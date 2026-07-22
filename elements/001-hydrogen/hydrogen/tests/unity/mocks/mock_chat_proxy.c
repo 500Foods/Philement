@@ -21,8 +21,8 @@ static ChatEngineConfig* g_last_engine = NULL;
 static char g_last_request_json[1024];
 
 ChatProxyResult* mock_chat_proxy_send_request(const ChatEngineConfig* engine,
-                                              const char* request_json,
-                                              const ChatProxyConfig* config) {
+                                               const char* request_json,
+                                               const ChatProxyConfig* config) {
     (void)config;
 
     g_call_count++;

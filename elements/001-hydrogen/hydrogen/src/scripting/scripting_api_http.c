@@ -263,60 +263,7 @@ int H_lua_http_wait_one(lua_State* L, H_Handle* h) {
         long elapsed_ms = (long)(((end_ts.tv_sec - start_ts.tv_sec) * 1000L) +
                                  ((end_ts.tv_nsec - start_ts.tv_nsec) / 1000000L));
 
-        if (resp->error_message) {
-            char buf[512];
-            snprintf(buf, sizeof(buf), "H.wait: %s", resp->error_message);
-            lua_pushnil(L);
-            lua_pushstring(L, buf);
-            oidc_rp_http_response_free(resp);
-            return 2;
-        }
-
-        lua_createtable(L, 0, 4);
-        lua_pushinteger(L, (lua_Integer)resp->http_status);
-        lua_setfield(L, -2, "status");
-
-        lua_createtable(L, 0, (int)resp->headers_count);
-        for (size_t i = 0; i < resp->headers_count; i++) {
-            const char* name = resp->headers[i].name ? resp->headers[i].name : "";
-            const char* value = resp->headers[i].value ? resp->headers[i].value : "";
-            lua_getfield(L, -1, name);
-            if (lua_isnil(L, -1)) {
-                lua_pop(L, 1);
-                lua_pushstring(L, value);
-                lua_setfield(L, -2, name);
-            } else {
-                size_t existing_len = 0;
-                const char* existing = lua_tolstring(L, -1, &existing_len);
-                size_t total = existing_len + strlen(value) + 3;
-                char* combined = malloc(total);
-                if (combined) {
-                    snprintf(combined, total, "%s, %s", existing, value);
-                    lua_pop(L, 1);
-                    lua_pushstring(L, combined);
-                    lua_setfield(L, -2, name);
-                    free(combined);
-                } else {
-                    lua_pop(L, 1);
-                }
-            }
-        }
-        lua_setfield(L, -2, "headers");
-
-        if (resp->body) {
-            lua_pushstring(L, resp->body);
-        } else {
-            lua_pushliteral(L, "");
-        }
-        lua_setfield(L, -2, "body");
-
-        lua_pushinteger(L, (lua_Integer)elapsed_ms);
-        lua_setfield(L, -2, "elapsed_ms");
-
-        lua_pushnil(L);
-
-        oidc_rp_http_response_free(resp);
-        return 2;
+        return H_lua_http_push_inline_result(L, resp, elapsed_ms);
     }
 
     // Pool path: block on the handle's condvar.
@@ -325,16 +272,37 @@ int H_lua_http_wait_one(lua_State* L, H_Handle* h) {
         pthread_cond_wait(&h->http_cond, &h->http_mutex);
     }
 
+    pthread_mutex_unlock(&h->http_mutex);
+
+    return H_lua_http_push_pool_result(L, h);
+}
+
+/*
+ * Build the (result, error) pair for a completed pool-submitted HTTP
+ * handle and push it onto L, reading the fields the worker stored on the
+ * handle (http_result_status / _body / _headers_json / _error /
+ * _elapsed_ms).
+ *
+ * On error (http_result_error set) pushes (nil, "H.wait: <err>") and
+ * returns. On success pushes a result table
+ * { status, headers, body, elapsed_ms } followed by a trailing nil (so
+ * the caller's (result, err) pair contract holds).
+ *
+ * Extracted from H_lua_http_wait_one so the pool-result marshalling can
+ * be unit tested directly with a handle whose result fields are
+ * populated, without standing up the worker pool.
+ *
+ * Returns 2 (the size of the pushed pair).
+ */
+int H_lua_http_push_pool_result(lua_State* L, H_Handle* h) {
+    h->consumed = true;
+
     long elapsed_ms = h->http_result_elapsed_ms;
     int status = h->http_result_status;
     char* body_copy = h->http_result_body ? strdup(h->http_result_body) : NULL;
     char* headers_json_copy = h->http_result_headers_json
         ? strdup(h->http_result_headers_json) : NULL;
     char* error_copy = h->http_result_error ? strdup(h->http_result_error) : NULL;
-
-    pthread_mutex_unlock(&h->http_mutex);
-
-    h->consumed = true;
 
     if (error_copy) {
         char buf[512];
@@ -407,6 +375,77 @@ int H_lua_http_wait_one(lua_State* L, H_Handle* h) {
 
     free(body_copy);
     free(headers_json_copy);
+    return 2;
+}
+
+/*
+ * Build the (result, error) pair for a completed inline HTTP response
+ * and push it onto L. elapsed_ms is the caller-measured call duration.
+ *
+ * On error (resp->error_message set) pushes (nil, error_string) and
+ * frees resp. On success pushes a result table
+ * { status, headers, body, elapsed_ms } followed by a trailing nil
+ * (so the caller's (result, err) pair contract holds) and frees resp.
+ *
+ * Extracted from H_lua_http_wait_one so the response-to-table logic can
+ * be unit tested directly with synthetic OidcRpHttpResponse objects.
+ *
+ * Returns 2 (the size of the pushed pair).
+ */
+int H_lua_http_push_inline_result(lua_State* L, OidcRpHttpResponse* resp, long elapsed_ms) {
+    if (resp->error_message) {
+        char buf[512];
+        snprintf(buf, sizeof(buf), "H.wait: %s", resp->error_message);
+        lua_pushnil(L);
+        lua_pushstring(L, buf);
+        oidc_rp_http_response_free(resp);
+        return 2;
+    }
+
+    lua_createtable(L, 0, 4);
+    lua_pushinteger(L, (lua_Integer)resp->http_status);
+    lua_setfield(L, -2, "status");
+
+    lua_createtable(L, 0, (int)resp->headers_count);
+    for (size_t i = 0; i < resp->headers_count; i++) {
+        const char* name = resp->headers[i].name ? resp->headers[i].name : "";
+        const char* value = resp->headers[i].value ? resp->headers[i].value : "";
+        lua_getfield(L, -1, name);
+        if (lua_isnil(L, -1)) {
+            lua_pop(L, 1);
+            lua_pushstring(L, value);
+            lua_setfield(L, -2, name);
+        } else {
+            size_t existing_len = 0;
+            const char* existing = lua_tolstring(L, -1, &existing_len);
+            size_t total = existing_len + strlen(value) + 3;
+            char* combined = malloc(total);
+            if (combined) {
+                snprintf(combined, total, "%s, %s", existing, value);
+                lua_pop(L, 1);
+                lua_pushstring(L, combined);
+                lua_setfield(L, -2, name);
+                free(combined);
+            } else {
+                lua_pop(L, 1);
+            }
+        }
+    }
+    lua_setfield(L, -2, "headers");
+
+    if (resp->body) {
+        lua_pushstring(L, resp->body);
+    } else {
+        lua_pushliteral(L, "");
+    }
+    lua_setfield(L, -2, "body");
+
+    lua_pushinteger(L, (lua_Integer)elapsed_ms);
+    lua_setfield(L, -2, "elapsed_ms");
+
+    lua_pushnil(L);
+
+    oidc_rp_http_response_free(resp);
     return 2;
 }
 
