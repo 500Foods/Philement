@@ -1,0 +1,871 @@
+        -:    0:Source:/usr/include/curl/typecheck-gcc.h
+        -:    0:Graph:build/coverage/src/scripting/scripting_api_query_wait.gcno
+        -:    0:Data:-
+        -:    0:Runs:0
+        -:    1:#ifndef CURLINC_TYPECHECK_GCC_H
+        -:    2:#define CURLINC_TYPECHECK_GCC_H
+        -:    3:/***************************************************************************
+        -:    4: *                                  _   _ ____  _
+        -:    5: *  Project                     ___| | | |  _ \| |
+        -:    6: *                             / __| | | | |_) | |
+        -:    7: *                            | (__| |_| |  _ <| |___
+        -:    8: *                             \___|\___/|_| \_\_____|
+        -:    9: *
+        -:   10: * Copyright (C) Daniel Stenberg, <daniel@haxx.se>, et al.
+        -:   11: *
+        -:   12: * This software is licensed as described in the file COPYING, which
+        -:   13: * you should have received as part of this distribution. The terms
+        -:   14: * are also available at https://curl.se/docs/copyright.html.
+        -:   15: *
+        -:   16: * You may opt to use, copy, modify, merge, publish, distribute and/or sell
+        -:   17: * copies of the Software, and permit persons to whom the Software is
+        -:   18: * furnished to do so, under the terms of the COPYING file.
+        -:   19: *
+        -:   20: * This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
+        -:   21: * KIND, either express or implied.
+        -:   22: *
+        -:   23: * SPDX-License-Identifier: curl
+        -:   24: *
+        -:   25: ***************************************************************************/
+        -:   26:
+        -:   27:/* wraps curl_easy_setopt() with typechecking */
+        -:   28:
+        -:   29:/* To add a new kind of warning, add an
+        -:   30: *   if(curlcheck_sometype_option(_curl_opt))
+        -:   31: *     if(!curlcheck_sometype(value))
+        -:   32: *       _curl_easy_setopt_err_sometype();
+        -:   33: * block and define curlcheck_sometype_option, curlcheck_sometype and
+        -:   34: * _curl_easy_setopt_err_sometype below
+        -:   35: *
+        -:   36: * NOTE: We use two nested 'if' statements here instead of the && operator, in
+        -:   37: *       order to work around gcc bug #32061. It affects only gcc 4.3.x/4.4.x
+        -:   38: *       when compiling with -Wlogical-op.
+        -:   39: *
+        -:   40: * To add an option that uses the same type as an existing option, you will
+        -:   41: * just need to extend the appropriate _curl_*_option macro
+        -:   42: */
+        -:   43:
+        -:   44:#define curl_easy_setopt(handle, option, value)                         \
+        -:   45:  __extension__({                                                       \
+        -:   46:      if(__builtin_constant_p(option)) {                                \
+        -:   47:        CURL_IGNORE_DEPRECATION(                                        \
+        -:   48:          if(curlcheck_long_option(option))                             \
+        -:   49:            if(!curlcheck_long(value))                                  \
+        -:   50:              _curl_easy_setopt_err_long();                             \
+        -:   51:          if(curlcheck_off_t_option(option))                            \
+        -:   52:            if(!curlcheck_off_t(value))                                 \
+        -:   53:              _curl_easy_setopt_err_curl_off_t();                       \
+        -:   54:          if(curlcheck_string_option(option))                           \
+        -:   55:            if(!curlcheck_string(value))                                \
+        -:   56:              _curl_easy_setopt_err_string();                           \
+        -:   57:          if((option) == CURLOPT_PRIVATE) { }                           \
+        -:   58:          if(curlcheck_write_cb_option(option))                         \
+        -:   59:            if(!curlcheck_write_cb(value))                              \
+        -:   60:              _curl_easy_setopt_err_write_callback();                   \
+        -:   61:          if(curlcheck_curl_option(option))                             \
+        -:   62:            if(!curlcheck_curl(value))                                  \
+        -:   63:              _curl_easy_setopt_err_curl();                             \
+        -:   64:          if((option) == CURLOPT_RESOLVER_START_FUNCTION)               \
+        -:   65:            if(!curlcheck_resolver_start_callback(value))               \
+        -:   66:              _curl_easy_setopt_err_resolver_start_callback();          \
+        -:   67:          if((option) == CURLOPT_READFUNCTION)                          \
+        -:   68:            if(!curlcheck_read_cb(value))                               \
+        -:   69:              _curl_easy_setopt_err_read_cb();                          \
+        -:   70:          if((option) == CURLOPT_IOCTLFUNCTION)                         \
+        -:   71:            if(!curlcheck_ioctl_cb(value))                              \
+        -:   72:              _curl_easy_setopt_err_ioctl_cb();                         \
+        -:   73:          if((option) == CURLOPT_SOCKOPTFUNCTION)                       \
+        -:   74:            if(!curlcheck_sockopt_cb(value))                            \
+        -:   75:              _curl_easy_setopt_err_sockopt_cb();                       \
+        -:   76:          if((option) == CURLOPT_OPENSOCKETFUNCTION)                    \
+        -:   77:            if(!curlcheck_opensocket_cb(value))                         \
+        -:   78:              _curl_easy_setopt_err_opensocket_cb();                    \
+        -:   79:          if((option) == CURLOPT_PROGRESSFUNCTION)                      \
+        -:   80:            if(!curlcheck_progress_cb(value))                           \
+        -:   81:              _curl_easy_setopt_err_progress_cb();                      \
+        -:   82:          if((option) == CURLOPT_XFERINFOFUNCTION)                      \
+        -:   83:            if(!curlcheck_xferinfo_cb(value))                           \
+        -:   84:              _curl_easy_setopt_err_xferinfo_cb();                      \
+        -:   85:          if((option) == CURLOPT_DEBUGFUNCTION)                         \
+        -:   86:            if(!curlcheck_debug_cb(value))                              \
+        -:   87:              _curl_easy_setopt_err_debug_cb();                         \
+        -:   88:          if((option) == CURLOPT_SSL_CTX_FUNCTION)                      \
+        -:   89:            if(!curlcheck_ssl_ctx_cb(value))                            \
+        -:   90:              _curl_easy_setopt_err_ssl_ctx_cb();                       \
+        -:   91:          if(curlcheck_conv_cb_option(option))                          \
+        -:   92:            if(!curlcheck_conv_cb(value))                               \
+        -:   93:              _curl_easy_setopt_err_conv_cb();                          \
+        -:   94:          if((option) == CURLOPT_SEEKFUNCTION)                          \
+        -:   95:            if(!curlcheck_seek_cb(value))                               \
+        -:   96:              _curl_easy_setopt_err_seek_cb();                          \
+        -:   97:          if((option) == CURLOPT_CHUNK_BGN_FUNCTION)                    \
+        -:   98:            if(!curlcheck_chunk_bgn_cb(value))                          \
+        -:   99:              _curl_easy_setopt_err_chunk_bgn_cb();                     \
+        -:  100:          if((option) == CURLOPT_CHUNK_END_FUNCTION)                    \
+        -:  101:            if(!curlcheck_chunk_end_cb(value))                          \
+        -:  102:              _curl_easy_setopt_err_chunk_end_cb();                     \
+        -:  103:          if((option) == CURLOPT_CLOSESOCKETFUNCTION)                   \
+        -:  104:            if(!curlcheck_close_socket_cb(value))                       \
+        -:  105:              _curl_easy_setopt_err_close_socket_cb();                  \
+        -:  106:          if((option) == CURLOPT_FNMATCH_FUNCTION)                      \
+        -:  107:            if(!curlcheck_fnmatch_cb(value))                            \
+        -:  108:              _curl_easy_setopt_err_fnmatch_cb();                       \
+        -:  109:          if((option) == CURLOPT_HSTSREADFUNCTION)                      \
+        -:  110:            if(!curlcheck_hstsread_cb(value))                           \
+        -:  111:              _curl_easy_setopt_err_hstsread_cb();                      \
+        -:  112:          if((option) == CURLOPT_HSTSWRITEFUNCTION)                     \
+        -:  113:            if(!curlcheck_hstswrite_cb(value))                          \
+        -:  114:              _curl_easy_setopt_err_hstswrite_cb();                     \
+        -:  115:          if((option) == CURLOPT_SSH_HOSTKEYFUNCTION)                   \
+        -:  116:            if(!curlcheck_ssh_hostkey_cb(value))                        \
+        -:  117:              _curl_easy_setopt_err_ssh_hostkey_cb();                   \
+        -:  118:          if((option) == CURLOPT_SSH_KEYFUNCTION)                       \
+        -:  119:            if(!curlcheck_ssh_key_cb(value))                            \
+        -:  120:              _curl_easy_setopt_err_ssh_key_cb();                       \
+        -:  121:          if((option) == CURLOPT_INTERLEAVEFUNCTION)                    \
+        -:  122:            if(!curlcheck_interleave_cb(value))                         \
+        -:  123:              _curl_easy_setopt_err_interleave_cb();                    \
+        -:  124:          if((option) == CURLOPT_PREREQFUNCTION)                        \
+        -:  125:            if(!curlcheck_prereq_cb(value))                             \
+        -:  126:              _curl_easy_setopt_err_prereq_cb();                        \
+        -:  127:          if((option) == CURLOPT_TRAILERFUNCTION)                       \
+        -:  128:            if(!curlcheck_trailer_cb(value))                            \
+        -:  129:              _curl_easy_setopt_err_trailer_cb();                       \
+        -:  130:          if(curlcheck_cb_data_option(option))                          \
+        -:  131:            if(!curlcheck_cb_data(value))                               \
+        -:  132:              _curl_easy_setopt_err_cb_data();                          \
+        -:  133:          if((option) == CURLOPT_ERRORBUFFER)                           \
+        -:  134:            if(!curlcheck_error_buffer(value))                          \
+        -:  135:              _curl_easy_setopt_err_error_buffer();                     \
+        -:  136:          if((option) == CURLOPT_CURLU)                                 \
+        -:  137:            if(!curlcheck_ptr((value), CURLU))                          \
+        -:  138:              _curl_easy_setopt_err_curlu();                    \
+        -:  139:          if((option) == CURLOPT_STDERR)                                \
+        -:  140:            if(!curlcheck_FILE(value))                                  \
+        -:  141:              _curl_easy_setopt_err_FILE();                             \
+        -:  142:          if(curlcheck_postfields_option(option))                       \
+        -:  143:            if(!curlcheck_postfields(value))                            \
+        -:  144:              _curl_easy_setopt_err_postfields();                       \
+        -:  145:          if((option) == CURLOPT_HTTPPOST)                              \
+        -:  146:            if(!curlcheck_arr((value), struct curl_httppost))           \
+        -:  147:              _curl_easy_setopt_err_curl_httpost();                     \
+        -:  148:          if((option) == CURLOPT_MIMEPOST)                              \
+        -:  149:            if(!curlcheck_ptr((value), curl_mime))                      \
+        -:  150:              _curl_easy_setopt_err_curl_mimepost();                    \
+        -:  151:          if(curlcheck_slist_option(option))                            \
+        -:  152:            if(!curlcheck_arr((value), struct curl_slist))              \
+        -:  153:              _curl_easy_setopt_err_curl_slist();                       \
+        -:  154:          if((option) == CURLOPT_SHARE)                                 \
+        -:  155:            if(!curlcheck_ptr((value), CURLSH))                         \
+        -:  156:              _curl_easy_setopt_err_CURLSH();                           \
+        -:  157:          )                                                             \
+        -:  158:          }                                                             \
+        -:  159:      curl_easy_setopt(handle, option, value);                          \
+        -:  160:    })
+        -:  161:
+        -:  162:/* wraps curl_easy_getinfo() with typechecking */
+        -:  163:#define curl_easy_getinfo(handle, info, arg)                            \
+        -:  164:  __extension__({                                                       \
+        -:  165:      if(__builtin_constant_p(info)) {                                  \
+        -:  166:        CURL_IGNORE_DEPRECATION(                                        \
+        -:  167:          if(curlcheck_string_info(info))                               \
+        -:  168:            if(!curlcheck_arr((arg), char *))                           \
+        -:  169:              _curl_easy_getinfo_err_string();                          \
+        -:  170:          if(curlcheck_long_info(info))                                 \
+        -:  171:            if(!curlcheck_arr((arg), long))                             \
+        -:  172:              _curl_easy_getinfo_err_long();                            \
+        -:  173:          if(curlcheck_double_info(info))                               \
+        -:  174:            if(!curlcheck_arr((arg), double))                           \
+        -:  175:              _curl_easy_getinfo_err_double();                          \
+        -:  176:          if(curlcheck_slist_info(info))                                \
+        -:  177:            if(!curlcheck_arr((arg), struct curl_slist *))              \
+        -:  178:              _curl_easy_getinfo_err_curl_slist();                      \
+        -:  179:          if(curlcheck_tlssessioninfo_info(info))                       \
+        -:  180:            if(!curlcheck_arr((arg), struct curl_tlssessioninfo *))     \
+        -:  181:              _curl_easy_getinfo_err_curl_tlssessioninfo();            \
+        -:  182:          if(curlcheck_certinfo_info(info))                             \
+        -:  183:            if(!curlcheck_arr((arg), struct curl_certinfo *))           \
+        -:  184:              _curl_easy_getinfo_err_curl_certinfo();                   \
+        -:  185:          if(curlcheck_socket_info(info))                               \
+        -:  186:            if(!curlcheck_arr((arg), curl_socket_t))                    \
+        -:  187:              _curl_easy_getinfo_err_curl_socket();                     \
+        -:  188:          if(curlcheck_off_t_info(info))                                \
+        -:  189:            if(!curlcheck_arr((arg), curl_off_t))                       \
+        -:  190:              _curl_easy_getinfo_err_curl_off_t();                      \
+        -:  191:          )                                                             \
+        -:  192:          }                                                             \
+        -:  193:      curl_easy_getinfo(handle, info, arg);                             \
+        -:  194:    })
+        -:  195:
+        -:  196:/*
+        -:  197: * For now, just make sure that the functions are called with three arguments
+        -:  198: */
+        -:  199:#define curl_share_setopt(share,opt,param) curl_share_setopt(share,opt,param)
+        -:  200:#define curl_multi_setopt(handle,opt,param) curl_multi_setopt(handle,opt,param)
+        -:  201:
+        -:  202:/* the actual warnings, triggered by calling the _curl_easy_setopt_err*
+        -:  203: * functions */
+        -:  204:
+        -:  205:/* To define a new warning, use _CURL_WARNING(identifier, "message") */
+        -:  206:#define CURLWARNING(id, message)                                        \
+        -:  207:  static void __attribute__((__warning__(message)))                     \
+        -:  208:  __attribute__((__unused__)) __attribute__((__noinline__))             \
+        -:  209:  id(void) { __asm__(""); }
+        -:  210:
+    #####:  211:CURLWARNING(_curl_easy_setopt_err_long,
+        -:  212:            "curl_easy_setopt expects a long argument")
+    #####:  213:CURLWARNING(_curl_easy_setopt_err_curl_off_t,
+        -:  214:            "curl_easy_setopt expects a curl_off_t argument")
+    #####:  215:CURLWARNING(_curl_easy_setopt_err_string,
+        -:  216:            "curl_easy_setopt expects a "
+        -:  217:            "string ('char *' or char[]) argument")
+    #####:  218:CURLWARNING(_curl_easy_setopt_err_write_callback,
+        -:  219:            "curl_easy_setopt expects a curl_write_callback argument")
+    #####:  220:CURLWARNING(_curl_easy_setopt_err_resolver_start_callback,
+        -:  221:            "curl_easy_setopt expects a "
+        -:  222:            "curl_resolver_start_callback argument")
+    #####:  223:CURLWARNING(_curl_easy_setopt_err_read_cb,
+        -:  224:            "curl_easy_setopt expects a curl_read_callback argument")
+    #####:  225:CURLWARNING(_curl_easy_setopt_err_ioctl_cb,
+        -:  226:            "curl_easy_setopt expects a curl_ioctl_callback argument")
+    #####:  227:CURLWARNING(_curl_easy_setopt_err_sockopt_cb,
+        -:  228:            "curl_easy_setopt expects a curl_sockopt_callback argument")
+    #####:  229:CURLWARNING(_curl_easy_setopt_err_opensocket_cb,
+        -:  230:            "curl_easy_setopt expects a "
+        -:  231:            "curl_opensocket_callback argument")
+    #####:  232:CURLWARNING(_curl_easy_setopt_err_progress_cb,
+        -:  233:            "curl_easy_setopt expects a curl_progress_callback argument")
+    #####:  234:CURLWARNING(_curl_easy_setopt_err_xferinfo_cb,
+        -:  235:            "curl_easy_setopt expects a curl_xferinfo_callback argument")
+    #####:  236:CURLWARNING(_curl_easy_setopt_err_debug_cb,
+        -:  237:            "curl_easy_setopt expects a curl_debug_callback argument")
+    #####:  238:CURLWARNING(_curl_easy_setopt_err_ssl_ctx_cb,
+        -:  239:            "curl_easy_setopt expects a curl_ssl_ctx_callback argument")
+    #####:  240:CURLWARNING(_curl_easy_setopt_err_conv_cb,
+        -:  241:            "curl_easy_setopt expects a curl_conv_callback argument")
+    #####:  242:CURLWARNING(_curl_easy_setopt_err_seek_cb,
+        -:  243:            "curl_easy_setopt expects a curl_seek_callback argument")
+    #####:  244:CURLWARNING(_curl_easy_setopt_err_cb_data,
+        -:  245:            "curl_easy_setopt expects a "
+        -:  246:            "private data pointer as argument")
+    #####:  247:CURLWARNING(_curl_easy_setopt_err_chunk_bgn_cb,
+        -:  248:            "curl_easy_setopt expects a curl_chunk_bgn_callback argument")
+    #####:  249:CURLWARNING(_curl_easy_setopt_err_chunk_end_cb,
+        -:  250:            "curl_easy_setopt expects a curl_chunk_end_callback argument")
+    #####:  251:CURLWARNING(_curl_easy_setopt_err_close_socket_cb,
+        -:  252:            "curl_easy_setopt expects a curl_closesocket_callback argument")
+    #####:  253:CURLWARNING(_curl_easy_setopt_err_fnmatch_cb,
+        -:  254:            "curl_easy_setopt expects a curl_fnmatch_callback argument")
+    #####:  255:CURLWARNING(_curl_easy_setopt_err_hstsread_cb,
+        -:  256:            "curl_easy_setopt expects a curl_hstsread_callback argument")
+    #####:  257:CURLWARNING(_curl_easy_setopt_err_hstswrite_cb,
+        -:  258:            "curl_easy_setopt expects a curl_hstswrite_callback argument")
+    #####:  259:CURLWARNING(_curl_easy_setopt_err_ssh_key_cb,
+        -:  260:            "curl_easy_setopt expects a curl_sshkeycallback argument")
+    #####:  261:CURLWARNING(_curl_easy_setopt_err_ssh_hostkey_cb,
+        -:  262:            "curl_easy_setopt expects a curl_sshhostkeycallback argument")
+    #####:  263:CURLWARNING(_curl_easy_setopt_err_interleave_cb,
+        -:  264:            "curl_easy_setopt expects a curl_interleave_callback argument")
+    #####:  265:CURLWARNING(_curl_easy_setopt_err_prereq_cb,
+        -:  266:            "curl_easy_setopt expects a curl_prereq_callback argument")
+    #####:  267:CURLWARNING(_curl_easy_setopt_err_trailer_cb,
+        -:  268:            "curl_easy_setopt expects a curl_trailerfunc_ok argument")
+    #####:  269:CURLWARNING(_curl_easy_setopt_err_error_buffer,
+        -:  270:            "curl_easy_setopt expects a "
+        -:  271:            "char buffer of CURL_ERROR_SIZE as argument")
+    #####:  272:CURLWARNING(_curl_easy_setopt_err_curlu,
+        -:  273:            "curl_easy_setopt expects a 'CURLU *' argument")
+    #####:  274:CURLWARNING(_curl_easy_setopt_err_curl,
+        -:  275:            "curl_easy_setopt expects a 'CURL *' argument")
+    #####:  276:CURLWARNING(_curl_easy_setopt_err_FILE,
+        -:  277:            "curl_easy_setopt expects a 'FILE *' argument")
+    #####:  278:CURLWARNING(_curl_easy_setopt_err_postfields,
+        -:  279:            "curl_easy_setopt expects a 'void *' or 'char *' argument")
+    #####:  280:CURLWARNING(_curl_easy_setopt_err_curl_httpost,
+        -:  281:            "curl_easy_setopt expects a 'struct curl_httppost *' "
+        -:  282:            "argument")
+    #####:  283:CURLWARNING(_curl_easy_setopt_err_curl_mimepost,
+        -:  284:            "curl_easy_setopt expects a 'curl_mime *' "
+        -:  285:            "argument")
+    #####:  286:CURLWARNING(_curl_easy_setopt_err_curl_slist,
+        -:  287:            "curl_easy_setopt expects a 'struct curl_slist *' argument")
+    #####:  288:CURLWARNING(_curl_easy_setopt_err_CURLSH,
+        -:  289:            "curl_easy_setopt expects a CURLSH* argument")
+    #####:  290:CURLWARNING(_curl_easy_getinfo_err_string,
+        -:  291:            "curl_easy_getinfo expects a pointer to 'char *'")
+    #####:  292:CURLWARNING(_curl_easy_getinfo_err_long,
+        -:  293:            "curl_easy_getinfo expects a pointer to long")
+    #####:  294:CURLWARNING(_curl_easy_getinfo_err_double,
+        -:  295:            "curl_easy_getinfo expects a pointer to double")
+    #####:  296:CURLWARNING(_curl_easy_getinfo_err_curl_slist,
+        -:  297:            "curl_easy_getinfo expects a pointer to 'struct curl_slist *'")
+    #####:  298:CURLWARNING(_curl_easy_getinfo_err_curl_tlssessioninfo,
+        -:  299:            "curl_easy_getinfo expects a pointer to "
+        -:  300:            "'struct curl_tlssessioninfo *'")
+    #####:  301:CURLWARNING(_curl_easy_getinfo_err_curl_certinfo,
+        -:  302:            "curl_easy_getinfo expects a pointer to "
+        -:  303:            "'struct curl_certinfo *'")
+    #####:  304:CURLWARNING(_curl_easy_getinfo_err_curl_socket,
+        -:  305:            "curl_easy_getinfo expects a pointer to curl_socket_t")
+    #####:  306:CURLWARNING(_curl_easy_getinfo_err_curl_off_t,
+        -:  307:            "curl_easy_getinfo expects a pointer to curl_off_t")
+        -:  308:
+        -:  309:/* groups of curl_easy_setops options that take the same type of argument */
+        -:  310:
+        -:  311:/* evaluates to true if option takes a long argument */
+        -:  312:#define curlcheck_long_option(option)                   \
+        -:  313:  (0 < (option) && (option) < CURLOPTTYPE_OBJECTPOINT)
+        -:  314:
+        -:  315:#define curlcheck_off_t_option(option)                                  \
+        -:  316:  (((option) > CURLOPTTYPE_OFF_T) && ((option) < CURLOPTTYPE_BLOB))
+        -:  317:
+        -:  318:/* option takes a CURL * argument */
+        -:  319:#define curlcheck_curl_option(option)                                 \
+        -:  320:  ((option) == CURLOPT_STREAM_DEPENDS ||                              \
+        -:  321:   (option) == CURLOPT_STREAM_DEPENDS_E ||                            \
+        -:  322:   0)
+        -:  323:
+        -:  324:/* evaluates to true if option takes a char* argument */
+        -:  325:#define curlcheck_string_option(option)                                 \
+        -:  326:  ((option) == CURLOPT_ABSTRACT_UNIX_SOCKET ||                          \
+        -:  327:   (option) == CURLOPT_ACCEPT_ENCODING ||                               \
+        -:  328:   (option) == CURLOPT_ALTSVC ||                                        \
+        -:  329:   (option) == CURLOPT_CAINFO ||                                        \
+        -:  330:   (option) == CURLOPT_CAPATH ||                                        \
+        -:  331:   (option) == CURLOPT_COOKIE ||                                        \
+        -:  332:   (option) == CURLOPT_COOKIEFILE ||                                    \
+        -:  333:   (option) == CURLOPT_COOKIEJAR ||                                     \
+        -:  334:   (option) == CURLOPT_COOKIELIST ||                                    \
+        -:  335:   (option) == CURLOPT_CRLFILE ||                                       \
+        -:  336:   (option) == CURLOPT_CUSTOMREQUEST ||                                 \
+        -:  337:   (option) == CURLOPT_DEFAULT_PROTOCOL ||                              \
+        -:  338:   (option) == CURLOPT_DNS_INTERFACE ||                                 \
+        -:  339:   (option) == CURLOPT_DNS_LOCAL_IP4 ||                                 \
+        -:  340:   (option) == CURLOPT_DNS_LOCAL_IP6 ||                                 \
+        -:  341:   (option) == CURLOPT_DNS_SERVERS ||                                   \
+        -:  342:   (option) == CURLOPT_DOH_URL ||                                       \
+        -:  343:   (option) == CURLOPT_ECH ||                                           \
+        -:  344:   (option) == CURLOPT_EGDSOCKET ||                                     \
+        -:  345:   (option) == CURLOPT_FTP_ACCOUNT ||                                   \
+        -:  346:   (option) == CURLOPT_FTP_ALTERNATIVE_TO_USER ||                       \
+        -:  347:   (option) == CURLOPT_FTPPORT ||                                       \
+        -:  348:   (option) == CURLOPT_HAPROXY_CLIENT_IP ||                             \
+        -:  349:   (option) == CURLOPT_HSTS ||                                          \
+        -:  350:   (option) == CURLOPT_INTERFACE ||                                     \
+        -:  351:   (option) == CURLOPT_ISSUERCERT ||                                    \
+        -:  352:   (option) == CURLOPT_KEYPASSWD ||                                     \
+        -:  353:   (option) == CURLOPT_KRBLEVEL ||                                      \
+        -:  354:   (option) == CURLOPT_LOGIN_OPTIONS ||                                 \
+        -:  355:   (option) == CURLOPT_MAIL_AUTH ||                                     \
+        -:  356:   (option) == CURLOPT_MAIL_FROM ||                                     \
+        -:  357:   (option) == CURLOPT_NETRC_FILE ||                                    \
+        -:  358:   (option) == CURLOPT_NOPROXY ||                                       \
+        -:  359:   (option) == CURLOPT_PASSWORD ||                                      \
+        -:  360:   (option) == CURLOPT_PINNEDPUBLICKEY ||                               \
+        -:  361:   (option) == CURLOPT_PRE_PROXY ||                                     \
+        -:  362:   (option) == CURLOPT_PROTOCOLS_STR ||                                 \
+        -:  363:   (option) == CURLOPT_PROXY ||                                         \
+        -:  364:   (option) == CURLOPT_PROXY_CAINFO ||                                  \
+        -:  365:   (option) == CURLOPT_PROXY_CAPATH ||                                  \
+        -:  366:   (option) == CURLOPT_PROXY_CRLFILE ||                                 \
+        -:  367:   (option) == CURLOPT_PROXY_ISSUERCERT ||                              \
+        -:  368:   (option) == CURLOPT_PROXY_KEYPASSWD ||                               \
+        -:  369:   (option) == CURLOPT_PROXY_PINNEDPUBLICKEY ||                         \
+        -:  370:   (option) == CURLOPT_PROXY_SERVICE_NAME ||                            \
+        -:  371:   (option) == CURLOPT_PROXY_SSL_CIPHER_LIST ||                         \
+        -:  372:   (option) == CURLOPT_PROXY_SSLCERT ||                                 \
+        -:  373:   (option) == CURLOPT_PROXY_SSLCERTTYPE ||                             \
+        -:  374:   (option) == CURLOPT_PROXY_SSLKEY ||                                  \
+        -:  375:   (option) == CURLOPT_PROXY_SSLKEYTYPE ||                              \
+        -:  376:   (option) == CURLOPT_PROXY_TLS13_CIPHERS ||                           \
+        -:  377:   (option) == CURLOPT_PROXY_TLSAUTH_PASSWORD ||                        \
+        -:  378:   (option) == CURLOPT_PROXY_TLSAUTH_TYPE ||                            \
+        -:  379:   (option) == CURLOPT_PROXY_TLSAUTH_USERNAME ||                        \
+        -:  380:   (option) == CURLOPT_PROXYPASSWORD ||                                 \
+        -:  381:   (option) == CURLOPT_PROXYUSERNAME ||                                 \
+        -:  382:   (option) == CURLOPT_PROXYUSERPWD ||                                  \
+        -:  383:   (option) == CURLOPT_RANDOM_FILE ||                                   \
+        -:  384:   (option) == CURLOPT_RANGE ||                                         \
+        -:  385:   (option) == CURLOPT_REDIR_PROTOCOLS_STR ||                           \
+        -:  386:   (option) == CURLOPT_REFERER ||                                       \
+        -:  387:   (option) == CURLOPT_REQUEST_TARGET ||                                \
+        -:  388:   (option) == CURLOPT_RTSP_SESSION_ID ||                               \
+        -:  389:   (option) == CURLOPT_RTSP_STREAM_URI ||                               \
+        -:  390:   (option) == CURLOPT_RTSP_TRANSPORT ||                                \
+        -:  391:   (option) == CURLOPT_SASL_AUTHZID ||                                  \
+        -:  392:   (option) == CURLOPT_SERVICE_NAME ||                                  \
+        -:  393:   (option) == CURLOPT_SOCKS5_GSSAPI_SERVICE ||                         \
+        -:  394:   (option) == CURLOPT_SSH_HOST_PUBLIC_KEY_MD5 ||                       \
+        -:  395:   (option) == CURLOPT_SSH_HOST_PUBLIC_KEY_SHA256 ||                    \
+        -:  396:   (option) == CURLOPT_SSH_KNOWNHOSTS ||                                \
+        -:  397:   (option) == CURLOPT_SSH_PRIVATE_KEYFILE ||                           \
+        -:  398:   (option) == CURLOPT_SSH_PUBLIC_KEYFILE ||                            \
+        -:  399:   (option) == CURLOPT_SSLCERT ||                                       \
+        -:  400:   (option) == CURLOPT_SSLCERTTYPE ||                                   \
+        -:  401:   (option) == CURLOPT_SSLENGINE ||                                     \
+        -:  402:   (option) == CURLOPT_SSLKEY ||                                        \
+        -:  403:   (option) == CURLOPT_SSLKEYTYPE ||                                    \
+        -:  404:   (option) == CURLOPT_SSL_CIPHER_LIST ||                               \
+        -:  405:   (option) == CURLOPT_SSL_EC_CURVES ||                                 \
+        -:  406:   (option) == CURLOPT_SSL_SIGNATURE_ALGORITHMS ||                      \
+        -:  407:   (option) == CURLOPT_TLS13_CIPHERS ||                                 \
+        -:  408:   (option) == CURLOPT_TLSAUTH_PASSWORD ||                              \
+        -:  409:   (option) == CURLOPT_TLSAUTH_TYPE ||                                  \
+        -:  410:   (option) == CURLOPT_TLSAUTH_USERNAME ||                              \
+        -:  411:   (option) == CURLOPT_UNIX_SOCKET_PATH ||                              \
+        -:  412:   (option) == CURLOPT_URL ||                                           \
+        -:  413:   (option) == CURLOPT_USERAGENT ||                                     \
+        -:  414:   (option) == CURLOPT_USERNAME ||                                      \
+        -:  415:   (option) == CURLOPT_AWS_SIGV4 ||                                     \
+        -:  416:   (option) == CURLOPT_USERPWD ||                                       \
+        -:  417:   (option) == CURLOPT_XOAUTH2_BEARER ||                                \
+        -:  418:   0)
+        -:  419:
+        -:  420:/* evaluates to true if option takes a curl_write_callback argument */
+        -:  421:#define curlcheck_write_cb_option(option)                               \
+        -:  422:  ((option) == CURLOPT_HEADERFUNCTION ||                                \
+        -:  423:   (option) == CURLOPT_WRITEFUNCTION)
+        -:  424:
+        -:  425:/* evaluates to true if option takes a curl_conv_callback argument */
+        -:  426:#define curlcheck_conv_cb_option(option)                                \
+        -:  427:  ((option) == CURLOPT_CONV_TO_NETWORK_FUNCTION ||                      \
+        -:  428:   (option) == CURLOPT_CONV_FROM_NETWORK_FUNCTION ||                    \
+        -:  429:   (option) == CURLOPT_CONV_FROM_UTF8_FUNCTION)
+        -:  430:
+        -:  431:/* evaluates to true if option takes a data argument to pass to a callback */
+        -:  432:#define curlcheck_cb_data_option(option)                                      \
+        -:  433:  ((option) == CURLOPT_CHUNK_DATA ||                                          \
+        -:  434:   (option) == CURLOPT_CLOSESOCKETDATA ||                                     \
+        -:  435:   (option) == CURLOPT_DEBUGDATA ||                                           \
+        -:  436:   (option) == CURLOPT_FNMATCH_DATA ||                                        \
+        -:  437:   (option) == CURLOPT_HEADERDATA ||                                          \
+        -:  438:   (option) == CURLOPT_HSTSREADDATA ||                                        \
+        -:  439:   (option) == CURLOPT_HSTSWRITEDATA ||                                       \
+        -:  440:   (option) == CURLOPT_INTERLEAVEDATA ||                                      \
+        -:  441:   (option) == CURLOPT_IOCTLDATA ||                                           \
+        -:  442:   (option) == CURLOPT_OPENSOCKETDATA ||                                      \
+        -:  443:   (option) == CURLOPT_PREREQDATA ||                                          \
+        -:  444:   (option) == CURLOPT_XFERINFODATA ||                                        \
+        -:  445:   (option) == CURLOPT_READDATA ||                                            \
+        -:  446:   (option) == CURLOPT_SEEKDATA ||                                            \
+        -:  447:   (option) == CURLOPT_SOCKOPTDATA ||                                         \
+        -:  448:   (option) == CURLOPT_SSH_KEYDATA ||                                         \
+        -:  449:   (option) == CURLOPT_SSL_CTX_DATA ||                                        \
+        -:  450:   (option) == CURLOPT_WRITEDATA ||                                           \
+        -:  451:   (option) == CURLOPT_RESOLVER_START_DATA ||                                 \
+        -:  452:   (option) == CURLOPT_TRAILERDATA ||                                         \
+        -:  453:   (option) == CURLOPT_SSH_HOSTKEYDATA ||                                     \
+        -:  454:   0)
+        -:  455:
+        -:  456:/* evaluates to true if option takes a POST data argument (void* or char*) */
+        -:  457:#define curlcheck_postfields_option(option)                                   \
+        -:  458:  ((option) == CURLOPT_POSTFIELDS ||                                          \
+        -:  459:   (option) == CURLOPT_COPYPOSTFIELDS ||                                      \
+        -:  460:   0)
+        -:  461:
+        -:  462:/* evaluates to true if option takes a struct curl_slist * argument */
+        -:  463:#define curlcheck_slist_option(option)                                        \
+        -:  464:  ((option) == CURLOPT_HTTP200ALIASES ||                                      \
+        -:  465:   (option) == CURLOPT_HTTPHEADER ||                                          \
+        -:  466:   (option) == CURLOPT_MAIL_RCPT ||                                           \
+        -:  467:   (option) == CURLOPT_POSTQUOTE ||                                           \
+        -:  468:   (option) == CURLOPT_PREQUOTE ||                                            \
+        -:  469:   (option) == CURLOPT_PROXYHEADER ||                                         \
+        -:  470:   (option) == CURLOPT_QUOTE ||                                               \
+        -:  471:   (option) == CURLOPT_RESOLVE ||                                             \
+        -:  472:   (option) == CURLOPT_TELNETOPTIONS ||                                       \
+        -:  473:   (option) == CURLOPT_CONNECT_TO ||                                          \
+        -:  474:   0)
+        -:  475:
+        -:  476:/* groups of curl_easy_getinfo infos that take the same type of argument */
+        -:  477:
+        -:  478:/* evaluates to true if info expects a pointer to char * argument */
+        -:  479:#define curlcheck_string_info(info)                             \
+        -:  480:  (CURLINFO_STRING < (info) && (info) < CURLINFO_LONG &&        \
+        -:  481:   (info) != CURLINFO_PRIVATE)
+        -:  482:
+        -:  483:/* evaluates to true if info expects a pointer to long argument */
+        -:  484:#define curlcheck_long_info(info)                       \
+        -:  485:  (CURLINFO_LONG < (info) && (info) < CURLINFO_DOUBLE)
+        -:  486:
+        -:  487:/* evaluates to true if info expects a pointer to double argument */
+        -:  488:#define curlcheck_double_info(info)                     \
+        -:  489:  (CURLINFO_DOUBLE < (info) && (info) < CURLINFO_SLIST)
+        -:  490:
+        -:  491:/* true if info expects a pointer to struct curl_slist * argument */
+        -:  492:#define curlcheck_slist_info(info)                                      \
+        -:  493:  (((info) == CURLINFO_SSL_ENGINES) || ((info) == CURLINFO_COOKIELIST))
+        -:  494:
+        -:  495:/* true if info expects a pointer to struct curl_tlssessioninfo * argument */
+        -:  496:#define curlcheck_tlssessioninfo_info(info)                              \
+        -:  497:  (((info) == CURLINFO_TLS_SSL_PTR) || ((info) == CURLINFO_TLS_SESSION))
+        -:  498:
+        -:  499:/* true if info expects a pointer to struct curl_certinfo * argument */
+        -:  500:#define curlcheck_certinfo_info(info) ((info) == CURLINFO_CERTINFO)
+        -:  501:
+        -:  502:/* true if info expects a pointer to struct curl_socket_t argument */
+        -:  503:#define curlcheck_socket_info(info)                     \
+        -:  504:  (CURLINFO_SOCKET < (info) && (info) < CURLINFO_OFF_T)
+        -:  505:
+        -:  506:/* true if info expects a pointer to curl_off_t argument */
+        -:  507:#define curlcheck_off_t_info(info)              \
+        -:  508:  (CURLINFO_OFF_T < (info))
+        -:  509:
+        -:  510:
+        -:  511:/* typecheck helpers -- check whether given expression has requested type */
+        -:  512:
+        -:  513:/* For pointers, you can use the curlcheck_ptr/curlcheck_arr macros,
+        -:  514: * otherwise define a new macro. Search for __builtin_types_compatible_p
+        -:  515: * in the GCC manual.
+        -:  516: * NOTE: these macros MUST NOT EVALUATE their arguments! The argument is
+        -:  517: * the actual expression passed to the curl_easy_setopt macro. This
+        -:  518: * means that you can only apply the sizeof and __typeof__ operators, no
+        -:  519: * == or whatsoever.
+        -:  520: */
+        -:  521:
+        -:  522:/* XXX: should evaluate to true if expr is a pointer */
+        -:  523:#define curlcheck_any_ptr(expr)                 \
+        -:  524:  (sizeof(expr) == sizeof(void *))
+        -:  525:
+        -:  526:/* evaluates to true if expr is NULL */
+        -:  527:/* XXX: must not evaluate expr, so this check is not accurate */
+        -:  528:#define curlcheck_NULL(expr)                                            \
+        -:  529:  (__builtin_types_compatible_p(__typeof__(expr), __typeof__(NULL)))
+        -:  530:
+        -:  531:/* evaluates to true if expr is type*, const type* or NULL */
+        -:  532:#define curlcheck_ptr(expr, type)                                       \
+        -:  533:  (curlcheck_NULL(expr) ||                                              \
+        -:  534:   __builtin_types_compatible_p(__typeof__(expr), type *) ||            \
+        -:  535:   __builtin_types_compatible_p(__typeof__(expr), const type *))
+        -:  536:
+        -:  537:/* evaluates to true if expr is one of type[], type*, NULL or const type* */
+        -:  538:#define curlcheck_arr(expr, type)                                       \
+        -:  539:  (curlcheck_ptr((expr), type) ||                                       \
+        -:  540:   __builtin_types_compatible_p(__typeof__(expr), type []))
+        -:  541:
+        -:  542:/* evaluates to true if expr is a string */
+        -:  543:#define curlcheck_string(expr)                                          \
+        -:  544:  (curlcheck_arr((expr), char) ||                                       \
+        -:  545:   curlcheck_arr((expr), signed char) ||                                \
+        -:  546:   curlcheck_arr((expr), unsigned char))
+        -:  547:
+        -:  548:/* evaluates to true if expr is a CURL * */
+        -:  549:#define curlcheck_curl(expr)                                          \
+        -:  550:  (curlcheck_NULL(expr) ||                                              \
+        -:  551:   __builtin_types_compatible_p(__typeof__(expr), CURL *))
+        -:  552:
+        -:  553:
+        -:  554:/* evaluates to true if expr is a long (no matter the signedness)
+        -:  555: * XXX: for now, int is also accepted (and therefore short and char, which
+        -:  556: * are promoted to int when passed to a variadic function) */
+        -:  557:#define curlcheck_long(expr)                                            \
+        -:  558:  (                                                                     \
+        -:  559:  ((sizeof(long) != sizeof(int)) &&                                     \
+        -:  560:   (__builtin_types_compatible_p(__typeof__(expr), long) ||             \
+        -:  561:    __builtin_types_compatible_p(__typeof__(expr), signed long) ||      \
+        -:  562:    __builtin_types_compatible_p(__typeof__(expr), unsigned long)))     \
+        -:  563:  ||                                                                    \
+        -:  564:  ((sizeof(long) == sizeof(int)) &&                                     \
+        -:  565:  (__builtin_types_compatible_p(__typeof__(expr), long) ||              \
+        -:  566:   __builtin_types_compatible_p(__typeof__(expr), signed long) ||       \
+        -:  567:   __builtin_types_compatible_p(__typeof__(expr), unsigned long) ||     \
+        -:  568:   __builtin_types_compatible_p(__typeof__(expr), int) ||               \
+        -:  569:   __builtin_types_compatible_p(__typeof__(expr), signed int) ||        \
+        -:  570:   __builtin_types_compatible_p(__typeof__(expr), unsigned int) ||      \
+        -:  571:   __builtin_types_compatible_p(__typeof__(expr), short) ||             \
+        -:  572:   __builtin_types_compatible_p(__typeof__(expr), signed short) ||      \
+        -:  573:   __builtin_types_compatible_p(__typeof__(expr), unsigned short) ||    \
+        -:  574:   __builtin_types_compatible_p(__typeof__(expr), char) ||              \
+        -:  575:   __builtin_types_compatible_p(__typeof__(expr), signed char) ||       \
+        -:  576:   __builtin_types_compatible_p(__typeof__(expr), unsigned char)))      \
+        -:  577:                                                                  )
+        -:  578:
+        -:  579:/* evaluates to true if expr is of type curl_off_t */
+        -:  580:#define curlcheck_off_t(expr)                                   \
+        -:  581:  (__builtin_types_compatible_p(__typeof__(expr), curl_off_t))
+        -:  582:
+        -:  583:/* evaluates to true if expr is abuffer suitable for CURLOPT_ERRORBUFFER */
+        -:  584:/* XXX: also check size of an char[] array? */
+        -:  585:#define curlcheck_error_buffer(expr)                                    \
+        -:  586:  (curlcheck_NULL(expr) ||                                              \
+        -:  587:   __builtin_types_compatible_p(__typeof__(expr), char *) ||            \
+        -:  588:   __builtin_types_compatible_p(__typeof__(expr), char[]))
+        -:  589:
+        -:  590:/* evaluates to true if expr is of type (const) void* or (const) FILE* */
+        -:  591:#if 0
+        -:  592:#define curlcheck_cb_data(expr)                                         \
+        -:  593:  (curlcheck_ptr((expr), void) ||                                       \
+        -:  594:   curlcheck_ptr((expr), FILE))
+        -:  595:#else /* be less strict */
+        -:  596:#define curlcheck_cb_data(expr)                 \
+        -:  597:  curlcheck_any_ptr(expr)
+        -:  598:#endif
+        -:  599:
+        -:  600:/* evaluates to true if expr is of type FILE* */
+        -:  601:#define curlcheck_FILE(expr)                                            \
+        -:  602:  (curlcheck_NULL(expr) ||                                              \
+        -:  603:   (__builtin_types_compatible_p(__typeof__(expr), FILE *)))
+        -:  604:
+        -:  605:/* evaluates to true if expr can be passed as POST data (void* or char*) */
+        -:  606:#define curlcheck_postfields(expr)                                      \
+        -:  607:  (curlcheck_ptr((expr), void) ||                                       \
+        -:  608:   curlcheck_arr((expr), char) ||                                       \
+        -:  609:   curlcheck_arr((expr), unsigned char))
+        -:  610:
+        -:  611:/* helper: __builtin_types_compatible_p distinguishes between functions and
+        -:  612: * function pointers, hide it */
+        -:  613:#define curlcheck_cb_compatible(func, type)                             \
+        -:  614:  (__builtin_types_compatible_p(__typeof__(func), type) ||              \
+        -:  615:   __builtin_types_compatible_p(__typeof__(func) *, type))
+        -:  616:
+        -:  617:/* evaluates to true if expr is of type curl_resolver_start_callback */
+        -:  618:#define curlcheck_resolver_start_callback(expr)       \
+        -:  619:  (curlcheck_NULL(expr) || \
+        -:  620:   curlcheck_cb_compatible((expr), curl_resolver_start_callback))
+        -:  621:
+        -:  622:/* evaluates to true if expr is of type curl_read_callback or "similar" */
+        -:  623:#define curlcheck_read_cb(expr)                                         \
+        -:  624:  (curlcheck_NULL(expr) ||                                              \
+        -:  625:   curlcheck_cb_compatible((expr), __typeof__(fread) *) ||              \
+        -:  626:   curlcheck_cb_compatible((expr), curl_read_callback) ||               \
+        -:  627:   curlcheck_cb_compatible((expr), _curl_read_callback1) ||             \
+        -:  628:   curlcheck_cb_compatible((expr), _curl_read_callback2) ||             \
+        -:  629:   curlcheck_cb_compatible((expr), _curl_read_callback3) ||             \
+        -:  630:   curlcheck_cb_compatible((expr), _curl_read_callback4) ||             \
+        -:  631:   curlcheck_cb_compatible((expr), _curl_read_callback5) ||             \
+        -:  632:   curlcheck_cb_compatible((expr), _curl_read_callback6))
+        -:  633:typedef size_t (*_curl_read_callback1)(char *, size_t, size_t, void *);
+        -:  634:typedef size_t (*_curl_read_callback2)(char *, size_t, size_t, const void *);
+        -:  635:typedef size_t (*_curl_read_callback3)(char *, size_t, size_t, FILE *);
+        -:  636:typedef size_t (*_curl_read_callback4)(void *, size_t, size_t, void *);
+        -:  637:typedef size_t (*_curl_read_callback5)(void *, size_t, size_t, const void *);
+        -:  638:typedef size_t (*_curl_read_callback6)(void *, size_t, size_t, FILE *);
+        -:  639:
+        -:  640:/* evaluates to true if expr is of type curl_write_callback or "similar" */
+        -:  641:#define curlcheck_write_cb(expr)                                        \
+        -:  642:  (curlcheck_read_cb(expr) ||                                           \
+        -:  643:   curlcheck_cb_compatible((expr), __typeof__(fwrite) *) ||             \
+        -:  644:   curlcheck_cb_compatible((expr), curl_write_callback) ||              \
+        -:  645:   curlcheck_cb_compatible((expr), _curl_write_callback1) ||            \
+        -:  646:   curlcheck_cb_compatible((expr), _curl_write_callback2) ||            \
+        -:  647:   curlcheck_cb_compatible((expr), _curl_write_callback3) ||            \
+        -:  648:   curlcheck_cb_compatible((expr), _curl_write_callback4) ||            \
+        -:  649:   curlcheck_cb_compatible((expr), _curl_write_callback5) ||            \
+        -:  650:   curlcheck_cb_compatible((expr), _curl_write_callback6))
+        -:  651:typedef size_t (*_curl_write_callback1)(const char *, size_t, size_t, void *);
+        -:  652:typedef size_t (*_curl_write_callback2)(const char *, size_t, size_t,
+        -:  653:                                       const void *);
+        -:  654:typedef size_t (*_curl_write_callback3)(const char *, size_t, size_t, FILE *);
+        -:  655:typedef size_t (*_curl_write_callback4)(const void *, size_t, size_t, void *);
+        -:  656:typedef size_t (*_curl_write_callback5)(const void *, size_t, size_t,
+        -:  657:                                       const void *);
+        -:  658:typedef size_t (*_curl_write_callback6)(const void *, size_t, size_t, FILE *);
+        -:  659:
+        -:  660:/* evaluates to true if expr is of type curl_ioctl_callback or "similar" */
+        -:  661:#define curlcheck_ioctl_cb(expr)                                        \
+        -:  662:  (curlcheck_NULL(expr) ||                                              \
+        -:  663:   curlcheck_cb_compatible((expr), curl_ioctl_callback) ||              \
+        -:  664:   curlcheck_cb_compatible((expr), _curl_ioctl_callback1) ||            \
+        -:  665:   curlcheck_cb_compatible((expr), _curl_ioctl_callback2) ||            \
+        -:  666:   curlcheck_cb_compatible((expr), _curl_ioctl_callback3) ||            \
+        -:  667:   curlcheck_cb_compatible((expr), _curl_ioctl_callback4))
+        -:  668:typedef curlioerr (*_curl_ioctl_callback1)(CURL *, int, void *);
+        -:  669:typedef curlioerr (*_curl_ioctl_callback2)(CURL *, int, const void *);
+        -:  670:typedef curlioerr (*_curl_ioctl_callback3)(CURL *, curliocmd, void *);
+        -:  671:typedef curlioerr (*_curl_ioctl_callback4)(CURL *, curliocmd, const void *);
+        -:  672:
+        -:  673:/* evaluates to true if expr is of type curl_sockopt_callback or "similar" */
+        -:  674:#define curlcheck_sockopt_cb(expr)                                      \
+        -:  675:  (curlcheck_NULL(expr) ||                                              \
+        -:  676:   curlcheck_cb_compatible((expr), curl_sockopt_callback) ||            \
+        -:  677:   curlcheck_cb_compatible((expr), _curl_sockopt_callback1) ||          \
+        -:  678:   curlcheck_cb_compatible((expr), _curl_sockopt_callback2))
+        -:  679:typedef int (*_curl_sockopt_callback1)(void *, curl_socket_t, curlsocktype);
+        -:  680:typedef int (*_curl_sockopt_callback2)(const void *, curl_socket_t,
+        -:  681:                                      curlsocktype);
+        -:  682:
+        -:  683:/* evaluates to true if expr is of type curl_opensocket_callback or
+        -:  684:   "similar" */
+        -:  685:#define curlcheck_opensocket_cb(expr)                                   \
+        -:  686:  (curlcheck_NULL(expr) ||                                              \
+        -:  687:   curlcheck_cb_compatible((expr), curl_opensocket_callback) ||         \
+        -:  688:   curlcheck_cb_compatible((expr), _curl_opensocket_callback1) ||       \
+        -:  689:   curlcheck_cb_compatible((expr), _curl_opensocket_callback2) ||       \
+        -:  690:   curlcheck_cb_compatible((expr), _curl_opensocket_callback3) ||       \
+        -:  691:   curlcheck_cb_compatible((expr), _curl_opensocket_callback4))
+        -:  692:typedef curl_socket_t (*_curl_opensocket_callback1)
+        -:  693:  (void *, curlsocktype, struct curl_sockaddr *);
+        -:  694:typedef curl_socket_t (*_curl_opensocket_callback2)
+        -:  695:  (void *, curlsocktype, const struct curl_sockaddr *);
+        -:  696:typedef curl_socket_t (*_curl_opensocket_callback3)
+        -:  697:  (const void *, curlsocktype, struct curl_sockaddr *);
+        -:  698:typedef curl_socket_t (*_curl_opensocket_callback4)
+        -:  699:  (const void *, curlsocktype, const struct curl_sockaddr *);
+        -:  700:
+        -:  701:/* evaluates to true if expr is of type curl_progress_callback or "similar" */
+        -:  702:#define curlcheck_progress_cb(expr)                                     \
+        -:  703:  (curlcheck_NULL(expr) ||                                              \
+        -:  704:   curlcheck_cb_compatible((expr), curl_progress_callback) ||           \
+        -:  705:   curlcheck_cb_compatible((expr), _curl_progress_callback1) ||         \
+        -:  706:   curlcheck_cb_compatible((expr), _curl_progress_callback2))
+        -:  707:typedef int (*_curl_progress_callback1)(void *,
+        -:  708:    double, double, double, double);
+        -:  709:typedef int (*_curl_progress_callback2)(const void *,
+        -:  710:    double, double, double, double);
+        -:  711:
+        -:  712:/* evaluates to true if expr is of type curl_xferinfo_callback */
+        -:  713:#define curlcheck_xferinfo_cb(expr)                                     \
+        -:  714:  (curlcheck_NULL(expr) ||                                              \
+        -:  715:   curlcheck_cb_compatible((expr), curl_xferinfo_callback))
+        -:  716:
+        -:  717:/* evaluates to true if expr is of type curl_debug_callback or "similar" */
+        -:  718:#define curlcheck_debug_cb(expr)                                        \
+        -:  719:  (curlcheck_NULL(expr) ||                                              \
+        -:  720:   curlcheck_cb_compatible((expr), curl_debug_callback) ||              \
+        -:  721:   curlcheck_cb_compatible((expr), _curl_debug_callback1) ||            \
+        -:  722:   curlcheck_cb_compatible((expr), _curl_debug_callback2) ||            \
+        -:  723:   curlcheck_cb_compatible((expr), _curl_debug_callback3) ||            \
+        -:  724:   curlcheck_cb_compatible((expr), _curl_debug_callback4) ||            \
+        -:  725:   curlcheck_cb_compatible((expr), _curl_debug_callback5) ||            \
+        -:  726:   curlcheck_cb_compatible((expr), _curl_debug_callback6) ||            \
+        -:  727:   curlcheck_cb_compatible((expr), _curl_debug_callback7) ||            \
+        -:  728:   curlcheck_cb_compatible((expr), _curl_debug_callback8))
+        -:  729:typedef int (*_curl_debug_callback1) (CURL *,
+        -:  730:    curl_infotype, char *, size_t, void *);
+        -:  731:typedef int (*_curl_debug_callback2) (CURL *,
+        -:  732:    curl_infotype, char *, size_t, const void *);
+        -:  733:typedef int (*_curl_debug_callback3) (CURL *,
+        -:  734:    curl_infotype, const char *, size_t, void *);
+        -:  735:typedef int (*_curl_debug_callback4) (CURL *,
+        -:  736:    curl_infotype, const char *, size_t, const void *);
+        -:  737:typedef int (*_curl_debug_callback5) (CURL *,
+        -:  738:    curl_infotype, unsigned char *, size_t, void *);
+        -:  739:typedef int (*_curl_debug_callback6) (CURL *,
+        -:  740:    curl_infotype, unsigned char *, size_t, const void *);
+        -:  741:typedef int (*_curl_debug_callback7) (CURL *,
+        -:  742:    curl_infotype, const unsigned char *, size_t, void *);
+        -:  743:typedef int (*_curl_debug_callback8) (CURL *,
+        -:  744:    curl_infotype, const unsigned char *, size_t, const void *);
+        -:  745:
+        -:  746:/* evaluates to true if expr is of type curl_ssl_ctx_callback or "similar" */
+        -:  747:/* this is getting even messier... */
+        -:  748:#define curlcheck_ssl_ctx_cb(expr)                                      \
+        -:  749:  (curlcheck_NULL(expr) ||                                              \
+        -:  750:   curlcheck_cb_compatible((expr), curl_ssl_ctx_callback) ||            \
+        -:  751:   curlcheck_cb_compatible((expr), _curl_ssl_ctx_callback1) ||          \
+        -:  752:   curlcheck_cb_compatible((expr), _curl_ssl_ctx_callback2) ||          \
+        -:  753:   curlcheck_cb_compatible((expr), _curl_ssl_ctx_callback3) ||          \
+        -:  754:   curlcheck_cb_compatible((expr), _curl_ssl_ctx_callback4) ||          \
+        -:  755:   curlcheck_cb_compatible((expr), _curl_ssl_ctx_callback5) ||          \
+        -:  756:   curlcheck_cb_compatible((expr), _curl_ssl_ctx_callback6) ||          \
+        -:  757:   curlcheck_cb_compatible((expr), _curl_ssl_ctx_callback7) ||          \
+        -:  758:   curlcheck_cb_compatible((expr), _curl_ssl_ctx_callback8))
+        -:  759:typedef CURLcode (*_curl_ssl_ctx_callback1)(CURL *, void *, void *);
+        -:  760:typedef CURLcode (*_curl_ssl_ctx_callback2)(CURL *, void *, const void *);
+        -:  761:typedef CURLcode (*_curl_ssl_ctx_callback3)(CURL *, const void *, void *);
+        -:  762:typedef CURLcode (*_curl_ssl_ctx_callback4)(CURL *, const void *,
+        -:  763:                                            const void *);
+        -:  764:#ifdef HEADER_SSL_H
+        -:  765:/* hack: if we included OpenSSL's ssl.h, we know about SSL_CTX
+        -:  766: * this will of course break if we are included before OpenSSL headers...
+        -:  767: */
+        -:  768:typedef CURLcode (*_curl_ssl_ctx_callback5)(CURL *, SSL_CTX *, void *);
+        -:  769:typedef CURLcode (*_curl_ssl_ctx_callback6)(CURL *, SSL_CTX *, const void *);
+        -:  770:typedef CURLcode (*_curl_ssl_ctx_callback7)(CURL *, const SSL_CTX *, void *);
+        -:  771:typedef CURLcode (*_curl_ssl_ctx_callback8)(CURL *, const SSL_CTX *,
+        -:  772:                                            const void *);
+        -:  773:#else
+        -:  774:typedef _curl_ssl_ctx_callback1 _curl_ssl_ctx_callback5;
+        -:  775:typedef _curl_ssl_ctx_callback1 _curl_ssl_ctx_callback6;
+        -:  776:typedef _curl_ssl_ctx_callback1 _curl_ssl_ctx_callback7;
+        -:  777:typedef _curl_ssl_ctx_callback1 _curl_ssl_ctx_callback8;
+        -:  778:#endif
+        -:  779:
+        -:  780:/* evaluates to true if expr is of type curl_conv_callback or "similar" */
+        -:  781:#define curlcheck_conv_cb(expr)                                         \
+        -:  782:  (curlcheck_NULL(expr) ||                                              \
+        -:  783:   curlcheck_cb_compatible((expr), curl_conv_callback) ||               \
+        -:  784:   curlcheck_cb_compatible((expr), _curl_conv_callback1) ||             \
+        -:  785:   curlcheck_cb_compatible((expr), _curl_conv_callback2) ||             \
+        -:  786:   curlcheck_cb_compatible((expr), _curl_conv_callback3) ||             \
+        -:  787:   curlcheck_cb_compatible((expr), _curl_conv_callback4))
+        -:  788:typedef CURLcode (*_curl_conv_callback1)(char *, size_t length);
+        -:  789:typedef CURLcode (*_curl_conv_callback2)(const char *, size_t length);
+        -:  790:typedef CURLcode (*_curl_conv_callback3)(void *, size_t length);
+        -:  791:typedef CURLcode (*_curl_conv_callback4)(const void *, size_t length);
+        -:  792:
+        -:  793:/* evaluates to true if expr is of type curl_seek_callback or "similar" */
+        -:  794:#define curlcheck_seek_cb(expr)                                         \
+        -:  795:  (curlcheck_NULL(expr) ||                                              \
+        -:  796:   curlcheck_cb_compatible((expr), curl_seek_callback) ||               \
+        -:  797:   curlcheck_cb_compatible((expr), _curl_seek_callback1) ||             \
+        -:  798:   curlcheck_cb_compatible((expr), _curl_seek_callback2))
+        -:  799:typedef CURLcode (*_curl_seek_callback1)(void *, curl_off_t, int);
+        -:  800:typedef CURLcode (*_curl_seek_callback2)(const void *, curl_off_t, int);
+        -:  801:
+        -:  802:/* evaluates to true if expr is of type curl_chunk_bgn_callback */
+        -:  803:#define curlcheck_chunk_bgn_cb(expr)                                    \
+        -:  804:  (curlcheck_NULL(expr) ||                                              \
+        -:  805:   curlcheck_cb_compatible((expr), curl_chunk_bgn_callback) ||          \
+        -:  806:   curlcheck_cb_compatible((expr), _curl_chunk_bgn_callback1) ||        \
+        -:  807:   curlcheck_cb_compatible((expr), _curl_chunk_bgn_callback2))
+        -:  808:typedef long (*_curl_chunk_bgn_callback1)(struct curl_fileinfo *,
+        -:  809:                                          void *, int);
+        -:  810:typedef long (*_curl_chunk_bgn_callback2)(void *, void *, int);
+        -:  811:
+        -:  812:/* evaluates to true if expr is of type curl_chunk_end_callback */
+        -:  813:#define curlcheck_chunk_end_cb(expr)                                    \
+        -:  814:  (curlcheck_NULL(expr) ||                                              \
+        -:  815:   curlcheck_cb_compatible((expr), curl_chunk_end_callback))
+        -:  816:
+        -:  817:/* evaluates to true if expr is of type curl_closesocket_callback */
+        -:  818:#define curlcheck_close_socket_cb(expr)                                 \
+        -:  819:  (curlcheck_NULL(expr) ||                                              \
+        -:  820:   curlcheck_cb_compatible((expr), curl_closesocket_callback))
+        -:  821:
+        -:  822:/* evaluates to true if expr is of type curl_fnmatch_callback */
+        -:  823:#define curlcheck_fnmatch_cb(expr)                                      \
+        -:  824:  (curlcheck_NULL(expr) ||                                              \
+        -:  825:   curlcheck_cb_compatible((expr), curl_fnmatch_callback))
+        -:  826:
+        -:  827:/* evaluates to true if expr is of type curl_hstsread_callback */
+        -:  828:#define curlcheck_hstsread_cb(expr)                                     \
+        -:  829:  (curlcheck_NULL(expr) ||                                              \
+        -:  830:   curlcheck_cb_compatible((expr), curl_hstsread_callback))
+        -:  831:
+        -:  832:/* evaluates to true if expr is of type curl_hstswrite_callback */
+        -:  833:#define curlcheck_hstswrite_cb(expr)                                    \
+        -:  834:  (curlcheck_NULL(expr) ||                                              \
+        -:  835:   curlcheck_cb_compatible((expr), curl_hstswrite_callback))
+        -:  836:
+        -:  837:/* evaluates to true if expr is of type curl_sshhostkeycallback */
+        -:  838:#define curlcheck_ssh_hostkey_cb(expr)                                  \
+        -:  839:  (curlcheck_NULL(expr) ||                                              \
+        -:  840:   curlcheck_cb_compatible((expr), curl_sshhostkeycallback))
+        -:  841:
+        -:  842:/* evaluates to true if expr is of type curl_sshkeycallback */
+        -:  843:#define curlcheck_ssh_key_cb(expr)                                  \
+        -:  844:  (curlcheck_NULL(expr) ||                                          \
+        -:  845:   curlcheck_cb_compatible((expr), curl_sshkeycallback))
+        -:  846:
+        -:  847:/* evaluates to true if expr is of type curl_interleave_callback */
+        -:  848:#define curlcheck_interleave_cb(expr)                                   \
+        -:  849:  (curlcheck_NULL(expr) ||                                              \
+        -:  850:   curlcheck_cb_compatible((expr), _curl_interleave_callback1) ||       \
+        -:  851:   curlcheck_cb_compatible((expr), _curl_interleave_callback2))
+        -:  852:typedef size_t (*_curl_interleave_callback1)(void *p, size_t s,
+        -:  853:                                             size_t n, void *u);
+        -:  854:typedef size_t (*_curl_interleave_callback2)(char *p, size_t s,
+        -:  855:                                             size_t n, void *u);
+        -:  856:
+        -:  857:/* evaluates to true if expr is of type curl_prereq_callback */
+        -:  858:#define curlcheck_prereq_cb(expr)                                    \
+        -:  859:  (curlcheck_NULL(expr) ||                                           \
+        -:  860:   curlcheck_cb_compatible((expr), curl_prereq_callback))
+        -:  861:
+        -:  862:/* evaluates to true if expr is of type curl_trailer_callback */
+        -:  863:#define curlcheck_trailer_cb(expr)                                    \
+        -:  864:  (curlcheck_NULL(expr) ||                                            \
+        -:  865:   curlcheck_cb_compatible((expr), curl_trailer_callback))
+        -:  866:
+        -:  867:#endif /* CURLINC_TYPECHECK_GCC_H */
