@@ -20,6 +20,7 @@
 
 // Project headers
 #include <src/database/dbqueue/dbqueue.h>
+#include <src/api/auth/oidc_rp/oidc_rp_http.h>
 #include "scoreboard.h"
 #include "scripting_handle.h"
 
@@ -114,6 +115,8 @@ int H_lua_opts_timeout(lua_State* L, int idx);
 int H_lua_http_get(lua_State* L);
 int H_lua_http_post(lua_State* L);
 int H_lua_http_wait_one(lua_State* L, H_Handle* h);
+int H_lua_http_push_inline_result(lua_State* L, OidcRpHttpResponse* resp, long elapsed_ms);
+int H_lua_http_push_pool_result(lua_State* L, H_Handle* h);
 int H_lua_http_get_sync(lua_State* L);
 int H_lua_http_post_sync(lua_State* L);
 

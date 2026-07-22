@@ -49,6 +49,12 @@ void test_wait_on_consumed_handle_returns_error(void);
 void test_wait_on_non_handle_returns_error(void);
 void test_wait_with_no_args_returns_nothing(void);
 void test_query_sync_propagates_error(void);
+void test_query_with_params_table(void);
+void test_query_with_integer_params(void);
+void test_query_with_string_params(void);
+void test_query_with_boolean_params(void);
+void test_query_with_float_params(void);
+void test_query_with_nil_params(void);
 
 static lua_State* L = NULL;
 
@@ -266,6 +272,94 @@ void test_query_sync_propagates_error(void) {
     lua_pop(L, 2);
 }
 
+// H.query with an empty params table exercises H_lua_params_to_json with no iterations
+void test_query_with_params_table(void) {
+    get_h_function("query");
+    lua_pushstring(L, "SELECT 1");
+    lua_newtable(L);  // empty params table
+    int rc = lua_pcall(L, 2, 1, 0);
+    TEST_ASSERT_EQUAL(LUA_OK, rc);
+    H_Handle* h = H_Handle_check(L, -1);
+    TEST_ASSERT_NOT_NULL(h);
+    TEST_ASSERT_NOT_NULL(h->error);
+    lua_pop(L, 1);
+}
+
+// H.query with integer params exercises H_lua_params_to_json integer path
+void test_query_with_integer_params(void) {
+    get_h_function("query");
+    lua_pushstring(L, "SELECT 1");
+    lua_newtable(L);
+    lua_pushinteger(L, 42);
+    lua_setfield(L, -2, "id");
+    int rc = lua_pcall(L, 2, 1, 0);
+    TEST_ASSERT_EQUAL(LUA_OK, rc);
+    H_Handle* h = H_Handle_check(L, -1);
+    TEST_ASSERT_NOT_NULL(h);
+    TEST_ASSERT_NOT_NULL(h->error);
+    lua_pop(L, 1);
+}
+
+// H.query with string params exercises H_lua_params_to_json string path
+void test_query_with_string_params(void) {
+    get_h_function("query");
+    lua_pushstring(L, "SELECT 1");
+    lua_newtable(L);
+    lua_pushstring(L, "test_value");
+    lua_setfield(L, -2, "name");
+    int rc = lua_pcall(L, 2, 1, 0);
+    TEST_ASSERT_EQUAL(LUA_OK, rc);
+    H_Handle* h = H_Handle_check(L, -1);
+    TEST_ASSERT_NOT_NULL(h);
+    TEST_ASSERT_NOT_NULL(h->error);
+    lua_pop(L, 1);
+}
+
+// H.query with boolean params exercises H_lua_params_to_json boolean path
+void test_query_with_boolean_params(void) {
+    get_h_function("query");
+    lua_pushstring(L, "SELECT 1");
+    lua_newtable(L);
+    lua_pushboolean(L, 1);
+    lua_setfield(L, -2, "active");
+    int rc = lua_pcall(L, 2, 1, 0);
+    TEST_ASSERT_EQUAL(LUA_OK, rc);
+    H_Handle* h = H_Handle_check(L, -1);
+    TEST_ASSERT_NOT_NULL(h);
+    TEST_ASSERT_NOT_NULL(h->error);
+    lua_pop(L, 1);
+}
+
+// H.query with float params exercises H_lua_params_to_json real path
+void test_query_with_float_params(void) {
+    get_h_function("query");
+    lua_pushstring(L, "SELECT 1");
+    lua_newtable(L);
+    lua_pushnumber(L, 3.14159);
+    lua_setfield(L, -2, "price");
+    int rc = lua_pcall(L, 2, 1, 0);
+    TEST_ASSERT_EQUAL(LUA_OK, rc);
+    H_Handle* h = H_Handle_check(L, -1);
+    TEST_ASSERT_NOT_NULL(h);
+    TEST_ASSERT_NOT_NULL(h->error);
+    lua_pop(L, 1);
+}
+
+// H.query with nil value in params exercises H_lua_params_to_json null path
+void test_query_with_nil_params(void) {
+    get_h_function("query");
+    lua_pushstring(L, "SELECT 1");
+    lua_newtable(L);
+    lua_pushnil(L);
+    lua_setfield(L, -2, "optional");
+    int rc = lua_pcall(L, 2, 1, 0);
+    TEST_ASSERT_EQUAL(LUA_OK, rc);
+    H_Handle* h = H_Handle_check(L, -1);
+    TEST_ASSERT_NOT_NULL(h);
+    TEST_ASSERT_NOT_NULL(h->error);
+    lua_pop(L, 1);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -280,6 +374,12 @@ int main(void) {
     RUN_TEST(test_wait_on_non_handle_returns_error);
     RUN_TEST(test_wait_with_no_args_returns_nothing);
     RUN_TEST(test_query_sync_propagates_error);
+    RUN_TEST(test_query_with_params_table);
+    RUN_TEST(test_query_with_integer_params);
+    RUN_TEST(test_query_with_string_params);
+    RUN_TEST(test_query_with_boolean_params);
+    RUN_TEST(test_query_with_float_params);
+    RUN_TEST(test_query_with_nil_params);
 
     return UNITY_END();
 }

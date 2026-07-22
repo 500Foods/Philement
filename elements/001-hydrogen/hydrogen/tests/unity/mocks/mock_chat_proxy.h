@@ -28,8 +28,8 @@
 
 // Mock implementations
 ChatProxyResult* mock_chat_proxy_send_request(const ChatEngineConfig* engine,
-                                             const char* request_json,
-                                             const ChatProxyConfig* config);
+                                              const char* request_json,
+                                              const ChatProxyConfig* config);
 void mock_chat_proxy_result_destroy(ChatProxyResult* result);
 
 // Control functions
