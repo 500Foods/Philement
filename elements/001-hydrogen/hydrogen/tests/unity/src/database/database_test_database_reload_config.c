@@ -33,7 +33,8 @@ void tearDown(void) {
 void test_database_reload_config_basic_functionality(void) {
     // Test basic functionality
     bool result = database_reload_config();
-    TEST_ASSERT_FALSE(result); // Should return false as implementation is not yet complete
+    // No app_config / no queue changes: reload succeeds as a no-op reconcile
+    TEST_ASSERT_TRUE(result);
 }
 
 void test_database_reload_config_uninitialized_subsystem(void) {

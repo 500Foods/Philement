@@ -34,7 +34,7 @@ void tearDown(void) {
 void test_database_query_status_basic_functionality(void) {
     // Test basic functionality with valid query_id
     DatabaseQueryStatus result = database_query_status("query_123");
-    TEST_ASSERT_EQUAL(DB_QUERY_ERROR, result); // Should return error as implementation is not yet complete
+    TEST_ASSERT_EQUAL(DB_QUERY_ERROR, result); // Unknown query_id
 }
 
 void test_database_query_status_null_query_id(void) {

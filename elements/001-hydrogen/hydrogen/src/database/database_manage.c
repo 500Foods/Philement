@@ -233,15 +233,24 @@ bool database_add_database(const char* name, const char* engine, const char* con
     return true;
 }
 
-// Remove a database
+// Remove a database (stop workers, destroy lead+children, drop from manager)
 bool database_remove_database(const char* name) {
-    if (!database_subsystem || !name) {
+    if (!database_subsystem || !name || name[0] == '\0') {
         return false;
     }
 
-    // TODO: Implement database removal logic
-    log_this(SR_DATABASE, "Database removal not yet implemented", LOG_LEVEL_TRACE, 0);
-    return false;
+    if (!global_queue_manager) {
+        return false;
+    }
+
+    log_this(SR_DATABASE, "Removing database: %s", LOG_LEVEL_DEBUG, 1, name);
+    if (!database_queue_manager_remove_database(global_queue_manager, name)) {
+        log_this(SR_DATABASE, "Database not found for removal: %s", LOG_LEVEL_DEBUG, 1, name);
+        return false;
+    }
+
+    log_this(SR_DATABASE, "Database removed: %s", LOG_LEVEL_DEBUG, 1, name);
+    return true;
 }
 
 // Test database connectivity

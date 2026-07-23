@@ -202,6 +202,9 @@ char* chat_storage_store_segment(const char* database, const char* message, size
 
     if (!query_success) {
         log_this(SR_CHAT_STORAGE, "Failed to execute QueryRef #063 for hash: %s", LOG_LEVEL_ERROR, 1, hash);
+    } else if (cache) {
+        /* Write-through complete: keep cache entry, clear dirty */
+        chat_lru_cache_put(cache, hash, message, message_len, false);
     }
 
     return hash;

@@ -34,7 +34,7 @@ void tearDown(void) {
 void test_database_cancel_query_basic_functionality(void) {
     // Test basic functionality with valid query_id
     bool result = database_cancel_query("query_123");
-    TEST_ASSERT_FALSE(result); // Should return false as implementation is not yet complete
+    TEST_ASSERT_FALSE(result); // No pending entry for query_id
 }
 
 void test_database_cancel_query_null_query_id(void) {

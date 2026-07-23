@@ -43,8 +43,8 @@ void test_database_validate_query_empty_string(void) {
 }
 
 void test_database_validate_query_whitespace_only(void) {
-    // Test whitespace-only string - current implementation only checks length > 0
-    TEST_ASSERT_TRUE(database_validate_query("   "));
+    // Whitespace-only is not a valid template
+    TEST_ASSERT_FALSE(database_validate_query("   "));
 }
 
 void test_database_validate_query_valid_queries(void) {

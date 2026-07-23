@@ -258,6 +258,59 @@ QueryResult* pending_result_get(const PendingQueryResult* pending) {
 }
 
 /**
+ * @brief Look up a pending result by query_id (does not remove it)
+ */
+PendingQueryResult* pending_result_find(PendingResultManager* manager, const char* query_id) {
+    if (!manager || !query_id || query_id[0] == '\0') {
+        return NULL;
+    }
+
+    PendingQueryResult* found = NULL;
+    pthread_mutex_lock(&manager->manager_lock);
+    for (size_t i = 0; i < manager->count; i++) {
+        PendingQueryResult* pending = manager->results[i];
+        if (pending && pending->query_id && strcmp(pending->query_id, query_id) == 0) {
+            found = pending;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&manager->manager_lock);
+    return found;
+}
+
+/**
+ * @brief Best-effort cancel of a pending waiter
+ */
+bool pending_result_cancel(PendingResultManager* manager, const char* query_id, const char* dqm_label) {
+    if (!manager || !query_id || query_id[0] == '\0') {
+        return false;
+    }
+
+    bool found = false;
+    pthread_mutex_lock(&manager->manager_lock);
+    for (size_t i = 0; i < manager->count; i++) {
+        PendingQueryResult* pending = manager->results[i];
+        if (pending && pending->query_id && strcmp(pending->query_id, query_id) == 0) {
+            pthread_mutex_lock(&pending->result_lock);
+            if (!pending->completed) {
+                pending->timed_out = true;
+                pthread_cond_signal(&pending->result_ready);
+            }
+            pthread_mutex_unlock(&pending->result_lock);
+            found = true;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&manager->manager_lock);
+
+    if (found) {
+        log_this(dqm_label ? dqm_label : SR_DATABASE,
+                 "Pending query cancelled by id", LOG_LEVEL_DEBUG, 0);
+    }
+    return found;
+}
+
+/**
  * @brief Check if a pending result has completed
  */
 bool pending_result_is_completed(const PendingQueryResult* pending) {

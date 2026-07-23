@@ -143,7 +143,8 @@ int handle_media_upload_message(struct lws *wsi, WebSocketSessionData *session, 
 }
 
 int handle_media_chunk_message(struct lws *wsi, WebSocketSessionData *session, json_t *request_json) {
-    // TODO: Implement chunked upload support
+    /* Chunked multi-frame media upload is not supported; clients must use a
+     * single media_upload message (handle_media_upload_message). */
     (void)wsi;
     (void)session;
     (void)request_json;

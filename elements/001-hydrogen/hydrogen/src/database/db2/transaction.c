@@ -8,6 +8,7 @@
 #include <src/hydrogen.h>
 #include <src/database/database.h>
 #include <src/database/dbqueue/dbqueue.h>
+#include <src/utils/utils_uuid.h>
 
 // Local includes
 #include "types.h"
@@ -49,7 +50,15 @@ bool db2_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel le
         return false;
     }
 
-    tx->transaction_id = strdup("db2_tx");
+    {
+        char uuid_buf[UUID_STR_LEN];
+        generate_uuid(uuid_buf);
+        tx->transaction_id = strdup(uuid_buf);
+    }
+    if (!tx->transaction_id) {
+        free(tx);
+        return false;
+    }
     tx->isolation_level = level;
     tx->started_at = time(NULL);
     tx->active = true;

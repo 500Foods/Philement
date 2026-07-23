@@ -52,9 +52,9 @@ void test_database_validate_query_empty_query(void) {
 }
 
 void test_database_validate_query_whitespace_only(void) {
-    // Test whitespace-only query
+    // Whitespace-only is not a valid template
     bool result = database_validate_query("   ");
-    TEST_ASSERT_TRUE(result); // Should return true as it has length > 0
+    TEST_ASSERT_FALSE(result);
 }
 
 void test_database_validate_query_valid_queries(void) {

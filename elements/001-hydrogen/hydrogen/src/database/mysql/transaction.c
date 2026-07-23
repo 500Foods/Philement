@@ -8,6 +8,7 @@
 #include <src/hydrogen.h>
 #include <src/database/database.h>
 #include <src/database/dbqueue/dbqueue.h>
+#include <src/utils/utils_uuid.h>
 
 // Local includes
 #include "types.h"
@@ -131,7 +132,20 @@ bool mysql_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel 
         return false;
     }
 
-    tx->transaction_id = strdup("mysql_tx");
+    {
+        char uuid_buf[UUID_STR_LEN];
+        generate_uuid(uuid_buf);
+        tx->transaction_id = strdup(uuid_buf);
+    }
+    if (!tx->transaction_id) {
+        if (mysql_autocommit_ptr) {
+            mysql_autocommit_ptr(mysql_conn->connection, 1);
+        } else if (mysql_query_ptr) {
+            mysql_query_ptr(mysql_conn->connection, "ROLLBACK");
+        }
+        free(tx);
+        return false;
+    }
     tx->isolation_level = level;
     tx->started_at = time(NULL);
     tx->active = true;

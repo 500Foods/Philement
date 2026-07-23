@@ -31,6 +31,7 @@
 # 1.3.0 - 2026-07-20 - Added WebSocketServer + chat media-upload and streaming
 #                       chat to blackbox-cover storage_media.c, storage_hex.c,
 #                       proxy_mq.c and proxy_mc.c; mock LLM gains SSE streaming
+# 1.4.0 - 2026-07-23 - Non-stream chat_done + chat_error paths for chat_send.c
 
 set -euo pipefail
 
@@ -38,7 +39,7 @@ TEST_NAME="Auth Chat"
 TEST_ABBR="ACH"
 TEST_NUMBER="59"
 TEST_COUNTER=0
-TEST_VERSION="1.3.0"
+TEST_VERSION="1.4.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -614,6 +615,44 @@ if [[ -n "${STREAM_MSG}" ]]; then
     fi
 else
     record 1 "failed to build streaming chat message"
+fi
+
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WS chat_error path -> send_chat_error"
+# Missing JWT / empty payload should hit websocket_server_chat_send.c:send_chat_error.
+ERR_OUT="${RESP_DIR}/ws_chat_error.json"
+# shellcheck disable=SC2310 # Build failure is non-fatal; we report below
+ERR_MSG=$(jq -cn '{type:"chat", id:"bb-err-1", payload:{}}' 2>/dev/null) || true
+if [[ -n "${ERR_MSG}" ]]; then
+    # shellcheck disable=SC2310 # Send failure is non-fatal; response body is checked
+    chat_ws_send "${ERR_MSG}" "${ERR_OUT}" 8 || true
+    if [[ -f "${ERR_OUT}" ]] && "${GREP}" -q "chat_error" "${ERR_OUT}"; then
+        record 0 "WS chat_error response received (send_chat_error)"
+    else
+        record 1 "chat_error not received; body=$(head -c 200 "${ERR_OUT}" 2>/dev/null || true)"
+    fi
+else
+    record 1 "failed to build chat_error message"
+fi
+
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WS non-stream chat -> send_chat_done"
+# stream:false uses the legacy proxy path that finishes via send_chat_done
+# in websocket_server_chat_send.c (streaming uses multi_curl helpers instead).
+DONE_OUT="${RESP_DIR}/ws_chat_done.json"
+# shellcheck disable=SC2310 # Build failure is non-fatal; we report below
+DONE_MSG=$(jq -cn \
+    --arg jwt "Bearer ${JWT_TOKEN}" \
+    --arg engine "${VALID_ENGINE}" \
+    '{type:"chat", id:"bb-done-1", payload:{jwt:$jwt, engine:$engine, stream:false, messages:[{role:"user",content:"hello nonstream"}]}}' 2>/dev/null) || true
+if [[ -n "${DONE_MSG}" ]]; then
+    # shellcheck disable=SC2310 # Send failure is non-fatal; response body is checked
+    chat_ws_send "${DONE_MSG}" "${DONE_OUT}" 12 || true
+    if [[ -f "${DONE_OUT}" ]] && "${GREP}" -q "chat_done" "${DONE_OUT}"; then
+        record 0 "WS chat_done response received (send_chat_done)"
+    else
+        record 1 "chat_done not received; body=$(head -c 200 "${DONE_OUT}" 2>/dev/null || true)"
+    fi
+else
+    record 1 "failed to build non-stream chat message"
 fi
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary"

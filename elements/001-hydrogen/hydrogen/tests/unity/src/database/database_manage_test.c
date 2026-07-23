@@ -108,7 +108,7 @@ void test_database_remove_database_parameter_validation(void) {
     result = database_remove_database("");
     TEST_ASSERT_FALSE(result);
 
-    // Test valid name (function not implemented)
+    // Unknown name with no manager queues
     result = database_remove_database("test");
     TEST_ASSERT_FALSE(result);
 }
@@ -132,10 +132,10 @@ void test_database_remove_database_null_name(void) {
     TEST_ASSERT_FALSE(result);
 }
 
-// Test database_remove_database not implemented
+// Test database_remove_database when database is not present
 void test_database_remove_database_not_implemented(void) {
     bool result = database_remove_database("test");
-    TEST_ASSERT_FALSE(result); // Should return false as function is not implemented
+    TEST_ASSERT_FALSE(result); // Not found
 }
 
 int main(void) {

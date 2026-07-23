@@ -317,8 +317,8 @@ enum MHD_Result auth_stream_chat_response(struct MHD_Connection *connection,
     (void)engine;
     (void)request_json_str;
     (void)database;
-    // TODO: Implement streaming proxy (chunked SSE). Until then, one complete
-    // SSE response with headers + stub event — MHD allows only one queue per request.
+    /* REST SSE multi-chunk proxy is not wired (use WebSocket chat stream).
+     * Single SSE error event keeps the endpoint reachable for clients. */
     const char *event = "event: error\ndata: {\"error\": \"Streaming not yet implemented\"}\n\n";
     size_t event_len = strlen(event);
     struct MHD_Response *response = MHD_create_response_from_buffer(event_len, (void*)event, MHD_RESPMEM_PERSISTENT);

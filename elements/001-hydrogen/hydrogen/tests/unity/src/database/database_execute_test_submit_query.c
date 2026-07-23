@@ -15,6 +15,8 @@ bool database_submit_query(const char* database_name, const char* query_id,
                           const char* query_template, const char* parameters_json,
                           int queue_type_hint);
 
+// Without a registered queue named test_db, submit fails closed.
+
 // Test function prototypes
 void test_database_submit_query_basic_functionality(void);
 void test_database_submit_query_null_database_name(void);
@@ -39,7 +41,7 @@ void tearDown(void) {
 void test_database_submit_query_basic_functionality(void) {
     // Test basic functionality with valid parameters
     bool result = database_submit_query("test_db", "query_123", "SELECT * FROM test_table", "{}", 0);
-    TEST_ASSERT_FALSE(result); // Should return false as implementation is not yet complete
+    TEST_ASSERT_FALSE(result); // No queue registered for test_db
 }
 
 void test_database_submit_query_null_database_name(void) {
@@ -57,19 +59,19 @@ void test_database_submit_query_null_query_template(void) {
 void test_database_submit_query_null_parameters(void) {
     // Test null parameters (should still work)
     bool result = database_submit_query("test_db", "query_123", "SELECT * FROM test_table", NULL, 0);
-    TEST_ASSERT_FALSE(result); // Should return false as implementation is not yet complete
+    TEST_ASSERT_FALSE(result); // No queue registered for test_db
 }
 
 void test_database_submit_query_empty_database_name(void) {
     // Test empty database name
     bool result = database_submit_query("", "query_123", "SELECT * FROM test_table", "{}", 0);
-    TEST_ASSERT_FALSE(result); // Should return false as implementation is not yet complete
+    TEST_ASSERT_FALSE(result);
 }
 
 void test_database_submit_query_empty_query_template(void) {
     // Test empty query template
     bool result = database_submit_query("test_db", "query_123", "", "{}", 0);
-    TEST_ASSERT_FALSE(result); // Should return false as implementation is not yet complete
+    TEST_ASSERT_FALSE(result);
 }
 
 void test_database_submit_query_uninitialized_subsystem(void) {

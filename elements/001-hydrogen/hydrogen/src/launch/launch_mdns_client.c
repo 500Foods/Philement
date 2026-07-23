@@ -156,9 +156,8 @@ int launch_mdns_client_subsystem(void) {
         }
     }
     
-    // Initialize mDNS client system
-    // TODO: Add proper initialization when system is ready - for now just mark as successful
-    // This will be implemented when the actual mDNS client functionality is added
+    // Launch scaffold: config-validated registration only. Discovery client
+    // runtime lives outside this path (mDNS server is separate under src/mdns/).
 
     log_this(SR_MDNS_CLIENT, "Initializing mDNS client system", LOG_LEVEL_DEBUG, 0);
 
@@ -180,11 +179,8 @@ int launch_mdns_client_subsystem(void) {
         return 1; // Not an error if disabled
     }
 
-    // Step 2: Initialize mDNS client
+    // Step 2: Config accepted — no browse/query worker started yet
     log_this(SR_MDNS_CLIENT, "Starting " SR_MDNS_CLIENT " service discovery", LOG_LEVEL_DEBUG, 0);
-
-    // TODO: Implement actual mDNS client initialization when functionality is available
-    // For now, just register success
 
     // Step 3: Update subsystem registry
     log_this(SR_MDNS_CLIENT, "  Updating " SR_REGISTRY, LOG_LEVEL_DEBUG, 0);    
