@@ -1,7 +1,7 @@
 /*
- * Unity Test File: scripting_api_test_query.c
+ * Unity Test File: scripting_api_query_test_query_integration.c
  *
- * Phase 13 of the LUA_PLAN. Tests the H.query / H.altquery /
+ * Phase 13 of the LUA_PLAN. Integration tests for the H.query / H.altquery /
  * H.authquery / H.wait host functions:
  *   - H.query without app_config or DefaultDatabase returns an
  *     error handle

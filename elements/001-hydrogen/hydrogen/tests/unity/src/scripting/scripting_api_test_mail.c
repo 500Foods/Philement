@@ -18,6 +18,7 @@
 #include <src/scripting/lua_context.h>
 #include <src/scripting/scripting_handle.h>
 #include <src/scripting/scripting_api.h>
+#include <src/scripting/scripting_api_mail_notify.h>
 #include <src/mailrelay/mailrelay.h>
 
 static AppConfig mock_app_config_storage = {0};
@@ -49,6 +50,40 @@ void test_mail_wait_already_consumed(void);
 void test_notify_deferred_error(void);
 void test_notify_send_sync_deferred(void);
 void test_notify_does_not_enqueue(void);
+void test_free_mail_parse_with_cc(void);
+void test_free_mail_parse_with_bcc(void);
+void test_free_mail_parse_with_to_cc_bcc(void);
+void test_parse_recipient_field_nil_input(void);
+void test_parse_recipient_field_string_allocation_failure(void);
+void test_parse_recipient_field_invalid_type(void);
+void test_parse_recipient_field_too_many_recipients(void);
+void test_parse_recipient_field_array_allocation_failure(void);
+void test_parse_recipient_field_array_non_string(void);
+void test_parse_recipient_field_empty_array(void);
+void test_parse_recipient_field_string_success(void);
+void test_parse_recipient_field_array_success(void);
+void test_parse_params_table_non_table(void);
+void test_parse_params_table_non_string_keys(void);
+void test_parse_params_table_non_string_values(void);
+void test_parse_params_table_success(void);
+void test_parse_optional_string_field_non_string(void);
+void test_parse_optional_string_field_too_long(void);
+void test_parse_optional_string_field_allocation_failure(void);
+void test_parse_optional_string_field_nil(void);
+void test_parse_optional_string_field_empty_string(void);
+void test_parse_optional_string_field_success(void);
+void test_parse_mail_message_non_table(void);
+void test_parse_mail_message_missing_mode(void);
+void test_parse_mail_message_missing_subject(void);
+void test_parse_mail_message_missing_body(void);
+void test_status_to_mail_error_disabled(void);
+void test_status_to_mail_error_shutdown(void);
+void test_status_to_mail_error_queue_full(void);
+void test_status_to_mail_error_ok(void);
+void test_status_to_mail_error_invalid_args(void);
+void test_status_to_mail_error_timeout(void);
+void test_status_to_mail_error_default(void);
+void test_status_to_mail_error_with_producer_err(void);
 
 static MailRelayStatus mock_send_template(const MailRelaySendTemplateRequest* req,
                                           MailRelaySendTemplateResponse* resp,
@@ -441,9 +476,472 @@ void test_notify_does_not_enqueue(void) {
     H_lua_destroy_context(L);
 }
 
+void test_parse_recipient_field_nil_input(void) {
+    lua_State* L = make_ctx();
+    char err[256];
+    char** out_items = NULL;
+    int out_count = 0;
+    
+    lua_newtable(L);
+    bool result = parse_recipient_field(L, -1, "to", &out_items, &out_count, err, sizeof(err));
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_NULL(out_items);
+    TEST_ASSERT_EQUAL_INT(0, out_count);
+    lua_pop(L, 1);
+    H_lua_destroy_context(L);
+}
+
+void test_parse_recipient_field_invalid_type(void) {
+    lua_State* L = make_ctx();
+    char err[256];
+    char** out_items = NULL;
+    int out_count = 0;
+    
+    lua_newtable(L);
+    lua_pushnumber(L, 42);
+    lua_setfield(L, -2, "to");
+    
+    bool result = parse_recipient_field(L, -1, "to", &out_items, &out_count, err, sizeof(err));
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NOT_NULL(strstr(err, "must be a string or array"));
+    lua_pop(L, 1);
+    H_lua_destroy_context(L);
+}
+
+void test_parse_recipient_field_too_many_recipients(void) {
+    lua_State* L = make_ctx();
+    char err[256];
+    char** out_items = NULL;
+    int out_count = 0;
+    
+    lua_newtable(L);
+    lua_newtable(L);
+    for (int i = 1; i <= 257; i++) {
+        lua_pushinteger(L, i);
+        lua_pushstring(L, "test@example.com");
+        lua_rawset(L, -3);
+    }
+    lua_setfield(L, -2, "to");
+    
+    bool result = parse_recipient_field(L, -1, "to", &out_items, &out_count, err, sizeof(err));
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NOT_NULL(strstr(err, "exceeds maximum"));
+    lua_pop(L, 1);
+    H_lua_destroy_context(L);
+}
+
+void test_parse_recipient_field_array_non_string(void) {
+    lua_State* L = make_ctx();
+    char err[256];
+    char** out_items = NULL;
+    int out_count = 0;
+    
+    lua_newtable(L);  // outer table
+    lua_newtable(L);  // to array
+    lua_newtable(L);  // non-string value (table)
+    lua_rawseti(L, -2, 1);  // to[1] = table
+    lua_setfield(L, -2, "to");  // outer.to = to array
+    
+    bool result = parse_recipient_field(L, -1, "to", &out_items, &out_count, err, sizeof(err));
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NOT_NULL(strstr(err, "must contain only strings"));
+    lua_pop(L, 1);
+    H_lua_destroy_context(L);
+}
+
+void test_parse_recipient_field_empty_array(void) {
+    lua_State* L = make_ctx();
+    char err[256];
+    char** out_items = NULL;
+    int out_count = 0;
+    
+    lua_newtable(L);
+    lua_newtable(L);
+    lua_setfield(L, -2, "to");
+    
+    bool result = parse_recipient_field(L, -1, "to", &out_items, &out_count, err, sizeof(err));
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_NULL(out_items);
+    TEST_ASSERT_EQUAL_INT(0, out_count);
+    lua_pop(L, 1);
+    H_lua_destroy_context(L);
+}
+
+void test_parse_recipient_field_string_success(void) {
+    lua_State* L = make_ctx();
+    char err[256];
+    char** out_items = NULL;
+    int out_count = 0;
+    
+    lua_newtable(L);
+    lua_pushstring(L, "test@example.com");
+    lua_setfield(L, -2, "to");
+    
+    bool result = parse_recipient_field(L, -1, "to", &out_items, &out_count, err, sizeof(err));
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_NOT_NULL(out_items);
+    TEST_ASSERT_EQUAL_INT(1, out_count);
+    TEST_ASSERT_EQUAL_STRING("test@example.com", out_items[0]);
+    lua_pop(L, 1);
+    
+    free(out_items[0]);
+    free(out_items);
+    H_lua_destroy_context(L);
+}
+
+void test_parse_recipient_field_array_success(void) {
+    lua_State* L = make_ctx();
+    char err[256];
+    char** out_items = NULL;
+    int out_count = 0;
+    
+    lua_newtable(L);
+    lua_newtable(L);
+    lua_pushstring(L, "a@example.com");
+    lua_rawseti(L, -2, 1);
+    lua_pushstring(L, "b@example.com");
+    lua_rawseti(L, -2, 2);
+    lua_setfield(L, -2, "to");
+    
+    bool result = parse_recipient_field(L, -1, "to", &out_items, &out_count, err, sizeof(err));
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_NOT_NULL(out_items);
+    TEST_ASSERT_EQUAL_INT(2, out_count);
+    TEST_ASSERT_EQUAL_STRING("a@example.com", out_items[0]);
+    TEST_ASSERT_EQUAL_STRING("b@example.com", out_items[1]);
+    lua_pop(L, 1);
+    
+    free(out_items[0]);
+    free(out_items[1]);
+    free(out_items);
+    H_lua_destroy_context(L);
+}
+
+void test_parse_params_table_non_table(void) {
+    lua_State* L = make_ctx();
+    char err[256];
+    MailRelayTemplateParams params;
+    mailrelay_template_params_init(&params);
+    
+    lua_newtable(L);
+    lua_pushnumber(L, 42);
+    lua_setfield(L, -2, "params");
+    
+    bool result = parse_params_table(L, -1, &params, err, sizeof(err));
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NOT_NULL(strstr(err, "must be a table of strings"));
+    lua_pop(L, 1);
+    
+    mailrelay_template_params_free(&params);
+    H_lua_destroy_context(L);
+}
+
+void test_parse_params_table_non_string_keys(void) {
+    lua_State* L = make_ctx();
+    char err[256];
+    MailRelayTemplateParams params;
+    mailrelay_template_params_init(&params);
+    
+    lua_newtable(L);
+    lua_newtable(L);
+    lua_pushboolean(L, 1);
+    lua_pushstring(L, "value");
+    lua_settable(L, -3);
+    lua_setfield(L, -2, "params");
+    
+    bool result = parse_params_table(L, -1, &params, err, sizeof(err));
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NOT_NULL(strstr(err, "keys and values must be strings"));
+    lua_pop(L, 1);
+    
+    mailrelay_template_params_free(&params);
+    H_lua_destroy_context(L);
+}
+
+void test_parse_params_table_non_string_values(void) {
+    lua_State* L = make_ctx();
+    char err[256];
+    MailRelayTemplateParams params;
+    mailrelay_template_params_init(&params);
+    
+    lua_newtable(L);
+    lua_newtable(L);
+    lua_pushstring(L, "key");
+    lua_newtable(L);
+    lua_settable(L, -3);
+    lua_setfield(L, -2, "params");
+    
+    bool result = parse_params_table(L, -1, &params, err, sizeof(err));
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NOT_NULL(strstr(err, "keys and values must be strings"));
+    lua_pop(L, 1);
+    
+    mailrelay_template_params_free(&params);
+    H_lua_destroy_context(L);
+}
+
+void test_parse_params_table_success(void) {
+    lua_State* L = make_ctx();
+    char err[256];
+    MailRelayTemplateParams params;
+    mailrelay_template_params_init(&params);
+    
+    lua_newtable(L);
+    lua_newtable(L);
+    lua_pushstring(L, "KEY1");
+    lua_pushstring(L, "value1");
+    lua_settable(L, -3);
+    lua_pushstring(L, "KEY2");
+    lua_pushstring(L, "value2");
+    lua_settable(L, -3);
+    lua_setfield(L, -2, "params");
+    
+    bool result = parse_params_table(L, -1, &params, err, sizeof(err));
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_EQUAL_INT(2, params.count);
+    lua_pop(L, 1);
+    
+    mailrelay_template_params_free(&params);
+    H_lua_destroy_context(L);
+}
+
+void test_parse_optional_string_field_non_string(void) {
+    lua_State* L = make_ctx();
+    char err[256];
+    char* out = NULL;
+    
+    lua_newtable(L);
+    lua_newtable(L);
+    lua_setfield(L, -2, "subject");
+    
+    bool result = parse_optional_string_field(L, -1, "subject", &out, 256, err, sizeof(err));
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NOT_NULL(strstr(err, "must be a string"));
+    lua_pop(L, 1);
+    H_lua_destroy_context(L);
+}
+
+void test_parse_optional_string_field_too_long(void) {
+    lua_State* L = make_ctx();
+    char err[256];
+    char* out = NULL;
+    
+    lua_newtable(L);
+    lua_pushstring(L, "this string is way too long for the field and should trigger an error");
+    lua_setfield(L, -2, "subject");
+    
+    bool result = parse_optional_string_field(L, -1, "subject", &out, 10, err, sizeof(err));
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NOT_NULL(strstr(err, "is too long"));
+    lua_pop(L, 1);
+    H_lua_destroy_context(L);
+}
+
+void test_parse_optional_string_field_nil(void) {
+    lua_State* L = make_ctx();
+    char err[256];
+    char* out = NULL;
+    
+    lua_newtable(L);
+    lua_pushnil(L);
+    lua_setfield(L, -2, "subject");
+    
+    bool result = parse_optional_string_field(L, -1, "subject", &out, 256, err, sizeof(err));
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_NULL(out);
+    lua_pop(L, 1);
+    H_lua_destroy_context(L);
+}
+
+void test_parse_optional_string_field_empty_string(void) {
+    lua_State* L = make_ctx();
+    char err[256];
+    char* out = NULL;
+    
+    lua_newtable(L);
+    lua_pushstring(L, "");
+    lua_setfield(L, -2, "subject");
+    
+    bool result = parse_optional_string_field(L, -1, "subject", &out, 256, err, sizeof(err));
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_NULL(out);
+    lua_pop(L, 1);
+    H_lua_destroy_context(L);
+}
+
+void test_parse_optional_string_field_success(void) {
+    lua_State* L = make_ctx();
+    char err[256];
+    char* out = NULL;
+    
+    lua_newtable(L);
+    lua_pushstring(L, "Test Subject");
+    lua_setfield(L, -2, "subject");
+    
+    bool result = parse_optional_string_field(L, -1, "subject", &out, 256, err, sizeof(err));
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_NOT_NULL(out);
+    TEST_ASSERT_EQUAL_STRING("Test Subject", out);
+    lua_pop(L, 1);
+    
+    free(out);
+    H_lua_destroy_context(L);
+}
+
+void test_parse_mail_message_non_table(void) {
+    lua_State* L = make_ctx();
+    MailLuaParse p;
+    mail_parse_init(&p);
+    
+    lua_pushnumber(L, 42);
+    bool result = parse_mail_message(L, &p);
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NOT_NULL(strstr(p.err, "message table required"));
+    lua_pop(L, 1);
+    H_lua_destroy_context(L);
+}
+
+void test_parse_mail_message_missing_mode(void) {
+    lua_State* L = make_ctx();
+    MailLuaParse p;
+    mail_parse_init(&p);
+    
+    lua_newtable(L);
+    lua_pushstring(L, "test@example.com");
+    lua_setfield(L, -2, "to");
+    
+    bool result = parse_mail_message(L, &p);
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NOT_NULL(strstr(p.err, "template or subject+body is required"));
+    lua_pop(L, 1);
+    H_lua_destroy_context(L);
+}
+
+void test_parse_mail_message_missing_subject(void) {
+    lua_State* L = make_ctx();
+    MailLuaParse p;
+    mail_parse_init(&p);
+    lua_newtable(L);
+    lua_pushstring(L, "test@example.com");
+    lua_setfield(L, -2, "to");
+    lua_pushstring(L, "Test body");
+    lua_setfield(L, -2, "text_body");
+    bool result = parse_mail_message(L, &p);
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NOT_NULL(strstr(p.err, "subject is required"));
+    lua_pop(L, 1);
+    H_lua_destroy_context(L);
+}
+
+void test_parse_mail_message_missing_body(void) {
+    lua_State* L = make_ctx();
+    MailLuaParse p;
+    mail_parse_init(&p);
+    lua_newtable(L);
+    lua_pushstring(L, "test@example.com");
+    lua_setfield(L, -2, "to");
+    lua_pushstring(L, "Test Subject");
+    lua_setfield(L, -2, "subject");
+    bool result = parse_mail_message(L, &p);
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NOT_NULL(strstr(p.err, "text_body or html_body is required"));
+    lua_pop(L, 1);
+    H_lua_destroy_context(L);
+}
+
+void test_status_to_mail_error_disabled(void) {
+    char out[256];
+    status_to_mail_error(MAILRELAY_DISABLED, NULL, out, sizeof(out));
+    TEST_ASSERT_NOT_NULL(strstr(out, "mail relay is disabled"));
+}
+
+void test_status_to_mail_error_shutdown(void) {
+    char out[256];
+    status_to_mail_error(MAILRELAY_SHUTDOWN, NULL, out, sizeof(out));
+    TEST_ASSERT_NOT_NULL(strstr(out, "mail relay is not running"));
+}
+
+void test_status_to_mail_error_queue_full(void) {
+    char out[256];
+    status_to_mail_error(MAILRELAY_QUEUE_FULL, NULL, out, sizeof(out));
+    TEST_ASSERT_NOT_NULL(strstr(out, "queue is at capacity"));
+}
+
+void test_status_to_mail_error_ok(void) {
+    char out[256];
+    status_to_mail_error(MAILRELAY_OK, NULL, out, sizeof(out));
+    TEST_ASSERT_NOT_NULL(strstr(out, "send failed"));
+}
+
+void test_status_to_mail_error_invalid_args(void) {
+    char out[256];
+    status_to_mail_error(MAILRELAY_INVALID_ARGS, NULL, out, sizeof(out));
+    TEST_ASSERT_NOT_NULL(strstr(out, "send failed"));
+}
+
+void test_status_to_mail_error_timeout(void) {
+    char out[256];
+    status_to_mail_error(MAILRELAY_TIMEOUT, NULL, out, sizeof(out));
+    TEST_ASSERT_NOT_NULL(strstr(out, "send failed"));
+}
+
+void test_status_to_mail_error_default(void) {
+    char out[256];
+    status_to_mail_error((MailRelayStatus)999, NULL, out, sizeof(out));
+    TEST_ASSERT_NOT_NULL(strstr(out, "send failed"));
+}
+
+void test_status_to_mail_error_with_producer_err(void) {
+    char out[256];
+    status_to_mail_error(MAILRELAY_OK, "Producer error message", out, sizeof(out));
+    TEST_ASSERT_NOT_NULL(strstr(out, "Producer error message"));
+}
+
+void test_free_mail_parse_with_cc(void) {
+    MailLuaParse p = {0};
+    p.cc = calloc(2, sizeof(char*));
+    p.cc[0] = strdup("cc1@example.com");
+    p.cc[1] = strdup("cc2@example.com");
+    p.cc_count = 2;
+    free_mail_parse(&p);
+    TEST_ASSERT_NULL(p.cc);
+    TEST_ASSERT_EQUAL_INT(0, p.cc_count);
+}
+
+void test_free_mail_parse_with_bcc(void) {
+    MailLuaParse p = {0};
+    p.bcc = calloc(2, sizeof(char*));
+    p.bcc[0] = strdup("bcc1@example.com");
+    p.bcc[1] = strdup("bcc2@example.com");
+    p.bcc_count = 2;
+    free_mail_parse(&p);
+    TEST_ASSERT_NULL(p.bcc);
+    TEST_ASSERT_EQUAL_INT(0, p.bcc_count);
+}
+
+void test_free_mail_parse_with_to_cc_bcc(void) {
+    MailLuaParse p = {0};
+    p.to = calloc(2, sizeof(char*));
+    p.to[0] = strdup("to1@example.com");
+    p.to[1] = strdup("to2@example.com");
+    p.to_count = 2;
+    p.cc = calloc(1, sizeof(char*));
+    p.cc[0] = strdup("cc1@example.com");
+    p.cc_count = 1;
+    p.bcc = calloc(1, sizeof(char*));
+    p.bcc[0] = strdup("bcc1@example.com");
+    p.bcc_count = 1;
+    free_mail_parse(&p);
+    TEST_ASSERT_NULL(p.to);
+    TEST_ASSERT_EQUAL_INT(0, p.to_count);
+    TEST_ASSERT_NULL(p.cc);
+    TEST_ASSERT_EQUAL_INT(0, p.cc_count);
+    TEST_ASSERT_NULL(p.bcc);
+    TEST_ASSERT_EQUAL_INT(0, p.bcc_count);
+}
+
 int main(void) {
     UNITY_BEGIN();
-
     RUN_TEST(test_mail_send_returns_handle);
     RUN_TEST(test_mail_send_success_wait);
     RUN_TEST(test_mail_send_auto_idempotency_key);
@@ -462,6 +960,36 @@ int main(void) {
     RUN_TEST(test_notify_deferred_error);
     RUN_TEST(test_notify_send_sync_deferred);
     RUN_TEST(test_notify_does_not_enqueue);
-
+    RUN_TEST(test_free_mail_parse_with_cc);
+    RUN_TEST(test_free_mail_parse_with_bcc);
+    RUN_TEST(test_free_mail_parse_with_to_cc_bcc);
+    RUN_TEST(test_parse_recipient_field_nil_input);
+    RUN_TEST(test_parse_recipient_field_invalid_type);
+    RUN_TEST(test_parse_recipient_field_too_many_recipients);
+    RUN_TEST(test_parse_recipient_field_array_non_string);
+    RUN_TEST(test_parse_recipient_field_empty_array);
+    RUN_TEST(test_parse_recipient_field_string_success);
+    RUN_TEST(test_parse_recipient_field_array_success);
+    RUN_TEST(test_parse_params_table_non_table);
+    RUN_TEST(test_parse_params_table_non_string_keys);
+    RUN_TEST(test_parse_params_table_non_string_values);
+    RUN_TEST(test_parse_params_table_success);
+    RUN_TEST(test_parse_optional_string_field_non_string);
+    RUN_TEST(test_parse_optional_string_field_too_long);
+    RUN_TEST(test_parse_optional_string_field_nil);
+    RUN_TEST(test_parse_optional_string_field_empty_string);
+    RUN_TEST(test_parse_optional_string_field_success);
+    RUN_TEST(test_parse_mail_message_non_table);
+    RUN_TEST(test_parse_mail_message_missing_mode);
+    RUN_TEST(test_parse_mail_message_missing_subject);
+    RUN_TEST(test_parse_mail_message_missing_body);
+    RUN_TEST(test_status_to_mail_error_disabled);
+    RUN_TEST(test_status_to_mail_error_shutdown);
+    RUN_TEST(test_status_to_mail_error_queue_full);
+    RUN_TEST(test_status_to_mail_error_ok);
+    RUN_TEST(test_status_to_mail_error_invalid_args);
+    RUN_TEST(test_status_to_mail_error_timeout);
+    RUN_TEST(test_status_to_mail_error_default);
+    RUN_TEST(test_status_to_mail_error_with_producer_err);
     return UNITY_END();
 }
