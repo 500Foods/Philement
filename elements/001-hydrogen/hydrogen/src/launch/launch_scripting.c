@@ -81,6 +81,27 @@ LaunchReadiness check_scripting_launch_readiness(void) {
         scripting_subsystem_id = register_subsystem(SR_SCRIPTING, NULL, NULL, NULL, NULL, NULL);
     }
 
+    /*
+     * Scripting submits queries and holds pending waiters on the Database
+     * subsystem. Land Scripting before Database so orchestrator/workers
+     * are stopped before queues and the global pending manager are torn
+     * down (otherwise a late waiter blocks cleanup_global_pending_manager).
+     */
+    if (scripting_subsystem_id >= 0) {
+        if (!add_dependency_from_launch(scripting_subsystem_id, SR_DATABASE)) {
+            scripting_readiness_messages_add(&messages, &count, &capacity,
+                strdup("  No-Go:   Failed to register Database dependency"));
+            finalize_launch_messages(&messages, &count, &capacity);
+            return (LaunchReadiness){
+                .subsystem = SR_SCRIPTING,
+                .ready = false,
+                .messages = messages
+            };
+        }
+        scripting_readiness_messages_add(&messages, &count, &capacity,
+            strdup("  Go:      Database dependency registered"));
+    }
+
     if (!app_config) {
         scripting_readiness_messages_add(&messages, &count, &capacity,
             strdup("  No-Go:   app_config not loaded"));

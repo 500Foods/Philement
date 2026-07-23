@@ -399,8 +399,15 @@ DatabaseQuery* database_queue_await_result(DatabaseQueue* db_queue, const char* 
         return NULL;
     }
 
-    // Register a pending result for this query
-    PendingQueryResult* pending = pending_result_register(pending_mgr, query_id, timeout_seconds, dqm_label);
+    /*
+     * Prefer a waiter that was registered before queue submit (H.query /
+     * conduit / orchestrator). Re-registering after a fast worker has
+     * already signaled loses the result and hangs until timeout.
+     */
+    PendingQueryResult* pending = pending_result_find(pending_mgr, query_id);
+    if (!pending) {
+        pending = pending_result_register(pending_mgr, query_id, timeout_seconds, dqm_label);
+    }
     if (!pending) {
         log_this(dqm_label, "Failed to register pending result for query: %s", LOG_LEVEL_ERROR, 1, query_id);
         free(dqm_label);

@@ -53,6 +53,7 @@
 // Project headers
 #include <pthread.h>   // pthread_mutex_t, pthread_cond_t (Phase 17)
 #include <src/database/dbqueue/dbqueue.h>   // DatabaseQueue
+#include <src/database/database_pending.h> // PendingQueryResult
 
 #ifdef __cplusplus
 extern "C" {
@@ -134,6 +135,7 @@ typedef struct H_Handle {
     pthread_mutex_t refcount_mutex; // protects refcount across threads
     char*           query_id;     // strdup'd; NULL for pre-submit failures (QUERY)
     DatabaseQueue*  db_queue;     // not owned; NULL for pre-submit failures (QUERY)
+    PendingQueryResult* pending_query; // not owned after wait; pre-registered waiter (QUERY)
     char*           error;        // strdup'd; non-NULL means handle is in error state
     // Phase 16: HTTP kind fields
     char*           http_url;            // strdup'd; owned (HTTP)

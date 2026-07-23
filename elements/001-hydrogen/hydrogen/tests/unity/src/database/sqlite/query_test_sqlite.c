@@ -355,8 +355,19 @@ void test_sqlite_execute_query_exec_failure_with_error_msg(void) {
     
     bool query_result = sqlite_execute_query(&connection, &request, &result);
     
+    // Prepare failures return a populated error result (not NULL) so the
+    // engine retry layer classifies them as DB_ERR_OTHER instead of
+    // retryable DB_ERR_TRANSPORT.
     TEST_ASSERT_FALSE(query_result);
-    TEST_ASSERT_NULL(result);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_FALSE(result->success);
+    TEST_ASSERT_EQUAL(DB_ERR_OTHER, result->error_class);
+    TEST_ASSERT_NOT_NULL(result->error_message);
+    TEST_ASSERT_EQUAL_STRING("syntax error", result->error_message);
+
+    free(result->error_message);
+    free(result->data_json);
+    free(result);
 }
 
 void test_sqlite_execute_query_memory_allocation_failure(void) {

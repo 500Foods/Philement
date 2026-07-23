@@ -30,6 +30,7 @@
 // Local includes
 #include "scripting_handle.h"
 #include "scripting.h"   // SR_LUA (Phase 17)
+#include <src/database/database_pending.h>
 
 #define H_HANDLE_METATABLE "H.Handle"
 
@@ -117,6 +118,7 @@ H_Handle* H_Handle_new(lua_State* L, H_HandleKind kind) {
     h->refcount_mutex_initialized = true;
     h->query_id = NULL;
     h->db_queue = NULL;
+    h->pending_query = NULL;
     h->error = NULL;
     h->http_url = NULL;
     h->http_method = NULL;
@@ -178,6 +180,18 @@ H_Handle* H_Handle_new(lua_State* L, H_HandleKind kind) {
 void H_Handle_free(H_Handle* h) {
     if (!h) {
         return;
+    }
+    /*
+     * Drop a still-registered pending waiter when the handle is freed
+     * without H.wait (GC, error path). Prevents orphan entries that
+     * block cleanup_global_pending_manager during database landing.
+     */
+    if (h->pending_query) {
+        PendingResultManager* mgr = get_pending_result_manager();
+        if (mgr) {
+            pending_result_unregister(mgr, h->pending_query, SR_SCRIPTING);
+        }
+        h->pending_query = NULL;
     }
     if (h->query_id) {
         free(h->query_id);

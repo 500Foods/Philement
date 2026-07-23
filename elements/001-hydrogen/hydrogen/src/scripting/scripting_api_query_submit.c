@@ -23,12 +23,16 @@
 
 #include <src/api/conduit/conduit_helpers.h>
 #include <src/api/auth/auth_service.h>
+#include <src/database/database_pending.h>
+#include "scripting.h"
+
+int get_default_query_timeout(void);
 
 int H_lua_submit_query(lua_State* L,
                        const char* db_name,
                        const char* sql,
                        const char* params_json,
-                       int timeout_seconds __attribute__((unused)),
+                       int timeout_seconds,
                        const char* call_label) {
     if (!L || !sql) {
         H_Handle* h = H_Handle_new(L, H_HK_QUERY);
@@ -79,7 +83,35 @@ int H_lua_submit_query(lua_State* L,
         return 1;
     }
 
+    /*
+     * Register the pending waiter BEFORE queue submit. On fast backends
+     * (notably SQLite) the worker can finish and signal before H.wait
+     * would otherwise register, which discarded the result ("Query result
+     * not found for signaling") and left the waiter blocked until timeout
+     * — hanging test_43 SQLite shutdown. Mirrors the conduit/orchestrator
+     * register-then-submit order.
+     */
+    int wait_timeout = timeout_seconds > 0 ? timeout_seconds : get_default_query_timeout();
+    PendingResultManager* pending_mgr = get_pending_result_manager();
+    PendingQueryResult* pending = NULL;
+    if (pending_mgr) {
+        pending = pending_result_register(pending_mgr, query_id, wait_timeout, SR_SCRIPTING);
+    }
+    if (!pending) {
+        free(query_id);
+        free(db_query.query_template);
+        free(db_query.parameter_json);
+        H_Handle* h = H_Handle_new(L, H_HK_QUERY);
+        if (h) {
+            char buf[128];
+            snprintf(buf, sizeof(buf), "%s: failed to register pending result", call_label);
+            h->error = strdup(buf);
+        }
+        return 1;
+    }
+
     if (!database_queue_submit_query(dbq, &db_query)) {
+        pending_result_unregister(pending_mgr, pending, SR_SCRIPTING);
         free(query_id);
         free(db_query.query_template);
         free(db_query.parameter_json);
@@ -94,14 +126,19 @@ int H_lua_submit_query(lua_State* L,
 
     H_Handle* h = H_Handle_new(L, H_HK_QUERY);
     if (!h) {
+        pending_result_unregister(pending_mgr, pending, SR_SCRIPTING);
+        free(query_id);
+        free(db_query.query_template);
+        free(db_query.parameter_json);
         return 0;
     }
     h->query_id = query_id;
     h->db_queue = dbq;
+    h->pending_query = pending;
+    free(db_query.query_template);
+    free(db_query.parameter_json);
     return 1;
 }
-
-int get_default_query_timeout(void);
 
 /*
  * H.query(sql, params, opts?) -> handle
