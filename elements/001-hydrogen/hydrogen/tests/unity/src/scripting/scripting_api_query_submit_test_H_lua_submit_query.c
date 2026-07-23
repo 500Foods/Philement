@@ -25,6 +25,7 @@
 #include <src/scripting/scripting_api_internal.h>
 #include <src/scripting/scripting_handle.h>
 #include <src/scripting/lua_context.h>
+#include <src/database/database_pending.h>
 
 extern DatabaseQueueManager* global_queue_manager;
 
@@ -76,6 +77,7 @@ void tearDown(void) {
         lua_close(L);
         L = NULL;
     }
+    cleanup_global_pending_manager(SR_DATABASE);
     free(test_config.scripting.DefaultDatabase);
     test_config.scripting.DefaultDatabase = NULL;
     app_config = NULL;

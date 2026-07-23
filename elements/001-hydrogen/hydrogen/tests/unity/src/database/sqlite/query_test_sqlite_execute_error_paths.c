@@ -154,8 +154,18 @@ void test_sqlite_execute_query_prepare_failed(void) {
 
     bool query_result = sqlite_execute_query(&connection, &request, &result);
 
+    // Prepare failures return a populated error result (not NULL) so the
+    // engine layer does not treat them as retryable transport errors.
     TEST_ASSERT_FALSE(query_result);
-    TEST_ASSERT_NULL(result);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_FALSE(result->success);
+    TEST_ASSERT_EQUAL(DB_ERR_OTHER, result->error_class);
+    TEST_ASSERT_NOT_NULL(result->error_message);
+    TEST_ASSERT_EQUAL_STRING("no such table: missing_table", result->error_message);
+
+    free(result->error_message);
+    free(result->data_json);
+    free(result);
 }
 
 // ============================================================================

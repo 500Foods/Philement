@@ -54,6 +54,8 @@ int H_lua_wait_one(lua_State* L, H_Handle* h) {
 
     DatabaseQuery* result_q = database_queue_await_result(
         h->db_queue, h->query_id, timeout);
+    /* await_result unregisters the pending entry; drop our borrowed ptr */
+    h->pending_query = NULL;
     if (!result_q) {
         char buf[64];
         snprintf(buf, sizeof(buf), "H.wait: timeout after %ds", timeout);
@@ -172,6 +174,7 @@ int H_lua_wait(lua_State* L) {
         int timeout = get_default_query_timeout();
         DatabaseQuery* result_q = database_queue_await_result(
             h->db_queue, h->query_id, timeout);
+        h->pending_query = NULL;
         h->consumed = true;
         if (!result_q) {
             char buf[64];

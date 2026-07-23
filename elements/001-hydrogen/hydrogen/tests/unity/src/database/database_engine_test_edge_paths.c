@@ -10,8 +10,8 @@
  *     (empty ParameterList malloc, 193-196)
  *   - prepared-statement create with parameters_json
  *     (free ordered_params, 220)
- *   - prepared-statement cache full -> use-once-then-free   (238)
- *   - created-but-uncached prepared statement cleanup       (269-272)
+ *   - prepared-statement cache full -> LRU eviction store   (store path)
+ *   - created prepared statement remains cached after exec  (execute)
  *   - retry layer bumping DB_ERR_NONE to DB_ERR_OTHER       (383)
  *   - engine-level build/validate connection string         (447-451, 459-464)
  *   - cleanup of connection with empty prepared-statement
@@ -402,8 +402,16 @@ void test_execute_prepared_cache_full(void) {
     bool exec = database_engine_execute(connection, &request, &result);
     TEST_ASSERT_TRUE(exec);
 
-    // The uncached statement should have been unprepared (freed) by cleanup.
-    TEST_ASSERT_NULL(g_captured_stmt);
+    /*
+     * store_prepared_statement now evicts LRU when full and caches the new
+     * statement (instead of failing store and unpreparing after one use).
+     * The pre-stored entry is unprepared during eviction; the new stmt
+     * remains cached and owned by the connection.
+     */
+    TEST_ASSERT_NOT_NULL(g_captured_stmt);
+    TEST_ASSERT_NOT_NULL(find_prepared_statement(connection, "stmt_cache_full"));
+    TEST_ASSERT_NULL(find_prepared_statement(connection, "already_cached"));
+    TEST_ASSERT_EQUAL_size_t(1, connection->prepared_statement_count); // cppcheck-suppress nullPointerRedundantCheck
 
     free(request.sql_template);
     free(request.prepared_statement_name);
@@ -411,14 +419,8 @@ void test_execute_prepared_cache_full(void) {
         database_engine_cleanup_result(result);
     }
 
-    /*
-     * store_prepared_statement evicted the pre-stored statement via
-     * engine->unprepare_statement, leaving a NULL (not dangling) slot, so
-     * normal cleanup frees the array correctly.
-     */
-    if (connection) {
-        database_engine_cleanup_connection(connection);
-    }
+    database_engine_cleanup_connection(connection);
+    g_captured_stmt = NULL;
 }
 
 /*
