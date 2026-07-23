@@ -16,7 +16,7 @@
  *
  * Logic beyond Phase 10 (token exchange, ID-token validation, account
  * linking, JWT minting) lands in later phases (11–22). See
- * `docs/OIDC-PLAN.md` for context.
+ * `docs/H/plans/OIDC-PLAN.md` for context.
  */
 
 // Project includes

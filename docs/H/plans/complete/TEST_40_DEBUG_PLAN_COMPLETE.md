@@ -407,6 +407,6 @@ The debugging effort is complete when:
 - [test_40_auth.sh](/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh) - Test script
 - [auth_service_database.c](/elements/001-hydrogen/hydrogen/src/api/auth/auth_service_database.c) - Database layer
 - [login.c](/elements/001-hydrogen/hydrogen/src/api/auth/login/login.c) - Login endpoint
-- [AUTH_PLAN.md](/docs/H/plans/AUTH_PLAN.md) - Auth implementation plan
+- [AUTH_PLAN.md](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md) - Auth implementation plan
 - [SECRETS.md](/docs/H/SECRETS.md) - Environment variables reference
 - [TESTING.md](/docs/H/tests/TESTING.md) - Testing framework documentation

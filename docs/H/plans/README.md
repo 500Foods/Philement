@@ -1,59 +1,70 @@
 # PLANS
 
-These started life typically as AI conversations that morphed into a wishlist, then into an implementation plan, and finally into a completed to-do list for the project. The remains tend to be a smoking husk compared to what started as an egalitarian vision, but the journey may offer some insight into how we've gone from lightbulb to implementation.
+Working and completed implementation plans for Hydrogen.
 
-## [VICTORIALOGGING](/docs/H/plans/VICTORIALOGGING.md)
+- **Active backlog:** [`/docs/H/TODO.md`](/docs/H/TODO.md) — prioritized incomplete work only
+- **Completed plans:** [`/docs/H/plans/complete/`](/docs/H/plans/complete/) — finished plans (`*_COMPLETE.md`)
+- **This folder:** plans still open, plus supporting logs
 
-Implmenentation plan for adding support for VictoriaLogs to Hydrogen.
+When a plan finishes: move it into `complete/`, add `_COMPLETE` to the filename if missing, update links, drop it from `TODO.md`, run `mkl`.
 
-## [TO-DO](/docs/H/plans/TODO.md)
-  
-The Development Roadmap serves as a central location to track incomplete items across the Hydrogen project. It organizes tasks by subsystem (API, Database, Launch, Logging, OIDC, Print) with difficulty-based categorization from Easy to Hard. The document provides detailed status tracking for each task, including specific file locations and descriptions of what needs to be implemented. It also includes a comprehensive section on test management, outlining procedures for fixing failing tests, removing invaluable tests, and maintaining test quality across the codebase.
+---
 
-## [CONDUIT](/docs/H/plans/CONDUIT.md)
+## Active plans
 
-This describes implementation of a RESTful query execution endpoint for Hydrogen that allows clients to execute pre-defined database queries by ID reference. It details the Query Table Cache (QTC) design with in-memory caching of SQL templates, typed parameter format supporting INTEGER/STRING/BOOLEAN/FLOAT types, and automatic conversion of named parameters to database-specific formats. The document covers intelligent queue selection algorithms, synchronous execution with blocking wait mechanisms, and comprehensive API specifications with detailed request/response formats and error handling strategies.
+### [TODO (project backlog)](/docs/H/TODO.md)
 
-## [CONDUIT](/docs/H/plans/CONDUIT_FIX.md)
+Prioritized incomplete work with effort/done metrics. Start here.
 
-It has been a struggle to get through all the conduit implementation details, stalling at one point with auth_query. So a new plan was hatched to delve more into its details to try to get it moving forward again. Switching models (Kimi K2.5) also seemed to help break the log jam.  Seems grok-code-fast-1 is becoming stupider by the day for some reason.
+### [KEYCLOAK PLAN](/docs/H/plans/KEYCLOAK_PLAN.md)
 
-## [MIRAGE PLAN](/docs/H/plans/MIRAGE_PLAN.md)
+Production Keycloak SSO with Hydrogen as OIDC Relying Party. Phases 0–4 complete; Phase 5 real-IdP E2E in progress. Builds on historical RP work in [OIDC-PLAN.md](/docs/H/plans/OIDC-PLAN.md). Manual checklist: [OIDC_E2E_LOG.md](/docs/H/plans/OIDC_E2E_LOG.md).
 
-Mirage describes a new subystem that implements a distributed proxy network architecture where public Mirage servers act as multi-tenant proxy hubs for remote Hydrogen instances. It outlines the dual-server architecture with transparent proxying of both HTTP and WebSocket traffic, preserving remote server customizations and feature parity. The document covers security considerations including mutual authentication and end-to-end encryption, protocol extensions for tunnel establishment, and scalability features supporting thousands of remote devices with load balancing and automatic failover capabilities.
+### [OIDC-PLAN (historical RP implementation)](/docs/H/plans/OIDC-PLAN.md)
 
-## [DATABASE PLAN](/docs/H/plans/DATABASE_PLAN.md) ✅ **COMPLETED**
+Full phase log for Lithium + Hydrogen OIDC RP (Phases 1–25+ shipped). Day-to-day remaining work is tracked under KEYCLOAK_PLAN / OIDC_E2E_LOG, not by reopening this document from scratch.
 
-The Database Architecture Plan outlines the complete implementation of Hydrogen's multi-engine database subsystem. It covers the Database Queue Manager (DQM) architecture with dynamic child queue spawning, thread-safe operations, and comprehensive support for PostgreSQL, SQLite, MySQL, and IBM DB2 engines. The document details the two-phase migration workflow (LOAD and APPLY phases), bootstrap query integration, trigger-based cache invalidation, and extensive testing strategies. The plan also includes detailed implementation status tracking, showing completed phases for DQM infrastructure, multi-engine interface layers, and all database engine implementations.
+### [OIDC IdP](/docs/H/plans/OIDC_IDP.md)
 
-## [TERMINAL PLAN](/docs/H/plans/TERMINAL_PLAN.md) ✅ **COMPLETED**
+Hydrogen as OIDC **Identity Provider** (separate from RP). Plan only; not started.
 
-The Terminal Interface Plan provides a comprehensive roadmap for implementing an xterm.js-based terminal subsystem for Hydrogen. It details the architecture using xterm.js frontend with C backend PTY management and WebSocket data flow, following Hydrogen's established subsystem patterns. The document covers all implementation phases including configuration infrastructure with WebRoot and CORS support, payload generation for xterm.js assets, file serving with WebRoot support, PTY process management, WebSocket communication, and comprehensive testing frameworks. It also includes extensive lessons learned from authentication challenges and detailed success criteria for terminal functionality.
+### [MAIL RELAY PLAN](/docs/H/plans/MAILRELAY_PLAN.md)
 
-## [MIGRATIONS](/docs/H/plans/MIGRATIONS.md) ✅ **COMPLETED**
+SMTP mail relay subsystem. Core outbound/API/Lua/OTP delivered; later phases (UI, inbound, ops) remain.
 
-The Migration Strategy document focuses on optimizing database migration performance across PostgreSQL, DB2, SQLite, and MySQL engines. It provides detailed performance analysis showing significant variance between engines and identifies specific bottlenecks including transaction command complexity, excessive timeout management, and cleanup inefficiencies. The plan outlines targeted optimizations for PostgreSQL (primary focus) and DB2 (secondary focus), with specific implementation changes to connection-level timeout management, transaction command simplification, and batch cleanup operations.
+### [DATABASE UPDATE PLAN](/docs/H/plans/DATABASE_UPDATE_PLAN.md)
 
-## [CHAT PLAN](/docs/H/plans/CHAT_PLAN_SUMMARY.md) ✅ **Phases 1-10 COMPLETE**
+Named/positional parameter and JSON binding enhancements. Implementation largely done; verification and docs closeout remain.
 
-The Chat Service Implementation Plan describes the 13-phase approach for building an AI chat proxy service within the Conduit API. It provides a comprehensive chat infrastructure supporting multiple AI providers (OpenAI, Anthropic, Ollama), content-addressable storage with Brotli compression, and client-server optimization via context hashing. The implementation includes authenticated endpoints, batch operations, local LRU caching, and cross-server segment recovery. Completed phases cover libcurl integration, chat engine cache (CEC), health monitoring, public/authenticated endpoints, multi-provider support, storage pipeline, context hashing, and disk caching. Remaining phases (11-13) will add streaming support, advanced multi-modal features, and enterprise capabilities.
+### [CHAT PLAN](/docs/H/plans/CHAT_PLAN_SUMMARY.md)
 
-## [MAIL RELAY PLAN](/docs/H/plans/MAILRELAY_PLAN.md)
+Chat proxy service. Phases 1–12 complete (see `complete/`). Open work: [Phase 13](/docs/H/plans/CHAT_PLAN_PHASE_13.md).
 
-Implementation of SMTP mail relay functionality.
+### [UNITY ASAN PLAN](/docs/H/plans/UNITY_ASAN_PLAN.md)
 
-## [KEYCLOAK PLAN](/docs/H/plans/KEYCLOAK_PLAN.md)
+Separate ASAN Unity build/test variant for memory-safety gating without corrupting gcov coverage.
 
-Gated plan for Keycloak SSO with Hydrogen as OIDC Relying Party: IdP setup, production `OIDC_RP` config, account auto-provision policy, client integration docs (no frontend coding early), real-Keycloak E2E, multi-provider hardening, and post-MVP logout/health work. Builds on the shipped RP implementation documented historically in [`/docs/OIDC-PLAN.md`](/docs/OIDC-PLAN.md).
+### [MIRAGE PLAN](/docs/H/plans/MIRAGE_PLAN.md)
 
-## [LUA PLAN](/docs/H/plans/LUA_PLAN_COMPLETE.md)
+Distributed proxy architecture sketch. Implementation deferred.
 
-Implementation of LUA general scripting functionality.
+---
 
-## [STATIC FUNCTIONS](/docs/H/plans/STATIC_COMPLETE.md)
+## Completed plans
 
-Adventure involving static function refactoring and optimization - removing them so they can be directly incorporated into Unity Framework unit tests. This has been the policy early on, once the implications for Unity were understood. However, recent model work seemed to not pay heed to this and a ton of code was added with static functions all over.
+Full index: [`complete/README.md`](/docs/H/plans/complete/README.md). Highlights:
 
-## [LOGGING FUNCTIONS](/docs/H/plans/LOG_FANOUT_PLAN.md)
-
-Adventure involving static function refactoring and optimization - removing them so they can be directly incorporated into Unity Framework unit tests. This has been the policy early on, once the implications for Unity were understood. However, recent model work seemed to not pay heed to this and a ton of code was added with static functions all over.
+| Plan | File |
+|------|------|
+| Auth endpoints | [AUTH_PLAN_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md) |
+| Cap / cap_query | [CAP_PLAN_QUERY-COMPLETE.md](/docs/H/plans/complete/CAP_PLAN_QUERY-COMPLETE.md) |
+| Chat Phases 1–12 | [CHAT_PLAN_PHASE_*_COMPLETE.md](/docs/H/plans/complete/) |
+| Conduit | [CONDUIT_COMPLETE.md](/docs/H/plans/complete/CONDUIT_COMPLETE.md) |
+| Database subsystem | [DATABASE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_PLAN_COMPLETE.md) |
+| Log fanout | [LOG_FANOUT_PLAN_COMPLETE.md](/docs/H/plans/complete/LOG_FANOUT_PLAN_COMPLETE.md) |
+| Lua scripting | [LUA_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md) |
+| Mail Relay blackbox | [MAILRELAY_BLACKBOX_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md) |
+| Migrations perf | [MIGRATIONS_COMPLETE.md](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md) |
+| Static-function purge | [STATIC_COMPLETE.md](/docs/H/plans/complete/STATIC_COMPLETE.md) |
+| Terminal | [TERMINAL_PLAN_COMPLETE.md](/docs/H/plans/complete/TERMINAL_PLAN_COMPLETE.md) |
+| VictoriaLogs | [VICTORIALOGGING_COMPLETE.md](/docs/H/plans/complete/VICTORIALOGGING_COMPLETE.md) |

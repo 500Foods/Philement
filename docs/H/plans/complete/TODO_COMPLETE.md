@@ -7,7 +7,7 @@ Hydrogen project. Use elements/001-hydrogen/hydrogen as the base for the project
 Review INSTRUCTIONS.md
 Review tests/TESTING.md
 Review tests/TESTING_UNITY.md
-Review docs/plans/DATABASE_PLAN.md
+Review docs/H/plans/complete/DATABASE_PLAN_COMPLETE.md
 
 ## Purpose
 

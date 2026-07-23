@@ -1,5 +1,5 @@
 /*
- * Unity Test File: scripting_api_test_set_current_state.c
+ * Unity Test File: scripting_api_system_test_set_current_state.c
  *
  * Phase 9 of the LUA_PLAN. Tests H.set_current_state - the voluntary
  * progress-report function exposed to Lua scripts.
@@ -61,17 +61,19 @@
 // Mock app_config (zeroed = no special defaults needed for this suite).
 static AppConfig mock_app_config_storage = {0};
 
-// Forward declarations (required for -Wmissing-prototypes)
-void test_set_current_state_is_a_function_on_H(void);
-void test_set_current_state_direct_call_updates_scoreboard(void);
-void test_set_current_state_no_context_is_noop(void);
-void test_set_current_state_non_string_arg_logs_and_does_not_raise(void);
-void test_set_current_state_missing_arg_logs_and_does_not_raise(void);
-void test_set_current_state_returns_no_values(void);
-void test_set_current_state_multiple_calls_overwrite(void);
-void test_set_current_state_empty_string_clears_field(void);
-void test_set_current_state_end_to_end_through_worker_pool(void);
-void test_set_current_state_string_survives_lua_gc(void);
+ // Forward declarations (required for -Wmissing-prototypes)
+ void test_set_current_state_is_a_function_on_H(void);
+ void test_set_current_state_direct_call_updates_scoreboard(void);
+ void test_set_current_state_no_context_is_noop(void);
+ void test_set_current_state_non_string_arg_logs_and_does_not_raise(void);
+ void test_set_current_state_missing_arg_logs_and_does_not_raise(void);
+ void test_set_current_state_returns_no_values(void);
+ void test_set_current_state_multiple_calls_overwrite(void);
+ void test_set_current_state_empty_string_clears_field(void);
+ void test_set_current_state_end_to_end_through_worker_pool(void);
+ void test_set_current_state_string_survives_lua_gc(void);
+ void test_set_current_state_scoreboard_update_failure_logs_error(void);
+ void test_install_set_current_state_h_table_missing(void);
 
 // Poll the scoreboard until the job reaches a terminal status. The
 // same shape used by worker_pool_test_execute.c / _progress.c.
@@ -371,7 +373,51 @@ void test_set_current_state_string_survives_lua_gc(void) {
     scoreboard_destroy(sb);
 }
 
-int main(void) {
+// When the job_id in the context does not exist in the scoreboard,
+// scoreboard_update_current_state returns false. The host function should
+// log "scoreboard update failed" and return 0 without raising.
+void test_set_current_state_scoreboard_update_failure_logs_error(void) {
+    Scoreboard* sb = scoreboard_create();
+    TEST_ASSERT_NOT_NULL(sb);
+
+    lua_State* L = H_lua_create_context();
+    TEST_ASSERT_NOT_NULL(L);
+
+    H_lua_job_context ctx = {0};
+    snprintf(ctx.job_id, sizeof(ctx.job_id), "%s", "FAKE");
+    ctx.scoreboard = sb;
+    H_lua_set_job_context(L, &ctx);
+
+    int rc = H_lua_run_string(L,
+        "H.set_current_state('Loading data')",
+        "[phase9:scoreboard-fail]");
+    TEST_ASSERT_EQUAL_INT_MESSAGE(LUA_OK, rc,
+        "scoreboard update failure should not raise a Lua error");
+
+    TEST_ASSERT_NOT_NULL(strstr(mock_logging_get_last_message(),
+        "scoreboard update failed"));
+
+    H_lua_set_job_context(L, NULL);
+    H_lua_destroy_context(L);
+    scoreboard_destroy(sb);
+}
+
+// H_lua_install_set_current_state with no H table: logs "H table missing".
+void test_install_set_current_state_h_table_missing(void) {
+    lua_State* L = H_lua_create_context();
+    TEST_ASSERT_NOT_NULL(L);
+
+    lua_pushnil(L);
+    lua_setglobal(L, "H");
+
+    H_lua_install_set_current_state(L);
+
+    TEST_ASSERT_NOT_NULL(strstr(mock_logging_get_last_message(), "H table missing"));
+
+    H_lua_destroy_context(L);
+}
+
+ int main(void) {
     UNITY_BEGIN();
 
     RUN_TEST(test_set_current_state_is_a_function_on_H);
@@ -384,6 +430,8 @@ int main(void) {
     RUN_TEST(test_set_current_state_empty_string_clears_field);
     RUN_TEST(test_set_current_state_end_to_end_through_worker_pool);
     RUN_TEST(test_set_current_state_string_survives_lua_gc);
+    RUN_TEST(test_set_current_state_scoreboard_update_failure_logs_error);
+    RUN_TEST(test_install_set_current_state_h_table_missing);
 
     return UNITY_END();
 }

@@ -319,4 +319,4 @@ This library works in conjunction with:
 - [test_50_conduit_query.md](/docs/H/tests/test_50_conduit_query.md) - Conduit single query testing
 - [test_51_conduit_queries.md](/docs/H/tests/test_51_conduit_queries.md) - Conduit comprehensive testing
 - [framework.md](/docs/H/tests/framework.md) - Test framework utilities
-- [CONDUIT.md](/docs/H/plans/CONDUIT.md) - Conduit service implementation plan
+- [CONDUIT.md](/docs/H/plans/complete/CONDUIT_COMPLETE.md) - Conduit service implementation plan

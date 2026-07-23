@@ -2,7 +2,7 @@
  * @file oidc_rp_pkce.h
  * @brief OIDC Relying Party PKCE / nonce / state generators.
  *
- * Phase 8 of the OIDC plan (`docs/OIDC-PLAN.md`). Pure crypto helpers:
+ * Phase 8 of the OIDC plan (`docs/H/plans/OIDC-PLAN.md`). Pure crypto helpers:
  * no networking, no HTTP, no state-store interaction. These functions
  * generate the secret values that bind a single OIDC authorization
  * round-trip:
@@ -93,7 +93,7 @@ char* oidc_rp_make_code_verifier(void);
  * Computes `BASE64URL(SHA256(verifier))` per RFC 7636 §4.2. This is
  * the only challenge method we advertise (`code_challenge_method=S256`),
  * matching the Keycloak client requirement set out in
- * `docs/OIDC-PLAN.md` line 157.
+ * `docs/H/plans/OIDC-PLAN.md` line 157.
  *
  * The verifier is read but not retained; the caller must not assume
  * any side-effects on the input buffer.
@@ -119,7 +119,7 @@ char* oidc_rp_make_code_challenge(const char* verifier);
  * digits.
  *
  * The RFC does not mandate a specific length for `state` or `nonce`,
- * but `docs/OIDC-PLAN.md` line 224 fixes 32 bytes (= 64 hex chars)
+ * but `docs/H/plans/OIDC-PLAN.md` line 224 fixes 32 bytes (= 64 hex chars)
  * for both.
  *
  * @param byte_count Number of random bytes to draw. Must be > 0

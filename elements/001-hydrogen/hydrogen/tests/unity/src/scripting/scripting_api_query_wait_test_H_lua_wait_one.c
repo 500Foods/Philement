@@ -1,9 +1,9 @@
 /*
  * Unity Test File: scripting_api_query_wait_test_H_lua_wait_one
  *
- * Tests uncovered lines in scripting_api_query_wait.c for H_lua_wait_one.
- * Covers: null handle, consumed handle, handle with error, no query_id/db_queue,
- * timeout, result with error_message.
+ * Tests H_lua_wait_one in scripting_api_query_wait.c:
+ * null/consumed/error/no-query, timeout, error_message, success result,
+ * and HTTP/LLM/MAIL kind dispatch.
  */
 
 #include <src/hydrogen.h>
@@ -16,6 +16,7 @@
 #include <lauxlib.h>
 #include <lualib.h>
 
+#define USE_MOCK_DBQUEUE
 #include <unity/mocks/mock_dbqueue.h>
 
 #include <src/scripting/scripting_api.h>
@@ -31,6 +32,10 @@ void test_H_lua_wait_one_handle_with_error_returns_error(void);
 void test_H_lua_wait_one_handle_no_query_returns_error(void);
 void test_H_lua_wait_one_timeout_returns_error(void);
 void test_H_lua_wait_one_with_error_message_returns_error(void);
+void test_H_lua_wait_one_success_builds_result_table(void);
+void test_H_lua_wait_one_http_kind_dispatches(void);
+void test_H_lua_wait_one_llm_kind_dispatches(void);
+void test_H_lua_wait_one_mail_kind_dispatches(void);
 
 static lua_State* L = NULL;
 static DatabaseQueue test_db_queue;
@@ -45,6 +50,8 @@ void setUp(void) {
 
     memset(&test_db_queue, 0, sizeof(test_db_queue));
     memset(&test_dqm, 0, sizeof(test_dqm));
+    app_config = NULL;
+    global_queue_manager = NULL;
 }
 
 void tearDown(void) {
@@ -54,6 +61,7 @@ void tearDown(void) {
     }
     app_config = NULL;
     global_queue_manager = NULL;
+    mock_dbqueue_reset_all();
 }
 
 void test_H_lua_wait_one_null_handle_returns_error(void) {
@@ -71,9 +79,6 @@ void test_H_lua_wait_one_consumed_handle_returns_error(void) {
     H_Handle* h = H_Handle_new(L, H_HK_QUERY);
     TEST_ASSERT_NOT_NULL(h);
     h->consumed = true;
-    lua_pushlightuserdata(L, h);
-    lua_pushstring(L, "H.Handle");
-    lua_setmetatable(L, -2);
 
     int n = H_lua_wait_one(L, h);
     TEST_ASSERT_EQUAL_INT(2, n);
@@ -89,9 +94,6 @@ void test_H_lua_wait_one_handle_with_error_returns_error(void) {
     H_Handle* h = H_Handle_new(L, H_HK_QUERY);
     TEST_ASSERT_NOT_NULL(h);
     h->error = strdup("Test error message");
-    lua_pushlightuserdata(L, h);
-    lua_pushstring(L, "H.Handle");
-    lua_setmetatable(L, -2);
 
     int n = H_lua_wait_one(L, h);
     TEST_ASSERT_EQUAL_INT(2, n);
@@ -101,6 +103,7 @@ void test_H_lua_wait_one_handle_with_error_returns_error(void) {
     const char* err = lua_tostring(L, -1);
     TEST_ASSERT_NOT_NULL(err);
     TEST_ASSERT_NOT_NULL(strstr(err, "Test error message"));
+    TEST_ASSERT_TRUE(h->consumed);
     lua_pop(L, 2);
 }
 
@@ -109,9 +112,6 @@ void test_H_lua_wait_one_handle_no_query_returns_error(void) {
     TEST_ASSERT_NOT_NULL(h);
     h->query_id = NULL;
     h->db_queue = NULL;
-    lua_pushlightuserdata(L, h);
-    lua_pushstring(L, "H.Handle");
-    lua_setmetatable(L, -2);
 
     int n = H_lua_wait_one(L, h);
     TEST_ASSERT_EQUAL_INT(2, n);
@@ -120,24 +120,16 @@ void test_H_lua_wait_one_handle_no_query_returns_error(void) {
     TEST_ASSERT_EQUAL(LUA_TSTRING, lua_type(L, -1));
     const char* err = lua_tostring(L, -1);
     TEST_ASSERT_NOT_NULL(strstr(err, "no pending query"));
+    TEST_ASSERT_TRUE(h->consumed);
     lua_pop(L, 2);
 }
 
 void test_H_lua_wait_one_timeout_returns_error(void) {
     AppConfig config = {0};
     config.scripting.DefaultQueryTimeout = 1;
-
     app_config = &config;
-    global_queue_manager = &test_dqm;
 
-    mock_dbqueue_set_get_database_result(&test_db_queue);
-
-    DatabaseQuery* q = calloc(1, sizeof(DatabaseQuery));
-    TEST_ASSERT_NOT_NULL(q);
-    q->query_id = strdup("test-query-id");
-    TEST_ASSERT_NOT_NULL(q->query_id);
-    mock_dbqueue_set_await_result(q);
-
+    /* No await result set -> mock returns NULL (timeout) */
     H_Handle* h = H_Handle_new(L, H_HK_QUERY);
     TEST_ASSERT_NOT_NULL(h);
     h->query_id = strdup("test-query-id");
@@ -148,27 +140,23 @@ void test_H_lua_wait_one_timeout_returns_error(void) {
 
     TEST_ASSERT_EQUAL(LUA_TNIL, lua_type(L, -2));
     TEST_ASSERT_EQUAL(LUA_TSTRING, lua_type(L, -1));
+    const char* err = lua_tostring(L, -1);
+    TEST_ASSERT_NOT_NULL(strstr(err, "timeout"));
+    TEST_ASSERT_TRUE(h->consumed);
+    TEST_ASSERT_EQUAL_INT(1, mock_dbqueue_get_await_call_count());
     lua_pop(L, 2);
-
-    free(q->query_id);
-    free(q);
 }
 
 void test_H_lua_wait_one_with_error_message_returns_error(void) {
     AppConfig config = {0};
     config.scripting.DefaultQueryTimeout = 1;
-
     app_config = &config;
-    global_queue_manager = &test_dqm;
 
-    mock_dbqueue_set_get_database_result(&test_db_queue);
-
-    DatabaseQuery* q = calloc(1, sizeof(DatabaseQuery));
-    TEST_ASSERT_NOT_NULL(q);
-    q->query_id = strdup("test-query-id");
-    q->query_template = strdup("SELECT 1");
-    q->error_message = strdup("Database error occurred");
-    mock_dbqueue_set_await_result(q);
+    DatabaseQuery q = {0};
+    q.query_id = (char*)"test-query-id";
+    q.query_template = (char*)"SELECT 1";
+    q.error_message = (char*)"Database error occurred";
+    mock_dbqueue_set_await_result(&q);
 
     H_Handle* h = H_Handle_new(L, H_HK_QUERY);
     TEST_ASSERT_NOT_NULL(h);
@@ -181,13 +169,69 @@ void test_H_lua_wait_one_with_error_message_returns_error(void) {
     TEST_ASSERT_EQUAL(LUA_TNIL, lua_type(L, -2));
     TEST_ASSERT_EQUAL(LUA_TSTRING, lua_type(L, -1));
     const char* err = lua_tostring(L, -1);
-    TEST_ASSERT_NOT_NULL(err);
+    TEST_ASSERT_NOT_NULL(strstr(err, "Database error occurred"));
+    TEST_ASSERT_TRUE(h->consumed);
     lua_pop(L, 2);
+}
 
-    free(q->query_id);
-    free(q->query_template);
-    free(q->error_message);
-    free(q);
+void test_H_lua_wait_one_success_builds_result_table(void) {
+    AppConfig config = {0};
+    config.scripting.DefaultQueryTimeout = 5;
+    app_config = &config;
+
+    DatabaseQuery q = {0};
+    q.query_id = (char*)"ok-id";
+    q.query_template = (char*)"[{\"id\":1}]";
+    q.affected_rows = 1;
+    mock_dbqueue_set_await_result(&q);
+
+    H_Handle* h = H_Handle_new(L, H_HK_QUERY);
+    TEST_ASSERT_NOT_NULL(h);
+    h->query_id = strdup("ok-id");
+    h->db_queue = &test_db_queue;
+
+    int n = H_lua_wait_one(L, h);
+    TEST_ASSERT_EQUAL_INT(2, n);
+
+    TEST_ASSERT_EQUAL(LUA_TTABLE, lua_type(L, -2));
+    TEST_ASSERT_EQUAL(LUA_TNIL, lua_type(L, -1));
+    TEST_ASSERT_TRUE(h->consumed);
+    lua_pop(L, 2);
+}
+
+void test_H_lua_wait_one_http_kind_dispatches(void) {
+    H_Handle* h = H_Handle_new(L, H_HK_HTTP);
+    TEST_ASSERT_NOT_NULL(h);
+    /* Missing url/method -> HTTP wait error path */
+    int n = H_lua_wait_one(L, h);
+    TEST_ASSERT_EQUAL_INT(2, n);
+    TEST_ASSERT_EQUAL(LUA_TNIL, lua_type(L, -2));
+    TEST_ASSERT_EQUAL(LUA_TSTRING, lua_type(L, -1));
+    lua_pop(L, 2);
+}
+
+void test_H_lua_wait_one_llm_kind_dispatches(void) {
+    H_Handle* h = H_Handle_new(L, H_HK_LLM);
+    TEST_ASSERT_NOT_NULL(h);
+    /* Missing model name -> LLM wait error path */
+    int n = H_lua_wait_one(L, h);
+    TEST_ASSERT_EQUAL_INT(2, n);
+    TEST_ASSERT_EQUAL(LUA_TNIL, lua_type(L, -2));
+    TEST_ASSERT_EQUAL(LUA_TSTRING, lua_type(L, -1));
+    lua_pop(L, 2);
+}
+
+void test_H_lua_wait_one_mail_kind_dispatches(void) {
+    H_Handle* h = H_Handle_new(L, H_HK_MAIL);
+    TEST_ASSERT_NOT_NULL(h);
+    h->mail_error = strdup("mail boom");
+    int n = H_lua_wait_one(L, h);
+    TEST_ASSERT_EQUAL_INT(2, n);
+    TEST_ASSERT_EQUAL(LUA_TNIL, lua_type(L, -2));
+    TEST_ASSERT_EQUAL(LUA_TSTRING, lua_type(L, -1));
+    const char* err = lua_tostring(L, -1);
+    TEST_ASSERT_NOT_NULL(strstr(err, "mail boom"));
+    lua_pop(L, 2);
 }
 
 int main(void) {
@@ -199,6 +243,10 @@ int main(void) {
     RUN_TEST(test_H_lua_wait_one_handle_no_query_returns_error);
     RUN_TEST(test_H_lua_wait_one_timeout_returns_error);
     RUN_TEST(test_H_lua_wait_one_with_error_message_returns_error);
+    RUN_TEST(test_H_lua_wait_one_success_builds_result_table);
+    RUN_TEST(test_H_lua_wait_one_http_kind_dispatches);
+    RUN_TEST(test_H_lua_wait_one_llm_kind_dispatches);
+    RUN_TEST(test_H_lua_wait_one_mail_kind_dispatches);
 
     return UNITY_END();
 }

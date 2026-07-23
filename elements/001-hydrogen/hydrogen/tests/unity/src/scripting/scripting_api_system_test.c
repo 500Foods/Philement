@@ -1,5 +1,5 @@
 /*
- * Unity Test File: scripting_api_test_system.c
+ * Unity Test File: scripting_api_system_test.c
  *
  * Phase 6 of the LUA_PLAN. Tests H.system.{uptime, now, now_iso,
  * instance_id, version} - the five utility functions exposed via the
@@ -29,6 +29,10 @@
 // Module under test
 #include <src/scripting/lua_context.h>
 #include <src/scripting/scripting_api.h>
+#include <src/scripting/scripting_api_internal.h>
+
+// Mock logging introspection
+#include <tests/unity/mocks/mock_logging.h>
 
 // Mock app_config
 static AppConfig mock_app_config_storage = {0};
@@ -43,10 +47,13 @@ void test_system_version_returns_version_macro(void);
 void test_system_functions_via_lua_chunk(void);
 void test_system_functions_each_return_one_value(void);
 void test_system_uptime_does_not_fail_when_start_unset(void);
+void test_install_system_h_table_missing(void);
+void test_install_system_h_system_not_a_table(void);
 
 void setUp(void) {
     memset(&mock_app_config_storage, 0, sizeof(mock_app_config_storage));
     app_config = &mock_app_config_storage;
+    mock_logging_reset_all();
 }
 
 void tearDown(void) {
@@ -309,6 +316,41 @@ void test_system_uptime_does_not_fail_when_start_unset(void) {
     H_lua_destroy_context(L);
 }
 
+// H_lua_install_system with no H table: should log "H table missing" and return.
+void test_install_system_h_table_missing(void) {
+    lua_State* L = H_lua_create_context();
+    TEST_ASSERT_NOT_NULL(L);
+
+    // Remove the H global so lua_getglobal returns nil.
+    lua_pushnil(L);
+    lua_setglobal(L, "H");
+
+    H_lua_install_system(L);
+
+    TEST_ASSERT_NOT_NULL(strstr(mock_logging_get_last_message(), "H table missing"));
+
+    H_lua_destroy_context(L);
+}
+
+// H_lua_install_system with H.system not a table: should log
+// "H.system not a table" and return.
+void test_install_system_h_system_not_a_table(void) {
+    lua_State* L = H_lua_create_context();
+    TEST_ASSERT_NOT_NULL(L);
+
+    // Replace H.system with a non-table value.
+    lua_getglobal(L, "H");
+    lua_pushnumber(L, 42);
+    lua_setfield(L, -2, "system");
+    lua_pop(L, 1);
+
+    H_lua_install_system(L);
+
+    TEST_ASSERT_NOT_NULL(strstr(mock_logging_get_last_message(), "H.system not a table"));
+
+    H_lua_destroy_context(L);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -321,6 +363,8 @@ int main(void) {
     RUN_TEST(test_system_functions_via_lua_chunk);
     RUN_TEST(test_system_functions_each_return_one_value);
     RUN_TEST(test_system_uptime_does_not_fail_when_start_unset);
+    RUN_TEST(test_install_system_h_table_missing);
+    RUN_TEST(test_install_system_h_system_not_a_table);
 
     return UNITY_END();
 }

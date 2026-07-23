@@ -2,7 +2,7 @@
  * @file oidc_rp_token.h
  * @brief OIDC Relying Party — token-endpoint client.
  *
- * Phase 11 of the OIDC plan (`docs/OIDC-PLAN.md`). This module
+ * Phase 11 of the OIDC plan (`docs/H/plans/OIDC-PLAN.md`). This module
  * exchanges an authorization code (received at `/api/auth/oidc/callback`)
  * for OIDC tokens at the IdP's token endpoint. The exchange is an
  * RFC 6749 §4.1.3 Authorization Code Grant with PKCE (RFC 7636) and

@@ -1,7 +1,7 @@
 /*
  * Unity Test File: OIDC RP HTTP GET wrapper
  *
- * Phase 9 of `docs/OIDC-PLAN.md`. Covers oidc_rp_http_get,
+ * Phase 9 of `docs/H/plans/OIDC-PLAN.md`. Covers oidc_rp_http_get,
  * oidc_rp_http_response_free, and the test-seam helpers
  * (oidc_rp_http_test_set_response / clear_responses) from
  * src/api/auth/oidc_rp/oidc_rp_http.c.

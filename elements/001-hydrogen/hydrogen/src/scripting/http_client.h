@@ -30,7 +30,7 @@
  * pattern. Phase 17 will move the call onto a background thread so
  * multiple H.http.get calls can fan out.
  *
- * @see docs/H/plans/LUA_PLAN_COMPLETE.md Phase 16
+ * @see docs/H/plans/complete/LUA_PLAN_COMPLETE.md Phase 16
  */
 
 #ifndef HYDROGEN_SCRIPTING_HTTP_CLIENT_H

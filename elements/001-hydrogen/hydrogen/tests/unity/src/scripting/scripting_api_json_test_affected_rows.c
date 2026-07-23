@@ -1,5 +1,5 @@
 /*
- * Unity Test File: scripting_api_test_affected_rows.c
+ * Unity Test File: scripting_api_json_test_affected_rows.c
  *
  * Phase 14 of the LUA_PLAN. Tests that the H.*query result table
  * surfaces `affected_rows` from the awaited DatabaseQuery.

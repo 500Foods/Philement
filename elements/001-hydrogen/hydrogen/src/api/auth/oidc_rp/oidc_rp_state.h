@@ -2,7 +2,7 @@
  * @file oidc_rp_state.h
  * @brief OIDC Relying Party in-memory state store.
  *
- * Phase 7 of the OIDC plan (`docs/OIDC-PLAN.md`). This module owns
+ * Phase 7 of the OIDC plan (`docs/H/plans/OIDC-PLAN.md`). This module owns
  * the short-lived `state` records that bind an outgoing
  * `/api/auth/oidc/start` request to its eventual
  * `/api/auth/oidc/callback` arrival. Each record carries the data
@@ -32,7 +32,7 @@
  *
  * The store has no on-disk persistence by design — these records are
  * minutes old at most and a Hydrogen restart simply invalidates any
- * in-flight OIDC sessions. See `docs/OIDC-PLAN.md` lines 318–334.
+ * in-flight OIDC sessions. See `docs/H/plans/OIDC-PLAN.md` lines 318–334.
  *
  * @author Hydrogen Framework
  * @date 2026-05-09

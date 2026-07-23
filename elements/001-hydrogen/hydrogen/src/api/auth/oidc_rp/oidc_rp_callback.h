@@ -2,7 +2,7 @@
  * @file oidc_rp_callback.h
  * @brief OIDC RP authorization callback endpoint.
  *
- * Phase 14 of the OIDC plan (`docs/OIDC-PLAN.md`). The browser
+ * Phase 14 of the OIDC plan (`docs/H/plans/OIDC-PLAN.md`). The browser
  * arrives here after the user authenticated at the IdP. The handler
  * runs the entire server-side chain that turns the IdP authorization
  * code into a Hydrogen-issued JWT and a one-time handoff record:

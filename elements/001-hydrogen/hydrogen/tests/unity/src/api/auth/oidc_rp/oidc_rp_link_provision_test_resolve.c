@@ -158,7 +158,7 @@ static char *make_083_ok(int account_id) {
 }
 
 /* Build a provider config for the provision_only strategy. See
- * docs/OIDC-PLAN.md Phase 20 for the field semantics. */
+ * docs/H/plans/OIDC-PLAN.md Phase 20 for the field semantics. */
 static OIDCRPProviderConfig make_provider_provision(bool provision_enabled,
                                                      bool require_email_verified,
                                                      const char * const *domains) {

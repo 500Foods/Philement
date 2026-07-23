@@ -297,7 +297,7 @@ The optimizations successfully eliminated network/protocol overhead, but the rem
 
 ### Documentation
 
-- `docs/plans/DATABASE_PLAN.md` - Database subsystem architecture
+- `docs/H/plans/complete/DATABASE_PLAN_COMPLETE.md` - Database subsystem architecture
 - `INSTRUCTIONS.md` - Development standards and test procedures
 
 This plan provides a comprehensive roadmap for optimizing database migration performance while ensuring consistency and maintainability across all supported database engines.

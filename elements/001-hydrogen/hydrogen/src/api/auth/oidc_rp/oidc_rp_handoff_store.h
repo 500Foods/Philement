@@ -2,7 +2,7 @@
  * @file oidc_rp_handoff_store.h
  * @brief OIDC Relying Party in-memory handoff store.
  *
- * Phase 13 of the OIDC plan (`docs/OIDC-PLAN.md`). This module owns
+ * Phase 13 of the OIDC plan (`docs/H/plans/OIDC-PLAN.md`). This module owns
  * the single-use, short-lived handoff records that bridge the
  * `/api/auth/oidc/callback` redirect and the
  * `/api/auth/oidc/handoff` exchange. Each record carries the data
@@ -43,7 +43,7 @@
  * live for at most a minute (default `HandoffTtlSeconds` = 60).
  * A Hydrogen restart simply invalidates any in-flight handoffs;
  * the SPA shows "sign-in didn't complete, please try again". See
- * `docs/OIDC-PLAN.md` lines 318–334 (the same rationale that
+ * `docs/H/plans/OIDC-PLAN.md` lines 318–334 (the same rationale that
  * applies to the state store).
  *
  * @author Hydrogen Framework

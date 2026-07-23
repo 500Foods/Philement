@@ -8,7 +8,7 @@
  * auth paths uniformly.
  *
  * Threat model (per the Phase 13 plan and the Security Plan section
- * of `docs/OIDC-PLAN.md`):
+ * of `docs/H/plans/OIDC-PLAN.md`):
  *
  *   - Replay: every successful take is atomic. A second take with
  *     the same code returns NULL, which becomes 401 handoff_invalid.

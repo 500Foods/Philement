@@ -207,59 +207,39 @@ int H_lua_wait(lua_State* L) {
     return 2 * n;
 }
 
-int H_lua_query_sync(lua_State* L) {
-    int n_pushed = H_lua_query(L);
+int H_lua_finish_sync_wait(lua_State* L, int n_pushed,
+                           const char* alloc_err, const char* create_err) {
     if (n_pushed == 0) {
         lua_pushnil(L);
-        lua_pushstring(L, "H.query_sync: handle allocation failed");
+        lua_pushstring(L, alloc_err);
         return 2;
     }
     H_Handle* h = H_Handle_check(L, -1);
     if (!h) {
         lua_pop(L, 1);
         lua_pushnil(L);
-        lua_pushstring(L, "H.query_sync: handle creation failed");
+        lua_pushstring(L, create_err);
         return 2;
     }
     int n = H_lua_wait_one(L, h);
     lua_remove(L, -(n + 1));
     return n;
+}
+
+int H_lua_query_sync(lua_State* L) {
+    return H_lua_finish_sync_wait(L, H_lua_query(L),
+                                  "H.query_sync: handle allocation failed",
+                                  "H.query_sync: handle creation failed");
 }
 
 int H_lua_altquery_sync(lua_State* L) {
-    int n_pushed = H_lua_altquery(L);
-    if (n_pushed == 0) {
-        lua_pushnil(L);
-        lua_pushstring(L, "H.altquery_sync: handle allocation failed");
-        return 2;
-    }
-    H_Handle* h = H_Handle_check(L, -1);
-    if (!h) {
-        lua_pop(L, 1);
-        lua_pushnil(L);
-        lua_pushstring(L, "H.altquery_sync: handle creation failed");
-        return 2;
-    }
-    int n = H_lua_wait_one(L, h);
-    lua_remove(L, -(n + 1));
-    return n;
+    return H_lua_finish_sync_wait(L, H_lua_altquery(L),
+                                  "H.altquery_sync: handle allocation failed",
+                                  "H.altquery_sync: handle creation failed");
 }
 
 int H_lua_authquery_sync(lua_State* L) {
-    int n_pushed = H_lua_authquery(L);
-    if (n_pushed == 0) {
-        lua_pushnil(L);
-        lua_pushstring(L, "H.authquery_sync: handle allocation failed");
-        return 2;
-    }
-    H_Handle* h = H_Handle_check(L, -1);
-    if (!h) {
-        lua_pop(L, 1);
-        lua_pushnil(L);
-        lua_pushstring(L, "H.authquery_sync: handle creation failed");
-        return 2;
-    }
-    int n = H_lua_wait_one(L, h);
-    lua_remove(L, -(n + 1));
-    return n;
+    return H_lua_finish_sync_wait(L, H_lua_authquery(L),
+                                  "H.authquery_sync: handle allocation failed",
+                                  "H.authquery_sync: handle creation failed");
 }

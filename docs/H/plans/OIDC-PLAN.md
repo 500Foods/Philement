@@ -553,7 +553,7 @@ in `docs/H/INSTRUCTIONS.md` and `docs/H/tests/TESTING_UNITY.md`.
 
 ## Lithium Side: Login Manager Changes
 
-### Where the new code lives
+### Where the new Lithium code lives
 
 | Path | Purpose |
 |---|---|
@@ -1988,7 +1988,7 @@ Every phase block contains the same fields, in the same order:
 3. **`api_url_encode` from `src/api/api_utils.h` does the right
    thing.** The plan called for "properly URL-encoded" parameters;
    the existing helper handles the standard reserved-character set
-   for query-string values (`:`, `/`, `?`, `=`, `#`, ` `). The
+   for query-string values (`:`, `/`, `?`, `=`, `#`). The
    Phase 10 URL builder is a thin glue around `api_url_encode` plus
    a realloc-on-demand buffer. Per Phase 8 lesson #1: always grep
    `src/utils/utils_*.{c,h}` and `src/api/api_utils.h` for
@@ -5106,7 +5106,7 @@ src/webserver/...                    # route registration (one new dispatch bloc
 src/config/config.c, config.h        # load new OIDC_RP block
 elements/001-hydrogen/hydrogen/configs/*.json  # add OIDC_RP example block (one env)
 tests/test_40_auth.sh                # add post-OIDC JWT shape assertion
-docs/H/plans/AUTH_PLAN.md            # cross-link to OIDC-PLAN.md
+docs/H/plans/complete/AUTH_PLAN_COMPLETE.md            # cross-link to OIDC-PLAN.md
 docs/H/README.md, docs/H/SITEMAP.md  # add new doc links (test_04_check_links must pass)
 ```
 

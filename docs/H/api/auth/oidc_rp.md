@@ -14,7 +14,7 @@ client SPAs (such as Lithium) integrate against.
 > **For the implementer-facing recipe** (how a client SPA wires up the
 > handoff exchange, stores the JWT, and emits an auth event), see
 > [LITHIUM-KEYCLOAK.md](/docs/Li/LITHIUM-KEYCLOAK.md). For project-level
-> architecture and rationale, see [OIDC-PLAN.md](/docs/OIDC-PLAN.md).
+> architecture and rationale, see [OIDC-PLAN.md](/docs/H/plans/OIDC-PLAN.md).
 
 ---
 
@@ -254,7 +254,7 @@ back to normal local logout.
 
 The `OIDC_RP` block lives at the top level of `hydrogen.json`. The full
 schema (with sample values) is documented in
-[OIDC-PLAN.md](/docs/OIDC-PLAN.md). Below is a working production-shape
+[OIDC-PLAN.md](/docs/H/plans/OIDC-PLAN.md). Below is a working production-shape
 example.
 
 ```jsonc
@@ -480,8 +480,8 @@ on those rows.
 
 ## Related documents
 
-- [OIDC-PLAN.md](/docs/OIDC-PLAN.md) — Full architectural plan and phase log.
+- [OIDC-PLAN.md](/docs/H/plans/OIDC-PLAN.md) — Full architectural plan and phase log.
 - [LITHIUM-OIDC.md](/docs/Li/LITHIUM-OIDC.md) — Lithium-side user/operator guide.
 - [LITHIUM-KEYCLOAK.md](/docs/Li/LITHIUM-KEYCLOAK.md) — Implementer reference for new client SPAs.
 - [LITHIUM-JWT.md](/docs/Li/LITHIUM-JWT.md) — JWT lifecycle (the same JWT is produced by OIDC).
-- [AUTH_PLAN.md](/docs/H/plans/AUTH_PLAN.md) — Hydrogen authentication architecture.
+- [AUTH_PLAN.md](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md) — Hydrogen authentication architecture.

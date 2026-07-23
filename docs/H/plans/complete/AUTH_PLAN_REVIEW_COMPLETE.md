@@ -14,18 +14,18 @@ The authentication endpoints planning for Hydrogen is **comprehensive and well-d
 
 | Document | Lines | Status | Assessment |
 | ---------- | ------- | -------- | ------------ |
-| [`AUTH_PLAN.md`](/docs/H/plans/AUTH_PLAN.md) | 78 | ✅ Complete | Excellent TOC and navigation |
-| [`AUTH_PLAN_API.md`](/docs/H/plans/AUTH_PLAN_API.md) | 267 | ✅ Complete | Comprehensive API specs with schemas |
-| [`AUTH_PLAN_DIAGRAMS.md`](/docs/H/plans/AUTH_PLAN_DIAGRAMS.md) | 215 | ✅ Complete | Clear architecture diagrams |
-| [`AUTH_PLAN_IMPLEMENTATION.md`](/docs/H/plans/AUTH_PLAN_IMPLEMENTATION.md) | 690 | ✅ Complete | Detailed pseudo-code for all functions |
-| [`AUTH_PLAN_SECURITY.md`](/docs/H/plans/AUTH_PLAN_SECURITY.md) | 82 | ✅ Complete | Strong security measures |
-| [`AUTH_PLAN_ERRORS.md`](/docs/H/plans/AUTH_PLAN_ERRORS.md) | 156 | ✅ Complete | Comprehensive error handling |
-| [`AUTH_PLAN_TESTS.md`](/docs/H/plans/AUTH_PLAN_TESTS.md) | 1299 | ✅ Complete | Extensive test coverage strategy |
-| [`AUTH_PLAN_INTEGRATION.md`](/docs/H/plans/AUTH_PLAN_INTEGRATION.md) | 123 | ✅ Complete | Clear subsystem integration |
-| [`AUTH_PLAN_PERFORMANCE.md`](/docs/H/plans/AUTH_PLAN_PERFORMANCE.md) | 31 | ✅ Complete | Good performance considerations |
-| [`AUTH_PLAN_ACURANZO.md`](/docs/H/plans/AUTH_PLAN_ACURANZO.md) | 399 | ✅ Complete | Detailed database integration |
-| [`AUTH_PLAN_OPERATIONS.md`](/docs/H/plans/AUTH_PLAN_OPERATIONS.md) | 44 | ✅ Complete | Operational procedures defined |
-| [`AUTH_PLAN_PROGRESS.md`](/docs/H/plans/AUTH_PLAN_PROGRESS.md) | 152 | ✅ Complete | Clear phase tracking |
+| [`AUTH_PLAN.md`](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md) | 78 | ✅ Complete | Excellent TOC and navigation |
+| [`AUTH_PLAN_API.md`](/docs/H/plans/complete/AUTH_PLAN_API_COMPLETE.md) | 267 | ✅ Complete | Comprehensive API specs with schemas |
+| [`AUTH_PLAN_DIAGRAMS.md`](/docs/H/plans/complete/AUTH_PLAN_DIAGRAMS_COMPLETE.md) | 215 | ✅ Complete | Clear architecture diagrams |
+| [`AUTH_PLAN_IMPLEMENTATION.md`](/docs/H/plans/complete/AUTH_PLAN_IMPLEMENTATION_COMPLETE.md) | 690 | ✅ Complete | Detailed pseudo-code for all functions |
+| [`AUTH_PLAN_SECURITY.md`](/docs/H/plans/complete/AUTH_PLAN_SECURITY_COMPLETE.md) | 82 | ✅ Complete | Strong security measures |
+| [`AUTH_PLAN_ERRORS.md`](/docs/H/plans/complete/AUTH_PLAN_ERRORS_COMPLETE.md) | 156 | ✅ Complete | Comprehensive error handling |
+| [`AUTH_PLAN_TESTS.md`](/docs/H/plans/complete/AUTH_PLAN_TESTS_COMPLETE.md) | 1299 | ✅ Complete | Extensive test coverage strategy |
+| [`AUTH_PLAN_INTEGRATION.md`](/docs/H/plans/complete/AUTH_PLAN_INTEGRATION_COMPLETE.md) | 123 | ✅ Complete | Clear subsystem integration |
+| [`AUTH_PLAN_PERFORMANCE.md`](/docs/H/plans/complete/AUTH_PLAN_PERFORMANCE_COMPLETE.md) | 31 | ✅ Complete | Good performance considerations |
+| [`AUTH_PLAN_ACURANZO.md`](/docs/H/plans/complete/AUTH_PLAN_ACURANZO_COMPLETE.md) | 399 | ✅ Complete | Detailed database integration |
+| [`AUTH_PLAN_OPERATIONS.md`](/docs/H/plans/complete/AUTH_PLAN_OPERATIONS_COMPLETE.md) | 44 | ✅ Complete | Operational procedures defined |
+| [`AUTH_PLAN_PROGRESS.md`](/docs/H/plans/complete/AUTH_PLAN_PROGRESS_COMPLETE.md) | 152 | ✅ Complete | Clear phase tracking |
 
 ## Strengths
 
@@ -80,7 +80,7 @@ The authentication endpoints planning for Hydrogen is **comprehensive and well-d
 
 ## Areas of Excellence
 
-### API Specifications ([`AUTH_PLAN_API.md`](/docs/H/plans/AUTH_PLAN_API.md))
+### API Specifications ([`AUTH_PLAN_API.md`](/docs/H/plans/complete/AUTH_PLAN_API_COMPLETE.md))
 
 - **JSON schemas** for all request/response bodies
 - **HTTP status codes** properly mapped
@@ -99,7 +99,7 @@ The authentication endpoints planning for Hydrogen is **comprehensive and well-d
 }
 ```
 
-### Implementation Guide ([`AUTH_PLAN_IMPLEMENTATION.md`](/docs/H/plans/AUTH_PLAN_IMPLEMENTATION.md))
+### Implementation Guide ([`AUTH_PLAN_IMPLEMENTATION.md`](/docs/H/plans/complete/AUTH_PLAN_IMPLEMENTATION_COMPLETE.md))
 
 - **690 lines** of detailed pseudo-code
 - Every function has implementation details
@@ -119,7 +119,7 @@ bool verify_api_key(const char* api_key, system_info_t* sys_info) {
 }
 ```
 
-### Database Integration ([`AUTH_PLAN_ACURANZO.md`](/docs/H/plans/AUTH_PLAN_ACURANZO.md))
+### Database Integration ([`AUTH_PLAN_ACURANZO.md`](/docs/H/plans/complete/AUTH_PLAN_ACURANZO_COMPLETE.md))
 
 - Complete mapping of existing QueryRefs
 - SQL templates for new queries
@@ -127,7 +127,7 @@ bool verify_api_key(const char* api_key, system_info_t* sys_info) {
 - Caching strategy defined
 - Performance monitoring queries
 
-### Testing ([`AUTH_PLAN_TESTS.md`](/docs/H/plans/AUTH_PLAN_TESTS.md))
+### Testing ([`AUTH_PLAN_TESTS.md`](/docs/H/plans/complete/AUTH_PLAN_TESTS_COMPLETE.md))
 
 - **1299 lines** of comprehensive test strategy
 - Unit test examples with Unity framework
@@ -139,7 +139,7 @@ bool verify_api_key(const char* api_key, system_info_t* sys_info) {
 
 ### 1. Minor: Environment Variables Documentation
 
-**Gap**: Environment variable requirements are listed in [`AUTH_PLAN.md`](/docs/H/plans/AUTH_PLAN.md) but not in [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md)
+**Gap**: Environment variable requirements are listed in [`AUTH_PLAN.md`](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md) but not in [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md)
 
 **Recommendation**: Add auth environment variables to project setup documentation
 
@@ -158,7 +158,7 @@ export HYDROGEN_AUTH_ENABLE_REGISTRATION="true"
 
 ### 2. Minor: Migration File Names
 
-**Gap**: [`AUTH_PLAN_ACURANZO.md`](/docs/H/plans/AUTH_PLAN_ACURANZO.md) references migrations 1141-1143, but doesn't specify the Lua filename format
+**Gap**: [`AUTH_PLAN_ACURANZO.md`](/docs/H/plans/complete/AUTH_PLAN_ACURANZO_COMPLETE.md) references migrations 1141-1143, but doesn't specify the Lua filename format
 
 **Recommendation**: Confirm migration naming follows existing Acuranzo patterns
 
@@ -168,7 +168,7 @@ export HYDROGEN_AUTH_ENABLE_REGISTRATION="true"
 
 ### 3. Minor: CORS Configuration
 
-**Gap**: [`AUTH_PLAN_INTEGRATION.md`](/docs/H/plans/AUTH_PLAN_INTEGRATION.md) mentions CORS headers but doesn't detail allowed origins
+**Gap**: [`AUTH_PLAN_INTEGRATION.md`](/docs/H/plans/complete/AUTH_PLAN_INTEGRATION_COMPLETE.md) mentions CORS headers but doesn't detail allowed origins
 
 **Recommendation**: Define default CORS policy for auth endpoints
 
@@ -243,7 +243,7 @@ WHERE username = ?
 
 ### Phase 3: Core Implementation (Next Phase)
 
-Based on [`AUTH_PLAN_PROGRESS.md`](/docs/H/plans/AUTH_PLAN_PROGRESS.md), you're ready to start Phase 3:
+Based on [`AUTH_PLAN_PROGRESS.md`](/docs/H/plans/complete/AUTH_PLAN_PROGRESS_COMPLETE.md), you're ready to start Phase 3:
 
 - [ ] Create [`src/api/auth/auth_service.h`](/elements/001-hydrogen/hydrogen/src/api/auth/auth_service.h) header
 - [ ] Create [`src/api/auth/auth_service.c`](/elements/001-hydrogen/hydrogen/src/api/auth/auth_service.c) implementation
@@ -352,7 +352,7 @@ The authentication endpoints planning is comprehensive, well-structured, and pro
 
 **Recommendation**: **Proceed to Phase 3 (Core Implementation)**
 
-All planning documents are complete and aligned with Hydrogen's existing architecture, coding standards, and best practices. The implementation can begin immediately following the phased approach outlined in [`AUTH_PLAN_PROGRESS.md`](/docs/H/plans/AUTH_PLAN_PROGRESS.md).
+All planning documents are complete and aligned with Hydrogen's existing architecture, coding standards, and best practices. The implementation can begin immediately following the phased approach outlined in [`AUTH_PLAN_PROGRESS.md`](/docs/H/plans/complete/AUTH_PLAN_PROGRESS_COMPLETE.md).
 
 ## Review Diagram
 
@@ -383,7 +383,7 @@ graph TD
 1. **Review this assessment** with your team
 2. **Address minor clarifications** if desired (optional, non-blocking)
 3. **Switch to Code mode** to begin implementation
-4. **Start with Phase 3** from [`AUTH_PLAN_PROGRESS.md`](/docs/H/plans/AUTH_PLAN_PROGRESS.md)
+4. **Start with Phase 3** from [`AUTH_PLAN_PROGRESS.md`](/docs/H/plans/complete/AUTH_PLAN_PROGRESS_COMPLETE.md)
 5. **Follow the implementation order** recommended above
 
 ---

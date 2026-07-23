@@ -2,7 +2,7 @@
  * @file oidc_rp_jwks.h
  * @brief OIDC Relying Party — JWKS fetch + cache.
  *
- * Phase 9 of the OIDC plan (`docs/OIDC-PLAN.md`). The JWKS cache
+ * Phase 9 of the OIDC plan (`docs/H/plans/OIDC-PLAN.md`). The JWKS cache
  * holds the IdP's public keys, fetched from the `jwks_uri` advertised
  * in the discovery document. Phase 12 (ID token validation) will be
  * the first real consumer; Phase 9 lands the cache and the

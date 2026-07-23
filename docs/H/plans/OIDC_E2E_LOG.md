@@ -1,6 +1,6 @@
 # OIDC End-to-End Test Log (Phase 27)
 
-> Manual test checklist for Phase 27 of [OIDC-PLAN.md](/docs/OIDC-PLAN.md).
+> Manual test checklist for Phase 27 of [OIDC-PLAN.md](/docs/H/plans/OIDC-PLAN.md).
 > This document records the result of running the full sign-in flow
 > against the real Keycloak instance at
 > `https://www.500passwords.com/realms/festival`, replacing the mock

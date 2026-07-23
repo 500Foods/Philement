@@ -2,7 +2,7 @@
  * @file oidc_rp_idtoken.h
  * @brief OIDC Relying Party — ID token validation.
  *
- * Phase 12 of the OIDC plan (`docs/OIDC-PLAN.md`). This module
+ * Phase 12 of the OIDC plan (`docs/H/plans/OIDC-PLAN.md`). This module
  * validates an OpenID Connect `id_token` produced by the IdP (typically
  * Keycloak), as received from `oidc_rp_exchange_code` (Phase 11).
  *

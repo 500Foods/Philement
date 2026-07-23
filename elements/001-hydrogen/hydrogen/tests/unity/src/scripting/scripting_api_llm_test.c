@@ -1,5 +1,5 @@
 /*
- * Unity Test File: scripting_api_test_llm.c
+ * Unity Test File: scripting_api_llm_test.c
  *
  * Phase 18 of the LUA_PLAN. Tests the H.llm.* host functions:
  *   - H.llm.call returns an H_Handle of kind H_HK_LLM

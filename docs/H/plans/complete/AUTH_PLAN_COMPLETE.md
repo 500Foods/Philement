@@ -6,7 +6,7 @@ This document serves as the central table of contents for the Hydrogen authentic
 
 ## Review
 
-A thorough review of the authentication system architecture and implementation plan has been completed by Kilo Code (Architect Mode) on 2026-01-08. The review confirms the plan is complete and ready for implementation: [AUTH_PLAN_REVIEW.md](/docs/H/plans/AUTH_PLAN_REVIEW.md).
+A thorough review of the authentication system architecture and implementation plan has been completed by Kilo Code (Architect Mode) on 2026-01-08. The review confirms the plan is complete and ready for implementation: [AUTH_PLAN_REVIEW.md](/docs/H/plans/complete/AUTH_PLAN_REVIEW_COMPLETE.md).
 
 ## Quick Reference
 
@@ -31,48 +31,48 @@ A thorough review of the authentication system architecture and implementation p
 
 | Document | Purpose | Status |
 | ---------- | --------- | -------- |
-| **[AUTH_PLAN_DIAGRAMS.md](/docs/H/plans/AUTH_PLAN_DIAGRAMS.md)** | Architecture and flow diagrams | ✅ Complete |
-| **[AUTH_PLAN_API.md](/docs/H/plans/AUTH_PLAN_API.md)** | API specifications and schemas | ✅ Complete |
-| **[AUTH_PLAN_IMPLEMENTATION.md](/docs/H/plans/AUTH_PLAN_IMPLEMENTATION.md)** | Function implementations and pseudo-code | ✅ Complete |
-| **[AUTH_PLAN_SECURITY.md](/docs/H/plans/AUTH_PLAN_SECURITY.md)** | Security considerations and hardening | ✅ Complete |
-| **[AUTH_PLAN_INTEGRATION.md](/docs/H/plans/AUTH_PLAN_INTEGRATION.md)** | Subsystem integration details | ✅ Complete |
-| **[AUTH_PLAN_PERFORMANCE.md](/docs/H/plans/AUTH_PLAN_PERFORMANCE.md)** | Performance and scalability | ✅ Complete |
-| **[AUTH_PLAN_ACURANZO.md](/docs/H/plans/AUTH_PLAN_ACURANZO.md)** | Database integration and migrations | ✅ Complete |
-| **[AUTH_PLAN_OPERATIONS.md](/docs/H/plans/AUTH_PLAN_OPERATIONS.md)** | Monitoring and operations | ✅ Complete |
-| **[AUTH_PLAN_ERRORS.md](/docs/H/plans/AUTH_PLAN_ERRORS.md)** | Error handling and edge cases | ✅ Complete |
+| **[AUTH_PLAN_DIAGRAMS.md](/docs/H/plans/complete/AUTH_PLAN_DIAGRAMS_COMPLETE.md)** | Architecture and flow diagrams | ✅ Complete |
+| **[AUTH_PLAN_API.md](/docs/H/plans/complete/AUTH_PLAN_API_COMPLETE.md)** | API specifications and schemas | ✅ Complete |
+| **[AUTH_PLAN_IMPLEMENTATION.md](/docs/H/plans/complete/AUTH_PLAN_IMPLEMENTATION_COMPLETE.md)** | Function implementations and pseudo-code | ✅ Complete |
+| **[AUTH_PLAN_SECURITY.md](/docs/H/plans/complete/AUTH_PLAN_SECURITY_COMPLETE.md)** | Security considerations and hardening | ✅ Complete |
+| **[AUTH_PLAN_INTEGRATION.md](/docs/H/plans/complete/AUTH_PLAN_INTEGRATION_COMPLETE.md)** | Subsystem integration details | ✅ Complete |
+| **[AUTH_PLAN_PERFORMANCE.md](/docs/H/plans/complete/AUTH_PLAN_PERFORMANCE_COMPLETE.md)** | Performance and scalability | ✅ Complete |
+| **[AUTH_PLAN_ACURANZO.md](/docs/H/plans/complete/AUTH_PLAN_ACURANZO_COMPLETE.md)** | Database integration and migrations | ✅ Complete |
+| **[AUTH_PLAN_OPERATIONS.md](/docs/H/plans/complete/AUTH_PLAN_OPERATIONS_COMPLETE.md)** | Monitoring and operations | ✅ Complete |
+| **[AUTH_PLAN_ERRORS.md](/docs/H/plans/complete/AUTH_PLAN_ERRORS_COMPLETE.md)** | Error handling and edge cases | ✅ Complete |
 
 ### 📈 Planning & Progress
 
 | Document | Purpose | Status |
 | ---------- | --------- | -------- |
-| **[AUTH_PLAN_ACURANZO.md](/docs/H/plans/AUTH_PLAN_ACURANZO.md)** | Database integration and migrations | ✅ Complete |
-| **[AUTH_PLAN_PROGRESS.md](/docs/H/plans/AUTH_PLAN_PROGRESS.md)** | Implementation progress tracking, risk analysis, team assignments, phase checklists | ✅ Consolidated |
-| **[AUTH_PLAN_TESTS.md](/docs/H/plans/AUTH_PLAN_TESTS.md)** | Comprehensive testing strategy | ✅ Complete |
-| **[TEST_40_DEBUG_PLAN.md](/docs/H/plans/TEST_40_DEBUG_PLAN.md)** | Debugging plan for Test 40 failures | Incomplete |
+| **[AUTH_PLAN_ACURANZO.md](/docs/H/plans/complete/AUTH_PLAN_ACURANZO_COMPLETE.md)** | Database integration and migrations | ✅ Complete |
+| **[AUTH_PLAN_PROGRESS.md](/docs/H/plans/complete/AUTH_PLAN_PROGRESS_COMPLETE.md)** | Implementation progress tracking, risk analysis, team assignments, phase checklists | ✅ Consolidated |
+| **[AUTH_PLAN_TESTS.md](/docs/H/plans/complete/AUTH_PLAN_TESTS_COMPLETE.md)** | Comprehensive testing strategy | ✅ Complete |
+| **[TEST_40_DEBUG_PLAN.md](/docs/H/plans/complete/TEST_40_DEBUG_PLAN_COMPLETE.md)** | Debugging plan for Test 40 failures | Incomplete |
 | **[DATABASE_UPDATE_PLAN.md](/docs/H/plans/DATABASE_UPDATE_PLAN.md)** | Need to update database code to support named>positional params and JSON param passing | Incomplete |
 
 ## Quick Start Guide
 
 ### For Developers
 
-1. **Review the architecture**: Start with [AUTH_PLAN_DIAGRAMS.md](/docs/H/plans/AUTH_PLAN_DIAGRAMS.md)
-2. **Understand the API**: See [AUTH_PLAN_API.md](/docs/H/plans/AUTH_PLAN_API.md) for specifications
-3. **Implementation details**: Check [AUTH_PLAN_IMPLEMENTATION.md](/docs/H/plans/AUTH_PLAN_IMPLEMENTATION.md)
-4. **Database setup**: Follow [AUTH_PLAN_ACURANZO.md](/docs/H/plans/AUTH_PLAN_ACURANZO.md)
+1. **Review the architecture**: Start with [AUTH_PLAN_DIAGRAMS.md](/docs/H/plans/complete/AUTH_PLAN_DIAGRAMS_COMPLETE.md)
+2. **Understand the API**: See [AUTH_PLAN_API.md](/docs/H/plans/complete/AUTH_PLAN_API_COMPLETE.md) for specifications
+3. **Implementation details**: Check [AUTH_PLAN_IMPLEMENTATION.md](/docs/H/plans/complete/AUTH_PLAN_IMPLEMENTATION_COMPLETE.md)
+4. **Database setup**: Follow [AUTH_PLAN_ACURANZO.md](/docs/H/plans/complete/AUTH_PLAN_ACURANZO_COMPLETE.md)
 
 ### For Testers
 
 1. **Blackbox/Integration Testing**: [TESTING.md](/docs/H/tests/TESTING.md) - Framework and patterns for integration tests
 2. **Unity Unit Testing**: [TESTING_UNITY.md](/docs/H/tests/TESTING_UNITY.md) - Framework and patterns for unit tests
-3. **Auth Testing Strategy**: [AUTH_PLAN_TESTS.md](/docs/H/plans/AUTH_PLAN_TESTS.md) - Comprehensive auth-specific test plan
+3. **Auth Testing Strategy**: [AUTH_PLAN_TESTS.md](/docs/H/plans/complete/AUTH_PLAN_TESTS_COMPLETE.md) - Comprehensive auth-specific test plan
 4. **Test cases**: See integration test section in AUTH_PLAN_TESTS.md
 5. **Environment setup**: Check test data requirements in AUTH_PLAN_ACURANZO.md
 
 ### For Operations
 
-1. **Deployment & Progress**: [AUTH_PLAN_PROGRESS.md](/docs/H/plans/AUTH_PLAN_PROGRESS.md) (includes deployment checklist)
-2. **Monitoring setup**: [AUTH_PLAN_OPERATIONS.md](/docs/H/plans/AUTH_PLAN_OPERATIONS.md)
-3. **Performance targets**: [AUTH_PLAN_PERFORMANCE.md](/docs/H/plans/AUTH_PLAN_PERFORMANCE.md)
+1. **Deployment & Progress**: [AUTH_PLAN_PROGRESS.md](/docs/H/plans/complete/AUTH_PLAN_PROGRESS_COMPLETE.md) (includes deployment checklist)
+2. **Monitoring setup**: [AUTH_PLAN_OPERATIONS.md](/docs/H/plans/complete/AUTH_PLAN_OPERATIONS_COMPLETE.md)
+3. **Performance targets**: [AUTH_PLAN_PERFORMANCE.md](/docs/H/plans/complete/AUTH_PLAN_PERFORMANCE_COMPLETE.md)
 
 ## Developer Reference Guide
 

@@ -1,7 +1,7 @@
 /*
  * Unity Test File: OIDC RP /start helpers (Phase 10)
  *
- * Phase 10 of `docs/OIDC-PLAN.md`. Covers the two pure helpers added to
+ * Phase 10 of `docs/H/plans/OIDC-PLAN.md`. Covers the two pure helpers added to
  * `oidc_rp_service.c` in support of the `/oidc/start` endpoint:
  *
  *   - `oidc_rp_safe_return_to()` — open-redirect allow-list.
