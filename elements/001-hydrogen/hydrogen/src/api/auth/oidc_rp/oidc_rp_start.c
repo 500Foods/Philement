@@ -4,14 +4,14 @@
  * Initiates an Authorization Code + PKCE flow with the configured OIDC
  * provider:
  *
- *   1. Look up the active provider config (Providers[0] for now).
+ *   1. Look up the provider config (`?provider=` name, else Providers[0]).
  *   2. Generate state, nonce, and PKCE verifier+challenge.
  *   3. Validate the optional `return_to` query parameter against the
  *      open-redirect allow-list.
  *   4. Resolve the discovery doc (cache hit or fresh fetch) so we know
  *      the IdP's authorization_endpoint.
  *   5. Persist {state, nonce, code_verifier, database, return_to,
- *      client_ip} in the state store with the configured TTL.
+ *      client_ip, provider_name} in the state store with the configured TTL.
  *   6. Build the authorization URL and 302-redirect the browser to it.
  *
  * Disabled-feature, method-mismatch, and runtime-init failures all use
@@ -123,24 +123,6 @@ enum MHD_Result handle_get_auth_oidc_start(
         return oidc_rp_send_disabled_response(connection, method, "start");
     }
 
-    // Resolve the active provider. Failure here means the operator
-    // enabled the feature without configuring a provider; surface that
-    // explicitly rather than silently 500.
-    const OIDCRPProviderConfig *provider = oidc_rp_get_active_provider();
-    if (!provider) {
-        log_this(SR_AUTH,
-                 "OIDC RP /start: enabled but no providers configured",
-                 LOG_LEVEL_ERROR, 0);
-        json_t *response = json_object();
-        if (!response) {
-            return MHD_NO;
-        }
-        json_object_set_new(response, "error",
-                            json_string("oidc_no_provider"));
-        return api_send_json_response(connection, response,
-                                      MHD_HTTP_SERVICE_UNAVAILABLE);
-    }
-
     // Lazy-initialize state store + discovery cache on first real call.
     // Phase 14 will replace this with a proper startup hook.
     if (!oidc_rp_runtime_lazy_init()) {
@@ -153,6 +135,39 @@ enum MHD_Result handle_get_auth_oidc_start(
         connection, MHD_GET_ARGUMENT_KIND, "return_to");
     const char *database  = MHD_lookup_connection_value(
         connection, MHD_GET_ARGUMENT_KIND, "database");
+    const char *provider_q = MHD_lookup_connection_value(
+        connection, MHD_GET_ARGUMENT_KIND, "provider");
+
+    // Resolve provider: named ?provider= or default Providers[0].
+    // An explicit unknown name is 400 unknown_provider (stable contract).
+    // Missing config entirely is 503 oidc_no_provider.
+    const OIDCRPProviderConfig *provider = oidc_rp_find_provider(provider_q);
+    if (!provider) {
+        if (provider_q && *provider_q) {
+            log_this(SR_AUTH,
+                     "OIDC RP /start: unknown provider name",
+                     LOG_LEVEL_ALERT, 0);
+            json_t *response = json_object();
+            if (!response) {
+                return MHD_NO;
+            }
+            json_object_set_new(response, "error",
+                                json_string("unknown_provider"));
+            return api_send_json_response(connection, response,
+                                          MHD_HTTP_BAD_REQUEST);
+        }
+        log_this(SR_AUTH,
+                 "OIDC RP /start: enabled but no providers configured",
+                 LOG_LEVEL_ERROR, 0);
+        json_t *response = json_object();
+        if (!response) {
+            return MHD_NO;
+        }
+        json_object_set_new(response, "error",
+                            json_string("oidc_no_provider"));
+        return api_send_json_response(connection, response,
+                                      MHD_HTTP_SERVICE_UNAVAILABLE);
+    }
 
     if (!oidc_rp_safe_return_to(return_to)) {
         log_this(SR_AUTH,
@@ -225,6 +240,7 @@ enum MHD_Result handle_get_auth_oidc_start(
     bool put_ok = oidc_rp_state_put(
         state, nonce, code_verifier,
         database, return_to, client_ip,
+        provider->name,
         provider->state_ttl_seconds);
 
     if (!put_ok) {

@@ -48,6 +48,9 @@ void test_oidc_rp_get_active_provider_null_config_returns_null(void);
 void test_oidc_rp_get_active_provider_disabled_returns_null(void);
 void test_oidc_rp_get_active_provider_zero_providers_returns_null(void);
 void test_oidc_rp_get_active_provider_returns_first_provider(void);
+void test_oidc_rp_find_provider_by_name(void);
+void test_oidc_rp_find_provider_unknown_returns_null(void);
+void test_oidc_rp_find_provider_null_name_is_default(void);
 void test_oidc_rp_is_enabled_null_config_returns_false(void);
 void test_oidc_rp_is_enabled_disabled_returns_false(void);
 void test_oidc_rp_is_enabled_enabled_returns_true(void);
@@ -167,6 +170,36 @@ void test_oidc_rp_get_active_provider_returns_first_provider(void) {
     TEST_ASSERT_EQUAL_PTR(&app_config->oidc_rp.providers[0], p);
 }
 
+void test_oidc_rp_find_provider_by_name(void) {
+    app_config->oidc_rp.enabled = true;
+    app_config->oidc_rp.provider_count = 2;
+    app_config->oidc_rp.providers[0].name = (char *)"500passwords";
+    app_config->oidc_rp.providers[1].name = (char *)"google";
+
+    const OIDCRPProviderConfig *p0 = oidc_rp_find_provider("500passwords");
+    const OIDCRPProviderConfig *p1 = oidc_rp_find_provider("google");
+    TEST_ASSERT_EQUAL_PTR(&app_config->oidc_rp.providers[0], p0);
+    TEST_ASSERT_EQUAL_PTR(&app_config->oidc_rp.providers[1], p1);
+}
+
+void test_oidc_rp_find_provider_unknown_returns_null(void) {
+    app_config->oidc_rp.enabled = true;
+    app_config->oidc_rp.provider_count = 1;
+    app_config->oidc_rp.providers[0].name = (char *)"500passwords";
+    TEST_ASSERT_NULL(oidc_rp_find_provider("nope"));
+}
+
+void test_oidc_rp_find_provider_null_name_is_default(void) {
+    app_config->oidc_rp.enabled = true;
+    app_config->oidc_rp.provider_count = 2;
+    app_config->oidc_rp.providers[0].name = (char *)"a";
+    app_config->oidc_rp.providers[1].name = (char *)"b";
+    TEST_ASSERT_EQUAL_PTR(&app_config->oidc_rp.providers[0],
+                          oidc_rp_find_provider(NULL));
+    TEST_ASSERT_EQUAL_PTR(&app_config->oidc_rp.providers[0],
+                          oidc_rp_find_provider(""));
+}
+
 // ---------------------------------------------------------------------------
 // oidc_rp_is_enabled
 // ---------------------------------------------------------------------------
@@ -206,6 +239,9 @@ int main(void) {
     RUN_TEST(test_oidc_rp_get_active_provider_disabled_returns_null);
     RUN_TEST(test_oidc_rp_get_active_provider_zero_providers_returns_null);
     RUN_TEST(test_oidc_rp_get_active_provider_returns_first_provider);
+    RUN_TEST(test_oidc_rp_find_provider_by_name);
+    RUN_TEST(test_oidc_rp_find_provider_unknown_returns_null);
+    RUN_TEST(test_oidc_rp_find_provider_null_name_is_default);
 
     RUN_TEST(test_oidc_rp_is_enabled_null_config_returns_false);
     RUN_TEST(test_oidc_rp_is_enabled_disabled_returns_false);

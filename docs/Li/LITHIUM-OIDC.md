@@ -114,11 +114,17 @@ button.addEventListener('click', () => {
 });
 ```
 
-`startOidc()` builds:
+`startOidc()` builds (parameter order may vary; all are query params):
 
 ```text
-${server.url}/api/auth/oidc/start?database=${default_database}&return_to=${path}
+${server.url}/api/auth/oidc/start?database=${default_database}&provider=${providerId}&return_to=${path}
 ```
+
+- `provider` is always set to the config entry's `id`. It must match
+  Hydrogen `OIDC_RP.Providers[].Name`. Unknown names yield
+  `400 {"error":"unknown_provider"}` from Hydrogen.
+- `database` is omitted when `auth.default_database` is empty.
+- `return_to` is omitted unless it is a safe relative path starting with `/`.
 
 This is a `window.location.href` assignment, **not** a fetch. We need the
 browser to follow Hydrogen's 302 to Keycloak naturally, which fetch cannot

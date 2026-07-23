@@ -304,9 +304,9 @@ void test_database_reload_config_uninitialized(void) {
 
     database_subsystem = saved_subsystem;
 
-    // Test initialized subsystem (function not implemented)
+    // Test initialized subsystem with no app_config: reload succeeds as no-op
     result = database_reload_config();
-    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_TRUE(result);
 }
 
 // Test database_test_connection parameter validation
@@ -373,9 +373,9 @@ void test_database_validate_query_edge_cases(void) {
     result = database_validate_query("");
     TEST_ASSERT_FALSE(result);
 
-    // Test whitespace-only string
+    // Test whitespace-only string (must have non-whitespace content)
     result = database_validate_query("   ");
-    TEST_ASSERT_TRUE(result); // Current implementation only checks length > 0
+    TEST_ASSERT_FALSE(result);
 
     // Test valid query
     result = database_validate_query("SELECT * FROM users");

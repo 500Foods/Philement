@@ -199,11 +199,9 @@ enum MHD_Result handle_post_auth_oidc_end_session(
     // Build optional IdP logout URL
     char *redirect_url = NULL;
     if (validation.claims->id_token && validation.claims->idp_provider) {
-        const OIDCRPProviderConfig *provider = oidc_rp_get_active_provider();
-        // In a multi-provider future, look up by validation.claims->idp_provider.
-        // For now, only the active provider is supported.
-        if (provider && provider->name &&
-            strcmp(validation.claims->idp_provider, provider->name) == 0) {
+        const OIDCRPProviderConfig *provider =
+            oidc_rp_find_provider(validation.claims->idp_provider);
+        if (provider) {
             const OidcRpDiscoveryDoc *doc = oidc_rp_discovery_get(
                 provider->name,
                 provider->issuer,

@@ -60,6 +60,7 @@ typedef struct OidcRpStateRecord {
     char *database;       // May be NULL if caller did not supply one
     char *return_to;      // May be NULL if caller did not supply one
     char *client_ip;      // May be NULL if caller did not supply one
+    char *provider_name;  // OIDC_RP.Providers[].Name that started the flow
     time_t created_at;    // UNIX seconds
     int    ttl_seconds;   // TTL chosen at put time
 } OidcRpStateRecord;
@@ -110,6 +111,8 @@ void oidc_rp_state_shutdown(void);
  * @param database      Optional; may be NULL.
  * @param return_to     Optional; may be NULL.
  * @param client_ip     Optional; may be NULL.
+ * @param provider_name Optional provider Name from config; carried so
+ *                      `/callback` can resolve the same provider. May be NULL.
  * @param ttl_seconds   TTL for this record. If `<= 0`, the
  *                      `default_ttl_seconds` from `init` is used.
  * @return `true` on success, `false` on bad inputs, allocation
@@ -121,6 +124,7 @@ bool oidc_rp_state_put(const char *state,
                        const char *database,
                        const char *return_to,
                        const char *client_ip,
+                       const char *provider_name,
                        int ttl_seconds);
 
 /**

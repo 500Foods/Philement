@@ -250,17 +250,24 @@ remain green:
 
 - [x] `test_42_oidc_rp.sh` — passes against mock Keycloak (this is the
       pre-existing baseline; it does **not** target the real IdP).
+      Re-verified **101/101** on 2026-07-23 after multi-provider dispatch.
 - [x] `test_40_auth.sh` — passes; OIDC-issued JWT is shape-equivalent
       to password-issued JWT.
-- [x] All Vitest suites green (`npm test` — 906/906 unit tests pass; the
+- [x] All Vitest suites green (`npm test` — unit tests pass; the
       Open Code Review quality scan at the end of `npm test` fails its
       threshold due to pre-existing offline-mode findings, but that is
-      unrelated to the OIDC work).
+      unrelated to the OIDC work). `oidc-client` Vitest **26/26** after
+      `provider=` query param (2026-07-23).
 - [x] `test_04_check_links.sh` green after new docs (`oidc_rp.md`,
       `LITHIUM-OIDC.md`, `LITHIUM-KEYCLOAK.md`) are linked from
       `SITEMAP.md` and `LITHIUM-TOC.md`.
 - [x] `test_90_markdownlint.sh` green after the plan docs were edited.
-- [ ] `test_90_markdownlint.sh` green on the new docs.
+
+### Follow-on code (does not unblock Phase 27 manual checklist)
+
+| Date | Work | Result |
+|---|---|---|
+| 2026-07-23 | Multi-provider dispatch (`oidc_rp_find_provider`, state `provider_name`, Lithium always sends `?provider=`) | `mkt` green; Unity service/state green; Test 42 101/101; docs updated in `oidc_rp.md`, `LITHIUM-OIDC.md`, `LITHIUM-KEYCLOAK.md`, `KEYCLOAK_PLAN.md`, `OIDC-PLAN.md` |
 
 ---
 

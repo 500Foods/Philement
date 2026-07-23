@@ -644,7 +644,7 @@ the `500passwords` entry.
 button click
   → oidc-client.startOidc("500passwords", currentReturnTo)
       → window.location.href =
-          `${server.url}/api/auth/oidc/start?database=${db}&return_to=${path}`
+          `${server.url}/api/auth/oidc/start?database=${db}&provider=${id}&return_to=${path}`
 ```
 
 This is a full top-level navigation, not a fetch. We *want* the browser to
@@ -864,10 +864,11 @@ password login still works — every phase preserves that invariant.
 | 24 | Lithium — `oidc-login.js` (process return-from-IdP) | Lithium | Medium | ✅ Done |
 | 25 | Lithium — UI: provider button, divider, config-driven render | Lithium | Low | ✅ Done |
 | 26 | Lithium — `auth.last_method` setting and subtle highlighting | Lithium | Low | ✅ Done |
-| 27 | Both — End-to-end against real Keycloak (dev environment) | Hydrogen + Lithium | High | 🚧 In progress |
-| 28 | Phase-5-style hardening: health check field | Hydrogen | Low | Post-MVP |
-| 29 | Phase-5-style hardening: backchannel logout | Hydrogen | Medium | Post-MVP |
-| 30 | Phase-5-style hardening: RP-initiated logout in Lithium | Hydrogen + Lithium | Medium | Post-MVP |
+| 27 | Both — End-to-end against real Keycloak (dev environment) | Hydrogen + Lithium | High | 🚧 In progress (OTP blocker) |
+| 28 | Phase-5-style hardening: health check field | Hydrogen | Low | Post-MVP (KEYCLOAK Phase 8) |
+| 29 | Phase-5-style hardening: backchannel logout | Hydrogen | Medium | Post-MVP (KEYCLOAK Phase 9) |
+| 30 | Phase-5-style hardening: RP-initiated logout in Lithium | Hydrogen + Lithium | Medium | ✅ Code done (KEYCLOAK Phase 10); live verify open |
+| 31 | Multi-provider dispatch (`?provider=`, state carries name) | Hydrogen + Lithium | Medium | ✅ Done 2026-07-23 (KEYCLOAK Phase 7) |
 
 Phases 28–30 are explicitly **post-MVP**. Phases 1–27 are the
 must-ship scope for "OIDC login works in production".
@@ -5305,9 +5306,9 @@ parentheses.
 
 ---
 
-**Last updated:** 2026-07-11
+**Last updated:** 2026-07-23
 **Owner:** Philement engineering
-**Status:** Phases 1–26 complete. Phase 27 (end-to-end integration against real Keycloak) is **in progress**. Production config has been deployed and the automated pre-flight checks against the real Keycloak instance are green. The full manual sign-in checklist is blocked because the available Keycloak test user (`andrew@500foods.com`) requires MFA/OTP after the password step. A user without OTP (or a current OTP code/TOTP secret) is needed to complete the checklist.
+**Status:** Phases 1–26 complete. Phase 27 (real Keycloak E2E) still **blocked on MFA/OTP** for the available test user. Operational follow-on lives in [`KEYCLOAK_PLAN.md`](/docs/H/plans/KEYCLOAK_PLAN.md). On 2026-07-23, multi-provider dispatch shipped (Phase 31 / KEYCLOAK Phase 7): `oidc_rp_find_provider`, state `provider_name`, `?provider=` on `/start`, Lithium always sends provider id. Test 42 **101/101**. Next code without OTP: health probe (28) or backchannel logout (29).
 
 Phase 27 documentation deliverables shipped:
 
@@ -5339,9 +5340,28 @@ Lithium: Vitest 906/906 passing. `npm run lint` clean. `npm run build` clean. Th
 Open Code Review quality scan at the end of `npm test` fails its threshold due
 to pre-existing offline-mode findings, but the Vitest suite itself is green.
 
-Post-MVP work (Phases 28–30): OIDC RP health check, backchannel logout,
-RP-initiated logout. To be planned in detail after Phase 27 is in
-production.
+Post-MVP work: OIDC RP health check (28 / KEYCLOAK 8), backchannel logout
+(29 / KEYCLOAK 9). RP-initiated logout code is already shipped (30 /
+KEYCLOAK 10); live Keycloak verification remains open. Multi-provider
+dispatch shipped 2026-07-23 as Phase 31 / KEYCLOAK Phase 7.
+
+### Phase 31 lessons (multi-provider, 2026-07-23)
+
+1. **Carry provider name in state, not only on the request.** `/callback`
+   has no `?provider=` from the IdP; only the state store can bind the
+   flow to the provider that called `/start`.
+2. **Unknown name must not fall back to `Providers[0]`.** Silent fallback
+   would route a misconfigured SPA to the wrong IdP. Contract:
+   `400 unknown_provider` when the name is non-empty and unmatched;
+   default only when the param is absent/empty.
+3. **Lithium config `id` and Hydrogen `Providers[].Name` are the same
+   string.** Document and test that equality; Lithium always sends
+   `provider=` so production never relies on defaulting.
+4. **JWT `idp_provider` is the end-session key.** After Phase 10 carried
+   the claim, Phase 31 made `/end-session` look it up with
+   `oidc_rp_find_provider` so a second IdP works without code changes.
+5. **Default store TTL from `providers[0]` is fine.** Per-request
+   `state_ttl_seconds` still comes from the selected provider on `put`.
 
 ### Decisions made between Phase 3 and Phase 4
 

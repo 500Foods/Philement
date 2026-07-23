@@ -66,9 +66,9 @@ void test_database_comprehensive_all_functions(void) {
     bool cancel_result = database_cancel_query("query1");
     TEST_ASSERT_FALSE(cancel_result); // Should return false (not implemented)
 
-    // Test database_reload_config
+    // Test database_reload_config (no app_config: implemented path returns true)
     bool reload_result = database_reload_config();
-    TEST_ASSERT_FALSE(reload_result); // Should return false (not implemented)
+    TEST_ASSERT_TRUE(reload_result);
 
     // Test database_test_connection
     bool test_conn_result = database_test_connection("testdb");
