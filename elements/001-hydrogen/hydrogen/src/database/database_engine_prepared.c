@@ -62,6 +62,30 @@ bool store_prepared_statement(DatabaseHandle* connection, PreparedStatement* stm
     }
 
     if (connection->prepared_statement_count >= cache_size) {
+        /* Collapse any NULL holes first (stale slots from prior clear/evict). */
+        size_t write = 0;
+        for (size_t read = 0; read < connection->prepared_statement_count; read++) {
+            if (connection->prepared_statements[read] != NULL) {
+                if (write != read) {
+                    connection->prepared_statements[write] = connection->prepared_statements[read];
+                    if (connection->prepared_statement_lru_counter) {
+                        connection->prepared_statement_lru_counter[write] =
+                            connection->prepared_statement_lru_counter[read];
+                    }
+                }
+                write++;
+            }
+        }
+        for (size_t i = write; i < connection->prepared_statement_count; i++) {
+            connection->prepared_statements[i] = NULL;
+            if (connection->prepared_statement_lru_counter) {
+                connection->prepared_statement_lru_counter[i] = 0;
+            }
+        }
+        connection->prepared_statement_count = write;
+    }
+
+    if (connection->prepared_statement_count >= cache_size) {
         log_this(connection->designator ? connection->designator : SR_DATABASE,
                  "Prepared statement cache full (%zu/%zu), evicting LRU to make room for: %s",
                  LOG_LEVEL_TRACE, 3, connection->prepared_statement_count, cache_size, stmt->name);
@@ -70,6 +94,9 @@ bool store_prepared_statement(DatabaseHandle* connection, PreparedStatement* stm
         uint64_t min_lru_value = UINT64_MAX;
 
         for (size_t i = 0; i < connection->prepared_statement_count; i++) {
+            if (!connection->prepared_statement_lru_counter) {
+                break;
+            }
             if (connection->prepared_statement_lru_counter[i] < min_lru_value) {
                 min_lru_value = connection->prepared_statement_lru_counter[i];
                 lru_index = i;
@@ -80,20 +107,34 @@ bool store_prepared_statement(DatabaseHandle* connection, PreparedStatement* stm
         if (evicted_stmt) {
             __sync_add_and_fetch(&db_prepared_statements_evicted, 1);
 
+            size_t count_before = connection->prepared_statement_count;
             DatabaseEngineInterface* engine = database_engine_get_with_designator(connection->engine_type,
                                                                                    connection->designator ? connection->designator : SR_DATABASE);
             if (engine && engine->unprepare_statement) {
-                engine->unprepare_statement(connection, evicted_stmt);
                 /*
-                 * The engine owns the unprepare, so we cannot free the struct
-                 * here - but we MUST drop the dangling pointer from the cache
-                 * array. find_prepared_statement() and the connection cleanup
-                 * path both walk prepared_statements[] and would otherwise
-                 * dereference a freed statement. Leave prepared_statement_count
-                 * unchanged so the "cache full -> use once then free" fallback
-                 * (database_engine.c:238) still triggers on the next store.
+                 * Engine unprepare frees the statement and normally removes it
+                 * from prepared_statements[] (compact + count--). Do NOT NULL
+                 * lru_index afterward: after compact that index holds a live
+                 * neighbor. If the engine bailed without shrinking the cache,
+                 * compact here so store does not hit next_index >= cache_size
+                 * (false "corruption" during migration cache churn).
                  */
-                connection->prepared_statements[lru_index] = NULL;
+                engine->unprepare_statement(connection, evicted_stmt);
+                if (connection->prepared_statement_count >= count_before) {
+                    connection->prepared_statements[lru_index] = NULL;
+                    for (size_t i = lru_index; i < connection->prepared_statement_count - 1; i++) {
+                        connection->prepared_statements[i] = connection->prepared_statements[i + 1];
+                        if (connection->prepared_statement_lru_counter) {
+                            connection->prepared_statement_lru_counter[i] =
+                                connection->prepared_statement_lru_counter[i + 1];
+                        }
+                    }
+                    connection->prepared_statements[connection->prepared_statement_count - 1] = NULL;
+                    if (connection->prepared_statement_lru_counter) {
+                        connection->prepared_statement_lru_counter[connection->prepared_statement_count - 1] = 0;
+                    }
+                    connection->prepared_statement_count--;
+                }
             } else {
                 if (evicted_stmt->name) free(evicted_stmt->name);
                 if (evicted_stmt->sql_template) free(evicted_stmt->sql_template);
@@ -101,11 +142,16 @@ bool store_prepared_statement(DatabaseHandle* connection, PreparedStatement* stm
 
                 for (size_t i = lru_index; i < connection->prepared_statement_count - 1; i++) {
                     connection->prepared_statements[i] = connection->prepared_statements[i + 1];
-                    connection->prepared_statement_lru_counter[i] = connection->prepared_statement_lru_counter[i + 1];
+                    if (connection->prepared_statement_lru_counter) {
+                        connection->prepared_statement_lru_counter[i] =
+                            connection->prepared_statement_lru_counter[i + 1];
+                    }
                 }
 
                 connection->prepared_statements[connection->prepared_statement_count - 1] = NULL;
-                connection->prepared_statement_lru_counter[connection->prepared_statement_count - 1] = 0;
+                if (connection->prepared_statement_lru_counter) {
+                    connection->prepared_statement_lru_counter[connection->prepared_statement_count - 1] = 0;
+                }
                 connection->prepared_statement_count--;
             }
 
@@ -114,19 +160,27 @@ bool store_prepared_statement(DatabaseHandle* connection, PreparedStatement* stm
         }
     }
 
-    // cppcheck-suppress knownConditionTrueFalse
-    // Justification: Defensive check to detect corruption - intentionally redundant for safety
-    size_t next_index = connection->prepared_statement_count;
-    // cppcheck-suppress knownConditionTrueFalse
-    if (next_index >= cache_size) {
-        log_this(connection->designator ? connection->designator : SR_DATABASE,
-                 "CRITICAL: prepared_statement_count corruption detected (%zu >= %zu)", LOG_LEVEL_ERROR, 2,
-                 next_index, cache_size);
-        return false;
+    // Prefer a free (NULL) hole inside the live prefix before appending
+    size_t next_index = SIZE_MAX;
+    for (size_t i = 0; i < connection->prepared_statement_count; i++) {
+        if (connection->prepared_statements[i] == NULL) {
+            next_index = i;
+            break;
+        }
+    }
+
+    if (next_index == SIZE_MAX) {
+        next_index = connection->prepared_statement_count;
+        if (next_index >= cache_size) {
+            log_this(connection->designator ? connection->designator : SR_DATABASE,
+                     "CRITICAL: prepared_statement_count corruption detected (%zu >= %zu)", LOG_LEVEL_ERROR, 2,
+                     next_index, cache_size);
+            return false;
+        }
+        connection->prepared_statement_count++;
     }
 
     connection->prepared_statements[next_index] = stmt;
-    connection->prepared_statement_count++;
 
     log_this(connection->designator ? connection->designator : SR_DATABASE,
              "Stored prepared statement: %s (total: %zu of %zu)", LOG_LEVEL_TRACE, 3,

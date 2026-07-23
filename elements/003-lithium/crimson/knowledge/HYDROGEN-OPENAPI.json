@@ -2055,34 +2055,6 @@
                 }
               }
             }
-          },
-          "501": {
-            "description": "Server error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "success": {
-                      "type": "boolean",
-                      "example": false
-                    },
-                    "error": {
-                      "type": "string",
-                      "example": "Query execution not yet implemented"
-                    },
-                    "message": {
-                      "type": "string",
-                      "example": "The Conduit service infrastructure is being built. This endpoint will execute pre-defined queries once the Query Table Cache, parameter processing, and queue selection systems are complete."
-                    },
-                    "status": {
-                      "type": "string",
-                      "example": "under_construction"
-                    }
-                  }
-                }
-              }
-            }
           }
         },
         "requestBody": {

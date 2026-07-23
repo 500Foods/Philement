@@ -138,4 +138,57 @@ bool utils_rs256_verify(EVP_PKEY* pkey,
                          const unsigned char* input, size_t input_len,
                          const unsigned char* signature, size_t sig_len);
 
+/**
+ * @brief Generate an RSA key pair for OIDC/JWT signing.
+ * @param bits RSA modulus size (e.g. 2048). Values below 2048 are rejected.
+ * @return Newly allocated EVP_PKEY* (private+public), or NULL on failure.
+ * @note Caller frees via EVP_PKEY_free.
+ */
+EVP_PKEY* utils_rsa_generate_keypair(int bits);
+
+/**
+ * @brief Sign data with RS256 (RSA-SHA256).
+ * @param pkey Private key (must include private component).
+ * @param input Data to sign.
+ * @param input_len Length of input.
+ * @param signature_out Receives malloc'd raw signature bytes (caller frees).
+ * @param signature_len_out Receives signature length.
+ * @return true on success, false on any failure.
+ */
+bool utils_rs256_sign(EVP_PKEY* pkey,
+                      const unsigned char* input, size_t input_len,
+                      unsigned char** signature_out, size_t* signature_len_out);
+
+/**
+ * @brief Export RSA private key as PEM string.
+ * @param pkey Key pair with private component.
+ * @return Allocated PEM string (caller frees), or NULL on failure.
+ */
+char* utils_rsa_private_to_pem(EVP_PKEY* pkey);
+
+/**
+ * @brief Export RSA public key as PEM string.
+ * @param pkey Key (public or full pair).
+ * @return Allocated PEM string (caller frees), or NULL on failure.
+ */
+char* utils_rsa_public_to_pem(EVP_PKEY* pkey);
+
+/**
+ * @brief Load RSA private key from PEM string.
+ * @param pem NUL-terminated PEM (PKCS#8 or traditional RSA).
+ * @return Newly allocated EVP_PKEY*, or NULL on failure.
+ */
+EVP_PKEY* utils_rsa_private_from_pem(const char* pem);
+
+/**
+ * @brief Export RSA public key as a single JWK JSON object string.
+ *
+ * Produces fields: kty, n, e, alg=RS256, use=sig, and optional kid.
+ *
+ * @param pkey RSA key (public or full pair).
+ * @param kid Optional key id (may be NULL to omit kid).
+ * @return Allocated JSON object string (caller frees), or NULL on failure.
+ */
+char* utils_rsa_public_to_jwk(EVP_PKEY* pkey, const char* kid);
+
 #endif // UTILS_CRYPTO_H

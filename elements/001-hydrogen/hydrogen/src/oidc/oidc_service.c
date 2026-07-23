@@ -377,14 +377,16 @@ char* oidc_generate_discovery_document(void) {
     // Log discovery document request
     log_this(SR_OIDC, "Generating discovery document", LOG_LEVEL_STATE, 0);
 
-    // Build discovery document
-    char *issuer = oidc_context->config.issuer;
-    char *auth_endpoint = oidc_context->config.endpoints.authorization;
-    char *token_endpoint = oidc_context->config.endpoints.token;
-    char *userinfo_endpoint = oidc_context->config.endpoints.userinfo;
-    char *jwks_endpoint = oidc_context->config.endpoints.jwks;
+    const char *issuer = oidc_context->config.issuer ? oidc_context->config.issuer : "";
+    const char *auth_endpoint = oidc_context->config.endpoints.authorization
+        ? oidc_context->config.endpoints.authorization : "/oauth/authorize";
+    const char *token_endpoint = oidc_context->config.endpoints.token
+        ? oidc_context->config.endpoints.token : "/oauth/token";
+    const char *userinfo_endpoint = oidc_context->config.endpoints.userinfo
+        ? oidc_context->config.endpoints.userinfo : "/oauth/userinfo";
+    const char *jwks_endpoint = oidc_context->config.endpoints.jwks
+        ? oidc_context->config.endpoints.jwks : "/oauth/jwks";
 
-    // Build absolute URLs
     char *auth_url = NULL;
     char *token_url = NULL;
     char *userinfo_url = NULL;
@@ -402,22 +404,24 @@ char* oidc_generate_discovery_document(void) {
         return NULL;
     }
 
-    // Format discovery document
+    /* MVP discovery: authorization_code + PKCE S256 + RS256 only (no implicit). */
     char *document = NULL;
-    if (asprintf(&document, 
+    if (asprintf(&document,
         "{"
         "\"issuer\":\"%s\","
         "\"authorization_endpoint\":\"%s\","
         "\"token_endpoint\":\"%s\","
         "\"userinfo_endpoint\":\"%s\","
         "\"jwks_uri\":\"%s\","
-        "\"response_types_supported\":[\"code\",\"token\",\"id_token\",\"code token\",\"code id_token\",\"token id_token\",\"code token id_token\"],"
+        "\"response_types_supported\":[\"code\"],"
+        "\"response_modes_supported\":[\"query\"],"
+        "\"grant_types_supported\":[\"authorization_code\",\"refresh_token\"],"
         "\"subject_types_supported\":[\"public\"],"
         "\"id_token_signing_alg_values_supported\":[\"RS256\"],"
-        "\"scopes_supported\":[\"openid\",\"profile\",\"email\",\"address\",\"phone\"],"
-        "\"token_endpoint_auth_methods_supported\":[\"client_secret_basic\",\"client_secret_post\"],"
-        "\"claims_supported\":[\"sub\",\"iss\",\"auth_time\",\"name\",\"given_name\",\"family_name\",\"nickname\",\"preferred_username\",\"email\",\"email_verified\"],"
-        "\"code_challenge_methods_supported\":[\"plain\",\"S256\"]"
+        "\"scopes_supported\":[\"openid\",\"profile\",\"email\",\"offline_access\"],"
+        "\"token_endpoint_auth_methods_supported\":[\"client_secret_basic\",\"client_secret_post\",\"none\"],"
+        "\"claims_supported\":[\"sub\",\"iss\",\"aud\",\"exp\",\"iat\",\"auth_time\",\"nonce\",\"name\",\"preferred_username\",\"email\",\"email_verified\"],"
+        "\"code_challenge_methods_supported\":[\"S256\"]"
         "}",
         issuer, auth_url, token_url, userinfo_url, jwks_url) < 0) {
         log_this(SR_OIDC, "Failed to generate discovery document", LOG_LEVEL_ERROR, 0);
@@ -428,7 +432,6 @@ char* oidc_generate_discovery_document(void) {
         return NULL;
     }
 
-    // Free temporary strings
     free(auth_url);
     free(token_url);
     free(userinfo_url);
