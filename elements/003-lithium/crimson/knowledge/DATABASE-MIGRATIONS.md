@@ -307,4 +307,13 @@ in the migrations themselves so that they get populated in the database directly
 | [1268](/elements/002-helium/acuranzo/migrations/acuranzo_1268.lua) | queries | 1.0.0 | 2026-07-23 | 4 | ✗ | QueryRef #133 - Insert OAuth Client (OIDC IdP) |
 | [1269](/elements/002-helium/acuranzo/migrations/acuranzo_1269.lua) | queries | 1.0.0 | 2026-07-23 | 4 | ✗ | QueryRef #134 - Soft-disable OAuth Client (OIDC IdP) |
 | [1270](/elements/002-helium/acuranzo/migrations/acuranzo_1270.lua) | queries | 1.0.0 | 2026-07-23 | 4 | ✗ | QueryRef #135 - List Active OAuth Clients (OIDC IdP) |
-| **271** | | | | **1421** | **271** | |
+| [1271](/elements/002-helium/acuranzo/migrations/acuranzo_1271.lua) | oauth_authorization_codes | 1.0.0 | 2026-07-23 | 8 | ✓ | Creates oauth_authorization_codes (OIDC IdP Phase 6) |
+| [1272](/elements/002-helium/acuranzo/migrations/acuranzo_1272.lua) | oauth_refresh_tokens | 1.0.0 | 2026-07-23 | 9 | ✓ | Creates oauth_refresh_tokens (OIDC IdP Phase 6) |
+| [1273](/elements/002-helium/acuranzo/migrations/acuranzo_1273.lua) | queries | 1.0.0 | 2026-07-23 | 4 | ✗ | QueryRef #136 - Insert OAuth Authorization Code (OIDC IdP) |
+| [1274](/elements/002-helium/acuranzo/migrations/acuranzo_1274.lua) | queries | 1.0.0 | 2026-07-23 | 4 | ✗ | QueryRef #137 - Get OAuth Authorization Code (OIDC IdP) |
+| [1275](/elements/002-helium/acuranzo/migrations/acuranzo_1275.lua) | queries | 1.0.0 | 2026-07-23 | 4 | ✗ | QueryRef #138 - Consume OAuth Authorization Code (OIDC IdP) |
+| [1276](/elements/002-helium/acuranzo/migrations/acuranzo_1276.lua) | queries | 1.0.0 | 2026-07-23 | 4 | ✗ | QueryRef #139 - Insert OAuth Refresh Token (OIDC IdP) |
+| [1277](/elements/002-helium/acuranzo/migrations/acuranzo_1277.lua) | queries | 1.0.0 | 2026-07-23 | 4 | ✗ | QueryRef #140 - Get OAuth Refresh Token (OIDC IdP) |
+| [1278](/elements/002-helium/acuranzo/migrations/acuranzo_1278.lua) | queries | 1.0.0 | 2026-07-23 | 4 | ✗ | QueryRef #141 - Revoke OAuth Refresh Token (OIDC IdP) |
+| [1279](/elements/002-helium/acuranzo/migrations/acuranzo_1279.lua) | queries | 1.0.0 | 2026-07-23 | 4 | ✗ | QueryRef #142 - Revoke OAuth Refresh Token Family (OIDC IdP) |
+| **280** | | | | **1466** | **280** | |

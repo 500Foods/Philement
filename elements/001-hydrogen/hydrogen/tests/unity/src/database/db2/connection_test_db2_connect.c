@@ -32,6 +32,7 @@ static void test_db2_connect_malloc_failure_db_handle(void);
 static void test_db2_connect_malloc_failure_db2_conn(void);
 static void test_db2_connect_cache_creation_failure(void);
 static void test_db2_connect_success(void);
+static void test_db2_connect_disables_autocommit(void);
 
 void setUp(void) {
     // Reset all mocks to default state
@@ -216,6 +217,23 @@ void test_db2_connect_success(void) {
     TEST_ASSERT_TRUE(disconnect_result);
 }
 
+// Migration LOAD/APPLY require multi-statement rollback; connect must disable autocommit
+void test_db2_connect_disables_autocommit(void) {
+    ConnectionConfig config = {
+        .connection_string = (char*)"DSN=test;UID=user;PWD=password;"
+    };
+    DatabaseHandle* connection = NULL;
+
+    bool result = db2_connect(&config, &connection, "test");
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_NOT_NULL(connection);
+    TEST_ASSERT_TRUE(mock_libdb2_get_SQLSetConnectAttr_autocommit_off_seen());
+    TEST_ASSERT_TRUE(mock_libdb2_get_SQLSetConnectAttr_call_count() >= 1);
+
+    bool disconnect_result = db2_disconnect(connection);
+    TEST_ASSERT_TRUE(disconnect_result);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -230,6 +248,7 @@ int main(void) {
     RUN_TEST(test_db2_connect_malloc_failure_db2_conn);
     RUN_TEST(test_db2_connect_cache_creation_failure);
     RUN_TEST(test_db2_connect_success);
+    RUN_TEST(test_db2_connect_disables_autocommit);
 
     return UNITY_END();
 }

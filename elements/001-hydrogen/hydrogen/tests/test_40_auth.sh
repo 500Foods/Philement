@@ -22,6 +22,8 @@
 # analyze_auth_test_results()
 
 # CHANGELOG
+# 1.8.0 - 2026-07-23 - Added multi-engine DML transaction commit/rollback probe before auth
+#                    - Verifies native-client multi-statement rollback (migration LOAD prerequisite)
 # 1.7.0 - 2026-07-09 - Logout now uses the renewed JWT when renew succeeds
 #                    - Renew replaces the prior token in storage; logout must not
 #                      present the pre-renew token (would correctly return "already revoked")
@@ -57,11 +59,14 @@ TEST_NAME="Auth"
 TEST_ABBR="JWT"
 TEST_NUMBER="40"
 TEST_COUNTER=0
-TEST_VERSION="1.7.0"
+TEST_VERSION="1.8.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
+
+# shellcheck source=tests/lib/transaction_utils.sh # DML commit/rollback probe helpers
+[[ -n "${TRANSACTION_UTILS_GUARD:-}" ]] || source "${SCRIPT_DIR}/lib/transaction_utils.sh"
 
 # Parallel execution configuration
 declare -a PARALLEL_PIDS
@@ -621,6 +626,53 @@ TEST_NAME="Auth  {BLUE}databases: ${#AUTH_TEST_CONFIGS[@]}{RESET}"
 
 # Only proceed with auth tests if prerequisites are met
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
+    # Native-client DML transaction probe (all engines) — migration LOAD needs true multi-statement rollback
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Database DML transaction commit/rollback (all engines)"
+    tx_pass=0
+    tx_total=0
+    declare -A TX_ENGINE_SCHEMAS=(
+        ["postgresql"]="demo"
+        ["mysql"]="demo"
+        ["mariadb"]="demomrdb"
+        ["db2"]="DEMO"
+        ["cockroachdb"]="democrdb"
+        ["yugabytedb"]="demo"
+        ["sqlite"]=""
+    )
+    sqlite_tx_db="${DIAG_TEST_DIR}/hydro_tx_probe_${TIMESTAMP}.sqlite"
+    for test_config in "${!AUTH_TEST_CONFIGS[@]}"; do
+        IFS=':' read -r config_file log_suffix engine_name description <<< "${AUTH_TEST_CONFIGS[${test_config}]}"
+        tx_total=$(( tx_total + 1 ))
+        schema="${TX_ENGINE_SCHEMAS[${engine_name}]:-}"
+        tx_msg=""
+        # shellcheck disable=SC2310 # Continue even if transaction probe fails
+        if [[ "${engine_name}" == "sqlite" ]]; then
+            rm -f "${sqlite_tx_db}" 2>/dev/null || true
+            if tx_msg=$(verify_database_transactions "sqlite" "" "${sqlite_tx_db}"); then
+                tx_pass=$(( tx_pass + 1 ))
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: ${tx_msg}"
+            else
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: ${tx_msg}"
+                EXIT_CODE=1
+            fi
+            rm -f "${sqlite_tx_db}" 2>/dev/null || true
+        else
+            if tx_msg=$(verify_database_transactions "${engine_name}" "${schema}"); then
+                tx_pass=$(( tx_pass + 1 ))
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: ${tx_msg}"
+            else
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: ${tx_msg}"
+                EXIT_CODE=1
+            fi
+        fi
+    done
+    if [[ "${tx_pass}" -eq "${tx_total}" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "DML transactions OK on ${tx_pass}/${tx_total} engines (rollback leaves 0 rows; commit keeps 2)"
+        PASS_COUNT=$(( PASS_COUNT + 1 ))
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "DML transactions failed on $((tx_total - tx_pass))/${tx_total} engines"
+    fi
+
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Running Auth endpoint tests in parallel"
     
     # Start all auth tests in parallel with job limiting

@@ -289,12 +289,30 @@ int mock_SQLGetDiagRec(short handleType, void* handle, short recNumber, unsigned
     return 0; // SQL_SUCCESS
 }
 
+static int mock_SQLSetConnectAttr_last_attribute = -1;
+static long mock_SQLSetConnectAttr_last_value = 0;
+static int mock_SQLSetConnectAttr_call_count = 0;
+static int mock_SQLSetConnectAttr_autocommit_off_seen = 0;
+
 int mock_SQLSetConnectAttr(void* connectionHandle, int attribute, long value, int stringLength) {
     (void)connectionHandle;
-    (void)attribute;
-    (void)value;
     (void)stringLength;
+    mock_SQLSetConnectAttr_call_count++;
+    mock_SQLSetConnectAttr_last_attribute = attribute;
+    mock_SQLSetConnectAttr_last_value = value;
+    /* SQL_ATTR_AUTOCOMMIT=102, SQL_AUTOCOMMIT_OFF=0 */
+    if (attribute == 102 && value == 0) {
+        mock_SQLSetConnectAttr_autocommit_off_seen = 1;
+    }
     return mock_SQLSetConnectAttr_result;
+}
+
+int mock_libdb2_get_SQLSetConnectAttr_autocommit_off_seen(void) {
+    return mock_SQLSetConnectAttr_autocommit_off_seen;
+}
+
+int mock_libdb2_get_SQLSetConnectAttr_call_count(void) {
+    return mock_SQLSetConnectAttr_call_count;
 }
 
 int mock_SQLBindParameter(void* statementHandle, unsigned short parameterNumber, short inputOutputType,
@@ -437,6 +455,10 @@ void mock_libdb2_reset_all(void) {
     mock_SQLFreeHandle_result = 0;
     mock_SQLEndTran_result = 0;
     mock_SQLSetConnectAttr_result = 0;
+    mock_SQLSetConnectAttr_last_attribute = -1;
+    mock_SQLSetConnectAttr_last_value = 0;
+    mock_SQLSetConnectAttr_call_count = 0;
+    mock_SQLSetConnectAttr_autocommit_off_seen = 0;
     mock_SQLPrepare_result = 0;
     mock_SQLBindParameter_result = 0;
 }

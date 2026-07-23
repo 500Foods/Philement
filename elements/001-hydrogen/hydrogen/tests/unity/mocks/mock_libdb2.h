@@ -59,6 +59,8 @@ void mock_libdb2_set_fetch_row_count(int count);
 void mock_libdb2_set_SQLFreeHandle_result(int result);
 void mock_libdb2_set_SQLEndTran_result(int result);
 void mock_libdb2_set_SQLSetConnectAttr_result(int result);
+int mock_libdb2_get_SQLSetConnectAttr_autocommit_off_seen(void);
+int mock_libdb2_get_SQLSetConnectAttr_call_count(void);
 void mock_libdb2_set_SQLPrepare_result(int result);
 void mock_libdb2_set_SQLBindParameter_result(int result);
 void mock_libdb2_reset_all(void);

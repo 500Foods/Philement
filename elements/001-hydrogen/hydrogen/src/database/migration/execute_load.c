@@ -217,8 +217,14 @@ bool execute_migration_files_load_only(DatabaseQueue* db_queue, DatabaseHandle* 
     bool all_success = true;
 
     // Process each migration with a FRESH Lua state
-    // Skip migrations that are already applied (ref <= latest_applied_migration)
+    // Skip migrations already loaded or applied. After APPLY, type 1000 becomes 1003 so
+    // latest_loaded may be 0 while latest_applied is high — treat applied as a floor.
     // Passing NULL for L forces execute_single_migration_load_only_with_state to create its own
+    long long skip_through = db_queue->latest_loaded_migration;
+    if (db_queue->latest_applied_migration > skip_through) {
+        skip_through = db_queue->latest_applied_migration;
+    }
+
     for (size_t i = 0; i < migration_count; i++) {
         // Extract migration reference number from filename (e.g., "acuranzo_1148.lua" -> 1148)
         long long migration_ref = migration_extract_ref_from_filename(migration_files[i]);
@@ -228,10 +234,11 @@ bool execute_migration_files_load_only(DatabaseQueue* db_queue, DatabaseHandle* 
             break;
         }
 
-        // Skip migrations that are already applied
-        if (migration_ref <= db_queue->latest_applied_migration) {
-            log_this(dqm_label, "Skipping already applied migration: %s (ref=%lld, applied=%lld)",
-                     LOG_LEVEL_DEBUG, 3, migration_files[i], migration_ref, db_queue->latest_applied_migration);
+        // Skip migrations already present in Queries (loaded and/or applied)
+        if (migration_ref <= skip_through) {
+            log_this(dqm_label, "Skipping already loaded/applied migration: %s (ref=%lld, skip_through=%lld, loaded=%lld, applied=%lld)",
+                     LOG_LEVEL_DEBUG, 5, migration_files[i], migration_ref, skip_through,
+                     db_queue->latest_loaded_migration, db_queue->latest_applied_migration);
             continue;
         }
 
