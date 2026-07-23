@@ -32,19 +32,20 @@ previous phase's exit gate is green. Record learnings in the Working Log.
 
 ## Resuming Work on This Plan
 
-CURRENT PAUSE POINT (as of 2026-07-23): **Phases 0–5 complete (clients
-schema + in-memory registry). Next: Phase 6 (auth codes / refresh schema).**
+CURRENT PAUSE POINT (as of 2026-07-23): **Phases 0–7 complete. Next: Phase 8
+(resource-owner login at authorize).**
 
 ### Resume here next session
 
-1. Confirm Phases 0–5 Status complete; re-read Working Log.
+1. Confirm Phases 0–7 Status complete; re-read Working Log.
 2. Baseline: `zsh -ic 'mkt'`;
-   `mku oidc_clients_test_validate_client && mku oidc_keys_test_init_oidc_key_management`.
-3. Phase 6: migrations for `oauth_authorization_codes` + `oauth_refresh_tokens`
-   (next free migration **1271+**, QueryRef **136+**).
-4. Wire DB-backed client load via QueryRef **#132** when database name configured
-   (optional enhancement; in-memory works for Unity).
-5. Keep RP/Test 42 green.
+   `mku oidc_auth_codes_test_issue_consume && mku oidc_pkce_test_verify_s256 && mku oidc_clients_test_validate_client`.
+3. Phase 8: authorize GET/POST + password via `#012`; issue code + 302.
+4. Apply migrations **1271–1279** on all test DBs if not already (user applied
+   1266–1270; 1271+ are new).
+5. **Test 45 MUST cover all 7 engines** (postgres/mysql/sqlite/db2/mariadb/
+   cockroachdb/yugabytedb) like test_40 — not SQLite-only.
+6. Keep RP/Test 42 green.
 
 ### Session checklist (every OIDC IdP return)
 
@@ -273,7 +274,9 @@ preserves session-JWT semantics. Prefer dedicated oauth_* tables.
 6. Resource owners are Acuranzo accounts; no parallel user store in `oidc_users` long-term (stub API becomes thin facade over auth DB).
 7. In-memory auth-code store is acceptable for early Unity phases; durable DB before blackbox multi-process and production gate.
 8. Implicit flow stays disabled (`allow_implicit_flow = false`).
-9. Test 45 owns IdP blackbox ports `545x` per TESTING.md scheme.
+9. Test 45 owns IdP blackbox ports `545x` per TESTING.md scheme and **must**
+   exercise **all 7 database engines** in parallel (same set as test_40), not
+   SQLite alone.
 10. Historical docs under `docs/H/core/subsystems/oidc/` are aspirational; this plan is the implementation source of truth.
 
 ---
@@ -372,8 +375,8 @@ Match existing Hydrogen / auth / RP patterns; do not invent parallel stacks.
 | 3 | Wire MHD registration for discovery + JWKS only | Medium | complete |
 | 4 | Schema: `oauth_clients` + QueryRefs | Medium | complete |
 | 5 | Client registry implementation (DB-backed) | Medium | complete |
-| 6 | Schema: auth codes + refresh tokens (+ optional consent) | Medium | pending |
-| 7 | Authorization codes + PKCE verify | High | pending |
+| 6 | Schema: auth codes + refresh tokens (+ optional consent) | Medium | complete |
+| 7 | Authorization codes + PKCE verify | High | complete |
 | 8 | Resource-owner login at authorize (accounts + `#012`) | High | pending |
 | 9 | Token endpoint: code exchange → id_token + access_token | High | pending |
 | 10 | UserInfo endpoint | Medium | pending |
@@ -686,19 +689,19 @@ pre-approved first-party clients only.
 
 ### Work Items
 
-- [ ] 6.1 Design `oauth_authorization_codes`: code_hash PK, client_id,
+- [x] 6.1 Design `oauth_authorization_codes`: code_hash PK, client_id,
   account_id, redirect_uri, scope, nonce, code_challenge, challenge_method,
   expires_at, consumed_at, created meta.
   - **Verify:** design in Working Log.
-- [ ] 6.2 Design `oauth_refresh_tokens`: token_hash PK, client_id, account_id,
+- [x] 6.2 Design `oauth_refresh_tokens`: token_hash PK, client_id, account_id,
   scope, expires_at, revoked_at, replaced_by (rotation), family_id optional.
   - **Verify:** design in Working Log.
-- [ ] 6.3 Migrations + reverse + diagrams.
+- [x] 6.3 Migrations + reverse + diagrams.
   - **Verify:** luacheck + one engine migrate.
-- [ ] 6.4 QueryRefs: insert code, get+consume code (atomic), insert refresh,
+- [x] 6.4 QueryRefs: insert code, get+consume code (atomic), insert refresh,
   get refresh, revoke refresh, revoke all for account/client.
   - **Verify:** numbers logged; internal_sql only.
-- [ ] 6.5 Decision: in-memory code store for Unity-only vs DB-only — prefer DB
+- [x] 6.5 Decision: in-memory code store for Unity-only vs DB-only — prefer DB
   for anything Test 45 hits; Unity may use a test seam.
   - **Verify:** decision recorded.
 
@@ -709,10 +712,12 @@ pre-approved first-party clients only.
 
 ### Status
 
-- **State:** pending
-- **Date:**
-- **Result:**
-- **Variances:**
+- **State:** complete
+- **Date:** 2026-07-23
+- **Result:** Tables 1271–1272; QueryRefs #136–#142; luacheck green. Apply to
+  all 7 engines before Test 45.
+- **Variances:** Consume is separate get (#137) + update (#138) rather than one
+  atomic SQL — engines differ on UPDATE…RETURNING; app must check rows-affected.
 
 ---
 
@@ -731,17 +736,17 @@ authenticated account_id" to unit-test the code machine.
 
 ### Work Items
 
-- [ ] 7.1 Extract or share PKCE S256 verify helper (prefer
+- [x] 7.1 Extract or share PKCE S256 verify helper (prefer
   `utils_crypto` or small `oidc_pkce.c` under `src/oidc/`, patterned on
   `oidc_rp_pkce.c` without coupling to RP).
   - **Verify:** Unity: challenge from verifier validates; wrong verifier fails.
-- [ ] 7.2 `oidc_generate_authorization_code` — random code, store hash + metadata,
+- [x] 7.2 `oidc_generate_authorization_code` — random code, store hash + metadata,
   TTL from config (e.g. 60–300s).
   - **Verify:** Unity insert + validate once.
-- [ ] 7.3 `oidc_validate_authorization_code` — single-use consume, redirect_uri
+- [x] 7.3 `oidc_validate_authorization_code` — single-use consume, redirect_uri
   match, client_id match, PKCE verify, expiry.
   - **Verify:** Unity: second consume fails; expiry fails; bad PKCE fails.
-- [ ] 7.4 Replace token-service stubs for code path only; leave token JWT
+- [x] 7.4 Replace token-service stubs for code path only; leave token JWT
   generation to Phase 9.
   - **Verify:** `mkt` + `mku` + `mkp`.
 
@@ -752,10 +757,12 @@ authenticated account_id" to unit-test the code machine.
 
 ### Status
 
-- **State:** pending
-- **Date:**
-- **Result:**
-- **Variances:**
+- **State:** complete
+- **Date:** 2026-07-23
+- **Result:** `oidc_pkce` + `oidc_auth_codes` in-memory store; Unity green.
+- **Variances:** APIs named `oidc_auth_code_issue` / `oidc_auth_code_consume`
+  (not generate/validate). DB persistence via #136–#138 still to wire for
+  Test 45 multi-process.
 
 ---
 
@@ -1360,6 +1367,17 @@ Append discoveries, surprises, and decisions here as phases complete.
   secret only. Redirect: exact string match against JSON array entries.
 - **2026-07-23:** True max QueryRef before IdP work was **131** (not 209/210);
   earlier “210+” note was wrong (false positive from migration numbers).
+- **2026-07-23 Phase 6:** `oauth_authorization_codes` (1271),
+  `oauth_refresh_tokens` (1272). QueryRefs: **#136** insert code, **#137** get
+  code, **#138** consume code, **#139** insert refresh, **#140** get refresh,
+  **#141** revoke refresh, **#142** revoke family. Next free: mig **1280+**,
+  QRef **143+**.
+- **2026-07-23 Phase 6:** Unity uses **in-memory** `OIDCAuthCodeStore`; Test 45
+  / multi-process must use DB QueryRefs on **all 7 engines** (mirror test_40
+  configs: postgres, mysql, sqlite, db2, mariadb, cockroachdb, yugabytedb;
+  ports **5450–5456**).
+- **2026-07-23 Phase 7:** PKCE S256 only (`plain` rejected at issue). Code hash
+  = `utils_sha256_hash`. Default TTL 300s.
 
 ### Surprises / fixes
 
