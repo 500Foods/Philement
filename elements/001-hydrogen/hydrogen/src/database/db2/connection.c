@@ -310,14 +310,13 @@ bool db2_connect(ConnectionConfig* config, DatabaseHandle** connection, const ch
             }
         }
 
-        // // 2. AUTOCOMMIT OFF – the golden ticket
-        // if (SQLSetConnectAttr_ptr) {
-        //     SQLUINTEGER off = SQL_AUTOCOMMIT_OFF;
-        //     rc = SQLSetConnectAttr_ptr(conn_handle, SQL_ATTR_AUTOCOMMIT, (long)off, SQL_IS_UINTEGER);
-        //     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
-        //         log_this(log_subsystem, "Failed to disable autocommit", LOG_LEVEL_ALERT, 0);
-        //     }
-        // }
+        // 2. AUTOCOMMIT OFF – required so multi-statement LOAD/APPLY can roll back
+        if (SQLSetConnectAttr_ptr) {
+            rc = SQLSetConnectAttr_ptr(conn_handle, SQL_ATTR_AUTOCOMMIT, (long)SQL_AUTOCOMMIT_OFF, SQL_IS_UINTEGER);
+            if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
+                log_this(log_subsystem, "Failed to disable autocommit", LOG_LEVEL_ALERT, 0);
+            }
+        }
 
         // 3. Row array size – optional, but nice for bulk fetches later
         if (SQLSetConnectAttr_ptr) {

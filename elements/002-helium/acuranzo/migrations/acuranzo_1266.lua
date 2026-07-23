@@ -233,7 +233,8 @@ table.insert(queries,{sql=[[
                                 "nullable": false,
                                 "primary_key": false,
                                 "unique": false
-                            }
+                            },
+                            ${COMMON_DIAGRAM}
                         ]
                     }
                 ]

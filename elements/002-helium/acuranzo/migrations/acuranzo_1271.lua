@@ -167,7 +167,8 @@ table.insert(queries,{sql=[[
                             {"name": "code_challenge", "datatype": "${VARCHAR_128}", "nullable": false, "primary_key": false, "unique": false},
                             {"name": "code_challenge_method", "datatype": "${VARCHAR_20}", "nullable": false, "primary_key": false, "unique": false},
                             {"name": "expires_at", "datatype": "${TIMESTAMP_TZ}", "nullable": false, "primary_key": false, "unique": false},
-                            {"name": "consumed_at", "datatype": "${TIMESTAMP_TZ}", "nullable": true, "primary_key": false, "unique": false}
+                            {"name": "consumed_at", "datatype": "${TIMESTAMP_TZ}", "nullable": true, "primary_key": false, "unique": false},
+                            ${COMMON_DIAGRAM}
                         ]
                     }
                 ]

@@ -165,7 +165,8 @@ table.insert(queries,{sql=[[
                             {"name": "family_id", "datatype": "${VARCHAR_128}", "nullable": false, "primary_key": false, "unique": false},
                             {"name": "expires_at", "datatype": "${TIMESTAMP_TZ}", "nullable": false, "primary_key": false, "unique": false},
                             {"name": "revoked_at", "datatype": "${TIMESTAMP_TZ}", "nullable": true, "primary_key": false, "unique": false},
-                            {"name": "replaced_by_hash", "datatype": "${VARCHAR_128}", "nullable": true, "primary_key": false, "unique": false}
+                            {"name": "replaced_by_hash", "datatype": "${VARCHAR_128}", "nullable": true, "primary_key": false, "unique": false},
+                            ${COMMON_DIAGRAM}
                         ]
                     }
                 ]
