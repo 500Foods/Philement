@@ -11,7 +11,7 @@
 #include <src/database/database.h>
 
 // Forward declarations for functions being tested
-bool database_get_result(const char* query_id, const char* result_buffer, size_t buffer_size);
+bool database_get_result(const char* query_id, char* result_buffer, size_t buffer_size);
 
 // Test function prototypes
 void test_database_get_result_basic_functionality(void);
@@ -37,7 +37,7 @@ void test_database_get_result_basic_functionality(void) {
     // Test basic functionality with valid parameters
     char buffer[256] = {0};
     bool result = database_get_result("query_123", buffer, sizeof(buffer));
-    TEST_ASSERT_FALSE(result); // Should return false as implementation is not yet complete
+    TEST_ASSERT_FALSE(result); // No completed pending result for query_id
 }
 
 void test_database_get_result_null_query_id(void) {
@@ -55,7 +55,7 @@ void test_database_get_result_null_result_buffer(void) {
 
 void test_database_get_result_zero_buffer_size(void) {
     // Test zero buffer size
-    const char buffer[256] = {0};
+    char buffer[256] = {0};
     bool result = database_get_result("query_123", buffer, 0);
     TEST_ASSERT_FALSE(result);
 }

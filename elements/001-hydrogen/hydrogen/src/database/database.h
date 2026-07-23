@@ -5,7 +5,7 @@
  * It implements the architecture described in DATABASE_PLAN.md.
  *
  * Phase 1 (Current): Queue-based processing with multi-queue system
- * Phase 2 (Next): Multi-engine interface layer (PostgreSQL, SQLite, MySQL, DB2, AI)
+ * Multi-engine interface layer: PostgreSQL, SQLite, MySQL, DB2
  * Phase 3: Query caching and bootstrap system
  * Phase 4: Acuranzo integration and testing
  */
@@ -239,7 +239,7 @@ typedef struct {
     // Connection management
     DatabaseQueueManager* queue_manager;
 
-    // Engine registry (for Phase 2)
+    // Engine registry
     DatabaseEngineInterface* engines[DB_ENGINE_MAX];
 
     // Global statistics
@@ -282,7 +282,7 @@ void database_get_stats(char* buffer, size_t buffer_size);
 bool database_health_check(void);
 
 /*
- * Query Processing API (Phase 2 integration points)
+ * Query Processing API (name-based façade over queue + pending results)
  */
 
 // Submit a query to the database subsystem
@@ -295,8 +295,8 @@ bool database_submit_query(const char* database_name,
 // Check query result status
 DatabaseQueryStatus database_query_status(const char* query_id);
 
-// Get query result
-bool database_get_result(const char* query_id, const char* result_buffer, size_t buffer_size);
+// Get query result JSON into caller buffer (completed pending only)
+bool database_get_result(const char* query_id, char* result_buffer, size_t buffer_size);
 
 // Cancel a running query
 bool database_cancel_query(const char* query_id);
@@ -318,9 +318,9 @@ void database_get_supported_engines(char* buffer, size_t buffer_size);
  * Integration points for other subsystems
  */
 
-// For API subsystem integration
+// For API subsystem integration (synchronous submit+wait convenience)
 bool database_process_api_query(const char* database, const char* query_path,
-                               const char* parameters, const char* result_buffer, size_t buffer_size);
+                               const char* parameters, char* result_buffer, size_t buffer_size);
 
 // For launch/landing subsystem integration
 int launch_database_subsystem(void);     // Already in launch_database.c
@@ -339,11 +339,11 @@ char* database_escape_parameter(const char* parameter);
 // Get query processing time
 time_t database_get_query_age(const char* query_id);
 
-// Cleanup old query results
-void database_cleanup_old_results(time_t max_age_seconds);
+// Cleanup old query results; returns number of pending entries removed
+size_t database_cleanup_old_results(time_t max_age_seconds);
 
 /*
- * Database Engine Interface Management (Phase 2)
+ * Database Engine Interface Management
  */
 
 // Initialize database engine registry

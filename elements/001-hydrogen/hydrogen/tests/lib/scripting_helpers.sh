@@ -26,6 +26,8 @@
 # shellcheck disable=SC2312 # Several diagnostic command substitutions intentionally swallow the inner exit code; helpers either fall back gracefully or || true the outer call
 
 # CHANGELOG
+# 2.1.0 - 2026-07-23 - Seed Orchestrator Lua from src before SQLite runs so
+#                      H.query/H.wait blackbox coverage stays in sync.
 # 2.0.0 - 2026-07-02 - Phase 11i: added scripting_run_engine_parallel and
 #                      scripting_wait_for_ready_or_fail for parallel 7-engine
 #                      execution with fail-fast log tracking.
@@ -36,7 +38,7 @@
 export SCRIPTING_HELPERS_GUARD="true"
 
 SCRIPTING_HELPERS_NAME="Scripting Test Helpers"
-SCRIPTING_HELPERS_VERSION="2.0.0"
+SCRIPTING_HELPERS_VERSION="2.1.0"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${SCRIPTING_HELPERS_NAME} ${SCRIPTING_HELPERS_VERSION}" "info"
 
 # Log markers that mean "the Orchestrator will not start" (missing
@@ -228,6 +230,7 @@ scripting_count_log_matches() {
 #   SHUTDOWN_CLEAN          - process exited within the shutdown timeout
 #   ORCH_C_DESTROYED        - C-side "Orchestrator: destroyed"
 #   ORCH_LUA_SHUTDOWN       - Lua-side "Orchestrator: shutdown requested"
+#   ORCH_QUERY_PROBE        - Lua-side "Orchestrator: query_probe ok" (data plane)
 #   LIFECYCLE_COMPLETE      - full start->tick->clean-stop path succeeded
 #
 # Usage: scripting_run_engine_parallel <config_file> <log_file> \
@@ -244,6 +247,7 @@ scripting_run_engine_parallel() {
 
     local hydrogen_pid
     local ready_state
+    local sqlite_db
 
     true > "${result_file}"
     true > "${log_file}"
@@ -251,6 +255,36 @@ scripting_run_engine_parallel() {
     if [[ ! -f "${hydrogen_bin}" ]] || [[ ! -f "${config_file}" ]]; then
         echo "STARTUP_FAILED" >> "${result_file}"
         return 0
+    fi
+
+    # SQLite fixtures: refresh Orchestrator source so H.query/H.wait run.
+    sqlite_db=$(python3 - "${config_file}" <<'PY' 2>/dev/null || true
+import json, sys, os, re
+path = sys.argv[1]
+try:
+    with open(path, encoding="utf-8") as fh:
+        raw = fh.read()
+    # Expand ${env.VAR} lightly for path extraction only
+    def env_sub(m):
+        return os.environ.get(m.group(1), m.group(0))
+    raw = re.sub(r"\$\{env\.([A-Za-z0-9_]+)\}", env_sub, raw)
+    cfg = json.loads(raw)
+except Exception:
+    sys.exit(0)
+for conn in (cfg.get("Databases") or {}).get("Connections") or []:
+    eng = (conn.get("Engine") or "").lower()
+    db = conn.get("Database") or ""
+    if eng == "sqlite" and db:
+        print(db)
+        break
+PY
+)
+    if [[ -n "${sqlite_db}" ]]; then
+        # Resolve relative to project root when needed
+        if [[ ! -f "${sqlite_db}" && -n "${PROJECT_DIR:-}" && -f "${PROJECT_DIR}/${sqlite_db}" ]]; then
+            sqlite_db="${PROJECT_DIR}/${sqlite_db}"
+        fi
+        scripting_seed_orchestrator_from_source "${sqlite_db}" || true
     fi
 
     "${hydrogen_bin}" "${config_file}" > "${log_file}" 2>&1 &
@@ -342,6 +376,9 @@ scripting_run_engine_parallel() {
     if scripting_assert_log_contains "${log_file}" "Orchestrator: shutdown requested"; then
         echo "ORCH_LUA_SHUTDOWN" >> "${result_file}"
     fi
+    if scripting_assert_log_contains "${log_file}" "Orchestrator: query_probe ok"; then
+        echo "ORCH_QUERY_PROBE" >> "${result_file}"
+    fi
 
     # Full lifecycle succeeds only if every stage passed.
     if "${GREP}" -q "ORCH_C_STARTED" "${result_file}" 2>/dev/null && \
@@ -365,4 +402,48 @@ scripting_set_orchestrator_status() {
     sqlite3 "${db_path}" \
         "UPDATE scripts SET status = ${status} WHERE group_name = 'Orchestrators' AND script_name = 'Orchestrator';" \
         2>/dev/null
+}
+
+# Refresh the Orchestrator Lua source in a SQLite fixture from the in-tree
+# reference file (src/scripting/orchestrator.lua). Keeps blackbox DBs aligned
+# with the data-plane query probe without requiring a migration re-run.
+# Usage: scripting_seed_orchestrator_from_source <sqlite_db_path> [lua_path]
+scripting_seed_orchestrator_from_source() {
+    local db_path="$1"
+    local lua_path="${2:-}"
+    local project_dir="${PROJECT_DIR:-}"
+
+    if [[ -z "${lua_path}" ]]; then
+        if [[ -n "${project_dir}" && -f "${project_dir}/src/scripting/orchestrator.lua" ]]; then
+            lua_path="${project_dir}/src/scripting/orchestrator.lua"
+        else
+            return 1
+        fi
+    fi
+    if [[ ! -f "${db_path}" || ! -f "${lua_path}" ]]; then
+        return 1
+    fi
+    if ! command -v python3 >/dev/null 2>&1; then
+        return 1
+    fi
+
+    python3 - "${db_path}" "${lua_path}" <<'PY'
+import sqlite3
+import sys
+
+db_path, lua_path = sys.argv[1], sys.argv[2]
+with open(lua_path, encoding="utf-8") as fh:
+    code = fh.read()
+conn = sqlite3.connect(db_path)
+try:
+    cur = conn.execute(
+        "UPDATE scripts SET code = ? "
+        "WHERE group_name = 'Orchestrators' AND script_name = 'Orchestrator'",
+        (code,),
+    )
+    conn.commit()
+    sys.exit(0 if cur.rowcount >= 0 else 1)
+finally:
+    conn.close()
+PY
 }

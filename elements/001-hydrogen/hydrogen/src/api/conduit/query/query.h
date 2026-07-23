@@ -41,7 +41,6 @@
  * - 404: Query not found in QTC
  * - 408: Query execution timeout
  * - 500: Database error or internal server error
- * - 501: Not yet implemented (stub response)
  *
  * @param connection The MHD_Connection to send the response through
  * @param url The requested URL path
@@ -63,7 +62,6 @@
 //@ swagger:response 404 application/json {"type":"object","properties":{"success":{"type":"boolean","example":false},"error":{"type":"string","example":"Query not found"},"query_ref":{"type":"integer","example":9999},"database":{"type":"string","example":"Acuranzo"}}}
 //@ swagger:response 408 application/json {"type":"object","properties":{"success":{"type":"boolean","example":false},"error":{"type":"string","example":"Query execution timeout"},"query_ref":{"type":"integer","example":1234},"timeout_seconds":{"type":"integer","example":30},"database":{"type":"string","example":"Acuranzo"}}}
 //@ swagger:response 500 application/json {"type":"object","properties":{"success":{"type":"boolean","example":false},"error":{"type":"string","example":"Database error"},"database_error":{"type":"string","example":"Table 'users' not found"},"query_ref":{"type":"integer","example":1234},"database":{"type":"string","example":"Acuranzo"}}}
-//@ swagger:response 501 application/json {"type":"object","properties":{"success":{"type":"boolean","example":false},"error":{"type":"string","example":"Query execution not yet implemented"},"message":{"type":"string","example":"The Conduit service infrastructure is being built. This endpoint will execute pre-defined queries once the Query Table Cache, parameter processing, and queue selection systems are complete."},"status":{"type":"string","example":"under_construction"}}}
 
 // Function declarations for testable helper functions
 char* generate_query_id(void);

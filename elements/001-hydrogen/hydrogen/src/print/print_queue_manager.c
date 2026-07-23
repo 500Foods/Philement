@@ -63,7 +63,8 @@ void process_print_job(const char* job_data) {
              (long long)file_size);
     log_this(SR_QUEUES, log_buffer, LOG_LEVEL_STATE, 0);
 
-    // TODO: Implement actual print job processing here
+    /* Job is dequeued and logged. Device handoff / Beryllium analyze glue is
+     * not wired; queue infrastructure remains available for future printers. */
 
     json_decref(json);
 }

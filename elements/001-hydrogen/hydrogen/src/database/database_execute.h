@@ -10,21 +10,21 @@
 
 #include <time.h>
 
-// Query Processing API (Phase 2 integration points)
+// Query Processing API (name-based façade over queue + pending results)
 bool database_submit_query(const char* database_name, const char* query_id,
                           const char* query_template, const char* parameters_json,
                           int queue_type_hint);
 
 DatabaseQueryStatus database_query_status(const char* query_id);
 
-bool database_get_result(const char* query_id, const char* result_buffer, size_t buffer_size);
+bool database_get_result(const char* query_id, char* result_buffer, size_t buffer_size);
 
 bool database_cancel_query(const char* query_id);
 
 // Query lifecycle management
 time_t database_get_query_age(const char* query_id);
 
-void database_cleanup_old_results(time_t max_age_seconds);
+size_t database_cleanup_old_results(time_t max_age_seconds);
 
 // Queue statistics
 int database_get_total_queue_count(void);

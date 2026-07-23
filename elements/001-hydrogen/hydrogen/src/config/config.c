@@ -480,14 +480,6 @@ void dumpAppConfig(const AppConfig* config, const char* section) {
             func(&config->field); \
         }
 
-    // Macro for not yet implemented sections
-    #define DUMP_NOT_IMPLEMENTED(letter, name) \
-        if (!section || strcmp(section, name) == 0) { \
-            format_section_header(header, sizeof(header), letter, name); \
-            log_this(SR_CONFIG_CURRENT, "%s", LOG_LEVEL_DEBUG, 1, header); \
-            if (section) log_this(SR_CONFIG_CURRENT, "――― Section dump not yet implemented", LOG_LEVEL_STATE, 0); \
-        }
-
     DUMP_CONFIG_SECTION("A", SR_SERVER,      server,      dump_server_config);
     DUMP_CONFIG_SECTION("B", SR_NETWORK,     network,     dump_network_config);
     DUMP_CONFIG_SECTION("C", SR_DATABASE,    databases,   dump_database_config);
@@ -508,7 +500,6 @@ void dumpAppConfig(const AppConfig* config, const char* section) {
     DUMP_CONFIG_SECTION("Q", SR_SCRIPTING,   scripting,   dump_scripting_config);
 
     #undef DUMP_CONFIG_SECTION
-    #undef DUMP_NOT_IMPLEMENTED
 
     format_section_header(header, sizeof(header), "AppConfig Dump Complete", "");
     log_this(SR_CONFIG_CURRENT, "%s", LOG_LEVEL_DEBUG, 1, header);

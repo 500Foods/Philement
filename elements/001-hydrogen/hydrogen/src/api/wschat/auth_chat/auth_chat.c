@@ -445,7 +445,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         return ret;
     }
 
-    // Check if streaming is requested (not yet implemented)
+    /* REST stream=true returns 501; interactive streaming is on WebSocket chat. */
     if (stream) {
         free(engine_name);
         free_jwt_validation_result(&jwt_result);

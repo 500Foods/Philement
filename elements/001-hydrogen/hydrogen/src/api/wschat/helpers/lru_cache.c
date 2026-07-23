@@ -633,7 +633,8 @@ bool chat_lru_cache_put(ChatLRUCache* cache, const char* segment_hash,
             entry->content_size = content_size;
             entry->last_accessed = time(NULL);
             entry->access_count++;
-            entry->is_dirty = entry->is_dirty || is_dirty;
+            /* Caller controls dirty flag (write-through store clears after DB ok) */
+            entry->is_dirty = is_dirty;
 
             cache->current_size_bytes += content_size;
 
@@ -779,8 +780,8 @@ int chat_lru_cache_flush(ChatLRUCache* cache) {
 
     while (entry) {
         if (entry->is_dirty) {
-            /* TODO: Integrate with chat_storage to sync to database */
-            /* For now, just mark as clean */
+            /* Segments are write-through via chat_storage_store_segment (#063).
+             * Residual dirty entries are cleared here (no second DB path). */
             entry->is_dirty = false;
             synced++;
         }

@@ -13,7 +13,7 @@
 
 // Forward declarations for functions being tested
 bool database_process_api_query(const char* database, const char* query_path,
-                               const char* parameters, const char* result_buffer, size_t buffer_size);
+                               const char* parameters, char* result_buffer, size_t buffer_size);
 
 // Test function prototypes
 void test_database_process_api_query_basic_functionality(void);
@@ -39,8 +39,8 @@ void tearDown(void) {
 void test_database_process_api_query_basic_functionality(void) {
     // Test basic functionality with valid parameters
     char buffer[256] = {0};
-    bool result = database_process_api_query("test_db", "/api/query", "param=value", buffer, sizeof(buffer));
-    TEST_ASSERT_FALSE(result); // Should return false as implementation is not yet complete
+    bool result = database_process_api_query("test_db", "SELECT 1", "param=value", buffer, sizeof(buffer));
+    TEST_ASSERT_FALSE(result); // No queue registered for test_db
 }
 
 void test_database_process_api_query_null_database(void) {
@@ -65,16 +65,16 @@ void test_database_process_api_query_null_result_buffer(void) {
 
 void test_database_process_api_query_zero_buffer_size(void) {
     // Test zero buffer size
-    const char buffer[256] = {0};
+    char buffer[256] = {0};
     bool result = database_process_api_query("test_db", "/api/query", "param=value", buffer, 0);
     TEST_ASSERT_FALSE(result);
 }
 
 void test_database_process_api_query_null_parameters(void) {
-    // Test null parameters (should still work)
-    const char buffer[256] = {0};
-    bool result = database_process_api_query("test_db", "/api/query", NULL, buffer, sizeof(buffer));
-    TEST_ASSERT_FALSE(result); // Should return false as implementation is not yet complete
+    // Null parameters allowed; still fails without a registered queue
+    char buffer[256] = {0};
+    bool result = database_process_api_query("test_db", "SELECT 1", NULL, buffer, sizeof(buffer));
+    TEST_ASSERT_FALSE(result);
 }
 
 void test_database_process_api_query_uninitialized_subsystem(void) {

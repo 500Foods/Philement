@@ -135,10 +135,11 @@ DatabaseQueue* database_queue_manager_get_database(DatabaseQueueManager* manager
         return NULL;
     }
 
-    // Find database by name
-    for (size_t i = 0; i < manager->database_count; i++) {
+    // Scan full table so sparse slots after remove still resolve
+    for (size_t i = 0; i < manager->max_databases; i++) {
         DatabaseQueue* db_queue = manager->databases[i];
-        if (db_queue && strcmp(db_queue->database_name, name) == 0) {
+        if (db_queue && db_queue->database_name &&
+            strcmp(db_queue->database_name, name) == 0) {
             mutex_unlock(&manager->manager_lock);
             return db_queue;
         }
@@ -146,6 +147,56 @@ DatabaseQueue* database_queue_manager_get_database(DatabaseQueueManager* manager
 
     mutex_unlock(&manager->manager_lock);
     return NULL;  // Not found
+}
+
+/*
+ * Remove a database queue by name, compact the table, and destroy the queue.
+ */
+bool database_queue_manager_remove_database(DatabaseQueueManager* manager, const char* name) {
+    if (!manager || !name || name[0] == '\0') {
+        return false;
+    }
+
+    DatabaseQueue* removed = NULL;
+
+    MutexResult lock_result = MUTEX_LOCK(&manager->manager_lock, SR_DATABASE);
+    if (lock_result != MUTEX_SUCCESS) {
+        return false;
+    }
+
+    for (size_t i = 0; i < manager->max_databases; i++) {
+        DatabaseQueue* db_queue = manager->databases[i];
+        if (db_queue && db_queue->database_name &&
+            strcmp(db_queue->database_name, name) == 0) {
+            removed = db_queue;
+            manager->databases[i] = NULL;
+            break;
+        }
+    }
+
+    if (removed) {
+        // Compact non-NULL entries to the front so database_count stays dense
+        size_t write = 0;
+        for (size_t j = 0; j < manager->max_databases; j++) {
+            if (manager->databases[j]) {
+                manager->databases[write++] = manager->databases[j];
+            }
+        }
+        for (size_t j = write; j < manager->max_databases; j++) {
+            manager->databases[j] = NULL;
+        }
+        manager->database_count = write;
+    }
+
+    mutex_unlock(&manager->manager_lock);
+
+    if (!removed) {
+        return false;
+    }
+
+    // Destroy outside the manager lock (stop worker may join threads)
+    database_queue_destroy(removed);
+    return true;
 }
 
 /*

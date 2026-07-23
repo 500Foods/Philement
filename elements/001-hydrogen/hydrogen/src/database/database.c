@@ -8,24 +8,17 @@
 #include "database_connstring.h"
 #include "database_manage.h"
 #include "database_execute.h"
+#include "database_pending.h"
 #include <src/scripting/orchestrator.h>
 #include <src/mailrelay/mailrelay_events.h>
+#include <src/utils/utils_uuid.h>
+#include <ctype.h>
 /*
  * Database Subsystem Core Implementation
  *
  * Implements the core database subsystem functionality including
  * subsystem initialization, database management, and API functions.
  */
-
-// Project includes
-#include <src/hydrogen.h>
-#include <src/network/network.h> // Ping
-
-// Local incluses
-#include "database.h"
-#include "dbqueue/dbqueue.h"
-#include "database_connstring.h"
-#include "database_manage.h"
 
 // Engine description function declarations
 const char* postgresql_engine_get_description(void);
@@ -103,12 +96,20 @@ void database_subsystem_shutdown(void) {
 
     database_subsystem->shutdown_requested = true;
 
-    // TODO: Clean shutdown of queue manager, connections, etc.
-
-    free(database_subsystem);
+    // Drop the subsystem pointer before releasing queues so concurrent
+    // callers see an uninitialized subsystem while teardown proceeds.
+    DatabaseSubsystem* to_free = database_subsystem;
     database_subsystem = NULL;
-
     MUTEX_UNLOCK(&database_subsystem_mutex, SR_DATABASE);
+
+    // Queue teardown may join worker threads; do it outside the subsystem lock.
+    // Landing may already have destroyed the manager — these are idempotent.
+    if (global_queue_manager) {
+        database_queue_system_destroy();
+    }
+    cleanup_global_pending_manager(SR_DATABASE);
+
+    free(to_free);
 
     log_this(SR_DATABASE, "Database subsystem shutdown complete", LOG_LEVEL_DEBUG, 0);
 }
@@ -139,28 +140,136 @@ bool database_health_check(void) {
         return false;
     }
 
-    // TODO: Implement comprehensive health check
-    return database_subsystem->initialized && !database_subsystem->shutdown_requested;
+    if (!database_subsystem->initialized || database_subsystem->shutdown_requested) {
+        return false;
+    }
+
+    // No queues yet (early boot / unity): subsystem itself is healthy.
+    if (!global_queue_manager) {
+        return true;
+    }
+
+    MutexResult lock_result = MUTEX_LOCK(&global_queue_manager->manager_lock, SR_DATABASE);
+    if (lock_result != MUTEX_SUCCESS) {
+        return false;
+    }
+
+    bool healthy = true;
+    for (size_t i = 0; i < global_queue_manager->max_databases; i++) {
+        const DatabaseQueue* db_queue = global_queue_manager->databases[i];
+        if (!db_queue || !db_queue->is_lead_queue) {
+            continue;
+        }
+        if (db_queue->shutdown_requested) {
+            healthy = false;
+            break;
+        }
+    }
+
+    mutex_unlock(&global_queue_manager->manager_lock);
+    return healthy;
 }
 
 /*
- * Query Processing API (Phase 2 integration points)
- * Moved to database_execute.c
+ * Query Processing API — implemented in database_execute.c
  */
 
 /*
  * Configuration and Maintenance API
  */
 
-// Reload database configurations
+// Reconcile running queues with the current app_config Databases section.
+// Adds enabled connections that are missing; removes queues no longer enabled.
+// Does not re-parse config files — callers that hot-reload JSON should update
+// app_config first, then call this.
 bool database_reload_config(void) {
-    if (!database_subsystem) {
+    if (!database_subsystem || !database_subsystem->initialized ||
+        database_subsystem->shutdown_requested) {
         return false;
     }
 
-    // TODO: Implement configuration reload
-    log_this(SR_DATABASE, "Configuration reload not yet implemented", LOG_LEVEL_TRACE, 0);
-    return false;
+    if (!app_config) {
+        log_this(SR_DATABASE, "Config reload: no app_config present", LOG_LEVEL_DEBUG, 0);
+        return true;
+    }
+
+    const DatabaseConfig* db_config = &app_config->databases;
+    bool ok = true;
+
+    // Add enabled connections that are not yet running
+    for (int i = 0; i < db_config->connection_count; i++) {
+        const DatabaseConnection* conn = &db_config->connections[i];
+        if (!conn->enabled || !conn->name || !conn->type) {
+            continue;
+        }
+
+        bool present = false;
+        if (global_queue_manager) {
+            present = (database_queue_manager_get_database(global_queue_manager, conn->name) != NULL);
+        }
+        if (!present) {
+            log_this(SR_DATABASE, "Config reload: starting database %s", LOG_LEVEL_DEBUG, 1, conn->name);
+            if (!database_add_database(conn->name, conn->type, NULL)) {
+                log_this(SR_DATABASE, "Config reload: failed to add %s", LOG_LEVEL_ERROR, 1, conn->name);
+                ok = false;
+            }
+        }
+    }
+
+    // Remove running databases that are missing or disabled in config
+    if (global_queue_manager) {
+        char** to_remove = NULL;
+        size_t remove_count = 0;
+
+        MutexResult lock_result = MUTEX_LOCK(&global_queue_manager->manager_lock, SR_DATABASE);
+        if (lock_result == MUTEX_SUCCESS) {
+            for (size_t i = 0; i < global_queue_manager->max_databases; i++) {
+                DatabaseQueue* db_queue = global_queue_manager->databases[i];
+                if (!db_queue || !db_queue->database_name || !db_queue->is_lead_queue) {
+                    continue;
+                }
+
+                bool keep = false;
+                for (int c = 0; c < db_config->connection_count; c++) {
+                    const DatabaseConnection* conn = &db_config->connections[c];
+                    if (conn->enabled && conn->name &&
+                        strcmp(conn->name, db_queue->database_name) == 0) {
+                        keep = true;
+                        break;
+                    }
+                }
+                if (!keep) {
+                    char** grown = realloc(to_remove, (remove_count + 1) * sizeof(char*));
+                    if (!grown) {
+                        ok = false;
+                        break;
+                    }
+                    to_remove = grown;
+                    to_remove[remove_count] = strdup(db_queue->database_name);
+                    if (!to_remove[remove_count]) {
+                        ok = false;
+                        break;
+                    }
+                    remove_count++;
+                }
+            }
+            mutex_unlock(&global_queue_manager->manager_lock);
+        }
+
+        for (size_t r = 0; r < remove_count; r++) {
+            if (to_remove[r]) {
+                log_this(SR_DATABASE, "Config reload: removing database %s", LOG_LEVEL_DEBUG, 1, to_remove[r]);
+                if (!database_remove_database(to_remove[r])) {
+                    ok = false;
+                }
+                free(to_remove[r]);
+            }
+        }
+        free(to_remove);
+    }
+
+    log_this(SR_DATABASE, "Config reload complete", LOG_LEVEL_DEBUG, 0);
+    return ok;
 }
 
 
@@ -168,31 +277,88 @@ bool database_reload_config(void) {
  * Integration points for other subsystems
  */
 
-// For API subsystem integration
-bool database_process_api_query(const char* database __attribute__((unused)), const char* query_path __attribute__((unused)),
-                               const char* parameters __attribute__((unused)), const char* result_buffer __attribute__((unused)), size_t buffer_size __attribute__((unused))) {
-    if (!database_subsystem || !database || !query_path || !result_buffer || buffer_size == 0) {
+// Synchronous convenience path: run SQL (query_path) against named database.
+// Prefer conduit / H.query for production; this is a thin submit+wait helper.
+bool database_process_api_query(const char* database, const char* query_path,
+                               const char* parameters, char* result_buffer, size_t buffer_size) {
+    if (!database_subsystem || !database || database[0] == '\0' ||
+        !query_path || query_path[0] == '\0' ||
+        !result_buffer || buffer_size == 0) {
         return false;
     }
 
-    // TODO: Implement API query processing
-    log_this(SR_DATABASE, "API query processing not yet implemented", LOG_LEVEL_TRACE, 0);
-    return false;
+    if (!database_validate_query(query_path)) {
+        return false;
+    }
+
+    if (!global_queue_manager ||
+        !database_queue_manager_get_database(global_queue_manager, database)) {
+        return false;
+    }
+
+    char uuid_str[UUID_STR_LEN];
+    generate_uuid(uuid_str);
+
+    PendingResultManager* pending_mgr = get_pending_result_manager();
+    if (!pending_mgr) {
+        return false;
+    }
+
+    int timeout = database_subsystem->query_timeout_seconds > 0
+                      ? database_subsystem->query_timeout_seconds
+                      : 30;
+    PendingQueryResult* pending = pending_result_register(pending_mgr, uuid_str, timeout, SR_DATABASE);
+    if (!pending) {
+        return false;
+    }
+
+    if (!database_submit_query(database, uuid_str, query_path, parameters, 0)) {
+        pending_result_unregister(pending_mgr, pending, SR_DATABASE);
+        return false;
+    }
+
+    if (pending_result_wait(pending, SR_DATABASE) != 0) {
+        pending_result_unregister(pending_mgr, pending, SR_DATABASE);
+        return false;
+    }
+
+    bool ok = database_get_result(uuid_str, result_buffer, buffer_size);
+    pending_result_unregister(pending_mgr, pending, SR_DATABASE);
+    return ok;
 }
 
 /*
  * Utility Functions
  */
 
-// Validate query template
+// Validate query template (structural checks only — not a SQL parser)
 bool database_validate_query(const char* query_template) {
     if (!query_template) {
         return false;
     }
 
-    // Basic validation - check for SQL injection patterns
-    // TODO: Implement more comprehensive validation
-    return strlen(query_template) > 0;
+    size_t len = strlen(query_template);
+    if (len == 0) {
+        return false;
+    }
+
+    // Reject absurdly large templates (DoS / accidental binary dumps)
+    if (len > 1024 * 1024) {
+        return false;
+    }
+
+    // Must contain at least one non-whitespace character
+    bool has_content = false;
+    for (size_t i = 0; i < len; i++) {
+        unsigned char c = (unsigned char)query_template[i];
+        if (c == '\0') {
+            return false;
+        }
+        if (!isspace(c)) {
+            has_content = true;
+        }
+    }
+    return has_content;
 }
 
 // Escape query parameters

@@ -25,10 +25,10 @@
 # engine's run ends quickly (fail-fast) instead of blocking on the full
 # startup timeout.
 #
-# This first phase of the test only tracks logs: it confirms the
-# scripting subsystem starts the main orchestration script and ends it
-# cleanly. Future phases (12+) will add data-plane subtests (H.wait,
-# H.query, task claims, etc.) per the LUA_PLAN.
+# Lifecycle is verified via logs (start, ticks, clean shutdown). The
+# reference Orchestrator also runs a one-shot data-plane probe
+# (H.query / H.wait / H.query_sync / H.altquery) so blackbox coverage
+# includes the scripting query stack when fixtures are seeded.
 #
 # Helpers live in tests/lib/scripting_helpers.sh.
 
@@ -36,6 +36,8 @@
 # (Helper functions live in tests/lib/scripting_helpers.sh)
 
 # CHANGELOG
+# 2.2.0 - 2026-07-23 - Orchestrator data-plane query probe (H.query/H.wait) for
+#                      blackbox coverage of scripting_api_query_*.c / json.c
 # 2.1.0 - 2026-07-15 - Moved WebServer listeners from Linux ephemeral range 55430-55446 to dedicated 15430-15446 ports.
 # 2.0.0 - 2026-07-02 - Phase 11i: run all 7 database engines in parallel (like test_40),
 #                      one config per engine, with and without DefaultDatabase, and
@@ -49,7 +51,7 @@ TEST_NAME="Scripting  {BLUE}engines: 7{RESET}"
 TEST_ABBR="SCR"
 TEST_NUMBER="43"
 TEST_COUNTER=0
-TEST_VERSION="2.1.0"
+TEST_VERSION="2.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"

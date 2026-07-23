@@ -1,8 +1,11 @@
 /*
  * Database Query Execution Module
  *
- * Implements query submission, status checking, result retrieval,
- * and query lifecycle management for the database subsystem.
+ * Name-based façade over the live queue + pending-result path used by
+ * conduit, auth, scripting, and mailrelay. Production callers usually
+ * invoke database_queue_submit_query / pending_result_* directly; these
+ * helpers resolve a database by name and map query_id lifecycle onto the
+ * global PendingResultManager.
  */
 
 // Project includes
@@ -13,69 +16,146 @@
 #include "dbqueue/dbqueue.h"
 #include "database_connstring.h"
 #include "database_manage.h"
-
-/*
- * Query Processing API (Phase 2 integration points)
- */
-
-// Submit a query to the database subsystem
-bool database_submit_query(const char* database_name __attribute__((unused)),
-                          const char* query_id __attribute__((unused)),
-                          const char* query_template __attribute__((unused)),
-                          const char* parameters_json __attribute__((unused)),
-                          int queue_type_hint __attribute__((unused))) {
-    if (!database_subsystem || !database_name || !query_template) {
-        return false;
-    }
-
-    // TODO: Implement query submission to queue system
-    log_this(SR_DATABASE, "Query submission not yet implemented", LOG_LEVEL_TRACE, 0);
-    return false;
-}
-
-// Check query result status
-DatabaseQueryStatus database_query_status(const char* query_id) {
-    if (!database_subsystem || !query_id) {
-        return DB_QUERY_ERROR;
-    }
-
-    // TODO: Implement query status checking
-    return DB_QUERY_ERROR;
-}
-
-// Get query result
-bool database_get_result(const char* query_id, const char* result_buffer, size_t buffer_size) {
-    if (!database_subsystem || !query_id || !result_buffer || buffer_size == 0) {
-        return false;
-    }
-
-    // TODO: Implement result retrieval
-    return false;
-}
-
-// Cancel a running query
-bool database_cancel_query(const char* query_id) {
-    if (!database_subsystem || !query_id) {
-        return false;
-    }
-
-    // TODO: Implement query cancellation
-    return false;
-}
-
-// Cleanup old query results
-void database_cleanup_old_results(time_t max_age_seconds __attribute__((unused))) {
-    if (!database_subsystem) {
-        return;
-    }
-
-    // TODO: Implement result cleanup
-    log_this(SR_DATABASE, "Result cleanup not yet implemented", LOG_LEVEL_TRACE, 0);
-}
+#include "database_pending.h"
+#include "database_engine.h"
 
 // Forward declarations for helper functions
 time_t calculate_queue_query_age(DatabaseQueue* db_queue);
 time_t find_max_query_age_across_queues(void);
+
+/*
+ * Query Processing API — thin wrappers around the queue manager
+ */
+
+// Submit a query to the named database's lead queue (async enqueue).
+// Does not register a pending waiter; pair with pending_result_register
+// or database_queue_await_result when a result is required.
+bool database_submit_query(const char* database_name,
+                          const char* query_id,
+                          const char* query_template,
+                          const char* parameters_json,
+                          int queue_type_hint) {
+    if (!database_subsystem || !database_name || database_name[0] == '\0' ||
+        !query_template || query_template[0] == '\0') {
+        return false;
+    }
+
+    if (!global_queue_manager) {
+        return false;
+    }
+
+    DatabaseQueue* db_queue = database_queue_manager_get_database(global_queue_manager, database_name);
+    if (!db_queue) {
+        return false;
+    }
+
+    DatabaseQuery query;
+    memset(&query, 0, sizeof(query));
+    // submit serializes from these pointers; they must remain valid for the call.
+    query.query_id = (char*)(query_id && query_id[0] != '\0' ? query_id : "anonymous");
+    query.query_template = (char*)query_template;
+    query.parameter_json = (char*)parameters_json;
+    query.queue_type_hint = queue_type_hint;
+    query.submitted_at = time(NULL);
+
+    return database_queue_submit_query(db_queue, &query);
+}
+
+// Check query result status via the global pending-result manager
+DatabaseQueryStatus database_query_status(const char* query_id) {
+    if (!database_subsystem || !query_id || query_id[0] == '\0') {
+        return DB_QUERY_ERROR;
+    }
+
+    PendingResultManager* manager = get_pending_result_manager();
+    if (!manager) {
+        return DB_QUERY_ERROR;
+    }
+
+    PendingQueryResult* pending = pending_result_find(manager, query_id);
+    if (!pending) {
+        return DB_QUERY_ERROR;
+    }
+
+    if (pending_result_is_timed_out(pending)) {
+        return DB_QUERY_TIMEOUT;
+    }
+
+    // In-flight: no dedicated pending enum on DatabaseQueryStatus.
+    if (!pending_result_is_completed(pending)) {
+        return DB_QUERY_ERROR;
+    }
+
+    QueryResult* result = pending_result_get(pending);
+    if (!result) {
+        return DB_QUERY_ERROR;
+    }
+    if (result->success) {
+        return DB_QUERY_SUCCESS;
+    }
+    if (result->error_class == DB_ERR_TIMEOUT) {
+        return DB_QUERY_TIMEOUT;
+    }
+    return DB_QUERY_ERROR;
+}
+
+// Copy completed result JSON into caller buffer (non-blocking)
+bool database_get_result(const char* query_id, char* result_buffer, size_t buffer_size) {
+    if (!database_subsystem || !query_id || query_id[0] == '\0' ||
+        !result_buffer || buffer_size == 0) {
+        return false;
+    }
+
+    PendingResultManager* manager = get_pending_result_manager();
+    if (!manager) {
+        return false;
+    }
+
+    PendingQueryResult* pending = pending_result_find(manager, query_id);
+    if (!pending || !pending_result_is_completed(pending)) {
+        return false;
+    }
+
+    QueryResult* result = pending_result_get(pending);
+    if (!result || !result->data_json) {
+        return false;
+    }
+
+    size_t len = strlen(result->data_json);
+    if (len + 1 > buffer_size) {
+        return false;
+    }
+    memcpy(result_buffer, result->data_json, len + 1);
+    return true;
+}
+
+// Best-effort cancel of a pending waiter (does not kill engine execute)
+bool database_cancel_query(const char* query_id) {
+    if (!database_subsystem || !query_id || query_id[0] == '\0') {
+        return false;
+    }
+
+    PendingResultManager* manager = get_pending_result_manager();
+    if (!manager) {
+        return false;
+    }
+
+    return pending_result_cancel(manager, query_id, SR_DATABASE);
+}
+
+// Cleanup expired pending results (max_age is advisory; pending uses per-query timeout)
+size_t database_cleanup_old_results(time_t max_age_seconds __attribute__((unused))) {
+    if (!database_subsystem) {
+        return 0;
+    }
+
+    PendingResultManager* manager = get_pending_result_manager();
+    if (!manager) {
+        return 0;
+    }
+
+    return pending_result_cleanup_expired(manager, SR_DATABASE);
+}
 
 // Helper function to calculate query age from a single queue
 time_t calculate_queue_query_age(DatabaseQueue* db_queue) {
@@ -142,22 +222,24 @@ time_t find_max_query_age_across_queues(void) {
     return max_query_age;
 }
 
-// Get query processing time
+// Get age of a specific pending query, or oldest in-flight queue age as fallback
 time_t database_get_query_age(const char* query_id) {
-    if (!database_subsystem || !query_id) {
+    if (!database_subsystem || !query_id || query_id[0] == '\0') {
         return 0;
     }
 
-    // Lightweight implementation: Search through active queues for in-flight queries
-    // This tracks queries currently waiting in queues, not completed queries
-    // Full Phase 2 implementation would include a results cache for completed queries
+    PendingResultManager* manager = get_pending_result_manager();
+    if (manager) {
+        PendingQueryResult* pending = pending_result_find(manager, query_id);
+        if (pending && pending->submitted_at > 0) {
+            time_t now = time(NULL);
+            if (now >= pending->submitted_at) {
+                return now - pending->submitted_at;
+            }
+            return 0;
+        }
+    }
 
-    time_t query_age = find_max_query_age_across_queues();
-
-    // Return query age in seconds (approximate for in-flight queries)
-    // Full implementation would:
-    // 1. Deserialize each queue item to check query_id match
-    // 2. Calculate: current_time - query->submitted_at
-    // 3. Store completed query results in a cache for later retrieval
-    return query_age > 0 ? time(NULL) : 0;
+    // Fallback: oldest element age across queues (not id-specific)
+    return find_max_query_age_across_queues();
 }

@@ -198,9 +198,9 @@ int launch_notify_subsystem(void) {
         return 0;
     }
 
-    // TODO: Add actual notification service initialization here when implementation is ready
-    // For now, we log that the service would be initialized
-    log_this(SR_NOTIFY, "    Notify service initialization placeholder", LOG_LEVEL_STATE, 0);
+    // Config-only launch: SMTP settings validated and registered. Outbound
+    // notify send path is not a separate runtime (use Mail Relay for mail).
+    log_this(SR_NOTIFY, "    Notify SMTP configuration accepted", LOG_LEVEL_STATE, 0);
     log_this(SR_NOTIFY, "    SMTP notifier configured", LOG_LEVEL_STATE, 0);
     log_this(SR_NOTIFY, "    SMTP host: %s", LOG_LEVEL_STATE, 1, app_config->notify.smtp.host);
     log_this(SR_NOTIFY, "    SMTP port: %d", LOG_LEVEL_STATE, 1, app_config->notify.smtp.port);

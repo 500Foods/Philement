@@ -196,18 +196,35 @@ enum MHD_Result handle_post_auth_register(
     log_this(SR_AUTH, "Account record created: account_id=%d, username=%s", LOG_LEVEL_DEBUG, 2, 
              account_id, username);
     
-    // Step 6: Hash password with account_id as salt
+    // Step 6: Hash password with account_id as salt and persist via QueryRef #052
     char* hashed_password = compute_password_hash(password, account_id);
     if (!hashed_password) {
         log_this(SR_AUTH, "Failed to hash password for account_id=%d", LOG_LEVEL_ERROR, 1, account_id);
         return handle_register_error(connection, con_cls, "Failed to process password",
             MHD_HTTP_INTERNAL_SERVER_ERROR, request);
     }
-    
-    log_this(SR_AUTH, "Password hashed for account_id=%d", LOG_LEVEL_DEBUG, 1, account_id);
-    
-    // Clean up sensitive data immediately
+
+    json_t* pw_params = json_object();
+    json_t* pw_integer = json_object();
+    json_t* pw_string = json_object();
+    json_object_set_new(pw_integer, "ACCOUNTID", json_integer(account_id));
+    json_object_set_new(pw_string, "PASSWORDHASH", json_string(hashed_password));
+    json_object_set_new(pw_params, "INTEGER", pw_integer);
+    json_object_set_new(pw_params, "STRING", pw_string);
+
+    QueryResult* pw_result = execute_auth_query(52, database, pw_params);
+    json_decref(pw_params);
     free(hashed_password);
+
+    if (!pw_result || !pw_result->success) {
+        log_this(SR_AUTH, "Failed to store password hash for account_id=%d: %s", LOG_LEVEL_ERROR, 2,
+                 account_id, pw_result && pw_result->error_message ? pw_result->error_message : "Unknown error");
+        free_query_result(pw_result);
+        return handle_register_error(connection, con_cls, "Failed to store password",
+            MHD_HTTP_INTERNAL_SERVER_ERROR, request);
+    }
+    free_query_result(pw_result);
+    log_this(SR_AUTH, "Password stored for account_id=%d", LOG_LEVEL_DEBUG, 1, account_id);
     
     // Step 7: Log successful registration
     log_this(SR_AUTH, "Account registration successful: account_id=%d, username=%s, email=%s",

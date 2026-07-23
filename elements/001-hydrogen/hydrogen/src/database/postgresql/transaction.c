@@ -8,6 +8,7 @@
 #include <src/hydrogen.h>
 #include <src/database/database.h>
 #include <src/database/dbqueue/dbqueue.h>
+#include <src/utils/utils_uuid.h>
 
 // Local includes
 #include "types.h"
@@ -75,7 +76,18 @@ bool postgresql_begin_transaction(DatabaseHandle* connection, DatabaseIsolationL
         return false;
     }
 
-    transaction_id = strdup("postgresql_tx"); // TODO: Generate unique ID
+    {
+        char uuid_buf[UUID_STR_LEN];
+        generate_uuid(uuid_buf);
+        transaction_id = strdup(uuid_buf);
+    }
+    if (!transaction_id) {
+        free(tx);
+        rollback_res = PQexec_ptr(pg_conn->connection, "ROLLBACK");
+        if (rollback_res) PQclear_ptr(rollback_res);
+        pg_conn->in_transaction = false;
+        return false;
+    }
     tx->transaction_id = transaction_id;
     tx->isolation_level = level;
     tx->started_at = time(NULL);

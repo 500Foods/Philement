@@ -53,11 +53,35 @@ Actionable incomplete work only. Completed plans live in
 | **Remaining** | `unity_asan` CMake tree, harness test, first-run triage (`detect_leaks=0`) |
 | **Why now** | Catches UAF/double-free on unit-only paths blackbox never hits. Separate build; does not touch gcov. |
 
+### 4. Auth register — persist email on `account_contacts`
+
+| | |
+|---|---|
+| **Plan** | No dedicated plan yet (auth suite complete; this is a follow-on gap) |
+| **Code** | `src/api/auth/auth_service_database.c` (`create_account_record`) · `src/api/auth/register/register.c` |
+| **Effort** | S–M (needs Acuranzo QueryRef + call site) |
+| **Done** | ~40% — account row via #051; password hash via #052 wired on register; email accepted by API but not stored |
+| **Remaining** | New migration QueryRef to `INSERT` email into `account_contacts` (contact type email); call from `create_account_record` or register; Unity + blackbox register coverage |
+| **Why now** | Register returns 201 with email in JSON but login-by-email / contact lookups stay empty unless fixtures seed contacts. Small product correctness hole. |
+| **Note** | Do **not** reuse QueryRef #052 — that is password-hash storage only. |
+
+### 5. WebSocket server heartbeat — wire scheduled PING
+
+| | |
+|---|---|
+| **Plan** | No dedicated plan (WebSocket stack otherwise live) |
+| **Code** | `src/websocket/websocket_server_heartbeat.c` · dispatch/timer in `websocket_server_dispatch.c` |
+| **Effort** | S–M |
+| **Done** | ~50% — helpers implemented (`ws_send_ping`, pong handler, health check); config `WebSocketServer.Heartbeat.*` exists |
+| **Remaining** | Schedule server-side pings from writable/timer path; optional stale-connection close; blackbox in `test_23` with short `PingIntervalSeconds` |
+| **Why now** | File had zero blackbox coverage because nothing calls `ws_send_ping`. Client pings alone never exercise this module. |
+| **Note** | Distinct from libwebsockets client `--ping-interval` used in tests today. |
+
 ---
 
 ## P2 — Active product subsystems (larger, clear value)
 
-### 4. Mail Relay — finish remaining phases
+### 6. Mail Relay — finish remaining phases
 
 | | |
 |---|---|
@@ -67,21 +91,52 @@ Actionable incomplete work only. Completed plans live in
 | **Remaining** | System template seeds, Phase 9 Lithium UI, Phase 10 ops remainder, Phases 11–15 (inbound/rewrite/security/docs as scoped), auth MFA wiring via OTP |
 | **Why next** | Core send/API/Lua/OTP stack works (`test_57`/`test_58`). Remaining is product surface and ops polish. |
 
-### 5. Chat — Phase 13 advanced features
+### 7. Chat — Phase 13 advanced features (+ known gaps)
 
 | | |
 |---|---|
 | **Plan** | [`CHAT_PLAN_PHASE_13.md`](/docs/H/plans/CHAT_PLAN_PHASE_13.md) · index [`CHAT_PLAN_SUMMARY.md`](/docs/H/plans/CHAT_PLAN_SUMMARY.md) |
 | **Effort** | XL |
-| **Done** | Phases 1–12 complete; Phase 13 streaming-architecture note done, feature list mostly open |
-| **Remaining** | Function calling, response cache, key load-balance, fallback engines, analytics, templates, convo APIs, cost tracking, A/B, tests |
-| **Why later** | Large wishlist on top of a working chat proxy. Pick individual bullets only when a product need appears. |
+| **Done** | Phases 1–12 complete; WS streaming + media single-upload + non-stream `chat_done` blackbox live; Phase 13 feature list mostly open |
+| **Remaining (Phase 13 wishlist)** | Function calling, response cache, key load-balance, fallback engines, analytics, templates, convo APIs, cost tracking, A/B, tests |
+| **Remaining (concrete gaps from 2026-07 cleanup)** | See sub-bullets below — keep visible even if not started with the full P13 wishlist |
+| **Why later** | Large wishlist on top of a working chat proxy. Prefer discrete bullets when product needs them. |
+
+#### 7a. REST `/api/conduit/auth_chat` SSE streaming
+
+| | |
+|---|---|
+| **Code** | `src/api/wschat/auth_stream/auth_stream.c` · `src/api/wschat/auth_chat/auth_chat.c` |
+| **Effort** | L (MHD callback/SSE + reuse multi_curl proxy path) |
+| **Done** | ~20% — non-stream REST works; endpoint returns intentional **501** / SSE error event; WS streaming fully works |
+| **Remaining** | MHD incremental SSE response; drive `chat_proxy_*` multi-stream into SSE frames; flip `stream:true` off 501; update `test_59` (today asserts 501) and Unity stubs |
+| **Note** | Interactive streaming is already on WebSocket. REST SSE is parity for HTTP-only clients. |
+
+#### 7b. WebSocket chunked media upload
+
+| | |
+|---|---|
+| **Code** | `src/websocket/websocket_server_media.c` (`handle_media_chunk_message`) |
+| **Effort** | M |
+| **Done** | ~70% — single-message `media_upload` path complete (hash, store #071, blackbox) |
+| **Remaining** | Session buffers for `media_chunk` (upload_id / index / total); assemble → store; bounds/concurrency; cleanup on disconnect |
+| **Note** | Stub returns -1 by design until multi-frame uploads are required. |
+
+#### 7c. Dead / legacy chat stream callback cleanup
+
+| | |
+|---|---|
+| **Code** | `src/websocket/websocket_server_chat_stream.c` · unused `send_chat_chunk` / `send_stream_*` helpers in `websocket_server_chat_send.c` |
+| **Effort** | S |
+| **Done** | Live path is multi_curl (`proxy_multi` / `proxy_mc`); legacy callback unwired |
+| **Remaining** | Delete or `#if 0` legacy callback; drop dead send helpers **or** rewire if a product path needs them; adjust Unity if any |
+| **Note** | Coverage noise only — not a runtime bug. |
 
 ---
 
 ## P3 — Greenfield / deferred (keep visible, do not start casually)
 
-### 6. Hydrogen as OIDC Identity Provider
+### 8. Hydrogen as OIDC Identity Provider
 
 | | |
 |---|---|
@@ -89,9 +144,43 @@ Actionable incomplete work only. Completed plans live in
 | **Effort** | XL |
 | **Done** | 0% — scaffold/stubs only; plan authored |
 | **Remaining** | Phases 0–17 (crypto, JWKS, clients, codes, tokens, UserInfo, refresh, Test 45, docs) |
-| **Note** | Separate from completed OIDC **RP** (Keycloak). Start only if first-party IdP is a real goal. |
+| **Code stubs (explicit)** | `src/oidc/oidc_service.c` (authorize/token/userinfo/introspect/revoke TODOs) · `src/api/oidc/oidc_service.c` · partial alg support notes in `oidc_rp_idtoken.c` (RP verifier — track under Keycloak item if RP-only) |
+| **Note** | Separate from completed OIDC **RP** (Keycloak). Start only if first-party IdP is a real goal. OIDC cleanup intentionally deferred from the 2026-07 non-OIDC TODO purge. |
 
-### 7. Mirage distributed proxy
+### 9. Print subsystem — job → device / Beryllium handoff
+
+| | |
+|---|---|
+| **Plan** | None (print queue + Beryllium analyze exist as pieces) |
+| **Code** | `src/print/print_queue_manager.c` · `src/print/beryllium.c` · upload path in webserver |
+| **Effort** | L–XL (needs printer I/O product definition) |
+| **Done** | ~30% — queue create/dequeue/thread; job JSON parse/log; Beryllium G-code analysis library present |
+| **Remaining** | Define device interface; wire `process_print_job` → open file → optional Beryllium analyze → printer driver/status; blackbox when hardware or mock exists |
+| **Note** | Launch marks print running; processing is log-only until a real sink exists. |
+
+### 10. mDNS client runtime (browse / discover)
+
+| | |
+|---|---|
+| **Plan** | None (server is complete under `src/mdns/`) |
+| **Code** | `src/launch/launch_mdns_client.c` · config `mdns_client` · no `src/mdns_client/` worker |
+| **Effort** | L–XL |
+| **Done** | ~25% — config validation, launch/landing registry, readiness checks |
+| **Remaining** | Browse PTR/SRV/TXT for configured service types; result cache/API; real init beyond “register RUNNING”; tests |
+| **Note** | Launch is a scaffold that marks the subsystem running without discovery. mDNS **server** announcements are separate and working (`test_25`). |
+
+### 11. Notify subsystem — outbound SMTP runtime
+
+| | |
+|---|---|
+| **Plan** | None (or fold into Mail Relay if product chooses one path) |
+| **Code** | `src/launch/launch_notify.c` · config `notify.smtp` · no `src/notify/` send path |
+| **Effort** | M–L |
+| **Done** | ~25% — config + launch validates SMTP notifier settings and registers subsystem |
+| **Remaining** | Decide: implement notify SMTP client **or** officially route events through Mail Relay; then wire auth/system events; tests |
+| **Note** | Mail Relay is the production mail stack today. Notify launch is config-only placeholder. |
+
+### 12. Mirage distributed proxy
 
 | | |
 |---|---|
@@ -116,18 +205,35 @@ Actionable incomplete work only. Completed plans live in
 
 Moved under [`plans/complete/`](/docs/H/plans/complete/) in this cleanup, including:
 
-Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, Chat Phases 1–12, Lua scripting, Cap query, Mail Relay blackbox, Static-function purge, Log fanout, VictoriaLogs, Test 40 debug archaeology, and the old code-level `plans/TODO.md`.
+Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, Chat Phases 1–12, Lua scripting, Cap query, Mail Relay blackbox, Static-function purge, Log fanout, FilterLogs, Test 40 debug archaeology, and the old code-level `plans/TODO.md`.
+
+**2026-07 non-OIDC code cleanup** (not plan moves, but closed as code debt):
+
+- Database façade TODOs wired (`database_execute`, shutdown/health/reload/remove/validate)
+- Register password persist via QueryRef #052
+- `api_create_jwt` real HS256 implementation
+- Chat LRU write-through dirty-flag fix
+- Stale conduit swagger 501 / config `DUMP_NOT_IMPLEMENTED` removed
+- Intentional stubs documented in-code (REST SSE 501, media_chunk -1, print log-only, mDNS/Notify launch scaffold)
 
 ---
 
 ## Status snapshot
 
-| # | Plan | Effort left | Done | Priority |
+| # | Item | Effort left | Done | Priority |
 |---|------|-------------|------|----------|
 | 1 | Keycloak / OIDC RP E2E | S–M | ~90% | P0 |
 | 2 | Database params closeout | S | ~75% | P0 |
 | 3 | Unity ASAN | M | 0% | P1 |
-| 4 | Mail Relay remainder | L–XL | ~70% | P2 |
-| 5 | Chat Phase 13 | XL | ~15% of P13 | P2 |
-| 6 | OIDC IdP | XL | 0% | P3 |
-| 7 | Mirage | XL | 0% | P3 |
+| 4 | Register email → account_contacts | S–M | ~40% | P1 |
+| 5 | WS server heartbeat wire-up | S–M | ~50% | P1 |
+| 6 | Mail Relay remainder | L–XL | ~70% | P2 |
+| 7 | Chat Phase 13 (+ 7a–7c gaps) | XL | ~15% of P13 | P2 |
+| 7a | REST auth_chat SSE streaming | L | ~20% | P2 |
+| 7b | WS chunked media upload | M | ~70% | P2 |
+| 7c | Legacy chat_stream dead code | S | n/a | P2 |
+| 8 | OIDC IdP (+ service stubs) | XL | 0% | P3 |
+| 9 | Print job → device / Beryllium | L–XL | ~30% | P3 |
+| 10 | mDNS client runtime | L–XL | ~25% | P3 |
+| 11 | Notify SMTP runtime | M–L | ~25% | P3 |
+| 12 | Mirage | XL | 0% | P3 |

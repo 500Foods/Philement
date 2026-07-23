@@ -11,7 +11,7 @@
 #include <src/database/database.h>
 
 // Forward declarations for functions being tested
-void database_cleanup_old_results(time_t max_age_seconds);
+size_t database_cleanup_old_results(time_t max_age_seconds);
 
 // Test function prototypes
 void test_database_cleanup_old_results_basic_functionality(void);

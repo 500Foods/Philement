@@ -207,6 +207,8 @@ DatabaseQueueManager* database_queue_manager_create(size_t max_databases);
 void database_queue_manager_destroy(DatabaseQueueManager* manager);
 bool database_queue_manager_add_database(DatabaseQueueManager* manager, DatabaseQueue* db_queue);
 DatabaseQueue* database_queue_manager_get_database(DatabaseQueueManager* manager, const char* name);
+// Remove by name: extracts the queue, compacts the manager table, then destroys it.
+bool database_queue_manager_remove_database(DatabaseQueueManager* manager, const char* name);
 
 // Query operations
 bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query);

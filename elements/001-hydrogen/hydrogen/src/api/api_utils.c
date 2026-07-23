@@ -13,6 +13,11 @@
 #include <src/hydrogen.h>
 #include <src/oidc/oidc_tokens.h>
 #include <src/webserver/web_server_compression.h>
+#include <src/utils/utils_crypto.h>
+
+#include <openssl/evp.h>
+#include <openssl/hmac.h>
+#include <openssl/sha.h>
 
 // Local includes
 #include "api_utils.h"
@@ -360,16 +365,77 @@ json_t *api_validate_jwt(const char *token, const char *secret) {
 }
 
 /**
- * Create a JWT token from claims
+ * Create a JWT token from claims (HS256 with the provided secret).
+ * Production auth tokens use generate_jwt in auth_service_jwt.c; this is the
+ * generic claims+secret helper for API utilities.
  */
 char *api_create_jwt(const json_t *claims, const char *secret) {
-    if (!claims || !secret) return NULL;
-    
-    // TODO: Implement actual JWT creation with the provided secret
-    // This is a stub for now
-    log_this(SR_API, "JWT creation not fully implemented", LOG_LEVEL_ALERT, 0);
-    
-    return strdup("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkR1bW15IFRva2VuIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c");
+    if (!claims || !secret) {
+        return NULL;
+    }
+
+    json_t *header = json_object();
+    if (!header) {
+        return NULL;
+    }
+    json_object_set_new(header, "alg", json_string("HS256"));
+    json_object_set_new(header, "typ", json_string("JWT"));
+
+    char *header_json = json_dumps(header, JSON_COMPACT);
+    json_decref(header);
+    char *payload_json = json_dumps(claims, JSON_COMPACT);
+    if (!header_json || !payload_json) {
+        free(header_json);
+        free(payload_json);
+        return NULL;
+    }
+
+    char *header_b64 = utils_base64url_encode((const unsigned char *)header_json, strlen(header_json));
+    char *payload_b64 = utils_base64url_encode((const unsigned char *)payload_json, strlen(payload_json));
+    free(header_json);
+    free(payload_json);
+    if (!header_b64 || !payload_b64) {
+        free(header_b64);
+        free(payload_b64);
+        return NULL;
+    }
+
+    char *signing_input = NULL;
+    if (asprintf(&signing_input, "%s.%s", header_b64, payload_b64) < 0 || !signing_input) {
+        free(header_b64);
+        free(payload_b64);
+        return NULL;
+    }
+
+    unsigned char signature[SHA256_DIGEST_LENGTH];
+    unsigned int signature_len = SHA256_DIGEST_LENGTH;
+    if (HMAC(EVP_sha256(), secret, (int)strlen(secret),
+             (const unsigned char *)signing_input, strlen(signing_input),
+             signature, &signature_len) == NULL) {
+        free(header_b64);
+        free(payload_b64);
+        free(signing_input);
+        return NULL;
+    }
+
+    char *signature_b64 = utils_base64url_encode(signature, signature_len);
+    if (!signature_b64) {
+        free(header_b64);
+        free(payload_b64);
+        free(signing_input);
+        return NULL;
+    }
+
+    char *jwt = NULL;
+    if (asprintf(&jwt, "%s.%s.%s", header_b64, payload_b64, signature_b64) < 0) {
+        jwt = NULL;
+    }
+
+    free(header_b64);
+    free(payload_b64);
+    free(signature_b64);
+    free(signing_input);
+    return jwt;
 }
 
 // ============================================================================

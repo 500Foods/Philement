@@ -113,6 +113,29 @@ bool pending_result_signal_ready(
 QueryResult* pending_result_get(const PendingQueryResult* pending);
 
 /**
+ * @brief Look up a pending result by query_id (does not remove it)
+ *
+ * The returned pointer remains owned by the manager. Callers must not free
+ * it and should treat it as unstable across other manager mutations unless
+ * they hold manager_lock (status/age helpers copy fields under lock).
+ *
+ * @param manager The pending result manager
+ * @param query_id Query identifier to find
+ * @return Pending entry, or NULL if not found
+ */
+PendingQueryResult* pending_result_find(PendingResultManager* manager, const char* query_id);
+
+/**
+ * @brief Best-effort cancel: mark a pending query timed out and wake waiters
+ *
+ * Does not interrupt an in-flight engine execute; that path is owned by the
+ * connection watchdog cancel hooks. This only abandons the waiter side.
+ *
+ * @return true if a matching pending entry was found and signaled
+ */
+bool pending_result_cancel(PendingResultManager* manager, const char* query_id, const char* dqm_label);
+
+/**
  * @brief Check if a pending result has completed
  *
  * @param pending The pending result

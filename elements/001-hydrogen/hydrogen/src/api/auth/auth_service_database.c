@@ -561,8 +561,11 @@ int create_account_record(const char* username, const char* email,
     // Cleanup
     free_query_result(result);
 
-    // TODO: Store email in account_contacts using QueryRef #052
-    (void)email; // Suppress unused parameter warning for now
+    // Email is accepted for the register API surface but is not persisted here:
+    // QueryRef #052 is password-hash storage (used by register after create).
+    // account_contacts insert has no dedicated QueryRef yet; login still uses
+    // existing contact lookup QueryRefs when contacts are seeded by migrations.
+    (void)email;
 
     return account_id;
 }

@@ -402,15 +402,12 @@ void database_queue_perform_heartbeat(DatabaseQueue* db_queue) {
         database_queue_manage_child_queues(db_queue);
     }
 
-    // Periodic cleanup of expired pending results
-    PendingResultManager* pending_mgr = get_pending_result_manager();
-    if (pending_mgr) {
-        size_t cleaned = pending_result_cleanup_expired(pending_mgr, NULL);
-        if (cleaned > 0) {
-            char* cleanup_label = database_queue_generate_label(db_queue);
-            log_this(cleanup_label, "Cleaned up %zu expired pending results", LOG_LEVEL_DEBUG, 1, cleaned);
-            free(cleanup_label);
-        }
+    // Periodic cleanup of expired pending results (via name-based façade)
+    size_t cleaned = database_cleanup_old_results(0);
+    if (cleaned > 0) {
+        char* cleanup_label = database_queue_generate_label(db_queue);
+        log_this(cleanup_label, "Cleaned up %zu expired pending results", LOG_LEVEL_DEBUG, 1, cleaned);
+        free(cleanup_label);
     }
 }
 
