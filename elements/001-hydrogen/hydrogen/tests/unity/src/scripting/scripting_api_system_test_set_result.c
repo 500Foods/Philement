@@ -1,5 +1,5 @@
 /*
- * Unity Test File: scripting_api_test_set_result.c
+ * Unity Test File: scripting_api_system_test_set_result.c
  *
  * Phase 26 of the LUA_PLAN. Tests H.set_result - the artifact metadata
  * declaration function exposed to Lua scripts.
@@ -72,6 +72,8 @@
  void test_set_result_empty_string_clears_fields(void);
  void test_set_result_end_to_end_through_worker_pool(void);
  void test_set_result_strings_survive_lua_gc(void);
+ void test_set_result_scoreboard_update_failure_logs_error(void);
+ void test_install_set_result_h_table_missing(void);
 
  // Poll the scoreboard until the job reaches a terminal status. The
  // same shape used by worker_pool_test_execute.c / _progress.c.
@@ -371,10 +373,54 @@
      TEST_ASSERT_NOT_NULL(strstr(e->result_type, "type-"));
      TEST_ASSERT_NOT_NULL(e->result_location);
      TEST_ASSERT_NOT_NULL(strstr(e->result_location, "location-"));
-     scoreboard_entry_free(e);
-     free(id);
-     scoreboard_destroy(sb);
- }
+    scoreboard_entry_free(e);
+    free(id);
+    scoreboard_destroy(sb);
+}
+
+// When the job_id in the context does not exist in the scoreboard,
+// scoreboard_update_result returns false. The host function should
+// log "scoreboard update failed" and return 0 without raising.
+void test_set_result_scoreboard_update_failure_logs_error(void) {
+    Scoreboard* sb = scoreboard_create();
+    TEST_ASSERT_NOT_NULL(sb);
+
+    lua_State* L = H_lua_create_context();
+    TEST_ASSERT_NOT_NULL(L);
+
+    H_lua_job_context ctx = {0};
+    snprintf(ctx.job_id, sizeof(ctx.job_id), "%s", "FAKE");
+    ctx.scoreboard = sb;
+    H_lua_set_job_context(L, &ctx);
+
+    int rc = H_lua_run_string(L,
+        "H.set_result('json', 'inline:report:fail')",
+        "[phase26:scoreboard-fail]");
+    TEST_ASSERT_EQUAL_INT_MESSAGE(LUA_OK, rc,
+        "scoreboard update failure should not raise a Lua error");
+
+    TEST_ASSERT_NOT_NULL(strstr(mock_logging_get_last_message(),
+        "scoreboard update failed"));
+
+    H_lua_set_job_context(L, NULL);
+    H_lua_destroy_context(L);
+    scoreboard_destroy(sb);
+}
+
+// H_lua_install_set_result with no H table: logs "H table missing".
+void test_install_set_result_h_table_missing(void) {
+    lua_State* L = H_lua_create_context();
+    TEST_ASSERT_NOT_NULL(L);
+
+    lua_pushnil(L);
+    lua_setglobal(L, "H");
+
+    H_lua_install_set_result(L);
+
+    TEST_ASSERT_NOT_NULL(strstr(mock_logging_get_last_message(), "H table missing"));
+
+    H_lua_destroy_context(L);
+}
 
  int main(void) {
      UNITY_BEGIN();
@@ -388,7 +434,9 @@
      RUN_TEST(test_set_result_multiple_calls_overwrite);
      RUN_TEST(test_set_result_empty_string_clears_fields);
      RUN_TEST(test_set_result_end_to_end_through_worker_pool);
-     RUN_TEST(test_set_result_strings_survive_lua_gc);
+    RUN_TEST(test_set_result_strings_survive_lua_gc);
+    RUN_TEST(test_set_result_scoreboard_update_failure_logs_error);
+    RUN_TEST(test_install_set_result_h_table_missing);
 
-     return UNITY_END();
+    return UNITY_END();
  }

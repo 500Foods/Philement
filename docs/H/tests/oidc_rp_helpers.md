@@ -260,7 +260,7 @@ Confirms GET on `/handoff` returns 405 even when OIDC is enabled.
 - [oidc_rp_helpers_link.md](/docs/H/tests/oidc_rp_helpers_link.md) - Phases 18-20 linker tests
 - [oidc_rp_helpers_default.md](/docs/H/tests/oidc_rp_helpers_default.md) - Phase 21 default strategy
 - [oidc_rp_helpers_roles.md](/docs/H/tests/oidc_rp_helpers_roles.md) - Phase 22 role mapping
-- [OIDC RP Implementation Plan](/docs/H/plans/AUTH_PLAN.md)
+- [OIDC RP Implementation Plan](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md)
 
 ## Script comments
 

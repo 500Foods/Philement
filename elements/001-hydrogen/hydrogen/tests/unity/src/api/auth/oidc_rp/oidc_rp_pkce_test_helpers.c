@@ -1,7 +1,7 @@
 /*
  * Unity Test File: OIDC RP PKCE / nonce / state helpers
  *
- * Phase 8 of `docs/OIDC-PLAN.md`. Covers
+ * Phase 8 of `docs/H/plans/OIDC-PLAN.md`. Covers
  *   - oidc_rp_make_code_verifier()
  *   - oidc_rp_make_code_challenge()
  *   - oidc_rp_make_random_hex()

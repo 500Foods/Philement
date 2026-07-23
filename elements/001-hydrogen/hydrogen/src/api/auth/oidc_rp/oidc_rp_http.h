@@ -2,7 +2,7 @@
  * @file oidc_rp_http.h
  * @brief OIDC Relying Party — narrow outbound HTTP GET/POST helpers.
  *
- * Phase 9 of the OIDC plan (`docs/OIDC-PLAN.md`) introduced the GET
+ * Phase 9 of the OIDC plan (`docs/H/plans/OIDC-PLAN.md`) introduced the GET
  * wrapper for discovery + JWKS. Phase 11 added a companion POST
  * wrapper for the token-endpoint exchange. Both share the same test
  * seam, body cap, and TLS discipline.

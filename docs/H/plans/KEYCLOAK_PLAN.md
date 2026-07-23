@@ -52,7 +52,7 @@ Related:
 - `/elements/001-hydrogen/hydrogen/tests/lib/mock_keycloak/` — mock IdP for CI.
 - `/docs/H/api/auth/oidc_rp.md` — RP API contract.
 - `/docs/Li/LITHIUM-KEYCLOAK.md` — client SPA recipe (Lithium-oriented; Phase 5 generalizes).
-- `/docs/OIDC-PLAN.md` — historical full implementation plan (Phases 1–26 done; 27 open).
+- `/docs/H/plans/OIDC-PLAN.md` — historical full implementation plan (Phases 1–26 done; 27 open).
 - `/docs/H/plans/OIDC_E2E_LOG.md` — manual real-Keycloak checklist (unsigned).
 - Lithium SPA code exists but **frontend changes are deferred** per this plan until a later phase.
 
@@ -155,7 +155,7 @@ JWT `roles` claim is comma-separated **role_id integers** (e.g. `"1,3"`), not ro
 - Mock Keycloak + `test_42_oidc_rp.sh` through link strategies and role mapping.
 - API docs: [`/docs/H/api/auth/oidc_rp.md`](/docs/H/api/auth/oidc_rp.md).
 - Client recipe: [`/docs/Li/LITHIUM-KEYCLOAK.md`](/docs/Li/LITHIUM-KEYCLOAK.md).
-- Historical plan Phases 1–26: ✅ in [`/docs/OIDC-PLAN.md`](/docs/OIDC-PLAN.md).
+- Historical plan Phases 1–26: ✅ in [`/docs/H/plans/OIDC-PLAN.md`](/docs/H/plans/OIDC-PLAN.md).
 
 ### Open / incomplete
 
@@ -258,7 +258,7 @@ Confirm the shipped RP foundation, document remaining gaps with evidence, and lo
 
 ### Entry Gate
 
-- Clean tree understanding of this plan and [`OIDC-PLAN.md`](/docs/OIDC-PLAN.md) phase index.
+- Clean tree understanding of this plan and [`OIDC-PLAN.md`](/docs/H/plans/OIDC-PLAN.md) phase index.
 - Ability to run `mkt` and `test_42_oidc_rp.sh`.
 
 ### Work Items
@@ -746,12 +746,12 @@ No reverse migration required to disable the feature.
 
 | Document | Role |
 |---|---|
-| [`/docs/OIDC-PLAN.md`](/docs/OIDC-PLAN.md) | Historical full implementation (Phases 1–26 done). Use as archaeology, not day-to-day checklist. |
+| [`/docs/H/plans/OIDC-PLAN.md`](/docs/H/plans/OIDC-PLAN.md) | Historical full implementation (Phases 1–26 done). Use as archaeology, not day-to-day checklist. |
 | This file (`KEYCLOAK_PLAN.md`) | Operational gated plan for production SSO, provision policy, client/IdP docs, E2E, post-MVP. |
 | [`/docs/H/plans/OIDC_E2E_LOG.md`](/docs/H/plans/OIDC_E2E_LOG.md) | Manual real-Keycloak results (Phase 5). |
 | [`/docs/H/api/auth/oidc_rp.md`](/docs/H/api/auth/oidc_rp.md) | Wire contract for RP endpoints. |
 | [`/docs/Li/LITHIUM-KEYCLOAK.md`](/docs/Li/LITHIUM-KEYCLOAK.md) | Lithium-oriented client recipe; Phase 4 generalizes for all clients. |
-| [`/docs/H/plans/AUTH_PLAN.md`](/docs/H/plans/AUTH_PLAN.md) | Password auth / JWT baseline. |
+| [`/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md`](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md) | Password auth / JWT baseline. |
 | [`/docs/H/plans/MAILRELAY_PLAN.md`](/docs/H/plans/MAILRELAY_PLAN.md) | Structural model for gated plans. |
 
 ---
@@ -762,7 +762,7 @@ Append discoveries, surprises, and decisions here as phases complete.
 
 ### Decisions log
 
-- (Plan authored, 2026-07-11) **KEYCLOAK_PLAN created.** Intent: gated production/SSO completion plan, not a rewrite of the shipped RP. Historical implementation remains in `/docs/OIDC-PLAN.md` (1–26 ✅, 27 open). Hydrogen-as-IdP out of scope. Frontend coding deferred until Phase 6. Auto-provision is already implemented in RP linkers; Phase 3 locks operator policy and validates matrix. Client work in Phase 4 is documentation-only. Real Keycloak sign-off is Phase 5 via `OIDC_E2E_LOG.md`.
+- (Plan authored, 2026-07-11) **KEYCLOAK_PLAN created.** Intent: gated production/SSO completion plan, not a rewrite of the shipped RP. Historical implementation remains in `/docs/H/plans/OIDC-PLAN.md` (1–26 ✅, 27 open). Hydrogen-as-IdP out of scope. Frontend coding deferred until Phase 6. Auto-provision is already implemented in RP linkers; Phase 3 locks operator policy and validates matrix. Client work in Phase 4 is documentation-only. Real Keycloak sign-off is Phase 5 via `OIDC_E2E_LOG.md`.
 - (Phase 0 confirmation, 2026-07-11) **Foundation verified complete.** Historical OIDC-PLAN.md Phases 1-26 are all ✅ COMPLETE. Test 42 passes 88/88 across mock blackbox coverage (disabled endpoints, method gates, mock IdP discovery/JWKS, /start redirect, /handoff exchange, /callback failure paths + happy path, all 4 linker strategies, role mapping). Policy defaults locked for production:
   - Production linking strategy: **`match_email_only`** (link by verified email only, no auto-provision)
   - Provisioning: **off** (`ProvisionDefaults.Enabled = false`)

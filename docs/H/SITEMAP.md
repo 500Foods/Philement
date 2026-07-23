@@ -17,6 +17,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [SETUP.md](/docs/H/SETUP.md): Describes how to setup the dev environment
 - [SITEMAP.md](/docs/H/SITEMAP.md): An index to all the Markdown files in the proejct
 - [STRUCTURE.md](/docs/H/STRUCTURE.md): An index to all of the files in the project
+- [TODO.md](/docs/H/TODO.md): Prioritized incomplete plans and actionable backlog
 
 ## Folder: /elements/001-hydrogen/hydrogen/cmake
 
@@ -94,14 +95,67 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [home-workshop.md](/docs/H/core/guides/use-cases/home-workshop.md)
 - [print-farm.md](/docs/H/core/guides/use-cases/print-farm.md)
 
-### Folder: /docs/plans
+### Folder: /docs/H/plans
 
-- [DATABASE_PLAN.md](/docs/H/plans/DATABASE_PLAN.md): Implementation plan for Database feature
-- [TERMINAL_PLAN.md](/docs/H/plans/TERMINAL_PLAN.md): Implementation plan for Terminal feature
-- [LUA_PLAN_COMPLETE.md](/docs/H/plans/LUA_PLAN_COMPLETE.md): Scripting subsystem implementation roadmap
-- [OIDC_E2E_LOG.md](/docs/H/plans/OIDC_E2E_LOG.md): OIDC end-to-end manual test log (Phase 27)
-- [KEYCLOAK_PLAN.md](/docs/H/plans/KEYCLOAK_PLAN.md): Keycloak SSO plan (Hydrogen as OIDC RP; provision, client docs, E2E, post-MVP)
-- [UNITY_ASAN_PLAN.md](/docs/H/plans/UNITY_ASAN_PLAN.md): Plan for a separate ASAN Unity test variant (memory-safety gate)
+- [README.md](/docs/H/plans/README.md): Plans folder index
+- [CHAT_PLAN_PHASE_13.md](/docs/H/plans/CHAT_PLAN_PHASE_13.md): Chat Phase 13 advanced features (open)
+- [CHAT_PLAN_SUMMARY.md](/docs/H/plans/CHAT_PLAN_SUMMARY.md): Chat service plan index (Phases 1–12 complete, 13 open)
+- [DATABASE_UPDATE_PLAN.md](/docs/H/plans/DATABASE_UPDATE_PLAN.md): Database parameter binding enhancements (closeout remaining)
+- [KEYCLOAK_PLAN.md](/docs/H/plans/KEYCLOAK_PLAN.md): Keycloak SSO / Hydrogen as OIDC RP (Phase 5 E2E in progress)
+- [MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md): Mail Relay subsystem implementation plan
+- [MIRAGE_PLAN.md](/docs/H/plans/MIRAGE_PLAN.md): Mirage distributed proxy architecture (deferred)
+- [OIDC-PLAN.md](/docs/H/plans/OIDC-PLAN.md): Historical OIDC RP implementation phase log
+- [OIDC_E2E_LOG.md](/docs/H/plans/OIDC_E2E_LOG.md): OIDC real-Keycloak manual E2E checklist
+- [OIDC_IDP.md](/docs/H/plans/OIDC_IDP.md): Hydrogen as OIDC Identity Provider (not started)
+- [UNITY_ASAN_PLAN.md](/docs/H/plans/UNITY_ASAN_PLAN.md): Separate ASAN Unity test variant plan
+
+### Folder: /docs/H/plans/complete
+
+- [README.md](/docs/H/plans/complete/README.md): Index of completed plans
+
+Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for active work.
+
+- [AUTH_PLAN_ACURANZO_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_ACURANZO_COMPLETE.md)
+- [AUTH_PLAN_API_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_API_COMPLETE.md)
+- [AUTH_PLAN_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md)
+- [AUTH_PLAN_DIAGRAMS_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_DIAGRAMS_COMPLETE.md)
+- [AUTH_PLAN_ERRORS_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_ERRORS_COMPLETE.md)
+- [AUTH_PLAN_IMPLEMENTATION_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_IMPLEMENTATION_COMPLETE.md)
+- [AUTH_PLAN_INTEGRATION_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_INTEGRATION_COMPLETE.md)
+- [AUTH_PLAN_OPERATIONS_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_OPERATIONS_COMPLETE.md)
+- [AUTH_PLAN_PERFORMANCE_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_PERFORMANCE_COMPLETE.md)
+- [AUTH_PLAN_PROGRESS_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_PROGRESS_COMPLETE.md)
+- [AUTH_PLAN_REVIEW_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_REVIEW_COMPLETE.md)
+- [AUTH_PLAN_SECURITY_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_SECURITY_COMPLETE.md)
+- [AUTH_PLAN_TESTS_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_TESTS_COMPLETE.md)
+- [CAP_PLAN_QUERY-COMPLETE.md](/docs/H/plans/complete/CAP_PLAN_QUERY-COMPLETE.md)
+- [CHAT_PLAN_ORIGINAL_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_ORIGINAL_COMPLETE.md)
+- [CHAT_PLAN_PHASE_10_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_10_COMPLETE.md)
+- [CHAT_PLAN_PHASE_11_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_11_COMPLETE.md)
+- [CHAT_PLAN_PHASE_12_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_12_COMPLETE.md)
+- [CHAT_PLAN_PHASE_1_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_1_COMPLETE.md)
+- [CHAT_PLAN_PHASE_2_5_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_2_5_COMPLETE.md)
+- [CHAT_PLAN_PHASE_2_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_2_COMPLETE.md)
+- [CHAT_PLAN_PHASE_3_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_3_COMPLETE.md)
+- [CHAT_PLAN_PHASE_4_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_4_COMPLETE.md)
+- [CHAT_PLAN_PHASE_5_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_5_COMPLETE.md)
+- [CHAT_PLAN_PHASE_6_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_6_COMPLETE.md)
+- [CHAT_PLAN_PHASE_7_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_7_COMPLETE.md)
+- [CHAT_PLAN_PHASE_8_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_8_COMPLETE.md)
+- [CHAT_PLAN_PHASE_9_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_9_COMPLETE.md)
+- [CONDUIT_COMPLETE.md](/docs/H/plans/complete/CONDUIT_COMPLETE.md)
+- [CONDUIT_DIAGRAMS_COMPLETE.md](/docs/H/plans/complete/CONDUIT_DIAGRAMS_COMPLETE.md)
+- [CONDUIT_FIX_COMPLETE.md](/docs/H/plans/complete/CONDUIT_FIX_COMPLETE.md)
+- [DATABASE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_PLAN_COMPLETE.md)
+- [LOG_FANOUT_PLAN_COMPLETE.md](/docs/H/plans/complete/LOG_FANOUT_PLAN_COMPLETE.md)
+- [LUA_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md)
+- [MAILRELAY_BLACKBOX_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md)
+- [MIGRATIONS_COMPLETE.md](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md)
+- [STATIC_COMPLETE.md](/docs/H/plans/complete/STATIC_COMPLETE.md)
+- [TERMINAL_PLAN_COMPLETE.md](/docs/H/plans/complete/TERMINAL_PLAN_COMPLETE.md)
+- [TEST_40_DEBUG_PLAN_COMPLETE.md](/docs/H/plans/complete/TEST_40_DEBUG_PLAN_COMPLETE.md)
+- [TODO_COMPLETE.md](/docs/H/plans/complete/TODO_COMPLETE.md)
+- [VICTORIALOGGING_COMPLETE.md](/docs/H/plans/complete/VICTORIALOGGING_COMPLETE.md)
 
 ### Folder: /docs/reference
 

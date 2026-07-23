@@ -1,7 +1,7 @@
 /*
  * Unity Test File: OIDC RP Discovery cache + parser
  *
- * Phase 9 of `docs/OIDC-PLAN.md`. Covers the public API of
+ * Phase 9 of `docs/H/plans/OIDC-PLAN.md`. Covers the public API of
  * src/api/auth/oidc_rp/oidc_rp_discovery.c:
  *   - oidc_rp_discovery_init / shutdown
  *   - oidc_rp_discovery_parse (exposed for tests)

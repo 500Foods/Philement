@@ -979,7 +979,7 @@ Enabled + outbound? Launch Go? DB migrated + templates? Preview works? SMTP reac
 | [LUA_GUIDE.md](/docs/H/LUA_GUIDE.md) | Lua + Hydrogen `H` intro |
 | [LUA_FEATURES.md](/docs/H/LUA_FEATURES.md) | Pure Lua strings/tables/dates |
 | [lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md) | Full `H.mail` / `H.notify` reference |
-| [LUA_PLAN_COMPLETE.md](/docs/H/plans/LUA_PLAN_COMPLETE.md) | Scripting subsystem roadmap |
+| [LUA_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md) | Scripting subsystem roadmap |
 | Helium migrations under `/elements/002-helium/acuranzo/migrations/` | Schema and seed templates |
 
 ### Design principles (recap)

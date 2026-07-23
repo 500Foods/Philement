@@ -29,7 +29,7 @@ CURRENT PAUSE POINT (as of 2026-07-10): **Phase 7B Lua freeform complete (L.1–
 
 ### Blackbox coverage work (separate track — not part of Phase 7B+)
 
-- **Detailed plan:** [Blackbox Improvements](/docs/H/plans/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md) — launch-time
+- **Detailed plan:** [Blackbox Improvements](/docs/H/plans/complete/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md) — launch-time
   test seams (`SendOtpOnLaunch`, `FailNextSendOnLaunch`) to add blackbox coverage
   for `mailrelay_otp.c` (Test 58) and `mailrelay_retry.c` (Test 57).
 - **Status (as of 2026-07-14):** Plan Steps 1–4 implemented and verified
@@ -127,7 +127,7 @@ Run any of these with `mku <base name without .c>`, for example: `mku config_mai
 
 ### Existing Lua scripting mail/notify pieces (verified 2026-07-06)
 
-- Lua plan status is complete in `/docs/H/plans/LUA_PLAN_COMPLETE.md`; Phase 19 intentionally installed stable `H.mail` / `H.notify` stubs because Mail Relay did not exist yet.
+- Lua plan status is complete in `/docs/H/plans/complete/LUA_PLAN_COMPLETE.md`; Phase 19 intentionally installed stable `H.mail` / `H.notify` stubs because Mail Relay did not exist yet.
 - Stub implementation: `/elements/001-hydrogen/hydrogen/src/scripting/scripting_api_mail_notify.c`. `H.mail.send`, `H.mail.send_sync`, `H.notify.send`, and `H.notify.send_sync` currently return handles/errors with `"mail: not implemented"` / `"notify: not implemented"`.
 - `H_lua_install_mail_notify(L)` is called from `/elements/001-hydrogen/hydrogen/src/scripting/lua_context.c`, so the Lua API surface already exists and must be backfilled rather than newly designed.
 - Handle support already exists in `/elements/001-hydrogen/hydrogen/src/scripting/scripting_handle.{c,h}` via `H_HK_MAIL`, `H_HK_NOTIFY`, `mail_error`, and `notify_error` fields.
@@ -702,7 +702,7 @@ Entry Gate: none (starting phase). Confirm `mkt` and `mku config_mail_relay_test
   - Verification: this document's Subsystem File Map reflects the agreed final paths.
 
 - [x] 0.6 Lock the Lua backfill contract for existing `H.mail` / `H.notify` stubs.
-  - Files to review: `src/scripting/scripting_api_mail_notify.c`, `src/scripting/scripting_api.h`, `src/scripting/scripting_handle.{c,h}`, `src/scripting/lua_context.c`, and `/docs/H/plans/LUA_PLAN_COMPLETE.md` Phase 19.
+  - Files to review: `src/scripting/scripting_api_mail_notify.c`, `src/scripting/scripting_api.h`, `src/scripting/scripting_handle.{c,h}`, `src/scripting/lua_context.c`, and `/docs/H/plans/complete/LUA_PLAN_COMPLETE.md` Phase 19.
   - Deliverable: confirm that Mail Relay will expose an internal C producer API used by REST, Lua, Notify, and system events, so Lua does not call back through HTTP and does not bypass queue/audit/rate-limit logic.
   - Verification: Phase 7A exists in this plan with concrete work items and tests.
 

@@ -2,7 +2,7 @@
  * @file oidc_rp_discovery.h
  * @brief OIDC Relying Party — discovery document fetch + cache.
  *
- * Phase 9 of the OIDC plan (`docs/OIDC-PLAN.md`). This module owns
+ * Phase 9 of the OIDC plan (`docs/H/plans/OIDC-PLAN.md`). This module owns
  * the per-provider cache of `.well-known/openid-configuration`
  * responses. Phase 10 (`/oidc/start`) will be the first caller; Phase
  * 11 (`/token` exchange) and Phase 12 (ID-token validation) will

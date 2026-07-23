@@ -1,5 +1,5 @@
 /*
- * Unity Test File: scripting_api_test_log.c
+ * Unity Test File: scripting_api_log_test.c
  *
  * Phase 6 of the LUA_PLAN. Tests H.log.{trace, debug, info, warn, error,
  * fatal} - the six C functions that bridge Lua's string.format to

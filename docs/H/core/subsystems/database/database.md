@@ -231,7 +231,7 @@ The watchdog's startup log line shows the effective bounds:
 
 ### Core Documentation
 
-- **[DATABASE_PLAN.md](/docs/H/plans/DATABASE_PLAN.md)** - Comprehensive implementation plan and status
+- **[DATABASE_PLAN.md](/docs/H/plans/complete/DATABASE_PLAN_COMPLETE.md)** - Comprehensive implementation plan and status
 - **[Lead DQM Guide](/docs/H/core/reference/lead_dqm.md)** - Developer guide for Lead DQM implementation and operation
 - **[Database Architecture](/docs/H/core/reference/database_architecture.md)** - System architecture overview
 - **[Database Configuration](/docs/H/core/reference/database_configuration.md)** - Configuration reference

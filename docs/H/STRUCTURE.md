@@ -32,6 +32,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [SECRETS.md](/docs/H/SECRETS.md) - Security configuration guide
 - [SITEMAP.md](/docs/H/SITEMAP.md) - Project navigation and file index
 - [STRUCTURE.md](/docs/H/STRUCTURE.md) - This file - project structure overview
+- [TODO.md](/docs/H/TODO.md) - Prioritized incomplete plans (actionable backlog)
 
 </details>
 

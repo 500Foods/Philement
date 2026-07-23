@@ -186,8 +186,8 @@ This test is part of the Hydrogen test suite and runs automatically with:
 
 ## Related Documentation
 
-- [OIDC RP Implementation Plan](/docs/H/plans/AUTH_PLAN.md) - Detailed OIDC RP specification
-- [Conduit Service](/docs/H/plans/CONDUIT.md) - Conduit endpoints used by identity queries
+- [OIDC RP Implementation Plan](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md) - Detailed OIDC RP specification
+- [Conduit Service](/docs/H/plans/complete/CONDUIT_COMPLETE.md) - Conduit endpoints used by identity queries
 - [Database Architecture](/docs/H/core/subsystems/database/database.md) - QueryRef system
 - [Test Framework Overview](/docs/H/tests/TESTING.md)
 - [Authentication Tests](/docs/H/tests/test_40_auth.md) - Related auth endpoint testing

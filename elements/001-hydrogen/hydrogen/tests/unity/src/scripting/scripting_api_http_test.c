@@ -1,5 +1,5 @@
 /*
- * Unity Test File: scripting_api_test_http.c
+ * Unity Test File: scripting_api_http_test.c
  *
  * Phase 16 of the LUA_PLAN. Tests the H.http.* host functions:
  *   - H.http.get returns an H_Handle of kind H_HK_HTTP

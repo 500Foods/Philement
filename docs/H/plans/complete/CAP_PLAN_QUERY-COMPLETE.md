@@ -247,7 +247,7 @@ Success response is the normal conduit query shape. When verification fails tran
 
 (This is called out in master 2.8 attached to the Phase 2 work. It is broader than Cap but will affect how type-11 results are served.)
 
-- [ ] **2.8.1** Find the note in docs/H/plans/CONDUIT.md.
+- [ ] **2.8.1** Find the note in docs/H/plans/complete/CONDUIT_COMPLETE.md.
 - [ ] **2.8.2** Identify precise files: database_bootstrap.c + database_cache.{c,h} + query_execution + worker dispatch.
 - [ ] **2.8.3** Implement: on bootstrap for queue_type=="cache", run once, store compressed blob + timestamp in QueryCacheEntry.
 - [ ] **2.8.4** Serve the cached blob until TTL; async refresh.
@@ -332,7 +332,7 @@ Transient siteverify failures (HTTP 5xx, network timeout) are accepted and the s
 
 - `/docs/H/api/conduit/cap_query.md` — User-facing API documentation
 - `/docs/H/core/subsystems/conduit/conduit_api.md` — Updated endpoint summary and links
-- `/docs/H/plans/CAP_PLAN_QUERY.md` — This plan
+- `/docs/H/plans/complete/CAP_PLAN_QUERY-COMPLETE.md` — This plan
 
 ---
 

@@ -1,5 +1,5 @@
 /*
- * Unity Test File: scripting_api_test_http_async.c
+ * Unity Test File: scripting_api_http_test_async.c
  *
  * Phase 17 of the LUA_PLAN. End-to-end tests of the async H.http
  * path:

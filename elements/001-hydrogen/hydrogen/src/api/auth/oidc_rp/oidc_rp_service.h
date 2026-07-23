@@ -164,7 +164,7 @@ enum MHD_Result oidc_rp_send_redirect(struct MHD_Connection *connection,
  * @brief Lazily initialize the OIDC RP runtime (state store + discovery
  *        cache) on first real use.
  *
- * Phase 14 of `docs/OIDC-PLAN.md` will move this to a proper startup
+ * Phase 14 of `docs/H/plans/OIDC-PLAN.md` will move this to a proper startup
  * hook in Hydrogen's launch sequence. Until then, Phase 10 calls this
  * the first time `/oidc/start` is hit with `enabled=true`. The function
  * is idempotent and thread-safe: subsequent calls are no-ops.

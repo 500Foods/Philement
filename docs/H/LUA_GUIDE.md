@@ -6,7 +6,7 @@ If you only need the full API contract, use the reference:
 
 - [Host API reference](/docs/H/core/subsystems/scripting/lua_api.md)
 - [Scripting subsystem overview](/docs/H/core/subsystems/scripting/README.md)
-- [Implementation plan](/docs/H/plans/LUA_PLAN_COMPLETE.md)
+- [Implementation plan](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md)
 
 For pure Lua language features (strings, tables, numbers, dates, patterns) with no Hydrogen API, see [LUA_FEATURES.md](/docs/H/LUA_FEATURES.md).
 
@@ -988,7 +988,7 @@ Run `tests/test_98_luacheck.sh` after editing `.lua` files.
 | [LUA_FEATURES.md](/docs/H/LUA_FEATURES.md) | Pure Lua language features and stdlib recipes |
 | [lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md) | Full `H.*` contract |
 | [scripting README](/docs/H/core/subsystems/scripting/README.md) | Config, ops, lifecycle |
-| [LUA_PLAN_COMPLETE.md](/docs/H/plans/LUA_PLAN_COMPLETE.md) | Design history and phases |
+| [LUA_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md) | Design history and phases |
 | [MAIL_GUIDE.md](/docs/H/MAIL_GUIDE.md) | Mail Relay, rewrites, events, and Lua `H.mail` |
 | [MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md) | Mail Relay implementation plan |
 | [docs/He/LUA_INTRO.md](/docs/He/LUA_INTRO.md) | Migration-only Lua basics |

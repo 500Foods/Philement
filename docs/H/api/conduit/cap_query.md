@@ -161,6 +161,6 @@ src/api/conduit/
 ## Related Documentation
 
 - [Conduit REST API Reference](/docs/H/core/subsystems/conduit/conduit_api.md) - All conduit endpoints
-- [Conduit Implementation Plan](/docs/H/plans/CONDUIT.md) - Full implementation details
-- [Cap Query Implementation Plan](/docs/H/plans/CAP_PLAN_QUERY-COMPLETE.md) - This work's planning document
+- [Conduit Implementation Plan](/docs/H/plans/complete/CONDUIT_COMPLETE.md) - Full implementation details
+- [Cap Query Implementation Plan](/docs/H/plans/complete/CAP_PLAN_QUERY-COMPLETE.md) - This work's planning document
 - [Configuration Secrets](/docs/H/SECRETS.md) - Environment variable and secret handling

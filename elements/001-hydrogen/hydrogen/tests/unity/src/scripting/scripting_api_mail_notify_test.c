@@ -1,5 +1,5 @@
 /*
- * Unity Test File: scripting_api_test_mail.c
+ * Unity Test File: scripting_api_mail_notify_test.c
  *
  * H.mail.send / send_sync / H.wait for MAIL handles (template + freeform).
  * Uses mailrelay_send_template_set_fn and mailrelay_send_direct_set_fn seams.

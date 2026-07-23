@@ -1,7 +1,7 @@
 /*
  * OIDC Relying Party PKCE / nonce / state generators.
  *
- * Implements `docs/OIDC-PLAN.md` Phase 8. See the header for the
+ * Implements `docs/H/plans/OIDC-PLAN.md` Phase 8. See the header for the
  * contract and rationale; this file holds only the mechanics.
  *
  * Every function delegates entropy to `utils_random_bytes()` (OpenSSL

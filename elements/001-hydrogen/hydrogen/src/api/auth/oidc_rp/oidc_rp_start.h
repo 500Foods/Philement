@@ -2,7 +2,7 @@
  * @file oidc_rp_start.h
  * @brief OIDC RP authorization start endpoint
  *
- * Phase 10 of `docs/OIDC-PLAN.md`. Initiates an Authorization Code +
+ * Phase 10 of `docs/H/plans/OIDC-PLAN.md`. Initiates an Authorization Code +
  * PKCE flow with the configured OIDC provider:
  *
  *   1. Generates `state`, `nonce`, and a PKCE verifier+challenge.

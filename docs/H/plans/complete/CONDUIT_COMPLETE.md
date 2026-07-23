@@ -906,7 +906,7 @@ if (error_result) {
 - **Batch Operations**: `/api/conduit/queries` endpoint for multiple simultaneous queries
 - **Authentication**: JWT-protected endpoints for sensitive operations
 
-See [CONDUIT_DIAGRAMS.md](/docs/H/plans/CONDUIT_DIAGRAMS.md) for detailed architecture diagrams.
+See [CONDUIT_DIAGRAMS.md](/docs/H/plans/complete/CONDUIT_DIAGRAMS_COMPLETE.md) for detailed architecture diagrams.
 
 ## Next Priority Items (2026-01-22)
 

@@ -176,4 +176,4 @@ source "$(dirname "${BASH_SOURCE[0]}")/lib/oidc_rp_helpers_callback.sh"
 - [test_42_oidc_rp.md](/docs/H/tests/test_42_oidc_rp.md) - Main OIDC RP test
 - [oidc_rp_helpers.md](/docs/H/tests/oidc_rp_helpers.md) - Core helpers and Phase 13
 - [oidc_rp_helpers_link.md](/docs/H/tests/oidc_rp_helpers_link.md) - Linker strategy tests
-- [OIDC RP Implementation Plan](/docs/H/plans/AUTH_PLAN.md)
+- [OIDC RP Implementation Plan](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md)

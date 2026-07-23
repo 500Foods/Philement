@@ -1,7 +1,7 @@
 /*
  * Unity Test File: OIDC RP JWKS cache + parser
  *
- * Phase 9 of `docs/OIDC-PLAN.md`. Covers oidc_rp_jwks_init/shutdown,
+ * Phase 9 of `docs/H/plans/OIDC-PLAN.md`. Covers oidc_rp_jwks_init/shutdown,
  * oidc_rp_jwks_parse (exposed for tests), oidc_rp_jwks_find,
  * oidc_rp_jwks_invalidate, oidc_rp_jwks_size, oidc_rp_jwks_key_count,
  * and oidc_rp_jwks_keys_free from

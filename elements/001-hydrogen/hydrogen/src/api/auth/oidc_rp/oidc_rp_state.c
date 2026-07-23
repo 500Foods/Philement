@@ -1,7 +1,7 @@
 /*
  * OIDC Relying Party in-memory state store — Phase 7
  *
- * See `oidc_rp_state.h` for the API contract and `docs/OIDC-PLAN.md`
+ * See `oidc_rp_state.h` for the API contract and `docs/H/plans/OIDC-PLAN.md`
  * Phase 7 for the design rationale. This implementation is:
  *
  *   - A chained hash table with FNV-1a hashing, fixed bucket count.

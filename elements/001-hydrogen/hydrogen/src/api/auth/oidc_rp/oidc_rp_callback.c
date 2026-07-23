@@ -20,7 +20,7 @@
  * Logs typed error names, truncated state prefixes, account_id,
  * and client_ip. This matches the discipline established in
  * oidc_rp_start.c (Phase 10 lesson #10) and the security plan
- * deny-list (`docs/OIDC-PLAN.md` line 765).
+ * deny-list (`docs/H/plans/OIDC-PLAN.md` line 765).
  */
 
 // Project includes

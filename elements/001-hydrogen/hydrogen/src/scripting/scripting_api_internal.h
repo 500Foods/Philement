@@ -102,6 +102,8 @@ char* validate_jwt_and_get_db(const char* token, char** err_out);
 int H_lua_authquery(lua_State* L);
 int H_lua_wait_one(lua_State* L, H_Handle* h);
 int H_lua_wait(lua_State* L);
+int H_lua_finish_sync_wait(lua_State* L, int n_pushed,
+                           const char* alloc_err, const char* create_err);
 int H_lua_query_sync(lua_State* L);
 int H_lua_altquery_sync(lua_State* L);
 int H_lua_authquery_sync(lua_State* L);

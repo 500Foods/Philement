@@ -131,7 +131,7 @@ This test is part of the Hydrogen test suite and runs automatically with:
 
 ## Related Documentation
 
-- [LUA_PLAN_COMPLETE.md](/docs/H/plans/LUA_PLAN_COMPLETE.md) - Scripting implementation roadmap
+- [LUA_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md) - Scripting implementation roadmap
 - [lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md) - Lua host API reference
 - [Scripting README](/docs/H/core/subsystems/scripting/README.md) - Subsystem overview
 - [TESTING.md](/docs/H/tests/TESTING.md) - Test framework overview

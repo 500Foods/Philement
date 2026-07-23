@@ -43,7 +43,7 @@ Hydrogen is currently designed for technical users who:
 - [**Secrets Management**](/docs/H/SECRETS.md) - Environment variables and security configuration
 - [**Release Notes**](/RELEASES.md) - Detailed version history and changes
 - [**Markdown Site Map**](/docs/H/SITEMAP.md) - Index to all Markdown files in this repository
-- [**Project WIP**](/docs/H/TODO_PLANS.md) - Projects that are not yet complete or not yet started
+- [**Project TODO**](/docs/H/TODO.md) - Prioritized incomplete plans (actionable backlog)
 
 ### Generated Content
 
@@ -93,10 +93,10 @@ Hydrogen is currently designed for technical users who:
 
 ### Implementation Notes
 
-- [**Database**](/docs/H/plans/DATABASE_PLAN.md) - Implementation plan for Database subsystem
-- [**Migrations**](/docs/H/plans/MIGRATIONS.md) - Performance improvements to the Migration system
-- [**Conduit**](/docs/H/plans/CONDUIT.md) - Implementation plan for Conduit Service endpoints
-- [**Auth**](/docs/H/plans/AUTH_PLAN.md) - Implementation plan for Auth subsystem
+- [**Database**](/docs/H/plans/complete/DATABASE_PLAN_COMPLETE.md) - Implementation plan for Database subsystem
+- [**Migrations**](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md) - Performance improvements to the Migration system
+- [**Conduit**](/docs/H/plans/complete/CONDUIT_COMPLETE.md) - Implementation plan for Conduit Service endpoints
+- [**Auth**](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md) - Implementation plan for Auth subsystem
 - [**Conduit REST API**](/docs/H/core/subsystems/conduit/conduit_api.md) - Database query by reference
 
 ### Examples & Implementation

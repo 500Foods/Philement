@@ -1,5 +1,5 @@
 /*
- * Unity Test File: scripting_api_test_json.c
+ * Unity Test File: scripting_api_json_test.c
  *
  * Tests the JSON/Lua conversion helpers in scripting_api_json.c:
  *   - push_json_object_as_table with valid and invalid inputs

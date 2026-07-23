@@ -2,7 +2,7 @@
  * OIDC Relying Party in-memory handoff store — Phase 13
  *
  * See `oidc_rp_handoff_store.h` for the API contract and
- * `docs/OIDC-PLAN.md` Phase 13 for the design rationale. The
+ * `docs/H/plans/OIDC-PLAN.md` Phase 13 for the design rationale. The
  * structural pattern mirrors the Phase 7 state store
  * (`oidc_rp_state.{c,h}`) deliberately:
  *

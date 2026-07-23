@@ -1,5 +1,5 @@
 /*
- * Unity Test File: scripting_api_test_require.c
+ * Unity Test File: scripting_api_scoreboard_test_require.c
  *
  * Phase 11g and Phase 21 of the LUA_PLAN. Validates the DB-backed `require`
  * package.searchers hook without requiring a live database:
@@ -51,6 +51,10 @@
  void test_require_uses_bytecode_when_cached(void);
  void test_require_bytecode_takes_precedence_over_source(void);
  void test_require_clears_bytecode_on_source_replace(void);
+void test_require_source_cache_not_initialized(void);
+void test_require_invalid_bytecode_in_cache_returns_error(void);
+void test_require_default_database_empty_string_returns_error(void);
+void test_require_invalid_source_returns_error(void);
 
 void setUp(void) {
     mock_logging_reset_all();
@@ -314,20 +318,131 @@ void test_require_invalid_name_returns_error(void) {
      TEST_ASSERT_NOT_NULL(source);
      TEST_ASSERT_EQUAL_STRING("return 2", source);
 
-     H_lua_destroy_context(L);
- }
+      H_lua_destroy_context(L);
+  }
+
+void test_require_source_cache_not_initialized(void);
+void test_require_invalid_bytecode_in_cache_returns_error(void);
+void test_require_default_database_empty_string_returns_error(void);
+void test_require_invalid_source_returns_error(void);
+
+void test_require_source_cache_not_initialized(void) {
+      lua_State* L = make_context(true);
+      TEST_ASSERT_NOT_NULL(L);
+
+      SourceCache* saved_cache = scripting_source_cache;
+      scripting_source_cache = NULL;
+
+      const char* code =
+          "local ok, err = pcall(require, 'NoCache.Group')\n"
+          "if ok then error('expected require to fail') end\n"
+          "return err\n";
+      int rc = luaL_dostring(L, code);
+
+      scripting_source_cache = saved_cache;
+
+      if (rc != LUA_OK) {
+          const char* err = lua_tostring(L, -1);
+          TEST_FAIL_MESSAGE(err ? err : "pcall(require) raised unexpectedly");
+      }
+      TEST_ASSERT_TRUE(lua_isstring(L, -1));
+      const char* err = lua_tostring(L, -1);
+      TEST_ASSERT_NOT_NULL_MESSAGE(strstr(err, "source cache not initialized"), err);
+
+      H_lua_destroy_context(L);
+  }
+
+void test_require_invalid_bytecode_in_cache_returns_error(void) {
+      lua_State* L = make_context(true);
+      TEST_ASSERT_NOT_NULL(L);
+
+      uint8_t garbage[] = {0xAA, 0xBB, 0xCC, 0xDD};
+      TEST_ASSERT_TRUE(source_cache_put_bytecode(scripting_source_cache,
+                                                  "BadBytecode", "Module",
+                                                  garbage, sizeof(garbage)));
+
+      const char* code =
+          "local ok, err = pcall(require, 'BadBytecode.Module')\n"
+          "if ok then error('expected require to fail') end\n"
+          "return err\n";
+      int rc = luaL_dostring(L, code);
+      if (rc != LUA_OK) {
+          const char* err = lua_tostring(L, -1);
+          TEST_FAIL_MESSAGE(err ? err : "pcall(require) raised unexpectedly");
+      }
+      TEST_ASSERT_TRUE(lua_isstring(L, -1));
+
+      H_lua_destroy_context(L);
+  }
+
+void test_require_default_database_empty_string_returns_error(void) {
+      lua_State* L = make_context(true);
+      TEST_ASSERT_NOT_NULL(L);
+
+       AppConfig* saved = app_config;
+       static AppConfig mock;
+       static char empty_db[] = "";
+       memset(&mock, 0, sizeof(mock));
+       mock.scripting.AllowDBModuleLoad = true;
+       mock.scripting.DefaultDatabase = empty_db;
+       app_config = &mock;
+
+      const char* code =
+          "local ok, err = pcall(require, 'NoSource.Group')\n"
+          "if ok then error('expected require to fail') end\n"
+          "return err\n";
+      int rc = luaL_dostring(L, code);
+
+      app_config = saved;
+
+      if (rc != LUA_OK) {
+          const char* err = lua_tostring(L, -1);
+          TEST_FAIL_MESSAGE(err ? err : "pcall(require) raised unexpectedly");
+      }
+      TEST_ASSERT_TRUE(lua_isstring(L, -1));
+      const char* err = lua_tostring(L, -1);
+      TEST_ASSERT_NOT_NULL_MESSAGE(strstr(err, "DefaultDatabase not configured"), err);
+
+      H_lua_destroy_context(L);
+  }
+
+void test_require_invalid_source_returns_error(void) {
+      lua_State* L = make_context(true);
+      TEST_ASSERT_NOT_NULL(L);
+
+      TEST_ASSERT_TRUE(source_cache_put(scripting_source_cache,
+                                         "BadSource", "Module",
+                                         "this is not valid lua !!!"));
+
+      const char* code =
+          "local ok, err = pcall(require, 'BadSource.Module')\n"
+          "if ok then error('expected require to fail') end\n"
+          "return err\n";
+      int rc = luaL_dostring(L, code);
+      if (rc != LUA_OK) {
+          const char* err = lua_tostring(L, -1);
+          TEST_FAIL_MESSAGE(err ? err : "pcall(require) raised unexpectedly");
+      }
+      TEST_ASSERT_TRUE(lua_isstring(L, -1));
+
+      H_lua_destroy_context(L);
+  }
 
 int main(void) {
-     UNITY_BEGIN();
+      UNITY_BEGIN();
 
-     RUN_TEST(test_searcher_installed_when_allowed);
-     RUN_TEST(test_searcher_not_installed_when_denied);
-     RUN_TEST(test_require_cache_hit_returns_module_value);
-     RUN_TEST(test_require_missing_returns_error);
-     RUN_TEST(test_require_invalid_name_returns_error);
-     RUN_TEST(test_require_uses_bytecode_when_cached);
-     RUN_TEST(test_require_bytecode_takes_precedence_over_source);
-     RUN_TEST(test_require_clears_bytecode_on_source_replace);
+      RUN_TEST(test_searcher_installed_when_allowed);
+      RUN_TEST(test_searcher_not_installed_when_denied);
+      RUN_TEST(test_require_cache_hit_returns_module_value);
+      RUN_TEST(test_require_missing_returns_error);
+      RUN_TEST(test_require_invalid_name_returns_error);
+      RUN_TEST(test_require_uses_bytecode_when_cached);
+      RUN_TEST(test_require_bytecode_takes_precedence_over_source);
+      RUN_TEST(test_require_clears_bytecode_on_source_replace);
+      RUN_TEST(test_require_source_cache_not_initialized);
+      RUN_TEST(test_require_invalid_bytecode_in_cache_returns_error);
+      RUN_TEST(test_require_default_database_empty_string_returns_error);
+      RUN_TEST(test_require_invalid_source_returns_error);
 
-     return UNITY_END();
- }
+      return UNITY_END();
+  }
