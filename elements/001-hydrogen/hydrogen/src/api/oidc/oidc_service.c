@@ -44,10 +44,12 @@ bool init_oidc_endpoints(OIDCContext *oidc_context) {
  */
 void cleanup_oidc_endpoints(void) {
     log_this(SR_OIDC, "Cleaning up OIDC endpoints", LOG_LEVEL_DEBUG, 0);
-    
-    // Reset the global context
+
+    unregister_web_endpoint("/.well-known");
+    unregister_web_endpoint("/oauth");
+
     g_oidc_context = NULL;
-    
+
     log_this(SR_OIDC, "OIDC endpoints cleanup completed", LOG_LEVEL_DEBUG, 0);
 }
 
@@ -56,14 +58,75 @@ void cleanup_oidc_endpoints(void) {
  * 
  * @return true if registration successful, false otherwise
  */
+enum MHD_Result oidc_web_handler(void *cls, struct MHD_Connection *connection,
+                                 const char *url, const char *method,
+                                 const char *version, const char *upload_data,
+                                 size_t *upload_data_size, void **con_cls);
+
+bool is_oidc_well_known_request(const char *url);
+bool is_oidc_oauth_request(const char *url);
+
+enum MHD_Result oidc_web_handler(void *cls, struct MHD_Connection *connection,
+                                 const char *url, const char *method,
+                                 const char *version, const char *upload_data,
+                                 size_t *upload_data_size, void **con_cls) {
+    (void)cls;
+    return handle_oidc_request(connection, url, method, version,
+                               upload_data, upload_data_size, con_cls);
+}
+
+bool is_oidc_well_known_request(const char *url) {
+    if (!url) {
+        return false;
+    }
+    return strstr(url, "/.well-known/openid-configuration") != NULL;
+}
+
+bool is_oidc_oauth_request(const char *url) {
+    if (!url) {
+        return false;
+    }
+    // Only paths under /oauth that IdP owns (not /api/auth/oidc/...)
+    if (strncmp(url, "/oauth", 6) != 0) {
+        return false;
+    }
+    return is_oidc_endpoint(url);
+}
+
 bool register_oidc_endpoints(void) {
     log_this(SR_OIDC, "Registering OIDC endpoints with web server", LOG_LEVEL_DEBUG, 0);
-    
-    // Stub implementation that pretends to register endpoints
-    // In a real implementation, this would call web_server_register_handler
-    // for each OIDC endpoint URL pattern
-    
-    return true;  // Always succeeds in stub implementation
+
+    if (!app_config || !app_config->oidc.enabled) {
+        log_this(SR_OIDC, "OIDC disabled — skipping endpoint registration", LOG_LEVEL_DEBUG, 0);
+        return true;
+    }
+
+    unregister_web_endpoint("/.well-known");
+    unregister_web_endpoint("/oauth");
+
+    WebServerEndpoint well_known_endpoint = {
+        .prefix = "/.well-known",
+        .validator = is_oidc_well_known_request,
+        .handler = oidc_web_handler
+    };
+    if (!register_web_endpoint(&well_known_endpoint)) {
+        log_this(SR_OIDC, "Failed to register /.well-known OIDC endpoint", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    WebServerEndpoint oauth_endpoint = {
+        .prefix = "/oauth",
+        .validator = is_oidc_oauth_request,
+        .handler = oidc_web_handler
+    };
+    if (!register_web_endpoint(&oauth_endpoint)) {
+        log_this(SR_OIDC, "Failed to register /oauth OIDC endpoint", LOG_LEVEL_ERROR, 0);
+        unregister_web_endpoint("/.well-known");
+        return false;
+    }
+
+    log_this(SR_OIDC, "Registered OIDC endpoints: /.well-known and /oauth", LOG_LEVEL_STATE, 0);
+    return true;
 }
 
 /**

@@ -44,15 +44,15 @@ bool load_oidc_config(json_t* root, AppConfig* config) {
     oidc->scope = strdup("openid profile email");
     oidc->verify_ssl = true;
 
-    // Initialize endpoints with default paths
-    oidc->endpoints.authorization = construct_endpoint_path("/authorize");
-    oidc->endpoints.token = construct_endpoint_path("/token");
-    oidc->endpoints.userinfo = construct_endpoint_path("/userinfo");
-    oidc->endpoints.jwks = construct_endpoint_path("/jwks");
-    oidc->endpoints.end_session = construct_endpoint_path("/end_session");
-    oidc->endpoints.introspection = construct_endpoint_path("/introspect");
-    oidc->endpoints.revocation = construct_endpoint_path("/revoke");
-    oidc->endpoints.registration = construct_endpoint_path("/register");
+    // Initialize endpoints with default paths (IdP surface under /oauth/*)
+    oidc->endpoints.authorization = construct_endpoint_path("/oauth/authorize");
+    oidc->endpoints.token = construct_endpoint_path("/oauth/token");
+    oidc->endpoints.userinfo = construct_endpoint_path("/oauth/userinfo");
+    oidc->endpoints.jwks = construct_endpoint_path("/oauth/jwks");
+    oidc->endpoints.end_session = construct_endpoint_path("/oauth/end-session");
+    oidc->endpoints.introspection = construct_endpoint_path("/oauth/introspect");
+    oidc->endpoints.revocation = construct_endpoint_path("/oauth/revoke");
+    oidc->endpoints.registration = construct_endpoint_path("/oauth/register");
 
     // Initialize tokens with secure defaults
     oidc->tokens.access_token_lifetime = 3600;      // 1 hour
@@ -61,10 +61,10 @@ bool load_oidc_config(json_t* root, AppConfig* config) {
     oidc->tokens.signing_alg = strdup("RS256");    // RSA with SHA-256
     oidc->tokens.encryption_alg = strdup("A256GCM"); // AES-256 GCM
 
-    // Initialize keys with secure defaults
-    oidc->keys.encryption_enabled = true;
+    // Initialize keys with secure defaults (at-rest key encryption off until designed)
+    oidc->keys.encryption_enabled = false;
     oidc->keys.rotation_interval_days = 30;        // 30 days default
-    oidc->keys.storage_path = strdup("/var/lib/hydrogen/keys");
+    oidc->keys.storage_path = strdup("/var/lib/hydrogen/oidc");
 
     // Process main section
     success = PROCESS_SECTION(root, "OIDC");

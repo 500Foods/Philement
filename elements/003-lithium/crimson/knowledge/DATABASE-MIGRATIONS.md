@@ -302,4 +302,9 @@ in the migrations themselves so that they get populated in the database directly
 | [1263](/elements/002-helium/acuranzo/migrations/acuranzo_1263.lua) | queries | 1.0.0 | 2026-07-13 | 4 | ✗ | QueryRef #129 - Insert Script for the Hydrogen Scripting Subsystem (Scripting Manager CRUD) |
 | [1264](/elements/002-helium/acuranzo/migrations/acuranzo_1264.lua) | queries | 1.0.0 | 2026-07-13 | 4 | ✗ | QueryRef #130 - Update Script for the Hydrogen Scripting Subsystem (Scripting Manager CRUD) |
 | [1265](/elements/002-helium/acuranzo/migrations/acuranzo_1265.lua) | queries | 1.0.0 | 2026-07-13 | 4 | ✗ | QueryRef #131 - Delete Script for the Hydrogen Scripting Subsystem (Scripting Manager CRUD) |
-| **266** | | | | **1398** | **266** | |
+| [1266](/elements/002-helium/acuranzo/migrations/acuranzo_1266.lua) | oauth_clients | 1.0.0 | 2026-07-23 | 7 | ✓ | Creates the oauth_clients table (OIDC IdP Phase 4) |
+| [1267](/elements/002-helium/acuranzo/migrations/acuranzo_1267.lua) | queries | 1.0.0 | 2026-07-23 | 4 | ✗ | QueryRef #132 - Get OAuth Client by client_id (OIDC IdP) |
+| [1268](/elements/002-helium/acuranzo/migrations/acuranzo_1268.lua) | queries | 1.0.0 | 2026-07-23 | 4 | ✗ | QueryRef #133 - Insert OAuth Client (OIDC IdP) |
+| [1269](/elements/002-helium/acuranzo/migrations/acuranzo_1269.lua) | queries | 1.0.0 | 2026-07-23 | 4 | ✗ | QueryRef #134 - Soft-disable OAuth Client (OIDC IdP) |
+| [1270](/elements/002-helium/acuranzo/migrations/acuranzo_1270.lua) | queries | 1.0.0 | 2026-07-23 | 4 | ✗ | QueryRef #135 - List Active OAuth Clients (OIDC IdP) |
+| **271** | | | | **1421** | **271** | |

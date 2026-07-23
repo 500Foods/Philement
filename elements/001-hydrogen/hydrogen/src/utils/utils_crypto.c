@@ -17,6 +17,9 @@
 #include <openssl/core_names.h>
 #include <openssl/param_build.h>
 #include <openssl/err.h>
+#include <openssl/pem.h>
+#include <openssl/bn.h>
+#include <openssl/bio.h>
 
 // jansson for JWK parsing
 #include <jansson.h>
@@ -45,6 +48,14 @@ EVP_PKEY* utils_jwk_rsa_to_pkey(const char* jwk_json);
 bool utils_rs256_verify(EVP_PKEY* pkey,
                          const unsigned char* input, size_t input_len,
                          const unsigned char* signature, size_t sig_len);
+EVP_PKEY* utils_rsa_generate_keypair(int bits);
+bool utils_rs256_sign(EVP_PKEY* pkey,
+                      const unsigned char* input, size_t input_len,
+                      unsigned char** signature_out, size_t* signature_len_out);
+char* utils_rsa_private_to_pem(EVP_PKEY* pkey);
+char* utils_rsa_public_to_pem(EVP_PKEY* pkey);
+EVP_PKEY* utils_rsa_private_from_pem(const char* pem);
+char* utils_rsa_public_to_jwk(EVP_PKEY* pkey, const char* kid);
 
 /**
  * Standard Base64 encode data WITH padding (RFC 4648)
@@ -391,4 +402,277 @@ bool utils_rs256_verify(EVP_PKEY* pkey,
 
     EVP_MD_CTX_free(mdctx);
     return ok;
+}
+
+/**
+ * Generate an RSA key pair (default path for OIDC IdP signing keys).
+ */
+EVP_PKEY* utils_rsa_generate_keypair(int bits) {
+    if (bits < 2048) {
+        log_this("CRYPTO", "RSA keygen: bits must be >= 2048", LOG_LEVEL_ALERT, 0);
+        return NULL;
+    }
+
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_from_name(NULL, "RSA", NULL);
+    if (!ctx) {
+        log_this("CRYPTO", "RSA keygen: EVP_PKEY_CTX_new_from_name failed", LOG_LEVEL_ALERT, 0);
+        return NULL;
+    }
+
+    EVP_PKEY* pkey = NULL;
+    if (EVP_PKEY_keygen_init(ctx) <= 0) {
+        log_this("CRYPTO", "RSA keygen: keygen_init failed", LOG_LEVEL_ALERT, 0);
+        EVP_PKEY_CTX_free(ctx);
+        return NULL;
+    }
+
+    if (EVP_PKEY_CTX_set_rsa_keygen_bits(ctx, bits) <= 0) {
+        log_this("CRYPTO", "RSA keygen: set_rsa_keygen_bits failed", LOG_LEVEL_ALERT, 0);
+        EVP_PKEY_CTX_free(ctx);
+        return NULL;
+    }
+
+    if (EVP_PKEY_keygen(ctx, &pkey) <= 0 || !pkey) {
+        log_this("CRYPTO", "RSA keygen: keygen failed", LOG_LEVEL_ALERT, 0);
+        if (pkey) {
+            EVP_PKEY_free(pkey);
+            pkey = NULL;
+        }
+        EVP_PKEY_CTX_free(ctx);
+        return NULL;
+    }
+
+    EVP_PKEY_CTX_free(ctx);
+    return pkey;
+}
+
+/**
+ * RS256 sign — mirror of utils_rs256_verify using DigestSign.
+ */
+bool utils_rs256_sign(EVP_PKEY* pkey,
+                      const unsigned char* input, size_t input_len,
+                      unsigned char** signature_out, size_t* signature_len_out) {
+    if (!pkey || !input || input_len == 0 || !signature_out || !signature_len_out) {
+        return false;
+    }
+
+    *signature_out = NULL;
+    *signature_len_out = 0;
+
+    EVP_MD_CTX* mdctx = EVP_MD_CTX_new();
+    if (!mdctx) {
+        log_this("CRYPTO", "RS256 sign: EVP_MD_CTX_new failed", LOG_LEVEL_ALERT, 0);
+        return false;
+    }
+
+    if (EVP_DigestSignInit(mdctx, NULL, EVP_sha256(), NULL, pkey) != 1) {
+        log_this("CRYPTO", "RS256 sign: DigestSignInit failed", LOG_LEVEL_ALERT, 0);
+        EVP_MD_CTX_free(mdctx);
+        return false;
+    }
+
+    size_t sig_len = 0;
+    if (EVP_DigestSign(mdctx, NULL, &sig_len, input, input_len) != 1 || sig_len == 0) {
+        log_this("CRYPTO", "RS256 sign: DigestSign size probe failed", LOG_LEVEL_ALERT, 0);
+        EVP_MD_CTX_free(mdctx);
+        return false;
+    }
+
+    unsigned char* sig = (unsigned char*)malloc(sig_len);
+    if (!sig) {
+        log_this("CRYPTO", "RS256 sign: malloc failed", LOG_LEVEL_ALERT, 0);
+        EVP_MD_CTX_free(mdctx);
+        return false;
+    }
+
+    if (EVP_DigestSign(mdctx, sig, &sig_len, input, input_len) != 1) {
+        log_this("CRYPTO", "RS256 sign: DigestSign failed", LOG_LEVEL_ALERT, 0);
+        free(sig);
+        EVP_MD_CTX_free(mdctx);
+        return false;
+    }
+
+    EVP_MD_CTX_free(mdctx);
+    *signature_out = sig;
+    *signature_len_out = sig_len;
+    return true;
+}
+
+char* utils_rsa_private_to_pem(EVP_PKEY* pkey) {
+    if (!pkey) {
+        return NULL;
+    }
+
+    BIO* bio = BIO_new(BIO_s_mem());
+    if (!bio) {
+        log_this("CRYPTO", "RSA PEM export: BIO_new failed", LOG_LEVEL_ALERT, 0);
+        return NULL;
+    }
+
+    if (PEM_write_bio_PrivateKey(bio, pkey, NULL, NULL, 0, NULL, NULL) != 1) {
+        log_this("CRYPTO", "RSA PEM export: PEM_write_bio_PrivateKey failed", LOG_LEVEL_ALERT, 0);
+        BIO_free(bio);
+        return NULL;
+    }
+
+    char* data = NULL;
+    long len = BIO_get_mem_data(bio, &data);
+    if (len <= 0 || !data) {
+        BIO_free(bio);
+        return NULL;
+    }
+
+    char* out = (char*)malloc((size_t)len + 1U);
+    if (!out) {
+        BIO_free(bio);
+        return NULL;
+    }
+    memcpy(out, data, (size_t)len);
+    out[len] = '\0';
+    BIO_free(bio);
+    return out;
+}
+
+char* utils_rsa_public_to_pem(EVP_PKEY* pkey) {
+    if (!pkey) {
+        return NULL;
+    }
+
+    BIO* bio = BIO_new(BIO_s_mem());
+    if (!bio) {
+        log_this("CRYPTO", "RSA public PEM export: BIO_new failed", LOG_LEVEL_ALERT, 0);
+        return NULL;
+    }
+
+    if (PEM_write_bio_PUBKEY(bio, pkey) != 1) {
+        log_this("CRYPTO", "RSA public PEM export: PEM_write_bio_PUBKEY failed", LOG_LEVEL_ALERT, 0);
+        BIO_free(bio);
+        return NULL;
+    }
+
+    char* data = NULL;
+    long len = BIO_get_mem_data(bio, &data);
+    if (len <= 0 || !data) {
+        BIO_free(bio);
+        return NULL;
+    }
+
+    char* out = (char*)malloc((size_t)len + 1U);
+    if (!out) {
+        BIO_free(bio);
+        return NULL;
+    }
+    memcpy(out, data, (size_t)len);
+    out[len] = '\0';
+    BIO_free(bio);
+    return out;
+}
+
+EVP_PKEY* utils_rsa_private_from_pem(const char* pem) {
+    if (!pem || pem[0] == '\0') {
+        return NULL;
+    }
+
+    BIO* bio = BIO_new_mem_buf(pem, -1);
+    if (!bio) {
+        log_this("CRYPTO", "RSA PEM import: BIO_new_mem_buf failed", LOG_LEVEL_ALERT, 0);
+        return NULL;
+    }
+
+    EVP_PKEY* pkey = PEM_read_bio_PrivateKey(bio, NULL, NULL, NULL);
+    BIO_free(bio);
+    if (!pkey) {
+        log_this("CRYPTO", "RSA PEM import: PEM_read_bio_PrivateKey failed", LOG_LEVEL_ALERT, 0);
+        return NULL;
+    }
+    return pkey;
+}
+
+char* utils_rsa_public_to_jwk(EVP_PKEY* pkey, const char* kid) {
+    if (!pkey) {
+        return NULL;
+    }
+
+    BIGNUM* bn_n = NULL;
+    BIGNUM* bn_e = NULL;
+    if (EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_N, &bn_n) != 1 ||
+        EVP_PKEY_get_bn_param(pkey, OSSL_PKEY_PARAM_RSA_E, &bn_e) != 1 ||
+        !bn_n || !bn_e) {
+        log_this("CRYPTO", "RSA JWK export: get_bn_param n/e failed", LOG_LEVEL_ALERT, 0);
+        if (bn_n) {
+            BN_free(bn_n);
+        }
+        if (bn_e) {
+            BN_free(bn_e);
+        }
+        return NULL;
+    }
+
+    int n_len = BN_num_bytes(bn_n);
+    int e_len = BN_num_bytes(bn_e);
+    if (n_len <= 0 || e_len <= 0) {
+        BN_free(bn_n);
+        BN_free(bn_e);
+        return NULL;
+    }
+
+    unsigned char* n_bytes = (unsigned char*)malloc((size_t)n_len);
+    unsigned char* e_bytes = (unsigned char*)malloc((size_t)e_len);
+    if (!n_bytes || !e_bytes) {
+        free(n_bytes);
+        free(e_bytes);
+        BN_free(bn_n);
+        BN_free(bn_e);
+        return NULL;
+    }
+
+    if (BN_bn2bin(bn_n, n_bytes) != n_len || BN_bn2bin(bn_e, e_bytes) != e_len) {
+        free(n_bytes);
+        free(e_bytes);
+        BN_free(bn_n);
+        BN_free(bn_e);
+        log_this("CRYPTO", "RSA JWK export: BN_bn2bin failed", LOG_LEVEL_ALERT, 0);
+        return NULL;
+    }
+
+    BN_free(bn_n);
+    BN_free(bn_e);
+
+    char* n_b64 = utils_base64url_encode(n_bytes, (size_t)n_len);
+    char* e_b64 = utils_base64url_encode(e_bytes, (size_t)e_len);
+    free(n_bytes);
+    free(e_bytes);
+
+    if (!n_b64 || !e_b64) {
+        free(n_b64);
+        free(e_b64);
+        return NULL;
+    }
+
+    json_t* obj = json_object();
+    if (!obj) {
+        free(n_b64);
+        free(e_b64);
+        return NULL;
+    }
+
+    json_object_set_new(obj, "kty", json_string("RSA"));
+    json_object_set_new(obj, "alg", json_string("RS256"));
+    json_object_set_new(obj, "use", json_string("sig"));
+    json_object_set_new(obj, "n", json_string(n_b64));
+    json_object_set_new(obj, "e", json_string(e_b64));
+    if (kid && kid[0] != '\0') {
+        json_object_set_new(obj, "kid", json_string(kid));
+    }
+
+    free(n_b64);
+    free(e_b64);
+
+    char* dumped = json_dumps(obj, JSON_COMPACT);
+    json_decref(obj);
+    if (!dumped) {
+        log_this("CRYPTO", "RSA JWK export: json_dumps failed", LOG_LEVEL_ALERT, 0);
+        return NULL;
+    }
+    return dumped;
 }

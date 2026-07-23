@@ -85,6 +85,13 @@ enum MHD_Result handle_oidc_request(struct MHD_Connection *connection,
  */
 bool is_oidc_endpoint(const char *url);
 
+bool is_oidc_well_known_request(const char *url);
+bool is_oidc_oauth_request(const char *url);
+enum MHD_Result oidc_web_handler(void *cls, struct MHD_Connection *connection,
+                                 const char *url, const char *method,
+                                 const char *version, const char *upload_data,
+                                 size_t *upload_data_size, void **con_cls);
+
 /* 
  * Utility Functions for OIDC Endpoints
  */

@@ -410,9 +410,16 @@ bool sqlite_execute_query(DatabaseHandle* connection, QueryRequest* request, Que
 
     int prepare_result = sqlite3_prepare_v2_ptr(sqlite_conn->db, sql_to_execute, -1, &stmt, NULL);
     if (prepare_result != SQLITE_OK || !stmt) {
+        /*
+         * Common on empty SQLite DBs: bootstrap SELECTs from queries before
+         * migrations create it. Must return a populated QueryResult so the
+         * engine layer classifies this as DB_ERR_OTHER (no retry). Returning
+         * NULL was misread as DB_ERR_TRANSPORT and burned ~7s of ALERT retries.
+         */
+        const char* error_msg = NULL;
         log_this(designator, "SQLite prepare failed - result: %d", LOG_LEVEL_TRACE, 1, prepare_result);
         if (sqlite3_errmsg_ptr) {
-            const char* error_msg = sqlite3_errmsg_ptr(sqlite_conn->db);
+            error_msg = sqlite3_errmsg_ptr(sqlite_conn->db);
             if (error_msg) {
                 log_this(designator, "SQLite prepare error: %s", LOG_LEVEL_TRACE, 1, error_msg);
             }
@@ -421,6 +428,7 @@ bool sqlite_execute_query(DatabaseHandle* connection, QueryRequest* request, Que
         free(positional_sql);
         free(ordered_params);
         free_parameter_list(param_list);
+        *result = sqlite_build_error_result(prepare_result, error_msg);
         return false;
     }
 

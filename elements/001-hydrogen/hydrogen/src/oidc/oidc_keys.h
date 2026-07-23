@@ -209,4 +209,13 @@ const char* oidc_algorithm_to_string(OIDCKeyAlgorithm algorithm);
  */
 OIDCKeyAlgorithm oidc_algorithm_from_string(const char *algorithm_str);
 
+/* Internal helpers (non-static for Unity) */
+void oidc_free_key(OIDCKey *key);
+bool oidc_context_add_key(OIDCKeyContext *context, OIDCKey *key);
+bool oidc_ensure_storage_dir(const char *path);
+char* oidc_build_storage_path(const char *dir, const char *filename);
+bool oidc_write_text_file(const char *path, const char *contents);
+char* oidc_read_text_file(const char *path);
+void oidc_generate_kid(char *kid_out, size_t kid_out_len);
+
 #endif // OIDC_KEYS_H
