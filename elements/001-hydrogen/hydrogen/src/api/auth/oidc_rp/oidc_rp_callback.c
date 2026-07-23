@@ -261,9 +261,11 @@ enum MHD_Result handle_get_auth_oidc_callback(
         return oidc_rp_send_disabled_response(connection, method, "callback");
     }
 
-    // ---- Resolve the active provider ----
-    const OIDCRPProviderConfig *provider = oidc_rp_get_active_provider();
-    if (!provider) {
+    // Default provider used only for error redirects before state is
+    // taken (IdP error / missing params). After state take, the provider
+    // comes from the state record so multi-provider flows stay consistent.
+    const OIDCRPProviderConfig *default_provider = oidc_rp_get_active_provider();
+    if (!default_provider) {
         log_this(SR_AUTH,
                  "OIDC RP /callback: enabled but no providers configured",
                  LOG_LEVEL_ERROR, 0);
@@ -279,7 +281,7 @@ enum MHD_Result handle_get_auth_oidc_callback(
 
     // ---- Lazy runtime init (state + handoff + discovery) ----
     if (!oidc_rp_runtime_lazy_init()) {
-        return redirect_with_error(connection, provider, "server_error", NULL);
+        return redirect_with_error(connection, default_provider, "server_error", NULL);
     }
 
     // ---- Pull the IdP-supplied query parameters ----
@@ -302,14 +304,14 @@ enum MHD_Result handle_get_auth_oidc_callback(
                  LOG_LEVEL_ALERT, 2,
                  idp_error,
                  idp_error_desc ? idp_error_desc : "(none)");
-        return redirect_with_error(connection, provider, "idp_error", NULL);
+        return redirect_with_error(connection, default_provider, "idp_error", NULL);
     }
 
     if (!code || !*code || !state || !*state) {
         log_this(SR_AUTH,
                  "OIDC RP /callback: missing required code/state",
                  LOG_LEVEL_ALERT, 0);
-        return redirect_with_error(connection, provider,
+        return redirect_with_error(connection, default_provider,
                                    "state_invalid", NULL);
     }
 
@@ -323,8 +325,20 @@ enum MHD_Result handle_get_auth_oidc_callback(
         log_this(SR_AUTH,
                  "OIDC RP /callback: state_invalid (state=%s...)",
                  LOG_LEVEL_ALERT, 1, state_short);
-        return redirect_with_error(connection, provider,
+        return redirect_with_error(connection, default_provider,
                                    "state_invalid", NULL);
+    }
+
+    // Resolve the provider that started this flow (stored at /start).
+    const OIDCRPProviderConfig *provider =
+        oidc_rp_find_provider(state_record->provider_name);
+    if (!provider) {
+        log_this(SR_AUTH,
+                 "OIDC RP /callback: state provider missing from config",
+                 LOG_LEVEL_ERROR, 0);
+        oidc_rp_state_record_free(state_record);
+        return redirect_with_error(connection, default_provider,
+                                   "server_error", NULL);
     }
 
     // Pull the return_to out of the state record now so we can use it

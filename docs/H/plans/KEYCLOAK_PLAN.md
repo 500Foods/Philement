@@ -18,15 +18,14 @@ This document is the working plan for remaining and production work. Much of the
 
 ## Resuming Work on This Plan
 
-CURRENT PAUSE POINT (as of 2026-07-11): **Phase 0 complete.** Foundation verified. Test 42 green (88/88). Policy defaults locked. Ready for Phase 1 Keycloak IdP setup.
+CURRENT PAUSE POINT (as of 2026-07-23): **Phase 7 multi-provider dispatch complete.** Phase 5 (real Keycloak E2E) remains blocked on MFA/OTP for the available test user. Next implementable code: Phase 8 health probe or Phase 9 backchannel logout. Phase 10 RP-initiated logout already complete.
 
 ### Resume here next session
 
-1. Confirm Phase 0 Status and re-read Working Log.
-2. Run baseline: `zsh -ic 'mkt'` and `tests/test_42_oidc_rp.sh` (or via suite orchestration).
-3. Confirm next free migration / QueryRef from disk if any schema work is proposed (today: none required for core SSO).
-4. Present the next phase plan in small chunks; ask qualifying questions before coding.
-5. Frontend SPA coding is **out of scope** until Phase 6+ explicitly opens it; client work in early phases is **documentation only**.
+1. Confirm Phase 7 Status and re-read Working Log.
+2. Baseline: `zsh -ic 'mkt'`; `mku oidc_rp_service_test_helpers`; `tests/test_42_oidc_rp.sh`.
+3. Phase 5 still needs a Keycloak user without OTP (or a current TOTP secret) for full E2E sign-off.
+4. Next code phase candidates: Phase 8 (`oidc_rp_status` on system health) or Phase 9 (backchannel logout).
 
 ### Session checklist (every Keycloak / OIDC RP return)
 
@@ -149,22 +148,24 @@ JWT `roles` claim is comma-separated **role_id integers** (e.g. `"1,3"`), not ro
 
 ### Shipped and green (do not rebuild)
 
-- Full RP modules under `src/api/auth/oidc_rp/` (start, callback, handoff, state, PKCE, discovery, JWKS, token, id_token, link strategies, roles).
+- Full RP modules under `src/api/auth/oidc_rp/` (start, callback, handoff, state, PKCE, discovery, JWKS, token, id_token, link strategies, roles, end-session).
 - Config `OIDC_RP` / `OIDCRelyingPartyConfig` with multi-provider array (cap 8); env overrides for provider 0.
+- **Multi-provider dispatch (2026-07-23):** `oidc_rp_find_provider(name)`; state store `provider_name`; `/start?provider=`; `/callback` uses state provider; `/end-session` uses JWT `idp_provider`; Lithium always sends `provider=<id>`.
 - DB: `account_oidc_identities`, nullable `password_hash`, QueryRefs `#080`–`#084`.
-- Mock Keycloak + `test_42_oidc_rp.sh` through link strategies and role mapping.
+- Mock Keycloak + `test_42_oidc_rp.sh` through link strategies and role mapping (101/101 as of 2026-07-23).
 - API docs: [`/docs/H/api/auth/oidc_rp.md`](/docs/H/api/auth/oidc_rp.md).
 - Client recipe: [`/docs/Li/LITHIUM-KEYCLOAK.md`](/docs/Li/LITHIUM-KEYCLOAK.md).
-- Historical plan Phases 1–26: ✅ in [`/docs/H/plans/OIDC-PLAN.md`](/docs/H/plans/OIDC-PLAN.md).
+- Historical plan Phases 1–26 + multi-provider Phase 31: ✅ in [`/docs/H/plans/OIDC-PLAN.md`](/docs/H/plans/OIDC-PLAN.md).
 
 ### Open / incomplete
 
 | Item | Detail |
 |---|---|
-| Real Keycloak E2E | Phase 27 checklist in [`OIDC_E2E_LOG.md`](/docs/H/plans/OIDC_E2E_LOG.md) **unsigned** |
-| Multi-provider runtime | Schema supports `?provider=`; some paths still default strongly to `Providers[0]` |
+| Real Keycloak E2E | Phase 5 / OIDC Phase 27 checklist in [`OIDC_E2E_LOG.md`](/docs/H/plans/OIDC_E2E_LOG.md) **unsigned** (MFA/OTP blocker on test user) |
+| Dual-provider blackbox | Optional Test 42 second mock provider deferred (Unity covers named lookup) |
 | `idp_client_roles` | Not fully parsed from `resource_access` |
-| Health / logout | Post-MVP: discovery health, backchannel logout, RP-initiated logout |
+| Health / backchannel logout | Post-MVP: Phase 8 discovery health, Phase 9 backchannel logout |
+| RP-initiated logout live verify | Phase 10 **code shipped**; Keycloak post-logout URI + fresh OIDC JWT still need operator checklist |
 | Operator runbook | Secrets, exact redirect URIs, realm users, deploy env vars |
 | Generic client doc | Lithium-oriented; needs app-agnostic checklist for non-Lithium frontends |
 | Provisioning ops | Policy choice per environment not locked in a single operator doc |
@@ -242,11 +243,11 @@ Match existing auth / OIDC RP patterns; do not invent parallel stacks.
 | 3 | Account auto-provision policy and validation matrix | High | ✅ complete |
 | 4 | Client application integration guide (no frontend code) | Low | ✅ complete |
 | 5 | Real Keycloak E2E gate (manual + automated where possible) | High | 🚧 in progress — blocked by Keycloak MFA/OTP on test user |
-| 6 | Optional frontend wiring notes / Lithium sign-off (deferred coding) | Medium | deferred start |
-| 7 | Multi-provider dispatch hardening | Medium | pending |
+| 6 | Optional frontend wiring notes / Lithium sign-off (deferred coding) | Medium | ✅ complete (code shipped earlier; E2E still Phase 5) |
+| 7 | Multi-provider dispatch hardening | Medium | ✅ complete (2026-07-23) |
 | 8 | Post-MVP: health probe for OIDC RP | Low | pending |
 | 9 | Post-MVP: backchannel logout | Medium | pending |
-| 10 | Post-MVP: RP-initiated logout (server + client recipe) | Medium | pending |
+| 10 | Post-MVP: RP-initiated logout (server + client recipe) | Medium | ✅ complete (code; live Keycloak verify open) |
 
 ---
 
@@ -596,14 +597,15 @@ Make `OIDC_RP.Providers[]` and `?provider=` fully reliable so more than one IdP/
 
 ### Work Items
 
-- [ ] 7.1 Audit start/callback/handoff/discovery/JWKS for hard-coded provider index 0.
+- [x] 7.1 Audit start/callback/handoff/discovery/JWKS for hard-coded provider index 0.
   - **Verify:** list of call sites in Working Log.
-- [ ] 7.2 Ensure unknown `provider` returns stable `400 unknown_provider`.
-  - **Verify:** Unity + Test 42 coverage.
-- [ ] 7.3 Optional second mock provider config in Test 42 if practical.
-  - **Verify:** Test 42 green with two named providers.
-- [ ] 7.4 Document multi-provider client usage in Phase 4 guide.
-  - **Verify:** link check green.
+  - **Result:** Runtime TTL init still reads `providers[0]` for default store TTLs only (acceptable). Request path uses `oidc_rp_find_provider`. Discovery/JWKS already keyed by provider name.
+- [x] 7.2 Ensure unknown `provider` returns stable `400 unknown_provider`.
+  - **Verify:** Unity `oidc_rp_find_provider_*` + `/start` returns `{"error":"unknown_provider"}` for bad names.
+- [~] 7.3 Optional second mock provider config in Test 42 if practical.
+  - **Deferred:** single-provider mock remains sufficient; dual-provider blackbox can follow when a second IdP is configured. Named selection is covered by Unity + state `provider_name` round-trip.
+- [x] 7.4 Document multi-provider client usage (Appendix A + Lithium `provider=` query).
+  - **Verify:** Lithium `startOidc` appends `provider=<id>`; matches `OIDC_RP.Providers[].Name`.
 
 ### Exit Gate
 
@@ -612,10 +614,10 @@ Make `OIDC_RP.Providers[]` and `?provider=` fully reliable so more than one IdP/
 
 ### Status
 
-- **State:** pending
-- **Date:**
-- **Result:**
-- **Variances:**
+- **State:** complete
+- **Date:** 2026-07-23
+- **Result:** `oidc_rp_find_provider(name)` added; state store carries `provider_name`; `/start` accepts `?provider=`; `/callback` resolves provider from state; `/end-session` resolves by JWT `idp_provider` claim. Unity + Test 42 101/101 green. Lithium Vitest oidc-client 26/26.
+- **Variances:** Dual-provider blackbox (7.3) deferred. Phase 5 E2E still blocked on OTP.
 
 ---
 
@@ -771,6 +773,7 @@ Append discoveries, surprises, and decisions here as phases complete.
   - Shared realm expectations: Canvas LMS uses same `festival` realm with separate client; no shared client secrets.
 - (Phase 1–5 setup, 2026-07-11) **Production OIDC_RP configuration deployed and pre-flight verified.** The Hydrogen CephFS config `/tnt/hydrogen/hydrogen-lithium.json` now contains an `OIDC_RP` block with env-var placeholders. Kubernetes secret `t-philement-oidc-secrets` and deployment env vars were added to `t-philement-lithium-deployment.yaml`. The deployed Lithium config `/tnt/lithium/config/lithium.json` was updated with `auth.oidc_providers`. Pre-flight checks against the real Keycloak instance succeeded: `/api/auth/oidc/start` returns 302 to Keycloak with PKCE/state/nonce; `/api/auth/oidc/handoff` returns 401 for invalid codes; `/api/auth/oidc/callback` returns 302 to the SPA with typed `oidc_error` for invalid state/code/token errors.
 - (Phase 10, 2026-07-12) **RP-initiated logout implemented.** Chosen approach: carry the Keycloak `id_token` and provider name as optional Hydrogen JWT claims (only for OIDC logins), expose an authenticated `POST /api/auth/oidc/end-session` endpoint that validates the JWT, deletes it from storage, and returns a Keycloak `end_session_endpoint` URL built with `id_token_hint`, `post_logout_redirect_uri`, and `client_id`. Lithium global signout calls this endpoint and navigates to the returned URL. This avoids a separate server-side session store and survives JWT renewal because `generate_new_jwt` copies the claims. It keeps the Hydrogen JWT shape identical for password logins.
+- (Phase 7, 2026-07-23) **Multi-provider dispatch.** `oidc_rp_find_provider(name)` is the single lookup. NULL/empty name → `Providers[0]`. Explicit unknown name on `/start` → `400 {"error":"unknown_provider"}` (no silent fallback). State records store `provider_name` so `/callback` uses the same provider that started the flow even if defaults change mid-flight. `/end-session` looks up by JWT `idp_provider`. Lithium `startOidc` always sends `provider=<id>`. Runtime init still seeds store TTLs from `providers[0]` only — per-request TTL still comes from the selected provider on `put`.
 
 ### Surprises / deviations
 
@@ -820,6 +823,16 @@ Append discoveries, surprises, and decisions here as phases complete.
 - **Blocker for full manual sign-off:** the known test user requires MFA/OTP. Provide a user without OTP or a current OTP code to complete the checklist.
 - Registration page: enable "Registration" in realm settings if self-service signup desired
 
+### Phase 7 completed notes (2026-07-23)
+
+- **Call sites audited:** request path no longer hard-codes `Providers[0]` for start/callback/end-session selection. Remaining `providers[0]` use is runtime store default TTL seed only.
+- **API:** `oidc_rp_find_provider(const char *name)` in `oidc_rp_service.{c,h}`; `oidc_rp_get_active_provider()` is now a thin wrapper for default.
+- **State:** `OidcRpStateRecord.provider_name` + `oidc_rp_state_put(..., provider_name, ttl)`.
+- **Handlers:** `/start` reads `?provider=`; unknown → `400 unknown_provider`; `/callback` re-resolves via state; `/end-session` via JWT `idp_provider`.
+- **Lithium:** `src/core/oidc-client.js` always sets `provider=<id>`.
+- **Tests:** `mku oidc_rp_state_test_store`, `mku oidc_rp_service_test_helpers` (incl. find-by-name); `test_42_oidc_rp.sh` 101/101; Vitest `oidc-client` 26/26.
+- **Docs:** `docs/H/api/auth/oidc_rp.md`, `docs/Li/LITHIUM-OIDC.md`, `docs/Li/LITHIUM-KEYCLOAK.md`, `OIDC-PLAN.md` Phase 31, this plan.
+
 ### Phase 10 completed notes
 
 - Implementation merged into `src/api/auth/oidc_rp/oidc_rp_end_session.{c,h}` and wired into `api_service.c`.
@@ -828,6 +841,7 @@ Append discoveries, surprises, and decisions here as phases complete.
 - `tests/test_91_cppcheck.sh` passes with 0 issues in 1,559 files after fixing the `!token` dead-condition warning.
 - Hydrogen regular build succeeds; JWT/logout Unity tests pass; Lithium `npm test` and `npm run build` pass.
 - Lithium production deploy completed: version **1.1.3410** synchronized to `/fvl/tnt/t-500courses/lithium/` (2026-07-12).
+- Phase 7 follow-up: end-session now resolves provider by `idp_provider` name (not only `Providers[0]`).
 
 ### Phase 10 remaining work / open verification
 
@@ -848,7 +862,7 @@ The code is deployed but the live Keycloak sign-out behavior has not been confir
 
 ```text
 1. User chooses SSO
-2. window.location = `${hydrogenOrigin}/api/auth/oidc/start?database=${db}&return_to=/`
+2. window.location = `${hydrogenOrigin}/api/auth/oidc/start?database=${db}&provider=${providerName}&return_to=/`
 3. User completes Keycloak login (SSO session may already exist)
 4. Browser lands on SPA URL with ?oidc=1&handoff=HEX  (or oidc_error=CODE)
 5. SPA POST ${hydrogenOrigin}/api/auth/oidc/handoff  body: {"handoff":"HEX"}

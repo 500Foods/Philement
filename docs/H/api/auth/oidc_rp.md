@@ -31,12 +31,13 @@ mint a Hydrogen JWT after validating the IdP's response.
 ### Flow Summary
 
 ```text
-Browser   →  GET  /api/auth/oidc/start                  (302 to IdP)
+Browser   →  GET  /api/auth/oidc/start?provider=…&database=…&return_to=…
+Hydrogen  →  302 to IdP (state store records provider_name)
 IdP       →  user logs in
 IdP       →  302  /api/auth/oidc/callback?code=…&state=…
-Hydrogen  →  POST /token  (back to IdP, server-to-server)
+Hydrogen  →  POST /token  (back to IdP for the state-bound provider)
 Hydrogen  →  validate id_token (signature + claims)
-Hydrogen  →  resolve account, mint Hydrogen JWT
+Hydrogen  →  resolve account, mint Hydrogen JWT (may include idp_provider)
 Hydrogen  →  302 to client SPA with one-time `?handoff=…`
 Client    →  POST /api/auth/oidc/handoff  →  receives Hydrogen JWT
 ```
@@ -63,7 +64,7 @@ authorization endpoint with a CSRF-protected `state`, a replay-protected
 |---|---|---|
 | `database` | optional | Database name to authenticate against. Falls back to `OIDC_RP.Database` when absent. |
 | `return_to` | optional | Relative path inside the client SPA to deep-link to after sign-in. **Must** start with `/`. Validated against an allow-list. |
-| `provider` | optional | Provider name from `OIDC_RP.Providers[].Name`. Defaults to the first enabled provider when absent. |
+| `provider` | optional | Provider name from `OIDC_RP.Providers[].Name` (case-sensitive exact match). When omitted or empty, Hydrogen uses `Providers[0]`. Client SPAs (Lithium) **should always send** this so multi-provider configs stay unambiguous. |
 
 #### Start — response
 
@@ -78,17 +79,23 @@ authorization endpoint with a CSRF-protected `state`, a replay-protected
   - `code_challenge=<base64url(SHA256(code_verifier))>`
   - `code_challenge_method=S256`
 - **503** `{"error":"oidc_disabled"}` when `OIDC_RP.Enabled = false`.
-- **400** `{"error":"unknown_provider"}` when `provider` does not match any
-  configured provider.
+- **503** `{"error":"oidc_no_provider"}` when the feature is enabled but
+  no providers are configured.
+- **400** `{"error":"unknown_provider"}` when `provider` is non-empty and
+  does not match any configured `Providers[].Name` (no silent fallback to
+  `Providers[0]`).
 - **400** `{"error":"invalid_return_to"}` when `return_to` fails the
   allow-list check.
 
 #### Start — side effects
 
 A state record is inserted into the in-memory state store with TTL
-`StateTtlSeconds` (default 600). The record holds `state`, `nonce`,
-`code_verifier`, `database`, `return_to`, `client_ip`, `created_at`. It is
-removed atomically by `/oidc/callback`.
+`StateTtlSeconds` (default 600, or the selected provider's
+`StateTtlSeconds`). The record holds `state`, `nonce`, `code_verifier`,
+`database`, `return_to`, `client_ip`, **`provider_name`**, and
+`created_at`. It is removed atomically by `/oidc/callback`. The stored
+`provider_name` is how `/callback` resolves the same provider that
+started the flow when more than one IdP is configured.
 
 ---
 
@@ -101,6 +108,11 @@ one-time handoff code.
 
 **Authentication:** none (public). The endpoint is hit by the browser as
 part of the IdP redirect; it does **not** carry a Hydrogen JWT.
+
+After a successful state lookup, the provider used for token exchange,
+ID-token validation, account linking, and JWT minting is the one named in
+the state record (`provider_name` from `/start`), not necessarily
+`Providers[0]`.
 
 #### Callback — query parameters
 
@@ -212,7 +224,9 @@ user out of the upstream IdP as well.
 header. The endpoint validates the JWT, optionally accepts expired tokens
 (so a user can sign out even after the session has expired), and deletes
 the JWT from storage. If the token's OIDC context claims (`id_token` and
-`idp_provider`) are present and the provider's discovery document exposes
+`idp_provider`) are present, Hydrogen resolves the provider with
+`oidc_rp_find_provider(idp_provider)` (must match a configured
+`Providers[].Name`). When that provider's discovery document exposes
 `end_session_endpoint`, the endpoint constructs the IdP logout URL.
 
 **Request:**

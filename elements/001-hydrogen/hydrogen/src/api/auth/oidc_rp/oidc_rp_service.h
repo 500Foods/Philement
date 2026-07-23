@@ -178,11 +178,24 @@ enum MHD_Result oidc_rp_send_redirect(struct MHD_Connection *connection,
 bool oidc_rp_runtime_lazy_init(void);
 
 /**
- * @brief Resolve the active provider config.
+ * @brief Resolve a provider config by name.
  *
- * Phase 10 always uses `Providers[0]`. Future phases will dispatch by
- * provider name from the request. Returns NULL when OIDC RP is disabled
- * or no providers are configured.
+ * Looks up `Providers[i]` where `Providers[i].Name` equals `name`
+ * (case-sensitive, exact match). When `name` is NULL or empty, returns
+ * `Providers[0]` (the default provider). Returns NULL when OIDC RP is
+ * disabled, no providers are configured, or the named provider is not
+ * found.
+ *
+ * @param name Provider name (e.g. `"500passwords"`), or NULL/empty for default.
+ * @return Const pointer to the provider, or NULL.
+ */
+const OIDCRPProviderConfig *oidc_rp_find_provider(const char *name);
+
+/**
+ * @brief Resolve the default provider config (`Providers[0]`).
+ *
+ * Equivalent to `oidc_rp_find_provider(NULL)`. Kept for call sites that
+ * only need the first configured provider (runtime TTL init, legacy paths).
  *
  * @return Const pointer to the provider, or NULL.
  */

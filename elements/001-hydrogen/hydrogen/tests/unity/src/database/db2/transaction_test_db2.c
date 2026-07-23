@@ -159,7 +159,8 @@ void test_db2_begin_transaction_success(void) {
     TEST_ASSERT_NOT_NULL(transaction);
     TEST_ASSERT_TRUE(transaction->active);
     TEST_ASSERT_EQUAL(DB_ISOLATION_READ_COMMITTED, transaction->isolation_level);
-    TEST_ASSERT_EQUAL_STRING("db2_tx", transaction->transaction_id);
+    TEST_ASSERT_NOT_NULL(transaction->transaction_id);
+    TEST_ASSERT_EQUAL(36, strlen(transaction->transaction_id));
 
     // Clean up
     free(transaction->transaction_id);

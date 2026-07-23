@@ -103,6 +103,7 @@ void test_put_and_take_round_trip(void) {
         "Lithium",
         "/dashboard",
         "192.0.2.7",
+        "500passwords",
         600);
     TEST_ASSERT_TRUE(ok);
     TEST_ASSERT_EQUAL_size_t(1, oidc_rp_state_size());
@@ -115,6 +116,7 @@ void test_put_and_take_round_trip(void) {
     TEST_ASSERT_EQUAL_STRING("Lithium",            r->database);
     TEST_ASSERT_EQUAL_STRING("/dashboard",         r->return_to);
     TEST_ASSERT_EQUAL_STRING("192.0.2.7",          r->client_ip);
+    TEST_ASSERT_EQUAL_STRING("500passwords",       r->provider_name);
     TEST_ASSERT_EQUAL_INT(600, r->ttl_seconds);
     TEST_ASSERT_NOT_EQUAL(0, r->created_at);
 
@@ -128,7 +130,7 @@ void test_put_with_optional_fields_null(void) {
 
     bool ok = oidc_rp_state_put(
         "state-only", "nonce-only", "verifier-only",
-        NULL, NULL, NULL, 600);
+        NULL, NULL, NULL, NULL, 600);
     TEST_ASSERT_TRUE(ok);
 
     OidcRpStateRecord *r = oidc_rp_state_take("state-only");
@@ -136,6 +138,7 @@ void test_put_with_optional_fields_null(void) {
     TEST_ASSERT_NULL(r->database);
     TEST_ASSERT_NULL(r->return_to);
     TEST_ASSERT_NULL(r->client_ip);
+    TEST_ASSERT_NULL(r->provider_name);
     oidc_rp_state_record_free(r);
 }
 
@@ -144,16 +147,16 @@ void test_put_rejects_missing_required_fields(void) {
 
     // Missing state
     TEST_ASSERT_FALSE(oidc_rp_state_put(
-        NULL, "n", "v", NULL, NULL, NULL, 600));
+        NULL, "n", "v", NULL, NULL, NULL, NULL, 600));
     // Empty state
     TEST_ASSERT_FALSE(oidc_rp_state_put(
-        "", "n", "v", NULL, NULL, NULL, 600));
+        "", "n", "v", NULL, NULL, NULL, NULL, 600));
     // Missing nonce
     TEST_ASSERT_FALSE(oidc_rp_state_put(
-        "s", NULL, "v", NULL, NULL, NULL, 600));
+        "s", NULL, "v", NULL, NULL, NULL, NULL, 600));
     // Missing verifier
     TEST_ASSERT_FALSE(oidc_rp_state_put(
-        "s", "n", NULL, NULL, NULL, NULL, 600));
+        "s", "n", NULL, NULL, NULL, NULL, NULL, 600));
 
     TEST_ASSERT_EQUAL_size_t(0, oidc_rp_state_size());
 }
@@ -161,7 +164,7 @@ void test_put_rejects_missing_required_fields(void) {
 void test_put_before_init_returns_false(void) {
     // setUp already shut the store down. Don't init.
     bool ok = oidc_rp_state_put(
-        "s", "n", "v", NULL, NULL, NULL, 600);
+        "s", "n", "v", NULL, NULL, NULL, NULL, 600);
     TEST_ASSERT_FALSE(ok);
 }
 
@@ -177,7 +180,7 @@ void test_take_unknown_state_returns_null(void) {
 void test_take_is_single_use(void) {
     TEST_ASSERT_TRUE(oidc_rp_state_init(600));
     TEST_ASSERT_TRUE(oidc_rp_state_put(
-        "single-use", "n", "v", NULL, NULL, NULL, 600));
+        "single-use", "n", "v", NULL, NULL, NULL, NULL, 600));
 
     OidcRpStateRecord *r1 = oidc_rp_state_take("single-use");
     TEST_ASSERT_NOT_NULL(r1);
@@ -191,7 +194,7 @@ void test_take_expired_record_returns_null(void) {
     // 1-second TTL so we can easily age it out.
     TEST_ASSERT_TRUE(oidc_rp_state_init(1));
     TEST_ASSERT_TRUE(oidc_rp_state_put(
-        "soon-stale", "n", "v", NULL, NULL, NULL, 1));
+        "soon-stale", "n", "v", NULL, NULL, NULL, NULL, 1));
 
     // Sleep long enough to age past TTL (be generous to avoid flakes).
     sleep(2);
@@ -209,9 +212,9 @@ void test_take_expired_record_returns_null(void) {
 void test_sweep_expired_removes_aged_records(void) {
     TEST_ASSERT_TRUE(oidc_rp_state_init(1));
 
-    TEST_ASSERT_TRUE(oidc_rp_state_put("a", "n", "v", NULL, NULL, NULL, 1));
-    TEST_ASSERT_TRUE(oidc_rp_state_put("b", "n", "v", NULL, NULL, NULL, 1));
-    TEST_ASSERT_TRUE(oidc_rp_state_put("c", "n", "v", NULL, NULL, NULL, 1));
+    TEST_ASSERT_TRUE(oidc_rp_state_put("a", "n", "v", NULL, NULL, NULL, NULL, 1));
+    TEST_ASSERT_TRUE(oidc_rp_state_put("b", "n", "v", NULL, NULL, NULL, NULL, 1));
+    TEST_ASSERT_TRUE(oidc_rp_state_put("c", "n", "v", NULL, NULL, NULL, NULL, 1));
     TEST_ASSERT_EQUAL_size_t(3, oidc_rp_state_size());
 
     sleep(2);
@@ -225,9 +228,9 @@ void test_sweep_expired_keeps_fresh_records(void) {
     TEST_ASSERT_TRUE(oidc_rp_state_init(600));
 
     TEST_ASSERT_TRUE(oidc_rp_state_put("fresh-1", "n", "v",
-                                       NULL, NULL, NULL, 600));
+                                       NULL, NULL, NULL, NULL, 600));
     TEST_ASSERT_TRUE(oidc_rp_state_put("fresh-2", "n", "v",
-                                       NULL, NULL, NULL, 600));
+                                       NULL, NULL, NULL, NULL, 600));
 
     size_t removed = oidc_rp_state_sweep_expired();
     TEST_ASSERT_EQUAL_size_t(0, removed);
@@ -248,10 +251,10 @@ void test_size_reflects_inserts_and_takes(void) {
     TEST_ASSERT_TRUE(oidc_rp_state_init(600));
 
     TEST_ASSERT_EQUAL_size_t(0, oidc_rp_state_size());
-    oidc_rp_state_put("k1", "n", "v", NULL, NULL, NULL, 600);
+    oidc_rp_state_put("k1", "n", "v", NULL, NULL, NULL, NULL, 600);
     TEST_ASSERT_EQUAL_size_t(1, oidc_rp_state_size());
-    oidc_rp_state_put("k2", "n", "v", NULL, NULL, NULL, 600);
-    oidc_rp_state_put("k3", "n", "v", NULL, NULL, NULL, 600);
+    oidc_rp_state_put("k2", "n", "v", NULL, NULL, NULL, NULL, 600);
+    oidc_rp_state_put("k3", "n", "v", NULL, NULL, NULL, NULL, 600);
     TEST_ASSERT_EQUAL_size_t(3, oidc_rp_state_size());
 
     OidcRpStateRecord *r = oidc_rp_state_take("k2");
@@ -268,10 +271,10 @@ void test_put_replaces_existing_entry_for_same_state(void) {
 
     TEST_ASSERT_TRUE(oidc_rp_state_put(
         "dupe", "first-nonce", "first-verifier",
-        "DB-1", NULL, NULL, 600));
+        "DB-1", NULL, NULL, NULL, 600));
     TEST_ASSERT_TRUE(oidc_rp_state_put(
         "dupe", "second-nonce", "second-verifier",
-        "DB-2", NULL, NULL, 600));
+        "DB-2", NULL, NULL, NULL, 600));
 
     TEST_ASSERT_EQUAL_size_t(1, oidc_rp_state_size());
     OidcRpStateRecord *r = oidc_rp_state_take("dupe");
@@ -286,7 +289,7 @@ void test_default_ttl_applied_when_put_passes_zero(void) {
     TEST_ASSERT_TRUE(oidc_rp_state_init(123));
 
     TEST_ASSERT_TRUE(oidc_rp_state_put(
-        "default-ttl", "n", "v", NULL, NULL, NULL, 0));
+        "default-ttl", "n", "v", NULL, NULL, NULL, NULL, 0));
     OidcRpStateRecord *r = oidc_rp_state_take("default-ttl");
     TEST_ASSERT_NOT_NULL(r);
     TEST_ASSERT_EQUAL_INT(123, r->ttl_seconds);
@@ -332,7 +335,7 @@ static void *putter_thread(void *arg) {
         char key[64];
         snprintf(key, sizeof(key), "k-%d-%d", a->thread_id, i);
         oidc_rp_state_put(key, "nonce", "verifier",
-                          NULL, NULL, NULL, 600);
+                          NULL, NULL, NULL, NULL, 600);
     }
     return NULL;
 }

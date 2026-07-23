@@ -114,6 +114,7 @@ void record_free_fields(OidcRpStateRecord *r) {
     free(r->database);       r->database = NULL;
     free(r->return_to);      r->return_to = NULL;
     free(r->client_ip);      r->client_ip = NULL;
+    free(r->provider_name);  r->provider_name = NULL;
 }
 
 // ---------------------------------------------------------------------------
@@ -356,6 +357,7 @@ bool oidc_rp_state_put(const char *state,
                        const char *database,
                        const char *return_to,
                        const char *client_ip,
+                       const char *provider_name,
                        int ttl_seconds) {
     if (!g_store) {
         log_this(SR_AUTH,
@@ -379,6 +381,7 @@ bool oidc_rp_state_put(const char *state,
     entry->record.database      = opt_strdup(database);
     entry->record.return_to     = opt_strdup(return_to);
     entry->record.client_ip     = opt_strdup(client_ip);
+    entry->record.provider_name = opt_strdup(provider_name);
     entry->record.created_at    = time(NULL);
     entry->record.ttl_seconds   =
         (ttl_seconds > 0) ? ttl_seconds : g_store->default_ttl_seconds;
@@ -387,7 +390,8 @@ bool oidc_rp_state_put(const char *state,
         !entry->record.code_verifier ||
         (database  && !entry->record.database) ||
         (return_to && !entry->record.return_to) ||
-        (client_ip && !entry->record.client_ip)) {
+        (client_ip && !entry->record.client_ip) ||
+        (provider_name && !entry->record.provider_name)) {
         // Partial allocation failure — release what we have.
         free_entry(entry);
         log_this(SR_AUTH, "OIDC RP state-store: put strdup failed",

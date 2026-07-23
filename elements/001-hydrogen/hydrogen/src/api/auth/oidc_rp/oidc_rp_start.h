@@ -32,14 +32,17 @@
 /**
  * @brief Handle GET /api/auth/oidc/start requests.
  *
- * Builds an OIDC Authorization Code + PKCE redirect to the configured
- * provider (currently `Providers[0]`). When `oidc_rp.enabled` is
- * `false`, responds 503 `oidc_disabled`. Non-GET methods get 405. An
- * unsafe `return_to` value gets 400 `invalid_return_to`. Internal
- * failures (RNG, alloc, discovery) yield 500 `oidc_internal_error` or
- * 502 `oidc_discovery_failed`.
+ * Builds an OIDC Authorization Code + PKCE redirect to the selected
+ * provider (`?provider=` name, else `Providers[0]`). When
+ * `oidc_rp.enabled` is `false`, responds 503 `oidc_disabled`. Non-GET
+ * methods get 405. An unknown `provider` name gets 400
+ * `unknown_provider`. An unsafe `return_to` value gets 400
+ * `invalid_return_to`. Internal failures (RNG, alloc, discovery) yield
+ * 500 `oidc_internal_error` or 502 `oidc_discovery_failed`.
  *
  * Query parameters:
+ *   - `provider`  — optional; matches `OIDC_RP.Providers[].Name`.
+ *                   When omitted, uses the first configured provider.
  *   - `database`  — optional; persisted into the state record so the
  *                   eventual JWT is minted for the right DB. Falls
  *                   back to `OIDC_RP.Database` config or hardcoded

@@ -311,12 +311,28 @@ void oidc_rp_runtime_shutdown(void) {
              LOG_LEVEL_STATE, 0);
 }
 
-const OIDCRPProviderConfig *oidc_rp_get_active_provider(void) {
+const OIDCRPProviderConfig *oidc_rp_find_provider(const char *name) {
     if (!app_config || !app_config->oidc_rp.enabled) {
         return NULL;
     }
     if (app_config->oidc_rp.provider_count == 0) {
         return NULL;
     }
-    return &app_config->oidc_rp.providers[0];
+
+    // NULL or empty name → default to Providers[0]
+    if (!name || !*name) {
+        return &app_config->oidc_rp.providers[0];
+    }
+
+    for (size_t i = 0; i < app_config->oidc_rp.provider_count; i++) {
+        const char *pname = app_config->oidc_rp.providers[i].name;
+        if (pname && strcmp(pname, name) == 0) {
+            return &app_config->oidc_rp.providers[i];
+        }
+    }
+    return NULL;
+}
+
+const OIDCRPProviderConfig *oidc_rp_get_active_provider(void) {
+    return oidc_rp_find_provider(NULL);
 }

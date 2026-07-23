@@ -75,9 +75,15 @@ Before writing any client code, verify:
 Hydrogen-side smoke tests:
 
 ```bash
-curl -i 'https://app.example.com/api/auth/oidc/start?database=Lithium'
+# Prefer an explicit provider name matching OIDC_RP.Providers[].Name
+curl -i 'https://app.example.com/api/auth/oidc/start?database=Lithium&provider=500passwords'
 # Expect: HTTP/1.1 302 Found
 # Location: https://www.500passwords.com/realms/festival/protocol/openid-connect/auth?...
+
+# Unknown provider must not fall back silently
+curl -i 'https://app.example.com/api/auth/oidc/start?provider=does-not-exist'
+# Expect: HTTP/1.1 400
+# {"error":"unknown_provider"}
 
 curl -i -X POST 'https://app.example.com/api/auth/oidc/handoff' \
   -H 'Content-Type: application/json' \
@@ -568,11 +574,19 @@ modification. No code changes needed to add a third, fourth, etc.
 The provider-selection happens in two places:
 
 - The `?provider=<name>` query parameter on `/oidc/start` (Hydrogen
-  uses this to pick the right `OIDC_RP.Providers[]` entry).
+  uses this to pick the right `OIDC_RP.Providers[]` entry via
+  `oidc_rp_find_provider`). Lithium's `startOidc()` **always** sends
+  this param. An unknown name returns `400 {"error":"unknown_provider"}`
+  with no fallback to `Providers[0]`.
 - The `id` field of the provider in the client config (the client uses
   this to look up the button's `label`, `icon`, `start_url`).
 
-Both must agree.
+Both must agree (`auth.oidc_providers[].id` === `OIDC_RP.Providers[].Name`).
+
+Hydrogen also stores `provider_name` in the OIDC state record so
+`/oidc/callback` completes against the same provider that `/start`
+selected, and OIDC-minted JWTs carry `idp_provider` so
+`/oidc/end-session` can build the correct IdP logout URL.
 
 ---
 

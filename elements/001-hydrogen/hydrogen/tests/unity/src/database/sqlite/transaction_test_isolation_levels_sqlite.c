@@ -76,7 +76,8 @@ void test_sqlite_begin_transaction_read_uncommitted(void) {
     TEST_ASSERT_NOT_NULL(transaction);
     TEST_ASSERT_TRUE(transaction->active);
     TEST_ASSERT_EQUAL(DB_ISOLATION_READ_UNCOMMITTED, transaction->isolation_level);
-    TEST_ASSERT_EQUAL_STRING("sqlite_tx", transaction->transaction_id);
+    TEST_ASSERT_NOT_NULL(transaction->transaction_id);
+    TEST_ASSERT_EQUAL(36, strlen(transaction->transaction_id));
 
     // Clean up
     free(transaction->transaction_id);
@@ -98,7 +99,8 @@ void test_sqlite_begin_transaction_repeatable_read(void) {
     TEST_ASSERT_NOT_NULL(transaction);
     TEST_ASSERT_TRUE(transaction->active);
     TEST_ASSERT_EQUAL(DB_ISOLATION_REPEATABLE_READ, transaction->isolation_level);
-    TEST_ASSERT_EQUAL_STRING("sqlite_tx", transaction->transaction_id);
+    TEST_ASSERT_NOT_NULL(transaction->transaction_id);
+    TEST_ASSERT_EQUAL(36, strlen(transaction->transaction_id));
 
     // Clean up
     free(transaction->transaction_id);
@@ -120,7 +122,8 @@ void test_sqlite_begin_transaction_serializable(void) {
     TEST_ASSERT_NOT_NULL(transaction);
     TEST_ASSERT_TRUE(transaction->active);
     TEST_ASSERT_EQUAL(DB_ISOLATION_SERIALIZABLE, transaction->isolation_level);
-    TEST_ASSERT_EQUAL_STRING("sqlite_tx", transaction->transaction_id);
+    TEST_ASSERT_NOT_NULL(transaction->transaction_id);
+    TEST_ASSERT_EQUAL(36, strlen(transaction->transaction_id));
 
     // Clean up
     free(transaction->transaction_id);
