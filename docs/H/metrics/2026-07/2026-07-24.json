@@ -1,20 +1,20 @@
 {
     "metadata": {
         "generated": "2026-07-24",
-        "timestamp": "2026-Jul-24 (Fri) 10:35:01 PDT",
+        "timestamp": "2026-Jul-24 (Fri) 11:53:50 PDT",
         "version": "1.0.0"
     },
     "summary": {
-        "total_tests": 3457,
-        "total_passed": 3446,
-        "total_failed": 11,
-        "total_elapsed": "870.206278715",
-        "total_running_time": "2768.436",
-        "elapsed_formatted": "00:14:30.206",
-        "running_time_formatted": "00:46:08.436",
-        "unity_coverage": "72.586",
-        "blackbox_coverage": "55.449",
-        "combined_coverage": "84.357"
+        "total_tests": 3459,
+        "total_passed": 3458,
+        "total_failed": 1,
+        "total_elapsed": "818.537533057",
+        "total_running_time": "2642.908",
+        "elapsed_formatted": "00:13:38.537",
+        "running_time_formatted": "00:44:02.908",
+        "unity_coverage": "72.574",
+        "blackbox_coverage": "55.714",
+        "combined_coverage": "84.358"
     },
     "test_results": {
         "data": [
@@ -26,7 +26,7 @@
         "tests": 18,
         "pass": 18,
         "fail": 0,
-        "elapsed": 79.314
+        "elapsed": 19.773
     },
     {
         "group": 0,
@@ -36,7 +36,7 @@
         "tests": 9,
         "pass": 9,
         "fail": 0,
-        "elapsed": 0.202
+        "elapsed": 0.253
     },
     {
         "group": 0,
@@ -46,7 +46,7 @@
         "tests": 45,
         "pass": 45,
         "fail": 0,
-        "elapsed": 14.887
+        "elapsed": 9.311
     },
     {
         "group": 0,
@@ -56,7 +56,7 @@
         "tests": 4,
         "pass": 4,
         "fail": 0,
-        "elapsed": 11.146
+        "elapsed": 6.674
     },
     {
         "group": 1,
@@ -66,7 +66,7 @@
         "tests": 1110,
         "pass": 1110,
         "fail": 0,
-        "elapsed": 104.436
+        "elapsed": 108.006
     },
     {
         "group": 1,
@@ -76,7 +76,7 @@
         "tests": 5,
         "pass": 5,
         "fail": 0,
-        "elapsed": 1.465
+        "elapsed": 1.226
     },
     {
         "group": 1,
@@ -86,7 +86,7 @@
         "tests": 15,
         "pass": 15,
         "fail": 0,
-        "elapsed": 3.006
+        "elapsed": 3.629
     },
     {
         "group": 1,
@@ -96,7 +96,7 @@
         "tests": 34,
         "pass": 34,
         "fail": 0,
-        "elapsed": 4.483
+        "elapsed": 4.472
     },
     {
         "group": 1,
@@ -106,7 +106,7 @@
         "tests": 18,
         "pass": 18,
         "fail": 0,
-        "elapsed": 2.024
+        "elapsed": 1.917
     },
     {
         "group": 1,
@@ -116,27 +116,27 @@
         "tests": 4,
         "pass": 4,
         "fail": 0,
-        "elapsed": 0.367
+        "elapsed": 0.305
     },
     {
         "group": 1,
         "test_id": "16-SHD",
-        "test_name": "Shutdown  {BLUE}cycle: 0.278s{RESET}",
+        "test_name": "Shutdown  {BLUE}cycle: 0.337s{RESET}",
         "test_version": "4.0.0",
         "tests": 5,
         "pass": 5,
         "fail": 0,
-        "elapsed": 0.857
+        "elapsed": 0.898
     },
     {
         "group": 1,
         "test_id": "17-UPD",
-        "test_name": "Startup/Shutdown  {BLUE}cycle: 0.391s /  0.333s{RESET}",
+        "test_name": "Startup/Shutdown  {BLUE}cycle: 0.344s /  0.449s{RESET}",
         "test_version": "5.0.0",
         "tests": 9,
         "pass": 9,
         "fail": 0,
-        "elapsed": 2.121
+        "elapsed": 2.191
     },
     {
         "group": 1,
@@ -146,7 +146,7 @@
         "tests": 9,
         "pass": 9,
         "fail": 0,
-        "elapsed": 3.033
+        "elapsed": 3.037
     },
     {
         "group": 1,
@@ -156,7 +156,7 @@
         "tests": 8,
         "pass": 8,
         "fail": 0,
-        "elapsed": 2.468
+        "elapsed": 2.250
     },
     {
         "group": 2,
@@ -166,27 +166,27 @@
         "tests": 11,
         "pass": 11,
         "fail": 0,
-        "elapsed": 1.093
+        "elapsed": 1.694
     },
     {
         "group": 2,
         "test_id": "21-SYS",
-        "test_name": "Endpoints  {BLUE}avg: 37.933ms{RESET}",
+        "test_name": "Endpoints  {BLUE}avg: 39.517ms{RESET}",
         "test_version": "6.0.0",
         "tests": 11,
         "pass": 11,
         "fail": 0,
-        "elapsed": 1.729
+        "elapsed": 2.102
     },
     {
         "group": 2,
         "test_id": "22-SWG",
-        "test_name": "Swagger  {BLUE}avg: 0.918ms{RESET}",
+        "test_name": "Swagger  {BLUE}avg: 1.574ms{RESET}",
         "test_version": "7.4.0",
         "tests": 17,
         "pass": 17,
         "fail": 0,
-        "elapsed": 2.867
+        "elapsed": 2.693
     },
     {
         "group": 2,
@@ -196,7 +196,7 @@
         "tests": 23,
         "pass": 23,
         "fail": 0,
-        "elapsed": 2.326
+        "elapsed": 2.971
     },
     {
         "group": 2,
@@ -206,7 +206,7 @@
         "tests": 13,
         "pass": 13,
         "fail": 0,
-        "elapsed": 1.819
+        "elapsed": 2.244
     },
     {
         "group": 2,
@@ -216,7 +216,7 @@
         "tests": 9,
         "pass": 9,
         "fail": 0,
-        "elapsed": 6.612
+        "elapsed": 5.721
     },
     {
         "group": 2,
@@ -226,7 +226,7 @@
         "tests": 23,
         "pass": 23,
         "fail": 0,
-        "elapsed": 24.900
+        "elapsed": 28.505
     },
     {
         "group": 3,
@@ -236,7 +236,7 @@
         "tests": 23,
         "pass": 23,
         "fail": 0,
-        "elapsed": 2.503
+        "elapsed": 2.543
     },
     {
         "group": 3,
@@ -246,67 +246,67 @@
         "tests": 1124,
         "pass": 1124,
         "fail": 0,
-        "elapsed": 26.273
+        "elapsed": 26.242
     },
     {
         "group": 3,
         "test_id": "32-PGQ",
-        "test_name": "PostgreSQL Migration  {BLUE}cyc: 261.704s, mig: 280{RESET}",
+        "test_name": "PostgreSQL Migration  {BLUE}cyc: 266.657s, mig: 280{RESET}",
         "test_version": "1.1.0",
         "tests": 6,
         "pass": 6,
         "fail": 0,
-        "elapsed": 262.241
+        "elapsed": 267.187
     },
     {
         "group": 3,
         "test_id": "33-MSQ",
-        "test_name": "MySQL Migration  {BLUE}cyc: 364.515s, mig: 280{RESET}",
+        "test_name": "MySQL Migration  {BLUE}cyc: 366.657s, mig: 280{RESET}",
         "test_version": "1.1.0",
         "tests": 5,
         "pass": 5,
         "fail": 0,
-        "elapsed": 364.945
+        "elapsed": 367.113
     },
     {
         "group": 3,
         "test_id": "34-SQL",
-        "test_name": "SQLite Migration  {BLUE}cyc: 246.132s, mig: 280{RESET}",
+        "test_name": "SQLite Migration  {BLUE}cyc: 248.048s, mig: 280{RESET}",
         "test_version": "1.1.0",
         "tests": 5,
         "pass": 5,
         "fail": 0,
-        "elapsed": 246.597
+        "elapsed": 248.464
     },
     {
         "group": 3,
         "test_id": "35-DB2",
-        "test_name": "DB2 Migration  {BLUE}cyc: 309.276s, mig: 280{RESET}",
+        "test_name": "DB2 Migration  {BLUE}cyc: 315.032s, mig: 280{RESET}",
         "test_version": "1.1.0",
         "tests": 6,
         "pass": 6,
         "fail": 0,
-        "elapsed": 311.700
+        "elapsed": 317.612
     },
     {
         "group": 3,
         "test_id": "36-MDB",
-        "test_name": "MariaDB Migration  {BLUE}cyc: 365.837s, mig: 280{RESET}",
+        "test_name": "MariaDB Migration  {BLUE}cyc: 369.781s, mig: 280{RESET}",
         "test_version": "1.1.0",
         "tests": 6,
         "pass": 6,
         "fail": 0,
-        "elapsed": 366.318
+        "elapsed": 370.223
     },
     {
         "group": 3,
         "test_id": "37-CDB",
-        "test_name": "CockroachDB Migration  {BLUE}cyc: 264.573s, mig: 280{RESET}",
+        "test_name": "CockroachDB Migration  {BLUE}cyc: 266.880s, mig: 280{RESET}",
         "test_version": "1.1.0",
         "tests": 6,
         "pass": 6,
         "fail": 0,
-        "elapsed": 265.297
+        "elapsed": 267.340
     },
     {
         "group": 3,
@@ -316,7 +316,7 @@
         "tests": 6,
         "pass": 6,
         "fail": 0,
-        "elapsed": 4.630
+        "elapsed": 5.253
     },
     {
         "group": 4,
@@ -326,7 +326,7 @@
         "tests": 47,
         "pass": 47,
         "fail": 0,
-        "elapsed": 19.331
+        "elapsed": 19.154
     },
     {
         "group": 4,
@@ -336,17 +336,17 @@
         "tests": 13,
         "pass": 12,
         "fail": 1,
-        "elapsed": 132.466
+        "elapsed": 126.239
     },
     {
         "group": 4,
         "test_id": "42-ORP",
         "test_name": "OIDC Relying Party",
         "test_version": "2.4.0",
-        "tests": 99,
-        "pass": 98,
-        "fail": 1,
-        "elapsed": 32.695
+        "tests": 101,
+        "pass": 101,
+        "fail": 0,
+        "elapsed": 29.309
     },
     {
         "group": 4,
@@ -356,17 +356,17 @@
         "tests": 31,
         "pass": 31,
         "fail": 0,
-        "elapsed": 6.464
+        "elapsed": 6.415
     },
     {
         "group": 4,
         "test_id": "44-EXN",
-        "test_name": "Exercise Native  {BLUE}growth: 226 B/req{RESET}",
+        "test_name": "Exercise Native  {BLUE}growth: 447 B/req{RESET}",
         "test_version": "1.0.0",
         "tests": 9,
         "pass": 9,
         "fail": 0,
-        "elapsed": 41.723
+        "elapsed": 38.112
     },
     {
         "group": 4,
@@ -376,7 +376,7 @@
         "tests": 92,
         "pass": 92,
         "fail": 0,
-        "elapsed": 12.128
+        "elapsed": 11.660
     },
     {
         "group": 5,
@@ -386,7 +386,7 @@
         "tests": 122,
         "pass": 122,
         "fail": 0,
-        "elapsed": 24.689
+        "elapsed": 51.118
     },
     {
         "group": 5,
@@ -396,7 +396,7 @@
         "tests": 62,
         "pass": 62,
         "fail": 0,
-        "elapsed": 15.483
+        "elapsed": 11.981
     },
     {
         "group": 5,
@@ -406,7 +406,7 @@
         "tests": 61,
         "pass": 61,
         "fail": 0,
-        "elapsed": 10.194
+        "elapsed": 16.433
     },
     {
         "group": 5,
@@ -416,7 +416,7 @@
         "tests": 28,
         "pass": 28,
         "fail": 0,
-        "elapsed": 14.512
+        "elapsed": 14.701
     },
     {
         "group": 5,
@@ -426,7 +426,7 @@
         "tests": 24,
         "pass": 24,
         "fail": 0,
-        "elapsed": 13.264
+        "elapsed": 13.083
     },
     {
         "group": 5,
@@ -436,7 +436,7 @@
         "tests": 24,
         "pass": 24,
         "fail": 0,
-        "elapsed": 13.525
+        "elapsed": 12.831
     },
     {
         "group": 5,
@@ -446,7 +446,7 @@
         "tests": 8,
         "pass": 8,
         "fail": 0,
-        "elapsed": 9.846
+        "elapsed": 10.414
     },
     {
         "group": 5,
@@ -456,7 +456,7 @@
         "tests": 11,
         "pass": 11,
         "fail": 0,
-        "elapsed": 7.531
+        "elapsed": 7.349
     },
     {
         "group": 5,
@@ -466,7 +466,7 @@
         "tests": 34,
         "pass": 34,
         "fail": 0,
-        "elapsed": 10.618
+        "elapsed": 13.656
     },
     {
         "group": 5,
@@ -476,17 +476,17 @@
         "tests": 33,
         "pass": 33,
         "fail": 0,
-        "elapsed": 31.077
+        "elapsed": 31.651
     },
     {
         "group": 6,
         "test_id": "60-PRF",
-        "test_name": "Performance Test  {BLUE}winner:  Demo_DB2 with 0.076s{RESET}",
+        "test_name": "Performance Test  {BLUE}winner:  Demo_SQL with 0.079s{RESET}",
         "test_version": "1.0.2",
         "tests": 41,
         "pass": 41,
         "fail": 0,
-        "elapsed": 24.098
+        "elapsed": 28.410
     },
     {
         "group": 7,
@@ -496,7 +496,7 @@
         "tests": 9,
         "pass": 9,
         "fail": 0,
-        "elapsed": 13.024
+        "elapsed": 13.645
     },
     {
         "group": 7,
@@ -506,7 +506,7 @@
         "tests": 1,
         "pass": 1,
         "fail": 0,
-        "elapsed": 6.943
+        "elapsed": 7.989
     },
     {
         "group": 8,
@@ -516,7 +516,7 @@
         "tests": 5,
         "pass": 5,
         "fail": 0,
-        "elapsed": 11.173
+        "elapsed": 12.699
     },
     {
         "group": 9,
@@ -526,7 +526,7 @@
         "tests": 1,
         "pass": 1,
         "fail": 0,
-        "elapsed": 2.881
+        "elapsed": 2.145
     },
     {
         "group": 9,
@@ -536,7 +536,7 @@
         "tests": 1,
         "pass": 1,
         "fail": 0,
-        "elapsed": 39.809
+        "elapsed": 9.727
     },
     {
         "group": 9,
@@ -546,7 +546,7 @@
         "tests": 2,
         "pass": 2,
         "fail": 0,
-        "elapsed": 63.806
+        "elapsed": 9.115
     },
     {
         "group": 9,
@@ -554,9 +554,9 @@
         "test_name": "JSON Lint  {BLUE}jsonlint: 118 files{RESET}  {BLUE}schema: 102 files{RESET}",
         "test_version": "3.2.0",
         "tests": 103,
-        "pass": 94,
-        "fail": 9,
-        "elapsed": 18.576
+        "pass": 103,
+        "fail": 0,
+        "elapsed": 10.258
     },
     {
         "group": 9,
@@ -566,7 +566,7 @@
         "tests": 1,
         "pass": 1,
         "fail": 0,
-        "elapsed": 3.648
+        "elapsed": 3.146
     },
     {
         "group": 9,
@@ -576,7 +576,7 @@
         "tests": 1,
         "pass": 1,
         "fail": 0,
-        "elapsed": 1.122
+        "elapsed": 0.985
     },
     {
         "group": 9,
@@ -586,7 +586,7 @@
         "tests": 1,
         "pass": 1,
         "fail": 0,
-        "elapsed": 0.601
+        "elapsed": 0.613
     },
     {
         "group": 9,
@@ -596,7 +596,7 @@
         "tests": 1,
         "pass": 1,
         "fail": 0,
-        "elapsed": 0.434
+        "elapsed": 0.414
     },
     {
         "group": 9,
@@ -606,7 +606,7 @@
         "tests": 1,
         "pass": 1,
         "fail": 0,
-        "elapsed": 9.499
+        "elapsed": 7.555
     },
     {
         "group": 9,
@@ -616,7 +616,7 @@
         "tests": 4,
         "pass": 4,
         "fail": 0,
-        "elapsed": 55.617
+        "elapsed": 40.252
     }]
     },
     "cloc": {
@@ -625,21 +625,21 @@
     "section": "primary",
     "language": "Test C/Headers",
     "files": 1171,
-    "blank": 46128,
+    "blank": 46127,
     "comment": 39016,
-    "code": 163620,
+    "code": 163627,
     "comment_code_percentage": "23.8 %",
-    "lines": 248764
+    "lines": 248770
   },
   {
     "section": "primary",
     "language": "Core C/Headers",
     "files": 642,
-    "blank": 19506,
-    "comment": 31325,
-    "code": 92832,
-    "comment_code_percentage": "33.7 %",
-    "lines": 143663
+    "blank": 19503,
+    "comment": 31331,
+    "code": 92830,
+    "comment_code_percentage": "33.8 %",
+    "lines": 143664
   },
   {
     "section": "primary",
@@ -697,9 +697,9 @@
     "files": 118,
     "blank": 3,
     "comment": 0,
-    "code": 17213,
+    "code": 17208,
     "comment_code_percentage": "",
-    "lines": 17216
+    "lines": 17211
   },
   {
     "section": "secondary",
@@ -765,11 +765,11 @@
     "section": "totals",
     "language": "Totals",
     "files": 2415,
-    "blank": 91951,
-    "comment": 80763,
+    "blank": 91947,
+    "comment": 80769,
     "code": 380876,
     "comment_code_percentage": "21.2 %",
-    "lines": 553590
+    "lines": 553592
   }
 ],
         "stats": [
@@ -782,25 +782,25 @@
      {
          "section": "code_metrics",
          "metric": "Test",
-         "value": "163,620",
+         "value": "163,627",
          "description": "Test C/Headers code"
      },
      {
          "section": "code_metrics",
          "metric": "Code",
-         "value": "131,324",
+         "value": "131,322",
          "description": "Core C/Headers + Shell + CMake + Lua + JS code"
      },
      {
          "section": "code_metrics",
          "metric": "Comments",
-         "value": "41,552",
+         "value": "41,558",
          "description": "Core C/Headers + Shell + CMake + Lua + JS comments"
      },
      {
          "section": "code_metrics",
          "metric": "Combined",
-         "value": "231,295",
+         "value": "231,299",
          "description": "Total content lines (Docs + Code + Comments)"
      },
      {
@@ -818,7 +818,7 @@
      {
          "section": "ratios",
          "metric": "Code/Comments",
-         "value": "3.160",
+         "value": "3.159",
          "description": "Ratio of Code to Comments   {GREEN}Target: 3.000 - 5.000{RESET}"
      },
      {
@@ -830,61 +830,61 @@
      {
          "section": "coverage_lines",
          "metric": "Instrumented Blackbox",
-         "value": "54,344",
+         "value": "54,342",
          "description": "Lines of instrumented code - Blackbox"
      },
      {
          "section": "coverage_lines",
          "metric": "Instrumented Unity",
-         "value": "54,344",
+         "value": "54,342",
          "description": "Lines of instrumented code - Unity"
      },
      {
          "section": "coverage_lines",
          "metric": "Instrumented Tests",
-         "value": "124,417",
+         "value": "124,425",
          "description": "Lines of instrumented code - Test articles"
      },
      {
          "section": "coverage_lines",
          "metric": "Coverage Blackbox",
-         "value": "30,133",
+         "value": "30,276",
          "description": "Lines of covered code - Blackbox"
      },
      {
          "section": "coverage_lines",
          "metric": "Coverage Unity",
-         "value": "39,446",
+         "value": "39,438",
          "description": "Lines of covered code - Unity"
      },
      {
          "section": "coverage_lines",
          "metric": "Coverage Combined",
-         "value": "45,842",
+         "value": "45,841",
          "description": "Lines of covered code - Combined"
      },
      {
          "section": "coverage_percentages",
          "metric": "Coverage Blackbox %",
-         "value": "55.449 %",
+         "value": "55.714 %",
          "description": "Blackbox test coverage               {CYAN}Target: 65 %{RESET}"
      },
      {
          "section": "coverage_percentages",
          "metric": "Coverage Unity %",
-         "value": "72.586 %",
+         "value": "72.574 %",
          "description": "Unity test coverage                  {CYAN}Target: 75 %{RESET}"
      },
      {
          "section": "coverage_percentages",
          "metric": "Coverage Combined %",
-         "value": "84.357 %",
+         "value": "84.358 %",
          "description": "Combined test coverage               {CYAN}Target: 85 %{RESET}"
      },
      {
          "section": "coverage_percentages",
          "metric": "Unity Ratio",
-         "value": "176.250 %",
+         "value": "176.260 %",
          "description": "Test/Core C/Headers         {GREEN}Target: 150 % - 200 %{RESET}"
      },
      {
@@ -1347,9 +1347,9 @@
         "unity_covered": 177,
         "unity_instrumented": 224,
         "unity_percentage": 79.018,
-        "coverage_covered": 73,
+        "coverage_covered": 147,
         "coverage_instrumented": 224,
-        "coverage_percentage": 32.589,
+        "coverage_percentage": 65.625,
         "combined_covered": 180,
         "combined_instrumented": 224,
         "focus": 0.0
@@ -2252,17 +2252,17 @@
     },
     {
         "folder": "src/api/wschat",
-        "max_coverage_percentage": 88.571,
-        "combined_coverage_percentage": 88.571,
+        "max_coverage_percentage": 87.253,
+        "combined_coverage_percentage": 88.352,
         "file_path": "api/wschat/helpers/lru_cache.c",
         "unity_test_count": 19,
-        "unity_covered": 403,
+        "unity_covered": 397,
         "unity_instrumented": 455,
-        "unity_percentage": 88.571,
+        "unity_percentage": 87.253,
         "coverage_covered": 193,
         "coverage_instrumented": 455,
         "coverage_percentage": 42.418,
-        "combined_covered": 403,
+        "combined_covered": 402,
         "combined_instrumented": 455,
         "focus": 0.0
     },
@@ -2460,17 +2460,17 @@
     },
     {
         "folder": "src/config",
-        "max_coverage_percentage": 80.078,
-        "combined_coverage_percentage": 81.641,
+        "max_coverage_percentage": 79.688,
+        "combined_coverage_percentage": 81.250,
         "file_path": "config/config.c",
         "unity_test_count": 6,
         "unity_covered": 124,
         "unity_instrumented": 256,
         "unity_percentage": 48.438,
-        "coverage_covered": 205,
+        "coverage_covered": 204,
         "coverage_instrumented": 256,
-        "coverage_percentage": 80.078,
-        "combined_covered": 209,
+        "coverage_percentage": 79.688,
+        "combined_covered": 208,
         "combined_instrumented": 256,
         "focus": 0.0
     },
@@ -2928,9 +2928,9 @@
         "combined_coverage_percentage": 93.684,
         "file_path": "database/database_engine_registry.c",
         "unity_test_count": 7,
-        "unity_covered": 60,
+        "unity_covered": 57,
         "unity_instrumented": 95,
-        "unity_percentage": 63.158,
+        "unity_percentage": 60.000,
         "coverage_covered": 60,
         "coverage_instrumented": 95,
         "coverage_percentage": 63.158,
@@ -3011,9 +3011,9 @@
         "unity_covered": 204,
         "unity_instrumented": 251,
         "unity_percentage": 81.275,
-        "coverage_covered": 155,
+        "coverage_covered": 161,
         "coverage_instrumented": 251,
-        "coverage_percentage": 61.753,
+        "coverage_percentage": 64.143,
         "combined_covered": 215,
         "combined_instrumented": 251,
         "focus": 0.0
@@ -4019,9 +4019,9 @@
         "unity_covered": 42,
         "unity_instrumented": 52,
         "unity_percentage": 80.769,
-        "coverage_covered": 40,
+        "coverage_covered": 39,
         "coverage_instrumented": 52,
-        "coverage_percentage": 76.923,
+        "coverage_percentage": 75.000,
         "combined_covered": 45,
         "combined_instrumented": 52,
         "focus": 0.0
@@ -4700,17 +4700,17 @@
     },
     {
         "folder": "src/logging",
-        "max_coverage_percentage": 92.774,
-        "combined_coverage_percentage": 92.774,
+        "max_coverage_percentage": 93.240,
+        "combined_coverage_percentage": 93.240,
         "file_path": "logging/victoria_logs.c",
         "unity_test_count": 116,
-        "unity_covered": 398,
+        "unity_covered": 400,
         "unity_instrumented": 429,
-        "unity_percentage": 92.774,
+        "unity_percentage": 93.240,
         "coverage_covered": 7,
         "coverage_instrumented": 429,
         "coverage_percentage": 1.632,
-        "combined_covered": 398,
+        "combined_covered": 400,
         "combined_instrumented": 429,
         "focus": 0.0
     },
@@ -5020,17 +5020,17 @@
     },
     {
         "folder": "src/mdns",
-        "max_coverage_percentage": 97.590,
-        "combined_coverage_percentage": 100.000,
+        "max_coverage_percentage": 96.386,
+        "combined_coverage_percentage": 98.795,
         "file_path": "mdns/mdns_server_shutdown.c",
         "unity_test_count": 5,
         "unity_covered": 76,
         "unity_instrumented": 83,
         "unity_percentage": 91.566,
-        "coverage_covered": 81,
+        "coverage_covered": 80,
         "coverage_instrumented": 83,
-        "coverage_percentage": 97.590,
-        "combined_covered": 83,
+        "coverage_percentage": 96.386,
+        "combined_covered": 82,
         "combined_instrumented": 83,
         "focus": 0.0
     },
@@ -5059,9 +5059,9 @@
         "unity_covered": 86,
         "unity_instrumented": 119,
         "unity_percentage": 72.269,
-        "coverage_covered": 82,
+        "coverage_covered": 77,
         "coverage_instrumented": 119,
-        "coverage_percentage": 68.908,
+        "coverage_percentage": 64.706,
         "combined_covered": 100,
         "combined_instrumented": 119,
         "focus": 0.0
@@ -5069,16 +5069,16 @@
     {
         "folder": "src/mutex",
         "max_coverage_percentage": 87.645,
-        "combined_coverage_percentage": 88.031,
+        "combined_coverage_percentage": 88.417,
         "file_path": "mutex/mutex.c",
         "unity_test_count": 36,
         "unity_covered": 227,
         "unity_instrumented": 259,
         "unity_percentage": 87.645,
-        "coverage_covered": 143,
+        "coverage_covered": 144,
         "coverage_instrumented": 259,
-        "coverage_percentage": 55.212,
-        "combined_covered": 228,
+        "coverage_percentage": 55.598,
+        "combined_covered": 229,
         "combined_instrumented": 259,
         "focus": 0.0
     },
@@ -5805,16 +5805,16 @@
     {
         "folder": "src/state",
         "max_coverage_percentage": 98.039,
-        "combined_coverage_percentage": 98.039,
+        "combined_coverage_percentage": 100.000,
         "file_path": "state/state.c",
         "unity_test_count": 48,
         "unity_covered": 50,
         "unity_instrumented": 51,
         "unity_percentage": 98.039,
-        "coverage_covered": 39,
+        "coverage_covered": 40,
         "coverage_instrumented": 51,
-        "coverage_percentage": 76.471,
-        "combined_covered": 50,
+        "coverage_percentage": 78.431,
+        "combined_covered": 51,
         "combined_instrumented": 51,
         "focus": 0.0
     },
@@ -5933,16 +5933,16 @@
     {
         "folder": "src/terminal",
         "max_coverage_percentage": 79.715,
-        "combined_coverage_percentage": 83.630,
+        "combined_coverage_percentage": 82.918,
         "file_path": "terminal/terminal_session.c",
         "unity_test_count": 87,
         "unity_covered": 224,
         "unity_instrumented": 281,
         "unity_percentage": 79.715,
-        "coverage_covered": 84,
+        "coverage_covered": 113,
         "coverage_instrumented": 281,
-        "coverage_percentage": 29.893,
-        "combined_covered": 235,
+        "coverage_percentage": 40.214,
+        "combined_covered": 233,
         "combined_instrumented": 281,
         "focus": 0.0
     },
@@ -5955,9 +5955,9 @@
         "unity_covered": 129,
         "unity_instrumented": 170,
         "unity_percentage": 75.882,
-        "coverage_covered": 47,
+        "coverage_covered": 68,
         "coverage_instrumented": 170,
-        "coverage_percentage": 27.647,
+        "coverage_percentage": 40.000,
         "combined_covered": 129,
         "combined_instrumented": 170,
         "focus": 0.0
@@ -5971,9 +5971,9 @@
         "unity_covered": 227,
         "unity_instrumented": 249,
         "unity_percentage": 91.165,
-        "coverage_covered": 99,
+        "coverage_covered": 121,
         "coverage_instrumented": 249,
-        "coverage_percentage": 39.759,
+        "coverage_percentage": 48.594,
         "combined_covered": 240,
         "combined_instrumented": 249,
         "focus": 0.0
@@ -6051,9 +6051,9 @@
         "unity_covered": 316,
         "unity_instrumented": 352,
         "unity_percentage": 89.773,
-        "coverage_covered": 183,
+        "coverage_covered": 184,
         "coverage_instrumented": 352,
-        "coverage_percentage": 51.989,
+        "coverage_percentage": 52.273,
         "combined_covered": 316,
         "combined_instrumented": 352,
         "focus": 0.0
@@ -6284,18 +6284,18 @@
     },
     {
         "folder": "src/websocket",
-        "max_coverage_percentage": 86.111,
-        "combined_coverage_percentage": 86.111,
+        "max_coverage_percentage": 85.915,
+        "combined_coverage_percentage": 85.915,
         "file_path": "websocket/websocket_server_connection.c",
         "unity_test_count": 15,
         "unity_covered": 40,
-        "unity_instrumented": 72,
-        "unity_percentage": 55.556,
-        "coverage_covered": 62,
-        "coverage_instrumented": 72,
-        "coverage_percentage": 86.111,
-        "combined_covered": 62,
-        "combined_instrumented": 72,
+        "unity_instrumented": 71,
+        "unity_percentage": 56.338,
+        "coverage_covered": 61,
+        "coverage_instrumented": 71,
+        "coverage_percentage": 85.915,
+        "combined_covered": 61,
+        "combined_instrumented": 71,
         "focus": 0.0
     },
     {
@@ -6380,33 +6380,33 @@
     },
     {
         "folder": "src/websocket",
-        "max_coverage_percentage": 60.000,
-        "combined_coverage_percentage": 60.000,
+        "max_coverage_percentage": 59.596,
+        "combined_coverage_percentage": 59.596,
         "file_path": "websocket/websocket_server_pty.c",
         "unity_test_count": 24,
-        "unity_covered": 60,
-        "unity_instrumented": 100,
-        "unity_percentage": 60.000,
-        "coverage_covered": 8,
-        "coverage_instrumented": 100,
-        "coverage_percentage": 8.000,
-        "combined_covered": 60,
-        "combined_instrumented": 100,
+        "unity_covered": 59,
+        "unity_instrumented": 99,
+        "unity_percentage": 59.596,
+        "coverage_covered": 7,
+        "coverage_instrumented": 99,
+        "coverage_percentage": 7.071,
+        "combined_covered": 59,
+        "combined_instrumented": 99,
         "focus": 0.0
     },
     {
         "folder": "src/websocket",
-        "max_coverage_percentage": 78.049,
-        "combined_coverage_percentage": 80.488,
+        "max_coverage_percentage": 80.488,
+        "combined_coverage_percentage": 82.927,
         "file_path": "{CYAN}websocket/websocket_server_shutdown.c{RESET}",
         "unity_test_count": 17,
         "unity_covered": 6,
         "unity_instrumented": 82,
         "unity_percentage": 7.317,
-        "coverage_covered": 64,
+        "coverage_covered": 66,
         "coverage_instrumented": 82,
-        "coverage_percentage": 78.049,
-        "combined_covered": 66,
+        "coverage_percentage": 80.488,
+        "combined_covered": 68,
         "combined_instrumented": 82,
         "focus": 0.0
     },
@@ -6451,9 +6451,9 @@
         "unity_covered": 107,
         "unity_instrumented": 136,
         "unity_percentage": 78.676,
-        "coverage_covered": 80,
+        "coverage_covered": 76,
         "coverage_instrumented": 136,
-        "coverage_percentage": 58.824,
+        "coverage_percentage": 55.882,
         "combined_covered": 107,
         "combined_instrumented": 136,
         "focus": 0.0

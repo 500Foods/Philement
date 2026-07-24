@@ -96,19 +96,14 @@ int ws_handle_connection_closed(const struct lws *wsi, WebSocketSessionData *ses
         client_ip = session->request_ip;
     }
 
-    // Stop PTY bridge thread for terminal connections
+    // Stop PTY / terminal I/O bridge for terminal connections.
+    // stop_pty_bridge_thread joins the bridge and may free the TerminalSession
+    // via handle_terminal_websocket_close — do not touch terminal_session after.
     if (wsi && session) {
-        // Get terminal session from session data
         TerminalSession *terminal_session = session->terminal_session;
-        if (terminal_session && terminal_session->active) {
-            // Stop the PTY bridge thread
-            stop_pty_bridge_thread(terminal_session);
-
-            // Clear the WebSocket connection to prevent use of invalid wsi
-            terminal_session->websocket_connection = NULL;
-
-            // Clear the session from session data
+        if (terminal_session) {
             session->terminal_session = NULL;
+            stop_pty_bridge_thread(terminal_session);
         }
         // Cleanup chat-specific resources (pass wsi for final writable callback)
         chat_session_cleanup(session, (struct lws *)wsi);
