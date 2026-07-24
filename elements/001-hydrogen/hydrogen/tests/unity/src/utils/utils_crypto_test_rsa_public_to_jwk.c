@@ -13,6 +13,34 @@
 void test_rsa_jwk_null_pkey(void);
 void test_rsa_jwk_round_trip_parse(void);
 void test_rsa_pem_round_trip(void);
+void test_rsa_jwk_without_kid(void);
+void test_rsa_jwk_rejects_non_rsa_key(void);
+void test_rsa_private_pem_rejects_public_only(void);
+void test_rsa_private_pem_rejects_hmac_key(void);
+void test_rsa_public_pem_rejects_hmac_key(void);
+void test_rsa_private_from_pem_invalid(void);
+
+static EVP_PKEY* make_x25519_key(void) {
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_from_name(NULL, "X25519", NULL);
+    if (!ctx) {
+        return NULL;
+    }
+    EVP_PKEY* pkey = NULL;
+    if (EVP_PKEY_keygen_init(ctx) <= 0 || EVP_PKEY_keygen(ctx, &pkey) <= 0) {
+        if (pkey) {
+            EVP_PKEY_free(pkey);
+            pkey = NULL;
+        }
+    }
+    EVP_PKEY_CTX_free(ctx);
+    return pkey;
+}
+
+static EVP_PKEY* make_hmac_key(void) {
+    unsigned char raw[32];
+    memset(raw, 0x5A, sizeof(raw));
+    return EVP_PKEY_new_raw_private_key(EVP_PKEY_HMAC, NULL, raw, sizeof(raw));
+}
 
 void setUp(void) {
 }
@@ -97,10 +125,91 @@ void test_rsa_pem_round_trip(void) {
     EVP_PKEY_free(pkey);
 }
 
+void test_rsa_jwk_without_kid(void) {
+    EVP_PKEY* pkey = utils_rsa_generate_keypair(2048);
+    if (!pkey) {
+        TEST_IGNORE_MESSAGE("RSA keygen unavailable");
+        return;
+    }
+    char* jwk = utils_rsa_public_to_jwk(pkey, NULL);
+    TEST_ASSERT_NOT_NULL(jwk);
+    TEST_ASSERT_NULL(strstr(jwk, "\"kid\""));
+    char* jwk_empty = utils_rsa_public_to_jwk(pkey, "");
+    TEST_ASSERT_NOT_NULL(jwk_empty);
+    TEST_ASSERT_NULL(strstr(jwk_empty, "\"kid\""));
+    free(jwk);
+    free(jwk_empty);
+    EVP_PKEY_free(pkey);
+}
+
+void test_rsa_jwk_rejects_non_rsa_key(void) {
+    EVP_PKEY* x = make_x25519_key();
+    if (!x) {
+        TEST_IGNORE_MESSAGE("X25519 keygen unavailable");
+        return;
+    }
+    TEST_ASSERT_NULL(utils_rsa_public_to_jwk(x, "k1"));
+    EVP_PKEY_free(x);
+}
+
+void test_rsa_private_pem_rejects_public_only(void) {
+    EVP_PKEY* priv = utils_rsa_generate_keypair(2048);
+    if (!priv) {
+        TEST_IGNORE_MESSAGE("RSA keygen unavailable");
+        return;
+    }
+    char* jwk = utils_rsa_public_to_jwk(priv, "x");
+    TEST_ASSERT_NOT_NULL(jwk);
+    EVP_PKEY* pub = utils_jwk_rsa_to_pkey(jwk);
+    TEST_ASSERT_NOT_NULL(pub);
+
+    TEST_ASSERT_NULL(utils_rsa_private_to_pem(pub));
+
+    char* pub_pem = utils_rsa_public_to_pem(pub);
+    TEST_ASSERT_NOT_NULL(pub_pem);
+
+    free(pub_pem);
+    free(jwk);
+    EVP_PKEY_free(pub);
+    EVP_PKEY_free(priv);
+}
+
+void test_rsa_private_pem_rejects_hmac_key(void) {
+    EVP_PKEY* hmac = make_hmac_key();
+    if (!hmac) {
+        TEST_IGNORE_MESSAGE("HMAC raw key unavailable");
+        return;
+    }
+    TEST_ASSERT_NULL(utils_rsa_private_to_pem(hmac));
+    EVP_PKEY_free(hmac);
+}
+
+void test_rsa_public_pem_rejects_hmac_key(void) {
+    EVP_PKEY* hmac = make_hmac_key();
+    if (!hmac) {
+        TEST_IGNORE_MESSAGE("HMAC raw key unavailable");
+        return;
+    }
+    TEST_ASSERT_NULL(utils_rsa_public_to_pem(hmac));
+    EVP_PKEY_free(hmac);
+}
+
+void test_rsa_private_from_pem_invalid(void) {
+    TEST_ASSERT_NULL(utils_rsa_private_from_pem("not-a-pem"));
+    TEST_ASSERT_NULL(utils_rsa_private_from_pem(
+        "-----BEGIN PRIVATE KEY-----\nAAAA\n-----END PRIVATE KEY-----\n"));
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_rsa_jwk_null_pkey);
     RUN_TEST(test_rsa_jwk_round_trip_parse);
     RUN_TEST(test_rsa_pem_round_trip);
+    RUN_TEST(test_rsa_jwk_without_kid);
+    RUN_TEST(test_rsa_jwk_rejects_non_rsa_key);
+    RUN_TEST(test_rsa_private_pem_rejects_public_only);
+    RUN_TEST(test_rsa_private_pem_rejects_hmac_key);
+    RUN_TEST(test_rsa_public_pem_rejects_hmac_key);
+    RUN_TEST(test_rsa_private_from_pem_invalid);
     return UNITY_END();
 }

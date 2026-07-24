@@ -13,6 +13,16 @@
 
 void test_jwks_doc_not_init(void);
 void test_jwks_doc_has_keys(void);
+void test_jwks_doc_null_key_context(void);
+
+static void cleanup_key_dir(const char *dir) {
+    char path[512];
+    snprintf(path, sizeof(path), "%s/signing-active.pem", dir);
+    unlink(path);
+    snprintf(path, sizeof(path), "%s/signing-active.kid", dir);
+    unlink(path);
+    rmdir(dir);
+}
 
 void setUp(void) {
 }
@@ -54,18 +64,41 @@ void test_jwks_doc_has_keys(void) {
     json_decref(root);
     free(jwks);
     shutdown_oidc_service();
+    cleanup_key_dir(dir);
+}
 
-    char path[512];
-    snprintf(path, sizeof(path), "%s/signing-active.pem", dir);
-    unlink(path);
-    snprintf(path, sizeof(path), "%s/signing-active.kid", dir);
-    unlink(path);
-    rmdir(dir);
+void test_jwks_doc_null_key_context(void) {
+    char tmpl[] = "/tmp/oidc_jwks_null_XXXXXX";
+    char *dir = mkdtemp(tmpl);
+    TEST_ASSERT_NOT_NULL(dir);
+
+    OIDCConfig cfg;
+    memset(&cfg, 0, sizeof(cfg));
+    cfg.enabled = true;
+    cfg.issuer = (char*)"http://iss";
+    cfg.keys.storage_path = dir;
+    cfg.keys.encryption_enabled = false;
+    cfg.keys.rotation_interval_days = 90;
+    cfg.tokens.access_token_lifetime = 3600;
+    cfg.tokens.refresh_token_lifetime = 86400;
+    cfg.tokens.id_token_lifetime = 3600;
+    TEST_ASSERT_TRUE(init_oidc_service(&cfg));
+
+    OIDCContext *ctx = get_oidc_context();
+    TEST_ASSERT_NOT_NULL(ctx);
+    void *saved = ctx->key_context;
+    ctx->key_context = NULL;
+    TEST_ASSERT_NULL(oidc_generate_jwks_document());
+    ctx->key_context = saved;
+
+    shutdown_oidc_service();
+    cleanup_key_dir(dir);
 }
 
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_jwks_doc_not_init);
     RUN_TEST(test_jwks_doc_has_keys);
+    RUN_TEST(test_jwks_doc_null_key_context);
     return UNITY_END();
 }

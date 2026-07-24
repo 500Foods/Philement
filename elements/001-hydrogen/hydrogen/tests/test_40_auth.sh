@@ -22,6 +22,11 @@
 # analyze_auth_test_results()
 
 # CHANGELOG
+# 1.9.0 - 2026-07-24 - Suite-load resilience: curl max-time 45s, 5 retries with backoff on
+#                    - 000/5xx; Medium/Fast queue workers raised in configs (server-side
+#                    - soft auth timeouts + per-query watchdog cancel land separately)
+# 1.8.1 - 2026-07-24 - Raised auth curl max-time (5s -> 20s) so suite-parallel DB load
+#                    - (tests 41/44) cannot flake login solely via client-side abandon
 # 1.8.0 - 2026-07-23 - Added multi-engine DML transaction commit/rollback probe before auth
 #                    - Verifies native-client multi-statement rollback (migration LOAD prerequisite)
 # 1.7.0 - 2026-07-09 - Logout now uses the renewed JWT when renew succeeds
@@ -59,7 +64,7 @@ TEST_NAME="Auth"
 TEST_ABBR="JWT"
 TEST_NUMBER="40"
 TEST_COUNTER=0
-TEST_VERSION="1.8.0"
+TEST_VERSION="1.9.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -110,7 +115,9 @@ validate_auth_request() {
     local expected_status="$4"
     local output_file="$5"
     local jwt_token="${6:-}"  # Optional JWT token for authenticated requests
-    local max_retries=3
+    # Under suite-parallel DB load (tests 41/44) a single attempt can miss while
+    # the engine recovers from a cancelled hung statement. Prefer retry over flake.
+    local max_retries=5
     local retry=1
 
     while [[ "${retry}" -le "${max_retries}" ]]; do
@@ -122,8 +129,9 @@ validate_auth_request() {
             curl_cmd+=(-H "Authorization: Bearer ${jwt_token}")
         fi
 
-        # Complete curl command
-        curl_cmd+=(-d "${data}" -w "%{http_code}" -o "${output_file}" --compressed --max-time 5 "${url}")
+        # 45s > critical auth budget (~20s/query) so a slow but successful path
+        # is not abandoned by the client before the server answers.
+        curl_cmd+=(-d "${data}" -w "%{http_code}" -o "${output_file}" --compressed --max-time 45 "${url}")
 
         # Run curl and capture HTTP status
         local http_status
@@ -146,7 +154,8 @@ validate_auth_request() {
         fi
 
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Auth request returned HTTP ${http_status}, retrying (${retry}/${max_retries})..."
-        sleep 0.5
+        # Back off so concurrent exercise traffic can drain before the next try
+        sleep "${retry}"
         retry=$(( retry + 1 ))
     done
 

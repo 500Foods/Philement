@@ -13,7 +13,16 @@
 #include "auth_service.h"
 
 // Database query execution
+// Default pending/engine budget is 20s (AUTH_QUERY_TIMEOUT_DEFAULT).
+// Soft paths (roles, rate-limit counts, IP lists) should use
+// AUTH_QUERY_TIMEOUT_SOFT so a stalled engine cannot block login for 30s+.
+#define AUTH_QUERY_TIMEOUT_DEFAULT 20
+#define AUTH_QUERY_TIMEOUT_SOFT 5
+
 QueryResult* execute_auth_query(int query_ref, const char* database, json_t* params);
+QueryResult* execute_auth_query_timeout(int query_ref, const char* database,
+                                        json_t* params, int timeout_seconds);
+bool submit_auth_query_async(int query_ref, const char* database, json_t* params);
 void free_query_result(QueryResult* result);
 
 /*
@@ -39,8 +48,6 @@ void auth_service_database_test_clear_query_fn(void);
 
 // Account management
 account_info_t* lookup_account(const char* login_id, const char* database);
-char* get_password_hash(int account_id, const char* database);
-bool verify_password(const char* password, const char* stored_hash, int account_id);
 bool check_username_availability(const char* username, const char* database);
 int create_account_record(const char* username, const char* email,
                           const char* hashed_password, const char* full_name, const char* database);

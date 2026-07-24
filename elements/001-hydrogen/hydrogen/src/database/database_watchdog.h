@@ -35,7 +35,10 @@
  * bound prevents a hung query from holding a connection in the registry
  * longer than an hour.
  */
-#define DATABASE_WATCHDOG_MIN_TIMEOUT_SECONDS 30
+/* Min must stay low enough that soft auth paths (roles, rate-limit counts)
+ * can cancel hung engine work before a single stuck DB2 statement blocks the
+ * SMFC worker for half a minute under multi-process suite load. */
+#define DATABASE_WATCHDOG_MIN_TIMEOUT_SECONDS 5
 #define DATABASE_WATCHDOG_MAX_TIMEOUT_SECONDS 3600
 
 /*

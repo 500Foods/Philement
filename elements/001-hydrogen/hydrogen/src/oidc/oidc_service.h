@@ -1,9 +1,17 @@
 /*
  * OpenID Connect (OIDC) Service
  *
- * Main header file for Hydrogen's OIDC implementation, providing interfaces
- * for authentication, authorization, and identity management using the
- * OpenID Connect protocol.
+ * Main header for Hydrogen's OIDC IdP: lifecycle, authorization, token,
+ * userinfo, introspection, revocation, and discovery/JWKS.
+ *
+ * Implementation is split across:
+ *   oidc_service.c              — init / shutdown / get_oidc_context
+ *   oidc_service_authorize.c    — resource owner + auth codes
+ *   oidc_service_token.c        — token endpoint + mint helpers
+ *   oidc_service_userinfo.c     — userinfo + scope helpers
+ *   oidc_service_introspect.c   — RFC 7662 introspection
+ *   oidc_service_revoke.c       — RFC 7009 revocation
+ *   oidc_service_discovery.c    — discovery document + JWKS
  */
 
 #ifndef OIDC_SERVICE_H
@@ -13,6 +21,9 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <time.h>
+
+// Third-party (userinfo/introspect helpers)
+#include <jansson.h>
 
 /*
  * OIDC Context
@@ -74,6 +85,7 @@ void cleanup_oidc_user_management(OIDCUserContext *user_context);
  */
 bool init_oidc_endpoints(OIDCContext *context);
 void cleanup_oidc_endpoints(void);
+
 /*
  * OIDC Token Types
  * Defines the different types of tokens issued by the OIDC service
@@ -96,8 +108,11 @@ typedef enum {
 } OIDCGrantType;
 
 /*
- * Core OIDC functions
+ * Core OIDC lifecycle
  */
+
+// Free a context and all owned subcomponents (partial or full init).
+void oidc_service_release_context(OIDCContext *ctx);
 
 // Initialize the OIDC service
 bool init_oidc_service(const OIDCConfig *config);
@@ -158,23 +173,45 @@ char* oidc_mint_token_pair_response(int account_id,
                                     const char *nonce_or_null,
                                     const char *refresh_plaintext_or_null);
 
+/* Grant-specific token handlers (used by oidc_process_token_request). */
+char* oidc_token_handle_authorization_code(const char *code,
+                                           const char *redirect_uri,
+                                           const char *client_id,
+                                           const char *code_verifier,
+                                           const OIDCClient *client);
+char* oidc_token_handle_refresh_token(const char *refresh_token,
+                                      const char *client_id,
+                                      const OIDCClient *client);
+
 // Process a userinfo request (returns claims JSON or NULL if token invalid)
 char* oidc_process_userinfo_request(const char *access_token);
 
 /* True if space-delimited scope list contains needle. */
 bool oidc_scope_has(const char *scope, const char *needle);
 
+/* Merge email/profile claims from user_data JSON into out (by scope). */
+void oidc_userinfo_apply_scoped_claims(json_t *out, const char *scope, const char *user_data);
+
 char* oidc_inactive_json(void);
 char* oidc_introspect_access_json(const OIDCTokenClaims *claims, const char *client_id);
 char* oidc_introspect_refresh_json(const OIDCRefreshRecord *rec, const char *client_id);
+char* oidc_introspect_try_access(const OIDCContext *ctx, const char *token, const char *client_id);
+char* oidc_introspect_try_refresh(OIDCContext *ctx, const char *token, const char *client_id);
 
 // Process a token introspection request
-char* oidc_process_introspection_request(const char *token, const char *token_type_hint, 
+char* oidc_process_introspection_request(const char *token, const char *token_type_hint,
                                         const char *client_id, const char *client_secret);
 
+bool oidc_revoke_try_refresh(OIDCContext *ctx, const char *token, const char *client_id);
+bool oidc_revoke_try_access(const OIDCContext *ctx, const char *token);
+
 // Process a token revocation request
-bool oidc_process_revocation_request(const char *token, const char *token_type_hint, 
+bool oidc_process_revocation_request(const char *token, const char *token_type_hint,
                                     const char *client_id, const char *client_secret);
+
+/* Discovery URL helpers */
+char* oidc_discovery_join_url(const char *issuer, const char *path);
+const char* oidc_discovery_endpoint_or_default(const char *configured, const char *fallback);
 
 // Generate OIDC discovery document
 char* oidc_generate_discovery_document(void);

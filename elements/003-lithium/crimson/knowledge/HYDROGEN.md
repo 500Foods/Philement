@@ -88,7 +88,10 @@ Hydrogen is currently designed for technical users who:
 - [**Mirage Proxy**](/docs/H/core/subsystems/mirage/mirage.md) - WebSocket tunneling for remote device access
 - [**mDNS Server**](/docs/H/core/subsystems/mdnsserver/mdnsserver.md) - Service discovery implementation
 - [**Print Queue System**](/docs/H/core/subsystems/print/print.md) - 3D printing queue management
-- [**OIDC Integration**](/docs/H/core/subsystems/oidc/oidc.md) - OpenID Connect authentication
+- [**OIDC Integration**](/docs/H/core/subsystems/oidc/oidc.md) - OpenID Connect IdP overview
+- [**OIDC IdP Endpoints**](/docs/H/api/oidc/oidc_endpoints.md) - Discovery, authorize, token, userinfo, JWKS
+- [**OIDC IdP Operator**](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md) - Enable, keys, kill switch, IdP vs RP
+- [**OIDC RP Endpoints**](/docs/H/api/auth/oidc_rp.md) - Hydrogen as Keycloak client
 - [**System Information**](/docs/H/core/system_info.md) - System monitoring and reporting
 
 ### Implementation Notes

@@ -1,27 +1,38 @@
 /*
- * Unity Test File: init_oidc_key_management / JWKS / persistence
+ * Unity Test File: init_oidc_key_management / cleanup / get_active
  */
 
 #include <src/hydrogen.h>
 #include <unity.h>
 
 #include <src/oidc/oidc_keys.h>
-#include <src/utils/utils_crypto.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <jansson.h>
+#include <unity/mocks/mock_system.h>
 
 void test_oidc_keys_init_null_storage_generates_key(void);
 void test_oidc_keys_persist_and_reload_same_kid(void);
 void test_oidc_keys_jwks_has_real_modulus(void);
 void test_oidc_keys_sign_verify_and_find(void);
 void test_oidc_keys_unknown_kid(void);
+void test_oidc_keys_init_calloc_failure(void);
+void test_oidc_keys_init_strdup_failure(void);
+void test_oidc_keys_init_ensure_storage_dir_failure(void);
+void test_oidc_keys_init_empty_storage_path(void);
+void test_oidc_keys_cleanup_null_context(void);
+void test_oidc_keys_get_active_no_active_key(void);
+void test_oidc_keys_get_active_null_keys(void);
+void test_oidc_generate_signing_key_null_context(void);
+void test_oidc_generate_signing_key_unsupported_alg(void);
 
 void setUp(void) {
+    mock_system_reset_all();
 }
 
 void tearDown(void) {
+    mock_system_reset_all();
 }
 
 void test_oidc_keys_init_null_storage_generates_key(void) {
@@ -112,6 +123,81 @@ void test_oidc_keys_unknown_kid(void) {
     cleanup_oidc_key_management(ctx);
 }
 
+void test_oidc_keys_init_calloc_failure(void) {
+    mock_system_set_malloc_failure(1);
+    OIDCKeyContext *ctx = init_oidc_key_management(NULL, false, 90);
+    TEST_ASSERT_NULL(ctx);
+}
+
+void test_oidc_keys_init_strdup_failure(void) {
+    /* calloc for context succeeds (1), strdup storage_path fails (2) */
+    mock_system_set_malloc_failure(2);
+    OIDCKeyContext *ctx = init_oidc_key_management("/tmp/oidc_strdup_test", false, 90);
+    TEST_ASSERT_NULL(ctx);
+}
+
+void test_oidc_keys_init_ensure_storage_dir_failure(void) {
+    char template[] = "/tmp/oidc_ensure_fail_XXXXXX";
+    char *dir = mkdtemp(template);
+    TEST_ASSERT_NOT_NULL(dir);
+
+    char path[512];
+    snprintf(path, sizeof(path), "%s/not_a_dir", dir);
+    FILE *fp = fopen(path, "w");
+    TEST_ASSERT_NOT_NULL(fp);
+    fprintf(fp, "not a directory");
+    fclose(fp);
+
+    OIDCKeyContext *ctx = init_oidc_key_management(path, false, 90);
+    TEST_ASSERT_NULL(ctx);
+
+    unlink(path);
+    rmdir(dir);
+}
+
+void test_oidc_keys_init_empty_storage_path(void) {
+    OIDCKeyContext *ctx = init_oidc_key_management("", false, 30);
+    TEST_ASSERT_NOT_NULL(ctx);
+    TEST_ASSERT_NULL(ctx->storage_path);
+    TEST_ASSERT_NOT_NULL(oidc_get_active_signing_key(ctx));
+    cleanup_oidc_key_management(ctx);
+}
+
+void test_oidc_keys_cleanup_null_context(void) {
+    cleanup_oidc_key_management(NULL);
+}
+
+void test_oidc_keys_get_active_no_active_key(void) {
+    OIDCKey key = {0};
+    key.usage = KEY_USAGE_ENCRYPTION;
+    key.status = KEY_STATUS_ACTIVE;
+    OIDCKey *arr[1];
+    arr[0] = &key;
+
+    OIDCKeyContext ctx = {0};
+    ctx.keys = arr;
+    ctx.key_count = 1;
+    TEST_ASSERT_NULL(oidc_get_active_signing_key(&ctx));
+}
+
+void test_oidc_keys_get_active_null_keys(void) {
+    OIDCKeyContext ctx = {0};
+    ctx.key_count = 1;
+    TEST_ASSERT_NULL(oidc_get_active_signing_key(&ctx));
+}
+
+void test_oidc_generate_signing_key_null_context(void) {
+    TEST_ASSERT_NULL(oidc_generate_signing_key(NULL, KEY_ALG_RS256));
+}
+
+void test_oidc_generate_signing_key_unsupported_alg(void) {
+    OIDCKeyContext *ctx = init_oidc_key_management(NULL, false, 90);
+    TEST_ASSERT_NOT_NULL(ctx);
+    TEST_ASSERT_NULL(oidc_generate_signing_key(ctx, KEY_ALG_ES256));
+    TEST_ASSERT_NULL(oidc_generate_signing_key(ctx, KEY_ALG_RS384));
+    cleanup_oidc_key_management(ctx);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_oidc_keys_init_null_storage_generates_key);
@@ -119,5 +205,14 @@ int main(void) {
     RUN_TEST(test_oidc_keys_jwks_has_real_modulus);
     RUN_TEST(test_oidc_keys_sign_verify_and_find);
     RUN_TEST(test_oidc_keys_unknown_kid);
+    RUN_TEST(test_oidc_keys_init_calloc_failure);
+    RUN_TEST(test_oidc_keys_init_strdup_failure);
+    RUN_TEST(test_oidc_keys_init_ensure_storage_dir_failure);
+    RUN_TEST(test_oidc_keys_init_empty_storage_path);
+    RUN_TEST(test_oidc_keys_cleanup_null_context);
+    RUN_TEST(test_oidc_keys_get_active_no_active_key);
+    RUN_TEST(test_oidc_keys_get_active_null_keys);
+    RUN_TEST(test_oidc_generate_signing_key_null_context);
+    RUN_TEST(test_oidc_generate_signing_key_unsupported_alg);
     return UNITY_END();
 }

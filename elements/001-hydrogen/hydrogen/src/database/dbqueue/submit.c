@@ -58,6 +58,11 @@ char* serialize_query_to_json(DatabaseQuery* query) {
     // Add submitted_at_ns
     json_object_set_new(root, "submitted_at_ns", json_integer((json_int_t)query->submitted_at_ns));
 
+    // Per-query timeout (0 omitted means worker default)
+    if (query->timeout_seconds > 0) {
+        json_object_set_new(root, "timeout_seconds", json_integer(query->timeout_seconds));
+    }
+
     // Serialize to string
     char* json_str = json_dumps(root, JSON_COMPACT);
     json_decref(root);
@@ -201,6 +206,12 @@ DatabaseQuery* deserialize_query_from_json(const char* json_str) {
     json_t* submitted_ns_json = json_object_get(root, "submitted_at_ns");
     if (submitted_ns_json && json_is_integer(submitted_ns_json)) {
         query->submitted_at_ns = (uint64_t)json_integer_value(submitted_ns_json);
+    }
+
+    // Extract timeout_seconds (optional; 0 = worker default)
+    json_t* timeout_json = json_object_get(root, "timeout_seconds");
+    if (timeout_json && json_is_integer(timeout_json)) {
+        query->timeout_seconds = (int)json_integer_value(timeout_json);
     }
 
     json_decref(root);

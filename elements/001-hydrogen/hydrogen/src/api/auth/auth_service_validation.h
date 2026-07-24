@@ -25,6 +25,7 @@ bool check_ip_whitelist(const char* client_ip, const char* database);
 bool check_ip_blacklist(const char* client_ip, const char* database);
 
 // Rate limiting
+int auth_login_max_attempts(const char* database);
 bool handle_rate_limiting(const char* client_ip, int failed_count,
                          bool is_whitelisted, const char* database);
 

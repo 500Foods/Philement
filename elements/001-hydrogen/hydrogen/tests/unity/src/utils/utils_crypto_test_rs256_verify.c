@@ -13,6 +13,9 @@
 #include <openssl/evp.h>
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
+#include <openssl/ec.h>
+#include <openssl/obj_mac.h>
+#include <openssl/err.h>
 
 // Forward declarations for functions being tested
 bool utils_rs256_verify(EVP_PKEY* pkey,
@@ -32,10 +35,37 @@ void test_rs256_verify_valid_signature(void);
 void test_rs256_verify_wrong_data(void);
 void test_rs256_verify_truncated_signature(void);
 void test_rs256_verify_garbage_signature(void);
+void test_rs256_verify_x25519_fails_init(void);
+void test_rs256_verify_ec_internal_error(void);
 
 // Module-level key pair for tests that need a real key
 static EVP_PKEY* g_test_pkey = NULL;
 static EVP_PKEY* g_test_private_key = NULL;
+
+static EVP_PKEY* make_named_key(const char* name, int curve_nid) {
+    EVP_PKEY_CTX* ctx = EVP_PKEY_CTX_new_from_name(NULL, name, NULL);
+    if (!ctx) {
+        return NULL;
+    }
+    EVP_PKEY* pkey = NULL;
+    if (EVP_PKEY_keygen_init(ctx) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        return NULL;
+    }
+    if (curve_nid != 0 &&
+        EVP_PKEY_CTX_set_ec_paramgen_curve_nid(ctx, curve_nid) <= 0) {
+        EVP_PKEY_CTX_free(ctx);
+        return NULL;
+    }
+    if (EVP_PKEY_keygen(ctx, &pkey) <= 0) {
+        if (pkey) {
+            EVP_PKEY_free(pkey);
+            pkey = NULL;
+        }
+    }
+    EVP_PKEY_CTX_free(ctx);
+    return pkey;
+}
 
 void setUp(void) {
     // No per-test setup needed
@@ -305,6 +335,35 @@ void test_rs256_verify_garbage_signature(void) {
     TEST_ASSERT_FALSE(result);
 }
 
+// X25519 cannot DigestVerifyInit with SHA256
+void test_rs256_verify_x25519_fails_init(void) {
+    EVP_PKEY* x = make_named_key("X25519", 0);
+    if (!x) {
+        TEST_IGNORE_MESSAGE("X25519 keygen unavailable");
+        return;
+    }
+    const unsigned char input[] = "data";
+    unsigned char sig[64];
+    memset(sig, 0x11, sizeof(sig));
+    TEST_ASSERT_FALSE(utils_rs256_verify(x, input, sizeof(input) - 1U, sig, sizeof(sig)));
+    EVP_PKEY_free(x);
+}
+
+// EC+SHA256 accepts init but DigestVerify returns <0 on garbage DER (internal error path)
+void test_rs256_verify_ec_internal_error(void) {
+    EVP_PKEY* ec = make_named_key("EC", NID_X9_62_prime256v1);
+    if (!ec) {
+        TEST_IGNORE_MESSAGE("EC keygen unavailable");
+        return;
+    }
+    ERR_clear_error();
+    const unsigned char input[] = "x";
+    unsigned char sig[32];
+    memset(sig, 0x00, sizeof(sig));
+    TEST_ASSERT_FALSE(utils_rs256_verify(ec, input, 1U, sig, sizeof(sig)));
+    EVP_PKEY_free(ec);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -326,6 +385,10 @@ int main(void) {
 
     // Wrong data tests (valid sig but wrong input)
     RUN_TEST(test_rs256_verify_wrong_data);
+
+    // Wrong key type / DigestVerifyInit failure / internal error
+    RUN_TEST(test_rs256_verify_x25519_fails_init);
+    RUN_TEST(test_rs256_verify_ec_internal_error);
 
     // Free shared key pair
     if (g_test_private_key) {

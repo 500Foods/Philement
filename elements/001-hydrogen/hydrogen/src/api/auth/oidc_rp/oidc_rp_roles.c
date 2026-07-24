@@ -85,7 +85,10 @@ QueryResult *run_query(int query_ref,
     if (g_roles_query_fn) {
         return g_roles_query_fn(query_ref, database, params);
     }
-    return execute_auth_query(query_ref, database, params);
+    /* Roles are non-critical on the login path (empty claim on failure).
+     * Use the soft timeout so a stalled engine cannot burn 20–30s of the
+     * HTTP request budget under multi-process DB load. */
+    return execute_auth_query_timeout(query_ref, database, params, AUTH_QUERY_TIMEOUT_SOFT);
 }
 
 /* -------------------------------------------------------------------------

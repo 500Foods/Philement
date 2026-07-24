@@ -1,21 +1,11 @@
 /*
  * Auth Service Database Functions
- *
- * This file contains all database-related operations including:
- * - Query execution wrappers
- * - Account lookup and management
- * - Password verification
- * - JWT storage and revocation
- * - Login attempt logging
- * - IP blocking
+ * Query wrappers, account/JWT ops, login audit, IP block.
  */
 
-// Global includes
 #include <src/hydrogen.h>
 #include <string.h>
 #include <src/logging/logging.h>
-
-// Local includes
 #include "auth_service.h"
 #include "auth_service_database.h"
 #include "auth_service_jwt.h"
@@ -27,13 +17,7 @@
 #include <jansson.h>
 #include <src/config/config_databases.h>
 
-/* -------------------------------------------------------------------------
- * Test seam — process-global override of execute_auth_query.
- * NULL in production. When set, execute_auth_query delegates to the
- * installed function instead of touching the live database queue/cache.
- * Used exclusively by Unity tests to inject canned QueryResult responses.
- * -------------------------------------------------------------------------
- */
+/* Unity test seam: non-NULL overrides live queue/cache (production stays NULL). */
 AuthServiceDatabaseQueryFn g_auth_service_database_query_fn = NULL;
 
 void auth_service_database_test_set_query_fn(AuthServiceDatabaseQueryFn fn) {
@@ -44,121 +28,97 @@ void auth_service_database_test_clear_query_fn(void) {
     g_auth_service_database_query_fn = NULL;
 }
 
-/**
- * Helper function to free QueryResult structure
- */
 void free_query_result(QueryResult* result) {
-    if (result) {
-        if (result->error_message) free(result->error_message);
-        if (result->data_json) free(result->data_json);
-        if (result->column_names) {
-            for (size_t i = 0; i < result->column_count; i++) {
-                if (result->column_names[i]) {
-                    free(result->column_names[i]);
-                }
-            }
-            free(result->column_names);
+    if (!result) return;
+    free(result->error_message);
+    free(result->data_json);
+    if (result->column_names) {
+        for (size_t i = 0; i < result->column_count; i++) {
+            free(result->column_names[i]);
         }
-        free(result);
+        free(result->column_names);
+    }
+    free(result);
+}
+
+static void auth_release_prep(char* query_id, char* query_template, char* params_json,
+                              json_t* merged_params, const json_t* params) {
+    free(query_id);
+    free(query_template);
+    free(params_json);
+    if (merged_params != params) {
+        json_decref(merged_params);
     }
 }
 
-/**
- * Execute a database query using the conduit system
- * Returns QueryResult or NULL on error
- *
- * Register the pending result BEFORE submit so a fast worker cannot signal
- * completion before the waiter is visible (avoids "Query result not found
- * for signaling" and the subsequent free of an orphaned result).
- */
+/* Register pending BEFORE submit so fast workers cannot orphan results. */
 QueryResult* execute_auth_query(int query_ref, const char* database, json_t* params) {
+    return execute_auth_query_timeout(query_ref, database, params, AUTH_QUERY_TIMEOUT_DEFAULT);
+}
+
+QueryResult* execute_auth_query_timeout(int query_ref, const char* database,
+                                        json_t* params, int timeout_seconds) {
     if (g_auth_service_database_query_fn) {
         return g_auth_service_database_query_fn(query_ref, database, params);
     }
-
     if (!database || query_ref <= 0) {
         log_this(SR_AUTH, "Invalid parameters for database query", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
+    if (timeout_seconds <= 0) {
+        timeout_seconds = AUTH_QUERY_TIMEOUT_DEFAULT;
+    }
 
-    // Lookup the database queue
     DatabaseQueue* db_queue = database_queue_manager_get_database(global_queue_manager, database);
     if (!db_queue) {
         log_this(SR_AUTH, "Database queue not found: %s", LOG_LEVEL_ERROR, 1, database);
         return NULL;
     }
-
-    // Lookup query cache entry
     const QueryCacheEntry* cache_entry = lookup_query_cache_entry(db_queue, query_ref);
     if (!cache_entry) {
         log_this("AUTH", "QueryRef %d not found in cache for database %s", LOG_LEVEL_ERROR, 2, query_ref, database);
         return NULL;
     }
 
-    // Merge database connection parameters with query parameters
-    json_t* merged_params = params; // Default to original params
+    json_t* merged_params = params;
     if (app_config) {
         const DatabaseConnection* conn = find_database_connection(&app_config->databases, database);
         if (conn && conn->parameters) {
             merged_params = merge_database_parameters(conn, params);
-            log_this("AUTH", "Merged database connection parameters for database: %s", LOG_LEVEL_DEBUG, 1, database);
         }
     }
 
-    // Convert parameters to JSON string
     char* params_json = json_dumps(merged_params, JSON_COMPACT);
     if (!params_json) {
         log_this("AUTH", "Failed to serialize parameters to JSON", LOG_LEVEL_ERROR, 0);
-        if (merged_params != params) {
-            json_decref(merged_params);
-        }
+        auth_release_prep(NULL, NULL, NULL, merged_params, params);
         return NULL;
     }
-
-    // Generate query ID
     char* query_id = generate_query_id();
     if (!query_id) {
-        free(params_json);
-        if (merged_params != params) {
-            json_decref(merged_params);
-        }
         log_this("AUTH", "Failed to generate query ID", LOG_LEVEL_ERROR, 0);
+        auth_release_prep(NULL, NULL, params_json, merged_params, params);
         return NULL;
     }
-
     char* query_template = strdup(cache_entry->sql_template);
     if (!query_template) {
-        free(query_id);
-        free(params_json);
-        if (merged_params != params) {
-            json_decref(merged_params);
-        }
         log_this("AUTH", "Failed to duplicate query template", LOG_LEVEL_ERROR, 0);
+        auth_release_prep(query_id, NULL, params_json, merged_params, params);
         return NULL;
     }
 
     PendingResultManager* pending_mgr = get_pending_result_manager();
     if (!pending_mgr) {
         log_this("AUTH", "Pending result manager not initialized", LOG_LEVEL_ERROR, 0);
-        free(query_id);
-        free(query_template);
-        free(params_json);
-        if (merged_params != params) {
-            json_decref(merged_params);
-        }
+        auth_release_prep(query_id, query_template, params_json, merged_params, params);
         return NULL;
     }
 
-    // Must register before submit so the worker can always find the waiter.
-    PendingQueryResult* pending = pending_result_register(pending_mgr, query_id, 30, SR_AUTH);
+    /* timeout_seconds stamped on DatabaseQuery so worker/watchdog share budget. */
+    PendingQueryResult* pending = pending_result_register(pending_mgr, query_id, timeout_seconds, SR_AUTH);
     if (!pending) {
         log_this("AUTH", "Failed to register pending result for query: %s", LOG_LEVEL_ERROR, 1, query_id);
-        free(query_id);
-        free(query_template);
-        free(params_json);
-        if (merged_params != params) {
-            json_decref(merged_params);
-        }
+        auth_release_prep(query_id, query_template, params_json, merged_params, params);
         return NULL;
     }
 
@@ -168,34 +128,19 @@ QueryResult* execute_auth_query(int query_ref, const char* database, json_t* par
         .parameter_json = params_json,
         .queue_type_hint = database_queue_type_from_string(cache_entry->queue_type),
         .submitted_at = time(NULL),
-        .processed_at = 0,
-        .retry_count = 0,
-        .error_message = NULL
+        .timeout_seconds = timeout_seconds
     };
 
-    bool submit_success = database_queue_submit_query(db_queue, &db_query);
-    if (!submit_success) {
+    if (!database_queue_submit_query(db_queue, &db_query)) {
         log_this("AUTH", "Failed to submit query to database queue", LOG_LEVEL_ERROR, 0);
         pending_result_unregister(pending_mgr, pending, SR_AUTH);
-        free(query_id);
-        free(query_template);
-        free(params_json);
-        if (merged_params != params) {
-            json_decref(merged_params);
-        }
+        auth_release_prep(query_id, query_template, params_json, merged_params, params);
         return NULL;
     }
-
-    int wait_result = pending_result_wait(pending, SR_AUTH);
-    if (wait_result != 0) {
+    if (pending_result_wait(pending, SR_AUTH) != 0) {
         log_this("AUTH", "Query execution timed out or failed: %s", LOG_LEVEL_ERROR, 1, query_id);
         pending_result_unregister(pending_mgr, pending, SR_AUTH);
-        free(query_id);
-        free(query_template);
-        free(params_json);
-        if (merged_params != params) {
-            json_decref(merged_params);
-        }
+        auth_release_prep(query_id, query_template, params_json, merged_params, params);
         return NULL;
     }
 
@@ -204,12 +149,7 @@ QueryResult* execute_auth_query(int query_ref, const char* database, json_t* par
     if (!result) {
         log_this("AUTH", "Failed to allocate memory for query result", LOG_LEVEL_ERROR, 0);
         pending_result_unregister(pending_mgr, pending, SR_AUTH);
-        free(query_id);
-        free(query_template);
-        free(params_json);
-        if (merged_params != params) {
-            json_decref(merged_params);
-        }
+        auth_release_prep(query_id, query_template, params_json, merged_params, params);
         return NULL;
     }
 
@@ -228,9 +168,6 @@ QueryResult* execute_auth_query(int query_ref, const char* database, json_t* par
         result->column_count = pending_result->column_count;
         result->affected_rows = pending_result->affected_rows;
         result->execution_time_ms = pending_result->execution_time_ms;
-
-        // Some engine paths return only data_json; derive row_count for callers
-        // that rely on it (e.g. is_token_revoked / QueryRef #018).
         if (result->row_count == 0 && result->data_json && result->data_json[0] != '\0') {
             json_error_t err;
             json_t* arr = json_loads(result->data_json, 0, &err);
@@ -241,23 +178,12 @@ QueryResult* execute_auth_query(int query_ref, const char* database, json_t* par
         }
     }
 
-    // Ownership of pending_result stays with the pending entry; unregister frees it.
     pending_result_unregister(pending_mgr, pending, SR_AUTH);
-    free(query_id);
-    free(query_template);
-    free(params_json);
-    if (merged_params != params) {
-        json_decref(merged_params);
-    }
-
+    auth_release_prep(query_id, query_template, params_json, merged_params, params);
     return result;
 }
 
-/**
- * Lookup account information from database
- * Note: Actual authorization (status check) happens during password verification in QueryRef #012
- * which requires both correct password AND status_a16=1 (Active)
- */
+/* Status check is QueryRef #012 during password verify (password + status_a16=1). */
 account_info_t* lookup_account(const char* login_id, const char* database) {
     if (!login_id || !database) return NULL;
 
@@ -316,8 +242,7 @@ account_info_t* lookup_account(const char* login_id, const char* database) {
         }
         
         // Set enabled/authorized to true here
-        // The actual status check happens in QueryRef #012 during password verification
-        // which requires both password_hash AND status_a16=1
+        // The actual status check happens in QueryRef #012 during password verification which requires both password_hash AND status_a16=1
         // This prevents revealing whether accounts exist but are disabled
         account->enabled = true;
         account->authorized = true;
@@ -335,11 +260,11 @@ account_info_t* lookup_account(const char* login_id, const char* database) {
     return account;
 }
 
-/**
- * Verify password AND account status in one secure database query
- * Uses QueryRef #012 which checks password_hash AND status_a16=1
- * Returns true only if BOTH password correct AND account active
- * More secure: never exposes hash, doesn't reveal if account exists but disabled
+/*
+ * Verify password AND account status in one secure database query.
+ * Uses QueryRef #012 which checks password_hash AND status_a16=1.
+ * Returns true only if BOTH password correct AND account active.
+ * More secure: never exposes hash, does not reveal if account exists but disabled.
  */
 bool verify_password_and_status(const char* password, int account_id, const char* database, account_info_t* account) {
     if (!password || account_id <= 0 || !database || !account) return false;
@@ -405,34 +330,6 @@ bool verify_password_and_status(const char* password, int account_id, const char
     return verified;
 }
 
-/**
- * DEPRECATED: Use verify_password_and_status() instead
- * This function is kept for compatibility but should not be used
- * The new approach verifies password AND status in one secure database query
- */
-char* get_password_hash(int account_id, const char* database) {
-    (void)account_id;
-    (void)database;
-    log_this("AUTH", "get_password_hash() is deprecated - use verify_password_and_status() instead", LOG_LEVEL_ERROR, 0);
-    return NULL;
-}
-
-/**
- * DEPRECATED: Use verify_password_and_status() instead
- * This function is kept for compatibility but should not be used
- * The new approach verifies password AND status in one secure database query
- */
-bool verify_password(const char* password, const char* stored_hash, int account_id) {
-    (void)password;
-    (void)stored_hash;
-    (void)account_id;
-    log_this("AUTH", "verify_password() is deprecated - use verify_password_and_status() instead", LOG_LEVEL_ERROR, 0);
-    return false;
-}
-
-/**
- * Check if username is available
- */
 bool check_username_availability(const char* username, const char* database) {
     if (!username || !database) return false;
 
@@ -731,8 +628,8 @@ int check_failed_attempts(const char* login_id, const char* client_ip,
     json_object_set_new(params, "STRING", string_params);
     json_object_set_new(params, "INTEGER", integer_params);
 
-    // Execute query
-    QueryResult* result = execute_auth_query(5, database, params);
+    // Soft timeout: rate-limit count must not stall login under DB pressure
+    QueryResult* result = execute_auth_query_timeout(5, database, params, AUTH_QUERY_TIMEOUT_SOFT);
     json_decref(params);
 
     if (!result || !result->success) {
@@ -749,11 +646,18 @@ int check_failed_attempts(const char* login_id, const char* client_ip,
             json_t* row = json_array_get(result_json, 0);
             json_t* count_json = NULL;
             if (row) {
-                count_json = json_object_get(row, "count");
-                if (!count_json) count_json = json_object_get(row, "COUNT"); // DB2 uppercase
+                // QueryRef #005 aliases COUNT(*) AS attempts (see acuranzo_1096)
+                count_json = json_object_get(row, "attempts");
+                if (!count_json) count_json = json_object_get(row, "ATTEMPTS");
+                if (!count_json) count_json = json_object_get(row, "count");
+                if (!count_json) count_json = json_object_get(row, "COUNT");
             }
             if (count_json) {
-                count = (int)json_integer_value(count_json);
+                if (json_is_integer(count_json)) {
+                    count = (int)json_integer_value(count_json);
+                } else if (json_is_string(count_json)) {
+                    count = atoi(json_string_value(count_json));
+                }
             }
             json_decref(result_json);
         }
@@ -800,8 +704,86 @@ void block_ip_address(const char* client_ip, int duration_minutes, const char* d
     free_query_result(result);
 }
 
+/*
+ * Fire-and-forget auth query submit (no pending waiter).
+ * Used for audit inserts that must not block the login critical path under
+ * concurrent multi-process load on shared demo databases (e.g. Test 40 + 41/44).
+ * Submit serializes the query; caller may free buffers after return.
+ */
+bool submit_auth_query_async(int query_ref, const char* database, json_t* params) {
+    if (!database || query_ref <= 0) {
+        return false;
+    }
+
+    DatabaseQueue* db_queue = database_queue_manager_get_database(global_queue_manager, database);
+    if (!db_queue) {
+        log_this(SR_AUTH, "Database queue not found for async submit: %s", LOG_LEVEL_ERROR, 1, database);
+        return false;
+    }
+
+    const QueryCacheEntry* cache_entry = lookup_query_cache_entry(db_queue, query_ref);
+    if (!cache_entry) {
+        log_this(SR_AUTH, "QueryRef %d not found in cache for async submit on %s",
+                 LOG_LEVEL_ERROR, 2, query_ref, database);
+        return false;
+    }
+
+    json_t* merged_params = params;
+    if (app_config) {
+        const DatabaseConnection* conn = find_database_connection(&app_config->databases, database);
+        if (conn && conn->parameters) {
+            merged_params = merge_database_parameters(conn, params);
+        }
+    }
+
+    char* params_json = json_dumps(merged_params, JSON_COMPACT);
+    if (merged_params != params) {
+        json_decref(merged_params);
+    }
+    if (!params_json) {
+        return false;
+    }
+
+    char* query_id = generate_query_id();
+    if (!query_id) {
+        free(params_json);
+        return false;
+    }
+
+    char* query_template = strdup(cache_entry->sql_template);
+    if (!query_template) {
+        free(query_id);
+        free(params_json);
+        return false;
+    }
+
+    DatabaseQuery db_query = {
+        .query_id = query_id,
+        .query_template = query_template,
+        .parameter_json = params_json,
+        .queue_type_hint = database_queue_type_from_string(cache_entry->queue_type),
+        .submitted_at = time(NULL),
+        .processed_at = 0,
+        .retry_count = 0,
+        .timeout_seconds = AUTH_QUERY_TIMEOUT_SOFT,
+        .error_message = NULL
+    };
+
+    bool ok = database_queue_submit_query(db_queue, &db_query);
+    free(query_id);
+    free(query_template);
+    free(params_json);
+    return ok;
+}
+
 /**
- * Log login attempt to database
+ * Log login attempt to database (async / best-effort).
+ *
+ * Must not block authentication. Under suite-parallel load, multiple Hydrogen
+ * processes share the same demo schemas and contend on actions.action_id
+ * (MAX+1 inserts). A synchronous wait here was causing 30s watchdog timeouts
+ * and cascading Test 40 login failures (especially DB2) while standalone
+ * runs stayed green.
  */
 void log_login_attempt(const char* login_id, const char* client_ip,
                        const char* user_agent, time_t timestamp, const char* database) {
@@ -825,17 +807,10 @@ void log_login_attempt(const char* login_id, const char* client_ip,
     json_object_set_new(params, "STRING", string_params);
     json_object_set_new(params, "INTEGER", integer_params);
 
-    // Execute query
-    QueryResult* result = execute_auth_query(4, database, params);
-    json_decref(params);
-
-    if (!result || !result->success) {
-        log_this("AUTH", "Failed to log login attempt: %s", LOG_LEVEL_ERROR, 1,
-                result ? result->error_message : "Unknown error");
+    if (!submit_auth_query_async(4, database, params)) {
+        log_this(SR_AUTH, "Failed to enqueue login attempt audit for %s", LOG_LEVEL_ERROR, 1, login_id);
     }
-
-    // Cleanup
-    free_query_result(result);
+    json_decref(params);
 }
 
 /**
