@@ -219,25 +219,31 @@ __attribute__((unused)) void start_pty_bridge_thread(struct lws *wsi, TerminalSe
     log_this(SR_TERMINAL, "PTY bridge thread created and detached for session: %s", LOG_LEVEL_STATE, 1, session->session_id);
 }
 
-// Stop PTY bridge thread
+// Stop PTY / terminal I/O bridge for a session.
+//
+// Production path (find_or_create_terminal_session) stores a TerminalWSConnection*
+// in session->pty_bridge_context and runs terminal_io_bridge_thread. Closing must
+// join that thread and free the connection via handle_terminal_websocket_close.
+//
+// Casting TerminalWSConnection* to PtyBridgeContext* previously wrote
+// connection_closed into session_id[1] (corrupting the UUID) and never joined
+// the bridge thread — a use-after-free / SIGSEGV under rapid connect/disconnect
+// (seen in test_26 filesystem mode during full-suite parallel load).
 void stop_pty_bridge_thread(TerminalSession *session)
 {
     if (!session || !session->pty_bridge_context) {
         return;
     }
 
-    PtyBridgeContext *bridge = (PtyBridgeContext *)session->pty_bridge_context;
-
     log_this(SR_TERMINAL, "Stopping PTY bridge thread for session: %s", LOG_LEVEL_STATE, 1, session->session_id);
 
-    // Signal the bridge thread to stop
-    bridge->connection_closed = true;
+    TerminalWSConnection *ws_conn = (TerminalWSConnection *)session->pty_bridge_context;
 
-    // Also signal other threads that may be monitoring this session
-    session->connected = false;
-
-    // Clear the bridge context from session
+    // Detach from session first so a second close cannot double-free
     session->pty_bridge_context = NULL;
 
-    log_this(SR_TERMINAL, "PTY bridge thread stop signal sent for session: %s", LOG_LEVEL_STATE, 1, session->session_id);
+    // Join I/O bridge, remove terminal session, free TerminalWSConnection
+    handle_terminal_websocket_close(ws_conn);
+
+    log_this(SR_TERMINAL, "PTY bridge thread stop completed for session", LOG_LEVEL_STATE, 0);
 }

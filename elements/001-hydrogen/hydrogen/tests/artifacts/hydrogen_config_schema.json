@@ -1221,12 +1221,7 @@
                                             }
                                         },
                                         "required": [
-                                            "start",
-                                            "min",
-                                            "max",
-                                            "up",
-                                            "down",
-                                            "inactivity"
+                                            "start"
                                         ],
                                         "additionalProperties": false
                                     },

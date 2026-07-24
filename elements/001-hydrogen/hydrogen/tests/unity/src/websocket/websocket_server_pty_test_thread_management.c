@@ -279,24 +279,30 @@ void test_stop_pty_bridge_thread_no_bridge_context(void) {
     TEST_ASSERT_TRUE(true);
 }
 
-// Test stop_pty_bridge_thread with bridge context
+// Test stop_pty_bridge_thread with TerminalWSConnection bridge context
+// (production path stores TerminalWSConnection*, not PtyBridgeContext*)
 void test_stop_pty_bridge_thread_with_context(void) {
     TerminalSession mock_session;
     memset(&mock_session, 0, sizeof(TerminalSession));
+    // inactive so remove_terminal_session does not free stack session
+    mock_session.active = false;
+    mock_session.connected = true;
+    strncpy(mock_session.session_id, "test-session-id", sizeof(mock_session.session_id) - 1);
 
-    PtyBridgeContext mock_bridge;
-    memset(&mock_bridge, 0, sizeof(PtyBridgeContext));
-    mock_bridge.connection_closed = false;
+    TerminalWSConnection *ws_conn = calloc(1, sizeof(TerminalWSConnection));
+    TEST_ASSERT_NOT_NULL(ws_conn);
+    ws_conn->session = &mock_session;
+    ws_conn->active = true;
+    ws_conn->bridge_thread = 0;
+    strncpy(ws_conn->session_id, mock_session.session_id, sizeof(ws_conn->session_id) - 1);
 
-    mock_session.pty_bridge_context = &mock_bridge;
+    mock_session.pty_bridge_context = ws_conn;
 
     stop_pty_bridge_thread(&mock_session);
 
-    // Should set connection_closed flag
-    TEST_ASSERT_TRUE(mock_bridge.connection_closed);
-
-    // Note: Bridge context clearing and session connected flag are handled by the thread
-    // This test validates the function signature and basic structure
+    // Context cleared; connection freed by handle_terminal_websocket_close
+    TEST_ASSERT_NULL(mock_session.pty_bridge_context);
+    TEST_ASSERT_FALSE(mock_session.connected);
 }
 
 int main(void) {
