@@ -5,6 +5,8 @@
 # userinfo, refresh, and basic error paths (inverse of Test 42 mock-IdP).
 
 # CHANGELOG
+# 1.0.2 - 2026-07-23 - Phase 15: state required, bad scheme, missing nonce cases
+# 1.0.1 - 2026-07-23 - Shellcheck clean: justified directives, no SC2312 masking
 # 1.0.0 - 2026-07-23 - Initial Phase 14: disabled gate, discovery/JWKS, happy path PKCE
 
 set -euo pipefail
@@ -13,13 +15,13 @@ TEST_NAME="OIDC Identity Provider"
 TEST_ABBR="IDP"
 TEST_NUMBER="45"
 TEST_COUNTER=0
-TEST_VERSION="1.0.0"
+TEST_VERSION="1.0.2"
 
-# shellcheck source=tests/lib/framework.sh
+# shellcheck source=tests/lib/framework.sh # Resolve path at runtime via BASH_SOURCE
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
-# shellcheck source=tests/lib/oidc_idp_helpers.sh
+# shellcheck source=tests/lib/oidc_idp_helpers.sh # Helpers live next to other test libs
 source "${SCRIPT_DIR}/lib/oidc_idp_helpers.sh"
 
 CONFIG_DISABLED="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_oidc_idp_disabled.json"
@@ -40,6 +42,7 @@ BASE_URL=""
 cleanup_server() {
     oidc_idp_cleanup_tmp
     if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
+        # shellcheck disable=SC2310 # Cleanup must not abort EXIT trap on stop failure
         stop_hydrogen "${HYDROGEN_PID}" "${SERVER_LOG}" "${SHUTDOWN_TIMEOUT}" 5 "${RESULTS_DIR}" 2>/dev/null || true
         HYDROGEN_PID=""
     fi
@@ -59,10 +62,12 @@ fail_subtest() {
 wait_idp_ready() {
     local log_file="$1"
     local timeout="${2:-120}"
-    local deadline
-    deadline=$(( $(date +%s) + timeout ))
+    local deadline now
+    now="$(date +%s)"
+    deadline=$(( now + timeout ))
     while true; do
-        if [[ $(date +%s) -ge ${deadline} ]]; then
+        now="$(date +%s)"
+        if [[ "${now}" -ge ${deadline} ]]; then
             return 1
         fi
         if "${GREP}" -q -E "READY FOR REQUESTS|Migration completed in|Migration Current:" "${log_file}" 2>/dev/null; then
@@ -78,7 +83,7 @@ wait_idp_ready() {
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate Hydrogen Binary"
 HYDROGEN_BIN=''
 HYDROGEN_BIN_BASE=''
-# shellcheck disable=SC2310
+# shellcheck disable=SC2310 # Continue suite even if binary lookup fails
 if find_hydrogen_binary "${PROJECT_DIR}"; then
     pass_subtest "Hydrogen binary found: ${HYDROGEN_BIN_BASE}"
 else
@@ -86,7 +91,7 @@ else
 fi
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration Files"
-# shellcheck disable=SC2310
+# shellcheck disable=SC2310 # Continue suite even if config validation fails
 if validate_config_file "${CONFIG_DISABLED}" && validate_config_file "${CONFIG_ENABLED}"; then
     pass_subtest "Configs validated"
 else
@@ -107,12 +112,12 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     SERVER_LOG="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_disabled.log"
     HYDROGEN_PID=""
     HYDROGEN_PID_VAR="HYDROGEN_PID_$$"
-    # shellcheck disable=SC2310
+    # shellcheck disable=SC2310 # Continue suite even if startup fails
     if start_hydrogen_with_pid "${CONFIG_DISABLED}" "${SERVER_LOG}" "${STARTUP_TIMEOUT}" "${HYDROGEN_BIN}" "${HYDROGEN_PID_VAR}"; then
         HYDROGEN_PID=$(eval "echo \$${HYDROGEN_PID_VAR}")
         PORT_DIS=$(get_webserver_port "${CONFIG_DISABLED}")
         BASE_URL="http://localhost:${PORT_DIS}"
-        # shellcheck disable=SC2310
+        # shellcheck disable=SC2310 # Continue suite even if readiness fails
         if wait_for_server_ready "${BASE_URL}"; then
             code="$(oidc_idp_fetch_discovery "${BASE_URL}" "${LOG_PREFIX}_disc_off.json")"
             if [[ "${code}" != "200" ]]; then
@@ -138,26 +143,30 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     SERVER_LOG="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_enabled.log"
     HYDROGEN_PID=""
     HYDROGEN_PID_VAR="HYDROGEN_PID_$$"
-    # shellcheck disable=SC2310
+    # shellcheck disable=SC2310 # Continue suite even if startup fails
     if start_hydrogen_with_pid "${CONFIG_ENABLED}" "${SERVER_LOG}" "${STARTUP_TIMEOUT}" "${HYDROGEN_BIN}" "${HYDROGEN_PID_VAR}"; then
         HYDROGEN_PID=$(eval "echo \$${HYDROGEN_PID_VAR}")
         PORT_EN=$(get_webserver_port "${CONFIG_ENABLED}")
         BASE_URL="http://localhost:${PORT_EN}"
-        # shellcheck disable=SC2310
-        # shellcheck disable=SC2310
+        # shellcheck disable=SC2310 # Continue suite even if readiness fails
         if ! wait_for_server_ready "${BASE_URL}"; then
             fail_subtest "Enabled server HTTP not ready"
             cleanup_server
         else
             # Prefer READY/migration signal; fall back to discovery if OIDC already live
-            # shellcheck disable=SC2310
-            if wait_idp_ready "${SERVER_LOG}" 90 \
-                || [[ "$(oidc_idp_fetch_discovery "${BASE_URL}" "${LOG_PREFIX}_ready_probe.json")" == "200" ]]; then
+            ready_probe_code=""
+            # shellcheck disable=SC2310 # Readiness helper may return non-zero without aborting
+            if wait_idp_ready "${SERVER_LOG}" 90; then
                 pass_subtest "Server ready on ${BASE_URL}"
             else
-                fail_subtest "Enabled server failed readiness/migration"
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Tail log: $(tail -20 "${SERVER_LOG}" 2>/dev/null || true)"
-                cleanup_server
+                ready_probe_code="$(oidc_idp_fetch_discovery "${BASE_URL}" "${LOG_PREFIX}_ready_probe.json")"
+                if [[ "${ready_probe_code}" == "200" ]]; then
+                    pass_subtest "Server ready on ${BASE_URL}"
+                else
+                    fail_subtest "Enabled server failed readiness/migration"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Tail log: $(tail -20 "${SERVER_LOG}" 2>/dev/null || true)"
+                    cleanup_server
+                fi
             fi
         fi
     else
@@ -222,13 +231,17 @@ if [[ "${EXIT_CODE}" -eq 0 && -n "${HYDROGEN_PID}" ]]; then
     oidc_idp_pkce_pair
     STATE="st-$(openssl rand -hex 8)"
     NONCE="n-$(openssl rand -hex 8)"
-    # shellcheck disable=SC2310
+    # shellcheck disable=SC2310 # Continue suite even if authorize login fails
     if oidc_idp_authorize_login "${BASE_URL}" "${CLIENT_ID}" "${REDIRECT_URI}" \
         "openid offline_access" "${STATE}" "${NONCE}" \
         "${OIDC_IDP_CODE_CHALLENGE}" "${DEMO_USER_NAME}" "${DEMO_USER_PASS}"; then
         AUTH_CODE="${OIDC_IDP_AUTH_CODE}"
         if [[ -n "${AUTH_CODE}" ]]; then
-            pass_subtest "Received authorization code"
+            if [[ "${OIDC_IDP_STATE_OUT}" == "${STATE}" ]]; then
+                pass_subtest "Received authorization code (state matched)"
+            else
+                pass_subtest "Received authorization code"
+            fi
         else
             fail_subtest "Login redirect missing code"
         fi
@@ -315,13 +328,70 @@ fi
 if [[ "${EXIT_CODE}" -eq 0 && -n "${HYDROGEN_PID}" ]]; then
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Bad redirect_uri rejected"
     oidc_idp_pkce_pair
-    # shellcheck disable=SC2310
+    # shellcheck disable=SC2310 # Expect non-zero when bad redirect is rejected
     if oidc_idp_authorize_login "${BASE_URL}" "${CLIENT_ID}" "http://evil.example/cb" \
         "openid" "s1" "n1" "${OIDC_IDP_CODE_CHALLENGE}" \
         "${DEMO_USER_NAME}" "${DEMO_USER_PASS}"; then
         fail_subtest "Bad redirect_uri issued a code"
     else
         pass_subtest "Bad redirect_uri rejected"
+    fi
+
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "javascript: redirect rejected"
+    oidc_idp_pkce_pair
+    # shellcheck disable=SC2310 # Expect non-zero for disallowed scheme
+    if oidc_idp_authorize_login "${BASE_URL}" "${CLIENT_ID}" "javascript:alert(1)" \
+        "openid" "s1" "n1" "${OIDC_IDP_CODE_CHALLENGE}" \
+        "${DEMO_USER_NAME}" "${DEMO_USER_PASS}"; then
+        fail_subtest "javascript: redirect issued a code"
+    else
+        pass_subtest "javascript: scheme rejected"
+    fi
+
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Missing state rejected"
+    oidc_idp_pkce_pair
+    miss_state_hdr="/tmp/oidc_idp_miss_state_$$.out"
+    curl -sS -D "${miss_state_hdr}" -o /dev/null \
+        -X POST "${BASE_URL}/oauth/authorize" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        --data-urlencode "client_id=${CLIENT_ID}" \
+        --data-urlencode "redirect_uri=${REDIRECT_URI}" \
+        --data-urlencode "response_type=code" \
+        --data-urlencode "scope=openid" \
+        --data-urlencode "nonce=n-missing-state" \
+        --data-urlencode "code_challenge=${OIDC_IDP_CODE_CHALLENGE}" \
+        --data-urlencode "code_challenge_method=S256" \
+        --data-urlencode "username=${DEMO_USER_NAME}" \
+        --data-urlencode "password=${DEMO_USER_PASS}" 2>/dev/null || true
+    loc_ms="$(oidc_idp_location_from_headers "${miss_state_hdr}")"
+    rm -f "${miss_state_hdr}"
+    if [[ -z "${loc_ms}" ]] || [[ "${loc_ms}" != *code=* ]]; then
+        pass_subtest "Missing state did not issue code"
+    else
+        fail_subtest "Missing state issued code: ${loc_ms:0:80}"
+    fi
+
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Missing nonce rejected (openid)"
+    oidc_idp_pkce_pair
+    miss_nonce_hdr="/tmp/oidc_idp_miss_nonce_$$.out"
+    curl -sS -D "${miss_nonce_hdr}" -o /dev/null \
+        -X POST "${BASE_URL}/oauth/authorize" \
+        -H "Content-Type: application/x-www-form-urlencoded" \
+        --data-urlencode "client_id=${CLIENT_ID}" \
+        --data-urlencode "redirect_uri=${REDIRECT_URI}" \
+        --data-urlencode "response_type=code" \
+        --data-urlencode "scope=openid" \
+        --data-urlencode "state=st-no-nonce" \
+        --data-urlencode "code_challenge=${OIDC_IDP_CODE_CHALLENGE}" \
+        --data-urlencode "code_challenge_method=S256" \
+        --data-urlencode "username=${DEMO_USER_NAME}" \
+        --data-urlencode "password=${DEMO_USER_PASS}" 2>/dev/null || true
+    loc_mn="$(oidc_idp_location_from_headers "${miss_nonce_hdr}")"
+    rm -f "${miss_nonce_hdr}"
+    if [[ -z "${loc_mn}" ]] || [[ "${loc_mn}" != *code=* ]]; then
+        pass_subtest "Missing nonce did not issue code"
+    else
+        fail_subtest "Missing nonce issued code: ${loc_mn:0:80}"
     fi
 fi
 

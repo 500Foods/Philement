@@ -1,0 +1,46 @@
+{
+    "Server": {
+        "ServerName": "hydrogen-oidc-idp-example",
+        "PayloadKey": "${env.PAYLOAD_KEY}"
+    },
+    "WebServer": {
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "Port": 8080
+    },
+    "API": {
+        "Enabled": true,
+        "Prefix": "/api",
+        "JWTSecret": "${env.HYDROGEN_DEMO_JWT_KEY}"
+    },
+    "OIDC": {
+        "Enabled": false,
+        "Issuer": "https://auth.example.com",
+        "ClientId": "example-public-spa",
+        "RedirectUri": "https://app.example.com/oauth/callback",
+        "Database": "Acuranzo",
+        "Keys": {
+            "StoragePath": "/var/lib/hydrogen/oidc",
+            "EncryptionEnabled": false,
+            "RotationIntervalDays": 90
+        },
+        "Tokens": {
+            "AccessTokenLifetime": 3600,
+            "RefreshTokenLifetime": 86400,
+            "IdTokenLifetime": 3600,
+            "SigningAlg": "RS256"
+        }
+    },
+    "Databases": {
+        "Connections": [
+            {
+                "Name": "Acuranzo",
+                "Engine": "sqlite",
+                "Enabled": true,
+                "Database": "path/to/accounts.sqlite",
+                "AutoMigration": true,
+                "Migrations": "PAYLOAD:acuranzo"
+            }
+        ]
+    }
+}

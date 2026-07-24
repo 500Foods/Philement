@@ -60,6 +60,14 @@ OIDCClient* oidc_client_create(const char *client_id,
 bool oidc_client_registry_add(OIDCClientContext *ctx, OIDCClient *client);
 OIDCClient* oidc_client_registry_find(const OIDCClientContext *ctx, const char *client_id);
 
+/*
+ * True if redirect_uri uses an allowed scheme for browser clients.
+ * MVP: http and https only (exact scheme match, case-insensitive).
+ * Rejects javascript:, data:, file:, empty, and missing "://".
+ * Native custom schemes are intentionally not allowed until configured policy exists.
+ */
+bool oidc_redirect_uri_scheme_allowed(const char *redirect_uri);
+
 bool oidc_redirect_uri_allowed(const char *redirect_uris_json, const char *redirect_uri);
 char* oidc_hash_client_secret(const char *client_secret);
 bool oidc_client_secrets_equal(const char *stored_hash, const char *presented_secret);

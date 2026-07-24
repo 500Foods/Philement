@@ -76,6 +76,11 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 - [oidc_rp.md](/docs/H/api/auth/oidc_rp.md): OIDC Relying Party endpoints (`/api/auth/oidc/start`, `/callback`, `/handoff`)
 
+### Folder: /docs/api/oidc
+
+- [oidc_endpoints.md](/docs/H/api/oidc/oidc_endpoints.md): OIDC Identity Provider endpoints (`/.well-known`, `/oauth/*`)
+- [OIDC_IDP_OPERATOR.md](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md): IdP operator runbook (enable, keys, kill switch, IdP vs RP)
+
 ### Folder: /docs/deployment
 
 - [docker.md](/docs/H/core/deployment/docker.md)
@@ -106,7 +111,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [MIRAGE_PLAN.md](/docs/H/plans/MIRAGE_PLAN.md): Mirage distributed proxy architecture (deferred)
 - [OIDC-PLAN.md](/docs/H/plans/OIDC-PLAN.md): Historical OIDC RP implementation phase log
 - [OIDC_E2E_LOG.md](/docs/H/plans/OIDC_E2E_LOG.md): OIDC real-Keycloak manual E2E checklist
-- [OIDC_IDP.md](/docs/H/plans/OIDC_IDP.md): Hydrogen as OIDC Identity Provider (not started)
+- [OIDC_IDP.md](/docs/H/plans/OIDC_IDP.md): Hydrogen as OIDC Identity Provider (Phases 0–15 complete; Phase 16 docs)
 - [UNITY_ASAN_PLAN.md](/docs/H/plans/UNITY_ASAN_PLAN.md): Separate ASAN Unity test variant plan
 
 ### Folder: /docs/H/plans/complete

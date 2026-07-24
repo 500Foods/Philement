@@ -26,6 +26,7 @@ OIDCClient* oidc_client_create(const char *client_id,
                                const char *response_types);
 bool oidc_client_registry_add(OIDCClientContext *ctx, OIDCClient *client);
 OIDCClient* oidc_client_registry_find(const OIDCClientContext *ctx, const char *client_id);
+bool oidc_redirect_uri_scheme_allowed(const char *redirect_uri);
 bool oidc_redirect_uri_allowed(const char *redirect_uris_json, const char *redirect_uri);
 char* oidc_hash_client_secret(const char *client_secret);
 bool oidc_client_secrets_equal(const char *stored_hash, const char *presented_secret);
@@ -117,8 +118,47 @@ OIDCClient* oidc_client_registry_find(const OIDCClientContext *ctx, const char *
     return NULL;
 }
 
+bool oidc_redirect_uri_scheme_allowed(const char *redirect_uri) {
+    if (!redirect_uri || redirect_uri[0] == '\0') {
+        return false;
+    }
+    /* No whitespace or control chars (open-redirect / header injection). */
+    for (const char *p = redirect_uri; *p; p++) {
+        unsigned char c = (unsigned char)*p;
+        if (c <= 0x1fU || c == 0x7fU || c == ' ') {
+            return false;
+        }
+    }
+    /* Require scheme:// and only http or https (case-insensitive). */
+    const char *sep = strstr(redirect_uri, "://");
+    if (!sep || sep == redirect_uri) {
+        return false;
+    }
+    size_t scheme_len = (size_t)(sep - redirect_uri);
+    if (scheme_len == 4 &&
+        (redirect_uri[0] == 'h' || redirect_uri[0] == 'H') &&
+        (redirect_uri[1] == 't' || redirect_uri[1] == 'T') &&
+        (redirect_uri[2] == 't' || redirect_uri[2] == 'T') &&
+        (redirect_uri[3] == 'p' || redirect_uri[3] == 'P')) {
+        /* http:// — require non-empty host after :// */
+        return sep[3] != '\0';
+    }
+    if (scheme_len == 5 &&
+        (redirect_uri[0] == 'h' || redirect_uri[0] == 'H') &&
+        (redirect_uri[1] == 't' || redirect_uri[1] == 'T') &&
+        (redirect_uri[2] == 't' || redirect_uri[2] == 'T') &&
+        (redirect_uri[3] == 'p' || redirect_uri[3] == 'P') &&
+        (redirect_uri[4] == 's' || redirect_uri[4] == 'S')) {
+        return sep[3] != '\0';
+    }
+    return false;
+}
+
 bool oidc_redirect_uri_allowed(const char *redirect_uris_json, const char *redirect_uri) {
     if (!redirect_uris_json || !redirect_uri || redirect_uri[0] == '\0') {
+        return false;
+    }
+    if (!oidc_redirect_uri_scheme_allowed(redirect_uri)) {
         return false;
     }
 

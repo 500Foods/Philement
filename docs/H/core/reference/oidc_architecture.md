@@ -1,10 +1,33 @@
 # OIDC Architecture
 
-This document outlines the internal architecture of the OpenID Connect (OIDC) implementation in Hydrogen, detailing its components, data flows, and integration points.
+This document outlines the internal architecture of the OpenID Connect (OIDC)
+**Identity Provider** implementation in Hydrogen.
+
+## Implemented subset
+
+Canonical status: [OIDC_IDP.md](/docs/H/plans/OIDC_IDP.md).
+HTTP surface: [oidc_endpoints.md](/docs/H/api/oidc/oidc_endpoints.md).
+Operators: [OIDC_IDP_OPERATOR.md](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md).
+
+| Layer | Location | MVP reality |
+| --- | --- | --- |
+| HTTP handlers | `src/api/oidc/` | Registered when `OIDC.Enabled`; `handle_oidc_request` |
+| Core protocol | `src/oidc/oidc_service.c` | authorize issue, token, userinfo, introspect, revoke |
+| Keys | `src/oidc/oidc_keys.c` | RSA load/generate, JWKS, rotate |
+| Tokens | `src/oidc/oidc_tokens.c` | RS256 JWT access + id_token |
+| Clients | `src/oidc/oidc_clients.c` | In-memory registry + config seed |
+| Auth codes / refresh | `oidc_auth_codes.c`, `oidc_refresh_tokens.c` | In-memory stores |
+| Users | `src/oidc/oidc_users.c` | Stub; login uses auth DB, not this module |
+| Crypto helpers | `src/utils/utils_crypto.c` | RS256 sign/verify, base64url, SHA-256 |
+| RP (separate) | `src/api/auth/oidc_rp/` | Out of scope here |
+
+Historical text below may still describe future modules (e.g. full user CRUD,
+dynamic registration). Prefer the table and plan when they disagree.
 
 ## Overview
 
-The Hydrogen OIDC service implements a standards-compliant OpenID Connect Identity Provider (IdP) that can authenticate users and issue security tokens for client applications. The architecture is designed to be:
+The Hydrogen OIDC **IdP** authenticates resource owners and issues security
+tokens for client applications. The architecture aims to be:
 
 - **Modular**: Composed of discrete, single-responsibility components
 - **Secure**: Following OIDC security best practices

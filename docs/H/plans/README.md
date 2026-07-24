@@ -26,7 +26,11 @@ Full phase log for Lithium + Hydrogen OIDC RP (Phases 1–25+ shipped). Day-to-d
 
 ### [OIDC IdP](/docs/H/plans/OIDC_IDP.md)
 
-Hydrogen as OIDC **Identity Provider** (separate from RP). Plan only; not started.
+Hydrogen as OIDC **Identity Provider** (separate from RP). Phases 0–15 complete
+(crypto through security hardening + Test 45). Docs/operator:
+[oidc_endpoints.md](/docs/H/api/oidc/oidc_endpoints.md),
+[OIDC_IDP_OPERATOR.md](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md). Remaining: Phase 16
+closeout items if any, Phase 17 optional post-MVP.
 
 ### [MAIL RELAY PLAN](/docs/H/plans/MAILRELAY_PLAN.md)
 

@@ -697,8 +697,7 @@ bool oidc_validate_access_token(const OIDCTokenContext *context, const char *acc
     }
     time_t exp = (time_t)json_integer_value(exp_j);
     time_t now = time(NULL);
-    /* Small clock skew allowance (60s). */
-    if (exp + 60 < now) {
+    if (exp + (time_t)OIDC_JWT_CLOCK_SKEW_SECONDS < now) {
         json_decref(pl);
         free(payload_json);
         return false;
@@ -706,7 +705,7 @@ bool oidc_validate_access_token(const OIDCTokenContext *context, const char *acc
     json_t *nbf_j = json_object_get(pl, "nbf");
     if (json_is_integer(nbf_j)) {
         time_t nbf = (time_t)json_integer_value(nbf_j);
-        if (nbf > now + 60) {
+        if (nbf > now + (time_t)OIDC_JWT_CLOCK_SKEW_SECONDS) {
             json_decref(pl);
             free(payload_json);
             return false;

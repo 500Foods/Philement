@@ -141,11 +141,11 @@ Actionable incomplete work only. Completed plans live in
 | | |
 |---|---|
 | **Plan** | [`OIDC_IDP.md`](/docs/H/plans/OIDC_IDP.md) |
-| **Effort** | XL |
-| **Done** | 0% — scaffold/stubs only; plan authored |
-| **Remaining** | Phases 0–17 (crypto, JWKS, clients, codes, tokens, UserInfo, refresh, Test 45, docs) |
-| **Code stubs (explicit)** | `src/oidc/oidc_service.c` (authorize/token/userinfo/introspect/revoke TODOs) · `src/api/oidc/oidc_service.c` · partial alg support notes in `oidc_rp_idtoken.c` (RP verifier — track under Keycloak item if RP-only) |
-| **Note** | Separate from completed OIDC **RP** (Keycloak). Start only if first-party IdP is a real goal. OIDC cleanup intentionally deferred from the 2026-07 non-OIDC TODO purge. |
+| **Effort** | M remaining (was XL) |
+| **Done** | ~90% — Phases 0–15 complete (protocol + Test 45 + hardening); Phase 16 docs |
+| **Remaining** | Phase 17 optional (end-session, client credentials, consent UI); DB-backed codes/refresh for multi-process; multi-engine Test 45 |
+| **Docs** | [oidc_endpoints.md](/docs/H/api/oidc/oidc_endpoints.md) · [OIDC_IDP_OPERATOR.md](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md) |
+| **Note** | Separate from OIDC **RP** (Keycloak). MVP IdP is usable behind kill switch; HA needs durable stores. |
 
 ### 9. Print subsystem — job → device / Beryllium handoff
 
@@ -232,7 +232,7 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 7a | REST auth_chat SSE streaming | L | ~20% | P2 |
 | 7b | WS chunked media upload | M | ~70% | P2 |
 | 7c | Legacy chat_stream dead code | S | n/a | P2 |
-| 8 | OIDC IdP (+ service stubs) | XL | 0% | P3 |
+| 8 | OIDC IdP (MVP + docs) | M | ~90% | P3 |
 | 9 | Print job → device / Beryllium | L–XL | ~30% | P3 |
 | 10 | mDNS client runtime | L–XL | ~25% | P3 |
 | 11 | Notify SMTP runtime | M–L | ~25% | P3 |

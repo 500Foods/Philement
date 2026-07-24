@@ -1,22 +1,45 @@
 #!/usr/bin/env bash
 # OIDC IdP blackbox helpers for test_45_oidc_idp.sh
-# shellcheck shell=bash
+# shellcheck shell=bash # Explicit bash for pipefail and arrays used by callers
 
+# Sourced library marker (mirrors FRAMEWORK_GUARD pattern)
 OIDC_IDP_HELPERS_GUARD=1
+export OIDC_IDP_HELPERS_GUARD
 
 # PKCE S256: verifier (43-128 unreserved) → challenge
+# Sets OIDC_IDP_CODE_VERIFIER and OIDC_IDP_CODE_CHALLENGE (exported for callers)
 oidc_idp_pkce_pair() {
-    local verifier
-    verifier="$(openssl rand -base64 48 | tr '+/' '-_' | tr -d '=')"
-    # shellcheck disable=SC2034
+    local verifier b64_raw challenge_b64
+    b64_raw="$(openssl rand -base64 48)" || return 1
+    # base64url without piping (avoids SC2312 masking)
+    verifier="${b64_raw//+/-}"
+    verifier="${verifier//\//_}"
+    verifier="${verifier//=/}"
     OIDC_IDP_CODE_VERIFIER="${verifier}"
-    OIDC_IDP_CODE_CHALLENGE="$(printf '%s' "${verifier}" | openssl dgst -binary -sha256 | openssl base64 -A | tr '+/' '-_' | tr -d '=')"
+    export OIDC_IDP_CODE_VERIFIER
+    local tmp_v tmp_d
+    tmp_v="/tmp/oidc_idp_pkce_v_$$"
+    tmp_d="/tmp/oidc_idp_pkce_d_$$"
+    printf '%s' "${verifier}" > "${tmp_v}" || return 1
+    openssl dgst -binary -sha256 -out "${tmp_d}" "${tmp_v}" || {
+        rm -f "${tmp_v}" "${tmp_d}"
+        return 1
+    }
+    challenge_b64="$(openssl base64 -A -in "${tmp_d}")" || {
+        rm -f "${tmp_v}" "${tmp_d}"
+        return 1
+    }
+    rm -f "${tmp_v}" "${tmp_d}"
+    OIDC_IDP_CODE_CHALLENGE="${challenge_b64//+/-}"
+    OIDC_IDP_CODE_CHALLENGE="${OIDC_IDP_CODE_CHALLENGE//\//_}"
+    OIDC_IDP_CODE_CHALLENGE="${OIDC_IDP_CODE_CHALLENGE//=/}"
+    export OIDC_IDP_CODE_CHALLENGE
 }
 
 oidc_idp_http_code() {
     local url="$1"
     shift
-    curl -sS -o /tmp/oidc_idp_body_$$.out -w '%{http_code}' "$@" "${url}" 2>/dev/null || echo "000"
+    curl -sS -o "/tmp/oidc_idp_body_$$.out" -w '%{http_code}' "$@" "${url}" 2>/dev/null || echo "000"
 }
 
 oidc_idp_get_body() {
@@ -34,19 +57,29 @@ oidc_idp_location_from_headers() {
 }
 
 # Parse code= and state= from redirect URL query
+# Sets OIDC_IDP_AUTH_CODE and OIDC_IDP_STATE_OUT (exported)
 oidc_idp_parse_code_from_location() {
     local location="$1"
     local query="${location#*\?}"
     OIDC_IDP_AUTH_CODE=""
     OIDC_IDP_STATE_OUT=""
     local part
+    local -a parts
     IFS='&' read -ra parts <<< "${query}"
     for part in "${parts[@]}"; do
         case "${part}" in
-            code=*) OIDC_IDP_AUTH_CODE="${part#code=}" ;;
-            state=*) OIDC_IDP_STATE_OUT="${part#state=}" ;;
+            code=*)
+                OIDC_IDP_AUTH_CODE="${part#code=}"
+                ;;
+            state=*)
+                OIDC_IDP_STATE_OUT="${part#state=}"
+                ;;
+            *)
+                ;;
         esac
     done
+    export OIDC_IDP_AUTH_CODE
+    export OIDC_IDP_STATE_OUT
 }
 
 # GET discovery document → file
@@ -137,6 +170,7 @@ oidc_idp_authorize_login() {
     location="$(oidc_idp_location_from_headers "${hdr_file}")"
     if [[ -z "${location}" ]]; then
         OIDC_IDP_AUTH_CODE=""
+        export OIDC_IDP_AUTH_CODE
         return 1
     fi
     oidc_idp_parse_code_from_location "${location}"

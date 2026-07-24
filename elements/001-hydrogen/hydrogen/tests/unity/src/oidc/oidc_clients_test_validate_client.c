@@ -31,12 +31,26 @@ void test_validate_null_params(void) {
 }
 
 void test_redirect_uri_allowed_helpers(void) {
+    TEST_ASSERT_TRUE(oidc_redirect_uri_scheme_allowed("https://app.example/cb"));
+    TEST_ASSERT_TRUE(oidc_redirect_uri_scheme_allowed("http://127.0.0.1:5459/cb"));
+    TEST_ASSERT_TRUE(oidc_redirect_uri_scheme_allowed("HTTPS://APP.EXAMPLE/CB"));
+    TEST_ASSERT_FALSE(oidc_redirect_uri_scheme_allowed("javascript:alert(1)"));
+    TEST_ASSERT_FALSE(oidc_redirect_uri_scheme_allowed("data:text/html,x"));
+    TEST_ASSERT_FALSE(oidc_redirect_uri_scheme_allowed("file:///etc/passwd"));
+    TEST_ASSERT_FALSE(oidc_redirect_uri_scheme_allowed("myapp://callback"));
+    TEST_ASSERT_FALSE(oidc_redirect_uri_scheme_allowed("https://evil.example/cb with space"));
+    TEST_ASSERT_FALSE(oidc_redirect_uri_scheme_allowed("https://"));
+    TEST_ASSERT_FALSE(oidc_redirect_uri_scheme_allowed(NULL));
+
     TEST_ASSERT_TRUE(oidc_redirect_uri_allowed(
         "[\"https://app.example/cb\",\"http://localhost:3000/cb\"]",
         "https://app.example/cb"));
     TEST_ASSERT_FALSE(oidc_redirect_uri_allowed(
         "[\"https://app.example/cb\"]",
         "https://evil.example/cb"));
+    TEST_ASSERT_FALSE(oidc_redirect_uri_allowed(
+        "[\"javascript:alert(1)\"]",
+        "javascript:alert(1)"));
     TEST_ASSERT_FALSE(oidc_redirect_uri_allowed("not-json", "https://x"));
     TEST_ASSERT_FALSE(oidc_redirect_uri_allowed(NULL, "https://x"));
 }

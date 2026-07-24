@@ -18,10 +18,12 @@ The documentation for the project is in /docs/H/
 - Review /docs/H/tests/TESTING.md before continuing
 - Aliases and other env vars are defined in ~/.zshrc
 - After ANY C coding change, run alias `mkt` to perform a test build - can be run from any directory
+- After ANY C coding change that passes `mkt`, run alias `mkp` (cppcheck / test_91) before considering the change done
 - The trial build outputs minimal text - typically only error messages - greatly reducing AI token usage
 - Once test build succeeds, run alias `mka` to perform build against all targets - can be run from any directory
 - Working with unit tests, after alias `mkt` use alias `mku <base test name without .c>` to build and run the test fro any directory
 - When making only script changes, there is no need to run alias `mkt` - that is for changes to C code only
+- After ANY Bash/script change, run alias `mks` (shellcheck / test_92) before considering the change done
 - Assume all env vars (like HYDROGEN_ROOT) and all aliases are properly defined and declaredp
 
 ## ⚠️ ADDITINAL GUIDANCE
