@@ -1,12 +1,12 @@
 {
     "Server": {
-        "ServerName": "hydrogen-test-45-oidc-idp",
+        "ServerName": "hydrogen-test-45-postgres",
         "PayloadKey": "${env.PAYLOAD_KEY}"
     },
     "WebServer": {
         "EnableIPv4": true,
         "EnableIPv6": false,
-        "Port": 5451
+        "Port": 5450
     },
     "API": {
         "Enabled": true,
@@ -15,12 +15,12 @@
     },
     "OIDC": {
         "Enabled": true,
-        "Issuer": "http://localhost:5451",
+        "Issuer": "http://localhost:5450",
         "ClientId": "test-idp-public",
         "RedirectUri": "http://127.0.0.1:5459/cb",
         "Database": "Acuranzo",
         "Keys": {
-            "StoragePath": "tests/artifacts/oidc_idp_keys_45",
+            "StoragePath": "tests/artifacts/oidc_idp_keys_45_postgres",
             "EncryptionEnabled": false,
             "RotationIntervalDays": 90
         },
@@ -34,20 +34,24 @@
     "Databases": {
         "Connections": [
             {
-                "Name": "Acuranzo",
-                "Engine": "sqlite",
                 "Enabled": true,
-                "Database": "tests/artifacts/database/sqlite/hydrodemo.sqlite",
+                "Name": "Acuranzo",
+                "Engine": "${env.ACURANZO_DB_TYPE}",
+                "Host": "${env.ACURANZO_DB_HOST}",
+                "Port": "${env.ACURANZO_DB_PORT}",
+                "Database": "${env.ACURANZO_DB_NAME}",
+                "User": "${env.ACURANZO_DB_USER}",
+                "Pass": "${env.ACURANZO_DB_PASS}",
                 "StmtCache": 100,
-                "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
+                "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM demo.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
                 "AutoMigration": true,
                 "TestMigration": false,
                 "Parameters": {
                     "LOGINRETRYWINDOW": 15,
-                    "IPADDRESS": "10.10.10.10",
+                    "IPADDRESS": "10.10.10.11",
                     "LOGINID": "${env.HYDROGEN_DEMO_USER_NAME}"
                 },
-                "Schema": "",
+                "Schema": "demo",
                 "Migrations": "PAYLOAD:acuranzo",
                 "Queues": {
                     "Slow": {

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # OIDC IdP blackbox helpers for test_45_oidc_idp.sh
 # shellcheck shell=bash # Explicit bash for pipefail and arrays used by callers
+# Temp paths use BASHPID+RANDOM so parallel engine jobs do not clobber each other.
 
 # Sourced library marker (mirrors FRAMEWORK_GUARD pattern)
 OIDC_IDP_HELPERS_GUARD=1
@@ -17,9 +18,10 @@ oidc_idp_pkce_pair() {
     verifier="${verifier//=/}"
     OIDC_IDP_CODE_VERIFIER="${verifier}"
     export OIDC_IDP_CODE_VERIFIER
-    local tmp_v tmp_d
-    tmp_v="/tmp/oidc_idp_pkce_v_$$"
-    tmp_d="/tmp/oidc_idp_pkce_d_$$"
+    local tmp_v tmp_d uniq
+    uniq="${BASHPID:-$$}_${RANDOM}"
+    tmp_v="/tmp/oidc_idp_pkce_v_${uniq}"
+    tmp_d="/tmp/oidc_idp_pkce_d_${uniq}"
     printf '%s' "${verifier}" > "${tmp_v}" || return 1
     openssl dgst -binary -sha256 -out "${tmp_d}" "${tmp_v}" || {
         rm -f "${tmp_v}" "${tmp_d}"
@@ -39,15 +41,19 @@ oidc_idp_pkce_pair() {
 oidc_idp_http_code() {
     local url="$1"
     shift
-    curl -sS -o "/tmp/oidc_idp_body_$$.out" -w '%{http_code}' "$@" "${url}" 2>/dev/null || echo "000"
+    local body
+    body="/tmp/oidc_idp_body_${BASHPID:-$$}_${RANDOM}.out"
+    curl -sS -o "${body}" -w '%{http_code}' "$@" "${url}" 2>/dev/null || echo "000"
+    rm -f "${body}"
 }
 
 oidc_idp_get_body() {
-    cat "/tmp/oidc_idp_body_$$.out" 2>/dev/null || true
+    # Deprecated for parallel use; callers should pass explicit out files
+    true
 }
 
 oidc_idp_cleanup_tmp() {
-    rm -f "/tmp/oidc_idp_body_$$.out" "/tmp/oidc_idp_hdr_$$.out"
+    rm -f /tmp/oidc_idp_body_* /tmp/oidc_idp_hdr_* /tmp/oidc_idp_pkce_* 2>/dev/null || true
 }
 
 # Returns Location header value (first) from curl -D headers file
@@ -150,7 +156,7 @@ oidc_idp_authorize_login() {
     local challenge="$7"
     local username="$8"
     local password="$9"
-    local hdr_file="/tmp/oidc_idp_hdr_$$.out"
+    local hdr_file="/tmp/oidc_idp_hdr_${BASHPID:-$$}_${RANDOM}.out"
 
     curl -sS -D "${hdr_file}" -o /dev/null \
         -X POST "${base_url}/oauth/authorize" \
@@ -168,6 +174,7 @@ oidc_idp_authorize_login() {
 
     local location
     location="$(oidc_idp_location_from_headers "${hdr_file}")"
+    rm -f "${hdr_file}"
     if [[ -z "${location}" ]]; then
         OIDC_IDP_AUTH_CODE=""
         export OIDC_IDP_AUTH_CODE
