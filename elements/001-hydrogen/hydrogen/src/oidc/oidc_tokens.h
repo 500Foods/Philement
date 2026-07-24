@@ -18,6 +18,13 @@
 #include <stdlib.h>
 #include <time.h>
 
+/*
+ * Clock skew tolerance (seconds) for exp/nbf when validating access tokens.
+ * Tokens may be accepted up to this many seconds past exp, and nbf may be
+ * up to this many seconds in the future. Documented Phase 15 policy.
+ */
+#define OIDC_JWT_CLOCK_SKEW_SECONDS 60
+
 // Project Libraries
 #include "oidc_keys.h"
 

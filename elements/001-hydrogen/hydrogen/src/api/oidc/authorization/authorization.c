@@ -8,13 +8,16 @@
 #include <src/hydrogen.h>
 #include <src/api/oidc/oidc_service.h>
 #include <src/oidc/oidc_service.h>
+#include <src/oidc/oidc_clients.h>
 #include <src/oidc/oidc_pkce.h>
 #include <src/api/api_utils.h>
+#include <src/api/auth/auth_service.h>
 
 #include "authorization.h"
 
 #include <stdio.h>
 #include <string.h>
+#include <time.h>
 
 enum MHD_Result oidc_auth_send_html(struct MHD_Connection *connection,
                                     const char *html, unsigned int status);
@@ -31,9 +34,14 @@ void oidc_auth_free_params(char *client_id, char *redirect_uri, char *response_t
                            char *code_challenge, char *code_challenge_method);
 bool oidc_auth_params_valid_for_code(const char *client_id, const char *redirect_uri,
                                      const char *response_type,
+                                     const char *scope,
+                                     const char *state,
+                                     const char *nonce,
                                      const char *code_challenge,
                                      const char *code_challenge_method,
                                      const char **error_out);
+/* Safe redirect target only when client_id + redirect_uri are registered. */
+const char *oidc_auth_safe_error_redirect(const char *client_id, const char *redirect_uri);
 
 enum MHD_Result oidc_auth_send_html(struct MHD_Connection *connection,
                                     const char *html, unsigned int status) {
@@ -75,12 +83,35 @@ void oidc_auth_free_params(char *client_id, char *redirect_uri, char *response_t
     free(code_challenge_method);
 }
 
+const char *oidc_auth_safe_error_redirect(const char *client_id, const char *redirect_uri) {
+    if (!client_id || !redirect_uri || !oidc_redirect_uri_scheme_allowed(redirect_uri)) {
+        return NULL;
+    }
+    OIDCContext *ctx = get_oidc_context();
+    if (!ctx || !ctx->client_context) {
+        return NULL;
+    }
+    if (!oidc_validate_client((OIDCClientContext *)ctx->client_context, client_id, redirect_uri)) {
+        return NULL;
+    }
+    return redirect_uri;
+}
+
 bool oidc_auth_params_valid_for_code(const char *client_id, const char *redirect_uri,
                                      const char *response_type,
+                                     const char *scope,
+                                     const char *state,
+                                     const char *nonce,
                                      const char *code_challenge,
                                      const char *code_challenge_method,
                                      const char **error_out) {
     if (!client_id || !redirect_uri || !response_type) {
+        if (error_out) {
+            *error_out = "invalid_request";
+        }
+        return false;
+    }
+    if (!oidc_redirect_uri_scheme_allowed(redirect_uri)) {
         if (error_out) {
             *error_out = "invalid_request";
         }
@@ -92,6 +123,24 @@ bool oidc_auth_params_valid_for_code(const char *client_id, const char *redirect
         }
         return false;
     }
+    /* CSRF: state required for all authorize requests. */
+    if (!state || state[0] == '\0') {
+        if (error_out) {
+            *error_out = "invalid_request";
+        }
+        return false;
+    }
+    /* OIDC: nonce required when openid scope is present (default scope is openid). */
+    {
+        const char *use_scope = (scope && scope[0] != '\0') ? scope : "openid";
+        if (oidc_scope_has(use_scope, "openid") && (!nonce || nonce[0] == '\0')) {
+            if (error_out) {
+                *error_out = "invalid_request";
+            }
+            return false;
+        }
+    }
+    /* PKCE: S256 only; plain rejected (oidc_pkce_method_is_s256). */
     if (!code_challenge || !oidc_pkce_method_is_s256(code_challenge_method)) {
         if (error_out) {
             *error_out = "invalid_request";
@@ -276,12 +325,15 @@ enum MHD_Result handle_oidc_authorization_endpoint(struct MHD_Connection *connec
 
     const char *param_error = NULL;
     if (!oidc_auth_params_valid_for_code(client_id, redirect_uri, response_type,
+                                         scope, state, nonce,
                                          code_challenge, code_challenge_method,
                                          &param_error)) {
+        /* Never redirect errors to an unvalidated redirect_uri (open redirect). */
+        const char *safe_redir = oidc_auth_safe_error_redirect(client_id, redirect_uri);
         enum MHD_Result ret = send_oauth_error(connection,
                                                param_error ? param_error : "invalid_request",
                                                "Invalid authorization request",
-                                               redirect_uri, state);
+                                               safe_redir, state);
         oidc_auth_free_params(client_id, redirect_uri, response_type, scope, state,
                               nonce, code_challenge, code_challenge_method);
         free(username);
@@ -322,6 +374,56 @@ enum MHD_Result handle_oidc_authorization_endpoint(struct MHD_Connection *connec
         return ret;
     }
 
+    /* Rate-limit authorize login using the same #004–#007 path as /api/auth/login. */
+    {
+        const char *database = oidc_get_accounts_database();
+        char *client_ip = api_get_client_ip(connection);
+        if (client_ip) {
+            bool is_whitelisted = check_ip_whitelist(client_ip, database);
+            if (check_ip_blacklist(client_ip, database)) {
+                free(client_ip);
+                char *html = oidc_auth_build_login_html(client_id, redirect_uri, response_type,
+                                                        scope, state, nonce, code_challenge,
+                                                        code_challenge_method,
+                                                        "Too many attempts. Try again later.");
+                oidc_auth_free_params(client_id, redirect_uri, response_type, scope, state,
+                                      nonce, code_challenge, code_challenge_method);
+                free(username);
+                free(password);
+                if (!html) {
+                    return MHD_NO;
+                }
+                enum MHD_Result ret = oidc_auth_send_html(connection, html, MHD_HTTP_OK);
+                free(html);
+                return ret;
+            }
+            const int rate_window = 900;
+            time_t window_start = time(NULL) - rate_window;
+            int failed_count = check_failed_attempts(username, client_ip, window_start, database);
+            if (handle_rate_limiting(client_ip, failed_count, is_whitelisted, database)) {
+                free(client_ip);
+                char *html = oidc_auth_build_login_html(client_id, redirect_uri, response_type,
+                                                        scope, state, nonce, code_challenge,
+                                                        code_challenge_method,
+                                                        "Too many attempts. Try again later.");
+                oidc_auth_free_params(client_id, redirect_uri, response_type, scope, state,
+                                      nonce, code_challenge, code_challenge_method);
+                free(username);
+                free(password);
+                if (!html) {
+                    return MHD_NO;
+                }
+                enum MHD_Result ret = oidc_auth_send_html(connection, html, MHD_HTTP_OK);
+                free(html);
+                return ret;
+            }
+            const char *user_agent = MHD_lookup_connection_value(connection, MHD_HEADER_KIND,
+                                                                 "User-Agent");
+            log_login_attempt(username, client_ip, user_agent, time(NULL), database);
+            free(client_ip);
+        }
+    }
+
     int account_id = 0;
     if (!oidc_authenticate_resource_owner(username, password, &account_id)) {
         char *html = oidc_auth_build_login_html(client_id, redirect_uri, response_type,
@@ -347,24 +449,20 @@ enum MHD_Result handle_oidc_authorization_endpoint(struct MHD_Connection *connec
                                                code_challenge, code_challenge_method,
                                                account_id, &issue_error);
     if (!code) {
+        const char *safe_redir = oidc_auth_safe_error_redirect(client_id, redirect_uri);
         enum MHD_Result ret = send_oauth_error(connection,
                                                issue_error ? issue_error : "server_error",
                                                "Failed to issue authorization code",
-                                               redirect_uri, state);
+                                               safe_redir, state);
         oidc_auth_free_params(client_id, redirect_uri, response_type, scope, state,
                               nonce, code_challenge, code_challenge_method);
         return ret;
     }
 
+    /* state is required and always reflected on success redirect. */
     char *location = NULL;
-    if (state && state[0] != '\0') {
-        if (asprintf(&location, "%s?code=%s&state=%s", redirect_uri, code, state) < 0) {
-            location = NULL;
-        }
-    } else {
-        if (asprintf(&location, "%s?code=%s", redirect_uri, code) < 0) {
-            location = NULL;
-        }
+    if (asprintf(&location, "%s?code=%s&state=%s", redirect_uri, code, state) < 0) {
+        location = NULL;
     }
     free(code);
     oidc_auth_free_params(client_id, redirect_uri, response_type, scope, state,

@@ -18,6 +18,9 @@ of Test 42, which drives Hydrogen as a Relying Party against mock Keycloak).
 - Refresh rotation and reuse rejection
 - Authorization code reuse rejection
 - Bad `redirect_uri` rejection
+- Disallowed redirect schemes (`javascript:`)
+- Missing `state` / missing `nonce` (with `openid`) rejected
+- Success redirect includes matching `state`
 
 ## Configuration
 
@@ -45,5 +48,7 @@ the 302 `Location` for the code.
 
 ## Related
 
-- Plan: [OIDC_IDP.md](/docs/H/plans/OIDC_IDP.md) Phase 14
+- Plan: [OIDC_IDP.md](/docs/H/plans/OIDC_IDP.md) Phases 14–15
+- Endpoints: [oidc_endpoints.md](/docs/H/api/oidc/oidc_endpoints.md)
+- Operator: [OIDC_IDP_OPERATOR.md](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md)
 - RP blackbox: [test_42_oidc_rp.md](/docs/H/tests/test_42_oidc_rp.md)

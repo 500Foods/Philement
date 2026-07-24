@@ -1,16 +1,44 @@
 # OpenID Connect (OIDC) Integration
 
-This document outlines the architecture and implementation plan for adding OpenID Connect (OIDC) functionality to Hydrogen, enabling it to function as an Identity Provider (IdP).
+Hydrogen supports two separate OIDC roles. This document is primarily about
+Hydrogen as an **Identity Provider (IdP)**. External SSO (Keycloak, etc.) uses
+Hydrogen as a **Relying Party** instead.
+
+## Implemented subset (source of truth)
+
+Implementation status and gates live in
+[OIDC_IDP.md](/docs/H/plans/OIDC_IDP.md) (Phases 0–15 complete as of 2026-07-23).
+API contract: [oidc_endpoints.md](/docs/H/api/oidc/oidc_endpoints.md).
+Operators: [OIDC_IDP_OPERATOR.md](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md).
+
+| Capability | Status |
+| --- | --- |
+| Discovery + JWKS (RS256 keys on disk) | Implemented |
+| Authorize code + PKCE S256 + HTML login | Implemented |
+| Token (code exchange, refresh rotation) | Implemented |
+| UserInfo, introspect, revoke | Implemented |
+| Resource owners = Acuranzo accounts | Implemented |
+| Config kill switch `OIDC.Enabled` | Implemented (default off) |
+| Dynamic registration, end-session, implicit | Not MVP |
+| DB-backed auth codes / refresh (multi-process) | Deferred (in-memory MVP) |
+| Multi-engine blackbox (all 7 DBs) | Deferred (Test 45 SQLite) |
+
+**RP (Keycloak client):** [oidc_rp.md](/docs/H/api/auth/oidc_rp.md),
+[KEYCLOAK_PLAN.md](/docs/H/plans/KEYCLOAK_PLAN.md). Do not confuse
+`src/api/oidc/` (IdP) with `src/api/auth/oidc_rp/` (RP).
+
+Sections below retain historical architecture notes. Where they conflict with
+the plan or endpoint docs, **prefer the plan and endpoint docs**.
 
 ## Overview
 
-The OIDC integration will allow Hydrogen to:
+The OIDC **IdP** integration allows Hydrogen to:
 
-1. Function as a standalone Identity Provider (IdP)
-2. Serve as an umbrella authentication service for the organization
-3. Support flexible deployment where instances can serve as IdPs for different web applications
+1. Function as a standalone Identity Provider for first-party / trusted clients
+2. Issue RS256 `id_token` / access tokens and opaque refresh tokens
+3. Authenticate resource owners via existing account passwords
 
-This functionality will provide a secure, standards-compliant authentication and authorization system that can be used across the organization's services and applications.
+External org-wide SSO remains Keycloak + Hydrogen RP, not this stack.
 
 ## Architecture
 
@@ -97,20 +125,21 @@ The OIDC functionality will integrate with Hydrogen's existing components:
 
 ## OIDC Endpoints
 
-The following endpoints will be implemented:
+Live and deferred endpoints are documented in
+[oidc_endpoints.md](/docs/H/api/oidc/oidc_endpoints.md). Summary:
 
-| Endpoint | Purpose |
-|----------|---------|
-| `/.well-known/openid-configuration` | OIDC discovery document |
-| `/oauth/authorize` | Authorization endpoint for initiating authentication flows |
-| `/oauth/token` | Token endpoint for obtaining tokens |
-| `/oauth/userinfo` | UserInfo endpoint for retrieving authenticated user information |
-| `/oauth/jwks` | JSON Web Key Set endpoint for public keys |
-| `/oauth/introspect` | Token introspection endpoint |
-| `/oauth/revoke` | Token revocation endpoint |
-| `/oauth/register` | Dynamic client registration endpoint |
-| `/oauth/clients` | Client management API |
-| `/oauth/users` | User management API |
+| Endpoint | Purpose | MVP |
+|----------|---------|-----|
+| `/.well-known/openid-configuration` | Discovery | Yes |
+| `/oauth/authorize` | Authorization code + login | Yes |
+| `/oauth/token` | Code / refresh grants | Yes |
+| `/oauth/userinfo` | UserInfo | Yes |
+| `/oauth/jwks` | JWKS | Yes |
+| `/oauth/introspect` | Introspection | Yes |
+| `/oauth/revoke` | Revocation | Yes |
+| `/oauth/register` | Dynamic client registration | No |
+| `/oauth/end-session` | RP-initiated logout | No |
+| `/oauth/clients` / `/oauth/users` | Admin APIs | No (aspirational) |
 
 ## Data Flow
 
