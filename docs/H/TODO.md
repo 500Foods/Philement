@@ -143,7 +143,7 @@ Actionable incomplete work only. Completed plans live in
 | **Plan** | [`OIDC_IDP.md`](/docs/H/plans/OIDC_IDP.md) |
 | **Effort** | M remaining (was XL) |
 | **Done** | ~90% — Phases 0–15 complete (protocol + Test 45 + hardening); Phase 16 docs |
-| **Remaining** | Phase 17 optional (end-session, client credentials, consent UI); DB-backed codes/refresh for multi-process; multi-engine Test 45 |
+| **Remaining** | Phase 17 optional (end-session, client credentials, consent UI); DB-backed codes/refresh for multi-process |
 | **Docs** | [oidc_endpoints.md](/docs/H/api/oidc/oidc_endpoints.md) · [OIDC_IDP_OPERATOR.md](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md) |
 | **Note** | Separate from OIDC **RP** (Keycloak). MVP IdP is usable behind kill switch; HA needs durable stores. |
 

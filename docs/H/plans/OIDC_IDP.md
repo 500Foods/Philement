@@ -32,8 +32,9 @@ previous phase's exit gate is green. Record learnings in the Working Log.
 
 ## Resuming Work on This Plan
 
-CURRENT PAUSE POINT (as of 2026-07-23): **Phases 0–16 complete (MVP docs). Next:
-Phase 17 optional post-MVP, or durability (DB codes/refresh) / multi-engine Test 45.**
+CURRENT PAUSE POINT (as of 2026-07-23): **Phases 0–16 complete. Test 45 multi-engine
+(v2.0.0, ports 5450–5456) implemented. Next: Phase 17 optional, or durability
+(DB codes/refresh #136–#142).**
 
 ### Resume here next session
 
@@ -41,7 +42,7 @@ Phase 17 optional post-MVP, or durability (DB codes/refresh) / multi-engine Test
 2. Phase 17 optional: end-session, client credentials, consent UI.
 3. Refresh/auth-code stores still in-memory — wire DB #139–#142 before multi-process.
 4. Access JWT revoke = no denylist; kill sessions via refresh revoke.
-5. Multi-engine Test 45 (5450–5456) still deferred from Phase 14 variance.
+5. Multi-engine Test 45 done (v2.0.0, 7/7); durability DB codes/refresh still open.
 
 ### Session checklist (every OIDC IdP return)
 
@@ -1075,9 +1076,9 @@ the inverse of Test 42's mock-Keycloak approach.
 
 ### Work Items
 
-- [x] 14.1 Create configs: disabled (5450), enabled full SQLite (5451) with
-  config client seed + demo DB.
-  - **Verify:** server starts; Test 45 green.
+- [x] 14.1 Create configs: disabled (5457) + seven engines (5450–5456) with
+  config client seed + demo/per-engine DB (v2.0.0 multi-engine).
+  - **Verify:** server starts; Test 45 green on all engines.
 - [x] 14.2 Implement helpers `tests/lib/oidc_idp_helpers.sh` (curl wrappers,
   form login, code parse from redirect, token POST, jwt payload decode).
   - **Verify:** used by Test 45 green path.
@@ -1086,7 +1087,7 @@ the inverse of Test 42's mock-Keycloak approach.
 - [x] 14.4 Subtests (minimum):
   1–9 implemented and green; (10) JWKS presence asserted (full RS256 verify
   of live id_token deferred — Unity already covers verify).
-  - **Verify:** `./tests/test_45_oidc_idp.sh` 18/18 pass.
+  - **Verify:** `./tests/test_45_oidc_idp.sh` 7/7 engines (92 subtests) pass.
 - [x] 14.5 Docs: `docs/H/tests/test_45_oidc_idp.md`; TESTING.md list updated.
   - **Verify:** links present; full lint deferred.
 - [~] 14.6 Test 42 regression — deferred (no RP code changed this phase).
@@ -1102,12 +1103,12 @@ the inverse of Test 42's mock-Keycloak approach.
 
 - **State:** complete
 - **Date:** 2026-07-23
-- **Result:** Test 45 18/18 green (~2s). Config client seed + launch
-  readiness no longer requires ClientSecret. Happy path login→code→tokens→
-  userinfo→refresh works against demo SQLite.
-- **Variances:** Single-engine SQLite only (not 5450–5456 multi-DB yet).
-  JWKS crypto verify of live token deferred to Unity. Test 42 not re-run.
-  shellcheck/markdownlint full suite not run this session.
+- **Result:** Test 45 multi-engine v2.0.0 **7/7 green** (~5s, 92 subtests).
+  Config client seed + launch readiness no longer requires ClientSecret.
+  Happy path login→code→tokens→userinfo→refresh on all engines.
+- **Variances:** Multi-engine parallel added 2026-07-23 (v2.0.0 configs
+  5450–5456 + disabled 5457). JWKS crypto verify of live token still Unity.
+  Stores still in-memory (DB wire separate).
 
 ---
 
@@ -1517,8 +1518,10 @@ Append discoveries, surprises, and decisions here as phases complete.
   `init_oidc_service`. Grants: `authorization_code refresh_token`.
 - **2026-07-23 Phase 14:** Launch readiness no longer requires ClientId/Secret
   (RP leftovers). ClientId without RedirectUri is No-Go; secret optional.
-- **2026-07-23 Phase 14:** Test 45 ports 5450 disabled / 5451 enabled; SQLite
-  `hydrodemo.sqlite`; demo user env; keys dir `tests/artifacts/oidc_idp_keys_45`.
+- **2026-07-23 Phase 14 (initial):** SQLite-only 5450 disabled / 5451 enabled.
+- **2026-07-23 Phase 14 multi-engine:** ports **5450–5456** engines, disabled
+  **5457**, callback **5459**; per-engine keys `oidc_idp_keys_45_<engine>`;
+  SQLite isolated copy; unique `IPADDRESS` per engine.
 - **2026-07-23 Phase 14:** Authorize happy path = POST form with username/password
   and hidden OAuth fields; 302 Location carries `code` (curl `-D` headers).
 - **2026-07-23 Lint hygiene (post-Phase 14):** After **any** C change run
@@ -1591,6 +1594,11 @@ Append discoveries, surprises, and decisions here as phases complete.
 
 ---
 
+- **Parallel Test 45 lesson:** helpers must not use `/tmp/..._$$` alone — background
+  jobs share the parent `$$`. Use `BASHPID`+`RANDOM` for temp files. Unique
+  `IPADDRESS` per engine config reduces shared rate-limit window collisions.
+- Test 45 v2.0.0: **7/7 engines green** (92 subtests) after race fix.
+
 ## Related Documents
 
 - [KEYCLOAK_PLAN.md](/docs/H/plans/KEYCLOAK_PLAN.md) — Hydrogen as OIDC RP
@@ -1620,3 +1628,11 @@ Hydrogen OIDC IdP MVP is done when:
 5. `test_45_oidc_idp.sh` green; `test_42_oidc_rp.sh` still green.
 6. Docs and operator runbook match behavior; kill switch works.
 7. No secrets in logs; no overload of session `tokens` or RP identity tables.
+
+### 2026-07-23 Multi-engine Test 45
+
+- Ports: **5450–5456** engines; disabled gate **5457**; redirect callback **5459**.
+- Configs: `hydrogen_test_45_{postgres,mysql,sqlite,db2,mariadb,cockroachdb,yugabytedb}.json`.
+- Parallel runner mirrors test_40; SQLite uses isolated DB copy per run.
+- Per-engine key dirs: `tests/artifacts/oidc_idp_keys_45_<engine>`.
+- Old single `hydrogen_test_45_oidc_idp.json` removed.
