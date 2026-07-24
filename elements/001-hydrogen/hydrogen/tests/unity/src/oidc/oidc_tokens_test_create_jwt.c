@@ -16,6 +16,17 @@
 void test_create_claims_null(void);
 void test_create_jwt_round_trip(void);
 void test_id_and_access_token_distinct(void);
+void test_init_cleanup_null_and_ok(void);
+void test_free_claims_null(void);
+void test_apply_lifetime_paths(void);
+void test_build_payload_multi_aud_client_id_jti_auth_time(void);
+void test_sign_compact_null_params(void);
+void test_create_jwt_invalid_params(void);
+void test_generate_id_access_invalid_and_no_key(void);
+void test_generate_refresh_stub(void);
+void test_access_token_clears_reference(void);
+void test_claims_from_payload_json_paths(void);
+void test_split_compact_failures(void);
 
 void setUp(void) {
 }
@@ -23,9 +34,233 @@ void setUp(void) {
 void tearDown(void) {
 }
 
+static void unlink_key_dir(const char *dir) {
+    char path[512];
+    snprintf(path, sizeof(path), "%s/signing-active.pem", dir);
+    unlink(path);
+    snprintf(path, sizeof(path), "%s/signing-active.kid", dir);
+    unlink(path);
+    rmdir(dir);
+}
+
 void test_create_claims_null(void) {
     TEST_ASSERT_NULL(oidc_create_token_claims(NULL, "sub", "aud"));
     TEST_ASSERT_NULL(oidc_create_token_claims("iss", NULL, "aud"));
+}
+
+void test_init_cleanup_null_and_ok(void) {
+    TEST_ASSERT_NULL(init_oidc_token_service(NULL, 1, 2, 3));
+    cleanup_oidc_token_service(NULL);
+
+    char tmpl[] = "/tmp/oidc_tok_init_XXXXXX";
+    char *dir = mkdtemp(tmpl);
+    TEST_ASSERT_NOT_NULL(dir);
+    OIDCKeyContext *keys = init_oidc_key_management(dir, false, 90);
+    TEST_ASSERT_NOT_NULL(keys);
+    OIDCTokenContext *tok = init_oidc_token_service(keys, 10, 20, 30);
+    TEST_ASSERT_NOT_NULL(tok);
+    TEST_ASSERT_EQUAL_INT(10, tok->access_token_lifetime);
+    TEST_ASSERT_EQUAL_INT(20, tok->refresh_token_lifetime);
+    TEST_ASSERT_EQUAL_INT(30, tok->id_token_lifetime);
+    cleanup_oidc_token_service(tok);
+    cleanup_oidc_key_management(keys);
+    unlink_key_dir(dir);
+}
+
+void test_free_claims_null(void) {
+    oidc_free_token_claims(NULL);
+}
+
+void test_apply_lifetime_paths(void) {
+    oidc_token_apply_lifetime(NULL, 100);
+    OIDCTokenClaims c;
+    memset(&c, 0, sizeof(c));
+    oidc_token_apply_lifetime(&c, 3600);
+    TEST_ASSERT_TRUE(c.iat > 0);
+    TEST_ASSERT_EQUAL(c.iat, c.nbf);
+    TEST_ASSERT_EQUAL(c.iat + 3600, c.exp);
+
+    c.iat = 1000;
+    c.nbf = 0;
+    c.exp = 0;
+    oidc_token_apply_lifetime(&c, 50);
+    TEST_ASSERT_EQUAL(1000, c.iat);
+    TEST_ASSERT_EQUAL(1000, c.nbf);
+    TEST_ASSERT_EQUAL(1050, c.exp);
+}
+
+void test_build_payload_multi_aud_client_id_jti_auth_time(void) {
+    TEST_ASSERT_NULL(oidc_token_build_payload_json(NULL, false));
+
+    OIDCTokenClaims bare;
+    memset(&bare, 0, sizeof(bare));
+    bare.iss = (char*)"iss";
+    bare.sub = NULL;
+    TEST_ASSERT_NULL(oidc_token_build_payload_json(&bare, false));
+
+    OIDCTokenClaims c;
+    memset(&c, 0, sizeof(c));
+    c.iss = (char*)"http://iss";
+    c.sub = (char*)"sub1";
+    char *a0 = (char*)"aud-a";
+    char *a1 = (char*)"aud-b";
+    char *auds[2] = { a0, a1 };
+    c.aud = auds;
+    c.aud_count = 2U;
+    c.jti = (char*)"jti-xyz";
+    c.auth_time = (char*)"not-a-number";
+    c.scope = (char*)"openid";
+    c.azp = (char*)"azp1";
+
+    char *pl = oidc_token_build_payload_json(&c, true);
+    TEST_ASSERT_NOT_NULL(pl);
+    json_error_t err;
+    json_t *root = json_loads(pl, 0, &err);
+    TEST_ASSERT_NOT_NULL(root);
+    json_t *aud = json_object_get(root, "aud");
+    TEST_ASSERT_TRUE(json_is_array(aud));
+    TEST_ASSERT_EQUAL_size_t(2U, json_array_size(aud));
+    TEST_ASSERT_EQUAL_STRING("jti-xyz", json_string_value(json_object_get(root, "jti")));
+    TEST_ASSERT_EQUAL_STRING("not-a-number", json_string_value(json_object_get(root, "auth_time")));
+    json_decref(root);
+    free(pl);
+
+    /* client_id fallback when no aud array */
+    memset(&c, 0, sizeof(c));
+    c.iss = (char*)"iss";
+    c.sub = (char*)"sub";
+    c.client_id = (char*)"client-only";
+    pl = oidc_token_build_payload_json(&c, false);
+    TEST_ASSERT_NOT_NULL(pl);
+    root = json_loads(pl, 0, &err);
+    TEST_ASSERT_EQUAL_STRING("client-only", json_string_value(json_object_get(root, "aud")));
+    TEST_ASSERT_EQUAL_STRING("access", json_string_value(json_object_get(root, "token_use")));
+    json_decref(root);
+    free(pl);
+}
+
+void test_sign_compact_null_params(void) {
+    TEST_ASSERT_NULL(oidc_token_sign_compact(NULL, "{}", "{}"));
+    OIDCKey key;
+    memset(&key, 0, sizeof(key));
+    TEST_ASSERT_NULL(oidc_token_sign_compact(&key, "{}", "{}"));
+    TEST_ASSERT_NULL(oidc_token_sign_compact(&key, NULL, "{}"));
+    key.key_data = (void*)0x1;
+    TEST_ASSERT_NULL(oidc_token_sign_compact(&key, "{}", NULL));
+}
+
+void test_create_jwt_invalid_params(void) {
+    TEST_ASSERT_NULL(oidc_create_jwt(NULL, NULL, NULL));
+
+    OIDCKey key;
+    memset(&key, 0, sizeof(key));
+    strncpy(key.kid, "k1", sizeof(key.kid) - 1U);
+    OIDCTokenClaims c;
+    memset(&c, 0, sizeof(c));
+    /* missing iss/sub -> payload build fails */
+    TEST_ASSERT_NULL(oidc_create_jwt(NULL, &c, &key));
+}
+
+void test_generate_id_access_invalid_and_no_key(void) {
+    TEST_ASSERT_NULL(oidc_generate_id_token(NULL, NULL));
+    TEST_ASSERT_NULL(oidc_generate_access_token(NULL, NULL, NULL));
+
+    OIDCTokenContext ctx;
+    memset(&ctx, 0, sizeof(ctx));
+    OIDCTokenClaims c;
+    memset(&c, 0, sizeof(c));
+    c.iss = (char*)"iss";
+    c.sub = (char*)"sub";
+    /* key_context NULL */
+    TEST_ASSERT_NULL(oidc_generate_id_token(&ctx, &c));
+    TEST_ASSERT_NULL(oidc_generate_access_token(&ctx, &c, NULL));
+
+    /* empty key context -> no active signing key */
+    OIDCKeyContext keys;
+    memset(&keys, 0, sizeof(keys));
+    ctx.key_context = &keys;
+    ctx.id_token_lifetime = 60;
+    ctx.access_token_lifetime = 60;
+    TEST_ASSERT_NULL(oidc_generate_id_token(&ctx, &c));
+    TEST_ASSERT_NULL(oidc_generate_access_token(&ctx, &c, NULL));
+}
+
+void test_generate_refresh_stub(void) {
+    TEST_ASSERT_NULL(oidc_generate_refresh_token(NULL, NULL));
+    OIDCTokenContext ctx;
+    memset(&ctx, 0, sizeof(ctx));
+    OIDCTokenClaims c;
+    memset(&c, 0, sizeof(c));
+    TEST_ASSERT_NULL(oidc_generate_refresh_token(&ctx, &c));
+}
+
+void test_access_token_clears_reference(void) {
+    char *ref = (char*)"stale";
+    TEST_ASSERT_NULL(oidc_generate_access_token(NULL, NULL, &ref));
+    TEST_ASSERT_NULL(ref);
+}
+
+void test_claims_from_payload_json_paths(void) {
+    TEST_ASSERT_NULL(oidc_claims_from_payload_json(NULL));
+    TEST_ASSERT_NULL(oidc_claims_from_payload_json("not-json"));
+    TEST_ASSERT_NULL(oidc_claims_from_payload_json("[1,2]"));
+    TEST_ASSERT_NULL(oidc_claims_from_payload_json("{\"iss\":\"only\"}"));
+
+    const char *multi =
+        "{\"iss\":\"I\",\"sub\":\"S\",\"aud\":[\"a1\",\"a2\"],"
+        "\"exp\":999,\"iat\":1,\"nbf\":2,\"scope\":\"openid\","
+        "\"nonce\":\"nn\",\"jti\":\"jj\",\"client_id\":\"cid\","
+        "\"email\":\"e@x\",\"name\":\"N\"}";
+    OIDCTokenClaims *cl = oidc_claims_from_payload_json(multi);
+    TEST_ASSERT_NOT_NULL(cl);
+    TEST_ASSERT_EQUAL_STRING("I", cl->iss);
+    TEST_ASSERT_EQUAL_STRING("S", cl->sub);
+    TEST_ASSERT_EQUAL_size_t(1U, cl->aud_count);
+    TEST_ASSERT_EQUAL_STRING("a1", cl->aud[0]);
+    /* aud array path sets client_id from first aud; later client_id claim skipped */
+    TEST_ASSERT_EQUAL_STRING("a1", cl->client_id);
+    TEST_ASSERT_EQUAL_STRING("nn", cl->nonce);
+    TEST_ASSERT_EQUAL_STRING("jj", cl->jti);
+    TEST_ASSERT_EQUAL_STRING("openid", cl->scope);
+    TEST_ASSERT_NOT_NULL(cl->user_data);
+    TEST_ASSERT_TRUE(strstr(cl->user_data, "email") != NULL);
+    oidc_free_token_claims(cl);
+
+    /* aud string only, no separate client_id field */
+    const char *aud_str = "{\"iss\":\"I\",\"sub\":\"S\",\"aud\":\"only-aud\"}";
+    cl = oidc_claims_from_payload_json(aud_str);
+    TEST_ASSERT_NOT_NULL(cl);
+    TEST_ASSERT_EQUAL_STRING("only-aud", cl->client_id);
+    oidc_free_token_claims(cl);
+
+    /* client_id without aud */
+    const char *cid_only = "{\"iss\":\"I\",\"sub\":\"S\",\"client_id\":\"only-cid\"}";
+    cl = oidc_claims_from_payload_json(cid_only);
+    TEST_ASSERT_NOT_NULL(cl);
+    TEST_ASSERT_EQUAL_STRING("only-cid", cl->client_id);
+    oidc_free_token_claims(cl);
+}
+
+void test_split_compact_failures(void) {
+    char *h = NULL;
+    char *p = NULL;
+    char *s = NULL;
+    TEST_ASSERT_FALSE(oidc_token_split_compact(NULL, &h, &p, &s));
+    TEST_ASSERT_FALSE(oidc_token_split_compact("abc", NULL, &p, &s));
+    TEST_ASSERT_FALSE(oidc_token_split_compact("no-dots", &h, &p, &s));
+    TEST_ASSERT_FALSE(oidc_token_split_compact("a.b", &h, &p, &s));
+    TEST_ASSERT_FALSE(oidc_token_split_compact("a.b.c.d", &h, &p, &s));
+    TEST_ASSERT_FALSE(oidc_token_split_compact(".b.c", &h, &p, &s));
+    TEST_ASSERT_FALSE(oidc_token_split_compact("a..c", &h, &p, &s));
+    TEST_ASSERT_FALSE(oidc_token_split_compact("a.b.", &h, &p, &s));
+
+    TEST_ASSERT_TRUE(oidc_token_split_compact("aa.bb.cc", &h, &p, &s));
+    TEST_ASSERT_EQUAL_STRING("aa", h);
+    TEST_ASSERT_EQUAL_STRING("bb", p);
+    TEST_ASSERT_EQUAL_STRING("cc", s);
+    free(h);
+    free(p);
+    free(s);
 }
 
 void test_create_jwt_round_trip(void) {
@@ -114,13 +349,7 @@ void test_create_jwt_round_trip(void) {
     oidc_free_token_claims(claims);
     cleanup_oidc_token_service(tok);
     cleanup_oidc_key_management(keys);
-
-    char path[512];
-    snprintf(path, sizeof(path), "%s/signing-active.pem", dir);
-    unlink(path);
-    snprintf(path, sizeof(path), "%s/signing-active.kid", dir);
-    unlink(path);
-    rmdir(dir);
+    unlink_key_dir(dir);
 }
 
 void test_id_and_access_token_distinct(void) {
@@ -177,18 +406,23 @@ void test_id_and_access_token_distinct(void) {
     oidc_free_token_claims(claims);
     cleanup_oidc_token_service(tok);
     cleanup_oidc_key_management(keys);
-
-    char path[512];
-    snprintf(path, sizeof(path), "%s/signing-active.pem", dir);
-    unlink(path);
-    snprintf(path, sizeof(path), "%s/signing-active.kid", dir);
-    unlink(path);
-    rmdir(dir);
+    unlink_key_dir(dir);
 }
 
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_create_claims_null);
+    RUN_TEST(test_init_cleanup_null_and_ok);
+    RUN_TEST(test_free_claims_null);
+    RUN_TEST(test_apply_lifetime_paths);
+    RUN_TEST(test_build_payload_multi_aud_client_id_jti_auth_time);
+    RUN_TEST(test_sign_compact_null_params);
+    RUN_TEST(test_create_jwt_invalid_params);
+    RUN_TEST(test_generate_id_access_invalid_and_no_key);
+    RUN_TEST(test_generate_refresh_stub);
+    RUN_TEST(test_access_token_clears_reference);
+    RUN_TEST(test_claims_from_payload_json_paths);
+    RUN_TEST(test_split_compact_failures);
     RUN_TEST(test_create_jwt_round_trip);
     RUN_TEST(test_id_and_access_token_distinct);
     return UNITY_END();

@@ -258,30 +258,10 @@ enum MHD_Result handle_auth_login_request(
     
     log_this(SR_AUTH, "IP security checks passed for client: %s (whitelisted=%d)",
              LOG_LEVEL_DEBUG, 2, client_ip, is_whitelisted);
-    
-    // Step 7: Log login attempt
-    const char* user_agent = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "User-Agent");
-    log_login_attempt(login_id, client_ip, user_agent, time(NULL), database);
-    
-    log_this(SR_AUTH, "Login attempt logged for %s from %s", LOG_LEVEL_DEBUG, 2, login_id, client_ip);
-    
-    // Step 8: Check for failed login attempts within rate limit window
-    // Rate limit window is 15 minutes (900 seconds) by default
-    const int RATE_LIMIT_WINDOW_SECONDS = 900; // 15 minutes
-    time_t window_start = time(NULL) - RATE_LIMIT_WINDOW_SECONDS;
-    int failed_count = check_failed_attempts(login_id, client_ip, window_start, database);
-    
-    log_this(SR_AUTH, "Failed login attempts for %s from %s: %d in last %d seconds",
-             LOG_LEVEL_DEBUG, 4, login_id, client_ip, failed_count, RATE_LIMIT_WINDOW_SECONDS);
-    
-    // Step 9: Handle rate limiting - block IP if too many failed attempts
-    bool should_block = handle_rate_limiting(client_ip, failed_count, is_whitelisted, database);
-    if (should_block) {
-        json_decref(request);
-        enum MHD_Result result = login_send_rate_limit_error(connection, login_id, client_ip);
-        free(client_ip);
-        return result;
-    }
+
+    // Rate limiting runs only after a failed credential check (see below).
+    // Pre-auth counting of every attempt treated successful load-test traffic
+    // as failures and blocked 127.0.0.1 once LOGINMAXATTEMPTS was reachable.
     
     // Step 10: Lookup account information by login_id
     account_info_t* account = lookup_account(login_id, database);
@@ -319,12 +299,30 @@ enum MHD_Result handle_auth_login_request(
     if (!verify_password_and_status(password, account->id, database, account)) {
         log_this(SR_AUTH, "Invalid credentials for account_id=%d from IP %s (password incorrect OR account not active)",
                  LOG_LEVEL_ALERT, 2, account->id, client_ip);
+        const char* user_agent = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "User-Agent");
+        log_login_attempt(login_id, client_ip, user_agent, time(NULL), database);
+        const int RATE_LIMIT_WINDOW_SECONDS = 900;
+        time_t window_start = time(NULL) - RATE_LIMIT_WINDOW_SECONDS;
+        int failed_count = check_failed_attempts(login_id, client_ip, window_start, database);
+        bool should_block = handle_rate_limiting(client_ip, failed_count, is_whitelisted, database);
+        enum MHD_Result fail_result;
+        if (should_block) {
+            fail_result = login_send_rate_limit_error(connection, login_id, client_ip);
+        } else {
+            response = json_object();
+            json_object_set_new(response, "error", json_string("Invalid credentials"));
+            fail_result = api_send_json_response(connection, response, MHD_HTTP_UNAUTHORIZED);
+        }
         free_account_info(account);
         free(client_ip);
         json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "error", json_string("Invalid credentials"));
-        return api_send_json_response(connection, response, MHD_HTTP_UNAUTHORIZED);
+        return fail_result;
+    }
+
+    // Best-effort audit of successful login (async; must not block auth path)
+    {
+        const char* user_agent = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "User-Agent");
+        log_login_attempt(login_id, client_ip, user_agent, time(NULL), database);
     }
     
     log_this(SR_AUTH, "Password and status verified for account_id=%d", LOG_LEVEL_DEBUG, 1, account->id);

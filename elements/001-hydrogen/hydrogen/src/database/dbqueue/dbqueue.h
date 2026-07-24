@@ -159,6 +159,7 @@ typedef struct DatabaseQuery {
     uint64_t submitted_at_ns;      // High-precision nanoseconds timestamp
     time_t processed_at;
     int retry_count;
+    int timeout_seconds;           // Per-query engine/watchdog budget (0 = default 30s)
     char* error_message;
     int affected_rows;             // Rows affected by write statements (UPDATE/INSERT/DELETE);
                                    // 0 for SELECTs or before the result is known. Populated

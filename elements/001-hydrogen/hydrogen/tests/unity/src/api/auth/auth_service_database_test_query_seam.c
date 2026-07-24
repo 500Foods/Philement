@@ -516,7 +516,8 @@ void test_is_token_revoked_query_failure(void) {
  * Purpose: Cover the success parsing branch (lines 721-736)
  */
 void test_check_failed_attempts_success(void) {
-    set_success("[{\"count\": 3}]");
+    /* QueryRef #005 returns COUNT(*) AS attempts */
+    set_success("[{\"attempts\": 3}]");
 
     int count = check_failed_attempts("login", "1.2.3.4", 0, "test_db");
     TEST_ASSERT_EQUAL_INT(3, count);

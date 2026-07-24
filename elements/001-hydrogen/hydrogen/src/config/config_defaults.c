@@ -126,7 +126,7 @@ void initialize_config_defaults_database(AppConfig* config) {
 
         // Watchdog clamp bounds (seconds) for per-query timeouts. The
         // watchdog uses these at init time; see database_watchdog.c.
-        config->databases.watchdog_min_seconds = 30;
+        config->databases.watchdog_min_seconds = 5;
         config->databases.watchdog_max_seconds = 3600;
 
         // Set default queue scaling configurations

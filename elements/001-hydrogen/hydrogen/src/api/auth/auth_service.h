@@ -153,12 +153,8 @@ account_info_t* lookup_account(const char* login_id, const char* database);
 // transport/query failure. Caller must free via free_account_info().
 char* auth_roles_from_database(int account_id, const char* database);
 
-// New secure verification: password + status in one database query
+// Password + status in one database query (QueryRef #012)
 bool verify_password_and_status(const char* password, int account_id, const char* database, account_info_t* account);
-
-// Deprecated - kept for compatibility
-char* get_password_hash(int account_id, const char* database);
-bool verify_password(const char* password, const char* stored_hash, int account_id);
 
 // JWT functions
 char* generate_jwt(account_info_t* account, system_info_t* system,
@@ -187,7 +183,9 @@ jwt_validation_result_t validate_jwt_token(const char* token, const char* databa
 jwt_validation_result_t validate_jwt_for_logout(const char* token, const char* database);
 
 // Database query wrapper functions
-QueryResult* execute_auth_query(int query_ref, const char* database, json_t* params);
+    QueryResult* execute_auth_query(int query_ref, const char* database, json_t* params);
+    QueryResult* execute_auth_query_timeout(int query_ref, const char* database,
+                                            json_t* params, int timeout_seconds);
 
 // JWT storage functions
 bool is_token_revoked(const char* token_hash, const char* ip_address, const char* database);

@@ -16,11 +16,13 @@
 #include <time.h>
 #include <stdlib.h>
 #include <src/logging/logging.h>
+#include <src/config/config_databases.h>
 #include <jansson.h>
 
 // Local includes
 #include "auth_service.h"
 #include "auth_service_validation.h"
+#include "auth_service_database.h"
 
 /**
  * Validate login input parameters
@@ -262,7 +264,7 @@ bool check_ip_whitelist(const char* client_ip, const char* database) {
     json_object_set_new(params, "STRING", string_params);
 
     // Execute query against specified database
-    QueryResult* result = execute_auth_query(2, database, params);
+    QueryResult* result = execute_auth_query_timeout(2, database, params, AUTH_QUERY_TIMEOUT_SOFT);
     json_decref(params);
 
     if (!result) {
@@ -303,7 +305,7 @@ bool check_ip_blacklist(const char* client_ip, const char* database) {
     json_object_set_new(params, "STRING", string_params);
 
     // Execute query against specified database
-    QueryResult* result = execute_auth_query(3, database, params);
+    QueryResult* result = execute_auth_query_timeout(3, database, params, AUTH_QUERY_TIMEOUT_SOFT);
     json_decref(params);
 
     if (!result) {
@@ -324,6 +326,38 @@ bool check_ip_blacklist(const char* client_ip, const char* database) {
     return is_blacklisted;
 }
 
+/*
+ * LOGINMAXATTEMPTS from connection Parameters (default 5).
+ * Blackbox load tests set a high value so shared demo schemas polluted by
+ * concurrent exercise traffic do not false-positive block 127.0.0.1.
+ */
+int auth_login_max_attempts(const char* database) {
+    const int DEFAULT_MAX = 5;
+    if (!database || !app_config) {
+        return DEFAULT_MAX;
+    }
+    const DatabaseConnection* conn = find_database_connection(&app_config->databases, database);
+    if (!conn || !conn->parameters || !json_is_object(conn->parameters)) {
+        return DEFAULT_MAX;
+    }
+    json_t* val = json_object_get(conn->parameters, "LOGINMAXATTEMPTS");
+    if (!val) {
+        return DEFAULT_MAX;
+    }
+    if (json_is_integer(val)) {
+        int n = (int)json_integer_value(val);
+        return n > 0 ? n : DEFAULT_MAX;
+    }
+    if (json_is_string(val)) {
+        const char* s = json_string_value(val);
+        if (s && s[0] != '\0') {
+            int n = atoi(s);
+            return n > 0 ? n : DEFAULT_MAX;
+        }
+    }
+    return DEFAULT_MAX;
+}
+
 /**
  * Handle rate limiting logic and IP blocking
  * Returns true if IP should be blocked (rate limit exceeded)
@@ -331,15 +365,15 @@ bool check_ip_blacklist(const char* client_ip, const char* database) {
  */
 bool handle_rate_limiting(const char* client_ip, int failed_count,
                           bool is_whitelisted, const char* database) {
-    const int MAX_ATTEMPTS = 5;
+    const int max_attempts = auth_login_max_attempts(database);
     const int BLOCK_DURATION_MINUTES = 15;
 
-    if (failed_count >= MAX_ATTEMPTS && !is_whitelisted) {
+    if (failed_count >= max_attempts && !is_whitelisted) {
         // Block IP address using QueryRef #007
         block_ip_address(client_ip, BLOCK_DURATION_MINUTES, database);
         
         log_this(SR_AUTH, "IP %s blocked due to too many failed attempts (%d >= %d)",
-                LOG_LEVEL_ALERT, 3, client_ip, failed_count, MAX_ATTEMPTS);
+                LOG_LEVEL_ALERT, 3, client_ip, failed_count, max_attempts);
         
         return true; // IP blocked
     }

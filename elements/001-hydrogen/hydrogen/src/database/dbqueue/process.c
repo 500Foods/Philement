@@ -74,7 +74,9 @@ void database_queue_process_single_query(DatabaseQueue* db_queue) {
             request.query_id = query->query_id;
             request.sql_template = query->query_template;
             request.parameters_json = query->parameter_json;
-            request.timeout_seconds = 30; // Default timeout
+            // Honor per-query budget from submitter (auth soft paths use 5s so
+            // hung DB2 work is cancelled before it monopolizes the worker).
+            request.timeout_seconds = (query->timeout_seconds > 0) ? query->timeout_seconds : 30;
             request.isolation_level = DB_ISOLATION_READ_COMMITTED;
             request.use_prepared_statement = false;
             request.prepared_statement_name = NULL;

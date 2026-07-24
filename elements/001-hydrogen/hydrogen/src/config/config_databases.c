@@ -63,7 +63,7 @@ bool load_database_config(json_t* root, AppConfig* config) {
     // from JSON without a separate "is this set" check.
     db_config->bootstrap_timeout_seconds = 30;
     db_config->bootstrap_retries = 3;
-    db_config->watchdog_min_seconds = 30;
+    db_config->watchdog_min_seconds = 5;
     db_config->watchdog_max_seconds = 3600;
 
     // Get Databases section
