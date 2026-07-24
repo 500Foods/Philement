@@ -503,6 +503,7 @@ void initialize_config_defaults_oidc(AppConfig* config) {
         config->oidc.client_id = NULL;
         config->oidc.client_secret = NULL;
         config->oidc.redirect_uri = strdup("http://localhost:8080/auth/callback");
+        config->oidc.database = NULL;
         config->oidc.port = 8080;
         config->oidc.auth_method = strdup("client_secret_basic");
         config->oidc.scope = strdup("openid profile email");

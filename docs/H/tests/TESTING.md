@@ -95,6 +95,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_41_exercise_asan.sh](/docs/H/tests/test_41_exercise.md)**: Memory exercise under ASAN/LSAN (500 concurrent auths, 6 DBs; YugabyteDB disabled)
 - **[test_44_exercise_native.sh](/docs/H/tests/test_44_exercise_native.md)**: Native RSS exercise (5000 concurrent auths, 6 DBs; suite-parallel with test 41)
 - **[test_42_oidc_rp.sh](/docs/H/tests/test_42_oidc_rp.md)**: OIDC Relying Party - complete authentication flow testing
+- **[test_45_oidc_idp.sh](/docs/H/tests/test_45_oidc_idp.md)**: OIDC Identity Provider - discovery, JWKS, authorize/login, PKCE token, userinfo, refresh
 - **[test_43_scripting.sh](/docs/H/tests/test_43_scripting.md)**: Scripting subsystem end-to-end testing
 - **[test_51_conduit.sh](/docs/H/tests/test_51_conduit_queries.md)**: Conduit endpoints testing (all 4 endpoints with full parameter support across 7 database engines)
 - **[test_52_conduit_auth_query.sh](/docs/H/tests/test_52_conduit_auth_query.md)**: Authenticated conduit query testing

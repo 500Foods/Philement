@@ -574,6 +574,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_41_exercise_asan.sh](/elements/001-hydrogen/hydrogen/tests/test_41_exercise_asan.sh) - Memory exercise ASAN (500 concurrent auths, 6 DBs + LSAN; YugabyteDB disabled)
 - [tests/test_44_exercise_native.sh](/elements/001-hydrogen/hydrogen/tests/test_44_exercise_native.sh) - Memory exercise native RSS (5000 concurrent auths, 6 DBs; port 5444)
 - [tests/test_42_oidc_rp.sh](/elements/001-hydrogen/hydrogen/tests/test_42_oidc_rp.sh) - OIDC Relying Party - complete authentication flow testing
+- [tests/test_45_oidc_idp.sh](/elements/001-hydrogen/hydrogen/tests/test_45_oidc_idp.sh) - OIDC Identity Provider - discovery, authorize/login, PKCE token, userinfo, refresh
 - [tests/test_50_conduit_query.sh](/elements/001-hydrogen/hydrogen/tests/test_50_conduit_query.sh) - Conduit single query endpoint testing (public queries across 7 database engines)
 - [tests/test_51_conduit_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_51_conduit_queries.sh) - Conduit multiple queries endpoint testing (batch queries across 7 database engines)
 - [tests/test_52_conduit_auth_query.sh](/elements/001-hydrogen/hydrogen/tests/test_52_conduit_auth_query.sh) - Conduit authenticated single query endpoint testing (JWT-protected queries across 7 database engines)

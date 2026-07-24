@@ -252,6 +252,54 @@ bool oidc_authenticate_client(const OIDCClientContext *client_context,
     return oidc_client_secrets_equal(client->client_secret_hash, client_secret);
 }
 
+bool oidc_seed_client_from_config(OIDCClientContext *client_context,
+                                  const char *client_id,
+                                  const char *client_secret_or_null,
+                                  const char *redirect_uri) {
+    if (!client_context || !client_id || client_id[0] == '\0') {
+        return true;
+    }
+    if (!redirect_uri || redirect_uri[0] == '\0') {
+        log_this(SR_OIDC, "OIDC config ClientId set without RedirectUri — skip seed",
+                 LOG_LEVEL_ALERT, 0);
+        return true;
+    }
+    if (oidc_client_registry_find(client_context, client_id) != NULL) {
+        return true;
+    }
+
+    char *uris_json = NULL;
+    if (asprintf(&uris_json, "[\"%s\"]", redirect_uri) < 0 || !uris_json) {
+        return false;
+    }
+
+    bool confidential = (client_secret_or_null && client_secret_or_null[0] != '\0');
+    char *secret_hash = NULL;
+    if (confidential) {
+        secret_hash = oidc_hash_client_secret(client_secret_or_null);
+        if (!secret_hash) {
+            free(uris_json);
+            return false;
+        }
+    }
+
+    OIDCClient *client = oidc_client_create(
+        client_id, secret_hash, "config-seed",
+        confidential, true, uris_json,
+        "authorization_code refresh_token", "code");
+    free(secret_hash);
+    free(uris_json);
+    if (!client) {
+        return false;
+    }
+    if (!oidc_client_registry_add(client_context, client)) {
+        oidc_client_free(client);
+        return false;
+    }
+    log_this(SR_OIDC, "Seeded OIDC client from config", LOG_LEVEL_STATE, 0);
+    return true;
+}
+
 bool oidc_register_client(OIDCClientContext *client_context,
                           const char *client_name,
                           const char *redirect_uri,

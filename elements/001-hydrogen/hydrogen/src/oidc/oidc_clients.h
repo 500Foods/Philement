@@ -72,6 +72,15 @@ bool oidc_authenticate_client(const OIDCClientContext *client_context,
                               const char *client_id,
                               const char *client_secret);
 
+/*
+ * Seed one client from OIDCConfig ClientId/RedirectUri/ClientSecret when set.
+ * Public if secret empty; confidential if secret present. No-op if ClientId empty.
+ */
+bool oidc_seed_client_from_config(OIDCClientContext *client_context,
+                                  const char *client_id,
+                                  const char *client_secret_or_null,
+                                  const char *redirect_uri);
+
 bool oidc_register_client(OIDCClientContext *client_context,
                           const char *client_name,
                           const char *redirect_uri,

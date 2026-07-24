@@ -18,6 +18,14 @@
  * OIDC Context
  * Main context structure for the OIDC service
  */
+#include "oidc_clients.h"
+#include "oidc_keys.h"
+#include "oidc_tokens.h"
+#include "oidc_users.h"
+#include "oidc_auth_codes.h"
+#include "oidc_refresh_tokens.h"
+#include "oidc_pkce.h"
+
 typedef struct {
     OIDCConfig config;              // OIDC configuration
     bool initialized;               // Whether the service is initialized
@@ -26,12 +34,10 @@ typedef struct {
     void *token_context;            // Token service context
     void *user_context;             // User management context
     void *client_context;           // Client registry context
-    void *data_context;             // Data storage context
+    OIDCAuthCodeStore *auth_code_store; // Authorization codes (in-memory)
+    OIDCRefreshStore *refresh_store;    // Refresh tokens (in-memory)
+    char *database_name;            // Accounts DB name for resource-owner auth
 } OIDCContext;
-#include "oidc_clients.h"
-#include "oidc_keys.h"
-#include "oidc_tokens.h"
-#include "oidc_users.h"
 
 /*
  * Client Registry Management Functions
@@ -102,20 +108,65 @@ void shutdown_oidc_service(void);
 // Get the global OIDC context
 OIDCContext* get_oidc_context(void);
 
-// Process an authorization request
-char* oidc_process_authorization_request(const char *client_id, const char *redirect_uri, 
-                                        const char *response_type, const char *scope, 
-                                        const char *state, const char *nonce, 
+/*
+ * Issue an authorization code after client + resource-owner authentication.
+ * Returns plaintext code (caller frees) or NULL on failure.
+ * error_code receives a short OAuth error token when non-NULL and failure.
+ */
+char* oidc_issue_authorization_code(const char *client_id,
+                                    const char *redirect_uri,
+                                    const char *scope,
+                                    const char *nonce,
+                                    const char *code_challenge,
+                                    const char *code_challenge_method,
+                                    int account_id,
+                                    const char **error_code);
+
+/* Authenticate resource owner via accounts + QueryRef #012 path. */
+bool oidc_authenticate_resource_owner(const char *login_id,
+                                      const char *password,
+                                      int *account_id_out);
+
+/* Resolve DB name used for IdP resource-owner auth. */
+const char* oidc_get_accounts_database(void);
+
+// Legacy wrapper — prefer oidc_issue_authorization_code after login
+char* oidc_process_authorization_request(const char *client_id, const char *redirect_uri,
+                                        const char *response_type, const char *scope,
+                                        const char *state, const char *nonce,
                                         const char *code_challenge, const char *code_challenge_method);
 
-// Process a token request
-char* oidc_process_token_request(const char *grant_type, const char *code, 
-                                const char *redirect_uri, const char *client_id, 
-                                const char *client_secret, const char *refresh_token, 
+// Process a token request (returns JSON success or OAuth error object; caller frees)
+char* oidc_process_token_request(const char *grant_type, const char *code,
+                                const char *redirect_uri, const char *client_id,
+                                const char *client_secret, const char *refresh_token,
                                 const char *code_verifier);
 
-// Process a userinfo request
+/* Build OAuth token-endpoint error JSON (caller frees). */
+char* oidc_token_error_json(const char *error, const char *description);
+
+bool oidc_client_allows_refresh(const OIDCClient *client);
+bool oidc_should_issue_refresh(const OIDCClient *client, const char *scope);
+char* oidc_build_token_response_json(const char *access_token,
+                                     const char *id_token,
+                                     int expires_in,
+                                     const char *scope,
+                                     const char *refresh_token_or_null);
+char* oidc_mint_token_pair_response(int account_id,
+                                    const char *client_id,
+                                    const char *scope,
+                                    const char *nonce_or_null,
+                                    const char *refresh_plaintext_or_null);
+
+// Process a userinfo request (returns claims JSON or NULL if token invalid)
 char* oidc_process_userinfo_request(const char *access_token);
+
+/* True if space-delimited scope list contains needle. */
+bool oidc_scope_has(const char *scope, const char *needle);
+
+char* oidc_inactive_json(void);
+char* oidc_introspect_access_json(const OIDCTokenClaims *claims, const char *client_id);
+char* oidc_introspect_refresh_json(const OIDCRefreshRecord *rec, const char *client_id);
 
 // Process a token introspection request
 char* oidc_process_introspection_request(const char *token, const char *token_type_hint, 

@@ -37,6 +37,9 @@
 //@ swagger:response 401 application/json {"type":"object","properties":{"error":{"type":"string","example":"invalid_token"},"error_description":{"type":"string","example":"The access token is invalid"}}}
 //@ swagger:response 403 application/json {"type":"object","properties":{"error":{"type":"string","example":"insufficient_scope"},"error_description":{"type":"string","example":"The access token does not have the required scopes"}}}
 enum MHD_Result handle_oidc_userinfo_endpoint(struct MHD_Connection *connection,
-                                         const char *method);
+                                          const char *method);
+
+enum MHD_Result oidc_userinfo_send_unauthorized(struct MHD_Connection *connection,
+                                                const char *description);
 
 #endif /* HYDROGEN_OIDC_USERINFO_H */
