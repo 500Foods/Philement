@@ -60,19 +60,21 @@ enum MHD_Result handle_oidc_revocation_endpoint(struct MHD_Connection *connectio
                                    MHD_HTTP_UNAUTHORIZED);
     }
     
-    // Process the revocation request
+    // Process the revocation request (false = auth failure or service down)
     bool revocation_result = oidc_process_revocation_request(
         token, token_type_hint, client_id, client_secret);
-    
-    // RFC 7009 requires a 200 OK response with an empty body for successful revocation
+
+    free(client_id);
+    free(client_secret);
+
+    // RFC 7009: 200 OK empty body when request accepted (including unknown tokens)
     if (revocation_result) {
         struct MHD_Response *response = MHD_create_response_from_buffer(0, (void*)"", MHD_RESPMEM_PERSISTENT);
         enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
         MHD_destroy_response(response);
         return ret;
-    } else {
-        return send_oidc_json_response(connection, 
-                                   "{\"error\":\"server_error\",\"error_description\":\"Failed to process revocation request\"}",
-                                   MHD_HTTP_INTERNAL_SERVER_ERROR);
     }
+    return send_oidc_json_response(connection,
+                               "{\"error\":\"invalid_client\",\"error_description\":\"Client authentication failed\"}",
+                               MHD_HTTP_UNAUTHORIZED);
 }

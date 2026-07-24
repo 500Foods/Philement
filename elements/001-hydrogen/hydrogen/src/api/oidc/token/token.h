@@ -50,7 +50,15 @@
 enum MHD_Result handle_oidc_token_endpoint(struct MHD_Connection *connection,
                                        const char *method,
                                        const char *upload_data,
-                                       const size_t *upload_data_size,
+                                       size_t *upload_data_size,
                                        void **con_cls);
+
+/* Helpers (non-static for Unity) */
+char* oidc_token_form_get(const char *body, const char *key);
+void oidc_token_merge_strdup(char **dest, const char *src);
+void oidc_token_free_params(char *grant_type, char *code, char *redirect_uri,
+                            char *client_id, char *client_secret,
+                            char *refresh_token, char *code_verifier);
+unsigned int oidc_token_http_status_for_json(const char *json);
 
 #endif /* HYDROGEN_OIDC_TOKEN_H */

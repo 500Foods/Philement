@@ -155,21 +155,30 @@ LaunchReadiness check_oidc_launch_readiness(void) {
         return (LaunchReadiness){ .subsystem = SR_OIDC, .ready = true, .messages = messages };
     }
 
-    // Validate core settings using helper functions
+    // Validate core settings (IdP: issuer required; ClientId/RedirectUri optional seed)
     validate_oidc_issuer(app_config->oidc.issuer, &messages, &count, &capacity, &ready);
 
-    if (!app_config->oidc.client_id || strlen(app_config->oidc.client_id) == 0) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   OIDC client_id is required"));
-        ready = false;
+    /* Config client seed is optional. If ClientId is set, RedirectUri is required.
+     * ClientSecret is optional (public client when absent). */
+    if (app_config->oidc.client_id && strlen(app_config->oidc.client_id) > 0) {
+        if (!app_config->oidc.redirect_uri || strlen(app_config->oidc.redirect_uri) == 0) {
+            add_launch_message(&messages, &count, &capacity,
+                strdup("  No-Go:   OIDC RedirectUri required when ClientId is set (config seed)"));
+            ready = false;
+        } else {
+            validate_oidc_redirect_uri(app_config->oidc.redirect_uri, &messages, &count, &capacity, &ready);
+            add_launch_message(&messages, &count, &capacity,
+                strdup("  Go:      Config client seed ClientId/RedirectUri present"));
+        }
+    } else {
+        add_launch_message(&messages, &count, &capacity,
+            strdup("  Go:      No config client seed (registry/DB clients only)"));
     }
 
-    if (!app_config->oidc.client_secret || strlen(app_config->oidc.client_secret) == 0) {
-        add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   OIDC client_secret is required"));
-        ready = false;
+    /* OIDC.Port is legacy; endpoints ride the WebServer. Soft-check only. */
+    if (app_config->oidc.port > 0) {
+        validate_oidc_port(app_config->oidc.port, &messages, &count, &capacity, &ready);
     }
-
-    validate_oidc_redirect_uri(app_config->oidc.redirect_uri, &messages, &count, &capacity, &ready);
-    validate_oidc_port(app_config->oidc.port, &messages, &count, &capacity, &ready);
 
     if (ready) {
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Core settings valid"));

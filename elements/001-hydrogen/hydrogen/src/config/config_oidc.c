@@ -76,6 +76,7 @@ bool load_oidc_config(json_t* root, AppConfig* config) {
         success = success && PROCESS_STRING(root, oidc, client_id, "OIDC.ClientId", "OIDC");
         success = success && PROCESS_SENSITIVE(root, oidc, client_secret, "OIDC.ClientSecret", "OIDC");
         success = success && PROCESS_STRING(root, oidc, redirect_uri, "OIDC.RedirectUri", "OIDC");
+        success = success && PROCESS_STRING(root, oidc, database, "OIDC.Database", "OIDC");
         success = success && PROCESS_INT(root, oidc, port, "OIDC.Port", "OIDC");
         success = success && PROCESS_STRING(root, oidc, auth_method, "OIDC.AuthMethod", "OIDC");
         success = success && PROCESS_STRING(root, oidc, scope, "OIDC.Scope", "OIDC");
@@ -152,6 +153,7 @@ void cleanup_oidc_config(OIDCConfig* config) {
     free(config->client_id);
     free(config->client_secret);
     free(config->redirect_uri);
+    free(config->database);
     free(config->auth_method);
     free(config->scope);
 
@@ -192,6 +194,7 @@ void dump_oidc_config(const OIDCConfig* config) {
     DUMP_STRING("――――Client ID", config->client_id);
     DUMP_SECRET("――――Client Secret", config->client_secret);
     DUMP_STRING("――――Redirect URI", config->redirect_uri);
+    DUMP_STRING("――――Database", config->database);
     DUMP_INT("――――Port", config->port);
     DUMP_STRING("――――Auth Method", config->auth_method);
     DUMP_STRING("――――Scope", config->scope);

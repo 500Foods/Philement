@@ -10,8 +10,13 @@
 
 // Local includes
 #include "oidc_service.h"
+#include "token/token.h"
 #include <src/oidc/oidc_service.h>
 #include <src/webserver/web_server_core.h>
+#include <src/utils/utils_crypto.h>
+
+#include <openssl/evp.h>
+#include <strings.h>
 
 // Global OIDC context pointer
 static OIDCContext *g_oidc_context = NULL;
@@ -280,84 +285,149 @@ bool extract_token_request_params(struct MHD_Connection *connection,
                               char **grant_type, char **code, char **redirect_uri,
                               char **client_id, char **client_secret,
                               char **refresh_token, char **code_verifier) {
-    /* Mark unused parameters */
-    (void)upload_data;
-    (void)upload_data_size;
-    // This is a stub implementation that just extracts the parameters
-    // from the request POST data
-    const char *value;
-    
-    value = MHD_lookup_connection_value(connection, MHD_POSTDATA_KIND, "grant_type");
-    *grant_type = value ? strdup(value) : NULL;
-    
-    value = MHD_lookup_connection_value(connection, MHD_POSTDATA_KIND, "code");
-    *code = value ? strdup(value) : NULL;
-    
-    value = MHD_lookup_connection_value(connection, MHD_POSTDATA_KIND, "redirect_uri");
-    *redirect_uri = value ? strdup(value) : NULL;
-    
-    value = MHD_lookup_connection_value(connection, MHD_POSTDATA_KIND, "client_id");
-    *client_id = value ? strdup(value) : NULL;
-    
-    value = MHD_lookup_connection_value(connection, MHD_POSTDATA_KIND, "client_secret");
-    *client_secret = value ? strdup(value) : NULL;
-    
-    value = MHD_lookup_connection_value(connection, MHD_POSTDATA_KIND, "refresh_token");
-    *refresh_token = value ? strdup(value) : NULL;
-    
-    value = MHD_lookup_connection_value(connection, MHD_POSTDATA_KIND, "code_verifier");
-    *code_verifier = value ? strdup(value) : NULL;
-    
-    // Also try to extract client credentials from Authorization header
+    if (!grant_type || !code || !redirect_uri || !client_id || !client_secret ||
+        !refresh_token || !code_verifier) {
+        return false;
+    }
+
+    *grant_type = NULL;
+    *code = NULL;
+    *redirect_uri = NULL;
+    *client_id = NULL;
+    *client_secret = NULL;
+    *refresh_token = NULL;
+    *code_verifier = NULL;
+
+    /* Prefer application/x-www-form-urlencoded body (token handler buffers this). */
+    if (upload_data && upload_data_size > 0U) {
+        char *body = (char*)malloc(upload_data_size + 1U);
+        if (body) {
+            memcpy(body, upload_data, upload_data_size);
+            body[upload_data_size] = '\0';
+            *grant_type = oidc_token_form_get(body, "grant_type");
+            *code = oidc_token_form_get(body, "code");
+            *redirect_uri = oidc_token_form_get(body, "redirect_uri");
+            *client_id = oidc_token_form_get(body, "client_id");
+            *client_secret = oidc_token_form_get(body, "client_secret");
+            *refresh_token = oidc_token_form_get(body, "refresh_token");
+            *code_verifier = oidc_token_form_get(body, "code_verifier");
+            free(body);
+        }
+    }
+
     if (!*client_id || !*client_secret) {
         char *auth_client_id = NULL;
         char *auth_client_secret = NULL;
-        extract_client_credentials(connection, &auth_client_id, &auth_client_secret);
-        if (!*client_id) {
-            *client_id = auth_client_id;
-        } else {
-            free(auth_client_id);
+        if (extract_client_credentials(connection, &auth_client_id, &auth_client_secret)) {
+            if (!*client_id) {
+                *client_id = auth_client_id;
+                auth_client_id = NULL;
+            }
+            if (!*client_secret) {
+                *client_secret = auth_client_secret;
+                auth_client_secret = NULL;
+            }
         }
-
-        if (!*client_secret) {
-            *client_secret = auth_client_secret;
-        } else {
-            free(auth_client_secret);
-        }
+        free(auth_client_id);
+        free(auth_client_secret);
     }
-    
-    // Validate required parameters based on grant type
+
     if (!*grant_type) {
         return false;
     }
-    
+
     if (strcmp(*grant_type, "authorization_code") == 0) {
-        return (*code != NULL && *redirect_uri != NULL);
-    } else if (strcmp(*grant_type, "refresh_token") == 0) {
+        return (*code != NULL && *redirect_uri != NULL && *code_verifier != NULL);
+    }
+    if (strcmp(*grant_type, "refresh_token") == 0) {
         return (*refresh_token != NULL);
-    } else if (strcmp(*grant_type, "client_credentials") == 0) {
+    }
+    if (strcmp(*grant_type, "client_credentials") == 0) {
         return (*client_id != NULL && *client_secret != NULL);
     }
-    
+
     return false;
 }
 
 /**
- * Extract client credentials from Basic Auth header
- * 
- * @param connection The MHD connection
- * @param client_id Output parameter for client_id
- * @param client_secret Output parameter for client_secret
- * @return true if extraction successful, false otherwise
+ * Extract client credentials from Basic Auth header (RFC 6749 §2.3.1).
+ * Does not invent credentials when header is absent.
  */
 bool extract_client_credentials(struct MHD_Connection *connection,
                             char **client_id, char **client_secret) {
-    /* Mark unused parameters */
-    (void)connection;
-    // This is a stub implementation that always succeeds with default credentials
-    *client_id = strdup("test_client_id");
-    *client_secret = strdup("test_client_secret");
-    
+    if (!client_id || !client_secret) {
+        return false;
+    }
+    *client_id = NULL;
+    *client_secret = NULL;
+    if (!connection) {
+        return false;
+    }
+
+    const char *auth = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Authorization");
+    if (!auth) {
+        return false;
+    }
+
+    /* Case-insensitive "Basic " prefix */
+    if (strncasecmp(auth, "Basic ", 6) != 0) {
+        return false;
+    }
+    const char *b64 = auth + 6;
+    while (*b64 == ' ') {
+        b64++;
+    }
+    if (*b64 == '\0') {
+        return false;
+    }
+
+    /* HTTP Basic uses standard base64 (+/), not base64url. */
+    size_t in_len = strlen(b64);
+    size_t out_cap = (in_len / 4U) * 3U + 4U;
+    unsigned char *decoded = (unsigned char*)malloc(out_cap);
+    if (!decoded) {
+        return false;
+    }
+    int n = EVP_DecodeBlock(decoded, (const unsigned char*)b64, (int)in_len);
+    if (n < 0) {
+        free(decoded);
+        return false;
+    }
+    size_t pad = 0;
+    if (in_len > 0U && b64[in_len - 1U] == '=') {
+        pad++;
+    }
+    if (in_len > 1U && b64[in_len - 2U] == '=') {
+        pad++;
+    }
+    size_t decoded_len = (size_t)n > pad ? (size_t)n - pad : 0U;
+
+    char *pair = (char*)malloc(decoded_len + 1U);
+    if (!pair) {
+        free(decoded);
+        return false;
+    }
+    memcpy(pair, decoded, decoded_len);
+    pair[decoded_len] = '\0';
+    free(decoded);
+
+    char *colon = strchr(pair, ':');
+    if (!colon) {
+        free(pair);
+        return false;
+    }
+    *colon = '\0';
+    *client_id = strdup(pair);
+    *client_secret = strdup(colon + 1);
+    free(pair);
+
+    if (!*client_id || !*client_secret) {
+        free(*client_id);
+        free(*client_secret);
+        *client_id = NULL;
+        *client_secret = NULL;
+        return false;
+    }
     return true;
 }
 

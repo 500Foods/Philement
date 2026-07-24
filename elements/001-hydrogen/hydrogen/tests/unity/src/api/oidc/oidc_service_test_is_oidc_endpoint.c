@@ -31,6 +31,10 @@ void test_is_oidc_endpoint_known_paths(void) {
     TEST_ASSERT_TRUE(is_oidc_endpoint("/oauth/authorize"));
     TEST_ASSERT_TRUE(is_oidc_endpoint("/oauth/token"));
     TEST_ASSERT_TRUE(is_oidc_endpoint("/oauth/userinfo"));
+    TEST_ASSERT_TRUE(is_oidc_endpoint("/oauth/introspect"));
+    TEST_ASSERT_TRUE(is_oidc_endpoint("/oauth/revoke"));
+    TEST_ASSERT_TRUE(is_oidc_endpoint("/oauth/register"));
+    TEST_ASSERT_TRUE(is_oidc_endpoint("/oauth/end-session"));
 }
 
 void test_is_oidc_endpoint_unknown(void) {

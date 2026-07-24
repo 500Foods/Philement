@@ -54,14 +54,15 @@ typedef struct OIDCTokensConfig {
 typedef struct OIDCConfig {
     bool enabled;                // Whether OIDC is enabled
     char* issuer;               // Identity provider URL
-    char* client_id;            // Client identifier
-    char* client_secret;        // Client secret
-    char* redirect_uri;         // Redirect URI for auth code flow
+    char* client_id;            // Client identifier (legacy RP leftover)
+    char* client_secret;        // Client secret (legacy RP leftover)
+    char* redirect_uri;         // Redirect URI (legacy RP leftover)
+    char* database;             // Accounts database name for resource owners
     int port;                   // Port for OIDC endpoints
     char* auth_method;          // Token endpoint auth method
     char* scope;                // Default scope for requests
     bool verify_ssl;            // Whether to verify SSL certificates
-    
+
     // Sub-configurations
     OIDCEndpointsConfig endpoints;  // Endpoint configurations
     OIDCKeysConfig keys;            // Key configurations

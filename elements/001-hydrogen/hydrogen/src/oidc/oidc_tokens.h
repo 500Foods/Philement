@@ -245,6 +245,17 @@ OIDCTokenClaims* oidc_parse_jwt(const char *token);
  * @param key Key to use for signing
  * @return JWT string (caller must free)
  */
-char* oidc_create_jwt(OIDCTokenContext *context, OIDCTokenClaims *claims, OIDCKey *key);
+char* oidc_create_jwt(OIDCTokenContext *context, const OIDCTokenClaims *claims, OIDCKey *key);
+
+/* Internal helpers (non-static for Unity) */
+char* oidc_token_build_header_json(const char *kid);
+char* oidc_token_build_payload_json(const OIDCTokenClaims *claims, bool is_id_token);
+char* oidc_token_sign_compact(OIDCKey *key, const char *header_json, const char *payload_json);
+void oidc_token_apply_lifetime(OIDCTokenClaims *claims, int lifetime_seconds);
+bool oidc_token_split_compact(const char *jwt,
+                              char **header_b64_out,
+                              char **payload_b64_out,
+                              char **sig_b64_out);
+OIDCTokenClaims* oidc_claims_from_payload_json(const char *payload_json);
 
 #endif // OIDC_TOKENS_H

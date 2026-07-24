@@ -160,52 +160,60 @@ void test_oidc_invalid_issuer_url_format(void) {
     TEST_ASSERT_NOT_NULL(result.messages);
 }
 
-// Test 5: NULL client_id
+// Test 5: NULL client_id — IdP no longer hard-requires ClientId
 void test_oidc_null_client_id(void) {
     setup_minimal_valid_oidc_config();
     free(app_config->oidc.client_id);
     app_config->oidc.client_id = NULL;
-    
+
     LaunchReadiness result = check_oidc_launch_readiness();
-    
-    TEST_ASSERT_FALSE(result.ready);
     TEST_ASSERT_NOT_NULL(result.messages);
+    size_t i;
+    for (i = 0; result.messages[i] != NULL; i++) {
+        TEST_ASSERT_NULL(strstr(result.messages[i], "client_id is required"));
+    }
 }
 
-// Test 6: Empty client_id
+// Test 6: Empty client_id — IdP no longer hard-requires ClientId
 void test_oidc_empty_client_id(void) {
     setup_minimal_valid_oidc_config();
     free(app_config->oidc.client_id);
     app_config->oidc.client_id = strdup("");
-    
+
     LaunchReadiness result = check_oidc_launch_readiness();
-    
-    TEST_ASSERT_FALSE(result.ready);
     TEST_ASSERT_NOT_NULL(result.messages);
+    size_t i;
+    for (i = 0; result.messages[i] != NULL; i++) {
+        TEST_ASSERT_NULL(strstr(result.messages[i], "client_id is required"));
+    }
 }
 
-// Test 7: NULL client_secret
+// Test 7: NULL client_secret — public config seed OK (no hard fail)
 void test_oidc_null_client_secret(void) {
     setup_minimal_valid_oidc_config();
     free(app_config->oidc.client_secret);
     app_config->oidc.client_secret = NULL;
-    
+
     LaunchReadiness result = check_oidc_launch_readiness();
-    
-    TEST_ASSERT_FALSE(result.ready);
     TEST_ASSERT_NOT_NULL(result.messages);
+    size_t i;
+    for (i = 0; result.messages[i] != NULL; i++) {
+        TEST_ASSERT_NULL(strstr(result.messages[i], "client_secret is required"));
+    }
 }
 
-// Test 8: Empty client_secret
+// Test 8: Empty client_secret — public config seed OK
 void test_oidc_empty_client_secret(void) {
     setup_minimal_valid_oidc_config();
     free(app_config->oidc.client_secret);
     app_config->oidc.client_secret = strdup("");
-    
+
     LaunchReadiness result = check_oidc_launch_readiness();
-    
-    TEST_ASSERT_FALSE(result.ready);
     TEST_ASSERT_NOT_NULL(result.messages);
+    size_t i;
+    for (i = 0; result.messages[i] != NULL; i++) {
+        TEST_ASSERT_NULL(strstr(result.messages[i], "client_secret is required"));
+    }
 }
 
 // Test 9: Empty redirect_uri

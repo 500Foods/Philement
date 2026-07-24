@@ -60,18 +60,21 @@ enum MHD_Result handle_oidc_introspection_endpoint(struct MHD_Connection *connec
                                    MHD_HTTP_UNAUTHORIZED);
     }
     
-    // Process the introspection request
+    // Process the introspection request (NULL = auth failure or service down)
     char *introspection_response = oidc_process_introspection_request(
         token, token_type_hint, client_id, client_secret);
-    
+
+    free(client_id);
+    free(client_secret);
+
     if (!introspection_response) {
-        return send_oidc_json_response(connection, 
-                                   "{\"error\":\"server_error\",\"error_description\":\"Failed to process introspection request\"}",
-                                   MHD_HTTP_INTERNAL_SERVER_ERROR);
+        return send_oidc_json_response(connection,
+                                   "{\"error\":\"invalid_client\",\"error_description\":\"Client authentication failed\"}",
+                                   MHD_HTTP_UNAUTHORIZED);
     }
-    
+
     enum MHD_Result ret = send_oidc_json_response(connection, introspection_response, MHD_HTTP_OK);
     free(introspection_response);
-    
+
     return ret;
 }
