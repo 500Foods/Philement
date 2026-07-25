@@ -25,15 +25,14 @@ void test_database_submit_query_null_parameters(void);
 void test_database_submit_query_empty_database_name(void);
 void test_database_submit_query_empty_query_template(void);
 void test_database_submit_query_uninitialized_subsystem(void);
+void test_database_submit_query_no_queue_manager(void);
 
 void setUp(void) {
-    // Set up test fixtures, if any
-    // Initialize database subsystem for testing
     database_subsystem_init();
+    database_queue_system_init();
 }
 
 void tearDown(void) {
-    // Clean up test fixtures, if any
     database_subsystem_shutdown();
 }
 
@@ -81,6 +80,13 @@ void test_database_submit_query_uninitialized_subsystem(void) {
     TEST_ASSERT_FALSE(result);
 }
 
+// Test: subsystem initialized but queue manager destroyed (global_queue_manager is NULL)
+void test_database_submit_query_no_queue_manager(void) {
+    database_queue_system_destroy(); // Destroy queue manager but keep subsystem
+    bool result = database_submit_query("test_db", "query_123", "SELECT * FROM test_table", "{}", 0);
+    TEST_ASSERT_FALSE(result);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -91,6 +97,7 @@ int main(void) {
     RUN_TEST(test_database_submit_query_empty_database_name);
     RUN_TEST(test_database_submit_query_empty_query_template);
     RUN_TEST(test_database_submit_query_uninitialized_subsystem);
+    RUN_TEST(test_database_submit_query_no_queue_manager);
 
     return UNITY_END();
 }

@@ -9,6 +9,11 @@
 
 // Include necessary headers for the module being tested
 #include <src/database/database.h>
+#include <src/database/database_pending.h>
+
+// Include mock system header for malloc failure testing
+#define USE_MOCK_SYSTEM
+#include <unity/mocks/mock_system.h>
 
 // Forward declarations for functions being tested
 size_t database_cleanup_old_results(time_t max_age_seconds);
@@ -18,43 +23,44 @@ void test_database_cleanup_old_results_basic_functionality(void);
 void test_database_cleanup_old_results_zero_age(void);
 void test_database_cleanup_old_results_large_age(void);
 void test_database_cleanup_old_results_uninitialized_subsystem(void);
+void test_database_cleanup_old_results_no_manager(void);
 
 void setUp(void) {
-    // Set up test fixtures, if any
-    // Initialize database subsystem for testing
     database_subsystem_init();
 }
 
 void tearDown(void) {
-    // Clean up test fixtures, if any
     database_subsystem_shutdown();
+    mock_system_reset_all();
 }
 
 // Test database_cleanup_old_results function
 void test_database_cleanup_old_results_basic_functionality(void) {
-    // Test basic functionality with valid max_age_seconds
-    database_cleanup_old_results(3600); // 1 hour
-    // Function returns void, so we just ensure it doesn't crash
+    database_cleanup_old_results(3600);
     TEST_PASS();
 }
 
 void test_database_cleanup_old_results_zero_age(void) {
-    // Test with zero max_age_seconds
     database_cleanup_old_results(0);
     TEST_PASS();
 }
 
 void test_database_cleanup_old_results_large_age(void) {
-    // Test with large max_age_seconds
-    database_cleanup_old_results(31536000); // 1 year
+    database_cleanup_old_results(31536000);
     TEST_PASS();
 }
 
 void test_database_cleanup_old_results_uninitialized_subsystem(void) {
-    // Test with uninitialized subsystem
-    database_subsystem_shutdown(); // Ensure subsystem is not initialized
+    database_subsystem_shutdown();
     database_cleanup_old_results(3600);
-    TEST_PASS(); // Should not crash even with uninitialized subsystem
+    TEST_PASS();
+}
+
+// Test: get_pending_result_manager() returns NULL (malloc failure)
+void test_database_cleanup_old_results_no_manager(void) {
+    mock_system_set_malloc_failure(1);
+    size_t result = database_cleanup_old_results(3600);
+    TEST_ASSERT_EQUAL(0, result);
 }
 
 int main(void) {
@@ -64,6 +70,7 @@ int main(void) {
     RUN_TEST(test_database_cleanup_old_results_zero_age);
     RUN_TEST(test_database_cleanup_old_results_large_age);
     RUN_TEST(test_database_cleanup_old_results_uninitialized_subsystem);
+    RUN_TEST(test_database_cleanup_old_results_no_manager);
 
     return UNITY_END();
 }
