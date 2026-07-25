@@ -1,0 +1,481 @@
+        -:    0:Source:/mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/src/api/oidc/authorization/authorization.c
+        -:    0:Graph:build/coverage/src/api/oidc/authorization/authorization.gcno
+        -:    0:Data:build/coverage/src/api/oidc/authorization/authorization.gcda
+        -:    0:Runs:116
+        -:    1:/*
+        -:    2: * OIDC Authorization Endpoint Implementation
+        -:    3: *
+        -:    4: * GET  /oauth/authorize — validate params, show login form
+        -:    5: * POST /oauth/authorize — authenticate resource owner, issue code, redirect
+        -:    6: */
+        -:    7:
+        -:    8:#include <src/hydrogen.h>
+        -:    9:#include <src/api/oidc/oidc_service.h>
+        -:   10:#include <src/oidc/oidc_service.h>
+        -:   11:#include <src/oidc/oidc_clients.h>
+        -:   12:#include <src/oidc/oidc_pkce.h>
+        -:   13:#include <src/api/api_utils.h>
+        -:   14:#include <src/api/auth/auth_service.h>
+        -:   15:
+        -:   16:#include "authorization.h"
+        -:   17:
+        -:   18:#include <stdio.h>
+        -:   19:#include <string.h>
+        -:   20:#include <time.h>
+        -:   21:
+        -:   22:enum MHD_Result oidc_auth_send_html(struct MHD_Connection *connection,
+        -:   23:                                    const char *html, unsigned int status);
+        -:   24:enum MHD_Result oidc_auth_send_redirect(struct MHD_Connection *connection,
+        -:   25:                                        const char *location);
+        -:   26:char* oidc_auth_build_login_html(const char *client_id, const char *redirect_uri,
+        -:   27:                                 const char *response_type, const char *scope,
+        -:   28:                                 const char *state, const char *nonce,
+        -:   29:                                 const char *code_challenge,
+        -:   30:                                 const char *code_challenge_method,
+        -:   31:                                 const char *error_msg);
+        -:   32:void oidc_auth_free_params(char *client_id, char *redirect_uri, char *response_type,
+        -:   33:                           char *scope, char *state, char *nonce,
+        -:   34:                           char *code_challenge, char *code_challenge_method);
+        -:   35:bool oidc_auth_params_valid_for_code(const char *client_id, const char *redirect_uri,
+        -:   36:                                     const char *response_type,
+        -:   37:                                     const char *scope,
+        -:   38:                                     const char *state,
+        -:   39:                                     const char *nonce,
+        -:   40:                                     const char *code_challenge,
+        -:   41:                                     const char *code_challenge_method,
+        -:   42:                                     const char **error_out);
+        -:   43:/* Safe redirect target only when client_id + redirect_uri are registered. */
+        -:   44:const char *oidc_auth_safe_error_redirect(const char *client_id, const char *redirect_uri);
+        -:   45:
+    #####:   46:enum MHD_Result oidc_auth_send_html(struct MHD_Connection *connection,
+        -:   47:                                    const char *html, unsigned int status) {
+    #####:   48:    if (!html) {
+    #####:   49:        return MHD_NO;
+        -:   50:    }
+    #####:   51:    struct MHD_Response *response = MHD_create_response_from_buffer(
+        -:   52:        strlen(html), (void*)html, MHD_RESPMEM_MUST_COPY);
+    #####:   53:    MHD_add_response_header(response, "Content-Type", "text/html; charset=utf-8");
+    #####:   54:    add_oidc_cors_headers(response);
+    #####:   55:    enum MHD_Result ret = MHD_queue_response(connection, status, response);
+    #####:   56:    MHD_destroy_response(response);
+    #####:   57:    return ret;
+        -:   58:}
+        -:   59:
+        7:   60:enum MHD_Result oidc_auth_send_redirect(struct MHD_Connection *connection,
+        -:   61:                                        const char *location) {
+        7:   62:    if (!location) {
+    #####:   63:        return MHD_NO;
+        -:   64:    }
+        7:   65:    struct MHD_Response *response = MHD_create_response_from_buffer(0, (void*)"", MHD_RESPMEM_PERSISTENT);
+        7:   66:    MHD_add_response_header(response, "Location", location);
+        7:   67:    add_oidc_cors_headers(response);
+        7:   68:    enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_FOUND, response);
+        7:   69:    MHD_destroy_response(response);
+        7:   70:    return ret;
+        -:   71:}
+        -:   72:
+       42:   73:void oidc_auth_free_params(char *client_id, char *redirect_uri, char *response_type,
+        -:   74:                           char *scope, char *state, char *nonce,
+        -:   75:                           char *code_challenge, char *code_challenge_method) {
+       42:   76:    free(client_id);
+       42:   77:    free(redirect_uri);
+       42:   78:    free(response_type);
+       42:   79:    free(scope);
+       42:   80:    free(state);
+       42:   81:    free(nonce);
+       42:   82:    free(code_challenge);
+       42:   83:    free(code_challenge_method);
+       42:   84:}
+        -:   85:
+       35:   86:const char *oidc_auth_safe_error_redirect(const char *client_id, const char *redirect_uri) {
+       35:   87:    if (!client_id || !redirect_uri || !oidc_redirect_uri_scheme_allowed(redirect_uri)) {
+       14:   88:        return NULL;
+        -:   89:    }
+       21:   90:    OIDCContext *ctx = get_oidc_context();
+       21:   91:    if (!ctx || !ctx->client_context) {
+    #####:   92:        return NULL;
+        -:   93:    }
+       21:   94:    if (!oidc_validate_client((OIDCClientContext *)ctx->client_context, client_id, redirect_uri)) {
+        7:   95:        return NULL;
+        -:   96:    }
+       14:   97:    return redirect_uri;
+        -:   98:}
+        -:   99:
+       42:  100:bool oidc_auth_params_valid_for_code(const char *client_id, const char *redirect_uri,
+        -:  101:                                     const char *response_type,
+        -:  102:                                     const char *scope,
+        -:  103:                                     const char *state,
+        -:  104:                                     const char *nonce,
+        -:  105:                                     const char *code_challenge,
+        -:  106:                                     const char *code_challenge_method,
+        -:  107:                                     const char **error_out) {
+       42:  108:    if (!client_id || !redirect_uri || !response_type) {
+        7:  109:        if (error_out) {
+        7:  110:            *error_out = "invalid_request";
+        -:  111:        }
+        7:  112:        return false;
+        -:  113:    }
+       35:  114:    if (!oidc_redirect_uri_scheme_allowed(redirect_uri)) {
+        7:  115:        if (error_out) {
+        7:  116:            *error_out = "invalid_request";
+        -:  117:        }
+        7:  118:        return false;
+        -:  119:    }
+       28:  120:    if (strcmp(response_type, "code") != 0) {
+    #####:  121:        if (error_out) {
+    #####:  122:            *error_out = "unsupported_response_type";
+        -:  123:        }
+    #####:  124:        return false;
+        -:  125:    }
+        -:  126:    /* CSRF: state required for all authorize requests. */
+       28:  127:    if (!state || state[0] == '\0') {
+        7:  128:        if (error_out) {
+        7:  129:            *error_out = "invalid_request";
+        -:  130:        }
+        7:  131:        return false;
+        -:  132:    }
+        -:  133:    /* OIDC: nonce required when openid scope is present (default scope is openid). */
+        -:  134:    {
+      21*:  135:        const char *use_scope = (scope && scope[0] != '\0') ? scope : "openid";
+       21:  136:        if (oidc_scope_has(use_scope, "openid") && (!nonce || nonce[0] == '\0')) {
+        7:  137:            if (error_out) {
+        7:  138:                *error_out = "invalid_request";
+        -:  139:            }
+        7:  140:            return false;
+        -:  141:        }
+        -:  142:    }
+        -:  143:    /* PKCE: S256 only; plain rejected (oidc_pkce_method_is_s256). */
+       14:  144:    if (!code_challenge || !oidc_pkce_method_is_s256(code_challenge_method)) {
+    #####:  145:        if (error_out) {
+    #####:  146:            *error_out = "invalid_request";
+        -:  147:        }
+    #####:  148:        return false;
+        -:  149:    }
+        -:  150:
+       14:  151:    OIDCContext *ctx = get_oidc_context();
+       14:  152:    if (!ctx || !ctx->client_context) {
+    #####:  153:        if (error_out) {
+    #####:  154:            *error_out = "server_error";
+        -:  155:        }
+    #####:  156:        return false;
+        -:  157:    }
+       14:  158:    if (!oidc_validate_client((OIDCClientContext*)ctx->client_context, client_id, redirect_uri)) {
+        7:  159:        if (error_out) {
+        7:  160:            *error_out = "unauthorized_client";
+        -:  161:        }
+        7:  162:        return false;
+        -:  163:    }
+        7:  164:    return true;
+        -:  165:}
+        -:  166:
+    #####:  167:char* oidc_auth_build_login_html(const char *client_id, const char *redirect_uri,
+        -:  168:                                 const char *response_type, const char *scope,
+        -:  169:                                 const char *state, const char *nonce,
+        -:  170:                                 const char *code_challenge,
+        -:  171:                                 const char *code_challenge_method,
+        -:  172:                                 const char *error_msg) {
+    #####:  173:    char *html = NULL;
+    #####:  174:    const char *err = error_msg ? error_msg : "";
+    #####:  175:    if (asprintf(&html,
+        -:  176:        "<!DOCTYPE html><html><head><meta charset=\"utf-8\">"
+        -:  177:        "<title>Sign in</title>"
+        -:  178:        "<style>body{font-family:sans-serif;max-width:28rem;margin:2rem auto;padding:1rem}"
+        -:  179:        "label{display:block;margin-top:.75rem}input{width:100%%;padding:.4rem}"
+        -:  180:        "button{margin-top:1rem;padding:.5rem 1rem}.err{color:#a00}</style></head><body>"
+        -:  181:        "<h1>Sign in</h1>"
+        -:  182:        "<p class=\"err\">%s</p>"
+        -:  183:        "<form method=\"POST\" action=\"/oauth/authorize\">"
+        -:  184:        "<input type=\"hidden\" name=\"client_id\" value=\"%s\">"
+        -:  185:        "<input type=\"hidden\" name=\"redirect_uri\" value=\"%s\">"
+        -:  186:        "<input type=\"hidden\" name=\"response_type\" value=\"%s\">"
+        -:  187:        "<input type=\"hidden\" name=\"scope\" value=\"%s\">"
+        -:  188:        "<input type=\"hidden\" name=\"state\" value=\"%s\">"
+        -:  189:        "<input type=\"hidden\" name=\"nonce\" value=\"%s\">"
+        -:  190:        "<input type=\"hidden\" name=\"code_challenge\" value=\"%s\">"
+        -:  191:        "<input type=\"hidden\" name=\"code_challenge_method\" value=\"%s\">"
+        -:  192:        "<label>Username or email"
+        -:  193:        "<input name=\"username\" type=\"text\" autocomplete=\"username\" required></label>"
+        -:  194:        "<label>Password"
+        -:  195:        "<input name=\"password\" type=\"password\" autocomplete=\"current-password\" required></label>"
+        -:  196:        "<button type=\"submit\">Continue</button>"
+        -:  197:        "</form></body></html>",
+        -:  198:        err,
+        -:  199:        client_id ? client_id : "",
+        -:  200:        redirect_uri ? redirect_uri : "",
+        -:  201:        response_type ? response_type : "code",
+        -:  202:        scope ? scope : "openid",
+        -:  203:        state ? state : "",
+        -:  204:        nonce ? nonce : "",
+        -:  205:        code_challenge ? code_challenge : "",
+        -:  206:        code_challenge_method ? code_challenge_method : "S256") < 0) {
+    #####:  207:        return NULL;
+        -:  208:    }
+    #####:  209:    return html;
+        -:  210:}
+        -:  211:
+        -:  212:char* oidc_auth_form_get(const char *body, const char *key);
+        -:  213:void oidc_auth_merge_strdup(char **dest, const char *src);
+        -:  214:
+      350:  215:char* oidc_auth_form_get(const char *body, const char *key) {
+      350:  216:    if (!body || !key) {
+    #####:  217:        return NULL;
+        -:  218:    }
+      350:  219:    size_t key_len = strlen(key);
+      350:  220:    const char *p = body;
+     2275:  221:    while (p && *p) {
+     1911:  222:        if ((p == body || p[-1] == '&') &&
+     1911:  223:            strncmp(p, key, key_len) == 0 && p[key_len] == '=') {
+      336:  224:            const char *val = p + key_len + 1;
+      336:  225:            const char *end = strchr(val, '&');
+      336:  226:            size_t len = end ? (size_t)(end - val) : strlen(val);
+      336:  227:            char *raw = (char*)malloc(len + 1U);
+      336:  228:            if (!raw) {
+    #####:  229:                return NULL;
+        -:  230:            }
+      336:  231:            memcpy(raw, val, len);
+      336:  232:            raw[len] = '\0';
+      336:  233:            char *decoded = api_url_decode(raw);
+      336:  234:            free(raw);
+      336:  235:            return decoded;
+        -:  236:        }
+     1575:  237:        p = strchr(p, '&');
+     1575:  238:        if (p) {
+     1561:  239:            p++;
+        -:  240:        }
+        -:  241:    }
+       14:  242:    return NULL;
+        -:  243:}
+        -:  244:
+      280:  245:void oidc_auth_merge_strdup(char **dest, const char *src) {
+      280:  246:    if (dest && !*dest && src) {
+      266:  247:        *dest = strdup(src);
+        -:  248:    }
+      280:  249:}
+        -:  250:
+      112:  251:enum MHD_Result handle_oidc_authorization_endpoint(struct MHD_Connection *connection,
+        -:  252:                                             const char *method,
+        -:  253:                                             const char *upload_data,
+        -:  254:                                             size_t *upload_data_size,
+        -:  255:                                             void **con_cls) {
+      112:  256:    log_this(SR_OIDC, "Handling authorization endpoint request", LOG_LEVEL_DEBUG, 0);
+        -:  257:
+      112:  258:    ApiPostBuffer *buffer = NULL;
+      112:  259:    ApiBufferResult buf_result = api_buffer_post_data(method, upload_data, upload_data_size,
+        -:  260:                                                      con_cls, &buffer);
+      112:  261:    if (buf_result == API_BUFFER_CONTINUE) {
+       70:  262:        return MHD_YES;
+        -:  263:    }
+       42:  264:    if (buf_result == API_BUFFER_ERROR) {
+    #####:  265:        return MHD_NO;
+        -:  266:    }
+       42:  267:    if (buf_result == API_BUFFER_METHOD_ERROR) {
+    #####:  268:        return send_oauth_error(connection, "invalid_request", "Method not allowed", NULL, NULL);
+        -:  269:    }
+        -:  270:
+       42:  271:    char *client_id = NULL;
+       42:  272:    char *redirect_uri = NULL;
+       42:  273:    char *response_type = NULL;
+       42:  274:    char *scope = NULL;
+       42:  275:    char *state = NULL;
+       42:  276:    char *nonce = NULL;
+       42:  277:    char *code_challenge = NULL;
+       42:  278:    char *code_challenge_method = NULL;
+       42:  279:    char *username = NULL;
+       42:  280:    char *password = NULL;
+        -:  281:
+       42:  282:    (void)extract_oauth_params(connection, &client_id, &redirect_uri, &response_type,
+        -:  283:                               &scope, &state, &nonce, &code_challenge, &code_challenge_method);
+        -:  284:
+       42:  285:    if (buffer && buffer->data && buffer->size > 0U) {
+       35:  286:        char *body = (char*)malloc(buffer->size + 1U);
+       35:  287:        if (body) {
+       35:  288:            memcpy(body, buffer->data, buffer->size);
+       35:  289:            body[buffer->size] = '\0';
+        -:  290:            char *v;
+       35:  291:            v = oidc_auth_form_get(body, "client_id");
+       35:  292:            oidc_auth_merge_strdup(&client_id, v);
+       35:  293:            free(v);
+       35:  294:            v = oidc_auth_form_get(body, "redirect_uri");
+       35:  295:            oidc_auth_merge_strdup(&redirect_uri, v);
+       35:  296:            free(v);
+       35:  297:            v = oidc_auth_form_get(body, "response_type");
+       35:  298:            oidc_auth_merge_strdup(&response_type, v);
+       35:  299:            free(v);
+       35:  300:            v = oidc_auth_form_get(body, "scope");
+       35:  301:            oidc_auth_merge_strdup(&scope, v);
+       35:  302:            free(v);
+       35:  303:            v = oidc_auth_form_get(body, "state");
+       35:  304:            oidc_auth_merge_strdup(&state, v);
+       35:  305:            free(v);
+       35:  306:            v = oidc_auth_form_get(body, "nonce");
+       35:  307:            oidc_auth_merge_strdup(&nonce, v);
+       35:  308:            free(v);
+       35:  309:            v = oidc_auth_form_get(body, "code_challenge");
+       35:  310:            oidc_auth_merge_strdup(&code_challenge, v);
+       35:  311:            free(v);
+       35:  312:            v = oidc_auth_form_get(body, "code_challenge_method");
+       35:  313:            oidc_auth_merge_strdup(&code_challenge_method, v);
+       35:  314:            free(v);
+       35:  315:            username = oidc_auth_form_get(body, "username");
+       35:  316:            if (!username) {
+    #####:  317:                username = oidc_auth_form_get(body, "login_id");
+        -:  318:            }
+       35:  319:            password = oidc_auth_form_get(body, "password");
+       35:  320:            free(body);
+        -:  321:        }
+        -:  322:    }
+        -:  323:
+       42:  324:    api_free_post_buffer(con_cls);
+        -:  325:
+       42:  326:    const char *param_error = NULL;
+       42:  327:    if (!oidc_auth_params_valid_for_code(client_id, redirect_uri, response_type,
+        -:  328:                                         scope, state, nonce,
+        -:  329:                                         code_challenge, code_challenge_method,
+        -:  330:                                         &param_error)) {
+        -:  331:        /* Never redirect errors to an unvalidated redirect_uri (open redirect). */
+       35:  332:        const char *safe_redir = oidc_auth_safe_error_redirect(client_id, redirect_uri);
+      35*:  333:        enum MHD_Result ret = send_oauth_error(connection,
+       35:  334:                                               param_error ? param_error : "invalid_request",
+        -:  335:                                               "Invalid authorization request",
+        -:  336:                                               safe_redir, state);
+       35:  337:        oidc_auth_free_params(client_id, redirect_uri, response_type, scope, state,
+        -:  338:                              nonce, code_challenge, code_challenge_method);
+       35:  339:        free(username);
+       35:  340:        free(password);
+       35:  341:        return ret;
+        -:  342:    }
+        -:  343:
+        7:  344:    if (method && strcmp(method, "GET") == 0) {
+    #####:  345:        char *html = oidc_auth_build_login_html(client_id, redirect_uri, response_type,
+        -:  346:                                                scope, state, nonce, code_challenge,
+        -:  347:                                                code_challenge_method, NULL);
+    #####:  348:        oidc_auth_free_params(client_id, redirect_uri, response_type, scope, state,
+        -:  349:                              nonce, code_challenge, code_challenge_method);
+    #####:  350:        free(username);
+    #####:  351:        free(password);
+    #####:  352:        if (!html) {
+    #####:  353:            return MHD_NO;
+        -:  354:        }
+    #####:  355:        enum MHD_Result ret = oidc_auth_send_html(connection, html, MHD_HTTP_OK);
+    #####:  356:        free(html);
+    #####:  357:        return ret;
+        -:  358:    }
+        -:  359:
+        7:  360:    if (!username || !password || username[0] == '\0' || password[0] == '\0') {
+    #####:  361:        char *html = oidc_auth_build_login_html(client_id, redirect_uri, response_type,
+        -:  362:                                                scope, state, nonce, code_challenge,
+        -:  363:                                                code_challenge_method,
+        -:  364:                                                "Username and password are required.");
+    #####:  365:        oidc_auth_free_params(client_id, redirect_uri, response_type, scope, state,
+        -:  366:                              nonce, code_challenge, code_challenge_method);
+    #####:  367:        free(username);
+    #####:  368:        free(password);
+    #####:  369:        if (!html) {
+    #####:  370:            return MHD_NO;
+        -:  371:        }
+    #####:  372:        enum MHD_Result ret = oidc_auth_send_html(connection, html, MHD_HTTP_OK);
+    #####:  373:        free(html);
+    #####:  374:        return ret;
+        -:  375:    }
+        -:  376:
+        -:  377:    /* Rate-limit authorize login using the same #004–#007 path as /api/auth/login. */
+        -:  378:    {
+        7:  379:        const char *database = oidc_get_accounts_database();
+        7:  380:        char *client_ip = api_get_client_ip(connection);
+        7:  381:        if (client_ip) {
+        7:  382:            bool is_whitelisted = check_ip_whitelist(client_ip, database);
+        7:  383:            if (check_ip_blacklist(client_ip, database)) {
+    #####:  384:                free(client_ip);
+    #####:  385:                char *html = oidc_auth_build_login_html(client_id, redirect_uri, response_type,
+        -:  386:                                                        scope, state, nonce, code_challenge,
+        -:  387:                                                        code_challenge_method,
+        -:  388:                                                        "Too many attempts. Try again later.");
+    #####:  389:                oidc_auth_free_params(client_id, redirect_uri, response_type, scope, state,
+        -:  390:                                      nonce, code_challenge, code_challenge_method);
+    #####:  391:                free(username);
+    #####:  392:                free(password);
+    #####:  393:                if (!html) {
+    #####:  394:                    return MHD_NO;
+        -:  395:                }
+    #####:  396:                enum MHD_Result ret = oidc_auth_send_html(connection, html, MHD_HTTP_OK);
+    #####:  397:                free(html);
+    #####:  398:                return ret;
+        -:  399:            }
+        7:  400:            const int rate_window = 900;
+        7:  401:            time_t window_start = time(NULL) - rate_window;
+        7:  402:            int failed_count = check_failed_attempts(username, client_ip, window_start, database);
+        7:  403:            if (handle_rate_limiting(client_ip, failed_count, is_whitelisted, database)) {
+    #####:  404:                free(client_ip);
+    #####:  405:                char *html = oidc_auth_build_login_html(client_id, redirect_uri, response_type,
+        -:  406:                                                        scope, state, nonce, code_challenge,
+        -:  407:                                                        code_challenge_method,
+        -:  408:                                                        "Too many attempts. Try again later.");
+    #####:  409:                oidc_auth_free_params(client_id, redirect_uri, response_type, scope, state,
+        -:  410:                                      nonce, code_challenge, code_challenge_method);
+    #####:  411:                free(username);
+    #####:  412:                free(password);
+    #####:  413:                if (!html) {
+    #####:  414:                    return MHD_NO;
+        -:  415:                }
+    #####:  416:                enum MHD_Result ret = oidc_auth_send_html(connection, html, MHD_HTTP_OK);
+    #####:  417:                free(html);
+    #####:  418:                return ret;
+        -:  419:            }
+        7:  420:            const char *user_agent = MHD_lookup_connection_value(connection, MHD_HEADER_KIND,
+        -:  421:                                                                 "User-Agent");
+        7:  422:            log_login_attempt(username, client_ip, user_agent, time(NULL), database);
+        7:  423:            free(client_ip);
+        -:  424:        }
+        -:  425:    }
+        -:  426:
+        7:  427:    int account_id = 0;
+        7:  428:    if (!oidc_authenticate_resource_owner(username, password, &account_id)) {
+    #####:  429:        char *html = oidc_auth_build_login_html(client_id, redirect_uri, response_type,
+        -:  430:                                                scope, state, nonce, code_challenge,
+        -:  431:                                                code_challenge_method,
+        -:  432:                                                "Invalid credentials.");
+    #####:  433:        oidc_auth_free_params(client_id, redirect_uri, response_type, scope, state,
+        -:  434:                              nonce, code_challenge, code_challenge_method);
+    #####:  435:        free(username);
+    #####:  436:        free(password);
+    #####:  437:        if (!html) {
+    #####:  438:            return MHD_NO;
+        -:  439:        }
+    #####:  440:        enum MHD_Result ret = oidc_auth_send_html(connection, html, MHD_HTTP_OK);
+    #####:  441:        free(html);
+    #####:  442:        return ret;
+        -:  443:    }
+        7:  444:    free(username);
+        7:  445:    free(password);
+        -:  446:
+        7:  447:    const char *issue_error = NULL;
+        7:  448:    char *code = oidc_issue_authorization_code(client_id, redirect_uri, scope, nonce,
+        -:  449:                                               code_challenge, code_challenge_method,
+        -:  450:                                               account_id, &issue_error);
+        7:  451:    if (!code) {
+    #####:  452:        const char *safe_redir = oidc_auth_safe_error_redirect(client_id, redirect_uri);
+    #####:  453:        enum MHD_Result ret = send_oauth_error(connection,
+    #####:  454:                                               issue_error ? issue_error : "server_error",
+        -:  455:                                               "Failed to issue authorization code",
+        -:  456:                                               safe_redir, state);
+    #####:  457:        oidc_auth_free_params(client_id, redirect_uri, response_type, scope, state,
+        -:  458:                              nonce, code_challenge, code_challenge_method);
+    #####:  459:        return ret;
+        -:  460:    }
+        -:  461:
+        -:  462:    /* state is required and always reflected on success redirect. */
+        7:  463:    char *location = NULL;
+        7:  464:    if (asprintf(&location, "%s?code=%s&state=%s", redirect_uri, code, state) < 0) {
+    #####:  465:        location = NULL;
+        -:  466:    }
+        7:  467:    free(code);
+        7:  468:    oidc_auth_free_params(client_id, redirect_uri, response_type, scope, state,
+        -:  469:                          nonce, code_challenge, code_challenge_method);
+        -:  470:
+        7:  471:    if (!location) {
+    #####:  472:        return MHD_NO;
+        -:  473:    }
+        7:  474:    enum MHD_Result ret = oidc_auth_send_redirect(connection, location);
+        7:  475:    free(location);
+        7:  476:    return ret;
+        -:  477:}
