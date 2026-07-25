@@ -6,8 +6,28 @@
  * verifying API key, hashing passwords securely, and creating account records.
  */
 
-// Project includes 
+// Project includes
 #include <src/hydrogen.h>
+
+// Mock redirects for Unity test builds - these allow register.c's calls to be
+// redirected to mock_ prefixed functions defined in test files, avoiding
+// multiple definition errors with the real implementations in the static library.
+// Must come after hydrogen.h (for types like PayloadData) but before
+// api_utils.h and auth_service.h (so declarations are redirected).
+#ifdef USE_MOCK_API_UTILS
+#include <unity/mocks/mock_api_utils.h>
+#define api_send_json_response mock_api_send_json_response
+#define api_parse_json_body mock_api_parse_json_body
+#define validate_registration_input mock_validate_registration_input
+#define verify_api_key mock_verify_api_key
+#define check_license_expiry mock_check_license_expiry
+#define check_username_availability mock_check_username_availability
+#define create_account_record mock_create_account_record
+#define compute_password_hash mock_compute_password_hash
+#define execute_auth_query mock_execute_auth_query
+#define free_query_result mock_free_query_result
+#endif
+
 #include <src/api/api_utils.h>
 #include <src/api/auth/auth_service.h>
 
@@ -15,7 +35,7 @@
 #include "register.h"
 
 // Helper function to handle error responses
-static enum MHD_Result handle_register_error(
+enum MHD_Result handle_register_error(
     struct MHD_Connection *connection,
     void **con_cls,
     const char *error_message,
@@ -36,7 +56,7 @@ static enum MHD_Result handle_register_error(
 }
 
 // Helper function to validate and extract registration parameters
-static bool extract_and_validate_parameters(
+bool extract_and_validate_parameters(
     json_t *request,
     const char **username,
     const char **password,

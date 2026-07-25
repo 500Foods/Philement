@@ -52,4 +52,51 @@ enum MHD_Result handle_post_auth_register(
     void **con_cls
 );
 
+/**
+ * @brief Handle error response for registration failures
+ *
+ * Builds a JSON error response, optionally frees the request object,
+ * and sends the response with the given HTTP status code.
+ *
+ * @param connection The HTTP connection
+ * @param con_cls Connection-specific data (unused)
+ * @param error_message Error message for the JSON response
+ * @param http_status HTTP status code
+ * @param request JSON request object to free (may be NULL)
+ * @return MHD_Result indicating success or failure
+ */
+enum MHD_Result handle_register_error(
+    struct MHD_Connection *connection,
+    void **con_cls,
+    const char *error_message,
+    unsigned int http_status,
+    json_t *request
+);
+
+/**
+ * @brief Extract and validate registration parameters from JSON request
+ *
+ * Extracts username, password, email, full_name, api_key, and database
+ * from the JSON request object and validates that all required fields
+ * are present.
+ *
+ * @param request JSON request object
+ * @param username Output: username string (or NULL if missing)
+ * @param password Output: password string (or NULL if missing)
+ * @param email Output: email string (or NULL if missing)
+ * @param full_name Output: full name string (or NULL if missing/optional)
+ * @param api_key Output: API key string (or NULL if missing)
+ * @param database Output: database string (or NULL if missing)
+ * @return true if all required parameters are present, false otherwise
+ */
+bool extract_and_validate_parameters(
+    json_t *request,
+    const char **username,
+    const char **password,
+    const char **email,
+    const char **full_name,
+    const char **api_key,
+    const char **database
+);
+
 #endif // REGISTER_H
