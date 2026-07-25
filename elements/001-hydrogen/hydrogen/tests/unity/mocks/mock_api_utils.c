@@ -14,7 +14,14 @@ static const char *mock_buffer_data = NULL;
 // Static buffer for mock use - allocated once and reused
 static ApiPostBuffer mock_buffer_storage = {0};
 
-// Mock implementations
+// Capture mode state for mock_api_send_json_response
+static bool g_capture_mode = false;
+static json_t *g_captured_response = NULL;
+static unsigned int g_captured_status = 0;
+static int g_send_json_response_call_count = 0;
+
+// Mock implementations - weak so test files can override with custom behavior
+__attribute__((weak))
 ApiBufferResult mock_api_buffer_post_data(
     const char *method,
     const char *upload_data,
@@ -44,11 +51,13 @@ ApiBufferResult mock_api_buffer_post_data(
     return mock_buffer_result;
 }
 
+__attribute__((weak))
 void mock_api_free_post_buffer(void **con_cls) {
     (void)con_cls;
     // Do nothing in mock
 }
 
+__attribute__((weak))
 enum MHD_Result mock_api_send_error_and_cleanup(
     struct MHD_Connection *connection,
     void **con_cls,
@@ -63,18 +72,40 @@ enum MHD_Result mock_api_send_error_and_cleanup(
     return mock_send_error_result;
 }
 
+__attribute__((weak))
+enum MHD_Result mock_api_send_json_response(
+    struct MHD_Connection *connection,
+    json_t *json_obj,
+    unsigned int status_code
+) {
+    (void)connection;
+    g_send_json_response_call_count++;
 
-// Mock control functions
-void mock_api_utils_reset_all(void) {
-    mock_buffer_result = API_BUFFER_COMPLETE;
-    mock_send_error_result = MHD_YES;
-    mock_buffer_data = NULL;
-    mock_buffer_storage.data = NULL;
-    mock_buffer_storage.size = 0;
-    mock_buffer_storage.capacity = 0;
-    mock_buffer_storage.http_method = 'P';
+    if (g_capture_mode) {
+        // Store the pointer so the test can inspect it.
+        // The test owns the json_obj and must free it.
+        g_captured_response = json_obj;
+        g_captured_status = status_code;
+    } else {
+        // Default: take ownership and free the json_obj
+        if (json_obj) {
+            json_decref(json_obj);
+        }
+    }
+
+    return MHD_YES;
 }
 
+__attribute__((weak))
+json_t *mock_api_parse_json_body(ApiPostBuffer *buffer) {
+    if (!buffer || !buffer->data || buffer->size == 0) {
+        return NULL;
+    }
+    return json_loads(buffer->data, 0, NULL);
+}
+
+
+// Mock control functions
 void mock_api_utils_set_buffer_result(ApiBufferResult result) {
     mock_buffer_result = result;
 }
@@ -85,4 +116,41 @@ void mock_api_utils_set_send_error_result(enum MHD_Result result) {
 
 void mock_api_utils_set_buffer_data(const char *data) {
     mock_buffer_data = data;
+}
+
+void mock_api_utils_set_capture_mode(bool capture) {
+    g_capture_mode = capture;
+}
+
+json_t *mock_api_utils_get_captured_response(void) {
+    return g_captured_response;
+}
+
+unsigned int mock_api_utils_get_captured_status(void) {
+    return g_captured_status;
+}
+
+int mock_api_utils_get_send_json_response_call_count(void) {
+    return g_send_json_response_call_count;
+}
+
+void mock_api_utils_reset_capture(void) {
+    if (g_captured_response) {
+        json_decref(g_captured_response);
+        g_captured_response = NULL;
+    }
+    g_captured_status = 0;
+    g_send_json_response_call_count = 0;
+}
+
+void mock_api_utils_reset_all(void) {
+    mock_buffer_result = API_BUFFER_COMPLETE;
+    mock_send_error_result = MHD_YES;
+    mock_buffer_data = NULL;
+    mock_buffer_storage.data = NULL;
+    mock_buffer_storage.size = 0;
+    mock_buffer_storage.capacity = 0;
+    mock_buffer_storage.http_method = 'P';
+    mock_api_utils_reset_capture();
+    g_capture_mode = false;
 }
