@@ -1,0 +1,1 @@
+{"database":"testdb","max_size_bytes":1073741824,"current_size_bytes":24,"total_entries":1,"cache_hits":0,"cache_misses":5,"evictions":0,"lru_order":["hashdb"]}
