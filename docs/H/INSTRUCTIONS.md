@@ -26,6 +26,13 @@ The documentation for the project is in /docs/H/
 - After ANY Bash/script change, run alias `mks` (shellcheck / test_92) before considering the change done
 - Assume all env vars (like HYDROGEN_ROOT) and all aliases are properly defined and declaredp
 
+**IMPORTANT NOTE:**  these aliases are not loaded by default into the regular AI model environment, you can run them by using a zsh instance like this:
+
+```bash
+zsh -ic 'mkt' 2>&1 
+zsh -ic 'mku mutext_test_stats' 2>&1 
+```
+
 ## ⚠️ ADDITINAL GUIDANCE
 
 - When searching code, use tools like grep to find patterns efficiently

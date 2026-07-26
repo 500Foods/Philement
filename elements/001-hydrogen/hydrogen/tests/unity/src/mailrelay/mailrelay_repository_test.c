@@ -19,10 +19,8 @@
 #include <stdbool.h>
 #include <string.h>
 
-// Forward declarations
 void setUp(void);
 void tearDown(void);
-
 void test_executor_seam_is_set_and_used(void);
 void test_queue_insert_builds_correct_params(void);
 void test_queue_get_by_uuid_builds_correct_params(void);
@@ -35,7 +33,6 @@ void test_queue_recover_stale_builds_correct_params(void);
 void test_default_executor_returns_no_database(void);
 void test_helpers_reject_null_params(void);
 void test_helpers_reject_null_callback(void);
-
 void test_queue_get_by_idempotency_builds_correct_params(void);
 void test_queue_mark_sent_builds_correct_params(void);
 void test_queue_mark_failed_builds_correct_params(void);
@@ -64,11 +61,29 @@ void test_cleanup_events_builds_correct_params(void);
 void test_cleanup_attempts_builds_correct_params(void);
 void test_cleanup_otp_builds_correct_params(void);
 void test_role_get_by_name_builds_correct_params(void);
+void test_resolve_database_returns_explicit_database(void);
+void test_resolve_database_falls_back_to_single_connection(void);
+void test_resolve_database_returns_null_when_no_database(void);
+void test_resolve_database_null_app_config(void);
+void test_resolve_database_empty_database_name_falls_back(void);
+void test_repo_add_string_null_root(void);
+void test_repo_add_string_null_name(void);
+void test_repo_add_string_missing_string_object(void);
+void test_repo_add_string_null_value_adds_null(void);
+void test_repo_add_int_null_root(void);
+void test_repo_add_int_null_name(void);
+void test_repo_add_int_missing_integer_object(void);
+void test_repo_add_int64_null_root(void);
+void test_repo_add_int64_null_name(void);
+void test_repo_add_int64_missing_integer_object(void);
+void test_repo_execute_json_null_params(void);
+void test_invoke_callback_null_callback(void);
 
 static int g_captured_query_ref;
 static char* g_captured_params_json;
 static bool g_executor_called;
 static MailRelayRepoResult* g_captured_result;
+static AppConfig* g_saved_app_config = NULL;
 
 static void reset_mock_state(void) {
     g_captured_query_ref = -1;
@@ -82,16 +97,13 @@ static void mock_callback(MailRelayRepoResult* result, void* user_data) {
     (void)user_data;
     g_captured_result = result;
 }
-
-static bool mock_executor(int query_ref, const char* params_json,
-                          mailrelay_repo_callback_fn callback, void* user_data) {
+static bool mock_executor(int query_ref, const char* params_json, mailrelay_repo_callback_fn callback, void* user_data) {
     (void)callback;
     (void)user_data;
     g_captured_query_ref = query_ref;
     free(g_captured_params_json);
     g_captured_params_json = params_json ? strdup(params_json) : NULL;
     g_executor_called = true;
-
     // Simulate a successful empty result.
     MailRelayRepoResult result = {
         .status = MAILRELAY_REPO_OK,
@@ -106,6 +118,7 @@ static bool mock_executor(int query_ref, const char* params_json,
 }
 
 void setUp(void) {
+    g_saved_app_config = app_config;
     reset_mock_state();
     mailrelay_repo_set_executor(mock_executor);
 }
@@ -113,6 +126,7 @@ void setUp(void) {
 void tearDown(void) {
     reset_mock_state();
     mailrelay_repo_set_executor(NULL);
+    app_config = g_saved_app_config;
 }
 
 // Helper: load the captured params JSON into a json_t (caller must decref).
@@ -124,8 +138,7 @@ static json_t* load_captured_params(void) {
     return json_loads(g_captured_params_json, 0, &err);
 }
 
-// Helper: fetch a STRING param value from the captured params.
-// Copies the value into a static buffer so the JSON can be released safely.
+// Helper: fetch a STRING param value from the captured params. Copies the value into a static buffer so the JSON can be released safely.
 static char g_captured_buf[1024];
 static const char* captured_string(const char* name) {
     json_t* root = load_captured_params();
@@ -160,24 +173,18 @@ static long long captured_integer(const char* name) {
     return value;
 }
 
-// ----------------------------------------------------------------------------
 // Executor seam tests
-// ----------------------------------------------------------------------------
 
 void test_executor_seam_is_set_and_used(void) {
     TEST_ASSERT_EQUAL_PTR(mock_executor, mailrelay_repo_get_executor());
-
     MailRelayRepoQueueGetByUuid params = { .message_uuid = "test-uuid" };
     bool result = mailrelay_repo_queue_get_by_uuid(&params, mock_callback, NULL);
-
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_TRUE(g_executor_called);
     TEST_ASSERT_EQUAL_INT(MAILRELAY_QREF_QUEUE_GET_BY_UUID, g_captured_query_ref);
 }
 
-// ----------------------------------------------------------------------------
 // Queue helper parameter JSON tests
-// ----------------------------------------------------------------------------
 
 void test_queue_insert_builds_correct_params(void) {
     MailRelayRepoQueueInsert params = {
@@ -194,16 +201,13 @@ void test_queue_insert_builds_correct_params(void) {
         .idempotency_key = "idem-123",
         .next_attempt_at = "2026-07-07T12:00:00Z"
     };
-
     bool result = mailrelay_repo_queue_insert(&params, mock_callback, NULL);
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_EQUAL_INT(MAILRELAY_QREF_QUEUE_INSERT, g_captured_query_ref);
     TEST_ASSERT_NOT_NULL(g_captured_params_json);
-
     json_error_t err;
     json_t* root = json_loads(g_captured_params_json, 0, &err);
     TEST_ASSERT_NOT_NULL(root);
-
     json_t* string_obj = json_object_get(root, "STRING");
     TEST_ASSERT_NOT_NULL(string_obj);
     TEST_ASSERT_EQUAL_STRING("msg-123", json_string_value(json_object_get(string_obj, "MESSAGE_UUID")));
@@ -217,11 +221,9 @@ void test_queue_insert_builds_correct_params(void) {
     TEST_ASSERT_EQUAL_STRING("{}", json_string_value(json_object_get(string_obj, "HEADERS_JSON")));
     TEST_ASSERT_EQUAL_STRING("idem-123", json_string_value(json_object_get(string_obj, "IDEMPOTENCY_KEY")));
     TEST_ASSERT_EQUAL_STRING("2026-07-07T12:00:00Z", json_string_value(json_object_get(string_obj, "NEXT_ATTEMPT_AT")));
-
     json_t* integer_obj = json_object_get(root, "INTEGER");
     TEST_ASSERT_NOT_NULL(integer_obj);
     TEST_ASSERT_EQUAL_INT(5, json_integer_value(json_object_get(integer_obj, "PRIORITY")));
-
     json_decref(root);
 }
 
@@ -275,9 +277,7 @@ void test_queue_mark_sending_builds_correct_params(void) {
     json_decref(root);
 }
 
-// ----------------------------------------------------------------------------
 // Attempts helper tests
-// ----------------------------------------------------------------------------
 
 void test_attempt_insert_builds_correct_params(void) {
     MailRelayRepoAttemptInsert params = {
@@ -311,9 +311,7 @@ void test_attempt_insert_builds_correct_params(void) {
     json_decref(root);
 }
 
-// ----------------------------------------------------------------------------
 // Template helper tests
-// ----------------------------------------------------------------------------
 
 void test_template_get_by_key_builds_correct_params(void) {
     MailRelayRepoTemplateGetByKey params = { .template_key = "mail.test" };
@@ -329,9 +327,7 @@ void test_template_get_by_key_builds_correct_params(void) {
     json_decref(root);
 }
 
-// ----------------------------------------------------------------------------
 // Cleanup helper tests
-// ----------------------------------------------------------------------------
 
 void test_cleanup_queue_builds_correct_params(void) {
     MailRelayRepoCleanupQueue params = { .cutoff_at = "2026-07-01T00:00:00Z" };
@@ -361,9 +357,7 @@ void test_queue_recover_stale_builds_correct_params(void) {
     json_decref(root);
 }
 
-// ----------------------------------------------------------------------------
 // Default executor error path test
-// ----------------------------------------------------------------------------
 
 void test_default_executor_returns_no_database(void) {
     // Ensure the default executor is installed by clearing the seam.
@@ -379,9 +373,7 @@ void test_default_executor_returns_no_database(void) {
     TEST_ASSERT_EQUAL_INT(MAILRELAY_REPO_NO_DATABASE, g_captured_result->status);
 }
 
-// ----------------------------------------------------------------------------
 // NULL argument tests
-// ----------------------------------------------------------------------------
 
 void test_helpers_reject_null_params(void) {
     TEST_ASSERT_FALSE(mailrelay_repo_queue_insert(NULL, mock_callback, NULL));
@@ -394,9 +386,7 @@ void test_helpers_reject_null_callback(void) {
     TEST_ASSERT_FALSE(mailrelay_repo_queue_get_by_uuid(&params, NULL, NULL));
 }
 
-// ----------------------------------------------------------------------------
 // Queue helper parameter JSON tests (remaining functions)
-// ----------------------------------------------------------------------------
 
 void test_queue_get_by_idempotency_builds_correct_params(void) {
     MailRelayRepoQueueGetByIdempotency params = { .idempotency_key = "idem-xyz" };
@@ -438,9 +428,7 @@ void test_queue_reschedule_builds_correct_params(void) {
     TEST_ASSERT_EQUAL_STRING("2026-08-01T00:00:00Z", captured_string("NEXT_ATTEMPT_AT"));
 }
 
-// ----------------------------------------------------------------------------
 // Template helper parameter JSON tests (remaining functions)
-// ----------------------------------------------------------------------------
 
 void test_template_list_active_has_no_params(void) {
     bool result = mailrelay_repo_template_list_active(mock_callback, NULL);
@@ -506,9 +494,7 @@ void test_template_soft_delete_builds_correct_params(void) {
     TEST_ASSERT_EQUAL_STRING("mail.old", captured_string("TEMPLATE_KEY"));
 }
 
-// ----------------------------------------------------------------------------
 // Event helper parameter JSON tests
-// ----------------------------------------------------------------------------
 
 void test_event_insert_builds_correct_params(void) {
     MailRelayRepoEventInsert params = {
@@ -578,9 +564,7 @@ void test_event_mark_suppressed_builds_correct_params(void) {
     TEST_ASSERT_EQUAL_INT64(33, captured_integer("EVENT_ID"));
 }
 
-// ----------------------------------------------------------------------------
 // OTP helper parameter JSON tests
-// ----------------------------------------------------------------------------
 
 void test_otp_insert_builds_correct_params(void) {
     MailRelayRepoOtpInsert params = {
@@ -653,9 +637,7 @@ void test_otp_mark_max_attempts_builds_correct_params(void) {
     TEST_ASSERT_EQUAL_INT64(77, captured_integer("OTP_ID"));
 }
 
-// ----------------------------------------------------------------------------
 // Route helper parameter JSON tests
-// ----------------------------------------------------------------------------
 
 void test_route_get_by_sender_domain_builds_correct_params(void) {
     MailRelayRepoRouteGetBySenderDomain params = { .sender_domain = "example.com" };
@@ -759,9 +741,7 @@ void test_route_soft_delete_builds_correct_params(void) {
     TEST_ASSERT_EQUAL_INT64(99, captured_integer("ROUTE_ID"));
 }
 
-// ----------------------------------------------------------------------------
 // Cleanup helper parameter JSON tests (remaining functions)
-// ----------------------------------------------------------------------------
 
 void test_cleanup_events_builds_correct_params(void) {
     MailRelayRepoCleanupEvents params = { .cutoff_at = "2026-11-01T00:00:00Z" };
@@ -787,9 +767,7 @@ void test_cleanup_otp_builds_correct_params(void) {
     TEST_ASSERT_EQUAL_STRING("2027-01-01T00:00:00Z", captured_string("CUTOFF_AT"));
 }
 
-// ----------------------------------------------------------------------------
 // Role helper parameter JSON tests
-// ----------------------------------------------------------------------------
 
 void test_role_get_by_name_builds_correct_params(void) {
     bool result = mailrelay_repo_role_get_by_name("admin", mock_callback, NULL);
@@ -798,13 +776,165 @@ void test_role_get_by_name_builds_correct_params(void) {
     TEST_ASSERT_EQUAL_STRING("admin", captured_string("ROLENAME"));
 }
 
-// ----------------------------------------------------------------------------
-// Main
-// ----------------------------------------------------------------------------
+// mailrelay_repo_resolve_database tests
+
+void test_resolve_database_returns_explicit_database(void) {
+    AppConfig* cfg = calloc(1, sizeof(AppConfig));
+    TEST_ASSERT_NOT_NULL(cfg);
+    cfg->mail_relay.Database = strdup("explicit_db");
+    app_config = cfg;
+
+    const char* result = mailrelay_repo_resolve_database();
+    TEST_ASSERT_EQUAL_STRING("explicit_db", result);
+
+    app_config = NULL;
+    free(cfg->mail_relay.Database);
+    free(cfg);
+}
+
+void test_resolve_database_falls_back_to_single_connection(void) {
+    AppConfig* cfg = calloc(1, sizeof(AppConfig));
+    TEST_ASSERT_NOT_NULL(cfg);
+    cfg->mail_relay.Database = NULL;
+    cfg->databases.connection_count = 1;
+    cfg->databases.connections[0].name = strdup("fallback_db");
+    app_config = cfg;
+
+    const char* result = mailrelay_repo_resolve_database();
+    TEST_ASSERT_EQUAL_STRING("fallback_db", result);
+
+    app_config = NULL;
+    free(cfg->databases.connections[0].name);
+    free(cfg);
+}
+
+void test_resolve_database_returns_null_when_no_database(void) {
+    AppConfig* cfg = calloc(1, sizeof(AppConfig));
+    TEST_ASSERT_NOT_NULL(cfg);
+    cfg->mail_relay.Database = NULL;
+    cfg->databases.connection_count = 0;
+    app_config = cfg;
+
+    const char* result = mailrelay_repo_resolve_database();
+    TEST_ASSERT_NULL(result);
+
+    app_config = NULL;
+    free(cfg);
+}
+
+void test_resolve_database_null_app_config(void) {
+    app_config = NULL;
+    const char* result = mailrelay_repo_resolve_database();
+    TEST_ASSERT_NULL(result);
+}
+
+void test_resolve_database_empty_database_name_falls_back(void) {
+    AppConfig* cfg = calloc(1, sizeof(AppConfig));
+    TEST_ASSERT_NOT_NULL(cfg);
+    cfg->mail_relay.Database = strdup("");
+    cfg->databases.connection_count = 1;
+    cfg->databases.connections[0].name = strdup("fallback_db");
+    app_config = cfg;
+
+    const char* result = mailrelay_repo_resolve_database();
+    TEST_ASSERT_EQUAL_STRING("fallback_db", result);
+
+    app_config = NULL;
+    free(cfg->mail_relay.Database);
+    free(cfg->databases.connections[0].name);
+    free(cfg);
+}
+
+// repo_add_string tests
+
+void test_repo_add_string_null_root(void) {
+    TEST_ASSERT_FALSE(repo_add_string(NULL, "KEY", "value"));
+}
+
+void test_repo_add_string_null_name(void) {
+    json_t* root = repo_params_new();
+    TEST_ASSERT_NOT_NULL(root);
+    TEST_ASSERT_FALSE(repo_add_string(root, NULL, "value"));
+    json_decref(root);
+}
+
+void test_repo_add_string_missing_string_object(void) {
+    json_t* root = json_object();
+    TEST_ASSERT_NOT_NULL(root);
+    TEST_ASSERT_FALSE(repo_add_string(root, "KEY", "value"));
+    json_decref(root);
+}
+
+void test_repo_add_string_null_value_adds_null(void) {
+    json_t* root = repo_params_new();
+    TEST_ASSERT_NOT_NULL(root);
+    TEST_ASSERT_TRUE(repo_add_string(root, "NULL_KEY", NULL));
+
+    json_t* string_obj = json_object_get(root, "STRING");
+    TEST_ASSERT_NOT_NULL(string_obj);
+    json_t* val = json_object_get(string_obj, "NULL_KEY");
+    TEST_ASSERT_NOT_NULL(val);
+    TEST_ASSERT_TRUE(json_is_null(val));
+    json_decref(root);
+}
+
+// repo_add_int tests
+
+void test_repo_add_int_null_root(void) {
+    TEST_ASSERT_FALSE(repo_add_int(NULL, "KEY", 42));
+}
+
+void test_repo_add_int_null_name(void) {
+    json_t* root = repo_params_new();
+    TEST_ASSERT_NOT_NULL(root);
+    TEST_ASSERT_FALSE(repo_add_int(root, NULL, 42));
+    json_decref(root);
+}
+
+void test_repo_add_int_missing_integer_object(void) {
+    json_t* root = json_object();
+    TEST_ASSERT_NOT_NULL(root);
+    TEST_ASSERT_FALSE(repo_add_int(root, "KEY", 42));
+    json_decref(root);
+}
+
+// repo_add_int64 tests
+
+void test_repo_add_int64_null_root(void) {
+    TEST_ASSERT_FALSE(repo_add_int64(NULL, "KEY", 42));
+}
+
+void test_repo_add_int64_null_name(void) {
+    json_t* root = repo_params_new();
+    TEST_ASSERT_NOT_NULL(root);
+    TEST_ASSERT_FALSE(repo_add_int64(root, NULL, 42));
+    json_decref(root);
+}
+
+void test_repo_add_int64_missing_integer_object(void) {
+    json_t* root = json_object();
+    TEST_ASSERT_NOT_NULL(root);
+    TEST_ASSERT_FALSE(repo_add_int64(root, "KEY", 42));
+    json_decref(root);
+}
+
+// repo_execute_json and mailrelay_repo_invoke_callback tests
+
+void test_repo_execute_json_null_params(void) {
+    bool result = repo_execute_json(MAILRELAY_QREF_QUEUE_INSERT, NULL,
+                                    mock_callback, NULL);
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NOT_NULL(g_captured_result);
+    TEST_ASSERT_EQUAL_INT(MAILRELAY_REPO_INVALID_ARGS, g_captured_result->status);
+}
+
+void test_invoke_callback_null_callback(void) {
+    mailrelay_repo_invoke_callback(NULL, NULL, MAILRELAY_REPO_OK,
+                                   NULL, NULL, 0);
+}
 
 int main(void) {
     UNITY_BEGIN();
-
     RUN_TEST(test_executor_seam_is_set_and_used);
     RUN_TEST(test_queue_insert_builds_correct_params);
     RUN_TEST(test_queue_get_by_uuid_builds_correct_params);
@@ -817,7 +947,6 @@ int main(void) {
     RUN_TEST(test_default_executor_returns_no_database);
     RUN_TEST(test_helpers_reject_null_params);
     RUN_TEST(test_helpers_reject_null_callback);
-
     RUN_TEST(test_queue_get_by_idempotency_builds_correct_params);
     RUN_TEST(test_queue_mark_sent_builds_correct_params);
     RUN_TEST(test_queue_mark_failed_builds_correct_params);
@@ -846,6 +975,22 @@ int main(void) {
     RUN_TEST(test_cleanup_attempts_builds_correct_params);
     RUN_TEST(test_cleanup_otp_builds_correct_params);
     RUN_TEST(test_role_get_by_name_builds_correct_params);
-
+    RUN_TEST(test_resolve_database_returns_explicit_database);
+    RUN_TEST(test_resolve_database_falls_back_to_single_connection);
+    RUN_TEST(test_resolve_database_returns_null_when_no_database);
+    RUN_TEST(test_resolve_database_null_app_config);
+    RUN_TEST(test_resolve_database_empty_database_name_falls_back);
+    RUN_TEST(test_repo_add_string_null_root);
+    RUN_TEST(test_repo_add_string_null_name);
+    RUN_TEST(test_repo_add_string_missing_string_object);
+    RUN_TEST(test_repo_add_string_null_value_adds_null);
+    RUN_TEST(test_repo_add_int_null_root);
+    RUN_TEST(test_repo_add_int_null_name);
+    RUN_TEST(test_repo_add_int_missing_integer_object);
+    RUN_TEST(test_repo_add_int64_null_root);
+    RUN_TEST(test_repo_add_int64_null_name);
+    RUN_TEST(test_repo_add_int64_missing_integer_object);
+    RUN_TEST(test_repo_execute_json_null_params);
+    RUN_TEST(test_invoke_callback_null_callback);
     return UNITY_END();
 }

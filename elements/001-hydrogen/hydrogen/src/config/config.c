@@ -427,10 +427,6 @@ void format_section_header(char* buffer, size_t size, const char* letter, const 
 
     // Get LOG_LINE_BREAK's character count
     size_t target_char_count = utf8_char_count(LOG_LINE_BREAK);
-    if (size <= strlen(LOG_LINE_BREAK)) {
-        buffer[0] = '\0';
-        return;
-    }
 
     // Build: 3 emdashes + space + title + space + LOG_LINE_BREAK
     char temp[256] = {0};
@@ -447,10 +443,6 @@ void format_section_header(char* buffer, size_t size, const char* letter, const 
 
     // Copy to buffer
     size_t len = strlen(temp);
-    if (len >= size) {
-        buffer[0] = '\0';
-        return;
-    }
     memcpy(buffer, temp, len + 1);
 }
 

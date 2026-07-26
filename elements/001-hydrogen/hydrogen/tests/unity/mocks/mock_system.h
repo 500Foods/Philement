@@ -150,6 +150,7 @@ extern time_t mock_gettimeofday_sec;
 extern suseconds_t mock_gettimeofday_usec;
 extern int mock_gettimeofday_should_fail;
 extern int mock_asprintf_should_fail;
+extern int mock_asprintf_call_count;
 
 #endif // USE_MOCK_SYSTEM
 

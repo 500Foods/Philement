@@ -161,6 +161,7 @@ int mock_close_should_fail = 0;
 int mock_sem_init_should_fail = 0;
 int mock_select_result = 0;
 int mock_asprintf_should_fail = 0;
+int mock_asprintf_call_count = 0;
 
 // Mock implementation of malloc
 void *mock_malloc(size_t size) {
@@ -472,6 +473,7 @@ void mock_system_reset_all(void) {
     mock_select_result = 0;
     mock_sem_init_should_fail = 0;
     mock_asprintf_should_fail = 0;
+    mock_asprintf_call_count = 0;
 }
 
 // Mock implementation of dlopen
@@ -657,7 +659,8 @@ int mock_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, 
 
 // Mock implementation of asprintf
 int mock_asprintf(char **strp, const char *fmt, ...) {
-    if (mock_asprintf_should_fail) {
+    mock_asprintf_call_count++;
+    if (mock_asprintf_should_fail > 0 && mock_asprintf_call_count == mock_asprintf_should_fail) {
         return -1;
     }
 
@@ -673,4 +676,5 @@ int mock_asprintf(char **strp, const char *fmt, ...) {
 // Mock control function for asprintf
 void mock_system_set_asprintf_failure(int should_fail) {
     mock_asprintf_should_fail = should_fail;
+    mock_asprintf_call_count = 0;
 }

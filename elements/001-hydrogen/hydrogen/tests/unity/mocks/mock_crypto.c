@@ -43,6 +43,7 @@ void mock_crypto_reset_all(void);
 
 // Global variables to store mock state - shared across all object files
 int mock_base64url_encode_should_fail = 0;
+int mock_base64url_encode_call_count = 0;
 const char* mock_base64url_encode_result = NULL;
 int mock_base64url_decode_should_fail = 0;
 int mock_sha256_hash_should_fail = 0;
@@ -55,7 +56,9 @@ char* mock_utils_base64url_encode(const unsigned char* data, size_t length) {
     (void)data;    // Suppress unused parameter
     (void)length;  // Suppress unused parameter
 
-    if (mock_base64url_encode_should_fail) {
+    mock_base64url_encode_call_count++;
+    if (mock_base64url_encode_should_fail > 0 &&
+        mock_base64url_encode_call_count == mock_base64url_encode_should_fail) {
         return NULL;
     }
 
@@ -144,6 +147,7 @@ bool mock_utils_random_bytes(unsigned char* buffer, size_t length) {
 // Mock control functions
 void mock_crypto_set_base64url_encode_failure(int should_fail) {
     mock_base64url_encode_should_fail = should_fail;
+    mock_base64url_encode_call_count = 0;
 }
 
 void mock_crypto_set_base64url_encode_result(const char* result) {
@@ -172,6 +176,7 @@ void mock_crypto_set_random_bytes_failure(int should_fail) {
 
 void mock_crypto_reset_all(void) {
     mock_base64url_encode_should_fail = 0;
+    mock_base64url_encode_call_count = 0;
     mock_base64url_encode_result = NULL;
     mock_base64url_decode_should_fail = 0;
     mock_sha256_hash_should_fail = 0;
