@@ -45,6 +45,7 @@ void mock_crypto_reset_all(void);
 
 // Extern declarations for global mock state variables (defined in mock_crypto.c)
 extern int mock_base64url_encode_should_fail;
+extern int mock_base64url_encode_call_count;
 extern const char* mock_base64url_encode_result;
 extern int mock_base64url_decode_should_fail;
 extern int mock_sha256_hash_should_fail;

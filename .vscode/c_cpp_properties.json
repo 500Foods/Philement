@@ -11,6 +11,9 @@
                 "${workspaceFolder}/elements/001-hydrogen/hydrogen",
                 "${workspaceFolder}/elements/001-hydrogen/hydrogen/tests",
                 "${workspaceFolder}/elements/001-hydrogen/hydrogen/tests/unity/framework/Unity/src"
+            ],
+            "compileCommands": [
+                "${workspaceFolder}/elements/001-hydrogen/hydrogen/build/compile_commands.json"
             ]
         }
     ],
