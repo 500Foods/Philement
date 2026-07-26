@@ -190,9 +190,10 @@ int pending_result_wait(PendingQueryResult* pending, const char* dqm_label) {
         }
     }
 
+    bool was_timed_out = pending->timed_out;
     pthread_mutex_unlock(&pending->result_lock);
 
-    if (pending->timed_out) {
+    if (was_timed_out) {
         return -1;
     }
 
@@ -357,6 +358,10 @@ void pending_result_unregister(PendingResultManager* manager, PendingQueryResult
         return;
     }
 
+    // Lock the pending result's mutex to prevent concurrent access
+    // from pending_result_wait or pending_result_signal_ready
+    pthread_mutex_lock(&pending->result_lock);
+
     // Clean up the pending result: query_id, QueryResult, sync primitives, struct
     if (pending->query_id) {
         free(pending->query_id);
@@ -364,6 +369,7 @@ void pending_result_unregister(PendingResultManager* manager, PendingQueryResult
     if (pending->result) {
         database_engine_cleanup_result(pending->result);
     }
+    pthread_mutex_unlock(&pending->result_lock);
     pthread_mutex_destroy(&pending->result_lock);
     pthread_cond_destroy(&pending->result_ready);
     free(pending);
@@ -395,6 +401,15 @@ size_t pending_result_cleanup_expired(PendingResultManager* manager, const char*
             if (expired || pending->timed_out) {
                 // Remove from array
                 manager->results[index] = NULL;
+
+                // Lock the pending result's mutex to prevent concurrent access
+                // from pending_result_wait (which may be blocked on
+                // pthread_cond_timedwait with the lock released). Signal any
+                // blocked waiter before freeing so it can exit cleanly.
+                pthread_mutex_lock(&pending->result_lock);
+                pending->timed_out = true;
+                pthread_cond_signal(&pending->result_ready);
+                pthread_mutex_unlock(&pending->result_lock);
 
                 // Clean up the pending result
                 if (pending->query_id) free(pending->query_id);
