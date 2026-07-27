@@ -144,14 +144,10 @@ static void test_launch_database_subsystem_get_subsystem_id_failure(void) {
 }
 
 static void test_launch_database_subsystem_null_config(void) {
-    // Test behavior with null app config
-    // Note: The function doesn't handle NULL app_config gracefully (crashes)
-    // In a more complete implementation, we'd add NULL checks to the function
-    TEST_IGNORE_MESSAGE("Function doesn't handle NULL app_config gracefully - crashes");
+    app_config = NULL;
+    int result = launch_database_subsystem();
+    TEST_ASSERT_EQUAL(0, result);
 }
-
-// NOTE: Test disabled - Marked as TEST_IGNORE because it crashes
-// The function needs NULL checks added to handle missing app_config
 
 static void test_launch_database_subsystem_server_stopping(void) {
     // Test behavior when server is stopping
@@ -173,11 +169,11 @@ static void test_launch_database_subsystem_server_stopping(void) {
 int main(void) {
     UNITY_BEGIN();
 
-    if (0) RUN_TEST(test_launch_database_subsystem_basic_functionality);  // Disabled: SEGFAULT - mock_strdup(NULL) issue
+    RUN_TEST(test_launch_database_subsystem_basic_functionality);
     RUN_TEST(test_launch_database_subsystem_no_databases_configured);
     RUN_TEST(test_launch_database_subsystem_disabled_databases);
     RUN_TEST(test_launch_database_subsystem_get_subsystem_id_failure);
-    if (0) RUN_TEST(test_launch_database_subsystem_null_config);           // Disabled: TEST_IGNORE - needs NULL check in source
+    RUN_TEST(test_launch_database_subsystem_null_config);
     RUN_TEST(test_launch_database_subsystem_server_stopping);
 
     return UNITY_END();

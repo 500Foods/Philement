@@ -37,7 +37,7 @@ void test_mysql_execute_prepared_affected_rows_fallback(void);
 void test_mysql_execute_prepared_basic_execution(void);
 void test_mysql_execute_prepared_stmt_execute_unavailable(void);
 void test_mysql_execute_prepared_memory_allocation_failure(void);
-void test_mysql_execute_prepared_with_result_set(void);
+
 
 void setUp(void) {
     mock_libmysqlclient_reset_all();
@@ -617,13 +617,6 @@ void test_mysql_execute_prepared_basic_execution(void) {
     free(connection);
 }
 
-void test_mysql_execute_prepared_with_result_set(void) {
-    // Test prepared statement with result set (comprehensive test)
-    // Note: Current mock infrastructure doesn't fully support prepared statement result processing
-    // This test is simplified to focus on the paths that can be tested with current mocks
-    TEST_IGNORE_MESSAGE("Mock infrastructure doesn't fully support prepared statement result processing");
-}
-
 int main(void) {
     UNITY_BEGIN();
 
@@ -641,7 +634,6 @@ int main(void) {
     RUN_TEST(test_mysql_execute_prepared_affected_rows_fallback); // Targets line 520
     RUN_TEST(test_mysql_execute_prepared_basic_execution); // Targets lines 224-527 (basic execution)
     RUN_TEST(test_mysql_execute_prepared_memory_allocation_failure); // Skipped - requires mock_system
-    if (0) RUN_TEST(test_mysql_execute_prepared_with_result_set); // Skipped - mock limitation
 
     return UNITY_END();
 }

@@ -106,6 +106,7 @@ static char** mock_mysql_fetch_row_result = NULL;
 // Prepared statement mock results
 static void* mock_mysql_stmt_init_result = (void*)0x87654321; // Non-NULL = success
 static int mock_mysql_stmt_prepare_result = 0; // 0 = success
+static int mock_mysql_stmt_execute_result = 0; // 0 = success
 static int mock_mysql_stmt_close_result = 0; // 0 = success
 
 // Mock control to simulate unavailable functions
@@ -258,7 +259,7 @@ int mock_mysql_stmt_prepare(void* stmt, const char* query, unsigned long length)
 
 int mock_mysql_stmt_execute(void* stmt) {
     (void)stmt; // Suppress unused parameter
-    return 0; // Success
+    return mock_mysql_stmt_execute_result;
 }
 
 int mock_mysql_stmt_close(void* stmt) {
@@ -394,6 +395,10 @@ void mock_libmysqlclient_set_mysql_stmt_prepare_result(int result) {
     mock_mysql_stmt_prepare_result = result;
 }
 
+void mock_libmysqlclient_set_mysql_stmt_execute_result(int result) {
+    mock_mysql_stmt_execute_result = result;
+}
+
 void mock_libmysqlclient_set_mysql_stmt_close_result(int result) {
     mock_mysql_stmt_close_result = result;
 }
@@ -420,6 +425,7 @@ void mock_libmysqlclient_reset_all(void) {
     // Reset prepared statement mocks
     mock_mysql_stmt_init_result = (void*)0x87654321;
     mock_mysql_stmt_prepare_result = 0;
+    mock_mysql_stmt_execute_result = 0;
     mock_mysql_stmt_close_result = 0;
 
     // Clear mock fields

@@ -50,15 +50,7 @@ void tearDown(void) {
 
 // Test database_queue_lead_execute_migration_load with NULL queue
 void test_database_queue_lead_execute_migration_load_null_queue(void) {
-    // Function should handle NULL gracefully
-    // This will likely cause a crash or return early - testing for stability
-    DatabaseQueue* queue = NULL;
-    
-    // Call the function - it should not crash
-    database_queue_lead_execute_migration_load(queue);
-    
-    // If we get here, test passes
-    TEST_PASS();
+    TEST_ASSERT_FALSE(database_queue_lead_execute_migration_load(NULL));
 }
 
 // Test database_queue_lead_execute_migration_load with no connection
@@ -80,7 +72,7 @@ void test_database_queue_lead_execute_migration_load_no_connection(void) {
 int main(void) {
     UNITY_BEGIN();
 
-    if (0) RUN_TEST(test_database_queue_lead_execute_migration_load_null_queue);
+    RUN_TEST(test_database_queue_lead_execute_migration_load_null_queue);
     RUN_TEST(test_database_queue_lead_execute_migration_load_no_connection);
 
     return UNITY_END();

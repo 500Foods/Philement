@@ -16,10 +16,6 @@
 #include <src/database/database_connstring.h>
 #include <src/database/database_engine.h>
 
-// External global variable access for testing
-extern ConnectionPoolManager* global_connection_pool_manager;
-extern pthread_mutex_t global_pool_manager_lock;
-
 // Function prototypes for test functions
 void test_connection_pool_system_init_valid(void);
 void test_connection_pool_system_init_already_initialized(void);
@@ -73,11 +69,13 @@ void test_connection_pool_system_init_already_initialized(void) {
 }
 
 // Test connection_pool_system_init with malloc failure
+// Must run before any successful init in this suite (global manager is static).
 void test_connection_pool_system_init_malloc_failure(void) {
+    mock_system_reset_all();
     mock_system_set_malloc_failure(1);
-    
+
     bool result = connection_pool_system_init(5);
-    
+
     TEST_ASSERT_FALSE(result);
 }
 
@@ -167,9 +165,9 @@ void test_connection_pool_release_connection_not_in_pool(void) {
 int main(void) {
     UNITY_BEGIN();
     
+    RUN_TEST(test_connection_pool_system_init_malloc_failure);
     RUN_TEST(test_connection_pool_system_init_valid);
     RUN_TEST(test_connection_pool_system_init_already_initialized);
-    if (0) RUN_TEST(test_connection_pool_system_init_malloc_failure);  // Disabled: global state already initialized
     RUN_TEST(test_connection_pool_get_global_manager_not_initialized);
     RUN_TEST(test_connection_pool_get_global_manager_initialized);
     RUN_TEST(test_connection_pool_acquire_connection_null_pool);

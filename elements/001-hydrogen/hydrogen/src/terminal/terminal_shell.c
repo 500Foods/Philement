@@ -245,13 +245,16 @@ PtyShell *pty_spawn_shell(const char *shell_command, TerminalSession *session) {
     }
 
     // Fork child process
-    pid_t pid = fork();
+    pid_t pid;
 #ifdef UNITY_TEST_MODE
     if (test_mode_force_fork_failure) {
         pid = -1;
-        errno = EAGAIN; // Simulate fork failure
-    }
+        errno = EAGAIN; // Simulate fork failure without spawning a child
+    } else
 #endif
+    {
+        pid = fork();
+    }
     if (pid == -1) {
         log_this(SR_TERMINAL, "Fork failed: %s", LOG_LEVEL_ERROR, 1, strerror(errno));
         cleanup_pty_resources(master_fd, shell->slave_fd, shell->slave_name, shell);

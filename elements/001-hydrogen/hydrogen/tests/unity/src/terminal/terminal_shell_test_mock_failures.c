@@ -218,10 +218,7 @@ int main(void) {
     RUN_TEST(test_pty_spawn_shell_strdup_failure);
     RUN_TEST(test_pty_spawn_shell_configure_master_failure);
 
-    // This test causes Unity to output duplicate results due to real process spawning
-    // So it is disabled for now - we still have sufficient coverage even without it.
-    // Consider adding it to a separate test suite that allows real process spawning.
-    if (0) RUN_TEST(test_pty_spawn_shell_fork_failure);
+    RUN_TEST(test_pty_spawn_shell_fork_failure);
 
     // pty_spawn_shell success test (covers setup_child_process call)
     RUN_TEST(test_pty_spawn_shell_success_covers_setup_child_call);

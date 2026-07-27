@@ -263,7 +263,10 @@ bool check_all_launch_readiness(void) {
  * 5. Initialize services - Each with its own thread management
  *
  * Returns 1 on successful startup, 0 on critical failure
- */
+  */
+#ifdef UNITY_TEST_MODE
+__attribute__((weak))
+#endif
 int startup_hydrogen(const char* config_path) {
 
     // Capture the start time as early as possible

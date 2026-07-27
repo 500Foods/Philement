@@ -17,6 +17,7 @@
 
 // Include config headers for structure definitions
 #include <src/config/config_logging.h>
+#include <src/registry/registry.h>
 
 // Direct declarations to avoid implicit function declarations
 void mock_launch_set_get_subsystem_id_result(int result);
@@ -54,6 +55,10 @@ void setUp(void) {
     server_starting = 1;
     server_running = 1;
     app_config = &test_app_config;
+
+    // Real registry: Logging must be registered for ready=true paths
+    init_registry();
+    register_subsystem(SR_LOGGING, NULL, NULL, NULL, NULL, NULL);
 
     // Initialize test config with valid logging configuration
     memset(&test_app_config, 0, sizeof(AppConfig));
@@ -100,6 +105,7 @@ void tearDown(void) {
         free(test_app_config.logging.levels);
         test_app_config.logging.levels = NULL;
     }
+    init_registry();
 }
 
 // Test functions
@@ -247,8 +253,8 @@ void test_check_logging_launch_readiness_no_destinations_enabled(void) {
 }
 
 void test_check_logging_launch_readiness_subsystem_not_registered(void) {
-    // Arrange
-    mock_launch_set_get_subsystem_id_result(-1);
+    // Arrange — empty registry so Logging is not registered
+    init_registry();
 
     // Act
     LaunchReadiness result = check_logging_launch_readiness();
@@ -257,6 +263,7 @@ void test_check_logging_launch_readiness_subsystem_not_registered(void) {
     TEST_ASSERT_EQUAL_STRING("Logging", result.subsystem);
     TEST_ASSERT_FALSE(result.ready);
     TEST_ASSERT_NOT_NULL(result.messages);
+    free_readiness_messages(&result);
 }
 
 void test_check_logging_launch_readiness_successful(void) {
@@ -283,11 +290,11 @@ int main(void) {
     RUN_TEST(test_check_logging_launch_readiness_invalid_log_level);
     RUN_TEST(test_check_logging_launch_readiness_invalid_console_level);
     RUN_TEST(test_check_logging_launch_readiness_invalid_file_level);
-    if (0) RUN_TEST(test_check_logging_launch_readiness_console_disabled);  // Disabled: Mock registry interaction not working
-    if (0) RUN_TEST(test_check_logging_launch_readiness_file_disabled);     // Disabled: Mock registry interaction not working
+    RUN_TEST(test_check_logging_launch_readiness_console_disabled);
+    RUN_TEST(test_check_logging_launch_readiness_file_disabled);
     RUN_TEST(test_check_logging_launch_readiness_no_destinations_enabled);
     RUN_TEST(test_check_logging_launch_readiness_subsystem_not_registered);
-    if (0) RUN_TEST(test_check_logging_launch_readiness_successful);        // Disabled: Mock registry interaction not working
+    RUN_TEST(test_check_logging_launch_readiness_successful);
 
     return UNITY_END();
 }

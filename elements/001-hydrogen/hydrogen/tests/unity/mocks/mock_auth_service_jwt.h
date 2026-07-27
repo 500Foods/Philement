@@ -20,6 +20,7 @@
 // Mock function declarations
 #ifdef USE_MOCK_AUTH_SERVICE_JWT
 #define validate_jwt mock_validate_jwt
+#define validate_jwt_token mock_validate_jwt
 #define free_jwt_validation_result mock_free_jwt_validation_result
 #endif
 

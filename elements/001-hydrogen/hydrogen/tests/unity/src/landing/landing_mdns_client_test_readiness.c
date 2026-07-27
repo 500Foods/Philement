@@ -139,8 +139,8 @@ int main(void) {
     // Basic readiness tests
     RUN_TEST(test_check_mdns_client_landing_readiness_success);
     RUN_TEST(test_check_mdns_client_landing_readiness_mdns_not_running);
-    if (0) RUN_TEST(test_check_mdns_client_landing_readiness_network_not_running);
-    if (0) RUN_TEST(test_check_mdns_client_landing_readiness_logging_not_running);
+    RUN_TEST(test_check_mdns_client_landing_readiness_network_not_running);
+    RUN_TEST(test_check_mdns_client_landing_readiness_logging_not_running);
 
     return UNITY_END();
 }

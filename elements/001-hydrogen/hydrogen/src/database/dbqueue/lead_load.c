@@ -27,6 +27,10 @@
  * - Only metadata population for later APPLY phase execution
  */
 bool database_queue_lead_execute_migration_load(DatabaseQueue* lead_queue) {
+    if (!lead_queue) {
+        return false;
+    }
+
     char* dqm_label = database_queue_generate_label(lead_queue);
     log_this(dqm_label, "Starting migration LOAD phase - populating Queries table metadata", LOG_LEVEL_DEBUG, 0);
 
