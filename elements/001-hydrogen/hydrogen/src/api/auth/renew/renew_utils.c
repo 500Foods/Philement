@@ -6,6 +6,11 @@
  */
 
 #include <src/hydrogen.h>
+
+#if defined(USE_MOCK_AUTH_SERVICE_JWT)
+#include <unity/mocks/mock_auth_service_jwt.h>
+#endif
+
 #include <src/api/auth/renew/renew_utils.h>
 #include <src/api/auth/auth_service.h>
 #include <string.h>

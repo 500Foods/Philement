@@ -716,6 +716,12 @@ int launch_database_subsystem(void) {
     log_this(SR_DATABASE, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
     log_this(SR_DATABASE, "LAUNCH: " SR_DATABASE, LOG_LEVEL_DEBUG, 0);
 
+    if (!app_config) {
+        log_this(SR_DATABASE, "Configuration not loaded", LOG_LEVEL_ERROR, 0);
+        log_this(SR_DATABASE, "LAUNCH: " SR_DATABASE " FAILED", LOG_LEVEL_DEBUG, 0);
+        return 0;
+    }
+
     // Get database configuration for logging
     const DatabaseConfig* db_config = &app_config->databases;
     log_this(SR_DATABASE, SR_DATABASE " connections configured", LOG_LEVEL_DEBUG, 0);

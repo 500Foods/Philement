@@ -4,7 +4,7 @@ Catalogue of Unity unit tests that are currently disabled via `if (0) RUN_TEST(.
 
 Generated: 2026-07-26
 
-Total disabled tests: 43
+Total disabled tests: 43 (all reviewed — cleanup complete)
 
 ---
 
@@ -20,118 +20,112 @@ Total disabled tests: 43
 
 ---
 
-## Landing
+## Landing — DONE
 
-| # | File | Line | Test Function | Reason |
-| --- | ------ | ------ | --------------- | -------- |
-| 6 | `/elements/001-hydrogen/hydrogen/tests/unity/src/landing/landing_api_test_readiness.c` | 100 | `test_check_api_landing_readiness_both_running` | — |
-| 7 | `/elements/001-hydrogen/hydrogen/tests/unity/src/landing/landing_mdns_client_test_readiness.c` | 142 | `test_check_mdns_client_landing_readiness_network_not_running` | — |
-| 8 | `/elements/001-hydrogen/hydrogen/tests/unity/src/landing/landing_mdns_client_test_readiness.c` | 143 | `test_check_mdns_client_landing_readiness_logging_not_running` | — |
-| 9 | `/elements/001-hydrogen/hydrogen/tests/unity/src/landing/landing_payload_test_check_payload_landing_readiness.c` | 102 | `test_check_payload_landing_readiness_memory_allocation_failure` | — |
-| 10 | `/elements/001-hydrogen/hydrogen/tests/unity/src/landing/landing_swagger_test_check_swagger_landing_readiness.c` | 163 | `test_check_swagger_landing_readiness_webserver_not_running` | — |
-| 11 | `/elements/001-hydrogen/hydrogen/tests/unity/src/landing/landing_terminal_test_check_terminal_landing_readiness.c` | 180 | `test_check_terminal_landing_readiness_malloc_failure` | — |
-| 12 | `/elements/001-hydrogen/hydrogen/tests/unity/src/landing/landing_test_check_all_landing_readiness.c` | 238 | `test_check_all_landing_readiness_shutdown_success` | — |
-| 13 | `/elements/001-hydrogen/hydrogen/tests/unity/src/landing/landing_test_check_all_landing_readiness.c` | 239 | `test_check_all_landing_readiness_restart_success` | — |
-| 14 | `/elements/001-hydrogen/hydrogen/tests/unity/src/landing/landing_test_land_approved_subsystems.c` | 224 | `test_land_approved_subsystems_single_ready_subsystem` | — |
-| 15 | `/elements/001-hydrogen/hydrogen/tests/unity/src/landing/landing_test_land_approved_subsystems.c` | 225 | `test_land_approved_subsystems_multiple_ready_subsystems` | — |
-| 16 | `/elements/001-hydrogen/hydrogen/tests/unity/src/landing/landing_test_land_approved_subsystems.c` | 226 | `test_land_approved_subsystems_registry_skipped` | — |
-| 17 | `/elements/001-hydrogen/hydrogen/tests/unity/src/landing/landing_test_land_approved_subsystems.c` | 227 | `test_land_approved_subsystems_not_ready_subsystems_skipped` | — |
-| 18 | `/elements/001-hydrogen/hydrogen/tests/unity/src/landing/landing_test_land_approved_subsystems.c` | 228 | `test_land_approved_subsystems_unknown_subsystem_skipped` | — |
+| # | File | Test Function | Resolution |
+| --- | ------ | --------------- | -------- |
+| 6 | `landing_api_test_readiness.c` | `both_running` | Re-enabled; mock_landing works |
+| 7–8 | `landing_mdns_client_test_readiness.c` | network/logging not running | Re-enabled |
+| 9 | `landing_payload_…` | `memory_allocation_failure` | **Removed** — stub TEST_IGNORE only; malloc not interceptable in prebuilt landing_*.o |
+| 10 | `landing_swagger_…` | `webserver_not_running` | Re-enabled; fixed expectations to match early-exit messages |
+| 11 | `landing_terminal_…` | `malloc_failure` | **Removed** — same as #9 |
+| 12–13 | `landing_test_check_all_landing_readiness.c` | shutdown/restart success | Re-enabled; real registry + `restart_requested`; `UNITY_TEST_MODE` skips `exit(0)`; weak `startup_hydrogen` |
+| 14–18 | `landing_test_land_approved_subsystems.c` | single/multi/skip cases | Re-enabled via real `init_registry`/`register_subsystem`; assert states after land |
+
+Source: `landing.c` (`UNITY_TEST_MODE` return before process teardown/exit); `launch.c` (`startup_hydrogen` weak under `UNITY_TEST_MODE`).
 
 ---
 
-## Launch
+## Launch — DONE
 
-| # | File | Line | Test Function | Reason |
-| --- | ------ | ------ | --------------- | -------- |
-| 19 | `/elements/001-hydrogen/hydrogen/tests/unity/src/launch/launch_database_test_launch_subsystem.c` | 176 | `test_launch_database_subsystem_basic_functionality` | Disabled: SEGFAULT – mock_strdup(NULL) issue |
-| 20 | `/elements/001-hydrogen/hydrogen/tests/unity/src/launch/launch_database_test_launch_subsystem.c` | 180 | `test_launch_database_subsystem_null_config` | Disabled: needs NULL check in source |
-| 21 | `/elements/001-hydrogen/hydrogen/tests/unity/src/launch/launch_logging_test_check_logging_launch_readiness.c` | 286 | `test_check_logging_launch_readiness_console_disabled` | Disabled: Mock registry interaction not working |
-| 22 | `/elements/001-hydrogen/hydrogen/tests/unity/src/launch/launch_logging_test_check_logging_launch_readiness.c` | 287 | `test_check_logging_launch_readiness_file_disabled` | Disabled: Mock registry interaction not working |
-| 23 | `/elements/001-hydrogen/hydrogen/tests/unity/src/launch/launch_logging_test_check_logging_launch_readiness.c` | 290 | `test_check_logging_launch_readiness_successful` | Disabled: Mock registry interaction not working |
-| 24 | `/elements/001-hydrogen/hydrogen/tests/unity/src/launch/launch_logging_test_launch_logging_subsystem.c` | 74 | `test_launch_logging_subsystem_successful_launch` | Disabled: Mock registry interaction not working |
-| 25 | `/elements/001-hydrogen/hydrogen/tests/unity/src/launch/launch_oidc_test_check_oidc_launch_readiness_with_registry.c` | 80 | `test_check_oidc_launch_readiness_disabled_with_registry_mock` | Disabled: Mock registry interaction not working |
-| 26 | `/elements/001-hydrogen/hydrogen/tests/unity/src/launch/launch_swagger_test_validation.c` | 358 | `test_check_swagger_launch_readiness_valid_configuration` | Disabled: Mock registry interaction not working |
+| # | File | Test Function | Resolution |
+| --- | ------ | --------------- | -------- |
+| 19 | `launch_database_test_launch_subsystem.c` | `basic_functionality` | Re-enabled; mock_strdup already NULL-safe |
+| 20 | same | `null_config` | Re-enabled; NULL guard in `launch_database_subsystem` |
+| 21–23 | `launch_logging_test_check_logging_launch_readiness.c` | console/file disabled, successful | Real `init_registry` + register Logging |
+| 24 | `launch_logging_test_launch_logging_subsystem.c` | successful launch | Real registry register Logging |
+| 25 | `launch_oidc_…_with_registry.c` | disabled with registry | Real register Registry (launchable once registered) |
+| 26 | `launch_swagger_test_validation.c` | valid_configuration | Calls `validate_swagger_configuration` (full readiness needs API/Payload/payload binary) |
 
----
-
-## WebServer
-
-| # | File | Line | Test Function | Reason |
-| --- | ------ | ------ | --------------- | -------- |
-| 27 | `/elements/001-hydrogen/hydrogen/tests/unity/src/webserver/web_server_upload_test_handle_upload_request.c` | 171 | `test_handle_upload_request_file_upload_completed` | — |
+Source: `launch_database.c` NULL `app_config` guard.
 
 ---
 
-## Terminal
+## WebServer — DONE
 
-| # | File | Line | Test Function | Reason |
-| --- | ------ | ------ | --------------- | -------- |
-| 28 | `/elements/001-hydrogen/hydrogen/tests/unity/src/terminal/terminal_shell_test_mock_failures.c` | 224 | `test_pty_spawn_shell_fork_failure` | — |
-
----
-
-## Scripting
-
-| # | File | Line | Test Function | Reason |
-| --- | ------ | ------ | --------------- | -------- |
-| 29 | `/elements/001-hydrogen/hydrogen/tests/unity/src/scripting/scripting_handle_test_lifecycle.c` | 192 | `test_handle_gc_frees_handle` | GC test deferred |
+| # | File | Test Function | Resolution |
+| --- | ------ | --------------- | -------- |
+| 27 | `web_server_upload_test_handle_upload_request.c` | `file_upload_completed` | Re-enabled; fixed `mkstemps` suffix len `.gcode` → 6 |
 
 ---
 
-## API — Auth / Renew
+## Terminal — DONE
 
-| # | File | Line | Test Function | Reason |
-| --- | ------ | ------ | --------------- | -------- |
-| 30 | `/elements/001-hydrogen/hydrogen/tests/unity/src/api/auth/renew/renew_utils_test_validate_token_and_extract_claims.c` | 137 | `test_validate_token_and_extract_claims_success` | — |
+| # | File | Test Function | Resolution |
+| --- | ------ | --------------- | -------- |
+| 28 | `terminal_shell_test_mock_failures.c` | `pty_spawn_shell_fork_failure` | Re-enabled; `UNITY_TEST_MODE` skips real `fork()` when force-fail is set |
 
----
-
-## API — OIDC
-
-| # | File | Line | Test Function | Reason |
-| --- | ------ | ------ | --------------- | -------- |
-| 31 | `/elements/001-hydrogen/hydrogen/tests/unity/src/api/oidc/oidc_service_test_register_oidc_endpoints.c` | 139 | `test_register_well_known_fails_when_full` | — |
-| 32 | `/elements/001-hydrogen/hydrogen/tests/unity/src/api/oidc/oidc_service_test_register_oidc_endpoints.c` | 140 | `test_register_oauth_fails_when_full` | — |
+Source: `terminal_shell.c` — force-fork-failure before calling `fork()`.
 
 ---
 
-## API — Conduit
+## Scripting — DONE
 
-| # | File | Line | Test Function | Reason |
-| --- | ------ | ------ | --------------- | -------- |
-| 33 | `/elements/001-hydrogen/hydrogen/tests/unity/src/api/conduit/alt_queries/alt_queries_test_execute_single_alt_query.c` | 115 | `test_execute_single_alt_query_with_params` | SKIPPED – requires full database queue setup |
-
----
-
-## Database — Connection / Pool
-
-| # | File | Line | Test Function | Reason |
-| --- | ------ | ------ | --------------- | -------- |
-| 34 | `/elements/001-hydrogen/hydrogen/tests/unity/src/database/database_connstring_test_global_pool.c` | 172 | `test_connection_pool_system_init_malloc_failure` | Disabled: global state already initialized |
-| 35 | `/elements/001-hydrogen/hydrogen/tests/unity/src/database/database_connstring_test_pool.c` | 228 | `test_connection_pool_create_malloc_failure` | Disabled: unreliable due to system allocations |
-| 36 | `/elements/001-hydrogen/hydrogen/tests/unity/src/database/database_connstring_test_pool.c` | 229 | `test_connection_pool_create_strdup_failure` | Disabled: unreliable due to system allocations |
-| 37 | `/elements/001-hydrogen/hydrogen/tests/unity/src/database/database_connstring_test_pool.c` | 230 | `test_connection_pool_create_connections_malloc_failure` | Disabled: unreliable due to system allocations |
-| 38 | `/elements/001-hydrogen/hydrogen/tests/unity/src/database/database_connstring_test_pool_manager.c` | 242 | `test_connection_pool_manager_create_malloc_failure` | Disabled: unreliable due to system allocations |
-| 39 | `/elements/001-hydrogen/hydrogen/tests/unity/src/database/database_connstring_test_pool_manager.c` | 243 | `test_connection_pool_manager_create_pools_malloc_failure` | Disabled: unreliable due to system allocations |
+| # | File | Test Function | Resolution |
+| --- | ------ | --------------- | -------- |
+| 29 | `scripting_handle_test_lifecycle.c` | `handle_gc_frees_handle` | Re-enabled; passes with current `__gc` / `H_Handle_release` |
 
 ---
 
-## Database — MySQL
+## API — Auth / Renew — DONE
 
-| # | File | Line | Test Function | Reason |
-| --- | ------ | ------ | --------------- | -------- |
-| 40 | `/elements/001-hydrogen/hydrogen/tests/unity/src/database/mysql/query_test_edge_cases_mysql.c` | 425 | `test_mysql_execute_prepared_execution_failure` | — |
-| 41 | `/elements/001-hydrogen/hydrogen/tests/unity/src/database/mysql/query_test_edge_cases_mysql.c` | 428 | `test_mysql_execute_prepared_null_column_data` | — |
-| 42 | `/elements/001-hydrogen/hydrogen/tests/unity/src/database/mysql/query_test_coverage_mysql.c` | 644 | `test_mysql_execute_prepared_with_result_set` | Skipped – mock limitation |
+| # | File | Test Function | Resolution |
+| --- | ------ | --------------- | -------- |
+| 30 | `renew_utils_test_validate_token_and_extract_claims.c` | success | Re-enabled via `mock_auth_service_jwt`; `validate_jwt_token` alias + include in `renew_utils.c` |
 
 ---
 
-## Database — DBQueue
+## API — OIDC — DONE
 
-| # | File | Line | Test Function | Reason |
-| --- | ------ | ------ | --------------- | -------- |
-| 43 | `/elements/001-hydrogen/hydrogen/tests/unity/src/database/dbqueue/lead_load_test_execute_migration_load.c` | 83 | `test_database_queue_lead_execute_migration_load_null_queue` | — |
+| # | File | Test Function | Resolution |
+| --- | ------ | --------------- | -------- |
+| 31–32 | `oidc_service_test_register_oidc_endpoints.c` | full endpoint table | Re-enabled; stable `g_filler_prefixes[]` (was stack pointers) |
+
+---
+
+## API — Conduit — DONE
+
+| # | File | Test Function | Resolution |
+| --- | ------ | --------------- | -------- |
+| 33 | `alt_queries_test_execute_single_alt_query.c` | `with_params` | **Removed** — never implemented body; needs full DB queue |
+
+---
+
+## Database — Connection / Pool — DONE
+
+| # | File | Test Function | Resolution |
+| --- | ------ | --------------- | -------- |
+| 34 | `database_connstring_test_global_pool.c` | init malloc failure | Re-enabled; runs first (static global) |
+| 35–37 | `database_connstring_test_pool.c` | create malloc/strdup/connections fail | Re-enabled; `USE_MOCK_SYSTEM` works |
+| 38–39 | `database_connstring_test_pool_manager.c` | manager malloc fails | Re-enabled |
+
+---
+
+## Database — MySQL — DONE
+
+| # | File | Test Function | Resolution |
+| --- | ------ | --------------- | -------- |
+| 40 | `query_test_edge_cases_mysql.c` | prepared execution failure | Re-enabled; `mock_libmysqlclient_set_mysql_stmt_execute_result` |
+| 41 | same | null column data | **Removed** — TEST_IGNORE stub only |
+| 42 | `query_test_coverage_mysql.c` | prepared with result set | **Removed** — TEST_IGNORE stub only |
+
+---
+
+## Database — DBQueue — DONE
+
+| # | File | Test Function | Resolution |
+| --- | ------ | --------------- | -------- |
+| 43 | `lead_load_test_execute_migration_load.c` | null queue | Re-enabled; NULL guard in `lead_load.c` |
 
 ---
 

@@ -293,7 +293,11 @@ bool check_all_landing_readiness(void) {
         log_this(SR_LANDING, "LANDING: REGISTRY (Final Step)", LOG_LEVEL_DEBUG, 0);
         bool registry_ok = land_registry_subsystem(false);  // false = not restart
         landing_success &= registry_ok;
-        
+
+#ifdef UNITY_TEST_MODE
+        // Unit tests must not tear down process-global mutex/log state or exit(0)
+        return landing_success;
+#else
         // Record shutdown end time
         record_shutdown_end_time();
         
@@ -336,6 +340,7 @@ bool check_all_landing_readiness(void) {
         mutex_system_cleanup();
                
         exit(0);  // Exit process after clean shutdown
+#endif
     }
         
     return landing_success;

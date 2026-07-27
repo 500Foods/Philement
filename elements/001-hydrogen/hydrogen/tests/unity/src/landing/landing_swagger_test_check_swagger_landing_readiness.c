@@ -109,23 +109,19 @@ void test_check_swagger_landing_readiness_webserver_not_running(void) {
     // Act
     LaunchReadiness result = check_swagger_landing_readiness();
 
-    // Assert
+    // Assert — early exit when WebServer is down (no "Go" Swagger line first)
     TEST_ASSERT_NOT_NULL(result.messages);
     TEST_ASSERT_FALSE(result.ready);
     TEST_ASSERT_EQUAL_STRING(SR_SWAGGER, result.subsystem);
 
-    // Check messages
     TEST_ASSERT_NOT_NULL(result.messages[0]);
     TEST_ASSERT_EQUAL_STRING(SR_SWAGGER, result.messages[0]);
     TEST_ASSERT_NOT_NULL(result.messages[1]);
-    TEST_ASSERT_EQUAL_STRING("  Go:      Swagger ready for shutdown", result.messages[1]);
+    TEST_ASSERT_EQUAL_STRING("  No-Go:   WebServer subsystem not running", result.messages[1]);
     TEST_ASSERT_NOT_NULL(result.messages[2]);
-    TEST_ASSERT_EQUAL_STRING("  No-Go:   WebServer subsystem not running", result.messages[2]);
-    TEST_ASSERT_NOT_NULL(result.messages[3]);
-    TEST_ASSERT_EQUAL_STRING("  Decide:  No-Go For Landing of Swagger", result.messages[3]);
-    TEST_ASSERT_NULL(result.messages[4]);
+    TEST_ASSERT_EQUAL_STRING("  Decide:  No-Go For Landing of Swagger", result.messages[2]);
+    TEST_ASSERT_NULL(result.messages[3]);
 
-    // Cleanup
     free_readiness_messages(&result);
 }
 
@@ -160,7 +156,7 @@ int main(void) {
 
     RUN_TEST(test_check_swagger_landing_readiness_both_running);
     RUN_TEST(test_check_swagger_landing_readiness_swagger_not_running);
-    if (0) RUN_TEST(test_check_swagger_landing_readiness_webserver_not_running);
+    RUN_TEST(test_check_swagger_landing_readiness_webserver_not_running);
     RUN_TEST(test_check_swagger_landing_readiness_neither_running);
 
     return UNITY_END();

@@ -20,7 +20,6 @@ void test_check_terminal_landing_readiness_subsystem_running_dependencies_ready(
 void test_check_terminal_landing_readiness_subsystem_not_running(void);
 void test_check_terminal_landing_readiness_webserver_not_running(void);
 void test_check_terminal_landing_readiness_websocket_not_running(void);
-void test_check_terminal_landing_readiness_malloc_failure(void);
 
 // Mock state
 static bool mock_subsystem_running_terminal = true;
@@ -164,12 +163,6 @@ void test_check_terminal_landing_readiness_websocket_not_running(void) {
     free_readiness_messages(&result);
 }
 
-void test_check_terminal_landing_readiness_malloc_failure(void) {
-    // This test would require mocking malloc to fail, but that's complex
-    // For now, we'll skip this edge case as it's covered by blackbox tests
-    TEST_IGNORE_MESSAGE("malloc failure test requires advanced mocking not implemented");
-}
-
 int main(void) {
     UNITY_BEGIN();
 
@@ -177,7 +170,6 @@ int main(void) {
     RUN_TEST(test_check_terminal_landing_readiness_subsystem_not_running);
     RUN_TEST(test_check_terminal_landing_readiness_webserver_not_running);
     RUN_TEST(test_check_terminal_landing_readiness_websocket_not_running);
-    if (0) RUN_TEST(test_check_terminal_landing_readiness_malloc_failure);
 
     return UNITY_END();
 }

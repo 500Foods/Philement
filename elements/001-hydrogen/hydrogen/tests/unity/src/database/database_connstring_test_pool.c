@@ -225,9 +225,9 @@ int main(void) {
     UNITY_BEGIN();
     
     RUN_TEST(test_connection_pool_create_valid);
-    if (0) RUN_TEST(test_connection_pool_create_malloc_failure);  // Disabled: unreliable due to system allocations
-    if (0) RUN_TEST(test_connection_pool_create_strdup_failure);  // Disabled: unreliable due to system allocations
-    if (0) RUN_TEST(test_connection_pool_create_connections_malloc_failure);  // Disabled: unreliable due to system allocations
+    RUN_TEST(test_connection_pool_create_malloc_failure);
+    RUN_TEST(test_connection_pool_create_strdup_failure);
+    RUN_TEST(test_connection_pool_create_connections_malloc_failure);
     RUN_TEST(test_connection_pool_destroy_null);
     RUN_TEST(test_connection_pool_destroy_valid);
     RUN_TEST(test_connection_pool_destroy_with_entries);

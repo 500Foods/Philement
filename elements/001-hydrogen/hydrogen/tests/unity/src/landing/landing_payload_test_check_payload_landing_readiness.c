@@ -27,7 +27,6 @@ __attribute__((weak)) bool is_subsystem_running_by_name(const char* name) {
 // Test function declarations
 void test_check_payload_landing_readiness_subsystem_running(void);
 void test_check_payload_landing_readiness_subsystem_not_running(void);
-void test_check_payload_landing_readiness_memory_allocation_failure(void);
 
 void setUp(void) {
     // Reset mock state
@@ -86,20 +85,11 @@ void test_check_payload_landing_readiness_subsystem_not_running(void) {
     free_readiness_messages(&result);
 }
 
-void test_check_payload_landing_readiness_memory_allocation_failure(void) {
-    // This test would require mocking malloc to return NULL
-    // However, since we can't easily mock malloc in this context,
-    // we'll skip this test as the malloc failure path is already
-    // tested by the existing blackbox tests (though not executed)
-    TEST_IGNORE_MESSAGE("Memory allocation failure test requires malloc mocking");
-}
-
 int main(void) {
     UNITY_BEGIN();
 
     RUN_TEST(test_check_payload_landing_readiness_subsystem_running);
     RUN_TEST(test_check_payload_landing_readiness_subsystem_not_running);
-    if (0) RUN_TEST(test_check_payload_landing_readiness_memory_allocation_failure);
 
     return UNITY_END();
 }

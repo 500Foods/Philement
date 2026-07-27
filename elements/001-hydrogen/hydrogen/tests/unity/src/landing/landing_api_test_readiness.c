@@ -97,7 +97,7 @@ int main(void) {
     // Basic readiness tests
     RUN_TEST(test_check_api_landing_readiness_api_not_running);
     RUN_TEST(test_check_api_landing_readiness_webserver_not_running);
-    if (0) RUN_TEST(test_check_api_landing_readiness_both_running);
+    RUN_TEST(test_check_api_landing_readiness_both_running);
 
     return UNITY_END();
 }

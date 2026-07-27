@@ -102,9 +102,9 @@ void test_handle_upload_request_no_file_uploaded(void) {
 
 // Test: file upload completed - should process file and send response
 void test_handle_upload_request_file_upload_completed(void) {
-    // Create a temp G-code file
+    // Create a temp G-code file (suffix length must match ".gcode")
     char temp_path[] = "/tmp/test_upload_XXXXXX.gcode";
-    int fd = mkstemps(temp_path, 5);
+    int fd = mkstemps(temp_path, 6);
     TEST_ASSERT(fd != -1);
 
     const char *gcode = "G21 ; metric values\nG90 ; absolute positioning\nG28 ; home all axes\n";
@@ -168,7 +168,7 @@ int main(void) {
     RUN_TEST(test_handle_upload_request_response_already_sent);
     RUN_TEST(test_handle_upload_request_upload_failed);
     RUN_TEST(test_handle_upload_request_no_file_uploaded);
-    if (0) RUN_TEST(test_handle_upload_request_file_upload_completed);
+    RUN_TEST(test_handle_upload_request_file_upload_completed);
     RUN_TEST(test_handle_upload_request_queue_response_failure);
 
     return UNITY_END();

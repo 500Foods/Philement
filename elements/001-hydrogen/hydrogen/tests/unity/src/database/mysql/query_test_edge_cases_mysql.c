@@ -29,7 +29,6 @@ void test_mysql_execute_query_empty_result_path(void);
 void test_mysql_execute_prepared_execution_failure(void);
 void test_mysql_execute_prepared_with_error_message(void);
 void test_mysql_execute_prepared_no_result_set(void);
-void test_mysql_execute_prepared_null_column_data(void);
 
 void setUp(void) {
     mock_libmysqlclient_reset_all();
@@ -299,10 +298,41 @@ void test_mysql_execute_query_empty_result_path(void) {
 // ============================================================================
 
 void test_mysql_execute_prepared_execution_failure(void) {
-    // Note: mock_mysql_stmt_execute is hardcoded to return 0 (success) in the current mock
-    // This test cannot currently trigger the execution failure path without mock enhancement
-    // Test skipped - would require enhancing mock to support configurable stmt_execute result
-    TEST_IGNORE_MESSAGE("Mock infrastructure doesn't support mysql_stmt_execute failure simulation");
+    DatabaseHandle* connection = calloc(1, sizeof(DatabaseHandle));
+    TEST_ASSERT_NOT_NULL(connection);
+
+    MySQLConnection* mysql_conn = calloc(1, sizeof(MySQLConnection));
+    TEST_ASSERT_NOT_NULL(mysql_conn);
+    mysql_conn->connection = (void*)0x12345678;
+
+    connection->engine_type = DB_ENGINE_MYSQL;
+    connection->connection_handle = mysql_conn;
+    connection->designator = strdup("test_db");
+
+    PreparedStatement stmt = {0};
+    stmt.name = strdup("test_stmt");
+    stmt.sql_template = strdup("SELECT * FROM invalid");
+    stmt.engine_specific_handle = (void*)0x87654321;
+
+    QueryRequest request = {0};
+    request.sql_template = strdup("SELECT 1");
+
+    QueryResult* result = NULL;
+
+    mock_libmysqlclient_set_mysql_stmt_execute_result(1); // failure
+    mock_libmysqlclient_set_mysql_error_result("Statement execution failed");
+
+    bool success = mysql_execute_prepared(connection, &stmt, &request, &result);
+
+    TEST_ASSERT_FALSE(success);
+    TEST_ASSERT_NULL(result);
+
+    free(request.sql_template);
+    free(stmt.name);
+    free(stmt.sql_template);
+    free(connection->designator);
+    free(mysql_conn);
+    free(connection);
 }
 
 void test_mysql_execute_prepared_with_error_message(void) {
@@ -404,13 +434,6 @@ void test_mysql_execute_prepared_no_result_set(void) {
     free(connection);
 }
 
-void test_mysql_execute_prepared_null_column_data(void) {
-    // Note: Current mock infrastructure doesn't fully support NULL handling in prepared statements
-    // The mock mysql_stmt_fetch and bind mechanisms would need enhancement to properly test this
-    // Test skipped - would require significant mock library enhancements
-    TEST_IGNORE_MESSAGE("Mock infrastructure doesn't support NULL column data simulation for prepared statements");
-}
-
 int main(void) {
     UNITY_BEGIN();
     
@@ -422,10 +445,9 @@ int main(void) {
     RUN_TEST(test_mysql_execute_query_empty_result_path);
     
     // mysql_execute_prepared edge cases
-    if (0) RUN_TEST(test_mysql_execute_prepared_execution_failure);
+    RUN_TEST(test_mysql_execute_prepared_execution_failure);
     RUN_TEST(test_mysql_execute_prepared_with_error_message);
     RUN_TEST(test_mysql_execute_prepared_no_result_set);
-    if (0) RUN_TEST(test_mysql_execute_prepared_null_column_data);
     
     return UNITY_END();
 }

@@ -56,24 +56,24 @@ static void teardown_oidc_service(void) {
     }
 }
 
+/* Stable storage — register_web_endpoint keeps the prefix pointer */
+static char g_filler_prefixes[MAX_ENDPOINTS][32];
+
 static void fill_endpoints(int count) {
-    for (int i = 0; i < count; i++) {
-        char prefix[32];
-        snprintf(prefix, sizeof(prefix), "/filler%d", i);
+    for (int i = 0; i < count && i < MAX_ENDPOINTS; i++) {
+        snprintf(g_filler_prefixes[i], sizeof(g_filler_prefixes[i]), "/filler%d", i);
         WebServerEndpoint endpoint = {
-            .prefix = prefix,
+            .prefix = g_filler_prefixes[i],
             .validator = is_oidc_endpoint,
             .handler = oidc_web_handler
         };
-        register_web_endpoint(&endpoint);
+        TEST_ASSERT_TRUE(register_web_endpoint(&endpoint));
     }
 }
 
 static void clear_endpoints(int count) {
-    for (int i = 0; i < count; i++) {
-        char prefix[32];
-        snprintf(prefix, sizeof(prefix), "/filler%d", i);
-        unregister_web_endpoint(prefix);
+    for (int i = 0; i < count && i < MAX_ENDPOINTS; i++) {
+        unregister_web_endpoint(g_filler_prefixes[i]);
     }
 }
 
@@ -136,7 +136,7 @@ void test_register_oauth_fails_when_full(void) {
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_register_disabled);
-    if (0) RUN_TEST(test_register_well_known_fails_when_full);
-    if (0) RUN_TEST(test_register_oauth_fails_when_full);
+    RUN_TEST(test_register_well_known_fails_when_full);
+    RUN_TEST(test_register_oauth_fails_when_full);
     return UNITY_END();
 }

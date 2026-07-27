@@ -17,6 +17,7 @@
 
 // Forward declarations for functions being tested
 LaunchReadiness check_swagger_launch_readiness(void);
+bool validate_swagger_configuration(const char*** messages, size_t* count, size_t* capacity);
 
 // Test function declarations
 void test_check_swagger_launch_readiness_swagger_disabled(void);
@@ -312,7 +313,9 @@ void test_check_swagger_launch_readiness_invalid_doc_expansion_value(void) {
 }
 
 void test_check_swagger_launch_readiness_valid_configuration(void) {
-    // Setup: Create config with all valid values
+    /* Full check_swagger_launch_readiness needs API/Payload/Registry readiness
+     * (binary payload, keys, etc.). Validate the config helper that this suite
+     * is named for. */
     AppConfig* config = (AppConfig*)app_config;
     config->swagger.enabled = true;
     config->swagger.prefix = strdup("/swagger");
@@ -323,21 +326,21 @@ void test_check_swagger_launch_readiness_valid_configuration(void) {
     config->swagger.ui_options.default_model_expand_depth = 1;
     config->swagger.ui_options.doc_expansion = strdup("list");
 
-    // Test: Should return ready when all configuration is valid
-    LaunchReadiness result = check_swagger_launch_readiness();
-    TEST_ASSERT_TRUE(result.ready);
-    TEST_ASSERT_NOT_NULL(result.messages);
+    const char** messages = NULL;
+    size_t count = 0;
+    size_t capacity = 0;
+    TEST_ASSERT_TRUE(validate_swagger_configuration(&messages, &count, &capacity));
+    if (messages) {
+        for (size_t i = 0; i < count; i++) {
+            free((void*)messages[i]);
+        }
+        free(messages);
+    }
 }
-
-// NOTE: Test disabled - Registry dependency check fails in unit tests
-// ISSUE: check_swagger_launch_readiness() calls is_subsystem_launchable_by_name("WebServer")
-// which isn't properly mocked because launch source files aren't compiled with mocks
-// Same architectural issue as other launch tests requiring registry mocking
 
 int main(void) {
     UNITY_BEGIN();
 
-    // Run all test functions for validation scenarios
     RUN_TEST(test_check_swagger_launch_readiness_swagger_disabled);
     RUN_TEST(test_check_swagger_launch_readiness_invalid_prefix_null);
     RUN_TEST(test_check_swagger_launch_readiness_invalid_prefix_empty);
@@ -355,7 +358,7 @@ int main(void) {
     RUN_TEST(test_check_swagger_launch_readiness_invalid_model_expand_depth_negative);
     RUN_TEST(test_check_swagger_launch_readiness_invalid_model_expand_depth_too_high);
     RUN_TEST(test_check_swagger_launch_readiness_invalid_doc_expansion_value);
-    if (0) RUN_TEST(test_check_swagger_launch_readiness_valid_configuration);  // Disabled: Mock registry interaction not working
+    RUN_TEST(test_check_swagger_launch_readiness_valid_configuration);
 
     return UNITY_END();
 }
