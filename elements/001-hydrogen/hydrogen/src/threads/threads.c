@@ -58,14 +58,21 @@ void init_service_threads(ServiceThreads *threads, const char* subsystem_name) {
 
 // Add a thread to service tracking with custom subsystem and optional description
 void add_service_thread_with_subsystem(ServiceThreads *threads, pthread_t thread_id, const char* subsystem, const char* description) {
-    MutexResult lock_result = MUTEX_LOCK(&thread_mutex, subsystem ? subsystem : SR_THREADS_LIB);
+    char msg[128];
+    msg[0] = '\0';
+    bool log_error_max = false;
+    bool do_log = false;
+    const char* log_subsystem = subsystem ? subsystem : SR_THREADS_LIB;
+    char subsystem_copy[32];
+    subsystem_copy[0] = '\0';
+
+    MutexResult lock_result = MUTEX_LOCK(&thread_mutex, log_subsystem);
     if (lock_result == MUTEX_SUCCESS) {
         if (threads->thread_count < MAX_SERVICE_THREADS) {
             pid_t tid = (pid_t)syscall(SYS_gettid);
             threads->thread_ids[threads->thread_count] = thread_id;
             threads->thread_tids[threads->thread_count] = tid;
 
-            // Store description if provided
             if (description) {
                 strncpy(threads->thread_descriptions[threads->thread_count], description, 31);
                 threads->thread_descriptions[threads->thread_count][31] = '\0';
@@ -75,24 +82,28 @@ void add_service_thread_with_subsystem(ServiceThreads *threads, pthread_t thread
 
             threads->thread_count++;
 
-            // Only log if not in final shutdown mode
             if (!final_shutdown_mode) {
-                char msg[128];
-                const char* log_subsystem = subsystem ? subsystem : SR_THREADS_LIB;
+                strncpy(subsystem_copy, threads->subsystem, sizeof(subsystem_copy) - 1);
+                subsystem_copy[sizeof(subsystem_copy) - 1] = '\0';
                 if (description && strlen(description) > 0) {
                     snprintf(msg, sizeof(msg), "%s (%s): Thread %lu (tid: %d) added, count: %d",
-                             threads->subsystem, description, (unsigned long)thread_id, tid, threads->thread_count);
+                             subsystem_copy, description, (unsigned long)thread_id, tid, threads->thread_count);
                 } else {
                     snprintf(msg, sizeof(msg), "%s: Thread %lu (tid: %d) added, count: %d",
-                             threads->subsystem, (unsigned long)thread_id, tid, threads->thread_count);
+                             subsystem_copy, (unsigned long)thread_id, tid, threads->thread_count);
                 }
-                log_this(log_subsystem, msg, LOG_LEVEL_TRACE, 0);
+                do_log = true;
             }
         } else {
-            const char* log_subsystem = subsystem ? subsystem : SR_THREADS_LIB;
-            log_this(log_subsystem, "Failed to add thread: MAX_SERVICE_THREADS reached", LOG_LEVEL_ERROR, 0);
+            log_error_max = true;
         }
-        MUTEX_UNLOCK(&thread_mutex, subsystem ? subsystem : SR_THREADS_LIB);
+        MUTEX_UNLOCK(&thread_mutex, log_subsystem);
+    }
+
+    if (do_log) {
+        log_this(log_subsystem, msg, LOG_LEVEL_TRACE, 0);
+    } else if (log_error_max) {
+        log_this(log_subsystem, "Failed to add thread: MAX_SERVICE_THREADS reached", LOG_LEVEL_ERROR, 0);
     }
 }
 
@@ -108,7 +119,9 @@ void add_service_thread(ServiceThreads *threads, pthread_t thread_id) {
 
 // Remove a thread from service tracking
 // If skip_logging is true, don't generate log messages (used during shutdown)
-void remove_thread_internal(ServiceThreads *threads, int index, bool skip_logging) {
+// Returns true when a removal log line should be emitted by the caller (outside thread_mutex).
+bool remove_thread_internal(ServiceThreads *threads, int index, bool skip_logging,
+                            char* log_msg, size_t log_msg_size) {
     pthread_t thread_id = threads->thread_ids[index];
 
     // Move last thread to this position to maintain array compaction
@@ -129,27 +142,31 @@ void remove_thread_internal(ServiceThreads *threads, int index, bool skip_loggin
 
     threads->thread_count--;
 
-    // Only log if not skipping, not in final shutdown, and early in shutdown (when app_config still exists)
-    if (!skip_logging && !final_shutdown_mode) {
-        char msg[128];
-        log_group_begin();
-        snprintf(msg, sizeof(msg), "%s: Thread %lu removed, count: %d", 
+    if (!skip_logging && !final_shutdown_mode && log_msg && log_msg_size > 0) {
+        snprintf(log_msg, log_msg_size, "%s: Thread %lu removed, count: %d",
                  threads->subsystem, (unsigned long)thread_id, threads->thread_count);
-        log_this(SR_THREADS_LIB, msg, LOG_LEVEL_TRACE, 0);
-        log_group_end();
+        return true;
     }
+    return false;
 }
 
 void remove_service_thread(ServiceThreads *threads, pthread_t thread_id) {
+    char msg[128];
+    bool do_log = false;
+
     MutexResult lock_result = MUTEX_LOCK(&thread_mutex, SR_THREADS_LIB);
     if (lock_result == MUTEX_SUCCESS) {
         for (int i = 0; i < threads->thread_count; i++) {
             if (pthread_equal(threads->thread_ids[i], thread_id)) {
-                remove_thread_internal(threads, i, false);
+                do_log = remove_thread_internal(threads, i, false, msg, sizeof(msg));
                 break;
             }
         }
         MUTEX_UNLOCK(&thread_mutex, SR_THREADS_LIB);
+    }
+
+    if (do_log) {
+        log_this(SR_THREADS_LIB, msg, LOG_LEVEL_TRACE, 0);
     }
 }
 
@@ -186,10 +203,8 @@ void update_service_thread_metrics(ServiceThreads *threads) {
         for (int i = 0; i < threads->thread_count; i++) {
             pid_t tid = threads->thread_tids[i];
 
-            // Check if thread is alive
             if (kill(tid, 0) != 0) {
-                // Thread is dead, remove it
-                remove_thread_internal(threads, i, true);  // Skip logging during metrics update
+                (void)remove_thread_internal(threads, i, true, NULL, 0);
                 i--; // Reprocess this index
                 continue;
             }
@@ -238,44 +253,44 @@ ThreadMemoryMetrics get_thread_memory_metrics(ServiceThreads *threads, pthread_t
 
 // Report status of all service threads
 void report_thread_status(void) {
+    int logging_count = 0;
+    int web_count = 0;
+    int websocket_count = 0;
+    int mdns_count = 0;
+    int mail_count = 0;
+    int print_count = 0;
+    int database_count = 0;
+    int total_threads = 0;
+    bool have_counts = false;
+
     MutexResult lock_result = MUTEX_LOCK(&thread_mutex, SR_THREADS_LIB);
     if (lock_result == MUTEX_SUCCESS) {
-        log_this(SR_THREADS, "Thread Status Report:", LOG_LEVEL_STATE, 0);
-
-        // Report logging threads
-        log_this(SR_THREADS, "  Logging Threads: %d active", LOG_LEVEL_STATE, 1, logging_threads.thread_count);
-
-        // Report web threads
-        log_this(SR_THREADS, "  Web Threads: %d active", LOG_LEVEL_STATE, 1, webserver_threads.thread_count);
-
-        // Report websocket threads
-        log_this(SR_THREADS, "  WebSocket Threads: %d active", LOG_LEVEL_STATE, 1, websocket_threads.thread_count);
-
-        // Report mdns server threads
-        log_this(SR_THREADS, "  mDNS Server Threads: %d active", LOG_LEVEL_STATE, 1, mdns_server_threads.thread_count);
-
-        // Report mail relay threads
-        log_this(SR_THREADS, "  Mail Relay Threads: %d active", LOG_LEVEL_STATE, 1, mailrelay_threads.thread_count);
-
-        // Report print threads
-        log_this(SR_THREADS, "  Print Threads: %d active", LOG_LEVEL_STATE, 1, print_threads.thread_count);
-
-        // Report database threads
-        log_this(SR_THREADS, "  Database Threads: %d active", LOG_LEVEL_STATE, 1, database_threads.thread_count);
-
-        // Calculate total threads
-        int total_threads = logging_threads.thread_count +
-                           webserver_threads.thread_count +
-                           websocket_threads.thread_count +
-                           mdns_server_threads.thread_count +
-                           mailrelay_threads.thread_count +
-                           print_threads.thread_count +
-                           database_threads.thread_count;
-
-        log_this(SR_THREADS, "Total Active Threads: %d", LOG_LEVEL_STATE, 1, total_threads);
-
+        logging_count = logging_threads.thread_count;
+        web_count = webserver_threads.thread_count;
+        websocket_count = websocket_threads.thread_count;
+        mdns_count = mdns_server_threads.thread_count;
+        mail_count = mailrelay_threads.thread_count;
+        print_count = print_threads.thread_count;
+        database_count = database_threads.thread_count;
+        total_threads = logging_count + web_count + websocket_count + mdns_count +
+                        mail_count + print_count + database_count;
+        have_counts = true;
         MUTEX_UNLOCK(&thread_mutex, SR_THREADS_LIB);
     }
+
+    if (!have_counts) {
+        return;
+    }
+
+    log_this(SR_THREADS, "Thread Status Report:", LOG_LEVEL_STATE, 0);
+    log_this(SR_THREADS, "  Logging Threads: %d active", LOG_LEVEL_STATE, 1, logging_count);
+    log_this(SR_THREADS, "  Web Threads: %d active", LOG_LEVEL_STATE, 1, web_count);
+    log_this(SR_THREADS, "  WebSocket Threads: %d active", LOG_LEVEL_STATE, 1, websocket_count);
+    log_this(SR_THREADS, "  mDNS Server Threads: %d active", LOG_LEVEL_STATE, 1, mdns_count);
+    log_this(SR_THREADS, "  Mail Relay Threads: %d active", LOG_LEVEL_STATE, 1, mail_count);
+    log_this(SR_THREADS, "  Print Threads: %d active", LOG_LEVEL_STATE, 1, print_count);
+    log_this(SR_THREADS, "  Database Threads: %d active", LOG_LEVEL_STATE, 1, database_count);
+    log_this(SR_THREADS, "Total Active Threads: %d", LOG_LEVEL_STATE, 1, total_threads);
 }
 
 // Free thread-related resources

@@ -63,6 +63,7 @@ void free_threads_resources(void);
 
 // Internal function declarations (made public for testing)
 size_t get_thread_stack_size(pid_t tid);
-void remove_thread_internal(ServiceThreads *threads, int index, bool skip_logging);
+bool remove_thread_internal(ServiceThreads *threads, int index, bool skip_logging,
+                            char* log_msg, size_t log_msg_size);
 
 #endif // THREADS_H

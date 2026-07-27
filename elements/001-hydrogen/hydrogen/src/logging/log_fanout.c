@@ -28,8 +28,9 @@
 
 // Shared logging state (declared in logging.c / state.c).
 extern volatile sig_atomic_t log_queue_shutdown;
-extern pthread_cond_t terminate_cond;
-extern pthread_mutex_t terminate_mutex;
+
+static pthread_mutex_t log_fanout_wake_mutex = PTHREAD_MUTEX_INITIALIZER;
+static pthread_cond_t log_fanout_wake_cond = PTHREAD_COND_INITIALIZER;
 
 // Local mirror of logging.c's label widths so this module stays self-contained.
 #define FANOUT_PRIORITY_WIDTH 8
@@ -171,37 +172,50 @@ static Queue* g_log_queue = NULL;
 static pthread_t g_log_fanout_thread;
 static volatile sig_atomic_t g_log_fanout_running = 0;
 
+void log_fanout_wake(void) {
+    pthread_mutex_lock(&log_fanout_wake_mutex);
+    pthread_cond_signal(&log_fanout_wake_cond);
+    pthread_mutex_unlock(&log_fanout_wake_mutex);
+}
+
+void log_fanout_drain(void) {
+    size_t size;
+    int priority;
+    char* data;
+
+    if (!g_log_queue) {
+        return;
+    }
+
+    data = queue_dequeue_nonblocking(g_log_queue, &size, &priority);
+    while (data) {
+        fanout_entry(data);
+        free(data);
+        data = queue_dequeue_nonblocking(g_log_queue, &size, &priority);
+    }
+}
+
 void* log_fanout_thread(void* arg) {
     (void)arg;
 
     while (!log_queue_shutdown) {
-        pthread_mutex_lock(&terminate_mutex);
-        while (queue_size(g_log_queue) == 0 && !log_queue_shutdown) {
-            pthread_cond_wait(&terminate_cond, &terminate_mutex);
-        }
-        pthread_mutex_unlock(&terminate_mutex);
+        log_fanout_drain();
 
-        size_t size;
-        int priority;
-        char* data = queue_dequeue_nonblocking(g_log_queue, &size, &priority);
-        while (data) {
-            fanout_entry(data);
-            free(data);
-            data = queue_dequeue_nonblocking(g_log_queue, &size, &priority);
+        pthread_mutex_lock(&log_fanout_wake_mutex);
+        if (!log_queue_shutdown) {
+            struct timespec ts;
+            clock_gettime(CLOCK_REALTIME, &ts);
+            ts.tv_nsec += 100000000L;
+            if (ts.tv_nsec >= 1000000000L) {
+                ts.tv_sec += 1;
+                ts.tv_nsec -= 1000000000L;
+            }
+            pthread_cond_timedwait(&log_fanout_wake_cond, &log_fanout_wake_mutex, &ts);
         }
+        pthread_mutex_unlock(&log_fanout_wake_mutex);
     }
 
-    {
-        size_t size;
-        int priority;
-        char* data = queue_dequeue_nonblocking(g_log_queue, &size, &priority);
-        while (data) {
-            fanout_entry(data);
-            free(data);
-            data = queue_dequeue_nonblocking(g_log_queue, &size, &priority);
-        }
-    }
-
+    log_fanout_drain();
     return NULL;
 }
 
@@ -228,9 +242,9 @@ bool shutdown_log_fanout(void) {
     g_log_fanout_running = 0;
 
     log_queue_shutdown = 1;
-    pthread_mutex_lock(&terminate_mutex);
-    pthread_cond_broadcast(&terminate_cond);
-    pthread_mutex_unlock(&terminate_mutex);
+    pthread_mutex_lock(&log_fanout_wake_mutex);
+    pthread_cond_broadcast(&log_fanout_wake_cond);
+    pthread_mutex_unlock(&log_fanout_wake_mutex);
 
     bool ok = true;
     if (g_log_fanout_thread) {

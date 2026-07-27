@@ -113,6 +113,10 @@ void free_mutex_id(void *ptr);
 // Lazy init mutex TLS keys
 void init_mutex_tls_keys(void);
 
+// Timed bookkeeping locks (never block forever; used by mutex internals)
+bool mutex_bookkeeping_lock(pthread_mutex_t *m);
+void mutex_bookkeeping_unlock(pthread_mutex_t *m);
+
 // Accessors for current_mutex_operation_id
 MutexId* get_current_mutex_op_id(void);
 void set_current_mutex_op_id(const MutexId *id);
