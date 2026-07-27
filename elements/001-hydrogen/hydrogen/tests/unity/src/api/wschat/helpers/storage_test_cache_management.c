@@ -10,15 +10,34 @@
 
 #include <src/hydrogen.h>
 #include <unity.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 #include <src/api/wschat/helpers/storage.h>
+#include <src/api/wschat/helpers/lru_cache.h>
+
+static char g_tmp_root[] = "/tmp/storage_test_cache_management_XXXXXX";
 
 void setUp(void) {
+    /* Create sandbox cache directory before any cache operations */
+    char cmd[512];
+    snprintf(cmd, sizeof(cmd), "rm -rf %s 2>/dev/null", g_tmp_root);
+    system(cmd);
+    mkdir(g_tmp_root, 0755);
+    setenv(CHAT_CACHE_DIR_ENV_VAR, g_tmp_root, 1);
+
     chat_storage_cache_shutdown("testdb");
 }
 
 void tearDown(void) {
     chat_storage_cache_shutdown("testdb");
+
+    /* Clean up sandbox */
+    char cmd[512];
+    snprintf(cmd, sizeof(cmd), "rm -rf %s 2>/dev/null", g_tmp_root);
+    system(cmd);
+    unsetenv(CHAT_CACHE_DIR_ENV_VAR);
 }
 
 /* cache_init with valid database creates a cache */
@@ -72,6 +91,7 @@ static void test_cache_shutdown_unknown(void) {
 }
 
 int main(void) {
+    mkdtemp(g_tmp_root);
     UNITY_BEGIN();
     RUN_TEST(test_cache_init_valid);
     RUN_TEST(test_cache_init_already_exists);
