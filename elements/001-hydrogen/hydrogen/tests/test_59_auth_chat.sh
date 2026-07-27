@@ -32,6 +32,8 @@
 #                       chat to blackbox-cover storage_media.c, storage_hex.c,
 #                       proxy_mq.c and proxy_mc.c; mock LLM gains SSE streaming
 # 1.4.0 - 2026-07-23 - Non-stream chat_done + chat_error paths for chat_send.c
+# 1.5.0 - 2026-07-27 - Isolate chat LRU disk cache under DIAG_TEST_DIR via
+#                       CHAT_CACHE_DIR so tests never write hydrogen/cache/
 
 set -euo pipefail
 
@@ -39,7 +41,7 @@ TEST_NAME="Auth Chat"
 TEST_ABBR="ACH"
 TEST_NUMBER="59"
 TEST_COUNTER=0
-TEST_VERSION="1.4.0"
+TEST_VERSION="1.5.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -62,6 +64,7 @@ MOCK_LLM_PID=""
 HYDROGEN_PID=""
 SQLITE_TEMP=""
 CONFIG_TEMP=""
+CHAT_CACHE_TEMP=""
 MOCK_LLM_LOG=""
 HYDROGEN_LOG=""
 
@@ -101,6 +104,10 @@ cleanup() {
     if [[ -n "${CONFIG_TEMP}" ]]; then
         rm -f "${CONFIG_TEMP}" 2>/dev/null || true
     fi
+    if [[ -n "${CHAT_CACHE_TEMP}" ]]; then
+        rm -rf "${CHAT_CACHE_TEMP}" 2>/dev/null || true
+    fi
+    unset CHAT_CACHE_DIR 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -332,6 +339,14 @@ PY
 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "SQLite engines retargeted to ${MOCK_URL}"
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen"
+# Point chat LRU disk cache at a disposable dir under the test diagnostics tree.
+# Default path is cwd-relative "cache" (see lru_cache.h LRU_CACHE_DIR_NAME), which
+# would pollute elements/001-hydrogen/hydrogen/cache/ when the server runs from PROJECT_DIR.
+CHAT_CACHE_TEMP="${DIAG_TEST_DIR}/chat_lru_cache"
+mkdir -p "${CHAT_CACHE_TEMP}"
+export CHAT_CACHE_DIR="${CHAT_CACHE_TEMP}"
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "CHAT_CACHE_DIR=${CHAT_CACHE_DIR}"
+
 HYDROGEN_LOG="${LOG_PREFIX}${TIMESTAMP}_hydrogen.log"
 hydrogen_pid_var="AUTH_CHAT_HYDROGEN_PID"
 eval "${hydrogen_pid_var}=''"
