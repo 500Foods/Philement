@@ -11,6 +11,8 @@
 #include <unity.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 #include <src/api/wschat/helpers/context_hashing.h>
 #include <src/api/wschat/helpers/storage.h>
@@ -25,12 +27,27 @@ void test_resolve_bandwidth_saved(void);
 static const char* DB = "test_resolve_db";
 static const char* VALID = "abcdefghijklmnopqrstuvwxyz0123456789ABCDEFG";
 
+static char g_tmp_root[] = "/tmp/context_hashing_test_resolve_XXXXXX";
+
 void setUp(void) {
+    /* Create sandbox cache directory before any cache operations */
+    char cmd[512];
+    snprintf(cmd, sizeof(cmd), "rm -rf %s 2>/dev/null", g_tmp_root);
+    system(cmd);
+    mkdir(g_tmp_root, 0755);
+    setenv(CHAT_CACHE_DIR_ENV_VAR, g_tmp_root, 1);
+
     chat_storage_cache_shutdown(DB);
 }
 
 void tearDown(void) {
     chat_storage_cache_shutdown(DB);
+
+    /* Clean up sandbox */
+    char cmd[512];
+    snprintf(cmd, sizeof(cmd), "rm -rf %s 2>/dev/null", g_tmp_root);
+    system(cmd);
+    unsetenv(CHAT_CACHE_DIR_ENV_VAR);
 }
 
 /* NULL database / hashes / zero count -> NULL */
@@ -112,6 +129,10 @@ void test_resolve_bandwidth_saved(void) {
 }
 
 int main(void) {
+    if (mkdtemp(g_tmp_root) == NULL) {
+        strncpy(g_tmp_root, "/tmp/context_hashing_test_resolve_fb", sizeof(g_tmp_root) - 1);
+        mkdir(g_tmp_root, 0755);
+    }
     UNITY_BEGIN();
     RUN_TEST(test_resolve_null_params);
     RUN_TEST(test_resolve_found);
