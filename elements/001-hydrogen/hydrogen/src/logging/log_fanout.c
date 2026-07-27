@@ -181,10 +181,20 @@ void* log_fanout_thread(void* arg) {
         }
         pthread_mutex_unlock(&terminate_mutex);
 
-        // Drain everything currently available.
         size_t size;
         int priority;
-        char* data = queue_dequeue(g_log_queue, &size, &priority);
+        char* data = queue_dequeue_nonblocking(g_log_queue, &size, &priority);
+        while (data) {
+            fanout_entry(data);
+            free(data);
+            data = queue_dequeue_nonblocking(g_log_queue, &size, &priority);
+        }
+    }
+
+    {
+        size_t size;
+        int priority;
+        char* data = queue_dequeue_nonblocking(g_log_queue, &size, &priority);
         while (data) {
             fanout_entry(data);
             free(data);
@@ -218,7 +228,9 @@ bool shutdown_log_fanout(void) {
     g_log_fanout_running = 0;
 
     log_queue_shutdown = 1;
+    pthread_mutex_lock(&terminate_mutex);
     pthread_cond_broadcast(&terminate_cond);
+    pthread_mutex_unlock(&terminate_mutex);
 
     bool ok = true;
     if (g_log_fanout_thread) {

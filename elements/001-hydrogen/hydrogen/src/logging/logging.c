@@ -566,11 +566,11 @@ void log_this(const char* subsystem, const char* format, int priority, int num_a
 
             log_queue = queue_find("SystemLog");
             if (log_queue) {
-                if (queue_enqueue(log_queue, json_message, strlen(json_message), priority) == 0) {
-                    // Queue succeeded, don't need console fallback
+                if (queue_enqueue(log_queue, json_message, strlen(json_message), priority)) {
                     use_console = false;
-                    // Signal the log queue manager
+                    pthread_mutex_lock(&terminate_mutex);
                     pthread_cond_signal(&terminate_cond);
+                    pthread_mutex_unlock(&terminate_mutex);
                 }
                 queue_release(log_queue);
             }

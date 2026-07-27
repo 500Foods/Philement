@@ -201,6 +201,7 @@ declare -a ENV_WHITELIST=(
     "MOCK_URL" "RESP_DIR" "SQLITE_TEMP" "TEST_RESULT" "VALID_ENGINE" "WEB_PORT"
     "MEDIA_HASH" "MEDIA_OUT" "MEDIA_REF" "STREAM_MSG" "STREAM_OUT" "WS_PORT"
     "DONE_MSG" "DONE_OUT" "ERR_MSG" "ERR_OUT"
+    "CHAT_CACHE_DIR" "CHAT_CACHE_TEMP"
     # First found in tests/test_60_performance.sh                         
     "PERF_CONFIG_FILE" "PERF_DESCRIPTION" "PERF_ITERATIONS" "PERF_LOG_SUFFIX" "PERF_MEASURED_COUNT"
     # First found in tests/test_91_cppcheck.sh

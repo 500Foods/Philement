@@ -8,15 +8,15 @@ Total disabled tests: 43
 
 ---
 
-## Logging
+## Logging — DONE (re-enabled, all pass)
 
-| # | File | Line | Test Function | Reason |
+| # | File | Line | Test Function | Resolution |
 | --- | ------ | ------ | --------------- | -------- |
-| 1 | `/elements/001-hydrogen/hydrogen/tests/unity/src/logging/logging_test_basic.c` | 126 | `test_count_format_specifiers_single_specifier` | — |
-| 2 | `/elements/001-hydrogen/hydrogen/tests/unity/src/logging/logging_test_basic.c` | 127 | `test_count_format_specifiers_multiple_specifiers` | — |
-| 3 | `/elements/001-hydrogen/hydrogen/tests/unity/src/logging/logging_test_basic.c` | 129 | `test_count_format_specifiers_mixed` | — |
-| 4 | `/elements/001-hydrogen/hydrogen/tests/unity/src/logging/logging_test_basic.c` | 132 | `test_get_fallback_priority_label_valid_priorities` | — |
-| 5 | `/elements/001-hydrogen/hydrogen/tests/unity/src/logging/logging_test_basic.c` | 133 | `test_get_fallback_priority_label_invalid_priority` | — |
+| 1 | `logging_test_basic.c` | — | `test_count_format_specifiers_single_specifier` | Re-enabled; matches `count_format_specifiers` |
+| 2 | `logging_test_basic.c` | — | `test_count_format_specifiers_multiple_specifiers` | Re-enabled |
+| 3 | `logging_test_basic.c` | — | `test_count_format_specifiers_mixed` | Re-enabled |
+| 4 | `logging_test_basic.c` | — | `test_get_fallback_priority_label_valid_priorities` | Re-enabled; matches fallback labels |
+| 5 | `logging_test_basic.c` | — | `test_get_fallback_priority_label_invalid_priority` | Re-enabled; invalid → STATE |
 
 ---
 
