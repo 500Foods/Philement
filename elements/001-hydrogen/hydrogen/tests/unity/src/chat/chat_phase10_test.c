@@ -37,12 +37,11 @@ static const char* TEST_DATABASE = "test_phase10_db";
 void setUp(void) {
     // Ensure default cache dir for default-path tests
     unsetenv(CHAT_CACHE_DIR_ENV_VAR);
-    system("rm -rf ./cache 2>/dev/null");
+    system("rm -rf /tmp/chat_phase10_test_cache 2>/dev/null");
 }
 
 void tearDown(void) {
     // Clean up after each test
-    system("rm -rf ./cache 2>/dev/null");
     system("rm -rf /tmp/chat_phase10_test_cache 2>/dev/null");
     unsetenv(CHAT_CACHE_DIR_ENV_VAR);
 }
@@ -94,7 +93,7 @@ void test_cache_dir_no_database_in_path(void) {
 // Test 4: Two-tier directory structure (first 2 chars as subfolder)
 void test_cache_two_tier_structure(void) {
     // Use a unique cache directory to avoid racing with chat_lru_cache_test
-    // which also targets the default ./cache path during parallel test execution
+    // which also targets /tmp/ paths during parallel test execution
     setenv(CHAT_CACHE_DIR_ENV_VAR, "/tmp/chat_phase10_test_cache", 1);
     system("rm -rf /tmp/chat_phase10_test_cache 2>/dev/null");
 
