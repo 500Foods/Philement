@@ -6,6 +6,9 @@
 
 #include <src/hydrogen.h>
 #include <unity.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 #include <src/api/wschat/helpers/storage.h>
 #include <src/api/wschat/helpers/lru_cache.h>
@@ -13,7 +16,16 @@
 /* Function prototype (exposed via header comment in storage.h) */
 ChatLRUCache* chat_storage_get_or_create_cache(const char* database);
 
+static char g_tmp_root[] = "/tmp/storage_test_get_or_create_XXXXXX";
+
 void setUp(void) {
+    /* Create sandbox cache directory before any cache operations */
+    char cmd[512];
+    snprintf(cmd, sizeof(cmd), "rm -rf %s 2>/dev/null", g_tmp_root);
+    system(cmd);
+    mkdir(g_tmp_root, 0755);
+    setenv(CHAT_CACHE_DIR_ENV_VAR, g_tmp_root, 1);
+
     /* Best-effort: shutdown any lingering test caches */
     chat_storage_cache_shutdown("testdb");
     chat_storage_cache_shutdown("testdb2");
@@ -24,6 +36,12 @@ void tearDown(void) {
     chat_storage_cache_shutdown("testdb");
     chat_storage_cache_shutdown("testdb2");
     chat_storage_cache_shutdown("full1");
+
+    /* Clean up sandbox */
+    char cmd[512];
+    snprintf(cmd, sizeof(cmd), "rm -rf %s 2>/dev/null", g_tmp_root);
+    system(cmd);
+    unsetenv(CHAT_CACHE_DIR_ENV_VAR);
 }
 
 /* NULL database returns NULL */
@@ -67,6 +85,10 @@ static void test_get_or_create_cache_full(void) {
 }
 
 int main(void) {
+    if (mkdtemp(g_tmp_root) == NULL) {
+        strncpy(g_tmp_root, "/tmp/storage_test_get_or_create_fb", sizeof(g_tmp_root) - 1);
+        mkdir(g_tmp_root, 0755);
+    }
     UNITY_BEGIN();
     RUN_TEST(test_get_or_create_cache_null_database);
     RUN_TEST(test_get_or_create_cache_existing);

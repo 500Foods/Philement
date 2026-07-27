@@ -6,6 +6,9 @@
 
 #include <src/hydrogen.h>
 #include <unity.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <sys/stat.h>
 
 #include <unity/mocks/mock_dbqueue.h>
 #include <unity/mocks/mock_database_engine.h>
@@ -15,6 +18,8 @@
 
 static DatabaseQueue* g_dbq = NULL;
 static DatabaseHandle* g_handle = NULL;
+
+static char g_tmp_root[] = "/tmp/storage_test_retrieve_segments_batch_XXXXXX";
 
 static char* build_compressed_hex(const char* content) {
     uint8_t* comp = NULL;
@@ -33,6 +38,13 @@ static char* build_compressed_hex(const char* content) {
 }
 
 void setUp(void) {
+    /* Create sandbox cache directory before any cache operations */
+    char cmd[512];
+    snprintf(cmd, sizeof(cmd), "rm -rf %s 2>/dev/null", g_tmp_root);
+    system(cmd);
+    mkdir(g_tmp_root, 0755);
+    setenv(CHAT_CACHE_DIR_ENV_VAR, g_tmp_root, 1);
+
     mock_dbqueue_reset_all();
     mock_database_engine_reset_all();
     chat_storage_cache_shutdown("testdb");
@@ -53,6 +65,12 @@ void tearDown(void) {
     chat_storage_cache_shutdown("testdb");
     mock_dbqueue_reset_all();
     mock_database_engine_reset_all();
+
+    /* Clean up sandbox */
+    char cmd[512];
+    snprintf(cmd, sizeof(cmd), "rm -rf %s 2>/dev/null", g_tmp_root);
+    system(cmd);
+    unsetenv(CHAT_CACHE_DIR_ENV_VAR);
 }
 
 /* NULL database */
@@ -148,6 +166,10 @@ static void test_batch_db_unavailable(void) {
 }
 
 int main(void) {
+    if (mkdtemp(g_tmp_root) == NULL) {
+        strncpy(g_tmp_root, "/tmp/storage_test_retrieve_segments_batch_fb", sizeof(g_tmp_root) - 1);
+        mkdir(g_tmp_root, 0755);
+    }
     UNITY_BEGIN();
     RUN_TEST(test_batch_null_database);
     RUN_TEST(test_batch_null_hashes);
