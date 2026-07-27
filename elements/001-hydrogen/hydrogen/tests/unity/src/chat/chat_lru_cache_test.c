@@ -32,31 +32,35 @@ void test_lru_cache_get_dir(void);
 // Test database name
 static const char* TEST_DATABASE = "test_lru_cache_db";
 
+// Sandbox root for all disk operations in this test run
+static char g_tmp_root[] = "/tmp/chat_lru_cache_test_XXXXXX";
+
+// Point the cache implementation at a sandboxed, unique subdirectory
+static void set_sandbox_cache_dir(const char* leaf) {
+    char dir[256];
+    snprintf(dir, sizeof(dir), "%s/%s", g_tmp_root, leaf);
+    setenv(CHAT_CACHE_DIR_ENV_VAR, dir, 1);
+}
+
 // Forward declarations for test helper functions
 static char* generate_test_hash(int seed);
 static char* generate_test_content(int seed, size_t* out_len);
 
 void setUp(void) {
-    // Clean up any existing test cache directory before each test
-    // Get the actual cache directory used by implementation
-    char* cache_dir = chat_lru_cache_get_dir(TEST_DATABASE);
-    if (cache_dir) {
-        char cmd[512];
-        snprintf(cmd, sizeof(cmd), "rm -rf \"%s\" 2>/dev/null", cache_dir);
-        system(cmd);
-        free(cache_dir);
-    }
+    // Best-effort cleanup of the sandbox root from a previous run
+    char cmd[512];
+    snprintf(cmd, sizeof(cmd), "rm -rf %s 2>/dev/null", g_tmp_root);
+    system(cmd);
+    // Recreate the sandbox root
+    mkdir(g_tmp_root, 0755);
 }
 
 void tearDown(void) {
-    // Clean up after each test
-    char* cache_dir = chat_lru_cache_get_dir(TEST_DATABASE);
-    if (cache_dir) {
-        char cmd[512];
-        snprintf(cmd, sizeof(cmd), "rm -rf \"%s\" 2>/dev/null", cache_dir);
-        system(cmd);
-        free(cache_dir);
-    }
+    // Clean up the sandbox directory after each test
+    char cmd[512];
+    snprintf(cmd, sizeof(cmd), "rm -rf %s 2>/dev/null", g_tmp_root);
+    system(cmd);
+    unsetenv(CHAT_CACHE_DIR_ENV_VAR);
 }
 
 // Generate a deterministic test hash (43 chars base64url-like)
@@ -89,6 +93,7 @@ static char* generate_test_content(int seed, size_t* out_len) {
 
 // Test 1: Basic cache initialization and shutdown
 void test_lru_cache_init_shutdown(void) {
+    set_sandbox_cache_dir("init");
     ChatLRUCache* cache = chat_lru_cache_init(TEST_DATABASE, 1024 * 1024);  // 1MB
     TEST_ASSERT_NOT_NULL(cache);
 
@@ -97,6 +102,7 @@ void test_lru_cache_init_shutdown(void) {
 
 // Test 2: Cache contains returns false for non-existent entry
 void test_lru_cache_contains_empty(void) {
+    set_sandbox_cache_dir("contains");
     ChatLRUCache* cache = chat_lru_cache_init(TEST_DATABASE, 1024 * 1024);
     TEST_ASSERT_NOT_NULL(cache);
 
@@ -110,6 +116,7 @@ void test_lru_cache_contains_empty(void) {
 
 // Test 3: Cache put and get basic functionality
 void test_lru_cache_put_get(void) {
+    set_sandbox_cache_dir("putget");
     ChatLRUCache* cache = chat_lru_cache_init(TEST_DATABASE, 1024 * 1024);
     TEST_ASSERT_NOT_NULL(cache);
 
@@ -138,6 +145,7 @@ void test_lru_cache_put_get(void) {
 
 // Test 4: Cache get returns NULL for non-existent entry
 void test_lru_cache_get_miss(void) {
+    set_sandbox_cache_dir("miss");
     ChatLRUCache* cache = chat_lru_cache_init(TEST_DATABASE, 1024 * 1024);
     TEST_ASSERT_NOT_NULL(cache);
 
@@ -151,6 +159,7 @@ void test_lru_cache_get_miss(void) {
 
 // Test 5: Cache remove functionality
 void test_lru_cache_remove(void) {
+    set_sandbox_cache_dir("remove");
     ChatLRUCache* cache = chat_lru_cache_init(TEST_DATABASE, 1024 * 1024);
     TEST_ASSERT_NOT_NULL(cache);
 
@@ -181,6 +190,7 @@ void test_lru_cache_remove(void) {
 
 // Test 6: Cache statistics tracking
 void test_lru_cache_stats(void) {
+    set_sandbox_cache_dir("stats");
     ChatLRUCache* cache = chat_lru_cache_init(TEST_DATABASE, 1024 * 1024);
     TEST_ASSERT_NOT_NULL(cache);
 
@@ -229,6 +239,7 @@ void test_lru_cache_stats(void) {
 
 // Test 7: LRU eviction when cache is full
 void test_lru_cache_eviction(void) {
+    set_sandbox_cache_dir("eviction");
     // Create small cache (1KB)
     ChatLRUCache* cache = chat_lru_cache_init(TEST_DATABASE, 1024);
     TEST_ASSERT_NOT_NULL(cache);
@@ -264,6 +275,7 @@ void test_lru_cache_eviction(void) {
 
 // Test 8: Cache update existing entry
 void test_lru_cache_update_entry(void) {
+    set_sandbox_cache_dir("update");
     ChatLRUCache* cache = chat_lru_cache_init(TEST_DATABASE, 1024 * 1024);
     TEST_ASSERT_NOT_NULL(cache);
 
@@ -297,6 +309,7 @@ void test_lru_cache_update_entry(void) {
 
 // Test 9: Cache clear functionality
 void test_lru_cache_clear(void) {
+    set_sandbox_cache_dir("clear");
     ChatLRUCache* cache = chat_lru_cache_init(TEST_DATABASE, 1024 * 1024);
     TEST_ASSERT_NOT_NULL(cache);
 
@@ -333,6 +346,7 @@ void test_lru_cache_clear(void) {
 
 // Test 10: NULL parameter handling
 void test_lru_cache_null_params(void) {
+    set_sandbox_cache_dir("nullparams");
     // Init with NULL database
     ChatLRUCache* cache = chat_lru_cache_init(NULL, 1024);
     TEST_ASSERT_NULL(cache);
@@ -354,6 +368,7 @@ void test_lru_cache_null_params(void) {
 
 // Test 11: Dirty flag tracking for sync
 void test_lru_cache_dirty_flag(void) {
+    set_sandbox_cache_dir("dirty");
     ChatLRUCache* cache = chat_lru_cache_init(TEST_DATABASE, 1024 * 1024);
     TEST_ASSERT_NOT_NULL(cache);
 
@@ -375,6 +390,7 @@ void test_lru_cache_dirty_flag(void) {
 
 // Test 12: Cache get directory path
 void test_lru_cache_get_dir(void) {
+    set_sandbox_cache_dir("getdir");
     char* path = chat_lru_cache_get_dir("testdb");
     TEST_ASSERT_NOT_NULL(path);
     // Path should be non-empty string
