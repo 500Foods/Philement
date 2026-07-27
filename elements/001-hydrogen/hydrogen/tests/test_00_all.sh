@@ -190,12 +190,7 @@ declare -a TEST_ELAPSED
 # Command line argument parsing
 SKIP_TESTS=false
 SEQUENTIAL_MODE=false
-# Groups 4x and 5x share the same database schemas/SQLite file across multiple conduit/OIDC tests. Running them in parallel causes migration/query collisions
-# (duplicate key errors, locked SQLite, rate-limit exhaustion). Keep them sequential so each test gets a clean shot at the shared databases while still exercising
-# internal concurrent query handling.
-# NOTE: test_56_cap_query.sh is part of group 5x and now exercises both negative paths (missing/invalid token) and positive protected-query INSERT
-# paths using the Cap fallback path. It is wired to full auto-run.
-SEQUENTIAL_GROUPS=( )
+SEQUENTIAL_GROUPS=()
 TEST_ARGS=()
 
 # Parse all arguments                                                  
