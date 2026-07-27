@@ -28,6 +28,81 @@ b="build/coverage/src/${src_path}.c.gcov"
 [[ -f "${a}" ]] || { echo "Error: File '${a}' not found." >&2; exit 1; }
 [[ -f "${b}" ]] || { echo "Error: File '${b}' not found." >&2; exit 1; }
 
+# Function to compute coverage percentage from a gcov file
+compute_coverage() {
+    local file="$1"
+    awk '
+        /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ { covered++; total++ }
+        /^[ \t]*#####:[ \t]*[0-9]+:/ { total++ }
+        END {
+            if (total == "") total = 0
+            if (covered == "") covered = 0
+            if (total == 0) {
+                print "0"
+            } else {
+                printf "%d\n", int(covered * 100 / total)
+            }
+        }
+    ' "${file}"
+}
+
+# Function to extract coverage status per line: linenum:status (1=covered, 0=uncovered)
+extract_coverage_status() {
+    local file="$1"
+    local output="$2"
+    awk '
+        /^[ \t]*[0-9]+\*?:[ \t]*[0-9]+:/ {
+            split($0, parts, ":")
+            gsub(/^[ \t]*|[ \t]*$/, "", parts[2])
+            print parts[2] ":1"
+        }
+        /^[ \t]*#####:[ \t]*[0-9]+:/ {
+            split($0, parts, ":")
+            gsub(/^[ \t]*|[ \t]*$/, "", parts[2])
+            print parts[2] ":0"
+        }
+    ' "${file}" > "${output}"
+}
+
+# Function to compute combined coverage from two coverage status files
+compute_combined_coverage() {
+    local file_a="$1"
+    local file_b="$2"
+    awk -F: '
+    {
+        ln = $1
+        status = $2
+        if (ln in combined) {
+            if (status == 1) combined[ln] = 1
+        } else {
+            combined[ln] = status
+        }
+    }
+    END {
+        total = 0
+        covered = 0
+        for (ln in combined) {
+            total++
+            if (combined[ln] == 1) covered++
+        }
+        if (total == 0) {
+            print "0"
+        } else {
+            printf "%d\n", int(covered * 100 / total)
+        }
+    }
+    ' "${file_a}" "${file_b}"
+}
+
+# Compute coverage percentages
+unit_cov=$(compute_coverage "${a}")
+blackbox_cov=$(compute_coverage "${b}")
+extract_coverage_status "${a}" status_a.txt
+extract_coverage_status "${b}" status_b.txt
+combined_cov=$(compute_combined_coverage status_a.txt status_b.txt)
+
+echo "Unit Coverage: ${unit_cov}%, Blackbox Coverage: ${blackbox_cov}%, Combined Coverage: ${combined_cov}%"
+
 # Function to extract uncovered lines: line_num:source
 extract_uncovered() {
     local file="$1"
@@ -61,4 +136,4 @@ else
 fi
 
 # Cleanup
-rm -f uncovered_*.txt sorted_*.txt
+rm -f uncovered_*.txt sorted_*.txt status_*.txt

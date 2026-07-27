@@ -53,7 +53,17 @@ Actionable incomplete work only. Completed plans live in
 | **Remaining** | `unity_asan` CMake tree, harness test, first-run triage (`detect_leaks=0`) |
 | **Why now** | Catches UAF/double-free on unit-only paths blackbox never hits. Separate build; does not touch gcov. |
 
-### 4. Auth register — persist email on `account_contacts`
+### 4. Unity disabled-test cleanup
+
+| | |
+|---|---|
+| **Plan** | [`UNITY_CLEANUP.md`](/docs/H/plans/UNITY_CLEANUP.md) |
+| **Effort** | M |
+| **Done** | ~0% — catalogue complete (43 tests) |
+| **Remaining** | Review each `if (0) RUN_TEST(...)` entry: fix and re-enable, mark ignored with `TEST_IGNORE_MESSAGE`, or remove if redundant/broken |
+| **Why now** | 43 disabled tests are dead weight; several segfault or have weak justification. Recovering even half moves Unity-only coverage up and shrinks the blackbox-to-unity gap. |
+
+### 5. Auth register — persist email on `account_contacts`
 
 | | |
 |---|---|
@@ -65,7 +75,7 @@ Actionable incomplete work only. Completed plans live in
 | **Why now** | Register returns 201 with email in JSON but login-by-email / contact lookups stay empty unless fixtures seed contacts. Small product correctness hole. |
 | **Note** | Do **not** reuse QueryRef #052 — that is password-hash storage only. |
 
-### 5. WebSocket server heartbeat — wire scheduled PING
+### 6. WebSocket server heartbeat — wire scheduled PING
 
 | | |
 |---|---|
@@ -221,19 +231,20 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 ## Status snapshot
 
 | # | Item | Effort left | Done | Priority |
-|---|------|-------------|------|----------|
+| --- | ------ | ------------- | ------ |----------|
 | 1 | Keycloak / OIDC RP E2E | S–M | ~90% | P0 |
 | 2 | Database params closeout | S | ~75% | P0 |
 | 3 | Unity ASAN | M | 0% | P1 |
-| 4 | Register email → account_contacts | S–M | ~40% | P1 |
-| 5 | WS server heartbeat wire-up | S–M | ~50% | P1 |
-| 6 | Mail Relay remainder | L–XL | ~70% | P2 |
-| 7 | Chat Phase 13 (+ 7a–7c gaps) | XL | ~15% of P13 | P2 |
-| 7a | REST auth_chat SSE streaming | L | ~20% | P2 |
-| 7b | WS chunked media upload | M | ~70% | P2 |
-| 7c | Legacy chat_stream dead code | S | n/a | P2 |
-| 8 | OIDC IdP (MVP + docs) | M | ~90% | P3 |
-| 9 | Print job → device / Beryllium | L–XL | ~30% | P3 |
-| 10 | mDNS client runtime | L–XL | ~25% | P3 |
-| 11 | Notify SMTP runtime | M–L | ~25% | P3 |
-| 12 | Mirage | XL | 0% | P3 |
+| 4 | Unity disabled-test cleanup | M | ~0% | P1 |
+| 5 | Register email → account_contacts | S–M | ~40% | P1 |
+| 6 | WS server heartbeat wire-up | S–M | ~50% | P1 |
+| 7 | Mail Relay remainder | L–XL | ~70% | P2 |
+| 8 | Chat Phase 13 (+ 7a–7c gaps) | XL | ~15% of P13 | P2 |
+| 8a | REST auth_chat SSE streaming | L | ~20% | P2 |
+| 8b | WS chunked media upload | M | ~70% | P2 |
+| 8c | Legacy chat_stream dead code | S | n/a | P2 |
+| 9 | OIDC IdP (MVP + docs) | M | ~90% | P3 |
+| 10 | Print job → device / Beryllium | L–XL | ~30% | P3 |
+| 11 | mDNS client runtime | L–XL | ~25% | P3 |
+| 12 | Notify SMTP runtime | M–L | ~25% | P3 |
+| 13 | Mirage | XL | 0% | P3 |
