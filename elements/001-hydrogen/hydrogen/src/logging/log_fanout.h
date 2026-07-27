@@ -40,6 +40,15 @@ bool init_log_fanout(void);
 bool shutdown_log_fanout(void);
 
 /*
+ * Wake the fan-out consumer after a successful SystemLog enqueue.
+ * Must not be called while holding log_mutex (deadlock with fanout path).
+ */
+void log_fanout_wake(void);
+
+/* Drain currently queued SystemLog entries (also used by the consumer thread). */
+void log_fanout_drain(void);
+
+/*
  * The following helpers are exposed (non-static) primarily so the Unity test
  * suite can exercise priority labeling, destination gating, entry formatting,
  * mailrelay fan-out, and per-entry routing directly. They are not part of the

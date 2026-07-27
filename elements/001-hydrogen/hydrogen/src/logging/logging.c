@@ -43,6 +43,7 @@
 
 // Local includes
 #include "logging.h"
+#include "log_fanout.h"
 #include <src/registry/registry.h>
 #include <stdarg.h>
 #include <time.h>
@@ -449,17 +450,13 @@ void log_this(const char* subsystem, const char* format, int priority, int num_a
 #endif
 
 void log_this(const char* subsystem, const char* format, int priority, int num_args, ...) {
-
-    // NEW: Skip logging if in mutex operation to break recursion
-    if (*get_mutex_operation_flag()) {
-        return;
-    }
+    bool wake_log_fanout = false;
 
     // Skip logging if in mutex operation to break recursion
     if (*get_mutex_operation_flag()) {
         return;
     }
-    
+
     // Set thread-local flag to prevent recursive logging
     bool was_in_logging = log_is_in_logging_operation();
     set_logging_operation_flag(true);
@@ -568,9 +565,7 @@ void log_this(const char* subsystem, const char* format, int priority, int num_a
             if (log_queue) {
                 if (queue_enqueue(log_queue, json_message, strlen(json_message), priority)) {
                     use_console = false;
-                    pthread_mutex_lock(&terminate_mutex);
-                    pthread_cond_signal(&terminate_cond);
-                    pthread_mutex_unlock(&terminate_mutex);
+                    wake_log_fanout = true;
                 }
                 queue_release(log_queue);
             }
@@ -589,6 +584,10 @@ void log_this(const char* subsystem, const char* format, int priority, int num_a
 
     // Restore the logging operation flag
     set_logging_operation_flag(was_in_logging);
+
+    if (wake_log_fanout) {
+        log_fanout_wake();
+    }
 }
 
 // Protect from mock system renaming this function

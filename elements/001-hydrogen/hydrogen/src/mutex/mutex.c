@@ -24,59 +24,38 @@ static MutexLockAttempt* locked_mutexes = NULL;
 static size_t locked_mutex_count = 0;
 static size_t locked_mutex_capacity = 0;
 
-// Thread-local storage for current mutex operation (now via keys)
-static pthread_key_t mutex_op_id_key;
-static pthread_key_t mutex_op_ptr_key;
-static bool mutex_tls_keys_initialized = false;
+// Per-thread current lock identity for REL logging. Use __thread (no malloc)
+// so LSAN never sees orphaned MutexId copies after thread exit / key_delete.
+static __thread MutexId tls_mutex_op_id;
+static __thread bool tls_mutex_op_id_set = false;
+static __thread pthread_mutex_t *tls_mutex_op_ptr = NULL;
 
-// Destructor for MutexId* (free on thread exit)
 void free_mutex_id(void *ptr) {
-    MutexId *id = (MutexId *)ptr;
-    if (id) free(id);
+    (void)ptr;
 }
 
-// Lazy init mutex TLS keys
 void init_mutex_tls_keys(void) {
-    if (!mutex_tls_keys_initialized) {
-        pthread_key_create(&mutex_op_id_key, free_mutex_id);
-        pthread_key_create(&mutex_op_ptr_key, NULL);  // No free for mutex ptr
-        mutex_tls_keys_initialized = true;
-    }
 }
 
-// Accessors for current_mutex_operation_id
 MutexId* get_current_mutex_op_id(void) {
-    init_mutex_tls_keys();
-    return pthread_getspecific(mutex_op_id_key);
+    return tls_mutex_op_id_set ? &tls_mutex_op_id : NULL;
 }
 
 void set_current_mutex_op_id(const MutexId *id) {
-    init_mutex_tls_keys();
-    // Free any existing MutexId before setting new one
-    MutexId *existing = pthread_getspecific(mutex_op_id_key);
-    if (existing) {
-        free(existing);
-    }
     if (id == NULL) {
-        pthread_setspecific(mutex_op_id_key, NULL);
+        tls_mutex_op_id_set = false;
         return;
     }
-    MutexId *copy = malloc(sizeof(MutexId));
-    if (copy) {
-        *copy = *id;  // Copy contents
-        pthread_setspecific(mutex_op_id_key, copy);
-    }
+    tls_mutex_op_id = *id;
+    tls_mutex_op_id_set = true;
 }
 
-// Accessors for current_mutex_operation_ptr
 pthread_mutex_t* get_current_mutex_op_ptr(void) {
-    init_mutex_tls_keys();
-    return pthread_getspecific(mutex_op_ptr_key);
+    return tls_mutex_op_ptr;
 }
 
 void set_current_mutex_op_ptr(pthread_mutex_t *ptr) {
-    init_mutex_tls_keys();
-    pthread_setspecific(mutex_op_ptr_key, ptr);
+    tls_mutex_op_ptr = ptr;
 }
 
 // Forward declarations
@@ -85,6 +64,21 @@ void detect_potential_deadlock(MutexId* current_id);
 // Statistics
 static MutexStats global_stats = {0};
 static pthread_mutex_t stats_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+bool mutex_bookkeeping_lock(pthread_mutex_t *m) {
+    struct timespec ts;
+    clock_gettime(CLOCK_REALTIME, &ts);
+    ts.tv_nsec += 50000000L;
+    if (ts.tv_nsec >= 1000000000L) {
+        ts.tv_sec += 1;
+        ts.tv_nsec -= 1000000000L;
+    }
+    return pthread_mutex_timedlock(m, &ts) == 0;
+}
+
+void mutex_bookkeeping_unlock(pthread_mutex_t *m) {
+    pthread_mutex_unlock(m);
+}
 
 /*
  * Core mutex lock with timeout and identification
@@ -109,110 +103,98 @@ MutexResult mutex_lock_with_timeout(
         timeout.tv_nsec %= 1000000000;
     }
 
-    // DEBUG: Log lock attempt (only if logging system is initialized and not already in a logging operation to avoid circular dependency)
-    if (queue_system_initialized && !log_is_in_logging_operation()) {
-        log_this(id->subsystem, "MUTEX REQ: %X as %s in %s()", LOG_LEVEL_TRACE, 3, (unsigned int)(uintptr_t)mutex, id->name, id->function);
-    }
+    // Do NOT log MUTEX REQ here. log_this takes log_mutex via MUTEX_LOCK which
+    // re-enters this function (stats/deadlock bookkeeping) and under load caused
+    // system-wide hangs (test_41 ASAN). REL/EXP still log after the critical path.
 
     // Record lock attempt for deadlock detection
-    if (deadlock_detection_enabled) {
-        pthread_mutex_lock(&deadlock_detection_mutex);
-        // Expand capacity if needed
+    if (deadlock_detection_enabled && mutex_bookkeeping_lock(&deadlock_detection_mutex)) {
         if (active_lock_count >= active_lock_capacity) {
-            active_lock_capacity = active_lock_capacity == 0 ? 16 : active_lock_capacity * 2;
+            size_t new_cap = active_lock_capacity == 0 ? 16 : active_lock_capacity * 2;
             MutexLockAttempt* new_attempts = realloc(active_lock_attempts,
-                active_lock_capacity * sizeof(MutexLockAttempt));
-            if (!new_attempts) {
-                pthread_mutex_unlock(&deadlock_detection_mutex);
-                return MUTEX_ERROR;
+                new_cap * sizeof(MutexLockAttempt));
+            if (new_attempts) {
+                active_lock_attempts = new_attempts;
+                active_lock_capacity = new_cap;
             }
-            active_lock_attempts = new_attempts;
         }
-        // Add lock attempt
-        active_lock_attempts[active_lock_count].id = *id;
-        active_lock_attempts[active_lock_count].thread_id = pthread_self();
-        active_lock_attempts[active_lock_count].attempt_start = time(NULL);
-        active_lock_attempts[active_lock_count].is_write_lock = false;
-        active_lock_count++;
-        pthread_mutex_unlock(&deadlock_detection_mutex);
+        if (active_lock_count < active_lock_capacity) {
+            active_lock_attempts[active_lock_count].id = *id;
+            active_lock_attempts[active_lock_count].thread_id = pthread_self();
+            active_lock_attempts[active_lock_count].attempt_start = time(NULL);
+            active_lock_attempts[active_lock_count].is_write_lock = false;
+            active_lock_count++;
+        }
+        mutex_bookkeeping_unlock(&deadlock_detection_mutex);
     }
 
     // Attempt to lock with timeout
     int result = pthread_mutex_timedlock(mutex, &timeout);
 
     // Remove from active attempts
-    if (deadlock_detection_enabled) {
-        pthread_mutex_lock(&deadlock_detection_mutex);
-        // Find and remove this attempt
+    if (deadlock_detection_enabled && mutex_bookkeeping_lock(&deadlock_detection_mutex)) {
         for (size_t i = 0; i < active_lock_count; i++) {
             if (pthread_equal(active_lock_attempts[i].thread_id, pthread_self()) &&
                 strcmp(active_lock_attempts[i].id.name, id->name) == 0) {
-                // Shift remaining elements
                 memmove(&active_lock_attempts[i], &active_lock_attempts[i + 1],
                     (active_lock_count - i - 1) * sizeof(MutexLockAttempt));
                 active_lock_count--;
                 break;
             }
         }
-        pthread_mutex_unlock(&deadlock_detection_mutex);
+        mutex_bookkeeping_unlock(&deadlock_detection_mutex);
     }
 
-    // Update statistics
-    pthread_mutex_lock(&stats_mutex);
-    global_stats.total_locks++;
     if (result == 0) {
-        // Success - record the locked mutex
-        if (deadlock_detection_enabled) {
-            pthread_mutex_lock(&deadlock_detection_mutex);
-            // Expand capacity if needed
-            if (locked_mutex_count >= locked_mutex_capacity) {
-                locked_mutex_capacity = locked_mutex_capacity == 0 ? 16 : locked_mutex_capacity * 2;
-                MutexLockAttempt* new_locked = realloc(locked_mutexes,
-                    locked_mutex_capacity * sizeof(MutexLockAttempt));
-                if (!new_locked) {
-                    pthread_mutex_unlock(&deadlock_detection_mutex);
-                    pthread_mutex_unlock(&stats_mutex);
-                    return MUTEX_ERROR;
-                }
-                locked_mutexes = new_locked;
-            }
-            // Add locked mutex
-            locked_mutexes[locked_mutex_count].id = *id;
-            locked_mutexes[locked_mutex_count].thread_id = pthread_self();
-            locked_mutexes[locked_mutex_count].mutex_ptr = mutex;
-            locked_mutex_count++;
-            // Set thread-local storage for unlock logging
-            set_current_mutex_op_id(id);
-            set_current_mutex_op_ptr(mutex);
-            pthread_mutex_unlock(&deadlock_detection_mutex);
+        if (mutex_bookkeeping_lock(&stats_mutex)) {
+            global_stats.total_locks++;
+            mutex_bookkeeping_unlock(&stats_mutex);
+        } else {
+            __atomic_fetch_add(&global_stats.total_locks, 1, __ATOMIC_RELAXED);
         }
-        pthread_mutex_unlock(&stats_mutex);
+        if (deadlock_detection_enabled && mutex_bookkeeping_lock(&deadlock_detection_mutex)) {
+            if (locked_mutex_count >= locked_mutex_capacity) {
+                size_t new_cap = locked_mutex_capacity == 0 ? 16 : locked_mutex_capacity * 2;
+                MutexLockAttempt* new_locked = realloc(locked_mutexes,
+                    new_cap * sizeof(MutexLockAttempt));
+                if (new_locked) {
+                    locked_mutexes = new_locked;
+                    locked_mutex_capacity = new_cap;
+                }
+            }
+            if (locked_mutex_count < locked_mutex_capacity) {
+                locked_mutexes[locked_mutex_count].id = *id;
+                locked_mutexes[locked_mutex_count].thread_id = pthread_self();
+                locked_mutexes[locked_mutex_count].mutex_ptr = mutex;
+                locked_mutex_count++;
+            }
+            mutex_bookkeeping_unlock(&deadlock_detection_mutex);
+        }
+        set_current_mutex_op_id(id);
+        set_current_mutex_op_ptr(mutex);
         return MUTEX_SUCCESS;
     } else if (result == ETIMEDOUT) {
-        // Timeout - potential deadlock
-        global_stats.total_timeouts++;
-        global_stats.last_timeout_time = time(NULL);
-        pthread_mutex_unlock(&stats_mutex);
-        // Clear thread-local storage on failure
+        if (mutex_bookkeeping_lock(&stats_mutex)) {
+            global_stats.total_timeouts++;
+            global_stats.last_timeout_time = time(NULL);
+            mutex_bookkeeping_unlock(&stats_mutex);
+        }
         set_current_mutex_op_id(NULL);
         set_current_mutex_op_ptr(NULL);
-        // Log timeout with full context (only if not already in a logging operation to avoid circular dependency)
         if (!log_is_in_logging_operation()) {
             log_this(id->subsystem, "MUTEX EXP: %X as %s in %s() [%s:%d] - timeout after %dms", LOG_LEVEL_ERROR, 6, (unsigned int)(uintptr_t)mutex, id->name, id->function, id->file, id->line, timeout_ms);
         }
-        // Check for potential deadlock
         if (deadlock_detection_enabled) {
             detect_potential_deadlock(id);
         }
         return MUTEX_TIMEOUT;
     } else {
-        // Other error
-        global_stats.total_errors++;
-        pthread_mutex_unlock(&stats_mutex);
-        // Clear thread-local storage on failure
+        if (mutex_bookkeeping_lock(&stats_mutex)) {
+            global_stats.total_errors++;
+            mutex_bookkeeping_unlock(&stats_mutex);
+        }
         set_current_mutex_op_id(NULL);
         set_current_mutex_op_ptr(NULL);
-        // Log error (only if not already in a logging operation to avoid circular dependency)
         if (!log_is_in_logging_operation()) {
             log_this(id->subsystem, "MUTEX ERR 1: %X as %s in %s() [%s:%d] - error %d (%s)", LOG_LEVEL_ERROR, 7, (unsigned int)(uintptr_t)mutex, id->name, id->function, id->file, id->line, result, strerror(result));
         }
@@ -267,28 +249,23 @@ MutexResult mutex_unlock(pthread_mutex_t* mutex) {
                      (unsigned int)(uintptr_t)mutex, op_id->name, op_id->function);
         }
         
-        // Remove from locked_mutexes tracking array
-        if (deadlock_detection_enabled) {
-            pthread_mutex_lock(&deadlock_detection_mutex);
+        if (deadlock_detection_enabled && mutex_bookkeeping_lock(&deadlock_detection_mutex)) {
             for (size_t i = 0; i < locked_mutex_count; i++) {
                 if (locked_mutexes[i].mutex_ptr == mutex &&
                     pthread_equal(locked_mutexes[i].thread_id, pthread_self())) {
-                    // Shift remaining elements
                     memmove(&locked_mutexes[i], &locked_mutexes[i + 1],
                         (locked_mutex_count - i - 1) * sizeof(MutexLockAttempt));
                     locked_mutex_count--;
                     break;
                 }
             }
-            pthread_mutex_unlock(&deadlock_detection_mutex);
+            mutex_bookkeeping_unlock(&deadlock_detection_mutex);
         }
-        
-        // Clear thread-local storage
+
         set_current_mutex_op_id(NULL);
         set_current_mutex_op_ptr(NULL);
         return MUTEX_SUCCESS;
     } else {
-        // This is a serious error - log it (only if not already in a logging operation to avoid circular dependency)
         if (!log_is_in_logging_operation()) {
             log_this(SR_MUTEXES, "MUTEX ERR 2: %X unlock failed - error %d (%s)", LOG_LEVEL_ERROR, 3, (unsigned int)(uintptr_t)mutex, result, strerror(result));
         }
@@ -305,31 +282,26 @@ MutexResult mutex_unlock_with_id(pthread_mutex_t* mutex, MutexId* id) {
     }
     int result = pthread_mutex_unlock(mutex);
     if (result == 0) {
-        // DEBUG: Log unlock operation (only if not already in a logging operation to avoid circular dependency)
         if (!log_is_in_logging_operation()) {
             log_this(id->subsystem, "MUTEX REL: %X as %s in %s()", LOG_LEVEL_TRACE, 3,
                      (unsigned int)(uintptr_t)mutex, id->name, id->function);
         }
-        
-        // Remove from locked_mutexes tracking array
-        if (deadlock_detection_enabled) {
-            pthread_mutex_lock(&deadlock_detection_mutex);
+
+        if (deadlock_detection_enabled && mutex_bookkeeping_lock(&deadlock_detection_mutex)) {
             for (size_t i = 0; i < locked_mutex_count; i++) {
                 if (locked_mutexes[i].mutex_ptr == mutex &&
                     pthread_equal(locked_mutexes[i].thread_id, pthread_self())) {
-                    // Shift remaining elements
                     memmove(&locked_mutexes[i], &locked_mutexes[i + 1],
                         (locked_mutex_count - i - 1) * sizeof(MutexLockAttempt));
                     locked_mutex_count--;
                     break;
                 }
             }
-            pthread_mutex_unlock(&deadlock_detection_mutex);
+            mutex_bookkeeping_unlock(&deadlock_detection_mutex);
         }
-        
+
         return MUTEX_SUCCESS;
     } else {
-        // This is a serious error - log it (only if not already in a logging operation to avoid circular dependency)
         if (!log_is_in_logging_operation()) {
             log_this(id->subsystem, "MUTEX ERR 3: %X unlock failed - error %d (%s)", LOG_LEVEL_ERROR, 3, (unsigned int)(uintptr_t)mutex, result, strerror(result));
         }
@@ -341,20 +313,29 @@ MutexResult mutex_unlock_with_id(pthread_mutex_t* mutex, MutexId* id) {
  * Deadlock detection helper
  */
 void detect_potential_deadlock(MutexId* current_id) {
-    pthread_mutex_lock(&deadlock_detection_mutex);
-    // Look for threads waiting for mutexes we might hold
+    char peer_name[128];
+    peer_name[0] = '\0';
+    bool found = false;
+
+    if (!current_id || !mutex_bookkeeping_lock(&deadlock_detection_mutex)) {
+        return;
+    }
     for (size_t i = 0; i < active_lock_count; i++) {
         MutexLockAttempt* attempt = &active_lock_attempts[i];
-        // Check if this thread is waiting for a mutex
-        // In a real deadlock detection algorithm, we'd check the actual
-        // mutex ownership, but this is a simplified version
         if (strcmp(attempt->id.subsystem, current_id->subsystem) == 0) {
-            log_this(SR_MUTEXES, "DEADLOCK: Thread waiting for %s while we wait for %s", LOG_LEVEL_ERROR, 2, attempt->id.name, current_id->name);
+            strncpy(peer_name, attempt->id.name, sizeof(peer_name) - 1);
+            peer_name[sizeof(peer_name) - 1] = '\0';
+            found = true;
             global_stats.total_deadlocks_detected++;
             global_stats.last_deadlock_time = time(NULL);
+            break;
         }
     }
-    pthread_mutex_unlock(&deadlock_detection_mutex);
+    mutex_bookkeeping_unlock(&deadlock_detection_mutex);
+
+    if (found && !log_is_in_logging_operation()) {
+        log_this(SR_MUTEXES, "DEADLOCK: Thread waiting for %s while we wait for %s", LOG_LEVEL_ERROR, 2, peer_name, current_id->name);
+    }
 }
 
 /*
@@ -372,18 +353,16 @@ bool mutex_is_deadlock_detection_enabled(void) {
  * Log all currently active lock attempts
  */
 void mutex_log_active_locks(void) {
-    pthread_mutex_lock(&deadlock_detection_mutex);
-    if (active_lock_count == 0) {
+    if (!mutex_bookkeeping_lock(&deadlock_detection_mutex)) {
+        return;
+    }
+    size_t count = active_lock_count;
+    mutex_bookkeeping_unlock(&deadlock_detection_mutex);
+    if (count == 0) {
         log_this(SR_MUTEXES, "No active mutex lock attempts", LOG_LEVEL_TRACE, 0);
     } else {
-        log_this(SR_MUTEXES, "Active mutex lock attempts: %zu", LOG_LEVEL_TRACE, 1, active_lock_count);
-        for (size_t i = 0; i < active_lock_count; i++) {
-            MutexLockAttempt* attempt = &active_lock_attempts[i];
-            time_t duration = time(NULL) - attempt->attempt_start;
-            log_this(SR_MUTEXES, " [%zu] %s in %s() [%s:%d] - waiting %ld seconds", LOG_LEVEL_TRACE, 6, i, attempt->id.name, attempt->id.function, attempt->id.file, attempt->id.line, duration);
-        }
+        log_this(SR_MUTEXES, "Active mutex lock attempts: %zu", LOG_LEVEL_TRACE, 1, count);
     }
-    pthread_mutex_unlock(&deadlock_detection_mutex);
 }
 
 /*
@@ -391,15 +370,19 @@ void mutex_log_active_locks(void) {
  */
 void mutex_get_stats(MutexStats* stats) {
     if (!stats) return;
-    pthread_mutex_lock(&stats_mutex);
-    *stats = global_stats;
-    pthread_mutex_unlock(&stats_mutex);
+    if (mutex_bookkeeping_lock(&stats_mutex)) {
+        *stats = global_stats;
+        mutex_bookkeeping_unlock(&stats_mutex);
+    } else {
+        *stats = global_stats;
+    }
 }
 
 void mutex_reset_stats(void) {
-    pthread_mutex_lock(&stats_mutex);
-    memset(&global_stats, 0, sizeof(MutexStats));
-    pthread_mutex_unlock(&stats_mutex);
+    if (mutex_bookkeeping_lock(&stats_mutex)) {
+        memset(&global_stats, 0, sizeof(MutexStats));
+        mutex_bookkeeping_unlock(&stats_mutex);
+    }
 }
 
 /*
@@ -430,33 +413,22 @@ bool mutex_system_init(void) {
 }
 
 void mutex_system_cleanup(void) {
-    // CRITICAL: Log FIRST, before deleting TLS keys
-    // Logging after key deletion creates new TLS allocations that never get freed
     log_this(SR_MUTEXES, "Mutex system cleanup started", LOG_LEVEL_TRACE, 0);
-    
-    // Clean up deadlock detection structures
-    pthread_mutex_lock(&deadlock_detection_mutex);
-    free(active_lock_attempts);
-    active_lock_attempts = NULL;
-    active_lock_count = 0;
-    active_lock_capacity = 0;
-    // Clean up locked mutex tracking structures
-    free(locked_mutexes);
-    locked_mutexes = NULL;
-    locked_mutex_count = 0;
-    locked_mutex_capacity = 0;
-    
-    // CRITICAL: Clear current thread's TLS data BEFORE deleting keys
-    // pthread_key_delete() doesn't call destructors - we must free manually
-    set_current_mutex_op_id(NULL);  // Frees any MutexId stored for this thread
-    set_current_mutex_op_ptr(NULL);  // Clear mutex ptr (no allocation to free)
-    
-    // Now safe to delete the keys
-    pthread_key_delete(mutex_op_id_key);
-    pthread_key_delete(mutex_op_ptr_key);
-    pthread_mutex_unlock(&deadlock_detection_mutex);
-    
-    // DO NOT log here - would create new TLS allocations after keys deleted
+
+    if (mutex_bookkeeping_lock(&deadlock_detection_mutex)) {
+        free(active_lock_attempts);
+        active_lock_attempts = NULL;
+        active_lock_count = 0;
+        active_lock_capacity = 0;
+        free(locked_mutexes);
+        locked_mutexes = NULL;
+        locked_mutex_count = 0;
+        locked_mutex_capacity = 0;
+        mutex_bookkeeping_unlock(&deadlock_detection_mutex);
+    }
+
+    set_current_mutex_op_id(NULL);
+    set_current_mutex_op_ptr(NULL);
 }
 
 /*
