@@ -107,12 +107,10 @@ typedef struct {
     unsigned int time_type;
 } MYSQL_TIME;
 
-// Helper function to bind a single parameter (will be used in Step 3)
-// cppcheck-suppress unusedFunction
-static bool mysql_bind_single_parameter(MYSQL_BIND* bind, unsigned int param_index, TypedParameter* param,
-                                         void** bound_values, size_t total_param_count, const char* designator) __attribute__((unused));
-static bool mysql_bind_single_parameter(MYSQL_BIND* bind, unsigned int param_index, TypedParameter* param,
+// Helper function to bind a single parameter (non-static for Unity direct tests)
+bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, TypedParameter* param,
                                          void** bound_values, size_t total_param_count, const char* designator) {
+    MYSQL_BIND* bind = (MYSQL_BIND*)bind_ptr;
     if (!bind || !param || !bound_values) {
         log_this(designator, "mysql_bind_single_parameter: invalid parameters", LOG_LEVEL_ERROR, 0);
         return false;

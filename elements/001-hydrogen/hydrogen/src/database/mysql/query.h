@@ -8,6 +8,7 @@
 #define DATABASE_ENGINE_MYSQL_QUERY_H
 
 #include <src/database/database.h>
+#include <src/database/database_params.h>
 
 // Helper functions
 void mysql_cleanup_column_names(char** column_names, size_t column_count);
@@ -17,9 +18,11 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
 bool mysql_execute_prepared(DatabaseHandle* connection, const PreparedStatement* stmt, QueryRequest* request, QueryResult** result);
 
 /* ----------------------------------------------------------------------------
- * The following helper is NOT part of the stable public API. It is exposed
- * (non-static) solely so the Unity test framework can call it directly.
+ * The following helpers are NOT part of the stable public API. They are exposed
+ * (non-static) solely so the Unity test framework can call them directly.
  * -------------------------------------------------------------------------- */
 void mysql_cleanup_bound_values(void** bound_values, size_t count);
+bool mysql_bind_single_parameter(void* bind, unsigned int param_index, TypedParameter* param,
+                                 void** bound_values, size_t total_param_count, const char* designator);
 
 #endif // DATABASE_ENGINE_MYSQL_QUERY_H
