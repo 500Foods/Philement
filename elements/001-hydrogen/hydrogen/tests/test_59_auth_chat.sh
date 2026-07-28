@@ -34,6 +34,8 @@
 # 1.4.0 - 2026-07-23 - Non-stream chat_done + chat_error paths for chat_send.c
 # 1.5.0 - 2026-07-27 - Isolate chat LRU disk cache under DIAG_TEST_DIR via
 #                       CHAT_CACHE_DIR so tests never write hydrogen/cache/
+# 1.6.0 - 2026-07-28 - WS heartbeat blackbox: short PingIntervalSeconds + hold
+#                       connection so server PING/PONG path is exercised
 
 set -euo pipefail
 
@@ -41,7 +43,7 @@ TEST_NAME="Auth Chat"
 TEST_ABBR="ACH"
 TEST_NUMBER="59"
 TEST_COUNTER=0
-TEST_VERSION="1.5.0"
+TEST_VERSION="1.6.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -322,18 +324,26 @@ if ! prepare_sqlite_with_mock_endpoint "${SQLITE_TEMP}" "${MOCK_URL}"; then
     exit 1
 fi
 
-# Materialize config with absolute sqlite path, Chat enabled, and WebSocketServer port.
+# Materialize config with absolute sqlite path, Chat enabled, WebSocketServer
+# port, and a short heartbeat interval so Test 59 can blackbox-cover
+# websocket_server_heartbeat.c without a long wait.
 python3 - "${BASE_CONFIG}" "${CONFIG_TEMP}" "${SQLITE_TEMP}" "${WEB_PORT}" "${WS_PORT}" <<'PY'
 import json, sys
 src, dst, sqlite_path, web_port, ws_port = sys.argv[1:6]
 cfg = json.load(open(src))
 cfg["WebServer"]["Port"] = int(web_port)
 cfg["WebSocketServer"]["Port"] = int(ws_port)
+cfg["WebSocketServer"]["Heartbeat"] = {
+    "Enabled": True,
+    "PingIntervalSeconds": 1,
+    # Generous timeout so websocat chat steps (no auto-pong) are not closed mid-flight.
+    "PongTimeoutSeconds": 60,
+    "StaleConnectionSeconds": 120,
+}
 for c in cfg.get("Databases", {}).get("Connections", []):
     c["Database"] = sqlite_path
     c["Chat"] = True
 json.dump(cfg, open(dst, "w"), indent=2)
-print(dst)
 PY
 
 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "SQLite engines retargeted to ${MOCK_URL}"
@@ -482,15 +492,15 @@ code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat/stream" \
 if [[ "${code}" == "400" ]]; then record 0 "400 on unknown engine"; else record 1 "expected 400 got ${code}"; fi
 
 # Streaming is stubbed: a successful auth+parse+engine path returns 200 with an
-# SSE body containing the "not yet implemented" error event.
+# SSE body containing the intentional REST-SSE-unavailable error event.
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat/stream stub SSE -> 200"
 out="${RESP_DIR}/stream_stub.json"
 code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat/stream" \
     '{"messages":[{"role":"user","content":"hello stream"}],"temperature":0.2,"max_tokens":64}' \
     "${out}" "${JWT_TOKEN}")
 body_snip=$(head -c 200 "${out}" 2>/dev/null || true)
-if [[ "${code}" == "200" ]] && echo "${body_snip}" | "${GREP}" -q "Streaming not yet implemented"; then
-    record 0 "200 SSE stub with not-implemented event"
+if [[ "${code}" == "200" ]] && echo "${body_snip}" | "${GREP}" -q "REST SSE streaming unavailable"; then
+    record 0 "200 SSE stub with unavailable event"
 else
     record 1 "stream stub failed HTTP ${code} body=${body_snip}"
 fi
@@ -668,6 +678,66 @@ if [[ -n "${DONE_MSG}" ]]; then
     fi
 else
     record 1 "failed to build non-stream chat message"
+fi
+
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WS heartbeat -> PING sent"
+# Hold a chat WebSocket open long enough for the server's 1s heartbeat timer
+# (ws_arm_heartbeat_timer / ws_handle_heartbeat_timer / ws_send_ping).
+# Assert server-side PING; application pong delivery varies by client stack and
+# is already covered by Unity (ws_handle_pong_received).
+HB_OUT="${RESP_DIR}/ws_heartbeat.txt"
+count_log_matches() {
+    local pattern="$1"
+    local n=0
+    if [[ -f "${HYDROGEN_LOG}" ]]; then
+        # grep -c exits 1 when count is 0; do not append a second zero via || echo
+        n=$("${GREP}" -c "${pattern}" "${HYDROGEN_LOG}" 2>/dev/null || true)
+    fi
+    [[ -z "${n}" ]] && n=0
+    printf '%s' "${n}"
+}
+if ! command -v python3 >/dev/null 2>&1; then
+    record 1 "python3 not available; cannot exercise heartbeat"
+else
+    ping_before=$(count_log_matches '\[WS\] PING sent')
+    # shellcheck disable=SC2310 # client exit is expected; we only care about server logs
+    python3 - "${WS_PORT}" "${WEBSOCKET_KEY}" >"${HB_OUT}" 2>&1 <<'PY' || true
+import asyncio, sys
+try:
+    import websockets
+except ImportError:
+    sys.stderr.write("websockets module missing\n")
+    sys.exit(2)
+
+port = int(sys.argv[1])
+key = sys.argv[2]
+url = f"ws://127.0.0.1:{port}/"
+headers = {"Authorization": f"Key {key}"}
+
+async def hold():
+    async with websockets.connect(
+        url,
+        subprotocols=["hydrogen"],
+        extra_headers=headers,
+        open_timeout=5,
+        close_timeout=2,
+        ping_interval=None,
+    ) as ws:
+        # Idle long enough for at least one 1s server heartbeat tick.
+        await asyncio.sleep(2.5)
+        _ = ws
+
+asyncio.run(hold())
+PY
+    py_rc=$?
+    ping_after=$(count_log_matches '\[WS\] PING sent')
+    if [[ "${py_rc}" -eq 2 ]]; then
+        record 1 "python websockets module missing"
+    elif [[ "${ping_after}" -gt "${ping_before}" ]]; then
+        record 0 "heartbeat PING exercised (${ping_before}->${ping_after})"
+    else
+        record 1 "heartbeat PING not observed (${ping_before}->${ping_after}); body=$(head -c 160 "${HB_OUT}" 2>/dev/null || true)"
+    fi
 fi
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary"

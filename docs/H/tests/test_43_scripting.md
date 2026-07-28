@@ -11,6 +11,9 @@ This script validates:
 - Orchestrator loading from the `scripts` table
 - Database connectivity for script execution
 - Scoreboard job tracking and completion
+- One-shot data-plane probes: `H.query` / `H.wait` / `H.query_sync` / `H.altquery`
+- One-shot mail/notify probes: `H.mail.send` / `send_sync` (freeform) and `H.notify.send_sync` (deferred error) when Mail Relay is enabled
+- One-shot HTTP probes: `H.http.get` / `H.wait` and `H.http.post_sync` against this process's WebServer (`HYDROGEN_HTTP_PROBE_BASE`)
 - Clean shutdown with Lua state cleanup
 - Graceful handling of disabled or missing Orchestrator rows
 
@@ -19,7 +22,7 @@ This script validates:
 - **Test Name**: Scripting End-to-End
 - **Test Abbreviation**: SCR
 - **Test Number**: 43
-- **Version**: 2.1.0
+- **Version**: 2.4.0
 
 ## Test Architecture
 

@@ -95,6 +95,14 @@ bool mailrelay_event_run_handler(const char* source,
 const MailEventRule* mailrelay_event_find_rule(const char* event_key);
 const char* mailrelay_event_resolve_source(const char* event_key,
                                            const MailEventRule* rule);
+const char* mailrelay_event_resolve_source_owned(const char* event_key,
+                                                 const MailEventRule* rule,
+                                                 char** out_owned);
+bool mailrelay_event_parse_script_ref(const char* script_ref,
+                                      char* group_out,
+                                      size_t group_cap,
+                                      char* name_out,
+                                      size_t name_cap);
 
 #ifdef __cplusplus
 }

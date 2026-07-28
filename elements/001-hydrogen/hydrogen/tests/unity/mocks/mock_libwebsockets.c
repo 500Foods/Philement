@@ -175,6 +175,12 @@ int mock_lws_callback_on_writable(struct lws *wsi)
     return 0; // Success
 }
 
+void mock_lws_set_timer_usecs(struct lws *wsi, long long usecs)
+{
+    (void)wsi;
+    (void)usecs;
+}
+
 const struct lws_protocols *mock_lws_get_protocol(struct lws *wsi)
 {
     (void)wsi;

@@ -217,8 +217,8 @@ int launch_mdns_server_subsystem(void) {
         server_config->model,                 // Device model
         server_config->manufacturer,          // Manufacturer
         VERSION,                              // Software version
-        "1.0.0",                              // Hardware version (placeholder)
-        "/config",                            // Config URL (placeholder)
+        "1.0.0",                              /* TXT hardware version (fixed; not config-driven) */
+        "/config",                            /* TXT config URL path (fixed) */
         server_config->services,              // Services array
         server_config->num_services,         // Number of services
         server_config->enable_ipv6           // IPv6 support flag

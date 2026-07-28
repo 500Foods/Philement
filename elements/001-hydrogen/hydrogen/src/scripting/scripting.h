@@ -2,7 +2,7 @@
  * Scripting Subsystem - State
  *
  * Phase 3b of the LUA_PLAN. Owns the subsystem-level state: shutdown
- * flag, ServiceThreads handle, and the placeholder for the long-lived
+ * flag, ServiceThreads handle, and the long-lived
  * Orchestrator lua_State (filled in by Phase 11).
  *
  * The subsystem is disabled by default (config->scripting.Enabled).

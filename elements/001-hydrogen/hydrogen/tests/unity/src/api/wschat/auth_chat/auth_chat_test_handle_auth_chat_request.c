@@ -262,7 +262,7 @@ void test_handle_auth_chat_request_parse_error(void) {
     TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
-// Valid JWT + valid parse, but stream=true -> "Streaming not yet implemented".
+// Valid JWT + valid parse, but stream=true -> 501 REST SSE unavailable.
 void test_handle_auth_chat_request_stream_not_implemented(void) {
     struct MHD_Connection *mock_connection = (struct MHD_Connection*)0x123;
     void *con_cls = NULL;

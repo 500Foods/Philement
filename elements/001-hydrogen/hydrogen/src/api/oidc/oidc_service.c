@@ -187,9 +187,7 @@ enum MHD_Result handle_oidc_request(struct MHD_Connection *connection,
         return MHD_NO;
     }
     
-    // Route the request to the appropriate endpoint handler
-    // Note: currently referring to functions not yet implemented in individual files
-    // These will be uncommented once the endpoint implementations are created
+    /* Route to IdP endpoint handlers (register/end-session may return 501). */
     if (strstr(url, "/.well-known/openid-configuration")) {
         return handle_oidc_discovery_endpoint(connection);
     } else if (strstr(url, "/oauth/authorize")) {
@@ -233,8 +231,7 @@ bool extract_oauth_params(struct MHD_Connection *connection, char **client_id,
                        char **redirect_uri, char **response_type,
                        char **scope, char **state, char **nonce,
                        char **code_challenge, char **code_challenge_method) {
-    // This is a stub implementation that just extracts the parameters
-    // from the request URL query string
+    /* Extract authorize query parameters from the MHD connection. */
     const char *value;
     
     value = MHD_lookup_connection_value(connection, MHD_GET_ARGUMENT_KIND, "client_id");
@@ -511,7 +508,7 @@ enum MHD_Result send_oidc_json_response(struct MHD_Connection *connection,
 bool validate_oauth_params(const char *client_id, const char *redirect_uri,
                        const char *response_type, char **error,
                        char **error_description) {
-    // This is a stub implementation that performs minimal validation
+    /* Minimal presence checks; full client validation is elsewhere in the IdP path. */
     if (!client_id) {
         *error = strdup("invalid_request");
         *error_description = strdup("Missing client_id parameter");

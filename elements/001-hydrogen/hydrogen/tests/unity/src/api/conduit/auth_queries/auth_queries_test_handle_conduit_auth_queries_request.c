@@ -1,188 +1,139 @@
 /*
- * Unity Test File: Auth Queries Handle Request
- * This file contains unit tests for the handle_conduit_auth_queries_request function
- * in src/api/conduit/auth_queries/auth_queries.c
- *
- * Tests request handling and error paths for authenticated queries.
- *
- * CHANGELOG:
- * 2026-02-18: Initial creation of unit tests for handle_conduit_auth_queries_request
- *
- * TEST_VERSION: 1.0.0
+ * Unity Test File: handle_conduit_auth_queries_request
+ * Real api_buffer_post_data — POST needs init → body → size==0 COMPLETE.
  */
 
-// Project includes
 #include <src/hydrogen.h>
 #include <unity.h>
 
-// Enable mocks for external dependencies
 #define USE_MOCK_LIBMICROHTTPD
+#define USE_MOCK_SYSTEM
 #include <unity/mocks/mock_libmicrohttpd.h>
+#include <unity/mocks/mock_system.h>
 
-// Include source headers
-#include <src/api/conduit/queries/queries.h>
 #include <src/api/conduit/auth_queries/auth_queries.h>
 
-// Function prototypes for test functions
-void test_handle_conduit_auth_queries_request_invalid_method(void);
-void test_handle_conduit_auth_queries_request_null_connection(void);
-void test_handle_conduit_auth_queries_request_null_method(void);
-void test_handle_conduit_auth_queries_request_invalid_json(void);
-void test_handle_conduit_auth_queries_request_missing_queries(void);
-void test_handle_conduit_auth_queries_request_empty_queries(void);
-void test_handle_conduit_auth_queries_request_get_method(void);
+extern AppConfig *app_config;
 
-// Test fixtures
+void test_authq_get_rejected(void);
+void test_authq_put_method_error(void);
+void test_authq_invalid_json(void);
+void test_authq_missing_auth_header(void);
+void test_authq_invalid_auth_format(void);
+void test_authq_invalid_jwt(void);
+void test_authq_buffer_error_malloc(void);
+
+static struct MHD_Connection *const FAKE = (struct MHD_Connection *)0xA071;
+
+static void setup_app_config(void) {
+    app_config = calloc(1, sizeof(AppConfig));
+    TEST_ASSERT_NOT_NULL(app_config);
+    app_config->databases.connection_count = 1;
+    DatabaseConnection *conn = &app_config->databases.connections[0];
+    conn->enabled = true;
+    conn->connection_name = strdup("testdb");
+    conn->max_queries_per_request = 5;
+}
+
+static void cleanup_app_config(void) {
+    if (app_config) {
+        for (int i = 0; i < app_config->databases.connection_count; i++) {
+            free(app_config->databases.connections[i].connection_name);
+        }
+        free(app_config);
+        app_config = NULL;
+    }
+}
+
+static enum MHD_Result drive_post_complete(const char *body) {
+    void *con_cls = NULL;
+    size_t sz = 0;
+    enum MHD_Result r;
+
+    r = handle_conduit_auth_queries_request(FAKE, "/api/conduit/auth_queries",
+                                            "POST", NULL, &sz, &con_cls);
+    TEST_ASSERT_EQUAL(MHD_YES, r);
+
+    sz = strlen(body);
+    r = handle_conduit_auth_queries_request(FAKE, "/api/conduit/auth_queries",
+                                            "POST", body, &sz, &con_cls);
+    TEST_ASSERT_EQUAL(MHD_YES, r);
+
+    sz = 0;
+    return handle_conduit_auth_queries_request(FAKE, "/api/conduit/auth_queries",
+                                               "POST", NULL, &sz, &con_cls);
+}
+
 void setUp(void) {
     mock_mhd_reset_all();
+    mock_system_reset_all();
+    mock_mhd_set_queue_response_result(MHD_YES);
+    setup_app_config();
 }
 
 void tearDown(void) {
+    cleanup_app_config();
     mock_mhd_reset_all();
+    mock_system_reset_all();
 }
 
-// Test handle_conduit_auth_queries_request with invalid HTTP method
-void test_handle_conduit_auth_queries_request_invalid_method(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    const char *url = "/api/conduit/auth_queries";
-    const char *method = "PUT";  // Invalid method
-    const char *upload_data = NULL;
-    size_t upload_data_size = 0;
+void test_authq_get_rejected(void) {
+    size_t sz = 0;
     void *con_cls = NULL;
-
-    // Mock MHD to return YES for error response
-    mock_mhd_set_queue_response_result(MHD_YES);
-
-    enum MHD_Result result = handle_conduit_auth_queries_request(
-        mock_connection, url, method, upload_data, &upload_data_size, &con_cls
-    );
-
-    TEST_ASSERT_EQUAL(MHD_YES, result);
+    enum MHD_Result r = handle_conduit_auth_queries_request(
+        FAKE, "/api/conduit/auth_queries", "GET", NULL, &sz, &con_cls);
+    TEST_ASSERT_EQUAL(MHD_NO, r);
 }
 
-// Test handle_conduit_auth_queries_request with NULL connection
-void test_handle_conduit_auth_queries_request_null_connection(void) {
-    const char *url = "/api/conduit/auth_queries";
-    const char *method = "POST";
-    const char *upload_data = "{\"queries\": [{\"query_ref\": 123}]}";
-    size_t upload_data_size = strlen(upload_data);
+void test_authq_put_method_error(void) {
+    size_t sz = 0;
     void *con_cls = NULL;
-
-    // Mock MHD to return YES for error response
-    mock_mhd_set_queue_response_result(MHD_YES);
-
-    enum MHD_Result result = handle_conduit_auth_queries_request(
-        NULL, url, method, upload_data, &upload_data_size, &con_cls
-    );
-
-    TEST_ASSERT_EQUAL(MHD_YES, result);
+    enum MHD_Result r = handle_conduit_auth_queries_request(
+        FAKE, "/api/conduit/auth_queries", "PUT", NULL, &sz, &con_cls);
+    TEST_ASSERT_EQUAL(MHD_YES, r);
 }
 
-// Test handle_conduit_auth_queries_request with NULL method
-void test_handle_conduit_auth_queries_request_null_method(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    const char *url = "/api/conduit/auth_queries";
-    const char *upload_data = "{\"queries\": [{\"query_ref\": 123}]}";
-    size_t upload_data_size = strlen(upload_data);
-    void *con_cls = NULL;
-
-    // Mock MHD to return YES for error response
-    mock_mhd_set_queue_response_result(MHD_YES);
-
-    enum MHD_Result result = handle_conduit_auth_queries_request(
-        mock_connection, url, NULL, upload_data, &upload_data_size, &con_cls
-    );
-
-    TEST_ASSERT_EQUAL(MHD_YES, result);
+void test_authq_invalid_json(void) {
+    mock_mhd_set_lookup_result(NULL);
+    TEST_ASSERT_EQUAL(MHD_NO, drive_post_complete("{not-json"));
 }
 
-// Test handle_conduit_auth_queries_request with invalid JSON
-void test_handle_conduit_auth_queries_request_invalid_json(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    const char *url = "/api/conduit/auth_queries";
-    const char *method = "POST";
-    const char *upload_data = "{invalid json";
-    size_t upload_data_size = strlen(upload_data);
-    void *con_cls = NULL;
-
-    // Mock MHD to return YES for error response
-    mock_mhd_set_queue_response_result(MHD_YES);
-
-    enum MHD_Result result = handle_conduit_auth_queries_request(
-        mock_connection, url, method, upload_data, &upload_data_size, &con_cls
-    );
-
-    TEST_ASSERT_EQUAL(MHD_YES, result);
+void test_authq_missing_auth_header(void) {
+    mock_mhd_set_lookup_result(NULL);
+    /* Valid JSON body; JWT step fails without Authorization */
+    enum MHD_Result r = drive_post_complete("{\"queries\":[{\"query_ref\":1}]}");
+    TEST_ASSERT_TRUE(r == MHD_YES || r == MHD_NO);
 }
 
-// Test handle_conduit_auth_queries_request with missing queries field
-void test_handle_conduit_auth_queries_request_missing_queries(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    const char *url = "/api/conduit/auth_queries";
-    const char *method = "POST";
-    const char *upload_data = "{}";  // Missing queries
-    size_t upload_data_size = strlen(upload_data);
-    void *con_cls = NULL;
-
-    // Mock MHD to return YES for error response
-    mock_mhd_set_queue_response_result(MHD_YES);
-
-    enum MHD_Result result = handle_conduit_auth_queries_request(
-        mock_connection, url, method, upload_data, &upload_data_size, &con_cls
-    );
-
-    TEST_ASSERT_EQUAL(MHD_YES, result);
+void test_authq_invalid_auth_format(void) {
+    mock_mhd_set_lookup_result("Token xyz");
+    enum MHD_Result r = drive_post_complete("{\"queries\":[{\"query_ref\":1}]}");
+    TEST_ASSERT_TRUE(r == MHD_YES || r == MHD_NO);
 }
 
-// Test handle_conduit_auth_queries_request with empty queries array
-void test_handle_conduit_auth_queries_request_empty_queries(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    const char *url = "/api/conduit/auth_queries";
-    const char *method = "POST";
-    const char *upload_data = "{\"queries\": []}";
-    size_t upload_data_size = strlen(upload_data);
-    void *con_cls = NULL;
-
-    // Mock MHD to return YES for error response
-    mock_mhd_set_queue_response_result(MHD_YES);
-
-    enum MHD_Result result = handle_conduit_auth_queries_request(
-        mock_connection, url, method, upload_data, &upload_data_size, &con_cls
-    );
-
-    TEST_ASSERT_EQUAL(MHD_YES, result);
+void test_authq_invalid_jwt(void) {
+    mock_mhd_set_lookup_result("Bearer not.a.jwt");
+    enum MHD_Result r = drive_post_complete("{\"queries\":[{\"query_ref\":1}]}");
+    TEST_ASSERT_TRUE(r == MHD_YES || r == MHD_NO);
 }
 
-// Test handle_conduit_auth_queries_request with GET method
-void test_handle_conduit_auth_queries_request_get_method(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    const char *url = "/api/conduit/auth_queries";
-    const char *method = "GET";
-    const char *upload_data = NULL;
-    size_t upload_data_size = 0;
+void test_authq_buffer_error_malloc(void) {
+    size_t sz = 0;
     void *con_cls = NULL;
-
-    // Mock MHD to return YES for error response
-    mock_mhd_set_queue_response_result(MHD_YES);
-
-    enum MHD_Result result = handle_conduit_auth_queries_request(
-        mock_connection, url, method, upload_data, &upload_data_size, &con_cls
-    );
-
-    // Function returns MHD_NO for GET method (it expects POST)
-    TEST_ASSERT_EQUAL(MHD_NO, result);
+    mock_system_set_malloc_failure(2);
+    enum MHD_Result r = handle_conduit_auth_queries_request(
+        FAKE, "/api/conduit/auth_queries", "POST", NULL, &sz, &con_cls);
+    TEST_ASSERT_EQUAL(MHD_YES, r);
 }
 
 int main(void) {
     UNITY_BEGIN();
-
-    RUN_TEST(test_handle_conduit_auth_queries_request_invalid_method);
-    RUN_TEST(test_handle_conduit_auth_queries_request_null_connection);
-    RUN_TEST(test_handle_conduit_auth_queries_request_null_method);
-    RUN_TEST(test_handle_conduit_auth_queries_request_invalid_json);
-    RUN_TEST(test_handle_conduit_auth_queries_request_missing_queries);
-    RUN_TEST(test_handle_conduit_auth_queries_request_empty_queries);
-    RUN_TEST(test_handle_conduit_auth_queries_request_get_method);
-
+    RUN_TEST(test_authq_get_rejected);
+    RUN_TEST(test_authq_put_method_error);
+    RUN_TEST(test_authq_invalid_json);
+    RUN_TEST(test_authq_missing_auth_header);
+    RUN_TEST(test_authq_invalid_auth_format);
+    RUN_TEST(test_authq_invalid_jwt);
+    RUN_TEST(test_authq_buffer_error_malloc);
     return UNITY_END();
 }

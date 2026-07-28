@@ -125,6 +125,7 @@ bool mailrelay_message_copy(MailRelayMessage* dst, const MailRelayMessage* src) 
         }
     }
     dst->priority = src->priority;
+    dst->queue_id = src->queue_id;
     return true;
 }
 

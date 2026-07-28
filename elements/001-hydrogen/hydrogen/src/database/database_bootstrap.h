@@ -23,11 +23,9 @@ typedef struct DatabaseQueue DatabaseQueue;
 void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue);
 
 /*
- * Populate QTC from bootstrap query results
- * Called separately when QTC needs to be refreshed without re-running bootstrap query
- * Note: This is currently not implemented as bootstrap query always populates QTC
+ * Unused alternate QTC fill — bootstrap already populates QTC directly.
  *
- * @param db_queue The database queue with bootstrap data to populate QTC from
+ * @param db_queue Unused (API stability)
  */
 void database_queue_populate_qtc_from_bootstrap(DatabaseQueue* db_queue);
 

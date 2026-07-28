@@ -451,7 +451,8 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         chat_context_free_hash_array(context_hashes, context_hash_count);
-        json_t *error_response = auth_chat_build_error_response("Streaming not yet implemented");
+        json_t *error_response = auth_chat_build_error_response(
+            "REST SSE streaming unavailable; use WebSocket chat stream");
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_NOT_IMPLEMENTED);
         return ret;
     }

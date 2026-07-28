@@ -94,9 +94,8 @@ QueryResult *oidc_rp_link_run_query(int query_ref,
  * Sets id, enabled=true, authorized=true, username (preferred_username
  * or sub as fallback), email (from claims if present), and roles="".
  *
- * Phase 22 will replace the username and roles fields with authoritative
- * DB values from the account_roles join. For now the claims-based values
- * are the correct OIDC-path defaults.
+ * roles starts empty; oidc_rp_roles overwrites from DB/IdP after link.
+ * username/email come from claims (OIDC-path defaults).
  *
  * @param account_id  Resolved account_id.
  * @param claims      Validated ID-token claims.

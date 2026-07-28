@@ -254,8 +254,7 @@ void mysql_update_prepared_lru_counter(DatabaseHandle* connection, const char* s
     }
 }
 
-// Legacy utility functions for compatibility with existing tests
-// These are stubs for functions expected by unit tests
+/* Helpers retained for Unity / engine function-pointer checks. */
 bool mysql_validate_prepared_statement_functions(void) {
     return (mysql_stmt_init_ptr != NULL && mysql_stmt_prepare_ptr != NULL && mysql_stmt_close_ptr != NULL);
 }

@@ -102,6 +102,9 @@ enum MHD_Result deduplicate_and_validate_queries(
     *is_duplicate = calloc(original_count, sizeof(bool));
     if (!*is_duplicate) {
         log_this(SR_API, "deduplicate_and_validate_queries: Failed to allocate memory for duplicate tracking", LOG_LEVEL_ERROR, 0);
+        if (result_code) {
+            *result_code = DEDUP_ERROR;
+        }
         return MHD_NO;
     }
 
@@ -117,6 +120,10 @@ enum MHD_Result deduplicate_and_validate_queries(
         free(query_params);
         free(first_occurrence);
         free(*is_duplicate);
+        *is_duplicate = NULL;
+        if (result_code) {
+            *result_code = DEDUP_ERROR;
+        }
         return MHD_NO;
     }
 
@@ -192,6 +199,12 @@ enum MHD_Result deduplicate_and_validate_queries(
         free(query_params);
         free(first_occurrence);
         free(*is_duplicate);
+        *deduplicated_queries = NULL;
+        *mapping_array = NULL;
+        *is_duplicate = NULL;
+        if (result_code) {
+            *result_code = DEDUP_ERROR;
+        }
         return MHD_NO;
     }
 

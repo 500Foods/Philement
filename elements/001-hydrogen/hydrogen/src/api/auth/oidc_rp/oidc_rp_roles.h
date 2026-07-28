@@ -12,13 +12,9 @@
  *   IDP_REALM_ROLES: copy `realm_access.roles` from the validated id_token
  *     claims directly. No database query. `IdpRolePrefix` is applied.
  *
- *   IDP_CLIENT_ROLES: copy `resource_access.<client_id>.roles` from the
- *     claims. Phase 12 populates `OidcRpIdTokenClaims::roles[]` from
- *     `realm_access.roles` only; `resource_access` roles are not yet parsed
- *     by the validator. For Phase 22, IDP_CLIENT_ROLES falls back to
- *     IDP_REALM_ROLES (both use the already-parsed roles[] array).
- *     This is documented in the implementation; a future phase may add a
- *     dedicated `client_roles[]` field to OidcRpIdTokenClaims.
+ *   IDP_CLIENT_ROLES: intended for `resource_access.<client_id>.roles`;
+ *     the validator currently fills roles[] from realm_access only, so
+ *     this mode falls back to IDP_REALM_ROLES until client roles are parsed.
  *
  *   MERGE: union of DATABASE roles and IDP_REALM_ROLES roles. Each role
  *     appears at most once (case-sensitive dedup). IdP-sourced roles get

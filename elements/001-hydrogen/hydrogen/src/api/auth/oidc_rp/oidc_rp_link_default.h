@@ -9,7 +9,7 @@
  *   2. Email-link via QueryRef #082/#081 (first OIDC sign-in for an existing
  *      password-login account — links the OIDC identity to the account).
  *   3. Provision via QueryRef #083 (brand-new user — creates the account row,
- *      links the OIDC identity, defers default-role assignment to Phase 22).
+ *      links the OIDC identity; DefaultRoles→account_roles insert not wired).
  *   4. NO_ACCOUNT if none of the above succeed or are configured to run.
  *
  * Prerequisites for each step are checked against the active provider

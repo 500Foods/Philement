@@ -26,9 +26,11 @@
 # startup timeout.
 #
 # Lifecycle is verified via logs (start, ticks, clean shutdown). The
-# reference Orchestrator also runs a one-shot data-plane probe
-# (H.query / H.wait / H.query_sync / H.altquery) so blackbox coverage
-# includes the scripting query stack when fixtures are seeded.
+# reference Orchestrator also runs one-shot data-plane probes
+# (H.query / H.wait / H.query_sync / H.altquery, H.mail / H.notify, and
+# H.http get/post against HYDROGEN_HTTP_PROBE_BASE) so blackbox coverage
+# includes the scripting query, mail, and HTTP client stacks when
+# fixtures are seeded and Mail Relay is enabled in the configs.
 #
 # Helpers live in tests/lib/scripting_helpers.sh.
 
@@ -36,6 +38,10 @@
 # (Helper functions live in tests/lib/scripting_helpers.sh)
 
 # CHANGELOG
+# 2.4.0 - 2026-07-28 - Orchestrator H.http probe (self WebServer health) for
+#                      blackbox coverage of scripting/http_client.c + pool
+# 2.3.0 - 2026-07-28 - Orchestrator H.mail/H.notify probe + MailRelay on configs
+#                      for blackbox coverage of scripting_api_mail_notify.c
 # 2.2.0 - 2026-07-23 - Orchestrator data-plane query probe (H.query/H.wait) for
 #                      blackbox coverage of scripting_api_query_*.c / json.c
 # 2.1.0 - 2026-07-15 - Moved WebServer listeners from Linux ephemeral range 55430-55446 to dedicated 15430-15446 ports.
@@ -51,7 +57,7 @@ TEST_NAME="Scripting  {BLUE}engines: 7{RESET}"
 TEST_ABBR="SCR"
 TEST_NUMBER="43"
 TEST_COUNTER=0
-TEST_VERSION="2.2.0"
+TEST_VERSION="2.4.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"

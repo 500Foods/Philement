@@ -35,7 +35,7 @@ enum MHD_Result handle_oidc_end_session_endpoint(struct MHD_Connection *connecti
     
     log_this(SR_OIDC, "Handling end session endpoint request", LOG_LEVEL_DEBUG, 0);
     
-    // This is a stub implementation that always returns a "Not Implemented" response
+    /* IdP Phase 17 optional: RP-initiated logout not implemented (501). */
     return send_oidc_json_response(connection, 
                                "{\"error\":\"not_implemented\",\"error_description\":\"End session not implemented\"}",
                                MHD_HTTP_NOT_IMPLEMENTED);

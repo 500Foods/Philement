@@ -152,7 +152,6 @@ int handle_media_chunk_message(struct lws *wsi, WebSocketSessionData *session, j
 }
 
 int media_subsystem_init(void) {
-    // Nothing to initialize for now
     return 0;
 }
 

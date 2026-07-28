@@ -6,15 +6,16 @@
 black-box tests Hydrogen as an OpenID Connect **Identity Provider** (the inverse
 of Test 42, which drives Hydrogen as a Relying Party against mock Keycloak).
 
-Version **2.0.0** runs the IdP suite **in parallel across all 7 database
+Version **2.1.0** runs the IdP suite **in parallel across all 7 database
 engines** (same set as Test 40), plus a sequential OIDC-disabled gate.
 
 ## Purpose
 
 - Feature gate: `OIDC.Enabled=false` leaves discovery closed (HTTP non-200)
 - Per engine: discovery, JWKS, authorize errors, login+PKCE, token, userinfo,
-  id_token claims, refresh rotation/reuse, code reuse, redirect/state/nonce
-  hardening
+  id_token claims, introspection (access + refresh), revocation, end-session
+  and registration stubs (501), refresh rotation/reuse, code reuse,
+  redirect/state/nonce hardening
 
 ## Configuration
 

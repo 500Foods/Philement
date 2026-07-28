@@ -220,7 +220,7 @@ int victoria_logs_escape_json(const char* input, char* output, size_t output_siz
  * The body can be up to VICTORIA_LOGS_MAX_BATCH_BUFFER (1MB).
  */
  bool victoria_logs_send_http_post(const char* host, int port, const char* path, const char* body, size_t body_len, bool use_ssl) {
-    (void)use_ssl;  // SSL not implemented yet, would need OpenSSL
+    (void)use_ssl;  /* https:// parsed but TLS not implemented (plain TCP only). */
 
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {

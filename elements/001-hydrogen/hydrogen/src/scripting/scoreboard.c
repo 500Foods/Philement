@@ -670,7 +670,7 @@ bool scoreboard_attach_waiter(Scoreboard* sb,
     if (!waiter_handle && !result_ref) {
         // A "tag only" attach (no handle, no result) is not useful
         // and would surprise the worker (which would log a
-        // "would signal waiter" marker with a NULL handle). Reject.
+        // reject empty attach (no handle and no result_ref).
         return false;
     }
 

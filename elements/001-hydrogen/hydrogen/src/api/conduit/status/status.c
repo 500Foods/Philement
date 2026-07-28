@@ -59,8 +59,7 @@
         return "in_progress";
     }
 
-    // Could check latest_applied_migration vs latest_available_migration for more detail
-    // For now, just return completed if bootstrap is done
+    /* Bootstrap done ⇒ report completed (no pending-migration delta). */
     return "completed";
 }
 

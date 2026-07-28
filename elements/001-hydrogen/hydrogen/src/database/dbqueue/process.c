@@ -227,8 +227,9 @@ void* database_queue_worker_thread(void* arg) {
                 database_queue_lead_run_migration(db_queue);         // Checks AutoMigration flag
                 database_queue_lead_run_migration_test(db_queue);    // Checks TestMigration flag independently
                 database_queue_lead_launch_additional_queues(db_queue);
-                // database_queue_lead_manage_heartbeats(db_queue); // Disabled for now - causing mutex issues
-                db_queue->conductor_sequence_completed = true; // Mark as completed to prevent re-execution
+                /* lead_manage_heartbeats not called here (historical mutex issues);
+                 * ongoing heartbeats run in the worker loop via perform_heartbeat. */
+                db_queue->conductor_sequence_completed = true;
             }
 
         }
@@ -280,22 +281,14 @@ void* database_queue_worker_thread(void* arg) {
 /*
  * Manage child queues based on workload and configuration
  *
- * NOTE: Auto-scaling is DISABLED to prevent race conditions.
- * The scale-up/scale-down logic was causing use-after-free bugs when:
- * 1. Scale-down destroys a child queue
- * 2. Concurrent threads still try to use the destroyed queue
- *
- * Child queues are spawned at startup based on config and remain until shutdown.
- * To re-enable auto-scaling, proper reference counting needs to be implemented.
+ * Child-queue auto-scale is intentionally a no-op: children are created at
+ * Lead startup from config and live until shutdown. Dynamic scale-up/down
+ * was removed after use-after-free races; re-enable only with refcounting
+ * (see docs/H/TODO.md).
  */
 void database_queue_manage_child_queues(DatabaseQueue* lead_queue) {
     if (!lead_queue || !lead_queue->is_lead_queue) {
         return;
     }
-
-    // AUTO-SCALING DISABLED - see note above
-    // Child queues persist for the lifetime of the lead queue
-    // This prevents race conditions where queues are destroyed while in use
-    
-    (void)lead_queue;  // Suppress unused warning
+    (void)lead_queue;
 }

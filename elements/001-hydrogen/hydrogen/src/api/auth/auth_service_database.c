@@ -414,7 +414,7 @@ int create_account_record(const char* username, const char* email,
     json_object_set_new(string_params, "FIRST_NAME", json_string(first_name));
     json_object_set_new(string_params, "LAST_NAME", json_string(last_name));
     json_object_set_new(string_params, "PASSWORD_HASH", json_string(hashed_password));
-    json_object_set_new(string_params, "SUMMARY", json_string("")); // Empty summary for now
+    json_object_set_new(string_params, "SUMMARY", json_string("")); /* QueryRef #051 SUMMARY unused */
     
     json_object_set_new(params, "STRING", string_params);
 

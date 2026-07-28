@@ -228,8 +228,8 @@ void test_alt_queries_validate_jwt_for_auth_alt_null_token(void) {
 
     enum MHD_Result result = validate_jwt_for_auth_alt(mock_connection, NULL);
 
-    // NULL token → sends 400 error with json_false() success → returns MHD_YES (from mock)
-    TEST_ASSERT_EQUAL(MHD_YES, result);
+    // NULL token → error response sent; MHD_NO stops the handler
+    TEST_ASSERT_EQUAL(MHD_NO, result);
 }
 
 int main(void) {

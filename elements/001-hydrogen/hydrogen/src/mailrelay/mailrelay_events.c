@@ -11,8 +11,10 @@
 #include <src/mailrelay/mailrelay.h>
 #include <src/mailrelay/mailrelay_events.h>
 #include <src/mailrelay/mailrelay_internal.h>
+#include <src/mailrelay/mailrelay_repository.h>
 
 #include <src/scripting/lua_context.h>
+#include <src/scripting/orchestrator.h>
 #include <src/utils/utils_time.h>
 
 #include <stdlib.h>
@@ -38,7 +40,8 @@ static const char* MAILRELAY_EVENT_STARTED_SCRIPT =
     "    return {\n"
     "        template_key = \"system.server_started\",\n"
     "        to = recipients,\n"
-    "        params = params\n"
+    "        params = params,\n"
+    "        debounce_key = \"system.lifecycle\"\n"
     "    }\n"
     "end\n";
 
@@ -63,6 +66,31 @@ static const char* MAILRELAY_EVENT_STOPPED_SCRIPT =
     "        template_key = \"system.server_stopped\",\n"
     "        to = recipients,\n"
     "        params = params\n"
+    "    }\n"
+    "end\n";
+
+/* Built-in default handler for system.databases_ready (post-migration ready). */
+static const char* MAILRELAY_EVENT_DATABASES_READY_SCRIPT =
+    "function handle_event(event)\n"
+    "    local recipients = event.admin_recipients or {}\n"
+    "    if #recipients == 0 then\n"
+    "        return nil\n"
+    "    end\n"
+    "    local params = {\n"
+    "        SERVER_NAME = event.server_name or \"\",\n"
+    "        APP_NAME = event.app_name or \"\",\n"
+    "        TIMESTAMP = event.timestamp or \"\"\n"
+    "    }\n"
+    "    if event.params then\n"
+    "        for k, v in pairs(event.params) do\n"
+    "            params[k] = v\n"
+    "        end\n"
+    "    end\n"
+    "    return {\n"
+    "        template_key = \"system.databases_ready\",\n"
+    "        to = recipients,\n"
+    "        params = params,\n"
+    "        debounce_key = \"system.lifecycle\"\n"
     "    }\n"
     "end\n";
 
@@ -372,6 +400,7 @@ bool mailrelay_event_dispatch_request(lua_State* L, char* err, size_t err_cap) {
     req.reply_to = reply_to;
     req.params = &params;
     req.idempotency_key = idempotency_key;
+    req.debounce_key = debounce_key;
     req.priority = priority;
     req.app_name = (app_config && app_config->server.server_name) ? app_config->server.server_name : "Hydrogen";
     req.server_name = req.app_name;
@@ -482,21 +511,94 @@ const MailEventRule* mailrelay_event_find_rule(const char* event_key) {
 }
 
 /*
- * Resolve the Lua handler source for an event.
- * Phase 6.1a only supports built-in default handlers for the well-known
- * system events. Phase 6.1b will add DB-loaded custom scripts.
+ * Split "Group.Name" / "Mail.Events.ServerStarted" on the last '.' into
+ * group_name and script_name. Returns false if no separator is present.
  */
-const char* mailrelay_event_resolve_source(const char* event_key,
-                                                   const MailEventRule* rule) {
-    (void)rule; // Reserved for DB script lookup in Phase 6.1b.
+bool mailrelay_event_parse_script_ref(const char* script_ref,
+                                      char* group_out,
+                                      size_t group_cap,
+                                      char* name_out,
+                                      size_t name_cap) {
+    if (!script_ref || !group_out || !name_out || group_cap == 0 || name_cap == 0) {
+        return false;
+    }
+    const char* dot = strrchr(script_ref, '.');
+    if (!dot || dot == script_ref || dot[1] == '\0') {
+        return false;
+    }
+    size_t group_len = (size_t)(dot - script_ref);
+    if (group_len >= group_cap || strlen(dot + 1) >= name_cap) {
+        return false;
+    }
+    memcpy(group_out, script_ref, group_len);
+    group_out[group_len] = '\0';
+    snprintf(name_out, name_cap, "%s", dot + 1);
+    return true;
+}
+
+/*
+ * Resolve Lua handler source. Configured Rules.script_name wins (DB load via
+ * QueryRef #087). Otherwise well-known system events use built-in handlers.
+ * When out_owned is non-NULL and a heap buffer was allocated, *out_owned is set
+ * so the caller can free it after run_handler returns.
+ */
+const char* mailrelay_event_resolve_source_owned(const char* event_key,
+                                                 const MailEventRule* rule,
+                                                 char** out_owned) {
+    if (out_owned) {
+        *out_owned = NULL;
+    }
+    if (!event_key) {
+        return NULL;
+    }
+
+    if (rule && rule->script_name && rule->script_name[0] != '\0') {
+        char group[128];
+        char name[128];
+        if (!mailrelay_event_parse_script_ref(rule->script_name, group, sizeof(group),
+                                              name, sizeof(name))) {
+            log_this(SR_MAIL_RELAY,
+                     "Event rule script_name '%s' is not Group.Name form",
+                     LOG_LEVEL_ERROR, 1, rule->script_name);
+            return NULL;
+        }
+        const char* database = mailrelay_repo_resolve_database();
+        if (!database) {
+            log_this(SR_MAIL_RELAY,
+                     "Cannot load event script '%s': no Mail Relay database",
+                     LOG_LEVEL_ERROR, 1, rule->script_name);
+            return NULL;
+        }
+        char* code = scripting_fetch_script_source(group, name, database, 15);
+        if (!code) {
+            log_this(SR_MAIL_RELAY,
+                     "Event script '%s' not found in database '%s'",
+                     LOG_LEVEL_ERROR, 2, rule->script_name, database);
+            return NULL;
+        }
+        if (out_owned) {
+            *out_owned = code;
+            return code;
+        }
+        free(code);
+        return NULL;
+    }
 
     if (strcmp(event_key, "system.server_started") == 0) {
         return MAILRELAY_EVENT_STARTED_SCRIPT;
+    }
+    if (strcmp(event_key, "system.databases_ready") == 0) {
+        return MAILRELAY_EVENT_DATABASES_READY_SCRIPT;
     }
     if (strcmp(event_key, "system.server_stopped") == 0) {
         return MAILRELAY_EVENT_STOPPED_SCRIPT;
     }
     return NULL;
+}
+
+const char* mailrelay_event_resolve_source(const char* event_key,
+                                           const MailEventRule* rule) {
+    return mailrelay_event_resolve_source_owned(event_key, rule, NULL);
 }
 
 bool mailrelay_event_emit(const char* event_key,
@@ -519,7 +621,8 @@ bool mailrelay_event_emit(const char* event_key,
     }
 
     const MailEventRule* rule = mailrelay_event_find_rule(event_key);
-    const char* source = mailrelay_event_resolve_source(event_key, rule);
+    char* owned_source = NULL;
+    const char* source = mailrelay_event_resolve_source_owned(event_key, rule, &owned_source);
     if (!source) {
         log_this(SR_MAIL_RELAY,
                  "No handler available for event '%s'",
@@ -535,6 +638,7 @@ bool mailrelay_event_emit(const char* event_key,
     pthread_mutex_unlock(&mailrelay_runtime->mutex);
 
     if (!allowed) {
+        free(owned_source);
         log_this(SR_MAIL_RELAY,
                  "Event '%s' rate limited",
                  LOG_LEVEL_ALERT, 1, event_key);
@@ -543,6 +647,7 @@ bool mailrelay_event_emit(const char* event_key,
 
     char err[256];
     bool ok = mailrelay_event_run_handler(source, event_key, event_key, params, err, sizeof(err));
+    free(owned_source);
     if (!ok) {
         log_this(SR_MAIL_RELAY,
                  "Event '%s' handler failed: %s",

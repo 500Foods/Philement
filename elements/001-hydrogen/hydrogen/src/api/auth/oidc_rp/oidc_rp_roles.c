@@ -13,8 +13,8 @@
  *     what the existing password login path does: it also sends
  *     account->roles = "" and the JWT encodes whatever that string is).
  *     Phase 22 calls #017 and builds a comma-separated role_id list.
- *     A future phase may add a role-name JOIN query; for now role_ids
- *     are the canonical representation in the JWT `roles` field.
+ *     Role_ids are the canonical JWT `roles` representation (role-name
+ *     JOIN is optional polish, not required for correctness).
  *
  *   IDP_REALM_ROLES:
  *     Copy `claims->roles[]` (parsed from `realm_access.roles` by Phase 12)
@@ -23,9 +23,8 @@
  *   IDP_CLIENT_ROLES:
  *     Phase 12 does not parse `resource_access.<client>.roles` separately;
  *     it populates only `claims->roles[]` from `realm_access.roles`.
- *     IDP_CLIENT_ROLES therefore behaves identically to IDP_REALM_ROLES
- *     in Phase 22. This is documented in the header. A future phase may
- *     extend OidcRpIdTokenClaims with a `client_roles[]` array.
+ *     IDP_CLIENT_ROLES currently falls back to realm roles (no separate
+ *     resource_access client-role parse yet).
  *
  *   MERGE:
  *     Union of DATABASE role_ids (no prefix) and IDP_REALM_ROLES strings
@@ -406,14 +405,14 @@ void oidc_rp_roles_apply(const OIDCRPProviderConfig *provider,
         }
 
         case OIDC_RP_ROLE_SRC_IDP_REALM_ROLES:
-        /* IDP_CLIENT_ROLES falls back to IDP_REALM_ROLES in Phase 22
+        /* IDP_CLIENT_ROLES falls back to IDP_REALM_ROLES until client roles are parsed
          * because OidcRpIdTokenClaims does not yet have a separate
          * client_roles[] array. See header documentation. */
         case OIDC_RP_ROLE_SRC_IDP_CLIENT_ROLES: {
             if (source == OIDC_RP_ROLE_SRC_IDP_CLIENT_ROLES) {
                 log_this(SR_AUTH,
                          "OIDC RP roles: IDP_CLIENT_ROLES not yet distinct from "
-                         "IDP_REALM_ROLES (Phase 22 fallback); using realm_access.roles",
+                         "IDP_REALM_ROLES (client-role parse not implemented); using realm_access.roles",
                          LOG_LEVEL_DEBUG, 0);
             }
             new_roles = roles_from_idp(claims, prefix);

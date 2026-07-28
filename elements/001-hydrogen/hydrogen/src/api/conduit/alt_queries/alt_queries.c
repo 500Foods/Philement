@@ -113,6 +113,9 @@ enum MHD_Result alt_queries_deduplicate_and_validate(
     *is_duplicate = calloc(original_count, sizeof(bool));
     if (!*is_duplicate) {
         log_this(SR_AUTH, "alt_queries_deduplicate_and_validate: Failed to allocate memory for duplicate tracking", LOG_LEVEL_ERROR, 0);
+        if (result_code) {
+            *result_code = DEDUP_ERROR;
+        }
         return MHD_NO;
     }
 
@@ -128,6 +131,10 @@ enum MHD_Result alt_queries_deduplicate_and_validate(
         free(query_params);
         free(first_occurrence);
         free(*is_duplicate);
+        *is_duplicate = NULL;
+        if (result_code) {
+            *result_code = DEDUP_ERROR;
+        }
         return MHD_NO;
     }
 
@@ -203,6 +210,12 @@ enum MHD_Result alt_queries_deduplicate_and_validate(
         free(query_params);
         free(first_occurrence);
         free(*is_duplicate);
+        *deduplicated_queries = NULL;
+        *mapping_array = NULL;
+        *is_duplicate = NULL;
+        if (result_code) {
+            *result_code = DEDUP_ERROR;
+        }
         return MHD_NO;
     }
 
@@ -268,7 +281,8 @@ enum MHD_Result validate_jwt_for_auth_alt(
 {
     if (!token) {
         log_this(SR_AUTH, "validate_jwt_for_auth: NULL token", LOG_LEVEL_ERROR, 0);
-        return send_conduit_error_response(connection, "Missing authentication token", MHD_HTTP_BAD_REQUEST);
+        send_conduit_error_response(connection, "Missing authentication token", MHD_HTTP_BAD_REQUEST);
+        return MHD_NO;
     }
 
     // Validate JWT token - pass NULL since database comes from request
@@ -276,7 +290,8 @@ enum MHD_Result validate_jwt_for_auth_alt(
     if (!result.valid || !result.claims) {
         log_this(SR_AUTH, "validate_jwt_for_auth: JWT validation failed", LOG_LEVEL_ALERT, 0);
         free_jwt_validation_result(&result);
-        return send_conduit_error_response(connection, "Invalid or expired JWT token", MHD_HTTP_UNAUTHORIZED);
+        send_conduit_error_response(connection, "Invalid or expired JWT token", MHD_HTTP_UNAUTHORIZED);
+        return MHD_NO;
     }
 
     log_this(SR_AUTH, "validate_jwt_for_auth: JWT validated successfully", LOG_LEVEL_DEBUG, 0);

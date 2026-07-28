@@ -6,7 +6,7 @@
  * 2. Validate prerequisites: Enabled, email present, email_verified,
  *    AllowedEmailDomains.
  * 3. Provision via QueryRef #083, link via #081, touch via #084.
- * 4. Default-role assignment is DEFERRED to Phase 22.
+ * 4. ProvisionDefaults.DefaultRoles → account_roles INSERT not wired yet.
  *
  * @author Hydrogen Framework
  * @date 2026-05-09

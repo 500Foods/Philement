@@ -319,7 +319,8 @@ enum MHD_Result auth_stream_chat_response(struct MHD_Connection *connection,
     (void)database;
     /* REST SSE multi-chunk proxy is not wired (use WebSocket chat stream).
      * Single SSE error event keeps the endpoint reachable for clients. */
-    const char *event = "event: error\ndata: {\"error\": \"Streaming not yet implemented\"}\n\n";
+    const char *event =
+        "event: error\ndata: {\"error\": \"REST SSE streaming unavailable; use WebSocket\"}\n\n";
     size_t event_len = strlen(event);
     struct MHD_Response *response = MHD_create_response_from_buffer(event_len, (void*)event, MHD_RESPMEM_PERSISTENT);
     if (!response) {

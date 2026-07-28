@@ -17,7 +17,9 @@
 
 // Enable mocks for external dependencies
 #define USE_MOCK_LIBMICROHTTPD
+#define USE_MOCK_SYSTEM
 #include <unity/mocks/mock_libmicrohttpd.h>
+#include <unity/mocks/mock_system.h>
 
 // Include source header
 #include <src/api/conduit/queries/queries.h>
@@ -37,28 +39,25 @@ void test_deduplicate_and_validate_queries_memory_allocation_failure_duplicate_t
 void test_deduplicate_and_validate_queries_memory_allocation_failure_query_arrays(void);
 void test_deduplicate_and_validate_queries_memory_allocation_failure_output_arrays(void);
 void test_deduplicate_and_validate_queries_invalid_query_objects(void);
+void test_deduplicate_and_validate_queries_connection_name_match(void);
 
 // Test fixtures
 void setUp(void) {
-    // Reset all mocks before each test
     mock_mhd_reset_all();
+    mock_system_reset_all();
 
-    // Initialize mock app config
     app_config = calloc(1, sizeof(AppConfig));
     TEST_ASSERT_NOT_NULL(app_config);
 
-    // Initialize databases config
     app_config->databases.connection_count = 1;
 
-    // Set up test database connection
     DatabaseConnection *conn = &app_config->databases.connections[0];
     conn->enabled = true;
     conn->connection_name = strdup("testdb");
-    conn->max_queries_per_request = 5;  // Test limit
+    conn->max_queries_per_request = 5;
 }
 
 void tearDown(void) {
-    // Clean up app config
     if (app_config) {
         for (int i = 0; i < app_config->databases.connection_count; i++) {
             free(app_config->databases.connections[i].connection_name);
@@ -68,6 +67,7 @@ void tearDown(void) {
     }
 
     mock_mhd_reset_all();
+    mock_system_reset_all();
 }
 
 // Test deduplicate_and_validate_queries with empty array
@@ -309,24 +309,87 @@ void test_deduplicate_and_validate_queries_null_parameters(void) {
     json_decref(queries_array);
 }
 
-// Test deduplicate_and_validate_queries with memory allocation failure for duplicate tracking
+static json_t *one_query_array(void) {
+    json_t *queries_array = json_array();
+    json_t *query = json_object();
+    json_object_set_new(query, "query_ref", json_integer(1));
+    json_array_append_new(queries_array, query);
+    return queries_array;
+}
+
+/* is_duplicate = calloc(...) is first alloc in success path after DB lookup */
 void test_deduplicate_and_validate_queries_memory_allocation_failure_duplicate_tracking(void) {
-    // This test would require mocking malloc to fail, but since we can't easily do that
-    // in this test framework, we'll skip it for now. In a real implementation with
-    // dependency injection or malloc mocking, we'd test this path.
-    TEST_IGNORE_MESSAGE("Memory allocation failure testing requires malloc mocking");
+    json_t *queries_array = one_query_array();
+    json_t *deduplicated_queries = NULL;
+    size_t *mapping_array = NULL;
+    bool *is_duplicate = NULL;
+    DeduplicationResult dedup_code = DEDUP_OK;
+
+    mock_system_set_calloc_failure(1);
+
+    enum MHD_Result result = deduplicate_and_validate_queries(
+        NULL, queries_array, "testdb", &deduplicated_queries, &mapping_array,
+        &is_duplicate, &dedup_code);
+
+    TEST_ASSERT_EQUAL(MHD_NO, result);
+    json_decref(queries_array);
 }
 
-// Test deduplicate_and_validate_queries with memory allocation failure for query arrays
+/* After is_duplicate: query_refs, query_params, first_occurrence (calls 2–4) */
 void test_deduplicate_and_validate_queries_memory_allocation_failure_query_arrays(void) {
-    // Similar to above, requires malloc mocking
-    TEST_IGNORE_MESSAGE("Memory allocation failure testing requires malloc mocking");
+    json_t *queries_array = one_query_array();
+    json_t *deduplicated_queries = NULL;
+    size_t *mapping_array = NULL;
+    bool *is_duplicate = NULL;
+    DeduplicationResult dedup_code = DEDUP_OK;
+
+    mock_system_set_calloc_failure(2);
+
+    enum MHD_Result result = deduplicate_and_validate_queries(
+        NULL, queries_array, "testdb", &deduplicated_queries, &mapping_array,
+        &is_duplicate, &dedup_code);
+
+    TEST_ASSERT_EQUAL(MHD_NO, result);
+    json_decref(queries_array);
 }
 
-// Test deduplicate_and_validate_queries with memory allocation failure for output arrays
+/* mapping_array calloc after json_array() for deduplicated_queries */
 void test_deduplicate_and_validate_queries_memory_allocation_failure_output_arrays(void) {
-    // Similar to above, requires malloc mocking
-    TEST_IGNORE_MESSAGE("Memory allocation failure testing requires malloc mocking");
+    json_t *queries_array = one_query_array();
+    json_t *deduplicated_queries = NULL;
+    size_t *mapping_array = NULL;
+    bool *is_duplicate = NULL;
+    DeduplicationResult dedup_code = DEDUP_OK;
+
+    /* Fail mapping_array calloc (5th alloc: is_dup, refs, params, first, mapping) */
+    mock_system_set_calloc_failure(5);
+
+    enum MHD_Result result = deduplicate_and_validate_queries(
+        NULL, queries_array, "testdb", &deduplicated_queries, &mapping_array,
+        &is_duplicate, &dedup_code);
+
+    TEST_ASSERT_EQUAL(MHD_NO, result);
+    json_decref(queries_array);
+}
+
+void test_deduplicate_and_validate_queries_connection_name_match(void) {
+    /* find_database_connection already matches connection_name; ensure success */
+    json_t *queries_array = one_query_array();
+    json_t *deduplicated_queries = NULL;
+    size_t *mapping_array = NULL;
+    bool *is_duplicate = NULL;
+    DeduplicationResult dedup_code = DEDUP_ERROR;
+
+    enum MHD_Result result = deduplicate_and_validate_queries(
+        NULL, queries_array, "testdb", &deduplicated_queries, &mapping_array,
+        &is_duplicate, &dedup_code);
+
+    TEST_ASSERT_EQUAL(MHD_YES, result);
+    TEST_ASSERT_NOT_NULL(deduplicated_queries);
+    free(mapping_array);
+    free(is_duplicate);
+    json_decref(deduplicated_queries);
+    json_decref(queries_array);
 }
 
 // Test deduplicate_and_validate_queries with invalid query objects
@@ -390,6 +453,7 @@ int main(void) {
     RUN_TEST(test_deduplicate_and_validate_queries_memory_allocation_failure_query_arrays);
     RUN_TEST(test_deduplicate_and_validate_queries_memory_allocation_failure_output_arrays);
     RUN_TEST(test_deduplicate_and_validate_queries_invalid_query_objects);
+    RUN_TEST(test_deduplicate_and_validate_queries_connection_name_match);
 
     return UNITY_END();
 }

@@ -397,23 +397,29 @@ void test_queue_get_by_idempotency_builds_correct_params(void) {
 }
 
 void test_queue_mark_sent_builds_correct_params(void) {
-    MailRelayRepoQueueMarkSent params = { .queue_id = 7, .smtp_code = 250, .smtp_text = "OK" };
+    MailRelayRepoQueueMarkSent params = {
+        .queue_id = 7, .smtp_code = 250, .smtp_text = "OK", .server_index = 0
+    };
     bool result = mailrelay_repo_queue_mark_sent(&params, mock_callback, NULL);
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_EQUAL_INT(MAILRELAY_QREF_QUEUE_MARK_SENT, g_captured_query_ref);
     TEST_ASSERT_EQUAL_INT64(7, captured_integer("QUEUE_ID"));
     TEST_ASSERT_EQUAL_INT(250, captured_integer("SMTP_CODE"));
     TEST_ASSERT_EQUAL_STRING("OK", captured_string("SMTP_TEXT"));
+    TEST_ASSERT_EQUAL_INT(0, captured_integer("SERVER_INDEX"));
 }
 
 void test_queue_mark_failed_builds_correct_params(void) {
-    MailRelayRepoQueueMarkFailed params = { .queue_id = 8, .smtp_code = 550, .smtp_text = "Rejected" };
+    MailRelayRepoQueueMarkFailed params = {
+        .queue_id = 8, .smtp_code = 550, .smtp_text = "Rejected", .server_index = 1
+    };
     bool result = mailrelay_repo_queue_mark_failed(&params, mock_callback, NULL);
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_EQUAL_INT(MAILRELAY_QREF_QUEUE_MARK_FAILED, g_captured_query_ref);
     TEST_ASSERT_EQUAL_INT64(8, captured_integer("QUEUE_ID"));
     TEST_ASSERT_EQUAL_INT(550, captured_integer("SMTP_CODE"));
     TEST_ASSERT_EQUAL_STRING("Rejected", captured_string("SMTP_TEXT"));
+    TEST_ASSERT_EQUAL_INT(1, captured_integer("SERVER_INDEX"));
 }
 
 void test_queue_reschedule_builds_correct_params(void) {

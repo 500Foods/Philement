@@ -122,7 +122,7 @@ char* oidc_process_userinfo_request(const char *access_token) {
     const char *scope = claims->scope ? claims->scope : "openid";
     oidc_userinfo_apply_scoped_claims(out, scope, claims->user_data);
 
-    /* Accounts DB profile fill deferred until lookup-by-id exists. */
+    /* Optional: merge accounts DB profile by sub/account_id (not wired). */
 
     char *json = json_dumps(out, JSON_COMPACT);
     json_decref(out);

@@ -582,8 +582,10 @@ bool database_signal_ready_if_complete(void) {
         // races the DB subsystem.
         scripting_orchestrator_load_configured();
 
-        // Phase 6: emit the server-started event now that the database
-        // is ready and the orchestrator has had a chance to load.
+        // Phase 6: databases ready (migrations complete / leads up), then
+        // the broader server-started event. Both may share debounce_key
+        // "system.lifecycle" so blackbox can observe coalesced delivery.
+        mailrelay_event_emit("system.databases_ready", NULL);
         mailrelay_event_emit("system.server_started", NULL);
     }
 

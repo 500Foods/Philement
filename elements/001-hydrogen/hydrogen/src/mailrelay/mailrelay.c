@@ -352,11 +352,25 @@ MailRelayStatus mailrelay_enqueue_to_queue(const MailRelayMessage* msg,
         return MAILRELAY_INVALID_ARGS;
     }
 
-    if (!mailrelay_persist_message(msg, priority, NULL)) {
+    long long queue_id = 0;
+    if (!mailrelay_persist_message(msg, priority, &queue_id)) {
         return MAILRELAY_PERSIST_FAILED;
     }
 
-    MailRelayStatus status = mailrelay_queue_enqueue(queue, msg, priority);
+    MailRelayMessage staged;
+    const MailRelayMessage* to_enqueue = msg;
+    if (queue_id > 0 && msg->queue_id != queue_id) {
+        if (!mailrelay_message_copy(&staged, msg)) {
+            return MAILRELAY_PERSIST_FAILED;
+        }
+        staged.queue_id = queue_id;
+        to_enqueue = &staged;
+    }
+
+    MailRelayStatus status = mailrelay_queue_enqueue(queue, to_enqueue, priority);
+    if (to_enqueue == &staged) {
+        mailrelay_message_free(&staged);
+    }
     if (status == MAILRELAY_OK) {
         if (mailrelay_runtime) {
             pthread_mutex_lock(&mailrelay_runtime->mutex);

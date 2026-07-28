@@ -505,16 +505,12 @@ bool database_queue_lead_process_queries(DatabaseQueue* lead_queue) {
     char* dqm_label = database_queue_generate_label(lead_queue);
     log_this(dqm_label, "Processing incoming queries", LOG_LEVEL_TRACE, 0);
 
-    // Use the existing query processing from process.c
-    // Lead queue processes queries like any other queue, but may have special handling
+    /* Test/API surface only — production workers use process_single_query.
+     * Dequeues one item and frees it without engine execute (no live caller). */
     DatabaseQuery* query = database_queue_process_next(lead_queue);
     if (query) {
-        // Lead queue specific processing could go here
-        // For now, just log and clean up like other queues
-        log_this(dqm_label, "Lead queue processing query: %s", LOG_LEVEL_TRACE, 1,
+        log_this(dqm_label, "Lead process_queries dequeue (no execute): %s", LOG_LEVEL_TRACE, 1,
                 query->query_id ? query->query_id : "unknown");
-
-        // Clean up query
         if (query->query_id) free(query->query_id);
         if (query->query_template) free(query->query_template);
         if (query->parameter_json) free(query->parameter_json);

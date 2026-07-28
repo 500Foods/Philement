@@ -2,26 +2,25 @@
 
 ## Overview
 
-The `test_22_startup_shutdown.sh` script (Test 15: Startup/Shutdown) is a comprehensive testing tool within the Hydrogen test suite that validates the complete startup and shutdown lifecycle of the Hydrogen server with both minimal and maximal configurations. This test ensures robust lifecycle management across different configuration scenarios.
+The `test_17_startup_shutdown.sh` script validates the complete startup and shutdown lifecycle of the Hydrogen server with both minimal and maximal configurations, and exercises VictoriaLogs shipping against a local mock insert endpoint.
 
 ## Purpose
 
-This script ensures that the core lifecycle management of the Hydrogen server functions correctly by testing the initialization and termination processes under different configuration scenarios. It validates that the server can start up successfully, operate properly, and shut down cleanly with both simple and complex configurations.
+This script ensures that the core lifecycle management of the Hydrogen server functions correctly by testing the initialization and termination processes under different configuration scenarios. It validates that the server can start up successfully, operate properly, and shut down cleanly with both simple and complex configurations. With `VICTORIALOGS_URL` pointed at `tests/lib/mock_victoria_logs/server.js`, it also drives the production VictoriaLogs worker (queue, batch, HTTP POST) for blackbox coverage of `src/logging/victoria_logs.c`.
 
 ## Key Features
 
 - **Dual Configuration Testing**: Tests both minimal and maximal configurations in sequence
 - **Complete Lifecycle Validation**: Tests full startup and shutdown cycles for each configuration
-- **Comprehensive Subtest Coverage**: Reports on 9 subtests total (3 setup + 3 per configuration)
+- **VictoriaLogs mock sink**: Starts a Node HTTP sink, sets `VICTORIALOGS_*` / `K8S_*` env vars, asserts POST receipts
 - **Timeout Management**: Implements proper timeout handling for startup and shutdown phases
 - **Diagnostic Collection**: Captures detailed diagnostics during lifecycle operations
 - **Library-Based Architecture**: Uses new modular library system for enhanced reliability
 
 ## Technical Details
 
-- **Script Version**: 3.0.0 (Complete rewrite using new modular test libraries)
-- **Test Number**: 22 (internally referenced as Test 15)
-- **Total Subtests**: 9
+- **Script Version**: 5.1.0
+- **Test Number**: 17
 - **Architecture**: Library-based using modular scripts from lib/ directory
 
 ### Dependencies
@@ -32,11 +31,12 @@ The script uses several modular libraries:
 - `file_utils.sh` - File operations and validation
 - `framework.sh` - Core testing framework
 - `lifecycle.sh` - Server lifecycle management
+- `lib/mock_victoria_logs/server.js` - Mock VictoriaLogs insert endpoint (Node)
 
 ### Configuration Files
 
-- **Minimal Config**: `configs/hydrogen_test_min.json` - Basic configuration for minimal testing
-- **Maximal Config**: `configs/hydrogen_test_max.json` - Full-featured configuration for comprehensive testing
+- **Minimal Config**: `configs/hydrogen_test_17_startup_min.json`
+- **Maximal Config**: `configs/hydrogen_test_17_startup_max.json`
 
 ### Timeout Configuration
 
@@ -47,11 +47,12 @@ The script uses several modular libraries:
 ## Test Process
 
 1. **Binary Validation**: Locates and validates the Hydrogen binary
-2. **Configuration Validation**: Validates both minimal and maximal configuration files
-3. **Directory Setup**: Creates output and diagnostic directories
-4. **Minimal Configuration Test**: Runs complete lifecycle test with minimal configuration
-5. **Maximal Configuration Test**: Runs complete lifecycle test with maximal configuration
-6. **Results Export**: Exports results for integration with the main test suite
+2. **Mock VictoriaLogs**: Starts sink on ephemeral port; exports `VICTORIALOGS_URL` and K8s metadata env
+3. **Configuration Validation**: Validates both minimal and maximal configuration files
+4. **Minimal Configuration Test**: Lifecycle with VL shipping enabled
+5. **Maximal Configuration Test**: Lifecycle with VL shipping enabled
+6. **Receipt check**: Asserts the mock received at least one JSON-line POST
+7. **Results Export**: Exports results for integration with the main test suite
 
 ### Per-Configuration Testing
 
@@ -73,7 +74,7 @@ To run this test as part of the full suite:
 To run this test individually:
 
 ```bash
-./test_22_startup_shutdown.sh
+./test_17_startup_shutdown.sh
 ```
 
 ## Output and Logging

@@ -338,6 +338,14 @@ MailRelayStatus mailrelay_send_template_default(const MailRelaySendTemplateReque
     if (req->idempotency_key && req->idempotency_key[0] != '\0') {
         msg.idempotency_key = strdup(req->idempotency_key);
     }
+    if (req->debounce_key && req->debounce_key[0] != '\0') {
+        msg.debounce_key = strdup(req->debounce_key);
+        if (!msg.debounce_key) {
+            mailrelay_message_free(&msg);
+            snprintf(err, err_cap, "memory allocation failed");
+            return MAILRELAY_INVALID_ARGS;
+        }
+    }
     msg.priority = req->priority;
 
     if (!msg.message_id || !msg.template_key) {

@@ -250,18 +250,15 @@ void sqlite_update_prepared_lru_counter(DatabaseHandle* connection, const char* 
     }
 }
 
-// Legacy utility functions for compatibility with existing tests
-// These operate on the old PreparedStatementCache structure and are stubs
+/* Legacy PreparedStatementCache API — no-ops; live cache is on DatabaseHandle. */
 bool sqlite_add_prepared_statement(PreparedStatementCache* cache, const char* name) {
     (void)cache;
     (void)name;
-    // Stub implementation - actual caching is done through DatabaseHandle
     return true;
 }
 
 bool sqlite_remove_prepared_statement(PreparedStatementCache* cache, const char* name) {
     (void)cache;
     (void)name;
-    // Stub implementation - actual caching is done through DatabaseHandle
     return true;
 }

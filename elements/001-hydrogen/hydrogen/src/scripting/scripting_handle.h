@@ -125,7 +125,7 @@ int H_Handle_get_refcount(struct H_Handle* h);
  *     mail_message_id   strdup'd; set on successful queue accept
  *     mail_status       strdup'd; set on success (e.g. "queued")
  *   H_HK_NOTIFY:
- *     notify_error      strdup'd; non-NULL means handle is in an error state (NOTIFY stub)
+ *     notify_error      strdup'd; non-NULL means notify deferred-error path
  */
 typedef struct H_Handle {
     H_HandleKind    kind;
@@ -170,7 +170,7 @@ typedef struct H_Handle {
     char*           mail_error;          // strdup'd; non-NULL means handle is in an error state
     char*           mail_message_id;     // strdup'd; set on successful queue accept
     char*           mail_status;         // strdup'd; set on success (e.g. "queued")
-    char*           notify_error;        // strdup'd; non-NULL means handle is in an error state (NOTIFY stub)
+    char*           notify_error;        // non-NULL: notify deferred-error message
 } H_Handle;
 
 /*

@@ -28,6 +28,7 @@ typedef struct MailRelayMessage {
     char* idempotency_key;
     char* debounce_key;
     int priority;
+    long long queue_id;            /**< Persisted mail_queue.queue_id (0 if none). */
 } MailRelayMessage;
 
 /* Initialize all fields to empty. */

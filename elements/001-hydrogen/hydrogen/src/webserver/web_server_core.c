@@ -504,8 +504,7 @@ char* get_payload_subdirectory_path(const PayloadData* payload, const char* subd
     // Log the payload extraction request
     log_this(SR_WEBSERVER, "Resolving payload subdirectory: %s", LOG_LEVEL_DEBUG, 1, prefix);
 
-    // For now, return a placeholder path since payload extraction requires tar parsing
-    // This would need implementation based on existing swagger payload handling
+    /* Synthetic path only — does not walk payload_cache / tar (see docs/H/TODO.md). */
     if (snprintf(buffer, sizeof(buffer), "/payload/%s", subdir) >= (int)sizeof(buffer)) {
         log_this(SR_WEBSERVER, "Payload path buffer overflow", LOG_LEVEL_ERROR, 0);
         return NULL;
