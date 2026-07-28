@@ -97,6 +97,7 @@ tests/          Test framework
 - tests/test_24_uploads.sh - Upload file to server
 - tests/test_25_mdns.sh - mDNS announcements
 - tests/test_26_terminal.sh - Testing xterm.js implementation
+- tests/test_27_reporting_image_scale.sh - Reporting image scale endpoint testing with ImageMagick
 - tests/test_30_database.sh - All Engines Parallel Operational Test
 - tests/test_32_postgres_migrations.sh - PostgreSQL migration performance test
 - tests/test_33_mysql_migrations.sh - MySQL migration performance test

@@ -77,6 +77,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_24_uploads.sh](/docs/H/tests/test_24_uploads.md)**: Tests uploading a file to the server
 - **[test_25_mdns.sh](/docs/H/tests/test_25_mdns.md)**: Tests mDNS server and client functionality and integration
 - **[test_26_terminal.sh](/docs/H/tests/test_26_terminal.md)**: Tests terminal functionality, payload serving, and WebSocket connections
+- **[test_27_reporting_image_scale.sh](/docs/H/tests/test_27_reporting_image_scale.md)**: Tests the Reporting image_scale endpoint with ImageMagick for image conversion and scaling
 
 ### Database Tests
 
