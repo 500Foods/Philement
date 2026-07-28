@@ -127,10 +127,7 @@ LaunchReadiness check_scripting_launch_readiness(void) {
     scripting_readiness_messages_add(&messages, &count, &capacity,
         strdup("  Go:      Scripting subsystem enabled in configuration"));
 
-    // Validate worker count bounds so a future Phase 7 (worker pool)
-    // cannot start with an out-of-range value. Phase 3b does not act
-    // on the value yet, but we surface the validation now so the
-    // readiness check is a no-op later.
+    /* WorkerCount validated here; launch uses it for scripting_workers_init. */
     int worker_count = app_config->scripting.WorkerCount;
     if (worker_count < 1 || worker_count > MAX_CONCURRENT_JOBS) {
         char msg[160];

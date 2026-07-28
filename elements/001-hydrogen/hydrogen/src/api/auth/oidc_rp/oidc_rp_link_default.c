@@ -42,7 +42,8 @@
  *   - DB errors at any step terminate early rather than falling through;
  *     partial-state repairs are the operator's responsibility.
  *
- * Default-role assignment is still DEFERRED to Phase 22 (same as Phase 20).
+ * ProvisionDefaults.DefaultRoles → account_roles INSERT is not wired yet
+ * (same gap as provision_only; JWT role-mapping is separate and live).
  */
 
 // Project includes
@@ -313,7 +314,7 @@ OidcRpLinkResult oidc_rp_link_match_email_then_provision(
     if (linking->provision_defaults.default_role_count > 0) {
         log_this(SR_AUTH,
                  "OIDC RP linker MATCH_EMAIL_THEN_PROVISION: %zu default roles configured for "
-                 "account_id=%d (assignment deferred to Phase 22)",
+                 "account_id=%d (account_roles insert not implemented)",
                  LOG_LEVEL_STATE, 2,
                  linking->provision_defaults.default_role_count, new_account_id);
     }

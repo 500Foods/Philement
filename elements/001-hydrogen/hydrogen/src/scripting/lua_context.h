@@ -55,12 +55,8 @@ void H_lua_destroy_context(lua_State* L);
 /*
  * Install the H host table into a Lua state.
  *
- * Phase 3 only installs the empty H table with its sub-table placeholders
- * (H.log, H.system, H.query, H.altquery, H.authquery, H.http, H.llm,
- * H.mail, H.notify, H.sleep, H.shutdown_requested, H.set_current_state,
- * H.scoreboard, H.wait). Real functions are filled in by later phases
- * (Phase 6 onward). Until then, the placeholders let scripts reference
- * the surface without raising an error during early bring-up.
+ * Install the H host table and all registered H.* C functions for this
+ * lua_State (log, system, query, http, llm, mail, scoreboard, wait, …).
  */
 void H_lua_install_api(lua_State* L);
 

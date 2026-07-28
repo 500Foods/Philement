@@ -47,9 +47,13 @@ int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *sess
     session->last_ping_sent = 0;
     session->last_pong_received = time(NULL);  // Start with current time to avoid immediate timeout
     session->ping_pending = false;
+    session->heartbeat_ping_due = false;
 
     // Extract client information
     ws_update_client_info(wsi, session);
+
+    // Schedule first application-level ping/pong heartbeat (config-driven)
+    ws_arm_heartbeat_timer(wsi);
 
     // Lock context for thread-safe updates
     pthread_mutex_lock(&ws_context->mutex);

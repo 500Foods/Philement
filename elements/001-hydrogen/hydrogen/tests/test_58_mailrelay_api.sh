@@ -372,6 +372,8 @@ run_mailrelay_variant() {
     fi
 
     temp_config="${DIAG_TEST_DIR}/hydrogen_test_${TEST_NUMBER}_${engine_name}_${variant_label}_${TIMESTAMP}.json"
+    # Enable Events + Persist + short debounce for lifecycle mail + repo workers.
+    # Rules point at seeded Mail.Events.* scripts (migration 1281).
     if [[ "${use_tls}" -eq 1 ]]; then
         export MAILRELAY_MAILVAL_CERT="${MAILVAL_CERT}"
         jq_patch=$(jq --arg web_port "${web_port}" --arg port "${mailval_port}" \
@@ -379,7 +381,20 @@ run_mailrelay_variant() {
                        .MailRelay.Servers[0].Port = $port |
                        .MailRelay.Servers[0].UseTLS = true |
                        .MailRelay.Servers[0].TLSMode = 1 |
-                       .MailRelay.Servers[0].CAPath = "${env.MAILRELAY_MAILVAL_CERT}"' \
+                       .MailRelay.Servers[0].CAPath = "${env.MAILRELAY_MAILVAL_CERT}" |
+                       .MailRelay.AdminRecipients = ["events-sink@mailval.local"] |
+                       .MailRelay.Queue.Persist = true |
+                       .MailRelay.Queue.DebounceSeconds = 2 |
+                       .MailRelay.Events = {
+                           Enabled: true,
+                           MaxEventsPerInterval: 20,
+                           EventIntervalSeconds: 60,
+                           Rules: {
+                               "system.databases_ready": "Mail.Events.DatabasesReady",
+                               "system.server_started": "Mail.Events.ServerStarted",
+                               "system.server_stopped": "Mail.Events.ServerStopped"
+                           }
+                       }' \
                       "${actual_config_file}" 2>/dev/null) || true
     else
         jq_patch=$(jq --arg web_port "${web_port}" --arg port "${mailval_port}" \
@@ -387,7 +402,20 @@ run_mailrelay_variant() {
                        .MailRelay.Servers[0].Port = $port |
                        .MailRelay.Servers[0].UseTLS = false |
                        .MailRelay.Servers[0].TLSMode = 0 |
-                       .MailRelay.Servers[0].CAPath = ""' \
+                       .MailRelay.Servers[0].CAPath = "" |
+                       .MailRelay.AdminRecipients = ["events-sink@mailval.local"] |
+                       .MailRelay.Queue.Persist = true |
+                       .MailRelay.Queue.DebounceSeconds = 2 |
+                       .MailRelay.Events = {
+                           Enabled: true,
+                           MaxEventsPerInterval: 20,
+                           EventIntervalSeconds: 60,
+                           Rules: {
+                               "system.databases_ready": "Mail.Events.DatabasesReady",
+                               "system.server_started": "Mail.Events.ServerStarted",
+                               "system.server_stopped": "Mail.Events.ServerStopped"
+                           }
+                       }' \
                       "${actual_config_file}" 2>/dev/null) || true
     fi
 
@@ -448,6 +476,17 @@ run_mailrelay_variant() {
         # shellcheck disable=SC2310 # Continue even if readiness check fails
         if ! wait_for_ready_for_requests "${hydrogen_log}" "${READY_TIMEOUT}"; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: READY FOR REQUESTS signal not observed"
+            variant_failed=true
+        fi
+    fi
+
+    # Allow debounce window (2s) to flush databases_ready+server_started coalesce.
+    if [[ "${variant_failed}" = false ]]; then
+        sleep 3
+        # shellcheck disable=SC2310 # Capture failures are handled below
+        lifecycle_capture=$(poll_mailval_capture "${maildata_dir}" "MailRelayEvent" 10) || true
+        if [[ -z "${lifecycle_capture}" ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: lifecycle event mail not captured (databases_ready/server_started)"
             variant_failed=true
         fi
     fi
@@ -586,16 +625,24 @@ run_mailrelay_variant() {
         fi
     fi
 
-    # Stop Hydrogen cleanly.
+    # Stop Hydrogen cleanly (emits system.server_stopped while enqueue still works).
     # shellcheck disable=SC2310 # Continue even if shutdown fails
     stop_hydrogen "${hydrogen_pid}" "${hydrogen_log}" "${SHUTDOWN_TIMEOUT}" "${SHUTDOWN_ACTIVITY_TIMEOUT}" "${DIAG_TEST_DIR}"
 
-    # Poll the sink for the delivered message.
+    # Poll the sink for the API send and server_stopped event mail.
     if [[ "${variant_failed}" = false ]]; then
         # shellcheck disable=SC2310 # Capture failures are handled below
         capture_file=$(poll_mailval_capture "${maildata_dir}" "MailRelayBlackbox" "${CAPTURE_TIMEOUT}") || true
         if [[ -z "${capture_file}" ]]; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: SMTP sink did not capture message with subject marker"
+            variant_failed=true
+        fi
+    fi
+    if [[ "${variant_failed}" = false ]]; then
+        # shellcheck disable=SC2310 # Capture failures are handled below
+        stopped_capture=$(poll_mailval_capture "${maildata_dir}" "server_stopped" 15) || true
+        if [[ -z "${stopped_capture}" ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: server_stopped event mail not captured"
             variant_failed=true
         fi
     fi

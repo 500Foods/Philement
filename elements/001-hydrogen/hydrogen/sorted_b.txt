@@ -1,0 +1,11 @@
+22:        return false;
+27:        return false;
+42:        return false;
+46:        return false;
+61:        log_this(SR_OIDC, "OIDC service not initialized", LOG_LEVEL_ERROR, 0);
+62:        return false;
+65:        return false;
+70:        log_this(SR_OIDC, "Revocation client authentication failed", LOG_LEVEL_DEBUG, 0);
+71:        return false;
+76:        return true;
+99:    return true;

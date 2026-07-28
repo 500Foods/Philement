@@ -279,14 +279,8 @@ int H_lua_build_result_table(lua_State* L, const char* data_json, int affected_r
  * failure) results in a handle whose `error` field is set, so
  * H.wait returns (nil, error) without raising.
  *
- * The H.http sub-table replaces the Phase 3 placeholder sub-table
- * of the same name. Future phases (17+) may add more functions
- * (e.g. H.http.request for fully custom requests, or an
- * async-multiplexer entry point).
- *
- * Called automatically by H_lua_install_query (which is the single
- * install point that wires every H.* function on a fresh
- * lua_State).
+ * Installs H.http.get / H.http.post (and related). Called from the
+ * shared H.* install path on each fresh lua_State.
  */
 void H_lua_install_http(lua_State* L);
 

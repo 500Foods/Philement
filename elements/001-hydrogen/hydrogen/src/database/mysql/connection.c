@@ -478,13 +478,10 @@ bool mysql_reset_connection(DatabaseHandle* connection) {
  * connection), so it is safe to call from a different thread than
  * the one stuck in the query.
  *
- * LIMITATION: if the underlying TCP socket is dead (network
- * black hole, host unreachable, etc.), mysql_kill will block trying
- * to write the KILL command. In that case the watchdog thread
- * itself can become stuck. A future enhancement would open a
- * separate admin connection for KILL, which avoids the
- * wedged-socket problem entirely. For now this is best-effort and
- * works for the common case (server is slow but reachable).
+ * LIMITATION: if the TCP socket is dead, mysql_kill can block the
+ * caller (watchdog) writing KILL. Prefer a dedicated admin connection
+ * for cancel under full fault-tolerance work (docs/H/TODO.md). Best-effort
+ * when the server is slow but reachable.
  */
 void mysql_cancel_inflight(DatabaseHandle* connection) {
     if (!connection || connection->engine_type != DB_ENGINE_MYSQL) {

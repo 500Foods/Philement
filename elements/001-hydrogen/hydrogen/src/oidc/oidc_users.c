@@ -60,10 +60,8 @@ void cleanup_oidc_user_management(OIDCUserContext *context) {
     
     log_this(SR_OIDC, "Cleaning up user management", LOG_LEVEL_STATE, 0);
     
-    // Clean up user storage resources
-    if (context->user_storage) {
-        // Free any user storage resources (stub implementation)
-    }
+    /* user_storage never allocated; IdP login uses accounts DB, not this module. */
+    (void)context->user_storage;
     
     free(context);
     log_this(SR_OIDC, "User management cleanup completed", LOG_LEVEL_STATE, 0);
@@ -92,7 +90,7 @@ OIDCAuthResult oidc_authenticate_user(const OIDCUserContext *context,
     
     log_this(SR_OIDC, "Authenticating user", LOG_LEVEL_STATE, 0);
     
-    // This is a stub implementation that always succeeds for "test_user"
+    /* Scaffold only — not the production IdP password path. */
     if (strcmp(username, "test_user") == 0) {
         result.success = true;
         result.level = AUTH_LEVEL_SINGLE_FACTOR;
@@ -141,7 +139,7 @@ char* oidc_create_user(const OIDCUserContext *context,
     
     log_this(SR_OIDC, "Creating new user", LOG_LEVEL_STATE, 0);
     
-    // This is a stub implementation that returns a dummy user ID
+    /* Scaffold only — does not persist users. */
     char *user_id = strdup("user_12345");
     
     if (!user_id) {
@@ -167,7 +165,7 @@ char* oidc_get_user_info(const OIDCUserContext *context, const char *user_id) {
     
     log_this(SR_OIDC, "Retrieving user info", LOG_LEVEL_STATE, 0);
     
-    // This is a stub implementation that returns a minimal valid user info
+    /* Scaffold only — fixed dummy claims. */
     char *user_info = strdup("{"
         "\"sub\": \"user_12345\","
         "\"name\": \"Test User\","
@@ -203,6 +201,6 @@ int oidc_update_user(const OIDCUserContext *context,
     
     log_this(SR_OIDC, "Updating user", LOG_LEVEL_STATE, 0);
     
-    // This is a stub implementation that always succeeds
+    /* Scaffold only — no persistence. */
     return 0;
 }

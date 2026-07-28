@@ -477,6 +477,7 @@ bool mailrelay_repo_queue_mark_sent(const MailRelayRepoQueueMarkSent* params,
     repo_add_int64(p, "QUEUE_ID", params->queue_id);
     repo_add_int(p, "SMTP_CODE", params->smtp_code);
     repo_add_string(p, "SMTP_TEXT", params->smtp_text);
+    repo_add_int(p, "SERVER_INDEX", params->server_index);
     return repo_execute_json(MAILRELAY_QREF_QUEUE_MARK_SENT, p, callback, user_data);
 }
 
@@ -493,6 +494,7 @@ bool mailrelay_repo_queue_mark_failed(const MailRelayRepoQueueMarkFailed* params
     repo_add_int64(p, "QUEUE_ID", params->queue_id);
     repo_add_int(p, "SMTP_CODE", params->smtp_code);
     repo_add_string(p, "SMTP_TEXT", params->smtp_text);
+    repo_add_int(p, "SERVER_INDEX", params->server_index);
     return repo_execute_json(MAILRELAY_QREF_QUEUE_MARK_FAILED, p, callback, user_data);
 }
 

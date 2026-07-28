@@ -2,15 +2,10 @@
  * @file oidc_rp_service.h
  * @brief OIDC Relying Party shared service helpers
  *
- * Internal helpers shared by the three OIDC RP endpoint handlers
- * (`/api/auth/oidc/start`, `/api/auth/oidc/callback`,
- * `/api/auth/oidc/handoff`). At Phase 6 these are stub endpoints
- * that always return `503 {"error":"oidc_disabled"}` because the
- * feature is gated by `OIDCRelyingPartyConfig.Enabled`, which
- * defaults to `false`.
- *
- * Real OIDC behaviour (state store, PKCE, discovery, JWKS, ID-token
- * validation, account linking, JWT minting) lands in Phases 7–22.
+ * Internal helpers shared by OIDC RP endpoint handlers
+ * (`/api/auth/oidc/start`, `/callback`, `/handoff`, etc.).
+ * When `OIDCRelyingPartyConfig.Enabled` is false, handlers return
+ * `503 {"error":"oidc_disabled"}` via oidc_rp_send_disabled_response.
  *
  * @author Hydrogen Framework
  * @date 2026-05-08
@@ -62,7 +57,7 @@ enum MHD_Result oidc_rp_send_disabled_response(struct MHD_Connection *connection
  *        endpoints.
  *
  * Builds `{"error":"method_not_allowed"}` and queues it with HTTP
- * status 405. Used by the stub handlers when, for instance, a `POST`
+ * status 405. Used when, for instance, a `POST`
  * lands on `/api/auth/oidc/start` (which is `GET`-only) or a `GET`
  * lands on `/api/auth/oidc/handoff` (which is `POST`-only).
  *

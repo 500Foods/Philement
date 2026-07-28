@@ -102,6 +102,7 @@ typedef struct MailRelaySendTemplateRequest {
     const char* reply_to;                 /**< Override Reply-To; NULL uses MailRelay.DefaultReplyTo. */
     const MailRelayTemplateParams* params; /**< User macro parameters. */
     const char* idempotency_key;          /**< Optional idempotency key. */
+    const char* debounce_key;             /**< Optional debounce coalescing key. */
     int priority;                         /**< Queue priority (higher dequeues first). */
     const char* app_name;                 /**< Value for %APP_NAME%. */
     const char* server_name;              /**< Value for %SERVER_NAME%. */

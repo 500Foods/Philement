@@ -74,7 +74,7 @@ void process_print_job(const char* job_data) {
 // Sets up job management infrastructure
 // Returns: 1 on success, 0 on failure
 int init_print_queue(void) {
-    QueueAttributes print_queue_attrs = {0}; // Initialize with default values for now
+    QueueAttributes print_queue_attrs = {0}; /* defaults — no custom attrs required */
     print_queue = queue_create("PrintQueue", &print_queue_attrs);
     if (!print_queue) {
         log_this(SR_QUEUES, "Failed to create PrintQueue", LOG_LEVEL_ERROR, 0);

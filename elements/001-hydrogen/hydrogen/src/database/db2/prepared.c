@@ -290,18 +290,15 @@ void db2_update_prepared_lru_counter(DatabaseHandle* connection, const char* stm
     }
 }
 
-// Legacy utility functions for compatibility with existing tests
-// These operate on the old PreparedStatementCache structure and are stubs
+/* Legacy PreparedStatementCache API — no-ops; live cache is on DatabaseHandle. */
 bool db2_add_prepared_statement(PreparedStatementCache* cache, const char* name) {
     (void)cache;
     (void)name;
-    // Stub implementation - actual caching is done through DatabaseHandle
     return true;
 }
 
 bool db2_remove_prepared_statement(PreparedStatementCache* cache, const char* name) {
     (void)cache;
     (void)name;
-    // Stub implementation - actual caching is done through DatabaseHandle
     return true;
 }

@@ -12,11 +12,11 @@
  *   3. QueryRef #083 — provision new accounts row (password_hash = NULL).
  *   4. QueryRef #081 — link the new account to the OIDC identity.
  *   5. QueryRef #084 — touch last_seen_at.
- *   6. Default-role assignment is DEFERRED to Phase 22.
+ *   6. ProvisionDefaults.DefaultRoles → account_roles INSERT is not wired yet
+ *      (JWT role-mapping in oidc_rp_roles.c is separate and live).
  *
  * The "orphan account" path (step 3 succeeds but step 4 fails) is logged
  * loudly and returns DB_ERROR. The user's next sign-in will retry step 4.
- * Phase 22 may add a transactional wrapper if orphan rows accumulate.
  *
  * Extracted from the original oidc_rp_link.c monolith in Phase 21.
  */
@@ -181,11 +181,11 @@ OidcRpLinkResult oidc_rp_link_provision_only(const OIDCRPProviderConfig *provide
                                      claims->email_verified, database);
     }
 
-    /* Step 6: default-role assignment deferred to Phase 22. Log intent. */
+    /* Step 6: DefaultRoles not yet written to account_roles (see docs/H/TODO.md). */
     if (linking->provision_defaults.default_role_count > 0) {
         log_this(SR_AUTH,
                  "OIDC RP linker PROVISION_ONLY: %zu default roles configured for "
-                 "account_id=%d (assignment deferred to Phase 22)",
+                 "account_id=%d (account_roles insert not implemented)",
                  LOG_LEVEL_STATE, 2,
                  linking->provision_defaults.default_role_count, new_account_id);
     }

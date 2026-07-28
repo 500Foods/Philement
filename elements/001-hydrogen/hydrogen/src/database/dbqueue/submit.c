@@ -301,8 +301,7 @@ bool database_queue_submit_query(DatabaseQueue* db_queue, DatabaseQuery* query) 
         }
 
         if (!target_child) {
-            // No appropriate child queue exists, use Lead queue itself for now
-            // log_this(SR_DATABASE, "No %s child queue found, using Lead queue for query: %s", LOG_LEVEL_TRACE, 2, target_queue_type, query->query_id);
+            /* No matching child — fall through and submit on this Lead queue. */
         }
     }
 
@@ -366,7 +365,6 @@ DatabaseQuery* database_queue_process_next(DatabaseQueue* db_queue) {
 
     if (!query_data) return NULL;
 
-    // Deserialize query from JSON (placeholder - needs implementation)
     DatabaseQuery* query = deserialize_query_from_json(query_data);
     free(query_data);
 

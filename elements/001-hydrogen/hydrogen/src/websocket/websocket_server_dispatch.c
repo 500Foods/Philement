@@ -431,6 +431,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
         case LWS_CALLBACK_SERVER_WRITEABLE:
             if (session) {
                 handle_chat_writable(wsi, session);
+                ws_maybe_send_heartbeat_ping(wsi, session);
             }
             return 0;
 
@@ -440,6 +441,10 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 ws_handle_pong_received(session);
             }
             return 0;
+
+        // Heartbeat - per-connection timer (armed on establish / after each tick)
+        case LWS_CALLBACK_TIMER:
+            return ws_handle_heartbeat_timer(wsi, session);
 
         // Connection Setup
         case LWS_CALLBACK_FILTER_NETWORK_CONNECTION:
@@ -537,7 +542,6 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
         case LWS_CALLBACK_RAW_CLOSE_FILE:
         case LWS_CALLBACK_RAW_FILE_BIND_PROTOCOL:
         case LWS_CALLBACK_RAW_FILE_DROP_PROTOCOL:
-        case LWS_CALLBACK_TIMER:
         case LWS_CALLBACK_EVENT_WAIT_CANCELLED:
         case LWS_CALLBACK_CHILD_CLOSING:
         case LWS_CALLBACK_CONNECTING:

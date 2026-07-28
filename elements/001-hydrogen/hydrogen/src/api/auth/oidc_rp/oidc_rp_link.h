@@ -23,8 +23,8 @@
  *   `match_email_then_provision` (default) — fast-path via (iss, sub);
  *     on miss, try email-link; on email-miss, provision if allowed.
  *
- * Phase 22 will add role-mapping (default-role assignment for provisioned
- * accounts and IdP role-claim → Hydrogen role mapping).
+ * Role-mapping at JWT issue time is live (oidc_rp_roles.c). ProvisionDefaults
+ * DefaultRoles → account_roles row insert on first provision is still open.
  *
  * Logging policy:
  *   - NEVER log `email` on the success path.

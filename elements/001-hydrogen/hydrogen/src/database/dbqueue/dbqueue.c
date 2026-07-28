@@ -142,7 +142,7 @@ bool database_queue_health_check(DatabaseQueue* db_queue) {
     // Basic health checks
     if (db_queue->shutdown_requested) return false;
 
-    // Check if queues are responding (placeholder - expand with actual connection testing)
+    /* Depth watermark only; no live connection probe (see docs/H/TODO.md). */
     size_t total_depth = database_queue_get_depth(db_queue);
     if (total_depth > 10000) {  // Arbitrary high watermark
         log_this(SR_DATABASE, "Queue depth too high: %zu for %s", LOG_LEVEL_ALERT, 2, total_depth, db_queue->database_name);

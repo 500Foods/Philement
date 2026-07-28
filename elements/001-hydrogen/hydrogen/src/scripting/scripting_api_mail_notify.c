@@ -3,7 +3,7 @@
  *
  * H.mail.send queues mail through Mail Relay: template mode
  * (mailrelay_send_template) or freeform mode (mailrelay_send_direct).
- * H.notify remains a deferred-error compatibility stub.
+ * H.notify returns a stable deferred error (use H.mail; see docs/H/TODO.md).
  */
 
 #include <src/hydrogen.h>

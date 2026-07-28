@@ -4,7 +4,8 @@
  * Manages the generation, validation, and handling of OIDC tokens:
  * - Access tokens (RS256 JWT)
  * - ID tokens (RS256 JWT)
- * - Refresh tokens (opaque stub until Phase 11)
+ * - Access/ID JWT helpers used by the IdP token path
+ * - oidc_generate_refresh_token is a legacy no-op; live refresh is oidc_refresh_issue
  */
 
 #include <src/hydrogen.h>
@@ -406,8 +407,10 @@ char* oidc_generate_refresh_token(const OIDCTokenContext *context,
         return NULL;
     }
 
-    /* Phase 11: durable opaque refresh. Stub remains for link compatibility. */
-    log_this(SR_OIDC, "Refresh token generation deferred to Phase 11", LOG_LEVEL_DEBUG, 0);
+    /* Legacy API: real refresh tokens come from oidc_refresh_issue (oidc_refresh_tokens.c). */
+    (void)context;
+    (void)claims;
+    log_this(SR_OIDC, "oidc_generate_refresh_token is unused; use oidc_refresh_issue", LOG_LEVEL_DEBUG, 0);
     return NULL;
 }
 

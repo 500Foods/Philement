@@ -96,10 +96,10 @@ const char *get_terminal_websocket_protocol(void) {
  * Check if session manager requires WebSocket authentication
  *
  * @param config Terminal configuration
- * @return Always false for now (no authentication required)
+ * @return false — terminal WS auth not implemented (open until product requires it)
  */
 bool terminal_websocket_requires_auth(const TerminalConfig *config __attribute__((unused))) {
-    return false; // For now, no authentication required
+    return false;
 }
 
 /**

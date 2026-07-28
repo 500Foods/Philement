@@ -269,9 +269,7 @@ json_t* chat_context_reconstruct_conversation(const char* database,
             json_t* fallback_msg = json_array_get(fallback_messages, i);
             if (!json_is_object(fallback_msg)) continue;
 
-            // Check if this position needs a fallback
-            // For now, append missing messages at the end
-            // A more sophisticated approach would match by content hash
+            /* Gap fill: append remaining fallback messages (no hash-position match). */
             json_t* content_obj = json_object_get(fallback_msg, "content");
             if (content_obj) {
                 json_t* new_msg = json_deep_copy(fallback_msg);

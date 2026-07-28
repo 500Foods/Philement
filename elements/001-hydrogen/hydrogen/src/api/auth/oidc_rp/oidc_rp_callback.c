@@ -46,7 +46,7 @@
 #include <time.h>
 
 // Hydrogen JWT lifetime — matches login.c:356 and renew.c:19. A future
-// refactor could lift this into auth_service_jwt.h, but for now mirror
+// local JWT claim helper (could share with auth_service_jwt.h)
 // the existing constant verbatim so the contract is identical to
 // password login.
 #define OIDC_RP_CALLBACK_JWT_LIFETIME 3600

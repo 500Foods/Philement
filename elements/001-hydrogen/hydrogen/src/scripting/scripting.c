@@ -22,8 +22,7 @@
 #include "scoreboard.h"
 #include "source_cache.h"
 
-// Long-lived Orchestrator state placeholder. NULL in Phase 3b - Phase 11
-// will allocate and compile a real Orchestrator state here.
+/* Long-lived Orchestrator lua_State (set when Orchestrator loads). */
 lua_State* scripting_orchestrator_state = NULL;
 
 // Scoreboard pointer. NULL until allocated by launch_scripting_subsystem
@@ -53,10 +52,8 @@ void scripting_init_state(void) {
 /*
  * Tear down the subsystem's static state.
  *
- * Phase 3b has no Orchestrator running and no workers, so this is
- * mostly bookkeeping. Once Phase 11 lands, the Orchestrator state will
- * be lua_close'd here. The scoreboard (Phase 5) is always torn down
- * here so ASAN can verify it is clean on every shutdown path.
+ * Closes Orchestrator state if present; always tears down scoreboard
+ * and source cache so ASAN sees a clean shutdown path.
  */
 void scripting_cleanup_state(void) {
     if (scripting_orchestrator_state) {

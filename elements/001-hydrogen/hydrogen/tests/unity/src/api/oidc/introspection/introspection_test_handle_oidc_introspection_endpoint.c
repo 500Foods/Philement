@@ -24,6 +24,26 @@ static struct MHD_Connection *const FAKE = (struct MHD_Connection *)0xBEEF;
 
 static char *g_tmpdir = NULL;
 
+static enum MHD_Result drive_post(const char *body) {
+    void *con_cls = NULL;
+    size_t zero = 0;
+    size_t len = body ? strlen(body) : 0;
+    enum MHD_Result ret;
+
+    ret = handle_oidc_introspection_endpoint(FAKE, "POST", NULL, &zero, &con_cls);
+    if (ret != MHD_YES || !con_cls) {
+        return ret;
+    }
+    if (len > 0) {
+        ret = handle_oidc_introspection_endpoint(FAKE, "POST", body, &len, &con_cls);
+        if (ret != MHD_YES) {
+            return ret;
+        }
+    }
+    zero = 0;
+    return handle_oidc_introspection_endpoint(FAKE, "POST", NULL, &zero, &con_cls);
+}
+
 static bool init_oidc_with_client(void) {
     char tmpl[] = "/tmp/oidc_intro_ep_XXXXXX";
     g_tmpdir = mkdtemp(tmpl);
@@ -79,29 +99,24 @@ void test_introspect_method_not_allowed(void) {
 }
 
 void test_introspect_missing_token(void) {
-    mock_mhd_set_lookup_result(NULL);
-    enum MHD_Result ret = handle_oidc_introspection_endpoint(FAKE, "POST", NULL, NULL, NULL);
+    enum MHD_Result ret = drive_post("client_id=cli");
     TEST_ASSERT_EQUAL_INT(MHD_YES, ret);
 }
 
 void test_introspect_no_client_credentials(void) {
-    mock_mhd_add_lookup("token", "some-token");
-    enum MHD_Result ret = handle_oidc_introspection_endpoint(FAKE, "POST", NULL, NULL, NULL);
+    enum MHD_Result ret = drive_post("token=some-token");
     TEST_ASSERT_EQUAL_INT(MHD_YES, ret);
 }
 
 void test_introspect_failure_no_oidc(void) {
-    mock_mhd_add_lookup("token", "some-token");
     mock_mhd_add_lookup("Authorization", "Basic Y2xpOnNlYw==");
-    enum MHD_Result ret = handle_oidc_introspection_endpoint(FAKE, "POST", NULL, NULL, NULL);
+    enum MHD_Result ret = drive_post("token=some-token");
     TEST_ASSERT_EQUAL_INT(MHD_YES, ret);
 }
 
 void test_introspect_success(void) {
     TEST_ASSERT_TRUE(init_oidc_with_client());
-    mock_mhd_add_lookup("token", "some-token");
-    mock_mhd_add_lookup("Authorization", "Basic Y2xpOg==");
-    enum MHD_Result ret = handle_oidc_introspection_endpoint(FAKE, "POST", NULL, NULL, NULL);
+    enum MHD_Result ret = drive_post("token=some-token&client_id=cli");
     TEST_ASSERT_EQUAL_INT(MHD_YES, ret);
 }
 

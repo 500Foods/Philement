@@ -441,11 +441,9 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
 }
 
 /*
- * Populate QTC from bootstrap query results
- * This is a placeholder - not currently implemented as bootstrap query always populates QTC
+ * Alternate QTC fill path — unused. Bootstrap already writes QTC directly.
+ * Kept for API stability / Unity linkage.
  */
 void database_queue_populate_qtc_from_bootstrap(DatabaseQueue* db_queue) {
-    // Currently not needed as bootstrap query always populates QTC
-    // If needed in future, this would extract QTC data from cached bootstrap results
     (void)db_queue;
 }

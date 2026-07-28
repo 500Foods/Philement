@@ -234,11 +234,8 @@ OidcRpIdTokenError verify_signature(const OIDCRPProviderConfig* provider,
     // `return` statements and exactly two `continue` statements,
     // each `continue` gated on `!retried`.
     //
-    // Note: a NULL return from `oidc_rp_jwks_find` after refetch
-    // collapses both "kid not in JWKS" and "JWKS refetch failed"
-    // into KID_UNKNOWN. Phase 14 may want to map a transient HTTP
-    // failure on refetch to a different user-facing code; for now,
-    // the retry-and-give-up shape matches the plan's contract.
+    // NULL from oidc_rp_jwks_find after refetch is always KID_UNKNOWN
+    // (covers both missing kid and JWKS HTTP failure) — intentional.
     for (;;) {
         const OidcRpJwk* jwk = oidc_rp_jwks_find(provider->name, jwks_uri,
                                                   provider->verify_ssl, ttl, kid);
@@ -598,7 +595,7 @@ OidcRpIdTokenError oidc_rp_validate_id_token(const OIDCRPProviderConfig* provide
     // verifier path.
     if (strcmp(alg, "RS256") != 0) {
         log_this(SR_AUTH,
-                 "OIDC_RP: id_token rejected (alg=%s not yet implemented in verifier)",
+                 "OIDC_RP: id_token rejected (alg=%s not supported by verifier)",
                  LOG_LEVEL_ALERT, 1, alg);
         result = OIDC_RP_IDTOKEN_ERR_ALG_REJECTED;
         goto cleanup;

@@ -127,30 +127,21 @@ typedef struct {
     // KILLED (not FAILED). Idempotent: setting twice is a no-op.
     bool                kill_requested;
 
-    // Phase 12: completion signaling. POD pointers; the scoreboard
-    // does not own them. The intended (and only v1) consumer is the
-    // H_Handle type that Phase 13 introduces; the worker calls the
-    // H_Handle signal function with waiter_handle and writes the
-    // final result into *result_ref. Until Phase 13 the worker only
-    // logs a "would signal waiter" marker (see worker_pool.c).
+    // Completion waiter slots (POD; scoreboard does not own pointees).
+    // Production job wait is poll via H.scoreboard.get; condvar wake via
+    // waiter_handle is not wired (worker claims + TRACE only).
     //
     //   has_waiter      - true once scoreboard_attach_waiter has run.
-    //   waiter_handle   - opaque pointer to a waiter object. NULL when
-    //                     no waiter is attached.
-    //   result_ref      - opaque pointer to a result storage the C side
-    //                     populates on completion. NULL when not in use.
-    //   waiter_signaled - true once scoreboard_claim_waiter has handed
-    //                     the waiter fields to a completion path. Prevents
-    //                     double-signal if claim is invoked more than once.
+    //   waiter_handle   - opaque waiter object, or NULL.
+    //   result_ref      - optional result storage pointer, or NULL.
+    //   waiter_signaled - true after scoreboard_claim_waiter (one-shot).
     //
     // Concurrency: attach may race with the worker. The worker MUST
     // re-read waiter fields at terminal status via scoreboard_claim_waiter
     // (live scoreboard state), not from an early scoreboard_find snapshot
     // taken at job start. Callers that attach after the job is already
-    // terminal will not receive a completion signal; they must check
-    // status after attach and treat terminal as done (Phase 13 H.wait).
-    // Subsequent scoreboard_attach_waiter calls are idempotent (first
-    // writer wins). scoreboard_clear_waiter resets all waiter fields.
+    // terminal must check status after attach (no late wake).
+    // Attach is idempotent (first writer wins); clear_waiter resets.
     bool                has_waiter;
     void*               waiter_handle;
     void*               result_ref;
@@ -425,33 +416,15 @@ void scoreboard_list_free(ScoreboardEntry** list, size_t count);
  *
  *   sb            - the scoreboard
  *   job_id        - the 5-char ID to attach to
- *   waiter_handle - opaque pointer to a waiter object. In Phase 13
- *                   this will be an H_Handle* (the C-side object
- *                   that backs H.wait). For Phase 12 it is just
- *                   stored verbatim and is not dereferenced by the
- *                   scoreboard. May be NULL only if result_ref is
- *                   also NULL (a "tag only" attach is not useful
- *                   and is rejected).
- *   result_ref    - opaque pointer to a result storage the C side
- *                   populates on completion. May be NULL (e.g. a
- *                   waiter that only cares about completion and not
- *                   the result).
+ *   waiter_handle - opaque pointer (not dereferenced by scoreboard).
+ *                   May be NULL only if result_ref is also NULL.
+ *   result_ref    - optional result storage pointer, or NULL.
  *
- * Returns true if a matching entry was found and the waiter was
- * attached (or was already attached). Returns false if the ID is
- * unknown, if both pointers are NULL, or if memory could not be
- * allocated.
+ * Returns true if attached (or already attached); false if unknown ID,
+ * both pointers NULL, or allocation failure.
  *
- * Concurrency: thread-safe (briefly takes the scoreboard mutex).
- * Idempotent: a second attach with the same or different pointers
- * is a no-op and still returns true; the first attach wins. This
- * is the right semantic for a submitter that wants to ensure the
- * waiter is in place even if another thread raced ahead.
- *
- * Phase 12 sets only the C-side scoreboard primitive; the actual
- * wake-up is performed by the worker (worker_pool.c) once the job
- * reaches a terminal status. Phase 13 plugs the H_Handle signal
- * into that worker hook.
+ * Thread-safe; first attach wins. Worker claims at terminal status;
+ * condvar wake is not wired (poll via H.scoreboard.get).
  */
 bool scoreboard_attach_waiter(Scoreboard* sb,
                              const char* job_id,
@@ -474,10 +447,7 @@ bool scoreboard_attach_waiter(Scoreboard* sb,
  * unknown (in which case *out_has_waiter is left as false and the
  * out_handle / out_result outputs are left as NULL).
  *
- * The returned pointers are owned by the scoreboard; the caller
- * must not free them. They remain valid until the entry is removed
- * (which currently never happens - the scoreboard is append-only -
- * but a future phase may add removal).
+ * Pointers are owned by the scoreboard (append-only; entries not removed).
  */
 bool scoreboard_get_waiter(Scoreboard* sb,
                            const char* job_id,
@@ -502,9 +472,8 @@ bool scoreboard_get_waiter(Scoreboard* sb,
  * claimed. On false, out_handle / out_result are left unchanged when
  * non-NULL (callers should initialize them).
  *
- * The worker calls this after marking a job terminal so a waiter
- * attached after job start (but before claim) is still observed.
- * Phase 13 will use the claimed pointers for the real H_Handle signal.
+ * The worker calls this after marking a job terminal so a late attach
+ * is still observed. Claimed pointers are not used for condvar wake today.
  */
 bool scoreboard_claim_waiter(Scoreboard* sb,
                              const char* job_id,

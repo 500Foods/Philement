@@ -19,9 +19,7 @@
 
 // External reference to the server context
 extern WebSocketServerContext *ws_context;
-
-// Forward declaration
-void ws_request_heartbeat_ping(struct lws *wsi, const WebSocketSessionData *session);
+extern AppConfig *app_config;
 
 /*
  * Send a WebSocket ping frame to the client
@@ -56,9 +54,10 @@ void ws_send_ping(struct lws *wsi, WebSocketSessionData *session)
 
     session->last_ping_sent = time(NULL);
     session->ping_pending = true;
+    session->heartbeat_ping_due = false;
 
     log_this(SR_WEBSOCKET, "[WS] PING sent to %s",
-             LOG_LEVEL_TRACE, 1, session->request_ip);
+             LOG_LEVEL_STATE, 1, session->request_ip);
 }
 
 /*
@@ -79,15 +78,14 @@ void ws_handle_pong_received(WebSocketSessionData *session)
     if (session->last_ping_sent > 0) {
         rtt = difftime(now, session->last_ping_sent);
     }
-    
+
     session->last_pong_received = now;
     session->ping_pending = false;
 
-    log_this(SR_WEBSOCKET, "[WS] PONG received from %s (RTT: %.3fs, pending: %s)",
-             LOG_LEVEL_TRACE, 3, 
-             session->request_ip, 
-             rtt,
-             session->ping_pending ? "yes" : "no");
+    log_this(SR_WEBSOCKET, "[WS] PONG received from %s (RTT: %.3fs)",
+             LOG_LEVEL_STATE, 2,
+             session->request_ip,
+             rtt);
 }
 
 /*
@@ -138,4 +136,70 @@ void ws_request_heartbeat_ping(struct lws *wsi, const WebSocketSessionData *sess
 
     // Request writable callback to send the ping
     lws_callback_on_writable(wsi);
+}
+
+/*
+ * Arm the per-connection LWS timer used to schedule heartbeats.
+ */
+void ws_arm_heartbeat_timer(struct lws *wsi)
+{
+    if (!wsi || !app_config || !app_config->websocket.heartbeat.enabled) {
+        return;
+    }
+
+    int interval = app_config->websocket.heartbeat.ping_interval_seconds;
+    if (interval < 1) {
+        interval = 1;
+    }
+
+    lws_set_timer_usecs(wsi, (lws_usec_t)interval * 1000000LL);
+}
+
+/*
+ * Handle LWS_CALLBACK_TIMER: health-check, schedule a ping, re-arm timer.
+ * Returns -1 to close the connection when unhealthy.
+ */
+int ws_handle_heartbeat_timer(struct lws *wsi, WebSocketSessionData *session)
+{
+    if (!wsi || !session || !app_config || !app_config->websocket.heartbeat.enabled) {
+        return 0;
+    }
+
+    int pong_timeout = app_config->websocket.heartbeat.pong_timeout_seconds;
+    if (pong_timeout < 1) {
+        pong_timeout = 1;
+    }
+
+    if (!ws_check_connection_health(wsi, session, pong_timeout)) {
+        log_this(SR_WEBSOCKET, "[WS] Closing unhealthy connection to %s (pong timeout)",
+                 LOG_LEVEL_STATE, 1, session->request_ip);
+        return -1;
+    }
+
+    int stale = app_config->websocket.heartbeat.stale_connection_seconds;
+    if (stale > 0 && session->last_pong_received > 0) {
+        double idle = difftime(time(NULL), session->last_pong_received);
+        if (idle > (double)stale) {
+            log_this(SR_WEBSOCKET, "[WS] Closing stale connection to %s (%.0fs > %ds)",
+                     LOG_LEVEL_STATE, 2, session->request_ip, idle, stale);
+            return -1;
+        }
+    }
+
+    session->heartbeat_ping_due = true;
+    ws_request_heartbeat_ping(wsi, session);
+    ws_arm_heartbeat_timer(wsi);
+    return 0;
+}
+
+/*
+ * Send a due heartbeat ping from the writable callback.
+ */
+void ws_maybe_send_heartbeat_ping(struct lws *wsi, WebSocketSessionData *session)
+{
+    if (!wsi || !session || !session->heartbeat_ping_due) {
+        return;
+    }
+
+    ws_send_ping(wsi, session);
 }

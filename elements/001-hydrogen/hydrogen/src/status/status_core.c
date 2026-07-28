@@ -153,10 +153,9 @@ SystemMetrics* collect_system_metrics(const WebSocketMetrics *ws_metrics) {
     metrics->server_stopping = server_stopping;
     metrics->server_starting = server_starting;
 
-    // Note: The actual collection of other metrics will be implemented
-    // in separate components (status_system.c, status_process.c, etc.)
-    // This function will coordinate those collections.
-    
+    /* Allocates base SystemMetrics (uptime/version/flags). Full fill is
+     * collect_all_metrics() in status.c → status_system / status_process. */
+
     pthread_mutex_unlock(&status_mutex);
     return metrics;
 }

@@ -767,7 +767,7 @@ void chat_lru_cache_request_sync(ChatLRUCache* cache) {
     pthread_mutex_unlock(&cache->cache_mutex);
 }
 
-/* Flush dirty entries to database (stub - will integrate with storage layer) */
+/* Clear residual dirty flags; segments are write-through via chat_storage (#063). */
 int chat_lru_cache_flush(ChatLRUCache* cache) {
     if (!cache) {
         return -1;

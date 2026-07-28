@@ -19,7 +19,7 @@ typedef struct QueryCacheEntry {
     char* description;             // Human-readable description for logging
     char* queue_type;              // Recommended queue: "slow", "medium", "fast", "cache"
     int timeout_seconds;           // Query-specific timeout
-    time_t last_used;              // LRU tracking for future optimization
+    time_t last_used;              // last access time (optional LRU)
     volatile int usage_count;      // Usage statistics
 } QueryCacheEntry;
 

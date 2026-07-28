@@ -76,22 +76,11 @@ bool scripting_worker_should_exit(ScriptingWorkerPool* pool);
 void scripting_signal_waiter_if_present(const char* job_id);
 
 /*
- * Phase 12: if the job has a waiter attached, log a marker.
+ * Claim any attached scoreboard waiter at terminal status (one-shot).
  *
- * The real wake-up (H_Handle signal, condvar broadcast) lands in
- * Phase 13. For now we only log so the test suite can verify that
- * the worker actually fires the post-terminal-status hook. The
- * marker is at LOG_LEVEL_TRACE because it is expected in normal
- * operation (any job with a waiter will produce one), and the
- * scoreboard API shape is the unit-tested surface, not the log
- * line.
- *
- * Waiter fields are claimed live from the scoreboard at terminal
- * status via scoreboard_claim_waiter. An early scoreboard_find
- * snapshot taken at job start can miss a waiter attached after
- * dequeue; claim is one-shot so double-signal is impossible.
- * Callers that attach after claim must check terminal status
- * themselves (Phase 13 H.wait).
+ * Production job observation is poll-based (H.scoreboard.get / list).
+ * Condvar wake via waiter_handle is not wired — claim + TRACE only so
+ * attach/claim semantics stay unit-testable. See docs/H/TODO.md.
  */
 void scripting_signal_waiter_if_present(const char* job_id) {
     if (!job_id || !scripting_scoreboard) {
@@ -104,7 +93,7 @@ void scripting_signal_waiter_if_present(const char* job_id) {
         return;
     }
     log_this(SR_SCRIPTING,
-             "Worker [%s]: would signal waiter handle=%p result_ref=%p",
+             "Worker [%s]: claimed waiter handle=%p result_ref=%p (no condvar wake)",
              LOG_LEVEL_TRACE, 3, job_id, handle, result_ref);
 }
 
@@ -536,11 +525,7 @@ void scripting_worker_process_one(ScriptingWorkerPool* pool,
         scoreboard_update_status(scripting_scoreboard, job_id, terminal);
     }
 
-    // Phase 12: signal any attached waiter using live scoreboard
-    // state (not the start-of-job entry snapshot). The entry is now
-    // terminal, so a waiter (e.g. a future H.wait call) may observe
-    // the final result. Phase 13 replaces the log marker with a real
-    // H_Handle signal.
+    /* Claim any attached waiter (poll-based jobs; no condvar wake). */
     scripting_signal_waiter_if_present(job_id);
 
     H_lua_destroy_context(L);

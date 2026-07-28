@@ -110,7 +110,7 @@ account_info_t *oidc_rp_link_build_account_info(int account_id,
         account->email = strdup(claims->email);
     }
 
-    /* Roles are always empty at this stage; Phase 22's role-mapping
+    /* Roles are empty here; oidc_rp_roles fills them after link success.
      * module will replace this with the authoritative DB join. */
     account->roles = strdup("");
 

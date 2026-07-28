@@ -145,6 +145,61 @@ oidc_idp_userinfo() {
         "${base_url}/oauth/userinfo" 2>/dev/null || echo "000"
 }
 
+# POST /oauth/introspect (public client via client_id form field)
+oidc_idp_introspect() {
+    local base_url="$1"
+    local client_id="$2"
+    local token="$3"
+    local hint="${4:-}"
+    local out_file="$5"
+    if [[ -n "${hint}" ]]; then
+        curl -sS -o "${out_file}" -w '%{http_code}' \
+            -X POST "${base_url}/oauth/introspect" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            --data-urlencode "token=${token}" \
+            --data-urlencode "token_type_hint=${hint}" \
+            --data-urlencode "client_id=${client_id}" 2>/dev/null || echo "000"
+    else
+        curl -sS -o "${out_file}" -w '%{http_code}' \
+            -X POST "${base_url}/oauth/introspect" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            --data-urlencode "token=${token}" \
+            --data-urlencode "client_id=${client_id}" 2>/dev/null || echo "000"
+    fi
+}
+
+# POST /oauth/revoke (public client via client_id form field)
+oidc_idp_revoke() {
+    local base_url="$1"
+    local client_id="$2"
+    local token="$3"
+    local hint="${4:-}"
+    local out_file="$5"
+    if [[ -n "${hint}" ]]; then
+        curl -sS -o "${out_file}" -w '%{http_code}' \
+            -X POST "${base_url}/oauth/revoke" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            --data-urlencode "token=${token}" \
+            --data-urlencode "token_type_hint=${hint}" \
+            --data-urlencode "client_id=${client_id}" 2>/dev/null || echo "000"
+    else
+        curl -sS -o "${out_file}" -w '%{http_code}' \
+            -X POST "${base_url}/oauth/revoke" \
+            -H "Content-Type: application/x-www-form-urlencoded" \
+            --data-urlencode "token=${token}" \
+            --data-urlencode "client_id=${client_id}" 2>/dev/null || echo "000"
+    fi
+}
+
+# GET stub endpoints (end-session / register) → HTTP code only
+oidc_idp_get_endpoint() {
+    local base_url="$1"
+    local path="$2"
+    local out_file="$3"
+    curl -sS -o "${out_file}" -w '%{http_code}' \
+        "${base_url}${path}" 2>/dev/null || echo "000"
+}
+
 # Full authorize login POST → sets OIDC_IDP_AUTH_CODE on success (302)
 oidc_idp_authorize_login() {
     local base_url="$1"

@@ -5,6 +5,7 @@
 # PKCE token, userinfo, refresh, error paths (inverse of Test 42).
 
 # CHANGELOG
+# 2.1.0 - 2026-07-28 - Introspect/revoke/end-session/register blackbox probes
 # 2.0.0 - 2026-07-23 - Multi-engine parallel (5450-5456), test_40 pattern
 # 1.0.2 - 2026-07-23 - Phase 15: state required, bad scheme, missing nonce
 # 1.0.1 - 2026-07-23 - Shellcheck clean
@@ -16,7 +17,7 @@ TEST_NAME="OIDC Identity Provider"
 TEST_ABBR="IDP"
 TEST_NUMBER="45"
 TEST_COUNTER=0
-TEST_VERSION="2.0.0"
+TEST_VERSION="2.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Resolve path at runtime via BASH_SOURCE
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -292,6 +293,65 @@ run_idp_test_parallel() {
         fi
     fi
 
+    # Introspection (RFC 7662) before refresh rotation consumes the RT.
+    if [[ -n "${access_token}" ]]; then
+        local intro_at="${prefix}_intro_at.json"
+        code="$(oidc_idp_introspect "${base_url}" "${CLIENT_ID}" "${access_token}" \
+            "access_token" "${intro_at}")"
+        if [[ "${code}" == "200" ]] \
+            && jq -e '.active == true' "${intro_at}" >/dev/null 2>&1; then
+            echo "INTROSPECT_ACCESS_OK" >> "${result_file}"
+        else
+            echo "INTROSPECT_ACCESS_FAIL" >> "${result_file}"
+        fi
+    fi
+    if [[ -n "${refresh_token}" ]]; then
+        local intro_rt="${prefix}_intro_rt.json"
+        code="$(oidc_idp_introspect "${base_url}" "${CLIENT_ID}" "${refresh_token}" \
+            "refresh_token" "${intro_rt}")"
+        if [[ "${code}" == "200" ]] \
+            && jq -e '.active == true' "${intro_rt}" >/dev/null 2>&1; then
+            echo "INTROSPECT_REFRESH_OK" >> "${result_file}"
+        else
+            echo "INTROSPECT_REFRESH_FAIL" >> "${result_file}"
+        fi
+    fi
+
+    # Stub endpoints: end-session + dynamic registration (501 Not Implemented).
+    local stub_es="${prefix}_end_session.json"
+    code="$(oidc_idp_get_endpoint "${base_url}" "/oauth/end-session" "${stub_es}")"
+    if [[ "${code}" == "501" ]] \
+        && jq -e '.error == "not_implemented"' "${stub_es}" >/dev/null 2>&1; then
+        echo "END_SESSION_OK" >> "${result_file}"
+    else
+        echo "END_SESSION_FAIL" >> "${result_file}"
+    fi
+    local stub_reg="${prefix}_register.json"
+    code="$(oidc_idp_get_endpoint "${base_url}" "/oauth/register" "${stub_reg}")"
+    if [[ "${code}" == "501" ]] \
+        && jq -e '.error == "not_implemented"' "${stub_reg}" >/dev/null 2>&1; then
+        echo "REGISTER_OK" >> "${result_file}"
+    else
+        echo "REGISTER_FAIL" >> "${result_file}"
+    fi
+
+    # Method-not-allowed on POST-only endpoints (GET).
+    code="$(curl -sS -o "${prefix}_intro_get.json" -w '%{http_code}' \
+        "${base_url}/oauth/introspect" 2>/dev/null || echo "000")"
+    if [[ "${code}" == "405" ]]; then
+        echo "INTROSPECT_METHOD_OK" >> "${result_file}"
+    else
+        echo "INTROSPECT_METHOD_FAIL" >> "${result_file}"
+    fi
+    code="$(curl -sS -o "${prefix}_revoke_get.json" -w '%{http_code}' \
+        "${base_url}/oauth/revoke" 2>/dev/null || echo "000")"
+    if [[ "${code}" == "405" ]]; then
+        echo "REVOKE_METHOD_OK" >> "${result_file}"
+    else
+        echo "REVOKE_METHOD_FAIL" >> "${result_file}"
+    fi
+
+    local live_refresh="${refresh_token}"
     if [[ -n "${refresh_token}" ]]; then
         local tok2="${prefix}_token2.json"
         code="$(oidc_idp_token_refresh "${base_url}" "${CLIENT_ID}" "${refresh_token}" "${tok2}")"
@@ -299,6 +359,7 @@ run_idp_test_parallel() {
         new_rt="$(jq -r '.refresh_token // empty' "${tok2}" 2>/dev/null || true)"
         if [[ "${code}" == "200" && -n "${new_rt}" && "${new_rt}" != "${refresh_token}" ]]; then
             echo "REFRESH_OK" >> "${result_file}"
+            live_refresh="${new_rt}"
             local tok3="${prefix}_token3.json"
             code="$(oidc_idp_token_refresh "${base_url}" "${CLIENT_ID}" "${refresh_token}" "${tok3}")"
             if [[ "${code}" != "200" ]] || jq -e '.error' "${tok3}" >/dev/null 2>&1; then
@@ -311,6 +372,37 @@ run_idp_test_parallel() {
         fi
     elif [[ -n "${access_token}" ]]; then
         echo "REFRESH_MISSING" >> "${result_file}"
+    fi
+
+    # Revocation (RFC 7009) after rotation so refresh tests stay valid.
+    if [[ -n "${access_token}" ]]; then
+        local rev_at="${prefix}_rev_at.body"
+        code="$(oidc_idp_revoke "${base_url}" "${CLIENT_ID}" "${access_token}" \
+            "access_token" "${rev_at}")"
+        if [[ "${code}" == "200" ]]; then
+            echo "REVOKE_ACCESS_OK" >> "${result_file}"
+        else
+            echo "REVOKE_ACCESS_FAIL" >> "${result_file}"
+        fi
+    fi
+    if [[ -n "${live_refresh}" ]]; then
+        local rev_rt="${prefix}_rev_rt.body"
+        code="$(oidc_idp_revoke "${base_url}" "${CLIENT_ID}" "${live_refresh}" \
+            "refresh_token" "${rev_rt}")"
+        if [[ "${code}" == "200" ]]; then
+            echo "REVOKE_REFRESH_OK" >> "${result_file}"
+            local intro_dead="${prefix}_intro_dead.json"
+            code="$(oidc_idp_introspect "${base_url}" "${CLIENT_ID}" "${live_refresh}" \
+                "refresh_token" "${intro_dead}")"
+            if [[ "${code}" == "200" ]] \
+                && jq -e '.active == false' "${intro_dead}" >/dev/null 2>&1; then
+                echo "INTROSPECT_REVOKED_OK" >> "${result_file}"
+            else
+                echo "INTROSPECT_REVOKED_FAIL" >> "${result_file}"
+            fi
+        else
+            echo "REVOKE_REFRESH_FAIL" >> "${result_file}"
+        fi
     fi
 
     if [[ -n "${auth_code}" ]]; then
@@ -504,6 +596,21 @@ analyze_idp_test_results() {
         PASS_COUNT=$(( PASS_COUNT + 1 ))
     else
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: id_token failed"
+        engine_ok=1
+    fi
+
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Introspect + revoke"
+    if "${GREP}" -q "INTROSPECT_ACCESS_OK" "${result_file}" 2>/dev/null \
+        && "${GREP}" -q "INTROSPECT_REFRESH_OK" "${result_file}" 2>/dev/null \
+        && "${GREP}" -q "REVOKE_ACCESS_OK" "${result_file}" 2>/dev/null \
+        && "${GREP}" -q "REVOKE_REFRESH_OK" "${result_file}" 2>/dev/null \
+        && "${GREP}" -q "INTROSPECT_REVOKED_OK" "${result_file}" 2>/dev/null \
+        && "${GREP}" -q "END_SESSION_OK" "${result_file}" 2>/dev/null \
+        && "${GREP}" -q "REGISTER_OK" "${result_file}" 2>/dev/null; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Introspect/revoke/stubs OK"
+        PASS_COUNT=$(( PASS_COUNT + 1 ))
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: Introspect/revoke/stubs failed"
         engine_ok=1
     fi
 

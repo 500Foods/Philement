@@ -39,24 +39,6 @@ int send_chat_proxy_result(struct lws *wsi, const char* request_id,
 ChatMessage* convert_json_messages_to_chat_messages(json_t *messages);
 
 // ============================================================================
-// Streaming Context
-// ============================================================================
-
-typedef struct {
-    struct lws *wsi;
-    char *request_id;
-    char *model;
-    int chunk_index;
-    bool stream_completed;
-    char *finish_reason;
-    bool first_chunk_logged;
-    struct timespec start_time;
-    volatile bool *connection_valid;
-    volatile bool *stream_active;
-    MultiStreamContext *multi_stream_ctx;
-} StreamContext;
-
-// ============================================================================
 // Send Helpers
 // ============================================================================
 
@@ -70,19 +52,5 @@ void send_chat_done(struct lws *wsi, const char* request_id, const char* content
 void send_chat_chunk(struct lws *wsi, const char* request_id, const char* content,
                      const char* reasoning_content, const char* model, int index,
                      const char* finish_reason);
-
-void send_stream_chunk(StreamContext* ctx, const char* content,
-                       const char* reasoning_content, const char* model,
-                       int index, const char* finish_reason);
-
-void send_stream_done(StreamContext* ctx, const char* finish_reason,
-                      int prompt_tokens, int completion_tokens, int total_tokens,
-                      double response_time_ms, json_t* raw_response);
-
-// ============================================================================
-// Stream Callback
-// ============================================================================
-
-void stream_chunk_callback(const ChatStreamChunk* chunk, void* user_data);
 
 #endif // WEBSOCKET_SERVER_CHAT_INTERNAL_H

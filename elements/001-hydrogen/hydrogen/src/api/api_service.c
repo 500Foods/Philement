@@ -660,7 +660,7 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
         return handle_post_auth_register(connection, url, method, version, upload_data,
                                        upload_data_size, con_cls);
     }
-    // OIDC Relying Party endpoints (Phase 6 stubs; gated by OIDC_RP.Enabled)
+    // OIDC Relying Party endpoints (gated by OIDC_RP.Enabled)
     else if (strcmp(path, "auth/oidc/start") == 0) {
         return handle_get_auth_oidc_start(connection, url, method, version, upload_data,
                                           upload_data_size, con_cls);

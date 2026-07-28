@@ -43,7 +43,8 @@ void test_validate_jwt_for_auth_alt_null_token(void) {
 
     enum MHD_Result result = validate_jwt_for_auth_alt(mock_connection, NULL);
 
-    TEST_ASSERT_EQUAL(MHD_YES, result);
+    /* Error response sent; MHD_NO so handlers stop processing */
+    TEST_ASSERT_EQUAL(MHD_NO, result);
 }
 
 // Test validate_jwt_for_auth_alt with invalid JWT token
@@ -56,8 +57,7 @@ void test_validate_jwt_for_auth_alt_invalid_jwt(void) {
 
     enum MHD_Result result = validate_jwt_for_auth_alt(mock_connection, token);
 
-    // Should return YES because MHD response was queued successfully
-    TEST_ASSERT_EQUAL(MHD_YES, result);
+    TEST_ASSERT_EQUAL(MHD_NO, result);
 }
 
 int main(void) {

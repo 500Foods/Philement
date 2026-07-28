@@ -26,6 +26,8 @@
 # shellcheck disable=SC2312 # Several diagnostic command substitutions intentionally swallow the inner exit code; helpers either fall back gracefully or || true the outer call
 
 # CHANGELOG
+# 2.2.0 - 2026-07-28 - Record ORCH_MAIL_PROBE / ORCH_NOTIFY_PROBE markers from
+#                      Orchestrator H.mail / H.notify blackbox probes.
 # 2.1.0 - 2026-07-23 - Seed Orchestrator Lua from src before SQLite runs so
 #                      H.query/H.wait blackbox coverage stays in sync.
 # 2.0.0 - 2026-07-02 - Phase 11i: added scripting_run_engine_parallel and
@@ -231,6 +233,9 @@ scripting_count_log_matches() {
 #   ORCH_C_DESTROYED        - C-side "Orchestrator: destroyed"
 #   ORCH_LUA_SHUTDOWN       - Lua-side "Orchestrator: shutdown requested"
 #   ORCH_QUERY_PROBE        - Lua-side "Orchestrator: query_probe ok" (data plane)
+#   ORCH_MAIL_PROBE         - Lua-side "Orchestrator: mail_probe ok" (H.mail freeform)
+#   ORCH_NOTIFY_PROBE       - Lua-side "Orchestrator: notify_probe ok" (H.notify deferred)
+#   ORCH_HTTP_PROBE         - Lua-side "Orchestrator: http_probe ok" (H.http get/post)
 #   LIFECYCLE_COMPLETE      - full start->tick->clean-stop path succeeded
 #
 # Usage: scripting_run_engine_parallel <config_file> <log_file> \
@@ -248,6 +253,8 @@ scripting_run_engine_parallel() {
     local hydrogen_pid
     local ready_state
     local sqlite_db
+    local web_port
+    local prev_http_probe_base="${HYDROGEN_HTTP_PROBE_BASE-}"
 
     true > "${result_file}"
     true > "${log_file}"
@@ -257,28 +264,38 @@ scripting_run_engine_parallel() {
         return 0
     fi
 
-    # SQLite fixtures: refresh Orchestrator source so H.query/H.wait run.
-    sqlite_db=$(python3 - "${config_file}" <<'PY' 2>/dev/null || true
-import json, sys, os, re
+    # Extract WebServer.Port + optional SQLite path; seed Orchestrator Lua;
+    # export HYDROGEN_HTTP_PROBE_BASE for H.http self-call (inherited at exec).
+    web_port=""
+    sqlite_db=""
+    eval "$(python3 - "${config_file}" <<'PY' 2>/dev/null || true
+import json, sys, os, re, shlex
 path = sys.argv[1]
 try:
     with open(path, encoding="utf-8") as fh:
         raw = fh.read()
-    # Expand ${env.VAR} lightly for path extraction only
     def env_sub(m):
         return os.environ.get(m.group(1), m.group(0))
     raw = re.sub(r"\$\{env\.([A-Za-z0-9_]+)\}", env_sub, raw)
     cfg = json.loads(raw)
 except Exception:
     sys.exit(0)
+port = (cfg.get("WebServer") or {}).get("Port")
+if port is not None:
+    print("web_port=" + shlex.quote(str(port)))
 for conn in (cfg.get("Databases") or {}).get("Connections") or []:
     eng = (conn.get("Engine") or "").lower()
     db = conn.get("Database") or ""
     if eng == "sqlite" and db:
-        print(db)
+        print("sqlite_db=" + shlex.quote(db))
         break
 PY
-)
+)"
+    if [[ -n "${web_port}" ]]; then
+        export HYDROGEN_HTTP_PROBE_BASE="http://127.0.0.1:${web_port}"
+    else
+        unset HYDROGEN_HTTP_PROBE_BASE || true
+    fi
     if [[ -n "${sqlite_db}" ]]; then
         # Resolve relative to project root when needed
         if [[ ! -f "${sqlite_db}" && -n "${PROJECT_DIR:-}" && -f "${PROJECT_DIR}/${sqlite_db}" ]]; then
@@ -294,6 +311,11 @@ PY
         register_hydrogen_pid "${hydrogen_pid}"
     fi
     echo "PID=${hydrogen_pid}" >> "${result_file}"
+    if [[ -n "${prev_http_probe_base}" ]]; then
+        export HYDROGEN_HTTP_PROBE_BASE="${prev_http_probe_base}"
+    else
+        unset HYDROGEN_HTTP_PROBE_BASE || true
+    fi
 
     sleep 0.5
     if ! kill -0 "${hydrogen_pid}" 2>/dev/null; then
@@ -378,6 +400,15 @@ PY
     fi
     if scripting_assert_log_contains "${log_file}" "Orchestrator: query_probe ok"; then
         echo "ORCH_QUERY_PROBE" >> "${result_file}"
+    fi
+    if scripting_assert_log_contains "${log_file}" "Orchestrator: mail_probe ok"; then
+        echo "ORCH_MAIL_PROBE" >> "${result_file}"
+    fi
+    if scripting_assert_log_contains "${log_file}" "Orchestrator: notify_probe ok"; then
+        echo "ORCH_NOTIFY_PROBE" >> "${result_file}"
+    fi
+    if scripting_assert_log_contains "${log_file}" "Orchestrator: http_probe ok"; then
+        echo "ORCH_HTTP_PROBE" >> "${result_file}"
     fi
 
     # Full lifecycle succeeds only if every stage passed.

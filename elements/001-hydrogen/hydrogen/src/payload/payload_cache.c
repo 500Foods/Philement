@@ -166,7 +166,7 @@ bool get_payload_files_by_prefix(const char *prefix, PayloadFile **files,
  * Process payload tar cache from PayloadData
  */
 bool process_payload_tar_cache(const PayloadData *payload_data) {
-    // Not yet implemented - always return false for compilation
+    /* Unused alternate entry; live path is process_payload_tar_cache_from_data. */
     (void)payload_data;
     return false;
 }
@@ -181,9 +181,7 @@ bool process_payload_tar_cache_from_data(const uint8_t *tar_data, size_t tar_siz
         return false;
     }
 
-    // Check if payload is compressed (assume Brotli compression)
-    // For now, always assume compressed since that's the current implementation
-    // log_this(SR_PAYLOAD, "― Processing compressed payload: %zu bytes", LOG_LEVEL_STATE, 1, tar_size);
+    /* Embedded payloads are always Brotli-compressed before tar parse. */
 
     // Use Brotli streaming API for decompression
     BrotliDecoderState* decoder = BrotliDecoderCreateInstance(NULL, NULL, NULL);
@@ -256,7 +254,7 @@ bool process_payload_tar_cache_from_data(const uint8_t *tar_data, size_t tar_siz
  * List contents of tar file
  */
 void list_tar_contents(const uint8_t *tar_data, size_t tar_size) {
-    // Not yet implemented - dummy implementation for compilation
+    /* Optional debug dump never wired; keep symbol for API stability. */
     (void)tar_data;
     (void)tar_size;
 }

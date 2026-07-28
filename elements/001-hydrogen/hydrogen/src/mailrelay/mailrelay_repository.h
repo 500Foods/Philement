@@ -162,6 +162,7 @@ typedef struct {
     long long queue_id;
     int smtp_code;
     const char* smtp_text;
+    int server_index;
 } MailRelayRepoQueueMarkSent;
 
 bool mailrelay_repo_queue_mark_sent(const MailRelayRepoQueueMarkSent* params,
@@ -172,6 +173,7 @@ typedef struct {
     long long queue_id;
     int smtp_code;
     const char* smtp_text;
+    int server_index;
 } MailRelayRepoQueueMarkFailed;
 
 bool mailrelay_repo_queue_mark_failed(const MailRelayRepoQueueMarkFailed* params,

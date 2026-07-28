@@ -80,6 +80,7 @@ typedef struct WebSocketSessionData {
     time_t last_ping_sent;             // When we last sent a ping to this client
     time_t last_pong_received;         // When we last received a pong from this client
     bool ping_pending;                 // Whether we're waiting for a pong response
+    bool heartbeat_ping_due;           // Timer requested a ping; send on next writable
 } WebSocketSessionData;
 
 // Initialize the server context
@@ -124,5 +125,8 @@ void ws_send_ping(struct lws *wsi, WebSocketSessionData *session);
 void ws_handle_pong_received(WebSocketSessionData *session);
 bool ws_check_connection_health(const struct lws *wsi, const WebSocketSessionData *session, int pong_timeout_seconds);
 void ws_request_heartbeat_ping(struct lws *wsi, const WebSocketSessionData *session);
+void ws_arm_heartbeat_timer(struct lws *wsi);
+int ws_handle_heartbeat_timer(struct lws *wsi, WebSocketSessionData *session);
+void ws_maybe_send_heartbeat_ping(struct lws *wsi, WebSocketSessionData *session);
 
 #endif // WEBSOCKET_SERVER_INTERNAL_H

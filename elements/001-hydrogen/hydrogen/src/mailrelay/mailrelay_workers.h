@@ -11,6 +11,10 @@
 
 #include <stdbool.h>
 
+#include <src/mailrelay/mailrelay_queue.h>
+#include <src/mailrelay/mailrelay_repository.h>
+#include <src/mailrelay/mailrelay_result.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -36,6 +40,13 @@ void mailrelay_workers_stop(void);
  * drive a worker directly. Not part of the stable public API.
  */
 void* mailrelay_worker_thread(void* arg);
+
+/* Exposed for Unity / static-function policy; not stable public API. */
+void worker_repo_noop_cb(MailRelayRepoResult* result, void* user_data);
+void worker_persist_outcome(const MailRelayQueueItem* item,
+                            bool sent,
+                            bool retrying,
+                            const MailRelayResult* result);
 
 #ifdef __cplusplus
 }
