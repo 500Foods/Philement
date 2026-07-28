@@ -91,6 +91,10 @@ bool mailrelay_template_params_add(MailRelayTemplateParams* params,
 /* Free all owned strings and reset the parameter map. */
 void mailrelay_template_params_free(MailRelayTemplateParams* params);
 
+/* Deep-copy a parameter map into an initialized destination. */
+bool mailrelay_template_params_copy(MailRelayTemplateParams* dst,
+                                    const MailRelayTemplateParams* src);
+
 /*
  * Look up a value by key. The latest added entry wins for duplicate keys.
  *

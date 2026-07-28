@@ -108,6 +108,14 @@ extern sqlite3_errmsg_t sqlite3_errmsg_ptr;
     // SQLite bind functions use 1-based indexing
     int bind_result = SQLITE_OK;
 
+    if (param->is_null) {
+        if (!sqlite3_bind_null_ptr) return false;
+        bind_result = sqlite3_bind_null_ptr(stmt, param_index);
+        log_this(designator, "Bound NULL parameter %d: name=%s", LOG_LEVEL_TRACE, 2,
+                 param_index, param->name);
+        return bind_result == SQLITE_OK;
+    }
+
     switch (param->type) {
         case PARAM_TYPE_INTEGER: {
             if (!sqlite3_bind_int_ptr) return false;

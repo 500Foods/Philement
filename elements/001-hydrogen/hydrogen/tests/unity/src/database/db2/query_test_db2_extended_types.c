@@ -198,9 +198,12 @@ void test_parse_null_date_parameter(void) {
         "}"
     "}";
     
-    // Parser should handle null values - expecting failure
     ParameterList* result = parse_typed_parameters(json_params, "TEST");
-    TEST_ASSERT_NULL(result);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL(1, result->count);
+    TEST_ASSERT_NOT_NULL(result->params[0]);
+    TEST_ASSERT_TRUE(result->params[0]->is_null);
+    free_parameter_list(result);
 }
 
 // Test parameter conversion with TEXT type

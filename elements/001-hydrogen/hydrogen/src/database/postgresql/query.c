@@ -120,6 +120,11 @@ char* postgresql_convert_param_value(const TypedParameter* param, const char* de
         return NULL;
     }
 
+    // PQexecParams treats a NULL paramValues[i] as SQL NULL.
+    if (param->is_null) {
+        return NULL;
+    }
+
     char buffer[256];
     
     switch (param->type) {

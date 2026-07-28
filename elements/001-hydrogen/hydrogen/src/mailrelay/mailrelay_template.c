@@ -316,6 +316,21 @@ void mailrelay_template_params_free(MailRelayTemplateParams* params) {
     params->capacity = 0;
 }
 
+bool mailrelay_template_params_copy(MailRelayTemplateParams* dst,
+                                    const MailRelayTemplateParams* src) {
+    if (!dst || !src) {
+        return false;
+    }
+    mailrelay_template_params_init(dst);
+    for (int i = 0; i < src->count; i++) {
+        if (!mailrelay_template_params_add(dst, src->items[i].key, src->items[i].value)) {
+            mailrelay_template_params_free(dst);
+            return false;
+        }
+    }
+    return true;
+}
+
 const char* mailrelay_template_params_get(const MailRelayTemplateParams* params,
                                           const char* key) {
     if (!params || !key) {

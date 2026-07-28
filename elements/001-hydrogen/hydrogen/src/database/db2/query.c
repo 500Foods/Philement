@@ -402,6 +402,18 @@ bool db2_bind_single_parameter(void* stmt_handle, unsigned short param_index, Ty
     log_this(designator, "Binding parameter %u: name=%s, type=%d", LOG_LEVEL_TRACE, 3,
              (unsigned int)param_index, param->name, param->type);
 
+    if (param->is_null) {
+        bound_values[param_index - 1] = NULL;
+        str_len_indicators[param_index - 1] = SQL_NULL_DATA;
+        log_this(designator, "Binding NULL parameter %u: name=%s", LOG_LEVEL_TRACE, 2,
+                 (unsigned int)param_index, param->name);
+        bind_result = SQLBindParameter_ptr(stmt_handle, param_index, SQL_PARAM_INPUT,
+                                           SQL_C_CHAR, SQL_VARCHAR, 1, 0,
+                                           NULL, 0,
+                                           &str_len_indicators[param_index - 1]);
+        return bind_result == SQL_SUCCESS || bind_result == SQL_SUCCESS_WITH_INFO;
+    }
+
     switch (param->type) {
         case PARAM_TYPE_INTEGER: {
             bound_values[param_index - 1] = malloc(sizeof(int));
