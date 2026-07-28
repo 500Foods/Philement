@@ -48,6 +48,10 @@ Chat proxy service. Phases 1–12 complete (see `complete/`). Open work: [Phase 
 
 Separate ASAN Unity build/test variant for memory-safety gating without corrupting gcov coverage.
 
+### [IMAGE PLAN](/docs/H/plans/IMAGE_PLAN.md)
+
+Reporting service: `image_scale` endpoint using ImageMagick to convert and scale base64-encoded images. Includes XO (PDF XObject) output format. Phases 0–7 planned with stage gates and blackbox Test 27.
+
 ### [MIRAGE PLAN](/docs/H/plans/MIRAGE_PLAN.md)
 
 Distributed proxy architecture sketch. Implementation deferred.

@@ -39,7 +39,7 @@ A handful of other projects are directly included in the tests/lib folder of thi
 ```bash
 sudo apt update
 sudo apt install -y build-essential wget curl jq nodejs npm cloc ninja-build upx-ucl brotli
-sudo apt install -y libjansson-dev libmicrohttpd-dev libssl-dev libwebsockets-dev libbrotli-dev libcurl-openssl-dev
+sudo apt install -y libjansson-dev libmicrohttpd-dev libssl-dev libwebsockets-dev libbrotli-dev libcurl-openssl-dev libmagickwand-dev zlib1g-dev
 sudo apt install -y valgrind cppcheck libxml2-utils
 npm install -g markdownlint jsonlint stylelint htmlhint swagger-cli
 ```
@@ -85,6 +85,8 @@ These libraries are required for Hydrogen to run:
 - [libm](https://www.gnu.org/software/libc/manual/html_node/Mathematics.html) - Mathematical operations support
 - [libbrotlidec](https://github.com/google/brotli) - Brotli decompression library
 - [libtar](https://github.com/tklauser/libtar) - TAR file manipulation
+- [zlib](https://www.zlib.net/) - Compression library for FlateDecode (PDF XObject encoding)
+- [ImageMagick](https://imagemagick.org/) (libMagickWand) - Image processing and conversion for the Reporting service
 
 ## Environment Variables
 
@@ -327,6 +329,8 @@ echo "Setup complete" >&2
     "libwebsockets-dev",
     "libbrotli-dev",
     "libcurl4-openssl-dev",
+    "libmagickwand-dev",
+    "zlib1g-dev",
     "libtar-dev",
     "valgrind",
     "cppcheck",
