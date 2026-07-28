@@ -114,8 +114,45 @@ extern volatile sig_atomic_t web_server_shutdown;
 extern pthread_cond_t terminate_cond;
 extern pthread_mutex_t terminate_mutex;
 
+/* True if something already accepts TCP on 127.0.0.1:port (active listener).
+ * SO_REUSEADDR bind probes can miss a live peer under races; connect catches it. */
+bool is_tcp_port_listening_localhost(int port) {
+    int sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (sock < 0) {
+        return false;
+    }
+
+    struct timeval tv = { .tv_sec = 0, .tv_usec = 200000 };
+    (void)setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
+    (void)setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
+
+    struct sockaddr_in addr;
+    memset(&addr, 0, sizeof(addr));
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons((uint16_t)port);
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+    int result = connect(sock, (struct sockaddr*)&addr, sizeof(addr));
+    int saved = errno;
+    close(sock);
+
+    if (result == 0) {
+        return true;
+    }
+    /* Immediate refusal means nothing is listening; timeout/other = treat as free for bind. */
+    (void)saved;
+    return false;
+}
+
 // Check if a network port is available for binding
 bool is_port_available(int port, bool check_ipv6) {
+    if (is_tcp_port_listening_localhost(port)) {
+        log_this(SR_WEBSERVER,
+                 "Port %d is already in use (active listener on 127.0.0.1) — another process holds it",
+                 LOG_LEVEL_ERROR, 1, port);
+        return false;
+    }
+
     bool ipv4_ok = false;
 
     // Check IPv4
@@ -136,7 +173,7 @@ bool is_port_available(int port, bool check_ipv6) {
         ipv4_ok = (result == 0);
 
         if (!ipv4_ok) {
-            log_this(SR_WEBSERVER, "IPv4 port %d availability check failed: %s", LOG_LEVEL_DEBUG, 2, port, strerror(errno));
+            log_this(SR_WEBSERVER, "IPv4 port %d is not available: %s", LOG_LEVEL_ERROR, 2, port, strerror(errno));
         } else {
             log_this(SR_WEBSERVER, "IPv4 port %d is available (SO_REUSEADDR enabled)", LOG_LEVEL_DEBUG, 1, port);
         }
@@ -168,7 +205,7 @@ bool is_port_available(int port, bool check_ipv6) {
             ipv6_ok = (result == 0);
 
             if (!ipv6_ok) {
-                log_this(SR_WEBSERVER, "IPv6 port %d availability check failed: %s", LOG_LEVEL_DEBUG, 2, port, strerror(errno));
+                log_this(SR_WEBSERVER, "IPv6 port %d is not available: %s", LOG_LEVEL_ERROR, 2, port, strerror(errno));
             } else {
                 log_this(SR_WEBSERVER, "IPv6 port %d is available (SO_REUSEADDR enabled)", LOG_LEVEL_DEBUG, 1, port);
             }
@@ -362,16 +399,18 @@ void* run_web_server(void* arg) {
                                 MHD_OPTION_THREAD_STACK_SIZE, (1024 * 1024), // 1MB stack size
                                 MHD_OPTION_END);
     if (webserver_daemon == NULL) {
-        log_this(SR_WEBSERVER, "Failed to start web server daemon", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_WEBSERVER,
+                 "Failed to start web server daemon on port %u (port may already be in use by another process)",
+                 LOG_LEVEL_ERROR, 1, server_web_config->port);
         server_web_config = NULL;  // Reset config on failure
-        log_this(SR_WEBSERVER, "Web server initialization failed", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_WEBSERVER, "Web server initialization failed", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
     // Check if the web server is actually running
     const union MHD_DaemonInfo *info = MHD_get_daemon_info(webserver_daemon, MHD_DAEMON_INFO_BIND_PORT);
     if (info == NULL) {
-        log_this(SR_WEBSERVER, "Failed to get daemon info", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_WEBSERVER, "Failed to get daemon info after start", LOG_LEVEL_ERROR, 0);
         MHD_stop_daemon(webserver_daemon);
         webserver_daemon = NULL;
         return NULL;
@@ -379,7 +418,9 @@ void* run_web_server(void* arg) {
 
     unsigned int actual_port = info->port;
     if (actual_port == 0) {
-        log_this(SR_WEBSERVER, "Web server failed to bind to the specified port", LOG_LEVEL_DEBUG, 0);
+        log_this(SR_WEBSERVER,
+                 "Web server failed to bind to port %u (already in use or insufficient privileges)",
+                 LOG_LEVEL_ERROR, 1, server_web_config->port);
         MHD_stop_daemon(webserver_daemon);
         webserver_daemon = NULL;
         return NULL;

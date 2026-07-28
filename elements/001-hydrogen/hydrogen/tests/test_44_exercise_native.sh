@@ -1,9 +1,15 @@
 #!/usr/bin/env bash
 
 # Test: Memory Exercise Native - Multi-engine auth stress RSS measurement
-# Single Hydrogen (hydrogen_release) with six DBs (YugabyteDB disabled), 5000 concurrent
+# Single Hydrogen (hydrogen_release by default) with six DBs (YugabyteDB disabled), 5000 concurrent
 # auth requests, steady-state RSS growth analysis. Companion to test_41 (ASAN/LSAN).
 # Separate test number so the suite can run 41 and 44 in parallel (different ports).
+#
+# Diagnosis (symbols / easier cores), like test_41's ASAN binary selection:
+#   EXERCISE_NATIVE_DIAG=1 ./tests/test_44_exercise_native.sh
+#     → prefers hydrogen_perf (debug info, no ASAN) over packed release
+#   EXERCISE_NATIVE_BIN=/path/to/binary ./tests/test_44_exercise_native.sh
+#   EXERCISE_NATIVE_LOG_LEVEL=DEBUG|TRACE|STATE (default STATE)
 
 # FUNCTIONS (lib/exercise_helpers.sh)
 # scrape_metrics() get_metric() run_auth_request() run_auth_batch()
@@ -14,7 +20,7 @@ TEST_NAME="Exercise Native"
 TEST_ABBR="EXN"
 TEST_NUMBER="44"
 TEST_COUNTER=0
-TEST_VERSION="1.0.0"
+TEST_VERSION="1.1.0"
 
 TOTAL_REQUESTS=5000
 SNAPSHOT_INTERVAL=500
@@ -56,40 +62,89 @@ else
     EXIT_CODE=1
 fi
 
-# ── Locate release (non-ASAN) binary ────────────────────────────────
-print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate Release Binary"
+# ── Locate native (non-ASAN) binary ─────────────────────────────────
+# Default: hydrogen_release (packed, RSS-representative).
+# EXERCISE_NATIVE_DIAG=1: prefer hydrogen_perf (symbols for gdb/cores).
+# EXERCISE_NATIVE_BIN=: explicit path override (must not be ASAN).
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate Native Binary"
+
+resolve_native_cand() {
+    local cand="$1"
+    local local_resolved="${cand}"
+    if [[ -z "${cand}" ]]; then
+        return 1
+    fi
+    if command -v realpath >/dev/null 2>&1; then
+        local_resolved=$(realpath "${cand}" 2>/dev/null || echo "${cand}")
+    fi
+    if [[ "${local_resolved}" != /* && -f "${local_resolved}" ]]; then
+        local_resolved="./${local_resolved}"
+    fi
+    if [[ ! -x "${local_resolved}" ]]; then
+        return 1
+    fi
+    if { readelf -s "${local_resolved}" || true; } | "${GREP}" -q "__asan" 2>/dev/null; then
+        return 1
+    fi
+    printf '%s\n' "${local_resolved}"
+    return 0
+}
 
 RELEASE_BIN=""
-for cand in \
-    "${HYDROGEN_BIN_BASE}_release" \
-    "hydrogen_release" \
-    "$(dirname "${HYDROGEN_BIN}" 2>/dev/null || echo ".")/hydrogen_release" \
-    "${PROJECT_DIR}/hydrogen_release" \
-    "build/hydrogen_release" ; do
-    if [[ -n "${cand}" && -x "${cand}" ]]; then
-        local_resolved="${cand}"
-        if command -v realpath >/dev/null 2>&1; then
-            local_resolved=$(realpath "${cand}" 2>/dev/null || echo "${cand}")
-        fi
-        if [[ "${local_resolved}" != /* && -f "${local_resolved}" ]]; then
-            local_resolved="./${local_resolved}"
-        fi
-        if [[ -x "${local_resolved}" ]]; then
-            if ! { readelf -s "${local_resolved}" || true; } | "${GREP}" -q "__asan" 2>/dev/null; then
-                RELEASE_BIN="${local_resolved}"
-                break
-            fi
-        fi
+NATIVE_BIN_LABEL="release"
+
+if [[ -n "${EXERCISE_NATIVE_BIN:-}" ]]; then
+    # shellcheck disable=SC2310 # Candidate resolution returns non-zero when path missing/ASAN
+    if RELEASE_BIN=$(resolve_native_cand "${EXERCISE_NATIVE_BIN}"); then
+        NATIVE_BIN_LABEL="override"
+    else
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "EXERCISE_NATIVE_BIN not usable (missing or ASAN): ${EXERCISE_NATIVE_BIN}"
     fi
-done
+fi
+
+if [[ -z "${RELEASE_BIN}" && "${EXERCISE_NATIVE_DIAG:-0}" == "1" ]]; then
+    for cand in \
+        "${HYDROGEN_BIN_BASE}_perf" \
+        "hydrogen_perf" \
+        "$(dirname "${HYDROGEN_BIN}" 2>/dev/null || echo ".")/hydrogen_perf" \
+        "${PROJECT_DIR}/hydrogen_perf" \
+        "build/hydrogen_perf" ; do
+        # shellcheck disable=SC2310 # Try next candidate when resolve_native_cand fails
+        if RELEASE_BIN=$(resolve_native_cand "${cand}"); then
+            NATIVE_BIN_LABEL="perf-diag"
+            break
+        fi
+    done
+    if [[ -z "${RELEASE_BIN}" ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "EXERCISE_NATIVE_DIAG=1 but hydrogen_perf not found; falling back to release"
+    fi
+fi
 
 if [[ -z "${RELEASE_BIN}" ]]; then
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "hydrogen_release not found or is ASAN-instrumented"
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Release binary required for native RSS exercise"
+    for cand in \
+        "${HYDROGEN_BIN_BASE}_release" \
+        "hydrogen_release" \
+        "$(dirname "${HYDROGEN_BIN}" 2>/dev/null || echo ".")/hydrogen_release" \
+        "${PROJECT_DIR}/hydrogen_release" \
+        "build/hydrogen_release" ; do
+        # shellcheck disable=SC2310 # Try next candidate when resolve_native_cand fails
+        if RELEASE_BIN=$(resolve_native_cand "${cand}"); then
+            NATIVE_BIN_LABEL="release"
+            break
+        fi
+    done
+fi
+
+if [[ -z "${RELEASE_BIN}" ]]; then
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "No non-ASAN native binary found (release/perf)"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Native binary required for RSS exercise"
     EXIT_CODE=1
 else
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Release binary: ${RELEASE_BIN}"
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Release binary available"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Native binary (${NATIVE_BIN_LABEL}): ${RELEASE_BIN}"
+    if [[ "${NATIVE_BIN_LABEL}" == "perf-diag" ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Diag mode: symbols available — ulimit -c unlimited; cores named hydrogen_perf.core.<pid>"
+    fi
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Native binary available"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
 fi
 
@@ -169,16 +224,31 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
     export HYDROGEN_BIN="${RELEASE_BIN}"
     unset ASAN_OPTIONS 2>/dev/null || true
-    # STATE keeps startup/migration markers without multi-GB TRACE spam under 5000 auths
-    export HYDROGEN_LOG_LEVEL=STATE
+    # STATE keeps startup/migration markers without multi-GB TRACE spam under 5000 auths.
+    # Override: EXERCISE_NATIVE_LOG_LEVEL=DEBUG|TRACE  (TRACE only while hunting SEGV)
+    export HYDROGEN_LOG_LEVEL="${EXERCISE_NATIVE_LOG_LEVEL:-STATE}"
+    if [[ "${EXERCISE_NATIVE_DIAG:-0}" == "1" && -z "${EXERCISE_NATIVE_LOG_LEVEL:-}" ]]; then
+        # Diag default: DEBUG fills the post-watchdog window without full-run TRACE volume
+        export HYDROGEN_LOG_LEVEL=DEBUG
+    fi
+    # Prefer cores when diagnosing (no-op if already unlimited / hard limit blocks)
+    ulimit -c unlimited 2>/dev/null || true
 
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Launching native release: ${HYDROGEN_BIN}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Launching native (${NATIVE_BIN_LABEL}): ${HYDROGEN_BIN}"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HYDROGEN_LOG_LEVEL=${HYDROGEN_LOG_LEVEL}"
 
     server_info=$(run_conduit_server "${CONFIG_FILE}" "${EXERCISE_LOG_SUFFIX}" "Exercise-Native" "${RESULT_FILE}")
 
     if [[ "${server_info}" == "FAILED:0" ]]; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server startup failed"
+        if "${GREP}" -q "CRASH_DETECTED=true" "${RESULT_FILE}" 2>/dev/null; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "SEGV during startup — check log and *.core.* next to binary cwd"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server crashed (SEGV) during startup"
+        elif "${GREP}" -q "PORT_IN_USE=true" "${RESULT_FILE}" 2>/dev/null; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Port ${SERVER_PORT:-?} already in use — do not run two test_44 on the same config"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server startup failed: port in use"
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server startup failed"
+        fi
         EXIT_CODE=1
     else
         HYDROGEN_PID=$(echo "${server_info}" | awk -F: '{print $NF}')

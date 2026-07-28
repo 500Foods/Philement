@@ -612,12 +612,20 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
         return false;
     }
 
+    /* Serialize ODBC use of this connection handle (CLI is not free-threaded). */
+    MutexResult conn_lock = MUTEX_LOCK(&connection->connection_lock, designator);
+    if (conn_lock != MUTEX_SUCCESS) {
+        log_this(designator, "DB2 execute_query: Failed to lock connection", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
     // log_this(designator, "DB2 execute_query:\n%s", LOG_LEVEL_TRACE, 1, request->sql_template);
 
     // Allocate statement handle
     void* stmt_handle = NULL;
     if (SQLAllocHandle_ptr(SQL_HANDLE_STMT, db2_conn->connection, &stmt_handle) != SQL_SUCCESS) {
         log_this(designator, "DB2 execute_query: Failed to allocate statement handle", LOG_LEVEL_ERROR, 0);
+        mutex_unlock(&connection->connection_lock);
         return false;
     }
 
@@ -657,6 +665,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
                 free_parameter_list(param_list);
                 db2_active_stmt_clear(connection, stmt_handle);
                 SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
+                mutex_unlock(&connection->connection_lock);
                 return false;
             }
             
@@ -672,6 +681,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
                 free_parameter_list(param_list);
                 db2_active_stmt_clear(connection, stmt_handle);
                 SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
+                mutex_unlock(&connection->connection_lock);
                 return false;
             }
             
@@ -687,6 +697,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
                 free_parameter_list(param_list);
                 db2_active_stmt_clear(connection, stmt_handle);
                 SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
+                mutex_unlock(&connection->connection_lock);
                 return false;
             }
             
@@ -702,6 +713,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
                     free_parameter_list(param_list);
                     db2_active_stmt_clear(connection, stmt_handle);
                     SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
+                    mutex_unlock(&connection->connection_lock);
                     return false;
                 }
             }
@@ -724,6 +736,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
                 log_this(designator, "DB2 execute_query: Failed to parse required parameters", LOG_LEVEL_ERROR, 0);
                 db2_active_stmt_clear(connection, stmt_handle);
                 SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
+                mutex_unlock(&connection->connection_lock);
                 return false;
             }
             exec_result = SQLExecDirect_ptr(stmt_handle, (char*)request->sql_template, SQL_NTS);
@@ -796,6 +809,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
 
         db2_active_stmt_clear(connection, stmt_handle);
         SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
+        mutex_unlock(&connection->connection_lock);
         return false;
     }
 
@@ -805,6 +819,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
     // Clean up statement handle
     db2_active_stmt_clear(connection, stmt_handle);
     SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
+    mutex_unlock(&connection->connection_lock);
 
     if (process_result) {
         log_this(designator, "DB2 execute_query: Query completed successfully", LOG_LEVEL_DEBUG, 0);
