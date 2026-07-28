@@ -1,8 +1,0 @@
-22:        return false;
-42:        return false;
-48:    oidc_free_token_claims(claims);
-49:    return true;
-65:        return false;
-76:        return true;
-84:        try_refresh = false;
-95:        return true;

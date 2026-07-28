@@ -201,6 +201,29 @@ not open work unless listed below.
 | **Remaining** | Delete function + tests, or rewire to `process_single_query` if a Lead-specific path is needed |
 | **Why** | Looks like unfinished Lead processing; is Unity-only surface. |
 
+### 12d. Mail Relay Persist — MySQL/MariaDB SEGV on QueryRef 93
+
+| | |
+| --- | --- |
+| **Code** | `src/database/mysql/query.c` (prepared bind/execute) · QueryRef **093** `acuranzo_1223.lua` · `mailrelay_repo_queue_insert` · workers Persist path |
+| **Effort** | M |
+| **Done** | ~40% — Persist happy path green on SQLite/PG/Cockroach/Yugabyte/DB2 via `test_58` (Events + Persist + mark_sending/sent/attempt); JSON null params fixed (`TypedParameter.is_null`); `insert_callback` reads DQM array `[{queue_id}]` |
+| **Remaining** | Diagnose SEGV after successful multi-param bind on MySQL/MariaDB Persist insert (likely incomplete hand-rolled `MYSQL_BIND` ABI and/or `INSERT…RETURNING` via prepared stmt). Align bind struct with real client headers or engine-safe insert+key return. Re-enable `Queue.Persist` for mysql/mariadb in `test_58` once green. |
+| **Why now** | Any SEGV is a defect; Persist is off for those engines in blackbox only as a shield. Blocks full multi-engine queue durability. |
+| **Note** | Repro: enable Persist on `hydrogen_test_58_mysql.json` path; crash after binding all 12 params, no MySQL error string. Distinct from item 12e (pkey race). |
+
+### 12e. App-generated `MAX+1` PKs — clients must confirm insert + retry on conflict
+
+| | |
+| --- | --- |
+| **Design** | **Intentional:** prefer integer PKs via `COALESCE(MAX(id),0)+1` + `INSERT_KEY_*` / `RETURNING` over UUIDs everywhere. Migrations that emit this pattern are fine; the duty is on **callers**, not on rewriting schema to sequences/UUIDs. |
+| **Code (example)** | QueryRef **093** `acuranzo_1223.lua` (`mail_queue`); Hydrogen `mailrelay_persist_message` / `insert_callback`. Same SQL shape is **widespread** in Acuranzo migrations (`INSERT_KEY_START` / `WITH next_*_id AS (SELECT COALESCE(MAX…)+1)`). |
+| **Effort** | M (audit clients + add retry where concurrent inserts are possible) |
+| **Done** | Convention works single-threaded; `RETURNING` / result row gives the new id **only after a successful insert** |
+| **Remaining** | (1) **Audit** C (and any other) clients of `INSERT_KEY_*` / `MAX+1` QueryRefs for concurrent use. (2) On unique/duplicate PK (or missing returned id): **retry** the insert (bounded), then treat returned id as success. (3) Mail Relay Persist: lifecycle debounce + API send can collide today → flaky `mail_queue_pkey` under PG; `mailrelay_persist_message` fails once with no retry. (4) Document the contract: success = insert OK **and** new id in result; failure = retry or surface error — never assume `MAX+1` alone is race-free. |
+| **Why now** | Concurrent Persist/workers will hit this; silent one-shot failure is worse than a short retry loop. |
+| **Note** | Orthogonal to 12d (MySQL SEGV). Do **not** “fix” only by serializing tests. Search migrations for `COALESCE(MAX(` / `INSERT_KEY_` to find the surface area; fix **call sites**, not the migration style. |
+
 ---
 
 ## P2 — Active product subsystems (larger, clear value)
@@ -211,8 +234,8 @@ not open work unless listed below.
 | --- | --- |
 | **Plan** | [`MAILRELAY_PLAN.md`](/docs/H/plans/MAILRELAY_PLAN.md) |
 | **Effort** | L–XL |
-| **Done** | ~70% — Phases 0–5, 7–8 done; Phase 6/10 partial; pause after 7B/8 |
-| **Remaining** | System template seeds, Phase 9 Lithium UI, Phase 10 ops remainder, Phases 11–15 (inbound/rewrite/security/docs as scoped), auth MFA wiring via OTP; blackbox depth (events/persist/debounce) may land in parallel sessions |
+| **Done** | ~70% — Phases 0–5, 7–8 done; Phase 6/10 partial; pause after 7B/8; `test_58` Events+Persist depth on non-MySQL engines |
+| **Remaining** | System template seeds, Phase 9 Lithium UI, Phase 10 ops remainder, Phases 11–15 (inbound/rewrite/security/docs as scoped), auth MFA wiring via OTP; **P1 defects 12d/12e** (MySQL Persist SEGV; MAX+1 insert confirm/retry at call sites) before treating Persist as multi-engine complete |
 | **Why next** | Core send/API/Lua/OTP stack works (`test_57`/`test_58`). Remaining is product surface and ops polish. |
 | **Note** | Parallel session may complete subsets — re-check plan/tests before starting. |
 
@@ -414,6 +437,8 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 12a | DQM child auto-scale (optional) | L | no-op by design | P1 |
 | 12b | Scoreboard waiter condvar wake | M | poll only | P1 |
 | 12c | lead_process_queries dead API | S | Unity-only | P1 |
+| 12d | MailRelay Persist MySQL/MariaDB SEGV | M | ~40% | P1 |
+| 12e | MAX+1 PK clients: confirm + retry | M | single-thread OK | P1 |
 | 13 | Mail Relay remainder | L–XL | ~70% | P2 |
 | 14 | Chat Phase 13 (+ 14a–14c) | XL | ~15% of P13 | P2 |
 | 14a | REST auth_chat SSE streaming | L | ~20% | P2 |

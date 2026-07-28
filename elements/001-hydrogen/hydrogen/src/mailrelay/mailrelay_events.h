@@ -103,6 +103,17 @@ bool mailrelay_event_parse_script_ref(const char* script_ref,
                                       size_t group_cap,
                                       char* name_out,
                                       size_t name_cap);
+bool mailrelay_event_emit_run(const char* event_key,
+                              const MailEventRule* rule,
+                              const MailRelayTemplateParams* params);
+typedef struct MailRelayEventEmitJob {
+    char* event_key;
+    char* script_name;
+    MailRelayTemplateParams params;
+    bool has_params;
+} MailRelayEventEmitJob;
+void mailrelay_event_emit_job_free(MailRelayEventEmitJob* job);
+void* mailrelay_event_emit_thread(void* arg);
 
 #ifdef __cplusplus
 }

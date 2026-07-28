@@ -121,55 +121,60 @@ ParameterList* parse_typed_parameters(const char* json_params, const char* dqm_l
                 return NULL;
             }
 
-            // Parse value based on type
+            // Parse value based on type (JSON null → SQL NULL bind)
             bool parse_success = false;
-            switch (param_type) {
-                case PARAM_TYPE_INTEGER:
-                    if (json_is_integer(param_value)) {
-                        param->value.int_value = json_integer_value(param_value);
-                        parse_success = true;
-                    }
-                    break;
-
-                case PARAM_TYPE_STRING:
-                    if (json_is_string(param_value)) {
-                        param->value.string_value = strdup(json_string_value(param_value));
-                        if (param->value.string_value) {
+            if (json_is_null(param_value)) {
+                param->is_null = true;
+                parse_success = true;
+            } else {
+                switch (param_type) {
+                    case PARAM_TYPE_INTEGER:
+                        if (json_is_integer(param_value)) {
+                            param->value.int_value = json_integer_value(param_value);
                             parse_success = true;
                         }
-                    }
-                    break;
+                        break;
 
-                case PARAM_TYPE_BOOLEAN:
-                    if (json_is_boolean(param_value)) {
-                        param->value.bool_value = json_boolean_value(param_value);
-                        parse_success = true;
-                    }
-                    break;
+                    case PARAM_TYPE_STRING:
+                        if (json_is_string(param_value)) {
+                            param->value.string_value = strdup(json_string_value(param_value));
+                            if (param->value.string_value) {
+                                parse_success = true;
+                            }
+                        }
+                        break;
 
-                case PARAM_TYPE_FLOAT:
-                    if (json_is_real(param_value)) {
-                        param->value.float_value = json_real_value(param_value);
-                        parse_success = true;
-                    } else if (json_is_integer(param_value)) {
-                        // Allow integers for float parameters
-                        param->value.float_value = (double)json_integer_value(param_value);
-                        parse_success = true;
-                    }
-                    break;
-
-                case PARAM_TYPE_TEXT:
-                case PARAM_TYPE_DATE:
-                case PARAM_TYPE_TIME:
-                case PARAM_TYPE_DATETIME:
-                case PARAM_TYPE_TIMESTAMP:
-                    if (json_is_string(param_value)) {
-                        param->value.text_value = strdup(json_string_value(param_value));
-                        if (param->value.text_value) {
+                    case PARAM_TYPE_BOOLEAN:
+                        if (json_is_boolean(param_value)) {
+                            param->value.bool_value = json_boolean_value(param_value);
                             parse_success = true;
                         }
-                    }
-                    break;
+                        break;
+
+                    case PARAM_TYPE_FLOAT:
+                        if (json_is_real(param_value)) {
+                            param->value.float_value = json_real_value(param_value);
+                            parse_success = true;
+                        } else if (json_is_integer(param_value)) {
+                            // Allow integers for float parameters
+                            param->value.float_value = (double)json_integer_value(param_value);
+                            parse_success = true;
+                        }
+                        break;
+
+                    case PARAM_TYPE_TEXT:
+                    case PARAM_TYPE_DATE:
+                    case PARAM_TYPE_TIME:
+                    case PARAM_TYPE_DATETIME:
+                    case PARAM_TYPE_TIMESTAMP:
+                        if (json_is_string(param_value)) {
+                            param->value.text_value = strdup(json_string_value(param_value));
+                            if (param->value.text_value) {
+                                parse_success = true;
+                            }
+                        }
+                        break;
+                }
             }
 
             if (!parse_success) {

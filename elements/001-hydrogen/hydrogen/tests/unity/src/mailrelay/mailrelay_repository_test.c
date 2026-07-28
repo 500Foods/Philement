@@ -1,8 +1,7 @@
 /*
  * Mail Relay Repository unit tests.
  *
- * Tests the callback-based QueryRef execution seam and parameter JSON
- * construction for representative helpers.
+ * Tests the callback-based QueryRef execution seam and parameter JSON construction for representative helpers.
  */
 
 // Project includes
@@ -232,7 +231,6 @@ void test_queue_get_by_uuid_builds_correct_params(void) {
     bool result = mailrelay_repo_queue_get_by_uuid(&params, mock_callback, NULL);
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_EQUAL_INT(MAILRELAY_QREF_QUEUE_GET_BY_UUID, g_captured_query_ref);
-
     json_error_t err;
     json_t* root = json_loads(g_captured_params_json, 0, &err);
     TEST_ASSERT_NOT_NULL(root);
@@ -245,7 +243,6 @@ void test_queue_select_next_pending_has_no_params(void) {
     bool result = mailrelay_repo_queue_select_next_pending(mock_callback, NULL);
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_EQUAL_INT(MAILRELAY_QREF_QUEUE_SELECT_NEXT_PENDING, g_captured_query_ref);
-
     json_error_t err;
     json_t* root = json_loads(g_captured_params_json, 0, &err);
     TEST_ASSERT_NOT_NULL(root);
@@ -261,11 +258,9 @@ void test_queue_mark_sending_builds_correct_params(void) {
         .instance_id = "instance-1",
         .claim_token = "token-1"
     };
-
     bool result = mailrelay_repo_queue_mark_sending(&params, mock_callback, NULL);
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_EQUAL_INT(MAILRELAY_QREF_QUEUE_MARK_SENDING, g_captured_query_ref);
-
     json_error_t err;
     json_t* root = json_loads(g_captured_params_json, 0, &err);
     TEST_ASSERT_NOT_NULL(root);

@@ -30,7 +30,9 @@ static const char* MAILRELAY_EVENT_STARTED_SCRIPT =
     "    local params = {\n"
     "        SERVER_NAME = event.server_name or \"\",\n"
     "        APP_NAME = event.app_name or \"\",\n"
-    "        TIMESTAMP = event.timestamp or \"\"\n"
+    "        TIMESTAMP = event.timestamp or \"\",\n"
+    "        COUNT = \"1\",\n"
+    "        SUMMARY = \"1 event\"\n"
     "    }\n"
     "    if event.params then\n"
     "        for k, v in pairs(event.params) do\n"
@@ -79,7 +81,9 @@ static const char* MAILRELAY_EVENT_DATABASES_READY_SCRIPT =
     "    local params = {\n"
     "        SERVER_NAME = event.server_name or \"\",\n"
     "        APP_NAME = event.app_name or \"\",\n"
-    "        TIMESTAMP = event.timestamp or \"\"\n"
+    "        TIMESTAMP = event.timestamp or \"\",\n"
+    "        COUNT = \"1\",\n"
+    "        SUMMARY = \"1 event\"\n"
     "    }\n"
     "    if event.params then\n"
     "        for k, v in pairs(event.params) do\n"
@@ -601,6 +605,71 @@ const char* mailrelay_event_resolve_source(const char* event_key,
     return mailrelay_event_resolve_source_owned(event_key, rule, NULL);
 }
 
+/*
+ * Deferred emit job. DB script loads (QueryRef #087) must not run on the Lead
+ * DQM thread: READY FOR REQUESTS is emitted there, and blocking on a queue
+ * query from Lead deadlocks the same way Orchestrator load does.
+ */
+void mailrelay_event_emit_job_free(MailRelayEventEmitJob* job) {
+    if (!job) {
+        return;
+    }
+    free(job->event_key);
+    free(job->script_name);
+    if (job->has_params) {
+        mailrelay_template_params_free(&job->params);
+    }
+    free(job);
+}
+
+bool mailrelay_event_emit_run(const char* event_key,
+                              const MailEventRule* rule,
+                              const MailRelayTemplateParams* params) {
+    char* owned_source = NULL;
+    const char* source = mailrelay_event_resolve_source_owned(event_key, rule, &owned_source);
+    if (!source) {
+        log_this(SR_MAIL_RELAY,
+                 "No handler available for event '%s'",
+                 LOG_LEVEL_DEBUG, 1, event_key);
+        return false;
+    }
+
+    char err[256];
+    bool ok = mailrelay_event_run_handler(source, event_key, event_key, params, err, sizeof(err));
+    free(owned_source);
+    if (!ok) {
+        log_this(SR_MAIL_RELAY,
+                 "Event '%s' handler failed: %s",
+                 LOG_LEVEL_ERROR, 2, event_key, err);
+    } else {
+        log_this(SR_MAIL_RELAY,
+                 "Event '%s' dispatched",
+                 LOG_LEVEL_DEBUG, 1, event_key);
+    }
+    return ok;
+}
+
+void* mailrelay_event_emit_thread(void* arg) {
+    MailRelayEventEmitJob* job = (MailRelayEventEmitJob*)arg;
+    if (!job || !job->event_key) {
+        mailrelay_event_emit_job_free(job);
+        return NULL;
+    }
+
+    MailEventRule rule_storage = {0};
+    const MailEventRule* rule = NULL;
+    if (job->script_name && job->script_name[0] != '\0') {
+        rule_storage.event_key = job->event_key;
+        rule_storage.script_name = job->script_name;
+        rule = &rule_storage;
+    }
+
+    const MailRelayTemplateParams* params = job->has_params ? &job->params : NULL;
+    (void)mailrelay_event_emit_run(job->event_key, rule, params);
+    mailrelay_event_emit_job_free(job);
+    return NULL;
+}
+
 bool mailrelay_event_emit(const char* event_key,
                           const MailRelayTemplateParams* params) {
     if (!event_key || event_key[0] == '\0') {
@@ -621,14 +690,6 @@ bool mailrelay_event_emit(const char* event_key,
     }
 
     const MailEventRule* rule = mailrelay_event_find_rule(event_key);
-    char* owned_source = NULL;
-    const char* source = mailrelay_event_resolve_source_owned(event_key, rule, &owned_source);
-    if (!source) {
-        log_this(SR_MAIL_RELAY,
-                 "No handler available for event '%s'",
-                 LOG_LEVEL_DEBUG, 1, event_key);
-        return false;
-    }
 
     pthread_mutex_lock(&mailrelay_runtime->mutex);
     bool allowed = mailrelay_event_check_rate_limit(
@@ -638,26 +699,53 @@ bool mailrelay_event_emit(const char* event_key,
     pthread_mutex_unlock(&mailrelay_runtime->mutex);
 
     if (!allowed) {
-        free(owned_source);
         log_this(SR_MAIL_RELAY,
                  "Event '%s' rate limited",
                  LOG_LEVEL_ALERT, 1, event_key);
         return false;
     }
 
-    char err[256];
-    bool ok = mailrelay_event_run_handler(source, event_key, event_key, params, err, sizeof(err));
-    free(owned_source);
-    if (!ok) {
-        log_this(SR_MAIL_RELAY,
-                 "Event '%s' handler failed: %s",
-                 LOG_LEVEL_ERROR, 2, event_key, err);
-    } else {
-        log_this(SR_MAIL_RELAY,
-                 "Event '%s' dispatched",
-                 LOG_LEVEL_DEBUG, 1, event_key);
+    /* Built-in handlers are pure Lua strings — safe inline on Lead.
+     * system.server_stopped always uses the built-in handler (no DB fetch):
+     * landing tears Mail Relay down immediately after emit, and a QueryRef
+     * load or detached thread races that teardown under STARTTLS. */
+    if (strcmp(event_key, "system.server_stopped") == 0) {
+        return mailrelay_event_emit_run(event_key, NULL, params);
     }
-    return ok;
+    if (!rule || !rule->script_name || rule->script_name[0] == '\0') {
+        return mailrelay_event_emit_run(event_key, rule, params);
+    }
+
+    /* DB-backed rules: defer load+run so Lead can service QueryRef #087. */
+    MailRelayEventEmitJob* job = calloc(1, sizeof(*job));
+    if (!job) {
+        return false;
+    }
+    job->event_key = strdup(event_key);
+    job->script_name = strdup(rule->script_name);
+    if (!job->event_key || !job->script_name) {
+        mailrelay_event_emit_job_free(job);
+        return false;
+    }
+    if (params && params->count > 0) {
+        if (!mailrelay_template_params_copy(&job->params, params)) {
+            mailrelay_event_emit_job_free(job);
+            return false;
+        }
+        job->has_params = true;
+    }
+
+    pthread_t tid;
+    if (pthread_create(&tid, NULL, mailrelay_event_emit_thread, job) != 0) {
+        log_this(SR_MAIL_RELAY,
+                 "Event '%s': failed to start deferred emit thread; running inline",
+                 LOG_LEVEL_ERROR, 1, event_key);
+        bool ok = mailrelay_event_emit_run(event_key, rule, params);
+        mailrelay_event_emit_job_free(job);
+        return ok;
+    }
+    pthread_detach(tid);
+    return true;
 }
 
 /*

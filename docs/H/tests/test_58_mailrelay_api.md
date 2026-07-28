@@ -7,14 +7,13 @@ Validates the Hydrogen Mail Relay REST API (`/api/mailrelay/status`, `/api/mailr
 ## What It Does
 
 1. Starts the `mailval` SMTP sink (prebuilt binary) listening on `127.0.0.1`.
-2. Starts Hydrogen with a config that enables Mail Relay and points outbound delivery at the sink.
-3. Waits for HTTP readiness and the canonical `READY FOR REQUESTS` signal.
-4. Authenticates as the `mailadmin` account (which has the `mail_send` role) and obtains a JWT.
-5. Calls `GET /api/mailrelay/status` and verifies a successful response.
-6. Calls `POST /api/mailrelay/preview` with the seeded `mail.test` template and verifies rendered subject, body, and `macros_used`.
-7. Calls `POST /api/mailrelay/send` with the same template and a unique idempotency key, and verifies the message is queued.
-8. Logs in as a demo user without the `mail_send` role and verifies the send endpoint returns `401`.
-9. Stops Hydrogen cleanly, polls the sink capture, and verifies the delivered message subject matches the rendered marker.
+2. Starts Hydrogen with Mail Relay enabled, `AdminRecipients` → mailval, `Events.Enabled` + Rules for `system.databases_ready` / `system.server_started` / `system.server_stopped` (seeded `Mail.Events.*` scripts), and `DebounceSeconds=2`.
+3. Waits for HTTP readiness and `READY FOR REQUESTS`.
+4. After a short debounce window, asserts mailval captured a lifecycle event subject containing `MailRelayEvent` (coalesced `databases_ready` + `server_started` via `debounce_key=system.lifecycle`).
+5. Authenticates as `mailadmin` (`mail_send` role) and obtains a JWT.
+6. `GET /api/mailrelay/status`, `POST /api/mailrelay/preview` (`mail.test`), `POST /api/mailrelay/send` to the sink.
+7. Demo user without `mail_send` gets `401` on send.
+8. Stops Hydrogen; asserts API send subject `MailRelayBlackbox` in mailval (and soft-checks `server_stopped`).
 
 ## Transport Variants
 

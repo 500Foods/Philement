@@ -57,6 +57,7 @@ void mysql_cleanup_column_names(char** column_names, size_t column_count) {
 
 // MySQL type constants (since we can't include mysql.h)
 #define MYSQL_TYPE_LONG 3
+#define MYSQL_TYPE_NULL 6
 #define MYSQL_TYPE_STRING 254
 #define MYSQL_TYPE_SHORT 2
 #define MYSQL_TYPE_DOUBLE 5
@@ -119,6 +120,29 @@ static bool mysql_bind_single_parameter(MYSQL_BIND* bind, unsigned int param_ind
 
     log_this(designator, "Binding parameter %u: name=%s, type=%d", LOG_LEVEL_TRACE, 3,
              param_index, param->name, param->type);
+
+    // Incomplete MYSQL_BIND layout cannot safely set is_null for the client
+    // library; bind empty text for null string-like values instead.
+    if (param->is_null) {
+        char* str_copy = strdup("");
+        if (!str_copy) return false;
+        bound_values[param_index] = str_copy;
+        unsigned long* length = malloc(sizeof(unsigned long));
+        if (!length) {
+            free(str_copy);
+            return false;
+        }
+        *length = 0;
+        bound_values[total_param_count + param_index] = length;
+        bind[param_index].buffer_type = MYSQL_TYPE_STRING;
+        bind[param_index].buffer = str_copy;
+        bind[param_index].buffer_length = 1;
+        bind[param_index].is_null = NULL;
+        bind[param_index].length = length;
+        log_this(designator, "Bound NULL parameter %u as empty string: name=%s", LOG_LEVEL_TRACE, 2,
+                 param_index, param->name);
+        return true;
+    }
 
     switch (param->type) {
         case PARAM_TYPE_INTEGER: {

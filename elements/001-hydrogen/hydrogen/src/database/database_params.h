@@ -33,6 +33,7 @@ typedef enum {
 typedef struct TypedParameter {
     char* name;              // Parameter name (e.g., "userId")
     ParameterType type;      // Data type
+    bool is_null;            // True when JSON value was null (SQL NULL bind)
     union {
         long long int_value;
         char* string_value;

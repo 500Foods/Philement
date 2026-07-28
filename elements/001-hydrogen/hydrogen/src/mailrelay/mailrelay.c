@@ -268,11 +268,23 @@ void insert_callback(MailRelayRepoResult* result, void* user_data) {
         return;
     }
     ctx->status = result->status;
-    if (result->status == MAILRELAY_REPO_OK && result->data && json_is_object(result->data)) {
-        json_t* qid = json_object_get(result->data, "queue_id");
-        if (qid && json_is_integer(qid)) {
-            ctx->queue_id = json_integer_value(qid);
+    if (result->status != MAILRELAY_REPO_OK || !result->data) {
+        return;
+    }
+    // DQM returns a JSON array of row objects for RETURNING; accept a bare object too.
+    json_t* row = result->data;
+    if (json_is_array(result->data)) {
+        if (json_array_size(result->data) < 1) {
+            return;
         }
+        row = json_array_get(result->data, 0);
+    }
+    if (!row || !json_is_object(row)) {
+        return;
+    }
+    json_t* qid = json_object_get(row, "queue_id");
+    if (qid && json_is_integer(qid)) {
+        ctx->queue_id = json_integer_value(qid);
     }
 }
 

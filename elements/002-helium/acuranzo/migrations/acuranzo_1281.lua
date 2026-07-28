@@ -62,7 +62,9 @@ table.insert(queries,{sql=[[
                         local params = {
                             SERVER_NAME = event.server_name or "",
                             APP_NAME = event.app_name or "",
-                            TIMESTAMP = event.timestamp or ""
+                            TIMESTAMP = event.timestamp or "",
+                            COUNT = "1",
+                            SUMMARY = "1 event"
                         }
                         if event.params then
                             for k, v in pairs(event.params) do
@@ -95,7 +97,9 @@ table.insert(queries,{sql=[[
                         local params = {
                             SERVER_NAME = event.server_name or "",
                             APP_NAME = event.app_name or "",
-                            TIMESTAMP = event.timestamp or ""
+                            TIMESTAMP = event.timestamp or "",
+                            COUNT = "1",
+                            SUMMARY = "1 event"
                         }
                         if event.params then
                             for k, v in pairs(event.params) do

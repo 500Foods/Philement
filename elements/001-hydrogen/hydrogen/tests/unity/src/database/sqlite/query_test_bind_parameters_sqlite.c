@@ -429,11 +429,20 @@ void test_sqlite_execute_query_with_null_text_parameter(void) {
     request.parameters_json = (char*)"{\"TEXT\": {\"content\": null}}";
     QueryResult* result = NULL;
 
-    // This should fail during parameter parsing
+    void* mock_stmt = (void*)0x87654321;
+    mock_libsqlite3_set_sqlite3_prepare_v2_result(0);
+    mock_libsqlite3_set_sqlite3_prepare_v2_output_handle(mock_stmt);
+    mock_libsqlite3_set_sqlite3_step_result(101);
+    mock_libsqlite3_set_sqlite3_column_count_result(0);
+
     bool query_result = sqlite_execute_query(&connection, &request, &result);
 
-    TEST_ASSERT_FALSE(query_result);
-    TEST_ASSERT_NULL(result);
+    TEST_ASSERT_TRUE(query_result);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_TRUE(result->success);
+
+    free(result->data_json);
+    free(result);
 }
 
 // ============================================================================
@@ -454,11 +463,20 @@ void test_sqlite_execute_query_with_null_date_parameter(void) {
     request.parameters_json = (char*)"{\"DATE\": {\"eventDate\": null}}";
     QueryResult* result = NULL;
 
-    // This should fail during parameter parsing
+    void* mock_stmt = (void*)0x87654321;
+    mock_libsqlite3_set_sqlite3_prepare_v2_result(0);
+    mock_libsqlite3_set_sqlite3_prepare_v2_output_handle(mock_stmt);
+    mock_libsqlite3_set_sqlite3_step_result(101);
+    mock_libsqlite3_set_sqlite3_column_count_result(0);
+
     bool query_result = sqlite_execute_query(&connection, &request, &result);
 
-    TEST_ASSERT_FALSE(query_result);
-    TEST_ASSERT_NULL(result);
+    TEST_ASSERT_TRUE(query_result);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_TRUE(result->success);
+
+    free(result->data_json);
+    free(result);
 }
 
 // ============================================================================
@@ -479,11 +497,20 @@ void test_sqlite_execute_query_with_null_time_parameter(void) {
     request.parameters_json = (char*)"{\"TIME\": {\"startTime\": null}}";
     QueryResult* result = NULL;
 
-    // This should fail during parameter parsing
+    void* mock_stmt = (void*)0x87654321;
+    mock_libsqlite3_set_sqlite3_prepare_v2_result(0);
+    mock_libsqlite3_set_sqlite3_prepare_v2_output_handle(mock_stmt);
+    mock_libsqlite3_set_sqlite3_step_result(101);
+    mock_libsqlite3_set_sqlite3_column_count_result(0);
+
     bool query_result = sqlite_execute_query(&connection, &request, &result);
 
-    TEST_ASSERT_FALSE(query_result);
-    TEST_ASSERT_NULL(result);
+    TEST_ASSERT_TRUE(query_result);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_TRUE(result->success);
+
+    free(result->data_json);
+    free(result);
 }
 
 // ============================================================================
@@ -504,11 +531,20 @@ void test_sqlite_execute_query_with_null_datetime_parameter(void) {
     request.parameters_json = (char*)"{\"DATETIME\": {\"createdAt\": null}}";
     QueryResult* result = NULL;
 
-    // This should fail during parameter parsing
+    void* mock_stmt = (void*)0x87654321;
+    mock_libsqlite3_set_sqlite3_prepare_v2_result(0);
+    mock_libsqlite3_set_sqlite3_prepare_v2_output_handle(mock_stmt);
+    mock_libsqlite3_set_sqlite3_step_result(101);
+    mock_libsqlite3_set_sqlite3_column_count_result(0);
+
     bool query_result = sqlite_execute_query(&connection, &request, &result);
 
-    TEST_ASSERT_FALSE(query_result);
-    TEST_ASSERT_NULL(result);
+    TEST_ASSERT_TRUE(query_result);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_TRUE(result->success);
+
+    free(result->data_json);
+    free(result);
 }
 
 // ============================================================================
@@ -529,11 +565,20 @@ void test_sqlite_execute_query_with_null_timestamp_parameter(void) {
     request.parameters_json = (char*)"{\"TIMESTAMP\": {\"modifiedAt\": null}}";
     QueryResult* result = NULL;
 
-    // This should fail during parameter parsing
+    void* mock_stmt = (void*)0x87654321;
+    mock_libsqlite3_set_sqlite3_prepare_v2_result(0);
+    mock_libsqlite3_set_sqlite3_prepare_v2_output_handle(mock_stmt);
+    mock_libsqlite3_set_sqlite3_step_result(101);
+    mock_libsqlite3_set_sqlite3_column_count_result(0);
+
     bool query_result = sqlite_execute_query(&connection, &request, &result);
 
-    TEST_ASSERT_FALSE(query_result);
-    TEST_ASSERT_NULL(result);
+    TEST_ASSERT_TRUE(query_result);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_TRUE(result->success);
+
+    free(result->data_json);
+    free(result);
 }
 
 // ============================================================================
