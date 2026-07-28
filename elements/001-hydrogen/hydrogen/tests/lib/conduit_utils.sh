@@ -12,6 +12,8 @@
 # test_conduit_multiple_queries_endpoint()
 
 # CHANGELOG
+# 1.7.5 - 2026-07-27 - Fail fast on Signal 11 / process death during startup waits
+#                    - Avoid 300s+ hangs when hydrogen crashes after STARTUP COMPLETE
 # 1.7.4 - 2026-07-15 - Store acquired JWTs by database engine instead of position
 #                    - Keeps tokens aligned when a non-ready database is skipped
 # 1.7.3 - 2026-07-15 - Use the conduit status endpoint for per-database readiness
@@ -522,6 +524,23 @@ EOF
     echo "${tests_passed}:${total_tests}"
 }
 
+# True if hydrogen pid is gone, log shows SEGV, or a port-bind failure was logged.
+# Used by run_conduit_server to fail fast instead of waiting full readiness timeouts.
+hydrogen_process_crashed() {
+    local pid="$1"
+    local log="$2"
+    if ! kill -0 "${pid}" 2>/dev/null; then
+        return 0
+    fi
+    if "${GREP}" -q "Signal 11 received" "${log}" 2>/dev/null; then
+        return 0
+    fi
+    if "${GREP}" -qE "Port [0-9]+ is already in use|Port [0-9]+ is not available|failed to bind to port" "${log}" 2>/dev/null; then
+        return 0
+    fi
+    return 1
+}
+
 # Function to run conduit server lifecycle (startup, migration wait, shutdown)
 run_conduit_server() {
     local config_file="$1"
@@ -572,12 +591,25 @@ run_conduit_server() {
             break
         fi
 
+        # shellcheck disable=SC2310 # Poll crash/alive status; non-zero means still running
+        if hydrogen_process_crashed "${hydrogen_pid}" "${log_file}"; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Hydrogen exited or crashed during startup (see log for Signal 11 / port bind)"
+            break
+        fi
+
         if "${GREP}" -q "STARTUP COMPLETE" "${log_file}" 2>/dev/null; then
             startup_success=true
             break
         fi
         sleep 0.1
     done
+
+    # shellcheck disable=SC2310 # Poll crash/alive status after STARTUP COMPLETE race
+    if [[ "${startup_success}" = true ]] && hydrogen_process_crashed "${hydrogen_pid}" "${log_file}"; then
+        # STARTUP COMPLETE can race with a worker-thread SEGV; do not wait 300s+
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server logged STARTUP COMPLETE but process crashed (SEGV/port) — aborting"
+        startup_success=false
+    fi
 
     if [[ "${startup_success}" = true ]]; then
         echo "STARTUP_SUCCESS" >> "${result_file}"
@@ -594,11 +626,19 @@ run_conduit_server() {
             migration_timeout="${CONDUIT_MIGRATION_TIMEOUT}"
         fi
         local ready_signalled=false
+        local crash_during_ready=false
 
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for server to be Ready For Requests (all database migrations complete)..."
         while true; do
             if [[ $((SECONDS - migration_start_time)) -ge ${migration_timeout} ]]; then
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Readiness wait timeout after ${migration_timeout}s - proceeding with conduit tests"
+                break
+            fi
+
+            # shellcheck disable=SC2310 # Poll crash/alive status; non-zero means still running
+            if hydrogen_process_crashed "${hydrogen_pid}" "${log_file}"; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Hydrogen crashed before READY FOR REQUESTS (SEGV or port failure)"
+                crash_during_ready=true
                 break
             fi
 
@@ -610,6 +650,17 @@ run_conduit_server() {
 
             sleep 0.1
         done
+
+        if [[ "${crash_during_ready}" = true ]]; then
+            echo "STARTUP_FAILED" >> "${result_file}"
+            echo "CRASH_DETECTED=true" >> "${result_file}"
+            kill -9 "${hydrogen_pid}" 2>/dev/null || true
+            if declare -f unregister_hydrogen_pid >/dev/null 2>&1; then
+                unregister_hydrogen_pid "${hydrogen_pid}"
+            fi
+            echo "FAILED:0"
+            return 1
+        fi
 
         # Confirm the webserver is serving requests by polling the authoritative readiness
         # endpoint. It returns HTTP 200 only once the server is Ready For Requests, and 503
@@ -626,6 +677,11 @@ run_conduit_server() {
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Webserver readiness timeout"
                 break
             fi
+            # shellcheck disable=SC2310 # Poll crash/alive status; non-zero means still running
+            if hydrogen_process_crashed "${hydrogen_pid}" "${log_file}"; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Hydrogen crashed while waiting for readiness endpoint"
+                break
+            fi
             local http_code
             http_code=$(curl -s -w "%{http_code}" -o /dev/null --max-time 5 "${base_url}/api/system/readiness" 2>/dev/null)
             if [[ "${http_code}" == "200" ]]; then
@@ -639,6 +695,14 @@ run_conduit_server() {
         if [[ "${server_ready}" = false ]]; then
             if [[ "${ready_signalled}" = true ]]; then
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "READY FOR REQUESTS was logged but readiness endpoint did not return 200"
+            fi
+            if "${GREP}" -q "Signal 11 received" "${log_file}" 2>/dev/null; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "SEGV detected in server log — preserve core dump if present"
+                echo "CRASH_DETECTED=true" >> "${result_file}"
+            fi
+            if "${GREP}" -qE "Port [0-9]+ is already in use|failed to bind to port" "${log_file}" 2>/dev/null; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Port bind failure detected (another process likely holds the port)"
+                echo "PORT_IN_USE=true" >> "${result_file}"
             fi
             echo "STARTUP_FAILED" >> "${result_file}"
             kill -9 "${hydrogen_pid}" 2>/dev/null || true
@@ -656,6 +720,14 @@ run_conduit_server() {
         # Return server info for caller to use
         echo "${base_url}:${hydrogen_pid}"
     else
+        if "${GREP}" -q "Signal 11 received" "${log_file}" 2>/dev/null; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "SEGV during startup — check core dump and server log"
+            echo "CRASH_DETECTED=true" >> "${result_file}"
+        fi
+        if "${GREP}" -qE "Port [0-9]+ is already in use|Port [0-9]+ is not available|failed to bind to port" "${log_file}" 2>/dev/null; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Port unavailable — refuse startup instead of hanging"
+            echo "PORT_IN_USE=true" >> "${result_file}"
+        fi
         echo "STARTUP_FAILED" >> "${result_file}"
         kill -9 "${hydrogen_pid}" 2>/dev/null || true
         if declare -f unregister_hydrogen_pid >/dev/null 2>&1; then
