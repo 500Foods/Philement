@@ -30,6 +30,7 @@
 #include "mailrelay/status/status.h"
 #include "mailrelay/send/send.h"
 #include "mailrelay/preview/preview.h"
+#include <src/reporting/image_scale/image_scale.h>
 #include "api/wschat/auth_chat/auth_chat.h"
 #include "api/wschat/auth_chats/auth_chats.h"
 #include "api/wschat/auth_stream/auth_stream.h"
@@ -214,6 +215,7 @@ bool register_api_endpoints(void) {
         log_this(SR_API, "― %s/mailrelay/status", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/mailrelay/send", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/mailrelay/preview", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/reporting/image_scale", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
     log_group_end();
     
     return true;
@@ -348,6 +350,7 @@ bool is_api_request(const char *url) {
         "conduit/auth_chat",
         "conduit/auth_chats",
         "conduit/auth_chat/stream",
+        "reporting/image_scale",
         NULL  // Sentinel
     };
 
@@ -396,6 +399,7 @@ bool is_api_request(const char *url) {
         "conduit/auth_chat",
         "conduit/auth_chats",
         "conduit/auth_chat/stream",
+        "reporting/image_scale",
         NULL  // Sentinel
     };
 
@@ -774,6 +778,10 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     else if (strcmp(path, "mailrelay/preview") == 0) {
         return handle_mailrelay_preview_request(connection, url, method, upload_data,
                                                  upload_data_size, con_cls);
+    }
+    else if (strcmp(path, "reporting/image_scale") == 0) {
+        return handle_reporting_image_scale_request(connection, url, method, upload_data,
+                                                     upload_data_size, con_cls);
     }
 
     // Endpoint not found

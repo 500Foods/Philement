@@ -19,6 +19,8 @@ void status_cleanup(void);
 
 // Helper function to collect all metrics
 SystemMetrics* collect_all_metrics(const WebSocketMetrics *ws_metrics);
+// detailed_fds=false skips per-FD /proc/net scans (Prometheus path)
+SystemMetrics* collect_all_metrics_ex(const WebSocketMetrics *ws_metrics, bool detailed_fds);
 
 // Get complete system status in JSON format
 // This is the original format used by the /api/system/info endpoint

@@ -50,6 +50,7 @@ extern LaunchReadiness check_oidc_landing_readiness(void);         // from landi
 extern LaunchReadiness check_resources_landing_readiness(void);    // from landing_resources.c
 extern LaunchReadiness check_notify_landing_readiness(void);       // from landing_notify.c
 extern LaunchReadiness check_scripting_landing_readiness(void);   // from landing_scripting.c
+extern LaunchReadiness check_reporting_landing_readiness(void);    // from landing_reporting.c
 extern LaunchReadiness check_registry_landing_readiness(void);     // from landing_registry.c
 
 // Forward declarations of functions
@@ -138,8 +139,9 @@ ReadinessResults handle_landing_readiness(void) {
         {SR_OIDC,           check_oidc_landing_readiness},
         {SR_PAYLOAD,        check_payload_landing_readiness},
         {SR_THREADS,        check_threads_landing_readiness},
-        {SR_SCRIPTING,      check_scripting_landing_readiness},
-        {SR_REGISTRY,       check_registry_landing_readiness}
+         {SR_SCRIPTING,      check_scripting_landing_readiness},
+         {SR_REPORTING,      check_reporting_landing_readiness},
+         {SR_REGISTRY,       check_registry_landing_readiness}
     };
     
     // Process subsystems in defined order

@@ -68,6 +68,9 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [src/api/README.md](/elements/001-hydrogen/hydrogen/src/api/README.md) - API documentation
 - [src/api/oidc/](/elements/001-hydrogen/hydrogen/src/api/oidc/) - OIDC-specific API endpoints
 - [src/api/system/](/elements/001-hydrogen/hydrogen/src/api/system/) - System information API endpoints
+- [src/api/reporting/](/elements/001-hydrogen/hydrogen/src/api/reporting/) - Reporting API swagger surface (`image_scale`)
+- [src/api/reporting/reporting_service.h](/elements/001-hydrogen/hydrogen/src/api/reporting/reporting_service.h) - Reporting service swagger tag
+- [src/api/reporting/image_scale/image_scale.h](/elements/001-hydrogen/hydrogen/src/api/reporting/image_scale/image_scale.h) - image_scale swagger + handler prototype
 
 </details>
 
@@ -85,6 +88,8 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [src/config/config_logging.h](/elements/001-hydrogen/hydrogen/src/config/config_logging.h) - Logging configuration interface definitions
 - [src/config/config_mail_relay.c](/elements/001-hydrogen/hydrogen/src/config/config_mail_relay.c) - Mail relay configuration implementation
 - [src/config/config_mail_relay.h](/elements/001-hydrogen/hydrogen/src/config/config_mail_relay.h) - Mail relay configuration interface definitions
+- [src/config/config_reporting.c](/elements/001-hydrogen/hydrogen/src/config/config_reporting.c) - Reporting configuration implementation
+- [src/config/config_reporting.h](/elements/001-hydrogen/hydrogen/src/config/config_reporting.h) - Reporting configuration interface definitions
 - [src/config/config_mdns_client.c](/elements/001-hydrogen/hydrogen/src/config/config_mdns_client.c) - mDNS client configuration implementation
 - [src/config/config_mdns_client.h](/elements/001-hydrogen/hydrogen/src/config/config_mdns_client.h) - mDNS client configuration interface definitions
 - [src/config/config_mdns_server.c](/elements/001-hydrogen/hydrogen/src/config/config_mdns_server.c) - mDNS server configuration implementation
@@ -184,6 +189,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [src/launch/launch_database.c](/elements/001-hydrogen/hydrogen/src/launch/launch_database.c) - Database subsystem launch
 - [src/launch/launch_logging.c](/elements/001-hydrogen/hydrogen/src/launch/launch_logging.c) - Logging subsystem launch
 - [src/launch/launch_mail_relay.c](/elements/001-hydrogen/hydrogen/src/launch/launch_mail_relay.c) - Mail relay launch
+- [src/launch/launch_reporting.c](/elements/001-hydrogen/hydrogen/src/launch/launch_reporting.c) - Reporting subsystem launch
 - [src/launch/launch_mdns_client.c](/elements/001-hydrogen/hydrogen/src/launch/launch_mdns_client.c) - mDNS client launch
 - [src/launch/launch_mdns_server.c](/elements/001-hydrogen/hydrogen/src/launch/launch_mdns_server.c) - mDNS server launch
 - [src/launch/launch_network.c](/elements/001-hydrogen/hydrogen/src/launch/launch_network.c) - Network subsystem launch
@@ -213,6 +219,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [src/landing/landing_database.c](/elements/001-hydrogen/hydrogen/src/landing/landing_database.c) - Database subsystem shutdown
 - [src/landing/landing_logging.c](/elements/001-hydrogen/hydrogen/src/landing/landing_logging.c) - Logging subsystem shutdown
 - [src/landing/landing_mail_relay.c](/elements/001-hydrogen/hydrogen/src/landing/landing_mail_relay.c) - Mail relay shutdown
+- [src/landing/landing_reporting.c](/elements/001-hydrogen/hydrogen/src/landing/landing_reporting.c) - Reporting subsystem shutdown
 - [src/landing/landing_mdns_client.c](/elements/001-hydrogen/hydrogen/src/landing/landing_mdns_client.c) - mDNS client shutdown
 - [src/landing/landing_mdns_server.c](/elements/001-hydrogen/hydrogen/src/landing/landing_mdns_server.c) - mDNS server shutdown
 - [src/landing/landing_network.c](/elements/001-hydrogen/hydrogen/src/landing/landing_network.c) - Network subsystem shutdown
@@ -272,6 +279,24 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 
 - [src/payload/payload.c](/elements/001-hydrogen/hydrogen/src/payload/payload.c) - Payload system implementation
 - [src/payload/payload.h](/elements/001-hydrogen/hydrogen/src/payload/payload.h) - Payload system interface definitions
+
+</details>
+
+<details>
+<summary><b>Reporting Service</b></summary>
+
+- [src/reporting/reporting_service.c](/elements/001-hydrogen/hydrogen/src/reporting/reporting_service.c) - MagickWand genesis/terminus and resource limits
+- [src/reporting/reporting_service.h](/elements/001-hydrogen/hydrogen/src/reporting/reporting_service.h) - Reporting service interface
+- [src/reporting/image_scale/image_scale.c](/elements/001-hydrogen/hydrogen/src/reporting/image_scale/image_scale.c) - image_scale HTTP handler
+- [src/reporting/image_scale/image_scale.h](/elements/001-hydrogen/hydrogen/src/reporting/image_scale/image_scale.h) - image_scale handler interface
+- [src/reporting/helpers/base64_utils.c](/elements/001-hydrogen/hydrogen/src/reporting/helpers/base64_utils.c) - Base64 encode/decode with data URI strip
+- [src/reporting/helpers/base64_utils.h](/elements/001-hydrogen/hydrogen/src/reporting/helpers/base64_utils.h) - Base64 utility interface
+- [src/reporting/helpers/image_format.c](/elements/001-hydrogen/hydrogen/src/reporting/helpers/image_format.c) - Format/MIME mapping
+- [src/reporting/helpers/image_format.h](/elements/001-hydrogen/hydrogen/src/reporting/helpers/image_format.h) - Format mapping interface
+- [src/reporting/helpers/image_scale_core.c](/elements/001-hydrogen/hydrogen/src/reporting/helpers/image_scale_core.c) - MagickWand scale core
+- [src/reporting/helpers/image_scale_core.h](/elements/001-hydrogen/hydrogen/src/reporting/helpers/image_scale_core.h) - Scale core interface
+- [src/reporting/helpers/image_xo.c](/elements/001-hydrogen/hydrogen/src/reporting/helpers/image_xo.c) - XO (PDF XObject) encoder
+- [src/reporting/helpers/image_xo.h](/elements/001-hydrogen/hydrogen/src/reporting/helpers/image_xo.h) - XO encoder interface
 
 </details>
 
@@ -559,6 +584,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_24_uploads.sh](/elements/001-hydrogen/hydrogen/tests/test_24_uploads.sh) - File upload functionality tests
 - [tests/test_25_mdns.sh](/elements/001-hydrogen/hydrogen/tests/test_25_mdns.sh) - mDNS service discovery tests
 - [tests/test_26_terminal.sh](/elements/001-hydrogen/hydrogen/tests/test_26_terminal.sh) - Terminal interface tests
+- [tests/test_27_reporting_image_scale.sh](/elements/001-hydrogen/hydrogen/tests/test_27_reporting_image_scale.sh) - Reporting image_scale endpoint (ImageMagick)
 
 ### API Tests
 

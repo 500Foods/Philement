@@ -383,14 +383,14 @@ void H_lua_install_scoreboard(lua_State* L) {
 
     lua_getglobal(L, "H");
     if (!lua_istable(L, -1)) {
-        log_this(SR_LUA, "H_lua_install_scoreboard: H table missing",
+        log_this(SR_SCRIPTING, "H_lua_install_scoreboard: H table missing",
                  LOG_LEVEL_ERROR, 0);
         lua_pop(L, 1);
         return;
     }
     lua_getfield(L, -1, "scoreboard");
     if (!lua_istable(L, -1)) {
-        log_this(SR_LUA, "H_lua_install_scoreboard: H.scoreboard not a table",
+        log_this(SR_SCRIPTING, "H_lua_install_scoreboard: H.scoreboard not a table",
                  LOG_LEVEL_ERROR, 0);
         lua_pop(L, 2);
         return;
@@ -414,14 +414,14 @@ void H_lua_install_package(lua_State* L) {
 
     lua_getglobal(L, "package");
     if (!lua_istable(L, -1)) {
-        log_this(SR_LUA, "H_lua_install_package: package table missing",
+        log_this(SR_SCRIPTING, "H_lua_install_package: package table missing",
                  LOG_LEVEL_ERROR, 0);
         lua_pop(L, 1);
         return;
     }
     lua_getfield(L, -1, "searchers");
     if (!lua_istable(L, -1)) {
-        log_this(SR_LUA, "H_lua_install_package: package.searchers not a table",
+        log_this(SR_SCRIPTING, "H_lua_install_package: package.searchers not a table",
                  LOG_LEVEL_ERROR, 0);
         lua_pop(L, 2);
         return;

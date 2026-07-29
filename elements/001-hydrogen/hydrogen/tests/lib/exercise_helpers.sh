@@ -15,32 +15,76 @@ EXERCISE_HELPERS_NAME="Exercise Test Helpers"
 EXERCISE_HELPERS_VERSION="1.0.0"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${EXERCISE_HELPERS_NAME} ${EXERCISE_HELPERS_VERSION}" "info"
 
-# Defaults (callers may override before first scrape)
-SCRAPE_MAX_ATTEMPTS="${SCRAPE_MAX_ATTEMPTS:-5}"
-SCRAPE_CURL_TIMEOUT="${SCRAPE_CURL_TIMEOUT:-15}"
-SCRAPE_RETRY_DELAY="${SCRAPE_RETRY_DELAY:-2}"
-METRICS_DELAY="${METRICS_DELAY:-0.25}"
+# Defaults (callers may override before first scrape).
+# Force numeric defaults: suite-parallel sourcing can leave empty/non-numeric
+# SCRAPE_* in the environment, which collapses the retry loop to a single pass.
+if ! [[ "${SCRAPE_MAX_ATTEMPTS:-}" =~ ^[1-9][0-9]*$ ]]; then
+    SCRAPE_MAX_ATTEMPTS=5
+fi
+if ! [[ "${SCRAPE_CURL_TIMEOUT:-}" =~ ^[1-9][0-9]*$ ]]; then
+    SCRAPE_CURL_TIMEOUT=15
+fi
+if ! [[ "${SCRAPE_RETRY_DELAY:-}" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+    SCRAPE_RETRY_DELAY=2
+fi
+if ! [[ "${METRICS_DELAY:-}" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+    METRICS_DELAY=0.25
+fi
 
 # scrape_metrics prom_url [settle_delay]
 # Retries until a body containing hydrogen_ metrics is returned, or attempts exhausted.
+# Uses connect-timeout so a hung ASAN handler does not burn the full max-time on
+# every attempt before retries can help (suite-parallel contention).
 scrape_metrics() {
     local prom_url="$1"
     local settle_delay="${2:-${METRICS_DELAY}}"
-    local attempt response
+    local attempt response http_code
+    local max_attempts="${SCRAPE_MAX_ATTEMPTS}"
+    local curl_timeout="${SCRAPE_CURL_TIMEOUT}"
+    local retry_delay="${SCRAPE_RETRY_DELAY}"
+    local tmp_body=""
+
+    if ! [[ "${max_attempts}" =~ ^[1-9][0-9]*$ ]]; then
+        max_attempts=5
+    fi
+    if ! [[ "${curl_timeout}" =~ ^[1-9][0-9]*$ ]]; then
+        curl_timeout=15
+    fi
 
     if [[ -n "${settle_delay}" ]] && awk "BEGIN {exit !(${settle_delay} > 0)}" 2>/dev/null; then
         sleep "${settle_delay}"
     fi
-    for ((attempt=1; attempt<=SCRAPE_MAX_ATTEMPTS; attempt++)); do
-        response=$(curl -s --max-time "${SCRAPE_CURL_TIMEOUT}" "${prom_url}" 2>/dev/null || true)
-        if [[ -n "${response}" ]] && echo "${response}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then
+
+    tmp_body=$(mktemp 2>/dev/null) || tmp_body=""
+    for ((attempt=1; attempt<=max_attempts; attempt++)); do
+        http_code="000"
+        response=""
+        if [[ -n "${tmp_body}" ]]; then
+            : > "${tmp_body}"
+            # shellcheck disable=SC2034 # http_code used for 200 check below
+            http_code=$(curl -sS -o "${tmp_body}" -w "%{http_code}" \
+                --connect-timeout 5 \
+                --max-time "${curl_timeout}" \
+                "${prom_url}" 2>/dev/null || echo "000")
+            response=$(cat "${tmp_body}" 2>/dev/null || true)
+        else
+            response=$(curl -s --connect-timeout 5 --max-time "${curl_timeout}" \
+                "${prom_url}" 2>/dev/null || true)
+            if [[ -n "${response}" ]]; then
+                http_code="200"
+            fi
+        fi
+        if [[ "${http_code}" == "200" ]] && [[ -n "${response}" ]] && \
+           echo "${response}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then
+            [[ -n "${tmp_body}" ]] && rm -f "${tmp_body}"
             echo "${response}"
             return 0
         fi
-        if [[ "${attempt}" -lt "${SCRAPE_MAX_ATTEMPTS}" ]]; then
-            sleep "${SCRAPE_RETRY_DELAY}"
+        if [[ "${attempt}" -lt "${max_attempts}" ]]; then
+            sleep "${retry_delay}"
         fi
     done
+    [[ -n "${tmp_body}" ]] && rm -f "${tmp_body}"
     echo ""
 }
 

@@ -48,7 +48,7 @@ int H_lua_panic(lua_State* L);
 lua_State* H_lua_create_context(void) {
     lua_State* L = lua_newstate(lua_mmap_alloc, NULL);
     if (!L) {
-        log_this(SR_LUA, "Failed to create Lua state", LOG_LEVEL_ERROR, 0);
+        log_this(SR_SCRIPTING, "Failed to create Lua state", LOG_LEVEL_ERROR, 0);
         return NULL;
     }
 
@@ -133,7 +133,7 @@ void H_lua_open_sandboxed_libraries(lua_State* L) {
     // (AllowOsTime) or rely on the clock indirectly. Phase 6+ will install
     // a controlled shim if necessary; for Phase 3 we just log the
     // decision so reviewers can see which policy was in effect.
-    log_this(SR_LUA, "Sandbox policy: io=%s debug=%s loadlib=%s os.time=%s os.execute=%s",
+    log_this(SR_SCRIPTING, "Sandbox policy: io=%s debug=%s loadlib=%s os.time=%s os.execute=%s",
              LOG_LEVEL_TRACE, 5,
              allow_io ? "on" : "off",
              allow_debug ? "on" : "off",
@@ -155,7 +155,7 @@ void H_lua_open_sandboxed_libraries(lua_State* L) {
  */
 int H_lua_panic(lua_State* L) {
     const char* msg = lua_tostring(L, -1);
-    log_this(SR_LUA, "Lua panic: %s", LOG_LEVEL_FATAL, 1, msg ? msg : "(no message)");
+    log_this(SR_SCRIPTING, "Lua panic: %s", LOG_LEVEL_FATAL, 1, msg ? msg : "(no message)");
     return 0;
 }
 
@@ -179,7 +179,7 @@ void H_lua_install_api(lua_State* L) {
     if (!lua_istable(L, -1)) {
         // Defensive: H should have just been set to a fresh table.
         lua_pop(L, 1);
-        log_this(SR_LUA, "Failed to install H table", LOG_LEVEL_ERROR, 0);
+        log_this(SR_SCRIPTING, "Failed to install H table", LOG_LEVEL_ERROR, 0);
         return;
     }
 
@@ -264,12 +264,12 @@ void H_lua_install_api(lua_State* L) {
  */
 int H_lua_run_string(lua_State* L, const char* code, const char* name) {
     if (!L) {
-        log_this(SR_LUA, "H_lua_run_string called with NULL lua_State", LOG_LEVEL_ERROR, 0);
+        log_this(SR_SCRIPTING, "H_lua_run_string called with NULL lua_State", LOG_LEVEL_ERROR, 0);
         return LUA_ERRRUN;
     }
 
     if (!code) {
-        log_this(SR_LUA, "H_lua_run_string called with NULL code", LOG_LEVEL_ERROR, 0);
+        log_this(SR_SCRIPTING, "H_lua_run_string called with NULL code", LOG_LEVEL_ERROR, 0);
         lua_pushliteral(L, "H_lua_run_string: code is NULL");
         return LUA_ERRRUN;
     }
@@ -283,7 +283,7 @@ int H_lua_run_string(lua_State* L, const char* code, const char* name) {
         // Copy to C-owned memory for logging; the caller's caller will
         // still see the error string on the stack when it returns.
         const char* lua_err = lua_tostring(L, -1);
-        log_this(SR_LUA, "Failed to compile chunk %s: %s", LOG_LEVEL_ERROR, 2,
+        log_this(SR_SCRIPTING, "Failed to compile chunk %s: %s", LOG_LEVEL_ERROR, 2,
                  chunk_name, lua_err ? lua_err : "(no message)");
         return load_rc;
     }
@@ -294,7 +294,7 @@ int H_lua_run_string(lua_State* L, const char* code, const char* name) {
     if (call_rc != LUA_OK) {
         // lua_pcall left the runtime error on the stack.
         const char* lua_err = lua_tostring(L, -1);
-        log_this(SR_LUA, "Failed to execute chunk %s: %s", LOG_LEVEL_ERROR, 2,
+        log_this(SR_SCRIPTING, "Failed to execute chunk %s: %s", LOG_LEVEL_ERROR, 2,
                  chunk_name, lua_err ? lua_err : "(no message)");
         return call_rc;
     }
@@ -339,7 +339,7 @@ void H_lua_set_job_context(lua_State* L, const H_lua_job_context* ctx) {
     }
     H_lua_job_context* dup = malloc(sizeof(H_lua_job_context));
     if (!dup) {
-        log_this(SR_LUA, "H_lua_set_job_context: allocation failed",
+        log_this(SR_SCRIPTING, "H_lua_set_job_context: allocation failed",
                  LOG_LEVEL_ERROR, 0);
         return;
     }

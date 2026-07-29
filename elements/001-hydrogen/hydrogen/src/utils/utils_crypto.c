@@ -36,8 +36,20 @@ static const char base64_table[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqr
 
 // Function prototypes
 char* utils_base64_encode(const unsigned char* data, size_t length);
+unsigned char* utils_base64_decode(const char* input, size_t* output_length);
 char* utils_base64url_encode(const unsigned char* data, size_t length);
 unsigned char* utils_base64url_decode(const char* input, size_t* output_length);
+
+// Map a single standard base64 character to its 6-bit value (0-63).
+// Returns -1 for invalid characters. Does not treat whitespace or '='.
+int utils_base64_char_value(char c) {
+    if (c >= 'A' && c <= 'Z') return c - 'A';
+    if (c >= 'a' && c <= 'z') return c - 'a' + 26;
+    if (c >= '0' && c <= '9') return c - '0' + 52;
+    if (c == '+') return 62;
+    if (c == '/') return 63;
+    return -1;
+}
 char* utils_sha256_hash(const unsigned char* data, size_t length);
 unsigned char* utils_hmac_sha256(const unsigned char* data, size_t data_len,
                                   const char* key, size_t key_len,
@@ -85,6 +97,87 @@ char* utils_base64_encode(const unsigned char* data, size_t length) {
 
     // String is already null-terminated from calloc
     return encoded;
+}
+
+/**
+ * Standard Base64 decode data (RFC 4648). Accepts optional padding and
+ * skips whitespace (spaces, tabs, CR, LF) so data: URI payloads work.
+ */
+unsigned char* utils_base64_decode(const char* input, size_t* output_length) {
+    if (!input || !output_length) return NULL;
+
+    size_t input_length = strlen(input);
+    if (input_length == 0) return NULL;
+
+    // Strip whitespace into a contiguous buffer
+    char* clean = calloc(input_length + 1, 1);
+    if (!clean) return NULL;
+
+    size_t clean_len = 0;
+    for (size_t i = 0; i < input_length; i++) {
+        char c = input[i];
+        if (c == ' ' || c == '\t' || c == '\n' || c == '\r') continue;
+        clean[clean_len++] = c;
+    }
+
+    if (clean_len == 0) {
+        free(clean);
+        return NULL;
+    }
+
+    // Pad to multiple of 4 if caller omitted padding
+    size_t rem = clean_len % 4;
+    if (rem == 1) {
+        free(clean);
+        return NULL; // impossible residue for valid base64
+    }
+    if (rem == 2) {
+        clean[clean_len++] = '=';
+        clean[clean_len++] = '=';
+    } else if (rem == 3) {
+        clean[clean_len++] = '=';
+    }
+
+    size_t pad_count = 0;
+    if (clean_len >= 1 && clean[clean_len - 1] == '=') pad_count++;
+    if (clean_len >= 2 && clean[clean_len - 2] == '=') pad_count++;
+
+    // Reject padding in non-terminal positions or more than two pads
+    for (size_t i = 0; i + pad_count < clean_len; i++) {
+        if (clean[i] == '=') {
+            free(clean);
+            return NULL;
+        }
+    }
+
+    size_t decoded_length = (clean_len / 4) * 3 - pad_count;
+    unsigned char* decoded = calloc(decoded_length + 1, 1);
+    if (!decoded) {
+        free(clean);
+        return NULL;
+    }
+
+    size_t j = 0;
+    for (size_t i = 0; i < clean_len; i += 4) {
+        int a = (clean[i] == '=') ? 0 : utils_base64_char_value(clean[i]);
+        int b = (clean[i + 1] == '=') ? 0 : utils_base64_char_value(clean[i + 1]);
+        int c = (clean[i + 2] == '=') ? 0 : utils_base64_char_value(clean[i + 2]);
+        int d = (clean[i + 3] == '=') ? 0 : utils_base64_char_value(clean[i + 3]);
+        if (a < 0 || b < 0 || c < 0 || d < 0) {
+            free(clean);
+            free(decoded);
+            return NULL;
+        }
+        uint32_t triple = ((uint32_t)a << 18) | ((uint32_t)b << 12) |
+                          ((uint32_t)c << 6) | (uint32_t)d;
+        if (j < decoded_length) decoded[j++] = (unsigned char)((triple >> 16) & 0xFF);
+        if (j < decoded_length) decoded[j++] = (unsigned char)((triple >> 8) & 0xFF);
+        if (j < decoded_length) decoded[j++] = (unsigned char)(triple & 0xFF);
+    }
+
+    free(clean);
+    *output_length = decoded_length;
+    return decoded;
 }
 
 /**

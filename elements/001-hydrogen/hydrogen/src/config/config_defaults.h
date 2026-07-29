@@ -35,6 +35,7 @@
  * N. Resources - System resource limits and monitoring
  * O. OIDC - OpenID Connect authentication
  * P. Notify - Notification system
+ * R. Reporting - Image processing and reporting service
  *
  * @param config Pointer to the AppConfig structure to initialize
  * @return true on success, false on failure (memory allocation errors)
@@ -59,5 +60,6 @@ void initialize_config_defaults_oidc(AppConfig* config);
 void initialize_config_defaults_oidc_rp(AppConfig* config);
 void initialize_config_defaults_notify(AppConfig* config);
 void initialize_config_defaults_scripting(AppConfig* config);
+void initialize_config_defaults_reporting(AppConfig* config);
 
 #endif /* HYDROGEN_CONFIG_DEFAULTS_H */

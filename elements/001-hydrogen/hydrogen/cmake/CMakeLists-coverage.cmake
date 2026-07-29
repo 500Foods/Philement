@@ -47,13 +47,15 @@ foreach(SOURCE_FILE ${HYDROGEN_SOURCES})
             -DRELEASE='"${HYDROGEN_RELEASE}"'
             -DBUILD_TYPE='"Coverage"'
             -I${CMAKE_CURRENT_SOURCE_DIR}/../src
-            ${JANSSON_CFLAGS}
-            ${MICROHTTPD_CFLAGS}
-            ${WEBSOCKETS_CFLAGS}
-            ${BROTLI_CFLAGS}
-            ${UUID_CFLAGS}
-            ${LUA_CFLAGS}
-            ${PROJECT_INCLUDE_FLAGS}
+             ${JANSSON_CFLAGS}
+             ${MICROHTTPD_CFLAGS}
+             ${WEBSOCKETS_CFLAGS}
+             ${BROTLI_CFLAGS}
+             ${UUID_CFLAGS}
+             ${LUA_CFLAGS}
+             ${MAGICKWAND_CFLAGS}
+             ${ZLIB_CFLAGS}
+             ${PROJECT_INCLUDE_FLAGS}
             -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
         DEPENDS ${SOURCE_FILE}
         COMMENT "Compiling ${REL_PATH} to coverage object file"

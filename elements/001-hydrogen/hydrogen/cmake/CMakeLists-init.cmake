@@ -50,6 +50,8 @@ pkg_check_modules(BROTLI REQUIRED libbrotlienc libbrotlidec)
 pkg_check_modules(UUID REQUIRED uuid)
 pkg_check_modules(LUA REQUIRED lua)
 pkg_check_modules(CURL REQUIRED libcurl)
+pkg_check_modules(MAGICKWAND REQUIRED MagickWand-7.Q16HDRI)
+pkg_check_modules(ZLIB REQUIRED zlib)
 
 find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)
@@ -67,6 +69,8 @@ set(HYDROGEN_BASE_LIBS
     ${UUID_LIBRARIES}
     ${LUA_LIBRARIES}
     ${CURL_LIBRARIES}
+    ${MAGICKWAND_LIBRARIES}
+    ${ZLIB_LIBRARIES}
 )
 
 # Include directories
@@ -82,6 +86,8 @@ set(HYDROGEN_INCLUDE_DIRS
     ${UUID_INCLUDE_DIRS}
     ${LUA_INCLUDE_DIRS}
     ${CURL_INCLUDE_DIRS}
+    ${MAGICKWAND_INCLUDE_DIRS}
+    ${ZLIB_INCLUDE_DIRS}
 )
 
 # Source file discovery
@@ -139,14 +145,16 @@ function(hydrogen_add_executable_target target_name build_type extra_cflags extr
                 -DVERSION='"${HYDROGEN_VERSION}"'
                 -DRELEASE='"${HYDROGEN_RELEASE}"'
                 -DBUILD_TYPE='"${build_type}"'
-                ${JANSSON_CFLAGS}
-                ${MICROHTTPD_CFLAGS}
-                ${WEBSOCKETS_CFLAGS}
-                ${BROTLI_CFLAGS}
-                ${UUID_CFLAGS}
-                ${LUA_CFLAGS}
-                ${CURL_CFLAGS}
-                ${PROJECT_INCLUDE_FLAGS}
+                 ${JANSSON_CFLAGS}
+                 ${MICROHTTPD_CFLAGS}
+                 ${WEBSOCKETS_CFLAGS}
+                 ${BROTLI_CFLAGS}
+                 ${UUID_CFLAGS}
+                 ${LUA_CFLAGS}
+                 ${CURL_CFLAGS}
+                 ${MAGICKWAND_CFLAGS}
+                 ${ZLIB_CFLAGS}
+                 ${PROJECT_INCLUDE_FLAGS}
                 -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
             DEPENDS ${SOURCE_FILE}
             COMMENT "Compiling ${REL_PATH} to ${target_name} object file"

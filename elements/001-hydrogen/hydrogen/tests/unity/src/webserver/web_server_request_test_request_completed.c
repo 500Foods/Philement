@@ -28,29 +28,19 @@ __attribute__((weak)) ServiceThreads webserver_threads = {0};
 // Mock functions
 __attribute__((weak))
 enum MHD_Result MHD_destroy_post_processor(struct MHD_PostProcessor *pp) {
-    (void)pp; // Mock - do nothing
+    (void)pp;
     return MHD_YES;
 }
 
 __attribute__((weak))
 int fclose(FILE *stream) {
-    (void)stream; // Mock - do nothing
+    (void)stream;
     return 0;
 }
 
 __attribute__((weak))
-void free(void *ptr) {
-    (void)ptr; // Mock - do nothing
-}
-
-__attribute__((weak))
 void remove_service_thread(ServiceThreads *threads, pthread_t thread_id) {
-    (void)threads; (void)thread_id; // Mock - do nothing
-}
-
-__attribute__((weak))
-pthread_t pthread_self(void) {
-    return (pthread_t)12345; // Mock thread ID
+    (void)threads; (void)thread_id;
 }
 
 void setUp(void) {

@@ -56,7 +56,9 @@ typedef struct {
  static const char *brotli_paths[] = {"libbrotlidec.so", "/lib64/libbrotlidec.so.1", "/usr/lib/libbrotlidec.so", "/usr/lib/x86_64-linux-gnu/libbrotlidec.so.1", NULL};
  static const char *libtar_paths[] = {"libtar.so", "/usr/lib64/libtar.so.1", "/usr/lib64/libtar.so", "/lib64/libtar.so.1", "/usr/lib/libtar.so", "/usr/lib/x86_64-linux-gnu/libtar.so", NULL};
  static const char *lua_paths[] = {"liblua.so", "/lib64/liblua.so.5.4", "/usr/lib/liblua.so", "/usr/lib/x86_64-linux-gnu/liblua.so.5.4", NULL};
- static const char *libcurl_paths[] = {"libcurl.so", "/lib64/libcurl.so.4", "/usr/lib/libcurl.so", "/usr/lib/x86_64-linux-gnu/libcurl.so.4", NULL};
+  static const char *libcurl_paths[] = {"libcurl.so", "/lib64/libcurl.so.4", "/usr/lib/libcurl.so", "/usr/lib/x86_64-linux-gnu/libcurl.so.4", NULL};
+  static const char *magickwand_paths[] = {"libMagickWand-7.Q16HDRI.so.10", "/usr/lib64/libMagickWand-7.Q16HDRI.so.10", "/usr/lib/x86_64-linux-gnu/libMagickWand-7.Q16HDRI.so.10", NULL};
+  static const char *zlib_paths[] = {"libz.so", "/lib64/libz.so.1", "/usr/lib/libz.so", "/usr/lib/x86_64-linux-gnu/libz.so.1", NULL};
  
  static const char *jansson_funcs[] = {"jansson_version_str", NULL};
  static const char *microhttpd_funcs[] = {"MHD_utils_dependency_get_version", NULL};
@@ -65,7 +67,8 @@ typedef struct {
  static const char *brotli_funcs[] = {"BrotliDecoderVersion", NULL};
  static const char *libtar_funcs[] = {"libtar_version", NULL};
  static const char *lua_funcs[] = {NULL};
- static const char *libcurl_funcs[] = {"curl_version", NULL};
+  static const char *libcurl_funcs[] = {"curl_version", NULL};
+  static const char *magickwand_funcs[] = {"MagickGetVersion", NULL};  static const char *zlib_funcs[] = {"zlibVersion", NULL};
 
 // Database configurations
 static const DatabaseDependencyConfig db_configs[] = {
@@ -190,8 +193,10 @@ void save_cache(const char *db_name, const char *version) {
      {"libbrotlidec", brotli_paths, brotli_funcs, "1.1.0", false, false},
      {"libtar", libtar_paths, libtar_funcs, "1.2.20", false, false},
      {"lua", lua_paths, lua_funcs, "5.4", false, false},
-     {"libcurl", libcurl_paths, libcurl_funcs, "8.15.0", false, true}
- };
+      {"libcurl", libcurl_paths, libcurl_funcs, "8.15.0", false, true},
+      {"MagickWand", magickwand_paths, magickwand_funcs, "7.1", false, false},
+      {"zlib", zlib_paths, zlib_funcs, "1.3.1", false, false}
+  };
  
   const char *utils_dependency_get_status_string(LibraryStatus status) {
      switch (status) {
@@ -461,7 +466,21 @@ void save_cache(const char *db_name, const char *version) {
                  }
 
  
-                 if (strcmp(config->name, "libbrotlidec") == 0 && strcmp(*func_name, "BrotliDecoderVersion") == 0) {
+                  if (strcmp(config->name, "MagickWand") == 0 && strcmp(*func_name, "MagickGetVersion") == 0) {
+                      unsigned long (*magick_func)(char **);
+                      *(void **)(&magick_func) = func_ptr;
+                      unsigned long ver = magick_func(NULL);
+                      unsigned int major = (ver >> 8) & 0xFF;
+                      unsigned int minor = ver & 0xFF;
+                      snprintf(buffer, size, "%u.%u", major, minor);
+                      version = buffer;
+                      *method = "SYM";
+                      log_this(SR_DEPCHECK, "― %s. Found: %s via %s", LOG_LEVEL_TRACE, 3, config->name, version, *func_name);
+                      dlclose(handle);
+                      return version;
+                  }
+
+                  if (strcmp(config->name, "libbrotlidec") == 0 && strcmp(*func_name, "BrotliDecoderVersion") == 0) {
                      uint32_t (*brotli_func)(void);
                      *(void **)(&brotli_func) = func_ptr;
                      uint32_t ver = brotli_func();

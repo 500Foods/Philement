@@ -678,7 +678,7 @@ void H_lua_install_mail_notify(lua_State* L) {
 
     lua_getglobal(L, "H");
     if (!lua_istable(L, -1)) {
-        log_this(SR_LUA, "H_lua_install_mail_notify: H table missing",
+        log_this(SR_SCRIPTING, "H_lua_install_mail_notify: H table missing",
                  LOG_LEVEL_ERROR, 0);
         lua_pop(L, 1);
         return;

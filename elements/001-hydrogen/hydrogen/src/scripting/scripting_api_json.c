@@ -68,14 +68,14 @@ char* H_lua_params_to_json(lua_State* L, int arg) {
         } else if (t == LUA_TNIL) {
             // omit
         } else {
-            log_this(SR_LUA,
+            log_this(SR_SCRIPTING,
                      "H.*query: skipping unsupported param type for key '%s'",
                      LOG_LEVEL_ALERT, 1, key);
         }
         lua_pop(L, 1);
         idx++;
         if (idx > 1000) {
-            log_this(SR_LUA, "H.*query: params table too large (>1000 entries)",
+            log_this(SR_SCRIPTING, "H.*query: params table too large (>1000 entries)",
                      LOG_LEVEL_ALERT, 0);
             break;
         }
@@ -188,7 +188,7 @@ int H_lua_build_result_table(lua_State* L, const char* data_json, int affected_r
             }
             json_decref(arr);
         } else {
-            log_this(SR_LUA, "H.*query: data_json parse failed: %s",
+            log_this(SR_SCRIPTING, "H.*query: data_json parse failed: %s",
                      LOG_LEVEL_ALERT, 1,
                      arr ? "not a JSON array" : err.text);
             if (arr) json_decref(arr);

@@ -81,7 +81,7 @@
 #define SR_QUEUES           "Queues"
 #define SR_MUTEXES          "Mutexes"         
 
-// The primary 19 Subsystems
+// The primary 22 Subsystems
 #define SR_REGISTRY         "Registry"
 #define SR_THREADS          "Threads"
 #define SR_PAYLOAD          "Payload"
@@ -103,7 +103,7 @@
 #define SR_NOTIFY           "Notify"
 #define SR_MIRAGE           "Mirage"
 #define SR_SCRIPTING        "Scripting"   // Lua scripting subsystem (Phase 2b+)
-#define SR_LUA              "Lua"         // Per-script log tag (host API calls)
+#define SR_REPORTING        "Reporting"   // Reporting service (image processing)
 
 // Additional sub-Subsystem Tracking
 #define SR_WEBSOCKET_LIB    "WebSocket-Lib"     // Low-level libwebsockets diagnostics
@@ -112,9 +112,9 @@
 #define SR_CHAT             "Chat"              // Chat/AI proxy service
 #define SR_WEBSOCKET_CHAT   "WebSocket-Chat"    // WebSocket component of Chat
 
-#define INITIAL_REGISTRY_CAPACITY 20
-#define MAX_DEPENDENCIES 20
-#define MAX_SUBSYSTEMS 19  // Total number of subsystems (Registry, Payload, Threads, Network, Database, Logging, WebServer, API, Swagger, WebSocket, Terminal, mDNS Server, mDNS Client, Mail Relay, Print, Resources, OIDC, Notify, Scripting)
+#define INITIAL_REGISTRY_CAPACITY 22
+#define MAX_DEPENDENCIES 22
+#define MAX_SUBSYSTEMS 22  // Total number of subsystems
 
 // LOGGING ////////////////////////////////////////////////////////////////////////////////////////
 

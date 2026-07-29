@@ -48,10 +48,6 @@ Chat proxy service. Phases 1–12 complete (see `complete/`). Open work: [Phase 
 
 Separate ASAN Unity build/test variant for memory-safety gating without corrupting gcov coverage.
 
-### [IMAGE PLAN](/docs/H/plans/IMAGE_PLAN.md)
-
-Reporting service: `image_scale` endpoint using ImageMagick to convert and scale base64-encoded images. Includes XO (PDF XObject) output format. Phases 0–7 planned with stage gates and blackbox Test 27.
-
 ### [MIRAGE PLAN](/docs/H/plans/MIRAGE_PLAN.md)
 
 Distributed proxy architecture sketch. Implementation deferred.
@@ -68,6 +64,7 @@ Full index: [`complete/README.md`](/docs/H/plans/complete/README.md). Highlights
 | Cap / cap_query | [CAP_PLAN_QUERY-COMPLETE.md](/docs/H/plans/complete/CAP_PLAN_QUERY-COMPLETE.md) |
 | Chat Phases 1–12 | [CHAT_PLAN_PHASE_*_COMPLETE.md](/docs/H/plans/complete/) |
 | Conduit | [CONDUIT_COMPLETE.md](/docs/H/plans/complete/CONDUIT_COMPLETE.md) |
+| Image / Reporting | [IMAGE_PLAN_COMPLETE.md](/docs/H/plans/complete/IMAGE_PLAN_COMPLETE.md) |
 | Database subsystem | [DATABASE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_PLAN_COMPLETE.md) |
 | Log fanout | [LOG_FANOUT_PLAN_COMPLETE.md](/docs/H/plans/complete/LOG_FANOUT_PLAN_COMPLETE.md) |
 | Lua scripting | [LUA_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md) |

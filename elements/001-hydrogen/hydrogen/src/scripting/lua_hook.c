@@ -186,7 +186,7 @@ void H_lua_progress_hook_fn(lua_State* L, lua_Debug* ar) {
     // not pause the worker for long.
     if (ctx->soft_limit_kb > 0 && memory_kb >= ctx->soft_limit_kb) {
         if (!ctx->soft_warned) {
-            log_this(SR_LUA,
+            log_this(SR_SCRIPTING,
                      "Job %s exceeded soft memory limit (%zu KB, soft=%zu KB)",
                      LOG_LEVEL_ALERT, 3, ctx->job_id, memory_kb, ctx->soft_limit_kb);
             ctx->soft_warned = true;
@@ -220,12 +220,12 @@ void H_lua_install_progress_hook(lua_State* L) {
     }
     H_lua_job_context* ctx = H_lua_get_job_context(L);
     if (!ctx || ctx->job_id[0] == '\0') {
-        log_this(SR_LUA, "H_lua_install_progress_hook: no job context",
+        log_this(SR_SCRIPTING, "H_lua_install_progress_hook: no job context",
                  LOG_LEVEL_ERROR, 0);
         return;
     }
     if (ctx->hook_interval <= 0) {
-        log_this(SR_LUA,
+        log_this(SR_SCRIPTING,
                  "H_lua_install_progress_hook: hook_interval<=0 for job %s; "
                  "hook not installed",
                  LOG_LEVEL_ERROR, 1, ctx->job_id);

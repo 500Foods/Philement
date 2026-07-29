@@ -244,13 +244,13 @@ void H_lua_install_system(lua_State* L) {
 
     lua_getglobal(L, "H");
     if (!lua_istable(L, -1)) {
-        log_this(SR_LUA, "H_lua_install_system: H table missing", LOG_LEVEL_ERROR, 0);
+        log_this(SR_SCRIPTING, "H_lua_install_system: H table missing", LOG_LEVEL_ERROR, 0);
         lua_pop(L, 1);
         return;
     }
     lua_getfield(L, -1, "system");
     if (!lua_istable(L, -1)) {
-        log_this(SR_LUA, "H_lua_install_system: H.system not a table", LOG_LEVEL_ERROR, 0);
+        log_this(SR_SCRIPTING, "H_lua_install_system: H.system not a table", LOG_LEVEL_ERROR, 0);
         lua_pop(L, 2);
         return;
     }
@@ -269,13 +269,13 @@ void H_lua_install_gc(lua_State* L) {
 
     lua_getglobal(L, "H");
     if (!lua_istable(L, -1)) {
-        log_this(SR_LUA, "H_lua_install_gc: H table missing", LOG_LEVEL_ERROR, 0);
+        log_this(SR_SCRIPTING, "H_lua_install_gc: H table missing", LOG_LEVEL_ERROR, 0);
         lua_pop(L, 1);
         return;
     }
     lua_getfield(L, -1, "gc");
     if (!lua_istable(L, -1)) {
-        log_this(SR_LUA, "H_lua_install_gc: H.gc not a table", LOG_LEVEL_ERROR, 0);
+        log_this(SR_SCRIPTING, "H_lua_install_gc: H.gc not a table", LOG_LEVEL_ERROR, 0);
         lua_pop(L, 2);
         return;
     }
@@ -293,7 +293,7 @@ void H_lua_install_set_current_state(lua_State* L) {
 
     lua_getglobal(L, "H");
     if (!lua_istable(L, -1)) {
-        log_this(SR_LUA, "H_lua_install_set_current_state: H table missing",
+        log_this(SR_SCRIPTING, "H_lua_install_set_current_state: H table missing",
                  LOG_LEVEL_ERROR, 0);
         lua_pop(L, 1);
         return;
@@ -310,7 +310,7 @@ void H_lua_install_set_result(lua_State* L) {
 
     lua_getglobal(L, "H");
     if (!lua_istable(L, -1)) {
-        log_this(SR_LUA, "H_lua_install_set_result: H table missing",
+        log_this(SR_SCRIPTING, "H_lua_install_set_result: H table missing",
                  LOG_LEVEL_ERROR, 0);
         lua_pop(L, 1);
         return;
@@ -327,7 +327,7 @@ void H_lua_install_sleep_shutdown(lua_State* L) {
 
     lua_getglobal(L, "H");
     if (!lua_istable(L, -1)) {
-        log_this(SR_LUA, "H_lua_install_sleep_shutdown: H table missing",
+        log_this(SR_SCRIPTING, "H_lua_install_sleep_shutdown: H table missing",
                  LOG_LEVEL_ERROR, 0);
         lua_pop(L, 1);
         return;

@@ -12,6 +12,8 @@
 # run_all_tests_parallel() 
 
 # CHANGELOG
+# 8.2.1 - 2026-07-29 - Wait for Oh SVG jobs before email; retry COVERAGE.svg without ANSI
+#                       if Oh aborts (munmap_chunk on large colored coverage tables)
 # 8.2.0 - 2026-07-16 - Added --redisplay to re-show the saved final results table and
 #                       re-run coverage reconciliation/per-file discrepancy from persisted
 #                       RESULTS_DIR artifacts without executing any tests
@@ -921,16 +923,39 @@ fi
 
 } > "${metrics_file}"
 
-# Generate SVGs from generated tables
-# shellcheck disable=SC2154 # OH defined externally in framework.sh
-("${OH}" --width 108 --font "Vanadium Mono Semi-Extended" -i "${results_table_file}" -o "${results_svg_path}" 2>/dev/null) &
-# shellcheck disable=SC2154 # OH defined externally in framework.sh
-("${OH}" --width 108 --font "Vanadium Mono Semi-Extended" -i "${coverage_table_file}" -o "${coverage_svg_path}" 2>/dev/null) &
+# Generate SVGs from generated tables.
+# Oh v1.009 can abort (munmap_chunk / exit 134) on large ANSI coverage tables;
+# fall back to a plain-text render so COVERAGE.svg is never left stale for email.
+generate_table_svg() {
+    local input_file="$1"
+    local output_file="$2"
+    local plain_file
+    plain_file=$(mktemp "${RESULTS_DIR}/oh_plain.XXXXXX")
+    rm -f "${output_file}"
+    # shellcheck disable=SC2154 # OH defined externally in framework.sh
+    if ! "${OH}" --width 108 --font "Vanadium Mono Semi-Extended" -i "${input_file}" -o "${output_file}" 2>/dev/null \
+        || [[ ! -s "${output_file}" ]]; then
+        # GNU sed \x1B is unreliable here; perl strips CSI/OSC cleanly
+        perl -pe 's/\e\[[0-?]*[ -\/]*[@-~]//g; s/\e\][^\a\e]*(?:\a|\e\\)//g' \
+            "${input_file}" > "${plain_file}" || true
+        "${OH}" --width 108 --font "Vanadium Mono Semi-Extended" -i "${plain_file}" -o "${output_file}" 2>/dev/null || true
+    fi
+    rm -f "${plain_file}"
+}
+
+generate_table_svg "${results_table_file}" "${results_svg_path}" &
+svg_results_pid=$!
+generate_table_svg "${coverage_table_file}" "${coverage_svg_path}" &
+svg_coverage_pid=$!
 
 # Generate SVG for repo history
-("${HYDROGEN_ROOT}"/extras/hbm_browser/hbm_browser.sh "${HYDROGEN_ROOT}"/extras/hbm_browser/hbm_browser_all.json "${HYDROGEN_ROOT}"/images/HISTORY.svg >/dev/null 2>&1)  &
+("${HYDROGEN_ROOT}"/extras/hbm_browser/hbm_browser.sh "${HYDROGEN_ROOT}"/extras/hbm_browser/hbm_browser_all.json "${HYDROGEN_ROOT}"/images/HISTORY.svg >/dev/null 2>&1) &
+svg_history_pid=$!
 
-# Generate e-mail
+# Wait for SVGs so make-email attaches the run's tables, not a prior COVERAGE.svg
+wait "${svg_results_pid}" "${svg_coverage_pid}" "${svg_history_pid}" 2>/dev/null || true
+
+# Generate e-mail (after SVGs are finalized)
 ("${PROJECT_DIR}/extras/make-email.sh" > /dev/null 2>&1) || true
 
 exit "${OVERALL_EXIT_CODE}"

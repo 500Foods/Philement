@@ -81,6 +81,14 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [oidc_endpoints.md](/docs/H/api/oidc/oidc_endpoints.md): OIDC Identity Provider endpoints (`/.well-known`, `/oauth/*`)
 - [OIDC_IDP_OPERATOR.md](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md): IdP operator runbook (enable, keys, kill switch, IdP vs RP)
 
+### Folder: /docs/api/reporting
+
+- [reporting_endpoints.md](/docs/H/api/reporting/reporting_endpoints.md): Reporting service `image_scale` endpoint (MagickWand, XO format)
+
+### Folder: /docs/api/conduit
+
+- [cap_query.md](/docs/H/api/conduit/cap_query.md): Cap-protected conduit query endpoint
+
 ### Folder: /docs/deployment
 
 - [docker.md](/docs/H/core/deployment/docker.md)
@@ -149,6 +157,7 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [CHAT_PLAN_PHASE_8_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_8_COMPLETE.md)
 - [CHAT_PLAN_PHASE_9_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_9_COMPLETE.md)
 - [CONDUIT_COMPLETE.md](/docs/H/plans/complete/CONDUIT_COMPLETE.md)
+- [IMAGE_PLAN_COMPLETE.md](/docs/H/plans/complete/IMAGE_PLAN_COMPLETE.md): Reporting image_scale (Phases 0–7)
 - [CONDUIT_DIAGRAMS_COMPLETE.md](/docs/H/plans/complete/CONDUIT_DIAGRAMS_COMPLETE.md)
 - [CONDUIT_FIX_COMPLETE.md](/docs/H/plans/complete/CONDUIT_FIX_COMPLETE.md)
 - [DATABASE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_PLAN_COMPLETE.md)
@@ -281,6 +290,7 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [test_24_uploads.md](/docs/H/tests/test_24_uploads.md): File upload functionality tests
 - [test_25_mdns.md](/docs/H/tests/test_25_mdns.md): mDNS server and client functionality and integration tests
 - [test_26_terminal.md](/docs/H/tests/test_26_terminal.md): Terminal functionality, payload serving, and WebSocket connections
+- [test_27_reporting_image_scale.md](/docs/H/tests/test_27_reporting_image_scale.md): Reporting image_scale endpoint (ImageMagick)
 - [test_30_database.md](/docs/H/tests/test_30_database.md): All Engines Parallel Operational Test
 - [test_31_migrations.md](/docs/H/tests/test_31_migrations.md): Database migration validation
 - [test_32_postgres_migrations.md](/docs/H/tests/test_32_postgres_migrations.md): PostgreSQL migration performance test

@@ -38,6 +38,7 @@ Active plans folder: [`/docs/H/plans/`](/docs/H/plans/).
 | [CONDUIT_DIAGRAMS_COMPLETE.md](/docs/H/plans/complete/CONDUIT_DIAGRAMS_COMPLETE.md) | Conduit diagrams |
 | [CONDUIT_FIX_COMPLETE.md](/docs/H/plans/complete/CONDUIT_FIX_COMPLETE.md) | Conduit auth_query fix |
 | [DATABASE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_PLAN_COMPLETE.md) | Database subsystem |
+| [IMAGE_PLAN_COMPLETE.md](/docs/H/plans/complete/IMAGE_PLAN_COMPLETE.md) | Reporting image_scale (MagickWand) |
 | [LOG_FANOUT_PLAN_COMPLETE.md](/docs/H/plans/complete/LOG_FANOUT_PLAN_COMPLETE.md) | Log fanout consumer |
 | [LUA_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md) | Lua scripting |
 | [MAILRELAY_BLACKBOX_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md) | Mail Relay blackbox |

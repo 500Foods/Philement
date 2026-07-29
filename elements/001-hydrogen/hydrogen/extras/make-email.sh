@@ -40,8 +40,9 @@ cd "${HYDROGEN_DIR}" || exit 1
 echo "=== Hydrogen Email Notification Script ==="
 echo "📧 Preparing email with test results..."
 
-# Let's pause for a moment in case not all of our SVGs have been updated yet
-sleep 5
+# Prefer SVGs written by this suite run. test_00_all.sh now waits for Oh before
+# invoking us; keep a short settle delay for filesystem mtime visibility.
+sleep 2
 
 # Check if mutt is available
 if ! command -v mutt >/dev/null 2>&1; then

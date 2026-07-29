@@ -38,7 +38,7 @@ struct Scoreboard;
  * Create a sandboxed Lua state.
  *
  * Reads config->scripting.Sandbox to decide which standard libraries to
- * open. Returns NULL on failure (with a SR_LUA log entry).
+ * open. Returns NULL on failure (with a SR_SCRIPTING log entry).
  *
  * Ownership: caller must release the state with H_lua_destroy_context().
  */

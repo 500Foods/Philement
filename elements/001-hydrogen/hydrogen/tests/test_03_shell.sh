@@ -141,6 +141,8 @@ declare -a ENV_WHITELIST=(
     "BASE_URL" "CONFIG_FILE" "FIRST_LOG" "FIRST_PID" "PORT" "SECOND_LOG" "SECOND_PID" 
     # First found in tests/test_22_swagger.sh
     "CUSTOM_HEADERS_TEST_RESULT"
+    # First found in tests/test_27_reporting_image_scale.sh
+    "CURL_MAX_TIME" "FAIL_COUNT" "IMAGES_DIR" "PASS_COUNT" "RESULT_DIR" "TOTAL_COUNT"
     # First found in tests/test_40_auth.sh
     "MIGRATION_TIMEOUT"
     # First found in tests/test_41_exercise_asan.sh / test_44_exercise_native.sh / lib/exercise_helpers.sh

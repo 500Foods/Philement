@@ -236,12 +236,18 @@ void get_fd_info(int fd, FileDescriptorInfo *info) {
     }
 }
 
-// Collect file descriptor information
+// Collect file descriptor information.
+// Single-pass grow: FDs can open/close between a count pass and a fill pass
+// (common under multi-DB ASAN + concurrent HTTP), which previously overflowed
+// a fixed calloc and could abort the prometheus/info handler mid-request.
 bool collect_file_descriptors(FileDescriptorInfo **descriptors, int *count) {
     if (!descriptors || !count) {
         log_this(SR_STATUS, "NULL parameter passed to collect_file_descriptors", LOG_LEVEL_ERROR, 0);
         return false;
     }
+
+    *descriptors = NULL;
+    *count = 0;
 
     DIR *dir = opendir("/proc/self/fd");
     if (!dir) {
@@ -249,34 +255,61 @@ bool collect_file_descriptors(FileDescriptorInfo **descriptors, int *count) {
         return false;
     }
 
-    // First pass to count file descriptors
     const struct dirent *ent;
-    *count = 0;
+    int capacity = 0;
+    FileDescriptorInfo *list = NULL;
+
     while ((ent = readdir(dir)) != NULL) {
-        if (ent->d_name[0] != '.') (*count)++;
+        if (ent->d_name[0] == '.') {
+            continue;
+        }
+
+        if (*count >= capacity) {
+            int new_cap = capacity == 0 ? 64 : capacity * 2;
+            FileDescriptorInfo *grown = realloc(list, (size_t)new_cap * sizeof(FileDescriptorInfo));
+            if (!grown) {
+                free(list);
+                closedir(dir);
+                *descriptors = NULL;
+                *count = 0;
+                return false;
+            }
+            list = grown;
+            capacity = new_cap;
+        }
+
+        FileDescriptorInfo *info = &list[*count];
+        memset(info, 0, sizeof(*info));
+        info->fd = atoi(ent->d_name);
+        get_fd_info(info->fd, info);
+        (*count)++;
     }
 
-    // Allocate array for file descriptors
-    *descriptors = calloc((size_t)*count, sizeof(FileDescriptorInfo));
-    if (!*descriptors) {
-        closedir(dir);
+    closedir(dir);
+    *descriptors = list;
+    return true;
+}
+
+// Count open FDs only (no per-FD /proc/net scans). Used by Prometheus which
+// only exposes hydrogen_process_open_fds, not the detailed JSON file list.
+bool count_open_file_descriptors(int *count) {
+    if (!count) {
+        return false;
+    }
+    *count = 0;
+
+    DIR *dir = opendir("/proc/self/fd");
+    if (!dir) {
+        log_this(SR_STATUS, "Failed to open /proc/self/fd", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
-    // Reset and second pass to collect information
-    rewinddir(dir);
-    int current_fd = 0;
-
+    const struct dirent *ent;
     while ((ent = readdir(dir)) != NULL) {
-        if (ent->d_name[0] == '.') continue;
-
-        int fd = atoi(ent->d_name);
-        FileDescriptorInfo *info = &(*descriptors)[current_fd];
-        info->fd = fd;
-        get_fd_info(fd, info);
-        current_fd++;
+        if (ent->d_name[0] != '.') {
+            (*count)++;
+        }
     }
-
     closedir(dir);
     return true;
 }
