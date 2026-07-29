@@ -22,6 +22,8 @@
  * N. Resources
  * O. OIDC
  * P. Notify
+ * Q. Scripting
+ * R. Reporting
  */
 
 #ifndef CONFIG_FORWARD_H
@@ -153,5 +155,9 @@ typedef struct ScriptingConfig ScriptingConfig;
 
 struct ScriptingSandboxConfig;
 typedef struct ScriptingSandboxConfig ScriptingSandboxConfig;
+
+// R. Reporting Configuration
+struct ReportingConfig;
+typedef struct ReportingConfig ReportingConfig;
 
 #endif /* CONFIG_FORWARD_H */

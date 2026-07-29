@@ -650,6 +650,41 @@
             },
             "additionalProperties": false
         },
+        "Reporting": {
+            "type": "object",
+            "description": "Reporting subsystem configuration (image_scale and related endpoints)",
+            "properties": {
+                "Enabled": {
+                    "type": "boolean",
+                    "description": "Enable or disable the Reporting subsystem"
+                },
+                "MaxImageSize": {
+                    "type": "integer",
+                    "description": "Maximum image dimension in pixels (width or height)",
+                    "minimum": 1
+                },
+                "MaxInputBytes": {
+                    "type": "integer",
+                    "description": "Maximum input image payload size in bytes",
+                    "minimum": 1
+                },
+                "MaxOutputBytes": {
+                    "type": "integer",
+                    "description": "Maximum output image payload size in bytes",
+                    "minimum": 1
+                },
+                "DefaultDPI": {
+                    "type": "integer",
+                    "description": "Default DPI used when scaling vector/raster images",
+                    "minimum": 1
+                },
+                "AllowedFormats": {
+                    "type": "string",
+                    "description": "Comma-separated list of allowed image formats (e.g. jpg,png,svg). Empty/null allows all supported formats."
+                }
+            },
+            "additionalProperties": false
+        },
         "MailRelay": {
             "type": "object",
             "description": "Mail relay configuration",

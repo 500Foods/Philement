@@ -24,7 +24,9 @@ void status_cleanup(void) {
 }
 
 // Helper function to collect all metrics
-SystemMetrics* collect_all_metrics(const WebSocketMetrics *ws_metrics) {
+// detailed_fds: full per-FD enumeration (JSON /api/system/info). Prometheus only
+// needs an FD count and must stay cheap under ASAN multi-DB load (test 41).
+SystemMetrics* collect_all_metrics_ex(const WebSocketMetrics *ws_metrics, bool detailed_fds) {
     SystemMetrics *metrics = collect_system_metrics(ws_metrics);
     if (!metrics) {
         log_this(SR_STATUS, "Failed to allocate metrics structure", LOG_LEVEL_ERROR, 0);
@@ -58,9 +60,17 @@ SystemMetrics* collect_all_metrics(const WebSocketMetrics *ws_metrics) {
     }
 
     // Collect process metrics
-    if (!collect_file_descriptors(&metrics->file_descriptors, &metrics->fd_count)) {
-        log_this(SR_STATUS, "Failed to collect file descriptors", LOG_LEVEL_ERROR, 0);
-        goto error;
+    if (detailed_fds) {
+        if (!collect_file_descriptors(&metrics->file_descriptors, &metrics->fd_count)) {
+            log_this(SR_STATUS, "Failed to collect file descriptors", LOG_LEVEL_ERROR, 0);
+            goto error;
+        }
+    } else {
+        metrics->file_descriptors = NULL;
+        if (!count_open_file_descriptors(&metrics->fd_count)) {
+            log_this(SR_STATUS, "Failed to count file descriptors", LOG_LEVEL_ERROR, 0);
+            goto error;
+        }
     }
 
     size_t vmsize, vmrss, vmswap;
@@ -84,6 +94,10 @@ error:
     return NULL;
 }
 
+SystemMetrics* collect_all_metrics(const WebSocketMetrics *ws_metrics) {
+    return collect_all_metrics_ex(ws_metrics, true);
+}
+
 // Get complete system status in JSON format
 json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
     SystemMetrics *metrics = collect_all_metrics(ws_metrics);
@@ -98,7 +112,7 @@ json_t* get_system_status_json(const WebSocketMetrics *ws_metrics) {
 
 // Get system status in Prometheus format
 char* get_system_status_prometheus(const WebSocketMetrics *ws_metrics) {
-    SystemMetrics *metrics = collect_all_metrics(ws_metrics);
+    SystemMetrics *metrics = collect_all_metrics_ex(ws_metrics, false);
     if (!metrics) {
         return NULL;
     }

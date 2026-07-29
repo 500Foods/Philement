@@ -175,7 +175,7 @@ char* scoreboard_submit_with_limits(Scoreboard* sb,
         return NULL;
     }
     if (!script_name) {
-        log_this(SR_LUA, "scoreboard_submit_with_limits: NULL script_name",
+        log_this(SR_SCRIPTING, "scoreboard_submit_with_limits: NULL script_name",
                  LOG_LEVEL_ERROR, 0);
         return NULL;
     }
@@ -251,7 +251,7 @@ char* scoreboard_submit_with_limits(Scoreboard* sb,
         pthread_mutex_unlock(&sb->mutex);
         free(dup_script);
         free(dup_params);
-        log_this(SR_LUA, "scoreboard_submit_with_limits: could not generate unique id after %d retries",
+        log_this(SR_SCRIPTING, "scoreboard_submit_with_limits: could not generate unique id after %d retries",
                  LOG_LEVEL_ERROR, 1, SCOREBOARD_ID_RETRY_LIMIT);
         return NULL;
     }
@@ -463,7 +463,7 @@ bool scoreboard_update_current_state(Scoreboard* sb, const char* job_id, const c
     if (state && state[0] != '\0') {
         new_state = strdup(state);
         if (!new_state) {
-            log_this(SR_LUA, "scoreboard_update_current_state: strdup failed for job %s",
+            log_this(SR_SCRIPTING, "scoreboard_update_current_state: strdup failed for job %s",
                      LOG_LEVEL_ERROR, 1, job_id);
             return false;
         }

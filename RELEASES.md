@@ -169,6 +169,7 @@ QUALITY CHECKLIST (before completing)
 -->
 ## Contents
 
+- [July 2026](#july-2026)
 - [March 2026](#march-2026)
 - [February 2026](#february-2026)
 - [January 2026](#january-2026)
@@ -184,6 +185,10 @@ QUALITY CHECKLIST (before completing)
 - [March 2025](#march-2025)
 - [February 2025](#february-2025)
 - [July 2024](#july-2024)
+
+## July 2026
+
+- [2026-Jul-29 (Wed)](/releases/2026-07/2026-07-29.md): (H) Reporting image_scale endpoint, MagickWand, Test 27
 
 ## March 2026
 

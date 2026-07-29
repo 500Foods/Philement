@@ -118,13 +118,13 @@ void H_lua_install_log(lua_State* L) {
 
     lua_getglobal(L, "H");
     if (!lua_istable(L, -1)) {
-        log_this(SR_LUA, "H_lua_install_log: H table missing", LOG_LEVEL_ERROR, 0);
+        log_this(SR_SCRIPTING, "H_lua_install_log: H table missing", LOG_LEVEL_ERROR, 0);
         lua_pop(L, 1);
         return;
     }
     lua_getfield(L, -1, "log");
     if (!lua_istable(L, -1)) {
-        log_this(SR_LUA, "H_lua_install_log: H.log not a table", LOG_LEVEL_ERROR, 0);
+        log_this(SR_SCRIPTING, "H_lua_install_log: H.log not a table", LOG_LEVEL_ERROR, 0);
         lua_pop(L, 2);
         return;
     }

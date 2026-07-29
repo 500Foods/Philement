@@ -48,7 +48,7 @@ This section records what actually exists in the codebase today, so later phases
 - **Outbound HTTP exists** (libcurl, `curl_global_init` at startup). Cleanest generic synchronous primitive: `oidc_rp_http_get/post` in `src/api/auth/oidc_rp/oidc_rp_http.{c,h}`. Async streaming exists in the wschat proxy (`src/api/wschat/helpers/proxy*`).
 - **Logging**: `log_this(const char* subsystem, const char* format, int priority, int num_args, ...)` — variadic, `num_args` must match format specifiers. Thread-safe, effectively synchronous to the caller.
 - **VictoriaLogs is integrated** (async, env-configured via `VICTORIALOGS_URL`): `victoria_logs_send(subsystem, message, priority)` in `src/logging/victoria_logs.c`.
-- **Subsystem/launch framework** is well-established. Adding a subsystem means: a name macro in `src/globals.h` (e.g. `SR_LUA`), a `check_<x>_launch_readiness()` + `launch_<x>_subsystem()` pair (see `src/launch/launch_print.c` as a template), a dispatch line in `src/launch/launch.c`, a landing handler in `src/landing/`, registry entry, and an entry in the registry/subsystem order.
+- **Subsystem/launch framework** is well-established. Adding a subsystem means: a name macro in `src/globals.h` (e.g. `SR_SCRIPTING`), a `check_<x>_launch_readiness()` + `launch_<x>_subsystem()` pair (see `src/launch/launch_print.c` as a template), a dispatch line in `src/launch/launch.c`, a landing handler in `src/landing/`, registry entry, and an entry in the registry/subsystem order.
 - **Reusable concurrency primitives**: thread-safe priority queue in `src/queue/queue.h` (`queue_create`/`queue_enqueue`/`queue_dequeue`), and thread registration/metrics via `ServiceThreads` in `src/threads/threads.h` (`init_service_threads`, `add_service_thread_with_description`). A Lua worker pool should reuse these rather than inventing new ones.
 - **LLM model resolution already works by name at request time.** The wschat chat path takes a model/engine **name string** from the request and resolves it via `chat_engine_cache_lookup_by_name(cache, name)` (`src/api/wschat/helpers/engine_cache.c`) against a DB-loaded `ChatEngineCache` (provider, `model`, `api_url`, `api_key`), then calls `chat_proxy_send_with_retry(engine, ...)`. This is exactly the model needed for `H.llm.call{ model = "..." }`: Lua passes a name, the server resolves it. A default engine exists via `chat_engine_cache_get_default`. The cache is loaded per database by `chat_engine_cache_bootstrap_for_database`.
 - **Available LLMs can already be listed.** The conduit status endpoint (`src/api/conduit/status/status.c`) enumerates `cec->engines[]` into a `"models"` JSON array per database (backed by QueryRef #061). So "retrieve available models as a query" is feasible now; `chat_engine_cache_get_all()` also exists (currently unused).
@@ -220,7 +220,7 @@ That observation led to a two-tier architecture (modeled directly on how Migrati
   - `ScriptingConfig scripting;` added to `AppConfig` in `src/hydrogen.h`
   - `initialize_config_defaults_scripting()` added to `src/config/config_defaults.{c,h}` and called from the defaults chain
   - `load_scripting_config`, `dump_scripting_config`, and `cleanup_scripting_config` wired into `src/config/config.c` as section **Q**
-  - `SR_SCRIPTING` and `SR_LUA` added to `src/globals.h`
+  - `SR_SCRIPTING` and `SR_SCRIPTING` added to `src/globals.h`
   - `docs/H/INSTRUCTIONS.md` updated with `Q. Scripting` and Scripting in subsystem order
 - **Validation**:
   - `mks` equivalent (`tests/test_92_shellcheck.sh`) — **PASS**, 116 shell files, 0 issues

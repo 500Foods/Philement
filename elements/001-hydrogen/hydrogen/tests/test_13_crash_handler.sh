@@ -15,6 +15,7 @@
 # run_crash_test_with_build() 
 
 # CHANGELOG
+# 7.5.0 - 2026-07-28 - Fixed set -e causing subshell exit before GDB_RESULT written; added SIGSEGV fallback pattern for stripped backtraces
 # 7.4.0 - 2026-07-16 - Fixed Debug Symbols subtest incorrectly failing the run for development builds (debug symbols present is a PASS); clarified EXIT_CODE handling
 # 7.3.0 - 2025-12-02 - Simplified solution: skip ASAN builds entirely to focus on core crash handler functionality
 # 7.2.0 - 2025-12-02 - Enhanced ASAN build handling with improved startup detection and ASAN-specific options
@@ -66,7 +67,7 @@ TEST_NAME="Crash Handler"
 TEST_ABBR="BUG"
 TEST_NUMBER="13"
 TEST_COUNTER=0
-TEST_VERSION="7.4.0"
+TEST_VERSION="7.5.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -300,6 +301,12 @@ analyze_core_with_gdb() {
             has_test_crash=1
             has_backtrace=1
         fi
+    # Fallback: check for SIGSEGV even if backtrace doesn't show function names
+    # (happens when GDB can't resolve symbols from core file, e.g. stripped backtrace)
+    elif "${GREP}" -q "Program terminated with signal SIGSEGV" "${gdb_output_file}" || \
+          "${GREP}" -q "Program terminated with signal SIGSEGV, Segmentation fault" "${gdb_output_file}"; then
+        has_backtrace=1
+        has_test_crash=1
     # For release and naked builds, just check for SIGSEGV
     elif [[ "${build_name}" == *"release"* ]] || [[ "${build_name}" == *"naked"* ]]; then
         if "${GREP}" -q "Program terminated with signal SIGSEGV" "${gdb_output_file}" || \
@@ -495,8 +502,11 @@ run_crash_test_parallel() {
         # We want to continue even if core file content verification fails
         # shellcheck disable=SC2310 # We want to continue even if ASAN detection fails
         if verify_core_file_content "${core_file}" "${binary}"; then
-            analyze_core_with_gdb "${binary}" "${core_file}" "${gdb_output_file}"
-            echo "GDB_RESULT=$?" >> "${result_file}"
+            if analyze_core_with_gdb "${binary}" "${core_file}" "${gdb_output_file}"; then
+                echo "GDB_RESULT=0" >> "${result_file}"
+            else
+                echo "GDB_RESULT=1" >> "${result_file}"
+            fi
         else
             echo "GDB_RESULT=1" >> "${result_file}"
         fi

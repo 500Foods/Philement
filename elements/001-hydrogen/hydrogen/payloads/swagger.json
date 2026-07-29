@@ -40,6 +40,10 @@
       "description": "Provides OpenID Connect protocol endpoints and authentication services"
     },
     {
+      "name": "Reporting Service",
+      "description": "Provides image processing and conversion services."
+    },
+    {
       "name": "System Service",
       "description": "Provides system-level operations, monitoring, and diagnostics"
     }
@@ -4219,6 +4223,179 @@
         "security": [
           {
             "BearerAuth": []
+          }
+        ]
+      }
+    },
+    "/reporting/image_scale": {
+      "post": {
+        "summary": "Scale and convert an image",
+        "description": "Scales and converts a base64-encoded image to a specified format and dimensions. Accepts optional data: URI prefix on the image field. Supports px/pt units, DPI conversion, and XO (PDF XObject) output.",
+        "operationId": "imageScalePost",
+        "tags": [
+          "Reporting Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "image": {
+                      "type": "string"
+                    },
+                    "format": {
+                      "type": "string"
+                    },
+                    "width": {
+                      "type": "integer"
+                    },
+                    "height": {
+                      "type": "integer"
+                    },
+                    "units": {
+                      "type": "string"
+                    },
+                    "mime_type": {
+                      "type": "string"
+                    },
+                    "input_format": {
+                      "type": "string"
+                    },
+                    "input_dimensions": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "details": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "image",
+                  "format",
+                  "width",
+                  "height"
+                ],
+                "properties": {
+                  "image": {
+                    "type": "string",
+                    "description": "Base64-encoded image, optional data: URI prefix"
+                  },
+                  "format": {
+                    "type": "string",
+                    "description": "Output format (jpg,png,bmp,svg,ico,webp,xo,...)"
+                  },
+                  "width": {
+                    "type": "integer",
+                    "description": "Output width in units"
+                  },
+                  "height": {
+                    "type": "integer",
+                    "description": "Output height in units"
+                  },
+                  "units": {
+                    "type": "string",
+                    "enum": [
+                      "px",
+                      "pt"
+                    ],
+                    "default": "px"
+                  },
+                  "dpi": {
+                    "type": "integer",
+                    "default": 72
+                  },
+                  "scale_algorithm": {
+                    "type": "string",
+                    "enum": [
+                      "nearest",
+                      "bilinear",
+                      "bicubic",
+                      "lanczos",
+                      "mitchell"
+                    ],
+                    "default": "lanczos"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
           }
         ]
       }

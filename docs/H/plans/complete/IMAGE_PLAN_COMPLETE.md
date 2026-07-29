@@ -25,7 +25,7 @@ dependencies from the reporting client and centralizes image processing.
 
 ### URL
 
-```
+``` API
 POST /api/reporting/image_scale
 ```
 
@@ -47,11 +47,11 @@ POST /api/reporting/image_scale
 
 | Parameter         | Type   | Required | Default   | Description                                                                 |
 | ----------------- | ------ | -------- | --------- | --------------------------------------------------------------------------- |
-| `image`           | string | yes      | —         | Base64-encoded image data. May include a `data:` URI prefix.              |
+| `image`           | string | yes      | —         | Base64-encoded image data. May include a `data:` URI prefix.                |
 | `format`          | string | yes      | —         | Output format: `jpg`, `png`, `bmp`, `svg`, `ico`, `webp`, `xo`, or others.  |
 | `width`           | int    | yes      | —         | Output width in the specified units.                                        |
 | `height`          | int    | yes      | —         | Output height in the specified units.                                       |
-| `units`           | string | no       | `px`      | Unit of width/height: `px` (pixels) or `pt` (points, 1/72 inch).          |
+| `units`           | string | no       | `px`      | Unit of width/height: `px` (pixels) or `pt` (points, 1/72 inch).            |
 | `dpi`             | int    | no       | `72`      | DPI used for pt-to-px conversion.                                           |
 | `scale_algorithm` | string | no       | `lanczos` | Scaling algorithm: `nearest`, `bilinear`, `bicubic`, `lanczos`, `mitchell`. |
 
@@ -120,7 +120,7 @@ An XO stream consists of:
 
 The output is a base64-encoded byte sequence containing:
 
-```
+```format
 [4 bytes: width (big-endian uint32)]
 [4 bytes: height (big-endian uint32)]
 [1 byte:  color_space  (0=Gray, 1=RGB, 2=CMYK)]
@@ -214,7 +214,7 @@ inserts them directly without additional compression. The pixel data is stored i
 
 ## Phase 1: Core Image Processing Module
 
-### Goals
+### Phase 1 Goals
 
 - Create `src/reporting/` directory with the image processing core.
 - Implement base64 decode/encode, ImageMagick initialization, format mapping, and the XO encoder.
@@ -222,7 +222,7 @@ inserts them directly without additional compression. The pixel data is stored i
 
 ### Directory Structure
 
-```
+```structure
 src/reporting/
   reporting_service.c       # Service init/cleanup, name
   reporting_service.h       # Service header with swagger annotations
@@ -240,7 +240,7 @@ src/reporting/
     image_scale_core.h
 ```
 
-### Tasks
+### Phase 1 Tasks
 
 1. **Create `src/reporting/reporting_service.h`**: Service-level swagger annotations (`//@ swagger:tag "Reporting Service"`).
 
@@ -291,42 +291,83 @@ src/reporting/
 
 ## Phase 2: API Endpoint Wiring
 
-### Goals
+### Phase 2 Goals
 
 - Register the endpoint in the API service.
-- Add swagger annotations.
+- Ensure swagger annotations are discovered (see layout decision below).
 - Add to JSON endpoint and auth lists.
+- Confirm JWT middleware + disabled-subsystem behavior.
 
-### Tasks
+### Phase 2 Status Note (post–Phase 1)
+
+Core handler and swagger annotations already exist under `src/reporting/`. Launch/landing
+already call `reporting_service_init` / `cleanup`. Phase 2 is **wiring only**, not
+re-implementing the handler — but swagger discovery and include paths differ from the
+original Phase 2 draft (corrected below).
+
+### Phase 2 Tasks
 
 1. **Edit `src/api/api_service.c`**:
-   - Add `#include "reporting/reporting_service.h"` and `#include "reporting/image_scale/image_scale.h"`.
-   - Add route in `handle_api_request()`:
+   - Include with project path style (not relative `"reporting/..."`):
+
+     ```c
+     #include <src/reporting/image_scale/image_scale.h>
+     ```
+
+     (`reporting_service.h` is optional here; the handler does not require it at the
+     route layer.)
+
+   - Add route in `handle_api_request()` (near mailrelay routes):
+
      ```c
      else if (strcmp(path, "reporting/image_scale") == 0) {
          return handle_reporting_image_scale_request(connection, url, method, upload_data,
                                                       upload_data_size, con_cls);
      }
      ```
-   - Add `"reporting/image_scale"` to the `json_endpoints[]` array in `api_service_endpoint_expects_json()`.
-   - Add `"reporting/image_scale"` to the `protected_endpoints[]` array in `api_service_endpoint_requires_auth()` (reporting endpoints require JWT).
+
+   - Add `"reporting/image_scale"` to `json_endpoints[]` in `api_service_endpoint_expects_json()`.
+   - Add `"reporting/image_scale"` to `protected_endpoints[]` in `api_service_endpoint_requires_auth()`
+     (plan decision: reporting requires JWT via middleware — handler does **not** currently
+     re-validate JWT itself; middleware is required for auth).
    - Add log line in `register_api_endpoints()` for the new endpoint.
 
-2. **Edit `src/launch/launch.c`**: Add `launch_reporting_subsystem()` call in the launch plan.
+2. **Launch wiring**: **Already done in Phase 0** (`launch_reporting_subsystem` /
+   `land_reporting_subsystem` / readiness). No further launch.c work unless registration
+   log text is desired.
 
-3. **Swagger**: Verify `swagger-generate.sh` picks up the new annotations. The script scans `src/api/*/` for service directories and endpoint subdirectories. Since Reporting is under `src/api/reporting/`, it will be discovered automatically.
+3. **Swagger layout (required decision — see Phase 2 Assessment)**:
+   - `payloads/swagger-generate.sh` scans **only** `src/api/*/` for `*_service.h` and
+     endpoint headers. Annotations currently live under `src/reporting/`, so they will
+     **not** be discovered as-is.
+   - Preferred approach (matches mailrelay): add a thin API surface under
+     `src/api/reporting/`:
+     - `src/api/reporting/reporting_service.h` — service-level swagger tags (may mirror
+       or `#include` / duplicate annotations from `src/reporting/reporting_service.h`)
+     - `src/api/reporting/image_scale/image_scale.h` — endpoint swagger + thin declare
+       of `handle_reporting_image_scale_request` (implementation stays in
+       `src/reporting/image_scale/image_scale.c`)
+   - Alternative: extend `swagger-generate.sh` to also scan `src/reporting/`. Avoid unless
+     there is a strong reason not to follow the mailrelay split.
+
+4. **Auth / JSON middleware smoke** (manual or minimal check before Phase 3):
+   - With Reporting disabled: expect 503 from handler (`Reporting disabled`).
+   - With Reporting enabled, no JWT: expect 401 from middleware.
+   - With JWT + valid body: expect 200 (full matrix is Phase 3 / Test 27).
 
 ### Stage Gate 2 — Validation
 
 - **Build**: `zsh -ic 'mkt'` succeeds.
-- **Swagger**: Run `swagger-generate.sh` and verify `/reporting/image_scale` appears in `swagger.json`.
+- **Swagger**: Run `swagger-generate.sh` and verify `/api/reporting/image_scale` (or
+  configured path) appears in `swagger.json` under Reporting Service.
 - **cppcheck**: `zsh -ic 'mkp'` passes.
+- **Optional smoke**: one curl with/without JWT against a local binary (full blackbox is Phase 3).
 
 ---
 
 ## Phase 3: Blackbox Test (Test 27)
 
-### Goals
+### Phase 3 Goals
 
 - Create `tests/test_27_reporting_image_scale.sh`.
 - Create test configuration JSON.
@@ -435,12 +476,12 @@ DESCRIPTION="RIS"
 
 ## Phase 4: Unity Unit Test Expansion
 
-### Goals
+### Phase 4 Goals
 
 - Expand Unity unit tests for the reporting module to improve coverage.
 - Target high-value functions that are testable in isolation.
 
-### Tasks
+### PHase 4 Tasks
 
 1. **`tests/unity/src/reporting/base64_utils_test.c`**: Test base64 encode/decode round-trip, data URI stripping, empty input, invalid characters.
 
@@ -462,12 +503,12 @@ DESCRIPTION="RIS"
 
 ## Phase 5: SVG Considerations & Edge Cases
 
-### Goals
+### Phase 5 Goals
 
 - Handle SVG input and output properly.
 - Handle edge cases like animated images, multi-frame images, EXIF orientation.
 
-### Tasks
+### Phase 5 Tasks
 
 1. **SVG input**: When reading an SVG, ImageMagick rasterizes it. The `density` setting controls the output resolution. Ensure `density` is set from the `dpi` parameter before reading.
 
@@ -490,13 +531,13 @@ DESCRIPTION="RIS"
 
 ## Phase 6: Performance & Limits
 
-### Goals
+### Phase 6 Goals
 
 - Enforce input/output size limits.
 - Add timeout for long-running operations.
 - Document performance characteristics.
 
-### Tasks
+### Phase 6 Tasks
 
 1. **Size limits**: In `image_scale.c`, check `Content-Length` or accumulated buffer size against `ReportingConfig.MaxInputBytes`. Check output blob size against `MaxOutputBytes`.
 
@@ -516,27 +557,27 @@ DESCRIPTION="RIS"
 
 ## Phase 7: Documentation & Closeout
 
-### Goals
+### Phase 7 Goals
 
 - Add documentation for the Reporting service.
 - Update all index files.
 - Move plan to `complete/` when done.
 
-### Tasks
+### Phase 7 Tasks
 
-1. **Create `docs/H/api/reporting/reporting_endpoints.md`**: API documentation for the Reporting service.
+1. **Create `docs/H/api/reporting/reporting_endpoints.md`**: Done — API documentation for the Reporting service.
 
-2. **Update `docs/H/plans/README.md`**: Add link to `IMAGE_PLAN.md` in the active plans section.
+2. **Update `docs/H/plans/README.md`**: Done — removed from active; listed under completed as `IMAGE_PLAN_COMPLETE.md`.
 
-3. **Update `docs/H/INSTRUCTIONS.md`**: Add `tests/test_27_reporting_image_scale.sh` to the test list.
+3. **Update `docs/H/INSTRUCTIONS.md`**: Done earlier (Test 27 already listed).
 
-4. **Update `docs/H/tests/TESTING.md`**: Add Test 27 to the test list.
+4. **Update `docs/H/tests/TESTING.md`**: Done earlier (Test 27 already listed); Test 27 md filled in.
 
-5. **Update `docs/H/SITEMAP.md`**: Add links to new documentation files.
+5. **Update `docs/H/SITEMAP.md`**: Done — reporting API, Test 27, complete plan.
 
-6. **Update `docs/H/STRUCTURE.md`**: Add new source files.
+6. **Update `docs/H/STRUCTURE.md`**: Done — reporting sources, config, launch/landing, test 27.
 
-7. **Update `RELEASES.md`**: Note the new Reporting service.
+7. **Update `RELEASES.md`**: Done — 2026-07-29 entry + daily notes.
 
 ### Stage Gate 7 — Validation
 
@@ -583,6 +624,7 @@ ${ZLIB_INCLUDE_DIRS}
 ```
 
 Add `MAGICKWAND_CFLAGS` and `ZLIB_CFLAGS` to the compile commands in:
+
 - `hydrogen_add_executable_target()` in `CMakeLists-init.cmake`
 - The coverage object file loop in `CMakeLists-coverage.cmake`
 
@@ -604,7 +646,7 @@ The reporting module does not require database, network, or threading mocks. The
 
 The swagger generation script (`payloads/swagger-generate.sh`) scans `src/api/*/` for service directories containing `*_service.h` files and endpoint subdirectories with `*.h` files containing `//@ swagger:path` annotations.
 
-### Service-level annotations (`src/reporting/reporting_service.h`):
+### Service-level annotations (`src/reporting/reporting_service.h`)
 
 ```c
 //@ swagger:title Reporting Service API
@@ -613,7 +655,7 @@ The swagger generation script (`payloads/swagger-generate.sh`) scans `src/api/*/
 //@ swagger:tag "Reporting Service" Provides image processing and conversion services.
 ```
 
-### Endpoint-level annotations (`src/reporting/image_scale/image_scale.h`):
+### Endpoint-level annotations (`src/reporting/image_scale/image_scale.h`)
 
 ```c
 //@ swagger:path /api/reporting/image_scale
@@ -639,17 +681,18 @@ Existing: `sample.png` (256x256 PNG).
 
 To add:
 
-| File          | Source          | How to create                                              |
-| ------------- | --------------- | ---------------------------------------------------------- |
+| File          | Source          | How to create                                                |
+| ------------- | --------------- | ------------------------------------------------------------ |
 | `sample.bmp`  | Generated       | Use ImageMagick: `convert -size 1920x1080 xc:red sample.bmp` |
-| `sample.jpg`  | Generated       | `convert -size 800x600 plasma: sample.jpg`                 |
-| `sample.webp` | Generated       | `convert -size 512x512 plasma: sample.webp`                |
-| `sample.ico`  | Generated       | `convert -size 64x64 xc:blue sample.ico`                   |
-| `sample.svg`  | Hand-written    | Simple SVG with a rectangle and circle.                    |
+| `sample.jpg`  | Generated       | `convert -size 800x600 plasma: sample.jpg`                   |
+| `sample.webp` | Generated       | `convert -size 512x512 plasma: sample.webp`                  |
+| `sample.ico`  | Generated       | `convert -size 64x64 xc:blue sample.ico`                     |
+| `sample.svg`  | Hand-written    | Simple SVG with a rectangle and circle.                      |
 
 ### Test Framework
 
 The test script will use the existing test framework (`tests/lib/framework.sh`) which provides:
+
 - `setup_test_environment` — sets up paths, counters, etc.
 - `print_subtest`, `print_result`, `print_message` — output formatting.
 - `validate_config_file` — validates JSON config.
@@ -786,39 +829,365 @@ The `Reporting` section in JSON config:
 
 ## Open Questions & Considerations
 
-1. **MagickWand version**: The system may have ImageMagick 6 or 7. The pkg-config name differs (`MagickWand` vs `MagickWand-7.Q16HDRI`). The CMake should try the HDRI variant first, then fall back. The version function for dependency checking is `MagickGetVersion` (ImageMagick 7) or `MagickCoreGetVersion` (ImageMagick 6).
+Status legend: **Resolved** | **Deferred** | **Open (Phase 2)** | **Open (later)**
 
-2. **zlib dependency**: The XO encoder uses `compress2()` from zlib for FlateDecode compression. zlib is already available as a transitive dependency through brotli and OpenSSL, but must be added explicitly to `pkg_check_modules` and `HYDROGEN_BASE_LIBS` in CMake. zlib must also be added to `tests/test_14_library_dependencies.sh` and `src/utils/utils_dependency.c`.
+1. **MagickWand version** — **Resolved (Phase 0)**: Using `MagickWand-7.Q16HDRI` via pkg-config; environment verified ImageMagick 7.1.x. No IM6 fallback implemented (acceptable for current hosts).
 
-3. **SVG rasterization**: SVG input requires a `density` setting before reading. The `dpi` parameter controls this. For SVG output, ImageMagick's SVG coder produces a vector SVG with the scaled viewport.
+2. **zlib dependency** — **Resolved (Phase 0/1)**: Explicit CMake + `utils_dependency` + XO `compress2()`.
 
-2. **SVG rasterization**: SVG input requires a `density` setting before reading. The `dpi` parameter controls this. For SVG output, ImageMagick's SVG coder produces a vector SVG with the scaled viewport.
+3. **SVG rasterization** — **Resolved (Phase 5)**: `MagickSetOption(density)` + `MagickSetResolution` before `MagickReadImageBlob`; Test 27 SVG→PNG.
 
-3. **Animated images**: GIF and animated WebP have multiple frames. The initial implementation processes only the first frame. This should be documented.
+4. **Animated images** — **Resolved (Phase 5)**: `scale_image_core_keep_first_frame()`; first frame only (document in Phase 7 API docs).
 
-4. **Color space handling**: When converting from CMYK to RGB (or vice versa), ImageMagick handles the conversion. The XO format reports the color space in its header.
+5. **Color space / transparency** — **Resolved (Phase 5)**: Flatten alpha onto white for JPEG/BMP; preserve alpha for PNG/WEBP; strip ICC on web formats.
 
-5. **Memory limits**: ImageMagick has its own resource limits. We should set `MAGICK_MEMORY_LIMIT` and `MAGICK_MAP_LIMIT` via `MagickSetResourceLimit()` to prevent memory exhaustion from malicious inputs.
+6. **Memory limits** — **Resolved (Phase 6)**: `reporting_service_apply_resource_limits()` sets Memory/Map/Width/Height/Area/Time on init.
 
-6. **Thread safety**: MagickWand is not thread-safe by default. Each request should create and destroy its own MagickWand instance. The `reporting_service_init()` function should call `MagickWandGenesis()` and `reporting_service_cleanup()` should call `MagickWandTerminus()`.
+7. **Thread safety** — **Resolved (Phase 1)**: Per-request wand; genesis/terminus in `reporting_service_init`/`cleanup` via launch/landing.
 
-7. **Error messages**: ImageMagick error messages can be verbose. The endpoint should extract a concise error message from the MagickException.
+8. **Error messages** — **Partially done (Phase 1)**: `MagickGetException` → heap string on core failures; can refine wording later.
 
-8. **Base64 line length**: The `data:` URI spec allows base64 with or without line breaks. The decoder should handle both.
+9. **Base64 line length** — **Resolved (Phase 1)**: `utils_base64_decode` strips whitespace.
 
-9. **JPEG quality**: Currently defaults to ImageMagick's default (92). A future extension could add a `quality` parameter.
+10. **JPEG quality** — **Open (later)**: Default ImageMagick quality; optional `quality` param is a future extension.
 
-10. **ICO multi-resolution**: ICO files can contain multiple resolutions. When reading, ImageMagick picks the first. When writing, a single resolution is produced.
+11. **ICO multi-resolution** — **Resolved (Phase 5 behavior)**: Same first-frame path as multi-frame; multi-res ICO not expanded (document in Phase 7).
+
+12. **CMake modification constraint** — **Resolved (waived for Phases 0–1)**: CFLAGS also required in `CMakeLists-unity.cmake` (Phase 1 lesson). Further CMake edits only if new libs appear.
+
+13. **Swagger / source layout** — **Resolved (Phase 2)**: Thin `src/api/reporting/` headers (service tag + endpoint swagger + handler prototype). Implementation stays in `src/reporting/`. Generator unchanged.
+
+14. **JWT enforcement path** — **Resolved (Phase 2)**: `reporting/image_scale` listed in `protected_endpoints[]`. Middleware rejects without JWT before body work; handler does not re-validate JWT.
+
+15. **POST size vs MaxInputBytes** — **Resolved (Phase 6 testing)**: Test 27 uses MaxIn/Out 9e6 so reporting 413 is reachable under `API_MAX_POST_SIZE` (10 MiB). Production default 50 MB still exceeds API buffer — document in Phase 7 (raise API buffer or lower default).
+
+16. **Double buffering** — **Resolved (Phase 2)**: Same pattern as conduit: JSON middleware buffers via `api_buffer_post_data` into `con_cls`; handler calls `api_buffer_post_data` again and gets `API_BUFFER_COMPLETE` with the existing buffer (no second accumulation). Safe.
+
+---
+
+## Phased Implementation Process
+
+This plan follows a review-implement-verify cycle. Each phase is executed as:
+
+1. **Review** — Assess the phase plan, confirm approach, identify risks.
+2. **Implement** — Write code, config, tests, documentation for the phase.
+3. **Verify** — Run `zsh -ic 'mkt'`, `zsh -ic 'mkp'`, and `mku` tests. Document results.
+4. **Document** — Update this plan's Working Log with outcomes and lessons learned.
+5. **Proceed** — Move to the next phase only after stage gate validation passes.
+
+### Phase Execution Order
+
+| Phase | Focus | Key Deliverables | Stage Gate |
+| ------- | ------- | ----------------- | ------------ |
+| 0 | Environment & CMake | MagickWand/zlib in CMake, ReportingConfig, launch/landing, dependency check | `mkt` builds, config test passes, dependency test passes |
+| 1 | Core image processing | base64_utils, image_format, image_xo, image_scale_core, endpoint handler | `mkt` builds, 4 Unity tests pass, `mkp` clean |
+| 2 | API endpoint wiring | Route registration, JSON/auth endpoint lists, swagger annotations | `mkt` builds, swagger.json includes endpoint, `mkp` clean |
+| 3 | Blackbox test (Test 27) | Test script, config JSON, sample images, 12 test cases | `mkt` builds, blackbox test passes, coverage checked |
+| 4 | Unity test expansion | 5 Unity test files for reporting module | All `mku` tests pass, coverage improved, `mkp` clean |
+| 5 | SVG & edge cases | SVG density, EXIF orientation, multi-frame, color profiles, transparency | Blackbox SVG tests pass, `mkt` builds |
+| 6 | Performance & limits | Size limits, dimension limits, resource limits, ASAN clean | Blackbox limit tests pass, ASAN clean, `mkt` builds |
+| 7 | Documentation & closeout | API docs, index updates, markdown lint, link check | `test_90`, `test_04`, `test_27` all pass |
+
+### Build & Test Commands
+
+All commands run via zsh to load aliases from `~/.zshrc`:
+
+```bash
+zsh -ic 'mkt'                           # Trial build (C code changes)
+zsh -ic 'mku <test_name>'               # Build and run Unity test
+zsh -ic 'mkp'                           # cppcheck (C lint)
+zsh -ic 'mks'                           # shellcheck (Bash lint)
+zsh -ic 'tests/test_27_reporting_image_scale.sh'  # Blackbox test
+extras/add_coverage.sh <source.c>       # Coverage analysis
+```
+
+### Project Conventions Checklist
+
+- [x] No `static` functions in `src/` (enforced by build)
+- [x] `#include <src/hydrogen.h>` first in all `.c` files
+- [x] `#include <src/folder/...>` style includes (no `../../..`)
+- [x] All functions have header declarations
+- [x] Use `log_this` for logging
+- [x] No GOTO
+- [x] Unity test naming: `<source>_test_<function>.c`
+- [x] Bash: use `jq` for JSON, `[[ ]]` over `[ ]`, full `${var}` declarations
+- [x] Markdown: absolute links, no line refs, headings not bold
 
 ---
 
 ## Working Log
 
-- **Phase 0**: Not started.
-- **Phase 1**: Not started.
-- **Phase 2**: Not started.
-- **Phase 3**: Not started.
-- **Phase 4**: Not started.
-- **Phase 5**: Not started.
-- **Phase 6**: Not started.
-- **Phase 7**: Not started.
+- **Phase 0**: Complete. Build passes, config test passes (11/11), dependency test passes (29/29), cppcheck clean. MagickWand+zlib CMake, ReportingConfig, SR_REPORTING launch/landing, dependency check. (Earlier note: shutdown/test_14 noise was pre-existing; `mkt` later passed shutdown cleanly after Phase 1.)
+- **Phase 1**: Complete (2026-07-29). Core under `src/reporting/`. Delivered: `reporting_service` (MagickWandGenesis/Terminus), `helpers/base64_utils` (+ shared `utils_base64_decode`), `image_format`, `image_xo`, `image_scale_core`, `image_scale` handler (**not** registered in `api_service.c`). Launch/landing call reporting_service. Unity CMake MagickWand/zlib CFLAGS. Stage gate: `mkt` OK, helper Unity 27/27 (`base64_utils` 8, `image_format` 7, `image_xo` 5, `image_scale_core` 7), launch/landing reporting Unity OK, `mkp` clean (1,859 files).
+- **Phase 2**: Complete (2026-07-29). Thin `src/api/reporting/` swagger surface; `api_service.c` route + `json_endpoints[]` + `protected_endpoints[]` + registration log. Stage gate: `mkt` OK, swagger `/reporting/image_scale` POST under Reporting Service with bearerAuth, `mkp` clean (1,861 files).
+- **Phase 3**: Complete (2026-07-29). `test_27_reporting_image_scale.sh` + config + sample images. Stage gate: 21/21 subtests, 14/14 image_scale cases, `mks` clean. MaxInputBytes set to 10 MiB in test config to match `API_MAX_POST_SIZE`.
+- **Phase 4**: Complete (2026-07-29). Handler Unity + service Unity + expanded helpers. Totals: handler 14, service 4, base64 8, format 10, xo 8, scale_core 7. `mkt`/`mkp` clean.
+- **Phase 5**: Complete (2026-07-29). SVG density+resolution before read; EXIF AutoOrient; first-frame only for multi-frame; ICC strip for web formats; JPEG/BMP alpha flatten onto white. Unity image_scale_core 10/10; test_27 23/23 (16 image cases incl. SVG→PNG, PNG→JPEG flatten). `mkt`/`mkp`/`mks` clean.
+- **Phase 6**: Complete (2026-07-29). Magick resource limits on init (memory/map 512MiB, width/height/area from MaxImageSize, time 60s). Input/output limits use 413 CONTENT_TOO_LARGE; decoded blob also checked. MaxOutputBytes on base64 length. test_27 25/25 (18 image cases: dims 400, input 413). Unity service 5, handler 14, core 10. `mkt`/`mkp`/`mks` clean. Test config MaxIn/Out 9e6 so handler limit is reachable under API_MAX_POST_SIZE.
+- **Phase 7**: Complete (2026-07-29). API docs `docs/H/api/reporting/reporting_endpoints.md`; Test 27 doc filled; SITEMAP/STRUCTURE/API_OVERVIEW/plans indexes; RELEASES 2026-07-29; plan moved to `complete/IMAGE_PLAN_COMPLETE.md`.
+
+### Progress Summary (2026-07-29)
+
+| Phase | Status | Notes |
+| ----- | ------ | ----- |
+| 0 Environment & CMake | Done | MagickWand/zlib, config, launch/landing, deps |
+| 1 Core image processing | Done | `src/reporting/*`, 4 helper Unity suites |
+| 2 API wiring | Done | Route + JSON/auth lists + thin `src/api/reporting/` |
+| 3 Blackbox Test 27 | Done | 14/14 cases, SQLite JWT, sample images |
+| 4 Unity expansion | Done | Handler + service + helper expansion |
+| 5 SVG & edge cases | Done | density, EXIF, first frame, strip, flatten |
+| 6 Performance & limits | Done | Magick resource caps, 413 input/output, blackbox |
+| 7 Documentation & closeout | Done | API docs, indexes, RELEASES, plan → complete/ |
+
+**In tree (complete):**
+
+- Config: `config_reporting.c/.h`, defaults, load/cleanup, `AppConfig.reporting`
+- Launch/landing: `launch_reporting.c`, `landing_reporting.c`, registry hooks
+- Core: `src/reporting/reporting_service.*`, `helpers/*`, `image_scale/*`
+- API surface: `src/api/reporting/reporting_service.h`, `image_scale/image_scale.h`
+- Routing: `api_service.c` — `reporting/image_scale` route, JSON + JWT middleware lists
+- Shared: `utils_base64_decode` / `utils_base64_char_value` in `utils_crypto`
+- CMake: init + coverage + **unity** MagickWand/zlib CFLAGS
+- Unity: helpers + `reporting_service_test` + `image_scale_test_handle_reporting_image_scale_request`
+- Swagger: `POST /reporting/image_scale` in `payloads/swagger.json`
+- Blackbox: `tests/test_27_reporting_image_scale.sh`, config, sample images
+- Docs: `docs/H/api/reporting/reporting_endpoints.md`, Test 27 md, indexes, RELEASES
+
+### Assessment (2026-07-28) — Initial plan feasibility
+
+**Verdict: Within abilities to implement completely.**
+
+**Environment verified:**
+
+- ImageMagick 7.1.1-47 Q16-HDRI is installed (runtime + dev headers via `ImageMagick-devel`)
+- pkg-config finds `MagickWand-7.Q16HDRI` and `MagickWand`
+- zlib is installed (`zlib-ng-compat-devel`), pkg-config finds `zlib`
+- CMake structure understood: `cmake/CMakeLists-init.cmake` and `cmake/CMakeLists-coverage.cmake`
+- Source auto-discovery via `GLOB_RECURSE` — no CMake changes needed for new `.c` files
+- Library linking and include paths must be added to CMake (see Open Question 12)
+
+**Codebase patterns verified:**
+
+- Config system: `config_forward.h` → `config.h` → `config_defaults.c` → `config.c` (pattern matches `config_scripting.*`)
+- API routing: `handle_api_request()` in `api_service.c` with `json_endpoints[]` and `protected_endpoints[]` arrays
+- Launch/landing: `launch_<subsystem>_subsystem()` in `launch.c`, `land_<subsystem>_subsystem` function pointer in `landing.c`, `SR_*` constant in `globals.h`
+- Dependency check: `lib_configs[]` array in `utils_dependency.c`
+- Unity tests: auto-discovered via `GLOB_RECURSE` in `tests/unity/src/*_test*.c`
+
+**Risks identified (Phase 0 era — largely closed):**
+
+1. CMake modification constraint — waived and completed (init + coverage; unity added in Phase 1)
+2. Phase 0 critical path — completed successfully
+3. launch/landing reporting files + SR_REPORTING — completed in Phase 0
+
+### Phase 2 Assessment (2026-07-29) — Completed
+
+**Verdict: Complete. Stage gate 2 passed.**
+
+Delivered:
+
+1. `src/api/reporting/reporting_service.h` — swagger service tag
+2. `src/api/reporting/image_scale/image_scale.h` — swagger + handler prototype (required for generator handler grep)
+3. `api_service.c` — include, route, `json_endpoints[]`, `protected_endpoints[]`, registration log
+4. `swagger-generate.sh` → `POST /reporting/image_scale` under Reporting Service with bearerAuth
+5. `mkt` / `mkp` clean
+
+Remaining open for later phases: #15 POST size ceiling before large Test 27 cases.
+
+---
+
+## Phase 2 — Lessons Learned
+
+### 1. swagger-generate requires a visible handler prototype
+
+Scanning only looks for `handle_.*_${endpoint_name}` in the endpoint `.h` under `src/api/`. A header that only `#include`s the core prototype (or only has annotations) is skipped silently — tag appears, path does not. Put the `enum MHD_Result handle_reporting_image_scale_request(...)` declaration in the thin API header.
+
+### 2. Avoid `*/` inside block comments (cppcheck)
+
+A comment like `scans src/api/*/` terminates the C block comment early and yields `Unmatched ')'` / syntaxError from cppcheck. Rephrase (e.g. "src/api service directories").
+
+### 3. JSON middleware + handler both call api_buffer_post_data
+
+When path is in `json_endpoints[]`, middleware buffers first; on the final callback the handler's `api_buffer_post_data` sees non-NULL `con_cls` and returns `API_BUFFER_COMPLETE` with the same buffer. Do not free the buffer in middleware before the handler runs.
+
+### 4. JWT for reporting is middleware-only
+
+Unlike mailrelay (handler-side auth, not on `protected_endpoints[]`), reporting relies on `protected_endpoints[]`. Do not omit the list entry assuming the handler will check JWT.
+
+---
+
+## Phase 3 — Lessons Learned
+
+### 1. Align MaxInputBytes with API_MAX_POST_SIZE for blackbox
+
+Default `MaxInputBytes` (50 MB) exceeds `API_MAX_POST_SIZE` (10 MiB). Test config must use ≤10 MiB or large BMP posts fail at the buffer layer with a generic error before reporting limits apply. 1920x1080 uncompressed BMP base64 is ~8.3 MiB — OK under 10 MiB.
+
+### 2. Build large JSON bodies via files, not shell args
+
+`jq --arg image "$huge_b64"` hits ARG_MAX. Use `jq --rawfile image path.b64` and `curl -d @body.json` so multi-megabyte payloads stay on disk.
+
+### 3. Point-units test: inches are not points
+
+Plan text “2x2 inches at 300 DPI → 600x600” means `width=144, height=144, units=pt, dpi=300` (144 pt = 2 in), not `width=2`.
+
+### 4. XO header check is endian-sensitive
+
+Verify width/height as big-endian uint32 (`00000020` for 32). Decode response base64 to a temp file and `od` the header.
+
+### 5. Single SQLite + demo JWT is enough for Test 27
+
+No multi-engine matrix required for image_scale. Pattern: `hydrogen_test_27_reporting.json` with SQLite hydrodemo, login as `Acuranzo` + demo credentials, then exercise the endpoint. Auth case is no-JWT → 401.
+
+### 6. AllowedFormats enable unsupported-format testing
+
+Set `AllowedFormats` to an explicit allow-list (omit `gif`) so “unsupported format” is a real 400 path, distinct from unknown Magick coder failures.
+
+---
+
+## Phase 4 — Lessons Learned
+
+### 1. Helper Unity already existed from Phase 1
+
+Phase 4 main gap was the endpoint handler and service lifecycle, not rewriting helper suites. Expand helpers only for uncovered lines (fallback Magick name, `format_table_has`, wand-based XO encode).
+
+### 2. MHD two-call POST pattern in Unity
+
+Mirror mailrelay: first call with body (`upload_data_size > 0`) returns `MHD_YES` while buffering; second call with empty body and size 0 completes and processes. Always `api_free_post_buffer` afterward.
+
+### 3. Do not redefine global Unity mocks
+
+`USE_MOCK_LIBMICROHTTPD` / `USE_MOCK_SYSTEM` are CMake-global. Including `mock_system.h` without needing controls is fine only if symbols exist; prefer MHD mock only when system mock APIs are unused.
+
+### 4. Tiny embedded PNG is enough for success paths
+
+A 1×1 PNG base64 plus real MagickWand covers PNG and XO success without fixtures on disk. Validation paths need no Magick at all once config is enabled.
+
+### 5. init reporting_service in setUp for Magick paths
+
+Handler success and wand XO tests require `reporting_service_init()` / `cleanup()` around each test so MagickWand genesis is active.
+
+---
+
+## Phase 5 — Lessons Learned
+
+### 1. Density alone is not enough for SVG
+
+Set both `MagickSetOption(wand, "density", …)` and `MagickSetResolution()` before `MagickReadImageBlob` so SVG rasterization honors `dpi`.
+
+### 2. Flatten before format encode
+
+Call `MagickMergeImageLayers(FlattenLayer)` with a white background while alpha is still present, then `MagickSetImageFormat` to JPEG. Flattening after format set is less reliable.
+
+### 3. MagickStripImage is web-only
+
+Strip ICC/EXIF for jpg/png/webp/gif/ico; skip bmp/svg/xo so intermediate and print-oriented paths keep metadata behavior predictable.
+
+### 4. Multi-frame: GetImage + Clear + AddImage
+
+`MagickGetNumberImages` > 1 → extract first via `MagickGetImage`, `ClearMagickWand`, `MagickAddImage`. Avoid leaving the iterator on a discarded frame.
+
+### 5. Blackbox alpha check via identify %A
+
+After JPEG round-trip, `identify -format '%A'` should be `False` or `Undefined` (not `True`).
+
+---
+
+## Phase 6 — Lessons Learned
+
+### 1. MaxInputBytes must be under API_MAX_POST_SIZE for blackbox 413
+
+If test MaxInputBytes equals 10 MiB, a payload that exceeds it also hits `api_buffer_post_data` → `API_BUFFER_ERROR` (HTTP 100/connection abort). Use MaxInputBytes=9e6 and a 9.5e6 base64 body so the handler returns 413.
+
+### 2. 413 for size, 400 for dimensions
+
+`MHD_HTTP_CONTENT_TOO_LARGE` for MaxInputBytes/MaxOutputBytes; keep 400 for MaxImageSize dimension rejects (not a payload-size problem).
+
+### 3. MaxOutputBytes applies to base64 string length
+
+Match MaxInputBytes semantics (base64 field size), not raw Magick blob bytes. Check after encode for both XO and raster paths.
+
+### 4. MagickSetResourceLimit after Genesis
+
+Call `reporting_service_apply_resource_limits()` immediately after `MagickWandGenesis()` and again on double-init so config-driven MaxImageSize can refresh width/height/area caps.
+
+### 5. size_t vs int for limit compares
+
+Use `(size_t)MaxInputBytes` comparisons, not `(int)strlen` — large base64 lengths can exceed INT_MAX edge cases and signed truncation.
+
+---
+
+## Phase 0 — Lessons Learned
+
+### 1. LaunchReadiness struct field name
+
+The `LaunchReadiness` struct (defined in `src/state/state_types.h`) uses `subsystem`, not `name`. Always check the struct definition before writing readiness check functions. The pattern is:
+
+```c
+LaunchReadiness readiness = {0};
+readiness.subsystem = SR_REPORTING;
+readiness.ready = true;
+readiness.messages = NULL;
+```
+
+### 2. MagickWand version function signature mismatch
+
+`MagickGetVersion` returns `unsigned long`, not `const char*`. The generic version-checking code in `utils_dependency.c` calls version functions as `const char *(*void_func)(void)`, which causes a segfault when applied to `MagickGetVersion`. Always add a special case for functions with non-standard signatures, similar to how OpenSSL, libtar, and libbrotlidec are handled.
+
+### 3. CMake CFLAGS must be added in two places
+
+MagickWand and zlib CFLAGS must be added to both `cmake/CMakeLists-init.cmake` (in `hydrogen_add_executable_target()`) and `cmake/CMakeLists-coverage.cmake` (in the coverage object file loop). Missing either causes compilation failures for coverage builds.
+
+### 4. SETUP.md was pre-updated
+
+The `docs/H/SETUP.md` file already contained `libmagickwand-dev` and `zlib1g-dev` in the Ubuntu build environment, apps.json, and runtime dependencies sections. No documentation changes were needed for Phase 0.
+
+### 5. test_14_library_dependencies.sh was pre-updated
+
+The test script already had `check_dependency_log "MagickWand"` and `check_dependency_log "zlib"` at lines 231-232. Only the C-side `lib_configs[]` array needed updating.
+
+### 6. Shutdown test failure is pre-existing
+
+The `mkt` shutdown test fails with no clear error message. This is not caused by Phase 0 changes — the Reporting subsystem is disabled by default and returns success (1) from both launch and landing functions when disabled.
+
+### 7. Source file discovery is fully automatic
+
+New `.c` files under `src/` are automatically picked up by `file(GLOB_RECURSE HYDROGEN_SOURCES "../src/*.c")` in `CMakeLists-init.cmake`. No CMake changes are needed for source discovery — only for library linking and include paths.
+
+---
+
+## Phase 1 — Lessons Learned
+
+### 1. MagickWand headers trip `-Wswitch-enum` under `-Werror`
+
+Including `<MagickWand/MagickWand.h>` pulls MagickCore inline headers (e.g. `pixel-accessor.h`) with incomplete `switch` over channel enums. Wrap Magick includes with:
+
+```c
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wswitch-enum"
+#include <MagickWand/MagickWand.h>
+#pragma GCC diagnostic pop
+```
+
+### 2. Unity CMake needs MagickWand/zlib CFLAGS too
+
+Phase 0 added CFLAGS to `CMakeLists-init.cmake` and `CMakeLists-coverage.cmake` only. Unity object compilation is a third path in `CMakeLists-unity.cmake` (source objects, test objects, and mock object libs). Without `${MAGICKWAND_CFLAGS}` / `${ZLIB_CFLAGS}`, Unity builds fail with `MagickWand/MagickWand.h: No such file or directory`.
+
+### 3. Prefer shared crypto base64; add standard decode
+
+`utils_base64_encode` already existed; standard `utils_base64_decode` did not (only base64url). Reporting `base64_utils` wraps shared encode/decode and adds `data:` URI stripping. Avoid duplicating alphabet tables in reporting.
+
+### 4. Module lives under `src/reporting/`, API under `src/api/` later
+
+Swagger discovery scans `src/api/*/`. Phase 1 placed the service and endpoint under `src/reporting/` for subsystem ownership (like mailrelay core vs API). Phase 2 must either move/copy swagger headers under `src/api/reporting/` or extend swagger-generate.sh — do not assume `src/reporting/` is auto-discovered for OpenAPI.
+
+### 5. Capture input dimensions before resize
+
+`scale_image_core` must return pre-scale width/height/format via out-params; after `MagickResizeImage` the wand only has output size.
+
+### 6. CMake CFLAGS are needed in three places, not two
+
+Phase 0 lesson #3 said init + coverage. Phase 1 proved **unity** is a third compile path (`CMakeLists-unity.cmake` source objects, test objects, and mock object libs). Any new pkg-config CFLAGS must be mirrored in all three.
+
+### 7. API surface vs subsystem core (mailrelay pattern)
+
+Mailrelay keeps HTTP under `src/api/mailrelay/` and core under `src/mailrelay/`. Reporting Phase 1 put both core and handler under `src/reporting/`. That is fine for implementation, but OpenAPI generation only walks `src/api/`. Phase 2 should introduce a thin `src/api/reporting/` annotation/declaration layer rather than moving all of `src/reporting/` or special-casing swagger-generate without need.

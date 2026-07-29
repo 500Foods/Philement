@@ -396,6 +396,8 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
             ${BROTLI_CFLAGS}
             ${UUID_CFLAGS}
             ${LUA_CFLAGS}
+            ${MAGICKWAND_CFLAGS}
+            ${ZLIB_CFLAGS}
             ${PROJECT_INCLUDE_FLAGS}
             -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
         DEPENDS ${SOURCE_FILE}
@@ -462,6 +464,8 @@ target_compile_options(unity_mocks PRIVATE
     ${BROTLI_CFLAGS}
     ${UUID_CFLAGS}
     ${LUA_CFLAGS}
+    ${MAGICKWAND_CFLAGS}
+    ${ZLIB_CFLAGS}
     ${PROJECT_INCLUDE_FLAGS}
 )
 
@@ -482,6 +486,8 @@ target_compile_options(unity_print_mocks PRIVATE
     ${BROTLI_CFLAGS}
     ${UUID_CFLAGS}
     ${LUA_CFLAGS}
+    ${MAGICKWAND_CFLAGS}
+    ${ZLIB_CFLAGS}
     ${PROJECT_INCLUDE_FLAGS}
 )
 
@@ -666,6 +672,10 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
             ${MICROHTTPD_CFLAGS}
             ${WEBSOCKETS_CFLAGS}
             ${BROTLI_CFLAGS}
+            ${UUID_CFLAGS}
+            ${LUA_CFLAGS}
+            ${MAGICKWAND_CFLAGS}
+            ${ZLIB_CFLAGS}
             ${PROJECT_INCLUDE_FLAGS}
             -c ${TEST_SOURCE} -o ${TEST_OUTPUT_OBJ}
         DEPENDS ${TEST_SOURCE}

@@ -33,6 +33,22 @@ typedef struct evp_pkey_st EVP_PKEY;
 char* utils_base64_encode(const unsigned char* data, size_t length);
 
 /**
+ * @brief Map one standard Base64 character to its 6-bit value
+ * @param c Character to map
+ * @return 0-63 on success, -1 if not a Base64 alphabet character
+ */
+int utils_base64_char_value(char c);
+
+/**
+ * @brief Standard Base64 decode data (RFC 4648, with optional padding)
+ * @param input Base64 encoded string (may contain whitespace)
+ * @param output_length Pointer to store the decoded data length
+ * @return Allocated buffer containing decoded data, or NULL on error
+ * @note Caller must free the returned buffer
+ */
+unsigned char* utils_base64_decode(const char* input, size_t* output_length);
+
+/**
  * @brief Base64url encode data (URL-safe base64 without padding)
  * @param data Input data to encode
  * @param length Length of input data in bytes

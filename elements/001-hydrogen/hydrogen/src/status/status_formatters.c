@@ -322,7 +322,11 @@ char* format_system_status_prometheus(const SystemMetrics *metrics) {
     // Initial buffer size - will be expanded if needed
     size_t buffer_size = 16384;
     char *output = malloc(buffer_size);
+    if (!output) {
+        return NULL;
+    }
     size_t offset = 0;
+    output[0] = '\0';
 
     // Helper macro to safely append to buffer
     #define APPEND(...) do { \

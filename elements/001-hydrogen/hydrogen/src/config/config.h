@@ -32,6 +32,8 @@
  * N. Resources (subsystem)
  * O. OIDC (subsystem)
  * P. Notify (subsystem)
+ * Q. Scripting (subsystem)
+ * R. Reporting (subsystem)
  * 
  * NOTE: threads, registry, and payload are subsystems that don't 
  * have their own sections in the config system because they are
@@ -74,6 +76,7 @@ bool is_file_readable(const char* path);
 #include "config_oidc_rp.h"              // O-RP. OIDC Relying Party
 #include "config_notify.h"               // P. Notify
 #include "config_scripting.h"            // Q. Scripting
+#include "config_reporting.h"            // R. Reporting
 
 // Support for configuration value handling and type conversion
 #include "config_utils.h"  // Includes string handling and file operations

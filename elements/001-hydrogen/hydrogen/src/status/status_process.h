@@ -20,6 +20,7 @@ char* safe_truncate(char* dest, size_t dest_size, const char* src);
 
 // File descriptor functions
 bool collect_file_descriptors(FileDescriptorInfo **descriptors, int *count);
+bool count_open_file_descriptors(int *count);
 void get_fd_info(int fd, FileDescriptorInfo *info);
 void get_socket_info(ino_t inode, char *proto, int *port);
 

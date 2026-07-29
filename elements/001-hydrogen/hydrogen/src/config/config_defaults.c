@@ -39,6 +39,7 @@
  * N. Resources - System resource limits and monitoring
  * O. OIDC - OpenID Connect authentication
  * P. Notify - Notification system
+ * R. Reporting - Image processing and reporting service
  *
  * @param config Pointer to the AppConfig structure to initialize
  * @return true on success, false on failure (memory allocation errors)
@@ -70,6 +71,7 @@ bool initialize_config_defaults(AppConfig* config) {
     initialize_config_defaults_oidc_rp(config);
     initialize_config_defaults_notify(config);
     initialize_config_defaults_scripting(config);
+    initialize_config_defaults_reporting(config);
 
     log_this(SR_CONFIG, "― Successfully initialized configuration defaults", LOG_LEVEL_DEBUG, 0);
     return true;
@@ -598,5 +600,19 @@ void initialize_config_defaults_scripting(AppConfig* config) {
         config->scripting.AllowDBModuleLoad = false;
 
         log_this(SR_CONFIG, "――― Applied config defaults for Scripting", LOG_LEVEL_DEBUG, 0);
+    }
+}
+
+// R. Reporting Configuration Defaults
+void initialize_config_defaults_reporting(AppConfig* config) {
+    if (config) {
+        config->reporting.Enabled = false;
+        config->reporting.MaxImageSize = 8192;
+        config->reporting.MaxInputBytes = 52428800;
+        config->reporting.MaxOutputBytes = 52428800;
+        config->reporting.DefaultDPI = 72;
+        config->reporting.AllowedFormats = NULL;
+
+        log_this(SR_CONFIG, "――― Applied config defaults for Reporting", LOG_LEVEL_DEBUG, 0);
     }
 }

@@ -50,7 +50,7 @@ struct curl_slist* H_lua_headers_to_slist(lua_State* L, int idx) {
         if (name && value && name_len > 0) {
             size_t buf_len = name_len + value_len + 4;
             if (buf_len > 8192) {
-                log_this(SR_LUA,
+                log_this(SR_SCRIPTING,
                          "H_lua_headers_to_slist: header '%s' too long (%zu bytes), skipping",
                          LOG_LEVEL_ALERT, 2, name, name_len + value_len);
             } else {
@@ -64,7 +64,7 @@ struct curl_slist* H_lua_headers_to_slist(lua_State* L, int idx) {
                 }
             }
         } else {
-            log_this(SR_LUA,
+            log_this(SR_SCRIPTING,
                      "H_lua_headers_to_slist: skipping non-string header (key or value)",
                      LOG_LEVEL_ALERT, 0);
         }
@@ -494,7 +494,7 @@ void H_lua_install_http(lua_State* L) {
 
     lua_getglobal(L, "H");
     if (!lua_istable(L, -1)) {
-        log_this(SR_LUA, "H_lua_install_http: H table missing",
+        log_this(SR_SCRIPTING, "H_lua_install_http: H table missing",
                  LOG_LEVEL_ERROR, 0);
         lua_pop(L, 1);
         return;

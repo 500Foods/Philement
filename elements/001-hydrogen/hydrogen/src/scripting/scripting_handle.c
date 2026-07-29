@@ -29,7 +29,7 @@
 
 // Local includes
 #include "scripting_handle.h"
-#include "scripting.h"   // SR_LUA (Phase 17)
+#include "scripting.h"   // SR_SCRIPTING (Phase 17)
 #include <src/database/database_pending.h>
 
 #define H_HANDLE_METATABLE "H.Handle"
@@ -98,7 +98,7 @@ H_Handle* H_Handle_new(lua_State* L, H_HandleKind kind) {
 
     H_Handle* h = (H_Handle*)calloc(1, sizeof(H_Handle));
     if (!h) {
-        log_this(SR_LUA, "H_Handle_new: allocation failed",
+        log_this(SR_SCRIPTING, "H_Handle_new: allocation failed",
                  LOG_LEVEL_ERROR, 0);
         // Pop the userdata so the stack is clean.
         lua_pop(L, 1);
@@ -109,7 +109,7 @@ H_Handle* H_Handle_new(lua_State* L, H_HandleKind kind) {
     h->refcount = 1;
     h->refcount_mutex_initialized = false;
     if (pthread_mutex_init(&h->refcount_mutex, NULL) != 0) {
-        log_this(SR_LUA, "H_Handle_new: refcount mutex_init failed",
+        log_this(SR_SCRIPTING, "H_Handle_new: refcount mutex_init failed",
                  LOG_LEVEL_ERROR, 0);
         free(h);
         lua_pop(L, 1);
@@ -156,14 +156,14 @@ H_Handle* H_Handle_new(lua_State* L, H_HandleKind kind) {
     // database queue's own condvar via database_queue_await_result).
     if (kind == H_HK_HTTP) {
         if (pthread_mutex_init(&h->http_mutex, NULL) != 0) {
-            log_this(SR_LUA, "H_Handle_new: mutex_init failed",
+            log_this(SR_SCRIPTING, "H_Handle_new: mutex_init failed",
                      LOG_LEVEL_ERROR, 0);
             free(h);
             lua_pop(L, 1);
             return NULL;
         }
         if (pthread_cond_init(&h->http_cond, NULL) != 0) {
-            log_this(SR_LUA, "H_Handle_new: cond_init failed",
+            log_this(SR_SCRIPTING, "H_Handle_new: cond_init failed",
                      LOG_LEVEL_ERROR, 0);
             pthread_mutex_destroy(&h->http_mutex);
             free(h);

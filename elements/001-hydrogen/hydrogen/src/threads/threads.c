@@ -191,39 +191,80 @@ size_t get_thread_stack_size(pid_t tid) {
     return stack_size;
 }
 
-// Update memory metrics for all threads in a service
+// Update memory metrics for all threads in a service.
+// Snapshot TIDs under thread_mutex, then do /proc I/O unlocked so prometheus
+// collection cannot hold the global thread registry during concurrent add/remove.
 void update_service_thread_metrics(ServiceThreads *threads) {
+    if (!threads) {
+        return;
+    }
+
+    pid_t tid_snap[MAX_SERVICE_THREADS];
+    int count = 0;
+
     MutexResult lock_result = MUTEX_LOCK(&thread_mutex, SR_THREADS_LIB);
-    if (lock_result == MUTEX_SUCCESS) {
-        // Reset service totals
-        threads->virtual_memory = 0;
-        threads->resident_memory = 0;
+    if (lock_result != MUTEX_SUCCESS) {
+        return;
+    }
 
-        // Update each thread's metrics using stack size only
-        for (int i = 0; i < threads->thread_count; i++) {
-            pid_t tid = threads->thread_tids[i];
+    count = threads->thread_count;
+    if (count > MAX_SERVICE_THREADS) {
+        count = MAX_SERVICE_THREADS;
+    }
+    for (int i = 0; i < count; i++) {
+        tid_snap[i] = threads->thread_tids[i];
+    }
+    MUTEX_UNLOCK(&thread_mutex, SR_THREADS_LIB);
 
-            if (kill(tid, 0) != 0) {
-                (void)remove_thread_internal(threads, i, true, NULL, 0);
-                i--; // Reprocess this index
-                continue;
+    size_t stack_sizes[MAX_SERVICE_THREADS];
+    bool alive[MAX_SERVICE_THREADS];
+    for (int i = 0; i < count; i++) {
+        alive[i] = (kill(tid_snap[i], 0) == 0);
+        stack_sizes[i] = alive[i] ? get_thread_stack_size(tid_snap[i]) : 0;
+    }
+
+    lock_result = MUTEX_LOCK(&thread_mutex, SR_THREADS_LIB);
+    if (lock_result != MUTEX_SUCCESS) {
+        return;
+    }
+
+    threads->virtual_memory = 0;
+    threads->resident_memory = 0;
+
+    for (int i = 0; i < threads->thread_count; ) {
+        pid_t tid = threads->thread_tids[i];
+        int snap_idx = -1;
+        for (int j = 0; j < count; j++) {
+            if (tid_snap[j] == tid) {
+                snap_idx = j;
+                break;
             }
-
-            // Get thread stack size
-            size_t stack_size = get_thread_stack_size(tid);
-
-            // Update thread metrics with stack size
-            ThreadMemoryMetrics *metrics = &threads->thread_metrics[i];
-            metrics->virtual_bytes = stack_size * 1024; // Convert KB to bytes
-            metrics->resident_bytes = stack_size * 1024; // Assume stack is resident
-
-            // Add to service totals
-            threads->virtual_memory += metrics->virtual_bytes;
-            threads->resident_memory += metrics->resident_bytes;
         }
 
-        MUTEX_UNLOCK(&thread_mutex, SR_THREADS_LIB);
+        if (snap_idx < 0 || !alive[snap_idx]) {
+            if (kill(tid, 0) != 0) {
+                (void)remove_thread_internal(threads, i, true, NULL, 0);
+                continue;
+            }
+            size_t stack_size = get_thread_stack_size(tid);
+            ThreadMemoryMetrics *metrics = &threads->thread_metrics[i];
+            metrics->virtual_bytes = stack_size * 1024;
+            metrics->resident_bytes = stack_size * 1024;
+            threads->virtual_memory += metrics->virtual_bytes;
+            threads->resident_memory += metrics->resident_bytes;
+            i++;
+            continue;
+        }
+
+        ThreadMemoryMetrics *metrics = &threads->thread_metrics[i];
+        metrics->virtual_bytes = stack_sizes[snap_idx] * 1024;
+        metrics->resident_bytes = stack_sizes[snap_idx] * 1024;
+        threads->virtual_memory += metrics->virtual_bytes;
+        threads->resident_memory += metrics->resident_bytes;
+        i++;
     }
+
+    MUTEX_UNLOCK(&thread_mutex, SR_THREADS_LIB);
 }
 
 // Get memory metrics for a specific thread

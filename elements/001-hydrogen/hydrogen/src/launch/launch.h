@@ -27,6 +27,7 @@
  * - 13. mDNS Client
  * - 14. MailRelay
  * - 15. Print
+ * - 16. Reporting
  * 
  * Each subsystem:
  * - Determines its own readiness independently
@@ -165,6 +166,7 @@ LaunchReadiness check_notify_launch_readiness(void);
 LaunchReadiness check_oidc_launch_readiness(void);
 LaunchReadiness check_resources_launch_readiness(void);
 LaunchReadiness check_scripting_launch_readiness(void);
+LaunchReadiness check_reporting_launch_readiness(void);
 
 // OIDC validation helper functions
 bool validate_oidc_issuer(const char* issuer, const char*** messages, size_t* count, size_t* capacity, bool* ready);
@@ -193,6 +195,7 @@ int launch_print_subsystem(void);
 int launch_oidc_subsystem(void);
 int launch_resources_subsystem(void);
 int launch_scripting_subsystem(void);
+int launch_reporting_subsystem(void);
 
 // Log early startup information (before any initialization)
 void log_early_info(void);

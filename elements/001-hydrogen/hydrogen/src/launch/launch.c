@@ -17,6 +17,7 @@
  * - 13. mDNS Client
  * - 14. Mail Relay
  * - 15. Print
+ * - 16. Reporting
  * - 16. Resources
  * - 17. OIDC
  * - 18. Notify
@@ -191,6 +192,7 @@ bool launch_approved_subsystems(ReadinessResults* results) {
         else if (strcmp(subsystem, SR_OIDC        ) == 0) { init_ok = (launch_oidc_subsystem()        == 1); }
         else if (strcmp(subsystem, SR_NOTIFY      ) == 0) { init_ok = (launch_notify_subsystem()      == 1); }
         else if (strcmp(subsystem, SR_SCRIPTING   ) == 0) { init_ok = (launch_scripting_subsystem()   == 1); }
+        else if (strcmp(subsystem, SR_REPORTING   ) == 0) { init_ok = (launch_reporting_subsystem()   == 1); }
 
         // Update registry state based on result
         update_subsystem_state(subsystem_id, init_ok ? SUBSYSTEM_RUNNING : SUBSYSTEM_ERROR);
