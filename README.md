@@ -53,7 +53,7 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-07-29 21:38:40 UTC
+Last updated at 2026-07-29 21:55:51 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -61,7 +61,7 @@ JSON                           450            406              0        1491497
 SVG                            232            453           7619         326877
 C                             1568          63713          57060         254859
 Text                           304            300              0         123071
-Markdown                       723          31338            243          93022
+Markdown                       723          31338            243          93025
 JavaScript                     276          10521          13627          51690
 Lua                            296           7061           4827          46852
 Bourne Shell                   142           6985          94248          36039
@@ -78,7 +78,7 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          4542         128214         193574        2455807
+SUM:                          4542         128214         193574        2455810
 -------------------------------------------------------------------------------
 2331 Files were skipped (duplicate, binary, or without source code):
   svg: 931
