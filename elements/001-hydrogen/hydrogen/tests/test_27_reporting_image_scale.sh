@@ -14,6 +14,9 @@
 # run_image_scale_cases()
 
 # CHANGELOG
+# 1.3.0 - 2026-07-29 - Fix: replace bare `exit` with ORCHESTRATION guard so that
+#                       test_00_all.sh can collect results when test is sourced
+#                       in a background subshell (run_single_test_parallel).
 # 1.2.0 - 2026-07-29 - Phase 6: oversized dimensions (400) and MaxInputBytes (413).
 # 1.1.0 - 2026-07-29 - Phase 5: SVG→PNG, PNG alpha→JPEG flatten checks.
 # 1.0.0 - 2026-07-29 - Initial blackbox coverage for Reporting image_scale (IMAGE_PLAN Phase 3).
@@ -641,4 +644,6 @@ fi
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Image scale cases: ${PASS_COUNT}/${TOTAL_COUNT} passed (${FAIL_COUNT} failed)"
 
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
-exit "${EXIT_CODE}"
+
+# Return status code if sourced, exit if run standalone
+${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
