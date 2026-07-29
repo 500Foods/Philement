@@ -1,0 +1,299 @@
+        -:    0:Source:/mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/src/reporting/image_scale/image_scale.c
+        -:    0:Graph:build/unity/src/reporting/image_scale/image_scale.gcno
+        -:    0:Data:build/unity/src/reporting/image_scale/image_scale.gcda
+        -:    0:Runs:1139
+        -:    1:/*
+        -:    2: * Reporting image_scale Endpoint Implementation
+        -:    3: */
+        -:    4:
+        -:    5:#include <src/hydrogen.h>
+        -:    6:#include <src/api/api_utils.h>
+        -:    7:
+        -:    8:#pragma GCC diagnostic push
+        -:    9:#pragma GCC diagnostic ignored "-Wswitch-enum"
+        -:   10:#include <MagickWand/MagickWand.h>
+        -:   11:#pragma GCC diagnostic pop
+        -:   12:
+        -:   13:#include <src/reporting/reporting_service.h>
+        -:   14:#include <src/reporting/helpers/base64_utils.h>
+        -:   15:#include <src/reporting/helpers/image_format.h>
+        -:   16:#include <src/reporting/helpers/image_xo.h>
+        -:   17:#include <src/reporting/helpers/image_scale_core.h>
+        -:   18:
+        -:   19:#include "image_scale.h"
+        -:   20:
+       84:   21:enum MHD_Result image_scale_send_error(struct MHD_Connection *connection,
+        -:   22:                                       const char *error,
+        -:   23:                                       const char *details,
+        -:   24:                                       unsigned int http_status) {
+       84:   25:    json_t *response = json_object();
+       84:   26:    if (!response) {
+        1:   27:        return api_send_error_and_cleanup(connection, NULL, "Failed to build error response", http_status);
+        -:   28:    }
+       83:   29:    json_object_set_new(response, "success", json_false());
+       83:   30:    json_object_set_new(response, "error", json_string(error ? error : "Error"));
+       83:   31:    if (details) {
+       78:   32:        json_object_set_new(response, "details", json_string(details));
+        -:   33:    }
+       83:   34:    enum MHD_Result result = api_send_json_response(connection, response, http_status);
+       83:   35:    json_decref(response);
+       83:   36:    return result;
+        -:   37:}
+        -:   38:
+      219:   39:enum MHD_Result handle_reporting_image_scale_request(
+        -:   40:    struct MHD_Connection *connection,
+        -:   41:    const char *url,
+        -:   42:    const char *method,
+        -:   43:    const char *upload_data,
+        -:   44:    size_t *upload_data_size,
+        -:   45:    void **con_cls) {
+        -:   46:    (void)url;
+        -:   47:
+      219:   48:    if (!connection || !method || !upload_data_size || !con_cls) {
+       20:   49:        return MHD_NO;
+        -:   50:    }
+        -:   51:
+      199:   52:    if (!app_config || !app_config->reporting.Enabled) {
+       13:   53:        return image_scale_send_error(connection, "Reporting disabled",
+        -:   54:                                      "Reporting subsystem is not enabled",
+        -:   55:                                      MHD_HTTP_SERVICE_UNAVAILABLE);
+        -:   56:    }
+        -:   57:
+      186:   58:    if (strcmp(method, "POST") != 0) {
+        5:   59:        return image_scale_send_error(connection, "Method not allowed",
+        -:   60:                                      "Only POST is supported",
+        -:   61:                                      MHD_HTTP_METHOD_NOT_ALLOWED);
+        -:   62:    }
+        -:   63:
+      181:   64:    ApiPostBuffer *buffer = NULL;
+      181:   65:    ApiBufferResult buf_result = api_buffer_post_data(method, upload_data,
+        -:   66:                                                      upload_data_size, con_cls, &buffer);
+        -:   67:
+      181:   68:    if (buf_result == API_BUFFER_ERROR) {
+        3:   69:        return MHD_YES;
+        -:   70:    }
+      178:   71:    if (buf_result == API_BUFFER_METHOD_ERROR) {
+    #####:   72:        api_free_post_buffer(con_cls);
+    #####:   73:        return image_scale_send_error(connection, "Method not allowed",
+        -:   74:                                      "Only POST is supported",
+        -:   75:                                      MHD_HTTP_METHOD_NOT_ALLOWED);
+        -:   76:    }
+      178:   77:    if (buf_result == API_BUFFER_CONTINUE) {
+      113:   78:        return MHD_YES;
+        -:   79:    }
+        -:   80:
+       65:   81:    json_t *request_json = api_parse_json_body(buffer);
+       65:   82:    api_free_post_buffer(con_cls);
+        -:   83:
+       65:   84:    if (!request_json) {
+       24:   85:        return image_scale_send_error(connection, "Invalid JSON",
+        -:   86:                                      "Request body contains invalid JSON",
+        -:   87:                                      MHD_HTTP_BAD_REQUEST);
+        -:   88:    }
+        -:   89:
+       41:   90:    json_t *j_image = json_object_get(request_json, "image");
+       41:   91:    json_t *j_format = json_object_get(request_json, "format");
+       41:   92:    json_t *j_width = json_object_get(request_json, "width");
+       41:   93:    json_t *j_height = json_object_get(request_json, "height");
+       41:   94:    json_t *j_units = json_object_get(request_json, "units");
+       41:   95:    json_t *j_dpi = json_object_get(request_json, "dpi");
+       41:   96:    json_t *j_algo = json_object_get(request_json, "scale_algorithm");
+        -:   97:
+       41:   98:    if (!json_is_string(j_image)) {
+        3:   99:        json_decref(request_json);
+        3:  100:        return image_scale_send_error(connection, "Missing parameter",
+        -:  101:                                      "Field 'image' is required and must be a string",
+        -:  102:                                      MHD_HTTP_BAD_REQUEST);
+        -:  103:    }
+       38:  104:    if (!json_is_string(j_format)) {
+        3:  105:        json_decref(request_json);
+        3:  106:        return image_scale_send_error(connection, "Missing parameter",
+        -:  107:                                      "Field 'format' is required and must be a string",
+        -:  108:                                      MHD_HTTP_BAD_REQUEST);
+        -:  109:    }
+       35:  110:    if (!json_is_integer(j_width) || !json_is_integer(j_height)) {
+        3:  111:        json_decref(request_json);
+        3:  112:        return image_scale_send_error(connection, "Missing parameter",
+        -:  113:                                      "Fields 'width' and 'height' are required integers",
+        -:  114:                                      MHD_HTTP_BAD_REQUEST);
+        -:  115:    }
+        -:  116:
+       32:  117:    const char *image_b64 = json_string_value(j_image);
+       32:  118:    const char *format = json_string_value(j_format);
+       32:  119:    int width = (int)json_integer_value(j_width);
+       32:  120:    int height = (int)json_integer_value(j_height);
+       32:  121:    const char *units = json_is_string(j_units) ? json_string_value(j_units) : "px";
+    #####:  122:    int dpi = json_is_integer(j_dpi) ? (int)json_integer_value(j_dpi)
+       32:  123:                                     : app_config->reporting.DefaultDPI;
+       32:  124:    if (dpi <= 0) {
+        3:  125:        dpi = 72;
+        -:  126:    }
+      32*:  127:    const char *algorithm = json_is_string(j_algo) ? json_string_value(j_algo) : "lanczos";
+        -:  128:
+        -:  129:    // Size limits on base64 input length (413 Payload Too Large)
+       32:  130:    size_t input_b64_len = strlen(image_b64);
+       32:  131:    if (app_config->reporting.MaxInputBytes > 0 &&
+       32:  132:        input_b64_len > (size_t)app_config->reporting.MaxInputBytes) {
+        3:  133:        json_decref(request_json);
+        3:  134:        return image_scale_send_error(connection, "Input too large",
+        -:  135:                                      "Base64 image exceeds MaxInputBytes",
+        -:  136:                                      MHD_HTTP_CONTENT_TOO_LARGE);
+        -:  137:    }
+        -:  138:
+       29:  139:    if (!format_is_supported(format, app_config->reporting.AllowedFormats)) {
+        3:  140:        json_decref(request_json);
+        3:  141:        return image_scale_send_error(connection, "Unsupported format",
+        -:  142:                                      "Requested format is not allowed",
+        -:  143:                                      MHD_HTTP_BAD_REQUEST);
+        -:  144:    }
+        -:  145:
+       26:  146:    int px_w = 0;
+       26:  147:    int px_h = 0;
+       26:  148:    if (!parse_dimensions(width, height, units, dpi, &px_w, &px_h)) {
+        3:  149:        json_decref(request_json);
+        3:  150:        return image_scale_send_error(connection, "Invalid dimensions",
+        -:  151:                                      "Could not convert width/height with given units",
+        -:  152:                                      MHD_HTTP_BAD_REQUEST);
+        -:  153:    }
+        -:  154:
+       23:  155:    if (app_config->reporting.MaxImageSize > 0 &&
+       23:  156:        (px_w > app_config->reporting.MaxImageSize ||
+       20:  157:         px_h > app_config->reporting.MaxImageSize)) {
+        3:  158:        json_decref(request_json);
+        3:  159:        return image_scale_send_error(connection, "Dimensions too large",
+        -:  160:                                      "Requested dimensions exceed MaxImageSize",
+        -:  161:                                      MHD_HTTP_BAD_REQUEST);
+        -:  162:    }
+        -:  163:
+       20:  164:    size_t blob_len = 0;
+       20:  165:    unsigned char *blob = reporting_base64_decode(image_b64, &blob_len);
+       20:  166:    if (!blob) {
+        3:  167:        json_decref(request_json);
+        3:  168:        return image_scale_send_error(connection, "Invalid image data",
+        -:  169:                                      "Base64 decode failed",
+        -:  170:                                      MHD_HTTP_BAD_REQUEST);
+        -:  171:    }
+        -:  172:
+        -:  173:    // Decoded binary size must also respect MaxInputBytes
+       17:  174:    if (app_config->reporting.MaxInputBytes > 0 &&
+       17:  175:        blob_len > (size_t)app_config->reporting.MaxInputBytes) {
+    #####:  176:        free(blob);
+    #####:  177:        json_decref(request_json);
+    #####:  178:        return image_scale_send_error(connection, "Input too large",
+        -:  179:                                      "Decoded image exceeds MaxInputBytes",
+        -:  180:                                      MHD_HTTP_CONTENT_TOO_LARGE);
+        -:  181:    }
+        -:  182:
+       17:  183:    char *core_err = NULL;
+       17:  184:    size_t in_w = 0;
+       17:  185:    size_t in_h = 0;
+       17:  186:    char *input_format = NULL;
+       17:  187:    MagickWand *wand = scale_image_core(blob, blob_len, width, height, units, dpi,
+        -:  188:                                        algorithm, format, &core_err,
+        -:  189:                                        &in_w, &in_h, &input_format);
+       17:  190:    free(blob);
+        -:  191:
+       17:  192:    if (!wand) {
+       3*:  193:        const char *details = core_err ? core_err : "Image processing failed";
+        3:  194:        enum MHD_Result r = image_scale_send_error(connection, "Image processing failed",
+        -:  195:                                                   details, MHD_HTTP_BAD_REQUEST);
+        3:  196:        free(core_err);
+        3:  197:        free(input_format);
+        3:  198:        json_decref(request_json);
+        3:  199:        return r;
+        -:  200:    }
+       14:  201:    free(core_err);
+        -:  202:
+       14:  203:    char *out_b64 = NULL;
+       14:  204:    const char *mime = format_to_mime(format);
+        -:  205:
+       14:  206:    if (format_is_xo(format)) {
+        3:  207:        size_t xo_b64_len = 0;
+        3:  208:        out_b64 = encode_xo_stream(wand, &xo_b64_len);
+        -:  209:        (void)xo_b64_len;
+        -:  210:    } else {
+       11:  211:        size_t out_blob_len = 0;
+       11:  212:        unsigned char *out_blob = MagickGetImageBlob(wand, &out_blob_len);
+       11:  213:        if (!out_blob || out_blob_len == 0) {
+    #####:  214:            char *ex = scale_image_core_exception(wand);
+    #####:  215:            enum MHD_Result r = image_scale_send_error(connection, "Encode failed",
+        -:  216:                                                       ex ? ex : "MagickGetImageBlob failed",
+        -:  217:                                                       MHD_HTTP_INTERNAL_SERVER_ERROR);
+    #####:  218:            free(ex);
+    #####:  219:            free(input_format);
+    #####:  220:            DestroyMagickWand(wand);
+    #####:  221:            json_decref(request_json);
+    #####:  222:            return r;
+        -:  223:        }
+        -:  224:
+       11:  225:        out_b64 = reporting_base64_encode(out_blob, out_blob_len);
+       11:  226:        MagickRelinquishMemory(out_blob);
+        -:  227:    }
+        -:  228:
+       14:  229:    if (!out_b64) {
+    #####:  230:        free(input_format);
+    #####:  231:        DestroyMagickWand(wand);
+    #####:  232:        json_decref(request_json);
+    #####:  233:        return image_scale_send_error(connection, "Encode failed",
+        -:  234:                                      "Failed to encode output image",
+        -:  235:                                      MHD_HTTP_INTERNAL_SERVER_ERROR);
+        -:  236:    }
+        -:  237:
+        -:  238:    // MaxOutputBytes limits base64 payload size (matches MaxInputBytes semantics)
+       14:  239:    if (app_config->reporting.MaxOutputBytes > 0 &&
+       14:  240:        strlen(out_b64) > (size_t)app_config->reporting.MaxOutputBytes) {
+        3:  241:        free(out_b64);
+        3:  242:        free(input_format);
+        3:  243:        DestroyMagickWand(wand);
+        3:  244:        json_decref(request_json);
+        3:  245:        return image_scale_send_error(connection, "Output too large",
+        -:  246:                                      "Encoded image exceeds MaxOutputBytes",
+        -:  247:                                      MHD_HTTP_CONTENT_TOO_LARGE);
+        -:  248:    }
+        -:  249:
+       11:  250:    json_t *response = json_object();
+       11:  251:    if (!response) {
+    #####:  252:        free(out_b64);
+    #####:  253:        free(input_format);
+    #####:  254:        DestroyMagickWand(wand);
+    #####:  255:        json_decref(request_json);
+    #####:  256:        return image_scale_send_error(connection, "Internal error",
+        -:  257:                                      "Failed to build response",
+        -:  258:                                      MHD_HTTP_INTERNAL_SERVER_ERROR);
+        -:  259:    }
+        -:  260:
+       11:  261:    json_object_set_new(response, "success", json_true());
+       11:  262:    json_object_set_new(response, "format", json_string(format));
+       11:  263:    json_object_set_new(response, "width", json_integer(px_w));
+       11:  264:    json_object_set_new(response, "height", json_integer(px_h));
+       11:  265:    json_object_set_new(response, "units", json_string("px"));
+       11:  266:    json_object_set_new(response, "image", json_string(out_b64));
+      11*:  267:    json_object_set_new(response, "mime_type", json_string(mime ? mime : "application/octet-stream"));
+        -:  268:
+       11:  269:    if (input_format && input_format[0] != '\0') {
+        -:  270:        char in_mime[64];
+       11:  271:        snprintf(in_mime, sizeof(in_mime), "image/%s", input_format);
+      110:  272:        for (char *p = in_mime; *p; p++) {
+       99:  273:            if (*p >= 'A' && *p <= 'Z') {
+       33:  274:                *p = (char)(*p - 'A' + 'a');
+        -:  275:            }
+        -:  276:        }
+       11:  277:        json_object_set_new(response, "input_format", json_string(in_mime));
+        -:  278:    }
+        -:  279:
+       11:  280:    json_t *dims = json_object();
+       11:  281:    if (dims) {
+       11:  282:        json_object_set_new(dims, "width", json_integer((json_int_t)in_w));
+       11:  283:        json_object_set_new(dims, "height", json_integer((json_int_t)in_h));
+       11:  284:        json_object_set_new(response, "input_dimensions", dims);
+        -:  285:    }
+        -:  286:
+       11:  287:    free(out_b64);
+       11:  288:    free(input_format);
+       11:  289:    DestroyMagickWand(wand);
+       11:  290:    json_decref(request_json);
+        -:  291:
+       11:  292:    enum MHD_Result result = api_send_json_response(connection, response, MHD_HTTP_OK);
+       11:  293:    json_decref(response);
+       11:  294:    return result;
+        -:  295:}
