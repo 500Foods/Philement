@@ -35,6 +35,7 @@ CURRENT STATE (as of 2026-07-29): **v1 metadata audit complete** (Phases 0–5 +
    - Compare to a **folded** expected shape through max APPLY (or start simpler: “objects named in applied forward `code` exist”)
 4. Do **not** start Phase 6 unless asked; do **not** expand v1 metadata scope as a substitute for catalog.
 5. Metadata smoke (regression only):  
+
    ```bash
    extras/schematool/schematool.sh --migrations "$HELIUM_ROOT/acuranzo/migrations" \
      --design acuranzo --engine postgresql --schema demo \
@@ -617,7 +618,7 @@ Emit short unified diff on failure (`diff -u` or Lua) gated by `--verbose`.
 - [x] DB2 via `db2 EXPORT … LOBS TO` + Python DEL/LOB parse (CLOBs too large for VARCHAR cast).
 - [x] Schema-qualified table (`demo.queries`, `DEMO.QUERIES`, bare `queries` for SQLite).
 - [x] Connection failure → exit 1; password never printed; script files with CONNECT wiped ASAP.
-- [x] CLI `--dump-db [PATH]` + env fallbacks (ACURANZO_ / CANVAS_ / HYDROTST_).
+- [x] CLI `--dump-db [PATH]` + env fallbacks (ACURANZO_/ CANVAS_ / HYDROTST_).
 - [x] Do **not** scan product table row data; do **not** invoke `pg_dump`/`mysqldump`.
 - [~] Filter `query_dialect_a30` — deferred (single-dialect rows in practice).
 
@@ -701,13 +702,13 @@ Emit short unified diff on failure (`diff -u` or Lua) gated by `--verbose`.
 
 **Entry gate:** Phase 5 done (v1 metadata usable). Phase 6 not required.
 
-**Why this is next**
+#### Why this is next
 
 - Operators care that tables/columns/nullability/indexes exist and look right after hundreds of migrations.
 - v1 correctly ignores “CREATE said NOT NULL, later migration dropped it” for **per-ref metadata** (each file still matches its own stored `code`). Live shape only appears when probing the catalog.
 - Concrete tree example: **`acuranzo_1190.lua`** — `password_hash` DROP NOT NULL (and reverse SET NOT NULL). Metadata audit of 1190 is Y; live column nullability is the catalog signal.
 
-**Product constraints (carry forward)**
+#### Product constraints (carry forward)
 
 - Still **read-only**; still native clients (`psql` / `mysql` / `sqlite3` / `db2`); no full-DB dump tools; **no product row-data scans**.
 - One schema at a time OK initially; **skip lists** for huge or uninteresting tables.
