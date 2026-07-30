@@ -11,6 +11,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [LUA_GUIDE.md](/docs/H/LUA_GUIDE.md): Intro to Lua and writing scripts against the Hydrogen `H` host API
 - [LUA_FEATURES.md](/docs/H/LUA_FEATURES.md): Pure Lua language features and standard library recipes
 - [MAIL_GUIDE.md](/docs/H/MAIL_GUIDE.md): Mail Relay, templates, rewrites, and Lua mail handling
+- [tools/SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md): SchemaTool migration drift auditor (operator guide)
 - [RELEASES.md](/RELEASES.md): Version history index and instructions
 - [DEPLOYMENT.md](/docs/H/DEPLOYMENT.md): Standalone VPS and Kubernetes/DOKS deployment strategies, health checks, with and without databases
 - [SECRETS.md](/docs/H/SECRETS.md): Outlines how secrets are managed in the project
@@ -220,6 +221,11 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 ## Folder: /extras
 
 - [README.md](/elements/001-hydrogen/hydrogen/extras/README.md): Build scripts and diagnostic tools
+- [schematool/README.md](/elements/001-hydrogen/hydrogen/extras/schematool/README.md): SchemaTool quick start (migration drift auditor)
+
+## Folder: /docs/H/tools
+
+- [SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md): SchemaTool operator guide
 
 ## Folder: /installer
 

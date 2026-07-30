@@ -378,21 +378,20 @@ void test_llm_wait_success_with_list_returns_models(void) {
     h->kind = H_HK_LLM;
     h->consumed = false;
     h->llm_list = true;
-    h->llm_model_name = strdup("test-model");
+    h->llm_db_name = strdup("test-db");
 
     int result = H_lua_llm_wait_one(L, h);
 
     TEST_ASSERT_EQUAL(2, result);
-    TEST_ASSERT_EQUAL(LUA_TNIL, lua_type(L, 1));
-    TEST_ASSERT_EQUAL(LUA_TSTRING, lua_type(L, 2));
-    const char* err = lua_tostring(L, 2);
-    TEST_ASSERT_NOT_NULL(err);
+    TEST_ASSERT_EQUAL(LUA_TTABLE, lua_type(L, 1));
+    TEST_ASSERT_EQUAL(LUA_TNIL, lua_type(L, 2));
+    TEST_ASSERT_TRUE(h->consumed);
 
     lua_pop(L, 2);
-    free(engines_array);
+    // engines_array is free()'d by H_lua_llm_wait_one on the success path
     free(engine1);
     free(engine2);
-    free(h->llm_model_name);
+    free(h->llm_db_name);
     free(h);
     free(g_test_dbq.chat_engine_cache);
     lua_close(L);

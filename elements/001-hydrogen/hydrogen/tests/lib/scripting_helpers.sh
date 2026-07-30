@@ -26,6 +26,8 @@
 # shellcheck disable=SC2312 # Several diagnostic command substitutions intentionally swallow the inner exit code; helpers either fall back gracefully or || true the outer call
 
 # CHANGELOG
+# 2.3.0 - 2026-07-29 - Scoreboard/LLM orchestrator probes, mock LLM rewrite for
+#                      SQLite fixtures, ORCH_SCOREBOARD_PROBE / ORCH_LLM_PROBE.
 # 2.2.0 - 2026-07-28 - Record ORCH_MAIL_PROBE / ORCH_NOTIFY_PROBE markers from
 #                      Orchestrator H.mail / H.notify blackbox probes.
 # 2.1.0 - 2026-07-23 - Seed Orchestrator Lua from src before SQLite runs so
@@ -40,8 +42,12 @@
 export SCRIPTING_HELPERS_GUARD="true"
 
 SCRIPTING_HELPERS_NAME="Scripting Test Helpers"
-SCRIPTING_HELPERS_VERSION="2.1.0"
+SCRIPTING_HELPERS_VERSION="2.3.0"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${SCRIPTING_HELPERS_NAME} ${SCRIPTING_HELPERS_VERSION}" "info"
+
+# Optional mock LLM (set by test_43 before parallel runs). Empty = skip rewrite.
+SCRIPTING_MOCK_LLM_URL="${SCRIPTING_MOCK_LLM_URL:-}"
+SCRIPTING_LLM_PROBE_MODEL="${SCRIPTING_LLM_PROBE_MODEL:-}"
 
 # Log markers that mean "the Orchestrator will not start" (missing
 # scripting migrations, missing scripts table, disabled row, or no DB).
@@ -236,6 +242,8 @@ scripting_count_log_matches() {
 #   ORCH_MAIL_PROBE         - Lua-side "Orchestrator: mail_probe ok" (H.mail freeform)
 #   ORCH_NOTIFY_PROBE       - Lua-side "Orchestrator: notify_probe ok" (H.notify deferred)
 #   ORCH_HTTP_PROBE         - Lua-side "Orchestrator: http_probe ok" (H.http get/post)
+#   ORCH_SCOREBOARD_PROBE   - Lua-side "Orchestrator: scoreboard_probe ok"
+#   ORCH_LLM_PROBE          - Lua-side "Orchestrator: llm_probe ok"
 #   LIFECYCLE_COMPLETE      - full start->tick->clean-stop path succeeded
 #
 # Usage: scripting_run_engine_parallel <config_file> <log_file> \
@@ -255,6 +263,7 @@ scripting_run_engine_parallel() {
     local sqlite_db
     local web_port
     local prev_http_probe_base="${HYDROGEN_HTTP_PROBE_BASE-}"
+    local prev_llm_probe_model="${HYDROGEN_LLM_PROBE_MODEL-}"
 
     true > "${result_file}"
     true > "${log_file}"
@@ -296,15 +305,63 @@ PY
     else
         unset HYDROGEN_HTTP_PROBE_BASE || true
     fi
+    if [[ -n "${SCRIPTING_LLM_PROBE_MODEL}" ]]; then
+        export HYDROGEN_LLM_PROBE_MODEL="${SCRIPTING_LLM_PROBE_MODEL}"
+    elif [[ -n "${prev_llm_probe_model}" ]]; then
+        export HYDROGEN_LLM_PROBE_MODEL="${prev_llm_probe_model}"
+    else
+        unset HYDROGEN_LLM_PROBE_MODEL || true
+    fi
+    local run_config="${config_file}"
     if [[ -n "${sqlite_db}" ]]; then
         # Resolve relative to project root when needed
         if [[ ! -f "${sqlite_db}" && -n "${PROJECT_DIR:-}" && -f "${PROJECT_DIR}/${sqlite_db}" ]]; then
             sqlite_db="${PROJECT_DIR}/${sqlite_db}"
         fi
-        scripting_seed_orchestrator_from_source "${sqlite_db}" || true
+        # Disposable copy when mock LLM rewrite is needed so parallel runs and
+        # the shared hydrodemo fixture are not mutated.
+        if [[ -n "${SCRIPTING_MOCK_LLM_URL}" && -f "${sqlite_db}" ]]; then
+            local temp_db="${log_file%.log}_orch.sqlite"
+            local temp_cfg="${log_file%.log}_orch.json"
+            cp "${sqlite_db}" "${temp_db}" 2>/dev/null || true
+            if [[ -f "${sqlite_db}-wal" ]]; then
+                cp "${sqlite_db}-wal" "${temp_db}-wal" 2>/dev/null || true
+            fi
+            if [[ -f "${sqlite_db}-shm" ]]; then
+                cp "${sqlite_db}-shm" "${temp_db}-shm" 2>/dev/null || true
+            fi
+            if [[ -f "${temp_db}" ]]; then
+                scripting_seed_orchestrator_from_source "${temp_db}" || true
+                scripting_point_sqlite_engines_at_mock "${temp_db}" "${SCRIPTING_MOCK_LLM_URL}" || true
+                if python3 - "${config_file}" "${temp_cfg}" "${temp_db}" <<'PY' 2>/dev/null
+import json, sys, os, re
+src, dst, db_path = sys.argv[1], sys.argv[2], sys.argv[3]
+with open(src, encoding="utf-8") as fh:
+    raw = fh.read()
+def env_sub(m):
+    return os.environ.get(m.group(1), m.group(0))
+raw = re.sub(r"\$\{env\.([A-Za-z0-9_]+)\}", env_sub, raw)
+cfg = json.loads(raw)
+for conn in (cfg.get("Databases") or {}).get("Connections") or []:
+    eng = (conn.get("Engine") or "").lower()
+    if eng == "sqlite":
+        conn["Database"] = db_path
+        conn["Chat"] = True
+with open(dst, "w", encoding="utf-8") as fh:
+    json.dump(cfg, fh, indent=4)
+    fh.write("\n")
+PY
+                then
+                    run_config="${temp_cfg}"
+                    sqlite_db="${temp_db}"
+                fi
+            fi
+        else
+            scripting_seed_orchestrator_from_source "${sqlite_db}" || true
+        fi
     fi
 
-    "${hydrogen_bin}" "${config_file}" > "${log_file}" 2>&1 &
+    "${hydrogen_bin}" "${run_config}" > "${log_file}" 2>&1 &
     hydrogen_pid=$!
     disown "${hydrogen_pid}" 2>/dev/null || true
     if declare -f register_hydrogen_pid >/dev/null 2>&1; then
@@ -315,6 +372,11 @@ PY
         export HYDROGEN_HTTP_PROBE_BASE="${prev_http_probe_base}"
     else
         unset HYDROGEN_HTTP_PROBE_BASE || true
+    fi
+    if [[ -n "${prev_llm_probe_model}" ]]; then
+        export HYDROGEN_LLM_PROBE_MODEL="${prev_llm_probe_model}"
+    else
+        unset HYDROGEN_LLM_PROBE_MODEL || true
     fi
 
     sleep 0.5
@@ -410,6 +472,12 @@ PY
     if scripting_assert_log_contains "${log_file}" "Orchestrator: http_probe ok"; then
         echo "ORCH_HTTP_PROBE" >> "${result_file}"
     fi
+    if scripting_assert_log_contains "${log_file}" "Orchestrator: scoreboard_probe ok"; then
+        echo "ORCH_SCOREBOARD_PROBE" >> "${result_file}"
+    fi
+    if scripting_assert_log_contains "${log_file}" "Orchestrator: llm_probe ok"; then
+        echo "ORCH_LLM_PROBE" >> "${result_file}"
+    fi
 
     # Full lifecycle succeeds only if every stage passed.
     if "${GREP}" -q "ORCH_C_STARTED" "${result_file}" 2>/dev/null && \
@@ -432,6 +500,49 @@ scripting_set_orchestrator_status() {
     local status="$2"
     sqlite3 "${db_path}" \
         "UPDATE scripts SET status = ${status} WHERE group_name = 'Orchestrators' AND script_name = 'Orchestrator';" \
+        2>/dev/null
+}
+
+# Point SQLite lookup engine endpoints at a local mock OpenAI-compatible URL
+# (same rewrite pattern as test_59). Safe no-op when sqlite3/db missing.
+# Usage: scripting_point_sqlite_engines_at_mock <sqlite_db_path> <mock_url>
+scripting_point_sqlite_engines_at_mock() {
+    local db_path="$1"
+    local mock_url="$2"
+    if [[ -z "${db_path}" || -z "${mock_url}" || ! -f "${db_path}" ]]; then
+        return 1
+    fi
+    if ! command -v sqlite3 >/dev/null 2>&1; then
+        return 1
+    fi
+    # shellcheck disable=SC2016 # SQL uses single-quoted JSON paths for sqlite3
+    sqlite3 "${db_path}" <<SQL
+UPDATE lookups
+SET collection = json_set(
+        json_set(
+            json_set(collection, '$.endpoint', '${mock_url}'),
+            '$.engine', 'openai'
+        ),
+        '$.api key', 'mock-key'
+    )
+WHERE collection IS NOT NULL
+  AND json_valid(collection)
+  AND json_extract(collection, '$.endpoint') IS NOT NULL;
+SQL
+}
+
+# First engine display name from a SQLite fixture (for HYDROGEN_LLM_PROBE_MODEL).
+# Usage: scripting_first_engine_name <sqlite_db_path>
+scripting_first_engine_name() {
+    local db_path="$1"
+    if [[ -z "${db_path}" || ! -f "${db_path}" ]]; then
+        return 1
+    fi
+    if ! command -v sqlite3 >/dev/null 2>&1; then
+        return 1
+    fi
+    sqlite3 "${db_path}" \
+        "SELECT json_extract(collection,'\$.name') FROM lookups WHERE collection IS NOT NULL AND json_valid(collection) AND json_extract(collection,'\$.endpoint') IS NOT NULL LIMIT 1;" \
         2>/dev/null
 }
 

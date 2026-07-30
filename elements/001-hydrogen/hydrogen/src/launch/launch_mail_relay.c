@@ -279,6 +279,9 @@ static int g_launch_fail_remaining = 0;
 /* Recipient/purpose used by the OTP launch seam (Seam A). */
 #define MAILRELAY_OTP_LAUNCH_RECIPIENT "mailrelay-otp-launch@hydrogen.local"
 #define MAILRELAY_OTP_LAUNCH_CODE      "123456"
+#define MAILRELAY_OTP_LAUNCH_WRONG     "000000"
+/* Separate recipient for the max-attempts path so it does not collide with the happy path. */
+#define MAILRELAY_OTP_LAUNCH_MAX_RECIPIENT "mailrelay-otp-max@hydrogen.local"
 
 /*
  * Wait until the Mail Relay database's query cache contains the OTP insert
@@ -418,78 +421,162 @@ int launch_mail_relay_subsystem(void) {
         mailrelay_message_free(&msg);
     }
 
-    // Seam A — OTP send + self-verify (drives Test 58 coverage).
-    // Generate a fixed, known OTP, send it through the real templated worker
-    // path, then immediately verify it against the same recipient/purpose.
+    // Seam A — OTP send + wrong-code + self-verify + max-attempts (Test 58).
     // Test-only: inert unless Test.SendOtpOnLaunch is set. Restores the default
     // transport first so this send is never caught by Seam B's failing transport.
+    // Paths exercised in mailrelay_repository.c:
+    //   otp_insert, otp_get_active, otp_increment_attempts, otp_consume,
+    //   otp_mark_max_attempts.
     if (config->Test.SendOtpOnLaunch) {
         mailrelay_smtp_reset_transport();
 
-        // The synchronous OTP queries below require the database query cache to
-        // be populated. That cache is filled by the asynchronous database
-        // bootstrap, which can still be in flight when this subsystem launches,
-        // so wait for it before issuing the OTP queries.
+        // Synchronous OTP queries need the QTC populated by async DB bootstrap.
         if (!launch_wait_for_mailrelay_otp_cache(15000)) {
             log_this(SR_MAIL_RELAY,
                      "TEST: SendOtpOnLaunch skipped - Mail Relay database query cache not ready",
                      LOG_LEVEL_STATE, 0);
         } else {
-        mailrelay_otp_set_fixed_code(MAILRELAY_OTP_LAUNCH_CODE);
+            mailrelay_otp_set_fixed_code(MAILRELAY_OTP_LAUNCH_CODE);
 
-        MailRelayOtpSendRequest send_req;
-        memset(&send_req, 0, sizeof(send_req));
-        send_req.email = MAILRELAY_OTP_LAUNCH_RECIPIENT;
-        send_req.account_id = 0;
-        send_req.purpose_a66 = MAIL_OTP_PURPOSE_EMAIL_VERIFY;
-        send_req.digits = (int)strlen(MAILRELAY_OTP_LAUNCH_CODE);
-        send_req.expiry_seconds = 300;
-        send_req.max_attempts = 5;
-        send_req.priority = 0;
-        send_req.app_name = "Hydrogen";
+            MailRelayOtpSendRequest send_req;
+            memset(&send_req, 0, sizeof(send_req));
+            send_req.email = MAILRELAY_OTP_LAUNCH_RECIPIENT;
+            send_req.account_id = 0;
+            send_req.purpose_a66 = MAIL_OTP_PURPOSE_EMAIL_VERIFY;
+            send_req.digits = (int)strlen(MAILRELAY_OTP_LAUNCH_CODE);
+            send_req.expiry_seconds = 300;
+            send_req.max_attempts = 5;
+            send_req.priority = 0;
+            send_req.app_name = "Hydrogen";
 
-        MailRelayOtpSendResponse send_resp;
-        mailrelay_otp_send_response_init(&send_resp);
-        char otp_err[256];
-        otp_err[0] = '\0';
-        MailRelayStatus otp_status =
-            mailrelay_otp_generate_and_send(&send_req, &send_resp, otp_err, sizeof(otp_err));
+            MailRelayOtpSendResponse send_resp;
+            mailrelay_otp_send_response_init(&send_resp);
+            char otp_err[256];
+            otp_err[0] = '\0';
+            MailRelayStatus otp_status =
+                mailrelay_otp_generate_and_send(&send_req, &send_resp, otp_err, sizeof(otp_err));
 
-        if (otp_status == MAILRELAY_OK) {
-            log_this(SR_MAIL_RELAY,
-                     "MAILRELAY_OTP_LAUNCH_SENT recipient=" MAILRELAY_OTP_LAUNCH_RECIPIENT,
-                     LOG_LEVEL_STATE, 0);
-        } else {
-            log_this(SR_MAIL_RELAY,
-                     "MAILRELAY_OTP_LAUNCH_SEND_FAILED status=%d %s",
-                     LOG_LEVEL_STATE, 2, (int)otp_status, otp_err);
-        }
+            if (otp_status == MAILRELAY_OK) {
+                log_this(SR_MAIL_RELAY,
+                         "MAILRELAY_OTP_LAUNCH_SENT recipient=" MAILRELAY_OTP_LAUNCH_RECIPIENT,
+                         LOG_LEVEL_STATE, 0);
+            } else {
+                log_this(SR_MAIL_RELAY,
+                         "MAILRELAY_OTP_LAUNCH_SEND_FAILED status=%d %s",
+                         LOG_LEVEL_STATE, 2, (int)otp_status, otp_err);
+            }
 
-        MailRelayOtpVerifyRequest verify_req;
-        memset(&verify_req, 0, sizeof(verify_req));
-        verify_req.email = MAILRELAY_OTP_LAUNCH_RECIPIENT;
-        verify_req.purpose_a66 = MAIL_OTP_PURPOSE_EMAIL_VERIFY;
-        verify_req.code = MAILRELAY_OTP_LAUNCH_CODE;
+            // Wrong code once → otp_increment_attempts (QueryRef 115).
+            if (otp_status == MAILRELAY_OK) {
+                MailRelayOtpVerifyRequest wrong_req;
+                memset(&wrong_req, 0, sizeof(wrong_req));
+                wrong_req.email = MAILRELAY_OTP_LAUNCH_RECIPIENT;
+                wrong_req.purpose_a66 = MAIL_OTP_PURPOSE_EMAIL_VERIFY;
+                wrong_req.code = MAILRELAY_OTP_LAUNCH_WRONG;
 
-        MailRelayOtpVerifyResponse verify_resp;
-        mailrelay_otp_verify_response_init(&verify_resp);
-        char verify_err[256];
-        verify_err[0] = '\0';
-        MailRelayStatus verify_status =
-            mailrelay_otp_verify(&verify_req, &verify_resp, verify_err, sizeof(verify_err));
+                MailRelayOtpVerifyResponse wrong_resp;
+                mailrelay_otp_verify_response_init(&wrong_resp);
+                char wrong_err[256];
+                wrong_err[0] = '\0';
+                MailRelayStatus wrong_status =
+                    mailrelay_otp_verify(&wrong_req, &wrong_resp, wrong_err, sizeof(wrong_err));
 
-        if (verify_status == MAILRELAY_OK) {
-            log_this(SR_MAIL_RELAY,
-                     "MAILRELAY_OTP_LAUNCH_VERIFIED recipient=" MAILRELAY_OTP_LAUNCH_RECIPIENT,
-                     LOG_LEVEL_STATE, 0);
-        } else {
-            log_this(SR_MAIL_RELAY,
-                     "MAILRELAY_OTP_LAUNCH_VERIFY_FAILED status=%d %s",
-                     LOG_LEVEL_STATE, 2, (int)verify_status, verify_err);
-        }
+                if (wrong_status != MAILRELAY_OK &&
+                    strstr(wrong_err, "MAIL_OTP_INVALID") != NULL) {
+                    log_this(SR_MAIL_RELAY,
+                             "MAILRELAY_OTP_LAUNCH_WRONG_CODE recipient="
+                             MAILRELAY_OTP_LAUNCH_RECIPIENT,
+                             LOG_LEVEL_STATE, 0);
+                } else {
+                    log_this(SR_MAIL_RELAY,
+                             "MAILRELAY_OTP_LAUNCH_WRONG_CODE_UNEXPECTED status=%d %s",
+                             LOG_LEVEL_STATE, 2, (int)wrong_status, wrong_err);
+                }
+            }
 
-        mailrelay_otp_clear_fixed_code();
-        mailrelay_otp_send_response_free(&send_resp);
+            // Correct code → otp_consume (QueryRef 114).
+            MailRelayOtpVerifyRequest verify_req;
+            memset(&verify_req, 0, sizeof(verify_req));
+            verify_req.email = MAILRELAY_OTP_LAUNCH_RECIPIENT;
+            verify_req.purpose_a66 = MAIL_OTP_PURPOSE_EMAIL_VERIFY;
+            verify_req.code = MAILRELAY_OTP_LAUNCH_CODE;
+
+            MailRelayOtpVerifyResponse verify_resp;
+            mailrelay_otp_verify_response_init(&verify_resp);
+            char verify_err[256];
+            verify_err[0] = '\0';
+            MailRelayStatus verify_status =
+                mailrelay_otp_verify(&verify_req, &verify_resp, verify_err, sizeof(verify_err));
+
+            if (verify_status == MAILRELAY_OK) {
+                log_this(SR_MAIL_RELAY,
+                         "MAILRELAY_OTP_LAUNCH_VERIFIED recipient="
+                         MAILRELAY_OTP_LAUNCH_RECIPIENT,
+                         LOG_LEVEL_STATE, 0);
+            } else {
+                log_this(SR_MAIL_RELAY,
+                         "MAILRELAY_OTP_LAUNCH_VERIFY_FAILED status=%d %s",
+                         LOG_LEVEL_STATE, 2, (int)verify_status, verify_err);
+            }
+
+            mailrelay_otp_send_response_free(&send_resp);
+
+            // Second OTP: max_attempts=1 so one wrong code hits otp_mark_max_attempts.
+            memset(&send_req, 0, sizeof(send_req));
+            send_req.email = MAILRELAY_OTP_LAUNCH_MAX_RECIPIENT;
+            send_req.account_id = 0;
+            send_req.purpose_a66 = MAIL_OTP_PURPOSE_EMAIL_VERIFY;
+            send_req.digits = (int)strlen(MAILRELAY_OTP_LAUNCH_CODE);
+            send_req.expiry_seconds = 300;
+            send_req.max_attempts = 1;
+            send_req.priority = 0;
+            send_req.app_name = "Hydrogen";
+
+            MailRelayOtpSendResponse max_send_resp;
+            mailrelay_otp_send_response_init(&max_send_resp);
+            otp_err[0] = '\0';
+            MailRelayStatus max_send_status =
+                mailrelay_otp_generate_and_send(&send_req, &max_send_resp,
+                                                otp_err, sizeof(otp_err));
+
+            if (max_send_status == MAILRELAY_OK) {
+                log_this(SR_MAIL_RELAY,
+                         "MAILRELAY_OTP_LAUNCH_MAX_SENT recipient="
+                         MAILRELAY_OTP_LAUNCH_MAX_RECIPIENT,
+                         LOG_LEVEL_STATE, 0);
+
+                MailRelayOtpVerifyRequest max_req;
+                memset(&max_req, 0, sizeof(max_req));
+                max_req.email = MAILRELAY_OTP_LAUNCH_MAX_RECIPIENT;
+                max_req.purpose_a66 = MAIL_OTP_PURPOSE_EMAIL_VERIFY;
+                max_req.code = MAILRELAY_OTP_LAUNCH_WRONG;
+
+                MailRelayOtpVerifyResponse max_resp;
+                mailrelay_otp_verify_response_init(&max_resp);
+                char max_err[256];
+                max_err[0] = '\0';
+                MailRelayStatus max_status =
+                    mailrelay_otp_verify(&max_req, &max_resp, max_err, sizeof(max_err));
+
+                if (max_status != MAILRELAY_OK &&
+                    strstr(max_err, "MAIL_OTP_MAX_ATTEMPTS") != NULL) {
+                    log_this(SR_MAIL_RELAY,
+                             "MAILRELAY_OTP_LAUNCH_MAX_ATTEMPTS recipient="
+                             MAILRELAY_OTP_LAUNCH_MAX_RECIPIENT,
+                             LOG_LEVEL_STATE, 0);
+                } else {
+                    log_this(SR_MAIL_RELAY,
+                             "MAILRELAY_OTP_LAUNCH_MAX_ATTEMPTS_UNEXPECTED status=%d %s",
+                             LOG_LEVEL_STATE, 2, (int)max_status, max_err);
+                }
+            } else {
+                log_this(SR_MAIL_RELAY,
+                         "MAILRELAY_OTP_LAUNCH_MAX_SEND_FAILED status=%d %s",
+                         LOG_LEVEL_STATE, 2, (int)max_send_status, otp_err);
+            }
+
+            mailrelay_otp_clear_fixed_code();
+            mailrelay_otp_send_response_free(&max_send_resp);
         }
     }
 

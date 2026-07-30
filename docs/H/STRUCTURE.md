@@ -686,6 +686,9 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [extras/payload/debug_payload.c](/elements/001-hydrogen/hydrogen/extras/payload/debug_payload.c) - Payload debug analysis tool
 - [extras/payload/find_all_markers.c](/elements/001-hydrogen/hydrogen/extras/payload/find_all_markers.c) - Multiple marker detection tool
 - [extras/payload/test_payload_detection.c](/elements/001-hydrogen/hydrogen/extras/payload/test_payload_detection.c) - Payload validation testing tool
+- [extras/schematool/](/elements/001-hydrogen/hydrogen/extras/schematool/) - SchemaTool migration drift auditor (Bash + Lua)
+- [extras/schematool/README.md](/elements/001-hydrogen/hydrogen/extras/schematool/README.md) - SchemaTool quick start
+- [docs/H/tools/SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md) - SchemaTool operator guide
 
 </details>
 

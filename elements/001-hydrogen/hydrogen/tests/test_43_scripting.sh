@@ -27,17 +27,21 @@
 #
 # Lifecycle is verified via logs (start, ticks, clean shutdown). The
 # reference Orchestrator also runs one-shot data-plane probes
-# (H.query / H.wait / H.query_sync / H.altquery, H.mail / H.notify, and
-# H.http get/post against HYDROGEN_HTTP_PROBE_BASE) so blackbox coverage
-# includes the scripting query, mail, and HTTP client stacks when
+# (H.query / H.wait / H.query_sync / H.altquery, H.mail / H.notify,
+# H.http get/post against HYDROGEN_HTTP_PROBE_BASE, H.scoreboard get/cancel,
+# and H.llm list/call against a local mock LLM) so blackbox coverage
+# includes the scripting query, mail, HTTP, scoreboard, and LLM stacks when
 # fixtures are seeded and Mail Relay is enabled in the configs.
 #
 # Helpers live in tests/lib/scripting_helpers.sh.
 
 # FUNCTIONS
 # (Helper functions live in tests/lib/scripting_helpers.sh)
+# start_mock_llm / stop_mock_llm
 
 # CHANGELOG
+# 2.5.0 - 2026-07-29 - Scoreboard get/cancel + LLM list/call probes via mock LLM
+#                      for blackbox coverage of scoreboard.c / scripting_api_llm.c
 # 2.4.0 - 2026-07-28 - Orchestrator H.http probe (self WebServer health) for
 #                      blackbox coverage of scripting/http_client.c + pool
 # 2.3.0 - 2026-07-28 - Orchestrator H.mail/H.notify probe + MailRelay on configs
@@ -57,14 +61,70 @@ TEST_NAME="Scripting  {BLUE}engines: 7{RESET}"
 TEST_ABBR="SCR"
 TEST_NUMBER="43"
 TEST_COUNTER=0
-TEST_VERSION="2.4.0"
+TEST_VERSION="2.5.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
+# Mock LLM (shared by SQLite fixture rewrites; port outside test_59's 15901)
+MOCK_LLM_PORT=15439
+MOCK_LLM_SCRIPT="${SCRIPT_DIR}/lib/mock_llm/server.js"
+MOCK_LLM_PID=""
+MOCK_LLM_LOG=""
+
 # shellcheck source=tests/lib/scripting_helpers.sh # Phase 11h split for code-size cap
 source "$(dirname "${BASH_SOURCE[0]}")/lib/scripting_helpers.sh"
+
+stop_mock_llm() {
+    if [[ -z "${MOCK_LLM_PID}" ]]; then
+        return 0
+    fi
+    if ps -p "${MOCK_LLM_PID}" >/dev/null 2>&1; then
+        kill -TERM "${MOCK_LLM_PID}" 2>/dev/null || true
+        local waited=0
+        while (( waited < 20 )) && ps -p "${MOCK_LLM_PID}" >/dev/null 2>&1; do
+            sleep 0.1
+            waited=$((waited + 1))
+        done
+        if ps -p "${MOCK_LLM_PID}" >/dev/null 2>&1; then
+            kill -KILL "${MOCK_LLM_PID}" 2>/dev/null || true
+        fi
+    fi
+    wait "${MOCK_LLM_PID}" 2>/dev/null || true
+    MOCK_LLM_PID=""
+}
+
+start_mock_llm() {
+    if ! command -v node >/dev/null 2>&1; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "node not available; cannot start mock LLM"
+        return 1
+    fi
+    if [[ ! -f "${MOCK_LLM_SCRIPT}" ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "mock LLM script missing: ${MOCK_LLM_SCRIPT}"
+        return 1
+    fi
+    MOCK_LLM_LOG="${LOG_PREFIX}${TIMESTAMP}_mock_llm.log"
+    node "${MOCK_LLM_SCRIPT}" "${MOCK_LLM_PORT}" >"${MOCK_LLM_LOG}" 2>&1 &
+    MOCK_LLM_PID=$!
+    local waited=0
+    while (( waited < 50 )); do
+        if [[ -s "${MOCK_LLM_LOG}" ]] && "${GREP}" -q "^READY ${MOCK_LLM_PORT}\$" "${MOCK_LLM_LOG}"; then
+            return 0
+        fi
+        if ! ps -p "${MOCK_LLM_PID}" >/dev/null 2>&1; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "mock LLM exited early; log: ${MOCK_LLM_LOG}"
+            MOCK_LLM_PID=""
+            return 1
+        fi
+        sleep 0.1
+        waited=$((waited + 1))
+    done
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "mock LLM not READY within 5s"
+    return 1
+}
+
+trap 'stop_mock_llm || true' EXIT
 
 # Parallel execution configuration
 declare -a PARALLEL_PIDS
@@ -145,6 +205,34 @@ fi
 # ---------------------------------------------------------------------------
 
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start mock LLM for H.llm blackbox probe"
+    # shellcheck disable=SC2310 # continue without mock if node unavailable
+    if start_mock_llm; then
+        SCRIPTING_MOCK_LLM_URL="http://127.0.0.1:${MOCK_LLM_PORT}/v1/chat/completions"
+        export SCRIPTING_MOCK_LLM_URL
+        # Prefer first engine name from shared SQLite fixture when present.
+        sqlite_fixture="${PROJECT_DIR}/tests/artifacts/database/sqlite/hydrodemo.sqlite"
+        engine_name=""
+        if [[ -f "${sqlite_fixture}" ]]; then
+            engine_name=$(scripting_first_engine_name "${sqlite_fixture}" || true)
+        fi
+        if [[ -n "${engine_name}" ]]; then
+            SCRIPTING_LLM_PROBE_MODEL="${engine_name}"
+        else
+            SCRIPTING_LLM_PROBE_MODEL="ChatGPT 4o"
+        fi
+        export SCRIPTING_LLM_PROBE_MODEL
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Mock LLM READY on port ${MOCK_LLM_PORT} (model=${SCRIPTING_LLM_PROBE_MODEL})"
+        PASS_COUNT=$(( PASS_COUNT + 1 ))
+    else
+        SCRIPTING_MOCK_LLM_URL=""
+        SCRIPTING_LLM_PROBE_MODEL=""
+        export SCRIPTING_MOCK_LLM_URL
+        export SCRIPTING_LLM_PROBE_MODEL
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Mock LLM unavailable; LLM probe will list-only / skip call"
+        PASS_COUNT=$(( PASS_COUNT + 1 ))
+    fi
+
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Running scripting Orchestrator lifecycle in parallel"
 
     for test_config in "${!SCRIPTING_TEST_CONFIGS[@]}"; do

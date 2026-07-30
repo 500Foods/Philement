@@ -24,6 +24,7 @@
 # analyze_engine_results()
 
 # CHANGELOG
+# 2.5.0 - 2026-07-29 - OTP launch seam: wrong-code (otp_increment_attempts) + max-attempts (otp_mark_max_attempts) markers and DB status checks.
 # 2.4.0 - 2026-07-15 - Moved listeners from Linux ephemeral range 55800-55831 to dedicated 15800-15831 ports to prevent full-suite client connection collisions.
 # 2.3.0 - 2026-07-14 - Added launch-time OTP send + self-verify coverage subtest (Seam A, SendOtpOnLaunch) asserting MAILRELAY_OTP_LAUNCH_SENT/VERIFIED markers and DB row consumption.
 # 2.2.0 - 2026-07-09 - Parallel fail-soft: variant/engine helpers always return 0 after writing PASS/FAIL so set -e wait does not abort the suite mid-run; wait -n/wait pid tolerate non-zero children.
@@ -38,7 +39,7 @@ TEST_NAME="MailRelay API"
 TEST_ABBR="MRA"
 TEST_NUMBER="58"
 TEST_COUNTER=0
-TEST_VERSION="2.4.0"
+TEST_VERSION="2.5.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -80,7 +81,11 @@ CAPTURE_TIMEOUT=15
 OTP_WEB_PORT=15830
 OTP_MAILVAL_PORT=15831
 OTP_RECIPIENT="mailrelay-otp-launch@hydrogen.local"
+OTP_MAX_RECIPIENT="mailrelay-otp-max@hydrogen.local"
 OTP_PURPOSE=1
+# Lookup 067: consumed=1, max_attempts_exceeded=3
+OTP_STATUS_CONSUMED=1
+OTP_STATUS_MAX_ATTEMPTS=3
 
 # Mail validator paths
 MAILVAL_DIR="${PROJECT_DIR}/extras/mailval"
@@ -692,16 +697,17 @@ analyze_engine_results() {
     return 1
 }
 
-# Run the launch-time OTP send + self-verify coverage subtest (Seam A).
-# Starts Hydrogen with MailRelay.Test.SendOtpOnLaunch enabled, which fires a deterministic OTP send through the real templated worker path during launch
-# and then verifies it. Asserts the MAILRELAY_OTP_LAUNCH_SENT and MAILRELAY_OTP_LAUNCH_VERIFIED log markers and that the OTP row was consumed
-# in the database (mail_otp_codes.status_a67 = 1). Uses an isolated SQLite copy so the baseline database is not mutated.
+# Run the launch-time OTP coverage subtest (Seam A).
+# SendOtpOnLaunch: fixed OTP send, one wrong verify (increment_attempts), correct
+# verify (consume), then a second OTP with max_attempts=1 and one wrong verify
+# (mark_max_attempts). Isolated SQLite copy so the baseline is not mutated.
 run_mailrelay_otp_launch() {
     local label="$1"
     local config_file="$2"
     local web_port="$3"
     local mailval_port="$4"
     local recipient="$5"
+    local max_recipient="${6:-${OTP_MAX_RECIPIENT}}"
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}"
     local variant_tag="otp_launch_${TIMESTAMP}"
     local maildata_dir="${DIAG_TEST_DIR}/mailval_${variant_tag}"
@@ -778,25 +784,39 @@ run_mailrelay_otp_launch() {
         failed=true
     fi
     if [[ "${failed}" = false ]]; then
-        if ! "${GREP}" -q "MAILRELAY_OTP_LAUNCH_SENT" "${hydrogen_log}" 2>/dev/null; then
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: log missing MAILRELAY_OTP_LAUNCH_SENT"
-            failed=true
-        fi
-        if ! "${GREP}" -q "MAILRELAY_OTP_LAUNCH_VERIFIED" "${hydrogen_log}" 2>/dev/null; then
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: log missing MAILRELAY_OTP_LAUNCH_VERIFIED"
-            failed=true
-        fi
+        local marker
+        for marker in \
+            MAILRELAY_OTP_LAUNCH_SENT \
+            MAILRELAY_OTP_LAUNCH_WRONG_CODE \
+            MAILRELAY_OTP_LAUNCH_VERIFIED \
+            MAILRELAY_OTP_LAUNCH_MAX_SENT \
+            MAILRELAY_OTP_LAUNCH_MAX_ATTEMPTS; do
+            if ! "${GREP}" -q "${marker}" "${hydrogen_log}" 2>/dev/null; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: log missing ${marker}"
+                failed=true
+            fi
+        done
     fi
-    # DB consumed check: the launched OTP row must be marked consumed (status_a67 = 1).
+    # DB: happy-path row consumed; max-attempts row locked out.
     if [[ "${failed}" = false ]] && command -v sqlite3 >/dev/null 2>&1; then
         local consumed
-        consumed=$(sqlite3 "${sqlite_temp_file}" "SELECT COUNT(*) FROM mail_otp_codes WHERE email='${recipient}' AND purpose_a66=${OTP_PURPOSE} AND status_a67=1;" 2>/dev/null || echo "0")
+        local maxed
+        consumed=$(sqlite3 "${sqlite_temp_file}" \
+            "SELECT COUNT(*) FROM mail_otp_codes WHERE email='${recipient}' AND purpose_a66=${OTP_PURPOSE} AND status_a67=${OTP_STATUS_CONSUMED};" \
+            2>/dev/null || echo "0")
         if [[ -z "${consumed}" ]] || [[ "${consumed}" = "0" ]]; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: OTP row not consumed in DB (count=${consumed})"
             failed=true
         fi
+        maxed=$(sqlite3 "${sqlite_temp_file}" \
+            "SELECT COUNT(*) FROM mail_otp_codes WHERE email='${max_recipient}' AND purpose_a66=${OTP_PURPOSE} AND status_a67=${OTP_STATUS_MAX_ATTEMPTS};" \
+            2>/dev/null || echo "0")
+        if [[ -z "${maxed}" ]] || [[ "${maxed}" = "0" ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: OTP max-attempts row missing in DB (count=${maxed})"
+            failed=true
+        fi
     elif [[ "${failed}" = false ]]; then
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: sqlite3 unavailable; relying on MAILRELAY_OTP_LAUNCH_VERIFIED marker for consume assertion"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: sqlite3 unavailable; relying on log markers for OTP assertions"
     fi
     # Stop Hydrogen and the sink.
     # shellcheck disable=SC2310 # Continue even if shutdown fails
@@ -804,7 +824,7 @@ run_mailrelay_otp_launch() {
     stop_mailval "${mailval_pid}"
     rm -f "${sqlite_temp_config}" "${sqlite_temp_file}" "${sqlite_temp_file}-wal" "${sqlite_temp_file}-shm" 2>/dev/null || true
     if [[ "${failed}" = false ]]; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${label}: OTP sent + self-verified (SENT + VERIFIED markers, DB row consumed)"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${label}: OTP wrong-code + verify + max-attempts (markers + DB)"
         PASS_COUNT=$(( PASS_COUNT + 1 ))
         return 0
     fi
@@ -950,9 +970,9 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
     # OTP launch coverage subtest (Seam A) — isolated SQLite variant.
     # shellcheck disable=SC2310 # Continue even if the OTP subtest fails
-    if ! run_mailrelay_otp_launch "MailRelay OTP Launch (send + self-verify)" \
+    if ! run_mailrelay_otp_launch "MailRelay OTP Launch (wrong-code + verify + max-attempts)" \
             "${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_sqlite.json" \
-            "${OTP_WEB_PORT}" "${OTP_MAILVAL_PORT}" "${OTP_RECIPIENT}"; then
+            "${OTP_WEB_PORT}" "${OTP_MAILVAL_PORT}" "${OTP_RECIPIENT}" "${OTP_MAX_RECIPIENT}"; then
         EXIT_CODE=1
     fi
 

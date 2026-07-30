@@ -52,6 +52,15 @@ Separate ASAN Unity build/test variant for memory-safety gating without corrupti
 
 Distributed proxy architecture sketch. Implementation deferred.
 
+### [SCHEMATOOL PLAN](/docs/H/plans/SCHEMATOOL_PLAN.md)
+
+Standalone Bash/Lua auditor in `extras/schematool/`. **v1 metadata** (Phases 0–5):
+LOAD/APPLY + `queries` text vs Lua — shipped. **Next: Phase 7 live catalog**
+(tables/columns/nullability vs net applied shape; e.g. 1190 DROP NOT NULL) —
+higher priority than Phase 6 unit tests. Operator docs:
+[SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md). Does not replace Hydrogen migration
+runner.
+
 ---
 
 ## Completed plans
@@ -59,7 +68,7 @@ Distributed proxy architecture sketch. Implementation deferred.
 Full index: [`complete/README.md`](/docs/H/plans/complete/README.md). Highlights:
 
 | Plan | File |
-|------|------|
+| ------ | ------ |
 | Auth endpoints | [AUTH_PLAN_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md) |
 | Cap / cap_query | [CAP_PLAN_QUERY-COMPLETE.md](/docs/H/plans/complete/CAP_PLAN_QUERY-COMPLETE.md) |
 | Chat Phases 1–12 | [CHAT_PLAN_PHASE_*_COMPLETE.md](/docs/H/plans/complete/) |
