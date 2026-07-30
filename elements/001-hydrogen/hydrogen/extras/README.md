@@ -15,6 +15,7 @@ This folder contains utility scripts and one-off diagnostic tools for the Hydrog
 - [Error Handling](#error-handling)
 - [Utility Scripts](#utility-scripts)
   - [`hydrogen_flush.sh`](#hydrogen_flushsh)
+  - [`schematool/`](#schematool)
   - [`add_coverage.sh`](#add_coveragesh)
   - [`comment-analysis.sh`](#comment-analysissh)
   - [`filter-log.sh`](#filter-logsh)
@@ -218,6 +219,38 @@ Flushing DEMO databases...
 
 Flush operation completed.
 ```
+
+### `schematool/`
+
+**Purpose:** Migration Drift Auditor  
+**Description:** Compares on-disk Lua migrations (`design_NNNN.lua`) to a live
+database `queries` table (LOAD/APPLY presence and `code`/`name`/`summary`
+fidelity). Read-only Bash + Lua tool; does not replace Hydrogen LOAD/APPLY.
+
+**Docs:**
+
+- [extras/schematool/README.md](/elements/001-hydrogen/hydrogen/extras/schematool/README.md) — quick start
+- [/docs/H/tools/SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md) — full operator guide
+- [/docs/H/plans/SCHEMATOOL_PLAN.md](/docs/H/plans/SCHEMATOOL_PLAN.md) — implementation plan
+
+**Usage:**
+
+```bash
+extras/schematool/schematool.sh \
+  --migrations "$HELIUM_ROOT/acuranzo/migrations" \
+  --design acuranzo \
+  --engine sqlite \
+  --database "$HYDROGEN_ROOT/tests/artifacts/database/sqlite/hydrodemo.sqlite" \
+  --from 1000 --to 1005 \
+  --out-dir /tmp/schematool-out
+```
+
+**Features:**
+
+- Hydrogen `tables` checklist (LOAD / L.match / APPLY / A.match)
+- Fully commented remediation `.sql` (never auto-executed)
+- Orphan capture `.mig` for DB-only migration refs
+- Engines: postgresql, mysql, sqlite, db2 (native clients)
 
 ### `add_coverage.sh`
 

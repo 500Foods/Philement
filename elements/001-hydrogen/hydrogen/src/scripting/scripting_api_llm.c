@@ -260,28 +260,9 @@ int H_lua_llm_wait_one(lua_State* L, H_Handle* h) {
         return 2;
     }
 
-    if (!h->llm_model_name) {
-        lua_pushnil(L);
-        lua_pushstring(L, "H.wait: LLM handle missing model name");
-        h->consumed = true;
-        return 2;
-    }
-
     const char* db_name = h->llm_db_name ? h->llm_db_name : NULL;
-    ChatEngineConfig* engine = resolve_llm_engine(h->llm_model_name, db_name);
 
-    if (!engine) {
-        char buf[256];
-        snprintf(buf, sizeof(buf), "H.wait: model '%s' not found", h->llm_model_name);
-        lua_pushnil(L);
-        lua_pushstring(L, buf);
-        h->consumed = true;
-        return 2;
-    }
-
-    ChatProxyConfig config = chat_proxy_get_default_config();
-    config.request_timeout_seconds = h->llm_timeout > 0 ? h->llm_timeout : DEFAULT_LLM_TIMEOUT;
-
+    // H.llm.list handles have no model; resolve cache and enumerate only.
     if (h->llm_list) {
         DatabaseQueue* dbq = resolve_llm_db_queue(db_name, NULL);
         if (!dbq || !dbq->chat_engine_cache) {
@@ -316,6 +297,7 @@ int H_lua_llm_wait_one(lua_State* L, H_Handle* h) {
             lua_pushstring(L, json_str);
             lua_setfield(L, -2, "models");
             free(json_str);
+            lua_pushnil(L);
         } else {
             lua_pushnil(L);
             lua_pushstring(L, "H.wait: failed to build models list");
@@ -324,55 +306,79 @@ int H_lua_llm_wait_one(lua_State* L, H_Handle* h) {
             h->consumed = true;
             return 2;
         }
-    } else {
-        char* request_json = build_llm_request_json(h->llm_prompt, h->llm_max_tokens, h->llm_temperature);
-        if (!request_json) {
-            lua_pushnil(L);
-            lua_pushstring(L, "H.wait: failed to build request JSON");
-            h->consumed = true;
-            return 2;
-        }
 
-        ChatProxyResult* result = chat_proxy_send_with_retry(engine, request_json, &config);
-        free(request_json);
-
-        if (!result) {
-            lua_pushnil(L);
-            lua_pushstring(L, "H.wait: failed to send LLM request");
-            h->consumed = true;
-            return 2;
-        }
-
-        if (!chat_proxy_result_is_success(result)) {
-            char buf[512];
-            snprintf(buf, sizeof(buf), "H.wait: LLM request failed (%d): %s",
-                     result->http_status,
-                     result->error_message ? result->error_message : "unknown error");
-            lua_pushnil(L);
-            lua_pushstring(L, buf);
-            chat_proxy_result_destroy(result);
-            h->consumed = true;
-            return 2;
-        }
-
-        lua_createtable(L, 0, 4);
-        lua_pushinteger(L, (lua_Integer)result->http_status);
-        lua_setfield(L, -2, "status");
-
-        if (result->response_body) {
-            lua_pushstring(L, result->response_body);
-        } else {
-            lua_pushliteral(L, "");
-        }
-        lua_setfield(L, -2, "response");
-
-        lua_pushinteger(L, (lua_Integer)(result->total_time_ms));
-        lua_setfield(L, -2, "elapsed_ms");
-
-        lua_pushnil(L);
-
-        chat_proxy_result_destroy(result);
+        h->consumed = true;
+        return 2;
     }
+
+    if (!h->llm_model_name) {
+        lua_pushnil(L);
+        lua_pushstring(L, "H.wait: LLM handle missing model name");
+        h->consumed = true;
+        return 2;
+    }
+
+    ChatEngineConfig* engine = resolve_llm_engine(h->llm_model_name, db_name);
+
+    if (!engine) {
+        char buf[256];
+        snprintf(buf, sizeof(buf), "H.wait: model '%s' not found", h->llm_model_name);
+        lua_pushnil(L);
+        lua_pushstring(L, buf);
+        h->consumed = true;
+        return 2;
+    }
+
+    ChatProxyConfig config = chat_proxy_get_default_config();
+    config.request_timeout_seconds = h->llm_timeout > 0 ? h->llm_timeout : DEFAULT_LLM_TIMEOUT;
+
+    char* request_json = build_llm_request_json(h->llm_prompt, h->llm_max_tokens, h->llm_temperature);
+    if (!request_json) {
+        lua_pushnil(L);
+        lua_pushstring(L, "H.wait: failed to build request JSON");
+        h->consumed = true;
+        return 2;
+    }
+
+    ChatProxyResult* result = chat_proxy_send_with_retry(engine, request_json, &config);
+    free(request_json);
+
+    if (!result) {
+        lua_pushnil(L);
+        lua_pushstring(L, "H.wait: failed to send LLM request");
+        h->consumed = true;
+        return 2;
+    }
+
+    if (!chat_proxy_result_is_success(result)) {
+        char buf[512];
+        snprintf(buf, sizeof(buf), "H.wait: LLM request failed (%d): %s",
+                 result->http_status,
+                 result->error_message ? result->error_message : "unknown error");
+        lua_pushnil(L);
+        lua_pushstring(L, buf);
+        chat_proxy_result_destroy(result);
+        h->consumed = true;
+        return 2;
+    }
+
+    lua_createtable(L, 0, 4);
+    lua_pushinteger(L, (lua_Integer)result->http_status);
+    lua_setfield(L, -2, "status");
+
+    if (result->response_body) {
+        lua_pushstring(L, result->response_body);
+    } else {
+        lua_pushliteral(L, "");
+    }
+    lua_setfield(L, -2, "response");
+
+    lua_pushinteger(L, (lua_Integer)(result->total_time_ms));
+    lua_setfield(L, -2, "elapsed_ms");
+
+    lua_pushnil(L);
+
+    chat_proxy_result_destroy(result);
 
     h->consumed = true;
     return 2;

@@ -185,6 +185,15 @@ The [Hydrogen Build Metrics Browser](/elements/001-hydrogen/hydrogen/extras/hbm_
 
 ## Latest Test Results
 
+**IMPORTANT:** We have two main test patterns. Unity Framework unit tests are typical C unit tests that are most often used to test
+the many error paths and tends to be more exhaustive in its approach to those. It has a target of 75% coverage of instrumented lines.
+Blackbox tests are entirely separate and are structured to run the Hydrogen server directly and track its instrumented line coverage
+against the real binary implementation. This tends to be more of a 'happy paths' situation, but it also exercises code paths that are
+hard to reach with unit tests, despite numerous mocks and temporary servers. Even so, our goal here is only 60% blackbox coverage in
+part because we have so much defensive code. When we look at the covered lines from both the Unity and Blackbox approaches, we get a
+combined value - lines that are covered by either, and it has a much higher target of 85%, reflecting how both systems work together to
+cover more of the code than either approach can easily achieve independently.
+
 <div style="display: flex; flex-direction: column; align-items: start; gap: 0px;">
   <img src="/elements/001-hydrogen/hydrogen/images/COMPLETE.svg" alt="Complete Test Results" style="margin: -25px 0px 0px -20px;">
   <img src="/elements/001-hydrogen/hydrogen/images/COVERAGE.svg" alt="Coverage Test Results" style="margin: -25px 0px 0px -20px;">

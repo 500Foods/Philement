@@ -34,7 +34,8 @@
                     "Slow": {
                         "start": 2
                     }
-                }
+                },
+                "Chat": true
             }
         ]
     },

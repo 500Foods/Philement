@@ -29,12 +29,16 @@
 --   4. Once, exercises H.http.get / H.http.post (+ H.wait / *_sync) against
 --      HYDROGEN_HTTP_PROBE_BASE (set by blackbox tests to this process's
 --      WebServer) so blackbox runs cover scripting http_client + pool.
---   5. Every TICK_MS, lists active scripts whose next_run is due
+--   5. Once, exercises H.scoreboard.get / cancel plus a cancel-target job
+--      so blackbox runs cover scoreboard_find / scoreboard_request_kill.
+--   6. Once, exercises H.llm.list_sync and H.llm.call (+ H.wait) when
+--      HYDROGEN_LLM_PROBE_MODEL is set (blackbox points engines at mock LLM).
+--   7. Every TICK_MS, lists active scripts whose next_run is due
 --      (in real deployments this would be QueryRef #088; in this
 --      reference it just lists the local scoreboard and submits
 --      a sample "tick" job when the queue is idle, to exercise
 --      the worker pool end-to-end).
---   6. Exits cleanly when H.shutdown_requested() is true.
+--   8. Exits cleanly when H.shutdown_requested() is true.
 
 local TICK_MS = 1000
 
@@ -206,9 +210,124 @@ local function run_http_probe()
     end
 end
 
+-- One-shot scoreboard probe. Covers H.scoreboard.get + cancel (find / kill)
+-- and a short-lived cancel-target job in addition to the tick path's list/submit.
+local function run_scoreboard_probe()
+    if type(H.scoreboard) ~= "table" then
+        H.log.warn("Orchestrator: scoreboard_probe skipped (H.scoreboard unavailable)")
+        return
+    end
+
+    local cancel_id = H.scoreboard.submit({
+        script_name = "orchestrator.scoreboard_cancel",
+        params_json = "{\"probe\":\"cancel\"}",
+        source = "local t = 0\n"
+              .. "while t < 20000000 do\n"
+              .. "  t = t + 1\n"
+              .. "  if t % 100000 == 0 then\n"
+              .. "    H.set_current_state('cancel-target ' .. tostring(t))\n"
+              .. "  end\n"
+              .. "end\n"
+              .. "return 0\n",
+    })
+    if not cancel_id then
+        H.log.warn("Orchestrator: scoreboard_probe submit cancel target failed")
+        return
+    end
+
+    local snap = H.scoreboard.get(cancel_id)
+    if type(snap) == "table" and snap.job_id then
+        H.log.info("Orchestrator: scoreboard_probe get ok id=%s status=%s",
+                   tostring(snap.job_id), tostring(snap.status))
+    else
+        H.log.warn("Orchestrator: scoreboard_probe get unexpected")
+    end
+
+    local cancelled = H.scoreboard.cancel(cancel_id)
+    if cancelled then
+        H.log.info("Orchestrator: scoreboard_probe cancel ok id=%s", cancel_id)
+    else
+        H.log.warn("Orchestrator: scoreboard_probe cancel returned false")
+    end
+
+    -- Brief settle so worker can observe kill_requested and mark terminal.
+    H.sleep(200)
+
+    local after = H.scoreboard.get(cancel_id)
+    if type(after) == "table" then
+        H.log.info("Orchestrator: scoreboard_probe after status=%s kill=%s",
+                   tostring(after.status), tostring(after.kill_requested))
+    end
+
+    local missing = H.scoreboard.get("_____")
+    if missing == nil then
+        H.log.info("Orchestrator: scoreboard_probe miss ok")
+    end
+
+    H.log.info("Orchestrator: scoreboard_probe ok")
+end
+
+-- One-shot LLM probe. Uses HYDROGEN_LLM_PROBE_MODEL when set (test_43 + mock LLM).
+-- list_sync covers enumeration; call + wait covers chat_proxy when engines resolve.
+local function run_llm_probe()
+    if type(H.llm) ~= "table" or type(H.llm.list_sync) ~= "function" then
+        H.log.warn("Orchestrator: llm_probe skipped (H.llm unavailable)")
+        return
+    end
+
+    local list_res, list_err = H.llm.list_sync()
+    if list_err then
+        H.log.info("Orchestrator: llm_probe list_sync err: %s", tostring(list_err))
+    elseif type(list_res) == "table" and list_res.models ~= nil then
+        H.log.info("Orchestrator: llm_probe list_sync ok")
+    else
+        H.log.warn("Orchestrator: llm_probe list_sync unexpected")
+    end
+
+    local model = nil
+    if type(os) == "table" and type(os.getenv) == "function" then
+        model = os.getenv("HYDROGEN_LLM_PROBE_MODEL")
+    end
+    if type(model) ~= "string" or model == "" then
+        -- Prefer first name from list JSON string when mock/env did not set one.
+        if type(list_res) == "table" and type(list_res.models) == "string"
+           and list_res.models:find("\"name\"", 1, true) then
+            model = list_res.models:match("\"name\"%s*:%s*\"([^\"]+)\"")
+        end
+    end
+    if type(model) ~= "string" or model == "" then
+        H.log.info("Orchestrator: llm_probe call skipped (no model)")
+        if list_err == nil and type(list_res) == "table" then
+            H.log.info("Orchestrator: llm_probe ok")
+        end
+        return
+    end
+
+    local h = H.llm.call(model, "orchestrator blackbox llm probe", {
+        max_tokens = 32,
+        temperature = 0.2,
+        timeout = 15,
+    })
+    local call_res, call_err = H.wait(h)
+    if call_err then
+        H.log.info("Orchestrator: llm_probe call wait err: %s", tostring(call_err))
+    elseif type(call_res) == "table" and call_res.status then
+        H.log.info("Orchestrator: llm_probe call ok status=%s", tostring(call_res.status))
+    else
+        H.log.warn("Orchestrator: llm_probe call unexpected")
+    end
+
+    if (list_err == nil and type(list_res) == "table")
+       or (call_err == nil and type(call_res) == "table") then
+        H.log.info("Orchestrator: llm_probe ok")
+    end
+end
+
 local query_probed = false
 local mail_probed = false
 local http_probed = false
+local scoreboard_probed = false
+local llm_probed = false
 local iterations = 0
 while not H.shutdown_requested() do
     iterations = iterations + 1
@@ -240,10 +359,27 @@ while not H.shutdown_requested() do
         end
     end
 
+    if not scoreboard_probed then
+        scoreboard_probed = true
+        local ok_s, sb_err = pcall(run_scoreboard_probe)
+        if not ok_s then
+            H.log.warn("Orchestrator: scoreboard_probe failed: %s", tostring(sb_err))
+        end
+    end
+
+    if not llm_probed then
+        llm_probed = true
+        local ok_l, llm_err = pcall(run_llm_probe)
+        if not ok_l then
+            H.log.warn("Orchestrator: llm_probe failed: %s", tostring(llm_err))
+        end
+    end
+
     if #jobs == 0 then
         local id = H.scoreboard.submit({
             script_name = "orchestrator.tick",
             source = "H.set_current_state('orchestrator tick ' .. tostring(os.time()))\n"
+                     .. "H.set_result('json', 'orchestrator.tick')\n"
                      .. "return 0\n",
         })
         if id then

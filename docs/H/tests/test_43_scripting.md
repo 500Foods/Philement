@@ -14,6 +14,8 @@ This script validates:
 - One-shot data-plane probes: `H.query` / `H.wait` / `H.query_sync` / `H.altquery`
 - One-shot mail/notify probes: `H.mail.send` / `send_sync` (freeform) and `H.notify.send_sync` (deferred error) when Mail Relay is enabled
 - One-shot HTTP probes: `H.http.get` / `H.wait` and `H.http.post_sync` against this process's WebServer (`HYDROGEN_HTTP_PROBE_BASE`)
+- One-shot scoreboard probes: `H.scoreboard.get` / `cancel` (plus list/submit on the tick path)
+- One-shot LLM probes: `H.llm.list_sync` and `H.llm.call` + `H.wait` against `tests/lib/mock_llm` when available (`HYDROGEN_LLM_PROBE_MODEL`, SQLite endpoint rewrite)
 - Clean shutdown with Lua state cleanup
 - Graceful handling of disabled or missing Orchestrator rows
 
@@ -22,7 +24,7 @@ This script validates:
 - **Test Name**: Scripting End-to-End
 - **Test Abbreviation**: SCR
 - **Test Number**: 43
-- **Version**: 2.4.0
+- **Version**: 2.5.0
 
 ## Test Architecture
 
@@ -36,7 +38,8 @@ This script validates:
 | Phase 13 | Query functions | `H.query` / `H.altquery` can run from Orchestrator |
 | Phase 16 | HTTP calls | `H.http.get/post` work from Orchestrator |
 | Phase 17 | Async HTTP | Background HTTP worker pool functions |
-| Phase 18 | LLM calls | `H.llm.call` works (if models configured) |
+| Phase 11 | Scoreboard host API | `H.scoreboard.get` / `cancel` / list / submit |
+| Phase 18 | LLM calls | `H.llm.list_sync` + `H.llm.call` via mock LLM (SQLite) |
 
 ### Configuration Files
 
