@@ -920,6 +920,10 @@
                             "type": "boolean",
                             "description": "Force one transient SMTP failure on launch send (test-only coverage seam)"
                         },
+                        "MailRepoProbeOnLaunch": {
+                            "type": "boolean",
+                            "description": "Run H.mail repository helper probe on launch (test-only coverage seam)"
+                        },
                         "TestFrom": {
                             "type": "string",
                             "description": "Override From address for test message"

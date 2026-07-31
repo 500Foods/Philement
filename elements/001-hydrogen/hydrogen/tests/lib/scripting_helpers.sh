@@ -26,6 +26,7 @@
 # shellcheck disable=SC2312 # Several diagnostic command substitutions intentionally swallow the inner exit code; helpers either fall back gracefully or || true the outer call
 
 # CHANGELOG
+# 2.4.0 - 2026-07-30 - ORCH_MAIL_REPO_PROBE + MAILRELAY_REPO_PROBE_OK (H.mail repo helpers)
 # 2.3.0 - 2026-07-29 - Scoreboard/LLM orchestrator probes, mock LLM rewrite for
 #                      SQLite fixtures, ORCH_SCOREBOARD_PROBE / ORCH_LLM_PROBE.
 # 2.2.0 - 2026-07-28 - Record ORCH_MAIL_PROBE / ORCH_NOTIFY_PROBE markers from
@@ -42,7 +43,7 @@
 export SCRIPTING_HELPERS_GUARD="true"
 
 SCRIPTING_HELPERS_NAME="Scripting Test Helpers"
-SCRIPTING_HELPERS_VERSION="2.3.0"
+SCRIPTING_HELPERS_VERSION="2.4.0"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${SCRIPTING_HELPERS_NAME} ${SCRIPTING_HELPERS_VERSION}" "info"
 
 # Optional mock LLM (set by test_43 before parallel runs). Empty = skip rewrite.
@@ -240,6 +241,8 @@ scripting_count_log_matches() {
 #   ORCH_LUA_SHUTDOWN       - Lua-side "Orchestrator: shutdown requested"
 #   ORCH_QUERY_PROBE        - Lua-side "Orchestrator: query_probe ok" (data plane)
 #   ORCH_MAIL_PROBE         - Lua-side "Orchestrator: mail_probe ok" (H.mail freeform)
+#   ORCH_MAIL_REPO_PROBE    - Lua-side "Orchestrator: mail_repo_probe ok" (H.mail template/route/cleanup/event)
+#   MAIL_REPO_PROBE_LAUNCH  - Launch seam "MAILRELAY_REPO_PROBE_OK" (MailRepoProbeOnLaunch)
 #   ORCH_NOTIFY_PROBE       - Lua-side "Orchestrator: notify_probe ok" (H.notify deferred)
 #   ORCH_HTTP_PROBE         - Lua-side "Orchestrator: http_probe ok" (H.http get/post)
 #   ORCH_SCOREBOARD_PROBE   - Lua-side "Orchestrator: scoreboard_probe ok"
@@ -465,6 +468,12 @@ PY
     fi
     if scripting_assert_log_contains "${log_file}" "Orchestrator: mail_probe ok"; then
         echo "ORCH_MAIL_PROBE" >> "${result_file}"
+    fi
+    if scripting_assert_log_contains "${log_file}" "Orchestrator: mail_repo_probe ok"; then
+        echo "ORCH_MAIL_REPO_PROBE" >> "${result_file}"
+    fi
+    if scripting_assert_log_contains "${log_file}" "MAILRELAY_REPO_PROBE_OK"; then
+        echo "MAIL_REPO_PROBE_LAUNCH" >> "${result_file}"
     fi
     if scripting_assert_log_contains "${log_file}" "Orchestrator: notify_probe ok"; then
         echo "ORCH_NOTIFY_PROBE" >> "${result_file}"

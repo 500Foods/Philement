@@ -330,6 +330,9 @@ int H_lua_llm_wait_one(lua_State* L, H_Handle* h);
  *
  * H.mail.send(message, opts?) -> handle
  * H.mail.send_sync(message, opts?) -> result, err
+ * H.mail.template_list() / template_get(key) / route_list() / queue_get(uuid)
+ * H.mail.cleanup_{queue,events,attempts,otp}(cutoff_at)
+ * H.mail.event_list_pending() / event_insert(table)
  * H.notify.send(message, opts?) -> handle
  * H.notify.send_sync(message, opts?) -> result, err
  *
@@ -346,6 +349,7 @@ int H_lua_mail_send_sync(lua_State* L);
 int H_lua_notify_send(lua_State* L);
 int H_lua_notify_send_sync(lua_State* L);
 void H_lua_install_mail_notify(lua_State* L);
+void H_lua_install_mail_repo(lua_State* L);
 
 /*
  * Wait on a MAIL or NOTIFY handle.

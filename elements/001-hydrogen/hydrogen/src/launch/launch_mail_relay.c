@@ -19,6 +19,9 @@
 #include <string.h>
 #include <time.h>
 
+// Third-party headers
+#include <lua.h>
+
 // Local includes
 #include "launch.h"
 #include "launch_mail_relay.h"
@@ -33,6 +36,9 @@
 #include <src/mailrelay/mailrelay_smtp.h>
 #include <src/mailrelay/mailrelay_workers.h>
 #include <src/mailrelay/mailrelay_repository.h>
+
+// Scripting (ephemeral Lua for MailRepoProbeOnLaunch)
+#include <src/scripting/lua_context.h>
 
 // Database includes (to wait for the query cache to be populated before the
 // synchronous OTP launch seam runs).
@@ -284,16 +290,10 @@ static int g_launch_fail_remaining = 0;
 #define MAILRELAY_OTP_LAUNCH_MAX_RECIPIENT "mailrelay-otp-max@hydrogen.local"
 
 /*
- * Wait until the Mail Relay database's query cache contains the OTP insert
- * QueryRef (112). The OTP launch seam issues synchronous OTP queries that
- * require cached QueryRefs, but the database bootstrap that populates the cache
- * runs asynchronously and may still be in flight when this subsystem launches
- * (the cache object itself may not even exist yet). Block briefly (polling)
- * until the cache exists and holds the OTP insert QueryRef, or time out.
- *
- * Returns true once the cache holds the OTP insert QueryRef.
+ * Wait until the Mail Relay database's query cache contains the given QueryRef.
+ * Used by launch-time OTP and H.mail repo probe seams.
  */
- bool launch_wait_for_mailrelay_otp_cache(unsigned int timeout_ms) {
+bool launch_wait_for_mailrelay_qref(int query_ref, unsigned int timeout_ms) {
     if (!app_config) {
         return false;
     }
@@ -315,8 +315,7 @@ static int g_launch_fail_remaining = 0;
     while (waited < timeout_ms) {
         DatabaseQueue* q = database_queue_manager_get_database(global_queue_manager, db);
         if (q != NULL && q->query_cache != NULL &&
-            query_cache_lookup(q->query_cache, MAILRELAY_QREF_OTP_INSERT,
-                               SR_MAIL_RELAY) != NULL) {
+            query_cache_lookup(q->query_cache, query_ref, SR_MAIL_RELAY) != NULL) {
             return true;
         }
         struct timespec ts = {0, (long)step_ms * 1000000L};
@@ -324,6 +323,79 @@ static int g_launch_fail_remaining = 0;
         waited += step_ms;
     }
     return false;
+}
+
+bool launch_wait_for_mailrelay_otp_cache(unsigned int timeout_ms) {
+    return launch_wait_for_mailrelay_qref(MAILRELAY_QREF_OTP_INSERT, timeout_ms);
+}
+
+/*
+ * Ephemeral Lua probe of H.mail repository helpers (template_list, route_list,
+ * cleanup_*, event_list_pending, queue_get). Test-only.
+ */
+void launch_mail_repo_probe(void) {
+    static const char* probe_lua =
+        "local ok = true\n"
+        "local function check(name, res, err)\n"
+        "  if err then\n"
+        "    H.log.error('MAILRELAY_REPO_PROBE_FAIL %s: %s', name, tostring(err))\n"
+        "    ok = false\n"
+        "    return\n"
+        "  end\n"
+        "  if type(res) ~= 'table' then\n"
+        "    H.log.error('MAILRELAY_REPO_PROBE_FAIL %s: bad result type', name)\n"
+        "    ok = false\n"
+        "  end\n"
+        "end\n"
+        "local t, e = H.mail.template_list()\n"
+        "check('template_list', t, e)\n"
+        "local tg, eg = H.mail.template_get('mail.test')\n"
+        "check('template_get', tg, eg)\n"
+        "local r, er = H.mail.route_list()\n"
+        "check('route_list', r, er)\n"
+        "local q, eq = H.mail.queue_get('00000000-0000-0000-0000-000000000000')\n"
+        "check('queue_get', q, eq)\n"
+        "local cutoff = '1970-01-01 00:00:00'\n"
+        "local cq, ecq = H.mail.cleanup_queue(cutoff)\n"
+        "check('cleanup_queue', cq, ecq)\n"
+        "local ce, ece = H.mail.cleanup_events(cutoff)\n"
+        "check('cleanup_events', ce, ece)\n"
+        "local ca, eca = H.mail.cleanup_attempts(cutoff)\n"
+        "check('cleanup_attempts', ca, eca)\n"
+        "local co, eco = H.mail.cleanup_otp(cutoff)\n"
+        "check('cleanup_otp', co, eco)\n"
+        "local ep, eep = H.mail.event_list_pending()\n"
+        "check('event_list_pending', ep, eep)\n"
+        "local ei, eei = H.mail.event_insert({\n"
+        "  event_key = 'mailrelay.repo_probe',\n"
+        "  status_a65 = 0,\n"
+        "  template_key = 'mail.test',\n"
+        "  recipients_json = '[\"probe@mailval.local\"]',\n"
+        "  subject = 'repo probe',\n"
+        "  priority = 0,\n"
+        "})\n"
+        "check('event_insert', ei, eei)\n"
+        "if ok then\n"
+        "  H.log.info('MAILRELAY_REPO_PROBE_OK')\n"
+        "end\n"
+        "return ok\n";
+
+    lua_State* L = H_lua_create_context();
+    if (!L) {
+        log_this(SR_MAIL_RELAY,
+                 "TEST: MailRepoProbeOnLaunch failed to create Lua context",
+                 LOG_LEVEL_STATE, 0);
+        return;
+    }
+    int rc = H_lua_run_string(L, probe_lua, "[mail-repo-probe]");
+    if (rc != LUA_OK) {
+        const char* err = lua_tostring(L, -1);
+        log_this(SR_MAIL_RELAY,
+                 "MAILRELAY_REPO_PROBE_FAIL lua: %s",
+                 LOG_LEVEL_STATE, 1, err ? err : "unknown");
+        lua_pop(L, 1);
+    }
+    H_lua_destroy_context(L);
 }
 
 // Launch the mail relay subsystem
@@ -577,6 +649,20 @@ int launch_mail_relay_subsystem(void) {
 
             mailrelay_otp_clear_fixed_code();
             mailrelay_otp_send_response_free(&max_send_resp);
+        }
+    }
+
+    // Seam C — H.mail repository helpers via ephemeral Lua (Test 58 coverage).
+    if (config->Test.MailRepoProbeOnLaunch) {
+        if (!launch_wait_for_mailrelay_qref(MAILRELAY_QREF_TEMPLATE_LIST_ACTIVE, 15000)) {
+            log_this(SR_MAIL_RELAY,
+                     "TEST: MailRepoProbeOnLaunch skipped - query cache not ready",
+                     LOG_LEVEL_STATE, 0);
+        } else {
+            log_this(SR_MAIL_RELAY,
+                     "TEST: MailRepoProbeOnLaunch running H.mail repo probe",
+                     LOG_LEVEL_STATE, 0);
+            launch_mail_repo_probe();
         }
     }
 

@@ -694,6 +694,7 @@ void H_lua_install_mail_notify(lua_State* L) {
     lua_pushcfunction(L, H_lua_mail_send_sync);
     lua_setfield(L, -2, "send_sync");
     lua_setfield(L, -2, "mail");
+    H_lua_install_mail_repo(L);
 
     lua_getfield(L, -1, "notify");
     if (!lua_istable(L, -1)) {

@@ -34,6 +34,7 @@ Hydrogen is currently designed for technical users who:
 - [**Lua Guide**](/docs/H/LUA_GUIDE.md) - Intro to Lua and writing Hydrogen host-API scripts
 - [**Lua Features**](/docs/H/LUA_FEATURES.md) - Pure Lua language features and standard library recipes
 - [**Mail Guide**](/docs/H/MAIL_GUIDE.md) - Mail Relay, templates, rewrites, and Lua mail handling
+- [**Examples**](/docs/H/EXAMPLES.md) - Practical end-to-end examples for common Hydrogen tasks
 - [**SchemaTool**](/docs/H/tools/SCHEMATOOL.md) - Migration drift auditor (Lua migrations vs live `queries`)
 - [**Databases**](/docs/H/DATABASES.md) - Considerations around using PostgreSQL, MySQL/MariaDB, SQLite, and DB2
 - [**AI Instructions**](/docs/H/INSTRUCTIONS.md) - Development guide optimized for AI assistance

@@ -13,6 +13,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [MAIL_GUIDE.md](/docs/H/MAIL_GUIDE.md): Mail Relay, templates, rewrites, and Lua mail handling
 - [tools/SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md): SchemaTool migration drift auditor (operator guide)
 - [RELEASES.md](/RELEASES.md): Version history index and instructions
+- [EXAMPLES.md](/docs/H/EXAMPLES.md): Practical end-to-end examples for common Hydrogen tasks
 - [DEPLOYMENT.md](/docs/H/DEPLOYMENT.md): Standalone VPS and Kubernetes/DOKS deployment strategies, health checks, with and without databases
 - [SECRETS.md](/docs/H/SECRETS.md): Outlines how secrets are managed in the project
 - [SETUP.md](/docs/H/SETUP.md): Describes how to setup the dev environment
