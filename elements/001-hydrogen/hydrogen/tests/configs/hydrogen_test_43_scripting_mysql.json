@@ -86,6 +86,7 @@
                 "AuthMode": 0,
                 "TimeoutSeconds": 5
             }
-        ]
+        ],
+        "Database": "Acuranzo"
     }
 }

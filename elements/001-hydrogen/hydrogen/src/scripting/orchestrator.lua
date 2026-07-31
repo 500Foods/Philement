@@ -151,6 +151,73 @@ local function run_mail_probe()
         end
     end
 
+    -- Repository helpers (QueryRefs via mailrelay_repository). Soft-fail when
+    -- MailRelay.Database / QTC is not ready; hard-require when functions exist
+    -- and at least template_list succeeds so test_43 blackbox covers the path.
+    if type(H.mail.template_list) == "function" then
+        local repo_ok = true
+        local function repo_check(name, r, e)
+            if e then
+                H.log.warn("Orchestrator: mail_repo_probe %s err: %s", name, tostring(e))
+                repo_ok = false
+                return
+            end
+            if type(r) ~= "table" then
+                H.log.warn("Orchestrator: mail_repo_probe %s bad result", name)
+                repo_ok = false
+            end
+        end
+        local tl, tle = H.mail.template_list()
+        repo_check("template_list", tl, tle)
+        if type(H.mail.template_get) == "function" then
+            local tg, tge = H.mail.template_get("mail.test")
+            repo_check("template_get", tg, tge)
+        end
+        if type(H.mail.route_list) == "function" then
+            local rl, rle = H.mail.route_list()
+            repo_check("route_list", rl, rle)
+        end
+        if type(H.mail.queue_get) == "function" then
+            local qg, qge = H.mail.queue_get("00000000-0000-0000-0000-000000000000")
+            repo_check("queue_get", qg, qge)
+        end
+        local cutoff = "1970-01-01 00:00:00"
+        if type(H.mail.cleanup_queue) == "function" then
+            local cq, cqe = H.mail.cleanup_queue(cutoff)
+            repo_check("cleanup_queue", cq, cqe)
+        end
+        if type(H.mail.cleanup_events) == "function" then
+            local ce, cee = H.mail.cleanup_events(cutoff)
+            repo_check("cleanup_events", ce, cee)
+        end
+        if type(H.mail.cleanup_attempts) == "function" then
+            local ca, cae = H.mail.cleanup_attempts(cutoff)
+            repo_check("cleanup_attempts", ca, cae)
+        end
+        if type(H.mail.cleanup_otp) == "function" then
+            local co, coe = H.mail.cleanup_otp(cutoff)
+            repo_check("cleanup_otp", co, coe)
+        end
+        if type(H.mail.event_list_pending) == "function" then
+            local ep, epe = H.mail.event_list_pending()
+            repo_check("event_list_pending", ep, epe)
+        end
+        if type(H.mail.event_insert) == "function" then
+            local ei, eie = H.mail.event_insert({
+                event_key = "orchestrator.mail_repo_probe",
+                status_a65 = 0,
+                template_key = "mail.test",
+                recipients_json = '["orch-repo@hydrogen.local"]',
+                subject = "orch repo probe",
+                priority = 0,
+            })
+            repo_check("event_insert", ei, eie)
+        end
+        if repo_ok then
+            H.log.info("Orchestrator: mail_repo_probe ok")
+        end
+    end
+
     if res and err == nil then
         H.log.info("Orchestrator: mail_probe ok")
     end

@@ -21,6 +21,7 @@
 // Project headers
 #include <src/database/dbqueue/dbqueue.h>
 #include <src/api/auth/oidc_rp/oidc_rp_http.h>
+#include <src/mailrelay/mailrelay_repository.h>
 #include "scoreboard.h"
 #include "scripting_handle.h"
 
@@ -107,6 +108,32 @@ int H_lua_finish_sync_wait(lua_State* L, int n_pushed,
 int H_lua_query_sync(lua_State* L);
 int H_lua_altquery_sync(lua_State* L);
 int H_lua_authquery_sync(lua_State* L);
+
+// ----------------------------------------------------------------------------
+// scripting_api_mail_repo.c
+// ----------------------------------------------------------------------------
+
+typedef struct {
+    MailRelayRepoStatus status;
+    char error[256];
+    json_t* data;
+    int affected_rows;
+} MailRepoLuaCtx;
+
+void mail_repo_lua_callback(MailRelayRepoResult* result, void* user_data);
+const char* mail_repo_status_message(MailRelayRepoStatus status, const char* detail);
+int mail_repo_push_result(lua_State* L, MailRepoLuaCtx* ctx);
+int H_lua_mail_template_list(lua_State* L);
+int H_lua_mail_template_get(lua_State* L);
+int H_lua_mail_route_list(lua_State* L);
+int H_lua_mail_queue_get(lua_State* L);
+int H_lua_mail_cleanup_queue(lua_State* L);
+int H_lua_mail_cleanup_events(lua_State* L);
+int H_lua_mail_cleanup_attempts(lua_State* L);
+int H_lua_mail_cleanup_otp(lua_State* L);
+int H_lua_mail_event_list_pending(lua_State* L);
+int H_lua_mail_event_insert(lua_State* L);
+void H_lua_install_mail_repo(lua_State* L);
 
 // ----------------------------------------------------------------------------
 // scripting_api_http.c

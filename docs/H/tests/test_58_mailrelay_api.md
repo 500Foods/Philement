@@ -15,6 +15,7 @@ Validates the Hydrogen Mail Relay REST API (`/api/mailrelay/status`, `/api/mailr
 7. Demo user without `mail_send` gets `401` on send.
 8. Stops Hydrogen; asserts API send subject `MailRelayBlackbox` in mailval (and soft-checks `server_stopped`).
 9. Isolated SQLite OTP launch subtest (`SendOtpOnLaunch`): wrong code → increment attempts, correct code → consume, second OTP with `max_attempts=1` wrong code → max-attempts lockout.
+10. Same subtest enables `MailRepoProbeOnLaunch`: ephemeral Lua calls `H.mail.template_list` / `template_get` / `route_list` / `queue_get` / `cleanup_*` / `event_list_pending` / `event_insert` and logs `MAILRELAY_REPO_PROBE_OK`.
 
 ## Transport Variants
 

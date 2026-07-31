@@ -22,4 +22,10 @@ bool launch_fail_transport(const MailRelaySmtpRequest* req, MailRelayResult* out
 // Block until the Mail Relay OTP cache has been populated (or timeout)
 bool launch_wait_for_mailrelay_otp_cache(unsigned int timeout_ms);
 
+// Block until a specific Mail Relay QueryRef is present in the QTC
+bool launch_wait_for_mailrelay_qref(int query_ref, unsigned int timeout_ms);
+
+// Ephemeral Lua probe of H.mail repository helpers (test seam)
+void launch_mail_repo_probe(void);
+
 #endif /* LAUNCH_MAIL_RELAY_H */

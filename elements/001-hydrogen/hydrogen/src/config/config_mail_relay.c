@@ -53,6 +53,7 @@ void cleanup_mail_relay_test(MailRelayTest* test) {
     test->SendRawOnLaunch = false;
     test->SendOtpOnLaunch = false;
     test->FailNextSendOnLaunch = false;
+    test->MailRepoProbeOnLaunch = false;
 }
 
 // Helper function to cleanup mail relay events configuration
@@ -127,6 +128,7 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
     mail->Test.SendRawOnLaunch = false;
     mail->Test.SendOtpOnLaunch = false;
     mail->Test.FailNextSendOnLaunch = false;
+    mail->Test.MailRepoProbeOnLaunch = false;
     mail->Test.TestFrom = NULL;
     mail->Test.TestTo = NULL;
     mail->Test.TestSubject = NULL;
@@ -226,6 +228,11 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
         json_t* fail_next = json_object_get(test_section, "FailNextSendOnLaunch");
         if (fail_next && json_is_boolean(fail_next)) {
             mail->Test.FailNextSendOnLaunch = json_boolean_value(fail_next);
+        }
+
+        json_t* repo_probe = json_object_get(test_section, "MailRepoProbeOnLaunch");
+        if (repo_probe && json_is_boolean(repo_probe)) {
+            mail->Test.MailRepoProbeOnLaunch = json_boolean_value(repo_probe);
         }
 
         json_t* test_from = json_object_get(test_section, "TestFrom");
@@ -465,6 +472,8 @@ void dump_mailrelay_config(const MailRelayConfig* config) {
     snprintf(buffer, sizeof(buffer), "SendOtpOnLaunch: %s", config->Test.SendOtpOnLaunch ? "true" : "false");
     DUMP_TEXT("――――", buffer);
     snprintf(buffer, sizeof(buffer), "FailNextSendOnLaunch: %s", config->Test.FailNextSendOnLaunch ? "true" : "false");
+    DUMP_TEXT("――――", buffer);
+    snprintf(buffer, sizeof(buffer), "MailRepoProbeOnLaunch: %s", config->Test.MailRepoProbeOnLaunch ? "true" : "false");
     DUMP_TEXT("――――", buffer);
     if (config->Test.TestFrom) {
         snprintf(buffer, sizeof(buffer), "TestFrom: %s", config->Test.TestFrom);

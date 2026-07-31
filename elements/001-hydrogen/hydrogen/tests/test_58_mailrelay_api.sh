@@ -24,6 +24,7 @@
 # analyze_engine_results()
 
 # CHANGELOG
+# 2.6.0 - 2026-07-30 - MailRepoProbeOnLaunch: H.mail template/route/cleanup/event repo helpers via ephemeral Lua.
 # 2.5.0 - 2026-07-29 - OTP launch seam: wrong-code (otp_increment_attempts) + max-attempts (otp_mark_max_attempts) markers and DB status checks.
 # 2.4.0 - 2026-07-15 - Moved listeners from Linux ephemeral range 55800-55831 to dedicated 15800-15831 ports to prevent full-suite client connection collisions.
 # 2.3.0 - 2026-07-14 - Added launch-time OTP send + self-verify coverage subtest (Seam A, SendOtpOnLaunch) asserting MAILRELAY_OTP_LAUNCH_SENT/VERIFIED markers and DB row consumption.
@@ -39,7 +40,7 @@ TEST_NAME="MailRelay API"
 TEST_ABBR="MRA"
 TEST_NUMBER="58"
 TEST_COUNTER=0
-TEST_VERSION="2.5.0"
+TEST_VERSION="2.6.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -741,7 +742,8 @@ run_mailrelay_otp_launch() {
                     .MailRelay.Servers[0].CAPath = "" |
                     .MailRelay.Queue.Persist = true |
                     .Databases.Connections[0].Database = $db |
-                    .MailRelay.Test.SendOtpOnLaunch = true' \
+                    .MailRelay.Test.SendOtpOnLaunch = true |
+                    .MailRelay.Test.MailRepoProbeOnLaunch = true' \
                    "${config_file}" 2>/dev/null) || true
     if [[ -z "${jq_patch}" ]]; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label}: Failed to patch OTP launch config"
@@ -790,7 +792,8 @@ run_mailrelay_otp_launch() {
             MAILRELAY_OTP_LAUNCH_WRONG_CODE \
             MAILRELAY_OTP_LAUNCH_VERIFIED \
             MAILRELAY_OTP_LAUNCH_MAX_SENT \
-            MAILRELAY_OTP_LAUNCH_MAX_ATTEMPTS; do
+            MAILRELAY_OTP_LAUNCH_MAX_ATTEMPTS \
+            MAILRELAY_REPO_PROBE_OK; do
             if ! "${GREP}" -q "${marker}" "${hydrogen_log}" 2>/dev/null; then
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: log missing ${marker}"
                 failed=true
@@ -824,11 +827,11 @@ run_mailrelay_otp_launch() {
     stop_mailval "${mailval_pid}"
     rm -f "${sqlite_temp_config}" "${sqlite_temp_file}" "${sqlite_temp_file}-wal" "${sqlite_temp_file}-shm" 2>/dev/null || true
     if [[ "${failed}" = false ]]; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${label}: OTP wrong-code + verify + max-attempts (markers + DB)"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${label}: OTP + H.mail repo probe (markers + DB)"
         PASS_COUNT=$(( PASS_COUNT + 1 ))
         return 0
     fi
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label}: OTP launch coverage failed"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label}: OTP / repo-probe launch coverage failed"
     return 1
 }
 
@@ -847,7 +850,6 @@ else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to find Hydrogen binary"
     EXIT_CODE=1
 fi
-
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate mailval Binary"
 if [[ -x "${MAILVAL_BIN}" ]]; then
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using mailval binary: ${MAILVAL_BIN}"
@@ -885,7 +887,6 @@ if [[ -z "${HYDROGEN_DEMO_API_KEY:-}" ]]; then
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: HYDROGEN_DEMO_API_KEY is not set"
     env_vars_valid=false
 fi
-
 if [[ "${env_vars_valid}" = true ]]; then
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Required environment variables are set"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
@@ -970,7 +971,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
     # OTP launch coverage subtest (Seam A) — isolated SQLite variant.
     # shellcheck disable=SC2310 # Continue even if the OTP subtest fails
-    if ! run_mailrelay_otp_launch "MailRelay OTP Launch (wrong-code + verify + max-attempts)" \
+    if ! run_mailrelay_otp_launch "MailRelay OTP + Repo Probe Launch" \
             "${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_sqlite.json" \
             "${OTP_WEB_PORT}" "${OTP_MAILVAL_PORT}" "${OTP_RECIPIENT}" "${OTP_MAX_RECIPIENT}"; then
         EXIT_CODE=1
