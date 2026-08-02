@@ -7,7 +7,7 @@ Define a gated, phase-by-phase plan for a **standalone operator utility** (Bash 
 | Track | Status | Answers |
 | ------- | -------- | --------- |
 | **v1 Metadata** | **Shipped** (Phases 0–5) | Did LOAD/APPLY happen? Does stored `queries.code`/`name`/`summary` still match on-disk Lua? |
-| **v2 Live catalog** | **Next** (Phase 7) | Do **live database objects** (tables, columns, nullability, indexes, …) match what the migration set implies after APPLY through max ref? |
+| **v2 Live catalog** | **Shipped** (Phase 7 / CLI 1.5.0) | Do **live database objects** (tables, columns, nullability, …) match net applied DDL (hybrid C fold)? |
 
 v1 alone cannot answer “we CREATE’d a column NOT NULL, then later DROP NOT NULL — does live shape look right?” That is the catalog track.
 
@@ -22,26 +22,28 @@ This document is edited as work proceeds. Each phase has Objective, Entry Gate, 
 
 ## Resuming Work
 
-CURRENT STATE (as of 2026-07-29): **v1 metadata audit complete** (Phases 0–5 + expect 1.0.1 name-parse fix). Tested end-to-end on Test 40 PostgreSQL (283 refs).
+CURRENT STATE (as of 2026-08-02): **v1 metadata complete**; **Phase 7 catalog shipped** (CLI v1.5.0). **1190 acceptance green on all 7 Test 40 layouts** (PG, CRDB-schema, MySQL, MariaDB, SQLite, DB2, Yugabyte). Phase 6 still deferred.
 
-**Next priority (operator-driven):** **Phase 7 — live catalog / object shape**, not Phase 6 unit tests. Live schema fidelity matters more day-to-day than `queries` text-only consistency (v1 remains valuable and stays default).
+**Next priority:** optional full-schema catalog noise tuning, catalog remediation `.sql`, or Phase 6 tests if asked.
 
-### Resume here next session — Phase 7
+### Resume here next session
 
-1. Re-read this section, **Two-track product model** (below), **Phase 7** work items, Working Log “Test 40 PG” + “Plan priority: catalog”.
-2. Anchor example already in tree: **`acuranzo_1190.lua`** — `password_hash` **DROP NOT NULL** (PG/DB2 `ALTER COLUMN … DROP NOT NULL`; SQLite rebuild note). CREATE migrations that set NOT NULL still match metadata; **live** nullability is only visible via catalog.
-3. Spike first engine (recommended **PostgreSQL** `information_schema` / `pg_catalog` on Test 40 `demo`):
-   - List tables/columns/nullability/defaults/PK for one schema
-   - Compare to a **folded** expected shape through max APPLY (or start simpler: “objects named in applied forward `code` exist”)
-4. Do **not** start Phase 6 unless asked; do **not** expand v1 metadata scope as a substitute for catalog.
-5. Metadata smoke (regression only):  
+1. Catalog smoke (1190):
 
    ```bash
    extras/schematool/schematool.sh --migrations "$HELIUM_ROOT/acuranzo/migrations" \
+     --design acuranzo --engine sqlite \
+     --database "$HYDROGEN_ROOT/tests/artifacts/database/sqlite/hydrodemo.sqlite" \
+     --catalog --only-tables accounts --out-dir /tmp/schematool-cat --no-sql
+   # Expect exit 0; password_hash expected=true live=true
+
+   extras/schematool/schematool.sh --migrations "$HELIUM_ROOT/acuranzo/migrations" \
      --design acuranzo --engine postgresql --schema demo \
-     --out-dir /tmp/schematool-out
-   # Expect exit 2 today: real code drift on 1280/1281 only (after 1172 fix)
+     --catalog --only-tables accounts --out-dir /tmp/schematool-cat-pg --no-sql
    ```
+
+2. Metadata smoke (regression): PG still exit 2 only for real 1280/1281 code drift.
+3. Optional: MySQL/DB2 catalog smoke on Test 40 configs; full-schema catalog run; Phase 6 tests.
 
 ---
 
@@ -74,15 +76,36 @@ SchemaTool **v1** surfaces that class of problem with a small per-migration **me
          LOAD/APPLY/match      live tables/cols/nulls
 ```
 
-| | Track A — Metadata (shipped) | Track B — Live catalog (next) |
+| | Track A — Metadata (shipped) | Track B — Live catalog (shipped) |
 | -- | ------------------------------ | ------------------------------- |
 | Input | Lua → expected payloads; `SELECT` from `queries` | Lua/DDL fold and/or applied `code`; engine catalog APIs |
 | Signal | Edited-in-place migration files; missing LOAD/APPLY | Missing tables; wrong nullability; extra/missing columns |
 | Example | 1280/1281 mail seed `code` ≠ Lua | 1190 made `password_hash` nullable — live col must allow NULL |
 | False expectation | “Live CREATE matches migration 1005 alone” | “Lua file text equals `queries.code`” (that’s Track A) |
-| CLI sketch | default full audit | `--catalog` / `--mode catalog\|both` (lock in Phase 7) |
+| CLI sketch | default full audit | additive **`--catalog`** (metadata default) |
 
 **Priority:** Track B is the **next implementation focus**. Track A is maintenance/fixes only unless a regression blocks operators.
+
+### Catalog access model — targeted probes, not bulk dump (locked 2026-08-02)
+
+**Operator concern:** a full-schema catalog dump is costly and wasteful when auditing one migration (e.g. 1190 → only `accounts.password_hash`).
+
+| Approach | When | Cost |
+| ---------- | ------ | ------ |
+| **Targeted probes (default)** | Catalog compare / acceptance | Issue engine-native queries **only for tables (and optionally columns) in scope** — driven by expected-shape set, `--only-tables`, or migration ref focus |
+| **Full dump (`--dump-catalog`)** | Debug / golden fixtures | One-shot JSON of schema objects; optional, not the hot path |
+
+**How probes work (interactive clients, same as Phase 3):**
+
+- Still **native clients** (`sqlite3`, `psql`, `mysql`, `db2`) + credentials — connect and run **read-only SQL/PRAGMA**, not `pg_dump` / file export of the whole DB.
+- “Interactive” here means **narrow SELECTs against catalog views** (or `PRAGMA table_info('accounts')`), not a human REPL session.
+- Scope drivers (combine as implemented):
+  1. Expected-shape builder lists tables/columns that matter (hybrid C from applied migrations).
+  2. `--only-tables a,b` / skip lists shrink further.
+  3. Optional later: `--from`/`--to` or `--focus-ref 1190` to limit which migrations feed expected shape (and thus which live probes run).
+- SQLite 1190 path: `PRAGMA table_info(accounts)` → `password_hash.notnull == 0` — one pragma, not full `sqlite_master` walk unless needed for presence checks.
+
+**Do not:** scan product row data; dump entire `information_schema` when only one table is in scope; treat bulk dump as required before compare.
 
 ---
 
@@ -462,20 +485,25 @@ SQL: ./schematool-out/schematool_acuranzo_postgresql_….sql (all statements com
 
 ```text
 elements/001-hydrogen/hydrogen/extras/schematool/
-  schematool.sh                 # CLI v1.4.0 — full audit + env polish  (Phase 1–5 ✓)
+  schematool.sh                 # CLI v1.5.0 — metadata + catalog  (Phase 1–5, 7 ✓)
   lua/
     schematool_discover.lua     # disk file discovery → checklist JSON  (Phase 1 ✓)
     schematool_expect.lua       # get_migration + decode → expected payloads  (Phase 2 ✓)
     schematool_normalize.lua    # loose/strict normalize  (Phase 4 ✓)
     schematool_compare.lua      # join + four checks + findings JSON  (Phase 4 ✓)
     schematool_remediate.lua    # commented .sql + plain-text .mig  (Phase 4 ✓)
+    schematool_catalog_fold.lua # hybrid-C fold applied type-1003 DDL  (Phase 7 ✓)
+    schematool_catalog_compare.lua  # expected ⟷ live catalog  (Phase 7 ✓)
   db/
     query_pg.sh                 # psql json_agg  (Phase 3 ✓)
     query_mysql.sh              # mysql JSON_ARRAYAGG  (Phase 3 ✓)
     query_sqlite.sh             # sqlite3 json_group_array  (Phase 3 ✓)
     query_db2.sh                # db2 EXPORT LOBS + python parse  (Phase 3 ✓)
+    catalog_sqlite.sh           # PRAGMA table_info probes  (Phase 7 ✓)
+    catalog_pg.sh               # information_schema filtered  (Phase 7 ✓)
+    catalog_mysql.sh            # information_schema filtered  (Phase 7 ✓)
+    catalog_db2.sh              # SYSCAT.COLUMNS  (Phase 7 ✓)
     common.sh                   # qualify helpers (optional)
-    # optional later: catalog_*.sh — DESCRIBE / information_schema probes
   testdata/
     expected_pg_demo_1000_1002.json
 ```
@@ -711,81 +739,64 @@ Emit short unified diff on failure (`diff -u` or Lua) gated by `--verbose`.
 #### Product constraints (carry forward)
 
 - Still **read-only**; still native clients (`psql` / `mysql` / `sqlite3` / `db2`); no full-DB dump tools; **no product row-data scans**.
-- One schema at a time OK initially; **skip lists** for huge or uninteresting tables.
-- Does **not** replace Track A — default may become `--mode both` later; v1 remains available alone.
+- **Targeted probes by default** (see **Catalog access model**); bulk `--dump-catalog` optional for debug.
+- One schema at a time OK initially; **skip lists** / `--only-tables` for huge or uninteresting tables.
+- Does **not** replace Track A — metadata remains default; **`--catalog`** adds catalog track (or catalog-only paths via dump/probe flags).
 - Remediation stays **commented** guidance (Hydrogen new migration preferred over blind ALTER).
+- **First engine: SQLite** (`hydrodemo.sqlite`); then PG → MySQL → DB2.
 
-#### Phase 7a — Catalog dump adapters (spike → four engines)
+#### Locked Phase 7 product choices (2026-08-02)
+
+| Topic | Decision |
+| ------ | ---------- |
+| First spike engine | **SQLite** (hydrodemo), then PG/MySQL/DB2 |
+| Live access | **Targeted catalog probes** (narrow SQL/PRAGMA per in-scope table); not full-schema dump as default |
+| Expected shape | **C hybrid** — presence + nullability/type for columns touched by CREATE / ALTER COLUMN / DROP NOT NULL-class ops |
+| CLI | Additive **`--catalog`**; metadata path unchanged when flag omitted |
+| Exit codes | Keep **0/1/2/3** simple; when both tracks run use **worst-wins** for now; **bitfield / separate codes later** if needed |
+| Acceptance | **1190** `accounts.password_hash` live **nullable** after APPLY; no false fail from earlier CREATE NOT NULL text |
+
+#### Phase 7a — Catalog probe adapters (spike SQLite → four engines)
 
 **Work items:**
 
-- [ ] Define intermediate **live catalog JSON** contract (draft below).
-- [ ] PostgreSQL spike on Test 40 `demo`: tables, columns (name, type, nullable, default), primary keys; optional indexes/FKs later.
-- [ ] MySQL/MariaDB: `information_schema` / `SHOW CREATE` as needed.
-- [ ] SQLite: `sqlite_master` + `PRAGMA table_info` / `index_list`.
-- [ ] DB2: `SYSCAT.TABLES` / `SYSCAT.COLUMNS` (or DESCRIBE where cleanest for scripts).
-- [ ] CLI: `--dump-catalog [PATH]` parallel to `--dump-db`; schema/skip-list flags.
-- [ ] Never SELECT fact-table row content; password hygiene same as Phase 3.
+- [x] Define intermediate **live catalog JSON** contract — `{schema, tables:[{table, columns, primary_key, indexes}]}`.
+- [x] **SQLite** `catalog_sqlite.sh`: `PRAGMA table_info` for named tables only.
+- [x] **PostgreSQL** `catalog_pg.sh`: `information_schema` filtered by table list (Test 40 `demo`).
+- [x] **MySQL** `catalog_mysql.sh`: `information_schema.COLUMNS` filtered.
+- [x] **DB2** `catalog_db2.sh`: `SYSCAT.COLUMNS` EXPORT + Python parse.
+- [x] CLI: `--dump-catalog [PATH]`; `--only-tables`; probe used by compare path.
+- [x] Never SELECT fact-table row content; password hygiene same as Phase 3.
 
-**Draft catalog JSON (per table):**
-
-```json
-{
-  "schema": "demo",
-  "table": "accounts",
-  "columns": [
-    {
-      "name": "password_hash",
-      "data_type": "text",
-      "nullable": true,
-      "default": null
-    }
-  ],
-  "primary_key": ["account_id"],
-  "indexes": []
-}
-```
-
-**Exit gate 7a:** PG dump of `demo` on Test 40 returns stable JSON for a known table set; other engines at least stubbed or one smoke each.
+**Exit gate 7a:** SQLite + PG probes return stable JSON with `password_hash` nullability — **met 2026-08-02**.
 
 #### Phase 7b — Expected shape (what “should” exist)
 
-**Hard problem:** live shape ≠ any single migration’s CREATE after later ALTERs.
-
-**Approaches (pick in spike; document choice):**
-
-| Approach | Pros | Cons |
-| ---------- | ------ | ------ |
-| **A. Fold applied forward DDL** through max type-1003 ref (parse CREATE/ALTER/DROP from expected or DB `code`) | True net schema from migration source of truth | DDL parse is dialect-hard; edge cases |
-| **B. Presence-only** — objects/columns mentioned in applied migrations must exist (no full type fold) | Faster to ship | Misses nullability/type drift |
-| **C. Hybrid** — presence + nullability/type for columns touched by CREATE/ALTER COLUMN | Hits 1190-class bugs | Still need light DDL understanding |
-| **D. Diagram/ERD from type 1002 `collection`** if populated | May already be “current model” | Often stub `code`; collection quality varies |
-
-**Recommended start:** **C hybrid on PG** — enumerate tables/columns from folded or last-known CREATE + apply ALTER COLUMN / DROP COLUMN / DROP NOT NULL patterns seen in Acuranzo migrations; expand dialect coverage after PG green.
+**Approaches (C locked 2026-08-02):** hybrid C — presence + nullability from folded applied type-1003 forward `code`.
 
 **Work items:**
 
-- [ ] Lock approach A/B/C/D (or hybrid) after PG spike with 1190 as acceptance case.
-- [ ] Implement expected-catalog builder (Lua and/or SQL parse helpers).
-- [ ] Anchor tests: after full APPLY, `password_hash.nullable == true` on engines that support 1190’s ALTER; document SQLite limitation (rebuild) honestly.
-- [ ] Skip list + `--from-table` / `--only-tables` for iteration speed.
+- [x] Lock approach **C hybrid** (2026-08-02).
+- [x] Implement `lua/schematool_catalog_fold.lua` (CREATE/ALTER/DROP/MODIFY/RENAME/SQLite `_new` rebuild).
+- [x] Anchor: 1190 `password_hash.nullable == true` on hydrodemo SQLite + Test 40 PG.
+- [x] `--only-tables` keeps one-table audits cheap.
 
-**Exit gate 7b:** On Test 40 PG `demo`, catalog compare reports 1190 nullability correctly; no false fail solely because migration 10xx CREATE had NOT NULL.
+**Exit gate 7b:** **met 2026-08-02** — no false fail from earlier CREATE NOT NULL alone.
 
 #### Phase 7c — Compare UX + remediation + multi-engine
 
 **Work items:**
 
-- [ ] Join expected catalog ⟷ live catalog; `tables` report (object, column, check, notes).
-- [ ] CLI `--mode metadata|catalog|both` (names TBD); catalog can run without failing metadata exit or combined exit policy locked here.
-- [ ] Commented remediation hints (ADD COLUMN / DROP NOT NULL guidance — not auto-applied).
-- [ ] Extend adapters to MySQL, SQLite, DB2 to Phase 3 parity bar.
-- [ ] Docs: update `/docs/H/tools/SCHEMATOOL.md` — two tracks, 1190 example, cumulative ALTER caveat strengthened.
-- [ ] Update success criteria for v2 below.
+- [x] `lua/schematool_catalog_compare.lua` + `tables` catalog report.
+- [x] CLI **`--catalog`**; with `--only-tables` skips metadata for speed; without runs after metadata; worst-wins exit.
+- [~] Commented catalog remediation SQL blocks — deferred (checklist + notes sufficient for v2 first ship).
+- [x] Probe adapters PG/MySQL/SQLite/DB2 present; SQLite+PG smoke verified; MySQL/DB2 await live Test 40 DBs in this env.
+- [x] Docs: `/docs/H/tools/SCHEMATOOL.md` + extras README.
+- [x] shellcheck (`mks`) + luacheck clean.
 
-**Exit gate 7c:** Documented one-command catalog audit on maintainer PG; 1190 case green; shellcheck/luacheck clean.
+**Exit gate 7c:** **met 2026-08-02** for SQLite + PG 1190.
 
-**Status:** **next** — not started (promoted from backlog 2026-07-29)
+**Status:** **complete** (2026-08-02) — CLI v1.5.0; follow-ups = MySQL/DB2 live smoke, optional remediation SQL, full-schema noise tuning
 
 ---
 
@@ -841,11 +852,12 @@ Candidates:
 
 ## Success Criteria (v2 catalog — Phase 7)
 
-1. Read-only catalog dump for at least **PostgreSQL** on Test 40 `demo` (tables + columns + nullability).
+1. Read-only **targeted catalog probes** for at least **SQLite** (hydrodemo) and **PostgreSQL** (Test 40 `demo`) — tables + columns + nullability for **in-scope** objects only.
 2. **1190 acceptance:** live `password_hash` reported **nullable** after APPLY through 1190; tool does **not** fail solely because an earlier CREATE migration text still says NOT NULL.
-3. Missing table or missing column (relative to expected net shape) → non-zero exit + clear checklist row; no product row scans.
-4. Optional `--mode metadata` still behaves as v1; catalog mode documented in `/docs/H/tools/SCHEMATOOL.md`.
+3. Missing table or missing column (relative to expected net shape) → non-zero exit + clear checklist row; no product row scans; no mandatory full-schema dump.
+4. Default (no `--catalog`) still behaves as v1 metadata; `--catalog` documented in `/docs/H/tools/SCHEMATOOL.md`.
 5. Same safety bar: no uncommented live DDL from SchemaTool; secrets never in artifacts.
+6. One-table audit (`--only-tables accounts`) stays cheap (pragma / filtered IS query, not whole-DB export).
 
 ---
 
@@ -868,13 +880,16 @@ Candidates:
 - ~~Phase 2 `database.lua` API?~~ **Resolved: not needed.**
 - ~~DB2 client path?~~ **Resolved: EXPORT LOBS + Python.**
 - ~~When to start live catalog?~~ **Resolved: Phase 7 is next primary** (operator priority over Phase 6 tests).
-- **Expected-shape approach:** A fold / B presence / C hybrid / D diagram — lock in 7b after PG spike.
-- **CLI mode names:** `--catalog` vs `--mode metadata|catalog|both`.
-- **Combined exit codes** when both tracks run.
-- Diagram payload: `code` stub vs `collection` ERD — optional for catalog expected shape.
+- ~~Expected-shape approach?~~ **Resolved: C hybrid** (2026-08-02).
+- ~~CLI mode names?~~ **Resolved: additive `--catalog`** (metadata default).
+- ~~Combined exit codes?~~ **Resolved for now: worst-wins; bitfield later** (do not add new codes yet).
+- ~~Bulk dump vs probes?~~ **Resolved: targeted probes default; `--dump-catalog` optional debug.**
+- ~~First spike engine?~~ **Resolved: SQLite hydrodemo, then PG.**
+- Diagram payload: `code` stub vs `collection` ERD — optional for catalog expected shape (not primary for C).
 - MySQL `--schema` vs connection database: multi-tenant layouts.
-- Large DB2 EXPORT of full 283 refs: time/disk; batching if slow.
-- SQLite nullability ALTER limits (1190 comments rebuild) — document engine gaps in catalog UX.
+- Large DB2 catalog queries: always filter by table list; batch if needed.
+- SQLite nullability: 1190 uses rebuild — probes must read post-rebuild `PRAGMA table_info`, not assume ALTER COLUMN exists.
+- Optional later: `--focus-ref N` / migration-range limiting of expected-shape input (cheap one-migration audits).
 
 ---
 
@@ -937,14 +952,26 @@ write commented .sql + plain-text .mig (orphans)
 
 ```text
 applied max ref (type 1003) ──► which migrations count as "in effect"
-expected shape builder ────────► tables/cols/nullable (hybrid C first)
-catalog dump (query_catalog_*.sh) ─► live JSON
-compare ─► tables report + commented guidance
-acceptance: 1190 password_hash nullable on PG demo
+expected shape builder (C) ───► tables/cols/nullable needed for compare
+                                │
+                                ▼
+              table list (∩ --only-tables / skip)
+                                │
+        ┌───────────────────────┼───────────────────────┐
+        ▼                       ▼                       ▼
+  probe_sqlite (PRAGMA)   probe_pg (IS filtered)   … mysql/db2
+        │                       │
+        └───────────┬───────────┘
+                    ▼
+              live catalog JSON (same contract)
+                    ▼
+         compare ─► tables report + commented guidance
+acceptance: 1190 password_hash nullable (SQLite hydrodemo first, then PG demo)
 ```
 
+- **Not** “dump whole schema then analyze” on the default path — **derive probe list → query catalog for those objects only**.
 - Reuse connection/env/password patterns from Phase 3 adapters.
-- New files (draft): `db/catalog_pg.sh`, `lua/schematool_catalog_*.lua`, CLI flags in `schematool.sh`.
+- New files (draft): `db/catalog_sqlite.sh` (first), `db/catalog_pg.sh`, …; `lua/schematool_catalog_expect.lua` / compare; CLI `--catalog`, `--only-tables`, `--dump-catalog` in `schematool.sh`.
 - Keep metadata path untouched unless sharing helpers (normalize, tables render).
 
 ### Operator sample commands
@@ -1085,6 +1112,51 @@ extras/schematool/schematool.sh --migrations "$HELIUM_ROOT/acuranzo/migrations" 
   **7a dump / 7b expected shape / 7c UX** with **1190 acceptance**; Phase 8 = former optional backlog;
   Resuming Work points at Phase 7; v2 success criteria added.
 - Do **not** treat Phase 6 tests as the default next session task.
+
+### 2026-08-02 — Phase 7 locks (pre-implementation review)
+
+- Reviewed INSTRUCTIONS, TESTING, SCHEMATOOL_PLAN; next work is Phase 7 catalog (not Phase 6).
+- **First engine: SQLite** (hydrodemo), not PG-first — easier local spike; 1190 rebuild path must be documented.
+- **Access model:** default = **targeted interactive probes** (connect + narrow `PRAGMA` / filtered `information_schema`), **not** generate-a-huge-metadata-dump-then-analyze. Full `--dump-catalog` remains optional debug.
+  - Rationale: auditing one migration (1190 → `accounts` only) must stay cheap; whole-schema dumps do not scale as the default path.
+- **Expected shape: C hybrid** locked (presence + nullability/type for CREATE/ALTER-touched columns).
+- **CLI: `--catalog`** additive; metadata remains default when flag omitted.
+- **Exit codes:** keep 0/1/2/3; worst-wins if both tracks run; **separate bitfield later** — do not invent new codes now.
+- Plan sections updated: Resuming Work, Catalog access model, Phase 7a/b/c, open questions, success criteria, implementation sketch.
+
+### 2026-08-02 — Phase 7 implemented (catalog v2)
+
+- CLI **v1.5.0**: `--catalog`, `--dump-catalog`, `--only-tables`.
+- New: `db/catalog_{sqlite,pg,mysql,db2}.sh`, `lua/schematool_catalog_{fold,compare}.lua`.
+- Fold source: **DB type 1003 applied `code`** (what actually ran), ordered by ref; handles CREATE, ADD/DROP COLUMN, DROP/SET NOT NULL, MODIFY COLUMN, DROP TABLE, RENAME (SQLite `_new` rebuild).
+- **1190 acceptance:** hydrodemo SQLite + Test 40 PG `demo` — `accounts.password_hash` expected=true live=true, exit 0, 16/16 column checks.
+- `--only-tables` skips metadata audit (fast path); without filter, `--catalog` stacks on full metadata (worst-wins exit).
+- `mks` clean; luacheck clean on new Lua.
+- Docs updated: `/docs/H/tools/SCHEMATOOL.md`, `extras/schematool/README.md`.
+- Lesson: catalog compare must flatten via `jq` TSV for reliable boolean parse (hand JSON bool scan was fragile).
+- Lesson: Lua patterns have no `(?:…)` — write two DROP TABLE matches (IF EXISTS / plain).
+
+### 2026-08-02 — All Test 40 engines catalog green
+
+1190 `accounts.password_hash` nullable on **every** Test 40 layout (exit 0, 16/16 cols):
+
+| Label | Engine flag | Schema / DB | Exit | password_hash |
+| ------- | ------------- | ------------- | ------ | --------------- |
+| postgres_demo | postgresql | demo @ ACURANZO | 0 | Y exp=true live=true |
+| cockroach_democrdb | postgresql | democrdb @ ACURANZO (schema on PG host) | 0 | Y |
+| mysql_demo | mysql | demo @ CANVAS (connect DB=schema) | 0 | Y |
+| mariadb_demomrdb | mysql | demomrdb @ CANVAS | 0 | Y |
+| sqlite_hydrodemo | sqlite | hydrodemo.sqlite | 0 | Y |
+| db2_demo | db2 | DEMO @ HYDROTST | 0 | Y |
+| yugabytedb_demo | postgresql | demo @ YUGABYTE | 0 | Y |
+
+**MySQL lessons (fixed):**
+
+1. Connect to **schema as database** (`demo` / `demomrdb`), not bootstrap name `canvas` (may be missing).
+2. `JSON_ARRAYAGG` / long `JSON_OBJECT` rows **truncate** in mysql client — metadata dump uses **HEX(columns) + Python** decode; catalog probe uses flat COLUMNS TSV + Python assemble.
+3. Nested `JSON_ARRAYAGG` + correlated `t.TABLE_NAME` failed on MariaDB (`Unknown column t.TABLE_NAME`) — flat join avoids it.
+
+Deferred still: catalog remediation `.sql`; Phase 6 unit tests.
 
 ---
 

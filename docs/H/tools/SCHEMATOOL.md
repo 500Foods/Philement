@@ -2,9 +2,13 @@
 
 Standalone **Bash + Lua** operator utility under
 [`extras/schematool/`](/elements/001-hydrogen/hydrogen/extras/schematool/).
-Compares the **on-disk Lua migration set** to a **running database** `queries`
-table and reports whether each migration was LOADed/APPLYed and whether stored
-`code` / `name` / `summary` still match the Lua sources.
+
+**Two tracks:**
+
+| Track | Flag | Answers |
+| ------- | ------ | --------- |
+| **Metadata (v1)** | default | Did LOAD/APPLY happen? Does stored `queries` text match Lua? |
+| **Catalog (v2)** | `--catalog` | Do live tables/columns/nullability match net applied DDL? |
 
 Quick start (local extras README):
 [`extras/schematool/README.md`](/elements/001-hydrogen/hydrogen/extras/schematool/README.md).
@@ -17,18 +21,24 @@ Implementation plan:
 Hydrogen LOAD/APPLY advances schema well, but does **not** detect
 **historical edit drift**: someone changes an already-shipped
 `design_NNNN.lua` instead of adding `NNNN+1`. Existing databases keep the old
-payload in `queries.code`. SchemaTool surfaces that class of problem with a
-per-migration checklist.
+payload in `queries.code`. SchemaTool **metadata** track surfaces that class
+of problem with a per-migration checklist.
+
+Separately, later migrations can change live shape (e.g. `acuranzo_1190.lua`
+drops `NOT NULL` on `accounts.password_hash`) while each migration’s stored
+text still matches its own Lua file. The **catalog** track folds applied
+forward DDL and probes the live catalog (targeted, not a full-DB dump).
 
 ## What it is / is not
 
 | Is | Is not |
 | ---- | -------- |
 | Read-only auditor (native clients) | Replacement for Hydrogen LOAD/APPLY |
-| Metadata fidelity (types 1000–1003) | Full live-schema / `DESCRIBE` (backlog) |
+| Metadata fidelity (types 1000–1003) | Row-data auditor / product table scans |
+| Live catalog probes (`--catalog`) | Bulk `pg_dump` / full-schema export default |
 | Console checklist via `tables` | Auto-executor of remediation SQL |
-| Commented `.sql` + orphan `.mig` | Full-DB dump tools (`pg_dump`, etc.) |
-| Bash + Lua under `extras/` | C code in `src/` or a REST endpoint |
+| Commented `.sql` + orphan `.mig` | C code in `src/` or a REST endpoint |
+| Bash + Lua under `extras/` | Auto-uncommented live DDL |
 
 ## Requirements
 
@@ -80,6 +90,47 @@ Specialized modes:
 | `--dry-disk` | Disk discovery + stub SQL only |
 | `--emit-expected [PATH]` | Expected payloads JSON only |
 | `--dump-db [PATH]` | DB metadata JSON only |
+| `--catalog` | Live catalog audit (hybrid-C fold + targeted probes) |
+| `--dump-catalog [PATH]` | Live catalog JSON only |
+| `--only-tables a,b` | Catalog: limit fold output + probes (cheap one-table path) |
+
+### Catalog track (`--catalog`)
+
+```bash
+# 1190 acceptance — accounts.password_hash must be live-nullable
+extras/schematool/schematool.sh \
+  --migrations "$HELIUM_ROOT/acuranzo/migrations" \
+  --design acuranzo \
+  --engine sqlite \
+  --database "$HYDROGEN_ROOT/tests/artifacts/database/sqlite/hydrodemo.sqlite" \
+  --catalog --only-tables accounts \
+  --out-dir /tmp/schematool-cat --no-sql
+```
+
+PostgreSQL (Test 40 / `ACURANZO_DB_*`):
+
+```bash
+extras/schematool/schematool.sh \
+  --migrations "$HELIUM_ROOT/acuranzo/migrations" \
+  --design acuranzo \
+  --engine postgresql \
+  --schema demo \
+  --catalog --only-tables accounts \
+  --out-dir /tmp/schematool-cat --no-sql
+```
+
+How it works:
+
+1. Dump applied migration rows (`queries` type **1003** codes) — same adapters as metadata
+2. **Hybrid C fold** — parse CREATE/ALTER/DROP NOT NULL / MODIFY / SQLite rebuild rename
+3. **Targeted probe** — only tables in the expected set (or `--only-tables`):  
+   SQLite `PRAGMA table_info`; PG/MySQL `information_schema`; DB2 `SYSCAT.COLUMNS`
+4. Compare presence + **nullability**; `tables` report (Object / Column / OK / Expected / Live)
+
+With `--only-tables`, metadata audit is skipped (fast path). Without it,
+`--catalog` runs **after** the default metadata audit; exit is **worst-wins**.
+
+**Teaching examples:** catalog → **1190** `password_hash` nullable; metadata → **1280/1281** mail seed text drift.
 
 ## Checklist columns
 
