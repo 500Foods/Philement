@@ -23,6 +23,12 @@
 # print_test_completion()
 
 # CHANGELOG
+# 4.6.0 - 2026-08-03 - Widened subtest counter from 3 digits (%03d) to 4 digits (%04d)
+#                     in all test_ref formatting (print_subtest, print_command, print_output,
+#                     print_result, print_warning, print_error, print_message, print_box,
+#                     print_marker). Updated dump_collected_output() sort keys from
+#                     -k1.9,1.15 -k1.18,1.26n to -k1.9,1.16 -k1.19,1.27n to match the
+#                     new fixed-width subtest ref (NN-XXXX, up to 9999 subtests per test).
 # 4.5.0 - 2026-07-09 - Completion cleanup only kills this test's stable owned PID list
 # 4.4.0 - 2026-07-09 - Test completion kills only owned hydrogen PIDs, not all hydrogen_test_
 # 4.3.0 - 2026-06-22 - dump_collected_output() sort key widened to match the new 4-digit
@@ -74,7 +80,7 @@ export LOG_OUTPUT_GUARD="true"
 
 # Library metadata
 LOG_OUTPUT_NAME="Log Output Library"
-LOG_OUTPUT_VERSION="4.3.0"
+LOG_OUTPUT_VERSION="4.6.0"
 export LOG_OUTPUT_NAME LOG_OUTPUT_VERSION
 
 # Global variables for test/subtest numbering
@@ -160,11 +166,11 @@ dump_collected_output() {
     if [[ -n "${OUTPUT_COLLECTION}" ]]; then
         # Use printf to output the collected string, pipe through sort, preserving ANSI codes.
         # Sort keys are fixed BYTE columns (after %b expands the leading ANSI color escape):
-        #   - chars 9-15  : the subtest ref (e.g. "41-014")
-        #   - chars 18-26 : the elapsed time field "SSSS.ZZZ" (4-digit seconds; see
+        #   - chars 9-16  : the subtest ref (e.g. "41-0014")
+        #   - chars 19-27 : the elapsed time field "SSSS.ZZZ" (4-digit seconds; see
         #                   get_elapsed_time in framework.sh). Sorting numerically here
         #                   keeps lines in chronological order within a subtest.
-        "${PRINTF}" '%b' "${OUTPUT_COLLECTION}" 2>/dev/null | sort -k1.9,1.15 -k1.18,1.26n || true
+        "${PRINTF}" '%b' "${OUTPUT_COLLECTION}" 2>/dev/null | sort -k1.9,1.16 -k1.19,1.27n || true
     fi
 }
 
@@ -330,7 +336,7 @@ print_subtest() {
     local subtest_name="$3"
 
     local test_ref
-    test_ref="${subtest_number}-$(${PRINTF} "%03d" "$((subtest_counter + 1))")"
+    test_ref="${subtest_number}-$(${PRINTF} "%04d" "$((subtest_counter + 1))")"
 
     local elapsed
     elapsed=$(get_elapsed_time)
@@ -349,7 +355,7 @@ print_command() {
     local cmd="$3"
 
     local test_ref
-    test_ref="${subtest_number}-$(${PRINTF} "%03d" "${subtest_counter}")"
+    test_ref="${subtest_number}-$(${PRINTF} "%04d" "${subtest_counter}")"
 
     local elapsed
     elapsed=$(get_elapsed_time)
@@ -383,7 +389,7 @@ print_output() {
     local message=$3
 
     local test_ref
-    test_ref="${subtest_number}-$(${PRINTF} "%03d" "${subtest_counter}")"
+    test_ref="${subtest_number}-$(${PRINTF} "%04d" "${subtest_counter}")"
 
     local elapsed
     elapsed=$(get_elapsed_time)
@@ -414,7 +420,7 @@ print_result() {
     local message=$4
 
     local test_ref
-    test_ref="${subtest_number}-$(${PRINTF} "%03d" "${subtest_counter}")"
+    test_ref="${subtest_number}-$(${PRINTF} "%04d" "${subtest_counter}")"
 
     local elapsed
     elapsed=$(get_elapsed_time)
@@ -445,7 +451,7 @@ print_warning() {
     local message=$3
 
     local test_ref
-    test_ref="${subtest_number}-$(${PRINTF} "%03d" "${subtest_counter}")"
+    test_ref="${subtest_number}-$(${PRINTF} "%04d" "${subtest_counter}")"
 
     local elapsed
     elapsed=$(get_elapsed_time)
@@ -469,7 +475,7 @@ print_error() {
     local message=$3
 
     local test_ref
-    test_ref="${subtest_number}-$(${PRINTF} "%03d" "${subtest_counter}")"
+    test_ref="${subtest_number}-$(${PRINTF} "%04d" "${subtest_counter}")"
 
     local elapsed
     elapsed=$(get_elapsed_time)
@@ -497,7 +503,7 @@ print_message() {
     local message=$3
 
     local test_ref
-    test_ref="${subtest_number}-$(${PRINTF} "%03d" "${subtest_counter}")"
+    test_ref="${subtest_number}-$(${PRINTF} "%04d" "${subtest_counter}")"
 
     local elapsed
     elapsed=$(get_elapsed_time)
@@ -528,7 +534,7 @@ print_box() {
     local message="$3"
     
     local test_ref
-    test_ref="${subtest_number}-$(${PRINTF} "%03d" "${subtest_counter}")"
+    test_ref="${subtest_number}-$(${PRINTF} "%04d" "${subtest_counter}")"
 
     # shellcheck disable=SC2154 # PROJECT_DIR defined in framework.sh
     if [[ "${#message}" -ge "${#PROJECT_DIR}" ]]; then
@@ -568,7 +574,7 @@ print_marker() {
     local subtest_counter="$2"
     
     local test_ref
-    test_ref="${subtest_number}-$(${PRINTF} "%03d" "${subtest_counter}")"
+    test_ref="${subtest_number}-$(${PRINTF} "%04d" "${subtest_counter}")"
 
     local elapsed
     elapsed=$(get_elapsed_time)
