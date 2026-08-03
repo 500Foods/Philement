@@ -12,6 +12,7 @@
 # run_all_tests_parallel() 
 
 # CHANGELOG
+# 8.2.2 - 2026-08-02 - Updated Test 22 version to 7.5.0 (Brotli decompression + proxy/Host header tests)
 # 8.2.1 - 2026-07-29 - Wait for Oh SVG jobs before email; retry COVERAGE.svg without ANSI
 #                       if Oh aborts (munmap_chunk on large colored coverage tables)
 # 8.2.0 - 2026-07-16 - Added --redisplay to re-show the saved final results table and

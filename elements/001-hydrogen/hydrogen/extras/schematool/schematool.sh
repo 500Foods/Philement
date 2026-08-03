@@ -3,8 +3,13 @@
 # SchemaTool — Migration Drift Auditor
 # Compares on-disk Lua migrations against a running database.
 # Outputs: Hydrogen `tables` checklist + fully commented remediation .sql + orphan .mig
-
+#
+# This is the entry point: help text and parameter handling live here.
+# Database/Lua operations, audit orchestration, and rendering are in lib/.
+#
 # CHANGELOG
+# 1.6.0 - 2026-08-02 - Row grouping: --group-size N inserts separators every N rows (default 20; 0 = disabled)
+# 1.5.2 - 2026-08-02 - Refactored into lib/ modules; no behavioral change
 # 1.5.1 - 2026-08-02 - MySQL HEX metadata dump + flat catalog probe (all Test 40 engines)
 # 1.5.0 - 2026-08-02 - Phase 7: --catalog live object shape (hybrid C, targeted probes)
 # 1.4.0 - 2026-07-29 - Phase 5: SCHEMATOOL_DB_* env, tables polish, operator docs
@@ -19,27 +24,23 @@ SCRIPT_PATH="${BASH_SOURCE[0]}"
 SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
 LUA_DIR="${SCRIPT_DIR}/lua"
 DB_DIR="${SCRIPT_DIR}/db"
+LIB_DIR="${SCRIPT_DIR}/lib"
 
-VERSION="1.5.1"
+VERSION="1.6.0"
 
-# Showstoppers
-if ! command -v tables >/dev/null 2>&1; then
-    echo "Error: 'tables' command not found" >&2
-    exit 1
-fi
-if ! command -v jq >/dev/null 2>&1; then
-    echo "Error: 'jq' command not found" >&2
-    exit 1
-fi
-if ! command -v lua >/dev/null 2>&1; then
-    echo "Error: 'lua' command not found" >&2
-    exit 1
-fi
+# Source library modules (helpers, audit orchestration, rendering)
+# shellcheck source=extras/schematool/lib/schematool_init.sh # dependency checks + command lookups
+source "${LIB_DIR}/schematool_init.sh"
+# shellcheck source=extras/schematool/lib/schematool_runners.sh # db/Lua adapter wrappers
+source "${LIB_DIR}/schematool_runners.sh"
+# shellcheck source=extras/schematool/lib/schematool_audit.sh # audit mode dispatch + orchestration
+source "${LIB_DIR}/schematool_audit.sh"
+# shellcheck source=extras/schematool/lib/schematool_render.sh # tables rendering + dispatch
+source "${LIB_DIR}/schematool_render.sh"
 
-TABLES="$(command -v tables)"
-JQ="$(command -v jq)"
-LUA="$(command -v lua)"
-DATE_CMD="$(command -v gdate 2>/dev/null || command -v date)"
+# Verify required tools are present and resolve command paths
+schematool_check_deps
+schematool_resolve_commands
 
 print_help() {
     cat <<'EOF'
@@ -92,6 +93,7 @@ Output:
   --catalog                   Live catalog audit (object shape vs applied DDL fold)
   --dump-catalog [PATH]       Fetch live catalog JSON only (optional --only-tables)
   --only-tables a,b           Catalog: probe/compare only these tables (cheap path)
+  --group-size N              Insert table separator after every N rows (default: 20; 0 = disabled)
   -h, --help                  This help
   --version                   Print version
 
@@ -106,6 +108,7 @@ Exit codes:
 EOF
 }
 
+# --- Argument defaults ---
 MIGRATIONS=""
 DESIGN=""
 ENGINE=""
@@ -136,7 +139,9 @@ CATALOG=0
 DUMP_CATALOG=0
 DUMP_CATALOG_PATH=""
 ONLY_TABLES=""
+ROW_GROUP_SIZE=20
 
+# --- Argument parsing ---
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --migrations)
@@ -263,6 +268,10 @@ while [[ $# -gt 0 ]]; do
             ONLY_TABLES="${2:-}"
             shift 2
             ;;
+        --group-size)
+            ROW_GROUP_SIZE="${2:-}"
+            shift 2
+            ;;
         -h|--help)
             print_help
             exit 0
@@ -331,6 +340,10 @@ if [[ -n "${FROM_REF}" && ! "${FROM_REF}" =~ ^[0-9]+$ ]]; then
 fi
 if [[ -n "${TO_REF}" && ! "${TO_REF}" =~ ^[0-9]+$ ]]; then
     echo "Error: --to must be an integer" >&2
+    exit 1
+fi
+if [[ -n "${ROW_GROUP_SIZE}" && ! "${ROW_GROUP_SIZE}" =~ ^[0-9]+$ ]]; then
+    echo "Error: --group-size must be a non-negative integer" >&2
     exit 1
 fi
 
@@ -470,537 +483,32 @@ CAT_LIVE_JSON="${WORK_DIR}/catalog_live.json"
 CAT_DATA_JSON="${WORK_DIR}/catalog_checklist.json"
 CAT_FINDINGS_JSON="${WORK_DIR}/catalog_findings.json"
 
-run_dump_db() {
-    local out_file="$1"
-    local adapter
-    case "${ENGINE}" in
-        postgresql) adapter="${DB_DIR}/query_pg.sh" ;;
-        mysql) adapter="${DB_DIR}/query_mysql.sh" ;;
-        sqlite) adapter="${DB_DIR}/query_sqlite.sh" ;;
-        db2) adapter="${DB_DIR}/query_db2.sh" ;;
-        *)
-            echo "Error: no dump adapter for engine ${ENGINE}" >&2
-            exit 1
-            ;;
-    esac
-    if [[ ! -x "${adapter}" && -f "${adapter}" ]]; then
-        chmod +x "${adapter}" || true
-    fi
-    if [[ ! -f "${adapter}" ]]; then
-        echo "Error: adapter not found: ${adapter}" >&2
-        exit 1
-    fi
-
-    if [[ "${ENGINE}" == "sqlite" ]]; then
-        if [[ -z "${DATABASE}" ]]; then
-            echo "Error: --database (sqlite file path) is required" >&2
-            exit 1
-        fi
-    elif [[ "${ENGINE}" == "db2" ]]; then
-        if [[ -z "${DATABASE}" || -z "${USER_NAME}" ]]; then
-            echo "Error: --database and --user required for db2 (or HYDROTST_DB_*)" >&2
-            exit 1
-        fi
-        if [[ -z "${SCHEMA}" ]]; then
-            echo "Error: --schema is required for db2 (e.g. DEMO)" >&2
-            exit 1
-        fi
-    else
-        if [[ -z "${HOST}" || -z "${USER_NAME}" || -z "${DATABASE}" ]]; then
-            echo "Error: --host/--user/--database required (or engine env fallbacks)" >&2
-            exit 1
-        fi
-        if [[ -z "${SCHEMA}" ]]; then
-            echo "Error: --schema is required (e.g. demo)" >&2
-            exit 1
-        fi
-    fi
-
-    local dump_args=(
-        --host "${HOST}"
-        --port "${PORT}"
-        --user "${USER_NAME}"
-        --database "${DATABASE}"
-        --schema "${SCHEMA}"
-        --password-env "${PASSWORD_ENV}"
-    )
-    if [[ -n "${FROM_REF}" ]]; then
-        dump_args+=(--from "${FROM_REF}")
-    fi
-    if [[ -n "${TO_REF}" ]]; then
-        dump_args+=(--to "${TO_REF}")
-    fi
-
-    set +e
-    "${adapter}" "${dump_args[@]}" > "${out_file}"
-    local dump_rc=$?
-    set -e
-    if [[ "${dump_rc}" -ne 0 ]]; then
-        echo "Error: database metadata dump failed" >&2
-        exit 1
-    fi
-    if ! "${JQ}" -e 'type == "array"' "${out_file}" >/dev/null 2>&1; then
-        echo "Error: dump did not produce a JSON array" >&2
-        exit 1
-    fi
-}
-
-run_expect() {
-    local out_file="$1"
-    if [[ -z "${SCHEMA}" && "${ENGINE}" != "sqlite" ]]; then
-        echo "Error: --schema is required for expected extract (empty only for sqlite)" >&2
-        exit 1
-    fi
-    local schema_arg="${SCHEMA}"
-    set +e
-    (
-        cd "${MIGRATIONS}" || exit 1
-        if [[ -n "${FROM_REF}" || -n "${TO_REF}" ]]; then
-            "${LUA}" "${LUA_DIR}/schematool_expect.lua" \
-                "${MIGRATIONS}" "${ENGINE}" "${DESIGN}" "${schema_arg}" \
-                --all "${FROM_REF}" "${TO_REF}"
-        else
-            "${LUA}" "${LUA_DIR}/schematool_expect.lua" \
-                "${MIGRATIONS}" "${ENGINE}" "${DESIGN}" "${schema_arg}" \
-                --all
-        fi
-    ) > "${out_file}"
-    local expect_rc=$?
-    set -e
-    if [[ "${expect_rc}" -ne 0 ]]; then
-        echo "Error: expected payload extraction failed" >&2
-        exit 1
-    fi
-    if ! "${JQ}" -e 'type == "array" or type == "object"' "${out_file}" >/dev/null 2>&1; then
-        echo "Error: expected extraction did not produce JSON" >&2
-        exit 1
-    fi
-}
-
-run_discover() {
-    local out_file="$1"
-    if ! "${LUA}" "${LUA_DIR}/schematool_discover.lua" \
-        "${MIGRATIONS}" "${DESIGN}" "${FROM_REF}" "${TO_REF}" \
-        > "${out_file}"; then
-        echo "Error: migration discovery failed" >&2
-        exit 1
-    fi
-    if ! "${JQ}" -e 'type == "array"' "${out_file}" >/dev/null 2>&1; then
-        echo "Error: discovery did not produce a JSON array" >&2
-        exit 1
-    fi
-    local row_count
-    row_count="$("${JQ}" 'length' "${out_file}")"
-    if [[ "${row_count}" -eq 0 ]]; then
-        echo "Error: no migrations matched ${DESIGN}_NNNN.lua in ${MIGRATIONS}" >&2
-        exit 1
-    fi
-}
-
-run_dump_catalog() {
-    local out_file="$1"
-    local adapter
-    case "${ENGINE}" in
-        postgresql) adapter="${DB_DIR}/catalog_pg.sh" ;;
-        mysql) adapter="${DB_DIR}/catalog_mysql.sh" ;;
-        sqlite) adapter="${DB_DIR}/catalog_sqlite.sh" ;;
-        db2) adapter="${DB_DIR}/catalog_db2.sh" ;;
-        *)
-            echo "Error: no catalog adapter for engine ${ENGINE}" >&2
-            exit 1
-            ;;
-    esac
-    if [[ ! -x "${adapter}" && -f "${adapter}" ]]; then
-        chmod +x "${adapter}" || true
-    fi
-    if [[ ! -f "${adapter}" ]]; then
-        echo "Error: catalog adapter not found: ${adapter}" >&2
-        exit 1
-    fi
-
-    local cat_args=(
-        --host "${HOST}"
-        --port "${PORT}"
-        --user "${USER_NAME}"
-        --database "${DATABASE}"
-        --schema "${SCHEMA}"
-        --password-env "${PASSWORD_ENV}"
-    )
-    if [[ -n "${ONLY_TABLES}" ]]; then
-        cat_args+=(--tables "${ONLY_TABLES}")
-    fi
-
-    set +e
-    "${adapter}" "${cat_args[@]}" > "${out_file}"
-    local cat_rc=$?
-    set -e
-    if [[ "${cat_rc}" -ne 0 ]]; then
-        echo "Error: catalog probe failed" >&2
-        exit 1
-    fi
-    if ! "${JQ}" -e 'type == "object" and has("tables")' "${out_file}" >/dev/null 2>&1; then
-        echo "Error: catalog probe did not produce catalog JSON object" >&2
-        exit 1
-    fi
-}
-
-run_catalog_audit() {
-    # Need applied migration codes for fold
-    if [[ ! -f "${DB_JSON}" ]] || ! "${JQ}" -e 'type == "array"' "${DB_JSON}" >/dev/null 2>&1; then
-        local saved_from="${FROM_REF}"
-        local saved_to="${TO_REF}"
-        FROM_REF=""
-        TO_REF=""
-        run_dump_db "${DB_JSON}"
-        FROM_REF="${saved_from}"
-        TO_REF="${saved_to}"
-    fi
-
-    local fold_args=(
-        --db "${DB_JSON}"
-        --schema "${SCHEMA}"
-        --out "${CAT_EXPECTED_JSON}"
-    )
-    if [[ -n "${ONLY_TABLES}" ]]; then
-        fold_args+=(--only-tables "${ONLY_TABLES}")
-    fi
-    set +e
-    "${LUA}" "${LUA_DIR}/schematool_catalog_fold.lua" "${fold_args[@]}"
-    local fold_rc=$?
-    set -e
-    if [[ "${fold_rc}" -ne 0 ]]; then
-        echo "Error: catalog expected-shape fold failed" >&2
-        exit 1
-    fi
-
-    # Probe only tables present in expected (intersection with --only-tables already applied)
-    local probe_tables="${ONLY_TABLES}"
-    if [[ -z "${probe_tables}" ]]; then
-        probe_tables="$("${JQ}" -r '[.tables[].table] | join(",")' "${CAT_EXPECTED_JSON}")"
-    fi
-    local saved_only="${ONLY_TABLES}"
-    ONLY_TABLES="${probe_tables}"
-    run_dump_catalog "${CAT_LIVE_JSON}"
-    ONLY_TABLES="${saved_only}"
-
-    local cmp_args=(
-        --expected "${CAT_EXPECTED_JSON}"
-        --live "${CAT_LIVE_JSON}"
-        --checklist-out "${CAT_DATA_JSON}"
-        --findings-out "${CAT_FINDINGS_JSON}"
-    )
-    if [[ "${ONLY_FAILURES}" -eq 1 ]]; then
-        cmp_args+=(--only-failures)
-    fi
-    set +e
-    "${LUA}" "${LUA_DIR}/schematool_catalog_compare.lua" "${cmp_args[@]}"
-    local ccmp_rc=$?
-    set -e
-    if [[ "${ccmp_rc}" -ne 0 ]]; then
-        echo "Error: catalog compare failed" >&2
-        exit 1
-    fi
-}
-
-# --- Phase 3 only: dump DB ---
-if [[ "${DUMP_DB}" -eq 1 && "${FULL_AUDIT}" -eq 0 && "${CATALOG_AUDIT}" -eq 0 ]]; then
-    run_dump_db "${DB_JSON}"
-    DUMP_OUT="${DUMP_DB_PATH}"
-    if [[ -z "${DUMP_OUT}" ]]; then
-        if [[ -n "${OUT_DIR}" ]]; then
-            DUMP_OUT="${OUT_DIR}/db_metadata.json"
-        else
-            DUMP_OUT=""
-        fi
-    fi
-    ROW_N="$("${JQ}" 'length' "${DB_JSON}")"
-    if [[ -n "${DUMP_OUT}" ]]; then
-        dump_parent="$(dirname "${DUMP_OUT}")"
-        mkdir -p "${dump_parent}"
-        cp "${DB_JSON}" "${DUMP_OUT}"
-        echo "DB metadata: ${DUMP_OUT} (${ROW_N} rows)" >&2
-    else
-        "${JQ}" '.' "${DB_JSON}"
-        echo "DB metadata rows: ${ROW_N}" >&2
-    fi
-    if [[ "${EMIT_EXPECTED}" -eq 0 && "${DRY_DISK}" -eq 0 && "${DUMP_CATALOG}" -eq 0 ]]; then
-        exit 0
-    fi
-fi
-
-# --- Phase 7: dump catalog only ---
-if [[ "${DUMP_CATALOG}" -eq 1 && "${CATALOG_AUDIT}" -eq 0 && "${FULL_AUDIT}" -eq 0 ]]; then
-    run_dump_catalog "${CAT_LIVE_JSON}"
-    CAT_OUT="${DUMP_CATALOG_PATH}"
-    if [[ -z "${CAT_OUT}" ]]; then
-        if [[ -n "${OUT_DIR}" ]]; then
-            CAT_OUT="${OUT_DIR}/catalog_live.json"
-        else
-            CAT_OUT=""
-        fi
-    fi
-    TBL_N="$("${JQ}" '.tables | length' "${CAT_LIVE_JSON}")"
-    if [[ -n "${CAT_OUT}" ]]; then
-        cat_parent="$(dirname "${CAT_OUT}")"
-        mkdir -p "${cat_parent}"
-        cp "${CAT_LIVE_JSON}" "${CAT_OUT}"
-        echo "Catalog: ${CAT_OUT} (${TBL_N} tables)" >&2
-    else
-        "${JQ}" '.' "${CAT_LIVE_JSON}"
-        echo "Catalog tables: ${TBL_N}" >&2
-    fi
-    exit 0
-fi
-
-# --- Phase 2 only: emit expected ---
-if [[ "${EMIT_EXPECTED}" -eq 1 && "${FULL_AUDIT}" -eq 0 ]]; then
-    run_expect "${EXPECTED_JSON}"
-    EXPECT_OUT="${EMIT_EXPECTED_PATH}"
-    if [[ -z "${EXPECT_OUT}" ]]; then
-        if [[ -n "${OUT_DIR}" ]]; then
-            EXPECT_OUT="${OUT_DIR}/expected_payloads.json"
-        else
-            EXPECT_OUT=""
-        fi
-    fi
-    if [[ -n "${EXPECT_OUT}" ]]; then
-        expect_parent="$(dirname "${EXPECT_OUT}")"
-        mkdir -p "${expect_parent}"
-        cp "${EXPECTED_JSON}" "${EXPECT_OUT}"
-        echo "Expected payloads: ${EXPECT_OUT}" >&2
-    else
-        "${JQ}" '.' "${EXPECTED_JSON}"
-    fi
-    if [[ "${DRY_DISK}" -eq 0 && "${DUMP_DB}" -eq 0 ]]; then
-        exit 0
-    fi
-fi
-
 DB_LABEL="${DATABASE:-none}"
 SCHEMA_LABEL="${SCHEMA:-.}"
 AUDIT_EXIT=0
 CATALOG_EXIT=0
 RENDER_MODE="metadata"
 
-# --- Phase 4: full metadata audit ---
-if [[ "${FULL_AUDIT}" -eq 1 ]]; then
-    # Ranged disk set for checklist; full disk set for orphan membership
-    DISK_ALL_JSON="${WORK_DIR}/disk_all.json"
-    run_discover "${DISK_JSON}"
-    if [[ -n "${FROM_REF}" || -n "${TO_REF}" ]]; then
-        # Full discovery without range (orphan = in DB, not on any disk file)
-        if ! "${LUA}" "${LUA_DIR}/schematool_discover.lua" \
-            "${MIGRATIONS}" "${DESIGN}" "" "" \
-            > "${DISK_ALL_JSON}"; then
-            echo "Error: full migration discovery failed" >&2
-            exit 1
-        fi
-    else
-        cp "${DISK_JSON}" "${DISK_ALL_JSON}"
-    fi
-    run_expect "${EXPECTED_JSON}"
-    # Dump all migration metadata (no --from/--to) so orphans outside range are visible
-    SAVED_FROM="${FROM_REF}"
-    SAVED_TO="${TO_REF}"
-    FROM_REF=""
-    TO_REF=""
-    run_dump_db "${DB_JSON}"
-    FROM_REF="${SAVED_FROM}"
-    TO_REF="${SAVED_TO}"
-
-    COMPARE_ARGS=(
-        --disk "${DISK_JSON}"
-        --disk-all "${DISK_ALL_JSON}"
-        --expected "${EXPECTED_JSON}"
-        --db "${DB_JSON}"
-        --normalize "${NORMALIZE}"
-        --checklist-out "${DATA_JSON}"
-        --findings-out "${FINDINGS_JSON}"
-    )
-    if [[ "${ONLY_FAILURES}" -eq 1 ]]; then
-        COMPARE_ARGS+=(--only-failures)
-    fi
-    if [[ "${INCLUDE_REVERSE}" -eq 1 ]]; then
-        COMPARE_ARGS+=(--include-reverse)
-    fi
-    if [[ "${INCLUDE_DIAGRAM}" -eq 1 ]]; then
-        COMPARE_ARGS+=(--include-diagram)
-    fi
-
-    set +e
-    "${LUA}" "${LUA_DIR}/schematool_compare.lua" "${COMPARE_ARGS[@]}"
-    cmp_rc=$?
-    set -e
-    if [[ "${cmp_rc}" -ne 0 ]]; then
-        echo "Error: compare failed" >&2
-        exit 1
-    fi
-
-    AUDIT_EXIT="$("${JQ}" -r '.exit_code // 0' "${FINDINGS_JSON}")"
-    MIN_REF="$("${JQ}" 'min_by(.ref).ref' "${DATA_JSON}")"
-    MAX_REF="$("${JQ}" 'max_by(.ref).ref' "${DATA_JSON}")"
-    ROW_COUNT="$("${JQ}" 'length' "${DATA_JSON}")"
-    CNT_OK="$("${JQ}" -r '.counts.ok // 0' "${FINDINGS_JSON}")"
-    CNT_DRIFT="$("${JQ}" -r '.counts.drift // 0' "${FINDINGS_JSON}")"
-    CNT_MLOAD="$("${JQ}" -r '.counts.missing_load // 0' "${FINDINGS_JSON}")"
-    CNT_MAPPLY="$("${JQ}" -r '.counts.missing_apply // 0' "${FINDINGS_JSON}")"
-    CNT_ORPHAN="$("${JQ}" -r '.counts.orphans // 0' "${FINDINGS_JSON}")"
-    DB_MAX_APPLY="$("${JQ}" '[.[] | select(.query_type==1003) | .query_ref] | if length>0 then max else 0 end' "${DB_JSON}")"
-    DISK_MAX="$("${JQ}" 'max_by(.ref).ref' "${DISK_JSON}")"
-
-    case "${AUDIT_EXIT}" in
-        0) EXIT_LABEL="exit 0 clean" ;;
-        2) EXIT_LABEL="exit 2 drift/missing" ;;
-        3) EXIT_LABEL="exit 3 anomalies" ;;
-        *) EXIT_LABEL="exit ${AUDIT_EXIT}" ;;
-    esac
-
-    SUBTITLE="{CYAN}Audit{WHITE} refs ${MIN_REF}-${MAX_REF} ({BOLD}${ROW_COUNT}{RESET}{CYAN} rows) · disk AVAIL ${DISK_MAX} · DB APPLY ${DB_MAX_APPLY}{RESET}"
-    # Keep footer plain-ish: tables theme tokens vary; counts + exit are the operator signal
-    FOOTER="{CYAN}${DISPLAY_STAMP}{RESET} {RED}———{RESET} ok=${CNT_OK} drift=${CNT_DRIFT} missL=${CNT_MLOAD} missA=${CNT_MAPPLY} orphan=${CNT_ORPHAN} · ${EXIT_LABEL} · norm=${NORMALIZE}"
-
-    # Remediation artifacts
-    if [[ "${NO_SQL}" -eq 0 ]]; then
-        if [[ -z "${SQL_OUT}" ]]; then
-            if [[ -n "${OUT_DIR}" ]]; then
-                SQL_OUT="${OUT_DIR}/schematool_${DESIGN}_${ENGINE}_${UTC_STAMP}.sql"
-            else
-                SQL_OUT="./schematool_${DESIGN}_${ENGINE}_${UTC_STAMP}.sql"
-            fi
-        fi
-    fi
-
-    MIG_PATH="${MIG_OUT}"
-    if [[ -z "${MIG_PATH}" && -n "${OUT_DIR}" ]]; then
-        orphan_n="$("${JQ}" '.counts.orphans // 0' "${FINDINGS_JSON}")"
-        if [[ "${orphan_n}" -gt 0 ]]; then
-            MIG_PATH="${OUT_DIR}/schematool_${DESIGN}_${ENGINE}_${UTC_STAMP}.mig"
-        fi
-    fi
-
-    if [[ "${NO_SQL}" -eq 0 || -n "${MIG_PATH}" ]]; then
-        REM_ARGS=(
-            --findings "${FINDINGS_JSON}"
-            --design "${DESIGN}"
-            --engine "${ENGINE}"
-            --schema "${SCHEMA}"
-            --database "${DATABASE}"
-            --migrations "${MIGRATIONS}"
-            --normalize "${NORMALIZE}"
-            --version "${VERSION}"
-            --stamp "${UTC_STAMP}"
-        )
-        if [[ "${NO_SQL}" -eq 0 ]]; then
-            sql_parent="$(dirname "${SQL_OUT}")"
-            mkdir -p "${sql_parent}"
-            REM_ARGS+=(--sql-out "${SQL_OUT}")
-        else
-            # remediate requires --sql-out; write to work dir and discard
-            REM_ARGS+=(--sql-out "${WORK_DIR}/discard.sql")
-        fi
-        if [[ -n "${MIG_PATH}" ]]; then
-            mig_parent="$(dirname "${MIG_PATH}")"
-            mkdir -p "${mig_parent}"
-            REM_ARGS+=(--mig-out "${MIG_PATH}")
-        fi
-        if [[ "${INCLUDE_OK}" -eq 1 ]]; then
-            REM_ARGS+=(--include-ok-comments)
-        fi
-        set +e
-        "${LUA}" "${LUA_DIR}/schematool_remediate.lua" "${REM_ARGS[@]}"
-        rem_rc=$?
-        set -e
-        if [[ "${rem_rc}" -ne 0 ]]; then
-            echo "Error: remediation generation failed" >&2
-            exit 1
-        fi
-    fi
-
-    if [[ -n "${OUT_DIR}" ]]; then
-        cp "${DATA_JSON}" "${OUT_DIR}/checklist_data.json"
-        cp "${FINDINGS_JSON}" "${OUT_DIR}/findings.json"
-        cp "${DB_JSON}" "${OUT_DIR}/db_metadata.json"
-        cp "${EXPECTED_JSON}" "${OUT_DIR}/expected_payloads.json"
-        cp "${DISK_JSON}" "${OUT_DIR}/disk.json"
-    fi
-elif [[ "${CATALOG_AUDIT}" -eq 0 ]]; then
-    # Disk-only (Phase 1)
-    run_discover "${DATA_JSON}"
-    MIN_REF="$("${JQ}" 'min_by(.ref).ref' "${DATA_JSON}")"
-    MAX_REF="$("${JQ}" 'max_by(.ref).ref' "${DATA_JSON}")"
-    ROW_COUNT="$("${JQ}" 'length' "${DATA_JSON}")"
-    SUBTITLE="{CYAN}Disk discovery{WHITE} refs ${MIN_REF}–${MAX_REF} ({BOLD}${ROW_COUNT}{RESET}{CYAN} files) · no DB audit{RESET}"
-    FOOTER="{CYAN}Generated{WHITE} ${DISPLAY_STAMP}{RESET} {RED}———{RESET} {YELLOW}dry-disk{RESET}"
-
-    if [[ "${NO_SQL}" -eq 0 ]]; then
-        if [[ -z "${SQL_OUT}" ]]; then
-            if [[ -n "${OUT_DIR}" ]]; then
-                SQL_OUT="${OUT_DIR}/schematool_${DESIGN}_${ENGINE}_${UTC_STAMP}.sql"
-            else
-                SQL_OUT="./schematool_${DESIGN}_${ENGINE}_${UTC_STAMP}.sql"
-            fi
-        fi
-        sql_parent="$(dirname "${SQL_OUT}")"
-        mkdir -p "${sql_parent}"
-        {
-            echo "-- ============================================================================="
-            echo "-- SchemaTool remediation (NOT EXECUTED)"
-            echo "-- schematool ${VERSION} · dry-disk stub"
-            echo "-- design=${DESIGN} engine=${ENGINE} schema=${SCHEMA_LABEL} database=${DB_LABEL}"
-            echo "-- migrations=${MIGRATIONS}"
-            echo "-- refs=${MIN_REF}-${MAX_REF} count=${ROW_COUNT}"
-            echo "-- normalize=${NORMALIZE}"
-            echo "-- Generated: ${UTC_STAMP}"
-            echo "-- Rule: Uncomment deliberately. Prefer Hydrogen LOAD/APPLY when possible."
-            echo "-- Full audit requires DB connection (not --dry-disk)."
-            echo "-- ============================================================================="
-            echo "--"
-        } > "${SQL_OUT}"
-        echo "SQL: ${SQL_OUT} (all statements commented)" >&2
-    fi
-
-    if [[ -n "${OUT_DIR}" ]]; then
-        cp "${DATA_JSON}" "${OUT_DIR}/checklist_data.json"
-    fi
+# --- Early-exit modes (standalone dump/emit; may exit 0 internally) ---
+if [[ "${DUMP_DB}" -eq 1 && "${FULL_AUDIT}" -eq 0 && "${CATALOG_AUDIT}" -eq 0 ]]; then
+    schematool_run_dump_db_only
+fi
+if [[ "${DUMP_CATALOG}" -eq 1 && "${CATALOG_AUDIT}" -eq 0 && "${FULL_AUDIT}" -eq 0 ]]; then
+    schematool_run_dump_catalog_only
+fi
+if [[ "${EMIT_EXPECTED}" -eq 1 && "${FULL_AUDIT}" -eq 0 ]]; then
+    schematool_run_emit_expected_only
 fi
 
-# --- Phase 7: catalog audit ---
+# --- Audit orchestration ---
+if [[ "${FULL_AUDIT}" -eq 1 ]]; then
+    schematool_run_metadata_audit
+elif [[ "${CATALOG_AUDIT}" -eq 0 ]]; then
+    schematool_run_dry_disk
+fi
+
 if [[ "${CATALOG_AUDIT}" -eq 1 ]]; then
-    run_catalog_audit
-    CATALOG_EXIT="$("${JQ}" -r '.exit_code // 0' "${CAT_FINDINGS_JSON}")"
-    CAT_OK="$("${JQ}" -r '.counts.ok // 0' "${CAT_FINDINGS_JSON}")"
-    CAT_MT="$("${JQ}" -r '.counts.missing_table // 0' "${CAT_FINDINGS_JSON}")"
-    CAT_MC="$("${JQ}" -r '.counts.missing_column // 0' "${CAT_FINDINGS_JSON}")"
-    CAT_NULL="$("${JQ}" -r '.counts.nullability // 0' "${CAT_FINDINGS_JSON}")"
-    CAT_CHK="$("${JQ}" -r '.counts.checked // 0' "${CAT_FINDINGS_JSON}")"
-    CAT_ROWS="$("${JQ}" 'length' "${CAT_DATA_JSON}")"
-
-    case "${CATALOG_EXIT}" in
-        0) CAT_EXIT_LABEL="exit 0 clean" ;;
-        2) CAT_EXIT_LABEL="exit 2 shape drift" ;;
-        *) CAT_EXIT_LABEL="exit ${CATALOG_EXIT}" ;;
-    esac
-
-    if [[ -n "${OUT_DIR}" ]]; then
-        cp "${CAT_EXPECTED_JSON}" "${OUT_DIR}/catalog_expected.json"
-        cp "${CAT_LIVE_JSON}" "${OUT_DIR}/catalog_live.json"
-        cp "${CAT_DATA_JSON}" "${OUT_DIR}/catalog_checklist.json"
-        cp "${CAT_FINDINGS_JSON}" "${OUT_DIR}/catalog_findings.json"
-        if [[ -f "${DB_JSON}" ]]; then
-            cp "${DB_JSON}" "${OUT_DIR}/db_metadata.json"
-        fi
-    fi
-
-    # Catalog-only render when metadata was skipped
-    if [[ "${FULL_AUDIT}" -eq 0 ]]; then
-        RENDER_MODE="catalog"
-        DATA_JSON="${CAT_DATA_JSON}"
-        SUBTITLE="{CYAN}Catalog{WHITE} hybrid-C · ${CAT_CHK} checks · tables filter=${ONLY_TABLES:-all}{RESET}"
-        FOOTER="{CYAN}${DISPLAY_STAMP}{RESET} {RED}———{RESET} ok=${CAT_OK} missT=${CAT_MT} missC=${CAT_MC} null=${CAT_NULL} · ${CAT_EXIT_LABEL}"
-    else
-        # Print catalog table after metadata
-        RENDER_MODE="both"
-    fi
+    schematool_run_catalog_audit
 fi
 
 # Worst-wins exit across tracks
@@ -1009,118 +517,7 @@ if [[ "${CATALOG_EXIT}" -gt "${FINAL_EXIT}" ]]; then
     FINAL_EXIT="${CATALOG_EXIT}"
 fi
 
-# Shorten long sqlite paths in title for readability
-TITLE_DB="${DB_LABEL}"
-if [[ "${ENGINE}" == "sqlite" && ${#TITLE_DB} -gt 48 ]]; then
-    TITLE_DB="…/${TITLE_DB##*/}"
-fi
-
-render_metadata_table() {
-    local theme="Red"
-    if [[ "${AUDIT_EXIT}" -eq 0 && "${FULL_AUDIT}" -eq 1 ]]; then
-        theme="Blue"
-    fi
-    cat > "${LAYOUT_JSON}" <<EOF
-{
-    "title": "{BOLD}{WHITE}SchemaTool{RESET} — ${DESIGN} / ${ENGINE} / ${SCHEMA_LABEL} @ ${TITLE_DB}",
-    "subtitle": "${SUBTITLE}",
-    "footer": "${FOOTER}",
-    "footer_position": "right",
-    "theme": "${theme}",
-    "columns": [
-        {"header": "Ref", "key": "ref", "datatype": "int", "justification": "right", "summary": "count"},
-        {"header": "File", "key": "file", "datatype": "text", "justification": "left", "summary": "count"},
-        {"header": "LOAD", "key": "load", "datatype": "text", "justification": "center"},
-        {"header": "L.match", "key": "load_match", "datatype": "text", "justification": "center"},
-        {"header": "APPLY", "key": "apply", "datatype": "text", "justification": "center"},
-        {"header": "A.match", "key": "apply_match", "datatype": "text", "justification": "center"},
-        {"header": "Notes", "key": "notes", "datatype": "text", "justification": "left"}
-    ]
-}
-EOF
-    if [[ -n "${OUT_DIR}" ]]; then
-        cp "${LAYOUT_JSON}" "${OUT_DIR}/checklist_layout.json"
-    fi
-    case "${FORMAT}" in
-        tables|both)
-            "${TABLES}" "${LAYOUT_JSON}" "${DATA_JSON}"
-            ;;
-        json)
-            "${JQ}" '.' "${DATA_JSON}"
-            ;;
-        *)
-            echo "Error: unsupported format ${FORMAT}" >&2
-            exit 1
-            ;;
-    esac
-    if [[ "${FORMAT}" == "both" && -n "${OUT_DIR}" ]]; then
-        echo "JSON: ${OUT_DIR}/checklist_data.json" >&2
-    elif [[ "${FORMAT}" == "both" ]]; then
-        echo "--- checklist JSON ---"
-        "${JQ}" '.' "${DATA_JSON}"
-    fi
-}
-
-render_catalog_table() {
-    local theme="Red"
-    if [[ "${CATALOG_EXIT}" -eq 0 ]]; then
-        theme="Blue"
-    fi
-    local cat_layout="${WORK_DIR}/catalog_layout.json"
-    local only_label="${ONLY_TABLES:-all}"
-    cat > "${cat_layout}" <<EOF
-{
-    "title": "{BOLD}{WHITE}SchemaTool Catalog{RESET} — ${DESIGN} / ${ENGINE} / ${SCHEMA_LABEL} @ ${TITLE_DB}",
-    "subtitle": "{CYAN}Live object shape{WHITE} · hybrid-C · filter=${only_label} · ${CAT_CHK} checks ({BOLD}${CAT_ROWS}{RESET}{CYAN} rows){RESET}",
-    "footer": "{CYAN}${DISPLAY_STAMP}{RESET} {RED}———{RESET} ok=${CAT_OK} missT=${CAT_MT} missC=${CAT_MC} null=${CAT_NULL} · ${CAT_EXIT_LABEL}",
-    "footer_position": "right",
-    "theme": "${theme}",
-    "columns": [
-        {"header": "Object", "key": "object", "datatype": "text", "justification": "left", "summary": "count"},
-        {"header": "Column", "key": "column", "datatype": "text", "justification": "left"},
-        {"header": "Check", "key": "check", "datatype": "text", "justification": "center"},
-        {"header": "OK", "key": "status", "datatype": "text", "justification": "center"},
-        {"header": "Expected", "key": "expected", "datatype": "text", "justification": "center"},
-        {"header": "Live", "key": "live", "datatype": "text", "justification": "center"},
-        {"header": "Notes", "key": "notes", "datatype": "text", "justification": "left"}
-    ]
-}
-EOF
-    if [[ -n "${OUT_DIR}" ]]; then
-        cp "${cat_layout}" "${OUT_DIR}/catalog_layout.json"
-    fi
-    case "${FORMAT}" in
-        tables|both)
-            "${TABLES}" "${cat_layout}" "${CAT_DATA_JSON}"
-            ;;
-        json)
-            "${JQ}" '.' "${CAT_DATA_JSON}"
-            ;;
-        *)
-            echo "Error: unsupported format ${FORMAT}" >&2
-            exit 1
-            ;;
-    esac
-    if [[ "${FORMAT}" == "both" && -n "${OUT_DIR}" ]]; then
-        echo "JSON: ${OUT_DIR}/catalog_checklist.json" >&2
-    elif [[ "${FORMAT}" == "both" ]]; then
-        echo "--- catalog JSON ---"
-        "${JQ}" '.' "${CAT_DATA_JSON}"
-    fi
-}
-
-case "${RENDER_MODE}" in
-    catalog)
-        render_catalog_table
-        ;;
-    both)
-        render_metadata_table
-        echo "" >&2
-        render_catalog_table
-        ;;
-    *)
-        render_metadata_table
-        ;;
-esac
+# Render checklist
+schematool_render
 
 exit "${FINAL_EXIT}"

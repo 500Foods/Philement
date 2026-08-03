@@ -21,6 +21,20 @@
     "Swagger": {
         "Enabled": true,
         "Prefix": "/apidocs",
+        "Metadata": {
+            "Title": "Hydrogen Test API Two",
+            "Description": "Test API for Swagger UI configuration 2",
+            "Version": "2.0.0",
+            "Contact": {
+                "Name": "Test Contact Two",
+                "Email": "contact2@test.com",
+                "URL": "https://test2.example.com/contact"
+            },
+            "License": {
+                "Name": "Apache-2.0",
+                "URL": "https://www.apache.org/licenses/LICENSE-2.0"
+            }
+        },
         "UIOptions": {
             "TryItEnabled": true,
             "AlwaysExpanded": true,

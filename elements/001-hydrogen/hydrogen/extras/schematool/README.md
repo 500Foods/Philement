@@ -34,10 +34,30 @@ extras/schematool/schematool.sh \
 
 Requires: `tables`, `jq`, `lua`, plus `sqlite3` / `psql` / `mysql` / `db2`.
 
+## Row Grouping
+
+By default, the checklist table inserts a horizontal separator after every 20
+rows to make long tables easier to scan. Override with `--group-size N`
+(`0` disables grouping entirely):
+
+```bash
+extras/schematool/schematool.sh \
+  --migrations "$HELIUM_ROOT/acuranzo/migrations" \
+  --design acuranzo \
+  --engine sqlite \
+  --database "$HYDROGEN_ROOT/tests/artifacts/database/sqlite/hydrodemo.sqlite" \
+  --group-size 50
+```
+
 ## Layout
 
 ```text
-schematool.sh                 # CLI (v1.5+)
+schematool.sh                 # CLI entry — help + parameter handling
+lib/
+  schematool_init.sh          # dependency checks + command path resolution
+  schematool_runners.sh       # db/Lua adapter wrappers (query/catalog adapters, Lua extractors)
+  schematool_audit.sh         # audit mode dispatch + orchestration (dump/emit/audits)
+  schematool_render.sh        # tables rendering + render dispatch
 lua/
   schematool_discover.lua
   schematool_expect.lua
@@ -49,6 +69,7 @@ lua/
 db/
   query_{pg,mysql,sqlite,db2}.sh
   catalog_{pg,mysql,sqlite,db2}.sh
+  common.sh
 testdata/
   expected_pg_demo_1000_1002.json
 ```

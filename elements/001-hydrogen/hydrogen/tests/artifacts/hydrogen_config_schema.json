@@ -564,6 +564,52 @@
                     "type": "string",
                     "description": "Swagger UI URL prefix"
                 },
+                "WebRoot": {
+                    "type": "string",
+                    "description": "WebRoot path for Swagger files (PAYLOAD:/ path or filesystem path)"
+                },
+                "CORSOrigin": {
+                    "type": "string",
+                    "description": "Optional per-subsystem CORS override"
+                },
+                "Metadata": {
+                    "type": "object",
+                    "description": "Swagger metadata (title, description, version, contact, license)",
+                    "properties": {
+                        "Title": {
+                            "type": "string",
+                            "description": "API title"
+                        },
+                        "Description": {
+                            "type": "string",
+                            "description": "API description"
+                        },
+                        "Version": {
+                            "type": "string",
+                            "description": "API version"
+                        },
+                        "Contact": {
+                            "type": "object",
+                            "description": "Contact information",
+                            "properties": {
+                                "Name": { "type": "string" },
+                                "Email": { "type": "string" },
+                                "URL": { "type": "string" }
+                            },
+                            "additionalProperties": false
+                        },
+                        "License": {
+                            "type": "object",
+                            "description": "License information",
+                            "properties": {
+                                "Name": { "type": "string" },
+                                "URL": { "type": "string" }
+                            },
+                            "additionalProperties": false
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "UIOptions": {
                     "type": "object",
                     "description": "Swagger UI options",
