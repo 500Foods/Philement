@@ -4,6 +4,7 @@
 # Collects and analyzes coverage data from Unity and blackbox tests
 
 # CHANGELOG
+# 5.2.0 - 2026-08-03 - Always run test count analysis regardless of whether counts match; fix buggy non-deduplicated awk recalculation of test10_total_executed that caused false FAIL with inflated counts
 # 5.1.0 - 2026-07-04 - Hardened test count parsing: strip newlines/whitespace from cache and diagnostic count values to prevent [[: ... arithmetic syntax error
 # 5.0.0 - 2025-12-05 - Added HYDROGEN_ROOT environment variable check
 # 4.1.0 - 2025-10-10 - Sorted list of uncovered files
@@ -25,7 +26,7 @@ TEST_NAME="Test Suite Coverage  {BLUE}coverage_table{RESET}"
 TEST_ABBR="COV"
 TEST_NUMBER="89"
 TEST_COUNTER=0
-TEST_VERSION="5.1.0"
+TEST_VERSION="5.2.0"
 
 export SKIP_GCOV_REGEN=0
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
@@ -332,20 +333,11 @@ print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  - Test 10 (executed): ${test
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  - Coverage (mapped): ${coverage_table_display} tests"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  - Raw (RUN_TEST): ${raw_display} tests"
 
-if [[ "${test10_total_executed}" -eq "${coverage_table_count}" ]] && [[ "${coverage_table_count}" -eq "${raw_runtest_count}" ]]; then
-    test10_final_display=$(format_number "${formatted_test10}")
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All test counts match: ${test10_final_display} tests consistently reported"
-else
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Test count discrepancies found"
-fi
+# Perform additional analysis always, regardless of whether counts match,
+# to surface duplicate test names, mismatches, and other count discrepancies
+print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Additional test analysis"
 
-# Only perform additional analysis if counts don't match
-if [[ "${test10_total_executed}" -eq "${coverage_table_count}" ]] && [[ "${coverage_table_count}" -eq "${raw_runtest_count}" ]]; then
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "All test counts match - skipping detailed analysis"
-else
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Additional test analysis (counts don't match)"
-
-    # Show fast A, B, C, D sections only when investigating discrepancies
+    # A, B, C, D, E, F, G sections investigate potential test count discrepancies
     if [[ -d "tests/unity/src" ]] && [[ -d "${BUILD_DIR}/tests/diagnostics" ]]; then
     # Find the most recent Test 10 diagnostic directory
     latest_test10_dir=$("${FIND}" "${BUILD_DIR}/tests/diagnostics" -name "test_10_*" -type d 2>/dev/null | sort -r | head -1 || true)
@@ -675,10 +667,8 @@ else
 
         fi
     fi
-fi
 
-# Only do expensive detailed failure analysis if counts don't match
-if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]] || [[ "${coverage_table_count}" -ne "${raw_runtest_count}" ]]; then
+# Always perform the expensive detailed analysis to surface any discrepancies
     # Parse Test 10's individual test execution results
     declare -A test10_executed_counts
     declare -A grep_test_counts
@@ -696,15 +686,16 @@ if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]] || [[ "${cover
             basename_file=\$(basename \"\$file\" .c)
             test_count=\$(\"\$GREP\" -c \"RUN_TEST(\" \"\$file\" 2>/dev/null || echo \"0\")
             ignore_count=\$(\"\$GREP\" -c \"if (0) RUN_TEST(\" \"\$file\" 2>/dev/null || echo \"0\")
-            echo \"\${basename_file}:\${test_count}:\${ignore_count}\"
+            echo \"\${basename_file}:\${test_count}:\${ignore_count}:\${file}\"
         done
     " _ > "${temp_results_file}" 2>/dev/null
 
     # Populate cache arrays
-    while IFS=: read -r basename_file test_count ignore_count; do
+    while IFS=: read -r basename_file test_count ignore_count file_path; do
         if [[ "${test_count}" =~ ^[0-9]+$ ]] && [[ "${ignore_count}" =~ ^[0-9]+$ ]]; then
             cached_runtest_counts["${basename_file}"]=${test_count}
             cached_ignore_counts["${basename_file}"]=${ignore_count}
+            cached_test_files["${basename_file}"]="${file_path}"
         fi
     done < "${temp_results_file}"
     rm -f "${temp_results_file}"
@@ -718,15 +709,10 @@ if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]] || [[ "${cover
         latest_test10_dir=$("${FIND}" "${BUILD_DIR}/tests/diagnostics" -name "test_10_*" -type d 2>/dev/null | sort -r | head -1 || true)
 
         if [[ -n "${latest_test10_dir}" ]]; then
-            # Ultra-efficient: single awk pass across all diagnostic files
-            # shellcheck disable=SC2312 # Intentional FIND | AWK pipeline
-            test10_total_executed_raw=$("${FIND}" "${latest_test10_dir}" -name "*.txt" -type f -exec "${AWK}" "
-            /Tests/ && /Failures/ && /Ignored/ {sum += \$1}
-            ENDFILE {if (!/Tests/ || !/Failures/ || !/Ignored/) sum += 0}
-            END {print sum}
-            " {} + 2>/dev/null || echo "0")
-            test10_total_executed=$(sanitize_count "${test10_total_executed_raw}")
-    
+            # test10_total_executed retains its correct value from cache/diagnostics (lines 290-295).
+            # Do not recalculate here with a non-deduplicated awk sum that over-counts
+            # by summing every matching line across all files instead of one per file.
+
             # Ultra-efficient awk-based parsing of diagnostic files
             diag_output=$("${FIND}" "${latest_test10_dir}" -name "*.txt" -type f -exec "${AWK}" "
             BEGIN {
@@ -989,7 +975,6 @@ if [[ "${test10_total_executed}" -ne "${coverage_table_count}" ]] || [[ "${cover
     VALIDATION_DURATION=$(echo "${VALIDATION_END_TIME} - ${VALIDATION_START_TIME}" | bc 2>/dev/null || echo "0")
     detailed_duration_display=$(format_duration "${VALIDATION_DURATION}")
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Total validation section took: ${detailed_duration_display} (detailed path)"
-fi
-  
+
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
 ${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"

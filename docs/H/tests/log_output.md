@@ -7,9 +7,9 @@ The Log Output Library (`log_output.sh`) provides consistent logging, formatting
 ## Library Information
 
 - **Script**: `../lib/log_output.sh`
-- **Version**: 3.2.0
+- **Version**: 4.6.0
 - **Created**: 2025-07-02
-- **Updated**: 2025-07-18 - Modified output collection to dump cache when new TEST starts for progressive feedback
+- **Updated**: 2026-08-03 - Widened subtest counter from 3 digits to 4 digits (NN-XXXX) to support >1000 subtests per test
 - **Purpose**: Provides modular logging functionality with modern numbered output system
 
 ## Purpose
@@ -37,7 +37,7 @@ The Log Output Library (`log_output.sh`) provides consistent logging, formatting
 ### Test Numbering
 
 - `CURRENT_TEST_NUMBER` - Current test number (e.g., "10")
-- `CURRENT_SUBTEST_NUMBER` - Current subtest number (e.g., "001")
+- `CURRENT_SUBTEST_NUMBER` - Current subtest number (e.g., "0001")
 - `SUBTEST_COUNTER` - Auto-incrementing subtest counter
 
 ### Timing and Statistics
@@ -89,7 +89,7 @@ Sets the current subtest number for output prefixing.
 
 **Parameters:**
 
-- `number`: Subtest number (e.g., "001")
+   - `number`: Subtest number (e.g., "0001")
 
 **Usage:**
 
@@ -119,12 +119,12 @@ set_test_number "$TEST_NUMBER"
 
 #### `next_subtest()`
 
-Increments the subtest counter and sets the current subtest number in 3-digit format.
+   Increments the subtest counter and sets the current subtest number in 4-digit format.
 
 **Features:**
 
 - Auto-increments SUBTEST_COUNTER
-- Sets CURRENT_SUBTEST_NUMBER in format "001", "002", etc.
+   - Sets CURRENT_SUBTEST_NUMBER in format "0001", "0002", etc.
 
 **Usage:**
 
@@ -149,7 +149,7 @@ Gets the current test prefix for output formatting.
 
 **Returns:**
 
-- "XX-YYY" format if both test and subtest numbers are set
+- "XX-YYYY" format if both test and subtest numbers are set
 - "XX" format if only test number is set
 - "XX" if no numbers are set
 
@@ -251,7 +251,7 @@ Prints a beautiful test header using tables.sh with proper columns.
 - Uses tables.sh for professional table formatting
 - Automatically starts test timer
 - Creates timestamp with milliseconds
-- Includes test ID in format "XX-000"
+- Includes test ID in format "XX-0000"
 - Shows Test#, Test Title, Version, and Started columns
 
 **Usage:**
@@ -270,7 +270,7 @@ Prints a formatted subtest header with timing and numbering. **NEW**: Now provid
 
 **Features:**
 
-- Shows current test-subtest number (e.g., "10-001")
+- Shows current test-subtest number (e.g., "10-0001")
 - Displays elapsed time since test start
 - Uses blue color formatting with bold text
 - **NEW**: Automatically dumps any cached output from previous test activities before starting new test
@@ -541,13 +541,13 @@ source "lib/framework.sh"       # Third - uses output functions
 All output follows a consistent format:
 
 ```log
-  XX-YYY   SSS.ZZZ   ██ TYPE   message content
+  XX-YYYY   SSSS.ZZZ   ██ TYPE   message content
 ```
 
 Where:
 
-- `XX-YYY`: Test and subtest number (e.g., "10-001")
-- `SSS.ZZZ`: Elapsed time in seconds with milliseconds (e.g., "001.234")
+- `XX-YYYY`: Test and subtest number (e.g., "10-0001")
+- `SSSS.ZZZ`: Elapsed time in seconds with milliseconds (e.g., "0001.234")
 - `██ TYPE`: Colored icon and type label (PASS, FAIL, WARN, ERROR, INFO, DATA, EXEC)
 - `message content`: The actual message
 
@@ -569,6 +569,21 @@ All legacy functions have been completely removed as of version 3.0.2.
 
 ## Version History
 
+- **4.6.0** (2026-08-03) - Widened subtest counter from 3 digits (%03d) to 4 digits (%04d) to support >1000 subtests per test
+- **4.3.0** (2026-06-22) - dump_collected_output() sort key widened to match the new 4-digit elapsed-time field (SSSS.ZZZ)
+- **4.3.0** (2026-06-22) - dump_collected_output() sort key widened to match the new 4-digit elapsed-time field (SSSS.ZZZ)
+- **4.2.0** (2026-01-23) - Added print_marker() to be a little more stylish
+- **4.1.0** (2026-01-01) - Added HELIUM_ROOT path filtering to process_message() function
+- **4.0.0** (2025-12-05) - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
+- **3.9.0** (2025-08-18) - Inlining some functions for performance
+- **3.8.0** (2025-08-17) - Converted OUTPUT_COLLECTION from array to simple string for improved performance
+- **3.7.0** (2025-08-10) - Simplified some log output naming, cleared out mktemp calls
+- **3.6.0** (2025-08-07) - Support for commas in test names (ie, thousands separators)
+- **3.5.0** (2025-08-06) - Improvements to logging file handling, common TAB file naming
+- **3.4.0** (2025-08-02) - Removed unused functions, moved test functions to framework.sh
+- **3.3.1** (2025-07-31) - Fixed issue where not all collected output was output/cleared at end of test
+- **3.3.0** (2025-07-20) - Updated guard clause to prevent multiple sourcing
+- **3.2.1** (2025-07-18) - Fixed hanging issue in output collection mechanism when running through orchestrator
 - **3.2.0** (2025-07-18) - Modified output collection to dump cache when new TEST starts for progressive feedback
 - **3.1.0** (2025-07-07) - Restructured how test elapsed times are stored and accessed
 - **3.0.4** (2025-07-06) - Added mechanism to handle absolute paths in log output

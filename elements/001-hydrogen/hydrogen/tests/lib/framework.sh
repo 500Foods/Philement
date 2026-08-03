@@ -246,7 +246,7 @@ set_test_number() {
 # Function to reset subtest counter
 reset_subtest_counter() {
     SUBTEST_COUNTER=0
-    CURRENT_SUBTEST_NUMBER="000"
+    CURRENT_SUBTEST_NUMBER="0000"
 }
 
 # Function to start test timing
