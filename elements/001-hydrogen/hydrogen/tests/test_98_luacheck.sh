@@ -8,6 +8,7 @@
  
 # CHANGELOG
 # 1.1.0 - 2026-01-01 - Added HELIUM_ROOT Lua files to analysis
+# 1.1.1 - 2026-08-03 - Fixed regex to handle --ranges column ranges; added global=H via .lintignore-lua
 # 1.0.0 - 2025-10-15 - Initial version for Lua code analysis based on test_91_cppcheck.sh
 
 set -euo pipefail
@@ -17,7 +18,7 @@ TEST_NAME="Lua Lint"
 TEST_ABBR="LUA"
 TEST_NUMBER="98"
 TEST_COUNTER=0
-TEST_VERSION="1.0.0"
+TEST_VERSION="1.1.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -157,9 +158,11 @@ print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running luacheck on ${FILES_TO
 # Check for issues
 ISSUE_COUNT=0
 
-# Count lines that contain actual luacheck issues (format: filename:line:column: message)
+# Count lines that contain actual luacheck issues (format: filename:line:col_range: message)
+# luacheck with --ranges outputs column ranges like "1-1" or "15-16", so we
+# match digits optionally followed by a range suffix.
 while IFS= read -r line; do
-    if [[ "${line}" =~ ^[^:]+:[0-9]+:[0-9]+: ]]; then
+    if [[ "${line}" =~ ^[^:]+:[0-9]+:[0-9]+([0-9-]+)?: ]]; then
         ISSUE_COUNT=$(( ISSUE_COUNT + 1 ))
     fi
 done <<< "${LUACHECK_OUTPUT}"

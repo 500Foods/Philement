@@ -13,6 +13,7 @@
 # CHANGELOG:
 # 2026-01-01: Added ignore=561 to suppress cyclomatic complexity warnings for database migration functions
 #             when HELIUM_ROOT Lua files were added to the test coverage.
+# 2026-08-03: Added global=H to declare the Hydrogen host API table, fixing W113 false positives
 
 # Standard library (lua51, lua52, lua53, luajit, ngx_lua)
 std=max
@@ -28,6 +29,7 @@ global=migration
 global=database
 global=engine
 global=schema
+global=H
 
 # Ignore specific warnings
 # 211: unused variable
