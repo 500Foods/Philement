@@ -89,7 +89,7 @@ Sets the current subtest number for output prefixing.
 
 **Parameters:**
 
-   - `number`: Subtest number (e.g., "0001")
+- `number`: Subtest number (e.g., "0001")
 
 **Usage:**
 
@@ -124,7 +124,7 @@ set_test_number "$TEST_NUMBER"
 **Features:**
 
 - Auto-increments SUBTEST_COUNTER
-   - Sets CURRENT_SUBTEST_NUMBER in format "0001", "0002", etc.
+- Sets CURRENT_SUBTEST_NUMBER in format "0001", "0002", etc.
 
 **Usage:**
 

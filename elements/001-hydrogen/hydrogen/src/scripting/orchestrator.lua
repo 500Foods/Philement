@@ -53,14 +53,14 @@ local function run_query_probe()
     if err then
         H.log.warn("Orchestrator: query_probe wait err: %s", tostring(err))
     else
-        H.log.info("Orchestrator: query_probe ok")
+        H.log.info("Orchestrator: query_probe ok, %d rows", #rows)
     end
 
     local rows_sync, err_sync = H.query_sync("SELECT 2 AS n")
     if err_sync then
         H.log.warn("Orchestrator: query_sync_probe err: %s", tostring(err_sync))
     else
-        H.log.info("Orchestrator: query_sync_probe ok")
+        H.log.info("Orchestrator: query_sync_probe ok, %d rows", #rows_sync)
     end
 
     if type(H.altquery) == "function" then
@@ -69,14 +69,9 @@ local function run_query_probe()
         if err_alt then
             H.log.warn("Orchestrator: altquery_probe err: %s", tostring(err_alt))
         else
-            H.log.info("Orchestrator: altquery_probe ok")
+            H.log.info("Orchestrator: altquery_probe ok, %d rows", #rows_alt)
         end
-        -- silence unused-local warnings in strict environments
-        rows_alt = rows_alt
     end
-
-    rows = rows
-    rows_sync = rows_sync
 end
 
 -- One-shot mail/notify probe. Freeform H.mail covers dual-mode parse + producer
@@ -138,7 +133,6 @@ local function run_mail_probe()
         elseif type(tres) == "table" and tres.message_id then
             H.log.info("Orchestrator: mail_probe template ok")
         end
-        tres = tres
     end
 
     if type(H.notify) == "table" and type(H.notify.send_sync) == "function" then
