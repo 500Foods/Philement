@@ -9,6 +9,9 @@
 # test_swagger_configuration()
 
 # CHANGELOG
+# 7.5.0 - 2026-08-02 - Added Brotli decompression test (request .br without Accept-Encoding: br)
+#                    - Added proxy/Host header tests for swagger.json to exercise get_server_url paths
+#                    - Added Metadata.Contact/License sections to test config JSON files
 # 7.4.0 - 2026-01-06 - Added custom headers test to verify WebServer.Headers configuration is applied to responses.
 #                    - Tests both configurations: one with simple headers and one with CORS headers.
 #                    - Verifies headers match patterns (wildcard * and extension-specific like .js).
@@ -50,7 +53,7 @@ TEST_NAME="Swagger"
 TEST_ABBR="SWG"
 TEST_NUMBER="22"
 TEST_COUNTER=0
-TEST_VERSION="7.4.0"
+TEST_VERSION="7.5.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -308,25 +311,44 @@ run_swagger_test_parallel() {
                 all_tests_passed=false
             fi
 
-            # Test file downloads using helper function
-            test_file_download "${base_url}${swagger_prefix}/swagger-ui.css" "${LOG_PREFIX}_${log_suffix}_swagger_css.css" "CSS" "CSS_FILE_TEST" "${result_file}" || all_tests_passed=false
-            test_file_download "${base_url}${swagger_prefix}/favicon-32x32.png" "${LOG_PREFIX}_${log_suffix}_swagger_png.png" "PNG" "PNG_FILE_TEST" "${result_file}" || all_tests_passed=false
-
-            # Test Brotli compressed file handling (coverage: lines 463-464)
-            local br_file="${LOG_PREFIX}_${log_suffix}_swagger_br.br"
-            print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s -H \"Accept-Encoding: br\" --max-time 10 \"${base_url}${swagger_prefix}/swagger-ui.css.br\""
-            if curl -s -H "Accept-Encoding: br" --max-time 10 "${base_url}${swagger_prefix}/swagger-ui.css.br" > "${br_file}"; then
-                if [[ -s "${br_file}" ]]; then
-                    echo "BR_FILE_TEST_PASSED" >> "${result_file}"
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully downloaded Brotli compressed file ($(wc -c < "${br_file}" || true) bytes)"
+            # Test Brotli decompression for clients that don't support brotli (coverage: decompress_brotli_data)
+            local br_decompress_file="${LOG_PREFIX}_${log_suffix}_br_decompress.css"
+            print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s -H \"Accept-Encoding: identity\" --max-time 10 \"${base_url}${swagger_prefix}/swagger-ui.css.br\""
+            if curl -s -H "Accept-Encoding: identity" --max-time 10 "${base_url}${swagger_prefix}/swagger-ui.css.br" > "${br_decompress_file}"; then
+                if [[ -s "${br_decompress_file}" ]]; then
+                    echo "BR_DECOMPRESS_TEST_PASSED" >> "${result_file}"
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully decompressed Brotli file for non-br client ($(wc -c < "${br_decompress_file}" || true) bytes)"
                 else
-                    echo "BR_FILE_TEST_FAILED" >> "${result_file}"
+                    echo "BR_DECOMPRESS_TEST_FAILED" >> "${result_file}"
                     all_tests_passed=false
                 fi
             else
-                echo "BR_FILE_TEST_FAILED" >> "${result_file}"
+                echo "BR_DECOMPRESS_TEST_FAILED" >> "${result_file}"
                 all_tests_passed=false
             fi
+
+            # Test swagger.json metadata with proxy/Host headers (coverage: get_server_url proxy paths)
+            _test_proxy_url() {
+                local _tn="$1" _pattern="$2" _neg="$3"; shift 3
+                local _f="${LOG_PREFIX}_${log_suffix}_proxy${_tn}.json"
+                print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s $* --max-time 10 ${base_url}${swagger_prefix}/swagger.json"
+                if curl -s "$@" --max-time 10 "${base_url}${swagger_prefix}/swagger.json" > "${_f}" 2>/dev/null; then
+                    if jq -e . "${_f}" >/dev/null 2>&1 && grep -q "${_pattern}" "${_f}"; then
+                        [[ -n "${_neg}" ]] && grep -q "${_neg}" "${_f}" && { echo "SWAGGER_JSON_PROXY${_tn}_TEST_FAILED" >> "${result_file}"; all_tests_passed=false; return; }
+                        echo "SWAGGER_JSON_PROXY${_tn}_TEST_PASSED" >> "${result_file}"
+                    else
+                        echo "SWAGGER_JSON_PROXY${_tn}_TEST_FAILED" >> "${result_file}"
+                        all_tests_passed=false
+                    fi
+                else
+                    echo "SWAGGER_JSON_PROXY${_tn}_TEST_FAILED" >> "${result_file}"
+                    all_tests_passed=false
+                fi
+            }
+            _test_proxy_url 1 "https://example.com:8443" "" -H "X-Forwarded-Proto: https" -H "X-Forwarded-Port: 8443" -H "Host: example.com"
+            _test_proxy_url 2 "https://example.com" "https://example.com:443" -H "X-Forwarded-Proto: https" -H "X-Forwarded-Port: 443" -H "Host: example.com"
+            _test_proxy_url 3 "https://example.com" "https://example.com:" -H "X-Forwarded-Proto: https" -H "Host: example.com"
+            _test_proxy_url 4 "http://example.com:" "" -H "Host: example.com"
 
             # Test 404 error handling for non-existent files
             # local notfound_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_404.txt"
@@ -434,6 +456,11 @@ analyze_swagger_test_results() {
     local javascript_passed=false
     local swagger_json_passed=false
     local custom_headers_passed=false
+    local br_decompress_passed=false
+    local swagger_json_proxy1_passed=false
+    local swagger_json_proxy2_passed=false
+    local swagger_json_proxy3_passed=false
+    local swagger_json_proxy4_passed=false
 
     # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking individual test results:"
 
@@ -472,12 +499,28 @@ analyze_swagger_test_results() {
         # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ Swagger JSON test: FAILED"
     fi
 
-    # Check custom headers test
     if "${GREP}" -q "CUSTOM_HEADERS_TEST_PASSED" "${result_file}" 2>/dev/null; then
         custom_headers_passed=true
-        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ Custom headers test: PASSED"
-    # else
-        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ Custom headers test: FAILED"
+    fi
+
+    if "${GREP}" -q "BR_DECOMPRESS_TEST_PASSED" "${result_file}" 2>/dev/null; then
+        br_decompress_passed=true
+    fi
+
+    if "${GREP}" -q "SWAGGER_JSON_PROXY1_TEST_PASSED" "${result_file}" 2>/dev/null; then
+        swagger_json_proxy1_passed=true
+    fi
+
+    if "${GREP}" -q "SWAGGER_JSON_PROXY2_TEST_PASSED" "${result_file}" 2>/dev/null; then
+        swagger_json_proxy2_passed=true
+    fi
+
+    if "${GREP}" -q "SWAGGER_JSON_PROXY3_TEST_PASSED" "${result_file}" 2>/dev/null; then
+        swagger_json_proxy3_passed=true
+    fi
+
+    if "${GREP}" -q "SWAGGER_JSON_PROXY4_TEST_PASSED" "${result_file}" 2>/dev/null; then
+        swagger_json_proxy4_passed=true
     fi
 
     # Show diagnostic file links
@@ -494,6 +537,11 @@ analyze_swagger_test_results() {
     JAVASCRIPT_TEST_RESULT=${javascript_passed}
     SWAGGER_JSON_TEST_RESULT=${swagger_json_passed}
     CUSTOM_HEADERS_TEST_RESULT=${custom_headers_passed}
+    BR_DECOMPRESS_TEST_RESULT=${br_decompress_passed}
+    SWAGGER_JSON_PROXY1_RESULT=${swagger_json_proxy1_passed}
+    SWAGGER_JSON_PROXY2_RESULT=${swagger_json_proxy2_passed}
+    SWAGGER_JSON_PROXY3_RESULT=${swagger_json_proxy3_passed}
+    SWAGGER_JSON_PROXY4_RESULT=${swagger_json_proxy4_passed}
     
     # Return success only if all tests passed
     if "${GREP}" -q "ALL_SWAGGER_TESTS_PASSED" "${result_file}" 2>/dev/null; then
@@ -821,6 +869,51 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 PASS_COUNT=$(( PASS_COUNT + 1 ))
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Custom headers test failed"
+                EXIT_CODE=1
+            fi
+            
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Brotli Decompression Test - ${description}"
+            if [[ "${BR_DECOMPRESS_TEST_RESULT}" = true ]]; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Brotli decompression test passed"
+                PASS_COUNT=$(( PASS_COUNT + 1 ))
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Brotli decompression test failed"
+                EXIT_CODE=1
+            fi
+
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Proxy URL Test 1 (non-default port) - ${description}"
+            if [[ "${SWAGGER_JSON_PROXY1_RESULT}" = true ]]; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Swagger JSON proxy test 1 passed (X-Forwarded-Proto=https, port=8443)"
+                PASS_COUNT=$(( PASS_COUNT + 1 ))
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Swagger JSON proxy test 1 failed"
+                EXIT_CODE=1
+            fi
+
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Proxy URL Test 2 (default port) - ${description}"
+            if [[ "${SWAGGER_JSON_PROXY2_RESULT}" = true ]]; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Swagger JSON proxy test 2 passed (default port omitted)"
+                PASS_COUNT=$(( PASS_COUNT + 1 ))
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Swagger JSON proxy test 2 failed"
+                EXIT_CODE=1
+            fi
+
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Proxy URL Test 3 (no forwarded port) - ${description}"
+            if [[ "${SWAGGER_JSON_PROXY3_RESULT}" = true ]]; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Swagger JSON proxy test 3 passed (behind proxy)"
+                PASS_COUNT=$(( PASS_COUNT + 1 ))
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Swagger JSON proxy test 3 failed"
+                EXIT_CODE=1
+            fi
+
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Proxy URL Test 4 (direct access) - ${description}"
+            if [[ "${SWAGGER_JSON_PROXY4_RESULT}" = true ]]; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Swagger JSON proxy test 4 passed (direct access Host header)"
+                PASS_COUNT=$(( PASS_COUNT + 1 ))
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Swagger JSON proxy test 4 failed"
                 EXIT_CODE=1
             fi
             

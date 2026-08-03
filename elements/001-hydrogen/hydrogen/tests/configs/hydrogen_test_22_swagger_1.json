@@ -19,6 +19,20 @@
     "Swagger": {
         "Enabled": true,
         "Prefix": "/swagger",
+        "Metadata": {
+            "Title": "Hydrogen Test API One",
+            "Description": "Test API for Swagger UI configuration 1",
+            "Version": "1.0.0",
+            "Contact": {
+                "Name": "Test Contact One",
+                "Email": "contact1@test.com",
+                "URL": "https://test1.example.com/contact"
+            },
+            "License": {
+                "Name": "MIT License",
+                "URL": "https://opensource.org/licenses/MIT"
+            }
+        },
         "UIOptions": {
             "TryItEnabled": true,
             "AlwaysExpanded": true,

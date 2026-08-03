@@ -485,7 +485,12 @@ SQL: ./schematool-out/schematool_acuranzo_postgresql_….sql (all statements com
 
 ```text
 elements/001-hydrogen/hydrogen/extras/schematool/
-  schematool.sh                 # CLI v1.5.0 — metadata + catalog  (Phase 1–5, 7 ✓)
+  schematool.sh                 # CLI entry — help + parameter handling + dispatch
+  lib/
+    schematool_init.sh          # dependency checks + command path resolution
+    schematool_runners.sh       # db/Lua adapter wrappers (query/catalog adapters, Lua extractors)
+    schematool_audit.sh         # audit mode dispatch + orchestration (dump/emit/audits)
+    schematool_render.sh        # tables rendering + render dispatch
   lua/
     schematool_discover.lua     # disk file discovery → checklist JSON  (Phase 1 ✓)
     schematool_expect.lua       # get_migration + decode → expected payloads  (Phase 2 ✓)
