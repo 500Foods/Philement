@@ -143,6 +143,11 @@ void mock_dbqueue_set_query_cache_lookup_result(QueryCacheEntry* result) {
     mock_query_cache_lookup_result = result;
 }
 
+// Set the result for query_cache_lookup_by_ref_and_type
+void mock_dbqueue_set_query_cache_lookup_by_ref_and_type_result(QueryCacheEntry* result) {
+    mock_query_cache_lookup_by_ref_and_type_result = result;
+}
+
 // Mock implementation of database_queue_submit_query
 bool mock_database_queue_submit_query(DatabaseQueue* queue, const DatabaseQuery* query) {
     (void)queue; // Unused parameter

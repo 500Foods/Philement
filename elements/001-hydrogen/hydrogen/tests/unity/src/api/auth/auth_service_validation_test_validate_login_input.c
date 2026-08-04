@@ -31,6 +31,10 @@ void test_validate_login_input_long_login_id(void);
 void test_validate_login_input_invalid_timezone(void);
 void test_validate_login_input_minimum_valid_password(void);
 void test_validate_login_input_maximum_valid_password(void);
+void test_validate_login_input_empty_password(void);
+void test_validate_login_input_valid_timezone_utc(void);
+void test_validate_login_input_valid_timezone_america(void);
+void test_validate_login_input_valid_timezone_europe(void);
 
 void setUp(void) {
     // No setup needed for validation functions
@@ -124,6 +128,34 @@ void test_validate_login_input_maximum_valid_password(void) {
     TEST_ASSERT_TRUE(result);
 }
 
+// Test empty password
+void test_validate_login_input_empty_password(void) {
+    bool result = validate_login_input("testuser", "", "test-api-key", "America/Vancouver");
+    
+    TEST_ASSERT_FALSE(result);
+}
+
+// Test valid UTC timezone
+void test_validate_login_input_valid_timezone_utc(void) {
+    bool result = validate_login_input("testuser", "Password123!", "test-api-key", "UTC");
+    
+    TEST_ASSERT_TRUE(result);
+}
+
+// Test valid America timezone
+void test_validate_login_input_valid_timezone_america(void) {
+    bool result = validate_login_input("testuser", "Password123!", "test-api-key", "America/New_York");
+    
+    TEST_ASSERT_TRUE(result);
+}
+
+// Test valid Europe timezone
+void test_validate_login_input_valid_timezone_europe(void) {
+    bool result = validate_login_input("testuser", "Password123!", "test-api-key", "Europe/London");
+    
+    TEST_ASSERT_TRUE(result);
+}
+
 int main(void) {
     UNITY_BEGIN();
     
@@ -139,6 +171,10 @@ int main(void) {
     RUN_TEST(test_validate_login_input_invalid_timezone);
     RUN_TEST(test_validate_login_input_minimum_valid_password);
     RUN_TEST(test_validate_login_input_maximum_valid_password);
+    RUN_TEST(test_validate_login_input_empty_password);
+    RUN_TEST(test_validate_login_input_valid_timezone_utc);
+    RUN_TEST(test_validate_login_input_valid_timezone_america);
+    RUN_TEST(test_validate_login_input_valid_timezone_europe);
     
     return UNITY_END();
 }
