@@ -1,6 +1,6 @@
 /*
  * Unity Test File: WebSocket Chat Send Helper Tests
- * Tests send_chat_error, send_chat_done, and send_chat_chunk functions.
+ * Tests send_chat_error and send_chat_done functions.
  */
 
 // Standard project header plus Unity Framework header
@@ -17,7 +17,6 @@ void test_send_chat_error_with_request_id(void);
 void test_send_chat_error_null_message(void);
 void test_send_chat_done_minimal(void);
 void test_send_chat_done_with_raw_response_retrieval(void);
-void test_send_chat_chunk_full(void);
 
 // Test fixtures
 static struct lws *test_wsi;
@@ -68,13 +67,6 @@ void test_send_chat_done_with_raw_response_retrieval(void) {
     TEST_ASSERT_TRUE(1);
 }
 
-void test_send_chat_chunk_full(void) {
-    mock_lws_set_write_result(80);
-    send_chat_chunk(test_wsi, "request-123", "chunk content", "reasoning",
-                    "gpt-4", 0, NULL);
-    TEST_ASSERT_TRUE(1);
-}
-
 int main(void) {
     UNITY_BEGIN();
 
@@ -83,7 +75,6 @@ int main(void) {
     RUN_TEST(test_send_chat_error_null_message);
     RUN_TEST(test_send_chat_done_minimal);
     RUN_TEST(test_send_chat_done_with_raw_response_retrieval);
-    RUN_TEST(test_send_chat_chunk_full);
 
     return UNITY_END();
 }

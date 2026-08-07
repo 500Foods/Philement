@@ -212,6 +212,8 @@ void victoria_logs_clear_batch(void);
  * -------------------------------------------------------------------------- */
 bool victoria_logs_parse_url(const char* url, char* host, int* port, char* path, bool* use_ssl);
 bool victoria_logs_send_http_post(const char* host, int port, const char* path, const char* body, size_t body_len, bool use_ssl);
+bool victoria_logs_io_write_all(int sock, void *ssl, const char *data, size_t len);
+void victoria_logs_ssl_teardown(void *ssl, void *ssl_ctx, int sock);
 bool victoria_logs_queue_init(void);
 void victoria_logs_queue_cleanup(void);
 bool victoria_logs_queue_enqueue(const char* message);

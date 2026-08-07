@@ -49,8 +49,4 @@ void send_chat_done(struct lws *wsi, const char* request_id, const char* content
                     int prompt_tokens, int completion_tokens, int total_tokens,
                     double response_time_ms, json_t* raw_response);
 
-void send_chat_chunk(struct lws *wsi, const char* request_id, const char* content,
-                     const char* reasoning_content, const char* model, int index,
-                     const char* finish_reason);
-
 #endif // WEBSOCKET_SERVER_CHAT_INTERNAL_H

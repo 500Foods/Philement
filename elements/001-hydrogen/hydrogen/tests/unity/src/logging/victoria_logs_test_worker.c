@@ -37,6 +37,7 @@ void test_victoria_logs_send_http_post_success_204(void);
 void test_victoria_logs_send_http_post_success_200(void);
 void test_victoria_logs_send_http_post_bad_status(void);
 void test_victoria_logs_send_http_post_connect_fail(void);
+void test_victoria_logs_send_http_post_https_against_plain_fails(void);
 void test_victoria_logs_flush_batch_success(void);
 void test_victoria_logs_flush_batch_stale_drop(void);
 void test_victoria_logs_add_to_batch_message_too_large(void);
@@ -304,6 +305,16 @@ void test_victoria_logs_send_http_post_connect_fail(void) {
     TEST_ASSERT_FALSE(ok);
 }
 
+/* https:// must not silently fall back to plain TCP against a non-TLS peer. */
+void test_victoria_logs_send_http_post_https_against_plain_fails(void) {
+    TEST_ASSERT_TRUE(sink_start(204));
+    const char* body = "{\"msg\":\"hello\"}";
+    bool ok = victoria_logs_send_http_post("127.0.0.1", g_sink_port, "/insert",
+                                          body, strlen(body), true);
+    sink_stop();
+    TEST_ASSERT_FALSE(ok);
+}
+
 /* ---- flush_batch_internal ----------------------------------------------- */
 
 void test_victoria_logs_flush_batch_success(void) {
@@ -544,6 +555,7 @@ int main(void) {
     RUN_TEST(test_victoria_logs_send_http_post_success_200);
     RUN_TEST(test_victoria_logs_send_http_post_bad_status);
     RUN_TEST(test_victoria_logs_send_http_post_connect_fail);
+    RUN_TEST(test_victoria_logs_send_http_post_https_against_plain_fails);
     RUN_TEST(test_victoria_logs_flush_batch_success);
     RUN_TEST(test_victoria_logs_flush_batch_stale_drop);
     RUN_TEST(test_victoria_logs_add_to_batch_message_too_large);

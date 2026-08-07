@@ -95,28 +95,6 @@ not open work unless listed below.
 | **Why now** | Register returns 201 with email in JSON but login-by-email / contact lookups stay empty unless fixtures seed contacts. |
 | **Note** | Do **not** reuse QueryRef #052 — that is password-hash storage only. |
 
-### 7. WebSocket server heartbeat — blackbox coverage
-
-| | |
-| --- | --- |
-| **Plan** | No dedicated plan (WebSocket stack otherwise live) |
-| **Code** | `src/websocket/websocket_server_heartbeat.c` · `websocket_server_dispatch.c` · `websocket_server_connection.c` |
-| **Effort** | S |
-| **Done** | ~90% — timer arm on connect, `TIMER` → health/ping-due, writable sends ping, pong handler live; config `WebSocketServer.Heartbeat.*` |
-| **Remaining** | Confirm gcov hits `ws_send_ping` / timer path under `test_23` (short `PingIntervalSeconds`); stale-connection close assertions if missing |
-| **Why now** | Implementation looks wired; prior backlog assumed zero callers. Validate coverage, then drop or shrink this item. |
-| **Note** | Distinct from libwebsockets client `--ping-interval` used in tests today. |
-
-### 8. VictoriaLogs fanout — TLS (`https://`)
-
-| | |
-| --- | --- |
-| **Code** | `src/logging/victoria_logs.c` (`victoria_logs_send_http_post`, `victoria_logs_parse_url`) |
-| **Effort** | M |
-| **Done** | ~70% — URL parse sets `use_ssl`; POST path is plain TCP and ignores the flag |
-| **Remaining** | TLS connect (OpenSSL or reuse existing crypto/curl patterns); fail closed if `https` requested and TLS unavailable; blackbox against TLS sink or documented http-only constraint |
-| **Why now** | Production log sinks are often HTTPS; silent downgrade/ignore is a footgun. |
-
 ### 9. DB queue health check — live connection probe
 
 | | |
@@ -138,16 +116,6 @@ not open work unless listed below.
 | **Remaining** | **Health:** per-database (or per-engine) config string for the liveness statement; engines execute that instead of literals (sensible defaults matching current strings). **Orphan DROP:** document why it exists (empty bootstrap result ⇒ treat target table as orphaned and drop before retry/recreate); replace C-built DDL with a config template or explicit QueryRef/DDL hook; verify dialect safety (`IF EXISTS`, schema-qualified names, quoting) across all engines — works today largely because Acuranzo bootstrap table names are simple unquoted identifiers, not because the helper is portable SQL. |
 | **Why** | Operators may want a different health probe; keeping DROP/DDL out of C matches the QueryRef model and avoids silent multi-engine edge cases. |
 | **Note** | Migrations still supply their own SQL from payloads (out of scope). Item 9 is queue-depth health; this is the **engine** probe SQL. |
-
-### 10. Payload / webserver path hygiene
-
-| | |
-| --- | --- |
-| **Code** | `src/payload/payload_cache.c` · `src/webserver/web_server_core.c` (`get_payload_subdirectory_path`) |
-| **Effort** | S–M |
-| **Done** | Live cache uses `process_payload_tar_cache_from_data`; swagger/terminal use cache APIs |
-| **Remaining** | Either implement `get_payload_subdirectory_path` against payload cache **or** remove/stop calling the synthetic `/payload/...` helper; delete or implement unused `process_payload_tar_cache` / `list_tar_contents` symbols |
-| **Why now** | Dead API surface and a misleading path resolver confuse coverage and future webroot work. |
 
 ### 12. Database fault tolerance — crash / transient outage while running
 
@@ -227,7 +195,7 @@ not open work unless listed below.
 | **Effort** | XL |
 | **Done** | Phases 1–12 complete; WS streaming + media single-upload + non-stream `chat_done` blackbox live; Phase 13 feature list mostly open |
 | **Remaining (Phase 13 wishlist)** | Function calling, response cache, key load-balance, fallback engines, analytics, templates, convo APIs, cost tracking, A/B, tests |
-| **Remaining (concrete gaps)** | Sub-items 14a–14c |
+| **Remaining (concrete gaps)** | Sub-items 14a–14b |
 | **Why later** | Large wishlist on top of a working chat proxy. Prefer discrete bullets when product needs them. |
 
 #### 14a. REST `/api/conduit/auth_chat` SSE streaming
@@ -249,16 +217,6 @@ not open work unless listed below.
 | **Done** | ~70% — single-message `media_upload` path complete (hash, store #071, blackbox) |
 | **Remaining** | Session buffers for `media_chunk` (upload_id / index / total); assemble → store; bounds/concurrency; cleanup on disconnect |
 | **Note** | Stub returns -1 by design until multi-frame uploads are required. |
-
-#### 14c. Legacy chat send helpers cleanup
-
-| | |
-| --- | --- |
-| **Code** | `src/websocket/websocket_server_chat_send.c` (`send_chat_chunk` / unused `send_stream_*` if any) |
-| **Effort** | S |
-| **Done** | `websocket_server_chat_stream.c` already removed; live path is multi_curl (`proxy_multi` / `proxy_mc`) |
-| **Remaining** | Drop dead send helpers **or** rewire if a product path needs them; adjust Unity if any |
-| **Note** | Coverage noise only — not a runtime bug. |
 
 ### 15. Terminal WebSocket authentication
 
@@ -398,6 +356,10 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 
 - Removed legacy no-op `oidc_generate_refresh_token` (+ header/Unity); live path remains `oidc_refresh_issue`
 - Removed dead `database_queue_lead_process_queries` (+ header, `lead_test_process_queries`, coverage-improvement cases); production path remains `database_queue_process_single_query`
+- Removed dead `send_chat_chunk` (+ decl/Unity); live WS helpers remain `send_chat_error` / `send_chat_done`; streaming stays multi_curl
+- Payload/webserver path hygiene: removed unused `resolve_webroot_path` / `get_payload_subdirectory_path` / `resolve_filesystem_path`, no-op `process_payload_tar_cache` / `list_tar_contents`, and their Unity tests; live cache remains `process_payload_tar_cache_from_data` + swagger/terminal cache APIs
+- WS heartbeat coverage closed: `test_59` already blackbox-exercises PING (`PingIntervalSeconds=1`); Unity added for `ws_handle_heartbeat_timer` (healthy/pong-timeout/stale), `ws_arm_heartbeat_timer`, `ws_maybe_send_heartbeat_ping`
+- VictoriaLogs HTTPS: `victoria_logs_send_http_post` uses OpenSSL TLS when `use_ssl` (SNI + peer verify); fail closed on handshake/I/O error (no plain-TCP downgrade); Unity asserts HTTPS against plain sink fails
 
 ---
 
@@ -411,21 +373,17 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 4 | Unity ASAN | M | 0% | P1 |
 | 5 | Unity disabled-test cleanup | M | ~0% | P1 |
 | 6 | Register email → account_contacts | S–M | ~40% | P1 |
-| 7 | WS heartbeat blackbox | S | ~90% | P1 |
-| 8 | VictoriaLogs TLS | M | ~70% | P1 |
 | 9 | DB queue health probe | S–M | ~40% | P1 |
 | 9a | Config health SQL + bootstrap orphan DROP | S–M | hard-coded | P1 |
-| 10 | Payload/webserver path hygiene | S–M | partial | P1 |
 | 12 | DB fault tolerance (crash/transient) | L | partial | P1 |
 | 12a | DQM child auto-scale (optional) | L | no-op by design | P1 |
 | 12b | Scoreboard waiter condvar wake | M | poll only | P1 |
 | 12d | MailRelay Persist MySQL/MariaDB SEGV | M | ~40% | P1 |
 | 12e | MAX+1 PK clients: confirm + retry | M | single-thread OK | P1 |
 | 13 | Mail Relay remainder | L–XL | ~70% | P2 |
-| 14 | Chat Phase 13 (+ 14a–14c) | XL | ~15% of P13 | P2 |
+| 14 | Chat Phase 13 (+ 14a–14b) | XL | ~15% of P13 | P2 |
 | 14a | REST auth_chat SSE streaming | L | ~20% | P2 |
 | 14b | WS chunked media upload | M | ~70% | P2 |
-| 14c | Legacy chat_send helpers | S | n/a | P2 |
 | 15 | Terminal WS auth | M | ~10% | P2 |
 | 16 | H.notify real or deprecate | S–L | shim | P2 |
 | 17 | OIDC RP client-role parse | S–M | fallback | P2 |
