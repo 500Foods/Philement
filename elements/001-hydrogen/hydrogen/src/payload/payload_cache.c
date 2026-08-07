@@ -163,15 +163,6 @@ bool get_payload_files_by_prefix(const char *prefix, PayloadFile **files,
 }
 
 /**
- * Process payload tar cache from PayloadData
- */
-bool process_payload_tar_cache(const PayloadData *payload_data) {
-    /* Unused alternate entry; live path is process_payload_tar_cache_from_data. */
-    (void)payload_data;
-    return false;
-}
-
-/**
  * Process payload tar cache from raw data
  */
 bool process_payload_tar_cache_from_data(const uint8_t *tar_data, size_t tar_size) {
@@ -248,15 +239,6 @@ bool process_payload_tar_cache_from_data(const uint8_t *tar_data, size_t tar_siz
     free(decompressed_data);
 
     return success;
-}
-
-/**
- * List contents of tar file
- */
-void list_tar_contents(const uint8_t *tar_data, size_t tar_size) {
-    /* Optional debug dump never wired; keep symbol for API stability. */
-    (void)tar_data;
-    (void)tar_size;
 }
 
 /**

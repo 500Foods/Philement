@@ -1,22 +1,11 @@
 /*
- * VictoriaLogs Integration Implementation
- *
- * Provides threaded HTTP logging to VictoriaLogs server.
- * Uses a dedicated worker thread with intelligent dual-timer batching:
- * - Short timer (1s): Sends logs when idle
- * - Long timer (10s): Periodic flush during heavy load
- * - First log sent immediately to verify connectivity
- *
- * No dependencies on other subsystems - initializes at startup from env vars.
+ * VictoriaLogs: threaded HTTP/HTTPS fanout with dual-timer batching
+ * (short idle flush, long periodic flush; first message immediate).
  */
 
-// Global includes
 #include <src/hydrogen.h>
-
-// Local includes
 #include "victoria_logs.h"
 
-// System includes
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -31,38 +20,20 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <signal.h>
+#include <openssl/ssl.h>
 
-// Global configuration instance
 VictoriaLogsConfig victoria_logs_config = {0};
-
-// Global thread state
 VLThreadState victoria_logs_thread = {0};
 
-// Priority level names (must match globals.h)
 static const char* priority_labels[] = {
     "TRACE", "DEBUG", "STATE", "ALERT", "ERROR", "FATAL", "QUIET"
 };
 
-// Forward declarations
- void* victoria_logs_worker(void* arg);
- bool victoria_logs_queue_enqueue(const char* message);
- char* victoria_logs_queue_dequeue(void);
- bool victoria_logs_queue_init(void);
- void victoria_logs_queue_cleanup(void);
- bool victoria_logs_send_http_post(const char* host, int port, const char* path, const char* body, size_t body_len, bool use_ssl);
- bool victoria_logs_flush_batch_internal(void);
- bool victoria_logs_add_to_batch(const char* message);
- void victoria_logs_reset_long_timer(void);
-
-/**
- * Parse log level string to numeric value
- */
 int victoria_logs_parse_level(const char* level_str, int default_level) {
     if (!level_str || !level_str[0]) {
         return default_level;
     }
 
-    // Convert to uppercase for comparison
     char upper[16];
     size_t len = strlen(level_str);
     if (len >= sizeof(upper)) {
@@ -85,9 +56,6 @@ int victoria_logs_parse_level(const char* level_str, int default_level) {
     return default_level;
 }
 
-/**
- * Get priority label for a log level (internal to victoria_logs)
- */
 const char* victoria_logs_get_priority_label(int priority) {
     if (priority >= 0 && priority <= LOG_LEVEL_QUIET) {
         return priority_labels[priority];
@@ -159,11 +127,8 @@ int victoria_logs_escape_json(const char* input, char* output, size_t output_siz
     return (int)j;
 }
 
-/**
- * Parse URL into components
- * Supports http://host:port/path format
- */
- bool victoria_logs_parse_url(const char* url, char* host, int* port, char* path, bool* use_ssl) {
+/* Parse http(s)://host[:port]/path into components. */
+bool victoria_logs_parse_url(const char* url, char* host, int* port, char* path, bool* use_ssl) {
     if (!url || !host || !port || !path || !use_ssl) {
         return false;
     }
@@ -172,8 +137,6 @@ int victoria_logs_escape_json(const char* input, char* output, size_t output_siz
     *port = 80;
 
     const char* ptr = url;
-
-    // Check for protocol
     if (strncmp(ptr, "https://", 8) == 0) {
         *use_ssl = true;
         *port = 443;
@@ -182,7 +145,6 @@ int victoria_logs_escape_json(const char* input, char* output, size_t output_siz
         ptr += 7;
     }
 
-    // Find path
     const char* path_start = strchr(ptr, '/');
     if (path_start) {
         strncpy(path, path_start, 1023);
@@ -191,7 +153,6 @@ int victoria_logs_escape_json(const char* input, char* output, size_t output_siz
         strcpy(path, "/");
     }
 
-    // Extract host and port
     size_t host_len = path_start ? (size_t)(path_start - ptr) : strlen(ptr);
     if (host_len >= 256) {
         return false;
@@ -201,7 +162,6 @@ int victoria_logs_escape_json(const char* input, char* output, size_t output_siz
     strncpy(host_port, ptr, host_len);
     host_port[host_len] = '\0';
 
-    // Check for port in host:port format
     char* colon = strchr(host_port, ':');
     if (colon) {
         *colon = '\0';
@@ -209,39 +169,63 @@ int victoria_logs_escape_json(const char* input, char* output, size_t output_siz
     }
 
     snprintf(host, 256, "%s", host_port);
-
     return true;
 }
 
-/**
- * Send HTTP POST request to VictoriaLogs
- *
- * Sends headers and body separately to avoid buffer size limitations.
- * The body can be up to VICTORIA_LOGS_MAX_BATCH_BUFFER (1MB).
- */
- bool victoria_logs_send_http_post(const char* host, int port, const char* path, const char* body, size_t body_len, bool use_ssl) {
-    (void)use_ssl;  /* https:// parsed but TLS not implemented (plain TCP only). */
+bool victoria_logs_io_write_all(int sock, void *ssl_v, const char *data, size_t len) {
+    SSL *ssl = (SSL *)ssl_v;
+    size_t total = 0;
+    while (total < len) {
+        ssize_t n;
+        if (ssl) {
+            int r = SSL_write(ssl, data + total, (int)(len - total));
+            if (r <= 0) {
+                return false;
+            }
+            n = r;
+        } else {
+            n = send(sock, data + total, len - total, MSG_NOSIGNAL);
+            if (n < 0) {
+                return false;
+            }
+        }
+        total += (size_t)n;
+    }
+    return true;
+}
 
+void victoria_logs_ssl_teardown(void *ssl_v, void *ssl_ctx_v, int sock) {
+    SSL *ssl = (SSL *)ssl_v;
+    SSL_CTX *ssl_ctx = (SSL_CTX *)ssl_ctx_v;
+    if (ssl) {
+        SSL_shutdown(ssl);
+        SSL_free(ssl);
+    }
+    if (ssl_ctx) {
+        SSL_CTX_free(ssl_ctx);
+    }
+    if (sock >= 0) {
+        close(sock);
+    }
+}
+
+/* HTTP/HTTPS POST; body up to VICTORIA_LOGS_MAX_BATCH_BUFFER. TLS fail-closed. */
+bool victoria_logs_send_http_post(const char* host, int port, const char* path, const char* body, size_t body_len, bool use_ssl) {
     int sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
         return false;
     }
 
-    // Set socket timeout
-    struct timeval tv;
-    tv.tv_sec = VICTORIA_LOGS_TIMEOUT_SEC;
-    tv.tv_usec = 0;
+    struct timeval tv = { .tv_sec = VICTORIA_LOGS_TIMEOUT_SEC, .tv_usec = 0 };
     setsockopt(sock, SOL_SOCKET, SO_SNDTIMEO, &tv, sizeof(tv));
     setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
-    // Resolve hostname
     const struct hostent* server = gethostbyname(host);
     if (!server) {
         close(sock);
         return false;
     }
 
-    // Connect
     struct sockaddr_in server_addr;
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
@@ -253,7 +237,28 @@ int victoria_logs_escape_json(const char* input, char* output, size_t output_siz
         return false;
     }
 
-    // Build HTTP headers (separate from body to avoid buffer size issues)
+    SSL_CTX *ssl_ctx = NULL;
+    SSL *ssl = NULL;
+    if (use_ssl) {
+        ssl_ctx = SSL_CTX_new(TLS_client_method());
+        if (!ssl_ctx) {
+            close(sock);
+            return false;
+        }
+        SSL_CTX_set_default_verify_paths(ssl_ctx);
+        SSL_CTX_set_verify(ssl_ctx, SSL_VERIFY_PEER, NULL);
+        ssl = SSL_new(ssl_ctx);
+        if (!ssl || SSL_set_fd(ssl, sock) != 1) {
+            victoria_logs_ssl_teardown(ssl, ssl_ctx, sock);
+            return false;
+        }
+        (void)SSL_set_tlsext_host_name(ssl, host);
+        if (SSL_connect(ssl) != 1) {
+            victoria_logs_ssl_teardown(ssl, ssl_ctx, sock);
+            return false;
+        }
+    }
+
     char headers[1024];
     int hdr_len = snprintf(headers, sizeof(headers),
         "POST %s HTTP/1.1\r\n"
@@ -264,42 +269,29 @@ int victoria_logs_escape_json(const char* input, char* output, size_t output_siz
         "\r\n",
         path, host, port, body_len);
 
-    if (hdr_len < 0 || (size_t)hdr_len >= sizeof(headers)) {
-        close(sock);
+    if (hdr_len < 0 || (size_t)hdr_len >= sizeof(headers) ||
+        !victoria_logs_io_write_all(sock, ssl, headers, (size_t)hdr_len) ||
+        !victoria_logs_io_write_all(sock, ssl, body, body_len)) {
+        victoria_logs_ssl_teardown(ssl, ssl_ctx, sock);
         return false;
     }
 
-    // Send headers
-    ssize_t sent = send(sock, headers, (size_t)hdr_len, MSG_NOSIGNAL);
-    if (sent < 0) {
-        close(sock);
-        return false;
-    }
-
-    // Send body in chunks if needed
-    size_t total_sent = 0;
-    while (total_sent < body_len) {
-        sent = send(sock, body + total_sent, body_len - total_sent, MSG_NOSIGNAL);
-        if (sent < 0) {
-            close(sock);
-            return false;
-        }
-        total_sent += (size_t)sent;
-    }
-
-    // Read response (we don't really care about the body, just the status)
     char response[1024];
-    ssize_t received = recv(sock, response, sizeof(response) - 1, 0);
-    close(sock);
+    ssize_t received;
+    if (ssl) {
+        int r = SSL_read(ssl, response, (int)(sizeof(response) - 1));
+        received = (r < 0) ? -1 : (ssize_t)r;
+    } else {
+        received = recv(sock, response, sizeof(response) - 1, 0);
+    }
+    victoria_logs_ssl_teardown(ssl, ssl_ctx, sock);
 
     if (received > 0) {
         response[received] = '\0';
-        // Check for 204 No Content (success) or 200 OK
         if (strstr(response, "204") != NULL || strstr(response, "200") != NULL) {
             return true;
         }
     }
-
     return false;
 }
 

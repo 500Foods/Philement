@@ -61,27 +61,3 @@ void send_chat_done(struct lws *wsi, const char* request_id, const char* content
     ws_write_json_response(wsi, response);
     json_decref(response);
 }
-
-// Send a chat chunk response to the client
-void send_chat_chunk(struct lws *wsi, const char* request_id, const char* content,
-                     const char* reasoning_content, const char* model, int index,
-                     const char* finish_reason) {
-    json_t* response = json_object();
-    json_object_set_new(response, "type", json_string("chat_chunk"));
-    if (request_id) {
-        json_object_set_new(response, "id", json_string(request_id));
-    }
-
-    json_t* chunk = json_object();
-    json_object_set_new(chunk, "content", json_string(content ? content : ""));
-    if (reasoning_content) {
-        json_object_set_new(chunk, "reasoning_content", json_string(reasoning_content));
-    }
-    if (model) json_object_set_new(chunk, "model", json_string(model));
-    json_object_set_new(chunk, "index", json_integer(index));
-    if (finish_reason) json_object_set_new(chunk, "finish_reason", json_string(finish_reason));
-    json_object_set_new(response, "chunk", chunk);
-
-    ws_write_json_response(wsi, response);
-    json_decref(response);
-}
