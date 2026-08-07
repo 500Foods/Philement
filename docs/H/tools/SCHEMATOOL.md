@@ -14,7 +14,7 @@ Quick start (local extras README):
 [`extras/schematool/README.md`](/elements/001-hydrogen/hydrogen/extras/schematool/README.md).
 
 Implementation plan:
-[`/docs/H/plans/SCHEMATOOL_PLAN.md`](/docs/H/plans/SCHEMATOOL_PLAN.md).
+[`/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md).
 
 ## Purpose
 
@@ -151,6 +151,23 @@ With `--only-tables`, metadata audit is skipped (fast path). Without it,
 Hydrogen `tables` layout+data JSON → ANSI table. Theme is Blue when exit 0,
 Red otherwise (dry-disk / drift / anomalies). Footer shows counts and exit.
 
+### Finding details (after the table)
+
+When the audit exit is non-zero (and `--format` is not `json`), SchemaTool
+prints a **detail section** under the checklist:
+
+| Track | Content |
+| ------- | --------- |
+| Metadata | Per drift: line-oriented **DB actual (−) vs Lua expected (+)** diffs for `code`/`name`/`summary`, plus **commented** `UPDATE …queries` remediation to align metadata |
+| Catalog | Per failed check: live vs expected, nullability/presence guidance |
+
+Also written under `--out-dir` as `finding_detail.txt` /
+`catalog_finding_detail.txt`. Suppress with `--no-detail`. Cap diff size with
+`--detail-max-lines N` (default 80).
+
+**Caveat:** commented UPDATEs fix **stored migration text only** — they do not
+replay DDL. Prefer a new forward migration when live objects must change.
+
 ### Remediation `.sql`
 
 Path: `--sql-out` or `--out-dir/schematool_<design>_<engine>_<utc>.sql`.
@@ -186,18 +203,40 @@ exist (`--mig-out` or under `--out-dir`).
 
 ## Connection and env precedence
 
-CLI flags always win. For each empty field:
+CLI flags always win. For each empty field, env is chosen from the **requested**
+`--engine` name **before** dialect aliasing (so `yugabytedb` does not steal
+`ACURANZO_DB_*`):
 
-1. **Engine-specific env**
-   - postgresql → `ACURANZO_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`
-   - mysql → `CANVAS_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`
-   - db2 → `HYDROTST_DB_{USER,NAME,PASS,SCHEMA}`
+1. **Requested-engine env**
+   - `postgresql` / `postgres` / `cockroachdb` → `ACURANZO_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`
+   - `yugabytedb` → `YUGABYTE_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`
+   - `mysql` / `mariadb` → `CANVAS_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`
+   - `db2` → `HYDROTST_DB_{USER,NAME,PASS,SCHEMA}`
 2. **Generic** `SCHEMATOOL_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`
 3. Default ports: postgresql 5432, mysql 3306
 
 Password: prefer `--password-env VAR` (never printed; never written into `.sql`).
 
 SQLite: `--database` is the file path (or `SCHEMATOOL_DB_NAME`); host/user unused.
+
+### Test 40 convenience wrappers
+
+| Wrapper | Schema | Primary credentials |
+| --------- | -------- | --------------------- |
+| `schematool_postgresql.sh` | `demo` | `ACURANZO_DB_*` |
+| `schematool_cockroachdb.sh` | `democrdb` | `ACURANZO_DB_*` (same PG family host; different schema) |
+| `schematool_yugabytedb.sh` | `demo` | **`YUGABYTE_DB_*`** (explicit flags; never ACURANZO) |
+| `schematool_mysql.sh` | `demo` | `CANVAS_DB_*` |
+| `schematool_mariadb.sh` | `demomrdb` | `CANVAS_DB_*` |
+| `schematool_sqlite.sh` | _(empty)_ | `hydrodemo.sqlite` path |
+| `schematool_db2.sh` | `demo` | `HYDROTST_DB_*` + localhost:55555 |
+
+Multi-engine 1190 catalog smoke:
+
+```bash
+extras/schematool/smoke_test40_catalog.sh --out-dir /tmp/schematool-t40
+# Expect: 7 pass / 0 fail
+```
 
 ## Normalization
 
@@ -236,16 +275,34 @@ later ALTERs changed live objects.
 | `sqlite` | `sqlite3` | No schema qualifier |
 | `db2` | `db2` EXPORT LOBS | Schema often uppercase (`DEMO`) |
 
-## Safety
+## Safety (production checklist)
 
-- Read-only SELECTs / catalog probes only — SchemaTool never applies DDL/DML
-- Remediation `.sql` is 100% commented (linted at generation time)
-- Never embeds passwords in artifacts
-- Does not scan product table row data
+SchemaTool is intended to be safe against production databases when used as
+documented. Confirm these before pointing at prod:
+
+| Guard | Behavior |
+| ------- | ---------- |
+| No auto-apply | Tool never runs remediation SQL; `.sql` is 100% commented |
+| Metadata I/O | `SELECT` on `queries` types 1000–1003 only |
+| Catalog I/O | Targeted `information_schema` / `PRAGMA` / `SYSCAT` for in-scope tables |
+| No row scans | Never `SELECT *` product tables |
+| Secrets | `--password-env`; passwords never printed or written to artifacts |
+| PG / YB / CRDB | `PGOPTIONS=-c default_transaction_read_only=on` on client sessions |
+| MySQL / MariaDB | `SET SESSION TRANSACTION READ ONLY` before probes |
+| SQLite | `sqlite3 -readonly` |
+| DB2 | EXPORT LOBS read path only (no DML from SchemaTool) |
+| Wrong-host risk | Use correct `--engine` / wrapper / explicit `--host` — especially Yugabyte vs local PG |
+
+**Operator tips for prod:**
+
+1. Start with `--catalog --only-tables <few>` (cheap) before full-schema catalog.
+2. Prefer a **read-only DB role** when the engine allows it (defense beyond client guards).
+3. Review any `.sql` / `.mig` offline; never pipe unedited to a client.
+4. Metadata exit 2 on known drift (e.g. 1280/1281 mail seeds) is audit signal, not a write.
 
 ## Related
 
-- Plan: [`SCHEMATOOL_PLAN.md`](/docs/H/plans/SCHEMATOOL_PLAN.md)
+- Plan: [`SCHEMATOOL_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md)
 - Offline SQL gen: [`tests/lib/get_migration.lua`](/elements/001-hydrogen/hydrogen/tests/lib/get_migration.lua)
 - Migration performance tests: `test_32`–`test_38`
 - Migrations complete plan: [`MIGRATIONS_COMPLETE.md`](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md)

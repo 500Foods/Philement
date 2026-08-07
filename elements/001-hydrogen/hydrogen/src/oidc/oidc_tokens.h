@@ -137,15 +137,6 @@ char* oidc_generate_id_token(const OIDCTokenContext *context, const OIDCTokenCla
 char* oidc_generate_access_token(const OIDCTokenContext *context, const OIDCTokenClaims *claims, char **reference);
 
 /*
- * Generate a refresh token
- *
- * @param context Token context
- * @param claims Token claims
- * @return Reference token string (caller must free)
- */
-char* oidc_generate_refresh_token(const OIDCTokenContext *context, const OIDCTokenClaims *claims);
-
-/*
  * Generate an authorization code
  * 
  * @param context Token context

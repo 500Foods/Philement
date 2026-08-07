@@ -9,12 +9,14 @@
 #   AUDIT_EXIT, CATALOG_EXIT, FULL_AUDIT, RENDER_MODE,
 #   DESIGN, ENGINE, SCHEMA_LABEL, DB_LABEL, TITLE_DB,
 #   SUBTITLE, FOOTER, DISPLAY_STAMP,
-#   DATA_JSON, LAYOUT_JSON, OUT_DIR, FORMAT,
+#   DATA_JSON, LAYOUT_JSON, OUT_DIR, FORMAT, FINDINGS_JSON,
 #   CAT_DATA_JSON, CAT_EXPECTED_JSON, CAT_LIVE_JSON, CAT_FINDINGS_JSON,
 #   CAT_OK, CAT_MT, CAT_MC, CAT_NULL, CAT_CHK, CAT_ROWS, CAT_EXIT_LABEL,
-#   ONLY_TABLES, TABLES, JQ, ROW_GROUP_SIZE, WORK_DIR
+#   ONLY_TABLES, TABLES, JQ, LUA, LUA_DIR, ROW_GROUP_SIZE, WORK_DIR,
+#   SCHEMA, NO_DETAIL, DETAIL_MAX_LINES
 #
 # CHANGELOG
+# 1.2.0 - 2026-08-06 - Post-table finding details (diff + commented remediation)
 # 1.1.0 - 2026-08-02 - Row grouping: horizontal separators every ROW_GROUP_SIZE rows
 # 1.0.0 - 2026-08-02 - Split from schematool.sh
 
@@ -89,6 +91,8 @@ EOF
         echo "--- checklist JSON ---"
         "${JQ}" '.' "${DATA_JSON}"
     fi
+
+    schematool_render_metadata_detail
 }
 
 render_catalog_table() {
@@ -144,6 +148,81 @@ EOF
         echo "--- catalog JSON ---"
         "${JQ}" '.' "${CAT_DATA_JSON}"
     fi
+
+    schematool_render_catalog_detail
+}
+
+# Post-table narrative: unified field diffs + commented UPDATE/guidance
+schematool_render_metadata_detail() {
+    if [[ "${NO_DETAIL:-0}" -eq 1 ]]; then
+        return 0
+    fi
+    if [[ "${FORMAT}" == "json" ]]; then
+        return 0
+    fi
+    if [[ -z "${FINDINGS_JSON:-}" || ! -f "${FINDINGS_JSON}" ]]; then
+        return 0
+    fi
+    if [[ "${AUDIT_EXIT:-0}" -eq 0 ]]; then
+        return 0
+    fi
+    local detail_script="${LUA_DIR}/schematool_detail.lua"
+    if [[ ! -f "${detail_script}" ]]; then
+        return 0
+    fi
+    local max_lines="${DETAIL_MAX_LINES:-80}"
+    local detail_out="${WORK_DIR}/finding_detail.txt"
+    set +e
+    "${LUA}" "${detail_script}" \
+        --findings "${FINDINGS_JSON}" \
+        --engine "${ENGINE}" \
+        --schema "${SCHEMA:-}" \
+        --max-lines "${max_lines}" \
+        >"${detail_out}" 2>/dev/null
+    local drc=$?
+    set -e
+    if [[ "${drc}" -eq 0 && -s "${detail_out}" ]]; then
+        cat "${detail_out}"
+        if [[ -n "${OUT_DIR}" ]]; then
+            cp "${detail_out}" "${OUT_DIR}/finding_detail.txt"
+            echo "Detail: ${OUT_DIR}/finding_detail.txt" >&2
+        fi
+    fi
+}
+
+schematool_render_catalog_detail() {
+    if [[ "${NO_DETAIL:-0}" -eq 1 ]]; then
+        return 0
+    fi
+    if [[ "${FORMAT}" == "json" ]]; then
+        return 0
+    fi
+    if [[ "${CATALOG_EXIT:-0}" -eq 0 ]]; then
+        return 0
+    fi
+    # Checklist rows hold per-check expected/live; findings JSON is counts-only
+    if [[ -z "${CAT_DATA_JSON:-}" || ! -f "${CAT_DATA_JSON}" ]]; then
+        return 0
+    fi
+    local detail_script="${LUA_DIR}/schematool_detail.lua"
+    if [[ ! -f "${detail_script}" ]]; then
+        return 0
+    fi
+    local detail_out="${WORK_DIR}/catalog_finding_detail.txt"
+    set +e
+    "${LUA}" "${detail_script}" \
+        --catalog-findings "${CAT_DATA_JSON}" \
+        --max-lines "${DETAIL_MAX_LINES:-80}" \
+        >"${detail_out}" 2>/dev/null
+    local drc=$?
+    set -e
+    if [[ "${drc}" -eq 0 && -s "${detail_out}" ]]; then
+        cat "${detail_out}"
+        if [[ -n "${OUT_DIR}" ]]; then
+            cp "${detail_out}" "${OUT_DIR}/catalog_finding_detail.txt"
+            echo "Detail: ${OUT_DIR}/catalog_finding_detail.txt" >&2
+        fi
+    fi
 }
 
 schematool_render() {
@@ -154,7 +233,7 @@ schematool_render() {
             ;;
         both)
             render_metadata_table
-            echo "" >&2
+            echo ""
             render_catalog_table
             ;;
         *)

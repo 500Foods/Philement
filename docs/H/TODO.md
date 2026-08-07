@@ -149,16 +149,6 @@ not open work unless listed below.
 | **Remaining** | Either implement `get_payload_subdirectory_path` against payload cache **or** remove/stop calling the synthetic `/payload/...` helper; delete or implement unused `process_payload_tar_cache` / `list_tar_contents` symbols |
 | **Why now** | Dead API surface and a misleading path resolver confuse coverage and future webroot work. |
 
-### 11. Dead API cleanup — `oidc_generate_refresh_token`
-
-| | |
-| --- | --- |
-| **Code** | `src/oidc/oidc_tokens.c` · live path `src/oidc/oidc_refresh_tokens.c` (`oidc_refresh_issue`) |
-| **Effort** | S |
-| **Done** | Real refresh issue/rotate/validate live on IdP token path |
-| **Remaining** | Remove legacy `oidc_generate_refresh_token` (+ header/Unity) **or** thin-wrapper to `oidc_refresh_issue` if anything external still links it |
-| **Why now** | No-op symbol that looks like unfinished Phase 11 work. |
-
 ### 12. Database fault tolerance — crash / transient outage while running
 
 | | |
@@ -190,16 +180,6 @@ not open work unless listed below.
 | **Done** | Attach/claim one-shot semantics work; worker claims at terminal and TRACE-logs; jobs observed via `H.scoreboard.get` / list poll |
 | **Remaining** | If blocking wait on scoreboard jobs is required: condvar/H_Handle signal using claimed `waiter_handle` (query/HTTP already use other wait paths) |
 | **Note** | Incomplete condvar path, not broken polling. Capture so “would signal” comments do not reappear as mystery debt. |
-
-### 12c. Dead API — `database_queue_lead_process_queries`
-
-| | |
-| --- | --- |
-| **Code** | `src/database/dbqueue/lead.c` · Unity `lead_test_process_queries` |
-| **Effort** | S |
-| **Done** | Symbol exists; **no production caller** — dequeues and frees without engine execute |
-| **Remaining** | Delete function + tests, or rewire to `process_single_query` if a Lead-specific path is needed |
-| **Why** | Looks like unfinished Lead processing; is Unity-only surface. |
 
 ### 12d. Mail Relay Persist — MySQL/MariaDB SEGV on QueryRef 93
 
@@ -408,12 +388,16 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 **2026-07-28 comment hygiene** (minimal behavior: REST SSE error string wording only):
 
 - OIDC RP provision DefaultRoles comments no longer claim “Phase 22 deferred”
-- `oidc_generate_refresh_token` documented as legacy no-op vs `oidc_refresh_issue`
 - IdP end-session/registration 501s tagged Phase 17 optional
 - Payload/webserver/VictoriaLogs/terminal/dbqueue health comments aligned with reality
 - Cleared “for now” / “will be implemented” / “stub implementation” phrasing where work is done or intentional
 - Scoreboard waiter docs match claim+TRACE (no false Phase 13 promise)
 - New TODO slices: 12a auto-scale, 12b waiter wake, 12c lead_process_queries
+
+**2026-08-07 dead API cleanup:**
+
+- Removed legacy no-op `oidc_generate_refresh_token` (+ header/Unity); live path remains `oidc_refresh_issue`
+- Removed dead `database_queue_lead_process_queries` (+ header, `lead_test_process_queries`, coverage-improvement cases); production path remains `database_queue_process_single_query`
 
 ---
 
@@ -432,11 +416,9 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 9 | DB queue health probe | S–M | ~40% | P1 |
 | 9a | Config health SQL + bootstrap orphan DROP | S–M | hard-coded | P1 |
 | 10 | Payload/webserver path hygiene | S–M | partial | P1 |
-| 11 | Drop legacy oidc_generate_refresh_token | S | n/a | P1 |
 | 12 | DB fault tolerance (crash/transient) | L | partial | P1 |
 | 12a | DQM child auto-scale (optional) | L | no-op by design | P1 |
 | 12b | Scoreboard waiter condvar wake | M | poll only | P1 |
-| 12c | lead_process_queries dead API | S | Unity-only | P1 |
 | 12d | MailRelay Persist MySQL/MariaDB SEGV | M | ~40% | P1 |
 | 12e | MAX+1 PK clients: confirm + retry | M | single-thread OK | P1 |
 | 13 | Mail Relay remainder | L–XL | ~70% | P2 |

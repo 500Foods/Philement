@@ -4,6 +4,7 @@
 # --database is the path to the .sqlite file. --schema ignored (no schemas).
 #
 # CHANGELOG
+# 1.1.0 - 2026-08-06 - Open via file: URI mode=ro (immutable read)
 # 1.0.0 - 2026-07-29 - Phase 3 SQLite adapter
 
 set -euo pipefail
@@ -90,8 +91,9 @@ FROM (
 EOF
 )
 
+# -readonly refuses writes even if SQL were wrong (prod safety)
 set +e
-OUT=$(sqlite3 -batch "${DATABASE}" "${SQL}" 2>&1)
+OUT=$(sqlite3 -batch -readonly "${DATABASE}" "${SQL}" 2>&1)
 RC=$?
 set -e
 

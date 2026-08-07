@@ -8,6 +8,7 @@
 # Never scans product row data.
 #
 # CHANGELOG
+# 1.1.0 - 2026-08-06 - Open with sqlite3 -readonly
 # 1.0.0 - 2026-08-02 - Phase 7a SQLite catalog probe
 
 set -euo pipefail
@@ -61,7 +62,7 @@ if [[ -n "${TABLES_CSV}" ]]; then
     IFS=',' read -r -a TABLE_ARR <<< "${TABLES_CSV}"
 else
     # Capture table list then mapfile (avoid SC2312 masking sqlite3 status in process subst)
-    local_list="$(sqlite3 -batch "${DATABASE}" \
+    local_list="$(sqlite3 -batch -readonly "${DATABASE}" \
         "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name;")"
     mapfile -t TABLE_ARR <<< "${local_list}"
 fi
@@ -78,7 +79,7 @@ for raw in "${TABLE_ARR[@]+"${TABLE_ARR[@]}"}"; do
 
     # PRAGMA table_info: cid|name|type|notnull|dflt_value|pk
     set +e
-    PRAGMA_OUT=$(sqlite3 -batch -separator '|' "${DATABASE}" "PRAGMA table_info('${t}');" 2>&1)
+    PRAGMA_OUT=$(sqlite3 -batch -readonly -separator '|' "${DATABASE}" "PRAGMA table_info('${t}');" 2>&1)
     PRC=$?
     set -e
     if [[ "${PRC}" -ne 0 ]]; then

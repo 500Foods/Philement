@@ -5,7 +5,7 @@
  * - Access tokens (RS256 JWT)
  * - ID tokens (RS256 JWT)
  * - Access/ID JWT helpers used by the IdP token path
- * - oidc_generate_refresh_token is a legacy no-op; live refresh is oidc_refresh_issue
+ * - Refresh tokens: oidc_refresh_issue in oidc_refresh_tokens.c
  */
 
 #include <src/hydrogen.h>
@@ -398,20 +398,6 @@ char* oidc_generate_access_token(const OIDCTokenContext *context,
         log_this(SR_OIDC, "Generated access token", LOG_LEVEL_DEBUG, 0);
     }
     return jwt;
-}
-
-char* oidc_generate_refresh_token(const OIDCTokenContext *context,
-                                  const OIDCTokenClaims *claims) {
-    if (!context || !claims) {
-        log_this(SR_OIDC, "Invalid parameters for refresh token generation", LOG_LEVEL_ERROR, 0);
-        return NULL;
-    }
-
-    /* Legacy API: real refresh tokens come from oidc_refresh_issue (oidc_refresh_tokens.c). */
-    (void)context;
-    (void)claims;
-    log_this(SR_OIDC, "oidc_generate_refresh_token is unused; use oidc_refresh_issue", LOG_LEVEL_DEBUG, 0);
-    return NULL;
 }
 
 bool oidc_token_split_compact(const char *jwt,

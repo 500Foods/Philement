@@ -6,6 +6,7 @@
 # mysql client cannot truncate mid-JSON (seen with long migration code).
 #
 # CHANGELOG
+# 1.3.0 - 2026-08-06 - SET SESSION TRANSACTION READ ONLY before SELECT
 # 1.2.0 - 2026-08-02 - HEX+Python decode (avoid client line truncation)
 # 1.1.0 - 2026-08-02 - NDJSON rows + schema-as-DB
 # 1.0.0 - 2026-07-29 - Phase 3 MySQL adapter
@@ -106,7 +107,7 @@ ERR="${WORK}/err.txt"
 
 set +e
 mysql -h "${HOST}" -P "${PORT}" -u "${USER_NAME}" -p"${PASS}" "${DB_USE}" \
-    -N -B --raw -e "${SQL}" >"${RAW}" 2>"${ERR}"
+    -N -B --raw -e "SET SESSION TRANSACTION READ ONLY; ${SQL}" >"${RAW}" 2>"${ERR}"
 RC=$?
 set -e
 
