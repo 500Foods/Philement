@@ -123,7 +123,7 @@ ERR="${WORK}/err.txt"
 
 set +e
 mysql -h "${HOST}" -P "${PORT}" -u "${USER_NAME}" -p"${PASS}" "${DB_USE}" \
-    -N -B --raw -e "${SQL}" >"${RAW}" 2>"${ERR}"
+    -N -B --raw -e "SET SESSION TRANSACTION READ ONLY; ${SQL}" >"${RAW}" 2>"${ERR}"
 RC=$?
 set -e
 

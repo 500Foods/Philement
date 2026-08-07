@@ -52,15 +52,6 @@ Separate ASAN Unity build/test variant for memory-safety gating without corrupti
 
 Distributed proxy architecture sketch. Implementation deferred.
 
-### [SCHEMATOOL PLAN](/docs/H/plans/SCHEMATOOL_PLAN.md)
-
-Standalone Bash/Lua auditor in `extras/schematool/`. **v1 metadata** (Phases 0–5):
-LOAD/APPLY + `queries` text vs Lua — shipped. **Next: Phase 7 live catalog**
-(tables/columns/nullability vs net applied shape; e.g. 1190 DROP NOT NULL) —
-higher priority than Phase 6 unit tests. Operator docs:
-[SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md). Does not replace Hydrogen migration
-runner.
-
 ---
 
 ## Completed plans
@@ -79,6 +70,7 @@ Full index: [`complete/README.md`](/docs/H/plans/complete/README.md). Highlights
 | Lua scripting | [LUA_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md) |
 | Mail Relay blackbox | [MAILRELAY_BLACKBOX_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md) |
 | Migrations perf | [MIGRATIONS_COMPLETE.md](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md) |
+| SchemaTool | [SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md) |
 | Static-function purge | [STATIC_COMPLETE.md](/docs/H/plans/complete/STATIC_COMPLETE.md) |
 | Terminal | [TERMINAL_PLAN_COMPLETE.md](/docs/H/plans/complete/TERMINAL_PLAN_COMPLETE.md) |
 | VictoriaLogs | [VICTORIALOGGING_COMPLETE.md](/docs/H/plans/complete/VICTORIALOGGING_COMPLETE.md) |

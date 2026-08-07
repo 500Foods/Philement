@@ -495,34 +495,6 @@ bool database_queue_lead_manage_heartbeats(DatabaseQueue* lead_queue) {
 }
 
 /*
- * Process incoming queries on Lead DQM queue
- */
-bool database_queue_lead_process_queries(DatabaseQueue* lead_queue) {
-    if (!lead_queue || !lead_queue->is_lead_queue) {
-        return false;
-    }
-
-    char* dqm_label = database_queue_generate_label(lead_queue);
-    log_this(dqm_label, "Processing incoming queries", LOG_LEVEL_TRACE, 0);
-
-    /* Test/API surface only — production workers use process_single_query.
-     * Dequeues one item and frees it without engine execute (no live caller). */
-    DatabaseQuery* query = database_queue_process_next(lead_queue);
-    if (query) {
-        log_this(dqm_label, "Lead process_queries dequeue (no execute): %s", LOG_LEVEL_TRACE, 1,
-                query->query_id ? query->query_id : "unknown");
-        if (query->query_id) free(query->query_id);
-        if (query->query_template) free(query->query_template);
-        if (query->parameter_json) free(query->parameter_json);
-        if (query->error_message) free(query->error_message);
-        free(query);
-    }
-
-    free(dqm_label);
-    return true;
-}
-
-/*
  * Spawn a child queue of the specified type
  */
 bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* queue_type) {

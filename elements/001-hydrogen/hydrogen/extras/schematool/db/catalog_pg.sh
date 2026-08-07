@@ -122,12 +122,14 @@ EOF
 )
 
 export PGPASSWORD="${PASS}"
+export PGOPTIONS="${PGOPTIONS:-} -c default_transaction_read_only=on"
 set +e
 OUT=$(psql -h "${HOST}" -p "${PORT}" -U "${USER_NAME}" -d "${DATABASE}" \
     -v ON_ERROR_STOP=1 -t -A -c "${SQL}" 2>&1)
 RC=$?
 set -e
 unset PGPASSWORD
+unset PGOPTIONS
 
 if [[ "${RC}" -ne 0 ]]; then
     SAFE="${OUT//${PASS}/***}"

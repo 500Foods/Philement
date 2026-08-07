@@ -23,7 +23,6 @@ void test_build_payload_multi_aud_client_id_jti_auth_time(void);
 void test_sign_compact_null_params(void);
 void test_create_jwt_invalid_params(void);
 void test_generate_id_access_invalid_and_no_key(void);
-void test_generate_refresh_stub(void);
 void test_access_token_clears_reference(void);
 void test_claims_from_payload_json_paths(void);
 void test_split_compact_failures(void);
@@ -183,15 +182,6 @@ void test_generate_id_access_invalid_and_no_key(void) {
     ctx.access_token_lifetime = 60;
     TEST_ASSERT_NULL(oidc_generate_id_token(&ctx, &c));
     TEST_ASSERT_NULL(oidc_generate_access_token(&ctx, &c, NULL));
-}
-
-void test_generate_refresh_stub(void) {
-    TEST_ASSERT_NULL(oidc_generate_refresh_token(NULL, NULL));
-    OIDCTokenContext ctx;
-    memset(&ctx, 0, sizeof(ctx));
-    OIDCTokenClaims c;
-    memset(&c, 0, sizeof(c));
-    TEST_ASSERT_NULL(oidc_generate_refresh_token(&ctx, &c));
 }
 
 void test_access_token_clears_reference(void) {
@@ -419,7 +409,6 @@ int main(void) {
     RUN_TEST(test_sign_compact_null_params);
     RUN_TEST(test_create_jwt_invalid_params);
     RUN_TEST(test_generate_id_access_invalid_and_no_key);
-    RUN_TEST(test_generate_refresh_stub);
     RUN_TEST(test_access_token_clears_reference);
     RUN_TEST(test_claims_from_payload_json_paths);
     RUN_TEST(test_split_compact_failures);

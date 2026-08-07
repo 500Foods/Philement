@@ -16,7 +16,6 @@
 // Forward declarations for functions being tested
 bool database_queue_lead_run_bootstrap(DatabaseQueue* lead_queue);
 bool database_queue_lead_run_migration(DatabaseQueue* lead_queue);
-bool database_queue_lead_process_queries(DatabaseQueue* lead_queue);
 bool database_queue_lead_manage_heartbeats(DatabaseQueue* lead_queue);
 bool database_queue_lead_launch_additional_queues(DatabaseQueue* lead_queue);
 bool database_queue_shutdown_child_queue(DatabaseQueue* lead_queue, const char* queue_type);
@@ -31,8 +30,6 @@ void test_database_queue_lead_run_bootstrap_null_queue(void);
 void test_database_queue_lead_run_bootstrap_non_lead_queue(void);
 void test_database_queue_lead_run_migration_null_queue(void);
 void test_database_queue_lead_run_migration_non_lead_queue(void);
-void test_database_queue_lead_process_queries_null_queue(void);
-void test_database_queue_lead_process_queries_non_lead_queue(void);
 void test_database_queue_lead_manage_heartbeats_null_queue(void);
 void test_database_queue_lead_manage_heartbeats_non_lead_queue(void);
 void test_database_queue_lead_launch_additional_queues_null_queue(void);
@@ -116,25 +113,6 @@ void test_database_queue_lead_run_migration_non_lead_queue(void) {
     queue->is_lead_queue = false;
     
     bool result = database_queue_lead_run_migration(queue);
-    TEST_ASSERT_FALSE(result);
-
-    destroy_simple_mock_queue(queue);
-}
-
-// Test database_queue_lead_process_queries with NULL queue
-void test_database_queue_lead_process_queries_null_queue(void) {
-    bool result = database_queue_lead_process_queries(NULL);
-    TEST_ASSERT_FALSE(result);
-}
-
-// Test database_queue_lead_process_queries with non-lead queue
-void test_database_queue_lead_process_queries_non_lead_queue(void) {
-    DatabaseQueue* queue = create_simple_mock_queue(1000, 0, 0);
-    TEST_ASSERT_NOT_NULL(queue);
-    
-    queue->is_lead_queue = false;
-    
-    bool result = database_queue_lead_process_queries(queue);
     TEST_ASSERT_FALSE(result);
 
     destroy_simple_mock_queue(queue);
@@ -310,10 +288,6 @@ int main(void) {
     // Migration tests
     RUN_TEST(test_database_queue_lead_run_migration_null_queue);
     RUN_TEST(test_database_queue_lead_run_migration_non_lead_queue);
-
-    // Process queries tests
-    RUN_TEST(test_database_queue_lead_process_queries_null_queue);
-    RUN_TEST(test_database_queue_lead_process_queries_non_lead_queue);
 
     // Manage heartbeats tests
     RUN_TEST(test_database_queue_lead_manage_heartbeats_null_queue);

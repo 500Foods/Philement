@@ -236,7 +236,6 @@ bool database_queue_lead_run_migration(DatabaseQueue* lead_queue);
 bool database_queue_lead_run_migration_test(DatabaseQueue* lead_queue);
 bool database_queue_lead_launch_additional_queues(DatabaseQueue* lead_queue);
 bool database_queue_lead_manage_heartbeats(DatabaseQueue* lead_queue);
-bool database_queue_lead_process_queries(DatabaseQueue* lead_queue);
 
 // Lead queue internal helper functions (formerly static in lead.c)
 typedef enum {

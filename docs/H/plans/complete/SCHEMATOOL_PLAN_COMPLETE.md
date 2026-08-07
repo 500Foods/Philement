@@ -7,7 +7,7 @@ Define a gated, phase-by-phase plan for a **standalone operator utility** (Bash 
 | Track | Status | Answers |
 | ------- | -------- | --------- |
 | **v1 Metadata** | **Shipped** (Phases 0–5) | Did LOAD/APPLY happen? Does stored `queries.code`/`name`/`summary` still match on-disk Lua? |
-| **v2 Live catalog** | **Shipped** (Phase 7 / CLI 1.5.0) | Do **live database objects** (tables, columns, nullability, …) match net applied DDL (hybrid C fold)? |
+| **v2 Live catalog** | **Shipped** (Phase 7; CLI 1.5.0→1.7.1) | Do **live database objects** (tables, columns, nullability, …) match net applied DDL (hybrid C fold)? |
 
 v1 alone cannot answer “we CREATE’d a column NOT NULL, then later DROP NOT NULL — does live shape look right?” That is the catalog track.
 
@@ -22,28 +22,29 @@ This document is edited as work proceeds. Each phase has Objective, Entry Gate, 
 
 ## Resuming Work
 
-CURRENT STATE (as of 2026-08-02): **v1 metadata complete**; **Phase 7 catalog shipped** (CLI v1.5.0). **1190 acceptance green on all 7 Test 40 layouts** (PG, CRDB-schema, MySQL, MariaDB, SQLite, DB2, Yugabyte). Phase 6 still deferred.
+CURRENT STATE (as of 2026-08-06): **COMPLETE for operator ship** — CLI **v1.7.1**.
+Plan archived at `/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md`.
 
-**Next priority:** optional full-schema catalog noise tuning, catalog remediation `.sql`, or Phase 6 tests if asked.
+| Gate | Result |
+| ------ | -------- |
+| Track A metadata (Phases 0–5) | Shipped |
+| Track B catalog (Phase 7) | Shipped |
+| Test 40 catalog 1190 (all 7 engines) | **PASS** via `extras/schematool/smoke_test40_catalog.sh` |
+| Yugabyte env isolation | Fixed — `YUGABYTE_DB_*` / `--engine yugabytedb` (no ACURANZO fallthrough) |
+| Read-only client guards | PG `default_transaction_read_only`; MySQL session RO; SQLite `-readonly` |
+| Post-table finding details | Shipped (CLI 1.7.1) — diffs + commented remediation; `--no-detail` |
+| shellcheck / luacheck | Clean |
+| Phase 6 automated unit tests | Still deferred (optional backlog) |
+| Catalog remediation `.sql` | Still deferred (checklist + detail sufficient) |
 
-### Resume here next session
+**Production readiness:** read-only by design; prefer read-only DB role + wrappers/explicit flags; see `/docs/H/tools/SCHEMATOOL.md` Safety.
 
-1. Catalog smoke (1190):
+### Verify anytime
 
-   ```bash
-   extras/schematool/schematool.sh --migrations "$HELIUM_ROOT/acuranzo/migrations" \
-     --design acuranzo --engine sqlite \
-     --database "$HYDROGEN_ROOT/tests/artifacts/database/sqlite/hydrodemo.sqlite" \
-     --catalog --only-tables accounts --out-dir /tmp/schematool-cat --no-sql
-   # Expect exit 0; password_hash expected=true live=true
-
-   extras/schematool/schematool.sh --migrations "$HELIUM_ROOT/acuranzo/migrations" \
-     --design acuranzo --engine postgresql --schema demo \
-     --catalog --only-tables accounts --out-dir /tmp/schematool-cat-pg --no-sql
-   ```
-
-2. Metadata smoke (regression): PG still exit 2 only for real 1280/1281 code drift.
-3. Optional: MySQL/DB2 catalog smoke on Test 40 configs; full-schema catalog run; Phase 6 tests.
+```bash
+extras/schematool/smoke_test40_catalog.sh --out-dir /tmp/schematool-t40
+# Expect: 7 pass / 0 fail
+```
 
 ---
 
@@ -801,7 +802,7 @@ Emit short unified diff on failure (`diff -u` or Lua) gated by `--verbose`.
 
 **Exit gate 7c:** **met 2026-08-02** for SQLite + PG 1190.
 
-**Status:** **complete** (2026-08-02) — CLI v1.5.0; follow-ups = MySQL/DB2 live smoke, optional remediation SQL, full-schema noise tuning
+**Status:** **complete** (2026-08-02; multi-engine + prod guards + finding detail verified 2026-08-06 CLI **v1.7.1**)
 
 ---
 
@@ -1163,6 +1164,13 @@ extras/schematool/schematool.sh --migrations "$HELIUM_ROOT/acuranzo/migrations" 
 
 Deferred still: catalog remediation `.sql`; Phase 6 unit tests.
 
+### 2026-08-06 — Prod guards, Test 40 smoke, finding detail, archive
+
+- CLI **v1.7.0**: `ENGINE_REQUESTED` env map (`yugabytedb` → `YUGABYTE_DB_*`); read-only client guards (PGOPTIONS / MySQL session RO / SQLite `-readonly`); `smoke_test40_catalog.sh` — **7/7** PASS on 1190.
+- CLI **v1.7.1**: post-table **finding details** (`lua/schematool_detail.lua`) — line diffs (− DB / + Lua) + commented UPDATE guidance; flags `--no-detail`, `--detail-max-lines`; artifacts `finding_detail.txt` / `catalog_finding_detail.txt`.
+- Operator docs + extras README updated (Safety checklist, wrappers, detail section).
+- Plan marked complete and moved to `plans/complete/SCHEMATOOL_PLAN_COMPLETE.md`.
+
 ---
 
 ## References
@@ -1177,5 +1185,7 @@ Deferred still: catalog remediation `.sql`; Phase 6 unit tests.
 - Catalog acceptance sample: `/elements/002-helium/acuranzo/migrations/acuranzo_1190.lua` (DROP NOT NULL)
 - Metadata drift samples: `acuranzo_1280.lua`, `acuranzo_1281.lua` (mail seeds; Lua ahead of DB on Test 40 PG)
 - Operator docs: `/docs/H/tools/SCHEMATOOL.md`
+- Extras quick start: `/elements/001-hydrogen/hydrogen/extras/schematool/README.md`
+- Smoke: `/elements/001-hydrogen/hydrogen/extras/schematool/smoke_test40_catalog.sh`
 - Completed migration perf plan (context only): `/docs/H/plans/complete/MIGRATIONS_COMPLETE.md`
-- Plans index: `/docs/H/plans/README.md`
+- Plans index: `/docs/H/plans/README.md` / completed: `/docs/H/plans/complete/README.md`

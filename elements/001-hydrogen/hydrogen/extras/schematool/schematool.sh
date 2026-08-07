@@ -8,6 +8,8 @@
 # Database/Lua operations, audit orchestration, and rendering are in lib/.
 #
 # CHANGELOG
+# 1.7.1 - 2026-08-06 - Post-table finding details (field diffs + commented remediation SQL)
+# 1.7.0 - 2026-08-06 - Engine-request env (YUGABYTE_DB_*); read-only client guards; Test 40 smoke
 # 1.6.0 - 2026-08-02 - Row grouping: --group-size N inserts separators every N rows (default 20; 0 = disabled)
 # 1.5.2 - 2026-08-02 - Refactored into lib/ modules; no behavioral change
 # 1.5.1 - 2026-08-02 - MySQL HEX metadata dump + flat catalog probe (all Test 40 engines)
@@ -26,7 +28,7 @@ LUA_DIR="${SCRIPT_DIR}/lua"
 DB_DIR="${SCRIPT_DIR}/db"
 LIB_DIR="${SCRIPT_DIR}/lib"
 
-VERSION="1.6.0"
+VERSION="1.7.1"
 
 # Source library modules (helpers, audit orchestration, rendering)
 # shellcheck source=extras/schematool/lib/schematool_init.sh # dependency checks + command lookups
@@ -63,12 +65,16 @@ Connection (required for full audit / --dump-db; env fallbacks apply):
   --password-env VAR     Env var holding password (preferred; never printed)
 
   Env precedence when flags omitted (first non-empty wins per field):
-    1) Engine-specific:
-         postgresql → ACURANZO_DB_{HOST,PORT,USER,NAME,PASS}
-         mysql      → CANVAS_DB_{HOST,PORT,USER,NAME,PASS}
-         db2        → HYDROTST_DB_{USER,NAME,PASS}
+    1) Requested engine name (before alias) → primary env:
+         postgresql|postgres|cockroachdb → ACURANZO_DB_{HOST,PORT,USER,NAME,PASS}
+         yugabytedb                      → YUGABYTE_DB_{HOST,PORT,USER,NAME,PASS}
+         mysql|mariadb                   → CANVAS_DB_{HOST,PORT,USER,NAME,PASS}
+         db2                             → HYDROTST_DB_{USER,NAME,PASS}
     2) Generic SCHEMATOOL_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}
     3) sqlite → --database path (or SCHEMATOOL_DB_NAME as file path)
+
+  IMPORTANT: --engine yugabytedb must NOT fall through to ACURANZO_DB_* (wrong host).
+  Prefer Test 40 wrappers (schematool_*.sh) or explicit --host/--password-env for prod.
 
   Docs: /docs/H/tools/SCHEMATOOL.md
 
@@ -94,6 +100,8 @@ Output:
   --dump-catalog [PATH]       Fetch live catalog JSON only (optional --only-tables)
   --only-tables a,b           Catalog: probe/compare only these tables (cheap path)
   --group-size N              Insert table separator after every N rows (default: 20; 0 = disabled)
+  --no-detail                 Skip post-table finding details (diffs + commented SQL)
+  --detail-max-lines N        Max diff lines per field in detail section (default: 80)
   -h, --help                  This help
   --version                   Print version
 
@@ -140,6 +148,8 @@ DUMP_CATALOG=0
 DUMP_CATALOG_PATH=""
 ONLY_TABLES=""
 ROW_GROUP_SIZE=20
+NO_DETAIL=0
+DETAIL_MAX_LINES=80
 
 # --- Argument parsing ---
 while [[ $# -gt 0 ]]; do
@@ -272,6 +282,14 @@ while [[ $# -gt 0 ]]; do
             ROW_GROUP_SIZE="${2:-}"
             shift 2
             ;;
+        --no-detail)
+            NO_DETAIL=1
+            shift
+            ;;
+        --detail-max-lines)
+            DETAIL_MAX_LINES="${2:-}"
+            shift 2
+            ;;
         -h|--help)
             print_help
             exit 0
@@ -288,7 +306,10 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-# Engine aliases
+# Preserve requested engine for env selection (aliases collapse dialect only)
+ENGINE_REQUESTED="${ENGINE}"
+
+# Engine aliases (dialect adapters)
 case "${ENGINE}" in
     mariadb) ENGINE="mysql" ;;
     cockroachdb|yugabytedb|postgres) ENGINE="postgresql" ;;
@@ -346,11 +367,24 @@ if [[ -n "${ROW_GROUP_SIZE}" && ! "${ROW_GROUP_SIZE}" =~ ^[0-9]+$ ]]; then
     echo "Error: --group-size must be a non-negative integer" >&2
     exit 1
 fi
+if [[ -n "${DETAIL_MAX_LINES}" && ! "${DETAIL_MAX_LINES}" =~ ^[0-9]+$ ]]; then
+    echo "Error: --detail-max-lines must be a non-negative integer" >&2
+    exit 1
+fi
 
 # Env fallbacks for connection (flags win)
-# Precedence per field: CLI flag → engine-specific → SCHEMATOOL_DB_*
-case "${ENGINE}" in
-    postgresql)
+# Precedence per field: CLI flag → requested-engine env → SCHEMATOOL_DB_*
+# ENGINE_REQUESTED keeps yugabytedb on YUGABYTE_DB_* (not ACURANZO after alias).
+case "${ENGINE_REQUESTED}" in
+    yugabytedb)
+        [[ -z "${HOST}" ]] && HOST="${YUGABYTE_DB_HOST:-}"
+        [[ -z "${PORT}" ]] && PORT="${YUGABYTE_DB_PORT:-}"
+        [[ -z "${USER_NAME}" ]] && USER_NAME="${YUGABYTE_DB_USER:-}"
+        [[ -z "${DATABASE}" ]] && DATABASE="${YUGABYTE_DB_NAME:-}"
+        [[ -z "${PASSWORD_ENV}" && -n "${YUGABYTE_DB_PASS:-}" ]] && PASSWORD_ENV="YUGABYTE_DB_PASS"
+        [[ -z "${SCHEMA}" && -n "${YUGABYTE_DB_SCHEMA:-}" ]] && SCHEMA="${YUGABYTE_DB_SCHEMA}"
+        ;;
+    postgresql|postgres|cockroachdb)
         [[ -z "${HOST}" ]] && HOST="${ACURANZO_DB_HOST:-}"
         [[ -z "${PORT}" ]] && PORT="${ACURANZO_DB_PORT:-}"
         [[ -z "${USER_NAME}" ]] && USER_NAME="${ACURANZO_DB_USER:-}"
@@ -358,7 +392,7 @@ case "${ENGINE}" in
         [[ -z "${PASSWORD_ENV}" && -n "${ACURANZO_DB_PASS:-}" ]] && PASSWORD_ENV="ACURANZO_DB_PASS"
         [[ -z "${SCHEMA}" && -n "${ACURANZO_DB_SCHEMA:-}" ]] && SCHEMA="${ACURANZO_DB_SCHEMA}"
         ;;
-    mysql)
+    mysql|mariadb)
         [[ -z "${HOST}" ]] && HOST="${CANVAS_DB_HOST:-}"
         [[ -z "${PORT}" ]] && PORT="${CANVAS_DB_PORT:-}"
         [[ -z "${USER_NAME}" ]] && USER_NAME="${CANVAS_DB_USER:-}"

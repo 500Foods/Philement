@@ -6,7 +6,7 @@ Migration drift auditor for Hydrogen Lua migrations vs a live database.
 object shape vs folded applied DDL).
 
 **Full docs:** [`/docs/H/tools/SCHEMATOOL.md`](/docs/H/tools/SCHEMATOOL.md)  
-**Plan:** [`/docs/H/plans/SCHEMATOOL_PLAN.md`](/docs/H/plans/SCHEMATOOL_PLAN.md)
+**Plan:** [`/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md)
 
 ## One-liner (metadata)
 
@@ -77,26 +77,35 @@ testdata/
 ## Outputs
 
 1. **stdout** — Hydrogen `tables` checklist (metadata and/or catalog)
-2. **`.sql`** — fully commented remediation (metadata track; never auto-executed)
-3. **`.mig`** — plain-text orphan DB rows (when present)
-4. **catalog_*.json** under `--out-dir` when `--catalog` is used
+2. **stdout detail** — after the table on failures: field diffs (− DB / + Lua) and commented remediation SQL (disable with `--no-detail`)
+3. **`.sql`** — fully commented remediation (metadata track; never auto-executed)
+4. **`.mig`** — plain-text orphan DB rows (when present)
+5. **catalog_*.json** / `finding_detail.txt` under `--out-dir` when used
 
 Exit: `0` clean · `1` hard error · `2` drift/missing · `3` orphans/anomalies  
 (When both tracks run: worst-wins.)
 
 ## Env (when flags omitted)
 
-| Engine | Primary env | Also |
-| -------- | ------------- | ------ |
-| postgresql | `ACURANZO_DB_*` | `SCHEMATOOL_DB_*` |
-| mysql | `CANVAS_DB_*` | `SCHEMATOOL_DB_*` |
+Chosen from **requested** `--engine` (before alias):
+
+| Requested engine | Primary env | Also |
+| ------------------ | ------------- | ------ |
+| postgresql / cockroachdb | `ACURANZO_DB_*` | `SCHEMATOOL_DB_*` |
+| yugabytedb | `YUGABYTE_DB_*` | `SCHEMATOOL_DB_*` |
+| mysql / mariadb | `CANVAS_DB_*` | `SCHEMATOOL_DB_*` |
 | db2 | `HYDROTST_DB_*` | `SCHEMATOOL_DB_*` |
 | sqlite | `--database` path | `SCHEMATOOL_DB_NAME` as path |
 
 Password: `--password-env VAR` preferred (never printed).
 
+Test 40 wrappers: `schematool_{postgresql,mysql,mariadb,sqlite,db2,cockroachdb,yugabytedb}.sh`  
+Smoke (all 7, 1190 catalog): `./smoke_test40_catalog.sh`
+
 ## Safety
 
-Read-only. Remediation SQL is 100% commented. Catalog uses **targeted probes**
-(not full-DB dumps). Updating `queries.code` does not replay DDL — prefer a new
-forward migration for live schema fixes.
+Read-only client guards (PG `default_transaction_read_only`, MySQL session
+read-only, SQLite `-readonly`). Remediation SQL is 100% commented. Catalog uses
+**targeted probes** (not full-DB dumps). Updating `queries.code` does not replay
+DDL — prefer a new forward migration for live schema fixes. See
+[`SCHEMATOOL.md` Safety](/docs/H/tools/SCHEMATOOL.md) before production use.
