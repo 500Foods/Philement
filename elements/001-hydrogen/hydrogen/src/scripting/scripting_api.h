@@ -325,8 +325,9 @@ int H_lua_llm_wait_one(lua_State* L, H_Handle* h);
 /*
  * Populate H.mail and H.notify host functions.
  *
- * Phase 7A: H.mail.send queues templated mail via mailrelay_send_template.
- * H.notify returns a stable deferred error (no channel→template map yet).
+ * H.mail: dual-mode queue via mailrelay_send_template / mailrelay_send_direct.
+ * H.notify: permanent compatibility shim — always
+ *   "notify: deferred to mailrelay rules" (no channel map, no send path).
  *
  * H.mail.send(message, opts?) -> handle
  * H.mail.send_sync(message, opts?) -> result, err
@@ -339,7 +340,7 @@ int H_lua_llm_wait_one(lua_State* L, H_Handle* h);
  * message shape for H.mail.send (template-first):
  *   { template|template_key = string, to = string|array, cc?, bcc?,
  *     params = { [string] = string }?, idempotency_key?, priority? }
- * message shape for H.notify.send:
+ * message shape for H.notify.send (accepted, ignored):
  *   { channel = string, to = string|array, body = string }
  *
  * Called automatically by H_lua_install_api.

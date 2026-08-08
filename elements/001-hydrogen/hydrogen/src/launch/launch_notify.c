@@ -1,8 +1,11 @@
 /*
- * Launch Notify Subsystem
+ * Launch Notify Subsystem (config-only scaffold)
  *
- * This module handles the initialization of the notify subsystem.
- * It provides functions for checking readiness and launching notification services.
+ * Validates optional NotifyConfig (SMTP notifier settings) and registers the
+ * subsystem. There is no separate outbound notify send runtime — production
+ * mail is Mail Relay (H.mail / REST / events / LogNotify fanout). H.notify in
+ * Lua is a permanent deferred-error shim. Keep this launch path for config
+ * compatibility; do not add a parallel SMTP client here.
  */
 
  // Global includes
@@ -198,9 +201,9 @@ int launch_notify_subsystem(void) {
         return 0;
     }
 
-    // Config-only launch: SMTP settings validated and registered. Outbound
-    // notify send path is not a separate runtime (use Mail Relay for mail).
-    log_this(SR_NOTIFY, "    Notify SMTP configuration accepted", LOG_LEVEL_STATE, 0);
+    // Config-only: SMTP settings validated and registered. No outbound notify
+    // client — use Mail Relay. Intentional permanent scaffold (not incomplete).
+    log_this(SR_NOTIFY, "    Notify SMTP configuration accepted (scaffold; mail via Mail Relay)", LOG_LEVEL_STATE, 0);
     log_this(SR_NOTIFY, "    SMTP notifier configured", LOG_LEVEL_STATE, 0);
     log_this(SR_NOTIFY, "    SMTP host: %s", LOG_LEVEL_STATE, 1, app_config->notify.smtp.host);
     log_this(SR_NOTIFY, "    SMTP port: %d", LOG_LEVEL_STATE, 1, app_config->notify.smtp.port);

@@ -40,7 +40,7 @@ Mail Relay is **not** “open SMTP and hope.” It is a **controlled mail pipeli
 4. **Workers** claim queue items, render to **RFC 5322**, and deliver via **libcurl SMTP/SMTPS**.
 5. Outcomes are recorded (attempts, status, metrics). Secrets and OTP plaintext never appear in normal logs.
 
-**One delivery path.** REST, Lua, Notify, and events all enqueue through Mail Relay (`mailrelay_send_template`, `mailrelay_send_direct`, or `mailrelay_enqueue`). Scripts must not open SMTP sockets or call REST just to send mail.
+**One delivery path.** REST, Lua `H.mail`, log fanout (`LogNotify`), and events enqueue through Mail Relay (`mailrelay_send_template`, `mailrelay_send_direct`, or `mailrelay_enqueue`). `H.notify` is a permanent deferred-error shim (not a second stack). Scripts must not open SMTP sockets or call REST just to send mail.
 
 **Rewrite is first-class.** You can change From/To/Cc, inject BCC watchers, swap templates, coalesce bursts, and reshape inbound submission into outbound templated mail—without callers knowing the SMTP topology.
 
@@ -49,8 +49,8 @@ Mail Relay is **not** “open SMTP and hope.” It is a **controlled mail pipeli
 ## Architecture and data flow
 
 ```text
-  REST /api/mailrelay/*     Lua H.mail / H.notify     System events
-  Inbound SMTP (opt-in)     Notify compatibility      Internal C callers
+  REST /api/mailrelay/*     Lua H.mail                System events
+  Inbound SMTP (opt-in)     LogNotify fanout          Internal C callers
               \                    |                    /
                \                   |                   /
                 v                  v                  v
@@ -349,24 +349,27 @@ Mixing template and freeform fields is rejected (`MAIL_PARAM_MISSING`).
 
 **Lua must not** call SMTP, shell out to `sendmail`, or HTTP-loop back to `/api/mailrelay/*` for ordinary sends. That would bypass rate limits, audit, and idempotency.
 
-### Lua: `H.notify`
+### Lua: `H.notify` (permanent shim)
 
-Notify is a **compatibility shim**. v1 always returns a stable deferred error
-(`"notify: deferred to mailrelay rules"`) — no silent success, no channel→template
-map yet. Prefer explicit event emission or `H.mail` (template or freeform).
+`H.notify` is a **permanent compatibility surface**, not a future second mail
+stack. Calls always fail closed with the stable string
+`"notify: deferred to mailrelay rules"` — no silent success, no enqueue, no
+channel→template mapping. That behavior is intentional and frozen.
+
+**Use instead:** `H.mail` (template or freeform), Mail Relay REST, system
+events, or logging with `LogNotify` (async mail via Mail Relay). The optional
+config `Notify` / launch_notify path is a config-only scaffold; it does not
+send mail.
 
 ```lua
 local h = H.notify.send({
     channel = "email",
     to = "ops@example.com",
-    body = "deprecated shape",
+    body = "legacy shape — ignored",
 })
 local res, err = H.wait(h)
 -- res == nil, err == "notify: deferred to mailrelay rules"
 ```
-
-Recommended practice: emit a named event or call `H.mail` with a template key
-or freeform subject/body your org owns.
 
 ### Multiline bodies in Lua (templates stored as SQL)
 

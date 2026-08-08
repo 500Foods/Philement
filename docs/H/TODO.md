@@ -63,16 +63,6 @@ not open work unless listed below.
 | **Remaining** | `unity_asan` CMake tree, harness test, first-run triage (`detect_leaks=0`) |
 | **Why now** | Catches UAF/double-free on unit-only paths blackbox never hits. Separate build; does not touch gcov. |
 
-### 5. Unity disabled-test cleanup
-
-| | |
-| --- | --- |
-| **Plan** | [`UNITY_CLEANUP.md`](/docs/H/plans/UNITY_CLEANUP.md) |
-| **Effort** | M |
-| **Done** | ~0% — catalogue complete (43 tests) |
-| **Remaining** | Review each `if (0) RUN_TEST(...)` entry: fix and re-enable, mark ignored with `TEST_IGNORE_MESSAGE`, or remove if redundant/broken |
-| **Why now** | 43 disabled tests are dead weight; several segfault or have weak justification. |
-
 ### 6. Auth register — persist email on `account_contacts`
 
 | | |
@@ -218,16 +208,6 @@ not open work unless listed below.
 | **Remaining** | Product decision (JWT/session cookie vs stay open on trusted nets); implement gate + blackbox |
 | **Why later** | Fine for lab; risk on exposed deployments. |
 
-### 16. H.notify — real delivery or permanent deprecation
-
-| | |
-| --- | --- |
-| **Code** | `src/scripting/scripting_api_mail_notify.c` · docs `MAIL_GUIDE.md` |
-| **Effort** | S (docs/deprecate) or M–L (implement channel→template map) |
-| **Done** | Stable deferred error `"notify: deferred to mailrelay rules"`; `H.mail` is the real path |
-| **Remaining** | Either implement notify→mailrelay rules mapping **or** document as permanent shim and fold “Notify subsystem” (item 21) into Mail Relay only |
-| **Note** | Do not leave both notify launch scaffold and Lua notify ambiguous. |
-
 ### 17. OIDC RP — parse IdP client roles (`resource_access`)
 
 | | |
@@ -274,17 +254,6 @@ not open work unless listed below.
 | **Done** | ~25% — config validation, launch/landing registry, readiness checks |
 | **Remaining** | Browse PTR/SRV/TXT for configured service types; result cache/API; real init beyond “register RUNNING”; tests |
 | **Note** | Launch is a scaffold that marks the subsystem running without discovery. mDNS **server** announcements are separate and working (`test_25`). |
-
-### 21. Notify subsystem — outbound SMTP runtime
-
-| | |
-| --- | --- |
-| **Plan** | None (or fold into Mail Relay if product chooses one path) |
-| **Code** | `src/launch/launch_notify.c` · config `notify.smtp` · no `src/notify/` send path |
-| **Effort** | M–L |
-| **Done** | ~25% — config + launch validates SMTP notifier settings and registers subsystem |
-| **Remaining** | Decide with item 16: implement notify SMTP client **or** officially route events through Mail Relay; then wire auth/system events; tests |
-| **Note** | Mail Relay is the production mail stack today. Notify launch is config-only placeholder. |
 
 ### 22. Mirage distributed proxy
 
@@ -342,6 +311,17 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 - Scoreboard waiter docs match claim+TRACE (no false Phase 13 promise)
 - New TODO slices: 12a auto-scale, 12b waiter wake, 12c lead_process_queries
 
+**2026-08-07 H.notify permanent shim (§16) + Notify fold (§21):**
+
+- Decision: `H.notify` stays forever as deferred-error only (`"notify: deferred to mailrelay rules"`); no channel→template map
+- Production mail: Mail Relay only (`H.mail`, REST, events, `LogNotify` fanout)
+- `launch_notify` / `NotifyConfig` remain config-only scaffold (not a second SMTP runtime)
+- Docs: `MAIL_GUIDE.md`, `LUA_GUIDE.md`, `lua_api.md`; comments in `scripting_api_mail_notify.c`, `launch_notify.c`, `landing_notify.c`
+
+**2026-08-07 Unity disabled-test cleanup (§5):**
+
+- All 43 `if (0) RUN_TEST(...)` entries reviewed; plan moved to [`UNITY_CLEANUP_COMPLETE.md`](/docs/H/plans/complete/UNITY_CLEANUP_COMPLETE.md); zero remaining `if (0) RUN_TEST` in Unity sources
+
 **2026-08-07 database params closeout:**
 
 - [`DATABASE_UPDATE_PLAN_COMPLETE.md`](/docs/H/plans/complete/DATABASE_UPDATE_PLAN_COMPLETE.md) — Phases 5–6 verification/docs done; Unity param suites + `mkp`/`mks` green
@@ -365,7 +345,6 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 1 | Keycloak / OIDC RP E2E | S–M | ~90% | P0 |
 | 3 | Provision DefaultRoles → account_roles | S–M | ~30% | P0 |
 | 4 | Unity ASAN | M | 0% | P1 |
-| 5 | Unity disabled-test cleanup | M | ~0% | P1 |
 | 6 | Register email → account_contacts | S–M | ~40% | P1 |
 | 9 | DB queue health probe | S–M | ~40% | P1 |
 | 9a | Config health SQL + bootstrap orphan DROP | S–M | hard-coded | P1 |
@@ -379,12 +358,10 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 14a | REST auth_chat SSE streaming | L | ~20% | P2 |
 | 14b | WS chunked media upload | M | ~70% | P2 |
 | 15 | Terminal WS auth | M | ~10% | P2 |
-| 16 | H.notify real or deprecate | S–L | shim | P2 |
 | 17 | OIDC RP client-role parse | S–M | fallback | P2 |
 | 18 | OIDC IdP post-MVP | M–L | ~90% | P3 |
 | 19 | Print job → device / Beryllium | L–XL | ~30% | P3 |
 | 20 | mDNS client runtime | L–XL | ~25% | P3 |
-| 21 | Notify SMTP runtime | M–L | ~25% | P3 |
 | 22 | Mirage | XL | 0% | P3 |
 | 23 | Reserved enums/fields | n/a | n/a | P3 |
 

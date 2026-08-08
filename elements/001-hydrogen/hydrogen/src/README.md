@@ -31,7 +31,7 @@ This is the C source for the hydrogen project.
 - [`mdns`](/elements/001-hydrogen/hydrogen/src/mdns/) - Service discovery (client) and advertising (server)
 - [`mirage`](/elements/001-hydrogen/hydrogen/src/mirage/) - Proxy services
 - [`network`](/elements/001-hydrogen/hydrogen/src/network/) - Network interfaces
-- [`notify`](/elements/001-hydrogen/hydrogen/src/notify/) - Notification services
+- Notify (scaffold) — [`config_notify`](/elements/001-hydrogen/hydrogen/src/config/config_notify.h) + [`launch_notify`](/elements/001-hydrogen/hydrogen/src/launch/launch_notify.c); no `src/notify/` runtime (mail is Mail Relay)
 - [`oidc`](/elements/001-hydrogen/hydrogen/src/oidc/) - OpenID Connect
 - [`payload`](/elements/001-hydrogen/hydrogen/src/payload/) - Payload management
 - [`print`](/elements/001-hydrogen/hydrogen/src/print/) - Print subsystem

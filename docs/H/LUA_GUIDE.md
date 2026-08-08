@@ -536,9 +536,10 @@ local h2 = H.mail.send({
 })
 ```
 
-`H.notify` returns a stable deferred error (`"notify: deferred to mailrelay rules"`).
-Prefer `H.mail` or system events. Full contract: [lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md)
-and [MAIL_GUIDE.md](/docs/H/MAIL_GUIDE.md).
+`H.notify` is a **permanent shim**: always `"notify: deferred to mailrelay rules"`.
+Do not plan on channel→template notify; use `H.mail` or system events. Full
+contract: [lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md) and
+[MAIL_GUIDE.md](/docs/H/MAIL_GUIDE.md).
 
 ### Scoreboard (jobs)
 

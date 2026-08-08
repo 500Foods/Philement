@@ -49,4 +49,5 @@ Active plans folder: [`/docs/H/plans/`](/docs/H/plans/).
 | [TERMINAL_PLAN_COMPLETE.md](/docs/H/plans/complete/TERMINAL_PLAN_COMPLETE.md) | Terminal subsystem |
 | [TEST_40_DEBUG_PLAN_COMPLETE.md](/docs/H/plans/complete/TEST_40_DEBUG_PLAN_COMPLETE.md) | Test 40 debug (historical) |
 | [TODO_COMPLETE.md](/docs/H/plans/complete/TODO_COMPLETE.md) | Old code-level TODO list |
+| [UNITY_CLEANUP_COMPLETE.md](/docs/H/plans/complete/UNITY_CLEANUP_COMPLETE.md) | Unity disabled-test cleanup (43 tests) |
 | [VICTORIALOGGING_COMPLETE.md](/docs/H/plans/complete/VICTORIALOGGING_COMPLETE.md) | VictoriaLogs integration |

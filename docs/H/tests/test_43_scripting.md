@@ -12,7 +12,7 @@ This script validates:
 - Database connectivity for script execution
 - Scoreboard job tracking and completion
 - One-shot data-plane probes: `H.query` / `H.wait` / `H.query_sync` / `H.altquery`
-- One-shot mail/notify probes: `H.mail.send` / `send_sync` (freeform) and `H.notify.send_sync` (deferred error) when Mail Relay is enabled
+- One-shot mail/notify probes: `H.mail.send` / `send_sync` (freeform) and `H.notify.send_sync` (permanent deferred-error shim) when Mail Relay is enabled
 - One-shot HTTP probes: `H.http.get` / `H.wait` and `H.http.post_sync` against this process's WebServer (`HYDROGEN_HTTP_PROBE_BASE`)
 - One-shot scoreboard probes: `H.scoreboard.get` / `cancel` (plus list/submit on the tick path)
 - One-shot LLM probes: `H.llm.list_sync` and `H.llm.call` + `H.wait` against `tests/lib/mock_llm` when available (`HYDROGEN_LLM_PROBE_MODEL`, SQLite endpoint rewrite)
