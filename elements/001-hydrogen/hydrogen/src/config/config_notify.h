@@ -1,8 +1,9 @@
 /*
- * Notify Configuration
+ * Notify Configuration (scaffold)
  *
- * Defines the configuration structure and handlers for the notification subsystem.
- * Includes settings for notification delivery through various channels (e.g., SMTP).
+ * Optional NotifyConfig / SMTP settings validated at launch. There is no
+ * separate notify send runtime — production outbound mail is Mail Relay.
+ * Lua H.notify is a permanent deferred-error shim (use H.mail).
  */
 
 #ifndef HYDROGEN_CONFIG_NOTIFY_H

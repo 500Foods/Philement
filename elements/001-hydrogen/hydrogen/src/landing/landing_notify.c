@@ -66,15 +66,12 @@ void free_notify_resources(void) {
     // Clean up notification service resources
     log_this(SR_LANDING, "  Step 1: Stopping notification service", LOG_LEVEL_DEBUG, 0);
 
-    // Note: If SMTP connections or notification queues were created,
-    // they would be cleaned up here. Currently the notify subsystem
-    // only initializes configuration, so minimal cleanup is needed.
+    // Config-only scaffold: no notify SMTP client, queues, or template cache
+    // (mail is Mail Relay). Nothing to tear down beyond registry state.
 
-    log_this(SR_LANDING, "  Step 2: Clearing notification templates", LOG_LEVEL_DEBUG, 0);
-    // Any cached notification templates would be freed here
+    log_this(SR_LANDING, "  Step 2: No notify runtime resources (scaffold)", LOG_LEVEL_DEBUG, 0);
 
-    log_this(SR_LANDING, "  Step 3: Closing notification connections", LOG_LEVEL_DEBUG, 0);
-    // Any persistent connections (SMTP, etc.) would be closed here
+    log_this(SR_LANDING, "  Step 3: No notify connections to close", LOG_LEVEL_DEBUG, 0);
 
     // Update the registry that notify has been shut down
     update_subsystem_after_shutdown("Notify");

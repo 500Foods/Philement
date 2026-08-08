@@ -1,10 +1,12 @@
-# Unity Cleanup — Disabled Tests
+# Unity Cleanup — Disabled Tests (COMPLETE)
 
-Catalogue of Unity unit tests that are currently disabled via `if (0) RUN_TEST(...)`. Each entry records the test function, its file/line, and any inline reason. This file is the canonical to-do list for reviewing and either re-enabling, fixing, or removing these tests.
+Catalogue of Unity unit tests that were disabled via `if (0) RUN_TEST(...)`.
+Each entry records the test function and resolution (re-enable, fix, or remove).
 
-Generated: 2026-07-26
+Generated: 2026-07-26 · Closed: 2026-08-07
 
-Total disabled tests: 43 (all reviewed — cleanup complete)
+Total disabled tests: 43 (all reviewed — cleanup complete). Zero
+`if (0) RUN_TEST` remain under `tests/unity/`.
 
 ---
 

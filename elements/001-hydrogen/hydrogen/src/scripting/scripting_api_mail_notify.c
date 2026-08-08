@@ -3,7 +3,9 @@
  *
  * H.mail.send queues mail through Mail Relay: template mode
  * (mailrelay_send_template) or freeform mode (mailrelay_send_direct).
- * H.notify returns a stable deferred error (use H.mail; see docs/H/TODO.md).
+ * H.notify is a permanent compatibility shim: always returns
+ * "notify: deferred to mailrelay rules". Production path is H.mail /
+ * Mail Relay only (no channel→template map, no separate notify runtime).
  */
 
 #include <src/hydrogen.h>
@@ -30,7 +32,7 @@
 #define MAIL_LUA_MAX_BODY_LEN (1024 * 1024)
 #define MAIL_LUA_ERR_CAP 512
 
-/* Phase 7A.4: explicit deferred compatibility; no channel→template map yet. */
+/* Permanent H.notify shim error string (API-stable; do not change casually). */
 static const char* NOTIFY_DEFERRED_ERROR = "notify: deferred to mailrelay rules";
 
 /* Owned parse buffers freed by free_mail_parse (struct defined in
@@ -579,15 +581,15 @@ int H_lua_mail_send_sync(lua_State* L) {
 /*
  * H.notify.send(message, opts?) -> handle
  *
- * Phase 7A.4: stable deferred error (no silent success, no enqueue).
- * Real channel→template rule mapping is deferred.
+ * Permanent shim: stable deferred error only (no silent success, no enqueue,
+ * no channel→template map). Use H.mail for real delivery.
  */
 int H_lua_notify_send(lua_State* L) {
     H_Handle* h = H_Handle_new(L, H_HK_NOTIFY);
     if (!h) {
         return 0;
     }
-    /* Message table is accepted for API stability; not interpreted in 7A.4. */
+    /* Message table accepted for API stability; not interpreted. */
     h->notify_error = strdup(NOTIFY_DEFERRED_ERROR);
     return 1;
 }
