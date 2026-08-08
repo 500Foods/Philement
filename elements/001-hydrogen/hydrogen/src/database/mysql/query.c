@@ -107,7 +107,12 @@ typedef struct {
     unsigned int time_type;
 } MYSQL_TIME;
 
-// Helper function to bind a single parameter (non-static for Unity direct tests)
+/*
+ * Fill MYSQL_BIND[param_index] from TypedParameter. Allocates value/length
+ * storage into bound_values for mysql_cleanup_bound_values. DATE/TIME/DATETIME/
+ * TIMESTAMP parse ISO text into MYSQL_TIME. is_null string-likes bind as empty
+ * text (hand-rolled MYSQL_BIND layout cannot set client is_null safely).
+ */
 bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, TypedParameter* param,
                                          void** bound_values, size_t total_param_count, const char* designator) {
     MYSQL_BIND* bind = (MYSQL_BIND*)bind_ptr;

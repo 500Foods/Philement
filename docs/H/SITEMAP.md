@@ -20,6 +20,12 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [SITEMAP.md](/docs/H/SITEMAP.md): An index to all the Markdown files in the proejct
 - [STRUCTURE.md](/docs/H/STRUCTURE.md): An index to all of the files in the project
 - [TODO.md](/docs/H/TODO.md): Prioritized incomplete plans and actionable backlog
+- [DATABASES.md](/docs/H/DATABASES.md): Multi-engine SQL notes and design constraints
+
+## Folder: /docs/H/database
+
+- [PARAMETER_TYPES.md](/docs/H/database/PARAMETER_TYPES.md): Typed JSON query parameter types
+- [PARAMETER_BINDING.md](/docs/H/database/PARAMETER_BINDING.md): Per-engine parameter binding
 
 ## Folder: /elements/001-hydrogen/hydrogen/cmake
 
@@ -115,7 +121,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [README.md](/docs/H/plans/README.md): Plans folder index
 - [CHAT_PLAN_PHASE_13.md](/docs/H/plans/CHAT_PLAN_PHASE_13.md): Chat Phase 13 advanced features (open)
 - [CHAT_PLAN_SUMMARY.md](/docs/H/plans/CHAT_PLAN_SUMMARY.md): Chat service plan index (Phases 1–12 complete, 13 open)
-- [DATABASE_UPDATE_PLAN.md](/docs/H/plans/DATABASE_UPDATE_PLAN.md): Database parameter binding enhancements (closeout remaining)
+
 - [KEYCLOAK_PLAN.md](/docs/H/plans/KEYCLOAK_PLAN.md): Keycloak SSO / Hydrogen as OIDC RP (Phase 5 E2E in progress)
 - [MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md): Mail Relay subsystem implementation plan
 - [MIRAGE_PLAN.md](/docs/H/plans/MIRAGE_PLAN.md): Mirage distributed proxy architecture (deferred)
@@ -163,6 +169,7 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [CONDUIT_DIAGRAMS_COMPLETE.md](/docs/H/plans/complete/CONDUIT_DIAGRAMS_COMPLETE.md)
 - [CONDUIT_FIX_COMPLETE.md](/docs/H/plans/complete/CONDUIT_FIX_COMPLETE.md)
 - [DATABASE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_PLAN_COMPLETE.md)
+- [DATABASE_UPDATE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_UPDATE_PLAN_COMPLETE.md)
 - [LOG_FANOUT_PLAN_COMPLETE.md](/docs/H/plans/complete/LOG_FANOUT_PLAN_COMPLETE.md)
 - [LUA_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md)
 - [MAILRELAY_BLACKBOX_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md)

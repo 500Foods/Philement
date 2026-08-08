@@ -111,9 +111,11 @@ extern PQresultErrorField_t PQresultErrorField_ptr;
 // External declarations for constants (defined in connection.c)
 extern bool check_timeout_expired(time_t start_time, int timeout_seconds);
 
-// Helper function to convert TypedParameter to PostgreSQL string format
-// PostgreSQL PQexecParams accepts all parameters as text strings
-// Returns allocated string that caller must free
+/*
+ * Convert TypedParameter to a heap string for PQexecParams (text format).
+ * Returns NULL for is_null (PQexecParams treats NULL paramValues[i] as SQL NULL).
+ * Caller frees non-NULL results.
+ */
 char* postgresql_convert_param_value(const TypedParameter* param, const char* designator) {
     if (!param) {
         log_this(designator, "postgresql_convert_param_value: NULL parameter", LOG_LEVEL_ERROR, 0);

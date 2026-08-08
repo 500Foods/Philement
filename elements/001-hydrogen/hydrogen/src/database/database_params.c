@@ -1,8 +1,10 @@
-
 /*
  * Database Parameter Processing Implementation
  *
- * Handles parsing of typed JSON parameters and conversion to database-specific formats.
+ * parse_typed_parameters: JSON type groups → ParameterList (zero-init each
+ * TypedParameter before fill so free paths never free garbage pointers).
+ * convert_named_to_positional: :name → $N (PostgreSQL) or ? (others); repeats
+ * of the same name get separate ordered slots with the same TypedParameter*.
  */
 
 // Project includes

@@ -92,11 +92,11 @@ extern sqlite3_errmsg_t sqlite3_errmsg_ptr;
 }
 
 /*
- * SQLite Parameter Binding
+ * Bind one TypedParameter on a prepared sqlite3_stmt (1-based index).
+ * INTEGER/BOOLEAN → bind_int; FLOAT → bind_double; STRING/TEXT and
+ * DATE/TIME/DATETIME/TIMESTAMP → bind_text (ISO strings); is_null → bind_null.
  */
-
-// Helper function to bind a single parameter
- bool sqlite_bind_single_parameter(void* stmt, int param_index, TypedParameter* param, const char* designator) {
+bool sqlite_bind_single_parameter(void* stmt, int param_index, TypedParameter* param, const char* designator) {
     if (!stmt || !param) {
         log_this(designator, "sqlite_bind_single_parameter: invalid parameters", LOG_LEVEL_ERROR, 0);
         return false;

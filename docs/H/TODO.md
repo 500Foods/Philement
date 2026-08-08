@@ -37,16 +37,6 @@ not open work unless listed below.
 | **Remaining** | Manual E2E against real Keycloak (password + OIDC login, provision, renew, logout, managers); optional Phase 26 last-method polish |
 | **Why now** | Unblocks production SSO. Implementation is done; only verification remains. |
 
-### 2. Database parameter support — verification & docs closeout
-
-| | |
-| --- | --- |
-| **Plan** | [`DATABASE_UPDATE_PLAN.md`](/docs/H/plans/DATABASE_UPDATE_PLAN.md) |
-| **Effort** | S |
-| **Done** | ~75% — Phases 1–4 implementation complete |
-| **Remaining** | Phase 5 test runs (coverage/cppcheck/shellcheck/leaks) and Phase 6 comment/docs tidy; mark complete |
-| **Why now** | Code is in; finishing checkboxes shrinks the backlog with almost no design risk. |
-
 ### 3. OIDC RP — provision DefaultRoles → `account_roles`
 
 | | |
@@ -352,6 +342,11 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 - Scoreboard waiter docs match claim+TRACE (no false Phase 13 promise)
 - New TODO slices: 12a auto-scale, 12b waiter wake, 12c lead_process_queries
 
+**2026-08-07 database params closeout:**
+
+- [`DATABASE_UPDATE_PLAN_COMPLETE.md`](/docs/H/plans/complete/DATABASE_UPDATE_PLAN_COMPLETE.md) — Phases 5–6 verification/docs done; Unity param suites + `mkp`/`mks` green
+- Docs: [PARAMETER_TYPES.md](/docs/H/database/PARAMETER_TYPES.md), [PARAMETER_BINDING.md](/docs/H/database/PARAMETER_BINDING.md)
+
 **2026-08-07 dead API cleanup:**
 
 - Removed legacy no-op `oidc_generate_refresh_token` (+ header/Unity); live path remains `oidc_refresh_issue`
@@ -368,7 +363,6 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | # | Item | Effort left | Done | Priority |
 | --- | ------ | ------------- | ------ | ---------- |
 | 1 | Keycloak / OIDC RP E2E | S–M | ~90% | P0 |
-| 2 | Database params closeout | S | ~75% | P0 |
 | 3 | Provision DefaultRoles → account_roles | S–M | ~30% | P0 |
 | 4 | Unity ASAN | M | 0% | P1 |
 | 5 | Unity disabled-test cleanup | M | ~0% | P1 |

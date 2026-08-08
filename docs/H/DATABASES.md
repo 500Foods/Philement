@@ -14,6 +14,8 @@ There are of course variations in what these database engines are each capable o
 
 - **QUERY ID SYSTEM.** Rather than sending raw SQL queries, the API uses a query ID system where clients reference pre-defined query templates by numeric ID with parameters. This provides schema independence, security through query whitelisting, and enables cross-database compatibility without exposing internal SQL structures.
 
+- **TYPED PARAMETERS.** Runtime binds use typed JSON groups (`INTEGER`, `STRING`, …) and named `:markers` in SQL, converted to `$N` or `?` per engine. Details: [PARAMETER_TYPES.md](/docs/H/database/PARAMETER_TYPES.md), [PARAMETER_BINDING.md](/docs/H/database/PARAMETER_BINDING.md).
+
 - **MIGRATION SYSTEM.** Database schema evolution is handled through Lua scripts that generate engine-specific SQL migrations. The system uses a two-phase LOAD/APPLY process: LOAD extracts migration metadata into the database, while APPLY executes the actual schema changes with transaction safety and rollback capabilities.
 
 - **SQL DIALECT VARIATIONS.** While basic SQL is largely compatible, engines differ in advanced features like window functions, common table expressions (CTEs), recursive queries, and specific built-in functions. Our migration system uses a macro system to adjust queries for similar features across engines, such as "CURRENT TIMESTAMP" (DB2) vs. "current_timestamp()" (PostgreSQL, MySQL/MariaDB, and SQLite).

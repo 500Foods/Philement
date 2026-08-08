@@ -385,7 +385,12 @@ bool db2_process_query_results(void* stmt_handle, const char* designator, struct
     return true;
 }
 
-// Helper function to bind a single parameter (non-static for testing)
+/*
+ * Bind one TypedParameter via SQLBindParameter (1-based index).
+ * INTEGER/BOOLEAN/FLOAT use native C types; STRING/TEXT as CHAR/LONGVARCHAR;
+ * DATE/TIME/DATETIME/TIMESTAMP parse ISO strings into SQL_*_STRUCT buffers
+ * stored in bound_values for cleanup after execute.
+ */
 bool db2_bind_single_parameter(void* stmt_handle, unsigned short param_index, TypedParameter* param,
                                        void** bound_values, long* str_len_indicators, const char* designator) {
     if (!stmt_handle || !param || !bound_values || !str_len_indicators || !designator) {

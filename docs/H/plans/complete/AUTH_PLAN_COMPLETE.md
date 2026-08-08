@@ -49,7 +49,7 @@ A thorough review of the authentication system architecture and implementation p
 | **[AUTH_PLAN_PROGRESS.md](/docs/H/plans/complete/AUTH_PLAN_PROGRESS_COMPLETE.md)** | Implementation progress tracking, risk analysis, team assignments, phase checklists | ✅ Consolidated |
 | **[AUTH_PLAN_TESTS.md](/docs/H/plans/complete/AUTH_PLAN_TESTS_COMPLETE.md)** | Comprehensive testing strategy | ✅ Complete |
 | **[TEST_40_DEBUG_PLAN.md](/docs/H/plans/complete/TEST_40_DEBUG_PLAN_COMPLETE.md)** | Debugging plan for Test 40 failures | Incomplete |
-| **[DATABASE_UPDATE_PLAN.md](/docs/H/plans/DATABASE_UPDATE_PLAN.md)** | Need to update database code to support named>positional params and JSON param passing | Incomplete |
+| **[DATABASE_UPDATE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_UPDATE_PLAN_COMPLETE.md)** | Named/positional params and JSON param binding across engines | Complete |
 
 ## Quick Start Guide
 
