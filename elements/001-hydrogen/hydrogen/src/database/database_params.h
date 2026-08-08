@@ -1,7 +1,9 @@
 /*
  * Database Parameter Processing Header
  *
- * Handles parsing of typed JSON parameters and conversion to database-specific formats.
+ * Typed JSON parameter parse + named-to-positional SQL conversion for all
+ * engines. JSON groups values by type key (INTEGER, STRING, …); SQL uses
+ * :name markers. See docs/H/database/PARAMETER_TYPES.md.
  */
 
 #ifndef DATABASE_PARAMS_H
@@ -16,17 +18,17 @@
 // Use the correct enum name from database_types.h
 typedef DatabaseEngine DatabaseEngineType;
 
-// Parameter type enumeration
+// Parameter type enumeration (JSON type-group keys match parameter_type_to_string)
 typedef enum {
     PARAM_TYPE_INTEGER,
     PARAM_TYPE_STRING,
     PARAM_TYPE_BOOLEAN,
     PARAM_TYPE_FLOAT,
-    PARAM_TYPE_TEXT,       // New - Large text fields (CLOBs, TEXT columns)
-    PARAM_TYPE_DATE,       // New - Date values (YYYY-MM-DD)
-    PARAM_TYPE_TIME,       // New - Time values (HH:MM:SS)
-    PARAM_TYPE_DATETIME,   // New - Combined date and time (YYYY-MM-DD HH:MM:SS)
-    PARAM_TYPE_TIMESTAMP   // New - Date, time with milliseconds (YYYY-MM-DD HH:MM:SS.fff)
+    PARAM_TYPE_TEXT,       // Large text / CLOB-style values
+    PARAM_TYPE_DATE,       // YYYY-MM-DD
+    PARAM_TYPE_TIME,       // HH:MM:SS
+    PARAM_TYPE_DATETIME,   // YYYY-MM-DD HH:MM:SS
+    PARAM_TYPE_TIMESTAMP   // YYYY-MM-DD HH:MM:SS.fff
 } ParameterType;
 
 // Typed parameter structure
@@ -39,11 +41,11 @@ typedef struct TypedParameter {
         char* string_value;
         bool bool_value;
         double float_value;
-        char* text_value;       // For TEXT (large text fields)
-        char* date_value;       // For DATE (format: YYYY-MM-DD)
-        char* time_value;       // For TIME (format: HH:MM:SS)
-        char* datetime_value;   // For DATETIME (format: YYYY-MM-DD HH:MM:SS)
-        char* timestamp_value;  // For TIMESTAMP (format: YYYY-MM-DD HH:MM:SS.fff)
+        char* text_value;       // TEXT
+        char* date_value;       // DATE YYYY-MM-DD
+        char* time_value;       // TIME HH:MM:SS
+        char* datetime_value;   // DATETIME YYYY-MM-DD HH:MM:SS
+        char* timestamp_value;  // TIMESTAMP YYYY-MM-DD HH:MM:SS.fff
     } value;
 } TypedParameter;
 
@@ -55,11 +57,10 @@ typedef struct ParameterList {
 
 // Function prototypes
 
-// Parse typed JSON parameters into parameter list
+// Parse typed JSON parameters into parameter list (caller frees with free_parameter_list)
 ParameterList* parse_typed_parameters(const char* json_params, const char* dqm_label);
 
-// Convert SQL template from named to positional parameters
-// Returns modified SQL and ordered parameter array
+// Replace :name with engine placeholders ($N or ?); fill ordered_params (caller frees array only)
 char* convert_named_to_positional(
     const char* sql_template,
     ParameterList* params,
@@ -69,7 +70,7 @@ char* convert_named_to_positional(
     const char* dqm_label
 );
 
-// Build parameter array in correct order for database execution
+// Scan SQL for :name occurrences (skips string literals); build ordered bind list
 bool build_parameter_array(
     const char* sql_template,
     ParameterList* params,

@@ -192,5 +192,7 @@ This test is part of the Hydrogen testing framework and runs automatically with:
 - [Database Tests](/docs/H/tests/test_30_database.md)
 - [Authentication Tests](/docs/H/tests/test_40_auth.md)
 - [Conduit Service](/docs/H/plans/complete/CONDUIT_COMPLETE.md)
-- [Database Parameter Support](/docs/H/plans/DATABASE_UPDATE_PLAN.md)
+- [Parameter types](/docs/H/database/PARAMETER_TYPES.md)
+- [Parameter binding](/docs/H/database/PARAMETER_BINDING.md)
+- [Database Parameter Support (plan)](/docs/H/plans/complete/DATABASE_UPDATE_PLAN_COMPLETE.md)
 - [Database Architecture](/docs/H/core/subsystems/database/database.md)

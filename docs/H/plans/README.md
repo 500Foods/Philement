@@ -36,10 +36,6 @@ closeout items if any, Phase 17 optional post-MVP.
 
 SMTP mail relay subsystem. Core outbound/API/Lua/OTP delivered; later phases (UI, inbound, ops) remain.
 
-### [DATABASE UPDATE PLAN](/docs/H/plans/DATABASE_UPDATE_PLAN.md)
-
-Named/positional parameter and JSON binding enhancements. Implementation largely done; verification and docs closeout remain.
-
 ### [CHAT PLAN](/docs/H/plans/CHAT_PLAN_SUMMARY.md)
 
 Chat proxy service. Phases 1–12 complete (see `complete/`). Open work: [Phase 13](/docs/H/plans/CHAT_PLAN_PHASE_13.md).
@@ -66,6 +62,7 @@ Full index: [`complete/README.md`](/docs/H/plans/complete/README.md). Highlights
 | Conduit | [CONDUIT_COMPLETE.md](/docs/H/plans/complete/CONDUIT_COMPLETE.md) |
 | Image / Reporting | [IMAGE_PLAN_COMPLETE.md](/docs/H/plans/complete/IMAGE_PLAN_COMPLETE.md) |
 | Database subsystem | [DATABASE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_PLAN_COMPLETE.md) |
+| Database parameters | [DATABASE_UPDATE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_UPDATE_PLAN_COMPLETE.md) |
 | Log fanout | [LOG_FANOUT_PLAN_COMPLETE.md](/docs/H/plans/complete/LOG_FANOUT_PLAN_COMPLETE.md) |
 | Lua scripting | [LUA_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md) |
 | Mail Relay blackbox | [MAILRELAY_BLACKBOX_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md) |

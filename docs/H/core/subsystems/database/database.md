@@ -23,6 +23,8 @@ Database Instance
 - **Child Queue Managers** - Specialized queues for different priority levels
 - **Multi-Engine Interface** - Unified API across all supported database engines
 - **Dynamic Queue Scaling** - Automatic spawning/shutdown based on workload
+- **[Parameter types](/docs/H/database/PARAMETER_TYPES.md)** - Typed JSON parameters and named SQL markers
+- **[Parameter binding](/docs/H/database/PARAMETER_BINDING.md)** - Per-engine placeholders and bind APIs
 
 ## Implementation Status
 

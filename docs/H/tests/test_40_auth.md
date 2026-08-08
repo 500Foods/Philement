@@ -33,6 +33,13 @@ This script validates that the Hydrogen server correctly handles JWT-based authe
 - **`/api/auth/logout`**: Tests logout and JWT token invalidation
 - **`/api/auth/register`**: Tests new user registration with unique credentials
 
+### Typed parameters
+
+Auth database helpers submit QueryRefs with typed JSON parameters (named
+`:markers` converted per engine). This test exercises that path end-to-end
+across engines. See [PARAMETER_TYPES.md](/docs/H/database/PARAMETER_TYPES.md)
+and [PARAMETER_BINDING.md](/docs/H/database/PARAMETER_BINDING.md).
+
 ### Advanced Testing
 
 - **Parallel Execution**: Runs multiple database engine instances simultaneously using job control
