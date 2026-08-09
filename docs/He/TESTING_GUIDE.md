@@ -280,27 +280,46 @@ and/or DB2.
 
 ### DB2 SQL0100W / SQLSTATE 02000 on reverse (zero-row DELETE)
 
+**Read this first:** This is almost always a **bad reverse migration**, not a
+Hydrogen or DB2 defect. DB2 is stricter than other engines on purpose — use
+the failure to fix the Lua, do not teach the driver to ignore it.
+
+**Rule (same as `docs/He/GUIDE.md` → Forward/Reverse Symmetry):**
+
+- Forward `INSERT`s / `CREATE`s / `ALTER`s → reverse undoes **exactly** that
+- Reverse must **not** `DELETE`/`UPDATE` rows or tables the forward never touched
+- Hundreds of migrations never hit this because they already mirrored correctly
+
 **Symptoms** (e.g. TestMigration reverse fails on `acuranzo_1293` statement 1):
 
 - `SQL0100W  No row was found for FETCH, UPDATE or DELETE…`
 - `SQLSTATE: 02000, Native Error: 100`
-- `Reverse migration statement 1 failed`
+- `Reverse migration statement N failed` (often statement 1)
+- PG/SQLite/MySQL may have **passed** the same reverse (0-row DELETE = OK there)
 
-**Cause**: Reverse ran a `DELETE`/`UPDATE` that matched **zero rows**. That is a
-**migration bug**, not something to paper over in the DB2 driver. Forward and
-reverse must mirror: delete only what the forward inserted (same for
-CREATE/DROP). DB2 is stricter than PG/MySQL/SQLite here and surfaces the
-mismatch — keep treating it as failure.
+**Cause**: Reverse `DELETE`/`UPDATE` matched **zero rows**. On DB2 CLI that is
+`SQL_NO_DATA` and Hydrogen correctly treats it as failure.
 
-Example: 1293 forward seeds free courses only (no `course_prices` rows) but
-reverse still ran `DELETE FROM course_prices …` first → zero rows → fail.
+Concrete bad example (1293 before 1.0.3):
 
-**Solution**:
+| Forward | Broken reverse |
+|---------|----------------|
+| Seed free `courses` only (FL-34: **no** `course_prices` rows) | `DELETE FROM course_prices WHERE …` then delete courses |
 
-- Fix the migration: reverse DML must match forward DML (omit deletes for
-  tables/keys the forward never wrote)
-- Do **not** teach Hydrogen to ignore `SQL_NO_DATA` / SQL0100W for migrations
-- Rebuild payload after migration edits; re-run `test_35_db2_migrations`
+Fixed reverse: delete only the seeded `courses` by `code` — no prices statement.
+
+**Solution:**
+
+1. Open the reverse `code` block; list every DML statement
+2. For each, confirm forward actually wrote matching rows/objects
+3. Remove or rewrite any reverse that cannot match rows after a clean APPLY
+4. Rebuild payload; re-run `test_35_db2_migrations`
+
+**Do not:**
+
+- Change Hydrogen DB2 execute to treat `SQL_NO_DATA` / SQL0100W as success
+- “Fix” by inserting dummy reverse-side rows so DELETE finds something
+- Assume empty DELETE is harmless because other engines accepted it
 
 ### DB2 SQL0668N reason code 7 (reorg-pending) on reverse
 
