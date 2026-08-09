@@ -48,7 +48,7 @@
     "@floating-ui/dom": "^1.7.6",
     "@lezer/highlight": "^1.2.3",
     "country-flag-icons": "^1.6.15",
-    "dompurify": "^3.3.2",
+    "dompurify": "^3.4.13",
     "flatpickr": "^4.6.13",
     "luxon": "^3.7.2",
     "marked": "^17.0.4",
