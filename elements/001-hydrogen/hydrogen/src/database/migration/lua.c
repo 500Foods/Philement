@@ -28,7 +28,8 @@ void* lua_mmap_alloc(void* ud, void* ptr, size_t osize, size_t nsize);
 lua_State* lua_setup(const char* dqm_label) {
     // Create a new Lua state using our custom allocator
     // This bypasses malloc entirely and uses mmap/munmap
-    lua_State* L = lua_newstate(lua_mmap_alloc, NULL);
+    /* Lua 5.5: lua_newstate takes a hash seed (luaL_makeseed). */
+    lua_State* L = lua_newstate(lua_mmap_alloc, NULL, luaL_makeseed(NULL));
     if (!L) {
         log_this(dqm_label, "Failed to create Lua state for migration", LOG_LEVEL_ERROR, 0);
         return NULL;

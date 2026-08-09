@@ -337,11 +337,13 @@ local database = {
                             local strip_len = math.min(base_indent_len, line_leading_len)
 
                             -- Only strip if we have whitespace to strip
+                            -- (Lua 5.5: for-loop control vars are read-only)
+                            local stripped_line = line
                             if strip_len > 0 then
-                                line = line:sub(strip_len + 1)
+                                stripped_line = line:sub(strip_len + 1)
                             end
 
-                            table.insert(lines, line)
+                            table.insert(lines, stripped_line)
                         end
                     end
                     return table.concat(lines, "\n")

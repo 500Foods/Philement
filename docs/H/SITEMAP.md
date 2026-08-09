@@ -131,6 +131,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [OIDC_IDP.md](/docs/H/plans/OIDC_IDP.md): Hydrogen as OIDC Identity Provider (Phases 0–15 complete; Phase 16 docs)
 - [UNITY_ASAN_PLAN.md](/docs/H/plans/UNITY_ASAN_PLAN.md): Separate ASAN Unity test variant plan
 
+
 ### Folder: /docs/H/plans/complete
 
 - [README.md](/docs/H/plans/complete/README.md): Index of completed plans
@@ -173,6 +174,8 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [DATABASE_UPDATE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_UPDATE_PLAN_COMPLETE.md)
 - [LOG_FANOUT_PLAN_COMPLETE.md](/docs/H/plans/complete/LOG_FANOUT_PLAN_COMPLETE.md)
 - [LUA_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md)
+- [LUA_55_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_55_PLAN_COMPLETE.md): Upgrade embedded Lua 5.4 → 5.5
+- [LUA_CLIENT_COMPLETE.md](/docs/H/plans/complete/LUA_CLIENT_COMPLETE.md)
 - [MAILRELAY_BLACKBOX_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md)
 - [MIGRATIONS_COMPLETE.md](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md)
 - [SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md): SchemaTool migration drift auditor (CLI 1.7.1)

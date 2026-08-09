@@ -191,6 +191,8 @@ declare -a ENV_WHITELIST=(
     "ACCESS_TOKEN" "AUTH_CODE" "CLIENT_ID" "CONFIG_DISABLED" "CONFIG_ENABLED" "DEMO_USER_NAME" "DEMO_USER_PASS" "ID_TOKEN" "NONCE" 
     "OIDC_IDP_AUTH_CODE" "OIDC_IDP_CODE_CHALLENGE" "OIDC_IDP_CODE_VERIFIER" "OIDC_IDP_STATE_OUT"
     "PORT_DIS" "PORT_EN" "REDIRECT_URI" "REFRESH_TOKEN"
+    # First found in tests/test_46_conduit_script.sh
+    "HTTP_TIMEOUT"
     # First found in tests/test_51_conduit.sh
     "CONDUIT_CONFIG_FILE" "CONDUIT_DESCRIPTION" "CONDUIT_ENGINE_NAME" "CONDUIT_LOG_SUFFIX"
     # First found in tests/test_57_mailrelay_outbound.sh

@@ -19,14 +19,18 @@ Before setting up Helium, ensure your system meets these requirements:
 # Update package list
 sudo apt-get update
 
-# Install Lua 5.1 (recommended version)
-sudo apt-get install lua5.1
+# Runtime for migrations is Hydrogen's embedded Lua (currently 5.5).
+# For local syntax checks, install a matching CLI when possible:
+#   Fedora 43: system packages may still be 5.4; build 5.5 into /usr/local
+#   or use the same lua binary Hydrogen's pkg-config finds.
+# Authoring tip: migration Lua is plain 5.x; avoid mutating for-loop control
+# variables (read-only in Lua 5.5).
 
-# Install luarocks (Lua package manager)
-sudo apt-get install luarocks
+# Example (Debian/Ubuntu older docs used 5.1 — prefer 5.4+ CLI):
+# sudo apt-get install lua5.4 luarocks
 
 # Verify installation
-lua5.1 -v  # Should show Lua 5.1.x
+lua -v  # Prefer 5.5.x when matching Hydrogen embed
 luarocks --version  # Should show luarocks version
 ```
 
@@ -75,33 +79,44 @@ choco install lua
 If your package manager doesn't have the required versions:
 
 ```bash
-# Download Lua 5.1 source
-curl -L -o lua.tar.gz http://www.lua.org/ftp/lua-5.1.5.tar.gz
+# Prefer Lua 5.5 to match Hydrogen embed (example: 5.5.1)
+curl -L -o lua.tar.gz https://www.lua.org/ftp/lua-5.5.1.tar.gz
 tar -xzf lua.tar.gz
-cd lua-5.1.5
-
-# Build and install
+cd lua-5.5.1
 make linux
-sudo make install
+sudo make install INSTALL_TOP=/usr/local
 
-# Install luarocks
-wget https://luarocks.org/releases/luarocks-3.9.2.tar.gz
-tar -xzf luarocks-3.9.2.tar.gz
-cd luarocks-3.9.2
-./configure
-make
-sudo make install
+# pkg-config helper (Hydrogen uses pkg_check_modules(LUA ...))
+sudo tee /usr/local/lib/pkgconfig/lua.pc >/dev/null <<'EOF'
+V= 5.5
+R= 5.5.1
+prefix=/usr/local
+libdir=${prefix}/lib
+includedir=${prefix}/include
+Name: Lua
+Version: ${R}
+Libs: -L${libdir} -llua -lm -ldl
+Cflags: -I${includedir}
+EOF
+export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig:$PKG_CONFIG_PATH
 ```
 
 ## Installing Lua Libraries
 
 ### lua-brotli (Required for compression)
 
-```bash
-# Install lua-brotli library
-luarocks install lua-brotli
+Hydrogen migrations `require("brotli")` from the **embedded** Lua state.
+With a **static** `liblua.a`, the hydrogen binary must export Lua symbols
+(`-rdynamic` on the link line) and `brotli.so` must be on `package.cpath`
+(e.g. `/usr/local/lib/lua/5.5/brotli.so` or `./brotli.so` next to the cwd).
 
-# Verify installation
+```bash
+# luarocks may not detect Lua 5.5 headers yet; build the rock by hand:
+#   luarocks unpack lua-brotli && cd lua-brotli-*/lua-brotli
+#   make LUA_INCDIR=/usr/local/include LUA_LIBDIR=/usr/local/lib
+#   sudo cp brotli.so /usr/local/lib/lua/5.5/
+
+# Verify with the same lua as the embed
 lua -e "require 'brotli'"  # Should not error
 ```
 

@@ -249,6 +249,10 @@ typedef struct BytecodeDumpBuffer {
 int bytecode_dump_writer(lua_State* L, const void* p, size_t sz, void* ud) {
     (void)L;
     BytecodeDumpBuffer* buf = (BytecodeDumpBuffer*)ud;
+    /* Lua 5.5 may call the writer once more with sz==0 to end the dump. */
+    if (sz == 0) {
+        return 0;
+    }
     if (buf->len + sz > buf->capacity) {
         size_t new_capacity = buf->capacity ? buf->capacity * 2 : 256;
         while (new_capacity < buf->len + sz) {

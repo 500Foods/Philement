@@ -9,5 +9,5 @@
 # Debug build with AddressSanitizer
 hydrogen_add_executable_target(debug "Debug"
     "-g -fsanitize=address,leak -fno-omit-frame-pointer"
-    "-lasan -fsanitize=address,leak -no-pie"
+    "-lasan -fsanitize=address,leak -no-pie -rdynamic"
 )

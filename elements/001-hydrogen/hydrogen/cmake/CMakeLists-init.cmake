@@ -48,7 +48,29 @@ pkg_check_modules(MICROHTTPD REQUIRED libmicrohttpd)
 pkg_check_modules(WEBSOCKETS REQUIRED libwebsockets)
 pkg_check_modules(BROTLI REQUIRED libbrotlienc libbrotlidec)
 pkg_check_modules(UUID REQUIRED uuid)
-pkg_check_modules(LUA REQUIRED lua)
+# Lua 5.5+ only (LUA_55_PLAN). Prefer versioned pc names, then generic lua.
+pkg_check_modules(LUA lua5.5)
+if(NOT LUA_FOUND)
+    pkg_check_modules(LUA lua-5.5)
+endif()
+if(NOT LUA_FOUND)
+    pkg_check_modules(LUA REQUIRED lua)
+endif()
+if(LUA_VERSION VERSION_LESS "5.5")
+    message(FATAL_ERROR
+        "Hydrogen requires Lua 5.5 or newer (found ${LUA_VERSION}). "
+        "Install Lua 5.5 devel and ensure pkg-config finds it "
+        "(e.g. PKG_CONFIG_PATH=/usr/local/lib/pkgconfig).")
+endif()
+# pkg_check_modules leaves -L out of LUA_LIBRARIES; without this, the
+# linker can pick a system liblua.so.5.4 while compiling against 5.5 headers.
+if(LUA_LIBRARY_DIRS)
+    link_directories(${LUA_LIBRARY_DIRS})
+endif()
+# Static liblua.a used for embed must be built with -fPIC when any target
+# links PIE (coverage uses -fPIE/-pie). Upstream default `make linux` does
+# not; rebuild: make linux MYCFLAGS='-fPIC' && make install
+message(STATUS "Lua ${LUA_VERSION} (${LUA_INCLUDE_DIRS}; libs ${LUA_LIBRARIES})")
 pkg_check_modules(CURL REQUIRED libcurl)
 pkg_check_modules(MAGICKWAND REQUIRED MagickWand-7.Q16HDRI)
 pkg_check_modules(ZLIB REQUIRED zlib)

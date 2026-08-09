@@ -46,7 +46,9 @@ add_custom_target(hydrogen_release
 )
 
 # Internal target for building just the release executable (without payload processing)
+# -no-pie: static liblua.a (Lua 5.5 /usr/local) may lack -fPIC; PIE link fails
+# with R_X86_64_32S. Coverage keeps -pie and requires a PIC-built liblua.
 hydrogen_add_executable_target(release "Release"
     "-Os -s -DNDEBUG -march=x86-64 -flto=auto -fno-stack-protector -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections"
-    "-flto=auto -Wl,--gc-sections -Wl,--strip-all"
+    "-flto=auto -Wl,--gc-sections -Wl,--strip-all -no-pie -rdynamic"
 )

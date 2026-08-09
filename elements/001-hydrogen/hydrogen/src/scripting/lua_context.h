@@ -96,7 +96,7 @@ int H_lua_run_string(lua_State* L, const char* code, const char* name);
 
 /*
  * Per-lua_State job context. Stored in the state's "extraspace" (a
- * pointer-sized slot tied 1:1 to the state by Lua 5.4) so the
+ * pointer-sized slot tied 1:1 to the state by Lua 5.5) so the
  * progress hook (Phase 8) can identify which job is running without
  * touching the Lua registry or globals.
  *
