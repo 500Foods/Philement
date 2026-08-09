@@ -113,6 +113,9 @@ Macros use the `${MACRO_NAME}` syntax and are expanded at runtime by the `databa
 | Macro | Description | PostgreSQL | MySQL | SQLite | DB2 | Source |
 |-------|-------------|------------|-------|--------|-----|--------|
 | `${DROP_CHECK}` | Check for data before DROP | `SELECT pg_catalog.pg_terminate_backend...` | `DO IF(EXISTS(SELECT 1 FROM...` | `SELECT 'Refusing to drop...` | `BEGIN IF EXISTS(SELECT 1...` | `database_*.lua` |
+| `${REORG}` | Table reorg after structural ALTER | `-- REORG TABLE` (no-op) | `-- REORG TABLE` (no-op) | `-- REORG TABLE` (no-op) | `CALL SYSPROC.ADMIN_CMD('REORG TABLE ${SCHEMA}${TABLE}');` | `database_*.lua` |
+
+**`${REORG}` / DB2:** After `ADD COLUMN`, `DROP COLUMN`, or some `ALTER COLUMN` changes, DB2 marks the table **reorg-pending**. Further DML fails with **SQL0668N reason code 7** until REORG runs. Put `${REORG}` **after** each structural change (and often before the next DROP on the same table — see `acuranzo_1172`, `acuranzo_1297`). On non-DB2 engines the macro is a SQL comment.
 
 ### Subquery Delimiters
 

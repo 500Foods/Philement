@@ -27,16 +27,6 @@ not open work unless listed below.
 
 ## P0 — Close the loop (high ROI, low–medium effort)
 
-### 0. Lua client script invoke (REST)
-
-| | |
-| --- | --- |
-| **Plan** | [`LUA_CLIENT.md`](/docs/H/plans/LUA_CLIENT.md) |
-| **Effort** | M–L (Phases 0–10; engine mostly exists) |
-| **Done** | ~40% — Phases 0–3 (design, result_json, submit_from_db, wait_job) |
-| **Remaining** | REST POST/GET + JWT; allowlist; Unity+blackbox; docs |
-| **Why now** | LUA_PLAN deferred REST job submission; SPAs cannot call Lua (Reception `FL-49b` free-enroll / Canvas proxy). No product C routes — generic conduit-style script surface. |
-
 ### 1. Keycloak / OIDC RP real-IdP sign-off
 
 | | |

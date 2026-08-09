@@ -75,6 +75,7 @@ fixtures catch up. The suite **requires** the SQLite full path to pass.
 
 ## Related
 
-- Plan: [LUA_CLIENT.md](/docs/H/plans/LUA_CLIENT.md) Phase 9
+- Plan: [LUA_CLIENT_COMPLETE.md](/docs/H/plans/complete/LUA_CLIENT_COMPLETE.md) Phase 9
+- API: [script.md](/docs/H/api/conduit/script.md)
 - Fixture migrations: Helium `acuranzo_1296`–`1298` (`Api.Echo`, `invokable`, QueryRef #149)
 - Unity coverage: `script_test_*`, `scripting_invoke_test_*`

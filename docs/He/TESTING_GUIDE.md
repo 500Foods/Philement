@@ -245,6 +245,29 @@ cd elements/001-hydrogen/hydrogen
 - Check database-specific macro expansions
 - Use `${SCHEMA}` and `${TABLE}` macros for portability
 
+### Multi-row seed fails on SQLite or DB2 only
+
+**Symptoms** (seen on `acuranzo_1293` before the portable rewrite):
+
+- SQLite: `near "(": syntax error` while applying a seed that uses
+  `FROM (VALUES …) AS v(col1, col2, …)`
+- DB2: `SQL0104N An unexpected token "UNION" was found…` for
+  `INSERT … SELECT … FROM (SELECT … UNION ALL SELECT …)`
+
+**Cause**: Row-source syntax that is valid on PostgreSQL but not on SQLite
+and/or DB2.
+
+**Solution**:
+
+- Use multi-row `INSERT INTO … (cols, ${COMMON_FIELDS}) VALUES (…), (…);`
+  with `${COMMON_VALUES}` — same pattern as `acuranzo_1280.lua`
+- Do **not** use PostgreSQL-only `VALUES AS v(cols)` aliases
+- Do **not** assume bare `UNION ALL` derived tables are portable
+- For single-row `SELECT … WHERE NOT EXISTS` on DB2, include `${DUMMY_TABLE}`
+  (see `docs/He/GUIDE.md` → **Portable Multi-Row Data Seeds**)
+- Rebuild payload (`mkt` / `mka`) after fixing the migration; re-run
+  `test_34_sqlite_migrations` and `test_35_db2_migrations`
+
 ### Migration State Issues
 
 **Error**: Migration shows wrong state in queries table
@@ -254,6 +277,53 @@ cd elements/001-hydrogen/hydrogen
 - Check that UPDATE statements in migration SQL are correct
 - Verify query_ref matches migration number
 - Ensure reverse migration resets state properly
+
+### DB2 SQL0100W / SQLSTATE 02000 on reverse (zero-row DELETE)
+
+**Symptoms** (e.g. TestMigration reverse fails on `acuranzo_1293` statement 1):
+
+- `SQL0100W  No row was found for FETCH, UPDATE or DELETE…`
+- `SQLSTATE: 02000, Native Error: 100`
+- `Reverse migration statement 1 failed`
+
+**Cause**: Reverse ran a `DELETE`/`UPDATE` that matched **zero rows**. That is a
+**migration bug**, not something to paper over in the DB2 driver. Forward and
+reverse must mirror: delete only what the forward inserted (same for
+CREATE/DROP). DB2 is stricter than PG/MySQL/SQLite here and surfaces the
+mismatch — keep treating it as failure.
+
+Example: 1293 forward seeds free courses only (no `course_prices` rows) but
+reverse still ran `DELETE FROM course_prices …` first → zero rows → fail.
+
+**Solution**:
+
+- Fix the migration: reverse DML must match forward DML (omit deletes for
+  tables/keys the forward never wrote)
+- Do **not** teach Hydrogen to ignore `SQL_NO_DATA` / SQL0100W for migrations
+- Rebuild payload after migration edits; re-run `test_35_db2_migrations`
+
+### DB2 SQL0668N reason code 7 (reorg-pending) on reverse
+
+**Symptoms** (e.g. TestMigration after APPLY through N, reverse fails on N−1 or N−2):
+
+- Reverse for migration **M** (DROP COLUMN) appears to succeed
+- Next older reverse fails on DML (`DELETE`/`UPDATE`) against the same table with:
+  `SQL0668N Operation not allowed for reason code "7" on table "SCHEMA.TABLE"`
+  `SQLSTATE=57007`
+
+**Cause**: DB2 marked the table reorg-pending after `DROP COLUMN` (or similar
+structural ALTER). Reverse for **M** had `${REORG}` only before the DROP (or
+not at all), not **after**.
+
+**Solution**:
+
+- After every structural `DROP COLUMN` / `ADD COLUMN` / relevant `ALTER COLUMN`,
+  emit `${REORG}` (macro → `CALL SYSPROC.ADMIN_CMD('REORG TABLE …')` on DB2;
+  no-op comment elsewhere)
+- Match `acuranzo_1172.lua` / `acuranzo_1297.lua`: REORG before **and** after DROP
+- See `docs/He/GUIDE.md` → **DB2: `${REORG}` after ADD/DROP COLUMN** and
+  `MACRO_REFERENCE.md` → `${REORG}`
+- Rebuild payload; re-run `test_35_db2_migrations`
 
 ### Encoding/Compression Failures
 

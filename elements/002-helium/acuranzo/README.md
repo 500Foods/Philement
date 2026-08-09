@@ -329,4 +329,10 @@ in the migrations themselves so that they get populated in the database directly
 | [1290](/elements/002-helium/acuranzo/migrations/acuranzo_1290.lua) | scripts | 1.0.4 | 2026-08-08 | 4 | ✗ | Phase 31: intro course enrollment on first Canvas provision |
 | [1291](/elements/002-helium/acuranzo/migrations/acuranzo_1291.lua) | courses | 1.0.0 | 2026-08-08 | 8 | ✓ | Phase 35: courses catalog table (Band G) |
 | [1292](/elements/002-helium/acuranzo/migrations/acuranzo_1292.lua) | course_prices | 1.0.0 | 2026-08-08 | 8 | ✓ | Phase 35: course_prices table (Band G + STRIPE_PLAN Phase 3) |
-| **293** | | | | **1532** | **293** | |
+| [1293](/elements/002-helium/acuranzo/migrations/acuranzo_1293.lua) | courses | 1.0.3 | 2026-08-09 | 4 | ✗ | Phase 36: seed courses from live Canvas catalog + assets (free; no prices) |
+| [1294](/elements/002-helium/acuranzo/migrations/acuranzo_1294.lua) | queries | 1.0.0 | 2026-08-08 | 4 | ✗ | QueryRef #147 - Courses: List Published (Phase 37) |
+| [1295](/elements/002-helium/acuranzo/migrations/acuranzo_1295.lua) | queries | 1.0.0 | 2026-08-08 | 4 | ✗ | QueryRef #148 - Courses: Get by Slug (Phase 37) |
+| [1296](/elements/002-helium/acuranzo/migrations/acuranzo_1296.lua) | scripts | 1.0.0 | 2026-08-08 | 4 | ✗ | LUA_CLIENT Phase 6: seed Api.Echo fixture for conduit script invoke |
+| [1297](/elements/002-helium/acuranzo/migrations/acuranzo_1297.lua) | scripts | 1.0.1 | 2026-08-09 | 7 | ✗ | LUA_CLIENT Phase 7: scripts.invokable allowlist column + Api.Echo=true |
+| [1298](/elements/002-helium/acuranzo/migrations/acuranzo_1298.lua) | queries | 1.0.0 | 2026-08-08 | 4 | ✗ | QueryRef #149 - Get Invokable Script by Group/Name (LUA_CLIENT Phase 7) |
+| **299** | | | | **1559** | **299** | |

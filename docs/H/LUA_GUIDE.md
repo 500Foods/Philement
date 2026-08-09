@@ -406,10 +406,17 @@ Never spin a tight loop without `H.sleep`.
 
 ```lua
 H.set_current_state("Loading customers")
-H.set_result("json", "workflow:ABCDE")
+H.set_result("json", "workflow:ABCDE")          -- metadata only
+H.set_result_json({ ok = true, data = row })    -- body for REST clients
 ```
 
 No-ops if called from the Orchestrator (it is not a scoreboard job).
+
+Client SPAs invoke allowlisted scripts over JWT
+`POST /api/conduit/script` (see [script.md](/docs/H/api/conduit/script.md)).
+Workers receive merged params as global `params` (including server-injected
+`params._hydrogen`). Prefer `H.set_result_json` when the caller needs a JSON
+payload.
 
 ### Database queries
 
@@ -990,11 +997,14 @@ Run `tests/test_98_luacheck.sh` after editing `.lua` files.
 | [lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md) | Full `H.*` contract |
 | [scripting README](/docs/H/core/subsystems/scripting/README.md) | Config, ops, lifecycle |
 | [LUA_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md) | Design history and phases |
+| [LUA_CLIENT_COMPLETE.md](/docs/H/plans/complete/LUA_CLIENT_COMPLETE.md) | Client REST script invoke |
+| [script.md](/docs/H/api/conduit/script.md) | `POST/GET /api/conduit/script` |
 | [MAIL_GUIDE.md](/docs/H/MAIL_GUIDE.md) | Mail Relay, rewrites, events, and Lua `H.mail` |
 | [MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md) | Mail Relay implementation plan |
 | [docs/He/LUA_INTRO.md](/docs/He/LUA_INTRO.md) | Migration-only Lua basics |
 | [docs/He/GUIDE.md](/docs/He/GUIDE.md) | Writing Helium migrations |
 | [Test 43 scripting](/docs/H/tests/test_43_scripting.md) | End-to-end scripting tests |
+| [Test 46 conduit script](/docs/H/tests/test_46_conduit_script.md) | Client invoke blackbox |
 | [Lua in 15 minutes](https://tylerneylon.com/a/learn-lua/) | External quick language tour |
 | [Lua 5.4 manual](https://www.lua.org/manual/5.4/) | Language reference |
 
