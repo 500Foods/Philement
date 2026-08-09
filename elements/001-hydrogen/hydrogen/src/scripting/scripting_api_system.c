@@ -237,6 +237,46 @@ int H_lua_set_result(lua_State* L) {
     return 0;
 }
 
+int H_lua_set_result_json(lua_State* L) {
+    int nargs = lua_gettop(L);
+    if (nargs < 1) {
+        log_this(SR_SCRIPTING, "H.set_result_json: missing table argument",
+                 LOG_LEVEL_ERROR, 0);
+        return 0;
+    }
+    if (!lua_istable(L, 1)) {
+        log_this(SR_SCRIPTING, "H.set_result_json: argument must be a table",
+                 LOG_LEVEL_ERROR, 0);
+        return 0;
+    }
+
+    H_lua_job_context* ctx = H_lua_get_job_context(L);
+    if (!ctx || ctx->job_id[0] == '\0' || !ctx->scoreboard) {
+        return 0;
+    }
+
+    char* json_text = H_lua_table_to_json_string(L, 1);
+    if (!json_text) {
+        log_this(SR_SCRIPTING, "H.set_result_json: encode failed for job %s",
+                 LOG_LEVEL_ERROR, 1, ctx->job_id);
+        return 0;
+    }
+
+    if (!scoreboard_update_result_json(ctx->scoreboard, ctx->job_id, json_text)) {
+        log_this(SR_SCRIPTING,
+                 "H.set_result_json: scoreboard update failed for job %s",
+                 LOG_LEVEL_ERROR, 1, ctx->job_id);
+        free(json_text);
+        return 0;
+    }
+
+    /* Mark artifact kind for observers; location unused for inline body. */
+    (void)scoreboard_update_result(ctx->scoreboard, ctx->job_id, "json", "");
+
+    free(json_text);
+    return 0;
+}
+
 // Install functions ////////////////////////////////////////////////////////
 
 void H_lua_install_system(lua_State* L) {
@@ -318,6 +358,23 @@ void H_lua_install_set_result(lua_State* L) {
 
     lua_pushcfunction(L, H_lua_set_result);
     lua_setfield(L, -2, "set_result");
+
+    lua_pop(L, 1);
+}
+
+void H_lua_install_set_result_json(lua_State* L) {
+    if (!L) return;
+
+    lua_getglobal(L, "H");
+    if (!lua_istable(L, -1)) {
+        log_this(SR_SCRIPTING, "H_lua_install_set_result_json: H table missing",
+                 LOG_LEVEL_ERROR, 0);
+        lua_pop(L, 1);
+        return;
+    }
+
+    lua_pushcfunction(L, H_lua_set_result_json);
+    lua_setfield(L, -2, "set_result_json");
 
     lua_pop(L, 1);
 }

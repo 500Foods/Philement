@@ -190,6 +190,7 @@ void H_lua_install_api(lua_State* L) {
         "query", "altquery", "authquery", "wait",
         "http", "llm", "mail", "notify",
         "sleep", "shutdown_requested", "set_current_state", "set_result",
+        "set_result_json",
         "scoreboard",
         NULL
     };
@@ -219,6 +220,8 @@ void H_lua_install_api(lua_State* L) {
     // Phase 26: artifact metadata declaration. Replaces the Phase 3
     // placeholder sub-table with a top-level function on H.
     H_lua_install_set_result(L);
+    // LUA_CLIENT Phase 1: inline JSON body for client-facing jobs.
+    H_lua_install_set_result_json(L);
     // Phase 11: cooperative shutdown primitives and scoreboard
     // access. Both replace Phase 3 placeholder sub-tables of the
     // same names (H.sleep and H.shutdown_requested) or populate

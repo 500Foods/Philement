@@ -89,6 +89,24 @@ void push_scoreboard_entry_as_table(lua_State* L, const ScoreboardEntry* e) {
                                                      lua_setfield(L, -2, "max_runtime_seconds");
     lua_pushboolean(L, e->kill_requested);
                                                      lua_setfield(L, -2, "kill_requested");
+    if (e->result_type) {
+        lua_pushstring(L, e->result_type);
+    } else {
+        lua_pushnil(L);
+    }
+                                                     lua_setfield(L, -2, "result_type");
+    if (e->result_location) {
+        lua_pushstring(L, e->result_location);
+    } else {
+        lua_pushnil(L);
+    }
+                                                     lua_setfield(L, -2, "result_location");
+    if (e->result_json) {
+        lua_pushstring(L, e->result_json);
+    } else {
+        lua_pushnil(L);
+    }
+                                                     lua_setfield(L, -2, "result_json");
 }
 
 int H_lua_scoreboard_list(lua_State* L) {

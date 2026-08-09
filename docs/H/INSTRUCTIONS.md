@@ -111,6 +111,7 @@ tests/          Test framework
 - tests/test_42_oidc_rp.sh - OIDC Relying Party - complete authentication flow testing through Role Mapping
 - tests/test_43_scripting.sh - Scripting subsystem Orchestrator lifecycle across all 7 database engines in parallel (with/without DefaultDatabase, fail-fast)
 - tests/test_44_exercise_native.sh - Memory exercise native RSS (5000 concurrent auth requests across 6 DBs; port 5444; suite-parallel with test 41)
+- tests/test_46_conduit_script.sh - Conduit script invoke JWT blackbox (Api.Echo, 7 engines parallel)
 - tests/test_50_conduit_query.sh - Single public query endpoint testing
 - tests/test_51_conduit_queries.sh - Conduit multiple queries endpoint testing
 - tests/test_52_conduit_auth_query.sh - Authenticated single query endpoint

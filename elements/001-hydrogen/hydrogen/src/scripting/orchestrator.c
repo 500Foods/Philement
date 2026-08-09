@@ -282,8 +282,12 @@ bool scripting_orchestrator_start_with_source(const char* source,
  * coded 87 here matches the QueryRef number registered in
  * acuranzo_1204.lua. Keeping the number adjacent to the SQL
  * parameter names makes the lookup obvious during code review.
+ *
+ * QueryRef #149 - same params, but only rows with invokable <> 0
+ * (LUA_CLIENT Phase 7 client REST path). Registered in acuranzo_1298.
  */
 #define H_SCRIPTING_ORCHESTRATOR_QUERYREF 87
+#define H_SCRIPTING_INVOKABLE_SCRIPT_QUERYREF 149
 
 /*
  * Build a typed-JSON parameter object for QueryRef #087:
@@ -377,11 +381,14 @@ char* orchestrator_extract_code_from_result(const char* data_json) {
  * This helper is shared by the Orchestrator load path (11f) and the
  * DB-backed `require` searcher (11g).
  */
-char* scripting_fetch_script_source(const char* group_name,
-                                    const char* script_name,
-                                    const char* database,
-                                    int timeout_seconds) {
-    if (!group_name || !script_name || !database || timeout_seconds <= 0) {
+static char* scripting_fetch_script_source_by_queryref(
+    const char* group_name,
+    const char* script_name,
+    const char* database,
+    int timeout_seconds,
+    int query_ref) {
+    if (!group_name || !script_name || !database || timeout_seconds <= 0
+        || query_ref <= 0) {
         log_this(SR_SCRIPTING,
                  "scripting_fetch_script_source: invalid arguments",
                  LOG_LEVEL_ERROR, 0);
@@ -397,11 +404,11 @@ char* scripting_fetch_script_source(const char* group_name,
         return NULL;
     }
     QueryCacheEntry* cache_entry = lookup_query_cache_entry(
-        db_queue, H_SCRIPTING_ORCHESTRATOR_QUERYREF);
+        db_queue, query_ref);
     if (!cache_entry) {
         log_this(SR_SCRIPTING,
                  "Script source fetch: QueryRef %d not found in cache for database '%s'",
-                 LOG_LEVEL_ERROR, 2, H_SCRIPTING_ORCHESTRATOR_QUERYREF, database);
+                 LOG_LEVEL_ERROR, 2, query_ref, database);
         return NULL;
     }
 
@@ -524,6 +531,24 @@ char* scripting_fetch_script_source(const char* group_name,
     free(params_json);
 
     return code;
+}
+
+char* scripting_fetch_script_source(const char* group_name,
+                                    const char* script_name,
+                                    const char* database,
+                                    int timeout_seconds) {
+    return scripting_fetch_script_source_by_queryref(
+        group_name, script_name, database, timeout_seconds,
+        H_SCRIPTING_ORCHESTRATOR_QUERYREF);
+}
+
+char* scripting_fetch_invokable_script_source(const char* group_name,
+                                              const char* script_name,
+                                              const char* database,
+                                              int timeout_seconds) {
+    return scripting_fetch_script_source_by_queryref(
+        group_name, script_name, database, timeout_seconds,
+        H_SCRIPTING_INVOKABLE_SCRIPT_QUERYREF);
 }
 
 /*

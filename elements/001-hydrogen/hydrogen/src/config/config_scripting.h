@@ -54,6 +54,12 @@ typedef struct ScriptingConfig {
     int SourceRootCount;
 
     bool AllowDBModuleLoad;                                // Whether require() may load modules from the database (Phase 20+)
+
+    /* LUA_CLIENT Phase 8 — client REST invoke limits (Phase 0 defaults) */
+    int ClientInvokeDefaultTimeout;   // default wait timeout seconds (15)
+    int ClientInvokeMaxTimeout;       // clamp ceiling for timeout_seconds (60)
+    int ClientInvokeMaxParamsBytes;   // max params JSON size (256 KiB)
+    int ClientInvokeMaxResultBytes;   // max result_json size (1 MiB)
 } ScriptingConfig;
 
 /*

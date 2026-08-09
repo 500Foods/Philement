@@ -41,6 +41,12 @@ bool load_scripting_config(json_t* root, AppConfig* config) {
 
     scripting->AllowDBModuleLoad = false;
 
+    /* LUA_CLIENT Phase 0/8 defaults */
+    scripting->ClientInvokeDefaultTimeout = 15;
+    scripting->ClientInvokeMaxTimeout = 60;
+    scripting->ClientInvokeMaxParamsBytes = 256 * 1024;
+    scripting->ClientInvokeMaxResultBytes = 1024 * 1024;
+
     // Process main scripting section
     success = PROCESS_SECTION(root, "Scripting");
     success = success && PROCESS_BOOL(root, scripting, Enabled, "Scripting.Enabled", "Scripting");
@@ -56,6 +62,14 @@ bool load_scripting_config(json_t* root, AppConfig* config) {
     success = success && PROCESS_INT(root, scripting, MemorySoftLimitKB, "Scripting.MemorySoftLimitKB", "Scripting");
     success = success && PROCESS_INT(root, scripting, MemoryHardLimitKB, "Scripting.MemoryHardLimitKB", "Scripting");
     success = success && PROCESS_BOOL(root, scripting, AllowDBModuleLoad, "Scripting.AllowDBModuleLoad", "Scripting");
+    success = success && PROCESS_INT(root, scripting, ClientInvokeDefaultTimeout,
+                                     "Scripting.ClientInvokeDefaultTimeout", "Scripting");
+    success = success && PROCESS_INT(root, scripting, ClientInvokeMaxTimeout,
+                                     "Scripting.ClientInvokeMaxTimeout", "Scripting");
+    success = success && PROCESS_INT(root, scripting, ClientInvokeMaxParamsBytes,
+                                     "Scripting.ClientInvokeMaxParamsBytes", "Scripting");
+    success = success && PROCESS_INT(root, scripting, ClientInvokeMaxResultBytes,
+                                     "Scripting.ClientInvokeMaxResultBytes", "Scripting");
 
     // Phase 11f: if scripting is enabled and the operator did not
     // supply a name, default to the seeded Orchestrators.Orchestrator
@@ -131,6 +145,10 @@ void dump_scripting_config(const ScriptingConfig* config) {
     DUMP_INT("Memory Soft Limit (KB)", config->MemorySoftLimitKB);
     DUMP_INT("Memory Hard Limit (KB)", config->MemoryHardLimitKB);
     DUMP_BOOL("Allow DB Module Load", config->AllowDBModuleLoad);
+    DUMP_INT("Client Invoke Default Timeout", config->ClientInvokeDefaultTimeout);
+    DUMP_INT("Client Invoke Max Timeout", config->ClientInvokeMaxTimeout);
+    DUMP_INT("Client Invoke Max Params Bytes", config->ClientInvokeMaxParamsBytes);
+    DUMP_INT("Client Invoke Max Result Bytes", config->ClientInvokeMaxResultBytes);
 
     DUMP_TEXT("――", "Sandbox Configuration");
     DUMP_BOOL("―― Allow Os Time", config->Sandbox.AllowOsTime);

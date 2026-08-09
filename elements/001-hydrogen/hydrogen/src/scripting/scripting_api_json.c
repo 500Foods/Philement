@@ -171,6 +171,183 @@ void push_json_value_as_lua(lua_State* L, json_t* val) {
 }
 
 /*
+ * Convert a Lua value at `idx` to a jansson value (caller owns).
+ * Tables with sequential integer keys 1..n become arrays; otherwise objects.
+ * Depth is capped to avoid hostile graphs.
+ */
+json_t* H_lua_value_to_json(lua_State* L, int idx, int depth) {
+    if (!L || depth > 64) {
+        return NULL;
+    }
+    idx = lua_absindex(L, idx);
+    int t = lua_type(L, idx);
+    switch (t) {
+    case LUA_TNIL:
+        return json_null();
+    case LUA_TBOOLEAN:
+        return json_boolean(lua_toboolean(L, idx));
+    case LUA_TNUMBER:
+        if (lua_isinteger(L, idx)) {
+            return json_integer((json_int_t)lua_tointeger(L, idx));
+        }
+        return json_real((double)lua_tonumber(L, idx));
+    case LUA_TSTRING: {
+        const char* s = lua_tostring(L, idx);
+        return json_string(s ? s : "");
+    }
+    case LUA_TTABLE: {
+        /* Detect array: keys are exactly 1..n consecutive integers. */
+        size_t n = lua_rawlen(L, idx);
+        bool is_array = (n > 0);
+        if (is_array) {
+            lua_pushnil(L);
+            while (lua_next(L, idx) != 0) {
+                if (!lua_isinteger(L, -2)) {
+                    is_array = false;
+                    lua_pop(L, 2);
+                    break;
+                }
+                lua_Integer k = lua_tointeger(L, -2);
+                if (k < 1 || (size_t)k > n) {
+                    is_array = false;
+                    lua_pop(L, 2);
+                    break;
+                }
+                lua_pop(L, 1);
+            }
+            /* Count keys: must equal n for a pure array. */
+            if (is_array) {
+                size_t key_count = 0;
+                lua_pushnil(L);
+                while (lua_next(L, idx) != 0) {
+                    key_count++;
+                    lua_pop(L, 1);
+                }
+                if (key_count != n) {
+                    is_array = false;
+                }
+            }
+        } else if (n == 0) {
+            /* Empty table or map: treat empty as object {}. */
+            is_array = false;
+        }
+
+        if (is_array) {
+            json_t* arr = json_array();
+            if (!arr) {
+                return NULL;
+            }
+            for (size_t i = 1; i <= n; i++) {
+                lua_rawgeti(L, idx, (lua_Integer)i);
+                json_t* elem = H_lua_value_to_json(L, -1, depth + 1);
+                lua_pop(L, 1);
+                if (!elem) {
+                    json_decref(arr);
+                    return NULL;
+                }
+                if (json_array_append_new(arr, elem) != 0) {
+                    json_decref(arr);
+                    return NULL;
+                }
+            }
+            return arr;
+        }
+
+        json_t* obj = json_object();
+        if (!obj) {
+            return NULL;
+        }
+        lua_pushnil(L);
+        while (lua_next(L, idx) != 0) {
+            char keybuf[64];
+            const char* key = NULL;
+            if (lua_type(L, -2) == LUA_TSTRING) {
+                key = lua_tostring(L, -2);
+            } else if (lua_isinteger(L, -2)) {
+                snprintf(keybuf, sizeof(keybuf), "%lld",
+                         (long long)lua_tointeger(L, -2));
+                key = keybuf;
+            } else {
+                lua_pop(L, 1);
+                continue;
+            }
+            if (!key) {
+                lua_pop(L, 1);
+                continue;
+            }
+            json_t* val = H_lua_value_to_json(L, -1, depth + 1);
+            lua_pop(L, 1);
+            if (!val) {
+                json_decref(obj);
+                return NULL;
+            }
+            if (json_object_set_new(obj, key, val) != 0) {
+                json_decref(obj);
+                return NULL;
+            }
+        }
+        return obj;
+    }
+    default:
+        return NULL;
+    }
+}
+
+/*
+ * Encode Lua table at `arg` to a compact JSON string (caller frees).
+ * Returns NULL on type/encode failure.
+ */
+char* H_lua_table_to_json_string(lua_State* L, int arg) {
+    if (!L || !lua_istable(L, arg)) {
+        return NULL;
+    }
+    json_t* root = H_lua_value_to_json(L, arg, 0);
+    if (!root) {
+        return NULL;
+    }
+    char* out = json_dumps(root, JSON_COMPACT);
+    json_decref(root);
+    return out;
+}
+
+/*
+ * LUA_CLIENT: expose job params_json as the global `params` table before
+ * the worker runs script source. NULL/empty/invalid JSON → empty table.
+ */
+void H_lua_inject_job_params(lua_State* L, const char* params_json) {
+    if (!L) {
+        return;
+    }
+    if (!params_json || params_json[0] == '\0') {
+        lua_newtable(L);
+        lua_setglobal(L, "params");
+        return;
+    }
+    json_error_t err;
+    json_t* root = json_loads(params_json, 0, &err);
+    if (!root) {
+        log_this(SR_SCRIPTING,
+                 "H_lua_inject_job_params: parse failed: %s",
+                 LOG_LEVEL_ALERT, 1, err.text);
+        lua_newtable(L);
+        lua_setglobal(L, "params");
+        return;
+    }
+    if (!json_is_object(root) && !json_is_array(root)) {
+        log_this(SR_SCRIPTING,
+                 "H_lua_inject_job_params: root must be object or array",
+                 LOG_LEVEL_ALERT, 0);
+        json_decref(root);
+        lua_newtable(L);
+        lua_setglobal(L, "params");
+        return;
+    }
+    push_json_value_as_lua(L, root);
+    json_decref(root);
+    lua_setglobal(L, "params");
+}
+
+/*
  * Parse data_json and push a result table onto the Lua stack.
  */
 int H_lua_build_result_table(lua_State* L, const char* data_json, int affected_rows) {

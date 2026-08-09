@@ -599,6 +599,10 @@ void initialize_config_defaults_scripting(AppConfig* config) {
         config->scripting.Sandbox.AllowLoadlib = false;
 
         config->scripting.AllowDBModuleLoad = false;
+        config->scripting.ClientInvokeDefaultTimeout = 15;
+        config->scripting.ClientInvokeMaxTimeout = 60;
+        config->scripting.ClientInvokeMaxParamsBytes = 256 * 1024;
+        config->scripting.ClientInvokeMaxResultBytes = 1024 * 1024;
 
         log_this(SR_CONFIG, "――― Applied config defaults for Scripting", LOG_LEVEL_DEBUG, 0);
     }

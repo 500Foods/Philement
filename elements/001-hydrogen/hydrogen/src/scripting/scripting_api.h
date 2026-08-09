@@ -114,6 +114,29 @@ void H_lua_install_set_current_state(lua_State* L);
 void H_lua_install_set_result(lua_State* L);
 
 /*
+ * Populate H.set_result_json with the C function backing it.
+ *
+ * LUA_CLIENT Phase 1: inline JSON response body for client-facing jobs.
+ *
+ *   H.set_result_json(table)
+ *       Encodes `table` to JSON via jansson and stores it on the
+ *       current job's scoreboard entry (result_json). Also sets
+ *       result_type to "json" when non-empty. Empty table stores "{}".
+ *
+ * Worker job context only (Orchestrator is a no-op). Non-table args
+ * are logged and do not raise. Bodies larger than
+ * SCOREBOARD_RESULT_JSON_MAX are rejected (logged, no raise).
+ */
+void H_lua_install_set_result_json(lua_State* L);
+
+/*
+ * LUA_CLIENT: set global `params` from the job's params_json string
+ * (object or array). Call after H_lua_create_context, before run.
+ * NULL/empty/invalid → empty table. Never raises.
+ */
+void H_lua_inject_job_params(lua_State* L, const char* params_json);
+
+/*
  * Populate H.sleep and H.shutdown_requested with the C functions
  * backing them.
  *

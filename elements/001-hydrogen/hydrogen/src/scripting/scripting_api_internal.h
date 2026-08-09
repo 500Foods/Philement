@@ -58,6 +58,7 @@ int H_lua_gc_isrunning(lua_State* L);
 
 int H_lua_set_current_state(lua_State* L);
 int H_lua_set_result(lua_State* L);
+int H_lua_set_result_json(lua_State* L);
 int H_lua_sleep(lua_State* L);
 int H_lua_shutdown_requested(lua_State* L);
 
@@ -80,9 +81,12 @@ int H_lua_package_searcher(lua_State* L);
 // ----------------------------------------------------------------------------
 
 char* H_lua_params_to_json(lua_State* L, int arg);
+char* H_lua_table_to_json_string(lua_State* L, int arg);
+json_t* H_lua_value_to_json(lua_State* L, int idx, int depth);
 void push_json_value_as_lua(lua_State* L, json_t* val);
 void push_json_object_as_table(lua_State* L, json_t* obj);
 void push_json_array_as_table(lua_State* L, json_t* arr);
+void H_lua_inject_job_params(lua_State* L, const char* params_json);
 int H_lua_build_result_table(lua_State* L, const char* data_json, int affected_rows);
 
 // ----------------------------------------------------------------------------

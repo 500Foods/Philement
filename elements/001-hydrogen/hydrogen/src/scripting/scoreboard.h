@@ -160,7 +160,21 @@ typedef struct {
     // result_location - a path, URI, or reference to retrieve the artifact
     char*               result_type;
     char*               result_location;
+
+    // LUA_CLIENT Phase 1: inline JSON body for HTTP invoke responses.
+    // Set by H.set_result_json. strdup'd; owned; freed on entry destroy.
+    // Max length SCOREBOARD_RESULT_JSON_MAX (1 MiB). NULL means unset;
+    // HTTP layer maps unset completed jobs to result {}.
+    char*               result_json;
+
+    // LUA_CLIENT Phase 5: JWT subject that submitted the job via REST.
+    // Used for GET /api/conduit/script/{job_id} authz. NULL for
+    // in-process / Orchestrator submits. strdup'd; owned.
+    char*               submitted_by;
 } ScoreboardEntry;
+
+/* Hard cap for result_json (LUA_CLIENT Phase 0: 1 MiB). */
+#define SCOREBOARD_RESULT_JSON_MAX (1024 * 1024)
 
 /*
  * The scoreboard itself.
@@ -538,8 +552,34 @@ bool scoreboard_update_error(Scoreboard* sb, const char* job_id,
  * scoreboard_update_progress and scoreboard_update_current_state.
  */
 bool scoreboard_update_result(Scoreboard* sb, const char* job_id,
-                              const char* result_type,
-                              const char* result_location);
+                               const char* result_type,
+                               const char* result_location);
+
+/*
+ * LUA_CLIENT Phase 1: store inline JSON result body for a job.
+ *
+ *   sb         - the scoreboard
+ *   job_id     - the 5-char ID to update
+ *   result_json - JSON text to store, or NULL/"" to clear.
+ *                 Must be <= SCOREBOARD_RESULT_JSON_MAX bytes (not
+ *                 including NUL). Longer input returns false without
+ *                 changing the entry.
+ *
+ * Returns true if a matching entry was found and updated (or cleared),
+ * false if the ID is unknown, input is too large, or allocation failed.
+ *
+ * Thread-safe. The string is copied into scoreboard-owned memory.
+ * Does NOT change status or timestamps.
+ */
+bool scoreboard_update_result_json(Scoreboard* sb, const char* job_id,
+                                   const char* result_json);
+
+/*
+ * LUA_CLIENT Phase 5: record JWT sub for REST-submitted jobs.
+ * Overwrites any previous value. NULL/"" clears.
+ */
+bool scoreboard_set_submitted_by(Scoreboard* sb, const char* job_id,
+                                 const char* submitted_by);
 
 /*
  * Exposed for Unity tests (NOT part of the stable public API).

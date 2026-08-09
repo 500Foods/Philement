@@ -84,6 +84,17 @@ char* scripting_fetch_script_source(const char* group_name,
                                     int timeout_seconds);
 
 /*
+ * LUA_CLIENT Phase 7: Fetch script source only when scripts.invokable
+ * is set (QueryRef #149). Missing or non-invokable rows both return
+ * NULL so REST can map both to the same 404 (no existence leak).
+ * Caller frees the returned string on success.
+ */
+char* scripting_fetch_invokable_script_source(const char* group_name,
+                                              const char* script_name,
+                                              const char* database,
+                                              int timeout_seconds);
+
+/*
  * Start the Orchestrator by looking up the (group_name, script_name)
  * row in the `scripts` table via QueryRef #087, then delegating to
  * scripting_orchestrator_start_with_source with the loaded code.

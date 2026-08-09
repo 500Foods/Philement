@@ -18,9 +18,10 @@
  *   4. (Phase 10) if kill_requested, mark KILLED and return
  *   5. script_registry_lookup - get the source for script_name
  *   6. H_lua_create_context - fresh lua_State
- *   7. (Phase 8) H_lua_install_progress_hook with per-job limits
- *   8. H_lua_run_string - compile + pcall
- *   9. on success: update_status(COMPLETED); on failure:
+ *   7. H_lua_inject_job_params - global `params` from entry->params_json
+ *   8. (Phase 8) H_lua_install_progress_hook with per-job limits
+ *   9. H_lua_run_string - compile + pcall
+ *  10. on success: update_status(COMPLETED); on failure:
  *      copy error string out of Lua (UAF discipline from Phase 1),
  *      lua_pop it, classify as KILLED or FAILED (Phase 10), log it,
  *      update_status(...)
@@ -55,6 +56,7 @@
 #include "lua_context.h"
 #include "lua_hook.h"
 #include "scoreboard.h"
+#include "scripting_api.h"
 #include <src/threads/threads.h>
 
 extern volatile sig_atomic_t scripting_system_shutdown;
@@ -453,6 +455,9 @@ void scripting_worker_process_one(ScriptingWorkerPool* pool,
     clock_gettime(CLOCK_MONOTONIC, &ctx.started_at);
     H_lua_set_job_context(L, &ctx);
     H_lua_install_progress_hook(L);
+
+    /* Client invoke + Orchestrator submit: scripts read global `params`. */
+    H_lua_inject_job_params(L, entry->params_json);
 
     int rc = H_lua_run_string(L, source, chunk_name);
 
