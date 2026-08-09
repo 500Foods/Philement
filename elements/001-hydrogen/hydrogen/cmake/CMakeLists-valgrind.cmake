@@ -9,5 +9,5 @@
 # Valgrind-compatible build
 hydrogen_add_executable_target(valgrind "Valgrind-Compatible"
     "-O0 -g"
-    "-no-pie"
+    "-no-pie -rdynamic"
 )

@@ -4,7 +4,7 @@ This guide explains how to validate, test, and debug Helium migrations before de
 
 ## Prerequisites
 
-- Lua 5.1+ with luarocks
+- Lua CLI (prefer 5.5 to match Hydrogen embed) with luarocks; migration host needs `lua-brotli` loadable by the embed (`brotli.so` on `package.cpath`, and the hydrogen binary linked with `-rdynamic` when Lua is static)
 - luacheck: `luarocks install luacheck`
 - Database engines: PostgreSQL, MySQL, SQLite, or DB2
 - Hydrogen test suite access

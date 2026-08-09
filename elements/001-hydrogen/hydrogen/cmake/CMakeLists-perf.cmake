@@ -9,5 +9,5 @@
 # Performance-optimized build
 hydrogen_add_executable_target(perf "Performance"
     "-O3 -g -ffast-math -finline-functions -funroll-loops -DNDEBUG"
-    "-flto=auto -no-pie"
+    "-flto=auto -no-pie -rdynamic"
 )

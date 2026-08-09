@@ -55,7 +55,18 @@ typedef struct {
  static const char *openssl_paths[] = {"libssl.so", "/lib64/libssl.so.3", "/usr/lib/libssl.so", "/usr/lib/x86_64-linux-gnu/libssl.so.3", NULL};
  static const char *brotli_paths[] = {"libbrotlidec.so", "/lib64/libbrotlidec.so.1", "/usr/lib/libbrotlidec.so", "/usr/lib/x86_64-linux-gnu/libbrotlidec.so.1", NULL};
  static const char *libtar_paths[] = {"libtar.so", "/usr/lib64/libtar.so.1", "/usr/lib64/libtar.so", "/lib64/libtar.so.1", "/usr/lib/libtar.so", "/usr/lib/x86_64-linux-gnu/libtar.so", NULL};
- static const char *lua_paths[] = {"liblua.so", "/lib64/liblua.so.5.4", "/usr/lib/liblua.so", "/usr/lib/x86_64-linux-gnu/liblua.so.5.4", NULL};
+  static const char *lua_paths[] = {
+      "liblua.so",
+      "/usr/local/lib/liblua.a",
+      "/usr/local/lib64/liblua.so.5.5",
+      "/lib64/liblua.so.5.5",
+      "/usr/lib/liblua.so",
+      "/usr/lib64/liblua.so.5.5",
+      "/usr/lib/x86_64-linux-gnu/liblua.so.5.5",
+      "/lib64/liblua.so.5.4",
+      "/usr/lib/x86_64-linux-gnu/liblua.so.5.4",
+      NULL
+  };
   static const char *libcurl_paths[] = {"libcurl.so", "/lib64/libcurl.so.4", "/usr/lib/libcurl.so", "/usr/lib/x86_64-linux-gnu/libcurl.so.4", NULL};
   static const char *magickwand_paths[] = {"libMagickWand-7.Q16HDRI.so.10", "/usr/lib64/libMagickWand-7.Q16HDRI.so.10", "/usr/lib/x86_64-linux-gnu/libMagickWand-7.Q16HDRI.so.10", NULL};
   static const char *zlib_paths[] = {"libz.so", "/lib64/libz.so.1", "/usr/lib/libz.so", "/usr/lib/x86_64-linux-gnu/libz.so.1", NULL};
@@ -192,7 +203,7 @@ void save_cache(const char *db_name, const char *version) {
      {"OpenSSL", openssl_paths, openssl_funcs, "3.2.4", false, false},
      {"libbrotlidec", brotli_paths, brotli_funcs, "1.1.0", false, false},
      {"libtar", libtar_paths, libtar_funcs, "1.2.20", false, false},
-     {"lua", lua_paths, lua_funcs, "5.4", false, false},
+      {"lua", lua_paths, lua_funcs, "5.5", false, false},
       {"libcurl", libcurl_paths, libcurl_funcs, "8.15.0", false, true},
       {"MagickWand", magickwand_paths, magickwand_funcs, "7.1", false, false},
       {"zlib", zlib_paths, zlib_funcs, "1.3.1", false, false}
@@ -380,7 +391,7 @@ void save_cache(const char *db_name, const char *version) {
          // Use compile-time LUA_VERSION macro for Lua version
          const char *lua_ver = LUA_VERSION;
          if (lua_ver) {
-             // LUA_VERSION is like "Lua 5.4", extract the version part
+              // LUA_VERSION is like "Lua 5.5", extract the version part
              const char *version_start = strstr(lua_ver, "Lua ");
              if (version_start) {
                  version_start += 4; // Skip "Lua "

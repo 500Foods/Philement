@@ -66,6 +66,7 @@ Full index: [`complete/README.md`](/docs/H/plans/complete/README.md). Highlights
 | Log fanout | [LOG_FANOUT_PLAN_COMPLETE.md](/docs/H/plans/complete/LOG_FANOUT_PLAN_COMPLETE.md) |
 | Lua scripting | [LUA_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md) |
 | Lua client script invoke | [LUA_CLIENT_COMPLETE.md](/docs/H/plans/complete/LUA_CLIENT_COMPLETE.md) |
+| Lua 5.5 embed upgrade | [LUA_55_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_55_PLAN_COMPLETE.md) |
 | Mail Relay blackbox | [MAILRELAY_BLACKBOX_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md) |
 | Migrations perf | [MIGRATIONS_COMPLETE.md](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md) |
 | SchemaTool | [SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md) |

@@ -50,3 +50,5 @@ extras/hbm_browser/node_modules/*
 
 # No clue where these are coming from all of a sudden?
 .cache/*
+# Local lua-brotli C module for migration host (Lua 5.5)
+brotli.so

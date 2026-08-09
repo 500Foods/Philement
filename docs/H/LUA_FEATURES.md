@@ -5,7 +5,7 @@ Pure Lua reference for everyday scripting: strings, tables, numbers, dates, patt
 - Hydrogen scripting intro: [LUA_GUIDE.md](/docs/H/LUA_GUIDE.md)
 - Host API contract: [lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md)
 
-Hydrogen embeds **Lua 5.4**. Try examples with `lua` or `lua -i`.
+Hydrogen embeds **Lua 5.5**. Try examples with `lua` or `lua -i`.
 
 ---
 
@@ -693,7 +693,7 @@ end
 
 ### External references
 
-- [Lua 5.4 Reference Manual](https://www.lua.org/manual/5.4/)
+- [Lua 5.5 Reference Manual](https://www.lua.org/manual/5.5/)
 - [Programming in Lua](https://www.lua.org/pil/)
 - [Learn Lua in 15 minutes](https://tylerneylon.com/a/learn-lua/)
 - [LUA_GUIDE.md](/docs/H/LUA_GUIDE.md) — Hydrogen scripting

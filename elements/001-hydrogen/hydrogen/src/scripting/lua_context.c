@@ -46,7 +46,8 @@ int H_lua_panic(lua_State* L);
  * Returns NULL on failure; logs at LOG_LEVEL_ERROR.
  */
 lua_State* H_lua_create_context(void) {
-    lua_State* L = lua_newstate(lua_mmap_alloc, NULL);
+    /* Lua 5.5: lua_newstate takes a hash seed (luaL_makeseed). */
+    lua_State* L = lua_newstate(lua_mmap_alloc, NULL, luaL_makeseed(NULL));
     if (!L) {
         log_this(SR_SCRIPTING, "Failed to create Lua state", LOG_LEVEL_ERROR, 0);
         return NULL;
@@ -310,7 +311,7 @@ int H_lua_run_string(lua_State* L, const char* code, const char* name) {
 /*
  * Set the per-state job context. Pass a NULL pointer to clear.
  *
- * The context lives in the state's "extraspace" (Lua 5.4 API) - a
+ * The context lives in the state's "extraspace" (Lua 5.5 API) - a
  * pointer-sized slot tied 1:1 to the lua_State, allocated by
  * lua_newstate and freed by lua_close. We store a pointer to a
  * heap-allocated H_lua_job_context, owned and freed by the caller

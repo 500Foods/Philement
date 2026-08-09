@@ -245,7 +245,7 @@ end
 ## Learning Resources
 
 - [Lua in 15 Minutes](https://tylerneylon.com/a/learn-lua/) - Quick start guide
-- [Official Lua Manual](https://www.lua.org/manual/5.1/) - Complete reference
+- [Official Lua Manual (5.5)](https://www.lua.org/manual/5.5/) - Complete reference (Hydrogen embed)
 - [Programming in Lua](https://www.lua.org/pil/) - Free online book
 
 ## Testing Your Lua Code

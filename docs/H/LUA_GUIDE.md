@@ -12,7 +12,7 @@ For pure Lua language features (strings, tables, numbers, dates, patterns) with 
 
 Helium migrations have a separate, migration-focused intro: [docs/He/LUA_INTRO.md](/docs/He/LUA_INTRO.md). This guide covers both in-server scripting and the multiline-string habits migrations need.
 
-Hydrogen embeds **Lua 5.4**. Scripts run sandboxed: `io`, `os.execute`, `debug`, and native `package.loadlib` are off by default. Prefer the `H.*` API over raw OS libraries.
+Hydrogen embeds **Lua 5.5**. Scripts run sandboxed: `io`, `os.execute`, `debug`, and native `package.loadlib` are off by default. Prefer the `H.*` API over raw OS libraries.
 
 ---
 
@@ -225,7 +225,7 @@ table.insert(parts, " FROM ")
 table.insert(parts, table_name)
 local sql = table.concat(parts)
 
--- format (Lua 5.4 string.format)
+-- format (Lua 5.5 string.format)
 local line = string.format("job %s finished in %d ms", job_id, ms)
 ```
 
@@ -1006,7 +1006,7 @@ Run `tests/test_98_luacheck.sh` after editing `.lua` files.
 | [Test 43 scripting](/docs/H/tests/test_43_scripting.md) | End-to-end scripting tests |
 | [Test 46 conduit script](/docs/H/tests/test_46_conduit_script.md) | Client invoke blackbox |
 | [Lua in 15 minutes](https://tylerneylon.com/a/learn-lua/) | External quick language tour |
-| [Lua 5.4 manual](https://www.lua.org/manual/5.4/) | Language reference |
+| [Lua 5.5 manual](https://www.lua.org/manual/5.5/) | Language reference |
 
 ### Mental model (one paragraph)
 

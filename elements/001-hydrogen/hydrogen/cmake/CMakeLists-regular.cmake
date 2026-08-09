@@ -7,7 +7,9 @@
 # cmake --build . --target all_variants      : Build all variants including regular
 #
 # Default build target
-hydrogen_add_executable_target(regular "Regular" "-O2 -g" "-no-pie")
+# -rdynamic: export Lua symbols so C rocks (e.g. lua-brotli) can dlopen
+# against a statically linked liblua (Lua 5.5 / LUA_55_PLAN).
+hydrogen_add_executable_target(regular "Regular" "-O2 -g" "-no-pie -rdynamic")
 
 # Regular build with payload embedding (similar to release but without UPX compression)
 # This matches the regular binary behavior for comprehensive functionality
