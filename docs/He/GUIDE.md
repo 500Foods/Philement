@@ -44,6 +44,7 @@ Only after the above should you write or modify a migration.
 - Use only documented macros from `MACRO_REFERENCE.md`. Never invent `${SOMETHING}`.
 - Every migration must be self-contained and reversible. The reverse must be able to run cleanly after the forward (for testing).
 - Rare engine differences are allowed with `if engine == 'xxx' then ... end` blocks (see acuranzo_1190.lua). Document why in the summary.
+- **Multi-row data seeds** must use the house `INSERT … VALUES (…), (…);` pattern (see **Portable Multi-Row Data Seeds** below). Do **not** invent PostgreSQL-only or SQLite-only row sources.
 - After changes, the model (or human) must be able to run the Hydrogen migration validation tests without failures.
 
 If you cannot follow all of the above from the source material, ask for clarification or re-read the anatomy document instead of guessing.
@@ -55,10 +56,13 @@ If you cannot follow all of the above from the source material, ask for clarific
 - [ ] cfg.TABLE + cfg.MIGRATION set
 - [ ] Forward query with state UPDATE inside the code block to TYPE_APPLIED_MIGRATION
 - [ ] Reverse query that resets state to TYPE_FORWARD_MIGRATION (and uses DROP_CHECK for tables)
+- [ ] **Forward ↔ reverse exact mirror** — reverse undoes *only* what forward did (see **Forward/Reverse Symmetry** below). No extra DELETEs, no missing DROPs
 - [ ] Diagram query with proper JSON_INGEST wrappers, object_ref, and COMMON_DIAGRAM where appropriate
 - [ ] All SQL uses only allowed macros + ${SUBQUERY_DELIMITER}
+- [ ] Multi-row seeds use `INSERT … VALUES (row), (row);` + `${COMMON_FIELDS}` / `${COMMON_VALUES}` (not `VALUES AS v(cols)`, not bare `UNION ALL` derived tables)
+- [ ] Structural ALTER (ADD/DROP/ALTER COLUMN): `${REORG}` after change on reverse (and as needed on forward) — DB2 SQL0668N rc7
 - [ ] Summary Markdown is clear and explains purpose, columns, indexes, and any engine quirks
-- [ ] Tested mentally against PostgreSQL 15 / YugabyteDB semantics first (primary target)
+- [ ] Tested mentally against PostgreSQL 15 / YugabyteDB **and** SQLite + DB2 seed syntax (primary target is PG; seeds must still apply everywhere)
 
 ## Lua Basics for Migrations
 
@@ -465,6 +469,17 @@ INSERT INTO ${SCHEMA}${TABLE} VALUES (
 );
 ```
 
+### Multi-row seed (Migration 1280)
+
+Canonical multi-row seed — `INSERT … VALUES (…), (…), (…);` with
+`${COMMON_FIELDS}` / `${COMMON_VALUES}`:
+
+- Forward seed: [`acuranzo_1280.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1280.lua)
+  (system mail templates)
+- Similar: [`acuranzo_1281.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1281.lua)
+  (script rows), [`acuranzo_1293.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1293.lua)
+  (courses catalog)
+
 ### Lookup Data (Migration 1069)
 
 Inserts theme CSS data into the lookups table with complex multiline CSS content.
@@ -480,6 +495,41 @@ Most migrations create new tables. The pattern includes:
 3. Use appropriate constraints (PRIMARY KEY, UNIQUE, etc.)
 4. Update migration state to applied
 
+### Forward/Reverse Symmetry (non-negotiable)
+
+Helium migrations are **pairs**. TestMigration applies forward through N, then
+reverses N…down. Every reverse must **exactly undo** its forward — nothing
+more, nothing less.
+
+| Forward does | Reverse must |
+|--------------|--------------|
+| `CREATE TABLE T` | `DROP TABLE T` (via `${DROP_CHECK}`) |
+| `ADD COLUMN` / other structural ALTER | matching `DROP COLUMN` / undo + `${REORG}` on DB2 |
+| `INSERT` rows with keys/codes `K` | `DELETE` **only** those keys/codes from **only** those tables |
+| Insert into table A only | **Do not** `DELETE` from table B “just in case” |
+| No rows in child table C | **No** reverse statement against C |
+
+**Why this exists:** The migration system + multi-engine tests catch author
+mistakes. **DB2 is intentionally stricter** than PostgreSQL/MySQL/SQLite on
+zero-row `DELETE`/`UPDATE` (`SQL0100W` / SQLSTATE `02000` / CLI `SQL_NO_DATA`).
+That is a **feature**: it proves reverse claimed work that forward never did.
+
+**Do not:**
+
+- Soften Hydrogen/DB2 to ignore SQL0100W so a sloppy reverse “passes”
+- Emit reverse DML for tables or keys the forward never wrote
+- Rely on “DELETE is idempotent / empty is fine” — other engines may hide the
+  bug; DB2 TestMigration will not
+
+**Do:**
+
+- List every `INSERT`/`CREATE`/`ALTER` in forward; write the inverse only
+- If forward is free-only seed (no prices), reverse deletes courses only —
+  see `acuranzo_1293.lua` (fixed 1.0.3)
+- Treat SQL0100W on reverse as “fix the migration,” not “fix the driver”
+
+Full failure symptoms: `docs/He/TESTING_GUIDE.md` → **DB2 SQL0100W**.
+
 ### Data Insertion Pattern
 
 For inserting reference or initial data:
@@ -487,7 +537,58 @@ For inserting reference or initial data:
 1. Use INSERT with explicit column lists
 2. Include `${COMMON_FIELDS}` and `${COMMON_VALUES}` for audit data
 3. Consider foreign key relationships
-4. Ensure reverse migration deletes the same data
+4. Reverse deletes **exactly** those rows (same keys, same tables) — see
+   **Forward/Reverse Symmetry** above
+
+### Portable Multi-Row Data Seeds
+
+Helium migrations run on **PostgreSQL, MariaDB/MySQL, SQLite, and DB2**.
+A seed that only works on PostgreSQL will fail Hydrogen tests 33–35 and break
+AutoMigration on other engines.
+
+**Do this** (house style — see `acuranzo_1280.lua`):
+
+```sql
+INSERT INTO ${SCHEMA}${TABLE} (
+    col_a, col_b, col_c,
+    ${COMMON_FIELDS}
+)
+VALUES
+(
+    1, 'first', '…',
+    ${COMMON_VALUES}
+),
+(
+    2, 'second', '…',
+    ${COMMON_VALUES}
+);
+```
+
+**Do not do this** (common LLM / Postgres-only mistakes):
+
+| Anti-pattern | Why it fails |
+|--------------|--------------|
+| `FROM (VALUES (…), (…)) AS v(col1, col2, …)` | PostgreSQL-style column list on a `VALUES` derived table — **SQLite** errors with `near "(": syntax error` |
+| `FROM (SELECT … UNION ALL SELECT …) AS v` inside `INSERT…SELECT` | **DB2** often rejects `UNION` in that context (`SQL0104N … UNION … Expected … <table_expr>`) |
+| Bare `SELECT … WHERE NOT EXISTS` without a row source on DB2 | DB2 needs `${DUMMY_TABLE}` (`FROM SYSIBM.SYSDUMMY1`); empty on other engines — see `database_db2.lua` and `acuranzo_1289` / `1290` notes |
+| Hard-coded `CURRENT_TIMESTAMP` / engine types | Use `${NOW}`, `${INTEGER}`, etc. from macros |
+
+**Idempotency:** APPLY runs each forward migration once. Prefer a simple
+multi-row `VALUES` seed (unique keys will fail loudly if re-applied incorrectly)
+over clever `WHERE NOT EXISTS` wrappers unless you have tested the wrapper on
+**all four** engines. If you need skip-if-exists, prefer patterns already proven
+in Acuranzo (and still validate on SQLite + DB2).
+
+**After editing seeds:** rebuild Hydrogen payload (`mkt` / `mka` or
+`payload-generate.sh`) so tests 32–38 see the new embedded SQL. Stale payload
+or LOADed-but-not-APPLIED rows keep the old broken `code` until LOAD refreshes.
+
+**Study order for seeds:**
+
+1. `acuranzo_1280.lua` — multi-row `VALUES` + `${COMMON_VALUES}`
+2. `acuranzo_1281.lua` — multi-row script seeds
+3. `acuranzo_1293.lua` — larger catalog seed (same pattern)
+4. `docs/He/MACRO_REFERENCE.md` — `${COMMON_FIELDS}`, `${COMMON_VALUES}`, `${DUMMY_TABLE}`
 
 ### Schema Modification Pattern
 
@@ -497,6 +598,51 @@ When altering existing tables:
 2. Consider data migration if changing column types
 3. Ensure reverse migration undoes the change
 4. Update diagram migration for schema changes
+5. **DB2 REORG** — after `ADD COLUMN` / `DROP COLUMN` / structural `ALTER COLUMN`, emit `${REORG}` (see below)
+
+### DB2: `${REORG}` after ADD/DROP COLUMN
+
+DB2 leaves a table **reorg-pending** after many structural ALTERs. Until
+`REORG TABLE` runs, later DML fails with:
+
+`SQL0668N Operation not allowed for reason code "7" on table "….SCRIPTS"`
+
+Hydrogen TestMigration applies reverse migrations newest-first. A reverse that
+only drops a column without a **post-DROP** `${REORG}` can pass its own
+statements, then break the **next** older reverse that touches the same table
+(e.g. 1297 drop `invokable` → 1296 `DELETE` Api.Echo).
+
+**Canonical reverse pattern** (from `acuranzo_1172.lua`, also `acuranzo_1297`):
+
+```sql
+${REORG}
+
+${SUBQUERY_DELIMITER}
+
+ALTER TABLE ${SCHEMA}${TABLE}
+    DROP COLUMN some_col;
+
+${SUBQUERY_DELIMITER}
+
+${REORG}
+
+${SUBQUERY_DELIMITER}
+
+UPDATE ${SCHEMA}${QUERIES}
+  SET query_type_a28 = ${TYPE_FORWARD_MIGRATION}
+WHERE query_ref = ${MIGRATION}
+  AND query_type_a28 = ${TYPE_APPLIED_MIGRATION};
+```
+
+- **Before DROP:** REORG clears pending state from a prior ALTER on the same table.
+- **After DROP:** REORG clears pending state so the next reverse (or app DML) can run.
+- On PG/MySQL/SQLite, `${REORG}` expands to a comment — safe everywhere.
+
+Forward migrations that `ADD COLUMN` and then `UPDATE` the same table in a later
+statement should REORG between ADD and UPDATE when the engine requires it (DB2
+often allows DEFAULT ADD + UPDATE in one apply, but REORG after ADD is safer if
+you see SQL0668N). Prefer matching existing Acuranzo ALTER migrations
+(`1190` documents REORG after `ALTER COLUMN`; `1172` after each DROP).
 
 ### Lookup Table Pattern
 
@@ -844,7 +990,7 @@ These templates provide a starting point for common migration patterns. Copy, mo
 
 1. **Always include reverse migrations** for testing (and use `${DROP_CHECK}` for table drops).
 2. **Use diagram migrations** for every schema change (table, significant column change). Include `object_ref` and `${COMMON_DIAGRAM}`.
-3. **Test migrations** on all supported databases, with primary focus on PostgreSQL 15 / YugabyteDB (see Hydrogen `test_38_yugabytedb_migrations.sh` and `test_32_postgres_migrations.sh`).
+3. **Test migrations** on all supported databases, with primary focus on PostgreSQL 15 / YugabyteDB (see Hydrogen `test_38_yugabytedb_migrations.sh` and `test_32_postgres_migrations.sh`). **Always** smoke multi-row seeds on SQLite and DB2 — that is where portable-SQL mistakes surface first.
 4. **Use descriptive names** and summaries. Summaries should explain purpose, columns, indexes, and any engine-specific behavior.
 5. **Include CHANGELOG** entries at the top of every migration file.
 6. **Leverage macros** for database portability — never hard-code engine-specific syntax except in rare guarded `if engine == 'xxx'` blocks.
@@ -852,6 +998,8 @@ These templates provide a starting point for common migration patterns. Copy, mo
 8. **Put the state transition UPDATE inside the embedded `code`** for forward and reverse migrations.
 9. **Use `${SUBQUERY_DELIMITER}`** between statements inside the embedded code.
 10. **Keep reverse migrations safe** — for data-changing reverses, document manual prerequisites (e.g. "delete or assign passwords before reversing").
+11. **Multi-row seeds** — copy `acuranzo_1280` (`INSERT … VALUES (…), (…);` + `${COMMON_VALUES}`). Never invent `VALUES AS v(cols)` or untested `UNION ALL` row sources (see **Portable Multi-Row Data Seeds**).
+12. **DB2 REORG** — after structural `ADD`/`DROP`/`ALTER COLUMN`, use `${REORG}` (especially **after** DROP on reverse so TestMigration’s next reverse can DML the table). See **DB2: `${REORG}` after ADD/DROP COLUMN**.
 
 ## Migration Workflow
 

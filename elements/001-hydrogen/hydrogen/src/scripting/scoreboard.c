@@ -9,10 +9,8 @@
  * See scoreboard.h for the v1 surface and the design rationale
  * (mutex-protected array, copy-on-find, on-demand growth).
  *
- * ID generation reuses Hydrogen's 5-char ID generator
- * (generate_id in src/utils/utils_logging.c) to stay consistent with
- * the rest of the project. Collisions on a 12^5 ~ 248K-id space are
- * extremely unlikely in v1 (the scoreboard's lifetime is one process)
+ * ID generation reuses Hydrogen's 5-char ID generator (generate_id in src/utils/utils_logging.c) to stay consistent with
+ * the rest of the project. Collisions on a 12^5 ~ 248K-id space are extremely unlikely in v1 (the scoreboard's lifetime is one process)
  * and submit() retries on a collision.
  */
 
@@ -38,8 +36,7 @@ bool is_terminal_status(ScoreboardJobStatus status) {
         || status == SCOREBOARD_JOB_KILLED;
 }
 
-// Helper: free the strings owned by an entry and zero the struct.
-// Does NOT free the entry pointer itself (caller owns the storage).
+// Helper: free the strings owned by an entry and zero the struct. Does NOT free the entry pointer itself (caller owns the storage).
 void entry_clear_owned(ScoreboardEntry* entry) {
     if (!entry) {
         return;
@@ -104,8 +101,7 @@ void timespec_now(struct timespec* ts) {
 }
 
 // Helper: append a new entry (already-populated entry) to the array.
-// On capacity exhaustion, realloc doubles the capacity. Returns
-// true on success, false on allocation failure.
+// On capacity exhaustion, realloc doubles the capacity. Returns true on success, false on allocation failure.
 bool entries_grow_if_needed(Scoreboard* sb) {
     if (sb->count < sb->capacity) {
         return true;
@@ -125,8 +121,7 @@ bool entries_grow_if_needed(Scoreboard* sb) {
 }
 
 // Generate a fresh 5-char ID and check that no existing entry uses it.
-// On a collision, retry up to a small bound, then return NULL so the
-// caller sees "could not allocate" rather than blocking forever.
+// On a collision, retry up to a small bound, then return NULL so the caller sees "could not allocate" rather than blocking forever.
 #define SCOREBOARD_ID_RETRY_LIMIT 8
 bool generate_unique_id(const Scoreboard* sb, char out[ID_LEN + 1]) {
     for (int attempt = 0; attempt < SCOREBOARD_ID_RETRY_LIMIT; attempt++) {
@@ -164,8 +159,7 @@ void scoreboard_destroy(Scoreboard* sb) {
     if (!sb) {
         return;
     }
-    // Free any entry-owned strings; entries themselves are part of
-    // the array and freed by free(entries) below.
+    // Free any entry-owned strings; entries themselves are part of the array and freed by free(entries) below.
     for (size_t i = 0; i < sb->count; i++) {
         entry_clear_owned(&sb->entries[i]);
     }
@@ -203,13 +197,9 @@ char* scoreboard_submit_with_limits(Scoreboard* sb,
         }
     }
 
-    // Phase 8: resolve limits. We snapshot from app_config (if
-    // available) at submit time so later config edits don't change a
-    // running job's contract. The hook reads from the entry copy
-    // (filled by scoreboard_find), not from app_config.
-    //
-    // Zero fields mean "use the config default" (or for hard_limit,
-    // SIZE_MAX means "no limit"). Non-NULL limits with all-zero fields
+    // Phase 8: resolve limits. We snapshot from app_config (if available) at submit time so later config edits don't change a
+    // running job's contract. The hook reads from the entry copy (filled by scoreboard_find), not from app_config.
+    // Zero fields mean "use the config default" (or for hard_limit, SIZE_MAX means "no limit"). Non-NULL limits with all-zero fields
     // is therefore identical to NULL.
     int    hook_interval = 0;
     size_t soft_kb = 0;
@@ -239,12 +229,9 @@ char* scoreboard_submit_with_limits(Scoreboard* sb,
             max_runtime = (cfg_runtime > 0) ? cfg_runtime : INT_MAX;
         }
     } else {
-        // No config: leave zero fields as zero. The hook handles
-        // 0 soft / 0 hard by skipping the check (see lua_hook.c).
-        // hook_interval was already left at 0 above if the caller
-        // didn't provide a positive value. max_runtime stays 0,
-        // which the hook treats as "no limit" (only positive values
-        // are enforced).
+        // No config: leave zero fields as zero. The hook handles 0 soft / 0 hard by skipping the check (see lua_hook.c).
+        // hook_interval was already left at 0 above if the caller didn't provide a positive value. max_runtime stays 0,
+        // which the hook treats as "no limit" (only positive values are enforced).
     }
 
     pthread_mutex_lock(&sb->mutex);
@@ -295,10 +282,8 @@ char* scoreboard_submit_with_limits(Scoreboard* sb,
     pthread_mutex_unlock(&sb->mutex);
 
     if (!result) {
-        // We already inserted the entry under the lock; that's a
-        // partial success but the caller asked for a return value
-        // and we can't give them one. Roll back the entry so the
-        // scoreboard doesn't grow a row the caller can't see.
+        // We already inserted the entry under the lock; that's a partial success but the caller asked for a return value
+        // and we can't give them one. Roll back the entry so the scoreboard doesn't grow a row the caller can't see.
         pthread_mutex_lock(&sb->mutex);
         entry_clear_owned(&sb->entries[sb->count - 1]);
         memset(&sb->entries[sb->count - 1], 0, sizeof(ScoreboardEntry));
@@ -334,10 +319,8 @@ ScoreboardEntry* scoreboard_find(Scoreboard* sb, const char* job_id) {
         copy = calloc(1, sizeof(ScoreboardEntry));
         if (copy) {
             *copy = *match;
-            // The match's script_name / params_json / current_state
-            // point at strings owned by the scoreboard. The copy must
-            // own its own strings so the caller can free it
-            // independently.
+            // The match's script_name / params_json / current_state point at strings owned by the scoreboard. The copy must
+            // own its own strings so the caller can free it independently.
             copy->script_name = match->script_name ? strdup(match->script_name) : NULL;
             copy->params_json = match->params_json ? strdup(match->params_json) : NULL;
             copy->current_state = match->current_state ? strdup(match->current_state) : NULL;
@@ -471,8 +454,7 @@ bool scoreboard_update_current_state(Scoreboard* sb, const char* job_id, const c
         return false;
     }
 
-    // Allocate the new string OUTSIDE the lock so the mutex critical
-    // section stays short. NULL/empty state clears the field.
+    // Allocate the new string OUTSIDE the lock so the mutex critical section stays short. NULL/empty state clears the field.
     char* new_state = NULL;
     if (state && state[0] != '\0') {
         new_state = strdup(state);
@@ -490,8 +472,7 @@ bool scoreboard_update_current_state(Scoreboard* sb, const char* job_id, const c
         if (strcmp(entry->job_id, job_id) != 0) {
             continue;
         }
-        // Free any prior value, then install the new one (which may
-        // be NULL to clear). The owned-string pattern is the same as
+        // Free any prior value, then install the new one (which may be NULL to clear). The owned-string pattern is the same as
         // script_name / params_json: copy in, copy out.
         if (entry->current_state) {
             free(entry->current_state);
@@ -552,13 +533,9 @@ bool scoreboard_is_kill_requested(Scoreboard* sb, const char* job_id, bool* out)
 }
 
 /*
- * Snapshot all entries into a heap-allocated array of heap-allocated
- * copies. Phase 11 backs H.scoreboard.list() with this; the
- * Orchestrator and any future introspection code use it to see the
- * scoreboard at a point in time without holding the mutex.
- *
- * Empty scoreboard: returns true with *out_list = NULL and
- * *out_count = 0 (a valid snapshot, just empty).
+ * Snapshot all entries into a heap-allocated array of heap-allocated copies. Phase 11 backs H.scoreboard.list() with this; the
+ * Orchestrator and any future introspection code use it to see the scoreboard at a point in time without holding the mutex.
+ * Empty scoreboard: returns true with *out_list = NULL and out_count = 0 (a valid snapshot, just empty).
  */
 bool scoreboard_list(Scoreboard* sb,
                      ScoreboardEntry*** out_list,
@@ -570,8 +547,7 @@ bool scoreboard_list(Scoreboard* sb,
     *out_count = 0;
 
     if (!sb) {
-        // A NULL scoreboard is treated as an empty snapshot, not a
-        // failure, so callers can use the same code path during
+        // A NULL scoreboard is treated as an empty snapshot, not a failure, so callers can use the same code path during
         // tests that don't allocate a real scoreboard.
         return true;
     }
@@ -595,8 +571,7 @@ bool scoreboard_list(Scoreboard* sb,
     for (size_t i = 0; i < sb->count; i++) {
         ScoreboardEntry* copy = calloc(1, sizeof(ScoreboardEntry));
         if (!copy) {
-            // Partial failure: free what we have so far so the
-            // caller doesn't have to track how many were made.
+            // Partial failure: free what we have so far so the caller doesn't have to track how many were made.
             for (size_t j = 0; j < made; j++) {
                 scoreboard_entry_free(list[j]);
             }
@@ -605,9 +580,7 @@ bool scoreboard_list(Scoreboard* sb,
             return false;
         }
         *copy = sb->entries[i];
-        // Strdup the owned strings, same as scoreboard_find, so the
-        // caller can free each entry independently with
-        // scoreboard_entry_free.
+        // Strdup the owned strings, same as scoreboard_find, so the caller can free each entry independently with scoreboard_entry_free.
         copy->script_name = sb->entries[i].script_name
             ? strdup(sb->entries[i].script_name) : NULL;
         copy->params_json = sb->entries[i].params_json
@@ -635,8 +608,7 @@ bool scoreboard_list(Scoreboard* sb,
             || (sb->entries[i].result_location && !copy->result_location)
             || (sb->entries[i].result_json && !copy->result_json)
             || (sb->entries[i].submitted_by && !copy->submitted_by)) {
-            // strdup failure: clean up this entry and everything
-            // before it.
+            // strdup failure: clean up this entry and everything before it.
             scoreboard_entry_free(copy);
             for (size_t j = 0; j < made; j++) {
                 scoreboard_entry_free(list[j]);
@@ -656,8 +628,7 @@ bool scoreboard_list(Scoreboard* sb,
 }
 
 /*
- * Free an array of heap-allocated entry copies returned by
- * scoreboard_list. Frees each entry (via scoreboard_entry_free) and
+ * Free an array of heap-allocated entry copies returned by scoreboard_list. Frees each entry (via scoreboard_entry_free) and
  * then the array. Safe with NULL list or zero count.
  */
 void scoreboard_list_free(ScoreboardEntry** list, size_t count) {
@@ -671,14 +642,10 @@ void scoreboard_list_free(ScoreboardEntry** list, size_t count) {
 }
 
 /*
- * Phase 12: attach a waiter to a job. See scoreboard.h for the
- * contract. POD pointers, so the critical section only sets three
+ * Phase 12: attach a waiter to a job. See scoreboard.h for the* contract. POD pointers, so the critical section only sets three
  * fields; no allocations, no strdups.
- *
- * Idempotency: a second attach is a no-op (first writer wins). This
- * matches the submitter's typical pattern ("attach if not already
- * attached") and prevents a racing attach from clobbering a waiter
- * that is already in place.
+ * Idempotency: a second attach is a no-op (first writer wins). This matches the submitter's typical pattern ("attach if not already
+ * attached") and prevents a racing attach from clobbering a waiter  that is already in place.
  */
 bool scoreboard_attach_waiter(Scoreboard* sb,
                              const char* job_id,

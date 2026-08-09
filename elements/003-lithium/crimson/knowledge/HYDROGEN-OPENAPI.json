@@ -2167,6 +2167,434 @@
         }
       }
     },
+    "/conduit/script": {
+      "post": {
+        "summary": "Invoke a named DB-backed Lua script\nGet script job status by id",
+        "description": "Submits a trusted database script (Group.Name) with JSON params. Requires JWT. Default wait=true blocks until terminal status or timeout. Injects params._hydrogen from JWT claims. Returns job status and result payload.\nReturns scoreboard status for a previously submitted script job. JWT required; only the submitting subject may read the job.",
+        "operationId": "invokeConduitScriptPost",
+        "tags": [
+          "Conduit Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "job_id": {
+                      "type": "string"
+                    },
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "pending"
+                    },
+                    "job_id": {
+                      "type": "string"
+                    },
+                    "script": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "job_not_found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "method_not_allowed"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "scripting_disabled"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "forbidden"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "script"
+                ],
+                "properties": {
+                  "script": {
+                    "type": "string",
+                    "description": "Canonical script id Group.Name",
+                    "example": "Api.Echo"
+                  },
+                  "params": {
+                    "type": "object",
+                    "description": "Opaque params object passed to the script"
+                  },
+                  "wait": {
+                    "type": "boolean",
+                    "description": "If true (default), wait for completion",
+                    "example": true
+                  },
+                  "timeout_seconds": {
+                    "type": "integer",
+                    "description": "Wait budget 1-60, default 15",
+                    "example": 15
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      },
+      "get": {
+        "summary": "Invoke a named DB-backed Lua script\nGet script job status by id",
+        "description": "Submits a trusted database script (Group.Name) with JSON params. Requires JWT. Default wait=true blocks until terminal status or timeout. Injects params._hydrogen from JWT claims. Returns job status and result payload.\nReturns scoreboard status for a previously submitted script job. JWT required; only the submitting subject may read the job.",
+        "operationId": "getConduitScriptJob",
+        "tags": [
+          "Conduit Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "job_id": {
+                      "type": "string"
+                    },
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "pending"
+                    },
+                    "job_id": {
+                      "type": "string"
+                    },
+                    "script": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "job_not_found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "method_not_allowed"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "scripting_disabled"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "forbidden"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "script"
+                ],
+                "properties": {
+                  "script": {
+                    "type": "string",
+                    "description": "Canonical script id Group.Name",
+                    "example": "Api.Echo"
+                  },
+                  "params": {
+                    "type": "object",
+                    "description": "Opaque params object passed to the script"
+                  },
+                  "wait": {
+                    "type": "boolean",
+                    "description": "If true (default), wait for completion",
+                    "example": true
+                  },
+                  "timeout_seconds": {
+                    "type": "integer",
+                    "description": "Wait budget 1-60, default 15",
+                    "example": 15
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/conduit/status": {
       "get": {
         "summary": "Get database readiness status",

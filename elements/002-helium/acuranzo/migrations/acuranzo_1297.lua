@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.1 - 2026-08-09 - Reverse: ${REORG} after DROP COLUMN (DB2 SQL0668N rc7)
 -- 1.0.0 - 2026-08-08 - invokable DEFAULT false; seed Echo invokable
 
 return function(engine, design_name, schema_name, cfg)
@@ -99,6 +100,12 @@ table.insert(queries,{sql=[[
 
             ${SUBQUERY_DELIMITER}
 
+            -- DB2: DROP COLUMN leaves table reorg-pending (SQL0668N rc7) until
+            -- REORG; next reverse (e.g. 1296 DELETE Api.Echo) needs access.
+            ${REORG}
+
+            ${SUBQUERY_DELIMITER}
+
             UPDATE ${SCHEMA}${QUERIES}
               SET query_type_a28 = ${TYPE_FORWARD_MIGRATION}
             WHERE query_ref = ${MIGRATION}
@@ -108,6 +115,9 @@ table.insert(queries,{sql=[[
         'Drop scripts.invokable'                                            AS name,
         [=[
             # Reverse Migration ${MIGRATION}: Drop scripts.invokable
+
+            `${REORG}` before and after DROP (DB2). Post-DROP REORG clears
+            reorg-pending so later reverse DML on `${TABLE}` succeeds.
         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,

@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD007 MD024 -->
 # LUA_CLIENT — Client-Facing Script Invoke Plan
 
 ## Purpose
@@ -40,8 +41,9 @@ Phases must not skip Unity when adding C; Phase 9 must not be waived without exp
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-08-08):** Phases **0–9 complete**. Next:
-**Phase 10** — Documentation + Reception handoff.
+**CURRENT PAUSE POINT (as of 2026-08-09):** Phases **0–10 complete**. Plan
+moved to [`complete/LUA_CLIENT_COMPLETE.md`](/docs/H/plans/complete/LUA_CLIENT_COMPLETE.md).
+Optional Phases 11–13 remain deferred until requested.
 
 ### Session checklist
 
@@ -191,6 +193,7 @@ script conduit for interactive actions (`FL-49b`).
 | Echo fixture | Yes for blackbox (`Api.Echo`, invokable=true) despite no product seeds |
 
 **Request (POST):**
+
 ```json
 {
   "script": "Enroll.FreeCourse",
@@ -201,6 +204,7 @@ script conduit for interactive actions (`FL-49b`).
 ```
 
 **Response (always HTTP 200 for job outcomes including failed/timeout unless auth/validation/routing errors):**
+
 ```json
 {
   "status": "completed",
@@ -213,6 +217,7 @@ script conduit for interactive actions (`FL-49b`).
   "elapsed_ms": 123
 }
 ```
+
 `status`: `completed` | `failed` | `killed` | `timeout` | (async) `pending`/`running`.
 
 #### Exit gate / validation
@@ -576,28 +581,30 @@ script conduit for interactive actions (`FL-49b`).
 
 #### Work items
 
-- [ ] **10.1** API doc: `docs/H/api/conduit/script.md` (or scripting equivalent) — request/response, auth, errors, examples.
-- [ ] **10.2** Update [lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md): move REST job submission from Deferred → Implemented; document `H.set_result_json`.
-- [ ] **10.3** Update [scripting/README.md](/docs/H/core/subsystems/scripting/README.md) job execution section (REST submit).
-- [ ] **10.4** Cross-link LUA_GUIDE, EXAMPLES if needed; RELEASES note when shipping.
-- [ ] **10.5** Reception note (Working Log + optional FINISHLINE pointer): `enroll.freeEnrollPath` / script name `Enroll.FreeCourse` is product work **after** this Hydrogen surface exists — not part of this plan’s code.
-- [ ] **10.6** TODO.md / plans README: mark progress; when fully done move this file to `complete/LUA_CLIENT_COMPLETE.md`.
+- [x] **10.1** API doc: `docs/H/api/conduit/script.md` — request/response, auth, errors, examples.
+- [x] **10.2** Update [lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md): REST job submission → Implemented; document `H.set_result_json`.
+- [x] **10.3** Update [scripting/README.md](/docs/H/core/subsystems/scripting/README.md) job execution section (REST submit).
+- [x] **10.4** Cross-link LUA_GUIDE, conduit README/API, SITEMAP, STRUCTURE; RELEASES note.
+- [x] **10.5** Reception note in API doc + Working Log: `enroll.freeEnrollPath` / `Enroll.FreeCourse` is product work after this surface — not Hydrogen C.
+- [x] **10.6** TODO.md / plans README: removed active entry; file → `complete/LUA_CLIENT_COMPLETE.md`.
 
 #### Exit gate / validation
 
-- [ ] Docs lint (`test_90` / project markdown norms) clean for touched files.
-- [ ] No remaining “REST job submission deferred” contradiction in lua_api.md.
+- [x] Docs lint (`test_90` / project markdown norms) clean for touched files.
+- [x] No remaining “REST job submission deferred” contradiction in lua_api.md.
 
 #### Status
 
-- **State:** pending
-- **Date:**
-- **Result:**
-- **Variances:**
+- **State:** complete
+- **Date:** 2026-08-09
+- **Result:** Operator/SPA docs + indexes; plan closed to complete/.
+- **Variances:** None. Optional Phases 11–13 remain deferred.
 
 #### Lessons learned
 
-- (fill after phase)
+- Keep client invoke under conduit docs next to query; lua_api only needs the
+  `H.set_result_json` contract plus a one-line REST pointer.
+- Reception product mapping stays out of Hydrogen C — document once in API handoff.
 
 ---
 
@@ -795,6 +802,16 @@ curl -sS -X POST "http://127.0.0.1:${PORT}/api/conduit/script" \
 - Regenerated `payload.tar.br.enc` (migrations through 1298). Indexes updated.
 - Next: Phase 10 docs handoff.
 
+### 2026-08-09 — Phase 10 docs + closeout
+
+- API: [`docs/H/api/conduit/script.md`](/docs/H/api/conduit/script.md).
+- lua_api: REST invoke Implemented; `H.set_result_json` documented; deferred list cleaned.
+- scripting/conduit READMEs, LUA_GUIDE, SITEMAP, STRUCTURE, test_46 links.
+- TODO P0 item 0 removed; plans README → complete table.
+- Reception handoff: SPA maps config path → script name (e.g. `Enroll.FreeCourse`);
+  not Hydrogen product routes.
+- Plan file → `complete/LUA_CLIENT_COMPLETE.md`. Optional 11–13 stay deferred.
+
 ---
 
 ## Related Documents
@@ -814,7 +831,7 @@ curl -sS -X POST "http://127.0.0.1:${PORT}/api/conduit/script" \
 
 ## Definition of Done (Plan Complete)
 
-- [ ] Phases 0–10 Status complete with green exit gates.
-- [ ] Blackbox test in suite; docs updated; lua_api deferred line removed.
-- [ ] No Canvas-specific C; generic invoke only.
-- [ ] File moved to `docs/H/plans/complete/LUA_CLIENT_COMPLETE.md`; plans README + TODO updated; `mkl` run.
+- [x] Phases 0–10 Status complete with green exit gates.
+- [x] Blackbox test in suite; docs updated; lua_api deferred line removed.
+- [x] No Canvas-specific C; generic invoke only.
+- [x] File moved to `docs/H/plans/complete/LUA_CLIENT_COMPLETE.md`; plans README + TODO updated; `mkl` run.

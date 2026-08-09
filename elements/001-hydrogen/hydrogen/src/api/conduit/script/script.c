@@ -812,13 +812,16 @@ enum MHD_Result handle_conduit_script_request(
     }
 
     char *job_id = conduit_script_extract_job_id(path);
-    if (job_id) {
+    if (job_id || strcmp(path, "conduit/script/") == 0) {
         if (strcmp(method, "GET") != 0) {
             free(job_id);
             return send_script_error(connection, "method_not_allowed",
                                      "Use GET for /api/conduit/script/{job_id}",
                                      MHD_HTTP_METHOD_NOT_ALLOWED);
         }
+        /* job_id is NULL only for the exact "conduit/script/" path (no id
+         * segment); handle_script_get maps that to a 400 missing_job_id
+         * rather than a misleading 404. */
         enum MHD_Result r = handle_script_get(connection, job_id);
         free(job_id);
         return r;

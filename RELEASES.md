@@ -169,6 +169,7 @@ QUALITY CHECKLIST (before completing)
 -->
 ## Contents
 
+- [August 2026](#august-2026)
 - [July 2026](#july-2026)
 - [March 2026](#march-2026)
 - [February 2026](#february-2026)
@@ -185,6 +186,10 @@ QUALITY CHECKLIST (before completing)
 - [March 2025](#march-2025)
 - [February 2025](#february-2025)
 - [July 2024](#july-2024)
+
+## August 2026
+
+- [2026-Aug-09 (Sun)](/releases/2026-08/2026-08-09.md): (H) LUA_CLIENT complete — JWT `/api/conduit/script`, Test 46, docs
 
 ## July 2026
 
