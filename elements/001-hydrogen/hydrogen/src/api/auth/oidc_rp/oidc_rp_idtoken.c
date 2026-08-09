@@ -51,6 +51,12 @@ void oidc_rp_idtoken_claims_free(OidcRpIdTokenClaims* claims) {
     scrub_and_free(claims->email);            // PII
     free(claims->preferred_username);
     free(claims->name);
+    free(claims->currency);
+    free(claims->preferred_language);
+    free(claims->referral_source);
+    free(claims->learner_type);
+    free(claims->country);
+    free(claims->age_band);
     for (size_t i = 0; i < claims->role_count && i < OIDC_RP_IDTOKEN_MAX_ROLES; ++i) {
         free(claims->roles[i]);
     }
@@ -506,6 +512,12 @@ OidcRpIdTokenError parse_payload_and_check(const char* payload_b64,
     ok &= copy_string_field(root, "email", &claims->email);
     ok &= copy_string_field(root, "preferred_username", &claims->preferred_username);
     ok &= copy_string_field(root, "name", &claims->name);
+    ok &= copy_string_field(root, "currency", &claims->currency);
+    ok &= copy_string_field(root, "preferred_language", &claims->preferred_language);
+    ok &= copy_string_field(root, "referral_source", &claims->referral_source);
+    ok &= copy_string_field(root, "learner_type", &claims->learner_type);
+    ok &= copy_string_field(root, "country", &claims->country);
+    ok &= copy_string_field(root, "age_band", &claims->age_band);
     if (!ok) {
         oidc_rp_idtoken_claims_free(claims);
         result = OIDC_RP_IDTOKEN_ERR_INTERNAL;

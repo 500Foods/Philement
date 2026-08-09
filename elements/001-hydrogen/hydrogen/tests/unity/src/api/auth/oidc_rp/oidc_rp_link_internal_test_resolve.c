@@ -221,6 +221,10 @@ void test_query_083_failed_result_returns_neg_one(void);
 /* query_084 */
 void test_query_084_success_is_non_fatal_ok(void);
 void test_query_084_null_result_is_non_fatal(void);
+/* query_143 */
+void test_query_143_success_is_non_fatal_ok(void);
+void test_query_143_null_result_is_non_fatal(void);
+void test_query_143_failed_result_is_non_fatal(void);
 
 /* -------------------------------------------------------------------------
  * oidc_rp_link_run_query
@@ -567,6 +571,37 @@ void test_query_084_null_result_is_non_fatal(void) {
 }
 
 /* -------------------------------------------------------------------------
+ * oidc_rp_link_query_143_insert_registration_meta
+ * -------------------------------------------------------------------------
+ */
+
+void test_query_143_success_is_non_fatal_ok(void) {
+    seam_push(143, true, "[{\"meta_id\":7}]", NULL);
+    OidcRpIdTokenClaims claims = make_claims(
+        "https://example.com", "sub-meta", "meta", "meta@example.com", true);
+    claims.currency = (char *)"USD";
+    claims.preferred_language = (char *)"en";
+    oidc_rp_link_query_143_insert_registration_meta(42, &claims, "Lithium");
+    TEST_ASSERT_EQUAL_INT(143, g_last_query_ref);
+}
+
+void test_query_143_null_result_is_non_fatal(void) {
+    OidcRpIdTokenClaims claims = make_claims(
+        "https://example.com", "sub-meta2", "meta2", "meta2@example.com", true);
+    /* Empty seam → NULL result; must not crash. Defaults CAD/en apply. */
+    oidc_rp_link_query_143_insert_registration_meta(43, &claims, "Lithium");
+    TEST_ASSERT_EQUAL_INT(1, g_call_count);
+}
+
+void test_query_143_failed_result_is_non_fatal(void) {
+    seam_push(143, false, NULL, "insert failed");
+    OidcRpIdTokenClaims claims = make_claims(
+        "https://example.com", "sub-meta3", "meta3", "meta3@example.com", true);
+    oidc_rp_link_query_143_insert_registration_meta(44, &claims, "Lithium");
+    TEST_ASSERT_EQUAL_INT(143, g_last_query_ref);
+}
+
+/* -------------------------------------------------------------------------
  * main
  * -------------------------------------------------------------------------
  */
@@ -612,6 +647,10 @@ int main(void) {
 
     RUN_TEST(test_query_084_success_is_non_fatal_ok);
     RUN_TEST(test_query_084_null_result_is_non_fatal);
+
+    RUN_TEST(test_query_143_success_is_non_fatal_ok);
+    RUN_TEST(test_query_143_null_result_is_non_fatal);
+    RUN_TEST(test_query_143_failed_result_is_non_fatal);
 
     return UNITY_END();
 }

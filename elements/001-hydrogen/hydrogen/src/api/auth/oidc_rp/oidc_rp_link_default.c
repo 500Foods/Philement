@@ -15,7 +15,8 @@
  *   Step 3 — Provision path (Phase 20):
  *     On email-miss (no matching account), if ProvisionDefaults.Enabled=true
  *     and all prerequisites pass (email present, verified if required, domain
- *     allowed), provision via #083 → link via #081 → #084 touch → return OK.
+ *     allowed), provision via #083 → link via #081 → #143 meta → #084 touch
+ *     → return OK.
  *
  *   Step 4 — No match:
  *     If none of the above succeed (or are configured to run), return
@@ -305,6 +306,9 @@ OidcRpLinkResult oidc_rp_link_match_email_then_provision(
                  LOG_LEVEL_ERROR, 3, new_account_id, iss_log, sub_log);
         return OIDC_RP_LINK_DB_ERROR;
     }
+
+    /* Registration meta via #143 (best-effort, write-once at first provision). */
+    oidc_rp_link_query_143_insert_registration_meta(new_account_id, claims, database);
 
     if (prov_identity_id >= 0) {
         oidc_rp_link_query_084_touch(prov_identity_id, claims->email,

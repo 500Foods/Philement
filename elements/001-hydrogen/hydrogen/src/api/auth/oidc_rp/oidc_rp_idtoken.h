@@ -110,6 +110,15 @@ typedef struct OidcRpIdTokenClaims {
     bool  email_verified;
     char* preferred_username;                        // Optional
     char* name;                                      // Optional
+    /* Band F registration attributes (Phase 27/28/29). Optional at parse
+     * time; provision path defaults currency→CAD and preferred_language→en
+     * when missing. Written once to user_registration_meta via QueryRef #143. */
+    char* currency;                                  // Optional (ISO-4217)
+    char* preferred_language;                        // Optional (locale, e.g. en)
+    char* referral_source;                           // Optional
+    char* learner_type;                              // Optional
+    char* country;                                   // Optional
+    char* age_band;                                  // Optional
     char* roles[OIDC_RP_IDTOKEN_MAX_ROLES];          // realm_access.roles (optional)
     size_t role_count;
     long  exp;                                       // Unix seconds

@@ -436,3 +436,82 @@ void oidc_rp_link_query_084_touch(int identity_id,
         free_query_result(result);
     }
 }
+
+/* -------------------------------------------------------------------------
+ * QueryRef #143 — insert user_registration_meta (Phase 29)
+ * -------------------------------------------------------------------------
+ */
+void oidc_rp_link_query_143_insert_registration_meta(int account_id,
+                                                     const OidcRpIdTokenClaims *claims,
+                                                     const char *database) {
+    if (!claims || account_id < 0) {
+        return;
+    }
+
+    const char *currency = (claims->currency && *claims->currency)
+                               ? claims->currency
+                               : "CAD";
+    const char *lang = (claims->preferred_language && *claims->preferred_language)
+                           ? claims->preferred_language
+                           : "en";
+
+    if (!claims->currency || !*claims->currency) {
+        log_this(SR_AUTH,
+                 "OIDC RP linker: missing currency claim; defaulting CAD account_id=%d",
+                 LOG_LEVEL_ALERT, 1, account_id);
+    }
+    if (!claims->preferred_language || !*claims->preferred_language) {
+        log_this(SR_AUTH,
+                 "OIDC RP linker: missing preferred_language claim; defaulting en account_id=%d",
+                 LOG_LEVEL_ALERT, 1, account_id);
+    }
+
+    json_t *params         = json_object();
+    json_t *integer_params = json_object();
+    json_t *string_params  = json_object();
+
+    json_object_set_new(integer_params, "ACCOUNTID", json_integer(account_id));
+    json_object_set_new(params, "INTEGER", integer_params);
+
+    json_object_set_new(string_params, "CURRENCY", json_string(currency));
+    json_object_set_new(string_params, "PREFERREDLANGUAGE", json_string(lang));
+
+    if (claims->referral_source && *claims->referral_source) {
+        json_object_set_new(string_params, "REFERRALSOURCE",
+                            json_string(claims->referral_source));
+    } else {
+        json_object_set_new(string_params, "REFERRALSOURCE", json_null());
+    }
+    if (claims->learner_type && *claims->learner_type) {
+        json_object_set_new(string_params, "LEARNERTYPE",
+                            json_string(claims->learner_type));
+    } else {
+        json_object_set_new(string_params, "LEARNERTYPE", json_null());
+    }
+    if (claims->country && *claims->country) {
+        json_object_set_new(string_params, "COUNTRY",
+                            json_string(claims->country));
+    } else {
+        json_object_set_new(string_params, "COUNTRY", json_null());
+    }
+    if (claims->age_band && *claims->age_band) {
+        json_object_set_new(string_params, "AGEBAND",
+                            json_string(claims->age_band));
+    } else {
+        json_object_set_new(string_params, "AGEBAND", json_null());
+    }
+    json_object_set_new(params, "STRING", string_params);
+
+    QueryResult *result = oidc_rp_link_run_query(143, database, params);
+    json_decref(params);
+
+    if (!result || !result->success) {
+        log_this(SR_AUTH,
+                 "OIDC RP linker: QueryRef #143 registration meta failed for "
+                 "account_id=%d (non-fatal)",
+                 LOG_LEVEL_ALERT, 1, account_id);
+    }
+    if (result) {
+        free_query_result(result);
+    }
+}

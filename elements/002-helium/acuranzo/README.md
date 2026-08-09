@@ -316,4 +316,17 @@ in the migrations themselves so that they get populated in the database directly
 | [1277](/elements/002-helium/acuranzo/migrations/acuranzo_1277.lua) | queries | 1.0.0 | 2026-07-23 | 4 | ✗ | QueryRef #140 - Get OAuth Refresh Token (OIDC IdP) |
 | [1278](/elements/002-helium/acuranzo/migrations/acuranzo_1278.lua) | queries | 1.0.0 | 2026-07-23 | 4 | ✗ | QueryRef #141 - Revoke OAuth Refresh Token (OIDC IdP) |
 | [1279](/elements/002-helium/acuranzo/migrations/acuranzo_1279.lua) | queries | 1.0.0 | 2026-07-23 | 4 | ✗ | QueryRef #142 - Revoke OAuth Refresh Token Family (OIDC IdP) |
-| **280** | | | | **1466** | **280** | |
+| [1280](/elements/002-helium/acuranzo/migrations/acuranzo_1280.lua) | mail_templates | 1.0.0 | 2026-07-28 | 4 | ✗ | Seed system mail templates (server_started, databases_ready, server_stopped) |
+| [1281](/elements/002-helium/acuranzo/migrations/acuranzo_1281.lua) | scripts | 1.0.0 | 2026-07-28 | 4 | ✗ | Seed Mail.Events.* handler scripts for system mail events |
+| [1282](/elements/002-helium/acuranzo/migrations/acuranzo_1282.lua) | mail_templates | 1.0.0 | 2026-07-28 | 4 | ✗ | Fix system event templates: COUNT/SUMMARY use macro defaults for debounce |
+| [1283](/elements/002-helium/acuranzo/migrations/acuranzo_1283.lua) | account_canvas_links | 1.0.0 | 2026-08-08 | 7 | ✓ | Creates the account_canvas_links table (Band E/F Phase 23/30) |
+| [1284](/elements/002-helium/acuranzo/migrations/acuranzo_1284.lua) | user_registration_meta | 1.0.0 | 2026-08-08 | 6 | ✓ | Creates the user_registration_meta table (Band F Phase 29) |
+| [1285](/elements/002-helium/acuranzo/migrations/acuranzo_1285.lua) | queries | 1.0.0 | 2026-08-08 | 4 | ✗ | QueryRef #143 - OIDC RP: Insert User Registration Meta (Phase 29) |
+| [1286](/elements/002-helium/acuranzo/migrations/acuranzo_1286.lua) | queries | 1.0.0 | 2026-08-08 | 4 | ✗ | QueryRef #144 - Canvas: Lookup Link by Account (Phase 30) |
+| [1287](/elements/002-helium/acuranzo/migrations/acuranzo_1287.lua) | queries | 1.0.0 | 2026-08-08 | 4 | ✗ | QueryRef #145 - Canvas: Link Account to Canvas User (Phase 30) |
+| [1288](/elements/002-helium/acuranzo/migrations/acuranzo_1288.lua) | queries | 1.0.0 | 2026-08-08 | 4 | ✗ | QueryRef #146 - Canvas: Touch Link (Phase 30) |
+| [1289](/elements/002-helium/acuranzo/migrations/acuranzo_1289.lua) | scripts | 1.0.2 | 2026-08-08 | 5 | ✗ | Phase 30: Provision.EnsureCanvasUser Lua + Orchestrator poll driver |
+| [1290](/elements/002-helium/acuranzo/migrations/acuranzo_1290.lua) | scripts | 1.0.4 | 2026-08-08 | 4 | ✗ | Phase 31: intro course enrollment on first Canvas provision |
+| [1291](/elements/002-helium/acuranzo/migrations/acuranzo_1291.lua) | courses | 1.0.0 | 2026-08-08 | 8 | ✓ | Phase 35: courses catalog table (Band G) |
+| [1292](/elements/002-helium/acuranzo/migrations/acuranzo_1292.lua) | course_prices | 1.0.0 | 2026-08-08 | 8 | ✓ | Phase 35: course_prices table (Band G + STRIPE_PLAN Phase 3) |
+| **293** | | | | **1532** | **293** | |

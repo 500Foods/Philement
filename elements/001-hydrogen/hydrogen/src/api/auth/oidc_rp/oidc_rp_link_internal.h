@@ -197,4 +197,23 @@ void oidc_rp_link_query_084_touch(int identity_id,
                                   bool email_verified,
                                   const char *database);
 
+/**
+ * @brief QueryRef #143 — insert user_registration_meta (Phase 29).
+ *
+ * Called once after a successful first-time provision (#083 + #081).
+ * Best-effort: failure is logged at ALERT and does not block login
+ * (account already exists; next sign-in is the #080 fast path and will
+ * not retry). Idempotent in SQL (NOT EXISTS on account_id).
+ *
+ * Missing currency / preferred_language claims fall back to CAD / en with
+ * an ALERT log. Optional claims are stored as SQL NULL when absent.
+ *
+ * @param account_id  New Hydrogen account PK from #083.
+ * @param claims      Validated ID-token claims (registration attributes).
+ * @param database    Hydrogen database name.
+ */
+void oidc_rp_link_query_143_insert_registration_meta(int account_id,
+                                                     const OidcRpIdTokenClaims *claims,
+                                                     const char *database);
+
 #endif /* OIDC_RP_LINK_INTERNAL_H */

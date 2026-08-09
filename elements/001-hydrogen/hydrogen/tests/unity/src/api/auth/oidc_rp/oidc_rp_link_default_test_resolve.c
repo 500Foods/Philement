@@ -496,6 +496,7 @@ void test_default_provision_happy_path(void) {
     seam_push(82, true, miss082,  NULL);
     seam_push(83, true, prov083,  NULL);
     seam_push(81, true, link081,  NULL);
+    seam_push(143, true, "[{\"meta_id\":1}]", NULL);
     seam_push(84, true, touch084, NULL);
     free(miss080);
     free(miss082);
@@ -548,6 +549,7 @@ void test_default_provision_empty_allowlist_accepts_any(void) {
     seam_push(82, true, miss082,  NULL);
     seam_push(83, true, prov083,  NULL);
     seam_push(81, true, link081,  NULL);
+    seam_push(143, true, "[{\"meta_id\":1}]", NULL);
     seam_push(84, true, touch084, NULL);
     free(miss080);
     free(miss082);
