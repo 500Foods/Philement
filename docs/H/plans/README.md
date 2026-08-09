@@ -32,6 +32,10 @@ Hydrogen as OIDC **Identity Provider** (separate from RP). Phases 0–15 complet
 [OIDC_IDP_OPERATOR.md](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md). Remaining: Phase 16
 closeout items if any, Phase 17 optional post-MVP.
 
+### [LUA CLIENT (script invoke)](/docs/H/plans/LUA_CLIENT.md)
+
+Client-facing REST to run named DB Lua scripts (conduit-style), with sync wait and JSON results. Closes the gap left when LUA_PLAN deferred REST job submission. Unblocks SPA paths (e.g. Reception free-enroll) without product-specific C endpoints.
+
 ### [MAIL RELAY PLAN](/docs/H/plans/MAILRELAY_PLAN.md)
 
 SMTP mail relay subsystem. Core outbound/API/Lua/OTP delivered; later phases (UI, inbound, ops) remain.

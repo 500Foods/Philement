@@ -27,6 +27,7 @@
  #include "conduit/alt_query/alt_query.h"
  #include "conduit/alt_queries/alt_queries.h"
  #include "conduit/status/status.h"
+#include "conduit/script/script.h"
 #include "mailrelay/status/status.h"
 #include "mailrelay/send/send.h"
 #include "mailrelay/preview/preview.h"
@@ -212,6 +213,8 @@ bool register_api_endpoints(void) {
         log_this(SR_API, "― %s/conduit/auth_chats", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/auth_chat/stream", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/status", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/conduit/script", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/conduit/script/{job_id}", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/mailrelay/status", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/mailrelay/send", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/mailrelay/preview", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
@@ -350,16 +353,22 @@ bool is_api_request(const char *url) {
         "conduit/auth_chat",
         "conduit/auth_chats",
         "conduit/auth_chat/stream",
+        "conduit/script",
         "reporting/image_scale",
         NULL  // Sentinel
     };
-
+    
     for (int i = 0; protected_endpoints[i] != NULL; i++) {
         if (strcmp(path, protected_endpoints[i]) == 0) {
             return true;
         }
     }
 
+    /* GET /api/conduit/script/{job_id} */
+    if (strncmp(path, "conduit/script/", 15) == 0) {
+        return true;
+    }
+    
     return false;
 }
 
@@ -399,16 +408,17 @@ bool is_api_request(const char *url) {
         "conduit/auth_chat",
         "conduit/auth_chats",
         "conduit/auth_chat/stream",
+        "conduit/script",
         "reporting/image_scale",
         NULL  // Sentinel
     };
-
+    
     for (int i = 0; json_endpoints[i] != NULL; i++) {
         if (strcmp(path, json_endpoints[i]) == 0) {
             return true;
         }
     }
-
+    
     return false;
 }
 
@@ -766,6 +776,11 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     else if (strcmp(path, "conduit/status") == 0) {
         return handle_conduit_status_request(connection, url, method, upload_data,
                                            upload_data_size, con_cls);
+    }
+    else if (strcmp(path, "conduit/script") == 0 ||
+             strncmp(path, "conduit/script/", 15) == 0) {
+        return handle_conduit_script_request(connection, url, method, upload_data,
+                                             upload_data_size, con_cls, path);
     }
     else if (strcmp(path, "mailrelay/status") == 0) {
         return handle_mailrelay_status_request(connection, url, method, upload_data,

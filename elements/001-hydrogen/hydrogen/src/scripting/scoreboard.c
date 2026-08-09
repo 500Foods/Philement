@@ -75,6 +75,16 @@ void entry_clear_owned(ScoreboardEntry* entry) {
         free(entry->result_location);
         entry->result_location = NULL;
     }
+    // LUA_CLIENT Phase 1: inline JSON body.
+    if (entry->result_json) {
+        free(entry->result_json);
+        entry->result_json = NULL;
+    }
+    // LUA_CLIENT Phase 5: REST submitter subject.
+    if (entry->submitted_by) {
+        free(entry->submitted_by);
+        entry->submitted_by = NULL;
+    }
 }
 
 // Helper: zero a timespec to "not set".
@@ -335,13 +345,17 @@ ScoreboardEntry* scoreboard_find(Scoreboard* sb, const char* job_id) {
             copy->error_traceback = match->error_traceback ? strdup(match->error_traceback) : NULL;
             copy->result_type = match->result_type ? strdup(match->result_type) : NULL;
             copy->result_location = match->result_location ? strdup(match->result_location) : NULL;
+            copy->result_json = match->result_json ? strdup(match->result_json) : NULL;
+            copy->submitted_by = match->submitted_by ? strdup(match->submitted_by) : NULL;
             if ((match->script_name && !copy->script_name)
                 || (match->params_json && !copy->params_json)
                 || (match->current_state && !copy->current_state)
                 || (match->error_message && !copy->error_message)
                 || (match->error_traceback && !copy->error_traceback)
                 || (match->result_type && !copy->result_type)
-                || (match->result_location && !copy->result_location)) {
+                || (match->result_location && !copy->result_location)
+                || (match->result_json && !copy->result_json)
+                || (match->submitted_by && !copy->submitted_by)) {
                 // strdup failed; abandon the copy.
                 entry_clear_owned(copy);
                 free(copy);
@@ -608,13 +622,19 @@ bool scoreboard_list(Scoreboard* sb,
             ? strdup(sb->entries[i].result_type) : NULL;
         copy->result_location = sb->entries[i].result_location
             ? strdup(sb->entries[i].result_location) : NULL;
+        copy->result_json = sb->entries[i].result_json
+            ? strdup(sb->entries[i].result_json) : NULL;
+        copy->submitted_by = sb->entries[i].submitted_by
+            ? strdup(sb->entries[i].submitted_by) : NULL;
         if ((sb->entries[i].script_name && !copy->script_name)
             || (sb->entries[i].params_json && !copy->params_json)
             || (sb->entries[i].current_state && !copy->current_state)
             || (sb->entries[i].error_message && !copy->error_message)
             || (sb->entries[i].error_traceback && !copy->error_traceback)
             || (sb->entries[i].result_type && !copy->result_type)
-            || (sb->entries[i].result_location && !copy->result_location)) {
+            || (sb->entries[i].result_location && !copy->result_location)
+            || (sb->entries[i].result_json && !copy->result_json)
+            || (sb->entries[i].submitted_by && !copy->submitted_by)) {
             // strdup failure: clean up this entry and everything
             // before it.
             scoreboard_entry_free(copy);
@@ -893,6 +913,86 @@ bool scoreboard_update_result(Scoreboard* sb, const char* job_id,
         if (result_location && result_location[0] != '\0') {
             entry->result_location = strdup(result_location);
             if (!entry->result_location) {
+                pthread_mutex_unlock(&sb->mutex);
+                return false;
+            }
+        }
+        pthread_mutex_unlock(&sb->mutex);
+        return true;
+    }
+    pthread_mutex_unlock(&sb->mutex);
+    return false;
+}
+
+/*
+ * LUA_CLIENT Phase 1: store inline JSON result body.
+ */
+bool scoreboard_update_result_json(Scoreboard* sb, const char* job_id,
+                                   const char* result_json) {
+    if (!sb || !job_id) {
+        return false;
+    }
+
+    if (result_json && result_json[0] != '\0') {
+        size_t len = strlen(result_json);
+        size_t cap = (size_t)SCOREBOARD_RESULT_JSON_MAX;
+        if (app_config && app_config->scripting.ClientInvokeMaxResultBytes > 0) {
+            size_t cfg = (size_t)app_config->scripting.ClientInvokeMaxResultBytes;
+            if (cfg < cap) {
+                cap = cfg;
+            }
+        }
+        if (len > cap) {
+            return false;
+        }
+    }
+
+    pthread_mutex_lock(&sb->mutex);
+    for (size_t i = 0; i < sb->count; i++) {
+        ScoreboardEntry* entry = &sb->entries[i];
+        if (strcmp(entry->job_id, job_id) != 0) {
+            continue;
+        }
+        if (entry->result_json) {
+            free(entry->result_json);
+            entry->result_json = NULL;
+        }
+        if (result_json && result_json[0] != '\0') {
+            entry->result_json = strdup(result_json);
+            if (!entry->result_json) {
+                pthread_mutex_unlock(&sb->mutex);
+                return false;
+            }
+        }
+        pthread_mutex_unlock(&sb->mutex);
+        return true;
+    }
+    pthread_mutex_unlock(&sb->mutex);
+    return false;
+}
+
+/*
+ * LUA_CLIENT Phase 5: store JWT subject for REST-submitted jobs.
+ */
+bool scoreboard_set_submitted_by(Scoreboard* sb, const char* job_id,
+                                 const char* submitted_by) {
+    if (!sb || !job_id) {
+        return false;
+    }
+
+    pthread_mutex_lock(&sb->mutex);
+    for (size_t i = 0; i < sb->count; i++) {
+        ScoreboardEntry* entry = &sb->entries[i];
+        if (strcmp(entry->job_id, job_id) != 0) {
+            continue;
+        }
+        if (entry->submitted_by) {
+            free(entry->submitted_by);
+            entry->submitted_by = NULL;
+        }
+        if (submitted_by && submitted_by[0] != '\0') {
+            entry->submitted_by = strdup(submitted_by);
+            if (!entry->submitted_by) {
                 pthread_mutex_unlock(&sb->mutex);
                 return false;
             }

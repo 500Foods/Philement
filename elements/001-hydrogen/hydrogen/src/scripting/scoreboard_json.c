@@ -168,6 +168,7 @@ json_t* scripting_scoreboard_snapshot_json(size_t max_jobs, bool include_params_
                 if (entry->result_location && entry->result_location[0] != '\0') {
                     json_object_set_new(job_obj, "result_location", json_string(entry->result_location));
                 }
+                /* LUA_CLIENT: omit result_json from system info (can be large). */
 
                 json_array_append_new(jobs, job_obj);
                 job_index++;

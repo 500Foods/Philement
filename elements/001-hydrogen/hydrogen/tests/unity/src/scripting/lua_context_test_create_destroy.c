@@ -118,6 +118,10 @@ void test_lua_create_context_installs_H_table(void) {
     TEST_ASSERT_TRUE_MESSAGE(lua_isfunction(L, -1), "H.set_result");
     lua_pop(L, 1);
 
+    lua_getfield(L, -1, "set_result_json");
+    TEST_ASSERT_TRUE_MESSAGE(lua_isfunction(L, -1), "H.set_result_json");
+    lua_pop(L, 1);
+
     // Phase 11: H.sleep and H.shutdown_requested are top-level
     // functions on H, replacing their Phase 3 placeholder sub-tables.
     lua_getfield(L, -1, "sleep");

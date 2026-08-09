@@ -321,6 +321,7 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [test_42_oidc_rp.md](/docs/H/tests/test_42_oidc_rp.md): OIDC Relying Party - end-to-end authentication flow testing
 - [test_45_oidc_idp.md](/docs/H/tests/test_45_oidc_idp.md): OIDC Identity Provider - discovery, authorize/login, PKCE token, userinfo, refresh
 - [test_43_scripting.md](/docs/H/tests/test_43_scripting.md): Scripting subsystem end-to-end testing
+- [test_46_conduit_script.md](/docs/H/tests/test_46_conduit_script.md): Conduit script invoke blackbox (JWT + Api.Echo)
 - [test_50_conduit_query.md](/docs/H/tests/test_50_conduit_query.md): Single public query endpoint testing
 - [test_51_conduit_queries.md](/docs/H/tests/test_51_conduit_queries.md): Conduit multiple queries endpoint testing
 - [test_52_conduit_auth_query.md](/docs/H/tests/test_52_conduit_auth_query.md): Authenticated single query endpoint

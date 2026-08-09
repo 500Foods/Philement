@@ -603,6 +603,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_45_oidc_idp.sh](/elements/001-hydrogen/hydrogen/tests/test_45_oidc_idp.sh) - OIDC Identity Provider - discovery, authorize/login, PKCE token, userinfo, refresh
 - [tests/test_50_conduit_query.sh](/elements/001-hydrogen/hydrogen/tests/test_50_conduit_query.sh) - Conduit single query endpoint testing (public queries across 7 database engines)
 - [tests/test_51_conduit_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_51_conduit_queries.sh) - Conduit multiple queries endpoint testing (batch queries across 7 database engines)
+- [tests/test_46_conduit_script.sh](/elements/001-hydrogen/hydrogen/tests/test_46_conduit_script.sh) - Conduit script invoke blackbox (JWT POST/GET /api/conduit/script, Api.Echo, 7 engines)
 - [tests/test_52_conduit_auth_query.sh](/elements/001-hydrogen/hydrogen/tests/test_52_conduit_auth_query.sh) - Conduit authenticated single query endpoint testing (JWT-protected queries across 7 database engines)
 - [tests/test_53_conduit_auth_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_53_conduit_auth_queries.sh) - Conduit authenticated multiple queries endpoint testing (batch authenticated queries across 7 database engines)
 - [tests/test_54_conduit_alt_query.sh](/elements/001-hydrogen/hydrogen/tests/test_54_conduit_alt_query.sh) - Conduit alt single query endpoint testing (cross-database single queries with JWT authentication)
