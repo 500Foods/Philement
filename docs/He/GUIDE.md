@@ -989,17 +989,18 @@ These templates provide a starting point for common migration patterns. Copy, mo
 ## Best Practices
 
 1. **Always include reverse migrations** for testing (and use `${DROP_CHECK}` for table drops).
-2. **Use diagram migrations** for every schema change (table, significant column change). Include `object_ref` and `${COMMON_DIAGRAM}`.
-3. **Test migrations** on all supported databases, with primary focus on PostgreSQL 15 / YugabyteDB (see Hydrogen `test_38_yugabytedb_migrations.sh` and `test_32_postgres_migrations.sh`). **Always** smoke multi-row seeds on SQLite and DB2 — that is where portable-SQL mistakes surface first.
-4. **Use descriptive names** and summaries. Summaries should explain purpose, columns, indexes, and any engine-specific behavior.
-5. **Include CHANGELOG** entries at the top of every migration file.
-6. **Leverage macros** for database portability — never hard-code engine-specific syntax except in rare guarded `if engine == 'xxx'` blocks.
-7. **Embed content directly** - no escaping needed. Use `[=[ ... ]=]` for the `code` and `summary` blocks.
-8. **Put the state transition UPDATE inside the embedded `code`** for forward and reverse migrations.
-9. **Use `${SUBQUERY_DELIMITER}`** between statements inside the embedded code.
-10. **Keep reverse migrations safe** — for data-changing reverses, document manual prerequisites (e.g. "delete or assign passwords before reversing").
-11. **Multi-row seeds** — copy `acuranzo_1280` (`INSERT … VALUES (…), (…);` + `${COMMON_VALUES}`). Never invent `VALUES AS v(cols)` or untested `UNION ALL` row sources (see **Portable Multi-Row Data Seeds**).
-12. **DB2 REORG** — after structural `ADD`/`DROP`/`ALTER COLUMN`, use `${REORG}` (especially **after** DROP on reverse so TestMigration’s next reverse can DML the table). See **DB2: `${REORG}` after ADD/DROP COLUMN**.
+2. **Forward ↔ reverse exact mirror** — reverse undoes only what forward did (CREATE↔DROP, INSERT↔DELETE same keys/tables). Zero-row reverse DML is a migration bug; DB2 SQL0100W is the intended alarm. See **Forward/Reverse Symmetry**. Never paper this over in the engine.
+3. **Use diagram migrations** for every schema change (table, significant column change). Include `object_ref` and `${COMMON_DIAGRAM}`.
+4. **Test migrations** on all supported databases, with primary focus on PostgreSQL 15 / YugabyteDB (see Hydrogen `test_38_yugabytedb_migrations.sh` and `test_32_postgres_migrations.sh`). **Always** smoke multi-row seeds on SQLite and DB2 — that is where portable-SQL mistakes surface first. DB2 reverse is where symmetry mistakes surface.
+5. **Use descriptive names** and summaries. Summaries should explain purpose, columns, indexes, and any engine-specific behavior.
+6. **Include CHANGELOG** entries at the top of every migration file.
+7. **Leverage macros** for database portability — never hard-code engine-specific syntax except in rare guarded `if engine == 'xxx'` blocks.
+8. **Embed content directly** - no escaping needed. Use `[=[ ... ]=]` for the `code` and `summary` blocks.
+9. **Put the state transition UPDATE inside the embedded `code`** for forward and reverse migrations.
+10. **Use `${SUBQUERY_DELIMITER}`** between statements inside the embedded code.
+11. **Keep reverse migrations safe** — for data-changing reverses, document manual prerequisites (e.g. "delete or assign passwords before reversing").
+12. **Multi-row seeds** — copy `acuranzo_1280` (`INSERT … VALUES (…), (…);` + `${COMMON_VALUES}`). Never invent `VALUES AS v(cols)` or untested `UNION ALL` row sources (see **Portable Multi-Row Data Seeds**).
+13. **DB2 REORG** — after structural `ADD`/`DROP`/`ALTER COLUMN`, use `${REORG}` (especially **after** DROP on reverse so TestMigration’s next reverse can DML the table). See **DB2: `${REORG}` after ADD/DROP COLUMN**.
 
 ## Migration Workflow
 
