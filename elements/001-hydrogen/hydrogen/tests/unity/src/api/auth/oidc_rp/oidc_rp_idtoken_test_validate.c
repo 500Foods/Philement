@@ -226,7 +226,10 @@ static char* make_standard_payload(const char* iss,
         "{\"iss\":\"%s\",\"sub\":\"user-123\",\"aud\":%s,"
         "\"iat\":%ld,\"exp\":%ld,\"nonce\":\"%s\","
         "\"email\":\"alice@example.com\",\"email_verified\":true,"
-        "\"preferred_username\":\"alice\",\"name\":\"Alice Example\"}",
+        "\"preferred_username\":\"alice\",\"name\":\"Alice Example\","
+        "\"currency\":\"CAD\",\"preferred_language\":\"en\","
+        "\"referral_source\":\"search\",\"learner_type\":\"student\","
+        "\"country\":\"CA\",\"age_band\":\"25_34\"}",
         iss, aud_json_value, iat, exp, nonce);
     TEST_ASSERT_TRUE(rc > 0);
     return buf;
@@ -379,6 +382,12 @@ void test_validate_happy_path(void) {
     TEST_ASSERT_TRUE(claims->email_verified);
     TEST_ASSERT_EQUAL_STRING("alice", claims->preferred_username);
     TEST_ASSERT_EQUAL_STRING("Alice Example", claims->name);
+    TEST_ASSERT_EQUAL_STRING("CAD", claims->currency);
+    TEST_ASSERT_EQUAL_STRING("en", claims->preferred_language);
+    TEST_ASSERT_EQUAL_STRING("search", claims->referral_source);
+    TEST_ASSERT_EQUAL_STRING("student", claims->learner_type);
+    TEST_ASSERT_EQUAL_STRING("CA", claims->country);
+    TEST_ASSERT_EQUAL_STRING("25_34", claims->age_band);
     TEST_ASSERT_EQUAL_INT(0, (int)claims->role_count);
     TEST_ASSERT_TRUE(claims->exp > now);
 

@@ -11,8 +11,9 @@
  *         PROVISION_DISALLOWED_EMAIL.
  *   3. QueryRef #083 — provision new accounts row (password_hash = NULL).
  *   4. QueryRef #081 — link the new account to the OIDC identity.
- *   5. QueryRef #084 — touch last_seen_at.
- *   6. ProvisionDefaults.DefaultRoles → account_roles INSERT is not wired yet
+ *   5. QueryRef #143 — insert user_registration_meta (best-effort, once).
+ *   6. QueryRef #084 — touch last_seen_at.
+ *   7. ProvisionDefaults.DefaultRoles → account_roles INSERT is not wired yet
  *      (JWT role-mapping in oidc_rp_roles.c is separate and live).
  *
  * The "orphan account" path (step 3 succeeds but step 4 fails) is logged
@@ -175,13 +176,16 @@ OidcRpLinkResult oidc_rp_link_provision_only(const OIDCRPProviderConfig *provide
         return OIDC_RP_LINK_DB_ERROR;
     }
 
-    /* Step 5: touch via #084 (best-effort). */
+    /* Step 5: registration meta via #143 (best-effort, write-once). */
+    oidc_rp_link_query_143_insert_registration_meta(new_account_id, claims, database);
+
+    /* Step 6: touch via #084 (best-effort). */
     if (new_identity_id >= 0) {
         oidc_rp_link_query_084_touch(new_identity_id, claims->email,
                                      claims->email_verified, database);
     }
 
-    /* Step 6: DefaultRoles not yet written to account_roles (see docs/H/TODO.md). */
+    /* Step 7: DefaultRoles not yet written to account_roles (see docs/H/TODO.md). */
     if (linking->provision_defaults.default_role_count > 0) {
         log_this(SR_AUTH,
                  "OIDC RP linker PROVISION_ONLY: %zu default roles configured for "

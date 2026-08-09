@@ -282,6 +282,7 @@ void test_provision_only_happy_path_provisions_account(void) {
     seam_push(80, true, miss,   NULL);
     seam_push(83, true, prov,   NULL);
     seam_push(81, true, link_r, NULL);
+    seam_push(143, true, "[{\"meta_id\":1}]", NULL);
     seam_push(84, true, touch,  NULL);
     free(miss); free(prov); free(link_r); free(touch);
 
@@ -291,7 +292,7 @@ void test_provision_only_happy_path_provisions_account(void) {
     TEST_ASSERT_EQUAL(OIDC_RP_LINK_OK, r);
     TEST_ASSERT_NOT_NULL(account);
     TEST_ASSERT_EQUAL_INT(101, account->id);
-    TEST_ASSERT_EQUAL_INT(4, g_call_count);
+    TEST_ASSERT_EQUAL_INT(5, g_call_count);
     TEST_ASSERT_EQUAL_INT(84, g_last_query_ref);
 
     free_account_info(account);
@@ -310,6 +311,7 @@ void test_provision_only_no_allowlist_accepts_any_domain(void) {
     seam_push(80, true, miss,   NULL);
     seam_push(83, true, prov,   NULL);
     seam_push(81, true, link_r, NULL);
+    seam_push(143, true, "[{\"meta_id\":1}]", NULL);
     seam_push(84, true, touch,  NULL);
     free(miss); free(prov); free(link_r); free(touch);
 
@@ -337,6 +339,7 @@ void test_provision_only_domain_match_is_case_insensitive(void) {
     seam_push(80, true, miss,   NULL);
     seam_push(83, true, prov,   NULL);
     seam_push(81, true, link_r, NULL);
+    seam_push(143, true, "[{\"meta_id\":1}]", NULL);
     seam_push(84, true, touch,  NULL);
     free(miss); free(prov); free(link_r); free(touch);
 
@@ -420,6 +423,7 @@ void test_provision_only_unverified_email_allowed_when_not_required(void) {
     seam_push(80, true, miss,   NULL);
     seam_push(83, true, prov,   NULL);
     seam_push(81, true, link_r, NULL);
+    seam_push(143, true, "[{\"meta_id\":1}]", NULL);
     seam_push(84, true, touch,  NULL);
     free(miss); free(prov); free(link_r); free(touch);
 
