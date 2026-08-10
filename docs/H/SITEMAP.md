@@ -131,7 +131,6 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [OIDC_IDP.md](/docs/H/plans/OIDC_IDP.md): Hydrogen as OIDC Identity Provider (Phases 0–15 complete; Phase 16 docs)
 - [UNITY_ASAN_PLAN.md](/docs/H/plans/UNITY_ASAN_PLAN.md): Separate ASAN Unity test variant plan
 
-
 ### Folder: /docs/H/plans/complete
 
 - [README.md](/docs/H/plans/complete/README.md): Index of completed plans

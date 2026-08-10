@@ -217,7 +217,15 @@ scripting_assert_log_not_contains() {
 scripting_count_log_matches() {
     local log_file="$1"
     local needle="$2"
-    "${GREP}" -c -F "${needle}" "${log_file}" 2>/dev/null | head -1 || echo "0"
+    local count
+    # Single integer only: grep -c may print "0" with exit 1 (no match); avoid
+    # multiline/pipefail glitches that break [[ tick_count -ge 1 ]].
+    count=$("${GREP}" -c -F "${needle}" "${log_file}" 2>/dev/null || true)
+    count=$(printf '%s' "${count}" | tr -d '\r' | head -n 1)
+    if [[ -z "${count}" || ! "${count}" =~ ^[0-9]+$ ]]; then
+        count=0
+    fi
+    printf '%s\n' "${count}"
 }
 
 # Run the full Orchestrator lifecycle for one engine/config in the
