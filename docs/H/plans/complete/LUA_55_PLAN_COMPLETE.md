@@ -23,7 +23,7 @@ Manual incompatibilities: [§8](https://www.lua.org/manual/5.5/manual.html#8).
 ### Testing policy
 
 | Layer | When | What |
-|-------|------|------|
+| ------- | ------ | ------ |
 | **Unity** | After C API changes (Phase 2) | Scripting suite, especially dump/require/hook/gc |
 | **Blackbox** | Phase 3 | test_43, test_46; migration 32–38 (or agreed subset) |
 | **Lint** | After C / shell / docs | `mkp`, `mks`, test_98 as needed |
@@ -95,7 +95,7 @@ Host today resolves **5.4**. Lua 5.5 is released with a short §8 break list; th
 embed surface is small but non-trivial:
 
 | Risk | Where |
-|------|--------|
+| ------ | -------- |
 | `lua_newstate` third arg (seed) | `lua_context.c`, `database/migration/lua.c` |
 | `lua_dump` extra final writer call + stack rules | `bytecode_dump_writer` / scoreboard cache |
 | Bytecode major incompatibility | In-process source_cache dumps only (restart clears) |
@@ -112,7 +112,7 @@ language breakage is near zero (no `global` identifier; for-loop vars not mutate
 ### Present
 
 | Piece | Notes |
-|-------|--------|
+| ------- | -------- |
 | Link | `pkg_check_modules(LUA REQUIRED lua)` → 5.4.0 on this host |
 | States | `lua_newstate(lua_mmap_alloc, NULL)` ×2 |
 | Sandbox | `luaL_openlibs` then null dangerous globals |
@@ -127,7 +127,7 @@ language breakage is near zero (no `global` identifier; for-loop vars not mutate
 Filled in Phase 0. Defaults below are the intended lock if Phase 0 agrees:
 
 | Topic | Decision |
-|-------|----------|
+| ------- | ---------- |
 | Target | Lua **5.5.x** (prefer distro latest patch, e.g. 5.5.1) |
 | Support window | **5.5 only** — drop 5.4 |
 | CMake | Prefer versioned module if available (`lua5.5` / `lua-5.5`); else `lua` after host upgrade; fail configure if `LUA_VERSION_NUM < 505` |
@@ -144,7 +144,7 @@ Filled in Phase 0. Defaults below are the intended lock if Phase 0 agrees:
 ## Phase Groups
 
 | Group | Phases | Theme |
-|-------|--------|--------|
+| ------- | -------- | -------- |
 | A | 0 | Design lock + host readiness |
 | B | 1 | Build / link / dependency probe |
 | C | 2 | C API + Unity |
@@ -182,8 +182,6 @@ to `/usr/local` (bin + static `liblua.a` + headers + `lua.pc`). System Fedora
 
 #### Lessons learned
 
-_(empty)_
-
 ---
 
 ### Phase 1: CMake + Dependency Probe
@@ -212,8 +210,6 @@ so static `/usr/local/lib/liblua.a` wins over Fedora `liblua.so.5.4`. Regular
 binary contains `lua_newstate` / `luaL_makeseed` and string `Lua 5.5`.
 
 #### Lessons learned
-
-_(empty)_
 
 ---
 
@@ -247,8 +243,6 @@ _(empty)_
 No instruction_count rebaseline needed.
 
 #### Lessons learned
-
-_(empty)_
 
 ---
 
@@ -285,8 +279,6 @@ _(empty)_
 
 #### Lessons learned
 
-_(empty)_
-
 ---
 
 ### Phase 4: Docs + Closeout
@@ -316,14 +308,12 @@ _(empty)_
 
 #### Lessons learned
 
-_(empty)_
-
 ---
 
 ## Optional follow-ups (out of plan)
 
 | Item | Why defer |
-|------|-----------|
+| ------ | ----------- |
 | `luaL_openselectedlibs` sandbox | Behavior-preserving cleanup only |
 | Adopt `global` in new scripts | Style; not required |
 | `table.create` in hot Lua | Micro-opt |

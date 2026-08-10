@@ -8,6 +8,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.3 - 2026-08-09 - Orchestrator: ${SCHEMA}scripts (not lithium), per-tick log, shutdown wording (see also 1299)
 -- 1.0.2 - 2026-08-08 - DB2: VALUES seed (not SELECT/WHERE NOT EXISTS) avoids SQL1585N
 -- 1.0.1 - 2026-08-08 - DB2: ${DUMMY_TABLE} before WHERE NOT EXISTS on script seed
 -- 1.0.0 - 2026-08-08 - Initial EnsureCanvasUser + orchestrator submit every 60s
@@ -401,7 +402,7 @@ H.set_current_state("done")
             UPDATE ${SCHEMA}scripts
             SET code = [==[
 -- Orchestrators.Orchestrator (500 Courses — Phase 30 driver)
--- Periodic Provision.EnsureCanvasUser submit; quiet tick logging.
+-- Periodic Provision.EnsureCanvasUser submit; per-iteration tick for lifecycle probes.
 
 local function qrows(res)
     if type(res) ~= "table" then return nil end
@@ -432,7 +433,7 @@ local function submit_ensure()
         return
     end
     local _qr, err = H.query_sync([[
-        SELECT code FROM lithium.scripts
+        SELECT code FROM ${SCHEMA}scripts
         WHERE group_name = 'Provision' AND script_name = 'EnsureCanvasUser'
         LIMIT 1
     ]])
@@ -472,17 +473,15 @@ while not H.shutdown_requested() do
             H.log.warn("Orchestrator: ensure pcall err: %s", tostring(err))
         end
     end
-    if iterations % 60 == 0 then
-        local jobs = H.scoreboard.list()
-        H.log.info("Orchestrator: tick %d, %d job(s)", iterations, #jobs)
-    end
+    local jobs = H.scoreboard.list()
+    H.log.info("Orchestrator: tick %d, %d job(s)", iterations, #jobs)
     H.sleep(TICK_MS)
 end
 
-H.log.info("Orchestrator: shutdown after %d iteration(s)", iterations)
+H.log.info("Orchestrator: shutdown requested, exiting after %d iteration(s)", iterations)
             ]==],
                 updated_at = ${NOW},
-                summary = '500 Courses Orchestrator: drives Provision.EnsureCanvasUser every 60s'
+                summary = '500 Courses Orchestrator: EnsureCanvasUser every 60s (schema-safe scripts)'
             WHERE group_name = 'Orchestrators'
               AND script_name = 'Orchestrator';
 
