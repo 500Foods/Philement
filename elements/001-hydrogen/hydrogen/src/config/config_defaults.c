@@ -72,6 +72,7 @@ bool initialize_config_defaults(AppConfig* config) {
     initialize_config_defaults_notify(config);
     initialize_config_defaults_scripting(config);
     initialize_config_defaults_reporting(config);
+    initialize_config_defaults_webhooks(config);
 
     log_this(SR_CONFIG, "― Successfully initialized configuration defaults", LOG_LEVEL_DEBUG, 0);
     return true;
@@ -619,5 +620,14 @@ void initialize_config_defaults_reporting(AppConfig* config) {
         config->reporting.AllowedFormats = NULL;
 
         log_this(SR_CONFIG, "――― Applied config defaults for Reporting", LOG_LEVEL_DEBUG, 0);
+    }
+}
+
+void initialize_config_defaults_webhooks(AppConfig* config) {
+    if (config) {
+        memset(&config->webhooks, 0, sizeof(config->webhooks));
+        config->webhooks.Enabled = false;
+        config->webhooks.HookCount = 0;
+        log_this(SR_CONFIG, "――― Applied config defaults for Webhooks", LOG_LEVEL_DEBUG, 0);
     }
 }

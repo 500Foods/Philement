@@ -28,6 +28,7 @@
  #include "conduit/alt_queries/alt_queries.h"
  #include "conduit/status/status.h"
 #include "conduit/script/script.h"
+#include "conduit/webhook/webhook.h"
 #include "mailrelay/status/status.h"
 #include "mailrelay/send/send.h"
 #include "mailrelay/preview/preview.h"
@@ -80,6 +81,48 @@ enum MHD_Result handle_exact_api_files_local_request(void *cls, struct MHD_Conne
                                       upload_data_size, con_cls);
 }
 
+bool is_webhook_alias_endpoint(const char *url) {
+    const char *prefix = "/webhook/";
+
+    if (!url || strncmp(url, prefix, 9) != 0 || url[9] == '\0') {
+        return false;
+    }
+    return strchr(url + 9, '/') == NULL;
+}
+
+enum MHD_Result handle_webhook_alias_request(void *cls,
+                                             struct MHD_Connection *connection,
+                                             const char *url,
+                                             const char *method,
+                                             const char *version,
+                                             const char *upload_data,
+                                             size_t *upload_data_size,
+                                             void **con_cls) {
+    char *hook;
+    char path_buf[64];
+    enum MHD_Result r;
+
+    (void)cls;
+    (void)version;
+    hook = conduit_webhook_extract_hook_from_url(url);
+    if (!hook) {
+        return handle_conduit_webhook_request(connection, url, method,
+                                              upload_data, upload_data_size,
+                                              con_cls, "webhook/");
+    }
+    if (strlen(hook) + 9 >= sizeof(path_buf)) {
+        free(hook);
+        return handle_conduit_webhook_request(connection, url, method,
+                                              upload_data, upload_data_size,
+                                              con_cls, "webhook/");
+    }
+    snprintf(path_buf, sizeof(path_buf), "webhook/%s", hook);
+    free(hook);
+    r = handle_conduit_webhook_request(connection, url, method, upload_data,
+                                       upload_data_size, con_cls, path_buf);
+    return r;
+}
+
 bool init_api_endpoints(void) {
     log_this(SR_API, "Initializing API endpoints", LOG_LEVEL_DEBUG, 0);
 
@@ -128,6 +171,7 @@ bool register_api_endpoints(void) {
     // Unregister existing endpoints to allow re-registration
     unregister_web_endpoint("/api/version");
     unregister_web_endpoint("/api/files/local");
+    unregister_web_endpoint("/webhook/");
     unregister_web_endpoint(app_config->api.prefix);
 
     // Register hardcoded /api/version endpoint with higher precedence FIRST
@@ -159,6 +203,21 @@ bool register_api_endpoints(void) {
     }
 
     log_this(SR_API, "Registered hardcoded endpoint: /api/files/local", LOG_LEVEL_DEBUG, 0);
+
+    {
+        WebServerEndpoint webhook_alias_endpoint = {
+            .prefix = "/webhook/",
+            .validator = is_webhook_alias_endpoint,
+            .handler = handle_webhook_alias_request
+        };
+        if (!register_web_endpoint(&webhook_alias_endpoint)) {
+            log_this(SR_API, "Failed to register /webhook/{hook} alias",
+                     LOG_LEVEL_ERROR, 0);
+            return false;
+        }
+        log_this(SR_API, "Registered hardcoded endpoint: /webhook/{hook}",
+                 LOG_LEVEL_DEBUG, 0);
+    }
 
     // Create general API endpoint registration
     WebServerEndpoint api_endpoint = {
@@ -215,6 +274,9 @@ bool register_api_endpoints(void) {
         log_this(SR_API, "― %s/conduit/status", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/script", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/script/{job_id}", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/conduit/webhook/{hook}", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/webhook/{hook} (alias)", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― /webhook/{hook} (alias)", LOG_LEVEL_DEBUG, 0);
         log_this(SR_API, "― %s/mailrelay/status", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/mailrelay/send", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/mailrelay/preview", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
@@ -782,6 +844,11 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
         return handle_conduit_script_request(connection, url, method, upload_data,
                                              upload_data_size, con_cls, path);
     }
+    else if (strncmp(path, "conduit/webhook/", 16) == 0 ||
+             strncmp(path, "webhook/", 8) == 0) {
+        return handle_conduit_webhook_request(connection, url, method, upload_data,
+                                              upload_data_size, con_cls, path);
+    }
     else if (strcmp(path, "mailrelay/status") == 0) {
         return handle_mailrelay_status_request(connection, url, method, upload_data,
                                                upload_data_size, con_cls);
@@ -805,7 +872,7 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
     struct MHD_Response *response = MHD_create_response_from_buffer(
         strlen(error_json), (void*)error_json, MHD_RESPMEM_PERSISTENT);
     MHD_add_response_header(response, "Content-Type", "application/json");
-    api_add_cors_headers(response);
+    api_add_cors_headers(response, connection);
     enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
     MHD_destroy_response(response);
     return ret;

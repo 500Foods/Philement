@@ -330,7 +330,7 @@ enum MHD_Result serve_file_for_method(struct MHD_Connection *connection, const c
             return MHD_NO;
         }
 
-        add_cors_headers(not_modified_response);
+        add_cors_headers(not_modified_response, connection);
         add_custom_headers(not_modified_response, file_path, server_web_config);
         add_static_metadata_headers(not_modified_response, &st, etag);
 
@@ -351,7 +351,7 @@ enum MHD_Result serve_file_for_method(struct MHD_Connection *connection, const c
         return MHD_NO;
     }
     
-    add_cors_headers(response);
+    add_cors_headers(response, connection);
     
     // Add custom headers based on file path
     add_custom_headers(response, file_path, server_web_config);
@@ -457,7 +457,7 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
     // Handle OPTIONS method for CORS preflight requests
     if (strcmp(method, "OPTIONS") == 0) {
         struct MHD_Response *response = MHD_create_response_from_buffer(0, NULL, MHD_RESPMEM_PERSISTENT);
-        add_cors_headers(response);
+        add_cors_headers(response, connection);
         enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
         MHD_destroy_response(response);
         return ret;
@@ -557,7 +557,7 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
         const char *page = "<html><body>404 Not Found</body></html>";
         struct MHD_Response *response = MHD_create_response_from_buffer(strlen(page),
                                         (void*)page, MHD_RESPMEM_PERSISTENT);
-        add_cors_headers(response);
+        add_cors_headers(response, connection);
         enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
         MHD_destroy_response(response);
         return ret;
@@ -584,7 +584,7 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
     const char *page = "<html><body>Method not supported</body></html>";
     struct MHD_Response *response = MHD_create_response_from_buffer(strlen(page),
                                     (void*)page, MHD_RESPMEM_PERSISTENT);
-    add_cors_headers(response);
+    add_cors_headers(response, connection);
     enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_BAD_REQUEST, response);
     MHD_destroy_response(response);
     return ret;

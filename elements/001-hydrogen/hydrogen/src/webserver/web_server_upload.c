@@ -136,7 +136,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
             const char *error_response = "{\"error\": \"File too large\", \"done\": false}";
             struct MHD_Response *response = MHD_create_response_from_buffer(strlen(error_response),
                                             (void*)error_response, MHD_RESPMEM_PERSISTENT);
-            add_cors_headers(response);
+            add_cors_headers(response, connection);
             MHD_add_response_header(response, "Content-Type", "application/json");
             enum MHD_Result ret = MHD_queue_response(connection, con_info->error_code, response);
             MHD_destroy_response(response);
@@ -348,7 +348,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
 
             struct MHD_Response *response = MHD_create_response_from_buffer(strlen(json_response),
                                             (void*)json_response, MHD_RESPMEM_MUST_FREE);
-            add_cors_headers(response);
+            add_cors_headers(response, connection);
             MHD_add_response_header(response, "Content-Type", "application/json");
             enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);
             MHD_destroy_response(response);
@@ -359,7 +359,7 @@ enum MHD_Result handle_upload_request(struct MHD_Connection *connection,
             const char *error_response = "{\"error\": \"File upload failed\", \"done\": false}";
             struct MHD_Response *response = MHD_create_response_from_buffer(strlen(error_response),
                                             (void*)error_response, MHD_RESPMEM_PERSISTENT);
-            add_cors_headers(response);
+            add_cors_headers(response, connection);
             MHD_add_response_header(response, "Content-Type", "application/json");
             enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_INTERNAL_SERVER_ERROR, response);
             MHD_destroy_response(response);

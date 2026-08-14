@@ -115,7 +115,7 @@ enum MHD_Result api_send_json_response(struct MHD_Connection *connection,
  *
  * @param response The MHD_Response object
  */
-void api_add_cors_headers(struct MHD_Response *response);
+void api_add_cors_headers(struct MHD_Response *response, struct MHD_Connection *connection);
 
 /**
  * Validate JWT token and extract claims

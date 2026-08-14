@@ -97,6 +97,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 - [cap_query.md](/docs/H/api/conduit/cap_query.md): Cap-protected conduit query endpoint
 - [script.md](/docs/H/api/conduit/script.md): JWT client Lua script invoke (`POST/GET /api/conduit/script`)
+- [webhook.md](/docs/H/api/conduit/webhook.md): Generic signed webhook (`POST /api/conduit/webhook/{hook}`)
 
 ### Folder: /docs/deployment
 

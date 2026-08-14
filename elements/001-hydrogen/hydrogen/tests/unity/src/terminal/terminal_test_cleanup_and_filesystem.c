@@ -25,7 +25,7 @@ enum MHD_Result serve_file_from_path(struct MHD_Connection *connection, const ch
 void format_file_size(size_t size, char *buffer, size_t buffer_size);
 
 // Forward declarations for external functions
-void add_cors_headers(struct MHD_Response *response);
+void add_cors_headers(struct MHD_Response *response, struct MHD_Connection *connection);
 bool client_accepts_brotli(struct MHD_Connection *connection);
 bool brotli_file_exists(const char *file_path, char *br_file_path, size_t br_buffer_size);
 void add_brotli_header(struct MHD_Response *response);

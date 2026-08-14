@@ -147,6 +147,7 @@ struct AppConfig {
     NotifyConfig notify;           // P. Notify configuration
     ScriptingConfig scripting;     // Q. Scripting configuration
     ReportingConfig reporting;     // R. Reporting configuration
+    WebhooksConfig webhooks;       // S. Webhooks (LUA_CLIENT Phase 14)
 };
 
 // Defined in global.c
