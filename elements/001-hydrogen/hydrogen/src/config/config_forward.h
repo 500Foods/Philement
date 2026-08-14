@@ -24,6 +24,7 @@
  * P. Notify
  * Q. Scripting
  * R. Reporting
+ * S. Webhooks
  */
 
 #ifndef CONFIG_FORWARD_H
@@ -159,5 +160,11 @@ typedef struct ScriptingSandboxConfig ScriptingSandboxConfig;
 // R. Reporting Configuration
 struct ReportingConfig;
 typedef struct ReportingConfig ReportingConfig;
+
+struct WebhooksConfig;
+typedef struct WebhooksConfig WebhooksConfig;
+
+struct WebhookHook;
+typedef struct WebhookHook WebhookHook;
 
 #endif /* CONFIG_FORWARD_H */

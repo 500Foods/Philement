@@ -41,9 +41,10 @@ Phases must not skip Unity when adding C; Phase 9 must not be waived without exp
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-08-09):** Phases **0–10 complete**. Plan
-moved to [`complete/LUA_CLIENT_COMPLETE.md`](/docs/H/plans/complete/LUA_CLIENT_COMPLETE.md).
-Optional Phases 11–13 remain deferred until requested.
+**CURRENT PAUSE POINT (as of 2026-08-13):** Phases **0–10 and 14
+complete**. Optional Phases 11–13 remain deferred. Phase 12 (public
+SPA scripts) stays deferred. Stripe Lua (`Stripe.Webhook`) is
+STRIPE_PLAN Phase 7, not Hydrogen C.
 
 ### Session checklist
 
@@ -599,6 +600,7 @@ script conduit for interactive actions (`FL-49b`).
 - **Date:** 2026-08-09
 - **Result:** Operator/SPA docs + indexes; plan closed to complete/.
 - **Variances:** None. Optional Phases 11–13 remain deferred.
+  Phase 14 added 2026-08-13 (FINISHLINE 69); not started.
 
 #### Lessons learned
 
@@ -696,6 +698,85 @@ script conduit for interactive actions (`FL-49b`).
 
 ---
 
+### Phase 14: Generic Signed Webhook → Lua
+
+- **Goal:** Unauthenticated POST of a **raw** body, HMAC-verified in C,
+  dispatches **one** config-named script. Vendor-blind. Needed so Stripe
+  (and later GitHub, Mail Relay, Course Builder) can callback without
+  JWT and without `/api/stripe/*`.
+- **Dependencies:** Phase 7 allowlist (script must be `invokable = 1`);
+  `utils_hmac_sha256` already in `utils_crypto.h`.
+- **Entry gate:** FINISHLINE Phase 69 / STRIPE_PLAN Phase 7. **Do not**
+  implement as a Stripe-named module. **Do not** open
+  `/api/conduit/script` to anonymous callers. Phase 12 stays deferred.
+
+#### Locked decisions (FINISHLINE `FL-67c`–`FL-67e`)
+
+```http
+POST /api/conduit/webhook/{hook}     ← canonical (Swagger only this)
+POST /api/webhook/{hook}            ← alias, same handler
+POST /webhook/{hook}                ← alias, same handler
+```
+
+- `{hook}` is a **config key** (`stripe`, later `github`), not a script
+  name the caller picks.
+- C is the lock; Lua is the router.
+- No JWT. **Not** in `protected_endpoints`.
+- Buffer the **raw** body (Stripe signs exact bytes; JSON re-encode
+  breaks the signature).
+- Config `Webhooks.Hooks[]`: secret env, signature header, HMAC algo,
+  **one** allowlisted script name.
+- Verify with `utils_hmac_sha256`. Unknown hook / bad sig → 401/404,
+  **no Lua**.
+- On success, submit only that script with built params:
+  `{ hook, body (raw string), headers, content_type }`. No user
+  `_hydrogen`.
+- Prefix-less `/webhook` must not steal Swagger UI or static routes
+  (register like `/api/files/local`, not a catch-all).
+- v1 verify stays in C so a Lua bug cannot accept a forged event.
+  Optional later: `H.hmac_sha256` on the `H` table — not required for v1.
+
+#### Work items
+
+- [x] **14.1** Config parse: `Webhooks.Enabled`, `Webhooks.Hooks[]`
+      (`Name`, `SecretEnv`, `SignatureHeader`, `Hmac`, `Script`).
+- [x] **14.2** `src/api/conduit/webhook/` handler: raw body, hook lookup,
+      HMAC, 401/404, submit configured script (reuse invoke/wait path
+      without JWT `_hydrogen` merge).
+- [x] **14.3** Register canonical + two aliases; Swagger **only**
+      `/api/conduit/webhook/{hook}` (annotations in `webhook.h`).
+- [x] **14.4** Unity: unknown hook, bad sig, good sig → script name,
+      raw body preserved, aliases share handler.
+- [x] **14.5** Docs: `docs/H/api/conduit/webhook.md`; pointer from
+      `script.md` / `lua_api.md`. Blackbox deferred to STRIPE_PLAN
+      Phase 7 live Stripe CLI.
+
+#### Exit gate / validation
+
+- [x] Bad signature never runs Lua.
+- [x] URL cannot name an arbitrary `invokable` script.
+- [x] `mkt` / Unity green; no `/api/stripe/*` symbols.
+
+#### Status
+
+- **State:** complete
+- **Date:** 2026-08-13
+- **Result:** Generic webhook C shipped. Tenant config + Lua router
+  remain STRIPE_PLAN Phase 7.
+- **Variances:** Swagger JSON regen not run this session (header
+  annotations present; `payloads/swagger-generate.sh` at next payload
+  rebuild). `Hmac` modes `sha256` and `sha256-timestamp` (vendor-blind
+  Stripe `t.payload`).
+
+#### Lessons learned
+
+- Buffer and send-JSON seams are required for Unity; MHD mocks do not
+  rewrite `api_send_json_response` inside hydrogen objects.
+- Prefix-less `/webhook/{hook}` must reject extra path segments so it
+  cannot steal Swagger or static routes.
+
+---
+
 ## Risks
 
 | Risk | Mitigation |
@@ -707,6 +788,8 @@ script conduit for interactive actions (`FL-49b`).
 | DB fetch latency on every invoke | source_cache / registry; Phase 2.3 |
 | Identity spoofing via params | Server-injected `_hydrogen` claims Phase 0/5 |
 | Scope creep into Canvas C | Refuse product routes; Reception scripts stay Helium Lua |
+| Anonymous script invoke for webhooks | Separate `/webhook/{hook}` path; C HMAC; one configured script |
+| Prefix-less `/webhook` steals static routes | Exact-prefix register like `/api/files/local` |
 
 ---
 
@@ -718,6 +801,7 @@ script conduit for interactive actions (`FL-49b`).
 4. Phase 7 (before any internet exposure)
 5. Phases 8 → 9 → 10 (ship)
 6. 11–13 only on demand
+7. Phase 14 when Reception/STRIPE_PLAN needs inbound webhooks (requested 2026-08-13)
 
 ---
 
@@ -812,6 +896,24 @@ curl -sS -X POST "http://127.0.0.1:${PORT}/api/conduit/script" \
   not Hydrogen product routes.
 - Plan file → `complete/LUA_CLIENT_COMPLETE.md`. Optional 11–13 stay deferred.
 
+### 2026-08-13 — Phase 14 requested (FINISHLINE 69)
+
+- Reception Band J handed payments to `STRIPE_PLAN.md`. Inbound Stripe
+  events cannot use JWT `/api/conduit/script` (`FL-67c`).
+- Phase 14 specified: generic `POST /api/conduit/webhook/{hook}`, C HMAC,
+  one configured script, aliases `/api/webhook/{hook}` + `/webhook/{hook}`.
+- Phase 12 remains deferred (wrong shape for Stripe).
+- C not started this session — pick up Phase 14 as its own work.
+
+### 2026-08-13 — Phase 14 implemented
+
+- Config `Webhooks` + `src/api/conduit/webhook/`.
+- Canonical + `/api/webhook/{hook}` + `/webhook/{hook}`.
+- HMAC `sha256` / `sha256-timestamp`; 401/404 never submit.
+- Unity: hmac, handle_request, config load, alias validator.
+- `mkt` green; `mkp` after knownConditionTrueFalse fix.
+- Docs: `webhook.md`, SITEMAP, STRUCTURE, script.md, lua_api.md.
+
 ---
 
 ## Related Documents
@@ -825,7 +927,7 @@ curl -sS -X POST "http://127.0.0.1:${PORT}/api/conduit/script" \
 | [CONDUIT_COMPLETE.md](/docs/H/plans/complete/CONDUIT_COMPLETE.md) | Conduit patterns to mirror |
 | [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md) | Build/test aliases |
 | [TODO.md](/docs/H/TODO.md) | Prioritized backlog entry |
-| Reception FINISHLINE | Product consumer (`FL-30-lua`, `FL-49b`) |
+| Reception FINISHLINE / STRIPE_PLAN | Product consumer (`FL-30-lua`, `FL-49b`, Phase 69 webhook) |
 
 ---
 

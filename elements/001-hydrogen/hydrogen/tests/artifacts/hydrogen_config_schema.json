@@ -87,6 +87,10 @@
                     "type": "string",
                     "description": "ChaCha (Cap) secret key, can use environment variable syntax like ${env.CHACHA_SECRET}"
                 },
+                "CORSOrigin": {
+                    "type": "string",
+                    "description": "Allowed CORS origins: * or a comma-separated list of exact origins (https://www.example.com, https://example.com). Wildcards like *.example.com are not valid CORS."
+                },
                 "Headers": {
                     "type": "array",
                     "description": "Custom HTTP headers configuration",
@@ -117,6 +121,10 @@
                 "JWTSecret": {
                     "type": "string",
                     "description": "Secret key for JWT token signing and validation, can use environment variable syntax like ${env.HYDROGEN_DEMO_JWT_KEY}"
+                },
+                "CORSOrigin": {
+                    "type": "string",
+                    "description": "API CORS override. Same syntax as WebServer.CORSOrigin. If set, takes precedence over WebServer.CORSOrigin for API responses."
                 }
             },
             "additionalProperties": false

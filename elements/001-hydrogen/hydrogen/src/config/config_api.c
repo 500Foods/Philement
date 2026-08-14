@@ -22,12 +22,14 @@ bool load_api_config(json_t* root, AppConfig* config) {
     api_config->enabled = true;
     api_config->prefix = strdup("/api");
     api_config->jwt_secret = strdup("${env.JWT_SECRET}");
+    api_config->cors_origin = strdup("*");
 
     // Process all config items in sequence
     success = PROCESS_SECTION(root, "API");
     success = success && PROCESS_BOOL(root, api_config, enabled, "API.Enabled", "API");
     success = success && PROCESS_STRING(root, api_config, prefix, "API.Prefix", "API");
     success = success && PROCESS_SENSITIVE(root, api_config, jwt_secret, "API.JWTSecret", "API");
+    success = success && PROCESS_STRING(root, api_config, cors_origin, "API.CORSOrigin", "API");
 
     // Clean up and return on failure
     if (!success) {
@@ -47,6 +49,7 @@ void cleanup_api_config(APIConfig* config) {
     // Free allocated strings
     free(config->prefix);
     free(config->jwt_secret);
+    free(config->cors_origin);
 
     // Zero out the structure
     memset(config, 0, sizeof(APIConfig));
@@ -63,4 +66,5 @@ void dump_api_config(const APIConfig* config) {
     DUMP_BOOL("―― Enabled", config->enabled);
     DUMP_STRING("―― Prefix", config->prefix);
     DUMP_SECRET("―― JWTSecret", config->jwt_secret);
+    DUMP_STRING("―― CORS Origin", config->cors_origin);
 }

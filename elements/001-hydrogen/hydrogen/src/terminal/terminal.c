@@ -288,7 +288,7 @@ enum MHD_Result serve_file_from_path(struct MHD_Connection *connection, const ch
         return MHD_NO;
     }
 
-    add_cors_headers(response);
+    add_cors_headers(response, connection);
 
     // Set Content-Type based on the original file (not the .br version)
     const char *ext = strrchr(file_path, '.');
@@ -529,7 +529,7 @@ enum MHD_Result handle_terminal_request(struct MHD_Connection *connection,
     }
 
     // Add CORS headers (from webserver core)
-    add_cors_headers(response);
+    add_cors_headers(response, connection);
 
     // Queue response
     enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_OK, response);

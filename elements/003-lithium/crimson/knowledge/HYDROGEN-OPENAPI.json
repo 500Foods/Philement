@@ -2648,6 +2648,122 @@
         ]
       }
     },
+    "/conduit/webhook/{hook}": {
+      "post": {
+        "summary": "Deliver a signed webhook to one configured Lua script",
+        "description": "Unauthenticated. {hook} is a config key, not a script name. C verifies HMAC against the configured secret and header, then submits the configured invokable script with params {hook, body, headers, content_type}. No JWT. No params._hydrogen.",
+        "operationId": "invokeConduitWebhookPost",
+        "tags": [
+          "Conduit Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string"
+                    },
+                    "job_id": {
+                      "type": "string"
+                    },
+                    "script": {
+                      "type": "string"
+                    },
+                    "result": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "invalid_signature"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "hook_not_found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "method_not_allowed"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "webhooks_disabled"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/mailrelay/preview": {
       "post": {
         "summary": "Preview a rendered mail template",

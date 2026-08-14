@@ -23,6 +23,12 @@ void test_is_exact_api_files_local_endpoint_no_match(void);
 void test_is_exact_api_files_local_endpoint_partial_match(void);
 void test_is_exact_api_files_local_endpoint_different_path(void);
 
+void test_is_webhook_alias_endpoint_null(void);
+void test_is_webhook_alias_endpoint_match(void);
+void test_is_webhook_alias_endpoint_bare(void);
+void test_is_webhook_alias_endpoint_extra_segment(void);
+void test_is_webhook_alias_endpoint_no_steal_swagger(void);
+
 void setUp(void) {
     // No setup needed for these pure functions
 }
@@ -91,6 +97,28 @@ void test_is_exact_api_files_local_endpoint_different_path(void) {
     TEST_ASSERT_FALSE(result);
 }
 
+void test_is_webhook_alias_endpoint_null(void) {
+    TEST_ASSERT_FALSE(is_webhook_alias_endpoint(NULL));
+}
+
+void test_is_webhook_alias_endpoint_match(void) {
+    TEST_ASSERT_TRUE(is_webhook_alias_endpoint("/webhook/stripe"));
+}
+
+void test_is_webhook_alias_endpoint_bare(void) {
+    TEST_ASSERT_FALSE(is_webhook_alias_endpoint("/webhook"));
+    TEST_ASSERT_FALSE(is_webhook_alias_endpoint("/webhook/"));
+}
+
+void test_is_webhook_alias_endpoint_extra_segment(void) {
+    TEST_ASSERT_FALSE(is_webhook_alias_endpoint("/webhook/stripe/extra"));
+}
+
+void test_is_webhook_alias_endpoint_no_steal_swagger(void) {
+    TEST_ASSERT_FALSE(is_webhook_alias_endpoint("/swagger"));
+    TEST_ASSERT_FALSE(is_webhook_alias_endpoint("/webhookfoo"));
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -107,6 +135,12 @@ int main(void) {
     RUN_TEST(test_is_exact_api_files_local_endpoint_no_match);
     RUN_TEST(test_is_exact_api_files_local_endpoint_partial_match);
     RUN_TEST(test_is_exact_api_files_local_endpoint_different_path);
+
+    RUN_TEST(test_is_webhook_alias_endpoint_null);
+    RUN_TEST(test_is_webhook_alias_endpoint_match);
+    RUN_TEST(test_is_webhook_alias_endpoint_bare);
+    RUN_TEST(test_is_webhook_alias_endpoint_extra_segment);
+    RUN_TEST(test_is_webhook_alias_endpoint_no_steal_swagger);
 
     return UNITY_END();
 }

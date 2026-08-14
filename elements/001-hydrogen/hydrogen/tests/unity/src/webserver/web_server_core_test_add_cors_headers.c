@@ -24,15 +24,15 @@ void tearDown(void) {
 // Test functions
 static void test_add_cors_headers_null_response(void) {
     // Test null response parameter - should not crash
-    add_cors_headers(NULL);
+    add_cors_headers(NULL, NULL);
     TEST_PASS(); // If we reach here, function handled null gracefully
 }
 
 static void test_add_cors_headers_multiple_calls(void) {
     // Test calling multiple times - should not crash
-    add_cors_headers(NULL);
-    add_cors_headers(NULL);
-    add_cors_headers(NULL);
+    add_cors_headers(NULL, NULL);
+    add_cors_headers(NULL, NULL);
+    add_cors_headers(NULL, NULL);
     TEST_PASS(); // If we reach here, function handled multiple calls gracefully
 }
 
@@ -42,17 +42,17 @@ static void test_add_cors_headers_with_various_null_combinations(void) {
     // We can test that it doesn't crash in various scenarios
 
     // Test with NULL response - should not crash
-    add_cors_headers(NULL);
+    add_cors_headers(NULL, NULL);
 
     // Test multiple calls with NULL - should be safe
     for (int i = 0; i < 5; i++) {
-        add_cors_headers(NULL);
+        add_cors_headers(NULL, NULL);
     }
 
     // Test alternating NULL and non-NULL calls (though we can't create real MHD_Response)
     // The function should handle NULL gracefully in all cases
-    add_cors_headers(NULL);
-    add_cors_headers(NULL);
+    add_cors_headers(NULL, NULL);
+    add_cors_headers(NULL, NULL);
 
     TEST_PASS(); // All NULL combinations handled without crashing
 }
@@ -67,13 +67,27 @@ static void test_add_cors_headers_function_signature(void) {
     TEST_PASS(); // Function signature is correct and can be called
 }
 
+static void test_cors_match_origin_star_and_list(void) {
+    TEST_ASSERT_EQUAL_STRING("*", cors_match_origin(NULL, "https://www.500courses.com"));
+    TEST_ASSERT_EQUAL_STRING("*", cors_match_origin("*", "https://www.500courses.com"));
+    TEST_ASSERT_EQUAL_STRING("https://www.500courses.com",
+        cors_match_origin("https://www.500courses.com, https://500courses.com",
+                          "https://www.500courses.com"));
+    TEST_ASSERT_EQUAL_STRING("https://500courses.com",
+        cors_match_origin("https://www.500courses.com,https://500courses.com",
+                          "https://500courses.com"));
+    TEST_ASSERT_NULL(cors_match_origin("https://www.500courses.com",
+                                       "https://evil.example"));
+    TEST_ASSERT_NULL(cors_match_origin("https://www.500courses.com", NULL));
+}
+
 static void test_add_cors_headers_no_side_effects_on_null(void) {
     // Test that calling with NULL doesn't affect any global state
     // Since this function only calls MHD_add_response_header with NULL,
     // it should be safe to call multiple times
 
     for (int i = 0; i < 10; i++) {
-        add_cors_headers(NULL);
+        add_cors_headers(NULL, NULL);
     }
 
     TEST_PASS(); // Multiple calls with NULL completed without issues
@@ -86,6 +100,7 @@ int main(void) {
     RUN_TEST(test_add_cors_headers_multiple_calls);
     RUN_TEST(test_add_cors_headers_with_various_null_combinations);
     RUN_TEST(test_add_cors_headers_function_signature);
+    RUN_TEST(test_cors_match_origin_star_and_list);
     RUN_TEST(test_add_cors_headers_no_side_effects_on_null);
 
     return UNITY_END();

@@ -301,7 +301,7 @@ enum MHD_Result api_send_json_response(struct MHD_Connection *connection,
     MHD_add_response_header(response, "Content-Type", "application/json");
     
     // Add CORS headers
-    api_add_cors_headers(response);
+    api_add_cors_headers(response, connection);
     
     // Queue the response
     enum MHD_Result ret = MHD_queue_response(connection, status_code, response);
@@ -316,14 +316,8 @@ enum MHD_Result api_send_json_response(struct MHD_Connection *connection,
 /**
  * Add standard CORS headers to a response
  */
-void api_add_cors_headers(struct MHD_Response *response) {
-    MHD_add_response_header(response, "Access-Control-Allow-Origin", "*");
-    MHD_add_response_header(response, "Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS");
-    MHD_add_response_header(response, "Access-Control-Allow-Headers",
-                          "Content-Type, Authorization, X-Requested-With");
-    MHD_add_response_header(response, "Access-Control-Expose-Headers",
-                          "Content-Length, Content-Type, ETag, Last-Modified, Cache-Control");
-    MHD_add_response_header(response, "Access-Control-Max-Age", "86400");
+void api_add_cors_headers(struct MHD_Response *response, struct MHD_Connection *connection) {
+    add_cors_headers(response, connection);
 }
 
 /**

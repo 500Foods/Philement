@@ -34,6 +34,7 @@
  * P. Notify (subsystem)
  * Q. Scripting (subsystem)
  * R. Reporting (subsystem)
+ * S. Webhooks (generic signed ingress)
  * 
  * NOTE: threads, registry, and payload are subsystems that don't 
  * have their own sections in the config system because they are
@@ -77,6 +78,7 @@ bool is_file_readable(const char* path);
 #include "config_notify.h"               // P. Notify
 #include "config_scripting.h"            // Q. Scripting
 #include "config_reporting.h"            // R. Reporting
+#include "config_webhooks.h"             // S. Webhooks
 
 // Support for configuration value handling and type conversion
 #include "config_utils.h"  // Includes string handling and file operations

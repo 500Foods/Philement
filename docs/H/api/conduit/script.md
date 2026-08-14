@@ -202,6 +202,14 @@ Hydrogen provides only the generic surface. Product work (for example
 `enroll.freeEnrollPath` → script `Enroll.FreeCourse`, FL-49b) lives in the SPA
 and Helium seed data after this endpoint exists — not in Hydrogen C routes.
 
+## Inbound webhooks (not this path)
+
+Vendor callbacks (Stripe, later GitHub, …) POST a raw signed body with
+**no JWT**. Do **not** use `/api/conduit/script` for that. The generic
+ingress is `POST /api/conduit/webhook/{hook}` (LUA_CLIENT Phase 14).
+C verifies HMAC and runs one configured script. See
+[webhook.md](/docs/H/api/conduit/webhook.md).
+
 ## Testing
 
 - Blackbox: [`test_46_conduit_script.md`](/docs/H/tests/test_46_conduit_script.md)

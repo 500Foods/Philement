@@ -40,7 +40,7 @@ enum MHD_Result handle_system_upload_request(struct MHD_Connection *connection,
         struct MHD_Response *response = MHD_create_response_from_buffer(
             strlen(error_json), (void*)error_json, MHD_RESPMEM_PERSISTENT);
         MHD_add_response_header(response, "Content-Type", "application/json");
-        api_add_cors_headers(response);
+        api_add_cors_headers(response, connection);
         enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_METHOD_NOT_ALLOWED, response);
         MHD_destroy_response(response);
         return ret;

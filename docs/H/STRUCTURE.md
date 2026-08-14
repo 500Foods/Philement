@@ -457,6 +457,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [docs/api/system/system_version.md](/docs/H/api/system/system_version.md) - System version API
 - [docs/api/conduit/cap_query.md](/docs/H/api/conduit/cap_query.md) - Cap-protected conduit query
 - [docs/api/conduit/script.md](/docs/H/api/conduit/script.md) - JWT client Lua script invoke
+- [docs/api/conduit/webhook.md](/docs/H/api/conduit/webhook.md) - Generic signed webhook ingress
 - [docs/api/reporting/reporting_endpoints.md](/docs/H/api/reporting/reporting_endpoints.md) - Reporting image_scale
 
 </details>

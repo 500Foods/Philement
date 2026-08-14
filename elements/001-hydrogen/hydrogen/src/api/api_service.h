@@ -169,9 +169,16 @@ bool is_exact_api_files_local_endpoint(const char *url);
  * @return MHD_Result indicating success or failure
  */
 enum MHD_Result handle_exact_api_files_local_request(void *cls, struct MHD_Connection *connection,
-                                                   const char *url, const char *method,
-                                                   const char *version, const char *upload_data,
-                                                   size_t *upload_data_size, void **con_cls);
+                                                    const char *url, const char *method,
+                                                    const char *version, const char *upload_data,
+                                                    size_t *upload_data_size, void **con_cls);
+
+bool is_webhook_alias_endpoint(const char *url);
+
+enum MHD_Result handle_webhook_alias_request(void *cls, struct MHD_Connection *connection,
+                                             const char *url, const char *method,
+                                             const char *version, const char *upload_data,
+                                             size_t *upload_data_size, void **con_cls);
 
 /*
  * Main API handler function

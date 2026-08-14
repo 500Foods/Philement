@@ -67,7 +67,7 @@ void test_handle_swagger_request_compressed_file_no_brotli_support(void);
 
 // Mock function prototypes
 bool client_accepts_brotli(struct MHD_Connection *connection);
-void add_cors_headers(struct MHD_Response *response);
+void add_cors_headers(struct MHD_Response *response, struct MHD_Connection *connection);
 void add_brotli_header(struct MHD_Response *response);
 
 //=============================================================================

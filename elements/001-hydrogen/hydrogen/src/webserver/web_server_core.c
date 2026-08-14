@@ -218,12 +218,71 @@ bool is_port_available(int port, bool check_ipv6) {
     return ipv4_ok;
 }
 
-void add_cors_headers(struct MHD_Response *response) {
-    MHD_add_response_header(response, "Access-Control-Allow-Origin", "*");
+const char *cors_match_origin(const char *configured, const char *request_origin) {
+    if (!configured || configured[0] == '\0' || strcmp(configured, "*") == 0) {
+        return "*";
+    }
+    if (!request_origin || request_origin[0] == '\0') {
+        return NULL;
+    }
+
+    const char *cursor = configured;
+    size_t origin_len = strlen(request_origin);
+    while (*cursor != '\0') {
+        while (*cursor == ' ' || *cursor == ',') {
+            cursor++;
+        }
+        if (*cursor == '\0') {
+            break;
+        }
+        const char *start = cursor;
+        while (*cursor != '\0' && *cursor != ',') {
+            cursor++;
+        }
+        const char *end = cursor;
+        while (end > start && (*(end - 1) == ' ')) {
+            end--;
+        }
+        size_t token_len = (size_t)(end - start);
+        if (token_len == origin_len && strncmp(start, request_origin, origin_len) == 0) {
+            return request_origin;
+        }
+    }
+    return NULL;
+}
+
+void add_cors_headers(struct MHD_Response *response, struct MHD_Connection *connection) {
+    if (!response) {
+        return;
+    }
+
+    const char *configured = "*";
+    if (app_config && app_config->api.cors_origin && app_config->api.cors_origin[0] != '\0') {
+        configured = app_config->api.cors_origin;
+    } else if (app_config && app_config->webserver.cors_origin &&
+               app_config->webserver.cors_origin[0] != '\0') {
+        configured = app_config->webserver.cors_origin;
+    }
+
+    const char *request_origin = NULL;
+    if (connection) {
+        request_origin = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Origin");
+    }
+    const char *allow_origin = cors_match_origin(configured, request_origin);
+    if (allow_origin) {
+        MHD_add_response_header(response, "Access-Control-Allow-Origin", allow_origin);
+        if (strcmp(allow_origin, "*") != 0) {
+            MHD_add_response_header(response, "Access-Control-Allow-Credentials", "true");
+            MHD_add_response_header(response, "Vary", "Origin");
+        }
+    }
+
     MHD_add_response_header(response, "Access-Control-Allow-Methods", "GET, HEAD, POST, OPTIONS");
-    MHD_add_response_header(response, "Access-Control-Allow-Headers", "Content-Type");
+    MHD_add_response_header(response, "Access-Control-Allow-Headers",
+                          "Content-Type, Authorization, X-Requested-With");
     MHD_add_response_header(response, "Access-Control-Expose-Headers",
                           "Content-Length, Content-Type, ETag, Last-Modified, Cache-Control");
+    MHD_add_response_header(response, "Access-Control-Max-Age", "86400");
 }
 
 bool init_web_server(WebServerConfig *web_config) {

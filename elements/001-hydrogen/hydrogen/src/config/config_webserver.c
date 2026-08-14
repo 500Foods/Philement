@@ -102,6 +102,7 @@ bool load_webserver_config(json_t* root, AppConfig* config) {
     webserver->chacha_server = strdup("${env.CHACHA_SERVER}");
     webserver->chacha_site_id = strdup("${env.CHACHA_SITEID}");
     webserver->chacha_secret = strdup("${env.CHACHA_SECRET}");
+    webserver->cors_origin = strdup("*");
 
     success = PROCESS_SECTION(root, "WebServer");
     
@@ -119,6 +120,7 @@ bool load_webserver_config(json_t* root, AppConfig* config) {
     success = success && PROCESS_STRING(root, webserver, chacha_server, "WebServer.ChaChaServer", "WebServer");
     success = success && PROCESS_STRING(root, webserver, chacha_site_id, "WebServer.ChaChaSiteID", "WebServer");
     success = success && PROCESS_STRING(root, webserver, chacha_secret, "WebServer.ChaChaSecret", "WebServer");
+    success = success && PROCESS_STRING(root, webserver, cors_origin, "WebServer.CORSOrigin", "WebServer");
 
     // Process connection settings
     success = success && PROCESS_INT(root, webserver, thread_pool_size, "WebServer.ThreadPoolSize", "WebServer");
@@ -175,6 +177,7 @@ void dump_webserver_config(const WebServerConfig* config) {
     DUMP_STRING("―― ChaCha Server", config->chacha_server);
     DUMP_STRING("―― ChaCha Site ID", config->chacha_site_id);
     DUMP_SECRET("―― ChaCha Secret", config->chacha_secret);
+    DUMP_STRING("―― CORS Origin", config->cors_origin);
 
     // Connection settings
     DUMP_TEXT("――", "Connection Settings");
@@ -209,6 +212,7 @@ void cleanup_webserver_config(WebServerConfig* config) {
     free(config->chacha_server);
     free(config->chacha_site_id);
     free(config->chacha_secret);
+    free(config->cors_origin);
 
     // Clean up custom headers
     if (config->headers) {

@@ -999,6 +999,7 @@ Run `tests/test_98_luacheck.sh` after editing `.lua` files.
 | [LUA_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md) | Design history and phases |
 | [LUA_CLIENT_COMPLETE.md](/docs/H/plans/complete/LUA_CLIENT_COMPLETE.md) | Client REST script invoke |
 | [script.md](/docs/H/api/conduit/script.md) | `POST/GET /api/conduit/script` |
+| [webhook.md](/docs/H/api/conduit/webhook.md) | `POST /api/conduit/webhook/{hook}` |
 | [MAIL_GUIDE.md](/docs/H/MAIL_GUIDE.md) | Mail Relay, rewrites, events, and Lua `H.mail` |
 | [MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md) | Mail Relay implementation plan |
 | [docs/He/LUA_INTRO.md](/docs/He/LUA_INTRO.md) | Migration-only Lua basics |

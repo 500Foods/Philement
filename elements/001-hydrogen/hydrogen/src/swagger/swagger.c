@@ -270,7 +270,7 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
             MHD_add_response_header(response, "Location", redirect_url);
             free(redirect_url);
             
-            add_cors_headers(response);
+            add_cors_headers(response, connection);
             enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_MOVED_PERMANENTLY, response);
             MHD_destroy_response(response);
             return ret;
@@ -598,7 +598,7 @@ enum MHD_Result handle_swagger_request(struct MHD_Connection *connection,
     }
 
     // Add CORS headers
-    add_cors_headers(response);
+    add_cors_headers(response, connection);
 
     // Add custom headers based on file path
     if (app_config) {
