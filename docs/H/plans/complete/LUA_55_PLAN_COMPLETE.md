@@ -49,9 +49,10 @@ or `mka` / test_01 will fail the same way:
    `make linux MYCFLAGS='-fPIC' && sudo make install`  
    (plus `lua.pc` / `PKG_CONFIG_PATH` so CMake does not pick an older distro
    `liblua.so`).
-3. **Non-coverage binaries** use `-no-pie -rdynamic` (regular/debug/perf/valgrind/
-   release). `-rdynamic` still required so C rocks (`brotli.so`) resolve Lua
-   symbols from the static embed.
+3. **Non-coverage binaries** use `-no-pie`. Regular/debug/perf/valgrind keep
+   `-rdynamic`. Release exports only the Lua C API via
+   `cmake/scripts/lua_export.list` (`--dynamic-list`) so C rocks (`brotli.so`)
+   still resolve the static embed without dumping every Hydrogen symbol.
 4. **CMake:** `link_directories(${LUA_LIBRARY_DIRS})` after `pkg_check_modules`
    so `-L` is not dropped; version gate stays “require N.N only”.
 5. **Validate:** `objdump -r $prefix/lib/liblua.a | grep R_X86_64_32S` should be

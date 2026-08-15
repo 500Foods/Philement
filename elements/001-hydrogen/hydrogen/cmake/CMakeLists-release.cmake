@@ -48,7 +48,10 @@ add_custom_target(hydrogen_release
 # Internal target for building just the release executable (without payload processing)
 # -no-pie: static liblua.a (Lua 5.5 /usr/local) may lack -fPIC; PIE link fails
 # with R_X86_64_32S. Coverage keeps -pie and requires a PIC-built liblua.
+# --dynamic-list (not -rdynamic): export only the Lua C API so C rocks
+# (e.g. brotli.so) can dlopen the static embed. -rdynamic exports every
+# Hydrogen symbol, defeats --gc-sections, and bloated naked ~335 KB -> ~555 KB.
 hydrogen_add_executable_target(release "Release"
-    "-Os -s -DNDEBUG -march=x86-64 -flto=auto -fno-stack-protector -fno-asynchronous-unwind-tables -ffunction-sections -fdata-sections"
-    "-flto=auto -Wl,--gc-sections -Wl,--strip-all -no-pie -rdynamic"
+    "-Os -s -DNDEBUG -march=x86-64 -flto=auto -fno-stack-protector -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections"
+    "-flto=auto -Wl,--gc-sections -Wl,--strip-all -no-pie -Wl,--dynamic-list=${CMAKE_CURRENT_SOURCE_DIR}/scripts/lua_export.list"
 )
