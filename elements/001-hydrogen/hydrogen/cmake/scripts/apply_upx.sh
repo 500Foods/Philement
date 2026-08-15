@@ -33,8 +33,17 @@ if ! command -v upx >/dev/null 2>&1; then
     exit 0
 fi
 
-# Apply UPX compression
-printf "%s%s Applying UPX compression with --best option...%s\n" "${CYAN}" "${INFO}" "${NORMAL}"
-upx --best "${EXECUTABLE}"
+# Drop leftover .eh_frame from static liblua (Hydrogen already compiles
+# with -fno-asynchronous-unwind-tables). Crash dumps use GDB, not in-process
+# unwind. Harmless if the sections are already absent.
+if command -v objcopy >/dev/null 2>&1; then
+    objcopy --remove-section=.eh_frame --remove-section=.eh_frame_hdr \
+        --remove-section=.comment --remove-section=.annobin.notes \
+        "${EXECUTABLE}" 2>/dev/null || true
+fi
+
+# --ultra-brute is slower at pack time but ~70 KB smaller than --best.
+printf "%s%s Applying UPX compression with --ultra-brute...%s\n" "${CYAN}" "${INFO}" "${NORMAL}"
+upx --ultra-brute "${EXECUTABLE}"
 
 printf "%s%s UPX compression completed successfully%s\n" "${GREEN}" "${PASS}" "${NORMAL}"
