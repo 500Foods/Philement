@@ -242,10 +242,13 @@ oidc_idp_authorize_login() {
 # JWT payload middle segment → JSON string (base64url)
 oidc_idp_jwt_payload_json() {
     local jwt="$1"
-    printf '%s' "${jwt}" | cut -d. -f2 | python3 -c '
-import sys, base64
-s = sys.stdin.read().strip()
-s += "=" * ((4 - len(s) % 4) % 4)
-sys.stdout.write(base64.urlsafe_b64decode(s.encode()).decode())
-' 2>/dev/null || true
+    local s pad i
+    s=$(printf '%s' "${jwt}" | cut -d. -f2)
+    s="${s//-/+}"
+    s="${s//_//}"
+    pad=$(( (4 - ${#s} % 4) % 4 ))
+    for (( i = 0; i < pad; i++ )); do
+        s="${s}="
+    done
+    printf '%s' "${s}" | base64 -d 2>/dev/null || true
 }

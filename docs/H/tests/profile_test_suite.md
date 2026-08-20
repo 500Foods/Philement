@@ -56,7 +56,7 @@ Catalog groups (zeros are listed so missing tools stay visible):
 - **Reporting**: cloc, tables, Oh, lua, mutt, …
 - **Process**: flock, sleep, timeout, kill, …
 - **DB**: sqlite3, psql, mysql, mariadb
-- **Misc**: python3, node, perl, addto, mailval
+- **Misc**: node, perl, addto, mailval
 - **Uncategorized**: anything not in the catalog (listed with counts in the error log)
 
 ## Tables Layout

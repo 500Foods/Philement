@@ -23,7 +23,7 @@ Validates across all seven database engines (parallel):
 - **Test Name**: Conduit Script
 - **Test Abbreviation**: CSC
 - **Test Number**: 46
-- **Version**: 1.0.0
+- **Version**: 1.1.0
 
 ## Port Assignment
 
