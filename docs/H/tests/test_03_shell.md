@@ -47,7 +47,7 @@ The test maintains an array of environment variables with the following informat
 2. **Defined Variable Checks**: Iterates through the predefined array, checking each variable
 3. **Project Search**: Scans JSON config files for `${env.VARIABLE}` patterns and shell scripts for `${VARIABLE}` patterns
 4. **Missing Variable Detection**: Identifies and fails on undocumented variables found in project files
-5. **Reporting**: Provides detailed pass/fail status with descriptions and file locations
+5. **Reporting**: Provides detailed pass/fail status with descriptions and file locations. Undocumented names are also printed after the completion table as a quoted, line-wrapped `ENV_WHITELIST` block for copy/paste.
 
 ## Expected Output
 
@@ -55,11 +55,16 @@ For each environment variable:
 
 - **PASS**: Variable is set and non-empty
 - **FAIL**: Variable is missing or empty, with long description displayed
-- **Additional FAIL**: Undocumented variables found in configs
+- **Additional FAIL**: Undocumented variables found in configs or scripts
+- **Copy/paste block**: After the completion table, undocumented names are printed as quoted, line-wrapped `ENV_WHITELIST` entries
+
+`Found at` lines keep `file:line` plus a sanitized snippet. Literal `\n` in `printf` source is not expanded, so leftover format fragments do not appear as extra log lines.
 
 ## Maintenance
 
 When new environment variables are added to JSON configurations, they should be added to the `ENV_VARS` array in `test_03_shell.sh` with appropriate descriptions before the test will pass.
+
+Script-internal names (loop counters, temp paths, and similar) belong in `ENV_WHITELIST`. After a Test 03 run, copy the trailing quoted block into that array.
 
 ## Dependencies
 

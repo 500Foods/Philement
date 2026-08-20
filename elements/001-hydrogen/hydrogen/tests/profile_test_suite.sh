@@ -1,11 +1,7 @@
 #!/usr/bin/env bash
 #
 # profile_test_suite.sh
-# Profile fork/execve activity for a Hydrogen test script under strace.
-#
-# Default target is the full suite (test_00_all.sh). Pass any test_NN_*.sh
-# script to profile a single test instead, so changes can be validated quickly
-# without re-running the entire suite:
+# Profile execve activity for a Hydrogen test script under strace.
 #
 #   ./profile_test_suite.sh                       profile the full suite
 #   ./profile_test_suite.sh test_40_auth.sh       profile one test
@@ -14,38 +10,45 @@
 #   ./profile_test_suite.sh --mono ...            disable ANSI colours
 #   ./profile_test_suite.sh --help
 #
-# Output files (dated so re-runs never clobber one another or stray *.txt):
+# Output files (dated; re-runs on the same day overwrite that day's files):
 #   profile_trace-<DATE>.txt    raw strace output
 #   profile_summary-<DATE>.txt  rendered summary (tables; mono archive)
 #   profile_error-<DATE>.txt    diagnostics + strace stderr
 #
 # CHANGELOG
-# 1.0.0 - 2026-08-19 - Rewrite. Fixes:
-#   * `rm -f ./*.txt` used to wipe the error-log header (and any other *.txt)
-#     because it ran *after* the header was written. Cleanup is now scoped to
-#     legacy non-dated profile outputs only.
-#   * strace -f could hang indefinitely on background processes that outlive
-#     the suite (make-email/mutt on SMTP, hbm_browser, orphaned servers). A
-#     watchdog now bounds the run and kills the whole traced process group.
-#   * Summary is now rendered with the project `tables` executable (Blue
-#     theme), with a plain-text fallback.
-#   * Individual-test profiling and --skip-email/--timeout/--mono flags added;
-#     --help documents usage.
+# 1.2.2 - 2026-08-20 - Title is basename @ HH:MM:SS.
+# 1.2.1 - 2026-08-20 - Tables layout nitpicks:
+#   * Blank zeros (tables default); omit column widths so Command/Count/title/footer auto-size.
+#   * Command summary is count of non-zero rows (zero rows are annotated); Count stays sum.
+#   * Leftover bucket labelled Uncategorized.
+# 1.2.0 - 2026-08-20 - Timeout, catalog, tables:
+#   * Replace the setsid/watchdog (setsid without -w returns immediately and
+#     the watchdog is then killed) with GNU timeout -k, which process-group
+#     kills strace and every tracee. A timeout is the only reliable stop.
+#   * strace -z counts successful execve only, dropping PATH-walk ENOENT
+#     probes that inflated bash/sh/Other.
+#   * One awk pass catalogs every basename (aliases gawk->awk, etc.).
+#   * tables: Count is num + sum. JSON is built with jq.
+# 1.1.0 - 2026-08-20 - Path-basename matching; tables num/break.
+# 1.0.0 - 2026-08-19 - Rewrite: dated outputs, timeout, tables, flags.
 
-set -o pipefail
+set -euo pipefail
+
+SCRIPT_VERSION="1.2.2"
 
 # --- Toolchain ----------------------------------------------------------
-DATE_BIN=$(command -v date)
-GREP_BIN=$(command -v ggrep 2>/dev/null || command -v grep)
-TABLES_BIN=$(command -v tables)
-STRACE_BIN=$(PATH=/usr/bin command -v strace)
-TIMEOUT_BIN=$(command -v timeout)
-SETSID_BIN=$(command -v setsid)
+DATE_BIN=$(command -v gdate 2>/dev/null || command -v date || true)
+AWK_BIN=$(command -v gawk 2>/dev/null || command -v awk || true)
+GREP_BIN=$(command -v ggrep 2>/dev/null || command -v grep || true)
+JQ_BIN=$(command -v jq || true)
+TABLES_BIN=$(command -v tables || true)
+STRACE_BIN=$(PATH=/usr/bin command -v strace || true)
+TIMEOUT_BIN=$(command -v gtimeout 2>/dev/null || command -v timeout || true)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Record the profiling start time (seconds + human string) for the title.
 PROFILE_START_EPOCH=$("${DATE_BIN}" +%s 2>/dev/null || echo 0)
 PROFILE_START_HUMAN=$("${DATE_BIN}" '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null || true)
+PROFILE_START_CLOCK=$("${DATE_BIN}" '+%H:%M:%S' 2>/dev/null || true)
 
 # --- Defaults -----------------------------------------------------------
 DEFAULT_SCRIPT="test_00_all.sh"
@@ -54,20 +57,10 @@ MONO=0
 SKIP_EMAIL=0
 TEST_SCRIPT=""
 EXTRA_ARGS=()
-STRACE_PID=""
-WATCHDOG_PID=""
 TMPDIR_PROFILE=""
 
 cleanup() {
-    if [[ -n "${WATCHDOG_PID}" ]]; then
-        kill "${WATCHDOG_PID}" 2>/dev/null || true
-    fi
-    if [[ -n "${STRACE_PID}" ]]; then
-        kill -TERM -"${STRACE_PID}" 2>/dev/null || true
-        kill -KILL -"${STRACE_PID}" 2>/dev/null || true
-    fi
     [[ -n "${TMPDIR_PROFILE}" ]] && rm -rf "${TMPDIR_PROFILE}" || true
-    rm -f "${SCRIPT_DIR}/.profile_watchdog_fired" 2>/dev/null || true
 }
 trap cleanup EXIT
 
@@ -75,18 +68,22 @@ usage() {
     cat <<EOF
 Usage: $(basename "$0") [--help] [--timeout SECONDS] [--skip-email] [--mono] [test_script]
 
-Profile fork/execve activity for a Hydrogen test script under strace.
+Profile successful execve activity for a Hydrogen test script under strace.
 
   (no argument)        Profile the full suite (test_00_all.sh)
   test_script          Profile an individual test, e.g. test_40_auth.sh
-  --timeout N          Hard cap (seconds) on the strace run (default: ${PROFILE_TIMEOUT})
+  --timeout N          Hard cap (seconds) on the strace run (default: ${PROFILE_TIMEOUT}).
+                       GNU timeout process-group kills strace and every tracee.
+                       0 disables the cap (unbounded; not recommended).
   --skip-email         Set HYDROGEN_DISABLE_EMAIL=1 so the suite's make-email
-                       (mutt) tail is skipped — handy while profiling under strace
+                       (mutt) tail is skipped
   --mono               Disable ANSI colours in the rendered summary
   --help, -h           Show this help
 
 Environment:
   PROFILE_TIMEOUT      Overrides the default --timeout value
+
+Version: ${SCRIPT_VERSION}
 EOF
 }
 
@@ -111,6 +108,11 @@ if [[ ${#EXTRA_ARGS[@]} -gt 0 ]]; then
     echo "Warning: ignoring extra arguments: ${EXTRA_ARGS[*]}" >&2
 fi
 
+if [[ ! "${PROFILE_TIMEOUT}" =~ ^[0-9]+$ ]]; then
+    echo "Error: --timeout must be a non-negative integer (seconds)" >&2
+    exit 2
+fi
+
 echo "" >&2
 echo "Profiling Summary for ${TEST_SCRIPT} on $("${DATE_BIN}" || true)" >&2
 
@@ -119,12 +121,23 @@ if [[ -z "${STRACE_BIN}" ]]; then
     echo "Error: strace not found in /usr/bin" >&2
     exit 1
 fi
+if [[ -z "${TIMEOUT_BIN}" ]]; then
+    echo "Error: timeout not found (needed to bound strace -f)" >&2
+    exit 1
+fi
 if [[ -z "${GREP_BIN}" ]]; then
     echo "Error: grep not found" >&2
     exit 1
 fi
+if [[ -z "${AWK_BIN}" ]]; then
+    echo "Error: awk not found" >&2
+    exit 1
+fi
+if [[ -z "${JQ_BIN}" ]]; then
+    echo "Error: jq not found" >&2
+    exit 1
+fi
 
-# Resolve the target script (accept a bare name in cwd or a path).
 RUN_SCRIPT=""
 for candidate in "${TEST_SCRIPT}" "./${TEST_SCRIPT}" "${SCRIPT_DIR}/${TEST_SCRIPT}"; do
     if [[ -x "${candidate}" ]]; then
@@ -137,326 +150,407 @@ if [[ -z "${RUN_SCRIPT}" ]]; then
     exit 1
 fi
 
-# strace execs the target via execvp: a bare name (e.g. test_40_auth.sh) is
-# looked up on PATH and not found. Prefix bare names with ./ so the target is
-# located relative to cwd, matching the original ./${TEST_SCRIPT} behaviour.
 case "${RUN_SCRIPT}" in
     */*) : ;;
     *)   RUN_SCRIPT="./${RUN_SCRIPT}" ;;
 esac
 
-# --- Output files (dated: never clobber a prior run's archives) -----------
+ulimit -n 4096 2>/dev/null || true
+
+# --- Output files -------------------------------------------------------
 RUN_DATE_TAG=$("${DATE_BIN}" +%Y%m%d)
 TRACE_OUT="profile_trace-${RUN_DATE_TAG}.txt"
 SUMMARY_OUT="profile_summary-${RUN_DATE_TAG}.txt"
 ERROR_LOG="profile_error-${RUN_DATE_TAG}.txt"
 
-# Only ever touch our own legacy non-dated outputs. The old `rm -f ./*.txt`
-# wiped the error-log header (written just above) and could destroy unrelated
-# *.txt files; dated outputs make a blanket clean-up unnecessary.
 rm -f profile_trace.txt profile_summary.txt profile_error.txt
 
-# Diagnostics header (written first, never wiped by a later rm).
 {
     echo "Profiling run started at $("${DATE_BIN}" || true)"
+    echo "profile_test_suite.sh ${SCRIPT_VERSION}"
     echo "Test script: ${RUN_SCRIPT}"
     echo "Timeout: ${PROFILE_TIMEOUT}s  skip-email: ${SKIP_EMAIL}"
     echo "System limits: $(ulimit -n 2>/dev/null || true), Memory: $(free -m 2>/dev/null | "${GREP_BIN}" Mem || true)"
-    echo "strace: ${STRACE_BIN}, setsid: ${SETSID_BIN:-n/a}, tables: ${TABLES_BIN:-n/a}"
+    echo "strace: ${STRACE_BIN}, timeout: ${TIMEOUT_BIN}, tables: ${TABLES_BIN:-n/a}, jq: ${JQ_BIN}"
 } > "${ERROR_LOG}"
 
 if [[ "${SKIP_EMAIL}" -eq 1 ]]; then
     export HYDROGEN_DISABLE_EMAIL=1
 fi
 
-# --- Run strace (bounded; whole traced tree is killed on timeout) --------
-# strace -f follows every fork. Background daemons spawned by the suite
-# (make-email/mutt hanging on SMTP, hbm_browser, orphaned hydrogen/mailval
-# servers) can keep strace alive long after the script "finishes", which is
-# exactly the stall observed in the 2026-08-19 run. setsid isolates the tree
-# in its own process group so the watchdog can kill strace AND every forked
-# descendant atomically when the timeout fires.
+# --- Run strace (GNU timeout process-group kills the whole tree) --------
+# strace -f follows every fork. Tracees that outlive the script (mutt on
+# SMTP, orphaned hydrogen servers, hbm_browser) keep strace alive until
+# timeout fires. GNU timeout puts the command in its own process group
+# and signals the whole group; -k 10 sends KILL if TERM is ignored.
+# -z records successful execve only (PATH-walk ENOENT is dropped).
 echo "Running strace on ${RUN_SCRIPT}..." >> "${ERROR_LOG}"
 STRACE_STATUS=0
 STRACE_TIMED_OUT=0
 
-if [[ -n "${SETSID_BIN}" && -n "${TIMEOUT_BIN}" ]]; then
-    "${SETSID_BIN}" "${STRACE_BIN}" -f -e trace=fork,execve \
-        -o "${TRACE_OUT}" "${RUN_SCRIPT}" 2>> "${ERROR_LOG}" &
-    STRACE_PID=$!
-    (
-        sleep "${PROFILE_TIMEOUT}"
-        echo "watchdog" > "${SCRIPT_DIR}/.profile_watchdog_fired"
-        kill -TERM -"${STRACE_PID}" 2>/dev/null || true
-        sleep 5
-        kill -KILL -"${STRACE_PID}" 2>/dev/null || true
-    ) &
-    WATCHDOG_PID=$!
-    wait "${STRACE_PID}" 2>/dev/null
-    STRACE_STATUS=$?
-    # Allow strace to finish flushing the trace file and any lingering tracees
-    # (forked daemons that may still be writing) to settle. Without this, the
-    # post-hoc grep sees a partial trace.
-    sleep 1
-    if [[ -f "${SCRIPT_DIR}/.profile_watchdog_fired" ]]; then
-        STRACE_TIMED_OUT=1
-        rm -f "${SCRIPT_DIR}/.profile_watchdog_fired"
-        echo "strace timed out after ${PROFILE_TIMEOUT}s; process group ${STRACE_PID} terminated." >> "${ERROR_LOG}"
-    fi
-    kill "${WATCHDOG_PID}" 2>/dev/null || true
-    wait "${WATCHDOG_PID}" 2>/dev/null
-else
-    # Fallback: bare timeout (no group kill; tracees may survive a timeout).
-    "${TIMEOUT_BIN:-}" -k 10 "${PROFILE_TIMEOUT}" "${STRACE_BIN}" -f -e trace=fork,execve \
-        -o "${TRACE_OUT}" "${RUN_SCRIPT}" 2>> "${ERROR_LOG}"
-    STRACE_STATUS=$?
-    [[ "${STRACE_STATUS}" -ne 0 ]] && STRACE_TIMED_OUT=1
+"${TIMEOUT_BIN}" -k 10 "${PROFILE_TIMEOUT}" \
+    "${STRACE_BIN}" -f -z -s 256 -e trace=execve \
+    -o "${TRACE_OUT}" -- "${RUN_SCRIPT}" 2>> "${ERROR_LOG}" \
+    || STRACE_STATUS=$?
+
+if [[ "${STRACE_STATUS}" -eq 124 || "${STRACE_STATUS}" -eq 137 ]]; then
+    STRACE_TIMED_OUT=1
+    echo "strace timed out after ${PROFILE_TIMEOUT}s (status ${STRACE_STATUS}); process group terminated." >> "${ERROR_LOG}"
+elif [[ "${STRACE_STATUS}" -ne 0 ]]; then
+    echo "strace exited with status ${STRACE_STATUS}." >> "${ERROR_LOG}"
 fi
 
-if [[ "${STRACE_TIMED_OUT}" -ne 0 ]]; then
-    echo "Warning: strace did not exit cleanly (status ${STRACE_STATUS}; timed out). Summary is from a partial trace." >> "${ERROR_LOG}"
+if [[ ! -f "${TRACE_OUT}" ]]; then
+    echo "Error: trace file ${TRACE_OUT} was not created" >&2
+    exit 1
 fi
 
-# --- Tally execve invocations -------------------------------------------
-# Count distinct execve *invocations*: the initial `execve("PATH", ["argv0"...`
-# line, excluding strace's `<... execve resumed>)` continuation lines (which
-# appear when a prior execve was <unfinished ...>). Counting only the initial
-# lines keeps TOTAL_EXEC consistent with the per-command breakdown and the
-# "Other" bucket below.
-TOTAL_EXEC=$("${GREP_BIN}" -cE '^[0-9]+ execve\(' "${TRACE_OUT}" 2>/dev/null || true)
-TOTAL_EXEC=${TOTAL_EXEC:-0}
-
-# Parallel arrays preserve the exact grep patterns and counts from the
-# original script so the numbers stay comparable across runs.
-COUNT_LABELS=( hydrogen bash sh xargs cat find bc tr wc date md5sum \
-               mkdir mktemp realpath basename dirname du rm \
-               grep sed awk curl \
-               cmake make cc gcov \
-               cppcheck shellcheck markdownlint jsonlint eslint stylelint htmlhint \
-               cloc tables \
-               flock head cp sleep tail sort which jsonschema-cli )
-COUNT_CATS=(  Hydrogen Shell Shell Shell SysUtils SysUtils SysUtils SysUtils SysUtils SysUtils SysUtils \
-               PathTools PathTools PathTools PathTools PathTools PathTools PathTools \
-               TextTools TextTools TextTools TextTools \
-               Build Build Build Build \
-               Lint Lint Lint Lint Lint Lint Lint \
-               Reporting Reporting \
-               Misc Misc Misc Misc Misc Misc Misc Misc )
-counts=()
-# Build a precise argv[0]-anchored pattern per label from the label itself.
-# strace format: execve("PATH", ["ARGV0", ...]) — matching on the 2nd quoted
-# token (argv[0]) avoids false positives when a binary NAME appears in arguments
-# or env of another command (e.g. `which jsonschema-cli`, or `jsonschema-cli`
-# echoed in bash's PATH-lookup env block).
-# argv[0] may be a bare name ("bash"), a relative path ("./hydrogen_debug"), or
-# absolute ("/usr/bin/grep"). So we match the argv[0] field as ending in the
-# label, with an optional path prefix: ["[^"]*LABEL".
-for label in "${COUNT_LABELS[@]}"; do
-    # Escape any regex-special chars in the label (e.g. - in jsonschema-cli).
-    # Use double quotes so backslash sequences are interpreted by sed.
-    esc_label=$(printf '%s' "${label}" | sed "s#[.[\*^$()+?{|\\]#\\\\&#g")
-    if [[ "${label}" == "hydrogen" ]]; then
-        pattern='execve\("[^"]*hydrogen/hydrogen", \["hydrogen"'
-    else
-        pattern='execve\("[^"]*'${esc_label}'", \["[^"]*'${esc_label}'"'
-    fi
-    c=$("${GREP_BIN}" -cE "${pattern}" "${TRACE_OUT}" 2>/dev/null || true)
-    c=${c:-0}
-    counts+=("${c}")
-done
-
-# Hydrogen variants: the build produces several binaries (hydrogen,
-# hydrogen_coverage, hydrogen_debug, hydrogen_naked, hydrogen_perf,
-# hydrogen_release, hydrogen_valgrind). The generic `hydrogen` pattern above
-# only catches the bare name, so enumerate each variant into its own row so a
-# zero for one variant is visible rather than merged into the main bucket.
-HYDROGEN_VARIANTS=( hydrogen_coverage hydrogen_debug hydrogen_naked \
-                    hydrogen_perf hydrogen_release hydrogen_valgrind )
-HYDRO_VARIANT_COUNTS=()
-for v in "${HYDROGEN_VARIANTS[@]}"; do
-    # argv[0] may be "./hydrogen_debug" or "/build/hydrogen_debug"; match the
-    # basename at the end of the argv[0] field (2nd quoted token).
-    # shellcheck disable=SC2086 # ${v} is intentionally unquoted: spliced into regex
-    hydro_pat='execve\("[^"]*'${v}'", \["[^"]*'${v}'"'
-    c=$("${GREP_BIN}" -cE "${hydro_pat}" "${TRACE_OUT}" 2>/dev/null || true)
-    c=${c:-0}
-    HYDRO_VARIANT_COUNTS+=("${c}")
-done
-
-# --- Render summary via `tables` (plain-text fallback) ------------------
-# Capture the end time + total profiling duration for the footer.
-PROFILE_END_EPOCH=$("${DATE_BIN}" +%s 2>/dev/null || echo 0)
-PROFILE_END_HUMAN=$("${DATE_BIN}" '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null || true)
-PROFILE_DURATION_S=$(( PROFILE_END_EPOCH - PROFILE_START_EPOCH ))
-PROFILE_DURATION=$(printf '%dh %dm %ds' $(( PROFILE_DURATION_S / 3600 )) $(( (PROFILE_DURATION_S % 3600) / 60 )) $(( PROFILE_DURATION_S % 60 )))
-if [[ "${STRACE_TIMED_OUT}" -ne 0 ]]; then
-    PROFILE_DURATION="${PROFILE_DURATION} (timed out)"
-fi
-
+# --- Catalog ------------------------------------------------------------
+# Single source of truth: basename <tab> category. Display order is file order.
+# GNU aliases (gawk, ggrep, ...) remap onto these names so they do not
+# land in Uncategorized and do not get a second row.
 TMPDIR_PROFILE=$(mktemp -d)
+CATALOG_FILE="${TMPDIR_PROFILE}/catalog.txt"
+ALIAS_FILE="${TMPDIR_PROFILE}/alias.txt"
+TALLY_FILE="${TMPDIR_PROFILE}/tally.txt"
+OTHER_FILE="${TMPDIR_PROFILE}/other.txt"
 
-# "Other": any execve line not matching a tracked category. These are
-# typically PATH-resolution noise (failed bash lookups from lmod, `id`/`uname`
-# from shell init) and low-frequency tooling. We report the count and also log
-# the distinct binaries (for ad-hoc triage).
-# Build a newline-separated list of all tracked argv[0] names; an execve line
-# is "tracked" if its argv[0] (the 2nd quoted field) equals one of them.
-TRACKED_NAMES_FILE="${TMPDIR_PROFILE}/tracked_names.txt"
+cat > "${CATALOG_FILE}" <<'EOF'
+hydrogen	Hydrogen
+hydrogen_coverage	Hydrogen
+hydrogen_debug	Hydrogen
+hydrogen_naked	Hydrogen
+hydrogen_perf	Hydrogen
+hydrogen_release	Hydrogen
+hydrogen_valgrind	Hydrogen
+bash	Shell
+sh	Shell
+dash	Shell
+zsh	Shell
+xargs	Shell
+*.sh	Shell
+cat	SysUtils
+find	SysUtils
+bc	SysUtils
+tr	SysUtils
+wc	SysUtils
+date	SysUtils
+md5sum	SysUtils
+printf	SysUtils
+true	SysUtils
+false	SysUtils
+env	SysUtils
+nproc	SysUtils
+id	SysUtils
+uname	SysUtils
+stat	SysUtils
+df	SysUtils
+tee	SysUtils
+cut	SysUtils
+uniq	SysUtils
+base64	SysUtils
+openssl	SysUtils
+seq	SysUtils
+mkdir	PathTools
+mktemp	PathTools
+realpath	PathTools
+basename	PathTools
+dirname	PathTools
+du	PathTools
+rm	PathTools
+mv	PathTools
+cp	PathTools
+ln	PathTools
+chmod	PathTools
+touch	PathTools
+ls	PathTools
+grep	TextTools
+sed	TextTools
+awk	TextTools
+curl	TextTools
+jq	TextTools
+head	TextTools
+tail	TextTools
+sort	TextTools
+git	TextTools
+cmake	Build
+make	Build
+ninja	Build
+ninja-build	Build
+cc	Build
+gcc	Build
+gcov	Build
+ccache	Build
+cppcheck	Lint
+shellcheck	Lint
+markdownlint	Lint
+jsonlint	Lint
+eslint	Lint
+stylelint	Lint
+htmlhint	Lint
+xmlstarlet	Lint
+luacheck	Lint
+jsonschema-cli	Lint
+cloc	Reporting
+tables	Reporting
+Oh	Reporting
+convert	Reporting
+magick	Reporting
+mutt	Reporting
+lua	Reporting
+flock	Process
+sleep	Process
+which	Process
+timeout	Process
+kill	Process
+pkill	Process
+pgrep	Process
+ps	Process
+sqlite3	DB
+psql	DB
+mysql	DB
+mariadb	DB
+python3	Misc
+node	Misc
+perl	Misc
+addto	Misc
+mailval	Misc
+EOF
+
+cat > "${ALIAS_FILE}" <<'EOF'
+gawk	awk
+ggrep	grep
+gsed	sed
+gdate	date
+gfind	find
+gtimeout	timeout
+grealpath	realpath
+gbasename	basename
+gdirname	dirname
+gxargs	xargs
+gstat	stat
+g++	gcc
+EOF
+
+# shellcheck disable=SC2016 # awk program is single-quoted on purpose
+"${AWK_BIN}" -v catalog_file="${CATALOG_FILE}" -v alias_file="${ALIAS_FILE}" \
+    -v tally_file="${TALLY_FILE}" -v other_file="${OTHER_FILE}" '
+BEGIN {
+    FS = "\t"
+    while ((getline < alias_file) > 0) {
+        if (NF >= 2) alias[$1] = $2
+    }
+    close(alias_file)
+    while ((getline < catalog_file) > 0) {
+        if (NF >= 2) {
+            n++
+            order[n] = $1
+            category[$1] = $2
+        }
+    }
+    close(catalog_file)
+}
+/^[0-9]+ execve\("/ {
+    split($0, parts, "\"")
+    path = parts[2]
+    if (path == "") next
+    nparts = split(path, segs, "/")
+    base = segs[nparts]
+    if (base == "") next
+    if (base in alias) base = alias[base]
+    if (base ~ /\.sh$/) base = "*.sh"
+    total++
+    if (base in category) {
+        count[base]++
+    } else {
+        other++
+        otherc[base]++
+    }
+}
+END {
+    print total + 0
+    print other + 0
+    for (i = 1; i <= n; i++) {
+        print order[i] "\t" category[order[i]] "\t" (count[order[i]] + 0) > tally_file
+    }
+    nout = 0
+    for (b in otherc) {
+        nout++
+        obase[nout] = b
+        ocount[nout] = otherc[b]
+    }
+    for (i = 1; i <= nout; i++) {
+        for (j = i + 1; j <= nout; j++) {
+            if (ocount[j] > ocount[i] || (ocount[j] == ocount[i] && obase[j] < obase[i])) {
+                tb = obase[i]; obase[i] = obase[j]; obase[j] = tb
+                tc = ocount[i]; ocount[i] = ocount[j]; ocount[j] = tc
+            }
+        }
+    }
+    for (i = 1; i <= nout; i++) {
+        print ocount[i] "\t" obase[i] > other_file
+    }
+}
+' "${TRACE_OUT}" > "${TMPDIR_PROFILE}/meta.txt"
+
 {
-    printf '%s\n' "hydrogen"
-    printf '%s\n' "${COUNT_LABELS[@]}"
-    printf '%s\n' "${HYDROGEN_VARIANTS[@]}"
-} | sort -u > "${TRACKED_NAMES_FILE}"
-
-# Extract the executable path (1st quoted field, $4) from each execve result
-# line, then keep only those whose basename is NOT a tracked binary (= "Other").
-# Fixed-string -F lookup avoids regex pitfalls with names like "jsonschema-cli".
-OTHER_COUNT=$("${GREP_BIN}" -E '^[0-9]+ execve\(' "${TRACE_OUT}" 2>/dev/null \
-    | awk -F'"' '{print $4}' \
-    | awk -F'/' '{print $NF}' \
-    | "${GREP_BIN}" -vxFf "${TRACKED_NAMES_FILE}" 2>/dev/null \
-    | wc -l 2>/dev/null || true)
+    read -r TOTAL_EXEC
+    read -r OTHER_COUNT
+} < "${TMPDIR_PROFILE}/meta.txt"
+TOTAL_EXEC=${TOTAL_EXEC:-0}
 OTHER_COUNT=${OTHER_COUNT:-0}
 
-# Distinct uncategorized binaries (basenames, for the diagnostics log).
-OTHER_BINS=$("${GREP_BIN}" -E '^[0-9]+ execve\(' "${TRACE_OUT}" 2>/dev/null \
-    | awk -F'"' '{print $4}' \
-    | awk -F'/' '{print $NF}' \
-    | "${GREP_BIN}" -vxFf "${TRACKED_NAMES_FILE}" 2>/dev/null \
-    | sort | uniq -c | sort -nr || true)
-if [[ -n "${OTHER_BINS}" ]]; then
+if [[ -s "${OTHER_FILE}" ]]; then
     {
         echo "Uncategorized execve counts (for triage):"
-        echo "${OTHER_BINS}"
+        cat "${OTHER_FILE}"
         echo ""
     } >> "${ERROR_LOG}"
 fi
 
-# Reconcile: the sum of all rows (tracked + hydrogen variants + Other) should
-# equal TOTAL_EXEC. Any residual is execve lines that aren't result lines
-# (e.g. strace's "<unfinished ...>" probes), reported in the footer for audit.
 CAT_SUM=0
-for i in "${!counts[@]}"; do
-    CAT_SUM=$(( CAT_SUM + counts[i] ))
-done
-for c in "${HYDRO_VARIANT_COUNTS[@]}"; do
-    CAT_SUM=$(( CAT_SUM + c ))
-done
+while IFS=$'\t' read -r _cmd _cat cnt; do
+    [[ -z "${_cmd}" ]] && continue
+    CAT_SUM=$(( CAT_SUM + cnt ))
+done < "${TALLY_FILE}"
 CAT_SUM=$(( CAT_SUM + OTHER_COUNT ))
 RESIDUAL=$(( TOTAL_EXEC - CAT_SUM ))
 [[ ${RESIDUAL} -lt 0 ]] && RESIDUAL=0
 
+# --- Render -------------------------------------------------------------
+PROFILE_END_EPOCH=$("${DATE_BIN}" +%s 2>/dev/null || echo 0)
+PROFILE_END_HUMAN=$("${DATE_BIN}" '+%Y-%m-%d %H:%M:%S %Z' 2>/dev/null || true)
+PROFILE_DURATION_S=$(( PROFILE_END_EPOCH - PROFILE_START_EPOCH ))
+if [[ "${PROFILE_DURATION_S}" -lt 0 ]]; then
+    PROFILE_DURATION_S=0
+fi
+if [[ "${PROFILE_DURATION_S}" -ge 3600 ]]; then
+    PROFILE_DURATION=$(printf '%dh %dm %ds' $(( PROFILE_DURATION_S / 3600 )) $(( (PROFILE_DURATION_S % 3600) / 60 )) $(( PROFILE_DURATION_S % 60 )))
+elif [[ "${PROFILE_DURATION_S}" -ge 60 ]]; then
+    PROFILE_DURATION=$(printf '%dm %ds' $(( PROFILE_DURATION_S / 60 )) $(( PROFILE_DURATION_S % 60 )))
+else
+    PROFILE_DURATION=$(printf '%ds' "${PROFILE_DURATION_S}")
+fi
+if [[ "${STRACE_TIMED_OUT}" -ne 0 ]]; then
+    PROFILE_DURATION="${PROFILE_DURATION} (timed out)"
+fi
+
 LAYOUT="${TMPDIR_PROFILE}/layout.json"
 DATA="${TMPDIR_PROFILE}/data.json"
 
-# Build data JSON (safe: categories/labels are fixed identifiers).
-# Rows: each tracked command, followed by hydrogen variants (under Hydrogen
-# so they group together via the 'break' column), then a final 'Other' row.
-printf '[' > "${DATA}"
-row_idx=0
-# Format an integer with thousands separators (e.g. 15504 -> "15,504").
 fmt_count() {
     local n="$1"
     printf '%s' "${n}" | sed ':a;s/\B[0-9]\{3\}\>/,&/;ta' || printf '%s' "${n}"
 }
-emit_row() {
-    [[ ${row_idx} -gt 0 ]] && printf ',' >> "${DATA}"
-    printf '\n  {"category":"%s","command":"%s","count":"%s"}' "$1" "$2" "$3" >> "${DATA}"
-    row_idx=$(( row_idx + 1 ))
-}
-emit_sep() {
-    [[ ${row_idx} -gt 0 ]] && printf ',' >> "${DATA}"
-    printf '\n  {"category":"","command":"","count":""}' >> "${DATA}"
-    row_idx=$(( row_idx + 1 ))
-}
-prev_cat=""
-for i in "${!COUNT_LABELS[@]}"; do
-    cat="${COUNT_CATS[${i}]}"
-    if [[ -n "${prev_cat}" && "${cat}" != "${prev_cat}" ]]; then
-        emit_sep
-    fi
-    emit_row "${cat}" "${COUNT_LABELS[${i}]}" "$(fmt_count "${counts[${i}]}" )"
-    # Hydrogen variants: emit immediately after the hydrogen entry so they
-    # render within the same Hydrogen group.
-    if [[ "${COUNT_LABELS[${i}]}" == "hydrogen" ]]; then
-        for j in "${!HYDROGEN_VARIANTS[@]}"; do
-            emit_row "Hydrogen" "${HYDROGEN_VARIANTS[${j}]}" "$(fmt_count "${HYDRO_VARIANT_COUNTS[${j}]}" )"
-        done
-    fi
-    prev_cat="${cat}"
-done
-# Other bucket as its own group.
-if [[ ${RESIDUAL} -gt 0 ]]; then
-    emit_sep
-    emit_row "Other" "(uncategorized + ${RESIDUAL} probes)" "$(fmt_count "${OTHER_COUNT}")"
-else
-    emit_sep
-    emit_row "Other" "(uncategorized)" "$(fmt_count "${OTHER_COUNT}")"
-fi
-printf '\n]\n' >> "${DATA}"
 
-cat > "${LAYOUT}" <<EOF
+OTHER_LABEL="Uncategorized"
+if [[ ${RESIDUAL} -gt 0 ]]; then
+    OTHER_LABEL="Uncategorized + ${RESIDUAL} probes"
+fi
+
+# shellcheck disable=SC2016 # jq program is single-quoted on purpose
 {
-  "theme": "Blue",
-   "title": "Fork/Exec Profile: ${RUN_SCRIPT}  [${PROFILE_START_HUMAN}]",
-    "footer": "Total: ${TOTAL_EXEC}  |  ${PROFILE_DURATION}",
-   "footer_position": "right",
-   "columns": [
-     {"header": "Category", "key": "category", "datatype": "text", "width": 12, "justification": "left"},
-     {"header": "Command", "key": "command", "datatype": "text", "width": 24, "justification": "left"},
-     {"header": "Count", "key": "count", "datatype": "text", "width": 10, "justification": "right"}
-   ]
-}
-EOF
+    cat "${TALLY_FILE}"
+    printf '%s\t%s\t%s\n' "${OTHER_LABEL}" "Uncategorized" "${OTHER_COUNT}"
+} | "${JQ_BIN}" -R -s -c '
+    split("\n")
+    | map(select(length > 0))
+    | map(split("\t"))
+    | map(
+        (.[2] | tonumber) as $count
+        | {
+            category: .[1],
+            command: .[0],
+            count: $count,
+            annotate: ($count == 0)
+        }
+    )
+' > "${DATA}"
+
+FOOTER_TEXT="${PROFILE_DURATION}"
+if [[ "${STRACE_TIMED_OUT}" -ne 0 ]]; then
+    FOOTER_TEXT="${FOOTER_TEXT} — partial trace"
+fi
+
+# shellcheck disable=SC2016 # jq program is single-quoted on purpose
+"${JQ_BIN}" -n \
+    --arg title "$(basename "${RUN_SCRIPT}") @ ${PROFILE_START_CLOCK}" \
+    --arg footer "${FOOTER_TEXT}" \
+    '{
+      theme: "Blue",
+      title: $title,
+      footer: $footer,
+      footer_position: "right",
+      columns: [
+        {
+          header: "Category",
+          key: "category",
+          datatype: "text",
+          justification: "left",
+          visible: false,
+          break: true
+        },
+        {
+          header: "Command",
+          key: "command",
+          datatype: "text",
+          justification: "left",
+          summary: "count"
+        },
+        {
+          header: "Count",
+          key: "count",
+          datatype: "num",
+          justification: "right",
+          summary: "sum"
+        }
+      ]
+    }' > "${LAYOUT}"
 
 echo "" >&2
 if [[ -n "${TABLES_BIN}" ]]; then
-    # Archive a clean mono copy; print a (optionally coloured) copy to console.
-    "${TABLES_BIN}" "${LAYOUT}" "${DATA}" --mono > "${SUMMARY_OUT}" 2>/dev/null
+    "${TABLES_BIN}" "${LAYOUT}" "${DATA}" --mono > "${SUMMARY_OUT}" 2>/dev/null || true
     if [[ "${MONO}" -eq 1 || ! -t 1 ]]; then
-        "${TABLES_BIN}" "${LAYOUT}" "${DATA}" --mono
+        "${TABLES_BIN}" "${LAYOUT}" "${DATA}" --mono || true
     else
-        "${TABLES_BIN}" "${LAYOUT}" "${DATA}"
+        "${TABLES_BIN}" "${LAYOUT}" "${DATA}" || true
     fi
 else
-    # Plain-text fallback when the tables executable is unavailable.
+    FMT_TOTAL="$(fmt_count "${TOTAL_EXEC}")"
+    FMT_TOTAL="${FMT_TOTAL:-${TOTAL_EXEC}}"
     {
         echo "Profiling Summary for ${RUN_SCRIPT}"
         echo "  started: ${PROFILE_START_HUMAN}"
         echo "  ended:   ${PROFILE_END_HUMAN} (${PROFILE_DURATION})"
         echo "-----------------------------------"
-        echo "  Total exec: $(fmt_count "${TOTAL_EXEC}")"
+        printf '  Total exec: %s\n' "${FMT_TOTAL}"
         [[ ${RESIDUAL} -gt 0 ]] && echo "  (${RESIDUAL} non-result execve lines excluded from sum)"
         if [[ "${STRACE_TIMED_OUT}" -ne 0 ]]; then
             echo "  NOTE: timed out — partial trace"
         fi
         if [[ "${OTHER_COUNT}" -gt 0 ]]; then
-            echo "  Uncategorized (Other): $(fmt_count "${OTHER_COUNT}") — see ${ERROR_LOG}"
+            FMT_OTHER="$(fmt_count "${OTHER_COUNT}")"
+            FMT_OTHER="${FMT_OTHER:-${OTHER_COUNT}}"
+            echo "  Uncategorized: ${FMT_OTHER} — see ${ERROR_LOG}"
         fi
         echo ""
         prev_cat=""
-        for i in "${!COUNT_LABELS[@]}"; do
-            cat="${COUNT_CATS[${i}]}"
+        while IFS=$'\t' read -r cmd cat cnt; do
+            [[ -z "${cmd}" ]] && continue
             if [[ -n "${prev_cat}" && "${cat}" != "${prev_cat}" ]]; then
                 echo "  ----"
             fi
-            printf '  [%s] %s: %s\n' "${cat}" "${COUNT_LABELS[${i}]}" "$(fmt_count "${counts[${i}]}" )"
-            # Hydrogen variants render in the same group, right after hydrogen.
-            if [[ "${COUNT_LABELS[${i}]}" == "hydrogen" ]]; then
-                for j in "${!HYDROGEN_VARIANTS[@]}"; do
-                    printf '  [%s] %s: %s\n' "Hydrogen" "${HYDROGEN_VARIANTS[${j}]}" "$(fmt_count "${HYDRO_VARIANT_COUNTS[${j}]}" )"
-                done
-            fi
+            FMT_C="$(fmt_count "${cnt}")"
+            FMT_C="${FMT_C:-${cnt}}"
+            printf '  [%s] %s: %s\n' "${cat}" "${cmd}" "${FMT_C}"
             prev_cat="${cat}"
-        done
+        done < "${TALLY_FILE}"
         echo "  ----"
-        if [[ ${RESIDUAL} -gt 0 ]]; then
-            printf '  [Other] (uncategorized + %s probes): %s\n' "${RESIDUAL}" "$(fmt_count "${OTHER_COUNT}")"
-        else
-            printf '  [Other] (uncategorized): %s\n' "$(fmt_count "${OTHER_COUNT}")"
-        fi
+        FMT_OTHER2="$(fmt_count "${OTHER_COUNT}")"
+        FMT_OTHER2="${FMT_OTHER2:-${OTHER_COUNT}}"
+        printf '  [Uncategorized] %s: %s\n' "${OTHER_LABEL}" "${FMT_OTHER2}"
         echo "==================================="
-        printf '  [SUM] %s\n' "$(fmt_count "${TOTAL_EXEC}")"
+        printf '  [SUM] %s\n' "${FMT_TOTAL}"
         echo "-----------------------------------"
         echo "- Check ${ERROR_LOG} for strace errors and stall diagnostics."
     } | tee "${SUMMARY_OUT}"

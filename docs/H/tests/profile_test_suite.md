@@ -2,151 +2,88 @@
 
 ## Overview
 
-The `profile_test_suite.sh` script provides performance profiling capabilities for test scripts in the Hydrogen test suite. It uses `strace` to monitor system calls, tracking fork operations and command executions to analyze the performance characteristics of test runs.
+The `profile_test_suite.sh` script profiles Hydrogen test scripts under `strace`. It counts successful `execve` calls by basename, groups them with the project `tables` executable, and writes dated trace/summary/error files.
 
 ## Script Information
 
-- **Script**: `profile_test_suite.sh`
-- **Purpose**: Performance profiling and system call analysis for test scripts
-- **Dependencies**: strace, standard Unix utilities
-
-## Key Features
-
-- **System Call Tracing**: Uses strace to monitor fork and execve system calls
-- **Command Execution Analysis**: Tracks all external command invocations
-- **Performance Metrics**: Counts executions by command type and frequency
-- **Resource Monitoring**: Captures system limits and memory usage
-- **Error Logging**: Comprehensive error capture and reporting
+- **Script**: `/elements/001-hydrogen/hydrogen/tests/profile_test_suite.sh`
+- **Version**: 1.2.2
+- **Purpose**: Bounded execve profiling of the suite or a single test
+- **Dependencies**: strace, GNU timeout, awk, jq, grep, date; `tables` for the summary (plain-text fallback if missing)
 
 ## Usage
 
 ```bash
-./profile_test_suite.sh [script_name]
+./profile_test_suite.sh                       # full suite (test_00_all.sh)
+./profile_test_suite.sh test_40_auth.sh       # one test
+./profile_test_suite.sh --timeout 600 ...     # hard cap in seconds (default 1800)
+./profile_test_suite.sh --skip-email ...      # skip make-email/mutt
+./profile_test_suite.sh --mono ...            # no ANSI colours
+./profile_test_suite.sh --help
 ```
 
-### Parameters
+`PROFILE_TIMEOUT` overrides the default cap. `0` disables it (unbounded; not recommended).
 
-- `script_name`: Optional test script to profile (default: `test_00_all.sh`)
+## Output Files
 
-### Output Files
+Dated so a later day does not clobber an earlier run. Same-day re-runs overwrite that day's files:
 
-- `profile_trace.txt`: Raw strace output with all system calls
-- `profile_summary.txt`: Formatted summary of profiling results
-- `profile_error.txt`: Error log and diagnostic information
+- `profile_trace-YYYYMMDD.txt`: raw strace (`-f -z -e execve`)
+- `profile_summary-YYYYMMDD.txt`: tables summary (mono archive)
+- `profile_error-YYYYMMDD.txt`: diagnostics and strace stderr
 
-## Functionality
+Legacy undated `profile_trace.txt` / `profile_summary.txt` / `profile_error.txt` are removed at start.
 
-### Profiling Process
+## How It Works
 
-1. **Setup Phase**: Validates strace availability and test script executability
-2. **System Preparation**: Sets file descriptor limits and captures system state
-3. **Tracing Execution**: Runs strace with fork/execve tracing on target script
-4. **Data Analysis**: Processes trace output to categorize command executions
-5. **Reporting**: Generates formatted summary with execution counts
+1. Resolve the target script (cwd, `./name`, or `tests/`).
+2. Run `timeout -k 10 N strace -f -z -s 256 -e trace=execve` on it. GNU timeout process-group kills strace and every tracee when the cap fires. That is the only reliable stop for `strace -f`.
+3. `-z` keeps successful execve only, so PATH-walk `ENOENT` probes do not inflate bash/sh/Uncategorized.
+4. One awk pass maps each path basename through a catalog (plus GNU aliases such as `gawk` → `awk`).
+5. `tables` renders Command + Count with a hidden Category break column. Zeros are blank. Zero-count rows are annotated so Command `summary: "count"` is the number of non-zero rows and Count `summary: "sum"` is total execve. Column widths are omitted so the table, title, and footer auto-size.
 
-### Command Categories
+## Command Categories
 
-The script categorizes command executions into logical groups:
+Catalog groups (zeros are listed so missing tools stay visible):
 
-- **Core Execution**: hydrogen binary, bash, sh, xargs
-- **File Operations**: cat, find, file manipulation utilities
-- **Text Processing**: grep, sed, awk, text utilities
-- **System Utilities**: mkdir, mktemp, path utilities
-- **Build Tools**: cmake, make, cc, gcov
-- **Quality Tools**: cppcheck, shellcheck, linting tools
-- **Analysis Tools**: cloc, tables
+- **Hydrogen**: `hydrogen` and `hydrogen_*` variants
+- **Shell**: bash, sh, dash, zsh, xargs, `*.sh` (test scripts and helpers)
+- **SysUtils**: cat, find, date, printf, env, …
+- **PathTools**: mkdir, rm, cp, realpath, …
+- **TextTools**: grep, sed, awk, jq, curl, …
+- **Build**: cmake, ninja, cc, gcov, …
+- **Lint**: cppcheck, shellcheck, jsonschema-cli, …
+- **Reporting**: cloc, tables, Oh, lua, mutt, …
+- **Process**: flock, sleep, timeout, kill, …
+- **DB**: sqlite3, psql, mysql, mariadb
+- **Misc**: python3, node, perl, addto, mailval
+- **Uncategorized**: anything not in the catalog (listed with counts in the error log)
 
-## Integration with Test Suite
+## Tables Layout
 
-Used for performance analysis and optimization of the test suite:
+The summary uses the project `tables` binary (Blue theme), not hand-drawn separators:
 
-- **Bottleneck Identification**: Reveals frequently called commands
-- **Resource Usage Analysis**: Tracks system call patterns
-- **Optimization Opportunities**: Identifies potential performance improvements
-- **Debugging Support**: Provides detailed execution traces
+- Hidden `category` column with `break: true` draws group rules
+- Count is `datatype: num` with thousands separators; zeros render blank (tables default)
+- Zero-count rows set `"annotate": true` so they still appear but are excluded from summaries
+- Command `summary: "count"` is the number of non-zero rows; Count `summary: "sum"` is total execve
+- No fixed `width` on columns; title and footer size to content
+- Title is `basename @ HH:MM:SS` (for example `test_18_signals.sh @ 11:30:28`)
+- Footer is duration (and “partial trace” if the timeout fired)
 
-## Dependencies
+## Timeout
 
-- **strace**: System call tracer (required)
-- **Standard Unix Tools**: grep, date, ulimit, free
-- **Test Scripts**: Target scripts must be executable
+`strace -f` follows every fork. Background processes that outlive the script (mutt on SMTP, orphaned hydrogen servers, `hbm_browser`) keep strace alive until something kills the tree. GNU `timeout -k 10` sends TERM to the process group, then KILL. A timeout is the only reliable bound; there is no clean “suite finished” signal once `-f` is attached.
 
-## Error Handling
-
-- Validates strace availability before execution
-- Checks test script executability
-- Captures and logs all errors during profiling
-- Continues processing even with partial failures
-- Provides clear error messages and diagnostic information
-
-## Usage Examples
-
-### Profile Main Test Suite
-
-```bash
-./profile_test_suite.sh
-# Profiles test_00_all.sh by default
-```
-
-### Profile Specific Test
-
-```bash
-./profile_test_suite.sh test_01_compilation.sh
-# Profiles compilation test specifically
-```
-
-### Analyze Results
-
-```bash
-# View summary
-cat profile_summary.txt
-
-# Examine detailed trace
-head -50 profile_trace.txt
-
-# Check for errors
-cat profile_error.txt
-```
-
-## Output Interpretation
-
-### Summary Format
-
-```log
-Profiling Summary for test_00_all.sh [timestamp]
------------------------------------
-  Total exec: 1250
-
-  hydrogen: 45
-
-  bash: 234
-  sh: 12
-  xargs: 89
-
-  [additional command counts...]
-```
-
-### Key Metrics
-
-- **Total exec**: Total number of execve system calls
-- **hydrogen**: Number of times the hydrogen binary was executed
-- **Command counts**: Frequency of each command type execution
-
-## Performance Considerations
-
-- **File Descriptor Limits**: Automatically increases ulimit for large traces
-- **Memory Monitoring**: Captures system memory state
-- **Large Output Handling**: Manages potentially large trace files
-- **Incremental Processing**: Processes trace data in categorized chunks
+`--skip-email` sets `HYDROGEN_DISABLE_EMAIL=1` so `make-email.sh` / mutt are not started.
 
 ## Troubleshooting
 
-Common issues and solutions:
-
-- **strace not found**: Ensure strace is installed in /usr/bin
-- **Permission denied**: Script must be executable
-- **Large trace files**: Monitor disk space for long-running tests
-- **Incomplete traces**: Check profile_error.txt for strace failures
+- **strace not found**: install strace in `/usr/bin`
+- **timeout not found**: GNU coreutils `timeout` is required
+- **Permission denied**: target script must be executable
+- **Partial trace**: timeout fired; summary is from whatever was flushed
+- **Large Uncategorized bucket**: see `Uncategorized execve counts` in the error log and add catalog rows if they are real tools
 
 ## Related Documentation
 
