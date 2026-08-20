@@ -2,16 +2,20 @@
 # SchemaTool MySQL/MariaDB metadata adapter — read-only SELECT on queries
 #
 # Emits JSON array of {query_ref,query_type,name,summary,code}.
-# Large text fields are transferred as HEX and decoded in Python so the
+# Large text fields are transferred as HEX and decoded with xxd so the
 # mysql client cannot truncate mid-JSON (seen with long migration code).
 #
 # CHANGELOG
+# 1.4.0 - 2026-08-20 - HEX decode via xxd+jq (drop python3)
 # 1.3.0 - 2026-08-06 - SET SESSION TRANSACTION READ ONLY before SELECT
 # 1.2.0 - 2026-08-02 - HEX+Python decode (avoid client line truncation)
 # 1.1.0 - 2026-08-02 - NDJSON rows + schema-as-DB
 # 1.0.0 - 2026-07-29 - Phase 3 MySQL adapter
 
 set -euo pipefail
+
+# shellcheck source=extras/schematool/db/common.sh # HEX decode helper
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 HOST=""
 PORT="3306"
@@ -45,8 +49,12 @@ if ! command -v mysql >/dev/null 2>&1; then
     echo "Error: mysql client not found" >&2
     exit 1
 fi
-if ! command -v python3 >/dev/null 2>&1; then
-    echo "Error: python3 not found" >&2
+if ! command -v jq >/dev/null 2>&1; then
+    echo "Error: jq not found" >&2
+    exit 1
+fi
+# shellcheck disable=SC2310 # missing xxd is a hard adapter error
+if ! schematool_require_xxd; then
     exit 1
 fi
 
@@ -120,48 +128,36 @@ if [[ "${RC}" -ne 0 ]]; then
     exit 1
 fi
 
-python3 - "${RAW}" <<'PY'
-import json, sys
-from pathlib import Path
+if [[ ! -s "${RAW}" ]]; then
+    echo "[]"
+    exit 0
+fi
 
-path = Path(sys.argv[1])
-rows = []
-if path.stat().st_size == 0:
-    print("[]")
-    sys.exit(0)
+NDJSON="${WORK}/rows.ndjson"
+: > "${NDJSON}"
+idx=0
+while IFS=$'\t' read -r ref_s typ_s name_h sum_h code_h || [[ -n "${ref_s:-}" ]]; do
+    [[ -z "${ref_s:-}" ]] && continue
+    if [[ ! "${ref_s}" =~ ^[0-9]+$ || ! "${typ_s}" =~ ^[0-9]+$ ]]; then
+        continue
+    fi
+    idx=$((idx + 1))
+    nf="${WORK}/n.${idx}"
+    sf="${WORK}/s.${idx}"
+    cf="${WORK}/c.${idx}"
+    schematool_unhex_to_file "${name_h}" "${nf}"
+    schematool_unhex_to_file "${sum_h}" "${sf}"
+    schematool_unhex_to_file "${code_h}" "${cf}"
+    jq -nc --argjson query_ref "${ref_s}" --argjson query_type "${typ_s}" \
+        --rawfile name "${nf}" --rawfile summary "${sf}" --rawfile code "${cf}" \
+        '{query_ref:$query_ref, query_type:$query_type, name:$name, summary:$summary, code:$code}' \
+        >> "${NDJSON}"
+done < "${RAW}"
 
-def unhex(h: str) -> str:
-    h = (h or "").strip()
-    if not h or h.upper() == "NULL":
-        return ""
-    try:
-        return bytes.fromhex(h).decode("utf-8", errors="replace")
-    except ValueError:
-        return ""
-
-with path.open("r", encoding="utf-8", errors="replace") as f:
-    for line in f:
-        line = line.rstrip("\n")
-        if not line:
-            continue
-        parts = line.split("\t")
-        if len(parts) < 5:
-            continue
-        ref_s, typ_s, name_h, sum_h, code_h = parts[0], parts[1], parts[2], parts[3], parts[4]
-        try:
-            ref = int(ref_s)
-            typ = int(typ_s)
-        except ValueError:
-            continue
-        rows.append({
-            "query_ref": ref,
-            "query_type": typ,
-            "name": unhex(name_h),
-            "summary": unhex(sum_h),
-            "code": unhex(code_h),
-        })
-
-print(json.dumps(rows, ensure_ascii=False, separators=(",", ":")))
-PY
+if [[ ! -s "${NDJSON}" ]]; then
+    echo "[]"
+    exit 0
+fi
+jq -s -c '.' "${NDJSON}"
 
 exit 0

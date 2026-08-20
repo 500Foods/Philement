@@ -2,6 +2,7 @@
 # SchemaTool DB common helpers — schema qualification and shared contracts
 #
 # CHANGELOG
+# 1.1.0 - 2026-08-20 - HEX decode helper (xxd) for MySQL/DB2 adapters
 # 1.0.0 - 2026-07-29 - Phase 3 shared helpers
 
 # shellcheck disable=SC2034 # sourced variables used by callers
@@ -84,4 +85,30 @@ schematool_apply_env_fallbacks() {
             : "${SCHEMATOOL_FB_PASSWORD_ENV:=}"
             ;;
     esac
+}
+
+schematool_require_xxd() {
+    if ! command -v xxd >/dev/null 2>&1; then
+        echo "Error: xxd not found (needed to decode HEX exports)" >&2
+        return 1
+    fi
+}
+
+# Decode a HEX string to dest file. Empty / NULL / invalid → empty file.
+schematool_unhex_to_file() {
+    local hex="$1"
+    local dest="$2"
+    hex="${hex//[$'\r\n']/}"
+    hex="${hex// /}"
+    if [[ -z "${hex}" || "${hex^^}" == "NULL" ]]; then
+        : > "${dest}"
+        return 0
+    fi
+    if [[ $(( ${#hex} % 2 )) -ne 0 ]]; then
+        : > "${dest}"
+        return 0
+    fi
+    if ! printf '%s' "${hex}" | xxd -r -p > "${dest}" 2>/dev/null; then
+        : > "${dest}"
+    fi
 }

@@ -6,6 +6,7 @@
 # Never prints password.
 #
 # CHANGELOG
+# 1.1.0 - 2026-08-20 - Tab DEL + dd LOB assemble (drop python3)
 # 1.0.0 - 2026-07-29 - Phase 3 DB2 adapter (EXPORT + LOBSINFILE)
 
 set -euo pipefail
@@ -50,8 +51,8 @@ if ! command -v db2 >/dev/null 2>&1; then
     echo "Error: db2 client not found" >&2
     exit 1
 fi
-if ! command -v python3 >/dev/null 2>&1; then
-    echo "Error: python3 not found (required to parse DB2 EXPORT)" >&2
+if ! command -v jq >/dev/null 2>&1; then
+    echo "Error: jq not found" >&2
     exit 1
 fi
 
@@ -97,8 +98,8 @@ DEL_FILE="${WORK}/rows.del"
 cat > "${SCRIPT}" <<EOF
 CONNECT TO ${DATABASE} USER ${USER_NAME} USING '${PASS_SQL}';
 EXPORT TO ${DEL_FILE} OF DEL LOBS TO ${WORK}/ LOBFILE stlob
-MODIFIED BY LOBSINFILE
-SELECT query_ref, query_type_a28, name, summary, code
+MODIFIED BY LOBSINFILE COLDEL0x09 NOCHARDEL
+SELECT query_ref, query_type_a28, COALESCE(name, ''), summary, code
 FROM ${QUALIFIED}
 WHERE ${WHERE}
 ORDER BY query_ref, query_type_a28;
@@ -125,75 +126,66 @@ if [[ ! -f "${DEL_FILE}" ]]; then
     exit 1
 fi
 
-# Parse DEL + LOB files → JSON
-export SCHEMATOOL_DB2_WORK="${WORK}"
-export SCHEMATOOL_DB2_DEL="${DEL_FILE}"
-python3 - <<'PY'
-import csv
-import json
-import os
-import re
-import sys
-
-work = os.environ["SCHEMATOOL_DB2_WORK"]
-del_path = os.environ["SCHEMATOOL_DB2_DEL"]
-
 # LOB pointer: filename.start.length/  e.g. stlob.001.lob.0.175/
-lob_re = re.compile(r"^(.+\.lob)\.(\d+)\.(\d+)/$")
+resolve_db2_field() {
+    local raw="$1"
+    local dest="$2"
+    local fname start length path
+    raw="${raw#"${raw%%[![:space:]]*}"}"
+    raw="${raw%"${raw##*[![:space:]]}"}"
+    if [[ -z "${raw}" ]]; then
+        : > "${dest}"
+        return 0
+    fi
+    if [[ "${raw}" =~ ^(.+\.lob)\.([0-9]+)\.([0-9]+)/$ ]]; then
+        fname="${BASH_REMATCH[1]}"
+        start="${BASH_REMATCH[2]}"
+        length="${BASH_REMATCH[3]}"
+        path="${WORK}/${fname}"
+        if [[ ! -f "${path}" ]]; then
+            path="${WORK}/${fname##*/}"
+        fi
+        if [[ ! -f "${path}" ]]; then
+            echo "Error: missing LOB file ${fname}" >&2
+            return 1
+        fi
+        dd if="${path}" of="${dest}" iflag=skip_bytes,count_bytes \
+            skip="${start}" count="${length}" status=none
+        return 0
+    fi
+    printf '%s' "${raw}" > "${dest}"
+}
 
+if [[ ! -s "${DEL_FILE}" ]]; then
+    echo "[]"
+    exit 0
+fi
 
-def resolve_field(raw: str) -> str:
-    if raw is None:
-        return ""
-    raw = raw.strip()
-    if not raw:
-        return ""
-    m = lob_re.match(raw)
-    if not m:
-        return raw
-    fname, start_s, length_s = m.group(1), m.group(2), m.group(3)
-    path = os.path.join(work, fname)
-    if not os.path.isfile(path):
-        # sometimes basename only differs
-        alt = os.path.join(work, os.path.basename(fname))
-        path = alt if os.path.isfile(alt) else path
-    if not os.path.isfile(path):
-        sys.stderr.write(f"Error: missing LOB file {fname}\n")
-        sys.exit(1)
-    start = int(start_s)
-    length = int(length_s)
-    with open(path, "rb") as fh:
-        fh.seek(start)
-        data = fh.read(length)
-    return data.decode("utf-8", errors="replace")
+NDJSON="${WORK}/rows.ndjson"
+: > "${NDJSON}"
+idx=0
+while IFS=$'\t' read -r ref_s typ_s name_h sum_raw code_raw || [[ -n "${ref_s:-}" ]]; do
+    [[ -z "${ref_s:-}" ]] && continue
+    if [[ ! "${ref_s}" =~ ^[0-9]+$ || ! "${typ_s}" =~ ^[0-9]+$ ]]; then
+        continue
+    fi
+    idx=$((idx + 1))
+    nf="${WORK}/n.${idx}"
+    sf="${WORK}/s.${idx}"
+    cf="${WORK}/c.${idx}"
+    resolve_db2_field "${name_h:-}" "${nf}"
+    resolve_db2_field "${sum_raw:-}" "${sf}"
+    resolve_db2_field "${code_raw:-}" "${cf}"
+    jq -nc --argjson query_ref "${ref_s}" --argjson query_type "${typ_s}" \
+        --rawfile name "${nf}" --rawfile summary "${sf}" --rawfile code "${cf}" \
+        '{query_ref:$query_ref, query_type:$query_type, name:$name, summary:$summary, code:$code}' \
+        >> "${NDJSON}"
+done < "${DEL_FILE}"
 
-
-rows = []
-with open(del_path, "r", encoding="utf-8", errors="replace", newline="") as fh:
-    reader = csv.reader(fh)
-    for parts in reader:
-        if len(parts) < 5:
-            continue
-        try:
-            ref = int(parts[0])
-            qtype = int(parts[1])
-        except ValueError:
-            continue
-        name = resolve_field(parts[2])
-        summary = resolve_field(parts[3])
-        code = resolve_field(parts[4])
-        rows.append(
-            {
-                "query_ref": ref,
-                "query_type": qtype,
-                "name": name,
-                "summary": summary,
-                "code": code,
-            }
-        )
-
-json.dump(rows, sys.stdout, ensure_ascii=False)
-sys.stdout.write("\n")
-PY
+if [[ ! -s "${NDJSON}" ]]; then
+    echo "[]"
+    exit 0
+fi
+jq -s -c '.' "${NDJSON}"
 
 exit 0
