@@ -3,6 +3,10 @@
 # getvars.sh - Extract environment variables from files
 # Utility script to find and format environment variables for whitelisting
 #
+# CHANGELOG
+# 1.1.0 - 2026-08-20 - format_vars_for_whitelist wraps quoted names to match
+#                      ENV_WHITELIST source style in test_03_shell.sh
+#
 # Usage: ./getvars.sh [file|directory]
 #
 # Auto-detects file type based on extension:
@@ -61,10 +65,32 @@ extract_env_vars_from_files() {
 }
 
 # Function to format variables as quoted list for whitelist
+# Matches ENV_WHITELIST source style: 4-space indent, "VAR" "VAR", wrap ~100 cols
 format_vars_for_whitelist() {
     local vars="${1}"
-    echo "${vars}" | sed 's/.*/    "&"/' | tr '\n' ' ' | fold -w 80 -s
-    echo ""
+    local line=""
+    local quoted=""
+    local width=100
+    local first=1
+    local v=""
+
+    while IFS= read -r v; do
+        [[ -z "${v}" ]] && continue
+        quoted="\"${v}\""
+        if [[ ${first} -eq 1 ]]; then
+            line="    ${quoted}"
+            first=0
+        elif [[ $(( ${#line} + 1 + ${#quoted} )) -gt "${width}" ]]; then
+            printf '%s\n' "${line}"
+            line="    ${quoted}"
+        else
+            line="${line} ${quoted}"
+        fi
+    done <<< "${vars}"
+
+    if [[ ${first} -eq 0 ]]; then
+        printf '%s\n' "${line}"
+    fi
 }
 
 # If this script is sourced (not executed), return early after defining functions

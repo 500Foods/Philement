@@ -1,0 +1,8 @@
+Profiling run started at 2026-08-20T12:09:23 PDT
+profile_test_suite.sh 1.2.2
+Test script: /mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/tests/test_00_all.sh
+Timeout: 3600s  skip-email: 0
+System limits: 4096, Memory: Mem:           48094       28189        5498        5863       19922       19904
+strace: /usr/bin/strace, timeout: /usr/bin/timeout, tables: /usr/local/bin/tables, jq: /usr/bin/jq
+Running strace on /mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/tests/test_00_all.sh...
+strace timed out after 3600s (status 137); process group terminated.

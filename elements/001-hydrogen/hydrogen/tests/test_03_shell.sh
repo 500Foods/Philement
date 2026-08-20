@@ -5,6 +5,10 @@
 # Validates that required and optional environment variables are properly configured
 
 # CHANGELOG
+# 1.4.2 - 2026-08-20 - Add PROFILE_START_CLOCK from profile_test_suite.sh
+# 1.4.1 - 2026-08-20 - Refresh profile_test_suite.sh names in ENV_WHITELIST
+# 1.4.0 - 2026-08-20 - Sanitize Found-at snippets so printf \n cannot leak extra log
+#                      lines; print a copy/paste ENV_WHITELIST block after the table
 # 1.3.0 - 2026-07-02 - Added Test 43 scripting helper vars to the ENV_VARS allow-list
 # 1.2.0 - 2026-06-21 - Added a bunch for Test 41/42 - new tests
 # 1.1.0 - 2026-01-08 - Added HYDROGEN_SCHEMA which is used directly by hydrogen to valdate its schema
@@ -31,7 +35,7 @@ TEST_NAME="Shell Variables"
 TEST_ABBR="ZSH"
 TEST_NUMBER="03"
 TEST_COUNTER=0
-TEST_VERSION="1.3.0"
+TEST_VERSION="1.4.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "${HYDROGEN_ROOT}/tests/lib/framework.sh"
@@ -96,12 +100,13 @@ declare -a ENV_WHITELIST=(
     "APPVERSION" "HELP" "IGNORE_FILE" "IGNORE_PATTERNS_SERIALIZED" "INPUT_FILE"     
     "NOREPORT" "QUIET" "TABLE_THEME"     
     # First found in tests/profile_test_suite.sh
-    "AWK_COUNT" "BASENAME_COUNT" "BASH_COUNT" "BC_COUNT" "CAT_COUNT" "CC_COUNT" "CLOC_COUNT" "CMAKE_COUNT"     
-    "CPPCHECK_COUNT" "CURL_COUNT" "DATE_COUNT" "DEFAULT_SCRIPT" "DIRNAME_COUNT" "DU_COUNT" "ERROR_LOG"     
-    "ESLINT_COUNT" "FIND_COUNT" "FORKS" "GCOV_COUNT" "GREP_COUNT" "HTMLHINT_COUNT" "HYDROGEN_COUNT"
-    "JSONLINT_COUNT" "MAKE_COUNT" "MARKDOWNLINT_COUNT" "MD5_COUNT" "MKDIR_COUNT" "MKTEMP_COUNT" 
-    "REALPATH_COUNT" "RM_COUNT" "SED_COUNT" "SHELLCHECK_COUNT" "SH_COUNT" "STRACE_STATUS" "STYLELINT_COUNT"
-    "SUMMARY_OUT" "TABLES_COUNT" "TEST_SCRIPT" "TRACE_OUT" "TR_COUNT" "WC_COUNT" "XARGS_COUNT" 
+    "ALIAS_FILE" "AWK_BIN" "CATALOG_FILE" "DATA" "DATE_BIN" "DEFAULT_SCRIPT" "ERROR_LOG"
+    "FMT_C" "FMT_OTHER" "FMT_OTHER2" "FMT_TOTAL" "FOOTER_TEXT" "GREP_BIN" "JQ_BIN" "LAYOUT"
+    "MONO" "OTHER_COUNT" "OTHER_FILE" "OTHER_LABEL" "PROFILE_DURATION" "PROFILE_DURATION_S"
+    "PROFILE_END_HUMAN" "PROFILE_START_CLOCK" "PROFILE_START_HUMAN" "PROFILE_TIMEOUT" "RESIDUAL" "RUN_DATE_TAG"
+    "RUN_SCRIPT" "SCRIPT_VERSION" "SKIP_EMAIL" "STRACE_BIN" "STRACE_STATUS" "STRACE_TIMED_OUT"
+    "SUMMARY_OUT" "TABLES_BIN" "TALLY_FILE" "TEST_SCRIPT" "TIMEOUT_BIN" "TMPDIR_PROFILE"
+    "TOTAL_EXEC" "TRACE_OUT"    
     # First found in tests/test_00_all.sh
     "BLACKBOX_COVERAGE" "BUILD_NUMBER" "CACHE_CMD_DIR" "COMBINED_COVERAGE" "COVERAGE" "END_TIME"
     "OVERALL_EXIT_CODE" "PATH" "SCRIPT_SCALE" "SEQUENTIAL_MODE" "SKIP_TESTS" "START_TIME"
@@ -112,7 +117,7 @@ declare -a ENV_WHITELIST=(
     "SRC_DIR" "UNITY_SRC_DIR" 
     # First found in tests/test_03_shell.sh
     "ALL_FOUND_VARS" "CONFIG_VARS" "EXTRAS_VARS" "SCRIPT_VARS" "PAYLOAD_VARS" "WHITELIST_COUNT"
-    "RELATIVE_LINK_COUNT"
+    "RELATIVE_LINK_COUNT" "UNDOCUMENTED_VARS"
     # First found in tests/test_04/check_links.sh
     "ISSUES_FOUND" "MARKDOWN_CHECK" "MISSING_LINKS_COUNT" "ORPHANED_FILES_COUNT" "SITEMAP"     
     "SITEMAP_EXIT_CODE" "TARGET_README" "TOTAL_EXTRACTED_ISSUES" "TOTAL_LINKS" 
@@ -426,6 +431,29 @@ PAYLOAD_VARS=$(extract_env_vars_from_files "${PROJECT_DIR}/payloads" "shell_only
 # Combine and deduplicate
 ALL_FOUND_VARS=$(echo -e "${CONFIG_VARS}\n${SCRIPT_VARS}\n${EXTRAS_VARS}\n${PAYLOAD_VARS}" | grep -v '^$' | sort | uniq)
 
+# Collect undocumented names for a copy/paste ENV_WHITELIST block after the table
+UNDOCUMENTED_VARS=""
+
+# grep -n of a printf '\n ...' source line includes a literal \n. print_message
+# then uses echo -e / %b, which expands that \n and dumps the rest of the snippet
+# as extra log lines. Keep only file:line and collapse remaining backslashes.
+sanitize_found_at() {
+    local raw="${1}"
+    local loc=""
+    local snippet=""
+    loc="${raw%%:*}"
+    raw="${raw#*:}"
+    loc="${loc}:${raw%%:*}"
+    snippet="${raw#*:}"
+    snippet="${snippet#"${snippet%%[![:space:]]*}"}"
+    snippet="${snippet//\\n/ }"
+    snippet="${snippet//\\/}"
+    if [[ ${#snippet} -gt 80 ]]; then
+        snippet="${snippet:0:77}..."
+    fi
+    printf '%s' "${loc}: ${snippet}"
+}
+
 # Check each found var
 for var_name in ${ALL_FOUND_VARS}; do
     # Skip if already in our defined list
@@ -448,12 +476,14 @@ for var_name in ${ALL_FOUND_VARS}; do
         found_line=$(grep -rn "\${${var_name}}" "${PROJECT_DIR}/tests" "${PROJECT_DIR}/extras" "${PROJECT_DIR}/payloads" --include="*.sh" 2>/dev/null | head -1 || true)
     fi
     if [[ -n "${found_line}" ]]; then
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Found at ${found_line}"
+        sanitized_line=$(sanitize_found_at "${found_line}")
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Found at ${sanitized_line}"
     else
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Environment variable ${var_name} is referenced in project files."
     fi
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${var_name} is not documented in ENV_VARS array"
     EXIT_CODE=1
+    UNDOCUMENTED_VARS="${UNDOCUMENTED_VARS}${var_name}"$'\n'
 done
 
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Search complete"
@@ -468,6 +498,15 @@ fi
 
 # Print completion table
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
+
+# Copy/paste block for ENV_WHITELIST in this script. Printed after the table
+# so collected log output cannot interleave it, and so it is easy to grab.
+if [[ -n "${UNDOCUMENTED_VARS}" ]]; then
+    echo ""
+    echo "Undocumented vars - paste into ENV_WHITELIST:"
+    format_vars_for_whitelist "${UNDOCUMENTED_VARS}"
+    echo ""
+fi
 
 # Return status code if sourced, exit if run standalone                
 ${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
