@@ -1,8 +1,15 @@
 #!/usr/bin/env bash
 
 # CHANGELOG
+# 1.0.2 - 2026-08-19 - Honour HYDROGEN_DISABLE_EMAIL=1 (skip mail tail); bounded
+#                      mutt with MUTT_TIMEOUT (default 120s) so an unreachable
+#                      SMTP relay can no longer strand test_00_all.sh or any
+#                      strace -f profile run indefinitely.
 # 1.0.1 - 2025-12-07 - Updated to use HYDROGEN_DOCS_ROOT to locate metrics
 # 1.0.0 - 2025-12-02 - Initial version of make-email.sh script
+
+# How long (seconds) mutt may block on SMTP before we give up.
+MUTT_TIMEOUT="${MUTT_TIMEOUT:-120}"
 
 # About this Script
 
@@ -31,6 +38,13 @@ if [[ -z "${HELIUM_ROOT:-}" ]]; then
     exit 1
 fi
 
+# Opt-out: skip the mail tail entirely. Useful while profiling the suite under
+# strace (profile_test_suite.sh --skip-email sets this for the traced child)
+# or whenever notification delivery is not wanted.
+if [[ "${HYDROGEN_DISABLE_EMAIL:-0}" -eq 1 ]]; then
+    echo "📧 Email notification skipped (HYDROGEN_DISABLE_EMAIL=1)."
+    exit 0
+fi
 # Get the directory where this script is located
 HYDROGEN_DIR="${HYDROGEN_ROOT}"
 
@@ -225,8 +239,17 @@ MUTT_CMD+=" < ${EMAIL_BODY}"
 echo "📧 Sending email to: ${HYDROGEN_DEV_EMAIL}"
 echo "📝 Subject: ${SUBJECT}"
 
-# Execute mutt command
-eval "${MUTT_CMD}"
+# Execute mutt command. Bounded by MUTT_TIMEOUT so an unreachable/misconfigured
+# SMTP relay cannot hang the suite (or a strace -f profile) indefinitely.
+mutt_rc=0
+timeout "${MUTT_TIMEOUT}" bash -c "${MUTT_CMD}" || mutt_rc=$?
+if [[ "${mutt_rc}" -ne 0 ]]; then
+    if [[ "${mutt_rc}" -eq 124 ]]; then
+        echo "⚠️  Email delivery timed out after ${MUTT_TIMEOUT}s; skipping." >&2
+    else
+        echo "⚠️  Email delivery failed (mutt exit ${mutt_rc}); skipping." >&2
+    fi
+fi
 
 # Clean up
 rm -f "${EMAIL_BODY}"

@@ -356,4 +356,5 @@ in the migrations themselves so that they get populated in the database directly
 | [1317](/elements/002-helium/acuranzo/migrations/acuranzo_1317.lua) | scripts | 1.0.0 | 2026-08-13 | 4 | ✗ | STRIPE_PLAN Phase 5 follow-up: Stripe.Checkout nil-bind INSERT fix |
 | [1318](/elements/002-helium/acuranzo/migrations/acuranzo_1318.lua) | scripts | 1.0.0 | 2026-08-13 | 4 | ✗ | STRIPE_PLAN Phase 7/8: seed Enroll.PaidCourse (module, not invokable) |
 | [1319](/elements/002-helium/acuranzo/migrations/acuranzo_1319.lua) | scripts | 1.0.0 | 2026-08-13 | 4 | ✗ | STRIPE_PLAN Phase 7: seed Stripe.Webhook (invokable) |
-| **320** | | | | **1660** | **320** | |
+| [1320](/elements/002-helium/acuranzo/migrations/acuranzo_1320.lua) | scripts | 1.0.0 | 2026-08-17 | 4 | ✗ | PRIORITIZE 2.11: Account.UpdatePrefs empty-optional nil-bind fix |
+| **321** | | | | **1664** | **321** | |
