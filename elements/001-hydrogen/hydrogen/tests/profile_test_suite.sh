@@ -310,7 +310,6 @@ sqlite3	DB
 psql	DB
 mysql	DB
 mariadb	DB
-python3	Misc
 node	Misc
 perl	Misc
 addto	Misc

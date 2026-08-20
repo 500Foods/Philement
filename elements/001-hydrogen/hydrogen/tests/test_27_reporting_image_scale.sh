@@ -14,6 +14,7 @@
 # run_image_scale_cases()
 
 # CHANGELOG
+# 1.4.0 - 2026-08-20 - Replace python3 oversized-input generator with head/tr
 # 1.3.0 - 2026-07-29 - Fix: replace bare `exit` with ORCHESTRATION guard so that
 #                       test_00_all.sh can collect results when test is sourced
 #                       in a background subshell (run_single_test_parallel).
@@ -28,7 +29,7 @@ TEST_NAME="Reporting Image Scale"
 TEST_ABBR="RIS"
 TEST_NUMBER="27"
 TEST_COUNTER=0
-TEST_VERSION="1.2.0"
+TEST_VERSION="1.4.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -512,7 +513,7 @@ run_image_scale_cases() {
     resp="${work_dir}/resp_bigin.json"
     local big_b64f="${work_dir}/big.b64"
     # 9.5e6 > MaxInputBytes 9e6; total JSON still under API_MAX_POST_SIZE (10485760)
-    python3 -c 'print("A" * 9500000, end="")' > "${big_b64f}"
+    head -c 9500000 /dev/zero | tr '\0' 'A' > "${big_b64f}"
     write_scale_body "${body}" "${big_b64f}" "png" 32 32 "px" 72 "nearest"
     status=$(post_image_scale "${base_url}" "${jwt_token}" "${body}" "${resp}")
     # 413 Content Too Large from reporting handler

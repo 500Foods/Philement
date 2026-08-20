@@ -23,7 +23,7 @@ with ImageMagick, JWT auth (SQLite demo), and sample images under
 | Test name | Reporting Image Scale |
 | Abbreviation | RIS |
 | Number | 27 |
-| Version | 1.2.0 |
+| Version | 1.4.0 |
 | Config | [`hydrogen_test_27_reporting.json`](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_27_reporting.json) |
 | Port | 5270 (`5` + `27` + `0`) |
 

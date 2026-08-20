@@ -13,6 +13,7 @@
 # analyze_engine()
 
 # CHANGELOG
+# 1.1.0 - 2026-08-20 - Replace python3 JSON rewrite with jq
 # 1.0.0 - 2026-08-08 - Initial blackbox for LUA_CLIENT Phase 9
 
 set -euo pipefail
@@ -21,7 +22,7 @@ TEST_NAME="Conduit Script"
 TEST_ABBR="CSC"
 TEST_NUMBER="46"
 TEST_COUNTER=0
-TEST_VERSION="1.0.0"
+TEST_VERSION="1.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -178,19 +179,13 @@ prepare_sqlite_config() {
     if ! seed_sqlite_lua_client_fixture "${db_copy}"; then
         return 1
     fi
-    python3 - "${src_config}" "${out_config}" "${db_copy}" <<'PY'
-import json, sys
-src, dst, db = sys.argv[1:4]
-with open(src) as f:
-    c = json.load(f)
-for conn in c["Databases"]["Connections"]:
-    if conn.get("Engine") == "sqlite":
-        conn["Database"] = db
-        conn["AutoMigration"] = False
-with open(dst, "w") as f:
-    json.dump(c, f, indent=4)
-    f.write("\n")
-PY
+    jq --arg db "${db_copy}" '
+        .Databases.Connections |= map(
+            if ((.Engine // "") | ascii_downcase) == "sqlite" then
+                .Database = $db | .AutoMigration = false
+            else . end
+        )
+    ' "${src_config}" > "${out_config}"
     echo "${out_config}"
 }
 

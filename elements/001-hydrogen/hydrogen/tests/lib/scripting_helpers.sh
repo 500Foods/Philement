@@ -26,6 +26,7 @@
 # shellcheck disable=SC2312 # Several diagnostic command substitutions intentionally swallow the inner exit code; helpers either fall back gracefully or || true the outer call
 
 # CHANGELOG
+# 2.5.0 - 2026-08-20 - Drop python3: jq config extract/rewrite, sqlite3 readfile seed
 # 2.4.0 - 2026-07-30 - ORCH_MAIL_REPO_PROBE + MAILRELAY_REPO_PROBE_OK (H.mail repo helpers)
 # 2.3.0 - 2026-07-29 - Scoreboard/LLM orchestrator probes, mock LLM rewrite for
 #                      SQLite fixtures, ORCH_SCOREBOARD_PROBE / ORCH_LLM_PROBE.
@@ -43,7 +44,7 @@
 export SCRIPTING_HELPERS_GUARD="true"
 
 SCRIPTING_HELPERS_NAME="Scripting Test Helpers"
-SCRIPTING_HELPERS_VERSION="2.4.0"
+SCRIPTING_HELPERS_VERSION="2.5.0"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${SCRIPTING_HELPERS_NAME} ${SCRIPTING_HELPERS_VERSION}" "info"
 
 # Optional mock LLM (set by test_43 before parallel runs). Empty = skip rewrite.
@@ -288,29 +289,8 @@ scripting_run_engine_parallel() {
     # export HYDROGEN_HTTP_PROBE_BASE for H.http self-call (inherited at exec).
     web_port=""
     sqlite_db=""
-    eval "$(python3 - "${config_file}" <<'PY' 2>/dev/null || true
-import json, sys, os, re, shlex
-path = sys.argv[1]
-try:
-    with open(path, encoding="utf-8") as fh:
-        raw = fh.read()
-    def env_sub(m):
-        return os.environ.get(m.group(1), m.group(0))
-    raw = re.sub(r"\$\{env\.([A-Za-z0-9_]+)\}", env_sub, raw)
-    cfg = json.loads(raw)
-except Exception:
-    sys.exit(0)
-port = (cfg.get("WebServer") or {}).get("Port")
-if port is not None:
-    print("web_port=" + shlex.quote(str(port)))
-for conn in (cfg.get("Databases") or {}).get("Connections") or []:
-    eng = (conn.get("Engine") or "").lower()
-    db = conn.get("Database") or ""
-    if eng == "sqlite" and db:
-        print("sqlite_db=" + shlex.quote(db))
-        break
-PY
-)"
+    web_port=$(jq -r '.WebServer.Port // empty' "${config_file}" 2>/dev/null || true)
+    sqlite_db=$(jq -r '[.Databases.Connections[]? | select((.Engine // "") | ascii_downcase == "sqlite") | .Database // empty][0] // empty' "${config_file}" 2>/dev/null || true)
     if [[ -n "${web_port}" ]]; then
         export HYDROGEN_HTTP_PROBE_BASE="http://127.0.0.1:${web_port}"
     else
@@ -344,24 +324,13 @@ PY
             if [[ -f "${temp_db}" ]]; then
                 scripting_seed_orchestrator_from_source "${temp_db}" || true
                 scripting_point_sqlite_engines_at_mock "${temp_db}" "${SCRIPTING_MOCK_LLM_URL}" || true
-                if python3 - "${config_file}" "${temp_cfg}" "${temp_db}" <<'PY' 2>/dev/null
-import json, sys, os, re
-src, dst, db_path = sys.argv[1], sys.argv[2], sys.argv[3]
-with open(src, encoding="utf-8") as fh:
-    raw = fh.read()
-def env_sub(m):
-    return os.environ.get(m.group(1), m.group(0))
-raw = re.sub(r"\$\{env\.([A-Za-z0-9_]+)\}", env_sub, raw)
-cfg = json.loads(raw)
-for conn in (cfg.get("Databases") or {}).get("Connections") or []:
-    eng = (conn.get("Engine") or "").lower()
-    if eng == "sqlite":
-        conn["Database"] = db_path
-        conn["Chat"] = True
-with open(dst, "w", encoding="utf-8") as fh:
-    json.dump(cfg, fh, indent=4)
-    fh.write("\n")
-PY
+                if jq --arg db "${temp_db}" '
+                    .Databases.Connections |= map(
+                        if ((.Engine // "") | ascii_downcase) == "sqlite" then
+                            .Database = $db | .Chat = true
+                        else . end
+                    )
+                ' "${config_file}" > "${temp_cfg}" 2>/dev/null
                 then
                     run_config="${temp_cfg}"
                     sqlite_db="${temp_db}"
@@ -582,27 +551,10 @@ scripting_seed_orchestrator_from_source() {
     if [[ ! -f "${db_path}" || ! -f "${lua_path}" ]]; then
         return 1
     fi
-    if ! command -v python3 >/dev/null 2>&1; then
+    if ! command -v sqlite3 >/dev/null 2>&1; then
         return 1
     fi
 
-    python3 - "${db_path}" "${lua_path}" <<'PY'
-import sqlite3
-import sys
-
-db_path, lua_path = sys.argv[1], sys.argv[2]
-with open(lua_path, encoding="utf-8") as fh:
-    code = fh.read()
-conn = sqlite3.connect(db_path)
-try:
-    cur = conn.execute(
-        "UPDATE scripts SET code = ? "
-        "WHERE group_name = 'Orchestrators' AND script_name = 'Orchestrator'",
-        (code,),
-    )
-    conn.commit()
-    sys.exit(0 if cur.rowcount >= 0 else 1)
-finally:
-    conn.close()
-PY
+    sqlite3 "${db_path}" \
+        "UPDATE scripts SET code = readfile('${lua_path}') WHERE group_name = 'Orchestrators' AND script_name = 'Orchestrator';"
 }
