@@ -2,9 +2,13 @@
 # SchemaTool DB2 live catalog probe — SYSCAT.COLUMNS (filtered)
 #
 # CHANGELOG
+# 1.1.0 - 2026-08-20 - Tab/HEX export + jq assemble (drop python3)
 # 1.0.0 - 2026-08-02 - Phase 7a DB2 catalog probe
 
 set -euo pipefail
+
+# shellcheck source=extras/schematool/db/common.sh # HEX decode helper
+source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
 
 HOST=""
 PORT=""
@@ -42,8 +46,12 @@ if ! command -v db2 >/dev/null 2>&1; then
     echo "Error: db2 client not found" >&2
     exit 1
 fi
-if ! command -v python3 >/dev/null 2>&1; then
-    echo "Error: python3 not found" >&2
+if ! command -v jq >/dev/null 2>&1; then
+    echo "Error: jq not found" >&2
+    exit 1
+fi
+# shellcheck disable=SC2310 # missing xxd is a hard adapter error
+if ! schematool_require_xxd; then
     exit 1
 fi
 
@@ -102,10 +110,12 @@ PASS_SQL="${PASS//\'/\'\'}"
     echo "CONNECT TO ${DATABASE} USER ${USER_NAME} USING '${PASS_SQL}';"
 } > "${CONN_SCRIPT}"
 
-# Export column catalog as DEL
+# Tab-delimited HEX default so commas/quotes in DEFAULT cannot break fields
 EXPORT_FILE="${WORK}/cols.del"
-SQL_EXPORT="EXPORT TO '${EXPORT_FILE}' OF DEL
-SELECT TABNAME, COLNAME, TYPENAME, NULLS, DEFAULT, KEYSEQ, COLNO
+SQL_EXPORT="EXPORT TO '${EXPORT_FILE}' OF DEL MODIFIED BY COLDEL0x09 NOCHARDEL
+SELECT TABNAME, COLNAME, TYPENAME, NULLS,
+       HEX(CAST(COALESCE(DEFAULT, '') AS VARCHAR(512))),
+       COALESCE(KEYSEQ, 0), COLNO
 FROM SYSCAT.COLUMNS
 WHERE TABSCHEMA = '${SCHEMA_SQL}'
   ${TABLE_FILTER}
@@ -128,57 +138,80 @@ if [[ "${RC}" -ne 0 && ! -f "${EXPORT_FILE}" ]]; then
     exit 1
 fi
 
-python3 - "${EXPORT_FILE}" "${SCHEMA_U}" <<'PY'
-import csv, json, sys
-path, schema = sys.argv[1], sys.argv[2]
-tables = {}
-order = []
-try:
-    with open(path, newline="") as f:
-        reader = csv.reader(f)
-        for row in reader:
-            if len(row) < 7:
-                continue
-            tab, col, typ, nulls, default, keyseq, colno = row[:7]
-            tab = tab.strip()
-            col = col.strip()
-            typ = (typ or "").strip().lower()
-            nullable = (nulls or "").strip().upper() == "Y"
-            try:
-                ks = int(keyseq) if keyseq not in ("", None) else 0
-            except ValueError:
-                ks = 0
-            try:
-                cno = int(colno) if colno not in ("", None) else 0
-            except ValueError:
-                cno = 0
-            if tab not in tables:
-                tables[tab] = {"table": tab.lower(), "columns": [], "primary_key": [], "indexes": [], "_pk": []}
-                order.append(tab)
-            tables[tab]["columns"].append({
-                "name": col.lower(),
-                "data_type": typ.lower(),
-                "nullable": nullable,
-                "default": default if default not in ("", None) else None,
-                "_colno": cno,
-            })
-            if ks and ks > 0:
-                tables[tab]["_pk"].append((ks, col.lower()))
-except FileNotFoundError:
-    pass
+if [[ ! -f "${EXPORT_FILE}" || ! -s "${EXPORT_FILE}" ]]; then
+    jq -nc --arg schema "${SCHEMA_U}" '{schema:$schema, tables:[]}'
+    exit 0
+fi
 
-out_tables = []
-for tab in order:
-    t = tables[tab]
-    t["columns"].sort(key=lambda c: c.get("_colno", 0))
-    for c in t["columns"]:
-        c.pop("_colno", None)
-    t["_pk"].sort(key=lambda x: x[0])
-    t["primary_key"] = [n for _, n in t["_pk"]]
-    t.pop("_pk", None)
-    out_tables.append(t)
+NDJSON="${WORK}/cols.ndjson"
+: > "${NDJSON}"
+idx=0
+while IFS=$'\t' read -r tab col typ nulls def_h keyseq colno || [[ -n "${tab:-}" ]]; do
+    [[ -z "${tab:-}" ]] && continue
+    colno="${colno//$'\r'/}"
+    pk_n="${keyseq:-0}"
+    pk_n="${pk_n// /}"
+    if [[ ! "${pk_n}" =~ ^[0-9]+$ ]]; then
+        pk_n=0
+    fi
+    ord_n="${colno:-0}"
+    ord_n="${ord_n// /}"
+    if [[ ! "${ord_n}" =~ ^[0-9]+$ ]]; then
+        ord_n=0
+    fi
+    idx=$((idx + 1))
+    df="${WORK}/d.${idx}"
+    schematool_unhex_to_file "${def_h:-}" "${df}"
+    if [[ -s "${df}" ]]; then
+        jq -nc \
+            --arg tab "${tab}" --arg col "${col}" --arg typ "${typ:-}" \
+            --arg nulls "${nulls:-}" --argjson pk "${pk_n}" --argjson ord "${ord_n}" \
+            --rawfile dflt "${df}" \
+            '{
+              tab: ($tab | ascii_downcase),
+              col: ($col | ascii_downcase),
+              dtype: ($typ | ascii_downcase),
+              nullable: (($nulls | ascii_upcase) == "Y"),
+              dflt: $dflt,
+              pk: $pk,
+              ord: $ord
+            }' >> "${NDJSON}"
+    else
+        jq -nc \
+            --arg tab "${tab}" --arg col "${col}" --arg typ "${typ:-}" \
+            --arg nulls "${nulls:-}" --argjson pk "${pk_n}" --argjson ord "${ord_n}" \
+            '{
+              tab: ($tab | ascii_downcase),
+              col: ($col | ascii_downcase),
+              dtype: ($typ | ascii_downcase),
+              nullable: (($nulls | ascii_upcase) == "Y"),
+              dflt: null,
+              pk: $pk,
+              ord: $ord
+            }' >> "${NDJSON}"
+    fi
+done < "${EXPORT_FILE}"
 
-print(json.dumps({"schema": schema, "tables": out_tables}, separators=(",", ":")))
-PY
+if [[ ! -s "${NDJSON}" ]]; then
+    jq -nc --arg schema "${SCHEMA_U}" '{schema:$schema, tables:[]}'
+    exit 0
+fi
+
+# shellcheck disable=SC2016 # jq program is single-quoted on purpose
+jq -s -c --arg schema "${SCHEMA_U}" '
+  group_by(.tab)
+  | map({
+      table: .[0].tab,
+      columns: (sort_by(.ord) | map({
+        name: .col,
+        data_type: .dtype,
+        nullable: .nullable,
+        default: .dflt
+      })),
+      primary_key: ([.[] | select(.pk > 0) | {o: .pk, n: .col}] | sort_by(.o) | map(.n)),
+      indexes: []
+    })
+  | {schema: $schema, tables: .}
+' "${NDJSON}"
 
 exit 0

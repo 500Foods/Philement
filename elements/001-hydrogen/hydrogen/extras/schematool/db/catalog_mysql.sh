@@ -4,6 +4,7 @@
 # Prints JSON: { "schema": "...", "tables": [ { table, columns[], primary_key[] } ] }
 #
 # CHANGELOG
+# 1.2.0 - 2026-08-20 - Assemble TSV with jq (drop python3)
 # 1.1.0 - 2026-08-02 - Flat HEX export + Python assemble (avoid nested JSON_ARRAYAGG)
 # 1.0.0 - 2026-08-02 - Phase 7a MySQL catalog probe
 
@@ -37,8 +38,8 @@ if ! command -v mysql >/dev/null 2>&1; then
     echo "Error: mysql client not found" >&2
     exit 1
 fi
-if ! command -v python3 >/dev/null 2>&1; then
-    echo "Error: python3 not found" >&2
+if ! command -v jq >/dev/null 2>&1; then
+    echo "Error: jq not found" >&2
     exit 1
 fi
 
@@ -136,68 +137,39 @@ if [[ "${RC}" -ne 0 ]]; then
     exit 1
 fi
 
-python3 - "${RAW}" "${SCHEMA_USE}" <<'PY'
-import json, sys
-from pathlib import Path
-
-path = Path(sys.argv[1])
-schema = sys.argv[2]
-tables = {}
-order = []
-
-if path.stat().st_size > 0:
-    with path.open("r", encoding="utf-8", errors="replace") as f:
-        for line in f:
-            line = line.rstrip("\n")
-            if not line:
-                continue
-            parts = line.split("\t")
-            if len(parts) < 6:
-                continue
-            tab, col, dtype, isnull, ord_s, pk_s = parts[:6]
-            tab = tab.strip()
-            col = col.strip()
-            dtype = (dtype or "").strip().lower()
-            nullable = (isnull or "").strip().upper() == "YES"
-            try:
-                ord_n = int(ord_s)
-            except ValueError:
-                ord_n = 0
-            try:
-                pk_n = int(pk_s)
-            except ValueError:
-                pk_n = 0
-            if tab not in tables:
-                tables[tab] = {
-                    "table": tab,
-                    "columns": [],
-                    "primary_key": [],
-                    "indexes": [],
-                    "_pk": [],
-                }
-                order.append(tab)
-            tables[tab]["columns"].append({
-                "name": col,
-                "data_type": dtype,
-                "nullable": nullable,
-                "default": None,
-                "_ord": ord_n,
-            })
-            if pk_n > 0:
-                tables[tab]["_pk"].append((pk_n, col))
-
-out = []
-for tab in order:
-    t = tables[tab]
-    t["columns"].sort(key=lambda c: c.get("_ord", 0))
-    for c in t["columns"]:
-        c.pop("_ord", None)
-    t["_pk"].sort(key=lambda x: x[0])
-    t["primary_key"] = [n for _, n in t["_pk"]]
-    t.pop("_pk", None)
-    out.append(t)
-
-print(json.dumps({"schema": schema, "tables": out}, separators=(",", ":")))
-PY
+# shellcheck disable=SC2016 # jq program is single-quoted on purpose
+jq -n -c --arg schema "${SCHEMA_USE}" --rawfile raw "${RAW}" '
+  def trim: gsub("^[[:space:]]+|[[:space:]]+$"; "");
+  def as_int: tonumber? // 0;
+  [
+    $raw
+    | gsub("\r"; "")
+    | split("\n")
+    | map(select(length > 0) | split("\t"))
+    | map(select(length >= 6))
+    | .[]
+    | {
+        tab: (.[0] | trim),
+        col: (.[1] | trim),
+        dtype: ((.[2] // "") | trim | ascii_downcase),
+        nullable: ((.[3] // "") | trim | ascii_upcase == "YES"),
+        ord: (.[4] | as_int),
+        pk: (.[5] | as_int)
+      }
+  ]
+  | group_by(.tab)
+  | map({
+      table: .[0].tab,
+      columns: (sort_by(.ord) | map({
+        name: .col,
+        data_type: .dtype,
+        nullable: .nullable,
+        default: null
+      })),
+      primary_key: ([.[] | select(.pk > 0) | {o: .pk, n: .col}] | sort_by(.o) | map(.n)),
+      indexes: []
+    })
+  | {schema: $schema, tables: .}
+'
 
 exit 0

@@ -260,7 +260,7 @@ build_file_cache() {
 build_file_cache
 
 # Optimized file processing function for xargs
-# shellcheck disable=SC2317 # This function is designed to be run in parallel with xargs, so we disable SC2317
+# shellcheck disable=SC2317,SC2329 # This function is designed to be run in parallel with xargs, so we disable SC2317
 process_file_batch() {
     local cache_file="$1"
     local repo_root="$2"

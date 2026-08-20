@@ -32,7 +32,7 @@ extras/schematool/schematool.sh \
   --out-dir /tmp/schematool-cat --no-sql
 ```
 
-Requires: `tables`, `jq`, `lua`, plus `sqlite3` / `psql` / `mysql` / `db2`.
+Requires: `tables`, `jq`, `lua`, `xxd` (MySQL/DB2 HEX), plus `sqlite3` / `psql` / `mysql` / `db2`.
 
 ## Row Grouping
 
