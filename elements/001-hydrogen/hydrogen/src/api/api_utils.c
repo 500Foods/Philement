@@ -22,6 +22,62 @@
 // Local includes
 #include "api_utils.h"
 
+static __thread const char *g_api_request_url = NULL;
+
+bool api_url_matches_pattern(const char *url, const char *pattern) {
+    size_t pattern_len;
+    size_t url_len;
+
+    if (!url || !pattern) {
+        return false;
+    }
+    if (strcmp(pattern, "*") == 0) {
+        return true;
+    }
+    if (pattern[0] == '.' && pattern[1] != '\0') {
+        pattern_len = strlen(pattern);
+        url_len = strlen(url);
+        if (url_len >= pattern_len) {
+            return strcmp(url + url_len - pattern_len, pattern) == 0;
+        }
+        return false;
+    }
+    return strstr(url, pattern) != NULL;
+}
+
+void api_set_request_url(const char *url) {
+    g_api_request_url = url;
+}
+
+const char *api_get_request_url(void) {
+    return g_api_request_url;
+}
+
+void api_add_configured_headers(struct MHD_Response *response) {
+    const char *url;
+    const APIConfig *api;
+    size_t i;
+
+    if (!response || !app_config) {
+        return;
+    }
+    api = &app_config->api;
+    if (!api->headers || api->headers_count == 0) {
+        return;
+    }
+    url = g_api_request_url;
+    if (!url) {
+        return;
+    }
+    for (i = 0; i < api->headers_count; i++) {
+        const HeaderRule *rule = &api->headers[i];
+        if (rule->pattern && rule->header_name && rule->header_value &&
+            api_url_matches_pattern(url, rule->pattern)) {
+            MHD_add_response_header(response, rule->header_name, rule->header_value);
+        }
+    }
+}
+
 /**
  * URL decode a string
  * Converts URL-encoded strings (e.g., %20 to space, + to space)
@@ -302,6 +358,8 @@ enum MHD_Result api_send_json_response(struct MHD_Connection *connection,
     
     // Add CORS headers
     api_add_cors_headers(response, connection);
+
+    api_add_configured_headers(response);
     
     // Queue the response
     enum MHD_Result ret = MHD_queue_response(connection, status_code, response);

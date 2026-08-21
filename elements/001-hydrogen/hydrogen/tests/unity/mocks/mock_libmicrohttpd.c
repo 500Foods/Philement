@@ -5,6 +5,7 @@
 #include "mock_libmicrohttpd.h"
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <microhttpd.h>
 
 // Project headers for TerminalConfig
@@ -19,6 +20,11 @@ static enum MHD_Result mock_mhd_queue_response_result = MHD_YES;
 static bool mock_mhd_start_daemon_should_fail = false;
 static const union MHD_DaemonInfo* mock_mhd_daemon_info_result = NULL;
 static bool mock_mhd_is_terminal_websocket_request_result = true;
+
+#define MOCK_MHD_MAX_HEADERS 32
+static char mock_header_names[MOCK_MHD_MAX_HEADERS][64];
+static char mock_header_values[MOCK_MHD_MAX_HEADERS][256];
+static int mock_header_count = 0;
 
 // For key-based lookup
 typedef struct {
@@ -119,7 +125,15 @@ struct MHD_Response* MHD_create_response_from_fd(size_t size, int fd) {
 __attribute__((weak))
 enum MHD_Result MHD_add_response_header(struct MHD_Response *response,
                                        const char *header, const char *content) {
-    (void)response; (void)header; (void)content;
+    (void)response;
+
+    if (header && content && mock_header_count < MOCK_MHD_MAX_HEADERS) {
+        snprintf(mock_header_names[mock_header_count],
+                 sizeof(mock_header_names[0]), "%s", header);
+        snprintf(mock_header_values[mock_header_count],
+                 sizeof(mock_header_values[0]), "%s", content);
+        mock_header_count++;
+    }
 
     return mock_mhd_add_header_should_fail ? MHD_NO : MHD_YES;
 }
@@ -193,6 +207,22 @@ void mock_mhd_reset_all(void) {
         if (mock_lookup_entries[i].value) free((void*)mock_lookup_entries[i].value);
     }
     mock_lookup_count = 0;
+    mock_header_count = 0;
+}
+
+bool mock_mhd_header_was_added(const char *header, const char *content) {
+    int i;
+
+    if (!header || !content) {
+        return false;
+    }
+    for (i = 0; i < mock_header_count; i++) {
+        if (strcmp(mock_header_names[i], header) == 0 &&
+            strcmp(mock_header_values[i], content) == 0) {
+            return true;
+        }
+    }
+    return false;
 }
 
 /*

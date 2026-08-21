@@ -111,6 +111,24 @@ enum MHD_Result api_send_json_response(struct MHD_Connection *connection,
                                     unsigned int status_code);
 
 /**
+ * Bind the current request URL for API.Headers matching.
+ * handle_api_request sets this for the duration of the request.
+ */
+void api_set_request_url(const char *url);
+const char *api_get_request_url(void);
+
+/**
+ * Match a request URL against an API.Headers pattern.
+ * "*" matches all; ".ext" matches a suffix; otherwise substring.
+ */
+bool api_url_matches_pattern(const char *url, const char *pattern);
+
+/**
+ * Apply API.Headers rules whose pattern matches the current request URL.
+ */
+void api_add_configured_headers(struct MHD_Response *response);
+
+/**
  * Add standard CORS headers to a response
  *
  * @param response The MHD_Response object

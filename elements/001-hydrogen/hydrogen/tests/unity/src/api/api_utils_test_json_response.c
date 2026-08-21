@@ -41,6 +41,9 @@ void test_api_send_json_response_various_status_codes(void);
 void test_api_send_json_response_complex_json(void);
 void test_api_send_json_response_empty_json(void);
 void test_api_send_json_response_large_json(void);
+void test_api_url_matches_pattern(void);
+void test_api_send_json_response_applies_matching_headers(void);
+void test_api_send_json_response_skips_nonmatching_headers(void);
 
 // Test basic JSON response (covers the main path)
 void test_api_send_json_response_basic(void) {
@@ -225,6 +228,70 @@ void test_api_send_json_response_large_json(void) {
     TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
+void test_api_url_matches_pattern(void) {
+    TEST_ASSERT_FALSE(api_url_matches_pattern(NULL, "*"));
+    TEST_ASSERT_FALSE(api_url_matches_pattern("/api/conduit/query", NULL));
+    TEST_ASSERT_TRUE(api_url_matches_pattern("/api/conduit/query", "*"));
+    TEST_ASSERT_TRUE(api_url_matches_pattern("/api/conduit/query", "/conduit/query"));
+    TEST_ASSERT_TRUE(api_url_matches_pattern("/api/conduit/queries", "/conduit/query"));
+    TEST_ASSERT_FALSE(api_url_matches_pattern("/api/conduit/script", "/conduit/query"));
+    TEST_ASSERT_FALSE(api_url_matches_pattern("/api/conduit/auth_query", "/conduit/query"));
+    TEST_ASSERT_TRUE(api_url_matches_pattern("/api/v1/data.json", ".json"));
+    TEST_ASSERT_FALSE(api_url_matches_pattern("/api/v1/data.json", ".js"));
+}
+
+void test_api_send_json_response_applies_matching_headers(void) {
+    struct MHD_Connection *connection = (struct MHD_Connection *)0x1234;
+    AppConfig config = {0};
+    HeaderRule rule;
+    json_t *json_obj;
+
+    rule.pattern = (char *)"/conduit/query";
+    rule.header_name = (char *)"Cache-Control";
+    rule.header_value = (char *)"max-age=60";
+    config.api.headers = &rule;
+    config.api.headers_count = 1;
+    app_config = &config;
+
+    api_set_request_url("/api/conduit/query");
+    json_obj = json_object();
+    json_object_set_new(json_obj, "success", json_true());
+    mock_mhd_set_create_response_should_fail(false);
+    mock_mhd_set_queue_response_result(MHD_YES);
+
+    TEST_ASSERT_EQUAL(MHD_YES, api_send_json_response(connection, json_obj, MHD_HTTP_OK));
+    TEST_ASSERT_TRUE(mock_mhd_header_was_added("Cache-Control", "max-age=60"));
+
+    api_set_request_url(NULL);
+    app_config = NULL;
+}
+
+void test_api_send_json_response_skips_nonmatching_headers(void) {
+    struct MHD_Connection *connection = (struct MHD_Connection *)0x1234;
+    AppConfig config = {0};
+    HeaderRule rule;
+    json_t *json_obj;
+
+    rule.pattern = (char *)"/conduit/query";
+    rule.header_name = (char *)"Cache-Control";
+    rule.header_value = (char *)"max-age=60";
+    config.api.headers = &rule;
+    config.api.headers_count = 1;
+    app_config = &config;
+
+    api_set_request_url("/api/conduit/script");
+    json_obj = json_object();
+    json_object_set_new(json_obj, "success", json_true());
+    mock_mhd_set_create_response_should_fail(false);
+    mock_mhd_set_queue_response_result(MHD_YES);
+
+    TEST_ASSERT_EQUAL(MHD_YES, api_send_json_response(connection, json_obj, MHD_HTTP_OK));
+    TEST_ASSERT_FALSE(mock_mhd_header_was_added("Cache-Control", "max-age=60"));
+
+    api_set_request_url(NULL);
+    app_config = NULL;
+}
+
 int main(void) {
     UNITY_BEGIN();
     
@@ -237,6 +304,9 @@ int main(void) {
     RUN_TEST(test_api_send_json_response_complex_json);
     RUN_TEST(test_api_send_json_response_empty_json);
     RUN_TEST(test_api_send_json_response_large_json);
+    RUN_TEST(test_api_url_matches_pattern);
+    RUN_TEST(test_api_send_json_response_applies_matching_headers);
+    RUN_TEST(test_api_send_json_response_skips_nonmatching_headers);
     
     return UNITY_END();
 }

@@ -14,14 +14,7 @@
 #include <jansson.h>
 #include "config_forward.h"  // For AppConfig forward declaration
 #include "config_swagger.h"  // For SwaggerConfig
-#include "config_api.h"      // For APIConfig
-
-// Header rule structure for custom headers
-typedef struct HeaderRule {
-    char* pattern;           // File pattern (e.g., "*", ".js", ".wasm")
-    char* header_name;       // Header name (e.g., "Cross-Origin-Opener-Policy")
-    char* header_value;      // Header value (e.g., "same-origin")
-} HeaderRule;
+#include "config_api.h"      // For APIConfig and HeaderRule
 
 /*
  * Web server configuration structure
