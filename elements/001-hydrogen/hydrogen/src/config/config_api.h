@@ -9,8 +9,17 @@
 #define HYDROGEN_CONFIG_API_H
 
 #include <stdbool.h>
+#include <stddef.h>
 #include <jansson.h>
 #include "config_forward.h"  // For AppConfig forward declaration
+
+// Header rule: [pattern, name, value]. Same shape as WebServer.Headers.
+// Pattern matches the request URL (* = all, ".ext" suffix, else substring).
+typedef struct HeaderRule {
+    char* pattern;
+    char* header_name;
+    char* header_value;
+} HeaderRule;
 
 // API configuration structure
 typedef struct APIConfig {
@@ -18,6 +27,8 @@ typedef struct APIConfig {
     char* prefix;         // API URL prefix (e.g., "/api")
     char* jwt_secret;     // Secret key for JWT token signing
     char* cors_origin;    // NEW: CORS origin for API endpoints
+    HeaderRule* headers;  // Custom response header rules (URL-matched)
+    size_t headers_count;
 } APIConfig;
 
 /*
@@ -31,6 +42,8 @@ typedef struct APIConfig {
  * @param config Pointer to AppConfig structure to update
  * @return true if successful, false on error
  */
+bool process_api_headers_config(json_t* root, APIConfig* api_config);
+
 bool load_api_config(json_t* root, AppConfig* config);
 
 /*

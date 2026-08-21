@@ -357,4 +357,47 @@ in the migrations themselves so that they get populated in the database directly
 | [1318](/elements/002-helium/acuranzo/migrations/acuranzo_1318.lua) | scripts | 1.0.0 | 2026-08-13 | 4 | ✗ | STRIPE_PLAN Phase 7/8: seed Enroll.PaidCourse (module, not invokable) |
 | [1319](/elements/002-helium/acuranzo/migrations/acuranzo_1319.lua) | scripts | 1.0.0 | 2026-08-13 | 4 | ✗ | STRIPE_PLAN Phase 7: seed Stripe.Webhook (invokable) |
 | [1320](/elements/002-helium/acuranzo/migrations/acuranzo_1320.lua) | scripts | 1.0.0 | 2026-08-17 | 4 | ✗ | PRIORITIZE 2.11: Account.UpdatePrefs empty-optional nil-bind fix |
-| **321** | | | | **1664** | **321** | |
+| [1321](/elements/002-helium/acuranzo/migrations/acuranzo_1321.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.8: Enroll.FreeCourse writes user_enrollments |
+| [1322](/elements/002-helium/acuranzo/migrations/acuranzo_1322.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.8: Provision.EnsureCanvasUser writes intro user_enrollments |
+| [1323](/elements/002-helium/acuranzo/migrations/acuranzo_1323.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.8: seed Enroll.SyncEnrollments (invokable) Canvas→Helium backfill |
+| [1324](/elements/002-helium/acuranzo/migrations/acuranzo_1324.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.7: seed Enroll.Archive (invokable) hide overlay |
+| [1325](/elements/002-helium/acuranzo/migrations/acuranzo_1325.lua) | enrollment_events | 1.0.0 | 2026-08-20 | 8 | ✓ | PRIORITIZE 2.9: create enrollment_events table |
+| [1326](/elements/002-helium/acuranzo/migrations/acuranzo_1326.lua) | queries | 1.0.0 | 2026-08-20 | 4 | ✗ | QueryRef #150 - Enrolment History lines (PRIORITIZE 2.9) |
+| [1327](/elements/002-helium/acuranzo/migrations/acuranzo_1327.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.9: seed Enroll.LogEvent (module, not invokable) |
+| [1328](/elements/002-helium/acuranzo/migrations/acuranzo_1328.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.9: Enroll.FreeCourse appends enrollment_events |
+| [1329](/elements/002-helium/acuranzo/migrations/acuranzo_1329.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.9: Enroll.PaidCourse appends enrollment_events |
+| [1330](/elements/002-helium/acuranzo/migrations/acuranzo_1330.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.9: Enroll.Archive appends enrollment_events |
+| [1331](/elements/002-helium/acuranzo/migrations/acuranzo_1331.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.9: Provision.EnsureCanvasUser appends enrollment_events |
+| [1332](/elements/002-helium/acuranzo/migrations/acuranzo_1332.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.9: Enroll.SyncEnrollments appends enrollment_events |
+| [1333](/elements/002-helium/acuranzo/migrations/acuranzo_1333.lua) | courses | 1.0.0 | 2026-08-20 | 9 | ✗ | PRIORITIZE 2.29: courses.tags JSON + canvas_updated_at |
+| [1334](/elements/002-helium/acuranzo/migrations/acuranzo_1334.lua) | catalog_events | 1.0.0 | 2026-08-20 | 7 | ✓ | PRIORITIZE 2.29: create catalog_events table |
+| [1335](/elements/002-helium/acuranzo/migrations/acuranzo_1335.lua) | queries | 1.0.0 | 2026-08-20 | 4 | ✗ | QueryRef #151 - Management History lines (PRIORITIZE 2.29) |
+| [1336](/elements/002-helium/acuranzo/migrations/acuranzo_1336.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.29: seed Catalog.LogEvent (module, not invokable) |
+| [1337](/elements/002-helium/acuranzo/migrations/acuranzo_1337.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.29: seed Catalog.SyncFromCanvas (not invokable) |
+| [1338](/elements/002-helium/acuranzo/migrations/acuranzo_1338.lua) | queries | 1.0.0 | 2026-08-20 | 6 | ✗ | PRIORITIZE 2.29: QueryRefs 147/148 SELECT tags |
+| [1339](/elements/002-helium/acuranzo/migrations/acuranzo_1339.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.27: seed Catalog.GetBySlug (invokable) enrolled unpublished detail |
+| [1340](/elements/002-helium/acuranzo/migrations/acuranzo_1340.lua) | account_canvas_alerts | -- 15s poll. Clock is accounts.created_at (2 minutes); this table | -- 15s poll. Clock is accounts.created_at (2 minutes); this table | 6 | ✓ | PRIORITIZE 2.1: account_canvas_alerts (one-shot unlinked admin mail) |
+| [1341](/elements/002-helium/acuranzo/migrations/acuranzo_1341.lua) | mail_templates | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.1: ops.canvas_user_unlinked mail template |
+| [1342](/elements/002-helium/acuranzo/migrations/acuranzo_1342.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.1: replace Provision.EnsureCanvasUser |
+| [1343](/elements/002-helium/acuranzo/migrations/acuranzo_1343.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.1: replace Orchestrators.Orchestrator |
+| [1344](/elements/002-helium/acuranzo/migrations/acuranzo_1344.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.1: replace Enroll.FreeCourse |
+| [1345](/elements/002-helium/acuranzo/migrations/acuranzo_1345.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.34: seed Stripe.EnsureProduct (not invokable) |
+| [1346](/elements/002-helium/acuranzo/migrations/acuranzo_1346.lua) | courses | 1.0.0 | 2026-08-21 | 6 | ✗ | PRIORITIZE 2.35: courses.retired (searchable, not buyable) |
+| [1347](/elements/002-helium/acuranzo/migrations/acuranzo_1347.lua) | queries | 1.0.0 | 2026-08-21 | 6 | ✗ | PRIORITIZE 2.35: QueryRefs 147/148 SELECT retired |
+| [1348](/elements/002-helium/acuranzo/migrations/acuranzo_1348.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.35: Catalog.GetBySlug SELECT retired |
+| [1349](/elements/002-helium/acuranzo/migrations/acuranzo_1349.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.35: seed Catalog.Retire (not invokable) |
+| [1350](/elements/002-helium/acuranzo/migrations/acuranzo_1350.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.35: Stripe.Checkout fail-closed on retired |
+| [1351](/elements/002-helium/acuranzo/migrations/acuranzo_1351.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.35: Enroll.FreeCourse fail-closed on retired |
+| [1352](/elements/002-helium/acuranzo/migrations/acuranzo_1352.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.35: Enroll.PaidCourse fail-closed on retired |
+| [1353](/elements/002-helium/acuranzo/migrations/acuranzo_1353.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.1 leftover: Enroll.PaidCourse Helium-first, find-don't-create |
+| [1354](/elements/002-helium/acuranzo/migrations/acuranzo_1354.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.1 leftover: EnsureCanvasUser projects entitled Canvas seats |
+| [1355](/elements/002-helium/acuranzo/migrations/acuranzo_1355.lua) | orders | 1.0.0 | 2026-08-21 | 12 | ✗ | PRIORITIZE 2.18: orders refund columns |
+| [1356](/elements/002-helium/acuranzo/migrations/acuranzo_1356.lua) | queries | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: QueryRef #150 revoked / unenrolled lines |
+| [1357](/elements/002-helium/acuranzo/migrations/acuranzo_1357.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: seed Enroll.CanvasSeat (module, not invokable) |
+| [1358](/elements/002-helium/acuranzo/migrations/acuranzo_1358.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: Enroll.Archive Canvas unenroll / reenroll |
+| [1359](/elements/002-helium/acuranzo/migrations/acuranzo_1359.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: Enroll.SyncEnrollments Canvas heal |
+| [1360](/elements/002-helium/acuranzo/migrations/acuranzo_1360.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: seed Account.Orders (invokable) |
+| [1361](/elements/002-helium/acuranzo/migrations/acuranzo_1361.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: seed Stripe.Refund (not invokable) |
+| [1362](/elements/002-helium/acuranzo/migrations/acuranzo_1362.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: seed Stripe.DeactivateCustomer (not invokable) |
+| [1363](/elements/002-helium/acuranzo/migrations/acuranzo_1363.lua) | queries | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.19: QueryRef 147 Q / LEVEL / PAID_FREE / TAG / SORT / HIDE_RETIRED |
+| **364** | | | | **1864** | **364** | |

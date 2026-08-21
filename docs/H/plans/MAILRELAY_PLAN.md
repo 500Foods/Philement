@@ -264,6 +264,15 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 
 ### Decisions log
 
+- (11.4 sequential, 2026-08-21) **Idempotent send is Persist-backed.**
+  1. `producer_try_idempotency` already looked up QueryRef 095; with
+     `Queue.Persist=false` the row never existed, so a retry minted a
+     second message. That was 500courses 2.24.
+  2. 500courses `hydrogen-lithium.json` now sets `MailRelay.Queue.Persist=true`
+     (`Database` already `Lithium`). Roll `lithium-500courses` to pick it up.
+  3. `test_58` 2.7.0: second POST same key → same `message_id`; one
+     MailRelayBlackbox sink file. Skipped on MySQL/MariaDB (Persist off).
+  4. Not 11.1–11.3. Not UNIQUE. Not in-memory cache when Persist is off.
 - (Phase 7B complete, 2026-07-10) **Lua freeform mail (L.1–L.3).**
   1. Policy: Lua may send **template** *or* **freeform** (exactly one mode). REST stays template-only.
   2. Freeform fields: `subject` + (`text_body` and/or `html_body`); `body` aliases `text_body`. Literal bodies — no macro expansion.
@@ -1484,9 +1493,15 @@ Entry Gate: Phase 4 exit gate green.
   - Messages stuck in `sending` after a crash return to `pending` after timeout.
   - Verification: restart/recovery blackbox proves recovery and no duplicates beyond the accepted retry policy.
 
-- [ ] 11.4 Enforce idempotency.
+- [x] 11.4 Enforce idempotency.
   - Duplicate API requests with the same idempotency key return the existing queued/sent status.
   - Verification: API test posts a duplicate request and observes one mail delivered.
+  - Live (2026-08-21): `producer_try_idempotency` + QueryRef 095. Requires
+    `Queue.Persist=true` so the first send writes `mail_queue`. Sequential
+    retries only (no UNIQUE on `idempotency_key`; concurrent same-key can
+    still race). MySQL/MariaDB Persist stays off (TODO 12d). 11.1–11.3
+    multi-instance claim still open. `test_58` 2.7.0 asserts same
+    `message_id` + one sink delivery when Persist is on.
 
 Exit Gate: multi-instance Hydrogen processes a shared mail queue with no normal duplicate sends and predictable crash recovery.
 

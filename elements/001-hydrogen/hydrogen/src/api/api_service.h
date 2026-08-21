@@ -68,6 +68,11 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
                                  const char *version, const char *upload_data,
                                  size_t *upload_data_size, void **con_cls);
 
+enum MHD_Result handle_api_request_dispatch(struct MHD_Connection *connection,
+                                 const char *url, const char *method,
+                                 const char *version, const char *upload_data,
+                                 size_t *upload_data_size, void **con_cls);
+
 /*
  * Check if a URL is an API endpoint and extract service/endpoint info
  *

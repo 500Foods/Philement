@@ -30,6 +30,8 @@ void test_cleanup_api_config_empty_config(void);
 void test_cleanup_api_config_with_data(void);
 void test_dump_api_config_null_pointer(void);
 void test_dump_api_config_basic(void);
+void test_load_api_config_headers(void);
+void test_load_api_config_empty_headers(void);
 
 // Test setup and teardown
 void setUp(void) {
@@ -178,6 +180,54 @@ void test_dump_api_config_null_pointer(void) {
     // No assertions needed - function should not crash
 }
 
+void test_load_api_config_headers(void) {
+    AppConfig config = {0};
+    initialize_config_defaults(&config);
+
+    json_t* root = json_object();
+    json_t* api_section = json_object();
+    json_t* headers = json_array();
+    json_t* rule = json_array();
+
+    json_array_append_new(rule, json_string("/conduit/query"));
+    json_array_append_new(rule, json_string("Cache-Control"));
+    json_array_append_new(rule, json_string("max-age=60"));
+    json_array_append_new(headers, rule);
+    json_object_set_new(api_section, "Headers", headers);
+    json_object_set_new(root, "API", api_section);
+
+    bool result = load_api_config(root, &config);
+
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_EQUAL(1, config.api.headers_count);
+    TEST_ASSERT_NOT_NULL(config.api.headers);
+    TEST_ASSERT_EQUAL_STRING("/conduit/query", config.api.headers[0].pattern);
+    TEST_ASSERT_EQUAL_STRING("Cache-Control", config.api.headers[0].header_name);
+    TEST_ASSERT_EQUAL_STRING("max-age=60", config.api.headers[0].header_value);
+
+    json_decref(root);
+    cleanup_api_config(&config.api);
+}
+
+void test_load_api_config_empty_headers(void) {
+    AppConfig config = {0};
+    initialize_config_defaults(&config);
+
+    json_t* root = json_object();
+    json_t* api_section = json_object();
+    json_object_set_new(api_section, "Headers", json_array());
+    json_object_set_new(root, "API", api_section);
+
+    bool result = load_api_config(root, &config);
+
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_EQUAL(0, config.api.headers_count);
+    TEST_ASSERT_NULL(config.api.headers);
+
+    json_decref(root);
+    cleanup_api_config(&config.api);
+}
+
 void test_dump_api_config_basic(void) {
     APIConfig config = {0};
 
@@ -214,6 +264,8 @@ int main(void) {
     // Dump function tests
     RUN_TEST(test_dump_api_config_null_pointer);
     RUN_TEST(test_dump_api_config_basic);
+    RUN_TEST(test_load_api_config_headers);
+    RUN_TEST(test_load_api_config_empty_headers);
 
     return UNITY_END();
 }

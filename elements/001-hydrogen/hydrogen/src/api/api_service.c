@@ -104,22 +104,28 @@ enum MHD_Result handle_webhook_alias_request(void *cls,
 
     (void)cls;
     (void)version;
+    api_set_request_url(url);
     hook = conduit_webhook_extract_hook_from_url(url);
     if (!hook) {
-        return handle_conduit_webhook_request(connection, url, method,
-                                              upload_data, upload_data_size,
-                                              con_cls, "webhook/");
+        r = handle_conduit_webhook_request(connection, url, method,
+                                           upload_data, upload_data_size,
+                                           con_cls, "webhook/");
+        api_set_request_url(NULL);
+        return r;
     }
     if (strlen(hook) + 9 >= sizeof(path_buf)) {
         free(hook);
-        return handle_conduit_webhook_request(connection, url, method,
-                                              upload_data, upload_data_size,
-                                              con_cls, "webhook/");
+        r = handle_conduit_webhook_request(connection, url, method,
+                                           upload_data, upload_data_size,
+                                           con_cls, "webhook/");
+        api_set_request_url(NULL);
+        return r;
     }
     snprintf(path_buf, sizeof(path_buf), "webhook/%s", hook);
     free(hook);
     r = handle_conduit_webhook_request(connection, url, method, upload_data,
                                        upload_data_size, con_cls, path_buf);
+    api_set_request_url(NULL);
     return r;
 }
 
@@ -567,7 +573,7 @@ static enum MHD_Result check_jwt_auth(struct MHD_Connection *connection,
  * This ensures consistent handling of all requests under the configured
  * prefix, while allowing other prefixes to be used by different subsystems.
  */
-enum MHD_Result handle_api_request(struct MHD_Connection *connection,
+enum MHD_Result handle_api_request_dispatch(struct MHD_Connection *connection,
                                   const char *url, const char *method,
                                   const char *version, const char *upload_data,
                                   size_t *upload_data_size, void **con_cls) {
@@ -873,7 +879,21 @@ enum MHD_Result handle_api_request(struct MHD_Connection *connection,
         strlen(error_json), (void*)error_json, MHD_RESPMEM_PERSISTENT);
     MHD_add_response_header(response, "Content-Type", "application/json");
     api_add_cors_headers(response, connection);
+    api_add_configured_headers(response);
     enum MHD_Result ret = MHD_queue_response(connection, MHD_HTTP_NOT_FOUND, response);
     MHD_destroy_response(response);
     return ret;
+}
+
+enum MHD_Result handle_api_request(struct MHD_Connection *connection,
+                                  const char *url, const char *method,
+                                  const char *version, const char *upload_data,
+                                  size_t *upload_data_size, void **con_cls) {
+    enum MHD_Result result;
+
+    api_set_request_url(url);
+    result = handle_api_request_dispatch(connection, url, method, version,
+                                         upload_data, upload_data_size, con_cls);
+    api_set_request_url(NULL);
+    return result;
 }

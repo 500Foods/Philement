@@ -24,6 +24,9 @@
 # analyze_engine_results()
 
 # CHANGELOG
+# 2.7.0 - 2026-08-21 - 11.4: second send with the same idempotency_key
+#                      returns the first message_id and does not double-deliver
+#                      when Queue.Persist is on (all engines except MySQL/MariaDB).
 # 2.6.0 - 2026-07-30 - MailRepoProbeOnLaunch: H.mail template/route/cleanup/event repo helpers via ephemeral Lua.
 # 2.5.0 - 2026-07-29 - OTP launch seam: wrong-code (otp_increment_attempts) + max-attempts (otp_mark_max_attempts) markers and DB status checks.
 # 2.4.0 - 2026-07-15 - Moved listeners from Linux ephemeral range 55800-55831 to dedicated 15800-15831 ports to prevent full-suite client connection collisions.
@@ -40,7 +43,7 @@ TEST_NAME="MailRelay API"
 TEST_ABBR="MRA"
 TEST_NUMBER="58"
 TEST_COUNTER=0
-TEST_VERSION="2.6.0"
+TEST_VERSION="2.7.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -307,6 +310,14 @@ run_mailrelay_variant() {
     local idempotency_key
     local send_data
     local send_success
+    local send_message_id
+    local send_response_dup
+    local send_message_id_dup
+    local enable_persist=true
+    local capture_count
+    local subject
+    local stored
+    local candidate
     local demo_token
     local demo_data
     local unauthorized_send_response
@@ -359,7 +370,7 @@ run_mailrelay_variant() {
     # keep Persist off there until that client path is fixed. JSON null params need
     # TypedParameter.is_null (database_params) for PG-family engines.
     # Rules point at seeded Mail.Events.* scripts (migration 1281).
-    local enable_persist=true
+    enable_persist=true
     if [[ "${engine_name}" == "mysql" || "${engine_name}" == "mariadb" ]]; then
         enable_persist=false
     fi
@@ -573,6 +584,21 @@ run_mailrelay_variant() {
             if [[ "${send_success}" != "true" ]]; then
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: send endpoint returned success=${send_success}"
                 variant_failed=true
+            elif [[ "${enable_persist}" == true ]]; then
+                send_message_id=$(jq -r '.message_id // empty' "${send_response}" 2>/dev/null || true)
+                send_response_dup="${response_dir}/send_dup.json"
+                http_status=$(api_request "POST" "${base_url}/api/mailrelay/send" "${send_data}" "${send_response_dup}" "${mailadmin_token}")
+                if [[ "${http_status}" != "200" ]]; then
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: duplicate send returned HTTP ${http_status}"
+                    variant_failed=true
+                else
+                    send_success=$(jq -r '.success // false' "${send_response_dup}" 2>/dev/null || echo "false")
+                    send_message_id_dup=$(jq -r '.message_id // empty' "${send_response_dup}" 2>/dev/null || true)
+                    if [[ "${send_success}" != "true" ]] || [[ -z "${send_message_id}" ]] || [[ "${send_message_id}" != "${send_message_id_dup}" ]]; then
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: 11.4 idempotency failed (first=${send_message_id:-empty} second=${send_message_id_dup:-empty} success=${send_success})"
+                        variant_failed=true
+                    fi
+                fi
             fi
         fi
     fi
@@ -613,6 +639,20 @@ run_mailrelay_variant() {
         if [[ -z "${capture_file}" ]]; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: SMTP sink did not capture message with subject marker"
             variant_failed=true
+        elif [[ "${enable_persist}" == true ]]; then
+            capture_count=0
+            for candidate in "${maildata_dir}"/mailval_smtp_*.json; do
+                [[ -f "${candidate}" ]] || continue
+                subject=$(jq -r '[.commands[]? | select(.dir=="meta" and .key=="subject")] | .[0].value // empty' "${candidate}" 2>/dev/null || true)
+                stored=$(jq -r '[.commands[]? | select(.dir=="meta" and .key=="stored_uid")] | .[0].value // empty' "${candidate}" 2>/dev/null || true)
+                if [[ "${stored}" == "yes" ]] && [[ "${subject}" == *"MailRelayBlackbox"* ]]; then
+                    capture_count=$((capture_count + 1))
+                fi
+            done
+            if [[ "${capture_count}" -ne 1 ]]; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: 11.4 expected 1 MailRelayBlackbox delivery, got ${capture_count}"
+                variant_failed=true
+            fi
         fi
     fi
     if [[ "${variant_failed}" = false ]]; then

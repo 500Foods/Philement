@@ -125,6 +125,18 @@
                 "CORSOrigin": {
                     "type": "string",
                     "description": "API CORS override. Same syntax as WebServer.CORSOrigin. If set, takes precedence over WebServer.CORSOrigin for API responses."
+                },
+                "Headers": {
+                    "type": "array",
+                    "description": "Custom HTTP headers for JSON API responses. Same [pattern, name, value] triples as WebServer.Headers. Pattern matches the request URL: * (all), a suffix like .json, or a substring such as /conduit/query. Default is no extra headers. Do not use * with Cache-Control: max-age — that would cache auth, script, webhook, and health responses.",
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "minItems": 3,
+                        "maxItems": 3
+                    }
                 }
             },
             "additionalProperties": false

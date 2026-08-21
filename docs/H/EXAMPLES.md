@@ -443,7 +443,10 @@ This is a full production-ready `hydrogen.json` that sends a startup email using
     "API": {
         "Enabled": true,
         "Prefix": "/api",
-        "JWTSecret": "${env.JWT_SECRET}"
+        "JWTSecret": "${env.JWT_SECRET}",
+        "Headers": [
+            ["/conduit/query", "Cache-Control", "max-age=60"]
+        ]
     },
     "MailRelay": {
         "Enabled": true,

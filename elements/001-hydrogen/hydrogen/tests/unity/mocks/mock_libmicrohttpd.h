@@ -43,6 +43,7 @@ void MHD_stop_daemon(struct MHD_Daemon *daemon);
 
 // Mock control functions
 void mock_mhd_reset_all(void);
+bool mock_mhd_header_was_added(const char *header, const char *content);
 void mock_mhd_set_lookup_result(const char *result);
 const char* mock_mhd_get_lookup_result(void);
 void mock_mhd_add_lookup(const char* key, const char* value);
