@@ -13,9 +13,11 @@ This script validates:
 - Scoreboard job tracking and completion
 - One-shot data-plane probes: `H.query` / `H.wait` / `H.query_sync` / `H.altquery`
 - One-shot mail/notify probes: `H.mail.send` / `send_sync` (freeform) and `H.notify.send_sync` (permanent deferred-error shim) when Mail Relay is enabled
-- One-shot HTTP probes: `H.http.get` / `H.wait` and `H.http.post_sync` against this process's WebServer (`HYDROGEN_HTTP_PROBE_BASE`)
+- One-shot HTTP probes: `H.http.get` / `H.wait`, `H.http.get_sync`, and `H.http.post_sync` against this process's WebServer (`HYDROGEN_HTTP_PROBE_BASE`)
 - One-shot scoreboard probes: `H.scoreboard.get` / `cancel` (plus list/submit on the tick path)
-- One-shot LLM probes: `H.llm.list_sync` and `H.llm.call` + `H.wait` against `tests/lib/mock_llm` when available (`HYDROGEN_LLM_PROBE_MODEL`, SQLite endpoint rewrite)
+- One-shot LLM probes: `H.llm.list_sync`, `H.llm.list` + `H.wait`, and `H.llm.call` + `H.wait` against `tests/lib/mock_llm` when available (`HYDROGEN_LLM_PROBE_MODEL`, SQLite endpoint rewrite)
+- One-shot system probes: `H.system.*`, `H.gc.*`, `H.log.trace` / `debug` / `fatal`
+- One-shot host-API error handles: missing `H.query` / `H.altquery` / `H.authquery` / `H.http` args, bad JWT, typed query params
 - Clean shutdown with Lua state cleanup
 - Graceful handling of disabled or missing Orchestrator rows
 
@@ -24,7 +26,7 @@ This script validates:
 - **Test Name**: Scripting End-to-End
 - **Test Abbreviation**: SCR
 - **Test Number**: 43
-- **Version**: 2.5.0
+- **Version**: 2.7.0
 
 ## Test Architecture
 
@@ -40,6 +42,8 @@ This script validates:
 | Phase 17 | Async HTTP | Background HTTP worker pool functions |
 | Phase 11 | Scoreboard host API | `H.scoreboard.get` / `cancel` / list / submit |
 | Phase 18 | LLM calls | `H.llm.list_sync` + `H.llm.call` via mock LLM (SQLite) |
+| Phase 6 | System / GC / log | `H.system.*`, `H.gc.*`, `H.log.trace` / `debug` / `fatal` |
+| Phase 13 | Query error handles | Missing args, empty DB name, `H.authquery` bad JWT |
 
 ### Configuration Files
 

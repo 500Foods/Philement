@@ -33,12 +33,15 @@
 --      so blackbox runs cover scoreboard_find / scoreboard_request_kill.
 --   6. Once, exercises H.llm.list_sync and H.llm.call (+ H.wait) when
 --      HYDROGEN_LLM_PROBE_MODEL is set (blackbox points engines at mock LLM).
---   7. Every TICK_MS, lists active scripts whose next_run is due
+--   7. Once, exercises H.system / H.gc / H.log.trace|debug|fatal plus
+--      typed query params, H.altquery_sync, H.http.get_sync, H.llm.list,
+--      and host-API error handles so blackbox covers those C paths.
+--   8. Every TICK_MS, lists active scripts whose next_run is due
 --      (in real deployments this would be QueryRef #088; in this
 --      reference it just lists the local scoreboard and submits
 --      a sample "tick" job when the queue is idle, to exercise
 --      the worker pool end-to-end).
---   8. Exits cleanly when H.shutdown_requested() is true.
+--   9. Exits cleanly when H.shutdown_requested() is true.
 
 local TICK_MS = 1000
 
@@ -70,6 +73,31 @@ local function run_query_probe()
             H.log.warn("Orchestrator: altquery_probe err: %s", tostring(err_alt))
         else
             H.log.info("Orchestrator: altquery_probe ok, %d rows", #rows_alt)
+        end
+    end
+
+    -- Typed params (INTEGER/STRING/BOOLEAN/FLOAT) + unsupported skip path.
+    local typed = {
+        flag = 1,
+        name = "probe",
+        ok = true,
+        ratio = 1.5,
+        nested = { skip = true },
+    }
+    local h_typed = H.query("SELECT 4 AS n", typed, { timeout = 10 })
+    local _, typed_err = H.wait(h_typed)
+    if typed_err then
+        H.log.warn("Orchestrator: query_typed_probe err: %s", tostring(typed_err))
+    else
+        H.log.info("Orchestrator: query_typed_probe ok")
+    end
+
+    if type(H.altquery_sync) == "function" then
+        local rows_as, err_as = H.altquery_sync("Acuranzo", "SELECT 5 AS n", nil, { timeout = 10 })
+        if err_as then
+            H.log.warn("Orchestrator: altquery_sync_probe err: %s", tostring(err_as))
+        else
+            H.log.info("Orchestrator: altquery_sync_probe ok, %d rows", #rows_as)
         end
     end
 end
@@ -266,6 +294,15 @@ local function run_http_probe()
         H.log.warn("Orchestrator: http_probe post unexpected")
     end
 
+    if type(H.http.get_sync) == "function" then
+        local gs, ge = H.http.get_sync(get_url, { Accept = "application/json" }, { timeout = 10 })
+        if ge then
+            H.log.warn("Orchestrator: http_probe get_sync err: %s", tostring(ge))
+        elseif type(gs) == "table" and gs.status then
+            H.log.info("Orchestrator: http_probe get_sync ok status=%s", tostring(gs.status))
+        end
+    end
+
     if get_err == nil and type(get_res) == "table" and get_res.status then
         H.log.info("Orchestrator: http_probe ok")
     end
@@ -382,6 +419,91 @@ local function run_llm_probe()
        or (call_err == nil and type(call_res) == "table") then
         H.log.info("Orchestrator: llm_probe ok")
     end
+
+    if type(H.llm.list) == "function" then
+        local h_list = H.llm.list()
+        local lr, le = H.wait(h_list)
+        if le then
+            H.log.info("Orchestrator: llm_probe list wait err: %s", tostring(le))
+        elseif type(lr) == "table" then
+            H.log.info("Orchestrator: llm_probe list async ok")
+        end
+    end
+end
+
+-- One-shot H.system / H.gc / extra log levels. Entire C functions were
+-- previously Unity-only; calling them here moves blackbox over 60%.
+local function run_system_probe()
+    if type(H.system) ~= "table" then
+        H.log.warn("Orchestrator: system_probe skipped (H.system unavailable)")
+        return
+    end
+
+    local uptime = H.system.uptime()
+    local now = H.system.now()
+    local iso = H.system.now_iso()
+    local inst = H.system.instance_id()
+    local ver = H.system.version()
+    if type(uptime) ~= "number" or type(now) ~= "number"
+       or type(iso) ~= "string" or type(inst) ~= "string" or type(ver) ~= "string" then
+        H.log.warn("Orchestrator: system_probe unexpected types")
+        return
+    end
+
+    if type(H.gc) == "table" then
+        local kb = H.gc.count()
+        local running = H.gc.isrunning()
+        H.gc.step()
+        H.gc.collect()
+        H.log.info("Orchestrator: gc_probe ok kb=%s running=%s",
+                   tostring(kb), tostring(running))
+    end
+
+    H.log.trace("Orchestrator: system_probe trace %s", "ok")
+    H.log.debug("Orchestrator: system_probe debug %s", "ok")
+    H.log.fatal("Orchestrator: system_probe fatal %s", "ok")
+
+    H.log.info("Orchestrator: system_probe ok uptime=%s ver=%s",
+               tostring(uptime), tostring(ver))
+end
+
+-- Host-API error handles (missing args, bad JWT, bad HTTP). Failures are
+-- expected; we only need the C error branches to execute.
+local function expect_wait_err(label, handle)
+    local _, err = H.wait(handle)
+    if err then
+        H.log.info("Orchestrator: api_err %s ok", label)
+    else
+        H.log.warn("Orchestrator: api_err %s expected error", label)
+    end
+end
+
+local function run_api_error_probe()
+    expect_wait_err("query_missing", H.query())
+    expect_wait_err("altquery_missing", H.altquery())
+    expect_wait_err("altquery_empty_db", H.altquery("", "SELECT 1 AS n"))
+    if type(H.authquery) == "function" then
+        expect_wait_err("authquery_missing", H.authquery())
+        expect_wait_err("authquery_empty", H.authquery("", "SELECT 1 AS n"))
+        expect_wait_err("authquery_badjwt",
+                       H.authquery("not-a-jwt", "SELECT 1 AS n", { flag = 1 }, { timeout = 5 }))
+    end
+    if type(H.http) == "table" and type(H.http.get) == "function" then
+        expect_wait_err("http_get_missing", H.http.get())
+        expect_wait_err("http_get_empty", H.http.get(""))
+        expect_wait_err("http_post_bad_body", H.http.post("http://127.0.0.1/", 123))
+        expect_wait_err("http_post_bad_headers",
+                       H.http.post("http://127.0.0.1/", "x", "not-a-table"))
+    end
+    H.sleep()
+    H.sleep(0)
+    pcall(function() H.sleep("x") end)
+    pcall(function() H.set_current_state() end)
+    pcall(function() H.set_current_state(1) end)
+    pcall(function() H.set_result() end)
+    pcall(function() H.set_result_json() end)
+    pcall(function() H.set_result_json("nope") end)
+    H.log.info("Orchestrator: api_error_probe ok")
 end
 
 local query_probed = false
@@ -389,6 +511,8 @@ local mail_probed = false
 local http_probed = false
 local scoreboard_probed = false
 local llm_probed = false
+local system_probed = false
+local api_error_probed = false
 local iterations = 0
 while not H.shutdown_requested() do
     iterations = iterations + 1
@@ -433,6 +557,22 @@ while not H.shutdown_requested() do
         local ok_l, llm_err = pcall(run_llm_probe)
         if not ok_l then
             H.log.warn("Orchestrator: llm_probe failed: %s", tostring(llm_err))
+        end
+    end
+
+    if not system_probed then
+        system_probed = true
+        local ok_sys, sys_err = pcall(run_system_probe)
+        if not ok_sys then
+            H.log.warn("Orchestrator: system_probe failed: %s", tostring(sys_err))
+        end
+    end
+
+    if not api_error_probed then
+        api_error_probed = true
+        local ok_e, err_e = pcall(run_api_error_probe)
+        if not ok_e then
+            H.log.warn("Orchestrator: api_error_probe failed: %s", tostring(err_e))
         end
     end
 

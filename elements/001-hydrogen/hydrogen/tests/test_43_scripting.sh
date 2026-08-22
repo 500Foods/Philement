@@ -29,9 +29,10 @@
 # reference Orchestrator also runs one-shot data-plane probes
 # (H.query / H.wait / H.query_sync / H.altquery, H.mail / H.notify,
 # H.mail repo helpers via Orchestrator mail_repo_probe on SQLite-seeded source,
-# H.http get/post against HYDROGEN_HTTP_PROBE_BASE, H.scoreboard get/cancel,
-# and H.llm list/call against a local mock LLM) so blackbox coverage
-# includes the scripting query, mail, HTTP, scoreboard, and LLM stacks when
+# H.http get/post/get_sync against HYDROGEN_HTTP_PROBE_BASE, H.scoreboard get/cancel,
+# H.llm list/call against a local mock LLM, H.system/H.gc/H.log.trace|debug|fatal,
+# and host-API error handles) so blackbox coverage includes the scripting query,
+# mail, HTTP, scoreboard, LLM, system, and submit-error stacks when
 # fixtures are seeded and Mail Relay is enabled. Full H.mail repo blackbox
 # across engines is covered by test_58 MailRepoProbeOnLaunch.
 #
@@ -42,6 +43,7 @@
 # start_mock_llm / stop_mock_llm
 
 # CHANGELOG
+# 2.7.0 - 2026-08-21 - Orchestrator H.system/H.gc/H.log + API error-handle probes
 # 2.6.0 - 2026-07-30 - Orchestrator mail_repo_probe (H.mail template/route/cleanup/event)
 #                      for blackbox coverage when SQLite seeds orchestrator.lua
 # 2.5.0 - 2026-07-29 - Scoreboard get/cancel + LLM list/call probes via mock LLM
@@ -65,7 +67,7 @@ TEST_NAME="Scripting  {BLUE}engines: 7{RESET}"
 TEST_ABBR="SCR"
 TEST_NUMBER="43"
 TEST_COUNTER=0
-TEST_VERSION="2.6.0"
+TEST_VERSION="2.7.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"

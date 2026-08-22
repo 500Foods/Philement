@@ -13,6 +13,7 @@
 # analyze_engine()
 
 # CHANGELOG
+# 1.2.0 - 2026-08-21 - Extra parse/GET/405/fail cases for blackbox coverage
 # 1.1.0 - 2026-08-20 - Replace python3 JSON rewrite with jq
 # 1.0.0 - 2026-08-08 - Initial blackbox for LUA_CLIENT Phase 9
 
@@ -22,7 +23,7 @@ TEST_NAME="Conduit Script"
 TEST_ABBR="CSC"
 TEST_NUMBER="46"
 TEST_COUNTER=0
-TEST_VERSION="1.1.0"
+TEST_VERSION="1.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -134,6 +135,20 @@ H.set_result_json(out)
 return 0
 ',
     'LUA_CLIENT fixture: echo params',
+    1, datetime('now'), 1, datetime('now'), 1
+);
+
+-- Api.Fail (blackbox: Lua error → HTTP 200 status=failed)
+INSERT OR REPLACE INTO scripts (
+    group_name, script_name, script_type, schedule, next_run,
+    last_run_start, last_run_end, status, code, summary,
+    created_id, created_at, updated_id, updated_at, invokable
+) VALUES (
+    'Api', 'Fail', 1, NULL, NULL, NULL, NULL, 1,
+    '-- Api.Fail (LUA_CLIENT blackbox fail probe)
+error("blackbox fail probe")
+',
+    'LUA_CLIENT fixture: forced Lua error',
     1, datetime('now'), 1, datetime('now'), 1
 );
 
@@ -392,6 +407,138 @@ run_engine() {
         echo "RESERVED_HTTP=${http_st}" >> "${result_file}"
     fi
 
+    # --- parse / routing cases (no Echo fixture required) ---
+    local parse_file="${result_file}.parse.json"
+    http_st=$(api_request "POST" "${base_url}/api/conduit/script" \
+        'not-json' "${parse_file}" "${jwt}")
+    if [[ "${http_st}" == "400" ]]; then
+        record_case "${result_file}" "invalid_json_400" 1
+    else
+        record_case "${result_file}" "invalid_json_400" 0
+        echo "INVALID_JSON_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    http_st=$(api_request "POST" "${base_url}/api/conduit/script" \
+        '{}' "${parse_file}" "${jwt}")
+    if [[ "${http_st}" == "400" ]]; then
+        record_case "${result_file}" "missing_script_400" 1
+    else
+        record_case "${result_file}" "missing_script_400" 0
+        echo "MISSING_SCRIPT_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    http_st=$(api_request "POST" "${base_url}/api/conduit/script" \
+        '{"script":""}' "${parse_file}" "${jwt}")
+    if [[ "${http_st}" == "400" ]]; then
+        record_case "${result_file}" "empty_script_400" 1
+    else
+        record_case "${result_file}" "empty_script_400" 0
+        echo "EMPTY_SCRIPT_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    http_st=$(api_request "POST" "${base_url}/api/conduit/script" \
+        '{"script":"Api/Echo","wait":true}' "${parse_file}" "${jwt}")
+    if [[ "${http_st}" == "400" ]]; then
+        record_case "${result_file}" "slash_name_400" 1
+    else
+        record_case "${result_file}" "slash_name_400" 0
+        echo "SLASH_NAME_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    http_st=$(api_request "POST" "${base_url}/api/conduit/script" \
+        '{"script":"Api.Echo","params":[1],"wait":true}' "${parse_file}" "${jwt}")
+    if [[ "${http_st}" == "400" ]]; then
+        record_case "${result_file}" "params_array_400" 1
+    else
+        record_case "${result_file}" "params_array_400" 0
+        echo "PARAMS_ARRAY_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    http_st=$(api_request "POST" "${base_url}/api/conduit/script" \
+        '{"script":"Api.Echo","wait":"yes"}' "${parse_file}" "${jwt}")
+    if [[ "${http_st}" == "400" ]]; then
+        record_case "${result_file}" "wait_not_bool_400" 1
+    else
+        record_case "${result_file}" "wait_not_bool_400" 0
+        echo "WAIT_NOT_BOOL_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    http_st=$(api_request "POST" "${base_url}/api/conduit/script" \
+        '{"script":"Api.Echo","timeout_seconds":"x"}' "${parse_file}" "${jwt}")
+    if [[ "${http_st}" == "400" ]]; then
+        record_case "${result_file}" "timeout_not_int_400" 1
+    else
+        record_case "${result_file}" "timeout_not_int_400" 0
+        echo "TIMEOUT_NOT_INT_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    http_st=$(api_request "GET" "${base_url}/api/conduit/script/_____" \
+        "" "${parse_file}" "")
+    if [[ "${http_st}" == "401" ]]; then
+        record_case "${result_file}" "get_noauth_401" 1
+    else
+        record_case "${result_file}" "get_noauth_401" 0
+        echo "GET_NOAUTH_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    http_st=$(api_request "GET" "${base_url}/api/conduit/script/_____" \
+        "" "${parse_file}" "${jwt}")
+    if [[ "${http_st}" == "404" ]]; then
+        record_case "${result_file}" "get_unknown_404" 1
+    else
+        record_case "${result_file}" "get_unknown_404" 0
+        echo "GET_UNKNOWN_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    http_st=$(api_request "GET" "${base_url}/api/conduit/script/" \
+        "" "${parse_file}" "${jwt}")
+    if [[ "${http_st}" == "400" ]]; then
+        record_case "${result_file}" "get_missing_id_400" 1
+    else
+        record_case "${result_file}" "get_missing_id_400" 0
+        echo "GET_MISSING_ID_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    http_st=$(api_request "POST" "${base_url}/api/conduit/script/not-a-job" \
+        '{"script":"Api.Echo"}' "${parse_file}" "${jwt}")
+    if [[ "${http_st}" == "405" ]]; then
+        record_case "${result_file}" "get_path_post_405" 1
+    else
+        record_case "${result_file}" "get_path_post_405" 0
+        echo "GET_PATH_POST_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    if [[ "${echo_ok}" -eq 1 ]]; then
+        local clamp_file="${result_file}.clamp.json"
+        http_st=$(api_request "POST" "${base_url}/api/conduit/script" \
+            '{"script":"Api.Echo","params":{"clamp":true},"wait":true,"timeout_seconds":0}' \
+            "${clamp_file}" "${jwt}")
+        local clamp_st=""
+        clamp_st=$(jq -r '.status // empty' "${clamp_file}" 2>/dev/null || true)
+        if [[ "${http_st}" == "200" && "${clamp_st}" == "completed" ]]; then
+            record_case "${result_file}" "timeout_clamp" 1
+        else
+            record_case "${result_file}" "timeout_clamp" 0
+            echo "CLAMP_HTTP=${http_st}" >> "${result_file}"
+        fi
+    fi
+
+    if [[ "${engine_key}" == "sqlite" ]]; then
+        local fail_file="${result_file}.fail.json"
+        http_st=$(api_request "POST" "${base_url}/api/conduit/script" \
+            '{"script":"Api.Fail","params":{},"wait":true,"timeout_seconds":15}' \
+            "${fail_file}" "${jwt}")
+        local fail_st=""
+        fail_st=$(jq -r '.status // empty' "${fail_file}" 2>/dev/null || true)
+        if [[ "${http_st}" == "200" && "${fail_st}" == "failed" ]]; then
+            record_case "${result_file}" "fail_status" 1
+        else
+            record_case "${result_file}" "fail_status" 0
+            echo "FAIL_HTTP=${http_st}" >> "${result_file}"
+            echo "FAIL_STATUS=${fail_st}" >> "${result_file}"
+        fi
+    fi
+
     echo "ENGINE_COMPLETE=1" >> "${result_file}"
     # shellcheck disable=SC2310 # Shutdown best-effort at end of engine run
     scripting_shutdown_instance "${hydrogen_pid}" "${SHUTDOWN_TIMEOUT}" || true
@@ -445,9 +592,9 @@ analyze_engine() {
     pass_n=${pass_n:-0}
     fail_n=${fail_n:-0}
 
-    if [[ "${fail_n}" -eq 0 && "${pass_n}" -ge 6 ]]; then
+    if [[ "${fail_n}" -eq 0 && "${pass_n}" -ge 15 ]]; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 \
-            "${description}: ${pass_n} cases passed (login, 401, 404s, Echo, async GET, reserved)"
+            "${description}: ${pass_n} cases passed (login, auth/parse/GET/405, Echo, async, reserved)"
         PASS_COUNT=$(( PASS_COUNT + 1 ))
     else
         local fails
