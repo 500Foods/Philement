@@ -16,7 +16,7 @@ Lithium uses **Vitest** as the test runner with **happy-dom** for DOM testing. T
 
 | Command | Description |
 |---------|-------------|
-| `npm test` | Run all tests (672 tests) |
+| `npm test` | Run Vitest (`vitest run`) |
 | `npm run test:watch` | Run tests in watch mode |
 | `npm run test:coverage` | Run tests with coverage report |
 | `npm run coverage:copy` | Copy coverage to `public/` for deployment |
@@ -163,7 +163,11 @@ export HYDROGEN_DEMO_API_KEY=EveryGoodBoyDeservesFudge
 npm test -- --run tests/integration/
 ```
 
-Tests automatically skip with clear message if server or credentials unavailable.
+Tests skip (`it.skip` / `skip()`) if the server or credentials are unavailable.
+Default `HYDROGEN_SERVER_URL` is `https://lithium.philement.com`. If the live
+certificate is expired, the suite retries once without TLS verification and
+warns. Override with `HYDROGEN_SERVER_URL=http://localhost:8080` for a local
+Hydrogen.
 
 ---
 

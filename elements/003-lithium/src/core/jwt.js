@@ -201,4 +201,25 @@ export default {
   clear: clearJWT,
   getTimeUntilExpiry,
   getRenewalTime,
+  consumeSloQuery,
 };
+
+/**
+ * Keycloak front-channel logout lands on `?slo=1`. Clear the Lithium JWT
+ * and wipe the query flag. Returns true when SLO was consumed.
+ */
+export function consumeSloQuery(win = typeof window !== 'undefined' ? window : null) {
+  if (!win?.location) return false;
+  const params = new URLSearchParams(win.location.search);
+  if (params.get('slo') !== '1') return false;
+  clearJWT();
+  params.delete('slo');
+  const qs = params.toString();
+  const next = win.location.pathname + (qs ? `?${qs}` : '') + (win.location.hash || '');
+  try {
+    win.history.replaceState({}, '', next);
+  } catch {
+    /* ignore */
+  }
+  return true;
+}

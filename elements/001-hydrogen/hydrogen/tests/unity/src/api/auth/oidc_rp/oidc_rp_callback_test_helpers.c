@@ -62,6 +62,40 @@ void test_callback_scrub_free_scrubs_and_frees(void);
 void test_redirect_with_error_queues_url(void);
 void test_redirect_with_error_build_failure_returns_mhd_no(void);
 
+void test_silent_idp_error_login_required(void);
+void test_silent_idp_error_rejects_access_denied(void);
+void test_build_spa_cancel_url_uses_return_to(void);
+void test_build_spa_cancel_url_defaults_slash(void);
+
+void test_silent_idp_error_login_required(void) {
+    TEST_ASSERT_TRUE(oidc_rp_is_silent_idp_error("login_required"));
+    TEST_ASSERT_TRUE(oidc_rp_is_silent_idp_error("interaction_required"));
+    TEST_ASSERT_TRUE(oidc_rp_is_silent_idp_error("consent_required"));
+}
+
+void test_silent_idp_error_rejects_access_denied(void) {
+    TEST_ASSERT_FALSE(oidc_rp_is_silent_idp_error("access_denied"));
+    TEST_ASSERT_FALSE(oidc_rp_is_silent_idp_error("idp_error"));
+    TEST_ASSERT_FALSE(oidc_rp_is_silent_idp_error(NULL));
+    TEST_ASSERT_FALSE(oidc_rp_is_silent_idp_error(""));
+}
+
+void test_build_spa_cancel_url_uses_return_to(void) {
+    char *url = build_spa_cancel_url(
+        "https://www.500courses.com/api/auth/oidc/callback", "/account");
+    TEST_ASSERT_NOT_NULL(url);
+    TEST_ASSERT_EQUAL_STRING("https://www.500courses.com/account", url);
+    free(url);
+}
+
+void test_build_spa_cancel_url_defaults_slash(void) {
+    char *url = build_spa_cancel_url(
+        "https://lithium.500courses.com/api/auth/oidc/callback", NULL);
+    TEST_ASSERT_NOT_NULL(url);
+    TEST_ASSERT_EQUAL_STRING("https://lithium.500courses.com/", url);
+    free(url);
+}
+
 // handle_get_auth_oidc_callback early-branch coverage (feature gate,
 // method discrimination, and the no-provider path). The deep success /
 // error chain after the provider is resolved requires live MHD + global
@@ -386,6 +420,11 @@ int main(void) {
     // redirect_with_error
     RUN_TEST(test_redirect_with_error_queues_url);
     RUN_TEST(test_redirect_with_error_build_failure_returns_mhd_no);
+
+    RUN_TEST(test_silent_idp_error_login_required);
+    RUN_TEST(test_silent_idp_error_rejects_access_denied);
+    RUN_TEST(test_build_spa_cancel_url_uses_return_to);
+    RUN_TEST(test_build_spa_cancel_url_defaults_slash);
 
     // handle_get_auth_oidc_callback — early branches
     RUN_TEST(test_handler_method_not_allowed);

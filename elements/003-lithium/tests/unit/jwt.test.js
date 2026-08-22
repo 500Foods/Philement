@@ -48,6 +48,7 @@ import {
   clearJWT,
   getTimeUntilExpiry,
   getRenewalTime,
+  consumeSloQuery,
 } from '../../src/core/jwt.js';
 
 // STORAGE_KEY is imported from the module
@@ -295,6 +296,29 @@ describe('JWT', () => {
       const renewalTime = getRenewalTime(token);
       
       expect(renewalTime).toBe(Infinity);
+    });
+  });
+
+  describe('consumeSloQuery', () => {
+    it('clears JWT and strips slo=1', () => {
+      storeJWT('header.payload.sig');
+      const replaceState = vi.fn();
+      const handled = consumeSloQuery({
+        location: { search: '?slo=1', pathname: '/', hash: '' },
+        history: { replaceState },
+      });
+      expect(handled).toBe(true);
+      expect(retrieveJWT()).toBeNull();
+      expect(replaceState).toHaveBeenCalled();
+    });
+
+    it('is a no-op without slo', () => {
+      storeJWT('header.payload.sig');
+      expect(consumeSloQuery({
+        location: { search: '', pathname: '/', hash: '' },
+        history: { replaceState: vi.fn() },
+      })).toBe(false);
+      expect(retrieveJWT()).toBe('header.payload.sig');
     });
   });
 });

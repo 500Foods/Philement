@@ -53,9 +53,9 @@ This fills and submits the login form automatically.
 
 | Command | Description |
 |---------|-------------|
-| `npm run dev` | Start development server with hot reload |
-| `npm run build` | Build development version (no minification) |
-| `npm run preview` | Preview production build locally |
+| `npm run dev` | Start Vite dev server with HMR (`:3000`, does not open a browser) |
+| `npm run build` | Validate Tabulator + lint CSS + Vite build (Oxc minify) + style/icon registries |
+| `npm run preview` | Preview the `dist/` build locally |
 
 ### Testing
 
@@ -69,8 +69,8 @@ This fills and submits the login form automatically.
 
 | Command | Description |
 |---------|-------------|
-| `npm run build:prod` | Production build with minification |
-| `npm run deploy` | Build, test, and deploy |
+| `npm run build:prod` | Same as `build` in production mode, then `postbuild.sh` (HTML/SW minify) |
+| `npm run deploy` | `deploy-parallel.sh`: tests+CSS lint, templates, version bump, Vite `--mode deploy` into `dist-deploy/`, registries, postbuild, prune, brotli, rsync to `$LITHIUM_DEPLOY` |
 
 ### Utilities
 
@@ -235,16 +235,17 @@ npm run format
 
 ### `npm run deploy`
 
-The deploy script performs these steps:
+Requires `$LITHIUM_DEPLOY` (`predeploy`). Script: `scripts/deploy-parallel.sh`.
 
-1. **Clean** — Remove old build artifacts
-2. **Lint** — Run ESLint (must pass)
-3. **Test** — Run all tests (must pass)
-4. **Build** — Production build with minification
-5. **Templates** — Copy HTML templates to public/
-6. **Config** — Seed runtime config (if not exists)
-7. **Prune** — Remove old hashed assets (keep newest N versions)
-8. **Copy** — Copy to deploy directory
+1. **Validate** — Tabulator config
+2. **Test + CSS lint** — `test:coverage` and `lint:css` in parallel (both must pass)
+3. **Coverage copy** — into `public/coverage`
+4. **Templates** — `templates:copy` (HTML/CSS → `public/src/managers/`)
+5. **Version** — `version:bump`
+6. **Vite** — `vite build --mode deploy` into local `dist-deploy/` (`emptyOutDir: false` on the target)
+7. **Registries + config** — style/icon registries; seed `lithium.json` only if missing
+8. **Postbuild** — HTML/SW minify, prune old hashed assets, Brotli
+9. **Sync** — rsync `dist-deploy/` → `$LITHIUM_DEPLOY`
 
 ### Environment for Deployment
 

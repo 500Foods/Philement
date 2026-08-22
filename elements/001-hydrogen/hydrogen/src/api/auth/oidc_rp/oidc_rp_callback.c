@@ -200,6 +200,46 @@ char *build_spa_success_url(const char *redirect_uri,
     return url;
 }
 
+bool oidc_rp_is_silent_idp_error(const char *error_code) {
+    if (!error_code || !*error_code) {
+        return false;
+    }
+    return strcmp(error_code, "login_required") == 0
+        || strcmp(error_code, "interaction_required") == 0
+        || strcmp(error_code, "consent_required") == 0;
+}
+
+// Silent SSO miss: bounce to the SPA origin (plus safe return_to) with no
+// oidc= / oidc_error= so the brochure site stays anonymous.
+char *build_spa_cancel_url(const char *redirect_uri, const char *return_to) {
+    char origin[512];
+    origin[0] = '\0';
+    if (redirect_uri && *redirect_uri) {
+        const char *scheme_end = strstr(redirect_uri, "://");
+        if (scheme_end) {
+            const char *path_start = strchr(scheme_end + 3, '/');
+            size_t origin_len = path_start
+                ? (size_t)(path_start - redirect_uri)
+                : strlen(redirect_uri);
+            if (origin_len < sizeof(origin)) {
+                memcpy(origin, redirect_uri, origin_len);
+                origin[origin_len] = '\0';
+            }
+        }
+    }
+
+    const char *path = "/";
+    if (return_to && return_to[0] == '/' && return_to[1] != '/' && return_to[1] != '\\') {
+        path = return_to;
+    }
+
+    char *url = NULL;
+    if (asprintf(&url, "%s%s", origin, path) == -1) {
+        return NULL;
+    }
+    return url;
+}
+
 // Redirect to the SPA's login page with `?oidc_error=<code>`. Used by
 // every failure branch below. Returns MHD_NO on allocation failure
 // (the connection is then closed by MHD).
@@ -304,7 +344,30 @@ enum MHD_Result handle_get_auth_oidc_callback(
                  LOG_LEVEL_ALERT, 2,
                  idp_error,
                  idp_error_desc ? idp_error_desc : "(none)");
-        return redirect_with_error(connection, default_provider, "idp_error", NULL);
+        OidcRpStateRecord *rec = (state && *state) ? oidc_rp_state_take(state) : NULL;
+        const char *return_to = rec ? rec->return_to : NULL;
+        const OIDCRPProviderConfig *err_provider = default_provider;
+        if (rec && rec->provider_name) {
+            const OIDCRPProviderConfig *named =
+                oidc_rp_find_provider(rec->provider_name);
+            if (named) {
+                err_provider = named;
+            }
+        }
+        enum MHD_Result err_ret;
+        if (oidc_rp_is_silent_idp_error(idp_error)) {
+            char *cancel = build_spa_cancel_url(
+                err_provider ? err_provider->redirect_uri : NULL, return_to);
+            err_ret = cancel ? oidc_rp_send_redirect(connection, cancel) : MHD_NO;
+            free(cancel);
+        } else {
+            err_ret = redirect_with_error(connection, err_provider,
+                                          "idp_error", return_to);
+        }
+        if (rec) {
+            oidc_rp_state_record_free(rec);
+        }
+        return err_ret;
     }
 
     if (!code || !*code || !state || !*state) {

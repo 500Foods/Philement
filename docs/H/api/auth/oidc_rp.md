@@ -65,6 +65,7 @@ authorization endpoint with a CSRF-protected `state`, a replay-protected
 | `database` | optional | Database name to authenticate against. Falls back to `OIDC_RP.Database` when absent. |
 | `return_to` | optional | Relative path inside the client SPA to deep-link to after sign-in. **Must** start with `/`. Validated against an allow-list. |
 | `provider` | optional | Provider name from `OIDC_RP.Providers[].Name` (case-sensitive exact match). When omitted or empty, Hydrogen uses `Providers[0]`. Client SPAs (Lithium) **should always send** this so multi-provider configs stay unambiguous. |
+| `prompt` | optional | When `none`, Hydrogen adds `prompt=none` to the IdP authorize URL (silent SSO). Other values are ignored. If the IdP returns `login_required` / `interaction_required` / `consent_required`, `/callback` redirects to the SPA origin with no `oidc_error`. |
 
 #### Start — response
 
