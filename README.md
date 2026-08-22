@@ -53,7 +53,7 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-08-22 20:53:51 UTC
+Last updated at 2026-08-22 23:47:10 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -61,7 +61,7 @@ JSON                           478            430              0        1608955
 SVG                            294            577          11137         513412
 C                             1583          64259          56898         260842
 Text                           328            324              0         136240
-Markdown                       739          32993            246          98067
+Markdown                       739          33382            245          99502
 Lua                            385          10731           6747          83327
 JavaScript                     224          10445          13582          49798
 Bourne Shell                   167           7533         105303          40792
@@ -78,13 +78,13 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          4701         134770         210103        2823356
+SUM:                          4701         135159         210102        2824791
 -------------------------------------------------------------------------------
-1675 Files were skipped (duplicate, binary, or without source code):
+1676 Files were skipped (duplicate, binary, or without source code):
   svg: 1178
   css: 165
   html: 134
-  md: 39
+  md: 40
   js: 24
   png: 23
   br: 16
