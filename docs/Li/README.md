@@ -31,6 +31,9 @@ This directory contains the complete documentation for the Lithium PWA.
 | [LITHIUM-API.md](LITHIUM-API.md) | API endpoints |
 | [LITHIUM-WEB.md](LITHIUM-WEB.md) | Deployment process |
 | [LITHIUM-CHANGELOG.md](LITHIUM-CHANGELOG.md) | Migration notes |
+| [AGENTS.md](/elements/003-lithium/AGENTS.md) | Agent / session map |
+| [plans/LITHIUM_SPRINT.md](plans/LITHIUM_SPRINT.md) | Active sprint plan |
+| [TODO.md](TODO.md) | Backlog pointer |
 
 ---
 

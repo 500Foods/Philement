@@ -11,8 +11,10 @@ A lightweight, performant modular SPA built with vanilla JavaScript ES modules. 
 
 | Document | Purpose |
 |----------|---------|
-| **[docs/Li/LITHIUM-TOC.md](/docs/Li/LITHIUM-TOC.md)** | **Table of contents** — Start here |
+| **[AGENTS.md](AGENTS.md)** | **Agent map** — read first in a new session |
+| **[docs/Li/LITHIUM-TOC.md](/docs/Li/LITHIUM-TOC.md)** | **Table of contents** |
 | **[docs/Li/LITHIUM-INS.md](/docs/Li/LITHIUM-INS.md)** | **⚠️ Mandatory** — Coding standards |
+| [docs/Li/plans/LITHIUM_SPRINT.md](/docs/Li/plans/LITHIUM_SPRINT.md) | Gated sprint (Phases 0–31) |
 | [docs/Li/LITHIUM-DEV.md](/docs/Li/LITHIUM-DEV.md) | Development environment |
 | [docs/Li/LITHIUM-TST.md](/docs/Li/LITHIUM-TST.md) | Testing framework |
 | [docs/Li/LITHIUM-FAQ.md](/docs/Li/LITHIUM-FAQ.md) | Troubleshooting |
