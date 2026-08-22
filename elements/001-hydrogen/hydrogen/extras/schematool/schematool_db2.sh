@@ -8,12 +8,22 @@
 # Design:             acuranzo
 #
 # CHANGELOG
+# 1.1.0 - 2026-08-22 - Resolve sibling schematool.sh, then HYDROGEN_ROOT
 # 1.0.0 - 2026-08-02 - Created as Test 40 config convenience wrapper
 
 set -euo pipefail
 
 # shellcheck disable=SC2154 # HELIUM_ROOT may be set by env; HYDROTST_DB_* from .zshrc
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [[ -x "${HERE}/schematool.sh" ]]; then
+    SCHEMATOOL="${HERE}/schematool.sh"
+elif [[ -x "${HYDROGEN_ROOT:-}/extras/schematool/schematool.sh" ]]; then
+    SCHEMATOOL="${HYDROGEN_ROOT}/extras/schematool/schematool.sh"
+else
+    echo "Error: extras/schematool/schematool.sh not found (set HYDROGEN_ROOT)" >&2
+    exit 1
+fi
+SCRIPT_DIR="$(cd "$(dirname "${SCHEMATOOL}")" && pwd)"
 if [[ -n "${HELIUM_ROOT:-}" ]]; then
     MIGRATIONS_DIR="${HELIUM_ROOT}/acuranzo/migrations"
 else
@@ -24,7 +34,7 @@ export SCHEMATOOL_DB_HOST="localhost"
 export SCHEMATOOL_DB_PORT="55555"
 export SCHEMATOOL_DB_SCHEMA="demo"
 
-exec "${SCRIPT_DIR}/schematool.sh" \
+exec "${SCHEMATOOL}" \
     --migrations "${MIGRATIONS_DIR}" \
     --design acuranzo \
     --engine db2 \

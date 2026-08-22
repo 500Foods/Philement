@@ -338,6 +338,7 @@ export class LithiumApp {
 
     // Auth expired handler
     eventBus.on(Events.AUTH_EXPIRED, () => {
+      if (this.auth._loggingOut) return;
       this.auth.handleAuthExpired();
     });
   }

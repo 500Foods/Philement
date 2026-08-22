@@ -34,6 +34,7 @@
 #include "oidc_rp_discovery.h"
 #include "oidc_rp_pkce.h"
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -137,6 +138,9 @@ enum MHD_Result handle_get_auth_oidc_start(
         connection, MHD_GET_ARGUMENT_KIND, "database");
     const char *provider_q = MHD_lookup_connection_value(
         connection, MHD_GET_ARGUMENT_KIND, "provider");
+    const char *prompt_q = MHD_lookup_connection_value(
+        connection, MHD_GET_ARGUMENT_KIND, "prompt");
+    const bool prompt_none = prompt_q && strcmp(prompt_q, "none") == 0;
 
     // Resolve provider: named ?provider= or default Providers[0].
     // An explicit unknown name is 400 unknown_provider (stable contract).
@@ -274,6 +278,14 @@ enum MHD_Result handle_get_auth_oidc_start(
                            state, nonce, code_verifier, code_challenge,
                            client_ip, NULL);
         return MHD_NO;
+    }
+
+    if (prompt_none) {
+        char *with_prompt = NULL;
+        if (asprintf(&with_prompt, "%s&prompt=none", redirect_url) != -1) {
+            free(redirect_url);
+            redirect_url = with_prompt;
+        }
     }
 
     // Log at STATE level — operator-visible but no secrets. State is

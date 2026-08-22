@@ -94,6 +94,8 @@ enum MHD_Result handle_get_auth_oidc_callback(
 void callback_truncated_state(const char *state, char out[16]);
 char *build_spa_error_url(const char *redirect_uri, const char *error_code, const char *return_to);
 char *build_spa_success_url(const char *redirect_uri, const char *handoff_code, const char *return_to);
+char *build_spa_cancel_url(const char *redirect_uri, const char *return_to);
+bool oidc_rp_is_silent_idp_error(const char *error_code);
 enum MHD_Result redirect_with_error(struct MHD_Connection *connection, const OIDCRPProviderConfig *provider, const char *error_code, const char *return_to);
 void callback_scrub_free(char *s);
 

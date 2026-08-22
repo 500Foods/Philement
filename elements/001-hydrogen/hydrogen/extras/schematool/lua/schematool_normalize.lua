@@ -2,6 +2,7 @@
 -- Normalize migration text for loose/strict comparison.
 --
 -- CHANGELOG
+-- 1.0.1 - 2026-08-22 - Lua 5.4+ const for-loop variable (do not assign to line)
 -- 1.0.0 - 2026-07-29 - Phase 4 normalizer
 
 local M = {}
@@ -24,9 +25,7 @@ function M.normalize(s, mode)
     -- loose
     local lines = {}
     for line in (s .. "\n"):gmatch("(.-)\n") do
-        -- trim trailing whitespace
-        line = line:gsub("[ \t]+$", "")
-        lines[#lines + 1] = line
+        lines[#lines + 1] = line:gsub("[ \t]+$", "")
     end
 
     -- Collapse runs of blank lines to a single blank line

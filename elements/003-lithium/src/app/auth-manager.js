@@ -1,5 +1,5 @@
 import { logAuth, Status } from '../core/log.js';
-import { retrieveJWT, validateJWT, storeJWT, clearJWT, getTimeUntilExpiry } from '../core/jwt.js';
+import { retrieveJWT, validateJWT, storeJWT, clearJWT, getTimeUntilExpiry, consumeSloQuery } from '../core/jwt.js';
 import { loadMacrosPostLogin } from '../shared/lookups.js';
 import { toast } from '../shared/toast.js';
 import { eventBus, Events } from '../core/event-bus.js';
@@ -16,6 +16,7 @@ export class AuthManager {
     this._lastUserActivity = 0;
     this._tokenScheduledAt = 0;
     this._isRenewing = false;
+    this._loggingOut = false;
   }
 
   _saveLastManager(type, id) {
@@ -27,6 +28,7 @@ export class AuthManager {
   }
 
   async checkAuthAndLoad() {
+    consumeSloQuery();
     const token = retrieveJWT();
     const validation = validateJWT(token);
 
@@ -274,57 +276,61 @@ export class AuthManager {
     }
   }
 
-   async performQuickLogoutCleanup() {
-     logAuth(Status.INFO, 'Performing quick logout cleanup');
-     await this._fadeOutForLogout();
-     await this.performLogoutActions('quick');
-     clearJWT();
-     window.location.reload(true);
-   }
-
-   async performNormalLogoutCleanup() {
-     logAuth(Status.INFO, 'Performing normal logout cleanup');
-     await this._fadeOutForLogout();
-     await this.performLogoutActions('normal');
-     clearJWT();
-     window.location.reload(true);
-   }
-
-  async performPublicLogoutCleanup() {
-    logAuth(Status.INFO, 'Performing public logout cleanup');
-    await this._fadeOutForLogout();
-    await this.performLogoutActions('public');
-    window.location.reload(true);
-  }
-
-   async performGlobalLogoutCleanup() {
-     logAuth(Status.INFO, 'Performing global logout cleanup');
-     // Fade out main UI (using the same fadeout as regular logout, but without logout panel)
-     await this._fadeOutForLogout();
-
-     // Ask Hydrogen to invalidate the current session and, if the user logged in
-     // via OIDC, return the upstream IdP logout URL so we can sign out of
-     // Keycloak as well. The API client pulls the JWT from localStorage automatically.
-     let idpRedirectUrl = null;
+    async _oidcEndSessionRedirect() {
+     this._loggingOut = true;
      try {
        const endSessionResponse = await this.app.api.post('auth/oidc/end-session', {});
        if (endSessionResponse && endSessionResponse.redirect_url) {
-         idpRedirectUrl = endSessionResponse.redirect_url;
          logAuth(Status.INFO, 'OIDC end-session URL received; redirecting to IdP logout');
-       } else {
-         logAuth(Status.INFO, 'No OIDC end-session URL; local logout only');
+         return endSessionResponse.redirect_url;
        }
+       logAuth(Status.INFO, 'No OIDC end-session URL; local logout only');
      } catch (error) {
        logAuth(Status.WARN, `OIDC end-session request failed: ${error.message}`);
      }
+     return null;
+   }
 
-     await this.performLogoutActions('global');
-
+   async _finishLogout(idpRedirectUrl) {
      if (idpRedirectUrl) {
        window.location.href = idpRedirectUrl;
      } else {
        window.location.reload(true);
      }
+   }
+
+    async performQuickLogoutCleanup() {
+     logAuth(Status.INFO, 'Performing quick logout cleanup');
+     await this._fadeOutForLogout();
+     const idpRedirectUrl = await this._oidcEndSessionRedirect();
+     await this.performLogoutActions('quick');
+     clearJWT();
+     await this._finishLogout(idpRedirectUrl);
+   }
+
+   async performNormalLogoutCleanup() {
+     logAuth(Status.INFO, 'Performing normal logout cleanup');
+     await this._fadeOutForLogout();
+     const idpRedirectUrl = await this._oidcEndSessionRedirect();
+     await this.performLogoutActions('normal');
+     clearJWT();
+     await this._finishLogout(idpRedirectUrl);
+   }
+
+  async performPublicLogoutCleanup() {
+    logAuth(Status.INFO, 'Performing public logout cleanup');
+    await this._fadeOutForLogout();
+    const idpRedirectUrl = await this._oidcEndSessionRedirect();
+    await this.performLogoutActions('public');
+    await this._finishLogout(idpRedirectUrl);
+  }
+
+   async performGlobalLogoutCleanup() {
+     logAuth(Status.INFO, 'Performing global logout cleanup');
+     await this._fadeOutForLogout();
+     const idpRedirectUrl = await this._oidcEndSessionRedirect();
+     await this.performLogoutActions('global');
+     await this._finishLogout(idpRedirectUrl);
    }
 
    async handleAuthExpired() {
