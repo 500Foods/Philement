@@ -259,7 +259,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1220](/elements/002-helium/acuranzo/migrations/acuranzo_1220.lua) | mail_events | 1.0.0 | 2026-07-07 | 8 | ✓ | Creates the mail_events table for the Hydrogen Mail Relay Subsystem (Phase 4B) |
 | [1221](/elements/002-helium/acuranzo/migrations/acuranzo_1221.lua) | mail_otp_codes | 1.0.0 | 2026-07-07 | 8 | ✓ | Creates the mail_otp_codes table for the Hydrogen Mail Relay Subsystem (Phase 4B) |
 | [1222](/elements/002-helium/acuranzo/migrations/acuranzo_1222.lua) | mail_routes | 1.0.0 | 2026-07-07 | 8 | ✓ | Creates the mail_routes table for the Hydrogen Mail Relay Subsystem (Phase 4B) |
-| [1223](/elements/002-helium/acuranzo/migrations/acuranzo_1223.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #093 - Insert Pending Mail Queue Row |
+| [1223](/elements/002-helium/acuranzo/migrations/acuranzo_1223.lua) | queries | 1.0.1 | 2026-08-21 | 4 | ✗ | QueryRef #093 - Insert Pending Mail Queue Row |
 | [1224](/elements/002-helium/acuranzo/migrations/acuranzo_1224.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #094 - Get Mail Queue Row by Message UUID |
 | [1225](/elements/002-helium/acuranzo/migrations/acuranzo_1225.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #095 - Get Mail Queue Row by Idempotency Key |
 | [1226](/elements/002-helium/acuranzo/migrations/acuranzo_1226.lua) | queries | 1.0.0 | 2026-07-07 | 4 | ✗ | QueryRef #096 - Select Next Pending Mail Queue Row |

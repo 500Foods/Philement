@@ -31,6 +31,8 @@ bool db2_bind_single_parameter(void* stmt_handle, unsigned short param_index, Ty
 char* db2_trim_trailing_whitespace(char* str);
 char* db2_format_datetime_string(char* str);
 char* db2_format_timestamp_string(char* str);
+bool db2_normalize_iso8601_timestamp(const char* input, char* output, size_t output_size);
+void db2_complete_standalone_statement(DatabaseHandle* connection, bool success);
 void db2_cleanup_bound_values(void** bound_values, size_t count);
 
 #endif // DATABASE_ENGINE_DB2_QUERY_H

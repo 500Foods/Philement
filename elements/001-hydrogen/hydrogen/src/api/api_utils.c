@@ -25,9 +25,6 @@
 static __thread const char *g_api_request_url = NULL;
 
 bool api_url_matches_pattern(const char *url, const char *pattern) {
-    size_t pattern_len;
-    size_t url_len;
-
     if (!url || !pattern) {
         return false;
     }
@@ -35,8 +32,8 @@ bool api_url_matches_pattern(const char *url, const char *pattern) {
         return true;
     }
     if (pattern[0] == '.' && pattern[1] != '\0') {
-        pattern_len = strlen(pattern);
-        url_len = strlen(url);
+        size_t pattern_len = strlen(pattern);
+        size_t url_len = strlen(url);
         if (url_len >= pattern_len) {
             return strcmp(url + url_len - pattern_len, pattern) == 0;
         }

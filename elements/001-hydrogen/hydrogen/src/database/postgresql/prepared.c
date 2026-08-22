@@ -20,6 +20,7 @@ extern PQexec_t PQexec_ptr;
 extern PQresultStatus_t PQresultStatus_ptr;
 extern PQclear_t PQclear_ptr;
 extern PQerrorMessage_t PQerrorMessage_ptr;
+extern PQresultErrorField_t PQresultErrorField_ptr;
 
 // Forward declarations for utility functions
 bool postgresql_initialize_prepared_statement_cache(DatabaseHandle* connection, size_t cache_size);
@@ -112,7 +113,6 @@ bool postgresql_add_prepared_statement_to_cache(DatabaseHandle* connection, Prep
     return true;
 }
 
-// Prepared Statement Management Functions
 bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, const char* sql, PreparedStatement** stmt, bool add_to_cache) {
     if (!connection || !name || !sql || !stmt || connection->engine_type != DB_ENGINE_POSTGRESQL) {
         return false;
@@ -123,27 +123,66 @@ bool postgresql_prepare_statement(DatabaseHandle* connection, const char* name, 
         return false;
     }
 
-    // Note: Timeout is now set once per connection in postgresql_connect()
-    // No need to set it before each PREPARE operation
+    bool used_savepoint = false;
+    if (pg_conn->in_transaction && PQexec_ptr && PQresultStatus_ptr && PQclear_ptr) {
+        void* sp = PQexec_ptr(pg_conn->connection, "SAVEPOINT hydrogen_pqprepare");
+        if (sp) {
+            if (PQresultStatus_ptr(sp) == PGRES_COMMAND_OK) {
+                used_savepoint = true;
+            }
+            PQclear_ptr(sp);
+        }
+    }
 
-    // Prepare the statement (timeout already set at connection level)
     time_t start_time = time(NULL);
     void* res = PQprepare_ptr(pg_conn->connection, name, sql, 0, NULL);
 
-    // Check if prepare took too long
     if (check_timeout_expired(start_time, 15)) {
         log_this(SR_DATABASE, "PostgreSQL PREPARE execution time exceeded 15 seconds", LOG_LEVEL_ERROR, 0);
         if (res) PQclear_ptr(res);
+        if (used_savepoint) {
+            void* sp_res = PQexec_ptr(pg_conn->connection, "ROLLBACK TO SAVEPOINT hydrogen_pqprepare");
+            if (sp_res) PQclear_ptr(sp_res);
+        }
         return false;
     }
 
-    if (PQresultStatus_ptr(res) != PGRES_COMMAND_OK) {
-        log_this(SR_DATABASE, "PostgreSQL PREPARE failed", LOG_LEVEL_ERROR, 0);
-        log_this(SR_DATABASE, PQerrorMessage_ptr(pg_conn->connection), LOG_LEVEL_ERROR, 0);
+    if (!res || PQresultStatus_ptr(res) != PGRES_COMMAND_OK) {
+        bool already_exists = false;
+        if (PQresultErrorField_ptr && res) {
+            const char* sqlstate = PQresultErrorField_ptr(res, 'C');
+            if (sqlstate && strcmp(sqlstate, "42P05") == 0) {
+                already_exists = true;
+            }
+        }
+        if (!already_exists && PQerrorMessage_ptr) {
+            const char* err = PQerrorMessage_ptr(pg_conn->connection);
+            if (err && strstr(err, "already exists")) {
+                already_exists = true;
+            }
+        }
+        if (!already_exists) {
+            log_this(SR_DATABASE, "PostgreSQL PREPARE failed", LOG_LEVEL_ERROR, 0);
+            log_this(SR_DATABASE, PQerrorMessage_ptr(pg_conn->connection), LOG_LEVEL_ERROR, 0);
+            if (res) PQclear_ptr(res);
+            if (used_savepoint) {
+                void* sp_res = PQexec_ptr(pg_conn->connection, "ROLLBACK TO SAVEPOINT hydrogen_pqprepare");
+                if (sp_res) PQclear_ptr(sp_res);
+            }
+            return false;
+        }
+        if (res) PQclear_ptr(res);
+        if (used_savepoint) {
+            void* sp_res = PQexec_ptr(pg_conn->connection, "ROLLBACK TO SAVEPOINT hydrogen_pqprepare");
+            if (sp_res) PQclear_ptr(sp_res);
+        }
+    } else {
         PQclear_ptr(res);
-        return false;
+        if (used_savepoint) {
+            void* sp_res = PQexec_ptr(pg_conn->connection, "RELEASE SAVEPOINT hydrogen_pqprepare");
+            if (sp_res) PQclear_ptr(sp_res);
+        }
     }
-    PQclear_ptr(res);
 
     // Create prepared statement structure
     PreparedStatement* prepared_stmt = calloc(1, sizeof(PreparedStatement));

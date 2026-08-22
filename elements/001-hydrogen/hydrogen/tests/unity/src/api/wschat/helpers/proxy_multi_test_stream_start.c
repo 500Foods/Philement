@@ -108,11 +108,14 @@ static void init_manager(void) {
 }
 
 static void destroy_manager(void) {
-    if (manager.multi_handle) {
-        curl_multi_cleanup(manager.multi_handle);
-        manager.multi_handle = NULL;
+    if (manager.initialized) {
+        if (manager.multi_handle) {
+            curl_multi_cleanup(manager.multi_handle);
+            manager.multi_handle = NULL;
+        }
+        pthread_mutex_destroy(&manager.streams_mutex);
+        manager.initialized = false;
     }
-    pthread_mutex_destroy(&manager.streams_mutex);
     manager.active_streams = NULL;
 }
 

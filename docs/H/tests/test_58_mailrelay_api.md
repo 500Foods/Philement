@@ -48,7 +48,9 @@ The test runs in parallel against all configured engines:
 - `tests/configs/hydrogen_test_58_cockroachdb.json`
 - `tests/configs/hydrogen_test_58_yugabytedb.json`
 
-The script overrides the web port, mailval port, and TLS settings in each config at runtime, so a single config file per engine supports both plaintext and STARTTLS variants. Secrets and database connection parameters are injected via `${env.*}` variables resolved by the config loader.
+The script overrides the web port, mailval port, TLS settings, and `Servers[0].CAPath` (absolute mailval cert path for STARTTLS) in each config at runtime, so a single config file per engine supports both plaintext and STARTTLS variants. Secrets and database connection parameters are injected via `${env.*}` variables resolved by the config loader. `Queue.Persist` is on except MySQL and MariaDB.
+
+Helpers live in [`/elements/001-hydrogen/hydrogen/tests/lib/mailrelay_api_helpers.sh`](/elements/001-hydrogen/hydrogen/tests/lib/mailrelay_api_helpers.sh). Each engine runs plaintext then STARTTLS in one job (at most four engine jobs at once) so a full-suite 50s batch does not start 14 Hydrogen processes at the same time.
 
 Test 58 uses the dedicated `15800-15831` listener range. These ports are below Linux's default ephemeral client-port range (`32768-60999`), preventing unrelated outbound connections in the full test suite from temporarily occupying a Test 58 listener port.
 

@@ -38,6 +38,8 @@ void test_db2_process_query_results_success_null_data(void);
 void test_db2_process_query_results_success_mixed_data(void);
 void test_db2_process_query_results_timing_calculation(void);
 void test_db2_process_query_results_special_characters_escape(void);
+void test_db2_process_query_results_success_with_info_fetch(void);
+void test_db2_normalize_iso8601_timestamp(void);
 
 void setUp(void) {
     mock_system_reset_all();
@@ -340,6 +342,39 @@ void test_db2_process_query_results_special_characters_escape(void) {
     free(result);
 }
 
+void test_db2_process_query_results_success_with_info_fetch(void) {
+    void* stmt_handle = (void*)0x1000;
+    struct timespec start_time;
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
+    QueryResult* result = NULL;
+
+    mock_libdb2_set_SQLNumResultCols_result(0, 1);
+    mock_libdb2_set_SQLDescribeCol_column_name("queue_id");
+    mock_libdb2_set_fetch_row_count(1);
+    mock_libdb2_set_SQLFetch_result(1);
+    mock_libdb2_set_SQLGetData_data("1", 1);
+    mock_libdb2_set_SQLRowCount_result(0, 1);
+
+    TEST_ASSERT_TRUE(db2_process_query_results(stmt_handle, "test", start_time, &result));
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL(1, result->row_count);
+    TEST_ASSERT_NOT_NULL(strstr(result->data_json, "\"queue_id\""));
+
+    free(result->data_json);
+    free(result);
+}
+
+void test_db2_normalize_iso8601_timestamp(void) {
+    char out[32];
+
+    TEST_ASSERT_TRUE(db2_normalize_iso8601_timestamp("2026-08-22T00:28:34Z", out, sizeof(out)));
+    TEST_ASSERT_EQUAL_STRING("2026-08-22 00:28:34", out);
+    TEST_ASSERT_FALSE(db2_normalize_iso8601_timestamp("2026-08-22 00:28:34", out, sizeof(out)));
+    TEST_ASSERT_FALSE(db2_normalize_iso8601_timestamp("not-a-date", out, sizeof(out)));
+    TEST_ASSERT_FALSE(db2_normalize_iso8601_timestamp(NULL, out, sizeof(out)));
+    TEST_ASSERT_FALSE(db2_normalize_iso8601_timestamp("2026-08-22T00:28:34Z", out, 8));
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -362,6 +397,8 @@ int main(void) {
     RUN_TEST(test_db2_process_query_results_success_mixed_data);
     RUN_TEST(test_db2_process_query_results_timing_calculation);
     RUN_TEST(test_db2_process_query_results_special_characters_escape);
+    RUN_TEST(test_db2_process_query_results_success_with_info_fetch);
+    RUN_TEST(test_db2_normalize_iso8601_timestamp);
 
     return UNITY_END();
 }

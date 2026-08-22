@@ -58,7 +58,8 @@ bool chat_proxy_multi_init(MultiStreamManager* manager, struct lws_context* lws_
     manager->max_host_connections = 50;  // Default per-provider limit
     manager->max_total_connections = 200;
     manager->shutdown_requested = false;
-    
+    manager->worker_thread_started = false;
+
     // Configure multi handle - use simple polling interface (curl_multi_perform + curl_multi_wait)
     // Do NOT set CURLMOPT_SOCKETFUNCTION or CURLMOPT_TIMERFUNCTION - those require
     // the multi_socket_action() interface which we're not using
@@ -146,26 +147,33 @@ void chat_proxy_multi_cleanup(MultiStreamManager* manager) {
     if (!manager || !manager->initialized) {
         return;
     }
-    
+
+    manager->shutdown_requested = true;
+    if (manager->worker_thread_started) {
+        int join_result = pthread_join(manager->worker_thread, NULL);
+        if (join_result != 0) {
+            log_this(SR_CHAT, "Failed to join multi-stream worker thread", LOG_LEVEL_ERROR, 0);
+        }
+        manager->worker_thread_started = false;
+    }
+
     pthread_mutex_lock(&manager->streams_mutex);
     
     // Stop all active streams
     MultiStreamContext* stream = manager->active_streams;
     while (stream) {
         MultiStreamContext* next = stream->next;
-        
+        void* priv_data = NULL;
+
         if (stream->easy_handle) {
+            curl_easy_getinfo(stream->easy_handle, CURLINFO_PRIVATE, &priv_data);
             curl_multi_remove_handle(manager->multi_handle, stream->easy_handle);
             curl_easy_cleanup(stream->easy_handle);
+            stream->easy_handle = NULL;
         }
         if (stream->headers) {
             curl_slist_free_all(stream->headers);
         }
-        
-        // Free CURL stream context
-        // Note: We need to get it from CURL private data
-        void* priv_data = NULL;
-        curl_easy_getinfo(stream->easy_handle, CURLINFO_PRIVATE, &priv_data);
         if (priv_data) {
             CurlStreamContext* curl_ctx = (CurlStreamContext*)priv_data;
             free(curl_ctx->line_buffer);
@@ -188,9 +196,11 @@ void chat_proxy_multi_cleanup(MultiStreamManager* manager) {
     pthread_mutex_unlock(&manager->streams_mutex);
     pthread_mutex_destroy(&manager->streams_mutex);
     
-    // Cleanup CURL multi
-    curl_multi_cleanup(manager->multi_handle);
-    
+    if (manager->multi_handle) {
+        curl_multi_cleanup(manager->multi_handle);
+        manager->multi_handle = NULL;
+    }
+
     manager->initialized = false;
     if (g_multi_manager == manager) {
         g_multi_manager = NULL;
