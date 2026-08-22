@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.1 - 2026-08-21 - Document INSERT_KEY empty-result retry contract for MAX+1.
 -- 1.0.0 - 2026-07-07 - Initial creation for MAILRELAY_PLAN Phase 4C.1
 
 return function(engine, design_name, schema_name, cfg)
@@ -126,7 +127,11 @@ table.insert(queries,{sql=[[
 
                     ## Returns
 
-                    - `queue_id`: The newly inserted queue primary key.
+                    - `queue_id`: The newly inserted queue primary key via
+                      `${INSERT_KEY_START}` / `${INSERT_KEY_RETURN}`. A
+                      concurrent `MAX(queue_id)+1` collision fails the INSERT
+                      and returns no row. That is not a race to paper over:
+                      treat an empty result as "retry the insert".
 
                     ## Tables
 

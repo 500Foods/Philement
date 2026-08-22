@@ -757,6 +757,7 @@ Higher priority dequeues first; FIFO within the same priority. Event handlers an
 With `Queue.Persist=true` and a configured `Database`:
 
 - Enqueue writes a durable row before memory queue acceptance.
+- `queue_id` is `MAX(queue_id)+1` wrapped in `${INSERT_KEY_*}` (`RETURNING` / DB2 `FINAL TABLE`). Success returns the new id. A primary-key collision returns no row; retry the insert. Do not treat that empty result as success.
 - Attempts append to `mail_attempts`.
 - Startup recovers stale `sending` rows older than `StaleTimeoutSeconds`.
 - Multi-instance claim uses conditional updates (`instance_id`, `claim_token`) so only one worker owns a row.

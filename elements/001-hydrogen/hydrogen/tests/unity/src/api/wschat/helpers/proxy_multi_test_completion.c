@@ -446,10 +446,9 @@ void test_cleanup_with_stream(void) {
     // After cleanup the manager is no longer initialized and the list is empty.
     TEST_ASSERT_FALSE(manager.initialized);
     TEST_ASSERT_NULL(manager.active_streams);
+    TEST_ASSERT_NULL(manager.multi_handle);
     // Stream, its strings, and the CURL context were freed by cleanup().
     g_curl_ctx = NULL;
-    curl_multi_cleanup(manager.multi_handle);
-    pthread_mutex_destroy(&manager.streams_mutex);
 }
 
 // ---------------------------------------------------------------------------

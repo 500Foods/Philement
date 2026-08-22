@@ -256,11 +256,32 @@ bool mailrelay_send_raw(const MailRelayMessage* msg,
     return mailrelay_smtp_send(msg, server, default_from, app_name, out);
 }
 
+#define MAILRELAY_PERSIST_INSERT_ATTEMPTS 5
+
 /* Context used to capture the result of a queue insert callback. */
 typedef struct {
     MailRelayRepoStatus status;
     long long queue_id;
 } MailRelayInsertContext;
+
+long long mailrelay_json_queue_id(json_t* qid) {
+    if (!qid) {
+        return 0;
+    }
+    if (json_is_integer(qid)) {
+        return json_integer_value(qid);
+    }
+    if (json_is_real(qid)) {
+        return (long long)json_real_value(qid);
+    }
+    if (json_is_string(qid)) {
+        const char* text = json_string_value(qid);
+        if (text && text[0] != '\0') {
+            return strtoll(text, NULL, 10);
+        }
+    }
+    return 0;
+}
 
 void insert_callback(MailRelayRepoResult* result, void* user_data) {
     MailRelayInsertContext* ctx = (MailRelayInsertContext*)user_data;
@@ -283,9 +304,10 @@ void insert_callback(MailRelayRepoResult* result, void* user_data) {
         return;
     }
     json_t* qid = json_object_get(row, "queue_id");
-    if (qid && json_is_integer(qid)) {
-        ctx->queue_id = json_integer_value(qid);
+    if (!qid) {
+        qid = json_object_get(row, "QUEUE_ID");
     }
+    ctx->queue_id = mailrelay_json_queue_id(qid);
 }
 
 bool mailrelay_persist_message(const MailRelayMessage* msg,
@@ -341,13 +363,32 @@ bool mailrelay_persist_message(const MailRelayMessage* msg,
         .next_attempt_at = next_attempt_at
     };
 
-    bool submitted = mailrelay_repo_queue_insert(&params, insert_callback, &ctx);
+    int attempt = 0;
+    while (attempt < MAILRELAY_PERSIST_INSERT_ATTEMPTS) {
+        ctx.status = MAILRELAY_REPO_OK;
+        ctx.queue_id = 0;
+        if (!mailrelay_repo_queue_insert(&params, insert_callback, &ctx) ||
+            ctx.status != MAILRELAY_REPO_OK) {
+            log_this(SR_MAIL_RELAY,
+                     "Failed to persist mail queue row (status=%d attempt=%d)",
+                     LOG_LEVEL_ERROR, 2, (int)ctx.status, attempt + 1);
+            free(recipients_json);
+            return false;
+        }
+        if (ctx.queue_id > 0) {
+            break;
+        }
+        log_this(SR_MAIL_RELAY,
+                 "Mail queue insert returned no queue_id; retrying (%d/%d)",
+                 LOG_LEVEL_STATE, 2, attempt + 1, MAILRELAY_PERSIST_INSERT_ATTEMPTS);
+        attempt = attempt + 1;
+    }
     free(recipients_json);
 
-    if (!submitted || ctx.status != MAILRELAY_REPO_OK) {
+    if (ctx.queue_id <= 0) {
         log_this(SR_MAIL_RELAY,
-                 "Failed to persist mail queue row (status=%d)",
-                 LOG_LEVEL_ERROR, 1, (int)ctx.status);
+                 "Failed to persist mail queue row: empty insert result after %d attempts",
+                 LOG_LEVEL_ERROR, 1, MAILRELAY_PERSIST_INSERT_ATTEMPTS);
         return false;
     }
 

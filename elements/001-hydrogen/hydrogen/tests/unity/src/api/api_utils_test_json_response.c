@@ -233,7 +233,8 @@ void test_api_url_matches_pattern(void) {
     TEST_ASSERT_FALSE(api_url_matches_pattern("/api/conduit/query", NULL));
     TEST_ASSERT_TRUE(api_url_matches_pattern("/api/conduit/query", "*"));
     TEST_ASSERT_TRUE(api_url_matches_pattern("/api/conduit/query", "/conduit/query"));
-    TEST_ASSERT_TRUE(api_url_matches_pattern("/api/conduit/queries", "/conduit/query"));
+    TEST_ASSERT_FALSE(api_url_matches_pattern("/api/conduit/queries", "/conduit/query"));
+    TEST_ASSERT_TRUE(api_url_matches_pattern("/api/conduit/query/extra", "/conduit/query"));
     TEST_ASSERT_FALSE(api_url_matches_pattern("/api/conduit/script", "/conduit/query"));
     TEST_ASSERT_FALSE(api_url_matches_pattern("/api/conduit/auth_query", "/conduit/query"));
     TEST_ASSERT_TRUE(api_url_matches_pattern("/api/v1/data.json", ".json"));

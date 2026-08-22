@@ -30,6 +30,7 @@ extern SQLDescribeCol_t SQLDescribeCol_ptr;
 extern SQLGetDiagRec_t SQLGetDiagRec_ptr;
 extern SQLPrepare_t SQLPrepare_ptr;
 extern SQLBindParameter_t SQLBindParameter_ptr;
+extern SQLEndTran_t SQLEndTran_ptr;
 
 // Helper function to trim trailing whitespace from strings (DB2-specific)
  char* db2_trim_trailing_whitespace(char* str) {
@@ -62,6 +63,50 @@ extern SQLBindParameter_t SQLBindParameter_ptr;
     }
 
     return str;
+}
+
+bool db2_normalize_iso8601_timestamp(const char* input, char* output, size_t output_size) {
+    int year = 0;
+    int month = 0;
+    int day = 0;
+    int hour = 0;
+    int minute = 0;
+    int second = 0;
+    int written;
+
+    if (!input || !output || output_size < 20) {
+        return false;
+    }
+    if (sscanf(input, "%d-%d-%dT%d:%d:%d", &year, &month, &day, &hour, &minute, &second) != 6) {
+        return false;
+    }
+    if (year < 1 || month < 1 || month > 12 || day < 1 || day > 31 ||
+        hour < 0 || hour > 23 || minute < 0 || minute > 59 || second < 0 || second > 60) {
+        return false;
+    }
+    written = snprintf(output, output_size, "%04d-%02d-%02d %02d:%02d:%02d",
+                       year, month, day, hour, minute, second);
+    return written == 19;
+}
+
+void db2_complete_standalone_statement(DatabaseHandle* connection, bool success) {
+    DB2Connection* db2_conn;
+    int end_result;
+
+    if (!connection || connection->current_transaction || !SQLEndTran_ptr) {
+        return;
+    }
+    db2_conn = (DB2Connection*)connection->connection_handle;
+    if (!db2_conn || !db2_conn->connection) {
+        return;
+    }
+    end_result = SQLEndTran_ptr(SQL_HANDLE_DBC, db2_conn->connection,
+                                success ? SQL_COMMIT : SQL_ROLLBACK);
+    if (end_result != SQL_SUCCESS && end_result != SQL_SUCCESS_WITH_INFO) {
+        const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+        log_this(designator, "DB2 standalone %s failed: %d", LOG_LEVEL_ERROR, 2,
+                 success ? "commit" : "rollback", end_result);
+    }
 }
 
 // Helper function to format DB2 timestamp strings to standard format (DB2-specific)
@@ -330,8 +375,11 @@ bool db2_process_query_results(void* stmt_handle, const char* designator, struct
         strcpy(json_buffer, "[");
         json_buffer_size = 1;
 
-        // Fetch rows using helper function
-        while (SQLFetch_ptr && SQLFetch_ptr(stmt_handle) == SQL_SUCCESS) {
+        while (SQLFetch_ptr) {
+            int fetch_rc = SQLFetch_ptr(stmt_handle);
+            if (fetch_rc != SQL_SUCCESS && fetch_rc != SQL_SUCCESS_WITH_INFO) {
+                break;
+            }
             bool first_row = (row_count == 0);
             if (!db2_fetch_row_data(stmt_handle, column_names, column_count,
                                     &json_buffer, &json_buffer_size, &json_buffer_capacity, first_row)) {
@@ -434,8 +482,15 @@ bool db2_bind_single_parameter(void* stmt_handle, unsigned short param_index, Ty
             break;
         }
         case PARAM_TYPE_STRING: {
-            size_t str_len = param->value.string_value ? strlen(param->value.string_value) : 0;
-            bound_values[param_index - 1] = param->value.string_value ? strdup(param->value.string_value) : strdup("");
+            char normalized[32];
+            const char* bind_str = param->value.string_value ? param->value.string_value : "";
+            size_t str_len;
+            if (param->value.string_value &&
+                db2_normalize_iso8601_timestamp(param->value.string_value, normalized, sizeof(normalized))) {
+                bind_str = normalized;
+            }
+            str_len = strlen(bind_str);
+            bound_values[param_index - 1] = strdup(bind_str);
             if (!bound_values[param_index - 1]) return false;
             str_len_indicators[param_index - 1] = (long)str_len;
             log_this(designator, "Binding STRING parameter %u: value='%s', len=%zu", LOG_LEVEL_TRACE, 3,
@@ -546,8 +601,11 @@ bool db2_bind_single_parameter(void* stmt_handle, unsigned short param_index, Ty
         case PARAM_TYPE_DATETIME: {
             // Validate DATETIME format (YYYY-MM-DD HH:MM:SS)
             const char* datetime_value = param->value.datetime_value ? param->value.datetime_value : "";
+            char normalized[32];
             int year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0;
-            if (sscanf(datetime_value, "%d-%d-%d %d:%d:%d", &year, &month, &day, &hour, &minute, &second) != 6) {
+            if (db2_normalize_iso8601_timestamp(datetime_value, normalized, sizeof(normalized))) {
+                datetime_value = normalized;
+            } else if (sscanf(datetime_value, "%d-%d-%d %d:%d:%d", &year, &month, &day, &hour, &minute, &second) != 6) {
                 log_this(designator, "Invalid DATETIME format (expected YYYY-MM-DD HH:MM:SS): %s", LOG_LEVEL_ERROR, 1, datetime_value);
                 return false;
             }
@@ -568,9 +626,12 @@ bool db2_bind_single_parameter(void* stmt_handle, unsigned short param_index, Ty
         case PARAM_TYPE_TIMESTAMP: {
             // Validate TIMESTAMP format (YYYY-MM-DD HH:MM:SS.FFF)
             const char* timestamp_value = param->value.timestamp_value ? param->value.timestamp_value : "";
+            char normalized[32];
             int year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0;
             float fraction = 0.0f;
-            if (sscanf(timestamp_value, "%d-%d-%d %d:%d:%d.%f", &year, &month, &day, &hour, &minute, &second, &fraction) != 7) {
+            if (db2_normalize_iso8601_timestamp(timestamp_value, normalized, sizeof(normalized))) {
+                timestamp_value = normalized;
+            } else if (sscanf(timestamp_value, "%d-%d-%d %d:%d:%d.%f", &year, &month, &day, &hour, &minute, &second, &fraction) != 7) {
                 log_this(designator, "Invalid TIMESTAMP format (expected YYYY-MM-DD HH:MM:SS.FFF): %s", LOG_LEVEL_ERROR, 1, timestamp_value);
                 return false;
             }
@@ -737,13 +798,13 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
             
             // Execute the prepared statement
             exec_result = SQLExecute_ptr(stmt_handle);
-            
-            // Cleanup binding resources
-            db2_cleanup_bound_values(bound_values, param_count);
-            free(str_len_indicators);
+
             free(positional_sql);
             free(ordered_params);
             free_parameter_list(param_list);
+            positional_sql = NULL;
+            ordered_params = NULL;
+            param_list = NULL;
         } else {
             // No actual parameters or parsing failed
             if (param_list) {
@@ -824,6 +885,13 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
             free(error_message);
         }
 
+        if (bound_values) {
+            db2_cleanup_bound_values(bound_values, param_count);
+            bound_values = NULL;
+        }
+        free(str_len_indicators);
+        str_len_indicators = NULL;
+        db2_complete_standalone_statement(connection, false);
         db2_active_stmt_clear(connection, stmt_handle);
         SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
         mutex_unlock(&connection->connection_lock);
@@ -832,6 +900,13 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
 
     // Process query results using helper function
     bool process_result = db2_process_query_results(stmt_handle, designator, start_time, result);
+    if (bound_values) {
+        db2_cleanup_bound_values(bound_values, param_count);
+        bound_values = NULL;
+    }
+    free(str_len_indicators);
+    str_len_indicators = NULL;
+    db2_complete_standalone_statement(connection, process_result);
 
     // Clean up statement handle
     db2_active_stmt_clear(connection, stmt_handle);
@@ -921,11 +996,13 @@ bool db2_execute_prepared(DatabaseHandle* connection, const PreparedStatement* s
             log_this(designator, "DB2 prepared statement execution failed - result: %d (could not get error details)", LOG_LEVEL_ERROR, 1, exec_result);
         }
 
+        db2_complete_standalone_statement(connection, false);
         return false;
     }
 
     // Process query results using helper function
     bool process_result = db2_process_query_results(stmt_handle, designator, start_time, result);
+    db2_complete_standalone_statement(connection, process_result);
     
     if (process_result) {
         log_this(designator, "DB2 prepared statement execution: Query completed successfully", LOG_LEVEL_TRACE, 0);

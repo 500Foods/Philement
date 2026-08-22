@@ -101,6 +101,7 @@ void mailrelay_event_free_all_rate_limits(void);
  * are not part of the stable public API.
  */
 void recovery_callback(MailRelayRepoResult* result, void* user_data);
+long long mailrelay_json_queue_id(json_t* qid);
 void insert_callback(MailRelayRepoResult* result, void* user_data);
 bool mailrelay_persist_message(const MailRelayMessage* msg,
                                int priority,

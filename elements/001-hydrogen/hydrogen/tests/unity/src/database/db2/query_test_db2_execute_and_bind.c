@@ -62,6 +62,7 @@ void test_db2_bind_single_parameter_timestamp_type(void);
 void test_db2_bind_single_parameter_timestamp_malloc_failure(void);
 void test_db2_bind_single_parameter_timestamp_invalid_format(void);
 void test_db2_bind_single_parameter_bind_failure(void);
+void test_db2_bind_single_parameter_string_iso8601(void);
 
 void setUp(void) {
     mock_system_reset_all();
@@ -837,6 +838,31 @@ void test_db2_bind_single_parameter_bind_failure(void) {
     free(str_len_indicators);
 }
 
+void test_db2_bind_single_parameter_string_iso8601(void) {
+    void* stmt = (void*)0x1234;
+    TypedParameter param = {0};
+    param.type = PARAM_TYPE_STRING;
+    param.name = (char*)"NEXT_ATTEMPT_AT";
+    param.value.string_value = (char*)"2026-08-22T00:28:34Z";
+
+    void** bound_values = calloc(1, sizeof(void*));
+    TEST_ASSERT_NOT_NULL(bound_values);
+    long* str_len_indicators = calloc(1, sizeof(long));
+    TEST_ASSERT_NOT_NULL(str_len_indicators);
+
+    mock_libdb2_set_SQLBindParameter_result(SQL_SUCCESS);
+
+    bool result = db2_bind_single_parameter(stmt, 1, &param, bound_values, str_len_indicators, "test");
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_NOT_NULL(bound_values[0]);
+    TEST_ASSERT_EQUAL_STRING("2026-08-22 00:28:34", (char*)bound_values[0]);
+    TEST_ASSERT_EQUAL(19, str_len_indicators[0]);
+
+    free(bound_values[0]);
+    free(bound_values);
+    free(str_len_indicators);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -876,6 +902,7 @@ int main(void) {
     RUN_TEST(test_db2_bind_single_parameter_timestamp_malloc_failure);
     RUN_TEST(test_db2_bind_single_parameter_timestamp_invalid_format);
     RUN_TEST(test_db2_bind_single_parameter_bind_failure);
+    RUN_TEST(test_db2_bind_single_parameter_string_iso8601);
 
     return UNITY_END();
 }
