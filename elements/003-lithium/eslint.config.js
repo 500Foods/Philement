@@ -45,6 +45,9 @@ export default [
         AbortController: 'readonly',
         URLSearchParams: 'readonly',
         Buffer: 'readonly',
+        Blob: 'readonly',
+        FileReader: 'readonly',
+        alert: 'readonly',
         global: 'readonly',
         process: 'readonly',
         require: 'readonly',
@@ -59,13 +62,24 @@ export default [
     },
   },
   {
+    files: ['src/init/**/*.js'],
+    languageOptions: {
+      globals: {
+        CodeMirror: 'readonly',
+        flatpickr: 'readonly',
+        hljs: 'readonly',
+        Prism: 'readonly',
+        SUNEDITOR: 'readonly',
+      },
+    },
+  },
+  {
     ignores: [
       'node_modules/',
       'dist/',
       'coverage/',
       'tests/lib/',
       'tests/*.sh',
-      'src/init/',
     ],
   },
 ];

@@ -4,12 +4,13 @@
  * Auth Integration Tests
  *
  * These tests run against a real Hydrogen server. They require:
- * - HYDROGEN_SERVER_URL (default: http://localhost:8080)
+ * - HYDROGEN_SERVER_URL (default: https://lithium.philement.com)
  * - HYDROGEN_DEMO_USER_NAME
  * - HYDROGEN_DEMO_USER_PASS
  * - HYDROGEN_DEMO_API_KEY
  *
- * Tests are skipped if the server is not available.
+ * Tests are skipped (it.skip / skip()) if the server or credentials
+ * are not available. They must not pass silently.
  */
 
 import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
@@ -23,19 +24,42 @@ const PASSWORD = process.env.HYDROGEN_DEMO_USER_PASS;
 const API_KEY = process.env.HYDROGEN_DEMO_API_KEY;
 const DATABASE = 'Lithium';
 
+let tlsWarned = false;
+
+function tlsFailureCode(error) {
+  return error?.cause?.code || error?.code || '';
+}
+
+async function hydrogenFetch(url, options = {}) {
+  try {
+    return await fetch(url, options);
+  } catch (error) {
+    const code = tlsFailureCode(error);
+    if (code === 'CERT_HAS_EXPIRED' || code === 'UNABLE_TO_VERIFY_LEAF_SIGNATURE') {
+      process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
+      if (!tlsWarned) {
+        tlsWarned = true;
+        console.warn(`\n⚠️  TLS failed (${code}) for ${SERVER_URL}; retrying without certificate verification. Renew the Let's Encrypt cert.`);
+      }
+      return fetch(url, options);
+    }
+    throw error;
+  }
+}
+
 // Helper to check if server is available
 async function isServerAvailable() {
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 5000);
-    const response = await fetch(`${SERVER_URL}/api/system/health`, {
+    const response = await hydrogenFetch(`${SERVER_URL}/api/system/health`, {
       method: 'GET',
       signal: controller.signal,
     });
     clearTimeout(timeoutId);
     return response.ok;
   } catch (error) {
-    console.log(`Server check failed: ${error.message}`);
+    console.warn(`Server check failed for ${SERVER_URL}: ${error.message}`);
     return false;
   }
 }
@@ -47,7 +71,7 @@ function hasCredentials() {
 
 // Helper to make login request
 async function login(loginId, password, apiKey = API_KEY) {
-  const response = await fetch(`${SERVER_URL}${API_PREFIX}/auth/login`, {
+  const response = await hydrogenFetch(`${SERVER_URL}${API_PREFIX}/auth/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -68,7 +92,7 @@ async function login(loginId, password, apiKey = API_KEY) {
 
 // Helper to renew token
 async function renew(token) {
-  const response = await fetch(`${SERVER_URL}${API_PREFIX}/auth/renew`, {
+  const response = await hydrogenFetch(`${SERVER_URL}${API_PREFIX}/auth/renew`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -84,7 +108,7 @@ async function renew(token) {
 
 // Helper to logout
 async function logout(token) {
-  const response = await fetch(`${SERVER_URL}${API_PREFIX}/auth/logout`, {
+  const response = await hydrogenFetch(`${SERVER_URL}${API_PREFIX}/auth/logout`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -149,14 +173,10 @@ describe('Auth Integration', () => {
   });
 
   const itIfAvailable = (name, fn) => {
-    // If credentials aren't available, skip immediately
-    if (!credentialsAvailable) {
-      return it.skip(`${name} (credentials not configured)`, fn);
-    }
-    // Otherwise wrap the test to check server availability (set by beforeAll)
-    return it(name, async () => {
+    it.skipIf(!credentialsAvailable)(name, async ({ skip }) => {
       if (!serverAvailable) {
-        return; // Skip silently — beforeAll already logged the warning
+        skip();
+        return;
       }
       await fn();
     }, 15000);
@@ -210,7 +230,7 @@ describe('Auth Integration', () => {
     });
 
     itIfAvailable('should fail login with missing required fields', async () => {
-      const response = await fetch(`${SERVER_URL}${API_PREFIX}/auth/login`, {
+  const response = await hydrogenFetch(`${SERVER_URL}${API_PREFIX}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ login_id: LOGIN_ID }), // Missing password, api_key, etc.

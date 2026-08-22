@@ -594,7 +594,7 @@ row below is ≤ 1000):**
 
 **Work items:**
 
-- [ ] Add `dist-deploy-500courses/` (and `.tmp-*` if desired) to
+- [x] Add `dist-deploy-500courses/` (and `.tmp-*` if desired) to
       `.gitignore`. Do not delete the user’s deploy dir without asking;
       just stop tracking if currently tracked (`git check-ignore` / status).
 - [ ] `templates:copy` copies **HTML only** (or document why CSS must
@@ -609,7 +609,7 @@ row below is ≤ 1000):**
 
 **Exit gate / validation:**
 
-- [ ] `git check-ignore -v dist-deploy-500courses` succeeds.
+- [x] `git check-ignore -v dist-deploy-500courses` succeeds.
 - [ ] `package.json` `build` runs `templates:copy` (or equivalent).
 - [ ] Working Log states the punchcard decision.
 - [ ] `npm run build`.
@@ -671,7 +671,7 @@ row below is ≤ 1000):**
 - [ ] Run `npm run test:coverage` and replace `LITHIUM-TST.md` counts and
       file list.
 - [ ] Fix `event-bus.test.js` to `off` the same function reference.
-- [ ] Fix integration `itIfAvailable` to `it.skip` when Hydrogen is down.
+- [x] Fix integration `itIfAvailable` to `it.skip` when Hydrogen is down.
 - [ ] Delete tautological Queries tests that only assert a mock was
       called, or rewrite them to hit production functions.
 
@@ -1151,7 +1151,7 @@ recipe after sprint churn.
 
 **Work items:**
 
-- [ ] Auth integration uses documented base URL (align README vs 8080 vs
+- [x] Auth integration uses documented base URL (align README vs 8080 vs
       lithium.philement.com).
 - [ ] Add one JWT + `POST /api/conduit/script` `Api.Echo` integration
       test (skip if no server / scripting disabled).
@@ -1282,6 +1282,38 @@ Builder fixture decline/accept if Band F live.
 
 # Working Log
 
+### P-hygiene-20260822 — Build-system cleanup (pre-sprint)
+
+- What we did: removed OpenCodeReview (`test:quality`, root/Lithium
+  gitignore entries). Rewrote Lithium `.gitignore` (was a Hydrogen copy)
+  and untracked `dist/` + `dist-deploy-500courses/`. Deleted Hydrogen
+  leftovers (`.lintignore*`, `build/`, `tests/test-runner.js`,
+  `tests/package.json`, `test:ci`). Moved `@eslint/js` to devDependencies;
+  dropped unused `purgecss`, `@vitejs/plugin-basic-ssl`, `vite-plugin-html`.
+  ESLint no longer ignores `src/init/`. `vite` `server.open` is false.
+  `LITHIUM-DEV.md` build/deploy text matches the scripts.
+- Not done: live TLS cert (ops, user). Phase 11 remaining: `templates:copy`
+  on `build`, `public/src` orphans, punchcard.
+- Gate result: not a sprint phase.
+
+### P-tests-20260822 — Pre-sprint test hygiene
+
+- What we did: `npm test` was 902 green Vitest cases plus an unlicensed
+  OpenCodeReview dump (188 mostly-false positives, `|| true`) and two
+  unhandled `ECONNREFUSED :8080` from parallel unit tests leaking fetch
+  against `config.js` defaults. Auth integration already defaulted to
+  `https://lithium.philement.com` but demo creds were set and the live
+  Let's Encrypt cert expired 2026-08-02, so Node fetch failed and
+  `itIfAvailable` returned without `it.skip`.
+- Changes: happy-dom `fetch` stub in `tests/setup.js`; integration uses
+  `hydrogenFetch` (one insecure retry on expired cert) and real skip;
+  `npm test` is `vitest run` only;
+  README / AGENTS / header comments aligned to the live URL.
+- Gate result: not a sprint phase. Phase 13 skip item and Phase 28 URL
+  item pulled forward; other Phase 13/28 work still pending.
+- Follow-ups: renew `lithium.philement.com` cert (ops). Do not rewrite
+  `src/` for OpenCodeReview complexity/unused-class noise.
+
 ### P-plan-20260822 — Sprint plan authored
 
 - What we did: Architecture review of Lithium; wrote
@@ -1369,6 +1401,7 @@ Builder fixture decline/accept if Band F live.
 
 | Date | Change |
 |------|--------|
+| 2026-08-22 | Pre-sprint test hygiene: live URL + skip + drop OCR from `npm test` |
 | 2026-08-22 | Initial LITHIUM_SPRINT.md (Phases 0–31) |
 | 2026-08-21 | Verification pass: confirmed all quantitative claims against code; corrected Phase 0's dev-server item (TOC already reads correctly); added exact 14-file baseline table to Phase 7/8 |
 | 2026-08-21 | Gap review: added Chats/WS decision record (Phase 9), log.js flush-stub fix (Phase 10), npm audit gate (Phase 29 renamed), and a11y/i18n/CSP/bundle Non-goals; declined CI band and Playwright E2E phase per user |

@@ -1,60 +1,26 @@
-# Build and test artifacts
-build/
-
-# cmake build artifacts
-cmake/Testing/
-
-# Temporary generated files
-payloads/swagger.json
-payloads/payload.tar.br.enc
-
-# Log files
-*.log
-*.log.*
-system_test_*.log
-error_*.log
-
-# Test generated temporary files
-tests/profile*.txt
-tests/*.log
-response_*.json
-temp_*
-*.tmp
-*.upx
-
-# Crimson knowledge base files (RAG content)
-crimson/knowledge/*
-
-# Core files
-0.*
-1.*
-*.core.*
-tests/0.*
-tests/1.*
-
-# Don't need to copy this around, thanks
-tests/unity/framework/
-
-# Executables
-hydrogen           
-hydrogen_coverage
-hydrogen_debug     
-hydrogen_naked     
-hydrogen_perf      
-hydrogen_release
-hydrogen_release_exe
-hydrogen_valgrind
-
-# Node exclusions
-tests/lib/node_modules/*
-# tests/lib/package*
-extras/hbm_browser/node_modules/*
-# extras/hbm_browser/package*
-
+# Dependencies
 node_modules/
 
+# Vite / deploy output
+dist/
+dist-deploy/
+dist-deploy-500courses/
+
+# Coverage
 coverage/
 public/coverage/
-dist-deploy/
-dist/
-open-code-review/
+
+# Local scratch
+.tmp-*
+.deploy-timestamps
+
+# Logs / temp
+*.log
+*.log.*
+*.tmp
+
+# Crimson RAG dump (generated)
+crimson/knowledge/*
+
+# OS
+.DS_Store
