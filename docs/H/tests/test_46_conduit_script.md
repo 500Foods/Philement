@@ -17,13 +17,17 @@ Validates across all seven database engines (parallel):
 - Unknown script and non-invokable script → **404** (no existence leak)
 - Client-supplied `params._hydrogen` → **400**
 - `wait:false` → **202** with `job_id`, then GET polls to terminal result
+- Parse/routing: invalid JSON, missing/empty `script`, slash name, `params` array, non-bool `wait`, non-int `timeout_seconds` → **400**
+- `POST .../script/{job_id}` → **405**
+- `GET` without JWT → **401**; unknown `job_id` → **404**; trailing slash → **400**
+- SQLite `Api.Fail` → **200** with `status=failed` (Lua `error()`)
 
 ## Test Configuration
 
 - **Test Name**: Conduit Script
 - **Test Abbreviation**: CSC
 - **Test Number**: 46
-- **Version**: 1.1.0
+- **Version**: 1.2.0
 
 ## Port Assignment
 

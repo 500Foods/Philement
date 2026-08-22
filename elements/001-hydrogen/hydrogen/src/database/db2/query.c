@@ -1,8 +1,5 @@
-/*
-  * DB2 Database Engine - Query Execution Implementation
-  *
-  * Implements DB2 query execution functions.
-  */
+// DB2 Database Engine - Query Execution Implementation
+// Implements DB2 query execution functions.
 
 // Project includes
 #include <src/hydrogen.h>
@@ -36,10 +33,8 @@ extern SQLEndTran_t SQLEndTran_ptr;
  char* db2_trim_trailing_whitespace(char* str) {
     if (!str) return NULL;
 
-    // Find the end of the string
+    // Find the end of the string, Move backwards from the end, removing whitespace
     char* end = str + strlen(str) - 1;
-
-    // Move backwards from the end, removing whitespace
     while (end >= str && (*end == ' ' || *end == '\t' || *end == '\n' || *end == '\r')) {
         *end = '\0';
         end--;
@@ -56,9 +51,8 @@ extern SQLEndTran_t SQLEndTran_ptr;
     // Standard format: "2023-12-25 14:30:00" (remove decimal point and microseconds)
 
     size_t len = strlen(str);
-    // Look for the pattern YYYY-MM-DD HH:MM:SS. (19 chars + decimal)
+    // Look for the pattern YYYY-MM-DD HH:MM:SS. (19 chars + decimal), Truncate at the decimal point to get "YYYY-MM-DD HH:MM:SS"
     if (len >= 20 && str[10] == ' ' && str[19] == '.') {
-        // Truncate at the decimal point to get "YYYY-MM-DD HH:MM:SS"
         str[19] = '\0';
     }
 
@@ -163,8 +157,7 @@ char** db2_get_column_names(void* stmt_handle, int column_count) {
 }
 
 // Helper function to fetch and format a single row (non-static for testing)
-bool db2_fetch_row_data(void* stmt_handle, char** column_names, int column_count,
-                        char** json_buffer, size_t* json_buffer_size, size_t* json_buffer_capacity, bool first_row) {
+bool db2_fetch_row_data(void* stmt_handle, char** column_names, int column_count, char** json_buffer, size_t* json_buffer_size, size_t* json_buffer_capacity, bool first_row) {
     if (!stmt_handle || !json_buffer || !json_buffer_size || !json_buffer_capacity) {
         return false;
     }
@@ -402,8 +395,7 @@ bool db2_process_query_results(void* stmt_handle, const char* designator, struct
         json_buffer_capacity = 3; // CRITICAL FIX: Update capacity to match actual allocation (2 chars + null terminator)
     }
 
-    // End JSON array - only for queries with result columns
-    // For DDL statements, "[]" is already complete, don't append anything
+    // End JSON array - only for queries with result columns. For DDL statements, "[]" is already complete, don't append anything
     if (column_count > 0) {
         if (!db2_ensure_json_buffer_capacity(&json_buffer, json_buffer_size, &json_buffer_capacity, 2)) {
             free(json_buffer);
@@ -433,12 +425,10 @@ bool db2_process_query_results(void* stmt_handle, const char* designator, struct
     return true;
 }
 
-/*
- * Bind one TypedParameter via SQLBindParameter (1-based index).
- * INTEGER/BOOLEAN/FLOAT use native C types; STRING/TEXT as CHAR/LONGVARCHAR;
- * DATE/TIME/DATETIME/TIMESTAMP parse ISO strings into SQL_*_STRUCT buffers
- * stored in bound_values for cleanup after execute.
- */
+// Bind one TypedParameter via SQLBindParameter (1-based index).
+// INTEGER/BOOLEAN/FLOAT use native C types; STRING/TEXT as CHAR/LONGVARCHAR;
+// DATE/TIME/DATETIME/TIMESTAMP parse ISO strings into SQL_*_STRUCT buffers stored in bound_values for cleanup after execute.
+
 bool db2_bind_single_parameter(void* stmt_handle, unsigned short param_index, TypedParameter* param,
                                        void** bound_values, long* str_len_indicators, const char* designator) {
     if (!stmt_handle || !param || !bound_values || !str_len_indicators || !designator) {
@@ -681,7 +671,6 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
 
     const char* designator = connection->designator ? connection->designator : SR_DATABASE;
     log_this(designator, "db2_execute_query: ENTER - connection=%p, request=%p, result=%p", LOG_LEVEL_TRACE, 3, (void*)connection, (void*)request, (void*)result);
-
     log_this(designator, "db2_execute_query: Parameters validated, proceeding", LOG_LEVEL_TRACE, 0);
 
     DB2Connection* db2_conn = (DB2Connection*)connection->connection_handle;
@@ -696,8 +685,6 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
         log_this(designator, "DB2 execute_query: Failed to lock connection", LOG_LEVEL_ERROR, 0);
         return false;
     }
-
-    // log_this(designator, "DB2 execute_query:\n%s", LOG_LEVEL_TRACE, 1, request->sql_template);
 
     // Allocate statement handle
     void* stmt_handle = NULL;
@@ -858,14 +845,11 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
         QueryResult* error_result = calloc(1, sizeof(QueryResult));
         if (error_result) {
             error_result->success = false;
-            /*
-             * Classify by SQLSTATE prefix: 08 = connection_exception,
-             * 40 = transaction_rollback (deadlock/serialization),
-             * 57 = operator_intervention (query cancelled or
-             * statement_timeout). These are transient and worth
-             * retrying. Everything else is a real error.
-             */
-            DatabaseErrorClass err_class = DB_ERR_OTHER;
+            
+             // Classify by SQLSTATE prefix: 08 = connection_exception, 40 = transaction_rollback (deadlock/serialization),
+             // 57 = operator_intervention (query cancelled or statement_timeout). These are transient and worth retrying. Everything else is a real error.
+
+             DatabaseErrorClass err_class = DB_ERR_OTHER;
             if (sql_state[0] == '0' && sql_state[1] == '8') {
                 err_class = DB_ERR_TRANSPORT;
             } else if (sql_state[0] == '4' && sql_state[1] == '0') {
@@ -920,8 +904,8 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
     return process_result;
 }
 
-    // cppcheck-suppress constParameterPointer
-    // Justification: Database engine interface requires non-const QueryRequest* parameter
+// cppcheck-suppress constParameterPointer
+// Justification: Database engine interface requires non-const QueryRequest* parameter
 bool db2_execute_prepared(DatabaseHandle* connection, const PreparedStatement* stmt, QueryRequest* request, QueryResult** result) {
     if (!connection || !stmt || !request || !result || connection->engine_type != DB_ENGINE_DB2) {
         return false;

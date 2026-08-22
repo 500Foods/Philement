@@ -26,6 +26,7 @@
 # shellcheck disable=SC2312 # Several diagnostic command substitutions intentionally swallow the inner exit code; helpers either fall back gracefully or || true the outer call
 
 # CHANGELOG
+# 2.6.0 - 2026-08-21 - Record ORCH_SYSTEM_PROBE / ORCH_API_ERROR_PROBE
 # 2.5.0 - 2026-08-20 - Drop python3: jq config extract/rewrite, sqlite3 readfile seed
 # 2.4.0 - 2026-07-30 - ORCH_MAIL_REPO_PROBE + MAILRELAY_REPO_PROBE_OK (H.mail repo helpers)
 # 2.3.0 - 2026-07-29 - Scoreboard/LLM orchestrator probes, mock LLM rewrite for
@@ -44,7 +45,7 @@
 export SCRIPTING_HELPERS_GUARD="true"
 
 SCRIPTING_HELPERS_NAME="Scripting Test Helpers"
-SCRIPTING_HELPERS_VERSION="2.5.0"
+SCRIPTING_HELPERS_VERSION="2.6.0"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${SCRIPTING_HELPERS_NAME} ${SCRIPTING_HELPERS_VERSION}" "info"
 
 # Optional mock LLM (set by test_43 before parallel runs). Empty = skip rewrite.
@@ -463,6 +464,12 @@ scripting_run_engine_parallel() {
     fi
     if scripting_assert_log_contains "${log_file}" "Orchestrator: llm_probe ok"; then
         echo "ORCH_LLM_PROBE" >> "${result_file}"
+    fi
+    if scripting_assert_log_contains "${log_file}" "Orchestrator: system_probe ok"; then
+        echo "ORCH_SYSTEM_PROBE" >> "${result_file}"
+    fi
+    if scripting_assert_log_contains "${log_file}" "Orchestrator: api_error_probe ok"; then
+        echo "ORCH_API_ERROR_PROBE" >> "${result_file}"
     fi
 
     # Full lifecycle succeeds only if every stage passed.
