@@ -44,6 +44,10 @@ Chat proxy service. Phases 1–12 complete (see `complete/`). Open work: [Phase 
 
 Separate ASAN Unity build/test variant for memory-safety gating without corrupting gcov coverage.
 
+### [MCP PLAN](/docs/H/plans/MCP.md)
+
+Model Context Protocol server as a new Hydrogen subsystem. Lua implements the protocol; C is transport, JWT, and `mcp_access` only. Plan drafted; Phase 0 not started.
+
 ### [MIRAGE PLAN](/docs/H/plans/MIRAGE_PLAN.md)
 
 Distributed proxy architecture sketch. Implementation deferred.
