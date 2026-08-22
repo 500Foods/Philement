@@ -53,21 +53,21 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-08-22 07:20:27 UTC
+Last updated at 2026-08-22 19:00:53 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                           481            429              0        1645672
+JSON                           478            430              0        1608955
 SVG                            294            577          11137         513412
 C                             1583          64248          56896         260741
-Text                           327            323              0         135689
-Markdown                       741          33042            246          98191
+Text                           328            324              0         136240
+Markdown                       741          33135            246          98442
 Lua                            385          10731           6747          83328
-JavaScript                     276          10521          13627          51690
-Bourne Shell                   167           7533         104785          40729
-CSS                            124           2769           1563          14045
+JavaScript                     224          10443          13581          49749
+Bourne Shell                   167           7533         105296          40729
+CSS                             84           2769           1563          14005
 C/C++ Header                   329           4000          13854          12019
-HTML                            54            307            232           3083
+HTML                            42            258            219           2836
 CMake                           18            176            355           1411
 make                            11            112             75            607
 TOML                             1             55             35            449
@@ -78,36 +78,32 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          4809         134931         209641        2861660
+SUM:                          4703         134899         210093        2823517
 -------------------------------------------------------------------------------
-2589 Files were skipped (duplicate, binary, or without source code):
-  svg: 1193
-  css: 440
-  br: 370
-  html: 345
-  png: 55
+1673 Files were skipped (duplicate, binary, or without source code):
+  svg: 1178
+  css: 165
+  html: 134
   md: 37
   js: 24
-  mp4: 15
+  png: 23
+  br: 16
   lua: 12
   pem: 9
   kid: 8
-  jpg: 7
-  json: 7
-  woff2: 6
   gitignore: 5
-  ico: 5
+  jpg: 5
+  mp4: 5
   clp: 3
-  lintignore-markdown: 3
+  ico: 3
   sqlite: 3
-  lintignore-bash: 2
-  lintignore-c: 2
-  lintignore-lua: 2
-  lintignore: 2
+  json: 2
+  lintignore-markdown: 2
   sqruff_db2: 2
   sqruff_mysql: 2
   sqruff_postgresql: 2
   sqruff_sqlite: 2
+  woff2: 2
   3mf: 1
   ansi: 1
   auth_code_flow_debug: 1
@@ -122,6 +118,10 @@ SUM:                          4809         134931         209641        2861660
   gitattributes: 1
   jsonc: 1
   key: 1
+  lintignore-bash: 1
+  lintignore-c: 1
+  lintignore-lua: 1
+  lintignore: 1
   list: 1
   password_flow_debug: 1
   payload_generated: 1
@@ -132,7 +132,6 @@ SUM:                          4809         134931         209641        2861660
   stylelintrc: 1
   supp: 1
   trial-ignore: 1
-  txt: 1
   webp: 1
 ```
 <!--CLOC-END-->
