@@ -361,8 +361,8 @@ class CodeMirrorInit {
     const editor = this.getEditor(elementId);
     if (editor) {
       let mode = 'javascript'; // default
-      let theme = 'dracula';
-      let extraOptions = {};
+      const theme = 'dracula';
+      const extraOptions = {};
 
       switch (language.toLowerCase()) {
         case 'javascript':

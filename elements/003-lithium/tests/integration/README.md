@@ -12,7 +12,7 @@ These tests run against a real Hydrogen server to verify end-to-end functionalit
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `HYDROGEN_SERVER_URL` | Hydrogen server base URL | `http://localhost:8080` |
+| `HYDROGEN_SERVER_URL` | Hydrogen server base URL | `https://lithium.philement.com` |
 | `HYDROGEN_DEMO_USER_NAME` | Demo username for login tests | - |
 | `HYDROGEN_DEMO_USER_PASS` | Demo password for login tests | - |
 | `HYDROGEN_DEMO_API_KEY` | Demo API key for login tests | - |
@@ -28,13 +28,13 @@ npm test
 # Run only integration tests
 npm test -- tests/integration/
 
-# Run with specific server
-HYDROGEN_SERVER_URL=http://localhost:8081 npm test -- tests/integration/
+# Run against a local Hydrogen instead of the live host
+HYDROGEN_SERVER_URL=http://localhost:8080 npm test -- tests/integration/
 
-# Run with full credentials
+# Run with full credentials (defaults match the documented demo user)
 HYDROGEN_DEMO_USER_NAME=testuser \
-HYDROGEN_DEMO_USER_PASS=testpass \
-HYDROGEN_DEMO_API_KEY=test-api-key \
+HYDROGEN_DEMO_USER_PASS=usertest \
+HYDROGEN_DEMO_API_KEY=EveryGoodBoyDeservesFudge \
 npm test -- tests/integration/
 ```
 
@@ -59,7 +59,9 @@ Tests the authentication endpoints:
 
 ## Skipping Integration Tests
 
-If the Hydrogen server is not available or credentials are missing, tests are automatically skipped with a warning message.
+If the Hydrogen server is not available or credentials are missing, tests are skipped (`it.skip` / `skip()`), not counted as passed.
+
+The live host certificate expired 2026-08-02. Integration tests retry once with certificate verification disabled and print a warning; renew the Let's Encrypt cert for `lithium.philement.com`.
 
 ## Notes
 

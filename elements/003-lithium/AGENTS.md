@@ -417,7 +417,7 @@ Workdir: `elements/003-lithium`.
 |---------|------|
 | `npm install` | Once per tree |
 | `npm run dev` | Vite :3000 HMR. **Needs Hydrogen** for login/data. TOC’s “cannot run dev” is overstated. Auto-login: `?USER=&PASS=` |
-| `npm test` | `vitest run` + `test:quality` (OpenCodeReview, `\|\| true`) |
+| `npm test` | `vitest run` (unit + integration) |
 | `npm run test:watch` | Vitest watch |
 | `npm run test:coverage` | v8 → `./coverage` |
 | `npm run coverage:copy` | into `public/coverage` |
@@ -436,9 +436,10 @@ Env: `LITHIUM_ROOT`, `LITHIUM_DEPLOY`, `LITHIUM_DEPLOY_KEEP`.
 - Unit tests for core (`jwt`, `utils`, `conduit` query helpers, `permissions`,
   LithiumTable resolution) are real. Prefer adding tests there.
 - Many manager tests are mocks/smoke. Do not add tests for placeholder shells.
-- `tests/integration/auth.integration.test.js` hits live Hydrogen when up.
-  If the server is down, `itIfAvailable` can **return without `it.skip`** —
-  CI looks green with zero cases. Fix in Phase 27.
+- `tests/integration/auth.integration.test.js` hits
+  `https://lithium.philement.com` (override with `HYDROGEN_SERVER_URL`).
+  Missing credentials or a down server **skip** the cases. The live cert
+  expired 2026-08-02; tests retry once without TLS verify and warn.
 - `LITHIUM-TST.md` still says “672 tests” / 14 unit files — stale.
 - Coverage excludes `src/init/**`.
 
@@ -477,7 +478,6 @@ From the 2026-08-22 review. Tracked in `LITHIUM_SPRINT.md`.
 | Med | ~491 `element.style` assignments; ~72 live `console.*` |
 | Med | ~138 direct `localStorage` pref writes |
 | Med | `public/src` CSS duplicates Vite CSS; orphans `user-profiles/`, `session-logs/`, `style-manager-v2.html` |
-| Med | `dist-deploy-500courses/` not in `.gitignore` |
 | Med | `app.user` never set; `getState()` lies |
 | Low | Missing `REFACTORING_PLAN.md`; API/TST/MGR docs stale |
 

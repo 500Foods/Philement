@@ -96,8 +96,8 @@ export default defineConfig(({ mode }) => {
       // Port for dev server
       port: 3000,
 
-      // Open browser automatically
-      open: true,
+      // Do not open a browser on `npm run dev` (noisy for agents / SSH).
+      open: false,
 
       // Enable HTTPS for PWA development
       https: false, // Set to true if you have SSL certificates

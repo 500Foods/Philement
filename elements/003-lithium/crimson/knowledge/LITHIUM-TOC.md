@@ -18,13 +18,12 @@ The Tour Manager matches tours to managers using **only the numeric portion** of
 
 **See:** [LITHIUM-MGR-TOUR.md](LITHIUM-MGR-TOUR.md)
 
-### Cannot Run Development Server Directly
+### Development server needs Hydrogen
 
-Lithium requires a running Hydrogen backend. Do **not** run `npm run dev` to test changes. Instead:
-- Use static analysis and code review
-- Run ESLint: `npm run lint`
-- Build verification: `npm run build`
-- Testing is performed in CI/CD pipeline
+`npm run dev` starts Vite on port 3000 with HMR. Login and Conduit data
+require a running Hydrogen backend (local `http://localhost:8080` or the
+URL in `config/lithium.json`). For most code edits prefer `npm test` and
+`npm run lint`. Runtime checks need JWT against a migrated DB.
 
 ---
 
@@ -39,6 +38,9 @@ Lithium requires a running Hydrogen backend. Do **not** run `npm run dev` to tes
 | [LITHIUM-INS.md](LITHIUM-INS.md) | **⚠️ Mandatory** — Coding standards and rules for Models |
 | [LITHIUM-TST.md](LITHIUM-TST.md) | Test framework (Vitest), coverage, how to add tests |
 | [LITHIUM-FAQ.md](LITHIUM-FAQ.md) | Common issues, troubleshooting, lessons learned |
+| [../elements/003-lithium/AGENTS.md](/elements/003-lithium/AGENTS.md) | **Agent map** — stack, IDs, Hydrogen/Helium/Keycloak, known defects |
+| [TODO.md](TODO.md) | Active backlog pointer |
+| [plans/LITHIUM_SPRINT.md](plans/LITHIUM_SPRINT.md) | Gated sprint (Phases 0–31) |
 
 ### Core Architecture
 
@@ -167,4 +169,4 @@ When working on Lithium, reference these files based on your task:
 
 ---
 
-**Last updated:** April 2026
+**Last updated:** August 2026
