@@ -7,7 +7,8 @@ object shape vs folded applied DDL).
 
 **Full docs:** [`/docs/H/tools/SCHEMATOOL.md`](/docs/H/tools/SCHEMATOOL.md)  
 **Plan:** [`/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md)  
-**Helper (planned):** [`/docs/H/plans/SCHEMAHELPER.md`](/docs/H/plans/SCHEMAHELPER.md)
+**Helper (splash):** `schemahelper.sh` — plan
+[`/docs/H/plans/SCHEMAHELPER.md`](/docs/H/plans/SCHEMAHELPER.md)
 
 ## One-liner (metadata)
 
@@ -54,6 +55,8 @@ extras/schematool/schematool.sh \
 
 ```text
 schematool.sh                 # CLI entry — help + parameter handling
+schemahelper.sh               # SchemaHelper launcher (Lua 5.5 + terminal.lua)
+schemahelper.lua              # SchemaHelper TUI (splash in 0.1.0)
 lib/
   schematool_init.sh          # dependency checks + command path resolution
   schematool_runners.sh       # db/Lua adapter wrappers (query/catalog adapters, Lua extractors)

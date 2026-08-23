@@ -8,6 +8,7 @@
 # Database/Lua operations, audit orchestration, and rendering are in lib/.
 #
 # CHANGELOG
+# 1.8.0 - 2026-08-23 - Catalog findings JSON: failures[] + live_extras[] (tables unchanged)
 # 1.7.1 - 2026-08-06 - Post-table finding details (field diffs + commented remediation SQL)
 # 1.7.0 - 2026-08-06 - Engine-request env (YUGABYTE_DB_*); read-only client guards; Test 40 smoke
 # 1.6.0 - 2026-08-02 - Row grouping: --group-size N inserts separators every N rows (default 20; 0 = disabled)
@@ -28,7 +29,7 @@ LUA_DIR="${SCRIPT_DIR}/lua"
 DB_DIR="${SCRIPT_DIR}/db"
 LIB_DIR="${SCRIPT_DIR}/lib"
 
-VERSION="1.7.1"
+VERSION="1.8.0"
 
 # Source library modules (helpers, audit orchestration, rendering)
 # shellcheck source=extras/schematool/lib/schematool_init.sh # dependency checks + command lookups

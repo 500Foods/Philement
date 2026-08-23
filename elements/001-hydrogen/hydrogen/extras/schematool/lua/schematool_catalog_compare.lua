@@ -8,6 +8,7 @@
 --     [--only-failures]
 --
 -- CHANGELOG
+-- 1.1.0 - 2026-08-23 - Additive findings: failures[] + live_extras[] (tables unchanged)
 -- 1.0.0 - 2026-08-02 - Phase 7c catalog compare
 
 -- luacheck: globals arg
@@ -151,6 +152,8 @@ local counts = {
     missing_column = 0,
     nullability = 0,
     checked = 0,
+    live_extra_table = 0,
+    live_extra_column = 0,
 }
 
 local exp_names = {}
@@ -232,9 +235,86 @@ for _, tname in ipairs(exp_names) do
     ::continue_table::
 end
 
+-- Reverse pass: live tables/columns absent from the expected fold.
+-- JSON only (live_extras[]). Do not add these to the tables checklist.
+local live_extras = {}
+local live_names = {}
+for tname, _ in pairs(live_tables) do
+    live_names[#live_names + 1] = tname
+end
+table.sort(live_names)
+
+for _, tname in ipairs(live_names) do
+    local live_cols = live_map[tname] or {}
+    if not exp_tables[tname] then
+        counts.live_extra_table = counts.live_extra_table + 1
+        live_extras[#live_extras + 1] = {
+            object = tname,
+            column = "-",
+            check = "extra_table",
+            status = "N",
+            expected = "missing",
+            live = "present",
+            notes = "live table not in expected fold",
+        }
+        local col_names = {}
+        for cn, _ in pairs(live_cols) do
+            col_names[#col_names + 1] = cn
+        end
+        table.sort(col_names)
+        for _, cn in ipairs(col_names) do
+            counts.live_extra_column = counts.live_extra_column + 1
+            live_extras[#live_extras + 1] = {
+                object = tname,
+                column = cn,
+                check = "extra_column",
+                status = "N",
+                expected = "missing",
+                live = "present",
+                notes = "live column not in expected fold",
+            }
+        end
+    else
+        local exp_cols = exp_map[tname] or {}
+        local col_names = {}
+        for cn, _ in pairs(live_cols) do
+            col_names[#col_names + 1] = cn
+        end
+        table.sort(col_names)
+        for _, cn in ipairs(col_names) do
+            if not exp_cols[cn] then
+                counts.live_extra_column = counts.live_extra_column + 1
+                live_extras[#live_extras + 1] = {
+                    object = tname,
+                    column = cn,
+                    check = "extra_column",
+                    status = "N",
+                    expected = "missing",
+                    live = "present",
+                    notes = "live column not in expected fold",
+                }
+            end
+        end
+    end
+end
+
 local exit_code = 0
 if counts.missing_table > 0 or counts.missing_column > 0 or counts.nullability > 0 then
     exit_code = 2
+end
+
+local function row_json(r)
+    return string.format(
+        '{"object":"%s","column":"%s","check":"%s","status":"%s",'
+            .. '"expected":"%s","live":"%s","notes":"%s"}',
+        json_escape(r.object),
+        json_escape(r.column),
+        json_escape(r.check),
+        json_escape(r.status),
+        json_escape(r.expected),
+        json_escape(r.live),
+        json_escape(r.notes or "")
+    )
 end
 
 local cl_parts = { "[" }
@@ -249,31 +329,38 @@ for _, r in ipairs(rows) do
             cl_parts[#cl_parts + 1] = ","
         end
         first = false
-        cl_parts[#cl_parts + 1] = string.format(
-            '{"object":"%s","column":"%s","check":"%s","status":"%s",'
-                .. '"expected":"%s","live":"%s","notes":"%s"}',
-            json_escape(r.object),
-            json_escape(r.column),
-            json_escape(r.check),
-            json_escape(r.status),
-            json_escape(r.expected),
-            json_escape(r.live),
-            json_escape(r.notes or "")
-        )
+        cl_parts[#cl_parts + 1] = row_json(r)
     end
 end
 cl_parts[#cl_parts + 1] = "]"
 write_all(checklist_out, table.concat(cl_parts) .. "\n")
 
+local fail_parts = {}
+for _, r in ipairs(rows) do
+    if r.status == "N" then
+        fail_parts[#fail_parts + 1] = row_json(r)
+    end
+end
+
+local extra_parts = {}
+for _, r in ipairs(live_extras) do
+    extra_parts[#extra_parts + 1] = row_json(r)
+end
+
 local findings = string.format(
     '{"exit_code":%d,"counts":{"ok":%d,"missing_table":%d,"missing_column":%d,'
-        .. '"nullability":%d,"checked":%d},"track":"catalog"}',
+        .. '"nullability":%d,"checked":%d,"live_extra_table":%d,"live_extra_column":%d},'
+        .. '"track":"catalog","failures":[%s],"live_extras":[%s]}',
     exit_code,
     counts.ok,
     counts.missing_table,
     counts.missing_column,
     counts.nullability,
-    counts.checked
+    counts.checked,
+    counts.live_extra_table,
+    counts.live_extra_column,
+    table.concat(fail_parts, ","),
+    table.concat(extra_parts, ",")
 )
 write_all(findings_out, findings .. "\n")
 
