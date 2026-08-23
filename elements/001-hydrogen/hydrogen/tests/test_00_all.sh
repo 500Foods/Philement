@@ -931,11 +931,12 @@ fi
 generate_table_svg() {
     local input_file="$1"
     local output_file="$2"
+    local output_width="$3"
     local plain_file
     plain_file=$(mktemp "${RESULTS_DIR}/oh_plain.XXXXXX")
     rm -f "${output_file}"
     # shellcheck disable=SC2154 # OH defined externally in framework.sh
-    if ! "${OH}" --width 108 --font "Vanadium Mono Semi-Extended" -i "${input_file}" -o "${output_file}" 2>/dev/null \
+    if ! "${OH}" --width "${output_width}" --font "Vanadium Mono Semi-Extended" -i "${input_file}" -o "${output_file}" 2>/dev/null \
         || [[ ! -s "${output_file}" ]]; then
         # GNU sed \x1B is unreliable here; perl strips CSI/OSC cleanly
         perl -pe 's/\e\[[0-?]*[ -\/]*[@-~]//g; s/\e\][^\a\e]*(?:\a|\e\\)//g' \
@@ -945,9 +946,9 @@ generate_table_svg() {
     rm -f "${plain_file}"
 }
 
-generate_table_svg "${results_table_file}" "${results_svg_path}" &
+generate_table_svg "${results_table_file}" "${results_svg_path}" "109" &
 svg_results_pid=$!
-generate_table_svg "${coverage_table_file}" "${coverage_svg_path}" &
+generate_table_svg "${coverage_table_file}" "${coverage_svg_path}" "113" &
 svg_coverage_pid=$!
 
 # Generate SVG for repo history
