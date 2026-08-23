@@ -33,7 +33,7 @@ This test validates that SQLite database migrations execute successfully and pro
 ## Success Criteria
 
 - Hydrogen server starts successfully
-- Migration completion message appears within 30-second timeout
+- Migration completion message appears within 1800-second timeout
 - Server shuts down cleanly
 - Migration time is captured and reported
 
@@ -51,7 +51,7 @@ This test validates that SQLite database migrations execute successfully and pro
 ## Error Handling
 
 - **Startup Failure**: Server fails to start within timeout
-- **Migration Timeout**: Migration doesn't complete within 30 seconds
+- **Migration Timeout**: Migration doesn't complete within 1800 seconds
 - **Configuration Issues**: Invalid config file or missing dependencies
 - **Database Access**: SQLite file access failures
 
