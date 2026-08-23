@@ -53,18 +53,18 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-08-23 19:53:59 UTC
+Last updated at 2026-08-23 22:43:00 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                           479            428              0        1615645
+JSON                           486            428              0        1615700
 SVG                            294            573          11137         513410
 C                             1583          64271          56894         260908
 Text                           329            325              0         136794
-Markdown                       741          33664            248         100534
-Lua                            385          10731           6747          83327
+Markdown                       741          33668            248         100639
+Lua                            388          10846           6769          84703
 JavaScript                     224          10445          13582          49798
-Bourne Shell                   167           7533         105817          40786
+Bourne Shell                   168           7563         105827          41050
 CSS                             84           2769           1563          14005
 C/C++ Header                   329           4000          13854          12021
 HTML                            42            258            219           2836
@@ -78,9 +78,9 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          4705         135448         210615        2833125
+SUM:                          4716         135597         210647        2834925
 -------------------------------------------------------------------------------
-1675 Files were skipped (duplicate, binary, or without source code):
+1677 Files were skipped (duplicate, binary, or without source code):
   svg: 1178
   css: 165
   html: 134
@@ -99,6 +99,8 @@ SUM:                          4705         135448         210615        2833125
   sqlite: 3
   json: 2
   lintignore-markdown: 2
+  sqlite-shm: 2
+  sqlite-wal: 2
   sqruff_db2: 2
   sqruff_mysql: 2
   sqruff_postgresql: 2
@@ -125,8 +127,6 @@ SUM:                          4705         135448         210615        2833125
   list: 1
   password_flow_debug: 1
   payload_generated: 1
-  sqlite-shm: 1
-  sqlite-wal: 1
   stl: 1
   stylelintcache: 1
   stylelintrc: 1
