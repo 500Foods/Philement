@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "design": "acuranzo",
+  "engine": "postgresql",
+  "schema": "demo",
+  "updated_utc": "2026-08-23T22:19:17Z",
+  "cursor_id": "",
+  "decisions": []
+}

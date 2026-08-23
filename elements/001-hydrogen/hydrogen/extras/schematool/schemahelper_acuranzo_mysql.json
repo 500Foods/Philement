@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "design": "acuranzo",
+  "engine": "mysql",
+  "schema": "demo",
+  "updated_utc": "2026-08-23T22:09:47Z",
+  "cursor_id": "",
+  "decisions": []
+}
