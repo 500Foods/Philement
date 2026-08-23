@@ -48,6 +48,10 @@ Separate ASAN Unity build/test variant for memory-safety gating without corrupti
 
 Model Context Protocol server as a new Hydrogen subsystem. Lua implements the protocol; C is transport, JWT, and `mcp_access` only. Plan drafted; Phase 0 not started.
 
+### [SCHEMAHELPER PLAN](/docs/H/plans/SCHEMAHELPER.md)
+
+Interactive Lua TUI front-end to SchemaTool. Walks drift findings with update-database / create-migration-packet / skip / accept. Plan drafted; Phase 0 not started.
+
 ### [MIRAGE PLAN](/docs/H/plans/MIRAGE_PLAN.md)
 
 Distributed proxy architecture sketch. Implementation deferred.
