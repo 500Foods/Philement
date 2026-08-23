@@ -364,11 +364,8 @@ dispatches a fixed script, **not** a subsystem. MCP is closer to WebSocket.
 | `RequiredScopes` | Optional scope strings that must appear on an OIDC access token. Empty = no scope gate. Hydrogen user JWTs have no scopes and skip this check |
 | `Database` | Optional Hydrogen DB name for script load; else Scripting default |
 | `MaxBodyBytes` | JSON-RPC body cap |
-| `MaxResultBytes` | Cap on a single tool result before `Mcp.Server` truncates and sets
-  `isError` / a truncation notice. Default 256 KiB. Agents die on unbounded
-  `H.query` dumps; this is the USB-C fuse |
-| `RequestTimeoutSeconds` | Ceiling for one Protocol job (MHD connection stays suspended this long).
-  Many MCP clients time out around 30–60s on their side regardless |
+| `MaxResultBytes` | Cap on a single tool result before `Mcp.Server` truncates and sets `isError` / a truncation notice. Default 256 KiB. Agents die on unbounded `H.query` dumps; this is the USB-C fuse |
+| `RequestTimeoutSeconds` | Ceiling for one Protocol job (MHD connection stays suspended this long). Many MCP clients time out around 30–60s on their side regardless |
 | `ThreadPoolSize` | MHD worker threads for the MCP daemon. Default `4`. **Not** “one thread per client” |
 | `AllowedOrigins` | Exact-match allowlist for a **present** `Origin` header. Empty = only same-origin/no-`Origin` traffic allowed; browser clients need an explicit entry |
 | `SessionIdleTimeoutSeconds` | Server-side reaper interval for the session→subject binding table; prevents unbounded growth from abandoned sessions. Default `900` |
@@ -962,7 +959,7 @@ Locked-decisions table below is filled. No C required. Review stop.
 
 #### Lessons learned
 
-*(fill after the phase)*
+(fill after the phase)
 
 ---
 
@@ -1002,7 +999,7 @@ if they iterate config sections — update those only if they break.
 
 #### Lessons learned
 
-*(fill after the phase)*
+(fill after the phase)
 
 ---
 
@@ -1046,7 +1043,7 @@ if they iterate config sections — update those only if they break.
 
 #### Lessons learned
 
-*(fill after the phase)*
+(fill after the phase)
 
 ---
 
@@ -1058,7 +1055,7 @@ if they iterate config sections — update those only if they break.
 
 #### Work items
 
-- [ ] **3.1** `mcp_stats` — atomics: `sessions_active`, `sessions_total`,
+- [ ] **3.1** `mcp_stat` — atomics: `sessions_active`, `sessions_total`,
       `sessions_expired`, `rpc_received`, `rpc_succeeded`, `rpc_failed`,
       `rpc_in_flight`, `auth_rejected` (plus reason counters or a small
       reason enum), `origin_rejected`, `dispatch_timeouts`, `bytes_in`,
@@ -1086,7 +1083,7 @@ phase Status.
 
 #### Lessons learned
 
-*(fill after the phase)*
+(fill after the phase)
 
 ---
 
@@ -1140,7 +1137,7 @@ is a launch No-Go / launch failure, not a crash.
 
 #### Lessons learned
 
-*(fill after the phase)*
+(fill after the phase)
 
 ---
 
@@ -1193,7 +1190,7 @@ bare 401 without reading Hydrogen docs.
 
 #### Lessons learned
 
-*(fill after the phase)*
+(fill after the phase)
 
 ---
 
@@ -1251,7 +1248,7 @@ dispatch.
 
 #### Lessons learned
 
-*(fill after the phase)*
+(fill after the phase)
 
 ---
 
@@ -1301,7 +1298,7 @@ C still does not inspect `method`. A stub Protocol source that echoes
 
 #### Lessons learned
 
-*(fill after the phase)*
+(fill after the phase)
 
 ---
 
@@ -1346,7 +1343,7 @@ C still does not inspect `method`. A stub Protocol source that echoes
 
 #### Lessons learned
 
-*(fill after the phase)*
+(fill after the phase)
 
 ---
 
@@ -1398,7 +1395,7 @@ Protocol script can be written without any new C.
 
 #### Lessons learned
 
-*(fill after the phase)*
+(fill after the phase)
 
 ---
 
@@ -1451,7 +1448,7 @@ A local hydrogen with MCP enabled can initialize and echo through Lua only.
 
 #### Lessons learned
 
-*(fill after the phase)*
+(fill after the phase)
 
 ---
 
@@ -1490,7 +1487,7 @@ Status works when MCP disabled (enabled=false, zeros). No listen leak of JWT.
 
 #### Lessons learned
 
-*(fill after the phase)*
+(fill after the phase)
 
 ---
 
@@ -1525,7 +1522,7 @@ Coverage report attached to Status. Residual lines listed with rationale.
 
 #### Lessons learned
 
-*(fill after the phase)*
+(fill after the phase)
 
 ---
 
@@ -1591,7 +1588,7 @@ Coverage report attached to Status. Residual lines listed with rationale.
 
 #### Lessons learned
 
-*(fill after the phase)*
+(fill after the phase)
 
 ---
 
@@ -1634,7 +1631,7 @@ Coverage report attached to Status. Residual lines listed with rationale.
 
 #### Lessons learned
 
-*(fill after the phase)*
+(fill after the phase)
 
 ---
 
@@ -1665,7 +1662,7 @@ If C must change, Phase 0 failed — record why in Working Log before adding C.
 
 #### Lessons learned
 
-*(fill after the phase)*
+(fill after the phase)
 
 ---
 
@@ -1693,7 +1690,7 @@ configure by hand. Do not reopen Phase 5 to “add OAuth.”
 
 #### Lessons learned
 
-*(fill after the phase)*
+(fill after the phase)
 
 ---
 
@@ -1717,7 +1714,7 @@ array — that **is** a C change, so it is explicitly later.
 
 #### Lessons learned
 
-*(fill after the phase)*
+(fill after the phase)
 
 ---
 
@@ -1933,11 +1930,11 @@ that affect later phases must be recorded so they are not lost.
 
 ### Surprises
 
-*(none yet)*
+(none yet)
 
 ### Follow-ups
 
-*(none yet)*
+(none yet)
 
 ---
 
