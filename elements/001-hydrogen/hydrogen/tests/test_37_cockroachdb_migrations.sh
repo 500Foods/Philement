@@ -8,6 +8,7 @@
 # run_migration_test()
 
 # CHANGELOG
+# 1.1.1 - 2026-08-22 - Increased timeout to 1800 seconds for suite-parallel LOAD/APPLY/REVERSE
 # 1.1.0 - 2026-07-02 - Added migration failure detection (APPLY/REVERSE/transaction errors) and reversed-migration count in summary
 # 1.0.1 - 2025-11-24 - Increased timeout to 90 seconds
 # 1.0.0 - 2025-09-26 - Initial implementation for CockroachDB migration testing
@@ -19,7 +20,7 @@ TEST_NAME="CockroachDB Migration"
 TEST_ABBR="CDB"
 TEST_NUMBER="37"
 TEST_COUNTER=0
-TEST_VERSION="1.1.0"
+TEST_VERSION="1.1.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -32,7 +33,7 @@ CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_${ENGINE_REF}.js
 LOG_LINE_PATTERN="Migration test completed in"
 
 # Test timeouts
-TIMEOUT=900
+TIMEOUT=1800
 STARTUP_TIMEOUT=15
 SHUTDOWN_TIMEOUT=15
 

@@ -8,6 +8,7 @@
 # run_migration_test()
 
 # CHANGELOG
+# 1.1.1 - 2026-08-22 - Increased timeout to 1800 seconds for suite-parallel LOAD/APPLY/REVERSE
 # 1.1.0 - 2026-07-02 - Added migration failure detection (APPLY/REVERSE/transaction errors) and reversed-migration count in summary
 # 1.0.2 - 2026-01-01 - Increased timeout to 300 seconds - we're now at 140+ migrations and they take awhile
 # 1.0.1 - 2025-11-24 - Increased timeout to 90 seconds
@@ -20,7 +21,7 @@ TEST_NAME="DB2 Migration"
 TEST_ABBR="DB2"
 TEST_NUMBER="35"
 TEST_COUNTER=0
-TEST_VERSION="1.1.0"
+TEST_VERSION="1.1.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -33,7 +34,7 @@ CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_${ENGINE_REF}.js
 LOG_LINE_PATTERN="Migration test completed in"
 
 # Test timeouts
-TIMEOUT=900
+TIMEOUT=1800
 STARTUP_TIMEOUT=15
 SHUTDOWN_TIMEOUT=15
 
