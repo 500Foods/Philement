@@ -209,6 +209,17 @@ not open work unless listed below.
 | **Why later** | New capability. Reuses Scripting + JWT. Touches `MAX_SUBSYSTEMS` and launch/landing dispatch — do not start casually |
 | **Note** | C stays protocol-agnostic. Adding MCP tools is Lua + `mcp_access`, not Hydrogen C. |
 
+### 25. SchemaHelper — interactive SchemaTool front-end
+
+| | |
+| --- | --- |
+| **Plan** | [`SCHEMAHELPER.md`](/docs/H/plans/SCHEMAHELPER.md) |
+| **Effort** | L |
+| **Done** | 0% — plan only |
+| **Remaining** | Phase 0 design lock, then launcher/TUI, packets, optional metadata apply |
+| **Why later** | SchemaTool already audits; this is the decision-loop UX. Not a Hydrogen subsystem. |
+| **Note** | Lua TUI in `extras/schematool/`. SchemaTool stays read-only. Packets, not full `design_NNNN.lua`. |
+
 ### 15. Terminal WebSocket authentication
 
 | | |
@@ -369,6 +380,7 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 14a | REST auth_chat SSE streaming | L | ~20% | P2 |
 | 14b | WS chunked media upload | M | ~70% | P2 |
 | 24 | MCP server subsystem | XL | 0% | P2 |
+| 25 | SchemaHelper TUI | L | 0% | P2 |
 | 15 | Terminal WS auth | M | ~10% | P2 |
 | 17 | OIDC RP client-role parse | S–M | fallback | P2 |
 | 18 | OIDC IdP post-MVP | M–L | ~90% | P3 |

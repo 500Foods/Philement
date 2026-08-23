@@ -1,0 +1,1159 @@
+<!-- markdownlint-disable MD007 MD024 -->
+# SchemaHelper Plan — Interactive SchemaTool Front-End
+
+## Purpose
+
+Define a gated, phase-by-phase plan for **SchemaHelper**: a Lua TUI that sits
+in front of the shipped SchemaTool auditor and turns a batch of drift findings
+into **operator decisions**.
+
+SchemaTool already answers “what is different?” and even suggests commented
+SQL. It does **not** help an operator work the queue: push official Lua onto
+the database, pull a live divergence into a new migration packet, skip it, or
+accept it as a known difference.
+
+This document is the working plan. Edit it as work proceeds. Each phase is
+numbered, focused, and gated. Do not start a phase until the previous phase’s
+exit gate is green. Record learnings in the Working Log.
+
+## How To Use This Document
+
+- Work **one phase at a time**, top to bottom.
+- Each phase has: **Goal**, **Dependencies**, **Entry gate**, **Work items**,
+  **Exit gate / validation**, **Status**, **Lessons learned**.
+- Mark work items `[x]` only when verification actually passed.
+- Defer with `[~]` plus one-line rationale and target phase.
+- After each phase: fill **Status**, append reusable discoveries to
+  **Working Log**, then stop for review before the next phase.
+- This is **Bash + Lua 5.5 under `extras/`**, not C. After script/Lua
+  changes: `zsh -ic 'mks'` and Test 98 (`luacheck`). See
+  [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md). TUI: terminal.lua.
+
+## Resuming Work
+
+**CURRENT PAUSE POINT (as of 2026-08-23):** Plan drafted and reviewed
+against actual SchemaTool source + the real terminal.lua rock/docs (see
+Working Log). Locked decisions table is now final, not "proposal" — the one
+previously-open question (catalog live-only extras) is locked to Phase 1.
+No implementation yet. Next: **Phase 0 remaining item** — install
+`terminal` via LuaRocks and run the widget spike — then start Phase 1.
+
+### Resume here next session
+
+1. Confirm this document is the source of truth; no `schemahelper.lua`
+   exists yet.
+2. Re-read SchemaTool operator docs:
+   [SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md).
+3. Run `luarocks install terminal` and the ~30-line Screen/KeyBar/Text
+   spike (Phase 0's last open work item) before writing `schemahelper.lua`
+   for real.
+4. Present the Phase 1 chunk (launcher + wrapper picker + JSON ingest,
+   including the `live_extras[]` additive SchemaTool change) after Phase 0
+   Status is complete.
+
+### Session checklist
+
+1. Read **CURRENT PAUSE POINT** and last **Working Log** entries.
+2. Confirm previous phase **Status** is complete.
+3. Re-read next phase Goal + Exit gate only.
+4. Implement → verify gates → update this doc → stop.
+
+## Priority
+
+| | |
+| --- | --- |
+| **Band** | P2 — operator tooling, not a Hydrogen subsystem |
+| **Effort** | L (TUI + packet writer + optional confirmed metadata apply) |
+| **Done** | 0% — plan only |
+| **Why this shape** | SchemaTool is complete and read-only. The missing piece is a decision loop over its findings, including “this live DB should become a new migration.” |
+| **Do not start casually** | Write paths can mutate `queries` or (later) live DDL. Phase 0 must lock safety before any apply code exists. |
+
+Backlog entry: [TODO.md item 25](/docs/H/TODO.md).
+
+---
+
+## Recommendation
+
+**Yes. Build this as a front-end, not a second auditor.**
+
+SchemaTool already does the hard work: Lua expect extract, native-client
+metadata dump, hybrid-C catalog fold, targeted probes, `tables` checklist,
+commented remediation `.sql`, orphan `.mig`, and `--format json`. A second
+tool that re-implements compare would rot immediately.
+
+What operators actually need next is a **review queue** that starts with
+totals, then walks leftovers one by one:
+
+| Need | SchemaTool today | SchemaHelper |
+| --- | --- | --- |
+| See the whole picture | Batch table + footer counts | Opening dashboard: total / perfect / accepted / subject for review + variance classes |
+| See one disparity | Scroll the table + detail | 1-by-1: “this is the variance, what would you like to do?” |
+| Official Lua wins | Commented `UPDATE` / LOAD/APPLY guidance | **Apply to database** (confirmed, per finding) |
+| Live DB wins | Orphan `.mig` only | **Generate a migration** (assigned next ref, packet) |
+| Look closer | Post-table detail dump | **Explore in more detail** (paged, then back to the prompt) |
+| Not now | Re-run the whole audit | **Skip for now** (still subject for review next time) |
+| Known divergence | Re-reported every run | **Accept permanent variance** (persisted; counts as accepted) |
+
+The Lua TUI idea matches the existing extras stack (`lua/` already owns
+expect/compare/remediate). A thin `schemahelper.sh` launcher plus
+`schemahelper.lua` is the Hydrogen-shaped version of this: no C, no
+subsystem, no REST, no ncurses. The TUI is
+[terminal.lua](https://lunarmodules.github.io/terminal.lua/) on **Lua 5.5**.
+
+**Do not generate a complete `design_NNNN.lua` in v1.** Assign the next
+number and write an informational packet (finding, diffs, suggested SQL,
+notes). A human still authors the real migration. That is enough to stop
+losing context and colliding on refs.
+
+**Keep SchemaTool read-only forever.** SchemaHelper is the only writer, and
+only when `--allow-write` is set and the operator confirms the specific
+finding. Default SchemaHelper is review + packets + accepted variances.
+
+---
+
+## Problem Statement
+
+Two legitimate sources of truth exist in this project:
+
+1. **Official migrations** — `design_NNNN.lua` under Helium (e.g.
+   [`/elements/002-helium/acuranzo/migrations/`](/elements/002-helium/acuranzo/migrations/)).
+   When a live DB has drifted *behind* or *away* from these, the fix is to
+   align the database (metadata `UPDATE`, Hydrogen LOAD/APPLY, or a new
+   official forward migration that repairs live shape).
+2. **A living database** — a demo, canvas, or production-adjacent schema
+   where someone made useful changes that are **not** on disk. Those changes
+   should become the *next* numbered migration if they are worth keeping.
+
+SchemaTool surfaces both situations as the same kind of row: “not the same.”
+It cannot tell the operator which direction to go. The `.sql` file is a
+review artifact, not a workflow. The `.mig` file only covers **orphan refs**
+(in DB, not on disk), not catalog extras (extra column, different
+nullability) or “this applied row is *better* than Lua.”
+
+Without a helper, operators:
+
+- Re-run SchemaTool and scroll a long table.
+- Hand-copy detail/SQL into notes.
+- Guess the next migration number.
+- Accidentally treat “update `queries.code`” as if it replayed DDL.
+- Re-triage the same accepted differences every session.
+
+---
+
+## Relationship To SchemaTool
+
+```text
+  wrappers (schematool_*.sh) or custom flags
+                 │
+                 ▼
+        schematool.sh  ── read-only ──► findings.json
+                 │                      catalog checklist
+                 │                      finding_detail.txt
+                 │                      commented .sql / .mig
+                 ▼
+        schemahelper.lua  (TUI decision loop)
+                 │
+     ┌───────────┼───────────────┬────────────────┐
+     ▼           ▼               ▼                ▼
+  apply to DB  packet NNNN    skip for now    accept permanent
+  (opt-in)     (not a .lua)   (still review)  (sidecar state)
+```
+
+SchemaHelper **invokes** SchemaTool. It does not fold DDL, probe catalogs, or
+decode brotli payloads itself.
+
+Completed SchemaTool plan:
+[SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md).
+
+Operator guide: [SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md).
+
+### What SchemaTool already emits (reuse)
+
+| Artifact | Path under `--out-dir` | Helper use |
+| --- | --- | --- |
+| Metadata findings | `findings.json` | Queue: drifts, missing LOAD/APPLY, anomalies, orphans |
+| Metadata checklist | layout/data JSON | Optional summary pane |
+| Catalog checklist | catalog data JSON | Queue: missing table/column, nullability |
+| Catalog findings | `catalog_findings.json` | Counts + exit only today — **too thin** (see contract) |
+| Detail text | `finding_detail.txt` / `catalog_finding_detail.txt` | Review pane |
+| Remediation | commented `.sql` | Source for **Update database** (metadata) |
+| Orphans | `.mig` | Seed for **Create migration packet** |
+
+### Contract gap (Phase 0 / 1)
+
+`catalog_findings.json` currently stores **counts only**. Per-row catalog
+failures live in the checklist JSON. SchemaHelper should not scrape the
+human `tables` output.
+
+**Additive SchemaTool change (preferred):** attach a `failures[]` (or
+`rows[]`) array to catalog findings, each with `object`, `column`, `check`,
+`expected`, `live`, `notes`, and optional commented `remediation`. Metadata
+`findings.json` already has structured drifts; optionally attach the
+per-finding commented SQL block there too so the helper does not parse the
+`.sql` file.
+
+SchemaTool remains an auditor. The contract change is JSON-only and
+backward-compatible.
+
+---
+
+## Home In The Repo
+
+**Locked proposal (confirm in Phase 0):**
+
+| Item | Path |
+| --- | --- |
+| Launcher | [`extras/schematool/schemahelper.sh`](/elements/001-hydrogen/hydrogen/extras/schematool/) |
+| TUI entry | [`extras/schematool/schemahelper.lua`](/elements/001-hydrogen/hydrogen/extras/schematool/) |
+| Lua modules | `extras/schematool/lua/schemahelper_*.lua` |
+| Operator docs (later) | `/docs/H/tools/SCHEMAHELPER.md` |
+| This plan | `/docs/H/plans/SCHEMAHELPER.md` |
+
+Rationale: same folder as the auditor and the Test 40 wrappers; same Lua
+runtime SchemaTool already requires; not `src/`; not a Hydrogen subsystem.
+
+Entry for humans: `schemahelper.sh` (deps, `stty`, wrapper discovery).
+`schemahelper.lua` is the interactive app. The user-facing name is
+**SchemaHelper**; the Lua file name is `schemahelper.lua` as requested.
+
+---
+
+## Goals And Non-Goals
+
+### Goals
+
+1. **Pick a SchemaTool invocation** — list `schematool_*.sh` wrappers plus a
+   custom-flags path; run with `--format json --out-dir <workspace>`.
+2. **Open on an analysis dashboard** — totals first (migrations found,
+   perfect, accepted variations, subject for review) plus a classification
+   breakdown of variance kinds. Then enter the 1-by-1 queue.
+3. **Walk every leftover disparity** — one finding at a time: “this is the
+   variance, what would you like to do?”
+4. **Five review actions** — Explore in more detail, Skip for now, Accept
+   permanent variance, Apply to database, Generate a migration.
+5. **Assign the next migration number** when generating a packet, without
+   colliding with on-disk `design_NNNN.lua` or earlier packets.
+6. **Persist selections in a sidecar state file** next to the SchemaTool
+   artifacts, named like the source run, so several engines/designs can
+   share one folder and later runs resume.
+7. **Stay pretty and keyboard-driven** — Lua 5.5 + terminal.lua full-screen
+   UI, not a web UI, not a wall of raw JSON.
+8. **Default read-only** — packets and accepts do not touch the database.
+
+### Non-goals (this plan)
+
+- Replacing SchemaTool or Hydrogen LOAD/APPLY.
+- Auto-authoring a complete, shippable `acuranzo_NNNN.lua`.
+- Auto-executing the full commented `.sql` file.
+- Live catalog DDL apply in v1 (nullable/add/drop against product tables).
+- Scanning product row data.
+- A new blackbox test number, C code, or REST endpoint.
+- ncurses, ltui, or a second TUI stack. The one allowed extra rock is
+  `terminal` (and its deps `luasystem`, `utf8`) on Lua 5.5.
+- Vendoring C rocks into `extras/`. `luasystem` stays a LuaRocks install.
+- Writing secrets, passwords, or connection strings into packets.
+
+---
+
+## Proposed Locked Decisions (Phase 0 confirms)
+
+| Topic | Proposal |
+| --- | --- |
+| Product split | SchemaTool = read-only auditor. SchemaHelper = interactive front-end. |
+| Language | Bash launcher + Lua 5.5 TUI. No C. |
+| Lua version | **Lua 5.5 only** (same as Hydrogen host / [LUA_55_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_55_PLAN_COMPLETE.md)). Refuse 5.4 and earlier. |
+| TUI stack | [terminal.lua](https://lunarmodules.github.io/terminal.lua/) (`luarocks install terminal`). Deps: `luasystem` >= 0.7.0, `utf8` >= 1.3.0. Rock constraint `lua >= 5.1, < 5.6` includes 5.5. No hand-rolled `stty`/ANSI, no ncurses. |
+| Ingest | SchemaTool `--format json --out-dir`. Never scrape ANSI tables. |
+| Wrapper picker | Discover `extras/schematool/schematool_*.sh` (postgresql, mysql, mariadb, sqlite, db2, cockroachdb, yugabytedb) + **Custom**. |
+| Finding identity | Stable id: `meta:{kind}:{ref}:{type}:{field}` or `cat:{object}:{column}:{check}` or `orphan:{ref}`. |
+| Opening screen | Analysis dashboard (totals + variance classes). Enter review only after that. |
+| Skip for now | Persist as `skipped` in the sidecar so quit/resume works; still **subject for review** on the next launch (not accepted). |
+| Accept permanent variance | Persist as `accepted` in the sidecar. Counts as “Accepted variations”; hidden from the 1-by-1 queue until id or payload hash changes. |
+| Apply to database (v1) | **Metadata only**: uncomment the single finding’s SchemaTool `UPDATE`/`DELETE` guidance and run it via the native client, transaction + typed confirm. Requires `--allow-write`. Record as `applied` in the sidecar. |
+| Apply to database (catalog) | **Not in v1.** Offer explore / generate-migration instead. |
+| Generate a migration | Write a **packet directory**, assign `NNNN = max(disk refs, reserved packets) + 1`. Do not write into Helium `migrations/`. Record as `packet` in the sidecar. |
+| Workspace | Same `--out-dir` SchemaTool already uses (or cwd). Many helper/tool pairs share one folder. |
+| Sidecar state name | `schemahelper_<design>_<engine>.json` next to `schematool_<design>_<engine>_<utc>.sql`. Stable stem (no timestamp) so re-runs resume. Optional `--state-file` override. |
+| Packet location | Same workspace: `schemahelper_<design>_<engine>_<ref>/`. Override with `--packet-dir`. |
+| Next-ref scan | `design_NNNN.lua` in `--migrations` plus reserved packet refs in the workspace. |
+| Re-audit | After apply or packet, operator can re-run SchemaTool and reload; sidecar decisions still apply. |
+| Secrets | Inherit SchemaTool `--password-env`; never print; never write into packets or state. |
+| SchemaTool edits | Additive JSON only (`failures[]`, `live_extras[]`). No behavior change to default `tables` path. |
+
+---
+
+## Runtime — Lua 5.5 And terminal.lua
+
+SchemaHelper is an **operator** Lua program (system `lua` on PATH), not a
+Hydrogen-embedded script. It still must be **Lua 5.5**, the same version
+the project already standardized on.
+
+| Piece | Requirement |
+| --- | --- |
+| Interpreter | Lua **5.5** (`_VERSION` starts with `Lua 5.5`, or `LUA_VERSION_NUM >= 505`) |
+| Docs | [LUA_GUIDE.md](/docs/H/LUA_GUIDE.md), [LUA_FEATURES.md](/docs/H/LUA_FEATURES.md), [LUA_55_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_55_PLAN_COMPLETE.md) |
+| TUI library | [terminal.lua](https://lunarmodules.github.io/terminal.lua/) |
+| Install | `luarocks install terminal` into the Lua 5.5 tree |
+| Rock deps | `luasystem` >= 0.7.0 (C; Lua 5.5 in its CI), `utf8` >= 1.3.0 |
+| Not used | ncurses, ltui, raw `stty`, hand-rolled ANSI boxes |
+
+`schemahelper.sh` fails fast if `lua` is not 5.5 or if
+`require("terminal")` fails, with the install one-liner. SchemaTool’s
+existing Lua (expect/compare) keeps working on the same 5.5 interpreter.
+
+### Why terminal.lua
+
+It is mechanisms-over-policies, UTF-8, no curses, and already has the
+widgets this TUI needs:
+
+| SchemaHelper surface | terminal.lua piece |
+| --- | --- |
+| Wrapper / track picker | `cli.Select` |
+| SchemaTool run | `progress.Bar` / `terminal.progress` spinner |
+| Analysis dashboard | `ui.panel.Screen` + `ui.panel.Bar` header + `ui.panel.Text` |
+| 1-by-1 review | `ui.panel.Text` (variance) + `ui.panel.KeyBar` (e/s/a/u/g) |
+| Explore in more detail | `ui.panel.Text` (scrollable diff / SQL) |
+| Apply confirm | `ui.panel.Confirm` or `cli.Confirm` (plus typed ref) |
+| Optional note on packet | `cli.Prompt` |
+| Resize | `ui.panel.Screen` reflow |
+
+Do **not** use the Canvas / braille graph layer. Do not vendor
+`luasystem` (C) into `extras/`.
+
+---
+
+## Opening Dashboard
+
+After SchemaTool finishes (or after loading an existing `--out-dir`), the
+TUI **does not** jump into the first finding. It shows the current state:
+
+```text
+┌ SchemaHelper  acuranzo / postgresql / demo ─────────────────────────┐
+│ Source: schematool_postgresql.sh     workspace: /tmp/st-pg          │
+│ State:  schemahelper_acuranzo_postgresql.json                       │
+├─────────────────────────────────────────────────────────────────────┤
+│ Total migrations found          213                                 │
+│ Perfect migrations                4                                 │
+│ Accepted variations              12                                 │
+│ Subject for review               12                                 │
+├─────────────────────────────────────────────────────────────────────┤
+│ Variance classes (subject for review)                               │
+│   metadata content drift          5                                 │
+│   missing LOAD                    2                                 │
+│   missing APPLY                   1                                 │
+│   orphan DB ref                   1                                 │
+│   catalog nullability             2                                 │
+│   catalog missing column          1                                 │
+├─────────────────────────────────────────────────────────────────────┤
+│ [Enter] begin review   [r]e-audit   [q]uit                          │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+### Count definitions
+
+| Line | Meaning |
+| --- | --- |
+| Total migrations found | Disk `design_NNNN.lua` refs in scope, plus orphan DB refs not on disk |
+| Perfect migrations | All SchemaTool checks pass and no permanent accept is recorded |
+| Accepted variations | Sidecar `accepted` (and still matching payload hash if gated) |
+| Subject for review | Findings that are not perfect, not accepted, not applied, and not already turned into a packet |
+
+Skipped items stay in **subject for review**. Applied / packet items drop
+out of that line (they are handled, not “perfect”). Footer or a second
+block may show `applied` / `packet reserved` counts so the operator can
+see work already done in this workspace.
+
+### Variance classes
+
+Built from SchemaTool finding kinds (metadata + catalog). Only **subject
+for review** rows feed the class table. Draft classes:
+
+| Class | Source |
+| --- | --- |
+| metadata content drift | `findings.drifts` (code / name / summary) |
+| missing LOAD | `findings.missing_load` |
+| missing APPLY | `findings.missing_apply` |
+| orphan DB ref | `findings.orphans` |
+| anomaly 1000+1003 | `findings.anomalies` |
+| catalog missing table | catalog check `table` |
+| catalog missing column | catalog check `column` |
+| catalog nullability | catalog check `nullable` |
+| catalog live extra | if Phase 0 adds live-only extras |
+
+---
+
+## Sidecar State File
+
+Selections survive quit and later launches. The file lives **in the same
+folder** as the SchemaTool artifacts and uses the same stem pattern so
+several runs can share one directory:
+
+| SchemaTool artifact | SchemaHelper sidecar |
+| --- | --- |
+| `schematool_acuranzo_postgresql_20260823T190000Z.sql` | `schemahelper_acuranzo_postgresql.json` |
+| `schematool_acuranzo_mysql_20260823T190100Z.sql` | `schemahelper_acuranzo_mysql.json` |
+| `schematool_acuranzo_sqlite_….sql` | `schemahelper_acuranzo_sqlite.json` |
+
+The helper stem **omits the UTC stamp** so a second launch against the
+same design+engine resumes the same decisions. SchemaTool may write a new
+timestamped `.sql` each audit; the helper still opens the stable sidecar.
+
+Override: `--state-file PATH`. Default: `<out-dir>/schemahelper_<design>_<engine>.json`
+(cwd if `--out-dir` is unset).
+
+Do **not** default into the git tree. If the operator’s `--out-dir` is
+inside the repo, warn once; prefer `/tmp/…` or `~/.cache/hydrogen/schemahelper/`.
+
+### Draft sidecar shape
+
+```json
+{
+  "version": 1,
+  "design": "acuranzo",
+  "engine": "postgresql",
+  "schema": "demo",
+  "updated_utc": "2026-08-23T19:10:00Z",
+  "cursor_id": "meta:drift:1148:1003:code",
+  "decisions": [
+    {
+      "id": "meta:drift:1280:1003:code",
+      "action": "accepted",
+      "hash": "…",
+      "note": "mail seed known drift",
+      "at": "2026-08-23T19:05:00Z"
+    },
+    {
+      "id": "orphan:1290",
+      "action": "packet",
+      "ref": 1290,
+      "packet": "schemahelper_acuranzo_postgresql_1290",
+      "at": "2026-08-23T19:08:00Z"
+    }
+  ]
+}
+```
+
+`action` values: `skipped` | `accepted` | `applied` | `packet`.
+
+No passwords, no full `code` blobs — ids, hashes, notes, packet paths only.
+
+---
+
+## Actions
+
+Each finding is shown with a recommended default based on kind, which the
+operator can override.
+
+| Key | Action | Source of truth | Effect |
+| --- | --- | --- | --- |
+| `e` | Explore in more detail | — | Page the full diff / suggested SQL; return to the same prompt |
+| `s` | Skip for now | Neither | Record `skipped`; stay in subject-for-review next launch |
+| `a` | Accept permanent variance | Neither | Record `accepted`; dashboard accepted++; hidden until id/hash changes |
+| `u` | Apply to database | Official Lua | Apply **this finding’s** metadata remediation (v1). Disabled unless `--allow-write` |
+| `g` | Generate a migration | Live DB | Reserve next `NNNN`, write packet, record `packet` |
+| `n` / `p` | Next / previous | — | Move in the review queue (does not decide) |
+| `r` | Re-audit | — | Re-run SchemaTool, rebuild dashboard + queue, keep sidecar decisions |
+| `q` | Quit | — | Flush sidecar; return to dashboard or exit |
+
+### Recommended default by finding kind
+
+| Kind | Default | Why |
+| --- | --- | --- |
+| Metadata drift (Lua ≠ stored `code`) | Update database **or** Create packet | Operator must choose direction. Prompt; do not guess. |
+| Missing LOAD / missing APPLY | Update database is **wrong** | Guidance only: run Hydrogen AutoMigration. Action `u` disabled; show help. |
+| Orphan DB ref | Create packet | This is the original `.mig` use case. |
+| Catalog missing column/table on live | Update database is **wrong** in v1 | Live is behind official fold → new official migration or Hydrogen APPLY, not a helper UPDATE. Offer packet of “needed DDL” as notes only. |
+| Catalog extra / live-ahead (locked for Phase 1, see Contract gap) | Create packet | Live has something official Lua does not. |
+| Catalog nullability mismatch | Create packet (v1) | Could be either direction; packet is safer than live `ALTER`. |
+| Anomaly both 1000+1003 | Detail + skip | Needs a human; helper must not auto-delete. |
+
+**Verified against source (2026-08-23):** `schematool_catalog_compare.lua`
+only iterates `exp_names` (tables/columns present in the **expected/disk**
+fold) and looks up the matching `live` entry — it never walks
+`live_tables`/`live_map` for names absent from `exp_map`. So today, a table
+or column that exists live but not on disk is silently invisible to the
+catalog track. v1 catalog compare does **not** emit “extra live column” as a
+first-class finding.
+
+**Locked decision (no longer deferred): yes, add it in Phase 1.** This is
+not an optional nice-to-have — it is the mechanism for the plan’s second
+motivating use case (“build a migration from a database that diverged in a
+way worth keeping”). Without it, `g` (generate a migration) only ever fires
+from **metadata orphans** (`queries` rows not on disk); a live table/column
+that was hand-added and never written back to Lua stays permanently
+invisible to SchemaHelper. Phase 1 must add either a small SchemaTool
+additive change (a `live_extras[]` array alongside `catalog_findings.json`,
+populated by a reverse pass — walk `live_tables`/`live_map` for names absent
+from `exp_map`/`exp_tables`) **or**, if that would touch too much of
+`schematool_catalog_compare.lua` for one phase, a helper-side pass that
+loads the same `catalog_expected.json` / `catalog_live.json` SchemaTool
+already writes under `--out-dir` and diffs them the same way. Prefer the
+SchemaTool-side change: it is one additive loop next to code that already
+has both maps in scope, and it keeps SchemaHelper from re-implementing
+catalog comparison. Do not ship Phase 4 (migration packets) as “done” for
+the catalog track until this exists — otherwise the packet feature only
+covers half of what it was built for.
+
+---
+
+## Migration Packet
+
+A packet is **not** a migration. It is the briefing a human (or a later
+authoring pass) needs to write `design_NNNN.lua`.
+
+### Directory
+
+```text
+<out-dir>/schemahelper_acuranzo_postgresql_1283/
+  MANIFEST.json
+  PACKET.md
+  FINDING.json
+  DETAIL.txt
+  SUGGESTED.sql
+```
+
+### `MANIFEST.json` (draft)
+
+```json
+{
+  "ref": 1283,
+  "design": "acuranzo",
+  "engine": "postgresql",
+  "schema": "demo",
+  "created_utc": "2026-08-23T19:00:00Z",
+  "status": "reserved",
+  "finding_ids": ["cat:accounts:new_col:column"],
+  "source": "schemahelper",
+  "schemahelper_version": "0.0.0",
+  "schematool_version": "1.7.1"
+}
+```
+
+`status`: `reserved` → `promoted` (human copied into Helium) or `abandoned`.
+
+### `PACKET.md` (draft)
+
+Human-readable: assigned ref, design, engine, schema, finding ids, short
+operator notes typed in the TUI, and pointers to the sibling files.
+
+### `SUGGESTED.sql`
+
+Direction is **database → official**, the inverse of SchemaTool’s usual
+“make DB match Lua” remediation. For orphans, copy the `.mig` payload. For
+catalog live-ahead, emit the live `CREATE`/`ALTER` fragment we can infer
+(best-effort; may be comments + `DESCRIBE` capture). Never claim this SQL
+is a complete multi-engine migration.
+
+### Number assignment
+
+1. Scan `--migrations` for `design_(\d+)\.lua`.
+2. Scan `--packet-dir` for `MANIFEST.json` `ref` values still `reserved`.
+3. `next = max + 1`.
+4. Create the packet directory **before** showing the number as assigned.
+5. Do not leave holes unless the operator passes `--ref N` to force one.
+
+Collisions with a ref someone is authoring by hand in Helium are still
+possible; the packet header must say “confirm the number is free before
+promoting.”
+
+---
+
+## TUI Sketch
+
+One-by-one prompt (after the dashboard). Short summary first; explore
+opens the long diff.
+
+```text
+┌ SchemaHelper  review  3 of 12 subject ──────────────────────────────┐
+│ This is the variance                                                │
+│   id:     cat:accounts.password_hash / nullability                  │
+│   class:  catalog nullability                                       │
+│   expect: nullable=true     live: nullable=false                    │
+│   note:   1190 fold says NULL; live still NOT NULL                  │
+├─────────────────────────────────────────────────────────────────────┤
+│ What would you like to do?                                          │
+│   [e] explore in more detail                                        │
+│   [s] skip for now                                                  │
+│   [a] accept permanent variance                                     │
+│   [u] apply to database          (disabled — catalog / no --allow-write) │
+│   [g] generate a migration       (next ref 1283)                    │
+│   [n]ext  [p]rev  [r]e-audit  [q]uit to dashboard                   │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+Wrapper picker (first screen):
+
+```text
+Select SchemaTool target
+
+  1) schematool_postgresql.sh     ACURANZO_DB_* / schema demo
+  2) schematool_mysql.sh          CANVAS_DB_* / schema demo
+  3) schematool_mariadb.sh        CANVAS_DB_* / schema demomrdb
+  4) schematool_sqlite.sh         hydrodemo.sqlite
+  5) schematool_db2.sh            HYDROTST_DB_*
+  6) schematool_cockroachdb.sh    ACURANZO_DB_* / schema democrdb
+  7) schematool_yugabytedb.sh     YUGABYTE_DB_*  (never ACURANZO)
+  8) Custom flags…
+
+  Tracks: [m]etadata  [c]atalog  [b]oth (default)
+```
+
+Implementation notes:
+
+- `schemahelper.sh` checks Lua 5.5 + `require("terminal")`, then execs
+  `schemahelper.lua`. terminal.lua / luasystem own raw mode and restore.
+- Wrapper picker is `cli.Select`, not a Bash menu.
+- Full-screen path uses `ui.panel.Screen` (resize-safe). Do not assume
+  256-color; use terminal.lua text stacks.
+- If stdout is not a tty, refuse the TUI and print usage (except
+  `--print-summary` / `--print-queue`). Optional later: `--batch`.
+- Explore uses `ui.panel.Text` scrolling; honor SchemaTool
+  `--detail-max-lines` when stuffing the panel.
+
+---
+
+## Safety
+
+SchemaTool’s production bar stays intact. SchemaHelper adds a **narrow**
+write path.
+
+| Guard | Rule |
+| --- | --- |
+| Default | No DB writes. Packets + sidecar accepts only. |
+| `--allow-write` | Required before `u` is offered. |
+| Per-finding confirm | Type the ref (or object.column) to apply. No “apply all.” |
+| Transaction | Metadata apply in one transaction; rollback on client error. |
+| One statement family | Only the uncommented block for **this** finding id. |
+| No catalog DDL in v1 | `u` refused on catalog findings. |
+| No full-file apply | Never pipe the SchemaTool `.sql` wholesale. |
+| Read-only SchemaTool | Helper runs SchemaTool with the same RO client guards it has today. Apply uses a **separate** client session without RO, only after confirm. |
+| Wrong-host | Wrapper picker must show engine + env family (especially Yugabyte vs ACURANZO). |
+| Secrets | `--password-env`; never in packets, sidecar state, or screen dumps. |
+| Prefer Hydrogen | Missing LOAD/APPLY → tell the operator to run AutoMigration; do not invent INSERT/DDL. |
+| Metadata ≠ live shape | After a metadata `UPDATE`, the TUI must remind: this does not replay DDL. |
+
+---
+
+## Scope And Repo Areas
+
+Primary: `/elements/001-hydrogen/hydrogen/extras/schematool/`
+
+Related:
+
+- `/docs/H/tools/SCHEMATOOL.md` — note the helper; keep SchemaTool RO
+- `/docs/H/tools/SCHEMAHELPER.md` — new operator guide (docs phase)
+- `/elements/001-hydrogen/hydrogen/extras/schematool/README.md`
+- `/elements/001-hydrogen/hydrogen/extras/README.md`
+- `/docs/H/SITEMAP.md`, `/docs/H/STRUCTURE.md`, `/docs/H/TODO.md`
+- Optional additive edits to SchemaTool Lua compare/remediate for JSON
+  contract only
+
+Date of snapshot: 2026-08-23
+
+---
+
+## Testing Policy
+
+| Layer | When | What |
+| --- | --- | --- |
+| **luacheck** | Every Lua change | Test 98 |
+| **shellcheck** | Every `.sh` change | `zsh -ic 'mks'` |
+| **markdown** | Docs | Test 90 + Test 04 after new pages |
+| **Unity / C** | Never for this plan | No `src/` |
+| **Blackbox** | Not required for v1 | Do not add `test_NN` unless later asked |
+| **Smoke** | Phase 2+ | Fixture findings JSON → queue build → packet write (no live DB required). Optional: run against Test 40 sqlite wrapper in review-only mode |
+
+---
+
+## Phase 0 — Design Lock
+
+### Goal
+
+Lock product split, TUI stack, finding identity, packet format, write
+policy, and the SchemaTool JSON contract — on paper only.
+
+### Dependencies
+
+None. SchemaTool CLI 1.7.1 is shipped.
+
+### Entry gate
+
+- [x] This plan exists and is linked from
+      [plans/README.md](/docs/H/plans/README.md) and
+      [TODO.md](/docs/H/TODO.md) (both already link here as of 2026-08-23).
+
+### Work items
+
+- [ ] Confirm or amend **Proposed Locked Decisions**.
+- [x] Confirm Lua **5.5** + [terminal.lua](https://lunarmodules.github.io/terminal.lua/)
+      as the TUI stack; record the installed rock versions in the Working
+      Log (`luarocks show terminal`, `luasystem`, `utf8`). **Verified
+      2026-08-23**: dev box has `lua 5.5.1` and `luarocks 3.9.2`;
+      `luarocks --lua-version=5.5 search terminal` lists `terminal 0.1.0-1`
+      (deps `lua >= 5.1, < 5.6`, `luasystem >= 0.7.0`, `utf8 >= 1.3.0`) —
+      the rock is real and Lua-5.5-compatible. It is not yet installed
+      locally (`luarocks show terminal` currently errors "cannot find
+      package"); run the actual `luarocks install terminal` before writing
+      any TUI code, not just the search. The published docs confirm every
+      widget class this plan names actually exists in the library
+      (`cli.Select`, `cli.Confirm`, `cli.Prompt`, `cli.MultiSelect`,
+      `progress.Bar`, `ui.panel.Screen`, `ui.panel.Bar`, `ui.panel.KeyBar`,
+      `ui.panel.Text`, `ui.panel.Confirm`, `ui.panel.ButtonBar`,
+      `ui.panel.TabStrip`, `ui.panel.Set`) — the TUI sketch in this plan is
+      not speculative.
+- [ ] **New work item — de-risk early:** before Phase 2, write a disposable
+      ~30-line script (not committed, or committed under
+      `extras/schematool/lua/spike_terminal.lua` and deleted once Phase 2
+      lands) that opens a `ui.panel.Screen`, shows a `ui.panel.Bar` header,
+      a `ui.panel.Text` body, and a `ui.panel.KeyBar` footer, reads one
+      keypress, and exits restoring the tty. The rock has few downloads
+      (38 total as of this writing) and only reached 0.1.0 recently; a
+      15-minute spike now is cheaper than discovering a Screen/KeyBar
+      layout quirk midway through Phase 2's real implementation.
+- [ ] Confirm dashboard count definitions and variance class list.
+- [ ] Confirm sidecar name `schemahelper_<design>_<engine>.json` in
+      `--out-dir` (stable stem, no timestamp).
+- [x] Decide catalog **live-only extras**: **locked to SchemaTool-side
+      additive change**, done in Phase 1 (see Contract gap section above).
+      Not deferred — it is required for the catalog half of “generate a
+      migration.”
+- [ ] Lock accept invalidation: id-only vs id + payload hash.
+- [ ] Lock packet path (`schemahelper_<design>_<engine>_<ref>/`) and
+      next-ref algorithm.
+- [ ] Lock apply surface: metadata-only v1, no catalog DDL.
+- [ ] Draft the catalog `failures[]` JSON shape if SchemaTool will grow it.
+- [ ] Do **not** write `schemahelper.lua` in this phase.
+
+### Exit gate / validation
+
+- [ ] Locked-decisions table in this doc is no longer “proposal.”
+- [ ] Live-extras question has an explicit yes/no/defer.
+- [ ] Review stop before Phase 1.
+
+### Status
+
+Not started.
+
+### Lessons learned
+
+None yet.
+
+---
+
+## Phase 1 — Launcher, Picker, Ingest
+
+### Goal
+
+`schemahelper.sh` starts, picks a wrapper or custom flags, runs SchemaTool
+into a session `--out-dir`, and `schemahelper.lua` loads a unified finding
+queue from JSON.
+
+### Dependencies
+
+Phase 0 lock. SchemaTool `--format json --out-dir`.
+
+### Entry gate
+
+- [ ] Phase 0 Status complete.
+
+### Work items
+
+- [ ] Add `schemahelper.sh`: help, `--allow-write`, `--packet-dir`,
+      `--state-file`, `--out-dir`, track flags, pass-through to SchemaTool.
+      Fail if `lua` is not 5.5 or `require("terminal")` fails.
+- [ ] Discover and list `schematool_*.sh` with engine/env one-liners.
+- [ ] Custom path: prompt or accept extra SchemaTool flags.
+- [ ] Invoke SchemaTool with `--format json --out-dir <workspace>` (and
+      `--catalog` when both/catalog selected).
+- [ ] Implement SchemaTool additive JSON: `failures[]` on catalog findings
+      (per-row object/column/check/expected/live/notes) **and**
+      `live_extras[]` (table/column present live but absent from the
+      expected/disk fold — the reverse pass `schematool_catalog_compare.lua`
+      does not do today). Both are additive; `tables` console output is
+      unchanged.
+- [ ] `lua/schemahelper_queue.lua`: merge metadata + catalog into ordered
+      findings with stable ids; compute dashboard totals + classes;
+      apply sidecar decisions (`accepted` / `applied` / `packet` drop
+      out of subject-for-review).
+- [ ] Load/create `schemahelper_<design>_<engine>.json` in the workspace.
+- [ ] Headless dump: `--print-summary` (dashboard JSON) and
+      `--print-queue` (review list). No TUI yet if that keeps the phase
+      small.
+
+### Exit gate / validation
+
+- [ ] Picker can launch each Test 40 wrapper in review-only mode.
+- [ ] `--print-queue` on a known `--out-dir` fixture lists drifts without a
+      live DB.
+- [ ] Yugabyte wrapper still does not fall through to `ACURANZO_DB_*`.
+- [ ] `mks` + Test 98 clean.
+- [ ] Secrets never appear in session JSON.
+
+### Status
+
+Not started.
+
+### Lessons learned
+
+None yet.
+
+---
+
+## Phase 2 — Review TUI
+
+### Goal
+
+Interactive flow: analysis dashboard first, then 1-by-1 “what would you
+like to do?” with explore / skip / quit. Read-only this phase.
+
+### Dependencies
+
+Phase 1 queue.
+
+### Entry gate
+
+- [ ] Phase 1 Status complete.
+
+### Work items
+
+- [ ] `schemahelper.lua` full-screen UI via terminal.lua
+      (`ui.panel.Screen` / `Bar` / `Text` / `KeyBar`).
+- [ ] Wrapper picker via `cli.Select` (if not already done in Phase 1).
+- [ ] Dashboard: total / perfect / accepted / subject for review + class
+      table. Enter begins review; `q` quits.
+- [ ] Review: short variance summary + the five action labels (`e` `s`
+      `a` `u` `g`). `u`/`g` may be shown disabled until later phases.
+- [ ] `e` opens a scrollable `ui.panel.Text` (diff / SQL) and returns.
+- [ ] Keys: `n` `p` `r` `q` (quit returns to dashboard).
+- [ ] terminal.lua restores the tty on all exit paths (verify Ctrl-C).
+- [ ] Refuse to start when stdout is not a tty (except `--print-summary`
+      / `--print-queue`).
+
+### Exit gate / validation
+
+- [ ] Can walk a fixture queue and a real sqlite Test 40 catalog+meta run.
+- [ ] Terminal is usable after quit / Ctrl-C.
+- [ ] Test 98 clean.
+
+### Status
+
+Not started.
+
+### Lessons learned
+
+None yet.
+
+---
+
+## Phase 3 — Skip And Accept
+
+### Goal
+
+`s` records skip-for-now (still subject for review next launch). `a`
+records a permanent accept in the sidecar so the next run counts it as
+an accepted variation and hides it from the 1-by-1 queue until identity
+(and hash, if locked) changes.
+
+### Dependencies
+
+Phase 2 TUI.
+
+### Entry gate
+
+- [ ] Phase 2 Status complete.
+
+### Work items
+
+- [ ] Write/update the sidecar on every `s` / `a` / quit (and later `u`
+      / `g`).
+- [ ] `skipped` does not change dashboard “subject for review.”
+- [ ] `accepted` increments accepted variations and leaves the queue.
+- [ ] Resume: reopen the same `--out-dir` + design + engine; cursor and
+      decisions come back; a second engine in the same folder uses its
+      own `schemahelper_<design>_<engine>.json`.
+- [ ] Optional revoke-accept from the dashboard (un-accept).
+- [ ] Sidecar contains no secrets and no full `code` blobs.
+
+### Exit gate / validation
+
+- [ ] Second launch against the same fixture hides accepted ids.
+- [ ] Changing expected/live hash re-shows the finding if hash-gated.
+- [ ] Waiver file contains no secrets and no full `code` blobs.
+
+### Status
+
+Not started.
+
+### Lessons learned
+
+None yet.
+
+---
+
+## Phase 4 — Migration Packets
+
+### Goal
+
+`g` reserves the next ref and writes the packet directory in the same
+workspace as the sidecar. No Helium tree writes. No DB writes.
+
+### Dependencies
+
+Phase 3 (can start after Phase 2 if skip/accept slips; prefer after 3).
+
+### Entry gate
+
+- [ ] Phase 2 Status complete. Phase 3 preferred.
+
+### Work items
+
+- [ ] Next-ref scan (disk + reserved packets).
+- [ ] Write `MANIFEST.json`, `PACKET.md`, `FINDING.json`, `DETAIL.txt`,
+      `SUGGESTED.sql`.
+- [ ] Prompt for an optional one-line operator note.
+- [ ] Record `packet` in the sidecar; drop from subject-for-review.
+- [ ] Collision: refuse if `schemahelper_<design>_<engine>_<ref>/` or
+      `design_NNNN.lua` appears mid-session.
+- [ ] Dashboard / quit summary lists reserved refs.
+
+### Exit gate / validation
+
+- [ ] Two packets in one session get consecutive unused refs.
+- [ ] Default packet path is outside the repo.
+- [ ] Packet SQL is review-only (commented or clearly “not applied”).
+- [ ] Test 98 clean.
+
+### Status
+
+Not started.
+
+### Lessons learned
+
+None yet.
+
+---
+
+## Phase 5 — Update Database (Metadata Only)
+
+**Scope note:** this phase is **optional for v1**. The plan's two driving
+use cases — catching a drifted DB up to spec, and turning a useful live
+change into a migration packet — are both satisfiable by Phases 1–4 alone
+(review, skip, accept, packet) plus the operator running SchemaTool's own
+suggested `.sql` by hand, which is exactly today's workflow minus the
+manual scrolling/renumbering. Writing to a live database from a TUI is the
+single highest-risk, highest-review-burden piece of this whole plan (new
+non-RO client session, transaction handling, typed confirm, partial-apply
+recovery). Ship and use Phases 1–4 for a few real sessions first; only pick
+up Phase 5 if that experience shows the `u` action is actually needed
+often enough to justify it. Keep it in the plan (do not delete it — the
+design work above is still useful) but do not block "v1 done" on it. See
+the updated Definition Of Done.
+
+### Goal
+
+With `--allow-write`, `u` applies **one** metadata remediation (content
+drift `UPDATE` of `code`/`name`/`summary`, or a carefully confirmed orphan
+`DELETE`) using the native client.
+
+### Dependencies
+
+Phase 2. Strongly prefer Phase 4 so “create packet” exists as the other
+direction before writes are possible.
+
+### Entry gate
+
+- [ ] Phase 4 Status complete (or explicit variance).
+- [ ] Phase 0 write policy still “metadata only.”
+
+### Work items
+
+- [ ] Extract the single finding’s commented SQL from SchemaTool artifacts
+      (or from the Phase 1 attached JSON).
+- [ ] Uncomment only that block; reject if the block is Hydrogen-guidance
+      (missing LOAD/APPLY) rather than a single UPDATE/DELETE.
+- [ ] Open a **non-RO** client session; begin transaction; execute; commit.
+- [ ] Typed confirm = ref number.
+- [ ] On success, drop finding from queue; offer `r` re-audit.
+- [ ] Log apply to session dir (SQL text OK; no password).
+- [ ] Refuse catalog findings and missing LOAD/APPLY.
+
+### Exit gate / validation
+
+- [ ] Without `--allow-write`, `u` is disabled.
+- [ ] Wrong confirm string does not execute.
+- [ ] sqlite fixture: drift UPDATE then SchemaTool re-run is clean for that
+      ref.
+- [ ] SchemaTool itself still cannot write.
+- [ ] `mks` + Test 98 clean.
+
+### Status
+
+Not started.
+
+### Lessons learned
+
+None yet.
+
+---
+
+## Phase 6 — Docs And Polish
+
+### Goal
+
+Operator docs, index links, extras README, and a review-only smoke path.
+
+### Dependencies
+
+Phases 1–4 minimum. Phase 5 if shipped.
+
+### Entry gate
+
+- [ ] TUI + packets usable on Test 40 sqlite.
+
+### Work items
+
+- [ ] `/docs/H/tools/SCHEMAHELPER.md` (purpose, keys, safety, packets).
+- [ ] Update extras schematool README + extras README.
+- [ ] Cross-link from [SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md).
+- [ ] Test 04 + Test 90 clean.
+- [ ] Optional: `extras/schematool/smoke_schemahelper_queue.sh` against
+      checked-in fixture JSON (no live DB).
+
+### Exit gate / validation
+
+- [ ] `mkl` / Test 04 / Test 90 / Test 98 / `mks` green.
+- [ ] Plan Status for 1–6 filled; leftover items deferred with `[~]`.
+
+### Status
+
+Not started.
+
+### Lessons learned
+
+None yet.
+
+---
+
+## Phase 7 — Optional Follow-Ons
+
+Not required for v1 “done.” Pick up only after Phase 6.
+
+- [ ] Catalog live-only extras if deferred in Phase 0.
+- [ ] Confirmed single-statement catalog DDL apply (nullable / add column)
+      with a louder confirm than metadata.
+- [ ] `--batch` JSON decisions for non-interactive use.
+- [ ] Promote-packet helper that copies a stub into Helium (still not a
+      full Lua author).
+- [ ] Group related catalog rows (one table) into a single packet.
+- [ ] Bitfield SchemaTool exit (noted as future in SchemaTool itself).
+
+### Status
+
+Deferred.
+
+---
+
+## Definition Of Done (v1)
+
+- Operator can pick a SchemaTool wrapper, run metadata and/or catalog, and
+  see an analysis dashboard (total / perfect / accepted / subject for
+  review + variance classes).
+- 1-by-1 review offers: explore, skip for now, accept permanent variance,
+  generate a migration. **Apply to database (`u`) is Phase 5 and is not
+  required for v1** — see the scope note on Phase 5. The key still shows in
+  the review prompt (disabled/"not yet available") so the UI layout does
+  not change shape later.
+- Catalog track can surface **live-only extras** (table/column present in
+  the DB but not in the expected/disk fold), not just missing/mismatched
+  ones — otherwise "generate a migration" only ever fires from metadata
+  orphans and the plan's second use case is half-delivered.
+- Selections persist in `schemahelper_<design>_<engine>.json` beside the
+  SchemaTool artifacts; several engines can share one `--out-dir`.
+- Packets get a reserved number and enough detail to author a migration
+  later, for **both** metadata orphans and catalog live-only extras.
+- SchemaTool is unchanged in spirit (read-only auditor) aside from additive
+  JSON.
+- No complete `design_NNNN.lua` is invented by the tool.
+- Docs + luacheck + shellcheck green.
+
+v1 done = Phases 0–4 + 6. Phase 5 (apply to database) and Phase 7 (optional
+follow-ons) are picked up later, only if real usage of v1 shows they are
+worth the added risk.
+
+---
+
+## Working Log
+
+### 2026-08-23 — Plan drafted
+
+- Reviewed [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md),
+  [TESTING.md](/docs/H/tests/TESTING.md),
+  [TESTING_UNITY.md](/docs/H/tests/TESTING_UNITY.md),
+  [SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md), and
+  [SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md).
+- SchemaTool CLI **1.7.1** already has structured `findings.json`,
+  commented remediation, orphan `.mig`, Test 40 wrappers, and `--format
+  json`. Catalog `catalog_findings.json` is counts-only; checklist holds
+  the rows.
+- Recommendation: front-end TUI, not a second auditor; packets not full
+  Lua; SchemaTool stays read-only; live-extras detection is the Phase 0
+  question that decides how good “create migration from the DB” can be.
+- UX lock-in (same day): open on analysis dashboard (total / perfect /
+  accepted / subject for review + variance classes); then 1-by-1 with
+  explore / skip / accept-permanent / apply / generate-migration.
+  Selections persist in `schemahelper_<design>_<engine>.json` beside
+  SchemaTool artifacts so many engines can share one folder.
+- TUI stack lock-in (same day): **Lua 5.5** (Hydrogen host version) and
+  [terminal.lua](https://lunarmodules.github.io/terminal.lua/) via
+  `luarocks install terminal` (`luasystem` + `utf8`). Not hand-rolled
+  ANSI/`stty`, not ncurses. Rock allows `lua >= 5.1, < 5.6`.
+- No code written.
+
+### 2026-08-23 — Plan review pass
+
+- Re-read this plan plus [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md),
+  [TESTING.md](/docs/H/tests/TESTING.md), and
+  [TESTING_UNITY.md](/docs/H/tests/TESTING_UNITY.md) (the latter two are
+  N/A here — no `src/`, no Unity — the plan already said so correctly).
+- Verified against actual source, not just the plan's prose:
+  `schematool_catalog_compare.lua` only walks `exp_names`/`exp_map`
+  (expected/disk side) and looks up the matching live entry; it never
+  iterates `live_tables`/`live_map` for names absent from the expected set.
+  So "live-only extras are invisible today" is confirmed true, not a
+  guess. Locked the open Phase 0 question: **build this in Phase 1**
+  (`live_extras[]`), not defer to Phase 7 — without it, `g` only ever
+  fires from metadata orphans and the plan's stated second use case
+  ("turn a useful live DB into a migration") is half-delivered for the
+  catalog track, which is the more common way schemas actually drift.
+  Confirmed `catalog_findings.json` really is counts-only today (matches
+  the plan's Contract gap claim) — `schematool_catalog_compare.lua` writes
+  only a `counts` object to `findings_out`; the per-row detail lives in
+  `checklist_out`.
+- Verified the environment: `lua 5.5.1` + `luarocks 3.9.2` present;
+  `luarocks --lua-version=5.5 search terminal` lists `terminal 0.1.0-1`
+  with `lua >= 5.1, < 5.6` — genuinely Lua-5.5-compatible, not a
+  guess-and-hope dependency. Fetched the published terminal.lua doc index
+  and confirmed every widget class this plan names by name
+  (`cli.Select`, `cli.Confirm`, `cli.Prompt`, `cli.MultiSelect`,
+  `progress.Bar`, `ui.panel.Screen`, `.Bar`, `.KeyBar`, `.Text`,
+  `.Confirm`, `.ButtonBar`, `.TabStrip`, `.Set`) actually exists in the
+  library. Added a Phase 0 work item to spike the riskiest widgets
+  (`Screen`/`KeyBar`/`Text`) in ~30 disposable lines before Phase 2, since
+  the rock is young (0.1.0, ~38 downloads) — cheap insurance, not a
+  blocker.
+- Confirmed both [plans/README.md](/docs/H/plans/README.md) and
+  [TODO.md](/docs/H/TODO.md) already link this plan — checked off that
+  entry-gate item, it was already true.
+- Descoped Phase 5 (apply to database) out of "v1 done." It is the
+  highest-risk, highest-review-burden phase (non-RO client session,
+  transactions, typed confirm) and is not required by either driving use
+  case — Phases 1–4 (review, skip, accept, packet) already let an
+  operator triage everything and hand-run SchemaTool's own suggested SQL,
+  which is strictly better than today (no more scrolling/renumbering by
+  hand). Recommend shipping v1 as Phases 0–4 + 6, then deciding on Phase 5
+  from real usage instead of designing a write path speculatively.
+- No code written yet; still design-only. Next: begin Phase 0 for real —
+  install `terminal` via `luarocks install terminal` (search confirmed
+  the rock exists for 5.5; it is not yet installed), run the spike
+  script, then start the Phase 1 chunk (launcher + wrapper picker + JSON
+  ingest, including the `live_extras[]` additive change).
