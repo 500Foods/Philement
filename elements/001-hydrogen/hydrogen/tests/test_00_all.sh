@@ -12,6 +12,7 @@
 # run_all_tests_parallel() 
 
 # CHANGELOG
+# 8.3.0 - 2026-08-22 - Tests/Pass/Fail use tables num datatype (thousands separators)
 # 8.2.2 - 2026-08-02 - Updated Test 22 version to 7.5.0 (Brotli decompression + proxy/Host header tests)
 # 8.2.1 - 2026-07-29 - Wait for Oh SVG jobs before email; retry COVERAGE.svg without ANSI
 #                       if Oh aborts (munmap_chunk on large colored coverage tables)
@@ -66,7 +67,7 @@ TEST_NAME="Test Suite Orchestration"
 TEST_ABBR="ORC"
 TEST_NUMBER="00"
 TEST_COUNTER=0
-TEST_VERSION="8.2.0"
+TEST_VERSION="8.3.0"
 export TEST_NAME TEST_ABBR TEST_NUMBER TEST_VERSION
  
 # shellcheck disable=SC1091 # Resolve path statically
@@ -738,7 +739,7 @@ layout_json_content='{
         {
             "header": "Tests",
             "key": "tests",
-            "datatype": "int",
+            "datatype": "num",
             "width": 7,
             "justification": "right",
             "summary": "sum"
@@ -746,7 +747,7 @@ layout_json_content='{
         {
             "header": "Pass",
             "key": "pass",
-            "datatype": "int",
+            "datatype": "num",
             "width": 7,
             "justification": "right",
             "summary": "sum"
@@ -754,7 +755,7 @@ layout_json_content='{
         {
             "header": "Fail",
             "key": "fail",
-            "datatype": "int",
+            "datatype": "num",
             "width": 7,
             "justification": "right",
             "summary": "sum"

@@ -4,6 +4,8 @@
 # Displays comprehensive coverage data from Unity and blackbox tests in a formatted table
 
 # CHANGELOG
+# 5.2.0 - 2026-08-22 - Coverage table columns auto-width (no fixed widths)
+# 5.1.0 - 2026-08-22 - Lines/Tests/Unity/Black/Cover use tables num datatype (thousands separators)
 # 5.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 4.1.0 - 2025-09-17 - Added CYAN color flag for files where Unity Framework tests exceed Unity lines of coverage found
 # 4.0.0 - 2025-08-13 - Added Tests column showing Unity test count per source file with caching
@@ -35,7 +37,7 @@ fi
 set -euo pipefail
 
 COVERAGE_TABLE_NAME="Coverage Table Library"
-COVERAGE_TABLE_VERSION="4.1.0"
+COVERAGE_TABLE_VERSION="5.2.0"
 export COVERAGE_TABLE_NAME COVERAGE_TABLE_VERSION
 
 # Test Configuration
@@ -43,7 +45,7 @@ TEST_NAME="Coverage Table"
 TEST_ABBR="CVT"
 TEST_NUMBER="CT"
 TEST_COUNTER=0
-TEST_VERSION="4.1.0"
+TEST_VERSION="5.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "${HYDROGEN_ROOT}/tests/lib/framework.sh"
@@ -581,7 +583,7 @@ cat > "${layout_json}" << EOF
         {
             "header": "Lines",
             "key": "coverage_instrumented",
-            "datatype": "int",
+            "datatype": "num",
             "justification": "right",
             "summary": "sum"
         },
@@ -589,48 +591,42 @@ cat > "${layout_json}" << EOF
             "header": "Source File",
             "key": "file_path",
             "datatype": "text",
-            "summary": "count",
-            "width": 44
+            "summary": "count"
         },
         {
             "header": "Tests",
             "key": "unity_test_count",
-            "datatype": "int",
+            "datatype": "num",
             "justification": "right",
-            "summary": "sum",
-            "width": 7
+            "summary": "sum"
         },
         {
             "header": "Unity",
             "key": "unity_covered",
-            "datatype": "int",
+            "datatype": "num",
             "justification": "right",
-            "summary": "sum",
-            "width": 8
+            "summary": "sum"
         },
         {
             "header": "Black",
             "key": "coverage_covered",
-            "datatype": "int",
+            "datatype": "num",
             "justification": "right",
-            "summary": "sum",
-            "width": 8
+            "summary": "sum"
         },
         {
             "header": "Cover",
             "key": "combined_covered",
-            "datatype": "int",
+            "datatype": "num",
             "justification": "right",
-            "summary": "sum",
-            "width": 8
+            "summary": "sum"
         },
         {
             "header": "Focus",
             "key": "focus",
             "datatype": "float",
             "justification": "right",
-            "summary": "",
-            "width": 8
+            "summary": ""
         }
     ]
 }
