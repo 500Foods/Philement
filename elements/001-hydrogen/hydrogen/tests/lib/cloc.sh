@@ -12,6 +12,8 @@
 # run_cloc_with_stats()
 
 # CHANGELOG
+# 7.5.0 - 2026-08-22 - C/C % always X.Y % (0.0 % when a non-zero ratio rounds to zero)
+# 7.4.0 - 2026-08-22 - Main CLOC table Files/Blank/Comment/Code/Lines use tables num datatype (thousands separators)
 # 6.5.1 - 2026-07-15 - Updated coverage target thresholds in extended statistics table to 60/75/85
 # 7.3.0 - 2025-12-30 - Fixed thousands separators by adding LC_ALL=en_US.UTF_8 to printf commands using '%'d 
 # 7.2.0 - 2025-12-27 - Updated Totals row with label and C/C % to main cloc table
@@ -64,7 +66,7 @@ export CLOC_GUARD="true"
 
 # Library metadata
 CLOC_NAME="CLOC Library"
-CLOC_VERSION="7.2.0"
+CLOC_VERSION="7.5.0"
 # shellcheck disable=SC2310,SC2153,SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CLOC_NAME} ${CLOC_VERSION}" "info" 2> /dev/null || true
 
@@ -262,25 +264,25 @@ run_cloc_analysis() {
         {
             "header": "Files",
             "key": "files",
-            "datatype": "int",
+            "datatype": "num",
             "justification": "right"
         },
         {
             "header": "Blank",
             "key": "blank",
-            "datatype": "int",
+            "datatype": "num",
             "justification": "right"
         },
         {
             "header": "Comment",
             "key": "comment",
-            "datatype": "int",
+            "datatype": "num",
             "justification": "right"
         },
         {
             "header": "Code",
             "key": "code",
-            "datatype": "int",
+            "datatype": "num",
             "justification": "right"
         },
         {
@@ -292,7 +294,7 @@ run_cloc_analysis() {
         {
             "header": "Lines",
             "key": "lines",
-            "datatype": "int",
+            "datatype": "num",
             "justification": "right"
         }
     ]
@@ -301,6 +303,13 @@ EOF
 
             # Create data JSON for TABLES program using jq
             jq -n '
+                def format_cc_pct(comment; code):
+                    if (code > 0) and (comment > 0) then
+                        ((comment / code * 1000) | round
+                            | ((. / 10) | floor | tostring) + "." + ((. % 10) | tostring) + " %")
+                    else
+                        ""
+                    end;
                 # Process core JSON
                 input as $core |
                 # Process test JSON
@@ -316,7 +325,6 @@ EOF
                             blank: ($core.C.blank // 0),
                             comment: ($core.C.comment // 0),
                             code: ($core.C.code // 0),
-                            comment_code_percentage: (if ($core.C.code // 0) > 0 then (if (($core.C.comment // 0) / ($core.C.code // 0) * 100) > 0 then ((($core.C.comment // 0) / ($core.C.code // 0) * 100 | . * 10 | round / 10) | tostring + " %") else "" end) else "" end),
                             lines: (($core.C.blank // 0) + ($core.C.comment // 0) + ($core.C.code // 0))
                         }
                     else empty end),
@@ -329,7 +337,6 @@ EOF
                             blank: ($test.C.blank // 0),
                             comment: ($test.C.comment // 0),
                             code: ($test.C.code // 0),
-                            comment_code_percentage: (if ($test.C.code // 0) > 0 then (if (($test.C.comment // 0) / ($test.C.code // 0) * 100) > 0 then ((($test.C.comment // 0) / ($test.C.code // 0) * 100 | . * 10 | round / 10) | tostring + " %") else "" end) else "" end),
                             lines: (($test.C.blank // 0) + ($test.C.comment // 0) + ($test.C.code // 0))
                         }
                     else empty end),
@@ -344,8 +351,7 @@ EOF
                                 files: (($core_md.nFiles // 0) + ($test_md.nFiles // 0)),
                                 blank: (($core_md.blank // 0) + ($test_md.blank // 0)),
                                 comment: (($core_md.comment // 0) + ($test_md.comment // 0)),
-                                code: (($core_md.code // 0) + ($test_md.code // 0)),
-                                comment_code_percentage: (if (($core_md.code // 0) + ($test_md.code // 0)) > 0 then (if (((($core_md.comment // 0) + ($test_md.comment // 0))) / (($core_md.code // 0) + ($test_md.code // 0)) * 100) > 0 then (((($core_md.comment // 0) + ($test_md.comment // 0))) / (($core_md.code // 0) + ($test_md.code // 0)) * 100 | . * 10 | round / 10 | tostring + " %") else "" end) else "" end)
+                                code: (($core_md.code // 0) + ($test_md.code // 0))
                             } | .lines = (.blank + .comment + .code)
                         ),
                         # Shell (consolidated from Bourne Shell and zsh)
@@ -356,8 +362,7 @@ EOF
                                 files: (($core_sh.nFiles // 0) + ($test_sh.nFiles // 0) + ($core_zsh.nFiles // 0) + ($test_zsh.nFiles // 0)),
                                 blank: (($core_sh.blank // 0) + ($test_sh.blank // 0) + ($core_zsh.blank // 0) + ($test_zsh.blank // 0)),
                                 comment: (($core_sh.comment // 0) + ($test_sh.comment // 0) + ($core_zsh.comment // 0) + ($test_zsh.comment // 0)),
-                                code: (($core_sh.code // 0) + ($test_sh.code // 0) + ($core_zsh.code // 0) + ($test_zsh.code // 0)),
-                                comment_code_percentage: (if (($core_sh.code // 0) + ($test_sh.code // 0) + ($core_zsh.code // 0) + ($test_zsh.code // 0)) > 0 then (if (((($core_sh.comment // 0) + ($test_sh.comment // 0) + ($core_zsh.comment // 0) + ($test_zsh.comment // 0))) / (($core_sh.code // 0) + ($test_sh.code // 0) + ($core_zsh.code // 0) + ($test_zsh.code // 0)) * 100) > 0 then (((($core_sh.comment // 0) + ($test_sh.comment // 0) + ($core_zsh.comment // 0) + ($test_zsh.comment // 0))) / (($core_sh.code // 0) + ($test_sh.code // 0) + ($core_zsh.code // 0) + ($test_zsh.code // 0)) * 100 | . * 10 | round / 10 | tostring | if contains(".") then . else . + ".0" end | . + " %") else "" end) else "" end)
+                                code: (($core_sh.code // 0) + ($test_sh.code // 0) + ($core_zsh.code // 0) + ($test_zsh.code // 0))
                             } | .lines = (.blank + .comment + .code)
                         ),
                         # Lua
@@ -368,8 +373,7 @@ EOF
                                 files: (($core_lua.nFiles // 0) + ($test_lua.nFiles // 0)),
                                 blank: (($core_lua.blank // 0) + ($test_lua.blank // 0)),
                                 comment: (($core_lua.comment // 0) + ($test_lua.comment // 0)),
-                                code: (($core_lua.code // 0) + ($test_lua.code // 0)),
-                                comment_code_percentage: (if (($core_lua.code // 0) + ($test_lua.code // 0)) > 0 then (if (((($core_lua.comment // 0) + ($test_lua.comment // 0))) / (($core_lua.code // 0) + ($test_lua.code // 0)) * 100) > 0 then (((($core_lua.comment // 0) + ($test_lua.comment // 0))) / (($core_lua.code // 0) + ($test_lua.code // 0)) * 100 | . * 10 | round / 10 | tostring | if contains(".") then . else . + ".0" end | . + " %") else "" end) else "" end)
+                                code: (($core_lua.code // 0) + ($test_lua.code // 0))
                             } | .lines = (.blank + .comment + .code)
                         ),
                         # CMake
@@ -380,8 +384,7 @@ EOF
                                 files: (($core_cmake.nFiles // 0) + ($test_cmake.nFiles // 0)),
                                 blank: (($core_cmake.blank // 0) + ($test_cmake.blank // 0)),
                                 comment: (($core_cmake.comment // 0) + ($test_cmake.comment // 0)),
-                                code: (($core_cmake.code // 0) + ($test_cmake.code // 0)),
-                                comment_code_percentage: (if (($core_cmake.code // 0) + ($test_cmake.code // 0)) > 0 then (if (((($core_cmake.comment // 0) + ($test_cmake.comment // 0))) / (($core_cmake.code // 0) + ($test_cmake.code // 0)) * 100) > 0 then (((($core_cmake.comment // 0) + ($test_cmake.comment // 0))) / (($core_cmake.code // 0) + ($test_cmake.code // 0)) * 100 | . * 10 | round / 10 | tostring + " %") else "" end) else "" end)
+                                code: (($core_cmake.code // 0) + ($test_cmake.code // 0))
                             } | .lines = (.blank + .comment + .code)
                         ),
                         # JavaScript
@@ -392,8 +395,7 @@ EOF
                                 files: (($core_js.nFiles // 0) + ($test_js.nFiles // 0)),
                                 blank: (($core_js.blank // 0) + ($test_js.blank // 0)),
                                 comment: (($core_js.comment // 0) + ($test_js.comment // 0)),
-                                code: (($core_js.code // 0) + ($test_js.code // 0)),
-                                comment_code_percentage: (if (($core_js.code // 0) + ($test_js.code // 0)) > 0 then (if (((($core_js.comment // 0) + ($test_js.comment // 0))) / (($core_js.code // 0) + ($test_js.code // 0)) * 100) > 0 then (((($core_js.comment // 0) + ($test_js.comment // 0))) / (($core_js.code // 0) + ($test_js.code // 0)) * 100 | . * 10 | round / 10 | tostring + " %") else "" end) else "" end)
+                                code: (($core_js.code // 0) + ($test_js.code // 0))
                             } | .lines = (.blank + .comment + .code)
                         )
                     ),
@@ -406,7 +408,6 @@ EOF
                             blank: (.value.blank // 0),
                             comment: (.value.comment // 0),
                             code: (.value.code // 0),
-                            comment_code_percentage: (if (.value.code // 0) > 0 then (if ((.value.comment // 0) / (.value.code // 0) * 100) > 0 then ((.value.comment // 0) / (.value.code // 0) * 100 | . * 10 | round / 10 | tostring + " %") else "" end) else "" end),
                             lines: ((.value.blank // 0) + (.value.comment // 0) + (.value.code // 0))
                         }
                     )
@@ -417,12 +418,12 @@ EOF
                          language: "Totals",
                          files: (. | map(.files // 0) | add),
                          blank: (. | map(.blank // 0) | add),
-                         comment: (. | map(.comment // 0) | add),
-                         code: (. | map(.code // 0) | add),
-                         comment_code_percentage: (if (. | map(.code // 0) | add) > 0 then (if ((. | map(.comment // 0) | add) / (. | map(.code // 0) | add) * 100) > 0 then (((. | map(.comment // 0) | add) / (. | map(.code // 0) | add) * 100 | . * 10 | round / 10) | tostring + " %") else "" end) else "" end),
-                         lines: (. | map(.lines // 0) | add)
-                     }
-                 ]
+                          comment: (. | map(.comment // 0) | add),
+                          code: (. | map(.code // 0) | add),
+                          lines: (. | map(.lines // 0) | add)
+                      }
+                  ]
+                  | map(.comment_code_percentage = format_cc_pct(.comment // 0; .code // 0))
             ' "${core_json}" "${test_json}" > "${data_json_file}"
 
             # Calculate totals from the generated JSON data

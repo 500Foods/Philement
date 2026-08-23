@@ -27,7 +27,6 @@
     "outputFile": "hydrogen_metrics_report.svg"
   },
   "metrics": [
-
     {
       "path": "scloc.main.Core_C_Headers.code",
       "label": "Core code",
