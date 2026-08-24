@@ -3,6 +3,9 @@
 --
 --
 -- CHANGELOG
+-- 0.5.0 - 2026-08-23 - Phase 5: review [u] reason (one-field apply)
+-- 0.4.14 - 2026-08-23 - Explore Enter decodes highlighted brotli line
+-- 0.4.13 - 2026-08-23 - One finding per field; decoded brotli is its own item
 -- 0.4.11 - 2026-08-23 - Decode brotli/base64 in compare; explore view
 -- 0.4.10 - 2026-08-23 - Migration vs DB sides; ignore 1000→1003 apply
 -- 0.4.9 - 2026-08-23 - Explore: field-level expected/actual diff
@@ -11,6 +14,9 @@
 -- 0.2.0 - 2026-08-23 - Phase 1: findings ingest, sidecar decisions, dashboard totals
 
 local M = {}
+
+local decode_embedded
+local split_lines
 
 local brotli_mod
 do
@@ -181,13 +187,80 @@ local function jq_num(filter, path, tmp_dir)
     return tonumber(lines[1]) or 0
 end
 
-local function first_field(obj)
+local function listed_fields(obj)
     local arr = obj:match('"fields"%s*:%s*%[(.-)%]')
-    if not arr then
-        return "code"
+    local fields = {}
+    local seen = {}
+    if arr then
+        for name in arr:gmatch('"([^"]+)"') do
+            if name ~= "" and not seen[name] then
+                seen[name] = true
+                fields[#fields + 1] = name
+            end
+        end
     end
-    local field = arr:match('"([^"]+)"')
-    return field or "code"
+    return fields
+end
+
+local function payload_raw(obj, name)
+    local s = json_string_field(obj, name)
+    if s ~= "" then
+        return s
+    end
+    local n = json_num_field(obj, name)
+    if n ~= nil then
+        return tostring(n)
+    end
+    return ""
+end
+
+local function payload_field_differs(expected, actual, name)
+    return payload_raw(expected, name) ~= payload_raw(actual, name)
+end
+
+local function has_embed(s)
+    s = tostring(s or "")
+    return s:find("BROTLI_DECOMPRESS", 1, true)
+        or s:find("CRYPTO_DECODE", 1, true)
+        or s:find("FROM_BASE64", 1, true)
+end
+
+local function drift_field_specs(obj, expected, actual)
+    local listed = listed_fields(obj)
+    local seen = {}
+    local names = {}
+    local function consider(name)
+        if not name or name == "" or seen[name] then
+            return
+        end
+        seen[name] = true
+        names[#names + 1] = name
+    end
+    for i = 1, #listed do
+        consider(listed[i])
+    end
+    local extras = { "name", "summary", "code" }
+    for i = 1, #extras do
+        if payload_field_differs(expected, actual, extras[i]) then
+            consider(extras[i])
+        end
+    end
+    if #names == 0 then
+        names[1] = "code"
+    end
+    local specs = {}
+    for i = 1, #names do
+        local name = names[i]
+        local ev = payload_raw(expected, name)
+        local av = payload_raw(actual, name)
+        if ev ~= av then
+            specs[#specs + 1] = { field = name, view = "raw" }
+        end
+    end
+    if #specs == 0 then
+        specs[1] = { field = names[1], view = "raw" }
+    end
+    return specs
 end
 
 local function add_finding(list, item)
@@ -211,26 +284,53 @@ local function load_metadata(path, tmp_dir, findings)
     for _, obj in ipairs(jq_lines(".drifts[]?", path, tmp_dir)) do
         local ref = json_num_field(obj, "ref") or 0
         local db_type = json_num_field(obj, "db_type") or 1003
-        local field = first_field(obj)
         local st_kind = json_string_field(obj, "kind")
         if st_kind == "" then
             st_kind = "drift"
         end
-        add_finding(findings, {
-            id = string.format("meta:drift:%d:%d:%s", ref, db_type, field),
-            class = "metadata content drift",
-            kind = st_kind,
-            ref = ref,
-            db_type = db_type,
-            file = json_string_field(obj, "file"),
-            summary = (db_type == 1003)
-                and string.format("APPLY check ref %d — %s mismatch", ref, field)
-                or string.format("LOAD check ref %d type %d — %s mismatch",
-                    ref, db_type, field),
-            expected = json_subobj(obj, "expected"),
-            actual = json_subobj(obj, "actual"),
-            detail = payload_text(obj),
-        })
+        local expected = json_subobj(obj, "expected")
+        local actual = json_subobj(obj, "actual")
+        local file = json_string_field(obj, "file")
+        local detail = payload_text(obj)
+        local specs = drift_field_specs(obj, expected, actual)
+        for i = 1, #specs do
+            local spec = specs[i]
+            local field = spec.field
+            local view = spec.view or "raw"
+            local id_field = field
+            if view == "decoded" then
+                id_field = field .. ":decoded"
+            end
+            local what
+            if view == "decoded" then
+                what = field .. " decoded"
+            else
+                what = field
+            end
+            local summary
+            if db_type == 1003 then
+                summary = string.format(
+                    "APPLY check ref %d — %s mismatch", ref, what)
+            else
+                summary = string.format(
+                    "LOAD check ref %d type %d — %s mismatch",
+                    ref, db_type, what)
+            end
+            add_finding(findings, {
+                id = string.format("meta:drift:%d:%d:%s", ref, db_type, id_field),
+                class = "metadata content drift",
+                kind = st_kind,
+                ref = ref,
+                db_type = db_type,
+                field = field,
+                view = view,
+                file = file,
+                summary = summary,
+                expected = expected,
+                actual = actual,
+                detail = detail,
+            })
+        end
     end
 
     for _, obj in ipairs(jq_lines(".missing_load[]?", path, tmp_dir)) do
@@ -622,7 +722,7 @@ local function decode_brotli_b64(b64)
     return nil
 end
 
-local function decode_embedded(s)
+decode_embedded = function(s)
     s = tostring(s or "")
     s = s:gsub(
         "BROTLI_DECOMPRESS%s*%(%s*CRYPTO_DECODE%s*%(%s*'([^']+)'[^)]*%)%s*%)",
@@ -650,7 +750,80 @@ function M.decode_embedded(s)
     return decode_embedded(s)
 end
 
-local function split_lines(text)
+function M.has_embed(s)
+    return has_embed(s)
+end
+
+function M.build_line_decode_view(left_line, right_line)
+    local l_ok = has_embed(left_line)
+    local r_ok = has_embed(right_line)
+    if not l_ok and not r_ok then
+        return nil
+    end
+    local lv = l_ok and decode_embedded(left_line) or ""
+    local rv = r_ok and decode_embedded(right_line) or ""
+    local layout = "both"
+    if l_ok and not r_ok then
+        layout = "left"
+    elseif r_ok and not l_ok then
+        layout = "right"
+    end
+    local a = split_lines(lv)
+    local b = split_lines(rv)
+    if layout == "left" then
+        b = {}
+    elseif layout == "right" then
+        a = {}
+    end
+    local maxn = math.max(#a, #b)
+    local nchg = 0
+    local first_diff = 0
+    local rows = {}
+    for n = 1, maxn do
+        local same = (a[n] or "") == (b[n] or "")
+        if not same then
+            nchg = nchg + 1
+            if first_diff == 0 then
+                first_diff = n
+            end
+        end
+        rows[#rows + 1] = {
+            kind = "pair",
+            n = n,
+            left = a[n] or "",
+            right = b[n] or "",
+            same = same,
+        }
+    end
+    local facts = { "decoded  BROTLI / CRYPTO" }
+    if layout == "left" then
+        facts[#facts + 1] = "Migration only"
+    elseif layout == "right" then
+        facts[#facts + 1] = "Database only"
+    else
+        facts[#facts + 1] = "Migration vs Database"
+    end
+    if maxn == 0 then
+        rows[#rows + 1] = {
+            kind = "label",
+            text = "decoded — empty",
+        }
+    else
+        table.insert(rows, 1, {
+            kind = "label",
+            text = string.format("decoded — %d of %d lines differ", nchg, maxn),
+        })
+    end
+    return {
+        facts = facts,
+        rows = rows,
+        first_diff = first_diff,
+        layout = layout,
+        decoded = true,
+    }
+end
+
+split_lines = function(text)
     local lines = {}
     text = text or ""
     if text == "" then
@@ -673,10 +846,6 @@ local function sides_of(finding)
         rname = "Live"
     end
     return left, right, lname, rname
-end
-
-local function is_apply_promotion(a, b)
-    return (a == "1000" and b == "1003") or (a == "1003" and b == "1000")
 end
 
 local function pad_clip(s, w)
@@ -875,71 +1044,79 @@ local function line_diff_lines(label, left, right, lname, rname, max_lines, widt
     return out
 end
 
+local function field_pair(finding)
+    local left, right, lname, rname = sides_of(finding)
+    local field = finding.field
+    local view = finding.view or "raw"
+    local lp = payload_map(left)
+    local rp = payload_map(right)
+    if lp and rp and field and field ~= "" then
+        local lv, rv = "", ""
+        for i = 1, #lp do
+            if lp[i][1] == field then
+                lv = lp[i][2] or ""
+                rv = rp[i][2] or ""
+                break
+            end
+        end
+        if view == "raw" then
+            lv = payload_raw(left, field)
+            rv = payload_raw(right, field)
+        end
+        return lv, rv, lname, rname, field, view
+    end
+    if view == "decoded" then
+        return decode_embedded(left), decode_embedded(right), lname, rname,
+            field or "value", view
+    end
+    return left, right, lname, rname, field or "value", view
+end
+
 local function compare_lines(finding, mode, width)
     local lines = {}
     width = width or 100
-    local left, right, lname, rname = sides_of(finding)
-    if left == "" and right == "" then
+    local lv, rv, lname, rname, field, view = field_pair(finding)
+    if lv == "" and rv == "" then
+        local left, right = sides_of(finding)
+        if left == "" and right == "" then
+            return lines
+        end
+    end
+    local label = field
+    if view == "decoded" then
+        label = field .. " (decoded)"
+    elseif has_embed(lv) or has_embed(rv) then
+        label = field .. " (encoded)"
+    end
+    if lv == rv then
+        lines[#lines + 1] = "  " .. label .. ": identical"
         return lines
     end
-    if left == right then
-        lines[#lines + 1] = "  " .. lname .. " and " .. rname .. " are identical"
-        return lines
-    end
-    local lp = payload_map(left)
-    local rp = payload_map(right)
-    if lp and rp then
-        for i = 1, #lp do
-            local key = lp[i][1]
-            local lv = lp[i][2] or ""
-            local rv = rp[i][2] or ""
-            if key == "query_type" and is_apply_promotion(lv, rv) then
-                if mode == "full" then
-                    lines[#lines + 1] = string.format(
-                        "  query_type: %s (migration) → %s (applied)  — ignored",
-                        lv, rv)
-                end
-            elseif lv == rv then
-                if mode == "full" and lv ~= "" and key ~= "query_type" then
-                    lines[#lines + 1] = "  " .. key .. ": identical"
-                end
-            elseif mode == "short" then
-                if key == "code" or key == "summary" then
-                    local nchg = 0
-                    local a = split_lines(lv)
-                    local b = split_lines(rv)
-                    local maxn = math.max(#a, #b)
-                    for n = 1, maxn do
-                        if (a[n] or "") ~= (b[n] or "") then
-                            nchg = nchg + 1
-                        end
-                    end
-                    lines[#lines + 1] = string.format(
-                        "  %s: %d of %d lines differ  (Migration vs Database)",
-                        key, nchg, maxn)
-                else
-                    lines[#lines + 1] = string.format(
-                        "  %s:  Migration=%s", key, clip_text(lv, 40))
-                    lines[#lines + 1] = string.format(
-                        "  %s   Database =%s",
-                        string.rep(" ", #key), clip_text(rv, 40))
-                end
-            else
-                local part = line_diff_lines(
-                    key, lv, rv, lname, rname, 80, width)
-                for _, row in ipairs(part) do
-                    lines[#lines + 1] = row
+    if mode == "short" then
+        if field == "code" or field == "summary" or view == "decoded"
+            or #lv > 80 or #rv > 80 then
+            local a = split_lines(lv)
+            local b = split_lines(rv)
+            local maxn = math.max(#a, #b)
+            local nchg = 0
+            for n = 1, maxn do
+                if (a[n] or "") ~= (b[n] or "") then
+                    nchg = nchg + 1
                 end
             end
+            lines[#lines + 1] = string.format(
+                "  %s: %d of %d lines differ  (Migration vs Database)",
+                label, nchg, maxn)
+        else
+            lines[#lines + 1] = string.format(
+                "  %s:  Migration=%s", label, clip_text(lv, 40))
+            lines[#lines + 1] = string.format(
+                "  %s   Database =%s",
+                string.rep(" ", #label), clip_text(rv, 40))
         end
         return lines
     end
-    if mode == "short" or (#left <= 80 and #right <= 80) then
-        lines[#lines + 1] = "  " .. lname .. ": " .. clip_text(left, 72)
-        lines[#lines + 1] = "  " .. rname .. ": " .. clip_text(right, 72)
-        return lines
-    end
-    local part = line_diff_lines("value", left, right, lname, rname, 80, width)
+    local part = line_diff_lines(label, lv, rv, lname, rname, 80, width)
     for _, row in ipairs(part) do
         lines[#lines + 1] = row
     end
@@ -954,6 +1131,14 @@ function M.build_explore_view(finding)
     if finding and finding.file and finding.file ~= "" then
         facts[#facts + 1] = "file  " .. finding.file
     end
+    if finding and finding.field and finding.field ~= "" then
+        local view = finding.view or "raw"
+        if view == "decoded" then
+            facts[#facts + 1] = "field  " .. finding.field .. "  (decoded)"
+        else
+            facts[#facts + 1] = "field  " .. finding.field
+        end
+    end
     if finding then
         for _, r in ipairs(explain_check(finding)) do
             facts[#facts + 1] = r:gsub("^%s+", "")
@@ -961,80 +1146,49 @@ function M.build_explore_view(finding)
     end
     local rows = {}
     if not finding then
-        return { facts = facts, rows = rows }
+        return { facts = facts, rows = rows, first_diff = 0 }
     end
-    local left, right = sides_of(finding)
-    local lp = payload_map(left)
-    local rp = payload_map(right)
-    if not lp or not rp then
-        local a = split_lines(decode_embedded(left))
-        local b = split_lines(decode_embedded(right))
-        local maxn = math.max(#a, #b)
-        for n = 1, maxn do
-            rows[#rows + 1] = {
-                kind = "pair",
-                n = n,
-                left = a[n] or "",
-                right = b[n] or "",
-                same = (a[n] or "") == (b[n] or ""),
-            }
-        end
-        return { facts = facts, rows = rows }
-    end
-    for i = 1, #lp do
-        local key = lp[i][1]
-        local lv = lp[i][2] or ""
-        local rv = rp[i][2] or ""
-        if key == "query_type" and is_apply_promotion(lv, rv) then
-            facts[#facts + 1] = "query_type 1000→1003 ignored (APPLY)"
-        elseif lv == rv then
-            if lv ~= "" and key ~= "query_type" then
-                facts[#facts + 1] = key .. ": identical"
-            end
-        else
-            local a = split_lines(lv)
-            local b = split_lines(rv)
-            local maxn = math.max(#a, #b)
-            local changed = {}
-            for n = 1, maxn do
-                if (a[n] or "") ~= (b[n] or "") then
-                    changed[#changed + 1] = n
-                end
-            end
-            rows[#rows + 1] = {
-                kind = "label",
-                text = string.format(
-                    "%s — %d of %d lines differ", key, #changed, maxn),
-            }
-            local context = 2
-            local show = {}
-            for _, n in ipairs(changed) do
-                for d = -context, context do
-                    local idx = n + d
-                    if idx >= 1 and idx <= maxn then
-                        show[idx] = true
-                    end
-                end
-            end
-            local prev = 0
-            for n = 1, maxn do
-                if show[n] then
-                    if prev > 0 and n > prev + 1 then
-                        rows[#rows + 1] = { kind = "label", text = "…" }
-                    end
-                    rows[#rows + 1] = {
-                        kind = "pair",
-                        n = n,
-                        left = a[n] or "",
-                        right = b[n] or "",
-                        same = (a[n] or "") == (b[n] or ""),
-                    }
-                    prev = n
-                end
+    local lv, rv, _, _, field, view = field_pair(finding)
+    local a = split_lines(lv)
+    local b = split_lines(rv)
+    local maxn = math.max(#a, #b)
+    local nchg = 0
+    local first_diff = 0
+    for n = 1, maxn do
+        if (a[n] or "") ~= (b[n] or "") then
+            nchg = nchg + 1
+            if first_diff == 0 then
+                first_diff = n
             end
         end
     end
-    return { facts = facts, rows = rows }
+    local label = field or "value"
+    if view == "decoded" then
+        label = label .. " (decoded)"
+    elseif has_embed(lv) or has_embed(rv) then
+        label = label .. " (encoded)"
+    end
+    if maxn == 0 then
+        rows[#rows + 1] = {
+            kind = "label",
+            text = label .. " — empty on both sides",
+        }
+        return { facts = facts, rows = rows, first_diff = 0 }
+    end
+    rows[#rows + 1] = {
+        kind = "label",
+        text = string.format("%s — %d of %d lines differ", label, nchg, maxn),
+    }
+    for n = 1, maxn do
+        rows[#rows + 1] = {
+            kind = "pair",
+            n = n,
+            left = a[n] or "",
+            right = b[n] or "",
+            same = (a[n] or "") == (b[n] or ""),
+        }
+    end
+    return { facts = facts, rows = rows, first_diff = first_diff }
 end
 
 local function note_for_state(id, state)
@@ -1351,7 +1505,14 @@ local function g_label(next_ref, g_reason)
     return "  [g] generate a migration"
 end
 
-function M.build_review_lines(finding, next_ref, g_reason)
+local function u_label(u_reason)
+    if u_reason and u_reason ~= "" then
+        return "  [u] apply to database          (disabled — " .. u_reason .. ")"
+    end
+    return "  [u] apply to database          (type REF.field)"
+end
+
+function M.build_review_lines(finding, next_ref, g_reason, u_reason)
     local lines = {}
     lines[#lines + 1] = "This is the variance"
     lines[#lines + 1] = "  id:       " .. finding.id
@@ -1374,13 +1535,13 @@ function M.build_review_lines(finding, next_ref, g_reason)
     lines[#lines + 1] = "  [e] explore in more detail"
     lines[#lines + 1] = "  [s] skip for now"
     lines[#lines + 1] = "  [a] accept permanent variance"
-    lines[#lines + 1] = "  [u] apply to database          (disabled — Phase 5)"
+    lines[#lines + 1] = u_label(u_reason)
     lines[#lines + 1] = g_label(next_ref, g_reason)
     lines[#lines + 1] = "  [n]ext  [p]rev  [r]e-audit  [q]uit to dashboard"
     return lines
 end
 
-function M.build_review_lines_detailed(finding, out_dir, state, next_ref, g_reason)
+function M.build_review_lines_detailed(finding, out_dir, state, next_ref, g_reason, u_reason)
     local lines = {}
     lines[#lines + 1] = "This is the variance"
     lines[#lines + 1] = "  id:       " .. finding.id
@@ -1410,7 +1571,7 @@ function M.build_review_lines_detailed(finding, out_dir, state, next_ref, g_reas
     lines[#lines + 1] = "  [e] explore in more detail"
     lines[#lines + 1] = "  [s] skip for now"
     lines[#lines + 1] = "  [a] accept permanent variance"
-    lines[#lines + 1] = "  [u] apply to database          (disabled — Phase 5)"
+    lines[#lines + 1] = u_label(u_reason)
     lines[#lines + 1] = g_label(next_ref, g_reason)
     lines[#lines + 1] = "  [n]ext  [p]rev  [r]e-audit  [q]uit to dashboard"
     return lines

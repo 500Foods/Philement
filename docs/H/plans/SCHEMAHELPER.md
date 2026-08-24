@@ -32,15 +32,14 @@ exit gate is green. Record learnings in the Working Log.
 ## Resuming Work
 
 **CURRENT PAUSE POINT (as of 2026-08-23):** Phases 0–4 and 6 closed.
-v1 is review + packets + operator docs. SchemaHelper **0.4.8** fronts
-SchemaTool **1.8.2**. Phase 5 (apply to database) is optional and not
-required for v1.
+Phase 5 first slice shipped: SchemaHelper **0.5.0** fronts SchemaTool
+**1.8.2**. `[u]` applies **one** metadata field (`code`/`name`/`summary`)
+when launched with `--allow-write`; confirm is `REF.field` (e.g.
+`1223.code`). Orphan/anomaly DELETE is not in this slice.
 
 Post-v1 field hardening is in (see Working Log): catalog fold Lua 5.5
 const + catalog degrade; custom-wrapper connect (exec flags + sourced
-`exec`); dashboard `q` / result-screen paint. Live wrappers (Test 40 +
-`schematool_500courses.sh` / `schematool_philement.sh`) reach the
-dashboard with findings.
+`exec`); dashboard `q` / result-screen paint; explore decode.
 
 Deferred polish (not a phase gate): dashboard “subject for review” is
 **findings**, not migrations (e.g. 24 drifted refs + 38 catalog rows =
@@ -49,11 +48,11 @@ Deferred polish (not a phase gate): dashboard “subject for review” is
 ### Resume here next session
 
 1. Confirm this document is the source of truth.
-2. Optional smoke: `schemahelper.sh schematool_sqlite.sh` — Enter review,
-   `[q]`/Esc quit (must not throw). Custom wrapper:
-   `schemahelper.sh /path/to/schematool_*.sh`.
-3. Pick up Phase 5 only if real sessions show `u` is needed. Otherwise
-   start with dashboard count wording or live `[r]` re-audit.
+2. Optional smoke: `schemahelper.sh --allow-write schematool_sqlite.sh`
+   — Enter review, `[u]` on a `code`/`name`/`summary` drift, type
+   `REF.field`. Without the flag, `[u]` stays disabled.
+3. Next polish: dashboard count wording or live `[r]` re-audit. Orphan
+   DELETE only if a real session needs it.
 
 ### Session checklist
 
@@ -68,7 +67,7 @@ Deferred polish (not a phase gate): dashboard “subject for review” is
 | --- | --- |
 | **Band** | P2 — operator tooling, not a Hydrogen subsystem |
 | **Effort** | L (TUI + packet writer + optional confirmed metadata apply) |
-| **Done** | v1 (Phases 0–4 + 6). Phase 5 apply remains optional. |
+| **Done** | v1 (Phases 0–4 + 6). Phase 5 first slice: one-field apply. |
 | **Why this shape** | SchemaTool is complete and read-only. The missing piece is a decision loop over its findings, including “this live DB should become a new migration.” |
 | **Do not start casually** | Write paths can mutate `queries` or (later) live DDL. Phase 0 must lock safety before any apply code exists. |
 
@@ -1059,37 +1058,44 @@ direction before writes are possible.
 
 ### Entry gate
 
-- [ ] Phase 4 Status complete (or explicit variance).
-- [ ] Phase 0 write policy still “metadata only.”
+- [x] Phase 4 Status complete (or explicit variance).
+- [x] Phase 0 write policy still “metadata only.”
 
 ### Work items
 
-- [ ] Extract the single finding’s commented SQL from SchemaTool artifacts
-      (or from the Phase 1 attached JSON).
-- [ ] Uncomment only that block; reject if the block is Hydrogen-guidance
-      (missing LOAD/APPLY) rather than a single UPDATE/DELETE.
-- [ ] Open a **non-RO** client session; begin transaction; execute; commit.
-- [ ] Typed confirm = ref number.
-- [ ] On success, drop finding from queue; offer `r` re-audit.
-- [ ] Log apply to session dir (SQL text OK; no password).
-- [ ] Refuse catalog findings and missing LOAD/APPLY.
+- [x] Generate a **single-field** `UPDATE` from official Lua
+      (`finding.expected`), not the whole SchemaTool commented block
+      (queue is one field per item).
+- [x] Refuse Hydrogen-guidance (missing LOAD/APPLY), catalog, orphan,
+      anomaly, and `:decoded` views.
+- [x] Open a **non-RO** client session; begin transaction; execute; commit
+      (all seven engines; wrapper-sourced when password-env is local).
+- [x] Typed confirm = `REF.field` (e.g. `1223.code`).
+- [x] On success, record `applied` and drop finding from queue.
+- [x] Log apply SQL to `--out-dir` (no password).
+- [~] Orphan / anomaly `DELETE` — deferred; not in this slice.
 
 ### Exit gate / validation
 
-- [ ] Without `--allow-write`, `u` is disabled.
-- [ ] Wrong confirm string does not execute.
-- [ ] sqlite fixture: drift UPDATE then SchemaTool re-run is clean for that
-      ref.
-- [ ] SchemaTool itself still cannot write.
-- [ ] `mks` + Test 98 clean.
+- [x] Without `--allow-write`, `u` is disabled.
+- [x] Wrong confirm string does not execute.
+- [x] sqlite fixture: one-field `UPDATE` then read-back matches official
+      Lua.
+- [x] SchemaTool itself still cannot write.
+- [x] `mks` + Test 98 clean.
 
 ### Status
 
-Not started.
+Complete (2026-08-23) for the **one-field UPDATE** slice.
+SchemaHelper **0.5.0**. Orphan/anomaly DELETE remains deferred.
 
 ### Lessons learned
 
-None yet.
+- Field-level queue items (0.4.13) make SchemaTool’s whole-ref
+  commented `UPDATE` the wrong unit. Generate `SET <field>` from
+  official Lua; never apply a `:decoded` payload into a wrapped column.
+- Confirm is `REF.field`, not just the ref, so `1223.code` cannot
+  silently write `name`.
 
 ---
 
@@ -1188,6 +1194,39 @@ worth the added risk.
 ---
 
 ## Working Log
+
+### 2026-08-23 — Phase 5 first slice: one-field apply
+
+- `[u]` + `--allow-write` applies one metadata field from official Lua.
+  Confirm `REF.field`. Catalog / missing LOAD/APPLY / orphan / anomaly /
+  decoded refused. Native client, one transaction, SQL log in
+  `--out-dir`. Sidecar `applied`. Reminder: metadata ≠ DDL.
+- SchemaHelper **0.5.0**. Modules: `schemahelper_apply.lua`,
+  `connect.exec_sql`.
+
+### 2026-08-23 — Explore: Enter decodes brotli line
+
+- Enter on a highlighted line with `BROTLI_DECOMPRESS` / `CRYPTO_DECODE`
+  replaces the view with the decoded text (both panes if both sides
+  wrap, else one full-width pane). Esc pops back. `keys.page_up` is not
+  a terminal.lua name (`pageup` / `pagedown`). SchemaHelper **0.4.14**.
+
+### 2026-08-23 — Explore: one field, full text, decoded item
+
+- Queue splits each drifted field into its own finding. If the stored
+  field is brotli/crypto wrapped and the decoded text also differs, a
+  second id `…:field:decoded` is added so encoded vs uncompressed are
+  not mixed in one explore.
+- Explore shows the whole field (no `…` window), line numbers on both
+  panes, wrap-aligned blanks, highlight starts on the first differing
+  line. SchemaHelper **0.4.13**.
+
+### 2026-08-23 — Review crash after SchemaTool (malformed pattern)
+
+- Enter on the dashboard crashed: `review_content` used
+  `line:match("^  %[[esaugn%]")`. `%]` inside a character class does
+  not close it, so Lua raised `malformed pattern (missing ']')`.
+- Filter key-legend lines with prefix checks, not patterns. **0.4.12**.
 
 ### 2026-08-23 — Explore panes, rules, highlight, brotli
 

@@ -57,7 +57,7 @@ extras/schematool/schematool.sh \
 ```text
 schematool.sh                 # CLI entry — help + parameter handling
 schemahelper.sh               # SchemaHelper launcher (Lua 5.5 + terminal.lua)
-schemahelper.lua              # SchemaHelper TUI (review + packets)
+schemahelper.lua              # SchemaHelper TUI (review + packets + apply)
 lib/
   schematool_init.sh          # dependency checks + command path resolution
   schematool_runners.sh       # db/Lua adapter wrappers (query/catalog adapters, Lua extractors)

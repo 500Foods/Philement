@@ -23,7 +23,7 @@ one by one:
 | Not now | `[s]` skip for now (still subject next launch) |
 | Known divergence | `[a]` accept permanent variance (sidecar) |
 | Live DB should become a migration | `[g]` reserve next ref and write a packet |
-| Official Lua should win | `[u]` apply (Phase 5; disabled in v1) |
+| Official Lua should win | `[u]` apply one field (`--allow-write`, type `REF.field`) |
 
 ## What it is / is not
 
@@ -104,7 +104,7 @@ need that engine listening and the matching env vars (see
 | `--ref N` | Force the next packet number |
 | `--track metadata\|catalog\|both` | Queue filter (default `both`) |
 | `--reuse` | Load existing artifacts; skip SchemaTool |
-| `--allow-write` | Reserved for Phase 5 apply (unused) |
+| `--allow-write` | Enable `[u]` one-field metadata `UPDATE` |
 
 Default `--out-dir` next to a Test 40 wrapper is inside the git tree.
 SchemaHelper warns once. Prefer `--out-dir /tmp/…` for real sessions.
@@ -119,21 +119,24 @@ SchemaHelper warns once. Prefer `--out-dir /tmp/…` for real sessions.
 4. **Dashboard** — totals + variance classes + reserved packet refs.
    If the catalog track fails after a successful metadata compare, the
    dashboard still opens on metadata findings (warning on the dashboard).
-5. **Review** — one finding at a time.
+5. **Review** — one field at a time. A SchemaTool drift with
+   `code`+`name` is two items. Explore shows the stored text; Enter on a
+   `BROTLI`/`CRYPTO` line opens the decoded payload (both sides, or one).
 
 | Key | Where | Effect |
 | --- | --- | --- |
 | Enter | Dashboard | Begin review |
 | `r` | Dashboard / review | Re-audit (review) / reserved |
 | `q` / Esc | Most screens | Back or quit |
-| `e` | Review | Explore: Migration vs Database, then scroll |
+| `e` | Review | Explore one field: Migration vs Database |
 | `s` | Review | Skip for now |
 | `a` | Review | Accept permanent variance |
-| `u` | Review | Apply to database (disabled) |
+| `u` | Review | Apply this field (needs `--allow-write`; type `1223.code`) |
 | `g` | Review | Generate a migration packet |
 | `n` / `p` | Review | Next / previous |
-| `j` / `k` / arrows | Explore | Move highlight (both panes) |
-| PgUp / PgDn | Explore | Page highlight |
+| `j` / `k` / arrows | Explore | Move line highlight (both panes) |
+| Enter | Explore | Decode highlighted brotli/crypto line |
+| PgUp / PgDn | Explore | Page by line |
 | Enter | Packet note | Write packet (empty note is OK) |
 | Esc | Packet note | Cancel packet |
 
@@ -167,8 +170,11 @@ never applied. Confirm the number is free before promoting into Helium.
 
 ## Safety
 
-- SchemaTool stays read-only. SchemaHelper does not write the database
-  in v1.
+- SchemaTool stays read-only. SchemaHelper writes only with
+  `--allow-write`, after typing `REF.field`, and only one metadata
+  field (`code` / `name` / `summary`) from official Lua. Catalog,
+  missing LOAD/APPLY, orphan, anomaly, and decoded views are refused.
+  A metadata `UPDATE` does not replay DDL.
 - Secrets inherit SchemaTool `--password-env`; never printed; never
   written into packets or the sidecar.
 - Catalog DDL apply is not offered. Missing LOAD/APPLY is guidance to

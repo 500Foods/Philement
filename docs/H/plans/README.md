@@ -51,7 +51,7 @@ Model Context Protocol server as a new Hydrogen subsystem. Lua implements the pr
 ### [SCHEMAHELPER PLAN](/docs/H/plans/SCHEMAHELPER.md)
 
 Interactive Lua TUI front-end to SchemaTool. Phases 0–4 shipped (review,
-skip, accept, packets). Phase 5 apply is optional. Operator guide:
+skip, accept, packets). Phase 5 first slice: one-field apply. Operator guide:
 [`/docs/H/tools/SCHEMAHELPER.md`](/docs/H/tools/SCHEMAHELPER.md).
 
 ### [MIRAGE PLAN](/docs/H/plans/MIRAGE_PLAN.md)

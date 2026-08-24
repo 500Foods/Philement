@@ -2,6 +2,10 @@
 -- SchemaHelper — Interactive SchemaTool front-end (Lua 5.5 + terminal.lua)
 --
 -- CHANGELOG
+-- 0.5.0 - 2026-08-23 - Phase 5: [u] one-field metadata apply
+-- 0.4.14 - 2026-08-23 - Explore: Enter decodes brotli line; pageup/pagedown
+-- 0.4.13 - 2026-08-23 - Explore: full field, both line nos, first-diff line
+-- 0.4.12 - 2026-08-23 - Review: do not use Lua patterns to drop key lines
 -- 0.4.11 - 2026-08-23 - Explore panes, red rules, highlight, brotli decode
 -- 0.4.10 - 2026-08-23 - Explore: Migration vs Database; ignore 1000→1003
 -- 0.4.9 - 2026-08-23 - Explore: chrome scroll + field diff, no screen.body
@@ -21,7 +25,7 @@
 
 -- luacheck: globals arg package
 
-local VERSION = "0.4.11"
+local VERSION = "0.5.0"
 local RELEASED = "2026-08-23"
 
 local LUA_RELEASES = {
@@ -85,6 +89,7 @@ package.path = script_dir() .. "/lua/?.lua;" .. package.path
 local queue = require("schemahelper_queue")
 local connect = require("schemahelper_connect")
 local packet = require("schemahelper_packet")
+local apply = require("schemahelper_apply")
 
 local function parse_args()
     local opts = {
@@ -793,6 +798,18 @@ local function dashboard_content(self)
         "[Enter] begin review   [r]e-audit   [q]uit")
 end
 
+local function is_review_key_line(line)
+    if line:sub(1, 21) == "What would you like t" then
+        return true
+    end
+    if line:sub(1, 3) ~= "  [" then
+        return false
+    end
+    local key = line:sub(4, 5)
+    return key == "e]" or key == "s]" or key == "a]" or key == "u]"
+        or key == "g]" or key == "n]" or key == "p]"
+end
+
 local function review_content(self)
     local app = self.app
     local header = session_header(self.opts, app, self.inner_width)
@@ -819,20 +836,23 @@ local function review_content(self)
     end
     local finding = subj[idx]
     local next_ref, g_reason = packet_next(self.opts)
+    local u_reason = apply.refuse_reason(finding, self.opts.allow_write)
     local review_lines = queue.build_review_lines_detailed(
-        finding, self.opts.out_dir, app.state, next_ref, g_reason)
+        finding, self.opts.out_dir, app.state, next_ref, g_reason, u_reason)
     local body = {}
     for i = 1, #review_lines do
         local line = review_lines[i]
-        if not line:match("^What would you like")
-            and not line:match("^  %[[esaugn%]")
-            and not line:match("^  %[[np%]") then
+        if not is_review_key_line(line) then
             body[#body + 1] = { line, ATTR_PATH }
         end
     end
+    local u_hint = " [u]pply"
+    if u_reason then
+        u_hint = ""
+    end
     paint_framed(self, header, body,
-        string.format("[%d of %d]  [e]xplore [s]kip [a]ccept [g]enerate  [n]/[p]  [q]uit",
-            idx, #subj))
+        string.format("[%d of %d]  [e]xplore [s]kip [a]ccept%s [g]enerate  [n]/[p]  [q]uit",
+            idx, #subj, u_hint))
 end
 
 local function wrap_display_line(text, width)
@@ -860,22 +880,30 @@ local function wrap_display_line(text, width)
     return out
 end
 
-local function flatten_explore_rows(view, col_w)
+local function flatten_explore_rows(view, left_text_w, right_text_w)
     local out = {}
     local rows = (view and view.rows) or {}
+    local layout = (view and view.layout) or "both"
+    left_text_w = math.max(4, left_text_w or 8)
+    right_text_w = math.max(4, right_text_w or left_text_w)
     for i = 1, #rows do
         local r = rows[i]
         if r.kind == "label" then
             out[#out + 1] = { kind = "label", text = r.text or "" }
         else
-            local wrap_w = math.max(4, col_w - 5)
-            local L = wrap_display_line(r.left or "", wrap_w)
-            local R = wrap_display_line(r.right or "", wrap_w)
+            local L = wrap_display_line(r.left or "", left_text_w)
+            local R = wrap_display_line(r.right or "", right_text_w)
+            if layout == "left" then
+                R = { "" }
+            elseif layout == "right" then
+                L = { "" }
+            end
             local nwrap = math.max(#L, #R)
             for w = 1, nwrap do
                 out[#out + 1] = {
                     kind = "pair",
                     n = (w == 1) and r.n or nil,
+                    line = r.n,
                     left = L[w] or "",
                     right = R[w] or "",
                     same = r.same,
@@ -886,15 +914,50 @@ local function flatten_explore_rows(view, col_w)
     return out
 end
 
-local function next_pair_index(rows, from, dir)
+local function explore_current_pair(app)
+    local flat = app.explore_flat or {}
+    local cur = app.explore_cursor or 0
+    local r = flat[cur]
+    if not r or r.kind ~= "pair" or not r.line then
+        return nil
+    end
+    local rows = (app.explore_view and app.explore_view.rows) or {}
+    for i = 1, #rows do
+        local row = rows[i]
+        if row.kind == "pair" and row.n == r.line then
+            return row
+        end
+    end
+    return nil
+end
+
+local function next_line_index(rows, from, dir)
     local i = from + dir
     while i >= 1 and i <= #rows do
-        if rows[i].kind == "pair" then
+        if rows[i].kind == "pair" and rows[i].n then
             return i
         end
         i = i + dir
     end
     return from
+end
+
+local function first_diff_line_index(rows, first_diff)
+    if first_diff and first_diff > 0 then
+        for i = 1, #rows do
+            local r = rows[i]
+            if r.kind == "pair" and r.n == first_diff then
+                return i
+            end
+        end
+    end
+    for i = 1, #rows do
+        local r = rows[i]
+        if r.kind == "pair" and not r.same then
+            return i
+        end
+    end
+    return next_line_index(rows, 0, 1)
 end
 
 local function explore_content(self)
@@ -924,20 +987,56 @@ local function explore_content(self)
         paint_hline_join(self, y)
         y = y + 1
     end
+    local layout = view.layout or "both"
+    local single = layout == "left" or layout == "right"
     local split = col + math.floor(width / 2)
+    if single then
+        split = col + width
+    end
     local left_w = math.max(8, split - col - 2)
     local right_w = math.max(8, (col + width) - split - 2)
-    write_span(y, col + 1, left_w, "Migration", ATTR_COLHEAD)
-    write_span(y, split + 1, right_w, "Database", ATTR_COLHEAD)
+    if single then
+        left_w = math.max(8, width - 2)
+        right_w = left_w
+    end
+    local maxn = 0
+    local vrows = view.rows or {}
+    for i = 1, #vrows do
+        if vrows[i].n and vrows[i].n > maxn then
+            maxn = vrows[i].n
+        end
+    end
+    local nw = math.max(3, #tostring(maxn))
+    local gutter = nw + 1
+    local left_text_w = math.max(4, left_w - gutter)
+    local right_text_w = math.max(4, right_w - gutter)
+    local lhead = "Migration"
+    local rhead = "Database"
+    if view.decoded then
+        lhead = "Migration (decoded)"
+        rhead = "Database (decoded)"
+    end
+    if layout == "left" then
+        write_span(y, col + 1, gutter, string.rep(" ", gutter), ATTR_COLHEAD)
+        write_span(y, col + 1 + gutter, left_text_w, lhead, ATTR_COLHEAD)
+    elseif layout == "right" then
+        write_span(y, col + 1, gutter, string.rep(" ", gutter), ATTR_COLHEAD)
+        write_span(y, col + 1 + gutter, left_text_w, rhead, ATTR_COLHEAD)
+    else
+        write_span(y, col + 1, gutter, string.rep(" ", gutter), ATTR_COLHEAD)
+        write_span(y, col + 1 + gutter, left_text_w, lhead, ATTR_COLHEAD)
+        write_span(y, split + 1, gutter, string.rep(" ", gutter), ATTR_COLHEAD)
+        write_span(y, split + 1 + gutter, right_text_w, rhead, ATTR_COLHEAD)
+    end
     y = y + 1
     local body_top = y
     local vis = footer_rule - body_top
     if vis < 1 then
         vis = 1
     end
-    local flat = flatten_explore_rows(view, left_w)
+    local flat = flatten_explore_rows(view, left_text_w, right_text_w)
     if not app.explore_cursor or app.explore_cursor < 1 then
-        app.explore_cursor = next_pair_index(flat, 0, 1)
+        app.explore_cursor = first_diff_line_index(flat, view.first_diff)
         if app.explore_cursor < 1 then
             app.explore_cursor = 1
         end
@@ -946,12 +1045,20 @@ local function explore_content(self)
         app.explore_cursor = #flat
     end
     local cursor = app.explore_cursor
+    local cursor_line = flat[cursor] and flat[cursor].line
+    local line_end = cursor
+    if cursor_line then
+        while line_end < #flat and flat[line_end + 1]
+            and flat[line_end + 1].line == cursor_line do
+            line_end = line_end + 1
+        end
+    end
     local scroll = app.explore_scroll or 0
     if cursor > 0 then
         if cursor <= scroll then
             scroll = math.max(0, cursor - 1)
-        elseif cursor > scroll + vis then
-            scroll = cursor - vis
+        elseif line_end > scroll + vis then
+            scroll = line_end - vis
         end
     end
     local max_scroll = math.max(0, #flat - vis)
@@ -965,6 +1072,8 @@ local function explore_content(self)
     app.explore_vis = vis
     app.explore_flat = flat
     app.explore_max_scroll = max_scroll
+    local num_fmt = "%" .. tostring(nw) .. "d"
+    local blank_num = string.rep(" ", nw)
     for i = 1, vis do
         local idx = scroll + i
         local r = flat[idx]
@@ -976,23 +1085,38 @@ local function explore_content(self)
             write_span(rr, col + 1, width - 2, r.text, ATTR_SECTION)
         else
             local attr = ATTR_PATH
-            if idx == cursor then
+            local num_attr = ATTR_DATE
+            if cursor_line and r.line == cursor_line then
                 attr = ATTR_HL
+                num_attr = ATTR_HL
                 write_span(rr, col, width, string.rep(" ", width), attr)
             end
-            local ltxt = r.left or ""
-            local rtxt = r.right or ""
-            if r.n then
-                ltxt = string.format("%4d %s", r.n, ltxt)
+            local lnum = r.n and string.format(num_fmt, r.n) or blank_num
+            local rnum = lnum
+            if single then
+                local txt = (layout == "right") and (r.right or "") or (r.left or "")
+                write_span(rr, col + 1, nw, lnum, num_attr)
+                write_span(rr, col + 1 + gutter, left_text_w, txt, attr)
+            else
+                write_span(rr, col + 1, nw, lnum, num_attr)
+                write_span(rr, col + 1 + gutter, left_text_w, r.left or "", attr)
+                write_span(rr, split + 1, nw, rnum, num_attr)
+                write_span(rr, split + 1 + gutter, right_text_w, r.right or "", attr)
             end
-            write_span(rr, col + 1, left_w, ltxt, attr)
-            write_span(rr, split + 1, right_w, rtxt, attr)
         end
     end
     paint_hline_join(self, footer_rule)
-    paint_vline_join(self, split, top_rule, footer_rule)
-    write_span(footer_row, col + 1, width - 2,
-        "[q]/Esc back   j/k move highlight   PgUp/PgDn", ATTR_PROMPT)
+    if not single then
+        paint_vline_join(self, split, top_rule, footer_rule)
+    end
+    local pair = explore_current_pair(app)
+    local can_decode = pair and not view.decoded
+        and (queue.has_embed(pair.left) or queue.has_embed(pair.right))
+    local foot = "[q]/Esc back   j/k line   PgUp/PgDn"
+    if can_decode then
+        foot = foot .. "   Enter decode"
+    end
+    write_span(footer_row, col + 1, width - 2, foot, ATTR_PROMPT)
 end
 
 local function note_content(self)
@@ -1026,6 +1150,36 @@ local function note_content(self)
         "Press Enter to write (empty note is OK)   ESC cancel")
 end
 
+local function apply_content(self)
+    local app = self.app
+    local header = session_header(self.opts, app, self.inner_width)
+    local token = app.apply_token or "?"
+    local finding = app.apply_finding
+    local lines = {
+        { "Apply official Lua to the database", ATTR_TITLE },
+        { "  type      " .. token, ATTR_VERSION },
+    }
+    if finding then
+        lines[#lines + 1] = { "  finding   " .. (finding.id or ""), ATTR_PATH }
+        lines[#lines + 1] = { "  field     " .. (finding.field or ""), ATTR_PATH }
+        lines[#lines + 1] = {
+            "  ref/type  " .. tostring(finding.ref or "?")
+                .. " / " .. tostring(finding.db_type or "?"),
+            ATTR_PATH,
+        }
+    end
+    lines[#lines + 1] = { "", ATTR_PATH }
+    lines[#lines + 1] = {
+        "This updates queries metadata only. It does not replay DDL.",
+        ATTR_ERR,
+    }
+    lines[#lines + 1] = { "", ATTR_PATH }
+    lines[#lines + 1] = { "Type " .. token .. " to confirm:", ATTR_SECTION }
+    lines[#lines + 1] = { "  " .. (app.apply_buf or ""), ATTR_PROMPT }
+    paint_framed(self, header, lines,
+        "Press Enter to apply   ESC cancel")
+end
+
 local function chrome_content(self)
     local mode = self.app.mode
     if mode == "splash" then
@@ -1042,6 +1196,8 @@ local function chrome_content(self)
         explore_content(self)
     elseif mode == "note" then
         note_content(self)
+    elseif mode == "apply" then
+        apply_content(self)
     else
         result_content(self)
     end
@@ -1146,6 +1302,95 @@ local function run_note(screen, app, opts)
     end
 end
 
+local function run_apply_confirm(screen, app)
+    app.apply_buf = app.apply_buf or ""
+    show_mode(screen, app, "apply")
+    while true do
+        local raw = t.input.readansi(0.2)
+        if raw == nil then
+            screen:check_resize(true)
+        else
+            local name = key_map[raw]
+            if name == keys.enter then
+                return app.apply_buf
+            elseif name == keys.escape then
+                return nil
+            elseif name == keys.backspace or raw == "\127" or raw == "\8" then
+                app.apply_buf = app.apply_buf:sub(1, -2)
+                show_mode(screen, app, "apply")
+            elseif raw and #raw == 1 and raw:match("[%g]") and raw ~= "\27" then
+                if #app.apply_buf < 80 then
+                    app.apply_buf = app.apply_buf .. raw
+                end
+                show_mode(screen, app, "apply")
+            end
+        end
+    end
+end
+
+local function apply_finding(screen, app, opts)
+    if not app.built or not app.built.subject then
+        app.show_mode_msg = "error: no finding selected"
+        return nil
+    end
+    local f = app.built.subject[app.review_index]
+    if not f then
+        app.show_mode_msg = "error: no finding selected"
+        return nil
+    end
+    local why = apply.refuse_reason(f, opts.allow_write)
+    if why then
+        app.show_mode_msg = "apply disabled — " .. why
+        return nil
+    end
+    local token = apply.confirm_token(f)
+    app.apply_finding = f
+    app.apply_token = token
+    app.apply_buf = ""
+    local typed = run_apply_confirm(screen, app)
+    app.apply_finding = nil
+    app.apply_token = nil
+    if typed == nil then
+        app.show_mode_msg = "apply cancelled"
+        return nil
+    end
+    if typed ~= token then
+        app.show_mode_msg = "apply aborted — type " .. token
+        return nil
+    end
+    local conn = connect.resolve(opts.wrapper)
+    local sql, sql_err = apply.build_sql(f, conn)
+    if not sql then
+        app.show_mode_msg = "error: " .. tostring(sql_err)
+        return nil
+    end
+    local log_path, log_err = apply.write_log(opts.out_dir, f, sql)
+    if not log_path then
+        app.show_mode_msg = "error: " .. tostring(log_err)
+        return nil
+    end
+    local ok, exec_err = connect.exec_sql(opts.wrapper, log_path)
+    if not ok then
+        app.show_mode_msg = "apply failed: " .. tostring(exec_err)
+        return nil
+    end
+    local saved, save_err = queue.save_decision(
+        opts.state_file, f.id, "applied", {
+            note = token,
+        })
+    if not saved then
+        app.show_mode_msg = "applied but sidecar: " .. tostring(save_err)
+        return nil
+    end
+    rebuild_queue(app, opts)
+    app.show_mode_msg = "applied " .. token
+        .. " — metadata only, does not replay DDL"
+    if app.built.totals.subject < 1 then
+        return "dashboard"
+    end
+    return nil
+end
+
 local function generate_packet(screen, app, opts)
     if not app.built or not app.built.subject then
         app.show_mode_msg = "error: no finding selected"
@@ -1237,6 +1482,7 @@ local function run_review(screen, app, opts)
                 app.explore_lines = explore
                 app.explore_scroll = 0
                 app.explore_cursor = 0
+                app.explore_stack = {}
                 app.review_stack[#app.review_stack + 1] = "review"
                 return "explore"
             elseif raw == "s" then
@@ -1265,6 +1511,12 @@ local function run_review(screen, app, opts)
                             app.show_mode_msg = "error: " .. tostring(why)
                         end
                     end
+                end
+                show_mode(screen, app, "review")
+            elseif raw == "u" then
+                local next_mode = apply_finding(screen, app, opts)
+                if next_mode then
+                    return next_mode
                 end
                 show_mode(screen, app, "review")
             elseif raw == "g" then
@@ -1314,41 +1566,71 @@ local function run_explore(screen, app, _)
             local name = key_map[raw]
             local step = app.explore_vis or 10
             if name == keys.escape or raw == "q" then
-                app.explore_lines = nil
-                app.explore_view = nil
-                app.explore_flat = nil
-                app.explore_scroll = 0
-                app.explore_cursor = 0
-                local prev = app.review_stack[#app.review_stack]
-                app.review_stack[#app.review_stack] = nil
-                if prev == "review" then
-                    return "review"
+                local stack = app.explore_stack or {}
+                if #stack > 0 then
+                    local prevv = stack[#stack]
+                    stack[#stack] = nil
+                    app.explore_view = prevv.view
+                    app.explore_cursor = prevv.cursor or 0
+                    app.explore_scroll = prevv.scroll or 0
+                    show_mode(screen, app, "explore")
+                else
+                    app.explore_lines = nil
+                    app.explore_view = nil
+                    app.explore_flat = nil
+                    app.explore_stack = {}
+                    app.explore_scroll = 0
+                    app.explore_cursor = 0
+                    local prev = app.review_stack[#app.review_stack]
+                    app.review_stack[#app.review_stack] = nil
+                    if prev == "review" then
+                        return "review"
+                    end
+                    return "dashboard"
                 end
-                return "dashboard"
+            elseif name == keys.enter then
+                local view = app.explore_view or {}
+                if not view.decoded then
+                    local pair = explore_current_pair(app)
+                    local nextv = pair and queue.build_line_decode_view(
+                        pair.left, pair.right)
+                    if nextv then
+                        local stack = app.explore_stack or {}
+                        stack[#stack + 1] = {
+                            view = app.explore_view,
+                            cursor = app.explore_cursor,
+                            scroll = app.explore_scroll,
+                        }
+                        app.explore_stack = stack
+                        app.explore_view = nextv
+                        app.explore_cursor = 0
+                        app.explore_scroll = 0
+                        show_mode(screen, app, "explore")
+                    end
+                end
             elseif name == keys.up or raw == "k" then
                 local flat = app.explore_flat or {}
-                app.explore_cursor = next_pair_index(
+                app.explore_cursor = next_line_index(
                     flat, app.explore_cursor or 1, -1)
                 show_mode(screen, app, "explore")
             elseif name == keys.down or raw == "j" then
                 local flat = app.explore_flat or {}
-                app.explore_cursor = next_pair_index(
+                app.explore_cursor = next_line_index(
                     flat, app.explore_cursor or 0, 1)
                 show_mode(screen, app, "explore")
-            elseif name == keys.page_up or raw == "b" then
+            elseif name == keys.pageup or raw == "b" then
                 local flat = app.explore_flat or {}
                 local cur = app.explore_cursor or 1
                 for _ = 1, step do
-                    cur = next_pair_index(flat, cur, -1)
+                    cur = next_line_index(flat, cur, -1)
                 end
                 app.explore_cursor = cur
                 show_mode(screen, app, "explore")
-            elseif name == keys.page_down or raw == "f"
-                or name == keys.enter then
+            elseif name == keys.pagedown or raw == "f" then
                 local flat = app.explore_flat or {}
                 local cur = app.explore_cursor or 0
                 for _ = 1, step do
-                    cur = next_pair_index(flat, cur, 1)
+                    cur = next_line_index(flat, cur, 1)
                 end
                 app.explore_cursor = cur
                 show_mode(screen, app, "explore")
@@ -1509,6 +1791,7 @@ local function main()
         explore_view = nil,
         explore_scroll = 0,
         explore_cursor = 0,
+        explore_stack = {},
         show_mode_msg = "",
         catalog_degraded = false,
     }

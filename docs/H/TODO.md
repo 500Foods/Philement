@@ -216,8 +216,8 @@ not open work unless listed below.
 | **Plan** | [`SCHEMAHELPER.md`](/docs/H/plans/SCHEMAHELPER.md) |
 | **Guide** | [`/docs/H/tools/SCHEMAHELPER.md`](/docs/H/tools/SCHEMAHELPER.md) |
 | **Effort** | L |
-| **Done** | v1 (Phases 0–4 + 6). Phase 5 apply optional. |
-| **Remaining** | Optional metadata apply (`u` / `--allow-write`) if real sessions need it |
+| **Done** | v1 (Phases 0–4 + 6). Phase 5 first slice: one-field metadata apply. |
+| **Remaining** | Orphan/anomaly DELETE, live `[r]`, dashboard count wording |
 | **Why later** | SchemaTool already audits; v1 review + packets shipped. Not a Hydrogen subsystem. |
 | **Note** | Lua TUI in `extras/schematool/`. SchemaTool stays read-only. Packets, not full `design_NNNN.lua`. |
 
