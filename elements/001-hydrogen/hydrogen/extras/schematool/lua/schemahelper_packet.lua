@@ -612,7 +612,7 @@ function M.promote(opts, finding)
     end
 
     if not packet_dir or not packet_ref then
-        return nil, "no packet for this finding; generate with [g] first"
+        return nil, "no packet for this finding; generate with [G] first"
     end
 
     if not file_exists(packet_dir) then

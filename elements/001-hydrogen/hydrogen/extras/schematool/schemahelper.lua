@@ -2,12 +2,13 @@
 -- SchemaHelper — Interactive SchemaTool front-end (Lua 5.5 + terminal.lua)
 --
 -- CHANGELOG
+-- 0.5.7 - 2026-08-24 - Mouseover highlighting on clickable options; click on release; capitalized option labels
+-- 0.5.6 - 2026-08-24 - Mouse support: SGR 1006; click wrapper rows and click [key] actions
 -- 0.5.5 - 2026-08-24 - Phase 7: catalog DDL apply (nullable / add column) with louder confirm (object.column)
--- 0.5.4 - 2026-08-24 - Phase 5 slice: confirmed orphan [u] DELETE (true orphans only)
--- 0.5.3 - 2026-08-24 - Dashboard/review [r] re-runs SchemaTool
--- 0.5.2 - 2026-08-24 - Dashboard: findings for review, not migrations
--- 0.5.1 - 2026-08-23 - [u] update; catalog review shows fold ref
--- 0.5.0 - 2026-08-23 - Phase 5: [u] one-field metadata apply
+-- 0.5.4 - 2026-08-24 - Phase 5 slice: confirmed orphan [U] DELETE (true orphans only)
+-- 0.5.3 - 2026-08-24 - Dashboard/review [R] re-runs SchemaTool
+-- 0.5.1 - 2026-08-23 - [U] labeled update; catalog review shows fold ref
+-- 0.5.0 - 2026-08-23 - Phase 5: [U] one-field metadata apply
 -- 0.4.14 - 2026-08-23 - Explore: Enter decodes brotli line; pageup/pagedown
 -- 0.4.13 - 2026-08-23 - Explore: full field, both line nos, first-diff line
 -- 0.4.12 - 2026-08-23 - Review: do not use Lua patterns to drop key lines
@@ -30,7 +31,7 @@
 
 -- luacheck: globals arg package
 
-local VERSION = "0.5.5"
+local VERSION = "0.5.7"
 local RELEASED = "2026-08-24"
 
 local LUA_RELEASES = {
@@ -82,6 +83,8 @@ local ATTR_ERR = { fg = "red", brightness = "bright" }
 local ATTR_OK = { fg = "green", brightness = "bright" }
 local ATTR_RULE = { fg = "red", brightness = "bright" }
 local ATTR_HL = { bg = "red", fg = "white", brightness = "bright" }
+local ATTR_HOT = { bg = "blue", fg = "green", brightness = "bright" }
+local ATTR_HOTLINK = { fg = "green", brightness = "bright" }
 local ATTR_COLHEAD = { fg = "yellow", brightness = "bright" }
 
 local function script_dir()
@@ -95,6 +98,147 @@ local queue = require("schemahelper_queue")
 local connect = require("schemahelper_connect")
 local packet = require("schemahelper_packet")
 local apply = require("schemahelper_apply")
+
+-- Mouse support: terminal.lua 0.1.0 ships no mouse module, so we enable SGR
+-- 1006 tracking and parse the escape report ourselves, mapping clicks to hot
+-- regions recorded during each paint. Clicks synthesize the same raw/name a
+-- keyboard press would produce, so the existing input loops need no rewrites.
+local hotspots = {}  -- rebuilt on every paint_framed for the live screen
+local ESC = "\27"
+
+local mouse_hot_x, mouse_hot_y = nil, nil
+
+local function enable_mouse()
+    t.output.write(ESC .. "[?1003h")
+    t.output.write(ESC .. "[?1006h")
+    t.output.flush()
+end
+
+local function disable_mouse()
+    t.output.write(ESC .. "[?1003l")
+    t.output.write(ESC .. "[?1006l")
+    t.output.flush()
+end
+
+local function is_mouse(raw)
+    return type(raw) == "string" and raw:sub(1, 3) == ESC .. "[<"
+end
+
+local function parse_mouse(raw)
+    local cb, x, y, tail = raw:match(ESC .. "%[<(%d+);(%d+);(%d+)([Mm])")
+    if not cb then
+        return nil
+    end
+    return {
+        btn = tonumber(cb),
+        x = tonumber(x),
+        y = tonumber(y),
+        release = (tail == "m"),
+    }
+end
+
+-- Map a recorded hot region key to a virtual key.
+local function map_hotkey(key)
+    if key:sub(1, 5) == "PICK:" then
+        return { pick = tonumber(key:sub(6)) }
+    end
+    if key == "Enter" then
+        return { name = keys.enter }
+    end
+    if key == "ESC" or key == "Esc" then
+        return { name = keys.escape }
+    end
+    return { raw = key:lower() }
+end
+
+local function find_hotspot(x, y)
+    for _, h in ipairs(hotspots) do
+        if y == h.row and x >= h.c0 and x <= h.c1 then
+            return h
+        end
+    end
+    return nil
+end
+
+local function mouse_vkey(raw)
+    local m = parse_mouse(raw)
+    if not m or m.btn ~= 0 then
+        return nil
+    end
+    local h = find_hotspot(m.x, m.y)
+    if not h then
+        return nil
+    end
+    return map_hotkey(h.key)
+end
+
+local function highlight_hotspot(screen, x, y)
+    if not screen or not x or not y then
+        if mouse_hot_x or mouse_hot_y then
+            mouse_hot_x, mouse_hot_y = nil, nil
+            screen:calculate_layout()
+            screen:render()
+        end
+        return
+    end
+    if x ~= mouse_hot_x or y ~= mouse_hot_y then
+        mouse_hot_x, mouse_hot_y = x, y
+        if screen then
+            screen:calculate_layout()
+            screen:render()
+        end
+    end
+end
+
+-- Unified key reader: (raw, name, extra). Mouse hits synthesize the same
+-- raw/name a keyboard press would yield; wrapper rows return extra.pick.
+-- Motion events (no button held) update the mouseover highlight and return
+-- nil (timeout-like) so the input loop continues without acting.
+-- Click events (button press followed by release) are processed on release.
+local function read_key(screen, _app)
+    local raw = t.input.readansi(0.2)
+    if raw == nil then
+        return nil, nil, nil
+    end
+    if is_mouse(raw) then
+        local m = parse_mouse(raw)
+        if not m or m.btn ~= 0 then
+            return "", "_ignore", nil
+        end
+        if not m.release then
+            -- Press or motion event: update highlight, do not act
+            highlight_hotspot(screen, m.x, m.y)
+            return nil, nil, nil
+        else
+            -- Release event: this is a click
+            highlight_hotspot(screen, nil, nil)
+            local v = mouse_vkey(raw)
+            if not v then
+                return "", "_ignore", nil
+            end
+            if v.pick then
+                return nil, nil, { pick = v.pick }
+            end
+            return v.raw or "", v.name or nil, nil
+        end
+    end
+    return raw, key_map[raw], nil
+end
+
+local function add_hotspots_for_line(text, row, col)
+    if type(text) ~= "string" or #text == 0 then
+        return
+    end
+    local p = 1
+    while true do
+        local s, e, key = text:find("%[(%a+)%]", p)
+        if not s then
+            break
+        end
+        hotspots[#hotspots + 1] = { row = row, c0 = col + s, c1 = col + e, key = key, subtext = text:sub(s, e) }
+        p = e + 1
+    end
+end
 
 local function parse_args()
     local opts = {
@@ -504,18 +648,42 @@ local function write_centered(row, col, width, text, attr, trunc)
     write_span(row, col + math.max(0, math.floor((width - w) / 2)), w, shown, attr)
 end
 
+local function paint_hotspot_highlight_for_row(row, col, width, text, attr)
+    if not mouse_hot_y or mouse_hot_y ~= row then
+        for _, h in ipairs(hotspots) do
+            if h.row == row then
+                if h.is_hotrow then
+                    write_span(row, col + 1, width - 2, h.subtext, ATTR_HOTLINK)
+                elseif h.subtext then
+                    t.cursor.position.set(h.row, h.c0)
+                    t.output.write(t.text.push_seq(ATTR_HOTLINK), h.subtext, t.text.pop_seq())
+                end
+            end
+        end
+        return
+    end
+    for _, h in ipairs(hotspots) do
+        if h.row == row and mouse_hot_x >= h.c0 and mouse_hot_x <= h.c1 then
+            if h.is_hotrow then
+                write_span(row, col + 1, width - 2, h.subtext, ATTR_HOT)
+            elseif h.subtext then
+                t.cursor.position.set(h.row, h.c0)
+                t.output.write(t.text.push_seq(ATTR_HOT), h.subtext, t.text.pop_seq())
+            end
+            return
+        end
+    end
+end
+
 local function wait_enter_or_esc(screen)
     while true do
-        local raw = t.input.readansi(0.2)
+        local raw, name = read_key(screen, nil)
         if raw == nil then
             if screen then
                 screen:check_resize(true)
             end
-        else
-            local name = key_map[raw]
-            if name == keys.enter or name == keys.escape then
-                return name
-            end
+        elseif name == keys.enter or name == keys.escape then
+            return name
         end
     end
 end
@@ -528,6 +696,7 @@ local function splash_content(self)
     if height < 1 or width < 1 then
         return
     end
+    hotspots = {}
 
     local opts = self.opts
     local tool_ver, tool_date = read_tool_version(opts.schematool)
@@ -582,8 +751,8 @@ local function splash_content(self)
         { "text", "Database Comparator", ATTR_SECTION },
         { "path", wrapper },
         { "blank" },
-        { "text", "Press Enter to continue", ATTR_PROMPT },
-        { "text", "Press ESC to exit", ATTR_PROMPT },
+        { "text", "[Enter] continue", ATTR_PROMPT },
+        { "text", "[ESC] exit", ATTR_PROMPT },
     }
 
     local start = row + math.max(0, math.floor((height - #lines) / 2))
@@ -595,7 +764,12 @@ local function splash_content(self)
         end
         local spec = lines[i]
         if spec[1] == "text" then
+            local shown = display_text(spec[2])
+            local w = swidth(shown)
+            local startc = col + math.max(0, math.floor((width - w) / 2))
             write_centered(line_row, col, width, spec[2], spec[3], "right")
+            add_hotspots_for_line(spec[2], line_row, startc - 1)
+            paint_hotspot_highlight_for_row(line_row, col, width, spec[2], spec[3])
         elseif spec[1] == "path" then
             write_centered(line_row, col, width, spec[2], ATTR_PATH, "left")
         elseif spec[1] == "version" then
@@ -639,7 +813,7 @@ local function paint_vline_join(self, split_col, top, bot)
     t.output.write(t.text.push_seq(ATTR_RULE), "┴", t.text.pop_seq())
 end
 
-local function paint_framed(self, header, body, footer)
+local function paint_framed(self, header, body, footer, hotrows)
     local row = self.inner_row
     local col = self.inner_col
     local height = self.inner_height
@@ -647,6 +821,7 @@ local function paint_framed(self, header, body, footer)
     if height < 3 or width < 4 then
         return
     end
+    hotspots = {}
     local last = row + height - 1
     local footer_row = last
     local footer_rule = last - 1
@@ -655,7 +830,9 @@ local function paint_framed(self, header, body, footer)
         if y >= footer_rule then
             break
         end
+        add_hotspots_for_line(header[i][1], y, col)
         write_span(y, col + 1, width - 2, header[i][1], header[i][2] or ATTR_PATH)
+        paint_hotspot_highlight_for_row(y, col, width, header[i][1], header[i][2] or ATTR_PATH)
         y = y + 1
     end
     if y < footer_rule then
@@ -667,10 +844,27 @@ local function paint_framed(self, header, body, footer)
         vis = 0
     end
     for i = 1, math.min(#body, vis) do
+        add_hotspots_for_line(body[i][1], y + i - 1, col)
         write_span(y + i - 1, col + 1, width - 2, body[i][1], body[i][2] or ATTR_PATH)
+        paint_hotspot_highlight_for_row(y + i - 1, col, width, body[i][1], body[i][2] or ATTR_PATH)
+    end
+    if hotrows then
+        for bi, key in pairs(hotrows) do
+            hotspots[#hotspots + 1] = {
+                row = y + bi - 1,
+                c0 = col + 1,
+                c1 = col + width - 1,
+                key = key,
+                subtext = body[bi] and body[bi][1] or string.rep(" ", width - 2),
+                attr = body[bi] and (body[bi][2] or ATTR_PATH),
+                is_hotrow = true,
+            }
+        end
     end
     paint_hline_join(self, footer_rule)
+    add_hotspots_for_line(footer or "", footer_row, col)
     write_span(footer_row, col + 1, width - 2, footer or "", ATTR_PROMPT)
+    paint_hotspot_highlight_for_row(footer_row, col, width, footer or "", ATTR_PROMPT)
 end
 
 local function picker_content(self)
@@ -686,7 +880,11 @@ local function picker_content(self)
         local attr = i == selected and ATTR_TITLE or ATTR_PATH
         lines[#lines + 1] = { mark .. wrapper_label(item), attr }
     end
-    paint_framed(self, {}, lines, "Press Enter to select   Press ESC to exit")
+    local hotrows = {}
+    for i = 1, #list do
+        hotrows[i + 2] = "PICK:" .. i
+    end
+    paint_framed(self, {}, lines, "[Enter] select   [ESC] exit", hotrows)
 end
 
 local function running_content(self)
@@ -730,10 +928,10 @@ local function result_content(self)
     local header = session_header(self.opts, self.app, self.inner_width)
     local raw = self.app.result_lines or {}
     local body = {}
-    local footer = "[w] pick another wrapper   [q]uit"
+    local footer = "[W] pick another wrapper   [Q]uit"
     for i = 1, #raw do
         local text = raw[i][1] or ""
-        if text:match("^%[w%]") or text:match("^%[Enter%]") then
+        if text:match("^%[W%]") or text:match("^%[Enter%]") then
             if text:match("%[Enter%]") then
                 footer = footer .. "   [Enter] review artifacts"
             end
@@ -800,7 +998,7 @@ local function dashboard_content(self)
         body[#body + 1] = { msg, ATTR_OK }
     end
     paint_framed(self, header, body,
-        "[Enter] begin review   [r]e-audit   [q]uit")
+        "[Enter] begin review   [R]e-audit   [Q]uit")
 end
 
 local function is_review_key_line(line)
@@ -811,9 +1009,10 @@ local function is_review_key_line(line)
         return false
     end
     local key = line:sub(4, 5)
-    return key == "e]" or key == "s]" or key == "a]" or key == "u]"
-        or key == "g]" or key == "n]" or key == "p]"
-        or key == "m]"
+    local kl = key:lower()
+    return kl == "e]" or kl == "s]" or kl == "a]" or kl == "u]"
+        or kl == "g]" or kl == "n]" or kl == "p]"
+        or kl == "m]"
 end
 
 local function review_content(self)
@@ -822,14 +1021,14 @@ local function review_content(self)
     if not app.built or not app.built.subject then
         paint_framed(self, header,
             { { "No findings to review", ATTR_TITLE } },
-            "[q]uit to dashboard")
+            "[Q]uit to dashboard")
         return
     end
     local subj = app.built.subject
     if #subj == 0 then
         paint_framed(self, header,
             { { "All findings reviewed — none for review", ATTR_TITLE } },
-            "[q]uit to dashboard")
+            "[Q]uit to dashboard")
         return
     end
     local idx = app.review_index
@@ -856,19 +1055,15 @@ local function review_content(self)
     local u_hint
     if u_reason then
         u_hint = ""
-    elseif finding.kind == "orphan" then
-        u_hint = " [u]elete"
-    elseif finding.class and finding.class:find("^catalog") then
-        u_hint = " [u]pply DDL"
     else
-         u_hint = " [u]pdate"
+        u_hint = " [U]pdate Database"
     end
     local m_label = ""
     if self.opts.allow_write then
-        m_label = " [m] promote"
+        m_label = " [M] Promote"
     end
     paint_framed(self, header, body,
-        string.format("[%d of %d]  [e]xplore [s]kip [a]ccept%s [g]enerate%s  [n]/[p]  [q]uit",
+        string.format("[%d of %d]  [E]xplore [S]kip [A]ccept%s [G]enerate Migration%s  [N]ext/[P]rev  [Q]uit",
             idx, #subj, u_hint, m_label))
 end
 
@@ -1129,7 +1324,7 @@ local function explore_content(self)
     local pair = explore_current_pair(app)
     local can_decode = pair and not view.decoded
         and (queue.has_embed(pair.left) or queue.has_embed(pair.right))
-    local foot = "[q]/Esc back   j/k line   PgUp/PgDn"
+    local foot = "[Q]/Esc back   j/k line   PgUp/PgDn"
     if can_decode then
         foot = foot .. "   Enter decode"
     end
@@ -1387,11 +1582,10 @@ local function run_dashboard(screen, app, opts, state)
     })
     show_mode(screen, app, "dashboard")
     while true do
-        local raw = t.input.readansi(0.2)
+        local raw, name = read_key(screen, app)
         if raw == nil then
             screen:check_resize(true)
         else
-            local name = key_map[raw]
             if name == keys.enter then
                 if app.built.totals.subject == 0 then
                     app.show_mode_msg = "Nothing to review"
@@ -1415,11 +1609,10 @@ local function run_note(screen, app, opts)
     app.note_buf = app.note_buf or ""
     show_mode(screen, app, "note")
     while true do
-        local raw = t.input.readansi(0.2)
+        local raw, name = read_key(screen, app)
         if raw == nil then
             screen:check_resize(true)
         else
-            local name = key_map[raw]
             if name == keys.enter then
                 return app.note_buf
             elseif name == keys.escape then
@@ -1441,11 +1634,10 @@ local function run_apply_confirm(screen, app)
     app.apply_buf = app.apply_buf or ""
     show_mode(screen, app, "apply")
     while true do
-        local raw = t.input.readansi(0.2)
+        local raw, name = read_key(screen, app)
         if raw == nil then
             screen:check_resize(true)
         else
-            local name = key_map[raw]
             if name == keys.enter then
                 return app.apply_buf
             elseif name == keys.escape then
@@ -1635,11 +1827,10 @@ local function run_review(screen, app, opts)
     app.review_index = app.review_index < 1 and 1 or app.review_index
     show_mode(screen, app, "review")
     while true do
-        local raw = t.input.readansi(0.2)
+        local raw, name = read_key(screen, app)
         if raw == nil then
             screen:check_resize(true)
         else
-            local name = key_map[raw]
             if raw == "e" then
                 local explore = { "No finding selected" }
                 if app.built and app.built.subject and
@@ -1728,11 +1919,10 @@ end
 local function run_explore(screen, app, _)
     show_mode(screen, app, "explore")
     while true do
-        local raw = t.input.readansi(0.2)
+        local raw, name = read_key(screen, app)
         if raw == nil then
             screen:check_resize(true)
         else
-            local name = key_map[raw]
             local step = app.explore_vis or 10
             if name == keys.escape or raw == "q" then
                 local stack = app.explore_stack or {}
@@ -1817,11 +2007,17 @@ local function pick_wrapper(screen, app, opts)
     app.picker.selected = 1
     show_mode(screen, app, "picker")
     while true do
-        local raw = t.input.readansi(0.2)
-        if raw == nil then
+        local raw, name, mextra = read_key(screen, app)
+        if raw == nil and not mextra then
             screen:check_resize(true)
+        elseif mextra and mextra.pick then
+            local idx = mextra.pick
+            if idx >= 1 and idx <= #list then
+                app.picker.selected = idx
+                opts.wrapper = list[idx].path
+                return true
+            end
         else
-            local name = key_map[raw]
             if name == keys.up then
                 app.picker.selected = math.max(1, app.picker.selected - 1)
                 show_mode(screen, app, "picker")
@@ -1917,7 +2113,7 @@ local function build_result_lines(opts, ran, exit_code, built, err)
         end
     end
     add("", ATTR_PATH)
-    add("[w] pick another wrapper   [q]uit", ATTR_PROMPT)
+    add("[W] pick another wrapper   [Q]uit", ATTR_PROMPT)
     if built and queue.artifacts_present(opts.out_dir, opts.track) then
         add("[Enter] review existing artifacts", ATTR_PROMPT)
     end
@@ -1926,11 +2122,10 @@ end
 
 local function wait_result_action(screen, can_reuse)
     while true do
-        local raw = t.input.readansi(0.2)
+        local raw, name = read_key(screen, nil)
         if raw == nil then
             screen:check_resize(true)
         else
-            local name = key_map[raw]
             if raw == "w" then
                 return "picker"
             elseif raw == "q" or name == keys.escape then
@@ -1966,7 +2161,9 @@ local function main()
     }
     local screen = build_screen(opts, app)
     show_mode(screen, app, "splash")
+    enable_mouse()
     if wait_enter_or_esc(screen) == keys.escape then
+        disable_mouse()
         return
     end
 
@@ -1979,6 +2176,7 @@ local function main()
                 if pick_err ~= "cancelled" then
                     io.stderr:write("Error: " .. tostring(pick_err) .. "\n")
                 end
+                disable_mouse()
                 return
             end
         end
@@ -2026,6 +2224,7 @@ local function main()
         show_mode(screen, app, "result")
         local action = wait_result_action(screen, have_art)
         if action == "quit" then
+            disable_mouse()
             return
         elseif action == "reuse" then
             opts.reuse = true
@@ -2059,6 +2258,7 @@ local function main()
         end
     end
     queue.save_cursor(opts.state_file, "")
+    disable_mouse()
 end
 
 -- Handle --version before terminal initialization (no TTY needed)

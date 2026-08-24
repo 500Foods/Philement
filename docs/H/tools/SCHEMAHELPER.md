@@ -146,6 +146,20 @@ SchemaHelper warns once. Prefer `--out-dir /tmp/…` for real sessions.
 | Enter | Packet note | Write packet (empty note is OK) |
 | Esc | Packet note | Cancel packet |
 
+## Mouse
+
+Terminal.lua 0.1.0 has no mouse module, so SchemaHelper enables SGR 1006
+tracking with `ESC[?1003h` (any event) and parses the report itself.
+Mouse behavior:
+
+- **Hover** — moving the cursor over a `[key]` action or picker row highlights
+  it with a blue background in real time.
+- **Click** — left-click on a `[key]` action (e.g. `[E]xplore`, `[S]kip`,
+  `[A]ccept`, `[U]pdate Database`, `[G]enerate Migration`, `[M] Promote`,
+  `[Enter]`, `[Q]uit`, `[R]e-audit`, `[W] pick another wrapper`) triggers it
+  on **release**. Only the bracketed tokens are clickable; the rest of the
+  line is not. Right-click and wheel are ignored.
+
 ## Sidecar
 
 Selections live in
