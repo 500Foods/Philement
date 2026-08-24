@@ -2,6 +2,7 @@
 -- Resolve wrapper credentials and ping the live DB. Never return passwords.
 --
 -- CHANGELOG
+-- 0.5.0 - 2026-08-23 - Phase 5: non-RO exec_sql for one-field apply
 -- 0.4.8 - 2026-08-23 - Source wrapper exec line for computed host/password-env
 -- 0.4.5 - 2026-08-23 - Parse wrapper --engine/--host/--database flags for ping
 -- 0.4.1 - 2026-08-23 - Only resolve sqlite database as a file path
@@ -521,6 +522,134 @@ function M.probe(wrapper)
         end
     end
     return conn
+end
+
+local function sql_runner_fragment()
+    return [[
+run_sql() {
+    engine="$1"; host="$2"; port="$3"; user="$4"; database="$5"
+    schema="$6"; password_env="$7"; sql_file="$8"
+    case "$engine" in
+        postgresql|cockroachdb|yugabytedb)
+            if [ -n "$password_env" ]; then
+                eval "export PGPASSWORD=\"\${$password_env}\""
+            fi
+            {
+                printf '%s\n' 'BEGIN;'
+                cat "$sql_file"
+                printf '%s\n' 'COMMIT;'
+            } | psql -h "$host" -p "$port" -U "$user" -d "$database" \
+                -v ON_ERROR_STOP=1 -f -
+            ;;
+        mysql|mariadb)
+            if [ -n "$password_env" ]; then
+                eval "export MYSQL_PWD=\"\${$password_env}\""
+            fi
+            db="$schema"
+            if [ -z "$db" ]; then
+                db="$database"
+            fi
+            {
+                printf '%s\n' 'START TRANSACTION;'
+                cat "$sql_file"
+                printf '%s\n' 'COMMIT;'
+            } | mysql -h "$host" -P "$port" -u "$user" "$db"
+            ;;
+        sqlite)
+            {
+                printf '%s\n' 'BEGIN;'
+                cat "$sql_file"
+                printf '%s\n' 'COMMIT;'
+            } | sqlite3 -bail "$database"
+            ;;
+        db2)
+            . /home/db2inst1/sqllib/db2profile >/dev/null 2>&1 || true
+            command -v db2 >/dev/null || { echo db2 client not found; exit 1; }
+            eval "pw=\"\${$password_env}\""
+            {
+                printf '%s\n' "CONNECT TO $database USER $user USING '$pw';"
+                cat "$sql_file"
+                printf '%s\n' 'COMMIT;'
+                printf '%s\n' 'CONNECT RESET;'
+            } | db2 +c -t +o
+            ;;
+        *)
+            echo "unsupported engine"
+            exit 1
+            ;;
+    esac
+}
+]]
+end
+
+function M.exec_sql(wrapper, sql_path)
+    if not sql_path or sql_path == "" then
+        return false, "no sql file"
+    end
+    local check = io.open(sql_path, "r")
+    if not check then
+        return false, "sql file not found"
+    end
+    check:close()
+    local conn = M.resolve(wrapper)
+    if not conn.engine or conn.engine == "" then
+        return false, "unresolved engine"
+    end
+    local need_wrap = conn.password_env ~= "" and getenv(conn.password_env) == ""
+    local runner = sql_runner_fragment()
+    local script
+    if need_wrap then
+        script = runner .. string.format([[
+exec() {
+    host=""; port=""; user=""; database=""; schema=""; engine=""; password_env=""
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            --host) host="$2"; shift 2 ;;
+            --port) port="$2"; shift 2 ;;
+            --user) user="$2"; shift 2 ;;
+            --database) database="$2"; shift 2 ;;
+            --schema) schema="$2"; shift 2 ;;
+            --engine) engine="$2"; shift 2 ;;
+            --password-env) password_env="$2"; shift 2 ;;
+            *) shift ;;
+        esac
+    done
+    if [ -z "$engine" ]; then
+        engine=%s
+    fi
+    run_sql "$engine" "$host" "$port" "$user" "$database" "$schema" \
+        "$password_env" %s
+    exit $?
+}
+# shellcheck disable=SC1090
+. %s
+]], sh_quote(conn.engine or ""), sh_quote(sql_path), sh_quote(wrapper))
+    else
+        script = runner .. string.format(
+            "run_sql %s %s %s %s %s %s %s %s\n",
+            sh_quote(conn.engine),
+            sh_quote(conn.host or ""),
+            sh_quote(conn.port or ""),
+            sh_quote(conn.user or ""),
+            sh_quote(conn.database or ""),
+            sh_quote(conn.schema or ""),
+            sh_quote(conn.password_env or ""),
+            sh_quote(sql_path)
+        )
+    end
+    local ok, out = run_shell(script)
+    local pass = ""
+    if conn.password_env ~= "" then
+        pass = getenv(conn.password_env)
+    end
+    out = scrub(tostring(out or ""):gsub("\n", " "):gsub("%s+", " "), pass)
+    if ok then
+        return true, out
+    end
+    if out == "" then
+        out = "apply failed"
+    end
+    return false, out
 end
 
 return M
