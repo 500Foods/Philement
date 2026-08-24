@@ -12,6 +12,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [LUA_FEATURES.md](/docs/H/LUA_FEATURES.md): Pure Lua language features and standard library recipes
 - [MAIL_GUIDE.md](/docs/H/MAIL_GUIDE.md): Mail Relay, templates, rewrites, and Lua mail handling
 - [tools/SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md): SchemaTool migration drift auditor (operator guide)
+- [tools/SCHEMAHELPER.md](/docs/H/tools/SCHEMAHELPER.md): SchemaHelper interactive SchemaTool front-end (operator guide)
 - [RELEASES.md](/RELEASES.md): Version history index and instructions
 - [EXAMPLES.md](/docs/H/EXAMPLES.md): Practical end-to-end examples for common Hydrogen tasks
 - [DEPLOYMENT.md](/docs/H/DEPLOYMENT.md): Standalone VPS and Kubernetes/DOKS deployment strategies, health checks, with and without databases
@@ -131,7 +132,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [OIDC-PLAN.md](/docs/H/plans/OIDC-PLAN.md): Historical OIDC RP implementation phase log
 - [OIDC_E2E_LOG.md](/docs/H/plans/OIDC_E2E_LOG.md): OIDC real-Keycloak manual E2E checklist
 - [OIDC_IDP.md](/docs/H/plans/OIDC_IDP.md): Hydrogen as OIDC Identity Provider (Phases 0–15 complete; Phase 16 docs)
-- [SCHEMAHELPER.md](/docs/H/plans/SCHEMAHELPER.md): SchemaHelper interactive SchemaTool front-end (plan only)
+- [SCHEMAHELPER.md](/docs/H/plans/SCHEMAHELPER.md): SchemaHelper interactive SchemaTool front-end (implementation plan)
 - [UNITY_ASAN_PLAN.md](/docs/H/plans/UNITY_ASAN_PLAN.md): Separate ASAN Unity test variant plan
 
 ### Folder: /docs/H/plans/complete
@@ -241,6 +242,7 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 ## Folder: /docs/H/tools
 
 - [SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md): SchemaTool operator guide
+- [SCHEMAHELPER.md](/docs/H/tools/SCHEMAHELPER.md): SchemaHelper operator guide
 
 ## Folder: /installer
 

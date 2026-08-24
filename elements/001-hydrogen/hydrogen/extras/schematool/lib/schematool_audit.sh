@@ -24,6 +24,8 @@
 #   CAT_ROWS, CAT_EXIT_LABEL, RENDER_MODE, SUBTITLE, FOOTER
 #
 # CHANGELOG
+# 1.2.0 - 2026-08-23 - Catalog track degrades after a successful metadata audit
+# 1.1.0 - 2026-08-23 - Stderr phase: markers for SchemaHelper progress
 # 1.0.0 - 2026-08-02 - Split from schematool.sh
 
 # shellcheck disable=SC2154,SC2034 # globals shared with schematool.sh and render lib
@@ -112,6 +114,7 @@ schematool_run_emit_expected_only() {
 # --- Phase 4: full metadata audit (LOAD/APPLY/text-fidelity) ---
 schematool_run_metadata_audit() {
     local disk_all_json="${WORK_DIR}/disk_all.json"
+    echo "phase: discover" >&2
     run_discover "${DISK_JSON}"
     if [[ -n "${FROM_REF}" || -n "${TO_REF}" ]]; then
         # Full discovery without range (orphan = in DB, not on any disk file)
@@ -124,12 +127,14 @@ schematool_run_metadata_audit() {
     else
         cp "${DISK_JSON}" "${disk_all_json}"
     fi
+    echo "phase: expect" >&2
     run_expect "${EXPECTED_JSON}"
     # Dump all migration metadata (no --from/--to) so orphans outside range are visible
     local saved_from="${FROM_REF}"
     local saved_to="${TO_REF}"
     FROM_REF=""
     TO_REF=""
+    echo "phase: dump" >&2
     run_dump_db "${DB_JSON}"
     FROM_REF="${saved_from}"
     TO_REF="${saved_to}"
@@ -153,6 +158,7 @@ schematool_run_metadata_audit() {
         COMPARE_ARGS+=(--include-diagram)
     fi
 
+    echo "phase: compare" >&2
     set +e
     "${LUA}" "${LUA_DIR}/schematool_compare.lua" "${COMPARE_ARGS[@]}"
     local cmp_rc=$?
@@ -234,6 +240,7 @@ schematool_run_metadata_audit() {
         if [[ "${INCLUDE_OK}" -eq 1 ]]; then
             REM_ARGS+=(--include-ok-comments)
         fi
+        echo "phase: remediate" >&2
         set +e
         "${LUA}" "${LUA_DIR}/schematool_remediate.lua" "${REM_ARGS[@]}"
         local rem_rc=$?
@@ -297,7 +304,25 @@ schematool_run_dry_disk() {
 
 # --- Phase 7: live catalog audit (object shape vs folded DDL) ---
 schematool_run_catalog_audit() {
+    echo "phase: catalog" >&2
+    set +e
     run_catalog_audit
+    local cat_rc=$?
+    set -e
+    if [[ "${cat_rc}" -ne 0 ]]; then
+        echo "Warning: catalog track skipped; metadata findings kept" >&2
+        if [[ "${FULL_AUDIT}" -eq 0 ]]; then
+            exit 1
+        fi
+        if [[ -n "${OUT_DIR}" ]]; then
+            rm -f "${OUT_DIR}/catalog_findings.json" \
+                "${OUT_DIR}/catalog_checklist.json" \
+                "${OUT_DIR}/catalog_expected.json" \
+                "${OUT_DIR}/catalog_live.json" \
+                "${OUT_DIR}/catalog_finding_detail.txt"
+        fi
+        return 0
+    fi
     CATALOG_EXIT="$("${JQ}" -r '.exit_code // 0' "${CAT_FINDINGS_JSON}")"
     CAT_OK="$("${JQ}" -r '.counts.ok // 0' "${CAT_FINDINGS_JSON}")"
     CAT_MT="$("${JQ}" -r '.counts.missing_table // 0' "${CAT_FINDINGS_JSON}")"

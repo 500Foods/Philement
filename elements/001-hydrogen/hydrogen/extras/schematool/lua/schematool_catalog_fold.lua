@@ -6,6 +6,7 @@
 --        [--checklist-out PATH]  (stdout JSON if no out)
 --
 -- CHANGELOG
+-- 1.0.1 - 2026-08-23 - Lua 5.5: do not assign to generic-for loop variable
 -- 1.0.0 - 2026-08-02 - Phase 7b hybrid C fold from applied codes
 
 -- luacheck: globals arg
@@ -498,10 +499,10 @@ local only = {}
 local only_set = false
 if only_tables_csv and only_tables_csv ~= "" then
     only_set = true
-    for name in only_tables_csv:gmatch("[^,]+") do
-        name = name:gsub("^%s+", ""):gsub("%s+$", ""):lower()
-        if name ~= "" then
-            only[name] = true
+    for raw in only_tables_csv:gmatch("[^,]+") do
+        local trimmed = raw:gsub("^%s+", ""):gsub("%s+$", ""):lower()
+        if trimmed ~= "" then
+            only[trimmed] = true
         end
     end
 end

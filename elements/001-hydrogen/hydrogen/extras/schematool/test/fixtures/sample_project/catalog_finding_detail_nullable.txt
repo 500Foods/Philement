@@ -1,0 +1,11 @@
+Finding: cat:accounts:id:nullable
+  object:             accounts
+  column:             id
+  check:              nullable
+  class:              catalog nullability
+  summary:            nullable mismatch: expected nullable=true live nullable=false
+  expected:           true
+  live:               false
+
+  Detail:
+  nullable mismatch: expected nullable=true live nullable=false

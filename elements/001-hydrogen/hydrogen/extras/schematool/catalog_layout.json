@@ -1,0 +1,17 @@
+{
+    "title": "{BOLD}{WHITE}SchemaTool Catalog{RESET} — acuranzo / sqlite / . @ …/hydrodemo.sqlite",
+    "subtitle": "{CYAN}Live object shape{WHITE} · hybrid-C · filter=all · 554 checks ({BOLD}554{RESET}{CYAN} rows){RESET}",
+    "footer": "{CYAN}2026-Aug-23 (Sun) 19:01:53 PDT{RESET} {RED}———{RESET} ok=553 missT=0 missC=0 null=1 · exit 2 shape drift",
+    "footer_position": "right",
+    "theme": "Red",
+    "columns": [
+        {"header": "Group", "key": "group", "datatype": "int", "visible": false, "break": true},
+        {"header": "Object", "key": "object", "datatype": "text", "justification": "left", "summary": "count"},
+        {"header": "Column", "key": "column", "datatype": "text", "justification": "left"},
+        {"header": "Check", "key": "check", "datatype": "text", "justification": "center"},
+        {"header": "OK", "key": "status", "datatype": "text", "justification": "center"},
+        {"header": "Expected", "key": "expected", "datatype": "text", "justification": "center"},
+        {"header": "Live", "key": "live", "datatype": "text", "justification": "center"},
+        {"header": "Notes", "key": "notes", "datatype": "text", "justification": "left"}
+    ]
+}

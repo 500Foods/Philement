@@ -214,10 +214,11 @@ not open work unless listed below.
 | | |
 | --- | --- |
 | **Plan** | [`SCHEMAHELPER.md`](/docs/H/plans/SCHEMAHELPER.md) |
+| **Guide** | [`/docs/H/tools/SCHEMAHELPER.md`](/docs/H/tools/SCHEMAHELPER.md) |
 | **Effort** | L |
-| **Done** | 0% — plan only |
-| **Remaining** | Phase 0 design lock, then launcher/TUI, packets, optional metadata apply |
-| **Why later** | SchemaTool already audits; this is the decision-loop UX. Not a Hydrogen subsystem. |
+| **Done** | v1 (Phases 0–4 + 6). Phase 5 apply optional. |
+| **Remaining** | Optional metadata apply (`u` / `--allow-write`) if real sessions need it |
+| **Why later** | SchemaTool already audits; v1 review + packets shipped. Not a Hydrogen subsystem. |
 | **Note** | Lua TUI in `extras/schematool/`. SchemaTool stays read-only. Packets, not full `design_NNNN.lua`. |
 
 ### 15. Terminal WebSocket authentication
@@ -380,7 +381,7 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 14a | REST auth_chat SSE streaming | L | ~20% | P2 |
 | 14b | WS chunked media upload | M | ~70% | P2 |
 | 24 | MCP server subsystem | XL | 0% | P2 |
-| 25 | SchemaHelper TUI | L | 0% | P2 |
+| 25 | SchemaHelper TUI | L | v1 | P2 |
 | 15 | Terminal WS auth | M | ~10% | P2 |
 | 17 | OIDC RP client-role parse | S–M | fallback | P2 |
 | 18 | OIDC IdP post-MVP | M–L | ~90% | P3 |

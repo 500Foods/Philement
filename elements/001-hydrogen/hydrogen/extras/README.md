@@ -231,8 +231,9 @@ fidelity). Read-only Bash + Lua tool; does not replace Hydrogen LOAD/APPLY.
 
 - [extras/schematool/README.md](/elements/001-hydrogen/hydrogen/extras/schematool/README.md) — quick start
 - [/docs/H/tools/SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md) — full operator guide
+- [/docs/H/tools/SCHEMAHELPER.md](/docs/H/tools/SCHEMAHELPER.md) — SchemaHelper operator guide
 - [/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md) — implementation plan (complete)
-- [/docs/H/plans/SCHEMAHELPER.md](/docs/H/plans/SCHEMAHELPER.md) — SchemaHelper interactive front-end (splash in 0.1.0)
+- [/docs/H/plans/SCHEMAHELPER.md](/docs/H/plans/SCHEMAHELPER.md) — SchemaHelper implementation plan
 
 **Usage:**
 

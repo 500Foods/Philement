@@ -4,6 +4,18 @@
 # Lua 5.5 TUI over extras/schematool. Default is review-only.
 #
 # CHANGELOG
+# 0.4.11 - 2026-08-23 - Explore panes, red rules, highlight, brotli decode
+# 0.4.10 - 2026-08-23 - Explore: Migration vs Database; ignore 1000→1003
+# 0.4.9 - 2026-08-23 - Explore: chrome scroll + field diff, no screen.body
+# 0.4.8 - 2026-08-23 - Source wrapper to resolve computed connect flags
+# 0.4.7 - 2026-08-23 - Result screen does not crash on tabbed log lines
+# 0.4.6 - 2026-08-23 - Dashboard q exits without keys.r crash
+# 0.4.5 - 2026-08-23 - Connect ping reads wrapper --engine and connect flags
+# 0.4.4 - 2026-08-23 - Catalog fold failure keeps metadata dashboard
+# 0.4.3 - 2026-08-23 - Progress bar while SchemaTool runs
+# 0.4.2 - 2026-08-23 - Keep /usr/local Lua 5.5 cpath so SchemaTool finds brotli
+# 0.4.1 - 2026-08-23 - Failed connect returns to wrapper picker
+# 0.4.0 - 2026-08-23 - Phase 4: --ref for forced packet numbers
 # 0.2.2 - 2026-08-23 - Session header + live connect probe
 # 0.2.1 - 2026-08-23 - Persistent chrome; wrapper picker inset at top
 # 0.2.0 - 2026-08-23 - Phase 1: flags, wrapper, --track, --reuse, invoke
@@ -17,8 +29,8 @@ SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
 LUA_APP="${SCRIPT_DIR}/schemahelper.lua"
 SCHEMATOOL_SH="${SCRIPT_DIR}/schematool.sh"
 
-VERSION="0.2.2"
-SCHEMATOOL_VERSION="1.8.0"
+VERSION="0.4.11"
+SCHEMATOOL_VERSION="1.8.2"
 
 print_help() {
     cat <<EOF
@@ -43,6 +55,7 @@ Options:
   --out-dir DIR          SchemaTool workspace (default: directory of wrapper)
   --state-file PATH      Sidecar JSON (default: <out-dir>/schemahelper_<design>_<engine>.json)
   --packet-dir DIR       Packet workspace (default: same as --out-dir)
+  --ref N                Force packet ref instead of max(disk, reserved)+1
   --track metadata|catalog|both
                          Which SchemaTool track to queue (default: both)
   --reuse                Load existing --out-dir artifacts; skip SchemaTool
@@ -125,6 +138,7 @@ OUT_DIR_ARG=""
 STATE_FILE_ARG=""
 PACKET_DIR_ARG=""
 TRACK_ARG="both"
+REF_ARG=""
 REUSE_ARG=0
 ALLOW_WRITE_ARG=0
 
@@ -176,6 +190,18 @@ while [[ $# -gt 0 ]]; do
                 exit 1
             fi
             PACKET_DIR_ARG="${2}"
+            shift 2
+            ;;
+        --ref)
+            if [[ $# -lt 2 ]]; then
+                echo "Error: --ref requires a positive integer" >&2
+                exit 1
+            fi
+            if [[ ! "${2}" =~ ^[1-9][0-9]*$ ]]; then
+                echo "Error: --ref must be a positive integer" >&2
+                exit 1
+            fi
+            REF_ARG="${2}"
             shift 2
             ;;
         --track)
@@ -235,6 +261,11 @@ fi
 if command -v luarocks >/dev/null 2>&1; then
     eval "$(luarocks --lua-version=5.5 path --bin 2>/dev/null || true)"
 fi
+# luarocks path replaces compiled-in defaults. SchemaTool expect needs
+# /usr/local/lib/lua/5.5/brotli.so; terminal stays in the user tree.
+LUA_PATH="${LUA_PATH:-}${LUA_PATH:+;}/usr/local/share/lua/5.5/?.lua;/usr/local/share/lua/5.5/?/init.lua"
+LUA_CPATH="${LUA_CPATH:-}${LUA_CPATH:+;}/usr/local/lib/lua/5.5/?.so;/usr/local/lib/lua/5.5/loadall.so"
+export LUA_PATH LUA_CPATH
 
 if ! lua -e 'require("terminal")' >/dev/null 2>&1; then
     echo "Error: require(\"terminal\") failed." >&2
@@ -287,6 +318,9 @@ if [[ -n "${PACKET_DIR_ABS}" ]]; then
     LUA_ARGS+=(--packet-dir "${PACKET_DIR_ABS}")
 fi
 LUA_ARGS+=(--track "${TRACK_ARG}")
+if [[ -n "${REF_ARG}" ]]; then
+    LUA_ARGS+=(--ref "${REF_ARG}")
+fi
 if [[ "${REUSE_ARG}" -eq 1 ]]; then
     LUA_ARGS+=(--reuse)
 fi

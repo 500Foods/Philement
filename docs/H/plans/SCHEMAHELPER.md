@@ -31,19 +31,29 @@ exit gate is green. Record learnings in the Working Log.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-08-23):** Phase 1 closed. Interactive
-flow: splash → wrapper picker (if no `--wrapper`) → SchemaTool invoke
-(unless `--reuse`) → result screen with dashboard totals. Next:
-**Phase 2** — full review TUI (dashboard keys, 1-by-1, explore).
+**CURRENT PAUSE POINT (as of 2026-08-23):** Phases 0–4 and 6 closed.
+v1 is review + packets + operator docs. SchemaHelper **0.4.8** fronts
+SchemaTool **1.8.2**. Phase 5 (apply to database) is optional and not
+required for v1.
+
+Post-v1 field hardening is in (see Working Log): catalog fold Lua 5.5
+const + catalog degrade; custom-wrapper connect (exec flags + sourced
+`exec`); dashboard `q` / result-screen paint. Live wrappers (Test 40 +
+`schematool_500courses.sh` / `schematool_philement.sh`) reach the
+dashboard with findings.
+
+Deferred polish (not a phase gate): dashboard “subject for review” is
+**findings**, not migrations (e.g. 24 drifted refs + 38 catalog rows =
+62). Re-audit `[r]` on the dashboard is still a stub message.
 
 ### Resume here next session
 
 1. Confirm this document is the source of truth.
-2. Run `extras/schematool/schemahelper.sh schematool_sqlite.sh` on a real
-   tty (or `--reuse` against an existing `--out-dir`) and confirm the
-   result screen totals.
-3. Re-read Phase 2 Goal + Exit gate only.
-4. Implement the review TUI on top of `lua/schemahelper_queue.lua`.
+2. Optional smoke: `schemahelper.sh schematool_sqlite.sh` — Enter review,
+   `[q]`/Esc quit (must not throw). Custom wrapper:
+   `schemahelper.sh /path/to/schematool_*.sh`.
+3. Pick up Phase 5 only if real sessions show `u` is needed. Otherwise
+   start with dashboard count wording or live `[r]` re-audit.
 
 ### Session checklist
 
@@ -58,7 +68,7 @@ flow: splash → wrapper picker (if no `--wrapper`) → SchemaTool invoke
 | --- | --- |
 | **Band** | P2 — operator tooling, not a Hydrogen subsystem |
 | **Effort** | L (TUI + packet writer + optional confirmed metadata apply) |
-| **Done** | ~25% — plan + splash + Phase 1 ingest / invoke |
+| **Done** | v1 (Phases 0–4 + 6). Phase 5 apply remains optional. |
 | **Why this shape** | SchemaTool is complete and read-only. The missing piece is a decision loop over its findings, including “this live DB should become a new migration.” |
 | **Do not start casually** | Write paths can mutate `queries` or (later) live DDL. Phase 0 must lock safety before any apply code exists. |
 
@@ -200,7 +210,7 @@ backward-compatible.
 | Launcher | [`extras/schematool/schemahelper.sh`](/elements/001-hydrogen/hydrogen/extras/schematool/) |
 | TUI entry | [`extras/schematool/schemahelper.lua`](/elements/001-hydrogen/hydrogen/extras/schematool/) |
 | Lua modules | `extras/schematool/lua/schemahelper_*.lua` |
-| Operator docs (later) | `/docs/H/tools/SCHEMAHELPER.md` |
+| Operator docs | `/docs/H/tools/SCHEMAHELPER.md` |
 | This plan | `/docs/H/plans/SCHEMAHELPER.md` |
 
 Rationale: same folder as the auditor and the Test 40 wrappers; same Lua
@@ -266,7 +276,7 @@ Entry for humans: `schemahelper.sh` (deps, `stty`, wrapper discovery).
 | Connect probe | As soon as a wrapper is chosen, Lua pings the live DB with the wrapper’s env family (never print passwords). Fail status blocks a new SchemaTool run. |
 | Splash look | Single-line box around the whole tty; bright red border. Left: SchemaHelper / version / release. Right: SchemaTool / version / release. Blank, then Lua `_VERSION` left and `terminal.lua` version right. Yellow names, green versions, cyan dates, magenta runtimes. |
 | Splash dismiss | Enter only. Other keys ignored. Ctrl-C / tty restore via `terminal.initwrap`. |
-| Versions | SchemaHelper **0.2.0** (released 2026-08-23) fronts SchemaTool **1.8.0** (2026-08-23; additive catalog JSON). |
+| Versions | SchemaHelper **0.4.0** (released 2026-08-23) fronts SchemaTool **1.8.0** (2026-08-23; additive catalog JSON). |
 | Skip for now | Persist as `skipped` in the sidecar so quit/resume works; still **subject for review** on the next launch (not accepted). |
 | Accept permanent variance | Persist as `accepted` in the sidecar. Counts as “Accepted variations”; hidden from the 1-by-1 queue until the **migration payload changes** (id + expected/live hash). Dashboard (Phase 3) must list accepted items and allow **un-accept** (returns the finding to subject-for-review). |
 | Apply to database (v1) | **Metadata only**: uncomment the single finding’s SchemaTool `UPDATE`/`DELETE` guidance and run it via the native client, transaction + typed confirm. Requires `--allow-write`. Record as `applied` in the sidecar. |
@@ -274,7 +284,7 @@ Entry for humans: `schemahelper.sh` (deps, `stty`, wrapper discovery).
 | Generate a migration | Write a **packet directory**, assign `NNNN = max(disk refs, reserved packets) + 1`. Do not write into Helium `migrations/`. Record as `packet` in the sidecar. |
 | Workspace | Default `--out-dir` is the directory of the chosen wrapper (`extras/schematool/` for Test 40 scripts is OK). Override with `--out-dir`. |
 | Sidecar state name | `schemahelper_<design>_<engine>.json` next to `schematool_<design>_<engine>_<utc>.sql`. Stable stem (no timestamp) so re-runs resume. Optional `--state-file` override. |
-| Packet location | Same workspace: `schemahelper_<design>_<engine>_<ref>/`. Override with `--packet-dir`. |
+| Packet location | Same workspace as `--out-dir`: `schemahelper_<design>_<engine>_<ref>/`. Override with `--packet-dir`. Warn once if that path is inside the git tree. |
 | Next-ref scan | `design_NNNN.lua` in `--migrations` plus reserved packet refs in the workspace. |
 | Re-audit | After apply or packet, operator can re-run SchemaTool and reload; sidecar decisions still apply. |
 | Secrets | Inherit SchemaTool `--password-env`; never print; never write into packets or state. |
@@ -530,8 +540,8 @@ authoring pass) needs to write `design_NNNN.lua`.
   "status": "reserved",
   "finding_ids": ["cat:accounts:new_col:column"],
   "source": "schemahelper",
-  "schemahelper_version": "0.0.0",
-  "schematool_version": "1.7.1"
+  "schemahelper_version": "0.4.0",
+  "schematool_version": "1.8.0"
 }
 ```
 
@@ -871,35 +881,43 @@ Phase 1 queue.
 
 ### Entry gate
 
-- [ ] Phase 1 Status complete.
+- [x] Phase 1 Status complete.
 
 ### Work items
 
-- [ ] `schemahelper.lua` full-screen UI via terminal.lua
+- [x] `schemahelper.lua` full-screen UI via terminal.lua
       (`ui.panel.Screen` / `Bar` / `Text` / `KeyBar`).
-- [ ] Wrapper picker via `cli.Select` (if not already done in Phase 1).
-- [ ] Dashboard: total / perfect / accepted / subject for review + class
+- [x] Wrapper picker via `cli.Select` (if not already done in Phase 1).
+- [x] Dashboard: total / perfect / accepted / subject for review + class
       table. Enter begins review; `q` quits.
-- [ ] Review: short variance summary + the five action labels (`e` `s`
+- [x] Review: short variance summary + the five action labels (`e` `s`
       `a` `u` `g`). `u`/`g` may be shown disabled until later phases.
-- [ ] `e` opens a scrollable `ui.panel.Text` (diff / SQL) and returns.
-- [ ] Keys: `n` `p` `r` `q` (quit returns to dashboard).
-- [ ] terminal.lua restores the tty on all exit paths (verify Ctrl-C).
-- [ ] Refuse to start when stdout is not a tty.
+- [x] `e` opens a scrollable `ui.panel.Text` (diff / SQL) and returns.
+- [x] Keys: `n` `p` `r` `q` (quit returns to dashboard).
+- [x] terminal.lua restores the tty on all exit paths (verify Ctrl-C).
+- [x] Refuse to start when stdout is not a tty.
 
 ### Exit gate / validation
 
-- [ ] Can walk a fixture queue and a real sqlite Test 40 catalog+meta run.
-- [ ] Terminal is usable after quit / Ctrl-C.
-- [ ] Test 98 clean.
+- [x] Can walk a fixture queue and a real sqlite Test 40 catalog+meta run.
+- [x] Terminal is usable after quit / Ctrl-C.
+- [x] Test 98 clean.
 
 ### Status
 
-Not started.
+Complete (2026-08-23). Dashboard with Enter→review, explore via TextPanel,
+skip/accept persistence, re-audit reload.
 
 ### Lessons learned
 
-None yet.
+- `key_map[raw]` is nil for character keys (e/s/a/u/g/n/p/r/q); must check
+  raw directly for single-char bindings. Enter maps to `ctrl_j` (ICRNL),
+  Escape maps to `ctrl_[`.
+- `TextPanel` requires `calculate_layout` before `set_lines`/`render`;
+  pass the Screen body inner geometry.
+- `--version` must be handled before `initwrap` since terminal init
+  fails without a TTY.
+- Dashboard rebuild on re-audit re-runs `queue.build` and refreshes `app.built`.
 
 ---
 
@@ -918,34 +936,42 @@ Phase 2 TUI.
 
 ### Entry gate
 
-- [ ] Phase 2 Status complete.
+- [x] Phase 2 Status complete.
 
 ### Work items
 
-- [ ] Write/update the sidecar on every `s` / `a` / quit (and later `u`
+- [x] Write/update the sidecar on every `s` / `a` / quit (and later `u`
       / `g`).
-- [ ] `skipped` does not change dashboard “subject for review.”
-- [ ] `accepted` increments accepted variations and leaves the queue.
-- [ ] Resume: reopen the same `--out-dir` + design + engine; cursor and
+- [x] `skipped` does not change dashboard “subject for review.”
+- [x] `accepted` increments accepted variations and leaves the queue.
+- [x] Resume: reopen the same `--out-dir` + design + engine; cursor and
       decisions come back; a second engine in the same folder uses its
       own `schemahelper_<design>_<engine>.json`.
-- [ ] Accepted-list review on the dashboard: inspect accepted items and
+- [~] Accepted-list review on the dashboard: inspect accepted items and
       un-accept (returns the finding to subject-for-review).
-- [ ] Sidecar contains no secrets and no full `code` blobs.
+       (Deferred — not required for Phase 2/3 minimal; cursor reset on quit
+       handles the common case.)
+- [x] Sidecar contains no secrets and no full `code` blobs.
 
 ### Exit gate / validation
 
-- [ ] Second launch against the same fixture hides accepted ids.
-- [ ] Changing expected/live hash re-shows the finding if hash-gated.
-- [ ] Waiver file contains no secrets and no full `code` blobs.
+- [x] Second launch against the same fixture hides accepted ids.
+- [~] Changing expected/live hash re-shows the finding if hash-gated.
+      (Hash field is stored but not yet compared; Phase 3+ will add
+      payload-hash comparison for invalidation.)
+- [x] Waiver file contains no secrets and no full `code` blobs.
 
 ### Status
 
-Not started.
+Complete (2026-08-23). `s` records skip-for-now; `a` records accepted;
+both persist to sidecar JSON. Decisions are reapplied on rebuild.
 
 ### Lessons learned
 
-None yet.
+- `save_decision` uses `jq` to atomically update the JSON sidecar,
+  rebuilding the `decisions` array to avoid duplicates by id.
+- `load_state` now loads `note` and `hash` from each decision record so
+  the review pane can display operator annotations.
 
 ---
 
@@ -962,33 +988,45 @@ Phase 3 (can start after Phase 2 if skip/accept slips; prefer after 3).
 
 ### Entry gate
 
-- [ ] Phase 2 Status complete. Phase 3 preferred.
+- [x] Phase 2 Status complete. Phase 3 preferred.
 
 ### Work items
 
-- [ ] Next-ref scan (disk + reserved packets).
-- [ ] Write `MANIFEST.json`, `PACKET.md`, `FINDING.json`, `DETAIL.txt`,
+- [x] Next-ref scan (disk `{design}_NNNN.lua` / `design_NNNN.lua` +
+      reserved packets). `--ref N` forces a number.
+- [x] Write `MANIFEST.json`, `PACKET.md`, `FINDING.json`, `DETAIL.txt`,
       `SUGGESTED.sql`.
-- [ ] Prompt for an optional one-line operator note.
-- [ ] Record `packet` in the sidecar; drop from subject-for-review.
-- [ ] Collision: refuse if `schemahelper_<design>_<engine>_<ref>/` or
-      `design_NNNN.lua` appears mid-session.
-- [ ] Dashboard / quit summary lists reserved refs.
+- [x] Prompt for an optional one-line operator note (inset chrome;
+      Enter = empty note, Esc = cancel).
+- [x] Record `packet` in the sidecar; drop from subject-for-review.
+- [x] Collision: refuse if `schemahelper_<design>_<engine>_<ref>/` or
+      `{design}_NNNN.lua` / `design_NNNN.lua` appears mid-session.
+- [x] Dashboard lists reserved refs; warn once if packet path is inside
+      the git tree.
 
 ### Exit gate / validation
 
-- [ ] Two packets in one session get consecutive unused refs.
-- [ ] Default packet path is outside the repo.
-- [ ] Packet SQL is review-only (commented or clearly “not applied”).
-- [ ] Test 98 clean.
+- [x] Two packets in one session get consecutive unused refs (fixture
+      disk max 1290 → 1291 then 1292).
+- [x] Default packet path is the workspace (`--out-dir`); warn if that
+      path is inside the git tree (locked: not `/tmp` / `~/.cache`).
+- [x] Packet SQL is review-only (commented header: not applied).
+- [x] Test 98 / luacheck clean. `mks` clean.
 
 ### Status
 
-Not started.
+Complete (2026-08-23). `[g]` writes
+`schemahelper_<design>_<engine>_<ref>/` via
+`lua/schemahelper_packet.lua`.
 
 ### Lessons learned
 
-None yet.
+- Disk refs must match SchemaTool discover (`{design}_NNNN.lua`) **and**
+  the fixture `design_NNNN.lua` name. Helium uses `acuranzo_NNNN.lua`.
+- `cli.Prompt` would drop chrome the same way `cli.Select` did. The note
+  field is typed inside the bordered body.
+- Sidecar `load_state` must keep `ref` / `packet` on each decision or
+  the dashboard cannot list reserved packets after resume.
 
 ---
 
@@ -1067,29 +1105,37 @@ Phases 1–4 minimum. Phase 5 if shipped.
 
 ### Entry gate
 
-- [ ] TUI + packets usable on Test 40 sqlite.
+- [x] TUI + packets usable on Test 40 sqlite (connect probe + `[g]`).
 
 ### Work items
 
-- [ ] `/docs/H/tools/SCHEMAHELPER.md` (purpose, keys, safety, packets).
-- [ ] Update extras schematool README + extras README.
-- [ ] Cross-link from [SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md).
-- [ ] Test 04 + Test 90 clean.
-- [ ] Optional: `extras/schematool/smoke_schemahelper_queue.sh` against
-      checked-in fixture JSON (no live DB).
+- [x] `/docs/H/tools/SCHEMAHELPER.md` (purpose, keys, safety, packets).
+- [x] Update extras schematool README + extras README.
+- [x] Cross-link from [SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md).
+- [x] Test 04 + Test 90 clean.
+- [~] Optional: `extras/schematool/smoke_schemahelper_queue.sh` against
+      checked-in fixture JSON (no live DB). Packet writer already smoked
+      headless against `test/fixtures/sample_project/`.
 
 ### Exit gate / validation
 
-- [ ] `mkl` / Test 04 / Test 90 / Test 98 / `mks` green.
-- [ ] Plan Status for 1–6 filled; leftover items deferred with `[~]`.
+- [x] Test 04 / Test 90 / Test 98 / `mks` green (`mkl` not required;
+      no C).
+- [x] Plan Status for 0–4 and 6 filled; Phase 5 optional; leftover
+      smoke script deferred with `[~]`.
 
 ### Status
 
-Not started.
+Complete (2026-08-23). Operator guide at
+[`/docs/H/tools/SCHEMAHELPER.md`](/docs/H/tools/SCHEMAHELPER.md).
 
 ### Lessons learned
 
-None yet.
+- Failed ping used to be a dead end. `[w]` returns to the wrapper
+  picker. SQLite is the usual local target; DB2/PG/MySQL need that
+  engine up.
+- `abs_file` must run only for SQLite. Applying it to `HYDROTST` turned
+  the DB2 database name into a filesystem path and the ping died.
 
 ---
 
@@ -1142,6 +1188,109 @@ worth the added risk.
 ---
 
 ## Working Log
+
+### 2026-08-23 — Explore panes, rules, highlight, brotli
+
+- Explore hides the session header. Red hlines join the outer box
+  (`├`/`┤`); a red vline splits Migration | Database (`┬`/`┴`).
+- Keys are pinned under a footer rule. `j`/`k` move a full-width
+  highlight across both panes.
+- `BROTLI_DECOMPRESS(CRYPTO_DECODE('…'))` is decoded in Lua (`brotli`
+  rock + base64) so the compare shows plaintext, not the blob.
+- SchemaHelper **0.4.11**.
+
+### 2026-08-23 — Explore: Migration vs Database; 1000→1003 ignored
+
+- SchemaTool never compares `query_type` (only code/name/summary).
+  Helper was treating Lua 1000 vs applied 1003 as a defect. That pair is
+  APPLY promotion and is now labeled ignored, not a variance.
+- Explore/review explain APPLY vs LOAD and show Migration │ Database
+  side-by-side around the first differing byte. Real leftover on 1223
+  is still the `code` SQL (one line). SchemaHelper **0.4.10**.
+
+### 2026-08-23 — Explore crash + unreadable expected/actual
+
+- `[e]` crashed: `screen.body` is nil (terminal.lua Screen does not
+  store `opts.body` as `self.body`; chrome is named `chrome`). Explore
+  now paints inside the existing border with j/k / PgUp/PgDn scroll.
+- Review no longer dumps the whole expected/actual JSON on one truncated
+  line. It shows first-difference + payload field deltas (`query_type`,
+  `name`, `summary`, `code`). Explore shows the line-level field diffs.
+- SchemaHelper **0.4.9**. Phase 5 still not started.
+
+### 2026-08-23 — Post-v1 field hardening; hold here
+
+- v1 (0–4 + 6) still closed. Phase 5 not started. SchemaHelper **0.4.8**,
+  SchemaTool **1.8.2**. Operator-confirmed: Test 40 wrappers and the
+  Lithium custom wrappers (`500courses`, `philement`) complete a
+  SchemaTool run and open the dashboard.
+- Catalog fold: Lua 5.5 forbids assigning the generic-for variable
+  (`schematool_catalog_fold.lua`). After a successful metadata audit,
+  catalog fold/probe/compare failure skips catalog (stale catalog JSON
+  removed) and keeps metadata exit 0/2/3. Helper opens the dashboard
+  with “Catalog track failed; metadata findings kept.”
+- Connect: do not infer ping from the filename stem alone. Read
+  `--engine` / `--host` / `--database` / `--password-env` from the
+  wrapper. Wrappers that compute those with `jq`/locals must be
+  **sourced** with `exec` intercepted so the expanded `exec` line and
+  password-env are used; leftover parent `${DB_*}` must not win.
+  Sidecar engine remains the filename stem (`philement`, `500courses`).
+  Passwords never printed / never written to sidecar.
+- TUI: `keys.r` is not a terminal.lua key — dashboard `[q]` evaluated
+  it and threw. Use `raw == "r"`. Result/log paint: strip tabs/ANSI;
+  `utf8cwidth` returns nil for tab and crashed the result screen.
+  Connect-fail must not show a leftover SchemaTool log tail.
+- Dashboard counts: 364 / 340 perfect / 62 subject is correct as
+  **findings** (24 metadata drifts + 37 live extras + 1 nullability).
+  Wording vs “migrations” is deferred polish.
+- `mks` + Test 98 green on the touched scripts. Next: Phase 5 only if
+  `u` is needed; else count wording or live `[r]`.
+
+### 2026-08-23 — Catalog fold crash; degrade to metadata
+
+- P4/P6 remain closed. Phase 5 not started.
+- DB2 helper run: metadata compare exit 2 (2 drifts), then catalog fold
+  died (`schematool_catalog_fold.lua`: assign to Lua 5.5 const `for`
+  variable `name`). SchemaTool exited 1; helper treated the audit as
+  failed.
+- Fold uses a trimmed local instead of assigning the loop variable.
+- After a successful metadata audit, catalog fold/probe/compare failure
+  skips the catalog track (warning, stale catalog JSON removed) and
+  keeps metadata artifacts / exit 0/2/3. Catalog-only still exits 1.
+- SchemaHelper 0.4.4 opens the dashboard when `findings.json` exists and
+  shows “Catalog track failed; metadata findings kept.”
+
+### 2026-08-23 — Phase 6 docs; connect dead-end fixed
+
+- Operator guide: [`/docs/H/tools/SCHEMAHELPER.md`](/docs/H/tools/SCHEMAHELPER.md).
+  Linked from SCHEMATOOL.md, extras READMEs, SITEMAP, STRUCTURE, docs/H
+  README, plans/README.
+- Connect: only SQLite database names are resolved as file paths. DB2
+  `HYDROTST` is a database name, not a path. Failed ping offers `[w]`
+  pick another wrapper, `[q]` quit, Enter if artifacts already exist.
+- Test 04 / 90 / 98 / `mks` green. Phase 6 closed.
+
+### 2026-08-23 — Phase 4 closed; migration packets
+
+- `[g]` is live for every subject-for-review finding. Next ref is
+  `max(disk {design}_NNNN.lua / design_NNNN.lua, reserved packets) + 1`.
+  `--ref N` forces a number; collisions with an on-disk migration or an
+  existing packet directory are refused.
+- Packet files: `MANIFEST.json`, `PACKET.md`, `FINDING.json`,
+  `DETAIL.txt`, `SUGGESTED.sql` under
+  `<packet-dir>/schemahelper_<design>_<engine>_<ref>/`. Default
+  `--packet-dir` is `--out-dir`. Warn if that path is inside the git
+  tree; do not redirect to `/tmp`.
+- Optional note is an inset chrome prompt (Enter empty, Esc cancel).
+  Sidecar records `action=packet` with `ref` / `packet` / `note`. The
+  finding leaves subject-for-review. Dashboard lists reserved refs.
+- `SUGGESTED.sql` is review-only. Orphans copy the SchemaTool `.mig`
+  excerpt when present; catalog live extras get best-effort comments,
+  not invented DDL.
+- Headless smoke on
+  `extras/schematool/test/fixtures/sample_project/migrations`: 1291 then
+  1292; `--ref 1148` collides with `design_1148.lua`; `--ref 2000` writes.
+- `mks` clean. luacheck clean. Next: Phase 6 docs.
 
 ### 2026-08-23 — Plan drafted
 

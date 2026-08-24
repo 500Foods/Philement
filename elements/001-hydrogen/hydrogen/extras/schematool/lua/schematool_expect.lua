@@ -10,6 +10,7 @@
 -- Prints one JSON object (single ref) or a JSON array (--all).
 --
 -- CHANGELOG
+-- 1.0.2 - 2026-08-23 - Stderr progress: expect N/M ref R
 -- 1.0.1 - 2026-07-29 - extract_as_field: ignore commas inside SQL string literals
 -- 1.0.0 - 2026-07-29 - Phase 2 expected payload extraction
 
@@ -396,6 +397,8 @@ if mode_or_ref == "--all" then
     end
     local out = { "[" }
     for i, r in ipairs(refs) do
+        io.stderr:write(string.format("expect %d/%d ref %d\n", i, #refs, r))
+        io.stderr:flush()
         out[#out + 1] = result_to_json(expect_one(r))
         if i < #refs then
             out[#out + 1] = ","
