@@ -31,11 +31,13 @@ exit gate is green. Record learnings in the Working Log.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-08-24):** Phases 0–4 and 6 closed.
-Phase 5 first slice shipped: SchemaHelper **0.5.3** fronts SchemaTool
-**1.8.3**. `[u]` updates **one** metadata field (`code`/`name`/`summary`)
-when launched with `--allow-write`; confirm is `REF.field` (e.g.
-`1223.code`). Orphan/anomaly DELETE is not in this slice.
+**CURRENT PAUSE POINT (as of 2026-08-24):** Phase 5 complete (both slices,
+v0.5.0 + v0.5.4). Phase 7 partial: catalog DDL apply (nullable/add-column with
+`object.column` confirm) and promote-packet helper both shipped (v0.5.5).
+Remaining Phase 7 items deferred/rejected by design: `--batch` (interactive-only
+lock), group-catalog-rows (confirmed not needed by operator), bitfield exit
+(SchemaTool-side). v1 Definition of Done is met. Lint: shellcheck + luacheck +
+Test 04 all clean.
 
 Dashboard count wording is in: migration totals stay migration counts;
 the queue line is **Findings for review** (field-level + catalog).
@@ -49,12 +51,16 @@ const + catalog degrade; custom-wrapper connect (exec flags + sourced
 ### Resume here next session
 
 1. Confirm this document is the source of truth.
-2. Optional smoke: `schemahelper.sh --allow-write schematool_sqlite.sh`
+2. Smoke: `schemahelper.sh --allow-write schematool_sqlite.sh`
    — Enter review, `[u]` on a `code`/`name`/`summary` drift, type
-   `REF.field`. Without the flag, `[u]` stays disabled. `[r]` on the
-   dashboard re-runs SchemaTool.
-3. Next: orphan DELETE only if a real session needs it. Phase 7 stays
-   deferred.
+   `REF.field`. `[u]` on an orphan ref, type bare `REF` (e.g. `1290`).
+   `[u]` on a catalog nullable mismatch, type `object.column` (e.g.
+   `accounts.id`) — DDL runs in a transaction. `[g]` generates a packet;
+   `[m]` promotes it into Helium. Without the flag, `[u]`/`[m]` stay
+   disabled. `[r]` on the dashboard re-runs SchemaTool.
+3. Phase 5 fully closed (both slices + orphan DELETE). Phase 7 partial:
+   catalog DDL apply + promote-packet helper. Remaining Phase 7 items
+   deferred or rejected by design — see CURRENT PAUSE POINT.
 
 ### Session checklist
 
@@ -69,7 +75,7 @@ const + catalog degrade; custom-wrapper connect (exec flags + sourced
 | --- | --- |
 | **Band** | P2 — operator tooling, not a Hydrogen subsystem |
 | **Effort** | L (TUI + packet writer + optional confirmed metadata apply) |
-| **Done** | v1 (Phases 0–4 + 6). Phase 5 first slice: one-field apply. |
+| **Done** | v1 (Phases 0–4 + 5 both slices + 6) + Phase 7 partial (catalog DDL apply + promote). |
 | **Why this shape** | SchemaTool is complete and read-only. The missing piece is a decision loop over its findings, including “this live DB should become a new migration.” |
 | **Do not start casually** | Write paths can mutate `queries` or (later) live DDL. Phase 0 must lock safety before any apply code exists. |
 
@@ -250,7 +256,9 @@ Entry for humans: `schemahelper.sh` (deps, `stty`, wrapper discovery).
 - Replacing SchemaTool or Hydrogen LOAD/APPLY.
 - Auto-authoring a complete, shippable `acuranzo_NNNN.lua`.
 - Auto-executing the full commented `.sql` file.
-- Live catalog DDL apply in v1 (nullable/add/drop against product tables).
+- Live catalog DDL apply for missing tables / live-only extras (Phase 7 did
+  NOT add drop-table / drop-column / extra-column apply — only nullable and
+  add-column).
 - Scanning product row data.
 - A new blackbox test number, C code, or REST endpoint.
 - ncurses, ltui, or a second TUI stack. The one allowed extra rock is
@@ -466,8 +474,9 @@ operator can override.
 | `e` | Explore in more detail | — | Page the full diff / suggested SQL; return to the same prompt |
 | `s` | Skip for now | Neither | Record `skipped`; stay in subject-for-review next launch |
 | `a` | Accept permanent variance | Neither | Record `accepted`; dashboard accepted++; hidden until id/hash changes |
-| `u` | Apply to database | Official Lua | Apply **this finding’s** metadata remediation (v1). Disabled unless `--allow-write` |
+| `u` | Apply to database | Official Lua | Apply one remediation: metadata `UPDATE` (`REF.field` confirm), orphan `DELETE` (`REF` confirm), or single-statement catalog DDL (`object.column` confirm). Disabled unless `--allow-write` |
 | `g` | Generate a migration | Live DB | Reserve next `NNNN`, write packet, record `packet` |
+| `m` | Promote packet to Helium | Packet | Write `design_NNNN.lua` stub from packet `SUGGESTED.sql`; mark packet `promoted`. Disabled unless `--allow-write` |
 | `n` / `p` | Next / previous | — | Move in the review queue (does not decide) |
 | `r` | Re-audit | — | Re-run SchemaTool, rebuild dashboard + queue, keep sidecar decisions |
 | `q` | Quit | — | Flush sidecar; return to dashboard or exit |
@@ -479,9 +488,9 @@ operator can override.
 | Metadata drift (Lua ≠ stored `code`) | Update database **or** Create packet | Operator must choose direction. Prompt; do not guess. |
 | Missing LOAD / missing APPLY | Update database is **wrong** | Guidance only: run Hydrogen AutoMigration. Action `u` disabled; show help. |
 | Orphan DB ref | Create packet | This is the original `.mig` use case. |
-| Catalog missing column/table on live | Update database is **wrong** in v1 | Live is behind official fold → new official migration or Hydrogen APPLY, not a helper UPDATE. Offer packet of “needed DDL” as notes only. |
+| Catalog missing column on live | Create packet **or** Apply DDL | Phase 7: `[u]` applies `ADD COLUMN` (confirm `object.column`; type from expected fold). Missing **table** on live stays packet-only (too structural for a helper ALTER). |
 | Catalog extra / live-ahead (locked for Phase 1, see Contract gap) | Create packet | Live has something official Lua does not. |
-| Catalog nullability mismatch | Create packet (v1) | Could be either direction; packet is safer than live `ALTER`. |
+| Catalog nullability mismatch | Apply to database **or** Create packet | Phase 7: `[u]` applies `ALTER COLUMN SET/DROP NOT NULL` (confirm `object.column`). Packet is safer alternative. |
 | Anomaly both 1000+1003 | Detail + skip | Needs a human; helper must not auto-delete. |
 
 **Verified against source (2026-08-23):** `schematool_catalog_compare.lua`
@@ -663,11 +672,11 @@ write path.
 | Guard | Rule |
 | --- | --- |
 | Default | No DB writes. Packets + sidecar accepts only. |
-| `--allow-write` | Required before `u` is offered. |
-| Per-finding confirm | Type the ref (or object.column) to apply. No “apply all.” |
-| Transaction | Metadata apply in one transaction; rollback on client error. |
+| `--allow-write` | Required before `u` / `m` is offered. |
+| Per-finding confirm | Type the ref (or object.column) to apply. No “apply all.” Catalog DDL uses louder `object.column` confirm. |
+| Transaction | All apply SQL (metadata UPDATE, orphan DELETE, catalog DDL) runs in one transaction. |
 | One statement family | Only the uncommented block for **this** finding id. |
-| No catalog DDL in v1 | `u` refused on catalog findings. |
+| Catalog DDL scope | Only `nullable` (SET/DROP NOT NULL) and `column` (ADD COLUMN); refused on `table`, `extra_table`, `extra_column`. |
 | No full-file apply | Never pipe the SchemaTool `.sql` wholesale. |
 | Read-only SchemaTool | Helper runs SchemaTool with the same RO client guards it has today. Apply uses a **separate** client session without RO, only after confirm. |
 | Wrong-host | Wrapper picker must show engine + env family (especially Yugabyte vs ACURANZO). |
@@ -1075,7 +1084,8 @@ direction before writes are possible.
 - [x] Typed confirm = `REF.field` (e.g. `1223.code`).
 - [x] On success, record `applied` and drop finding from queue.
 - [x] Log apply SQL to `--out-dir` (no password).
-- [~] Orphan / anomaly `DELETE` — deferred; not in this slice.
+  - [x] Orphan / anomaly `DELETE` — orphan slice shipped: true orphans delete
+      with `BETWEEN 1000 AND 1003`; anomalies refused.
 
 ### Exit gate / validation
 
@@ -1088,16 +1098,28 @@ direction before writes are possible.
 
 ### Status
 
-Complete (2026-08-23) for the **one-field UPDATE** slice.
-SchemaHelper **0.5.0**. Orphan/anomaly DELETE remains deferred.
+Complete (2026-08-24). Both slices shipped: one-field `UPDATE` (drifts) and
+confirmed orphan `DELETE` (true orphans only; anomalies refused).
+SchemaHelper **0.5.4**. DELETE uses `BETWEEN 1000 AND 1003` (matches SchemaTool
+remediation); confirm is `REF.field` for drifts, bare `REF` for orphans;
+sidecar records `applied` for both.
 
 ### Lessons learned
 
-- Field-level queue items (0.4.13) make SchemaTool’s whole-ref
+- Field-level queue items (0.4.13) make SchemaTool's whole-ref
   commented `UPDATE` the wrong unit. Generate `SET <field>` from
   official Lua; never apply a `:decoded` payload into a wrapped column.
 - Confirm is `REF.field`, not just the ref, so `1223.code` cannot
   silently write `name`.
+- Orphan DELETE needs its own confirm token (bare `REF`), since orphan
+  findings carry no `field`. The `refuse_reason` gate must check
+  kind/class **before** the field check, otherwise orphans (no field)
+  were dead-coded into "not a metadata field" and never reached the
+  orphan branch.
+- DELETE pattern `WHERE query_ref = N AND query_type_a28 BETWEEN 1000 AND 1003`
+  matches SchemaTool's own remediation (`schematool_remediate.lua`); no queue
+  change needed since orphan findings already carry `ref` + `kind`.
+- Anomalies (1000+1003 present on disk) stay refused — "do not auto-delete".
 
 ---
 
@@ -1151,18 +1173,21 @@ Complete (2026-08-23). Operator guide at
 
 Not required for v1 “done.” Pick up only after Phase 6.
 
-- [ ] Catalog live-only extras if deferred in Phase 0.
-- [ ] Confirmed single-statement catalog DDL apply (nullable / add column)
-      with a louder confirm than metadata.
+- [x] Catalog live-only extras (done in Phase 1, SchemaTool-side `live_extras[]`).
+- [x] Confirmed single-statement catalog DDL apply (nullable / add column)
+      with a louder confirm than metadata. SchemaHelper **0.5.5**.
 - [ ] `--batch` JSON decisions for non-interactive use.
-- [ ] Promote-packet helper that copies a stub into Helium (still not a
-      full Lua author).
-- [ ] Group related catalog rows (one table) into a single packet.
+- [x] Promote-packet helper that copies a stub into Helium (still not a
+      full Lua author). SchemaHelper **0.5.5**.
+- [x] Group related catalog rows (one table) into a single packet —
+      confirmed not required by operator (2026-08-24).
 - [ ] Bitfield SchemaTool exit (noted as future in SchemaTool itself).
 
 ### Status
 
-Deferred.
+Partial. Catalog DDL apply + promote-packet helper complete.
+`--batch` and bitfield exit remain deferred; group-catalog-rows confirmed
+not needed.
 
 ---
 
@@ -1172,10 +1197,12 @@ Deferred.
   see an analysis dashboard (total / perfect / accepted / subject for
   review + variance classes).
 - 1-by-1 review offers: explore, skip for now, accept permanent variance,
-  generate a migration. **Apply to database (`u`) is Phase 5 and is not
-  required for v1** — see the scope note on Phase 5. The key still shows in
-  the review prompt (disabled/"not yet available") so the UI layout does
-  not change shape later.
+  generate a migration, and apply to database (`u`). `[u]` updates one
+   metadata field (`REF.field` confirm) or deletes a true orphan ref
+   (`REF` confirm; anomalies refused), or applies single-statement catalog
+   DDL (`object.column` confirm: nullable→SET/DROP NOT NULL, missing
+   column→ADD COLUMN). Requires `--allow-write`; sidecar records `applied`;
+   SchemaTool stays read-only.
 - Catalog track can surface **live-only extras** (table/column present in
   the DB but not in the expected/disk fold), not just missing/mismatched
   ones — otherwise "generate a migration" only ever fires from metadata
@@ -1186,16 +1213,83 @@ Deferred.
   later, for **both** metadata orphans and catalog live-only extras.
 - SchemaTool is unchanged in spirit (read-only auditor) aside from additive
   JSON.
-- No complete `design_NNNN.lua` is invented by the tool.
+- No complete `design_NNNN.lua` is invented by the tool. `[m]` writes a **stub**
+   (not a full Lua author) that a human completes.
 - Docs + luacheck + shellcheck green.
 
-v1 done = Phases 0–4 + 6. Phase 5 (apply to database) and Phase 7 (optional
-follow-ons) are picked up later, only if real usage of v1 shows they are
-worth the added risk.
+v1 done = Phases 0–4 + 5 (both slices) + 6. Phase 7 partial: catalog DDL
+apply + promote-packet helper. Remaining Phase 7 items (`--batch`, group
+catalog rows, bitfield exit) stay deferred.
 
 ---
 
 ## Working Log
+
+### 2026-08-24 — Phase 5 confirmed complete; Phase 7 partial closed
+
+- Phase 5 confirmed complete both slices: one-field metadata `UPDATE` (0.5.0)
+  and confirmed orphan `DELETE` (0.5.4). Lint: shellcheck PASS (157 files),
+  luacheck clean (0 issues with project config `--no-unused-args`/`--no-self`),
+  Test 04 links clean (0 issues).
+- Phase 7 partial closed: catalog DDL apply (nullable / add column, louder
+  `object.column` confirm) and promote-packet helper both shipped (0.5.5).
+  Fixed one new luacheck `unused argument` on `promote_finding` by renaming
+  `screen` → `_screen` (matching the existing `_opts` convention).
+- Remaining Phase 7 items status:
+  - `--batch` JSON decisions: deferred by design (interactive-only lock;
+    headless operators use SchemaTool directly).
+  - Group related catalog rows into a single packet: operator confirmed not
+    required (2026-08-24). Each catalog finding keeps its own packet.
+  - Bitfield SchemaTool exit: deferred (SchemaTool-side change, not SchemaHelper).
+- v1 Definition of Done is met: Phases 0–4 + 5 (both slices) + 6, plus
+  Phase 7 partial (catalog DDL apply + promote).
+
+### 2026-08-24 — Phase 5 orphan DELETE slice
+
+- `[u]` now handles orphan findings (`kind == "orphan"`): builds
+  `DELETE FROM queries WHERE query_ref = N AND query_type_a28 BETWEEN 1000 AND 1003`
+  (matches SchemaTool remediation at `schematool_remediate.lua:445`).
+  Confirm token is bare `REF` (e.g. `1290`); `refuse_reason` checks
+  kind/class before the field check so orphans are no longer dead-coded
+  into "not a metadata field".
+- Anomalies (`both_1000_1003`, class "anomaly 1000+1003") stay refused
+  ("do not auto-delete"). Only true orphans delete.
+- `[u]` label adapts: "delete orphan ref (type REF)" on the review prompt,
+  `[u]elete` in the footer; "Press Enter to delete" on the confirm screen.
+- Sidecar records `applied` for both UPDATE and DELETE (no new enum value).
+- SQL log: `schemahelper_apply_<ref>_delete_<utc>.sql` for orphans; header
+  comments note "does not author a migration".
+- SchemaHelper **0.5.4**. `mks` + luacheck clean (one pre-existing warning).
+
+### 2026-08-24 — Phase 7 partial: catalog DDL apply + promote-packet
+
+- `[u]` on catalog `nullable` findings now allowed with `--allow-write`.
+  Generates `ALTER TABLE {schema}.{table} ALTER COLUMN {col} SET/DROP NOT NULL`
+  per engine. Confirm token is `object.column` (e.g. `accounts.id`) — louder
+  than the metadata `REF.field` because it requires typing a real schema object
+  name, not a number. DDL shown on the confirm screen before execution.
+  `schemahelper_apply.lua:build_catalog_sql`. Refused on `table` (missing),
+  `extra_table`, `extra_column` — too structural for a helper ALTER.
+- `[u]` on catalog `column` (missing column) findings now allowed. Generates
+  `ALTER TABLE {schema}.{table} ADD COLUMN {col} {type}`. Column type is
+  looked up from `catalog_expected.json` (the expected fold produced by
+  SchemaTool). If the type cannot be resolved, the apply is refused with an
+  error message.
+- `[u]` label adapts per finding kind: `[u]pdate` (metadata), `[u]elete`
+  (orphan), `[u]pply DDL` (catalog nullable/missing-column).
+- SQL log for catalog DDL: `schemahelper_apply_ddl_{object}_{column}_{utc}.sql`
+  with header "catalog DDL" and caveat "This ALTER statement mutates live DDL
+  shape."
+- Sidecar records `applied` for catalog DDL (same action name as metadata
+  update; note field is `object.column`).
+- `[m]` promote-packet helper writes a `design_NNNN.lua` stub into Helium
+  migrations from the packet's `SUGGESTED.sql`. Stub is intentionally not a
+  full Lua author — human must complete the INSERT pattern. Packet
+  `MANIFEST.json` status flips `reserved`→`promoted`. Requires
+  `--allow-write`. Only offered when a packet decision exists for the finding.
+- SQL is pre-generated before the confirm loop and displayed as "Proposed DDL
+  (review before confirming)" on the apply screen.
+- SchemaHelper **0.5.5**. `mks` + luacheck + Test 98 clean.
 
 ### 2026-08-24 — Live [r] re-audit
 

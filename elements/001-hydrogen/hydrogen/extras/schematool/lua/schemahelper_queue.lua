@@ -3,6 +3,8 @@
 --
 --
 -- CHANGELOG
+-- 0.5.5 - 2026-08-24 - Phase 7: u_label + explain_check for catalog DDL apply
+-- 0.5.4 - 2026-08-24 - Phase 5 slice: orphan [u] label + explain_check branch
 -- 0.5.2 - 2026-08-24 - Dashboard: findings for review, not migrations
 -- 0.5.1 - 2026-08-23 - [u] is update; catalog findings show last fold ref
 -- 0.5.0 - 2026-08-23 - Phase 5: review [u] reason (one-field apply)
@@ -901,6 +903,17 @@ local function explain_check(finding)
         if finding.live and finding.live ~= "" then
             lines[#lines + 1] = "  live:      " .. finding.live
         end
+        if finding.kind == "nullable" then
+            local want_null = (finding.expected == "true"
+                or finding.expected == "YES" or finding.expected == "1")
+            if want_null then
+                lines[#lines + 1] = "  apply:     [u] ALTER COLUMN DROP NOT NULL"
+            else
+                lines[#lines + 1] = "  apply:     [u] ALTER COLUMN SET NOT NULL"
+            end
+        elseif finding.kind == "column" then
+            lines[#lines + 1] = "  apply:     [u] ADD COLUMN (type from expected fold)"
+        end
         return lines
     end
     local file = finding.file
@@ -908,6 +921,14 @@ local function explain_check(finding)
         file = "(migration)"
     end
     local ref = tostring(finding.ref or "?")
+    if finding.kind == "orphan" then
+        lines[#lines + 1] = "  check:     orphan — ref in DB, absent from disk"
+        lines[#lines + 1] = "  migration: (no design_" .. ref .. ".lua on disk)"
+        lines[#lines + 1] = "  database:  queries  ref=" .. ref
+            .. "  type 1000/1003 (loaded/applied)"
+        lines[#lines + 1] = "  action:    [u] deletes ref rows (BETWEEN 1000 AND 1003)"
+        return lines
+    end
     if finding.db_type == 1003 then
         lines[#lines + 1] = "  check:     APPLY — migration vs applied queries row"
         lines[#lines + 1] = "  migration: " .. file
@@ -1525,9 +1546,29 @@ local function g_label(next_ref, g_reason)
     return "  [g] generate a migration"
 end
 
-local function u_label(u_reason)
+local function promote_label(finding, state, allow_write)
+    if not allow_write then
+        return "  [m] promote packet to Helium   (disabled — need --allow-write)"
+    end
+    local id = finding and finding.id
+    local rec = state and state.by_id and state.by_id[id]
+    if rec and rec.action == "packet" and rec.ref then
+        return "  [m] promote packet to Helium   (packet ref "
+            .. tostring(rec.ref) .. ")"
+    end
+    return "  [m] promote packet to Helium   (no packet — generate with [g] first)"
+end
+
+local function u_label(u_reason, finding)
     if u_reason and u_reason ~= "" then
         return "  [u] update database            (disabled — " .. u_reason .. ")"
+    end
+    if finding and finding.kind == "orphan" then
+        return "  [u] delete orphan ref          (type REF)"
+    end
+    if finding and finding.class
+        and finding.class:find("^catalog") then
+        return "  [u] apply catalog DDL          (type object.column)"
     end
     return "  [u] update database            (type REF.field)"
 end
@@ -1555,13 +1596,13 @@ function M.build_review_lines(finding, next_ref, g_reason, u_reason)
     lines[#lines + 1] = "  [e] explore in more detail"
     lines[#lines + 1] = "  [s] skip for now"
     lines[#lines + 1] = "  [a] accept permanent variance"
-    lines[#lines + 1] = u_label(u_reason)
+    lines[#lines + 1] = u_label(u_reason, finding)
     lines[#lines + 1] = g_label(next_ref, g_reason)
     lines[#lines + 1] = "  [n]ext  [p]rev  [r]e-audit  [q]uit to dashboard"
     return lines
 end
 
-function M.build_review_lines_detailed(finding, out_dir, state, next_ref, g_reason, u_reason)
+function M.build_review_lines_detailed(finding, out_dir, state, next_ref, g_reason, u_reason, allow_write)
     local lines = {}
     lines[#lines + 1] = "This is the variance"
     lines[#lines + 1] = "  id:       " .. finding.id
@@ -1591,10 +1632,23 @@ function M.build_review_lines_detailed(finding, out_dir, state, next_ref, g_reas
     lines[#lines + 1] = "  [e] explore in more detail"
     lines[#lines + 1] = "  [s] skip for now"
     lines[#lines + 1] = "  [a] accept permanent variance"
-    lines[#lines + 1] = u_label(u_reason)
+    lines[#lines + 1] = u_label(u_reason, finding)
     lines[#lines + 1] = g_label(next_ref, g_reason)
+    lines[#lines + 1] = promote_label(finding, state, allow_write)
     lines[#lines + 1] = "  [n]ext  [p]rev  [r]e-audit  [q]uit to dashboard"
     return lines
+end
+
+function M.g_label(next_ref, g_reason)
+    return g_label(next_ref, g_reason)
+end
+
+function M.promote_label(finding, state, allow_write)
+    return promote_label(finding, state, allow_write)
+end
+
+function M.u_label(u_reason, finding)
+    return u_label(u_reason, finding)
 end
 
 return M
