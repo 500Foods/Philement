@@ -8,6 +8,7 @@
 --     [--only-failures]
 --
 -- CHANGELOG
+-- 1.1.1 - 2026-08-23 - Pass expected column fold ref onto failures[]
 -- 1.1.0 - 2026-08-23 - Additive findings: failures[] + live_extras[] (tables unchanged)
 -- 1.0.0 - 2026-08-02 - Phase 7c catalog compare
 
@@ -69,7 +70,7 @@ local function cleanup_tmp()
     os.execute('rm -rf "' .. TMP_DIR .. '"')
 end
 
--- Emit TSV lines: table \t column \t nullable(true|false|null) \t data_type
+-- Emit TSV lines: table \t column \t nullable \t data_type \t ref
 local function emit_flat(path, out_path)
     local filter = [[
 .tables[]? |
@@ -79,7 +80,8 @@ local function emit_flat(path, out_path)
     ($t // ""),
     (.name // ""),
     (if .nullable == true then "true" elif .nullable == false then "false" else "null" end),
-    (.data_type // "")
+    (.data_type // ""),
+    (if .ref then (.ref|tostring) else "" end)
   ] | @tsv
 ]]
     local fpath = TMP_DIR .. "/flat.jq"
@@ -106,7 +108,11 @@ local function load_flat(path)
         return map, tables_seen
     end
     for line in f:lines() do
-        local t, c, n, dt = line:match("^(.-)\t(.-)\t(.-)\t(.*)$")
+        local t, c, n, dt, ref = line:match("^(.-)\t(.-)\t(.-)\t(.-)\t(.*)$")
+        if not t then
+            t, c, n, dt = line:match("^(.-)\t(.-)\t(.-)\t(.*)$")
+            ref = ""
+        end
         if t and c then
             t = t:lower()
             c = c:lower()
@@ -120,7 +126,11 @@ local function load_flat(path)
             if not map[t] then
                 map[t] = {}
             end
-            map[t][c] = { nullable = nullable, data_type = (dt or ""):lower() }
+            map[t][c] = {
+                nullable = nullable,
+                data_type = (dt or ""):lower(),
+                ref = tonumber(ref),
+            }
         end
     end
     f:close()
@@ -200,6 +210,7 @@ for _, tname in ipairs(exp_names) do
                 expected = "present",
                 live = "missing",
                 notes = "missing column",
+                ref = exp.ref,
             }
             goto continue_col
         end
@@ -228,6 +239,7 @@ for _, tname in ipairs(exp_names) do
                 expected = exp_s,
                 live = live_s,
                 notes = table.concat(notes, "; "),
+                ref = exp.ref,
             }
         end
         ::continue_col::
@@ -304,16 +316,21 @@ if counts.missing_table > 0 or counts.missing_column > 0 or counts.nullability >
 end
 
 local function row_json(r)
+    local ref_json = ""
+    if r.ref then
+        ref_json = string.format(',"ref":%d', r.ref)
+    end
     return string.format(
         '{"object":"%s","column":"%s","check":"%s","status":"%s",'
-            .. '"expected":"%s","live":"%s","notes":"%s"}',
+            .. '"expected":"%s","live":"%s","notes":"%s"%s}',
         json_escape(r.object),
         json_escape(r.column),
         json_escape(r.check),
         json_escape(r.status),
         json_escape(r.expected),
         json_escape(r.live),
-        json_escape(r.notes or "")
+        json_escape(r.notes or ""),
+        ref_json
     )
 end
 

@@ -18,12 +18,12 @@ one by one:
 
 | Need | Action |
 | --- | --- |
-| See the whole picture | Dashboard: total / perfect / accepted / subject for review |
+| See the whole picture | Dashboard: migrations found / perfect / accepted / findings for review |
 | Look closer | `[e]` explore (paged detail) |
 | Not now | `[s]` skip for now (still subject next launch) |
 | Known divergence | `[a]` accept permanent variance (sidecar) |
 | Live DB should become a migration | `[g]` reserve next ref and write a packet |
-| Official Lua should win | `[u]` apply one field (`--allow-write`, type `REF.field`) |
+| Official Lua should win | `[u]` update one field (`--allow-write`, type `REF.field`) |
 
 ## What it is / is not
 
@@ -104,7 +104,7 @@ need that engine listening and the matching env vars (see
 | `--ref N` | Force the next packet number |
 | `--track metadata\|catalog\|both` | Queue filter (default `both`) |
 | `--reuse` | Load existing artifacts; skip SchemaTool |
-| `--allow-write` | Enable `[u]` one-field metadata `UPDATE` |
+| `--allow-write` | Enable `[u]` update of one metadata field |
 
 Default `--out-dir` next to a Test 40 wrapper is inside the git tree.
 SchemaHelper warns once. Prefer `--out-dir /tmp/…` for real sessions.
@@ -116,9 +116,11 @@ SchemaHelper warns once. Prefer `--out-dir /tmp/…` for real sessions.
 3. **Connect / SchemaTool** — live ping, then audit unless `--reuse`.
    Expect prints `expect N/M ref R` to the log; the running screen shows
    a progress bar from those lines.
-4. **Dashboard** — totals + variance classes + reserved packet refs.
-   If the catalog track fails after a successful metadata compare, the
-   dashboard still opens on metadata findings (warning on the dashboard).
+4. **Dashboard** — migration totals, then **findings for review** (one
+    per drifted field plus catalog rows; not a migration count) +
+    variance classes + reserved packet refs. If the catalog track fails
+    after a successful metadata compare, the dashboard still opens on
+    metadata findings (warning on the dashboard).
 5. **Review** — one field at a time. A SchemaTool drift with
    `code`+`name` is two items. Explore shows the stored text; Enter on a
    `BROTLI`/`CRYPTO` line opens the decoded payload (both sides, or one).
@@ -126,12 +128,12 @@ SchemaHelper warns once. Prefer `--out-dir /tmp/…` for real sessions.
 | Key | Where | Effect |
 | --- | --- | --- |
 | Enter | Dashboard | Begin review |
-| `r` | Dashboard / review | Re-audit (review) / reserved |
+| `r` | Dashboard / review | Re-run SchemaTool; sidecar decisions kept |
 | `q` / Esc | Most screens | Back or quit |
 | `e` | Review | Explore one field: Migration vs Database |
 | `s` | Review | Skip for now |
 | `a` | Review | Accept permanent variance |
-| `u` | Review | Apply this field (needs `--allow-write`; type `1223.code`) |
+| `u` | Review | Update this field (needs `--allow-write`; type `1223.code`) |
 | `g` | Review | Generate a migration packet |
 | `n` / `p` | Review | Next / previous |
 | `j` / `k` / arrows | Explore | Move line highlight (both panes) |
@@ -147,8 +149,8 @@ Selections live in
 engines can share one folder. Actions: `skipped`, `accepted`, `applied`,
 `packet`. No passwords and no full `code` blobs.
 
-Skipped items stay **subject for review**. Accepted / packet / applied
-drop out of the 1-by-1 queue.
+Skipped items stay in **findings for review**. Accepted / packet /
+applied drop out of the 1-by-1 queue.
 
 ## Packets
 
@@ -174,7 +176,8 @@ never applied. Confirm the number is free before promoting into Helium.
   `--allow-write`, after typing `REF.field`, and only one metadata
   field (`code` / `name` / `summary`) from official Lua. Catalog,
   missing LOAD/APPLY, orphan, anomaly, and decoded views are refused.
-  A metadata `UPDATE` does not replay DDL.
+  A metadata update does not replay DDL. Catalog / schema DDL is not
+  applied; use `[g]` to packet a live-ahead change.
 - Secrets inherit SchemaTool `--password-env`; never printed; never
   written into packets or the sidecar.
 - Catalog DDL apply is not offered. Missing LOAD/APPLY is guidance to

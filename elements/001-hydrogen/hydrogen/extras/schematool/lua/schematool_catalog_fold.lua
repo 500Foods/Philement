@@ -6,6 +6,7 @@
 --        [--checklist-out PATH]  (stdout JSON if no out)
 --
 -- CHANGELOG
+-- 1.1.0 - 2026-08-23 - Record last fold ref on each expected column
 -- 1.0.1 - 2026-08-23 - Lua 5.5: do not assign to generic-for loop variable
 -- 1.0.0 - 2026-08-02 - Phase 7b hybrid C fold from applied codes
 
@@ -101,8 +102,9 @@ local function is_keyword_col(name)
         or u == "REFERENCES"
 end
 
--- tables[name] = { columns = { [name] = {name, data_type, nullable} }, col_order = {}, pk = {} }
+-- tables[name] = { columns = { [name] = {name, data_type, nullable, ref} }, col_order = {}, pk = {} }
 local tables = {}
+local current_ref = 0
 
 local function ensure_table(tname)
     tname = tname:lower()
@@ -150,6 +152,7 @@ local function set_column(tname, cname, data_type, nullable)
         name = cname,
         data_type = dt,
         nullable = nullv and true or false,
+        ref = current_ref,
     }
 end
 
@@ -165,6 +168,7 @@ local function set_nullable(tname, cname, nullable)
         return
     end
     c.nullable = nullable and true or false
+    c.ref = current_ref
 end
 
 local function drop_column(tname, cname)
@@ -489,7 +493,13 @@ local function json_string_field(obj, key)
     return table.concat(parts)
 end
 
+local function json_num_field(obj, key)
+    local n = obj:match('"' .. key .. '"%s*:%s*(%-?%d+)')
+    return n and tonumber(n) or nil
+end
+
 for _, line in ipairs(lines) do
+    current_ref = json_num_field(line, "r") or 0
     local code = json_string_field(line, "c")
     fold_code(code)
 end
@@ -523,11 +533,16 @@ for idx, n in ipairs(names) do
     for _, cn in ipairs(t.col_order) do
         local c = t.columns[cn]
         if c then
+            local ref_json = ""
+            if c.ref and c.ref > 0 then
+                ref_json = string.format(',"ref":%d', c.ref)
+            end
             cols[#cols + 1] = string.format(
-                '{"name":"%s","data_type":"%s","nullable":%s,"default":null}',
+                '{"name":"%s","data_type":"%s","nullable":%s,"default":null%s}',
                 json_escape(c.name),
                 json_escape(c.data_type),
-                c.nullable and "true" or "false"
+                c.nullable and "true" or "false",
+                ref_json
             )
         end
     end

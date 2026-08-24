@@ -3,6 +3,8 @@
 --
 --
 -- CHANGELOG
+-- 0.5.2 - 2026-08-24 - Dashboard: findings for review, not migrations
+-- 0.5.1 - 2026-08-23 - [u] is update; catalog findings show last fold ref
 -- 0.5.0 - 2026-08-23 - Phase 5: review [u] reason (one-field apply)
 -- 0.4.14 - 2026-08-23 - Explore Enter decodes highlighted brotli line
 -- 0.4.13 - 2026-08-23 - One finding per field; decoded brotli is its own item
@@ -423,6 +425,7 @@ local function add_catalog_rows(findings, rows, kind_fallback)
             kind = check,
             object = object,
             column = column,
+            ref = json_num_field(obj, "ref"),
             expected = json_string_field(obj, "expected"),
             live = json_string_field(obj, "live"),
             summary = json_string_field(obj, "notes"),
@@ -879,8 +882,25 @@ end
 
 local function explain_check(finding)
     local lines = {}
-    if finding.live and finding.live ~= "" then
+    if finding.object and finding.object ~= "" then
         lines[#lines + 1] = "  check:     catalog expected vs live object"
+        lines[#lines + 1] = "  table:     " .. finding.object
+        if finding.column and finding.column ~= "" and finding.column ~= "-" then
+            lines[#lines + 1] = "  column:    " .. finding.column
+        end
+        if finding.ref then
+            lines[#lines + 1] = "  migration: last fold ref "
+                .. tostring(finding.ref)
+                .. " (expected shape)"
+        else
+            lines[#lines + 1] = "  migration: (fold did not record a ref)"
+        end
+        if finding.expected and finding.expected ~= "" then
+            lines[#lines + 1] = "  expected:  " .. finding.expected
+        end
+        if finding.live and finding.live ~= "" then
+            lines[#lines + 1] = "  live:      " .. finding.live
+        end
         return lines
     end
     local file = finding.file
@@ -1466,7 +1486,7 @@ function M.build_dashboard_lines(opts)
     lines[#lines + 1] = string.format("Total migrations found      %d", built.totals.total)
     lines[#lines + 1] = string.format("Perfect migrations          %d", built.totals.perfect)
     lines[#lines + 1] = string.format("Accepted variations         %d", built.totals.accepted)
-    lines[#lines + 1] = string.format("Subject for review          %d", built.totals.subject)
+    lines[#lines + 1] = string.format("Findings for review         %d", built.totals.subject)
     if built.totals.applied > 0 or built.totals.packet > 0 then
         lines[#lines + 1] = string.format("Applied / packets           %d / %d",
             built.totals.applied, built.totals.packet)
@@ -1483,7 +1503,7 @@ function M.build_dashboard_lines(opts)
         end
     end
     lines[#lines + 1] = ""
-    lines[#lines + 1] = "Variance classes (subject for review)"
+    lines[#lines + 1] = "Variance classes (findings for review)"
     if #built.classes == 0 then
         lines[#lines + 1] = "  (none)"
     else
@@ -1507,9 +1527,9 @@ end
 
 local function u_label(u_reason)
     if u_reason and u_reason ~= "" then
-        return "  [u] apply to database          (disabled — " .. u_reason .. ")"
+        return "  [u] update database            (disabled — " .. u_reason .. ")"
     end
-    return "  [u] apply to database          (type REF.field)"
+    return "  [u] update database            (type REF.field)"
 end
 
 function M.build_review_lines(finding, next_ref, g_reason, u_reason)
