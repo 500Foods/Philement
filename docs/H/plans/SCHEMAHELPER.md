@@ -285,7 +285,7 @@ Entry for humans: `schemahelper.sh` (deps, `stty`, wrapper discovery).
 | Connect probe | As soon as a wrapper is chosen, Lua pings the live DB with the wrapper’s env family (never print passwords). Fail status blocks a new SchemaTool run. |
 | Splash look | Single-line box around the whole tty; bright red border. Left: SchemaHelper / version / release. Right: SchemaTool / version / release. Blank, then Lua `_VERSION` left and `terminal.lua` version right. Yellow names, green versions, cyan dates, magenta runtimes. |
 | Splash dismiss | Enter only. Other keys ignored. Ctrl-C / tty restore via `terminal.initwrap`. |
-| Versions | SchemaHelper **0.4.0** (released 2026-08-23) fronts SchemaTool **1.8.0** (2026-08-23; additive catalog JSON). |
+| Versions | SchemaHelper **0.5.5** (2026-08-24) fronts SchemaTool **1.8.3** (2026-08-23; additive catalog JSON `failures[]` + `live_extras[]`). |
 | Skip for now | Persist as `skipped` in the sidecar so quit/resume works; still **subject for review** on the next launch (not accepted). |
 | Accept permanent variance | Persist as `accepted` in the sidecar. Counts as “Accepted variations”; hidden from the 1-by-1 queue until the **migration payload changes** (id + expected/live hash). Dashboard (Phase 3) must list accepted items and allow **un-accept** (returns the finding to subject-for-review). |
 | Apply to database (v1) | **Metadata only**: uncomment the single finding’s SchemaTool `UPDATE`/`DELETE` guidance and run it via the native client, transaction + typed confirm. Requires `--allow-write`. Record as `applied` in the sidecar. |
@@ -550,8 +550,8 @@ authoring pass) needs to write `design_NNNN.lua`.
   "status": "reserved",
   "finding_ids": ["cat:accounts:new_col:column"],
   "source": "schemahelper",
-  "schemahelper_version": "0.4.0",
-  "schematool_version": "1.8.0"
+  "schemahelper_version": "0.5.5",
+  "schematool_version": "1.8.3"
 }
 ```
 
