@@ -2,6 +2,8 @@
 -- SchemaHelper — Interactive SchemaTool front-end (Lua 5.5 + terminal.lua)
 --
 -- CHANGELOG
+-- 0.5.5 - 2026-08-24 - Phase 7: catalog DDL apply (nullable / add column) with louder confirm (object.column)
+-- 0.5.4 - 2026-08-24 - Phase 5 slice: confirmed orphan [u] DELETE (true orphans only)
 -- 0.5.3 - 2026-08-24 - Dashboard/review [r] re-runs SchemaTool
 -- 0.5.2 - 2026-08-24 - Dashboard: findings for review, not migrations
 -- 0.5.1 - 2026-08-23 - [u] update; catalog review shows fold ref
@@ -28,7 +30,7 @@
 
 -- luacheck: globals arg package
 
-local VERSION = "0.5.3"
+local VERSION = "0.5.5"
 local RELEASED = "2026-08-24"
 
 local LUA_RELEASES = {
@@ -811,6 +813,7 @@ local function is_review_key_line(line)
     local key = line:sub(4, 5)
     return key == "e]" or key == "s]" or key == "a]" or key == "u]"
         or key == "g]" or key == "n]" or key == "p]"
+        or key == "m]"
 end
 
 local function review_content(self)
@@ -841,7 +844,8 @@ local function review_content(self)
     local next_ref, g_reason = packet_next(self.opts)
     local u_reason = apply.refuse_reason(finding, self.opts.allow_write)
     local review_lines = queue.build_review_lines_detailed(
-        finding, self.opts.out_dir, app.state, next_ref, g_reason, u_reason)
+        finding, self.opts.out_dir, app.state, next_ref,
+        g_reason, u_reason, self.opts.allow_write)
     local body = {}
     for i = 1, #review_lines do
         local line = review_lines[i]
@@ -849,13 +853,23 @@ local function review_content(self)
             body[#body + 1] = { line, ATTR_PATH }
         end
     end
-    local u_hint = " [u]pdate"
+    local u_hint
     if u_reason then
         u_hint = ""
+    elseif finding.kind == "orphan" then
+        u_hint = " [u]elete"
+    elseif finding.class and finding.class:find("^catalog") then
+        u_hint = " [u]pply DDL"
+    else
+         u_hint = " [u]pdate"
+    end
+    local m_label = ""
+    if self.opts.allow_write then
+        m_label = " [m] promote"
     end
     paint_framed(self, header, body,
-        string.format("[%d of %d]  [e]xplore [s]kip [a]ccept%s [g]enerate  [n]/[p]  [q]uit",
-            idx, #subj, u_hint))
+        string.format("[%d of %d]  [e]xplore [s]kip [a]ccept%s [g]enerate%s  [n]/[p]  [q]uit",
+            idx, #subj, u_hint, m_label))
 end
 
 local function wrap_display_line(text, width)
@@ -1153,34 +1167,96 @@ local function note_content(self)
         "Press Enter to write (empty note is OK)   ESC cancel")
 end
 
+local function split_lines(text)
+    local lines = {}
+    for line in (tostring(text or "") .. "\n"):gmatch("(.-)\n") do
+        lines[#lines + 1] = line
+    end
+    return lines
+end
+
 local function apply_content(self)
     local app = self.app
     local header = session_header(self.opts, app, self.inner_width)
     local token = app.apply_token or "?"
     local finding = app.apply_finding
+    local is_orphan = finding and finding.kind == "orphan"
+    local is_catalog = finding and finding.class
+        and finding.class:find("^catalog") ~= nil
+    local title = is_orphan
+        and "Delete this orphan from the database"
+        or is_catalog
+        and "Apply catalog DDL to the database"
+        or "Update this field on the database"
     local lines = {
-        { "Update this field on the database", ATTR_TITLE },
+        { title, ATTR_TITLE },
         { "  type      " .. token, ATTR_VERSION },
     }
     if finding then
         lines[#lines + 1] = { "  finding   " .. (finding.id or ""), ATTR_PATH }
-        lines[#lines + 1] = { "  field     " .. (finding.field or ""), ATTR_PATH }
+        if is_catalog then
+            lines[#lines + 1] = {
+                "  table     " .. (finding.object or ""), ATTR_PATH }
+            if finding.column and finding.column ~= ""
+                and finding.column ~= "-" then
+                lines[#lines + 1] = {
+                    "  column    " .. finding.column, ATTR_PATH }
+            end
+            local want_null = (finding.kind == "nullable")
+            if want_null then
+                local dn = (finding.expected == "true"
+                    or finding.expected == "YES" or finding.expected == "1")
+                local verb = dn and "DROP NOT NULL" or "SET NOT NULL"
+                lines[#lines + 1] = {
+                    "  action    ALTER COLUMN " .. verb, ATTR_PATH }
+            else
+                lines[#lines + 1] = {
+                    "  action    ADD COLUMN", ATTR_PATH }
+            end
+        elseif not is_orphan then
+            lines[#lines + 1] = { "  field     " .. (finding.field or ""), ATTR_PATH }
+            local ref_line = "  ref       " .. tostring(finding.ref or "?")
+                .. "  /  type=" .. tostring(finding.db_type or "?")
+            lines[#lines + 1] = { ref_line, ATTR_PATH }
+        end
+    end
+    lines[#lines + 1] = { "", ATTR_PATH }
+    if is_orphan then
         lines[#lines + 1] = {
-            "  ref/type  " .. tostring(finding.ref or "?")
-                .. " / " .. tostring(finding.db_type or "?"),
-            ATTR_PATH,
+            "This deletes orphan rows from queries. It does not author a migration.",
+            ATTR_ERR,
+        }
+    elseif is_catalog then
+        lines[#lines + 1] = {
+            "This ALTER statement mutates live DDL shape.",
+            ATTR_ERR,
+        }
+    else
+        lines[#lines + 1] = {
+            "This updates queries metadata only. It does not replay DDL.",
+            ATTR_ERR,
         }
     end
     lines[#lines + 1] = { "", ATTR_PATH }
-    lines[#lines + 1] = {
-        "This updates queries metadata only. It does not replay DDL.",
-        ATTR_ERR,
-    }
-    lines[#lines + 1] = { "", ATTR_PATH }
+    if app.apply_sql and app.apply_sql ~= "" then
+        lines[#lines + 1] = {
+            "Proposed DDL (review before confirming):", ATTR_SECTION }
+        for _, l in ipairs(split_lines(app.apply_sql)) do
+            lines[#lines + 1] = { "  " .. l, ATTR_PATH }
+        end
+        lines[#lines + 1] = { "", ATTR_PATH }
+    end
     lines[#lines + 1] = { "Type " .. token .. " to confirm:", ATTR_SECTION }
     lines[#lines + 1] = { "  " .. (app.apply_buf or ""), ATTR_PROMPT }
-    paint_framed(self, header, lines,
-        "Press Enter to update   ESC cancel")
+    local cancel
+    if is_orphan then
+        cancel = "Press Enter to delete   ESC cancel"
+    elseif is_catalog then
+        cancel = "Press Enter to apply DDL   ESC cancel"
+    else
+        cancel = "Press Enter to update   ESC cancel"
+    end
+    paint_framed(self, header, lines, cancel)
 end
 
 local function chrome_content(self)
@@ -1403,24 +1479,26 @@ local function apply_finding(screen, app, opts)
         return nil
     end
     local token = apply.confirm_token(f)
+    local conn = connect.resolve(opts.wrapper)
+    local sql, sql_err = apply.build_sql(f, conn, opts.out_dir)
+    if not sql then
+        app.show_mode_msg = "error: " .. tostring(sql_err)
+        return nil
+    end
     app.apply_finding = f
     app.apply_token = token
+    app.apply_sql = sql
     app.apply_buf = ""
     local typed = run_apply_confirm(screen, app)
     app.apply_finding = nil
     app.apply_token = nil
+    app.apply_sql = nil
     if typed == nil then
         app.show_mode_msg = "update cancelled"
         return nil
     end
     if typed ~= token then
         app.show_mode_msg = "update aborted — type " .. token
-        return nil
-    end
-    local conn = connect.resolve(opts.wrapper)
-    local sql, sql_err = apply.build_sql(f, conn)
-    if not sql then
-        app.show_mode_msg = "error: " .. tostring(sql_err)
         return nil
     end
     local log_path, log_err = apply.write_log(opts.out_dir, f, sql)
@@ -1442,8 +1520,16 @@ local function apply_finding(screen, app, opts)
         return nil
     end
     rebuild_queue(app, opts)
-    app.show_mode_msg = "updated " .. token
-        .. " — metadata only, does not replay DDL"
+    if f.kind == "orphan" then
+        app.show_mode_msg = "deleted orphan ref " .. token
+            .. " from queries (review .mig for migration capture)"
+    elseif f.class and f.class:find("^catalog") then
+        app.show_mode_msg = "applied DDL to " .. token
+            .. " — catalog shape changed"
+    else
+        app.show_mode_msg = "updated " .. token
+            .. " — metadata only, does not replay DDL"
+    end
     if app.built.totals.subject < 1 then
         return "dashboard"
     end
@@ -1516,6 +1602,35 @@ local function generate_packet(screen, app, opts)
     return nil
 end
 
+local function promote_finding(_screen, app, opts)
+    if not app.built or not app.built.subject then
+        app.show_mode_msg = "error: no finding selected"
+        return nil
+    end
+    local f = app.built.subject[app.review_index]
+    if not f then
+        app.show_mode_msg = "error: no finding selected"
+        return nil
+    end
+    local tool_ver = select(1, read_tool_version(opts.schematool))
+    local dest_path, name, ref = packet.promote({
+        migrations = opts.migrations,
+        packet_dir = opts.packet_dir,
+        design = opts.design,
+        engine = opts.engine,
+        state = app.state,
+        schemahelper_version = VERSION,
+        schematool_version = tool_ver or "",
+    }, f)
+    if not dest_path then
+        app.show_mode_msg = "error: " .. tostring(name)
+        return nil
+    end
+    app.show_mode_msg = string.format(
+        "promoted packet %d → %s/%s", ref, opts.migrations, name)
+    return nil
+end
+
 local function run_review(screen, app, opts)
     app.review_index = app.review_index < 1 and 1 or app.review_index
     show_mode(screen, app, "review")
@@ -1580,6 +1695,12 @@ local function run_review(screen, app, opts)
                 show_mode(screen, app, "review")
             elseif raw == "g" then
                 local next_mode = generate_packet(screen, app, opts)
+                if next_mode then
+                    return next_mode
+                end
+                show_mode(screen, app, "review")
+            elseif raw == "m" then
+                local next_mode = promote_finding(screen, app, opts)
                 if next_mode then
                     return next_mode
                 end

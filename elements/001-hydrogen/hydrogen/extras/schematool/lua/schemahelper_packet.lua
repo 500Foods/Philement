@@ -2,6 +2,7 @@
 -- Reserve the next migration ref and write a review-only packet directory.
 --
 -- CHANGELOG
+-- 0.5.5 - 2026-08-24 - Phase 7: promote to Helium migration stub
 -- 0.4.0 - 2026-08-23 - Phase 4: next-ref, collision, packet files
 
 local M = {}
@@ -31,6 +32,18 @@ local function is_dir(path)
     local out = h:read("*a") or ""
     h:close()
     return out == "yes"
+end
+
+local function file_exists(path)
+    if not path or path == "" then
+        return false
+    end
+    local f = io.open(path, "r")
+    if not f then
+        return false
+    end
+    f:close()
+    return true
 end
 
 local function write_all(path, data)
@@ -489,6 +502,167 @@ function M.write(opts, finding, extra)
         name = dest_name,
         note = note,
     }
+end
+
+local function lua_brackets(level)
+    local eqs = ("="):rep(level)
+    return "[" .. eqs .. "[", "]" .. eqs .. "]"
+end
+
+local function pick_lua_level(s)
+    local level = 0
+    local marker = "]"
+    while s:find(marker, 1, true) do
+        level = level + 1
+        marker = "]" .. ("="):rep(level) .. "]"
+    end
+    return level
+end
+
+local function generate_migration_stub(design, ref, engine, finding, suggested,
+    sh_ver, st_ver)
+    local level = pick_lua_level(suggested or "")
+    local open, close = lua_brackets(level)
+    local finding_id = json_escape(finding.id or "")
+    local object = json_escape(finding.object or "")
+    local column = json_escape(finding.column or "")
+    local class = json_escape(finding.class or "")
+    local desc = "Catalog DDL: " .. (finding.kind or "")
+        .. " " .. object
+    if column ~= "" and column ~= "-" then
+        desc = desc .. "." .. column
+    end
+    local ddl_body = (suggested or ""):gsub("^%s+", ""):gsub("%s+$", "")
+    return string.format([[-- Migration: %s_%04d.lua
+-- Promoted from SchemaHelper packet.
+-- STUB — review, complete, and author the proper INSERT before loading.
+--
+-- SchemaHelper: %s   SchemaTool: %s
+-- Engine: %s
+-- Finding: %s
+-- Class: %s
+
+-- luacheck: no max line length
+-- luacheck: no unused args
+
+return function(engine, design_name, schema_name, cfg)
+local queries = {}
+
+cfg.TABLE = "queries"
+cfg.MIGRATION = "%04d"
+cfg.QUERY_REF = "%04d"
+cfg.QUERY_NAME = %s
+-- FIXME: assign a real QueryRef if %04d is reserved; author the INSERT with
+--        ${COMMON_INSERT} fields and a reverse that flips type 1003→forward.
+
+-- ----------------------------------------------------------------------------
+-- Forward: %s
+-- ----------------------------------------------------------------------------
+table.insert(queries,{sql=%s
+
+%s
+
+%s})})
+
+-- ----------------------------------------------------------------------------
+-- Reverse
+-- ----------------------------------------------------------------------------
+-- TODO: author reverse. For catalog nullable/add-column changes the reverse
+--       is usually a no-op marker (flip type 1003→forward) so the migration
+--       chain can reverse past this ref. See acuranzo_1290 for the pattern.
+table.insert(queries,{sql=%s
+
+%s
+
+%s})})
+
+return queries end
+]],
+        design, ref,
+        sh_ver or "", st_ver or "",
+        engine or "",
+        finding_id,
+        class,
+        ref, ref,
+        string.format("%q", desc),
+        ref,
+        "DDL",
+        open, ddl_body, close,
+        -- reverse stub
+        open, "-- TODO: reverse DDL", close
+    )
+end
+
+function M.promote(opts, finding)
+    opts = opts or {}
+    local design = opts.design or ""
+    local engine = opts.engine or ""
+    local migrations = opts.migrations or ""
+    local packet_dir, packet_ref
+
+    if finding and finding.id then
+        local dec = opts.state and opts.state.by_id
+            and opts.state.by_id[finding.id]
+        if dec and dec.action == "packet"
+            and dec.ref and dec.packet then
+            packet_ref = dec.ref
+            packet_dir = M.packet_path(
+                opts.packet_dir, design, engine, dec.ref)
+        end
+    end
+
+    if not packet_dir or not packet_ref then
+        return nil, "no packet for this finding; generate with [g] first"
+    end
+
+    if not file_exists(packet_dir) then
+        return nil, "packet directory not found: " .. tostring(packet_dir)
+    end
+
+    local suggested_path = packet_dir .. "/SUGGESTED.sql"
+    if not file_exists(suggested_path) then
+        return nil, "packet SUGGESTED.sql not found"
+    end
+    local suggested = read_all(suggested_path) or ""
+
+    local manifest_body = read_all(packet_dir .. "/MANIFEST.json") or "{}"
+    local ref = json_num_field(manifest_body, "ref")
+    if not ref or ref < 1 then
+        return nil, "cannot determine packet ref from MANIFEST.json"
+    end
+
+    if not migrations or migrations == "" then
+        return nil, "migrations path is required"
+    end
+    if not is_dir(migrations) then
+        return nil, "migrations directory not found: " .. migrations
+    end
+
+    local dest_name = design .. "_" .. string.format("%04d", ref) .. ".lua"
+    local dest_path = migrations .. "/" .. dest_name
+    if file_exists(dest_path) then
+        return nil, "destination already exists: " .. dest_path
+    end
+
+    local stub = generate_migration_stub(
+        design, ref, engine, finding, suggested,
+        opts.schemahelper_version or "0.5.5",
+        opts.schematool_version or "")
+    local ok, err = write_all(dest_path, stub)
+    if not ok then
+        return nil, err
+    end
+
+    local manifest = read_all(packet_dir .. "/MANIFEST.json") or ""
+    local patched = manifest:gsub(
+        '"status"%s*:%s*"reserved"', '"status": "promoted"')
+    if patched == manifest then
+        patched = manifest:gsub(
+            '"status"%s*:%s*"reserved"', '"status": "promoted"')
+    end
+    write_all(packet_dir .. "/MANIFEST.json", patched)
+
+    return dest_path, dest_name, ref
 end
 
 return M

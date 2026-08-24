@@ -4,6 +4,8 @@
 # Lua 5.5 TUI over extras/schematool. Default is review-only.
 #
 # CHANGELOG
+# 0.5.5 - 2026-08-24 - Phase 7: catalog DDL apply (nullable / add column) + [m] promote packet to Helium
+# 0.5.4 - 2026-08-24 - Phase 5 slice: confirmed orphan [u] DELETE (true orphans only)
 # 0.5.3 - 2026-08-24 - Dashboard/review [r] re-runs SchemaTool
 # 0.5.2 - 2026-08-24 - Dashboard: findings for review, not migrations
 # 0.5.1 - 2026-08-23 - [u] labeled update; catalog review shows fold ref
@@ -36,7 +38,7 @@ SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
 LUA_APP="${SCRIPT_DIR}/schemahelper.lua"
 SCHEMATOOL_SH="${SCRIPT_DIR}/schematool.sh"
 
-VERSION="0.5.3"
+VERSION="0.5.5"
 SCHEMATOOL_VERSION="1.8.3"
 
 print_help() {
@@ -66,7 +68,11 @@ Options:
   --track metadata|catalog|both
                          Which SchemaTool track to queue (default: both)
   --reuse                Load existing --out-dir artifacts; skip SchemaTool
-  --allow-write          Enable [u] update of one metadata field (type REF.field)
+   --allow-write          Enable [u] update of one metadata field (type REF.field),
+                           [u] delete of an orphan ref (type REF; true orphans only),
+                           [u] apply of catalog DDL on nullable/add-column
+                           findings (type object.column), and [m] promote packet
+                           stub into Helium migrations
   --help, -h             This help
   --version              Print versions
 

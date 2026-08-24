@@ -24,6 +24,9 @@ one by one:
 | Known divergence | `[a]` accept permanent variance (sidecar) |
 | Live DB should become a migration | `[g]` reserve next ref and write a packet |
 | Official Lua should win | `[u]` update one field (`--allow-write`, type `REF.field`) |
+| DB ref is a keeper, not a refix | `[u]` delete an orphan ref (`--allow-write`, type `REF`; true orphans only) |
+| Live catalog shape drifted | `[u]` apply catalog DDL (`--allow-write`, type `object.column`; nullable→SET/DROP NOT NULL, missing col→ADD COLUMN) |
+| Need a Helium migration | `[g]` reserve next ref and write a packet, then `[m]` promote to `design_NNNN.lua` stub |
 
 ## What it is / is not
 
@@ -104,7 +107,7 @@ need that engine listening and the matching env vars (see
 | `--ref N` | Force the next packet number |
 | `--track metadata\|catalog\|both` | Queue filter (default `both`) |
 | `--reuse` | Load existing artifacts; skip SchemaTool |
-| `--allow-write` | Enable `[u]` update of one metadata field |
+| `--allow-write` | Enable `[u]` apply (metadata / orphan / catalog DDL) and `[m]` promote |
 
 Default `--out-dir` next to a Test 40 wrapper is inside the git tree.
 SchemaHelper warns once. Prefer `--out-dir /tmp/…` for real sessions.
@@ -133,8 +136,9 @@ SchemaHelper warns once. Prefer `--out-dir /tmp/…` for real sessions.
 | `e` | Review | Explore one field: Migration vs Database |
 | `s` | Review | Skip for now |
 | `a` | Review | Accept permanent variance |
-| `u` | Review | Update this field (needs `--allow-write`; type `1223.code`) |
+| `u` | Review | Update a field (`--allow-write`; type `1223.code`) OR delete an orphan ref (type `1290`; true orphans only; anomalies refused) OR apply catalog DDL (type `accounts.id`; nullable/add-column only) |
 | `g` | Review | Generate a migration packet |
+| `m` | Review | Promote current packet to a `design_NNNN.lua` stub in Helium (`--allow-write`; requires an existing packet) |
 | `n` / `p` | Review | Next / previous |
 | `j` / `k` / arrows | Explore | Move line highlight (both panes) |
 | Enter | Explore | Decode highlighted brotli/crypto line |
@@ -170,18 +174,35 @@ packet directory is refused.
 A packet is **not** a migration. `SUGGESTED.sql` is review-only and is
 never applied. Confirm the number is free before promoting into Helium.
 
+`[m]` (with `--allow-write`) writes a `design_NNNN.lua` **stub** from the
+packet's `SUGGESTED.sql`. The stub is not a full Lua author — a human must
+complete the INSERT-into-queries pattern before loading. The packet's
+`MANIFEST.json` status flips `reserved`→`promoted`.
+
 ## Safety
 
 - SchemaTool stays read-only. SchemaHelper writes only with
-  `--allow-write`, after typing `REF.field`, and only one metadata
-  field (`code` / `name` / `summary`) from official Lua. Catalog,
-  missing LOAD/APPLY, orphan, anomaly, and decoded views are refused.
-  A metadata update does not replay DDL. Catalog / schema DDL is not
-  applied; use `[g]` to packet a live-ahead change.
+  `--allow-write`, after a typed confirm, and only one finding at a time.
+  Two write shapes exist:
+  - **Update database `[u]`** — one metadata field (`code` / `name` /
+     `summary`) from official Lua. Confirm is `REF.field` (e.g. `1223.code`).
+  - **Delete orphan `[u]`** — removes a true orphan ref from `queries`
+     (`DELETE WHERE query_ref = N AND query_type_a28 BETWEEN 1000 AND 1003`,
+     matching SchemaTool remediation). Confirm is the bare `REF`
+     (e.g. `1290`). Anomalies (1000+1003 on disk) are **not** deletable —
+     review and skip instead.
+  - **Apply catalog DDL `[u]`** — single-statement `ALTER TABLE` on a
+     `nullable` mismatch (SET/DROP NOT NULL) or `missing column`
+     (ADD COLUMN, type from expected fold). Confirm is `object.column`
+     (e.g. `accounts.id`) — louder than `REF.field`. Refused on missing
+     tables, live-only extras, and extra columns.
+  Catalog, missing LOAD/APPLY, and decoded views are refused. A metadata
+  update does not replay DDL.
 - Secrets inherit SchemaTool `--password-env`; never printed; never
   written into packets or the sidecar.
-- Catalog DDL apply is not offered. Missing LOAD/APPLY is guidance to
-  run Hydrogen AutoMigration, not a helper `UPDATE`.
+- Catalog DDL apply is limited to nullable and add-column; other catalog
+  checks are refused. Missing LOAD/APPLY is guidance to run Hydrogen
+  AutoMigration, not a helper `UPDATE`.
 
 ## Related
 
