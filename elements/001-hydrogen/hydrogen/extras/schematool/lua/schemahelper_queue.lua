@@ -4,10 +4,9 @@
 --
 -- CHANGELOG
 -- 0.5.5 - 2026-08-24 - Phase 7: u_label + explain_check for catalog DDL apply
--- 0.5.4 - 2026-08-24 - Phase 5 slice: orphan [u] label + explain_check branch
--- 0.5.2 - 2026-08-24 - Dashboard: findings for review, not migrations
--- 0.5.1 - 2026-08-23 - [u] is update; catalog findings show last fold ref
--- 0.5.0 - 2026-08-23 - Phase 5: review [u] reason (one-field apply)
+-- 0.5.4 - 2026-08-24 - Phase 5 slice: orphan [U] label + explain_check branch
+-- 0.5.1 - 2026-08-23 - [U] is update; catalog findings show last fold ref
+-- 0.5.0 - 2026-08-23 - Phase 5: review [U] reason (one-field apply)
 -- 0.4.14 - 2026-08-23 - Explore Enter decodes highlighted brotli line
 -- 0.4.13 - 2026-08-23 - One finding per field; decoded brotli is its own item
 -- 0.4.11 - 2026-08-23 - Decode brotli/base64 in compare; explore view
@@ -907,12 +906,12 @@ local function explain_check(finding)
             local want_null = (finding.expected == "true"
                 or finding.expected == "YES" or finding.expected == "1")
             if want_null then
-                lines[#lines + 1] = "  apply:     [u] ALTER COLUMN DROP NOT NULL"
+                lines[#lines + 1] = "  apply:     [U]pdate Database — ALTER COLUMN DROP NOT NULL"
             else
-                lines[#lines + 1] = "  apply:     [u] ALTER COLUMN SET NOT NULL"
+                lines[#lines + 1] = "  apply:     [U]pdate Database — ALTER COLUMN SET NOT NULL"
             end
         elseif finding.kind == "column" then
-            lines[#lines + 1] = "  apply:     [u] ADD COLUMN (type from expected fold)"
+            lines[#lines + 1] = "  apply:     [U]pdate Database — ADD COLUMN (type from expected fold)"
         end
         return lines
     end
@@ -926,7 +925,7 @@ local function explain_check(finding)
         lines[#lines + 1] = "  migration: (no design_" .. ref .. ".lua on disk)"
         lines[#lines + 1] = "  database:  queries  ref=" .. ref
             .. "  type 1000/1003 (loaded/applied)"
-        lines[#lines + 1] = "  action:    [u] deletes ref rows (BETWEEN 1000 AND 1003)"
+        lines[#lines + 1] = "  action:    [U]pdate Database — deletes ref rows (BETWEEN 1000 AND 1003)"
         return lines
     end
     if finding.db_type == 1003 then
@@ -1538,39 +1537,39 @@ end
 
 local function g_label(next_ref, g_reason)
     if g_reason and g_reason ~= "" then
-        return "  [g] generate a migration       (disabled — " .. g_reason .. ")"
+        return "  [G]enerate Migration       (disabled — " .. g_reason .. ")"
     end
     if next_ref then
-        return "  [g] generate a migration       (next ref " .. tostring(next_ref) .. ")"
+        return "  [G]enerate Migration       (next ref " .. tostring(next_ref) .. ")"
     end
-    return "  [g] generate a migration"
+    return "  [G]enerate Migration"
 end
 
 local function promote_label(finding, state, allow_write)
     if not allow_write then
-        return "  [m] promote packet to Helium   (disabled — need --allow-write)"
+        return "  [M] Promote packet to Helium   (disabled — need --allow-write)"
     end
     local id = finding and finding.id
     local rec = state and state.by_id and state.by_id[id]
     if rec and rec.action == "packet" and rec.ref then
-        return "  [m] promote packet to Helium   (packet ref "
+        return "  [M] Promote packet to Helium   (packet ref "
             .. tostring(rec.ref) .. ")"
     end
-    return "  [m] promote packet to Helium   (no packet — generate with [g] first)"
+    return "  [M] Promote packet to Helium   (no packet — generate with [G] first)"
 end
 
 local function u_label(u_reason, finding)
     if u_reason and u_reason ~= "" then
-        return "  [u] update database            (disabled — " .. u_reason .. ")"
+        return "  [U]pdate Database            (disabled — " .. u_reason .. ")"
     end
     if finding and finding.kind == "orphan" then
-        return "  [u] delete orphan ref          (type REF)"
+        return "  [U]pdate Database            (delete orphan, type REF)"
     end
     if finding and finding.class
         and finding.class:find("^catalog") then
-        return "  [u] apply catalog DDL          (type object.column)"
+        return "  [U]pdate Database            (apply catalog DDL, type object.column)"
     end
-    return "  [u] update database            (type REF.field)"
+    return "  [U]pdate Database            (type REF.field)"
 end
 
 function M.build_review_lines(finding, next_ref, g_reason, u_reason)
@@ -1593,12 +1592,12 @@ function M.build_review_lines(finding, next_ref, g_reason, u_reason)
     end
     lines[#lines + 1] = ""
     lines[#lines + 1] = "What would you like to do?"
-    lines[#lines + 1] = "  [e] explore in more detail"
-    lines[#lines + 1] = "  [s] skip for now"
-    lines[#lines + 1] = "  [a] accept permanent variance"
+    lines[#lines + 1] = "  [E]xplore in more detail"
+    lines[#lines + 1] = "  [S]kip for now"
+    lines[#lines + 1] = "  [A]ccept permanent variance"
     lines[#lines + 1] = u_label(u_reason, finding)
     lines[#lines + 1] = g_label(next_ref, g_reason)
-    lines[#lines + 1] = "  [n]ext  [p]rev  [r]e-audit  [q]uit to dashboard"
+    lines[#lines + 1] = "  [N]ext  [P]rev  [R]e-audit  [Q]uit to dashboard"
     return lines
 end
 
@@ -1629,13 +1628,13 @@ function M.build_review_lines_detailed(finding, out_dir, state, next_ref, g_reas
     end
     lines[#lines + 1] = ""
     lines[#lines + 1] = "What would you like to do?"
-    lines[#lines + 1] = "  [e] explore in more detail"
-    lines[#lines + 1] = "  [s] skip for now"
-    lines[#lines + 1] = "  [a] accept permanent variance"
+    lines[#lines + 1] = "  [E]xplore in more detail"
+    lines[#lines + 1] = "  [S]kip for now"
+    lines[#lines + 1] = "  [A]ccept permanent variance"
     lines[#lines + 1] = u_label(u_reason, finding)
     lines[#lines + 1] = g_label(next_ref, g_reason)
     lines[#lines + 1] = promote_label(finding, state, allow_write)
-    lines[#lines + 1] = "  [n]ext  [p]rev  [r]e-audit  [q]uit to dashboard"
+    lines[#lines + 1] = "  [N]ext  [P]rev  [R]e-audit  [Q]uit to dashboard"
     return lines
 end
 
