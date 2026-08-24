@@ -1143,16 +1143,19 @@ Phases 1–4 minimum. Phase 5 if shipped.
 - [x] Update extras schematool README + extras README.
 - [x] Cross-link from [SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md).
 - [x] Test 04 + Test 90 clean.
-- [~] Optional: `extras/schematool/smoke_schemahelper_queue.sh` against
-      checked-in fixture JSON (no live DB). Packet writer already smoked
-      headless against `test/fixtures/sample_project/`.
+- [x] `extras/schematool/smoke_schemahelper_queue.sh` — headless smoke against
+      checked-in fixture JSON in `test/fixtures/sample_project/`: queue build
+      totals (4/1/1/4), field-level finding id `:name` (not `:code`),
+      next_ref=1291, `--ref 1148` collision, `--ref 2000` packet write. Driver:
+      `lua/schemahelper_smoke_queue.lua`.
 
 ### Exit gate / validation
 
 - [x] Test 04 / Test 90 / Test 98 / `mks` green (`mkl` not required;
       no C).
-- [x] Plan Status for 0–4 and 6 filled; Phase 5 optional; leftover
-      smoke script deferred with `[~]`.
+- [x] Plan Status for 0–4 and 6 filled; Phase 5 optional; smoke script
+      `smoke_schemahelper_queue.sh` + `lua/schemahelper_smoke_queue.lua`
+      complete (marks the `[~]` item in Phase 6 work items).
 
 ### Status
 
@@ -1224,6 +1227,19 @@ catalog rows, bitfield exit) stay deferred.
 ---
 
 ## Working Log
+
+### 2026-08-24 — Phase 6 smoke script closure
+
+- Created `lua/schemahelper_smoke_queue.lua` (headless Lua driver) and
+  `smoke_schemahelper_queue.sh` (bash wrapper) as the Phase 6 optional smoke.
+- Uses `test/fixtures/sample_project/` (not the stale `testdata/schemahelper_queue/`
+  sidecar which references `meta:drift:1148:1003:code` — the field-level split
+  produces `:name`).
+- Verified: totals 4/1/1/4; finding id `meta:drift:1148:1003:name` accepted;
+  next_ref=1291 (max disk 1290 + 1); `--ref 1148` collides with `design_1148.lua`;
+  `--ref 2000` writes `MANIFEST.json` / `PACKET.md` / `FINDING.json` /
+  `DETAIL.txt` / `SUGGESTED.sql` (orphan:1290 packet, then cleaned up).
+- shellcheck clean (1 file); luacheck clean (1 file, 0 issues).
 
 ### 2026-08-24 — Phase 5 confirmed complete; Phase 7 partial closed
 
