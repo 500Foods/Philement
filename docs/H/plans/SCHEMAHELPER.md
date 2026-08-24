@@ -31,28 +31,30 @@ exit gate is green. Record learnings in the Working Log.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-08-23):** Phases 0–4 and 6 closed.
-Phase 5 first slice shipped: SchemaHelper **0.5.0** fronts SchemaTool
-**1.8.2**. `[u]` applies **one** metadata field (`code`/`name`/`summary`)
+**CURRENT PAUSE POINT (as of 2026-08-24):** Phases 0–4 and 6 closed.
+Phase 5 first slice shipped: SchemaHelper **0.5.3** fronts SchemaTool
+**1.8.3**. `[u]` updates **one** metadata field (`code`/`name`/`summary`)
 when launched with `--allow-write`; confirm is `REF.field` (e.g.
 `1223.code`). Orphan/anomaly DELETE is not in this slice.
+
+Dashboard count wording is in: migration totals stay migration counts;
+the queue line is **Findings for review** (field-level + catalog).
+Dashboard and review `[r]` re-run SchemaTool, then rebuild the queue
+from the new artifacts; sidecar decisions stay.
 
 Post-v1 field hardening is in (see Working Log): catalog fold Lua 5.5
 const + catalog degrade; custom-wrapper connect (exec flags + sourced
 `exec`); dashboard `q` / result-screen paint; explore decode.
-
-Deferred polish (not a phase gate): dashboard “subject for review” is
-**findings**, not migrations (e.g. 24 drifted refs + 38 catalog rows =
-62). Re-audit `[r]` on the dashboard is still a stub message.
 
 ### Resume here next session
 
 1. Confirm this document is the source of truth.
 2. Optional smoke: `schemahelper.sh --allow-write schematool_sqlite.sh`
    — Enter review, `[u]` on a `code`/`name`/`summary` drift, type
-   `REF.field`. Without the flag, `[u]` stays disabled.
-3. Next polish: dashboard count wording or live `[r]` re-audit. Orphan
-   DELETE only if a real session needs it.
+   `REF.field`. Without the flag, `[u]` stays disabled. `[r]` on the
+   dashboard re-runs SchemaTool.
+3. Next: orphan DELETE only if a real session needs it. Phase 7 stays
+   deferred.
 
 ### Session checklist
 
@@ -89,7 +91,7 @@ totals, then walks leftovers one by one:
 
 | Need | SchemaTool today | SchemaHelper |
 | --- | --- | --- |
-| See the whole picture | Batch table + footer counts | Opening dashboard: total / perfect / accepted / subject for review + variance classes |
+| See the whole picture | Batch table + footer counts | Opening dashboard: total / perfect / accepted / findings for review + variance classes |
 | See one disparity | Scroll the table + detail | 1-by-1: “this is the variance, what would you like to do?” |
 | Official Lua wins | Commented `UPDATE` / LOAD/APPLY guidance | **Apply to database** (confirmed, per finding) |
 | Live DB wins | Orphan `.mig` only | **Generate a migration** (assigned next ref, packet) |
@@ -228,7 +230,7 @@ Entry for humans: `schemahelper.sh` (deps, `stty`, wrapper discovery).
 1. **Pick a SchemaTool invocation** — list `schematool_*.sh` wrappers plus a
    custom-flags path; run with `--format json --out-dir <workspace>`.
 2. **Open on an analysis dashboard** — totals first (migrations found,
-   perfect, accepted variations, subject for review) plus a classification
+    perfect, accepted variations, findings for review) plus a classification
    breakdown of variance kinds. Then enter the 1-by-1 queue.
 3. **Walk every leftover disparity** — one finding at a time: “this is the
    variance, what would you like to do?”
@@ -350,9 +352,9 @@ jump into the first finding. It shows the current state:
 │ Total migrations found          213                                 │
 │ Perfect migrations                4                                 │
 │ Accepted variations              12                                 │
-│ Subject for review               12                                 │
+│ Findings for review              12                                 │
 ├─────────────────────────────────────────────────────────────────────┤
-│ Variance classes (subject for review)                               │
+│ Variance classes (findings for review)                              │
 │   metadata content drift          5                                 │
 │   missing LOAD                    2                                 │
 │   missing APPLY                   1                                 │
@@ -371,9 +373,9 @@ jump into the first finding. It shows the current state:
 | Total migrations found | Disk `design_NNNN.lua` refs in scope, plus orphan DB refs not on disk |
 | Perfect migrations | All SchemaTool checks pass and no permanent accept is recorded |
 | Accepted variations | Sidecar `accepted` (and still matching payload hash if gated) |
-| Subject for review | Findings that are not perfect, not accepted, not applied, and not already turned into a packet |
+| Findings for review | Queue items: one per drifted field, plus catalog rows. Not a migration count (24 drifted refs + 38 catalog rows = 62). Excludes accepted / applied / packet. |
 
-Skipped items stay in **subject for review**. Applied / packet items drop
+Skipped items stay in **findings for review**. Applied / packet items drop
 out of that line (they are handled, not “perfect”). Footer or a second
 block may show `applied` / `packet reserved` counts so the operator can
 see work already done in this workspace.
@@ -1194,6 +1196,25 @@ worth the added risk.
 ---
 
 ## Working Log
+
+### 2026-08-24 — Live [r] re-audit
+
+- Dashboard and review `[r]` re-probe connect, re-run SchemaTool, ingest
+  JSON, keep sidecar decisions. Failed ping skips the run. SchemaHelper
+  **0.5.3**.
+
+### 2026-08-24 — Dashboard findings wording
+
+- Queue line is **Findings for review**, not Subject/migrations. Migration
+  totals stay ref counts. Classes header matches. SchemaHelper **0.5.2**.
+
+### 2026-08-23 — [u] is update; catalog fold ref
+
+- Review label is `[u] update database` so it is not confused with
+  `[a] accept`. Catalog failures now carry the last fold `ref` (the
+  migration that last set that column). Review shows table/column and
+  that ref. Schema DDL apply is still not offered; packet `[g]` is the
+  schema path. SchemaHelper **0.5.1**, SchemaTool **1.8.3**.
 
 ### 2026-08-23 — Phase 5 first slice: one-field apply
 

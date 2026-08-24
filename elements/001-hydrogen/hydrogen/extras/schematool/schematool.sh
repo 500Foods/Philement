@@ -8,6 +8,7 @@
 # Database/Lua operations, audit orchestration, and rendering are in lib/.
 #
 # CHANGELOG
+# 1.8.3 - 2026-08-23 - Catalog failures[] include last fold ref
 # 1.8.2 - 2026-08-23 - Catalog fold/compare failure degrades after metadata
 # 1.8.1 - 2026-08-23 - Expect/phase stderr progress for SchemaHelper
 # 1.8.0 - 2026-08-23 - Catalog findings JSON: failures[] + live_extras[] (tables unchanged)
@@ -31,7 +32,7 @@ LUA_DIR="${SCRIPT_DIR}/lua"
 DB_DIR="${SCRIPT_DIR}/db"
 LIB_DIR="${SCRIPT_DIR}/lib"
 
-VERSION="1.8.2"
+VERSION="1.8.3"
 
 # Source library modules (helpers, audit orchestration, rendering)
 # shellcheck source=extras/schematool/lib/schematool_init.sh # dependency checks + command lookups

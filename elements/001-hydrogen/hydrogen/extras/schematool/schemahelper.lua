@@ -2,6 +2,9 @@
 -- SchemaHelper — Interactive SchemaTool front-end (Lua 5.5 + terminal.lua)
 --
 -- CHANGELOG
+-- 0.5.3 - 2026-08-24 - Dashboard/review [r] re-runs SchemaTool
+-- 0.5.2 - 2026-08-24 - Dashboard: findings for review, not migrations
+-- 0.5.1 - 2026-08-23 - [u] update; catalog review shows fold ref
 -- 0.5.0 - 2026-08-23 - Phase 5: [u] one-field metadata apply
 -- 0.4.14 - 2026-08-23 - Explore: Enter decodes brotli line; pageup/pagedown
 -- 0.4.13 - 2026-08-23 - Explore: full field, both line nos, first-diff line
@@ -25,8 +28,8 @@
 
 -- luacheck: globals arg package
 
-local VERSION = "0.5.0"
-local RELEASED = "2026-08-23"
+local VERSION = "0.5.3"
+local RELEASED = "2026-08-24"
 
 local LUA_RELEASES = {
     ["5.5.1"] = "2026-08-03",
@@ -822,7 +825,7 @@ local function review_content(self)
     local subj = app.built.subject
     if #subj == 0 then
         paint_framed(self, header,
-            { { "All findings reviewed — none subject for review", ATTR_TITLE } },
+            { { "All findings reviewed — none for review", ATTR_TITLE } },
             "[q]uit to dashboard")
         return
     end
@@ -846,7 +849,7 @@ local function review_content(self)
             body[#body + 1] = { line, ATTR_PATH }
         end
     end
-    local u_hint = " [u]pply"
+    local u_hint = " [u]pdate"
     if u_reason then
         u_hint = ""
     end
@@ -1156,7 +1159,7 @@ local function apply_content(self)
     local token = app.apply_token or "?"
     local finding = app.apply_finding
     local lines = {
-        { "Apply official Lua to the database", ATTR_TITLE },
+        { "Update this field on the database", ATTR_TITLE },
         { "  type      " .. token, ATTR_VERSION },
     }
     if finding then
@@ -1177,7 +1180,7 @@ local function apply_content(self)
     lines[#lines + 1] = { "Type " .. token .. " to confirm:", ATTR_SECTION }
     lines[#lines + 1] = { "  " .. (app.apply_buf or ""), ATTR_PROMPT }
     paint_framed(self, header, lines,
-        "Press Enter to apply   ESC cancel")
+        "Press Enter to update   ESC cancel")
 end
 
 local function chrome_content(self)
@@ -1228,6 +1231,77 @@ show_mode = function(screen, app, mode)
     screen:render()
 end
 
+local function rebuild_queue(app, opts)
+    app.state = queue.load_state(opts.state_file)
+    app.built = queue.build({
+        out_dir = opts.out_dir,
+        track = opts.track,
+        state = app.state,
+    })
+    local n = app.built.totals.subject
+    if n < 1 then
+        app.review_index = 1
+    elseif app.review_index > n then
+        app.review_index = n
+    end
+end
+
+local function ingest_audit(app, opts, ran, exit_code)
+    local state_fh = io.open(opts.state_file, "r")
+    if state_fh then
+        state_fh:close()
+    else
+        queue.create_state(opts.state_file, opts.design, opts.engine, opts.schema)
+    end
+    rebuild_queue(app, opts)
+    app.catalog_degraded = false
+    local ok_exit = (exit_code == 0 or exit_code == 2 or exit_code == 3)
+    local have_meta = queue.artifacts_present(opts.out_dir, "metadata")
+    local have_cat = queue.artifacts_present(opts.out_dir, "catalog")
+    if ran and not ok_exit then
+        if opts.track == "catalog" and not have_cat then
+            return "SchemaTool failed; see log"
+        elseif have_meta then
+            app.catalog_degraded = true
+            app.show_mode_msg = "Catalog track failed; metadata findings kept"
+            return nil
+        end
+        return "SchemaTool failed; see log"
+    end
+    if ran and ok_exit and (opts.track == "both" or opts.track == "catalog")
+        and not have_cat and have_meta then
+        app.catalog_degraded = true
+        app.show_mode_msg = "Catalog track failed; metadata findings kept"
+    end
+    return nil
+end
+
+local function reaudit(screen, app, opts)
+    app.show_mode_msg = ""
+    app.status_note = "Connecting…"
+    show_mode(screen, app, "running")
+    app.conn = probe_connect(opts)
+    show_mode(screen, app, "running")
+    if not app.conn.ok then
+        app.show_mode_msg = "Re-audit skipped — no database connection"
+        rebuild_queue(app, opts)
+        return false
+    end
+    app.status_note = "Running SchemaTool…"
+    show_mode(screen, app, "running")
+    local exit_code, log = invoke_schematool(opts, screen, app)
+    app.log = log
+    local err = ingest_audit(app, opts, true, exit_code)
+    if err then
+        app.show_mode_msg = err
+        return false
+    end
+    if not app.catalog_degraded then
+        app.show_mode_msg = "re-audited"
+    end
+    return true
+end
+
 local function run_dashboard(screen, app, opts, state)
     app.state = state
     app.built = queue.build({
@@ -1252,27 +1326,12 @@ local function run_dashboard(screen, app, opts, state)
                     return "review"
                 end
             elseif raw == "r" then
-                app.show_mode_msg = "Re-audit not implemented in this fixture path"
+                reaudit(screen, app, opts)
                 show_mode(screen, app, "dashboard")
             elseif raw == "q" or name == keys.escape then
                 return "quit"
             end
         end
-    end
-end
-
-local function rebuild_queue(app, opts)
-    app.state = queue.load_state(opts.state_file)
-    app.built = queue.build({
-        out_dir = opts.out_dir,
-        track = opts.track,
-        state = app.state,
-    })
-    local n = app.built.totals.subject
-    if n < 1 then
-        app.review_index = 1
-    elseif app.review_index > n then
-        app.review_index = n
     end
 end
 
@@ -1340,7 +1399,7 @@ local function apply_finding(screen, app, opts)
     end
     local why = apply.refuse_reason(f, opts.allow_write)
     if why then
-        app.show_mode_msg = "apply disabled — " .. why
+        app.show_mode_msg = "update disabled — " .. why
         return nil
     end
     local token = apply.confirm_token(f)
@@ -1351,11 +1410,11 @@ local function apply_finding(screen, app, opts)
     app.apply_finding = nil
     app.apply_token = nil
     if typed == nil then
-        app.show_mode_msg = "apply cancelled"
+        app.show_mode_msg = "update cancelled"
         return nil
     end
     if typed ~= token then
-        app.show_mode_msg = "apply aborted — type " .. token
+        app.show_mode_msg = "update aborted — type " .. token
         return nil
     end
     local conn = connect.resolve(opts.wrapper)
@@ -1371,7 +1430,7 @@ local function apply_finding(screen, app, opts)
     end
     local ok, exec_err = connect.exec_sql(opts.wrapper, log_path)
     if not ok then
-        app.show_mode_msg = "apply failed: " .. tostring(exec_err)
+        app.show_mode_msg = "update failed: " .. tostring(exec_err)
         return nil
     end
     local saved, save_err = queue.save_decision(
@@ -1379,11 +1438,11 @@ local function apply_finding(screen, app, opts)
             note = token,
         })
     if not saved then
-        app.show_mode_msg = "applied but sidecar: " .. tostring(save_err)
+        app.show_mode_msg = "updated but sidecar: " .. tostring(save_err)
         return nil
     end
     rebuild_queue(app, opts)
-    app.show_mode_msg = "applied " .. token
+    app.show_mode_msg = "updated " .. token
         .. " — metadata only, does not replay DDL"
     if app.built.totals.subject < 1 then
         return "dashboard"
@@ -1535,18 +1594,7 @@ local function run_review(screen, app, opts)
                 app.review_index = math.max(1, app.review_index - 1)
                 show_mode(screen, app, "review")
             elseif raw == "r" then
-                local state = queue.load_state(opts.state_file)
-                app.built = queue.build({
-                    out_dir = opts.out_dir,
-                    track = opts.track,
-                    state = state,
-                })
-                app.review_index = math.min(
-                    app.review_index, app.built.totals.subject)
-                if app.review_index < 1 then
-                    app.review_index = 1
-                end
-                app.show_mode_msg = "re-audited"
+                reaudit(screen, app, opts)
                 show_mode(screen, app, "dashboard")
                 return "dashboard"
             elseif name == keys.escape or raw == "q" then
@@ -1731,13 +1779,13 @@ local function build_result_lines(opts, ran, exit_code, built, err)
         add(string.format("Total migrations found     %d", tot.total), ATTR_PROMPT)
         add(string.format("Perfect migrations         %d", tot.perfect), ATTR_PROMPT)
         add(string.format("Accepted variations        %d", tot.accepted), ATTR_PROMPT)
-        add(string.format("Subject for review         %d", tot.subject), ATTR_PROMPT)
+        add(string.format("Findings for review        %d", tot.subject), ATTR_PROMPT)
         if tot.applied > 0 or tot.packet > 0 then
             add(string.format("Applied / packets          %d / %d", tot.applied, tot.packet),
                 ATTR_PATH)
         end
         add("", ATTR_PATH)
-        add("Variance classes (subject for review)", ATTR_SECTION)
+        add("Variance classes (findings for review)", ATTR_SECTION)
         if #built.classes == 0 then
             add("  (none)", ATTR_PATH)
         else
@@ -1842,35 +1890,11 @@ local function main()
             ran = true
         end
 
-        local state_fh = io.open(opts.state_file, "r")
-        if state_fh then
-            state_fh:close()
-        else
-            queue.create_state(opts.state_file, opts.design, opts.engine, opts.schema)
-        end
-        state = queue.load_state(opts.state_file)
-
-        built = queue.build({
-            out_dir = opts.out_dir,
-            track = opts.track,
-            state = state,
-        })
-        local ok_exit = (exit_code == 0 or exit_code == 2 or exit_code == 3)
-        local have_meta = queue.artifacts_present(opts.out_dir, "metadata")
-        local have_cat = queue.artifacts_present(opts.out_dir, "catalog")
-        if ran and not ok_exit then
-            if opts.track == "catalog" and not have_cat then
-                err = "SchemaTool failed; see log"
-            elseif have_meta then
-                app.catalog_degraded = true
-                app.show_mode_msg = "Catalog track failed; metadata findings kept"
-            else
-                err = "SchemaTool failed; see log"
-            end
-        elseif ran and ok_exit and (opts.track == "both" or opts.track == "catalog")
-            and not have_cat and have_meta then
-            app.catalog_degraded = true
-            app.show_mode_msg = "Catalog track failed; metadata findings kept"
+        local ingest_err = ingest_audit(app, opts, ran, exit_code)
+        state = app.state
+        built = app.built
+        if not err then
+            err = ingest_err
         end
 
         if not err then

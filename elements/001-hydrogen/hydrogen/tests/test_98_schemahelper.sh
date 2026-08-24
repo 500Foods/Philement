@@ -169,7 +169,7 @@ end
 print("OK: state design=" .. state.design .. " engine=" .. state.engine)
 
 -- Test cursor_id persistence
-if state.cursor_id ~= "meta:drift:1148:1003:code" then
+if state.cursor_id ~= "meta:drift:1148:1003:name" then
     print("ERR: cursor_id=" .. tostring(state.cursor_id))
     os.exit(1)
 end
@@ -200,6 +200,15 @@ if not dash or #dash == 0 then
     print("ERR: dashboard lines empty")
     os.exit(1)
 end
+local dash_text = table.concat(dash, "\n")
+if not dash_text:find("Findings for review", 1, true) then
+    print("ERR: dashboard missing findings-for-review label")
+    os.exit(1)
+end
+if dash_text:find("Subject for review", 1, true) then
+    print("ERR: dashboard still labels the queue as migrations/subject")
+    os.exit(1)
+end
 print("OK: dashboard produces " .. #dash .. " lines")
 
 -- Test build_review_lines
@@ -219,7 +228,7 @@ end
 print("OK: explore produces " .. #explore .. " lines")
 
 -- Test note_for
-local note = queue.note_for("meta:drift:1148:1003:code", fixture, state)
+local note = queue.note_for("meta:drift:1148:1003:name", fixture, state)
 if note ~= "known drift" then
     print("ERR: note_for returned: " .. tostring(note))
     os.exit(1)
@@ -278,7 +287,7 @@ local built = queue.build({
 
 local found_accepted = false
 for _, f in ipairs(built.findings) do
-    if f.id == "meta:drift:1148:1003:code" and f.action == "accepted" then
+    if f.id == "meta:drift:1148:1003:name" and f.action == "accepted" then
         found_accepted = true
         break
     end
@@ -378,9 +387,9 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "schemahelper.lua --version"
 
 SCHEMALUA="${SCHEMAGUI}/schemahelper.lua"
 VER_OUT=$(lua "${SCHEMALUA}" --version 2>&1 || true)
-if echo "${VER_OUT}" | grep -q "0.3"; then
+if echo "${VER_OUT}" | grep -q "0.5"; then
     print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${VER_OUT}"
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "SchemaHelper 0.3.0 --version works"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "SchemaHelper --version works"
 else
     print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${VER_OUT}"
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Version not found or wrong format"

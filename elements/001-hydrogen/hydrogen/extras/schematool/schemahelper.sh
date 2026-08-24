@@ -4,6 +4,9 @@
 # Lua 5.5 TUI over extras/schematool. Default is review-only.
 #
 # CHANGELOG
+# 0.5.3 - 2026-08-24 - Dashboard/review [r] re-runs SchemaTool
+# 0.5.2 - 2026-08-24 - Dashboard: findings for review, not migrations
+# 0.5.1 - 2026-08-23 - [u] labeled update; catalog review shows fold ref
 # 0.5.0 - 2026-08-23 - Phase 5: --allow-write enables one-field apply
 # 0.4.14 - 2026-08-23 - Explore: Enter decodes brotli line; pageup/pagedown
 # 0.4.13 - 2026-08-23 - Explore: full field, both line nos, first-diff line
@@ -33,8 +36,8 @@ SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
 LUA_APP="${SCRIPT_DIR}/schemahelper.lua"
 SCHEMATOOL_SH="${SCRIPT_DIR}/schematool.sh"
 
-VERSION="0.5.0"
-SCHEMATOOL_VERSION="1.8.2"
+VERSION="0.5.3"
+SCHEMATOOL_VERSION="1.8.3"
 
 print_help() {
     cat <<EOF
@@ -63,7 +66,7 @@ Options:
   --track metadata|catalog|both
                          Which SchemaTool track to queue (default: both)
   --reuse                Load existing --out-dir artifacts; skip SchemaTool
-  --allow-write          Enable [u] one-field metadata UPDATE (type REF.field)
+  --allow-write          Enable [u] update of one metadata field (type REF.field)
   --help, -h             This help
   --version              Print versions
 
