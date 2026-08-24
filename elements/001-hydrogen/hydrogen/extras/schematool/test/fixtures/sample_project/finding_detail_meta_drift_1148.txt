@@ -1,0 +1,11 @@
+Finding: meta:drift:1148:1003:code
+  ref:                1148
+  kind:               drift (metadata content)
+  file:               design_1148.lua
+  class:              metadata content drift
+  summary:            ref 1148 code field mismatch: expected name=x actual name=y
+  expected:           name=x
+  actual:             name=y
+
+  Detail:
+  ref 1148 code field mismatch: expected name=x actual name=y

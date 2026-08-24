@@ -7,8 +7,9 @@ object shape vs folded applied DDL).
 
 **Full docs:** [`/docs/H/tools/SCHEMATOOL.md`](/docs/H/tools/SCHEMATOOL.md)  
 **Plan:** [`/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md)  
-**Helper (splash):** `schemahelper.sh` — plan
-[`/docs/H/plans/SCHEMAHELPER.md`](/docs/H/plans/SCHEMAHELPER.md)
+**SchemaHelper:** `schemahelper.sh` —
+[`/docs/H/tools/SCHEMAHELPER.md`](/docs/H/tools/SCHEMAHELPER.md)
+(plan: [`/docs/H/plans/SCHEMAHELPER.md`](/docs/H/plans/SCHEMAHELPER.md))
 
 ## One-liner (metadata)
 
@@ -56,13 +57,16 @@ extras/schematool/schematool.sh \
 ```text
 schematool.sh                 # CLI entry — help + parameter handling
 schemahelper.sh               # SchemaHelper launcher (Lua 5.5 + terminal.lua)
-schemahelper.lua              # SchemaHelper TUI (splash in 0.1.0)
+schemahelper.lua              # SchemaHelper TUI (review + packets)
 lib/
   schematool_init.sh          # dependency checks + command path resolution
   schematool_runners.sh       # db/Lua adapter wrappers (query/catalog adapters, Lua extractors)
   schematool_audit.sh         # audit mode dispatch + orchestration (dump/emit/audits)
   schematool_render.sh        # tables rendering + render dispatch
 lua/
+  schemahelper_queue.lua
+  schemahelper_connect.lua
+  schemahelper_packet.lua
   schematool_discover.lua
   schematool_expect.lua
   schematool_normalize.lua

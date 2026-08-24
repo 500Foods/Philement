@@ -129,6 +129,10 @@ How it works:
 
 With `--only-tables`, metadata audit is skipped (fast path). Without it,
 `--catalog` runs **after** the default metadata audit; exit is **worst-wins**.
+If the catalog fold, probe, or compare fails after a successful metadata
+audit, SchemaTool **1.8.2** skips the catalog track, keeps metadata
+artifacts, and exits with the metadata code (0 / 2 / 3) instead of 1.
+Catalog-only (`--only-tables`) still exits 1 on catalog failure.
 
 **Teaching examples:** catalog → **1190** `password_hash` nullable; metadata → **1280/1281** mail seed text drift.
 
@@ -299,6 +303,13 @@ documented. Confirm these before pointing at prod:
 2. Prefer a **read-only DB role** when the engine allows it (defense beyond client guards).
 3. Review any `.sql` / `.mig` offline; never pipe unedited to a client.
 4. Metadata exit 2 on known drift (e.g. 1280/1281 mail seeds) is audit signal, not a write.
+
+## SchemaHelper
+
+Interactive review of SchemaTool findings (dashboard, skip / accept,
+migration packets) is
+[`SchemaHelper`](/docs/H/tools/SCHEMAHELPER.md). SchemaTool itself stays
+read-only.
 
 ## Related
 

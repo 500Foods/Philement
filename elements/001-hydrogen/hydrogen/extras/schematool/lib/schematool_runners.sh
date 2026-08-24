@@ -12,6 +12,7 @@
 #   CAT_EXPECTED_JSON, CAT_DATA_JSON, CAT_FINDINGS_JSON, ONLY_FAILURES
 #
 # CHANGELOG
+# 1.1.0 - 2026-08-23 - Catalog fold/compare/probe return 1 (caller may degrade)
 # 1.0.0 - 2026-08-02 - Split from schematool.sh
 
 # shellcheck disable=SC2154,SC2034 # globals shared with schematool.sh and other lib modules
@@ -155,7 +156,7 @@ run_dump_catalog() {
         db2) adapter="${DB_DIR}/catalog_db2.sh" ;;
         *)
             echo "Error: no catalog adapter for engine ${ENGINE}" >&2
-            exit 1
+            return 1
             ;;
     esac
     if [[ ! -x "${adapter}" && -f "${adapter}" ]]; then
@@ -163,7 +164,7 @@ run_dump_catalog() {
     fi
     if [[ ! -f "${adapter}" ]]; then
         echo "Error: catalog adapter not found: ${adapter}" >&2
-        exit 1
+        return 1
     fi
 
     local cat_args=(
@@ -184,11 +185,11 @@ run_dump_catalog() {
     set -e
     if [[ "${cat_rc}" -ne 0 ]]; then
         echo "Error: catalog probe failed" >&2
-        exit 1
+        return 1
     fi
     if ! "${JQ}" -e 'type == "object" and has("tables")' "${out_file}" >/dev/null 2>&1; then
         echo "Error: catalog probe did not produce catalog JSON object" >&2
-        exit 1
+        return 1
     fi
 }
 
@@ -217,7 +218,7 @@ run_catalog_audit() {
     set -e
     if [[ "${fold_rc}" -ne 0 ]]; then
         echo "Error: catalog expected-shape fold failed" >&2
-        exit 1
+        return 1
     fi
 
     local probe_tables="${ONLY_TABLES}"
@@ -226,8 +227,14 @@ run_catalog_audit() {
     fi
     local saved_only="${ONLY_TABLES}"
     ONLY_TABLES="${probe_tables}"
+    set +e
     run_dump_catalog "${CAT_LIVE_JSON}"
+    local probe_rc=$?
+    set -e
     ONLY_TABLES="${saved_only}"
+    if [[ "${probe_rc}" -ne 0 ]]; then
+        return 1
+    fi
 
     local cmp_args=(
         --expected "${CAT_EXPECTED_JSON}"
@@ -244,6 +251,6 @@ run_catalog_audit() {
     set -e
     if [[ "${ccmp_rc}" -ne 0 ]]; then
         echo "Error: catalog compare failed" >&2
-        exit 1
+        return 1
     fi
 }

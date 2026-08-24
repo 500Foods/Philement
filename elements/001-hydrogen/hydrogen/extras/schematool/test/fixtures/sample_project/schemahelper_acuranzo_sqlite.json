@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "design": "acuranzo",
+  "engine": "sqlite",
+  "schema": "",
+  "updated_utc": "2026-08-23T12:00:00Z",
+  "cursor_id": "meta:drift:1148:1003:code",
+  "decisions": [
+    {
+      "id": "meta:drift:1148:1003:code",
+      "action": "accepted",
+      "hash": "fixture",
+      "note": "known drift",
+      "at": "2026-08-23T12:00:00Z"
+    }
+  ]
+}

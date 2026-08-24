@@ -2,6 +2,9 @@
 -- Resolve wrapper credentials and ping the live DB. Never return passwords.
 --
 -- CHANGELOG
+-- 0.4.8 - 2026-08-23 - Source wrapper exec line for computed host/password-env
+-- 0.4.5 - 2026-08-23 - Parse wrapper --engine/--host/--database flags for ping
+-- 0.4.1 - 2026-08-23 - Only resolve sqlite database as a file path
 -- 0.2.2 - 2026-08-23 - Lua connect probe (replaces schemahelper_connect.sh)
 
 local M = {}
@@ -19,20 +22,88 @@ local function wrapper_dir(path)
     return path:match("^(.*)/[^/]+$") or "."
 end
 
-local function read_wrapper_exports(path)
-    local out = {}
+local function expand_token(tok)
+    tok = tostring(tok or "")
+    tok = tok:gsub("\\%s*$", "")
+    tok = tok:gsub('^"(.*)"$', "%1")
+    tok = tok:gsub("^'(.*)'$", "%1")
+    tok = tok:gsub("%${([%w_]+)}", function(name)
+        return getenv(name)
+    end)
+    tok = tok:gsub("%$([%w_]+)", function(name)
+        return getenv(name)
+    end)
+    return tok
+end
+
+local function usable(val)
+    if not val or val == "" then
+        return false
+    end
+    if val:match("^%$") then
+        return false
+    end
+    if val == "null" then
+        return false
+    end
+    return true
+end
+
+local CLI_FLAGS = {
+    "engine", "host", "port", "user", "database", "schema",
+    "password-env", "design", "migrations",
+}
+
+local function read_wrapper_cli(path)
+    local flags = {}
+    local exports = {}
     local f = io.open(path, "r")
     if not f then
-        return out
+        return flags, exports
     end
-    for line in f:lines() do
-        local key, val = line:match('^export%s+(SCHEMATOOL_DB_%w+)="([^"]*)"')
-        if key then
-            out[key] = val
+    local pending
+    for raw in f:lines() do
+        local line = raw:gsub("^%s+", ""):gsub("%s+$", "")
+        if line ~= "" and not line:match("^#") then
+            local key, val = line:match('^export%s+(SCHEMATOOL_DB_%w+)="([^"]*)"')
+            if key then
+                exports[key] = val
+            end
+            local matched = false
+            for i = 1, #CLI_FLAGS do
+                local name = CLI_FLAGS[i]
+                local tok = line:match("%-%-" .. name:gsub("%-", "%%-") .. "%s+(%S+)")
+                if tok then
+                    flags[name] = expand_token(tok)
+                    pending = nil
+                    matched = true
+                    break
+                end
+            end
+            if pending and not matched and not line:match("^%-%-") then
+                local tok = line:match("^(%S+)")
+                if tok then
+                    flags[pending] = expand_token(tok)
+                end
+                pending = nil
+            elseif not matched then
+                for i = 1, #CLI_FLAGS do
+                    local name = CLI_FLAGS[i]
+                    if line:match("%-%-" .. name:gsub("%-", "%%-") .. "%s*$") then
+                        pending = name
+                        break
+                    end
+                end
+            end
         end
     end
     f:close()
-    return out
+    return flags, exports
+end
+
+function M.parse_wrapper(path)
+    local flags, exports = read_wrapper_cli(path)
+    return flags, exports
 end
 
 local function abs_file(path)
@@ -83,8 +154,41 @@ local function run_shell(script)
     local out = h:read("*a") or ""
     local ok = h:close()
     os.remove(path)
-    out = out:gsub("%s+$", ""):gsub("\n", " ")
+    out = out:gsub("%s+$", "")
     return ok == true, out
+end
+
+local function harvest_exec_flags(wrapper)
+    local script = string.format([[
+exec() {
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            --host|--port|--user|--database|--schema|--engine|--password-env|--design|--migrations)
+                printf 'flag:%%s=%%s\n' "${1#--}" "$2"
+                shift 2
+                ;;
+            *)
+                shift
+                ;;
+        esac
+    done
+    exit 0
+}
+# shellcheck disable=SC1090
+. %s
+]], sh_quote(wrapper))
+    local _, out = run_shell(script)
+    local flags = {}
+    if not out or out == "" then
+        return flags
+    end
+    for key, val in out:gmatch("flag:([%w%-]+)=([^\n]*)") do
+        val = val:gsub("%s+$", "")
+        if usable(val) then
+            flags[key] = val
+        end
+    end
+    return flags
 end
 
 local function scrub(text, pass)
@@ -95,22 +199,7 @@ local function scrub(text, pass)
     return text
 end
 
-function M.resolve(wrapper)
-    local engine = wrapper_engine(wrapper)
-    local exports = read_wrapper_exports(wrapper)
-    local conn = {
-        ok = false,
-        engine = engine,
-        family = "",
-        host = "",
-        port = "",
-        user = "",
-        database = "",
-        schema = "",
-        password_env = "",
-        detail = "not checked",
-    }
-
+local function apply_family(conn, engine, wrapper)
     if engine == "yugabytedb" then
         conn.family = "YUGABYTE_DB_*"
         conn.host = getenv("YUGABYTE_DB_HOST")
@@ -175,17 +264,83 @@ function M.resolve(wrapper)
             conn.password_env = "SCHEMATOOL_DB_PASS"
         end
     end
+end
 
-    if exports.SCHEMATOOL_DB_SCHEMA then
+function M.resolve(wrapper)
+    local stem = wrapper_engine(wrapper)
+    local flags, exports = read_wrapper_cli(wrapper)
+    local engine = flags.engine or stem
+    local conn = {
+        ok = false,
+        engine = engine,
+        stem = stem,
+        family = "",
+        host = "",
+        port = "",
+        user = "",
+        database = "",
+        schema = "",
+        password_env = "",
+        design = flags.design or "",
+        detail = "not checked",
+    }
+    apply_family(conn, engine, wrapper)
+
+    if usable(exports.SCHEMATOOL_DB_SCHEMA) then
         conn.schema = exports.SCHEMATOOL_DB_SCHEMA
     end
-    if exports.SCHEMATOOL_DB_HOST then
+    if usable(exports.SCHEMATOOL_DB_HOST) then
         conn.host = exports.SCHEMATOOL_DB_HOST
     end
-    if exports.SCHEMATOOL_DB_PORT then
+    if usable(exports.SCHEMATOOL_DB_PORT) then
         conn.port = exports.SCHEMATOOL_DB_PORT
     end
-    if conn.database ~= "" then
+    if usable(flags.host) then
+        conn.host = flags.host
+    end
+    if usable(flags.port) then
+        conn.port = flags.port
+    end
+    if usable(flags.user) then
+        conn.user = flags.user
+    end
+    if usable(flags.database) then
+        conn.database = flags.database
+    end
+    if usable(flags.schema) then
+        conn.schema = flags.schema
+    end
+    if usable(flags["password-env"]) then
+        conn.password_env = flags["password-env"]
+        conn.family = conn.password_env:gsub("_PASS$", "_*")
+    end
+    local harvested = harvest_exec_flags(wrapper)
+    if usable(harvested.engine) then
+        conn.engine = harvested.engine
+    end
+    if usable(harvested.host) then
+        conn.host = harvested.host
+    end
+    if usable(harvested.port) then
+        conn.port = harvested.port
+    end
+    if usable(harvested.user) then
+        conn.user = harvested.user
+    end
+    if usable(harvested.database) then
+        conn.database = harvested.database
+    end
+    if usable(harvested.schema) then
+        conn.schema = harvested.schema
+    end
+    if usable(harvested.design) then
+        conn.design = harvested.design
+    end
+    if usable(harvested["password-env"]) then
+        conn.password_env = harvested["password-env"]
+        conn.family = conn.password_env:gsub("_PASS$", "_*")
+    end
+    if conn.engine == "sqlite" and conn.database ~= "" then
         conn.database = abs_file(conn.database)
     end
     return conn
@@ -271,10 +426,75 @@ local function ping_db2(conn)
     return run_shell(script)
 end
 
+local function ping_via_wrapper(wrapper, conn)
+    local script = string.format([[
+exec() {
+    host=""; port=""; user=""; database=""; schema=""; engine=""; password_env=""
+    while [ "$#" -gt 0 ]; do
+        case "$1" in
+            --host) host="$2"; shift 2 ;;
+            --port) port="$2"; shift 2 ;;
+            --user) user="$2"; shift 2 ;;
+            --database) database="$2"; shift 2 ;;
+            --schema) schema="$2"; shift 2 ;;
+            --engine) engine="$2"; shift 2 ;;
+            --password-env) password_env="$2"; shift 2 ;;
+            *) shift ;;
+        esac
+    done
+    if [ -z "$engine" ]; then
+        engine=%s
+    fi
+    case "$engine" in
+        postgresql|cockroachdb|yugabytedb)
+            if [ -n "$password_env" ]; then
+                eval "export PGPASSWORD=\"\${$password_env}\""
+            fi
+            psql -h "$host" -p "$port" -U "$user" -d "$database" -v ON_ERROR_STOP=1 -t -A -c "SELECT 1"
+            ;;
+        mysql|mariadb)
+            if [ -n "$password_env" ]; then
+                eval "export MYSQL_PWD=\"\${$password_env}\""
+            fi
+            db="$schema"
+            if [ -z "$db" ]; then
+                db="$database"
+            fi
+            mysql -h "$host" -P "$port" -u "$user" "$db" -N -e "SELECT 1"
+            ;;
+        sqlite)
+            sqlite3 "file:${database}?mode=ro" "SELECT 1"
+            ;;
+        db2)
+            . /home/db2inst1/sqllib/db2profile >/dev/null 2>&1 || true
+            command -v db2 >/dev/null || { echo db2 client not found; exit 1; }
+            eval "pw=\"\${$password_env}\""
+            db2 -tv +o <<EOF
+CONNECT TO $database USER $user USING '$pw';
+VALUES 1;
+CONNECT RESET;
+EOF
+            ;;
+        *)
+            echo "unsupported engine"
+            exit 1
+            ;;
+    esac
+    exit $?
+}
+# shellcheck disable=SC1090
+. %s
+]], sh_quote(conn.engine or ""), sh_quote(wrapper))
+    return run_shell(script)
+end
+
 function M.probe(wrapper)
     local conn = M.resolve(wrapper)
     local ok, out
-    if conn.engine == "postgresql" or conn.engine == "cockroachdb"
+    local need_wrap = conn.password_env ~= "" and getenv(conn.password_env) == ""
+    if need_wrap then
+        ok, out = ping_via_wrapper(wrapper, conn)
+    elseif conn.engine == "postgresql" or conn.engine == "cockroachdb"
         or conn.engine == "yugabytedb" then
         ok, out = ping_pg(conn)
     elseif conn.engine == "mysql" or conn.engine == "mariadb" then
@@ -294,6 +514,7 @@ function M.probe(wrapper)
     if ok then
         conn.detail = "connected"
     else
+        out = tostring(out or ""):gsub("\n", " "):gsub("%s+", " ")
         conn.detail = scrub(out, pass)
         if conn.detail == "" then
             conn.detail = "failed"

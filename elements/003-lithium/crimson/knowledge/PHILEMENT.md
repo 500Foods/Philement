@@ -53,7 +53,7 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-08-23 16:32:58 UTC
+Last updated at 2026-08-23 19:53:59 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -61,7 +61,7 @@ JSON                           479            428              0        1615645
 SVG                            294            573          11137         513410
 C                             1583          64271          56894         260908
 Text                           329            325              0         136794
-Markdown                       740          33397            247          99623
+Markdown                       741          33664            248         100534
 Lua                            385          10731           6747          83327
 JavaScript                     224          10445          13582          49798
 Bourne Shell                   167           7533         105817          40786
@@ -78,7 +78,7 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          4704         135181         210614        2832214
+SUM:                          4705         135448         210615        2833125
 -------------------------------------------------------------------------------
 1675 Files were skipped (duplicate, binary, or without source code):
   svg: 1178

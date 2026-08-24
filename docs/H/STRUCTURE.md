@@ -695,8 +695,9 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [extras/schematool/](/elements/001-hydrogen/hydrogen/extras/schematool/) - SchemaTool migration drift auditor (Bash + Lua)
 - [extras/schematool/README.md](/elements/001-hydrogen/hydrogen/extras/schematool/README.md) - SchemaTool quick start
 - [docs/H/tools/SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md) - SchemaTool operator guide
+- [docs/H/tools/SCHEMAHELPER.md](/docs/H/tools/SCHEMAHELPER.md) - SchemaHelper operator guide
 - [docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md) - SchemaTool implementation plan (complete)
-- [docs/H/plans/SCHEMAHELPER.md](/docs/H/plans/SCHEMAHELPER.md) - SchemaHelper interactive SchemaTool front-end (plan only)
+- [docs/H/plans/SCHEMAHELPER.md](/docs/H/plans/SCHEMAHELPER.md) - SchemaHelper implementation plan
 
 </details>
 
