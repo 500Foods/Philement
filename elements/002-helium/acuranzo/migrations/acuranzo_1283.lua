@@ -80,7 +80,7 @@ table.insert(queries,{sql=[[
               `login_attribute=email` and Hydrogen `match_email_only`).
             - **last_seen_at**: Updated on each successful Canvas ensure /
               Dashboard path (best-effort touch). Row birth time is the
-              standard `${COMMON_CREATE}` `created_at` — do **not** add a
+              standard `COMMON_CREATE` `created_at` — do **not** add a
               second domain `created_at` (SQLite duplicate-column failure).
 
             ## Indexes

@@ -169,7 +169,7 @@ local write_opts = {
     engine = opts.engine,
     schema = state.schema or "",
     ref = 2000,
-    schemahelper_version = "0.5.6",
+    schemahelper_version = "0.5.7",
     schematool_version = "1.8.3",
 }
 

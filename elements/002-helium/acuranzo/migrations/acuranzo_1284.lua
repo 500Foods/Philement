@@ -88,7 +88,7 @@ table.insert(queries,{sql=[[
             - **country**: Optional free-text country. NULL when skipped.
             - **age_band**: Optional demographic band (under_18 / 18_24 /
               25_34 / 35_49 / 50_plus). NULL when skipped.
-            - Provision-time stamp is the standard `${COMMON_CREATE}`
+            - Provision-time stamp is the standard `COMMON_CREATE`
               `created_at` — do **not** add a second domain `created_at`
               (collides with COMMON; SQLite fails with duplicate column).
 

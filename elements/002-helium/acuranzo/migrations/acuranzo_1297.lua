@@ -56,7 +56,7 @@ table.insert(queries,{sql=[[
         [=[
             # Forward Migration ${MIGRATION}: scripts.invokable
 
-            Adds `invokable` (INTEGER_SMALL, DEFAULT 0) to `${TABLE}`.
+            Adds `invokable` (INTEGER_SMALL, DEFAULT 0) to `TABLE`.
             Client REST `POST /api/conduit/script` only loads rows with
             invokable <> 0 (QueryRef #149). Orchestrator and internal
             scripts remain non-invokable.
@@ -116,8 +116,8 @@ table.insert(queries,{sql=[[
         [=[
             # Reverse Migration ${MIGRATION}: Drop scripts.invokable
 
-            `${REORG}` before and after DROP (DB2). Post-DROP REORG clears
-            reorg-pending so later reverse DML on `${TABLE}` succeeds.
+            `REORG` before and after DROP (DB2). Post-DROP REORG clears
+            reorg-pending so later reverse DML on `TABLE` succeeds.
         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,

@@ -127,8 +127,8 @@ table.insert(queries,{sql=[[
 
                     ## Returns
 
-                    - `queue_id`: The newly inserted queue primary key via
-                      `${INSERT_KEY_START}` / `${INSERT_KEY_RETURN}`. A
+                    - `queue_id`: The newly inserted queue primary key
+                      `INSERT_KEY_START` / `INSERT_KEY_RETURN`. A
                       concurrent `MAX(queue_id)+1` collision fails the INSERT
                       and returns no row. That is not a race to paper over:
                       treat an empty result as "retry the insert".
@@ -139,7 +139,7 @@ table.insert(queries,{sql=[[
 
                     ## Security Notes
 
-                    - `query_type_a28` is `${TYPE_INTERNAL_SQL}` (0) so this query
+                    - `query_type_a28` is `TYPE_INTERNAL_SQL` (0) so this query
                       is not reachable via the REST API.
                 ]==]
                                                                                     AS summary,

@@ -97,7 +97,7 @@ table.insert(queries,{sql=[[
               provision, reconcile).
             - **amount_cents** / **currency** / **order_id**: paid
               lines only. NULL on free/intro/archive.
-            - `${COMMON_CREATE}` supplies `created_at` / `updated_at`
+            - `COMMON_CREATE` supplies `created_at` / `updated_at`
               — do **not** add a second domain timestamp. `created_at`
               is the event time.
 

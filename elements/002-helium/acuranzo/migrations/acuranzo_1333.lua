@@ -125,7 +125,7 @@ table.insert(queries,{sql=[[
         [=[
             # Reverse Migration ${MIGRATION}: Drop tags + canvas_updated_at
 
-            Exact undo. `${REORG}` around DROP (DB2 SQL0668N rc7).
+            Exact undo. `REORG` around DROP (DB2 SQL0668N rc7).
         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,

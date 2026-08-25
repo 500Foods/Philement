@@ -400,4 +400,5 @@ in the migrations themselves so that they get populated in the database directly
 | [1361](/elements/002-helium/acuranzo/migrations/acuranzo_1361.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: seed Stripe.Refund (not invokable) |
 | [1362](/elements/002-helium/acuranzo/migrations/acuranzo_1362.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: seed Stripe.DeactivateCustomer (not invokable) |
 | [1363](/elements/002-helium/acuranzo/migrations/acuranzo_1363.lua) | queries | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.19: QueryRef 147 Q / LEVEL / PAID_FREE / TAG / SORT / HIDE_RETIRED |
-| **364** | | | | **1864** | **364** | |
+| [1364](/elements/002-helium/acuranzo/migrations/acuranzo_1364.lua) | scripts | 1.0.0 | 2026-08-24 | 4 | ✗ | OOM fix: patch Orchestrators.Orchestrator to call H.scoreboard.prune_terminal() each tick |
+| **365** | | | | **1868** | **365** | |

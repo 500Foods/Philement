@@ -13,6 +13,9 @@
 # analyze_engine()
 
 # CHANGELOG
+# 1.2.1 - 2026-08-24 - Fix SQLite seed: invokable column + migrations 1296-1298
+#                     already present in baseline; make seed idempotent (conditional
+#                     ALTER, INSERT OR IGNORE) so startup no longer fails
 # 1.2.0 - 2026-08-21 - Extra parse/GET/405/fail cases for blackbox coverage
 # 1.1.0 - 2026-08-20 - Replace python3 JSON rewrite with jq
 # 1.0.0 - 2026-08-08 - Initial blackbox for LUA_CLIENT Phase 9
@@ -23,7 +26,7 @@ TEST_NAME="Conduit Script"
 TEST_ABBR="CSC"
 TEST_NUMBER="46"
 TEST_COUNTER=0
-TEST_VERSION="1.2.0"
+TEST_VERSION="1.2.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -113,12 +116,24 @@ seed_sqlite_lua_client_fixture() {
     if ! command -v sqlite3 >/dev/null 2>&1; then
         return 1
     fi
-    sqlite3 "${db_copy}" <<'SQL'
--- invokable allowlist column (migration 1297)
-ALTER TABLE scripts ADD COLUMN invokable INTEGER NOT NULL DEFAULT 0;
 
--- Api.Echo (migration 1296)
-INSERT OR REPLACE INTO scripts (
+    # Idempotently ensure the invokable allowlist column exists (migration 1297
+    # may already have applied it on a fresh baseline). SQLite's ALTER TABLE ...
+    # ADD COLUMN has no IF NOT EXISTS clause, so check pragma_table_info first.
+    local invokable_present
+    invokable_present=$(sqlite3 "${db_copy}" \
+        "SELECT COUNT(*) FROM pragma_table_info('scripts') WHERE name='invokable';" 2>/dev/null || echo 0)
+    if [[ "${invokable_present}" -eq 0 ]]; then
+        sqlite3 "${db_copy}" "ALTER TABLE scripts ADD COLUMN invokable INTEGER NOT NULL DEFAULT 0;" || return 1
+    fi
+
+    # All inserts use INSERT OR IGNORE so this function is idempotent: if
+    # migrations 1296/1298 already seeded Api.Echo / QueryRef #149 into the
+    # baseline, those rows are preserved (never downgraded); Api.Fail is
+    # test-only and also safely inserted.
+    sqlite3 "${db_copy}" <<'SQL'
+-- Api.Echo (migration 1296) — skip if the baseline already provides it
+INSERT OR IGNORE INTO scripts (
     group_name, script_name, script_type, schedule, next_run,
     last_run_start, last_run_end, status, code, summary,
     created_id, created_at, updated_id, updated_at, invokable
@@ -139,7 +154,7 @@ return 0
 );
 
 -- Api.Fail (blackbox: Lua error → HTTP 200 status=failed)
-INSERT OR REPLACE INTO scripts (
+INSERT OR IGNORE INTO scripts (
     group_name, script_name, script_type, schedule, next_run,
     last_run_start, last_run_end, status, code, summary,
     created_id, created_at, updated_id, updated_at, invokable
@@ -152,8 +167,8 @@ error("blackbox fail probe")
     1, datetime('now'), 1, datetime('now'), 1
 );
 
--- QueryRef #149 (migration 1298) — invokable-only script load
-INSERT INTO queries (
+-- QueryRef #149 (migration 1298) — invokable-only script load; skip if present
+INSERT OR IGNORE INTO queries (
     query_id, query_ref, query_status_a27, query_type_a28, query_dialect_a30,
     query_queue_a58, query_timeout, code, name, summary, collection,
     created_id, created_at, updated_id, updated_at

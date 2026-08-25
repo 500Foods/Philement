@@ -120,12 +120,12 @@ table.insert(queries,{sql=[[
 
                     ## Notes
 
-                    - `query_type_a28` is `${TYPE_PROTECTED}` (11) so this row
+                    - `query_type_a28` is `TYPE_PROTECTED` (11) so this row
                       is only returned by `lookup_database_and_protected_query`.
-                    - `query_queue_a58` is `${QTC_SLOW}` (0). The `cap_query`
+                    - `query_queue_a58` is `QTC_SLOW` (0). The `cap_query`
                       handler additionally forces the slow queue regardless.
                     - `review_status` defaults to 0 (pending review).
-                    - `${INSERT_KEY_START}` / `${INSERT_KEY_RETURN}` are
+                    - `INSERT_KEY_START` / `INSERT_KEY_RETURN` are
                       engine-specific wrappers that produce a result row
                       from the INSERT (e.g. `RETURNING` on PostgreSQL).
                 ]==]

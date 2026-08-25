@@ -516,6 +516,16 @@ local api_error_probed = false
 local iterations = 0
 while not H.shutdown_requested() do
     iterations = iterations + 1
+
+    -- Reclaim finished jobs before the per-tick list() snapshot so the
+    -- scoreboard does not grow without bound under sustained job throughput.
+    if type(H.scoreboard) == "table" and type(H.scoreboard.prune_terminal) == "function" then
+        local ok_p, pruned = pcall(H.scoreboard.prune_terminal)
+        if ok_p and type(pruned) == "number" and pruned > 0 then
+            H.log.info("Orchestrator: pruned %d terminal entries", pruned)
+        end
+    end
+
     local jobs = H.scoreboard.list()
     H.log.info("Orchestrator: tick %d, %d job(s) in scoreboard",
                 iterations, #jobs)

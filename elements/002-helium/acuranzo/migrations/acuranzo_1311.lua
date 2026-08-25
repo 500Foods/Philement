@@ -95,7 +95,7 @@ table.insert(queries,{sql=[[
             - **status**: `pending` | `completed` | `failed`.
               Default `pending`.
             - **currency**: lowercase ISO 4217 (`cad`/`usd`/`eur`/`gbp`),
-              same as `course_prices`. Not CHAR(3) — no `${CHAR_3}`
+              same as `course_prices`. Not CHAR(3) — no `CHAR_3`
               macro; do not use `total_cents_cad`.
             - **total_cents**: Settlement minor units (Lua re-reads
               `course_prices`; do not trust client cents).
@@ -103,7 +103,7 @@ table.insert(queries,{sql=[[
             - **idempotency_key**: Stripe Idempotency-Key
               (`checkout:{account_id}:…`). UNIQUE.
 
-            `${COMMON_CREATE}` supplies audit timestamps — do **not**
+            `COMMON_CREATE` supplies audit timestamps — do **not**
             add a second domain `created_at` (FL-29c).
 
             ## Indexes

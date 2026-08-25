@@ -120,7 +120,7 @@ table.insert(queries,{sql=[[
             - **source**: `intro` | `free` | `paid` | `renew`. Audit only.
             - **order_id**: future Stripe order. NULL until Band J.
 
-            `${COMMON_CREATE}` supplies audit `created_at` / `updated_at` —
+            `COMMON_CREATE` supplies audit `created_at` / `updated_at` —
             do **not** add a second domain `created_at` (FL-29c).
 
             ## Indexes
