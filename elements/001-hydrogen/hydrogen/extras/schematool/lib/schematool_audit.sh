@@ -17,6 +17,7 @@
 #   INCLUDE_OK, NORMALIZE, NO_SQL, OUT_DIR, SQL_OUT, MIG_OUT,
 #   UTC_STAMP, DISPLAY_STAMP, VERSION,
 #   DB_LABEL, SCHEMA_LABEL, AUDIT_EXIT, CATALOG_EXIT, RENDER_MODE
+#   DB_LABEL, SCHEMA_LABEL, AUDIT_EXIT, CATALOG_EXIT, RENDER_MODE
 #
 # Globals set by this library (consumed by schematool_render.sh):
 #   AUDIT_EXIT, SUBTITLE, FOOTER, DATA_JSON,
@@ -251,7 +252,7 @@ schematool_run_metadata_audit() {
         fi
     fi
 
-    if [[ -n "${OUT_DIR}" ]]; then
+    if [[ -n "${OUT_DIR}" && "${WORK_DIR_SET:-0}" -eq 0 ]]; then
         cp "${DATA_JSON}" "${OUT_DIR}/checklist_data.json"
         cp "${FINDINGS_JSON}" "${OUT_DIR}/findings.json"
         cp "${DB_JSON}" "${OUT_DIR}/db_metadata.json"
@@ -297,7 +298,7 @@ schematool_run_dry_disk() {
         echo "SQL: ${SQL_OUT} (all statements commented)" >&2
     fi
 
-    if [[ -n "${OUT_DIR}" ]]; then
+    if [[ -n "${OUT_DIR}" && "${WORK_DIR_SET:-0}" -eq 0 ]]; then
         cp "${DATA_JSON}" "${OUT_DIR}/checklist_data.json"
     fi
 }
@@ -314,7 +315,7 @@ schematool_run_catalog_audit() {
         if [[ "${FULL_AUDIT}" -eq 0 ]]; then
             exit 1
         fi
-        if [[ -n "${OUT_DIR}" ]]; then
+        if [[ -n "${OUT_DIR}" && "${WORK_DIR_SET:-0}" -eq 0 ]]; then
             rm -f "${OUT_DIR}/catalog_findings.json" \
                 "${OUT_DIR}/catalog_checklist.json" \
                 "${OUT_DIR}/catalog_expected.json" \
@@ -337,7 +338,7 @@ schematool_run_catalog_audit() {
         *) CAT_EXIT_LABEL="exit ${CATALOG_EXIT}" ;;
     esac
 
-    if [[ -n "${OUT_DIR}" ]]; then
+    if [[ -n "${OUT_DIR}" && "${WORK_DIR_SET:-0}" -eq 0 ]]; then
         cp "${CAT_EXPECTED_JSON}" "${OUT_DIR}/catalog_expected.json"
         cp "${CAT_LIVE_JSON}" "${OUT_DIR}/catalog_live.json"
         cp "${CAT_DATA_JSON}" "${OUT_DIR}/catalog_checklist.json"

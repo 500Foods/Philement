@@ -98,6 +98,7 @@ echo ""
 set +e
 lua "${LUA_SCRIPT}" \
     --out-dir "${FIXTURE_DIR}" \
+    --work-dir "${FIXTURE_DIR}" \
     --migrations "${MIGRATIONS_DIR}" \
     --packet-dir "${PACKET_DIR}"
 SMOKE_RC=$?

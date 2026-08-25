@@ -40,6 +40,7 @@ local packet = require("schemahelper_packet")
 
 local opts = {
     out_dir = "",
+    work_dir = "",
     migrations = "",
     design = "acuranzo",
     engine = "sqlite",
@@ -53,6 +54,9 @@ while i <= #arg do
     local a = arg[i]
     if a == "--out-dir" and i < #arg then
         opts.out_dir = arg[i + 1]
+        i = i + 2
+    elseif a == "--work-dir" and i < #arg then
+        opts.work_dir = arg[i + 1]
         i = i + 2
     elseif a == "--migrations" and i < #arg then
         opts.migrations = arg[i + 1]
@@ -81,6 +85,10 @@ if opts.out_dir == "" then
     fail("--out-dir is required (fixture directory with findings.json)")
 end
 
+if opts.work_dir == "" then
+    opts.work_dir = opts.out_dir
+end
+
 if opts.state_file == "" then
     opts.state_file = queue.default_state_path(opts.out_dir, opts.design, opts.engine)
 end
@@ -101,8 +109,8 @@ local function file_exists(path)
     return true
 end
 
-check(queue.artifacts_present(opts.out_dir, "both"),
-    "artifacts present in out-dir")
+check(queue.artifacts_present(opts.work_dir, "both"),
+    "artifacts present in work-dir")
 
 local state = queue.load_state(opts.state_file)
 check(state.design == opts.design, "state design = " .. opts.design)
@@ -111,7 +119,7 @@ check(state.cursor_id == "meta:drift:1148:1003:name",
     "cursor_id = meta:drift:1148:1003:name (field-level :name, not :code)")
 
 local built = queue.build({
-    out_dir = opts.out_dir,
+    out_dir = opts.work_dir,
     track = "both",
     state = state,
 })

@@ -13,6 +13,7 @@
 #   CAT_DATA_JSON, CAT_EXPECTED_JSON, CAT_LIVE_JSON, CAT_FINDINGS_JSON,
 #   CAT_OK, CAT_MT, CAT_MC, CAT_NULL, CAT_CHK, CAT_ROWS, CAT_EXIT_LABEL,
 #   ONLY_TABLES, TABLES, JQ, LUA, LUA_DIR, ROW_GROUP_SIZE, WORK_DIR,
+#   SCHEMA, NO_DETAIL, DETAIL_MAX_LINES, WORK_DIR_SET
 #   SCHEMA, NO_DETAIL, DETAIL_MAX_LINES
 #
 # CHANGELOG
@@ -64,7 +65,7 @@ render_metadata_table() {
     ]
 }
 EOF
-    if [[ -n "${OUT_DIR}" ]]; then
+    if [[ -n "${OUT_DIR}" && "${WORK_DIR_SET:-0}" -eq 0 ]]; then
         cp "${LAYOUT_JSON}" "${OUT_DIR}/checklist_layout.json"
     fi
     case "${FORMAT}" in
@@ -121,7 +122,7 @@ render_catalog_table() {
     ]
 }
 EOF
-    if [[ -n "${OUT_DIR}" ]]; then
+    if [[ -n "${OUT_DIR}" && "${WORK_DIR_SET:-0}" -eq 0 ]]; then
         cp "${cat_layout}" "${OUT_DIR}/catalog_layout.json"
     fi
     case "${FORMAT}" in
@@ -183,7 +184,7 @@ schematool_render_metadata_detail() {
     set -e
     if [[ "${drc}" -eq 0 && -s "${detail_out}" ]]; then
         cat "${detail_out}"
-        if [[ -n "${OUT_DIR}" ]]; then
+        if [[ -n "${OUT_DIR}" && "${WORK_DIR_SET:-0}" -eq 0 ]]; then
             cp "${detail_out}" "${OUT_DIR}/finding_detail.txt"
             echo "Detail: ${OUT_DIR}/finding_detail.txt" >&2
         fi
@@ -218,7 +219,7 @@ schematool_render_catalog_detail() {
     set -e
     if [[ "${drc}" -eq 0 && -s "${detail_out}" ]]; then
         cat "${detail_out}"
-        if [[ -n "${OUT_DIR}" ]]; then
+        if [[ -n "${OUT_DIR}" && "${WORK_DIR_SET:-0}" -eq 0 ]]; then
             cp "${detail_out}" "${OUT_DIR}/catalog_finding_detail.txt"
             echo "Detail: ${OUT_DIR}/catalog_finding_detail.txt" >&2
         fi

@@ -4,7 +4,7 @@
 -- design=acuranzo engine=sqlite schema=. database=/mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/tests/artifacts/database/sqlite/hydrodemo.sqlite
 -- migrations=/mnt/extra/Projects/Philement/elements/002-helium/acuranzo/migrations
 -- normalize=loose
--- Generated: 20260825T182427Z
+-- Generated: 20260825T212554Z
 -- counts: {"total":365,"ok":317,"drift":48,"missing_load":0,"missing_apply":0,"anomalies":0,"orphans":0}
 -- exit_code=2
 -- Rule: Uncomment deliberately. Prefer Hydrogen LOAD/APPLY when possible.

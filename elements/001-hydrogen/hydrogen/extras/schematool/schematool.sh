@@ -8,6 +8,7 @@
 # Database/Lua operations, audit orchestration, and rendering are in lib/.
 #
 # CHANGELOG
+# 1.9.0 - 2026-08-25 - --work-dir / --keep-work-dir: caller-managed intermediates
 # 1.8.3 - 2026-08-23 - Catalog failures[] include last fold ref
 # 1.8.2 - 2026-08-23 - Catalog fold/compare failure degrades after metadata
 # 1.8.1 - 2026-08-23 - Expect/phase stderr progress for SchemaHelper
@@ -90,7 +91,10 @@ Range / filter:
 
 Output:
   --format tables|json|both   Default: tables
-  --out-dir DIR               Write artifacts (layout/data/sql/mig)
+  --out-dir DIR               Write final artifacts (sql/mig) here
+  --work-dir DIR              Use DIR for intermediate JSON/detail files
+                              (default: tmpdir; auto-cleaned unless --keep-work-dir)
+  --keep-work-dir             Do not remove --work-dir on exit
   --sql-out PATH              Remediation .sql path
   --no-sql                    Skip remediation .sql
   --mig-out PATH              Orphan capture .mig path (plain text blocks)
@@ -136,6 +140,8 @@ ONLY_FAILURES=0
 DRY_DISK=0
 FORMAT="tables"
 OUT_DIR=""
+WORK_DIR_OPT=""
+KEEP_WORK_DIR=0
 SQL_OUT=""
 NO_SQL=0
 MIG_OUT=""
@@ -217,6 +223,14 @@ while [[ $# -gt 0 ]]; do
         --out-dir)
             OUT_DIR="${2:-}"
             shift 2
+            ;;
+        --work-dir)
+            WORK_DIR_OPT="${2:-}"
+            shift 2
+            ;;
+        --keep-work-dir)
+            KEEP_WORK_DIR=1
+            shift
             ;;
         --sql-out)
             SQL_OUT="${2:-}"
@@ -506,9 +520,19 @@ if [[ -n "${OUT_DIR}" ]]; then
     mkdir -p "${OUT_DIR}"
 fi
 
-WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/schematool.XXXXXX")"
-# shellcheck disable=SC2064 # expand WORK_DIR now for EXIT trap
-trap "rm -rf \"${WORK_DIR}\"" EXIT
+if [[ -n "${WORK_DIR_OPT}" ]]; then
+    WORK_DIR="${WORK_DIR_OPT}"
+    WORK_DIR_SET=1
+    mkdir -p "${WORK_DIR}"
+else
+    WORK_DIR_SET=0
+    WORK_DIR="$(mktemp -d "${TMPDIR:-/tmp}/schematool.XXXXXX")"
+fi
+
+if [[ "${KEEP_WORK_DIR}" -eq 0 ]]; then
+    # shellcheck disable=SC2064 # expand WORK_DIR now for EXIT trap
+    trap "rm -rf \"${WORK_DIR}\"" EXIT
+fi
 
 DATA_JSON="${WORK_DIR}/checklist_data.json"
 LAYOUT_JSON="${WORK_DIR}/checklist_layout.json"

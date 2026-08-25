@@ -219,7 +219,7 @@ local function dashboard_content(self)
     local reserved = packet.list_reserved(
         self.opts.packet_dir, self.opts.design, self.opts.engine)
     local dash_lines, built = Q.build_dashboard_lines({
-        out_dir = self.opts.out_dir,
+        out_dir = self.opts.work_dir,
         track = self.opts.track,
         state = app.state,
         reserved = reserved,
@@ -293,7 +293,7 @@ local function review_content(self)
     local next_ref, g_reason = packet_next(self.opts)
     local u_reason = apply.refuse_reason(finding, self.opts.allow_write)
     local review_lines = Q.build_review_lines_detailed(
-        finding, self.opts.out_dir, app.state, next_ref,
+        finding, self.opts.work_dir, app.state, next_ref,
         g_reason, u_reason, self.opts.allow_write)
     local body = {}
     for i = 1, #review_lines do

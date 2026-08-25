@@ -4,6 +4,7 @@
 # Lua 5.5 TUI over extras/schematool. Default is review-only.
 #
 # CHANGELOG
+# 0.5.8 - 2026-08-25 - Per-run /tmp work-dir for intermediates; --work-dir/--keep-work-dir
 # 0.5.7 - 2026-08-24 - Mouseover highlighting on clickable options; click on release; capitalized option labels
 # 0.5.6 - 2026-08-24 - Mouse support: SGR 1006; click wrapper rows and click [key] actions
 # 0.5.5 - 2026-08-24 - Phase 7: catalog DDL apply (nullable / add column) + [m] promote packet to Helium
@@ -40,8 +41,8 @@ SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
 LUA_APP="${SCRIPT_DIR}/schemahelper.lua"
 SCHEMATOOL_SH="${SCRIPT_DIR}/schematool.sh"
 
-VERSION="0.5.7"
-SCHEMATOOL_VERSION="1.8.3"
+VERSION="0.5.8"
+SCHEMATOOL_VERSION="1.9.0"
 
 print_help() {
     cat <<EOF
@@ -64,17 +65,20 @@ Options:
   --wrapper PATH         SchemaTool wrapper (same as positional)
   --migrations DIR       Override Helium migrations directory
   --out-dir DIR          SchemaTool workspace (default: directory of wrapper)
+  --work-dir DIR         Use DIR for intermediate JSON/detail/log files
+                         (default: /tmp/schemahelper-<timestamp>-<rand>)
   --state-file PATH      Sidecar JSON (default: <out-dir>/schemahelper_<design>_<engine>.json)
   --packet-dir DIR       Packet workspace (default: same as --out-dir)
   --ref N                Force packet ref instead of max(disk, reserved)+1
   --track metadata|catalog|both
-                         Which SchemaTool track to queue (default: both)
+                          Which SchemaTool track to queue (default: both)
   --reuse                Load existing --out-dir artifacts; skip SchemaTool
-    --allow-write          Enable [U]pdate Database: apply metadata change
-                            (type REF.field), delete orphan ref (type REF; true
-                            orphans only), apply catalog DDL on nullable/
-                            add-column findings (type object.column), and
-                            [M] Promote a packet stub into Helium migrations
+  --allow-write          Enable [U]pdate Database: apply metadata change
+                          (type REF.field), delete orphan ref (type REF; true
+                          orphans only), apply catalog DDL on nullable/
+                          add-column findings (type object.column), and
+                          [M] Promote a packet stub into Helium migrations
+  --keep-work-dir        Do not remove the auto-generated work-dir on exit
   --help, -h             This help
   --version              Print versions
 
@@ -147,15 +151,17 @@ if [[ ! -f "${LUA_APP}" ]]; then
     exit 1
 fi
 
-WRAPPER_ARG=""
+        WRAPPER_ARG=""
 MIGRATIONS_ARG=""
 OUT_DIR_ARG=""
+WORK_DIR_ARG=""
 STATE_FILE_ARG=""
 PACKET_DIR_ARG=""
 TRACK_ARG="both"
 REF_ARG=""
 REUSE_ARG=0
 ALLOW_WRITE_ARG=0
+KEEP_WORK_DIR_ARG=0
 
 while [[ $# -gt 0 ]]; do
     case "${1}" in
@@ -189,6 +195,14 @@ while [[ $# -gt 0 ]]; do
                 exit 1
             fi
             OUT_DIR_ARG="${2}"
+            shift 2
+            ;;
+        --work-dir)
+            if [[ $# -lt 2 ]]; then
+                echo "Error: --work-dir requires a directory" >&2
+                exit 1
+            fi
+            WORK_DIR_ARG="${2}"
             shift 2
             ;;
         --state-file)
@@ -233,6 +247,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --allow-write)
             ALLOW_WRITE_ARG=1
+            shift
+            ;;
+        --keep-work-dir)
+            KEEP_WORK_DIR_ARG=1
             shift
             ;;
         --)
@@ -305,6 +323,7 @@ fi
 
 MIGRATIONS_ABS="$(resolve_migrations "${MIGRATIONS_ARG}")"
 OUT_DIR_ABS="$(resolve_dir "${OUT_DIR_ARG}")"
+WORK_DIR_ABS="$(resolve_dir "${WORK_DIR_ARG}")"
 PACKET_DIR_ABS="$(resolve_dir "${PACKET_DIR_ARG}")"
 
 if [[ -n "${STATE_FILE_ARG}" ]]; then
@@ -326,6 +345,9 @@ fi
 if [[ -n "${OUT_DIR_ABS}" ]]; then
     LUA_ARGS+=(--out-dir "${OUT_DIR_ABS}")
 fi
+if [[ -n "${WORK_DIR_ABS}" ]]; then
+    LUA_ARGS+=(--work-dir "${WORK_DIR_ABS}")
+fi
 if [[ -n "${STATE_FILE_ARG}" ]]; then
     LUA_ARGS+=(--state-file "${STATE_FILE_ARG}")
 fi
@@ -341,6 +363,9 @@ if [[ "${REUSE_ARG}" -eq 1 ]]; then
 fi
 if [[ "${ALLOW_WRITE_ARG}" -eq 1 ]]; then
     LUA_ARGS+=(--allow-write)
+fi
+if [[ "${KEEP_WORK_DIR_ARG}" -eq 1 ]]; then
+    LUA_ARGS+=(--keep-work-dir)
 fi
 if [[ -f "${SCHEMATOOL_SH}" ]]; then
     LUA_ARGS+=(--schematool "${SCHEMATOOL_SH}")

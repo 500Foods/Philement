@@ -1,9 +1,0 @@
-{
-  "cursor_id": "",
-  "decisions": [],
-  "design": "acuranzo",
-  "engine": "yugabytedb",
-  "schema": "demo",
-  "updated_utc": "2026-08-24T17:55:44Z",
-  "version": 1
-}

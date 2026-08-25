@@ -5,7 +5,7 @@
 -- into the run loops and main entry point.
 --
 -- CHANGELOG
--- 0.5.8 - 2026-08-25 - Split 2283-line monolith into lua/ submodules; this file is now the orchestrator
+-- 0.5.8 - 2026-08-25 - Per-run /tmp work_dir for intermediates + cleanup on exit
 -- 0.5.7 - 2026-08-24 - Mouseover highlighting on clickable options; click on release; capitalized option labels
 -- 0.5.6 - 2026-08-24 - Mouse support: SGR 1006; click wrapper rows and click [key] actions
 -- 0.5.5 - 2026-08-24 - Phase 7: catalog DDL apply (nullable / add column) with louder confirm (object.column)
@@ -65,12 +65,14 @@ local function parse_args()
         wrapper = "",
         migrations = "",
         out_dir = "",
+        work_dir = "",
         state_file = "",
         packet_dir = "",
         track = "both",
         reuse = false,
         allow_write = false,
         ref = 0,
+        keep_work_dir = false,
         schematool = script_dir() .. "/schematool.sh",
         lua_version = _VERSION:match("Lua%s+([%d.]+)") or _VERSION,
         version = false,
@@ -87,6 +89,9 @@ local function parse_args()
         elseif a == "--out-dir" then
             opts.out_dir = arg[i + 1] or ""
             i = i + 2
+        elseif a == "--work-dir" then
+            opts.work_dir = arg[i + 1] or ""
+            i = i + 2
         elseif a == "--state-file" then
             opts.state_file = arg[i + 1] or ""
             i = i + 2
@@ -101,6 +106,9 @@ local function parse_args()
             i = i + 1
         elseif a == "--allow-write" then
             opts.allow_write = true
+            i = i + 1
+        elseif a == "--keep-work-dir" then
+            opts.keep_work_dir = true
             i = i + 1
         elseif a == "--ref" then
             opts.ref = tonumber(arg[i + 1]) or 0
@@ -397,7 +405,7 @@ end
 local function run_dashboard(screen, app, opts, state)
     app.state = state
     app.built = Q.build({
-        out_dir = opts.out_dir,
+        out_dir = opts.work_dir,
         track = opts.track,
         state = state,
     })
@@ -492,10 +500,10 @@ local function run_review(screen, app, opts)
                       local f = app.built.subject[app.review_index]
                       app.explore_view = Q.build_explore_view(f)
                       explore = Q.explore_lines(
-                         opts.out_dir,
-                         f.id,
-                         app.built.subject,
-                         app.state)
+                          opts.work_dir,
+                          f.id,
+                          app.built.subject,
+                          app.state)
                 end
                 app.explore_lines = explore
                 app.explore_scroll = 0
@@ -696,12 +704,27 @@ local function finish_paths(opts)
         opts.out_dir = W.wrapper_dir(opts.wrapper)
     end
     W.ensure_dir(opts.out_dir)
+    if opts.work_dir == "" then
+        local tmp = os.getenv("TMPDIR") or "/tmp"
+        local stamp = os.date("!%Y%m%dT%H%M%SZ")
+        local rand = tostring(math.random(100000, 999999))
+        opts.work_dir = string.format("%s/schemahelper-%s-%s",
+            tmp, stamp, rand)
+    end
+    W.ensure_dir(opts.work_dir)
     if opts.packet_dir == "" then
         opts.packet_dir = opts.out_dir
     end
     W.ensure_dir(opts.packet_dir)
     if opts.state_file == "" then
         opts.state_file = Q.default_state_path(opts.out_dir, design, engine)
+    end
+end
+
+local function cleanup_work_dir(opts)
+    if opts and opts.work_dir and opts.work_dir ~= ""
+        and not opts.keep_work_dir then
+        os.execute('rm -rf "' .. opts.work_dir:gsub('"', '\\"') .. '"')
     end
 end
 
@@ -775,7 +798,7 @@ local function main()
         finish_paths(opts)
         app.warn_in_repo = packet.in_git_tree(opts.packet_dir)
         app.catalog_degraded = false
-        app.log = opts.out_dir .. "/schemahelper_schematool.log"
+        app.log = opts.work_dir .. "/schemahelper_schematool.log"
 
         app.status_note = "Connecting…"
         show_mode(screen, app, "running")
@@ -785,7 +808,7 @@ local function main()
         local ran = false
         local exit_code = 0
         local err
-        local have_art = Q.artifacts_present(opts.out_dir, opts.track)
+        local have_art = Q.artifacts_present(opts.work_dir, opts.track)
         local should_run = not opts.reuse or not have_art
         if not app.conn.ok then
             should_run = false
@@ -810,18 +833,22 @@ local function main()
         if not err then
             break
         end
-        have_art = Q.artifacts_present(opts.out_dir, opts.track)
+        have_art = Q.artifacts_present(opts.work_dir, opts.track)
         app.result_lines = I.build_result_lines(opts, ran, exit_code, built, err, Q, ATTR.OK)
         show_mode(screen, app, "result")
         local action = wait_result_action(screen, have_art)
         if action == "quit" then
             Mouse.disable_mouse()
+            cleanup_work_dir(opts)
             return
         elseif action == "reuse" then
             opts.reuse = true
             break
         else
+            cleanup_work_dir(opts)
             opts.wrapper = ""
+            opts.out_dir = ""
+            opts.work_dir = ""
             opts.reuse = false
             app.conn = nil
         end
@@ -850,6 +877,7 @@ local function main()
     end
     Q.save_cursor(opts.state_file, "")
     Mouse.disable_mouse()
+    cleanup_work_dir(opts)
 end
 
 -- Handle --version before terminal initialization (no TTY needed)

@@ -3,7 +3,7 @@
 -- post-run result-line builder.
 --
 -- CHANGELOG
--- 0.5.8 - 2026-08-25 - Extracted from schemahelper.lua (invoke cluster)
+-- 0.5.8 - 2026-08-25 - Pass --work-dir to SchemaTool; log/exit files use work_dir
 
 local C = require("schemahelper_const")
 local W = require("schemahelper_wrappers")
@@ -77,14 +77,17 @@ local function progress_bar(width, current, total)
 end
 
 local function invoke_schematool(opts, screen, app, show_mode_fn)
-    local log = opts.out_dir .. "/schemahelper_schematool.log"
-    local exitf = opts.out_dir .. "/schemahelper_schematool.exit"
+    local log = opts.work_dir .. "/schemahelper_schematool.log"
+    local exitf = opts.work_dir .. "/schemahelper_schematool.exit"
     local parts = {
         W.sh_quote(opts.wrapper),
         "--format",
         "json",
         "--out-dir",
         W.sh_quote(opts.out_dir),
+        "--work-dir",
+        W.sh_quote(opts.work_dir),
+        "--keep-work-dir",
         "--no-detail",
     }
     if opts.track == "catalog" or opts.track == "both" then
@@ -179,6 +182,9 @@ local function session_header(opts, app, _)
     end
     add("wrapper  " .. (opts.wrapper ~= "" and opts.wrapper or "(none)"), ATTR.PATH)
     add("out-dir  " .. (opts.out_dir ~= "" and opts.out_dir or "(none)"), ATTR.PATH)
+    if opts.work_dir ~= "" and opts.work_dir ~= opts.out_dir then
+        add("work-dir " .. opts.work_dir, ATTR.PATH)
+    end
     add("state    " .. (opts.state_file ~= "" and opts.state_file or "(none)"), ATTR.PATH)
     add("track    " .. opts.track, ATTR.PATH)
     add("log      " .. (app.log or "(none)"), ATTR.PATH)
@@ -220,7 +226,7 @@ local function build_result_lines(opts, ran, exit_code, built, err, Q, ATTR_OK)
     if err then
         add(err, ATTR.ERR)
         if ran then
-            local tail = log_tail(opts.out_dir .. "/schemahelper_schematool.log", 6)
+            local tail = log_tail(opts.work_dir .. "/schemahelper_schematool.log", 6)
             for i = 1, #tail do
                 add(tail[i], ATTR.PATH)
             end
@@ -249,7 +255,7 @@ local function build_result_lines(opts, ran, exit_code, built, err, Q, ATTR_OK)
     end
     add("", ATTR.PATH)
     add("[W] pick another wrapper   [Q]uit", ATTR.PROMPT)
-    if built and Q.artifacts_present(opts.out_dir, opts.track) then
+    if built and Q.artifacts_present(opts.work_dir, opts.track) then
         add("[Enter] review existing artifacts", ATTR.PROMPT)
     end
     return lines

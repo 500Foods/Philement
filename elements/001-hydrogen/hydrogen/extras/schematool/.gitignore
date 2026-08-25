@@ -1,0 +1,20 @@
+# SchemaTool intermediate artifacts (written to --work-dir or copied to --out-dir)
+# These are generated artifacts, not source files.
+findings.json
+catalog_findings.json
+catalog_expected.json
+catalog_live.json
+catalog_checklist.json
+catalog_layout.json
+checklist_data.json
+checklist_layout.json
+db_metadata.json
+expected_payloads.json
+disk.json
+disk_all.json
+finding_detail*.txt
+catalog_finding_detail*.txt
+schemahelper_schematool.log
+schemahelper_schematool.exit
+schematool_checklist_grouped.json
+schematool_catalog_grouped.json

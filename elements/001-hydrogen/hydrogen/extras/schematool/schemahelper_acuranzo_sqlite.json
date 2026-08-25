@@ -1,15 +1,9 @@
 {
   "cursor_id": "",
-  "decisions": [
-    {
-      "action": "accepted",
-      "at": "2026-08-24T05:53:56Z",
-      "id": "meta:drift:1223:1003:code"
-    }
-  ],
+  "decisions": [],
   "design": "acuranzo",
   "engine": "sqlite",
   "schema": "",
-  "updated_utc": "2026-08-25T18:44:02Z",
+  "updated_utc": "2026-08-25T21:27:07Z",
   "version": 1
 }
