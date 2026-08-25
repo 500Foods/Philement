@@ -69,6 +69,12 @@ extras/schematool/schemahelper.sh schematool_sqlite.sh \
   --reuse --out-dir /tmp/schemahelper-out
 ```
 
+Intermediate JSON/detail/log files are written to a per-run
+`/tmp/schemahelper-<timestamp>-<rand>` work-dir by default. Use `--work-dir DIR`
+to control the location, or `--keep-work-dir` to retain the auto-generated
+directory for debugging. The `--out-dir` (state sidecar, SQL, `.mig`) is
+separate from `--work-dir` and persists by default.
+
 ## Wrappers
 
 `schemahelper.sh` discovers `extras/schematool/schematool_*.sh`. Each
@@ -101,16 +107,19 @@ need that engine listening and the matching env vars (see
 | --- | --- |
 | `--wrapper PATH` | Same as the positional wrapper |
 | `--migrations DIR` | Override Helium migrations (default acuranzo tree) |
-| `--out-dir DIR` | SchemaTool workspace (default: directory of wrapper) |
+| `--out-dir DIR` | SchemaTool workspace for final artifacts (SQL, .mig, state sidecar) (default: directory of wrapper) |
+| `--work-dir DIR` | Intermediate JSON/detail/log files for this session (default: `/tmp/schemahelper-<timestamp>-<rand>`; auto-cleaned on exit unless `--keep-work-dir`) |
 | `--state-file PATH` | Sidecar JSON override |
 | `--packet-dir DIR` | Packet workspace (default: same as `--out-dir`) |
 | `--ref N` | Force the next packet number |
 | `--track metadata\|catalog\|both` | Queue filter (default `both`) |
 | `--reuse` | Load existing artifacts; skip SchemaTool |
 | `--allow-write` | Enable `[u]` apply (metadata / orphan / catalog DDL) and `[m]` promote |
+| `--keep-work-dir` | Do not remove the auto-generated work-dir on exit |
 
 Default `--out-dir` next to a Test 40 wrapper is inside the git tree.
-SchemaHelper warns once. Prefer `--out-dir /tmp/…` for real sessions.
+SchemaHelper warns once. Prefer `--out-dir /tmp/…` for real sessions. The
+`--work-dir` intermediates default to `/tmp` and never land in the repo.
 
 ## Screens and keys
 

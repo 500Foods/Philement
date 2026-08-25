@@ -1,8 +1,8 @@
 # [Philement](https://www.philement.com)
 
-While Klipper has been an enormous boon to the 3D printing community as a whole, it isn't without its faults. Philement has been conceived as a full-on replacement, but it will take quite awhile to get there. In the interim it may end up serving as a front-end to Klipper, a bit like Obico perhaps.
+Philiment was originally conceived as a replacement for Klipper. While Klipper has been an enormous boon to the 3D printing community as a whole, it isn't without its faults. Some of them are deep design flaws. Some are tied directly to its Python roots. Some are more subjective.  Philement has been conceived as a full-on replacement, but it will take quite awhile to get there. Along the way, the work around Philement will have many other applications.
 
-The main differentiator to address upfront is that a large chunk of the lower-level code has been written in C and specifically not Python. For so many reasons. To help make this go a little more quickly, various AI engines are being tasked to help out. It isn't written by AI, but written with the help of AI. If that distinction matters to anyone. If nothing else, this gives a degree of plausible deniability if there's something crazy going on in the code.
+The main differentiator to address upfront is that a large chunk of the lower-level code has been written in both C and Lua, and specifically not Python. For so many reasons. To help make this go a little more quickly, various AI engines are being tasked to help out. It isn't written by AI, but written with the help of AI. If that distinction matters to anyone. If nothing else, this gives a degree of plausible deniability if there's something crazy going on in the code.
 
 As for the name, it is a combination of terms like 'Phi' (referencing the number 500 among *many* other meanings), 'filament' (that's what 3D printing is primarily obsessed with), and 'element' (small pieces of something larger). The individual components of the project have been named after atomic elements, for example.
 
@@ -15,7 +15,7 @@ This project has a number of, well, elements. Each is named after an element in 
 
 | Element | Status | Description |
 | :-------: | :------: | :------------ |
-| [hydrogen](/docs/H/README.md) | 🔨 | A websocket-equipped service, like Klipper+Moonraker combined |
+| [hydrogen](/docs/H/README.md) | 🏆 | A websocket-equipped service, like Klipper+Moonraker combined |
 | [helium](/docs/He/README.md) | 🔨 | Everything database-related |
 | [lithium](/docs/Li/README.md) | 🔨 | Web-based UI for desktops and larger systems |
 | [beryllium](/elements/004-beryllium/README.md) | 🏆 | Deals with everything gcode-related |
@@ -37,7 +37,10 @@ This project has a number of, well, elements. Each is named after an element in 
 | [calcium](/elements/020-calcium/README.md) | 💡 | Optimization Wizard - building on beryllium and boron |
 | [scandium](/elements/021-scandium/README.md) | 💡 | Implementation of x3dp.com - 3D Printer Exchange |
 | [titanium](/elements/022-titanium/README.md) | 💡 | High-performance video streaming for remote monitoring |
-| [vanadium](/docs/V/README.md) | 🏆 | Custom font for Philement based off of Iosevka |
+| [vanadium](/elements/023-vanadium/README.md) | 🏆 | Custom font for Philement based off of Iosevka |
+| [chromium](/elements/024-chromium/README.md) | 💡 | We're going to skip this one! |
+| [scandium](/elements/025-manganese/README.md) | 💡 | Lua support layer |
+| [iron](/elements/026-iron/README.md) | 💡 | Lua implementation of, well, a motion control system |
 
 <sup>💡 → Idea and Planning Stage &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🔨 → Working on it &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🏆 → Nowhere near done but... Check it out!</sup>
 
@@ -53,18 +56,18 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-08-25 05:20:56 UTC
+Last updated at 2026-08-25 18:06:51 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                           502            429              0        1622477
-SVG                            294            573          11137         513449
+JSON                           503            430              0        1629177
+SVG                            294            573          11137         513439
 C                             1584          64342          56924         261176
-Text                           332            328              0         137366
-Markdown                       743          33787            248         101215
+Text                           333            329              0         137918
+Markdown                       745          33761            248         101140
 Lua                            398          11138           6988          89266
 JavaScript                     224          10445          13582          49798
-Bourne Shell                   171           7661         106486          41647
+Bourne Shell                   171           7661         106790          41647
 CSS                             84           2769           1563          14005
 C/C++ Header                   329           4001          13862          12023
 HTML                            42            258            219           2836
@@ -78,13 +81,13 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          4806         136182         242515        2848324
+SUM:                          4810         136158         242819        2855491
 -------------------------------------------------------------------------------
-1678 Files were skipped (duplicate, binary, or without source code):
+1679 Files were skipped (duplicate, binary, or without source code):
   svg: 1182
   css: 165
   html: 134
-  md: 38
+  md: 39
   js: 24
   png: 23
   br: 16

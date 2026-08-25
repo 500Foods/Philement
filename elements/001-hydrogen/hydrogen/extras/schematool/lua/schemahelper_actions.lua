@@ -6,7 +6,7 @@
 -- input loops) are injected via init() to avoid a circular require.
 --
 -- CHANGELOG
--- 0.5.8 - 2026-08-25 - Extracted from schemahelper.lua (actions cluster)
+-- 0.5.8 - 2026-08-25 - Use work_dir for JSON/detail reads; out_dir for .mig/state
 
 local W = require("schemahelper_wrappers")
 local Q = require("schemahelper_queue")
@@ -32,7 +32,7 @@ end
 local function rebuild_queue(app, opts)
     app.state = Q.load_state(opts.state_file)
     app.built = Q.build({
-        out_dir = opts.out_dir,
+        out_dir = opts.work_dir,
         track = opts.track,
         state = app.state,
     })
@@ -54,8 +54,8 @@ local function ingest_audit(app, opts, ran, exit_code)
     rebuild_queue(app, opts)
     app.catalog_degraded = false
     local ok_exit = (exit_code == 0 or exit_code == 2 or exit_code == 3)
-    local have_meta = Q.artifacts_present(opts.out_dir, "metadata")
-    local have_cat = Q.artifacts_present(opts.out_dir, "catalog")
+    local have_meta = Q.artifacts_present(opts.work_dir, "metadata")
+    local have_cat = Q.artifacts_present(opts.work_dir, "catalog")
     if ran and not ok_exit then
         if opts.track == "catalog" and not have_cat then
             return "SchemaTool failed; see log"
@@ -117,7 +117,7 @@ local function apply_finding(screen, app, opts)
     end
     local token = apply.confirm_token(f)
     local conn = connect.resolve(opts.wrapper)
-    local sql, sql_err = apply.build_sql(f, conn, opts.out_dir)
+    local sql, sql_err = apply.build_sql(f, conn, opts.work_dir)
     if not sql then
         app.show_mode_msg = "error: " .. tostring(sql_err)
         return nil
@@ -138,7 +138,7 @@ local function apply_finding(screen, app, opts)
         app.show_mode_msg = "update aborted — type " .. token
         return nil
     end
-    local log_path, log_err = apply.write_log(opts.out_dir, f, sql)
+    local log_path, log_err = apply.write_log(opts.work_dir, f, sql)
     if not log_path then
         app.show_mode_msg = "error: " .. tostring(log_err)
         return nil
@@ -219,7 +219,7 @@ local function generate_packet(screen, app, opts)
         return nil
     end
     local tool_ver = select(1, W.read_tool_version(opts.schematool))
-    local detail_lines = Q.load_detail_section(opts.out_dir, f)
+    local detail_lines = Q.load_detail_section(opts.work_dir, f)
     local detail_text
     if #detail_lines > 0 then
         detail_text = table.concat(detail_lines, "\n") .. "\n"

@@ -261,6 +261,8 @@ extras/schematool/smoke_test40_catalog.sh --out-dir /tmp/schematool-t40
 | `--normalize loose\|strict` | Comparison mode |
 | `--format tables\|json\|both` | Console output |
 | `--no-sql` | Skip remediation file |
+| `--work-dir DIR` | Use DIR for intermediate JSON/detail/log files (default: a `mktemp -d` tmpdir; auto-cleaned unless `--keep-work-dir`) |
+| `--keep-work-dir` | Do not remove `--work-dir` on exit |
 
 ## Cumulative ALTER caveat
 
