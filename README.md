@@ -1,8 +1,8 @@
 # [Philement](https://www.philement.com)
 
-While Klipper has been an enormous boon to the 3D printing community as a whole, it isn't without its faults. Philement has been conceived as a full-on replacement, but it will take quite awhile to get there. In the interim it may end up serving as a front-end to Klipper, a bit like Obico perhaps.
+Philiment was originally conceived as a replacement for Klipper. While Klipper has been an enormous boon to the 3D printing community as a whole, it isn't without its faults. Some of them are deep design flaws. Some are tied directly to its Python roots. Some are more subjective.  Philement has been conceived as a full-on replacement, but it will take quite awhile to get there. Along the way, the work around Philement will have many other applications.
 
-The main differentiator to address upfront is that a large chunk of the lower-level code has been written in C and specifically not Python. For so many reasons. To help make this go a little more quickly, various AI engines are being tasked to help out. It isn't written by AI, but written with the help of AI. If that distinction matters to anyone. If nothing else, this gives a degree of plausible deniability if there's something crazy going on in the code.
+The main differentiator to address upfront is that a large chunk of the lower-level code has been written in both C and Lua, and specifically not Python. For so many reasons. To help make this go a little more quickly, various AI engines are being tasked to help out. It isn't written by AI, but written with the help of AI. If that distinction matters to anyone. If nothing else, this gives a degree of plausible deniability if there's something crazy going on in the code.
 
 As for the name, it is a combination of terms like 'Phi' (referencing the number 500 among *many* other meanings), 'filament' (that's what 3D printing is primarily obsessed with), and 'element' (small pieces of something larger). The individual components of the project have been named after atomic elements, for example.
 
@@ -15,7 +15,7 @@ This project has a number of, well, elements. Each is named after an element in 
 
 | Element | Status | Description |
 | :-------: | :------: | :------------ |
-| [hydrogen](/docs/H/README.md) | 🔨 | A websocket-equipped service, like Klipper+Moonraker combined |
+| [hydrogen](/docs/H/README.md) | 🏆 | A websocket-equipped service, like Klipper+Moonraker combined |
 | [helium](/docs/He/README.md) | 🔨 | Everything database-related |
 | [lithium](/docs/Li/README.md) | 🔨 | Web-based UI for desktops and larger systems |
 | [beryllium](/elements/004-beryllium/README.md) | 🏆 | Deals with everything gcode-related |
@@ -37,7 +37,10 @@ This project has a number of, well, elements. Each is named after an element in 
 | [calcium](/elements/020-calcium/README.md) | 💡 | Optimization Wizard - building on beryllium and boron |
 | [scandium](/elements/021-scandium/README.md) | 💡 | Implementation of x3dp.com - 3D Printer Exchange |
 | [titanium](/elements/022-titanium/README.md) | 💡 | High-performance video streaming for remote monitoring |
-| [vanadium](/docs/V/README.md) | 🏆 | Custom font for Philement based off of Iosevka |
+| [vanadium](/elements/023-vanadium/README.md) | 🏆 | Custom font for Philement based off of Iosevka |
+| [chromium](/elements/024-chromium/README.md) | 💡 | We're going to skip this one! |
+| [scandium](/elements/025-manganese/README.md) | 💡 | Lua support layer |
+| [iron](/elements/026-iron/README.md) | 💡 | Lua implementation of, well, a motion control system |
 
 <sup>💡 → Idea and Planning Stage &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🔨 → Working on it &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 🏆 → Nowhere near done but... Check it out!</sup>
 
