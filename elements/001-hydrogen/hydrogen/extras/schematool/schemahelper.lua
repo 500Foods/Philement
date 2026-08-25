@@ -1,7 +1,11 @@
 -- schemahelper.lua
 -- SchemaHelper — Interactive SchemaTool front-end (Lua 5.5 + terminal.lua)
+-- Orchestrator: wires the focused modules under lua/ (const, ui, mouse,
+-- paint, wrappers, invoke, screens, explore, queue, packet, apply, connect)
+-- into the run loops and main entry point.
 --
 -- CHANGELOG
+-- 0.5.8 - 2026-08-25 - Split 2283-line monolith into lua/ submodules; this file is now the orchestrator
 -- 0.5.7 - 2026-08-24 - Mouseover highlighting on clickable options; click on release; capitalized option labels
 -- 0.5.6 - 2026-08-24 - Mouse support: SGR 1006; click wrapper rows and click [key] actions
 -- 0.5.5 - 2026-08-24 - Phase 7: catalog DDL apply (nullable / add column) with louder confirm (object.column)
@@ -31,62 +35,6 @@
 
 -- luacheck: globals arg package
 
-local VERSION = "0.5.7"
-local RELEASED = "2026-08-24"
-
-local LUA_RELEASES = {
-    ["5.5.1"] = "2026-08-03",
-    ["5.5.0"] = "2025-12-22",
-    ["5.5"] = "2025-12-22",
-}
-
-local TERMINAL_RELEASES = {
-    ["0.1.0"] = "2026-06-07",
-}
-
-local WRAPPER_ORDER = {
-    "postgresql",
-    "mysql",
-    "mariadb",
-    "sqlite",
-    "db2",
-    "cockroachdb",
-    "yugabytedb",
-}
-
-local WRAPPER_BLURB = {
-    postgresql = "ACURANZO_DB_* / schema demo",
-    mysql = "CANVAS_DB_* / schema demo",
-    mariadb = "CANVAS_DB_* / schema demomrdb",
-    sqlite = "hydrodemo.sqlite",
-    db2 = "HYDROTST_DB_*",
-    cockroachdb = "ACURANZO_DB_* / schema democrdb",
-    yugabytedb = "YUGABYTE_DB_*  (never ACURANZO)",
-}
-
-local t = require("terminal")
-local Screen = require("terminal.ui.panel.screen")
-local Panel = require("terminal.ui.panel")
-
-local key_map = t.input.keymap.default_key_map
-local keys = t.input.keymap.default_keys
-
-local ATTR_TITLE = { fg = "yellow", brightness = "bright" }
-local ATTR_SUB = { fg = "cyan", brightness = "bright" }
-local ATTR_VERSION = { fg = "green", brightness = "bright" }
-local ATTR_DATE = { fg = "cyan" }
-local ATTR_RUNTIME = { fg = "magenta" }
-local ATTR_SECTION = { fg = "yellow" }
-local ATTR_PATH = { fg = "white", brightness = "dim" }
-local ATTR_PROMPT = { fg = "white", brightness = "bright" }
-local ATTR_ERR = { fg = "red", brightness = "bright" }
-local ATTR_OK = { fg = "green", brightness = "bright" }
-local ATTR_RULE = { fg = "red", brightness = "bright" }
-local ATTR_HL = { bg = "red", fg = "white", brightness = "bright" }
-local ATTR_HOT = { bg = "blue", fg = "green", brightness = "bright" }
-local ATTR_HOTLINK = { fg = "green", brightness = "bright" }
-local ATTR_COLHEAD = { fg = "yellow", brightness = "bright" }
-
 local function script_dir()
     local src = arg[0] or ""
     local dir = src:match("^(.*)/[^/]+$")
@@ -94,151 +42,23 @@ local function script_dir()
 end
 
 package.path = script_dir() .. "/lua/?.lua;" .. package.path
-local queue = require("schemahelper_queue")
-local connect = require("schemahelper_connect")
+
+local C = require("schemahelper_const")
+local Mouse = require("schemahelper_mouse")
+local P = require("schemahelper_paint")
+local W = require("schemahelper_wrappers")
+local I = require("schemahelper_invoke")
+local S = require("schemahelper_screens")
+local E = require("schemahelper_explore")
+local Q = require("schemahelper_queue")
 local packet = require("schemahelper_packet")
-local apply = require("schemahelper_apply")
+local Actions = require("schemahelper_actions")
 
--- Mouse support: terminal.lua 0.1.0 ships no mouse module, so we enable SGR
--- 1006 tracking and parse the escape report ourselves, mapping clicks to hot
--- regions recorded during each paint. Clicks synthesize the same raw/name a
--- keyboard press would produce, so the existing input loops need no rewrites.
-local hotspots = {}  -- rebuilt on every paint_framed for the live screen
-local ESC = "\27"
-
-local mouse_hot_x, mouse_hot_y = nil, nil
-
-local function enable_mouse()
-    t.output.write(ESC .. "[?1003h")
-    t.output.write(ESC .. "[?1006h")
-    t.output.flush()
-end
-
-local function disable_mouse()
-    t.output.write(ESC .. "[?1003l")
-    t.output.write(ESC .. "[?1006l")
-    t.output.flush()
-end
-
-local function is_mouse(raw)
-    return type(raw) == "string" and raw:sub(1, 3) == ESC .. "[<"
-end
-
-local function parse_mouse(raw)
-    local cb, x, y, tail = raw:match(ESC .. "%[<(%d+);(%d+);(%d+)([Mm])")
-    if not cb then
-        return nil
-    end
-    return {
-        btn = tonumber(cb),
-        x = tonumber(x),
-        y = tonumber(y),
-        release = (tail == "m"),
-    }
-end
-
--- Map a recorded hot region key to a virtual key.
-local function map_hotkey(key)
-    if key:sub(1, 5) == "PICK:" then
-        return { pick = tonumber(key:sub(6)) }
-    end
-    if key == "Enter" then
-        return { name = keys.enter }
-    end
-    if key == "ESC" or key == "Esc" then
-        return { name = keys.escape }
-    end
-    return { raw = key:lower() }
-end
-
-local function find_hotspot(x, y)
-    for _, h in ipairs(hotspots) do
-        if y == h.row and x >= h.c0 and x <= h.c1 then
-            return h
-        end
-    end
-    return nil
-end
-
-local function mouse_vkey(raw)
-    local m = parse_mouse(raw)
-    if not m or m.btn ~= 0 then
-        return nil
-    end
-    local h = find_hotspot(m.x, m.y)
-    if not h then
-        return nil
-    end
-    return map_hotkey(h.key)
-end
-
-local function highlight_hotspot(screen, x, y)
-    if not screen or not x or not y then
-        if mouse_hot_x or mouse_hot_y then
-            mouse_hot_x, mouse_hot_y = nil, nil
-            screen:calculate_layout()
-            screen:render()
-        end
-        return
-    end
-    if x ~= mouse_hot_x or y ~= mouse_hot_y then
-        mouse_hot_x, mouse_hot_y = x, y
-        if screen then
-            screen:calculate_layout()
-            screen:render()
-        end
-    end
-end
-
--- Unified key reader: (raw, name, extra). Mouse hits synthesize the same
--- raw/name a keyboard press would yield; wrapper rows return extra.pick.
--- Motion events (no button held) update the mouseover highlight and return
--- nil (timeout-like) so the input loop continues without acting.
--- Click events (button press followed by release) are processed on release.
-local function read_key(screen, _app)
-    local raw = t.input.readansi(0.2)
-    if raw == nil then
-        return nil, nil, nil
-    end
-    if is_mouse(raw) then
-        local m = parse_mouse(raw)
-        if not m or m.btn ~= 0 then
-            return "", "_ignore", nil
-        end
-        if not m.release then
-            -- Press or motion event: update highlight, do not act
-            highlight_hotspot(screen, m.x, m.y)
-            return nil, nil, nil
-        else
-            -- Release event: this is a click
-            highlight_hotspot(screen, nil, nil)
-            local v = mouse_vkey(raw)
-            if not v then
-                return "", "_ignore", nil
-            end
-            if v.pick then
-                return nil, nil, { pick = v.pick }
-            end
-            return v.raw or "", v.name or nil, nil
-        end
-    end
-    return raw, key_map[raw], nil
-end
-
-local function add_hotspots_for_line(text, row, col)
-    if type(text) ~= "string" or #text == 0 then
-        return
-    end
-    local p = 1
-    while true do
-        local s, e, key = text:find("%[(%a+)%]", p)
-        if not s then
-            break
-        end
-        hotspots[#hotspots + 1] = { row = row, c0 = col + s, c1 = col + e, key = key, subtext = text:sub(s, e) }
-        p = e + 1
-    end
-end
+local t = C.t
+local Screen = C.Screen
+local Panel = C.Panel
+local keys = C.keys
+local ATTR = C.ATTR
 
 local function parse_args()
     local opts = {
@@ -301,378 +121,36 @@ local function parse_args()
     return opts
 end
 
-local function read_tool_version(path)
-    local f = io.open(path, "r")
-    if not f then
-        return nil, nil
+-- Unified key reader: (raw, name, extra). Mouse hits synthesize the same
+-- raw/name a keyboard press would yield; wrapper rows return extra.pick.
+-- Motion events update the mouseover highlight and return nil so the loop
+-- continues without acting; release events are processed as a click.
+local function read_key(screen, _app)
+    local raw = t.input.readansi(0.2)
+    if raw == nil then
+        return nil, nil, nil
     end
-    local ver
-    local date
-    for line in f:lines() do
-        local v = line:match('^VERSION="([^"]+)"')
-        if v then
-            ver = v
+    if Mouse.is_mouse(raw) then
+        local m = Mouse.parse_mouse(raw)
+        if not m or m.btn ~= 0 then
+            return "", "_ignore", nil
         end
-        local dv, dd = line:match("^#%s+(%d+%.%d+%.%d+)%s+%-%s+(%d%d%d%d%-%d%d%-%d%d)%s+")
-        if dv and (not ver or dv == ver) and not date then
-            date = dd
-        end
-        if ver and date then
-            break
-        end
-    end
-    f:close()
-    return ver, date
-end
-
-local function wrapper_engine(path)
-    local base = path:match("([^/]+)$") or path
-    return base:match("^schematool_(.+)%.sh$") or ""
-end
-
-local function wrapper_meta(path)
-    local engine = wrapper_engine(path)
-    local flags = connect.parse_wrapper(path)
-    local design = flags.design or "acuranzo"
-    local schema = flags.schema or ""
-    if schema == "" then
-        local resolved = connect.resolve(path)
-        schema = resolved.schema or ""
-    end
-    return design, engine, schema
-end
-
-local function wrapper_dir(path)
-    return path:match("^(.*)/[^/]+$") or "."
-end
-
-local function discover_wrappers(dir)
-    local found = {}
-    local cmd = 'ls -1 "' .. dir:gsub('"', '\\"') .. '"/schematool_*.sh 2>/dev/null'
-    local h = io.popen(cmd)
-    if h then
-        for line in h:lines() do
-            if line ~= "" then
-                local eng = wrapper_engine(line)
-                if eng ~= "" then
-                    found[eng] = line
-                end
+        if not m.release then
+            Mouse.highlight_hotspot(screen, m.x, m.y)
+            return nil, nil, nil
+        else
+            Mouse.highlight_hotspot(screen, nil, nil)
+            local v = Mouse.mouse_vkey(raw)
+            if not v then
+                return "", "_ignore", nil
             end
-        end
-        h:close()
-    end
-    local list = {}
-    local seen = {}
-    for _, eng in ipairs(WRAPPER_ORDER) do
-        if found[eng] then
-            list[#list + 1] = { engine = eng, path = found[eng] }
-            seen[eng] = true
-        end
-    end
-    local extras = {}
-    for eng, path in pairs(found) do
-        if not seen[eng] then
-            extras[#extras + 1] = { engine = eng, path = path }
-        end
-    end
-    table.sort(extras, function(a, b)
-        return a.engine < b.engine
-    end)
-    for _, item in ipairs(extras) do
-        list[#list + 1] = item
-    end
-    return list
-end
-
-local function wrapper_label(item)
-    local base = item.path:match("([^/]+)$") or item.path
-    local blurb = WRAPPER_BLURB[item.engine] or item.engine
-    return string.format("%-28s %s", base, blurb)
-end
-
-local function sh_quote(s)
-    return "'" .. tostring(s):gsub("'", "'\\''") .. "'"
-end
-
-local function ensure_dir(path)
-    if path and path ~= "" then
-        os.execute("mkdir -p " .. sh_quote(path))
-    end
-end
-
-local function count_disk_refs(migrations, design)
-    if not migrations or migrations == "" then
-        return 0
-    end
-    local design_pat = (design or "acuranzo"):gsub("(%W)", "%%%1")
-    local patterns = {
-        "^" .. design_pat .. "_(%d+)%.lua$",
-        "^design_(%d+)%.lua$",
-    }
-    local n = 0
-    local h = io.popen("ls -1 " .. sh_quote(migrations) .. " 2>/dev/null")
-    if not h then
-        return 0
-    end
-    for name in h:lines() do
-        for i = 1, #patterns do
-            if name:match(patterns[i]) then
-                n = n + 1
-                break
+            if v.pick then
+                return nil, nil, { pick = v.pick }
             end
+            return v.raw or "", v.name or nil, nil
         end
     end
-    h:close()
-    return n
-end
-
-local function read_tail_bytes(path, nbytes)
-    local f = io.open(path, "rb")
-    if not f then
-        return ""
-    end
-    local size = f:seek("end")
-    if not size then
-        f:close()
-        return ""
-    end
-    local start = math.max(0, size - nbytes)
-    f:seek("set", start)
-    local data = f:read("*a") or ""
-    f:close()
-    return data
-end
-
-local function parse_schematool_progress(log, fallback_total)
-    local prog = {
-        phase = "starting",
-        current = 0,
-        total = fallback_total or 0,
-        ref = nil,
-    }
-    local text = read_tail_bytes(log, 32768)
-    for line in (text .. "\n"):gmatch("([^\n]*)\n") do
-        local phase = line:match("^phase: (%S+)")
-        if phase then
-            prog.phase = phase
-        end
-        local cur, tot, ref = line:match("^expect (%d+)/(%d+) ref (%d+)")
-        if cur then
-            prog.phase = "expect"
-            prog.current = tonumber(cur) or 0
-            prog.total = tonumber(tot) or prog.total
-            prog.ref = tonumber(ref)
-        end
-        if line:match("^Compare:") then
-            prog.phase = "compare"
-            if prog.total > 0 then
-                prog.current = prog.total
-            end
-        end
-        if line:match("^SQL:") then
-            prog.phase = "remediate"
-        end
-    end
-    return prog
-end
-
-local show_mode
-
-local function progress_bar(width, current, total)
-    if width < 3 then
-        return ""
-    end
-    local inner = width - 2
-    local filled = 0
-    if total and total > 0 then
-        filled = math.floor(inner * current / total + 0.5)
-        if filled > inner then
-            filled = inner
-        end
-    end
-    return "[" .. string.rep("█", filled) .. string.rep("─", inner - filled) .. "]"
-end
-
-local function invoke_schematool(opts, screen, app)
-    local log = opts.out_dir .. "/schemahelper_schematool.log"
-    local exitf = opts.out_dir .. "/schemahelper_schematool.exit"
-    local parts = {
-        sh_quote(opts.wrapper),
-        "--format",
-        "json",
-        "--out-dir",
-        sh_quote(opts.out_dir),
-        "--no-detail",
-    }
-    if opts.track == "catalog" or opts.track == "both" then
-        parts[#parts + 1] = "--catalog"
-    end
-    if opts.migrations ~= "" then
-        parts[#parts + 1] = "--migrations"
-        parts[#parts + 1] = sh_quote(opts.migrations)
-    end
-    local wipe = io.open(log, "w")
-    if wipe then
-        wipe:close()
-    end
-    os.remove(exitf)
-    local total = count_disk_refs(opts.migrations, opts.design)
-    app.progress = {
-        phase = "starting",
-        current = 0,
-        total = total,
-        ref = nil,
-    }
-    local cmd = "(" .. table.concat(parts, " ") .. " > " .. sh_quote(log)
-        .. " 2>&1; echo $? > " .. sh_quote(exitf) .. ") &"
-    os.execute(cmd)
-    while true do
-        local raw = t.input.readansi(0.2)
-        if raw == nil then
-            screen:check_resize(true)
-        end
-        app.progress = parse_schematool_progress(log, total)
-        show_mode(screen, app, "running")
-        local ef = io.open(exitf, "r")
-        if ef then
-            local code = tonumber((ef:read("*l") or ""):match("%d+")) or 1
-            ef:close()
-            os.remove(exitf)
-            if app.progress.total > 0 then
-                app.progress.current = app.progress.total
-            end
-            app.progress.phase = "done"
-            show_mode(screen, app, "running")
-            return code, log
-        end
-    end
-end
-
-local function probe_connect(opts)
-    return connect.probe(opts.wrapper)
-end
-
-local function connect_text(conn)
-    if not conn then
-        return "checking…", ATTR_DATE
-    end
-    local target
-    if conn.family == "file" or (conn.host == "" and conn.database ~= "") then
-        target = conn.database
-    else
-        local who = conn.user
-        if who ~= "" then
-            who = who .. "@"
-        end
-        target = who .. conn.host
-        if conn.port ~= "" then
-            target = target .. ":" .. conn.port
-        end
-        if conn.database ~= "" then
-            target = target .. "/" .. conn.database
-        end
-        if conn.schema ~= "" then
-            target = target .. "  schema=" .. conn.schema
-        end
-    end
-    local family = conn.family
-    if family ~= "" then
-        family = family .. "  "
-    end
-    if conn.ok then
-        return "ok    " .. family .. target, ATTR_VERSION
-    end
-    local detail = conn.detail or "failed"
-    if #detail > 48 then
-        detail = detail:sub(1, 45) .. "…"
-    end
-    return "fail  " .. family .. target .. "  (" .. detail .. ")", ATTR_ERR
-end
-
-local function session_header(opts, app, _)
-    local lines = {}
-    local function add(text, attr)
-        lines[#lines + 1] = { text, attr }
-    end
-    add("wrapper  " .. (opts.wrapper ~= "" and opts.wrapper or "(none)"), ATTR_PATH)
-    add("out-dir  " .. (opts.out_dir ~= "" and opts.out_dir or "(none)"), ATTR_PATH)
-    add("state    " .. (opts.state_file ~= "" and opts.state_file or "(none)"), ATTR_PATH)
-    add("track    " .. opts.track, ATTR_PATH)
-    add("log      " .. (app.log or "(none)"), ATTR_PATH)
-    local ctext, cattr = connect_text(app.conn)
-    add("connect  " .. ctext, cattr)
-    return lines
-end
-
-local function display_text(text)
-    text = tostring(text or "")
-    text = text:gsub("\t", "    ")
-    text = text:gsub("\27%[[%d;?]*[ -/]*[@-~]", "")
-    text = text:gsub("[%z\1-\8\11-\31\127]", "")
-    return text
-end
-
-local function swidth(text)
-    text = display_text(text)
-    local ok, w = pcall(t.text.width.utf8swidth, text)
-    if ok and type(w) == "number" then
-        return w
-    end
-    return #text
-end
-
-local function write_span(row, col, width, text, attr)
-    width = tonumber(width) or 0
-    if width < 1 then
-        return
-    end
-    text = display_text(text)
-    local ok, shown = pcall(t.text.width.truncate_ellipsis, width, text, "right")
-    if not ok or type(shown) ~= "string" then
-        shown = text:sub(1, width)
-    end
-    t.cursor.position.set(row, col)
-    t.output.write(t.text.push_seq(attr), shown, t.text.pop_seq())
-end
-
-local function write_centered(row, col, width, text, attr, trunc)
-    text = display_text(text)
-    local ok, shown = pcall(t.text.width.truncate_ellipsis, width, text, trunc or "right")
-    if not ok or type(shown) ~= "string" then
-        shown = text
-    end
-    local w = swidth(shown)
-    if w < 1 then
-        return
-    end
-    write_span(row, col + math.max(0, math.floor((width - w) / 2)), w, shown, attr)
-end
-
-local function paint_hotspot_highlight_for_row(row, col, width, text, attr)
-    if not mouse_hot_y or mouse_hot_y ~= row then
-        for _, h in ipairs(hotspots) do
-            if h.row == row then
-                if h.is_hotrow then
-                    write_span(row, col + 1, width - 2, h.subtext, ATTR_HOTLINK)
-                elseif h.subtext then
-                    t.cursor.position.set(h.row, h.c0)
-                    t.output.write(t.text.push_seq(ATTR_HOTLINK), h.subtext, t.text.pop_seq())
-                end
-            end
-        end
-        return
-    end
-    for _, h in ipairs(hotspots) do
-        if h.row == row and mouse_hot_x >= h.c0 and mouse_hot_x <= h.c1 then
-            if h.is_hotrow then
-                write_span(row, col + 1, width - 2, h.subtext, ATTR_HOT)
-            elseif h.subtext then
-                t.cursor.position.set(h.row, h.c0)
-                t.output.write(t.text.push_seq(ATTR_HOT), h.subtext, t.text.pop_seq())
-            end
-            return
-        end
-    end
+    return raw, C.key_map[raw], nil
 end
 
 local function wait_enter_or_esc(screen)
@@ -688,488 +166,11 @@ local function wait_enter_or_esc(screen)
     end
 end
 
-local function splash_content(self)
-    local row = self.inner_row
-    local col = self.inner_col
-    local height = self.inner_height
-    local width = self.inner_width
-    if height < 1 or width < 1 then
-        return
-    end
-    hotspots = {}
-
-    local opts = self.opts
-    local tool_ver, tool_date = read_tool_version(opts.schematool)
-    local term_ver = t._VERSION or "0.1.0"
-    local versions = {
-        { "SchemaHelper", VERSION, RELEASED, ATTR_TITLE },
-        { "SchemaTool", tool_ver or "?", tool_date or "", ATTR_TITLE },
-        { "Lua", opts.lua_version, LUA_RELEASES[opts.lua_version] or "", ATTR_RUNTIME },
-        { "terminal.lua", term_ver, TERMINAL_RELEASES[term_ver] or "", ATTR_RUNTIME },
-    }
-
-    local name_w = 0
-    local ver_w = 0
-    local date_w = 0
-    for i = 1, #versions do
-        name_w = math.max(name_w, swidth(versions[i][1]))
-        ver_w = math.max(ver_w, swidth(versions[i][2]))
-        date_w = math.max(date_w, swidth(versions[i][3]))
-    end
-
-    local gap = 3
-    local table_w = name_w + gap + ver_w + gap + date_w
-    if table_w > width then
-        table_w = width
-    end
-    local table_col = col + math.max(0, math.floor((width - table_w) / 2))
-    local ver_col = table_col + name_w + gap
-    local date_col = ver_col + ver_w + gap
-
-    local migrations = opts.migrations
-    if migrations == "" then
-        migrations = "(migrations not resolved)"
-    end
-    local wrapper = opts.wrapper
-    if wrapper == "" then
-        wrapper = "(pick a SchemaTool wrapper after Enter)"
-    end
-
-    local last = row + height - 1
-    local lines = {
-        { "text", "Welcome to SchemaHelper", ATTR_TITLE },
-        { "text", "Frontend to Schema Tool", ATTR_SUB },
-        { "blank" },
-        { "version", 1 },
-        { "version", 2 },
-        { "version", 3 },
-        { "version", 4 },
-        { "blank" },
-        { "text", "Migration Comparator", ATTR_SECTION },
-        { "path", migrations },
-        { "blank" },
-        { "text", "Database Comparator", ATTR_SECTION },
-        { "path", wrapper },
-        { "blank" },
-        { "text", "[Enter] continue", ATTR_PROMPT },
-        { "text", "[ESC] exit", ATTR_PROMPT },
-    }
-
-    local start = row + math.max(0, math.floor((height - #lines) / 2))
-
-    for i = 1, #lines do
-        local line_row = start + i - 1
-        if line_row > last then
-            break
-        end
-        local spec = lines[i]
-        if spec[1] == "text" then
-            local shown = display_text(spec[2])
-            local w = swidth(shown)
-            local startc = col + math.max(0, math.floor((width - w) / 2))
-            write_centered(line_row, col, width, spec[2], spec[3], "right")
-            add_hotspots_for_line(spec[2], line_row, startc - 1)
-            paint_hotspot_highlight_for_row(line_row, col, width, spec[2], spec[3])
-        elseif spec[1] == "path" then
-            write_centered(line_row, col, width, spec[2], ATTR_PATH, "left")
-        elseif spec[1] == "version" then
-            local item = versions[spec[2]]
-            local name_pad = string.rep(" ", name_w - swidth(item[1]))
-            write_span(line_row, table_col, name_w, name_pad .. item[1], item[4])
-            if date_col <= col + width then
-                write_span(line_row, ver_col, ver_w, item[2], ATTR_VERSION)
-                if item[3] ~= "" and date_col + date_w <= col + width then
-                    write_span(line_row, date_col, date_w, item[3], ATTR_DATE)
-                end
-            end
-        end
-    end
-end
-
-local function paint_hline_join(self, row)
-    local col = self.inner_col
-    local width = self.inner_width
-    if not row or width < 1 or col < 2 then
-        return
-    end
-    t.cursor.position.set(row, col - 1)
-    t.output.write(
-        t.text.push_seq(ATTR_RULE),
-        "├" .. string.rep("─", width) .. "┤",
-        t.text.pop_seq())
-end
-
-local function paint_vline_join(self, split_col, top, bot)
-    if not split_col or not top or not bot or bot <= top then
-        return
-    end
-    t.cursor.position.set(top, split_col)
-    t.output.write(t.text.push_seq(ATTR_RULE), "┬", t.text.pop_seq())
-    for r = top + 1, bot - 1 do
-        t.cursor.position.set(r, split_col)
-        t.output.write(t.text.push_seq(ATTR_RULE), "│", t.text.pop_seq())
-    end
-    t.cursor.position.set(bot, split_col)
-    t.output.write(t.text.push_seq(ATTR_RULE), "┴", t.text.pop_seq())
-end
-
-local function paint_framed(self, header, body, footer, hotrows)
-    local row = self.inner_row
-    local col = self.inner_col
-    local height = self.inner_height
-    local width = self.inner_width
-    if height < 3 or width < 4 then
-        return
-    end
-    hotspots = {}
-    local last = row + height - 1
-    local footer_row = last
-    local footer_rule = last - 1
-    local y = row
-    for i = 1, #header do
-        if y >= footer_rule then
-            break
-        end
-        add_hotspots_for_line(header[i][1], y, col)
-        write_span(y, col + 1, width - 2, header[i][1], header[i][2] or ATTR_PATH)
-        paint_hotspot_highlight_for_row(y, col, width, header[i][1], header[i][2] or ATTR_PATH)
-        y = y + 1
-    end
-    if y < footer_rule then
-        paint_hline_join(self, y)
-        y = y + 1
-    end
-    local vis = footer_rule - y
-    if vis < 0 then
-        vis = 0
-    end
-    for i = 1, math.min(#body, vis) do
-        add_hotspots_for_line(body[i][1], y + i - 1, col)
-        write_span(y + i - 1, col + 1, width - 2, body[i][1], body[i][2] or ATTR_PATH)
-        paint_hotspot_highlight_for_row(y + i - 1, col, width, body[i][1], body[i][2] or ATTR_PATH)
-    end
-    if hotrows then
-        for bi, key in pairs(hotrows) do
-            hotspots[#hotspots + 1] = {
-                row = y + bi - 1,
-                c0 = col + 1,
-                c1 = col + width - 1,
-                key = key,
-                subtext = body[bi] and body[bi][1] or string.rep(" ", width - 2),
-                attr = body[bi] and (body[bi][2] or ATTR_PATH),
-                is_hotrow = true,
-            }
-        end
-    end
-    paint_hline_join(self, footer_rule)
-    add_hotspots_for_line(footer or "", footer_row, col)
-    write_span(footer_row, col + 1, width - 2, footer or "", ATTR_PROMPT)
-    paint_hotspot_highlight_for_row(footer_row, col, width, footer or "", ATTR_PROMPT)
-end
-
-local function picker_content(self)
-    local app = self.app
-    local list = app.picker.list
-    local selected = app.picker.selected
-    local lines = {
-        { "Select SchemaTool target", ATTR_TITLE },
-        { "", ATTR_PATH },
-    }
-    for i, item in ipairs(list) do
-        local mark = i == selected and "● " or "○ "
-        local attr = i == selected and ATTR_TITLE or ATTR_PATH
-        lines[#lines + 1] = { mark .. wrapper_label(item), attr }
-    end
-    local hotrows = {}
-    for i = 1, #list do
-        hotrows[i + 2] = "PICK:" .. i
-    end
-    paint_framed(self, {}, lines, "[Enter] select   [ESC] exit", hotrows)
-end
-
-local function running_content(self)
-    local app = self.app
-    local lines = session_header(self.opts, app, self.inner_width)
-    lines[#lines + 1] = { "", ATTR_PATH }
-    lines[#lines + 1] = { app.status_note or "Working…", ATTR_TITLE }
-    local prog = app.progress
-    if prog then
-        local label = "  phase    " .. (prog.phase or "starting")
-        if prog.phase == "expect" and prog.total and prog.total > 0 then
-            label = string.format("  expect   %d / %d", prog.current or 0, prog.total)
-            if prog.ref then
-                label = label .. "   ref " .. tostring(prog.ref)
-            end
-        elseif prog.total and prog.total > 0 and (prog.current or 0) > 0 then
-            label = string.format("  %s     %d / %d",
-                prog.phase or "work", prog.current, prog.total)
-        end
-        lines[#lines + 1] = { label, ATTR_VERSION }
-        local bar_w = math.max(10, (self.inner_width or 40) - 8)
-        local pct = ""
-        if prog.total and prog.total > 0 then
-            pct = string.format("  %d%%",
-                math.floor(100 * (prog.current or 0) / prog.total))
-        end
-        lines[#lines + 1] = {
-            "  " .. progress_bar(bar_w, prog.current or 0, prog.total or 0) .. pct,
-            ATTR_SUB,
-        }
-    end
-    local header = session_header(self.opts, app, self.inner_width)
-    local body = {}
-    for i = #header + 1, #lines do
-        body[#body + 1] = lines[i]
-    end
-    paint_framed(self, header, body, "Running SchemaTool…")
-end
-
-local function result_content(self)
-    local header = session_header(self.opts, self.app, self.inner_width)
-    local raw = self.app.result_lines or {}
-    local body = {}
-    local footer = "[W] pick another wrapper   [Q]uit"
-    for i = 1, #raw do
-        local text = raw[i][1] or ""
-        if text:match("^%[W%]") or text:match("^%[Enter%]") then
-            if text:match("%[Enter%]") then
-                footer = footer .. "   [Enter] review artifacts"
-            end
-        else
-            body[#body + 1] = raw[i]
-        end
-    end
-    paint_framed(self, header, body, footer)
-end
-
-local function packet_next(opts)
-    local ref, scan = packet.next_ref({
-        migrations = opts.migrations,
-        packet_dir = opts.packet_dir,
-        design = opts.design,
-        engine = opts.engine,
-        ref = opts.ref,
-    })
-    local collide = packet.collision({
-        migrations = opts.migrations,
-        packet_dir = opts.packet_dir,
-        design = opts.design,
-        engine = opts.engine,
-        ref = opts.ref,
-    }, ref)
-    if collide then
-        return ref, collide
-    end
-    return ref, nil, scan
-end
-
-local function dashboard_content(self)
-    local app = self.app
-    local header = session_header(self.opts, app, self.inner_width)
-    local reserved = packet.list_reserved(
-        self.opts.packet_dir, self.opts.design, self.opts.engine)
-    local dash_lines, built = queue.build_dashboard_lines({
-        out_dir = self.opts.out_dir,
-        track = self.opts.track,
-        state = app.state,
-        reserved = reserved,
-    })
-    app.built = built
-    local body = {}
-    for i = 1, #dash_lines do
-        body[#body + 1] = { dash_lines[i], ATTR_PATH }
-    end
-    if app.warn_in_repo then
-        body[#body + 1] = { "", ATTR_PATH }
-        body[#body + 1] = {
-            "Warning: packet path is inside the git tree",
-            ATTR_ERR,
-        }
-    end
-    if app.catalog_degraded then
-        body[#body + 1] = { "", ATTR_PATH }
-        body[#body + 1] = {
-            "Catalog track failed; metadata findings kept",
-            ATTR_ERR,
-        }
-    end
-    local msg = app.show_mode_msg or ""
-    if msg ~= "" and msg ~= "Catalog track failed; metadata findings kept" then
-        body[#body + 1] = { msg, ATTR_OK }
-    end
-    paint_framed(self, header, body,
-        "[Enter] begin review   [R]e-audit   [Q]uit")
-end
-
-local function is_review_key_line(line)
-    if line:sub(1, 21) == "What would you like t" then
-        return true
-    end
-    if line:sub(1, 3) ~= "  [" then
-        return false
-    end
-    local key = line:sub(4, 5)
-    local kl = key:lower()
-    return kl == "e]" or kl == "s]" or kl == "a]" or kl == "u]"
-        or kl == "g]" or kl == "n]" or kl == "p]"
-        or kl == "m]"
-end
-
-local function review_content(self)
-    local app = self.app
-    local header = session_header(self.opts, app, self.inner_width)
-    if not app.built or not app.built.subject then
-        paint_framed(self, header,
-            { { "No findings to review", ATTR_TITLE } },
-            "[Q]uit to dashboard")
-        return
-    end
-    local subj = app.built.subject
-    if #subj == 0 then
-        paint_framed(self, header,
-            { { "All findings reviewed — none for review", ATTR_TITLE } },
-            "[Q]uit to dashboard")
-        return
-    end
-    local idx = app.review_index
-    if idx < 1 then
-        idx = 1
-        app.review_index = 1
-    elseif idx > #subj then
-        idx = #subj
-        app.review_index = #subj
-    end
-    local finding = subj[idx]
-    local next_ref, g_reason = packet_next(self.opts)
-    local u_reason = apply.refuse_reason(finding, self.opts.allow_write)
-    local review_lines = queue.build_review_lines_detailed(
-        finding, self.opts.out_dir, app.state, next_ref,
-        g_reason, u_reason, self.opts.allow_write)
-    local body = {}
-    for i = 1, #review_lines do
-        local line = review_lines[i]
-        if not is_review_key_line(line) then
-            body[#body + 1] = { line, ATTR_PATH }
-        end
-    end
-    local u_hint
-    if u_reason then
-        u_hint = ""
-    else
-        u_hint = " [U]pdate Database"
-    end
-    local m_label = ""
-    if self.opts.allow_write then
-        m_label = " [M] Promote"
-    end
-    paint_framed(self, header, body,
-        string.format("[%d of %d]  [E]xplore [S]kip [A]ccept%s [G]enerate Migration%s  [N]ext/[P]rev  [Q]uit",
-            idx, #subj, u_hint, m_label))
-end
-
-local function wrap_display_line(text, width)
-    text = display_text(text)
-    if width < 8 then
-        width = 8
-    end
-    local out = {}
-    if text == "" then
-        out[1] = ""
-        return out
-    end
-    while swidth(text) > width do
-        local cut = width
-        if cut > #text then
-            cut = #text
-        end
-        while cut > 1 and swidth(text:sub(1, cut)) > width do
-            cut = cut - 1
-        end
-        out[#out + 1] = text:sub(1, cut)
-        text = text:sub(cut + 1)
-    end
-    out[#out + 1] = text
-    return out
-end
-
-local function flatten_explore_rows(view, left_text_w, right_text_w)
-    local out = {}
-    local rows = (view and view.rows) or {}
-    local layout = (view and view.layout) or "both"
-    left_text_w = math.max(4, left_text_w or 8)
-    right_text_w = math.max(4, right_text_w or left_text_w)
-    for i = 1, #rows do
-        local r = rows[i]
-        if r.kind == "label" then
-            out[#out + 1] = { kind = "label", text = r.text or "" }
-        else
-            local L = wrap_display_line(r.left or "", left_text_w)
-            local R = wrap_display_line(r.right or "", right_text_w)
-            if layout == "left" then
-                R = { "" }
-            elseif layout == "right" then
-                L = { "" }
-            end
-            local nwrap = math.max(#L, #R)
-            for w = 1, nwrap do
-                out[#out + 1] = {
-                    kind = "pair",
-                    n = (w == 1) and r.n or nil,
-                    line = r.n,
-                    left = L[w] or "",
-                    right = R[w] or "",
-                    same = r.same,
-                }
-            end
-        end
-    end
-    return out
-end
-
-local function explore_current_pair(app)
-    local flat = app.explore_flat or {}
-    local cur = app.explore_cursor or 0
-    local r = flat[cur]
-    if not r or r.kind ~= "pair" or not r.line then
-        return nil
-    end
-    local rows = (app.explore_view and app.explore_view.rows) or {}
-    for i = 1, #rows do
-        local row = rows[i]
-        if row.kind == "pair" and row.n == r.line then
-            return row
-        end
-    end
-    return nil
-end
-
-local function next_line_index(rows, from, dir)
-    local i = from + dir
-    while i >= 1 and i <= #rows do
-        if rows[i].kind == "pair" and rows[i].n then
-            return i
-        end
-        i = i + dir
-    end
-    return from
-end
-
-local function first_diff_line_index(rows, first_diff)
-    if first_diff and first_diff > 0 then
-        for i = 1, #rows do
-            local r = rows[i]
-            if r.kind == "pair" and r.n == first_diff then
-                return i
-            end
-        end
-    end
-    for i = 1, #rows do
-        local r = rows[i]
-        if r.kind == "pair" and not r.same then
-            return i
-        end
-    end
-    return next_line_index(rows, 0, 1)
+local show_mode
+show_mode = function(screen, app, mode)
+    app.mode = mode
+    screen:calculate_layout()
+    screen:render()
 end
 
 local function explore_content(self)
@@ -1191,12 +192,12 @@ local function explore_content(self)
         if y >= footer_rule - 2 then
             break
         end
-        write_span(y, col + 1, width - 2, facts[i], ATTR_PATH)
+        P.write_span(y, col + 1, width - 2, facts[i], ATTR.PATH)
         y = y + 1
     end
     local top_rule = y
     if y < footer_rule then
-        paint_hline_join(self, y)
+        P.paint_hline_join(self, y)
         y = y + 1
     end
     local layout = view.layout or "both"
@@ -1229,16 +230,16 @@ local function explore_content(self)
         rhead = "Database (decoded)"
     end
     if layout == "left" then
-        write_span(y, col + 1, gutter, string.rep(" ", gutter), ATTR_COLHEAD)
-        write_span(y, col + 1 + gutter, left_text_w, lhead, ATTR_COLHEAD)
+        P.write_span(y, col + 1, gutter, string.rep(" ", gutter), ATTR.COLHEAD)
+        P.write_span(y, col + 1 + gutter, left_text_w, lhead, ATTR.COLHEAD)
     elseif layout == "right" then
-        write_span(y, col + 1, gutter, string.rep(" ", gutter), ATTR_COLHEAD)
-        write_span(y, col + 1 + gutter, left_text_w, rhead, ATTR_COLHEAD)
+        P.write_span(y, col + 1, gutter, string.rep(" ", gutter), ATTR.COLHEAD)
+        P.write_span(y, col + 1 + gutter, left_text_w, rhead, ATTR.COLHEAD)
     else
-        write_span(y, col + 1, gutter, string.rep(" ", gutter), ATTR_COLHEAD)
-        write_span(y, col + 1 + gutter, left_text_w, lhead, ATTR_COLHEAD)
-        write_span(y, split + 1, gutter, string.rep(" ", gutter), ATTR_COLHEAD)
-        write_span(y, split + 1 + gutter, right_text_w, rhead, ATTR_COLHEAD)
+        P.write_span(y, col + 1, gutter, string.rep(" ", gutter), ATTR.COLHEAD)
+        P.write_span(y, col + 1 + gutter, left_text_w, lhead, ATTR.COLHEAD)
+        P.write_span(y, split + 1, gutter, string.rep(" ", gutter), ATTR.COLHEAD)
+        P.write_span(y, split + 1 + gutter, right_text_w, rhead, ATTR.COLHEAD)
     end
     y = y + 1
     local body_top = y
@@ -1246,9 +247,9 @@ local function explore_content(self)
     if vis < 1 then
         vis = 1
     end
-    local flat = flatten_explore_rows(view, left_text_w, right_text_w)
+    local flat = E.flatten_explore_rows(view, left_text_w, right_text_w)
     if not app.explore_cursor or app.explore_cursor < 1 then
-        app.explore_cursor = first_diff_line_index(flat, view.first_diff)
+        app.explore_cursor = E.first_diff_line_index(flat, view.first_diff)
         if app.explore_cursor < 1 then
             app.explore_cursor = 1
         end
@@ -1294,186 +295,63 @@ local function explore_content(self)
             break
         end
         if r.kind == "label" then
-            write_span(rr, col + 1, width - 2, r.text, ATTR_SECTION)
+            P.write_span(rr, col + 1, width - 2, r.text, ATTR.SECTION)
         else
-            local attr = ATTR_PATH
-            local num_attr = ATTR_DATE
+            local attr = ATTR.PATH
+            local num_attr = ATTR.DATE
             if cursor_line and r.line == cursor_line then
-                attr = ATTR_HL
-                num_attr = ATTR_HL
-                write_span(rr, col, width, string.rep(" ", width), attr)
+                attr = ATTR.HL
+                num_attr = ATTR.HL
+                P.write_span(rr, col, width, string.rep(" ", width), attr)
             end
             local lnum = r.n and string.format(num_fmt, r.n) or blank_num
             local rnum = lnum
             if single then
                 local txt = (layout == "right") and (r.right or "") or (r.left or "")
-                write_span(rr, col + 1, nw, lnum, num_attr)
-                write_span(rr, col + 1 + gutter, left_text_w, txt, attr)
+                P.write_span(rr, col + 1, nw, lnum, num_attr)
+                P.write_span(rr, col + 1 + gutter, left_text_w, txt, attr)
             else
-                write_span(rr, col + 1, nw, lnum, num_attr)
-                write_span(rr, col + 1 + gutter, left_text_w, r.left or "", attr)
-                write_span(rr, split + 1, nw, rnum, num_attr)
-                write_span(rr, split + 1 + gutter, right_text_w, r.right or "", attr)
+                P.write_span(rr, col + 1, nw, lnum, num_attr)
+                P.write_span(rr, col + 1 + gutter, left_text_w, r.left or "", attr)
+                P.write_span(rr, split + 1, nw, rnum, num_attr)
+                P.write_span(rr, split + 1 + gutter, right_text_w, r.right or "", attr)
             end
         end
     end
-    paint_hline_join(self, footer_rule)
+    P.paint_hline_join(self, footer_rule)
     if not single then
-        paint_vline_join(self, split, top_rule, footer_rule)
+        P.paint_vline_join(self, split, top_rule, footer_rule)
     end
-    local pair = explore_current_pair(app)
+    local pair = E.explore_current_pair(app)
     local can_decode = pair and not view.decoded
-        and (queue.has_embed(pair.left) or queue.has_embed(pair.right))
+        and (Q.has_embed(pair.left) or Q.has_embed(pair.right))
     local foot = "[Q]/Esc back   j/k line   PgUp/PgDn"
     if can_decode then
         foot = foot .. "   Enter decode"
     end
-    write_span(footer_row, col + 1, width - 2, foot, ATTR_PROMPT)
-end
-
-local function note_content(self)
-    local app = self.app
-    local header = session_header(self.opts, app, self.inner_width)
-    local dest = packet.packet_path(
-        self.opts.packet_dir,
-        self.opts.design,
-        self.opts.engine,
-        app.note_ref or 0)
-    local lines = {
-        { "Generate a migration packet", ATTR_TITLE },
-        { "  next ref  " .. tostring(app.note_ref or "?"), ATTR_VERSION },
-        { "  path      " .. dest, ATTR_PATH },
-    }
-    if app.note_finding then
-        lines[#lines + 1] = { "  finding   " .. (app.note_finding.id or ""), ATTR_PATH }
-        lines[#lines + 1] = { "  class     " .. (app.note_finding.class or ""), ATTR_PATH }
-    end
-    if app.warn_in_repo then
-        lines[#lines + 1] = { "", ATTR_PATH }
-        lines[#lines + 1] = {
-            "Warning: packet path is inside the git tree",
-            ATTR_ERR,
-        }
-    end
-    lines[#lines + 1] = { "", ATTR_PATH }
-    lines[#lines + 1] = { "Optional one-line note:", ATTR_SECTION }
-    lines[#lines + 1] = { "  " .. (app.note_buf or ""), ATTR_PROMPT }
-    paint_framed(self, header, lines,
-        "Press Enter to write (empty note is OK)   ESC cancel")
-end
-
-local function split_lines(text)
-    local lines = {}
-    for line in (tostring(text or "") .. "\n"):gmatch("(.-)\n") do
-        lines[#lines + 1] = line
-    end
-    return lines
-end
-
-local function apply_content(self)
-    local app = self.app
-    local header = session_header(self.opts, app, self.inner_width)
-    local token = app.apply_token or "?"
-    local finding = app.apply_finding
-    local is_orphan = finding and finding.kind == "orphan"
-    local is_catalog = finding and finding.class
-        and finding.class:find("^catalog") ~= nil
-    local title = is_orphan
-        and "Delete this orphan from the database"
-        or is_catalog
-        and "Apply catalog DDL to the database"
-        or "Update this field on the database"
-    local lines = {
-        { title, ATTR_TITLE },
-        { "  type      " .. token, ATTR_VERSION },
-    }
-    if finding then
-        lines[#lines + 1] = { "  finding   " .. (finding.id or ""), ATTR_PATH }
-        if is_catalog then
-            lines[#lines + 1] = {
-                "  table     " .. (finding.object or ""), ATTR_PATH }
-            if finding.column and finding.column ~= ""
-                and finding.column ~= "-" then
-                lines[#lines + 1] = {
-                    "  column    " .. finding.column, ATTR_PATH }
-            end
-            local want_null = (finding.kind == "nullable")
-            if want_null then
-                local dn = (finding.expected == "true"
-                    or finding.expected == "YES" or finding.expected == "1")
-                local verb = dn and "DROP NOT NULL" or "SET NOT NULL"
-                lines[#lines + 1] = {
-                    "  action    ALTER COLUMN " .. verb, ATTR_PATH }
-            else
-                lines[#lines + 1] = {
-                    "  action    ADD COLUMN", ATTR_PATH }
-            end
-        elseif not is_orphan then
-            lines[#lines + 1] = { "  field     " .. (finding.field or ""), ATTR_PATH }
-            local ref_line = "  ref       " .. tostring(finding.ref or "?")
-                .. "  /  type=" .. tostring(finding.db_type or "?")
-            lines[#lines + 1] = { ref_line, ATTR_PATH }
-        end
-    end
-    lines[#lines + 1] = { "", ATTR_PATH }
-    if is_orphan then
-        lines[#lines + 1] = {
-            "This deletes orphan rows from queries. It does not author a migration.",
-            ATTR_ERR,
-        }
-    elseif is_catalog then
-        lines[#lines + 1] = {
-            "This ALTER statement mutates live DDL shape.",
-            ATTR_ERR,
-        }
-    else
-        lines[#lines + 1] = {
-            "This updates queries metadata only. It does not replay DDL.",
-            ATTR_ERR,
-        }
-    end
-    lines[#lines + 1] = { "", ATTR_PATH }
-    if app.apply_sql and app.apply_sql ~= "" then
-        lines[#lines + 1] = {
-            "Proposed DDL (review before confirming):", ATTR_SECTION }
-        for _, l in ipairs(split_lines(app.apply_sql)) do
-            lines[#lines + 1] = { "  " .. l, ATTR_PATH }
-        end
-        lines[#lines + 1] = { "", ATTR_PATH }
-    end
-    lines[#lines + 1] = { "Type " .. token .. " to confirm:", ATTR_SECTION }
-    lines[#lines + 1] = { "  " .. (app.apply_buf or ""), ATTR_PROMPT }
-    local cancel
-    if is_orphan then
-        cancel = "Press Enter to delete   ESC cancel"
-    elseif is_catalog then
-        cancel = "Press Enter to apply DDL   ESC cancel"
-    else
-        cancel = "Press Enter to update   ESC cancel"
-    end
-    paint_framed(self, header, lines, cancel)
+    P.write_span(footer_row, col + 1, width - 2, foot, ATTR.PROMPT)
 end
 
 local function chrome_content(self)
     local mode = self.app.mode
     if mode == "splash" then
-        splash_content(self)
+        S.splash_content(self)
     elseif mode == "picker" then
-        picker_content(self)
+        S.picker_content(self)
     elseif mode == "running" then
-        running_content(self)
+        S.running_content(self)
     elseif mode == "dashboard" then
-        dashboard_content(self)
+        S.dashboard_content(self)
     elseif mode == "review" then
-        review_content(self)
+        S.review_content(self)
     elseif mode == "explore" then
         explore_content(self)
     elseif mode == "note" then
-        note_content(self)
+        S.note_content(self)
     elseif mode == "apply" then
-        apply_content(self)
+        S.apply_content(self)
     else
-        result_content(self)
+        S.result_content(self)
     end
 end
 
@@ -1496,86 +374,29 @@ local function build_screen(opts, app)
     }
 end
 
-show_mode = function(screen, app, mode)
-    app.mode = mode
-    screen:calculate_layout()
-    screen:render()
-end
-
-local function rebuild_queue(app, opts)
-    app.state = queue.load_state(opts.state_file)
-    app.built = queue.build({
-        out_dir = opts.out_dir,
-        track = opts.track,
-        state = app.state,
-    })
-    local n = app.built.totals.subject
-    if n < 1 then
-        app.review_index = 1
-    elseif app.review_index > n then
-        app.review_index = n
-    end
-end
-
 local function ingest_audit(app, opts, ran, exit_code)
-    local state_fh = io.open(opts.state_file, "r")
-    if state_fh then
-        state_fh:close()
-    else
-        queue.create_state(opts.state_file, opts.design, opts.engine, opts.schema)
-    end
-    rebuild_queue(app, opts)
-    app.catalog_degraded = false
-    local ok_exit = (exit_code == 0 or exit_code == 2 or exit_code == 3)
-    local have_meta = queue.artifacts_present(opts.out_dir, "metadata")
-    local have_cat = queue.artifacts_present(opts.out_dir, "catalog")
-    if ran and not ok_exit then
-        if opts.track == "catalog" and not have_cat then
-            return "SchemaTool failed; see log"
-        elseif have_meta then
-            app.catalog_degraded = true
-            app.show_mode_msg = "Catalog track failed; metadata findings kept"
-            return nil
-        end
-        return "SchemaTool failed; see log"
-    end
-    if ran and ok_exit and (opts.track == "both" or opts.track == "catalog")
-        and not have_cat and have_meta then
-        app.catalog_degraded = true
-        app.show_mode_msg = "Catalog track failed; metadata findings kept"
-    end
-    return nil
+    return Actions.ingest_audit(app, opts, ran, exit_code)
 end
 
 local function reaudit(screen, app, opts)
-    app.show_mode_msg = ""
-    app.status_note = "Connecting…"
-    show_mode(screen, app, "running")
-    app.conn = probe_connect(opts)
-    show_mode(screen, app, "running")
-    if not app.conn.ok then
-        app.show_mode_msg = "Re-audit skipped — no database connection"
-        rebuild_queue(app, opts)
-        return false
-    end
-    app.status_note = "Running SchemaTool…"
-    show_mode(screen, app, "running")
-    local exit_code, log = invoke_schematool(opts, screen, app)
-    app.log = log
-    local err = ingest_audit(app, opts, true, exit_code)
-    if err then
-        app.show_mode_msg = err
-        return false
-    end
-    if not app.catalog_degraded then
-        app.show_mode_msg = "re-audited"
-    end
-    return true
+    return Actions.reaudit(screen, app, opts)
+end
+
+local function apply_finding(screen, app, opts)
+    return Actions.apply_finding(screen, app, opts)
+end
+
+local function generate_packet(screen, app, opts)
+    return Actions.generate_packet(screen, app, opts)
+end
+
+local function promote_finding(screen, app, opts)
+    return Actions.promote_finding(screen, app, opts)
 end
 
 local function run_dashboard(screen, app, opts, state)
     app.state = state
-    app.built = queue.build({
+    app.built = Q.build({
         out_dir = opts.out_dir,
         track = opts.track,
         state = state,
@@ -1655,174 +476,6 @@ local function run_apply_confirm(screen, app)
     end
 end
 
-local function apply_finding(screen, app, opts)
-    if not app.built or not app.built.subject then
-        app.show_mode_msg = "error: no finding selected"
-        return nil
-    end
-    local f = app.built.subject[app.review_index]
-    if not f then
-        app.show_mode_msg = "error: no finding selected"
-        return nil
-    end
-    local why = apply.refuse_reason(f, opts.allow_write)
-    if why then
-        app.show_mode_msg = "update disabled — " .. why
-        return nil
-    end
-    local token = apply.confirm_token(f)
-    local conn = connect.resolve(opts.wrapper)
-    local sql, sql_err = apply.build_sql(f, conn, opts.out_dir)
-    if not sql then
-        app.show_mode_msg = "error: " .. tostring(sql_err)
-        return nil
-    end
-    app.apply_finding = f
-    app.apply_token = token
-    app.apply_sql = sql
-    app.apply_buf = ""
-    local typed = run_apply_confirm(screen, app)
-    app.apply_finding = nil
-    app.apply_token = nil
-    app.apply_sql = nil
-    if typed == nil then
-        app.show_mode_msg = "update cancelled"
-        return nil
-    end
-    if typed ~= token then
-        app.show_mode_msg = "update aborted — type " .. token
-        return nil
-    end
-    local log_path, log_err = apply.write_log(opts.out_dir, f, sql)
-    if not log_path then
-        app.show_mode_msg = "error: " .. tostring(log_err)
-        return nil
-    end
-    local ok, exec_err = connect.exec_sql(opts.wrapper, log_path)
-    if not ok then
-        app.show_mode_msg = "update failed: " .. tostring(exec_err)
-        return nil
-    end
-    local saved, save_err = queue.save_decision(
-        opts.state_file, f.id, "applied", {
-            note = token,
-        })
-    if not saved then
-        app.show_mode_msg = "updated but sidecar: " .. tostring(save_err)
-        return nil
-    end
-    rebuild_queue(app, opts)
-    if f.kind == "orphan" then
-        app.show_mode_msg = "deleted orphan ref " .. token
-            .. " from queries (review .mig for migration capture)"
-    elseif f.class and f.class:find("^catalog") then
-        app.show_mode_msg = "applied DDL to " .. token
-            .. " — catalog shape changed"
-    else
-        app.show_mode_msg = "updated " .. token
-            .. " — metadata only, does not replay DDL"
-    end
-    if app.built.totals.subject < 1 then
-        return "dashboard"
-    end
-    return nil
-end
-
-local function generate_packet(screen, app, opts)
-    if not app.built or not app.built.subject then
-        app.show_mode_msg = "error: no finding selected"
-        return nil
-    end
-    local f = app.built.subject[app.review_index]
-    if not f then
-        app.show_mode_msg = "error: no finding selected"
-        return nil
-    end
-    local next_ref, why = packet_next(opts)
-    if why then
-        app.show_mode_msg = why
-        return nil
-    end
-    app.note_finding = f
-    app.note_ref = next_ref
-    app.note_buf = ""
-    local note = run_note(screen, app, opts)
-    app.note_finding = nil
-    if note == nil then
-        app.show_mode_msg = "packet cancelled"
-        return nil
-    end
-    local tool_ver = select(1, read_tool_version(opts.schematool))
-    local detail_lines = queue.load_detail_section(opts.out_dir, f)
-    local detail_text
-    if #detail_lines > 0 then
-        detail_text = table.concat(detail_lines, "\n") .. "\n"
-    end
-    local written, err = packet.write({
-        migrations = opts.migrations,
-        packet_dir = opts.packet_dir,
-        out_dir = opts.out_dir,
-        design = opts.design,
-        engine = opts.engine,
-        schema = opts.schema,
-        ref = opts.ref,
-        schemahelper_version = VERSION,
-        schematool_version = tool_ver or "",
-    }, f, {
-        note = note,
-        detail_text = detail_text,
-    })
-    if not written then
-        app.show_mode_msg = "error: " .. tostring(err)
-        return nil
-    end
-    local ok, save_err = queue.save_decision(
-        opts.state_file, f.id, "packet", {
-            ref = written.ref,
-            packet = written.name,
-            note = note,
-        })
-    if not ok then
-        app.show_mode_msg = "error: " .. tostring(save_err)
-        return nil
-    end
-    rebuild_queue(app, opts)
-    app.show_mode_msg = string.format("packet %d  %s", written.ref, written.name)
-    if app.built.totals.subject < 1 then
-        return "dashboard"
-    end
-    return nil
-end
-
-local function promote_finding(_screen, app, opts)
-    if not app.built or not app.built.subject then
-        app.show_mode_msg = "error: no finding selected"
-        return nil
-    end
-    local f = app.built.subject[app.review_index]
-    if not f then
-        app.show_mode_msg = "error: no finding selected"
-        return nil
-    end
-    local tool_ver = select(1, read_tool_version(opts.schematool))
-    local dest_path, name, ref = packet.promote({
-        migrations = opts.migrations,
-        packet_dir = opts.packet_dir,
-        design = opts.design,
-        engine = opts.engine,
-        state = app.state,
-        schemahelper_version = VERSION,
-        schematool_version = tool_ver or "",
-    }, f)
-    if not dest_path then
-        app.show_mode_msg = "error: " .. tostring(name)
-        return nil
-    end
-    app.show_mode_msg = string.format(
-        "promoted packet %d → %s/%s", ref, opts.migrations, name)
-    return nil
-end
-
 local function run_review(screen, app, opts)
     app.review_index = app.review_index < 1 and 1 or app.review_index
     show_mode(screen, app, "review")
@@ -1836,13 +489,13 @@ local function run_review(screen, app, opts)
                 if app.built and app.built.subject and
                    app.review_index >= 1 and
                    app.review_index <= #app.built.subject then
-                     local f = app.built.subject[app.review_index]
-                     app.explore_view = queue.build_explore_view(f)
-                     explore = queue.explore_lines(
-                        opts.out_dir,
-                        f.id,
-                        app.built.subject,
-                        app.state)
+                      local f = app.built.subject[app.review_index]
+                      app.explore_view = Q.build_explore_view(f)
+                      explore = Q.explore_lines(
+                         opts.out_dir,
+                         f.id,
+                         app.built.subject,
+                         app.state)
                 end
                 app.explore_lines = explore
                 app.explore_scroll = 0
@@ -1854,7 +507,7 @@ local function run_review(screen, app, opts)
                 if app.built and app.built.subject then
                     local f = app.built.subject[app.review_index]
                     if f then
-                        local ok, why = queue.save_decision(
+                        local ok, why = Q.save_decision(
                             opts.state_file, f.id, "skipped", nil)
                         if ok then
                             app.show_mode_msg = "skipped: " .. f.id
@@ -1868,7 +521,7 @@ local function run_review(screen, app, opts)
                 if app.built and app.built.subject then
                     local f = app.built.subject[app.review_index]
                     if f then
-                        local ok, why = queue.save_decision(
+                        local ok, why = Q.save_decision(
                             opts.state_file, f.id, "accepted", nil)
                         if ok then
                             app.show_mode_msg = "accepted: " .. f.id
@@ -1950,8 +603,8 @@ local function run_explore(screen, app, _)
             elseif name == keys.enter then
                 local view = app.explore_view or {}
                 if not view.decoded then
-                    local pair = explore_current_pair(app)
-                    local nextv = pair and queue.build_line_decode_view(
+                    local pair = E.explore_current_pair(app)
+                    local nextv = pair and Q.build_line_decode_view(
                         pair.left, pair.right)
                     if nextv then
                         local stack = app.explore_stack or {}
@@ -1969,19 +622,19 @@ local function run_explore(screen, app, _)
                 end
             elseif name == keys.up or raw == "k" then
                 local flat = app.explore_flat or {}
-                app.explore_cursor = next_line_index(
+                app.explore_cursor = E.next_line_index(
                     flat, app.explore_cursor or 1, -1)
                 show_mode(screen, app, "explore")
             elseif name == keys.down or raw == "j" then
                 local flat = app.explore_flat or {}
-                app.explore_cursor = next_line_index(
+                app.explore_cursor = E.next_line_index(
                     flat, app.explore_cursor or 0, 1)
                 show_mode(screen, app, "explore")
             elseif name == keys.pageup or raw == "b" then
                 local flat = app.explore_flat or {}
                 local cur = app.explore_cursor or 1
                 for _ = 1, step do
-                    cur = next_line_index(flat, cur, -1)
+                    cur = E.next_line_index(flat, cur, -1)
                 end
                 app.explore_cursor = cur
                 show_mode(screen, app, "explore")
@@ -1989,7 +642,7 @@ local function run_explore(screen, app, _)
                 local flat = app.explore_flat or {}
                 local cur = app.explore_cursor or 0
                 for _ = 1, step do
-                    cur = next_line_index(flat, cur, 1)
+                    cur = E.next_line_index(flat, cur, 1)
                 end
                 app.explore_cursor = cur
                 show_mode(screen, app, "explore")
@@ -1999,7 +652,7 @@ local function run_explore(screen, app, _)
 end
 
 local function pick_wrapper(screen, app, opts)
-    local list = discover_wrappers(script_dir())
+    local list = W.discover_wrappers(script_dir())
     if #list == 0 then
         return nil, "no schematool_*.sh wrappers found"
     end
@@ -2035,89 +688,21 @@ local function pick_wrapper(screen, app, opts)
 end
 
 local function finish_paths(opts)
-    local design, engine, schema = wrapper_meta(opts.wrapper)
+    local design, engine, schema = W.wrapper_meta(opts.wrapper)
     opts.design = design
     opts.engine = engine
     opts.schema = schema
     if opts.out_dir == "" then
-        opts.out_dir = wrapper_dir(opts.wrapper)
+        opts.out_dir = W.wrapper_dir(opts.wrapper)
     end
-    ensure_dir(opts.out_dir)
+    W.ensure_dir(opts.out_dir)
     if opts.packet_dir == "" then
         opts.packet_dir = opts.out_dir
     end
-    ensure_dir(opts.packet_dir)
+    W.ensure_dir(opts.packet_dir)
     if opts.state_file == "" then
-        opts.state_file = queue.default_state_path(opts.out_dir, design, engine)
+        opts.state_file = Q.default_state_path(opts.out_dir, design, engine)
     end
-end
-
-local function log_tail(path, max_lines)
-    local lines = {}
-    if not path or path == "" then
-        return lines
-    end
-    local f = io.open(path, "r")
-    if not f then
-        return lines
-    end
-    for line in f:lines() do
-        lines[#lines + 1] = line
-        if #lines > max_lines then
-            table.remove(lines, 1)
-        end
-    end
-    f:close()
-    return lines
-end
-
-local function build_result_lines(opts, ran, exit_code, built, err)
-    local lines = {}
-    local function add(text, attr)
-        lines[#lines + 1] = { text, attr }
-    end
-    if ran then
-        add(string.format("SchemaTool exit %d  (0 clean / 2 drift / 3 anomaly)", exit_code),
-            (exit_code == 0 or exit_code == 2 or exit_code == 3) and ATTR_VERSION or ATTR_ERR)
-    elseif opts.reuse then
-        add("Loaded existing artifacts (--reuse)", ATTR_VERSION)
-    end
-    if err then
-        add(err, ATTR_ERR)
-        if ran then
-            local tail = log_tail(opts.out_dir .. "/schemahelper_schematool.log", 6)
-            for i = 1, #tail do
-                add(tail[i], ATTR_PATH)
-            end
-        end
-    end
-    if built and not err then
-        local tot = built.totals
-        add(string.format("Total migrations found     %d", tot.total), ATTR_PROMPT)
-        add(string.format("Perfect migrations         %d", tot.perfect), ATTR_PROMPT)
-        add(string.format("Accepted variations        %d", tot.accepted), ATTR_PROMPT)
-        add(string.format("Findings for review        %d", tot.subject), ATTR_PROMPT)
-        if tot.applied > 0 or tot.packet > 0 then
-            add(string.format("Applied / packets          %d / %d", tot.applied, tot.packet),
-                ATTR_PATH)
-        end
-        add("", ATTR_PATH)
-        add("Variance classes (findings for review)", ATTR_SECTION)
-        if #built.classes == 0 then
-            add("  (none)", ATTR_PATH)
-        else
-            for i = 1, #built.classes do
-                local c = built.classes[i]
-                add(string.format("  %-28s %d", c.name, c.count), ATTR_PATH)
-            end
-        end
-    end
-    add("", ATTR_PATH)
-    add("[W] pick another wrapper   [Q]uit", ATTR_PROMPT)
-    if built and queue.artifacts_present(opts.out_dir, opts.track) then
-        add("[Enter] review existing artifacts", ATTR_PROMPT)
-    end
-    return lines
 end
 
 local function wait_result_action(screen, can_reuse)
@@ -2139,6 +724,12 @@ end
 
 local function main()
     local opts = parse_args()
+    Actions.init({
+        show_mode = show_mode,
+        read_key = read_key,
+        run_apply_confirm = run_apply_confirm,
+        run_note = run_note,
+    })
     t.cursor.visible.set(false)
 
     local app = {
@@ -2161,9 +752,9 @@ local function main()
     }
     local screen = build_screen(opts, app)
     show_mode(screen, app, "splash")
-    enable_mouse()
+    Mouse.enable_mouse()
     if wait_enter_or_esc(screen) == keys.escape then
-        disable_mouse()
+        Mouse.disable_mouse()
         return
     end
 
@@ -2176,7 +767,7 @@ local function main()
                 if pick_err ~= "cancelled" then
                     io.stderr:write("Error: " .. tostring(pick_err) .. "\n")
                 end
-                disable_mouse()
+                Mouse.disable_mouse()
                 return
             end
         end
@@ -2188,13 +779,13 @@ local function main()
 
         app.status_note = "Connecting…"
         show_mode(screen, app, "running")
-        app.conn = probe_connect(opts)
+        app.conn = I.probe_connect(opts)
         show_mode(screen, app, "running")
 
         local ran = false
         local exit_code = 0
         local err
-        local have_art = queue.artifacts_present(opts.out_dir, opts.track)
+        local have_art = Q.artifacts_present(opts.out_dir, opts.track)
         local should_run = not opts.reuse or not have_art
         if not app.conn.ok then
             should_run = false
@@ -2205,7 +796,7 @@ local function main()
         if should_run then
             app.status_note = "Running SchemaTool…"
             show_mode(screen, app, "running")
-            exit_code, app.log = invoke_schematool(opts, screen, app)
+            exit_code, app.log = I.invoke_schematool(opts, screen, app, show_mode)
             ran = true
         end
 
@@ -2219,12 +810,12 @@ local function main()
         if not err then
             break
         end
-        have_art = queue.artifacts_present(opts.out_dir, opts.track)
-        app.result_lines = build_result_lines(opts, ran, exit_code, built, err)
+        have_art = Q.artifacts_present(opts.out_dir, opts.track)
+        app.result_lines = I.build_result_lines(opts, ran, exit_code, built, err, Q, ATTR.OK)
         show_mode(screen, app, "result")
         local action = wait_result_action(screen, have_art)
         if action == "quit" then
-            disable_mouse()
+            Mouse.disable_mouse()
             return
         elseif action == "reuse" then
             opts.reuse = true
@@ -2257,16 +848,16 @@ local function main()
             break
         end
     end
-    queue.save_cursor(opts.state_file, "")
-    disable_mouse()
+    Q.save_cursor(opts.state_file, "")
+    Mouse.disable_mouse()
 end
 
 -- Handle --version before terminal initialization (no TTY needed)
 do
     local _opts = parse_args()
     if _opts.version then
-        local tool_ver, tool_date = read_tool_version(_opts.schematool)
-        print(string.format("SchemaHelper %s (%s)", VERSION, RELEASED))
+        local tool_ver, tool_date = W.read_tool_version(_opts.schematool)
+        print(string.format("SchemaHelper %s (%s)", C.VERSION, C.RELEASED))
         print(string.format("SchemaTool %s (%s)",
             tool_ver or "unknown", tool_date or "unknown"))
         print(string.format("Lua %s", _opts.lua_version))

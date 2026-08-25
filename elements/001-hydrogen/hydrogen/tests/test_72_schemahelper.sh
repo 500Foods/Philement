@@ -5,6 +5,10 @@
 # checked-in fixture findings (no live DB required).
 
 # CHANGELOG
+# 1.0.2 - 2026-08-25 - Added dashboard_content render regression test against
+#   the fixture (headless terminal stubs); added lua/schemahelper_screens.lua
+#   to the luacheck list. Guards the packet-vs-queue resolver after the
+#   monolith split.
 # 1.0.1 - 2026-08-24 - Renumbered from 98 to 72, abbr SCH; added decode_embedded
 #   dialect tests (SQLite, MySQL upper+lower, DB2, PostgreSQL); fixed brotli
 #   C module path after luarocks LUA_CPATH overrides system defaults.
@@ -18,7 +22,7 @@ TEST_NAME="SchemaHelper Phase 72"
 TEST_ABBR="SCH"
 TEST_NUMBER="72"
 TEST_COUNTER=0
-TEST_VERSION="1.0.1"
+TEST_VERSION="1.0.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -334,7 +338,7 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "luacheck clean on schemahelper
 
 LUACHECK_OK=1
 
-for f in "schemahelper.lua" "lua/schemahelper_queue.lua" "lua/schemahelper_connect.lua" "lua/schemahelper_decode_test.lua"; do
+for f in "schemahelper.lua" "lua/schemahelper_queue.lua" "lua/schemahelper_connect.lua" "lua/schemahelper_decode_test.lua" "lua/schemahelper_screens.lua"; do
     full="${SCHEMAGUI}/${f}"
     if [[ -f "${full}" ]]; then
         output=$(luacheck --std=max --max-line-length=120 --ignore 542,561 --no-self --no-unused-args --formatter=plain "${full}" 2>&1 || true)
@@ -417,7 +421,6 @@ if not queue.has_embed("BROTLI_DECOMPRESS(BASE64DECODEBINARY('" .. b64_blob .. "
 if queue.has_embed("SELECT 1 FROM users") then errs[#errs+1] = "has_embed false positive on plain SQL"; ok = false end
 
 if not ok then
-    for _, e in ipairs(errs) do io.stderr:write("ERR: " .. e .. "\\n") end
     os.exit(1)
 end
 print("OK: all decode patterns verified (SQLite, MySQL upper+lower, DB2, PostgreSQL)")
@@ -501,6 +504,66 @@ if echo "${TP_TEST}" | grep -q "^OK:"; then
 else
     print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${TP_TEST}"
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "TextPanel not available"
+    EXIT_CODE=1
+fi
+
+# ---------------------------------------------------------------------------
+# 10. Validate dashboard_content renderer against fixture (no TTY / no live DB)
+# ---------------------------------------------------------------------------
+# Regression guard for the monolith split: dashboard_content must resolve the
+# reserved-packet refs via packet.list_reserved (the packet module), NOT
+# queue.list_reserved (which is nil and caused the startup crash). The terminal
+# I/O sinks are stubbed so the painter can run headless; the real TUI
+# initializes the terminal via t.initwrap before rendering.
+TEST_COUNTER=$((TEST_COUNTER + 1))
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Dashboard renderer (fixture, headless)"
+
+DASH_TEST=$(lua 2>&1 <<LUAEOF
+package.path = "${SCHEMAGUI}/lua/?.lua;" .. package.path
+local t = require("terminal")
+t.width = 80
+t.height = 24
+t.output.write = function() end
+t.cursor.position.set = function() end
+t.text.push_seq = function() return "" end
+t.text.pop_seq = function() return "" end
+t.text.width.utf8swidth = function(s) return #tostring(s or "") end
+t.text.width.truncate_ellipsis = function(w, s, _) return tostring(s or ""):sub(1, w) end
+
+local S = require("schemahelper_screens")
+local Q = require("schemahelper_queue")
+local packet = require("schemahelper_packet")
+
+assert(type(packet.list_reserved) == "function", "packet.list_reserved is not a function")
+assert(type(Q.list_reserved) == "nil", "queue.list_reserved should be nil")
+
+local fixture = "${SCHEMAGUI}/test/fixtures/sample_project"
+local state = Q.load_state(fixture .. "/schemahelper_acuranzo_sqlite.json")
+local app = { conn = nil, log = "(none)", state = state, built = nil,
+  warn_in_repo = false, catalog_degraded = false, show_mode_msg = "" }
+local opts = { wrapper = "(none)", out_dir = fixture, state_file = "(none)",
+  track = "both", migrations = fixture .. "/migrations", schematool = "(none)",
+  design = "acuranzo", engine = "sqlite", packet_dir = fixture, allow_write = true,
+  ref = 0, lua_version = "5.5" }
+local self_panel = { opts = opts, app = app, inner_row = 1, inner_col = 1,
+  inner_height = 24, inner_width = 80 }
+
+local ok, err = pcall(S.dashboard_content, self_panel)
+if ok then
+  print("OK: dashboard_content rendered without error")
+else
+  print("ERR: " .. tostring(err))
+  os.exit(1)
+end
+LUAEOF
+) 2>&1 || true
+
+if echo "${DASH_TEST}" | grep -q "^OK:"; then
+    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${DASH_TEST}"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Dashboard renderer exercises packet.list_reserved"
+else
+    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${DASH_TEST}"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Dashboard renderer failed (list_reserved regression?)"
     EXIT_CODE=1
 fi
 

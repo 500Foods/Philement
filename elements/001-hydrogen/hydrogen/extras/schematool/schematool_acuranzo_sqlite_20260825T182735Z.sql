@@ -1,0 +1,2887 @@
+-- =============================================================================
+-- SchemaTool remediation (NOT EXECUTED)
+-- schematool 1.8.3 · phase 4 audit
+-- design=acuranzo engine=sqlite schema=. database=/mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/tests/artifacts/database/sqlite/hydrodemo.sqlite
+-- migrations=/mnt/extra/Projects/Philement/elements/002-helium/acuranzo/migrations
+-- normalize=loose
+-- Generated: 20260825T182735Z
+-- counts: {"total":365,"ok":317,"drift":48,"missing_load":0,"missing_apply":0,"anomalies":0,"orphans":0}
+-- exit_code=2
+-- Rule: Uncomment deliberately. Prefer Hydrogen LOAD/APPLY when possible.
+-- Updating queries.code does NOT replay DDL against live tables.
+-- Prefer a NEW forward migration when live schema must change.
+-- Content match scope (v1): code + name + summary.
+-- Orphan DB refs: captured to .mig for optional new-migration rebuild.
+-- =============================================================================
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1198: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1198.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     085                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     11                                                   AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     BROTLI_DECOMPRESS(CRYPTO_DECODE(''GwkEABwHduywYPVKjujuGIbSpsJQEhg0p3+jIgtoW0VjcDcA6DCyNDoQxE3WAPPM5qYJEuD+xqQuDCgQTZ2NQAPiW2O3re33jpCIPnwfkt1WYgBcH5b91lTTeNCX+RsLTxDve5QeJy8QhLZgvFR3DPCv231tAjTawNf6cRm/7rh4TUpOKR3IdH1YctRI04ycIaA8PpRWQM20qyTiVlrIUXkmD6UTBVolkDaeItbaS0KZMCobYAqn3AUXKug9G9VLswL5f9HL2pVRUbE62dwKqdsekY1LHPty2/4HNMaSNSbPdQaXpM6mB80Mhx25iUnHivpnMpq3xXyrumNM5HfHcpt9KV4mD9HQvtQu81JNNC7HleHMc+RDpTNhWj3jSHn0DCVraibK+3LiGAiiR9lj2Yl7/lPN2ONAYq43gG+qNNcSgXG55QIyTgE='',''base64''))                                                                AS code,
+--     ''Insert Course Suggestion''                                                     AS name,
+--     BROTLI_DECOMPRESS(CRYPTO_DECODE(''G1AFAJwFduPLRQTJZnPsgidIkSm0RXqy/lIVxSaakCRjU6zrEkQhRh/G9f2VtAOcjM+0nd1vYWhLfWO/HdcJtWxvX0TAk0a30Gi0ABkV2zqTF16m2ZzSEHSc5C+TW8MVtwzkeM+oPHFQESsyW1o9MMsRKe4+UTJLRv1I5/NLWLvb8ys46cSYEY6cVMMxYcqQIP0RfAnSzqzaNQLkc4p13cXYNPV2z/GyK+13JKzOS325paI3x/g2NRc85R/1Ji8QSojKFCjuRt1HfiByHdp5bCaQ+IiZL+VK/MeQVIw0DHgra4F1BcTBdSJREQkNX0CBM2vEEoXS0Q/iID58KJ6lQfXDjIiFsoSeybWZgS3Ldn4xoeyQD+RzRLD2AWPNDjlCvuwNsROXX/WJiVy7KrPKfNkzr0Z5YJKP5wsMqKh2LahCGoV9/NHmxMXyhQ84MSZSYbc0m7goHeMLTBXdZxkRD4PMvKhdTgOdh+Fz4MgH3C0FNRxHPF1v4mC1CqNR4cp39LjAs7j+IH2cuJALbFgPPB/sYA2C1D/Okia7B/S1ozoZnc7Ev/Ug4MGFT+4+hjIvhWc7Q6jTel2JIzPOzkt6NfFYbnTHNFN//ZuZ3niqZLp6KH7F8gd5yNjk8h6ctTnqKVOMjQm/Rikm7xPoZRGYYgGfNh94Qhx/YghrwiVBMs0aX+E/g9N3iS2A0Jc3ZHZfGYC5Gwl+BZOp8oaclCZwUoxRBXyQRtLTFbPggdj0isdzc19N2xsC'',''base64''))
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1198
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1198
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1200: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1200.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     086                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     11                                                   AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''Ci0tICBzdWJtaXNzaW9uX2lkIAogICAgSU5TRVJUIElOVE8gY29udGFjdF9zdWJtaXNzaW9ucyAoCiAgICAgICAgc3VibWlzc2lvbl9pZCwKICAgICAgICBuYW1lLAogICAgICAgIGVtYWlsLAogICAgICAgIHN1YmplY3QsCiAgICAgICAgbWVzc2FnZSwKICAgICAgICBjaGFjaGFfdG9rZW4sCiAgICAgICAgY2hhY2hhX3NpdGUsCiAgICAgICAgaXBfYWRkcmVzcywKICAgICAgICByZXZpZXdfc3RhdHVzLAogICAgICAgIHZhbGlkX2FmdGVyLAogICAgICAgIHZhbGlkX3VudGlsLAogICAgICAgIGNyZWF0ZWRfaWQsCiAgICAgICAgY3JlYXRlZF9hdCwKICAgICAgICB1cGRhdGVkX2lkLAogICAgICAgIHVwZGF0ZWRfYXQKICAgICkKICAgIFdJVEggbmV4dF9zdWJtaXNzaW9uX2lkIEFTICgKICAgICAgICBTRUxFQ1QgQ09BTEVTQ0UoTUFYKHN1Ym1pc3Npb25faWQpLCAwKSArIDEgQVMgbmV3X3N1Ym1pc3Npb25faWQKICAgICAgICBGUk9NIGNvbnRhY3Rfc3VibWlzc2lvbnMKICAgICkKICAgIFNFTEVDVAogICAgICAgIG5ld19zdWJtaXNzaW9uX2lkLAogICAgICAgIDpOQU1FLAogICAgICAgIDpFTUFJTCwKICAgICAgICA6U1VCSkVDVCwKICAgICAgICA6TUVTU0FHRSwKICAgICAgICA6Q0hBQ0hBX1RPS0VOLAogICAgICAgIDpDSEFDSEFfU0lURSwKICAgICAgICA6SVBfQUREUkVTUywKICAgICAgICAwLAogICAgICAgIE5VTEwsCiAgICAgICAgTlVMTCwKICAgICAgICAwLAogICAgICAgIENVUlJFTlRfVElNRVNUQU1QLAogICAgICAgIDAsCiAgICAgICAgQ1VSUkVOVF9USU1FU1RBTVAKICAgIEZST00gbmV4dF9zdWJtaXNzaW9uX2lkClJFVFVSTklORyAgc3VibWlzc2lvbl9pZAo7Cg=='',''base64'')                                                                AS code,
+--     ''Insert Contact Submission''                                                     AS name,
+--     BROTLI_DECOMPRESS(CRYPTO_DECODE(''G7sEACwG7GblAjEbQS+FxsKlgizmg1yjQ2lbAQdEpxsceUkSeQEGA40MOU/oQG0BZ6VtfZrqEPGK+Qq16vbVSBiIJufalgbyGB299X/pO6KYhGlm96f2AnYWg6hM90zsBaYliGVEFMN2kv9cz6FSvym5vWfzhQu3GrcUF1HOS9KjRLJffz9ZDKYRh2JpkxAMUoPFE9YfD3dCXzAiI/BsgC5F2ZF4sg6Ir6C3zO9RNJ31Vc9Mxt+2B7IT65lSK/VuG86mPpNP/kVN8gqfQFOeAf42VB35A0vNOndFTGBWnId6w5HmPeYbZ1vcamD9kDBAXsgPjeJh4Kz9NXzHzDgc9dLh63HWXht2AsLGvnrO35pUNeVrrBlt1nzMmPkO81UtGcmEhAZoty4G8EW+c9APCkcl5ltHYRPuh+LzwVh0SyqqqnfkW6yZ4pt8CKmmS5YzYaqzb8FS0zd2PYfCmbY8nfcszOaG4Q6pTFHd9ewPtlg0TBaO1ED58DIedFkfBjnygsxziDlFp6Fuut4gCdTg6y8kLxl6dF5Y8OIvYys7Yj2xWLJVjt+6FyZ8F1ifjNXLacxvugH1PmyGIP8FiEWonv0guWQJhueIJ/5OCYa8pgCFnzEgAYKCfUkK9SkLd4hOESXpBGY3T7EPu1x26ClI/yrvgf61BbgZ6rh0Cn/IJ6H/fymQpK/Rha1yagnlhcDLOwqfukwq1+jUrftGAQ=='',''base64''))
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1200
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1200
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1223: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1223.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     093                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     BROTLI_DECOMPRESS(CRYPTO_DECODE(''G5gEAIzCce8jXFq4bTsNttWvpFXUIykM1xedTo9SGEtGxbJvPIclXNX//7khFjqhUdJy5T75iIdCxEPxCx53SFvjLC0l/M0fgYuIQRFDzW3z1X2euBHDAIBzzLGBAEDCh5FqTSxfnyotqAD0yFjnmskU31eiffywDL3dsUPko0pybgnTyLFsmuuQtyPBZ6fg7tnNN4SEtiBUMf1MPu2vAOcRBfFNg4uxaddoSr/U/3Hy/xDQBjcMKEKbTnVOn+6jw8F8vZ4C6D4hju2Jm4C2T0DEdGEK7ivmc+/GaxihAiLoBGqWj/SVFoJO1hkGvMQtYWFJRv6fhz3IAd3Wqr2v6LAVaHAem2/t10ywgJiVGW7ed7AdlNkCr9owzWhxjvdOF33aWh6yNLM9GuYUFwjjydPcv0visk6yooRIo2fJrxVLLRnHXPErkM1CF3wjopqQ5NtG/03HfqNwxj/eO5PcHXQxsdHt9n1FBHf9EOc+BU062awlHnnMYLOf0GiIu/saTGPJvMsY/Fkm'',''base64''))                                                                AS code,
+--     ''Insert Pending Mail Queue Row''                                                     AS name,
+--     BROTLI_DECOMPRESS(CRYPTO_DECODE(''G2kFAIzURvOUWCmT9889y3QFuAGckkrvQ22/lSWF9T/G5pE7iZrgvS+IWTJroqUw8bgSd4uraYtyjrgKBYULFBgn+YdlNwSytQJS4z0n58ajATWzliZLHpGUfQtHqDzoMusmL3IWFx9PMCg+JGmifgZCDQvyeMvPi0RMAIXQc6IpOqr2F5kUysCvz6dRwM4s3xAFAsMxT4lSkM0N3uHNZtAWRAd+NH8YxOpYUULzBs0NqQ/aaU1scsvQANgSvoew26lLBDgVjYTQLxOxk82y+C2POgdbGKQHLB/GEFxqdaqN+MBUjr/BjXZ7qdV+R7nXj6ZfM+rQ8ltBgCfOJ/oJvJ7pwdqG96m1psxn0JxfMRZGVIP2nPsCxBKoJ+MsV2GMf92R4psMh5P3rxdoJsx7rVeoGBTzK7zu7O/MWwQnI0l0ZUC3ICB6okA2/fjcgefvk8jMZLJJB3RNHPYfB+3OZD5bd6atQwCzdmvZTBFPT3oV31kDc3VO8R5E57nhWCfX50/PbSSEaakFVAj8a4d5fDhKCfljvPVyXQ7K0DZFsM2QANnZZTgnwezoXpARkE1T/kXSaBBwpuj0TCaNfdTMXiyREwmrn8/TemqqBDphQbNotkXAUV1y9vMKtUilR2JfUWwc0TkSI05YqVCBkKIuHFVSTPYvfcNvZpv/felM+L2EI5zjck6IKohGmCa5fK4aU2AZoKyiad5YN//MC/7iY74qeFqQ9WHe4Xle13m1ALRRNgZLuozKygTnkL+QxGh8EZtEOmrMB2kC'',''base64''))
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1223
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1223
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1224: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1224.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     094                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     2                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClNFTEVDVAogICAgcXVldWVfaWQsCiAgICBtZXNzYWdlX3V1aWQsCiAgICBzdGF0dXNfYTYzLAogICAgcHJpb3JpdHksCiAgICB0ZW1wbGF0ZV9rZXksCiAgICBmcm9tX2FkZHIsCiAgICByZXBseV90bywKICAgIHJlY2lwaWVudHNfanNvbiwKICAgIHN1YmplY3QsCiAgICBib2R5X3RleHQsCiAgICBib2R5X2h0bWwsCiAgICBoZWFkZXJzX2pzb24sCiAgICBpZGVtcG90ZW5jeV9rZXksCiAgICBhdHRlbXB0cywKICAgIG5leHRfYXR0ZW1wdF9hdCwKICAgIGxhc3RfYXR0ZW1wdF9hdCwKICAgIHNtdHBfY29kZSwKICAgIHNtdHBfdGV4dCwKICAgIHNlcnZlcl9pbmRleCwKICAgIGluc3RhbmNlX2lkLAogICAgY2xhaW1fdG9rZW4sCiAgICAgICAgICAgICAgICAgICAgICAgICAgICB2YWxpZF9hZnRlciwKICAgIHZhbGlkX3VudGlsLAogICAgY3JlYXRlZF9pZCwKICAgIGNyZWF0ZWRfYXQsCiAgICB1cGRhdGVkX2lkLAogICAgdXBkYXRlZF9hdAoKRlJPTQogICAgbWFpbF9xdWV1ZQpXSEVSRQogICAgbWVzc2FnZV91dWlkID0gOk1FU1NBR0VfVVVJRAo='',''base64'')                                                                AS code,
+--     ''Get Mail Queue Row by Message UUID''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzA5NCAtIEdldCBNYWlsIFF1ZXVlIFJvdyBieSBNZXNzYWdlIFVVSUQKClJldHJpZXZlcyBhIHNpbmdsZSBvdXRib3VuZCBtYWlsIHF1ZXVlIHJvdyBieSBpdHMKYG1lc3NhZ2VfdXVpZGAuCgojIyBQYXJhbWV0ZXJzCgotIGBNRVNTQUdFX1VVSURgIChzdHJpbmcsIHJlcXVpcmVkKTogVGhlIHN0YWJsZSBleHRlcm5hbAogIG1lc3NhZ2UgaWRlbnRpZmllci4KCiMjIFJldHVybnMKCi0gQWxsIGNvbHVtbnMgZnJvbSBgbWFpbF9xdWV1ZWAuCgojIyBUYWJsZXMKCi0gYG1haWxfcXVldWVgIChtaWdyYXRpb24gMTIxOCkuCgojIyBTZWN1cml0eSBOb3RlcwoKLSBgcXVlcnlfdHlwZV9hMjhgIGlzIGBUWVBFX0lOVEVSTkFMX1NRTGAgKDApIHNvIHRoaXMgcXVlcnkKICBpcyBub3QgcmVhY2hhYmxlIHZpYSB0aGUgUkVTVCBBUEkuCg=='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1224
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1224
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1225: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1225.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     095                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     2                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClNFTEVDVAogICAgcXVldWVfaWQsCiAgICBtZXNzYWdlX3V1aWQsCiAgICBzdGF0dXNfYTYzLAogICAgcHJpb3JpdHksCiAgICB0ZW1wbGF0ZV9rZXksCiAgICBmcm9tX2FkZHIsCiAgICByZXBseV90bywKICAgIHJlY2lwaWVudHNfanNvbiwKICAgIHN1YmplY3QsCiAgICBib2R5X3RleHQsCiAgICBib2R5X2h0bWwsCiAgICBoZWFkZXJzX2pzb24sCiAgICBpZGVtcG90ZW5jeV9rZXksCiAgICBhdHRlbXB0cywKICAgIG5leHRfYXR0ZW1wdF9hdCwKICAgIGxhc3RfYXR0ZW1wdF9hdCwKICAgIHNtdHBfY29kZSwKICAgIHNtdHBfdGV4dCwKICAgIHNlcnZlcl9pbmRleCwKICAgIGluc3RhbmNlX2lkLAogICAgY2xhaW1fdG9rZW4sCiAgICAgICAgICAgICAgICAgICAgICAgICAgICB2YWxpZF9hZnRlciwKICAgIHZhbGlkX3VudGlsLAogICAgY3JlYXRlZF9pZCwKICAgIGNyZWF0ZWRfYXQsCiAgICB1cGRhdGVkX2lkLAogICAgdXBkYXRlZF9hdAoKRlJPTQogICAgbWFpbF9xdWV1ZQpXSEVSRQogICAgaWRlbXBvdGVuY3lfa2V5ID0gOklERU1QT1RFTkNZX0tFWQpPUkRFUiBCWQogICAgY3JlYXRlZF9hdCBBU0MsCiAgICBxdWV1ZV9pZCBBU0MK'',''base64'')                                                                AS code,
+--     ''Get Mail Queue Row by Idempotency Key''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzA5NSAtIEdldCBNYWlsIFF1ZXVlIFJvdyBieSBJZGVtcG90ZW5jeSBLZXkKClJldHJpZXZlcyBvdXRib3VuZCBtYWlsIHF1ZXVlIHJvd3MgYnkgYGlkZW1wb3RlbmN5X2tleWAuCk11bHRpcGxlIHJvd3MgbWF5IGV4aXN0IGJlY2F1c2UgdGhlIGtleSBpcyBub3QgdW5pcXVlOyByb3dzCmFyZSByZXR1cm5lZCBvbGRlc3QtZmlyc3QuCgojIyBQYXJhbWV0ZXJzCgotIGBJREVNUE9URU5DWV9LRVlgIChzdHJpbmcsIHJlcXVpcmVkKTogQ2FsbGVyLXN1cHBsaWVkCiAgZHVwbGljYXRlLXN1cHByZXNzaW9uIGtleS4KCiMjIFJldHVybnMKCi0gQWxsIGNvbHVtbnMgZnJvbSBgbWFpbF9xdWV1ZWAuCgojIyBUYWJsZXMKCi0gYG1haWxfcXVldWVgIChtaWdyYXRpb24gMTIxOCkuCgojIyBTZWN1cml0eSBOb3RlcwoKLSBgcXVlcnlfdHlwZV9hMjhgIGlzIGBUWVBFX0lOVEVSTkFMX1NRTGAgKDApIHNvIHRoaXMgcXVlcnkKICBpcyBub3QgcmVhY2hhYmxlIHZpYSB0aGUgUkVTVCBBUEkuCg=='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1225
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1225
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1226: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1226.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     096                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     2                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClNFTEVDVAogICAgcXVldWVfaWQsCiAgICBtZXNzYWdlX3V1aWQsCiAgICBzdGF0dXNfYTYzLAogICAgcHJpb3JpdHksCiAgICB0ZW1wbGF0ZV9rZXksCiAgICBmcm9tX2FkZHIsCiAgICByZXBseV90bywKICAgIHJlY2lwaWVudHNfanNvbiwKICAgIHN1YmplY3QsCiAgICBib2R5X3RleHQsCiAgICBib2R5X2h0bWwsCiAgICBoZWFkZXJzX2pzb24sCiAgICBpZGVtcG90ZW5jeV9rZXksCiAgICBhdHRlbXB0cywKICAgIG5leHRfYXR0ZW1wdF9hdCwKICAgIGxhc3RfYXR0ZW1wdF9hdCwKICAgIHNtdHBfY29kZSwKICAgIHNtdHBfdGV4dCwKICAgIHNlcnZlcl9pbmRleCwKICAgIGluc3RhbmNlX2lkLAogICAgY2xhaW1fdG9rZW4sCiAgICAgICAgICAgICAgICAgICAgICAgICAgICB2YWxpZF9hZnRlciwKICAgIHZhbGlkX3VudGlsLAogICAgY3JlYXRlZF9pZCwKICAgIGNyZWF0ZWRfYXQsCiAgICB1cGRhdGVkX2lkLAogICAgdXBkYXRlZF9hdAoKRlJPTQogICAgbWFpbF9xdWV1ZQpXSEVSRQogICAgc3RhdHVzX2E2MyA9IDAKICAgIEFORCAoCiAgICAgICAgbmV4dF9hdHRlbXB0X2F0IElTIE5VTEwKICAgICAgICBPUiBuZXh0X2F0dGVtcHRfYXQgPD0gQ1VSUkVOVF9USU1FU1RBTVAKICAgICkKT1JERVIgQlkKICAgIHByaW9yaXR5IERFU0MsCiAgICBuZXh0X2F0dGVtcHRfYXQgQVNDLAogICAgcXVldWVfaWQgQVNDCg=='',''base64'')                                                                AS code,
+--     ''Select Next Pending Mail Queue Row''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzA5NiAtIFNlbGVjdCBOZXh0IFBlbmRpbmcgTWFpbCBRdWV1ZSBSb3cKClJldHVybnMgdGhlIG5leHQgcGVuZGluZyBvdXRib3VuZCBtYWlsIHF1ZXVlIHJvdyB0aGF0IGlzCmR1ZSBmb3IgZGVsaXZlcnkuIFRoZSBjYWxsZXIgaXMgcmVzcG9uc2libGUgZm9yIGF0b21pY2FsbHkKbWFya2luZyB0aGUgcm93IGBzZW5kaW5nYCB2aWEgUXVlcnlSZWYgIzA5Ny4KCiMjIFBhcmFtZXRlcnMKCi0gTm9uZS4KCiMjIFJldHVybnMKCi0gQWxsIGNvbHVtbnMgZnJvbSBgbWFpbF9xdWV1ZWAgZm9yIHRoZSBoaWdoZXN0LQogIHByaW9yaXR5IGR1ZSByb3cuCgojIyBUYWJsZXMKCi0gYG1haWxfcXVldWVgIChtaWdyYXRpb24gMTIxOCkuCgojIyBTZWN1cml0eSBOb3RlcwoKLSBgcXVlcnlfdHlwZV9hMjhgIGlzIGBUWVBFX0lOVEVSTkFMX1NRTGAgKDApIHNvIHRoaXMgcXVlcnkKICBpcyBub3QgcmVhY2hhYmxlIHZpYSB0aGUgUkVTVCBBUEkuCi0gVGhpcyBpcyBpbnRlbnRpb25hbGx5IGEgcGxhaW4gYFNFTEVDVGAgcmF0aGVyIHRoYW4gYW4KICBhdG9taWMgY2xhaW0sIGJlY2F1c2UgZW5naW5lLXNwZWNpZmljIGBVUERBVEUgLi4uCiAgUkVUVVJOSU5HYCBzeW50YXggZGlmZmVycyBiZXR3ZWVuIFBvc3RncmVTUUwsIE15U1FMLAogIFNRTGl0ZSwgYW5kIERCMi4gQXRvbWljIGNsYWltaW5nIHdpbGwgYmUgaGFuZGxlZCBieSB0aGUKICBDIHJlcG9zaXRvcnkgaGVscGVyIHVzaW5nIFF1ZXJ5UmVmICMwOTcuCg=='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1226
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1226
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1227: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1227.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     097                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClVQREFURSBtYWlsX3F1ZXVlClNFVAogICAgc3RhdHVzX2E2MyA9IDEsCiAgICBpbnN0YW5jZV9pZCA9IDpJTlNUQU5DRV9JRCwKICAgIGNsYWltX3Rva2VuID0gOkNMQUlNX1RPS0VOLAogICAgYXR0ZW1wdHMgPSBhdHRlbXB0cyArIDEsCiAgICBsYXN0X2F0dGVtcHRfYXQgPSBDVVJSRU5UX1RJTUVTVEFNUCwKICAgIHVwZGF0ZWRfYXQgPSBDVVJSRU5UX1RJTUVTVEFNUApXSEVSRQogICAgcXVldWVfaWQgPSA6UVVFVUVfSUQKICAgIEFORCBzdGF0dXNfYTYzID0gMAo='',''base64'')                                                                AS code,
+--     ''Mark Mail Queue Row as Sending''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzA5NyAtIE1hcmsgTWFpbCBRdWV1ZSBSb3cgYXMgU2VuZGluZwoKQ2xhaW1zIGEgcGVuZGluZyBvdXRib3VuZCBtYWlsIHF1ZXVlIHJvdyBieSBzZXR0aW5nIGl0cwpzdGF0dXMgdG8gYHNlbmRpbmdgLCByZWNvcmRpbmcgdGhlIG93bmluZyBpbnN0YW5jZSBhbmQgYQpjbGFpbSB0b2tlbiwgYW5kIGluY3JlbWVudGluZyB0aGUgYXR0ZW1wdCBjb3VudGVyLgoKIyMgUGFyYW1ldGVycwoKLSBgUVVFVUVfSURgIChpbnRlZ2VyLCByZXF1aXJlZCk6IFF1ZXVlIHJvdyB0byBjbGFpbS4KLSBgSU5TVEFOQ0VfSURgIChzdHJpbmcsIHJlcXVpcmVkKTogT3duaW5nIEh5ZHJvZ2VuIGluc3RhbmNlLgotIGBDTEFJTV9UT0tFTmAgKHN0cmluZywgcmVxdWlyZWQpOiBSYW5kb20gdG9rZW4gaGVsZCBkdXJpbmcKICB0aGUgc2VuZCBhdHRlbXB0LgoKIyMgUmV0dXJucwoKLSBObyByZXN1bHQgcm93cy4gVGhlIGNhbGxlciBjaGVja3MgYWZmZWN0ZWQtcm93IGNvdW50IHRvCiAgZGV0ZWN0IGEgbG9zdCByYWNlLgoKIyMgVGFibGVzCgotIGBtYWlsX3F1ZXVlYCAobWlncmF0aW9uIDEyMTgpLgoKIyMgU2VjdXJpdHkgTm90ZXMKCi0gYHF1ZXJ5X3R5cGVfYTI4YCBpcyBgVFlQRV9JTlRFUk5BTF9TUUxgICgwKSBzbyB0aGlzIHF1ZXJ5CiAgaXMgbm90IHJlYWNoYWJsZSB2aWEgdGhlIFJFU1QgQVBJLgo='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1227
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1227
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1228: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1228.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     098                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClVQREFURSBtYWlsX3F1ZXVlClNFVAogICAgc3RhdHVzX2E2MyA9IDIsCiAgICBzbXRwX2NvZGUgPSA6U01UUF9DT0RFLAogICAgc210cF90ZXh0ID0gOlNNVFBfVEVYVCwKICAgIHNlcnZlcl9pbmRleCA9IDpTRVJWRVJfSU5ERVgsCiAgICBpbnN0YW5jZV9pZCA9IE5VTEwsCiAgICBjbGFpbV90b2tlbiA9IE5VTEwsCiAgICB1cGRhdGVkX2F0ID0gQ1VSUkVOVF9USU1FU1RBTVAKV0hFUkUKICAgIHF1ZXVlX2lkID0gOlFVRVVFX0lECg=='',''base64'')                                                                AS code,
+--     ''Mark Mail Queue Row as Sent''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzA5OCAtIE1hcmsgTWFpbCBRdWV1ZSBSb3cgYXMgU2VudAoKTWFya3MgYW4gb3V0Ym91bmQgbWFpbCBxdWV1ZSByb3cgYXMgc3VjY2Vzc2Z1bGx5IHNlbnQsCnJlY29yZHMgdGhlIFNNVFAgcmVwbHksIGFuZCByZWxlYXNlcyB0aGUgaW5zdGFuY2UvY2xhaW0KbG9jay4KCiMjIFBhcmFtZXRlcnMKCi0gYFFVRVVFX0lEYCAoaW50ZWdlciwgcmVxdWlyZWQpOiBRdWV1ZSByb3cgdG8gdXBkYXRlLgotIGBTTVRQX0NPREVgIChpbnRlZ2VyLCByZXF1aXJlZCk6IFNNVFAgcmVwbHkgY29kZS4KLSBgU01UUF9URVhUYCAoc3RyaW5nLCByZXF1aXJlZCk6IFNNVFAgcmVwbHkgdGV4dC4KLSBgU0VSVkVSX0lOREVYYCAoc21hbGxpbnQsIHJlcXVpcmVkKTogSW5kZXggb2YgdGhlIHNlcnZlcgogIHRoYXQgZGVsaXZlcmVkIHRoZSBtZXNzYWdlLgoKIyMgUmV0dXJucwoKLSBObyByZXN1bHQgcm93cy4KCiMjIFRhYmxlcwoKLSBgbWFpbF9xdWV1ZWAgKG1pZ3JhdGlvbiAxMjE4KS4KCiMjIFNlY3VyaXR5IE5vdGVzCgotIGBxdWVyeV90eXBlX2EyOGAgaXMgYFRZUEVfSU5URVJOQUxfU1FMYCAoMCkgc28gdGhpcyBxdWVyeQogIGlzIG5vdCByZWFjaGFibGUgdmlhIHRoZSBSRVNUIEFQSS4K'',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1228
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1228
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1229: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1229.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     099                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClVQREFURSBtYWlsX3F1ZXVlClNFVAogICAgc3RhdHVzX2E2MyA9IDMsCiAgICBzbXRwX2NvZGUgPSA6U01UUF9DT0RFLAogICAgc210cF90ZXh0ID0gOlNNVFBfVEVYVCwKICAgIHNlcnZlcl9pbmRleCA9IDpTRVJWRVJfSU5ERVgsCiAgICBpbnN0YW5jZV9pZCA9IE5VTEwsCiAgICBjbGFpbV90b2tlbiA9IE5VTEwsCiAgICB1cGRhdGVkX2F0ID0gQ1VSUkVOVF9USU1FU1RBTVAKV0hFUkUKICAgIHF1ZXVlX2lkID0gOlFVRVVFX0lECg=='',''base64'')                                                                AS code,
+--     ''Mark Mail Queue Row as Failed''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzA5OSAtIE1hcmsgTWFpbCBRdWV1ZSBSb3cgYXMgRmFpbGVkCgpNYXJrcyBhbiBvdXRib3VuZCBtYWlsIHF1ZXVlIHJvdyBhcyBwZXJtYW5lbnRseSBmYWlsZWQsCnJlY29yZHMgdGhlIGZpbmFsIFNNVFAgcmVwbHksIGFuZCByZWxlYXNlcyB0aGUKaW5zdGFuY2UvY2xhaW0gbG9jay4KCiMjIFBhcmFtZXRlcnMKCi0gYFFVRVVFX0lEYCAoaW50ZWdlciwgcmVxdWlyZWQpOiBRdWV1ZSByb3cgdG8gdXBkYXRlLgotIGBTTVRQX0NPREVgIChpbnRlZ2VyLCByZXF1aXJlZCk6IExhc3QgU01UUCByZXBseSBjb2RlLgotIGBTTVRQX1RFWFRgIChzdHJpbmcsIHJlcXVpcmVkKTogTGFzdCBTTVRQIHJlcGx5IHRleHQuCi0gYFNFUlZFUl9JTkRFWGAgKHNtYWxsaW50LCByZXF1aXJlZCk6IEluZGV4IG9mIHRoZSBzZXJ2ZXIKICB1c2VkIGZvciB0aGUgZmluYWwgYXR0ZW1wdC4KCiMjIFJldHVybnMKCi0gTm8gcmVzdWx0IHJvd3MuCgojIyBUYWJsZXMKCi0gYG1haWxfcXVldWVgIChtaWdyYXRpb24gMTIxOCkuCgojIyBTZWN1cml0eSBOb3RlcwoKLSBgcXVlcnlfdHlwZV9hMjhgIGlzIGBUWVBFX0lOVEVSTkFMX1NRTGAgKDApIHNvIHRoaXMgcXVlcnkKICBpcyBub3QgcmVhY2hhYmxlIHZpYSB0aGUgUkVTVCBBUEkuCg=='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1229
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1229
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1230: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1230.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     100                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClVQREFURSBtYWlsX3F1ZXVlClNFVAogICAgc3RhdHVzX2E2MyA9IDQsCiAgICBuZXh0X2F0dGVtcHRfYXQgPSA6TkVYVF9BVFRFTVBUX0FULAogICAgc210cF9jb2RlID0gOlNNVFBfQ09ERSwKICAgIHNtdHBfdGV4dCA9IDpTTVRQX1RFWFQsCiAgICBzZXJ2ZXJfaW5kZXggPSA6U0VSVkVSX0lOREVYLAogICAgaW5zdGFuY2VfaWQgPSBOVUxMLAogICAgY2xhaW1fdG9rZW4gPSBOVUxMLAogICAgbGFzdF9hdHRlbXB0X2F0ID0gQ1VSUkVOVF9USU1FU1RBTVAsCiAgICB1cGRhdGVkX2F0ID0gQ1VSUkVOVF9USU1FU1RBTVAKV0hFUkUKICAgIHF1ZXVlX2lkID0gOlFVRVVFX0lECg=='',''base64'')                                                                AS code,
+--     ''Reschedule Mail Queue Row for Retry''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzEwMCAtIFJlc2NoZWR1bGUgTWFpbCBRdWV1ZSBSb3cgZm9yIFJldHJ5CgpSZXNjaGVkdWxlcyBhbiBvdXRib3VuZCBtYWlsIHF1ZXVlIHJvdyBmb3IgYSBmdXR1cmUgcmV0cnkKYWZ0ZXIgYSB0cmFuc2llbnQgZmFpbHVyZSwgcmVjb3JkaW5nIHRoZSBsYXN0IGF0dGVtcHQncwpTTVRQIHJlcGx5IGFuZCByZWxlYXNpbmcgdGhlIGluc3RhbmNlL2NsYWltIGxvY2suCgojIyBQYXJhbWV0ZXJzCgotIGBRVUVVRV9JRGAgKGludGVnZXIsIHJlcXVpcmVkKTogUXVldWUgcm93IHRvIHJlc2NoZWR1bGUuCi0gYE5FWFRfQVRURU1QVF9BVGAgKHRpbWVzdGFtcCwgcmVxdWlyZWQpOiBTY2hlZHVsZWQgdGltZQogIGZvciB0aGUgbmV4dCBhdHRlbXB0LgotIGBTTVRQX0NPREVgIChpbnRlZ2VyLCByZXF1aXJlZCk6IExhc3QgU01UUCByZXBseSBjb2RlLgotIGBTTVRQX1RFWFRgIChzdHJpbmcsIHJlcXVpcmVkKTogTGFzdCBTTVRQIHJlcGx5IHRleHQuCi0gYFNFUlZFUl9JTkRFWGAgKHNtYWxsaW50LCByZXF1aXJlZCk6IEluZGV4IG9mIHRoZSBzZXJ2ZXIKICB1c2VkIGZvciB0aGUgZmFpbGVkIGF0dGVtcHQuCgojIyBSZXR1cm5zCgotIE5vIHJlc3VsdCByb3dzLgoKIyMgVGFibGVzCgotIGBtYWlsX3F1ZXVlYCAobWlncmF0aW9uIDEyMTgpLgoKIyMgU2VjdXJpdHkgTm90ZXMKCi0gYHF1ZXJ5X3R5cGVfYTI4YCBpcyBgVFlQRV9JTlRFUk5BTF9TUUxgICgwKSBzbyB0aGlzIHF1ZXJ5CiAgaXMgbm90IHJlYWNoYWJsZSB2aWEgdGhlIFJFU1QgQVBJLgo='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1230
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1230
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1231: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1231.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     101                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClVQREFURSBtYWlsX3F1ZXVlClNFVAogICAgc3RhdHVzX2E2MyA9IDAsCiAgICBpbnN0YW5jZV9pZCA9IE5VTEwsCiAgICBjbGFpbV90b2tlbiA9IE5VTEwsCiAgICBhdHRlbXB0cyA9IGF0dGVtcHRzICsgMSwKICAgIHVwZGF0ZWRfYXQgPSBDVVJSRU5UX1RJTUVTVEFNUApXSEVSRQogICAgc3RhdHVzX2E2MyA9IDEKICAgIEFORCBsYXN0X2F0dGVtcHRfYXQgPCA6U1RBTEVfQkVGT1JFCg=='',''base64'')                                                                AS code,
+--     ''Recover Stale Sending Mail Queue Rows''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzEwMSAtIFJlY292ZXIgU3RhbGUgU2VuZGluZyBNYWlsIFF1ZXVlIFJvd3MKClJlY292ZXJzIG91dGJvdW5kIG1haWwgcXVldWUgcm93cyB0aGF0IGhhdmUgYmVlbiBzdHVjayBpbgpgc2VuZGluZ2Agc3RhdHVzIGxvbmdlciB0aGFuIGV4cGVjdGVkLCByZXR1cm5pbmcgdGhlbSB0bwpgcGVuZGluZ2Agc28gYW5vdGhlciB3b3JrZXIgY2FuIGNsYWltIHRoZW0uCgojIyBQYXJhbWV0ZXJzCgotIGBTVEFMRV9CRUZPUkVgICh0aW1lc3RhbXAsIHJlcXVpcmVkKTogUm93cyB3aG9zZQogIGBsYXN0X2F0dGVtcHRfYXRgIGlzIG9sZGVyIHRoYW4gdGhpcyB2YWx1ZSBhcmUgY29uc2lkZXJlZAogIHN0YWxlIGFuZCBhcmUgcmVzZXQgdG8gcGVuZGluZy4KCiMjIFJldHVybnMKCi0gTm8gcmVzdWx0IHJvd3MuIFRoZSBjYWxsZXIgY2hlY2tzIGFmZmVjdGVkLXJvdyBjb3VudC4KCiMjIFRhYmxlcwoKLSBgbWFpbF9xdWV1ZWAgKG1pZ3JhdGlvbiAxMjE4KS4KCiMjIFNlY3VyaXR5IE5vdGVzCgotIGBxdWVyeV90eXBlX2EyOGAgaXMgYFRZUEVfSU5URVJOQUxfU1FMYCAoMCkgc28gdGhpcyBxdWVyeQogIGlzIG5vdCByZWFjaGFibGUgdmlhIHRoZSBSRVNUIEFQSS4K'',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1231
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1231
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1232: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1232.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     102                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''Ci0tICBhdHRlbXB0X2lkIAogICAgSU5TRVJUIElOVE8gbWFpbF9hdHRlbXB0cyAoCiAgICAgICAgYXR0ZW1wdF9pZCwKICAgICAgICBxdWV1ZV9pZCwKICAgICAgICBhdHRlbXB0X251bWJlciwKICAgICAgICBzZXJ2ZXJfaW5kZXgsCiAgICAgICAgc3VjY2VzcywKICAgICAgICBzbXRwX2NvZGUsCiAgICAgICAgc210cF90ZXh0LAogICAgICAgIGR1cmF0aW9uX21zLAogICAgICAgIGVycm9yX2NsYXNzLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIHZhbGlkX2FmdGVyLAogICAgdmFsaWRfdW50aWwsCiAgICBjcmVhdGVkX2lkLAogICAgY3JlYXRlZF9hdCwKICAgIHVwZGF0ZWRfaWQsCiAgICB1cGRhdGVkX2F0CgogICAgKQogICAgV0lUSCBuZXh0X2F0dGVtcHRfaWQgQVMgKAogICAgICAgIFNFTEVDVCBDT0FMRVNDRShNQVgoYXR0ZW1wdF9pZCksIDApICsgMSBBUyBuZXdfYXR0ZW1wdF9pZAogICAgICAgIEZST00gbWFpbF9hdHRlbXB0cwogICAgKQogICAgU0VMRUNUCiAgICAgICAgbmV3X2F0dGVtcHRfaWQsCiAgICAgICAgOlFVRVVFX0lELAogICAgICAgIDpBVFRFTVBUX05VTUJFUiwKICAgICAgICA6U0VSVkVSX0lOREVYLAogICAgICAgIDpTVUNDRVNTLAogICAgICAgIDpTTVRQX0NPREUsCiAgICAgICAgOlNNVFBfVEVYVCwKICAgICAgICA6RFVSQVRJT05fTVMsCiAgICAgICAgOkVSUk9SX0NMQVNTLAogICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgIE5VTEwsCiAgICBOVUxMLAogICAgMCwKICAgIENVUlJFTlRfVElNRVNUQU1QLAogICAgMCwKICAgIENVUlJFTlRfVElNRVNUQU1QCgogICAgRlJPTSBuZXh0X2F0dGVtcHRfaWQKUkVUVVJOSU5HICBhdHRlbXB0X2lkCjsK'',''base64'')                                                                AS code,
+--     ''Insert Mail Attempt''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzEwMiAtIEluc2VydCBNYWlsIEF0dGVtcHQKCkluc2VydHMgYSBzaW5nbGUgZGVsaXZlcnkgYXR0ZW1wdCByZWNvcmQgZm9yIGFuIG91dGJvdW5kCm1haWwgcXVldWUgcm93LgoKIyMgUGFyYW1ldGVycwoKLSBgUVVFVUVfSURgIChpbnRlZ2VyLCByZXF1aXJlZCk6IExvZ2ljYWwgZm9yZWlnbiBrZXkgdG8KICBgbWFpbF9xdWV1ZS5xdWV1ZV9pZGAuCi0gYEFUVEVNUFRfTlVNQkVSYCAoc21hbGxpbnQsIHJlcXVpcmVkKTogMS1iYXNlZCBhdHRlbXB0CiAgbnVtYmVyIGZvciB0aGlzIG1lc3NhZ2UuCi0gYFNFUlZFUl9JTkRFWGAgKHNtYWxsaW50LCByZXF1aXJlZCk6IEluZGV4IG9mIHRoZSBvdXRib3VuZAogIHNlcnZlciB1c2VkLgotIGBTVUNDRVNTYCAoc21hbGxpbnQsIHJlcXVpcmVkKTogMCA9IGZhaWxlZCwgMSA9IHN1Y2NlZWRlZC4KLSBgU01UUF9DT0RFYCAoaW50ZWdlciwgb3B0aW9uYWwpOiBTTVRQIHJlcGx5IGNvZGUsIGlmIGFueS4KLSBgU01UUF9URVhUYCAoc3RyaW5nLCBvcHRpb25hbCk6IFNNVFAgcmVwbHkgdGV4dCwgaWYgYW55LgotIGBEVVJBVElPTl9NU2AgKGludGVnZXIsIG9wdGlvbmFsKTogRWxhcHNlZCBhdHRlbXB0IHRpbWUKICBpbiBtaWxsaXNlY29uZHMuCi0gYEVSUk9SX0NMQVNTYCAoc3RyaW5nLCBvcHRpb25hbCk6IEZhaWx1cmUgY2xhc3NpZmljYXRpb24KICAoZS5nLiBgdHJhbnNpZW50YCwgYHBlcm1hbmVudGAsIGB0aW1lb3V0YCwgYHRsc2ApLgoKIyMgUmV0dXJucwoKLSBgYXR0ZW1wdF9pZGA6IFRoZSBuZXdseSBpbnNlcnRlZCBhdHRlbXB0IHByaW1hcnkga2V5LgoKIyMgVGFibGVzCgotIGBtYWlsX2F0dGVtcHRzYCAobWlncmF0aW9uIDEyMTkpLgoKIyMgU2VjdXJpdHkgTm90ZXMKCi0gYHF1ZXJ5X3R5cGVfYTI4YCBpcyBgVFlQRV9JTlRFUk5BTF9TUUxgICgwKSBzbyB0aGlzIHF1ZXJ5CiAgaXMgbm90IHJlYWNoYWJsZSB2aWEgdGhlIFJFU1QgQVBJLgo='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1232
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1232
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1233: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1233.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     103                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     2                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClNFTEVDVAogICAgdGVtcGxhdGVfaWQsCiAgICB0ZW1wbGF0ZV9rZXksCiAgICBuYW1lLAogICAgc3RhdHVzX2E2NCwKICAgIHN1YmplY3RfdGVtcGxhdGUsCiAgICB0ZXh0X3RlbXBsYXRlLAogICAgaHRtbF90ZW1wbGF0ZSwKICAgIGNvbGxlY3Rpb24sCiAgICAgICAgICAgICAgICAgICAgICAgICAgICB2YWxpZF9hZnRlciwKICAgIHZhbGlkX3VudGlsLAogICAgY3JlYXRlZF9pZCwKICAgIGNyZWF0ZWRfYXQsCiAgICB1cGRhdGVkX2lkLAogICAgdXBkYXRlZF9hdAoKRlJPTQogICAgbWFpbF90ZW1wbGF0ZXMKV0hFUkUKICAgIHRlbXBsYXRlX2tleSA9IDpURU1QTEFURV9LRVkK'',''base64'')                                                                AS code,
+--     ''Get Mail Template by Key''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzEwMyAtIEdldCBNYWlsIFRlbXBsYXRlIGJ5IEtleQoKUmV0cmlldmVzIGEgc2luZ2xlIG1haWwgdGVtcGxhdGUgYnkgaXRzIHVuaXF1ZQpgdGVtcGxhdGVfa2V5YC4KCiMjIFBhcmFtZXRlcnMKCi0gYFRFTVBMQVRFX0tFWWAgKHN0cmluZywgcmVxdWlyZWQpOiBVbmlxdWUgdGVtcGxhdGUKICBpZGVudGlmaWVyIChlLmcuIGBtYWlsLnRlc3RgKS4KCiMjIFJldHVybnMKCi0gQWxsIGNvbHVtbnMgZnJvbSBgbWFpbF90ZW1wbGF0ZXNgIGZvciB0aGUKICBtYXRjaGluZyBrZXkuCgojIyBUYWJsZXMKCi0gYG1haWxfdGVtcGxhdGVzYCAobWlncmF0aW9uIDEyMTcpLgoKIyMgU2VjdXJpdHkgTm90ZXMKCi0gYHF1ZXJ5X3R5cGVfYTI4YCBpcyBgVFlQRV9JTlRFUk5BTF9TUUxgICgwKSBzbyB0aGlzIHF1ZXJ5CiAgaXMgbm90IHJlYWNoYWJsZSB2aWEgdGhlIFJFU1QgQVBJLgo='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1233
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1233
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1234: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1234.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     104                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     2                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClNFTEVDVAogICAgdGVtcGxhdGVfaWQsCiAgICB0ZW1wbGF0ZV9rZXksCiAgICBuYW1lLAogICAgc3RhdHVzX2E2NCwKICAgIHN1YmplY3RfdGVtcGxhdGUsCiAgICB0ZXh0X3RlbXBsYXRlLAogICAgaHRtbF90ZW1wbGF0ZSwKICAgIGNvbGxlY3Rpb24sCiAgICAgICAgICAgICAgICAgICAgICAgICAgICB2YWxpZF9hZnRlciwKICAgIHZhbGlkX3VudGlsLAogICAgY3JlYXRlZF9pZCwKICAgIGNyZWF0ZWRfYXQsCiAgICB1cGRhdGVkX2lkLAogICAgdXBkYXRlZF9hdAoKRlJPTQogICAgbWFpbF90ZW1wbGF0ZXMKV0hFUkUKICAgIHN0YXR1c19hNjQgPSAxCk9SREVSIEJZCiAgICBuYW1lIEFTQywKICAgIHRlbXBsYXRlX2tleSBBU0MK'',''base64'')                                                                AS code,
+--     ''List Active Mail Templates''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzEwNCAtIExpc3QgQWN0aXZlIE1haWwgVGVtcGxhdGVzCgpMaXN0cyBhbGwgYWN0aXZlIG1haWwgdGVtcGxhdGVzIG9yZGVyZWQgYnkgbmFtZS4KCiMjIFBhcmFtZXRlcnMKCi0gTm9uZS4KCiMjIFJldHVybnMKCi0gQWxsIGNvbHVtbnMgZnJvbSBgbWFpbF90ZW1wbGF0ZXNgIGZvciB0ZW1wbGF0ZXMKICB3aXRoIGBzdGF0dXNfYTY0ID0gMWAgKGFjdGl2ZSkuCgojIyBUYWJsZXMKCi0gYG1haWxfdGVtcGxhdGVzYCAobWlncmF0aW9uIDEyMTcpLgoKIyMgU2VjdXJpdHkgTm90ZXMKCi0gYHF1ZXJ5X3R5cGVfYTI4YCBpcyBgVFlQRV9JTlRFUk5BTF9TUUxgICgwKSBzbyB0aGlzIHF1ZXJ5CiAgaXMgbm90IHJlYWNoYWJsZSB2aWEgdGhlIFJFU1QgQVBJLgo='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1234
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1234
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1235: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1235.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     105                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''Ci0tICB0ZW1wbGF0ZV9pZCAKICAgIElOU0VSVCBJTlRPIG1haWxfdGVtcGxhdGVzICgKICAgICAgICB0ZW1wbGF0ZV9pZCwKICAgICAgICB0ZW1wbGF0ZV9rZXksCiAgICAgICAgbmFtZSwKICAgICAgICBzdGF0dXNfYTY0LAogICAgICAgIHN1YmplY3RfdGVtcGxhdGUsCiAgICAgICAgdGV4dF90ZW1wbGF0ZSwKICAgICAgICBodG1sX3RlbXBsYXRlLAogICAgICAgIGNvbGxlY3Rpb24sCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgdmFsaWRfYWZ0ZXIsCiAgICB2YWxpZF91bnRpbCwKICAgIGNyZWF0ZWRfaWQsCiAgICBjcmVhdGVkX2F0LAogICAgdXBkYXRlZF9pZCwKICAgIHVwZGF0ZWRfYXQKCiAgICApCiAgICBXSVRIIG5leHRfdGVtcGxhdGVfaWQgQVMgKAogICAgICAgIFNFTEVDVCBDT0FMRVNDRShNQVgodGVtcGxhdGVfaWQpLCAwKSArIDEgQVMgbmV3X3RlbXBsYXRlX2lkCiAgICAgICAgRlJPTSBtYWlsX3RlbXBsYXRlcwogICAgKQogICAgU0VMRUNUCiAgICAgICAgbmV3X3RlbXBsYXRlX2lkLAogICAgICAgIDpURU1QTEFURV9LRVksCiAgICAgICAgOk5BTUUsCiAgICAgICAgOlNUQVRVU19BNjQsCiAgICAgICAgOlNVQkpFQ1RfVEVNUExBVEUsCiAgICAgICAgOlRFWFRfVEVNUExBVEUsCiAgICAgICAgOkhUTUxfVEVNUExBVEUsCiAgICAgICAgOkNPTExFQ1RJT04sCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgTlVMTCwKICAgIE5VTEwsCiAgICAwLAogICAgQ1VSUkVOVF9USU1FU1RBTVAsCiAgICAwLAogICAgQ1VSUkVOVF9USU1FU1RBTVAKCiAgICBGUk9NIG5leHRfdGVtcGxhdGVfaWQKUkVUVVJOSU5HICB0ZW1wbGF0ZV9pZAo7Cg=='',''base64'')                                                                AS code,
+--     ''Insert Mail Template''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzEwNSAtIEluc2VydCBNYWlsIFRlbXBsYXRlCgpJbnNlcnRzIGEgbmV3IHJldXNhYmxlIG1haWwgdGVtcGxhdGUgaW50bwpgbWFpbF90ZW1wbGF0ZXNgLiBUaGUgYXBwbGljYXRpb24gZ2VuZXJhdGVzIHRoZQpgdGVtcGxhdGVfaWRgIHJhdGhlciB0aGFuIHJlbHlpbmcgb24gYW4gZW5naW5lLXNwZWNpZmljCmF1dG9pbmNyZW1lbnQuCgojIyBQYXJhbWV0ZXJzCgotIGBURU1QTEFURV9LRVlgIChzdHJpbmcsIHJlcXVpcmVkKTogVW5pcXVlIGV4dGVybmFsCiAgaWRlbnRpZmllciB1c2VkIGJ5IEFQSS9MdWEgY2FsbGVycy4KLSBgTkFNRWAgKHN0cmluZywgcmVxdWlyZWQpOiBIdW1hbi1yZWFkYWJsZSB0ZW1wbGF0ZSBuYW1lLgotIGBTVEFUVVNfQTY0YCAoc21hbGxpbnQsIHJlcXVpcmVkKTogVGVtcGxhdGUgc3RhdHVzIGZyb20KICBMb29rdXAgMDY0ICgwPWluYWN0aXZlLCAxPWFjdGl2ZSwgMj1kZXByZWNhdGVkKS4KLSBgU1VCSkVDVF9URU1QTEFURWAgKHN0cmluZywgcmVxdWlyZWQpOiBTdWJqZWN0IGxpbmUKICB0ZW1wbGF0ZSB3aXRoIGAlTUFDUk8lYCBwbGFjZWhvbGRlcnMuCi0gYFRFWFRfVEVNUExBVEVgIChzdHJpbmcsIG9wdGlvbmFsKTogUGxhaW4tYm9keSB0ZW1wbGF0ZS4KLSBgSFRNTF9URU1QTEFURWAgKHN0cmluZywgb3B0aW9uYWwpOiBIVE1MLWJvZHkgdGVtcGxhdGUuCi0gYENPTExFQ1RJT05gIChqc29uLCByZXF1aXJlZCk6IEdlbmVyaWMgSlNPTiBtZXRhZGF0YTsKICBwYXNzIGAne30nYCB3aGVuIG5vIG1ldGFkYXRhIGlzIG5lZWRlZC4KCiMjIFJldHVybnMKCi0gYHRlbXBsYXRlX2lkYDogVGhlIG5ld2x5IGluc2VydGVkIHRlbXBsYXRlIHByaW1hcnkga2V5LgoKIyMgVGFibGVzCgotIGBtYWlsX3RlbXBsYXRlc2AgKG1pZ3JhdGlvbiAxMjE3KS4KCiMjIFNlY3VyaXR5IE5vdGVzCgotIGBxdWVyeV90eXBlX2EyOGAgaXMgYFRZUEVfSU5URVJOQUxfU1FMYCAoMCkgc28gdGhpcyBxdWVyeQogIGlzIG5vdCByZWFjaGFibGUgdmlhIHRoZSBSRVNUIEFQSS4K'',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1235
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1235
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1236: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1236.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     106                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClVQREFURSBtYWlsX3RlbXBsYXRlcwpTRVQKICAgIHRlbXBsYXRlX2tleSA9IDpURU1QTEFURV9LRVksCiAgICBuYW1lID0gOk5BTUUsCiAgICBzdGF0dXNfYTY0ID0gOlNUQVRVU19BNjQsCiAgICBzdWJqZWN0X3RlbXBsYXRlID0gOlNVQkpFQ1RfVEVNUExBVEUsCiAgICB0ZXh0X3RlbXBsYXRlID0gOlRFWFRfVEVNUExBVEUsCiAgICBodG1sX3RlbXBsYXRlID0gOkhUTUxfVEVNUExBVEUsCiAgICBjb2xsZWN0aW9uID0gOkNPTExFQ1RJT04sCiAgICB1cGRhdGVkX2F0ID0gQ1VSUkVOVF9USU1FU1RBTVAKV0hFUkUKICAgIHRlbXBsYXRlX2lkID0gOlRFTVBMQVRFX0lECg=='',''base64'')                                                                AS code,
+--     ''Update Mail Template''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzEwNiAtIFVwZGF0ZSBNYWlsIFRlbXBsYXRlCgpVcGRhdGVzIGFuIGV4aXN0aW5nIG1haWwgdGVtcGxhdGUuIFRoZSBgdGVtcGxhdGVfaWRgCmlkZW50aWZpZXMgdGhlIHJvdyB0byB1cGRhdGU7IGFsbCBvdGhlciBmaWVsZHMgYXJlCnJlcGxhY2VkLgoKIyMgUGFyYW1ldGVycwoKLSBgVEVNUExBVEVfSURgIChpbnRlZ2VyLCByZXF1aXJlZCk6IFRlbXBsYXRlIHJvdyB0byB1cGRhdGUuCi0gYFRFTVBMQVRFX0tFWWAgKHN0cmluZywgcmVxdWlyZWQpOiBVbmlxdWUgZXh0ZXJuYWwKICBpZGVudGlmaWVyLgotIGBOQU1FYCAoc3RyaW5nLCByZXF1aXJlZCk6IEh1bWFuLXJlYWRhYmxlIHRlbXBsYXRlIG5hbWUuCi0gYFNUQVRVU19BNjRgIChzbWFsbGludCwgcmVxdWlyZWQpOiBUZW1wbGF0ZSBzdGF0dXMgZnJvbQogIExvb2t1cCAwNjQuCi0gYFNVQkpFQ1RfVEVNUExBVEVgIChzdHJpbmcsIHJlcXVpcmVkKTogU3ViamVjdCBsaW5lCiAgdGVtcGxhdGUuCi0gYFRFWFRfVEVNUExBVEVgIChzdHJpbmcsIG9wdGlvbmFsKTogUGxhaW4tYm9keSB0ZW1wbGF0ZS4KLSBgSFRNTF9URU1QTEFURWAgKHN0cmluZywgb3B0aW9uYWwpOiBIVE1MLWJvZHkgdGVtcGxhdGUuCi0gYENPTExFQ1RJT05gIChqc29uLCByZXF1aXJlZCk6IEdlbmVyaWMgSlNPTiBtZXRhZGF0YS4KCiMjIFJldHVybnMKCi0gTm8gcmVzdWx0IHJvd3MuCgojIyBUYWJsZXMKCi0gYG1haWxfdGVtcGxhdGVzYCAobWlncmF0aW9uIDEyMTcpLgoKIyMgU2VjdXJpdHkgTm90ZXMKCi0gYHF1ZXJ5X3R5cGVfYTI4YCBpcyBgVFlQRV9JTlRFUk5BTF9TUUxgICgwKSBzbyB0aGlzIHF1ZXJ5CiAgaXMgbm90IHJlYWNoYWJsZSB2aWEgdGhlIFJFU1QgQVBJLgo='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1236
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1236
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1237: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1237.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     107                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClVQREFURSBtYWlsX3RlbXBsYXRlcwpTRVQKICAgIHN0YXR1c19hNjQgPSAwLAogICAgdXBkYXRlZF9hdCA9IENVUlJFTlRfVElNRVNUQU1QCldIRVJFCiAgICB0ZW1wbGF0ZV9pZCA9IDpURU1QTEFURV9JRAo='',''base64'')                                                                AS code,
+--     ''Soft Delete Mail Template''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzEwNyAtIFNvZnQgRGVsZXRlIE1haWwgVGVtcGxhdGUKClNvZnQtZGVsZXRlcyBhIG1haWwgdGVtcGxhdGUgYnkgc2V0dGluZyBpdHMgc3RhdHVzIHRvCmluYWN0aXZlIChgc3RhdHVzX2E2NCA9IDBgKS4gVGhlIHJvdyBpcyByZXRhaW5lZCBmb3IgYXVkaXQKYW5kIHJlZmVyZW50aWFsIHNhZmV0eS4KCiMjIFBhcmFtZXRlcnMKCi0gYFRFTVBMQVRFX0lEYCAoaW50ZWdlciwgcmVxdWlyZWQpOiBUZW1wbGF0ZSByb3cgdG8gc29mdAogIGRlbGV0ZS4KCiMjIFJldHVybnMKCi0gTm8gcmVzdWx0IHJvd3MuCgojIyBUYWJsZXMKCi0gYG1haWxfdGVtcGxhdGVzYCAobWlncmF0aW9uIDEyMTcpLgoKIyMgU2VjdXJpdHkgTm90ZXMKCi0gYHF1ZXJ5X3R5cGVfYTI4YCBpcyBgVFlQRV9JTlRFUk5BTF9TUUxgICgwKSBzbyB0aGlzIHF1ZXJ5CiAgaXMgbm90IHJlYWNoYWJsZSB2aWEgdGhlIFJFU1QgQVBJLgo='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1237
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1237
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1238: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1238.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     108                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     BROTLI_DECOMPRESS(CRYPTO_DECODE(''G3kEAMSCdfUtaeIb6QClfYB/v02Yh75WyNT4dCbXTUMTQywRf+SWyCthb1OoIjYIgjnTSt03EC9UrwMT7nm/AgFAwIch1JpwfANG3qJEGHROVg1qHNf/ShwKPB/0q6zAAxuWXOL5avVIaAkGv65FRTt7sjW8veTNv2XYao8365VBpx2ksJ4ESXm9+ny1/gkka7nyzr4fz7fra91c/mIeb1A0zM8zY2mc1iuev64wA6pmn8WeqxEQtbvGkhU+cisHErviaGrPX3QuE4DIcoIqjVkr8kIkew4l8n/JE2wlkpSSI+Ql7OtyDa0yqmhPW1zWXzJKATxT/lAqYa7EBfuTxLhW+xO/lgtsKQU82UIR95Y9rt6EdZkFWQ4zOlptcuwVdR16FvHn5z1xdI3fb/isf+dYyTMYvZMijOxNFF2/9u6/yoroJa60hY7Rj47vxUpzK8QNawVD8Ga9IWEGxdQnPVmOLPKYvckOgdEikfSnHo0ptC5jwGdTAg=='',''base64''))                                                                AS code,
+--     ''Insert Mail Event''                                                     AS name,
+--     BROTLI_DECOMPRESS(CRYPTO_DECODE(''GzkFAMTk/as+TTUL4EBVyftSbiH7fr/9kKmVSE2791zMNOqT6WSTSCREiP8/hnPvtAExMkGFdpK/vLseCr3uFK32nhFzQotPEn29uoBB5m7wz5goaSItsgzLJvMBl4qT7J1cWUi7JL7i02CUJIlWfrEZj3CErqCqxmINJnMgUN3n0MHR5LQGhKe7C5cUJk4nDP4fciI49nQ+CT03RIVC680Dohakq8TL/HD1J6g2EqntLFXb979F4+bJ38k5RUGFhA1Qdh9ii81LrS2/7m6x2UmDvENHyICEe8pvpAiKCuKam40qoJ/Hb/DZ5eX7EdFAMhwUtTfUmW+Uj/2OPoE/X7bMlVhufeqDwjw9bY5/MLbmBVUaZbRA/EZ2uqMegTcXaKRkMnfFtpT/I3PcuetA55ibDQCdgkFbX+HPq98DYyEB82B9Af9A650dMNQF/GolUk0YstHQxssOIzR8unu6Ak1URmV3r20K90DDIDX2XFPq1PWzl1fnL1/PF5A0e6EmcRf2Tw3E7k6g927XfXp9+bw6uPnnyRUabiHKJNSMIJHu5jVkgL9xIMyWCFJ2MycpmBBMWNXYJrX58UiYbnLoCG0mU22e0YT/kAhPaIGSMMcit0ZakkGVARr2+v1uTYSO0GSWS4qkD+Bn2v4fm/5UEC4gn3+vV9xv6zx/vEFBv1vDQsNZvMcJfy9kukwuhlYk+QezvtI/e71rEw=='',''base64''))
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1238
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1238
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1239: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1239.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     109                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     2                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClNFTEVDVAogICAgZXZlbnRfaWQsCiAgICBldmVudF9rZXksCiAgICBzdGF0dXNfYTY1LAogICAgdGVtcGxhdGVfa2V5LAogICAgZnJvbV9hZGRyLAogICAgcmVwbHlfdG8sCiAgICByZWNpcGllbnRzX2pzb24sCiAgICBzdWJqZWN0LAogICAgYm9keV90ZXh0LAogICAgYm9keV9odG1sLAogICAgaGVhZGVyc19qc29uLAogICAgcGFyYW1zX2pzb24sCiAgICBkZWJvdW5jZV9rZXksCiAgICBpZGVtcG90ZW5jeV9rZXksCiAgICBwcmlvcml0eSwKICAgIHF1ZXVlX2lkLAogICAgcHJvY2Vzc2VkX2F0LAogICAgICAgICAgICAgICAgICAgICAgICAgICAgdmFsaWRfYWZ0ZXIsCiAgICB2YWxpZF91bnRpbCwKICAgIGNyZWF0ZWRfaWQsCiAgICBjcmVhdGVkX2F0LAogICAgdXBkYXRlZF9pZCwKICAgIHVwZGF0ZWRfYXQKCkZST00KICAgIG1haWxfZXZlbnRzCldIRVJFCiAgICBzdGF0dXNfYTY1ID0gMApPUkRFUiBCWQogICAgY3JlYXRlZF9hdCBBU0MsCiAgICBldmVudF9pZCBBU0MK'',''base64'')                                                                AS code,
+--     ''List Pending Mail Events''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzEwOSAtIExpc3QgUGVuZGluZyBNYWlsIEV2ZW50cwoKTGlzdHMgcGVuZGluZyBtYWlsIGV2ZW50cyAoYHN0YXR1c19hNjUgPSAwYCkgaW4KY3JlYXRpb24gb3JkZXIgc28gdGhlIGV2ZW50IHByb2Nlc3NvciBjYW4gY29udmVydCB0aGVtCmludG8gcXVldWVkIG1lc3NhZ2VzLgoKIyMgUGFyYW1ldGVycwoKLSBOb25lLgoKIyMgUmV0dXJucwoKLSBBbGwgY29sdW1ucyBmcm9tIGBtYWlsX2V2ZW50c2AgZm9yIHBlbmRpbmcKICBldmVudHMuCgojIyBUYWJsZXMKCi0gYG1haWxfZXZlbnRzYCAobWlncmF0aW9uIDEyMjApLgoKIyMgU2VjdXJpdHkgTm90ZXMKCi0gYHF1ZXJ5X3R5cGVfYTI4YCBpcyBgVFlQRV9JTlRFUk5BTF9TUUxgICgwKSBzbyB0aGlzIHF1ZXJ5CiAgaXMgbm90IHJlYWNoYWJsZSB2aWEgdGhlIFJFU1QgQVBJLgo='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1239
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1239
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1240: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1240.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     110                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClVQREFURSBtYWlsX2V2ZW50cwpTRVQKICAgIHN0YXR1c19hNjUgPSA6U1RBVFVTX0E2NSwKICAgIHF1ZXVlX2lkID0gOlFVRVVFX0lELAogICAgcHJvY2Vzc2VkX2F0ID0gQ1VSUkVOVF9USU1FU1RBTVAsCiAgICB1cGRhdGVkX2F0ID0gQ1VSUkVOVF9USU1FU1RBTVAKV0hFUkUKICAgIGV2ZW50X2lkID0gOkVWRU5UX0lECg=='',''base64'')                                                                AS code,
+--     ''Mark Mail Event Processed or Queued''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzExMCAtIE1hcmsgTWFpbCBFdmVudCBQcm9jZXNzZWQgb3IgUXVldWVkCgpNYXJrcyBhIG1haWwgZXZlbnQgYXMgcHJvY2Vzc2VkL3F1ZXVlZCAoYHN0YXR1c19hNjUgPSAxYApvciBgMmApIGFuZCByZWNvcmRzIHRoZSBhc3NvY2lhdGVkIGBtYWlsX3F1ZXVlLnF1ZXVlX2lkYAphbmQgYHByb2Nlc3NlZF9hdGAgdGltZXN0YW1wLgoKIyMgUGFyYW1ldGVycwoKLSBgRVZFTlRfSURgIChpbnRlZ2VyLCByZXF1aXJlZCk6IEV2ZW50IHJvdyB0byB1cGRhdGUuCi0gYFNUQVRVU19BNjVgIChzbWFsbGludCwgcmVxdWlyZWQpOiBOZXcgZXZlbnQgc3RhdHVzIGZyb20KICBMb29rdXAgMDY1ICgxID0gcXVldWVkLCAyID0gc2VudCkuCi0gYFFVRVVFX0lEYCAoaW50ZWdlciwgcmVxdWlyZWQpOiBUaGUgcXVldWUgcm93IGNyZWF0ZWQKICBmcm9tIHRoaXMgZXZlbnQuCgojIyBSZXR1cm5zCgotIE5vIHJlc3VsdCByb3dzLgoKIyMgVGFibGVzCgotIGBtYWlsX2V2ZW50c2AgKG1pZ3JhdGlvbiAxMjIwKS4KCiMjIFNlY3VyaXR5IE5vdGVzCgotIGBxdWVyeV90eXBlX2EyOGAgaXMgYFRZUEVfSU5URVJOQUxfU1FMYCAoMCkgc28gdGhpcyBxdWVyeQogIGlzIG5vdCByZWFjaGFibGUgdmlhIHRoZSBSRVNUIEFQSS4K'',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1240
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1240
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1241: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1241.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     111                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClVQREFURSBtYWlsX2V2ZW50cwpTRVQKICAgIHN0YXR1c19hNjUgPSA0LAogICAgcHJvY2Vzc2VkX2F0ID0gQ1VSUkVOVF9USU1FU1RBTVAsCiAgICB1cGRhdGVkX2F0ID0gQ1VSUkVOVF9USU1FU1RBTVAKV0hFUkUKICAgIGV2ZW50X2lkID0gOkVWRU5UX0lECg=='',''base64'')                                                                AS code,
+--     ''Mark Mail Event Suppressed''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzExMSAtIE1hcmsgTWFpbCBFdmVudCBTdXBwcmVzc2VkCgpNYXJrcyBhIG1haWwgZXZlbnQgYXMgc3VwcHJlc3NlZCAoYHN0YXR1c19hNjUgPSA0YCkgYW5kCnJlY29yZHMgdGhlIGBwcm9jZXNzZWRfYXRgIHRpbWVzdGFtcC4gQSBzdXBwcmVzc2VkIGV2ZW50CmlzIG5vdCBjb252ZXJ0ZWQgaW50byBhIHF1ZXVlZCBtZXNzYWdlLgoKIyMgUGFyYW1ldGVycwoKLSBgRVZFTlRfSURgIChpbnRlZ2VyLCByZXF1aXJlZCk6IEV2ZW50IHJvdyB0byBzdXBwcmVzcy4KCiMjIFJldHVybnMKCi0gTm8gcmVzdWx0IHJvd3MuCgojIyBUYWJsZXMKCi0gYG1haWxfZXZlbnRzYCAobWlncmF0aW9uIDEyMjApLgoKIyMgU2VjdXJpdHkgTm90ZXMKCi0gYHF1ZXJ5X3R5cGVfYTI4YCBpcyBgVFlQRV9JTlRFUk5BTF9TUUxgICgwKSBzbyB0aGlzIHF1ZXJ5CiAgaXMgbm90IHJlYWNoYWJsZSB2aWEgdGhlIFJFU1QgQVBJLgo='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1241
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1241
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1242: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1242.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     112                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''Ci0tICBvdHBfaWQgCiAgICBJTlNFUlQgSU5UTyBtYWlsX290cF9jb2RlcyAoCiAgICAgICAgb3RwX2lkLAogICAgICAgIGNvZGVfaGFzaCwKICAgICAgICBlbWFpbCwKICAgICAgICBhY2NvdW50X2lkLAogICAgICAgIHB1cnBvc2VfYTY2LAogICAgICAgIHN0YXR1c19hNjcsCiAgICAgICAgZXhwaXJ5X2F0LAogICAgICAgIGF0dGVtcHRzLAogICAgICAgIG1heF9hdHRlbXB0cywKICAgICAgICBjb25zdW1lZF9hdCwKICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICB2YWxpZF9hZnRlciwKICAgIHZhbGlkX3VudGlsLAogICAgY3JlYXRlZF9pZCwKICAgIGNyZWF0ZWRfYXQsCiAgICB1cGRhdGVkX2lkLAogICAgdXBkYXRlZF9hdAoKICAgICkKICAgIFdJVEggbmV4dF9vdHBfaWQgQVMgKAogICAgICAgIFNFTEVDVCBDT0FMRVNDRShNQVgob3RwX2lkKSwgMCkgKyAxIEFTIG5ld19vdHBfaWQKICAgICAgICBGUk9NIG1haWxfb3RwX2NvZGVzCiAgICApCiAgICBTRUxFQ1QKICAgICAgICBuZXdfb3RwX2lkLAogICAgICAgIDpDT0RFX0hBU0gsCiAgICAgICAgOkVNQUlMLAogICAgICAgIDpBQ0NPVU5UX0lELAogICAgICAgIDpQVVJQT1NFX0E2NiwKICAgICAgICAwLAogICAgICAgIDpFWFBJUllfQVQsCiAgICAgICAgMCwKICAgICAgICA6TUFYX0FUVEVNUFRTLAogICAgICAgIE5VTEwsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgTlVMTCwKICAgIE5VTEwsCiAgICAwLAogICAgQ1VSUkVOVF9USU1FU1RBTVAsCiAgICAwLAogICAgQ1VSUkVOVF9USU1FU1RBTVAKCiAgICBGUk9NIG5leHRfb3RwX2lkClJFVFVSTklORyAgb3RwX2lkCjsK'',''base64'')                                                                AS code,
+--     ''Insert OTP Code''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzExMiAtIEluc2VydCBPVFAgQ29kZQoKSW5zZXJ0cyBhIG5ldyBvbmUtdGltZSBwYXNzd29yZCBjb2RlIGludG8KYG1haWxfb3RwX2NvZGVzYC4gT25seSB0aGUgaGFzaCBvZiB0aGUgY29kZSBpcwpzdG9yZWQ7IHRoZSBwbGFpbnRleHQgY29kZSBtdXN0IG5ldmVyIGJlIHBlcnNpc3RlZC4KCiMjIFBhcmFtZXRlcnMKCi0gYENPREVfSEFTSGAgKHN0cmluZywgcmVxdWlyZWQpOiBIYXNoIG9mIHRoZSBpc3N1ZWQgT1RQLgotIGBFTUFJTGAgKHN0cmluZywgcmVxdWlyZWQpOiBBZGRyZXNzIHRoZSBPVFAgd2FzIHNlbnQgdG8uCi0gYEFDQ09VTlRfSURgIChpbnRlZ2VyLCBvcHRpb25hbCk6IEFjY291bnQgcmVmZXJlbmNlIHdoZW4KICB0aGUgT1RQIGlzIHRpZWQgdG8gYSBrbm93biBhY2NvdW50LgotIGBQVVJQT1NFX0E2NmAgKHNtYWxsaW50LCByZXF1aXJlZCk6IE9UUCBwdXJwb3NlIGZyb20KICBMb29rdXAgMDY2ICgwPWxvZ2luX21mYSwgMT1lbWFpbF92ZXJpZnksIDI9cGFzc3dvcmRfcmVzZXQpLgotIGBFWFBJUllfQVRgICh0aW1lc3RhbXAsIHJlcXVpcmVkKTogVGltZSBhZnRlciB3aGljaCB0aGUKICBPVFAgaXMgbm8gbG9uZ2VyIHZhbGlkLgotIGBNQVhfQVRURU1QVFNgIChzbWFsbGludCwgcmVxdWlyZWQpOiBNYXhpbXVtIGFsbG93ZWQKICB2ZXJpZmljYXRpb24gYXR0ZW1wdHMuCgojIyBSZXR1cm5zCgotIGBvdHBfaWRgOiBUaGUgbmV3bHkgaW5zZXJ0ZWQgT1RQIHByaW1hcnkga2V5LgoKIyMgVGFibGVzCgotIGBtYWlsX290cF9jb2Rlc2AgKG1pZ3JhdGlvbiAxMjIxKS4KCiMjIFNlY3VyaXR5IE5vdGVzCgotIGBxdWVyeV90eXBlX2EyOGAgaXMgYFRZUEVfSU5URVJOQUxfU1FMYCAoMCkgc28gdGhpcyBxdWVyeQogIGlzIG5vdCByZWFjaGFibGUgdmlhIHRoZSBSRVNUIEFQSS4KLSBUaGUgcGxhaW50ZXh0IE9UUCBpcyBuZXZlciBzdG9yZWQ7IG9ubHkgYGNvZGVfaGFzaGAgaXMKICBwZXJzaXN0ZWQuCg=='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1242
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1242
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1243: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1243.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     113                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     2                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClNFTEVDVAogICAgb3RwX2lkLAogICAgY29kZV9oYXNoLAogICAgZW1haWwsCiAgICBhY2NvdW50X2lkLAogICAgcHVycG9zZV9hNjYsCiAgICBzdGF0dXNfYTY3LAogICAgZXhwaXJ5X2F0LAogICAgYXR0ZW1wdHMsCiAgICBtYXhfYXR0ZW1wdHMsCiAgICBjb25zdW1lZF9hdCwKICAgICAgICAgICAgICAgICAgICAgICAgICAgIHZhbGlkX2FmdGVyLAogICAgdmFsaWRfdW50aWwsCiAgICBjcmVhdGVkX2lkLAogICAgY3JlYXRlZF9hdCwKICAgIHVwZGF0ZWRfaWQsCiAgICB1cGRhdGVkX2F0CgpGUk9NCiAgICBtYWlsX290cF9jb2RlcwpXSEVSRQogICAgZW1haWwgPSA6RU1BSUwKICAgIEFORCBwdXJwb3NlX2E2NiA9IDpQVVJQT1NFX0E2NgogICAgQU5EIHN0YXR1c19hNjcgPSAwCk9SREVSIEJZCiAgICBjcmVhdGVkX2F0IERFU0MsCiAgICBvdHBfaWQgREVTQwo='',''base64'')                                                                AS code,
+--     ''Get Active OTP by Email and Purpose''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzExMyAtIEdldCBBY3RpdmUgT1RQIGJ5IEVtYWlsIGFuZCBQdXJwb3NlCgpSZXRyaWV2ZXMgdGhlIGFjdGl2ZSBPVFAgcm93IGZvciBhIGdpdmVuIGVtYWlsIGFuZApwdXJwb3NlLiBNdWx0aXBsZSBhY3RpdmUgcm93cyBzaG91bGQgbm90IG5vcm1hbGx5IGV4aXN0Owp0aGUgcmVzdWx0IGlzIG9yZGVyZWQgbmV3ZXN0LWZpcnN0LgoKIyMgUGFyYW1ldGVycwoKLSBgRU1BSUxgIChzdHJpbmcsIHJlcXVpcmVkKTogQWRkcmVzcyB0aGUgT1RQIHdhcyBzZW50IHRvLgotIGBQVVJQT1NFX0E2NmAgKHNtYWxsaW50LCByZXF1aXJlZCk6IE9UUCBwdXJwb3NlIGZyb20KICBMb29rdXAgMDY2LgoKIyMgUmV0dXJucwoKLSBBbGwgY29sdW1ucyBmcm9tIGBtYWlsX290cF9jb2Rlc2AgZm9yIHRoZQogIG1hdGNoaW5nIGFjdGl2ZSBPVFAuCgojIyBUYWJsZXMKCi0gYG1haWxfb3RwX2NvZGVzYCAobWlncmF0aW9uIDEyMjEpLgoKIyMgU2VjdXJpdHkgTm90ZXMKCi0gYHF1ZXJ5X3R5cGVfYTI4YCBpcyBgVFlQRV9JTlRFUk5BTF9TUUxgICgwKSBzbyB0aGlzIHF1ZXJ5CiAgaXMgbm90IHJlYWNoYWJsZSB2aWEgdGhlIFJFU1QgQVBJLgo='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1243
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1243
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1244: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1244.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     114                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClVQREFURSBtYWlsX290cF9jb2RlcwpTRVQKICAgIHN0YXR1c19hNjcgPSAxLAogICAgY29uc3VtZWRfYXQgPSBDVVJSRU5UX1RJTUVTVEFNUCwKICAgIHVwZGF0ZWRfYXQgPSBDVVJSRU5UX1RJTUVTVEFNUApXSEVSRQogICAgb3RwX2lkID0gOk9UUF9JRAogICAgQU5EIHN0YXR1c19hNjcgPSAwCg=='',''base64'')                                                                AS code,
+--     ''Consume OTP Code''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzExNCAtIENvbnN1bWUgT1RQIENvZGUKCk1hcmtzIGFuIGFjdGl2ZSBPVFAgY29kZSBhcyBjb25zdW1lZCAoYHN0YXR1c19hNjcgPSAxYCkKYW5kIHJlY29yZHMgdGhlIGNvbnN1bXB0aW9uIHRpbWVzdGFtcC4KCiMjIFBhcmFtZXRlcnMKCi0gYE9UUF9JRGAgKGludGVnZXIsIHJlcXVpcmVkKTogT1RQIHJvdyB0byBjb25zdW1lLgoKIyMgUmV0dXJucwoKLSBObyByZXN1bHQgcm93cy4gVGhlIGNhbGxlciBjaGVja3MgYWZmZWN0ZWQtcm93IGNvdW50IHRvCiAgZW5zdXJlIHRoZSBPVFAgd2FzIHN0aWxsIGFjdGl2ZS4KCiMjIFRhYmxlcwoKLSBgbWFpbF9vdHBfY29kZXNgIChtaWdyYXRpb24gMTIyMSkuCgojIyBTZWN1cml0eSBOb3RlcwoKLSBgcXVlcnlfdHlwZV9hMjhgIGlzIGBUWVBFX0lOVEVSTkFMX1NRTGAgKDApIHNvIHRoaXMgcXVlcnkKICBpcyBub3QgcmVhY2hhYmxlIHZpYSB0aGUgUkVTVCBBUEkuCg=='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1244
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1244
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1245: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1245.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     115                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClVQREFURSBtYWlsX290cF9jb2RlcwpTRVQKICAgIGF0dGVtcHRzID0gYXR0ZW1wdHMgKyAxLAogICAgdXBkYXRlZF9hdCA9IENVUlJFTlRfVElNRVNUQU1QCldIRVJFCiAgICBvdHBfaWQgPSA6T1RQX0lECg=='',''base64'')                                                                AS code,
+--     ''Increment OTP Attempts''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzExNSAtIEluY3JlbWVudCBPVFAgQXR0ZW1wdHMKCkluY3JlbWVudHMgdGhlIHZlcmlmaWNhdGlvbi1hdHRlbXB0IGNvdW50ZXIgZm9yIGFuIE9UUApyb3cuCgojIyBQYXJhbWV0ZXJzCgotIGBPVFBfSURgIChpbnRlZ2VyLCByZXF1aXJlZCk6IE9UUCByb3cgdG8gdXBkYXRlLgoKIyMgUmV0dXJucwoKLSBObyByZXN1bHQgcm93cy4KCiMjIFRhYmxlcwoKLSBgbWFpbF9vdHBfY29kZXNgIChtaWdyYXRpb24gMTIyMSkuCgojIyBTZWN1cml0eSBOb3RlcwoKLSBgcXVlcnlfdHlwZV9hMjhgIGlzIGBUWVBFX0lOVEVSTkFMX1NRTGAgKDApIHNvIHRoaXMgcXVlcnkKICBpcyBub3QgcmVhY2hhYmxlIHZpYSB0aGUgUkVTVCBBUEkuCg=='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1245
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1245
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1246: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1246.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     116                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClVQREFURSBtYWlsX290cF9jb2RlcwpTRVQKICAgIHN0YXR1c19hNjcgPSAyLAogICAgdXBkYXRlZF9hdCA9IENVUlJFTlRfVElNRVNUQU1QCldIRVJFCiAgICBzdGF0dXNfYTY3ID0gMAogICAgQU5EIGV4cGlyeV9hdCA8IENVUlJFTlRfVElNRVNUQU1QCg=='',''base64'')                                                                AS code,
+--     ''Expire Old OTP Codes''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzExNiAtIEV4cGlyZSBPbGQgT1RQIENvZGVzCgpFeHBpcmVzIGFsbCBhY3RpdmUgT1RQIGNvZGVzIHdob3NlIGBleHBpcnlfYXRgIHRpbWVzdGFtcAppcyBpbiB0aGUgcGFzdCBieSBzZXR0aW5nIGBzdGF0dXNfYTY3ID0gMmAuCgojIyBQYXJhbWV0ZXJzCgotIE5vbmUuCgojIyBSZXR1cm5zCgotIE5vIHJlc3VsdCByb3dzLiBUaGUgY2FsbGVyIGNoZWNrcyBhZmZlY3RlZC1yb3cgY291bnQuCgojIyBUYWJsZXMKCi0gYG1haWxfb3RwX2NvZGVzYCAobWlncmF0aW9uIDEyMjEpLgoKIyMgU2VjdXJpdHkgTm90ZXMKCi0gYHF1ZXJ5X3R5cGVfYTI4YCBpcyBgVFlQRV9JTlRFUk5BTF9TUUxgICgwKSBzbyB0aGlzIHF1ZXJ5CiAgaXMgbm90IHJlYWNoYWJsZSB2aWEgdGhlIFJFU1QgQVBJLgo='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1246
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1246
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1247: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1247.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     117                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     2                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClNFTEVDVAogICAgb3RwX2lkLAogICAgY29kZV9oYXNoLAogICAgZW1haWwsCiAgICBhY2NvdW50X2lkLAogICAgcHVycG9zZV9hNjYsCiAgICBzdGF0dXNfYTY3LAogICAgZXhwaXJ5X2F0LAogICAgYXR0ZW1wdHMsCiAgICBtYXhfYXR0ZW1wdHMsCiAgICBjb25zdW1lZF9hdCwKICAgICAgICAgICAgICAgICAgICAgICAgICAgIHZhbGlkX2FmdGVyLAogICAgdmFsaWRfdW50aWwsCiAgICBjcmVhdGVkX2lkLAogICAgY3JlYXRlZF9hdCwKICAgIHVwZGF0ZWRfaWQsCiAgICB1cGRhdGVkX2F0CgpGUk9NCiAgICBtYWlsX290cF9jb2RlcwpXSEVSRQogICAgb3RwX2lkID0gOk9UUF9JRAo='',''base64'')                                                                AS code,
+--     ''Get OTP by ID''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzExNyAtIEdldCBPVFAgYnkgSUQKClJldHJpZXZlcyBhIHNpbmdsZSBPVFAgcm93IGJ5IGl0cyBwcmltYXJ5IGtleS4KCiMjIFBhcmFtZXRlcnMKCi0gYE9UUF9JRGAgKGludGVnZXIsIHJlcXVpcmVkKTogT1RQIHByaW1hcnkga2V5LgoKIyMgUmV0dXJucwoKLSBBbGwgY29sdW1ucyBmcm9tIGBtYWlsX290cF9jb2Rlc2AgZm9yIHRoZQogIG1hdGNoaW5nIHJvdy4KCiMjIFRhYmxlcwoKLSBgbWFpbF9vdHBfY29kZXNgIChtaWdyYXRpb24gMTIyMSkuCgojIyBTZWN1cml0eSBOb3RlcwoKLSBgcXVlcnlfdHlwZV9hMjhgIGlzIGBUWVBFX0lOVEVSTkFMX1NRTGAgKDApIHNvIHRoaXMgcXVlcnkKICBpcyBub3QgcmVhY2hhYmxlIHZpYSB0aGUgUkVTVCBBUEkuCg=='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1247
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1247
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1248: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1248.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     118                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     2                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClNFTEVDVAogICAgcm91dGVfaWQsCiAgICBzdGF0dXNfYTY4LAogICAgc291cmNlX25ldHdvcmssCiAgICBzZW5kZXJfZG9tYWluLAogICAgc2VuZGVyX3BhdHRlcm4sCiAgICByZWNpcGllbnRfZG9tYWluLAogICAgcmVjaXBpZW50X3BhdHRlcm4sCiAgICBhdXRoX3JlcXVpcmVkLAogICAgcmVxdWlyZV90bHMsCiAgICB0ZW1wbGF0ZV9rZXksCiAgICByZXdyaXRlX2Zyb20sCiAgICByZXdyaXRlX3RvLAogICAgYWRkX3JlY2lwaWVudHNfanNvbiwKICAgIHByaW9yaXR5LAogICAgc29ydF9zZXEsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICB2YWxpZF9hZnRlciwKICAgIHZhbGlkX3VudGlsLAogICAgY3JlYXRlZF9pZCwKICAgIGNyZWF0ZWRfYXQsCiAgICB1cGRhdGVkX2lkLAogICAgdXBkYXRlZF9hdAoKRlJPTQogICAgbWFpbF9yb3V0ZXMKV0hFUkUKICAgIHN0YXR1c19hNjggPSAxCiAgICBBTkQgc2VuZGVyX2RvbWFpbiA9IDpTRU5ERVJfRE9NQUlOCk9SREVSIEJZCiAgICBwcmlvcml0eSBERVNDLAogICAgc29ydF9zZXEgQVNDCg=='',''base64'')                                                                AS code,
+--     ''Get Active Inbound Route by Sender Domain''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzExOCAtIEdldCBBY3RpdmUgSW5ib3VuZCBSb3V0ZSBieSBTZW5kZXIgRG9tYWluCgpSZXRyaWV2ZXMgYWN0aXZlIGluYm91bmQgU01UUCByb3V0ZXMgbWF0Y2hpbmcgYSBzZW5kZXIKZG9tYWluLCBvcmRlcmVkIGJ5IHByaW9yaXR5IChoaWdoZXN0IGZpcnN0KSBhbmQgc29ydApzZXF1ZW5jZS4KCiMjIFBhcmFtZXRlcnMKCi0gYFNFTkRFUl9ET01BSU5gIChzdHJpbmcsIHJlcXVpcmVkKTogU2VuZGVyIGRvbWFpbiB0bwogIG1hdGNoLgoKIyMgUmV0dXJucwoKLSBBbGwgY29sdW1ucyBmcm9tIGBtYWlsX3JvdXRlc2AgZm9yIG1hdGNoaW5nCiAgYWN0aXZlIHJvdXRlcy4KCiMjIFRhYmxlcwoKLSBgbWFpbF9yb3V0ZXNgIChtaWdyYXRpb24gMTIyMikuCgojIyBTZWN1cml0eSBOb3RlcwoKLSBgcXVlcnlfdHlwZV9hMjhgIGlzIGBUWVBFX0lOVEVSTkFMX1NRTGAgKDApIHNvIHRoaXMgcXVlcnkKICBpcyBub3QgcmVhY2hhYmxlIHZpYSB0aGUgUkVTVCBBUEkuCg=='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1248
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1248
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1249: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1249.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     119                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     2                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClNFTEVDVAogICAgcm91dGVfaWQsCiAgICBzdGF0dXNfYTY4LAogICAgc291cmNlX25ldHdvcmssCiAgICBzZW5kZXJfZG9tYWluLAogICAgc2VuZGVyX3BhdHRlcm4sCiAgICByZWNpcGllbnRfZG9tYWluLAogICAgcmVjaXBpZW50X3BhdHRlcm4sCiAgICBhdXRoX3JlcXVpcmVkLAogICAgcmVxdWlyZV90bHMsCiAgICB0ZW1wbGF0ZV9rZXksCiAgICByZXdyaXRlX2Zyb20sCiAgICByZXdyaXRlX3RvLAogICAgYWRkX3JlY2lwaWVudHNfanNvbiwKICAgIHByaW9yaXR5LAogICAgc29ydF9zZXEsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICB2YWxpZF9hZnRlciwKICAgIHZhbGlkX3VudGlsLAogICAgY3JlYXRlZF9pZCwKICAgIGNyZWF0ZWRfYXQsCiAgICB1cGRhdGVkX2lkLAogICAgdXBkYXRlZF9hdAoKRlJPTQogICAgbWFpbF9yb3V0ZXMKV0hFUkUKICAgIHN0YXR1c19hNjggPSAxCk9SREVSIEJZCiAgICBwcmlvcml0eSBERVNDLAogICAgc29ydF9zZXEgQVNDCg=='',''base64'')                                                                AS code,
+--     ''List Active Inbound Routes''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzExOSAtIExpc3QgQWN0aXZlIEluYm91bmQgUm91dGVzCgpMaXN0cyBhbGwgYWN0aXZlIGluYm91bmQgU01UUCByb3V0ZXMgb3JkZXJlZCBieSBwcmlvcml0eQooaGlnaGVzdCBmaXJzdCkgYW5kIHNvcnQgc2VxdWVuY2UuCgojIyBQYXJhbWV0ZXJzCgotIE5vbmUuCgojIyBSZXR1cm5zCgotIEFsbCBjb2x1bW5zIGZyb20gYG1haWxfcm91dGVzYCBmb3IgYWN0aXZlIHJvdXRlcy4KCiMjIFRhYmxlcwoKLSBgbWFpbF9yb3V0ZXNgIChtaWdyYXRpb24gMTIyMikuCgojIyBTZWN1cml0eSBOb3RlcwoKLSBgcXVlcnlfdHlwZV9hMjhgIGlzIGBUWVBFX0lOVEVSTkFMX1NRTGAgKDApIHNvIHRoaXMgcXVlcnkKICBpcyBub3QgcmVhY2hhYmxlIHZpYSB0aGUgUkVTVCBBUEkuCg=='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1249
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1249
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1250: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1250.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     120                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     BROTLI_DECOMPRESS(CRYPTO_DECODE(''G30EAIzDuPE6bERE+9gUClAP+6u/kjb+oxPANAfQwjk7YDujJowMXAosTKpHqmr4PyCVCtc6M9v+h1gRRESD+fTZTtu33Mbnk7A4Zb+SSRLhw4JqTQFfhMnqKUcf8sm8WjVdi3k8qVdxE+LTsdr6slo/iH9705ARMTnlXvy6c+/n79eOH88WqW3xOj0PwNLhuP6by1SH4HnndF/XeHa14nHKJ+8q2fGuMGiqx4unCO0TH7IiI7LteJWyqIc6oUiH0S3nL5Vt2ECELGztkkQop6igjGJws/2UawaR/+fb2Uaxny86zezEsT50eRV0yaOQm72sv9NgFXy0slpCcDM5rPkUBKE4TVVxg2x9xWlSixPILWaDtWKrUOzBbvGdTTNyTMX0DA2/e9e9e58dDiq018wXqW4zaPQPtN7cpV6cOsh+okNwujfUGLSD2kKBhyr7/EfSHT1Zc5iq3oC+PFlsspnrH9/i4KrZRc7oKPsJi6kh7byoMqPXJZO+zBg='',''base64''))                                                                AS code,
+--     ''Insert Inbound Route''                                                     AS name,
+--     BROTLI_DECOMPRESS(CRYPTO_DECODE(''G9wFACwKbGPq0APaZ5fXTHN1UpJvgKIGUUABCw45g3PbCRNNMmlOH6Nu/AVUI1BEvt8OOFuBINo5bkbJ/F+U4L3BdN9lb2hmrVxTaP23l6REZB9ofAEVKvVTLfoazV8XYuUJIxt0kn8cDDXHtWHQe87Ob3XQSc5Rv+hj+GA5ngDd49p3T0rVirgNlWzIozJ0x496u0exNBsCZHDajpH8Sod99p4XWVChUPnjyXf8GD7DQxKG30bI7e1sFWByy6eiRp55RgVSzsHbTHJbQlh98eRE5y45pdqRm0PI9TKEMnMr/cNWuQPhYExNMecMPmWUhJ8FKxxHwMK1gCAzKUO1dhADZziAaEfhHTNr1sUw7egUNcQx7GFLo89q1wgcmyBs2TAIQRN731Fso1CqtyL3a0GETuBSnDN7N4xqX1OnIjnYMKmH98shYjL7fjF53uBg2ZMX/m9jgIOfJg/CIEjVweC3ypWTcKd8IhL3gAlDQ4evOY17QgkCCRtJ0Sybs4AMAwMwSgabv2Cp3/ayCW4jCWl87R6E0cX4XBFBhSHBcXQEtp49oKWBfVReoZY/kQLY1Z9zWvv9028/nIjgm5lLaqztKQ+y7y3pfpF0vFZjJBiBTXKK7SP+WQpqcmr5GssUJET1ekGCJc96c456AqIEbsfdPT0ZstW0/hVPzH6e0BfO6YWYcBBHlQRx9oFyv/NYGECINtnaW4kkckKNsz29K0KU0WaO67qKCtnmilGhUIlMKuJlPwGe7xaJZwzJO3YC1rIDOZ4RECriqoI4Zgh4lUt6tMkoooeKBNMymbSnAA=='',''base64''))
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1250
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1250
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1251: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1251.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     121                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClVQREFURSBtYWlsX3JvdXRlcwpTRVQKICAgIHN0YXR1c19hNjggPSA6U1RBVFVTX0E2OCwKICAgIHNvdXJjZV9uZXR3b3JrID0gOlNPVVJDRV9ORVRXT1JLLAogICAgc2VuZGVyX2RvbWFpbiA9IDpTRU5ERVJfRE9NQUlOLAogICAgc2VuZGVyX3BhdHRlcm4gPSA6U0VOREVSX1BBVFRFUk4sCiAgICByZWNpcGllbnRfZG9tYWluID0gOlJFQ0lQSUVOVF9ET01BSU4sCiAgICByZWNpcGllbnRfcGF0dGVybiA9IDpSRUNJUElFTlRfUEFUVEVSTiwKICAgIGF1dGhfcmVxdWlyZWQgPSA6QVVUSF9SRVFVSVJFRCwKICAgIHJlcXVpcmVfdGxzID0gOlJFUVVJUkVfVExTLAogICAgdGVtcGxhdGVfa2V5ID0gOlRFTVBMQVRFX0tFWSwKICAgIHJld3JpdGVfZnJvbSA9IDpSRVdSSVRFX0ZST00sCiAgICByZXdyaXRlX3RvID0gOlJFV1JJVEVfVE8sCiAgICBhZGRfcmVjaXBpZW50c19qc29uID0gOkFERF9SRUNJUElFTlRTX0pTT04sCiAgICBwcmlvcml0eSA9IDpQUklPUklUWSwKICAgIHNvcnRfc2VxID0gOlNPUlRfU0VRLAogICAgdXBkYXRlZF9hdCA9IENVUlJFTlRfVElNRVNUQU1QCldIRVJFCiAgICByb3V0ZV9pZCA9IDpST1VURV9JRAo='',''base64'')                                                                AS code,
+--     ''Update Inbound Route''                                                     AS name,
+--     BROTLI_DECOMPRESS(CRYPTO_DECODE(''GzEFAByH6cZHFqwjUumXTKUAYpGd/TbVBnD1RKBqLgDyLa3pam2lElpdfUOsuSWI+NE9qWVCYsi8ZOvTTEzYWo6Y2HOSfww2W45VqhUuPCE4Zl0PnZ6THCdzyi9eXHWUgcNijWGjkBmq9cT4exzWgtyMZ18sE4Dmj994L0I9rSlrjY4Xzw1Ftv5UJBZ73HKDFFiwbdwFSxWcfvSuHmQs093hcVtyi6uyuINzkJrtlM7ApsP1/ReVGk9ilD6gOfu5c7khQCxI4QAEKgzA+LGSehdDIh5l+IaATE5/s6RY6iDt0HxVG0D8wgY/9G2W3DyZQxO6l0YgiGCJzf+IXXhX9paem93mT9+NBMvilNl8Zyz7NCufpakFSdqpykV0z0aTtjQemeBY2ehaHUuf994cgOhGIGTtqzByhznMNiiUNeYr4Gjz41DLM1RuEa99tOCV7ARxB+2CBWcDQOgJD/UWaEsn2Dr6XWcUJPMjSUVSVVyJ6BCUExJUL0aToTjaQx1JGYyycz0FdijRF2z4yGCEodbHxMLoTUG0majXVMLPaC3x/GEW91lLIpWmRehB5YzxSL09EJTKS3Ba49OsVKvVzBpqkZnyvdckyu+Cpv/DotoWfHixGM1DDfxaf8Ww7wpOlzNfzFeUReniiau3MzHuijj7oLRX6lJoFQE='',''base64''))
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1251
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1251
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1252: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1252.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     122                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClVQREFURSBtYWlsX3JvdXRlcwpTRVQKICAgIHN0YXR1c19hNjggPSAwLAogICAgdXBkYXRlZF9hdCA9IENVUlJFTlRfVElNRVNUQU1QCldIRVJFCiAgICByb3V0ZV9pZCA9IDpST1VURV9JRAo='',''base64'')                                                                AS code,
+--     ''Soft Delete Inbound Route''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzEyMiAtIFNvZnQgRGVsZXRlIEluYm91bmQgUm91dGUKClNvZnQtZGVsZXRlcyBhbiBpbmJvdW5kIFNNVFAgcm91dGUgYnkgc2V0dGluZyBpdHMgc3RhdHVzCnRvIGluYWN0aXZlIChgc3RhdHVzX2E2OCA9IDBgKS4gVGhlIHJvdyBpcyByZXRhaW5lZCBmb3IKYXVkaXQgYW5kIHJlZmVyZW50aWFsIHNhZmV0eS4KCiMjIFBhcmFtZXRlcnMKCi0gYFJPVVRFX0lEYCAoaW50ZWdlciwgcmVxdWlyZWQpOiBSb3V0ZSByb3cgdG8gc29mdCBkZWxldGUuCgojIyBSZXR1cm5zCgotIE5vIHJlc3VsdCByb3dzLgoKIyMgVGFibGVzCgotIGBtYWlsX3JvdXRlc2AgKG1pZ3JhdGlvbiAxMjIyKS4KCiMjIFNlY3VyaXR5IE5vdGVzCgotIGBxdWVyeV90eXBlX2EyOGAgaXMgYFRZUEVfSU5URVJOQUxfU1FMYCAoMCkgc28gdGhpcyBxdWVyeQogIGlzIG5vdCByZWFjaGFibGUgdmlhIHRoZSBSRVNUIEFQSS4K'',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1252
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1252
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1253: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1253.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     123                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''CkRFTEVURSBGUk9NIG1haWxfcXVldWUKV0hFUkUKICAgIHN0YXR1c19hNjMgSU4gKDIsIDMpCiAgICBBTkQgY3JlYXRlZF9hdCA8IDpDVVRPRkZfQVQKOwo='',''base64'')                                                                AS code,
+--     ''Cleanup Old Sent/Failed Mail Queue Rows''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzEyMyAtIENsZWFudXAgT2xkIFNlbnQvRmFpbGVkIE1haWwgUXVldWUgUm93cwoKSGFyZC1kZWxldGVzIGNvbXBsZXRlZCBgbWFpbF9xdWV1ZWAgcm93cyB0aGF0IGFyZSBvbGRlciB0aGFuCmEgY2FsbGVyLXN1cHBsaWVkIGN1dG9mZiB0aW1lc3RhbXAuIE9ubHkgcm93cyBpbiBhIHRlcm1pbmFsCnN0YXR1cyAoYHNlbnRgIG9yIGBmYWlsZWRgKSBhcmUgZWxpZ2libGUgZm9yIHJlbW92YWw7IHBlbmRpbmcsCnNlbmRpbmcsIGFuZCByZXRyeWluZyByb3dzIGFyZSBwcmVzZXJ2ZWQuCgojIyBQYXJhbWV0ZXJzCgotIGBDVVRPRkZfQVRgICh0aW1lc3RhbXAsIHJlcXVpcmVkKTogRGVsZXRlIHJvd3Mgd2hvc2UKICBgY3JlYXRlZF9hdGAgaXMgc3RyaWN0bHkgbGVzcyB0aGFuIHRoaXMgdmFsdWUuIFRoZSBDIGNvZGUKICBjb21wdXRlcyB0aGlzIGZyb20gdGhlIGNvbmZpZ3VyZWQgcmV0ZW50aW9uIHBlcmlvZC4KCiMjIFJldHVybnMKCi0gTm8gcmVzdWx0IHJvd3MuCgojIyBUYWJsZXMKCi0gYG1haWxfcXVldWVgIChtaWdyYXRpb24gMTIxOCkuCgojIyBTZWN1cml0eSBOb3RlcwoKLSBgcXVlcnlfdHlwZV9hMjhgIGlzIGBUWVBFX0lOVEVSTkFMX1NRTGAgKDApIHNvIHRoaXMgcXVlcnkKICBpcyBub3QgcmVhY2hhYmxlIHZpYSB0aGUgUkVTVCBBUEkuCg=='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1253
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1253
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1254: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1254.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     124                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''CkRFTEVURSBGUk9NIG1haWxfZXZlbnRzCldIRVJFCiAgICBzdGF0dXNfYTY1IElOICgyLCAzLCA0KQogICAgQU5EIGNyZWF0ZWRfYXQgPCA6Q1VUT0ZGX0FUCjsK'',''base64'')                                                                AS code,
+--     ''Cleanup Old Mail Events''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzEyNCAtIENsZWFudXAgT2xkIE1haWwgRXZlbnRzCgpIYXJkLWRlbGV0ZXMgb2xkIGBtYWlsX2V2ZW50c2Agcm93cyB0aGF0IGhhdmUgcmVhY2hlZCBhCnRlcm1pbmFsIHN0YXR1cyAoYHNlbnRgLCBgZmFpbGVkYCwgb3IgYHN1cHByZXNzZWRgKS4gUGVuZGluZwphbmQgcXVldWVkIGV2ZW50cyBhcmUgcHJlc2VydmVkIHNvIHRoZXkgY2FuIHN0aWxsIGJlCnByb2Nlc3NlZC4KCiMjIFBhcmFtZXRlcnMKCi0gYENVVE9GRl9BVGAgKHRpbWVzdGFtcCwgcmVxdWlyZWQpOiBEZWxldGUgcm93cyB3aG9zZQogIGBjcmVhdGVkX2F0YCBpcyBzdHJpY3RseSBsZXNzIHRoYW4gdGhpcyB2YWx1ZS4gVGhlIEMgY29kZQogIGNvbXB1dGVzIHRoaXMgZnJvbSB0aGUgY29uZmlndXJlZCByZXRlbnRpb24gcGVyaW9kLgoKIyMgUmV0dXJucwoKLSBObyByZXN1bHQgcm93cy4KCiMjIFRhYmxlcwoKLSBgbWFpbF9ldmVudHNgIChtaWdyYXRpb24gMTIyMCkuCgojIyBTZWN1cml0eSBOb3RlcwoKLSBgcXVlcnlfdHlwZV9hMjhgIGlzIGBUWVBFX0lOVEVSTkFMX1NRTGAgKDApIHNvIHRoaXMgcXVlcnkKICBpcyBub3QgcmVhY2hhYmxlIHZpYSB0aGUgUkVTVCBBUEkuCg=='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1254
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1254
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1255: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1255.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     125                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''CkRFTEVURSBGUk9NIG1haWxfYXR0ZW1wdHMKV0hFUkUKICAgIGNyZWF0ZWRfYXQgPCA6Q1VUT0ZGX0FUCjsK'',''base64'')                                                                AS code,
+--     ''Cleanup Old Mail Attempts''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzEyNSAtIENsZWFudXAgT2xkIE1haWwgQXR0ZW1wdHMKCkhhcmQtZGVsZXRlcyBvbGQgcm93cyBmcm9tIHRoZSBgbWFpbF9hdHRlbXB0c2AgYXVkaXQgdGFibGUuCkF0dGVtcHRzIGFyZSByZXRhaW5lZCBwcmltYXJpbHkgZm9yIGRpYWdub3N0aWMgcHVycG9zZXM7IG9uY2UKb2xkZXIgdGhhbiB0aGUgcmV0ZW50aW9uIGN1dG9mZiB0aGV5IG1heSBiZSByZW1vdmVkLgoKIyMgUGFyYW1ldGVycwoKLSBgQ1VUT0ZGX0FUYCAodGltZXN0YW1wLCByZXF1aXJlZCk6IERlbGV0ZSByb3dzIHdob3NlCiAgYGNyZWF0ZWRfYXRgIGlzIHN0cmljdGx5IGxlc3MgdGhhbiB0aGlzIHZhbHVlLiBUaGUgQyBjb2RlCiAgY29tcHV0ZXMgdGhpcyBmcm9tIHRoZSBjb25maWd1cmVkIHJldGVudGlvbiBwZXJpb2QuCgojIyBSZXR1cm5zCgotIE5vIHJlc3VsdCByb3dzLgoKIyMgVGFibGVzCgotIGBtYWlsX2F0dGVtcHRzYCAobWlncmF0aW9uIDEyMTkpLgoKIyMgU2VjdXJpdHkgTm90ZXMKCi0gYHF1ZXJ5X3R5cGVfYTI4YCBpcyBgVFlQRV9JTlRFUk5BTF9TUUxgICgwKSBzbyB0aGlzIHF1ZXJ5CiAgaXMgbm90IHJlYWNoYWJsZSB2aWEgdGhlIFJFU1QgQVBJLgo='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1255
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1255
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1256: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1256.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     126                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''CkRFTEVURSBGUk9NIG1haWxfb3RwX2NvZGVzCldIRVJFCiAgICBzdGF0dXNfYTY3IElOICgxLCAyLCAzKQogICAgQU5EIGNyZWF0ZWRfYXQgPCA6Q1VUT0ZGX0FUCjsK'',''base64'')                                                                AS code,
+--     ''Cleanup Old OTP Codes''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzEyNiAtIENsZWFudXAgT2xkIE9UUCBDb2RlcwoKSGFyZC1kZWxldGVzIG9sZCBPVFAgY29kZSByb3dzIHRoYXQgYXJlIG5vIGxvbmdlciBhY3RpdmUuCkVsaWdpYmxlIHJvd3MgaGF2ZSBhIHRlcm1pbmFsIHN0YXR1cyAoYGNvbnN1bWVkYCwgYGV4cGlyZWRgLApvciBgbWF4X2F0dGVtcHRzX2V4Y2VlZGVkYCkgYW5kIHdlcmUgY3JlYXRlZCBiZWZvcmUgdGhlCmNhbGxlci1zdXBwbGllZCBjdXRvZmYuIEFjdGl2ZSBPVFBzIGFyZSBuZXZlciByZW1vdmVkIGJ5IHRoaXMKcXVlcnkuCgojIyBQYXJhbWV0ZXJzCgotIGBDVVRPRkZfQVRgICh0aW1lc3RhbXAsIHJlcXVpcmVkKTogRGVsZXRlIHJvd3Mgd2hvc2UKICBgY3JlYXRlZF9hdGAgaXMgc3RyaWN0bHkgbGVzcyB0aGFuIHRoaXMgdmFsdWUuIFRoZSBDIGNvZGUKICBjb21wdXRlcyB0aGlzIGZyb20gdGhlIGNvbmZpZ3VyZWQgcmV0ZW50aW9uIHBlcmlvZC4KCiMjIFJldHVybnMKCi0gTm8gcmVzdWx0IHJvd3MuCgojIyBUYWJsZXMKCi0gYG1haWxfb3RwX2NvZGVzYCAobWlncmF0aW9uIDEyMjEpLgoKIyMgU2VjdXJpdHkgTm90ZXMKCi0gYHF1ZXJ5X3R5cGVfYTI4YCBpcyBgVFlQRV9JTlRFUk5BTF9TUUxgICgwKSBzbyB0aGlzIHF1ZXJ5CiAgaXMgbm90IHJlYWNoYWJsZSB2aWEgdGhlIFJFU1QgQVBJLgo='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1256
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1256
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1260: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1260.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     127                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     2                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClNFTEVDVAogICAgcm9sZV9pZApGUk9NCiAgICByb2xlcwpXSEVSRQogICAgKG5hbWUgPSA6Uk9MRU5BTUUpCiAgICBBTkQgKHN0YXR1c19hMzQgPSAxKQo='',''base64'')                                                                AS code,
+--     ''Get Role By Name''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzEyNyAtIEdldCBSb2xlIEJ5IE5hbWUKClJldHJpZXZlcyB0aGUgYWN0aXZlIGByb2xlX2lkYCBmb3IgYSByb2xlIGJ5IGl0cyBodW1hbi1yZWFkYWJsZQpgbmFtZWAuCgojIyBQYXJhbWV0ZXJzCgotIGBST0xFTkFNRWAgKHN0cmluZywgcmVxdWlyZWQpOiBUaGUgcm9sZSBuYW1lIHRvIHJlc29sdmUKICAoZS5nLiBgbWFpbF9zZW5kYCkuCgojIyBSZXR1cm5zCgotIGByb2xlX2lkYCAoaW50ZWdlcik6IFRoZSBJRCBvZiB0aGUgbWF0Y2hpbmcgYWN0aXZlIHJvbGUuCgojIyBUYWJsZXMKCi0gYHJvbGVzYCAobWlncmF0aW9uIDEwMTYpLgoKIyMgU2VjdXJpdHkgTm90ZXMKCi0gYHF1ZXJ5X3R5cGVfYTI4YCBpcyBgVFlQRV9JTlRFUk5BTF9TUUxgICgwKSBzbyB0aGlzIHF1ZXJ5CiAgaXMgbm90IHJlYWNoYWJsZSB2aWEgdGhlIFJFU1QgQVBJLgo='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1260
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1260
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1262: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1262.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET code = '
+-- INSERT INTO queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     128                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     2                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CRYPTO_DECODE(''ClVQREFURSBtYWlsX290cF9jb2RlcwpTRVQKICAgIHN0YXR1c19hNjcgPSAzLAogICAgYXR0ZW1wdHMgPSBhdHRlbXB0cyArIDEsCiAgICB1cGRhdGVkX2F0ID0gQ1VSUkVOVF9USU1FU1RBTVAKV0hFUkUKICAgIG90cF9pZCA9IDpPVFBfSUQKICAgIEFORCBzdGF0dXNfYTY3ID0gMAo='',''base64'')                                                                AS code,
+--     ''Mark OTP Max Attempts Exceeded''                                                     AS name,
+--     CRYPTO_DECODE(''CiMgUXVlcnlSZWYgIzEyOCAtIE1hcmsgT1RQIE1heCBBdHRlbXB0cyBFeGNlZWRlZAoKTWFya3MgYW4gYWN0aXZlIE9UUCBhcyBtYXgtYXR0ZW1wdHMtZXhjZWVkZWQKKGBzdGF0dXNfYTY3ID0gM2AsIExvb2t1cCAwNjcpIGFuZCBpbmNyZW1lbnRzIHRoZQphdHRlbXB0IGNvdW50ZXIgaW4gdGhlIHNhbWUgdXBkYXRlLiBVc2VkIGJ5IHRoZSBNYWlsClJlbGF5IE9UUCB2ZXJpZnkgcGF0aCB3aGVuIGEgd3JvbmcgY29kZSBicmluZ3MgdGhlCmF0dGVtcHQgY291bnQgdG8gYG1heF9hdHRlbXB0c2AuCgojIyBQYXJhbWV0ZXJzCgotIGBPVFBfSURgIChpbnRlZ2VyLCByZXF1aXJlZCk6IE9UUCByb3cgdG8gbG9jayBvdXQuCgojIyBSZXR1cm5zCgotIE5vIHJlc3VsdCByb3dzLiBUaGUgY2FsbGVyIGNoZWNrcyBhZmZlY3RlZC1yb3cgY291bnQKICB0byBlbnN1cmUgdGhlIE9UUCB3YXMgc3RpbGwgYWN0aXZlLgoKIyMgVGFibGVzCgotIGBtYWlsX290cF9jb2Rlc2AgKG1pZ3JhdGlvbiAxMjIxKS4KCiMjIFNlY3VyaXR5IE5vdGVzCgotIGBxdWVyeV90eXBlX2EyOGAgaXMgYFRZUEVfSU5URVJOQUxfU1FMYCAoMCkgc28gdGhpcyBxdWVyeQogIGlzIG5vdCByZWFjaGFibGUgdmlhIHRoZSBSRVNUIEFQSS4KLSBEb2VzIG5vdCB0b3VjaCBgY29kZV9oYXNoYCBvciBleHBvc2UgcGxhaW50ZXh0IGNvZGVzLgo='',''base64'')
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1262
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1262
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1283: forward_load drift (type 1003) fields=summary
+-- Disk: acuranzo_1283.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET summary = '
+-- # Forward Migration 1283: Create account_canvas_links Table
+-- 
+-- Durable Hydrogen ↔ Canvas identity link for Band E/F (Phase 23
+-- design, Phase 30 implementation). Mirrors
+-- `account_oidc_identities`: one row caches the Canvas `user_id`
+-- after the first successful `ensure_canvas_user` so later phases
+-- (progress sync Phase 60, renewals) do not re-query Canvas by
+-- email on every request.
+-- 
+-- ## Schema
+-- 
+-- - **link_id**: Surrogate primary key.
+-- - **account_id**: Foreign reference to accounts (no SQL
+--   FK — same convention as account_oidc_identities / account_roles).
+--   UNIQUE 1:1 with the Hydrogen account.
+-- - **canvas_user_id**: Canvas LMS numeric user id. UNIQUE so two
+--   Hydrogen accounts cannot claim the same Canvas user.
+-- - **canvas_email**: Email used at link time (matches Canvas
+--   `login_attribute=email` and Hydrogen `match_email_only`).
+-- - **last_seen_at**: Updated on each successful Canvas ensure /
+--   Dashboard path (best-effort touch). Row birth time is the
+--   standard `COMMON_CREATE` `created_at` — do **not** add a
+--   second domain `created_at` (SQLite duplicate-column failure).
+-- 
+-- ## Indexes
+-- 
+-- - PRIMARY KEY on `link_id`.
+-- - UNIQUE on `account_id` — one Canvas user per Hydrogen account.
+-- - UNIQUE on `canvas_user_id` — one Hydrogen account per Canvas user.
+-- - INDEX on `canvas_email` — supports email-based recovery / admin
+--   lookup when the durable id is missing.
+-- 
+-- ## Mapping contract (FL-23)
+-- 
+-- v1 resolution is still email-match at Canvas; this table is the
+-- durable cache written once `ensure_canvas_user` succeeds. On
+-- `email_ambiguous` (multiple Canvas users share the email) the
+-- caller must fail closed and must not insert a row.
+-- 
+-- ## Notes
+-- 
+-- Additive migration. Existing `accounts` rows are not touched.
+-- QueryRefs that read/write this table land in later migrations
+-- (1286–1288).
+-- '
+--  WHERE query_ref = 1283
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1284: forward_load drift (type 1003) fields=summary
+-- Disk: acuranzo_1284.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET summary = '
+-- # Forward Migration 1284: Create user_registration_meta Table
+-- 
+-- This migration creates the user_registration_meta table for Band F new-user
+-- provisioning (Phase 29). It captures the registration-time
+-- attributes collected once at Keycloak signup (Phase 27/28) and
+-- seeded into Hydrogen on the first successful OIDC login.
+-- 
+-- ## Schema
+-- 
+-- - **meta_id**: Surrogate primary key.
+-- - **account_id**: Foreign reference to accounts (no SQL
+--   FK constraint — same convention as account_roles /
+--   account_oidc_identities). One row per account (1:1 via UNIQUE).
+-- - **currency**: ISO-4217 currency code (e.g. CAD/USD/EUR/GBP).
+--   Required at Keycloak registration (Phase 28); provision path
+--   falls back to `CAD` if the claim is missing.
+-- - **preferred_language**: Locale string (e.g. `en`). Required at
+--   Keycloak registration; falls back to `en` if missing.
+--   Passthrough to Canvas/Keycloak locale only (not SPA text —
+--   see Band N).
+-- - **referral_source**: Optional ("how did you hear about us").
+--   NULL when the user skipped it at registration.
+-- - **learner_type**: Optional (student/teacher/content
+--   creator/life-long learner). NULL when skipped.
+-- - **country**: Optional free-text country. NULL when skipped.
+-- - **age_band**: Optional demographic band (under_18 / 18_24 /
+--   25_34 / 35_49 / 50_plus). NULL when skipped.
+-- - Provision-time stamp is the standard `COMMON_CREATE`
+--   `created_at` — do **not** add a second domain `created_at`
+--   (collides with COMMON; SQLite fails with duplicate column).
+-- 
+-- ## Indexes
+-- 
+-- - PRIMARY KEY on `meta_id`.
+-- - UNIQUE on `account_id` — one registration-meta row per account
+--   (also serves as the lookup index; no separate secondary index).
+-- 
+-- ## Ownership (Phase 27 §8)
+-- 
+-- This row is the Hydrogen/Helium-owned copy of the registration
+-- attributes. Keycloak''s copy is a one-time seed only; it is never
+-- written back. Later edits flow through the Phase 53/54 PATCH
+-- endpoint (which writes this table), not through Keycloak.
+-- 
+-- ## Notes
+-- 
+-- Additive migration. Existing `accounts` rows are not touched.
+-- The provision path inserts exactly one row per account on first
+-- OIDC login (QueryRef #143 in acuranzo_1285); subsequent logins
+-- do not re-sync from Keycloak. VARCHAR_3 is not a dialect macro
+-- — currency uses VARCHAR_20 (sufficient for ISO-4217 codes).
+-- '
+--  WHERE query_ref = 1284
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1291: forward_load drift (type 1003) fields=summary
+-- Disk: acuranzo_1291.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET summary = '
+-- # Forward Migration 1291: Create courses Table
+-- 
+-- Band G Phase 35 — Reception catalog course rows (FL-34).
+-- 
+-- ## Schema (summary)
+-- 
+-- - **course_id**: Surrogate PK.
+-- - **code**: Canonical label without locale, e.g. `5C-001-W5C`
+--   (UNIQUE). Canvas may show `5C-001-W5C-EN`.
+-- - **slug**: URL-safe unique key.
+-- - **title / summary / description**: Marketing copy; description
+--   is plain text/Markdown (not raw HTML).
+-- - **image_path**: Site-relative asset path.
+-- - **canvas_course_id**: LMS numeric id (nullable until published).
+-- - **pricing_type**: `free` | `paid`. Amounts live in
+--   `course_prices` (migration 1292) — no `price_cents_*` columns.
+-- - **stripe_product_id**: NULL until Band J / STRIPE_PLAN.
+-- - **is_featured / sort_order / published**: Home + catalog flags.
+-- - **level / delivery_style / license / source / has_***: Card tags.
+-- 
+-- No SQL FK to accounts/canvas. `COMMON_CREATE` only for audit
+-- timestamps (no second domain created_at).
+-- '
+--  WHERE query_ref = 1291
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1297: forward_load drift (type 1003) fields=summary
+-- Disk: acuranzo_1297.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET summary = '
+-- # Forward Migration 1297: scripts.invokable
+-- 
+-- Adds `invokable` (INTEGER_SMALL, DEFAULT 0) to `TABLE`.
+-- Client REST `POST /api/conduit/script` only loads rows with
+-- invokable <> 0 (QueryRef #149). Orchestrator and internal
+-- scripts remain non-invokable.
+-- 
+-- Marks `Api.Echo` invokable for LUA_CLIENT fixture tests.
+-- '
+--  WHERE query_ref = 1297
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1301: forward_load drift (type 1003) fields=summary
+-- Disk: acuranzo_1301.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET summary = '
+-- # Forward Migration 1301: Create user_preferences Table
+-- 
+-- Band L Phase 52 — Reception notification preferences (FL-51).
+-- 
+-- This table is **notification behavior only**. Do not add
+-- `currency`, `preferred_language`, or any Phase 27 registration
+-- attribute here — those live on `user_registration_meta`
+-- (acuranzo_1284) and stay there when Settings PATCHes them.
+-- 
+-- ## Schema
+-- 
+-- - **pref_id**: Surrogate primary key.
+-- - **account_id**: Foreign reference to accounts (no SQL
+--   FK — same convention as user_registration_meta /
+--   account_oidc_identities). One row per account (1:1 via UNIQUE).
+-- - **notify_new_course**: Marketing / catalog announce mail.
+--   Default **0** (opt-in). CourseBuilder CB-29 Announce.
+-- - **notify_expiring**: Transactional mail N=7 days before
+--   enrollment expiry. Default **1** (opt-out). Phase 56 job.
+-- - **notify_expired**: Transactional mail when enrollment expires.
+--   Default **1**. Phase 56 job.
+-- - **notify_weekly_summary**: Weekly digest of active enrollments
+--   + expiration dates. Default **1**. Pref stored now; send job
+--   is not in Band L.
+-- 
+-- Booleans are `INTEGER_SMALL` 0/1 (same as `courses.is_featured`).
+-- `COMMON_CREATE` supplies `created_at` / `updated_at` — do
+-- **not** add a second domain `created_at` (FL-29c).
+-- 
+-- ## Defaults for a freshly provisioned account
+-- 
+-- No provision-time INSERT and no trigger. QueryRef #143 /
+-- `oidc_rp_link_provision.c` are unchanged. A new account has
+-- **no row**. Phase 53 read path LEFT JOIN + COALESCE to the
+-- column defaults above. First PATCH INSERTs (own JWT
+-- `account_id` only).
+-- 
+-- ## Indexes
+-- 
+-- - PRIMARY KEY on `pref_id`.
+-- - UNIQUE on `account_id` — also the lookup index; no secondary
+--   account index (same as 1284).
+-- 
+-- Additive migration. Existing `accounts` rows are not touched.
+-- '
+--  WHERE query_ref = 1301
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1307: forward_load drift (type 1003) fields=summary
+-- Disk: acuranzo_1307.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET summary = '
+-- # Forward Migration 1307: Create user_enrollments Table
+-- 
+-- Band M Phase 59 — Reception enrollment entitlements (FL-58).
+-- 
+-- Hydrogen **entitlement** is the source of truth for whether
+-- Reception grants access. Canvas enrollment / progress ids are
+-- action handles (Dashboard deep link, Phase 60 sync, re-enroll).
+-- Reception never reads Canvas REST.
+-- 
+-- This migration creates the empty table only. It does **not**
+-- backfill intro provision (1290) or `Enroll.FreeCourse` (1300)
+-- Canvas seats. Those scripts still POST Canvas only; a follow-up
+-- seed/script change writes Helium rows (FL-59).
+-- 
+-- ## Schema
+-- 
+-- - **enrollment_id**: Surrogate PK (MAX+1). Phase 56 idempotency
+--   keys use this name.
+-- - **account_id**: Hydrogen `accounts.account_id` (JWT `user_id`).
+--   Logical FK — no SQL FK (same as user_preferences).
+-- - **course_id**: `courses.course_id` — not the Canvas id as the
+--   join key.
+-- - **canvas_enrollment_id** / **canvas_course_id**: nullable LMS
+--   handles. FreeCourse may not return the enroll id today.
+-- - **status**: stored `pending` | `active` | `completed` |
+--   `superseded`. Default `active`. Do **not** store `expired`
+--   — derive from `expires_at`.
+-- - **enrolled_at**: first grant of **this** row. Free renew does
+--   not reset. Domain timestamp (not a second `created_at`).
+-- - **expires_at**: NULL = lifetime (intro). Phase 56 skips NULL.
+--   Free/paid catalog = `enrolled_at + 90 days` (script constant).
+-- - **completed_at** / **progress_percent** / **progress_synced_at**:
+--   Phase 60 cache. Stale-OK. Default progress 0.
+-- - **archived_at**: Reception hide overlay. NULL = not archived.
+--   Does not unenroll Canvas.
+-- - **renew_policy**: `free_renew` | `paid_renew` | `no_renew`.
+--   Frozen from `courses.pricing_type` at grant.
+-- - **source**: `intro` | `free` | `paid` | `renew`. Audit only.
+-- - **order_id**: future Stripe order. NULL until Band J.
+-- 
+-- `COMMON_CREATE` supplies audit `created_at` / `updated_at` —
+-- do **not** add a second domain `created_at` (FL-29c).
+-- 
+-- ## Indexes
+-- 
+-- - PRIMARY KEY on `enrollment_id`.
+-- - INDEX `(account_id, status)` — My Courses tabs.
+-- - INDEX `(expires_at)` — Phase 56 window scan.
+-- - INDEX `(account_id, archived_at)` — Archived tab.
+-- 
+-- **One current row per `(account_id, course_id)`** where
+-- `status IN (''active'',''completed'',''pending'')` is an **app
+-- invariant** (Enroll.* writers). Not a partial UNIQUE here:
+-- `CREATE UNIQUE INDEX ... WHERE` is not portable across
+-- MySQL/DB2. `superseded` rows may repeat the pair (paid
+-- history). Archive does not free the slot.
+-- 
+-- ## Writers (not in this migration)
+-- 
+-- - Intro (1290 follow-up): `source=intro`, `expires_at=NULL`,
+--   `renew_policy=free_renew`, `status=active`.
+-- - `Enroll.FreeCourse`: UPSERT current row `source=free`,
+--   `renew_policy=free_renew`, `expires_at=now()+90d`. Second
+--   call on a current non-expired row stays `already_enrolled`.
+-- - Free renew: UPDATE same row `expires_at=now()+90d`.
+-- - Paid fulfill (Band J): supersede current + INSERT new.
+-- 
+-- Additive. Existing `accounts` / `courses` / Canvas seats are
+-- not touched.
+-- '
+--  WHERE query_ref = 1307
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1310: forward_load drift (type 1003) fields=summary
+-- Disk: acuranzo_1310.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET summary = '
+-- # Forward Migration 1310: Add accounts.stripe_customer_id
+-- 
+-- STRIPE_PLAN Phase 1 — store the Stripe Customer id on the
+-- account row (`cus_…`). NULL until `Stripe.EnsureCustomer`
+-- (Phase 2) creates or links one.
+-- 
+-- ## Why accounts
+-- 
+-- Plan says “account/prefs row, not a users table invented
+-- here”. `user_preferences` is notification flags only
+-- (acuranzo_1301 / FL-51). `user_registration_meta` is the
+-- Keycloak registration seed. Every authenticated user already
+-- has an `accounts` row.
+-- 
+-- ## Notes
+-- 
+-- - Nullable. Existing rows stay NULL.
+-- - No UNIQUE: multiple NULLs are not portable (DB2).
+--   One-customer-per-account is a Lua invariant.
+-- - No extra index: lookup is by `account_id` (PK).
+-- - No diagram (column add; same as acuranzo_1172 / 1297).
+-- - `VARCHAR_100` matches `course_prices.stripe_price_id`.
+-- '
+--  WHERE query_ref = 1310
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1311: forward_load drift (type 1003) fields=summary
+-- Disk: acuranzo_1311.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET summary = '
+-- # Forward Migration 1311: Create orders Table
+-- 
+-- STRIPE_PLAN Phase 1 — checkout / PaymentIntent ledger.
+-- 
+-- Empty after APPLY. `Stripe.Checkout` (Phase 5) INSERTs
+-- `pending`. `Stripe.Webhook` / `Enroll.PaidCourse`
+-- (Phase 7–8) flip `completed` / `failed`.
+-- `user_enrollments.order_id` (acuranzo_1307) is the
+-- logical FK (no SQL FK).
+-- 
+-- ## Schema
+-- 
+-- - **order_id**: Surrogate PK (MAX+1 in Lua).
+-- - **order_number**: Human-facing unique handle (support).
+-- - **account_id**: Hydrogen `accounts.account_id` (JWT
+--   `user_id`). Logical FK — no SQL FK.
+-- - **stripe_intent_id**: Stripe PaymentIntent `pi_…`.
+--   NULL until the PI is created. No UNIQUE (NULL
+--   portability); uniqueness is a Lua invariant. Index
+--   for webhook lookup.
+-- - **status**: `pending` | `completed` | `failed`.
+--   Default `pending`.
+-- - **currency**: lowercase ISO 4217 (`cad`/`usd`/`eur`/`gbp`),
+--   same as `course_prices`. Not CHAR(3) — no `CHAR_3`
+--   macro; do not use `total_cents_cad`.
+-- - **total_cents**: Settlement minor units (Lua re-reads
+--   `course_prices`; do not trust client cents).
+-- - **items_json**: Checkout line snapshot.
+-- - **idempotency_key**: Stripe Idempotency-Key
+--   (`checkout:{account_id}:…`). UNIQUE.
+-- 
+-- `COMMON_CREATE` supplies audit timestamps — do **not**
+-- add a second domain `created_at` (FL-29c).
+-- 
+-- ## Indexes
+-- 
+-- - PRIMARY KEY on `order_id`.
+-- - UNIQUE on `order_number`.
+-- - UNIQUE on `idempotency_key`.
+-- - INDEX `(account_id)` — account order history.
+-- - INDEX `(stripe_intent_id)` — webhook idempotency.
+-- 
+-- Additive. Existing `accounts` / `user_enrollments` /
+-- `course_prices` rows are not touched.
+-- '
+--  WHERE query_ref = 1311
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1325: forward_load drift (type 1003) fields=summary
+-- Disk: acuranzo_1325.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET summary = '
+-- # Forward Migration 1325: Create enrollment_events Table
+-- 
+-- PRIORITIZE 2.9 — Enrolment History SoT (Helium). Canvas
+-- Course Information → Enrolment History is a projection
+-- written by `Enroll.LogEvent`. Reception does not read this
+-- table. Lithium owns later admin UI.
+-- 
+-- Append-only. One row per enrollment-affecting action.
+-- `user_enrollments` remains entitlement SoT; this is the
+-- audit log.
+-- 
+-- ## Schema
+-- 
+-- - **event_id**: Surrogate PK (MAX+1 in writers).
+-- - **account_id**: Hydrogen account (JWT `user_id`).
+-- - **course_id**: Helium `courses.course_id`.
+-- - **canvas_user_id** / **canvas_course_id**: LMS ids for
+--   the "User #123456" line and the wiki PUT target.
+-- - **enrollment_id**: optional `user_enrollments` handle.
+-- - **event_type**: `enrolled` | `purchased` | `archived` |
+--   `unarchived` | `renewed` | `synced`. `archived` is the
+--   student Canvas hide (2.18), not entitlement delete.
+-- - **actor**: `self` (learner click) | `system` (webhook,
+--   provision, reconcile).
+-- - **amount_cents** / **currency** / **order_id**: paid
+--   lines only. NULL on free/intro/archive.
+-- - `COMMON_CREATE` supplies `created_at` / `updated_at`
+--   — do **not** add a second domain timestamp. `created_at`
+--   is the event time.
+-- 
+-- ## Indexes
+-- 
+-- - PRIMARY KEY on `event_id`.
+-- - INDEX `(course_id, event_id)` — per-course page rebuild.
+-- - INDEX `(account_id, course_id)` — per-learner history.
+-- 
+-- Empty after APPLY. Writers are 1327+ (`Enroll.LogEvent`
+-- plus Enroll.* / Provision hooks). No backfill of past
+-- enrollments in this migration.
+-- '
+--  WHERE query_ref = 1325
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1334: forward_load drift (type 1003) fields=summary
+-- Disk: acuranzo_1334.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE queries
+--    SET summary = '
+-- # Forward Migration 1334: Create catalog_events Table
+-- 
+-- PRIORITIZE 2.29 — Management History SoT (Helium). Canvas
+-- Course Information → Management History is a projection
+-- written by `Catalog.LogEvent`. Reception does not read this
+-- table. Lithium Course Manager (Part 5) is the later UI.
+-- 
+-- Append-only. One row per brochure field that actually
+-- changed on a sync. Wiki PUT is best-effort and must not
+-- roll back the `courses` UPDATE.
+-- 
+-- ## Schema
+-- 
+-- - **event_id**: Surrogate PK (MAX+1 in writers).
+-- - **course_id**: Helium `courses.course_id`.
+-- - **canvas_course_id**: LMS id for the wiki PUT target.
+-- - **event_type**: `title` | `summary` | `description` |
+--   `published` | `tags`.
+-- - **actor**: `system` (sync / later poll).
+-- - **detail**: short before→after or upserted keys.
+-- - `COMMON_CREATE` supplies `created_at` / `updated_at`.
+-- 
+-- Empty after APPLY. Writer is 1336+ (`Catalog.LogEvent`
+-- plus `Catalog.SyncFromCanvas`).
+-- '
+--  WHERE query_ref = 1334
+--    AND query_type_a28 = 1003;
+--
