@@ -1,7 +1,7 @@
 {
-    "title": "{BOLD}{WHITE}SchemaTool{RESET} — acuranzo / db2 / demo @ HYDROTST",
+    "title": "{BOLD}{WHITE}SchemaTool{RESET} — acuranzo / sqlite / . @ …/hydrodemo.sqlite",
     "subtitle": "{CYAN}Audit{WHITE} refs 1000-1364 ({BOLD}365{RESET}{CYAN} rows) · disk AVAIL 1364 · DB APPLY 1364{RESET}",
-    "footer": "{CYAN}2026-Aug-24 (Mon) 20:04:33 PDT{RESET} {RED}———{RESET} ok=363 drift=2 missL=0 missA=0 orphan=0 · exit 2 drift/missing · norm=loose",
+    "footer": "{CYAN}2026-Aug-25 (Tue) 11:38:46 PDT{RESET} {RED}———{RESET} ok=317 drift=48 missL=0 missA=0 orphan=0 · exit 2 drift/missing · norm=loose",
     "footer_position": "right",
     "theme": "Red",
     "columns": [

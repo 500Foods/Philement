@@ -131,8 +131,9 @@ tests/          Test framework
 - tests/test_95_stylelint.sh - Lint for CSS
 - tests/test_96_htmlhint.sh - Lint for HTML
 - tests/test_97_xmlstarlet.sh - Lint for XML/SVG (xmlstarlet)
-- tests/test_98_luacheck.sh - Lua code analysis with luacheck
-- tests/test_99_code_size.sh - Checks limits on source code, runs cloc
+ - tests/test_98_luacheck.sh - Lua code analysis with luacheck
+ - tests/test_72_schemahelper.sh - SchemaHelper fixture + luacheck integration (no live DB)
+ - tests/test_99_code_size.sh - Checks limits on source code, runs cloc
 
 ## CRITICAL DOCUMENTATION
 

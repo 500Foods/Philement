@@ -125,6 +125,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_96_htmlhint.sh](/docs/H/tests/test_96_htmlhint.md)**: Validates HTML files using htmlhint.
 - **[test_97_xmlstarlet.sh](/docs/H/tests/test_97_xmlstarlet.md)**: Validates XML/SVG files using xmlstarlet.
 - **[test_98_luacheck.sh](/docs/H/tests/test_98_luacheck.md)**: Lua code analysis with luacheck
+- **[test_72_schemahelper.sh](/docs/H/tests/test_72_schemahelper.md)**: SchemaHelper fixture validation + luacheck (no live DB required)
 - **[test_99_code_size.sh](/docs/H/tests/test_99_code_size.md)**: Analyzes code size metrics and file distribution.
 
 ## Configuration Files

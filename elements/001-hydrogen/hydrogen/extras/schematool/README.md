@@ -64,7 +64,20 @@ lib/
   schematool_audit.sh         # audit mode dispatch + orchestration (dump/emit/audits)
   schematool_render.sh        # tables rendering + render dispatch
 lua/
-  schemahelper_queue.lua
+  schemahelper_const.lua        # VERSION + terminal module refs + attribute tables
+  schemahelper_ui.lua           # shared mutable UI state (hotspots, mouseover)
+  schemahelper_mouse.lua        # SGR 1006 mouse parsing + hotspot mapping
+  schemahelper_paint.lua        # low-level terminal painting + hotspot recording
+  schemahelper_wrappers.lua     # wrapper discovery/metadata + path helpers
+  schemahelper_invoke.lua       # SchemaTool invocation, progress, connect text
+  schemahelper_explore.lua      # explore-mode line wrapping + cursor nav
+  schemahelper_screens.lua      # per-screen content painters
+  schemahelper_actions.lua      # apply / generate-packet / promote + queue lifecycle
+  schemahelper_queue.lua        # findings merge (orchestrator over q* submodules)
+  schemahelper_qutil.lua        # pure text/json helpers
+  schemahelper_qstate.lua       # sidecar state load/create/update
+  schemahelper_qload.lua        # metadata + catalog findings ingest
+  schemahelper_qdecode.lua      # brotli/base64 decode + decode view
   schemahelper_connect.lua
   schemahelper_packet.lua
   schematool_discover.lua

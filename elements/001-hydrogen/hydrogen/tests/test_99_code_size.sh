@@ -7,6 +7,7 @@
 # show_top_files_by_type()
 
 # CHANGELOG
+# 3.6.0 - 2026-08-25 - Now enforces the 1000-line limit on *.lua files as well as *.c/*.h/*.md/*.sh
 # 3.5.0 - 2025-08-10 - Cleaned out some mktemp calls
 # 3.4.0 - 2025-08-07 - Added (cloc: lines) to test name 
 # 3.3.0 - 2025-08-06 - Bit of temp file handling management and cleanup
@@ -38,7 +39,7 @@ TEST_NAME="Code Size Analysis"
 TEST_ABBR="SIZ"
 TEST_NUMBER="99"
 TEST_COUNTER=0
-TEST_VERSION="3.5.0"
+TEST_VERSION="3.6.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -114,7 +115,7 @@ while read -r file; do
     if ! should_exclude_file "${rel_file}"; then
         echo "${rel_file}" >> "${SOURCE_FILES_LIST}"
     fi
-done < <("${FIND}" . -type f \( -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" \) | sort || true)
+done < <("${FIND}" . -type f \( -name "*.c" -o -name "*.h" -o -name "*.md" -o -name "*.sh" -o -name "*.lua" \) | sort || true)
 
 TOTAL_FILES=$(wc -l < "${SOURCE_FILES_LIST}")
 
@@ -173,8 +174,8 @@ done
 
 # Show top files by type
 show_top_files_by_type() {
-    local types=("md" "c" "h" "sh")
-    local labels=("Markdown" "C Source" "Header" "Shell Script")
+    local types=("md" "c" "h" "sh" "lua")
+    local labels=("Markdown" "C Source" "Header" "Shell Script" "Lua")
     
     for i in "${!types[@]}"; do
         local ext="${types[${i}]}"
