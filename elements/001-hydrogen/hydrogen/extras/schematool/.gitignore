@@ -1,5 +1,18 @@
 # SchemaTool intermediate artifacts (written to --work-dir or copied to --out-dir)
 # These are generated artifacts, not source files.
+# The leading "/" restricts these patterns to the schematool root directory only;
+# test fixtures in test/ and testdata/ are still tracked.
+
+# Generated JSON (catalog, findings, state sidecars, etc.)
+/*.json
+
+# Generated remediation SQL
+/*.sql
+
+# Generated log files
+/*.log
+
+# Specific artifact names for clarity (also covered by the blanket patterns above)
 findings.json
 catalog_findings.json
 catalog_expected.json
