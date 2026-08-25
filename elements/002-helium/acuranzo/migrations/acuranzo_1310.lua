@@ -70,7 +70,7 @@ table.insert(queries,{sql=[[
               One-customer-per-account is a Lua invariant.
             - No extra index: lookup is by `account_id` (PK).
             - No diagram (column add; same as acuranzo_1172 / 1297).
-            - `${VARCHAR_100}` matches `course_prices.stripe_price_id`.
+            - `VARCHAR_100` matches `course_prices.stripe_price_id`.
         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,
@@ -120,7 +120,7 @@ table.insert(queries,{sql=[[
         [=[
             # Reverse Migration ${MIGRATION}: Drop ${TABLE}.stripe_customer_id
 
-            Exact undo of the forward ADD. `${REORG}` before and after
+            Exact undo of the forward ADD. `REORG` before and after
             DROP (DB2 SQL0668N rc7).
         ]=]
                                                                             AS summary,

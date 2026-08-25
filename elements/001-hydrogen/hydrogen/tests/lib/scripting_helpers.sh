@@ -26,6 +26,8 @@
 # shellcheck disable=SC2312 # Several diagnostic command substitutions intentionally swallow the inner exit code; helpers either fall back gracefully or || true the outer call
 
 # CHANGELOG
+# 2.7.0 - 2026-08-24 - Added RSS sampling (get_orch_rss_kb) + ORCH_RSS_* / ORCH_PRUNED markers
+#                      during the tick-settle window to catch scoreboard growth regressions
 # 2.6.0 - 2026-08-21 - Record ORCH_SYSTEM_PROBE / ORCH_API_ERROR_PROBE
 # 2.5.0 - 2026-08-20 - Drop python3: jq config extract/rewrite, sqlite3 readfile seed
 # 2.4.0 - 2026-07-30 - ORCH_MAIL_REPO_PROBE + MAILRELAY_REPO_PROBE_OK (H.mail repo helpers)
@@ -45,7 +47,7 @@
 export SCRIPTING_HELPERS_GUARD="true"
 
 SCRIPTING_HELPERS_NAME="Scripting Test Helpers"
-SCRIPTING_HELPERS_VERSION="2.6.0"
+SCRIPTING_HELPERS_VERSION="2.7.0"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${SCRIPTING_HELPERS_NAME} ${SCRIPTING_HELPERS_VERSION}" "info"
 
 # Optional mock LLM (set by test_43 before parallel runs). Empty = skip rewrite.
@@ -228,6 +230,23 @@ scripting_count_log_matches() {
         count=0
     fi
     printf '%s\n' "${count}"
+}
+
+# Read the resident set size (RSS) of a process in kilobytes from
+# /proc/<pid>/status. Returns 0 if the process is unavailable.
+# Usage: get_orch_rss_kb <pid>
+get_orch_rss_kb() {
+    local pid="$1"
+    local status_file="/proc/${pid}/status"
+    if [[ -r "${status_file}" ]]; then
+        local rss
+        rss=$(awk '/^VmRSS:/ {print $2}' "${status_file}" 2>/dev/null || true)
+        if [[ "${rss}" =~ ^[0-9]+$ ]]; then
+            printf '%s\n' "${rss}"
+            return 0
+        fi
+    fi
+    printf '0\n'
 }
 
 # Run the full Orchestrator lifecycle for one engine/config in the
@@ -426,6 +445,35 @@ scripting_run_engine_parallel() {
     local tick_count
     tick_count=$(scripting_count_log_matches "${log_file}" "Orchestrator: tick")
     echo "ORCH_TICKS=${tick_count}" >> "${result_file}"
+
+    # Capture RSS after the orchestrator has been running for a few ticks so
+    # the warm-up allocations (script cache, prepared statements, etc.) are
+    # above the baseline. Then observe for an additional settle period and
+    # capture RSS again. An unbounded scoreboard (no prune_terminal) would
+    # show growth above the per-tick threshold; a healthy run stays flat.
+    local rss_initial_kb=0
+    local rss_final_kb=0
+    local rss_delta_kb=0
+    if [[ -n "${web_port:-}" ]]; then
+        rss_initial_kb=$(get_orch_rss_kb "${hydrogen_pid}" 2>/dev/null || echo 0)
+    fi
+    sleep "${tick_settle}"
+    if [[ -n "${web_port:-}" ]]; then
+        rss_final_kb=$(get_orch_rss_kb "${hydrogen_pid}" 2>/dev/null || echo 0)
+        rss_delta_kb=$(( rss_final_kb - rss_initial_kb ))
+    fi
+    {
+      echo "ORCH_RSS_INITIAL_KB=${rss_initial_kb}"
+      echo "ORCH_RSS_FINAL_KB=${rss_final_kb}"
+      echo "ORCH_RSS_DELTA_KB=${rss_delta_kb}"
+    } >> "${result_file}"
+
+    # Check for prune_terminal log line (verifies the Orchestrator is
+    # invoking the bounded scoreboard path). At least one prune log
+    # line means the API was available and called.
+    if scripting_assert_log_contains "${log_file}" "Orchestrator: pruned"; then
+        echo "ORCH_PRUNED" >> "${result_file}"
+    fi
 
     if scripting_assert_log_not_contains "${log_file}" "Orchestrator: failed"; then
         echo "ORCH_NO_FAIL" >> "${result_file}"

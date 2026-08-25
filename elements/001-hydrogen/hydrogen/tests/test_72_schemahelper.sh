@@ -1,20 +1,24 @@
 #!/usr/bin/env bash
 
-# Test: SchemaHelper Phase 98 Integration
+# Test: SchemaHelper Phase 72 Integration
 # Exercise schemahelper_queue.lua and schemahelper.lua against
 # checked-in fixture findings (no live DB required).
 
 # CHANGELOG
+# 1.0.1 - 2026-08-24 - Renumbered from 98 to 72, abbr SCH; added decode_embedded
+#   dialect tests (SQLite, MySQL upper+lower, DB2, PostgreSQL); fixed brotli
+#   C module path after luarocks LUA_CPATH overrides system defaults.
 # 1.0.0 - 2026-08-23 - Initial version for Phase 98 fixture validation
+# 1.0.1 - 2026-08-24 - Renumbered from 98 to 72, abbr changed to SCH
 
 set -euo pipefail
 
 # Test configuration
-TEST_NAME="SchemaHelper Phase 98"
-TEST_ABBR="SH98"
-TEST_NUMBER="98"
+TEST_NAME="SchemaHelper Phase 72"
+TEST_ABBR="SCH"
+TEST_NUMBER="72"
 TEST_COUNTER=0
-TEST_VERSION="1.0.0"
+TEST_VERSION="1.0.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -27,11 +31,15 @@ FIXTURE_DIR="${SCHEMAGUI}/test/fixtures/sample_project"
 if command -v luarocks > /dev/null 2>&1; then
     LUA_PATH_SETUP=$(luarocks --lua-version=5.5 path 2>/dev/null || true)
     if [[ -n "${LUA_PATH_SETUP}" ]]; then
+        _orig_cpath="${LUA_CPATH:-}"
         eval "${LUA_PATH_SETUP}"
+        if [[ -n "${_orig_cpath}" ]]; then
+            LUA_CPATH="${LUA_CPATH};${_orig_cpath}"
+        fi
     fi
 fi
 
-print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "SchemaHelper Phase 98 fixture validation"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "SchemaHelper Phase 72 fixture validation"
 
 # ---------------------------------------------------------------------------
 # 1. Verify fixture files exist
@@ -326,7 +334,7 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "luacheck clean on schemahelper
 
 LUACHECK_OK=1
 
-for f in "schemahelper.lua" "lua/schemahelper_queue.lua" "lua/schemahelper_connect.lua"; do
+for f in "schemahelper.lua" "lua/schemahelper_queue.lua" "lua/schemahelper_connect.lua" "lua/schemahelper_decode_test.lua"; do
     full="${SCHEMAGUI}/${f}"
     if [[ -f "${full}" ]]; then
         output=$(luacheck --std=max --max-line-length=120 --ignore 542,561 --no-self --no-unused-args --formatter=plain "${full}" 2>&1 || true)
@@ -353,7 +361,81 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 6. Validate schemahelper.sh --help and --version
+# 6. Validate decode_embedded across all dialects (SQLite, MySQL, DB2, PG)
+# ---------------------------------------------------------------------------
+TEST_COUNTER=$((TEST_COUNTER + 1))
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "decode_embedded all dialects"
+
+DECODE_TEST=$(lua 2>&1 <<LUAEOF
+package.path = "${SCHEMAGUI}/lua/?.lua;" .. package.path
+package.cpath = package.cpath .. ";/usr/local/lib/lua/5.5/?.so"
+local queue = require("schemahelper_queue")
+
+local test_plain = "hello world"
+local b64_blob = "DwWAaGVsbG8gd29ybGQD"
+local plain_b64 = "dGVzdA=="
+local ok = true
+local errs = {}
+
+-- MySQL lowercase brotli (the fix)
+local r = queue.decode_embedded("brotli_decompress(FROM_BASE64('" .. b64_blob .. "'))")
+if r ~= test_plain then errs[#errs+1] = "MySQL lowercase brotli: got " .. tostring(r) .. " expected " .. test_plain; ok = false end
+
+-- MySQL uppercase brotli
+r = queue.decode_embedded("BROTLI_DECOMPRESS(FROM_BASE64('" .. b64_blob .. "'))")
+if r ~= test_plain then errs[#errs+1] = "MySQL uppercase brotli failed"; ok = false end
+
+-- SQLite brotli
+r = queue.decode_embedded("BROTLI_DECOMPRESS(CRYPTO_DECODE('" .. b64_blob .. "'))")
+if r ~= test_plain then errs[#errs+1] = "SQLite brotli failed"; ok = false end
+
+-- DB2 brotli
+r = queue.decode_embedded("myschema.BROTLI_DECOMPRESS(myschema.BASE64DECODEBINARY('" .. b64_blob .. "'))")
+if r ~= test_plain then errs[#errs+1] = "DB2 brotli failed"; ok = false end
+
+-- PostgreSQL brotli
+r = queue.decode_embedded("brotli_decompress(DECODE('" .. b64_blob .. "', 'base64'))")
+if r ~= test_plain then errs[#errs+1] = "PostgreSQL brotli failed"; ok = false end
+
+-- PostgreSQL CONVERT_FROM
+r = queue.decode_embedded("CONVERT_FROM(DECODE('" .. plain_b64 .. "', 'base64'), 'UTF8')")
+if r ~= "test" then errs[#errs+1] = "PostgreSQL CONVERT_FROM failed"; ok = false end
+
+-- Standalone base64
+r = queue.decode_embedded("CRYPTO_DECODE('" .. plain_b64 .. "')")
+if r ~= "test" then errs[#errs+1] = "SQLite CRYPTO_DECODE failed"; ok = false end
+r = queue.decode_embedded("BASE64DECODE('" .. plain_b64 .. "')")
+if r ~= "test" then errs[#errs+1] = "DB2 BASE64DECODE failed"; ok = false end
+r = queue.decode_embedded("FROM_BASE64('" .. plain_b64 .. "')")
+if r ~= "test" then errs[#errs+1] = "MySQL FROM_BASE64 failed"; ok = false end
+
+-- has_embed detection
+if not queue.has_embed("brotli_decompress(FROM_BASE64('" .. b64_blob .. "'))") then errs[#errs+1] = "has_embed MySQL lowercase failed"; ok = false end
+if not queue.has_embed("BROTLI_DECOMPRESS(BASE64DECODEBINARY('" .. b64_blob .. "'))") then errs[#errs+1] = "has_embed DB2 failed"; ok = false end
+
+-- No false positives
+if queue.has_embed("SELECT 1 FROM users") then errs[#errs+1] = "has_embed false positive on plain SQL"; ok = false end
+
+if not ok then
+    for _, e in ipairs(errs) do io.stderr:write("ERR: " .. e .. "\\n") end
+    os.exit(1)
+end
+print("OK: all decode patterns verified (SQLite, MySQL upper+lower, DB2, PostgreSQL)")
+os.exit(0)
+LUAEOF
+) 2>&1 || true
+
+if echo "${DECODE_TEST}" | grep -q "^OK:"; then
+    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${DECODE_TEST}"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All decode patterns work"
+else
+    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${DECODE_TEST}"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Decode pattern failures"
+    EXIT_CODE=1
+fi
+
+# ---------------------------------------------------------------------------
+# 7. Validate schemahelper.sh --help and --version
 # ---------------------------------------------------------------------------
 TEST_COUNTER=$((TEST_COUNTER + 1))
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "schemahelper.sh --help / --version"
@@ -380,7 +462,7 @@ if [[ "${EXIT_CODE:-0}" -eq 0 ]]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 7. Validate schemahelper.lua --version prints version info
+# 8. Validate schemahelper.lua --version prints version info
 # ---------------------------------------------------------------------------
 TEST_COUNTER=$((TEST_COUNTER + 1))
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "schemahelper.lua --version"
@@ -397,7 +479,7 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# 8. Validate TextPanel is loadable (terminal.lua integration)
+# 9. Validate TextPanel is loadable (terminal.lua integration)
 # ---------------------------------------------------------------------------
 TEST_COUNTER=$((TEST_COUNTER + 1))
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "terminal.lua TextPanel available"

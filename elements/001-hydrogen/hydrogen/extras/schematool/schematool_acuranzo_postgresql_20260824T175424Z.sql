@@ -1,0 +1,1364 @@
+-- =============================================================================
+-- SchemaTool remediation (NOT EXECUTED)
+-- schematool 1.8.3 · phase 4 audit
+-- design=acuranzo engine=postgresql schema=demo database=t-500nodes-db
+-- migrations=/mnt/extra/Projects/Philement/elements/002-helium/acuranzo/migrations
+-- normalize=loose
+-- Generated: 20260824T175424Z
+-- counts: {"total":364,"ok":280,"drift":9,"missing_load":1,"missing_apply":80,"anomalies":0,"orphans":0}
+-- exit_code=2
+-- Rule: Uncomment deliberately. Prefer Hydrogen LOAD/APPLY when possible.
+-- Updating queries.code does NOT replay DDL against live tables.
+-- Prefer a NEW forward migration when live schema must change.
+-- Content match scope (v1): code + name + summary.
+-- Orphan DB refs: captured to .mig for optional new-migration rebuild.
+-- =============================================================================
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1223: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1223.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE demo.queries
+--    SET code = $schematool$
+-- INSERT INTO demo.queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM demo.queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     093                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     1                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     demo.brotli_decompress(DECODE('G6IEAIzCce8jXFq4bTsNttWvpFXUIykM1xedTo9SGEtGxbJvPIclXNX//1M7FnjBKhTW3v9GxwYpdoPsl2zMKSXWEwpR/W0vgY0xgh1HmJnl2+7zxIsYBgCcZ44NBAASPoxUqyL/PdjDOeVGUAHMuLXOZb0lvm8PTfTDMvROAZAhMa3IuSWspcayaa7LPSIFPjupz3c3HxPTybtiKvagkk/7KwC7h5AcqPAwNu0aUumX+m+n/TMCc8AXC3ahbW7y0Jw+NJcg2r+fDtVz4hxHjC+H3DlRkdOF6cDfYcfLNFLVQkaxyCgNy0fmSguZJ3ErVNDkLWHBmUb+n4c9yAHd1ip9r+iwFWhwhu239qtGNSBw5UDMiQE6gY6wauzWLdPcFtd47/SurC0lwUtbtsTFXOICwag6zf37uAiti6woGnP0Lvnesr2clmNb8XtQzUIXvC28lJrkYKX/pmO/UTjjtzdkkbeDLqY4etwOF0SY15E44aSS5rZqOQXJa4adHUNiIOJzP6LWkoOXNfi7TAA=', 'base64'))                                                                AS code,
+--     'Insert Pending Mail Queue Row'                                                     AS name,
+--     demo.brotli_decompress(DECODE('G1MFAMSkNfMxap6ghA4AVVKi7B23Rq1tyJ1ETfzuCWLSzNobUopZpESGajGjYlvAif20nWcmaXrrJ/nJeH/AW7yQQqS/58hQeFSgZtJSb2xCor9YXayh+xDWP0uOCQNnIWkzE9oeZvu4TaIEgcoelV3I/ZzPOwmdwCqCcc8orbUSRjzibqDhi2MpYIuWZ0Rvb30y94kikBUONvFs1qoKvnt/VJrR/iliAodKL2SSSKlVjTJRI1wGAzgZ/82HV9vrLhQc/Q6JUEPDP4caavE5d2orWSjr7lGJMcqVi6KdUka8YzzHD3CpWh2zstY02N+MtY/Rofq3tAc8OKjoPXg64MEih5uRqSHTw2hOTdgpGtQAoAVdQAidhWW0vystGh9yWYrXEhxKtu53MA6cdViFhcSAzXt4WlvemMAI74y4qMng5rzAry4CsfLHiwpcfLlCNL1eq1cDuAmF/WOrWusNB9Nav7IyYBZxzTkRBNXxr8x1Lw0M2DnKCxFtvDcOjdmLD53kSBsmsy5AIey/bDWPd+2kBAYy8Lq8QAf/ISsWQTZvEZzXBEgkAkEMsgYuLySKEgFbo+A8kF5p+S1G8+cvIX+YvN3O7tlotnPYtb1isZjnCFjrLjk/pQYiotHu1yfUeFijRSSGljA9oTQhGp1ea/xLLFr6zKuz95znYnRGXrWA5RpxXoE+eXwHlXqJZCL/Q6WSPlk4U+ldyXmyL/ALr5N5wdmFxAXf8R+4JgbGv+UIaqBPAuFlxhDWg6VTGraiBA==', 'base64'))
+--                                                                         AS summary,
+--     '{}'                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE demo.queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1223
+--   and query_type_a28 = 1000;
+-- $schematool$
+--  WHERE query_ref = 1223
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1280: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1280.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE demo.queries
+--    SET code = $schematool$
+-- INSERT INTO demo.mail_templates (
+--     template_id,
+--     template_key,
+--     name,
+--     status_a64,
+--     subject_template,
+--     text_template,
+--     html_template,
+--     collection,
+--                             valid_after,
+--             valid_until,
+--             created_id,
+--             created_at,
+--             updated_id,
+--             updated_at
+--         
+-- )
+-- VALUES
+-- (
+--     3,
+--     'system.server_started',
+--     'System Server Started',
+--     1,
+--     '[%COUNT|1%x] MailRelayEvent server_started %SERVER_NAME%',
+--     'Server %SERVER_NAME% (%APP_NAME%) started at %TIMESTAMP%.\n%SUMMARY|1 event%',
+--     '<p>Server %SERVER_NAME% (%APP_NAME%) started at %TIMESTAMP%.</p><p>%SUMMARY|1 event%</p>',
+--     '{}',
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- ),
+-- (
+--     4,
+--     'system.databases_ready',
+--     'System Databases Ready',
+--     1,
+--     '[%COUNT|1%x] MailRelayEvent databases_ready %SERVER_NAME%',
+--     'Databases ready on %SERVER_NAME% (%APP_NAME%) at %TIMESTAMP%.\n%SUMMARY|1 event%',
+--     '<p>Databases ready on %SERVER_NAME% (%APP_NAME%) at %TIMESTAMP%.</p><p>%SUMMARY|1 event%</p>',
+--     '{}',
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- ),
+-- (
+--     5,
+--     'system.server_stopped',
+--     'System Server Stopped',
+--     1,
+--     'MailRelayEvent server_stopped %SERVER_NAME%',
+--     'Server %SERVER_NAME% (%APP_NAME%) stopping at %TIMESTAMP%.',
+--     '<p>Server %SERVER_NAME% (%APP_NAME%) stopping at %TIMESTAMP%.</p>',
+--     '{}',
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- );
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE demo.queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1280
+--   and query_type_a28 = 1000;
+-- $schematool$
+--  WHERE query_ref = 1280
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1281: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1281.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE demo.queries
+--    SET code = $schematool$
+-- INSERT INTO demo.scripts (
+--     group_name,
+--     script_name,
+--     script_type,
+--     schedule,
+--     next_run,
+--     last_run_start,
+--     last_run_end,
+--     status,
+--     code,
+--     summary,
+--                             valid_after,
+--             valid_until,
+--             created_id,
+--             created_at,
+--             updated_id,
+--             updated_at
+--         
+-- )
+-- VALUES
+-- (
+--     'Mail.Events',
+--     'ServerStarted',
+--     1,
+--     NULL, NULL, NULL, NULL,
+--     1,
+--     CONVERT_FROM(DECODE('CmZ1bmN0aW9uIGhhbmRsZV9ldmVudChldmVudCkKICAgIGxvY2FsIHJlY2lwaWVudHMgPSBldmVudC5hZG1pbl9yZWNpcGllbnRzIG9yIHt9CiAgICBpZiAjcmVjaXBpZW50cyA9PSAwIHRoZW4KICAgICAgICByZXR1cm4gbmlsCiAgICBlbmQKICAgIGxvY2FsIHBhcmFtcyA9IHsKICAgICAgICBTRVJWRVJfTkFNRSA9IGV2ZW50LnNlcnZlcl9uYW1lIG9yICIiLAogICAgICAgIEFQUF9OQU1FID0gZXZlbnQuYXBwX25hbWUgb3IgIiIsCiAgICAgICAgVElNRVNUQU1QID0gZXZlbnQudGltZXN0YW1wIG9yICIiLAogICAgICAgIENPVU5UID0gIjEiLAogICAgICAgIFNVTU1BUlkgPSAiMSBldmVudCIKICAgIH0KICAgIGlmIGV2ZW50LnBhcmFtcyB0aGVuCiAgICAgICAgZm9yIGssIHYgaW4gcGFpcnMoZXZlbnQucGFyYW1zKSBkbwogICAgICAgICAgICBwYXJhbXNba10gPSB2CiAgICAgICAgZW5kCiAgICBlbmQKICAgIHJldHVybiB7CiAgICAgICAgdGVtcGxhdGVfa2V5ID0gInN5c3RlbS5zZXJ2ZXJfc3RhcnRlZCIsCiAgICAgICAgdG8gPSByZWNpcGllbnRzLAogICAgICAgIHBhcmFtcyA9IHBhcmFtcywKICAgICAgICBkZWJvdW5jZV9rZXkgPSAic3lzdGVtLmxpZmVjeWNsZSIKICAgIH0KZW5kCg==', 'base64'), 'UTF8'),
+--     'Mail event handler: system.server_started',
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- ),
+-- (
+--     'Mail.Events',
+--     'DatabasesReady',
+--     1,
+--     NULL, NULL, NULL, NULL,
+--     1,
+--     CONVERT_FROM(DECODE('CmZ1bmN0aW9uIGhhbmRsZV9ldmVudChldmVudCkKICAgIGxvY2FsIHJlY2lwaWVudHMgPSBldmVudC5hZG1pbl9yZWNpcGllbnRzIG9yIHt9CiAgICBpZiAjcmVjaXBpZW50cyA9PSAwIHRoZW4KICAgICAgICByZXR1cm4gbmlsCiAgICBlbmQKICAgIGxvY2FsIHBhcmFtcyA9IHsKICAgICAgICBTRVJWRVJfTkFNRSA9IGV2ZW50LnNlcnZlcl9uYW1lIG9yICIiLAogICAgICAgIEFQUF9OQU1FID0gZXZlbnQuYXBwX25hbWUgb3IgIiIsCiAgICAgICAgVElNRVNUQU1QID0gZXZlbnQudGltZXN0YW1wIG9yICIiLAogICAgICAgIENPVU5UID0gIjEiLAogICAgICAgIFNVTU1BUlkgPSAiMSBldmVudCIKICAgIH0KICAgIGlmIGV2ZW50LnBhcmFtcyB0aGVuCiAgICAgICAgZm9yIGssIHYgaW4gcGFpcnMoZXZlbnQucGFyYW1zKSBkbwogICAgICAgICAgICBwYXJhbXNba10gPSB2CiAgICAgICAgZW5kCiAgICBlbmQKICAgIHJldHVybiB7CiAgICAgICAgdGVtcGxhdGVfa2V5ID0gInN5c3RlbS5kYXRhYmFzZXNfcmVhZHkiLAogICAgICAgIHRvID0gcmVjaXBpZW50cywKICAgICAgICBwYXJhbXMgPSBwYXJhbXMsCiAgICAgICAgZGVib3VuY2Vfa2V5ID0gInN5c3RlbS5saWZlY3ljbGUiCiAgICB9CmVuZAo=', 'base64'), 'UTF8'),
+--     'Mail event handler: system.databases_ready',
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- ),
+-- (
+--     'Mail.Events',
+--     'ServerStopped',
+--     1,
+--     NULL, NULL, NULL, NULL,
+--     1,
+--     CONVERT_FROM(DECODE('CmZ1bmN0aW9uIGhhbmRsZV9ldmVudChldmVudCkKICAgIGxvY2FsIHJlY2lwaWVudHMgPSBldmVudC5hZG1pbl9yZWNpcGllbnRzIG9yIHt9CiAgICBpZiAjcmVjaXBpZW50cyA9PSAwIHRoZW4KICAgICAgICByZXR1cm4gbmlsCiAgICBlbmQKICAgIGxvY2FsIHBhcmFtcyA9IHsKICAgICAgICBTRVJWRVJfTkFNRSA9IGV2ZW50LnNlcnZlcl9uYW1lIG9yICIiLAogICAgICAgIEFQUF9OQU1FID0gZXZlbnQuYXBwX25hbWUgb3IgIiIsCiAgICAgICAgVElNRVNUQU1QID0gZXZlbnQudGltZXN0YW1wIG9yICIiCiAgICB9CiAgICBpZiBldmVudC5wYXJhbXMgdGhlbgogICAgICAgIGZvciBrLCB2IGluIHBhaXJzKGV2ZW50LnBhcmFtcykgZG8KICAgICAgICAgICAgcGFyYW1zW2tdID0gdgogICAgICAgIGVuZAogICAgZW5kCiAgICByZXR1cm4gewogICAgICAgIHRlbXBsYXRlX2tleSA9ICJzeXN0ZW0uc2VydmVyX3N0b3BwZWQiLAogICAgICAgIHRvID0gcmVjaXBpZW50cywKICAgICAgICBwYXJhbXMgPSBwYXJhbXMKICAgIH0KZW5kCg==', 'base64'), 'UTF8'),
+--     'Mail event handler: system.server_stopped',
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- );
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE demo.queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1281
+--   and query_type_a28 = 1000;
+-- $schematool$
+--  WHERE query_ref = 1281
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1284: forward_load drift (type 1000) fields=code+summary
+-- Disk: acuranzo_1284.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE demo.queries
+--    SET code = $schematool$
+-- CREATE TABLE demo.user_registration_meta
+-- (
+--     meta_id                 integer          NOT NULL,
+--     account_id              integer          NOT NULL,
+--     currency                varchar(20)               ,
+--     preferred_language      varchar(50)               ,
+--     referral_source         varchar(100)              ,
+--     learner_type            varchar(100)              ,
+--     country                 varchar(100)              ,
+--     age_band                varchar(20)               ,
+--                             valid_after             timestamptz             ,
+--             valid_until             timestamptz             ,
+--             created_id              integer          NOT NULL,
+--             created_at              timestamptz     NOT NULL,
+--             updated_id              integer          NOT NULL,
+--             updated_at              timestamptz     NOT NULL,
+--         
+--     PRIMARY KEY(meta_id),
+--     UNIQUE(account_id)
+-- );
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE demo.queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1284
+--   and query_type_a28 = 1000;
+-- $schematool$,
+--        summary = $schematool$
+-- # Forward Migration 1284: Create user_registration_meta Table
+-- 
+-- This migration creates the user_registration_meta table for Band F new-user
+-- provisioning (Phase 29). It captures the registration-time
+-- attributes collected once at Keycloak signup (Phase 27/28) and
+-- seeded into Hydrogen on the first successful OIDC login.
+-- 
+-- ## Schema
+-- 
+-- - **meta_id**: Surrogate primary key.
+-- - **account_id**: Foreign reference to demo.accounts (no SQL
+--   FK constraint — same convention as account_roles /
+--   account_oidc_identities). One row per account (1:1 via UNIQUE).
+-- - **currency**: ISO-4217 currency code (e.g. CAD/USD/EUR/GBP).
+--   Required at Keycloak registration (Phase 28); provision path
+--   falls back to `CAD` if the claim is missing.
+-- - **preferred_language**: Locale string (e.g. `en`). Required at
+--   Keycloak registration; falls back to `en` if missing.
+--   Passthrough to Canvas/Keycloak locale only (not SPA text —
+--   see Band N).
+-- - **referral_source**: Optional ("how did you hear about us").
+--   NULL when the user skipped it at registration.
+-- - **learner_type**: Optional (student/teacher/content
+--   creator/life-long learner). NULL when skipped.
+-- - **country**: Optional free-text country. NULL when skipped.
+-- - **age_band**: Optional demographic band (under_18 / 18_24 /
+--   25_34 / 35_49 / 50_plus). NULL when skipped.
+-- - Provision-time stamp is the standard `                        valid_after             timestamptz             ,
+--             valid_until             timestamptz             ,
+--             created_id              integer          NOT NULL,
+--             created_at              timestamptz     NOT NULL,
+--             updated_id              integer          NOT NULL,
+--             updated_at              timestamptz     NOT NULL,
+--         `
+--   `created_at` — do **not** add a second domain `created_at`
+--   (collides with COMMON; SQLite fails with duplicate column).
+-- 
+-- ## Indexes
+-- 
+-- - PRIMARY KEY on `meta_id`.
+-- - UNIQUE on `account_id` — one registration-meta row per account
+--   (also serves as the lookup index; no separate secondary index).
+-- 
+-- ## Ownership (Phase 27 §8)
+-- 
+-- This row is the Hydrogen/Helium-owned copy of the registration
+-- attributes. Keycloak's copy is a one-time seed only; it is never
+-- written back. Later edits flow through the Phase 53/54 PATCH
+-- endpoint (which writes this table), not through Keycloak.
+-- 
+-- ## Notes
+-- 
+-- Additive migration. Existing `accounts` rows are not touched.
+-- The provision path inserts exactly one row per account on first
+-- OIDC login (QueryRef #143 in acuranzo_1285); subsequent logins
+-- do not re-sync from Keycloak. VARCHAR_3 is not a dialect macro
+-- — currency uses VARCHAR_20 (sufficient for ISO-4217 codes).
+-- $schematool$
+--  WHERE query_ref = 1284
+--    AND query_type_a28 = 1000;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1285: forward_load drift (type 1000) fields=code
+-- Disk: acuranzo_1285.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE demo.queries
+--    SET code = $schematool$
+-- INSERT INTO demo.queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM demo.queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     143                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     1                                                         AS query_type_a28,
+--     1                                                          AS query_dialect_a30,
+--     1                                                       AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     demo.brotli_decompress(DECODE('G9QEAETDufwZFbd2gG57IFR5APCfDtcCzMIs4lT+uPvtbRswetccgGEEWbbV6BMSPaIjV3dHLe47SP/FcYDr9rPkcQMB8LlnMtVibn8PL3ZG1wJ9MlAC2BRVW+mWCfU+KSAWbIVoYFy30fJC8CCS3cH2xYrB7sJCFIP9ljUy2e0iZS8ypXI4pTw5CZc1H5EdyeVHU2o2pkstP7LSAqBrqwaIy1Vh5j/zQyiormPHv4vdfKs8LJZVOz9TDuvahq9hIfCc3Lb/icI5mALyzuUzuaLLJs/eTrDMcrdFndH5W4TqMvpPkUbcieL3esm6jA/jU6gwA5JteCrBeajop/i+rq5bQNL4A1yg71ruHKrtFT51C7VLxq+6r0wlJhGNamMH7dk747hurXyr2ccoQkf6qzwYzXu7xHY2WGCQr5ZJTYO2YPyJ9h0/+EnD9+NzwyTb6MS/1Wi6I5LSPoBlRYoa5vSCnb+qtO2lgtehkQg=', 'base64'))                                                                AS code,
+--     'OIDC RP: Insert User Registration Meta'                                                     AS name,
+--     demo.brotli_decompress(DECODE('G7oGABwJdmzFQmzegfxPne5/mV7ZChvCE9NUknSxfKeCFFN5nxqn4WJP+y0inVBJldr/n3lvF/VNmJ02RzSeWLsWPLnZaFahLvheSpDA/Du6QkPJ/9mrCFdu4KOMzWw4wH7bafkZqQ0zaQfHViqTRHmhKilqkM+rMp7EhdF2uEY5/v6BkUBiP8N1QaJKbdvdKjf9Dku5pEzyRMJJB2p7bdbosnV6mDBIYLMEpmkaOsy0lRq1ll+9M3JhDWw7pfNWpSA13R9s4JfWmyMSVU6/zWl9caG+T29WvpLB9pv4bzHd8qxLolHefAvyPR2q93rYj3VIR5AOocSg9BMlJew+5DoUpe+Qv7lNRcQ4hXlsXQpHbmSaVAaaeJvRdQqX8p+h+Yzo6qrB6glRGWIMiCezoYBDvdzAOt5Q3C6cAA4Zr3zWSLXsK4lOvpruUcMw8NwmBMpys3DLkkt0+bwuIZD7JhLui0FvKJhVFOBfY/1UABjhv870t3IxG7mVpw3C5q7XdCopo1RPaiKq2FuOlbFdx//w0L+YZEo5YpRE8zpihbqzCr+Gcj97G0j+vP6zDs3x+j9f701GEklH4uAIMPmMuy2BKgHCbXEveOytw16d+0E/FLTr9RoHnpsE0xiBSypVky0i+hOuwyOCUclGnJ9Lif2sEHAfnK/qKPBbHijJIOIFvhqLGwlxB4SXfo0Yi7kcRaHu3qUQ6UtHnvJEmh/LXa8VsA8Z2K+Izs86AjJ+Nr3kGIvDbonxgunq1jZTU9Ajw6yfLxRQ1buXh0OfAX4Fp4C2RzyGobX0CQISlacqvsXroBVvkPMkLy/JRGEgz2WallSKTJXjqeEJkvEElJgXhp17OVXEoDesKhMNsN5J8apI4BKYaajy3h7rDA2UQBdBlB3Hx1IM7ZoI84Tq7LgdFz3FhDaPFQGmYDJYkRNoeHNPp99o0KQttcm4CwVrHKOTJVrVDKL0vkB4ogzWGAqjPBE=', 'base64'))
+--                                                                         AS summary,
+--     '{}'                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE demo.queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1285
+--   and query_type_a28 = 1000;
+-- $schematool$
+--  WHERE query_ref = 1285
+--    AND query_type_a28 = 1000;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1286: forward_load drift (type 1000) fields=code
+-- Disk: acuranzo_1286.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE demo.queries
+--    SET code = $schematool$
+-- INSERT INTO demo.queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM demo.queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     144                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     1                                                         AS query_type_a28,
+--     1                                                          AS query_dialect_a30,
+--     1                                                       AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     CONVERT_FROM(DECODE('ClNFTEVDVAogICAgbGlua19pZCwKICAgIGFjY291bnRfaWQsCiAgICBjYW52YXNfdXNlcl9pZCwKICAgIGNhbnZhc19lbWFpbCwKICAgIGxhc3Rfc2Vlbl9hdCwKICAgIGNyZWF0ZWRfYXQKRlJPTQogICAgZGVtby5hY2NvdW50X2NhbnZhc19saW5rcwpXSEVSRQogICAgYWNjb3VudF9pZCA9IDpBQ0NPVU5USUQK', 'base64'), 'UTF8')                                                                AS code,
+--     'Canvas: Lookup Link by Account'                                                     AS name,
+--     CONVERT_FROM(DECODE('CiMgIFF1ZXJ5UmVmICMxNDQgLSBDYW52YXM6IExvb2t1cCBMaW5rIGJ5IEFjY291bnQKCkZhc3QgcGF0aCBmb3IgYGVuc3VyZV9jYW52YXNfdXNlcmAgKFBoYXNlIDMwKTogaWYgYSBkdXJhYmxlCkh5ZHJvZ2VuIOKGlCBDYW52YXMgbGluayBhbHJlYWR5IGV4aXN0cyBmb3IgdGhpcyBhY2NvdW50LApyZXR1cm4gdGhlIGNhY2hlZCBgY2FudmFzX3VzZXJfaWRgIGFuZCBza2lwIHRoZSBDYW52YXMgQVBJCmNyZWF0ZS9sb29rdXAuIFVOSVFVRShgYWNjb3VudF9pZGApIGd1YXJhbnRlZXMgYXQgbW9zdCBvbmUKcm93LgoKIyMgUGFyYW1ldGVycwoKLSBgQUNDT1VOVElEYCAoaW50ZWdlcik6IEh5ZHJvZ2VuIGFjY291bnQgUEsuCgojIyBSZXR1cm5zCgpaZXJvIG9yIG9uZSByb3c6Ci0gYGxpbmtfaWRgIChpbnRlZ2VyKQotIGBhY2NvdW50X2lkYCAoaW50ZWdlcikKLSBgY2FudmFzX3VzZXJfaWRgIChpbnRlZ2VyKTogQ2FudmFzIExNUyB1c2VyIGlkLgotIGBjYW52YXNfZW1haWxgIChzdHJpbmd8bnVsbCkKLSBgbGFzdF9zZWVuX2F0YCAodGltZXN0YW1wKTogZG9tYWluIHRvdWNoIGNvbHVtbi4KLSBgY3JlYXRlZF9hdGAgKHRpbWVzdGFtcCk6IHN0YW5kYXJkIENPTU1PTiBhdWRpdCBjb2x1bW4uCgojIyBUYWJsZXMKCi0gYGRlbW8uYWNjb3VudF9jYW52YXNfbGlua3NgIChhY3VyYW56b18xMjgzKS4KCiMjIE5vdGVzCgotIFplcm8gcm93cyBtZWFucyB0aGUgYWNjb3VudCBoYXMgbmV2ZXIgYmVlbiBsaW5rZWQ7IGNhbGxlcgogIG11c3QgcnVuIGVtYWlsLW1hdGNoIC8gQ2FudmFzIGNyZWF0ZSBhbmQgdGhlbiBRdWVyeVJlZgogICMxNDUuCi0gQWZ0ZXIgYSBoaXQgdGhlIGNhbGxlciBzaG91bGQgdG91Y2ggdmlhIFF1ZXJ5UmVmICMxNDYuCgo=', 'base64'), 'UTF8')
+--                                                                         AS summary,
+--     '{}'                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE demo.queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1286
+--   and query_type_a28 = 1000;
+-- $schematool$
+--  WHERE query_ref = 1286
+--    AND query_type_a28 = 1000;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1287: forward_load drift (type 1000) fields=code
+-- Disk: acuranzo_1287.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE demo.queries
+--    SET code = $schematool$
+-- INSERT INTO demo.queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM demo.queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     145                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     1                                                         AS query_type_a28,
+--     1                                                          AS query_dialect_a30,
+--     1                                                       AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     demo.brotli_decompress(DECODE('G1gEAARCmtPHqHPtl7c5QHAZAPjBzW9ZgGGmKd31Wova9ifgWBMQ/kpeo06Fkvt2GIrvg8gTetwgwOOeSakW0+XvAdKYrpe33/KtknSwhQMIxN6XwFnegU9yr/2NDbvQkf6e6qvp8rP5gR3nq1EePPmSfa9Ab3C3J5sDnMgwqFCqMjQCXHdVWyAyeKS2eyyMbNIBuObGealXeD81KlXsTmFuI4waj8jgEsNsb9s/oWUalMTxhg6wuzPG8Bw7mwkFyO1YHr9rTlV5Eb9DhuSVJH5ulKFDHmxP8yoY25KskyeKbbvRvcNyfUFcK+IPLoGYz0Y+Qab13j0MnLSJve15Cer/yVKhOy2MJqPKsFH+idOIths8v6uxJm298LNn/ZEVfhR70Ymi5LEFYjRxdcRnc8hIHLNsmWcPK8Ry6VwiAjpLCQ==', 'base64'))                                                                AS code,
+--     'Canvas: Link Account to Canvas User'                                                     AS name,
+--     demo.brotli_decompress(DECODE('G7wEAIzEOEZxiSUH+b5L5SLod65p6baapM6zzt2AoaaLIaXPczlgvj8ac1Lbou7oXhYWRTyfBxxSi3kd8SqWxpO61IURJX9xmRfompiewQi25P1DbNG78MSWKAzjHq4SdQh1bKirHFkMFf6M/e8s+DJ/x38ngDYkwDViJqm69JtxZagz5GFgkFQZfh04zRj9TYMeTY0PoIMsb7X9xGfnuSCIerAILSAVc3MWIpIA5mjxFbvRIrgHDqFH7hIP7jpQCUxUpwk5mSXnyzNAqGZiIOQjwxhCXgfNTTdoP0yMc+EAXHbAfaPYZQzScAflSZQlTI1NJ01aUk0YN7jAzGNw0xM1iKebaFzscsGkebSRB+++hn0OBfOOqKtrFNYrohHwUiFeHWwz+v2ZmwOLAHGC86PRFHtbG6e3G1dToBz1NKyL45MrDLq/pincMZ302ioBSjbIm22cH4BbJyM+jEjCILbB5aeV4hQ3BxcJcOZPPQV/OgQhhWAAqoS2brmx/Kvol6zzrhuG7IoE5wYwoWGC6QEOunaafVbnR/BFiwvyWCZgcQg8MtKlFvxYh/a63PThKcWnKrM7PF0wdFnnkJAMyvkfMvoljUHef7ybmJyfGpBkaLxY20GHAXKt6qCTQl7Q0BBhEkNjihQIjQvyUN4zAhg9P3LSSrSMPhrjUwwhNvMMPtbo3z0emZxCIdocUXiELNnloro9jmRad3ed4Kw6IaqanD4bw3EUvPlkFJqe6lvwL9t5MJnOY2v6qRAB', 'base64'))
+--                                                                         AS summary,
+--     '{}'                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT_TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT_TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE demo.queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1287
+--   and query_type_a28 = 1000;
+-- $schematool$
+--  WHERE query_ref = 1287
+--    AND query_type_a28 = 1000;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1289: forward_load drift (type 1000) fields=code
+-- Disk: acuranzo_1289.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE demo.queries
+--    SET code = $schematool$
+-- INSERT INTO demo.scripts (
+--     group_name,
+--     script_name,
+--     script_type,
+--     schedule,
+--     next_run,
+--     last_run_start,
+--     last_run_end,
+--     status,
+--     code,
+--     summary,
+--                             valid_after,
+--             valid_until,
+--             created_id,
+--             created_at,
+--             updated_id,
+--             updated_at
+--         
+-- )
+-- VALUES (
+--     'Provision',
+--     'EnsureCanvasUser',
+--     1,
+--     NULL, NULL, NULL, NULL,
+--     1,
+--     demo.brotli_decompress(DECODE('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', 'base64')),
+--     'Phase 30: ensure Canvas user + account_canvas_links for OIDC accounts',
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- );
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- -- Patch Orchestrator: every ~60s submit EnsureCanvasUser (source from DB).
+-- UPDATE demo.scripts
+-- SET code = demo.brotli_decompress(DECODE('G+8IABwHOdmpKYIysfBAKG7pTw2SosDyWrr+fF47XIMUrlWu16eFJIpKzgHdtfQE6Ymzcu/PfroHr1Hi715eZi60XpJQSpVdIgxd4g02hlr7cxpFwgFmTPoPS1Nf2OhYGmA+CEjqexjE4c7OmVdDx7h+dtP+DuiTShqyzaJa17gFBWR7UBPucj/KaWKF8P3DuZ7F1A0senzsGgbc0K0u7mEoLCnGesP6Wu3DuFCgJclcCwDj2yCsNN5vygfRDN5vedcF65v5VVG5hwRdKMnEkl66siThB3FsHTQff6CNzHSQyBc7E+mRFu3oVSxCLAqu9htth7Fn1Q3t+G/s4MKuPgMKpV7ceLAqmbyczpNNVxkKA7aKFUahExWSCXahSZTgPDhjc5TlDwgI82WagQEgp8Rfdal2UUIrRM6qUgXCmIfljMTjnBfLGIhRMaAdVYPw0SRKpVpCR8JMLCQq6rnStSp1LV3bKGgATFFP35WXMMlGZyt5cFUxP4IVZ3AHlHzgaIl4jotL9LDIoKNClwIJuueDkaChIOoeD5TH1dpnbJ3IRguaKYFSsZ7PTE3f2T4j8/Lws+ljwiKC9qy82QJDU98QlUoRE9ZlWDJC/om2ygCplIkBRqHlC7Ct2laMs4bcfN5DCZsjyrBukWLcU4Z3Wa0Wb7SUYm2UBWb8xSJCQPBhkMf//7bKbk1ahRvn6GW0xdwWPCM2iF8LrMaZqvO5D+fgSdPsqcrw45TYagOm4WCo0RvgGbmrAhZ68nDOPJsOgrMecF+7JmgqJ9pZIeZ3ITDrV0KKxIhKNd+NyZaAXNQ11dMOEUeJwzIock/W79U1pZztkgWSFcn6fpU8QfjmaVsDRy5yQpr6HfrR4rChxKSWRgrQZrl0eHl6N2+DIzgg2r2Y100dMjiPg8+KOsOuxaZxbLRN4Q5DVvyEO2PYpRxPbkxh1w6i3XovtB001iAWth+eg60J/6avvZN+DV0XtUoUNp3Zc43rhybLCkmQF4MKLUmsJ4FIHthonKU5x/W2ZWzW6zeayW8QeSlI8su1IbFGGlR42rymYRX1WC/tBL880GQBmybn23qCSu1dtOoSKSg=', 'base64')),
+--     updated_at = CURRENT_TIMESTAMP,
+--     summary = '500 Courses Orchestrator: EnsureCanvasUser every 60s (schema-safe scripts)'
+-- WHERE group_name = 'Orchestrators'
+--   AND script_name = 'Orchestrator';
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE demo.queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1289
+--   and query_type_a28 = 1000;
+-- $schematool$
+--  WHERE query_ref = 1289
+--    AND query_type_a28 = 1000;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1293: forward_load drift (type 1000) fields=code+summary
+-- Disk: acuranzo_1293.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE demo.queries
+--    SET code = $schematool$
+-- -- Phase 36 seed: multi-row INSERT VALUES (portable; see acuranzo_1280).
+-- -- course_id 1..15 for empty catalog. Re-run is not idempotent if codes
+-- -- already exist (UNIQUE) — migration APPLY runs once.
+-- 
+-- INSERT INTO demo.courses (
+--     course_id, code, slug, title, summary, description, image_path,
+--     canvas_course_id, pricing_type, stripe_product_id,
+--     is_featured, sort_order, published, level, delivery_style,
+--     license, source, has_ai, has_quizzes, has_badge, has_certificate,
+--                             valid_after,
+--             valid_until,
+--             created_id,
+--             created_at,
+--             updated_id,
+--             updated_at
+--         
+-- )
+-- VALUES
+-- -- featured home grid (sort 0..5)
+-- (
+--     1, '5C-001-W5C', 'welcome-to-500-courses', 'Welcome to 500 Courses',
+--     'Your starting point on the 500 Courses platform.',
+--     'Intro course granted automatically on first login.',
+--     '/assets/courses/5C/5C-001-W5C.png', 1001, 'free', NULL,
+--     1, 0, 1, 'explorer', 'self_guided',
+--     'CC-BY-4.0', 'original', 0, 0, 0, 0,
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- ),
+-- (
+--     2, '5C-002-VAI', 'vermillion', 'Vermillion',
+--     'Explore the Vermillion learning experience.',
+--     NULL,
+--     '/assets/courses/5C/5C-002-VAI.jpg', 1101, 'free', NULL,
+--     1, 1, 1, 'explorer', 'self_guided',
+--     NULL, 'original', 0, 0, 0, 0,
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- ),
+-- (
+--     3, '5C-003-COD', 'canvas-on-doks', 'Canvas on DOKS',
+--     'Run Canvas LMS on a DigitalOcean Kubernetes cluster.',
+--     NULL,
+--     '/assets/courses/5C/5C-003-COD.png', 1, 'free', NULL,
+--     1, 2, 1, 'expert', 'self_guided',
+--     'CC0-1.0', 'original', 0, 0, 0, 1,
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- ),
+-- (
+--     4, 'LB-001-SAF', 'safe-ai-foundation', 'Safe AI Foundation',
+--     'Foundations for using AI safely and responsibly.',
+--     NULL,
+--     '/assets/courses/LB/LB-001-SAF.png', 501, 'free', NULL,
+--     1, 3, 1, 'explorer', 'instructor',
+--     NULL, 'original', 1, 1, 0, 0,
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- ),
+-- (
+--     5, 'AZ-001-AZA', 'acuranzo-academy', 'Acuranzo Academy',
+--     'Get started with the Acuranzo platform.',
+--     NULL,
+--     '/assets/courses/AZ/AZ-001-AZA.png', 301, 'free', NULL,
+--     1, 4, 1, 'explorer', 'instructor',
+--     NULL, 'original', 0, 0, 0, 0,
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- ),
+-- (
+--     6, 'XP-001-ITX', 'introduction-to-x3dp', 'Introduction to X3DP',
+--     'An introduction to X3DP concepts and practice.',
+--     NULL,
+--     '/assets/courses/XP/XP-001-ITX.png', 601, 'free', NULL,
+--     1, 5, 1, 'explorer', 'self_guided',
+--     NULL, 'original', 0, 0, 0, 0,
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- ),
+-- -- catalog (published, not featured)
+-- (
+--     7, 'AZ-002-ADT', 'acuranzo-developer-training', 'Acuranzo Developer Training',
+--     'Developer-focused training for Acuranzo.',
+--     NULL,
+--     '/assets/courses/AZ/AZ-002-ADT.png', 401, 'free', NULL,
+--     0, 10, 1, 'expert', 'instructor',
+--     NULL, 'original', 0, 0, 0, 0,
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- ),
+-- (
+--     8, '5N-001-FVL', 'festival', 'Festival',
+--     'Festival platform overview and operations.',
+--     NULL,
+--     '/assets/courses/5N/5N-001-FVL.png', 701, 'free', NULL,
+--     0, 11, 1, 'expert', 'self_guided',
+--     NULL, 'original', 0, 0, 0, 0,
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- ),
+-- (
+--     9, '5F-001-GAV', 'glm-at-village', 'GLM at Village',
+--     'GLM deployment and use at Village.',
+--     NULL,
+--     '/assets/courses/5F/5F-001-GAV.png', 201, 'free', NULL,
+--     0, 12, 1, 'expert', 'groups',
+--     NULL, 'original', 1, 0, 0, 0,
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- ),
+-- (
+--     10, 'GM-001-ITG', 'introduction-to-gaius', 'Introduction to GAIUS',
+--     'Getting started with GAIUS.',
+--     NULL,
+--     '/assets/courses/GM/GM-001-ITG.png', 101, 'free', NULL,
+--     0, 13, 1, 'explorer', 'self_guided',
+--     NULL, 'original', 0, 0, 0, 0,
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- ),
+-- (
+--     11, 'PH-003-I2L', 'introduction-to-lithium', 'Introduction to Lithium',
+--     'Learn the Lithium SPA and Hydrogen APIs.',
+--     NULL,
+--     '/assets/courses/PH/PH-003-I2L.png', 801, 'free', NULL,
+--     0, 14, 1, 'expert', 'self_guided',
+--     NULL, 'original', 0, 0, 0, 0,
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- ),
+-- (
+--     12, 'LB-002-MCL', 'managing-canvas-for-lanboss', 'Managing Canvas for Lanboss',
+--     'Canvas administration for Lanboss.',
+--     NULL,
+--     '/assets/courses/LB/LB-002-MCL.png', 202, 'free', NULL,
+--     0, 15, 1, 'expert', 'instructor',
+--     NULL, 'original', 0, 0, 0, 0,
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- ),
+-- (
+--     13, 'LT-001-HCP', 'history-science-cultivated-plants',
+--     'History and Science of Cultivated Plants',
+--     'History and science of cultivated plants.',
+--     NULL,
+--     '/assets/courses/LT/LT-001-HCP.jpg', 901, 'free', NULL,
+--     0, 16, 1, 'explorer', 'self_guided',
+--     'CC-BY-SA-4.0', 'libretexts', 0, 0, 0, 0,
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- ),
+-- (
+--     14, 'SC-001-ADH', 'adult-health', 'Adult Health',
+--     'Adult health topics.',
+--     NULL,
+--     '/assets/courses/LT/LT-002-ADH.jpeg', 1002, 'free', NULL,
+--     0, 17, 1, 'explorer', 'self_guided',
+--     NULL, 'canvas_commons', 0, 0, 0, 0,
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- ),
+-- -- internal template: published=0
+-- (
+--     15, '5C-000-TMP', 'course-template-english', 'Course Template (English)',
+--     'Internal English course template.',
+--     NULL,
+--     '/assets/courses/5C/5C-000-TMP.png', 1003, 'free', NULL,
+--     0, 99, 0, NULL, 'self_guided',
+--     NULL, 'original', 0, 0, 0, 0,
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT_TIMESTAMP,
+--             0,
+--             CURRENT_TIMESTAMP
+--         
+-- );
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- -- Free courses intentionally have no course_prices rows (FL-34).
+-- 
+-- UPDATE demo.queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1293
+--   and query_type_a28 = 1000;
+-- $schematool$,
+--        summary = $schematool$
+-- # Forward Migration 1293: Seed courses
+-- 
+-- Inserts live Canvas catalog rows into `demo.courses` with
+-- Reception asset paths. Six featured rows (sort_order 0–5) replace
+-- the six placeholder home cards. All v1 seeds are `pricing_type=free`
+-- with **no** `course_prices` rows (FL-34). Course template is
+-- `published=0`. Same multi-row `INSERT … VALUES` pattern as 1280.
+-- $schematool$
+--  WHERE query_ref = 1293
+--    AND query_type_a28 = 1000;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1283: missing LOAD and APPLY
+-- Disk: acuranzo_1283.lua
+-- Prefer: start Hydrogen with AutoMigration against this DB (LOAD then APPLY).
+-- Do not hand-expand full DDL here (risk of double-apply on partial schemas).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1284: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1284.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1285: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1285.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1286: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1286.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1287: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1287.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1288: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1288.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1289: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1289.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1290: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1290.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1291: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1291.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1292: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1292.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1293: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1293.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1294: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1294.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1295: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1295.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1296: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1296.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1297: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1297.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1298: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1298.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1299: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1299.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1300: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1300.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1301: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1301.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1302: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1302.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1303: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1303.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1304: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1304.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1305: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1305.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1306: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1306.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1307: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1307.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1308: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1308.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1309: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1309.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1310: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1310.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1311: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1311.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1312: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1312.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1313: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1313.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1314: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1314.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1315: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1315.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1316: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1316.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1317: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1317.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1318: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1318.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1319: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1319.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1320: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1320.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1321: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1321.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1322: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1322.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1323: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1323.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1324: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1324.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1325: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1325.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1326: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1326.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1327: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1327.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1328: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1328.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1329: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1329.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1330: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1330.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1331: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1331.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1332: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1332.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1333: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1333.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1334: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1334.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1335: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1335.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1336: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1336.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1337: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1337.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1338: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1338.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1339: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1339.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1340: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1340.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1341: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1341.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1342: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1342.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1343: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1343.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1344: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1344.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1345: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1345.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1346: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1346.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1347: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1347.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1348: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1348.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1349: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1349.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1350: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1350.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1351: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1351.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1352: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1352.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1353: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1353.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1354: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1354.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1355: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1355.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1356: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1356.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1357: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1357.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1358: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1358.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1359: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1359.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1360: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1360.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1361: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1361.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1362: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1362.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1363: loaded (type 1000), not applied (no type 1003)
+-- Disk: acuranzo_1363.lua
+-- Prefer: run Hydrogen APPLY through this ref (AutoMigration / lead APPLY).
+-- ---------------------------------------------------------------------------
+--

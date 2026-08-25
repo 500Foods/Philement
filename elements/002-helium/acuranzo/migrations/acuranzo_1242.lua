@@ -116,7 +116,7 @@ table.insert(queries,{sql=[[
 
                     ## Security Notes
 
-                    - `query_type_a28` is `${TYPE_INTERNAL_SQL}` (0) so this query
+                    - `query_type_a28` is `TYPE_INTERNAL_SQL` (0) so this query
                       is not reachable via the REST API.
                     - The plaintext OTP is never stored; only `code_hash` is
                       persisted.

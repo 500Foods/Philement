@@ -411,6 +411,50 @@ size_t scoreboard_count(Scoreboard* sb) {
     return c;
 }
 
+/*
+ * Remove all terminal-state entries (COMPLETED, FAILED, KILLED) from
+ * the scoreboard. Non-terminal (PENDING, RUNNING) entries are preserved
+ * in their original relative order. Returns the number of entries
+ * pruned.
+ *
+ * Thread-safe: takes the scoreboard mutex for the duration of the
+ * compaction. The critical section is O(n) but cheap — freeing owned
+ * strings + a memmove-style shift of POD struct fields. No external
+ * allocations or blocking calls occur under the lock.
+ */
+size_t scoreboard_prune_terminal(Scoreboard* sb) {
+    if (!sb) {
+        return 0;
+    }
+    pthread_mutex_lock(&sb->mutex);
+
+    size_t pruned = 0;
+    size_t write_idx = 0;
+    for (size_t i = 0; i < sb->count; i++) {
+        if (is_terminal_status(sb->entries[i].status)) {
+            entry_clear_owned(&sb->entries[i]);
+            pruned++;
+        } else {
+            if (write_idx != i) {
+                sb->entries[write_idx] = sb->entries[i];
+            }
+            write_idx++;
+        }
+    }
+
+    /* Zero the vacated tail slots so no stale job_id / status remains
+     * that could be matched by a subsequent scoreboard_find before the
+     * slot is reused by a new submit. */
+    for (size_t i = write_idx; i < sb->count; i++) {
+        memset(&sb->entries[i], 0, sizeof(ScoreboardEntry));
+    }
+
+    sb->count = write_idx;
+
+    pthread_mutex_unlock(&sb->mutex);
+    return pruned;
+}
+
 bool scoreboard_update_progress(Scoreboard* sb, const char* job_id,
                                 uint64_t instruction_count,
                                 size_t memory_used_kb) {
@@ -627,10 +671,7 @@ bool scoreboard_list(Scoreboard* sb,
     return ok;
 }
 
-/*
- * Free an array of heap-allocated entry copies returned by scoreboard_list. Frees each entry (via scoreboard_entry_free) and
- * then the array. Safe with NULL list or zero count.
- */
+// Free an array of heap-allocated entry copies returned by scoreboard_list. Frees each entry (via scoreboard_entry_free) and then the array. Safe with NULL list or zero count.
 void scoreboard_list_free(ScoreboardEntry** list, size_t count) {
     if (!list) {
         return;
@@ -641,16 +682,10 @@ void scoreboard_list_free(ScoreboardEntry** list, size_t count) {
     free(list);
 }
 
-/*
- * Phase 12: attach a waiter to a job. See scoreboard.h for the* contract. POD pointers, so the critical section only sets three
- * fields; no allocations, no strdups.
- * Idempotency: a second attach is a no-op (first writer wins). This matches the submitter's typical pattern ("attach if not already
- * attached") and prevents a racing attach from clobbering a waiter  that is already in place.
- */
-bool scoreboard_attach_waiter(Scoreboard* sb,
-                             const char* job_id,
-                             void* waiter_handle,
-                             void* result_ref) {
+// Phase 12: attach a waiter to a job. See scoreboard.h for the* contract. POD pointers, so the critical section only sets three fields; no allocations, no strdups.
+// Idempotency: a second attach is a no-op (first writer wins). This matches the submitter's typical pattern ("attach if not already attached") and prevents
+// a racing attach from clobbering a waiter  that is already in place.
+ bool scoreboard_attach_waiter(Scoreboard* sb, const char* job_id, void* waiter_handle, void* result_ref) {
     if (!sb || !job_id) {
         return false;
     }
@@ -685,17 +720,9 @@ bool scoreboard_attach_waiter(Scoreboard* sb,
     return found;
 }
 
-/*
- * Phase 12: read the waiter fields. The scoreboard mutex is held
- * only long enough to copy three POD fields, so callers can read
- * the snapshot and then do their own blocking work (e.g. condvar
- * wait) without holding the scoreboard lock.
- */
-bool scoreboard_get_waiter(Scoreboard* sb,
-                           const char* job_id,
-                           bool* out_has_waiter,
-                           void** out_handle,
-                           void** out_result) {
+// Phase 12: read the waiter fields. The scoreboard mutex is held only long enough to copy three POD fields, so callers can read
+ // the snapshot and then do their own blocking work (e.g. condvar wait) without holding the scoreboard lock.
+bool scoreboard_get_waiter(Scoreboard* sb, const char* job_id, bool* out_has_waiter, void** out_handle, void** out_result) {
     if (out_has_waiter) {
         *out_has_waiter = false;
     }
@@ -730,15 +757,8 @@ bool scoreboard_get_waiter(Scoreboard* sb,
     return found;
 }
 
-/*
- * Phase 12: claim the waiter for a one-shot completion signal.
- * Live scoreboard state is authoritative; workers must not rely on
- * an early scoreboard_find snapshot of has_waiter.
- */
-bool scoreboard_claim_waiter(Scoreboard* sb,
-                             const char* job_id,
-                             void** out_handle,
-                             void** out_result) {
+// Phase 12: claim the waiter for a one-shot completion signal. Live scoreboard state is authoritative; workers must not rely on an early scoreboard_find snapshot of has_waiter.
+bool scoreboard_claim_waiter(Scoreboard* sb, const char* job_id, void** out_handle, void** out_result) {
     if (!sb || !job_id) {
         return false;
     }
@@ -766,13 +786,8 @@ bool scoreboard_claim_waiter(Scoreboard* sb,
     return claimed;
 }
 
-/*
- * Phase 12: clear the waiter fields. Use with care; in v1 there
- * is no caller that needs this (Phase 13's H_Handle lifecycle owns
- * its own cleanup), but the C API is in place for future REST
- * cancel-after-wait paths and for Unity tests that want to assert
- * the "no waiter" state directly.
- */
+// Phase 12: clear the waiter fields. Use with care; in v1 there is no caller that needs this (Phase 13's H_Handle lifecycle owns its own cleanup), 
+// but the C API is in place for future REST cancel-after-wait paths and for Unity tests that want to assert the "no waiter" state directly.
 bool scoreboard_clear_waiter(Scoreboard* sb, const char* job_id) {
     if (!sb || !job_id) {
         return false;
@@ -795,13 +810,9 @@ bool scoreboard_clear_waiter(Scoreboard* sb, const char* job_id) {
     return found;
 }
 
-/*
- * Phase 24: store structured error info for a failed job.
- * Thread-safe. Strings are strdup'd into scoreboard-owned memory.
- */
-bool scoreboard_update_error(Scoreboard* sb, const char* job_id,
-                              const char* error_message,
-                              const char* error_traceback) {
+// Phase 24: store structured error info for a failed job.
+// Thread-safe. Strings are strdup'd into scoreboard-owned memory.
+bool scoreboard_update_error(Scoreboard* sb, const char* job_id, const char* error_message, const char* error_traceback) {
     if (!sb || !job_id) {
         return false;
     }
@@ -843,13 +854,9 @@ bool scoreboard_update_error(Scoreboard* sb, const char* job_id,
     return false;
 }
 
-/*
- * Phase 25: store artifact metadata for a completed job.
- * Thread-safe. Strings are strdup'd into scoreboard-owned memory.
- */
-bool scoreboard_update_result(Scoreboard* sb, const char* job_id,
-                              const char* result_type,
-                              const char* result_location) {
+// Phase 25: store artifact metadata for a completed job.
+// Thread-safe. Strings are strdup'd into scoreboard-owned memory.
+bool scoreboard_update_result(Scoreboard* sb, const char* job_id, const char* result_type, const char* result_location) {
     if (!sb || !job_id) {
         return false;
     }
@@ -891,11 +898,8 @@ bool scoreboard_update_result(Scoreboard* sb, const char* job_id,
     return false;
 }
 
-/*
- * LUA_CLIENT Phase 1: store inline JSON result body.
- */
-bool scoreboard_update_result_json(Scoreboard* sb, const char* job_id,
-                                   const char* result_json) {
+// LUA_CLIENT Phase 1: store inline JSON result body.
+bool scoreboard_update_result_json(Scoreboard* sb, const char* job_id, const char* result_json) {
     if (!sb || !job_id) {
         return false;
     }
@@ -938,11 +942,8 @@ bool scoreboard_update_result_json(Scoreboard* sb, const char* job_id,
     return false;
 }
 
-/*
- * LUA_CLIENT Phase 5: store JWT subject for REST-submitted jobs.
- */
-bool scoreboard_set_submitted_by(Scoreboard* sb, const char* job_id,
-                                 const char* submitted_by) {
+// LUA_CLIENT Phase 5: store JWT subject for REST-submitted jobs.
+bool scoreboard_set_submitted_by(Scoreboard* sb, const char* job_id, const char* submitted_by) {
     if (!sb || !job_id) {
         return false;
     }

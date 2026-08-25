@@ -103,7 +103,7 @@ table.insert(queries,{sql=[[
             - **is_featured / sort_order / published**: Home + catalog flags.
             - **level / delivery_style / license / source / has_***: Card tags.
 
-            No SQL FK to accounts/canvas. `${COMMON_CREATE}` only for audit
+            No SQL FK to accounts/canvas. `COMMON_CREATE` only for audit
             timestamps (no second domain created_at).
         ]=]
                                                                             AS summary,

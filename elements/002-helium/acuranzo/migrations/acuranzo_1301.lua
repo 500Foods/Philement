@@ -82,8 +82,8 @@ table.insert(queries,{sql=[[
               + expiration dates. Default **1**. Pref stored now; send job
               is not in Band L.
 
-            Booleans are `${INTEGER_SMALL}` 0/1 (same as `courses.is_featured`).
-            `${COMMON_CREATE}` supplies `created_at` / `updated_at` — do
+            Booleans are `INTEGER_SMALL` 0/1 (same as `courses.is_featured`).
+            `COMMON_CREATE` supplies `created_at` / `updated_at` — do
             **not** add a second domain `created_at` (FL-29c).
 
             ## Defaults for a freshly provisioned account

@@ -135,7 +135,7 @@ table.insert(queries,{sql=[[
         [=[
             # Reverse Migration ${MIGRATION}: Drop orders refund columns
 
-            Exact undo. `${REORG}` around DROP (DB2 SQL0668N rc7).
+            Exact undo. `REORG` around DROP (DB2 SQL0668N rc7).
         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,

@@ -72,6 +72,7 @@ int H_lua_scoreboard_list(lua_State* L);
 int H_lua_scoreboard_get(lua_State* L);
 int H_lua_scoreboard_submit(lua_State* L);
 int H_lua_scoreboard_cancel(lua_State* L);
+int H_lua_scoreboard_prune_terminal(lua_State* L);
 
 bool split_module_name(const char* name, char** group_out, char** script_out);
 int H_lua_package_searcher(lua_State* L);

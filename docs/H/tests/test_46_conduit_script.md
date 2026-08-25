@@ -27,7 +27,7 @@ Validates across all seven database engines (parallel):
 - **Test Name**: Conduit Script
 - **Test Abbreviation**: CSC
 - **Test Number**: 46
-- **Version**: 1.2.0
+- **Version**: 1.2.1
 
 ## Port Assignment
 
@@ -58,6 +58,9 @@ Each enables **API** (JWT) and **Scripting** (workers + DefaultDatabase `Acuranz
 **SQLite** uses an isolated copy of `hydrodemo.sqlite` with a blackbox seed for
 `Api.Echo`, `scripts.invokable`, and QueryRef **#149** (AutoMigration is off on
 this path because the shared fixture has an APPLY hole at migration 1283).
+The seed is **idempotent**: it only adds the `invokable` column if missing and
+uses `INSERT OR IGNORE` for all rows, so a baseline that already has migrations
+1296–1298 is not overwritten or downgraded.
 
 **Other engines** attempt the same cases when the live DB already has migrations
 1296–1298; otherwise the engine is **skipped** (still counted pass) until

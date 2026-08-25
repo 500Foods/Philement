@@ -4,6 +4,8 @@
 --
 -- CHANGELOG
 -- 0.5.5 - 2026-08-24 - Phase 7: u_label + explain_check for catalog DDL apply
+-- 0.5.7 - 2026-08-24 - Decode MySQL/MariaDB lowercase brotli_decompress(FROM_BASE64('...'))
+-- 0.5.6 - 2026-08-24 - Decode DB2 brotli+base64; PostgreSQL brotli_decompress + CONVERT_FROM(DECODE)
 -- 0.5.4 - 2026-08-24 - Phase 5 slice: orphan [U] label + explain_check branch
 -- 0.5.1 - 2026-08-23 - [U] is update; catalog findings show last fold ref
 -- 0.5.0 - 2026-08-23 - Phase 5: review [U] reason (one-field apply)
@@ -226,6 +228,9 @@ local function has_embed(s)
     return s:find("BROTLI_DECOMPRESS", 1, true)
         or s:find("CRYPTO_DECODE", 1, true)
         or s:find("FROM_BASE64", 1, true)
+        or s:find("BASE64DECODE", 1, true)
+        or s:find("brotli_decompress", 1, true)
+        or s:find("CONVERT_FROM", 1, true)
 end
 
 local function drift_field_specs(obj, expected, actual)
@@ -739,7 +744,49 @@ decode_embedded = function(s)
             return decode_brotli_b64(b64) or "«brotli decode failed»"
         end)
     s = s:gsub(
+        "[%w_]*%.?brotli_decompress%s*%(%s*[%w_]*%.?FROM_BASE64%s*%(%s*'([^']+)'[^)]*%)%s*%)",
+        function(b64)
+            return decode_brotli_b64(b64) or "«brotli decode failed»"
+        end)
+    s = s:gsub(
+        "[%w_]*%.?BROTLI_DECOMPRESS%s*%(%s*[%w_]*%.?BASE64DECODEBINARY%s*%(%s*'([^']+)'[^)]*%)%s*%)",
+        function(b64)
+            return decode_brotli_b64(b64) or "«brotli decode failed»"
+        end)
+    s = s:gsub(
+        "[%w_]*%.?brotli_decompress%s*%(%s*[%w_]*%.?DECODE%s*%(%s*'([^']+)'[^)]*%)%s*%)",
+        function(b64)
+            return decode_brotli_b64(b64) or "«brotli decode failed»"
+        end)
+    s = s:gsub(
+        "[%w_]*%.?CONVERT_FROM%s*%(%s*[%w_]*%.?DECODE%s*%(%s*'([^']+)'[^)]*%)%s*,[^)]*%)",
+        function(b64)
+            local raw = base64_decode(b64)
+            if raw == "" then
+                return "«base64 decode failed»"
+            end
+            return raw
+        end)
+    s = s:gsub(
         "CRYPTO_DECODE%s*%(%s*'([^']+)'[^)]*%)",
+        function(b64)
+            local raw = base64_decode(b64)
+            if raw == "" then
+                return "«base64 decode failed»"
+            end
+            return raw
+        end)
+    s = s:gsub(
+        "[%w_]*%.?BASE64DECODE%s*%(%s*'([^']+)'[^)]*%)",
+        function(b64)
+            local raw = base64_decode(b64)
+            if raw == "" then
+                return "«base64 decode failed»"
+            end
+            return raw
+        end)
+    s = s:gsub(
+        "[%w_]*%.?FROM_BASE64%s*%(%s*'([^']+)'[^)]*%)",
         function(b64)
             local raw = base64_decode(b64)
             if raw == "" then

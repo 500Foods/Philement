@@ -81,7 +81,7 @@ table.insert(queries,{sql=[[
               `published` | `tags`.
             - **actor**: `system` (sync / later poll).
             - **detail**: short before→after or upserted keys.
-            - `${COMMON_CREATE}` supplies `created_at` / `updated_at`.
+            - `COMMON_CREATE` supplies `created_at` / `updated_at`.
 
             Empty after APPLY. Writer is 1336+ (`Catalog.LogEvent`
             plus `Catalog.SyncFromCanvas`).

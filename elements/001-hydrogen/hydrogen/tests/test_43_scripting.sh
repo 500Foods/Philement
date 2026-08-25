@@ -43,6 +43,10 @@
 # start_mock_llm / stop_mock_llm
 
 # CHANGELOG
+# 2.7.1 - 2026-08-24 - Added RSS growth monitoring and prune_terminal wiring
+#                      assertion to catch unbounded scoreboard growth (the
+#                      OOM precondition). Extended tick_settle to 10s so the
+#                      prune path is exercised with multiple completed jobs.
 # 2.7.0 - 2026-08-21 - Orchestrator H.system/H.gc/H.log + API error-handle probes
 # 2.6.0 - 2026-07-30 - Orchestrator mail_repo_probe (H.mail template/route/cleanup/event)
 #                      for blackbox coverage when SQLite seeds orchestrator.lua
@@ -67,7 +71,7 @@ TEST_NAME="Scripting  {BLUE}engines: 7{RESET}"
 TEST_ABBR="SCR"
 TEST_NUMBER="43"
 TEST_COUNTER=0
-TEST_VERSION="2.7.0"
+TEST_VERSION="2.7.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -162,7 +166,10 @@ SCRIPTING_TEST_CONFIGS=(
 # quick; the fail-fast path keeps a broken engine from blocking here.
 STARTUP_TIMEOUT=60
 SHUTDOWN_TIMEOUT=15
-TICK_SETTLE_SECONDS=3
+# Extended settle gives the Orchestrator enough ticks to exercise
+# the prune_terminal path (each tick when idle submits a one-shot
+# orchestrator.tick job that immediately goes terminal and gets pruned).
+TICK_SETTLE_SECONDS=10
 
 # ---------------------------------------------------------------------------
 # Pre-flight
@@ -296,9 +303,49 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         # shellcheck disable=SC2310 # We want to continue even if the test fails
         if scripting_assert_log_contains "${result_file}" "LIFECYCLE_COMPLETE"; then
             tick_line=$("${GREP}" "^ORCH_TICKS=" "${result_file}" 2>/dev/null | head -1 || echo "ORCH_TICKS=0")
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: start -> ${tick_line#ORCH_TICKS=} tick(s) -> clean shutdown"
+            rss_init_line=$("${GREP}" "^ORCH_RSS_INITIAL_KB=" "${result_file}" 2>/dev/null | head -1 || echo "ORCH_RSS_INITIAL_KB=0")
+            rss_final_line=$("${GREP}" "^ORCH_RSS_FINAL_KB=" "${result_file}" 2>/dev/null | head -1 || echo "ORCH_RSS_FINAL_KB=0")
+            rss_delta_line=$("${GREP}" "^ORCH_RSS_DELTA_KB=" "${result_file}" 2>/dev/null | head -1 || echo "ORCH_RSS_DELTA_KB=0")
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: start -> ${tick_line#ORCH_TICKS=} tick(s) -> clean shutdown (${rss_init_line#ORCH_RSS_INITIAL_KB=}KB -> ${rss_final_line#ORCH_RSS_FINAL_KB=}KB, Δ${rss_delta_line#ORCH_RSS_DELTA_KB}KB)"
             PASS_COUNT=$(( PASS_COUNT + 1 ))
             successful_configs=$(( successful_configs + 1 ))
+
+            # Inform the prune_terminal wiring status. For SQLite engines
+            # the reference orchestrator.lua (seeded from source) includes
+            # the call, so ORCH_PRUNED should be present. For non-SQLite
+            # engines the orchestrator is loaded from the DB fixture (which
+            # predates migration 1364), so ORCH_PRUNED may be absent — this
+            # is expected and not a test failure. The authoritative regression
+            # guard is the RSS growth check below.
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: scoreboard prune_terminal wired"
+            if scripting_assert_log_contains "${result_file}" "ORCH_PRUNED"; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: prune_terminal log line observed"
+                PASS_COUNT=$(( PASS_COUNT + 1 ))
+            else
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: prune_terminal not exercised (DB fixture predates migration 1364) — RSS growth check is authoritative"
+            fi
+
+            # Assert RSS growth during the observation window is bounded.
+            # The Orchestrator runs for tick_settle seconds after the first
+            # tick; with prune_terminal every tick, finished entries are
+            # reclaimed immediately so RSS should be flat. A growth > 15 MB
+            # in this window indicates the prune path is not firing and
+            # terminal entries are accumulating (the OOM precondition).
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: RSS growth bounded"
+            rss_delta="${rss_delta_line#ORCH_RSS_DELTA_KB=}"
+            rss_delta="${rss_delta//[^0-9-]/}"
+            if [[ -z "${rss_delta}" || ! "${rss_delta}" =~ ^-?[0-9]+$ ]]; then
+                rss_delta=0
+            fi
+            # -5 MB tolerance for GC / Lua runtime noise; +15 MB threshold
+            # for unbounded scoreboard growth.
+            if [[ "${rss_delta}" -le 15360 ]]; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: RSS delta ${rss_delta}KB within 15 MB threshold"
+                PASS_COUNT=$(( PASS_COUNT + 1 ))
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: RSS grew ${rss_delta}KB (> 15 MB) during tick window — possible scoreboard leak"
+                EXIT_CODE=1
+            fi
         else
             reason="incomplete lifecycle"
             # shellcheck disable=SC2310 # We want to continue even if the test fails

@@ -1,0 +1,142 @@
+-- =============================================================================
+-- SchemaTool remediation (NOT EXECUTED)
+-- schematool 1.8.3 · phase 4 audit
+-- design=acuranzo engine=db2 schema=demo database=HYDROTST
+-- migrations=/mnt/extra/Projects/Philement/elements/002-helium/acuranzo/migrations
+-- normalize=loose
+-- Generated: 20260824T173349Z
+-- counts: {"total":364,"ok":362,"drift":2,"missing_load":0,"missing_apply":0,"anomalies":0,"orphans":0}
+-- exit_code=2
+-- Rule: Uncomment deliberately. Prefer Hydrogen LOAD/APPLY when possible.
+-- Updating queries.code does NOT replay DDL against live tables.
+-- Prefer a NEW forward migration when live schema must change.
+-- Content match scope (v1): code + name + summary.
+-- Orphan DB refs: captured to .mig for optional new-migration rebuild.
+-- =============================================================================
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1223: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1223.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE demo.queries
+--    SET code = '
+-- INSERT INTO DEMO.queries (
+--                                 query_id,
+--                 query_ref,
+--                 query_status_a27,
+--                 query_type_a28,
+--                 query_dialect_a30,
+--                 query_queue_a58,
+--                 query_timeout,
+--                 code,
+--                 name,
+--                 summary,
+--                 collection,
+--                 valid_after,
+--                 valid_until,
+--                 created_id,
+--                 created_at,
+--                 updated_id,
+--                 updated_at
+--             
+-- )
+-- WITH next_query_id AS (
+--     SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+--     FROM DEMO.queries
+-- )
+-- SELECT
+--     new_query_id                                                        AS query_id,
+--     093                                                        AS query_ref,
+--     1                                                    AS query_status_a27,
+--     0                                                AS query_type_a28,
+--     4                                                          AS query_dialect_a30,
+--     0                                                         AS query_queue_a58,
+--     5000                                                          AS query_timeout,
+--     DEMO.BROTLI_DECOMPRESS(DEMO.BASE64DECODEBINARY(''G7UEAMSCdfUtaeMb6QCleYB+/doQC51WLlfeX0E8FPOQfM+JDOloDImU0LBNXK+esueC9OjzEHHgmWO/4geI6RgSu2eGeSwRM38GmqBgjNfiCa/tQClLIROtBrWjbNwb3u8zZP4H5oNuJbgymdg4i+M6gxN7oDpuGhdzMnhdM4XC+InYY06yZ5kOXvMVr/UvRxzwEMADNdzsV+sz09IXy7897X8UmAJB1MUpbJuRAq6L+KeNAN3vnw7sHcAfRYyFA3QHYHmq0UEXJ0qMBzFGOrUhg1tkNKvPX9Qpb4GQMrlQcfQsRLBglP2XPMFWIkkpOUJekj4t17hV5iq3lU0u6682qgMQGYg5sYAaoCqsNtbrepNHXvyDJDHkU48tKeE0bQ8LXeY3WEoGS/1CkOVwcsSts4i9XKlIjyNczuxZflrHtsPPxHfESp7jIuKlJ5YcrOk/Q1Yc34sVVyrsG+JIMITu4clHN7bDBcH+OtKR8EwlzWi1FV7XykY7hkSNJMz9iLqj8pTrdeZj4ykB''))                                                                AS code,
+--     ''Insert Pending Mail Queue Row''                                                     AS name,
+--     DEMO.BROTLI_DECOMPRESS(DEMO.BASE64DECODEBINARY(''G1MFALwV0GNPA6oMWFyOHIWdVpTY6unioIs4/fLXRA2iEBO2R1qCwFhkZ39NNQHQPhlXuwHUbiBycxsGZ8dOreiUDFmC5aQUUVWWJb2lmdtdv5WlhfX5v59n7KMp7d/7YlFhVfZrIVKFExxQIs1ibakX9cuFHqrS0U7ykxik6rdge8+RkHsUoGbUUi9+0V+sT8y79MXtn6WHr+csxGvmAmUPk3ncxtUgUJmj8hN8P6d99p3AKILh3pW4Qhjxir2Bgi/2pYA1Wp4VqTaZ+yLBMxxsolFLZeRbf1SK0S40gEOlFjJKpGSpVUZUD5fBAKyM/+bjVdPKFxzN+0SooOHCobpafE6ONhOFMu4eFRmjbLnI2ilFxDv6c/wASdSYKat2eX263tY1OhT/luaABzsVvQcNAzaY5XCzMryS6W40pwZkFQ1qANCCKsCHzswy2t2VBo0POS3Fa3EOKVvXK1yHx75FWEgM2LyHhtr0xghGOGfERU0GO+cFfnURiJk/XpTg4svlo+l5eRrATUjsHy2aFwZDzVdmGswsrrlHBUF1+CtzTBjosHOUJiLaeG8cGrMXHzrKkSZMJl2AQph/WWse79pKCQyk53V5hg7+QxYsgmgs+HwugKeI+bdRAxdSqeAqScDSBZwH7EnTPB/NgvnD5Om0f+6vl2Tn8NP0islinhMwt4rOT11ARLTa/PrExQvzakSibwnDE0onGJ2eC3+JSUufSc7r8Z+MzkhSCZivEecV6JNH3qvUa2j0C1Qq6pOZM5XalR5/cgVeoTkZ+4PrkCdPITD+LSfIgS4JuJcJQ5gPlk6hVQ0=''))
+--                                                                         AS summary,
+--     ''{}''                                                                AS collection,
+--                             NULL            AS valid_after ,
+--             NULL            AS valid_until ,
+--             0               AS created_id ,
+--             CURRENT TIMESTAMP          AS created_at ,
+--             0               AS updated_id ,
+--             CURRENT TIMESTAMP          AS updated_at
+--         
+-- FROM next_query_id;
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE DEMO.queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1223
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1223
+--    AND query_type_a28 = 1003;
+--
+-- ---------------------------------------------------------------------------
+-- Ref 1289: forward_load drift (type 1003) fields=code
+-- Disk: acuranzo_1289.lua
+-- NOTE: metadata-only fix. Does not replay DDL. Prefer new migration if schema wrong.
+-- ---------------------------------------------------------------------------
+-- UPDATE demo.queries
+--    SET code = '
+-- INSERT INTO DEMO.scripts (
+--     group_name,
+--     script_name,
+--     script_type,
+--     schedule,
+--     next_run,
+--     last_run_start,
+--     last_run_end,
+--     status,
+--     code,
+--     summary,
+--                             valid_after,
+--             valid_until,
+--             created_id,
+--             created_at,
+--             updated_id,
+--             updated_at
+--         
+-- )
+-- VALUES (
+--     ''Provision'',
+--     ''EnsureCanvasUser'',
+--     1,
+--     NULL, NULL, NULL, NULL,
+--     1,
+--     DEMO.BROTLI_DECOMPRESS(DEMO.BASE64DECODEBINARY(''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'')),
+--     ''Phase 30: ensure Canvas user + account_canvas_links for OIDC accounts'',
+--                             NULL,
+--             NULL,
+--             0,
+--             CURRENT TIMESTAMP,
+--             0,
+--             CURRENT TIMESTAMP
+--         
+-- );
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- -- Patch Orchestrator: every ~60s submit EnsureCanvasUser (source from DB).
+-- UPDATE DEMO.scripts
+-- SET code = DEMO.BROTLI_DECOMPRESS(DEMO.BASE64DECODEBINARY(''G+8IABwHOdmpKYIysfBAKG7pTw2SosDyWs7+fF47nEGEM+VcnxVitCWXgXSpeIL0xFm592c/3YPXKPF3Ly8zF1ovSSilyi4Rhi7xBh1j/meKxAA7l/5hcewL8572A0wHDr34HgZ2uLNz5tXQMa6f3bS/A/qknIZss6jW5FdQQLYHNeEutaPUT6wQvn84V2uMzUCjx8euYcAN3eriGl2mvSCkN6yv1T6MCxlqz4npAGB8G4SVRPtN6SCawfstayrQtsivgso9OMhCSSaW9NKVJAk/iGProPr4A2lkpoNEvtipSI+0SEevYhFiUXC130g7hDyLynXjv7GDCrv6DCiUenH+YFUyeTmdJpuu0mUKbGUrjEInKjgR7EIVKcFYMMbmfJY/wCHMlykcAUBOPX/VpdhFCa0QOatKEQhjHpYzEo9TWixjIEbFgHZUDdxHEyuFagkdCTOxkKio50rTqdS1dG0j8wNgimp9V1rCJBudraTBVUX8CFacwR1Q8oGjJeI5Li7RwyKFjjJdCiTong9GgoaCqHs8kB9Va5+xdSIbLWimBErFej4zNX1n+4zMy8PPqo8RjQjSs/BmC5Sf2pw1GkVMWJdhyQj5Ky5VqWlnkIkBRqHlC7Ct0laMs4bcfN5DCZsjyrBukWLcU4Z3SasVb7SUYmmUBWr8RSOCQ7BukMf//7bGbktahRunaGW0xVwLnhEbnl4LrMaZqvOpdeegSdPsqcrw44TYah2m4WCo0RvgGbmrHBZ68lDKPJsOgrMecF+bAiSVE+2sYPO7EJj1KyFFYkSlku/GaEtALmoK9bRDxFHisAyK3JP1ezUF59OV10CyIlnfr5ImCN88bWvgvIucEMd+h3a0OGwoMaml0Ttos1w8vDy9SrtgPBwQ7V7E66YOGZzHwWfhe8OuxapxbNQFc4chK37CnSHsUo4nN8awawfRbr0X0g4aaxAL2w/Pwda4f9PX+qRfQ9dFrRKFTWf2XOP6ocnSQhLkxaBCSxLrSSCSBzYaZ0nOcb1tGZv1+o0i+g0iL5nn9HJtiKyRBhWeNq9pWEU91ks7wS8PNFrApsnYrp6gUnsXrbqECwo='')),
+--     updated_at = CURRENT TIMESTAMP,
+--     summary = ''500 Courses Orchestrator: EnsureCanvasUser every 60s (schema-safe scripts)''
+-- WHERE group_name = ''Orchestrators''
+--   AND script_name = ''Orchestrator'';
+-- 
+-- -- SUBQUERY DELIMITER
+-- 
+-- UPDATE DEMO.queries
+--   SET query_type_a28 = 1003
+-- WHERE query_ref = 1289
+--   and query_type_a28 = 1000;
+-- '
+--  WHERE query_ref = 1289
+--    AND query_type_a28 = 1003;
+--

@@ -237,6 +237,26 @@ int H_lua_scoreboard_cancel(lua_State* L) {
     return 1;
 }
 
+/*
+ * H.scoreboard.prune_terminal() -> count_removed (integer)
+ *
+ * Removes all terminal-state entries (completed, failed, killed) from
+ * the scoreboard, freeing their owned strings. Non-terminal entries
+ * (pending, running) are preserved. Returns the number of entries that
+ * were pruned.
+ *
+ * The Orchestrator calls this each tick to prevent unbounded growth of
+ * finished job entries, which is the primary source of RSS creep under
+ * sustained job throughput. Callers that need to inspect a finished
+ * job's details must snapshot via H.scoreboard.list() before pruning.
+ */
+int H_lua_scoreboard_prune_terminal(lua_State* L) {
+    Scoreboard* sb = resolve_active_scoreboard(L);
+    size_t pruned = scoreboard_prune_terminal(sb);
+    lua_pushinteger(L, (lua_Integer)pruned);
+    return 1;
+}
+
 // H.package.searcher implementation (Phase 11g) ////////////////////////////
 
 // Bytecode dump buffer for caching compiled modules
@@ -422,6 +442,7 @@ void H_lua_install_scoreboard(lua_State* L) {
     lua_pushcfunction(L, H_lua_scoreboard_get);    lua_setfield(L, -2, "get");
     lua_pushcfunction(L, H_lua_scoreboard_submit); lua_setfield(L, -2, "submit");
     lua_pushcfunction(L, H_lua_scoreboard_cancel); lua_setfield(L, -2, "cancel");
+    lua_pushcfunction(L, H_lua_scoreboard_prune_terminal); lua_setfield(L, -2, "prune_terminal");
 
     lua_pop(L, 2);
 }

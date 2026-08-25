@@ -304,6 +304,16 @@ bool scoreboard_update_status(Scoreboard* sb, const char* job_id, ScoreboardJobS
 size_t scoreboard_count(Scoreboard* sb);
 
 /*
+ * Remove all terminal-state entries (COMPLETED, FAILED, KILLED)
+ * from the scoreboard, preserving non-terminal (PENDING, RUNNING)
+ * entries in their original order. Returns the number of entries
+ * pruned. Safe with NULL.
+ *
+ * Thread-safe: takes the scoreboard mutex for the compaction.
+ */
+size_t scoreboard_prune_terminal(Scoreboard* sb);
+
+/*
  * Human-readable name for a status value (for logging). Returns
  * "unknown" for out-of-range values; never returns NULL.
  */
