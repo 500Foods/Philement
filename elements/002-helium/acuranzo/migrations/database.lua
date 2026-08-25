@@ -249,7 +249,10 @@ local database = {
         while unresolved > 0 do
             -- Run macro expansion
             for key, value in pairs(cfg) do
-                sql = sql:gsub("${" .. key .. "}", value)
+                -- Use a function replacement so values containing '%' (e.g. SQL
+                -- LIKE patterns or printf-style format specifiers) are not
+                -- misinterpreted as gsub capture references.
+                sql = sql:gsub("${" .. key .. "}", function() return value end)
             end
             -- Check if we still have macros left to expand
             if sql:match("${([^}]+)}") then
@@ -393,7 +396,10 @@ local database = {
                 local changed = false
                 for key, value in pairs(cfg) do
                     local before = sql
-                    sql = sql:gsub("${" .. key .. "}", value)
+                    -- Use a function replacement so values containing '%' (e.g. SQL
+                -- LIKE patterns or printf-style format specifiers) are not
+                -- misinterpreted as gsub capture references.
+                sql = sql:gsub("${" .. key .. "}", function() return value end)
                     if sql ~= before then
                         changed = true
                     end
@@ -412,7 +418,10 @@ local database = {
         while unresolved > 0 do
             -- Run macro expansion
             for key, value in pairs(cfg) do
-                sql = sql:gsub("${" .. key .. "}", value)
+                -- Use a function replacement so values containing '%' (e.g. SQL
+                -- LIKE patterns or printf-style format specifiers) are not
+                -- misinterpreted as gsub capture references.
+                sql = sql:gsub("${" .. key .. "}", function() return value end)
             end
             -- Check if we still have macros left to expand
             if sql:match("${([^}]+)}") then
