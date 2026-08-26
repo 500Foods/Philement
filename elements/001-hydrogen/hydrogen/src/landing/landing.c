@@ -101,6 +101,7 @@ LandingFunction get_landing_function(const char* subsystem_name) {
     if (strcmp(subsystem_name, SR_NOTIFY        ) == 0) return land_notify_subsystem;
     if (strcmp(subsystem_name, SR_SCRIPTING     ) == 0) return land_scripting_subsystem;
     if (strcmp(subsystem_name, SR_REPORTING     ) == 0) return land_reporting_subsystem;
+    if (strcmp(subsystem_name, SR_MCP           ) == 0) return land_mcp_subsystem;
     return NULL;
 }
 

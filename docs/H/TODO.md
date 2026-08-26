@@ -204,8 +204,8 @@ not open work unless listed below.
 | --- | --- |
 | **Plan** | [`MCP.md`](/docs/H/plans/MCP.md) |
 | **Effort** | XL |
-| **Done** | ~7% — Phase 0 locked, Phase 1 config complete |
-| **Remaining** | Phase 2 count bump / launch-landing, then Streamable HTTP + JWT, `scripts.mcp_access`, Lua `Mcp.Server`, Test 47 |
+| **Done** | ~8% — Phase 0–2 complete (config + skeleton launch/landing) |
+| **Remaining** | Phase 3 status counters, then Streamable HTTP + JWT, `scripts.mcp_access`, Lua `Mcp.Server`, Test 47 |
 | **Why later** | New capability. Reuses Scripting + JWT. Touches `MAX_SUBSYSTEMS` and launch/landing dispatch — do not start casually |
 | **Note** | C stays protocol-agnostic. Adding MCP tools is Lua + `mcp_access`, not Hydrogen C. |
 

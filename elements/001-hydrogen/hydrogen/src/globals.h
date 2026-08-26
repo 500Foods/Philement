@@ -81,7 +81,7 @@
 #define SR_QUEUES           "Queues"
 #define SR_MUTEXES          "Mutexes"         
 
-// The primary 22 Subsystems
+// The primary 24 Subsystems
 #define SR_REGISTRY         "Registry"
 #define SR_THREADS          "Threads"
 #define SR_PAYLOAD          "Payload"
@@ -104,6 +104,7 @@
 #define SR_MIRAGE           "Mirage"
 #define SR_SCRIPTING        "Scripting"   // Lua scripting subsystem (Phase 2b+)
 #define SR_REPORTING        "Reporting"   // Reporting service (image processing)
+#define SR_MCP              "MCP"         // Model Context Protocol server
 
 // Additional sub-Subsystem Tracking
 #define SR_WEBSOCKET_LIB    "WebSocket-Lib"     // Low-level libwebsockets diagnostics
@@ -112,9 +113,9 @@
 #define SR_CHAT             "Chat"              // Chat/AI proxy service
 #define SR_WEBSOCKET_CHAT   "WebSocket-Chat"    // WebSocket component of Chat
 
-#define INITIAL_REGISTRY_CAPACITY 22
-#define MAX_DEPENDENCIES 22
-#define MAX_SUBSYSTEMS 22  // Total number of subsystems
+#define INITIAL_REGISTRY_CAPACITY 24
+#define MAX_DEPENDENCIES 24
+#define MAX_SUBSYSTEMS 24  // Total number of subsystems
 
 // LOGGING ////////////////////////////////////////////////////////////////////////////////////////
 

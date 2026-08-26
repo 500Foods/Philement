@@ -139,6 +139,7 @@ ReadinessResults handle_landing_readiness(void) {
         {SR_OIDC,           check_oidc_landing_readiness},
         {SR_PAYLOAD,        check_payload_landing_readiness},
         {SR_THREADS,        check_threads_landing_readiness},
+         {SR_MCP,            check_mcp_landing_readiness},
          {SR_SCRIPTING,      check_scripting_landing_readiness},
          {SR_REPORTING,      check_reporting_landing_readiness},
          {SR_REGISTRY,       check_registry_landing_readiness}

@@ -107,6 +107,7 @@ extern ServiceThreads websocket_threads;
 extern ServiceThreads mdns_server_threads;
 extern ServiceThreads print_threads;
 extern ServiceThreads scripting_threads;
+extern ServiceThreads mcp_threads;
 
 // Component shutdown flags
 extern volatile sig_atomic_t mdns_client_system_shutdown;

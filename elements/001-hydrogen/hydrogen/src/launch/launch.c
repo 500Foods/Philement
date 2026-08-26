@@ -193,6 +193,7 @@ bool launch_approved_subsystems(ReadinessResults* results) {
         else if (strcmp(subsystem, SR_NOTIFY      ) == 0) { init_ok = (launch_notify_subsystem()      == 1); }
         else if (strcmp(subsystem, SR_SCRIPTING   ) == 0) { init_ok = (launch_scripting_subsystem()   == 1); }
         else if (strcmp(subsystem, SR_REPORTING   ) == 0) { init_ok = (launch_reporting_subsystem()   == 1); }
+        else if (strcmp(subsystem, SR_MCP         ) == 0) { init_ok = (launch_mcp_subsystem()         == 1); }
 
         // Update registry state based on result
         update_subsystem_state(subsystem_id, init_ok ? SUBSYSTEM_RUNNING : SUBSYSTEM_ERROR);

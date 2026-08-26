@@ -86,6 +86,7 @@ int land_notify_subsystem(void);
 int land_registry_subsystem(bool is_restart);
 int land_scripting_subsystem(void);
 int land_reporting_subsystem(void);
+int land_mcp_subsystem(void);
 
 // Landing readiness checks
 LaunchReadiness check_registry_landing_readiness(void);
@@ -108,6 +109,7 @@ LaunchReadiness check_oidc_landing_readiness(void);
 LaunchReadiness check_notify_landing_readiness(void);
 LaunchReadiness check_scripting_landing_readiness(void);
 LaunchReadiness check_reporting_landing_readiness(void);
+LaunchReadiness check_mcp_landing_readiness(void);
 
 // Free resources allocated during OIDC launch
 void free_oidc_resources(void);
