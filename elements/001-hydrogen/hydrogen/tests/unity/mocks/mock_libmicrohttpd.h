@@ -51,6 +51,7 @@ void mock_mhd_set_connection_info(const union MHD_ConnectionInfo *info);
 void mock_mhd_set_create_response_should_fail(bool should_fail);
 void mock_mhd_set_add_header_should_fail(bool should_fail);
 void mock_mhd_set_queue_response_result(enum MHD_Result result);
+unsigned int mock_mhd_get_last_status_code(void);
 void mock_mhd_set_start_daemon_should_fail(bool should_fail);
 void mock_mhd_set_daemon_info_result(const union MHD_DaemonInfo *info);
 

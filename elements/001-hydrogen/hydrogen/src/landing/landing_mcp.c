@@ -8,8 +8,11 @@
 #include <src/hydrogen.h>
 #include <src/mcp/mcp.h>
 #include <src/registry/registry.h>
+#include <src/threads/threads.h>
 
 #include "landing.h"
+
+extern ServiceThreads mcp_threads;
 
 LaunchReadiness check_mcp_landing_readiness(void) {
     LaunchReadiness readiness = {0};
@@ -46,6 +49,8 @@ int land_mcp_subsystem(void) {
     }
 
     log_this(SR_MCP, "Landing MCP subsystem", LOG_LEVEL_STATE, 0);
+    mcp_stop_listen();
+    init_service_threads(&mcp_threads, SR_MCP);
     mcp_shutdown();
     update_subsystem_after_shutdown(SR_MCP);
     log_this(SR_MCP, "MCP subsystem landed", LOG_LEVEL_STATE, 0);

@@ -157,7 +157,26 @@ typedef struct {
             int killed_jobs;
         } scripting;
         struct {
-            int sessions_active;
+            unsigned long long sessions_active;
+            unsigned long long sessions_total;
+            unsigned long long sessions_expired;
+            unsigned long long rpc_received;
+            unsigned long long rpc_succeeded;
+            unsigned long long rpc_failed;
+            unsigned long long rpc_in_flight;
+            unsigned long long auth_rejected;
+            unsigned long long auth_rejected_missing;
+            unsigned long long auth_rejected_malformed;
+            unsigned long long auth_rejected_hydrogen_jwt;
+            unsigned long long auth_rejected_oidc_idp;
+            unsigned long long auth_rejected_oidc_rp;
+            unsigned long long auth_rejected_aud;
+            unsigned long long auth_rejected_scope;
+            unsigned long long origin_rejected;
+            unsigned long long dispatch_timeouts;
+            unsigned long long bytes_in;
+            unsigned long long bytes_out;
+            time_t last_rpc_at;
         } mcp;
     } specific;
 } ServiceMetrics;

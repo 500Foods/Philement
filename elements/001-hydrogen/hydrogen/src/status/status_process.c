@@ -10,6 +10,7 @@
 #include <src/webserver/web_server_core.h>
 #include <src/database/database.h>
 #include <src/scripting/scoreboard_json.h>
+#include <src/mcp/mcp_stats.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
@@ -22,6 +23,7 @@ extern ServiceThreads mdns_server_threads;
 extern ServiceThreads print_threads;
 extern ServiceThreads database_threads;
 extern ServiceThreads scripting_threads;
+extern ServiceThreads mcp_threads;
 
 // External queue memory structures
 extern QueueMemoryMetrics log_queue_memory;
@@ -470,6 +472,34 @@ bool collect_service_metrics(SystemMetrics *metrics, const WebSocketMetrics *ws_
     metrics->scripting.specific.scripting.completed_jobs = scripting_metrics.completed_jobs;
     metrics->scripting.specific.scripting.failed_jobs = scripting_metrics.failed_jobs;
     metrics->scripting.specific.scripting.killed_jobs = scripting_metrics.killed_jobs;
+
+    update_service_thread_metrics(&mcp_threads);
+    {
+        McpMetrics mcp_metrics;
+        mcp_collect_metrics(&mcp_metrics);
+        metrics->mcp.enabled = mcp_metrics.enabled;
+        convert_thread_metrics(&mcp_threads, &metrics->mcp.threads);
+        metrics->mcp.specific.mcp.sessions_active = mcp_metrics.sessions_active;
+        metrics->mcp.specific.mcp.sessions_total = mcp_metrics.sessions_total;
+        metrics->mcp.specific.mcp.sessions_expired = mcp_metrics.sessions_expired;
+        metrics->mcp.specific.mcp.rpc_received = mcp_metrics.rpc_received;
+        metrics->mcp.specific.mcp.rpc_succeeded = mcp_metrics.rpc_succeeded;
+        metrics->mcp.specific.mcp.rpc_failed = mcp_metrics.rpc_failed;
+        metrics->mcp.specific.mcp.rpc_in_flight = mcp_metrics.rpc_in_flight;
+        metrics->mcp.specific.mcp.auth_rejected = mcp_metrics.auth_rejected;
+        metrics->mcp.specific.mcp.auth_rejected_missing = mcp_metrics.auth_rejected_missing;
+        metrics->mcp.specific.mcp.auth_rejected_malformed = mcp_metrics.auth_rejected_malformed;
+        metrics->mcp.specific.mcp.auth_rejected_hydrogen_jwt = mcp_metrics.auth_rejected_hydrogen_jwt;
+        metrics->mcp.specific.mcp.auth_rejected_oidc_idp = mcp_metrics.auth_rejected_oidc_idp;
+        metrics->mcp.specific.mcp.auth_rejected_oidc_rp = mcp_metrics.auth_rejected_oidc_rp;
+        metrics->mcp.specific.mcp.auth_rejected_aud = mcp_metrics.auth_rejected_aud;
+        metrics->mcp.specific.mcp.auth_rejected_scope = mcp_metrics.auth_rejected_scope;
+        metrics->mcp.specific.mcp.origin_rejected = mcp_metrics.origin_rejected;
+        metrics->mcp.specific.mcp.dispatch_timeouts = mcp_metrics.dispatch_timeouts;
+        metrics->mcp.specific.mcp.bytes_in = mcp_metrics.bytes_in;
+        metrics->mcp.specific.mcp.bytes_out = mcp_metrics.bytes_out;
+        metrics->mcp.specific.mcp.last_rpc_at = mcp_metrics.last_rpc_at;
+    }
 
     return true;
 }

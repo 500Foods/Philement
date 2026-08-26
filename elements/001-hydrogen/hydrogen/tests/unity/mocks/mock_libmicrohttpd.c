@@ -17,6 +17,7 @@ static const union MHD_ConnectionInfo* mock_mhd_connection_info = NULL;
 static bool mock_mhd_create_response_should_fail = false;
 static bool mock_mhd_add_header_should_fail = false;
 static enum MHD_Result mock_mhd_queue_response_result = MHD_YES;
+static unsigned int mock_mhd_last_status_code = 0;
 static bool mock_mhd_start_daemon_should_fail = false;
 static const union MHD_DaemonInfo* mock_mhd_daemon_info_result = NULL;
 static bool mock_mhd_is_terminal_websocket_request_result = true;
@@ -145,7 +146,8 @@ __attribute__((weak))
 enum MHD_Result MHD_queue_response(struct MHD_Connection *connection,
                                   unsigned int status_code,
                                   struct MHD_Response *response) {
-    (void)connection; (void)status_code; (void)response;
+    (void)connection; (void)response;
+    mock_mhd_last_status_code = status_code;
 
     return mock_mhd_queue_response_result;
 }
@@ -197,6 +199,7 @@ void mock_mhd_reset_all(void) {
     mock_mhd_create_response_should_fail = false;
     mock_mhd_add_header_should_fail = false;
     mock_mhd_queue_response_result = MHD_YES;
+    mock_mhd_last_status_code = 0;
     mock_mhd_start_daemon_should_fail = false;
     mock_mhd_daemon_info_result = NULL;
     mock_mhd_is_terminal_websocket_request_result = true;
@@ -420,6 +423,10 @@ void mock_mhd_set_add_header_should_fail(bool should_fail) {
  */
 void mock_mhd_set_queue_response_result(enum MHD_Result result) {
     mock_mhd_queue_response_result = result;
+}
+
+unsigned int mock_mhd_get_last_status_code(void) {
+    return mock_mhd_last_status_code;
 }
 
 /*

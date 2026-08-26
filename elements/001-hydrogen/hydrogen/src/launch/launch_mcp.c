@@ -2,7 +2,7 @@
  * MCP Subsystem Launch
  *
  * Registers MCP, validates listen/protocol when enabled, clean-skips when
- * disabled. Does not bind a port in Phase 2.
+ * disabled. Binds MHD when enabled.
  */
 
 #include <src/hydrogen.h>
@@ -137,7 +137,17 @@ int launch_mcp_subsystem(void) {
         return 1;
     }
 
+    if (!app_config->mcp.RequireJWT) {
+        log_this(SR_MCP, "ALERT: MCP.RequireJWT is false; unauthenticated POST is allowed (test-only)",
+                 LOG_LEVEL_ALERT, 0);
+    }
+
     mcp_init_state();
-    log_this(SR_MCP, "MCP subsystem launched (skeleton, no listen)", LOG_LEVEL_STATE, 0);
+    if (!mcp_start_listen(&app_config->mcp)) {
+        log_this(SR_MCP, "MCP listen failed", LOG_LEVEL_ERROR, 0);
+        mcp_shutdown();
+        return 0;
+    }
+    log_this(SR_MCP, "MCP subsystem launched", LOG_LEVEL_STATE, 0);
     return 1;
 }
