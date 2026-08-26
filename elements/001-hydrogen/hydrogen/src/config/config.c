@@ -379,6 +379,7 @@ AppConfig* load_config(const char* cmdline_path) {
     LOAD_CONFIG("Q", SR_SCRIPTING,       load_scripting_config);
     LOAD_CONFIG("R", SR_REPORTING,       load_reporting_config);
     LOAD_CONFIG("S", SR_API,             load_webhooks_config);
+    LOAD_CONFIG("T", SR_CONFIG,          load_mcp_config);
 
     #undef LOAD_SERVER_CONFIG
     #undef LOAD_CONFIG
@@ -495,6 +496,7 @@ void dumpAppConfig(const AppConfig* config, const char* section) {
     DUMP_CONFIG_SECTION("P", SR_NOTIFY,      notify,      dump_notify_config);
     DUMP_CONFIG_SECTION("Q", SR_SCRIPTING,   scripting,   dump_scripting_config);
     DUMP_CONFIG_SECTION("S", SR_API,          webhooks,    dump_webhooks_config);
+    DUMP_CONFIG_SECTION("T", SR_CONFIG,       mcp,         dump_mcp_config);
 
     #undef DUMP_CONFIG_SECTION
 
@@ -536,6 +538,7 @@ void clean_app_config(AppConfig* config) {
     cleanup_scripting_config(&config->scripting);      // Q. Scripting Configuration
     cleanup_reporting_config(&config->reporting);        // R. Reporting Configuration
     cleanup_webhooks_config(&config->webhooks);           // S. Webhooks Configuration
+    cleanup_mcp_config(&config->mcp);                     // T. MCP Configuration
 
 }
 

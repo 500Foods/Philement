@@ -148,6 +148,7 @@ struct AppConfig {
     ScriptingConfig scripting;     // Q. Scripting configuration
     ReportingConfig reporting;     // R. Reporting configuration
     WebhooksConfig webhooks;       // S. Webhooks (LUA_CLIENT Phase 14)
+    MCPConfig mcp;                 // T. MCP configuration
 };
 
 // Defined in global.c

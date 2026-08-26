@@ -42,16 +42,14 @@ an explicit Status variance.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-08-22):** Plan drafted. No implementation.
-Next: **Phase 0 Design Lock**.
+**CURRENT PAUSE POINT (as of 2026-08-26):** Phase 0 locked. Phase 1 complete
+(config loads, Unity 9/9, `mkp` green). Next: **Phase 2** count bump. No
+`src/mcp/` yet. Do not bump `MAX_SUBSYSTEMS` until Phase 2.
 
 ### Resume here next session
 
-1. Confirm this document is the source of truth; no `src/mcp/` exists yet.
-2. Baseline: `zsh -ic 'mkt'`.
-3. Run Phase 0 as design-only. Do not write C until the locked-decisions table
-   is filled and reviewed.
-4. Present the Phase 1 chunk (config only) after Phase 0 Status is complete.
+1. Phase 2: apply Subsystem Count Touchpoints in one change set (22 → 24).
+2. Clean skip when disabled. Unity launch/landing. `test_17`.
 
 ### Session checklist
 
@@ -68,7 +66,7 @@ Build aliases: `zsh -ic '<alias>'` (`mkt`, `mka`, `mku <base>`, `mkp`, `mks`).
 | --- | --- |
 | **Band** | P2 — new capability, not a close-the-loop or safety gate |
 | **Effort** | XL (full subsystem + transport + Lua protocol + tests + docs) |
-| **Done** | 0% — plan only |
+| **Done** | ~3% — Phase 0 locked; Phase 1 in progress |
 | **Why this shape** | Unblocks AI-tool access to Hydrogen without a product-named C surface. Reuses Scripting, JWT, and the `scripts.invokable` allowlist pattern |
 | **Do not start casually** | Touches `MAX_SUBSYSTEMS`, launch/landing dispatch, status metrics, and blackbox configs. Phase 2 is the dangerous count-bump |
 
@@ -902,42 +900,21 @@ standing up `test_47_mcp.sh`'s full matrix or the Inspector. Must pass
 
 #### Work items
 
-- [ ] **0.1 Transport** — lock Streamable HTTP on a dedicated MHD port vs
-      attach-to-WebServer vs both.
-- [ ] **0.2 Config schema** — lock field names, defaults, `Interface` meaning.
-- [ ] **0.3 Auth** — Bearer required; Hydrogen JWT + optional OIDC IdP /
-      OIDC RP accept; PRM + `WWW-Authenticate`; claim inject; 401 shape.
-- [ ] **0.4 Allowlist** — `mcp_access` column + existence-hiding 404.
-- [ ] **0.5 Lua contract** — params / result / `H.mcp.list` / inline
-      `H.mcp.call` / `H.mcp.call_async`.
-- [ ] **0.6 Disabled semantics** — clean skip vs No-Go.
-- [ ] **0.7 Out of scope** — confirm non-goals (stdio, DCR, product tools,
-      GET+SSE).
-- [ ] **0.8 Count impact** — confirm 21st registered subsystem and the
-      touchpoint table above.
-- [ ] **0.9 Concurrency** — lock MHD thread-pool + suspend/resume; reject
-      thread-per-connection; lock inline `H.mcp.call`; `WorkerCount >= 2`.
-- [ ] **0.10 Overload code** — JSON-RPC `-32000` vs HTTP 429 when
-      `rpc_in_flight` would exceed `WorkerCount`.
-- [ ] **0.11 Agent surface** — lock `initialize.instructions`, no generic
-      SQL tool; `MaxResultBytes`; public `MCP.Resource`; client
-      compatibility matrix (HTTP+Bearer = v1; stdio/DCR = later).
-- [ ] **0.12 Tool schema wrapper shape** — confirm `mcp_schema` column holds
-      the *wrapper* form `{"inputSchema":{...},"outputSchema":{...}` that
-      `Mcp.Server` decodes (not the bare schema object), and that `NULL`
-      falls back to a permissive `{"type":"object"}`. Locks Phase 8.2b.
-- [ ] **0.13 Content-block helpers hosting** — `H.mcp.text/image/audio/
-      resource_link/tool_error` are **pure-Lua helpers** in a seeded
-      `Mcp.Helpers` module, not C host functions; only `call`/`list`/
-      `call_async` need C. Locks 9.4.
-- [ ] **0.14 Port scheme rationale** — record the specific 547x clash
-      (e.g. with Test 46 / sandbox ephemeral config) so the choice of
-      1547x/1548x is documented, not just "see Test 46". Locks the
-      test_slot decision row.
-- [ ] **0.15 MHD suspend/resume mock seam** — confirm `USE_MOCK_LIBMICROHTTPD`
-      covers `MHD_suspend_connection`/`MHD_resume_connection` for Phase 7
-      Unity; if not, add `mock_mcp_transport.c` seams before dispatch
-      testing. Locks the mock approach for 4.7 / 7.4.
+- [x] **0.1 Transport** — dedicated Streamable HTTP MHD daemon. Not WebServer path.
+- [x] **0.2 Config schema** — letter T; fields as Proposed config shape.
+- [x] **0.3 Auth** — Bearer default; Hydrogen JWT + optional IdP/RP; PRM + WWW-Authenticate.
+- [x] **0.4 Allowlist** — `scripts.mcp_access` DEFAULT 0; existence-hiding 404.
+- [x] **0.5 Lua contract** — envelope + `_hydrogen`; `H.mcp.list` / inline `call` / `call_async`.
+- [x] **0.6 Disabled semantics** — clean skip (`ready=true`).
+- [x] **0.7 Out of scope** — stdio, DCR, product tools, GET+SSE stay later/optional.
+- [x] **0.8 Count impact** — 21st registered; bump MAX_SUBSYSTEMS 22→24 in Phase 2.
+- [x] **0.9 Concurrency** — MHD pool + suspend/resume; inline `H.mcp.call`; WorkerCount>=2.
+- [x] **0.10 Overload code** — JSON-RPC `-32000` (not HTTP 429).
+- [x] **0.11 Agent surface** — `initialize.instructions`; no generic SQL; MaxResultBytes 256KiB.
+- [x] **0.12 Tool schema wrapper shape** — wrapper JSON; NULL → `{"type":"object"}`.
+- [x] **0.13 Content-block helpers hosting** — pure-Lua `Mcp.Helpers`; C only list/call/call_async.
+- [x] **0.14 Port scheme rationale** — 1547x/1548x (Test 46 15TTx; 547x ephemeral clash).
+- [x] **0.15 MHD suspend/resume mock seam** — mock_libmicrohttpd does **not** cover suspend/resume; extend it or add `mock_mcp_transport.c` before Phase 7.
 
 #### Exit gate / validation
 
@@ -947,41 +924,41 @@ Locked-decisions table below is filled. No C required. Review stop.
 
 | Topic | Decision |
 | --- | --- |
-| Transport | *pending* (recommendation: dedicated Streamable HTTP) |
-| Config letter | *pending* (recommendation: T) |
-| Interface | *pending* (recommendation: bind address) |
-| Protocol script | *pending* (recommendation: `Mcp.Server`) |
-| Auth | *pending* (recommendation: Bearer always; accept Hydrogen JWT by default; optional OIDC IdP + OIDC RP / Keycloak; PRM + `WWW-Authenticate` in v1; DCR stays Phase 16) |
-| Allowlist | *pending* (recommendation: `scripts.mcp_access` DEFAULT 0) |
-| Disabled | *pending* (recommendation: clean skip `ready=true`) |
-| Test slot | *pending* (recommendation: 47 / WebServer 1547x + MCP 1548x) |
-| Tool schema storage | *pending* (recommendation: nullable `scripts.mcp_schema` / `mcp_annotations` JSON columns, seeded per tool — see "Closing the tool-schema gap") |
-| Origin validation | *pending* (recommendation: `MCP.AllowedOrigins` allowlist, reject a present-but-mismatched `Origin` before JWT) |
-| Health endpoint | *pending* (recommendation: unauthenticated `GET <Path>/healthz` on the MCP port, separate from Phase 11's authenticated `/api/mcp/status`) |
-| Session lifecycle | *pending* (recommendation: `DELETE` termination, 404 on unknown session id, idle reaper via `SessionIdleTimeoutSeconds` / `MaxSessions`) |
-| Tool-error shape | *pending* (recommendation: `result.isError=true` content block for tool failures; JSON-RPC `error` reserved for envelope/dispatch failures only) |
-| Bind default | *pending* (recommendation: `127.0.0.1`, not `0.0.0.0`) |
-| MHD model | *pending* (recommendation: WebServer thread pool + `MHD_ALLOW_SUSPEND_RESUME`; not thread-per-connection; GET+SSE = 405 in v1) |
-| `H.mcp.call` | *pending* (recommendation: inline child `lua_State`; `call_async` for fan-out) |
-| Overload | *pending* (recommendation: JSON-RPC `-32000` when `rpc_in_flight` would exceed `WorkerCount`) |
-| Agent surface | *pending* (recommendation: `initialize.instructions` in v1; no generic SQL tool; `MaxResultBytes` 256 KiB; `Resource` is the public URL) |
-| Tool schema wrapper shape | *pending* (recommendation: wrapper form `{"inputSchema":{...},"outputSchema":{...}}` decoded by `Mcp.Server`; `NULL` → permissive `{"type":"object"}`) |
-| Content-block helpers | *pending* (recommendation: pure-Lua `Mcp.Helpers` module, not C host functions) |
-| Port scheme rationale | *pending* (recommendation: 1547x/1548x to keep the 5xx test-port prefix free and avoid the Test-46 clash; record the specific clash) |
-| MHD suspend/resume mock seam | *pending* (recommendation: verify `USE_MOCK_LIBMICROHTTPD` covers suspend/resume; else add `mock_mcp_transport.c` before Phase 7) |
+| Transport | Dedicated Streamable HTTP on `MCP.Port`. Not a WebServer path in v1 |
+| Config letter | **T** (`AppConfig.mcp`) |
+| Interface | Bind address. Default `127.0.0.1` |
+| Protocol script | `Mcp.Server` (`Group.Name`) |
+| Auth | Bearer required (`RequireJWT=true`). Accept Hydrogen JWT by default; optional OIDC IdP + OIDC RP. PRM + `WWW-Authenticate` in v1. DCR = Phase 16. `_hydrogen.scopes` for OIDC; Hydrogen JWT skips scope |
+| Allowlist | `scripts.mcp_access` INTEGER_SMALL NOT NULL DEFAULT 0 |
+| Disabled | Clean skip `ready=true` |
+| Test slot | 47 / WebServer **15470–15476** + MCP **15480–15486** |
+| Tool schema storage | Nullable `scripts.mcp_schema` / `mcp_annotations` JSON text, seeded per tool |
+| Origin validation | `MCP.AllowedOrigins`; present-but-mismatched Origin → 403 before JWT |
+| Health endpoint | Unauthenticated `GET <Path>/healthz` on MCP port; distinct from `/api/mcp/status` |
+| Session lifecycle | DELETE 204, unknown id 404, reaper via `SessionIdleTimeoutSeconds` / `MaxSessions` |
+| Tool-error shape | `result.isError=true` for tools; JSON-RPC `error` only for envelope/dispatch |
+| Bind default | `127.0.0.1`. Alert at launch if `0.0.0.0` / `::` |
+| MHD model | WebServer thread pool + `MHD_ALLOW_SUSPEND_RESUME`. GET+SSE = 405 in v1 |
+| `H.mcp.call` | Inline child `lua_State`. `call_async` queues. Launch No-Go if `WorkerCount < 2` |
+| Overload | JSON-RPC `-32000` when `rpc_in_flight` would exceed `WorkerCount` |
+| Agent surface | `initialize.instructions` in v1; no generic SQL; `MaxResultBytes` 256 KiB; `Resource` is the public URL |
+| Tool schema wrapper shape | `{"inputSchema":{...},"outputSchema":{...}}`; `NULL` → permissive `{"type":"object"}` |
+| Content-block helpers | Pure-Lua `Mcp.Helpers`, not C host functions |
+| Port scheme rationale | Follow Test 46 `15<TT>x` (below typical Linux ephemeral 32768–60999). 547x is in the old `5<TT>x` band that Test 46 already abandoned after concurrent-engine port clashes |
+| MHD suspend/resume mock seam | `USE_MOCK_LIBMICROHTTPD` does **not** wrap `MHD_suspend_connection`/`MHD_resume_connection`. Extend that mock or add `mock_mcp_transport.c` before Phase 7 Unity |
 
 #### Status
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-08-26 |
+| **Result** | All recommendations adopted. MHD mock gap recorded for Phase 7. |
+| **Variances** | None |
 
 #### Lessons learned
 
-(fill after the phase)
+- `mock_libmicrohttpd` is lookup/create/queue/start/stop only; suspend/resume is a real Phase 7 seam, not a documentation nit.
 
 ---
 
@@ -993,17 +970,18 @@ Locked-decisions table below is filled. No C required. Review stop.
 
 #### Work items
 
-- [ ] **1.1** `config_mcp.h` / `config_mcp.c` — `MCPConfig`, load/dump/cleanup.
+- [x] **1.1** `config_mcp.h` / `config_mcp.c` — `MCPConfig`, load/dump/cleanup.
       Dump must not print secrets (none expected; still mask if any appear).
-- [ ] **1.2** `AppConfig.mcp` letter T; `LOAD_CONFIG("T", ...)`.
-- [ ] **1.3** `initialize_config_defaults_mcp()` — `Enabled=false`,
+- [x] **1.2** `AppConfig.mcp` letter T; `LOAD_CONFIG("T", ...)`.
+- [x] **1.3** `initialize_config_defaults_mcp()` — `Enabled=false`,
       `Interface=127.0.0.1`, `Port=3100`, `Path=/mcp`, `Protocol=NULL`,
       `RequireJWT=true`, `AcceptHydrogenJWT=true`, `AcceptOidcIdP=false`,
       `AcceptOidcRp=false`, `ThreadPoolSize=4`.
-- [ ] **1.4** Env-var overrides if other subsystems do them for Port/Interface.
-- [ ] **1.5** Unity: load defaults, full custom, missing section, invalid port,
+- [~] **1.4** Env-var overrides if other subsystems do them for Port/Interface.
+      PROCESS_* already expands `${env.*}` in JSON strings; no extra MCP env keys.
+- [x] **1.5** Unity: load defaults, full custom, missing section, invalid port,
       cleanup NULL / partial, dump smoke.
-- [ ] **1.6** `mkt` + `mkp` + named `mku config_mcp_test_*`.
+- [x] **1.6** `mkt` + `mkp` + named `mku config_mcp_test_*`.
 
 #### Exit gate / validation
 
@@ -1014,14 +992,14 @@ if they iterate config sections — update those only if they break.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-08-26 |
+| **Result** | `config_mcp_test_load_mcp_config` 9/9. `mkp` green. Disabled defaults. |
+| **Variances** | 1.4 deferred: JSON `${env.*}` via PROCESS_* is enough |
 
 #### Lessons learned
 
-(fill after the phase)
+- `PROCESS_STRING_ARRAY` designated-initializer macro is unusable (substitutes field names into `.array`/`.capacity`). Call `process_string_array_config` directly.
 
 ---
 
@@ -1979,6 +1957,10 @@ that affect later phases must be recorded so they are not lost.
   uses `MHD_suspend_connection`/`MHD_resume_connection` instead. The Phase 4/7
   "copy alt_query, not conduit /script" guidance is directly supported by
   existing code.
+
+- (2026-08-26) Phase 0 locked; Phase 1 shipped (`config_mcp`, letter T, Unity 9/9).
+  `PROCESS_STRING_ARRAY` macro is broken — use `process_string_array_config` directly.
+  MHD mock still missing suspend/resume (Phase 7).
 
 ### Follow-ups
 

@@ -73,6 +73,7 @@ bool initialize_config_defaults(AppConfig* config) {
     initialize_config_defaults_scripting(config);
     initialize_config_defaults_reporting(config);
     initialize_config_defaults_webhooks(config);
+    initialize_config_defaults_mcp(config);
 
     log_this(SR_CONFIG, "― Successfully initialized configuration defaults", LOG_LEVEL_DEBUG, 0);
     return true;
@@ -629,5 +630,13 @@ void initialize_config_defaults_webhooks(AppConfig* config) {
         config->webhooks.Enabled = false;
         config->webhooks.HookCount = 0;
         log_this(SR_CONFIG, "――― Applied config defaults for Webhooks", LOG_LEVEL_DEBUG, 0);
+    }
+}
+
+void initialize_config_defaults_mcp(AppConfig* config) {
+    if (config) {
+        memset(&config->mcp, 0, sizeof(config->mcp));
+        mcp_config_apply_defaults(&config->mcp);
+        log_this(SR_CONFIG, "――― Applied config defaults for MCP", LOG_LEVEL_DEBUG, 0);
     }
 }
