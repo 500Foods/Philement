@@ -341,6 +341,7 @@ void crash_handler(int sig, siginfo_t *info, void *ucontext) {
     }
 
     log_this(SR_CRASH, "Signal %d received (cause: %d), generating core dump at %s", LOG_LEVEL_ERROR, 3, sig, info->si_code, abs_core_name);
+    log_this(SR_CRASH, "Fault address: %p", LOG_LEVEL_ERROR, 1, info->si_addr);
 
     // Get config file path from stored program arguments (if any)
     char** program_args = get_program_args();

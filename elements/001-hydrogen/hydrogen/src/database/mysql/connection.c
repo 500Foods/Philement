@@ -102,10 +102,6 @@ bool load_libmysql_functions(const char* designator __attribute__((unused))) {
     // For mocking, functions are already set
     return true;
 #else
-    if (libmysql_handle) {
-        return true; // Already loaded
-    }
-
     const char* log_subsystem = designator ? designator : SR_DATABASE;
     MUTEX_LOCK(&libmysql_mutex, log_subsystem);
 
