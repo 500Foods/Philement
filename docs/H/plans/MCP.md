@@ -173,8 +173,8 @@ Date of snapshot: 2026-08-22
 | Status machine | `status_core.h` `ServiceMetrics` union + `status_process.c` |
 | Launch/landing | 20 registered subsystems in `launch_readiness.c` |
 | Config letters | A–S taken; **T** is free (`Webhooks` is S under `SR_API`) |
-| Highest migration | `acuranzo_1363.lua`; next **1364** |
-| Highest QueryRef | **#150**; next **#151** (re-check at Phase 8) |
+| Highest migration | `acuranzo_1364.lua` already committed; next **1365** |
+| Highest QueryRef | **#151** taken (`acuranzo_1335`, "Management History lines"); next **#152** List / **#153** Get (re-check at Phase 8) |
 
 ### Missing
 
@@ -802,8 +802,10 @@ a fourth JWT parser.
 
 ### Migrations
 
-Next files: `acuranzo_1364.lua` onward. QueryRefs start at **#151** after a
-live max check. `scripts.mcp_access` is `INTEGER_SMALL NOT NULL DEFAULT 0`.
+Next files: `acuranzo_1365.lua` onward (`acuranzo_1364.lua` already exists).
+  QueryRefs: **#152** = List MCP Scripts, **#153** = Get MCP Script by Group/Name
+  (re-verify against `acuranzo/README.md` at Phase 8; #151 is taken by Management History).
+  `scripts.mcp_access` is `INTEGER_SMALL NOT NULL DEFAULT 0`.
 `scripts.mcp_schema` / `scripts.mcp_annotations` are nullable JSON text
 (see "Closing the tool-schema gap"). Load QueryRef must require
 `mcp_access <> 0` (mirror #149). Seed `Mcp.Server`, `Mcp.Echo`, and
@@ -918,8 +920,24 @@ standing up `test_47_mcp.sh`'s full matrix or the Inspector. Must pass
 - [ ] **0.10 Overload code** — JSON-RPC `-32000` vs HTTP 429 when
       `rpc_in_flight` would exceed `WorkerCount`.
 - [ ] **0.11 Agent surface** — lock `initialize.instructions`, no generic
-      SQL, `MaxResultBytes`, `MCP.Resource` = public URL, client
+      SQL tool; `MaxResultBytes`; public `MCP.Resource`; client
       compatibility matrix (HTTP+Bearer = v1; stdio/DCR = later).
+- [ ] **0.12 Tool schema wrapper shape** — confirm `mcp_schema` column holds
+      the *wrapper* form `{"inputSchema":{...},"outputSchema":{...}` that
+      `Mcp.Server` decodes (not the bare schema object), and that `NULL`
+      falls back to a permissive `{"type":"object"}`. Locks Phase 8.2b.
+- [ ] **0.13 Content-block helpers hosting** — `H.mcp.text/image/audio/
+      resource_link/tool_error` are **pure-Lua helpers** in a seeded
+      `Mcp.Helpers` module, not C host functions; only `call`/`list`/
+      `call_async` need C. Locks 9.4.
+- [ ] **0.14 Port scheme rationale** — record the specific 547x clash
+      (e.g. with Test 46 / sandbox ephemeral config) so the choice of
+      1547x/1548x is documented, not just "see Test 46". Locks the
+      test_slot decision row.
+- [ ] **0.15 MHD suspend/resume mock seam** — confirm `USE_MOCK_LIBMICROHTTPD`
+      covers `MHD_suspend_connection`/`MHD_resume_connection` for Phase 7
+      Unity; if not, add `mock_mcp_transport.c` seams before dispatch
+      testing. Locks the mock approach for 4.7 / 7.4.
 
 #### Exit gate / validation
 
@@ -947,6 +965,10 @@ Locked-decisions table below is filled. No C required. Review stop.
 | `H.mcp.call` | *pending* (recommendation: inline child `lua_State`; `call_async` for fan-out) |
 | Overload | *pending* (recommendation: JSON-RPC `-32000` when `rpc_in_flight` would exceed `WorkerCount`) |
 | Agent surface | *pending* (recommendation: `initialize.instructions` in v1; no generic SQL tool; `MaxResultBytes` 256 KiB; `Resource` is the public URL) |
+| Tool schema wrapper shape | *pending* (recommendation: wrapper form `{"inputSchema":{...},"outputSchema":{...}}` decoded by `Mcp.Server`; `NULL` → permissive `{"type":"object"}`) |
+| Content-block helpers | *pending* (recommendation: pure-Lua `Mcp.Helpers` module, not C host functions) |
+| Port scheme rationale | *pending* (recommendation: 1547x/1548x to keep the 5xx test-port prefix free and avoid the Test-46 clash; record the specific clash) |
+| MHD suspend/resume mock seam | *pending* (recommendation: verify `USE_MOCK_LIBMICROHTTPD` covers suspend/resume; else add `mock_mcp_transport.c` before Phase 7) |
 
 #### Status
 
@@ -1310,8 +1332,10 @@ C still does not inspect `method`. A stub Protocol source that echoes
 
 #### Work items
 
-- [ ] **8.1** Confirm next migration number and QueryRef (expected **1364** /
-      **#151**). Do not collide with in-flight Helium work.
+- [ ] **8.1** Confirm next migration number and QueryRef (expected **1365** /
+      **#152** List + **#153** Get; 1364 / #151 are already taken —
+      `acuranzo_1364` and `acuranzo_1335`'s Management History QueryRef).
+      Do not collide with in-flight Helium work.
 - [ ] **8.2** `ALTER TABLE scripts ADD COLUMN mcp_access … DEFAULT 0`.
 - [ ] **8.2b** `ALTER TABLE scripts ADD COLUMN mcp_schema … NULL` and
       `mcp_annotations … NULL` (see "Closing the tool-schema gap" above).
@@ -1870,8 +1894,19 @@ that affect later phases must be recorded so they are not lost.
 - (2026-08-22) Plan created. Recommended locks (not yet Phase 0 official):
   dedicated Streamable HTTP; config letter T; `Interface` = bind address;
   `Protocol` = `Mcp.Server`; JWT always; `scripts.mcp_access` DEFAULT 0;
-  clean skip when disabled; Test 47 / 547x; `MAX_SUBSYSTEMS` 22 → 24;
-  next migration ~1364 / QueryRef ~#151 subject to live check.
+  clean skip when disabled; Test 47 / 1547x / 1548x; `MAX_SUBSYSTEMS` 22 → 24;
+  next migration 1365 / QueryRef #152 (List) + #153 (Get) after live check;
+   1364 and #151 already taken (acuranzo_1364, acuranzo_1335 Management History).
+- (2026-08-25) Verified architecture against codebase before Phase 0: confirmed
+  20 registered subsystems (MCP = 21st; `MAX_SUBSYSTEMS`/`INITIAL_REGISTRY_CAPACITY`
+  22 → 24), `launch.c`/`landing.c`/`launch_readiness.c` `strcmp` dispatch tables,
+  `LOAD_CONFIG` letter T free, the per-subsystem `ServiceThreads`/`system_shutdown`
+  pattern in `state.h`+`threads.h`, the `extract_and_validate_jwt` Hydrogen-JWT-only
+  gap (Phase 5 JWKS work), and that `alt_query.c` (suspend/resume) is the correct
+  template vs `script.c` (blocking `scripting_wait_job`). Added Phase 0 work items
+  0.12–0.15 and matching locked-decision rows: `mcp_schema` wrapper shape,
+  content-block helpers as pure-Lua `Mcp.Helpers`, 1547x/1548x rationale, and the
+  MHD suspend/resume mock-seam check.
 - (2026-08-22) C/Lua split: C = listen + JWT + JSON-RPC envelope +
   `H.mcp.list/call`. Lua = every MCP method and every tool.
 - (2026-08-22) Robustness/agent-ergonomics review pass. New recommendations
@@ -1930,11 +1965,29 @@ that affect later phases must be recorded so they are not lost.
 
 ### Surprises
 
-(none yet)
+- (2026-08-25) Migration **`acuranzo_1364.lua` already exists** in
+  `elements/002-helium/acuranzo/migrations/`. The 2026-08-22 snapshot said
+  "next 1364." Next free is **1365**. Updated in Current Observed State,
+  Migrations section, Phase 8.1, and the decisions log.
+- (2026-08-25) QueryRef **#151 already exists** — `acuranzo_1335.lua` defines
+  it as "Management History lines (PRIORITIZE 2.29)." The snapshot said "next
+  #151." Next free: **#152** (List MCP Scripts) and **#153** (Get MCP Script).
+  Updated in Current Observed State, Migrations, Phase 8.1, and decisions log.
+- (2026-08-25) Confirmed the anti-pattern the plan warns against is real:
+  `src/api/conduit/script/script.c:742` calls `scripting_wait_job` **on the MHD
+  thread** when `req.wait` is set, while `src/api/conduit/alt_query/alt_query.c:443`
+  uses `MHD_suspend_connection`/`MHD_resume_connection` instead. The Phase 4/7
+  "copy alt_query, not conduit /script" guidance is directly supported by
+  existing code.
 
 ### Follow-ups
 
-(none yet)
+- (2026-08-25) Phase 0 must confirm four added locks (work items 0.12–0.15):
+  `mcp_schema` JSON wrapper shape; content-block helpers hosted as pure-Lua
+  `Mcp.Helpers` (not C); the specific reason for the 1547x/1548x port choice
+  vs the standard `5<T#>x` scheme; and whether `USE_MOCK_LIBMICROHTTPD`
+  covers `MHD_suspend_connection`/`MHD_resume_connection` (else add
+  `mock_mcp_transport.c` before Phase 7 dispatch Unity).
 
 ---
 
