@@ -143,10 +143,6 @@ bool load_libpq_functions(const char* designator __attribute__((unused))) {
     PQping_ptr = mock_PQping;
     return true;
 #else
-    if (libpq_handle) {
-        return true; // Already loaded
-    }
-
     const char* log_subsystem = designator ? designator : SR_DATABASE;
     MUTEX_LOCK(&libpq_mutex, log_subsystem);
 

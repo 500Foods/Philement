@@ -102,10 +102,6 @@ bool load_libdb2_functions(const char* designator __attribute__((unused))) {
     SQLBindParameter_ptr = mock_SQLBindParameter;
     return true;
 #else
-    if (libdb2_handle) {
-        return true; // Already loaded
-    }
-
     const char* log_subsystem = designator ? designator : SR_DATABASE;
     MUTEX_LOCK(&libdb2_mutex, log_subsystem);
 
