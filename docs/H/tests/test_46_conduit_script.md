@@ -27,7 +27,7 @@ Validates across all seven database engines (parallel):
 - **Test Name**: Conduit Script
 - **Test Abbreviation**: CSC
 - **Test Number**: 46
-- **Version**: 1.3.0
+- **Version**: 1.3.2
 
 ## Port Assignment
 
@@ -91,6 +91,22 @@ The `api_request` helper retries these transient failures with linear backoff
 up to 5 attempts, mirroring the fix already applied to test_40. Definitive
 HTTP responses (2xx, 3xx, 4xx except 408) are never retried — expected error
 codes like 401/404/400 are returned immediately.
+
+The async GET polling uses a **30-second time-based deadline** (via `date +%s`)
+with a **direct curl call** (5s max-time, no retry backoff) instead of
+`api_request`. This is critical because `api_request`'s 5-retry linear backoff
+adds up to **10 seconds of sleep per failed GET**, which would allow only ~3
+polling attempts within the 30s budget. The direct curl call enables
+~0.2s polling intervals, giving many more chances for the async job to
+complete under parallel DB/CPU load from tests 41/44.
+
+**POST retry on `job_not_found`**: Under heavy parallel DB load (tests 41/44),
+the server may accept an async job (HTTP 202 + `job_id`) but fail to persist it
+to DB2. The GET polling then receives `404 job_not_found` from the server.
+When this happens, the POST is retried up to 2 times, giving the server another
+chance to persist the job when DB connections free up. The `timeout_seconds`
+parameter is raised from 15 to 60 (`ClientInvokeMaxTimeout`) to give the Lua
+worker thread maximum headroom under CPU contention.
 
 ## Related
 
