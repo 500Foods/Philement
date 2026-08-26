@@ -13,6 +13,14 @@
 # analyze_engine()
 
 # CHANGELOG
+# 1.3.0 - 2026-08-25 - Suite-load resilience: added retry logic to api_request
+#                      (5 retries w/ backoff on 000/5xx/408/429 only; definitive
+#                      2xx/3xx/4xx responses are not retried). Raised login
+#                      max-time 15->45s and connect-timeout 3->10s. Switched
+#                      wait_ready from SECONDS to date +%s for reliable timing
+#                      in background subshells. Mirrors the fix already applied
+#                      to test_40_auth.sh for the same suite-parallel DB load
+#                      (tests 41/44).
 # 1.2.1 - 2026-08-24 - Fix SQLite seed: invokable column + migrations 1296-1298
 #                     already present in baseline; make seed idempotent (conditional
 #                     ALTER, INSERT OR IGNORE) so startup no longer fails
@@ -26,7 +34,7 @@ TEST_NAME="Conduit Script"
 TEST_ABBR="CSC"
 TEST_NUMBER="46"
 TEST_COUNTER=0
-TEST_VERSION="1.2.1"
+TEST_VERSION="1.3.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -73,18 +81,47 @@ api_request() {
     local output_file="$4"
     local jwt_token="${5:-}"
     local max_time="${6:-${HTTP_TIMEOUT}}"
-    local curl_cmd=(curl -s -X "${method}" -H "Content-Type: application/json"
-        --connect-timeout 3 --max-time "${max_time}" -w "%{http_code}" -o "${output_file}")
-    if [[ -n "${jwt_token}" ]]; then
-        curl_cmd+=(-H "Authorization: Bearer ${jwt_token}")
-    fi
-    if [[ "${method}" != "GET" && -n "${data}" ]]; then
-        curl_cmd+=(-d "${data}")
-    fi
-    curl_cmd+=("${url}")
-    local http_status
-    http_status=$("${curl_cmd[@]}" 2>/dev/null || true)
-    echo "${http_status:-000}"
+    local max_retries=5
+    local retry=1
+    local http_status="000"
+
+    while [[ "${retry}" -le "${max_retries}" ]]; do
+        local curl_cmd=(curl -s -X "${method}" -H "Content-Type: application/json"
+            --connect-timeout 10 --max-time "${max_time}" -w "%{http_code}" -o "${output_file}")
+        if [[ -n "${jwt_token}" ]]; then
+            curl_cmd+=(-H "Authorization: Bearer ${jwt_token}")
+        fi
+        if [[ "${method}" != "GET" && -n "${data}" ]]; then
+            curl_cmd+=(-d "${data}")
+        fi
+        curl_cmd+=("${url}")
+        # shellcheck disable=SC2312 # Intentionally swallow curl exit code; we use the HTTP status
+        http_status=$("${curl_cmd[@]}" 2>/dev/null || true)
+        http_status="${http_status:-000}"
+
+        # Retry only on transient failures: connection failure (000),
+        # server errors (5xx), request timeout (408), rate limiting (429).
+        # Any other HTTP status (2xx, 3xx, 4xx except 408) is a definitive
+        # response — do not retry (e.g. 401 for no-auth, 404 for unknown
+        # script, 400 for parse errors are all expected test outcomes).
+        if [[ "${http_status}" == "000" || \
+              "${http_status}" == 5* || \
+              "${http_status}" == "408" || \
+              "${http_status}" == "429" ]]; then
+            if [[ "${retry}" -eq "${max_retries}" ]]; then
+                break
+            fi
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP ${http_status} from ${method} ${url}, retrying (${retry}/${max_retries})..."
+            sleep "${retry}"
+            retry=$(( retry + 1 ))
+            continue
+        fi
+
+        # Definitive response (2xx, 3xx, 4xx except 408)
+        break
+    done
+
+    echo "${http_status}"
 }
 
 extract_jwt() {
@@ -97,14 +134,19 @@ extract_jwt() {
 wait_ready() {
     local log_file="$1"
     local timeout="${2:-${READY_TIMEOUT}}"
-    local start_time=${SECONDS}
-    while [[ $((SECONDS - start_time)) -lt "${timeout}" ]]; do
+    local start_time
+    local now_secs
+    start_time=$("${DATE}" +%s)
+    while true; do
         if "${GREP}" -q "READY FOR REQUESTS" "${log_file}" 2>/dev/null; then
             return 0
         fi
+        now_secs=$("${DATE}" +%s)
+        if (( now_secs - start_time >= timeout )); then
+            return 1
+        fi
         sleep 0.2
     done
-    return 1
 }
 
 # SQLite: isolate fixture + seed LUA_CLIENT fixture (Api.Echo, invokable, #149).
@@ -286,7 +328,8 @@ run_engine() {
         '{database:"Acuranzo",login_id:$login_id,password:$password,api_key:$api_key,tz:"America/Vancouver"}')
 
     local http_st
-    http_st=$(api_request "POST" "${base_url}/api/auth/login" "${login_payload}" "${login_file}" "" 15)
+    # shellcheck disable=SC2312 # Intentionally swallow curl exit code; we use the HTTP status
+    http_st=$(api_request "POST" "${base_url}/api/auth/login" "${login_payload}" "${login_file}" "" 45)
     local jwt
     jwt=$(extract_jwt "${login_file}")
     if [[ "${http_st}" != "200" || -z "${jwt}" ]]; then

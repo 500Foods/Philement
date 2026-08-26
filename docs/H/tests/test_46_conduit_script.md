@@ -27,7 +27,7 @@ Validates across all seven database engines (parallel):
 - **Test Name**: Conduit Script
 - **Test Abbreviation**: CSC
 - **Test Number**: 46
-- **Version**: 1.2.1
+- **Version**: 1.3.0
 
 ## Port Assignment
 
@@ -79,6 +79,18 @@ fixtures catch up. The suite **requires** the SQLite full path to pass.
 2. `POST /api/auth/login` as demo user on database `Acuranzo`
 3. Exercise auth/error/happy-path cases above
 4. Graceful shutdown
+
+## Suite-Load Resilience
+
+Test 46 runs in the same parallel batch (group 4, tests 40–49) as test_41
+(ASAN, 500 concurrent auth requests) and test_44 (native RSS, 5000 concurrent
+auth requests). These siblings create heavy CPU and database contention that
+can cause transient curl failures (connection refused, 5xx, 408, 429).
+
+The `api_request` helper retries these transient failures with linear backoff
+up to 5 attempts, mirroring the fix already applied to test_40. Definitive
+HTTP responses (2xx, 3xx, 4xx except 408) are never retried — expected error
+codes like 401/404/400 are returned immediately.
 
 ## Related
 
