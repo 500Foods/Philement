@@ -13,6 +13,27 @@
 # analyze_engine()
 
 # CHANGELOG
+# 1.3.2 - 2026-08-26 - Async GET polling: replaced api_request (which imposes up to
+#                      10s backoff sleep per failed GET via 5-retry linear backoff)
+#                      with a lightweight direct curl call (5s max-time, no retry
+#                      backoff) so polling checks every ~0.2s instead of every
+#                      ~10s. This ensures the 30s time-based deadline is not
+#                      consumed by retry backoff, giving the async job many more
+#                      chances to complete.
+#                      Additionally: if the server returns 202 but the job is
+#                      never persisted (GET returns 404 "job_not_found"), the POST
+#                      is retried up to 2 times. Under heavy parallel DB load
+#                      (tests 41/44), the server may accept an async job but fail
+#                      to persist it to DB2; retrying gives the server a second
+#                      chance when DB connections free up. timeout_seconds raised
+#                      from 15 to 60 (ClientInvokeMaxTimeout) for worker headroom.
+# 1.3.1 - 2026-08-26 - Async GET polling: switched from fixed iteration count
+#                      (50 × 0.2s = 10s wall-clock) to a 30s time-based deadline
+#                      using date +%s, so retry backoff in api_request no longer
+#                      starves the polling budget. Under parallel load the async
+#                      job may take longer to complete; the time-based deadline
+#                      guarantees sufficient polling coverage regardless of how
+#                      many retries each GET call consumes.
 # 1.3.0 - 2026-08-25 - Suite-load resilience: added retry logic to api_request
 #                      (5 retries w/ backoff on 000/5xx/408/429 only; definitive
 #                      2xx/3xx/4xx responses are not retried). Raised login
@@ -34,7 +55,7 @@ TEST_NAME="Conduit Script"
 TEST_ABBR="CSC"
 TEST_NUMBER="46"
 TEST_COUNTER=0
-TEST_VERSION="1.3.0"
+TEST_VERSION="1.3.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -413,39 +434,78 @@ run_engine() {
     fi
 
     # --- wait:false → 202 + GET status ---
+    # Under heavy parallel load (tests 41/44), the server may accept an async
+    # job (return 202 + job_id) but fail to persist it under DB contention.
+    # The GET then returns 404 "job_not_found". We retry the POST up to 2 times
+    # to give the server another chance to store the job. timeout_seconds is
+    # raised to 60 (ClientInvokeMaxTimeout) to give the worker more headroom.
     local async_file="${result_file}.async.json"
-    http_st=$(api_request "POST" "${base_url}/api/conduit/script" \
-        '{"script":"Api.Echo","params":{"async":true},"wait":false,"timeout_seconds":15}' \
-        "${async_file}" "${jwt}")
     local async_ok=0
     local job_id=""
-    if [[ "${http_st}" == "202" ]] && command -v jq >/dev/null 2>&1; then
-        job_id=$(jq -r '.job_id // empty' "${async_file}" 2>/dev/null || true)
-        if [[ -n "${job_id}" ]]; then
-            local get_file="${result_file}.get.json"
-            local waited=0
-            local get_st=""
-            while (( waited < 50 )); do
-                get_st=$(api_request "GET" "${base_url}/api/conduit/script/${job_id}" "" "${get_file}" "${jwt}" 10)
-                local gst
-                gst=$(jq -r '.status // empty' "${get_file}" 2>/dev/null || true)
-                if [[ "${get_st}" == "200" && ( "${gst}" == "completed" || "${gst}" == "failed" ) ]]; then
-                    if [[ "${gst}" == "completed" ]]; then
-                        local async_flag
-                        async_flag=$(jq -r '.result.async // empty' "${get_file}" 2>/dev/null || true)
-                        if [[ "${async_flag}" == "true" ]]; then
-                            async_ok=1
+    local get_st=""
+    local post_retries=0
+    local async_terminal=0
+
+    while [[ "${post_retries}" -lt 2 ]] && [[ "${async_ok}" -eq 0 ]] && [[ "${async_terminal}" -eq 0 ]]; do
+        http_st=$(api_request "POST" "${base_url}/api/conduit/script" \
+            '{"script":"Api.Echo","params":{"async":true},"wait":false,"timeout_seconds":60}' \
+            "${async_file}" "${jwt}")
+
+        if [[ "${http_st}" == "202" ]] && command -v jq >/dev/null 2>&1; then
+            job_id=$(jq -r '.job_id // empty' "${async_file}" 2>/dev/null || true)
+            if [[ -n "${job_id}" ]]; then
+                local get_file="${result_file}.get.json"
+                local poll_deadline
+                poll_deadline=$(( $(date +%s) + 30 ))
+
+                while true; do
+                    get_st=$(curl -s -X GET "${base_url}/api/conduit/script/${job_id}" \
+                        -H "Authorization: Bearer ${jwt}" \
+                        --connect-timeout 5 --max-time 5 \
+                        -o "${get_file}" -w "%{http_code}" 2>/dev/null || echo "000")
+                    get_st="${get_st:-000}"
+                    local gst
+                    gst=$(jq -r '.status // empty' "${get_file}" 2>/dev/null || true)
+                    if [[ "${get_st}" == "200" && ( "${gst}" == "completed" || "${gst}" == "failed" ) ]]; then
+                        if [[ "${gst}" == "completed" ]]; then
+                            local async_flag
+                            async_flag=$(jq -r '.result.async // empty' "${get_file}" 2>/dev/null || true)
+                            if [[ "${async_flag}" == "true" ]]; then
+                                async_ok=1
+                            fi
+                        fi
+                        async_terminal=1
+                        break
+                    fi
+                    # If job_not_found, break GET loop to retry POST
+                    if [[ "${get_st}" == "404" ]]; then
+                        local gql_err
+                        gql_err=$(jq -r '.error // empty' "${get_file}" 2>/dev/null || true)
+                        if [[ "${gql_err}" == "job_not_found" ]]; then
+                            break
                         fi
                     fi
-                    break
-                fi
-                sleep 0.2
-                waited=$((waited + 1))
-            done
-            echo "GET_HTTP=${get_st}" >> "${result_file}"
-            echo "JOB_ID=${job_id}" >> "${result_file}"
+                    local now
+                    now=$(date +%s)
+                    if (( now >= poll_deadline )); then
+                        break
+                    fi
+                    sleep 0.2
+                done
+            fi
         fi
-    fi
+
+        # Retry POST if job was not found (server didn't persist under load)
+        if [[ "${async_ok}" -eq 0 ]] && [[ "${async_terminal}" -eq 0 ]]; then
+            post_retries=$((post_retries + 1))
+            if [[ "${post_retries}" -lt 2 ]]; then
+                sleep 1
+            fi
+        fi
+    done
+
+    echo "GET_HTTP=${get_st}" >> "${result_file}"
+    echo "JOB_ID=${job_id}" >> "${result_file}"
     if [[ "${async_ok}" -eq 1 ]]; then
         record_case "${result_file}" "async_get" 1
     else
