@@ -156,6 +156,9 @@ typedef struct {
             int failed_jobs;
             int killed_jobs;
         } scripting;
+        struct {
+            int sessions_active;
+        } mcp;
     } specific;
 } ServiceMetrics;
 
@@ -196,6 +199,7 @@ typedef struct {
     ServiceMetrics print;
     ServiceMetrics database;
     ServiceMetrics scripting;
+    ServiceMetrics mcp;
     
     // Queue metrics
     QueueMetrics log_queue;

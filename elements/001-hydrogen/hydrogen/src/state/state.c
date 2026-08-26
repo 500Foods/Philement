@@ -53,6 +53,7 @@ volatile sig_atomic_t terminal_system_shutdown = 0;
 volatile sig_atomic_t print_system_shutdown = 0;
 volatile sig_atomic_t print_queue_shutdown = 0;
 volatile sig_atomic_t scripting_system_shutdown = 0;
+volatile sig_atomic_t mcp_system_shutdown = 0;
 
 // System thread handles with lifecycle management
 
@@ -72,6 +73,7 @@ ServiceThreads mailrelay_threads;
 ServiceThreads print_threads;
 ServiceThreads database_threads;
 ServiceThreads scripting_threads;
+ServiceThreads mcp_threads;
 
 // Shared resource handles
 mdns_server_t *mdns_server = NULL;

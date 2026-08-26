@@ -87,6 +87,7 @@ extern volatile sig_atomic_t print_system_shutdown;
 extern volatile sig_atomic_t terminal_system_shutdown;
 extern volatile sig_atomic_t database_stopping;
 extern volatile sig_atomic_t scripting_system_shutdown;
+extern volatile sig_atomic_t mcp_system_shutdown;
 
 // Forward deeclarations
 void free_webserver_resources(void);
@@ -167,6 +168,7 @@ LaunchReadiness check_oidc_launch_readiness(void);
 LaunchReadiness check_resources_launch_readiness(void);
 LaunchReadiness check_scripting_launch_readiness(void);
 LaunchReadiness check_reporting_launch_readiness(void);
+LaunchReadiness check_mcp_launch_readiness(void);
 
 // OIDC validation helper functions
 bool validate_oidc_issuer(const char* issuer, const char*** messages, size_t* count, size_t* capacity, bool* ready);
@@ -196,6 +198,7 @@ int launch_oidc_subsystem(void);
 int launch_resources_subsystem(void);
 int launch_scripting_subsystem(void);
 int launch_reporting_subsystem(void);
+int launch_mcp_subsystem(void);
 
 // Log early startup information (before any initialization)
 void log_early_info(void);

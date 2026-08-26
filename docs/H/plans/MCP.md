@@ -42,14 +42,13 @@ an explicit Status variance.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-08-26):** Phase 0 locked. Phase 1 complete
-(config loads, Unity 9/9, `mkp` green). Next: **Phase 2** count bump. No
-`src/mcp/` yet. Do not bump `MAX_SUBSYSTEMS` until Phase 2.
+**CURRENT PAUSE POINT (as of 2026-08-26):** Phase 0–2 complete. Next:
+**Phase 3** status counters. Skeleton launches; no MHD listen yet.
 
 ### Resume here next session
 
-1. Phase 2: apply Subsystem Count Touchpoints in one change set (22 → 24).
-2. Clean skip when disabled. Unity launch/landing. `test_17`.
+1. Phase 3: `mcp_stats` atomics + `ServiceMetrics` union arm + status JSON/Prometheus.
+2. Unity increment/snapshot/reset. `mkt` + `mkp`.
 
 ### Session checklist
 
@@ -66,7 +65,7 @@ Build aliases: `zsh -ic '<alias>'` (`mkt`, `mka`, `mku <base>`, `mkp`, `mks`).
 | --- | --- |
 | **Band** | P2 — new capability, not a close-the-loop or safety gate |
 | **Effort** | XL (full subsystem + transport + Lua protocol + tests + docs) |
-| **Done** | ~3% — Phase 0 locked; Phase 1 in progress |
+| **Done** | ~8% — Phase 0–2 complete; next Phase 3 status scaffold |
 | **Why this shape** | Unblocks AI-tool access to Hydrogen without a product-named C surface. Reuses Scripting, JWT, and the `scripts.invokable` allowlist pattern |
 | **Do not start casually** | Touches `MAX_SUBSYSTEMS`, launch/landing dispatch, status metrics, and blackbox configs. Phase 2 is the dangerous count-bump |
 
@@ -1012,20 +1011,20 @@ if they iterate config sections — update those only if they break.
 
 #### Work items
 
-- [ ] **2.1** Apply the **Subsystem Count Touchpoints** table in one change
+- [x] **2.1** Apply the **Subsystem Count Touchpoints** table in one change
       set. Do not land `SR_MCP` without the `MAX_SUBSYSTEMS` bump.
-- [ ] **2.2** `launch_mcp.c` — register, Network+Scripting deps when enabled,
+- [x] **2.2** `launch_mcp.c` — register, Network+Scripting deps when enabled,
       validate Interface/Port/Path/Protocol when enabled, clean skip when not.
       Enabled + `Scripting.WorkerCount < 2` is a No-Go. Log an ALERT if
       `Interface` is `0.0.0.0` / `::` (spec prefers localhost).
-- [ ] **2.3** `landing_mcp.c` — ready only if running; land sets shutdown flag.
-- [ ] **2.4** `src/mcp/mcp.c` — `mcp_init_state` / `mcp_shutdown` no-op drain.
-- [ ] **2.5** Unity: readiness enabled/disabled/null config/bad port/missing
+- [x] **2.3** `landing_mcp.c` — ready only if running; land sets shutdown flag.
+- [x] **2.4** `src/mcp/mcp.c` — `mcp_init_state` / `mcp_shutdown` no-op drain.
+- [x] **2.5** Unity: readiness enabled/disabled/null config/bad port/missing
       Protocol; launch success; land when not running.
-- [ ] **2.6** `mkt` + `mka` + `mkp`.
-- [ ] **2.7** `test_17_startup_shutdown.sh` — confirm min/max still start/stop.
+- [x] **2.6** `mkt` + `mka` + `mkp`.
+- [x] **2.7** `test_17_startup_shutdown.sh` — confirm min/max still start/stop.
       Fix any count assertions.
-- [ ] **2.8** Grep Unity/blackbox for leftover `22` / “primary 22” / hardcoded
+- [x] **2.8** Grep Unity/blackbox for leftover `22` / “primary 22” / hardcoded
       readiness lengths and update.
 
 #### Exit gate / validation
@@ -1036,14 +1035,15 @@ if they iterate config sections — update those only if they break.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-08-26 |
+| **Result** | `MAX_SUBSYSTEMS`/`INITIAL_REGISTRY_CAPACITY` 24. Clean skip. Unity 12/12. `mkt`/`mka`/`mkp` green. `test_17` 11/11. |
+| **Variances** | Status JSON/Prometheus collection deferred to Phase 3; `ServiceMetrics mcp` field present as stub. |
 
 #### Lessons learned
 
-(fill after the phase)
+- Reporting is not registered with `register_subsystem_from_launch`; MCP must register or `launch.c` skips it.
+- No Unity/blackbox tests hardcoded `MAX_SUBSYSTEMS == 22`.
 
 ---
 
@@ -1961,6 +1961,8 @@ that affect later phases must be recorded so they are not lost.
 - (2026-08-26) Phase 0 locked; Phase 1 shipped (`config_mcp`, letter T, Unity 9/9).
   `PROCESS_STRING_ARRAY` macro is broken — use `process_string_array_config` directly.
   MHD mock still missing suspend/resume (Phase 7).
+- (2026-08-26) Phase 2 shipped: 21st registered subsystem, capacity 24, clean skip,
+  `src/mcp/mcp.c` skeleton, `test_17` green. Status collection is Phase 3.
 
 ### Follow-ups
 

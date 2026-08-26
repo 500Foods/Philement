@@ -67,9 +67,10 @@ src/
  ├─state/        Terminal
  ├─threads/      Thread management
  ├─utils/        Utilities
- ├─webserver/    HTTP server
- ├─websocket/    WebSocket
- └─hydrogen.c    Main entry
+  ├─webserver/    HTTP server
+  ├─websocket/    WebSocket
+  ├─mcp/          MCP server
+  └─hydrogen.c    Main entry
 tests/          Test framework
 ```
 
@@ -250,7 +251,9 @@ N. Resources
 O. OIDC
 P. Notify
 Q. Scripting
-Q. Mirage
+R. Reporting
+S. Webhooks
+T. MCP
 
 ## SUBSYSTEM ORDER
 
@@ -274,8 +277,9 @@ App uses subsystems and a launch/landing system to control them. Details in src/
 16. Resources
 17. OIDC
 18. Notify
-19. Mirage
-20. Scripting
+19. Scripting
+20. Reporting
+21. MCP
 
 ## LAUNCH / LANDING
 
