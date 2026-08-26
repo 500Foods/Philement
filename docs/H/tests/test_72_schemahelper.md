@@ -72,7 +72,7 @@ data (no live database required). It exercises the full module stack:
 
 ## Fixture Layout
 
-```
+```directory
 extras/schematool/test/fixtures/sample_project/
   findings.json          — SchemaTool metadata audit output (copy of what --work-dir produces)
   catalog_findings.json  — SchemaTool catalog audit output
