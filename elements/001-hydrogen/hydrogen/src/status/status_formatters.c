@@ -288,6 +288,56 @@ json_t* format_system_status_json(const SystemMetrics *metrics) {
         json_object_set_new(services, "scripting", scripting);
     }
 
+    {
+        json_t *mcp = json_object();
+        json_object_set_new(mcp, "enabled", metrics->mcp.enabled ? json_true() : json_false());
+        json_t *mcp_status = json_object();
+        json_object_set_new(mcp_status, "sessionsActive",
+                          json_integer((json_int_t)metrics->mcp.specific.mcp.sessions_active));
+        json_object_set_new(mcp_status, "sessionsTotal",
+                          json_integer((json_int_t)metrics->mcp.specific.mcp.sessions_total));
+        json_object_set_new(mcp_status, "sessionsExpired",
+                          json_integer((json_int_t)metrics->mcp.specific.mcp.sessions_expired));
+        json_object_set_new(mcp_status, "rpcReceived",
+                          json_integer((json_int_t)metrics->mcp.specific.mcp.rpc_received));
+        json_object_set_new(mcp_status, "rpcSucceeded",
+                          json_integer((json_int_t)metrics->mcp.specific.mcp.rpc_succeeded));
+        json_object_set_new(mcp_status, "rpcFailed",
+                          json_integer((json_int_t)metrics->mcp.specific.mcp.rpc_failed));
+        json_object_set_new(mcp_status, "rpcInFlight",
+                          json_integer((json_int_t)metrics->mcp.specific.mcp.rpc_in_flight));
+        json_object_set_new(mcp_status, "authRejected",
+                          json_integer((json_int_t)metrics->mcp.specific.mcp.auth_rejected));
+        json_t *auth_reasons = json_object();
+        json_object_set_new(auth_reasons, "missing",
+                          json_integer((json_int_t)metrics->mcp.specific.mcp.auth_rejected_missing));
+        json_object_set_new(auth_reasons, "malformed",
+                          json_integer((json_int_t)metrics->mcp.specific.mcp.auth_rejected_malformed));
+        json_object_set_new(auth_reasons, "hydrogen_jwt",
+                          json_integer((json_int_t)metrics->mcp.specific.mcp.auth_rejected_hydrogen_jwt));
+        json_object_set_new(auth_reasons, "oidc_idp",
+                          json_integer((json_int_t)metrics->mcp.specific.mcp.auth_rejected_oidc_idp));
+        json_object_set_new(auth_reasons, "oidc_rp",
+                          json_integer((json_int_t)metrics->mcp.specific.mcp.auth_rejected_oidc_rp));
+        json_object_set_new(auth_reasons, "aud",
+                          json_integer((json_int_t)metrics->mcp.specific.mcp.auth_rejected_aud));
+        json_object_set_new(auth_reasons, "scope",
+                          json_integer((json_int_t)metrics->mcp.specific.mcp.auth_rejected_scope));
+        json_object_set_new(mcp_status, "authRejectedReasons", auth_reasons);
+        json_object_set_new(mcp_status, "originRejected",
+                          json_integer((json_int_t)metrics->mcp.specific.mcp.origin_rejected));
+        json_object_set_new(mcp_status, "dispatchTimeouts",
+                          json_integer((json_int_t)metrics->mcp.specific.mcp.dispatch_timeouts));
+        json_object_set_new(mcp_status, "bytesIn",
+                          json_integer((json_int_t)metrics->mcp.specific.mcp.bytes_in));
+        json_object_set_new(mcp_status, "bytesOut",
+                          json_integer((json_int_t)metrics->mcp.specific.mcp.bytes_out));
+        json_object_set_new(mcp_status, "lastRpcAt",
+                          json_integer((json_int_t)metrics->mcp.specific.mcp.last_rpc_at));
+        json_object_set_new(mcp, "status", mcp_status);
+        json_object_set_new(services, "mcp", mcp);
+    }
+
     json_object_set_new(root, "services", services);
     
     return root;
@@ -596,8 +646,73 @@ char* format_system_status_prometheus(const SystemMetrics *metrics) {
                metrics->database.specific.database.prepared_statement_cache_misses,
                metrics->database.specific.database.connections_created,
                metrics->database.specific.database.connections_closed,
-               metrics->database.specific.database.connection_errors);
+                metrics->database.specific.database.connection_errors);
     }
+
+    APPEND("# HELP hydrogen_mcp_sessions_active Current MCP sessions\n"
+           "# TYPE hydrogen_mcp_sessions_active gauge\n"
+           "hydrogen_mcp_sessions_active %llu\n"
+           "# HELP hydrogen_mcp_sessions_total Total MCP sessions created\n"
+           "# TYPE hydrogen_mcp_sessions_total counter\n"
+           "hydrogen_mcp_sessions_total %llu\n"
+           "# HELP hydrogen_mcp_sessions_expired MCP sessions expired by reaper\n"
+           "# TYPE hydrogen_mcp_sessions_expired counter\n"
+           "hydrogen_mcp_sessions_expired %llu\n"
+           "# HELP hydrogen_mcp_rpc_received JSON-RPC messages received\n"
+           "# TYPE hydrogen_mcp_rpc_received counter\n"
+           "hydrogen_mcp_rpc_received %llu\n"
+           "# HELP hydrogen_mcp_rpc_succeeded JSON-RPC messages succeeded\n"
+           "# TYPE hydrogen_mcp_rpc_succeeded counter\n"
+           "hydrogen_mcp_rpc_succeeded %llu\n"
+           "# HELP hydrogen_mcp_rpc_failed JSON-RPC messages failed\n"
+           "# TYPE hydrogen_mcp_rpc_failed counter\n"
+           "hydrogen_mcp_rpc_failed %llu\n"
+           "# HELP hydrogen_mcp_rpc_in_flight In-flight MCP RPCs\n"
+           "# TYPE hydrogen_mcp_rpc_in_flight gauge\n"
+           "hydrogen_mcp_rpc_in_flight %llu\n"
+           "# HELP hydrogen_mcp_auth_rejected Auth rejections by reason\n"
+           "# TYPE hydrogen_mcp_auth_rejected counter\n"
+           "hydrogen_mcp_auth_rejected{reason=\"missing\"} %llu\n"
+           "hydrogen_mcp_auth_rejected{reason=\"malformed\"} %llu\n"
+           "hydrogen_mcp_auth_rejected{reason=\"hydrogen_jwt\"} %llu\n"
+           "hydrogen_mcp_auth_rejected{reason=\"oidc_idp\"} %llu\n"
+           "hydrogen_mcp_auth_rejected{reason=\"oidc_rp\"} %llu\n"
+           "hydrogen_mcp_auth_rejected{reason=\"aud\"} %llu\n"
+           "hydrogen_mcp_auth_rejected{reason=\"scope\"} %llu\n"
+           "# HELP hydrogen_mcp_origin_rejected Origin header rejections\n"
+           "# TYPE hydrogen_mcp_origin_rejected counter\n"
+           "hydrogen_mcp_origin_rejected %llu\n"
+           "# HELP hydrogen_mcp_dispatch_timeouts Protocol job timeouts\n"
+           "# TYPE hydrogen_mcp_dispatch_timeouts counter\n"
+           "hydrogen_mcp_dispatch_timeouts %llu\n"
+           "# HELP hydrogen_mcp_bytes_in Request body bytes\n"
+           "# TYPE hydrogen_mcp_bytes_in counter\n"
+           "hydrogen_mcp_bytes_in %llu\n"
+           "# HELP hydrogen_mcp_bytes_out Response body bytes\n"
+           "# TYPE hydrogen_mcp_bytes_out counter\n"
+           "hydrogen_mcp_bytes_out %llu\n"
+           "# HELP hydrogen_mcp_last_rpc_timestamp Unix time of last RPC\n"
+           "# TYPE hydrogen_mcp_last_rpc_timestamp gauge\n"
+           "hydrogen_mcp_last_rpc_timestamp %ld\n",
+           metrics->mcp.specific.mcp.sessions_active,
+           metrics->mcp.specific.mcp.sessions_total,
+           metrics->mcp.specific.mcp.sessions_expired,
+           metrics->mcp.specific.mcp.rpc_received,
+           metrics->mcp.specific.mcp.rpc_succeeded,
+           metrics->mcp.specific.mcp.rpc_failed,
+           metrics->mcp.specific.mcp.rpc_in_flight,
+           metrics->mcp.specific.mcp.auth_rejected_missing,
+           metrics->mcp.specific.mcp.auth_rejected_malformed,
+           metrics->mcp.specific.mcp.auth_rejected_hydrogen_jwt,
+           metrics->mcp.specific.mcp.auth_rejected_oidc_idp,
+           metrics->mcp.specific.mcp.auth_rejected_oidc_rp,
+           metrics->mcp.specific.mcp.auth_rejected_aud,
+           metrics->mcp.specific.mcp.auth_rejected_scope,
+           metrics->mcp.specific.mcp.origin_rejected,
+           metrics->mcp.specific.mcp.dispatch_timeouts,
+           metrics->mcp.specific.mcp.bytes_in,
+           metrics->mcp.specific.mcp.bytes_out,
+           (long)metrics->mcp.specific.mcp.last_rpc_at);
 
     // Queue Metrics
     APPEND("# HELP hydrogen_queue_entries Current number of entries in queue\n"

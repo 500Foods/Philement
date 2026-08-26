@@ -42,13 +42,14 @@ an explicit Status variance.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-08-26):** Phase 0–2 complete. Next:
-**Phase 3** status counters. Skeleton launches; no MHD listen yet.
+**CURRENT PAUSE POINT (as of 2026-08-26):** Phase 0–6 complete. Next:
+**Phase 7** dispatch to Protocol script.
 
 ### Resume here next session
 
-1. Phase 3: `mcp_stats` atomics + `ServiceMetrics` union arm + status JSON/Prometheus.
-2. Unity increment/snapshot/reset. `mkt` + `mkp`.
+1. Phase 7: submit Protocol job, MHD suspend/resume, timeout/`rpc_in_flight`.
+2. Extend MHD mock for suspend/resume (locked 0.15) or `mock_mcp_transport.c`.
+3. Unity `mcp_dispatch_test_submit_protocol`. `mkt` + `mkp`.
 
 ### Session checklist
 
@@ -65,7 +66,7 @@ Build aliases: `zsh -ic '<alias>'` (`mkt`, `mka`, `mku <base>`, `mkp`, `mks`).
 | --- | --- |
 | **Band** | P2 — new capability, not a close-the-loop or safety gate |
 | **Effort** | XL (full subsystem + transport + Lua protocol + tests + docs) |
-| **Done** | ~8% — Phase 0–2 complete; next Phase 3 status scaffold |
+| **Done** | ~27% — Phase 0–6 complete; next Phase 7 dispatch |
 | **Why this shape** | Unblocks AI-tool access to Hydrogen without a product-named C surface. Reuses Scripting, JWT, and the `scripts.invokable` allowlist pattern |
 | **Do not start casually** | Touches `MAX_SUBSYSTEMS`, launch/landing dispatch, status metrics, and blackbox configs. Phase 2 is the dangerous count-bump |
 
@@ -835,6 +836,7 @@ safe functions):
 | `launch_mcp.c` | `launch/launch_mcp_test_check_mcp_launch_readiness.c` | disabled skip, enabled deps, missing Protocol, `WorkerCount < 2` No-Go, port-in-use |
 | `landing_mcp.c` | `landing/landing_mcp_test_land_mcp_subsystem.c` | not-running, drain timeout |
 | `mcp_http.c` | `mcp/mcp_http_test_handle_request.c` | path/method, `/healthz`, PRM well-known, Origin allow/deny/absent, 405 GET |
+| `mcp_http.c` | `mcp/mcp_http_test_start_listen.c` | bind fail, daemon-info fail, pool size, invalid Interface |
 | `mcp_auth.c` | `mcp/mcp_auth_test_validate_bearer.c` | missing, bad Hydrogen JWT, reserved `_hydrogen`, IdP/RP reject, `aud`/`scope`, `WWW-Authenticate` shape |
 | `mcp_rpc.c` | `mcp/mcp_rpc_test_parse_envelope.c` | parse error, notify vs request, batch reject, oversize, protocol-version header passthrough |
 | `mcp_session.c` (if split) | `mcp/mcp_session_test_bind.c` | generate, bind subject, hijack other `sub`, unknown 404, DELETE, reaper, `MaxSessions` |
@@ -1055,17 +1057,17 @@ if they iterate config sections — update those only if they break.
 
 #### Work items
 
-- [ ] **3.1** `mcp_stat` — atomics: `sessions_active`, `sessions_total`,
+- [x] **3.1** `mcp_stats` — atomics: `sessions_active`, `sessions_total`,
       `sessions_expired`, `rpc_received`, `rpc_succeeded`, `rpc_failed`,
       `rpc_in_flight`, `auth_rejected` (plus reason counters or a small
       reason enum), `origin_rejected`, `dispatch_timeouts`, `bytes_in`,
       `bytes_out`, `last_rpc_at`.
-- [ ] **3.2** `mcp_collect_metrics` → `ServiceMetrics` union arm `mcp`.
-- [ ] **3.3** Wire `status_process.c` + JSON field `mcp` + Prometheus names
+- [x] **3.2** `mcp_collect_metrics` → `ServiceMetrics` union arm `mcp`.
+- [x] **3.3** Wire `status_process.c` + JSON field `mcp` + Prometheus names
       `hydrogen_mcp_*`.
-- [ ] **3.4** Unity: increment/snapshot/reset; JSON contains keys when enabled
+- [x] **3.4** Unity: increment/snapshot/reset; JSON contains keys when enabled
       or always-present zeros (Phase 0 pick one; recommend always-present).
-- [ ] **3.5** `mkt` + `mkp` + `mku` status/mcp stats tests.
+- [x] **3.5** `mkt` + `mkp` + `mku` status/mcp stats tests.
 
 #### Exit gate / validation
 
@@ -1076,14 +1078,14 @@ phase Status.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-08-26 |
+| **Result** | Always-present JSON `services.mcp` (zeros included). Prometheus `hydrogen_mcp_*`. Unity 7/7. `mkp` green. |
+| **Variances** | JSON keys always present (not gated on `Enabled`). Auth reasons: missing, malformed, hydrogen_jwt, oidc_idp, oidc_rp, aud, scope. |
 
 #### Lessons learned
 
-(fill after the phase)
+- Gauge counters (`sessions_active`, `rpc_in_flight`) clamp at zero on underflow instead of wrapping.
 
 ---
 
@@ -1095,31 +1097,31 @@ phase Status.
 
 #### Work items
 
-- [ ] **4.1** Start MHD in `launch_mcp_subsystem` when enabled; fail launch
+- [x] **4.1** Start MHD in `launch_mcp_subsystem` when enabled; fail launch
       (not SEGV) if port in use — [no_segv_tolerance](/docs/H/INSTRUCTIONS.md).
       Flags: internal poll + select + `MHD_ALLOW_SUSPEND_RESUME` +
       `MCP.ThreadPoolSize`. Not `MHD_USE_THREAD_PER_CONNECTION`.
-- [ ] **4.2** Reject non-Path URLs with 404 (except well-known + healthz).
+- [x] **4.2** Reject non-Path URLs with 404 (except well-known + healthz).
       GET on `Path` itself is **405** in v1 (no SSE). Other methods 405.
-- [ ] **4.3** POST stub returns 501 JSON-RPC “not implemented” **or** a
+- [x] **4.3** POST stub returns 501 JSON-RPC “not implemented” **or** a
       temporary hardcoded initialize — prefer 501 so Phase 7 is the first
       real dispatch.
-- [ ] **4.4** Landing: stop accept, resume+fail in-flight suspended
+- [x] **4.4** Landing: stop accept, resume+fail in-flight suspended
       connections, join pool, `mcp_threads` drain with timeout (copy
       WebServer, not a single-thread join).
-- [ ] **4.5** `GET <Path>/healthz` — unauthenticated, no `Origin` check, no
+- [x] **4.5** `GET <Path>/healthz` — unauthenticated, no `Origin` check, no
       JSON-RPC, fixed `200 {"status":"ok"}` while the listener is up.
-- [ ] **4.5b** `GET /.well-known/oauth-protected-resource` and
+- [x] **4.5b** `GET /.well-known/oauth-protected-resource` and
       `GET /.well-known/oauth-protected-resource<Path>` — unauthenticated
       RFC 9728 document (may be a stub until Phase 5 fills issuers).
-- [ ] **4.6** `Origin` header validation against `MCP.AllowedOrigins`
+- [x] **4.6** `Origin` header validation against `MCP.AllowedOrigins`
       (Design Principle 10) on POST/DELETE. Reject with 403 before JWT
       parsing when `Origin` is present and not allowlisted. Increment
       `origin_rejected`, not `auth_rejected`.
-- [ ] **4.7** Unity with global `USE_MOCK_LIBMICROHTTPD`: bind failure,
+- [x] **4.7** Unity with global `USE_MOCK_LIBMICROHTTPD`: bind failure,
       path mismatch, method mismatch, `/healthz`, PRM path, Origin
       allowed / mismatched / absent, thread-pool option plumbed.
-- [ ] **4.8** `mkt` + `mkp`. No blackbox script yet.
+- [x] **4.8** `mkt` + `mkp`. No blackbox script yet.
 
 #### Exit gate / validation
 
@@ -1130,14 +1132,14 @@ is a launch No-Go / launch failure, not a crash.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-08-26 |
+| **Result** | Dedicated MHD listen. Unity handle 9/9, start 5/5, launch 4/4. `mkt`/`mkp` green. POST 501 stub. PRM empty issuers. |
+| **Variances** | In-flight suspend drain is a no-op until Phase 7 (no suspend yet). `MHD_stop_daemon` joins the pool. |
 
 #### Lessons learned
 
-(fill after the phase)
+- MHD first callback with `*con_cls == NULL` must return `MHD_YES` without queuing; tests skip that pass with a stack sentinel (cppcheck rejects `(void*)1`).
 
 ---
 
@@ -1150,28 +1152,28 @@ is a launch No-Go / launch failure, not a crash.
 
 #### Work items
 
-- [ ] **5.1** Require `Authorization: Bearer`. Missing/malformed → 401
+- [x] **5.1** Require `Authorization: Bearer`. Missing/malformed → 401
       with `WWW-Authenticate: Bearer realm="hydrogen-mcp",
       resource_metadata="<absolute PRM URL>"`. Increment `auth_rejected`
       with reason `missing` / `malformed`.
-- [ ] **5.2** Validate in order: Hydrogen JWT (`AcceptHydrogenJWT`) via
-      `extract_and_validate_jwt`; then OIDC IdP JWKS (`AcceptOidcIdP`);
+- [x] **5.2** Validate in order: Hydrogen JWT (`AcceptHydrogenJWT`) via
+      `validate_jwt`; then OIDC IdP JWKS (`AcceptOidcIdP`);
       then each `OIDC_RP.Providers[]` JWKS (`AcceptOidcRp`). First
       success wins. Inject claims for later dispatch. Reject request
       bodies that contain `_hydrogen`.
-- [ ] **5.3** Audience / scope: OIDC tokens must include `MCP.Resource`
+- [x] **5.3** Audience / scope: OIDC tokens must include `MCP.Resource`
       in `aud` when `aud` is present; `RequiredScopes` must be a subset
       of token scopes. Hydrogen user JWTs skip scope. Failures reason-
       coded `aud` / `scope`.
-- [ ] **5.4** Fill the Phase 4 PRM document: `resource`,
+- [x] **5.4** Fill the Phase 4 PRM document: `resource`,
       `authorization_servers`, `bearer_methods_supported: ["header"]`,
       `resource_signing_alg_values_supported` matching what we accept.
-- [ ] **5.5** `RequireJWT=false` path only if Phase 0 allowed it; still
+- [x] **5.5** `RequireJWT=false` path only if Phase 0 allowed it; still
       log ALERT once at launch. PRM still served.
-- [ ] **5.6** Unity: no header, bad Hydrogen JWT, expired, reserved
+- [x] **5.6** Unity: no header, bad Hydrogen JWT, expired, reserved
       `_hydrogen`, happy Hydrogen JWT, IdP/RP reject + accept (mock
       JWKS), `aud` mismatch, `WWW-Authenticate` + PRM JSON shape.
-- [ ] **5.7** `mkt` + `mkp`.
+- [x] **5.7** `mkt` + `mkp`.
 
 #### Exit gate / validation
 
@@ -1183,14 +1185,14 @@ bare 401 without reading Hydrogen docs.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-08-26 |
+| **Result** | Bearer gate + RFC 9728 PRM issuers. Unity auth 15/15, HTTP 10/10. `mkt`/`mkp` green. |
+| **Variances** | Hydrogen JWT uses `validate_jwt` directly (Unity mock seam). IdP/RP accept hooks for Unity; production uses `oidc_validate_access_token` + RP JWKS `verify_signature`. POST body `_hydrogen` check is in `mcp_validate_bearer`; HTTP handler still discards upload until Phase 6. |
 
 #### Lessons learned
 
-(fill after the phase)
+- `extract_and_validate_jwt` is compiled as conduit without `USE_MOCK_AUTH_SERVICE_JWT`; MCP auth must call `validate_jwt` so Unity can inject results.
 
 ---
 
@@ -1202,35 +1204,35 @@ bare 401 without reading Hydrogen docs.
 
 #### Work items
 
-- [ ] **6.1** Parse body with jansson. Cap `MaxBodyBytes`.
-- [ ] **6.2** Validate `jsonrpc == "2.0"`, `method` is a non-empty string,
+- [x] **6.1** Parse body with jansson. Cap `MaxBodyBytes`.
+- [x] **6.2** Validate `jsonrpc == "2.0"`, `method` is a non-empty string,
       `id` is string/number/null (notify). Do **not** switch on method.
-- [ ] **6.3** Batch arrays: reject in v1 with `-32600` (or lock support in
+- [x] **6.3** Batch arrays: reject in v1 with `-32600` (or lock support in
       Phase 0). Recommendation: reject. Keeps C small.
-- [ ] **6.3b** Pass `MCP-Protocol-Version` header into
+- [x] **6.3b** Pass `MCP-Protocol-Version` header into
       `_hydrogen.protocol_version` (default `2025-03-26` if absent, per
       spec). Do not switch on it in C; Lua `initialize` negotiates.
       Store the negotiated version on the session after Phase 7.
-- [ ] **6.4** Assign / echo `Mcp-Session-Id` header (generate on
+- [x] **6.4** Assign / echo `Mcp-Session-Id` header (generate on
       `initialize` only once Lua exists; for now generate on first POST).
       Bind session → `sub`. A later request whose Bearer `sub` does not
       match is 401, not a session steal.
-- [ ] **6.5** Unknown/expired `Mcp-Session-Id` on a non-`initialize` request
+- [x] **6.5** Unknown/expired `Mcp-Session-Id` on a non-`initialize` request
       → 404 (spec-mandated), forcing the client to re-`initialize` rather
       than silently starting a new anonymous session under an old id.
-- [ ] **6.6** `DELETE` with a valid `Mcp-Session-Id` → explicit session
+- [x] **6.6** `DELETE` with a valid `Mcp-Session-Id` → explicit session
       termination (204), freeing the session→subject binding immediately
       instead of waiting for `SessionIdleTimeoutSeconds`. Well-behaved
       clients (and the blackbox test) should call this on clean shutdown.
-- [ ] **6.7** Idle-session reaper: a periodic sweep (tied to
+- [x] **6.7** Idle-session reaper: a periodic sweep (tied to
       `SessionIdleTimeoutSeconds`) evicts session entries with no activity;
       new sessions beyond `MaxSessions` are rejected with a JSON-RPC error
       rather than growing the table unbounded. Export `sessions_expired`
       alongside the Phase 3 counters.
-- [ ] **6.8** Unity: parse error, invalid request, notify vs request,
+- [x] **6.8** Unity: parse error, invalid request, notify vs request,
       oversize, unknown session id 404, DELETE termination, reaper eviction,
       `MaxSessions` rejection.
-- [ ] **6.9** `mkt` + `mkp`.
+- [x] **6.9** `mkt` + `mkp`.
 
 #### Exit gate / validation
 
@@ -1241,14 +1243,15 @@ dispatch.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-08-26 |
+| **Result** | Envelope parse + session table. Unity rpc 13/13, session 7/7, HTTP 14/14. `mkt`/`mkp` green. Valid request still 501; notify 202. |
+| **Variances** | `initialize` is compared only for session create-vs-404, not dispatch. MaxSessions uses JSON-RPC `-32001` so `-32000` stays Phase 7 overload. Protocol version is on the envelope for Phase 7 inject; not stored on the session yet. |
 
 #### Lessons learned
 
-(fill after the phase)
+- Reap before taking the session mutex; nested lock in `resolve` would deadlock.
+- Tests that skip the MHD first pass have an empty body and now 400 instead of 501.
 
 ---
 
@@ -1963,6 +1966,15 @@ that affect later phases must be recorded so they are not lost.
   MHD mock still missing suspend/resume (Phase 7).
 - (2026-08-26) Phase 2 shipped: 21st registered subsystem, capacity 24, clean skip,
   `src/mcp/mcp.c` skeleton, `test_17` green. Status collection is Phase 3.
+- (2026-08-26) Phase 3 shipped: `mcp_stats.c` atomics, always-present
+  `services.mcp` JSON + `hydrogen_mcp_*` Prometheus. Next is Phase 4 MHD listen.
+- (2026-08-26) Phase 4 shipped: `mcp_http.c` dedicated daemon, healthz, PRM stub,
+  Origin 403, POST 501. Next is Phase 5 Bearer + PRM issuers.
+- (2026-08-26) Phase 5 shipped: `mcp_auth.c` multi-issuer Bearer, `WWW-Authenticate`,
+  filled PRM (`mcp_prm.c`). Next is Phase 6 JSON-RPC envelope.
+- (2026-08-26) Phase 6 shipped: `mcp_rpc.c` envelope, `mcp_session.c` bind/DELETE/reaper,
+  POST body accumulation. `_hydrogen` reject also checks `params._hydrogen`. Next is
+  Phase 7 dispatch (extend MHD mock for suspend/resume first).
 
 ### Follow-ups
 
