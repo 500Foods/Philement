@@ -42,13 +42,13 @@ an explicit Status variance.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-08-27):** Phase 0–14 complete (Groups A–E).
-Plan moved to [`MCP_COMPLETE.md`](/docs/H/plans/complete/MCP_COMPLETE.md).
-Optional later: Phases 15–17 (resources/prompts, DCR, stdio).
+**CURRENT PAUSE POINT (as of 2026-08-27):** Phase 0–15 complete (Groups A–F
+resources/prompts). Plan is [`MCP_COMPLETE.md`](/docs/H/plans/complete/MCP_COMPLETE.md).
+Optional later: Phases 16–17 (DCR, stdio).
 
 ### Resume here next session
 
-1. Optional Phase 15+ only if product tools need resources/prompts, DCR, or stdio.
+1. Optional Phase 16+ only if public MCP clients need DCR or stdio.
 
 ### Session checklist
 
@@ -65,7 +65,7 @@ Build aliases: `zsh -ic '<alias>'` (`mkt`, `mka`, `mku <base>`, `mkp`, `mks`).
 | --- | --- |
 | **Band** | P2 — new capability, not a close-the-loop or safety gate |
 | **Effort** | XL (full subsystem + transport + Lua protocol + tests + docs) |
-| **Done** | 100% Groups A–E (Phases 0–14). Phases 15–17 optional |
+| **Done** | 100% Groups A–E (Phases 0–14) plus Phase 15. Phases 16–17 optional |
 | **Why this shape** | Unblocks AI-tool access to Hydrogen without a product-named C surface. Reuses Scripting, JWT, and the `scripts.invokable` allowlist pattern |
 | **Do not start casually** | Touches `MAX_SUBSYSTEMS`, launch/landing dispatch, status metrics, and blackbox configs. Phase 2 is the dangerous count-bump |
 
@@ -170,7 +170,7 @@ Date of snapshot: 2026-08-22
 | Status machine | `status_core.h` `ServiceMetrics` union + `status_process.c` |
 | Launch/landing | 20 registered subsystems in `launch_readiness.c` |
 | Config letters | A–S taken; **T** is free (`Webhooks` is S under `SR_API`) |
-| Highest migration | `acuranzo_1372.lua` (Mcp.Sleep); next **1373** |
+| Highest migration | `acuranzo_1375.lua` (Mcp.Prompts.Intro); next **1376** |
 | Highest QueryRef | **#153** taken (`acuranzo_1367`, Get MCP Script); next **#154** |
 
 ### Missing
@@ -885,7 +885,7 @@ standing up `test_47_mcp.sh`'s full matrix or the Inspector. Must pass
 | C | 4–6 | Listen interface, JWT, JSON-RPC envelope |
 | D | 7–10 | Lua protocol dispatch, `mcp_access`, `H.mcp`, seeds |
 | E | 11–14 | Status API, Unity sweep, blackbox, docs |
-| F | 15+ | Optional: resources/prompts, OAuth 2.1, stdio, multi-server |
+| F | 15 | Resources/prompts (Lua naming; no C). 16–17 still optional (DCR, stdio) |
 
 ---
 
@@ -1660,24 +1660,31 @@ If C must change, Phase 0 failed — record why in Working Log before adding C.
 
 #### Work items
 
-- [ ] **15.1** Extend `Mcp.Server` only.
-- [ ] **15.2** Optional `scripts.mcp_kind` (`tool` / `resource` / `prompt`)
-      **only if** list filtering in SQL is worth a column. Prefer a Lua
-      naming convention (`Mcp.Tools.*`) first.
-- [ ] **15.3** Blackbox cases on Test 47.
+- [x] **15.1** Extend `Mcp.Server` only (`acuranzo_1373`).
+- [x] **15.2** No `scripts.mcp_kind`. Lua classifies from `mcp_schema`
+      (`uri` → resource, `arguments` without `inputSchema` → prompt).
+      Names stay two-segment `Group.Name` because `H.mcp.call` splits on
+      the first dot (`Mcp.Tools.*` would not load).
+- [x] **15.3** Blackbox cases on Test 47 (`resources/list`+`read`,
+      `prompts/list`+`get`, unknown URI/name **-32602**). Required on
+      all engines (live DBs at 1375).
+- [x] **15.1b** Fixture seeds `Mcp.Info` (`1374`, `hydrogen://mcp/info`)
+      and `Mcp.Intro` (`1375`).
 
 #### Status
 
 | | |
 | --- | --- |
-| **State** | deferred optional |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-08-27 |
+| **Result** | Lua-only plus a later MySQL prepared-fetch buffer fix (64 KiB). Test 47 1.1.2 **20/20** all 7 engines (30 cases, SQLite 31). hydrodemo patched. |
+| **Variances** | Plan suggested `Mcp.Tools.*` prefixes; first-dot `H.mcp.call` parse forbids a third segment, so kind lives in `mcp_schema` instead. |
 
 #### Lessons learned
 
-(fill after the phase)
+- Filtering after `H.mcp.list` is enough at fixture scale (page size 50). A `mcp_kind` column would be C-adjacent QueryRef work for no gain yet.
+- `H.mcp.call` splits `Group.Name` on the **first** dot. Three-segment names (`Mcp.Resources.Info`) cannot load without a C change.
+- `resources/read` / `prompts/get` reuse inline `H.mcp.call` (same deadlock rule as tools).
 
 ---
 
@@ -2010,6 +2017,17 @@ that affect later phases must be recorded so they are not lost.
   done. Optional Phases 15–17 remain in this file after the move to complete/.
 - (2026-08-27) Operator: database migrations are current (1283 APPLY hole closed;
   MCP seeds 1365–1372 applied). Test 47 should not skip MySQL/MariaDB for that.
+- (2026-08-27) Phase 15 shipped: `acuranzo_1373` Server resources/prompts,
+  `1374` `Mcp.Info`, `1375` `Mcp.Intro`. Kind from `mcp_schema` (not
+  `Mcp.Resources.*` — first-dot parse). No C. Test 47 1.1.0. Live engines
+  without 1373 omit resource/prompt cases.
+- (2026-08-27) Operator: all engines applied through **1375**. Test 47
+  Phase 15 cases are required, not skip-pass.
+- (2026-08-27) Test 47 MySQL/MariaDB initialize 404: prepared fetch used a
+  4096-byte column cap, so `Mcp.Server` (`code` 9680 after 1373) became 0
+  rows (then `-32603` unfinished string). Floor raised to 64 KiB (TEXT);
+  `MYSQL_DATA_TRUNCATED` kept as a row. ENGINE_SKIP removed. Test 47 1.1.2
+  **20/20**, 7/7 engines (30 cases, SQLite 31).
 
 ### Follow-ups
 

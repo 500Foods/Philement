@@ -25,6 +25,10 @@
 #define MYSQL_TYPE_LONGLONG     8
 #define MYSQL_TYPE_INT24        9
 #define MYSQL_TYPE_NEWDECIMAL   246
+#define MYSQL_NO_DATA           100
+#define MYSQL_DATA_TRUNCATED    101
+#define MYSQL_PREPARED_COL_FLOOR 65536
+#define MYSQL_PREPARED_COL_CAP  (1024 * 1024)
 
 // External declarations for libmysqlclient function pointers
 extern mysql_fetch_fields_t mysql_fetch_fields_ptr;
@@ -550,15 +554,15 @@ bool mysql_process_prepared_result(void* mysql_result, QueryResult* db_result, v
             }
         }
 
-        // Allocate buffer for fetching rows - using simple string buffers
-        #define MAX_COL_SIZE 4096
         char** col_buffers = calloc(column_count, sizeof(char*));
+        size_t* col_caps = calloc(column_count, sizeof(size_t));
         unsigned long* col_lengths = calloc(column_count, sizeof(unsigned long));
         char* col_is_null = calloc(column_count, sizeof(char));
         unsigned long* col_errors = calloc(column_count, sizeof(unsigned long));
 
-        if (!col_buffers || !col_lengths || !col_is_null || !col_errors) {
+        if (!col_buffers || !col_caps || !col_lengths || !col_is_null || !col_errors) {
             free(col_buffers);
+            free(col_caps);
             free(col_lengths);
             free(col_is_null);
             free(col_errors);
@@ -568,14 +572,22 @@ bool mysql_process_prepared_result(void* mysql_result, QueryResult* db_result, v
             return false;
         }
 
-        // Allocate column buffers
         for (size_t i = 0; i < column_count; i++) {
-            col_buffers[i] = calloc(1, MAX_COL_SIZE);
+            size_t cap = MYSQL_PREPARED_COL_FLOOR;
+            if (fields && fields[i].max_length + 1 > cap) {
+                cap = (size_t)fields[i].max_length + 1;
+            }
+            if (cap > MYSQL_PREPARED_COL_CAP) {
+                cap = MYSQL_PREPARED_COL_CAP;
+            }
+            col_caps[i] = cap;
+            col_buffers[i] = calloc(1, cap);
             if (!col_buffers[i]) {
                 for (size_t j = 0; j < i; j++) {
                     free(col_buffers[j]);
                 }
                 free(col_buffers);
+                free(col_caps);
                 free(col_lengths);
                 free(col_is_null);
                 free(col_errors);
@@ -616,6 +628,7 @@ bool mysql_process_prepared_result(void* mysql_result, QueryResult* db_result, v
                 free(col_buffers[i]);
             }
             free(col_buffers);
+            free(col_caps);
             free(col_lengths);
             free(col_is_null);
             free(col_errors);
@@ -625,18 +638,14 @@ bool mysql_process_prepared_result(void* mysql_result, QueryResult* db_result, v
             return false;
         }
 
-        // Bind result columns
         for (size_t i = 0; i < column_count; i++) {
-            // Initialize all fields to zero/NULL
             memset(&bind[i], 0, sizeof(MYSQL_BIND_COMPLETE));
-            
-            // Set required fields for result binding
-            bind[i].buffer_type = 253; // MYSQL_TYPE_STRING
+            bind[i].buffer_type = 253;
             bind[i].buffer = col_buffers[i];
-            bind[i].buffer_length = MAX_COL_SIZE;
-            bind[i].length = &col_lengths[i];     // Point to length indicator array
-            bind[i].is_null = &col_is_null[i];    // Point to is_null array element
-            bind[i].error = &col_errors[i];       // Point to error indicator array
+            bind[i].buffer_length = col_caps[i];
+            bind[i].length = &col_lengths[i];
+            bind[i].is_null = &col_is_null[i];
+            bind[i].error = &col_errors[i];
         }
 
         if (mysql_stmt_bind_result_ptr && mysql_stmt_bind_result_ptr(stmt_handle, bind) != 0) {
@@ -646,59 +655,110 @@ bool mysql_process_prepared_result(void* mysql_result, QueryResult* db_result, v
                 free(col_buffers[i]);
             }
             free(col_buffers);
+            free(col_caps);
             free(col_lengths);
             free(col_is_null);
+            free(col_errors);
             if (mysql_result && mysql_free_result_ptr) {
                 mysql_free_result_ptr(mysql_result);
             }
             return false;
         }
 
-        // Fetch all rows into JSON
         size_t json_size = 8192;
         db_result->data_json = calloc(1, json_size);
         if (db_result->data_json) {
             strcpy(db_result->data_json, "[");
             size_t row_count = 0;
 
-            while (mysql_stmt_fetch_ptr && mysql_stmt_fetch_ptr(stmt_handle) == 0) {
-                if (row_count > 0) strcat(db_result->data_json, ",");
-
-                // Expand JSON buffer if needed
-                if (strlen(db_result->data_json) + 4096 > json_size) {
-                    json_size *= 2;
-                    char* new_json = realloc(db_result->data_json, json_size);
-                    if (!new_json) break;
-                    db_result->data_json = new_json;
+            while (mysql_stmt_fetch_ptr) {
+                int fetch_rc = mysql_stmt_fetch_ptr(stmt_handle);
+                if (fetch_rc == MYSQL_NO_DATA) {
+                    break;
+                }
+                if (fetch_rc != 0 && fetch_rc != MYSQL_DATA_TRUNCATED) {
+                    break;
+                }
+                if (row_count > 0) {
+                    strcat(db_result->data_json, ",");
                 }
 
                 strcat(db_result->data_json, "{");
                 for (size_t col = 0; col < column_count; col++) {
-                    if (col > 0) strcat(db_result->data_json, ",");
+                    if (col > 0) {
+                        strcat(db_result->data_json, ",");
+                    }
 
-                    char col_json[MAX_COL_SIZE + 256];
                     const char* col_name = db_result->column_names ? db_result->column_names[col] : "unknown";
 
                     if (col_is_null[col]) {
-                        snprintf(col_json, sizeof(col_json), "\"%s\":null", col_name);
+                        size_t needed = strlen(col_name) + 10;
+                        if (strlen(db_result->data_json) + needed >= json_size) {
+                            json_size = json_size * 2 + needed;
+                            char* new_json = realloc(db_result->data_json, json_size);
+                            if (!new_json) {
+                                break;
+                            }
+                            db_result->data_json = new_json;
+                        }
+                        char* pos = db_result->data_json + strlen(db_result->data_json);
+                        snprintf(pos, json_size - strlen(db_result->data_json), "\"%s\":null", col_name);
                     } else {
-                        // Check if column is numeric type
-                        bool is_numeric = fields && mysql_is_numeric_type(fields[col].type);
+                        unsigned long raw_len = col_lengths[col];
+                        if (raw_len >= col_caps[col]) {
+                            raw_len = col_caps[col] - 1;
+                        }
+                        col_buffers[col][raw_len] = '\0';
 
+                        bool is_numeric = fields && mysql_is_numeric_type(fields[col].type);
                         if (is_numeric) {
-                            // Numeric types - no quotes around value (JSON number)
-                            snprintf(col_json, sizeof(col_json), "\"%s\":%s", col_name, col_buffers[col]);
+                            size_t needed = strlen(col_name) + strlen(col_buffers[col]) + 10;
+                            if (strlen(db_result->data_json) + needed >= json_size) {
+                                json_size = json_size * 2 + needed;
+                                char* new_json = realloc(db_result->data_json, json_size);
+                                if (!new_json) {
+                                    break;
+                                }
+                                db_result->data_json = new_json;
+                            }
+                            char* pos = db_result->data_json + strlen(db_result->data_json);
+                            snprintf(pos, json_size - strlen(db_result->data_json), "\"%s\":%s",
+                                     col_name, col_buffers[col]);
                         } else {
-                            // String types - trim trailing whitespace, escape and quote the value
-                            // col_buffers[col] is a modifiable buffer, so we can trim in place
                             mysql_trim_trailing_whitespace(col_buffers[col]);
-                            char escaped_data[MAX_COL_SIZE];
-                            mysql_json_escape_string(col_buffers[col], escaped_data, sizeof(escaped_data));
-                            snprintf(col_json, sizeof(col_json), "\"%s\":\"%s\"", col_name, escaped_data);
+                            size_t escaped_size = strlen(col_buffers[col]) * 2 + 1;
+                            char* escaped_data = calloc(1, escaped_size);
+                            if (!escaped_data) {
+                                size_t needed = strlen(col_name) + 10;
+                                if (strlen(db_result->data_json) + needed >= json_size) {
+                                    json_size = json_size * 2 + needed;
+                                    char* new_json = realloc(db_result->data_json, json_size);
+                                    if (!new_json) {
+                                        break;
+                                    }
+                                    db_result->data_json = new_json;
+                                }
+                                char* pos = db_result->data_json + strlen(db_result->data_json);
+                                snprintf(pos, json_size - strlen(db_result->data_json), "\"%s\":null", col_name);
+                            } else {
+                                mysql_json_escape_string(col_buffers[col], escaped_data, escaped_size);
+                                size_t needed = strlen(col_name) + strlen(escaped_data) + 10;
+                                if (strlen(db_result->data_json) + needed >= json_size) {
+                                    json_size = json_size * 2 + needed;
+                                    char* new_json = realloc(db_result->data_json, json_size);
+                                    if (!new_json) {
+                                        free(escaped_data);
+                                        break;
+                                    }
+                                    db_result->data_json = new_json;
+                                }
+                                char* pos = db_result->data_json + strlen(db_result->data_json);
+                                snprintf(pos, json_size - strlen(db_result->data_json),
+                                         "\"%s\":\"%s\"", col_name, escaped_data);
+                                free(escaped_data);
+                            }
                         }
                     }
-
-                    strcat(db_result->data_json, col_json);
                 }
                 strcat(db_result->data_json, "}");
                 row_count++;
@@ -707,12 +767,12 @@ bool mysql_process_prepared_result(void* mysql_result, QueryResult* db_result, v
             db_result->row_count = row_count;
         }
 
-        // Cleanup
         free(bind);
         for (size_t i = 0; i < column_count; i++) {
             free(col_buffers[i]);
         }
         free(col_buffers);
+        free(col_caps);
         free(col_lengths);
         free(col_is_null);
         free(col_errors);

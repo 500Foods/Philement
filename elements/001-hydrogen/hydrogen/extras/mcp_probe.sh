@@ -8,7 +8,12 @@
 #   extras/mcp_probe.sh ... --call Mcp.Echo '{"message":"hi"}'
 #
 # Prints PRM GET, unauthenticated 401 WWW-Authenticate, initialize,
-# tools/list, and tools/call. Pretty-prints JSON-RPC. Must pass mks.
+# tools/list, resources/list, prompts/list, and tools/call.
+# Pretty-prints JSON-RPC. Must pass mks.
+#
+# CHANGELOG
+# 1.1.0 - 2026-08-27 - Probe resources/list and prompts/list (Phase 15)
+# 1.0.0 - 2026-08-27 - Initial probe
 
 set -euo pipefail
 
@@ -125,6 +130,28 @@ st=$(curl -sS -D "${hdr}" -o "${body}" -w "%{http_code}" \
     -H "Authorization: Bearer ${jwt}" \
     -H "Mcp-Session-Id: ${session}" \
     -d '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
+    "${url}" || true)
+echo "HTTP ${st}"
+jq . "${body}" 2>/dev/null || cat "${body}"
+echo
+
+echo "=== resources/list ==="
+st=$(curl -sS -D "${hdr}" -o "${body}" -w "%{http_code}" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer ${jwt}" \
+    -H "Mcp-Session-Id: ${session}" \
+    -d '{"jsonrpc":"2.0","id":4,"method":"resources/list","params":{}}' \
+    "${url}" || true)
+echo "HTTP ${st}"
+jq . "${body}" 2>/dev/null || cat "${body}"
+echo
+
+echo "=== prompts/list ==="
+st=$(curl -sS -D "${hdr}" -o "${body}" -w "%{http_code}" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer ${jwt}" \
+    -H "Mcp-Session-Id: ${session}" \
+    -d '{"jsonrpc":"2.0","id":5,"method":"prompts/list","params":{}}' \
     "${url}" || true)
 echo "HTTP ${st}"
 jq . "${body}" 2>/dev/null || cat "${body}"
