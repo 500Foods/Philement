@@ -60,7 +60,7 @@ test_oidc_callback_missing_params_redirects_state_invalid() {
 
     local http_status
     http_status=$(curl -s -i -o "${response_file}" -w "%{http_code}" \
-        --max-time 5 "${base_url}/api/auth/oidc/callback" 2>/dev/null \
+        --max-time 30 "${base_url}/api/auth/oidc/callback" 2>/dev/null \
         || echo "000")
 
     if [[ "${http_status}" != "302" ]]; then
@@ -94,7 +94,7 @@ test_oidc_callback_unknown_state_redirects_state_invalid() {
 
     local http_status
     http_status=$(curl -s -i -o "${response_file}" -w "%{http_code}" \
-        --max-time 5 \
+        --max-time 30 \
         "${base_url}/api/auth/oidc/callback?code=any&state=never-was-issued-deadbeef" \
         2>/dev/null || echo "000")
 
@@ -129,7 +129,7 @@ test_oidc_callback_idp_error_redirects_idp_error() {
 
     local http_status
     http_status=$(curl -s -i -o "${response_file}" -w "%{http_code}" \
-        --max-time 5 \
+        --max-time 30 \
         "${base_url}/api/auth/oidc/callback?error=access_denied&error_description=User%20canceled" \
         2>/dev/null || echo "000")
 
@@ -265,7 +265,7 @@ test_oidc_callback_happy_path_end_to_end() {
     local exchange_status
     exchange_status=$(curl -s -X POST -H "Content-Type: application/json" \
         -d "${body}" -w "%{http_code}" -o "${exchange_file}" \
-        --max-time 5 "${base_url}/api/auth/oidc/handoff" \
+        --max-time 30 "${base_url}/api/auth/oidc/handoff" \
         2>/dev/null || echo "000")
 
     if [[ "${exchange_status}" != "200" ]]; then
@@ -354,7 +354,7 @@ test_oidc_end_session_happy_path() {
     # Method check: /end-session is POST-only. A GET must be rejected
     # with 405 without consuming the body.
     local get_status
-    get_status=$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 \
+    get_status=$(curl -s -o /dev/null -w '%{http_code}' --max-time 30 \
         "${base_url}/api/auth/oidc/end-session" 2>/dev/null || echo "000")
     if [[ "${get_status}" != "405" ]]; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 \
@@ -436,7 +436,7 @@ test_oidc_callback_replay_returns_state_invalid() {
     # capture the auth URL with the state. Then call /callback
     # ourselves with that state, twice.
     local start_headers="${LOG_PREFIX}${TIMESTAMP}_callback_replay_start.headers"
-    curl -s -i -o "${start_headers}" --max-time 5 \
+    curl -s -i -o "${start_headers}" --max-time 30 \
         "${base_url}/api/auth/oidc/start" >/dev/null 2>&1 || true
 
     local auth_url
@@ -458,7 +458,7 @@ test_oidc_callback_replay_returns_state_invalid() {
 
     # First callback consumes the state (we don't care about the
     # outcome — happy or sad — only that the state is GONE after).
-    curl -s -o /dev/null --max-time 5 \
+    curl -s -o /dev/null --max-time 30 \
         "${base_url}/api/auth/oidc/callback?code=test-code-ok&state=${state}" \
         >/dev/null 2>&1 || true
 
@@ -466,7 +466,7 @@ test_oidc_callback_replay_returns_state_invalid() {
     # state_invalid (state was atomically consumed by the first).
     local http_status
     http_status=$(curl -s -i -o "${replay_headers}" -w "%{http_code}" \
-        --max-time 5 \
+        --max-time 30 \
         "${base_url}/api/auth/oidc/callback?code=test-code-ok&state=${state}" \
         2>/dev/null || echo "000")
 

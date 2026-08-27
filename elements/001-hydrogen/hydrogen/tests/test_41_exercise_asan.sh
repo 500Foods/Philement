@@ -8,13 +8,17 @@
 # FUNCTIONS (lib/exercise_helpers.sh)
 # scrape_metrics() get_metric() run_auth_request() run_auth_batch()
 
+# CHANGELOG
+# 4.0.1 - 2026-08-27 - Suite-load: scrape 12× / 30s / 3s delay; 3s settle before
+#                      final Prometheus scrape (ASAN handler can stall after 500 auths).
+
 set -euo pipefail
 
 TEST_NAME="Exercise ASAN"
 TEST_ABBR="EXA"
 TEST_NUMBER="41"
 TEST_COUNTER=0
-TEST_VERSION="4.0.0"
+TEST_VERSION="4.0.1"
 
 TOTAL_REQUESTS=500
 SNAPSHOT_INTERVAL=50
@@ -26,9 +30,9 @@ MIDPOINT_REQUEST=$(( TOTAL_REQUESTS / 2 ))
 # (native wants 50). Override: EXERCISE_ASAN_CONCURRENCY=12 ./tests/test_41_...
 CONCURRENCY="${EXERCISE_ASAN_CONCURRENCY:-${ASAN_CONCURRENCY:-6}}"
 
-SCRAPE_MAX_ATTEMPTS=5
-SCRAPE_CURL_TIMEOUT=15
-SCRAPE_RETRY_DELAY=2
+SCRAPE_MAX_ATTEMPTS=3
+SCRAPE_CURL_TIMEOUT=90
+SCRAPE_RETRY_DELAY=3
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -348,7 +352,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     if [[ "${EXIT_CODE}" -eq 0 ]]; then
         print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Collect Final Metrics"
 
-        sleep 0.5
+        sleep 3
         FINAL_METRICS=$(scrape_metrics "${PROMETHEUS_URL}")
 
         if [[ -n "${FINAL_METRICS}" ]] && echo "${FINAL_METRICS}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then

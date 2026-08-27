@@ -5,13 +5,17 @@
 # shellcheck disable=SC2312 # Several diagnostic command substitutions intentionally swallow the inner exit code; helpers either fall back gracefully or || true the outer call
 
 # CHANGELOG
+# 1.1.1 - 2026-08-27 - group40 long-wait HTTP + INFO delay
 # 1.1.0 - 2026-06-20 - Added wait_for_migration_ready (canonical "READY FOR REQUESTS" signal) to replace the per-phase tail-offset migration-wait loops that timed out ~30s
 #                      each (shared SERVER_LOG is truncated per instance, so stale offsets matched nothing). Cuts Test 42 runtime from ~250s to a few seconds of real work.
 # 1.0.0 - 2026-05-09 - Initial extraction from test_42_oidc_rp.sh during Phase 13.
 
+# shellcheck source=tests/lib/group40_http.sh # Shared 40-series HTTP timing
+[[ -n "${GROUP40_HTTP_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/group40_http.sh"
+
 wait_for_migration_ready() {
     local server_log="$1"
-    local timeout="${2:-30}"
+    local timeout="${2:-${GROUP40_READY_TIMEOUT}}"
     local deadline
     deadline=$(( $(date +%s) + timeout ))
     while true; do
@@ -51,10 +55,15 @@ validate_oidc_request() {
     if [[ -n "${body}" ]]; then
         curl_cmd+=(-d "${body}")
     fi
-    curl_cmd+=(-w "%{http_code}" -o "${response_file}" --max-time 5 "${url}")
+    curl_cmd+=(-w "%{http_code}" -o "${response_file}" \
+        --connect-timeout "${GROUP40_CONNECT_TIMEOUT}" --max-time "${GROUP40_HTTP_MAX_TIME}" "${url}")
 
-    local http_status
+    local http_status t0 t1 elapsed
+    t0="${EPOCHREALTIME:-0}"
     http_status=$("${curl_cmd[@]}" 2>/dev/null || echo "000")
+    t1="${EPOCHREALTIME:-0}"
+    elapsed=$(awk -v a="${t0}" -v b="${t1}" 'BEGIN {printf "%.3f", b-a}')
+    group40_log_delay "${elapsed}" "${method} ${url} HTTP ${http_status}"
 
     if [[ "${http_status}" != "${expected_status}" ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Expected HTTP ${expected_status}, got ${http_status}"
@@ -149,7 +158,7 @@ test_oidc_unknown_path_404() {
 
     local http_status
     http_status=$(curl -s -X GET -w "%{http_code}" -o "${response_file}" \
-        --max-time 5 "${base_url}/api/${path}" 2>/dev/null || echo "000")
+        --connect-timeout 10 --max-time 90 "${base_url}/api/${path}" 2>/dev/null || echo "000")
 
     if [[ "${http_status}" == "404" ]]; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: 404 returned as expected"
@@ -233,7 +242,7 @@ mock_keycloak_set_mode() {
     local no_id_token="${2:-}"
     local id_token_invalid="${3:-}"
     curl -s -X POST \
-        --max-time 5 \
+        --connect-timeout 10 --max-time 90 \
         --data "tokenError=${token_error}&noIdToken=${no_id_token}&idTokenInvalid=${id_token_invalid}" \
         "http://127.0.0.1:${MOCK_KC_PORT}/realms/test/_test/set-mode" \
         >/dev/null 2>&1 || true
@@ -251,7 +260,7 @@ test_mock_keycloak_reachable() {
 
     local http_status body=""
     http_status=$(curl -s -X GET -w "%{http_code}" -o "${response_file}" \
-        --max-time 5 "http://127.0.0.1:${MOCK_KC_PORT}/health" 2>/dev/null || echo "000")
+        --connect-timeout 10 --max-time 90 "http://127.0.0.1:${MOCK_KC_PORT}/health" 2>/dev/null || echo "000")
     if [[ -f "${response_file}" ]]; then
         body=$(<"${response_file}")
     fi
@@ -272,7 +281,7 @@ test_mock_keycloak_discovery_doc() {
 
     local http_status
     http_status=$(curl -s -X GET -w "%{http_code}" -o "${response_file}" \
-        --max-time 5 \
+        --connect-timeout 10 --max-time 90 \
         "http://127.0.0.1:${MOCK_KC_PORT}/realms/test/.well-known/openid-configuration" \
         2>/dev/null || echo "000")
 
@@ -316,7 +325,7 @@ test_mock_keycloak_jwks_doc() {
 
     local http_status
     http_status=$(curl -s -X GET -w "%{http_code}" -o "${response_file}" \
-        --max-time 5 \
+        --connect-timeout 10 --max-time 90 \
         "http://127.0.0.1:${MOCK_KC_PORT}/realms/test/protocol/openid-connect/certs" \
         2>/dev/null || echo "000")
 
@@ -378,7 +387,7 @@ test_mock_keycloak_token_happy_path() {
     local http_status
     http_status=$(curl -s -X POST -w "%{http_code}" -o "${response_file}" \
         -H "Content-Type: application/x-www-form-urlencoded" \
-        --max-time 5 \
+        --connect-timeout 10 --max-time 90 \
         --data "${body}" \
         "http://127.0.0.1:${MOCK_KC_PORT}/realms/test/protocol/openid-connect/token" \
         2>/dev/null || echo "000")
@@ -445,7 +454,7 @@ test_mock_keycloak_id_token_header_and_claims() {
     local http_status
     http_status=$(curl -s -X POST -w "%{http_code}" -o "${response_file}" \
         -H "Content-Type: application/x-www-form-urlencoded" \
-        --max-time 5 \
+        --connect-timeout 10 --max-time 90 \
         --data "${body}" \
         "http://127.0.0.1:${MOCK_KC_PORT}/realms/test/protocol/openid-connect/token" \
         2>/dev/null || echo "000")
@@ -531,7 +540,7 @@ test_mock_keycloak_token_invalid_grant() {
     local http_status
     http_status=$(curl -s -X POST -w "%{http_code}" -o "${response_file}" \
         -H "Content-Type: application/x-www-form-urlencoded" \
-        --max-time 5 \
+        --connect-timeout 10 --max-time 90 \
         --data "${body}" \
         "http://127.0.0.1:${MOCK_KC_PORT}/realms/test/protocol/openid-connect/token" \
         2>/dev/null || echo "000")
@@ -577,7 +586,7 @@ test_mock_keycloak_token_unsupported_grant_type() {
     local http_status
     http_status=$(curl -s -X POST -w "%{http_code}" -o "${response_file}" \
         -H "Content-Type: application/x-www-form-urlencoded" \
-        --max-time 5 \
+        --connect-timeout 10 --max-time 90 \
         --data "${body}" \
         "http://127.0.0.1:${MOCK_KC_PORT}/realms/test/protocol/openid-connect/token" \
         2>/dev/null || echo "000")
@@ -620,7 +629,7 @@ test_oidc_start_redirects_to_idp() {
     #    because the mock IdP's /auth endpoint returns 404 (Phase 11+).
     local http_status
     http_status=$(curl -s -i -o "${response_file}" -w "%{http_code}" \
-        --max-time 5 \
+        --connect-timeout 10 --max-time 90 \
         "${base_url}/api/auth/oidc/start" 2>/dev/null || echo "000")
 
     if [[ "${http_status}" != "302" ]]; then
@@ -703,7 +712,7 @@ test_oidc_start_invalid_return_to_rejected() {
     # relative URL. Must be rejected.
     local http_status
     http_status=$(curl -s -X GET -w "%{http_code}" -o "${response_file}" \
-        --max-time 5 \
+        --connect-timeout 10 --max-time 90 \
         "${base_url}/api/auth/oidc/start?return_to=%2F%2Fevil.com" 2>/dev/null \
         || echo "000")
 
@@ -781,7 +790,7 @@ inject_handoff() {
     local http_status
     http_status=$(curl -s -X POST -H "Content-Type: application/json" \
         -d "${body}" -w "%{http_code}" -o "${response_file}" \
-        --max-time 5 "${base_url}/api/auth/oidc/_inject_handoff" \
+        --connect-timeout 10 --max-time 90 "${base_url}/api/auth/oidc/_inject_handoff" \
         2>/dev/null || echo "000")
     if [[ "${http_status}" != "200" ]]; then
         return 1
@@ -832,7 +841,7 @@ test_oidc_handoff_happy_path() {
     local http_status
     http_status=$(curl -s -X POST -H "Content-Type: application/json" \
         -d "${body}" -w "%{http_code}" -o "${exchange_file}" \
-        --max-time 5 "${base_url}/api/auth/oidc/handoff" \
+        --connect-timeout 10 --max-time 90 "${base_url}/api/auth/oidc/handoff" \
         2>/dev/null || echo "000")
 
     if [[ "${http_status}" != "200" ]]; then
@@ -902,11 +911,11 @@ test_oidc_handoff_replay_returns_401() {
 
     first_status=$(curl -s -X POST -H "Content-Type: application/json" \
         -d "${body}" -w "%{http_code}" -o "${first_file}" \
-        --max-time 5 "${base_url}/api/auth/oidc/handoff" \
+        --connect-timeout 10 --max-time 90 "${base_url}/api/auth/oidc/handoff" \
         2>/dev/null || echo "000")
     replay_status=$(curl -s -X POST -H "Content-Type: application/json" \
         -d "${body}" -w "%{http_code}" -o "${replay_file}" \
-        --max-time 5 "${base_url}/api/auth/oidc/handoff" \
+        --connect-timeout 10 --max-time 90 "${base_url}/api/auth/oidc/handoff" \
         2>/dev/null || echo "000")
 
     if [[ "${first_status}" == "200" ]] && [[ "${replay_status}" == "401" ]]; then

@@ -7,6 +7,9 @@
 OIDC_IDP_HELPERS_GUARD=1
 export OIDC_IDP_HELPERS_GUARD
 
+# shellcheck source=tests/lib/group40_http.sh # Shared 40-series HTTP timing
+[[ -n "${GROUP40_HTTP_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/group40_http.sh"
+
 # PKCE S256: verifier (43-128 unreserved) → challenge
 # Sets OIDC_IDP_CODE_VERIFIER and OIDC_IDP_CODE_CHALLENGE (exported for callers)
 oidc_idp_pkce_pair() {
@@ -43,7 +46,7 @@ oidc_idp_http_code() {
     shift
     local body
     body="/tmp/oidc_idp_body_${BASHPID:-$$}_${RANDOM}.out"
-    curl -sS -o "${body}" -w '%{http_code}' "$@" "${url}" 2>/dev/null || echo "000"
+    group40_curl_to "${body}" "$@" "${url}"
     rm -f "${body}"
 }
 
@@ -93,7 +96,7 @@ oidc_idp_fetch_discovery() {
     local base_url="$1"
     local out_file="$2"
     local code
-    code="$(curl -sS -o "${out_file}" -w '%{http_code}' "${base_url}/.well-known/openid-configuration" 2>/dev/null || echo "000")"
+    code="$(group40_curl_to "${out_file}" "${base_url}/.well-known/openid-configuration")"
     echo "${code}"
 }
 
@@ -101,7 +104,7 @@ oidc_idp_fetch_jwks() {
     local base_url="$1"
     local out_file="$2"
     local code
-    code="$(curl -sS -o "${out_file}" -w '%{http_code}' "${base_url}/oauth/jwks" 2>/dev/null || echo "000")"
+    code="$(group40_curl_to "${out_file}" "${base_url}/oauth/jwks")"
     echo "${code}"
 }
 
@@ -113,14 +116,14 @@ oidc_idp_token_code() {
     local code="$4"
     local verifier="$5"
     local out_file="$6"
-    curl -sS -o "${out_file}" -w '%{http_code}' \
+    group40_curl_to "${out_file}" \
         -X POST "${base_url}/oauth/token" \
         -H "Content-Type: application/x-www-form-urlencoded" \
         --data-urlencode "grant_type=authorization_code" \
         --data-urlencode "code=${code}" \
         --data-urlencode "redirect_uri=${redirect_uri}" \
         --data-urlencode "client_id=${client_id}" \
-        --data-urlencode "code_verifier=${verifier}" 2>/dev/null || echo "000"
+        --data-urlencode "code_verifier=${verifier}"
 }
 
 oidc_idp_token_refresh() {
@@ -128,21 +131,21 @@ oidc_idp_token_refresh() {
     local client_id="$2"
     local refresh="$3"
     local out_file="$4"
-    curl -sS -o "${out_file}" -w '%{http_code}' \
+    group40_curl_to "${out_file}" \
         -X POST "${base_url}/oauth/token" \
         -H "Content-Type: application/x-www-form-urlencoded" \
         --data-urlencode "grant_type=refresh_token" \
         --data-urlencode "refresh_token=${refresh}" \
-        --data-urlencode "client_id=${client_id}" 2>/dev/null || echo "000"
+        --data-urlencode "client_id=${client_id}"
 }
 
 oidc_idp_userinfo() {
     local base_url="$1"
     local access_token="$2"
     local out_file="$3"
-    curl -sS -o "${out_file}" -w '%{http_code}' \
+    group40_curl_to "${out_file}" \
         -H "Authorization: Bearer ${access_token}" \
-        "${base_url}/oauth/userinfo" 2>/dev/null || echo "000"
+        "${base_url}/oauth/userinfo"
 }
 
 # POST /oauth/introspect (public client via client_id form field)
@@ -153,18 +156,18 @@ oidc_idp_introspect() {
     local hint="${4:-}"
     local out_file="$5"
     if [[ -n "${hint}" ]]; then
-        curl -sS -o "${out_file}" -w '%{http_code}' \
+        group40_curl_to "${out_file}" \
             -X POST "${base_url}/oauth/introspect" \
             -H "Content-Type: application/x-www-form-urlencoded" \
             --data-urlencode "token=${token}" \
             --data-urlencode "token_type_hint=${hint}" \
-            --data-urlencode "client_id=${client_id}" 2>/dev/null || echo "000"
+            --data-urlencode "client_id=${client_id}"
     else
-        curl -sS -o "${out_file}" -w '%{http_code}' \
+        group40_curl_to "${out_file}" \
             -X POST "${base_url}/oauth/introspect" \
             -H "Content-Type: application/x-www-form-urlencoded" \
             --data-urlencode "token=${token}" \
-            --data-urlencode "client_id=${client_id}" 2>/dev/null || echo "000"
+            --data-urlencode "client_id=${client_id}"
     fi
 }
 
@@ -176,18 +179,18 @@ oidc_idp_revoke() {
     local hint="${4:-}"
     local out_file="$5"
     if [[ -n "${hint}" ]]; then
-        curl -sS -o "${out_file}" -w '%{http_code}' \
+        group40_curl_to "${out_file}" \
             -X POST "${base_url}/oauth/revoke" \
             -H "Content-Type: application/x-www-form-urlencoded" \
             --data-urlencode "token=${token}" \
             --data-urlencode "token_type_hint=${hint}" \
-            --data-urlencode "client_id=${client_id}" 2>/dev/null || echo "000"
+            --data-urlencode "client_id=${client_id}"
     else
-        curl -sS -o "${out_file}" -w '%{http_code}' \
+        group40_curl_to "${out_file}" \
             -X POST "${base_url}/oauth/revoke" \
             -H "Content-Type: application/x-www-form-urlencoded" \
             --data-urlencode "token=${token}" \
-            --data-urlencode "client_id=${client_id}" 2>/dev/null || echo "000"
+            --data-urlencode "client_id=${client_id}"
     fi
 }
 
@@ -196,8 +199,7 @@ oidc_idp_get_endpoint() {
     local base_url="$1"
     local path="$2"
     local out_file="$3"
-    curl -sS -o "${out_file}" -w '%{http_code}' \
-        "${base_url}${path}" 2>/dev/null || echo "000"
+    group40_curl_to "${out_file}" "${base_url}${path}"
 }
 
 # Full authorize login POST → sets OIDC_IDP_AUTH_CODE on success (302)
@@ -213,7 +215,7 @@ oidc_idp_authorize_login() {
     local password="$9"
     local hdr_file="/tmp/oidc_idp_hdr_${BASHPID:-$$}_${RANDOM}.out"
 
-    curl -sS -D "${hdr_file}" -o /dev/null \
+    group40_curl_to /dev/null -D "${hdr_file}" \
         -X POST "${base_url}/oauth/authorize" \
         -H "Content-Type: application/x-www-form-urlencoded" \
         --data-urlencode "client_id=${client_id}" \
@@ -225,7 +227,7 @@ oidc_idp_authorize_login() {
         --data-urlencode "code_challenge=${challenge}" \
         --data-urlencode "code_challenge_method=S256" \
         --data-urlencode "username=${username}" \
-        --data-urlencode "password=${password}" 2>/dev/null || true
+        --data-urlencode "password=${password}" >/dev/null
 
     local location
     location="$(oidc_idp_location_from_headers "${hdr_file}")"

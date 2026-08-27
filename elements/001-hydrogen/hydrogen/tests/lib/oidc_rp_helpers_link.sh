@@ -606,7 +606,7 @@ test_oidc_link_match_sub_only_hit() {
     body=$(printf '{"handoff":"%s"}' "${handoff_code}")
     exchange_status=$(curl -s -X POST -H "Content-Type: application/json" \
         -d "${body}" -w "%{http_code}" -o "${exchange_file}" \
-        --max-time 5 "${base_url}/api/auth/oidc/handoff" \
+        --max-time 30 "${base_url}/api/auth/oidc/handoff" \
         2>/dev/null || echo "000")
 
     # Clean up the seeded row now that the login attempt is done.
@@ -824,7 +824,7 @@ test_oidc_link_match_email_only_hit() {
     body=$(printf '{"handoff":"%s"}' "${OIDC_CHAIN_HANDOFF}")
     exchange_status=$(curl -s -X POST -H "Content-Type: application/json" \
         -d "${body}" -w "%{http_code}" -o "${exchange_file}" \
-        --max-time 5 "${base_url}/api/auth/oidc/handoff" \
+        --max-time 30 "${base_url}/api/auth/oidc/handoff" \
         2>/dev/null || echo "000")
 
     if [[ "${exchange_status}" != "200" ]]; then

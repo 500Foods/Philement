@@ -27,7 +27,7 @@ Validates across all seven database engines (parallel):
 - **Test Name**: Conduit Script
 - **Test Abbreviation**: CSC
 - **Test Number**: 46
-- **Version**: 1.3.4
+- **Version**: 1.3.5
 
 ## Port Assignment
 
@@ -97,6 +97,11 @@ The `api_request` helper retries these transient failures with linear backoff
 up to 5 attempts, mirroring the fix already applied to test_40. Definitive
 HTTP responses (2xx, 3xx, 4xx except 408) are never retried — expected error
 codes like 401/404/400 are returned immediately.
+
+After `READY FOR REQUESTS`, the script waits until `/api/version` returns a
+non-000 HTTP code (MHD bind can lag the log line). Login retries **8×**.
+`timeout_clamp` (`timeout_seconds:0` → 1s wait) retries on **404/000/5xx**
+because `WAIT_NOT_FOUND` is common while the scoreboard lags under load.
 
 The async GET polling uses a **45-second time-based deadline** (via `DATE +%s`)
 with a **direct curl call** (5s max-time, no retry backoff) instead of

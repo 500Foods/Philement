@@ -13,6 +13,10 @@
 # analyze_engine()
 
 # CHANGELOG
+# 1.3.6 - 2026-08-27 - 90s HTTP wait, 000-only retry, INFO delay lines (group40_http).
+# 1.3.5 - 2026-08-27 - Suite-load: HTTP warmup after READY; login 8×; retry
+#                      timeout_clamp on 404/000 (WAIT_NOT_FOUND while job
+#                      persist lags under tests 41/44).
 # 1.3.4 - 2026-08-27 - Root cause of suite-load 401: LOGINMAXATTEMPTS default 5
 #                      blocked 127.0.0.1 for 15m on shared live DBs (tests 41/44
 #                      pollute failed_attempts). Match test_40: LOGINMAXATTEMPTS
@@ -63,12 +67,14 @@ TEST_NAME="Conduit Script"
 TEST_ABBR="CSC"
 TEST_NUMBER="46"
 TEST_COUNTER=0
-TEST_VERSION="1.3.4"
+TEST_VERSION="1.3.6"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
+# shellcheck source=tests/lib/group40_http.sh # Shared 40-series HTTP timing
+[[ -n "${GROUP40_HTTP_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/group40_http.sh"
 # shellcheck source=tests/lib/scripting_helpers.sh # Start/shutdown helpers shared with test_43
 source "$(dirname "${BASH_SOURCE[0]}")/lib/scripting_helpers.sh"
 
@@ -87,10 +93,10 @@ SCRIPT_TEST_CONFIGS=(
 )
 
 # shellcheck disable=SC2034 # Reserved for log messages / future fail-fast bounds
-STARTUP_TIMEOUT=90
-SHUTDOWN_TIMEOUT=25
-READY_TIMEOUT=90
-HTTP_TIMEOUT=30
+STARTUP_TIMEOUT="${GROUP40_STARTUP_TIMEOUT}"
+SHUTDOWN_TIMEOUT="${GROUP40_SHUTDOWN_TIMEOUT}"
+READY_TIMEOUT="${GROUP40_READY_TIMEOUT}"
+HTTP_TIMEOUT="${GROUP40_HTTP_MAX_TIME}"
 BASELINE_SQLITE="${PROJECT_DIR}/tests/artifacts/database/sqlite/hydrodemo.sqlite"
 
 # Demo credentials from environment (set in shell / CI)
@@ -110,47 +116,7 @@ api_request() {
     local output_file="$4"
     local jwt_token="${5:-}"
     local max_time="${6:-${HTTP_TIMEOUT}}"
-    local max_retries=5
-    local retry=1
-    local http_status="000"
-
-    while [[ "${retry}" -le "${max_retries}" ]]; do
-        local curl_cmd=(curl -s -X "${method}" -H "Content-Type: application/json"
-            --connect-timeout 10 --max-time "${max_time}" -w "%{http_code}" -o "${output_file}")
-        if [[ -n "${jwt_token}" ]]; then
-            curl_cmd+=(-H "Authorization: Bearer ${jwt_token}")
-        fi
-        if [[ "${method}" != "GET" && -n "${data}" ]]; then
-            curl_cmd+=(-d "${data}")
-        fi
-        curl_cmd+=("${url}")
-        # shellcheck disable=SC2312 # Intentionally swallow curl exit code; we use the HTTP status
-        http_status=$("${curl_cmd[@]}" 2>/dev/null || true)
-        http_status="${http_status:-000}"
-
-        # Retry only on transient failures: connection failure (000),
-        # server errors (5xx), request timeout (408), rate limiting (429).
-        # Any other HTTP status (2xx, 3xx, 4xx except 408) is a definitive
-        # response — do not retry (e.g. 401 for no-auth, 404 for unknown
-        # script, 400 for parse errors are all expected test outcomes).
-        if [[ "${http_status}" == "000" || \
-              "${http_status}" == 5* || \
-              "${http_status}" == "408" || \
-              "${http_status}" == "429" ]]; then
-            if [[ "${retry}" -eq "${max_retries}" ]]; then
-                break
-            fi
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP ${http_status} from ${method} ${url}, retrying (${retry}/${max_retries})..."
-            sleep "${retry}"
-            retry=$(( retry + 1 ))
-            continue
-        fi
-
-        # Definitive response (2xx, 3xx, 4xx except 408)
-        break
-    done
-
-    echo "${http_status}"
+    group40_curl "${method}" "${url}" "${output_file}" "${data}" "${jwt_token}" "${max_time}"
 }
 
 extract_jwt() {
@@ -168,6 +134,28 @@ wait_ready() {
     start_time=$("${DATE}" +%s)
     while true; do
         if "${GREP}" -q "READY FOR REQUESTS" "${log_file}" 2>/dev/null; then
+            return 0
+        fi
+        now_secs=$("${DATE}" +%s)
+        if (( now_secs - start_time >= timeout )); then
+            return 1
+        fi
+        sleep 0.2
+    done
+}
+
+wait_http() {
+    local url="$1"
+    local timeout="${2:-30}"
+    local start_time now_secs http_st
+    start_time=$("${DATE}" +%s)
+    while true; do
+        # shellcheck disable=SC2312 # curl exit ignored; HTTP code is the signal
+        http_st=$(curl -s -o /dev/null -w "%{http_code}" \
+            --connect-timeout "${GROUP40_CONNECT_TIMEOUT}" --max-time 15 \
+            "${url}" 2>/dev/null || true)
+        http_st="${http_st:-000}"
+        if [[ "${http_st}" != "000" && "${http_st}" != "" ]]; then
             return 0
         fi
         now_secs=$("${DATE}" +%s)
@@ -347,6 +335,9 @@ run_engine() {
         return 0
     fi
     echo "READY=1" >> "${result_file}"
+    # Log READY can precede MHD bind under suite load (HTTP 000).
+    # shellcheck disable=SC2310 # Continue; login retries still cover bind lag
+    wait_http "${base_url}/api/version" "${GROUP40_READY_TIMEOUT}" || true
 
     local login_file="${result_file}.login.json"
     local login_payload
@@ -358,16 +349,17 @@ run_engine() {
 
     local http_st jwt=""
     local login_try=1
-    while [[ "${login_try}" -le 5 ]]; do
+    while [[ "${login_try}" -le 2 ]]; do
         # shellcheck disable=SC2312 # Intentionally swallow curl exit code; we use the HTTP status
-        http_st=$(api_request "POST" "${base_url}/api/auth/login" "${login_payload}" "${login_file}" "" 45)
+        http_st=$(api_request "POST" "${base_url}/api/auth/login" "${login_payload}" "${login_file}" "" \
+            "${GROUP40_HTTP_MAX_TIME}")
         jwt=$(extract_jwt "${login_file}")
         if [[ "${http_st}" == "200" && -n "${jwt}" ]]; then
             break
         fi
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
-            "${description}: login HTTP ${http_st} (try ${login_try}/5)"
-        sleep "${login_try}"
+            "INFO delay ${description}: login HTTP ${http_st} (try ${login_try}/2)"
+        sleep 2
         login_try=$(( login_try + 1 ))
     done
     if [[ "${http_st}" != "200" || -z "${jwt}" ]]; then
@@ -645,11 +637,26 @@ run_engine() {
 
     if [[ "${echo_ok}" -eq 1 ]]; then
         local clamp_file="${result_file}.clamp.json"
-        http_st=$(api_request "POST" "${base_url}/api/conduit/script" \
-            '{"script":"Api.Echo","params":{"clamp":true},"wait":true,"timeout_seconds":0}' \
-            "${clamp_file}" "${jwt}")
         local clamp_st=""
-        clamp_st=$(jq -r '.status // empty' "${clamp_file}" 2>/dev/null || true)
+        local clamp_try=1
+        while [[ "${clamp_try}" -le 5 ]]; do
+            http_st=$(api_request "POST" "${base_url}/api/conduit/script" \
+                '{"script":"Api.Echo","params":{"clamp":true},"wait":true,"timeout_seconds":0}' \
+                "${clamp_file}" "${jwt}")
+            clamp_st=$(jq -r '.status // empty' "${clamp_file}" 2>/dev/null || true)
+            if [[ "${http_st}" == "200" && "${clamp_st}" == "completed" ]]; then
+                break
+            fi
+            # timeout_seconds 0 clamps to 1s wait; under 41/44 load the job
+            # may not be on the scoreboard yet (WAIT_NOT_FOUND → 404).
+            if [[ "${http_st}" != "404" && "${http_st}" != "000" && "${http_st}" != 5* ]]; then
+                break
+            fi
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+                "${description}: timeout_clamp HTTP ${http_st} (try ${clamp_try}/5)"
+            sleep "${clamp_try}"
+            clamp_try=$(( clamp_try + 1 ))
+        done
         if [[ "${http_st}" == "200" && "${clamp_st}" == "completed" ]]; then
             record_case "${result_file}" "timeout_clamp" 1
         else

@@ -19,7 +19,7 @@ Native RSS measurement is a separate test: [test_44_exercise_native.md](/docs/H/
 | Test Name | Exercise ASAN |
 | Abbreviation | EXA |
 | Number | 41 |
-| Version | 4.0.0 |
+| Version | 4.0.1 |
 | Binary | `hydrogen_debug` (required) |
 | Port | 5410 |
 | Requests | 500 |
