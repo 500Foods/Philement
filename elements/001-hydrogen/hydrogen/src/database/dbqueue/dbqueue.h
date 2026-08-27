@@ -246,6 +246,7 @@ typedef enum {
 
 MigrationAction database_queue_lead_determine_migration_action(const DatabaseQueue* lead_queue);
 void database_queue_lead_log_migration_status(DatabaseQueue* lead_queue, const char* action);
+void database_queue_lead_log_migration_summary(DatabaseQueue* lead_queue);
 bool database_queue_lead_validate_migrations(DatabaseQueue* lead_queue);
 bool database_queue_lead_execute_migration_load(DatabaseQueue* lead_queue);
 bool database_queue_lead_execute_migration_apply(DatabaseQueue* lead_queue);

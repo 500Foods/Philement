@@ -189,7 +189,7 @@ void H_lua_install_api(lua_State* L) {
     static const char* placeholder_names[] = {
         "log", "system", "gc",
         "query", "altquery", "authquery", "wait",
-        "http", "llm", "mail", "notify",
+        "http", "llm", "mail", "notify", "mcp",
         "sleep", "shutdown_requested", "set_current_state", "set_result",
         "set_result_json",
         "scoreboard",
@@ -243,6 +243,7 @@ void H_lua_install_api(lua_State* L) {
     // Phase 7A: H.mail queues templated mail via mailrelay_send_template;
     // H.notify returns a stable deferred error (no channel map yet).
     H_lua_install_mail_notify(L);
+    H_lua_install_mcp(L);
 }
 
 /*

@@ -42,14 +42,13 @@ an explicit Status variance.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-08-26):** Phase 0–6 complete. Next:
-**Phase 7** dispatch to Protocol script.
+**CURRENT PAUSE POINT (as of 2026-08-27):** Phase 0–11 complete. Next:
+**Phase 12** Unity coverage sweep.
 
 ### Resume here next session
 
-1. Phase 7: submit Protocol job, MHD suspend/resume, timeout/`rpc_in_flight`.
-2. Extend MHD mock for suspend/resume (locked 0.15) or `mock_mcp_transport.c`.
-3. Unity `mcp_dispatch_test_submit_protocol`. `mkt` + `mkp`.
+1. Phase 12: `extras/add_coverage.sh` on `mcp/*.c` plus config/launch/landing MCP files.
+2. Fill remaining safe-function zeros; confirm no new `static` callables; `mkp`.
 
 ### Session checklist
 
@@ -66,7 +65,7 @@ Build aliases: `zsh -ic '<alias>'` (`mkt`, `mka`, `mku <base>`, `mkp`, `mks`).
 | --- | --- |
 | **Band** | P2 — new capability, not a close-the-loop or safety gate |
 | **Effort** | XL (full subsystem + transport + Lua protocol + tests + docs) |
-| **Done** | ~27% — Phase 0–6 complete; next Phase 7 dispatch |
+| **Done** | ~50% — Phase 0–11 complete; next Phase 12 Unity sweep |
 | **Why this shape** | Unblocks AI-tool access to Hydrogen without a product-named C surface. Reuses Scripting, JWT, and the `scripts.invokable` allowlist pattern |
 | **Do not start casually** | Touches `MAX_SUBSYSTEMS`, launch/landing dispatch, status metrics, and blackbox configs. Phase 2 is the dangerous count-bump |
 
@@ -171,8 +170,8 @@ Date of snapshot: 2026-08-22
 | Status machine | `status_core.h` `ServiceMetrics` union + `status_process.c` |
 | Launch/landing | 20 registered subsystems in `launch_readiness.c` |
 | Config letters | A–S taken; **T** is free (`Webhooks` is S under `SR_API`) |
-| Highest migration | `acuranzo_1364.lua` already committed; next **1365** |
-| Highest QueryRef | **#151** taken (`acuranzo_1335`, "Management History lines"); next **#152** List / **#153** Get (re-check at Phase 8) |
+| Highest migration | `acuranzo_1372.lua` (Mcp.Sleep); next **1373** |
+| Highest QueryRef | **#153** taken (`acuranzo_1367`, Get MCP Script); next **#154** |
 
 ### Missing
 
@@ -182,8 +181,8 @@ Date of snapshot: 2026-08-22
 | `config_mcp` / `AppConfig.mcp` | No config |
 | `SR_MCP` / launch / landing | Not a subsystem |
 | MCP transport | No Streamable HTTP / SSE / stdio |
-| `scripts.mcp_access` | No MCP allowlist |
-| `scripts.mcp_schema` / `mcp_annotations` | No way to advertise tool argument shapes to agents without hardcoding per-tool logic in `Mcp.Server` |
+| `scripts.mcp_access` | Landed Phase 8 (`acuranzo_1365`, QueryRef **#153**) |
+| `scripts.mcp_schema` / `mcp_annotations` | Landed Phase 8 (`acuranzo_1365`; listed by QueryRef **#152**) |
 | `Origin` validation | No DNS-rebinding mitigation for a browser-originated Streamable HTTP client |
 | Unauthenticated health path | No liveness/readiness probe target that doesn't require a JWT |
 | RFC 9728 Protected Resource Metadata | MCP clients that speak OAuth discovery (Claude / Cursor / Copilot) will 401 and then look for `/.well-known/oauth-protected-resource`; nothing serves it today |
@@ -800,14 +799,14 @@ a fourth JWT parser.
 
 ### Migrations
 
-Next files: `acuranzo_1365.lua` onward (`acuranzo_1364.lua` already exists).
-  QueryRefs: **#152** = List MCP Scripts, **#153** = Get MCP Script by Group/Name
-  (re-verify against `acuranzo/README.md` at Phase 8; #151 is taken by Management History).
+Next files: `acuranzo_1368.lua` onward (`acuranzo_1367.lua` already exists).
+  QueryRefs **#152** (List MCP Scripts, `acuranzo_1366`) and **#153**
+  (Get MCP Script by Group/Name, `acuranzo_1367`) are taken. Next **#154**.
   `scripts.mcp_access` is `INTEGER_SMALL NOT NULL DEFAULT 0`.
 `scripts.mcp_schema` / `scripts.mcp_annotations` are nullable JSON text
-(see "Closing the tool-schema gap"). Load QueryRef must require
+(see "Closing the tool-schema gap"). Load QueryRef requires
 `mcp_access <> 0` (mirror #149). Seed `Mcp.Server`, `Mcp.Echo`, and
-`Mcp.EchoStrict` with `mcp_access=1`; leave `invokable=0` unless a test needs
+`Mcp.EchoStrict` with `mcp_access=1` in Phase 10; leave `invokable=0` unless a test needs
 both.
 
 ### Blackbox
@@ -1264,26 +1263,26 @@ dispatch.
 
 #### Work items
 
-- [ ] **7.1** Build params JSON (envelope + `_hydrogen`). Submit
+- [x] **7.1** Build params JSON (envelope + `_hydrogen`). Submit
       `Group.Name` from config. **Do not** `scripting_wait_job` on the
       MHD thread: increment `rpc_in_flight`, `MHD_suspend_connection`,
       wait/complete on a resume callback or MCP waiter (copy conduit
       `alt_query` suspend/resume, not conduit `/script`). Cap wait at
       `RequestTimeoutSeconds`.
-- [ ] **7.1b** If `rpc_in_flight` would exceed `Scripting.WorkerCount`,
+- [x] **7.1b** If `rpc_in_flight` would exceed `Scripting.WorkerCount`,
       reject with the Phase 0 overload code (recommend JSON-RPC `-32000`)
       and do not enqueue.
-- [ ] **7.2** Map scoreboard COMPLETED → HTTP 200 + `result_json`. FAILED /
+- [x] **7.2** Map scoreboard COMPLETED → HTTP 200 + `result_json`. FAILED /
       timeout → JSON-RPC `-32603`. SHUTDOWN → same. Increment counters.
       Always decrement `rpc_in_flight` on resume.
-- [ ] **7.3** Until Phase 8 QueryRef exists, load may use the generic script
+- [x] **7.3** Until Phase 8 QueryRef exists, load may use the generic script
       fetch **only in Unity with injected source**. Production path waits for
       Phase 8.
-- [ ] **7.4** Unity with worker-pool / scoreboard / MHD-suspend mocks or
+- [x] **7.4** Unity with worker-pool / scoreboard / MHD-suspend mocks or
       existing scripting seams. Cover timeout, Lua error, shutdown,
       `rpc_in_flight` cap, and “handler returned before job finished”
       (suspend path).
-- [ ] **7.5** `mkt` + `mkp`.
+- [x] **7.5** `mkt` + `mkp`.
 
 #### Exit gate / validation
 
@@ -1294,14 +1293,15 @@ C still does not inspect `method`. A stub Protocol source that echoes
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-08-26 |
+| **Result** | `mcp_dispatch.c` submit+suspend+wait. MHD mock suspend/resume. Unity dispatch 7/7, HTTP 14/14. `mkp` green. |
+| **Variances** | Production DB load deferred to Phase 8 (`scripting_submit_job` / injected source hook). Wait stays on the MHD worker after suspend (alt_query model), not a separate resume callback thread. |
 
 #### Lessons learned
 
-(fill after the phase)
+- Real MHD `MHD_suspend_connection` returns `void`, not `enum MHD_Result`. Matching the header is required for Unity `-include` of the mock.
+- Overload uses live `rpc_in_flight` vs `Scripting.WorkerCount` before enqueue; `-32000` stays distinct from session-limit `-32001`.
 
 ---
 
@@ -1313,24 +1313,24 @@ C still does not inspect `method`. A stub Protocol source that echoes
 
 #### Work items
 
-- [ ] **8.1** Confirm next migration number and QueryRef (expected **1365** /
+- [x] **8.1** Confirm next migration number and QueryRef (expected **1365** /
       **#152** List + **#153** Get; 1364 / #151 are already taken —
       `acuranzo_1364` and `acuranzo_1335`'s Management History QueryRef).
       Do not collide with in-flight Helium work.
-- [ ] **8.2** `ALTER TABLE scripts ADD COLUMN mcp_access … DEFAULT 0`.
-- [ ] **8.2b** `ALTER TABLE scripts ADD COLUMN mcp_schema … NULL` and
+- [x] **8.2** `ALTER TABLE scripts ADD COLUMN mcp_access … DEFAULT 0`.
+- [x] **8.2b** `ALTER TABLE scripts ADD COLUMN mcp_schema … NULL` and
       `mcp_annotations … NULL` (see "Closing the tool-schema gap" above).
       Both are nullable JSON text set by the tool's own seed migration, not
       by `Mcp.Server`.
-- [ ] **8.3** QueryRef **Get MCP Script by Group/Name** — same shape as #149
+- [x] **8.3** QueryRef **Get MCP Script by Group/Name** — same shape as #149
       but `mcp_access <> 0`.
-- [ ] **8.4** QueryRef **List MCP Scripts** for `H.mcp.list`, returning
+- [x] **8.4** QueryRef **List MCP Scripts** for `H.mcp.list`, returning
       `mcp_schema` / `mcp_annotations` alongside name/group/summary so
       `Mcp.Server` never has to look them up per-tool.
-- [ ] **8.5** C load path uses the MCP QueryRef only. Missing / `mcp_access=0`
+- [x] **8.5** C load path uses the MCP QueryRef only. Missing / `mcp_access=0`
       → same 404. Protocol script itself must have `mcp_access=1`.
-- [ ] **8.6** Unity: not found, not allowed, allowed. No existence leak.
-- [ ] **8.7** luacheck + at least one engine migration path.
+- [x] **8.6** Unity: not found, not allowed, allowed. No existence leak.
+- [x] **8.7** luacheck + at least one engine migration path.
 
 #### Exit gate / validation
 
@@ -1341,14 +1341,15 @@ C still does not inspect `method`. A stub Protocol source that echoes
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-08-26 |
+| **Result** | `acuranzo_1365` columns; **#152** List (`1366`); **#153** Get (`1367`). Dispatch loads QueryRef 153; missing/`mcp_access=0` → HTTP 404. Unity dispatch 10/10, fetch 4/4. `mkp` + luacheck green. SQLite+PG expand clean. |
+| **Variances** | Protocol `mcp_access=1` seed deferred to Phase 10 (`Mcp.Server`). Live DB apply deferred to Test 47 / engine migration suite. |
 
 #### Lessons learned
 
-(fill after the phase)
+- QueryRef #153 is a separate allowlist from #149; C must not fall through to `scripting_submit_job` (QueryRef #087) on the production MCP path.
+- Unity injects source via submit-hook skip-load; allowlist tests set a load hook so missing and invokable-only names share the same 404.
 
 ---
 
@@ -1360,30 +1361,25 @@ C still does not inspect `method`. A stub Protocol source that echoes
 
 #### Work items
 
-- [ ] **9.1** `H.mcp.list` / `H.mcp.call` / `H.mcp.call_async` in
-      `scripting_api_*` (new file, not bolted onto mail). `H.mcp.list`
-      supports `cursor` / `page_size` and decodes `mcp_schema` /
-      `mcp_annotations` from JSON text to Lua tables (or `nil` if absent)
-      before returning rows.
-- [ ] **9.2** `H.mcp.call` re-checks `mcp_access` in C and runs the tool
-      in a **child `lua_State` on the calling worker** (Design Principle
-      15). `H.mcp.call_async` re-checks and **queues**. Unity must prove
-      `call` does not increment the job queue.
-- [ ] **9.3** Inject `_hydrogen` into tool scripts; reject tool-supplied
+- [x] **9.1** `H.mcp.list` / `H.mcp.call` / `H.mcp.call_async` in
+      `scripting_api_mcp.c`. `H.mcp.list` supports `cursor` / `page_size`
+      and decodes `mcp_schema` / `mcp_annotations` from JSON text to Lua
+      tables (or `nil` if absent) before returning rows.
+- [x] **9.2** `H.mcp.call` re-checks `mcp_access` (QueryRef **#153**) and
+      runs the tool in a **child `lua_State`**. `H.mcp.call_async` queues.
+      Unity: `call` does not increment `H_lua_mcp_submit_count`.
+- [x] **9.3** Inject `_hydrogen` into tool scripts; reject tool-supplied
       `_hydrogen`.
-- [ ] **9.4** `H.mcp.text` / `H.mcp.image` / `H.mcp.audio` /
-      `H.mcp.resource_link` / `H.mcp.tool_error` — pure Lua-side table
-      builders (can live entirely in the seeded `Mcp.Server`/shared Lua
-      helpers rather than as new host functions if that is simpler; record
-      the choice here since it affects whether this is C or Lua work).
-- [ ] **9.5** Unity: list empty, list two (with/without schema), list
+- [x] **9.4** Content-block helpers stay **pure Lua `Mcp.Helpers`** (Phase 0
+      lock). Not C host functions. Seed in Phase 10.
+- [x] **9.5** Unity: list empty, list two (with/without schema), list
       pagination, call denied, inline call ok (no extra scoreboard job),
       call_async + `H.wait`, reserved key, child-state destroy on tool
       `error()`.
-- [ ] **9.6** Docs stub in [lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md)
+- [x] **9.6** Docs stub in [lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md)
       including the content-block helper signatures and an example
       `tools/call` handler.
-- [ ] **9.7** `mkt` + `mkp` + `mku scripting_api_test_mcp*`.
+- [x] **9.7** `mkt` + `mkp` + `mku scripting_api_test_mcp*`.
 
 #### Exit gate / validation
 
@@ -1393,14 +1389,15 @@ Protocol script can be written without any new C.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-08-26 |
+| **Result** | `scripting_api_mcp.c`: list (#152 + C pagination), inline `call` (child `lua_State`, capture `H.set_result_json`), `call_async` (`H_HK_MCP` + `H.wait`). Unity list 4/4, call 4/4, call_async 2/2. `mkp` green. |
+| **Variances** | Content-block helpers not C (Phase 0); seed `Mcp.Helpers` in Phase 10. |
 
 #### Lessons learned
 
-(fill after the phase)
+- Inline `call` must wrap the child's `H.set_result_json` (registry capture). The child's job context has no scoreboard, so the stock host function would no-op.
+- Unity submit-count proves `call` does not enqueue; `call_async` is the only path that bumps `H_lua_mcp_submit_count`.
 
 ---
 
@@ -1412,30 +1409,30 @@ Protocol script can be written without any new C.
 
 #### Work items
 
-- [ ] **10.1** Seed `Mcp.Server` (`mcp_access=1`, `invokable=0`) implementing
+- [x] **10.1** Seed `Mcp.Server` (`mcp_access=1`, `invokable=0`) implementing
       at least: `initialize`, `notifications/initialized`, `ping`,
       `tools/list`, `tools/call`, `notifications/cancelled` (ignore).
-- [ ] **10.2** Capability object: `tools.listChanged=false` in v1.
+- [x] **10.2** Capability object: `tools.listChanged=false` in v1.
       `initialize` returns `serverInfo` plus a seeded
       `instructions` string (see [Exposing Hydrogen To Any Model](#exposing-hydrogen-to-any-model)).
       Truncate tool results larger than `MaxResultBytes`.
-- [ ] **10.3** Seed `Mcp.Echo` — returns its arguments, with a real
+- [x] **10.3** Seed `Mcp.Echo` — returns its arguments, with a real
       `mcp_schema.inputSchema` (not the permissive fallback) and
       `mcp_annotations = { readOnlyHint = true, idempotentHint = true }` so
       it doubles as the worked example for future tool seeds, not just a
       protocol fixture.
-- [ ] **10.4** `tools/call` name `Mcp.Echo` → `H.mcp.call`. Unknown tool →
+- [x] **10.4** `tools/call` name `Mcp.Echo` → `H.mcp.call`. Unknown tool →
       MCP tool error (`H.mcp.tool_error`), not C 404. Tool-raised failures
       (bad args) also use `H.mcp.tool_error`, never a JSON-RPC `error`
       object (Design Principle 12) — add a **second** fixture tool,
       `Mcp.EchoStrict`, that validates its own arguments against its
       `inputSchema` and returns `H.mcp.tool_error` on mismatch, so Test 47
       has a real case for tool-level failure shape.
-- [ ] **10.4b** Seed `Mcp.Sleep` (`mcp_access=1`, `invokable=0`) — sleeps
+- [x] **10.4b** Seed `Mcp.Sleep` (`mcp_access=1`, `invokable=0`) — sleeps
       `params.seconds` (capped, e.g. 60) so Test 47 can exercise timeout
       and `notifications/cancelled` without a product tool. `readOnlyHint`
       + `destructiveHint=false`.
-- [ ] **10.5** luacheck. No C change expected; if C changes, that is a
+- [x] **10.5** luacheck. No C change expected; if C changes, that is a
       design leak — stop and record it.
 
 #### Exit gate / validation
@@ -1446,14 +1443,15 @@ A local hydrogen with MCP enabled can initialize and echo through Lua only.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-08-26 |
+| **Result** | Seeds `acuranzo_1368` Helpers, `1369` Server, `1370` Echo, `1371` EchoStrict, `1372` Sleep. No C. Live apply left to operator. |
+| **Variances** | `MaxResultBytes` truncate uses Lua default 262144 (C config not visible without a C leak). Helpers are a seeded script plus inlined copies in Server/EchoStrict. |
 
 #### Lessons learned
 
-(fill after the phase)
+- Protocol and helper scripts use `mcp_access=1` so `H.mcp.call` can load them; `Mcp.Server` hides `Mcp.Server` / `Mcp.Helpers` from `tools/list`.
+- Truncation cannot read `MCP.MaxResultBytes` from Lua without a new `_hydrogen` field (deferred; would be C).
 
 ---
 
@@ -1466,16 +1464,16 @@ A local hydrogen with MCP enabled can initialize and echo through Lua only.
 
 #### Work items
 
-- [ ] **11.1** `GET /api/mcp/status` (WebServer/API, not the MCP port) —
+- [x] **11.1** `GET /api/mcp/status` (WebServer/API, not the MCP port) —
       JWT required, no special role (mirror mailrelay status).
-- [ ] **11.2** Body: enabled, listen, protocol name, accept flags
+- [x] **11.2** Body: enabled, listen, protocol name, accept flags
       (`AcceptHydrogenJWT` / `AcceptOidcIdP` / `AcceptOidcRp`),
       `Resource`, counters (`rpc_in_flight` included), thread count.
       No tokens, no JWKS.
-- [ ] **11.3** Swagger annotations + regenerate payload.
-- [ ] **11.4** Unity handler tests. `test_22_swagger.sh` if annotations
+- [x] **11.3** Swagger annotations + regenerate payload.
+- [x] **11.4** Unity handler tests. `test_22_swagger.sh` if annotations
       change the spec.
-- [ ] **11.5** `mkt` + `mkp`.
+- [x] **11.5** `mkt` + `mkp`.
 
 #### Exit gate / validation
 
@@ -1485,14 +1483,15 @@ Status works when MCP disabled (enabled=false, zeros). No listen leak of JWT.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-08-27 |
+| **Result** | JWT `GET /api/mcp/status` on WebServer. Unity handler 5/5, `mcp_get_status` 4/4. Swagger `/mcp/status` + MCP Service tag. `mkt`/`mkp` green. |
+| **Variances** | `test_22_swagger.sh` not re-run; `swagger-cli validate payloads/swagger.json` passed. Live seed apply on remaining engines is still an operator/Phase 13 item, not this endpoint. |
 
 #### Lessons learned
 
-(fill after the phase)
+- Unity executables are named from the source basename only; `status_test.c` collides with mailrelay. Use `status_test_handle_mcp_status_request.c`.
+- `swagger-generate.sh` validates `./swagger.json` in cwd, not `payloads/swagger.json`. Validate the output file directly.
 
 ---
 
@@ -1975,6 +1974,22 @@ that affect later phases must be recorded so they are not lost.
 - (2026-08-26) Phase 6 shipped: `mcp_rpc.c` envelope, `mcp_session.c` bind/DELETE/reaper,
   POST body accumulation. `_hydrogen` reject also checks `params._hydrogen`. Next is
   Phase 7 dispatch (extend MHD mock for suspend/resume first).
+- (2026-08-26) Phase 7 shipped: `mcp_dispatch.c` builds envelope+`_hydrogen`, caps
+  `rpc_in_flight` at WorkerCount (`-32000`), suspends MHD then `scripting_wait_job`,
+  maps COMPLETED to Lua `result_json` and timeout/FAILED/SHUTDOWN to `-32603`.
+  Mock wraps `MHD_suspend_connection`/`MHD_resume_connection` (`void`). Next is
+  Phase 8 `mcp_access`.
+- (2026-08-26) Phase 8 shipped: `scripts.mcp_access` / `mcp_schema` /
+  `mcp_annotations` (`acuranzo_1365`); QueryRef **#152** List (`1366`) and
+  **#153** Get (`1367`). Production dispatch loads #153 only; missing and
+  `mcp_access=0` are the same HTTP 404. Next is Phase 9 `H.mcp`.
+- (2026-08-26) Phase 9 shipped: `H.mcp.list` / inline `call` / `call_async`.
+  Content-block helpers remain Phase 10 Lua. Next is Phase 10 seeds.
+- (2026-08-26) Phase 10 shipped: `acuranzo_1368`–`1372` seed Helpers / Server /
+  Echo / EchoStrict / Sleep. No C. Operator applies migrations. Next is Phase 11.
+- (2026-08-27) Phase 11 shipped: JWT `GET /api/mcp/status` (enabled/listen/protocol/
+  accept flags/Resource/thread counts/counters including `rpc_in_flight`). Next is
+  Phase 12 Unity coverage sweep.
 
 ### Follow-ups
 

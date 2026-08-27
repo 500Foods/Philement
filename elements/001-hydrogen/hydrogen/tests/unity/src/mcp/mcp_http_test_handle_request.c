@@ -15,7 +15,7 @@ void test_mcp_handle_request_prm_root(void);
 void test_mcp_handle_request_prm_with_path(void);
 void test_mcp_handle_request_path_mismatch(void);
 void test_mcp_handle_request_get_path_405(void);
-void test_mcp_handle_request_post_501(void);
+void test_mcp_handle_request_post_dispatch_internal(void);
 void test_mcp_handle_request_origin_mismatch(void);
 void test_mcp_handle_request_origin_allowed(void);
 void test_mcp_handle_request_origin_absent(void);
@@ -105,9 +105,9 @@ void test_mcp_handle_request_get_path_405(void) {
     TEST_ASSERT_EQUAL(MHD_HTTP_METHOD_NOT_ALLOWED, mock_mhd_get_last_status_code());
 }
 
-void test_mcp_handle_request_post_501(void) {
+void test_mcp_handle_request_post_dispatch_internal(void) {
     TEST_ASSERT_EQUAL(MHD_YES, call_handler_body("/mcp", "POST", MCP_PING_BODY));
-    TEST_ASSERT_EQUAL(MHD_HTTP_NOT_IMPLEMENTED, mock_mhd_get_last_status_code());
+    TEST_ASSERT_EQUAL(MHD_HTTP_OK, mock_mhd_get_last_status_code());
 }
 
 void test_mcp_handle_request_origin_mismatch(void) {
@@ -123,12 +123,12 @@ void test_mcp_handle_request_origin_mismatch(void) {
 void test_mcp_handle_request_origin_allowed(void) {
     mock_mhd_add_lookup("Origin", "https://ok.example");
     TEST_ASSERT_EQUAL(MHD_YES, call_handler_body("/mcp", "POST", MCP_PING_BODY));
-    TEST_ASSERT_EQUAL(MHD_HTTP_NOT_IMPLEMENTED, mock_mhd_get_last_status_code());
+    TEST_ASSERT_EQUAL(MHD_HTTP_OK, mock_mhd_get_last_status_code());
 }
 
 void test_mcp_handle_request_origin_absent(void) {
     TEST_ASSERT_EQUAL(MHD_YES, call_handler_body("/mcp", "POST", MCP_PING_BODY));
-    TEST_ASSERT_EQUAL(MHD_HTTP_NOT_IMPLEMENTED, mock_mhd_get_last_status_code());
+    TEST_ASSERT_EQUAL(MHD_HTTP_OK, mock_mhd_get_last_status_code());
 }
 
 void test_mcp_handle_request_post_401_missing_bearer(void) {
@@ -179,7 +179,7 @@ int main(void) {
     RUN_TEST(test_mcp_handle_request_prm_with_path);
     RUN_TEST(test_mcp_handle_request_path_mismatch);
     RUN_TEST(test_mcp_handle_request_get_path_405);
-    RUN_TEST(test_mcp_handle_request_post_501);
+    RUN_TEST(test_mcp_handle_request_post_dispatch_internal);
     RUN_TEST(test_mcp_handle_request_origin_mismatch);
     RUN_TEST(test_mcp_handle_request_origin_allowed);
     RUN_TEST(test_mcp_handle_request_origin_absent);

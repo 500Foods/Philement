@@ -95,6 +95,10 @@ void mcp_stats_add_rpc_in_flight(int delta) {
     }
 }
 
+unsigned long long mcp_stats_get_rpc_in_flight(void) {
+    return __atomic_load_n(&mcp_stat_rpc_in_flight, __ATOMIC_RELAXED);
+}
+
 void mcp_stats_inc_auth_rejected(McpAuthRejectReason reason) {
     if (reason < 0 || reason >= MCP_AUTH_REJECT_REASON_COUNT) {
         return;

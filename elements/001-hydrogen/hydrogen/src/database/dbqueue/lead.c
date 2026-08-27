@@ -142,6 +142,27 @@ void database_queue_lead_log_migration_status(DatabaseQueue* lead_queue, const c
     free(dqm_label);
 }
 
+void database_queue_lead_log_migration_summary(DatabaseQueue* lead_queue) {
+    char* dqm_label;
+    long long available;
+    long long loaded;
+    long long applied;
+
+    if (!lead_queue) {
+        return;
+    }
+    dqm_label = database_queue_generate_label(lead_queue);
+    available = lead_queue->latest_available_migration;
+    loaded = lead_queue->latest_loaded_migration;
+    applied = lead_queue->latest_applied_migration;
+    if (applied > loaded) {
+        loaded = applied;
+    }
+    log_this(dqm_label, "Migration summary: available=%lld loaded=%lld applied=%lld",
+             LOG_LEVEL_STATE, 3, available, loaded, applied);
+    free(dqm_label);
+}
+
 /*
  * Validate migrations for Lead DQM
  */
@@ -312,6 +333,7 @@ bool database_queue_lead_run_migration(DatabaseQueue* lead_queue) {
             clock_gettime(CLOCK_MONOTONIC, &migration_end_time);
             double elapsed_seconds = calc_elapsed_time(&migration_end_time, &migration_start_time);
             log_this(dqm_label, "Migration completed in %.3fs", LOG_LEVEL_STATE, 1, elapsed_seconds);
+            database_queue_lead_log_migration_summary(lead_queue);
             migration_timer_running = false;
         }
 
@@ -338,7 +360,7 @@ bool database_queue_lead_run_migration(DatabaseQueue* lead_queue) {
         clock_gettime(CLOCK_MONOTONIC, &migration_end_time);
         double elapsed_seconds = calc_elapsed_time(&migration_end_time, &migration_start_time);
         log_this(dqm_label, "Migration completed in %.3fs", LOG_LEVEL_STATE, 1, elapsed_seconds);
-//        migration_timer_running = false;
+        database_queue_lead_log_migration_summary(lead_queue);
     }
 
     // Migration process completed - QTC already populated by bootstrap queries during migration

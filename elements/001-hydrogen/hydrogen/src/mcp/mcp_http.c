@@ -2,6 +2,7 @@
 #include <src/mcp/mcp_http.h>
 #include <src/mcp/mcp_auth.h>
 #include <src/mcp/mcp_prm.h>
+#include <src/mcp/mcp_dispatch.h>
 #include <src/mcp/mcp_rpc.h>
 #include <src/mcp/mcp_session.h>
 #include <src/mcp/mcp_stats.h>
@@ -20,8 +21,6 @@ static struct sockaddr_storage mcp_bind_addr;
 static char mcp_con_seen;
 
 static const char MCP_HEALTHZ_BODY[] = "{\"status\":\"ok\"}";
-static const char MCP_RPC_NOT_IMPL[] =
-    "{\"jsonrpc\":\"2.0\",\"id\":null,\"error\":{\"code\":-32601,\"message\":\"Not implemented\"}}";
 
 static void mcp_request_completed(void *cls, struct MHD_Connection *connection,
                                   void **con_cls, enum MHD_RequestTerminationCode toe) {
@@ -258,9 +257,7 @@ enum MHD_Result mcp_http_handle_post(struct MHD_Connection *connection,
         return queued;
     }
 
-    mcp_stats_add_bytes_out((unsigned long long)strlen(MCP_RPC_NOT_IMPL));
-    queued = mcp_queue_rpc_response(connection, MHD_HTTP_NOT_IMPLEMENTED,
-                                    (char *)MCP_RPC_NOT_IMPL, false, session_id);
+    queued = mcp_dispatch_submit_protocol(connection, cfg, auth, &env, session_id);
     mcp_rpc_envelope_cleanup(&env);
     free(session_id);
     return queued;

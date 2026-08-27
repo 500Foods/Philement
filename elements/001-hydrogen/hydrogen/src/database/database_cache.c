@@ -270,6 +270,38 @@ QueryCacheEntry* query_cache_lookup_by_ref_and_type(QueryTableCache* cache, int 
     return result;
 }
 
+long long query_cache_next_ref_of_type(QueryTableCache* cache, int query_type, long long after_ref,
+                                       const char* dqm_label) {
+    long long best = 0;
+    size_t i;
+
+    if (!cache) {
+        return 0;
+    }
+    if (pthread_rwlock_rdlock(&cache->cache_lock) != 0) {
+        log_this(dqm_label ? dqm_label : SR_DATABASE,
+                 "Failed to acquire read lock for next-ref lookup", LOG_LEVEL_ERROR, 0);
+        return 0;
+    }
+    for (i = 0; i < cache->entry_count; i++) {
+        QueryCacheEntry* entry = cache->entries[i];
+        long long ref;
+
+        if (!entry || entry->query_type != query_type) {
+            continue;
+        }
+        ref = (long long)entry->query_ref;
+        if (ref <= after_ref) {
+            continue;
+        }
+        if (best == 0 || ref < best) {
+            best = ref;
+        }
+    }
+    pthread_rwlock_unlock(&cache->cache_lock);
+    return best;
+}
+
 // Update usage statistics for a query
 void query_cache_update_usage(QueryTableCache* cache, int query_ref, const char* dqm_label) {
     QueryCacheEntry* entry = query_cache_lookup(cache, query_ref, dqm_label);

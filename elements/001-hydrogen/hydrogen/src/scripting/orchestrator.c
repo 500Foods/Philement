@@ -285,9 +285,13 @@ bool scripting_orchestrator_start_with_source(const char* source,
  *
  * QueryRef #149 - same params, but only rows with invokable <> 0
  * (LUA_CLIENT Phase 7 client REST path). Registered in acuranzo_1298.
+ *
+ * QueryRef #153 - same params, but only rows with mcp_access <> 0
+ * (MCP Phase 8 protocol/tool load). Registered in acuranzo_1367.
  */
 #define H_SCRIPTING_ORCHESTRATOR_QUERYREF 87
 #define H_SCRIPTING_INVOKABLE_SCRIPT_QUERYREF 149
+#define H_SCRIPTING_MCP_SCRIPT_QUERYREF 153
 
 /*
  * Build a typed-JSON parameter object for QueryRef #087:
@@ -549,6 +553,15 @@ char* scripting_fetch_invokable_script_source(const char* group_name,
     return scripting_fetch_script_source_by_queryref(
         group_name, script_name, database, timeout_seconds,
         H_SCRIPTING_INVOKABLE_SCRIPT_QUERYREF);
+}
+
+char* scripting_fetch_mcp_script_source(const char* group_name,
+                                        const char* script_name,
+                                        const char* database,
+                                        int timeout_seconds) {
+    return scripting_fetch_script_source_by_queryref(
+        group_name, script_name, database, timeout_seconds,
+        H_SCRIPTING_MCP_SCRIPT_QUERYREF);
 }
 
 /*

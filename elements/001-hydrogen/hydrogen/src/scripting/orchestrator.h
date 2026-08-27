@@ -95,6 +95,17 @@ char* scripting_fetch_invokable_script_source(const char* group_name,
                                               int timeout_seconds);
 
 /*
+ * MCP Phase 8: Fetch script source only when scripts.mcp_access
+ * is set (QueryRef #153). Missing or mcp_access=0 both return
+ * NULL so MCP can map both to the same 404 (no existence leak).
+ * Independent of invokable. Caller frees the returned string.
+ */
+char* scripting_fetch_mcp_script_source(const char* group_name,
+                                        const char* script_name,
+                                        const char* database,
+                                        int timeout_seconds);
+
+/*
  * Start the Orchestrator by looking up the (group_name, script_name)
  * row in the `scripts` table via QueryRef #087, then delegating to
  * scripting_orchestrator_start_with_source with the loaded code.

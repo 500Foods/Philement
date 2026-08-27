@@ -18,6 +18,7 @@ long long database_queue_find_next_migration_to_apply(DatabaseQueue* lead_queue)
 void test_database_queue_find_next_migration_to_apply_null_queue(void);
 void test_database_queue_find_next_migration_to_apply_no_cache(void);
 void test_database_queue_find_next_migration_to_apply_migration_not_found(void);
+void test_database_queue_find_next_migration_to_apply_skips_missing_ref(void);
 
 // Helper function to create a mock lead queue for testing
 static DatabaseQueue* create_mock_lead_queue(const char* db_name) {
@@ -90,12 +91,32 @@ void test_database_queue_find_next_migration_to_apply_migration_not_found(void) 
     destroy_mock_lead_queue(queue);
 }
 
+void test_database_queue_find_next_migration_to_apply_skips_missing_ref(void) {
+    DatabaseQueue* queue = create_mock_lead_queue("testdb");
+    QueryCacheEntry* entry;
+    long long result;
+
+    TEST_ASSERT_NOT_NULL(queue);
+    queue->latest_applied_migration = 1282;
+    queue->query_cache = query_cache_create("testdb");
+    TEST_ASSERT_NOT_NULL(queue->query_cache);
+    entry = query_cache_entry_create(1284, 1000, "SELECT 1;", "gap seed", "slow", 30, "testdb");
+    TEST_ASSERT_NOT_NULL(entry);
+    TEST_ASSERT_TRUE(query_cache_add_entry(queue->query_cache, entry, "testdb"));
+    result = database_queue_find_next_migration_to_apply(queue);
+    TEST_ASSERT_EQUAL(1284, result);
+    query_cache_destroy(queue->query_cache, "testdb");
+    queue->query_cache = NULL;
+    destroy_mock_lead_queue(queue);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
     RUN_TEST(test_database_queue_find_next_migration_to_apply_null_queue);
     RUN_TEST(test_database_queue_find_next_migration_to_apply_no_cache);
     RUN_TEST(test_database_queue_find_next_migration_to_apply_migration_not_found);
+    RUN_TEST(test_database_queue_find_next_migration_to_apply_skips_missing_ref);
 
     return UNITY_END();
 }

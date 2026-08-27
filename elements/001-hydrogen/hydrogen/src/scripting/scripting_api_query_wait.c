@@ -43,6 +43,9 @@ int H_lua_wait_one(lua_State* L, H_Handle* h) {
     if (h->kind == H_HK_MAIL || h->kind == H_HK_NOTIFY) {
         return H_lua_mail_notify_wait_one(L, h);
     }
+    if (h->kind == H_HK_MCP) {
+        return H_lua_mcp_wait_one(L, h);
+    }
     if (!h->query_id || !h->db_queue) {
         lua_pushnil(L);
         lua_pushstring(L, "H.wait: handle has no pending query");
@@ -152,6 +155,19 @@ int H_lua_wait(lua_State* L) {
             continue;
         }
         if (h->kind == H_HK_MAIL || h->kind == H_HK_NOTIFY) {
+            (void)H_lua_wait_one(L, h);
+            if (lua_isnil(L, -1)) {
+                errors[i] = NULL;
+            } else if (lua_isstring(L, -1)) {
+                errors[i] = strdup(lua_tostring(L, -1));
+            } else {
+                errors[i] = NULL;
+            }
+            lua_pop(L, 1);
+            h->consumed = true;
+            continue;
+        }
+        if (h->kind == H_HK_MCP) {
             (void)H_lua_wait_one(L, h);
             if (lua_isnil(L, -1)) {
                 errors[i] = NULL;
