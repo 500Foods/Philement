@@ -40,6 +40,13 @@ The mDNS Client is the network explorer that searches for and connects to availa
 
 - [README.md](/docs/H/core/subsystems/mdnsclient/README.md)
 
+## MCP
+
+MCP is Hydrogen's Model Context Protocol adapter: Streamable HTTP JSON-RPC for AI clients, with tools implemented entirely in Lua (`scripts.mcp_access`). C is transport, Bearer, envelope, and session only.
+
+- [mcp.md](/docs/H/core/subsystems/mcp/mcp.md)
+- [mcp_endpoints.md](/docs/H/api/mcp/mcp_endpoints.md)
+
 ## Mirage
 
 The Mirage subsystem is the distributed proxy network that enables secure and seamless remote access to Hydrogen servers. It acts as a bridge between public access points and private Hydrogen instances, allowing users to connect to their devices from anywhere in the world while preserving all customizations, branding, and features.

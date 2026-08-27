@@ -189,6 +189,7 @@ QUALITY CHECKLIST (before completing)
 
 ## August 2026
 
+- [2026-Aug-27 (Thu)](/releases/2026-08/2026-08-27.md): (H) MCP subsystem complete — Streamable HTTP, Test 47, docs
 - [2026-Aug-09 (Sun)](/releases/2026-08/2026-08-09.md): (H) LUA_CLIENT complete — JWT `/api/conduit/script`, Test 46, docs
 
 ## July 2026

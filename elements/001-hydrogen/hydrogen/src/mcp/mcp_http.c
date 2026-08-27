@@ -22,18 +22,18 @@ static char mcp_con_seen;
 
 static const char MCP_HEALTHZ_BODY[] = "{\"status\":\"ok\"}";
 
-static void mcp_request_completed(void *cls, struct MHD_Connection *connection,
-                                  void **con_cls, enum MHD_RequestTerminationCode toe) {
+void mcp_request_completed(void *cls, struct MHD_Connection *connection,
+                           void **con_cls, enum MHD_RequestTerminationCode toe) {
     (void)cls;
     (void)connection;
     (void)toe;
     mcp_http_upload_free(con_cls);
 }
 
-static enum MHD_Result mcp_queue_static(struct MHD_Connection *connection,
-                                        unsigned int status,
-                                        const char *body,
-                                        const char *content_type) {
+enum MHD_Result mcp_queue_static(struct MHD_Connection *connection,
+                                 unsigned int status,
+                                 const char *body,
+                                 const char *content_type) {
     struct MHD_Response *response;
     enum MHD_Result queued;
     size_t len = body ? strlen(body) : 0;
@@ -51,9 +51,9 @@ static enum MHD_Result mcp_queue_static(struct MHD_Connection *connection,
     return queued;
 }
 
-static enum MHD_Result mcp_queue_owned(struct MHD_Connection *connection,
-                                       unsigned int status,
-                                       char *body) {
+enum MHD_Result mcp_queue_owned(struct MHD_Connection *connection,
+                                unsigned int status,
+                                char *body) {
     struct MHD_Response *response;
     enum MHD_Result queued;
     size_t len = body ? strlen(body) : 0;

@@ -15,6 +15,10 @@ void test_mcp_rpc_parse_protocol_version_header(void);
 void test_mcp_rpc_parse_protocol_version_default(void);
 void test_mcp_rpc_is_initialize(void);
 void test_mcp_rpc_make_error_shape(void);
+void test_mcp_rpc_status_helpers(void);
+void test_mcp_rpc_parse_null_out(void);
+void test_mcp_rpc_parse_non_object(void);
+void test_mcp_rpc_envelope_cleanup_null(void);
 
 void setUp(void) {
 }
@@ -128,6 +132,34 @@ void test_mcp_rpc_make_error_shape(void) {
     free(body);
 }
 
+void test_mcp_rpc_status_helpers(void) {
+    TEST_ASSERT_EQUAL_STRING("OK", mcp_rpc_status_message(MCP_RPC_OK));
+    TEST_ASSERT_EQUAL_STRING("Parse error", mcp_rpc_status_message(MCP_RPC_ERR_PARSE));
+    TEST_ASSERT_EQUAL_STRING("Parse error", mcp_rpc_status_message(MCP_RPC_ERR_OVERSIZE));
+    TEST_ASSERT_EQUAL_STRING("Invalid Request", mcp_rpc_status_message(MCP_RPC_ERR_INVALID));
+    TEST_ASSERT_EQUAL_STRING("Invalid Request", mcp_rpc_status_message((McpRpcStatus)99));
+    TEST_ASSERT_EQUAL(0, mcp_rpc_status_code(MCP_RPC_OK));
+    TEST_ASSERT_EQUAL(MCP_RPC_PARSE_ERROR, mcp_rpc_status_code(MCP_RPC_ERR_PARSE));
+    TEST_ASSERT_EQUAL(MCP_RPC_PARSE_ERROR, mcp_rpc_status_code(MCP_RPC_ERR_OVERSIZE));
+    TEST_ASSERT_EQUAL(MCP_RPC_INVALID_REQUEST, mcp_rpc_status_code(MCP_RPC_ERR_INVALID));
+    TEST_ASSERT_EQUAL(MCP_RPC_INVALID_REQUEST, mcp_rpc_status_code((McpRpcStatus)99));
+}
+
+void test_mcp_rpc_parse_null_out(void) {
+    const char *body = "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}";
+    TEST_ASSERT_EQUAL(MCP_RPC_ERR_INVALID, mcp_rpc_parse(body, strlen(body), 1024, NULL, NULL));
+}
+
+void test_mcp_rpc_parse_non_object(void) {
+    const char *body = "\"ping\"";
+    McpRpcEnvelope env;
+    TEST_ASSERT_EQUAL(MCP_RPC_ERR_PARSE, mcp_rpc_parse(body, strlen(body), 1024, NULL, &env));
+}
+
+void test_mcp_rpc_envelope_cleanup_null(void) {
+    mcp_rpc_envelope_cleanup(NULL);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_mcp_rpc_parse_error_invalid_json);
@@ -143,5 +175,9 @@ int main(void) {
     RUN_TEST(test_mcp_rpc_parse_protocol_version_default);
     RUN_TEST(test_mcp_rpc_is_initialize);
     RUN_TEST(test_mcp_rpc_make_error_shape);
+    RUN_TEST(test_mcp_rpc_status_helpers);
+    RUN_TEST(test_mcp_rpc_parse_null_out);
+    RUN_TEST(test_mcp_rpc_parse_non_object);
+    RUN_TEST(test_mcp_rpc_envelope_cleanup_null);
     return UNITY_END();
 }

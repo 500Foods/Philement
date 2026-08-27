@@ -418,6 +418,12 @@ Workers receive merged params as global `params` (including server-injected
 `params._hydrogen`). Prefer `H.set_result_json` when the caller needs a JSON
 payload.
 
+MCP tools are a second allowlist (`scripts.mcp_access`). Protocol Lua uses
+`H.mcp.call` (inline child state — do not queue+wait on the same pool) or
+`H.mcp.call_async` + `H.wait` with at most `WorkerCount - 1` in-flight jobs.
+See [mcp.md](/docs/H/core/subsystems/mcp/mcp.md) and
+[lua_api.md `H.mcp`](/docs/H/core/subsystems/scripting/lua_api.md).
+
 ### Database queries
 
 ```lua
@@ -999,6 +1005,8 @@ Run `tests/test_98_luacheck.sh` after editing `.lua` files.
 | [LUA_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md) | Design history and phases |
 | [LUA_CLIENT_COMPLETE.md](/docs/H/plans/complete/LUA_CLIENT_COMPLETE.md) | Client REST script invoke |
 | [script.md](/docs/H/api/conduit/script.md) | `POST/GET /api/conduit/script` |
+| [mcp.md](/docs/H/core/subsystems/mcp/mcp.md) | MCP subsystem (Streamable HTTP + Lua tools) |
+| [mcp_endpoints.md](/docs/H/api/mcp/mcp_endpoints.md) | MCP listen, PRM, `/api/mcp/status` |
 | [webhook.md](/docs/H/api/conduit/webhook.md) | `POST /api/conduit/webhook/{hook}` |
 | [MAIL_GUIDE.md](/docs/H/MAIL_GUIDE.md) | Mail Relay, rewrites, events, and Lua `H.mail` |
 | [MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md) | Mail Relay implementation plan |

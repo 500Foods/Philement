@@ -44,10 +44,6 @@ Chat proxy service. Phases 1–12 complete (see `complete/`). Open work: [Phase 
 
 Separate ASAN Unity build/test variant for memory-safety gating without corrupting gcov coverage.
 
-### [MCP PLAN](/docs/H/plans/MCP.md)
-
-Model Context Protocol server as a new Hydrogen subsystem. Lua implements the protocol; C is transport, JWT, and `mcp_access` only. Plan drafted; Phase 0 not started.
-
 ### [SCHEMAHELPER PLAN](/docs/H/plans/SCHEMAHELPER.md)
 
 Interactive Lua TUI front-end to SchemaTool. Phases 0–4 shipped (review,
@@ -78,6 +74,7 @@ Full index: [`complete/README.md`](/docs/H/plans/complete/README.md). Highlights
 | Lua client script invoke | [LUA_CLIENT_COMPLETE.md](/docs/H/plans/complete/LUA_CLIENT_COMPLETE.md) |
 | Lua 5.5 embed upgrade | [LUA_55_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_55_PLAN_COMPLETE.md) |
 | Mail Relay blackbox | [MAILRELAY_BLACKBOX_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md) |
+| MCP server | [MCP_COMPLETE.md](/docs/H/plans/complete/MCP_COMPLETE.md) |
 | Migrations perf | [MIGRATIONS_COMPLETE.md](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md) |
 | SchemaTool | [SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md) |
 | Static-function purge | [STATIC_COMPLETE.md](/docs/H/plans/complete/STATIC_COMPLETE.md) |
