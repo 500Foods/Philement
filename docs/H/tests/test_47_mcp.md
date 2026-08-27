@@ -4,7 +4,8 @@
 
 The [`test_47_mcp.sh`](/elements/001-hydrogen/hydrogen/tests/test_47_mcp.sh)
 script black-box tests the MCP subsystem over Streamable HTTP: Hydrogen JWT
-login, Lua `Mcp.Server`, fixture tools, session lifecycle, and timeout.
+login, Lua `Mcp.Server`, fixture tools/resources/prompts, session lifecycle,
+and timeout.
 
 ## Purpose
 
@@ -18,6 +19,7 @@ Validates across all seven database engines (parallel):
 - `initialize` → `serverInfo` + `instructions` + `Mcp-Session-Id`
 - `notifications/initialized` → **202**
 - `tools/list` includes `Mcp.Echo` / `Mcp.EchoStrict` with `inputSchema`
+  and omits resource/prompt fixtures (`Mcp.Info`, `Mcp.Intro`)
 - Echo success (`result.content`, no `isError`)
 - EchoStrict bad args → `result.isError=true` (not JSON-RPC `error`)
 - Unknown / non-`mcp_access` tools hidden as tool errors
@@ -28,13 +30,17 @@ Validates across all seven database engines (parallel):
 - `notifications/cancelled` → **202**; shutdown still clean
 - `DELETE` → **204** then reuse → **404**
 - JWT `GET /api/mcp/status` on the WebServer port
+- `resources/list` includes `hydrogen://mcp/info`; `resources/read` returns text
+- Unknown resource URI → JSON-RPC **-32602**
+- `prompts/list` includes `Mcp.Intro`; `prompts/get` returns messages
+- Unknown prompt name → JSON-RPC **-32602**
 
 ## Test Configuration
 
 - **Test Name**: MCP Server
 - **Test Abbreviation**: MCP
 - **Test Number**: 47
-- **Version**: 1.0.0
+- **Version**: 1.1.2
 
 ## Port Assignment
 
@@ -69,13 +75,12 @@ and **MCP** (`Protocol` `Mcp.Server`, `RequestTimeoutSeconds` 4).
 
 **SQLite** uses an isolated copy of `hydrodemo.sqlite` with AutoMigration off
 so the suite does not mutate the shared fixture. The copy must already
-contain MCP seeds (`Mcp.Server` / Echo / EchoStrict / Sleep, QueryRefs
-**#152** / **#153**).
+contain MCP seeds (`Mcp.Server` / Echo / EchoStrict / Sleep /
+`Mcp.Info` / `Mcp.Intro`, QueryRefs **#152** / **#153**).
 
 **Other engines** run the same cases against the live DB (migrations
-1365–1372). If `initialize` cannot load `Mcp.Server`, that engine is
-**skipped** (still counted pass). The suite **requires** the SQLite full
-path to pass.
+1365–1375 applied). Missing `Mcp.Server` is a **failure**. The suite
+**requires** every engine, including Phase 15.
 
 ## Prerequisites
 
@@ -89,7 +94,8 @@ path to pass.
 1. Start Hydrogen; wait for `READY FOR REQUESTS`
 2. Probe healthz / PRM / 401 / Origin / GET 405
 3. `POST /api/auth/login` as demo user on database `Acuranzo`
-4. MCP initialize, tools/list, tools/call, session, timeout, DELETE
+4. MCP initialize, tools/list, tools/call, resources/*, prompts/*, session,
+   timeout, DELETE
 5. Graceful shutdown
 
 ## Manual helpers
@@ -102,4 +108,4 @@ path to pass.
 ## Related
 
 - Plan: [MCP_COMPLETE.md](/docs/H/plans/complete/MCP_COMPLETE.md) Phase 13
-- Fixture migrations: Helium `acuranzo_1365`–`1372`
+- Fixture migrations: Helium `acuranzo_1365`–`1375`

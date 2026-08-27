@@ -20,6 +20,9 @@
 # run_disabled()
 
 # CHANGELOG
+# 1.1.2 - 2026-08-27 - Fail engines that cannot load Mcp.Server (no skip-pass)
+# 1.1.1 - 2026-08-27 - Phase 15 required on all engines (1375 applied)
+# 1.1.0 - 2026-08-27 - Phase 15 resources/list+read, prompts/list+get
 # 1.0.1 - 2026-08-27 - Skip comment: seeds expected applied (1283 hole closed)
 # 1.0.0 - 2026-08-27 - Initial blackbox for MCP Phase 13 (Test 47)
 
@@ -29,7 +32,7 @@ TEST_NAME="MCP Server"
 TEST_ABBR="MCP"
 TEST_NUMBER="47"
 TEST_COUNTER=0
-TEST_VERSION="1.0.1"
+TEST_VERSION="1.1.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -440,10 +443,6 @@ run_engine() {
         record_case "${result_file}" "initialize" 0
         echo "INIT_HTTP=${http_st}" >> "${result_file}"
         echo "INIT_SESSION=${session}" >> "${result_file}"
-        # Non-SQLite: skip remaining cases if Protocol Lua did not load.
-        if [[ "${engine_key}" != "sqlite" ]]; then
-            echo "ENGINE_SKIP=fixture_migrations" >> "${result_file}"
-        fi
     fi
     echo "SESSION=${session}" >> "${result_file}"
 
@@ -485,6 +484,8 @@ run_engine() {
             and ([.result.tools[] | select(.name=="Mcp.Echo") | .inputSchema] | length > 0)
             and ([.result.tools[].name] | index("Mcp.Server") | not)
             and ([.result.tools[].name] | index("Mcp.Helpers") | not)
+            and ([.result.tools[].name] | index("Mcp.Info") | not)
+            and ([.result.tools[].name] | index("Mcp.Intro") | not)
         ' "${body}" >/dev/null 2>&1; then
         list_ok=1
     fi
@@ -493,9 +494,6 @@ run_engine() {
     else
         record_case "${result_file}" "tools_list" 0
         echo "LIST_HTTP=${http_st}" >> "${result_file}"
-        if [[ "${engine_key}" != "sqlite" ]]; then
-            echo "ENGINE_SKIP=fixture_migrations" >> "${result_file}"
-        fi
     fi
 
     if [[ "${list_ok}" -ne 1 ]]; then
@@ -651,6 +649,77 @@ run_engine() {
         echo "SLEEP_HTTP=${sleep_st}" >> "${result_file}"
     fi
 
+    # --- Phase 15 resources / prompts (1375 applied on all engines) ---
+    http_st=$(mcp_http "POST" "${mcp_url}" \
+        '{"jsonrpc":"2.0","id":20,"method":"resources/list","params":{}}' \
+        "${body}" "${hdr}" "${jwt}" "${session}" "" 20)
+    if [[ "${http_st}" == "200" ]] \
+        && jq -e '([.result.resources[].uri] | index("hydrogen://mcp/info"))' \
+            "${body}" >/dev/null 2>&1; then
+        record_case "${result_file}" "resources_list" 1
+    else
+        record_case "${result_file}" "resources_list" 0
+        echo "RESOURCES_LIST_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    http_st=$(mcp_http "POST" "${mcp_url}" \
+        '{"jsonrpc":"2.0","id":21,"method":"resources/read","params":{"uri":"hydrogen://mcp/info"}}' \
+        "${body}" "${hdr}" "${jwt}" "${session}" "" 20)
+    if [[ "${http_st}" == "200" ]] \
+        && jq -e '.result.contents[0].text != null and .error == null' \
+            "${body}" >/dev/null 2>&1; then
+        record_case "${result_file}" "resources_read" 1
+    else
+        record_case "${result_file}" "resources_read" 0
+        echo "RESOURCES_READ_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    http_st=$(mcp_http "POST" "${mcp_url}" \
+        '{"jsonrpc":"2.0","id":22,"method":"resources/read","params":{"uri":"hydrogen://mcp/no-such"}}' \
+        "${body}" "${hdr}" "${jwt}" "${session}" "" 20)
+    if [[ "${http_st}" == "200" ]] \
+        && jq -e '.error.code == -32602' "${body}" >/dev/null 2>&1; then
+        record_case "${result_file}" "resources_unknown" 1
+    else
+        record_case "${result_file}" "resources_unknown" 0
+        echo "RESOURCES_UNK_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    http_st=$(mcp_http "POST" "${mcp_url}" \
+        '{"jsonrpc":"2.0","id":23,"method":"prompts/list","params":{}}' \
+        "${body}" "${hdr}" "${jwt}" "${session}" "" 20)
+    if [[ "${http_st}" == "200" ]] \
+        && jq -e '([.result.prompts[].name] | index("Mcp.Intro"))' \
+            "${body}" >/dev/null 2>&1; then
+        record_case "${result_file}" "prompts_list" 1
+    else
+        record_case "${result_file}" "prompts_list" 0
+        echo "PROMPTS_LIST_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    http_st=$(mcp_http "POST" "${mcp_url}" \
+        '{"jsonrpc":"2.0","id":24,"method":"prompts/get","params":{"name":"Mcp.Intro","arguments":{"topic":"Echo"}}}' \
+        "${body}" "${hdr}" "${jwt}" "${session}" "" 20)
+    if [[ "${http_st}" == "200" ]] \
+        && jq -e '.result.messages[0].content.text != null and .error == null' \
+            "${body}" >/dev/null 2>&1; then
+        record_case "${result_file}" "prompts_get" 1
+    else
+        record_case "${result_file}" "prompts_get" 0
+        echo "PROMPTS_GET_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    http_st=$(mcp_http "POST" "${mcp_url}" \
+        '{"jsonrpc":"2.0","id":25,"method":"prompts/get","params":{"name":"No.SuchPrompt"}}' \
+        "${body}" "${hdr}" "${jwt}" "${session}" "" 20)
+    if [[ "${http_st}" == "200" ]] \
+        && jq -e '.error.code == -32602' "${body}" >/dev/null 2>&1; then
+        record_case "${result_file}" "prompts_unknown" 1
+    else
+        record_case "${result_file}" "prompts_unknown" 0
+        echo "PROMPTS_UNK_HTTP=${http_st}" >> "${result_file}"
+    fi
+
     http_st=$(mcp_http "DELETE" "${mcp_url}" "" "${body}" "${hdr}" "${jwt}" "${session}" "" 10)
     if [[ "${http_st}" == "204" ]]; then
         record_case "${result_file}" "delete_204" 1
@@ -711,13 +780,6 @@ analyze_engine() {
         return
     fi
 
-    if "${GREP}" -q "^ENGINE_SKIP=" "${result_file}" 2>/dev/null; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 \
-            "${description}: skipped (MCP seeds / QueryRef 152-153 not applied on live DB)"
-        PASS_COUNT=$(( PASS_COUNT + 1 ))
-        return
-    fi
-
     local pass_n fail_n
     pass_n=$("${GREP}" -c "^CASE_PASS=" "${result_file}" 2>/dev/null || echo 0)
     fail_n=$("${GREP}" -c "^CASE_FAIL=" "${result_file}" 2>/dev/null || echo 0)
@@ -726,9 +788,9 @@ analyze_engine() {
     pass_n=${pass_n:-0}
     fail_n=${fail_n:-0}
 
-    local min_pass=20
+    local min_pass=30
     if [[ "${description}" == "SQLite" ]]; then
-        min_pass=22
+        min_pass=31
     fi
 
     if [[ "${fail_n}" -eq 0 && "${pass_n}" -ge "${min_pass}" ]]; then
