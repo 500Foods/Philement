@@ -21,6 +21,9 @@ static unsigned int mock_mhd_last_status_code = 0;
 static bool mock_mhd_start_daemon_should_fail = false;
 static const union MHD_DaemonInfo* mock_mhd_daemon_info_result = NULL;
 static bool mock_mhd_is_terminal_websocket_request_result = true;
+static int mock_mhd_suspend_count = 0;
+static int mock_mhd_resume_count = 0;
+static bool mock_mhd_suspend_should_fail = false;
 
 #define MOCK_MHD_MAX_HEADERS 32
 static char mock_header_names[MOCK_MHD_MAX_HEADERS][64];
@@ -184,7 +187,21 @@ struct MHD_Daemon* MHD_start_daemon(unsigned int flags, uint16_t port,
 __attribute__((weak))
 void MHD_stop_daemon(struct MHD_Daemon *daemon) {
     (void)daemon;
-    // Mock cleanup - do nothing, just accept any daemon pointer
+}
+
+__attribute__((weak))
+void MHD_suspend_connection(struct MHD_Connection *connection) {
+    (void)connection;
+    if (mock_mhd_suspend_should_fail) {
+        return;
+    }
+    mock_mhd_suspend_count++;
+}
+
+__attribute__((weak))
+void MHD_resume_connection(struct MHD_Connection *connection) {
+    (void)connection;
+    mock_mhd_resume_count++;
 }
 
 /*
@@ -203,6 +220,9 @@ void mock_mhd_reset_all(void) {
     mock_mhd_start_daemon_should_fail = false;
     mock_mhd_daemon_info_result = NULL;
     mock_mhd_is_terminal_websocket_request_result = true;
+    mock_mhd_suspend_count = 0;
+    mock_mhd_resume_count = 0;
+    mock_mhd_suspend_should_fail = false;
 
     // Reset key-based lookups
     for (int i = 0; i < mock_lookup_count; i++) {
@@ -461,4 +481,16 @@ void mock_mhd_set_start_daemon_should_fail(bool should_fail) {
  */
 void mock_mhd_set_daemon_info_result(const union MHD_DaemonInfo *info) {
     mock_mhd_daemon_info_result = info;
+}
+
+int mock_mhd_get_suspend_count(void) {
+    return mock_mhd_suspend_count;
+}
+
+int mock_mhd_get_resume_count(void) {
+    return mock_mhd_resume_count;
+}
+
+void mock_mhd_set_suspend_should_fail(bool should_fail) {
+    mock_mhd_suspend_should_fail = should_fail;
 }

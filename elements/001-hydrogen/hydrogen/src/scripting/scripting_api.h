@@ -383,4 +383,10 @@ void H_lua_install_mail_repo(lua_State* L);
  */
 int H_lua_mail_notify_wait_one(lua_State* L, H_Handle* h);
 
+/*
+ * MCP Phase 9: H.mcp.list / H.mcp.call / H.mcp.call_async.
+ * Content-block helpers are pure Lua (Mcp.Helpers), not C.
+ */
+void H_lua_install_mcp(lua_State* L);
+
 #endif /* HYDROGEN_SCRIPTING_SCRIPTING_API_H */

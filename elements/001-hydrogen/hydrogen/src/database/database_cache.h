@@ -42,6 +42,8 @@ void query_cache_clear(QueryTableCache* cache, const char* dqm_label);
 bool query_cache_add_entry(QueryTableCache* cache, QueryCacheEntry* entry, const char* dqm_label);
 QueryCacheEntry* query_cache_lookup(QueryTableCache* cache, int query_ref, const char* dqm_label);
 QueryCacheEntry* query_cache_lookup_by_ref_and_type(QueryTableCache* cache, int query_ref, int query_type, const char* dqm_label);
+long long query_cache_next_ref_of_type(QueryTableCache* cache, int query_type, long long after_ref,
+                                       const char* dqm_label);
 void query_cache_update_usage(QueryTableCache* cache, int query_ref, const char* dqm_label);
 
 // Entry creation and cleanup

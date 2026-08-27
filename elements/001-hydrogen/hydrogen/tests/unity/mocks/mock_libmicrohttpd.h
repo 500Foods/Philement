@@ -40,6 +40,8 @@ struct MHD_Daemon* MHD_start_daemon(unsigned int flags, uint16_t port,
                                    MHD_AcceptPolicyCallback apc, void *apc_cls,
                                    MHD_AccessHandlerCallback dh, void *dh_cls, ...);
 void MHD_stop_daemon(struct MHD_Daemon *daemon);
+void MHD_suspend_connection(struct MHD_Connection *connection);
+void MHD_resume_connection(struct MHD_Connection *connection);
 
 // Mock control functions
 void mock_mhd_reset_all(void);
@@ -54,6 +56,9 @@ void mock_mhd_set_queue_response_result(enum MHD_Result result);
 unsigned int mock_mhd_get_last_status_code(void);
 void mock_mhd_set_start_daemon_should_fail(bool should_fail);
 void mock_mhd_set_daemon_info_result(const union MHD_DaemonInfo *info);
+int mock_mhd_get_suspend_count(void);
+int mock_mhd_get_resume_count(void);
+void mock_mhd_set_suspend_should_fail(bool should_fail);
 
 // Additional mock functions for session management
 bool session_manager_has_capacity(void);

@@ -164,6 +164,36 @@ int H_lua_llm_wait_one(lua_State* L, H_Handle* h);
 int H_lua_llm_call_sync(lua_State* L);
 int H_lua_llm_list_sync(lua_State* L);
 
+// ----------------------------------------------------------------------------
+// scripting_api_mcp.c
+// ----------------------------------------------------------------------------
+
+typedef char* (*H_lua_mcp_list_rows_fn)(void);
+typedef char* (*H_lua_mcp_fetch_source_fn)(const char* group, const char* name);
+typedef char* (*H_lua_mcp_submit_job_fn)(const char* script_name,
+                                         const char* source,
+                                         const char* params_json);
+typedef int (*H_lua_mcp_wait_job_fn)(lua_State* L, H_Handle* h);
+
+extern H_lua_mcp_list_rows_fn H_lua_mcp_list_rows_hook;
+extern H_lua_mcp_fetch_source_fn H_lua_mcp_fetch_source_hook;
+extern H_lua_mcp_submit_job_fn H_lua_mcp_submit_job_hook;
+extern H_lua_mcp_wait_job_fn H_lua_mcp_wait_job_hook;
+extern int H_lua_mcp_submit_count;
+
+void H_lua_mcp_clear_hooks(void);
+char* H_lua_mcp_fetch_list_rows_json(void);
+void H_lua_mcp_push_decoded_json_field(lua_State* L, json_t* row, const char* key);
+void H_lua_mcp_push_row(lua_State* L, json_t* row);
+char* H_lua_mcp_parent_hydrogen_json(lua_State* L);
+char* H_lua_mcp_build_tool_params(lua_State* L, int args_idx, char** err_out);
+char* H_lua_mcp_load_tool_source(const char* group, const char* script);
+int H_lua_mcp_list(lua_State* L);
+int H_lua_mcp_call(lua_State* L);
+int H_lua_mcp_call_async(lua_State* L);
+int H_lua_mcp_wait_one(lua_State* L, H_Handle* h);
+int H_lua_mcp_capture_result_json(lua_State* L);
+
 #ifdef __cplusplus
 }
 #endif

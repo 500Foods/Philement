@@ -69,7 +69,8 @@ typedef enum {
     H_HK_HTTP  = 2,
     H_HK_LLM   = 3,
     H_HK_MAIL  = 4,
-    H_HK_NOTIFY = 5
+    H_HK_NOTIFY = 5,
+    H_HK_MCP    = 6
 } H_HandleKind;
 
 /* Forward decls for the per-handle sync primitive (Phase 17). */

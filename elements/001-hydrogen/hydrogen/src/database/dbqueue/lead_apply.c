@@ -32,31 +32,30 @@ long long database_queue_find_next_migration_to_apply(DatabaseQueue* lead_queue)
 
     char* dqm_label = database_queue_generate_label(lead_queue);
 
-    long long next_migration_id = lead_queue->latest_applied_migration + 1;
-    log_this(dqm_label, "Looking for next migration to apply from QTC (ref=%lld, type=1000)",
-             LOG_LEVEL_DEBUG, 1, next_migration_id);
+    long long after_ref = lead_queue->latest_applied_migration;
 
-    // LOAD = highest migration with type 1000 (loaded forward migrations)
-    // APPLY = highest migration with type 1003 (applied migrations)
-    // We want the next migration: ref=(APPLY+1) AND type=1000
+    log_this(dqm_label, "Looking for next migration to apply from QTC (after ref=%lld, type=1000)",
+             LOG_LEVEL_DEBUG, 1, after_ref);
 
-    // Look for entry with specific ref AND type=1000 (forward migration)
-    // Multiple entries may share same ref but different types (1000=forward, 1001=reverse, 1002=diagram, 1003=applied)
     if (lead_queue->query_cache) {
-        const QueryCacheEntry* entry = query_cache_lookup_by_ref_and_type(
-            lead_queue->query_cache, (int)next_migration_id, 1000, dqm_label);
-
-        if (entry && entry->sql_template) {
+        long long next_migration_id = query_cache_next_ref_of_type(lead_queue->query_cache, 1000,
+                                                                  after_ref, dqm_label);
+        if (next_migration_id > 0) {
+            if (next_migration_id != after_ref + 1) {
+                log_this(dqm_label,
+                         "Skipping missing migration refs %lld..%lld - next loaded forward is %lld",
+                         LOG_LEVEL_DEBUG, 3, after_ref + 1, next_migration_id - 1,
+                         next_migration_id);
+            }
             log_this(dqm_label, "Found next migration to apply: ref=%lld, type=1000 (from QTC)",
                      LOG_LEVEL_DEBUG, 1, next_migration_id);
             free(dqm_label);
             return next_migration_id;
-        } else {
-            log_this(dqm_label, "No forward migration found for ref=%lld (type=1000) - APPLY phase complete",
-                     LOG_LEVEL_DEBUG, 1, next_migration_id);
-            free(dqm_label);
-            return 0;
         }
+        log_this(dqm_label, "No forward migration found after ref=%lld (type=1000) - APPLY phase complete",
+                 LOG_LEVEL_DEBUG, 1, after_ref);
+        free(dqm_label);
+        return 0;
     } else {
         log_this(dqm_label, "No query cache available for migration lookup", LOG_LEVEL_ERROR, 0);
         free(dqm_label);

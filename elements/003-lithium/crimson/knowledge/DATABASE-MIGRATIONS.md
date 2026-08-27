@@ -401,4 +401,12 @@ in the migrations themselves so that they get populated in the database directly
 | [1362](/elements/002-helium/acuranzo/migrations/acuranzo_1362.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: seed Stripe.DeactivateCustomer (not invokable) |
 | [1363](/elements/002-helium/acuranzo/migrations/acuranzo_1363.lua) | queries | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.19: QueryRef 147 Q / LEVEL / PAID_FREE / TAG / SORT / HIDE_RETIRED |
 | [1364](/elements/002-helium/acuranzo/migrations/acuranzo_1364.lua) | scripts | 1.0.0 | 2026-08-24 | 4 | ✗ | OOM fix: patch Orchestrators.Orchestrator to call H.scoreboard.prune_terminal() each tick |
-| **365** | | | | **1868** | **365** | |
+| [1365](/elements/002-helium/acuranzo/migrations/acuranzo_1365.lua) | scripts | 1.0.0 | 2026-08-26 | 12 | ✗ | MCP Phase 8: scripts.mcp_access allowlist + mcp_schema / mcp_annotations |
+| [1366](/elements/002-helium/acuranzo/migrations/acuranzo_1366.lua) | queries | 1.0.0 | 2026-08-26 | 4 | ✗ | QueryRef #152 - List MCP Scripts (MCP Phase 8) |
+| [1367](/elements/002-helium/acuranzo/migrations/acuranzo_1367.lua) | queries | 1.0.0 | 2026-08-26 | 4 | ✗ | QueryRef #153 - Get MCP Script by Group/Name (MCP Phase 8) |
+| [1368](/elements/002-helium/acuranzo/migrations/acuranzo_1368.lua) | scripts | 1.0.0 | 2026-08-26 | 4 | ✗ | MCP Phase 10: seed Mcp.Helpers (content-block / tool_error shapes) |
+| [1369](/elements/002-helium/acuranzo/migrations/acuranzo_1369.lua) | scripts | 1.0.0 | 2026-08-26 | 4 | ✗ | MCP Phase 10: seed Mcp.Server protocol script |
+| [1370](/elements/002-helium/acuranzo/migrations/acuranzo_1370.lua) | scripts | 1.0.0 | 2026-08-26 | 4 | ✗ | MCP Phase 10: seed Mcp.Echo fixture tool |
+| [1371](/elements/002-helium/acuranzo/migrations/acuranzo_1371.lua) | scripts | 1.0.0 | 2026-08-26 | 4 | ✗ | MCP Phase 10: seed Mcp.EchoStrict (tool-level isError on bad args) |
+| [1372](/elements/002-helium/acuranzo/migrations/acuranzo_1372.lua) | scripts | 1.0.0 | 2026-08-26 | 4 | ✗ | MCP Phase 10: seed Mcp.Sleep (timeout / cancel fixture) |
+| **373** | | | | **1908** | **373** | |

@@ -51,6 +51,7 @@ void mcp_stats_inc_rpc_received(void);
 void mcp_stats_inc_rpc_succeeded(void);
 void mcp_stats_inc_rpc_failed(void);
 void mcp_stats_add_rpc_in_flight(int delta);
+unsigned long long mcp_stats_get_rpc_in_flight(void);
 void mcp_stats_inc_auth_rejected(McpAuthRejectReason reason);
 void mcp_stats_inc_origin_rejected(void);
 void mcp_stats_inc_dispatch_timeouts(void);
