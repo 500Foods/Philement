@@ -693,6 +693,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [oidc_rp_helpers_roles.sh](/elements/001-hydrogen/hydrogen/tests/lib/oidc_rp_helpers_roles.sh) - OIDC RP role mapping testing utilities
   - [conduit_utils.sh](/elements/001-hydrogen/hydrogen/tests/lib/conduit_utils.sh) - Conduit endpoint testing utilities
   - [mailrelay_api_helpers.sh](/elements/001-hydrogen/hydrogen/tests/lib/mailrelay_api_helpers.sh) - Mail Relay API blackbox helpers (test_58)
+  - [mcp_helpers.sh](/elements/001-hydrogen/hydrogen/tests/lib/mcp_helpers.sh) - MCP Streamable HTTP blackbox helpers (test_47)
 
 </details>
 

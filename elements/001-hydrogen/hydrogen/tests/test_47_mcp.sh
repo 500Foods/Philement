@@ -4,22 +4,15 @@
 # Real hydrogen, Hydrogen JWT, Lua Mcp.Server: initialize / tools / call / session.
 
 # FUNCTIONS
-# api_request()
-# mcp_http()
-# extract_jwt()
-# header_value()
-# wait_ready()
-# b64url_encode()
-# b64url_decode()
-# mint_hijack_jwt()
-# token_hash()
-# prepare_sqlite_config()
-# record_case()
+# (Helpers live in tests/lib/mcp_helpers.sh)
 # run_engine()
 # analyze_engine()
 # run_disabled()
 
 # CHANGELOG
+# 1.1.5 - 2026-08-27 - Split HTTP/JWT/SQLite helpers into tests/lib/mcp_helpers.sh
+# 1.1.4 - 2026-08-27 - Suite-load: LOGINMAXATTEMPTS 100000 + Fast/Medium/Cache queues (match test_40); retry login on 401/empty JWT so a 15m IP block from test 46 cannot fail the engine.  Retry tools/resources/prompts list (QueryRef 152 empty).
+# 1.1.3 - 2026-08-27 - Extra auth/parse/list cases (malformed Bearer, nested _hydrogen in arguments, invalid JSON, tools/list cursor)
 # 1.1.2 - 2026-08-27 - Fail engines that cannot load Mcp.Server (no skip-pass)
 # 1.1.1 - 2026-08-27 - Phase 15 required on all engines (1375 applied)
 # 1.1.0 - 2026-08-27 - Phase 15 resources/list+read, prompts/list+get
@@ -32,7 +25,7 @@ TEST_NAME="MCP Server"
 TEST_ABBR="MCP"
 TEST_NUMBER="47"
 TEST_COUNTER=0
-TEST_VERSION="1.1.2"
+TEST_VERSION="1.1.5"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -40,6 +33,8 @@ setup_test_environment
 
 # shellcheck source=tests/lib/scripting_helpers.sh # Start/shutdown helpers shared with test_43
 source "$(dirname "${BASH_SOURCE[0]}")/lib/scripting_helpers.sh"
+# shellcheck source=tests/lib/mcp_helpers.sh # Split for the 1000-line cap
+source "$(dirname "${BASH_SOURCE[0]}")/lib/mcp_helpers.sh"
 
 declare -a PARALLEL_PIDS
 declare -A SCRIPT_TEST_CONFIGS
@@ -73,215 +68,6 @@ BASELINE_SQLITE="${PROJECT_DIR}/tests/artifacts/database/sqlite/hydrodemo.sqlite
 : "${HYDROGEN_DEMO_API_KEY:=}"
 # shellcheck disable=SC2154 # Set externally via ~/.zshrc or CI
 : "${HYDROGEN_DEMO_JWT_KEY:=}"
-
-api_request() {
-    local method="$1"
-    local url="$2"
-    local data="$3"
-    local output_file="$4"
-    local jwt_token="${5:-}"
-    local max_time="${6:-${HTTP_TIMEOUT}}"
-    local max_retries=5
-    local retry=1
-    local http_status="000"
-
-    while [[ "${retry}" -le "${max_retries}" ]]; do
-        local curl_cmd=(curl -s -X "${method}" -H "Content-Type: application/json"
-            --connect-timeout 10 --max-time "${max_time}" -w "%{http_code}" -o "${output_file}")
-        if [[ -n "${jwt_token}" ]]; then
-            curl_cmd+=(-H "Authorization: Bearer ${jwt_token}")
-        fi
-        if [[ "${method}" != "GET" && "${method}" != "DELETE" && -n "${data}" ]]; then
-            curl_cmd+=(-d "${data}")
-        fi
-        curl_cmd+=("${url}")
-        # shellcheck disable=SC2312 # Intentionally swallow curl exit code; we use the HTTP status
-        http_status=$("${curl_cmd[@]}" 2>/dev/null || true)
-        http_status="${http_status:-000}"
-
-        if [[ "${http_status}" == "000" || \
-              "${http_status}" == 5* || \
-              "${http_status}" == "408" || \
-              "${http_status}" == "429" ]]; then
-            if [[ "${retry}" -eq "${max_retries}" ]]; then
-                break
-            fi
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP ${http_status} from ${method} ${url}, retrying (${retry}/${max_retries})..."
-            sleep "${retry}"
-            retry=$(( retry + 1 ))
-            continue
-        fi
-        break
-    done
-
-    echo "${http_status}"
-}
-
-mcp_http() {
-    local method="$1"
-    local url="$2"
-    local data="$3"
-    local output_file="$4"
-    local header_file="$5"
-    local jwt_token="${6:-}"
-    local session_id="${7:-}"
-    local origin="${8:-}"
-    local max_time="${9:-${HTTP_TIMEOUT}}"
-    local max_retries=5
-    local retry=1
-    local http_status="000"
-
-    while [[ "${retry}" -le "${max_retries}" ]]; do
-        local curl_cmd=(curl -s -X "${method}" -H "Content-Type: application/json"
-            --connect-timeout 10 --max-time "${max_time}"
-            -D "${header_file}" -o "${output_file}" -w "%{http_code}")
-        if [[ -n "${jwt_token}" ]]; then
-            curl_cmd+=(-H "Authorization: Bearer ${jwt_token}")
-        fi
-        if [[ -n "${session_id}" ]]; then
-            curl_cmd+=(-H "Mcp-Session-Id: ${session_id}")
-        fi
-        if [[ -n "${origin}" ]]; then
-            curl_cmd+=(-H "Origin: ${origin}")
-        fi
-        if [[ "${method}" != "GET" && "${method}" != "DELETE" && -n "${data}" ]]; then
-            curl_cmd+=(-d "${data}")
-        fi
-        curl_cmd+=("${url}")
-        # shellcheck disable=SC2312 # Intentionally swallow curl exit code; we use the HTTP status
-        http_status=$("${curl_cmd[@]}" 2>/dev/null || true)
-        http_status="${http_status:-000}"
-
-        if [[ "${http_status}" == "000" || \
-              "${http_status}" == 5* || \
-              "${http_status}" == "408" || \
-              "${http_status}" == "429" ]]; then
-            if [[ "${retry}" -eq "${max_retries}" ]]; then
-                break
-            fi
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP ${http_status} from ${method} ${url}, retrying (${retry}/${max_retries})..."
-            sleep "${retry}"
-            retry=$(( retry + 1 ))
-            continue
-        fi
-        break
-    done
-
-    echo "${http_status}"
-}
-
-extract_jwt() {
-    local response_file="$1"
-    if [[ -f "${response_file}" ]]; then
-        jq -r '.token // empty' "${response_file}" 2>/dev/null || true
-    fi
-}
-
-header_value() {
-    local header_file="$1"
-    local name="$2"
-    if [[ -f "${header_file}" ]]; then
-        "${GREP}" -i "^${name}:" "${header_file}" 2>/dev/null | head -1 | cut -d: -f2- | tr -d '\r' | sed 's/^[[:space:]]*//' || true
-    fi
-}
-
-wait_ready() {
-    local log_file="$1"
-    local timeout="${2:-${READY_TIMEOUT}}"
-    local start_time
-    local now_secs
-    start_time=$("${DATE}" +%s)
-    while true; do
-        if "${GREP}" -q "READY FOR REQUESTS" "${log_file}" 2>/dev/null; then
-            return 0
-        fi
-        now_secs=$("${DATE}" +%s)
-        if (( now_secs - start_time >= timeout )); then
-            return 1
-        fi
-        sleep 0.2
-    done
-}
-
-b64url_encode() {
-    openssl base64 -e -A | tr '+/' '-_' | tr -d '='
-}
-
-b64url_decode() {
-    local s="$1"
-    local mod=$(( ${#s} % 4 ))
-    if [[ "${mod}" -eq 2 ]]; then
-        s="${s}=="
-    elif [[ "${mod}" -eq 3 ]]; then
-        s="${s}="
-    fi
-    printf '%s' "${s}" | tr -- '-_' '+/' | openssl base64 -d -A 2>/dev/null || true
-}
-
-token_hash() {
-    local token="$1"
-    printf '%s' "${token}" | openssl dgst -sha256 -binary | b64url_encode
-}
-
-# Rebuild JWT A with a different sub so session bind rejects it (sqlite only).
-mint_hijack_jwt() {
-    local src_jwt="$1"
-    local secret="$2"
-    local new_sub="$3"
-    local payload_b64 header_b64 payload_json new_payload unsigned sig
-    header_b64=$(printf '%s' "${src_jwt}" | cut -d. -f1)
-    payload_b64=$(printf '%s' "${src_jwt}" | cut -d. -f2)
-    payload_json=$(b64url_decode "${payload_b64}")
-    if [[ -z "${payload_json}" ]]; then
-        return 1
-    fi
-    new_payload=$(printf '%s' "${payload_json}" | jq -c --arg sub "${new_sub}" '.sub = $sub')
-    payload_b64=$(printf '%s' "${new_payload}" | b64url_encode)
-    unsigned="${header_b64}.${payload_b64}"
-    sig=$(printf '%s' "${unsigned}" | openssl dgst -sha256 -hmac "${secret}" -binary | b64url_encode)
-    printf '%s' "${unsigned}.${sig}"
-}
-
-prepare_sqlite_config() {
-    local src_config="$1"
-    local work_dir="$2"
-    local out_config="${work_dir}/config.json"
-    local db_copy="${work_dir}/hydrodemo.sqlite"
-    mkdir -p "${work_dir}"
-    cp -f "${BASELINE_SQLITE}" "${db_copy}"
-    if [[ -f "${BASELINE_SQLITE}-wal" ]]; then
-        cp -f "${BASELINE_SQLITE}-wal" "${db_copy}-wal" 2>/dev/null || true
-    fi
-    if [[ -f "${BASELINE_SQLITE}-shm" ]]; then
-        cp -f "${BASELINE_SQLITE}-shm" "${db_copy}-shm" 2>/dev/null || true
-    fi
-    local seed_n
-    seed_n=$(sqlite3 "${db_copy}" \
-        "SELECT COUNT(*) FROM scripts WHERE group_name='Mcp' AND script_name='Server' AND mcp_access<>0;" \
-        2>/dev/null || echo 0)
-    if [[ "${seed_n}" -lt 1 ]]; then
-        return 1
-    fi
-    jq --arg db "${db_copy}" '
-        .Databases.Connections |= map(
-            if ((.Engine // "") | ascii_downcase) == "sqlite" then
-                .Database = $db | .AutoMigration = false
-            else . end
-        )
-    ' "${src_config}" > "${out_config}"
-    echo "${out_config}"
-}
-
-record_case() {
-    local result_file="$1"
-    local name="$2"
-    local ok="$3"
-    if [[ "${ok}" == "1" ]]; then
-        echo "CASE_PASS=${name}" >> "${result_file}"
-    else
-        echo "CASE_FAIL=${name}" >> "${result_file}"
-    fi
-}
 
 run_engine() {
     local config_file="$1"
@@ -395,6 +181,42 @@ run_engine() {
         echo "GET_PATH_HTTP=${http_st}" >> "${result_file}"
     fi
 
+    # shellcheck disable=SC2312 # curl exit ignored; HTTP code is the signal
+    http_st=$(curl -s -X POST "${mcp_url}" -H "Content-Type: application/json" \
+        -H "Authorization: Basic abc" -d '{"jsonrpc":"2.0","id":1,"method":"ping"}' \
+        --connect-timeout 10 --max-time 10 -o "${body}" -w "%{http_code}" 2>/dev/null || true)
+    http_st="${http_st:-000}"
+    if [[ "${http_st}" == "401" ]]; then
+        record_case "${result_file}" "malformed_auth_401" 1
+    else
+        record_case "${result_file}" "malformed_auth_401" 0
+        echo "MALFORMED_AUTH_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    # shellcheck disable=SC2312 # curl exit ignored; HTTP code is the signal
+    http_st=$(curl -s -X POST "${mcp_url}" -H "Content-Type: application/json" \
+        -H "Authorization: Bearer " -d '{"jsonrpc":"2.0","id":1,"method":"ping"}' \
+        --connect-timeout 10 --max-time 10 -o "${body}" -w "%{http_code}" 2>/dev/null || true)
+    http_st="${http_st:-000}"
+    if [[ "${http_st}" == "401" ]]; then
+        record_case "${result_file}" "empty_bearer_401" 1
+    else
+        record_case "${result_file}" "empty_bearer_401" 0
+        echo "EMPTY_BEARER_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    # shellcheck disable=SC2312 # curl exit ignored; HTTP code is the signal
+    http_st=$(curl -s -X POST "${mcp_url}" -H "Content-Type: application/json" \
+        -H "Authorization: Bearer not-a-jwt" -d 'not-json' \
+        --connect-timeout 10 --max-time 10 -o "${body}" -w "%{http_code}" 2>/dev/null || true)
+    http_st="${http_st:-000}"
+    if [[ "${http_st}" == "400" || "${http_st}" == "401" ]]; then
+        record_case "${result_file}" "invalid_json_rejected" 1
+    else
+        record_case "${result_file}" "invalid_json_rejected" 0
+        echo "INVALID_JSON_HTTP=${http_st}" >> "${result_file}"
+    fi
+
     # --- login ---
     local login_file="${result_file}.login.json"
     local login_payload
@@ -403,9 +225,20 @@ run_engine() {
         --arg password "${HYDROGEN_DEMO_USER_PASS}" \
         --arg api_key "${HYDROGEN_DEMO_API_KEY}" \
         '{database:"Acuranzo",login_id:$login_id,password:$password,api_key:$api_key,tz:"America/Vancouver"}')
-    http_st=$(api_request "POST" "${base_url}/api/auth/login" "${login_payload}" "${login_file}" "" 45)
-    local jwt
-    jwt=$(extract_jwt "${login_file}")
+    local jwt=""
+    local login_try=1
+    while [[ "${login_try}" -le 5 ]]; do
+        # shellcheck disable=SC2312 # Intentionally swallow curl exit code; we use the HTTP status
+        http_st=$(api_request "POST" "${base_url}/api/auth/login" "${login_payload}" "${login_file}" "" 45)
+        jwt=$(extract_jwt "${login_file}")
+        if [[ "${http_st}" == "200" && -n "${jwt}" ]]; then
+            break
+        fi
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+            "${description}: login HTTP ${http_st} (try ${login_try}/5)"
+        sleep "${login_try}"
+        login_try=$(( login_try + 1 ))
+    done
     if [[ "${http_st}" != "200" || -z "${jwt}" ]]; then
         {
             echo "LOGIN_FAILED=1"
@@ -473,12 +306,8 @@ run_engine() {
         echo "PING_HTTP=${http_st}" >> "${result_file}"
     fi
 
-    http_st=$(mcp_http "POST" "${mcp_url}" \
-        '{"jsonrpc":"2.0","id":3,"method":"tools/list","params":{}}' \
-        "${body}" "${hdr}" "${jwt}" "${session}" "" 20)
     local list_ok=0
-    if [[ "${http_st}" == "200" ]] \
-        && jq -e '
+    local tools_filter='
             ([.result.tools[].name] | index("Mcp.Echo"))
             and ([.result.tools[].name] | index("Mcp.EchoStrict"))
             and ([.result.tools[] | select(.name=="Mcp.Echo") | .inputSchema] | length > 0)
@@ -486,7 +315,11 @@ run_engine() {
             and ([.result.tools[].name] | index("Mcp.Helpers") | not)
             and ([.result.tools[].name] | index("Mcp.Info") | not)
             and ([.result.tools[].name] | index("Mcp.Intro") | not)
-        ' "${body}" >/dev/null 2>&1; then
+        '
+    # shellcheck disable=SC2310 # list_ok is scored from the helper return
+    if http_st=$(mcp_expect_jq "${mcp_url}" "${jwt}" "${session}" \
+        '{"jsonrpc":"2.0","id":3,"method":"tools/list","params":{}}' \
+        "${body}" "${hdr}" "${tools_filter}"); then
         list_ok=1
     fi
     if [[ "${list_ok}" -eq 1 ]]; then
@@ -494,6 +327,16 @@ run_engine() {
     else
         record_case "${result_file}" "tools_list" 0
         echo "LIST_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    http_st=$(mcp_http "POST" "${mcp_url}" \
+        '{"jsonrpc":"2.0","id":3,"method":"tools/list","params":{"cursor":"1"}}' \
+        "${body}" "${hdr}" "${jwt}" "${session}" "" 20)
+    if [[ "${http_st}" == "200" ]] && jq -e '.result.tools != null and .error == null' "${body}" >/dev/null 2>&1; then
+        record_case "${result_file}" "tools_list_cursor" 1
+    else
+        record_case "${result_file}" "tools_list_cursor" 0
+        echo "LIST_CURSOR_HTTP=${http_st}" >> "${result_file}"
     fi
 
     if [[ "${list_ok}" -ne 1 ]]; then
@@ -555,6 +398,17 @@ run_engine() {
     else
         record_case "${result_file}" "hydrogen_rejected" 0
         echo "HYDROGEN_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    http_st=$(mcp_http "POST" "${mcp_url}" \
+        '{"jsonrpc":"2.0","id":8,"method":"tools/call","params":{"name":"Mcp.Echo","arguments":{"_hydrogen":{"x":1}}}}' \
+        "${body}" "${hdr}" "${jwt}" "${session}" "" 10)
+    if [[ "${http_st}" == "401" ]] \
+        || { [[ "${http_st}" == "200" ]] && jq -e '.result.isError == true or .error != null' "${body}" >/dev/null 2>&1; }; then
+        record_case "${result_file}" "hydrogen_args_rejected" 1
+    else
+        record_case "${result_file}" "hydrogen_args_rejected" 0
+        echo "HYDROGEN_ARGS_HTTP=${http_st}" >> "${result_file}"
     fi
 
     http_st=$(mcp_http "POST" "${mcp_url}" \
@@ -650,12 +504,11 @@ run_engine() {
     fi
 
     # --- Phase 15 resources / prompts (1375 applied on all engines) ---
-    http_st=$(mcp_http "POST" "${mcp_url}" \
+    # shellcheck disable=SC2310 # resources_list is scored from the helper return
+    if http_st=$(mcp_expect_jq "${mcp_url}" "${jwt}" "${session}" \
         '{"jsonrpc":"2.0","id":20,"method":"resources/list","params":{}}' \
-        "${body}" "${hdr}" "${jwt}" "${session}" "" 20)
-    if [[ "${http_st}" == "200" ]] \
-        && jq -e '([.result.resources[].uri] | index("hydrogen://mcp/info"))' \
-            "${body}" >/dev/null 2>&1; then
+        "${body}" "${hdr}" \
+        '([.result.resources[].uri] | index("hydrogen://mcp/info"))'); then
         record_case "${result_file}" "resources_list" 1
     else
         record_case "${result_file}" "resources_list" 0
@@ -685,12 +538,11 @@ run_engine() {
         echo "RESOURCES_UNK_HTTP=${http_st}" >> "${result_file}"
     fi
 
-    http_st=$(mcp_http "POST" "${mcp_url}" \
+    # shellcheck disable=SC2310 # prompts_list is scored from the helper return
+    if http_st=$(mcp_expect_jq "${mcp_url}" "${jwt}" "${session}" \
         '{"jsonrpc":"2.0","id":23,"method":"prompts/list","params":{}}' \
-        "${body}" "${hdr}" "${jwt}" "${session}" "" 20)
-    if [[ "${http_st}" == "200" ]] \
-        && jq -e '([.result.prompts[].name] | index("Mcp.Intro"))' \
-            "${body}" >/dev/null 2>&1; then
+        "${body}" "${hdr}" \
+        '([.result.prompts[].name] | index("Mcp.Intro"))'); then
         record_case "${result_file}" "prompts_list" 1
     else
         record_case "${result_file}" "prompts_list" 0
@@ -788,9 +640,9 @@ analyze_engine() {
     pass_n=${pass_n:-0}
     fail_n=${fail_n:-0}
 
-    local min_pass=30
+    local min_pass=35
     if [[ "${description}" == "SQLite" ]]; then
-        min_pass=31
+        min_pass=36
     fi
 
     if [[ "${fail_n}" -eq 0 && "${pass_n}" -ge "${min_pass}" ]]; then

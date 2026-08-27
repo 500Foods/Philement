@@ -27,7 +27,7 @@ Validates across all seven database engines (parallel):
 - **Test Name**: Conduit Script
 - **Test Abbreviation**: CSC
 - **Test Number**: 46
-- **Version**: 1.3.2
+- **Version**: 1.3.4
 
 ## Port Assignment
 
@@ -82,6 +82,12 @@ fixtures catch up. The suite **requires** the SQLite full path to pass.
 
 ## Suite-Load Resilience
 
+Configs match test_40 on the shared live DBs: `LOGINMAXATTEMPTS` **100000**
+(default 5 would `block_ip_address` 127.0.0.1 for 15 minutes when tests 41/44
+pollute `failed_attempts`) and dedicated **Fast/Medium/Cache** workers
+(QueryRef **#149** is `QTC_FAST`; with only `Slow.start=2` those invokes fall
+through to the Lead DQM).
+
 Test 46 runs in the same parallel batch (group 4, tests 40–49) as test_41
 (ASAN, 500 concurrent auth requests) and test_44 (native RSS, 5000 concurrent
 auth requests). These siblings create heavy CPU and database contention that
@@ -92,21 +98,16 @@ up to 5 attempts, mirroring the fix already applied to test_40. Definitive
 HTTP responses (2xx, 3xx, 4xx except 408) are never retried — expected error
 codes like 401/404/400 are returned immediately.
 
-The async GET polling uses a **30-second time-based deadline** (via `date +%s`)
+The async GET polling uses a **45-second time-based deadline** (via `DATE +%s`)
 with a **direct curl call** (5s max-time, no retry backoff) instead of
 `api_request`. This is critical because `api_request`'s 5-retry linear backoff
-adds up to **10 seconds of sleep per failed GET**, which would allow only ~3
-polling attempts within the 30s budget. The direct curl call enables
-~0.2s polling intervals, giving many more chances for the async job to
-complete under parallel DB/CPU load from tests 41/44.
+adds up to **10 seconds of sleep per failed GET**, which would starve the
+polling budget. The direct curl call enables ~0.2s polling intervals.
 
 **POST retry on `job_not_found`**: Under heavy parallel DB load (tests 41/44),
-the server may accept an async job (HTTP 202 + `job_id`) but fail to persist it
-to DB2. The GET polling then receives `404 job_not_found` from the server.
-When this happens, the POST is retried up to 2 times, giving the server another
-chance to persist the job when DB connections free up. The `timeout_seconds`
-parameter is raised from 15 to 60 (`ClientInvokeMaxTimeout`) to give the Lua
-worker thread maximum headroom under CPU contention.
+the server may accept an async job (HTTP 202 + `job_id`) but fail to persist it.
+The GET polling then receives `404 job_not_found`. The POST is retried up to 4
+times. `timeout_seconds` is 60 (`ClientInvokeMaxTimeout`) for worker headroom.
 
 ## Related
 

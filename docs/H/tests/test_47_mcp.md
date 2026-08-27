@@ -5,7 +5,8 @@
 The [`test_47_mcp.sh`](/elements/001-hydrogen/hydrogen/tests/test_47_mcp.sh)
 script black-box tests the MCP subsystem over Streamable HTTP: Hydrogen JWT
 login, Lua `Mcp.Server`, fixture tools/resources/prompts, session lifecycle,
-and timeout.
+and timeout. HTTP/JWT/SQLite helpers live in
+[`mcp_helpers.sh`](/elements/001-hydrogen/hydrogen/tests/lib/mcp_helpers.sh).
 
 ## Purpose
 
@@ -40,7 +41,7 @@ Validates across all seven database engines (parallel):
 - **Test Name**: MCP Server
 - **Test Abbreviation**: MCP
 - **Test Number**: 47
-- **Version**: 1.1.2
+- **Version**: 1.1.5
 
 ## Port Assignment
 
@@ -72,6 +73,10 @@ Test 43 / 46). Do not use 547x.
 
 Each enabled config turns on **API** (JWT), **Scripting** (`WorkerCount` 2),
 and **MCP** (`Protocol` `Mcp.Server`, `RequestTimeoutSeconds` 4).
+Connection parameters match test_40: `LOGINMAXATTEMPTS` **100000** and
+Fast/Medium/Cache queue workers (group 4 shares live DBs with tests 41/44).
+Login retries 5× on 401/empty JWT. `tools/list`, `resources/list`, and
+`prompts/list` retry when QueryRef **#152** returns an empty page.
 
 **SQLite** uses an isolated copy of `hydrodemo.sqlite` with AutoMigration off
 so the suite does not mutate the shared fixture. The copy must already

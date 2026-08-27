@@ -63,6 +63,7 @@ These libraries provide testing utilities for the OIDC Relying Party endpoints (
 
 - **[Conduit Utils Library](/docs/H/tests/conduit_utils.md)** - Conduit endpoint testing utilities, server lifecycle management. [Script](/elements/001-hydrogen/hydrogen/tests/lib/conduit_utils.sh)
 - **MailRelay API Helpers** - Shared Mail Relay API blackbox helpers for test_58. [Script](/elements/001-hydrogen/hydrogen/tests/lib/mailrelay_api_helpers.sh)
+- **MCP Helpers** - MCP Streamable HTTP blackbox helpers for test_47. [Script](/elements/001-hydrogen/hydrogen/tests/lib/mcp_helpers.sh)
 
 ## Related Documentation
 

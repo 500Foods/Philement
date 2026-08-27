@@ -31,6 +31,10 @@ void test_call_denied(void);
 void test_call_inline_ok_no_submit(void);
 void test_call_reserved_key(void);
 void test_call_child_error_destroys(void);
+void test_call_name_required_and_parse_fail(void);
+void test_call_no_args_table(void);
+void test_call_no_set_result(void);
+void test_call_parent_hydrogen_nontable(void);
 
 void setUp(void) {
     memset(&mock_app_config_storage, 0, sizeof(mock_app_config_storage));
@@ -113,11 +117,89 @@ void test_call_child_error_destroys(void) {
     H_lua_destroy_context(L);
 }
 
+void test_call_name_required_and_parse_fail(void) {
+    lua_State* L;
+    int rc;
+
+    L = H_lua_create_context();
+    TEST_ASSERT_NOT_NULL(L);
+    rc = luaL_dostring(L,
+        "r, e = H.mcp.call()\n"
+        "assert(r == nil and e:find('name required', 1, true))\n"
+        "r, e = H.mcp.call('noperiod')\n"
+        "assert(r == nil and e == 'not found')\n"
+        "return true\n");
+    TEST_ASSERT_EQUAL_MESSAGE(LUA_OK, rc, lua_tostring(L, -1));
+    H_lua_destroy_context(L);
+}
+
+void test_call_no_args_table(void) {
+    lua_State* L;
+    int rc;
+
+    H_lua_mcp_fetch_source_hook = fetch_echo;
+    L = H_lua_create_context();
+    TEST_ASSERT_NOT_NULL(L);
+    rc = luaL_dostring(L,
+        "r, e = H.mcp.call('Mcp.Echo')\n"
+        "assert(e == nil)\n"
+        "assert(r.has_h == false)\n"
+        "return true\n");
+    TEST_ASSERT_EQUAL_MESSAGE(LUA_OK, rc, lua_tostring(L, -1));
+    H_lua_destroy_context(L);
+}
+
+static char* fetch_no_result(const char* group, const char* name) {
+    (void)group;
+    (void)name;
+    return strdup("return 1\n");
+}
+
+void test_call_no_set_result(void) {
+    lua_State* L;
+    int rc;
+
+    H_lua_mcp_fetch_source_hook = fetch_no_result;
+    L = H_lua_create_context();
+    TEST_ASSERT_NOT_NULL(L);
+    rc = luaL_dostring(L,
+        "r, e = H.mcp.call('Mcp.Echo', {})\n"
+        "assert(e == nil)\n"
+        "assert(type(r) == 'table')\n"
+        "return true\n");
+    TEST_ASSERT_EQUAL_MESSAGE(LUA_OK, rc, lua_tostring(L, -1));
+    H_lua_destroy_context(L);
+}
+
+void test_call_parent_hydrogen_nontable(void) {
+    lua_State* L;
+    int rc;
+
+    H_lua_mcp_fetch_source_hook = fetch_echo;
+    L = H_lua_create_context();
+    TEST_ASSERT_NOT_NULL(L);
+    rc = luaL_dostring(L,
+        "params = { _hydrogen = 'not-a-table' }\n"
+        "r, e = H.mcp.call('Mcp.Echo', { msg = 'x' })\n"
+        "assert(e == nil)\n"
+        "assert(r.has_h == false)\n"
+        "params = 'nope'\n"
+        "r, e = H.mcp.call('Mcp.Echo', { msg = 'y' })\n"
+        "assert(e == nil)\n"
+        "return true\n");
+    TEST_ASSERT_EQUAL_MESSAGE(LUA_OK, rc, lua_tostring(L, -1));
+    H_lua_destroy_context(L);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_call_denied);
     RUN_TEST(test_call_inline_ok_no_submit);
     RUN_TEST(test_call_reserved_key);
     RUN_TEST(test_call_child_error_destroys);
+    RUN_TEST(test_call_name_required_and_parse_fail);
+    RUN_TEST(test_call_no_args_table);
+    RUN_TEST(test_call_no_set_result);
+    RUN_TEST(test_call_parent_hydrogen_nontable);
     return UNITY_END();
 }
