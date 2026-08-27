@@ -5,6 +5,7 @@
 # PKCE token, userinfo, refresh, error paths (inverse of Test 42).
 
 # CHANGELOG
+# 2.1.1 - 2026-08-27 - Startup/shutdown waits aligned with group40 (90s/30s).
 # 2.1.0 - 2026-07-28 - Introspect/revoke/end-session/register blackbox probes
 # 2.0.0 - 2026-07-23 - Multi-engine parallel (5450-5456), test_40 pattern
 # 1.0.2 - 2026-07-23 - Phase 15: state required, bad scheme, missing nonce
@@ -17,7 +18,7 @@ TEST_NAME="OIDC Identity Provider"
 TEST_ABBR="IDP"
 TEST_NUMBER="45"
 TEST_COUNTER=0
-TEST_VERSION="2.1.0"
+TEST_VERSION="2.1.1"
 
 # shellcheck source=tests/lib/framework.sh # Resolve path at runtime via BASH_SOURCE
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -33,8 +34,8 @@ REDIRECT_URI="http://127.0.0.1:5459/cb"
 DEMO_USER_NAME="${HYDROGEN_DEMO_USER_NAME:-}"
 DEMO_USER_PASS="${HYDROGEN_DEMO_USER_PASS:-}"
 
-STARTUP_TIMEOUT=20
-SHUTDOWN_TIMEOUT=15
+STARTUP_TIMEOUT="${GROUP40_STARTUP_TIMEOUT}"
+SHUTDOWN_TIMEOUT="${GROUP40_SHUTDOWN_TIMEOUT}"
 MIGRATION_TIMEOUT=180
 
 declare -a PARALLEL_PIDS
@@ -82,17 +83,19 @@ wait_idp_ready_log() {
 
 wait_idp_http_ready() {
     local base_url="$1"
-    local max_attempts="${2:-60}"
-    local attempt=1
+    local deadline=$(( SECONDS + GROUP40_READY_TIMEOUT ))
     local code
-    while [[ "${attempt}" -le "${max_attempts}" ]]; do
-        code="$(curl -sS -o /dev/null -w '%{http_code}' "${base_url}/.well-known/openid-configuration" 2>/dev/null || echo "000")"
+    while [[ "${SECONDS}" -lt "${deadline}" ]]; do
+        code="$(curl -sS -o /dev/null -w '%{http_code}' \
+            --connect-timeout "${GROUP40_CONNECT_TIMEOUT}" --max-time 15 \
+            "${base_url}/.well-known/openid-configuration" 2>/dev/null || echo "000")"
         if [[ "${code}" == "200" ]]; then
             return 0
         fi
         sleep 0.25
-        attempt=$(( attempt + 1 ))
     done
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+        "INFO delay IdP HTTP not ready after ${GROUP40_READY_TIMEOUT}s"
     return 1
 }
 
@@ -217,8 +220,7 @@ run_idp_test_parallel() {
         echo "JWKS_FAIL" >> "${result_file}"
     fi
 
-    code="$(curl -sS -o "${prefix}_auth_bad.json" -w '%{http_code}' \
-        "${base_url}/oauth/authorize" 2>/dev/null || echo "000")"
+    code="$(group40_curl_to "${prefix}_auth_bad.json" "${base_url}/oauth/authorize")"
     if [[ "${code}" != "200" ]] || grep -qi "error\|invalid" "${prefix}_auth_bad.json" 2>/dev/null; then
         echo "AUTH_BAD_PARAMS_OK" >> "${result_file}"
     else
@@ -336,15 +338,13 @@ run_idp_test_parallel() {
     fi
 
     # Method-not-allowed on POST-only endpoints (GET).
-    code="$(curl -sS -o "${prefix}_intro_get.json" -w '%{http_code}' \
-        "${base_url}/oauth/introspect" 2>/dev/null || echo "000")"
+    code="$(group40_curl_to "${prefix}_intro_get.json" "${base_url}/oauth/introspect")"
     if [[ "${code}" == "405" ]]; then
         echo "INTROSPECT_METHOD_OK" >> "${result_file}"
     else
         echo "INTROSPECT_METHOD_FAIL" >> "${result_file}"
     fi
-    code="$(curl -sS -o "${prefix}_revoke_get.json" -w '%{http_code}' \
-        "${base_url}/oauth/revoke" 2>/dev/null || echo "000")"
+    code="$(group40_curl_to "${prefix}_revoke_get.json" "${base_url}/oauth/revoke")"
     if [[ "${code}" == "405" ]]; then
         echo "REVOKE_METHOD_OK" >> "${result_file}"
     else
@@ -441,7 +441,7 @@ run_idp_test_parallel() {
     # shellcheck disable=SC2310 # pkce optional
     oidc_idp_pkce_pair || true
     local miss_state_hdr="${prefix}_miss_state.hdr"
-    curl -sS -D "${miss_state_hdr}" -o /dev/null \
+    group40_curl_to /dev/null -D "${miss_state_hdr}" \
         -X POST "${base_url}/oauth/authorize" \
         -H "Content-Type: application/x-www-form-urlencoded" \
         --data-urlencode "client_id=${CLIENT_ID}" \
@@ -452,7 +452,7 @@ run_idp_test_parallel() {
         --data-urlencode "code_challenge=${OIDC_IDP_CODE_CHALLENGE:-x}" \
         --data-urlencode "code_challenge_method=S256" \
         --data-urlencode "username=${DEMO_USER_NAME}" \
-        --data-urlencode "password=${DEMO_USER_PASS}" 2>/dev/null || true
+        --data-urlencode "password=${DEMO_USER_PASS}" >/dev/null
     local loc_ms
     loc_ms="$(oidc_idp_location_from_headers "${miss_state_hdr}")"
     if [[ -z "${loc_ms}" || "${loc_ms}" != *code=* ]]; then
@@ -464,7 +464,7 @@ run_idp_test_parallel() {
     # shellcheck disable=SC2310 # pkce optional
     oidc_idp_pkce_pair || true
     local miss_nonce_hdr="${prefix}_miss_nonce.hdr"
-    curl -sS -D "${miss_nonce_hdr}" -o /dev/null \
+    group40_curl_to /dev/null -D "${miss_nonce_hdr}" \
         -X POST "${base_url}/oauth/authorize" \
         -H "Content-Type: application/x-www-form-urlencoded" \
         --data-urlencode "client_id=${CLIENT_ID}" \
@@ -475,7 +475,7 @@ run_idp_test_parallel() {
         --data-urlencode "code_challenge=${OIDC_IDP_CODE_CHALLENGE:-x}" \
         --data-urlencode "code_challenge_method=S256" \
         --data-urlencode "username=${DEMO_USER_NAME}" \
-        --data-urlencode "password=${DEMO_USER_PASS}" 2>/dev/null || true
+        --data-urlencode "password=${DEMO_USER_PASS}" >/dev/null
     local loc_mn
     loc_mn="$(oidc_idp_location_from_headers "${miss_nonce_hdr}")"
     if [[ -z "${loc_mn}" || "${loc_mn}" != *code=* ]]; then

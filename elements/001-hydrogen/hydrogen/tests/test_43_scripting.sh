@@ -43,6 +43,7 @@
 # start_mock_llm / stop_mock_llm
 
 # CHANGELOG
+# 2.7.2 - 2026-08-27 - Startup/shutdown waits aligned with group40 (90s/30s).
 # 2.7.1 - 2026-08-24 - Added RSS growth monitoring and prune_terminal wiring
 #                      assertion to catch unbounded scoreboard growth (the
 #                      OOM precondition). Extended tick_settle to 10s so the
@@ -71,11 +72,14 @@ TEST_NAME="Scripting  {BLUE}engines: 7{RESET}"
 TEST_ABBR="SCR"
 TEST_NUMBER="43"
 TEST_COUNTER=0
-TEST_VERSION="2.7.1"
+TEST_VERSION="2.7.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
+
+# shellcheck source=tests/lib/group40_http.sh # Shared 40-series HTTP timing
+[[ -n "${GROUP40_HTTP_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/group40_http.sh"
 
 # Mock LLM (shared by SQLite fixture rewrites; port outside test_59's 15901)
 MOCK_LLM_PORT=15439
@@ -164,8 +168,8 @@ SCRIPTING_TEST_CONFIGS=(
 
 # Timeouts (seconds). Fixtures are assumed pre-migrated, so READY is
 # quick; the fail-fast path keeps a broken engine from blocking here.
-STARTUP_TIMEOUT=60
-SHUTDOWN_TIMEOUT=15
+STARTUP_TIMEOUT="${GROUP40_STARTUP_TIMEOUT}"
+SHUTDOWN_TIMEOUT="${GROUP40_SHUTDOWN_TIMEOUT}"
 # Extended settle gives the Orchestrator enough ticks to exercise
 # the prune_terminal path (each tick when idle submits a one-shot
 # orchestrator.tick job that immediately goes terminal and gets pruned).

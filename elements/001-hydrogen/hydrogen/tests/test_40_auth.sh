@@ -22,6 +22,9 @@
 # analyze_auth_test_results()
 
 # CHANGELOG
+# 1.9.3 - 2026-08-27 - Longer single-shot HTTP (90s); retry 000 only; INFO delay lines.
+# 1.9.2 - 2026-08-27 - Retry 401 only when expecting 200 (login); 12 tries.
+# 1.9.1 - 2026-08-27 - Suite-load: HTTP ready 90s + connect-timeout; login retries 401/000.
 # 1.9.0 - 2026-07-24 - Suite-load resilience: curl max-time 45s, 5 retries with backoff on
 #                    - 000/5xx; Medium/Fast queue workers raised in configs (server-side
 #                    - soft auth timeouts + per-query watchdog cancel land separately)
@@ -64,11 +67,13 @@ TEST_NAME="Auth"
 TEST_ABBR="JWT"
 TEST_NUMBER="40"
 TEST_COUNTER=0
-TEST_VERSION="1.9.0"
+TEST_VERSION="1.9.3"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
+# shellcheck source=tests/lib/group40_http.sh # Shared 40-series HTTP timing
+[[ -n "${GROUP40_HTTP_GUARD:-}" ]] || source "${SCRIPT_DIR}/lib/group40_http.sh"
 
 # shellcheck source=tests/lib/transaction_utils.sh # DML commit/rollback probe helpers
 [[ -n "${TRANSACTION_UTILS_GUARD:-}" ]] || source "${SCRIPT_DIR}/lib/transaction_utils.sh"
@@ -89,8 +94,8 @@ AUTH_TEST_CONFIGS=(
 )
 
 # Test timeouts (seconds)
-STARTUP_TIMEOUT=15
-SHUTDOWN_TIMEOUT=15
+STARTUP_TIMEOUT="${GROUP40_STARTUP_TIMEOUT}"
+SHUTDOWN_TIMEOUT="${GROUP40_SHUTDOWN_TIMEOUT}"
 MIGRATION_TIMEOUT=180
 
 # Demo credentials from environment variables (set in shell and used in migrations)
@@ -115,50 +120,28 @@ validate_auth_request() {
     local expected_status="$4"
     local output_file="$5"
     local jwt_token="${6:-}"  # Optional JWT token for authenticated requests
-    # Under suite-parallel DB load (tests 41/44) a single attempt can miss while
-    # the engine recovers from a cancelled hung statement. Prefer retry over flake.
-    local max_retries=5
-    local retry=1
+    local http_status
+    http_status=$(group40_curl "${method}" "${url}" "${output_file}" "${data}" "${jwt_token}" \
+        "${GROUP40_HTTP_MAX_TIME}")
 
-    while [[ "${retry}" -le "${max_retries}" ]]; do
-        # Build curl command with optional Authorization header
-        local curl_cmd=(curl -s -X "${method}" -H "Content-Type: application/json")
+    if [[ "${http_status}" == "${expected_status}" ]]; then
+        return 0
+    fi
 
-        # Add Authorization header if JWT token is provided
-        if [[ -n "${jwt_token}" ]]; then
-            curl_cmd+=(-H "Authorization: Bearer ${jwt_token}")
-        fi
-
-        # 45s > critical auth budget (~20s/query) so a slow but successful path
-        # is not abandoned by the client before the server answers.
-        curl_cmd+=(-d "${data}" -w "%{http_code}" -o "${output_file}" --compressed --max-time 45 "${url}")
-
-        # Run curl and capture HTTP status
-        local http_status
-        http_status=$("${curl_cmd[@]}" 2>/dev/null)
-
+    # Login congestion can surface as 401; one extra wait, not a timeout retry.
+    if [[ "${http_status}" == "401" && "${expected_status}" == "200" ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+            "INFO delay auth 401 then wait 2s (expected 200) ${url}"
+        sleep 2
+        http_status=$(group40_curl "${method}" "${url}" "${output_file}" "${data}" "${jwt_token}" \
+            "${GROUP40_HTTP_MAX_TIME}")
         if [[ "${http_status}" == "${expected_status}" ]]; then
             return 0
         fi
+    fi
 
-        # Do not retry on clear client errors (4xx except 408/429)
-        if [[ "${http_status}" == "4"* ]] && \
-           [[ "${http_status}" != "408" ]] && \
-           [[ "${http_status}" != "429" ]]; then
-            return 1
-        fi
-
-        # Last retry exhausted
-        if [[ "${retry}" -eq "${max_retries}" ]]; then
-            return 1
-        fi
-
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Auth request returned HTTP ${http_status}, retrying (${retry}/${max_retries})..."
-        # Back off so concurrent exercise traffic can drain before the next try
-        sleep "${retry}"
-        retry=$(( retry + 1 ))
-    done
-
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+        "INFO delay auth got HTTP ${http_status} expected ${expected_status} ${url}"
     return 1
 }
 
@@ -318,21 +301,26 @@ EOF
 # Function to wait for auth server to be ready for HTTP requests
 wait_for_auth_server_ready() {
     local base_url="$1"
-    local max_attempts=300
-    local attempt=1
+    local t0 t1 elapsed
+    t0="${EPOCHREALTIME:-0}"
+    local deadline=$(( SECONDS + GROUP40_READY_TIMEOUT ))
 
-    while [[ "${attempt}" -le "${max_attempts}" ]]; do
+    while [[ "${SECONDS}" -lt "${deadline}" ]]; do
         local http_code
-        http_code=$(curl -s -w "%{http_code}" -o /dev/null --max-time 2 "${base_url}/api/version" 2>/dev/null)
+        http_code=$(curl -s -w "%{http_code}" -o /dev/null \
+            --connect-timeout "${GROUP40_CONNECT_TIMEOUT}" --max-time 15 \
+            "${base_url}/api/version" 2>/dev/null || true)
         if [[ "${http_code}" == "200" ]]; then
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Auth server ready after ${attempt} attempt(s)"
+            t1="${EPOCHREALTIME:-0}"
+            elapsed=$(awk -v a="${t0}" -v b="${t1}" 'BEGIN {printf "%.3f", b-a}')
+            group40_log_delay "${elapsed}" "auth HTTP ready ${base_url}/api/version"
             return 0
         fi
-        sleep 0.1
-        attempt=$(( attempt + 1 ))
+        sleep 0.2
     done
 
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Auth server not ready after ${max_attempts} attempts"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+        "INFO delay auth server not HTTP-ready after ${GROUP40_READY_TIMEOUT}s"
     return 1
 }
 

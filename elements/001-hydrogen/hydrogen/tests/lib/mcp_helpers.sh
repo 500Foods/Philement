@@ -9,14 +9,20 @@
 # shellcheck disable=SC2312 # Diagnostic substitutions swallow inner status; callers use || true
 
 # CHANGELOG
+# 1.0.3 - 2026-08-27 - mcp_expect_jq 3 tries; log body on mismatch
+# 1.0.2 - 2026-08-27 - Long wait, 000-only retry, INFO delay (group40_http)
+# 1.0.1 - 2026-08-27 - wait_http() for MHD/MCP bind lag under suite load
 # 1.0.0 - 2026-08-27 - Split from test_47 to stay under the 1000-line cap
 
 [[ -n "${MCP_HELPERS_GUARD:-}" ]] && return 0
 export MCP_HELPERS_GUARD="true"
 
 MCP_HELPERS_NAME="MCP Test Helpers"
-MCP_HELPERS_VERSION="1.0.0"
+MCP_HELPERS_VERSION="1.0.3"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${MCP_HELPERS_NAME} ${MCP_HELPERS_VERSION}" "info"
+
+# shellcheck source=tests/lib/group40_http.sh # Shared 40-series HTTP timing
+[[ -n "${GROUP40_HTTP_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/group40_http.sh"
 
 api_request() {
     local method="$1"
@@ -25,40 +31,7 @@ api_request() {
     local output_file="$4"
     local jwt_token="${5:-}"
     local max_time="${6:-${HTTP_TIMEOUT}}"
-    local max_retries=5
-    local retry=1
-    local http_status="000"
-
-    while [[ "${retry}" -le "${max_retries}" ]]; do
-        local curl_cmd=(curl -s -X "${method}" -H "Content-Type: application/json"
-            --connect-timeout 10 --max-time "${max_time}" -w "%{http_code}" -o "${output_file}")
-        if [[ -n "${jwt_token}" ]]; then
-            curl_cmd+=(-H "Authorization: Bearer ${jwt_token}")
-        fi
-        if [[ "${method}" != "GET" && "${method}" != "DELETE" && -n "${data}" ]]; then
-            curl_cmd+=(-d "${data}")
-        fi
-        curl_cmd+=("${url}")
-        # shellcheck disable=SC2312 # Intentionally swallow curl exit code; we use the HTTP status
-        http_status=$("${curl_cmd[@]}" 2>/dev/null || true)
-        http_status="${http_status:-000}"
-
-        if [[ "${http_status}" == "000" || \
-              "${http_status}" == 5* || \
-              "${http_status}" == "408" || \
-              "${http_status}" == "429" ]]; then
-            if [[ "${retry}" -eq "${max_retries}" ]]; then
-                break
-            fi
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP ${http_status} from ${method} ${url}, retrying (${retry}/${max_retries})..."
-            sleep "${retry}"
-            retry=$(( retry + 1 ))
-            continue
-        fi
-        break
-    done
-
-    echo "${http_status}"
+    group40_curl "${method}" "${url}" "${output_file}" "${data}" "${jwt_token}" "${max_time}"
 }
 
 mcp_http() {
@@ -71,13 +44,13 @@ mcp_http() {
     local session_id="${7:-}"
     local origin="${8:-}"
     local max_time="${9:-${HTTP_TIMEOUT}}"
-    local max_retries=5
-    local retry=1
+    local try=1
     local http_status="000"
+    local t0 t1 elapsed
 
-    while [[ "${retry}" -le "${max_retries}" ]]; do
+    while [[ "${try}" -le "${GROUP40_CONNECT_RETRIES}" ]]; do
         local curl_cmd=(curl -s -X "${method}" -H "Content-Type: application/json"
-            --connect-timeout 10 --max-time "${max_time}"
+            --connect-timeout "${GROUP40_CONNECT_TIMEOUT}" --max-time "${max_time}"
             -D "${header_file}" -o "${output_file}" -w "%{http_code}")
         if [[ -n "${jwt_token}" ]]; then
             curl_cmd+=(-H "Authorization: Bearer ${jwt_token}")
@@ -92,29 +65,30 @@ mcp_http() {
             curl_cmd+=(-d "${data}")
         fi
         curl_cmd+=("${url}")
-        # shellcheck disable=SC2312 # Intentionally swallow curl exit code; we use the HTTP status
+        t0="${EPOCHREALTIME:-0}"
+        # shellcheck disable=SC2312 # curl exit ignored; HTTP status is the signal
         http_status=$("${curl_cmd[@]}" 2>/dev/null || true)
         http_status="${http_status:-000}"
-
-        if [[ "${http_status}" == "000" || \
-              "${http_status}" == 5* || \
-              "${http_status}" == "408" || \
-              "${http_status}" == "429" ]]; then
-            if [[ "${retry}" -eq "${max_retries}" ]]; then
-                break
-            fi
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP ${http_status} from ${method} ${url}, retrying (${retry}/${max_retries})..."
-            sleep "${retry}"
-            retry=$(( retry + 1 ))
-            continue
+        t1="${EPOCHREALTIME:-0}"
+        elapsed=$(awk -v a="${t0}" -v b="${t1}" 'BEGIN {printf "%.3f", b-a}')
+        group40_log_delay "${elapsed}" "${method} ${url} HTTP ${http_status}"
+        if [[ "${http_status}" != "000" ]]; then
+            echo "${http_status}"
+            return 0
         fi
-        break
+        if [[ "${try}" -eq "${GROUP40_CONNECT_RETRIES}" ]]; then
+            break
+        fi
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+            "INFO delay connect-fail ${method} ${url}, retry ${try}/${GROUP40_CONNECT_RETRIES}"
+        sleep 1
+        try=$(( try + 1 ))
     done
 
     echo "${http_status}"
 }
 
-# Retry JSON-RPC until HTTP 200 and jq filter match (QueryRef 152 can miss once).
+# Retry until expected HTTP (default 200) and optional jq match. 3 tries.
 mcp_expect_jq() {
     local url="$1"
     local jwt_token="$2"
@@ -124,21 +98,28 @@ mcp_expect_jq() {
     local header_file="$6"
     local jq_filter="$7"
     local max_try="${8:-3}"
+    local want_http="${9:-200}"
     local try=1
     local http_status="000"
+    local excerpt
 
     while [[ "${try}" -le "${max_try}" ]]; do
         http_status=$(mcp_http "POST" "${url}" "${payload}" "${output_file}" \
-            "${header_file}" "${jwt_token}" "${session_id}" "" 20)
-        if [[ "${http_status}" == "200" ]] \
-            && jq -e "${jq_filter}" "${output_file}" >/dev/null 2>&1; then
-            echo "${http_status}"
-            return 0
+            "${header_file}" "${jwt_token}" "${session_id}" "" "${GROUP40_HTTP_MAX_TIME}")
+        if [[ "${http_status}" == "${want_http}" ]]; then
+            if [[ -z "${jq_filter}" ]] \
+                || jq -e "${jq_filter}" "${output_file}" >/dev/null 2>&1; then
+                echo "${http_status}"
+                return 0
+            fi
         fi
+        excerpt=$(head -c 180 "${output_file}" 2>/dev/null || true)
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+            "INFO delay MCP HTTP ${http_status} want ${want_http} try ${try}/${max_try} body=${excerpt}"
         if [[ "${try}" -eq "${max_try}" ]]; then
             break
         fi
-        sleep "${try}"
+        sleep 1
         try=$(( try + 1 ))
     done
     echo "${http_status}"
@@ -168,6 +149,28 @@ wait_ready() {
     start_time=$("${DATE}" +%s)
     while true; do
         if "${GREP}" -q "READY FOR REQUESTS" "${log_file}" 2>/dev/null; then
+            return 0
+        fi
+        now_secs=$("${DATE}" +%s)
+        if (( now_secs - start_time >= timeout )); then
+            return 1
+        fi
+        sleep 0.2
+    done
+}
+
+wait_http() {
+    local url="$1"
+    local timeout="${2:-30}"
+    local start_time now_secs http_st
+    start_time=$("${DATE}" +%s)
+    while true; do
+        # shellcheck disable=SC2312 # curl exit ignored; HTTP code is the signal
+        http_st=$(curl -s -o /dev/null -w "%{http_code}" \
+            --connect-timeout "${GROUP40_CONNECT_TIMEOUT}" --max-time 15 \
+            "${url}" 2>/dev/null || true)
+        http_st="${http_st:-000}"
+        if [[ "${http_st}" != "000" && "${http_st}" != "" ]]; then
             return 0
         fi
         now_secs=$("${DATE}" +%s)

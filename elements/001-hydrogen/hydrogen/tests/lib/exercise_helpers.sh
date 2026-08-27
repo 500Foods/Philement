@@ -6,14 +6,19 @@
 # shellcheck disable=SC2154 # Globals (TEST_NUMBER, TEST_COUNTER, GREP) set by framework before sourcing
 
 # CHANGELOG
+# 1.0.2 - 2026-08-27 - Scrape INFO delay; flood connect-timeout; source group40.
+# 1.0.1 - 2026-08-27 - Auth flood max-time 5s -> 15s (wait, do not retry).
 # 1.0.0 - 2026-07-09 - Extracted from test_41_exercise.sh for ASAN/native split
 
 [[ -n "${EXERCISE_HELPERS_GUARD:-}" ]] && return 0
 export EXERCISE_HELPERS_GUARD="true"
 
 EXERCISE_HELPERS_NAME="Exercise Test Helpers"
-EXERCISE_HELPERS_VERSION="1.0.0"
+EXERCISE_HELPERS_VERSION="1.0.2"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${EXERCISE_HELPERS_NAME} ${EXERCISE_HELPERS_VERSION}" "info"
+
+# shellcheck source=tests/lib/group40_http.sh # Shared 40-series HTTP timing
+[[ -n "${GROUP40_HTTP_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/group40_http.sh"
 
 # Defaults (callers may override before first scrape).
 # Force numeric defaults: suite-parallel sourcing can leave empty/non-numeric
@@ -62,13 +67,18 @@ scrape_metrics() {
         if [[ -n "${tmp_body}" ]]; then
             : > "${tmp_body}"
             # shellcheck disable=SC2034 # http_code used for 200 check below
+            local t0 t1 elapsed
+            t0="${EPOCHREALTIME:-0}"
             http_code=$(curl -sS -o "${tmp_body}" -w "%{http_code}" \
-                --connect-timeout 5 \
+                --connect-timeout "${GROUP40_CONNECT_TIMEOUT}" \
                 --max-time "${curl_timeout}" \
                 "${prom_url}" 2>/dev/null || echo "000")
+            t1="${EPOCHREALTIME:-0}"
+            elapsed=$(awk -v a="${t0}" -v b="${t1}" 'BEGIN {printf "%.3f", b-a}')
+            group40_log_delay "${elapsed}" "scrape ${prom_url} HTTP ${http_code}"
             response=$(cat "${tmp_body}" 2>/dev/null || true)
         else
-            response=$(curl -s --connect-timeout 5 --max-time "${curl_timeout}" \
+            response=$(curl -s --connect-timeout "${GROUP40_CONNECT_TIMEOUT}" --max-time "${curl_timeout}" \
                 "${prom_url}" 2>/dev/null || true)
             if [[ -n "${response}" ]]; then
                 http_code="200"
@@ -115,7 +125,7 @@ run_auth_request() {
     fi
 
     curl -s -X POST -H "Content-Type: application/json" \
-        -d "${login_data}" --max-time 5 --compressed \
+        -d "${login_data}" --connect-timeout "${GROUP40_CONNECT_TIMEOUT}" --max-time 15 --compressed \
         "${url}/api/auth/login" >/dev/null 2>&1 || true
 }
 

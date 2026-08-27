@@ -41,7 +41,7 @@ Validates across all seven database engines (parallel):
 - **Test Name**: MCP Server
 - **Test Abbreviation**: MCP
 - **Test Number**: 47
-- **Version**: 1.1.5
+- **Version**: 1.1.6
 
 ## Port Assignment
 
@@ -75,8 +75,10 @@ Each enabled config turns on **API** (JWT), **Scripting** (`WorkerCount` 2),
 and **MCP** (`Protocol` `Mcp.Server`, `RequestTimeoutSeconds` 4).
 Connection parameters match test_40: `LOGINMAXATTEMPTS` **100000** and
 Fast/Medium/Cache queue workers (group 4 shares live DBs with tests 41/44).
-Login retries 5× on 401/empty JWT. `tools/list`, `resources/list`, and
-`prompts/list` retry when QueryRef **#152** returns an empty page.
+Login retries **8×** on 401/empty JWT/HTTP 000. After READY, wait until
+WebServer `/api/version` and MCP `/healthz` answer (bind lag). `initialize`
+retries on **404/000/5xx**. `tools/list`, `resources/list`, `prompts/list`,
+and unknown-resource **−32602** retry when QueryRef **#152** misses.
 
 **SQLite** uses an isolated copy of `hydrodemo.sqlite` with AutoMigration off
 so the suite does not mutate the shared fixture. The copy must already

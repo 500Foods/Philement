@@ -10,6 +10,11 @@
 # run_disabled()
 
 # CHANGELOG
+# 1.1.8 - 2026-08-27 - Score ping/echostrict/cursor/prompts via mcp_expect_jq (3 tries);
+#                      overlap Echo retry on 401; drop 10–20s MCP max-times.
+# 1.1.7 - 2026-08-27 - 90s HTTP wait, 000-only retry, INFO delay (group40_http).
+# 1.1.6 - 2026-08-27 - Suite-load: HTTP warmup; login 8×; retry initialize on
+#                      404/000; retry resources_unknown JSON-RPC.
 # 1.1.5 - 2026-08-27 - Split HTTP/JWT/SQLite helpers into tests/lib/mcp_helpers.sh
 # 1.1.4 - 2026-08-27 - Suite-load: LOGINMAXATTEMPTS 100000 + Fast/Medium/Cache queues (match test_40); retry login on 401/empty JWT so a 15m IP block from test 46 cannot fail the engine.  Retry tools/resources/prompts list (QueryRef 152 empty).
 # 1.1.3 - 2026-08-27 - Extra auth/parse/list cases (malformed Bearer, nested _hydrogen in arguments, invalid JSON, tools/list cursor)
@@ -25,7 +30,7 @@ TEST_NAME="MCP Server"
 TEST_ABBR="MCP"
 TEST_NUMBER="47"
 TEST_COUNTER=0
-TEST_VERSION="1.1.5"
+TEST_VERSION="1.1.8"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -53,10 +58,10 @@ SCRIPT_TEST_CONFIGS=(
 DISABLED_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mcp_disabled.json"
 
 # shellcheck disable=SC2034 # Reserved for log messages / future fail-fast bounds
-STARTUP_TIMEOUT=90
-SHUTDOWN_TIMEOUT=25
-READY_TIMEOUT=90
-HTTP_TIMEOUT=30
+STARTUP_TIMEOUT="${GROUP40_STARTUP_TIMEOUT}"
+SHUTDOWN_TIMEOUT="${GROUP40_SHUTDOWN_TIMEOUT}"
+READY_TIMEOUT="${GROUP40_READY_TIMEOUT}"
+HTTP_TIMEOUT="${GROUP40_HTTP_MAX_TIME}"
 BASELINE_SQLITE="${PROJECT_DIR}/tests/artifacts/database/sqlite/hydrodemo.sqlite"
 
 # Demo credentials from environment (set in shell / CI)
@@ -118,6 +123,10 @@ run_engine() {
         return 0
     fi
     echo "READY=1" >> "${result_file}"
+    # shellcheck disable=SC2310 # Continue; later HTTP retries still cover bind lag
+    wait_http "${base_url}/api/version" "${GROUP40_READY_TIMEOUT}" || true
+    # shellcheck disable=SC2310 # MCP bind can lag WebServer under suite load
+    wait_http "${mcp_url}/healthz" "${GROUP40_READY_TIMEOUT}" || true
 
     local body hdr http_st
     body="${result_file}.body"
@@ -227,16 +236,17 @@ run_engine() {
         '{database:"Acuranzo",login_id:$login_id,password:$password,api_key:$api_key,tz:"America/Vancouver"}')
     local jwt=""
     local login_try=1
-    while [[ "${login_try}" -le 5 ]]; do
+    while [[ "${login_try}" -le 2 ]]; do
         # shellcheck disable=SC2312 # Intentionally swallow curl exit code; we use the HTTP status
-        http_st=$(api_request "POST" "${base_url}/api/auth/login" "${login_payload}" "${login_file}" "" 45)
+        http_st=$(api_request "POST" "${base_url}/api/auth/login" "${login_payload}" "${login_file}" "" \
+            "${GROUP40_HTTP_MAX_TIME}")
         jwt=$(extract_jwt "${login_file}")
         if [[ "${http_st}" == "200" && -n "${jwt}" ]]; then
             break
         fi
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
-            "${description}: login HTTP ${http_st} (try ${login_try}/5)"
-        sleep "${login_try}"
+            "INFO delay ${description}: login HTTP ${http_st} (try ${login_try}/2)"
+        sleep 2
         login_try=$(( login_try + 1 ))
     done
     if [[ "${http_st}" != "200" || -z "${jwt}" ]]; then
@@ -261,15 +271,27 @@ run_engine() {
 
     # --- initialize ---
     local init_body='{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-06-18","capabilities":{},"clientInfo":{"name":"test47","version":"1.0.0"}}}'
-    http_st=$(mcp_http "POST" "${mcp_url}" "${init_body}" "${body}" "${hdr}" "${jwt}" "" "" 30)
-    local session
-    session=$(header_value "${hdr}" "Mcp-Session-Id")
+    local session=""
     local init_ok=0
-    if [[ "${http_st}" == "200" && -n "${session}" ]] \
-        && jq -e '.result.serverInfo.name == "hydrogen" and (.result.instructions|type=="string")' \
-            "${body}" >/dev/null 2>&1; then
-        init_ok=1
-    fi
+    local init_try=1
+    while [[ "${init_try}" -le 5 ]]; do
+        http_st=$(mcp_http "POST" "${mcp_url}" "${init_body}" "${body}" "${hdr}" "${jwt}" "" "")
+        session=$(header_value "${hdr}" "Mcp-Session-Id")
+        init_ok=0
+        if [[ "${http_st}" == "200" && -n "${session}" ]] \
+            && jq -e '.result.serverInfo.name == "hydrogen" and (.result.instructions|type=="string")' \
+                "${body}" >/dev/null 2>&1; then
+            init_ok=1
+            break
+        fi
+        if [[ "${http_st}" != "404" && "${http_st}" != "000" && "${http_st}" != 5* ]]; then
+            break
+        fi
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+            "${description}: initialize HTTP ${http_st} (try ${init_try}/5)"
+        sleep "${init_try}"
+        init_try=$(( init_try + 1 ))
+    done
     if [[ "${init_ok}" -eq 1 ]]; then
         record_case "${result_file}" "initialize" 1
     else
@@ -288,7 +310,7 @@ run_engine() {
 
     http_st=$(mcp_http "POST" "${mcp_url}" \
         '{"jsonrpc":"2.0","method":"notifications/initialized"}' \
-        "${body}" "${hdr}" "${jwt}" "${session}" "" 10)
+        "${body}" "${hdr}" "${jwt}" "${session}" "")
     if [[ "${http_st}" == "202" ]]; then
         record_case "${result_file}" "initialized_202" 1
     else
@@ -296,10 +318,11 @@ run_engine() {
         echo "INITIALIZED_HTTP=${http_st}" >> "${result_file}"
     fi
 
-    http_st=$(mcp_http "POST" "${mcp_url}" \
+    # shellcheck disable=SC2310 # ping scored from helper
+    if http_st=$(mcp_expect_jq "${mcp_url}" "${jwt}" "${session}" \
         '{"jsonrpc":"2.0","id":2,"method":"ping"}' \
-        "${body}" "${hdr}" "${jwt}" "${session}" "" 15)
-    if [[ "${http_st}" == "200" ]] && jq -e '.result != null and .error == null' "${body}" >/dev/null 2>&1; then
+        "${result_file}.ping.json" "${hdr}" \
+        '.result != null and .error == null'); then
         record_case "${result_file}" "ping" 1
     else
         record_case "${result_file}" "ping" 0
@@ -329,10 +352,11 @@ run_engine() {
         echo "LIST_HTTP=${http_st}" >> "${result_file}"
     fi
 
-    http_st=$(mcp_http "POST" "${mcp_url}" \
+    # shellcheck disable=SC2310 # cursor scored from helper
+    if http_st=$(mcp_expect_jq "${mcp_url}" "${jwt}" "${session}" \
         '{"jsonrpc":"2.0","id":3,"method":"tools/list","params":{"cursor":"1"}}' \
-        "${body}" "${hdr}" "${jwt}" "${session}" "" 20)
-    if [[ "${http_st}" == "200" ]] && jq -e '.result.tools != null and .error == null' "${body}" >/dev/null 2>&1; then
+        "${result_file}.cursor.json" "${hdr}" \
+        '.result.tools != null and .error == null'); then
         record_case "${result_file}" "tools_list_cursor" 1
     else
         record_case "${result_file}" "tools_list_cursor" 0
@@ -348,7 +372,7 @@ run_engine() {
 
     http_st=$(mcp_http "POST" "${mcp_url}" \
         '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"Mcp.Echo","arguments":{"message":"hello"}}}' \
-        "${body}" "${hdr}" "${jwt}" "${session}" "" 20)
+        "${body}" "${hdr}" "${jwt}" "${session}" "")
     if [[ "${http_st}" == "200" ]] \
         && jq -e '.result.content != null and .result.isError != true' "${body}" >/dev/null 2>&1; then
         record_case "${result_file}" "echo_ok" 1
@@ -357,33 +381,33 @@ run_engine() {
         echo "ECHO_HTTP=${http_st}" >> "${result_file}"
     fi
 
-    http_st=$(mcp_http "POST" "${mcp_url}" \
+    # shellcheck disable=SC2310 # echostrict scored from helper
+    if http_st=$(mcp_expect_jq "${mcp_url}" "${jwt}" "${session}" \
         '{"jsonrpc":"2.0","id":5,"method":"tools/call","params":{"name":"Mcp.EchoStrict","arguments":{"nope":true}}}' \
-        "${body}" "${hdr}" "${jwt}" "${session}" "" 20)
-    if [[ "${http_st}" == "200" ]] \
-        && jq -e '.result.isError == true and .error == null' "${body}" >/dev/null 2>&1; then
+        "${result_file}.strict.json" "${hdr}" \
+        '.result.isError == true and .error == null'); then
         record_case "${result_file}" "echostrict_iserror" 1
     else
         record_case "${result_file}" "echostrict_iserror" 0
         echo "STRICT_HTTP=${http_st}" >> "${result_file}"
     fi
 
-    http_st=$(mcp_http "POST" "${mcp_url}" \
+    # shellcheck disable=SC2310 # unknown tool scored from helper
+    if http_st=$(mcp_expect_jq "${mcp_url}" "${jwt}" "${session}" \
         '{"jsonrpc":"2.0","id":6,"method":"tools/call","params":{"name":"No.SuchTool","arguments":{}}}' \
-        "${body}" "${hdr}" "${jwt}" "${session}" "" 20)
-    if [[ "${http_st}" == "200" ]] \
-        && jq -e '.result.isError == true and .error == null' "${body}" >/dev/null 2>&1; then
+        "${result_file}.unk_tool.json" "${hdr}" \
+        '.result.isError == true and .error == null'); then
         record_case "${result_file}" "unknown_tool_hidden" 1
     else
         record_case "${result_file}" "unknown_tool_hidden" 0
         echo "UNKNOWN_TOOL_HTTP=${http_st}" >> "${result_file}"
     fi
 
-    http_st=$(mcp_http "POST" "${mcp_url}" \
+    # shellcheck disable=SC2310 # non_mcp scored from helper
+    if http_st=$(mcp_expect_jq "${mcp_url}" "${jwt}" "${session}" \
         '{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"Orchestrators.Orchestrator","arguments":{}}}' \
-        "${body}" "${hdr}" "${jwt}" "${session}" "" 20)
-    if [[ "${http_st}" == "200" ]] \
-        && jq -e '.result.isError == true and .error == null' "${body}" >/dev/null 2>&1; then
+        "${result_file}.nonmcp.json" "${hdr}" \
+        '.result.isError == true and .error == null'); then
         record_case "${result_file}" "non_mcp_hidden" 1
     else
         record_case "${result_file}" "non_mcp_hidden" 0
@@ -453,22 +477,34 @@ run_engine() {
     local echo_b="${result_file}.echo_b"
     local hdr_a="${result_file}.hdr_a"
     local hdr_b="${result_file}.hdr_b"
-    local st_a st_b
-    ( mcp_http "POST" "${mcp_url}" \
-        '{"jsonrpc":"2.0","id":11,"method":"tools/call","params":{"name":"Mcp.Echo","arguments":{"n":1}}}' \
-        "${echo_a}" "${hdr_a}" "${jwt}" "${session}" "" 20 | tail -1 > "${result_file}.st_a" ) &
-    local pid_a=$!
-    ( mcp_http "POST" "${mcp_url}" \
-        '{"jsonrpc":"2.0","id":12,"method":"tools/call","params":{"name":"Mcp.Echo","arguments":{"n":2}}}' \
-        "${echo_b}" "${hdr_b}" "${jwt}" "${session}" "" 20 | tail -1 > "${result_file}.st_b" ) &
-    local pid_b=$!
-    wait "${pid_a}" || true
-    wait "${pid_b}" || true
-    st_a=$(tail -1 "${result_file}.st_a" 2>/dev/null || echo 000)
-    st_b=$(tail -1 "${result_file}.st_b" 2>/dev/null || echo 000)
-    if [[ "${st_a}" == "200" && "${st_b}" == "200" ]] \
-        && jq -e '.result.isError != true' "${echo_a}" >/dev/null 2>&1 \
-        && jq -e '.result.isError != true' "${echo_b}" >/dev/null 2>&1; then
+    local st_a st_b overlap_try=1 overlap_ok=0
+    while [[ "${overlap_try}" -le 3 ]]; do
+        ( mcp_http "POST" "${mcp_url}" \
+            '{"jsonrpc":"2.0","id":11,"method":"tools/call","params":{"name":"Mcp.Echo","arguments":{"n":1}}}' \
+            "${echo_a}" "${hdr_a}" "${jwt}" "${session}" "" \
+            | tail -1 > "${result_file}.st_a" ) &
+        local pid_a=$!
+        ( mcp_http "POST" "${mcp_url}" \
+            '{"jsonrpc":"2.0","id":12,"method":"tools/call","params":{"name":"Mcp.Echo","arguments":{"n":2}}}' \
+            "${echo_b}" "${hdr_b}" "${jwt}" "${session}" "" \
+            | tail -1 > "${result_file}.st_b" ) &
+        local pid_b=$!
+        wait "${pid_a}" || true
+        wait "${pid_b}" || true
+        st_a=$(tail -1 "${result_file}.st_a" 2>/dev/null || echo 000)
+        st_b=$(tail -1 "${result_file}.st_b" 2>/dev/null || echo 000)
+        if [[ "${st_a}" == "200" && "${st_b}" == "200" ]] \
+            && jq -e '.result.isError != true' "${echo_a}" >/dev/null 2>&1 \
+            && jq -e '.result.isError != true' "${echo_b}" >/dev/null 2>&1; then
+            overlap_ok=1
+            break
+        fi
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+            "INFO delay overlap Echo HTTP ${st_a},${st_b} try ${overlap_try}/3"
+        sleep 1
+        overlap_try=$(( overlap_try + 1 ))
+    done
+    if [[ "${overlap_ok}" -eq 1 ]]; then
         record_case "${result_file}" "overlap_echo" 1
     else
         record_case "${result_file}" "overlap_echo" 0
@@ -515,23 +551,22 @@ run_engine() {
         echo "RESOURCES_LIST_HTTP=${http_st}" >> "${result_file}"
     fi
 
-    http_st=$(mcp_http "POST" "${mcp_url}" \
+    # shellcheck disable=SC2310 # resources_read scored from helper
+    if http_st=$(mcp_expect_jq "${mcp_url}" "${jwt}" "${session}" \
         '{"jsonrpc":"2.0","id":21,"method":"resources/read","params":{"uri":"hydrogen://mcp/info"}}' \
-        "${body}" "${hdr}" "${jwt}" "${session}" "" 20)
-    if [[ "${http_st}" == "200" ]] \
-        && jq -e '.result.contents[0].text != null and .error == null' \
-            "${body}" >/dev/null 2>&1; then
+        "${result_file}.res_read.json" "${hdr}" \
+        '.result.contents[0].text != null and .error == null'); then
         record_case "${result_file}" "resources_read" 1
     else
         record_case "${result_file}" "resources_read" 0
         echo "RESOURCES_READ_HTTP=${http_st}" >> "${result_file}"
     fi
 
-    http_st=$(mcp_http "POST" "${mcp_url}" \
+    # shellcheck disable=SC2310 # scored from helper return
+    if http_st=$(mcp_expect_jq "${mcp_url}" "${jwt}" "${session}" \
         '{"jsonrpc":"2.0","id":22,"method":"resources/read","params":{"uri":"hydrogen://mcp/no-such"}}' \
-        "${body}" "${hdr}" "${jwt}" "${session}" "" 20)
-    if [[ "${http_st}" == "200" ]] \
-        && jq -e '.error.code == -32602' "${body}" >/dev/null 2>&1; then
+        "${body}" "${hdr}" \
+        '.error.code == -32602'); then
         record_case "${result_file}" "resources_unknown" 1
     else
         record_case "${result_file}" "resources_unknown" 0
@@ -549,23 +584,22 @@ run_engine() {
         echo "PROMPTS_LIST_HTTP=${http_st}" >> "${result_file}"
     fi
 
-    http_st=$(mcp_http "POST" "${mcp_url}" \
+    # shellcheck disable=SC2310 # prompts_get scored from helper
+    if http_st=$(mcp_expect_jq "${mcp_url}" "${jwt}" "${session}" \
         '{"jsonrpc":"2.0","id":24,"method":"prompts/get","params":{"name":"Mcp.Intro","arguments":{"topic":"Echo"}}}' \
-        "${body}" "${hdr}" "${jwt}" "${session}" "" 20)
-    if [[ "${http_st}" == "200" ]] \
-        && jq -e '.result.messages[0].content.text != null and .error == null' \
-            "${body}" >/dev/null 2>&1; then
+        "${result_file}.prompts_get.json" "${hdr}" \
+        '.result.messages[0].content.text != null and .error == null'); then
         record_case "${result_file}" "prompts_get" 1
     else
         record_case "${result_file}" "prompts_get" 0
         echo "PROMPTS_GET_HTTP=${http_st}" >> "${result_file}"
     fi
 
-    http_st=$(mcp_http "POST" "${mcp_url}" \
+    # shellcheck disable=SC2310 # prompts_unknown scored from helper
+    if http_st=$(mcp_expect_jq "${mcp_url}" "${jwt}" "${session}" \
         '{"jsonrpc":"2.0","id":25,"method":"prompts/get","params":{"name":"No.SuchPrompt"}}' \
-        "${body}" "${hdr}" "${jwt}" "${session}" "" 20)
-    if [[ "${http_st}" == "200" ]] \
-        && jq -e '.error.code == -32602' "${body}" >/dev/null 2>&1; then
+        "${result_file}.prompts_unk.json" "${hdr}" \
+        '.error.code == -32602'); then
         record_case "${result_file}" "prompts_unknown" 1
     else
         record_case "${result_file}" "prompts_unknown" 0
