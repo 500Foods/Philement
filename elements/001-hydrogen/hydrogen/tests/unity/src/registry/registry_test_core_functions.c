@@ -319,37 +319,29 @@ void test_add_subsystem_dependency_max_dependencies(void) {
     TEST_ASSERT_EQUAL(0, id);
     TEST_ASSERT_EQUAL(1, subsystem_registry.count); // Verify main subsystem was registered
 
-    // Register dependency subsystems first with unique names
-    char dep_names[25][128];
-    for (int i = 0; i < 25; i++) {
+    char dep_names[MAX_DEPENDENCIES + 1][128];
+    for (int i = 0; i < MAX_DEPENDENCIES + 1; i++) {
         snprintf(dep_names[i], sizeof(dep_names[i]), "dep%d_%ld", i, unique_seed + i);
         int dep_id = register_subsystem(dep_names[i], NULL, NULL, NULL, NULL, NULL);
-        TEST_ASSERT_NOT_EQUAL(-1, dep_id); // Ensure registration succeeded
-        TEST_ASSERT_EQUAL(i + 1, dep_id); // Verify expected ID
+        TEST_ASSERT_NOT_EQUAL(-1, dep_id);
+        TEST_ASSERT_EQUAL(i + 1, dep_id);
     }
 
-    // Verify we have 21 total subsystems (main + 22 deps)
-    TEST_ASSERT_EQUAL(26, subsystem_registry.count);
+    TEST_ASSERT_EQUAL(MAX_DEPENDENCIES + 2, subsystem_registry.count);
 
-    // Now add dependencies (should succeed for all 20)
-    for (int i = 0; i < 22; i++) {
+    for (int i = 0; i < MAX_DEPENDENCIES; i++) {
         bool result = add_subsystem_dependency(id, dep_names[i]);
         TEST_ASSERT_TRUE(result);
     }
 
-    // Verify we've reached the maximum using the new function
     int dep_count = get_subsystem_dependency_count(id);
-    TEST_ASSERT_EQUAL(22, dep_count);
+    TEST_ASSERT_EQUAL(MAX_DEPENDENCIES, dep_count);
 
-    // Try to add one more - should fail
-    char too_many_name[128];
-    snprintf(too_many_name, sizeof(too_many_name), "too_many_%ld", unique_seed + 1000);
-    bool result = add_subsystem_dependency(id, too_many_name);
+    bool result = add_subsystem_dependency(id, dep_names[MAX_DEPENDENCIES]);
     TEST_ASSERT_FALSE(result);
 
-    // Verify count didn't change
     dep_count = get_subsystem_dependency_count(id);
-    TEST_ASSERT_EQUAL(22, dep_count);
+    TEST_ASSERT_EQUAL(MAX_DEPENDENCIES, dep_count);
 }
 
 // Test init_registry functionality with dependency inspection

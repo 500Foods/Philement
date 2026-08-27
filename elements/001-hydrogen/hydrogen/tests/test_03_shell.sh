@@ -5,6 +5,7 @@
 # Validates that required and optional environment variables are properly configured
 
 # CHANGELOG
+# 1.4.3 - 2026-08-27 - Whitelist MCP_HELPERS_* from tests/lib/mcp_helpers.sh
 # 1.4.2 - 2026-08-20 - Add PROFILE_START_CLOCK from profile_test_suite.sh
 # 1.4.1 - 2026-08-20 - Refresh profile_test_suite.sh names in ENV_WHITELIST
 # 1.4.0 - 2026-08-20 - Sanitize Found-at snippets so printf \n cannot leak extra log
@@ -35,7 +36,7 @@ TEST_NAME="Shell Variables"
 TEST_ABBR="ZSH"
 TEST_NUMBER="03"
 TEST_COUNTER=0
-TEST_VERSION="1.4.2"
+TEST_VERSION="1.4.3"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "${HYDROGEN_ROOT}/tests/lib/framework.sh"
@@ -197,7 +198,9 @@ declare -a ENV_WHITELIST=(
     "OIDC_IDP_AUTH_CODE" "OIDC_IDP_CODE_CHALLENGE" "OIDC_IDP_CODE_VERIFIER" "OIDC_IDP_STATE_OUT"
     "PORT_DIS" "PORT_EN" "REDIRECT_URI" "REFRESH_TOKEN"
     # First found in tests/test_46_conduit_script.sh
-    "HTTP_TIMEOUT"
+    "HTTP_TIMEOUT"                                  
+    # First found in tests/test_47_mcp.sh
+    "DISABLED_CONFIG" "MCP_HELPERS_GUARD" "MCP_HELPERS_NAME" "MCP_HELPERS_VERSION"
     # First found in tests/test_51_conduit.sh
     "CONDUIT_CONFIG_FILE" "CONDUIT_DESCRIPTION" "CONDUIT_ENGINE_NAME" "CONDUIT_LOG_SUFFIX"
     # First found in tests/test_57_mailrelay_outbound.sh
@@ -257,7 +260,7 @@ declare -a ENV_WHITELIST=(
     "SWAGGER_JSON_TEST_RESULT" "TCAP_PID" "TEMP_LOG" "TEMP_NEW_LOG" "TEMP_OUTPUT" "TEST_TEST_RESULT" 
     "TOPLIST" "TOTAL_COMBINATIONS" "TOTAL_DESIGNS" "TOTAL_FILES" "TOTAL_MIGRATIONS" "TRACED_LOG" 
     "TRAILING_SLASH_TEST_RESULT" "VALIDATION_DURATION" "VALIDATION_END_TIME" "VALIDATION_START_TIME" 
-    "WEBSOCKET_KEY_VALIDATED" "XML_COUNT" 
+    "WEBSOCKET_KEY_VALIDATED" "XML_COUNT"  "TEMP_COMBINED_JSON"
     # First found in extras
     "ALL_SRCS" "BUILD_CMD" "BUILD_OUTPUT" "ELAPSED_TIME" "EMAIL_BODY" "ERRORS" "EXECUTABLE_PATH"
     "FORMATTED_FAILED" "FORMATTED_PASSED" "IGNORED_SRCS" "MAP_FILE" "METRICS_JSON" "MOCKS_C_INCLUDES"

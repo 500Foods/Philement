@@ -13,6 +13,14 @@
 # analyze_engine()
 
 # CHANGELOG
+# 1.3.4 - 2026-08-27 - Root cause of suite-load 401: LOGINMAXATTEMPTS default 5
+#                      blocked 127.0.0.1 for 15m on shared live DBs (tests 41/44
+#                      pollute failed_attempts). Match test_40: LOGINMAXATTEMPTS
+#                      100000 + Fast/Medium/Cache workers (QueryRef 149 is FAST).
+# 1.3.3 - 2026-08-27 - Suite-load flake: retry login on 401/empty token (Yugabyte
+#                      under tests 41/44), raise Echo wait timeout 15->60, async
+#                      POST retries 2->4 and poll 30->45s, shutdown timeout 20->25,
+#                      use DATE for poll clocks.
 # 1.3.2 - 2026-08-26 - Async GET polling: replaced api_request (which imposes up to
 #                      10s backoff sleep per failed GET via 5-retry linear backoff)
 #                      with a lightweight direct curl call (5s max-time, no retry
@@ -55,7 +63,7 @@ TEST_NAME="Conduit Script"
 TEST_ABBR="CSC"
 TEST_NUMBER="46"
 TEST_COUNTER=0
-TEST_VERSION="1.3.2"
+TEST_VERSION="1.3.4"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -80,7 +88,7 @@ SCRIPT_TEST_CONFIGS=(
 
 # shellcheck disable=SC2034 # Reserved for log messages / future fail-fast bounds
 STARTUP_TIMEOUT=90
-SHUTDOWN_TIMEOUT=20
+SHUTDOWN_TIMEOUT=25
 READY_TIMEOUT=90
 HTTP_TIMEOUT=30
 BASELINE_SQLITE="${PROJECT_DIR}/tests/artifacts/database/sqlite/hydrodemo.sqlite"
@@ -348,11 +356,20 @@ run_engine() {
         --arg api_key "${HYDROGEN_DEMO_API_KEY}" \
         '{database:"Acuranzo",login_id:$login_id,password:$password,api_key:$api_key,tz:"America/Vancouver"}')
 
-    local http_st
-    # shellcheck disable=SC2312 # Intentionally swallow curl exit code; we use the HTTP status
-    http_st=$(api_request "POST" "${base_url}/api/auth/login" "${login_payload}" "${login_file}" "" 45)
-    local jwt
-    jwt=$(extract_jwt "${login_file}")
+    local http_st jwt=""
+    local login_try=1
+    while [[ "${login_try}" -le 5 ]]; do
+        # shellcheck disable=SC2312 # Intentionally swallow curl exit code; we use the HTTP status
+        http_st=$(api_request "POST" "${base_url}/api/auth/login" "${login_payload}" "${login_file}" "" 45)
+        jwt=$(extract_jwt "${login_file}")
+        if [[ "${http_st}" == "200" && -n "${jwt}" ]]; then
+            break
+        fi
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+            "${description}: login HTTP ${http_st} (try ${login_try}/5)"
+        sleep "${login_try}"
+        login_try=$(( login_try + 1 ))
+    done
     if [[ "${http_st}" != "200" || -z "${jwt}" ]]; then
         {
             echo "LOGIN_FAILED=1"
@@ -404,7 +421,7 @@ run_engine() {
     # --- Echo wait:true ---
     local echo_file="${result_file}.echo.json"
     http_st=$(api_request "POST" "${base_url}/api/conduit/script" \
-        '{"script":"Api.Echo","params":{"hello":"world","n":42},"wait":true,"timeout_seconds":15}' \
+        '{"script":"Api.Echo","params":{"hello":"world","n":42},"wait":true,"timeout_seconds":60}' \
         "${echo_file}" "${jwt}")
     local echo_ok=0
     if [[ "${http_st}" == "200" ]] && command -v jq >/dev/null 2>&1; then
@@ -446,7 +463,7 @@ run_engine() {
     local post_retries=0
     local async_terminal=0
 
-    while [[ "${post_retries}" -lt 2 ]] && [[ "${async_ok}" -eq 0 ]] && [[ "${async_terminal}" -eq 0 ]]; do
+    while [[ "${post_retries}" -lt 4 ]] && [[ "${async_ok}" -eq 0 ]] && [[ "${async_terminal}" -eq 0 ]]; do
         http_st=$(api_request "POST" "${base_url}/api/conduit/script" \
             '{"script":"Api.Echo","params":{"async":true},"wait":false,"timeout_seconds":60}' \
             "${async_file}" "${jwt}")
@@ -456,7 +473,7 @@ run_engine() {
             if [[ -n "${job_id}" ]]; then
                 local get_file="${result_file}.get.json"
                 local poll_deadline
-                poll_deadline=$(( $(date +%s) + 30 ))
+                poll_deadline=$(( $("${DATE}" +%s) + 45 ))
 
                 while true; do
                     get_st=$(curl -s -X GET "${base_url}/api/conduit/script/${job_id}" \
@@ -486,7 +503,7 @@ run_engine() {
                         fi
                     fi
                     local now
-                    now=$(date +%s)
+                    now=$("${DATE}" +%s)
                     if (( now >= poll_deadline )); then
                         break
                     fi
@@ -498,7 +515,7 @@ run_engine() {
         # Retry POST if job was not found (server didn't persist under load)
         if [[ "${async_ok}" -eq 0 ]] && [[ "${async_terminal}" -eq 0 ]]; then
             post_retries=$((post_retries + 1))
-            if [[ "${post_retries}" -lt 2 ]]; then
+            if [[ "${post_retries}" -lt 4 ]]; then
                 sleep 1
             fi
         fi

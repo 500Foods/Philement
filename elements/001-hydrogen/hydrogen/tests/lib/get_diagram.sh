@@ -4,6 +4,7 @@
 # Generate SVG database diagram from migration JSON
 
 # CHANGELOG
+# 3.1.1 - 2026-08-27 - Combine before/after JSON via Node files instead of jq --argjson (ARG_MAX)
 # 3.1.0 - 2026-07-08 - Fixed diagram JSON extraction for Brotli/base64-encoded content that folds to a single line; metadata now emitted as compact JSON
 # 3.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 2.1.0 - 2025-11-29 - Fixed Brotli decompression support 
@@ -112,7 +113,8 @@ fi
 # Create temporary files for before and after states
 TEMP_BEFORE_JSON=$(mktemp)
 TEMP_AFTER_JSON=$(mktemp)
-trap 'rm -f "${TEMP_BEFORE_JSON}" "${TEMP_AFTER_JSON}"' EXIT
+TEMP_COMBINED_JSON=$(mktemp)
+trap 'rm -f "${TEMP_BEFORE_JSON}" "${TEMP_AFTER_JSON}" "${TEMP_COMBINED_JSON}"' EXIT
 
 # Initialize both as empty arrays
 echo "[]" > "${TEMP_BEFORE_JSON}"
@@ -392,14 +394,11 @@ if [[ "${after_length}" -eq 0 ]]; then
     exit 1
 fi
 
-# Create combined before/after JSON structure
-BEFORE_DATA=$(cat "${TEMP_BEFORE_JSON}")
-AFTER_DATA=$(cat "${TEMP_AFTER_JSON}")
-
-COMBINED_JSON=$(jq -n \
-    --argjson before "${BEFORE_DATA}" \
-    --argjson after "${AFTER_DATA}" \
-    '{before: {diagram: $before}, after: {diagram: $after}}')
+DIAGRAM_BEFORE="${TEMP_BEFORE_JSON}" DIAGRAM_AFTER="${TEMP_AFTER_JSON}" DIAGRAM_COMBINED="${TEMP_COMBINED_JSON}" \
+    node --input-type=module -e 'import fs from "fs";
+const b = JSON.parse(fs.readFileSync(process.env.DIAGRAM_BEFORE, "utf8"));
+const a = JSON.parse(fs.readFileSync(process.env.DIAGRAM_AFTER, "utf8"));
+fs.writeFileSync(process.env.DIAGRAM_COMBINED, JSON.stringify({before:{diagram:b},after:{diagram:a}}));'
 
 # Report state counts
 before_count=$(jq '. | length' "${TEMP_BEFORE_JSON}" || true)
@@ -417,7 +416,7 @@ fi
 # Generate diagram and capture both stdout (SVG) and stderr (metadata)
 # Use unique temporary file to avoid conflicts in parallel execution
 METADATA_TMP=$(mktemp)
-SVG_OUTPUT=$(echo "${COMBINED_JSON}" | node "${LIB_DIR}/get_diagram.js" "${ENGINE}" 2>"${METADATA_TMP}")
+SVG_OUTPUT=$(node "${LIB_DIR}/get_diagram.js" "${ENGINE}" < "${TEMP_COMBINED_JSON}" 2>"${METADATA_TMP}")
 
 # Extract metadata from stderr if available
 METADATA=""

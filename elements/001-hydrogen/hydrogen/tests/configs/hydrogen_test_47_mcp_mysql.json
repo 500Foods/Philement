@@ -26,12 +26,22 @@
         "Parameters": {
           "LOGINRETRYWINDOW": 15,
           "IPADDRESS": "10.10.10.10",
-          "LOGINID": "${env.HYDROGEN_DEMO_USER_NAME}"
+          "LOGINID": "${env.HYDROGEN_DEMO_USER_NAME}",
+          "LOGINMAXATTEMPTS": 100000
         },
         "Migrations": "PAYLOAD:acuranzo",
         "Schema": "demo",
         "Queues": {
           "Slow": {
+            "start": 2
+          },
+          "Medium": {
+            "start": 4
+          },
+          "Fast": {
+            "start": 4
+          },
+          "Cache": {
             "start": 2
           }
         }
