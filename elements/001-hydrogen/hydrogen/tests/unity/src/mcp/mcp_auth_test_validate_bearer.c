@@ -29,6 +29,9 @@ void test_validate_bearer_aud_mismatch(void);
 void test_validate_bearer_scope_mismatch(void);
 void test_www_authenticate_and_prm_shape(void);
 void test_send_unauthorized_header(void);
+void test_prm_rp_issuers(void);
+void test_auth_resource_explicit(void);
+void test_prm_metadata_empty_resource(void);
 
 static void apply_defaults(void) {
     memset(&test_app, 0, sizeof(test_app));
@@ -311,6 +314,36 @@ void test_send_unauthorized_header(void) {
     free(www);
 }
 
+void test_prm_rp_issuers(void) {
+    char *prm;
+
+    test_app.mcp.AcceptHydrogenJWT = false;
+    test_app.mcp.AcceptOidcRp = true;
+    test_app.oidc_rp.provider_count = 1;
+    test_app.oidc_rp.providers[0].issuer = (char *)"https://kc.example";
+
+    prm = mcp_prm_build(&test_app.mcp, &test_app);
+    TEST_ASSERT_NOT_NULL(prm);
+    TEST_ASSERT_NOT_NULL(strstr(prm, "https://kc.example"));
+    TEST_ASSERT_NOT_NULL(strstr(prm, "RS256"));
+    TEST_ASSERT_NULL(strstr(prm, "HS256"));
+    free(prm);
+}
+
+void test_auth_resource_explicit(void) {
+    free(test_app.mcp.Resource);
+    test_app.mcp.Resource = strdup("https://mcp.example/mcp");
+    TEST_ASSERT_EQUAL_STRING("https://mcp.example/mcp", mcp_auth_resource(&test_app.mcp));
+    TEST_ASSERT_EQUAL_STRING("", mcp_auth_resource(NULL));
+}
+
+void test_prm_metadata_empty_resource(void) {
+    char *url = mcp_prm_metadata_url(NULL);
+    TEST_ASSERT_NOT_NULL(url);
+    TEST_ASSERT_EQUAL_STRING("/.well-known/oauth-protected-resource", url);
+    free(url);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_validate_bearer_missing);
@@ -328,5 +361,8 @@ int main(void) {
     RUN_TEST(test_validate_bearer_scope_mismatch);
     RUN_TEST(test_www_authenticate_and_prm_shape);
     RUN_TEST(test_send_unauthorized_header);
+    RUN_TEST(test_prm_rp_issuers);
+    RUN_TEST(test_auth_resource_explicit);
+    RUN_TEST(test_prm_metadata_empty_resource);
     return UNITY_END();
 }

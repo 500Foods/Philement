@@ -198,17 +198,6 @@ not open work unless listed below.
 | **Remaining** | Session buffers for `media_chunk` (upload_id / index / total); assemble → store; bounds/concurrency; cleanup on disconnect |
 | **Note** | Stub returns -1 by design until multi-frame uploads are required. |
 
-### 24. MCP server subsystem
-
-| | |
-| --- | --- |
-| **Plan** | [`MCP.md`](/docs/H/plans/MCP.md) |
-| **Effort** | XL |
-| **Done** | ~8% — Phase 0–2 complete (config + skeleton launch/landing) |
-| **Remaining** | Phase 3 status counters, then Streamable HTTP + JWT, `scripts.mcp_access`, Lua `Mcp.Server`, Test 47 |
-| **Why later** | New capability. Reuses Scripting + JWT. Touches `MAX_SUBSYSTEMS` and launch/landing dispatch — do not start casually |
-| **Note** | C stays protocol-agnostic. Adding MCP tools is Lua + `mcp_access`, not Hydrogen C. |
-
 ### 25. SchemaHelper — interactive SchemaTool front-end
 
 | | |
@@ -380,7 +369,6 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 14 | Chat Phase 13 (+ 14a–14b) | XL | ~15% of P13 | P2 |
 | 14a | REST auth_chat SSE streaming | L | ~20% | P2 |
 | 14b | WS chunked media upload | M | ~70% | P2 |
-| 24 | MCP server subsystem | XL | 0% | P2 |
 | 25 | SchemaHelper TUI | L | v1 | P2 |
 | 15 | Terminal WS auth | M | ~10% | P2 |
 | 17 | OIDC RP client-role parse | S–M | fallback | P2 |

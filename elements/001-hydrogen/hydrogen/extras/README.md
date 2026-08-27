@@ -17,6 +17,7 @@ This folder contains utility scripts and one-off diagnostic tools for the Hydrog
   - [`hydrogen_flush.sh`](#hydrogen_flushsh)
   - [`schematool/`](#schematool)
   - [`add_coverage.sh`](#add_coveragesh)
+  - [`mcp_probe.sh`](#mcp_probesh)
   - [`comment-analysis.sh`](#comment-analysissh)
   - [`filter-log.sh`](#filter-logsh)
   - [`make-email.sh`](#make-emailsh)
@@ -253,6 +254,19 @@ extras/schematool/schematool.sh \
 - Fully commented remediation `.sql` (never auto-executed)
 - Orphan capture `.mig` for DB-only migration refs
 - Engines: postgresql, mysql, sqlite, db2 (native clients)
+
+### `mcp_probe.sh`
+
+**Purpose:** Manual MCP Streamable HTTP probe
+**Description:** Thin `curl` + `jq` wrapper. Prints PRM GET, unauthenticated 401 `WWW-Authenticate`, `initialize`, `tools/list`, and `tools/call`. Optional `--login` against WebServer `/api/auth/login`.
+
+**Usage:**
+
+```bash
+extras/mcp_probe.sh --url http://127.0.0.1:3100/mcp --jwt TOKEN
+extras/mcp_probe.sh --url http://127.0.0.1:3100/mcp --login http://127.0.0.1:5000
+extras/mcp_probe.sh ... --call Mcp.Echo '{"message":"hi"}'
+```
 
 ### `add_coverage.sh`
 

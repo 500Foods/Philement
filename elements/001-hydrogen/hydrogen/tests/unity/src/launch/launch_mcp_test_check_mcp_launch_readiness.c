@@ -16,6 +16,9 @@ void test_check_mcp_launch_readiness_enabled_missing_protocol(void);
 void test_check_mcp_launch_readiness_enabled_bad_port(void);
 void test_check_mcp_launch_readiness_enabled_worker_count(void);
 void test_check_mcp_launch_readiness_enabled_ok(void);
+void test_check_mcp_launch_readiness_wildcard_interface(void);
+void test_check_mcp_launch_readiness_missing_interface(void);
+void test_check_mcp_launch_readiness_bad_path(void);
 
 void setUp(void) {
 }
@@ -117,6 +120,63 @@ void test_check_mcp_launch_readiness_enabled_ok(void) {
     TEST_ASSERT_TRUE(result.ready);
 }
 
+void test_check_mcp_launch_readiness_wildcard_interface(void) {
+    AppConfig *original = app_config;
+    AppConfig mock = {0};
+    mcp_config_apply_defaults(&mock.mcp);
+    mock.mcp.Enabled = true;
+    free(mock.mcp.Interface);
+    mock.mcp.Interface = strdup("0.0.0.0");
+    mock.mcp.Protocol = strdup("Mcp.Server");
+    mock.scripting.WorkerCount = 2;
+    app_config = &mock;
+
+    LaunchReadiness result = check_mcp_launch_readiness();
+
+    cleanup_mcp_config(&mock.mcp);
+    app_config = original;
+
+    TEST_ASSERT_TRUE(result.ready);
+}
+
+void test_check_mcp_launch_readiness_missing_interface(void) {
+    AppConfig *original = app_config;
+    AppConfig mock = {0};
+    mcp_config_apply_defaults(&mock.mcp);
+    mock.mcp.Enabled = true;
+    free(mock.mcp.Interface);
+    mock.mcp.Interface = NULL;
+    mock.mcp.Protocol = strdup("Mcp.Server");
+    mock.scripting.WorkerCount = 2;
+    app_config = &mock;
+
+    LaunchReadiness result = check_mcp_launch_readiness();
+
+    cleanup_mcp_config(&mock.mcp);
+    app_config = original;
+
+    TEST_ASSERT_FALSE(result.ready);
+}
+
+void test_check_mcp_launch_readiness_bad_path(void) {
+    AppConfig *original = app_config;
+    AppConfig mock = {0};
+    mcp_config_apply_defaults(&mock.mcp);
+    mock.mcp.Enabled = true;
+    free(mock.mcp.Path);
+    mock.mcp.Path = strdup("mcp");
+    mock.mcp.Protocol = strdup("Mcp.Server");
+    mock.scripting.WorkerCount = 2;
+    app_config = &mock;
+
+    LaunchReadiness result = check_mcp_launch_readiness();
+
+    cleanup_mcp_config(&mock.mcp);
+    app_config = original;
+
+    TEST_ASSERT_FALSE(result.ready);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -126,6 +186,9 @@ int main(void) {
     RUN_TEST(test_check_mcp_launch_readiness_enabled_bad_port);
     RUN_TEST(test_check_mcp_launch_readiness_enabled_worker_count);
     RUN_TEST(test_check_mcp_launch_readiness_enabled_ok);
+    RUN_TEST(test_check_mcp_launch_readiness_wildcard_interface);
+    RUN_TEST(test_check_mcp_launch_readiness_missing_interface);
+    RUN_TEST(test_check_mcp_launch_readiness_bad_path);
 
     return UNITY_END();
 }

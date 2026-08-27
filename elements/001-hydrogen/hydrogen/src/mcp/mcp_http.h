@@ -56,5 +56,14 @@ enum MHD_Result mcp_http_handle_post(struct MHD_Connection *connection,
 enum MHD_Result mcp_http_handle_delete(struct MHD_Connection *connection,
                                        const MCPConfig *cfg,
                                        const McpAuthResult *auth);
+void mcp_request_completed(void *cls, struct MHD_Connection *connection,
+                           void **con_cls, enum MHD_RequestTerminationCode toe);
+enum MHD_Result mcp_queue_static(struct MHD_Connection *connection,
+                                 unsigned int status,
+                                 const char *body,
+                                 const char *content_type);
+enum MHD_Result mcp_queue_owned(struct MHD_Connection *connection,
+                                unsigned int status,
+                                char *body);
 
 #endif

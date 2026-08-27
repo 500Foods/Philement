@@ -42,13 +42,13 @@ an explicit Status variance.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-08-27):** Phase 0–11 complete. Next:
-**Phase 12** Unity coverage sweep.
+**CURRENT PAUSE POINT (as of 2026-08-27):** Phase 0–14 complete (Groups A–E).
+Plan moved to [`MCP_COMPLETE.md`](/docs/H/plans/complete/MCP_COMPLETE.md).
+Optional later: Phases 15–17 (resources/prompts, DCR, stdio).
 
 ### Resume here next session
 
-1. Phase 12: `extras/add_coverage.sh` on `mcp/*.c` plus config/launch/landing MCP files.
-2. Fill remaining safe-function zeros; confirm no new `static` callables; `mkp`.
+1. Optional Phase 15+ only if product tools need resources/prompts, DCR, or stdio.
 
 ### Session checklist
 
@@ -65,7 +65,7 @@ Build aliases: `zsh -ic '<alias>'` (`mkt`, `mka`, `mku <base>`, `mkp`, `mks`).
 | --- | --- |
 | **Band** | P2 — new capability, not a close-the-loop or safety gate |
 | **Effort** | XL (full subsystem + transport + Lua protocol + tests + docs) |
-| **Done** | ~50% — Phase 0–11 complete; next Phase 12 Unity sweep |
+| **Done** | 100% Groups A–E (Phases 0–14). Phases 15–17 optional |
 | **Why this shape** | Unblocks AI-tool access to Hydrogen without a product-named C surface. Reuses Scripting, JWT, and the `scripts.invokable` allowlist pattern |
 | **Do not start casually** | Touches `MAX_SUBSYSTEMS`, launch/landing dispatch, status metrics, and blackbox configs. Phase 2 is the dangerous count-bump |
 
@@ -1504,12 +1504,13 @@ Status works when MCP disabled (enabled=false, zeros). No listen leak of JWT.
 
 #### Work items
 
-- [ ] **12.1** `extras/add_coverage.sh mcp/*.c` (and config/launch/landing
-      mcp files).
-- [ ] **12.2** Fill gaps on safe functions. Do not chase MHD/OpenSSL
+- [x] **12.1** `extras/add_coverage.sh mcp/*.c` (and config/launch/landing
+      mcp files). Blackbox gcov absent (no Test 47); Unity gcov used.
+- [x] **12.2** Fill gaps on safe functions. Do not chase MHD/OpenSSL
       allocation floors.
-- [ ] **12.3** Confirm no new `static` callables (`mkt` static gate).
-- [ ] **12.4** `mkp`.
+- [x] **12.3** Confirm no new `static` callables (`mkt` static gate).
+      Destatic'd `mcp_request_completed` / `mcp_queue_static` / `mcp_queue_owned`.
+- [x] **12.4** `mkp`.
 
 #### Exit gate / validation
 
@@ -1519,14 +1520,30 @@ Coverage report attached to Status. Residual lines listed with rationale.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-08-27 |
+| **Result** | Destatic HTTP helpers. Added Unity cases for IPv6 listen, overflow, session limit/hijack, PRM RP issuers, dispatch protocol-source, launch wildcard/path. `mkt`/`mkp` green. |
+| **Variances** | No blackbox `.gcov` yet (Phase 13). Residual Unity zeros are MHD/jansson alloc floors, live `scripting_*` wait/fetch, launch dependency-register fail, landing-when-running (needs registry). |
 
 #### Lessons learned
 
-(fill after the phase)
+- `add_coverage.sh` needs both Unity and blackbox gcov; for a new subsystem before Test 47, Unity gcov `#####` lines are the combined zeros.
+- Three `static` MHD helpers in `mcp_http.c` slipped Phase 4; destatic before the coverage sweep so Unity can call them.
+
+#### Residual uncovered (rationale)
+
+| Area | Lines / paths | Why left |
+| --- | --- | --- |
+| `mcp_queue_*` / `mcp_send_prm` | MHD_create_response NULL | MHD alloc floor |
+| `mcp_prm_build` / `mcp_rpc_make_error` / `mcp_dispatch_build_params` / `mcp_status_build_*` | `json_object()` fail | jansson alloc floor |
+| `mcp_http_upload_append` | realloc fail; grow-loop `next *= 2` | alloc floor |
+| `mcp_url_is_healthz` / `mcp_url_is_prm` | snprintf >= 512 | path cap; not operator-reachable |
+| `mcp_session_create_locked` | calloc/strdup fail | alloc floor |
+| `mcp_dispatch_load_protocol_source` | live QueryRef #153 fetch / empty source | needs DB; Test 47 |
+| `mcp_dispatch_submit_job` / `wait_job` no-hook | live scoreboard | needs Scripting workers |
+| `launch_mcp` | `add_dependency_from_launch` fail | registry mock not worth it |
+| `landing_mcp` | malloc fail; running-by-name true | registry; Test 17/47 |
+| `mcp_try_*` production JWKS | no hook | covered via Unity hooks; live IdP is Test 45/47 optional |
 
 ---
 
@@ -1538,44 +1555,35 @@ Coverage report attached to Status. Residual lines listed with rationale.
 
 #### Work items
 
-- [ ] **13.1** Create `test_47_mcp.sh` + configs + `/docs/H/tests/test_47_mcp.md`.
-      WebServer **15470–15476**, MCP **15480–15486**. `WorkerCount >= 2`.
-      Update [TESTING.md](/docs/H/tests/TESTING.md),
-      [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md), [SITEMAP.md](/docs/H/SITEMAP.md).
-- [ ] **13.2** Cases (SQLite required; other engines skip-pass if
-      migrations absent, same as Test 46). Disabled → MCP port refused.
-      `/healthz` and PRM well-known 200 without JWT. 401 on `Path`
-      includes `WWW-Authenticate` + `resource_metadata`. Mismatched
-      `Origin` → 403. initialize → serverInfo + `Mcp-Session-Id`.
-      `notifications/initialized` → 202 empty. GET `Path` → 405.
-      `tools/list` has `Mcp.Echo` / `Mcp.EchoStrict` with `inputSchema`.
-      Echo success (`result.content`, no `isError`). EchoStrict bad
-      args → `result.isError=true`. Unknown / non-`mcp_access` hidden.
-      `_hydrogen` rejected. Unknown session → 404. Session hijack
-      (user B JWT + user A session) → 401. DELETE → 204 then reuse
-      rejected. Two overlapping Echo calls with `WorkerCount=2` both
-      200 (queued `H.mcp.call` would deadlock). `Mcp.Sleep` timeout →
-      `-32603`. `notifications/cancelled` during Sleep does not hang
-      landing. Shutdown clean (`test_16` / `test_17` with MCP on).
-- [ ] **13.3** Prefer one engine first (SQLite), then expand if script
-      load is engine-agnostic. Do not require Keycloak in Test 47; PRM
-      + Hydrogen JWT is the CI path. Optional manual: IdP token (Test 45
-      helper) and Keycloak token (Test 42 helper) against `AcceptOidc*`.
-- [ ] **13.4** `mks`. Isolate `CHAT_CACHE_DIR` if any chat helper is reused
-      (it should not be).
-- [ ] **13.5** ASAN smoke: one enabled-MCP start/stop under Test 11 config
-      or a dedicated ASAN run — no leaks on init/shutdown; two-client
-      overlap included so the child `lua_State` path is in the leak set.
-- [ ] **13.6** Protocol-compliance smoke with the reference
-      `@modelcontextprotocol/inspector` CLI
-      (`npx @modelcontextprotocol/inspector --cli
-      http://127.0.0.1:15480/mcp --method tools/list`, JWT via header
-      flag) run manually against a locally-started test instance. This is
-      not part of `test_47_mcp.sh` (no network installs in blackbox CI) but
-      should be run once per phase-13 pass and the result noted in Status —
-      it catches spec-shape mistakes (missing `inputSchema`, wrong content
-      block keys) that a hand-rolled curl assertion can miss because curl
-      only checks the fields the test author remembered to check.
+- [x] **13.1** Create `test_47_mcp.sh` + configs + `/docs/H/tests/test_47_mcp.md`.
+       WebServer **15470–15476**, MCP **15480–15486**. `WorkerCount >= 2`.
+       Update [TESTING.md](/docs/H/tests/TESTING.md),
+       [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md), [SITEMAP.md](/docs/H/SITEMAP.md).
+- [x] **13.2** Cases (SQLite required; other engines skip-pass if
+       migrations absent, same as Test 46). Disabled → MCP port refused.
+       `/healthz` and PRM well-known 200 without JWT. 401 on `Path`
+       includes `WWW-Authenticate` + `resource_metadata`. Mismatched
+       `Origin` → 403. initialize → serverInfo + `Mcp-Session-Id`.
+       `notifications/initialized` → 202 empty. GET `Path` → 405.
+       `tools/list` has `Mcp.Echo` / `Mcp.EchoStrict` with `inputSchema`.
+       Echo success (`result.content`, no `isError`). EchoStrict bad
+       args → `result.isError=true`. Unknown / non-`mcp_access` hidden.
+       `_hydrogen` rejected. Unknown session → 404. Session hijack
+       (user B JWT + user A session) → 401. DELETE → 204 then reuse
+       rejected. Two overlapping Echo calls with `WorkerCount=2` both
+       200 (queued `H.mcp.call` would deadlock). `Mcp.Sleep` timeout →
+       `-32603`. `notifications/cancelled` during Sleep does not hang
+       landing. Shutdown clean (`test_16` / `test_17` with MCP on).
+- [x] **13.3** Prefer one engine first (SQLite), then expand if script
+       load is engine-agnostic. Do not require Keycloak in Test 47; PRM
+       + Hydrogen JWT is the CI path. Optional manual: IdP token (Test 45
+       helper) and Keycloak token (Test 42 helper) against `AcceptOidc*`.
+- [x] **13.4** `mks`. Isolate `CHAT_CACHE_DIR` if any chat helper is reused
+       (it should not be).
+- [~] **13.5** ASAN smoke: overlap + shutdown is in Test 47 on the debug
+       binary. Dedicated `hydrogen_asan` / Test 11 config not invoked.
+- [~] **13.6** Inspector CLI not run (no local `@modelcontextprotocol/inspector`;
+       no network install in blackbox CI). Curl assertions cover list/call shapes.
 
 #### Exit gate / validation
 
@@ -1585,14 +1593,16 @@ Coverage report attached to Status. Residual lines listed with rationale.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-08-27 |
+| **Result** | `test_47_mcp.sh` 20/20. SQLite 25 cases (incl. hijack). PG/DB2/CRDB/YB 24. MySQL+MariaDB skip (seeds not applied). Disabled port refused. `extras/mcp_probe.sh`. `mks` / test_90 / test_04 green. |
+| **Variances** | 13.5 dedicated ASAN binary not run (overlap+shutdown covered in Test 47). 13.6 Inspector CLI not run. Hijack is SQLite-only (mint JWT + `tokens` row). Shutdown clean is Test 47, not a test_16/17 config change. |
 
 #### Lessons learned
 
-(fill after the phase)
+- Non-SQLite initialize can be HTTP 200 JSON-RPC `-32603` when Protocol Lua is missing; skip-pass must not key only on 404.
+- Disabled-port curl writes `000` and exits non-zero; `|| echo 000` concatenates to `000000`.
+- Session hijack cannot mint a second login JWT: QueryRef #018 requires a `tokens` row. SQLite inserts the minted hash.
 
 ---
 
@@ -1604,20 +1614,20 @@ Coverage report attached to Status. Residual lines listed with rationale.
 
 #### Work items
 
-- [ ] **14.1** `/docs/H/core/subsystems/mcp/mcp.md` — architecture.
-- [ ] **14.2** `/docs/H/api/mcp/mcp_endpoints.md` — listen + status.
-- [ ] **14.3** LUA_GUIDE / lua_api `H.mcp` section (inline `call` vs
+- [x] **14.1** `/docs/H/core/subsystems/mcp/mcp.md` — architecture.
+- [x] **14.2** `/docs/H/api/mcp/mcp_endpoints.md` — listen + status.
+- [x] **14.3** LUA_GUIDE / lua_api `H.mcp` section (inline `call` vs
       `call_async` deadlock note).
-- [ ] **14.3b** Agent provisioning: Cursor/Claude `mcp.json` snippet,
+- [x] **14.3b** Agent provisioning: Cursor/Claude `mcp.json` snippet,
       Keycloak public-client checklist, PRM field reference. Point at
       [oidc_endpoints.md](/docs/H/api/oidc/oidc_endpoints.md) and
       [oidc_rp.md](/docs/H/api/auth/oidc_rp.md) — do not duplicate IdP/RP
       docs.
-- [ ] **14.4**       [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md) config letter T,
+- [x] **14.4** [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md) config letter T,
       subsystem order 21, test 47 (ports 1547x / 1548x).
-- [ ] **14.5** [STRUCTURE.md](/docs/H/STRUCTURE.md), [README.md](/docs/H/README.md)
+- [x] **14.5** [STRUCTURE.md](/docs/H/STRUCTURE.md), [README.md](/docs/H/README.md)
       TOC if needed, [RELEASES.md](/RELEASES.md) note.
-- [ ] **14.6** `test_04` + `test_90`. Move this plan to
+- [x] **14.6** `test_04` + `test_90`. Move this plan to
       `plans/complete/MCP_COMPLETE.md` only when Groups A–E are done.
 
 #### Exit gate / validation
@@ -1628,14 +1638,15 @@ Coverage report attached to Status. Residual lines listed with rationale.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-08-27 |
+| **Result** | Operator docs (`mcp.md`, `mcp_endpoints.md`), `H.mcp` deadlock note, indexes, RELEASES. Plan moved to `plans/complete/MCP_COMPLETE.md`. |
+| **Variances** | INSTRUCTIONS letter T / subsystem 21 / test 47 already landed in Phase 13. |
 
 #### Lessons learned
 
-(fill after the phase)
+- Content-block helpers stay documented as Lua `Mcp.Helpers`, not C `H.mcp.*`.
+- Agent docs must not claim “any model”; claim Streamable HTTP + Bearer from a configured issuer.
 
 ---
 
@@ -1990,6 +2001,15 @@ that affect later phases must be recorded so they are not lost.
 - (2026-08-27) Phase 11 shipped: JWT `GET /api/mcp/status` (enabled/listen/protocol/
   accept flags/Resource/thread counts/counters including `rpc_in_flight`). Next is
   Phase 12 Unity coverage sweep.
+- (2026-08-27) Phase 12 shipped: destatic `mcp_http` queue/completed helpers; Unity
+  gaps filled (IPv6, overflow, hijack, PRM RP, protocol-source, launch wildcard).
+  Residual = MHD/jansson floors + live Scripting/registry. Next is Phase 13 Test 47.
+- (2026-08-27) Phase 13 shipped: Test 47 20/20 (SQLite full; MySQL/MariaDB skip).
+  `extras/mcp_probe.sh`. Next is Phase 14 docs.
+- (2026-08-27) Phase 14 shipped: operator/agent docs, indexes, RELEASES. Groups A–E
+  done. Optional Phases 15–17 remain in this file after the move to complete/.
+- (2026-08-27) Operator: database migrations are current (1283 APPLY hole closed;
+  MCP seeds 1365–1372 applied). Test 47 should not skip MySQL/MariaDB for that.
 
 ### Follow-ups
 

@@ -16,6 +16,7 @@ void test_launch_mcp_subsystem_null_config(void);
 void test_launch_mcp_subsystem_disabled(void);
 void test_launch_mcp_subsystem_enabled(void);
 void test_launch_mcp_subsystem_bind_failure(void);
+void test_launch_mcp_subsystem_require_jwt_false(void);
 
 static union MHD_DaemonInfo daemon_info;
 
@@ -90,6 +91,25 @@ void test_launch_mcp_subsystem_bind_failure(void) {
     app_config = original;
 }
 
+void test_launch_mcp_subsystem_require_jwt_false(void) {
+    AppConfig *original = app_config;
+    AppConfig mock = {0};
+    mcp_config_apply_defaults(&mock.mcp);
+    mock.mcp.Enabled = true;
+    mock.mcp.RequireJWT = false;
+    app_config = &mock;
+    mock_mhd_set_daemon_info_result(&daemon_info);
+
+    int result = launch_mcp_subsystem();
+
+    TEST_ASSERT_EQUAL(1, result);
+    TEST_ASSERT_TRUE(mcp_is_listening());
+    mcp_shutdown();
+
+    cleanup_mcp_config(&mock.mcp);
+    app_config = original;
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -97,6 +117,7 @@ int main(void) {
     RUN_TEST(test_launch_mcp_subsystem_disabled);
     RUN_TEST(test_launch_mcp_subsystem_enabled);
     RUN_TEST(test_launch_mcp_subsystem_bind_failure);
+    RUN_TEST(test_launch_mcp_subsystem_require_jwt_false);
 
     return UNITY_END();
 }

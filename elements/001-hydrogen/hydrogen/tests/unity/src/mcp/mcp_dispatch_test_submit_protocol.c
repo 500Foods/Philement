@@ -28,6 +28,12 @@ void test_mcp_dispatch_in_flight_restored(void);
 void test_mcp_dispatch_not_found_404(void);
 void test_mcp_dispatch_not_allowed_404(void);
 void test_mcp_dispatch_allowed_loads(void);
+void test_mcp_dispatch_auth_kind_names(void);
+void test_mcp_dispatch_worker_cap_default(void);
+void test_mcp_dispatch_missing_protocol(void);
+void test_mcp_dispatch_build_params_oidc(void);
+void test_mcp_dispatch_null_connection(void);
+void test_mcp_dispatch_protocol_source_and_empty_name(void);
 
 static int load_calls;
 static char last_load_name[128];
@@ -256,6 +262,84 @@ void test_mcp_dispatch_allowed_loads(void) {
     TEST_ASSERT_EQUAL(1, mock_mhd_get_suspend_count());
 }
 
+void test_mcp_dispatch_auth_kind_names(void) {
+    TEST_ASSERT_EQUAL_STRING("hydrogen_jwt",
+                             mcp_dispatch_auth_kind_name(MCP_AUTH_KIND_HYDROGEN_JWT));
+    TEST_ASSERT_EQUAL_STRING("oidc_idp", mcp_dispatch_auth_kind_name(MCP_AUTH_KIND_OIDC_IDP));
+    TEST_ASSERT_EQUAL_STRING("oidc_rp", mcp_dispatch_auth_kind_name(MCP_AUTH_KIND_OIDC_RP));
+    TEST_ASSERT_EQUAL_STRING("none", mcp_dispatch_auth_kind_name(MCP_AUTH_KIND_NONE));
+}
+
+void test_mcp_dispatch_worker_cap_default(void) {
+    AppConfig *saved = app_config;
+    app_config = NULL;
+    TEST_ASSERT_EQUAL(2, mcp_dispatch_worker_cap());
+    app_config = saved;
+    TEST_ASSERT_EQUAL(2, mcp_dispatch_worker_cap());
+}
+
+void test_mcp_dispatch_missing_protocol(void) {
+    parse_ok("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}");
+    free(test_cfg.mcp.Protocol);
+    test_cfg.mcp.Protocol = NULL;
+    TEST_ASSERT_EQUAL(MHD_YES, mcp_dispatch_submit_protocol(
+        (struct MHD_Connection *)&mock_conn, &test_cfg.mcp, &auth, &env, "s1"));
+    TEST_ASSERT_EQUAL(0, submit_calls);
+    TEST_ASSERT_EQUAL(MHD_HTTP_OK, mock_mhd_get_last_status_code());
+}
+
+void test_mcp_dispatch_build_params_oidc(void) {
+    char *params;
+    json_t *root;
+    json_t *h;
+    json_t *scopes;
+    json_error_t err;
+    char *scope0 = strdup("mcp.read");
+
+    parse_ok("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\",\"params\":{\"a\":1}}");
+    auth.kind = MCP_AUTH_KIND_OIDC_IDP;
+    auth.iss = strdup("https://idp.example");
+    auth.database = strdup("demo");
+    auth.scopes = &scope0;
+    auth.scope_count = 1;
+    params = mcp_dispatch_build_params(&env, &auth, "sess-oidc");
+    TEST_ASSERT_NOT_NULL(params);
+    root = json_loads(params, 0, &err);
+    TEST_ASSERT_NOT_NULL(root);
+    h = json_object_get(root, "_hydrogen");
+    TEST_ASSERT_EQUAL_STRING("oidc_idp", json_string_value(json_object_get(h, "auth_kind")));
+    TEST_ASSERT_EQUAL_STRING("https://idp.example", json_string_value(json_object_get(h, "iss")));
+    TEST_ASSERT_EQUAL_STRING("demo", json_string_value(json_object_get(h, "database")));
+    scopes = json_object_get(h, "scopes");
+    TEST_ASSERT_TRUE(json_is_array(scopes));
+    TEST_ASSERT_EQUAL_STRING("mcp.read", json_string_value(json_array_get(scopes, 0)));
+    json_decref(root);
+    free(params);
+    free(scope0);
+    auth.scopes = NULL;
+    auth.scope_count = 0;
+}
+
+void test_mcp_dispatch_null_connection(void) {
+    parse_ok("{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"ping\"}");
+    TEST_ASSERT_EQUAL(MHD_NO, mcp_dispatch_submit_protocol(NULL, &test_cfg.mcp, &auth, &env, "s1"));
+    TEST_ASSERT_EQUAL(MHD_NO, mcp_dispatch_submit_protocol(
+        (struct MHD_Connection *)&mock_conn, &test_cfg.mcp, &auth, NULL, "s1"));
+}
+
+void test_mcp_dispatch_protocol_source_and_empty_name(void) {
+    char *source;
+    MCPConfig empty = {0};
+
+    mcp_dispatch_set_protocol_source("-- protocol\nreturn 0\n");
+    source = mcp_dispatch_load_protocol_source(&test_cfg.mcp);
+    TEST_ASSERT_NOT_NULL(source);
+    TEST_ASSERT_EQUAL_STRING("-- protocol\nreturn 0\n", source);
+    free(source);
+    mcp_dispatch_set_protocol_source(NULL);
+    TEST_ASSERT_NULL(mcp_dispatch_load_protocol_source(&empty));
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_mcp_dispatch_build_params_injects_hydrogen);
@@ -268,5 +352,11 @@ int main(void) {
     RUN_TEST(test_mcp_dispatch_not_found_404);
     RUN_TEST(test_mcp_dispatch_not_allowed_404);
     RUN_TEST(test_mcp_dispatch_allowed_loads);
+    RUN_TEST(test_mcp_dispatch_auth_kind_names);
+    RUN_TEST(test_mcp_dispatch_worker_cap_default);
+    RUN_TEST(test_mcp_dispatch_missing_protocol);
+    RUN_TEST(test_mcp_dispatch_build_params_oidc);
+    RUN_TEST(test_mcp_dispatch_null_connection);
+    RUN_TEST(test_mcp_dispatch_protocol_source_and_empty_name);
     return UNITY_END();
 }

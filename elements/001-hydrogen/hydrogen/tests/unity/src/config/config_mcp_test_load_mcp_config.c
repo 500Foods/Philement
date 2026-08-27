@@ -22,6 +22,7 @@ void test_load_mcp_config_interface_any(void);
 void test_cleanup_mcp_config_null(void);
 void test_dump_mcp_config_null(void);
 void test_dump_mcp_config_smoke(void);
+void test_mcp_config_apply_defaults_null(void);
 
 void setUp(void) {
 }
@@ -167,6 +168,10 @@ void test_dump_mcp_config_smoke(void) {
     cleanup_mcp_config(&config.mcp);
 }
 
+void test_mcp_config_apply_defaults_null(void) {
+    mcp_config_apply_defaults(NULL);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_load_mcp_config_null_config);
@@ -178,5 +183,6 @@ int main(void) {
     RUN_TEST(test_cleanup_mcp_config_null);
     RUN_TEST(test_dump_mcp_config_null);
     RUN_TEST(test_dump_mcp_config_smoke);
+    RUN_TEST(test_mcp_config_apply_defaults_null);
     return UNITY_END();
 }

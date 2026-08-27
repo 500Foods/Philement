@@ -63,6 +63,7 @@ Hydrogen is currently designed for technical users who:
 - [**Database Abstraction**](/docs/H/core/DATABASE_ABSTRACTION.md) - Multi-engine database layer
 - [**Subsystems Documentation**](/docs/H/core/subsystems/README.md) - Overview of all Hydrogen subsystems
 - [**Scripting / Lua API**](/docs/H/core/subsystems/scripting/README.md) - In-server Lua scripting subsystem
+- [**MCP Server**](/docs/H/core/subsystems/mcp/mcp.md) - Model Context Protocol (Streamable HTTP + Lua tools)
 - [**Lua Guide**](/docs/H/LUA_GUIDE.md) - Human-oriented intro to Lua and the `H` host API
 - [**Lua Features**](/docs/H/LUA_FEATURES.md) - Pure Lua language features (strings, tables, numbers, dates)
 - [**Mail Guide**](/docs/H/MAIL_GUIDE.md) - Mail Relay pipeline, rewrites, events, and Lua `H.mail`
@@ -95,6 +96,7 @@ Hydrogen is currently designed for technical users who:
 - [**OIDC IdP Endpoints**](/docs/H/api/oidc/oidc_endpoints.md) - Discovery, authorize, token, userinfo, JWKS
 - [**OIDC IdP Operator**](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md) - Enable, keys, kill switch, IdP vs RP
 - [**OIDC RP Endpoints**](/docs/H/api/auth/oidc_rp.md) - Hydrogen as Keycloak client
+- [**MCP Endpoints**](/docs/H/api/mcp/mcp_endpoints.md) - Streamable HTTP listen, PRM, `/api/mcp/status`
 - [**System Information**](/docs/H/core/system_info.md) - System monitoring and reporting
 
 ### Implementation Notes
@@ -103,6 +105,7 @@ Hydrogen is currently designed for technical users who:
 - [**Migrations**](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md) - Performance improvements to the Migration system
 - [**Conduit**](/docs/H/plans/complete/CONDUIT_COMPLETE.md) - Implementation plan for Conduit Service endpoints
 - [**Auth**](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md) - Implementation plan for Auth subsystem
+- [**MCP**](/docs/H/plans/complete/MCP_COMPLETE.md) - MCP server subsystem (Phases 0–14)
 - [**Conduit REST API**](/docs/H/core/subsystems/conduit/conduit_api.md) - Database query by reference
 
 ### Examples & Implementation

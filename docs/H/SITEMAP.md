@@ -72,6 +72,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [README.md](/docs/H/core/subsystems/README.md): Table of Contents for all Hydrogen subsystems documentation
 - [scripting/README.md](/docs/H/core/subsystems/scripting/README.md): Scripting subsystem overview
 - [scripting/lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md): Lua host API reference
+- [mcp/mcp.md](/docs/H/core/subsystems/mcp/mcp.md): MCP subsystem architecture
 - [LUA_GUIDE.md](/docs/H/LUA_GUIDE.md): Intro to Lua and practical Hydrogen scripting guide
 - [LUA_FEATURES.md](/docs/H/LUA_FEATURES.md): Pure Lua language features and standard library recipes
 
@@ -89,6 +90,10 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 - [oidc_endpoints.md](/docs/H/api/oidc/oidc_endpoints.md): OIDC Identity Provider endpoints (`/.well-known`, `/oauth/*`)
 - [OIDC_IDP_OPERATOR.md](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md): IdP operator runbook (enable, keys, kill switch, IdP vs RP)
+
+### Folder: /docs/api/mcp
+
+- [mcp_endpoints.md](/docs/H/api/mcp/mcp_endpoints.md): MCP Streamable HTTP listen, PRM, JWT `/api/mcp/status`
 
 ### Folder: /docs/api/reporting
 
@@ -127,7 +132,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 - [KEYCLOAK_PLAN.md](/docs/H/plans/KEYCLOAK_PLAN.md): Keycloak SSO / Hydrogen as OIDC RP (Phase 5 E2E in progress)
 - [MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md): Mail Relay subsystem implementation plan
-- [MCP.md](/docs/H/plans/MCP.md): MCP server subsystem implementation plan
+
 - [MIRAGE_PLAN.md](/docs/H/plans/MIRAGE_PLAN.md): Mirage distributed proxy architecture (deferred)
 - [OIDC-PLAN.md](/docs/H/plans/OIDC-PLAN.md): Historical OIDC RP implementation phase log
 - [OIDC_E2E_LOG.md](/docs/H/plans/OIDC_E2E_LOG.md): OIDC real-Keycloak manual E2E checklist
@@ -179,6 +184,7 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [LUA_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md)
 - [LUA_55_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_55_PLAN_COMPLETE.md): Upgrade embedded Lua 5.4 → 5.5
 - [LUA_CLIENT_COMPLETE.md](/docs/H/plans/complete/LUA_CLIENT_COMPLETE.md)
+- [MCP_COMPLETE.md](/docs/H/plans/complete/MCP_COMPLETE.md)
 - [MAILRELAY_BLACKBOX_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md)
 - [MIGRATIONS_COMPLETE.md](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md)
 - [SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md): SchemaTool migration drift auditor (CLI 1.7.1)
@@ -330,6 +336,7 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [test_45_oidc_idp.md](/docs/H/tests/test_45_oidc_idp.md): OIDC Identity Provider - discovery, authorize/login, PKCE token, userinfo, refresh
 - [test_43_scripting.md](/docs/H/tests/test_43_scripting.md): Scripting subsystem end-to-end testing
 - [test_46_conduit_script.md](/docs/H/tests/test_46_conduit_script.md): Conduit script invoke blackbox (JWT + Api.Echo)
+- [test_47_mcp.md](/docs/H/tests/test_47_mcp.md): MCP Streamable HTTP blackbox (JWT + Mcp.Echo)
 - [test_50_conduit_query.md](/docs/H/tests/test_50_conduit_query.md): Single public query endpoint testing
 - [test_51_conduit_queries.md](/docs/H/tests/test_51_conduit_queries.md): Conduit multiple queries endpoint testing
 - [test_52_conduit_auth_query.md](/docs/H/tests/test_52_conduit_auth_query.md): Authenticated single query endpoint

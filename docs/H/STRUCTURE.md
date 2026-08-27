@@ -71,6 +71,8 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [src/api/reporting/](/elements/001-hydrogen/hydrogen/src/api/reporting/) - Reporting API swagger surface (`image_scale`)
 - [src/api/reporting/reporting_service.h](/elements/001-hydrogen/hydrogen/src/api/reporting/reporting_service.h) - Reporting service swagger tag
 - [src/api/reporting/image_scale/image_scale.h](/elements/001-hydrogen/hydrogen/src/api/reporting/image_scale/image_scale.h) - image_scale swagger + handler prototype
+- [src/api/mcp/status/status.c](/elements/001-hydrogen/hydrogen/src/api/mcp/status/status.c) - JWT GET /api/mcp/status
+- [src/api/mcp/status/status.h](/elements/001-hydrogen/hydrogen/src/api/mcp/status/status.h) - MCP status handler interface
 
 </details>
 
@@ -88,6 +90,8 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [src/config/config_logging.h](/elements/001-hydrogen/hydrogen/src/config/config_logging.h) - Logging configuration interface definitions
 - [src/config/config_mail_relay.c](/elements/001-hydrogen/hydrogen/src/config/config_mail_relay.c) - Mail relay configuration implementation
 - [src/config/config_mail_relay.h](/elements/001-hydrogen/hydrogen/src/config/config_mail_relay.h) - Mail relay configuration interface definitions
+- [src/config/config_mcp.c](/elements/001-hydrogen/hydrogen/src/config/config_mcp.c) - MCP configuration implementation
+- [src/config/config_mcp.h](/elements/001-hydrogen/hydrogen/src/config/config_mcp.h) - MCP configuration interface (letter T)
 - [src/config/config_reporting.c](/elements/001-hydrogen/hydrogen/src/config/config_reporting.c) - Reporting configuration implementation
 - [src/config/config_reporting.h](/elements/001-hydrogen/hydrogen/src/config/config_reporting.h) - Reporting configuration interface definitions
 - [src/config/config_mdns_client.c](/elements/001-hydrogen/hydrogen/src/config/config_mdns_client.c) - mDNS client configuration implementation
@@ -173,6 +177,28 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 </details>
 
 <details>
+<summary><b>MCP Server</b></summary>
+
+- [src/mcp/mcp.c](/elements/001-hydrogen/hydrogen/src/mcp/mcp.c) - MCP lifecycle and status snapshot
+- [src/mcp/mcp.h](/elements/001-hydrogen/hydrogen/src/mcp/mcp.h) - MCP public interface
+- [src/mcp/mcp_http.c](/elements/001-hydrogen/hydrogen/src/mcp/mcp_http.c) - Dedicated MHD daemon
+- [src/mcp/mcp_http.h](/elements/001-hydrogen/hydrogen/src/mcp/mcp_http.h) - MCP HTTP interface
+- [src/mcp/mcp_auth.c](/elements/001-hydrogen/hydrogen/src/mcp/mcp_auth.c) - Bearer chain + WWW-Authenticate
+- [src/mcp/mcp_auth.h](/elements/001-hydrogen/hydrogen/src/mcp/mcp_auth.h) - MCP auth interface
+- [src/mcp/mcp_prm.c](/elements/001-hydrogen/hydrogen/src/mcp/mcp_prm.c) - RFC 9728 PRM document
+- [src/mcp/mcp_prm.h](/elements/001-hydrogen/hydrogen/src/mcp/mcp_prm.h) - PRM interface
+- [src/mcp/mcp_rpc.c](/elements/001-hydrogen/hydrogen/src/mcp/mcp_rpc.c) - JSON-RPC envelope
+- [src/mcp/mcp_rpc.h](/elements/001-hydrogen/hydrogen/src/mcp/mcp_rpc.h) - RPC envelope interface
+- [src/mcp/mcp_session.c](/elements/001-hydrogen/hydrogen/src/mcp/mcp_session.c) - Session bind, DELETE, reaper
+- [src/mcp/mcp_session.h](/elements/001-hydrogen/hydrogen/src/mcp/mcp_session.h) - Session interface
+- [src/mcp/mcp_dispatch.c](/elements/001-hydrogen/hydrogen/src/mcp/mcp_dispatch.c) - Protocol script submit + suspend
+- [src/mcp/mcp_dispatch.h](/elements/001-hydrogen/hydrogen/src/mcp/mcp_dispatch.h) - Dispatch interface
+- [src/mcp/mcp_stats.c](/elements/001-hydrogen/hydrogen/src/mcp/mcp_stats.c) - Atomics / snapshot
+- [src/mcp/mcp_stats.h](/elements/001-hydrogen/hydrogen/src/mcp/mcp_stats.h) - Stats interface
+
+</details>
+
+<details>
 <summary><b>Mutex Management</b></summary>
 
 - [src/mutex/mutex.c](/elements/001-hydrogen/hydrogen/src/mutex/mutex.c) - Mutex utility functions implementation
@@ -189,6 +215,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [src/launch/launch_database.c](/elements/001-hydrogen/hydrogen/src/launch/launch_database.c) - Database subsystem launch
 - [src/launch/launch_logging.c](/elements/001-hydrogen/hydrogen/src/launch/launch_logging.c) - Logging subsystem launch
 - [src/launch/launch_mail_relay.c](/elements/001-hydrogen/hydrogen/src/launch/launch_mail_relay.c) - Mail relay launch
+- [src/launch/launch_mcp.c](/elements/001-hydrogen/hydrogen/src/launch/launch_mcp.c) - MCP subsystem launch
 - [src/launch/launch_reporting.c](/elements/001-hydrogen/hydrogen/src/launch/launch_reporting.c) - Reporting subsystem launch
 - [src/launch/launch_mdns_client.c](/elements/001-hydrogen/hydrogen/src/launch/launch_mdns_client.c) - mDNS client launch
 - [src/launch/launch_mdns_server.c](/elements/001-hydrogen/hydrogen/src/launch/launch_mdns_server.c) - mDNS server launch
@@ -219,6 +246,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [src/landing/landing_database.c](/elements/001-hydrogen/hydrogen/src/landing/landing_database.c) - Database subsystem shutdown
 - [src/landing/landing_logging.c](/elements/001-hydrogen/hydrogen/src/landing/landing_logging.c) - Logging subsystem shutdown
 - [src/landing/landing_mail_relay.c](/elements/001-hydrogen/hydrogen/src/landing/landing_mail_relay.c) - Mail relay shutdown
+- [src/landing/landing_mcp.c](/elements/001-hydrogen/hydrogen/src/landing/landing_mcp.c) - MCP subsystem shutdown
 - [src/landing/landing_reporting.c](/elements/001-hydrogen/hydrogen/src/landing/landing_reporting.c) - Reporting subsystem shutdown
 - [src/landing/landing_mdns_client.c](/elements/001-hydrogen/hydrogen/src/landing/landing_mdns_client.c) - mDNS client shutdown
 - [src/landing/landing_mdns_server.c](/elements/001-hydrogen/hydrogen/src/landing/landing_mdns_server.c) - mDNS server shutdown
@@ -435,6 +463,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [Subsystems Documentation](/docs/H/core/subsystems/README.md) - Table of contents for all subsystem documentation
 - [docs/scripting/README.md](/docs/H/core/subsystems/scripting/README.md) - Scripting subsystem overview
 - [docs/scripting/lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md) - Lua host API reference
+- [docs/mcp/mcp.md](/docs/H/core/subsystems/mcp/mcp.md) - MCP subsystem architecture
 - [LUA_GUIDE.md](/docs/H/LUA_GUIDE.md) - Intro to Lua and practical Hydrogen scripting guide
 - [LUA_FEATURES.md](/docs/H/LUA_FEATURES.md) - Pure Lua language features and standard library recipes
 - [MAIL_GUIDE.md](/docs/H/MAIL_GUIDE.md) - Mail Relay, templates, rewrites, and Lua mail handling
@@ -459,6 +488,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [docs/api/conduit/script.md](/docs/H/api/conduit/script.md) - JWT client Lua script invoke
 - [docs/api/conduit/webhook.md](/docs/H/api/conduit/webhook.md) - Generic signed webhook ingress
 - [docs/api/reporting/reporting_endpoints.md](/docs/H/api/reporting/reporting_endpoints.md) - Reporting image_scale
+- [docs/api/mcp/mcp_endpoints.md](/docs/H/api/mcp/mcp_endpoints.md) - MCP Streamable HTTP + status
 
 </details>
 
@@ -608,6 +638,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_50_conduit_query.sh](/elements/001-hydrogen/hydrogen/tests/test_50_conduit_query.sh) - Conduit single query endpoint testing (public queries across 7 database engines)
 - [tests/test_51_conduit_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_51_conduit_queries.sh) - Conduit multiple queries endpoint testing (batch queries across 7 database engines)
 - [tests/test_46_conduit_script.sh](/elements/001-hydrogen/hydrogen/tests/test_46_conduit_script.sh) - Conduit script invoke blackbox (JWT POST/GET /api/conduit/script, Api.Echo, 7 engines)
+- [tests/test_47_mcp.sh](/elements/001-hydrogen/hydrogen/tests/test_47_mcp.sh) - MCP Streamable HTTP blackbox (JWT, Mcp.Echo, 7 engines, ports 1547x / 1548x)
 - [tests/test_52_conduit_auth_query.sh](/elements/001-hydrogen/hydrogen/tests/test_52_conduit_auth_query.sh) - Conduit authenticated single query endpoint testing (JWT-protected queries across 7 database engines)
 - [tests/test_53_conduit_auth_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_53_conduit_auth_queries.sh) - Conduit authenticated multiple queries endpoint testing (batch authenticated queries across 7 database engines)
 - [tests/test_54_conduit_alt_query.sh](/elements/001-hydrogen/hydrogen/tests/test_54_conduit_alt_query.sh) - Conduit alt single query endpoint testing (cross-database single queries with JWT authentication)
@@ -674,6 +705,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [extras/make-all.sh](/elements/001-hydrogen/hydrogen/extras/make-all.sh) - Compilation test script
 - [extras/make-clean.sh](/elements/001-hydrogen/hydrogen/extras/make-clean.sh) - Comprehensive build cleanup script
 - [extras/make-trial.sh](/elements/001-hydrogen/hydrogen/extras/make-trial.sh) - Quick trial build and diagnostics script
+- [extras/mcp_probe.sh](/elements/001-hydrogen/hydrogen/extras/mcp_probe.sh) - Manual MCP Streamable HTTP curl/jq probe
 - [extras/filter-log.sh]/elements/001-hydrogen/hydrogen/(extras/filter-log.sh) - Log output filtering utility
 
 </details>

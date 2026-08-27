@@ -12,6 +12,10 @@ void test_mcp_start_listen_bind_failure(void);
 void test_mcp_start_listen_daemon_info_failure(void);
 void test_mcp_start_listen_success_pool(void);
 void test_mcp_start_listen_invalid_interface(void);
+void test_mcp_start_listen_already_listening(void);
+void test_mcp_start_listen_ipv6(void);
+void test_mcp_start_listen_zero_pool(void);
+void test_mcp_fill_bind_addr_null(void);
 
 static void apply_ok_cfg(void) {
     memset(&cfg, 0, sizeof(cfg));
@@ -64,6 +68,35 @@ void test_mcp_start_listen_invalid_interface(void) {
     TEST_ASSERT_FALSE(mcp_start_listen(&cfg));
 }
 
+void test_mcp_start_listen_already_listening(void) {
+    mock_mhd_set_daemon_info_result(&daemon_info);
+    TEST_ASSERT_TRUE(mcp_start_listen(&cfg));
+    TEST_ASSERT_FALSE(mcp_start_listen(&cfg));
+    TEST_ASSERT_TRUE(mcp_is_listening());
+}
+
+void test_mcp_start_listen_ipv6(void) {
+    free(cfg.Interface);
+    cfg.Interface = strdup("::1");
+    mock_mhd_set_daemon_info_result(&daemon_info);
+    TEST_ASSERT_TRUE(mcp_start_listen(&cfg));
+    TEST_ASSERT_TRUE(mcp_is_listening());
+}
+
+void test_mcp_start_listen_zero_pool(void) {
+    cfg.ThreadPoolSize = 0;
+    mock_mhd_set_daemon_info_result(&daemon_info);
+    TEST_ASSERT_TRUE(mcp_start_listen(&cfg));
+    TEST_ASSERT_EQUAL(1, mcp_http_thread_pool_size());
+}
+
+void test_mcp_fill_bind_addr_null(void) {
+    struct sockaddr_storage addr;
+    TEST_ASSERT_FALSE(mcp_fill_bind_addr(NULL, NULL));
+    TEST_ASSERT_FALSE(mcp_fill_bind_addr(NULL, &addr));
+    TEST_ASSERT_FALSE(mcp_fill_bind_addr(&cfg, NULL));
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_mcp_start_listen_null);
@@ -71,5 +104,9 @@ int main(void) {
     RUN_TEST(test_mcp_start_listen_daemon_info_failure);
     RUN_TEST(test_mcp_start_listen_success_pool);
     RUN_TEST(test_mcp_start_listen_invalid_interface);
+    RUN_TEST(test_mcp_start_listen_already_listening);
+    RUN_TEST(test_mcp_start_listen_ipv6);
+    RUN_TEST(test_mcp_start_listen_zero_pool);
+    RUN_TEST(test_mcp_fill_bind_addr_null);
     return UNITY_END();
 }
