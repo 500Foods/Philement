@@ -17,6 +17,7 @@ This folder contains utility scripts and one-off diagnostic tools for the Hydrog
   - [`hydrogen_flush.sh`](#hydrogen_flushsh)
   - [`schematool/`](#schematool)
   - [`add_coverage.sh`](#add_coveragesh)
+  - [`function_coverage.sh`](#function_coveragesh)
   - [`mcp_probe.sh`](#mcp_probesh)
   - [`comment-analysis.sh`](#comment-analysissh)
   - [`filter-log.sh`](#filter-logsh)
@@ -290,6 +291,59 @@ extras/mcp_probe.sh ... --call Mcp.Echo '{"message":"hi"}'
 - ✅ Shows exact line numbers and source code of uncovered lines
 - ✅ Helps prioritize test development efforts
 - ✅ Provides clear output for code review and quality improvement
+
+### `function_coverage.sh`
+
+**Purpose:** Per-Function Coverage Analysis
+**Description:** Analyzes function-level coverage for a given source file by comparing gcov function records between Unity unit tests and Blackbox integration tests. Unlike `add_coverage.sh` which works at the line level, this tool answers three questions for each function:
+
+- Is it entered by Unity unit tests? (gcov call count > 0 in the Unity build)
+- Is it entered by Blackbox integration tests? (gcov call count > 0 in the coverage build)
+- Does it appear in the related Unity test source files? (function name found as a whole word in `<source>_test*.c` files)
+
+This distinguishes functions that are exercised *incidentally* (called as a side effect by some other test) from functions that are tested *independently* (explicitly referenced in a test file). It uses gcov's function records (`function NAME called N`) rather than line-level heuristics, which correctly identifies functions whose declaration line is non-executable but whose body was or wasn't entered.
+
+**Usage:**
+
+```bash
+./function_coverage.sh <relative_source_path>
+```
+
+**Examples:**
+
+```bash
+# Basic usage (path relative to src/)
+./function_coverage.sh scripting/scripting_api_mail_repo.c
+
+# Works with or without the src/ prefix
+./function_coverage.sh src/status/status.c
+
+# Root-level source files
+./function_coverage.sh hydrogen.c
+```
+
+**Output:**
+
+The script produces a table with one row per function:
+
+| Function | Line | Unity | Black | In Tests | In Any | Overall |
+|----------|------|-------|-------|----------|--------|---------|
+| `mail_repo_status_message` | 40 | YES | NO | YES | YES | UNITY |
+
+- **Unity / Black**: YES if gcov reports call count > 0, NO otherwise
+- **In Tests**: YES if the function name appears as a whole word in the related Unity test files (`<source>_test*.c`)
+- **In Any**: YES if the function name appears in any Unity test file (broader check)
+- **Overall**: BOTH (covered by both suites), UNITY (Unity only), BBOX (Blackbox only), or NEITHER
+
+A summary section follows with counts and percentages, plus a separate list of functions not called by Unity tests — the primary target for new unit test development.
+
+**Requirements:**
+
+- `HYDROGEN_ROOT` environment variable must be set
+- Build must have been configured with gcov instrumentation (`-fprofile-arcs -ftest-coverage`)
+- `.gcno` and `.gcda` files must exist in `build/unity/src/` and `build/coverage/src/`
+- If `.gcov` files don't exist, the script attempts to generate them from `.gcno` files automatically
+- Uses the `tables` command for formatted output if available, falls back to plain text table
 
 ### `comment-analysis.sh`
 

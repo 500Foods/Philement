@@ -13,6 +13,15 @@
 # analyze_engine()
 
 # CHANGELOG
+# 1.3.7 - 2026-08-28 - async_get flake fix: a 202-accepted job's scoreboard
+#                      registration can race the first GET's job_not_found
+#                      check by up to ~1-2s under suite load (observed on
+#                      MariaDB/MySQL, but reproduces on every engine incl.
+#                      PostgreSQL/CockroachDB). Previously a single 404
+#                      job_not_found aborted the poll loop and burned one of
+#                      only 4 POST retries immediately. Now the GET loop
+#                      keeps polling the SAME job_id through a 5s grace
+#                      window before giving up on it and retrying the POST.
 # 1.3.6 - 2026-08-27 - 90s HTTP wait, 000-only retry, INFO delay lines (group40_http).
 # 1.3.5 - 2026-08-27 - Suite-load: HTTP warmup after READY; login 8×; retry
 #                      timeout_clamp on 404/000 (WAIT_NOT_FOUND while job
@@ -67,7 +76,7 @@ TEST_NAME="Conduit Script"
 TEST_ABBR="CSC"
 TEST_NUMBER="46"
 TEST_COUNTER=0
-TEST_VERSION="1.3.6"
+TEST_VERSION="1.3.7"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -443,11 +452,16 @@ run_engine() {
     fi
 
     # --- wait:false → 202 + GET status ---
-    # Under heavy parallel load (tests 41/44), the server may accept an async
-    # job (return 202 + job_id) but fail to persist it under DB contention.
-    # The GET then returns 404 "job_not_found". We retry the POST up to 2 times
-    # to give the server another chance to store the job. timeout_seconds is
-    # raised to 60 (ClientInvokeMaxTimeout) to give the worker more headroom.
+    # Under heavy parallel load (tests 41/44), a 202-accepted job's scoreboard
+    # registration can race the first GET (plus JWT re-validation query
+    # latency on the GET path) by up to a couple seconds, so a single early
+    # 404 "job_not_found" does not reliably mean the job was never persisted
+    # (this races on every engine, not just slower ones). The GET loop below
+    # keeps polling the same job_id through a short not-found grace window
+    # before giving up on it. Only after that grace window elapses do we
+    # retry the POST (up to 4 times) to give the server another chance to
+    # store the job. timeout_seconds is raised to 60 (ClientInvokeMaxTimeout)
+    # to give the worker more headroom.
     local async_file="${result_file}.async.json"
     local async_ok=0
     local job_id=""
@@ -466,6 +480,15 @@ run_engine() {
                 local get_file="${result_file}.get.json"
                 local poll_deadline
                 poll_deadline=$(( $("${DATE}" +%s) + 45 ))
+                # Grace window for a freshly-accepted job: under suite load the
+                # 202 response can race the scoreboard registration (and the
+                # JWT-check query on the GET path) by up to ~1-2s, so a single
+                # early "job_not_found" does not mean the job was never
+                # persisted. Keep polling the SAME job_id until this grace
+                # deadline elapses before giving up and retrying the POST.
+                local not_found_grace_deadline
+                not_found_grace_deadline=$(( $("${DATE}" +%s) + 5 ))
+                local saw_not_found=0
 
                 while true; do
                     get_st=$(curl -s -X GET "${base_url}/api/conduit/script/${job_id}" \
@@ -486,13 +509,28 @@ run_engine() {
                         async_terminal=1
                         break
                     fi
-                    # If job_not_found, break GET loop to retry POST
+                    # If job_not_found, keep polling the same job_id through
+                    # the short grace window (registration may still be in
+                    # flight); only give up on this job_id and retry the POST
+                    # once job_not_found persists past not_found_grace_deadline.
                     if [[ "${get_st}" == "404" ]]; then
                         local gql_err
                         gql_err=$(jq -r '.error // empty' "${get_file}" 2>/dev/null || true)
                         if [[ "${gql_err}" == "job_not_found" ]]; then
-                            break
+                            saw_not_found=1
+                            local now_nf
+                            now_nf=$("${DATE}" +%s)
+                            if (( now_nf >= not_found_grace_deadline )); then
+                                break
+                            fi
+                            sleep 0.2
+                            continue
                         fi
+                    elif [[ "${saw_not_found}" -eq 1 ]]; then
+                        # Job became visible again; extend the grace window
+                        # so a transient not_found doesn't cost the whole
+                        # poll budget once the job is confirmed registered.
+                        saw_not_found=0
                     fi
                     local now
                     now=$("${DATE}" +%s)
