@@ -59,6 +59,8 @@ UNITY_GCOV_DIR="${PROJECT_DIR}/build/unity/src"
 COVERAGE_GCOV_DIR="${PROJECT_DIR}/build/coverage/src"
 UNITY_GCOV="${UNITY_GCOV_DIR}/${src_noext}.c.gcov"
 COVERAGE_GCOV="${COVERAGE_GCOV_DIR}/${src_noext}.c.gcov"
+UNITY_GCDA="${UNITY_GCOV_DIR}/${src_noext}.gcda"
+COVERAGE_GCDA="${COVERAGE_GCOV_DIR}/${src_noext}.gcda"
 SRC_PATH="${PROJECT_DIR}/src/${src_rel}"
 
 src_basename="$(basename "${src_noext}")"
@@ -87,7 +89,8 @@ pct() {
     fi
 }
 
-# Generate a .gcov file if it doesn't exist, using the .gcno file
+# Generate a .gcov file if it doesn't exist or is stale, using .gcno + .gcda files.
+# Refuses to generate from .gcno alone (would be all-zero); requires .gcda.
 generate_gcov_if_needed() {
     local gcov_file="$1"
     local gcov_parent
@@ -95,12 +98,16 @@ generate_gcov_if_needed() {
     local gcov_base
     gcov_base="$(basename "${gcov_file}" .c.gcov)"
 
-    if [[ ! -f "${gcov_file}" ]]; then
-        local gcno_file="${gcov_parent}/${gcov_base}.gcno"
-        if [[ -f "${gcno_file}" ]]; then
-            # shellcheck disable=SC2312 # gcov failure is non-fatal; we check the file later
-            (cd "${gcov_parent}" && gcov -b -c "${gcov_base}" >/dev/null 2>&1 || true)
-        fi
+    local gcda_file="${gcov_parent}/${gcov_base}.gcda"
+
+    # Need .gcda for real coverage data; .gcno alone produces all-zero gcov
+    if [[ ! -f "${gcda_file}" ]]; then
+        return 0
+    fi
+
+    # Regenerate if gcov is missing or stale (older than gcda)
+    if [[ ! -f "${gcov_file}" ]] || [[ "${gcda_file}" -nt "${gcov_file}" ]]; then
+        (cd "${gcov_parent}" && gcov -b -c "${gcov_base}" >/dev/null 2>&1 || true)
     fi
 }
 
@@ -151,11 +158,30 @@ parse_gcov_functions() {
 }
 
 # ---------------------------------------------------------------------------
-# Generate gcov files if missing
+# Generate gcov files if missing or stale
 # ---------------------------------------------------------------------------
 
 generate_gcov_if_needed "${UNITY_GCOV}"
 generate_gcov_if_needed "${COVERAGE_GCOV}"
+
+# ---------------------------------------------------------------------------
+# Check coverage data availability (.gcda must exist for real data)
+# ---------------------------------------------------------------------------
+
+UNITY_DATA="ok"
+COVERAGE_DATA="ok"
+
+if [[ ! -f "${UNITY_GCDA}" ]]; then
+    UNITY_DATA="no-gcda"
+elif [[ ! -f "${UNITY_GCOV}" ]]; then
+    UNITY_DATA="no-gcov"
+fi
+
+if [[ ! -f "${COVERAGE_GCDA}" ]]; then
+    COVERAGE_DATA="no-gcda"
+elif [[ ! -f "${COVERAGE_GCOV}" ]]; then
+    COVERAGE_DATA="no-gcov"
+fi
 
 # ---------------------------------------------------------------------------
 # Collect function data from both gcov files
@@ -165,8 +191,8 @@ declare -A unity_calls
 declare -A coverage_calls
 declare -A func_lines
 
-# Parse Unity gcov
-if [[ -f "${UNITY_GCOV}" ]]; then
+# Parse Unity gcov (only if .gcda exists and gcov file is available)
+if [[ "${UNITY_DATA}" == "ok" ]]; then
     # shellcheck disable=SC2312 # process substitution return value is non-fatal
     while IFS=$'\t' read -r func calls line; do
         [[ -z "${func}" ]] && continue
@@ -175,8 +201,8 @@ if [[ -f "${UNITY_GCOV}" ]]; then
     done < <(parse_gcov_functions "${UNITY_GCOV}")
 fi
 
-# Parse Coverage gcov
-if [[ -f "${COVERAGE_GCOV}" ]]; then
+# Parse Coverage gcov (only if .gcda exists and gcov file is available)
+if [[ "${COVERAGE_DATA}" == "ok" ]]; then
     # shellcheck disable=SC2312 # process substitution return value is non-fatal
     while IFS=$'\t' read -r func calls line; do
         [[ -z "${func}" ]] && continue
@@ -195,13 +221,9 @@ for func in "${!coverage_calls[@]}"; do
 done
 
 if [[ ${#func_set[@]} -eq 0 ]]; then
-    unity_found="missing"
-    coverage_found="missing"
-    [[ -f "${UNITY_GCOV}" ]] && unity_found="found"
-    [[ -f "${COVERAGE_GCOV}" ]] && coverage_found="found"
     echo "Error: No function records found in gcov files for ${src_rel}" >&2
-    echo "  Unity gcov:    ${UNITY_GCOV} (${unity_found})" >&2
-    echo "  Coverage gcov: ${COVERAGE_GCOV} (${coverage_found})" >&2
+    echo "  Unity gcov:    ${UNITY_GCOV} (${UNITY_DATA})" >&2
+    echo "  Coverage gcov: ${COVERAGE_GCOV} (${COVERAGE_DATA})" >&2
     echo "  Run Test 10 (Unity) or other tests to generate coverage data first." >&2
     exit 1
 fi
@@ -334,10 +356,8 @@ blackbox_pct="$(pct "${blackbox_covered}" "${total_funcs}")"
 in_related_pct="$(pct "${in_related_count}" "${total_funcs}")"
 in_any_pct="$(pct "${in_any_count}" "${total_funcs}")"
 
-unity_gcov_status="MISSING"
-coverage_gcov_status="MISSING"
-[[ -f "${UNITY_GCOV}" ]] && unity_gcov_status="found"
-[[ -f "${COVERAGE_GCOV}" ]] && coverage_gcov_status="found"
+unity_gcov_status="${UNITY_DATA}"
+coverage_gcov_status="${COVERAGE_DATA}"
 
 # ---------------------------------------------------------------------------
 # Render table output
@@ -349,6 +369,7 @@ render_with_tables() {
     layout_json="${temp_dir}/layout.json"
     data_json="${temp_dir}/data.json"
 
+    # shellcheck disable=SC2154 # {RESET} etc. are literal tokens for the tables command, not bash variables
     cat > "${layout_json}" << EOF
 {
     "title": "{BOLD}Function Coverage: ${src_rel}{RESET}  {CYAN}Unity{RESET} ${unity_pct}%  {MAGENTA}Blackbox{RESET} ${blackbox_pct}%",
@@ -358,8 +379,8 @@ render_with_tables() {
     "columns": [
         {"header": "Function", "key": "function", "datatype": "text"},
         {"header": "Line", "key": "line", "datatype": "num", "justification": "right"},
-        {"header": "Unity", "key": "unity", "datatype": "text"},
-        {"header": "Black", "key": "blackbox", "datatype": "text"},
+        {"header": "Unity", "key": "unity_calls", "datatype": "num", "justification": "right"},
+        {"header": "Black", "key": "blackbox_calls", "datatype": "num", "justification": "right"},
         {"header": "In Tests", "key": "in_related", "datatype": "text"},
         {"header": "In Any", "key": "in_any", "datatype": "text"},
         {"header": "Overall", "key": "overall", "datatype": "text"}
@@ -376,8 +397,8 @@ EOF
                 echo ","
             fi
             first=0
-            printf '    {"function": "%s", "line": %s, "unity": "%s", "blackbox": "%s", "in_related": "%s", "in_any": "%s", "overall": "%s"}' \
-                "${func}" "${sline:-0}" "${unity_str}" "${bb_str}" "${related_str}" "${any_str}" "${overall}"
+            printf '    {"function": "%s", "line": %s, "unity_calls": %s, "blackbox_calls": %s, "in_related": "%s", "in_any": "%s", "overall": "%s"}' \
+                "${func}" "${sline:-0}" "${uc}" "${cc}" "${related_str}" "${any_str}" "${overall}"
         done
         echo ""
         echo "]"
@@ -404,7 +425,7 @@ render_text_table() {
     for row in "${table_rows[@]}"; do
         IFS='|' read -r func sline unity_str uc bb_str cc related_str any_str overall <<< "${row}"
         printf "%-${max_func}s  %${max_line}d  %5s  %5s  %8s  %6s  %s\n" \
-            "${func}" "${sline:-0}" "${unity_str}" "${bb_str}" "${related_str}" "${any_str}" "${overall}"
+            "${func}" "${sline:-0}" "${uc}" "${cc}" "${related_str}" "${any_str}" "${overall}"
     done
 }
 
@@ -465,13 +486,33 @@ else
 fi
 echo ""
 
-# Functions covered by neither suite
+# Functions not entered by either suite
 if [[ "${never_entered_count}" -gt 0 ]]; then
     echo "Functions not entered by either Unity or Blackbox tests (${never_entered_count}):"
     for row in "${table_rows[@]}"; do
         IFS='|' read -r func sline unity_str uc bb_str cc related_str any_str overall <<< "${row}"
         if [[ "${overall}" == "NEITHER" ]]; then
             echo "  ${func} (line ${sline})"
+        fi
+    done
+    echo ""
+fi
+
+# Functions entered by Unity but not explicitly in related test source
+incidental_count=0
+for row in "${table_rows[@]}"; do
+    IFS='|' read -r func sline unity_str uc bb_str cc related_str any_str overall <<< "${row}"
+    if [[ "${uc}" -gt 0 && -z "${in_related[${func}]:-}" ]]; then
+        incidental_count=$((incidental_count + 1))
+    fi
+done
+
+if [[ "${incidental_count}" -gt 0 ]]; then
+    echo "Functions entered by Unity but not in related tests (${incidental_count}):"
+    for row in "${table_rows[@]}"; do
+        IFS='|' read -r func sline unity_str uc bb_str cc related_str any_str overall <<< "${row}"
+        if [[ "${uc}" -gt 0 && -z "${in_related[${func}]:-}" ]]; then
+            echo "  ${func} (line ${sline}, unity: ${uc}, blackbox: ${cc})"
         fi
     done
     echo ""

@@ -18,6 +18,7 @@ This folder contains utility scripts and one-off diagnostic tools for the Hydrog
   - [`schematool/`](#schematool)
   - [`add_coverage.sh`](#add_coveragesh)
   - [`function_coverage.sh`](#function_coveragesh)
+  - [`function_complete.sh`](#function_completesh)
   - [`mcp_probe.sh`](#mcp_probesh)
   - [`comment-analysis.sh`](#comment-analysissh)
   - [`filter-log.sh`](#filter-logsh)
@@ -344,6 +345,30 @@ A summary section follows with counts and percentages, plus a separate list of f
 - `.gcno` and `.gcda` files must exist in `build/unity/src/` and `build/coverage/src/`
 - If `.gcov` files don't exist, the script attempts to generate them from `.gcno` files automatically
 - Uses the `tables` command for formatted output if available, falls back to plain text table
+
+### `function_complete.sh`
+
+**Purpose:** Project-Wide Function Coverage Scan
+**Description:** Scans every compiled source file in the project and produces a consolidated table showing only the files that have function-level coverage gaps. For each file, the script reports how many functions are missing from each coverage category:
+
+- **U Gap:** Functions with call count 0 in Unity gcov (not entered by unit tests)
+- **B Gap:** Functions with call count 0 in Blackbox gcov (not entered by integration tests)
+- **No Tests:** Functions whose names don't appear in the related Unity test source files
+
+This is the "scan-all" companion to `function_coverage.sh`: instead of drilling into a single file's per-function details, it gives you the big picture — one row per file with gaps — grouped by folder with linebreaks between groups, matching the coverage table format.
+
+**Usage:**
+
+```bash
+./function_complete.sh
+```
+
+**Requirements:**
+
+- `HYDROGEN_ROOT` environment variable must be set
+- Requires `.gcda` files in `build/unity/src/` and/or `build/coverage/src/` (run tests first)
+- If `.gcda` is missing, files are skipped (no false all-zero reporting)
+- Uses the `tables` command for formatted output if available, falls back to plain text table with folder grouping
 
 ### `comment-analysis.sh`
 
