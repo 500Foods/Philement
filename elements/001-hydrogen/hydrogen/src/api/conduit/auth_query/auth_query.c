@@ -134,7 +134,8 @@ enum MHD_Result validate_jwt_from_header(
     
     if (!valid) {
         const char *error_msg = get_jwt_error_message(result.error);
-        unsigned int http_status = MHD_HTTP_UNAUTHORIZED;
+        unsigned int http_status = (result.error == JWT_ERROR_UNAVAILABLE)
+            ? MHD_HTTP_SERVICE_UNAVAILABLE : MHD_HTTP_UNAUTHORIZED;
         
         log_this(SR_AUTH, "validate_jwt_from_header: JWT validation failed - error_code=%d, msg=%s",
                  LOG_LEVEL_ALERT, 2, result.error, error_msg);

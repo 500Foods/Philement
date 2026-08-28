@@ -515,8 +515,9 @@ static bool validate_script_jwt(struct MHD_Connection *connection,
         } else if (strncmp(auth_header, "Bearer ", 7) != 0) {
             (void)send_invalid_authorization_format_response(connection);
         } else {
-            (void)send_jwt_error_response(connection, msg,
-                                          MHD_HTTP_UNAUTHORIZED);
+            unsigned int jwt_http = (jwt_out->error == JWT_ERROR_UNAVAILABLE)
+                ? MHD_HTTP_SERVICE_UNAVAILABLE : MHD_HTTP_UNAUTHORIZED;
+            (void)send_jwt_error_response(connection, msg, jwt_http);
         }
         return false;
     }

@@ -5,6 +5,7 @@
 
 #include <src/hydrogen.h>
 #include <string.h>
+#include <time.h>
 #include <src/logging/logging.h>
 #include "auth_service.h"
 #include "auth_service_database.h"
@@ -19,6 +20,20 @@
 
 /* Unity test seam: non-NULL overrides live queue/cache (production stays NULL). */
 AuthServiceDatabaseQueryFn g_auth_service_database_query_fn = NULL;
+
+static _Thread_local time_t g_auth_query_deadline = 0;
+
+void auth_query_begin_deadline(int budget_seconds) {
+    if (budget_seconds <= 0) {
+        g_auth_query_deadline = 0;
+        return;
+    }
+    g_auth_query_deadline = time(NULL) + budget_seconds;
+}
+
+void auth_query_end_deadline(void) {
+    g_auth_query_deadline = 0;
+}
 
 void auth_service_database_test_set_query_fn(AuthServiceDatabaseQueryFn fn) {
     g_auth_service_database_query_fn = fn;
@@ -67,6 +82,17 @@ QueryResult* execute_auth_query_timeout(int query_ref, const char* database,
     }
     if (timeout_seconds <= 0) {
         timeout_seconds = AUTH_QUERY_TIMEOUT_DEFAULT;
+    }
+    if (g_auth_query_deadline != 0) {
+        int remaining = (int)(g_auth_query_deadline - time(NULL));
+        if (remaining <= 0) {
+            log_this(SR_AUTH, "Auth query skipped: login budget exhausted (QueryRef %d)",
+                     LOG_LEVEL_ERROR, 1, query_ref);
+            return NULL;
+        }
+        if (timeout_seconds > remaining) {
+            timeout_seconds = remaining;
+        }
     }
 
     DatabaseQueue* db_queue = database_queue_manager_get_database(global_queue_manager, database);
@@ -184,18 +210,17 @@ QueryResult* execute_auth_query_timeout(int query_ref, const char* database,
 }
 
 /* Status check is QueryRef #012 during password verify (password + status_a16=1). */
-account_info_t* lookup_account(const char* login_id, const char* database) {
-    if (!login_id || !database) return NULL;
+int lookup_account_code(const char* login_id, const char* database, account_info_t** out) {
+    if (out) {
+        *out = NULL;
+    }
+    if (!login_id || !database || !out) return -1;
 
-    // Create parameters for QueryRef #008: Get Account ID
-    // Use typed parameter format: {"STRING": {"LOGINID": "value"}}
-    // Parameter name must match SQL placeholder :LOGINID
     json_t* params = json_object();
     json_t* string_params = json_object();
     json_object_set_new(string_params, "LOGINID", json_string(login_id));
     json_object_set_new(params, "STRING", string_params);
 
-    // Execute query
     QueryResult* result = execute_auth_query(8, database, params);
     json_decref(params);
 
@@ -203,61 +228,59 @@ account_info_t* lookup_account(const char* login_id, const char* database) {
         log_this("AUTH", "Failed to lookup account: %s", LOG_LEVEL_ERROR, 1,
                 result ? result->error_message : "Unknown error");
         free_query_result(result);
-        return NULL;
+        return -1;
     }
 
-    // Parse result JSON
     json_t* result_json = json_loads(result->data_json, 0, NULL);
     if (!result_json) {
         log_this("AUTH", "Failed to parse account lookup result", LOG_LEVEL_ERROR, 0);
-        free(result->data_json);
-        free(result);
-        return NULL;
+        free_query_result(result);
+        return -1;
     }
 
-    // Create account info structure
+    json_t* row = json_array_get(result_json, 0);
+    if (!row) {
+        json_decref(result_json);
+        free_query_result(result);
+        return 0;
+    }
+
     account_info_t* account = calloc(1, sizeof(account_info_t));
     if (!account) {
         log_this("AUTH", "Failed to allocate memory for account info", LOG_LEVEL_ERROR, 0);
         json_decref(result_json);
-        free(result->data_json);
-        free(result);
-        return NULL;
+        free_query_result(result);
+        return -1;
     }
 
-    // Extract account data from JSON
-    // QueryRef #008 returns only account_id from account_contacts table
-    json_t* row = json_array_get(result_json, 0); // First row
-    if (row) {
-        json_t* account_id_json = json_object_get(row, "account_id");
-        
+    json_t* account_id_json = json_object_get(row, "account_id");
+    if (account_id_json) {
+        account->id = (int)json_integer_value(account_id_json);
+    } else {
+        account_id_json = json_object_get(row, "ACCOUNT_ID");
         if (account_id_json) {
             account->id = (int)json_integer_value(account_id_json);
-        } else {
-            // Fallback: try uppercase column name (DB2)
-            account_id_json = json_object_get(row, "ACCOUNT_ID");
-            if (account_id_json) {
-                account->id = (int)json_integer_value(account_id_json);
-            }
         }
-        
-        // Set enabled/authorized to true here
-        // The actual status check happens in QueryRef #012 during password verification which requires both password_hash AND status_a16=1
-        // This prevents revealing whether accounts exist but are disabled
-        account->enabled = true;
-        account->authorized = true;
-        
-        // Username, email, and roles will be populated during password verification
-        account->username = NULL;
-        account->email = NULL;
-        account->roles = NULL;
     }
 
-    // Cleanup
+    account->enabled = true;
+    account->authorized = true;
+    account->username = NULL;
+    account->email = NULL;
+    account->roles = NULL;
+
     json_decref(result_json);
     free_query_result(result);
+    *out = account;
+    return 1;
+}
 
-    return account;
+account_info_t* lookup_account(const char* login_id, const char* database) {
+    account_info_t* account = NULL;
+    if (lookup_account_code(login_id, database, &account) == 1) {
+        return account;
+    }
+    return NULL;
 }
 
 /*
@@ -266,14 +289,14 @@ account_info_t* lookup_account(const char* login_id, const char* database) {
  * Returns true only if BOTH password correct AND account active.
  * More secure: never exposes hash, does not reveal if account exists but disabled.
  */
-bool verify_password_and_status(const char* password, int account_id, const char* database, account_info_t* account) {
-    if (!password || account_id <= 0 || !database || !account) return false;
+int verify_password_and_status_code(const char* password, int account_id, const char* database, account_info_t* account) {
+    if (!password || account_id <= 0 || !database || !account) return -1;
 
     // Compute password hash
     char* computed_hash = compute_password_hash(password, account_id);
     if (!computed_hash) {
         log_this("AUTH", "Failed to compute password hash", LOG_LEVEL_ERROR, 0);
-        return false;
+        return -1;
     }
 
     // Create parameters for QueryRef #012: Check Password (with status)
@@ -297,7 +320,7 @@ bool verify_password_and_status(const char* password, int account_id, const char
         log_this("AUTH", "Password verification query failed for account_id=%d: %s", LOG_LEVEL_ERROR, 2,
                 account_id, result ? result->error_message : "Unknown error");
         free_query_result(result);
-        return false;
+        return -1;
     }
 
     // Parse result JSON
@@ -306,7 +329,7 @@ bool verify_password_and_status(const char* password, int account_id, const char
         log_this("AUTH", "Failed to parse password verification result", LOG_LEVEL_ERROR, 0);
         free(result->data_json);
         free(result);
-        return false;
+        return -1;
     }
 
     // Check if we got a row back - if yes, password correct AND account active
@@ -327,7 +350,11 @@ bool verify_password_and_status(const char* password, int account_id, const char
     json_decref(result_json);
     free_query_result(result);
 
-    return verified;
+    return verified ? 1 : 0;
+}
+
+bool verify_password_and_status(const char* password, int account_id, const char* database, account_info_t* account) {
+    return verify_password_and_status_code(password, account_id, database, account) == 1;
 }
 
 bool check_username_availability(const char* username, const char* database) {
@@ -559,12 +586,9 @@ void delete_jwt_from_storage(const char* jwt_hash, const char* database) {
  * present and valid. A matching row means the token is active; no row means
  * it has been deleted/revoked (or never stored).
  */
-bool is_token_revoked(const char* token_hash, const char* ip_address, const char* database) {
-    if (!token_hash || !database) return true; // Assume revoked if invalid
+int jwt_token_store_status(const char* token_hash, const char* ip_address, const char* database) {
+    if (!token_hash || !database) return -1;
 
-    // Create parameters for QueryRef #018: Validate JWT
-    // Use typed parameter format: {"STRING": {"TOKENHASH": "value", "IPADDRESS": "value"}}
-    // QueryRef #018 expects :TOKENHASH and :IPADDRESS parameters
     json_t* params = json_object();
     json_t* string_params = json_object();
 
@@ -572,24 +596,21 @@ bool is_token_revoked(const char* token_hash, const char* ip_address, const char
     json_object_set_new(string_params, "IPADDRESS", json_string(ip_address ? ip_address : ""));
     json_object_set_new(params, "STRING", string_params);
 
-    // Execute query
     QueryResult* result = execute_auth_query(18, database, params);
     json_decref(params);
 
     if (!result) {
         log_this("AUTH", "Failed to check token revocation status", LOG_LEVEL_ERROR, 0);
-        return true; // Fail-safe: assume revoked
+        return -1;
     }
 
     if (!result->success) {
         log_this("AUTH", "Token validation query failed: %s", LOG_LEVEL_ERROR, 1,
                  result->error_message ? result->error_message : "Unknown error");
         free_query_result(result);
-        return true; // Fail-safe: assume revoked
+        return -1;
     }
 
-    // Prefer row_count when the engine populates it; fall back to JSON array
-    // size for paths that only return data_json.
     bool has_valid_row = result->row_count > 0;
     if (!has_valid_row && result->data_json && result->data_json[0] != '\0') {
         json_error_t err;
@@ -601,9 +622,12 @@ bool is_token_revoked(const char* token_hash, const char* ip_address, const char
     }
 
     free_query_result(result);
+    return has_valid_row ? 1 : 0;
+}
 
-    // No matching row => token is not in the active token store => revoked.
-    return !has_valid_row;
+bool is_token_revoked(const char* token_hash, const char* ip_address, const char* database) {
+    int status = jwt_token_store_status(token_hash, ip_address, database);
+    return status != 1;
 }
 
 /**
@@ -816,21 +840,17 @@ void log_login_attempt(const char* login_id, const char* client_ip,
 /**
  * Verify API key and retrieve system information
  */
-bool verify_api_key(const char* api_key, const char* database, system_info_t* sys_info) {
+int verify_api_key_code(const char* api_key, const char* database, system_info_t* sys_info) {
     if (!api_key || !database || !sys_info) {
         log_this(SR_AUTH, "Invalid parameters for API key verification", LOG_LEVEL_ERROR, 0);
-        return false;
+        return -1;
     }
 
-    // Create parameters for QueryRef #001: Verify API Key
-    // Use typed parameter format: {"STRING": {"APIKEY": "value"}}
-    // Parameter name must match SQL placeholder :APIKEY
     json_t* params = json_object();
     json_t* string_params = json_object();
     json_object_set_new(string_params, "APIKEY", json_string(api_key));
     json_object_set_new(params, "STRING", string_params);
 
-    // Execute query against specified database
     QueryResult* result = execute_auth_query(1, database, params);
     json_decref(params);
 
@@ -838,31 +858,28 @@ bool verify_api_key(const char* api_key, const char* database, system_info_t* sy
         log_this(SR_AUTH, "Failed to verify API key: %s", LOG_LEVEL_ERROR, 1,
                 result ? result->error_message : "Unknown error");
         free_query_result(result);
-        return false;
+        return -1;
     }
 
-    // Check if API key was found
     if (!result->data_json) {
         log_this(SR_AUTH, "Invalid API key attempted: %s", LOG_LEVEL_ALERT, 1, api_key);
         free_query_result(result);
-        return false;
+        return 0;
     }
 
-    // Parse result JSON to extract system information
     json_t* result_json = json_loads(result->data_json, 0, NULL);
     if (!result_json) {
         log_this(SR_AUTH, "Failed to parse API key verification result", LOG_LEVEL_ERROR, 0);
         free_query_result(result);
-        return false;
+        return -1;
     }
 
-    // Extract system information from first row
     json_t* row = json_array_get(result_json, 0);
     if (!row) {
         log_this(SR_AUTH, "Invalid API key: not found in database", LOG_LEVEL_ALERT, 0);
         json_decref(result_json);
         free_query_result(result);
-        return false;
+        return 0;
     }
 
     // Extract system_id, license_id (as app_id), and valid_until (as license_expiry)
@@ -913,7 +930,11 @@ bool verify_api_key(const char* api_key, const char* database, system_info_t* sy
     json_decref(result_json);
     free_query_result(result);
 
-    return true;
+    return 1;
+}
+
+bool verify_api_key(const char* api_key, const char* database, system_info_t* sys_info) {
+    return verify_api_key_code(api_key, database, sys_info) == 1;
 }
 
 /**

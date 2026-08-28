@@ -555,6 +555,7 @@ bool postgresql_execute_query(DatabaseHandle* connection, QueryRequest* request,
         // log_this(designator, "PostgreSQL execute_query: Complete result JSON: %s", LOG_LEVEL_DEBUG, 1, db_result->data_json);
     } else {
         log_this(designator, "PostgreSQL execute_query: Query returned no data (0 rows or 0 columns)", LOG_LEVEL_DEBUG, 0);
+        db_result->data_json = strdup("[]");
     }
 
     PQclear_ptr(pg_result);
@@ -883,6 +884,7 @@ bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedState
         // log_this(designator, "PostgreSQL execute_prepared: Complete result JSON: %s", LOG_LEVEL_DEBUG, 1, db_result->data_json);
     } else {
         log_this(designator, "PostgreSQL execute_prepared: Query returned no data (0 rows or 0 columns)", LOG_LEVEL_TRACE, 0);
+        db_result->data_json = strdup("[]");
     }
 
     PQclear_ptr(pg_result);

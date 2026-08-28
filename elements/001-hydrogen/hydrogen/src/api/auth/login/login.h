@@ -64,5 +64,6 @@ enum MHD_Result login_send_account_disabled_error(struct MHD_Connection *connect
 enum MHD_Result login_send_account_not_authorized_error(struct MHD_Connection *connection, const char* login_id, int account_id);
 enum MHD_Result login_send_jwt_generation_error(struct MHD_Connection *connection, int account_id);
 enum MHD_Result login_send_jwt_hash_error(struct MHD_Connection *connection, int account_id);
+enum MHD_Result login_send_auth_unavailable_error(struct MHD_Connection *connection);
 
 #endif /* HYDROGEN_AUTH_LOGIN_H */

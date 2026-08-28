@@ -40,6 +40,10 @@ SMTP mail relay subsystem. Core outbound/API/Lua/OTP delivered; later phases (UI
 
 Chat proxy service. Phases 1–12 complete (see `complete/`). Open work: [Phase 13](/docs/H/plans/CHAT_PLAN_PHASE_13.md).
 
+### [FORTIES](/docs/H/plans/FORTIES.md)
+
+Tests 40–47 under parallel suite load: wait vs retry, shared live DBs, auth 503 vs 401, MCP scoring. Open — Hydrogen robustness, not more harness retries.
+
 ### [UNITY ASAN PLAN](/docs/H/plans/UNITY_ASAN_PLAN.md)
 
 Separate ASAN Unity build/test variant for memory-safety gating without corrupting gcov coverage.

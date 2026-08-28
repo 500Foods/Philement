@@ -513,7 +513,12 @@ enum MHD_Result mcp_handle_request(void *cls,
         authorization = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Authorization");
         memset(&auth, 0, sizeof(auth));
         if (!mcp_validate_bearer(authorization, body, body_len, cfg, app_config, &auth)) {
+            McpAuthRejectReason reject = auth.reject_reason;
             mcp_auth_result_cleanup(&auth);
+            if (reject == MCP_AUTH_REJECT_UNAVAILABLE) {
+                return mcp_queue_static(connection, MHD_HTTP_SERVICE_UNAVAILABLE,
+                    "{\"error\":\"Authentication service unavailable\"}", "application/json");
+            }
             return mcp_send_unauthorized(connection, cfg);
         }
         if (is_delete) {

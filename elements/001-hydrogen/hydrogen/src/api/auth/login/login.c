@@ -59,6 +59,14 @@ enum MHD_Result login_send_ip_blacklist_error(struct MHD_Connection *connection,
 }
 
 // Send rate limit exceeded error
+enum MHD_Result login_send_auth_unavailable_error(struct MHD_Connection *connection) {
+    log_this(SR_AUTH, "Password verification query failed — not a credential rejection", LOG_LEVEL_ERROR, 0);
+    json_t* response = json_object();
+    json_object_set_new(response, "error", json_string("Authentication service unavailable"));
+    json_object_set_new(response, "retry_after", json_integer(2));
+    return api_send_json_response(connection, response, MHD_HTTP_SERVICE_UNAVAILABLE);
+}
+
 enum MHD_Result login_send_rate_limit_error(struct MHD_Connection *connection, const char* login_id, const char* client_ip) {
     log_this(SR_AUTH, "Rate limit exceeded for %s from %s - access denied",
              LOG_LEVEL_ALERT, 2, login_id, client_ip);
@@ -215,15 +223,26 @@ enum MHD_Result handle_auth_login_request(
     }
     
     log_this(SR_AUTH, "Login input validation passed for login_id: %s", LOG_LEVEL_DEBUG, 1, login_id);
+
+    auth_query_begin_deadline(AUTH_LOGIN_BUDGET_SECONDS);
     
     // Step 3: Verify API key and retrieve system information
     system_info_t sys_info = {0};
-    if (!verify_api_key(api_key, database, &sys_info)) {
-        log_this(SR_AUTH, "API key verification failed: %s", LOG_LEVEL_ALERT, 1, api_key);
-        json_decref(request);
-        response = json_object();
-        json_object_set_new(response, "error", json_string("Invalid API key"));
-        return api_send_json_response(connection, response, MHD_HTTP_UNAUTHORIZED);
+    {
+        int api_key_code = verify_api_key_code(api_key, database, &sys_info);
+        if (api_key_code < 0) {
+            json_decref(request);
+            auth_query_end_deadline();
+            return login_send_auth_unavailable_error(connection);
+        }
+        if (api_key_code == 0) {
+            log_this(SR_AUTH, "API key verification failed: %s", LOG_LEVEL_ALERT, 1, api_key);
+            json_decref(request);
+            auth_query_end_deadline();
+            response = json_object();
+            json_object_set_new(response, "error", json_string("Invalid API key"));
+            return api_send_json_response(connection, response, MHD_HTTP_UNAUTHORIZED);
+        }
     }
     
     log_this(SR_AUTH, "API key verified: system_id=%d, app_id=%d", LOG_LEVEL_DEBUG, 2,
@@ -232,6 +251,7 @@ enum MHD_Result handle_auth_login_request(
     // Step 4: Check if license has expired
     if (!check_license_expiry(sys_info.license_expiry)) {
         json_decref(request);
+        auth_query_end_deadline();
         return login_send_license_expired_error(connection, sys_info.system_id);
     }
     
@@ -241,6 +261,7 @@ enum MHD_Result handle_auth_login_request(
     char* client_ip = api_get_client_ip(connection);
     if (!client_ip) {
         json_decref(request);
+        auth_query_end_deadline();
         return login_send_client_ip_error(connection);
     }
     
@@ -253,6 +274,7 @@ enum MHD_Result handle_auth_login_request(
         json_decref(request);
         enum MHD_Result result = login_send_ip_blacklist_error(connection, client_ip);
         free(client_ip);
+        auth_query_end_deadline();
         return result;
     }
     
@@ -264,11 +286,21 @@ enum MHD_Result handle_auth_login_request(
     // as failures and blocked 127.0.0.1 once LOGINMAXATTEMPTS was reachable.
     
     // Step 10: Lookup account information by login_id
-    account_info_t* account = lookup_account(login_id, database);
-    if (!account) {
-        free(client_ip);
-        json_decref(request);
-        return login_send_account_not_found_error(connection, login_id);
+    account_info_t* account = NULL;
+    {
+        int lookup_code = lookup_account_code(login_id, database, &account);
+        if (lookup_code < 0) {
+            free(client_ip);
+            json_decref(request);
+            auth_query_end_deadline();
+            return login_send_auth_unavailable_error(connection);
+        }
+        if (lookup_code == 0 || !account) {
+            free(client_ip);
+            json_decref(request);
+            auth_query_end_deadline();
+            return login_send_account_not_found_error(connection, login_id);
+        }
     }
     
     log_this(SR_AUTH, "Account found for login_id: %s (account_id=%d, username=%s)",
@@ -276,18 +308,22 @@ enum MHD_Result handle_auth_login_request(
     
     // Step 11: Verify account is enabled
     if (!account->enabled) {
+        int disabled_id = account->id;
         free_account_info(account);
         free(client_ip);
         json_decref(request);
-        return login_send_account_disabled_error(connection, login_id, account->id);
+        auth_query_end_deadline();
+        return login_send_account_disabled_error(connection, login_id, disabled_id);
     }
     
     // Step 12: Verify account is authorized
     if (!account->authorized) {
+        int unauthorized_id = account->id;
         free_account_info(account);
         free(client_ip);
         json_decref(request);
-        return login_send_account_not_authorized_error(connection, login_id, account->id);
+        auth_query_end_deadline();
+        return login_send_account_not_authorized_error(connection, login_id, unauthorized_id);
     }
     
     log_this(SR_AUTH, "Account enabled and authorized for account_id=%d", LOG_LEVEL_DEBUG, 1, account->id);
@@ -296,7 +332,16 @@ enum MHD_Result handle_auth_login_request(
     // QueryRef #012 checks: password_hash match AND status_a16=1 (Active)
     // Returns row ONLY if BOTH conditions are met
     // More secure: never exposes hash, doesn't reveal if account disabled vs wrong password
-    if (!verify_password_and_status(password, account->id, database, account)) {
+    {
+        int verify_code = verify_password_and_status_code(password, account->id, database, account);
+        if (verify_code < 0) {
+            free_account_info(account);
+            free(client_ip);
+            json_decref(request);
+            auth_query_end_deadline();
+            return login_send_auth_unavailable_error(connection);
+        }
+        if (verify_code == 0) {
         log_this(SR_AUTH, "Invalid credentials for account_id=%d from IP %s (password incorrect OR account not active)",
                  LOG_LEVEL_ALERT, 2, account->id, client_ip);
         const char* user_agent = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "User-Agent");
@@ -316,7 +361,9 @@ enum MHD_Result handle_auth_login_request(
         free_account_info(account);
         free(client_ip);
         json_decref(request);
+        auth_query_end_deadline();
         return fail_result;
+        }
     }
 
     // Best-effort audit of successful login (async; must not block auth path)
@@ -340,10 +387,12 @@ enum MHD_Result handle_auth_login_request(
     time_t issued_at = time(NULL);
     char* jwt_token = generate_jwt(account, &sys_info, client_ip, tz, database, issued_at);
     if (!jwt_token) {
+        int jwt_account_id = account->id;
         free_account_info(account);
         free(client_ip);
         json_decref(request);
-        return login_send_jwt_generation_error(connection, account->id);
+        auth_query_end_deadline();
+        return login_send_jwt_generation_error(connection, jwt_account_id);
     }
     
     log_this(SR_AUTH, "JWT token generated for account_id=%d", LOG_LEVEL_DEBUG, 1, account->id);
@@ -352,11 +401,13 @@ enum MHD_Result handle_auth_login_request(
     // Compute token hash for storage
     char* jwt_hash = compute_token_hash(jwt_token);
     if (!jwt_hash) {
+        int hash_account_id = account->id;
         free(jwt_token);
         free_account_info(account);
         free(client_ip);
         json_decref(request);
-        return login_send_jwt_hash_error(connection, account->id);
+        auth_query_end_deadline();
+        return login_send_jwt_hash_error(connection, hash_account_id);
     }
     
     // JWT token lifetime is 1 hour (3600 seconds)
@@ -400,6 +451,7 @@ enum MHD_Result handle_auth_login_request(
     free_account_info(account);
     free(client_ip);
     json_decref(request);
+    auth_query_end_deadline();
     
     // Return successful response
     return api_send_json_response(connection, response, MHD_HTTP_OK);

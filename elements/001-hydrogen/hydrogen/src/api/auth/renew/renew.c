@@ -93,7 +93,9 @@ enum MHD_Result handle_post_auth_renew(
         response = create_renew_error_response(error_msg);
         free(token);
         if (request) json_decref(request);
-        return api_send_json_response(connection, response, MHD_HTTP_UNAUTHORIZED);
+        unsigned int renew_http = (validation.error == JWT_ERROR_UNAVAILABLE)
+            ? MHD_HTTP_SERVICE_UNAVAILABLE : MHD_HTTP_UNAUTHORIZED;
+        return api_send_json_response(connection, response, renew_http);
     }
     
     // Extract database from request or claims

@@ -265,7 +265,7 @@ DatabaseQuery* database_query_build_from_result(const char* query_id, QueryResul
 
 // Connection management helper functions (formerly static in heartbeat.c)
 bool database_queue_handle_connection_success(DatabaseQueue* db_queue, DatabaseHandle* db_handle);
-bool database_queue_perform_connection_attempt(DatabaseQueue* db_queue, ConnectionConfig* config, DatabaseEngine engine_type);
+int database_queue_perform_connection_attempt(DatabaseQueue* db_queue, ConnectionConfig* config, DatabaseEngine engine_type);
 
 // Statistics and monitoring
 size_t database_queue_get_depth(DatabaseQueue* db_queue);

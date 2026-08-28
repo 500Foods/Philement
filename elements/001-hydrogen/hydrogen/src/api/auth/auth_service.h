@@ -93,7 +93,8 @@ typedef enum {
     JWT_ERROR_INVALID_SIGNATURE,
     JWT_ERROR_UNSUPPORTED_ALGORITHM,
     JWT_ERROR_INVALID_FORMAT,
-    JWT_ERROR_REVOKED
+    JWT_ERROR_REVOKED,
+    JWT_ERROR_UNAVAILABLE
 } jwt_error_t;
 
 typedef struct {
@@ -128,6 +129,8 @@ bool validate_registration_input(const char* username, const char* password,
 bool validate_timezone(const char* tz);
 
 // API key and system validation
+// 1 = valid, 0 = invalid key, -1 = query/transport failure
+int verify_api_key_code(const char* api_key, const char* database, system_info_t* sys_info);
 bool verify_api_key(const char* api_key, const char* database, system_info_t* sys_info);
 bool check_license_expiry(time_t license_expiry);
 
@@ -146,6 +149,8 @@ bool handle_rate_limiting(const char* client_ip, int failed_count,
                          bool is_whitelisted, const char* database);
 
 // Account management functions
+// 1 = found (*out set), 0 = not found, -1 = query/transport failure
+int lookup_account_code(const char* login_id, const char* database, account_info_t** out);
 account_info_t* lookup_account(const char* login_id, const char* database);
 
 // Load account roles from the database (QueryRef #017) as a comma-separated
@@ -153,7 +158,11 @@ account_info_t* lookup_account(const char* login_id, const char* database);
 // transport/query failure. Caller must free via free_account_info().
 char* auth_roles_from_database(int account_id, const char* database);
 
-// Password + status in one database query (QueryRef #012)
+#define AUTH_LOGIN_BUDGET_SECONDS 45
+
+// Password + status in one database query (QueryRef #012).
+// 1 = match, 0 = mismatch/no row, -1 = query/transport failure (not a credential miss).
+int verify_password_and_status_code(const char* password, int account_id, const char* database, account_info_t* account);
 bool verify_password_and_status(const char* password, int account_id, const char* database, account_info_t* account);
 
 // JWT functions
@@ -182,6 +191,9 @@ char* parse_logout_request(const char* request_body);
 jwt_validation_result_t validate_jwt_token(const char* token, const char* database);
 jwt_validation_result_t validate_jwt_for_logout(const char* token, const char* database);
 
+void auth_query_begin_deadline(int budget_seconds);
+void auth_query_end_deadline(void);
+
 // Database query wrapper functions
     QueryResult* execute_auth_query(int query_ref, const char* database, json_t* params);
     QueryResult* execute_auth_query_timeout(int query_ref, const char* database,
@@ -189,6 +201,9 @@ jwt_validation_result_t validate_jwt_for_logout(const char* token, const char* d
 
 // JWT storage functions
 bool is_token_revoked(const char* token_hash, const char* ip_address, const char* database);
+
+// 1 = token still in store, 0 = missing/revoked, -1 = query/transport failure
+int jwt_token_store_status(const char* token_hash, const char* ip_address, const char* database);
 
 // Rate limiting and security functions
 int check_failed_attempts(const char* login_id, const char* client_ip,
