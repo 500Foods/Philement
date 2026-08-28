@@ -62,18 +62,18 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-08-28 20:47:05 UTC
+Last updated at 2026-08-28 21:48:42 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                           498            433              0        1650922
-SVG                            298            581          11383         526777
+JSON                           498            433              0        1650912
+SVG                            298            581          11383         526747
 C                             1617          65316          57015         268135
-Text                           336            332              0         139622
-Markdown                       750          34013            248         101974
+Text                           336            332              0         139621
+Markdown                       750          34021            248         101991
 Lua                            422          11439           7255          91539
 JavaScript                     224          10445          13582          49798
-Bourne Shell                   176           7916         108007          43702
+Bourne Shell                   177           7993         108066          44054
 CSS                             84           2769           1563          14005
 C/C++ Header                   341           4096          14005          12537
 HTML                            42            258            219           2836
@@ -87,7 +87,7 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          4837         138049         213832        2904913
+SUM:                          4838         138134         213891        2905241
 -------------------------------------------------------------------------------
 1717 Files were skipped (duplicate, binary, or without source code):
   svg: 1222
