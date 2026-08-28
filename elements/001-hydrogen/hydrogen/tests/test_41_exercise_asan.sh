@@ -9,6 +9,11 @@
 # scrape_metrics() get_metric() run_auth_request() run_auth_batch()
 
 # CHANGELOG
+# 4.0.2 - 2026-08-28 - 3s settle before initial Prometheus scrape too (mirrors the
+#                      final-scrape fix): the DB-ready gate opens right as all 6
+#                      engines' queue threads spin up, and ASAN's thread-registry
+#                      locking can stall the very first scrape the same way it can
+#                      stall the post-exercise one. Report last HTTP code on failure.
 # 4.0.1 - 2026-08-27 - Suite-load: scrape 12× / 30s / 3s delay; 3s settle before
 #                      final Prometheus scrape (ASAN handler can stall after 500 auths).
 
@@ -18,7 +23,7 @@ TEST_NAME="Exercise ASAN"
 TEST_ABBR="EXA"
 TEST_NUMBER="41"
 TEST_COUNTER=0
-TEST_VERSION="4.0.1"
+TEST_VERSION="4.0.2"
 
 TOTAL_REQUESTS=500
 SNAPSHOT_INTERVAL=50
@@ -236,7 +241,12 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
     if [[ "${EXIT_CODE}" -eq 0 ]]; then
         print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Collect Initial Metrics"
-        INITIAL_METRICS=$(scrape_metrics "${PROMETHEUS_URL}")
+        # 3s settle: "Build Ready Databases List" fires the instant the last engine's
+        # Lead DQM reports ready, which is also when all 6 engines' queue worker
+        # threads (Slow/Medium/Fast/Cache) spin up together. Under ASAN that thread
+        # burst can stall the webserver thread servicing this scrape (same class of
+        # stall the final-metrics scrape already settles 3s for after 500 auths).
+        INITIAL_METRICS=$(scrape_metrics "${PROMETHEUS_URL}" 3)
 
         if [[ -n "${INITIAL_METRICS}" ]] && echo "${INITIAL_METRICS}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then
             INITIAL_RSS=$(get_metric "${INITIAL_METRICS}" "hydrogen_process_resident_memory_bytes")
@@ -261,7 +271,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Initial metrics collected"
             PASS_COUNT=$(( PASS_COUNT + 1 ))
         else
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "WARNING: Prometheus endpoint returned no hydrogen metrics"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "WARNING: Prometheus endpoint returned no hydrogen metrics (last HTTP ${SCRAPE_LAST_HTTP_CODE:-000} after ${SCRAPE_LAST_ATTEMPTS:-0}/${SCRAPE_MAX_ATTEMPTS} attempts)"
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to collect initial metrics"
             INITIAL_RSS=0
             INITIAL_QUERIES=0
@@ -335,7 +345,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 else
                     FAILED_REQUESTS=$((FAILED_REQUESTS + 1))
                     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
-                        "[${REQUEST_COUNT}/${TOTAL_REQUESTS}] WARNING: No metrics returned"
+                        "[${REQUEST_COUNT}/${TOTAL_REQUESTS}] WARNING: No metrics returned (last HTTP ${SCRAPE_LAST_HTTP_CODE:-000} after ${SCRAPE_LAST_ATTEMPTS:-0}/${SCRAPE_MAX_ATTEMPTS} attempts)"
                 fi
             fi
         done
@@ -408,6 +418,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Final metrics collected"
             PASS_COUNT=$(( PASS_COUNT + 1 ))
         else
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "WARNING: Prometheus endpoint returned no hydrogen metrics (last HTTP ${SCRAPE_LAST_HTTP_CODE:-000} after ${SCRAPE_LAST_ATTEMPTS:-0}/${SCRAPE_MAX_ATTEMPTS} attempts)"
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to collect final metrics"
             EXIT_CODE=1
         fi

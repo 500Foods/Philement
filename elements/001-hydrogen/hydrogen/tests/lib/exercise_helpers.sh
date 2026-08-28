@@ -6,6 +6,8 @@
 # shellcheck disable=SC2154 # Globals (TEST_NUMBER, TEST_COUNTER, GREP) set by framework before sourcing
 
 # CHANGELOG
+# 1.0.3 - 2026-08-28 - scrape_metrics exposes SCRAPE_LAST_HTTP_CODE/SCRAPE_LAST_ATTEMPTS
+#                      diagnostics on exhaustion instead of a bare empty string.
 # 1.0.2 - 2026-08-27 - Scrape INFO delay; flood connect-timeout; source group40.
 # 1.0.1 - 2026-08-27 - Auth flood max-time 5s -> 15s (wait, do not retry).
 # 1.0.0 - 2026-07-09 - Extracted from test_41_exercise.sh for ASAN/native split
@@ -14,7 +16,7 @@
 export EXERCISE_HELPERS_GUARD="true"
 
 EXERCISE_HELPERS_NAME="Exercise Test Helpers"
-EXERCISE_HELPERS_VERSION="1.0.2"
+EXERCISE_HELPERS_VERSION="1.0.3"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${EXERCISE_HELPERS_NAME} ${EXERCISE_HELPERS_VERSION}" "info"
 
 # shellcheck source=tests/lib/group40_http.sh # Shared 40-series HTTP timing
@@ -40,6 +42,9 @@ fi
 # Retries until a body containing hydrogen_ metrics is returned, or attempts exhausted.
 # Uses connect-timeout so a hung ASAN handler does not burn the full max-time on
 # every attempt before retries can help (suite-parallel contention).
+# On exhaustion (empty echo), diagnostics are left in SCRAPE_LAST_HTTP_CODE and
+# SCRAPE_LAST_ATTEMPTS for the caller to report (e.g. "000" means every attempt
+# never connected/completed - a stall - vs. a non-200 that did respond).
 scrape_metrics() {
     local prom_url="$1"
     local settle_delay="${2:-${METRICS_DELAY}}"
@@ -48,6 +53,9 @@ scrape_metrics() {
     local curl_timeout="${SCRAPE_CURL_TIMEOUT}"
     local retry_delay="${SCRAPE_RETRY_DELAY}"
     local tmp_body=""
+
+    SCRAPE_LAST_HTTP_CODE=""
+    SCRAPE_LAST_ATTEMPTS=0
 
     if ! [[ "${max_attempts}" =~ ^[1-9][0-9]*$ ]]; then
         max_attempts=5
@@ -84,6 +92,8 @@ scrape_metrics() {
                 http_code="200"
             fi
         fi
+        SCRAPE_LAST_HTTP_CODE="${http_code}"
+        SCRAPE_LAST_ATTEMPTS="${attempt}"
         if [[ "${http_code}" == "200" ]] && [[ -n "${response}" ]] && \
            echo "${response}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then
             [[ -n "${tmp_body}" ]] && rm -f "${tmp_body}"
@@ -95,6 +105,8 @@ scrape_metrics() {
         fi
     done
     [[ -n "${tmp_body}" ]] && rm -f "${tmp_body}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+        "WARNING: scrape_metrics exhausted ${SCRAPE_LAST_ATTEMPTS}/${max_attempts} attempts against ${prom_url} (last HTTP ${SCRAPE_LAST_HTTP_CODE:-000})"
     echo ""
 }
 
