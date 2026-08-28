@@ -17,6 +17,136 @@ void database_engine_cleanup_result(QueryResult* result);
 static PendingResultManager* g_pending_manager = NULL;
 static pthread_mutex_t g_pending_manager_lock = PTHREAD_MUTEX_INITIALIZER;
 
+// Initial hash index size; kept equal to the initial results[] capacity so
+// the average chain length starts short and grows in step with capacity.
+#define PENDING_HASH_INITIAL_BUCKETS 64
+
+/**
+ * @brief Compute the bucket index for a query_id in a hash index of a given size
+ */
+size_t pending_hash_index(const char* query_id, size_t bucket_count) {
+    if (!query_id || bucket_count == 0) {
+        return 0;
+    }
+    // djb2 string hash - fast, good enough distribution for UUID-shaped query ids
+    unsigned long hash = 5381;
+    for (const unsigned char* p = (const unsigned char*)query_id; *p; p++) {
+        hash = ((hash << 5) + hash) + (unsigned long)(*p);
+    }
+    return (size_t)(hash % bucket_count);
+}
+
+/**
+ * @brief Look up a pending result by query_id via the manager's hash index (O(1) average)
+ */
+PendingQueryResult* pending_hash_find(const PendingResultManager* manager, const char* query_id) {
+    if (!manager || !query_id || !manager->hash_buckets || manager->hash_bucket_count == 0) {
+        return NULL;
+    }
+    size_t bucket = pending_hash_index(query_id, manager->hash_bucket_count);
+    PendingQueryResult* candidate = manager->hash_buckets[bucket];
+    while (candidate) {
+        if (candidate->query_id && strcmp(candidate->query_id, query_id) == 0) {
+            return candidate;
+        }
+        candidate = candidate->hash_next;
+    }
+    return NULL;
+}
+
+/**
+ * @brief Insert a pending result into the manager's hash index
+ */
+void pending_hash_insert(PendingResultManager* manager, PendingQueryResult* pending) {
+    if (!manager || !pending || !manager->hash_buckets || manager->hash_bucket_count == 0) {
+        return;
+    }
+    size_t bucket = pending_hash_index(pending->query_id, manager->hash_bucket_count);
+    pending->hash_next = manager->hash_buckets[bucket];
+    manager->hash_buckets[bucket] = pending;
+}
+
+/**
+ * @brief Remove a pending result from the manager's hash index by identity
+ */
+void pending_hash_remove(PendingResultManager* manager, PendingQueryResult* pending) {
+    if (!manager || !pending || !manager->hash_buckets || manager->hash_bucket_count == 0) {
+        return;
+    }
+    size_t bucket = pending_hash_index(pending->query_id, manager->hash_bucket_count);
+    PendingQueryResult** link = &manager->hash_buckets[bucket];
+    while (*link) {
+        if (*link == pending) {
+            *link = pending->hash_next;
+            pending->hash_next = NULL;
+            return;
+        }
+        link = &(*link)->hash_next;
+    }
+}
+
+/**
+ * @brief Rebuild the hash index with a new bucket count
+ */
+bool pending_hash_resize(PendingResultManager* manager, size_t new_bucket_count) {
+    if (!manager || new_bucket_count == 0) {
+        return false;
+    }
+
+    PendingQueryResult** new_buckets = calloc(new_bucket_count, sizeof(PendingQueryResult*));
+    if (!new_buckets) {
+        return false;
+    }
+
+    for (size_t i = 0; i < manager->count; i++) {
+        PendingQueryResult* pending = manager->results[i];
+        if (!pending) continue;
+        size_t bucket = pending_hash_index(pending->query_id, new_bucket_count);
+        pending->hash_next = new_buckets[bucket];
+        new_buckets[bucket] = pending;
+    }
+
+    free(manager->hash_buckets);
+    manager->hash_buckets = new_buckets;
+    manager->hash_bucket_count = new_bucket_count;
+    return true;
+}
+
+/**
+ * @brief Remove one entry from results[]/hash_buckets[] via swap-with-last (O(1))
+ */
+void pending_result_detach_locked(PendingResultManager* manager, PendingQueryResult* pending) {
+    if (!manager || !pending || !manager->results || manager->count == 0) {
+        return;
+    }
+
+    size_t idx = pending->array_index;
+    // Defensive check: fall back to a linear scan if array_index is ever
+    // out of sync (should not happen, but corruption here must not crash).
+    if (idx >= manager->count || manager->results[idx] != pending) {
+        idx = manager->count;
+        for (size_t i = 0; i < manager->count; i++) {
+            if (manager->results[i] == pending) {
+                idx = i;
+                break;
+            }
+        }
+        if (idx >= manager->count) {
+            return; // Not actually registered; nothing to detach.
+        }
+    }
+
+    pending_hash_remove(manager, pending);
+
+    size_t last = manager->count - 1;
+    if (idx != last) {
+        manager->results[idx] = manager->results[last];
+        manager->results[idx]->array_index = idx;
+    }
+    manager->results[last] = NULL;
+    manager->count--;
+}
+
 /**
  * @brief Initialize the pending result manager
  */
@@ -36,9 +166,21 @@ PendingResultManager* pending_result_manager_create(const char* dqm_label) {
         return NULL;
     }
 
+    // Query-id hash index: keeps register/signal/find/cancel O(1) average
+    // instead of scanning results[] under the single manager_lock.
+    manager->hash_bucket_count = PENDING_HASH_INITIAL_BUCKETS;
+    manager->hash_buckets = calloc(manager->hash_bucket_count, sizeof(PendingQueryResult*));
+    if (!manager->hash_buckets) {
+        log_this(dqm_label ? dqm_label : SR_DATABASE, "Failed to allocate pending hash index", LOG_LEVEL_ERROR, 0);
+        free(manager->results);
+        free(manager);
+        return NULL;
+    }
+
     // Initialize mutex
     if (pthread_mutex_init(&manager->manager_lock, NULL) != 0) {
         log_this(dqm_label ? dqm_label : SR_DATABASE, "Failed to initialize manager mutex", LOG_LEVEL_ERROR, 0);
+        free(manager->hash_buckets);
         free(manager->results);
         free(manager);
         return NULL;
@@ -72,6 +214,7 @@ void pending_result_manager_destroy(PendingResultManager* manager, const char* d
     }
 
     free(manager->results);
+    free(manager->hash_buckets);
     pthread_mutex_unlock(&manager->manager_lock);
     pthread_mutex_destroy(&manager->manager_lock);
     free(manager);
@@ -131,6 +274,14 @@ PendingQueryResult* pending_result_register(
     // Add to manager
     pthread_mutex_lock(&manager->manager_lock);
 
+    // Opportunistically reclaim expired/timed-out slots before growing the
+    // array. Under sustained load this keeps the backlog (and therefore the
+    // average hash chain length) bounded without waiting for the next
+    // per-queue heartbeat cleanup pass.
+    if (manager->count >= manager->capacity) {
+        pending_result_reap_expired_locked(manager, dqm_label);
+    }
+
     // Expand array if needed
     if (manager->count >= manager->capacity) {
         size_t new_capacity = manager->capacity * 2;
@@ -146,9 +297,18 @@ PendingQueryResult* pending_result_register(
         }
         manager->results = new_results;
         manager->capacity = new_capacity;
+
+        // Keep the hash index sized with the array so chains stay short.
+        // Non-fatal if this fails: the existing (smaller) index is still
+        // correct, just less evenly distributed.
+        if (!pending_hash_resize(manager, new_capacity)) {
+            log_this(dqm_label ? dqm_label : SR_DATABASE, "Failed to resize pending hash index", LOG_LEVEL_DEBUG, 0);
+        }
     }
 
+    pending->array_index = manager->count;
     manager->results[manager->count++] = pending;
+    pending_hash_insert(manager, pending);
     pthread_mutex_unlock(&manager->manager_lock);
 
     log_this(dqm_label ? dqm_label : SR_DATABASE, "Pending result registered", LOG_LEVEL_DEBUG, 0);
@@ -217,20 +377,19 @@ bool pending_result_signal_ready(
 
     pthread_mutex_lock(&manager->manager_lock);
 
-    // Find the pending result
-    for (size_t i = 0; i < manager->count; i++) {
-        PendingQueryResult* pending = manager->results[i];
-        if (pending && strcmp(pending->query_id, query_id) == 0) {
-            // Found it - signal completion
-            pthread_mutex_lock(&pending->result_lock);
-            pending->result = result;  // Transfer ownership
-            pending->completed = true;
-            pthread_cond_signal(&pending->result_ready);
-            pthread_mutex_unlock(&pending->result_lock);
+    // Find the pending result via the hash index (O(1) average) instead of
+    // scanning results[]; under load this is what previously made every
+    // DQM worker thread serialize behind a full backlog scan.
+    PendingQueryResult* pending = pending_hash_find(manager, query_id);
+    if (pending) {
+        // Found it - signal completion
+        pthread_mutex_lock(&pending->result_lock);
+        pending->result = result;  // Transfer ownership
+        pending->completed = true;
+        pthread_cond_signal(&pending->result_ready);
+        pthread_mutex_unlock(&pending->result_lock);
 
-            found = true;
-            break;
-        }
+        found = true;
     }
 
     pthread_mutex_unlock(&manager->manager_lock);
@@ -266,15 +425,8 @@ PendingQueryResult* pending_result_find(PendingResultManager* manager, const cha
         return NULL;
     }
 
-    PendingQueryResult* found = NULL;
     pthread_mutex_lock(&manager->manager_lock);
-    for (size_t i = 0; i < manager->count; i++) {
-        PendingQueryResult* pending = manager->results[i];
-        if (pending && pending->query_id && strcmp(pending->query_id, query_id) == 0) {
-            found = pending;
-            break;
-        }
-    }
+    PendingQueryResult* found = pending_hash_find(manager, query_id);
     pthread_mutex_unlock(&manager->manager_lock);
     return found;
 }
@@ -289,18 +441,15 @@ bool pending_result_cancel(PendingResultManager* manager, const char* query_id, 
 
     bool found = false;
     pthread_mutex_lock(&manager->manager_lock);
-    for (size_t i = 0; i < manager->count; i++) {
-        PendingQueryResult* pending = manager->results[i];
-        if (pending && pending->query_id && strcmp(pending->query_id, query_id) == 0) {
-            pthread_mutex_lock(&pending->result_lock);
-            if (!pending->completed) {
-                pending->timed_out = true;
-                pthread_cond_signal(&pending->result_ready);
-            }
-            pthread_mutex_unlock(&pending->result_lock);
-            found = true;
-            break;
+    PendingQueryResult* pending = pending_hash_find(manager, query_id);
+    if (pending) {
+        pthread_mutex_lock(&pending->result_lock);
+        if (!pending->completed) {
+            pending->timed_out = true;
+            pthread_cond_signal(&pending->result_ready);
         }
+        pthread_mutex_unlock(&pending->result_lock);
+        found = true;
     }
     pthread_mutex_unlock(&manager->manager_lock);
 
@@ -335,19 +484,22 @@ void pending_result_unregister(PendingResultManager* manager, PendingQueryResult
 
     pthread_mutex_lock(&manager->manager_lock);
 
-    // Find and remove the pending result from the array
-    bool found = false;
-    for (size_t i = 0; i < manager->count; i++) {
-        if (manager->results[i] == pending) {
-            // Shift remaining elements
-            for (size_t j = i; j < manager->count - 1; j++) {
-                manager->results[j] = manager->results[j + 1];
+    // Detach from results[]/hash_buckets[] in O(1) via swap-with-last,
+    // instead of scanning for the entry and shifting the tail down.
+    bool found = (pending->array_index < manager->count && manager->results[pending->array_index] == pending);
+    if (!found) {
+        // Defensive fallback; pending_result_detach_locked() also guards
+        // against a stale array_index, so this just determines `found`
+        // for the log message below.
+        for (size_t i = 0; i < manager->count; i++) {
+            if (manager->results[i] == pending) {
+                found = true;
+                break;
             }
-            manager->results[manager->count - 1] = NULL;
-            manager->count--;
-            found = true;
-            break;
         }
+    }
+    if (found) {
+        pending_result_detach_locked(manager, pending);
     }
 
     pthread_mutex_unlock(&manager->manager_lock);
@@ -379,63 +531,76 @@ void pending_result_unregister(PendingResultManager* manager, PendingQueryResult
 }
 
 /**
- * @brief Clean up expired pending results
+ * @brief Clean up expired pending results; caller must already hold manager_lock
+ *
+ * Walks results[] once, swap-removing each expired/timed-out entry in O(1)
+ * (see pending_result_detach_locked). Because a swap can move an unvisited
+ * entry into the current slot, the index is only advanced when the current
+ * slot survives the pass.
  */
-size_t pending_result_cleanup_expired(PendingResultManager* manager, const char* dqm_label) {
+size_t pending_result_reap_expired_locked(PendingResultManager* manager, const char* dqm_label) {
     if (!manager) return 0;
 
     size_t cleaned = 0;
     time_t now = time(NULL);
 
-    pthread_mutex_lock(&manager->manager_lock);
-
-    // Iterate backwards to safely remove elements
-    for (size_t i = manager->count; i > 0; i--) {
-        size_t index = i - 1;
-        PendingQueryResult* pending = manager->results[index];
-
-        if (pending) {
-            time_t elapsed = now - pending->submitted_at;
-            bool expired = (elapsed >= pending->timeout_seconds);
-
-            if (expired || pending->timed_out) {
-                // Remove from array
-                manager->results[index] = NULL;
-
-                // Lock the pending result's mutex to prevent concurrent access
-                // from pending_result_wait (which may be blocked on
-                // pthread_cond_timedwait with the lock released). Signal any
-                // blocked waiter before freeing so it can exit cleanly.
-                pthread_mutex_lock(&pending->result_lock);
-                pending->timed_out = true;
-                pthread_cond_signal(&pending->result_ready);
-                pthread_mutex_unlock(&pending->result_lock);
-
-                // Clean up the pending result
-                if (pending->query_id) free(pending->query_id);
-                if (pending->result) {
-                    database_engine_cleanup_result(pending->result);
-                }
-                pthread_mutex_destroy(&pending->result_lock);
-                pthread_cond_destroy(&pending->result_ready);
-                free(pending);
-
-                cleaned++;
-
-                // Shift remaining elements
-                for (size_t j = index; j < manager->count - 1; j++) {
-                    manager->results[j] = manager->results[j + 1];
-                }
-                manager->count--;
-            }
+    size_t i = 0;
+    while (i < manager->count) {
+        PendingQueryResult* pending = manager->results[i];
+        if (!pending) {
+            i++;
+            continue;
         }
-    }
 
-    pthread_mutex_unlock(&manager->manager_lock);
+        time_t elapsed = now - pending->submitted_at;
+        bool expired = (elapsed >= pending->timeout_seconds);
+
+        if (!expired && !pending->timed_out) {
+            i++;
+            continue;
+        }
+
+        // Detach first (O(1) swap-with-last) so the slot at `i` now holds
+        // an unvisited entry (or the array shrinks); do not advance `i`.
+        pending_result_detach_locked(manager, pending);
+
+        // Lock the pending result's mutex to prevent concurrent access
+        // from pending_result_wait (which may be blocked on
+        // pthread_cond_timedwait with the lock released). Signal any
+        // blocked waiter before freeing so it can exit cleanly.
+        pthread_mutex_lock(&pending->result_lock);
+        pending->timed_out = true;
+        pthread_cond_signal(&pending->result_ready);
+        pthread_mutex_unlock(&pending->result_lock);
+
+        // Clean up the pending result
+        if (pending->query_id) free(pending->query_id);
+        if (pending->result) {
+            database_engine_cleanup_result(pending->result);
+        }
+        pthread_mutex_destroy(&pending->result_lock);
+        pthread_cond_destroy(&pending->result_ready);
+        free(pending);
+
+        cleaned++;
+    }
 
     if (cleaned > 0) {
         log_this(dqm_label ? dqm_label : SR_DATABASE, "Cleaned up expired pending results", LOG_LEVEL_DEBUG, 0);
     }
+
+    return cleaned;
+}
+
+/**
+ * @brief Clean up expired pending results
+ */
+size_t pending_result_cleanup_expired(PendingResultManager* manager, const char* dqm_label) {
+    if (!manager) return 0;
+
+    pthread_mutex_lock(&manager->manager_lock);
+    size_t cleaned = pending_result_reap_expired_locked(manager, dqm_label);
+    pthread_mutex_unlock(&manager->manager_lock);
 
     return cleaned;
 }

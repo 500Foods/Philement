@@ -30,18 +30,28 @@ typedef struct PendingQueryResult {
     pthread_cond_t result_ready;       /**< Signals completion */
     time_t submitted_at;               /**< Submission timestamp */
     int timeout_seconds;               /**< Query-specific timeout */
+    size_t array_index;                /**< Current slot in manager->results[] (enables O(1) swap-remove) */
+    struct PendingQueryResult* hash_next; /**< Intrusive chain link for the manager's query_id hash index */
 } PendingQueryResult;
 
 /**
  * @brief Manager for all pending query results
  *
  * Thread-safe container for tracking all active pending results.
+ *
+ * Lookups by query_id (register/signal/find/cancel) are served by an
+ * intrusive chained hash index (hash_buckets) keyed on query_id, so they
+ * are O(1) average instead of scanning the results[] array. The array
+ * itself is kept (unordered) for cheap enumeration in cleanup_expired();
+ * removals use swap-with-last (O(1)) rather than shifting the tail.
  */
 typedef struct PendingResultManager {
-    PendingQueryResult** results;      /**< Array of pending results */
+    PendingQueryResult** results;      /**< Unordered array of pending results */
     size_t count;                      /**< Current number of results */
-    size_t capacity;                   /**< Allocated capacity */
-    pthread_mutex_t manager_lock;      /**< Protects result array */
+    size_t capacity;                   /**< Allocated capacity of results[] */
+    pthread_mutex_t manager_lock;      /**< Protects results[] and hash_buckets[] */
+    PendingQueryResult** hash_buckets; /**< Chained hash index buckets, keyed by query_id */
+    size_t hash_bucket_count;          /**< Number of buckets in hash_buckets[] */
 } PendingResultManager;
 
 /**
@@ -204,5 +214,79 @@ void cleanup_global_pending_manager(const char* dqm_label);
  */
 int pending_result_wait_multiple(PendingQueryResult **pendings, size_t count,
                                 int collective_timeout_seconds, const char* dqm_label);
+
+/**
+ * @brief Compute the bucket index for a query_id in a hash index of a given size
+ *
+ * @param query_id Query identifier to hash (NULL-safe: returns 0)
+ * @param bucket_count Number of buckets (0-safe: returns 0)
+ * @return Bucket index in [0, bucket_count)
+ */
+size_t pending_hash_index(const char* query_id, size_t bucket_count);
+
+/**
+ * @brief Look up a pending result by query_id via the manager's hash index (O(1) average)
+ *
+ * @param manager The pending result manager
+ * @param query_id Query identifier to find
+ * @return Matching pending entry, or NULL if not present
+ */
+PendingQueryResult* pending_hash_find(const PendingResultManager* manager, const char* query_id);
+
+/**
+ * @brief Insert a pending result into the manager's hash index
+ *
+ * @param manager The pending result manager
+ * @param pending Entry to insert (its hash_next is overwritten)
+ */
+void pending_hash_insert(PendingResultManager* manager, PendingQueryResult* pending);
+
+/**
+ * @brief Remove a pending result from the manager's hash index by identity
+ *
+ * @param manager The pending result manager
+ * @param pending Entry to unlink (matched by pointer identity, not just query_id)
+ */
+void pending_hash_remove(PendingResultManager* manager, PendingQueryResult* pending);
+
+/**
+ * @brief Rebuild the hash index with a new bucket count
+ *
+ * Rehashes every entry currently in manager->results[0..count-1]. Called
+ * whenever results[] capacity grows so the average chain length stays
+ * short. Failure to resize is non-fatal: the existing (smaller) index
+ * remains valid, just with longer chains.
+ *
+ * @param manager The pending result manager
+ * @param new_bucket_count Desired number of buckets
+ * @return true on success, false if the new bucket array could not be allocated
+ */
+bool pending_hash_resize(PendingResultManager* manager, size_t new_bucket_count);
+
+/**
+ * @brief Remove one entry from results[]/hash_buckets[] via swap-with-last (O(1))
+ *
+ * Caller must hold manager->manager_lock. Does not touch pending's
+ * synchronization primitives or free anything; it only detaches the entry
+ * from the manager's bookkeeping structures.
+ *
+ * @param manager The pending result manager
+ * @param pending Entry to detach (must currently be registered in manager)
+ */
+void pending_result_detach_locked(PendingResultManager* manager, PendingQueryResult* pending);
+
+/**
+ * @brief Clean up expired pending results; caller must already hold manager_lock
+ *
+ * Shared implementation used both by pending_result_cleanup_expired() (which
+ * acquires the lock itself) and by pending_result_register() (which is
+ * already holding the lock and wants to reclaim expired slots before
+ * growing results[]).
+ *
+ * @param manager The pending result manager
+ * @param dqm_label Label for logging purposes
+ * @return Number of results cleaned up
+ */
+size_t pending_result_reap_expired_locked(PendingResultManager* manager, const char* dqm_label);
 
 #endif // DATABASE_PENDING_H

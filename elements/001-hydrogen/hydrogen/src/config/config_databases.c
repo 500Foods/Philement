@@ -65,6 +65,7 @@ bool load_database_config(json_t* root, AppConfig* config) {
     db_config->bootstrap_retries = 3;
     db_config->watchdog_min_seconds = 5;
     db_config->watchdog_max_seconds = 3600;
+    db_config->max_connections_per_database = 32;
 
     // Get Databases section
     json_t* databases_obj = json_object_get(root, "Databases");
@@ -100,6 +101,7 @@ bool load_database_config(json_t* root, AppConfig* config) {
     success = success && PROCESS_INT(root, db_config, bootstrap_retries, "Databases.BootstrapRetries", "Databases");
     success = success && PROCESS_INT(root, db_config, watchdog_min_seconds, "Databases.WatchdogMinSeconds", "Databases");
     success = success && PROCESS_INT(root, db_config, watchdog_max_seconds, "Databases.WatchdogMaxSeconds", "Databases");
+    success = success && PROCESS_INT(root, db_config, max_connections_per_database, "Databases.MaxConnectionsPerDatabase", "Databases");
 
     // Handle array-based connections (the format you're using)
     if (json_is_array(connections_obj)) {

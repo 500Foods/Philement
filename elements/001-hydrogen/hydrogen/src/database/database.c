@@ -65,7 +65,7 @@ bool database_subsystem_init(void) {
     database_subsystem->successful_queries = 0;
     database_subsystem->failed_queries = 0;
     database_subsystem->timeout_queries = 0;
-    database_subsystem->max_connections_per_database = 16;
+    database_subsystem->max_connections_per_database = 32;
     database_subsystem->default_worker_threads = 2;
     database_subsystem->query_timeout_seconds = 30;
 
@@ -194,6 +194,11 @@ bool database_reload_config(void) {
     }
 
     const DatabaseConfig* db_config = &app_config->databases;
+
+    if (db_config->max_connections_per_database > 0) {
+        database_subsystem->max_connections_per_database = db_config->max_connections_per_database;
+    }
+
     bool ok = true;
 
     // Add enabled connections that are not yet running

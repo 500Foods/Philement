@@ -49,6 +49,7 @@ set(UNITY_MOCK_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_webserver_core.c
      ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_api_utils.c
      ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_auth_service.c
+     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_auth_service_login.c
      ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_auth_service_jwt.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_conduit_helpers.c
     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_auth_chat_deps.c

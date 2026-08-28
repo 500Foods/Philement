@@ -1,13 +1,19 @@
 # [Philement](https://www.philement.com)
 
-Philiment was originally conceived as a replacement for Klipper. While Klipper has been an enormous boon to the 3D printing community as a whole, it isn't without its faults. Some of them are deep design flaws. Some are tied directly to its Python roots. Some are more subjective.  Philement has been conceived as a full-on replacement, but it will take quite awhile to get there. Along the way, the work around Philement will have many other applications.
+Philement is a family of small pieces that are supposed to add up to a machine you can run locally and then forget about.
 
-The main differentiator to address upfront is that a large chunk of the lower-level code has been written in both C and Lua, and specifically not Python. For so many reasons. To help make this go a little more quickly, various AI engines are being tasked to help out. It isn't written by AI, but written with the help of AI. If that distinction matters to anyone. If nothing else, this gives a degree of plausible deniability if there's something crazy going on in the code.
+The first piece is [Hydrogen](/docs/H/README.md): a compact, multithreaded C process that already knows how to be a web server, a websocket host, an identity provider, a database client, a mail and print queue, and an MCP endpoint. It is meant to be generic. Print farms are one use. So are other appliances that need a sturdy host and do not want a cloud account or a sidecar for every concern.
 
-As for the name, it is a combination of terms like 'Phi' (referencing the number 500 among *many* other meanings), 'filament' (that's what 3D printing is primarily obsessed with), and 'element' (small pieces of something larger). The individual components of the project have been named after atomic elements, for example.
+Extensibility is pushed where it belongs. Almost everything you will want to add is Lua, against a sandboxed host API, or it is data in the database layer. There is no plugin folder and no `pip install` into the host. On the rare day the host is actually missing a primitive — MCP was one of those — you change the C. That code is structured, documented, and tested on purpose, so changing it is a normal patch, not a hack bolted on the side.
 
-As far as progress reporting goes, well, there are likely 500 steps or more to be completed before anyone takes this project seriously. Some of those steps will yield useful tools, as is already the case. But it is an ambitious project with many items to complete, and many more that likely haven't even been conceived of yet.
-<br/><br/><img src="https://progressbar-guibranco.vercel.app/50/?scale=500&title=%20Completed%20&width=415&suffix=%20%2F%20500%20Steps" alt="Completed 49 / 500 Steps">
+If the only thing this project accomplishes is a C host with Lua on top instead of a Python one, that is already a service. The process stays small. Your logic stays in the pot that cannot take the box down with a bad extra.
+
+3D printing is the long job that named the project and still sets the roadmap. Philement was aimed at the role Klipper and Moonraker occupy on a printer computer: motion and a service layer, without making that computer into a Python distribution. Getting all the way there will take a while. Along the way the same core is already usable for anything else that needs a local, scriptable appliance runtime.
+
+The name is Phi (500, among other things), filament, and element. The pieces are named after the periodic table for the same reason: a few of them do almost all the work; the rest are specific.
+
+As far as progress reporting goes, well, there are likely 500 steps or more to be completed before anyone takes this project seriously. Some of those steps will yield useful tools, as is already the case. But it is an ambitious project with many items to complete, and many more that likely haven't even been conceived of yet. 
+<br/><br/><img src="https://progressbar-guibranco.vercel.app/150/?scale=500&title=%20Completed%20&width=415&suffix=%20%2F%20500%20Steps" alt="Completed 149 / 500 Steps">
 
 ## Elements
 
@@ -56,7 +62,7 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-08-27 18:42:20 UTC
+Last updated at 2026-08-28 01:21:09 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -64,10 +70,10 @@ JSON                           497            432              0        1644004
 SVG                            298            581          11383         526777
 C                             1615          65186          56966         267394
 Text                           335            331              0         139054
-Markdown                       749          33885            248         101746
+Markdown                       749          33889            248         101756
 Lua                            422          11439           7255          91539
 JavaScript                     224          10445          13582          49798
-Bourne Shell                   174           7846         107523          43182
+Bourne Shell                   175           7853         107567          43325
 CSS                             84           2769           1563          14005
 C/C++ Header                   340           4076          13917          12453
 HTML                            42            258            219           2836
@@ -81,7 +87,7 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          4829         137699         213211        2895853
+SUM:                          4830         137710         213255        2896006
 -------------------------------------------------------------------------------
 1717 Files were skipped (duplicate, binary, or without source code):
   svg: 1222
