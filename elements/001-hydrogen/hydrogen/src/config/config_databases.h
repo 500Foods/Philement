@@ -81,6 +81,13 @@ typedef struct DatabaseConfig {
      */
     int watchdog_min_seconds;
     int watchdog_max_seconds;
+    /*
+     * Maximum concurrent connections a single Hydrogen binary may hold
+     * against one database (lead + worker queues). Enforced as the lead
+     * queue's max_child_queues cap (see database_queue_init_children_management).
+     * Default 32; override via Databases.MaxConnectionsPerDatabase in hydrogen.json.
+     */
+    int max_connections_per_database;
 } DatabaseConfig;
 
 // Initialize database configuration with defaults

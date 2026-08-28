@@ -760,6 +760,9 @@ int launch_database_subsystem(void) {
             app_config->databases.watchdog_min_seconds,
             app_config->databases.watchdog_max_seconds,
             app_config->databases.bootstrap_timeout_seconds);
+        if (database_subsystem) {
+            database_subsystem->max_connections_per_database = app_config->databases.max_connections_per_database;
+        }
     }
     if (!database_watchdog_init()) {
         log_this(SR_DATABASE, "Failed to initialize " SR_DATABASE " query watchdog", LOG_LEVEL_ERROR, 0);

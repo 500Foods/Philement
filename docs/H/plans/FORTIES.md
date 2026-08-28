@@ -57,7 +57,7 @@ Suite `170403`: 47 **login HTTP 000** on the same engines (Postgres, Cockroach) 
 Shared wait policy for 40–47:
 
 | Knob | Value |
-|------|--------|
+| ------ | -------- |
 | HTTP max-time | 90s |
 | Connect | 10s |
 | Startup | 90s (41 ASAN start still 180s) |
@@ -90,7 +90,7 @@ Rebuild after this C change: `mkt` then `mkp` (do not share the CMake dir with a
 ## Tests in the 40s
 
 | # | Role | Engines | Notes |
-|---|------|---------|--------|
+| --- | ------ | --------- | -------- |
 | 40 | JWT login/renew/logout/register | 7 | Shared live DBs; SQLite copy |
 | 41 | ASAN 500 concurrent auths | 6 | Yugabyte off; port 5410 |
 | 42 | OIDC RP | SQLite-centric configs | Shared `hydrodemo.sqlite` |
@@ -200,6 +200,7 @@ Postgres `000/empty` login is resolved: graceful 200 under load, 401 on bad cred
 ## Suite checkpoint (full run — build 2531, 2026-08-27)
 
 Results (`build/tests/results/results_data.json`; per-engine outcomes in `build/tests/diagnostics/test_40_.../*`):
+
 - **Test 40:** 4 fails — **Postgres** + **Cockroach** only: `LOGIN_FAILED` + `REGISTER_FAILED` each. MySQL/MariaDB/DB2/SQLite/Yugabyte full pass (43/47).
 - **Test 46:** 1 fail (17/18).
 - **Test 47:** 1 fail (19/20).
@@ -228,10 +229,12 @@ This is **connection-slot exhaustion at startup**, distinct from the single-proc
 Wrote `tests/unity/src/api/auth/login/login_test_success_paths.c` — a standalone `_test*.c` harness mirroring `login_test_error_paths.c`. Auto-discovered by the `*_test*.c` glob in `cmake/CMakeLists-unity.cmake:19`, producing a `login_test_success_paths` executable per the per-file wiring at `cmake/CMakeLists-unity.cmake:66-69`.
 
 Harness design (inline weak mocks, same linkage model as error_paths — test .o weak defs register first, strong archive members skipped):
+
 - Mocks: `validate_login_input`, `verify_api_key_code`, `check_license_expiry`, `api_get_client_ip`, `check_ip_whitelist`/`check_ip_blacklist`, `check_failed_attempts`, `handle_rate_limiting`, `lookup_account_code`/`lookup_account`, `verify_password_and_status_code`, `generate_jwt`, `compute_token_hash`, `store_jwt`, `free_account_info`, `api_buffer_post_data`, `api_send_json_response`, `mock_mhd_reset_all`.
 - **New seams not in error_paths:** `auth_roles_from_database` (defined in `src/api/auth/oidc_rp/oidc_rp_roles.c:162`, declared `auth_service.h:159` — NOT mocked elsewhere in login tests) is stubbed weak so the success path links against controlled roles. `api_send_json_response` is a **capturing** mock (records status code + response JSON) so success assertions can check body fields (`success`, `token`, `user_id`, `username`, `email`, `roles`).
 
 Six tests:
+
 1. `test_handle_auth_login_success` — full happy path → HTTP 200, asserts response body fields.
 2. `test_handle_auth_login_invalid_api_key` — `verify_api_key_code=0` → 401 "Invalid API key".
 3. `test_handle_auth_login_wrong_password_unauthorized` — verify fails, no rate limit → 401 "Invalid credentials".
@@ -240,12 +243,14 @@ Six tests:
 6. `test_handle_auth_login_jwt_generation_failure` — `generate_jwt` NULL → 500.
 
 **Status:** file written. Verification pending: the `*_test*.c` glob is resolved at CMake configure-time, so a **re-configure** is required before the new file compiles. Build commands:
+
 ```bash
 cmake -B build -S .        # re-configure to pick up the new globbed file
 ninja -C build login_test_success_paths   # or: ninja -C build unity_tests
 ./build/unity/login_test_success_paths     # expect 6 pass / 0 fail
 gcov -o build/unity/CMakeFiles/login_test_success_paths.dir/src/api/auth/login src/api/auth/login/login.c   # confirm success lines covered
 ```
+
 Build config (from workspace inspection): Ninja generator, compiler `/usr/lib64/ccache/cc`, login.c compiled into `libhydrogen_unity.a` with `--coverage` + auth mock defines (`USE_MOCK_CRYPTO/_API_UTILS/_DBQUEUE/_AUTH_SERVICE_JWT/_LIBMICROHTTPD/_AUTH_CHAT_DEPS/_SYSTEM`) in `cmake/CMakeLists-unity.cmake`.
 
 ### Remaining product gap (suite gate)
@@ -254,5 +259,9 @@ Test 40/47 still fail on **Postgres + Cockroach only** under true Group-4 parall
 
 ### Action direction (suite)
 
-1. Size Postgres `max_connections` / shard per-engine instances so test_40 obtains a connection during the concurrent run, OR
-2. Make the auth path **retry / reconnect on `too many clients`** (transient) in `src/database/postgresql/connection.c` instead of mapping it to 503.
+1. **DONE (infra, 2026-08-28):** raised Postgres `max_connections` 100 → **500** in `/var/lib/pgsql/data/postgresql.conf` + restart. Eliminates the startup-slot race for the 4-way concurrent suite (4 binaries × up to 16 PG slots ≪ 500).
+2. (Hardening, optional) expose Hydrogen's `max_connections_per_database` as a config knob — see note below.
+
+### Hydrogen connection demand cap (hardcoded)
+
+`DatabaseSubsystem.max_connections_per_database` is hardcoded to **16` at `src/database/database.c:68` (field at `src/database/database.h:253`) and is **not** bound to hydrogen.json — unlike`Databases.ConnectionCount` / `Databases.BootstrapTimeoutSeconds` / `Databases.BootstrapRetries` which ARE read from config via `PROCESS_INT` in `src/config/config_databases.c:98-100`. Exposing`Databases.MaxConnectionsPerDatabase` (struct field + `PROCESS_INT` + propagate to subsystem at init) would let operators tune demand without a Postgres restart. Not required to unblock the suite now that `max_connections=500`, but a reasonable refactor.

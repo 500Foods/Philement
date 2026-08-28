@@ -11,6 +11,14 @@
 #include <src/api/api_utils.h>
 #include <src/api/auth/auth_service.h>
 
+// Mock redirects for Unity test builds - these allow login.c's calls to be
+// redirected to mock_ prefixed functions defined in mock_api_utils.c, avoiding
+// multiple definition errors with the real implementations in the static library.
+#ifdef USE_MOCK_API_UTILS
+#include <unity/mocks/mock_api_utils.h>
+#include <unity/mocks/mock_auth_service_login.h>
+#endif
+
 // Local includes
 #include "login.h"
 

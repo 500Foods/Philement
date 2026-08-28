@@ -84,8 +84,13 @@ bool database_queue_init_children_management(DatabaseQueue* db_queue) {
         return false;
     }
 
-    // Allocate child queue array (max 20: allow for scaling)
-    db_queue->max_child_queues = 20;
+    // Allocate child queue array. The cap is governed by
+    // Databases.MaxConnectionsPerDatabase (default 32) once the subsystem is
+    // initialized by database_subsystem_init(); isolated unit tests that do not
+    // initialize the subsystem fall back to 20 so existing assertions hold.
+    db_queue->max_child_queues = (database_subsystem && database_subsystem->max_connections_per_database > 0)
+                                     ? database_subsystem->max_connections_per_database
+                                     : 20;
     db_queue->child_queues = calloc((size_t)db_queue->max_child_queues, sizeof(DatabaseQueue*));
     if (!db_queue->child_queues) {
         pthread_mutex_destroy(&db_queue->children_lock);
