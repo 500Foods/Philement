@@ -127,6 +127,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 ### Folder: /docs/H/plans
 
 - [README.md](/docs/H/plans/README.md): Plans folder index
+- [FORTIES.md](/docs/H/plans/FORTIES.md): Tests 40–47 suite-load robustness (open)
 - [CHAT_PLAN_PHASE_13.md](/docs/H/plans/CHAT_PLAN_PHASE_13.md): Chat Phase 13 advanced features (open)
 - [CHAT_PLAN_SUMMARY.md](/docs/H/plans/CHAT_PLAN_SUMMARY.md): Chat service plan index (Phases 1–12 complete, 13 open)
 

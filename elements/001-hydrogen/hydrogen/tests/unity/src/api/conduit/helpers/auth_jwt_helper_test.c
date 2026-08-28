@@ -32,6 +32,7 @@ void test_get_jwt_error_message_invalid_format(void);
 void test_get_jwt_error_message_not_yet_valid(void);
 void test_get_jwt_error_message_unsupported_algorithm(void);
 void test_get_jwt_error_message_none(void);
+void test_get_jwt_error_message_unavailable(void);
 void test_get_jwt_error_message_default(void);
 void test_extract_and_validate_jwt_null_result(void);
 void test_extract_and_validate_jwt_null_header(void);
@@ -96,6 +97,11 @@ void test_get_jwt_error_message_unsupported_algorithm(void) {
 void test_get_jwt_error_message_none(void) {
     const char* msg = get_jwt_error_message(JWT_ERROR_NONE);
     TEST_ASSERT_EQUAL_STRING("Invalid or expired JWT token", msg);
+}
+
+void test_get_jwt_error_message_unavailable(void) {
+    const char* msg = get_jwt_error_message(JWT_ERROR_UNAVAILABLE);
+    TEST_ASSERT_EQUAL_STRING("Authentication service unavailable", msg);
 }
 
 // Test get_jwt_error_message for default/unknown error
@@ -251,6 +257,7 @@ int main(void) {
     RUN_TEST(test_get_jwt_error_message_not_yet_valid);
     RUN_TEST(test_get_jwt_error_message_unsupported_algorithm);
     RUN_TEST(test_get_jwt_error_message_none);
+    RUN_TEST(test_get_jwt_error_message_unavailable);
     RUN_TEST(test_get_jwt_error_message_default);
     
     // extract_and_validate_jwt tests

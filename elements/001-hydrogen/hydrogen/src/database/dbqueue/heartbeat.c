@@ -132,9 +132,7 @@ bool database_queue_handle_connection_success(DatabaseQueue* db_queue, DatabaseH
             return false;
         }
     } else {
-        // CRITICAL: Clean up the handle - this will also free the config it owns
         database_engine_cleanup_connection(db_handle);
-        db_queue->is_connected = false;
         free(dqm_designator);
         return false;
     }
@@ -191,7 +189,7 @@ bool database_queue_handle_connection_success(DatabaseQueue* db_queue, DatabaseH
 /*
  * Perform the actual database connection attempt
  */
-bool database_queue_perform_connection_attempt(DatabaseQueue* db_queue, ConnectionConfig* config, DatabaseEngine engine_type) {
+int database_queue_perform_connection_attempt(DatabaseQueue* db_queue, ConnectionConfig* config, DatabaseEngine engine_type) {
     // Attempt real database connection with DQM designator
     DatabaseHandle* db_handle = NULL;
     char* dqm_designator = database_queue_generate_label(db_queue);
@@ -212,18 +210,16 @@ bool database_queue_perform_connection_attempt(DatabaseQueue* db_queue, Connecti
 
     if (connection_success && db_handle) {
         log_this(dqm_label_conn, "Database connection established successfully", LOG_LEVEL_DEBUG, 0);
-        bool success = database_queue_handle_connection_success(db_queue, db_handle);
+        bool stored = database_queue_handle_connection_success(db_queue, db_handle);
         free(dqm_label_conn);
         free(dqm_designator);
-        return success;
-    } else {
-        // Connection failed
-        db_queue->is_connected = false;
-        log_this(dqm_label_conn, "Database connection failed - no handle returned", LOG_LEVEL_ERROR, 0);
-        free(dqm_label_conn);
-        free(dqm_designator);
-        return false;
+        return stored ? 1 : -1;
     }
+    db_queue->is_connected = false;
+    log_this(dqm_label_conn, "Database connection failed - no handle returned", LOG_LEVEL_ERROR, 0);
+    free(dqm_label_conn);
+    free(dqm_designator);
+    return 0;
 }
 
 /*
@@ -303,15 +299,12 @@ bool database_queue_check_connection(DatabaseQueue* db_queue) {
         return false;
     }
 
-    // Perform the connection attempt
-    bool success = database_queue_perform_connection_attempt(db_queue, config, engine_type);
+    int attempt = database_queue_perform_connection_attempt(db_queue, config, engine_type);
 
     db_queue->last_connection_attempt = time(NULL);
 
-    // CRITICAL: Do NOT free config here - if connection succeeded, the DatabaseHandle owns it now
-    // It will be freed when the connection is cleaned up via database_engine_cleanup_connection()
-    // Only free config if connection FAILED
-    if (!success) {
+    bool success = (attempt == 1);
+    if (attempt == 0) {
         free_connection_config(config);
     }
 
@@ -341,38 +334,33 @@ void database_queue_perform_heartbeat(DatabaseQueue* db_queue) {
     bool was_connected = db_queue->is_connected;
     bool is_connected = false;
 
-    // Use persistent connection for health check if available
-    // log_this(dqm_label, "MUTEX_HEARTBEAT_LOCK: About to lock queue connection mutex", LOG_LEVEL_TRACE, 0);
+    bool need_reconnect = false;
     MutexResult result = MUTEX_LOCK(&db_queue->connection_lock, dqm_label);
-    // log_this(dqm_label, "MUTEX_HEARTBEAT_LOCK_RESULT: Lock result %s", LOG_LEVEL_TRACE, 1, mutex_result_to_string(result));
 
     if (result == MUTEX_SUCCESS) {
         if (db_queue->persistent_connection) {
-            // CRITICAL: Validate persistent connection integrity before use
             if ((uintptr_t)&db_queue->persistent_connection->connection_lock >= 0x1000) {
                 is_connected = database_engine_health_check(db_queue->persistent_connection);
                 db_queue->is_connected = is_connected;
             } else {
                 log_this(dqm_label, "CRITICAL ERROR: Persistent connection has corrupted mutex! Address: %p", LOG_LEVEL_ERROR, 1, (void*)&db_queue->persistent_connection->connection_lock);
                 log_this(dqm_label, "Discarding corrupted connection and attempting reconnection", LOG_LEVEL_ERROR, 0);
-
-                // CRITICAL: Clean up corrupted connection - this will free the config it owns
                 database_engine_cleanup_connection(db_queue->persistent_connection);
                 db_queue->persistent_connection = NULL;
-
-                // Attempt to establish a new connection
-                is_connected = database_queue_check_connection(db_queue);
+                db_queue->is_connected = false;
+                need_reconnect = true;
             }
         } else {
-            // No persistent connection, attempt to establish one
-            is_connected = database_queue_check_connection(db_queue);
+            need_reconnect = true;
         }
-        // log_this(dqm_label, "MUTEX_HEARTBEAT_UNLOCK: About to unlock queue connection mutex", LOG_LEVEL_TRACE, 0);
         mutex_unlock(&db_queue->connection_lock);
-        // log_this(dqm_label, "MUTEX_HEARTBEAT_UNLOCK: Unlock completed", LOG_LEVEL_TRACE, 0);
     } else {
         is_connected = false;
         db_queue->is_connected = false;
+    }
+
+    if (need_reconnect) {
+        is_connected = database_queue_check_connection(db_queue);
     }
 
     // Always log heartbeat activity to show the DQM is alive

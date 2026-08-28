@@ -19,6 +19,9 @@
 #define AUTH_QUERY_TIMEOUT_DEFAULT 20
 #define AUTH_QUERY_TIMEOUT_SOFT 5
 
+void auth_query_begin_deadline(int budget_seconds);
+void auth_query_end_deadline(void);
+
 QueryResult* execute_auth_query(int query_ref, const char* database, json_t* params);
 QueryResult* execute_auth_query_timeout(int query_ref, const char* database,
                                         json_t* params, int timeout_seconds);
@@ -46,8 +49,10 @@ typedef QueryResult* (*AuthServiceDatabaseQueryFn)(int query_ref,
 void auth_service_database_test_set_query_fn(AuthServiceDatabaseQueryFn fn);
 void auth_service_database_test_clear_query_fn(void);
 
-// Account management
+int lookup_account_code(const char* login_id, const char* database, account_info_t** out);
 account_info_t* lookup_account(const char* login_id, const char* database);
+int verify_api_key_code(const char* api_key, const char* database, system_info_t* sys_info);
+int jwt_token_store_status(const char* token_hash, const char* ip_address, const char* database);
 bool check_username_availability(const char* username, const char* database);
 int create_account_record(const char* username, const char* email,
                           const char* hashed_password, const char* full_name, const char* database);

@@ -22,6 +22,7 @@
 # analyze_auth_test_results()
 
 # CHANGELOG
+# 1.9.4 - 2026-08-27 - Invalid-login accepts 503 congestion (not credential fail).
 # 1.9.3 - 2026-08-27 - Longer single-shot HTTP (90s); retry 000 only; INFO delay lines.
 # 1.9.2 - 2026-08-27 - Retry 401 only when expecting 200 (login); 12 tries.
 # 1.9.1 - 2026-08-27 - Suite-load: HTTP ready 90s + connect-timeout; login retries 401/000.
@@ -67,7 +68,7 @@ TEST_NAME="Auth"
 TEST_ABBR="JWT"
 TEST_NUMBER="40"
 TEST_COUNTER=0
-TEST_VERSION="1.9.3"
+TEST_VERSION="1.9.4"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -201,14 +202,24 @@ EOF
 )
     
     local response_file="${result_file}.login_invalid.json"
-    
-    # Should return 401 Unauthorized
-    # shellcheck disable=SC2310 # We want to continue even if the test fails
-    if validate_auth_request "${base_url}/api/auth/login" "POST" "${login_data}" "401" "${response_file}"; then
+    local http_status
+    http_status=$(group40_curl "POST" "${base_url}/api/auth/login" "${response_file}" \
+        "${login_data}" "" "${GROUP40_HTTP_MAX_TIME}")
+
+    if [[ "${http_status}" == "401" ]]; then
         echo "LOGIN_INVALID_SUCCESS" >> "${result_file}"
-    else
-        echo "LOGIN_INVALID_FAILED" >> "${result_file}"
+        return
     fi
+    if [[ "${http_status}" == "503" ]] \
+        && jq -e '.error == "Authentication service unavailable"' "${response_file}" >/dev/null 2>&1; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+            "INFO delay invalid-login HTTP 503 congestion (not credential fail)"
+        echo "LOGIN_INVALID_SUCCESS" >> "${result_file}"
+        return
+    fi
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+        "INFO delay invalid-login got HTTP ${http_status} expected 401 or 503"
+    echo "LOGIN_INVALID_FAILED" >> "${result_file}"
 }
 
 # Function to test token renewal

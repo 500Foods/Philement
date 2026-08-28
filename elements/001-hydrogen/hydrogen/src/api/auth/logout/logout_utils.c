@@ -82,6 +82,8 @@ const char* get_jwt_validation_error_message(jwt_error_t error) {
             return "Invalid token format";
         case JWT_ERROR_REVOKED:
             return "Token already revoked";
+        case JWT_ERROR_UNAVAILABLE:
+            return "Authentication service unavailable";
         default:
             return "Invalid token";
     }

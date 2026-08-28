@@ -304,7 +304,9 @@ enum MHD_Result validate_jwt_and_extract_database(
         const char *error_msg = get_jwt_error_message(result.error);
         log_this(SR_AUTH, "validate_jwt_and_extract_database: JWT validation failed - %s", LOG_LEVEL_ALERT, 1, error_msg);
         free_jwt_validation_result(&result);
-        return send_jwt_error_response(connection, error_msg, MHD_HTTP_UNAUTHORIZED);
+        unsigned int jwt_http = (result.error == JWT_ERROR_UNAVAILABLE)
+            ? MHD_HTTP_SERVICE_UNAVAILABLE : MHD_HTTP_UNAUTHORIZED;
+        return send_jwt_error_response(connection, error_msg, jwt_http);
     }
 
     // Validate claims using helper

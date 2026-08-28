@@ -102,6 +102,8 @@ const char* get_jwt_validation_error_message_renew(jwt_error_t error) {
             return "Invalid token format";
         case JWT_ERROR_REVOKED:
             return "Token has been revoked";
+        case JWT_ERROR_UNAVAILABLE:
+            return "Authentication service unavailable";
         default:
             return "Invalid or expired token";
     }

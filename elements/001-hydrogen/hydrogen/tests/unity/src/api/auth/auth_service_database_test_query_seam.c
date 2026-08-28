@@ -22,6 +22,9 @@ void auth_service_database_test_clear_query_fn(void);
 
 // Forward declarations for functions being tested
 account_info_t* lookup_account(const char* login_id, const char* database);
+int lookup_account_code(const char* login_id, const char* database, account_info_t** out);
+int verify_api_key_code(const char* api_key, const char* database, system_info_t* sys_info);
+int jwt_token_store_status(const char* token_hash, const char* ip_address, const char* database);
 bool verify_password_and_status(const char* password, int account_id, const char* database, account_info_t* account);
 bool verify_api_key(const char* api_key, const char* database, system_info_t* sys_info);
 bool check_username_availability(const char* username, const char* database);
@@ -40,6 +43,10 @@ void test_lookup_account_success(void);
 void test_lookup_account_uppercase_fallback(void);
 void test_lookup_account_parse_error(void);
 void test_lookup_account_query_failure(void);
+void test_lookup_account_not_found_empty_array(void);
+void test_lookup_account_code_unavailable(void);
+void test_jwt_token_store_status_unavailable(void);
+void test_jwt_token_store_status_active(void);
 void test_verify_password_and_status_success(void);
 void test_verify_password_and_status_query_failure(void);
 void test_verify_password_and_status_parse_error(void);
@@ -233,6 +240,24 @@ void test_lookup_account_query_failure(void) {
     set_failure("db down");
 
     account_info_t* account = lookup_account("erin", "test_db");
+    TEST_ASSERT_NULL(account);
+}
+
+void test_lookup_account_not_found_empty_array(void) {
+    set_success("[]");
+
+    account_info_t* account = NULL;
+    int code = lookup_account_code("missing", "test_db", &account);
+    TEST_ASSERT_EQUAL_INT(0, code);
+    TEST_ASSERT_NULL(account);
+}
+
+void test_lookup_account_code_unavailable(void) {
+    set_failure("db down");
+
+    account_info_t* account = NULL;
+    int code = lookup_account_code("erin", "test_db", &account);
+    TEST_ASSERT_EQUAL_INT(-1, code);
     TEST_ASSERT_NULL(account);
 }
 
@@ -511,6 +536,20 @@ void test_is_token_revoked_query_failure(void) {
     TEST_ASSERT_TRUE(revoked);
 }
 
+void test_jwt_token_store_status_unavailable(void) {
+    set_failure("boom");
+
+    int status = jwt_token_store_status("hash", "1.2.3.4", "test_db");
+    TEST_ASSERT_EQUAL_INT(-1, status);
+}
+
+void test_jwt_token_store_status_active(void) {
+    set_success_rows(1);
+
+    int status = jwt_token_store_status("hash", "1.2.3.4", "test_db");
+    TEST_ASSERT_EQUAL_INT(1, status);
+}
+
 /**
  * Test: check_failed_attempts_success
  * Purpose: Cover the success parsing branch (lines 721-736)
@@ -570,6 +609,8 @@ int main(void) {
     RUN_TEST(test_lookup_account_uppercase_fallback);
     RUN_TEST(test_lookup_account_parse_error);
     RUN_TEST(test_lookup_account_query_failure);
+    RUN_TEST(test_lookup_account_not_found_empty_array);
+    RUN_TEST(test_lookup_account_code_unavailable);
 
     // verify_password_and_status branches
     RUN_TEST(test_verify_password_and_status_success);
@@ -603,6 +644,8 @@ int main(void) {
     RUN_TEST(test_is_token_revoked_json_array);
     RUN_TEST(test_is_token_revoked_query_null);
     RUN_TEST(test_is_token_revoked_query_failure);
+    RUN_TEST(test_jwt_token_store_status_unavailable);
+    RUN_TEST(test_jwt_token_store_status_active);
 
     // check_failed_attempts branches
     RUN_TEST(test_check_failed_attempts_success);

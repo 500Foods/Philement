@@ -260,6 +260,13 @@ bool mcp_try_hydrogen(const char *auth_header, const MCPConfig *cfg, McpAuthResu
         return false;
     }
     jwt = validate_jwt(auth_header + 7, NULL);
+    if (jwt.error == JWT_ERROR_UNAVAILABLE) {
+        if (jwt.claims) {
+            free_jwt_claims(jwt.claims);
+        }
+        mcp_auth_fail(out, MCP_AUTH_REJECT_UNAVAILABLE);
+        return false;
+    }
     if (!jwt.valid || !jwt.claims || !jwt.claims->database || jwt.claims->database[0] == '\0') {
         if (jwt.claims) {
             free_jwt_claims(jwt.claims);
@@ -500,6 +507,9 @@ bool mcp_validate_bearer(const char *auth_header,
     token = auth_header + 7;
     if (mcp_try_hydrogen(auth_header, cfg, out)) {
         return true;
+    }
+    if (out && out->reject_reason == MCP_AUTH_REJECT_UNAVAILABLE) {
+        return false;
     }
     if (mcp_try_oidc_idp(token, cfg, app, out, &detail)) {
         return true;

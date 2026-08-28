@@ -28,6 +28,8 @@ const char* get_jwt_error_message(jwt_error_t error) {
             return "JWT token not yet valid";
         case JWT_ERROR_UNSUPPORTED_ALGORITHM:
             return "Unsupported JWT algorithm";
+        case JWT_ERROR_UNAVAILABLE:
+            return "Authentication service unavailable";
         case JWT_ERROR_NONE:
         default:
             return "Invalid or expired JWT token";

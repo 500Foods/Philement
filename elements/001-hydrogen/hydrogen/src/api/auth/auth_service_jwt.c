@@ -345,17 +345,22 @@ jwt_validation_result_t validate_jwt(const char* token, const char* database) {
         ip_address = json_string_value(ip_json_revocation);
     }
 
-    // Check if token is revoked (requires database)
     if (db_to_use) {
         char* token_hash = compute_token_hash(token);
-        if (is_token_revoked(token_hash, ip_address, db_to_use)) {
-            free(token_hash);
+        int store_status = jwt_token_store_status(token_hash, ip_address, db_to_use);
+        free(token_hash);
+        if (store_status < 0) {
+            json_decref(payload_json);
+            free(token_copy);
+            result.error = JWT_ERROR_UNAVAILABLE;
+            return result;
+        }
+        if (store_status == 0) {
             json_decref(payload_json);
             free(token_copy);
             result.error = JWT_ERROR_REVOKED;
             return result;
         }
-        free(token_hash);
     } else {
         // If database not provided and not in JWT claims, return error
         json_decref(payload_json);

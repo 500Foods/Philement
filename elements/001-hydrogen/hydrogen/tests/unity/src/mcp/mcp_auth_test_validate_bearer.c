@@ -21,6 +21,7 @@ void test_validate_bearer_malformed(void);
 void test_validate_bearer_reserved_hydrogen(void);
 void test_validate_bearer_bad_hydrogen_jwt(void);
 void test_validate_bearer_expired_hydrogen_jwt(void);
+void test_validate_bearer_unavailable_hydrogen_jwt(void);
 void test_validate_bearer_happy_hydrogen_jwt(void);
 void test_validate_bearer_require_jwt_false(void);
 void test_validate_bearer_idp_reject(void);
@@ -247,6 +248,20 @@ void test_validate_bearer_expired_hydrogen_jwt(void) {
 
     TEST_ASSERT_FALSE(mcp_validate_bearer("Bearer expired", NULL, 0, &test_app.mcp, &test_app, &auth));
     TEST_ASSERT_EQUAL(MCP_AUTH_REJECT_HYDROGEN_JWT, auth.reject_reason);
+    mcp_auth_result_cleanup(&auth);
+}
+
+void test_validate_bearer_unavailable_hydrogen_jwt(void) {
+    McpAuthResult auth;
+    jwt_validation_result_t programmed;
+
+    memset(&programmed, 0, sizeof(programmed));
+    programmed.valid = false;
+    programmed.error = JWT_ERROR_UNAVAILABLE;
+    mock_auth_service_jwt_set_validation_result(programmed);
+
+    TEST_ASSERT_FALSE(mcp_validate_bearer("Bearer congested", NULL, 0, &test_app.mcp, &test_app, &auth));
+    TEST_ASSERT_EQUAL(MCP_AUTH_REJECT_UNAVAILABLE, auth.reject_reason);
     mcp_auth_result_cleanup(&auth);
 }
 
@@ -610,6 +625,7 @@ int main(void) {
     RUN_TEST(test_validate_bearer_reserved_hydrogen);
     RUN_TEST(test_validate_bearer_bad_hydrogen_jwt);
     RUN_TEST(test_validate_bearer_expired_hydrogen_jwt);
+    RUN_TEST(test_validate_bearer_unavailable_hydrogen_jwt);
     RUN_TEST(test_validate_bearer_happy_hydrogen_jwt);
     RUN_TEST(test_validate_bearer_require_jwt_false);
     RUN_TEST(test_validate_bearer_idp_reject);

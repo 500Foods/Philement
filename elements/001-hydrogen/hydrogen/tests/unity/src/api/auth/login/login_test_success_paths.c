@@ -1,11 +1,15 @@
 /*
- * Unity Test File: Login Error Paths
- * This file contains unit tests for error handling in the login endpoint
+ * Unity Test File: Login Success Paths
+ * This file contains unit tests for the success/happy path and remaining
+ * branches of the /api/auth/login endpoint that were not exercised by
+ * login_test_error_paths.c (notably the full success path through
+ * auth_roles_from_database, generate_jwt, compute_token_hash, store_jwt
+ * and the 200 response build).
  *
- * Tests: handle_auth_login_request() - Error paths and edge cases
+ * Tests: handle_auth_login_request() - Success path and credential branches
  *
  * CHANGELOG:
- * 2026-01-12: Initial version - Tests for login error paths
+ * 2026-08-28: Initial version - Tests for login success paths and coverage
  *
  * TEST_VERSION: 1.0.0
  */
@@ -28,24 +32,12 @@
 // ============================================================================
 
 // Test functions
-void test_handle_auth_login_api_buffer_error(void);
-void test_handle_auth_login_api_buffer_method_error(void);
-void test_handle_auth_login_empty_request_body(void);
-void test_handle_auth_login_invalid_json(void);
-void test_handle_auth_login_get_request_not_supported(void);
-void test_handle_auth_login_missing_required_parameters(void);
-void test_handle_auth_login_validation_failed(void);
-void test_handle_auth_login_license_expired(void);
-void test_handle_auth_login_failed_to_get_client_ip(void);
-void test_handle_auth_login_ip_blacklisted(void);
-void test_handle_auth_login_rate_limit_exceeded(void);
-void test_handle_auth_login_account_not_found(void);
-void test_handle_auth_login_account_lookup_unavailable(void);
-void test_handle_auth_login_api_key_unavailable(void);
-void test_handle_auth_login_account_disabled(void);
-void test_handle_auth_login_account_not_authorized(void);
-void test_handle_auth_login_failed_to_generate_jwt(void);
-void test_handle_auth_login_failed_to_compute_jwt_hash(void);
+void test_handle_auth_login_success(void);
+void test_handle_auth_login_invalid_api_key(void);
+void test_handle_auth_login_wrong_password_unauthorized(void);
+void test_handle_auth_login_wrong_password_rate_limited(void);
+void test_handle_auth_login_roles_fallback_empty(void);
+void test_handle_auth_login_jwt_generation_failure(void);
 
 // Helper functions
 void reset_all_mocks(void);
@@ -71,6 +63,13 @@ static int mock_verify_api_key_code = 1;
 static bool mock_verify_password_and_status_result = true;
 static char* mock_generate_jwt_result = NULL;
 static char* mock_compute_token_hash_result = NULL;
+static char* mock_auth_roles_from_database_result = NULL;
+
+// Capturing state for api_send_json_response
+static bool mock_capture_mode = false;
+static json_t *mock_captured_response = NULL;
+static unsigned int mock_captured_status = 0;
+static int mock_send_json_response_call_count = 0;
 
 // Mock implementations with weak linkage to override real implementations
 __attribute__((weak))
@@ -174,6 +173,15 @@ account_info_t* lookup_account(const char* login_id, const char* database) {
 }
 
 __attribute__((weak))
+char* auth_roles_from_database(int account_id, const char* database) {
+    (void)account_id; (void)database;
+    if (mock_auth_roles_from_database_result) {
+        return strdup(mock_auth_roles_from_database_result);
+    }
+    return NULL;
+}
+
+__attribute__((weak))
 int verify_password_and_status_code(const char* password, int account_id,
                                    const char* database, account_info_t* account) {
     (void)password; (void)account_id; (void)database; (void)account;
@@ -188,7 +196,7 @@ bool verify_password_and_status(const char* password, int account_id,
 
 __attribute__((weak))
 char* generate_jwt(account_info_t* account, system_info_t* system,
-                  const char* client_ip, const char* tz, const char* database, time_t issued_at) {
+                   const char* client_ip, const char* tz, const char* database, time_t issued_at) {
     (void)account; (void)system; (void)client_ip; (void)tz; (void)database; (void)issued_at;
     if (mock_generate_jwt_result) {
         return strdup(mock_generate_jwt_result);
@@ -227,7 +235,6 @@ void free_account_info(account_info_t* account) {
 static ApiBufferResult mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
 static ApiPostBuffer* mock_api_buffer = NULL;
 
-__attribute__((weak))
 ApiBufferResult api_buffer_post_data(
     const char *method,
     const char *upload_data,
@@ -236,15 +243,14 @@ ApiBufferResult api_buffer_post_data(
     ApiPostBuffer **buffer_out
 ) {
     (void)method; (void)upload_data; (void)upload_data_size; (void)con_cls;
-    
+
     if (mock_api_buffer_post_data_result == API_BUFFER_COMPLETE && buffer_out) {
         *buffer_out = mock_api_buffer;
     }
-    
+
     return mock_api_buffer_post_data_result;
 }
 
-__attribute__((weak))
 enum MHD_Result api_send_error_and_cleanup(
     struct MHD_Connection *connection,
     void **con_cls,
@@ -255,12 +261,10 @@ enum MHD_Result api_send_error_and_cleanup(
     return MHD_YES;
 }
 
-__attribute__((weak))
 void api_free_post_buffer(void **con_cls) {
     (void)con_cls;
 }
 
-__attribute__((weak))
 json_t *api_parse_json_body(ApiPostBuffer *buffer) {
     if (!buffer || !buffer->data || buffer->size == 0) {
         return NULL;
@@ -268,14 +272,22 @@ json_t *api_parse_json_body(ApiPostBuffer *buffer) {
     return json_loads(buffer->data, 0, NULL);
 }
 
-__attribute__((weak))
+// Capturing version: records the response json + status so success-path
+// tests can assert on the HTTP 200 body instead of only the return value.
 enum MHD_Result api_send_json_response(struct MHD_Connection *connection,
                                      json_t *json_obj,
                                      unsigned int status_code) {
-    (void)connection; (void)status_code;
-    if (json_obj) {
+    (void)connection;
+    mock_send_json_response_call_count++;
+    mock_captured_status = status_code;
+
+    if (mock_capture_mode && json_obj) {
+        // Take ownership (do not free) so the test can inspect fields.
+        mock_captured_response = json_obj;
+    } else if (json_obj) {
         json_decref(json_obj);
     }
+
     return MHD_YES;
 }
 
@@ -286,10 +298,10 @@ enum MHD_Result api_send_json_response(struct MHD_Connection *connection,
 void reset_all_mocks(void) {
     mock_validate_login_input_result = true;
     mock_check_license_expiry_result = true;
-    
+
     free(mock_api_get_client_ip_result);
     mock_api_get_client_ip_result = NULL;
-    
+
     mock_check_ip_whitelist_result = false;
     mock_check_ip_blacklist_result = false;
     mock_check_failed_attempts_result = 0;
@@ -298,21 +310,32 @@ void reset_all_mocks(void) {
     mock_lookup_account_code = 0;
     mock_verify_api_key_code = 1;
     mock_verify_password_and_status_result = true;
-    
+
     free(mock_generate_jwt_result);
     mock_generate_jwt_result = NULL;
-    
+
     free(mock_compute_token_hash_result);
     mock_compute_token_hash_result = NULL;
-    
+
+    free(mock_auth_roles_from_database_result);
+    mock_auth_roles_from_database_result = NULL;
+
     mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
-    
+
     if (mock_api_buffer) {
         free(mock_api_buffer->data);
         free(mock_api_buffer);
         mock_api_buffer = NULL;
     }
-    
+
+    mock_capture_mode = false;
+    if (mock_captured_response) {
+        json_decref(mock_captured_response);
+        mock_captured_response = NULL;
+    }
+    mock_captured_status = 0;
+    mock_send_json_response_call_count = 0;
+
     mock_mhd_reset_all();
 }
 
@@ -358,354 +381,192 @@ void tearDown(void) {
 }
 
 // ============================================================================
-// Test Functions - Error Paths
+// Test Functions - Success Paths and Credential Branches
 // ============================================================================
 
-// Test: API_BUFFER_ERROR case (lines 57-60)
-void test_handle_auth_login_api_buffer_error(void) {
+// Full happy path: API key valid, license ok, IP not blacklisted, account
+// found/enabled/authorized, password verifies, roles load, JWT generated and
+// stored. Verifies the HTTP 200 response body fields.
+void test_handle_auth_login_success(void) {
     struct MHD_Connection *mock_connection = (void*)0x123;
     void *con_cls = NULL;
     size_t upload_size = 0;
-    
-    mock_api_buffer_post_data_result = API_BUFFER_ERROR;
-    
-    enum MHD_Result result = handle_auth_login_request(
-        NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
-        NULL, &upload_size, &con_cls
-    );
-    
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-}
 
-// Test: API_BUFFER_METHOD_ERROR case (lines 62-65)
-void test_handle_auth_login_api_buffer_method_error(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *con_cls = NULL;
-    size_t upload_size = 0;
-    
-    mock_api_buffer_post_data_result = API_BUFFER_METHOD_ERROR;
-    
-    enum MHD_Result result = handle_auth_login_request(
-        NULL, mock_connection, "/api/auth/login", "PUT", "HTTP/1.1",
-        NULL, &upload_size, &con_cls
-    );
-    
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-}
-
-// Test: Empty request body (lines 75-77)
-void test_handle_auth_login_empty_request_body(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *con_cls = NULL;
-    size_t upload_size = 0;
-    
-    // Create empty buffer
-    mock_api_buffer = create_mock_buffer(NULL, 'P');
-    mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
-    
-    enum MHD_Result result = handle_auth_login_request(
-        NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
-        NULL, &upload_size, &con_cls
-    );
-    
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-}
-
-// Test: Invalid JSON (lines 85-86)
-void test_handle_auth_login_invalid_json(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *con_cls = NULL;
-    size_t upload_size = 0;
-    
-    // Create buffer with invalid JSON
-    mock_api_buffer = create_mock_buffer("{invalid json", 'P');
-    mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
-    
-    enum MHD_Result result = handle_auth_login_request(
-        NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
-        NULL, &upload_size, &con_cls
-    );
-    
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-}
-
-// Test: GET request not supported (lines 90-92)
-void test_handle_auth_login_get_request_not_supported(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *con_cls = NULL;
-    size_t upload_size = 0;
-    
-    // Create GET request buffer
-    mock_api_buffer = create_mock_buffer("{}", 'G');
-    mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
-    
-    enum MHD_Result result = handle_auth_login_request(
-        NULL, mock_connection, "/api/auth/login", "GET", "HTTP/1.1",
-        NULL, &upload_size, &con_cls
-    );
-    
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-}
-
-// Test: Missing required parameters (lines 107-111)
-void test_handle_auth_login_missing_required_parameters(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *con_cls = NULL;
-    size_t upload_size = 0;
-    
-    // Create JSON with missing parameters
-    const char* json = "{\"login_id\":\"test\"}";
-    mock_api_buffer = create_mock_buffer(json, 'P');
-    mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
-    
-    enum MHD_Result result = handle_auth_login_request(
-        NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
-        NULL, &upload_size, &con_cls
-    );
-    
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-}
-
-// Test: Login input validation failed (lines 116-120)
-void test_handle_auth_login_validation_failed(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *con_cls = NULL;
-    size_t upload_size = 0;
-    
-    const char* json = "{\"login_id\":\"test\",\"password\":\"pass\",\"api_key\":\"key\",\"tz\":\"UTC\",\"database\":\"db\"}";
-    mock_api_buffer = create_mock_buffer(json, 'P');
-    mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
-    mock_validate_login_input_result = false;
-    
-    enum MHD_Result result = handle_auth_login_request(
-        NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
-        NULL, &upload_size, &con_cls
-    );
-    
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-}
-
-// Test: License expired (lines 140-144)
-void test_handle_auth_login_license_expired(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *con_cls = NULL;
-    size_t upload_size = 0;
-    
-    const char* json = "{\"login_id\":\"test\",\"password\":\"Password123!\",\"api_key\":\"key\",\"tz\":\"America/Vancouver\",\"database\":\"db\"}";
-    mock_api_buffer = create_mock_buffer(json, 'P');
-    mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
-    mock_check_license_expiry_result = false;
-    
-    enum MHD_Result result = handle_auth_login_request(
-        NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
-        NULL, &upload_size, &con_cls
-    );
-    
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-}
-
-// Test: Failed to retrieve client IP address (lines 152-156)
-void test_handle_auth_login_failed_to_get_client_ip(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *con_cls = NULL;
-    size_t upload_size = 0;
-    
-    const char* json = "{\"login_id\":\"test\",\"password\":\"Password123!\",\"api_key\":\"key\",\"tz\":\"America/Vancouver\",\"database\":\"db\"}";
-    mock_api_buffer = create_mock_buffer(json, 'P');
-    mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
-    mock_api_get_client_ip_result = NULL; // Force NULL return
-    
-    enum MHD_Result result = handle_auth_login_request(
-        NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
-        NULL, &upload_size, &con_cls
-    );
-    
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-}
-
-// Test: IP blacklisted (lines 165-170)
-void test_handle_auth_login_ip_blacklisted(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *con_cls = NULL;
-    size_t upload_size = 0;
-    
-    const char* json = "{\"login_id\":\"test\",\"password\":\"Password123!\",\"api_key\":\"key\",\"tz\":\"America/Vancouver\",\"database\":\"db\"}";
+    const char* json = "{\"login_id\":\"testuser\",\"password\":\"Password123!\","
+                       "\"api_key\":\"key\",\"tz\":\"America/Vancouver\",\"database\":\"db\"}";
     mock_api_buffer = create_mock_buffer(json, 'P');
     mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
     mock_api_get_client_ip_result = strdup("192.168.1.1");
-    mock_check_ip_blacklist_result = true;
-    
-    enum MHD_Result result = handle_auth_login_request(
-        NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
-        NULL, &upload_size, &con_cls
-    );
-    
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-}
-
-// Test: Rate limit exceeded (lines 194-201)
-void test_handle_auth_login_rate_limit_exceeded(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *con_cls = NULL;
-    size_t upload_size = 0;
-    
-    const char* json = "{\"login_id\":\"test\",\"password\":\"Password123!\",\"api_key\":\"key\",\"tz\":\"America/Vancouver\",\"database\":\"db\"}";
-    mock_api_buffer = create_mock_buffer(json, 'P');
-    mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
-    mock_api_get_client_ip_result = strdup("192.168.1.1");
-    mock_check_failed_attempts_result = 10;
-    mock_handle_rate_limiting_result = true; // Should block
-    
-    enum MHD_Result result = handle_auth_login_request(
-        NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
-        NULL, &upload_size, &con_cls
-    );
-    
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-}
-
-// Test: Account not found (lines 207-212)
-void test_handle_auth_login_account_not_found(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *con_cls = NULL;
-    size_t upload_size = 0;
-    
-    const char* json = "{\"login_id\":\"test\",\"password\":\"Password123!\",\"api_key\":\"key\",\"tz\":\"America/Vancouver\",\"database\":\"db\"}";
-    mock_api_buffer = create_mock_buffer(json, 'P');
-    mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
-    mock_api_get_client_ip_result = strdup("192.168.1.1");
-    mock_lookup_account_result = NULL; // Account not found
-    
-    enum MHD_Result result = handle_auth_login_request(
-        NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
-        NULL, &upload_size, &con_cls
-    );
-    
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-}
-
-void test_handle_auth_login_account_lookup_unavailable(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *con_cls = NULL;
-    size_t upload_size = 0;
-
-    const char* json = "{\"login_id\":\"test\",\"password\":\"Password123!\",\"api_key\":\"key\",\"tz\":\"America/Vancouver\",\"database\":\"db\"}";
-    mock_api_buffer = create_mock_buffer(json, 'P');
-    mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
-    mock_api_get_client_ip_result = strdup("192.168.1.1");
-    mock_lookup_account_result = NULL;
-    mock_lookup_account_code = -1;
-
-    enum MHD_Result result = handle_auth_login_request(
-        NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
-        NULL, &upload_size, &con_cls
-    );
-
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-}
-
-void test_handle_auth_login_api_key_unavailable(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *con_cls = NULL;
-    size_t upload_size = 0;
-
-    const char* json = "{\"login_id\":\"test\",\"password\":\"Password123!\",\"api_key\":\"key\",\"tz\":\"America/Vancouver\",\"database\":\"db\"}";
-    mock_api_buffer = create_mock_buffer(json, 'P');
-    mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
-    mock_verify_api_key_code = -1;
-
-    enum MHD_Result result = handle_auth_login_request(
-        NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
-        NULL, &upload_size, &con_cls
-    );
-
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-}
-
-// Test: Account disabled (lines 220-227)
-void test_handle_auth_login_account_disabled(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *con_cls = NULL;
-    size_t upload_size = 0;
-    
-    const char* json = "{\"login_id\":\"test\",\"password\":\"Password123!\",\"api_key\":\"key\",\"tz\":\"America/Vancouver\",\"database\":\"db\"}";
-    mock_api_buffer = create_mock_buffer(json, 'P');
-    mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
-    mock_api_get_client_ip_result = strdup("192.168.1.1");
-    mock_lookup_account_result = create_mock_account(1, "test", "test@example.com", false, true);
-    
-    enum MHD_Result result = handle_auth_login_request(
-        NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
-        NULL, &upload_size, &con_cls
-    );
-    
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-    free_account_info(mock_lookup_account_result);
-}
-
-// Test: Account not authorized (lines 232-239)
-void test_handle_auth_login_account_not_authorized(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *con_cls = NULL;
-    size_t upload_size = 0;
-    
-    const char* json = "{\"login_id\":\"test\",\"password\":\"Password123!\",\"api_key\":\"key\",\"tz\":\"America/Vancouver\",\"database\":\"db\"}";
-    mock_api_buffer = create_mock_buffer(json, 'P');
-    mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
-    mock_api_get_client_ip_result = strdup("192.168.1.1");
-    mock_lookup_account_result = create_mock_account(1, "test", "test@example.com", true, false);
-    
-    enum MHD_Result result = handle_auth_login_request(
-        NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
-        NULL, &upload_size, &con_cls
-    );
-    
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-    free_account_info(mock_lookup_account_result);
-}
-
-// Test: Failed to generate JWT (lines 265-271)
-void test_handle_auth_login_failed_to_generate_jwt(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *con_cls = NULL;
-    size_t upload_size = 0;
-    
-    const char* json = "{\"login_id\":\"test\",\"password\":\"Password123!\",\"api_key\":\"key\",\"tz\":\"America/Vancouver\",\"database\":\"db\"}";
-    mock_api_buffer = create_mock_buffer(json, 'P');
-    mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
-    mock_api_get_client_ip_result = strdup("192.168.1.1");
-    mock_lookup_account_result = create_mock_account(1, "test", "test@example.com", true, true);
-    mock_generate_jwt_result = NULL; // Force JWT generation failure
-    
-    enum MHD_Result result = handle_auth_login_request(
-        NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
-        NULL, &upload_size, &con_cls
-    );
-    
-    TEST_ASSERT_EQUAL(MHD_YES, result);
-    free_account_info(mock_lookup_account_result);
-}
-
-// Test: Failed to compute JWT hash (lines 280-287)
-void test_handle_auth_login_failed_to_compute_jwt_hash(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *con_cls = NULL;
-    size_t upload_size = 0;
-    
-    const char* json = "{\"login_id\":\"test\",\"password\":\"Password123!\",\"api_key\":\"key\",\"tz\":\"America/Vancouver\",\"database\":\"db\"}";
-    mock_api_buffer = create_mock_buffer(json, 'P');
-    mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
-    mock_api_get_client_ip_result = strdup("192.168.1.1");
-    mock_lookup_account_result = create_mock_account(1, "test", "test@example.com", true, true);
+    mock_lookup_account_result = create_mock_account(1, "testuser", "test@example.com", true, true);
     mock_generate_jwt_result = strdup("test_jwt_token");
-    mock_compute_token_hash_result = NULL; // Force hash computation failure
-    
+    mock_compute_token_hash_result = strdup("test_hash_value");
+    mock_auth_roles_from_database_result = strdup("1,3");
+    mock_capture_mode = true;
+
     enum MHD_Result result = handle_auth_login_request(
         NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
         NULL, &upload_size, &con_cls
     );
-    
+
     TEST_ASSERT_EQUAL(MHD_YES, result);
+    TEST_ASSERT_EQUAL(1, mock_send_json_response_call_count);
+    TEST_ASSERT_EQUAL(MHD_HTTP_OK, mock_captured_status);
+
+    TEST_ASSERT_NOT_NULL(mock_captured_response);
+    TEST_ASSERT_TRUE(json_boolean_value(json_object_get(mock_captured_response, "success")));
+    TEST_ASSERT_EQUAL_STRING("test_jwt_token",
+                             json_string_value(json_object_get(mock_captured_response, "token")));
+    TEST_ASSERT_EQUAL_INT(1,
+                          json_integer_value(json_object_get(mock_captured_response, "user_id")));
+    TEST_ASSERT_EQUAL_STRING("testuser",
+                             json_string_value(json_object_get(mock_captured_response, "username")));
+    TEST_ASSERT_EQUAL_STRING("test@example.com",
+                             json_string_value(json_object_get(mock_captured_response, "email")));
+    TEST_ASSERT_EQUAL_STRING("1,3",
+                             json_string_value(json_object_get(mock_captured_response, "roles")));
+
+    free_account_info(mock_lookup_account_result);
+}
+
+// API key present but invalid (code == 0): must return 401 "Invalid API key".
+void test_handle_auth_login_invalid_api_key(void) {
+    struct MHD_Connection *mock_connection = (void*)0x123;
+    void *con_cls = NULL;
+    size_t upload_size = 0;
+
+    const char* json = "{\"login_id\":\"testuser\",\"password\":\"Password123!\","
+                       "\"api_key\":\"bad-key\",\"tz\":\"America/Vancouver\",\"database\":\"db\"}";
+    mock_api_buffer = create_mock_buffer(json, 'P');
+    mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
+    mock_api_get_client_ip_result = strdup("192.168.1.1");
+    mock_verify_api_key_code = 0; // invalid key
+    mock_capture_mode = true;
+
+    enum MHD_Result result = handle_auth_login_request(
+        NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
+        NULL, &upload_size, &con_cls
+    );
+
+    TEST_ASSERT_EQUAL(MHD_YES, result);
+    TEST_ASSERT_EQUAL(MHD_HTTP_UNAUTHORIZED, mock_captured_status);
+    TEST_ASSERT_NOT_NULL(mock_captured_response);
+    TEST_ASSERT_EQUAL_STRING("Invalid API key",
+                             json_string_value(json_object_get(mock_captured_response, "error")));
+}
+
+// Wrong password (verify fails, no rate limit): 401 "Invalid credentials".
+void test_handle_auth_login_wrong_password_unauthorized(void) {
+    struct MHD_Connection *mock_connection = (void*)0x123;
+    void *con_cls = NULL;
+    size_t upload_size = 0;
+
+    const char* json = "{\"login_id\":\"testuser\",\"password\":\"wrong\",\"api_key\":\"key\","
+                       "\"tz\":\"America/Vancouver\",\"database\":\"db\"}";
+    mock_api_buffer = create_mock_buffer(json, 'P');
+    mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
+    mock_api_get_client_ip_result = strdup("192.168.1.1");
+    mock_lookup_account_result = create_mock_account(1, "testuser", "test@example.com", true, true);
+    mock_verify_password_and_status_result = false; // wrong password
+    mock_handle_rate_limiting_result = false;       // not blocked
+    mock_capture_mode = true;
+
+    enum MHD_Result result = handle_auth_login_request(
+        NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
+        NULL, &upload_size, &con_cls
+    );
+
+    TEST_ASSERT_EQUAL(MHD_YES, result);
+    TEST_ASSERT_EQUAL(MHD_HTTP_UNAUTHORIZED, mock_captured_status);
+    TEST_ASSERT_EQUAL_STRING("Invalid credentials",
+                             json_string_value(json_object_get(mock_captured_response, "error")));
+
+    free_account_info(mock_lookup_account_result);
+}
+
+// Wrong password with rate limiting triggered: 429 with retry_after.
+void test_handle_auth_login_wrong_password_rate_limited(void) {
+    struct MHD_Connection *mock_connection = (void*)0x123;
+    void *con_cls = NULL;
+    size_t upload_size = 0;
+
+    const char* json = "{\"login_id\":\"testuser\",\"password\":\"wrong\",\"api_key\":\"key\","
+                       "\"tz\":\"America/Vancouver\",\"database\":\"db\"}";
+    mock_api_buffer = create_mock_buffer(json, 'P');
+    mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
+    mock_api_get_client_ip_result = strdup("192.168.1.1");
+    mock_lookup_account_result = create_mock_account(1, "testuser", "test@example.com", true, true);
+    mock_verify_password_and_status_result = false;
+    mock_handle_rate_limiting_result = true;  // blocked
+    mock_check_failed_attempts_result = 5;
+    mock_capture_mode = true;
+
+    enum MHD_Result result = handle_auth_login_request(
+        NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
+        NULL, &upload_size, &con_cls
+    );
+
+    TEST_ASSERT_EQUAL(MHD_YES, result);
+    TEST_ASSERT_EQUAL(MHD_HTTP_TOO_MANY_REQUESTS, mock_captured_status);
+    TEST_ASSERT_EQUAL_STRING("Too many failed attempts",
+                             json_string_value(json_object_get(mock_captured_response, "error")));
+
+    free_account_info(mock_lookup_account_result);
+}
+
+// auth_roles_from_database returns NULL: login.c must fall back to strdup("")
+// so the response still carries an (empty) roles field.
+void test_handle_auth_login_roles_fallback_empty(void) {
+    struct MHD_Connection *mock_connection = (void*)0x123;
+    void *con_cls = NULL;
+    size_t upload_size = 0;
+
+    const char* json = "{\"login_id\":\"testuser\",\"password\":\"Password123!\","
+                       "\"api_key\":\"key\",\"tz\":\"America/Vancouver\",\"database\":\"db\"}";
+    mock_api_buffer = create_mock_buffer(json, 'P');
+    mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
+    mock_api_get_client_ip_result = strdup("192.168.1.1");
+    mock_lookup_account_result = create_mock_account(1, "testuser", "test@example.com", true, true);
+    mock_generate_jwt_result = strdup("test_jwt_token");
+    mock_compute_token_hash_result = strdup("test_hash_value");
+    // auth_roles_from_database_result left NULL -> fallback path
+    mock_capture_mode = true;
+
+    enum MHD_Result result = handle_auth_login_request(
+        NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
+        NULL, &upload_size, &con_cls
+    );
+
+    TEST_ASSERT_EQUAL(MHD_YES, result);
+    TEST_ASSERT_EQUAL(MHD_HTTP_OK, mock_captured_status);
+    TEST_ASSERT_EQUAL_STRING("",
+                             json_string_value(json_object_get(mock_captured_response, "roles")));
+
+    free_account_info(mock_lookup_account_result);
+}
+
+// JWT generation returns NULL: 500 "Failed to generate authentication token".
+void test_handle_auth_login_jwt_generation_failure(void) {
+    struct MHD_Connection *mock_connection = (void*)0x123;
+    void *con_cls = NULL;
+    size_t upload_size = 0;
+
+    const char* json = "{\"login_id\":\"testuser\",\"password\":\"Password123!\","
+                       "\"api_key\":\"key\",\"tz\":\"America/Vancouver\",\"database\":\"db\"}";
+    mock_api_buffer = create_mock_buffer(json, 'P');
+    mock_api_buffer_post_data_result = API_BUFFER_COMPLETE;
+    mock_api_get_client_ip_result = strdup("192.168.1.1");
+    mock_lookup_account_result = create_mock_account(1, "testuser", "test@example.com", true, true);
+    mock_generate_jwt_result = NULL; // force failure
+    mock_capture_mode = true;
+
+    enum MHD_Result result = handle_auth_login_request(
+        NULL, mock_connection, "/api/auth/login", "POST", "HTTP/1.1",
+        NULL, &upload_size, &con_cls
+    );
+
+    TEST_ASSERT_EQUAL(MHD_YES, result);
+    TEST_ASSERT_EQUAL(MHD_HTTP_INTERNAL_SERVER_ERROR, mock_captured_status);
+
     free_account_info(mock_lookup_account_result);
 }
 
@@ -715,26 +576,14 @@ void test_handle_auth_login_failed_to_compute_jwt_hash(void) {
 
 int main(void) {
     UNITY_BEGIN();
-    
-    // Error path tests
-    RUN_TEST(test_handle_auth_login_api_buffer_error);
-    RUN_TEST(test_handle_auth_login_api_buffer_method_error);
-    RUN_TEST(test_handle_auth_login_empty_request_body);
-    RUN_TEST(test_handle_auth_login_invalid_json);
-    RUN_TEST(test_handle_auth_login_get_request_not_supported);
-    RUN_TEST(test_handle_auth_login_missing_required_parameters);
-    RUN_TEST(test_handle_auth_login_validation_failed);
-    RUN_TEST(test_handle_auth_login_license_expired);
-    RUN_TEST(test_handle_auth_login_failed_to_get_client_ip);
-    RUN_TEST(test_handle_auth_login_ip_blacklisted);
-    RUN_TEST(test_handle_auth_login_rate_limit_exceeded);
-    RUN_TEST(test_handle_auth_login_account_not_found);
-    RUN_TEST(test_handle_auth_login_account_lookup_unavailable);
-    RUN_TEST(test_handle_auth_login_api_key_unavailable);
-    RUN_TEST(test_handle_auth_login_account_disabled);
-    RUN_TEST(test_handle_auth_login_account_not_authorized);
-    RUN_TEST(test_handle_auth_login_failed_to_generate_jwt);
-    RUN_TEST(test_handle_auth_login_failed_to_compute_jwt_hash);
-    
+
+    // Success path and credential branches
+    RUN_TEST(test_handle_auth_login_success);
+    RUN_TEST(test_handle_auth_login_invalid_api_key);
+    RUN_TEST(test_handle_auth_login_wrong_password_unauthorized);
+    RUN_TEST(test_handle_auth_login_wrong_password_rate_limited);
+    RUN_TEST(test_handle_auth_login_roles_fallback_empty);
+    RUN_TEST(test_handle_auth_login_jwt_generation_failure);
+
     return UNITY_END();
 }

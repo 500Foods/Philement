@@ -117,7 +117,9 @@ enum MHD_Result handle_post_auth_logout(
         log_this(SR_AUTH, "JWT validation for logout failed: %s", LOG_LEVEL_ALERT, 1, error_msg);
         if (request) json_decref(request);
         response = create_logout_error_response(error_msg);
-        return api_send_json_response(connection, response, MHD_HTTP_UNAUTHORIZED);
+        unsigned int logout_http = (validation.error == JWT_ERROR_UNAVAILABLE)
+            ? MHD_HTTP_SERVICE_UNAVAILABLE : MHD_HTTP_UNAUTHORIZED;
+        return api_send_json_response(connection, response, logout_http);
     }
 
     // Check that claims were parsed successfully
