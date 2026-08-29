@@ -53,7 +53,6 @@ Hydrogen is currently designed for technical users who:
 - [**Release Notes**](/releases/README.md) - Release notes
 - [**Build Metrics**](/docs/H/metrics/README.md) - Daily build metrics and quality tracking
 - [**Planning**](/docs/H/plans/README.md) - Planning documents, TO-DO lists, that kind of thing
-- [**Forties**](/docs/H/plans/FORTIES.md) - Tests 40–47 parallel suite load (open)
 
 ### Core Documentation
 

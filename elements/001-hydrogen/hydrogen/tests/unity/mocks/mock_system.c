@@ -120,6 +120,8 @@ void mock_system_set_sem_init_failure(int should_fail);
 void mock_system_set_asprintf_failure(int should_fail);
 void mock_system_set_fork_failure(int should_fail);
 void mock_system_set_read_eagain(int should_return_eagain);
+void mock_system_set_select_result(int result);
+void mock_system_set_read_data(const void *data, size_t len);
 void mock_system_reset_all(void);
 
 // Global variables to store mock state - shared across all object files
@@ -160,6 +162,8 @@ int mock_kill_should_fail = 0;
 int mock_close_should_fail = 0;
 int mock_sem_init_should_fail = 0;
 int mock_select_result = 0;
+const void *mock_read_data = NULL;
+size_t mock_read_data_len = 0;
 int mock_asprintf_should_fail = 0;
 int mock_asprintf_call_count = 0;
 
@@ -409,6 +413,15 @@ void mock_system_set_read_eagain(int should_return_eagain) {
     mock_read_should_return_eagain = should_return_eagain;
 }
 
+void mock_system_set_select_result(int result) {
+    mock_select_result = result;
+}
+
+void mock_system_set_read_data(const void *data, size_t len) {
+    mock_read_data = data;
+    mock_read_data_len = len;
+}
+
 void mock_system_set_write_result(ssize_t result) {
     mock_write_result = result;
 }
@@ -464,6 +477,8 @@ void mock_system_reset_all(void) {
     mock_read_result = 0;
     mock_read_should_fail = 0;
     mock_read_should_return_eagain = 0;
+    mock_read_data = NULL;
+    mock_read_data_len = 0;
     mock_write_result = 0;
     mock_write_should_fail = 0;
     mock_waitpid_result = 0;
@@ -569,8 +584,6 @@ int mock_ioctl(int fd, unsigned long request, ...) {
 // Mock implementation of read
 ssize_t mock_read(int fd, void *buf, size_t count) {
     (void)fd;   // Suppress unused parameter
-    (void)buf;  // Suppress unused parameter
-    (void)count; // Suppress unused parameter
 
     if (mock_read_should_return_eagain) {
         errno = EAGAIN;
@@ -580,6 +593,15 @@ ssize_t mock_read(int fd, void *buf, size_t count) {
     if (mock_read_should_fail) {
         errno = EBADF;  // Bad file descriptor
         return -1;
+    }
+
+    if (mock_read_data && mock_read_result > 0 && buf && count > 0) {
+        size_t copy_len = (size_t)mock_read_result;
+        if (copy_len > count) copy_len = count;
+        if (copy_len > mock_read_data_len) copy_len = mock_read_data_len;
+        if (copy_len > 0) {
+            memcpy(buf, mock_read_data, copy_len);
+        }
     }
 
     return mock_read_result;

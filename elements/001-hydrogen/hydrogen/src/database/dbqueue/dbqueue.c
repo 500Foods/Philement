@@ -251,13 +251,14 @@ bool database_queue_add_tag(DatabaseQueue* db_queue, char tag) {
     if (strchr(db_queue->tags, tag)) return true;
 
     // Add tag to the end
-    size_t new_len = strlen(db_queue->tags) + 2; // +1 for new tag, +1 for null
+    size_t old_len = strlen(db_queue->tags);
+    size_t new_len = old_len + 2; // +1 for new tag, +1 for null
     char* new_tags = realloc(db_queue->tags, new_len);
     if (!new_tags) return false;
 
     db_queue->tags = new_tags;
-    db_queue->tags[strlen(db_queue->tags)] = tag;
-    db_queue->tags[strlen(db_queue->tags) + 1] = '\0';
+    db_queue->tags[old_len] = tag;
+    db_queue->tags[old_len + 1] = '\0';
 
     return true;
 }

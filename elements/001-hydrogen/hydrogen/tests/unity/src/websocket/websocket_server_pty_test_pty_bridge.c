@@ -12,6 +12,10 @@
 #include <src/websocket/websocket_server_internal.h>
 #include <src/websocket/websocket_server_pty.h>
 
+#include <stdlib.h>
+#include <string.h>
+#include <errno.h>
+
 // Include mock headers for comprehensive testing
 #define USE_MOCK_SYSTEM
 #include <unity/mocks/mock_libwebsockets.h>
@@ -22,6 +26,7 @@ json_t* create_pty_output_json(const char *buffer, size_t data_size);
 int send_pty_data_to_websocket(struct lws *wsi, const char *data, size_t len);
 int perform_pty_read(int master_fd, char *buffer, size_t buffer_size);
 int setup_pty_select(int master_fd, fd_set *readfds, struct timeval *timeout);
+int pty_bridge_iteration(PtyBridgeContext *bridge);
 
 // Test functions for PTY bridge functionality
 void test_create_pty_output_json_valid_data(void);
@@ -35,6 +40,16 @@ void test_perform_pty_read_eof(void);
 void test_perform_pty_read_error(void);
 void test_setup_pty_select_valid_fd(void);
 void test_setup_pty_select_invalid_fd(void);
+
+// Additional pty_bridge_iteration tests
+void test_pty_bridge_iteration_timeout(void);
+void test_pty_bridge_iteration_select_error_eintr(void);
+void test_pty_bridge_iteration_select_error_other(void);
+void test_pty_bridge_iteration_read_eof(void);
+void test_pty_bridge_iteration_read_error(void);
+void test_pty_bridge_iteration_data_available_success(void);
+void test_pty_bridge_iteration_data_available_no_session(void);
+void test_pty_bridge_iteration_data_available_connection_invalid(void);
 
 void setUp(void) {
     // Reset all mocks before each test
@@ -218,6 +233,183 @@ void test_setup_pty_select_invalid_fd(void) {
     TEST_ASSERT_TRUE(result >= -1);
 }
 
+// --- pty_bridge_iteration tests ---
+
+static void setup_test_bridge(PtyBridgeContext *bridge,
+                              PtyShell *shell,
+                              TerminalSession *session,
+                              WebSocketSessionData *ws_session,
+                              bool connection_valid)
+{
+    memset(shell, 0, sizeof(PtyShell));
+    shell->master_fd = 5;
+    shell->running = true;
+    shell->session = session;
+
+    memset(session, 0, sizeof(TerminalSession));
+    session->pty_shell = shell;
+    session->active = true;
+    session->connected = true;
+    strncpy(session->session_id, "test_session_001", sizeof(session->session_id) - 1);
+
+    memset(ws_session, 0, sizeof(WebSocketSessionData));
+    ws_session->terminal_session = session;
+    ws_session->connection_valid = connection_valid;
+
+    memset(bridge, 0, sizeof(PtyBridgeContext));
+    bridge->wsi = (struct lws *)0x12345678;
+    bridge->session = session;
+    bridge->active = true;
+    bridge->connection_closed = false;
+}
+
+// Test pty_bridge_iteration with select timeout (returns 0)
+void test_pty_bridge_iteration_timeout(void) {
+    PtyBridgeContext bridge;
+    PtyShell shell;
+    TerminalSession session;
+    WebSocketSessionData ws_session;
+
+    setup_test_bridge(&bridge, &shell, &session, &ws_session, true);
+
+    mock_system_set_select_result(0);  // select returns 0 = timeout
+
+    int result = pty_bridge_iteration(&bridge);
+
+    TEST_ASSERT_EQUAL_INT(0, result);
+}
+
+// Test pty_bridge_iteration with select error (EINTR - interrupted by signal)
+void test_pty_bridge_iteration_select_error_eintr(void) {
+    PtyBridgeContext bridge;
+    PtyShell shell;
+    TerminalSession session;
+    WebSocketSessionData ws_session;
+
+    setup_test_bridge(&bridge, &shell, &session, &ws_session, true);
+
+    mock_system_set_select_result(-1);  // select returns -1 = error
+    errno = EINTR;                      // Interrupted by signal - should continue
+
+    int result = pty_bridge_iteration(&bridge);
+
+    TEST_ASSERT_EQUAL_INT(0, result);
+}
+
+// Test pty_bridge_iteration with select error (other errno - non-recoverable)
+void test_pty_bridge_iteration_select_error_other(void) {
+    PtyBridgeContext bridge;
+    PtyShell shell;
+    TerminalSession session;
+    WebSocketSessionData ws_session;
+
+    setup_test_bridge(&bridge, &shell, &session, &ws_session, true);
+
+    mock_system_set_select_result(-1);  // select returns -1 = error
+    errno = ENOMEM;                     // Memory error - should exit
+
+    int result = pty_bridge_iteration(&bridge);
+
+    TEST_ASSERT_EQUAL_INT(1, result);
+}
+
+// Test pty_bridge_iteration with data available and EOF (read returns 0)
+void test_pty_bridge_iteration_read_eof(void) {
+    PtyBridgeContext bridge;
+    PtyShell shell;
+    TerminalSession session;
+    WebSocketSessionData ws_session;
+
+    setup_test_bridge(&bridge, &shell, &session, &ws_session, true);
+
+    mock_system_set_select_result(1);   // select returns >0 = data available
+    mock_system_set_read_result(0);     // read returns 0 = EOF
+
+    int result = pty_bridge_iteration(&bridge);
+
+    TEST_ASSERT_EQUAL_INT(1, result);
+}
+
+// Test pty_bridge_iteration with data available and read error (read returns -1)
+void test_pty_bridge_iteration_read_error(void) {
+    PtyBridgeContext bridge;
+    PtyShell shell;
+    TerminalSession session;
+    WebSocketSessionData ws_session;
+
+    setup_test_bridge(&bridge, &shell, &session, &ws_session, true);
+
+    mock_system_set_select_result(1);       // select returns >0 = data available
+    mock_system_set_read_should_fail(1);    // read returns -1 = error
+
+    int result = pty_bridge_iteration(&bridge);
+
+    TEST_ASSERT_EQUAL_INT(1, result);
+}
+
+// Test pty_bridge_iteration with data available, read success, and successful WebSocket send
+void test_pty_bridge_iteration_data_available_success(void) {
+    PtyBridgeContext bridge;
+    PtyShell shell;
+    TerminalSession session;
+    WebSocketSessionData ws_session;
+
+    setup_test_bridge(&bridge, &shell, &session, &ws_session, true);
+
+    const char *test_data = "hello";
+    mock_system_set_select_result(1);   // select returns >0 = data available
+    mock_system_set_read_result(5);     // read returns 5 bytes
+    mock_system_set_read_data(test_data, 5);  // provide actual data
+    mock_lws_set_wsi_user_result(&ws_session);  // valid session
+    mock_lws_set_write_result(0);       // lws_write succeeds
+
+    int result = pty_bridge_iteration(&bridge);
+
+    TEST_ASSERT_EQUAL_INT(0, result);
+}
+
+// Test pty_bridge_iteration with data available but no WebSocket session (send fails)
+void test_pty_bridge_iteration_data_available_no_session(void) {
+    PtyBridgeContext bridge;
+    PtyShell shell;
+    TerminalSession session;
+    WebSocketSessionData ws_session;
+
+    setup_test_bridge(&bridge, &shell, &session, &ws_session, true);
+
+    const char *test_data = "hello";
+    mock_system_set_select_result(1);   // select returns >0 = data available
+    mock_system_set_read_result(5);     // read returns 5 bytes
+    mock_system_set_read_data(test_data, 5);  // provide actual data
+    mock_lws_set_wsi_user_result(NULL); // no session data - send fails
+
+    int result = pty_bridge_iteration(&bridge);
+
+    // Even though send fails, pty_bridge_iteration returns 0 (doesn't exit)
+    TEST_ASSERT_EQUAL_INT(0, result);
+}
+
+// Test pty_bridge_iteration with data available but connection invalid (send fails)
+void test_pty_bridge_iteration_data_available_connection_invalid(void) {
+    PtyBridgeContext bridge;
+    PtyShell shell;
+    TerminalSession session;
+    WebSocketSessionData ws_session;
+
+    setup_test_bridge(&bridge, &shell, &session, &ws_session, false);
+
+    const char *test_data = "hello";
+    mock_system_set_select_result(1);   // select returns >0 = data available
+    mock_system_set_read_result(5);     // read returns 5 bytes
+    mock_system_set_read_data(test_data, 5);  // provide actual data
+    mock_lws_set_wsi_user_result(&ws_session);  // valid session but connection_valid=false
+
+    int result = pty_bridge_iteration(&bridge);
+
+    // Send fails due to invalid connection, but pty_bridge_iteration returns 0
+    TEST_ASSERT_EQUAL_INT(0, result);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -233,6 +425,16 @@ int main(void) {
     RUN_TEST(test_perform_pty_read_error);
     RUN_TEST(test_setup_pty_select_valid_fd);
     RUN_TEST(test_setup_pty_select_invalid_fd);
+
+    // pty_bridge_iteration tests
+    RUN_TEST(test_pty_bridge_iteration_timeout);
+    RUN_TEST(test_pty_bridge_iteration_select_error_eintr);
+    RUN_TEST(test_pty_bridge_iteration_select_error_other);
+    RUN_TEST(test_pty_bridge_iteration_read_eof);
+    RUN_TEST(test_pty_bridge_iteration_read_error);
+    RUN_TEST(test_pty_bridge_iteration_data_available_success);
+    RUN_TEST(test_pty_bridge_iteration_data_available_no_session);
+    RUN_TEST(test_pty_bridge_iteration_data_available_connection_invalid);
 
     return UNITY_END();
 }

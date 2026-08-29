@@ -27,16 +27,6 @@ not open work unless listed below.
 
 ## P0 — Close the loop (high ROI, low–medium effort)
 
-### 0. Forties (tests 40–47) under parallel suite load
-
-| | |
-| --- | --- |
-| **Plan** | [`FORTIES.md`](/docs/H/plans/FORTIES.md) |
-| **Effort** | M (Hydrogen: Postgres/Cockroach login under 41/44; 503 vs invalid-login; JWT/MCP overlap) |
-| **Done** | Harness group40 waits + INFO delays; test 47 expect_jq; login query-fail → 503 not lockout |
-| **Remaining** | Suite still nicks test 40 (PG/CR start-then-stall, YB invalid-login 503) and test 47 login `000` on PG/CR. Do not serialize group 4. |
-| **Why now** | Concurrent 4x is the load test of Hydrogen; remaining fails are product, not missing retries. |
-
 ### 1. Keycloak / OIDC RP real-IdP sign-off
 
 | | |

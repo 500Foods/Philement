@@ -40,10 +40,6 @@ SMTP mail relay subsystem. Core outbound/API/Lua/OTP delivered; later phases (UI
 
 Chat proxy service. Phases 1–12 complete (see `complete/`). Open work: [Phase 13](/docs/H/plans/CHAT_PLAN_PHASE_13.md).
 
-### [FORTIES](/docs/H/plans/FORTIES.md)
-
-Tests 40–47 under parallel suite load: wait vs retry, shared live DBs, auth 503 vs 401, MCP scoring. Open — Hydrogen robustness, not more harness retries.
-
 ### [UNITY ASAN PLAN](/docs/H/plans/UNITY_ASAN_PLAN.md)
 
 Separate ASAN Unity build/test variant for memory-safety gating without corrupting gcov coverage.
@@ -73,6 +69,7 @@ Full index: [`complete/README.md`](/docs/H/plans/complete/README.md). Highlights
 | Image / Reporting | [IMAGE_PLAN_COMPLETE.md](/docs/H/plans/complete/IMAGE_PLAN_COMPLETE.md) |
 | Database subsystem | [DATABASE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_PLAN_COMPLETE.md) |
 | Database parameters | [DATABASE_UPDATE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_UPDATE_PLAN_COMPLETE.md) |
+| Forties (tests 40–47) | [FORTIES_COMPLETE.md](/docs/H/plans/complete/FORTIES_COMPLETE.md) |
 | Log fanout | [LOG_FANOUT_PLAN_COMPLETE.md](/docs/H/plans/complete/LOG_FANOUT_PLAN_COMPLETE.md) |
 | Lua scripting | [LUA_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md) |
 | Lua client script invoke | [LUA_CLIENT_COMPLETE.md](/docs/H/plans/complete/LUA_CLIENT_COMPLETE.md) |

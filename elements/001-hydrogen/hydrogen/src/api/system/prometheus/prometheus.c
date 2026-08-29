@@ -71,6 +71,8 @@ enum MHD_Result handle_system_prometheus_request(struct MHD_Connection *connecti
         return MHD_NO;
     }
 
+    log_this(SR_API, "Prometheus output length: %zu bytes", LOG_LEVEL_DEBUG, 1, strlen(prometheus_output));
+
     // Send response
     struct MHD_Response *response = MHD_create_response_from_buffer(
         strlen(prometheus_output),
@@ -79,6 +81,7 @@ enum MHD_Result handle_system_prometheus_request(struct MHD_Connection *connecti
     );
 
     if (!response) {
+        log_this(SR_API, "MHD_create_response_from_buffer returned NULL for prometheus", LOG_LEVEL_ERROR, 0);
         free(prometheus_output);
         return MHD_NO;
     }
@@ -92,6 +95,11 @@ enum MHD_Result handle_system_prometheus_request(struct MHD_Connection *connecti
     MHD_add_response_header(response, "Access-Control-Allow-Headers", "*");
     
     enum MHD_Result result = MHD_queue_response(connection, MHD_HTTP_OK, response);
+    if (result == MHD_NO) {
+        log_this(SR_API, "MHD_queue_response returned MHD_NO for prometheus endpoint", LOG_LEVEL_ERROR, 0);
+    } else {
+        log_this(SR_API, "Prometheus response queued successfully (MHD_YES)", LOG_LEVEL_DEBUG, 0);
+    }
     MHD_destroy_response(response);
     
     return result;

@@ -39,6 +39,7 @@ Active plans folder: [`/docs/H/plans/`](/docs/H/plans/).
 | [CONDUIT_FIX_COMPLETE.md](/docs/H/plans/complete/CONDUIT_FIX_COMPLETE.md) | Conduit auth_query fix |
 | [DATABASE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_PLAN_COMPLETE.md) | Database subsystem |
 | [DATABASE_UPDATE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_UPDATE_PLAN_COMPLETE.md) | Named/typed parameter binding (all engines) |
+| [FORTIES_COMPLETE.md](/docs/H/plans/complete/FORTIES_COMPLETE.md) | Tests 40–47 parallel suite load |
 | [IMAGE_PLAN_COMPLETE.md](/docs/H/plans/complete/IMAGE_PLAN_COMPLETE.md) | Reporting image_scale (MagickWand) |
 | [LOG_FANOUT_PLAN_COMPLETE.md](/docs/H/plans/complete/LOG_FANOUT_PLAN_COMPLETE.md) | Log fanout consumer |
 | [LUA_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md) | Lua scripting |

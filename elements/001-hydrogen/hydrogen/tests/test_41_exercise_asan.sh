@@ -247,6 +247,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         # burst can stall the webserver thread servicing this scrape (same class of
         # stall the final-metrics scrape already settles 3s for after 500 auths).
         INITIAL_METRICS=$(scrape_metrics "${PROMETHEUS_URL}" 3)
+        read_scrape_status "${TEST_NUMBER}"
 
         if [[ -n "${INITIAL_METRICS}" ]] && echo "${INITIAL_METRICS}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then
             INITIAL_RSS=$(get_metric "${INITIAL_METRICS}" "hydrogen_process_resident_memory_bytes")
@@ -271,7 +272,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Initial metrics collected"
             PASS_COUNT=$(( PASS_COUNT + 1 ))
         else
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "WARNING: Prometheus endpoint returned no hydrogen metrics (last HTTP ${SCRAPE_LAST_HTTP_CODE:-000} after ${SCRAPE_LAST_ATTEMPTS:-0}/${SCRAPE_MAX_ATTEMPTS} attempts)"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "WARNING: Prometheus endpoint returned no hydrogen metrics (last HTTP ${SCRAPE_LAST_HTTP_CODE} after ${SCRAPE_LAST_ATTEMPTS}/${SCRAPE_MAX_ATTEMPTS} attempts)"
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to collect initial metrics"
             INITIAL_RSS=0
             INITIAL_QUERIES=0
@@ -311,6 +312,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             if (( REQUEST_COUNT - LAST_SNAPSHOT_AT >= SNAPSHOT_INTERVAL )) || (( REQUEST_COUNT >= TOTAL_REQUESTS )); then
                 LAST_SNAPSHOT_AT="${REQUEST_COUNT}"
                 METRICS=$(scrape_metrics "${PROMETHEUS_URL}")
+                read_scrape_status "${TEST_NUMBER}"
                 if [[ -n "${METRICS}" ]] && echo "${METRICS}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then
                     RSS=$(get_metric "${METRICS}" "hydrogen_process_resident_memory_bytes")
                     QUERIES=$(get_metric "${METRICS}" "hydrogen_database_queries_executed_total")
@@ -345,7 +347,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 else
                     FAILED_REQUESTS=$((FAILED_REQUESTS + 1))
                     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
-                        "[${REQUEST_COUNT}/${TOTAL_REQUESTS}] WARNING: No metrics returned (last HTTP ${SCRAPE_LAST_HTTP_CODE:-000} after ${SCRAPE_LAST_ATTEMPTS:-0}/${SCRAPE_MAX_ATTEMPTS} attempts)"
+                        "[${REQUEST_COUNT}/${TOTAL_REQUESTS}] WARNING: No metrics returned (last HTTP ${SCRAPE_LAST_HTTP_CODE} after ${SCRAPE_LAST_ATTEMPTS}/${SCRAPE_MAX_ATTEMPTS} attempts)"
                 fi
             fi
         done
@@ -364,6 +366,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
         sleep 3
         FINAL_METRICS=$(scrape_metrics "${PROMETHEUS_URL}")
+        read_scrape_status "${TEST_NUMBER}"
 
         if [[ -n "${FINAL_METRICS}" ]] && echo "${FINAL_METRICS}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then
             FINAL_RSS=$(get_metric "${FINAL_METRICS}" "hydrogen_process_resident_memory_bytes")
@@ -418,7 +421,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Final metrics collected"
             PASS_COUNT=$(( PASS_COUNT + 1 ))
         else
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "WARNING: Prometheus endpoint returned no hydrogen metrics (last HTTP ${SCRAPE_LAST_HTTP_CODE:-000} after ${SCRAPE_LAST_ATTEMPTS:-0}/${SCRAPE_MAX_ATTEMPTS} attempts)"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "WARNING: Prometheus endpoint returned no hydrogen metrics (last HTTP ${SCRAPE_LAST_HTTP_CODE} after ${SCRAPE_LAST_ATTEMPTS}/${SCRAPE_MAX_ATTEMPTS} attempts)"
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to collect final metrics"
             EXIT_CODE=1
         fi
