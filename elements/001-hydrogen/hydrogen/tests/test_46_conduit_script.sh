@@ -3,6 +3,7 @@
 # Test: Conduit Script Invoke (LUA_CLIENT Phase 9)
 # POST /api/conduit/script + GET /api/conduit/script/{job_id} across engines.
 # JWT login, Api.Echo fixture (invokable), auth/404 cases, async wait:false.
+# Also tests /api/system/jobs: authenticated GET (200 + array), unauth GET (401), POST (405).
 
 # FUNCTIONS
 # api_request()
@@ -13,6 +14,7 @@
 # analyze_engine()
 
 # CHANGELOG
+# 1.3.8 - 2026-08-29 - Added /api/system/jobs blackbox tests: authenticated GET (200 + array), unauthenticated GET (401), POST (405), raised pass threshold to 18
 # 1.3.7 - 2026-08-28 - async_get flake fix: a 202-accepted job's scoreboard
 #                      registration can race the first GET's job_not_found
 #                      check by up to ~1-2s under suite load (observed on
@@ -76,7 +78,7 @@ TEST_NAME="Conduit Script"
 TEST_ABBR="CSC"
 TEST_NUMBER="46"
 TEST_COUNTER=0
-TEST_VERSION="1.3.7"
+TEST_VERSION="1.3.8"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -382,6 +384,43 @@ run_engine() {
     fi
     echo "LOGIN_OK=1" >> "${result_file}"
     record_case "${result_file}" "login" 1
+
+    # --- /api/system/jobs authenticated GET (expect 200 + JSON array) ---
+    local jobs_file="${result_file}.jobs.json"
+    http_st=$(api_request "GET" "${base_url}/api/system/jobs" \
+        "" "${jobs_file}" "${jwt}")
+    local jobs_ok=0
+    if [[ "${http_st}" == "200" ]] && command -v jq >/dev/null 2>&1; then
+        if jq -e 'type == "array"' "${jobs_file}" >/dev/null 2>&1; then
+            jobs_ok=1
+        fi
+    fi
+    if [[ "${jobs_ok}" -eq 1 ]]; then
+        record_case "${result_file}" "system_jobs_auth" 1
+    else
+        record_case "${result_file}" "system_jobs_auth" 0
+        echo "SYSTEM_JOBS_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    # --- /api/system/jobs unauthenticated GET (expect 401) ---
+    http_st=$(api_request "GET" "${base_url}/api/system/jobs" \
+        "" "${jobs_file}.noauth" "")
+    if [[ "${http_st}" == "401" ]]; then
+        record_case "${result_file}" "system_jobs_noauth_401" 1
+    else
+        record_case "${result_file}" "system_jobs_noauth_401" 0
+        echo "SYSTEM_JOBS_NOAUTH_HTTP=${http_st}" >> "${result_file}"
+    fi
+
+    # --- /api/system/jobs POST (expect 405 method not allowed) ---
+    http_st=$(api_request "POST" "${base_url}/api/system/jobs" \
+        '{}' "${result_file}.jobs_post.json" "${jwt}")
+    if [[ "${http_st}" == "405" ]]; then
+        record_case "${result_file}" "system_jobs_post_405" 1
+    else
+        record_case "${result_file}" "system_jobs_post_405" 0
+        echo "SYSTEM_JOBS_POST_HTTP=${http_st}" >> "${result_file}"
+    fi
 
     # --- no auth → 401 ---
     local noauth_file="${result_file}.noauth.json"
@@ -772,9 +811,9 @@ analyze_engine() {
     pass_n=${pass_n:-0}
     fail_n=${fail_n:-0}
 
-    if [[ "${fail_n}" -eq 0 && "${pass_n}" -ge 15 ]]; then
+    if [[ "${fail_n}" -eq 0 && "${pass_n}" -ge 18 ]]; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 \
-            "${description}: ${pass_n} cases passed (login, auth/parse/GET/405, Echo, async, reserved)"
+            "${description}: ${pass_n} cases passed (login, jobs auth/401/405, auth/parse/GET/405, Echo, async, reserved)"
         PASS_COUNT=$(( PASS_COUNT + 1 ))
     else
         local fails

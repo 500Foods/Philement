@@ -258,8 +258,9 @@ bool register_api_endpoints(void) {
        log_this(SR_API, "― %s/auth/oidc/_inject_handoff (debug, non-release builds only)",
                 LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
 #endif
-        log_this(SR_API, "― %s/system/info", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
-        log_this(SR_API, "― %s/system/health", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+         log_this(SR_API, "― %s/system/info", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+         log_this(SR_API, "― %s/system/jobs", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+         log_this(SR_API, "― %s/system/health", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/system/readiness", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/system/test", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/system/version", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
@@ -468,6 +469,7 @@ bool is_api_request(const char *url) {
 #endif
         "system/test",
         "system/config",
+        "system/jobs",
         "conduit/query",
         "conduit/queries",
         "conduit/cap_query",
@@ -771,6 +773,14 @@ enum MHD_Result handle_api_request_dispatch(struct MHD_Connection *connection,
     // System endpoints
     else if (strcmp(path, "system/info") == 0) {
         return handle_system_info_request(connection);
+    }
+    else if (strcmp(path, "system/jobs") == 0) {
+        if (strcmp(method, "GET") != 0) {
+            json_t *error = json_object();
+            json_object_set_new(error, "error", json_string("Only GET method is allowed"));
+            return api_send_json_response(connection, error, MHD_HTTP_METHOD_NOT_ALLOWED);
+        }
+        return handle_system_jobs_request(connection);
     }
     else if (strcmp(path, "system/health") == 0) {
         return handle_system_health_request(connection);
