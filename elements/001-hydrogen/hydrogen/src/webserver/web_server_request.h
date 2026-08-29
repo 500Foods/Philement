@@ -65,9 +65,19 @@ bool matches_pattern(const char* path, const char* pattern);
 void add_custom_headers(struct MHD_Response *response, const char* file_path, const WebServerConfig* web_config);
 
 /* ----------------------------------------------------------------------------
- * The following helper is NOT part of the stable public API. It is exposed
- * (non-static) solely so the Unity test framework can call it directly.
+ * The following helpers are NOT part of the stable public API. They are exposed
+ * (non-static) solely so the Unity test framework can call them directly.
  * -------------------------------------------------------------------------- */
+
+/* Format a time_t as an RFC 7231 / RFC 9110 HTTP-date string, e.g.
+ * "Sun, 06 Nov 1994 08:49:37 GMT".  Exposed for unit testing alongside
+ * parse_http_date(). */
+bool format_http_date(time_t timestamp, char *buffer, size_t buffer_size);
+
+/* Parse an HTTP-date string (e.g. "Sun, 06 Nov 1994 08:49:37 GMT") into a
+ * time_t (UTC).  Returns (time_t)-1 on invalid input. */
+time_t parse_http_date(const char *http_date);
+
 bool web_server_url_looks_like_file(const char *url);
 
 #endif // WEB_SERVER_REQUEST_H

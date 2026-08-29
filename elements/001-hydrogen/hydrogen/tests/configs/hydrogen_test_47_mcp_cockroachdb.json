@@ -83,7 +83,7 @@
     "AcceptOidcIdP": false,
     "AcceptOidcRp": false,
     "ThreadPoolSize": 4,
-    "RequestTimeoutSeconds": 4,
+    "RequestTimeoutSeconds": 15,
     "MaxSessions": 256,
     "SessionIdleTimeoutSeconds": 900,
     "AllowedOrigins": []

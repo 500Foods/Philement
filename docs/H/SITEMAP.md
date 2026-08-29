@@ -127,7 +127,6 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 ### Folder: /docs/H/plans
 
 - [README.md](/docs/H/plans/README.md): Plans folder index
-- [FORTIES.md](/docs/H/plans/FORTIES.md): Tests 40–47 suite-load robustness (open)
 - [CHAT_PLAN_PHASE_13.md](/docs/H/plans/CHAT_PLAN_PHASE_13.md): Chat Phase 13 advanced features (open)
 - [CHAT_PLAN_SUMMARY.md](/docs/H/plans/CHAT_PLAN_SUMMARY.md): Chat service plan index (Phases 1–12 complete, 13 open)
 
@@ -181,6 +180,7 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [CONDUIT_FIX_COMPLETE.md](/docs/H/plans/complete/CONDUIT_FIX_COMPLETE.md)
 - [DATABASE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_PLAN_COMPLETE.md)
 - [DATABASE_UPDATE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_UPDATE_PLAN_COMPLETE.md)
+- [FORTIES_COMPLETE.md](/docs/H/plans/complete/FORTIES_COMPLETE.md): Tests 40–47 suite-load robustness
 - [LOG_FANOUT_PLAN_COMPLETE.md](/docs/H/plans/complete/LOG_FANOUT_PLAN_COMPLETE.md)
 - [LUA_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md)
 - [LUA_55_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_55_PLAN_COMPLETE.md): Upgrade embedded Lua 5.4 → 5.5

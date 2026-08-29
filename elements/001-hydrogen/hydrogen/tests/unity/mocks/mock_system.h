@@ -113,6 +113,7 @@ void mock_system_set_sem_init_failure(int should_fail);
 void mock_system_set_gettimeofday_time(time_t sec, suseconds_t usec);
 void mock_system_set_gettimeofday_failure(int should_fail);
 void mock_system_set_asprintf_failure(int should_fail);
+void mock_system_set_read_data(const void *data, size_t len);
 void mock_system_reset_all(void);
 
 // Extern declarations for global mock state variables (defined in mock_system.c)
@@ -126,6 +127,9 @@ extern const char *mock_gethostname_result;
 extern int mock_nanosleep_should_fail;
 extern int mock_clock_gettime_should_fail;
 extern int mock_poll_should_fail;
+extern time_t mock_gettimeofday_sec;
+extern suseconds_t mock_gettimeofday_usec;
+extern int mock_gettimeofday_should_fail;
 extern int mock_recvfrom_should_fail;
 extern void *mock_dlopen_result;
 extern int mock_dlopen_should_fail;
@@ -139,6 +143,8 @@ extern int mock_ioctl_should_fail;
 extern ssize_t mock_read_result;
 extern int mock_read_should_fail;
 extern int mock_read_should_return_eagain;
+extern const void *mock_read_data;
+extern size_t mock_read_data_len;
 extern ssize_t mock_write_result;
 extern int mock_write_should_fail;
 extern pid_t mock_waitpid_result;
@@ -151,6 +157,7 @@ extern suseconds_t mock_gettimeofday_usec;
 extern int mock_gettimeofday_should_fail;
 extern int mock_asprintf_should_fail;
 extern int mock_asprintf_call_count;
+extern int mock_select_result;
 
 #endif // USE_MOCK_SYSTEM
 

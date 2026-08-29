@@ -6,6 +6,10 @@
 # shellcheck disable=SC2154 # Globals (TEST_NUMBER, TEST_COUNTER, GREP) set by framework before sourcing
 
 # CHANGELOG
+# 1.0.4 - 2026-08-29 - scrape_metrics status written to SCRAPE_STATUS_FILE so
+#                      callers in command-substitution subshells can read the
+#                      real last HTTP code and attempt count (previously
+#                      reported 000/0/3 due to subshell variable scoping).
 # 1.0.3 - 2026-08-28 - scrape_metrics exposes SCRAPE_LAST_HTTP_CODE/SCRAPE_LAST_ATTEMPTS
 #                      diagnostics on exhaustion instead of a bare empty string.
 # 1.0.2 - 2026-08-27 - Scrape INFO delay; flood connect-timeout; source group40.
@@ -16,7 +20,7 @@
 export EXERCISE_HELPERS_GUARD="true"
 
 EXERCISE_HELPERS_NAME="Exercise Test Helpers"
-EXERCISE_HELPERS_VERSION="1.0.3"
+EXERCISE_HELPERS_VERSION="1.0.4"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${EXERCISE_HELPERS_NAME} ${EXERCISE_HELPERS_VERSION}" "info"
 
 # shellcheck source=tests/lib/group40_http.sh # Shared 40-series HTTP timing
@@ -57,6 +61,13 @@ scrape_metrics() {
     SCRAPE_LAST_HTTP_CODE=""
     SCRAPE_LAST_ATTEMPTS=0
 
+    # Use a well-known temp file path so callers (even those in command
+    # substitution subshells) can read the last HTTP code and attempt count.
+    # Command substitution creates a subshell where globals don't propagate.
+    local _status_dir="${SCRATCH_DIR:-/tmp/kilo}"
+    mkdir -p "${_status_dir}" 2>/dev/null || true
+    SCRAPE_STATUS_FILE="${_status_dir}/scrape_${TEST_NUMBER}_status"
+
     if ! [[ "${max_attempts}" =~ ^[1-9][0-9]*$ ]]; then
         max_attempts=5
     fi
@@ -94,6 +105,8 @@ scrape_metrics() {
         fi
         SCRAPE_LAST_HTTP_CODE="${http_code}"
         SCRAPE_LAST_ATTEMPTS="${attempt}"
+        echo "${http_code}" > "${SCRAPE_STATUS_FILE}" 2>/dev/null || true
+        echo "${attempt}" >> "${SCRAPE_STATUS_FILE}" 2>/dev/null || true
         if [[ "${http_code}" == "200" ]] && [[ -n "${response}" ]] && \
            echo "${response}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then
             [[ -n "${tmp_body}" ]] && rm -f "${tmp_body}"
@@ -107,7 +120,26 @@ scrape_metrics() {
     [[ -n "${tmp_body}" ]] && rm -f "${tmp_body}"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
         "WARNING: scrape_metrics exhausted ${SCRAPE_LAST_ATTEMPTS}/${max_attempts} attempts against ${prom_url} (last HTTP ${SCRAPE_LAST_HTTP_CODE:-000})"
+    # Ensure the status file reflects the final state (overwrite)
+    echo "${SCRAPE_LAST_HTTP_CODE:-000}" > "${SCRAPE_STATUS_FILE}" 2>/dev/null || true
+    echo "${SCRAPE_LAST_ATTEMPTS:-${max_attempts}}" >> "${SCRAPE_STATUS_FILE}" 2>/dev/null || true
     echo ""
+}
+
+# read_scrape_status [test_number]
+# Reads the SCRAPE_STATUS_FILE written by scrape_metrics (called in a subshell).
+# Sets globals SCRAPE_LAST_HTTP_CODE and SCRAPE_LAST_ATTEMPTS for the caller.
+read_scrape_status() {
+    local _tn="${1:-${TEST_NUMBER}}"
+    local _sf="${SCRATCH_DIR:-/tmp/kilo}/scrape_${_tn}_status"
+    SCRAPE_LAST_HTTP_CODE=""
+    SCRAPE_LAST_ATTEMPTS=0
+    if [[ -f "${_sf}" ]]; then
+        SCRAPE_LAST_HTTP_CODE=$(head -1 "${_sf}" 2>/dev/null || echo "")
+        SCRAPE_LAST_ATTEMPTS=$(sed -n '2p' "${_sf}" 2>/dev/null || echo "")
+    fi
+    [[ -z "${SCRAPE_LAST_HTTP_CODE}" ]] && SCRAPE_LAST_HTTP_CODE="000"
+    [[ -z "${SCRAPE_LAST_ATTEMPTS}" ]] && SCRAPE_LAST_ATTEMPTS=0
 }
 
 # get_metric metrics_text metric_name

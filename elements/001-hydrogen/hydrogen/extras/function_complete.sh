@@ -13,6 +13,7 @@
 #
 # CHANGELOG
 # 1.0.0 - 2026-08-28 - Initial version
+# 1.1.0 - 2026-08-29 - Add "Neither" column counting functions never entered by either Unity or Blackbox suite
 
 set -euo pipefail
 
@@ -272,6 +273,7 @@ while IFS= read -r src_rel; do
     black_gap=0
     test_gap=0
     any_gap=0
+    neither_gap=0
 
     # Find related test files once for this source file
     related_test_files=()
@@ -311,6 +313,9 @@ while IFS= read -r src_rel; do
         if [[ "${cc}" -eq 0 ]]; then
             black_gap=$((black_gap + 1))
         fi
+        if [[ "${uc}" -eq 0 && "${cc}" -eq 0 ]]; then
+            neither_gap=$((neither_gap + 1))
+        fi
         if [[ -z "${in_related[${ffunc}]:-}" ]]; then
             test_gap=$((test_gap + 1))
         fi
@@ -323,10 +328,10 @@ while IFS= read -r src_rel; do
     unset in_related
 
     # Only include files with at least one gap
-    if [[ ${unity_gap} -gt 0 || ${black_gap} -gt 0 || ${test_gap} -gt 0 || ${any_gap} -gt 0 ]]; then
+    if [[ ${unity_gap} -gt 0 || ${black_gap} -gt 0 || ${test_gap} -gt 0 || ${any_gap} -gt 0 || ${neither_gap} -gt 0 ]]; then
         folder="$(compute_folder "${src_rel}")"
-        printf '%s\t%s\t%d\t%d\t%d\t%d\t%d\n' \
-            "${folder}" "${src_rel}" "${total_funcs}" "${unity_gap}" "${black_gap}" "${test_gap}" "${any_gap}" \
+        printf '%s\t%s\t%d\t%d\t%d\t%d\t%d\t%d\n' \
+            "${folder}" "${src_rel}" "${total_funcs}" "${unity_gap}" "${black_gap}" "${test_gap}" "${any_gap}" "${neither_gap}" \
             >> "${RESULTS_FILE}"
     fi
 done < "${TMPDIR_WORK}/unique_srcs.txt"
@@ -349,14 +354,16 @@ total_unity_gap=0
 total_black_gap=0
 total_test_gap=0
 total_any_gap=0
+total_neither_gap=0
 
 if [[ -s "${RESULTS_FILE}" ]]; then
-    while IFS=$'\t' read -r _ _ total ug bg tg ag; do
+    while IFS=$'\t' read -r _ _ total ug bg tg ag ng; do
         total_funcs_sum=$((total_funcs_sum + total))
         total_unity_gap=$((total_unity_gap + ug))
         total_black_gap=$((total_black_gap + bg))
         total_test_gap=$((total_test_gap + tg))
         total_any_gap=$((total_any_gap + ag))
+        total_neither_gap=$((total_neither_gap + ng))
     done < "${RESULTS_FILE}"
 fi
 
@@ -369,7 +376,7 @@ if [[ "${total_files}" -eq 0 ]]; then
 fi
 
 echo ""
-echo "Function Coverage — Files with Gaps (${total_files} files, ${total_funcs_sum} functions, ${total_unity_gap} unity gaps, ${total_black_gap} black gaps, ${total_test_gap} missing tests)"
+echo "Function Coverage — Files with Gaps (${total_files} files, ${total_funcs_sum} functions, ${total_unity_gap} unity gaps, ${total_black_gap} black gaps, ${total_test_gap} missing tests, ${total_neither_gap} never entered)"
 echo ""
 
 render_with_tables() {
@@ -380,8 +387,8 @@ render_with_tables() {
 
     cat > "${layout_json}" << EOF
 {
-    "title": "{BOLD}Function Coverage — Files with Gaps{RESET}  {CYAN}Unity Gaps:{RESET} ${total_unity_gap}  {MAGENTA}Black Gaps:{RESET} ${total_black_gap}  {YELLOW}Missing Tests:{RESET} ${total_test_gap}",
-    "footer": "{CYAN}Files:{RESET} ${total_files}  {GREEN}Functions:{RESET} ${total_funcs_sum}  {MAGENTA}Unity Gaps:{RESET} ${total_unity_gap}  {BLUE}Black Gaps:{RESET} ${total_black_gap}  {YELLOW}Missing Tests:{RESET} ${total_test_gap}  {CYAN}${display_timestamp}{RESET}",
+    "title": "{BOLD}Function Coverage — Files with Gaps{RESET}  {CYAN}Unity Gaps:{RESET} ${total_unity_gap}  {MAGENTA}Black Gaps:{RESET} ${total_black_gap}  {YELLOW}Missing Tests:{RESET} ${total_test_gap}  {RED}Never:{RESET} ${total_neither_gap}",
+    "footer": "{CYAN}Files:{RESET} ${total_files}  {GREEN}Functions:{RESET} ${total_funcs_sum}  {MAGENTA}Unity Gaps:{RESET} ${total_unity_gap}  {BLUE}Black Gaps:{RESET} ${total_black_gap}  {YELLOW}Missing Tests:{RESET} ${total_test_gap}  {RED}Never:{RESET} ${total_neither_gap}  {CYAN}${display_timestamp}{RESET}",
     "footer_position": "left",
     "theme": "Red",
     "columns": [
@@ -390,6 +397,7 @@ render_with_tables() {
         {"header": "Funcs", "key": "functions", "datatype": "num", "justification": "right"},
         {"header": "U Gap", "key": "unity_gap", "datatype": "num", "justification": "right"},
         {"header": "B Gap", "key": "black_gap", "datatype": "num", "justification": "right"},
+        {"header": "Neither", "key": "neither", "datatype": "num", "justification": "right"},
         {"header": "No Tests", "key": "missing_tests", "datatype": "num", "justification": "right"}
     ]
 }
@@ -398,13 +406,13 @@ EOF
     {
         echo "["
         local first=1
-        while IFS=$'\t' read -r folder file total ug bg tg ag; do
+        while IFS=$'\t' read -r folder file total ug bg tg ag ng; do
             if [[ "${first}" -eq 0 ]]; then
                 echo ","
             fi
             first=0
-            printf '    {"folder": "%s", "file": "%s", "functions": %d, "unity_gap": %d, "black_gap": %d, "missing_tests": %d}' \
-                "${folder}" "${file}" "${total}" "${ug}" "${bg}" "${tg}"
+            printf '    {"folder": "%s", "file": "%s", "functions": %d, "unity_gap": %d, "black_gap": %d, "neither": %d, "missing_tests": %d}' \
+                "${folder}" "${file}" "${total}" "${ug}" "${bg}" "${ng}" "${tg}"
         done < "${RESULTS_FILE}"
         echo ""
         echo "]"
@@ -417,22 +425,22 @@ EOF
 
 render_text_table() {
     local prev_folder=""
-    printf "%-40s  %5s  %5s  %5s  %8s\n" "File" "Funcs" "U Gap" "B Gap" "No Tests"
-    printf '%*s\n' 80 '' | tr ' ' '-'
+    printf "%-40s  %5s  %5s  %5s  %7s  %8s\n" "File" "Funcs" "U Gap" "B Gap" "Neither" "No Tests"
+    printf '%*s\n' 90 '' | tr ' ' '-'
 
-    while IFS=$'\t' read -r folder file total ug bg tg ag; do
+    while IFS=$'\t' read -r folder file total ug bg tg ag ng; do
         if [[ "${folder}" != "${prev_folder}" ]]; then
             local folder_display="${folder}"
             [[ "${folder_display}" != */ ]] && folder_display="${folder_display}/"
             printf "\n%s\n" "${folder_display}"
             prev_folder="${folder}"
         fi
-        printf "%-40s  %5d  %5d  %5d  %8d\n" "${file}" "${total}" "${ug}" "${bg}" "${tg}"
+        printf "%-40s  %5d  %5d  %5d  %7d  %8d\n" "${file}" "${total}" "${ug}" "${bg}" "${ng}" "${tg}"
     done < "${RESULTS_FILE}"
 
-    printf '%*s\n' 70 '' | tr ' ' '-'
-    printf "Total: %d files, %d functions, %d unity gaps, %d black gaps, %d missing tests\n" \
-        "${total_files}" "${total_funcs_sum}" "${total_unity_gap}" "${total_black_gap}" "${total_test_gap}"
+    printf '%*s\n' 80 '' | tr ' ' '-'
+    printf "Total: %d files, %d functions, %d unity gaps, %d black gaps, %d never entered, %d missing tests\n" \
+        "${total_files}" "${total_funcs_sum}" "${total_unity_gap}" "${total_black_gap}" "${total_neither_gap}" "${total_test_gap}"
 }
 
 if command -v tables >/dev/null 2>&1; then

@@ -28,6 +28,9 @@ bool test_mode_force_calloc_failure = false;
 bool test_mode_force_strdup_failure = false;
 bool test_mode_force_fcntl_failure = false;
 bool test_mode_force_fork_failure = false;
+bool test_mode_force_execv_failure = false;
+bool test_mode_no_exit = false;
+bool test_mode_force_tty_failure = false;
 #endif
                  
 /**
@@ -96,8 +99,22 @@ void setup_child_process(const char *shell_command, int slave_fd, int master_fd)
     setsid();
 
     // Set controlling terminal
+#ifdef UNITY_TEST_MODE
+    if (test_mode_force_tty_failure) {
+        log_this(SR_TERMINAL, "Failed to set controlling terminal", LOG_LEVEL_ERROR, 0);
+        if (test_mode_no_exit) {
+            return;
+        }
+        exit(1);
+    }
+#endif
     if (ioctl(slave_fd, TIOCSCTTY, NULL) == -1) {
         log_this(SR_TERMINAL, "Failed to set controlling terminal", LOG_LEVEL_ERROR, 0);
+#ifdef UNITY_TEST_MODE
+        if (test_mode_no_exit) {
+            return;
+        }
+#endif
         exit(1);
     }
 
@@ -133,7 +150,13 @@ void setup_child_process(const char *shell_command, int slave_fd, int master_fd)
             NULL
         };
 
+#ifdef UNITY_TEST_MODE
+        if (!test_mode_force_execv_failure) {
+#endif
         execv(shell_command, args);
+#ifdef UNITY_TEST_MODE
+        }
+#endif
         // If we get here, exec failed - fall through to fallback
     }
     
@@ -149,12 +172,23 @@ void setup_child_process(const char *shell_command, int slave_fd, int master_fd)
             fallback_login_arg,  // Login bash
             NULL
         };
-        
+
+#ifdef UNITY_TEST_MODE
+        if (!test_mode_force_execv_failure) {
+#endif
         execv(fallback_shell, fallback_args);
+#ifdef UNITY_TEST_MODE
+        }
+#endif
     }
 
     // If both failed
     perror("execv failed for both configured and fallback shells");
+#ifdef UNITY_TEST_MODE
+    if (test_mode_no_exit) {
+        return;
+    }
+#endif
     _exit(1);
 }
 

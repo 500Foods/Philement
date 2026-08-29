@@ -1,6 +1,6 @@
 # Forties — tests 40–47 under suite load
 
-**Status:** in progress (Hydrogen 503/budget landed; suite gate still required).
+**Status:** complete (40-series tests green under parallel suite load).
 **Code:** `elements/001-hydrogen/hydrogen/tests/test_4*.sh`, `tests/lib/group40_http.sh`, `src/api/auth/login/login.c`, `src/api/auth/auth_service_database.c`.
 **Bar:** group 4 stays **parallel**. Concurrent suite load is deliberate: it finds Hydrogen races, not an excuse to serialize the batch.
 
