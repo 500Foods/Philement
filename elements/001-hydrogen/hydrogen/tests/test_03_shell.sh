@@ -318,7 +318,7 @@ declare -a ENV_WHITELIST=(
     "ALL_FUNCS_FILE" "ALL_TESTS_DIR" "ANY_TESTS_FILE" "COVERAGE_DATA" "COVERAGE_GCDA"
     "COVERAGE_GCOV" "COVERAGE_GCOV_DIR" "FUNC_DATA_FILE" "RESULTS_FILE" "SCRAPE_LAST_ATTEMPTS"
     "SRC_PATH" "TEST_SEARCH_DIR" "TMPDIR_WORK" "UNITY_DATA" "UNITY_GCDA" "UNITY_GCOV"
-    "UNITY_GCOV_DIR" "UNITY_TESTS_DIR"
+    "UNITY_GCOV_DIR" "UNITY_TESTS_DIR" "SCRAPE_LAST_HTTP_CODE" "SCRAPE_STATUS_FILE"
 )
 
 # Environment variables array
@@ -528,7 +528,7 @@ print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VER
 # so collected log output cannot interleave it, and so it is easy to grab.
 if [[ -n "${UNDOCUMENTED_VARS}" ]]; then
     echo ""
-    echo "Undocumented vars - paste into ENV_WHITELIST:"
+    echo "Undocumented vars - paste into ENV_WHITELIST in tests/test_03_shell.sh:"
     format_vars_for_whitelist "${UNDOCUMENTED_VARS}"
     echo ""
 fi

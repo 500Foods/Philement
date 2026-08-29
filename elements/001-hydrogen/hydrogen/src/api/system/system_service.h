@@ -20,5 +20,6 @@
 #include "recent/recent.h"
 #include "test/test.h"
 #include "config/config.h"
+#include "jobs/jobs.h"
 
 #endif /* HYDROGEN_SYSTEM_SERVICE_H */

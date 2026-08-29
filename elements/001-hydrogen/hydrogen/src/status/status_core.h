@@ -265,4 +265,7 @@ void status_free_network_metrics(NetworkMetrics *network);
 void status_free_service_thread_metrics(ServiceThreadMetrics *metrics);
 SystemMetrics* status_allocate_system_metrics(void);
 
+// Get the status mutex for use by other components
+pthread_mutex_t* get_status_mutex(void);
+
 #endif /* STATUS_CORE_H */
