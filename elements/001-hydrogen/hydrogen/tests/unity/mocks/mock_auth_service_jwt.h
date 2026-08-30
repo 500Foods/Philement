@@ -22,11 +22,16 @@
 #define validate_jwt mock_validate_jwt
 #define validate_jwt_token mock_validate_jwt
 #define free_jwt_validation_result mock_free_jwt_validation_result
+#define extract_and_validate_jwt mock_extract_and_validate_jwt
+#define free_jwt_claims mock_free_jwt_claims
 #endif
 
 // Mock implementations
 jwt_validation_result_t mock_validate_jwt(const char* token, const char* database);
 void mock_free_jwt_validation_result(jwt_validation_result_t* result);
+
+bool mock_extract_and_validate_jwt(const char* auth_header, jwt_validation_result_t* jwt_result);
+void mock_free_jwt_claims(jwt_claims_t* claims);
 
 // Mock control functions
 void mock_auth_service_jwt_reset_all(void);

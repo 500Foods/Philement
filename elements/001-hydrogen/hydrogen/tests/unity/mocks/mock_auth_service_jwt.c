@@ -85,6 +85,66 @@ void mock_free_jwt_validation_result(jwt_validation_result_t* result) {
 }
 
 /*
+ * Mock implementation of extract_and_validate_jwt
+ *
+ * Replicates the real function's header validation logic (NULL header,
+ * Bearer prefix check) so existing auth_jwt_helper tests continue to
+ * pass, while delegating token validation to mock_validate_jwt.
+ */
+bool mock_extract_and_validate_jwt(const char* auth_header, jwt_validation_result_t* jwt_result) {
+    if (!jwt_result) {
+        return false;
+    }
+
+    memset(jwt_result, 0, sizeof(jwt_validation_result_t));
+
+    // Check for Authorization header
+    if (!auth_header) {
+        jwt_result->valid = false;
+        jwt_result->error = JWT_ERROR_INVALID_FORMAT;
+        return false;
+    }
+
+    // Check for "Bearer " prefix
+    if (strncmp(auth_header, "Bearer ", 7) != 0) {
+        jwt_result->valid = false;
+        jwt_result->error = JWT_ERROR_INVALID_FORMAT;
+        return false;
+    }
+
+    // Use mock validation result for the token validation part
+    jwt_validation_result_t result = mock_validation_result;
+
+    if (result.claims) {
+        result.claims = mock_copy_claims(mock_validation_result.claims);
+    }
+
+    *jwt_result = result;
+    return result.valid;
+}
+
+/*
+ * Mock implementation of free_jwt_claims
+ */
+void mock_free_jwt_claims(jwt_claims_t* claims) {
+    if (!claims) return;
+
+    free(claims->iss);
+    free(claims->sub);
+    free(claims->aud);
+    free(claims->jti);
+    free(claims->username);
+    free(claims->email);
+    free(claims->roles);
+    free(claims->ip);
+    free(claims->tz);
+    free(claims->database);
+    free(claims->id_token);
+    free(claims->idp_provider);
+    free(claims);
+}
+
+/*
  * Reset all mock state to defaults
  */
 void mock_auth_service_jwt_reset_all(void) {
