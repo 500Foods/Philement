@@ -216,6 +216,20 @@ void log_early_info(void) {
     log_this(SR_STARTUP, "― Size:     %'d bytes", LOG_LEVEL_STATE, 1, server_executable_size);
     log_this(SR_STARTUP, "― Logging:  %s", LOG_LEVEL_STATE, 1, DEFAULT_PRIORITY_LEVELS[startup_log_level].label);
     log_this(SR_STARTUP, "― PID:      %d", LOG_LEVEL_STATE, 1, getpid());
+
+    // Benchmark clock_gettime latency — every mutex lock/unlock calls this
+    // ~2 times (mutex_bookkeeping_lock + mutex_lock_with_timeout).
+    // 51M calls at 500ns (no vDSO) = 25.5s; at 25ns (vDSO) = 1.3s.
+    struct timespec bm_start, bm_end, bm_ts;
+    clock_gettime(CLOCK_MONOTONIC, &bm_start);
+    for (int i = 0; i < 1000; i++) {
+        clock_gettime(CLOCK_REALTIME, &bm_ts);
+    }
+    clock_gettime(CLOCK_MONOTONIC, &bm_end);
+    long elapsed_ns = (bm_end.tv_sec - bm_start.tv_sec) * 1000000000L
+                     + (bm_end.tv_nsec - bm_start.tv_nsec);
+    long avg_ns = elapsed_ns / 1000;
+    log_this(SR_STARTUP, "― vDSO:     %ldns ", LOG_LEVEL_STATE, 1, avg_ns);
 }
 
 // Check readiness of all subsystems and coordinate launch
