@@ -1,5 +1,6 @@
 # Build and test artifacts
 build/
+build_test/
 
 # cmake build artifacts
 cmake/Testing/

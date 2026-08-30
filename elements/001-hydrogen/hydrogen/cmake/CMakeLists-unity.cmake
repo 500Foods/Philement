@@ -51,10 +51,11 @@ set(UNITY_MOCK_SOURCES
      ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_auth_service.c
      ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_auth_service_login.c
      ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_auth_service_jwt.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_conduit_helpers.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_auth_chat_deps.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_chat_proxy.c
-    ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_chat_engine_cache.c
+     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_conduit_helpers.c
+     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_auth_chat_deps.c
+     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_chat_proxy.c
+     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_chat_engine_cache.c
+     ${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_scoreboard_json.c
 )
 
 # Print-specific mock sources (only linked to print tests)
@@ -110,6 +111,7 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
     string(FIND "${SOURCE_FILE}" "scripting_api_query_wait.c" IS_SCRIPTING_QUERY_WAIT_SOURCE)
     string(FIND "${SOURCE_FILE}" "scripting_api_query_submit.c" IS_SCRIPTING_QUERY_SUBMIT_SOURCE)
     string(FIND "${SOURCE_FILE}" "scripting_api_query_resolve.c" IS_SCRIPTING_QUERY_RESOLVE_SOURCE)
+    string(FIND "${SOURCE_FILE}" "system/jobs/jobs.c" IS_SYSTEM_JOBS_SOURCE)
     if(IS_WEBSOCKET_SOURCE GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_LIBWEBSOCKETS")
@@ -351,6 +353,24 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
         list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_auth_service_jwt.h")
         set(MOCK_DEFINES ${MOCK_DEFINES_LIST})
         unset(MOCK_DEFINES_LIST)
+    elseif(IS_SYSTEM_JOBS_SOURCE GREATER -1)
+        # system/jobs endpoints: mock auth validation, scoreboard snapshot, api utils, and MHD
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_AUTH_SERVICE_JWT")
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_API_UTILS")
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_SCOREBOARD_JSON")
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_LIBMICROHTTPD")
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_SYSTEM")
+        list(APPEND MOCK_DEFINES_LIST "-include")
+        list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_api_utils.h")
+        list(APPEND MOCK_DEFINES_LIST "-include")
+        list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_scoreboard_json.h")
+        list(APPEND MOCK_DEFINES_LIST "-include")
+        list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_libmicrohttpd.h")
+        list(APPEND MOCK_DEFINES_LIST "-include")
+        list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_system.h")
+        set(MOCK_DEFINES ${MOCK_DEFINES_LIST})
+        unset(MOCK_DEFINES_LIST)
     elseif(IS_SCRIPTING_QUERY_RESOLVE_SOURCE GREATER -1)
         # resolve_db_queue: mock DQM lookup
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
@@ -530,6 +550,7 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
     string(FIND "${TEST_SOURCE}" "mdns_server_init_test_error_paths" IS_MDNS_ERROR_PATHS_TEST)
     string(FIND "${TEST_SOURCE}" "mdns_server_init_test_setup_hostname" IS_MDNS_SETUP_HOSTNAME_TEST)
     string(FIND "${TEST_SOURCE}" "mdns_server_init_test_allocate" IS_MDNS_ALLOCATE_TEST)
+    string(FIND "${TEST_SOURCE}" "system/jobs/jobs_test" IS_SYSTEM_JOBS_TEST)
     if(IS_MDNS_ERROR_PATHS_TEST GREATER -1 OR IS_MDNS_SETUP_HOSTNAME_TEST GREATER -1 OR IS_MDNS_ALLOCATE_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_NETWORK")
@@ -632,6 +653,17 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
     elseif(IS_SCRIPTING_MAIL_NOTIFY_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_SYSTEM -DUSE_MOCK_LOGGING -DUSE_MOCK_LIBMICROHTTPD -DUSE_MOCK_DBQUEUE -DUSE_MOCK_GENERATE_QUERY_ID -DUSE_MOCK_AUTH_SERVICE_JWT -DUSE_MOCK_AUTH_CHAT_DEPS -Dlog_this=mock_log_this")
+    elseif(IS_SYSTEM_JOBS_TEST GREATER -1)
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_AUTH_SERVICE_JWT")
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_API_UTILS")
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_SCOREBOARD_JSON")
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_LIBMICROHTTPD")
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_SYSTEM")
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_LOGGING")
+        list(APPEND MOCK_DEFINES_LIST "-Dlog_this=mock_log_this")
+        set(MOCK_DEFINES ${MOCK_DEFINES_LIST})
+        unset(MOCK_DEFINES_LIST)
     else()
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LOGGING -DUSE_MOCK_LIBMICROHTTPD -DUSE_MOCK_SYSTEM -Dlog_this=mock_log_this")

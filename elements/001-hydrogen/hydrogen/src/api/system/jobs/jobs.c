@@ -11,6 +11,17 @@
 #include <src/api/conduit/helpers/auth_jwt_helper.h>
 #include <src/scripting/scoreboard_json.h>
 
+// Unity test mocks: redirect calls when compiled for the Unity test suite
+#if defined(USE_MOCK_AUTH_SERVICE_JWT)
+#include <unity/mocks/mock_auth_service_jwt.h>
+#endif
+#if defined(USE_MOCK_API_UTILS)
+#include <unity/mocks/mock_api_utils.h>
+#endif
+#if defined(USE_MOCK_SCOREBOARD_JSON)
+#include <unity/mocks/mock_scoreboard_json.h>
+#endif
+
 #include "jobs.h"
 
 enum MHD_Result handle_system_jobs_request(struct MHD_Connection *connection)
