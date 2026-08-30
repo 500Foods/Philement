@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 
 # CHANGELOG
+# 2026-08-30: Replaced cppcheck-based dead-code analysis with a linker-based check: builds the "deadcode" CMake target (-O0, no LTO, hydrogen_release-shaped --gc-sections/--dynamic-list/--print-gc-sections link) and reports functions unreachable from main(), filtered to global symbols in our own objects and tests/.deadcode-baseline.txt; output condensed to 3 lines (count checked, count found, path to full list) with the list written to build/deadcode/dead_functions.txt instead of printed inline
+# 2026-08-30: Fixed dead-code cppcheck config parsing: include= now maps to -I (directory paths) not --include= (file force-include); only .c files passed as TUs, not headers; --quiet option skipped so unusedFunction output is visible; build dir cleaned each run
+# 2026-08-30: Added dead-code (unused function) analysis via cppcheck --enable=unusedFunction, with tests/.deadcode-baseline.txt for known false positives
 # 2026-07-15: Report build error counts and ensure non-zero exit propagates to callers (e.g. mkt && mka chains)
 # 2026-07-15: Added static-function gate to block NEW static functions in src/ (Unity tests cannot call static fns)
 # 2025-12-05: Added dependency check to prevent .c file includes in Unity tests and mocks, resolving gcov regeneration issue
@@ -280,6 +283,93 @@ if (echo "${UNITY_BUILD_OUTPUT}" | grep -q "completed successfully" || echo "${U
     else
         echo "⚠️  Map file not found, skipping unused file analysis"
     fi
+
+    # Dead Code Analysis — find functions unreachable from main() in a
+    # hydrogen_release-shaped link.
+    #
+    # This replaced an earlier cppcheck --enable=unusedFunction (source-level
+    # name-use scan) approach, which is a heuristic prone to both false
+    # positives (library-shaped registration surfaces) and false negatives
+    # (missed dlsym/table references) on this codebase, and a still-earlier
+    # nm+objdump-on-.o approach, which was abandoned because -O2 inlining
+    # removes call-site relocations for functions called once, making them
+    # look dead when they are not.
+    #
+    # This approach builds the "deadcode" CMake target (see
+    # cmake/CMakeLists-deadcode.cmake): all of src/ at -O0 (no inlining, so no
+    # lost relocations - see that file's comments for why -O2 would also work
+    # but -O0 is faster and equally correct here) linked exactly the way
+    # hydrogen_release is (--gc-sections + --dynamic-list=lua_export.list, NOT
+    # -rdynamic, which defeats --gc-sections - see CMakeLists-release.cmake)
+    # plus --print-gc-sections. The linker then reports, by name, every
+    # function section it discarded because nothing reachable from main()
+    # referenced it - a direct answer to "is this function ever called in the
+    # program we ship", not a heuristic. Because only src/*.c files are
+    # objects in this link, a function called exclusively from Unity tests is
+    # correctly still reported dead (tests/ isn't part of what we ship).
+    #
+    # The raw gc-sections output also includes discarded static/static-inline
+    # symbols from third-party headers (e.g. jansson's inline json_decref,
+    # curl's _curl_easy_setopt_err_* type-checkers) that coincidentally share
+    # names across translation units. Intersecting with the global ('T', not
+    # local 't') symbols nm reports for our own objects removes that noise,
+    # since every project function is non-static (INSTRUCTIONS.md "NO static
+    # FUNCTIONS" rule) and therefore globally unique.
+    #
+    # Note: dlsym-by-name lookups and weak symbols still cannot be detected —
+    # add those to tests/.deadcode-baseline.txt as needed.
+    DEADCODE_BUILD_OUTPUT=$(cmake --build build --target deadcode 2>&1)
+    DEADCODE_LINK_ERRORS=$(echo "${DEADCODE_BUILD_OUTPUT}" | grep -E "error:|undefined reference|collect2:|ld returned" || true)
+    if [[ -n "${DEADCODE_LINK_ERRORS}" ]]; then
+        echo "${DEADCODE_LINK_ERRORS}"
+        echo "❌ Dead code analysis build failed"
+        exit 1
+    fi
+
+    # Remove the byproduct binary - only the linker's --print-gc-sections
+    # output (already captured above) is needed.
+    rm -f "hydrogen_deadcode"
+
+    DEADCODE_OBJ_DIR="build/deadcode/src"
+    if [[ -d "${DEADCODE_OBJ_DIR}" ]]; then
+        # Global (externally-linked) symbols defined in our own objects: used
+        # both as the "checking N functions" count and to filter the
+        # gc-sections report down to real src/ functions.
+        GLOBAL_SYMS=$(find "${DEADCODE_OBJ_DIR}" -name "*.o" -print0 \
+            | xargs -0 nm --defined-only 2>/dev/null \
+            | grep ' T ' | awk '{print $3}' | sort -u || true)
+        FUNC_COUNT=$(echo "${GLOBAL_SYMS}" | grep -c . || true)
+
+        # Sections the linker discarded from our own objects (paths are
+        # relative to build/, e.g. "deadcode/src/..."), intersected with
+        # GLOBAL_SYMS to drop third-party header inline-symbol noise.
+        REMOVED_SECTIONS=$(echo "${DEADCODE_BUILD_OUTPUT}" \
+            | grep "removing unused section '\.text\." \
+            | grep "deadcode/src/" \
+            | sed -E "s/.*section '\.text\.([^']+)'.*/\1/" \
+            | sort -u || true)
+        DEAD_FUNCS=$(comm -12 <(echo "${REMOVED_SECTIONS}") <(echo "${GLOBAL_SYMS}") || true)
+    else
+        FUNC_COUNT="unknown"
+        DEAD_FUNCS=""
+    fi
+
+    # Filter with baseline (known false positives: entry points, test seams,
+    # dlsym-looked-up by name, etc.)
+    BASELINE_FILE="tests/.deadcode-baseline.txt"
+    if [[ -f "${BASELINE_FILE}" ]]; then
+        REPORTABLE_DEAD=$(comm -23 <(echo "${DEAD_FUNCS}") <(sort -u "${BASELINE_FILE}") || true)
+    else
+        REPORTABLE_DEAD="${DEAD_FUNCS}"
+    fi
+    DEAD_COUNT=$(echo "${REPORTABLE_DEAD}" | grep -c . || true)
+
+    DEADCODE_LIST_FILE="build/deadcode/dead_functions.txt"
+    printf '%s\n' "${REPORTABLE_DEAD}" | grep -v '^$' > "${DEADCODE_LIST_FILE}" || true
+
+    echo "$(date +%H:%M:%S.%3N || true) - Checking ${FUNC_COUNT} Functions for Dead Code"
+    echo "$(date +%H:%M:%S.%3N || true) - Found ${DEAD_COUNT} Dead Functions"
+    echo "$(date +%H:%M:%S.%3N || true) - Full list: ${DEADCODE_LIST_FILE}"
     echo "$(date +%H:%M:%S.%3N || true) - Trial Build Complete"
 else
     echo "❌ Build failed"

@@ -220,6 +220,19 @@ not open work unless listed below.
 | **Remaining** | Product decision (JWT/session cookie vs stay open on trusted nets); implement gate + blackbox |
 | **Why later** | Fine for lab; risk on exposed deployments. |
 
+### 24. `H.externaldb` — ad-hoc external database connections from Lua scripts
+
+| | |
+| --- | --- |
+| **Plan** | Extends `LUA_PLAN_COMPLETE.md` (Phase 29) — scripting can already run queries via `H.query` (through the DQM queue system); this adds a parallel direct-connection surface that bypasses DQM entirely |
+| **Example** | A Lua script connects to a Canvas LMS PostgreSQL/MySQL database (not managed by Hydrogen's config) and runs a query using a plain connection string and SQL |
+| **Code (new)** | `src/scripting/scripting_api_db.c` (mirror `scripting_api_http.c` pattern) · C wrappers around `DatabaseEngineInterface` vtable + `parse_connection_string` |
+| **Code (existing infra)** | `database.h` `DatabaseEngineInterface` (connect/disconnect/execute_query) · `database_connstring.c:parse_connection_string` · `QueryRequest`/`QueryResult` · `H_lua_install_api` in `lua_context.c` |
+| **Effort** | M |
+| **Done** | 0% — planning |
+| **Remaining** | (1) `H.externaldb.connect(conn_str)` → userdata handle with metatable for `:query(sql, params?)` and `:close()`; (2) resolve engine from connection string via `database_get_engine_interface` / `database_engine_get`; (3) build `ConnectionConfig` via `parse_connection_string`, call `engine->connect`; (4) `engine->execute_query` + format `QueryResult` as Lua table; (5) `engine->disconnect` + `free_connection_config` on close; (6) GC `__gc` to avoid leaks; (7) register `H_lua_install_db` in `lua_context.c:246`; (8) Unity unit tests (model `scripting_api_http_test.c`); (9) blackbox via Test 43. **Do not** call `database_create_and_start_queue` — it builds a DQM queue (worker threads + queue manager registration), which is the opposite of what an ad-hoc connection needs. |
+| **Why now** | Operators increasingly need to query external databases (Canvas, SIS, etc.) from scripts without provisioning them as Hydrogen databases. Reusing the existing `DatabaseEngineInterface` + `parse_connection_string` infra gives multi-engine support and named `QueryRef`-style parsing for free. |
+
 ### 17. OIDC RP — parse IdP client roles (`resource_access`)
 
 | | |
@@ -372,6 +385,7 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 25 | SchemaHelper TUI | L | v1 | P2 |
 | 15 | Terminal WS auth | M | ~10% | P2 |
 | 17 | OIDC RP client-role parse | S–M | fallback | P2 |
+| 24 | `H.externaldb` — ad-hoc external DB from Lua | M | 0% | P2 |
 | 18 | OIDC IdP post-MVP | M–L | ~90% | P3 |
 | 19 | Print job → device / Beryllium | L–XL | ~30% | P3 |
 | 20 | mDNS client runtime | L–XL | ~25% | P3 |

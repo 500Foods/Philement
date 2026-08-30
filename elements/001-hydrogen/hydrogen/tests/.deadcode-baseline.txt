@@ -1,0 +1,58 @@
+main
+mailrelay_reset_seams
+mailrelay_set_seam_time
+mailrelay_set_seam_message_id
+
+# Test-injection seams: setters/mocks called only from tests/unity/*, never
+# from src/. Verified by grep - each has zero production callers, so they are
+# genuinely "unreachable in the shipped binary", but they exist specifically
+# to let Unity tests substitute behavior (mock query functions, fake HTTP
+# responses, disable background threads/sweepers during tests, etc.) rather
+# than being abandoned code. Confirmed 2026-08-30.
+auth_service_database_test_clear_query_fn
+auth_service_database_test_set_query_fn
+cap_verify_test_clear_post_fn
+cap_verify_test_set_post_fn
+mailrelay_otp_set_random_fn
+mailrelay_send_direct_set_fn
+mailrelay_send_template_set_fn
+mcp_session_set_now
+oidc_rp_handoff_store_test_disable_sweeper
+oidc_rp_handoff_store_test_enable_sweeper
+oidc_rp_http_test_clear_responses
+oidc_rp_http_test_set_response
+oidc_rp_link_test_clear_query_fn
+oidc_rp_link_test_set_query_fn
+oidc_rp_roles_test_clear_query_fn
+oidc_rp_roles_test_set_query_fn
+oidc_rp_state_test_disable_sweeper
+oidc_rp_state_test_enable_sweeper
+scripting_http_test_clear_responses
+scripting_http_test_get_consumed_count
+scripting_http_test_set_response
+terminal_session_disable_cleanup_thread
+terminal_session_enable_cleanup_thread
+terminal_session_set_test_cleanup_interval
+
+# Hook setters: production dependency-injection points (hook = fn) that are
+# also only ever invoked from tests/unity/* today - grep confirms zero src/
+# call sites for each. The hook mechanism itself is real API surface, but
+# nothing in src/ currently wires a real implementation through it. Confirmed
+# 2026-08-30.
+H_lua_mcp_clear_hooks
+conduit_script_set_jwt_hook
+conduit_script_set_submit_hook
+conduit_script_set_wait_hook
+conduit_webhook_set_buffer_hook
+conduit_webhook_set_send_json_hook
+conduit_webhook_set_submit_hook
+conduit_webhook_set_wait_hook
+mailrelay_event_set_dispatcher
+mailrelay_repo_set_executor
+mcp_auth_set_oidc_idp_hook
+mcp_auth_set_oidc_rp_hook
+mcp_dispatch_set_load_source_hook
+mcp_dispatch_set_protocol_source
+mcp_dispatch_set_submit_hook
+mcp_dispatch_set_wait_hook
+scripting_invoke_set_load_source_hook

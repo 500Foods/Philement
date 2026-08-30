@@ -36,6 +36,7 @@
 # cmake --build . --target ccache_stats      : Show ccache statistics and performance metrics
 
 # CHANGELOG
+# 2026-08-30: Added "deadcode" target (CMakeLists-deadcode.cmake): -O0, no LTO, --dynamic-list + --gc-sections + --print-gc-sections build used by extras/make-trial.sh to find functions unreachable from main() in a hydrogen_release-shaped link
 # 2025-12-05: Cleaned up the README.md file to better reflect the current state of the Hydrogen build system
 # 2025-12-02: Fixed coverage build GDB debugging: removed -no-pie to enable PIE for proper core dump analysis
 # 2025-11-05: Fixed coverage build GDB debugging: replaced -no-pie with -rdynamic to export dynamic symbols for proper crash dump analysis
@@ -71,6 +72,7 @@ include("${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists-valgrind.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists-perf.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists-coverage.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists-release.cmake")
+include("${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists-deadcode.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists-examples.cmake")
 include("${CMAKE_CURRENT_SOURCE_DIR}/CMakeLists-unity.cmake")
 
