@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 # CHANGELOG
+# 2026-08-30: Trial Build Complete now reports total elapsed build time (e.g. "Trial Build Complete (2m 26s)")
 # 2026-08-30: Replaced cppcheck-based dead-code analysis with a linker-based check: builds the "deadcode" CMake target (-O0, no LTO, hydrogen_release-shaped --gc-sections/--dynamic-list/--print-gc-sections link) and reports functions unreachable from main(), filtered to global symbols in our own objects and tests/.deadcode-baseline.txt; output condensed to 3 lines (count checked, count found, path to full list) with the list written to build/deadcode/dead_functions.txt instead of printed inline
 # 2026-08-30: Fixed dead-code cppcheck config parsing: include= now maps to -I (directory paths) not --include= (file force-include); only .c files passed as TUs, not headers; --quiet option skipped so unusedFunction output is visible; build dir cleaned each run
 # 2026-08-30: Added dead-code (unused function) analysis via cppcheck --enable=unusedFunction, with tests/.deadcode-baseline.txt for known false positives
@@ -34,6 +35,8 @@ for arg in "$@"; do
         break
     fi
 done
+
+START_TIME=$(date +%s)
 
 if [[ "${QUICK_MODE}" != "true" ]]; then
     echo "$(date +%H:%M:%S.%3N || true) - Cleaning Build Directory"
@@ -370,7 +373,9 @@ if (echo "${UNITY_BUILD_OUTPUT}" | grep -q "completed successfully" || echo "${U
     echo "$(date +%H:%M:%S.%3N || true) - Checking ${FUNC_COUNT} Functions for Dead Code"
     echo "$(date +%H:%M:%S.%3N || true) - Found ${DEAD_COUNT} Dead Functions"
     echo "$(date +%H:%M:%S.%3N || true) - Full list: ${DEADCODE_LIST_FILE}"
-    echo "$(date +%H:%M:%S.%3N || true) - Trial Build Complete"
+    ELAPSED=$(( $(date +%s) - START_TIME ))
+    ELAPSED_FMT=$(printf '%dm %ds' $(( ELAPSED / 60 )) $(( ELAPSED % 60 )))
+    echo "$(date +%H:%M:%S.%3N || true) - Trial Build Complete (${ELAPSED_FMT})"
 else
     echo "❌ Build failed"
     FINAL_ERROR_COUNT=$( (echo "${BUILD_OUTPUT}"; echo "${UNITY_BUILD_OUTPUT}") | grep -c -E "error:" || true)
