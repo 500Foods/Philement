@@ -231,6 +231,10 @@ declare -a ENV_WHITELIST=(
     "CONFIGS_DIR" "VAR"                      
     # First found in extras/make_email.sh
     "MUTT_TIMEOUT"
+    # First found in extras/make_trials.sh
+    "BASELINE_FILE" "DEADCODE_BUILD_OUTPUT" "DEADCODE_LINK_ERRORS" "DEADCODE_LIST_FILE"
+    "DEADCODE_OBJ_DIR" "DEAD_COUNT" "DEAD_FUNCS" "ELAPSED_FMT" "FUNC_COUNT" "GLOBAL_SYMS"
+    "REMOVED_SECTIONS" "REPORTABLE_DEAD"
     # First found in extras/setup_victoria_logs_dev.sh
     "K8S_NAMESPACE" "K8S_NODE_NAME" "K8S_POD_NAME" "VICTORIALOGS_LVL" "VICTORIALOGS_URL"
     "K8S_CONTAINER_NAME"
