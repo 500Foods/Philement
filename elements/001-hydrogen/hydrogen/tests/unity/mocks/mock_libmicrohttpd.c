@@ -39,6 +39,44 @@ typedef struct {
 static MockLookupEntry mock_lookup_entries[10];
 static int mock_lookup_count = 0;
 
+// For MHD_get_connection_values iteration
+#define MOCK_MHD_MAX_VALUES 64
+typedef struct {
+    enum MHD_ValueKind kind;
+    const char *key;
+    const char *value;
+} MockValueEntry;
+
+static MockValueEntry mock_value_entries[MOCK_MHD_MAX_VALUES];
+static int mock_value_count = 0;
+
+/*
+ * Mock implementation of MHD_get_connection_values
+ * Iterates over pre-configured key-value pairs matching the requested kind,
+ * invoking the provided iterator callback for each entry.
+ */
+__attribute__((weak))
+int MHD_get_connection_values(struct MHD_Connection *connection,
+                              enum MHD_ValueKind kind,
+                              MHD_KeyValueIterator iterator,
+                              void *iterator_cls) {
+    (void)connection;
+    int count = 0;
+    if (!iterator) {
+        return 0;
+    }
+    for (int i = 0; i < mock_value_count; i++) {
+        if (mock_value_entries[i].kind == kind) {
+            if (iterator(iterator_cls, kind,
+                         mock_value_entries[i].key,
+                         mock_value_entries[i].value) == MHD_YES) {
+                count++;
+            }
+        }
+    }
+    return count;
+}
+
 /*
  * Mock implementation of MHD_lookup_connection_value
  * Use weak linkage to avoid conflicts with other test files
@@ -231,6 +269,7 @@ void mock_mhd_reset_all(void) {
     }
     mock_lookup_count = 0;
     mock_header_count = 0;
+    mock_mhd_clear_values();
 }
 
 bool mock_mhd_header_was_added(const char *header, const char *content) {
@@ -288,6 +327,35 @@ const char* mock_mhd_get_lookup_result(void) {
  */
 void mock_mhd_set_connection_info(const union MHD_ConnectionInfo *info) {
     mock_mhd_connection_info = info;
+}
+
+/*
+ * Add a key-value pair that MHD_get_connection_values will expose for the
+ * given value kind (e.g., MHD_POSTDATA_KIND, MHD_GET_ARGUMENT_KIND).
+ */
+void mock_mhd_add_value(enum MHD_ValueKind kind, const char *key, const char *value) {
+    if (mock_value_count >= MOCK_MHD_MAX_VALUES) {
+        return;
+    }
+    mock_value_entries[mock_value_count].kind = kind;
+    mock_value_entries[mock_value_count].key = key ? strdup(key) : NULL;
+    mock_value_entries[mock_value_count].value = value ? strdup(value) : NULL;
+    mock_value_count++;
+}
+
+/*
+ * Clear all key-value entries registered via mock_mhd_add_value
+ */
+void mock_mhd_clear_values(void) {
+    for (int i = 0; i < mock_value_count; i++) {
+        if (mock_value_entries[i].key) free((void*)mock_value_entries[i].key);
+        if (mock_value_entries[i].value) free((void*)mock_value_entries[i].value);
+    }
+    mock_value_count = 0;
+}
+
+int mock_mhd_get_value_count(void) {
+    return mock_value_count;
 }
 
 // Session management mock state variables
