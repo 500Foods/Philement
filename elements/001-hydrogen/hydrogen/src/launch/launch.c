@@ -31,6 +31,7 @@
 
 // Local includes
 #include "launch.h"
+#include <sched.h>
 #include <src/status/status_process.h>
 #include <src/utils/utils_dependency.h>
 #include <src/database/database.h>
@@ -217,19 +218,133 @@ void log_early_info(void) {
     log_this(SR_STARTUP, "― Logging:  %s", LOG_LEVEL_STATE, 1, DEFAULT_PRIORITY_LEVELS[startup_log_level].label);
     log_this(SR_STARTUP, "― PID:      %d", LOG_LEVEL_STATE, 1, getpid());
 
-    // Benchmark clock_gettime latency — every mutex lock/unlock calls this
-    // ~2 times (mutex_bookkeeping_lock + mutex_lock_with_timeout).
-    // 51M calls at 500ns (no vDSO) = 25.5s; at 25ns (vDSO) = 1.3s.
-    struct timespec bm_start, bm_end, bm_ts;
+    // Environment diagnostics — cheap system probes that answer "why is this
+    // node slow?" without a trip through metrics.  All are best-effort; if a
+    // file or syscall is unavailable the value defaults to a safe placeholder.
+
+    // Hostname (in a pod this is the pod name)
+    char hostname[256];
+    hostname[0] = '\0';
+    gethostname(hostname, sizeof(hostname) - 1);
+
+    // OS name from /etc/os-release
+    char os_name[256];
+    os_name[0] = '\0';
+    FILE *f = fopen("/etc/os-release", "r");
+    if (f) {
+        char line[512];
+        while (fgets(line, sizeof(line), f)) {
+            if (sscanf(line, "PRETTY_NAME=\"%255[^\"]", os_name) == 1) {
+                break;
+            }
+        }
+        fclose(f);
+    }
+
+    // Kernel version
+    struct utsname uts;
+    uname(&uts);
+
+    // Active clocksource (tsc vs kvm-clock vs xen vs hpet)
+    char clocksource[64];
+    clocksource[0] = '\0';
+    f = fopen("/sys/devices/system/clocksource/clocksource0/current_clocksource", "r");
+    if (f) {
+        if (fgets(clocksource, sizeof(clocksource), f)) {
+            clocksource[strcspn(clocksource, "\n")] = '\0';
+        }
+        fclose(f);
+    }
+
+    // vDSO latency benchmark (1000 calls) — the single most-called function
+    // in the codebase (~51M lock/unlock ops).  Sub-100ns means vDSO is active.
+    struct timespec bm_start, bm_end, ts;
+    pthread_mutex_t bench_mutex = PTHREAD_MUTEX_INITIALIZER;
+
     clock_gettime(CLOCK_MONOTONIC, &bm_start);
     for (int i = 0; i < 1000; i++) {
-        clock_gettime(CLOCK_REALTIME, &bm_ts);
+        clock_gettime(CLOCK_REALTIME, &ts);
     }
     clock_gettime(CLOCK_MONOTONIC, &bm_end);
-    long elapsed_ns = (bm_end.tv_sec - bm_start.tv_sec) * 1000000000L
-                     + (bm_end.tv_nsec - bm_start.tv_nsec);
-    long avg_ns = elapsed_ns / 1000;
-    log_this(SR_STARTUP, "― vDSO:     %ldns ", LOG_LEVEL_STATE, 1, avg_ns);
+    long vg_ns = ((bm_end.tv_sec - bm_start.tv_sec) * 1000000000L
+                 + (bm_end.tv_nsec - bm_start.tv_nsec)) / 1000;
+
+    // Bare mutex lock/unlock (no bookkeeping) next to vDSO for comparison
+    clock_gettime(CLOCK_MONOTONIC, &bm_start);
+    for (int i = 0; i < 1000; i++) {
+        pthread_mutex_lock(&bench_mutex);
+        pthread_mutex_unlock(&bench_mutex);
+    }
+    clock_gettime(CLOCK_MONOTONIC, &bm_end);
+    long mux_ns = ((bm_end.tv_sec - bm_start.tv_sec) * 1000000000L
+                   + (bm_end.tv_nsec - bm_start.tv_nsec)) / 1000;
+
+    // CPU affinity vs cgroup v2 quota
+    cpu_set_t mask;
+    int ncpu = 0;
+    if (sched_getaffinity(0, sizeof(mask), &mask) == 0) {
+        ncpu = CPU_COUNT(&mask);
+    }
+    char cpu_max[64];
+    cpu_max[0] = '\0';
+    f = fopen("/sys/fs/cgroup/cpu.max", "r");
+    if (f) {
+        if (fgets(cpu_max, sizeof(cpu_max), f)) {
+            cpu_max[strcspn(cpu_max, "\n")] = '\0';
+        }
+        fclose(f);
+    }
+
+    // Memory cgroup v2 (current usage / limit)
+    char mem_max[64], mem_cur[64];
+    mem_max[0] = '\0';
+    mem_cur[0] = '\0';
+    f = fopen("/sys/fs/cgroup/memory.max", "r");
+    if (f) {
+        if (fgets(mem_max, sizeof(mem_max), f)) {
+            mem_max[strcspn(mem_max, "\n")] = '\0';
+        }
+        fclose(f);
+    }
+    f = fopen("/sys/fs/cgroup/memory.current", "r");
+    if (f) {
+        if (fgets(mem_cur, sizeof(mem_cur), f)) {
+            mem_cur[strcspn(mem_cur, "\n")] = '\0';
+        }
+        fclose(f);
+    }
+
+    // RLIMIT_NOFILE soft/hard
+    struct rlimit rl;
+    getrlimit(RLIMIT_NOFILE, &rl);
+
+    // Seccomp mode (0=off, 1=strict, 2=filter)
+    int seccomp_val = -1;
+    f = fopen("/proc/self/status", "r");
+    if (f) {
+        char line[256];
+        while (fgets(line, sizeof(line), f)) {
+            if (sscanf(line, "Seccomp: %d", &seccomp_val) == 1) {
+                break;
+            }
+        }
+        fclose(f);
+    }
+
+    // Log environment diagnostics — one fact per line for grep/parsing
+    log_this(SR_STARTUP, "― Hostname: %s", LOG_LEVEL_STATE, 1, hostname[0] ? hostname : "(unknown)");
+    log_this(SR_STARTUP, "― OS:       %s", LOG_LEVEL_STATE, 1, os_name[0] ? os_name : "(unknown)");
+    log_this(SR_STARTUP, "― Kernel:   %s", LOG_LEVEL_STATE, 1, uts.release);
+    log_this(SR_STARTUP, "― Clocksrc: %s", LOG_LEVEL_STATE, 1, clocksource[0] ? clocksource : "(unknown)");
+    log_this(SR_STARTUP, "― vDSO:     %ldns", LOG_LEVEL_STATE, 1, vg_ns);
+    log_this(SR_STARTUP, "― Mutex:    %ldns", LOG_LEVEL_STATE, 1, mux_ns);
+    log_this(SR_STARTUP, "― CPUs:     %d (affinity)", LOG_LEVEL_STATE, 1, ncpu);
+    log_this(SR_STARTUP, "― CPUQuota: %s", LOG_LEVEL_STATE, 1, cpu_max[0] ? cpu_max : "(none)");
+    log_this(SR_STARTUP, "― MemCur:   %s", LOG_LEVEL_STATE, 1, mem_cur[0] ? mem_cur : "(n/a)");
+    log_this(SR_STARTUP, "― MemMax:   %s", LOG_LEVEL_STATE, 1, mem_max[0] ? mem_max : "(n/a)");
+    log_this(SR_STARTUP, "― FDSoft:   %lu", LOG_LEVEL_STATE, 1, (unsigned long)rl.rlim_cur);
+    log_this(SR_STARTUP, "― FDHard:   %lu", LOG_LEVEL_STATE, 1, (unsigned long)rl.rlim_max);
+    log_this(SR_STARTUP, "― Seccomp:  %d", LOG_LEVEL_STATE, 1, seccomp_val);
 }
 
 // Check readiness of all subsystems and coordinate launch
