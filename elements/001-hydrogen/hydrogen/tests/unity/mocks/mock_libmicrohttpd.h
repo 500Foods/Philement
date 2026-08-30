@@ -43,8 +43,16 @@ void MHD_stop_daemon(struct MHD_Daemon *daemon);
 void MHD_suspend_connection(struct MHD_Connection *connection);
 void MHD_resume_connection(struct MHD_Connection *connection);
 
+int MHD_get_connection_values(struct MHD_Connection *connection,
+                              enum MHD_ValueKind kind,
+                              MHD_KeyValueIterator iterator,
+                              void *iterator_cls);
+
 // Mock control functions
 void mock_mhd_reset_all(void);
+void mock_mhd_add_value(enum MHD_ValueKind kind, const char *key, const char *value);
+void mock_mhd_clear_values(void);
+int mock_mhd_get_value_count(void);
 bool mock_mhd_header_was_added(const char *header, const char *content);
 void mock_mhd_set_lookup_result(const char *result);
 const char* mock_mhd_get_lookup_result(void);
