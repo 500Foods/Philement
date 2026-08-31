@@ -12,8 +12,10 @@ If the only thing this project accomplishes is a C host with Lua on top instead 
 
 The name is Phi (500, among other things), filament, and element. The pieces are named after the periodic table for the same reason: a few of them do almost all the work; the rest are specific.
 
-As far as progress reporting goes, well, there are likely 500 steps or more to be completed before anyone takes this project seriously. Some of those steps will yield useful tools, as is already the case. But it is an ambitious project with many items to complete, and many more that likely haven't even been conceived of yet. 
+As far as progress reporting goes, well, there are likely 500 steps or more to be completed before anyone takes this project seriously. Some of those steps will yield useful tools, as is already the case. But it is an ambitious project with many items to complete, and many more that likely haven't even been conceived of yet.
 <br/><br/><img src="https://progressbar-guibranco.vercel.app/150/?scale=500&title=%20Completed%20&width=415&suffix=%20%2F%20500%20Steps" alt="Completed 149 / 500 Steps">
+
+Agents working in this repo: start at [AGENTS.md](/AGENTS.md).
 
 ## Elements
 
