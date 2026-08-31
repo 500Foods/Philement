@@ -27,6 +27,17 @@ not open work unless listed below.
 
 ## P0 — Close the loop (high ROI, low–medium effort)
 
+### 2. Chat Finale — dual path, knobs, MCP System.Info
+
+| | |
+| --- | --- |
+| **Plan** | [`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md) |
+| **Effort** | XL |
+| **Done** | Old chat Phases 1–12; WS stream + non-stream; REST non-stream `auth_chat`/`auth_chats`; MCP Phases 0–15 |
+| **Remaining** | Gated Phases 0–9: contract, temperature, reasoning, REST, WS, dead chat functions, `H.system.info` reuse of JWT `/api/system/info`, MCP tool `System.Info`, Grok user-JWT MCP, docs/DOKS. Phase 10 parked |
+| **Why now** | 500 Courses first deploy: REST **or** WS, Grok, streaming/temperature/reasoning, Grok calls public MCP with the user's Hydrogen JWT (possibly another pod). One plan, high priority |
+| **Note** | History: [`CHAT_PLAN_SUMMARY_COMPLETE.md`](/docs/H/plans/complete/CHAT_PLAN_SUMMARY_COMPLETE.md). MCP protocol is done; do not reopen MCP_COMPLETE except 16–17 |
+
 ### 1. Keycloak / OIDC RP real-IdP sign-off
 
 | | |
@@ -166,37 +177,6 @@ not open work unless listed below.
 | **Remaining** | System template seeds, Phase 9 Lithium UI, Phase 10 ops remainder, Phases 11–15 (inbound/rewrite/security/docs as scoped), auth MFA wiring via OTP; **P1 defects 12d/12e** (MySQL Persist SEGV; MAX+1 insert confirm/retry at call sites) before treating Persist as multi-engine complete |
 | **Why next** | Core send/API/Lua/OTP stack works (`test_57`/`test_58`). Remaining is product surface and ops polish. |
 | **Note** | Parallel session may complete subsets — re-check plan/tests before starting. |
-
-### 14. Chat — Phase 13 advanced features (+ known gaps)
-
-| | |
-| --- | --- |
-| **Plan** | [`CHAT_PLAN_PHASE_13.md`](/docs/H/plans/CHAT_PLAN_PHASE_13.md) · index [`CHAT_PLAN_SUMMARY.md`](/docs/H/plans/CHAT_PLAN_SUMMARY.md) |
-| **Effort** | XL |
-| **Done** | Phases 1–12 complete; WS streaming + media single-upload + non-stream `chat_done` blackbox live; Phase 13 feature list mostly open |
-| **Remaining (Phase 13 wishlist)** | Function calling, response cache, key load-balance, fallback engines, analytics, templates, convo APIs, cost tracking, A/B, tests |
-| **Remaining (concrete gaps)** | Sub-items 14a–14b |
-| **Why later** | Large wishlist on top of a working chat proxy. Prefer discrete bullets when product needs them. |
-
-#### 14a. REST `/api/conduit/auth_chat` SSE streaming
-
-| | |
-| --- | --- |
-| **Code** | `src/api/wschat/auth_stream/auth_stream.c` · `src/api/wschat/auth_chat/auth_chat.c` |
-| **Effort** | L (MHD callback/SSE + reuse multi_curl proxy path) |
-| **Done** | ~20% — non-stream REST works; endpoint returns intentional **501** / SSE error event; WS streaming fully works |
-| **Remaining** | MHD incremental SSE response; drive `chat_proxy_*` multi-stream into SSE frames; flip `stream:true` off 501; update `test_59` (today asserts 501) and Unity stubs |
-| **Note** | Interactive streaming is already on WebSocket. REST SSE is parity for HTTP-only clients. |
-
-#### 14b. WebSocket chunked media upload
-
-| | |
-| --- | --- |
-| **Code** | `src/websocket/websocket_server_media.c` (`handle_media_chunk_message`) |
-| **Effort** | M |
-| **Done** | ~70% — single-message `media_upload` path complete (hash, store #071, blackbox) |
-| **Remaining** | Session buffers for `media_chunk` (upload_id / index / total); assemble → store; bounds/concurrency; cleanup on disconnect |
-| **Note** | Stub returns -1 by design until multi-frame uploads are required. |
 
 ### 25. SchemaHelper — interactive SchemaTool front-end
 
@@ -367,6 +347,7 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 
 | # | Item | Effort left | Done | Priority |
 | --- | ------ | ------------- | ------ | ---------- |
+| 2 | Chat Finale | XL | Phases 1–12 + MCP 0–15 | P0 |
 | 1 | Keycloak / OIDC RP E2E | S–M | ~90% | P0 |
 | 3 | Provision DefaultRoles → account_roles | S–M | ~30% | P0 |
 | 4 | Unity ASAN | M | 0% | P1 |
@@ -379,9 +360,6 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 12d | MailRelay Persist MySQL/MariaDB SEGV | M | ~40% | P1 |
 | 12e | MAX+1 PK clients: confirm + retry | M | single-thread OK | P1 |
 | 13 | Mail Relay remainder | L–XL | ~70% | P2 |
-| 14 | Chat Phase 13 (+ 14a–14b) | XL | ~15% of P13 | P2 |
-| 14a | REST auth_chat SSE streaming | L | ~20% | P2 |
-| 14b | WS chunked media upload | M | ~70% | P2 |
 | 25 | SchemaHelper TUI | L | v1 | P2 |
 | 15 | Terminal WS auth | M | ~10% | P2 |
 | 17 | OIDC RP client-role parse | S–M | fallback | P2 |

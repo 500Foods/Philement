@@ -36,9 +36,9 @@ closeout items if any, Phase 17 optional post-MVP.
 
 SMTP mail relay subsystem. Core outbound/API/Lua/OTP delivered; later phases (UI, inbound, ops) remain.
 
-### [CHAT PLAN](/docs/H/plans/CHAT_PLAN_SUMMARY.md)
+### [CHAT FINALE](/docs/H/plans/CHAT_FINALE.md)
 
-Chat proxy service. Phases 1–12 complete (see `complete/`). Open work: [Phase 13](/docs/H/plans/CHAT_PLAN_PHASE_13.md).
+Active chat plan (P0). Dual REST+WS, provider knobs, MCP `System.Info`, Grok user-JWT MCP, dead-code gate. History: [CHAT_PLAN_SUMMARY_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_SUMMARY_COMPLETE.md).
 
 ### [UNITY ASAN PLAN](/docs/H/plans/UNITY_ASAN_PLAN.md)
 
@@ -64,7 +64,7 @@ Full index: [`complete/README.md`](/docs/H/plans/complete/README.md). Highlights
 | ------ | ------ |
 | Auth endpoints | [AUTH_PLAN_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md) |
 | Cap / cap_query | [CAP_PLAN_QUERY-COMPLETE.md](/docs/H/plans/complete/CAP_PLAN_QUERY-COMPLETE.md) |
-| Chat Phases 1–12 | [CHAT_PLAN_PHASE_*_COMPLETE.md](/docs/H/plans/complete/) |
+| Chat Phases 1–12 | [CHAT_PLAN_PHASE_*_COMPLETE.md](/docs/H/plans/complete/) · [summary](/docs/H/plans/complete/CHAT_PLAN_SUMMARY_COMPLETE.md) |
 | Conduit | [CONDUIT_COMPLETE.md](/docs/H/plans/complete/CONDUIT_COMPLETE.md) |
 | Image / Reporting | [IMAGE_PLAN_COMPLETE.md](/docs/H/plans/complete/IMAGE_PLAN_COMPLETE.md) |
 | Database subsystem | [DATABASE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_PLAN_COMPLETE.md) |

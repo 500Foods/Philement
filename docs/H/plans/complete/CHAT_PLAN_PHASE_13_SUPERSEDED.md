@@ -1,5 +1,9 @@
 # Chat Service - Phase 13: Advanced Features
 
+> **Superseded.** Remaining chat work, including items from this wishlist,
+> lives in [`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md). Do not start
+> work from this file.
+
 ## Objective
 
 Implement advanced features including function calling, response caching, load balancing, and analytics dashboard.
