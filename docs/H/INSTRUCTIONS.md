@@ -17,20 +17,22 @@ The documentation for the project is in /docs/H/
 
 - Review /docs/H/tests/TESTING.md before continuing
 - Aliases and other env vars are defined in ~/.zshrc
-- After ANY C coding change, run alias `mkt` to perform a test build - can be run from any directory
-- After ANY C coding change that passes `mkt`, run alias `mkp` (cppcheck / test_91) before considering the change done
+- After ordinary C edits (existing `.c`/`.h` already in the CMake glob), run alias `mkq` (quick trial: skip clean and cmake reconfigure) - can be run from any directory
+- Use alias `mkt` (full trial: clean + cmake + build) when there is no usable `build/` tree, after CMake/preset changes, or after **adding/removing** `src/` files (the source glob is resolved at configure time, so `mkq` will not see a new `.c`)
+- After ANY C coding change that passes `mkq` or `mkt`, run alias `mkp` (cppcheck / test_91) before considering the change done
 - The trial build outputs minimal text - typically only error messages - greatly reducing AI token usage
 - Once test build succeeds, run alias `mka` to perform build against all targets - can be run from any directory
-- Working with unit tests, after alias `mkt` use alias `mku <base test name without .c>` to build and run the test fro any directory
-- When making only script changes, there is no need to run alias `mkt` - that is for changes to C code only
+- Working with unit tests, after alias `mkq` (or `mkt` if the tree was just configured) use alias `mku <base test name without .c>` to build and run the test fro any directory
+- When making only script changes, there is no need to run alias `mkq`/`mkt` - that is for changes to C code only
 - After ANY Bash/script change, run alias `mks` (shellcheck / test_92) before considering the change done
 - Assume all env vars (like HYDROGEN_ROOT) and all aliases are properly defined and declaredp
 
 **IMPORTANT NOTE:**  these aliases are not loaded by default into the regular AI model environment, you can run them by using a zsh instance like this:
 
 ```bash
-zsh -ic 'mkt' 2>&1 
-zsh -ic 'mku mutext_test_stats' 2>&1 
+zsh -ic 'mkq' 2>&1
+zsh -ic 'mkt' 2>&1
+zsh -ic 'mku mutext_test_stats' 2>&1
 ```
 
 ## ⚠️ ADDITINAL GUIDANCE
@@ -198,7 +200,7 @@ tests/          Test framework
 > acceptable `static` usage is for file-scope *state* (globals, string
 > literals, test-seam callbacks) — never for callable functions.
 >
-> **This rule is enforced automatically.** `mkt` (the trial build) runs a
+> **This rule is enforced automatically.** `mkq`/`mkt` (the trial build) runs a
 > *static-function gate* in its Dependency Check: any **new** `static`
 > function definition added to `src/` fails the build immediately, with a
 > message telling you to remove `static` and add a header declaration. The set
@@ -303,14 +305,15 @@ When returning to a multi-phase subsystem such as Mail Relay, use this quick-sta
 
 1. Read the subsystem plan, e.g. [`/docs/H/plans/MAILRELAY_PLAN.md`](/docs/H/plans/MAILRELAY_PLAN.md).
 2. Check the current phase status blocks and the Working Log at the bottom of the plan.
-3. Verify the baseline build by running `zsh -ic 'mkt'`.
+3. Verify the baseline build by running `zsh -ic 'mkt'` (full trial) or `zsh -ic 'mkq'` if `build/` is already configured.
 4. Run the existing Unity tests for the subsystem:
    `zsh -ic 'mku mailrelay_message_test && mku mailrelay_render_test && mku mailrelay_smtp_test && mku mailrelay_send_raw_test && mku config_mail_relay_test_load_mailrelay_config'`
 5. Inspect the current source directory: [`/elements/001-hydrogen/hydrogen/src/mailrelay/`](/elements/001-hydrogen/hydrogen/src/mailrelay/).
 6. Inspect the current Unity tests: [`/elements/001-hydrogen/hydrogen/tests/unity/src/mailrelay/`](/elements/001-hydrogen/hydrogen/tests/unity/src/mailrelay/).
 7. Review uncommitted changes with `git status`.
 8. Build aliases are defined in `~/.zshrc`; in non-interactive shells invoke them as `zsh -ic '<alias>'`. The common aliases are:
-   - `mkt` — trial build
+    - `mkq` — quick trial build (no clean, no cmake reconfigure)
+    - `mkt` — full trial build (clean + cmake)
    - `mka` — build all targets
    - `mku <base>` — build and run a Unity test
    - `mkp` — C lint (cppcheck)

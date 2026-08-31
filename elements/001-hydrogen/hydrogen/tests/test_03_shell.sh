@@ -148,6 +148,8 @@ declare -a ENV_WHITELIST=(
     # First found in tests/test_22_swagger.sh
     "CUSTOM_HEADERS_TEST_RESULT" "SWAGGER_JSON_PROXY1_RESULT" "SWAGGER_JSON_PROXY2_RESULT" 
     "SWAGGER_JSON_PROXY3_RESULT" "SWAGGER_JSON_PROXY4_RESULT" "BR_DECOMPRESS_TEST_RESULT"
+    # First found in tests/test_25_mdns.sh
+    "BASH_COMMAND"    
     # First found in tests/test_27_reporting_image_scale.sh
     "CURL_MAX_TIME" "FAIL_COUNT" "IMAGES_DIR" "PASS_COUNT" "RESULT_DIR" "TOTAL_COUNT"
     # First found in tests/test_40_auth.sh

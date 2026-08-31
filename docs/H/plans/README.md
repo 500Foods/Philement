@@ -50,6 +50,11 @@ Interactive Lua TUI front-end to SchemaTool. Phases 0–4 shipped (review,
 skip, accept, packets). Phase 5 first slice: one-field apply. Operator guide:
 [`/docs/H/tools/SCHEMAHELPER.md`](/docs/H/tools/SCHEMAHELPER.md).
 
+### [MDNS UPGRADE](/docs/H/plans/MDNS_UPGRADE.md)
+
+RFC 6762/6763 server (codec, probe/claim, selective answers, NSEC) plus a
+real browse/resolve client. Test 25 log-contract. Phases 0–8 not started.
+
 ### [MIRAGE PLAN](/docs/H/plans/MIRAGE_PLAN.md)
 
 Distributed proxy architecture sketch. Implementation deferred.

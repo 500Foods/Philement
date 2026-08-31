@@ -731,6 +731,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [docs/H/tools/SCHEMAHELPER.md](/docs/H/tools/SCHEMAHELPER.md) - SchemaHelper operator guide
 - [docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md) - SchemaTool implementation plan (complete)
 - [docs/H/plans/SCHEMAHELPER.md](/docs/H/plans/SCHEMAHELPER.md) - SchemaHelper implementation plan
+- [docs/H/plans/MDNS_UPGRADE.md](/docs/H/plans/MDNS_UPGRADE.md) - mDNS RFC server + real client plan
 
 </details>
 

@@ -15,15 +15,12 @@
 
 #include "mdns_keys.h"
 #include "mdns_server.h"
+#include <src/mdns/mdns_wire.h>
 
 extern volatile sig_atomic_t server_running;
 extern volatile sig_atomic_t mdns_server_system_shutdown;
 extern pthread_cond_t terminate_cond;
 extern pthread_mutex_t terminate_mutex;
-
-// DNS header structure is now defined in mdns_server.h
-
-uint8_t *read_dns_name(uint8_t *ptr, const uint8_t *packet, char *name, size_t name_len);
 
 void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *packet_len, const char *hostname,
                                              const mdns_server_t *mdns_server_instance, uint32_t ttl, const mdns_server_interface_t *iface);
@@ -48,77 +45,171 @@ void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *packet_l
 
     if (!iface) {
         log_this(SR_MDNS_SERVER, "Warning: NULL interface passed to announcement builder", LOG_LEVEL_ALERT, 0);
-        // Initialize header with zeros and return minimum packet
-        dns_header_t *header = (dns_header_t *)packet;
-        memset(header, 0, sizeof(dns_header_t));
+        memset(packet, 0, sizeof(dns_header_t));
         *packet_len = sizeof(dns_header_t);
         return;
     }
 
-    // Initialize DNS header for response
-    dns_header_t *header = (dns_header_t *)packet;
-    header->id = 0;
-    header->flags = htons(MDNS_FLAG_RESPONSE | MDNS_FLAG_AUTHORITATIVE);
-    header->qdcount = 0;
-    header->ancount = 0;
-    header->nscount = 0;
-    header->arcount = 0;
+    {
+        mdns_buf b;
+        size_t an_pos;
+        uint16_t ancount = 0;
+        uint32_t host_ttl = (ttl == 0) ? 0 : MDNS_TTL_HOST;
+        uint32_t shared_ttl = (ttl == 0) ? 0 : MDNS_TTL_SHARED;
+        size_t i;
 
-    uint8_t *ptr = packet + sizeof(dns_header_t);
-
-    // Add IP address records for the hostname
-    for (size_t i = 0; i < iface->num_addresses; i++) {
-        struct in_addr addr;
-        struct in6_addr addr6;
-        if (inet_pton(AF_INET, iface->ip_addresses[i], &addr) == 1) {
-            ptr = write_dns_record(ptr, hostname, MDNS_TYPE_A, MDNS_CLASS_IN, ttl, &addr.s_addr, 4);
-            header->ancount = htons(ntohs(header->ancount) + 1);
-        } else if (inet_pton(AF_INET6, iface->ip_addresses[i], &addr6) == 1) {
-            ptr = write_dns_record(ptr, hostname, MDNS_TYPE_AAAA, MDNS_CLASS_IN, ttl, &addr6.s6_addr, 16);
-            header->ancount = htons(ntohs(header->ancount) + 1);
+        mdns_buf_init(&b, packet, MDNS_MAX_PACKET_SIZE);
+        if (mdns_put_u16(&b, 0) < 0) {
+            *packet_len = 0;
+            return;
         }
-    }
-
-    // Add service records (PTR, SRV, TXT)
-    for (size_t i = 0; i < mdns_server_instance->num_services; i++) {
-        // Use the full service type including .local as PTR owner name
-        const char *ptr_owner_name = mdns_server_instance->services[i].type;
-    
-        // Create full service instance name for SRV and TXT records
-        const size_t max_name_len = 100;
-        const size_t max_type_len = 100;
-        size_t name_len = strlen(mdns_server_instance->services[i].name);
-        size_t type_len = strlen(mdns_server_instance->services[i].type);
-    
-        size_t total_len = name_len + 1 + type_len + 6;  // +6 for extra formatting
-        if (total_len >= 256) {
-            log_this(SR_MDNS_SERVER, "Service name too long: %s.%s truncated", LOG_LEVEL_ALERT, 2,
-                     mdns_server_instance->services[i].name, mdns_server_instance->services[i].type);
-            name_len = max_name_len < name_len ? max_name_len : name_len;
-            type_len = max_type_len < type_len ? max_type_len : type_len;
+        if (mdns_put_u16(&b, DNS_FLAG_RESPONSE) < 0) {
+            *packet_len = 0;
+            return;
         }
-    
-        // Full service instance name with .local suffix
-        char full_service_instance_name[256];
-        snprintf(full_service_instance_name, sizeof(full_service_instance_name), "%.*s.%.*s",
-                 (int)name_len, mdns_server_instance->services[i].name, (int)type_len, mdns_server_instance->services[i].type);
+        if (mdns_put_u16(&b, 0) < 0) {
+            *packet_len = 0;
+            return;
+        }
+        an_pos = b.len;
+        if (mdns_put_u16(&b, 0) < 0) {
+            *packet_len = 0;
+            return;
+        }
+        if (mdns_put_u16(&b, 0) < 0) {
+            *packet_len = 0;
+            return;
+        }
+        if (mdns_put_u16(&b, 0) < 0) {
+            *packet_len = 0;
+            return;
+        }
 
-        // PTR record - owner name MUST include .local as per RFC 6763
-        ptr = write_dns_ptr_record(ptr, ptr_owner_name, full_service_instance_name, ttl);
-        header->ancount = htons(ntohs(header->ancount) + 1);
+        for (i = 0; i < iface->num_addresses; i++) {
+            struct in_addr addr;
+            struct in6_addr addr6;
+            size_t pos;
 
-        // SRV record for service location
-        ptr = write_dns_srv_record(ptr, full_service_instance_name, 0, 0, (uint16_t)mdns_server_instance->services[i].port, hostname, ttl);
-        header->ancount = htons(ntohs(header->ancount) + 1);
+            if (!iface->ip_addresses || !iface->ip_addresses[i]) {
+                continue;
+            }
+            if (inet_pton(AF_INET, iface->ip_addresses[i], &addr) == 1) {
+                if (mdns_rr_head(&b, hostname, MDNS_TYPE_A, host_ttl, 1, &pos) < 0) {
+                    break;
+                }
+                if (mdns_put_bytes(&b, &addr.s_addr, 4) < 0) {
+                    break;
+                }
+                if (mdns_rr_tail(&b, pos) < 0) {
+                    break;
+                }
+                ancount++;
+            } else if (inet_pton(AF_INET6, iface->ip_addresses[i], &addr6) == 1) {
+                if (mdns_rr_head(&b, hostname, MDNS_TYPE_AAAA, host_ttl, 1, &pos) < 0) {
+                    break;
+                }
+                if (mdns_put_bytes(&b, &addr6.s6_addr, 16) < 0) {
+                    break;
+                }
+                if (mdns_rr_tail(&b, pos) < 0) {
+                    break;
+                }
+                ancount++;
+            }
+        }
 
-        // TXT record with service metadata
-        ptr = write_dns_txt_record(ptr, full_service_instance_name, mdns_server_instance->services[i].txt_records, mdns_server_instance->services[i].num_txt_records, ttl);
-        header->ancount = htons(ntohs(header->ancount) + 1);
-    }
+        if (mdns_server_instance) {
+            for (i = 0; i < mdns_server_instance->num_services; i++) {
+                const char *ptr_owner_name = mdns_server_instance->services[i].type;
+                const size_t max_name_len = 100;
+                const size_t max_type_len = 100;
+                size_t name_len = strlen(mdns_server_instance->services[i].name);
+                size_t type_len = strlen(mdns_server_instance->services[i].type);
+                size_t total_len = name_len + 1 + type_len + 6;
+                char full_service_instance_name[256];
+                size_t pos;
+                size_t t;
 
-    *packet_len = (size_t)(ptr - packet);
-    if (*packet_len > 1500) {
-        log_this(SR_MDNS_SERVER, "Warning: Packet size %zu exceeds typical MTU (1500)", LOG_LEVEL_ALERT, 1, *packet_len);
+                if (total_len >= 256) {
+                    log_this(SR_MDNS_SERVER, "Service name too long: %s.%s truncated", LOG_LEVEL_ALERT, 2,
+                             mdns_server_instance->services[i].name, mdns_server_instance->services[i].type);
+                    name_len = max_name_len < name_len ? max_name_len : name_len;
+                    type_len = max_type_len < type_len ? max_type_len : type_len;
+                }
+
+                snprintf(full_service_instance_name, sizeof(full_service_instance_name), "%.*s.%.*s",
+                         (int)name_len, mdns_server_instance->services[i].name, (int)type_len, mdns_server_instance->services[i].type);
+
+                if (mdns_rr_head(&b, ptr_owner_name, MDNS_TYPE_PTR, shared_ttl, 0, &pos) < 0) {
+                    break;
+                }
+                if (mdns_put_name(&b, full_service_instance_name) < 0) {
+                    break;
+                }
+                if (mdns_rr_tail(&b, pos) < 0) {
+                    break;
+                }
+                ancount++;
+
+                if (mdns_rr_head(&b, full_service_instance_name, MDNS_TYPE_SRV, host_ttl, 1, &pos) < 0) {
+                    break;
+                }
+                if (mdns_put_u16(&b, 0) < 0) {
+                    break;
+                }
+                if (mdns_put_u16(&b, 0) < 0) {
+                    break;
+                }
+                if (mdns_put_u16(&b, (uint16_t)mdns_server_instance->services[i].port) < 0) {
+                    break;
+                }
+                if (mdns_put_name(&b, hostname) < 0) {
+                    break;
+                }
+                if (mdns_rr_tail(&b, pos) < 0) {
+                    break;
+                }
+                ancount++;
+
+                if (mdns_rr_head(&b, full_service_instance_name, MDNS_TYPE_TXT, shared_ttl, 1, &pos) < 0) {
+                    break;
+                }
+                for (t = 0; t < mdns_server_instance->services[i].num_txt_records; t++) {
+                    const char *txt = mdns_server_instance->services[i].txt_records[t];
+                    size_t txt_len;
+
+                    if (!txt) {
+                        continue;
+                    }
+                    txt_len = strlen(txt);
+                    if (txt_len > 255) {
+                        txt_len = 255;
+                    }
+                    if (mdns_put_u8(&b, (uint8_t)txt_len) < 0) {
+                        break;
+                    }
+                    if (mdns_put_bytes(&b, txt, txt_len) < 0) {
+                        break;
+                    }
+                }
+                if (mdns_rr_tail(&b, pos) < 0) {
+                    break;
+                }
+                ancount++;
+            }
+        }
+
+        if (b.overflow) {
+            log_this(SR_MDNS_SERVER, "Announcement packet overflow, skipping send", LOG_LEVEL_ALERT, 0);
+            *packet_len = 0;
+            return;
+        }
+        b.buf[an_pos] = (uint8_t)(ancount >> 8);
+        b.buf[an_pos + 1] = (uint8_t)(ancount & 0xffu);
+        *packet_len = b.len;
+        if (*packet_len > 1500) {
+            log_this(SR_MDNS_SERVER, "Warning: Packet size %zu exceeds typical MTU (1500)", LOG_LEVEL_ALERT, 1, *packet_len);
+        }
     }
 }
 
@@ -231,8 +322,13 @@ void mdns_server_send_announcement(mdns_server_t *mdns_server_instance, const ne
         }
 
         // Build announcement with interface-specific IPs
-        mdns_server_build_announcement(packet, &packet_len, mdns_server_instance->hostname, mdns_server_instance, MDNS_TTL, iface_net_info);
+        mdns_server_build_announcement(packet, &packet_len, mdns_server_instance->hostname, mdns_server_instance, MDNS_TTL_HOST, iface_net_info);
         free_single_interface_net_info(iface_net_info);
+
+        if (packet_len == 0) {
+            log_this(SR_MDNS_SERVER, "Skipping send on %s: empty or overflow announcement", LOG_LEVEL_ALERT, 1, iface->if_name);
+            continue;
+        }
 
         // Track send attempt outcomes
         int v4_success = 0;
