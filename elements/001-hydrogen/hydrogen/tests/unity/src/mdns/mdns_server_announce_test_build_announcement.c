@@ -53,6 +53,7 @@ void test_mdns_server_build_announcement_minimal_valid(void) {
     // Set hostname to a string literal (will be valid for the function's lifetime)
     char hostname_buffer[] = "test.local";
     server.hostname = hostname_buffer;
+    server.hostname_claimed = 1;
     server.num_services = 0;
     server.services = NULL;
 
@@ -89,6 +90,7 @@ void test_mdns_server_build_announcement_different_ttl(void) {
     memset(&server, 0, sizeof(server));
     char hostname_buffer1[] = "test.local";
     server.hostname = hostname_buffer1;
+    server.hostname_claimed = 1;
     server.num_services = 0;
     server.services = NULL;
 
@@ -118,6 +120,7 @@ void test_mdns_server_build_announcement_with_hostname(void) {
     memset(&server, 0, sizeof(server));
     char hostname_buffer2[] = "test.local";
     server.hostname = hostname_buffer2;
+    server.hostname_claimed = 1;
     server.num_services = 0;
     server.services = NULL;
 
@@ -147,6 +150,7 @@ void test_mdns_server_build_announcement_no_services(void) {
     memset(&server, 0, sizeof(server));
     char hostname_buffer[] = "test.local";
     server.hostname = hostname_buffer;
+    server.hostname_claimed = 1;
     server.num_services = 0;
     server.services = NULL;
 

@@ -11,6 +11,8 @@
 # test_mdns_client_logging()
 
 # CHANGELOG
+# 3.0.5 - 2026-08-31 - Dual-stack not required: tshark A/AAAA counts are diagnostic; one family is enough
+# 3.0.4 - 2026-08-31 - Require MDNS_SERVER CLAIMED after probe/claim
 # 3.0.3 - 2026-08-31 - set -e was aborting mid-test: grep -c returns 1 on zero matches, analyze_mdns_packets return 1 was unguarded; ERR trap dumps collected output
 # 3.0.2 - 2026-08-31 - Fix intermittent 25-0008 fail: wait for capture, flush tshark before read, accept Hydrogen_Test in pcap/netcat strings
 # 3.0.1 - 2025-09-22 - Performance optimizations: reduced timeouts, simplified responder loop test
@@ -28,7 +30,7 @@ TEST_NAME="mDNS"
 TEST_ABBR="DNS"
 TEST_NUMBER="25"
 TEST_COUNTER=0
-TEST_VERSION="3.0.3"
+TEST_VERSION="3.0.5"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -369,10 +371,33 @@ dump_mdns_system_state() {
     print_output "${TEST_NUMBER}" "${TEST_COUNTER}" " "
 }
 
+# Function to wait for RFC 6762 probe claim
+test_mdns_server_claimed() {
+    local log_file="$1"
+    local max_wait=50
+    local attempt=0
+
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for MDNS_SERVER CLAIMED..."
+
+    while [[ "${attempt}" -lt "${max_wait}" ]]; do
+        if "${GREP}" -q "MDNS_SERVER CLAIMED" "${log_file}" 2>/dev/null; then
+            local claimed_output
+            claimed_output=$("${GREP}" -c "MDNS_SERVER CLAIMED" "${log_file}" 2>/dev/null || true)
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Found ${claimed_output} MDNS_SERVER CLAIMED log entries"
+            return 0
+        fi
+        sleep 0.1
+        attempt=$((attempt + 1))
+    done
+
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "MDNS_SERVER CLAIMED not found within 5 seconds"
+    return 1
+}
+
 # Function to test mDNS server announcements
 test_mdns_server_announcements() {
     local log_file="$1"
-    local max_wait=10
+    local max_wait=50
     local attempt=0
 
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing mDNS server service announcements..."
@@ -403,7 +428,7 @@ test_mdns_server_announcements() {
                 return 0
             fi
         fi
-        sleep 0.02
+        sleep 0.1
         attempt=$((attempt + 1))
     done
 
@@ -579,6 +604,12 @@ analyze_mdns_packets() {
 
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Query types: PTR=${ptr_queries}, SRV=${srv_queries}, TXT=${txt_queries}"
 
+    local a_rr
+    a_rr=$(tshark -r "${capture_file}" -Y "mdns and dns.a" 2>/dev/null | wc -l || true)
+    local aaaa_rr
+    aaaa_rr=$(tshark -r "${capture_file}" -Y "mdns and dns.aaaa" 2>/dev/null | wc -l || true)
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Address RRs: A=${a_rr}, AAAA=${aaaa_rr} (one family is sufficient)"
+
     return 0
 }
 
@@ -728,6 +759,16 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     fi
 
     if [[ "${SERVER_READY}" = true ]]; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Verify mDNS Server Claimed"
+
+        # shellcheck disable=SC2310 # We want to continue even if the test fails
+        if test_mdns_server_claimed "${SERVER_LOG}"; then
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "mDNS probe claimed names"
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "mDNS probe claim failed"
+            EXIT_CODE=1
+        fi
+
         print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Verify mDNS Server Announcements"
 
         # shellcheck disable=SC2310 # We want to continue even if the test fails

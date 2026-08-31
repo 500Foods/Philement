@@ -42,6 +42,7 @@ void test_mdns_server_build_interface_announcement_null_interface(void) {
     memset(&server, 0, sizeof(server));
     char hostname_buffer[] = "test.local";
     server.hostname = hostname_buffer;
+    server.hostname_claimed = 1;
     server.num_services = 0;
     server.services = NULL;
 
@@ -63,6 +64,7 @@ void test_mdns_server_build_interface_announcement_null_packet(void) {
     memset(&server, 0, sizeof(server));
     char hostname_buffer[] = "test.local";
     server.hostname = hostname_buffer;
+    server.hostname_claimed = 1;
     server.num_services = 0;
     server.services = NULL;
 
@@ -90,6 +92,7 @@ void test_mdns_server_build_interface_announcement_minimal_valid(void) {
     memset(&server, 0, sizeof(server));
     char hostname_buffer[] = "test.local";
     server.hostname = hostname_buffer;
+    server.hostname_claimed = 1;
     server.num_services = 0;
     server.services = NULL;
 
@@ -124,6 +127,7 @@ void test_mdns_server_build_interface_announcement_with_services(void) {
     memset(&server, 0, sizeof(server));
     char hostname_buffer[] = "test.local";
     server.hostname = hostname_buffer;
+    server.hostname_claimed = 1;
 
     // Create a service
     mdns_server_service_t service;
@@ -133,6 +137,7 @@ void test_mdns_server_build_interface_announcement_with_services(void) {
     service.name = service_name;
     service.type = service_type;
     service.port = 8080;
+    service.claimed = 1;
 
     // Add TXT records
     service.txt_records = malloc(sizeof(char*) * 2);
@@ -176,6 +181,7 @@ void test_mdns_server_build_interface_announcement_ipv4_only(void) {
     memset(&server, 0, sizeof(server));
     char hostname_buffer[] = "test.local";
     server.hostname = hostname_buffer;
+    server.hostname_claimed = 1;
     server.num_services = 0;
     server.services = NULL;
 
@@ -204,6 +210,7 @@ void test_mdns_server_build_interface_announcement_ipv6_only(void) {
     memset(&server, 0, sizeof(server));
     char hostname_buffer[] = "test.local";
     server.hostname = hostname_buffer;
+    server.hostname_claimed = 1;
     server.num_services = 0;
     server.services = NULL;
 
@@ -232,6 +239,7 @@ void test_mdns_server_build_interface_announcement_multiple_ips(void) {
     memset(&server, 0, sizeof(server));
     char hostname_buffer[] = "test.local";
     server.hostname = hostname_buffer;
+    server.hostname_claimed = 1;
     server.num_services = 0;
     server.services = NULL;
 
@@ -266,6 +274,7 @@ void test_mdns_server_build_interface_announcement_long_service_name(void) {
     memset(&server, 0, sizeof(server));
     char hostname_buffer[] = "test.local";
     server.hostname = hostname_buffer;
+    server.hostname_claimed = 1;
 
     // Create a service with very long name
     mdns_server_service_t service;
@@ -275,6 +284,7 @@ void test_mdns_server_build_interface_announcement_long_service_name(void) {
     service.name = service_name;
     service.type = service_type;
     service.port = 8080;
+    service.claimed = 1;
     service.txt_records = NULL;
     service.num_txt_records = 0;
 
@@ -306,6 +316,7 @@ void test_mdns_server_build_interface_announcement_packet_size_limit(void) {
     memset(&server, 0, sizeof(server));
     char hostname_buffer[] = "test.local";
     server.hostname = hostname_buffer;
+    server.hostname_claimed = 1;
 
     // Create multiple services
     mdns_server_service_t services[5];

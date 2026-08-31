@@ -23,7 +23,7 @@ static uint8_t *test_put_dns_name(uint8_t *base, size_t cap, const uint8_t *ptr,
 }
 
 // Forward declarations for functions being tested
-bool mdns_server_process_query_packet(const mdns_server_t *mdns_server_instance,
+bool mdns_server_process_query_packet(mdns_server_t *mdns_server_instance,
                                         const network_info_t *net_info_instance,
                                         const uint8_t *buffer,
                                         ssize_t len,

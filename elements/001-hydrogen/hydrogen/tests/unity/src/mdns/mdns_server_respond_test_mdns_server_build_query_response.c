@@ -12,6 +12,7 @@
 void test_build_ptr_additional_and_flush(void);
 void test_build_legacy_echo_ttl_no_flush(void);
 void test_build_dns_sd_ptr(void);
+void test_build_ipv4_only_aaaa_yields_nsec(void);
 
 void setUp(void)
 {
@@ -184,11 +185,56 @@ void test_build_dns_sd_ptr(void)
     TEST_ASSERT_TRUE(saw);
 }
 
+void test_build_ipv4_only_aaaa_yields_nsec(void)
+{
+    mdns_server_t server;
+    mdns_server_service_t svc;
+    mdns_server_interface_t iface;
+    char *ips[1];
+    mdns_server_want_t want;
+    mdns_rr q;
+    mdns_msg query;
+    mdns_msg parsed;
+    uint8_t packet[MDNS_MAX_PACKET_SIZE];
+    size_t packet_len = 0;
+    size_t i;
+    int saw_nsec = 0;
+    int saw_aaaa = 0;
+
+    fill_server(&server, &svc, &iface, ips);
+    mdns_server_want_clear(&want, 1);
+    memset(&q, 0, sizeof q);
+    snprintf(q.name, sizeof q.name, "%s", "host.local");
+    q.type = MDNS_TYPE_AAAA;
+    q.cls = DNS_CLASS_IN;
+    mdns_server_want_add_question(&want, &server, &q);
+    memset(&query, 0, sizeof query);
+    query.questions[0] = q;
+    query.nquestions = 1;
+
+    mdns_server_build_query_response(packet, &packet_len, &server, &iface, &query, &want, 0);
+    TEST_ASSERT_TRUE(packet_len > 12);
+    TEST_ASSERT_EQUAL_INT(0, mdns_parse(packet, packet_len, &parsed));
+    for (i = 0; i < parsed.nrr; i++) {
+        if (parsed.rr[i].type == MDNS_TYPE_AAAA) {
+            saw_aaaa = 1;
+        }
+        if (parsed.rr[i].type == (uint16_t)RR_NSEC) {
+            saw_nsec = 1;
+            TEST_ASSERT_TRUE(mdns_name_equal(parsed.rr[i].name, "host.local"));
+            TEST_ASSERT_EQUAL_INT(MDNS_SEC_ANSWER, parsed.rr[i].section);
+        }
+    }
+    TEST_ASSERT_TRUE(saw_nsec);
+    TEST_ASSERT_FALSE(saw_aaaa);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
     RUN_TEST(test_build_ptr_additional_and_flush);
     RUN_TEST(test_build_legacy_echo_ttl_no_flush);
     RUN_TEST(test_build_dns_sd_ptr);
+    RUN_TEST(test_build_ipv4_only_aaaa_yields_nsec);
     return UNITY_END();
 }

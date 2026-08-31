@@ -170,9 +170,17 @@ int mdns_server_allocate_services(mdns_server_t *server, mdns_server_service_t *
 int mdns_server_init_services(mdns_server_t *server, const mdns_server_service_t *services, size_t num_services) {
     for (size_t i = 0; i < num_services; i++) {
         server->services[i].name = strdup(services[i].name);
+        server->services[i].name_base = strdup(services[i].name);
         server->services[i].type = strdup(services[i].type);
+        if (!server->services[i].name || !server->services[i].name_base || !server->services[i].type) {
+            log_this(SR_MDNS_SERVER, "Out of memory for services", LOG_LEVEL_DEBUG, 0);
+            return -1;
+        }
         server->services[i].port = services[i].port;
         server->services[i].num_txt_records = services[i].num_txt_records;
+        server->services[i].claimed = 0;
+        server->services[i].probe_conflict = 0;
+        server->services[i].name_attempts = 1;
         if (services[i].num_txt_records > 0) {
             size_t txt_count = (size_t)services[i].num_txt_records;
             server->services[i].txt_records = malloc(sizeof(char*) * txt_count);
@@ -210,6 +218,15 @@ int mdns_server_setup_hostname(mdns_server_t *server) {
         return -1;
     }
     sprintf(server->hostname, "%s.local", hostname);
+    server->hostname_base = strdup(hostname);
+    server->hostname_claimed = 0;
+    server->hostname_conflict = 0;
+    server->hostname_attempts = 1;
+    server->probe_failed = 0;
+    if (!server->hostname_base) {
+        log_this(SR_MDNS_SERVER, "Out of memory", LOG_LEVEL_ERROR, 0);
+        return -1;
+    }
     return 0;
 }
 
@@ -256,6 +273,7 @@ void mdns_server_cleanup(mdns_server_t *server, network_info_t *net_info_instanc
         if (server->services) {
             for (size_t i = 0; i < server->num_services; i++) {
                 if (server->services[i].name) free(server->services[i].name);
+                if (server->services[i].name_base) free(server->services[i].name_base);
                 if (server->services[i].type) free(server->services[i].type);
                 if (server->services[i].txt_records) {
                     for (size_t j = 0; j < server->services[i].num_txt_records; j++) {
@@ -267,6 +285,7 @@ void mdns_server_cleanup(mdns_server_t *server, network_info_t *net_info_instanc
             free(server->services);
         }
         if (server->hostname) free(server->hostname);
+        if (server->hostname_base) free(server->hostname_base);
         if (server->service_name) free(server->service_name);
         if (server->device_id) free(server->device_id);
         if (server->friendly_name) free(server->friendly_name);

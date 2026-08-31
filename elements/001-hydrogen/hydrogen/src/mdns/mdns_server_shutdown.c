@@ -69,9 +69,10 @@ void mdns_server_shutdown(mdns_server_t *mdns_server_instance) {
         }
     }
 
-    // Send goodbye packets
+    // Send goodbye packets only for names we claimed
     network_info_t *net_info_instance = get_network_info();
-    if (net_info_instance && net_info_instance->primary_index != -1) {
+    if (net_info_instance && net_info_instance->primary_index != -1 &&
+        !mdns_server_instance->probe_failed && mdns_server_any_claimed(mdns_server_instance)) {
         struct sockaddr_in addr_v4;
         struct sockaddr_in6 addr_v6;
 
@@ -154,6 +155,7 @@ void mdns_server_shutdown(mdns_server_t *mdns_server_instance) {
 
     // Free server identity
     free(mdns_server_instance->hostname);
+    free(mdns_server_instance->hostname_base);
     free(mdns_server_instance->service_name);
     free(mdns_server_instance->device_id);
     free(mdns_server_instance->friendly_name);
@@ -167,6 +169,7 @@ void mdns_server_shutdown(mdns_server_t *mdns_server_instance) {
     // Free services
     for (size_t i = 0; i < mdns_server_instance->num_services; i++) {
         free(mdns_server_instance->services[i].name);
+        free(mdns_server_instance->services[i].name_base);
         free(mdns_server_instance->services[i].type);
         for (size_t j = 0; j < mdns_server_instance->services[i].num_txt_records; j++) {
             free(mdns_server_instance->services[i].txt_records[j]);

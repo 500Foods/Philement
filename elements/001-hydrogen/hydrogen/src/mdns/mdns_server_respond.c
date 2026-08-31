@@ -38,17 +38,16 @@ void mdns_server_want_clear(mdns_server_want_t *w, size_t nsvc)
 
 int mdns_server_want_empty(const mdns_server_want_t *w)
 {
-    uint32_t mask = (uint32_t)~MDNS_W_NSEC;
     size_t i;
 
     if (!w) {
         return 1;
     }
-    if ((w->host_answer & mask) != 0 || (w->host_additional & mask) != 0) {
+    if (w->host_answer != 0 || w->host_additional != 0) {
         return 0;
     }
     for (i = 0; i < w->nsvc; i++) {
-        if ((w->svc_answer[i] & mask) != 0 || (w->svc_additional[i] & mask) != 0) {
+        if (w->svc_answer[i] != 0 || w->svc_additional[i] != 0) {
             return 0;
         }
     }
@@ -83,7 +82,7 @@ void mdns_server_want_add_question(mdns_server_want_t *w, const mdns_server_t *s
 
     if (server->hostname && (mdns_name_equal(q->name, server->hostname))) {
         if (qtype == MDNS_TYPE_A || is_any) {
-            w->host_answer |= MDNS_W_A;
+            w->host_answer |= MDNS_W_A | MDNS_W_NSEC;
         }
         if (qtype == MDNS_TYPE_AAAA || is_any) {
             w->host_answer |= MDNS_W_AAAA | MDNS_W_NSEC;
@@ -251,6 +250,58 @@ uint32_t mdns_server_response_ttl(uint32_t base, int legacy)
     return base;
 }
 
+int mdns_server_iface_has_af(const mdns_server_interface_t *iface, int family)
+{
+    size_t i;
+
+    if (!iface || !iface->ip_addresses) {
+        return 0;
+    }
+    for (i = 0; i < iface->num_addresses; i++) {
+        struct in_addr addr;
+        struct in6_addr addr6;
+
+        if (!iface->ip_addresses[i]) {
+            continue;
+        }
+        if (family == AF_INET && inet_pton(AF_INET, iface->ip_addresses[i], &addr) == 1) {
+            return 1;
+        }
+        if (family == AF_INET6 && inet_pton(AF_INET6, iface->ip_addresses[i], &addr6) == 1) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+void mdns_server_want_apply_missing_family(mdns_server_want_t *w, const mdns_server_interface_t *iface)
+{
+    int has_v4;
+    int has_v6;
+
+    if (!w || !iface) {
+        return;
+    }
+    has_v4 = mdns_server_iface_has_af(iface, AF_INET);
+    has_v6 = mdns_server_iface_has_af(iface, AF_INET6);
+    if ((w->host_answer & MDNS_W_A) && !has_v4) {
+        w->host_answer &= ~MDNS_W_A;
+        w->host_answer |= MDNS_W_NSEC;
+    }
+    if ((w->host_additional & MDNS_W_A) && !has_v4) {
+        w->host_additional &= ~MDNS_W_A;
+        w->host_additional |= MDNS_W_NSEC;
+    }
+    if ((w->host_answer & MDNS_W_AAAA) && !has_v6) {
+        w->host_answer &= ~MDNS_W_AAAA;
+        w->host_answer |= MDNS_W_NSEC;
+    }
+    if ((w->host_additional & MDNS_W_AAAA) && !has_v6) {
+        w->host_additional &= ~MDNS_W_AAAA;
+        w->host_additional |= MDNS_W_NSEC;
+    }
+}
+
 int mdns_server_put_host_addrs(mdns_buf *b, const char *hostname, const mdns_server_interface_t *iface,
                                uint32_t ttl, int flush, uint32_t bits, uint16_t *count)
 {
@@ -291,6 +342,32 @@ int mdns_server_put_host_addrs(mdns_buf *b, const char *hostname, const mdns_ser
             (*count)++;
         }
     }
+    return 0;
+}
+
+int mdns_server_put_host_nsec(mdns_buf *b, const char *hostname, const mdns_server_interface_t *iface,
+                              uint32_t ttl, int flush, uint16_t *count)
+{
+    uint16_t types[3];
+    size_t ntypes = 0;
+
+    if (!b || !hostname || !iface || !count) {
+        return 0;
+    }
+    if (mdns_server_iface_has_af(iface, AF_INET)) {
+        types[ntypes] = MDNS_TYPE_A;
+        ntypes++;
+    }
+    if (mdns_server_iface_has_af(iface, AF_INET6)) {
+        types[ntypes] = MDNS_TYPE_AAAA;
+        ntypes++;
+    }
+    types[ntypes] = (uint16_t)RR_NSEC;
+    ntypes++;
+    if (mdns_put_rr_nsec(b, hostname, types, ntypes, ttl, flush) < 0) {
+        return -1;
+    }
+    (*count)++;
     return 0;
 }
 
@@ -387,6 +464,7 @@ void mdns_server_build_query_response(uint8_t *packet, size_t *packet_len,
                                       int legacy)
 {
     mdns_buf b;
+    mdns_server_want_t local_want;
     size_t an_pos;
     size_t ns_pos;
     size_t ar_pos;
@@ -405,6 +483,10 @@ void mdns_server_build_query_response(uint8_t *packet, size_t *packet_len,
     if (!server || !want) {
         return;
     }
+
+    local_want = *want;
+    mdns_server_want_apply_missing_family(&local_want, iface);
+    want = &local_want;
 
     hostname = server->hostname;
     shared_ttl = mdns_server_response_ttl(MDNS_TTL_SHARED, legacy);
@@ -484,6 +566,11 @@ void mdns_server_build_query_response(uint8_t *packet, size_t *packet_len,
             *packet_len = 0;
             return;
         }
+        if ((want->host_answer & MDNS_W_NSEC) &&
+            mdns_server_put_host_nsec(&b, hostname, iface, host_ttl, flush, &ancount) < 0) {
+            *packet_len = 0;
+            return;
+        }
     }
 
     for (k = 0; k < want->nsvc; k++) {
@@ -499,6 +586,11 @@ void mdns_server_build_query_response(uint8_t *packet, size_t *packet_len,
         uint32_t extra = want->host_additional & ~want->host_answer;
 
         if (mdns_server_put_host_addrs(&b, hostname, iface, host_ttl, flush, extra, &arcount) < 0) {
+            *packet_len = 0;
+            return;
+        }
+        if ((extra & MDNS_W_NSEC) &&
+            mdns_server_put_host_nsec(&b, hostname, iface, host_ttl, flush, &arcount) < 0) {
             *packet_len = 0;
             return;
         }
@@ -569,7 +661,7 @@ void mdns_server_send_query_response(int sockfd, const mdns_server_t *server, co
     }
 }
 
-bool mdns_server_process_query_packet(const mdns_server_t *mdns_server_instance,
+bool mdns_server_process_query_packet(mdns_server_t *mdns_server_instance,
                                        const network_info_t *net_info_instance,
                                        const uint8_t *buffer,
                                        ssize_t len,
@@ -596,6 +688,10 @@ bool mdns_server_process_query_packet(const mdns_server_t *mdns_server_instance,
         return false;
     }
     if (msg.flags & DNS_QR_BIT) {
+        mdns_server_note_probe_conflicts(mdns_server_instance, &msg);
+        return true;
+    }
+    if (mdns_server_instance->probe_failed) {
         return true;
     }
 
@@ -603,10 +699,8 @@ bool mdns_server_process_query_packet(const mdns_server_t *mdns_server_instance,
     for (j = 0; j < msg.nquestions; j++) {
         mdns_server_want_add_question(&want, mdns_server_instance, &msg.questions[j]);
     }
+    mdns_server_want_mask_unclaimed(&want, mdns_server_instance);
     mdns_server_strip_known_answers(&want, mdns_server_instance, buffer, (size_t)len, &msg);
-    if (mdns_server_want_empty(&want)) {
-        return true;
-    }
 
     src_port = mdns_server_sockaddr_port(src_addr, src_len);
     legacy = (src_port != (uint16_t)MDNS_PORT) ? 1 : 0;
@@ -615,6 +709,10 @@ bool mdns_server_process_query_packet(const mdns_server_t *mdns_server_instance,
     }
 
     iface = mdns_server_iface_for_sock(mdns_server_instance, sockfd);
+    mdns_server_want_apply_missing_family(&want, iface);
+    if (mdns_server_want_empty(&want)) {
+        return true;
+    }
     mdns_server_build_query_response(packet, &packet_len, mdns_server_instance, iface, &msg, &want, legacy);
     if (packet_len == 0) {
         return true;

@@ -50,8 +50,8 @@ Each phase is its **own conversation**:
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-08-31):** Phase 3 complete.
-Next: **Phase 4**.
+**CURRENT PAUSE POINT (as of 2026-08-31):** Phase 5 complete.
+Next: **Phase 6**.
 
 ### Resume here next session
 
@@ -467,7 +467,17 @@ Responder is question-shaped; Unity covers strip/QU/legacy; Test 25 green.
 
 ## Phase 4 — Probe / claim / conflict rename
 
-**Status:** not started
+**Status:** complete
+
+Per-name `claimed` on each service plus `hostname_claimed`. Hostname conflict
+renames the label with a hyphen: `host.local` → `host-2.local` (attempt N).
+Instance conflict uses DNS-SD `Name (N)`. After 8 attempts on any name the
+whole server fails (`probe_failed`, all claimed flags cleared, no announce /
+answer / goodbye). Probe helpers live in
+[`mdns_server_probe.c`](/elements/001-hydrogen/hydrogen/src/mdns/mdns_server_probe.c);
+the 3×250 ms loop is `mdns_server_run_probe` in the announce thread (no
+random first delay). Test 25 greps `MDNS_SERVER CLAIMED` (5 names in the
+default fixture). Two-process duplicate-name run remains Phase 7.
 
 ### Goal
 
@@ -477,21 +487,21 @@ conflict: append `-2` to the host label (document the rule in Status).
 
 ### Work
 
-- [ ] `claimed` flag per server (or per service if multiple instances).
+- [x] `claimed` flag per server (or per service if multiple instances).
       Responder returns immediately if `!claimed`.
-- [ ] `build_probe`: QR=0, questions ANY+QU for instance and hostname,
+- [x] `build_probe`: QR=0, questions ANY+QU for instance and hostname,
       proposed SRV/TXT/A/AAAA in **authority** (appendix **build_probe**).
-- [ ] `conflicts_with_probe`: QR=1 and a live (TTL≠0) RR under those
+- [x] `conflicts_with_probe`: QR=1 and a live (TTL≠0) RR under those
       names. Ignore questions (including our own looped probe).
-- [ ] 3 probes, 250ms apart; listen between. On conflict: log
+- [x] 3 probes, 250ms apart; listen between. On conflict: log
       `MDNS_SERVER CONFLICT`, `next_name`, retry up to 8. Success: log
       `MDNS_SERVER CLAIMED`, then existing announce burst (3 × 1s then 60s).
-- [ ] Announce loop must not send until claimed.
-- [ ] Shutdown goodbye only if we claimed (never goodbye a name we
+- [x] Announce loop must not send until claimed.
+- [x] Shutdown goodbye only if we claimed (never goodbye a name we
       did not own).
-- [ ] Unity: conflict detector; next_name formatting; probe packet
+- [x] Unity: conflict detector; next_name formatting; probe packet
       has nscount > 0 and qdcount ≥ 2.
-- [ ] Test 25 (single process): grep `MDNS_SERVER CLAIMED`. Two-process
+- [x] Test 25 (single process): grep `MDNS_SERVER CLAIMED`. Two-process
       duplicate-name run is **Phase 7** (required, not optional).
 
 ### Done means
@@ -507,7 +517,15 @@ Single Hydrogen greps CLAIMED. Unity covers conflict detector and
 
 ## Phase 5 — NSEC + missing-family honesty
 
-**Status:** not started
+**Status:** complete
+
+Positive A/AAAA answers also carry NSEC (bitmap = families that exist on
+the iface + NSEC). Missing family drops `W_A` / `W_AAAA` and sets
+`W_NSEC`. `mdns_server_want_empty` counts NSEC so an NSEC-only reply is
+not skipped. `mdns_put_rr_nsec` is reached from
+`mdns_server_put_host_nsec`; `mdns_wire_keep_linked` still holds
+`mdns_rdata_*` / `mdns_txt_get` until Phase 6. Test 25 tshark A/AAAA
+counts are diagnostic; one family is enough.
 
 ### Goal
 
@@ -516,11 +534,11 @@ queries — send NSEC listing types that **do** exist (appendix NSEC).
 
 ### Work
 
-- [ ] When `want & W_A` and no v4 addrs → drop W_A, set W_NSEC.
-- [ ] Same for AAAA / v6.
-- [ ] NSEC next-domain = hostname; bitmap window 0; types present + NSEC.
-- [ ] Unity: IPv4-only host answering AAAA query yields NSEC, not AAAA.
-- [ ] Test 25: if dual-stack, ADDR log may be v4 and/or v6; do not require
+- [x] When `want & W_A` and no v4 addrs → drop W_A, set W_NSEC.
+- [x] Same for AAAA / v6.
+- [x] NSEC next-domain = hostname; bitmap window 0; types present + NSEC.
+- [x] Unity: IPv4-only host answering AAAA query yields NSEC, not AAAA.
+- [x] Test 25: if dual-stack, ADDR log may be v4 and/or v6; do not require
       both families.
 
 ### Done means
@@ -1201,6 +1219,8 @@ send HTTP.
 | 2026-08-31 | 1 | `mdns_wire.c`/`.h`; process_query uses parse + `mdns_name_equal`; `mdns_wire_keep_linked` for encode reachability. `mkt`/`mkp`/listed `mku` green. Zero new dead `mdns_*` symbols. |
 | 2026-08-31 | 2 | Announce/goodbye via `mdns_buf`; RFC TTL split + cache-flush; V6ONLY/PKTINFO; recv 9000; deleted `mdns_dns_utils`. `mkt`/`mkp`/mdns `mku`/Test 25 green. |
 | 2026-08-31 | 3 | Selective responder in `mdns_server_respond.c`; QU+legacy dest; known-answer strip; dns-sd. `mkt`/`mkp`/new `mku`/Test 25 green. |
+| 2026-08-31 | 4 | Probe/claim in `mdns_server_probe.c`; per-name claimed; hostname `label-N.local`; fail-whole after 8. `mkt`/`mkp`/probe `mku`/Test 25 CLAIMED green. |
+| 2026-08-31 | 5 | Missing-family NSEC; NSEC also on positive A/AAAA. `mkt`/`mkp`/NSEC `mku`/Test 25 3.0.5 green. |
 
 ## Lessons learned
 
@@ -1226,3 +1246,11 @@ send HTTP.
 - Do not chase 75% Unity on `mdns_server_announce.c` / `mdns_server_respond.c`
   until Phase 7 (`add_coverage.sh` on `src/mdns/`). Both files still change in
   Phases 4–6b.
+- New fields on `mdns_server_service_t` go at the **end**; positional Unity
+  inits (`{name, type, port, …}`) break `-Wmissing-field-initializers` if a
+  field is inserted in the middle.
+- Keep `mdns_server_run_probe` in `mdns_server_threads.c` so `USE_MOCK_THREADS`
+  maps `mdns_server_system_shutdown` and Unity announce-loop tests skip the
+  750 ms wait. `probe.c` objects are compiled without that mock.
+- `mdns_server_want_empty` must count `W_NSEC`. Masking it made explicit NSEC
+  questions and missing-family-only replies look empty.
