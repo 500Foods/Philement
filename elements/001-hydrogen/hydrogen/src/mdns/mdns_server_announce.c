@@ -90,6 +90,9 @@ void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *packet_l
             struct in6_addr addr6;
             size_t pos;
 
+            if (ttl != 0 && mdns_server_instance && !mdns_server_instance->hostname_claimed) {
+                break;
+            }
             if (!iface->ip_addresses || !iface->ip_addresses[i]) {
                 continue;
             }
@@ -120,7 +123,11 @@ void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *packet_l
 
         if (mdns_server_instance) {
             for (i = 0; i < mdns_server_instance->num_services; i++) {
-                const char *ptr_owner_name = mdns_server_instance->services[i].type;
+                const char *ptr_owner_name;
+                if (ttl != 0 && !mdns_server_instance->services[i].claimed) {
+                    continue;
+                }
+                ptr_owner_name = mdns_server_instance->services[i].type;
                 const size_t max_name_len = 100;
                 const size_t max_type_len = 100;
                 size_t name_len = strlen(mdns_server_instance->services[i].name);
@@ -297,6 +304,10 @@ void free_single_interface_net_info(network_info_t *net_info_instance) {
 void mdns_server_send_announcement(mdns_server_t *mdns_server_instance, const network_info_t *net_info_instance __attribute__((unused))) {
     struct sockaddr_in addr_v4;
     struct sockaddr_in6 addr_v6;
+
+    if (!mdns_server_instance || mdns_server_instance->probe_failed || !mdns_server_any_claimed(mdns_server_instance)) {
+        return;
+    }
 
     memset(&addr_v4, 0, sizeof(addr_v4));
     addr_v4.sin_family = AF_INET;

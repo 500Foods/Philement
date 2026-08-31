@@ -126,6 +126,7 @@ void test_want_add_hostname_a(void)
     mdns_server_want_add_question(&want, &server, &q);
     TEST_ASSERT_TRUE((want.host_answer & MDNS_W_A) != 0);
     TEST_ASSERT_TRUE((want.host_answer & MDNS_W_AAAA) == 0);
+    TEST_ASSERT_TRUE((want.host_answer & MDNS_W_NSEC) != 0);
 }
 
 void test_want_add_qu_bit(void)

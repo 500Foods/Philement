@@ -41,11 +41,15 @@ typedef struct {
  * - Memory-efficient string handling
  */
 typedef struct {
-    char *name;              // Service instance name
+    char *name;              // Service instance name (may gain " (N)" after conflict)
     char *type;              // Service type (e.g., _http._tcp)
     int port;                // Service port number
     char **txt_records;      // Array of TXT record strings
     size_t num_txt_records;  // Number of TXT records
+    char *name_base;         // Original instance label for rename
+    volatile int claimed;    // 1 after this instance survives probing
+    volatile int probe_conflict;
+    int name_attempts;
 } mdns_server_service_t;
 
 /*
@@ -96,7 +100,7 @@ typedef struct {
     int enable_ipv6;              // IPv6 support flag
     
     // Device identification
-    char *hostname;         // Local hostname
+    char *hostname;         // Local hostname (host.local, may become host-N.local)
     char *service_name;     // Primary service name
     char *device_id;        // Unique device identifier
     char *friendly_name;    // Human-readable name
@@ -112,6 +116,12 @@ typedef struct {
     // Service registry
     mdns_server_service_t *services;  // Array of advertised services
     size_t num_services;       // Number of services
+
+    char *hostname_base;    // Host label without .local
+    volatile int hostname_claimed;
+    volatile int hostname_conflict;
+    int hostname_attempts;
+    volatile int probe_failed; // 1: all names unclaimed, no announce/answer/goodbye
 } mdns_server_t;
 
 /*
@@ -198,6 +208,9 @@ void free_single_interface_net_info(network_info_t *net_info_instance);
 #define MDNS_DNS_SD_NAME "_services._dns-sd._udp.local"
 #define MDNS_LEGACY_TTL_CAP 10u
 #define MDNS_SERVER_WANT_MAX_SVC 32
+#define MDNS_PROBE_TRIES 3
+#define MDNS_PROBE_GAP_MS 250
+#define MDNS_MAX_NAME_ATTEMPTS 8
 
 typedef struct {
     uint32_t host_answer;
@@ -219,8 +232,12 @@ int mdns_server_should_multicast(int legacy, int qu);
 uint16_t mdns_server_sockaddr_port(const void *src_addr, uint32_t src_len);
 const mdns_server_interface_t *mdns_server_iface_for_sock(const mdns_server_t *server, int sockfd);
 uint32_t mdns_server_response_ttl(uint32_t base, int legacy);
+int mdns_server_iface_has_af(const mdns_server_interface_t *iface, int family);
+void mdns_server_want_apply_missing_family(mdns_server_want_t *w, const mdns_server_interface_t *iface);
 int mdns_server_put_host_addrs(mdns_buf *b, const char *hostname, const mdns_server_interface_t *iface,
                                uint32_t ttl, int flush, uint32_t bits, uint16_t *count);
+int mdns_server_put_host_nsec(mdns_buf *b, const char *hostname, const mdns_server_interface_t *iface,
+                              uint32_t ttl, int flush, uint16_t *count);
 int mdns_server_put_service_bits(mdns_buf *b, const mdns_server_t *server, size_t si, const char *hostname,
                                  uint32_t bits, uint32_t shared_ttl, uint32_t host_ttl, int flush, uint16_t *count);
 void mdns_server_build_query_response(uint8_t *packet, size_t *packet_len,
@@ -232,12 +249,29 @@ void mdns_server_build_query_response(uint8_t *packet, size_t *packet_len,
 void mdns_server_send_query_response(int sockfd, const mdns_server_t *server, const void *src_addr,
                                      uint32_t src_len, int legacy, int qu, const uint8_t *packet, size_t packet_len);
 
-bool mdns_server_process_query_packet(const mdns_server_t *mdns_server_instance,
+bool mdns_server_process_query_packet(mdns_server_t *mdns_server_instance,
                                         const network_info_t *net_info_instance,
                                         const uint8_t *buffer,
                                         ssize_t len,
                                         int sockfd,
                                         const void *src_addr,
                                         uint32_t src_len);
+
+void mdns_server_next_instance_name(const char *base, unsigned attempt, char *out, size_t cap);
+void mdns_server_next_hostname(const char *base, unsigned attempt, char *out, size_t cap);
+int mdns_server_all_claimed(const mdns_server_t *server);
+int mdns_server_any_claimed(const mdns_server_t *server);
+int mdns_server_any_probe_conflict(const mdns_server_t *server);
+void mdns_server_clear_probe_conflicts(mdns_server_t *server);
+void mdns_server_claim_unclaimed(mdns_server_t *server);
+void mdns_server_probe_fail(mdns_server_t *server);
+int mdns_server_apply_probe_renames(mdns_server_t *server);
+int mdns_server_rr_conflicts_probe(const mdns_server_t *server, const mdns_rr *rr);
+void mdns_server_note_probe_conflicts(mdns_server_t *server, const mdns_msg *msg);
+void mdns_server_want_mask_unclaimed(mdns_server_want_t *w, const mdns_server_t *server);
+void mdns_server_build_probe(uint8_t *packet, size_t *packet_len, const mdns_server_t *server,
+                             const mdns_server_interface_t *iface);
+void mdns_server_send_probe(mdns_server_t *server);
+int mdns_server_run_probe(mdns_server_t *server);
 
 #endif // MDNS_SERVER_H

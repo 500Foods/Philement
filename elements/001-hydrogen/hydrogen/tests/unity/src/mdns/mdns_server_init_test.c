@@ -403,7 +403,7 @@ void test_mdns_server_init_null_services_array(void) {
     char name[] = "test";
     char type[] = "_http._tcp.local";
     mdns_server_service_t services[] = {
-        {name, type, 8080, NULL, 0}
+        {name, type, 8080, NULL, 0, NULL, 0, 0, 0}
     };
 
     server = mdns_server_init(

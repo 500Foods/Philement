@@ -50,12 +50,27 @@ void *mdns_server_announce_loop(void *arg) {
 
     log_this(SR_MDNS_SERVER, "mDNS Server announce loop started", LOG_LEVEL_DEBUG, 0);
 
+    mdns_server_run_probe(mdns_server_instance);
+
     int initial_announcements = 3; // Initial burst
     unsigned int interval = 1; // Start with 1-second intervals
 
     while (!mdns_server_system_shutdown) {
+        if (mdns_server_instance->probe_failed) {
+            pthread_mutex_lock(&terminate_mutex);
+            if (!mdns_server_system_shutdown) {
+                struct timespec ts;
+                clock_gettime(CLOCK_REALTIME, &ts);
+                ts.tv_sec += 1;
+                pthread_cond_timedwait(&terminate_cond, &terminate_mutex, &ts);
+            }
+            pthread_mutex_unlock(&terminate_mutex);
+            continue;
+        }
         if (initial_announcements > 0) {
-            mdns_server_send_announcement(mdns_server_instance, thread_arg->net_info);
+            if (mdns_server_any_claimed(mdns_server_instance)) {
+                mdns_server_send_announcement(mdns_server_instance, thread_arg->net_info);
+            }
             initial_announcements--;
             sleep(interval);
             if (initial_announcements == 0) interval = 60; // Switch to normal interval
@@ -69,7 +84,7 @@ void *mdns_server_announce_loop(void *arg) {
             }
             pthread_mutex_unlock(&terminate_mutex);
 
-            if (!mdns_server_system_shutdown) {
+            if (!mdns_server_system_shutdown && mdns_server_any_claimed(mdns_server_instance)) {
                 mdns_server_send_announcement(mdns_server_instance, thread_arg->net_info);
             }
         }
@@ -79,6 +94,52 @@ void *mdns_server_announce_loop(void *arg) {
     remove_service_thread(&mdns_server_threads, pthread_self());
     // Note: thread_arg is not freed here as it may be stack-allocated by the caller
     return NULL;
+}
+
+int mdns_server_run_probe(mdns_server_t *server)
+{
+    int attempt;
+    int tries;
+    int waited;
+
+    if (!server) {
+        return -1;
+    }
+    if (server->hostname_attempts < 1) {
+        server->hostname_attempts = 1;
+    }
+    for (attempt = 0; attempt < MDNS_MAX_NAME_ATTEMPTS && !mdns_server_system_shutdown; attempt++) {
+        if (mdns_server_all_claimed(server)) {
+            return 0;
+        }
+        mdns_server_clear_probe_conflicts(server);
+        for (tries = 0; tries < MDNS_PROBE_TRIES && !mdns_server_system_shutdown; tries++) {
+            mdns_server_send_probe(server);
+            waited = 0;
+            while (waited < MDNS_PROBE_GAP_MS && !mdns_server_system_shutdown) {
+                usleep(10000);
+                waited += 10;
+            }
+            if (mdns_server_any_probe_conflict(server)) {
+                break;
+            }
+        }
+        if (mdns_server_system_shutdown) {
+            return -1;
+        }
+        if (!mdns_server_any_probe_conflict(server)) {
+            mdns_server_claim_unclaimed(server);
+            return 0;
+        }
+        if (mdns_server_apply_probe_renames(server) < 0) {
+            return -1;
+        }
+    }
+    if (!mdns_server_all_claimed(server) && !mdns_server_system_shutdown) {
+        mdns_server_probe_fail(server);
+        return -1;
+    }
+    return 0;
 }
 
 void *mdns_server_responder_loop(void *arg) {

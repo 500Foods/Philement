@@ -492,7 +492,6 @@ void mdns_wire_keep_linked(void)
 {
     uint8_t storage[64];
     mdns_buf b;
-    uint16_t types[1];
     mdns_rr rr;
     char name[MDNS_NAME_MAX];
     char txt[8];
@@ -500,9 +499,8 @@ void mdns_wire_keep_linked(void)
     uint16_t weight = 0;
     uint16_t port = 0;
 
-    types[0] = (uint16_t)RR_NSEC;
+    memset(storage, 0, sizeof storage);
     mdns_buf_init(&b, storage, sizeof storage);
-    (void)mdns_put_rr_nsec(&b, "h.local", types, 1, MDNS_TTL_HOST, 1);
     memset(&rr, 0, sizeof rr);
     (void)mdns_rdata_name(storage, b.len, &rr, name, sizeof name);
     (void)mdns_rdata_srv(storage, b.len, &rr, &prio, &weight, &port, name, sizeof name);
