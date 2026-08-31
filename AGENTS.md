@@ -19,7 +19,7 @@ Philement/
 ├── .gitignore / .gitattributes
 ├── .github/workflows/       # CI (main.yml refreshes the cloc badge)
 ├── releases/                # tagged release artifacts (2024-07 … 2026-08)
-└── docs/                    # all documentation lives under docs/, namespaced per element
+├── docs/                    # all documentation lives under docs/, namespaced per element
 │   ├── README.md            # MASTER index across all elements
 │   ├── H/                   # Hydrogen (the big one)
 │   ├── He/                  # Helium (Lua migrations)
@@ -67,7 +67,7 @@ Plans are **phase-gated and each phase is its own conversation**:
 
 1. **Confirm the prior phase is actually done** — re-read its Status block; do not trust memory of a previous session.
 2. **Discuss the current phase first** — read its Goal + Work items + Done means + Exit gate; grep/read code **before** writing anything.
-3. **Get explicit approval before editing source** when work is under an active phased plan (`docs/H/plans/`, e.g. [`CHAT_FINALE`](/docs/H/plans/CHAT_FINALE.md)). For a small isolated fix with no plan file in play, follow [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) and the tests below. Either way: never apply a DB migration — if a phase needs a Helium seed/migration packet, prepare/generate it and hand it to the user to apply.
+3. **Get explicit approval before editing source** when work is under an active phased plan (`docs/H/plans/`, e.g. [`CHAT_FINALE`](/docs/H/plans/CHAT_FINALE.md)). For a small isolated fix with no plan file in play, follow [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) and the tests below. Migration packets are handed to the user (see item 7), not applied here.
 4. **Ask questions as they arise** rather than guessing at ambiguous requirements.
 5. **Mark work items `[x]` and phase Status "complete" only after the named verification command actually passed** (`mkt`/`mku <base>`/`mkp`/`mks`/the named blackbox test). "Intent to verify" is not verification.
 6. **Update the phase's Status block and Working Log** at major milestones (not only at the end), and record lessons learned.
@@ -77,7 +77,7 @@ These rules are baked into [`docs/H/plans/CHAT_FINALE.md`](/docs/H/plans/CHAT_FI
 
 ## Environment & build tooling
 
-Aliases live in the developer's `~/.zshrc` and are **not in the repo** — on a fresh clone they are absent. They wrap scripts that *are* in the repo, so you can always invoke those directly: `make-trial.sh` → `mkt`, `make-all.sh` → `mka`, `run-unity-test.sh <name>` → `mku` (tab-completion ships as `extras/mku_completion.zsh`), `test_91_cppcheck.sh` → `mkp`, `test_92_shellcheck.sh` → `mks`. On a clean box, export `PHILEMENT_ROOT`, `HYDROGEN_ROOT`, and `HELIUM_ROOT` and call those scripts directly.
+Aliases live in the developer's `~/.zshrc` and are **not in the repo** — on a fresh clone they are absent. They wrap scripts in `elements/001-hydrogen/hydrogen/extras/` (`make-trial.sh` → `mkt`, `make-all.sh` → `mka`, `run-unity-test.sh <name>` → `mku`, `mku_completion.zsh`) and `elements/001-hydrogen/hydrogen/tests/` (`test_91_cppcheck.sh` → `mkp`, `test_92_shellcheck.sh` → `mks`). On a clean box, export `PHILEMENT_ROOT`, `HYDROGEN_ROOT`, and `HELIUM_ROOT` and call those scripts directly.
 
 To run the same aliases non-interactively (e.g. from an agent shell):
 
