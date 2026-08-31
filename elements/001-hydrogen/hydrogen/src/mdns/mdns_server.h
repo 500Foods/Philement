@@ -18,6 +18,7 @@
 
 // Project Libraries
 #include <src/network/network.h>
+#include <src/mdns/mdns_wire.h>
 
 // DNS header structure (moved from mdns_server_announce.c for test access)
 typedef struct {
@@ -186,10 +187,57 @@ void _mdns_server_build_interface_announcement(uint8_t *packet, size_t *packet_l
 network_info_t *create_single_interface_net_info(const mdns_server_interface_t *iface);
 void free_single_interface_net_info(network_info_t *net_info_instance);
 
-// DNS packet processing helper (made non-static for unit testing)
-bool mdns_server_process_query_packet(mdns_server_t *mdns_server_instance,
-                                       const network_info_t *net_info_instance,
-                                       const uint8_t *buffer,
-                                       ssize_t len);
+#define MDNS_W_PTR   0x01u
+#define MDNS_W_SRV   0x02u
+#define MDNS_W_TXT   0x04u
+#define MDNS_W_A     0x08u
+#define MDNS_W_AAAA  0x10u
+#define MDNS_W_NSEC  0x20u
+#define MDNS_W_SD    0x40u
+
+#define MDNS_DNS_SD_NAME "_services._dns-sd._udp.local"
+#define MDNS_LEGACY_TTL_CAP 10u
+#define MDNS_SERVER_WANT_MAX_SVC 32
+
+typedef struct {
+    uint32_t host_answer;
+    uint32_t host_additional;
+    uint32_t svc_answer[MDNS_SERVER_WANT_MAX_SVC];
+    uint32_t svc_additional[MDNS_SERVER_WANT_MAX_SVC];
+    size_t nsvc;
+    int qu;
+} mdns_server_want_t;
+
+void mdns_server_format_instance_name(const mdns_server_service_t *svc, char *out, size_t cap);
+void mdns_server_want_clear(mdns_server_want_t *w, size_t nsvc);
+int mdns_server_want_empty(const mdns_server_want_t *w);
+void mdns_server_want_add_question(mdns_server_want_t *w, const mdns_server_t *server, const mdns_rr *q);
+void mdns_server_strip_known_answers(mdns_server_want_t *w, const mdns_server_t *server,
+                                     const uint8_t *raw, size_t rawlen, const mdns_msg *msg);
+int mdns_server_should_unicast(int legacy, int qu);
+int mdns_server_should_multicast(int legacy, int qu);
+uint16_t mdns_server_sockaddr_port(const void *src_addr, uint32_t src_len);
+const mdns_server_interface_t *mdns_server_iface_for_sock(const mdns_server_t *server, int sockfd);
+uint32_t mdns_server_response_ttl(uint32_t base, int legacy);
+int mdns_server_put_host_addrs(mdns_buf *b, const char *hostname, const mdns_server_interface_t *iface,
+                               uint32_t ttl, int flush, uint32_t bits, uint16_t *count);
+int mdns_server_put_service_bits(mdns_buf *b, const mdns_server_t *server, size_t si, const char *hostname,
+                                 uint32_t bits, uint32_t shared_ttl, uint32_t host_ttl, int flush, uint16_t *count);
+void mdns_server_build_query_response(uint8_t *packet, size_t *packet_len,
+                                      const mdns_server_t *server,
+                                      const mdns_server_interface_t *iface,
+                                      const mdns_msg *query,
+                                      const mdns_server_want_t *want,
+                                      int legacy);
+void mdns_server_send_query_response(int sockfd, const mdns_server_t *server, const void *src_addr,
+                                     uint32_t src_len, int legacy, int qu, const uint8_t *packet, size_t packet_len);
+
+bool mdns_server_process_query_packet(const mdns_server_t *mdns_server_instance,
+                                        const network_info_t *net_info_instance,
+                                        const uint8_t *buffer,
+                                        ssize_t len,
+                                        int sockfd,
+                                        const void *src_addr,
+                                        uint32_t src_len);
 
 #endif // MDNS_SERVER_H
