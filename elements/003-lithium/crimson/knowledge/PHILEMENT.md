@@ -12,8 +12,10 @@ If the only thing this project accomplishes is a C host with Lua on top instead 
 
 The name is Phi (500, among other things), filament, and element. The pieces are named after the periodic table for the same reason: a few of them do almost all the work; the rest are specific.
 
-As far as progress reporting goes, well, there are likely 500 steps or more to be completed before anyone takes this project seriously. Some of those steps will yield useful tools, as is already the case. But it is an ambitious project with many items to complete, and many more that likely haven't even been conceived of yet. 
+As far as progress reporting goes, well, there are likely 500 steps or more to be completed before anyone takes this project seriously. Some of those steps will yield useful tools, as is already the case. But it is an ambitious project with many items to complete, and many more that likely haven't even been conceived of yet.
 <br/><br/><img src="https://progressbar-guibranco.vercel.app/150/?scale=500&title=%20Completed%20&width=415&suffix=%20%2F%20500%20Steps" alt="Completed 149 / 500 Steps">
+
+Agents working in this repo: start at [AGENTS.md](/AGENTS.md).
 
 ## Elements
 
@@ -62,7 +64,7 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-08-31 03:51:04 UTC
+Last updated at 2026-08-31 04:45:31 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -70,7 +72,7 @@ JSON                           500            435              0        1664790
 SVG                            298            581          11383         526807
 C                             1645          66351          58052         271589
 Text                           339            336              0         140816
-Markdown                       751          34233            249         102669
+Markdown                       752          34297            249         103043
 Lua                            422          11439           7255          91539
 JavaScript                     224          10445          13582          49798
 Bourne Shell                   177           8006         108760          44155
@@ -87,9 +89,9 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          4875         139417         215695        2924686
+SUM:                          4876         139481         215695        2925060
 -------------------------------------------------------------------------------
-1717 Files were skipped (duplicate, binary, or without source code):
+1716 Files were skipped (duplicate, binary, or without source code):
   svg: 1222
   css: 165
   html: 134
@@ -123,7 +125,6 @@ SUM:                          4875         139417         215695        2924686
   gcode: 1
   ggignore: 1
   gitattributes: 1
-  jsonc: 1
   key: 1
   lintignore-bash: 1
   lintignore-c: 1
