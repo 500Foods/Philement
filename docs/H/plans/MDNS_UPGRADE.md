@@ -50,8 +50,8 @@ Each phase is its **own conversation**:
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-08-31):** Phase 5 complete.
-Next: **Phase 6**.
+**CURRENT PAUSE POINT (as of 2026-08-31):** Phase 6a complete.
+Next: **Phase 6b**.
 
 ### Resume here next session
 
@@ -553,7 +553,14 @@ NSEC emitted on missing family; Unity proves it; Test 25 green.
 
 ## Phase 6 — Real mDNS client
 
-**Status:** not started
+**Status:** complete
+
+Landing order: readiness list is Print → MailRelay → **mDNS Server** → **mDNS Client**
+(comments in `landing.c`: 13 Server, 12 Client). Launch stays Server then Client
+(12/13). `scan_interval` / `health_check_interval` are milliseconds at use.
+String-array `ServiceTypes` parsed in this phase; remaining config debt is 6a.
+Sockets reuse `create_multicast_socket`. `mdns_wire_keep_linked` still holds
+rdata accessors until 6a/6b if unused from the client path.
 
 ### Goal
 
@@ -562,34 +569,34 @@ services. Landing sets shutdown and joins. Logs match the contract.
 
 ### Work
 
-- [ ] New `src/mdns/mdns_client.c` (split files if > ~400 lines).
-      No `static` functions.
-- [ ] Open sockets via existing per-iface helper (respect
-      `enable_ipv4` / `enable_ipv6`).
-- [ ] On `scan_interval`: `send_query` for configured `service_types`
-      (PTR). After FOUND, query SRV/TXT then A/AAAA (appendix
-      **send_query** / **handle_response**).
-- [ ] Accept **unsolicited** announcements (QR=1) so order vs server
-      start does not matter.
-- [ ] Cache: instance, host, port, TXT map, endpoints (v4 first, then
-      routable v6, then link-local with `scope=ifindex`, tie-broken by
-      address bytes for a stable order). Dedup endpoints by
-      (name, family, address). Cap `max_services`.
-- [ ] Send the first browse query immediately on thread start; do not
-      wait a full `scan_interval` before the first packet goes out.
-- [ ] TXT is optional for `MDNS_CLIENT FOUND`/ready state: do not block
-      on TXT once instance + SRV + ≥1 address are known; allow it to
-      arrive late (bounded grace, e.g. a few seconds) and default any
-      TXT-derived field (e.g. `path`) if it never shows up.
-- [ ] TTL-0 → drop cache entry, log `MDNS_CLIENT GOODBYE`.
-- [ ] Health check: if enabled, re-query when age > `health_check_interval`
-      (no HTTP).
-- [ ] Ignore questions (including our own).
-- [ ] `launch_mdns_client.c`: start thread, register real shutdown.
-      `landing_mdns_client.c`: flag + join (today it only sets a flag).
-- [ ] Unity: handle_response PTR/SRV/TXT/A; goodbye; name_equal trailing
-      dot; duplicate ADDR ignored.
-- [ ] Do **not** implement `auto_connect`.
+- [x] New `src/mdns/mdns_client.c` (split files if > ~400 lines).
+       No `static` functions.
+- [x] Open sockets via existing per-iface helper (respect
+       `enable_ipv4` / `enable_ipv6`).
+- [x] On `scan_interval`: `send_query` for configured `service_types`
+       (PTR). After FOUND, query SRV/TXT then A/AAAA (appendix
+       **send_query** / **handle_response**).
+- [x] Accept **unsolicited** announcements (QR=1) so order vs server
+       start does not matter.
+- [x] Cache: instance, host, port, TXT map, endpoints (v4 first, then
+       routable v6, then link-local with `scope=ifindex`, tie-broken by
+       address bytes for a stable order). Dedup endpoints by
+       (name, family, address). Cap `max_services`.
+- [x] Send the first browse query immediately on thread start; do not
+       wait a full `scan_interval` before the first packet goes out.
+- [x] TXT is optional for `MDNS_CLIENT FOUND`/ready state: do not block
+       on TXT once instance + SRV + ≥1 address are known; allow it to
+       arrive late (bounded grace, e.g. a few seconds) and default any
+       TXT-derived field (e.g. `path`) if it never shows up.
+- [x] TTL-0 → drop cache entry, log `MDNS_CLIENT GOODBYE`.
+- [x] Health check: if enabled, re-query when age > `health_check_interval`
+       (no HTTP).
+- [x] Ignore questions (including our own).
+- [x] `launch_mdns_client.c`: start thread, register real shutdown.
+       `landing_mdns_client.c`: flag + join (today it only sets a flag).
+- [x] Unity: handle_response PTR/SRV/TXT/A; goodbye; name_equal trailing
+       dot; duplicate ADDR ignored.
+- [x] Do **not** implement `auto_connect`.
 
 ### Done means
 
@@ -626,7 +633,12 @@ renumbering). Record the final numbers in Status once changed.
 
 ## Phase 6a — Registry, filters, TCP health, info, Lua
 
-**Status:** not started
+**Status:** complete
+
+Config: `TimeoutMs` / `HealthCheck.RetryCount`, `MonitoredServices` (Own /
+Printer / Custom; LoadBalancers logged once). Snapshot APIs + TCP health +
+`mdns` object on `/api/system/info` + `H.mdns.list`. Test 25 info curl left
+to Phase 7. Unity listen-socket TCP is `TEST_IGNORE` under `USE_MOCK_SYSTEM`.
 
 ### Goal
 
@@ -635,28 +647,28 @@ code can read. Health is TCP to the advertised port. No job router.
 
 ### Work
 
-- [ ] Fix config debt (ServiceTypes string-or-object, ms intervals,
+- [x] Fix config debt (ServiceTypes string-or-object, ms intervals,
       TimeoutMs, MonitoredServices). Unity for both JSON shapes.
-- [ ] `mdns_client_snapshot` / `mdns_client_count` / lookup-by-type
+- [x] `mdns_client_snapshot` / `mdns_client_count` / lookup-by-type
       (thread-safe copy; caller frees). Cap `max_services`; log
       `MDNS_CLIENT DROP` on eviction.
-- [ ] Filters: `OwnServices=false` skips instances we claimed;
+- [x] Filters: `OwnServices=false` skips instances we claimed;
       `PrinterServices` limits extra types to
       `_http._tcp`, `_octoprint._tcp`, `_hydrogen._tcp`, `_ipp._tcp`,
       `_printer._tcp` (plus configured ServiceTypes always);
       `CustomServices` appended to browse list;
       `LoadBalancers` ignored (debug log once).
-- [ ] TCP health: if `HealthCheck.Enabled`, connect to each cached
+- [x] TCP health: if `HealthCheck.Enabled`, connect to each cached
       endpoint with `TimeoutMs`, `RetryCount`. Log `MDNS_CLIENT HEALTH`.
       Mark cache entry unhealthy; do not HTTP GET. Unity with a local
       listening socket + refused port.
-- [ ] `/api/system/info` JSON: claimed instance/hostname, client cache
+- [x] `/api/system/info` JSON: claimed instance/hostname, client cache
       count, up to N instances (name, type, port, addrs, healthy).
-- [ ] Lua `H.mdns.list()` → table of the snapshot (read-only). No
+- [x] Lua `H.mdns.list()` → table of the snapshot (read-only). No
       `H.mdns.connect`. Unity or Test 43 only if scripting is already
       on in Test 25 — prefer Unity + a Test 25 log line that info was
       dumped, plus a curl of `/api/system/info` in Test 25.
-- [ ] Optional `mdns_client_on_change` function-pointer for in-process
+- [x] Optional `mdns_client_on_change` function-pointer for in-process
       listeners (found/lost/health). Default NULL. Unity that it fires.
 
 ### Done means
@@ -1221,6 +1233,8 @@ send HTTP.
 | 2026-08-31 | 3 | Selective responder in `mdns_server_respond.c`; QU+legacy dest; known-answer strip; dns-sd. `mkt`/`mkp`/new `mku`/Test 25 green. |
 | 2026-08-31 | 4 | Probe/claim in `mdns_server_probe.c`; per-name claimed; hostname `label-N.local`; fail-whole after 8. `mkt`/`mkp`/probe `mku`/Test 25 CLAIMED green. |
 | 2026-08-31 | 5 | Missing-family NSEC; NSEC also on positive A/AAAA. `mkt`/`mkp`/NSEC `mku`/Test 25 3.0.5 green. |
+| 2026-08-31 | 6 | Browse worker + cache; string ServiceTypes; land Server then Client; scan_interval as ms. `mkt`/`mkp`/client `mku`/Test 25 3.0.5 green. |
+| 2026-08-31 | 6a | Registry snapshot/count/lookup; TCP health; MonitoredServices; info JSON `mdns`; `H.mdns.list`; on_change. `mkt`/`mkp`/new `mku` green. Test 25 log tests pass; tshark Hydrogen-name wait timed out on busy LAN (Phase 7). |
 
 ## Lessons learned
 
@@ -1254,3 +1268,11 @@ send HTTP.
   750 ms wait. `probe.c` objects are compiled without that mock.
 - `mdns_server_want_empty` must count `W_NSEC`. Masking it made explicit NSEC
   questions and missing-family-only replies look empty.
+- Phase 6 string-array ServiceTypes must be parsed or Test 25 client types
+  stay empty. Nested `mDNSClient.ServiceTypes` lookup is required in addition
+  to the dotted-key Unity fixture.
+- Landing Server-before-Client is a special case vs reverse-of-launch;
+  launch order stays Server then Client.
+- Unity `USE_MOCK_SYSTEM` mocks `socket`/`connect`; a real listen+connect TCP
+  health test cannot pass there. Keep refused/null Unity and live TCP for
+  Test 25 / Phase 7.

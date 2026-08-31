@@ -9,6 +9,7 @@
 // Local includes
 #include "status_formatters.h"
 #include <src/api/wschat/helpers/metrics.h>
+#include <src/mdns/mdns_client.h>
 
 // Convert system metrics to JSON format
 // Exposed for testing - was previously static
@@ -339,6 +340,13 @@ json_t* format_system_status_json(const SystemMetrics *metrics) {
     }
 
     json_object_set_new(root, "services", services);
+
+    {
+        json_t *mdns = mdns_client_info_json();
+        if (mdns) {
+            json_object_set_new(root, "mdns", mdns);
+        }
+    }
     
     return root;
 }

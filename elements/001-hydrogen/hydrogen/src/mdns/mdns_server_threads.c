@@ -11,6 +11,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <poll.h>
+#include <time.h>
 
 #include "mdns_keys.h"
 #include "mdns_server.h"
@@ -104,6 +105,14 @@ int mdns_server_run_probe(mdns_server_t *server)
 
     if (!server) {
         return -1;
+    }
+    if (server->probe_tiebreak_lose) {
+        struct timespec ts;
+        ts.tv_sec = 1;
+        ts.tv_nsec = 0;
+        log_this(SR_MDNS_SERVER, "MDNS_SERVER probe tiebreak lost, delaying 1s", LOG_LEVEL_DEBUG, 0);
+        nanosleep(&ts, NULL);
+        server->probe_tiebreak_lose = 0;
     }
     if (server->hostname_attempts < 1) {
         server->hostname_attempts = 1;

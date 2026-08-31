@@ -23,6 +23,8 @@ void test_load_mdns_client_config_empty_json(void);
 void test_load_mdns_client_config_basic_fields(void);
 void test_load_mdns_client_config_health_check(void);
 void test_load_mdns_client_config_service_types(void);
+void test_load_mdns_client_config_service_types_strings(void);
+void test_load_mdns_client_config_timeout_monitored(void);
 void test_cleanup_mdns_client_config_null_pointer(void);
 void test_cleanup_mdns_client_config_empty_config(void);
 void test_cleanup_mdns_client_config_with_data(void);
@@ -186,7 +188,66 @@ void test_load_mdns_client_config_service_types(void) {
     cleanup_mdns_client_config(&config.mdns_client);
 }
 
+void test_load_mdns_client_config_service_types_strings(void) {
+    AppConfig config = {0};
+    initialize_config_defaults(&config);
+
+    json_t* root = json_object();
+    json_t* mdns_section = json_object();
+    json_t* service_types_array = json_array();
+
+    json_array_append_new(service_types_array, json_string("_http._tcp.local"));
+    json_array_append_new(service_types_array, json_string("_hydrogen._tcp.local"));
+    json_object_set(mdns_section, "ServiceTypes", service_types_array);
+    json_object_set(root, "mDNSClient", mdns_section);
+
+    bool result = load_mdns_client_config(root, &config);
+
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_EQUAL(2, config.mdns_client.num_service_types);
+    TEST_ASSERT_EQUAL_STRING("_http._tcp.local", config.mdns_client.service_types[0].type);
+    TEST_ASSERT_EQUAL_STRING("_hydrogen._tcp.local", config.mdns_client.service_types[1].type);
+
+    json_decref(root);
+    cleanup_mdns_client_config(&config.mdns_client);
+}
+
 // ===== CLEANUP FUNCTION TESTS =====
+
+void test_load_mdns_client_config_timeout_monitored(void) {
+    AppConfig config = {0};
+    json_t* root = json_object();
+    json_t* mdns_section = json_object();
+    json_t* health = json_object();
+    json_t* monitored = json_object();
+    json_t* custom = json_array();
+
+    initialize_config_defaults(&config);
+    json_object_set_new(health, "Enabled", json_true());
+    json_object_set_new(health, "IntervalMs", json_integer(1500));
+    json_object_set_new(health, "TimeoutMs", json_integer(250));
+    json_object_set_new(health, "RetryCount", json_integer(4));
+    json_object_set_new(monitored, "OwnServices", json_false());
+    json_object_set_new(monitored, "PrinterServices", json_true());
+    json_array_append_new(custom, json_string("_custom._tcp.local"));
+    json_object_set_new(monitored, "CustomServices", custom);
+    json_object_set_new(monitored, "LoadBalancers", json_array());
+    json_object_set_new(mdns_section, "HealthCheck", health);
+    json_object_set_new(mdns_section, "MonitoredServices", monitored);
+    json_object_set_new(root, "mDNSClient", mdns_section);
+
+    TEST_ASSERT_TRUE(load_mdns_client_config(root, &config));
+    TEST_ASSERT_EQUAL(1500, config.mdns_client.health_check_interval);
+    TEST_ASSERT_EQUAL(250, config.mdns_client.health_check_timeout);
+    TEST_ASSERT_EQUAL(4, config.mdns_client.health_check_retries);
+    TEST_ASSERT_FALSE(config.mdns_client.own_services);
+    TEST_ASSERT_TRUE(config.mdns_client.printer_services);
+    TEST_ASSERT_EQUAL(1, config.mdns_client.num_custom_services);
+    TEST_ASSERT_EQUAL_STRING("_custom._tcp.local", config.mdns_client.custom_services[0]);
+
+    json_decref(root);
+    cleanup_mdns_client_config(&config.mdns_client);
+}
 
 void test_cleanup_mdns_client_config_null_pointer(void) {
     // Test cleanup with NULL pointer - should handle gracefully
@@ -277,6 +338,8 @@ int main(void) {
     RUN_TEST(test_load_mdns_client_config_basic_fields);
     RUN_TEST(test_load_mdns_client_config_health_check);
     RUN_TEST(test_load_mdns_client_config_service_types);
+    RUN_TEST(test_load_mdns_client_config_service_types_strings);
+    RUN_TEST(test_load_mdns_client_config_timeout_monitored);
 
     // Cleanup function tests
     RUN_TEST(test_cleanup_mdns_client_config_null_pointer);

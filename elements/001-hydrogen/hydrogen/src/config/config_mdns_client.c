@@ -23,7 +23,13 @@ bool load_mdns_client_config(json_t* root, AppConfig* config) {
     mdns_config->max_services = 100;
     mdns_config->retry_count = 3;
     mdns_config->health_check_enabled = true;
-    mdns_config->health_check_interval = 60;  // seconds
+    mdns_config->health_check_interval = 60;  // milliseconds (JSON IntervalMs)
+    mdns_config->health_check_timeout = 1000;
+    mdns_config->health_check_retries = 3;
+    mdns_config->own_services = true;
+    mdns_config->printer_services = false;
+    mdns_config->custom_services = NULL;
+    mdns_config->num_custom_services = 0;
     mdns_config->service_types = NULL;
     mdns_config->num_service_types = 0;
 
@@ -40,11 +46,68 @@ bool load_mdns_client_config(json_t* root, AppConfig* config) {
         success = PROCESS_SECTION(root, SR_MDNS_CLIENT ".HealthCheck");
         success = success && PROCESS_BOOL(root, mdns_config, health_check_enabled, SR_MDNS_CLIENT ".HealthCheck.Enabled", SR_MDNS_CLIENT);
         success = success && PROCESS_INT(root, mdns_config, health_check_interval, SR_MDNS_CLIENT ".HealthCheck.IntervalMs", SR_MDNS_CLIENT);
+        success = success && PROCESS_INT(root, mdns_config, health_check_timeout, SR_MDNS_CLIENT ".HealthCheck.TimeoutMs", SR_MDNS_CLIENT);
+        success = success && PROCESS_INT(root, mdns_config, health_check_retries, SR_MDNS_CLIENT ".HealthCheck.RetryCount", SR_MDNS_CLIENT);
+    }
+
+    if (success) {
+        json_t *mdns_section = json_object_get(root, SR_MDNS_CLIENT);
+        json_t *monitored = json_object_get(root, SR_MDNS_CLIENT ".MonitoredServices");
+        if (!json_is_object(monitored) && json_is_object(mdns_section)) {
+            monitored = json_object_get(mdns_section, "MonitoredServices");
+        }
+        if (json_is_object(monitored)) {
+            json_t *own = json_object_get(monitored, "OwnServices");
+            json_t *printer = json_object_get(monitored, "PrinterServices");
+            success = PROCESS_SECTION(root, SR_MDNS_CLIENT ".MonitoredServices");
+            success = success && PROCESS_BOOL(root, mdns_config, own_services,
+                                              SR_MDNS_CLIENT ".MonitoredServices.OwnServices", SR_MDNS_CLIENT);
+            success = success && PROCESS_BOOL(root, mdns_config, printer_services,
+                                              SR_MDNS_CLIENT ".MonitoredServices.PrinterServices", SR_MDNS_CLIENT);
+            if (json_is_boolean(own)) {
+                mdns_config->own_services = json_is_true(own);
+            }
+            if (json_is_boolean(printer)) {
+                mdns_config->printer_services = json_is_true(printer);
+            }
+            json_t *custom = json_object_get(monitored, "CustomServices");
+            if (json_is_array(custom)) {
+                size_t n = json_array_size(custom);
+                if (n > 0) {
+                    size_t filled = 0;
+                    mdns_config->custom_services = calloc(n, sizeof(char *));
+                    if (!mdns_config->custom_services) {
+                        return false;
+                    }
+                    for (size_t i = 0; i < n; i++) {
+                        json_t *el = json_array_get(custom, i);
+                        if (json_is_string(el)) {
+                            mdns_config->custom_services[filled] = strdup(json_string_value(el));
+                            if (!mdns_config->custom_services[filled]) {
+                                success = false;
+                                break;
+                            }
+                            filled++;
+                        }
+                    }
+                    mdns_config->num_custom_services = filled;
+                }
+            }
+            if (json_object_get(monitored, "LoadBalancers") != NULL) {
+                log_this(SR_CONFIG, "MonitoredServices.LoadBalancers ignored", LOG_LEVEL_DEBUG, 0);
+            }
+        }
     }
 
     // Process service types array
     if (success) {
         json_t* service_types = json_object_get(root, SR_MDNS_CLIENT ".ServiceTypes");
+        if (!json_is_array(service_types)) {
+            json_t* mdns_section = json_object_get(root, SR_MDNS_CLIENT);
+            if (json_is_object(mdns_section)) {
+                service_types = json_object_get(mdns_section, "ServiceTypes");
+            }
+        }
         if (json_is_array(service_types)) {
             size_t type_count = json_array_size(service_types);
             log_this(SR_CONFIG, "――― Service Types: %zu configured", LOG_LEVEL_DEBUG, 1, type_count);
@@ -55,36 +118,51 @@ bool load_mdns_client_config(json_t* root, AppConfig* config) {
                     log_this(SR_CONFIG, "Failed to allocate service types array", LOG_LEVEL_ERROR, 0);
                     return false;
                 }
-                mdns_config->num_service_types = type_count;
 
+                size_t filled = 0;
                 for (size_t i = 0; i < type_count; i++) {
                     json_t* type = json_array_get(service_types, i);
-                    if (!json_is_object(type)) continue;
+                    MDNSServiceType *slot = &mdns_config->service_types[filled];
 
-                    // Process type string
-                    json_t* type_str = json_object_get(type, "Type");
-                    if (json_is_string(type_str)) {
-                        mdns_config->service_types[i].type = strdup(json_string_value(type_str));
-                        if (!mdns_config->service_types[i].type) {
+                    if (json_is_string(type)) {
+                        slot->type = strdup(json_string_value(type));
+                        if (!slot->type) {
                             success = false;
                             break;
                         }
-                        log_this(SR_CONFIG, "――――― Type: %s", LOG_LEVEL_DEBUG, 1, mdns_config->service_types[i].type);
-                    } else {
-                        mdns_config->service_types[i].type = strdup("_http._tcp.local");
-                        log_this(SR_CONFIG, "――――― Type: %s (*)", LOG_LEVEL_DEBUG, 1, mdns_config->service_types[i].type);
+                        slot->required = 0;
+                        slot->auto_connect = 0;
+                        log_this(SR_CONFIG, "――――― Type: %s", LOG_LEVEL_DEBUG, 1, slot->type);
+                        filled++;
+                        continue;
+                    }
+                    if (!json_is_object(type)) {
+                        continue;
                     }
 
-                    // Process required flag
-                    json_t* required = json_object_get(type, "Required");
-                    mdns_config->service_types[i].required = json_is_true(required);
-                    log_this(SR_CONFIG, "――――― Required: %s", LOG_LEVEL_DEBUG, 1, mdns_config->service_types[i].required ? "true" : "false");
+                    json_t* type_str = json_object_get(type, "Type");
+                    if (json_is_string(type_str)) {
+                        slot->type = strdup(json_string_value(type_str));
+                        if (!slot->type) {
+                            success = false;
+                            break;
+                        }
+                        log_this(SR_CONFIG, "――――― Type: %s", LOG_LEVEL_DEBUG, 1, slot->type);
+                    } else {
+                        slot->type = strdup("_http._tcp.local");
+                        log_this(SR_CONFIG, "――――― Type: %s (*)", LOG_LEVEL_DEBUG, 1, slot->type);
+                    }
 
-                    // Process auto_connect flag
+                    json_t* required = json_object_get(type, "Required");
+                    slot->required = json_is_true(required);
+                    log_this(SR_CONFIG, "――――― Required: %s", LOG_LEVEL_DEBUG, 1, slot->required ? "true" : "false");
+
                     json_t* auto_connect = json_object_get(type, "AutoConnect");
-                    mdns_config->service_types[i].auto_connect = json_is_true(auto_connect);
-                    log_this(SR_CONFIG, "――――― AutoConnect: %s", LOG_LEVEL_DEBUG, 1, mdns_config->service_types[i].auto_connect ? "true" : "false");
+                    slot->auto_connect = json_is_true(auto_connect);
+                    log_this(SR_CONFIG, "――――― AutoConnect: %s", LOG_LEVEL_DEBUG, 1, slot->auto_connect ? "true" : "false");
+                    filled++;
                 }
+                mdns_config->num_service_types = filled;
             }
         }
     }
@@ -107,6 +185,12 @@ void cleanup_mdns_client_config(MDNSClientConfig* config) {
         }
         free(config->service_types);
     }
+    if (config->custom_services) {
+        for (size_t i = 0; i < config->num_custom_services; i++) {
+            free(config->custom_services[i]);
+        }
+        free(config->custom_services);
+    }
 
     // Zero out the structure
     memset(config, 0, sizeof(MDNSClientConfig));
@@ -124,7 +208,7 @@ void dump_mdns_client_config(const MDNSClientConfig* config) {
     DUMP_BOOL2("――", "IPv6 Enabled", config->enable_ipv6);
     
     char buffer[256];
-    snprintf(buffer, sizeof(buffer), "Scan Interval: %d seconds", config->scan_interval);
+    snprintf(buffer, sizeof(buffer), "Scan Interval: %d ms", config->scan_interval);
     DUMP_TEXT("――", buffer);
     snprintf(buffer, sizeof(buffer), "Max Services: %zu", config->max_services);
     DUMP_TEXT("――", buffer);
@@ -133,7 +217,15 @@ void dump_mdns_client_config(const MDNSClientConfig* config) {
 
     // Dump health check configuration
     DUMP_BOOL2("――", "Health Check Enabled", config->health_check_enabled);
-    snprintf(buffer, sizeof(buffer), "Health Check Interval: %d seconds", config->health_check_interval);
+    snprintf(buffer, sizeof(buffer), "Health Check Interval: %d ms", config->health_check_interval);
+    DUMP_TEXT("――", buffer);
+    snprintf(buffer, sizeof(buffer), "Health Check Timeout: %d ms", config->health_check_timeout);
+    DUMP_TEXT("――", buffer);
+    snprintf(buffer, sizeof(buffer), "Health Check Retries: %d", config->health_check_retries);
+    DUMP_TEXT("――", buffer);
+    DUMP_BOOL2("――", "Own Services", config->own_services);
+    DUMP_BOOL2("――", "Printer Services", config->printer_services);
+    snprintf(buffer, sizeof(buffer), "Custom Services: %zu", config->num_custom_services);
     DUMP_TEXT("――", buffer);
 
     // Dump service types

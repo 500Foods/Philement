@@ -124,8 +124,8 @@ ReadinessResults handle_landing_readiness(void) {
     } subsystems[] = {
         {SR_PRINT,          check_print_landing_readiness},
         {SR_MAIL_RELAY,     check_mail_relay_landing_readiness},
-        {SR_MDNS_CLIENT,    check_mdns_client_landing_readiness},
         {SR_MDNS_SERVER,    check_mdns_server_landing_readiness},
+        {SR_MDNS_CLIENT,    check_mdns_client_landing_readiness},
         {SR_TERMINAL,       check_terminal_landing_readiness},
         {SR_WEBSOCKET,      check_websocket_landing_readiness},
         {SR_SWAGGER,        check_swagger_landing_readiness},
