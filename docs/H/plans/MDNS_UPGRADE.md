@@ -50,8 +50,8 @@ Each phase is its **own conversation**:
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-08-31):** Phase 2 complete.
-Next: **Phase 3**.
+**CURRENT PAUSE POINT (as of 2026-08-31):** Phase 3 complete.
+Next: **Phase 4**.
 
 ### Resume here next session
 
@@ -179,7 +179,7 @@ Paths relative to `/elements/001-hydrogen/hydrogen/` unless noted.
 | Piece | State |
 | --- | --- |
 | Server | Announce + query → **full** re-announce. `strcmp` names. No probe. |
-| Wire | [`src/mdns/mdns_dns_utils.c`](/elements/001-hydrogen/hydrogen/src/mdns/mdns_dns_utils.c) — no cap, recursive compression, no jump limit |
+| Wire | /elements/001-hydrogen/hydrogen/src/mdns/mdns_dns_utils.c) — no cap, recursive compression, no jump limit |
 | Sockets | Per-iface v4/v6, REUSEADDR/REUSEPORT, BINDTODEVICE. No V6ONLY, no PKTINFO |
 | TTL | `MDNS_TTL 255` used as **both** IP multicast hop count and DNS RR TTL ([`globals.h`](/elements/001-hydrogen/hydrogen/src/globals.h)) |
 | Flags | `MDNS_FLAG_RESPONSE 0x8400` already includes AA; ORed again with `0x0400` |
@@ -422,7 +422,13 @@ announcements; no dead `write_dns_*`.
 
 ## Phase 3 — Selective responder (QU, known-answer, dns-sd, legacy)
 
-**Status:** not started
+**Status:** complete
+
+New [`mdns_server_respond.c`](/elements/001-hydrogen/hydrogen/src/mdns/mdns_server_respond.c).
+`mdns_server_process_query_packet` takes `sockfd` + `src_addr`/`src_len`;
+`sockfd < 0` skips send (Unity). No `claimed` field yet (always answer).
+`W_NSEC` may be set; NSEC RRs are not emitted (Phase 5). Per-service want
+bits so a PTR for one type does not dump every service.
 
 ### Goal
 
@@ -431,22 +437,22 @@ what was asked; suppress known answers; honor QU and legacy unicast.
 
 ### Work
 
-- [ ] Want-bit mask (`W_PTR|W_SRV|W_TXT|W_A|W_AAAA|W_NSEC|W_SD`) per
+- [x] Want-bit mask (`W_PTR|W_SRV|W_TXT|W_A|W_AAAA|W_NSEC|W_SD`) per
       appendix **handle_query**. Match names with `mdns_name_equal`.
-- [ ] PTR query for a service type → PTR + additional SRV/TXT/A/AAAA.
-- [ ] `_services._dns-sd._udp.local` PTR → PTR to each advertised type.
-- [ ] `strip_known_answers`: only `MDNS_SEC_ANSWER` in a **query**;
+- [x] PTR query for a service type → PTR + additional SRV/TXT/A/AAAA.
+- [x] `_services._dns-sd._udp.local` PTR → PTR to each advertised type.
+- [x] `strip_known_answers`: only `MDNS_SEC_ANSWER` in a **query**;
       drop a bit if querier's TTL > ours/2. Authority section is **not**
       known-answer (that is probing).
-- [ ] Source port ≠ 5353 → **legacy**: echo questions, copy ID, TTL cap 10,
+- [x] Source port ≠ 5353 → **legacy**: echo questions, copy ID, TTL cap 10,
       no flush, **unicast only**.
-- [ ] QU bit → unicast **and** multicast (appendix `send_records`).
-- [ ] Reply on the **same socket** the query arrived on (v4 vs v6).
-- [ ] Do not answer until `claimed` (Phase 4 adds the flag; until then
+- [x] QU bit → unicast **and** multicast (appendix `send_records`).
+- [x] Reply on the **same socket** the query arrived on (v4 vs v6).
+- [x] Do not answer until `claimed` (Phase 4 adds the flag; until then
       treat claimed=1 so Test 25 stays green).
-- [ ] Unity: known-answer strip; QU vs QM; legacy port; dns-sd name;
+- [x] Unity: known-answer strip; QU vs QM; legacy port; dns-sd name;
       case-insensitive type match (`_HTTP._TCP.local`).
-- [ ] Test 25 still green (more selective packets; tshark may see fewer
+- [x] Test 25 still green (more selective packets; tshark may see fewer
       RRs per reply — do not require full dump).
 
 ### Done means
@@ -1194,6 +1200,7 @@ send HTTP.
 | 2026-08-31 | 0 | Plan locked (keep vs steal + log contract). Scratch tree already gone. TODO remaining starts at Phase 1. |
 | 2026-08-31 | 1 | `mdns_wire.c`/`.h`; process_query uses parse + `mdns_name_equal`; `mdns_wire_keep_linked` for encode reachability. `mkt`/`mkp`/listed `mku` green. Zero new dead `mdns_*` symbols. |
 | 2026-08-31 | 2 | Announce/goodbye via `mdns_buf`; RFC TTL split + cache-flush; V6ONLY/PKTINFO; recv 9000; deleted `mdns_dns_utils`. `mkt`/`mkp`/mdns `mku`/Test 25 green. |
+| 2026-08-31 | 3 | Selective responder in `mdns_server_respond.c`; QU+legacy dest; known-answer strip; dns-sd. `mkt`/`mkp`/new `mku`/Test 25 green. |
 
 ## Lessons learned
 
@@ -1214,3 +1221,8 @@ send HTTP.
   Unity fixtures must use `mdns_put_name`, not the removed `write_dns_name`.
 - Announce encode does not reach `mdns_put_rr_nsec` / rdata accessors; keep a
   reduced `mdns_wire_keep_linked` until Phase 5/6 or `--gc-sections` flags them.
+- Phase 3 `process_query` extra args: `sockfd < 0` or NULL src means parse/want
+  only (no send). New `src/mdns/*.c` still needs `mkt` (configure glob).
+- Do not chase 75% Unity on `mdns_server_announce.c` / `mdns_server_respond.c`
+  until Phase 7 (`add_coverage.sh` on `src/mdns/`). Both files still change in
+  Phases 4–6b.

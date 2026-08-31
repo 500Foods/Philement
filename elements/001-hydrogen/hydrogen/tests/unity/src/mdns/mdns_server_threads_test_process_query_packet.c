@@ -23,10 +23,13 @@ static uint8_t *test_put_dns_name(uint8_t *base, size_t cap, const uint8_t *ptr,
 }
 
 // Forward declarations for functions being tested
-bool mdns_server_process_query_packet(mdns_server_t *mdns_server_instance,
-                                       const network_info_t *net_info_instance,
-                                       const uint8_t *buffer,
-                                       ssize_t len);
+bool mdns_server_process_query_packet(const mdns_server_t *mdns_server_instance,
+                                        const network_info_t *net_info_instance,
+                                        const uint8_t *buffer,
+                                        ssize_t len,
+                                        int sockfd,
+                                        const void *src_addr,
+                                        uint32_t src_len);
 
 // Test function prototypes
 void test_process_query_packet_null_server(void);
@@ -58,7 +61,7 @@ void test_process_query_packet_null_server(void) {
     uint8_t buffer[512];
     memset(buffer, 0, sizeof(buffer));
     
-    bool result = mdns_server_process_query_packet(NULL, NULL, buffer, 100);
+    bool result = mdns_server_process_query_packet(NULL, NULL, buffer, 100, -1, NULL, 0);
     TEST_ASSERT_FALSE(result);
 }
 
@@ -67,7 +70,7 @@ void test_process_query_packet_null_buffer(void) {
     mdns_server_t server;
     memset(&server, 0, sizeof(server));
     
-    bool result = mdns_server_process_query_packet(&server, NULL, NULL, 100);
+    bool result = mdns_server_process_query_packet(&server, NULL, NULL, 100, -1, NULL, 0);
     TEST_ASSERT_FALSE(result);
 }
 
@@ -79,7 +82,7 @@ void test_process_query_packet_invalid_length(void) {
     memset(buffer, 0, sizeof(buffer));
     
     // Length smaller than DNS header
-    bool result = mdns_server_process_query_packet(&server, NULL, buffer, 5);
+    bool result = mdns_server_process_query_packet(&server, NULL, buffer, 5, -1, NULL, 0);
     TEST_ASSERT_FALSE(result);
 }
 
@@ -96,7 +99,7 @@ void test_process_query_packet_zero_questions(void) {
     dns_header_t *header = (dns_header_t *)buffer;
     header->qdcount = htons(0);  // No questions
     
-    bool result = mdns_server_process_query_packet(&server, NULL, buffer, sizeof(dns_header_t));
+    bool result = mdns_server_process_query_packet(&server, NULL, buffer, sizeof(dns_header_t), -1, NULL, 0);
     TEST_ASSERT_TRUE(result);  // Should succeed but do nothing
 }
 
@@ -129,7 +132,7 @@ void test_process_query_packet_ptr_match(void) {
     
     ssize_t len = ptr - buffer;
     
-    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len);
+    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len, -1, NULL, 0);
     TEST_ASSERT_TRUE(result);
 }
 
@@ -162,7 +165,7 @@ void test_process_query_packet_ptr_no_match(void) {
     
     ssize_t len = ptr - buffer;
     
-    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len);
+    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len, -1, NULL, 0);
     TEST_ASSERT_TRUE(result);  // Processed successfully, just no match
 }
 
@@ -195,7 +198,7 @@ void test_process_query_packet_srv_match(void) {
     
     ssize_t len = ptr - buffer;
     
-    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len);
+    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len, -1, NULL, 0);
     TEST_ASSERT_TRUE(result);
 }
 
@@ -228,7 +231,7 @@ void test_process_query_packet_txt_match(void) {
     
     ssize_t len = ptr - buffer;
     
-    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len);
+    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len, -1, NULL, 0);
     TEST_ASSERT_TRUE(result);
 }
 
@@ -252,7 +255,7 @@ void test_process_query_packet_a_match(void) {
     
     ssize_t len = ptr - buffer;
     
-    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len);
+    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len, -1, NULL, 0);
     TEST_ASSERT_TRUE(result);
 }
 
@@ -276,7 +279,7 @@ void test_process_query_packet_aaaa_match(void) {
     
     ssize_t len = ptr - buffer;
     
-    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len);
+    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len, -1, NULL, 0);
     TEST_ASSERT_TRUE(result);
 }
 
@@ -300,7 +303,7 @@ void test_process_query_packet_any_match(void) {
     
     ssize_t len = ptr - buffer;
     
-    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len);
+    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len, -1, NULL, 0);
     TEST_ASSERT_TRUE(result);
 }
 
@@ -324,7 +327,7 @@ void test_process_query_packet_a_no_match(void) {
     
     ssize_t len = ptr - buffer;
     
-    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len);
+    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len, -1, NULL, 0);
     TEST_ASSERT_TRUE(result);  // Processed successfully, just no match
 }
 
@@ -349,7 +352,7 @@ void test_process_query_packet_non_in_class(void) {
     
     ssize_t len = ptr - buffer;
     
-    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len);
+    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len, -1, NULL, 0);
     TEST_ASSERT_TRUE(result);  // Should process but ignore non-IN queries
 }
 
@@ -389,7 +392,7 @@ void test_process_query_packet_multiple_questions(void) {
     
     ssize_t len = ptr - buffer;
     
-    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len);
+    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len, -1, NULL, 0);
     TEST_ASSERT_TRUE(result);  // Should match first question and return
 }
 
@@ -414,7 +417,7 @@ void test_process_query_packet_no_services(void) {
     
     ssize_t len = ptr - buffer;
     
-    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len);
+    bool result = mdns_server_process_query_packet(&server, NULL, buffer, len, -1, NULL, 0);
     TEST_ASSERT_TRUE(result);  // Should process but not match anything
 }
 

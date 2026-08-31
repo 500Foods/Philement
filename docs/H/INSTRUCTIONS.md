@@ -314,9 +314,9 @@ When returning to a multi-phase subsystem such as Mail Relay, use this quick-sta
 8. Build aliases are defined in `~/.zshrc`; in non-interactive shells invoke them as `zsh -ic '<alias>'`. The common aliases are:
     - `mkq` — quick trial build (no clean, no cmake reconfigure)
     - `mkt` — full trial build (clean + cmake)
-   - `mka` — build all targets
-   - `mku <base>` — build and run a Unity test
-   - `mkp` — C lint (cppcheck)
-   - `mks` — shell script lint (shellcheck)
+    - `mka` — build all targets
+    - `mku <base>` — build and run a Unity test  
+    - `mkp` — C lint (cppcheck)
+    - `mks` — shell script lint (shellcheck)
 
 Use this baseline before asking qualifying questions and presenting the next implementation chunk.

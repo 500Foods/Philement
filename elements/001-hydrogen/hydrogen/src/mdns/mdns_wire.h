@@ -9,7 +9,9 @@
 #include <stdint.h>
 
 #define DNS_CLASS_IN      0x0001u
+#define DNS_CLASS_ANY     0x00ffu
 #define DNS_CLASS_MASK    0x7fffu
+#define DNS_QR_BIT        0x8000u
 #define DNS_CACHE_FLUSH   0x8000u
 #define DNS_QU_BIT        0x8000u
 #define DNS_FLAG_RESPONSE 0x8400u
