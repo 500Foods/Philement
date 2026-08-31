@@ -22,7 +22,6 @@
 
 #include "mdns_keys.h"
 #include "mdns_server.h"
-#include "mdns_dns_utils.h"
 
 // External declarations for functions implemented in split modules
 extern int create_multicast_socket(int family, const char *group, const char *if_name);

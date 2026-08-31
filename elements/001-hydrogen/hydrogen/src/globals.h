@@ -309,7 +309,12 @@ void init_startup_log_level(void);
 #define MDNS_PORT 5353                  // Standard mDNS port is 5353
 #define MDNS_GROUP_V4 "224.0.0.251"     // IPv4 multicast group
 #define MDNS_GROUP_V6 "ff02::fb"        // IPv6 multicast group
-#define MDNS_TTL 255                    // Default TTL for announcements
+#define MDNS_MULTICAST_TTL 255          // IP hop / IPV6_MULTICAST_HOPS
+#define MDNS_TTL_SHARED 4500            // PTR, TXT (RFC 6763 s10)
+#define MDNS_TTL_HOST 120               // SRV, A, AAAA, NSEC
+#ifndef MDNS_MSG_MAX
+#define MDNS_MSG_MAX 9000               // recv cap (send prefer <= 1500)
+#endif
 
 #define MDNS_TYPE_A 1                   // Host address (IPv4)
 #define MDNS_TYPE_PTR 12                // Domain name pointer (service discovery)

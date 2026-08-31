@@ -10,7 +10,17 @@
 // Include necessary headers for the module being tested
 #include <src/mdns/mdns_keys.h>
 #include <src/mdns/mdns_server.h>
-#include <src/mdns/mdns_dns_utils.h>
+#include <src/mdns/mdns_wire.h>
+
+static uint8_t *test_put_dns_name(uint8_t *base, size_t cap, const uint8_t *ptr, const char *name)
+{
+    mdns_buf b;
+
+    mdns_buf_init(&b, base, cap);
+    b.len = (size_t)(ptr - base);
+    (void)mdns_put_name(&b, name);
+    return base + b.len;
+}
 
 // Forward declarations for functions being tested
 bool mdns_server_process_query_packet(mdns_server_t *mdns_server_instance,
@@ -113,7 +123,7 @@ void test_process_query_packet_ptr_match(void) {
     header->qdcount = htons(1);
     
     uint8_t *ptr = buffer + sizeof(dns_header_t);
-    ptr = write_dns_name(ptr, "_http._tcp.local");
+    ptr = test_put_dns_name(buffer, sizeof(buffer), ptr, "_http._tcp.local");
     *((uint16_t*)ptr) = htons(MDNS_TYPE_PTR); ptr += 2;
     *((uint16_t*)ptr) = htons(MDNS_CLASS_IN); ptr += 2;
     
@@ -146,7 +156,7 @@ void test_process_query_packet_ptr_no_match(void) {
     header->qdcount = htons(1);
     
     uint8_t *ptr = buffer + sizeof(dns_header_t);
-    ptr = write_dns_name(ptr, "_printer._tcp.local");  // Different service
+    ptr = test_put_dns_name(buffer, sizeof(buffer), ptr, "_printer._tcp.local");  // Different service
     *((uint16_t*)ptr) = htons(MDNS_TYPE_PTR); ptr += 2;
     *((uint16_t*)ptr) = htons(MDNS_CLASS_IN); ptr += 2;
     
@@ -179,7 +189,7 @@ void test_process_query_packet_srv_match(void) {
     header->qdcount = htons(1);
     
     uint8_t *ptr = buffer + sizeof(dns_header_t);
-    ptr = write_dns_name(ptr, "Test Service._http._tcp.local");
+    ptr = test_put_dns_name(buffer, sizeof(buffer), ptr, "Test Service._http._tcp.local");
     *((uint16_t*)ptr) = htons(MDNS_TYPE_SRV); ptr += 2;
     *((uint16_t*)ptr) = htons(MDNS_CLASS_IN); ptr += 2;
     
@@ -212,7 +222,7 @@ void test_process_query_packet_txt_match(void) {
     header->qdcount = htons(1);
     
     uint8_t *ptr = buffer + sizeof(dns_header_t);
-    ptr = write_dns_name(ptr, "Test Service._http._tcp.local");
+    ptr = test_put_dns_name(buffer, sizeof(buffer), ptr, "Test Service._http._tcp.local");
     *((uint16_t*)ptr) = htons(MDNS_TYPE_TXT); ptr += 2;
     *((uint16_t*)ptr) = htons(MDNS_CLASS_IN); ptr += 2;
     
@@ -236,7 +246,7 @@ void test_process_query_packet_a_match(void) {
     header->qdcount = htons(1);
     
     uint8_t *ptr = buffer + sizeof(dns_header_t);
-    ptr = write_dns_name(ptr, "testhost.local");
+    ptr = test_put_dns_name(buffer, sizeof(buffer), ptr, "testhost.local");
     *((uint16_t*)ptr) = htons(MDNS_TYPE_A); ptr += 2;
     *((uint16_t*)ptr) = htons(MDNS_CLASS_IN); ptr += 2;
     
@@ -260,7 +270,7 @@ void test_process_query_packet_aaaa_match(void) {
     header->qdcount = htons(1);
     
     uint8_t *ptr = buffer + sizeof(dns_header_t);
-    ptr = write_dns_name(ptr, "testhost.local");
+    ptr = test_put_dns_name(buffer, sizeof(buffer), ptr, "testhost.local");
     *((uint16_t*)ptr) = htons(MDNS_TYPE_AAAA); ptr += 2;
     *((uint16_t*)ptr) = htons(MDNS_CLASS_IN); ptr += 2;
     
@@ -284,7 +294,7 @@ void test_process_query_packet_any_match(void) {
     header->qdcount = htons(1);
     
     uint8_t *ptr = buffer + sizeof(dns_header_t);
-    ptr = write_dns_name(ptr, "testhost.local");
+    ptr = test_put_dns_name(buffer, sizeof(buffer), ptr, "testhost.local");
     *((uint16_t*)ptr) = htons(MDNS_TYPE_ANY); ptr += 2;
     *((uint16_t*)ptr) = htons(MDNS_CLASS_IN); ptr += 2;
     
@@ -308,7 +318,7 @@ void test_process_query_packet_a_no_match(void) {
     header->qdcount = htons(1);
     
     uint8_t *ptr = buffer + sizeof(dns_header_t);
-    ptr = write_dns_name(ptr, "otherhost.local");  // Different hostname
+    ptr = test_put_dns_name(buffer, sizeof(buffer), ptr, "otherhost.local");  // Different hostname
     *((uint16_t*)ptr) = htons(MDNS_TYPE_A); ptr += 2;
     *((uint16_t*)ptr) = htons(MDNS_CLASS_IN); ptr += 2;
     
@@ -332,7 +342,7 @@ void test_process_query_packet_non_in_class(void) {
     header->qdcount = htons(1);
     
     uint8_t *ptr = buffer + sizeof(dns_header_t);
-    ptr = write_dns_name(ptr, "testhost.local");
+    ptr = test_put_dns_name(buffer, sizeof(buffer), ptr, "testhost.local");
     *((uint16_t*)ptr) = htons(MDNS_TYPE_A); ptr += 2;
     *((uint16_t*)ptr) = htons(3);  // CLASS_CH (Chaos), not IN
     ptr += 2;
@@ -368,12 +378,12 @@ void test_process_query_packet_multiple_questions(void) {
     uint8_t *ptr = buffer + sizeof(dns_header_t);
     
     // First question: PTR for service
-    ptr = write_dns_name(ptr, "_http._tcp.local");
+    ptr = test_put_dns_name(buffer, sizeof(buffer), ptr, "_http._tcp.local");
     *((uint16_t*)ptr) = htons(MDNS_TYPE_PTR); ptr += 2;
     *((uint16_t*)ptr) = htons(MDNS_CLASS_IN); ptr += 2;
     
     // Second question: A for hostname
-    ptr = write_dns_name(ptr, "testhost.local");
+    ptr = test_put_dns_name(buffer, sizeof(buffer), ptr, "testhost.local");
     *((uint16_t*)ptr) = htons(MDNS_TYPE_A); ptr += 2;
     *((uint16_t*)ptr) = htons(MDNS_CLASS_IN); ptr += 2;
     
@@ -398,7 +408,7 @@ void test_process_query_packet_no_services(void) {
     header->qdcount = htons(1);
     
     uint8_t *ptr = buffer + sizeof(dns_header_t);
-    ptr = write_dns_name(ptr, "_http._tcp.local");
+    ptr = test_put_dns_name(buffer, sizeof(buffer), ptr, "_http._tcp.local");
     *((uint16_t*)ptr) = htons(MDNS_TYPE_PTR); ptr += 2;
     *((uint16_t*)ptr) = htons(MDNS_CLASS_IN); ptr += 2;
     

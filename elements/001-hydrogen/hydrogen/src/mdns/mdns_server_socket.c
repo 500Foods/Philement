@@ -47,11 +47,18 @@ int create_multicast_socket(int family, const char *group, const char *if_name) 
         return -1;
     }
 
-    // Add SO_REUSEPORT for better multicast socket sharing
     if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEPORT, &yes, sizeof(yes)) < 0) {
         log_this(SR_MDNS_SERVER, "Failed to set SO_REUSEPORT: %s", LOG_LEVEL_DEBUG, 1, strerror(errno));
         close(sockfd);
         return -1;
+    }
+
+    if (family == AF_INET6) {
+        if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, &yes, sizeof(yes)) < 0) {
+            log_this(SR_MDNS_SERVER, "Failed to set IPV6_V6ONLY: %s", LOG_LEVEL_DEBUG, 1, strerror(errno));
+            close(sockfd);
+            return -1;
+        }
     }
 
     struct sockaddr_storage local_addr;
@@ -74,7 +81,7 @@ int create_multicast_socket(int family, const char *group, const char *if_name) 
         return -1;
     }
 
-    int ttl = MDNS_TTL;
+    int ttl = MDNS_MULTICAST_TTL;
     if (setsockopt(sockfd, family == AF_INET ? IPPROTO_IP : IPPROTO_IPV6,
                    family == AF_INET ? IP_MULTICAST_TTL : IPV6_MULTICAST_HOPS,
                    &ttl, sizeof(ttl)) < 0) {
@@ -120,6 +127,21 @@ int create_multicast_socket(int family, const char *group, const char *if_name) 
             return -1;
         }
     }
+
+#ifdef IP_PKTINFO
+    if (family == AF_INET) {
+        if (setsockopt(sockfd, IPPROTO_IP, IP_PKTINFO, &yes, sizeof(yes)) < 0) {
+            log_this(SR_MDNS_SERVER, "IP_PKTINFO refused: %s", LOG_LEVEL_DEBUG, 1, strerror(errno));
+        }
+    }
+#endif
+#ifdef IPV6_RECVPKTINFO
+    if (family == AF_INET6) {
+        if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_RECVPKTINFO, &yes, sizeof(yes)) < 0) {
+            log_this(SR_MDNS_SERVER, "IPV6_RECVPKTINFO refused: %s", LOG_LEVEL_DEBUG, 1, strerror(errno));
+        }
+    }
+#endif
 
     log_this(SR_MDNS_SERVER, "Created multicast socket on interface %s", LOG_LEVEL_DEBUG, 1, if_name);
     return sockfd;

@@ -93,8 +93,11 @@ void mdns_server_shutdown(mdns_server_t *mdns_server_instance) {
 
             // Build goodbye announcement with primary network interface
             mdns_server_build_announcement(packet, &packet_len, mdns_server_instance->hostname, mdns_server_instance, 0, net_info_instance);
+            if (packet_len == 0) {
+                log_this(SR_MDNS_SERVER, "Skipping goodbye on %s: empty or overflow packet", LOG_LEVEL_ALERT, 1, iface->if_name);
+                continue;
+            }
 
-            // Send 3 goodbye packets per RFC 6762
             for (int i = 0; i < 3; i++) {
                 if (iface->sockfd_v4 >= 0) {
                     if (sendto(iface->sockfd_v4, packet, packet_len, 0, (struct sockaddr *)&addr_v4, sizeof(addr_v4)) < 0) {

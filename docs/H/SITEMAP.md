@@ -131,6 +131,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 - [KEYCLOAK_PLAN.md](/docs/H/plans/KEYCLOAK_PLAN.md): Keycloak SSO / Hydrogen as OIDC RP (Phase 5 E2E in progress)
 - [MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md): Mail Relay subsystem implementation plan
+- [MDNS_UPGRADE.md](/docs/H/plans/MDNS_UPGRADE.md): mDNS RFC server + real client (active P2 plan)
 
 - [MIRAGE_PLAN.md](/docs/H/plans/MIRAGE_PLAN.md): Mirage distributed proxy architecture (deferred)
 - [OIDC-PLAN.md](/docs/H/plans/OIDC-PLAN.md): Historical OIDC RP implementation phase log

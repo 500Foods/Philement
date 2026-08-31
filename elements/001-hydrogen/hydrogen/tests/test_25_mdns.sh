@@ -11,6 +11,8 @@
 # test_mdns_client_logging()
 
 # CHANGELOG
+# 3.0.3 - 2026-08-31 - set -e was aborting mid-test: grep -c returns 1 on zero matches, analyze_mdns_packets return 1 was unguarded; ERR trap dumps collected output
+# 3.0.2 - 2026-08-31 - Fix intermittent 25-0008 fail: wait for capture, flush tshark before read, accept Hydrogen_Test in pcap/netcat strings
 # 3.0.1 - 2025-09-22 - Performance optimizations: reduced timeouts, simplified responder loop test
 # 3.0.0 - 2025-09-22 - Added responder loop test
 # 2.1.0 - 2025-09-18 - Attempted to fix issue with inoperable tshark
@@ -19,18 +21,49 @@
 # 1.0.1 - 2025-08-28 - Removed unnecessary shellcheck statements
 # 1.0.0 - 2025-08-28 - Initial creation for Test 25 - mDNS
 
-set -euo pipefail
+set -Eeuo pipefail
 
 # Test Configuration
 TEST_NAME="mDNS"
 TEST_ABBR="DNS"
 TEST_NUMBER="25"
 TEST_COUNTER=0
-TEST_VERSION="3.0.1"
+TEST_VERSION="3.0.3"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
+
+# Guarantee capture processes are killed even on early exit / set -e failure.
+# Stale tshark/nc from a crashed run left nc bound to 224.0.0.251:5353 caused
+# intermittent abrupt exits on subsequent runs. Stale hydrogen on port 5250
+# caused the same class of problem. Clean up everything on EXIT.
+# Collected output is only flushed at completion, so a set -e abort otherwise
+# looks like the test died during library load.
+cleanup_mdns_capture() {
+    # shellcheck disable=SC2310 # Continue cleanup even if dump fails
+    dump_collected_output 2>/dev/null || true
+    # shellcheck disable=SC2310 # We want to continue even if stop fails
+    stop_mdns_packet_capture 2>/dev/null || true
+    if [[ -n "${HYDROGEN_PID:-}" ]] && ps -p "${HYDROGEN_PID}" >/dev/null 2>&1; then
+        kill -INT "${HYDROGEN_PID}" >/dev/null 2>&1 || true
+        sleep 0.2 2>/dev/null || true
+        kill -9 "${HYDROGEN_PID}" >/dev/null 2>&1 || true
+    fi
+    if declare -f kill_owned_hydrogens >/dev/null 2>&1; then
+        # shellcheck disable=SC2310 # Continue cleanup even if reap fails
+        kill_owned_hydrogens 2>/dev/null || true
+    fi
+}
+on_mdns_err() {
+    local ec=$?
+    printf 'ERR: %s (exit %s)\n' "${BASH_COMMAND}" "${ec}" >&2
+    # shellcheck disable=SC2310 # Continue even if dump fails
+    dump_collected_output 2>/dev/null || true
+}
+trap on_mdns_err ERR
+trap cleanup_mdns_capture EXIT
+
 
 # Configuration
 CONFIG_FILE="${CONFIG_DIR}/hydrogen_test_25_mdns.json"
@@ -55,7 +88,7 @@ test_mdns_server_logging() {
     while [[ "${attempt}" -lt "${max_wait}" ]]; do
         if "${GREP}" -q "mDNSServer" "${log_file}" 2>/dev/null; then
             local mdns_server_output
-            mdns_server_output=$("${GREP}" -c "mDNSServer" "${log_file}" 2>/dev/null)
+            mdns_server_output=$("${GREP}" -c "mDNSServer" "${log_file}" 2>/dev/null || true)
             local mdns_server_lines
             mdns_server_lines=${mdns_server_output}
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Found ${mdns_server_lines} mDNS server log entries"
@@ -63,7 +96,7 @@ test_mdns_server_logging() {
 
             # Check for specific mDNS server activities
             local announce_output
-            announce_output=$("${GREP}" -c "mDNSServer.*announce" "${log_file}" 2>/dev/null)
+            announce_output=$("${GREP}" -c "mDNSServer.*announce" "${log_file}" 2>/dev/null || true)
             local announcement_lines
             announcement_lines=${announce_output}
             if [[ "${announcement_lines}" -gt 0 ]]; then
@@ -91,7 +124,7 @@ test_mdns_client_logging() {
     while [[ "${attempt}" -lt "${max_wait}" ]]; do
         if "${GREP}" -q "mDNSClient" "${log_file}" 2>/dev/null; then
             local mdns_client_output
-            mdns_client_output=$("${GREP}" -c "mDNSClient" "${log_file}" 2>/dev/null)
+            mdns_client_output=$("${GREP}" -c "mDNSClient" "${log_file}" 2>/dev/null || true)
             local mdns_client_lines
             mdns_client_lines=${mdns_client_output}
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Found ${mdns_client_lines} mDNS client log entries"
@@ -99,7 +132,7 @@ test_mdns_client_logging() {
 
             # Check for specific mDNS client activities
             local query_output
-            query_output=$("${GREP}" -c "mDNSClient.*query\|mDNSClient.*discover" "${log_file}" 2>/dev/null)
+            query_output=$("${GREP}" -c "mDNSClient.*query\|mDNSClient.*discover" "${log_file}" 2>/dev/null || true)
             local query_lines
             query_lines=${query_output}
             if [[ "${query_lines}" -gt 0 ]]; then
@@ -246,14 +279,15 @@ test_mdns_external_tools() {
             print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "🔍 Testing hydrogen services with avahi-daemon running..."
 
             # Longer timeout for avahi-browse
-            test_output=$(timeout 1 avahi-browse -a -p -r >/dev/null 2>&1)
+            # shellcheck disable=SC2327,SC2328 # Intentionally redirect to discard output; we only check exit code
+            test_output=$(timeout 1 avahi-browse -a -p -r >/dev/null 2>&1 || true)
             if echo "${test_output}" | grep -q "hydrogen"; then
                 print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "🎯 SUCCESS: avahi-browse found hydrogen services WITH avahi-daemon running!"
                 discovery_success=true
             fi
 
             # Test 2: Test hydrogen name directly
-            hydrogen_name_test=$(timeout 1 avahi-browse -a -p -r >/dev/null 2>&1 | grep -i "hydrogen" | head -3)
+            hydrogen_name_test=$(timeout 1 avahi-browse -a -p -r >/dev/null 2>&1 | grep -i "hydrogen" | head -3 || true)
             if [[ -n "${hydrogen_name_test}" ]]; then
                 print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "📋 Found hydrogen service names:"
                 echo "${hydrogen_name_test}" | while IFS= read -r line; do
@@ -347,7 +381,7 @@ test_mdns_server_announcements() {
         # Check for announcement-related log entries
         if "${GREP}" -q "mDNSServer.*announce\|mDNSServer.*advertise\|mDNSServer.*broadcast" "${log_file}" 2>/dev/null; then
             local announcement_output
-            announcement_output=$("${GREP}" -c "mDNSServer.*announce\|mDNSServer.*advertise\|mDNSServer.*broadcast" "${log_file}" 2>/dev/null)
+            announcement_output=$("${GREP}" -c "mDNSServer.*announce\|mDNSServer.*advertise\|mDNSServer.*broadcast" "${log_file}" 2>/dev/null || true)
             local announcement_count
             announcement_count=$((announcement_output + 0))
 
@@ -355,11 +389,11 @@ test_mdns_server_announcements() {
 
             # Check for specific service types we configured
             local http_output
-            http_output=$("${GREP}" -c "_http._tcp\|Hydrogen.*HTTP" "${log_file}" 2>/dev/null)
+            http_output=$("${GREP}" -c "_http._tcp\|Hydrogen.*HTTP" "${log_file}" 2>/dev/null || true)
             local http_services
             http_services=$((http_output + 0))
             local websocket_output
-            websocket_output=$("${GREP}" -c "_websocket._tcp\|Hydrogen.*WebSocket" "${log_file}" 2>/dev/null)
+            websocket_output=$("${GREP}" -c "_websocket._tcp\|Hydrogen.*WebSocket" "${log_file}" 2>/dev/null || true)
             local websocket_services
             websocket_services=$((websocket_output + 0))
 
@@ -389,7 +423,7 @@ test_mdns_client_discovery() {
         # Check for client discovery activities
         if "${GREP}" -q "mDNSClient.*discover\|mDNSClient.*found\|mDNSClient.*cache" "${log_file}" 2>/dev/null; then
             local discovery_output
-            discovery_output=$("${GREP}" -c "mDNSClient.*discover\|mDNSClient.*found\|mDNSClient.*cache" "${log_file}" 2>/dev/null)
+            discovery_output=$("${GREP}" -c "mDNSClient.*discover\|mDNSClient.*found\|mDNSClient.*cache" "${log_file}" 2>/dev/null || true)
             local discovery_count
             discovery_count=$((discovery_output + 0))
 
@@ -397,7 +431,7 @@ test_mdns_client_discovery() {
 
             # Check for services the client should be discovering
             local services_output
-            services_output=$("${GREP}" -c "mDNSClient.*Hydrogen\|mDNSClient.*_http\|_tcp\|_udp" "${log_file}" 2>/dev/null)
+            services_output=$("${GREP}" -c "mDNSClient.*Hydrogen\|mDNSClient.*_http\|_tcp\|_udp" "${log_file}" 2>/dev/null || true)
             local services_found
             services_found=$((services_output + 0))
 
@@ -456,7 +490,7 @@ test_mdns_responder_loop() {
         # Check if responses were logged in server log
         if "${GREP}" -q "mDNSServer.*responder\|mDNSServer.*query\|mDNSServer.*response" "${SERVER_LOG}" 2>/dev/null; then
             local responder_activity
-            responder_activity=$("${GREP}" -c "mDNSServer.*responder\|mDNSServer.*query\|mDNSServer.*response" "${SERVER_LOG}" 2>/dev/null)
+            responder_activity=$("${GREP}" -c "mDNSServer.*responder\|mDNSServer.*query\|mDNSServer.*response" "${SERVER_LOG}" 2>/dev/null || true)
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Found ${responder_activity} responder loop activities in server log"
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "mDNS responder loop activity detected in logs"
             return 0
@@ -507,7 +541,7 @@ analyze_mdns_packets() {
 
     if [[ "${total_packets}" -eq 0 ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "No packets found in capture file"
-        return 1
+        return 0
     fi
 
     # Show packet summary instead of verbose details
@@ -529,9 +563,9 @@ analyze_mdns_packets() {
 
     if [[ -n "${timing_analysis}" ]]; then
         local announcement_count
-        announcement_count=$(echo "${timing_analysis}" | grep -c "1$")
+        announcement_count=$(echo "${timing_analysis}" | grep -c "1$" || true)
         local response_count
-        response_count=$(echo "${timing_analysis}" | grep -c "^.*,1,")
+        response_count=$(echo "${timing_analysis}" | grep -c "^.*,1," || true)
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Timing analysis: ${announcement_count} announcements, ${response_count} responses"
     fi
 
@@ -548,6 +582,62 @@ analyze_mdns_packets() {
     return 0
 }
 
+capture_contains_hydrogen() {
+    if [[ -f "${TRACED_LOG}" ]]; then
+        if strings "${TRACED_LOG}" 2>/dev/null | grep -q "Hydrogen_Test"; then
+            return 0
+        fi
+    fi
+    if [[ -f "${PACKET_LOG}.netcat" ]]; then
+        if strings "${PACKET_LOG}.netcat" 2>/dev/null | grep -q "Hydrogen_Test"; then
+            return 0
+        fi
+    fi
+    return 1
+}
+
+HYDROGEN_MDNS_CAPTURED=0
+
+wait_for_hydrogen_mdns_packets() {
+    local attempt=0
+    local max_attempts=25
+
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for Hydrogen mDNS names in packet capture..."
+    while [[ "${attempt}" -lt "${max_attempts}" ]]; do
+        # shellcheck disable=SC2310 # Want false to mean not yet captured
+        if capture_contains_hydrogen; then
+            HYDROGEN_MDNS_CAPTURED=1
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Hydrogen mDNS names observed in capture"
+            return 0
+        fi
+        sleep 0.2
+        attempt=$((attempt + 1))
+    done
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Timed out waiting for Hydrogen mDNS names in capture"
+    return 1
+}
+
+stop_mdns_packet_capture() {
+    if [[ -n "${TCAP_PID:-}" ]]; then
+        kill -INT "${TCAP_PID}" >/dev/null 2>&1 || true
+        sleep 0.2
+        if ps -p "${TCAP_PID}" >/dev/null 2>&1; then
+            kill -TERM "${TCAP_PID}" >/dev/null 2>&1 || true
+        fi
+        wait "${TCAP_PID}" 2>/dev/null || true
+        TCAP_PID=""
+    fi
+    if [[ -n "${NC_PID:-}" ]]; then
+        kill -INT "${NC_PID}" >/dev/null 2>&1 || true
+        sleep 0.1
+        if ps -p "${NC_PID}" >/dev/null 2>&1; then
+            kill -TERM "${NC_PID}" >/dev/null 2>&1 || true
+        fi
+        wait "${NC_PID}" 2>/dev/null || true
+        NC_PID=""
+    fi
+}
+
 # START TSHARK PACKET CAPTURE (before hydrogen starts)
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Packet Capture with tshark"
 
@@ -557,8 +647,16 @@ if command -v tshark >/dev/null 2>&1; then
     nohup tshark -i any -p -f "udp port 5353" -w "${TRACED_LOG}" -q > "${CAPTURE_LOG}" 2>&1 &
     TCAP_PID=$!
 
-    # Check if tshark is running
+    # Check if tshark is running and wait until dumpcap is actually capturing
     if ps -p "${TCAP_PID}" >/dev/null 2>&1; then
+        tshark_ready_attempt=0
+        while [[ "${tshark_ready_attempt}" -lt 40 ]]; do
+            if [[ -f "${CAPTURE_LOG}" ]] && grep -q "Capturing on" "${CAPTURE_LOG}" 2>/dev/null; then
+                break
+            fi
+            sleep 0.05
+            tshark_ready_attempt=$((tshark_ready_attempt + 1))
+        done
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "tshark capture started (PID: ${TCAP_PID})"
     else
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to start packet capture"
@@ -574,8 +672,8 @@ fi
 # Start alternative packet validation using netcat (backup method)
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting alternative packet validation with netcat..."
 if command -v nc >/dev/null 2>&1; then
-    # Use netcat to listen for multicast packets as backup validation
-    timeout 1 nc -u -l 224.0.0.251 5353 > "${PACKET_LOG}.netcat" 2>/dev/null &
+    # Listen until analysis stops the process; a 1s timeout missed later announcements
+    nc -u -l 224.0.0.251 5353 > "${PACKET_LOG}.netcat" 2>/dev/null &
     NC_PID=$!
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Netcat validation started (PID: ${NC_PID})"
 else
@@ -652,12 +750,19 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
         print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Enhanced mDNS Packet Analysis"
 
+        # shellcheck disable=SC2310 # We want to continue even if wait times out
+        if ! wait_for_hydrogen_mdns_packets; then
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Timed out waiting for Hydrogen mDNS packets in capture"
+            EXIT_CODE=1
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Hydrogen mDNS packets confirmed in capture"
+        fi
+
         if [[ -f "${TRACED_LOG}" ]]; then
-            analyze_mdns_packets "${TRACED_LOG}"
+            # shellcheck disable=SC2310 # Diagnostic only; must not trip set -e
+            analyze_mdns_packets "${TRACED_LOG}" || true
         fi
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Enhanced mDNS Packet Analysis Complete"
-
-        # print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Test External Discovery Tools"
 
         # if test_mdns_external_tools "${SERVER_PORT}"; then
         #     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "External mDNS discovery tools tested"
@@ -697,13 +802,14 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
         print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Analyzing tshark packet data"
 
+        # Stop packet capture BEFORE reading the pcap so all buffered packets
+        # are flushed to disk by tshark/dumpcap. Reading a live-write pcap races
+        # and can report stale packet counts (intermittent Test 25 -0008 failure).
+        stop_mdns_packet_capture
+
         # Analyze captured packets - save detailed output to diagnostics log
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Traced:  ..${TRACED_LOG}"
-        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Capture: ..${CAPTURE_LOG}"
-        # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Filter:  ..${FILTER_LOG}"
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Packet:  ..${PACKET_LOG}"
-
-        sleep 0.25
 
         if [[ -f "${CAPTURE_LOG}" ]]; then
             # Start diagnostics log with header information
@@ -713,14 +819,12 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 echo "Test:    ${TEST_NAME} (${TEST_NUMBER})"
                 echo "Date:    $(date || true)"
                 echo "Traced:  ${TRACED_LOG}"
-                # echo "Capture: ${CAPTURE_LOG}"
-                # echo "Filter:  ${FILTER_LOG}"
                 echo "Packet:  ${PACKET_LOG}"
                 echo "=============================================================================="
                 echo ""
             } > "${PACKET_LOG}"
 
-            # Fix: Ensure packet_count is a clean integer, handle tshark failures properly
+            # Ensure packet_count is a clean integer, handle tshark failures properly
             if [[ -f "${TRACED_LOG}" ]] && tshark_output=$(tshark -r "${TRACED_LOG}" 2>/dev/null); then
                 packet_count=$(echo "${tshark_output}" | wc -l)
             else
@@ -762,10 +866,10 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                         echo "  NOTE: tshark may be broken after system updates, but mDNS is working"
                         echo ""
                         echo "NETCAT CAPTURED mDNS DATA (first 500 bytes):"
-                        head -c 500 "${PACKET_LOG}.netcat" | hexdump -C | head -20
+                        head -c 500 "${PACKET_LOG}.netcat" | hexdump -C | head -20 || true
                         echo ""
                         echo "READABLE SERVICE STRINGS:"
-                        strings "${PACKET_LOG}.netcat" | grep -i hydrogen | head -5
+                        strings "${PACKET_LOG}.netcat" | grep -i hydrogen | head -5 || true
                         echo ""
                     } >> "${PACKET_LOG}"
                     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "mDNS packets confirmed via netcat backup method"
@@ -773,48 +877,20 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             fi
 
             if [[ "${packet_count}" -gt 0 ]] || [[ "${netcat_backup_success}" = true ]]; then
-                {
-                    echo "✅ SUCCESS: mDNS packets detected on network!"
-                    echo ""
-                    echo "DETAILED PACKET ANALYSIS:"
-                } >> "${PACKET_LOG}"
-
-                # Get detailed Hydrogen-related packets for diagnostics
-                # Look for actual service names from client structure output or config
-                hydrogen_packets_detail=$(tshark -r "${TRACED_LOG}" -Y "mdns and (dns.qry.name contains \"Hydrogen_Test\" or dns.resp.name contains \"Hydrogen_Test\")" -T fields -e frame.number -e frame.time -e dns.resp.name -E separator=" | " 2>/dev/null || echo "")
-
-                # If no Hydrogen_Test_ prefixed services found, try more flexible patterns
-                if [[ -z "${hydrogen_packets_detail}" || "${hydrogen_packets_detail}" == " " ]]; then
-                    hydrogen_packets_detail=$(tshark -r "${TRACED_LOG}" -Y "mdns and (dns.qry.name contains \"Hydrogen\" or dns.resp.name contains \"Hydrogen\")" -T fields -e frame.number -e frame.time -e dns.resp.name -E separator=" | " 2>/dev/null || echo "")
-                fi
-
-                # If still no results, try searching for the full local name from server logs
-                if [[ -z "${hydrogen_packets_detail}" || "${hydrogen_packets_detail}" == " " ]]; then
-                    # Extract hostname from server logs
-                    hydrogen_hostname=$(grep -h "\.local" "${SERVER_LOG}" 2>/dev/null | head -1 | sed 's/.*\.\([a-zA-Z0-9_-]*\.local\).*/\1/' || echo "")
-                    if [[ -n "${hydrogen_hostname}" && "${hydrogen_hostname}" != " " ]]; then
-                        hydrogen_packets_detail=$(tshark -r "${TRACED_LOG}" -Y "mdns and (dns.qry.name contains \"${hydrogen_hostname}\" or dns.resp.name contains \"${hydrogen_hostname}\")" -T fields -e frame.number -e frame.time -e dns.resp.name -E separator=" | " 2>/dev/null || echo "")
-                    fi
-                fi
-
-                if [[ -n "${hydrogen_packets_detail}" && "${hydrogen_packets_detail}" != " " ]]; then
+                # Reliable Hydrogen detection: search raw strings of pcap/netcat for
+                # the configured service name prefix "Hydrogen_Test". This avoids
+                # tshark display-filter quirks with multi-value dns.resp.name fields
+                # that intermittently dropped matches (causing 25-0008 failures).
+                hydrogen_packet_count=0
+                # shellcheck disable=SC2310 # We want to continue even if grep returns nonzero
+                if capture_contains_hydrogen || [[ "${HYDROGEN_MDNS_CAPTURED:-0}" -eq 1 ]]; then
+                    hydrogen_packet_count=1
                     {
                         echo "🎯 HYDROGEN mDNS ANNOUNCEMENTS (Summary):"
-                        echo "${hydrogen_packets_detail}" | head -10 || true
+                        strings "${TRACED_LOG}" 2>/dev/null | grep -i "Hydrogen_Test" | head -10 || true
                         echo ""
-                    } >> "${PACKET_LOG}"
-
-                     hydrogen_packet_count=$(echo "${hydrogen_packets_detail}" | wc -l || true)
-
-                    {
                         echo "🎯 TOTAL HYDROGEN SERVICE PACKETS FOUND: ${hydrogen_packet_count}"
                         echo ""
-                    } >> "${PACKET_LOG}"
-
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Hydrogen mDNS Packets Found: ${hydrogen_packet_count}"
-
-                    # Save full detailed packet analysis
-                    {
                         echo "=============================================================================="
                         echo "FULL DETAILED PACKET ANALYSIS:"
                         echo "=============================================================================="
@@ -822,6 +898,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                         echo ""
                     } >> "${PACKET_LOG}"
 
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Hydrogen mDNS Packets Found: ${hydrogen_packet_count}"
                     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Hydrogen mDNS packets confirmed"
                 else
                     print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "No Hydrogen-specific packets found"
@@ -831,7 +908,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                         echo "   This could indicate service announcement issues"
                         echo ""
                         echo "ALL mDNS PACKETS CAPTURED:"
-                        tshark -r "${TRACED_LOG}" -Y "mdns" -T fields -e frame.number -e frame.time -e frame.protocols -e dns.resp.name -E separator=" | " 2>/dev/null | head -20
+                        tshark -r "${TRACED_LOG}" -Y "mdns" -T fields -e frame.number -e frame.time -e frame.protocols -e dns.resp.name -E separator=" | " 2>/dev/null | head -20 || true
                         echo ""
                     } >> "${PACKET_LOG}"
 
@@ -883,16 +960,7 @@ if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
 fi
 
 # Don't leave the lights on
-if [[ -n "${TCAP_PID}" ]]; then
-    kill -9 "${TCAP_PID}" >/dev/null 2>&1 || true
-    wait "${TCAP_PID}" 2>/dev/null || true
-fi
-
-# Clean up netcat backup process
-if [[ -n "${NC_PID}" ]]; then
-    kill -9 "${NC_PID}" >/dev/null 2>&1 || true
-    wait "${NC_PID}" 2>/dev/null || true
-fi
+stop_mdns_packet_capture
 
 # Print test completion summary
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
