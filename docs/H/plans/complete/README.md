@@ -21,6 +21,8 @@ Active plans folder: [`/docs/H/plans/`](/docs/H/plans/).
 | [AUTH_PLAN_TESTS_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_TESTS_COMPLETE.md) | Auth tests |
 | [CAP_PLAN_QUERY-COMPLETE.md](/docs/H/plans/complete/CAP_PLAN_QUERY-COMPLETE.md) | Cap query endpoint |
 | [CHAT_PLAN_ORIGINAL_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_ORIGINAL_COMPLETE.md) | Chat original draft |
+| [CHAT_PLAN_SUMMARY_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_SUMMARY_COMPLETE.md) | Chat Phases 1–12 index (historical) |
+| [CHAT_PLAN_PHASE_13_SUPERSEDED.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_13_SUPERSEDED.md) | Chat Phase 13 wishlist (superseded by CHAT_FINALE) |
 | [CHAT_PLAN_PHASE_1_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_1_COMPLETE.md) | Chat Phase 1 |
 | [CHAT_PLAN_PHASE_2_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_2_COMPLETE.md) | Chat Phase 2 |
 | [CHAT_PLAN_PHASE_2_5_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_2_5_COMPLETE.md) | Chat Phase 2.5 |

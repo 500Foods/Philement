@@ -127,8 +127,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 ### Folder: /docs/H/plans
 
 - [README.md](/docs/H/plans/README.md): Plans folder index
-- [CHAT_PLAN_PHASE_13.md](/docs/H/plans/CHAT_PLAN_PHASE_13.md): Chat Phase 13 advanced features (open)
-- [CHAT_PLAN_SUMMARY.md](/docs/H/plans/CHAT_PLAN_SUMMARY.md): Chat service plan index (Phases 1–12 complete, 13 open)
+- [CHAT_FINALE.md](/docs/H/plans/CHAT_FINALE.md): Chat finale (active P0 plan)
 
 - [KEYCLOAK_PLAN.md](/docs/H/plans/KEYCLOAK_PLAN.md): Keycloak SSO / Hydrogen as OIDC RP (Phase 5 E2E in progress)
 - [MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md): Mail Relay subsystem implementation plan
@@ -161,6 +160,8 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [AUTH_PLAN_TESTS_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_TESTS_COMPLETE.md)
 - [CAP_PLAN_QUERY-COMPLETE.md](/docs/H/plans/complete/CAP_PLAN_QUERY-COMPLETE.md)
 - [CHAT_PLAN_ORIGINAL_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_ORIGINAL_COMPLETE.md)
+- [CHAT_PLAN_PHASE_13_SUPERSEDED.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_13_SUPERSEDED.md)
+- [CHAT_PLAN_SUMMARY_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_SUMMARY_COMPLETE.md)
 - [CHAT_PLAN_PHASE_10_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_10_COMPLETE.md)
 - [CHAT_PLAN_PHASE_11_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_11_COMPLETE.md)
 - [CHAT_PLAN_PHASE_12_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_12_COMPLETE.md)

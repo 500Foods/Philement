@@ -1,5 +1,9 @@
 # Chat Service Implementation Plan - Phased Approach
 
+> **Superseded for remaining work.** Active plan:
+> [`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md).
+> Phases 1–12 below are historical. Phase 13 is not the backlog.
+
 ## Overview
 
 This document summarizes the 13-phase implementation plan for the Chat Proxy Service within the Conduit API. Each phase has a specific testable gate to ensure quality and prevent scope creep.
@@ -97,7 +101,7 @@ This went through several iterations before landing on this plan. One can be fou
     - Engine limits enforcement
     - **Gate**: Advanced multi-modal features working with proper provider translation
 
-11. **[CHAT_PLAN_PHASE_13.md](/docs/H/plans/CHAT_PLAN_PHASE_13.md)** - Advanced Features
+11. **[CHAT_PLAN_PHASE_13_SUPERSEDED.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_13_SUPERSEDED.md)** - Advanced Features
     - Function calling support
     - Response caching
     - Load balancing across API keys
@@ -146,11 +150,13 @@ Each phase depends on the successful completion of the previous phase's testable
 | Phase 10 | ✅ COMPLETE | 2026-03-23 |
 | Phase 11 | ✅ COMPLETE | 2026-03-23 |
 | Phase 12 | ✅ COMPLETE | 2026-03-23 |
-| Phase 13 | ⏳ IN PROGRESS | 2026-03-25 |
+| Phase 13 | ⛔ SUPERSEDED | see CHAT_FINALE |
 
 ## Next Steps
 
-Phase 11 (Streaming) and Phase 12 (Advanced Multi-modal) are now complete. **Phase 13: Advanced Features** is in progress with the following completed:
+Remaining work is [`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md), not Phase 13.
+
+Historical Phase 13 notes (do not implement from here):
 
 - **Streaming Architecture** (2026-03-25): Threaded worker implementation, SSE support, connection diagnostics
 - Function calling support
