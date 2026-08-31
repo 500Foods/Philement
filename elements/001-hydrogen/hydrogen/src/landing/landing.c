@@ -31,8 +31,8 @@
  * Standard Processing Order (reverse of launch):
  * - 15. Print (last launched, first to land)
  * - 14. MailRelay
- * - 13. mDNS Client
- * - 12. mDNS Server
+ * - 13. mDNS Server (goodbye burst while client still listening)
+ * - 12. mDNS Client
  * - 11. Terminal
  * - 10. WebSocket
  * - 09. Swagger

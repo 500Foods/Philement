@@ -50,6 +50,7 @@ typedef struct {
     volatile int claimed;    // 1 after this instance survives probing
     volatile int probe_conflict;
     int name_attempts;
+    uint64_t last_send_ms;   // Per-name rate limit (RFC 6762 s6: 1s minimum)
 } mdns_server_service_t;
 
 /*
@@ -122,6 +123,11 @@ typedef struct {
     volatile int hostname_conflict;
     int hostname_attempts;
     volatile int probe_failed; // 1: all names unclaimed, no announce/answer/goodbye
+    uint64_t last_multicast_ms;     // Last unique multicast (rate limit anchor)
+    uint64_t hostname_last_send_ms; // Per-name rate limit for hostname
+    volatile int probe_tiebreak_lose; // Set by responder when we lose s8.2 tiebreak
+    uint64_t (*now_ms_fn)(void);    // Injectable time source (defaults to mdns_client_now_ms)
+    uint32_t (*rand_delay_ms_fn)(uint32_t min_ms, uint32_t max_ms); // Injectable RNG for shared delay
 } mdns_server_t;
 
 /*
@@ -211,6 +217,9 @@ void free_single_interface_net_info(network_info_t *net_info_instance);
 #define MDNS_PROBE_TRIES 3
 #define MDNS_PROBE_GAP_MS 250
 #define MDNS_MAX_NAME_ATTEMPTS 8
+#define MDNS_RATE_LIMIT_MS 1000
+#define MDNS_SHARED_DELAY_MIN 20
+#define MDNS_SHARED_DELAY_MAX 120
 
 typedef struct {
     uint32_t host_answer;
@@ -247,7 +256,8 @@ void mdns_server_build_query_response(uint8_t *packet, size_t *packet_len,
                                       const mdns_server_want_t *want,
                                       int legacy);
 void mdns_server_send_query_response(int sockfd, const mdns_server_t *server, const void *src_addr,
-                                     uint32_t src_len, int legacy, int qu, const uint8_t *packet, size_t packet_len);
+                                      uint32_t src_len, int legacy, int qu, const uint8_t *packet, size_t packet_len,
+                                      const mdns_server_want_t *want);
 
 bool mdns_server_process_query_packet(mdns_server_t *mdns_server_instance,
                                         const network_info_t *net_info_instance,
@@ -273,5 +283,23 @@ void mdns_server_build_probe(uint8_t *packet, size_t *packet_len, const mdns_ser
                              const mdns_server_interface_t *iface);
 void mdns_server_send_probe(mdns_server_t *server);
 int mdns_server_run_probe(mdns_server_t *server);
+int mdns_server_rr_conflicts_claimed(const mdns_server_t *server, const mdns_rr *rr,
+                                     const uint8_t *msg, size_t msglen);
+void mdns_server_defend_claimed(mdns_server_t *server, const mdns_msg *msg,
+                                const uint8_t *raw, size_t rawlen);
+int mdns_server_addr_is_ours(const mdns_server_t *server, int family,
+                             const uint8_t *addr, size_t addrlen);
+int mdns_server_txt_rdata_matches(const mdns_server_service_t *svc,
+                                  const uint8_t *rdata, size_t rdlen);
+int mdns_server_srv_rdata_matches(const mdns_server_t *server, const mdns_server_service_t *svc,
+                                  const uint8_t *msg, size_t msglen, const mdns_rr *rr);
+int mdns_server_want_is_shared_only(const mdns_server_want_t *w);
+int mdns_server_rate_fresh(const mdns_server_t *server, const char *name, uint64_t last_ms);
+uint32_t mdns_server_default_rand_delay(uint32_t min_ms, uint32_t max_ms);
+int mdns_server_rr_cmp(const mdns_rr *a, const mdns_rr *b,
+                       const uint8_t *msg_a, const uint8_t *msg_b,
+                       size_t msglen_a, size_t msglen_b);
+int mdns_server_check_tiebreak(mdns_server_t *server, int sockfd, const mdns_msg *msg,
+                               const uint8_t *raw, size_t rawlen);
 
 #endif // MDNS_SERVER_H

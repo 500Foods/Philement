@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <time.h>
 
 #include "mdns_keys.h"
 #include "mdns_server.h"
@@ -613,7 +614,8 @@ void mdns_server_build_query_response(uint8_t *packet, size_t *packet_len,
 }
 
 void mdns_server_send_query_response(int sockfd, const mdns_server_t *server, const void *src_addr,
-                                     uint32_t src_len, int legacy, int qu, const uint8_t *packet, size_t packet_len)
+                                     uint32_t src_len, int legacy, int qu, const uint8_t *packet, size_t packet_len,
+                                     const mdns_server_want_t *want)
 {
     const mdns_server_interface_t *iface;
     int is_v6 = 0;
@@ -629,6 +631,16 @@ void mdns_server_send_query_response(int sockfd, const mdns_server_t *server, co
         is_v6 = 0;
     } else if (sa && src_len >= sizeof(sa_family_t)) {
         is_v6 = (sa->sa_family == AF_INET6) ? 1 : 0;
+    }
+
+    if (want && mdns_server_want_is_shared_only(want) && server->rand_delay_ms_fn) {
+        uint32_t delay_ms = server->rand_delay_ms_fn(MDNS_SHARED_DELAY_MIN, MDNS_SHARED_DELAY_MAX);
+        if (delay_ms > 0) {
+            struct timespec ts;
+            ts.tv_sec = delay_ms / 1000;
+            ts.tv_nsec = (delay_ms % 1000) * 1000000;
+            nanosleep(&ts, NULL);
+        }
     }
 
     if (mdns_server_should_multicast(legacy, qu)) {
@@ -695,6 +707,14 @@ bool mdns_server_process_query_packet(mdns_server_t *mdns_server_instance,
         return true;
     }
 
+    if (mdns_server_instance->now_ms_fn) {
+        mdns_server_defend_claimed(mdns_server_instance, &msg, buffer, (size_t)len);
+    }
+
+    if (!mdns_server_all_claimed(mdns_server_instance) && !mdns_server_instance->probe_failed) {
+        mdns_server_check_tiebreak(mdns_server_instance, sockfd, &msg, buffer, (size_t)len);
+    }
+
     mdns_server_want_clear(&want, mdns_server_instance->num_services);
     for (j = 0; j < msg.nquestions; j++) {
         mdns_server_want_add_question(&want, mdns_server_instance, &msg.questions[j]);
@@ -717,6 +737,18 @@ bool mdns_server_process_query_packet(mdns_server_t *mdns_server_instance,
     if (packet_len == 0) {
         return true;
     }
-    mdns_server_send_query_response(sockfd, mdns_server_instance, src_addr, src_len, legacy, want.qu, packet, packet_len);
+    mdns_server_send_query_response(sockfd, mdns_server_instance, src_addr, src_len, legacy, want.qu, packet, packet_len, &want);
+    if (mdns_server_instance->now_ms_fn) {
+        uint64_t now = mdns_server_instance->now_ms_fn();
+
+        if (want.host_answer & (MDNS_W_A | MDNS_W_AAAA | MDNS_W_NSEC)) {
+            mdns_server_instance->hostname_last_send_ms = now;
+        }
+        for (j = 0; j < mdns_server_instance->num_services && j < MDNS_SERVER_WANT_MAX_SVC; j++) {
+            if (want.svc_answer[j] & (MDNS_W_SRV | MDNS_W_TXT | MDNS_W_A | MDNS_W_AAAA | MDNS_W_NSEC)) {
+                mdns_server_instance->services[j].last_send_ms = now;
+            }
+        }
+    }
     return true;
 }

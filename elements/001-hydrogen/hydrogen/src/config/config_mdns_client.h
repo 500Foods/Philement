@@ -30,13 +30,20 @@ typedef struct MDNSClientConfig {
     bool enable_ipv6;
     
     // Scanning configuration
-    int scan_interval;           // Seconds between service scans
+    int scan_interval;           // Milliseconds between service scans
     size_t max_services;         // Maximum number of tracked services
     int retry_count;            // Number of retries for failed operations
     
     // Health check configuration
     bool health_check_enabled;
-    int health_check_interval;   // Seconds between health checks
+    int health_check_interval;   // Milliseconds between health checks
+    int health_check_timeout;    // TCP connect timeout milliseconds
+    int health_check_retries;    // TCP connect retries
+
+    bool own_services;
+    bool printer_services;
+    char **custom_services;
+    size_t num_custom_services;
     
     // Service types to discover
     MDNSServiceType* service_types;

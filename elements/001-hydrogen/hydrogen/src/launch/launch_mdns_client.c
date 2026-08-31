@@ -22,6 +22,7 @@
 
 // Local includes
 #include "launch.h"
+#include <src/mdns/mdns_client.h>
 
 // Registry ID and cached readiness state
 int mdns_client_subsystem_id = -1;
@@ -37,7 +38,7 @@ void register_mdns_client_for_launch(void) {
         mdns_client_subsystem_id = register_subsystem_from_launch(SR_MDNS_CLIENT, NULL, NULL,
                                                                 &mdns_client_system_shutdown,
                                                                 (int (*)(void))launch_mdns_client_subsystem,
-                                                                NULL);  // Client has no shutdown function yet
+                                                                 (void (*)(void))mdns_client_stop);
     }
 }
 
@@ -149,16 +150,13 @@ int launch_mdns_client_subsystem(void) {
         mdns_client_subsystem_id = register_subsystem_from_launch(SR_MDNS_CLIENT, NULL, NULL,
                                                                 &mdns_client_system_shutdown,
                                                                 (int (*)(void))launch_mdns_client_subsystem,
-                                                                NULL);  // Client has no shutdown function yet
+                                                                 (void (*)(void))mdns_client_stop);
         if (mdns_client_subsystem_id < 0) {
             log_this(SR_MDNS_CLIENT, "LAUNCH: MDNS CLIENT - Failed: Registration error", LOG_LEVEL_DEBUG, 0);
             return 0;
         }
     }
     
-    // Launch scaffold: config-validated registration only. Discovery client
-    // runtime lives outside this path (mDNS server is separate under src/mdns/).
-
     log_this(SR_MDNS_CLIENT, "Initializing mDNS client system", LOG_LEVEL_DEBUG, 0);
 
     // Step 1: Verify system state
@@ -179,8 +177,11 @@ int launch_mdns_client_subsystem(void) {
         return 1; // Not an error if disabled
     }
 
-    // Step 2: Config accepted — no browse/query worker started yet
     log_this(SR_MDNS_CLIENT, "Starting " SR_MDNS_CLIENT " service discovery", LOG_LEVEL_DEBUG, 0);
+    if (!mdns_client_start(&app_config->mdns_client)) {
+        log_this(SR_MDNS_CLIENT, "LAUNCH: MDNS CLIENT - Failed: browse thread", LOG_LEVEL_DEBUG, 0);
+        return 0;
+    }
 
     // Step 3: Update subsystem registry
     log_this(SR_MDNS_CLIENT, "  Updating " SR_REGISTRY, LOG_LEVEL_DEBUG, 0);    

@@ -31,7 +31,7 @@ void test_mdns_server_validate_services_valid(void) {
 
     char name[] = "test";
     char type[] = "_http._tcp.local";
-    mdns_server_service_t service = {name, type, 8080, NULL, 0, NULL, 0, 0, 0};
+    mdns_server_service_t service = {name, type, 8080, NULL, 0, NULL, 0, 0, 0, 0};
     TEST_ASSERT_EQUAL(0, mdns_server_validate_services(&service, 1));
 }
 

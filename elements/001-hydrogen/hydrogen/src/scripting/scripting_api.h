@@ -389,4 +389,7 @@ int H_lua_mail_notify_wait_one(lua_State* L, H_Handle* h);
  */
 void H_lua_install_mcp(lua_State* L);
 
+void H_lua_install_mdns(lua_State* L);
+int H_lua_mdns_list(lua_State* L);
+
 #endif /* HYDROGEN_SCRIPTING_SCRIPTING_API_H */

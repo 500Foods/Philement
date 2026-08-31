@@ -15,6 +15,7 @@
 
 #include "mdns_keys.h"
 #include "mdns_server.h"
+#include <src/mdns/mdns_client.h>
 
 extern AppConfig *app_config;
 
@@ -223,6 +224,8 @@ int mdns_server_setup_hostname(mdns_server_t *server) {
     server->hostname_conflict = 0;
     server->hostname_attempts = 1;
     server->probe_failed = 0;
+    server->now_ms_fn = mdns_client_now_ms;
+    server->rand_delay_ms_fn = mdns_server_default_rand_delay;
     if (!server->hostname_base) {
         log_this(SR_MDNS_SERVER, "Out of memory", LOG_LEVEL_ERROR, 0);
         return -1;
