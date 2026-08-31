@@ -40,10 +40,17 @@
 #   - seed_provision_queryrefs
 #
 # CHANGELOG
-# 1.1.0 - 2026-06-20 - Speed-up: replace broken tail-offset migration-wait loops (which timed out
-#                      ~30s each because the shared SERVER_LOG is truncated per instance) with
-#                      wait_for_migration_ready keyed off the canonical "READY FOR REQUESTS" signal.
-# 1.0.0 - 2026-05-09 - Initial creation, Phase 22 role-mapping sub-tests.
+# 1.2.0 - 2026-08-31 - Fix two bugs causing Phase 22 database-source sub-test
+#                    failure (Expected roles to contain '42', got: ''):
+#                    (1) seed_role_row/unseed_role_row used raw sqlite3 with
+#                    no busy_timeout, failing silently under WAL contention
+#                    while the server runs — now use _oidc_sqlite_exec with
+#                    .timeout 5000 and 8 retries.
+#                    (2) seed_roles_queryref inserted a duplicate QueryRef
+#                    #017 row with wrong metadata (query_type_a28=2 instead
+#                    of 1, query_dialect_a30='sqlite' instead of 2, etc.)
+#                    — corrected values to match seed_email_queryrefs
+#                    convention and cleaned the artifact hydrodemo.sqlite.
 
 # ---------------------------------------------------------------------------
 # seed_roles_queryref
@@ -52,6 +59,13 @@
 #   acuranzo_1108) but the demo DB may not have the SQL-type row if the
 #   migration was never applied. This helper is idempotent.
 #
+#   Follows the same metadata convention as seed_email_queryrefs and
+#   seed_provision_queryrefs: query_ref as integer (17, not '017'),
+#   query_type_a28 = 1 (SQL), query_dialect_a30 = 2 (SQLite),
+#   query_queue_a58 = 1 (medium), query_timeout = 5000. Uses
+#   _oidc_sqlite_exec for busy_timeout + retry to survive WAL contention
+#   while the server is running.
+#
 # Args:
 #   $1  sqlite_db   path to the SQLite database
 # ---------------------------------------------------------------------------
@@ -59,39 +73,39 @@ seed_roles_queryref() {
     local sqlite_db="$1"
     if [[ ! -f "${sqlite_db}" ]]; then return 1; fi
 
-    # Insert QueryRef #017 as a SQL-type query if it is not already present.
-    # The query selects role_id from account_roles filtered by validity window.
-    sqlite3 "${sqlite_db}" <<'SEED_017' 2>/dev/null || true
+    _oidc_sqlite_exec "${sqlite_db}" "
 INSERT OR IGNORE INTO queries (
-    query_id, query_ref, query_status_a27, query_type_a28,
-    query_dialect_a30, query_queue_a58, query_timeout,
-    name, code, summary, collection,
-    created_id, created_at, updated_id, updated_at
+    query_id, query_ref,
+    query_status_a27, query_type_a28, query_dialect_a30,
+    query_queue_a58, query_timeout,
+    code, name, summary, collection,
+    valid_after, valid_until, created_id, created_at, updated_id, updated_at
 )
 SELECT
     (SELECT COALESCE(MAX(query_id), 0) + 1 FROM queries),
-    '017',
+    17,
+    1,
     1,
     2,
-    'sqlite',
-    0,
-    30,
+    1,
+    5000,
+    'SELECT role_id FROM account_roles WHERE (account_id = :ACCOUNTID) AND ((valid_after IS NULL) OR (valid_after < datetime(''now''))) AND ((valid_until IS NULL) OR (valid_until > datetime(''now'')))',
     'Get User Roles',
-    'SELECT role_id FROM account_roles WHERE (account_id = :ACCOUNTID) AND ((valid_after IS NULL) OR (valid_after < datetime(''now''))) AND ((valid_until IS NULL) OR (valid_until > datetime(''now'')));',
     'QueryRef #017 - Get User Roles',
     '{}',
-    1, datetime('now'), 1, datetime('now')
+    datetime('now'), datetime('now', '+10 years'), 1, datetime('now'), 1, datetime('now')
 WHERE NOT EXISTS (
-    SELECT 1 FROM queries WHERE query_ref = '017' AND query_type_a28 = 2
+    SELECT 1 FROM queries WHERE query_ref = 17 AND query_type_a28 = 1
 );
-SEED_017
+" || true
 }
 
 # ---------------------------------------------------------------------------
 # seed_role_row
 #   Insert an account_roles row for account_id=1, role_id=42.
 #   Used to verify the DATABASE source returns non-empty roles.
-#   Idempotent.
+#   Idempotent. Uses _oidc_sqlite_exec for busy_timeout + retry to survive
+#   WAL contention while the Hydrogen server is running.
 #
 # Args:
 #   $1  sqlite_db   path to the SQLite database
@@ -100,7 +114,7 @@ seed_role_row() {
     local sqlite_db="$1"
     if [[ ! -f "${sqlite_db}" ]]; then return 1; fi
 
-    sqlite3 "${sqlite_db}" <<'SEED_ROLE' 2>/dev/null || true
+    _oidc_sqlite_exec "${sqlite_db}" "
 INSERT OR IGNORE INTO account_roles (
     account_id, role_id, system_id, status_a37,
     created_id, created_at, updated_id, updated_at
@@ -108,12 +122,13 @@ INSERT OR IGNORE INTO account_roles (
     1, 42, 1, 1,
     1, datetime('now'), 1, datetime('now')
 );
-SEED_ROLE
+" || true
 }
 
 # ---------------------------------------------------------------------------
 # unseed_role_row
 #   Remove the test account_roles row for account_id=1, role_id=42.
+#   Uses _oidc_sqlite_exec for busy_timeout + retry.
 #
 # Args:
 #   $1  sqlite_db   path to the SQLite database
@@ -122,9 +137,9 @@ unseed_role_row() {
     local sqlite_db="$1"
     if [[ ! -f "${sqlite_db}" ]]; then return 0; fi
 
-    sqlite3 "${sqlite_db}" \
+    _oidc_sqlite_exec "${sqlite_db}" \
         "DELETE FROM account_roles WHERE account_id=1 AND role_id=42 AND system_id=1;" \
-        2>/dev/null || true
+        || true
 }
 
 # ---------------------------------------------------------------------------
