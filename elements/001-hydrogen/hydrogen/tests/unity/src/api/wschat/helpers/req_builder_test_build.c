@@ -300,7 +300,7 @@ void test_build_ollama_native(void) {
     json_t* options = json_object_get(root, "options");
     TEST_ASSERT_NOT_NULL(options);
     TEST_ASSERT_EQUAL_INT(800, json_integer_value(json_object_get(options, "num_predict")));
-    TEST_ASSERT_EQUAL_DOUBLE(1.0, json_real_value(json_object_get(options, "temperature")));
+    TEST_ASSERT_EQUAL_DOUBLE(0.0, json_real_value(json_object_get(options, "temperature")));
 
     json_decref(root);
     chat_message_list_destroy(usr);

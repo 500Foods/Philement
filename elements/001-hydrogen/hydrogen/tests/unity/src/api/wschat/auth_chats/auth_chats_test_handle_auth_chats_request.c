@@ -71,6 +71,8 @@ static jwt_validation_result_t make_valid_jwt_with_database(jwt_claims_t* claims
     memset(claims_storage, 0, sizeof(jwt_claims_t));
     claims_storage->database = (char*)database;  // mock_set copies via strdup
     claims_storage->user_id = 42;
+    claims_storage->aud = (char*)"hydrogen-chat";
+    claims_storage->roles = (char*)"chat";
     jwt_validation_result_t result = {true, claims_storage, JWT_ERROR_NONE};
     return result;
 }
