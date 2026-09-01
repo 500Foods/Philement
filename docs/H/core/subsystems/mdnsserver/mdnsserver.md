@@ -63,7 +63,7 @@ Before any announcement, the server **probes** for its hostname and each service
 1. Send 3 probe queries (ANY+QU for the name, proposed records in authority), 250 ms apart.
 2. Listen between probes. A response (QR=1) with a live (TTL≠0) RR under the same name is a **conflict**.
 3. On conflict: rename and retry, up to `MAX_NAME_ATTEMPTS` (8) per name.
-   - Instance conflict: append ` (N)` to the label (DNS-SD convention): `hydrogen-printer (2)`.
+   - Instance conflict: append `(N)` to the label (DNS-SD convention): `hydrogen-printer (2)`.
    - Hostname conflict: append `-N` to the host label: `host-2.local`.
 4. After silence on all names: mark `claimed = 1`, then begin announcements.
 5. If 8 attempts fail on any name: the server fails to launch (`probe_failed`); no announce, answer, or goodbye.
@@ -75,7 +75,7 @@ The server does **not** answer any query until claimed.
 The responder answers only the records the question asks for, identified by name + type:
 
 | Question name | Type | Want bits |
-|---|---|---|
+| --- | --- | --- |
 | service type (e.g. `_http._tcp`) | PTR / ANY | PTR + SRV + TXT + A + AAAA + NSEC |
 | instance name | SRV / ANY | SRV + A + AAAA + NSEC |
 | instance name | TXT / ANY | TXT |
@@ -97,7 +97,7 @@ Additional processing:
 Two TTL classes (RFC 6763 s10):
 
 | Class | Records | TTL |
-|---|---|---|
+| --- | --- | --- |
 | Shared | PTR, dns-sd PTR | 4500 s |
 | Host (unique) | SRV, TXT, A, AAAA, NSEC | 120 s |
 
@@ -130,7 +130,7 @@ On shutdown the server sends RFC-compliant goodbye packets (TTL=0) for all claim
 Stable log tokens Test 25 greps in the Hydrogen server log:
 
 | Token | When |
-|---|---|
+| --- | --- |
 | `MDNS_SERVER PROBE <instance>` | each probe query sent |
 | `MDNS_SERVER CONFLICT <name>` | name taken; will rename |
 | `MDNS_SERVER CLAIMED <instance>` | name ours; announcements may start |
