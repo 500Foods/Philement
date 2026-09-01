@@ -164,18 +164,6 @@ ChatMessage *auth_chats_messages_json_to_list(json_t *messages) {
     return chat_messages;
 }
 
-ChatRequestParams auth_chats_resolve_request_params(const ChatEngineConfig *engine,
-                                                     double temperature,
-                                                     int max_tokens) {
-    ChatRequestParams params = chat_request_params_default();
-    if (!engine) {
-        return params;
-    }
-    params.temperature = temperature >= 0.0 ? temperature : engine->temperature_default;
-    params.max_tokens = max_tokens > 0 ? max_tokens : engine->max_tokens;
-    return params;
-}
-
 size_t auth_chats_build_multi_requests(ChatEngineCache *cache,
                                        json_t *engines,
                                        const ChatMessage *messages,
@@ -200,7 +188,7 @@ size_t auth_chats_build_multi_requests(ChatEngineCache *cache,
             continue;
         }
 
-        ChatRequestParams params = auth_chats_resolve_request_params(engine, temperature, max_tokens);
+        ChatRequestParams params = chat_resolve_request_params(engine, temperature, max_tokens, false);
         json_t *provider_request = chat_request_build(engine, messages, &params);
         char *request_body = chat_request_to_json_string(provider_request, true);
         json_decref(provider_request);

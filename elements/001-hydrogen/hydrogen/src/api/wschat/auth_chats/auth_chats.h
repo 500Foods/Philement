@@ -73,10 +73,6 @@ bool auth_chats_parse_request(json_t *request_json,
 
 ChatMessage *auth_chats_messages_json_to_list(json_t *messages);
 
-ChatRequestParams auth_chats_resolve_request_params(const ChatEngineConfig *engine,
-                                                     double temperature,
-                                                     int max_tokens);
-
 size_t auth_chats_build_multi_requests(ChatEngineCache *cache,
                                        json_t *engines,
                                        const ChatMessage *messages,

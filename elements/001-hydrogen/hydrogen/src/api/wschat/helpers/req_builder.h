@@ -68,10 +68,20 @@ json_t* chat_request_build_ollama(const ChatEngineConfig* engine,
                                    const ChatMessage* messages,
                                    const ChatRequestParams* params);
 
+json_t* chat_request_build_responses(const ChatEngineConfig* engine,
+                                      const ChatMessage* messages,
+                                      const ChatRequestParams* params);
+
 // Generic request builder (auto-detects provider)
 json_t* chat_request_build(const ChatEngineConfig* engine,
                            const ChatMessage* messages,
                            const ChatRequestParams* params);
+
+// Resolve ChatRequestParams from optional request fields and engine defaults
+ChatRequestParams chat_resolve_request_params(const ChatEngineConfig* engine,
+                                               double temperature,
+                                               int max_tokens,
+                                               bool stream);
 
 // Request to JSON string
 char* chat_request_to_json_string(json_t* request, bool compact);
@@ -93,6 +103,7 @@ bool chat_request_validate(const ChatEngineConfig* engine,
  * The following helpers are NOT part of the stable public API. They are exposed
  * (non-static) solely so the Unity test framework can call them directly.
  * -------------------------------------------------------------------------- */
+json_t* chat_request_build_messages_array(const ChatMessage* messages);
 json_t* chat_request_convert_openai_content_to_anthropic(const char* content_str);
 int chat_request_message_count_images(const char* content);
 int chat_request_count_all_images(const ChatMessage* messages);

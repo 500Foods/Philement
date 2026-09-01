@@ -86,14 +86,14 @@ void test_auth_chats_resolve_request_params_uses_defaults_and_overrides(void) {
     engine.temperature_default = 0.8;
     engine.max_tokens = 2048;
 
-    ChatRequestParams defaults = auth_chats_resolve_request_params(&engine, -1.0, -1);
+    ChatRequestParams defaults = chat_resolve_request_params(&engine, -1.0, -1, false);
     TEST_ASSERT_EQUAL_DOUBLE(0.8, defaults.temperature);
     TEST_ASSERT_EQUAL_INT(2048, defaults.max_tokens);
 
-    ChatRequestParams overrides = auth_chats_resolve_request_params(&engine, 0.2, 99);
+    ChatRequestParams overrides = chat_resolve_request_params(&engine, 0.2, 99, false);
     TEST_ASSERT_EQUAL_DOUBLE(0.2, overrides.temperature);
     TEST_ASSERT_EQUAL_INT(99, overrides.max_tokens);
-    (void)auth_chats_resolve_request_params(NULL, 0.2, 99);
+    (void)chat_resolve_request_params(NULL, 0.2, 99, false);
 }
 
 void test_auth_chats_build_multi_requests_filters_engines(void) {

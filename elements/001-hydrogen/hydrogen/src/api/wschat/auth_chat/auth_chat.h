@@ -54,14 +54,6 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
 jwt_validation_result_t auth_chat_validate_jwt_from_header(const char *auth_header);
 
 /**
- * Resolve ChatRequestParams from optional request fields and engine defaults.
- */
-ChatRequestParams auth_chat_resolve_request_params(const ChatEngineConfig *engine,
-                                                    double temperature,
-                                                    int max_tokens,
-                                                    bool stream);
-
-/**
  * Convert a messages JSON array into a ChatMessage linked list.
  * Handles string content and multimodal array content (including media: refs).
  */

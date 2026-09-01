@@ -124,9 +124,10 @@ json_t* chat_request_build_openai(const ChatEngineConfig* engine,
     }
     json_object_set_new(root, "messages", messages_array);
  
-    // Temperature - Always set to 1.0 for all requests
-    json_object_set_new(root, "temperature", json_real(1.0));
- 
+    // Temperature - use client value if provided, otherwise engine default
+    double temperature = (params->temperature >= 0.0) ? params->temperature : engine->temperature_default;
+    json_object_set_new(root, "temperature", json_real(temperature));
+
     // Max tokens
     if (params->max_tokens > 0) {
         json_object_set_new(root, "max_tokens", json_integer(params->max_tokens));
@@ -143,7 +144,7 @@ json_t* chat_request_build_openai(const ChatEngineConfig* engine,
     // This is safe to include for all providers - unused ones will ignore it
     json_object_set_new(root, "include_retrieval_info", json_true());
 
-    // Additional params
+    // Additional params overlay (merges last — explicit fields set the base)
     if (params->additional_params) {
         const char* key;
         json_t* value;
@@ -274,6 +275,10 @@ json_t* chat_request_build_anthropic(const ChatEngineConfig* engine,
     if (max_tokens <= 0) max_tokens = 4096;  // Default for Anthropic
     json_object_set_new(root, "max_tokens", json_integer(max_tokens));
 
+    // Temperature - use client value if provided, otherwise engine default
+    double temperature = (params->temperature >= 0.0) ? params->temperature : engine->temperature_default;
+    json_object_set_new(root, "temperature", json_real(temperature));
+
     // Extract system message and build messages array
     const char* system_content = NULL;
     json_t* messages_array = json_array();
@@ -320,6 +325,15 @@ json_t* chat_request_build_anthropic(const ChatEngineConfig* engine,
     // Request retrieval info for RAG citations
     json_object_set_new(root, "include_retrieval_info", json_true());
 
+    // Additional params overlay (merges last — explicit fields set the base)
+    if (params->additional_params) {
+        const char* key;
+        json_t* value;
+        json_object_foreach(params->additional_params, key, value) {
+            json_object_set(root, key, value);
+        }
+    }
+
     return root;
 }
 
@@ -352,10 +366,11 @@ json_t* chat_request_build_ollama(const ChatEngineConfig* engine,
 
     // Options (Ollama uses num_predict instead of max_tokens)
     json_t* options = json_object();
-    
-    // Temperature - Always set to 1.0 for all requests
-    json_object_set_new(options, "temperature", json_real(1.0));
- 
+
+    // Temperature - use client value if provided, otherwise engine default
+    double temperature = (params->temperature >= 0.0) ? params->temperature : engine->temperature_default;
+    json_object_set_new(options, "temperature", json_real(temperature));
+
     // Ollama uses num_predict for max_tokens
     int max_tokens = params->max_tokens > 0 ? params->max_tokens : engine->max_tokens;
     if (max_tokens > 0) {
@@ -367,6 +382,89 @@ json_t* chat_request_build_ollama(const ChatEngineConfig* engine,
     // Stream
     if (params->stream) {
         json_object_set_new(root, "stream", json_true());
+    }
+
+    // Additional params overlay (merges last — explicit fields set the base)
+    if (params->additional_params) {
+        const char* key;
+        json_t* value;
+        json_object_foreach(params->additional_params, key, value) {
+            json_object_set(root, key, value);
+        }
+    }
+
+    return root;
+}
+
+// Resolve ChatRequestParams from optional request fields and engine defaults
+ChatRequestParams chat_resolve_request_params(const ChatEngineConfig* engine,
+                                               double temperature,
+                                               int max_tokens,
+                                               bool stream) {
+    ChatRequestParams params = chat_request_params_default();
+    if (!engine) {
+        params.stream = stream;
+        return params;
+    }
+    params.temperature = (temperature >= 0.0) ? temperature : engine->temperature_default;
+    params.max_tokens = (max_tokens > 0) ? max_tokens : engine->max_tokens;
+    params.stream = stream;
+    return params;
+}
+
+// Build Responses API request (xAI/OpenAI)
+// Wire format: input (messages), max_output_tokens, temperature, tools
+json_t* chat_request_build_messages_array(const ChatMessage* messages) {
+    json_t* messages_array = json_array();
+    const ChatMessage* current = messages;
+    while (current) {
+        json_t* msg_obj = json_object();
+        json_object_set_new(msg_obj, "role", json_string(chat_message_role_to_string(current->role)));
+        json_object_set_new(msg_obj, "content", json_string(current->content ? current->content : ""));
+        json_array_append_new(messages_array, msg_obj);
+        current = current->next;
+    }
+    return messages_array;
+}
+
+json_t* chat_request_build_responses(const ChatEngineConfig* engine,
+                                      const ChatMessage* messages,
+                                      const ChatRequestParams* params) {
+    if (!engine || !messages) return NULL;
+
+    json_t* root = json_object();
+    if (!root) return NULL;
+
+    // Model
+    const char* model = params->model ? params->model : engine->model;
+    json_object_set_new(root, "model", json_string(model));
+
+    // Input (Responses API uses "input" instead of "messages")
+    json_t* input_array = chat_request_build_messages_array(messages);
+    json_object_set_new(root, "input", input_array);
+
+    // Temperature - use client value if provided, otherwise engine default
+    double temperature = (params->temperature >= 0.0) ? params->temperature : engine->temperature_default;
+    json_object_set_new(root, "temperature", json_real(temperature));
+
+    // Max output tokens (Responses API uses "max_output_tokens")
+    int max_tokens = params->max_tokens > 0 ? params->max_tokens : engine->max_tokens;
+    if (max_tokens > 0) {
+        json_object_set_new(root, "max_output_tokens", json_integer(max_tokens));
+    }
+
+    // Stream
+    if (params->stream) {
+        json_object_set_new(root, "stream", json_true());
+    }
+
+    // Additional params overlay (merges last — explicit fields set the base)
+    if (params->additional_params) {
+        const char* key;
+        json_t* value;
+        json_object_foreach(params->additional_params, key, value) {
+            json_object_set(root, key, value);
+        }
     }
 
     return root;
@@ -389,6 +487,11 @@ json_t* chat_request_build(const ChatEngineConfig* engine,
             // Fall through to OpenAI format for Ollama when not using native API
             return chat_request_build_openai(engine, messages, params);
         case CEC_PROVIDER_OPENAI:
+            // xAI/OpenAI use Responses API when configured
+            if (engine->use_responses_api) {
+                return chat_request_build_responses(engine, messages, params);
+            }
+            return chat_request_build_openai(engine, messages, params);
         case CEC_PROVIDER_UNKNOWN:
         default:
             return chat_request_build_openai(engine, messages, params);

@@ -63,30 +63,6 @@ jwt_validation_result_t auth_chat_validate_jwt_from_header(const char *auth_head
     return validate_jwt(auth_header + 7, NULL);
 }
 
-ChatRequestParams auth_chat_resolve_request_params(const ChatEngineConfig *engine,
-                                                    double temperature,
-                                                    int max_tokens,
-                                                    bool stream) {
-    ChatRequestParams params = chat_request_params_default();
-    if (!engine) {
-        params.stream = stream;
-        return params;
-    }
-
-    if (temperature >= 0.0) {
-        params.temperature = temperature;
-    } else {
-        params.temperature = engine->temperature_default;
-    }
-    if (max_tokens > 0) {
-        params.max_tokens = max_tokens;
-    } else {
-        params.max_tokens = engine->max_tokens;
-    }
-    params.stream = stream;
-    return params;
-}
-
 char *auth_chat_content_to_string(const json_t *content_obj) {
     if (!content_obj) {
         return NULL;
@@ -510,7 +486,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         return ret;
     }
 
-    ChatRequestParams params = auth_chat_resolve_request_params(engine, temperature, max_tokens, stream);
+    ChatRequestParams params = chat_resolve_request_params(engine, temperature, max_tokens, stream);
     ChatMessage *chat_messages = auth_chat_messages_json_to_list(database, messages);
 
     // Build request JSON for provider
