@@ -67,6 +67,8 @@ static void set_valid_request(void) {
     jwt_claims_t claims = {0};
     claims.database = (char *)"test_db";
     claims.user_id = 7;
+    claims.aud = (char *)"hydrogen-chat";
+    claims.roles = (char *)"chat";
     mock_auth_service_jwt_set_validation_result(
         (jwt_validation_result_t){true, &claims, JWT_ERROR_NONE});
     mock_api_utils_set_buffer_data(

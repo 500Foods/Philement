@@ -106,6 +106,8 @@ void test_handle_auth_chat_request_success(void) {
     memset(&claims_storage, 0, sizeof(jwt_claims_t));
     claims_storage.database = (char*)"test_db";
     claims_storage.user_id = 42;
+    claims_storage.aud = (char*)"hydrogen-chat";
+    claims_storage.roles = (char*)"chat";
     mock_auth_service_jwt_set_validation_result(
         (jwt_validation_result_t){true, &claims_storage, JWT_ERROR_NONE});
 
@@ -137,6 +139,8 @@ void test_handle_auth_chat_request_proxy_failure(void) {
     memset(&claims_storage, 0, sizeof(jwt_claims_t));
     claims_storage.database = (char*)"test_db";
     claims_storage.user_id = 42;
+    claims_storage.aud = (char*)"hydrogen-chat";
+    claims_storage.roles = (char*)"chat";
     mock_auth_service_jwt_set_validation_result(
         (jwt_validation_result_t){true, &claims_storage, JWT_ERROR_NONE});
 
@@ -166,6 +170,8 @@ void test_handle_auth_chat_request_parse_response_failure(void) {
     memset(&claims_storage, 0, sizeof(jwt_claims_t));
     claims_storage.database = (char*)"test_db";
     claims_storage.user_id = 42;
+    claims_storage.aud = (char*)"hydrogen-chat";
+    claims_storage.roles = (char*)"chat";
     mock_auth_service_jwt_set_validation_result(
         (jwt_validation_result_t){true, &claims_storage, JWT_ERROR_NONE});
 
@@ -198,6 +204,8 @@ void test_handle_auth_chat_request_payload_too_large(void) {
     memset(&claims_storage, 0, sizeof(jwt_claims_t));
     claims_storage.database = (char*)"test_db";
     claims_storage.user_id = 42;
+    claims_storage.aud = (char*)"hydrogen-chat";
+    claims_storage.roles = (char*)"chat";
     mock_auth_service_jwt_set_validation_result(
         (jwt_validation_result_t){true, &claims_storage, JWT_ERROR_NONE});
 
@@ -249,6 +257,8 @@ void test_handle_auth_chat_request_context_hash_used(void) {
     memset(&claims_storage, 0, sizeof(jwt_claims_t));
     claims_storage.database = (char*)"test_db";
     claims_storage.user_id = 42;
+    claims_storage.aud = (char*)"hydrogen-chat";
+    claims_storage.roles = (char*)"chat";
     mock_auth_service_jwt_set_validation_result(
         (jwt_validation_result_t){true, &claims_storage, JWT_ERROR_NONE});
 
@@ -286,6 +296,8 @@ void test_handle_auth_chat_request_context_hash_missed(void) {
     memset(&claims_storage, 0, sizeof(jwt_claims_t));
     claims_storage.database = (char*)"test_db";
     claims_storage.user_id = 42;
+    claims_storage.aud = (char*)"hydrogen-chat";
+    claims_storage.roles = (char*)"chat";
     mock_auth_service_jwt_set_validation_result(
         (jwt_validation_result_t){true, &claims_storage, JWT_ERROR_NONE});
 
@@ -318,6 +330,8 @@ void test_handle_auth_chat_request_with_params_and_multimodal(void) {
     memset(&claims_storage, 0, sizeof(jwt_claims_t));
     claims_storage.database = (char*)"test_db";
     claims_storage.user_id = 42;
+    claims_storage.aud = (char*)"hydrogen-chat";
+    claims_storage.roles = (char*)"chat";
     mock_auth_service_jwt_set_validation_result(
         (jwt_validation_result_t){true, &claims_storage, JWT_ERROR_NONE});
 
@@ -363,6 +377,8 @@ void test_handle_auth_chat_request_invalid_token_with_claims(void) {
     jwt_claims_t claims_storage;
     memset(&claims_storage, 0, sizeof(jwt_claims_t));
     claims_storage.database = (char*)"test_db";
+    claims_storage.aud = (char*)"hydrogen-chat";
+    claims_storage.roles = (char*)"chat";
     mock_mhd_set_lookup_result("Bearer badtoken");
     mock_auth_service_jwt_set_validation_result(
         (jwt_validation_result_t){false, &claims_storage, JWT_ERROR_INVALID_SIGNATURE});

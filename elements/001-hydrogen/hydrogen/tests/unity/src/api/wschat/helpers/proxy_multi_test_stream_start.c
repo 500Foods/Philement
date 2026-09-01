@@ -158,9 +158,7 @@ void test_stream_start_param_guards(void) {
     // NULL request
     TEST_ASSERT_NULL(chat_proxy_multi_stream_start(&manager, &engine, NULL, fake_wsi,
                                                    NULL, &g_conn_valid, &g_stream_active, NULL, NULL, NULL, NULL));
-    // NULL wsi
-    TEST_ASSERT_NULL(chat_proxy_multi_stream_start(&manager, &engine, "{\"stream\":true}", NULL,
-                                                   NULL, &g_conn_valid, &g_stream_active, NULL, NULL, NULL, NULL));
+    // NULL wsi is valid (REST SSE mode)
 
     destroy_manager();
 }
