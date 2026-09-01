@@ -74,8 +74,9 @@ Each phase is worked in its **own conversation**. Follow this sequence:
 **CURRENT PAUSE POINT (as of 2026-09-01):** Phase 0 complete. Phase 1
 complete (temperature, overlay, Responses builder, shared resolver). Phase 2
 complete (reasoning knobs, inbound Responses reasoning). Phase 3 complete
-(REST SSE streaming, chat JWT policy, stub endpoint removed).
-Next: **Phase 4 implementation**.
+(REST SSE streaming, chat JWT policy, stub endpoint removed). Phase 4 complete
+(WS media: resolution, context_hashing stats, stream-abort leak fix, config timeouts).
+Next: **Phase 5 implementation**.
 
 ### Resume here next session
 
@@ -794,7 +795,16 @@ Test 59 WS green. `mkt`/`mkp` green.
 
 ### Status
 
-Not started.
+**Complete (2026-09-01)**
+
+- **Media: hash resolution parity.** Renamed `convert_json_messages_to_chat_messages` to `convert_json_messages_to_chat_messages_with_media(const char *database, json_t *messages)`. Array content is now checked for `media:` references and resolved via `chat_storage_resolve_media_in_content()` before being sent to the provider — matching REST `auth_chat.c` behavior. String content passes through unchanged.
+- **Context hashing stats on WS chat_done.** Added `auth_chat_collect_segment_stats()` call in `handle_chat_message` when `context_hashes` are present. Stats are attached to the `chat_done` response (both streaming and non-streaming) with `hashes_used`, `hashes_missed`, `bandwidth_saved_bytes`, and `bandwidth_saved_percent` — matching REST non-streaming behavior.
+- **MultiStreamContext extended.** Added `has_context_hashing_stats`, `ctx_hashes_used`, `ctx_hashes_missed`, `ctx_bandwidth_saved_bytes`, `ctx_bandwidth_saved_percent` fields to `MultiStreamContext` for passing stats from WS handler to the streaming completion path.
+- **Stream-abort CURL leak fixed.** `chat_proxy_multi_stream_stop` now performs complete cleanup of the CURL easy handle, line buffers, post-done buffer, and `CurlStreamContext` — previously these were leaked on every client disconnect mid-stream because `curl_multi_remove_handle()` prevented `CURLMSG_DONE` from firing.
+- **Multi_curl timeouts via config.** Replaced hardcoded `CURLOPT_CONNECTTIMEOUT=10`/`CURLOPT_TIMEOUT=600` literals in `chat_proxy_multi_stream_start` with values from `chat_proxy_get_streaming_config()` (which reads `ChatProxyConfig`). Added `CURLOPT_LOW_SPEED_LIMIT=100`/`CURLOPT_LOW_SPEED_TIME=30` for stall detection so a trickling provider can't occupy a stream slot for the full timeout.
+- **Unity tests updated.** `websocket_server_chat_test_convert_messages.c` updated for new function signature (6/6 tests pass).
+- **Verification:** `mkt` green, `mkp` green (2,013 files), `mku websocket_server_chat_test_convert_messages` (6 tests) green.
+- Next: Phase 5 only.
 
 ---
 
@@ -1458,3 +1468,13 @@ zsh -ic 'mku <phase-named-unity>'
 - **Baseline.** Regenerated `tests/.static-baseline.txt` for 4 static callback helpers in `auth_chat_sse.c`.
 - **Verification:** `mkt` green, `mkp` green (2,013 files), `mks` green, `mku auth_jwt_helper_test` (27 tests) green.
 - Next: Phase 4 only.
+
+### 2026-09-01 — Phase 4 complete: WS media resolution, context_hashing stats, stream-abort leak fix, config timeouts
+
+- **Media: hash resolution parity.** `convert_json_messages_to_chat_messages` renamed to `convert_json_messages_to_chat_messages_with_media(const char *database, json_t *messages)`. Array content checked for `media:` refs and resolved via `chat_storage_resolve_media_in_content()` — matches REST `auth_chat.c` behavior.
+- **Context hashing stats on WS chat_done.** `auth_chat_collect_segment_stats()` called in `handle_chat_message` when context_hashes present. Stats attached to `chat_done` response (streaming + non-streaming) with `hashes_used`, `hashes_missed`, `bandwidth_saved_bytes`, `bandwidth_saved_percent`.
+- **Stream-abort CURL leak fixed.** `chat_proxy_multi_stream_stop` now frees easy handle, line buffers, post-done buffer, and CurlStreamContext inline — previously leaked on every mid-stream disconnect.
+- **Multi_curl timeouts via config.** Hardcoded 10s/600s replaced with `chat_proxy_get_streaming_config()` values. Added `CURLOPT_LOW_SPEED_LIMIT=100`/`CURLOPT_LOW_SPEED_TIME=30` for stall detection.
+- **Unity tests updated.** `websocket_server_chat_test_convert_messages.c` updated for new signature (6/6 pass).
+- **Verification:** `mkt` green, `mkp` green (2,013 files), `mku websocket_server_chat_test_convert_messages` (6 tests) green.
+- Next: Phase 5 only.

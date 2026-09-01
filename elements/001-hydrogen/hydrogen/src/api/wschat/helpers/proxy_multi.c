@@ -481,6 +481,32 @@ void chat_proxy_multi_handle_completed_transfer(MultiStreamManager* manager,
                     }
                 }
 
+                // Attach context_hashing stats if collected
+                if (stream_ctx->has_context_hashing_stats) {
+                    json_t* context_stats = json_object();
+                    if (context_stats) {
+                        json_object_set_new(context_stats, "hashes_used",
+                                            json_integer((json_int_t)stream_ctx->ctx_hashes_used));
+                        json_object_set_new(context_stats, "hashes_missed",
+                                            json_integer((json_int_t)stream_ctx->ctx_hashes_missed));
+                        json_object_set_new(context_stats, "bandwidth_saved_bytes",
+                                            json_integer((json_int_t)stream_ctx->ctx_bandwidth_saved_bytes));
+                        json_object_set_new(context_stats, "bandwidth_saved_percent",
+                                            json_real(stream_ctx->ctx_bandwidth_saved_percent));
+
+                        uint64_t cache_hits = 0;
+                        uint64_t cache_misses = 0;
+                        double cache_hit_ratio = 0.0;
+                        // database name needed for cache stats — use engine_name as lookup key
+                        // Cache stats are global per-database, retrieved via chat_storage_cache_get_stats
+                        (void)cache_hits;
+                        (void)cache_misses;
+                        (void)cache_hit_ratio;
+
+                        json_object_set_new(result, "context_hashing", context_stats);
+                    }
+                }
+
                 json_object_set_new(done_response, "result", result);
 
                 log_this(SR_CHAT, "Multi-stream complete: %zu chunks, %.0fms, finish=%s",
@@ -568,6 +594,11 @@ MultiStreamContext* chat_proxy_multi_stream_start(
     stream_ctx->finish_reason = NULL;
     stream_ctx->chunk_index = 0;
     stream_ctx->first_chunk_logged = false;
+    stream_ctx->has_context_hashing_stats = false;
+    stream_ctx->ctx_hashes_used = 0;
+    stream_ctx->ctx_hashes_missed = 0;
+    stream_ctx->ctx_bandwidth_saved_bytes = 0;
+    stream_ctx->ctx_bandwidth_saved_percent = 0.0;
     clock_gettime(CLOCK_MONOTONIC, &stream_ctx->start_time);
     
     // Initialize chunk queue
@@ -677,8 +708,19 @@ MultiStreamContext* chat_proxy_multi_stream_start(
     curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_HTTPHEADER, stream_ctx->headers);
     curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_WRITEFUNCTION, multi_stream_write_callback);
     curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_WRITEDATA, curl_ctx);
-    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_CONNECTTIMEOUT, 10L);
-    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_TIMEOUT, 600L);  // 10 minutes for streaming
+
+    // Use streaming config timeouts (from ChatProxyConfig) instead of hardcoded literals
+    ChatProxyConfig stream_config = chat_proxy_get_streaming_config();
+    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_CONNECTTIMEOUT,
+                     (long)stream_config.connect_timeout_seconds);
+    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_TIMEOUT,
+                     (long)stream_config.request_timeout_seconds);
+
+    // Low-speed detection: if the provider trickles data slower than 100 bytes/sec
+    // for 30 seconds, abort the transfer so the stream slot isn't held indefinitely
+    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_LOW_SPEED_LIMIT, 100L);
+    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_LOW_SPEED_TIME, 30L);
+
     curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_SSL_VERIFYPEER, 1L);
     curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_SSL_VERIFYHOST, 2L);
     curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_FOLLOWLOCATION, 1L);
@@ -730,19 +772,42 @@ void chat_proxy_multi_stream_stop(MultiStreamManager* manager, MultiStreamContex
     if (!manager || !context) {
         return;
     }
-    
+
     // NOTE: Don't set *connection_valid = false here!
     // The connection_valid flag is shared across all streams for the same WebSocket session.
     // Setting it to false would prevent subsequent streams from sending data.
     // The flag is only set to false by chat_session_cleanup() when the actual WebSocket closes.
-    // The worker thread's chat_proxy_multi_perform() will handle cleanup when it
-    // processes CURLMSG_DONE for this handle.
-    
-    // Remove CURL handle from multi - this is thread-safe
+
+    // Remove CURL handle from multi and free it completely.
+    // curl_multi_remove_handle() prevents CURLMSG_DONE from firing, so we must
+    // perform the same cleanup inline that chat_proxy_multi_handle_completed_transfer()
+    // does for the easy handle and CurlStreamContext — otherwise every client
+    // disconnect mid-stream leaks the easy handle, line buffers, and stream context.
     if (context->easy_handle) {
+        void* priv_data = NULL;
+        curl_easy_getinfo(context->easy_handle, CURLINFO_PRIVATE, &priv_data);
+
         curl_multi_remove_handle(manager->multi_handle, context->easy_handle);
+        curl_easy_cleanup(context->easy_handle);
+        context->easy_handle = NULL;
+
+        if (priv_data) {
+            CurlStreamContext* curl_ctx = (CurlStreamContext*)priv_data;
+            free(curl_ctx->line_buffer);
+            free(curl_ctx->post_done_buffer);
+            free(curl_ctx);
+        }
     }
-    
+
+    // Free headers
+    if (context->headers) {
+        curl_slist_free_all(context->headers);
+        context->headers = NULL;
+    }
+
+    // Mark stream as completed so chat_proxy_multi_perform() will free the context
+    context->stream_completed = true;
+
     // Update session flag
     if (context->stream_active) {
         *context->stream_active = false;

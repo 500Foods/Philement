@@ -123,7 +123,7 @@ int send_chat_proxy_result(struct lws *wsi, const char* request_id,
     return 0;
 }
 
-ChatMessage* convert_json_messages_to_chat_messages(json_t *messages) {
+ChatMessage* convert_json_messages_to_chat_messages_with_media(const char *database, json_t *messages) {
     ChatMessage *chat_messages = NULL;
     if (!messages || !json_is_array(messages)) {
         return NULL;
@@ -146,6 +146,18 @@ ChatMessage* convert_json_messages_to_chat_messages(json_t *messages) {
             content_str = strdup(json_string_value(content_obj));
         } else if (json_is_array(content_obj)) {
             content_str = json_dumps(content_obj, JSON_COMPACT);
+            if (content_str && database && strstr(content_str, "media:")) {
+                char *resolved = NULL;
+                char *error_msg = NULL;
+                if (chat_storage_resolve_media_in_content(database, content_str, &resolved, &error_msg)) {
+                    free(content_str);
+                    content_str = resolved;
+                } else {
+                    log_this(SR_WEBSOCKET_CHAT, "Media resolution failed: %s", LOG_LEVEL_ALERT, 1,
+                             error_msg ? error_msg : "unknown error");
+                }
+                free(error_msg);
+            }
         }
 
         if (content_str) {
@@ -318,12 +330,22 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     params.stream = stream;
     if (reasoning) params.reasoning = reasoning;
 
-    // Convert messages JSON to ChatMessage list for proper request building
-    ChatMessage *chat_messages = convert_json_messages_to_chat_messages(messages);
+    // Convert messages JSON to ChatMessage list with media resolution
+    ChatMessage *chat_messages = convert_json_messages_to_chat_messages_with_media(database, messages);
 
     // Build proper request JSON for provider using chat_request_build
     json_t *provider_request = chat_request_build(engine, chat_messages, &params);
     chat_message_list_destroy(chat_messages);
+
+    // Collect context_hashing stats (before provider call, for attachment to chat_done)
+    AuthChatSegmentStats segment_stats = {0};
+    bool has_ctx_stats = false;
+    if (context_hashes && context_hash_count > 0) {
+        if (auth_chat_collect_segment_stats(database, messages, context_hashes, context_hash_count,
+                                             NULL, &segment_stats)) {
+            has_ctx_stats = true;
+        }
+    }
 
     if (!provider_request) {
         send_chat_error(wsi, "Failed to build request", request_id);
@@ -412,9 +434,19 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
             free(engine_name);
             free(reasoning);
             chat_context_free_hash_array(context_hashes, context_hash_count);
+            auth_chat_free_segment_stats(&segment_stats);
             free(request_json_str);
             json_decref(request_json);
             return -1;
+        }
+
+        // Pass context_hashing stats to stream context for chat_done attachment
+        if (has_ctx_stats) {
+            multi_ctx->has_context_hashing_stats = true;
+            multi_ctx->ctx_hashes_used = segment_stats.hashes_used;
+            multi_ctx->ctx_hashes_missed = segment_stats.hashes_missed;
+            multi_ctx->ctx_bandwidth_saved_bytes = segment_stats.bandwidth_saved_bytes;
+            multi_ctx->ctx_bandwidth_saved_percent = segment_stats.bandwidth_saved_percent;
         }
 
         session->multi_stream_ctx = multi_ctx;
@@ -440,11 +472,32 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
 
         ChatProxyResult *proxy_result = chat_proxy_send_with_retry(engine, request_json_str, &proxy_config);
 
+        // Attach context_hashing stats to response if available
+        if (has_ctx_stats && proxy_result && proxy_result->code == CHAT_PROXY_OK && proxy_result->response_body) {
+            json_error_t json_err;
+            json_t* response_json = json_loads(proxy_result->response_body, 0, &json_err);
+            if (response_json) {
+                auth_chat_attach_context_hashing_stats(response_json, database,
+                                                        segment_stats.hashes_used,
+                                                        segment_stats.hashes_missed,
+                                                        segment_stats.bandwidth_saved_bytes,
+                                                        segment_stats.bandwidth_saved_percent);
+                char* updated = json_dumps(response_json, JSON_COMPACT);
+                if (updated) {
+                    free(proxy_result->response_body);
+                    proxy_result->response_body = updated;
+                    proxy_result->response_size = strlen(updated);
+                }
+                json_decref(response_json);
+            }
+        }
+
         if (send_chat_proxy_result(wsi, request_id, engine, proxy_result, start_time, message_count) != 0) {
             free(request_json_str);
             free(engine_name);
             free(reasoning);
             chat_context_free_hash_array(context_hashes, context_hash_count);
+            auth_chat_free_segment_stats(&segment_stats);
             json_decref(request_json);
             return -1;
         }
@@ -455,6 +508,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     free(engine_name);
             free(reasoning);
     chat_context_free_hash_array(context_hashes, context_hash_count);
+    auth_chat_free_segment_stats(&segment_stats);
     json_decref(request_json);
 
     return 0;

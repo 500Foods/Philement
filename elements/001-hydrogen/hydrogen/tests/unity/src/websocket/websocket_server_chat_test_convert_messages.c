@@ -27,20 +27,20 @@ void tearDown(void) {
 }
 
 void test_convert_json_messages_null(void) {
-    ChatMessage *result = convert_json_messages_to_chat_messages(NULL);
+    ChatMessage *result = convert_json_messages_to_chat_messages_with_media(NULL, NULL);
     TEST_ASSERT_NULL(result);
 }
 
 void test_convert_json_messages_not_array(void) {
     json_t *obj = json_object();
-    ChatMessage *result = convert_json_messages_to_chat_messages(obj);
+    ChatMessage *result = convert_json_messages_to_chat_messages_with_media(NULL, obj);
     TEST_ASSERT_NULL(result);
     json_decref(obj);
 }
 
 void test_convert_json_messages_empty_array(void) {
     json_t *arr = json_array();
-    ChatMessage *result = convert_json_messages_to_chat_messages(arr);
+    ChatMessage *result = convert_json_messages_to_chat_messages_with_media(NULL, arr);
     TEST_ASSERT_NULL(result);
     json_decref(arr);
 }
@@ -52,7 +52,7 @@ void test_convert_json_messages_valid_string_content(void) {
     json_object_set_new(msg, "content", json_string("hello"));
     json_array_append_new(arr, msg);
 
-    ChatMessage *result = convert_json_messages_to_chat_messages(arr);
+    ChatMessage *result = convert_json_messages_to_chat_messages_with_media(NULL, arr);
 
     TEST_ASSERT_NOT_NULL(result);
     TEST_ASSERT_EQUAL_INT(CHAT_ROLE_USER, result->role);
@@ -75,7 +75,7 @@ void test_convert_json_messages_array_content(void) {
     json_object_set_new(msg, "content", content_arr);
     json_array_append_new(arr, msg);
 
-    ChatMessage *result = convert_json_messages_to_chat_messages(arr);
+    ChatMessage *result = convert_json_messages_to_chat_messages_with_media(NULL, arr);
 
     TEST_ASSERT_NOT_NULL(result);
     TEST_ASSERT_EQUAL_INT(CHAT_ROLE_USER, result->role);
@@ -102,7 +102,7 @@ void test_convert_json_messages_skips_invalid_entries(void) {
     json_object_set_new(good, "content", json_string("valid"));
     json_array_append_new(arr, good);
 
-    ChatMessage *result = convert_json_messages_to_chat_messages(arr);
+    ChatMessage *result = convert_json_messages_to_chat_messages_with_media(NULL, arr);
 
     TEST_ASSERT_NOT_NULL(result);
     TEST_ASSERT_EQUAL_INT(CHAT_ROLE_ASSISTANT, result->role);
