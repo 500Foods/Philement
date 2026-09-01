@@ -14,7 +14,7 @@ Both are configured through `hydrogen.json`.
 ### Core Settings
 
 | Setting | Description | Default | Notes |
-|---------|-------------|---------|-------|
+| --------- | ------------- | --------- | ------- |
 | `Enabled` | Turns mDNS server on/off | `true` | Required |
 | `EnableIPv6` | Enables IPv6 support | `false` | Optional |
 | `DeviceId` | Unique device identifier | `"hydrogen-printer"` | Required |
@@ -29,7 +29,7 @@ Both are configured through `hydrogen.json`.
 Each service in the `Services` array can have:
 
 | Setting | Description | Default | Notes |
-|---------|-------------|---------|-------|
+| --------- | ------------- | --------- | ------- |
 | `Name` | Service instance name | - | Required |
 | `Type` | Service type | - | Required |
 | `Port` | Service port | - | Required |
@@ -70,10 +70,10 @@ The server probes for each instance name and the hostname before announcing. On 
 
 ## mDNS Client — `mDNSClient`
 
-### Core Settings
+### Core Client Settings
 
 | Setting | Description | Default | Notes |
-|---------|-------------|---------|-------|
+| --------- | ------------- | --------- | ------- |
 | `Enabled` | Turns mDNS client on/off | `true` | Required |
 | `EnableIPv6` | Enables IPv6 support | `false` | Optional |
 | `ScanIntervalMs` | Browse interval | `5000` | Milliseconds |
@@ -127,7 +127,7 @@ When an object is used, `Required` and `AutoConnect` are stored; `AutoConnect` i
 
 All intervals are **milliseconds**. Health checking is a TCP connect to the advertised host:port; there is no HTTP GET.
 
-### Example
+### Client Example
 
 ```json
 {
