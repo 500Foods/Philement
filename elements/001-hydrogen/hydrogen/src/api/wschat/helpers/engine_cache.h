@@ -71,7 +71,8 @@ typedef struct ChatEngineConfig {
 
     // Provider-specific settings (Phase 5)
     bool use_native_api;              // Use provider's native API (not OpenAI-compatible)
-    
+    bool use_responses_api;           // Use Responses API (xAI/OpenAI) instead of Chat Completions
+
     // Supported modalities (Phase 12)
     int supported_modalities;         // Bitmask of ChatModality values
 } ChatEngineConfig;

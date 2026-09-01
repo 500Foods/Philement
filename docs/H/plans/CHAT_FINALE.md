@@ -72,8 +72,8 @@ Each phase is worked in its **own conversation**. Follow this sequence:
 ## Resuming Work
 
 **CURRENT PAUSE POINT (as of 2026-09-01):** Phase 0 complete. Phase 1
-designed (overlay, Anthropic temperature, Responses routing locked).
-Next: **Phase 1 implementation**.
+complete (temperature, overlay, Responses builder, shared resolver).
+Next: **Phase 2 implementation**.
 
 ### Resume here next session
 
@@ -593,7 +593,17 @@ Named Unity green. `mkt`/`mkp` green.
 
 ### Status
 
-Not started.
+**Complete (2026-09-01)**
+
+- **Temperature reaches provider:** All four builders (OpenAI, Ollama, Anthropic, Responses) now emit `params->temperature` when `>= 0`, else `engine->temperature_default`. No more hardcoded `1.0`.
+- **Anthropic temperature added:** Was field-absent; now present with correct value.
+- **Overlay extended:** `additional_params` merge now works in all builders (Anthropic, Ollama, Responses), not just OpenAI. Overlay merges last — explicit fields set the base.
+- **Responses API builder:** New `chat_request_build_responses` emits `input` (not `messages`), `max_output_tokens` (not `max_tokens`), `temperature`, and overlay. Clean from the start — no hardcoded values.
+- **Responses routing:** `use_responses_api` bool added to `ChatEngineConfig`; `chat_request_build` dispatches to Responses builder from `CEC_PROVIDER_OPENAI` case when flag is set. Anthropic path unaffected.
+- **Shared resolver:** `auth_chat_resolve_request_params` and `auth_chats_resolve_request_params` unified into `chat_resolve_request_params` in `req_builder.c`. Both call sites updated.
+- **Database loading:** `use_responses_api` loaded from engine collection JSON alongside `use_native_api`.
+- **Unity tests:** 17 new tests in `req_builder_test_temperature.c` prove temperature round-trip, engine-default fallback, overlay merge in all builders, Responses format (`input`/`max_output_tokens`), and routing dispatch.
+- **Verification:** `mkt` green, `mkp` green (2,011 files), all named Unity tests green.
 
 ---
 
@@ -1387,3 +1397,17 @@ zsh -ic 'mku <phase-named-unity>'
 - **Phase 8 updated:** Goal, work items (8a/8b/8c), Done means, Exit gate
   all revised to reflect hosted + local MCP.
 - Next: Phase 1 only.
+
+### 2026-09-01 — Phase 1 complete: temperature, overlay, Responses builder, shared resolver
+
+- **All four builders fixed for temperature.** `chat_request_build_openai` and `chat_request_build_ollama` no longer hardcode `1.0`; `chat_request_build_anthropic` now emits temperature (was field-absent). All use `params->temperature >= 0 ? params->temperature : engine->temperature_default`.
+- **New Responses API builder.** `chat_request_build_responses` emits `input` (not `messages`), `max_output_tokens` (not `max_tokens`), temperature, stream, and overlay. Temperature correct from the start — no hardcoded values.
+- **Overlay extended to all builders.** `additional_params` merge now in Anthropic, Ollama, and Responses (was OpenAI-only). Provider-specific knobs (Anthropic `thinking`, Responses `reasoning_effort`) ride in the overlay without builder changes.
+- **Responses routing via runtime flag.** Added `bool use_responses_api` to `ChatEngineConfig` (alongside `use_native_api`). `chat_request_build` dispatches to Responses builder from `CEC_PROVIDER_OPENAI` case when flag is set. No new enum value. Anthropic path is unaffected by the flag.
+- **Shared resolver.** Unified `auth_chat_resolve_request_params` (auth_chat.c) and `auth_chats_resolve_request_params` (auth_chats.c) into single `chat_resolve_request_params` in req_builder.c. Both call sites updated; old prototypes removed from headers.
+- **Database loading.** `use_responses_api` loaded from engine collection JSON in `chat_engine_cache_load_from_database`, alongside `use_native_api`.
+- **Static-function gate caught a helper.** `chat_request_build_messages_array` was initially `static`; gate rejected it. Removed `static`, added header declaration in Unity-test section.
+- **Unity tests.** 17 new tests in `req_builder_test_temperature.c`: temperature client-value/engine-default for OpenAI+Ollama+Anthropic+Responses, Responses format (`input`, `max_output_tokens`), overlay merge in all four builders, routing dispatch (Responses when flag set, OpenAI when clear, Anthropic unaffected).
+- **Existing tests updated.** `req_builder_test.c` Ollama temperature assertion updated (was hardcoded 1.0, now client value 0.8). `auth_chat_test_helpers.c` and `auth_chats_test_helpers.c` updated to call shared resolver.
+- **Verification:** `mkt` green, `mkp` green (2,011 files), `mku req_builder_test_temperature` (17 tests), `mku req_builder_test` (10 tests), `mku auth_chat_test_helpers` (18 tests), `mku auth_chats_test_helpers` (9 tests) — all green.
+- Next: Phase 2 only.

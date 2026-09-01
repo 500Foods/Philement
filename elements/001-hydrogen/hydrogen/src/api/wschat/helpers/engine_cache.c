@@ -173,7 +173,8 @@ ChatEngineConfig* chat_engine_config_create(int engine_id, const char* name, Cha
 
     // Initialize provider-specific settings (Phase 5)
     engine->use_native_api = use_native_api;
-    
+    engine->use_responses_api = false;
+
     // Initialize supported modalities (Phase 12)
     engine->supported_modalities = supported_modalities > 0 ? supported_modalities : MODALITY_DEFAULT;
 
@@ -625,6 +626,7 @@ bool chat_engine_cache_load_from_database(ChatEngineCache* cache, const char* da
                 json_t* max_payload_obj = json_object_get(collection, "max_payload_mb");
                 json_t* max_concurrent_obj = json_object_get(collection, "max_concurrent_requests");
                 json_t* use_native_obj = json_object_get(collection, "use_native_api");
+                json_t* use_responses_obj = json_object_get(collection, "use_responses_api");
                 json_t* modalities_obj = json_object_get(collection, "modalities");
 
                 const char* name = name_obj && json_is_string(name_obj) ?
@@ -650,7 +652,9 @@ bool chat_engine_cache_load_from_database(ChatEngineCache* cache, const char* da
                 int max_concurrent = max_concurrent_obj && json_is_integer(max_concurrent_obj) ?
                                      (int)json_integer_value(max_concurrent_obj) : 100;
                 bool use_native = use_native_obj && json_is_boolean(use_native_obj) ?
-                                  json_boolean_value(use_native_obj) : false;
+                                   json_boolean_value(use_native_obj) : false;
+                bool use_responses = use_responses_obj && json_is_boolean(use_responses_obj) ?
+                                     json_boolean_value(use_responses_obj) : false;
                 
                 // Parse modalities array into bitmask
                 int supported_modalities = MODALITY_DEFAULT;
@@ -677,6 +681,9 @@ bool chat_engine_cache_load_from_database(ChatEngineCache* cache, const char* da
                     max_tokens, 0.7, is_default, liveliness, max_images, max_payload, max_concurrent,
                     supported_modalities, use_native
                 );
+                if (engine) {
+                    engine->use_responses_api = use_responses;
+                }
 
                 if (engine) {
                     if (chat_engine_cache_add_engine(cache, engine)) {
