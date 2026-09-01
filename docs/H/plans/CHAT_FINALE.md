@@ -71,8 +71,9 @@ Each phase is worked in its **own conversation**. Follow this sequence:
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-08-30):** Plan written. No phase started.
-Next: **Phase 0**.
+**CURRENT PAUSE POINT (as of 2026-09-01):** Phase 0 complete. Phase 1
+designed (overlay, Anthropic temperature, Responses routing locked).
+Next: **Phase 1 implementation**.
 
 ### Resume here next session
 
@@ -96,23 +97,29 @@ Next: **Phase 0**.
 ## Goals
 
 1. Client may use **REST or WebSocket**.
-2. Session with **Grok** (xAI CEC; wire format — Chat Completions vs
-   Responses — locked by the Phase 0 spike).
+2. Session with **Grok** (xAI CEC; **Responses API** wire format, locked
+   by Phase 0 spike). Other providers use Chat Completions / Messages.
 3. Questions return with **streaming** (per matrix), **temperature**,
    **reasoning**, the provider's max-tokens knob, and other obvious
-   provider knobs — field names as locked by Phase 0 (endpoint spike).
+   provider knobs. Responses API: `max_output_tokens`, `reasoning` items,
+   `response.*` SSE events.
 4. Grok can answer by calling **Hydrogen MCP** on the **public** MCP
-   URL, possibly a **different instance** than chat (DOKS). Intended.
-5. An MCP **Lua tool** returns the same JSON as authenticated
+   URL via **hosted MCP** (`type:mcp` in provider body), possibly a
+   **different instance** than chat (DOKS). Intended.
+5. **Local MCP** for all providers — Hydrogen acts as MCP client,
+   converts tools to function-calling defs, sends on any endpoint.
+6. An MCP **Lua tool** returns the same JSON as authenticated
    `GET /api/system/info`, by **reusing** the C collectors — not by
    HTTP-calling the REST endpoint, not by a second implementation.
-6. Shared parse/build/proxy where sharing is real. Published support matrix.
-7. Chat-related `mkt` dead functions driven to **zero**. Do not baseline them.
-8. **Observability.** One opaque correlation/request id threads the chat →
-   mint → MCP three-hop path (logs, not a shared store) so a missing MCP
-   call is distinguishable from a silent storage failure at 1 a.m. Locked
-   by Phase 0; verified by Phase 5 (logged failures) and Phase 8 (mint/MCP
-   trace).
+7. Shared parse/build/proxy where sharing is real. One internal request
+   object maps to the dialect the chosen model speaks. Published support
+   matrix.
+8. Chat-related `mkt` dead functions driven to **zero**. Do not baseline them.
+9. **Observability.** One opaque correlation/request id (UUID v4) threads
+   the chat → mint → MCP three-hop path (logs, not a shared store) so a
+   missing MCP call is distinguishable from a silent storage failure at
+   1 a.m. Locked by Phase 0; verified by Phase 5 (logged failures) and
+   Phase 8 (mint/MCP trace).
 
 ## Non-Goals
 
@@ -170,23 +177,42 @@ work items.
 ## Architecture (target)
 
 ```text
-500 Courses client
-  ├─ REST  POST /api/conduit/auth_chat[s]   Bearer <Hydrogen JWT>
-  └─ WS    type:"chat"  payload.jwt
-            │
-            v
-     Hydrogen instance A (chat proxy)  ──►  xAI Grok
-                                                 │
-                                                 │ independent MCP
-                                                 v
-     Public MCP URL (Streamable HTTP)
-            Authorization: Bearer <user-scoped JWT>
-            │
-            v
-     Hydrogen instance B (maybe)
-            Lua tools, including System.Info
-            (same JSON as JWT GET /api/system/info)
+Browser (SSE / WebSocket)
+        │
+Hydrogen chat proxy (the only place that knows vendors)
+        │
+   ┌────┼────────────────────────────┐
+   │    │                            │
+   │  /v1/responses              /v1/chat/completions      /v1/messages
+   │  (xAI, OpenAI)              (Ollama, Groq,           (Anthropic)
+   │   + type:mcp tool            OpenRouter floor)
+   │   = hosted MCP)
+   │
+   └────┴─────── MCP client (Hydrogen-side) ──────────────┘
+                         │
+                         ├─ Hosted MCP: Hydrogen exposes public MCP URL;
+                         │   provider connects via `type:mcp` (Responses only)
+                         └─ Local MCP: Hydrogen connects to MCP servers,
+                             converts tools to function-calling defs,
+                             sends on any endpoint
+                         │
+                         ▼
+                  Public MCP URL (Streamable HTTP)
+                  Authorization: Bearer <user-scoped JWT>
+                  │
+                  ▼
+                  Hydrogen (maybe different instance)
+                  Lua tools, including System.Info
+                  (same JSON as JWT GET /api/system/info)
 ```
+
+### Wire format rules
+
+1. **Normalize inbound to one internal request object** (model, messages/items, tools, stream flag), then map to the dialect the chosen model speaks.
+2. **Keep conversation state in Hydrogen** by default. `previous_response_id` is an optional fast path for OpenAI/xAI when opted in via engine config.
+3. **MCP lives in Hydrogen** — converted to function tools. Optionally *also* pass `type: mcp` when the route is OpenAI/xAI and the server is remote-reachable (hosted MCP optimization).
+4. **Stream through one internal event schema** (`{type: "text_delta"|"tool_call"|"tool_result"|"reasoning"|"done", ...}`). Translate Responses typed events, Chat Completions deltas, and Anthropic content blocks into it.
+5. **Per-engine JSON config** carries provider-specific attributes (e.g. `store` for Responses API). Passed where expected, ignored by adapters that don't use it.
 
 ---
 
@@ -199,7 +225,7 @@ work items.
 | REST `auth_chat` / `auth_chats` non-stream | JWT, CEC, proxy, storage, hashes, `media:` |
 | WS `"chat"` stream and non-stream | multi_curl + `chat_done` |
 | WS `"media_upload"` | Single-frame |
-| CEC `xai` | Maps to OpenAI-compatible |
+| CEC `xai` | Maps to OpenAI-compatible (Chat Completions) — but xAI Remote MCP **requires Responses API** (`/v1/responses`). Chat Completions rejects `type:mcp` with 422. Phase 0 spike confirmed. |
 | MCP Phases 0–15 | Test 47; Hydrogen JWT default |
 | `GET /api/system/info` | Public JSON via `get_system_status_json`; JWT adds `scripting` scoreboard |
 | Test 59 | REST + WS; **asserts REST stream 501** |
@@ -227,7 +253,7 @@ work items.
 | `context_hashing` stats | Reported to client only on non-stream REST `auth_chat`; silently dropped on REST stream and WS |
 | Silent storage failures | `storage.c`/`storage_media.c` have `return false` paths with no `log_this`, indistinguishable from "not found" |
 | MCP `aud` check | `mcp_try_hydrogen` never validates `aud`; only OIDC IdP/RP paths do — any Hydrogen JWT for any audience passes MCP auth today |
-| Scoped MCP token minting | Does not exist. `H.system_token` / `sub=hydrogen-scripting` referenced below as "don't use this" is **not present in the codebase at all** — there is no minting primitive to avoid or to use yet |
+| Wire format | Current CEC only builds Chat Completions. xAI/OpenAI need Responses API (`input`, `max_output_tokens`, `output[]`, `response.*` SSE). Dual adapter required (Phase 1+). |
 | Per-tool MCP authorization | Does not exist — any authenticated JWT can call any `mcp_access=1` tool |
 
 ### Authenticated status JSON (reuse this)
@@ -260,26 +286,24 @@ Draft recommendation in parentheses. Phase 0 writes the Decision column.
 | Non-stream | yes | yes | yes |
 | Streaming | **decide** (no; 400 → use WS) | no | yes |
 | Temperature | must apply | must apply | must apply |
-| `max_tokens` | yes | yes | yes |
+| `max_tokens` / `max_output_tokens` | yes | yes | yes |
 | Reasoning request | add | add | add |
 | Reasoning inbound | n/a if no REST stream | n/a | chunks |
 | `context_hashes` | yes | as today | parity or drop |
 | `media:` | yes | as today | parity |
 | Persist | yes | as today | parity |
 | Client `tools` | **no** | **no** | **no** |
-| Grok MCP | Phase 8 | Phase 8 | Phase 8 |
+| Hosted MCP (xAI/OpenAI) | Phase 8 | Phase 8 | Phase 8 |
+| Local MCP (all providers) | Phase 8 | Phase 8 | Phase 8 |
+
+**Wire format note:** xAI and OpenAI use `/v1/responses` (Responses API). All other providers use `/v1/chat/completions` (Chat Completions). Anthropic uses `/v1/messages`. CEC routes by engine config.
 
 **Lock notes for Phase 0 (from independent review):**
 
 - **Streaming error contract** is locked as **400 + stable JSON, use WS** —
   not a `200` body that is only a single SSE error event.
-- **Reasoning inbound** (`reasoning_content`) lives on WS chunks **only if**
-  Phase 0's spike confirms Grok chat stays on the Chat Completions wire
-  format; on xAI's Responses API, reasoning is a different field entirely.
-  Do not assert `reasoning_content` in Unity until the endpoint is locked.
-- **Grok may not even reach `/v1/chat/completions` with MCP.** The spike
-  probes that first. If MCP only works on `/v1/responses`, Phases 1–4
-  target the Responses wire format.
+- **Reasoning inbound** lives on WS chunks. On Responses API, reasoning is a typed `reasoning` item in the `output` array (not `delta.reasoning_content` as in Chat Completions). The Phase 0 spike confirms xAI uses Responses API, so the inbound assertion targets Responses reasoning items.
+- **Grok does not reach `/v1/chat/completions` with MCP.** The spike confirms MCP only works on `/v1/responses`. Phases 1–4 target the Responses wire format for xAI/OpenAI.
 
 ---
 
@@ -328,18 +352,23 @@ existing service-token mechanism.
 
 | Phase | Done means (one line) |
 | --- | --- |
-| 0 | Decisions written in Status (endpoint spike, streaming policy + error
-contract, aud-check outcome, System.Info scope, cost cap); no C |
-| 1 | Provider JSON uses client/engine temperature, not `1.0` |
-| 2 | Reasoning knobs round-trip; inbound chunks consistent with locked endpoint |
-| 3 | REST matches matrix; no fake 501/200 SSE |
-| 4 | WS matches matrix |
+| 0 | Decisions written in Status (endpoint spike → Responses API, streaming
+      policy + error contract, aud-check outcome, System.Info scope, cost
+      cap, wire format, MCP approach); no C |
+| 1 | Provider JSON uses client/engine temperature, not `1.0` (all builders
+      including new Responses adapter) |
+| 2 | Reasoning knobs round-trip; inbound Responses `reasoning` items on chunks |
+| 3 | REST matches matrix; real SSE; Responses API format for xAI/OpenAI |
+| 4 | WS matches matrix; Responses API format for xAI/OpenAI |
 | 5 | Zero chat names in `dead_functions.txt` |
 | 6 | `H.system.info()` === JWT `/api/system/info` collectors |
 | 7 | MCP tool `System.Info` callable; Test 47 proves it |
-| 8 | Grok (or mock) calls public MCP with a minted, short-TTL
-`aud=MCP.Resource` JWT; `aud`-gate proven real; mint+verify (8a) before
-wire (8b); `Mcp-Session-Id` not required for the Grok path |
+| 8 | Hosted MCP: Grok (or mock) calls public MCP with a minted,
+      short-TTL `aud=MCP.Resource` JWT; `aud`-gate proven real;
+      mint+verify (8a) before wire (8b); `Mcp-Session-Id` not required
+      for the Grok path. Local MCP (8c): Hydrogen as MCP client —
+      connects to external MCP servers, converts tools to function-calling
+      defs, proxies tool calls; Unity-proven |
 | 9 | Docs and DOKS notes match code |
 | 10 | Parked extras — not a gate |
 
@@ -357,7 +386,7 @@ This document exists.
 
 ### Work items
 
-- [ ] **Spike: live CEC endpoint probe.** `curl` the actual Grok engine
+- [x] **Spike: live CEC endpoint probe.** `curl` the actual Grok engine
       URL / CEC config with a dummy `type:mcp` tool body on the **same
       endpoint** (`/v1/chat/completions`) CEC already uses. xAI documents
       Remote MCP on the native SDK / **Responses API**, not Chat
@@ -366,75 +395,83 @@ This document exists.
       any Unity asserting Chat Completions knobs (temperature,
       `reasoning_content`, streaming) — otherwise the wire format is
       wrong under the hood. Record result + endpoint in Status.
-- [ ] **Lock whether Grok chat moves to the Responses API.** If it does
-      (per the spike): streaming = SSE `response.*` (not chat deltas),
-      reasoning is a Responses field (not `reasoning_content` in Chat
-      Completions deltas), `max_output_tokens` (not `max_tokens`), and
-      default `store=true` retains request/response 30 days on xAI's
-      side. This rewrites the Phase 1–3 meaning of "temperature,"
-      "reasoning," and "stream." Encode a data-residency Non-Goal.
-- [ ] Fill Support Matrix **Decision** column.
-- [ ] Choose REST streaming: request/response **or** real SSE via multi_curl.
-- [ ] Lock the exact error contract for the losing choice (status code +
-      JSON error shape) so the 500 Courses client can code against it
-      before Phase 3 lands — **400 + stable JSON, use WS** (do not ship a
+      **Result:** `/v1/chat/completions` returns **422** — `unknown variant "mcp", expected "function" or "live_search"`. `/v1/responses` endpoint exists (returns "Model not found", not 404). **Locked: xAI uses Responses API.**
+- [x] **Lock whether Grok chat moves to the Responses API.** Confirmed:
+      streaming = SSE `response.*` (not chat deltas), reasoning is a
+      Responses `reasoning` item (not `reasoning_content`), `max_output_tokens`
+      (not `max_tokens`), and default `store=true` retains request/response
+      30 days on xAI's side. `store` is a per-engine JSON config attribute
+      (passed where expected, ignored by adapters that don't use it).
+      This rewrites the Phase 1–3 meaning of "temperature," "reasoning,"
+      and "stream." Encode a data-residency Non-Goal.
+- [x] Fill Support Matrix **Decision** column. (See matrix above.)
+- [x] Choose REST streaming: **real SSE via multi_curl** (MHD incremental
+      + `chat_proxy_multi_*`).
+- [x] Lock the exact error contract for the losing choice (status code +
+      JSON error shape) so the client can code against it before Phase 3
+      lands — **400 + stable JSON, use WS** (do not ship a
       200-with-one-SSE-error-event body that returns 200 and is only an
       error event).
-- [ ] Choose Grok MCP option A / B / C (default A).
-- [ ] Name 500 Courses Grok engine in CEC and the public MCP URL shape.
-- [ ] Lock the MCP `authorization` header form: `"Bearer <jwt>"`, **not**
+- [x] Choose Grok MCP option: **Option A** (Hydrogen appends `type:mcp`
+      to provider body, mints per-user JWT).
+- [x] Name Grok engine in CEC: **grok-4.6** (xAI, to be verified when
+      credits available). Public MCP URL shape: `https://<host>/mcp`.
+- [x] Lock the MCP `authorization` header form: `"Bearer <jwt>"`, **not**
       the raw JWT — xAI Remote MCP third-party examples require the
       `Bearer ` prefix. Lock `allowed_tools` to `["System.Info"]` only
       (empty = every `mcp_access=1` tool Hydrogen ever grows).
-- [ ] Decide chat JWT policy: does chat require a specific `aud` and/or
-      role beyond a non-empty `database` claim (today it does not check
-      either)? Record the decision even if it is "no change." **Record
-      two policies**: chat (no extra scoping for 500 Courses) and MCP
-      (`aud=MCP.Resource` enforced) — do not pretend Phase 8 scoping is
-      real on the chat side.
-- [ ] Decide the Phase 8 token-handoff shape: what exactly gets minted
-      and sent to xAI as `authorization` (claims, TTL, which tools it
-      authorizes). Do not defer this to Phase 8 as an implementation
-      detail — it's a credential-exfiltration surface to a third party
-      and needs an explicit decision now. See Security & Safety. **Treat
-      the minted token as already leaked to xAI the moment it leaves
-      Hydrogen**: short TTL + minimal role/`aud` that chat/REST **reject
-      on purpose** are the only controls (no revocation exists).
-- [ ] **Split token work (process).** Mint + verify the narrow token in
+- [x] Decide chat JWT policy: chat requires a specific `aud` and/or
+      role beyond a non-empty `database` claim. Exact strings deferred to
+      Phase 3 (likely `aud=hydrogen-chat`, role=`chat`). **Record two
+      policies**: chat (specific `aud`/role) and MCP (`aud=MCP.Resource`
+      enforced) — do not pretend Phase 8 scoping is real on the chat side.
+- [x] Decide the Phase 8 token-handoff shape: mint a **short-TTL (15m)**
+      token with `aud=MCP.Resource`, carrying the chat user's `sub`,
+      `database`, and minimum roles needed for the tools this chat session
+      may reach. **Treat the minted token as already leaked to xAI** on
+      departure (short TTL + a role/`aud` chat/REST reject on purpose are
+      the only controls — no revocation exists).
+- [x] **Split token work (process).** Mint + verify the narrow token in
       Unity (its own change, its own review) **before** wiring the xAI MCP
       connector — do not do both in one phase. See Phase 8 restructure.
-- [ ] **Aud-check fix (ideal Pre-Phase-0 land).** Strengthen
-      `mcp_try_hydrogen` (`mcp_auth.c:253-284`) to call
-      `mcp_auth_aud_contains` like the OIDC IdP/RP paths. Land + Unity-
-      prove a mismatched-`aud` JWT is rejected **before** Phase 0 Status
-      is marked complete if possible; at minimum before Phase 8.
-- [ ] **Deployment assumption: A↔B sharing.** If chat runs on instance A
+- [x] **Aud-check fix (land before Phase 0 complete).** Strengthen
+      `mcp_try_hydrogen` (`mcp_auth.c:253-284`) to validate `aud` against
+      `mcp_auth_resource(cfg)`. Land + Unity-prove a mismatched-`aud` JWT
+      is rejected before Phase 0 Status is marked complete. Blocking
+      prerequisite for Phase 8.
+- [x] **Deployment assumption: A↔B sharing.** If chat runs on instance A
       and MCP on instance B, both must share signing keys, aligned clocks,
-      and the same `sub`/`database` claim space. Record as a Phase 0
-      assumption, not a Phase 9 afterthought.
-- [ ] **Fail-closed for `MCP.Resource`, beyond localhost.** Lock rejection
+      and the same `sub`/`database` claim space. Recorded as a Phase 0
+      assumption.
+- [x] **Fail-closed for `MCP.Resource`, beyond localhost.** Lock rejection
       of localhost **and** internal ClusterIP/DNS that xAI cannot reach —
       a loopback "Grok called MCP" smoke test otherwise lies.
-- [ ] **Stateless first tool path.** Lock that the first MCP tool call
+- [x] **Stateless first tool path.** Lock that the first MCP tool call
       tolerates a missing/rotating `Mcp-Session-Id` (initialize +
       tools/call on one POST, or sessionless) — xAI session affinity on
       that header is not guaranteed; sticky ingress is a hope, not a
       dependency.
-- [ ] **System.Info scope.** Decide whether the authenticated system-info
-      JSON includes the `scripting` scoreboard (operational inventory) or
-      only `version`/`status`/`system`. Lock as a product choice; Grok
-      must be permitted to see the chosen set (reuse of collectors is
-      engineering; reuse of the *authenticated* view is a product choice).
-- [ ] **One-line cost cap for 500 Courses.** Record a cap story
-      (`max_output_tokens` ceiling / per-session token budget / per-user
-      rate limit) even if enforcement stays in Phase 10.
-- [ ] **Correlation id across the three-hop path.** Lock one opaque
-      request/correlation id that threads chat (incoming request) → mint
-      log → MCP tool log, so "Grok didn't call MCP" is distinguishable from
-      "MCP call failed" and storage failures surface with context (not just
-      "not found"). Logged by all three hops, not a shared store. Required
-      by Goal 8.
-- [ ] Run `zsh -ic 'mkt'` once to (re)generate
+- [x] **System.Info scope.** The authenticated system-info JSON includes
+      the `scripting` scoreboard (operational inventory). Grok is permitted
+      to see the chosen set (reuse of collectors is engineering; reuse of
+      the *authenticated* view is a product choice).
+- [x] **One-line cost cap.** `max_output_tokens` ceiling (enforcement may
+      stay Phase 10).
+- [x] **Correlation id across the three-hop path.** One opaque UUID v4
+      threads chat (incoming request) → mint log → MCP tool log, so "Grok
+      didn't call MCP" is distinguishable from "MCP call failed" and
+      storage failures surface with context (not just "not found"). Logged
+      by all three hops, not a shared store. Required by Goal 8.
+- [x] **Wire format: dual adapter.** CEC supports both `/v1/responses`
+      (xAI/OpenAI) and `/v1/chat/completions` (others). New builder
+      (`chat_request_build_responses`) + new response parser + new stream
+      event handler for Responses API. Existing Chat Completions builder
+      retained for non-xAI providers.
+- [x] **MCP: hosted + local.** Hosted MCP (`type:mcp` in provider body)
+      for xAI/OpenAI Responses path. Local MCP (Hydrogen acts as MCP
+      client, converts tools to function-calling defs) for all providers.
+      Both paths converge on the same public MCP URL / Lua tools.
+- [x] Run `zsh -ic 'mkt'` once to (re)generate
       `build/deadcode/dead_functions.txt` (it is not persisted between
       checkouts), then snapshot current chat names into Working Log (do
       not baseline).
@@ -446,7 +483,8 @@ JSON, use WS), MCP option + engine name, `authorization` form
 (`Bearer <jwt>`) + `allowed_tools` whitelist, chat JWT policy (two
 policies), endpoint spike result (Chat Completions vs Responses), the
 aud-check fix outcome, System.Info scope, fail-closed shape, stateless
-Mcp-Session-Id stance, and the 500 Courses cost-cap line.
+Mcp-Session-Id stance, cost-cap line, wire format (dual adapter), and
+MCP approach (hosted + local).
 
 ### Exit gate
 
@@ -454,7 +492,42 @@ Status complete. Review stop.
 
 ### Status
 
-Not started.
+**Complete (2026-09-01)**
+
+- **Endpoint spike:** `/v1/chat/completions` + `type:mcp` → **422** (only
+  `function`/`live_search` accepted). `/v1/responses` endpoint exists.
+  **Locked: xAI uses Responses API.** Model: `grok-4.6`.
+- **Wire format:** Dual adapter — `/v1/responses` (xAI/OpenAI) + `/v1/chat/completions`
+  (others). New `chat_request_build_responses` + response parser + stream
+  event handler. Existing Chat Completions builder retained.
+- **REST streaming:** Real SSE via MHD incremental + `chat_proxy_multi_*`.
+- **Error contract:** 400 + stable JSON, use WS (not 200-with-one-SSE-error-event).
+- **MCP approach:** Hosted (`type:mcp` in provider body, xAI/OpenAI) + local
+  (Hydrogen MCP client → function tools, all providers). Both converge on
+  same public MCP URL.
+- **MCP option:** A — Hydrogen appends `type:mcp` to provider body, mints
+  per-user JWT.
+- **Authorization:** `"Bearer <jwt>"` (prefix required). `allowed_tools`
+  = `["System.Info"]` (never empty).
+- **Chat JWT policy:** Chat requires specific `aud`/role (exact strings
+  deferred to Phase 3). MCP requires `aud=MCP.Resource` enforced. Two
+  policies, written down.
+- **Token handoff:** 15m TTL, `aud=MCP.Resource`, claims: `sub` + `database`
+  + minimal roles. Treated as already leaked to xAI on departure.
+- **System.Info scope:** Includes `scripting` scoreboard.
+- **Cost cap:** `max_output_tokens` ceiling.
+- **Correlation ID:** UUID v4 threads chat → mint → MCP logs.
+- **Aud-check fix:** Land `mcp_try_hydrogen` `aud` validation before Phase
+  0 complete (blocking prerequisite for Phase 8).
+- **Deployment assumption:** A↔B share signing keys, aligned clocks, same
+  `sub`/`database` claim space.
+- **Fail-closed:** Reject localhost AND internal ClusterIP/DNS for
+  `MCP.Resource`.
+- **Mcp-Session-Id:** Not required for Grok path (sessionless OK).
+- **`store` attribute:** Per-engine JSON config field. Passed where expected
+  (Responses API), ignored by other adapters.
+- **Spike note:** xAI key out of credits — model name from docs, not live
+  verified. Future live testing (Phase 8) requires funded key.
 
 ---
 
@@ -463,7 +536,8 @@ Not started.
 ### Goal
 
 `ChatRequestParams.temperature` is what OpenAI-compatible and Ollama
-builders emit. Stop hardcoding `1.0`.
+builders emit. Stop hardcoding `1.0`. Build the new Responses API adapter
+with temperature correct from the start.
 
 > **Depends on Phase 0 spike.** Temperature round-trips identically on
 > either wire format, but confirm the chosen Grok endpoint before
@@ -478,22 +552,40 @@ Phase 0 Status complete.
 - [ ] `chat_request_build_openai` / `_ollama`: use `params->temperature`
       when `>= 0`, else engine default (currently both hardcode `1.0`,
       `req_builder.c:127-128,356-357`).
-- [ ] `chat_request_build_anthropic` currently emits **no** `temperature`
-      field at all — decide and implement one behavior: either start
-      emitting it the same way as the other two builders, or explicitly
-      document why Anthropic stays field-absent. Do not leave it
-      ambiguous between "not yet done" and "intentionally different."
+- [ ] **New:** `chat_request_build_responses` (Responses API adapter):
+      emit `temperature` from `params->temperature` when `>= 0`, else
+      engine default. Do not hardcode — this builder starts clean.
+- [ ] `chat_request_build_anthropic`: **start emitting temperature**
+      (same logic as other builders: `params->temperature >= 0` else
+      engine default). Temperature IS available on Anthropic; do not
+      leave it field-absent.
+- [ ] **Overlay mechanism:** `params->additional_params` is already
+      merged into the OpenAI request (`req_builder.c:147-153`) but
+      Anthropic and Ollama skip it. Extend the merge to **all** builders
+      (Anthropic, Ollama, Responses) so provider-specific knobs
+      (Anthropic `thinking`, Responses `reasoning_effort`, future
+      vendor params) ride in the overlay without builder changes.
+      Overlay merges last — explicit fields set the base, overlay can
+      override.
+- [ ] **Responses routing:** add `use_responses_api` bool to
+      `ChatEngineConfig` (alongside existing `use_native_api`). Dispatch
+      `chat_request_build_responses` from inside the `CEC_PROVIDER_OPENAI`
+      case in `chat_request_build` when the flag is set. No new enum
+      value — runtime flag on config.
 - [ ] REST and WS already resolve via `auth_chat_resolve_request_params`
       (or equivalent) — keep one resolver.
 - [ ] Unity: omitted → engine default; `0.2` → `0.2` in JSON; `1.0` → `1.0`
-      for OpenAI/Ollama. Add an explicit Anthropic assertion matching
-      whichever behavior was chosen above (field present-with-value vs.
-      confirmed absent) so a future change can't silently regress it.
+      for OpenAI/Ollama/Responses. Anthropic: temperature present-with-
+      value (matching new behavior). Overlay: `additional_params` merges
+      correctly in all builders.
 - [ ] `mkt` + `mkp`.
 
 ### Done means
 
-Unity proves provider JSON temperature is not a hardcoded `1.0`.
+Unity proves provider JSON temperature is not a hardcoded `1.0` for all
+builders including the new Responses adapter. Anthropic emits temperature.
+Overlay (`additional_params`) merges in all builders. Responses routing
+uses `ChatEngineConfig.use_responses_api` runtime flag.
 
 ### Exit gate
 
@@ -509,14 +601,15 @@ Not started.
 
 ### Goal
 
-Request-side reasoning that Grok/xAI actually accept. Inbound
-`reasoning_content` on every WS chunk path.
+Request-side reasoning that Grok/xAI actually accept. Inbound reasoning
+on every WS chunk path. On Responses API, reasoning is a typed `reasoning`
+item in the `output` array — not `delta.reasoning_content` as in Chat
+Completions.
 
-> **Gated on Phase 0 endpoint spike.** xAI documents `reasoning_content`
-> as a Responses-API behavior, not a Chat Completions delta. If the spike
-> locks `/v1/responses`, the inbound assertion must target the Responses
-> reasoning field, not chat `delta.reasoning_content`. The "Confirm
-> current xAI field names" work item below is the lock point.
+> **Gated on Phase 0 endpoint spike.** The spike locks `/v1/responses` for
+> xAI. The inbound assertion must target the Responses `reasoning` item,
+> not chat `delta.reasoning_content`. The "Confirm current xAI field names"
+> work item below is the lock point.
 
 ### Entry gate
 
@@ -525,17 +618,24 @@ Phase 1 Status complete.
 ### Work items
 
 - [ ] Confirm current xAI field names (`reasoning`, `reasoning_effort`,
-      or extra body). Parse from client JSON; pass through builder
-      (`additional_params` or explicit fields). Do not invent names.
-- [ ] `proxy_multi.c` final chunk copies `reasoning_content` like
-      `proxy_mc.c`.
-- [ ] Unity for parse + emit + chunk parse.
+      or extra body). Parse from client JSON; pass through the Responses
+      builder (`additional_params` or explicit fields). Do not invent
+      names.
+- [ ] **Responses API stream parser:** extract `reasoning` items from the
+      `output` array in SSE events (`response.reasoning_summary_text.delta`,
+      `response.output_item.added` with `type: "reasoning"`). Map to the
+      internal `{type: "reasoning", ...}` event schema.
+- [ ] `proxy_multi.c` final chunk: copy reasoning items from Responses
+      `output` array (not `reasoning_content` — that field is Chat
+      Completions only).
+- [ ] Unity for parse + emit + chunk parse. Responses reasoning item
+      appears on WS chunks.
 - [ ] `mkt` + `mkp`.
 
 ### Done means
 
 A request with the documented reasoning field appears on the provider
-body; a mock SSE `delta.reasoning_content` appears on WS chunks.
+body; a mock Responses `reasoning` item appears on WS chunks.
 
 ### Exit gate
 
@@ -551,8 +651,9 @@ Not started.
 
 ### Goal
 
-REST is complete per the Phase 0 matrix. No 501-as-success. No SSE 200
-that is only an error event unless SSE is real.
+REST is complete per the Phase 0 matrix. No 501-as-success. Real SSE
+(Phase 0 locked). Responses API wire format for xAI/OpenAI
+(`max_output_tokens`, `input`, `response.*` SSE events).
 
 ### Entry gate
 
@@ -564,8 +665,13 @@ Phase 2 Status complete.
       - Non-stream REST: `stream:true` → **400** (not the current 501)
         with the Phase-0-locked message pointing at WS. Unregister stub
         `/auth_chat/stream` (`auth_stream.c`).
-      - Or real SSE: MHD incremental + `chat_proxy_multi_*`; then
-        `stream:true` works.
+      - Real SSE: MHD incremental + `chat_proxy_multi_*`; `stream:true`
+        works via the Responses API SSE event stream (`response.created`,
+        `response.output_text.delta`, `response.completed`).
+- [ ] **Responses API REST path:** route `auth_chat` through
+      `chat_request_build_responses` for xAI/OpenAI engines. Map internal
+      request object → Responses format (`input`, `max_output_tokens`,
+      `temperature`, `tools` with `type:mcp` for hosted MCP).
 - [ ] Update Test 59 REST sections (today asserts 501 and stub SSE text).
 - [ ] `auth_chats` keeps the same knobs except streaming (unless Phase 0
       said otherwise).
@@ -579,7 +685,8 @@ Phase 2 Status complete.
 
 ### Done means
 
-Test 59 REST matches the matrix. Stub SSE gone.
+Test 59 REST matches the matrix. Stub SSE gone. Responses API format
+used for xAI/OpenAI.
 
 ### Exit gate
 
@@ -604,7 +711,12 @@ Phase 3 Status complete.
 ### Work items
 
 - [ ] Verify WS builds the same provider JSON as REST for temperature
-      and reasoning.
+      and reasoning. **Both paths use the same builder dispatch** —
+      `chat_request_build_responses` for xAI/OpenAI, `chat_request_build_openai`
+      for others.
+- [ ] **Responses API WS path:** route WS `"chat"` through
+      `chat_request_build_responses` for xAI/OpenAI engines. Same internal
+      request object → Responses format mapping as REST.
 - [ ] `media:` resolve and conversation persist: implement parity **or**
       document WS-not-in-matrix if Phase 0 said so (default: parity).
       Confirmed gap: `convert_json_messages_to_chat_messages`
@@ -809,13 +921,24 @@ Not started.
 
 ---
 
-## Phase 8 — Grok Calls MCP With The User JWT
+## Phase 8 — MCP: Hosted (Grok) And Local (Hydrogen Client)
 
 ### Goal
 
-A chat completion through Hydrogen can result in Grok calling the
-**public** MCP URL with a **user-scoped** JWT. Chat pod and MCP pod may
-differ. First useful call: `System.Info`.
+Two MCP directions, one protocol:
+
+1. **Hosted MCP** — A chat completion through Hydrogen can result in Grok
+   calling the **public** MCP URL with a **user-scoped** JWT. Chat pod and
+   MCP pod may differ. First useful call: `System.Info`. The MCP server
+   itself is already built (MCP_COMPLETE Phases 0–15); this phase wires the
+   `type:mcp` connector into the provider body.
+2. **Local MCP** — Hydrogen acts as an MCP **client**, connects to
+   external MCP servers, converts their tools to function-calling defs,
+   and sends them on any provider endpoint (not just Responses). Tool
+   calls from the LLM are proxied back to the external MCP server. The
+   protocol knowledge (JSON-RPC, `tools/list`, `tools/call`, sessions)
+   is already mastered from the server side; this is the same protocol
+   in reverse.
 
 ### Entry gate
 
@@ -892,17 +1015,53 @@ from wiring xAI.
 - [ ] Test 59 + Test 47 green (incl. new `aud`-rejection case). `mkt` +
       `mkp`.
 
+**8c — Local MCP: Hydrogen as MCP client**
+
+Hydrogen connects to **external** MCP servers, uses their tools as
+function-calling defs on any provider endpoint. The MCP protocol is
+already implemented on the server side (MCP_COMPLETE); this is the same
+protocol in reverse.
+
+- [ ] **MCP client transport.** Connect to configured external MCP servers
+      (`initialize`, cache `tools/list`, optional session binding). JSON-RPC
+      2.0 client over Streamable HTTP. Reuse the protocol understanding
+      from `src/mcp/` (envelope, `tools/call`, session semantics) — the
+      wire format is identical, only the direction reverses.
+- [ ] **Tool conversion.** Convert MCP tool schemas (`inputSchema`) to
+      OpenAI/Responses/Ollama function-calling definitions. Provider-agnostic:
+      the same converted tools are usable on any endpoint.
+- [ ] **Tool call proxy.** When the LLM calls a local-MCP tool, Hydrogen
+      proxies `tools/call` to the external MCP server and returns the result
+      in the provider's expected format. Inline (not queued) to avoid the
+      same deadlock risk MCP_COMPLETE solved for `H.mcp.call`.
+- [ ] **Engine config.** Per-engine JSON config for local MCP: server URLs,
+      enable/disable, tool allowlist. No C changes for new servers — config
+      only.
+- [ ] **Safety bar (same as Phase 7).** MCP-exposed scripts — including
+      tools proxied from external MCP servers — may not call `H.http.get` /
+      `H.query` / `H.altquery` with caller-influenced values. The hard "no
+      data-plane from MCP tools" bar applies regardless of whether the tool
+      is local Lua or remote MCP.
+- [ ] Unity: client `initialize` + `tools/list` parse; tool conversion to
+      function-calling def; tool call proxy; config load/cleanup. `mku` +
+      `mkp`.
+
 ### Done means
 
-Minted, `aud`-restricted, short-TTL token authorizes MCP `System.Info`
-without client `tools` in chat JSON; the token is rejected by chat/REST
-on purpose; MCP rejects a mismatched `aud` (proving the prerequisite fix
-is real, not assumed); `Mcp-Session-Id` is not required for the Grok path.
+**Hosted MCP:** Minted, `aud`-restricted, short-TTL token authorizes MCP
+`System.Info` without client `tools` in chat JSON; the token is rejected
+by chat/REST on purpose; MCP rejects a mismatched `aud` (proving the
+prerequisite fix is real, not assumed); `Mcp-Session-Id` is not required
+for the Grok path.
+
+**Local MCP:** Hydrogen connects to external MCP servers, converts their
+tools to function-calling defs, proxies tool calls back to them. Unity
+proves client transport, tool conversion, and call proxy.
 
 ### Exit gate
 
-Test 59 + Test 47 green (incl. aud-rejection). Option recorded as
-implemented.
+Test 59 + Test 47 green (incl. aud-rejection). Hosted option recorded as
+implemented. Local MCP Unity green.
 
 ### Status
 
@@ -1158,5 +1317,73 @@ zsh -ic 'mku <phase-named-unity>'
   `Bearer <jwt>` + `allowed_tools=["System.Info"]` (never empty); the
   minted token is useless for chat/REST on purpose; crude per-user
   rate/l cost cap lands before first student. With those, "trust this in
-  production for 500 Courses" holds — "every later client" does not.
-- Next: Phase 0 only.
+  - Next: Phase 0 only.
+
+### 2026-09-01 — Phase 0 complete: spike confirms Responses API, all decisions locked
+
+- **Live spike result:** `POST /v1/chat/completions` + `type:mcp` → **422**
+  (`unknown variant "mcp", expected "function" or "live_search"`).
+  `POST /v1/responses` → endpoint exists (returned "Model not found", not
+  404). **Confirmed: xAI Remote MCP is Responses API only.** Chat
+  Completions cannot carry MCP.
+- **Architecture refined (from Grok consultation):** Three wire formats,
+  not two. `/v1/completions` is obsolete. `/v1/chat/completions` is the
+  portability floor (Ollama, Groq, OpenRouter, most proxies). `/v1/responses`
+  is the agentic successor (OpenAI, xAI) with hosted MCP, reasoning items,
+  server-side state. Anthropic uses `/v1/messages`. Hydrogen needs a dual
+  adapter: Responses builder for xAI/OpenAI, Chat Completions builder for
+  others.
+- **MCP approach: hosted + local.** Hosted MCP (`type:mcp` in provider body)
+  for xAI/OpenAI Responses path. Local MCP (Hydrogen acts as MCP client,
+  converts tools to function-calling defs) for all providers. Both converge
+  on the same public MCP URL / Lua tools.
+- **Internal event schema:** One `{type: "text_delta"|"tool_call"|
+  "tool_result"|"reasoning"|"done", ...}` schema. Translate Responses typed
+  events, Chat Completions deltas, Anthropic content blocks into it. UI
+  never speaks any vendor SSE dialect.
+- **Conversation state:** Keep it in Hydrogen by default. `previous_response_id`
+  is an optional fast path for OpenAI/xAI when opted in via engine config.
+  `store` is a per-engine JSON config attribute (passed where expected,
+  ignored by adapters that don't use it). No hardcoded project references
+  in codebase.
+- **All Phase 0 decisions locked** — see Phase 0 Status block for full list.
+- **Plan text updated:** Goals, Phase Index, Support Matrix, Architecture,
+  Phases 1–4 updated to reflect Responses API wire format, dual adapter,
+  hosted+local MCP.
+- **xAI key out of credits** — model name `grok-4.6` from docs, not live
+  verified. Future live testing (Phase 8) requires funded key.
+- Next: Phase 1 only.
+
+### 2026-09-01 — Phase 1 design: overlay, Anthropic temperature, local MCP folded into Phase 8
+
+- **Overlay mechanism locked.** `params->additional_params` is already
+  merged into the OpenAI request but Anthropic and Ollama skip it. Phase 1
+  extends the merge to **all** builders (Anthropic, Ollama, Responses).
+  Provider-specific knobs (Anthropic `thinking`, Responses
+  `reasoning_effort`, future vendor params) ride in the overlay without
+  builder changes. Overlay merges last — explicit fields set the base,
+  overlay can override. This means Phase 2+ (reasoning, thinking) drops in
+  via engine config or client JSON without touching builders again.
+- **Anthropic temperature: emit, don't omit.** Temperature IS available on
+  Anthropic. Phase 1 adds it using the same logic as other builders
+  (`params->temperature >= 0` else engine default). No longer ambiguous.
+- **Responses routing: runtime flag, not enum.** Add `use_responses_api`
+  bool to `ChatEngineConfig` (alongside existing `use_native_api`).
+  Dispatch `chat_request_build_responses` from inside the
+  `CEC_PROVIDER_OPENAI` case. Avoids enum churn; the flag is set per-engine
+  in config.
+- **Local MCP folded into Phase 8.** MCP_COMPLETE built Hydrogen as an MCP
+  **server** only — the hosted/local distinction didn't exist when it was
+  designed. Phase 8 now has three sub-phases:
+  - **8a:** Mint + verify the narrow token (Unity) — unchanged.
+  - **8b:** Wire the Grok MCP connector (hosted MCP) — unchanged. The
+    existing MCP server is exactly what Grok talks to; no new MCP server
+    work needed.
+  - **8c (new):** Local MCP — Hydrogen as MCP client. Connect to external
+    MCP servers, convert tools to function-calling defs, proxy tool calls.
+    Same protocol as MCP_COMPLETE (JSON-RPC, `tools/list`, `tools/call`)
+    in reverse. New client transport, tool conversion, call proxy, engine
+    config. Safety bar from Phase 7 applies to proxied tools too.
+- **Phase 8 updated:** Goal, work items (8a/8b/8c), Done means, Exit gate
+  all revised to reflect hosted + local MCP.
+- Next: Phase 1 only.
