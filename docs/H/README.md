@@ -91,6 +91,7 @@ Hydrogen is currently designed for technical users who:
 - [**WebSocket Chat**](/docs/H/core/subsystems/websocket/websocket_chat.md) - Chat message handling via WebSocket protocol
 - [**Mirage Proxy**](/docs/H/core/subsystems/mirage/mirage.md) - WebSocket tunneling for remote device access
 - [**mDNS Server**](/docs/H/core/subsystems/mdnsserver/mdnsserver.md) - Service discovery implementation
+- [**mDNS Client**](/docs/H/core/subsystems/mdnsclient/mdnsclient.md) - Service browse/resolve client and registry
 - [**Print Queue System**](/docs/H/core/subsystems/print/print.md) - 3D printing queue management
 - [**OIDC Integration**](/docs/H/core/subsystems/oidc/oidc.md) - OpenID Connect IdP overview
 - [**OIDC IdP Endpoints**](/docs/H/api/oidc/oidc_endpoints.md) - Discovery, authorize, token, userinfo, JWKS

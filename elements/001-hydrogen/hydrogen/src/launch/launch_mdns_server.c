@@ -15,6 +15,7 @@
 
 // Local includes
 #include "launch.h"
+#include <src/state/state.h>
 #include <src/state/state_types.h>
 #include <src/mdns/mdns_server.h>
 
@@ -229,6 +230,9 @@ int launch_mdns_server_subsystem(void) {
         log_this(SR_MDNS_SERVER, "LAUNCH: " SR_MDNS_SERVER " Failed to initialize", LOG_LEVEL_STATE, 0);
         return 0;
     }
+
+    // Publish the global pointer so mdns_client_info_json can access claimed names
+    mdns_server = mdns_server_instance;
 
     // Initialize and start threads
     log_this(SR_MDNS_SERVER, "Starting " SR_MDNS_SERVER" background threads", LOG_LEVEL_STATE, 0);

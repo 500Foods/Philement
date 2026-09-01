@@ -26,8 +26,8 @@
  * Standard Processing Order (reverse of launch):
  * - 15. Print (last launched, first to land)
  * - 14. MailRelay
- * - 13. mDNS Client
- * - 12. mDNS Server
+ * - 13. mDNS Server (goodbye burst while client still listening)
+ * - 12. mDNS Client
  * - 11. Terminal
  * - 10. WebSocket
  * - 09. Swagger
@@ -83,8 +83,8 @@ bool handle_landing_plan(const ReadinessResults* results) {
         SR_RESOURCES,
         SR_PRINT,
         SR_MAIL_RELAY,
-        SR_MDNS_CLIENT,
         SR_MDNS_SERVER,
+        SR_MDNS_CLIENT,
         SR_TERMINAL,
         SR_WEBSOCKET,
         SR_SWAGGER,

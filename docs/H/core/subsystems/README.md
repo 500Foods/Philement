@@ -36,9 +36,10 @@ The mDNS Server is the network announcer that makes the Hydrogen server visible 
 
 ## mDNS Client
 
-The mDNS Client is the network explorer that searches for and connects to available services on the local network. It enables automatic discovery and integration with other devices and systems, allowing Hydrogen to find and communicate with nearby services without manual configuration.
+The mDNS Client browses configured service types, resolves SRV/TXT/A/AAAA, caches discovered services, honors TTL-0 goodbye, runs optional TCP health checks, and exposes a registry other subsystems can query.
 
-- [README.md](/docs/H/core/subsystems/mdnsclient/README.md)
+- [mdnsclient.md](/docs/H/core/subsystems/mdnsclient/mdnsclient.md)
+- [mdns_client_architecture.md](/docs/H/core/reference/mdns_client_architecture.md)
 
 ## MCP
 

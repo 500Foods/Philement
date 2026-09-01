@@ -19,6 +19,10 @@ void test_mdns_server_build_announcement_minimal_valid(void);
 void test_mdns_server_build_announcement_different_ttl(void);
 void test_mdns_server_build_announcement_with_hostname(void);
 void test_mdns_server_build_announcement_no_services(void);
+void test_mdns_server_build_announcement_matching_iface(void);
+void test_mdns_server_build_announcement_iface_fallback(void);
+void test_mdns_server_build_announcement_null_net_info(void);
+void test_mdns_server_build_announcement_null_packet_len(void);
 
 void setUp(void) {
     // Set up test fixtures, if any
@@ -174,6 +178,119 @@ void test_mdns_server_build_announcement_no_services(void) {
     }
 }
 
+void test_mdns_server_build_announcement_matching_iface(void) {
+    uint8_t packet[2048];
+    size_t packet_len = 0;
+
+    mdns_server_t server;
+    memset(&server, 0, sizeof(server));
+    char hostname_buf[] = "test.local";
+    server.hostname = hostname_buf;
+    server.hostname_claimed = 1;
+    server.num_services = 0;
+    server.services = NULL;
+
+    mdns_server_interface_t iface;
+    char *ips[1];
+    memset(&iface, 0, sizeof(iface));
+    iface.if_name = (char *)"eth0";
+    iface.sockfd_v4 = -1;
+    iface.sockfd_v6 = -1;
+    ips[0] = (char *)"192.168.1.100";
+    iface.ip_addresses = ips;
+    iface.num_addresses = 1;
+    server.interfaces = &iface;
+    server.num_interfaces = 1;
+
+    network_info_t net_info_data;
+    memset(&net_info_data, 0, sizeof(net_info_data));
+    net_info_data.count = 1;
+    net_info_data.primary_index = 0;
+    strcpy(net_info_data.interfaces[0].name, "eth0");
+
+    mdns_server_build_announcement(packet, &packet_len, "test.local", &server, 120, &net_info_data);
+
+    TEST_ASSERT_GREATER_THAN(12, packet_len);
+}
+
+void test_mdns_server_build_announcement_iface_fallback(void) {
+    uint8_t packet[2048];
+    size_t packet_len = 0;
+
+    mdns_server_t server;
+    memset(&server, 0, sizeof(server));
+    char hostname_buf[] = "test.local";
+    server.hostname = hostname_buf;
+    server.hostname_claimed = 1;
+    server.num_services = 0;
+    server.services = NULL;
+
+    mdns_server_interface_t iface;
+    char *ips[1];
+    memset(&iface, 0, sizeof(iface));
+    iface.if_name = (char *)"eth1";
+    iface.sockfd_v4 = -1;
+    iface.sockfd_v6 = -1;
+    ips[0] = (char *)"192.168.1.100";
+    iface.ip_addresses = ips;
+    iface.num_addresses = 1;
+    server.interfaces = &iface;
+    server.num_interfaces = 1;
+
+    network_info_t net_info_data;
+    memset(&net_info_data, 0, sizeof(net_info_data));
+    net_info_data.count = 1;
+    net_info_data.primary_index = 0;
+    strcpy(net_info_data.interfaces[0].name, "eth0");
+
+    mdns_server_build_announcement(packet, &packet_len, "test.local", &server, 120, &net_info_data);
+
+    TEST_ASSERT_GREATER_THAN(12, packet_len);
+}
+
+void test_mdns_server_build_announcement_null_net_info(void) {
+    uint8_t packet[2048];
+    size_t packet_len = 0;
+
+    mdns_server_t server;
+    memset(&server, 0, sizeof(server));
+    char hostname_buf[] = "test.local";
+    server.hostname = hostname_buf;
+    server.hostname_claimed = 1;
+    server.num_services = 0;
+    server.services = NULL;
+
+    mdns_server_interface_t iface;
+    char *ips[1];
+    memset(&iface, 0, sizeof(iface));
+    iface.if_name = (char *)"eth0";
+    iface.sockfd_v4 = -1;
+    iface.sockfd_v6 = -1;
+    ips[0] = (char *)"192.168.1.100";
+    iface.ip_addresses = ips;
+    iface.num_addresses = 1;
+    server.interfaces = &iface;
+    server.num_interfaces = 1;
+
+    mdns_server_build_announcement(packet, &packet_len, "test.local", &server, 120, NULL);
+
+    TEST_ASSERT_GREATER_THAN(12, packet_len);
+}
+
+void test_mdns_server_build_announcement_null_packet_len(void) {
+    uint8_t packet[2048];
+
+    mdns_server_t server;
+    memset(&server, 0, sizeof(server));
+    char hostname_buf[] = "test.local";
+    server.hostname = hostname_buf;
+    server.hostname_claimed = 1;
+    server.num_services = 0;
+    server.services = NULL;
+
+    mdns_server_build_announcement(packet, NULL, "test.local", &server, 120, NULL);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -182,6 +299,10 @@ int main(void) {
     RUN_TEST(test_mdns_server_build_announcement_different_ttl);
     RUN_TEST(test_mdns_server_build_announcement_with_hostname);
     RUN_TEST(test_mdns_server_build_announcement_no_services);
+    RUN_TEST(test_mdns_server_build_announcement_matching_iface);
+    RUN_TEST(test_mdns_server_build_announcement_iface_fallback);
+    RUN_TEST(test_mdns_server_build_announcement_null_net_info);
+    RUN_TEST(test_mdns_server_build_announcement_null_packet_len);
 
     return UNITY_END();
 }

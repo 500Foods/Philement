@@ -234,6 +234,7 @@ void mdns_server_format_instance_name(const mdns_server_service_t *svc, char *ou
 void mdns_server_want_clear(mdns_server_want_t *w, size_t nsvc);
 int mdns_server_want_empty(const mdns_server_want_t *w);
 void mdns_server_want_add_question(mdns_server_want_t *w, const mdns_server_t *server, const mdns_rr *q);
+void mdns_server_want_apply_rate_limit(mdns_server_want_t *w, const mdns_server_t *server);
 void mdns_server_strip_known_answers(mdns_server_want_t *w, const mdns_server_t *server,
                                      const uint8_t *raw, size_t rawlen, const mdns_msg *msg);
 int mdns_server_should_unicast(int legacy, int qu);

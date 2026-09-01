@@ -50,11 +50,6 @@ Interactive Lua TUI front-end to SchemaTool. Phases 0–4 shipped (review,
 skip, accept, packets). Phase 5 first slice: one-field apply. Operator guide:
 [`/docs/H/tools/SCHEMAHELPER.md`](/docs/H/tools/SCHEMAHELPER.md).
 
-### [MDNS UPGRADE](/docs/H/plans/MDNS_UPGRADE.md)
-
-RFC 6762/6763 server (codec, probe/claim, selective answers, NSEC) plus a
-real browse/resolve client. Test 25 log-contract. Phases 0–8 not started.
-
 ### [MIRAGE PLAN](/docs/H/plans/MIRAGE_PLAN.md)
 
 Distributed proxy architecture sketch. Implementation deferred.
@@ -81,6 +76,7 @@ Full index: [`complete/README.md`](/docs/H/plans/complete/README.md). Highlights
 | Lua 5.5 embed upgrade | [LUA_55_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_55_PLAN_COMPLETE.md) |
 | Mail Relay blackbox | [MAILRELAY_BLACKBOX_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md) |
 | MCP server | [MCP_COMPLETE.md](/docs/H/plans/complete/MCP_COMPLETE.md) |
+| mDNS upgrade | [MDNS_UPGRADE_COMPLETE.md](/docs/H/plans/complete/MDNS_UPGRADE_COMPLETE.md) |
 | Migrations perf | [MIGRATIONS_COMPLETE.md](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md) |
 | SchemaTool | [SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md) |
 | Static-function purge | [STATIC_COMPLETE.md](/docs/H/plans/complete/STATIC_COMPLETE.md) |

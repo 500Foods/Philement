@@ -80,6 +80,5 @@ int mdns_rdata_srv(const uint8_t *msg, size_t msglen, const mdns_rr *rr,
                    char *target, size_t targetcap);
 int mdns_txt_get(const uint8_t *rdata, size_t rdlen, const char *key,
                  char *out, size_t outcap);
-void mdns_wire_keep_linked(void);
 
 #endif

@@ -1,6 +1,6 @@
 # mDNS Client Architecture
 
-The mDNS Client subsystem provides service discovery and monitoring capabilities, enabling Hydrogen to discover and track both its own services and other network services for load balancing and high availability.
+The mDNS Client subsystem provides service discovery and monitoring, enabling Hydrogen to discover and track services on the local network.
 
 ## System Overview
 
@@ -20,325 +20,87 @@ The mDNS Client subsystem provides service discovery and monitoring capabilities
 │   └───────┬───────┘         └───────────────┘                 │
 │           │                                                   │
 │           ▼                                                   │
-│   ┌───────────────┐         ┌───────────────┐                 │
-│   │   Event       │────────►│   Load        │                 │
-│   │   Dispatcher  │         │   Balancer    │                 │
-│   └───────────────┘         └───────────────┘                 │
+│   ┌───────────────┐                                           │
+│   │   Event       │                                           │
+│   │   Dispatcher  │                                           │
+│   └───────────────┘                                           │
 │                                                               │
 └───────────────────────────────────────────────────────────────┘
 ```
+
+## What Shipped vs What Is Deferred
+
+This plan shipped the boxes in the diagram below. The load-balancer box is **out of scope** for this plan and is deferred to a later effort (Print / Conduit once a second consumer exists).
+
+| Architecture box | Status | Where |
+|---|---|---|
+| Scanner | Shown | `src/mdns/mdns_client.c` browse/resolve loop |
+| Monitor | Shown | `src/mdns/mdns_client_cache.c` cache + TTL refresh + goodbye |
+| Registry | Shown | `src/mdns/mdns_client_registry.c` snapshot API, system/info, `H.mdns.list` |
+| Health checker | Shown | `src/mdns/mdns_client_health.c` TCP connect to advertised host:port |
+| Event dispatcher | Shown | log tokens + optional C callback `mdns_client_on_change` |
+| Load balancer | **Deferred** | `MonitoredServices.LoadBalancers` parsed and ignored until a later plan defines a service type |
 
 ## Key Components
 
 ### Service Scanner
 
-- Periodic network scanning
-- Service type filtering
-- Discovery protocol handling
-- Initial service detection
+- Periodic network scanning at `ScanIntervalMs` (milliseconds).
+- Service type filtering from configured `ServiceTypes`.
+- Sends the first browse query immediately at thread start (does not wait a full interval).
+- Accepts unsolicited announcements (QR=1) so start order vs server does not matter.
 
 ### Service Monitor
 
-- Real-time service tracking
-- State change detection
-- Service metadata updates
-- Event generation
+- Real-time service tracking in a thread-safe cache capped at `max_services`.
+- TTL-0 goodbye drops the entry.
+- Endpoint ordering: IPv4, routable IPv6, link-local IPv6; tie-broken by address bytes.
+- Endpoint dedup by (name, family, address bytes).
 
 ### Service Registry
 
-- Service state storage
-- Service metadata caching
-- Query interface
-- State persistence
+- Thread-safe snapshot API: `mdns_client_snapshot()` / `mdns_client_count()` / `mdns_client_lookup_by_type()`.
+- Exposed via `/api/system/info` (claimed instance/hostname, cache count, up to N instances).
+- Exposed via Lua `H.mdns.list([type])`.
 
 ### Health Checker
 
-- Service availability testing
-- Response time monitoring
-- Error detection
-- Health status tracking
+- TCP connect to each cached endpoint's advertised host:port.
+- Configurable `IntervalMs`, `TimeoutMs`, `RetryCount`.
+- Logs `MDNS_CLIENT HEALTH ok`/`fail`; marks entry healthy/unhealthy.
+- No HTTP GET; no HTTP health URLs.
 
 ### Event Dispatcher
 
-- Service state notifications
-- Health status updates
-- Load balancer events
-- System notifications
+- Stable log tokens (see Log Contract) greppable in the Hydrogen server log.
+- Optional in-process callback `mdns_client_on_change` for found/lost/health events.
 
 ## Configuration
 
-The mDNS Client subsystem is configured through the following settings in hydrogen.json:
+Configured through the `mDNSClient` section of `hydrogen.json`. See the [mDNS Configuration Guide](/docs/H/core/reference/mdns_configuration.md).
 
-```json
-{
-    "mDNSClient": {
-        "Enabled": true,
-        "EnableIPv6": true,
-        "ScanIntervalMs": 5000,
-        "ServiceTypes": [
-            "_http._tcp",
-            "_octoprint._tcp",
-            "_websocket._tcp",
-            "_hydrogen._tcp"
-        ],
-        "MonitoredServices": {
-            "OwnServices": true,
-            "LoadBalancers": true,
-            "PrinterServices": true,
-            "CustomServices": []
-        },
-        "HealthCheck": {
-            "Enabled": true,
-            "IntervalMs": 30000,
-            "TimeoutMs": 5000,
-            "RetryCount": 3
-        }
-    }
-}
-```
+## Log Contract
 
-## Service Discovery Flow
+| Token | When |
+|---|---|
+| `MDNS_CLIENT QUERY` | browse/resolve query sent |
+| `MDNS_CLIENT FOUND` | new instance cached |
+| `MDNS_CLIENT SRV` | port + target |
+| `MDNS_CLIENT TXT` | at least one key |
+| `MDNS_CLIENT ADDR` | A or AAAA |
+| `MDNS_CLIENT GOODBYE` | TTL-0 for a cached instance |
+| `MDNS_CLIENT HEALTH` | TCP check result |
+| `MDNS_CLIENT DROP` | evicted |
 
-```sequence
-Scanner->Network: Browse for services
-Network->Scanner: Service found
-Scanner->Registry: Register service
-Registry->Monitor: Start monitoring
-Monitor->HealthChecker: Check service health
-HealthChecker->Registry: Update health status
-Registry->EventDispatcher: Service state change
-EventDispatcher->LoadBalancer: Update service pool
-```
+## Non-Goals
 
-### Service States
+- Round-robin / health-weighted job routing inside mDNS.
+- HTTP `auto_connect`, HTTP health URLs.
+- Lithium UI for the registry.
+- Persistent registry across restart.
 
-1. **Discovery**
-   - Initial detection
-   - Metadata collection
-   - Type verification
-   - Registry addition
+## References
 
-2. **Monitoring**
-   - Health checking
-   - State tracking
-   - Metadata updates
-   - Event generation
-
-3. **Termination**
-   - Service removal
-   - Resource cleanup
-   - Event notification
-   - Registry update
-
-## Error Handling
-
-1. **Network Errors**
-   - Connection failures
-   - Timeout handling
-   - Retry logic
-   - Event notification
-
-2. **Service Errors**
-   - Health check failures
-   - State inconsistencies
-   - Protocol errors
-   - Recovery procedures
-
-3. **System Errors**
-   - Resource exhaustion
-   - Thread failures
-   - Memory issues
-   - Error reporting
-
-## Integration Points
-
-### mDNS Server
-
-- Service verification
-- State coordination
-- Event synchronization
-- Health monitoring
-
-### Network Interface
-
-- Service discovery
-- Protocol handling
-- Connection management
-- Error detection
-
-### Load Balancer
-
-- Service selection
-- Health status
-- Availability updates
-- Failover handling
-
-## Performance Considerations
-
-1. **Resource Management**
-   - Memory utilization
-   - Thread allocation
-   - Network bandwidth
-   - CPU usage
-
-2. **Scalability**
-   - Service count limits
-   - Monitor distribution
-   - Event throughput
-   - Registry size
-
-3. **Efficiency**
-   - Cache optimization
-   - Health check timing
-   - Event batching
-   - State updates
-
-## Testing
-
-1. **Unit Tests**
-   - Service discovery
-   - Health checking
-   - State management
-   - Event handling
-
-2. **Integration Tests**
-   - End-to-end flow
-   - Error recovery
-   - Load balancing
-   - Performance metrics
-
-3. **Network Tests**
-   - Protocol compliance
-   - Timeout handling
-   - Error conditions
-   - Recovery behavior
-
-## Future Considerations
-
-1. **Feature Enhancements**
-   - Additional protocols
-   - Advanced monitoring
-   - Custom health checks
-   - Extended metrics
-
-2. **Performance Improvements**
-   - Optimized scanning
-   - Efficient monitoring
-   - Better caching
-   - Reduced overhead
-
-3. **Integration Extensions**
-   - Cloud services
-   - External monitors
-   - Custom protocols
-   - Advanced routing
-
-## Service Types
-
-### Standard Services
-
-- HTTP servers
-- WebSocket endpoints
-- OctoPrint instances
-- Hydrogen nodes
-
-### Load Balancers
-
-- HTTP load balancers
-- WebSocket balancers
-- Print job distributors
-- Service proxies
-
-### Custom Services
-
-- User-defined types
-- Special protocols
-- Test services
-- Development aids
-
-## Health Checking
-
-### Methods
-
-1. **TCP Connection**
-   - Port availability
-   - Connection time
-   - Response validation
-   - Error detection
-
-2. **HTTP Health Check**
-   - Endpoint testing
-   - Status verification
-   - Response timing
-   - Content validation
-
-3. **Custom Checks**
-   - Protocol-specific
-   - Service-defined
-   - User-configured
-   - Extended validation
-
-### Metrics
-
-- Response time
-- Success rate
-- Error frequency
-- State duration
-
-## Event System
-
-### Event Types
-
-1. **Discovery Events**
-   - Service found
-   - Service lost
-   - Type matched
-   - Metadata updated
-
-2. **Health Events**
-   - Status change
-   - Check result
-   - Timeout occurred
-   - Retry attempted
-
-3. **State Events**
-   - Registry updated
-   - Monitor started
-   - Service removed
-   - Error occurred
-
-### Event Handling
-
-- Asynchronous processing
-- Priority queuing
-- Error recovery
-- State synchronization
-
-## Load Balancing
-
-### Strategies
-
-1. **Round Robin**
-   - Simple distribution
-   - Equal weighting
-   - Basic fairness
-   - No health consideration
-
-2. **Health Weighted**
-   - Response time based
-   - Health status aware
-   - Error rate conscious
-   - Load balanced
-
-3. **Custom**
-   - User-defined rules
-   - Service specific
-   - Context aware
-   - Dynamic adjustment
-
-### Failover
-
-- Health monitoring
-- Service switching
-- State preservation
-- Error recovery
+- [mDNS Client](/docs/H/core/subsystems/mdnsclient/mdnsclient.md)
+- [mDNS Server](/docs/H/core/subsystems/mdnsserver/mdnsserver.md)
+- [mDNS Configuration Guide](/docs/H/core/reference/mdns_configuration.md)
