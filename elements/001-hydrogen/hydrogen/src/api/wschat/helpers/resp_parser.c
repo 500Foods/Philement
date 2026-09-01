@@ -370,7 +370,8 @@ ChatStreamChunk* chat_stream_chunk_parse(const char* json_line) {
     // Detect provider by JSON structure
     bool is_anthropic = false;
     bool is_ollama = false;
-    
+    bool is_responses_api = false;
+
     // Check for Anthropic: has "type" field
     json_t* type = json_object_get(root, "type");
     if (type && json_is_string(type)) {
@@ -380,8 +381,12 @@ ChatStreamChunk* chat_stream_chunk_parse(const char* json_line) {
             strcmp(type_str, "message_stop") == 0) {
             is_anthropic = true;
         }
+        // Check for Responses API: type starts with "response."
+        else if (strncmp(type_str, "response.", 9) == 0) {
+            is_responses_api = true;
+        }
     }
-    
+
     // Check for Ollama: has "response" field and "done" field
     json_t* response = json_object_get(root, "response");
     json_t* done = json_object_get(root, "done");
@@ -418,6 +423,45 @@ ChatStreamChunk* chat_stream_chunk_parse(const char* json_line) {
             if (done_reason && json_is_string(done_reason)) {
                 chunk->finish_reason = strdup(json_string_value(done_reason));
             }
+        }
+    } else if (is_responses_api) {
+        // Responses API streaming format (xAI/OpenAI)
+        if (type) {
+            const char* type_str = json_string_value(type);
+            if (strcmp(type_str, "response.output_text.delta") == 0) {
+                json_t* delta = json_object_get(root, "delta");
+                if (delta && json_is_string(delta)) {
+                    chunk->content = strdup(json_string_value(delta));
+                }
+            } else if (strcmp(type_str, "response.reasoning_summary_text.delta") == 0) {
+                json_t* delta = json_object_get(root, "delta");
+                if (delta && json_is_string(delta)) {
+                    chunk->reasoning_content = strdup(json_string_value(delta));
+                }
+            } else if (strcmp(type_str, "response.completed") == 0) {
+                chunk->is_done = true;
+                // Extract usage if present
+                json_t* resp_obj = json_object_get(root, "response");
+                if (resp_obj && json_is_object(resp_obj)) {
+                    if (!chunk->extra_fields) {
+                        chunk->extra_fields = json_object();
+                    }
+                    json_object_set(chunk->extra_fields, "response", resp_obj);
+                }
+            } else if (strcmp(type_str, "response.output_item.added") == 0) {
+                json_t* item = json_object_get(root, "item");
+                if (item && json_is_object(item)) {
+                    json_t* item_type = json_object_get(item, "type");
+                    if (item_type && json_is_string(item_type) &&
+                        strcmp(json_string_value(item_type), "reasoning") == 0) {
+                        if (!chunk->extra_fields) {
+                            chunk->extra_fields = json_object();
+                        }
+                        json_object_set(chunk->extra_fields, "reasoning_item_added", json_true());
+                    }
+                }
+            }
+            // Other response.* events (created, in_progress, etc.) produce empty chunks
         }
     } else {
         // OpenAI format (original)
@@ -469,6 +513,11 @@ ChatStreamChunk* chat_stream_chunk_parse(const char* json_line) {
 
     json_decref(root);
     return chunk;
+}
+
+// Parse Responses API stream chunk (direct call for testing)
+ChatStreamChunk* chat_stream_chunk_parse_responses(const char* json_line) {
+    return chat_stream_chunk_parse(json_line);
 }
 
 // Extract error from response

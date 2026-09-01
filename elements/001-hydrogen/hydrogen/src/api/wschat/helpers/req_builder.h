@@ -40,6 +40,7 @@ typedef struct ChatRequestParams {
     double temperature;          // Temperature (0.0 - 2.0, -1 for default)
     int max_tokens;              // Max tokens (-1 for default)
     bool stream;                 // Enable streaming
+    char* reasoning;             // Reasoning effort level (e.g., "low", "medium", "high") — NULL to omit
     json_t* additional_params;   // Additional provider-specific parameters
 } ChatRequestParams;
 
@@ -79,9 +80,10 @@ json_t* chat_request_build(const ChatEngineConfig* engine,
 
 // Resolve ChatRequestParams from optional request fields and engine defaults
 ChatRequestParams chat_resolve_request_params(const ChatEngineConfig* engine,
-                                               double temperature,
-                                               int max_tokens,
-                                               bool stream);
+                                                double temperature,
+                                                int max_tokens,
+                                                bool stream,
+                                                const char* reasoning);
 
 // Request to JSON string
 char* chat_request_to_json_string(json_t* request, bool compact);

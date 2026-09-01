@@ -75,9 +75,10 @@ bool auth_chats_parse_request(json_t *request_json,
                               size_t *engine_count,
                               double *temperature,
                               int *max_tokens,
+                              char **reasoning,
                               char **error_message) {
     if (!request_json || !engines || !messages || !engine_count || !temperature ||
-        !max_tokens || !error_message) {
+        !max_tokens || !reasoning || !error_message) {
         if (error_message) {
             *error_message = strdup("Invalid parse request parameters");
         }
@@ -89,6 +90,7 @@ bool auth_chats_parse_request(json_t *request_json,
     *engine_count = 0;
     *temperature = -1.0;
     *max_tokens = -1;
+    *reasoning = NULL;
     *error_message = NULL;
 
     json_t *engines_obj = json_object_get(request_json, "engines");
@@ -117,6 +119,12 @@ bool auth_chats_parse_request(json_t *request_json,
     json_t *max_tokens_obj = json_object_get(request_json, "max_tokens");
     if (max_tokens_obj && json_is_integer(max_tokens_obj)) {
         *max_tokens = (int)json_integer_value(max_tokens_obj);
+    }
+
+    // Extract reasoning (optional)
+    json_t *reasoning_obj = json_object_get(request_json, "reasoning");
+    if (reasoning_obj && json_is_string(reasoning_obj)) {
+        *reasoning = strdup(json_string_value(reasoning_obj));
     }
 
     *engines = engines_obj;
@@ -169,6 +177,7 @@ size_t auth_chats_build_multi_requests(ChatEngineCache *cache,
                                        const ChatMessage *messages,
                                        double temperature,
                                        int max_tokens,
+                                       const char *reasoning,
                                        ChatMultiRequest *requests) {
     if (!cache || !engines || !json_is_array(engines) || !requests) {
         return 0;
@@ -188,7 +197,7 @@ size_t auth_chats_build_multi_requests(ChatEngineCache *cache,
             continue;
         }
 
-        ChatRequestParams params = chat_resolve_request_params(engine, temperature, max_tokens, false);
+        ChatRequestParams params = chat_resolve_request_params(engine, temperature, max_tokens, false, reasoning);
         json_t *provider_request = chat_request_build(engine, messages, &params);
         char *request_body = chat_request_to_json_string(provider_request, true);
         json_decref(provider_request);
@@ -392,9 +401,11 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
     size_t engine_count = 0;
     double temperature = -1.0;
     int max_tokens = -1;
+    char *reasoning = NULL;
     char *parse_error = NULL;
     if (!auth_chats_parse_request(request_json, &engines_array, &messages, &engine_count,
-                                  &temperature, &max_tokens, &parse_error)) {
+                                  &temperature, &max_tokens, &reasoning, &parse_error)) {
+        free(reasoning);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         json_t *error = auth_chats_build_error_response(parse_error);
@@ -438,7 +449,7 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
 
     ChatMessage *chat_messages = auth_chats_messages_json_to_list(messages);
     size_t valid_requests = auth_chats_build_multi_requests(
-        cec, engines_array, chat_messages, temperature, max_tokens, multi_requests);
+        cec, engines_array, chat_messages, temperature, max_tokens, reasoning, multi_requests);
     chat_message_list_destroy(chat_messages);
 
     if (valid_requests == 0) {
@@ -477,6 +488,7 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
         database, broadcast_id, engine_count, engine_names, multi_result);
 
     // Cleanup
+    free(reasoning);
     auth_chats_free_engine_names(engine_names, valid_requests);
     chat_multi_result_destroy(multi_result);
     free_jwt_validation_result(&jwt_result);

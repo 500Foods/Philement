@@ -47,10 +47,11 @@ void tearDown(void) {
 // Helper: free the parse outputs the function populates.
 static void free_parse_outputs(char *engine, json_t *messages,
                                char **context_hashes, size_t context_hash_count,
-                               char *error_message) {
+                               char *reasoning, char *error_message) {
     free(engine);
     if (messages) json_decref(messages);
     if (context_hashes) chat_context_free_hash_array(context_hashes, context_hash_count);
+    free(reasoning);
     free(error_message);
 }
 
@@ -64,15 +65,16 @@ void test_auth_chat_parse_request_null_json(void) {
     int max_tokens = -999;
     bool stream = true;
     char *error_message = NULL;
+    char *reasoning = NULL;
 
     bool ok = auth_chat_parse_request(NULL, &engine, &messages, &context_hashes,
                                       &context_hash_count, &temperature, &max_tokens,
-                                      &stream, &error_message);
+                                      &stream, &reasoning, &error_message);
 
     TEST_ASSERT_FALSE(ok);
     TEST_ASSERT_NOT_NULL(error_message);
     TEST_ASSERT_NULL(messages);
-    free_parse_outputs(engine, messages, context_hashes, context_hash_count, error_message);
+    free_parse_outputs(engine, messages, context_hashes, context_hash_count, reasoning, error_message);
 }
 
 // Valid JSON but no "messages" key -> error_message set, returns false.
@@ -85,19 +87,20 @@ void test_auth_chat_parse_request_missing_messages(void) {
     int max_tokens = -999;
     bool stream = true;
     char *error_message = NULL;
+    char *reasoning = NULL;
 
     json_t *req = json_object();
     json_object_set_new(req, "engine", json_string("gpt-4"));
 
     bool ok = auth_chat_parse_request(req, &engine, &messages, &context_hashes,
                                       &context_hash_count, &temperature, &max_tokens,
-                                      &stream, &error_message);
+                                      &stream, &reasoning, &error_message);
 
     TEST_ASSERT_FALSE(ok);
     TEST_ASSERT_NOT_NULL(error_message);
     TEST_ASSERT_NULL(messages);
     json_decref(req);
-    free_parse_outputs(engine, messages, context_hashes, context_hash_count, error_message);
+    free_parse_outputs(engine, messages, context_hashes, context_hash_count, reasoning, error_message);
 }
 
 // "messages" present but not an array -> error_message set, returns false.
@@ -110,18 +113,19 @@ void test_auth_chat_parse_request_messages_not_array(void) {
     int max_tokens = -999;
     bool stream = true;
     char *error_message = NULL;
+    char *reasoning = NULL;
 
     json_t *req = json_object();
     json_object_set_new(req, "messages", json_string("not-an-array"));
 
     bool ok = auth_chat_parse_request(req, &engine, &messages, &context_hashes,
                                       &context_hash_count, &temperature, &max_tokens,
-                                      &stream, &error_message);
+                                      &stream, &reasoning, &error_message);
 
     TEST_ASSERT_FALSE(ok);
     TEST_ASSERT_NOT_NULL(error_message);
     json_decref(req);
-    free_parse_outputs(engine, messages, context_hashes, context_hash_count, error_message);
+    free_parse_outputs(engine, messages, context_hashes, context_hash_count, reasoning, error_message);
 }
 
 // Minimal valid: messages array only. Defaults applied, returns true.
@@ -134,6 +138,7 @@ void test_auth_chat_parse_request_valid_minimal(void) {
     int max_tokens = -999;
     bool stream = true;
     char *error_message = NULL;
+    char *reasoning = NULL;
 
     json_t *req = json_object();
     json_t *msgs = json_array();
@@ -142,7 +147,7 @@ void test_auth_chat_parse_request_valid_minimal(void) {
 
     bool ok = auth_chat_parse_request(req, &engine, &messages, &context_hashes,
                                       &context_hash_count, &temperature, &max_tokens,
-                                      &stream, &error_message);
+                                      &stream, &reasoning, &error_message);
 
     TEST_ASSERT_TRUE(ok);
     TEST_ASSERT_NULL(error_message);
@@ -154,7 +159,7 @@ void test_auth_chat_parse_request_valid_minimal(void) {
     TEST_ASSERT_EQUAL(0, context_hash_count);
 
     json_decref(req);
-    free_parse_outputs(engine, messages, context_hashes, context_hash_count, error_message);
+    free_parse_outputs(engine, messages, context_hashes, context_hash_count, reasoning, error_message);
 }
 
 // engine string is extracted via strdup when present.
@@ -167,6 +172,7 @@ void test_auth_chat_parse_request_engine_extracted(void) {
     int max_tokens = -999;
     bool stream = false;
     char *error_message = NULL;
+    char *reasoning = NULL;
 
     json_t *req = json_object();
     json_t *msgs = json_array();
@@ -176,13 +182,13 @@ void test_auth_chat_parse_request_engine_extracted(void) {
 
     bool ok = auth_chat_parse_request(req, &engine, &messages, &context_hashes,
                                       &context_hash_count, &temperature, &max_tokens,
-                                      &stream, &error_message);
+                                      &stream, &reasoning, &error_message);
 
     TEST_ASSERT_TRUE(ok);
     TEST_ASSERT_EQUAL_STRING("claude-3", engine);
 
     json_decref(req);
-    free_parse_outputs(engine, messages, context_hashes, context_hash_count, error_message);
+    free_parse_outputs(engine, messages, context_hashes, context_hash_count, reasoning, error_message);
 }
 
 // temperature absent -> default -1.0 preserved.
@@ -195,6 +201,7 @@ void test_auth_chat_parse_request_temperature_default_when_absent(void) {
     int max_tokens = -1;
     bool stream = false;
     char *error_message = NULL;
+    char *reasoning = NULL;
 
     json_t *req = json_object();
     json_t *msgs = json_array();
@@ -203,13 +210,13 @@ void test_auth_chat_parse_request_temperature_default_when_absent(void) {
 
     bool ok = auth_chat_parse_request(req, &engine, &messages, &context_hashes,
                                       &context_hash_count, &temperature, &max_tokens,
-                                      &stream, &error_message);
+                                      &stream, &reasoning, &error_message);
 
     TEST_ASSERT_TRUE(ok);
     TEST_ASSERT_EQUAL(-1.0, temperature);
 
     json_decref(req);
-    free_parse_outputs(engine, messages, context_hashes, context_hash_count, error_message);
+    free_parse_outputs(engine, messages, context_hashes, context_hash_count, reasoning, error_message);
 }
 
 // temperature out of range (> 2.0) -> error_message set, returns false.
@@ -222,6 +229,7 @@ void test_auth_chat_parse_request_temperature_out_of_range(void) {
     int max_tokens = -1;
     bool stream = false;
     char *error_message = NULL;
+    char *reasoning = NULL;
 
     json_t *req = json_object();
     json_t *msgs = json_array();
@@ -231,13 +239,13 @@ void test_auth_chat_parse_request_temperature_out_of_range(void) {
 
     bool ok = auth_chat_parse_request(req, &engine, &messages, &context_hashes,
                                       &context_hash_count, &temperature, &max_tokens,
-                                      &stream, &error_message);
+                                      &stream, &reasoning, &error_message);
 
     TEST_ASSERT_FALSE(ok);
     TEST_ASSERT_NOT_NULL(error_message);
 
     json_decref(req);
-    free_parse_outputs(engine, messages, context_hashes, context_hash_count, error_message);
+    free_parse_outputs(engine, messages, context_hashes, context_hash_count, reasoning, error_message);
 }
 
 // max_tokens absent -> default -1 preserved.
@@ -250,6 +258,7 @@ void test_auth_chat_parse_request_max_tokens_default_when_absent(void) {
     int max_tokens = -1;
     bool stream = false;
     char *error_message = NULL;
+    char *reasoning = NULL;
 
     json_t *req = json_object();
     json_t *msgs = json_array();
@@ -258,13 +267,13 @@ void test_auth_chat_parse_request_max_tokens_default_when_absent(void) {
 
     bool ok = auth_chat_parse_request(req, &engine, &messages, &context_hashes,
                                       &context_hash_count, &temperature, &max_tokens,
-                                      &stream, &error_message);
+                                      &stream, &reasoning, &error_message);
 
     TEST_ASSERT_TRUE(ok);
     TEST_ASSERT_EQUAL(-1, max_tokens);
 
     json_decref(req);
-    free_parse_outputs(engine, messages, context_hashes, context_hash_count, error_message);
+    free_parse_outputs(engine, messages, context_hashes, context_hash_count, reasoning, error_message);
 }
 
 // max_tokens out of range (< 1) -> error_message set, returns false.
@@ -277,6 +286,7 @@ void test_auth_chat_parse_request_max_tokens_out_of_range(void) {
     int max_tokens = -1;
     bool stream = false;
     char *error_message = NULL;
+    char *reasoning = NULL;
 
     json_t *req = json_object();
     json_t *msgs = json_array();
@@ -286,13 +296,13 @@ void test_auth_chat_parse_request_max_tokens_out_of_range(void) {
 
     bool ok = auth_chat_parse_request(req, &engine, &messages, &context_hashes,
                                       &context_hash_count, &temperature, &max_tokens,
-                                      &stream, &error_message);
+                                      &stream, &reasoning, &error_message);
 
     TEST_ASSERT_FALSE(ok);
     TEST_ASSERT_NOT_NULL(error_message);
 
     json_decref(req);
-    free_parse_outputs(engine, messages, context_hashes, context_hash_count, error_message);
+    free_parse_outputs(engine, messages, context_hashes, context_hash_count, reasoning, error_message);
 }
 
 // stream=true is extracted.
@@ -305,6 +315,7 @@ void test_auth_chat_parse_request_stream_true(void) {
     int max_tokens = -1;
     bool stream = false;
     char *error_message = NULL;
+    char *reasoning = NULL;
 
     json_t *req = json_object();
     json_t *msgs = json_array();
@@ -314,13 +325,13 @@ void test_auth_chat_parse_request_stream_true(void) {
 
     bool ok = auth_chat_parse_request(req, &engine, &messages, &context_hashes,
                                       &context_hash_count, &temperature, &max_tokens,
-                                      &stream, &error_message);
+                                      &stream, &reasoning, &error_message);
 
     TEST_ASSERT_TRUE(ok);
     TEST_ASSERT_TRUE(stream);
 
     json_decref(req);
-    free_parse_outputs(engine, messages, context_hashes, context_hash_count, error_message);
+    free_parse_outputs(engine, messages, context_hashes, context_hash_count, reasoning, error_message);
 }
 
 // All fields supplied with valid values -> returns true, all populated.
@@ -333,6 +344,7 @@ void test_auth_chat_parse_request_all_fields(void) {
     int max_tokens = -1;
     bool stream = false;
     char *error_message = NULL;
+    char *reasoning = NULL;
 
     json_t *req = json_object();
     json_t *msgs = json_array();
@@ -345,7 +357,7 @@ void test_auth_chat_parse_request_all_fields(void) {
 
     bool ok = auth_chat_parse_request(req, &engine, &messages, &context_hashes,
                                       &context_hash_count, &temperature, &max_tokens,
-                                      &stream, &error_message);
+                                      &stream, &reasoning, &error_message);
 
     TEST_ASSERT_TRUE(ok);
     TEST_ASSERT_EQUAL_STRING("gpt-4", engine);
@@ -354,7 +366,7 @@ void test_auth_chat_parse_request_all_fields(void) {
     TEST_ASSERT_FALSE(stream);
 
     json_decref(req);
-    free_parse_outputs(engine, messages, context_hashes, context_hash_count, error_message);
+    free_parse_outputs(engine, messages, context_hashes, context_hash_count, reasoning, error_message);
 }
 
 // context_hashes present but not an array -> error_message set, returns false.
@@ -367,6 +379,7 @@ void test_auth_chat_parse_request_invalid_context_hashes_type(void) {
     int max_tokens = -1;
     bool stream = false;
     char *error_message = NULL;
+    char *reasoning = NULL;
 
     json_t *req = json_object();
     json_t *msgs = json_array();
@@ -376,13 +389,13 @@ void test_auth_chat_parse_request_invalid_context_hashes_type(void) {
 
     bool ok = auth_chat_parse_request(req, &engine, &messages, &context_hashes,
                                       &context_hash_count, &temperature, &max_tokens,
-                                      &stream, &error_message);
+                                      &stream, &reasoning, &error_message);
 
     TEST_ASSERT_FALSE(ok);
     TEST_ASSERT_NOT_NULL(error_message);
 
     json_decref(req);
-    free_parse_outputs(engine, messages, context_hashes, context_hash_count, error_message);
+    free_parse_outputs(engine, messages, context_hashes, context_hash_count, reasoning, error_message);
 }
 
 int main(void) {

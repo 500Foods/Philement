@@ -186,13 +186,14 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     double temperature = -1.0;
     int max_tokens = -1;
     bool stream = false;
+    char *reasoning = NULL;
     char *error_message = NULL;
 
     bool parse_ok = auth_chat_parse_request(payload, &engine_name,
                                              &messages, &context_hashes,
                                              &context_hash_count,
                                              &temperature, &max_tokens,
-                                             &stream, &error_message);
+                                             &stream, &reasoning, &error_message);
 
     if (!parse_ok) {
         send_chat_error(wsi, error_message ? error_message : "Invalid request", request_id);
@@ -213,6 +214,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         if (!jwt_json || !json_is_string(jwt_json)) {
             send_chat_error(wsi, "JWT required for chat authentication", request_id);
             free(engine_name);
+            free(reasoning);
             chat_context_free_hash_array(context_hashes, context_hash_count);
             json_decref(request_json);
             return -1;
@@ -223,6 +225,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         if (!extract_and_validate_jwt(jwt, &jwt_result)) {
             send_chat_error(wsi, "Invalid JWT", request_id);
             free(engine_name);
+            free(reasoning);
             chat_context_free_hash_array(context_hashes, context_hash_count);
             json_decref(request_json);
             return -1;
@@ -233,6 +236,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
             send_chat_error(wsi, "JWT missing database claim", request_id);
             free_jwt_validation_result(&jwt_result);
             free(engine_name);
+            free(reasoning);
             chat_context_free_hash_array(context_hashes, context_hash_count);
             json_decref(request_json);
             return -1;
@@ -252,6 +256,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     if (!db_queue) {
         send_chat_error(wsi, "Database not found", request_id);
         free(engine_name);
+            free(reasoning);
         chat_context_free_hash_array(context_hashes, context_hash_count);
         json_decref(request_json);
         return -1;
@@ -262,6 +267,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     if (!cec) {
         send_chat_error(wsi, "Chat not enabled for this database", request_id);
         free(engine_name);
+            free(reasoning);
         chat_context_free_hash_array(context_hashes, context_hash_count);
         json_decref(request_json);
         return -1;
@@ -278,6 +284,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     if (!engine) {
         send_chat_error(wsi, engine_name ? "Engine not found" : "No default engine configured", request_id);
         free(engine_name);
+            free(reasoning);
         chat_context_free_hash_array(context_hashes, context_hash_count);
         json_decref(request_json);
         return -1;
@@ -287,6 +294,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     if (!engine->is_healthy) {
         send_chat_error(wsi, "Engine is currently unavailable", request_id);
         free(engine_name);
+            free(reasoning);
         chat_context_free_hash_array(context_hashes, context_hash_count);
         json_decref(request_json);
         return -1;
@@ -297,6 +305,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     params.temperature = (temperature >= 0.0) ? temperature : engine->temperature_default;
     params.max_tokens = (max_tokens > 0) ? max_tokens : engine->max_tokens;
     params.stream = stream;
+    if (reasoning) params.reasoning = reasoning;
 
     // Convert messages JSON to ChatMessage list for proper request building
     ChatMessage *chat_messages = convert_json_messages_to_chat_messages(messages);
@@ -308,6 +317,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     if (!provider_request) {
         send_chat_error(wsi, "Failed to build request", request_id);
         free(engine_name);
+            free(reasoning);
         chat_context_free_hash_array(context_hashes, context_hash_count);
         json_decref(request_json);
         return -1;
@@ -319,6 +329,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     if (!request_json_str) {
         send_chat_error(wsi, "Failed to serialize request", request_id);
         free(engine_name);
+            free(reasoning);
         chat_context_free_hash_array(context_hashes, context_hash_count);
         json_decref(request_json);
         return -1;
@@ -359,6 +370,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
 
             session->chat_stream_active = false;
             free(engine_name);
+            free(reasoning);
             chat_context_free_hash_array(context_hashes, context_hash_count);
             free(request_json_str);
             json_decref(request_json);
@@ -387,6 +399,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
             session->chat_stream_active = false;
 
             free(engine_name);
+            free(reasoning);
             chat_context_free_hash_array(context_hashes, context_hash_count);
             free(request_json_str);
             json_decref(request_json);
@@ -419,6 +432,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         if (send_chat_proxy_result(wsi, request_id, engine, proxy_result, start_time, message_count) != 0) {
             free(request_json_str);
             free(engine_name);
+            free(reasoning);
             chat_context_free_hash_array(context_hashes, context_hash_count);
             json_decref(request_json);
             return -1;
@@ -428,6 +442,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     // Cleanup
     free(request_json_str);
     free(engine_name);
+            free(reasoning);
     chat_context_free_hash_array(context_hashes, context_hash_count);
     json_decref(request_json);
 

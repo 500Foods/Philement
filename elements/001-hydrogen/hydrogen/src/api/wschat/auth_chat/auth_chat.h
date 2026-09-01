@@ -132,6 +132,7 @@ bool auth_chat_parse_request(json_t *request_json,
                               double *temperature,
                               int *max_tokens,
                               bool *stream,
+                              char **reasoning,
                               char **error_message);
 
 /**

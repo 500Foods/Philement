@@ -72,8 +72,9 @@ Each phase is worked in its **own conversation**. Follow this sequence:
 ## Resuming Work
 
 **CURRENT PAUSE POINT (as of 2026-09-01):** Phase 0 complete. Phase 1
-complete (temperature, overlay, Responses builder, shared resolver).
-Next: **Phase 2 implementation**.
+complete (temperature, overlay, Responses builder, shared resolver). Phase 2
+complete (reasoning knobs, inbound Responses reasoning).
+Next: **Phase 3 implementation**.
 
 ### Resume here next session
 
@@ -653,7 +654,18 @@ Unity green. `mkt`/`mkp` green.
 
 ### Status
 
-Not started.
+**Complete (2026-09-01)**
+
+- **Request-side reasoning:** `reasoning` field parsed from client JSON in `auth_chat_parse_request`, `auth_chats_parse_request`, and `auth_chat_stream_parse_request`. Added to `ChatRequestParams` struct. `chat_resolve_request_params` accepts reasoning parameter.
+- **Responses builder emits reasoning:** `chat_request_build_responses` emits `{"reasoning": {"effort": "<value>"}}` when reasoning is non-NULL. Omitted when NULL.
+- **Responses API SSE parser:** `chat_stream_chunk_parse` detects Responses API format (type starts with `response.`) and dispatches:
+  - `response.output_text.delta` → `chunk->content`
+  - `response.reasoning_summary_text.delta` → `chunk->reasoning_content`
+  - `response.completed` → `chunk->is_done` + full response object in `extra_fields`
+  - `response.output_item.added` with `type: "reasoning"` → `reasoning_item_added` flag in `extra_fields`
+- **WS chunk emission:** `proxy_mc.c` already emits `reasoning_content` inside `chat_chunk` events. `proxy_multi.c` final chunk handler updated to include `reasoning_content` and `extra_fields`.
+- **Unity tests:** 8 new tests in `resp_parser_test_responses.c` prove Responses SSE parsing. 2 new tests in `req_builder_test_temperature.c` prove reasoning emission/omission. All existing parse request tests updated for new parameter.
+- **Verification:** `mkt` green, `mkp` green (2,012 files), all named Unity tests green.
 
 ---
 
@@ -1411,3 +1423,17 @@ zsh -ic 'mku <phase-named-unity>'
 - **Existing tests updated.** `req_builder_test.c` Ollama temperature assertion updated (was hardcoded 1.0, now client value 0.8). `auth_chat_test_helpers.c` and `auth_chats_test_helpers.c` updated to call shared resolver.
 - **Verification:** `mkt` green, `mkp` green (2,011 files), `mku req_builder_test_temperature` (17 tests), `mku req_builder_test` (10 tests), `mku auth_chat_test_helpers` (18 tests), `mku auth_chats_test_helpers` (9 tests) — all green.
 - Next: Phase 2 only.
+
+### 2026-09-01 — Phase 2 complete: reasoning knobs round-trip, inbound Responses reasoning on chunks
+
+- **Request-side reasoning field.** Added `char* reasoning` to `ChatRequestParams`. Parsed from client JSON in `auth_chat_parse_request`, `auth_chats_parse_request`, and `auth_chat_stream_parse_request`. `chat_resolve_request_params` accepts reasoning parameter.
+- **Responses builder emits reasoning.** `chat_request_build_responses` emits `{"reasoning": {"effort": "<value>"}}` when reasoning is non-NULL. Omitted when NULL.
+- **Responses API SSE parser.** `chat_stream_chunk_parse` detects Responses API format (type starts with `response.`) and handles:
+  - `response.output_text.delta` → `chunk->content`
+  - `response.reasoning_summary_text.delta` → `chunk->reasoning_content`
+  - `response.completed` → `chunk->is_done` + full response object in `extra_fields`
+  - `response.output_item.added` with `type: "reasoning"` → `reasoning_item_added` flag
+- **WS chunk emission.** `proxy_mc.c` emits `reasoning_content` inside `chat_chunk` events. `proxy_multi.c` final chunk handler updated to include `reasoning_content` and `extra_fields`.
+- **Unity tests.** 8 new tests in `resp_parser_test_responses.c` (Responses SSE parsing). 2 new tests in `req_builder_test_temperature.c` (reasoning emission/omission). All existing parse request tests updated.
+- **Verification:** `mkt` green, `mkp` green (2,012 files), `mku resp_parser_test_responses` (8 tests), `mku req_builder_test_temperature` (19 tests) — all green.
+- Next: Phase 3 only.

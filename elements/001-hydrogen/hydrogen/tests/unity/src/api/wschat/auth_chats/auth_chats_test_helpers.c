@@ -86,14 +86,14 @@ void test_auth_chats_resolve_request_params_uses_defaults_and_overrides(void) {
     engine.temperature_default = 0.8;
     engine.max_tokens = 2048;
 
-    ChatRequestParams defaults = chat_resolve_request_params(&engine, -1.0, -1, false);
+    ChatRequestParams defaults = chat_resolve_request_params(&engine, -1.0, -1, false, NULL);
     TEST_ASSERT_EQUAL_DOUBLE(0.8, defaults.temperature);
     TEST_ASSERT_EQUAL_INT(2048, defaults.max_tokens);
 
-    ChatRequestParams overrides = chat_resolve_request_params(&engine, 0.2, 99, false);
+    ChatRequestParams overrides = chat_resolve_request_params(&engine, 0.2, 99, false, NULL);
     TEST_ASSERT_EQUAL_DOUBLE(0.2, overrides.temperature);
     TEST_ASSERT_EQUAL_INT(99, overrides.max_tokens);
-    (void)chat_resolve_request_params(NULL, 0.2, 99, false);
+    (void)chat_resolve_request_params(NULL, 0.2, 99, false, NULL);
 }
 
 void test_auth_chats_build_multi_requests_filters_engines(void) {
@@ -106,7 +106,7 @@ void test_auth_chats_build_multi_requests_filters_engines(void) {
     TEST_ASSERT_NOT_NULL(requests);
     TEST_ASSERT_NOT_NULL(message);
 
-    size_t count = auth_chats_build_multi_requests(cache, engines, message, 0.3, 64, requests);
+    size_t count = auth_chats_build_multi_requests(cache, engines, message, 0.3, 64, NULL, requests);
     TEST_ASSERT_EQUAL_UINT(1, count);
     TEST_ASSERT_EQUAL_STRING("healthy", requests[0].engine_name);
     TEST_ASSERT_NOT_NULL(strstr(requests[0].request_json, "test-model"));
@@ -115,7 +115,7 @@ void test_auth_chats_build_multi_requests_filters_engines(void) {
     chat_message_destroy(message);
     json_decref(engines);
     chat_engine_cache_destroy(cache);
-    TEST_ASSERT_EQUAL_UINT(0, auth_chats_build_multi_requests(NULL, NULL, NULL, 0, 0, NULL));
+    TEST_ASSERT_EQUAL_UINT(0, auth_chats_build_multi_requests(NULL, NULL, NULL, 0, 0, NULL, NULL));
 }
 
 void test_auth_chats_copy_engine_names_copies_values(void) {

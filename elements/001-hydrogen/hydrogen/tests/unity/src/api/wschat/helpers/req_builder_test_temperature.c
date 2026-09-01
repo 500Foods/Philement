@@ -389,6 +389,57 @@ void test_dispatch_anthropic_unaffected_by_responses_flag(void) {
     chat_engine_config_destroy(engine);
 }
 
+void test_responses_emits_reasoning_effort(void);
+void test_responses_omits_reasoning_when_null(void);
+
+// --- Responses reasoning ---
+
+void test_responses_emits_reasoning_effort(void) {
+    ChatEngineConfig* engine = chat_engine_config_create(
+        1, "test-engine", CEC_PROVIDER_OPENAI, "test-model",
+        "https://api.test.com/v1/responses", "sk-test123",
+        4096, 0.7, true, 300, 10, 10, 100, MODALITY_DEFAULT, false);
+    engine->use_responses_api = true;
+    ChatMessage* messages = chat_message_create(CHAT_ROLE_USER, "Hello", NULL);
+    ChatRequestParams params = chat_request_params_default();
+    params.reasoning = strdup("high");
+
+    json_t* request = chat_request_build(engine, messages, &params);
+    TEST_ASSERT_NOT_NULL(request);
+
+    json_t* reasoning = json_object_get(request, "reasoning");
+    TEST_ASSERT_NOT_NULL(reasoning);
+    TEST_ASSERT_TRUE(json_is_object(reasoning));
+    json_t* effort = json_object_get(reasoning, "effort");
+    TEST_ASSERT_NOT_NULL(effort);
+    TEST_ASSERT_EQUAL_STRING("high", json_string_value(effort));
+
+    json_decref(request);
+    chat_message_list_destroy(messages);
+    chat_engine_config_destroy(engine);
+    free(params.reasoning);
+}
+
+void test_responses_omits_reasoning_when_null(void) {
+    ChatEngineConfig* engine = chat_engine_config_create(
+        1, "test-engine", CEC_PROVIDER_OPENAI, "test-model",
+        "https://api.test.com/v1/responses", "sk-test123",
+        4096, 0.7, true, 300, 10, 10, 100, MODALITY_DEFAULT, false);
+    engine->use_responses_api = true;
+    ChatMessage* messages = chat_message_create(CHAT_ROLE_USER, "Hello", NULL);
+    ChatRequestParams params = chat_request_params_default();
+
+    json_t* request = chat_request_build(engine, messages, &params);
+    TEST_ASSERT_NOT_NULL(request);
+
+    json_t* reasoning = json_object_get(request, "reasoning");
+    TEST_ASSERT_NULL(reasoning);
+
+    json_decref(request);
+    chat_message_list_destroy(messages);
+    chat_engine_config_destroy(engine);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -409,6 +460,8 @@ int main(void) {
     RUN_TEST(test_dispatch_routes_responses_when_flag_set);
     RUN_TEST(test_dispatch_routes_openai_when_flag_clear);
     RUN_TEST(test_dispatch_anthropic_unaffected_by_responses_flag);
+    RUN_TEST(test_responses_emits_reasoning_effort);
+    RUN_TEST(test_responses_omits_reasoning_when_null);
 
     return UNITY_END();
 }

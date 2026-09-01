@@ -60,6 +60,7 @@ ChatParsedResponse* chat_response_parse(const char* json_response, ChatEnginePro
 
 // Stream chunk parsing
 ChatStreamChunk* chat_stream_chunk_parse(const char* json_line);
+ChatStreamChunk* chat_stream_chunk_parse_responses(const char* json_line);
 void chat_stream_chunk_destroy(ChatStreamChunk* chunk);
 
 // Error extraction from failed responses

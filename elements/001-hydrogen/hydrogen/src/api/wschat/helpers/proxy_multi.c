@@ -365,10 +365,20 @@ void chat_proxy_multi_handle_completed_transfer(MultiStreamManager* manager,
 
                         json_t* chunk_json = json_object();
                         json_object_set_new(chunk_json, "content", json_string(chunk->content ? chunk->content : ""));
+                        if (chunk->reasoning_content) {
+                            json_object_set_new(chunk_json, "reasoning_content", json_string(chunk->reasoning_content));
+                        }
                         if (chunk->model) json_object_set_new(chunk_json, "model", json_string(chunk->model));
                         json_object_set_new(chunk_json, "index", json_integer(stream_ctx->chunk_index));
                         if (chunk->finish_reason) {
                             json_object_set_new(chunk_json, "finish_reason", json_string(chunk->finish_reason));
+                        }
+                        if (chunk->extra_fields) {
+                            const char* key;
+                            json_t* value;
+                            json_object_foreach(chunk->extra_fields, key, value) {
+                                json_object_set(chunk_json, key, value);
+                            }
                         }
                         json_object_set_new(response, "chunk", chunk_json);
 

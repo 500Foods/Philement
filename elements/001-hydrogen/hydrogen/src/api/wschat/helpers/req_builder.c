@@ -15,6 +15,7 @@ ChatRequestParams chat_request_params_default(void) {
     params.temperature = -1.0;  // Use engine default
     params.max_tokens = -1;     // Use engine default
     params.stream = false;
+    params.reasoning = NULL;
     params.additional_params = NULL;
     return params;
 }
@@ -400,7 +401,8 @@ json_t* chat_request_build_ollama(const ChatEngineConfig* engine,
 ChatRequestParams chat_resolve_request_params(const ChatEngineConfig* engine,
                                                double temperature,
                                                int max_tokens,
-                                               bool stream) {
+                                               bool stream,
+                                               const char* reasoning) {
     ChatRequestParams params = chat_request_params_default();
     if (!engine) {
         params.stream = stream;
@@ -409,6 +411,9 @@ ChatRequestParams chat_resolve_request_params(const ChatEngineConfig* engine,
     params.temperature = (temperature >= 0.0) ? temperature : engine->temperature_default;
     params.max_tokens = (max_tokens > 0) ? max_tokens : engine->max_tokens;
     params.stream = stream;
+    if (reasoning && strlen(reasoning) > 0) {
+        params.reasoning = (char*)reasoning;
+    }
     return params;
 }
 
@@ -456,6 +461,13 @@ json_t* chat_request_build_responses(const ChatEngineConfig* engine,
     // Stream
     if (params->stream) {
         json_object_set_new(root, "stream", json_true());
+    }
+
+    // Reasoning effort (Responses API: "reasoning" object with "effort" field)
+    if (params->reasoning) {
+        json_t* reasoning_obj = json_object();
+        json_object_set_new(reasoning_obj, "effort", json_string(params->reasoning));
+        json_object_set_new(root, "reasoning", reasoning_obj);
     }
 
     // Additional params overlay (merges last — explicit fields set the base)
