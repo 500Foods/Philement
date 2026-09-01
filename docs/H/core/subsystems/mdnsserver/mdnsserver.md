@@ -1,49 +1,52 @@
 # mDNS Server
 
-This document describes the multicast DNS (mDNS) service discovery system implemented in the Hydrogen server, which allows printers to be automatically discovered on local networks.
+This document describes the multicast DNS (mDNS) **server** implemented in the Hydrogen server. It advertises the printer's services on the local network per RFC 6762 and RFC 6763, and answers mDNS queries from other hosts.
 
 ## Overview
 
-The mDNS Server module enables automatic service discovery, eliminating the need for manual IP address configuration in most network environments. It implements the DNS-SD protocol (RFC 6762 and RFC 6763) for advertising the following:
+The mDNS Server makes Hydrogen reachable without manual IP configuration. It probes for a unique instance name and hostname, claims them on the network, then periodically announces and selectively answers queries for the advertised services.
 
-- Printer availability
-- Service endpoints (web, WebSocket)
-- Printer capabilities
-- Network location information
+The server is **RFC 6762/6763 feature-complete** for a single-host appliance:
+
+- Probe / claim with conflict rename (`Name (2)` …, up to 8 attempts)
+- Selective answers (answer only what was asked)
+- Known-answer suppression
+- QU unicast + multicast replies
+- Legacy unicast (non-5353 source port)
+- NSEC when a family has no address
+- Cache-flush on unique records (SRV/TXT/A/AAAA/NSEC); none on shared PTR
+- TTL split: shared records 4500 s, host records 120 s
+- Defend unique names on conflict
+- Shared-record delay (20–120 ms)
+- Unique-record rate limit (1/s per name)
+- Probe tiebreak (RFC 6762 s8.2)
+- Overflow-safe codec (partial send, never truncated)
+- Goodbye burst (TTL=0 ×3) on shutdown, only for claimed names
 
 ## Configuration
 
-The mDNS Server is configured through the `mdns_server` section of the configuration file:
+The mDNS Server is configured through the `mDNSServer` section of `hydrogen.json`:
 
 ```json
 {
-  "mdns_server": {
-    "enabled": true,
+  "mDNSServer": {
+    "Enabled": true,
     "EnableIPv6": true,
-    "device_id": "hydrogen_01",
-    "friendly_name": "My Hydrogen Printer",
-    "model": "Voron 2.4",
-    "manufacturer": "Self-built",
-    "version": "1.0",
-    "services": [
+    "DeviceId": "hydrogen_01",
+    "FriendlyName": "My Hydrogen Printer",
+    "Model": "Voron 2.4",
+    "Manufacturer": "Self-built",
+    "Version": "1.0",
+    "Services": [
       {
-        "name": "hydrogen-printer",
-        "type": "_http._tcp.local",
-        "port": 5000,
-        "txt_records": [
+        "Name": "hydrogen-printer",
+        "Type": "_http._tcp",
+        "Port": 5000,
+        "TxtRecords": [
           "version=1.0",
           "api=/api",
           "path=/",
           "type=printer"
-        ]
-      },
-      {
-        "name": "hydrogen-ws",
-        "type": "_websocket._tcp.local",
-        "port": 5001,
-        "txt_records": [
-          "version=1.0",
-          "protocol=hydrogen-protocol"
         ]
       }
     ]
@@ -51,158 +54,98 @@ The mDNS Server is configured through the `mdns_server` section of the configura
 }
 ```
 
-For complete configuration options, see the [Configuration Guide](/docs/H/core/configuration.md#mdns-server).
+For full configuration options, see the [mDNS Configuration Guide](/docs/H/core/reference/mdns_configuration.md).
 
-## Service Advertisement
+## Probe and Claim
 
-The mDNS Server advertises services using the following DNS record types:
+Before any announcement, the server **probes** for its hostname and each service instance name:
 
-- **A/AAAA records**: Advertise IPv4/IPv6 addresses
-- **PTR records**: Map service types to specific instances
-- **SRV records**: Provide host and port information
-- **TXT records**: Include additional service metadata
+1. Send 3 probe queries (ANY+QU for the name, proposed records in authority), 250 ms apart.
+2. Listen between probes. A response (QR=1) with a live (TTL≠0) RR under the same name is a **conflict**.
+3. On conflict: rename and retry, up to `MAX_NAME_ATTEMPTS` (8) per name.
+   - Instance conflict: append ` (N)` to the label (DNS-SD convention): `hydrogen-printer (2)`.
+   - Hostname conflict: append `-N` to the host label: `host-2.local`.
+4. After silence on all names: mark `claimed = 1`, then begin announcements.
+5. If 8 attempts fail on any name: the server fails to launch (`probe_failed`); no announce, answer, or goodbye.
 
-When the server starts, it sends initial announcements with a brief delay between them, then periodically re-broadcasts service information according to the mDNS specification.
+The server does **not** answer any query until claimed.
 
-### Advertisement Format
+## Selective Responder
 
-Services are advertised using the following format:
+The responder answers only the records the question asks for, identified by name + type:
 
-```service
-[instance name].[service type]
-```
+| Question name | Type | Want bits |
+|---|---|---|
+| service type (e.g. `_http._tcp`) | PTR / ANY | PTR + SRV + TXT + A + AAAA + NSEC |
+| instance name | SRV / ANY | SRV + A + AAAA + NSEC |
+| instance name | TXT / ANY | TXT |
+| hostname | A / ANY | A |
+| hostname | AAAA / ANY | AAAA + NSEC |
+| hostname | NSEC | NSEC |
+| `_services._dns-sd._udp.local` | PTR / ANY | W_SD (PTR to each advertised type) |
 
-For example: `hydrogen-printer._http._tcp.local`
+Additional processing:
 
-## Network Interface Management
+- **Known-answer suppression**: a PTR in the query's answer section suppresses our PTR only if rdata names our instance and the querier's TTL is more than half ours.
+- **QU bit**: reply on both multicast and unicast.
+- **Legacy unicast** (source port ≠ 5353): echo questions, copy query ID, cap TTL at 10, no cache-flush, unicast only.
+- **NSEC**: if the interface has no address for the asked family, drop A/AAAA and set NSEC listing types that do exist.
+- **Reply on the same socket** the query arrived on (v4 vs v6).
 
-The mDNS Server automatically:
+## TTLs and Cache-Flush
 
-1. Detects all available network interfaces
-2. Excludes loopback interfaces
-3. Sets up multicast sockets for both IPv4 and IPv6 (if enabled)
-4. Monitors interface-specific IP addresses
-5. Manages interface-specific announcements
+Two TTL classes (RFC 6763 s10):
 
-This ensures services are properly advertised on all relevant network interfaces, even in complex multi-network environments.
+| Class | Records | TTL |
+|---|---|---|
+| Shared | PTR, dns-sd PTR | 4500 s |
+| Host (unique) | SRV, TXT, A, AAAA, NSEC | 120 s |
 
-## Implementation Details
+Unique records set the cache-flush bit on multicast answers. PTR (shared) does not. Legacy unicast answers never set cache-flush.
 
-The mDNS Server uses a modular architecture designed for reliability, efficiency, and standards compliance:
+## Defend, Delay, Rate Limit, Tiebreak
 
-### Component Architecture
+- **Defend (RFC 6762 s9)**: after claiming, a conflicting announcement (QR=1, TTL≠0, our unique name, different rdata) triggers an immediate multicast of our unique records. Logs `MDNS_SERVER DEFEND`.
+- **Shared-record delay (s6)**: PTR / dns-sd answers wait a random 20–120 ms; unique records answer immediately.
+- **Unique-record rate limit (s6)**: at most one multicast of a given unique name per second.
+- **Probe tiebreak (s8.2)**: if a probe arrives while we are probing the same name, compare records lexicographically; the loser delays 1 s and probes again.
 
-The implementation consists of several key components:
+## Wire Codec
 
-- **Socket Management**:
-  - Dual-stack IPv4/IPv6 support
-  - Interface-specific binding
-  - Multicast group management
+Server and client share an overflow-safe codec in `src/mdns/mdns_wire.c`. Names are written **uncompressed**; the parser accepts compression pointers with a jump limit. On overflow, the builder emits what fitted and never sends a truncated buffer.
 
-- **Packet Construction**:
-  - DNS record creation (A, AAAA, PTR, SRV, TXT)
-  - Name compression
-  - TTL management
+## Thread Management
 
-- **Service Announcement**:
-  - Periodic broadcasts
-  - Goodbye packets during shutdown
-  - Interface-specific announcements
+The mDNS Server runs two threads:
 
-- **Query Handling**:
-  - Question parsing
-  - Targeted responses
-  - Request filtering
+1. **Announcement thread** (`mdns_server_announce_loop`): runs the probe/claim sequence, then broadcasts service information at increasing intervals.
+2. **Responder thread** (`mdns_server_responder_loop`): listens for incoming mDNS queries and generates selective responses.
 
-### Thread Management
+## Shutdown Sequence
 
-The mDNS Server operates two primary threads:
+On shutdown the server sends RFC-compliant goodbye packets (TTL=0) for all claimed services, on all interfaces, 3 times with 250 ms delay. Names that were never claimed get no goodbye. Threads are then joined and sockets closed.
 
-1. **Announcement Thread (`mdns_server_announce_loop`)**:
-   - Broadcasts service information at regular intervals
-   - Sends initial announcements at server startup
-   - Handles graceful service withdrawal at shutdown
+## Log Contract
 
-2. **Responder Thread (`mdns_server_responder_loop`)**:
-   - Listens for incoming mDNS queries
-   - Filters relevant requests
-   - Generates appropriate responses
+Stable log tokens Test 25 greps in the Hydrogen server log:
 
-Both threads register with the service thread tracking system for proper monitoring and cleanup.
-
-### Shutdown Sequence
-
-The mDNS Server implements a robust, standards-compliant shutdown process:
-
-1. **Signaling Phase**
-   - Set `mdns_server_system_shutdown = 1` flag
-   - Broadcast on condition variable to wake waiting threads
-   - Allow threads to detect shutdown state and begin cleanup
-
-2. **Service Withdrawal**
-   - Send RFC-compliant "goodbye" packets (TTL=0) for all services
-   - Send on all network interfaces (IPv4 and IPv6)
-   - Repeat 3 times with 250ms delay for reliability
-   - Explicitly log each packet for verification
-
-3. **Thread Coordination**
-   - Join the announcement and responder threads
-   - Verify thread exit with progressive timeouts
-   - Use thread tracking to ensure all mDNS threads exit
-
-4. **Socket Cleanup**
-   - Explicitly close all sockets on each interface
-   - Close IPv4 and IPv6 sockets separately
-   - Verify socket closure
-
-5. **Resource Cleanup**
-   - Free interface structures in correct order
-   - Release all dynamically allocated memory
-   - Brief delay before final cleanup to prevent race conditions
-
-This approach ensures proper service withdrawal from the network and clean resource deallocation, even under error conditions.
+| Token | When |
+|---|---|
+| `MDNS_SERVER PROBE <instance>` | each probe query sent |
+| `MDNS_SERVER CONFLICT <name>` | name taken; will rename |
+| `MDNS_SERVER CLAIMED <instance>` | name ours; announcements may start |
+| `MDNS_SERVER GOODBYE` | TTL-0 burst |
+| `MDNS_SERVER DEFEND` | immediate re-announce on conflict |
 
 ## Debugging and Monitoring
 
-To verify proper mDNS Server operation, you can:
-
-1. Use the `/api/system/info` endpoint to check mDNS Server status
-2. View mDNS-specific log messages with the "mDNSServer" subsystem tag
-3. Use external tools to verify service announcement:
-   - `avahi-browse -a` on Linux
-   - `dns-sd -B _http._tcp` on macOS
-   - Bonjour Browser on Windows
-
-## Security Considerations
-
-The mDNS Server follows these security practices:
-
-1. **Access Control**: mDNS is limited to local networks by design
-2. **Minimal Information**: Only advertises necessary service information
-3. **DoS Protection**: Ignores malformed queries
-4. **Input Validation**: Sanitizes all incoming data
-
-## Troubleshooting
-
-Common mDNS Server issues and solutions:
-
-1. **Service Not Visible**
-   - Check if mDNS Server is enabled in configuration
-   - Ensure multicast is allowed on your network
-   - Verify no firewall is blocking UDP port 5353
-
-2. **Port Conflicts**
-   - Check if another mDNS service is running (Avahi, Bonjour)
-   - If necessary, stop conflicting services
-
-3. **Performance Issues**
-   - Limit the number of advertised services
-   - Tune announcement intervals for your network
+1. Use `/api/system/info` to see claimed instance/hostname and client cache count.
+2. View mDNS server logs with the `mDNSServer` subsystem tag.
+3. External verification: `avahi-browse -a` (Linux), `dns-sd -B _http._tcp` (macOS).
 
 ## References
 
-- [Shutdown Architecture](/docs/H/core/shutdown_architecture.md) - Complete shutdown sequence overview
-- [WebSocket Interface](/docs/H/core/subsystems/websocket/websocket.md) - WebSocket server implementation
-- [Configuration Guide](/docs/H/core/reference/configuration.md) - Configuration options
-- [Thread Monitoring](/docs/H/core/subsystems/threads/threads.md) - Thread tracking and diagnostics
-- [Release Notes](/RELEASES.md) - History of mDNS server improvements
+- [mDNS Configuration Guide](/docs/H/core/reference/mdns_configuration.md)
+- [mDNS Client](/docs/H/core/subsystems/mdnsclient/mdnsclient.md)
+- [RFC 6762](https://datatracker.ietf.org/doc/html/rfc6762) — Multicast DNS
+- [RFC 6763](https://datatracker.ietf.org/doc/html/rfc6763) — DNS-Based Service Discovery

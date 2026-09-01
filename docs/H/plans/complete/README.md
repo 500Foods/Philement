@@ -47,6 +47,7 @@ Active plans folder: [`/docs/H/plans/`](/docs/H/plans/).
 | [LUA_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_PLAN_COMPLETE.md) | Lua scripting |
 | [LUA_CLIENT_COMPLETE.md](/docs/H/plans/complete/LUA_CLIENT_COMPLETE.md) | Client REST script invoke (conduit/script) |
 | [MAILRELAY_BLACKBOX_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md) | Mail Relay blackbox |
+| [MDNS_UPGRADE_COMPLETE.md](/docs/H/plans/complete/MDNS_UPGRADE_COMPLETE.md) | mDNS RFC 6762/6763 server + real client (Phases 0–8) |
 | [MCP_COMPLETE.md](/docs/H/plans/complete/MCP_COMPLETE.md) | MCP server (Streamable HTTP + Lua) |
 | [MIGRATIONS_COMPLETE.md](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md) | Migration performance |
 | [SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md) | SchemaTool drift auditor (metadata + catalog, CLI 1.7.1) |

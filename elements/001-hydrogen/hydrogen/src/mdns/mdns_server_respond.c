@@ -37,6 +37,44 @@ void mdns_server_want_clear(mdns_server_want_t *w, size_t nsvc)
     }
 }
 
+void mdns_server_want_apply_rate_limit(mdns_server_want_t *w, const mdns_server_t *server)
+{
+    uint32_t unique_mask = MDNS_W_SRV | MDNS_W_TXT | MDNS_W_A | MDNS_W_AAAA | MDNS_W_NSEC;
+    size_t i;
+    uint64_t now;
+
+    if (!w || !server) {
+        return;
+    }
+    if (!server->now_ms_fn) {
+        return;
+    }
+    now = server->now_ms_fn();
+    if (now == 0) {
+        return;
+    }
+
+    if (server->hostname_last_send_ms != 0 &&
+        now - server->hostname_last_send_ms < (uint64_t)MDNS_RATE_LIMIT_MS) {
+        w->host_answer &= ~unique_mask;
+        w->host_additional &= ~unique_mask;
+    }
+
+    for (i = 0; i < w->nsvc && i < server->num_services; i++) {
+        const mdns_server_service_t *svc = &server->services[i];
+
+        /* cppcheck-suppress knownConditionTrueFalse -- defensive null check */
+        if (!svc) {
+            continue;
+        }
+        if (svc->last_send_ms != 0 &&
+            now - svc->last_send_ms < (uint64_t)MDNS_RATE_LIMIT_MS) {
+            w->svc_answer[i] &= ~unique_mask;
+            w->svc_additional[i] &= ~unique_mask;
+        }
+    }
+}
+
 int mdns_server_want_empty(const mdns_server_want_t *w)
 {
     size_t i;
@@ -554,53 +592,45 @@ void mdns_server_build_query_response(uint8_t *packet, size_t *packet_len,
     }
     (void)ns_pos;
 
-    for (k = 0; k < want->nsvc; k++) {
+    for (k = 0; k < want->nsvc && !b.overflow; k++) {
         if (mdns_server_put_service_bits(&b, server, k, hostname, want->svc_answer[k],
-                                         shared_ttl, host_ttl, flush, &ancount) < 0) {
-            *packet_len = 0;
-            return;
+                                          shared_ttl, host_ttl, flush, &ancount) < 0) {
+            break;
         }
     }
-    if (hostname && iface) {
+    if (!b.overflow && hostname && iface) {
         if (mdns_server_put_host_addrs(&b, hostname, iface, host_ttl, flush,
-                                       want->host_answer, &ancount) < 0) {
-            *packet_len = 0;
-            return;
+                                        want->host_answer, &ancount) < 0) {
+            /* overflow: skip remaining */
         }
-        if ((want->host_answer & MDNS_W_NSEC) &&
+        if (!b.overflow && (want->host_answer & MDNS_W_NSEC) &&
             mdns_server_put_host_nsec(&b, hostname, iface, host_ttl, flush, &ancount) < 0) {
-            *packet_len = 0;
-            return;
+            /* overflow: skip remaining */
         }
     }
 
-    for (k = 0; k < want->nsvc; k++) {
+    for (k = 0; k < want->nsvc && !b.overflow; k++) {
         uint32_t extra = want->svc_additional[k] & ~want->svc_answer[k];
 
         if (mdns_server_put_service_bits(&b, server, k, hostname, extra,
-                                         shared_ttl, host_ttl, flush, &arcount) < 0) {
-            *packet_len = 0;
-            return;
+                                          shared_ttl, host_ttl, flush, &arcount) < 0) {
+            /* overflow: stop adding additional records */
         }
     }
-    if (hostname && iface) {
+    if (!b.overflow && hostname && iface) {
         uint32_t extra = want->host_additional & ~want->host_answer;
 
         if (mdns_server_put_host_addrs(&b, hostname, iface, host_ttl, flush, extra, &arcount) < 0) {
-            *packet_len = 0;
-            return;
+            /* overflow: skip remaining */
         }
-        if ((extra & MDNS_W_NSEC) &&
+        if (!b.overflow && (extra & MDNS_W_NSEC) &&
             mdns_server_put_host_nsec(&b, hostname, iface, host_ttl, flush, &arcount) < 0) {
-            *packet_len = 0;
-            return;
+            /* overflow: skip remaining */
         }
     }
 
     if (b.overflow) {
-        log_this(SR_MDNS_SERVER, "Query response overflow, skipping send", LOG_LEVEL_ALERT, 0);
-        *packet_len = 0;
-        return;
+        log_this(SR_MDNS_SERVER, "Query response overflow, sending partial packet", LOG_LEVEL_ALERT, 0);
     }
     b.buf[an_pos] = (uint8_t)(ancount >> 8);
     b.buf[an_pos + 1] = (uint8_t)(ancount & 0xffu);
@@ -691,7 +721,6 @@ bool mdns_server_process_query_packet(mdns_server_t *mdns_server_instance,
     uint16_t src_port;
 
     (void)net_info_instance;
-    mdns_wire_keep_linked();
 
     if (!mdns_server_instance || !buffer || len < (ssize_t)sizeof(dns_header_t)) {
         return false;
@@ -721,6 +750,7 @@ bool mdns_server_process_query_packet(mdns_server_t *mdns_server_instance,
     }
     mdns_server_want_mask_unclaimed(&want, mdns_server_instance);
     mdns_server_strip_known_answers(&want, mdns_server_instance, buffer, (size_t)len, &msg);
+    mdns_server_want_apply_rate_limit(&want, mdns_server_instance);
 
     src_port = mdns_server_sockaddr_port(src_addr, src_len);
     legacy = (src_port != (uint16_t)MDNS_PORT) ? 1 : 0;

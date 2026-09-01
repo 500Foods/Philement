@@ -200,17 +200,6 @@ not open work unless listed below.
 | **Remaining** | Product decision (JWT/session cookie vs stay open on trusted nets); implement gate + blackbox |
 | **Why later** | Fine for lab; risk on exposed deployments. |
 
-### 20. mDNS upgrade — RFC server + real client
-
-| | |
-| --- | --- |
-| **Plan** | [`MDNS_UPGRADE.md`](/docs/H/plans/MDNS_UPGRADE.md) |
-| **Effort** | L–XL |
-| **Done** | ~25% — server announces + Test 25 pcap/avahi; client launch is registry-only |
-| **Remaining** | Gated Phases 1–8: codec, TTL/sockets, selective responder, probe/claim, NSEC, client+registry+TCP health, defend/delay/tiebreak, Test 25 log+duplicate-name+wire, docs. No in-mDNS job load-balancer. Scratch tree already removed (Phase 0). |
-| **Why next** | Announcements work; names collide, queries get a full dump, client never browses. One plan covers server RFC gaps and the client scaffold. |
-| **Note** | Sole mDNS backlog item. Archive mention: [`TODO_COMPLETE.md`](/docs/H/plans/complete/TODO_COMPLETE.md) launch_mdns_client. [`mdns_client_architecture.md`](/docs/H/core/reference/mdns_client_architecture.md) load-balancer/event wishlist is **out of scope**. |
-
 ### 24. `H.externaldb` — ad-hoc external database connections from Lua scripts
 
 | | |
@@ -304,7 +293,7 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 - `api_create_jwt` real HS256 implementation
 - Chat LRU write-through dirty-flag fix (`chat_lru_cache_flush` clears residual dirty only)
 - Stale conduit swagger 501 / config `DUMP_NOT_IMPLEMENTED` removed
-- Intentional stubs documented in-code (REST SSE 501, media_chunk -1, print log-only, Notify launch scaffold). mDNS client scaffold is item 20 ([`MDNS_UPGRADE.md`](/docs/H/plans/MDNS_UPGRADE.md)), not leftover comment debt.
+- Intentional stubs documented in-code (REST SSE 501, media_chunk -1, print log-only, Notify launch scaffold). mDNS upgrade is complete ([`MDNS_UPGRADE_COMPLETE.md`](/docs/H/plans/complete/MDNS_UPGRADE_COMPLETE.md)).
 - `deserialize_query_from_json` implemented (stale “placeholder” comment removed)
 
 **2026-07-28 comment hygiene** (minimal behavior: REST SSE error string wording only):
@@ -364,7 +353,6 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 15 | Terminal WS auth | M | ~10% | P2 |
 | 17 | OIDC RP client-role parse | S–M | fallback | P2 |
 | 24 | `H.externaldb` — ad-hoc external DB from Lua | M | 0% | P2 |
-| 20 | mDNS upgrade (RFC server + client) | L–XL | ~25% | P2 |
 | 18 | OIDC IdP post-MVP | M–L | ~90% | P3 |
 | 19 | Print job → device / Beryllium | L–XL | ~30% | P3 |
 | 22 | Mirage | XL | 0% | P3 |

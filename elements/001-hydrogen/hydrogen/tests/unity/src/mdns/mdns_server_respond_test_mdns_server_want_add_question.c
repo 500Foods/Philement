@@ -16,6 +16,7 @@ void test_want_add_srv_instance(void);
 void test_want_add_hostname_a(void);
 void test_want_add_qu_bit(void);
 void test_want_add_nulls(void);
+void test_want_add_hostname_nsec(void);
 
 void setUp(void)
 {
@@ -155,6 +156,24 @@ void test_want_add_nulls(void)
     TEST_ASSERT_TRUE(mdns_server_want_empty(&want));
 }
 
+void test_want_add_hostname_nsec(void)
+{
+    mdns_server_t server;
+    mdns_server_service_t svc;
+    mdns_server_want_t want;
+    mdns_rr q;
+
+    fill_server(&server, &svc);
+    mdns_server_want_clear(&want, 1);
+    memset(&q, 0, sizeof q);
+    snprintf(q.name, sizeof q.name, "%s", "host.local");
+    q.type = (uint16_t)RR_NSEC;
+    q.cls = DNS_CLASS_IN;
+    mdns_server_want_add_question(&want, &server, &q);
+    TEST_ASSERT_TRUE((want.host_answer & MDNS_W_NSEC) != 0);
+    TEST_ASSERT_TRUE((want.host_answer & MDNS_W_A) == 0);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -165,5 +184,6 @@ int main(void)
     RUN_TEST(test_want_add_hostname_a);
     RUN_TEST(test_want_add_qu_bit);
     RUN_TEST(test_want_add_nulls);
+    RUN_TEST(test_want_add_hostname_nsec);
     return UNITY_END();
 }

@@ -34,9 +34,9 @@ void tearDown(void) {
 
 // Helper function to create a fully initialized server for cleanup testing
 mdns_server_t *create_test_server_with_interfaces_and_services(void) {
-    mdns_server_t *server = malloc(sizeof(mdns_server_t));
+    mdns_server_t *server = calloc(1, sizeof(mdns_server_t));
     if (!server) return NULL;
-    
+
     // Initialize all basic fields
     server->hostname = strdup("test.local");
     server->service_name = strdup("TestApp");
@@ -52,12 +52,12 @@ mdns_server_t *create_test_server_with_interfaces_and_services(void) {
     
     // Initialize interfaces (2 interfaces)
     server->num_interfaces = 2;
-    server->interfaces = malloc(sizeof(mdns_server_interface_t) * 2);
+    server->interfaces = calloc(2, sizeof(mdns_server_interface_t));
     
     // Interface 1
     server->interfaces[0].if_name = strdup("eth0");
     server->interfaces[0].num_addresses = 2;
-    server->interfaces[0].ip_addresses = malloc(sizeof(char*) * 2);
+    server->interfaces[0].ip_addresses = calloc(2, sizeof(char*));
     server->interfaces[0].ip_addresses[0] = strdup("192.168.1.100");
     server->interfaces[0].ip_addresses[1] = strdup("10.0.0.50");
     server->interfaces[0].sockfd_v4 = -1;  // Use -1 to avoid actual socket
@@ -68,7 +68,7 @@ mdns_server_t *create_test_server_with_interfaces_and_services(void) {
     // Interface 2
     server->interfaces[1].if_name = strdup("wlan0");
     server->interfaces[1].num_addresses = 1;
-    server->interfaces[1].ip_addresses = malloc(sizeof(char*) * 1);
+    server->interfaces[1].ip_addresses = calloc(1, sizeof(char*));
     server->interfaces[1].ip_addresses[0] = strdup("192.168.0.200");
     server->interfaces[1].sockfd_v4 = -1;  // Use -1 to avoid actual socket
     server->interfaces[1].sockfd_v6 = -1;
@@ -77,14 +77,14 @@ mdns_server_t *create_test_server_with_interfaces_and_services(void) {
     
     // Initialize services (2 services)
     server->num_services = 2;
-    server->services = malloc(sizeof(mdns_server_service_t) * 2);
+    server->services = calloc(2, sizeof(mdns_server_service_t));
     
     // Service 1 with TXT records
     server->services[0].name = strdup("printer_http");
     server->services[0].type = strdup("_http._tcp.local");
     server->services[0].port = 8080;
     server->services[0].num_txt_records = 2;
-    server->services[0].txt_records = malloc(sizeof(char*) * 2);
+    server->services[0].txt_records = calloc(2, sizeof(char*));
     server->services[0].txt_records[0] = strdup("path=/api");
     server->services[0].txt_records[1] = strdup("version=1.0");
     
@@ -93,7 +93,7 @@ mdns_server_t *create_test_server_with_interfaces_and_services(void) {
     server->services[1].type = strdup("_websocket._tcp.local");
     server->services[1].port = 8081;
     server->services[1].num_txt_records = 1;
-    server->services[1].txt_records = malloc(sizeof(char*) * 1);
+    server->services[1].txt_records = calloc(1, sizeof(char*));
     server->services[1].txt_records[0] = strdup("protocol=websocket");
     
     return server;
@@ -113,7 +113,7 @@ void test_mdns_server_cleanup_fully_initialized_server(void) {
 
 // Test mdns_server_cleanup with server that has interfaces but no services
 void test_mdns_server_cleanup_server_with_interfaces(void) {
-    mdns_server_t *server = malloc(sizeof(mdns_server_t));
+    mdns_server_t *server = calloc(1, sizeof(mdns_server_t));
     TEST_ASSERT_NOT_NULL(server);
     
     // Initialize only interface-related fields
@@ -130,10 +130,10 @@ void test_mdns_server_cleanup_server_with_interfaces(void) {
     
     // Initialize interfaces
     server->num_interfaces = 1;
-    server->interfaces = malloc(sizeof(mdns_server_interface_t));
+    server->interfaces = calloc(1, sizeof(mdns_server_interface_t));
     server->interfaces[0].if_name = strdup("eth0");
     server->interfaces[0].num_addresses = 1;
-    server->interfaces[0].ip_addresses = malloc(sizeof(char*) * 1);
+    server->interfaces[0].ip_addresses = calloc(1, sizeof(char*));
     server->interfaces[0].ip_addresses[0] = strdup("192.168.1.100");
     server->interfaces[0].sockfd_v4 = -1;  // Use -1 to avoid actual socket
     server->interfaces[0].sockfd_v6 = -1;
@@ -150,7 +150,7 @@ void test_mdns_server_cleanup_server_with_interfaces(void) {
 
 // Test mdns_server_cleanup with server that has services but no interfaces
 void test_mdns_server_cleanup_server_with_services(void) {
-    mdns_server_t *server = malloc(sizeof(mdns_server_t));
+    mdns_server_t *server = calloc(1, sizeof(mdns_server_t));
     TEST_ASSERT_NOT_NULL(server);
     
     // Initialize only service-related fields
@@ -171,12 +171,12 @@ void test_mdns_server_cleanup_server_with_services(void) {
     
     // Initialize services
     server->num_services = 1;
-    server->services = malloc(sizeof(mdns_server_service_t));
+    server->services = calloc(1, sizeof(mdns_server_service_t));
     server->services[0].name = strdup("test_service");
     server->services[0].type = strdup("_http._tcp.local");
     server->services[0].port = 8080;
     server->services[0].num_txt_records = 1;
-    server->services[0].txt_records = malloc(sizeof(char*) * 1);
+    server->services[0].txt_records = calloc(1, sizeof(char*));
     server->services[0].txt_records[0] = strdup("test=value");
     
     // This should cleanup services but skip interfaces
@@ -206,7 +206,7 @@ void test_mdns_server_cleanup_server_with_all_fields(void) {
 
 // Test mdns_server_cleanup with network_info_instance
 void test_mdns_server_cleanup_with_network_info(void) {
-    mdns_server_t *server = malloc(sizeof(mdns_server_t));
+    mdns_server_t *server = calloc(1, sizeof(mdns_server_t));
     TEST_ASSERT_NOT_NULL(server);
     
     // Initialize minimal server
@@ -226,7 +226,7 @@ void test_mdns_server_cleanup_with_network_info(void) {
     server->services = NULL;
     
     // Create a dummy network_info_t to test that branch
-    network_info_t *test_net_info = malloc(sizeof(network_info_t));
+    network_info_t *test_net_info = calloc(1, sizeof(network_info_t));
     TEST_ASSERT_NOT_NULL(test_net_info);
     test_net_info->count = 0;
     test_net_info->primary_index = -1;

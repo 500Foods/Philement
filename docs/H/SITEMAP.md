@@ -47,6 +47,8 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [database.md](/docs/H/core/subsystems/database/database.md): Database subsystem overview and documentation index
 - [developer_onboarding.md](/docs/H/core/developer_onboarding.md)
 - [mdns_server.md](/docs/H/core/subsystems/mdnsserver/mdnsserver.md)
+- [mdnsclient.md](/docs/H/core/subsystems/mdnsclient/mdnsclient.md)
+- [mdnsclient/README.md](/docs/H/core/subsystems/mdnsclient/README.md)
 - [oidc_integration.md](/docs/H/core/subsystems/oidc/oidc.md)
 - [print_queue.md](/docs/H/core/subsystems/print/print.md)
 - [service.md](/docs/H/core/service.md)
@@ -131,7 +133,6 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 - [KEYCLOAK_PLAN.md](/docs/H/plans/KEYCLOAK_PLAN.md): Keycloak SSO / Hydrogen as OIDC RP (Phase 5 E2E in progress)
 - [MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md): Mail Relay subsystem implementation plan
-- [MDNS_UPGRADE.md](/docs/H/plans/MDNS_UPGRADE.md): mDNS RFC server + real client (active P2 plan)
 
 - [MIRAGE_PLAN.md](/docs/H/plans/MIRAGE_PLAN.md): Mirage distributed proxy architecture (deferred)
 - [OIDC-PLAN.md](/docs/H/plans/OIDC-PLAN.md): Historical OIDC RP implementation phase log
@@ -189,6 +190,7 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [LUA_CLIENT_COMPLETE.md](/docs/H/plans/complete/LUA_CLIENT_COMPLETE.md)
 - [MCP_COMPLETE.md](/docs/H/plans/complete/MCP_COMPLETE.md)
 - [MAILRELAY_BLACKBOX_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md)
+- [MDNS_UPGRADE_COMPLETE.md](/docs/H/plans/complete/MDNS_UPGRADE_COMPLETE.md): mDNS RFC server + real client (Phases 0–8)
 - [MIGRATIONS_COMPLETE.md](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md)
 - [SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md): SchemaTool migration drift auditor (CLI 1.7.1)
 - [STATIC_COMPLETE.md](/docs/H/plans/complete/STATIC_COMPLETE.md)

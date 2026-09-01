@@ -73,6 +73,7 @@ void mdns_server_shutdown(mdns_server_t *mdns_server_instance) {
     network_info_t *net_info_instance = get_network_info();
     if (net_info_instance && net_info_instance->primary_index != -1 &&
         !mdns_server_instance->probe_failed && mdns_server_any_claimed(mdns_server_instance)) {
+        log_this(SR_MDNS_SERVER, "MDNS_SERVER GOODBYE", LOG_LEVEL_DEBUG, 0);
         struct sockaddr_in addr_v4;
         struct sockaddr_in6 addr_v6;
 

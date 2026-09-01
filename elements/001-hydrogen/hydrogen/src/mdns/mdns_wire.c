@@ -487,22 +487,3 @@ int mdns_txt_get(const uint8_t *rdata, size_t rdlen, const char *key,
     }
     return -1;
 }
-
-void mdns_wire_keep_linked(void)
-{
-    uint8_t storage[64];
-    mdns_buf b;
-    mdns_rr rr;
-    char name[MDNS_NAME_MAX];
-    char txt[8];
-    uint16_t prio = 0;
-    uint16_t weight = 0;
-    uint16_t port = 0;
-
-    memset(storage, 0, sizeof storage);
-    mdns_buf_init(&b, storage, sizeof storage);
-    memset(&rr, 0, sizeof rr);
-    (void)mdns_rdata_name(storage, b.len, &rr, name, sizeof name);
-    (void)mdns_rdata_srv(storage, b.len, &rr, &prio, &weight, &port, name, sizeof name);
-    (void)mdns_txt_get((const uint8_t *)"\x01x", 2, "x", txt, sizeof txt);
-}

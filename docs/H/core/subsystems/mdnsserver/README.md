@@ -2,17 +2,23 @@
 
 ## What is the mDNS Server?
 
-The mDNS Server is the network announcer that makes the Hydrogen server visible to other devices on the local network. It enables automatic discovery and connection without manual setup, eliminating the need for users to remember or configure IP addresses.
+The mDNS Server is the network announcer that makes the Hydrogen server visible to other devices on the local network. It probes for a unique name, claims it, then advertises services and answers queries per RFC 6762/6763.
 
 ## Why is it Important?
 
-In traditional networking, connecting to a device like a 3D printer requires knowing its exact IP address, which can be cumbersome and error-prone. The mDNS Server solves this by broadcasting the printer's availability using multicast DNS (mDNS) protocol, allowing client applications and other network devices to automatically find and connect to the Hydrogen server.
+Connecting to a device like a 3D printer requires knowing its exact IP address. The mDNS Server solves this by broadcasting availability via multicast DNS, so clients find and connect to Hydrogen automatically.
 
 ## Key Features
 
-- **Automatic Discovery**: Printers announce themselves on the network
-- **Service Advertisement**: Publishes available endpoints like web interfaces and WebSocket connections
-- **Zero Configuration**: No manual network setup required
-- **Local Network Focus**: Designed specifically for secure, local network environments
+- **Probe / claim** with conflict rename before announcing
+- **Selective answers** — only the records the question asks for
+- **Known-answer suppression**, QU unicast, legacy unicast
+- **NSEC** when a family has no address
+- **Cache-flush** on unique records, TTL split (shared 4500 s / host 120 s)
+- **Defend**, shared-record delay, unique-record rate limit, probe tiebreak
+- **Goodbye burst** (TTL=0 ×3) on shutdown
 
-This subsystem is essential for creating a plug-and-play experience where users can simply connect their devices to the same network and immediately access the Hydrogen printer's services.
+## Documentation
+
+- [mdnsserver.md](/docs/H/core/subsystems/mdnsserver/mdnsserver.md) — full server documentation
+- [mdns_configuration.md](/docs/H/core/reference/mdns_configuration.md) — configuration guide

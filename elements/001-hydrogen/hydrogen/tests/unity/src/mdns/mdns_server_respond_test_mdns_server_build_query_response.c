@@ -1,6 +1,6 @@
 /*
  * Unity Test File: mdns_server_respond_test_mdns_server_build_query_response.c
- * Tests selective PTR+additional vs legacy unicast shape
+ * Tests selective PTR+additional vs legacy unicast shape and overflow split
  */
 
 #include <src/hydrogen.h>
@@ -13,6 +13,7 @@ void test_build_ptr_additional_and_flush(void);
 void test_build_legacy_echo_ttl_no_flush(void);
 void test_build_dns_sd_ptr(void);
 void test_build_ipv4_only_aaaa_yields_nsec(void);
+void test_build_overflow_sends_partial(void);
 
 void setUp(void)
 {
@@ -229,6 +230,66 @@ void test_build_ipv4_only_aaaa_yields_nsec(void)
     TEST_ASSERT_FALSE(saw_aaaa);
 }
 
+void test_build_overflow_sends_partial(void)
+{
+    mdns_server_t server;
+    mdns_server_interface_t iface;
+    char *ips[100];
+    char addr_buf[100][16];
+    mdns_server_want_t want;
+    mdns_rr q;
+    mdns_msg query;
+    mdns_msg parsed;
+    uint8_t packet[MDNS_MAX_PACKET_SIZE];
+    size_t packet_len = 0;
+    size_t i;
+    int a_count = 0;
+
+    memset(&server, 0, sizeof(server));
+    server.hostname = (char *)"host.local";
+    server.num_services = 0;
+    server.services = NULL;
+
+    memset(&iface, 0, sizeof(iface));
+    iface.if_name = (char *)"eth0";
+    iface.sockfd_v4 = -1;
+    iface.sockfd_v6 = -1;
+    iface.num_addresses = 100;
+    iface.ip_addresses = ips;
+
+    for (i = 0; i < 100; i++) {
+        snprintf(addr_buf[i], sizeof(addr_buf[i]), "10.0.0.%d", (int)(i + 1));
+        ips[i] = addr_buf[i];
+    }
+
+    mdns_server_want_clear(&want, 1);
+    memset(&q, 0, sizeof q);
+    snprintf(q.name, sizeof q.name, "%s", "host.local");
+    q.type = MDNS_TYPE_A;
+    q.cls = DNS_CLASS_IN;
+    mdns_server_want_add_question(&want, &server, &q);
+
+    memset(&query, 0, sizeof query);
+    query.questions[0] = q;
+    query.nquestions = 1;
+    query.qdcount = 1;
+
+    mdns_server_build_query_response(packet, &packet_len, &server, &iface, &query, &want, 0);
+
+    TEST_ASSERT_TRUE(packet_len > 12);
+    TEST_ASSERT_EQUAL_INT(0, mdns_parse(packet, packet_len, &parsed));
+    TEST_ASSERT_TRUE(parsed.ancount > 0);
+
+    for (i = 0; i < parsed.nrr; i++) {
+        if (parsed.rr[i].type == MDNS_TYPE_A) {
+            a_count++;
+        }
+    }
+    TEST_ASSERT_TRUE(a_count > 0);
+    TEST_ASSERT_TRUE(a_count < 100);
+    TEST_ASSERT_EQUAL_INT(a_count, parsed.ancount);
+}
+
 int main(void)
 {
     UNITY_BEGIN();
@@ -236,5 +297,6 @@ int main(void)
     RUN_TEST(test_build_legacy_echo_ttl_no_flush);
     RUN_TEST(test_build_dns_sd_ptr);
     RUN_TEST(test_build_ipv4_only_aaaa_yields_nsec);
+    RUN_TEST(test_build_overflow_sends_partial);
     return UNITY_END();
 }
