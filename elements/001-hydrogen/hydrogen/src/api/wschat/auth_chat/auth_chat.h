@@ -151,6 +151,17 @@ json_t* auth_chat_build_response(const char *database,
                                   const char *convos_ref);
 
 /**
+ * Stream chat response via Server-Sent Events (SSE).
+ * Uses MHD incremental response + chat_proxy_multi_* for provider streaming.
+ * Returns MHD_YES on success, MHD_NO on failure.
+ */
+enum MHD_Result auth_chat_stream_sse(struct MHD_Connection *connection,
+                                      const ChatEngineConfig *engine,
+                                      const char *request_body,
+                                      jwt_validation_result_t *jwt_result,
+                                      const char *database);
+
+/**
  * Build auth_chat error response
  */
 json_t* auth_chat_build_error_response(const char *error_message);

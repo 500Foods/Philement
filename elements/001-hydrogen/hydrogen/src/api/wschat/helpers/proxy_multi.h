@@ -56,11 +56,12 @@ typedef struct MultiStreamContext {
     char* request_id;                // Request ID for logging
     char* engine_name;               // Engine name for logging
     
-    // LWS connection info
+    // LWS connection info (NULL for REST SSE streams)
     struct lws* wsi;                 // WebSocket connection
     void* session_data;              // Session data (WebSocketSessionData*)
     volatile bool* connection_valid; // Connection valid flag pointer
     volatile bool* stream_active;    // Stream active flag pointer
+    bool is_rest;                    // true for REST SSE (no LWS)
     
     // CURL easy handle
     CURL* easy_handle;               // CURL easy handle for this stream

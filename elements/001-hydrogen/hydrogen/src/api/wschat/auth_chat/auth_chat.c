@@ -366,8 +366,8 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         return ret;
     }
 
-    // Validate claims
-    if (!validate_jwt_claims(&jwt_result, connection)) {
+    // Validate claims (chat policy: aud=hydrogen-chat, role=chat)
+    if (!validate_chat_jwt_claims(&jwt_result, connection)) {
         api_free_post_buffer(con_cls);
         free_jwt_validation_result(&jwt_result);
         return MHD_NO;
@@ -420,19 +420,6 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         json_t *error_response = auth_chat_build_error_response(error_message ? error_message : "Invalid request");
         free(error_message);
         enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_BAD_REQUEST);
-        return ret;
-    }
-
-    /* REST stream=true returns 501; interactive streaming is on WebSocket chat. */
-    if (stream) {
-        free(engine_name);
-        free(reasoning);
-        free_jwt_validation_result(&jwt_result);
-        json_decref(request_json);
-        chat_context_free_hash_array(context_hashes, context_hash_count);
-        json_t *error_response = auth_chat_build_error_response(
-            "REST SSE streaming unavailable; use WebSocket chat stream");
-        enum MHD_Result ret = api_send_json_response(connection, error_response, MHD_HTTP_NOT_IMPLEMENTED);
         return ret;
     }
 
@@ -527,7 +514,18 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         return ret;
     }
 
-    // Send request to AI API
+    if (stream) {
+        free(engine_name);
+        free(reasoning);
+        enum MHD_Result ret = auth_chat_stream_sse(connection, engine, request_body, &jwt_result, database);
+        free(request_body);
+        json_decref(request_json);
+        chat_context_free_hash_array(context_hashes, context_hash_count);
+        free_jwt_validation_result(&jwt_result);
+        return ret;
+    }
+
+    // Send request to AI API (non-streaming)
     ChatProxyConfig proxy_config = chat_proxy_get_default_config();
     struct timespec start_time;
     clock_gettime(CLOCK_MONOTONIC, &start_time);

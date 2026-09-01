@@ -73,8 +73,9 @@ Each phase is worked in its **own conversation**. Follow this sequence:
 
 **CURRENT PAUSE POINT (as of 2026-09-01):** Phase 0 complete. Phase 1
 complete (temperature, overlay, Responses builder, shared resolver). Phase 2
-complete (reasoning knobs, inbound Responses reasoning).
-Next: **Phase 3 implementation**.
+complete (reasoning knobs, inbound Responses reasoning). Phase 3 complete
+(REST SSE streaming, chat JWT policy, stub endpoint removed).
+Next: **Phase 4 implementation**.
 
 ### Resume here next session
 
@@ -716,7 +717,16 @@ Test 59 REST green. `mkt`/`mkp` green.
 
 ### Status
 
-Not started.
+**Complete (2026-09-01)**
+
+- **Real SSE streaming via MHD incremental + `chat_proxy_multi_*`:** New `auth_chat_sse.c` implements REST SSE streaming. Removed the old 501 response from `auth_chat.c`. The `stream:true` flag now triggers `auth_chat_stream_sse()` which starts a multi-curl worker, drains the chunk queue via a callback thread, writes SSE-formatted `data: <json>\n\n` events to a pipe, and streams them to the HTTP client via MHD's incremental response callback.
+- **Stub `/auth_chat/stream` endpoint removed:** Unregistered the route from `api_service.c` (removed from `protected_endpoints`, `json_endpoints`, debug log, and dispatch block). The `auth_stream.c` handler remains for Phase 5 dead-code cleanup but is no longer reachable.
+- **Chat JWT policy implemented:** Added `validate_chat_jwt_claims()` (REST) and `check_chat_jwt_claims()` (WS) to `auth_jwt_helper.c`. Both enforce `aud=hydrogen-chat` and `role=chat` on top of the standard `validate_jwt_claims()` database check. REST path sends 403 on mismatch; WS path returns error via `send_chat_error()`. Applied to `auth_chat.c`, `auth_chats.c`, and `websocket_server_chat.c`.
+- **Responses API routing:** Already correct from Phase 1 — `chat_request_build_responses` is dispatched for xAI/OpenAI engines with `use_responses_api` flag.
+- **Test 59 updated:** Changed stream test from expecting 501 to expecting 200 with real SSE. Removed 6 stub-endpoint subtests, replaced with single 404 test. Added non-chat JWT rejection test (403). All chat tests now use minted `CHAT_JWT_TOKEN` with correct `aud`/`roles`.
+- **Unity tests:** 10 new tests in `auth_jwt_helper_test.c` — `validate_chat_jwt_claims` (wrong aud, missing roles, success) and `check_chat_jwt_claims` (wrong aud, missing roles, success, null result). All 27 tests in the file pass.
+- **Baseline update:** `tests/.static-baseline.txt` regenerated to include the 4 static callback functions in `auth_chat_sse.c` (MHD callbacks and internal thread helpers that are only used via function pointers within the file).
+- **Verification:** `mkt` green, `mkp` green (2,013 files), `mks` green (165 scripts), `mku auth_jwt_helper_test` (27 tests) green.
 
 ---
 
@@ -1437,3 +1447,14 @@ zsh -ic 'mku <phase-named-unity>'
 - **Unity tests.** 8 new tests in `resp_parser_test_responses.c` (Responses SSE parsing). 2 new tests in `req_builder_test_temperature.c` (reasoning emission/omission). All existing parse request tests updated.
 - **Verification:** `mkt` green, `mkp` green (2,012 files), `mku resp_parser_test_responses` (8 tests), `mku req_builder_test_temperature` (19 tests) — all green.
 - Next: Phase 3 only.
+
+### 2026-09-01 — Phase 3 complete: REST SSE streaming, chat JWT policy, stub endpoint removed
+
+- **Real SSE streaming.** New `auth_chat_sse.c` implements REST SSE via MHD incremental response + `chat_proxy_multi_*`. Removed the old 501 from `auth_chat.c`. `stream:true` now triggers `auth_chat_stream_sse()` — multi-curl worker drains chunk queue → callback thread writes `data: <json>\n\n` to pipe → MHD callback streams to client.
+- **Stub endpoint removed.** Unregistered `/auth_chat/stream` from `api_service.c` (protected_endpoints, json_endpoints, debug log, dispatch block). `auth_stream.c` handler stays for Phase 5 dead-code cleanup.
+- **Chat JWT policy.** Added `validate_chat_jwt_claims()` (REST, sends 403) and `check_chat_jwt_claims()` (WS, returns error) to `auth_jwt_helper.c`. Enforces `aud=hydrogen-chat` + `role=chat` on top of standard database claim check. Applied to `auth_chat.c`, `auth_chats.c`, `websocket_server_chat.c`.
+- **Test 59 updated.** Stream test expects 200 SSE (not 501). Removed 6 stub-endpoint subtests → single 404 test. Added non-chat JWT rejection (403). All chat tests use minted CHAT_JWT_TOKEN.
+- **Unity tests.** 10 new tests in `auth_jwt_helper_test.c`: validate_chat_jwt_claims (wrong aud, missing roles, success) + check_chat_jwt_claims (wrong aud, missing roles, success, null). 27/27 pass.
+- **Baseline.** Regenerated `tests/.static-baseline.txt` for 4 static callback helpers in `auth_chat_sse.c`.
+- **Verification:** `mkt` green, `mkp` green (2,013 files), `mks` green, `mku auth_jwt_helper_test` (27 tests) green.
+- Next: Phase 4 only.

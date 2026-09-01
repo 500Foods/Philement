@@ -542,10 +542,10 @@ MultiStreamContext* chat_proxy_multi_stream_start(
     void (*completion_callback)(void* user_data, bool success),
     void* completion_user_data
 ) {
-    if (!manager || !manager->initialized || !engine || !request_json || !wsi) {
+    if (!manager || !manager->initialized || !engine || !request_json) {
         return NULL;
     }
-    
+
     // Allocate stream context
     MultiStreamContext* stream_ctx = (MultiStreamContext*)calloc(1, sizeof(MultiStreamContext));
     if (!stream_ctx) {
@@ -559,6 +559,7 @@ MultiStreamContext* chat_proxy_multi_stream_start(
     stream_ctx->session_data = session_data;
     stream_ctx->connection_valid = connection_valid;
     stream_ctx->stream_active = stream_active;
+    stream_ctx->is_rest = (wsi == NULL);
     stream_ctx->chunk_callback = chunk_callback;
     stream_ctx->user_data = user_data;
     stream_ctx->completion_callback = completion_callback;

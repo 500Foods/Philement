@@ -365,8 +365,8 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
         return ret;
     }
 
-    // Validate claims
-    if (!validate_jwt_claims(&jwt_result, connection)) {
+    // Validate claims (chat policy: aud=hydrogen-chat, role=chat)
+    if (!validate_chat_jwt_claims(&jwt_result, connection)) {
         api_free_post_buffer(con_cls);
         free_jwt_validation_result(&jwt_result);
         return MHD_NO;
