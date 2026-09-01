@@ -242,6 +242,17 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
             return -1;
         }
 
+        // Validate chat JWT policy (aud=hydrogen-chat, role=chat)
+        if (!check_chat_jwt_claims(&jwt_result)) {
+            send_chat_error(wsi, "JWT not authorized for chat", request_id);
+            free_jwt_validation_result(&jwt_result);
+            free(engine_name);
+            free(reasoning);
+            chat_context_free_hash_array(context_hashes, context_hash_count);
+            json_decref(request_json);
+            return -1;
+        }
+
         // Store database name in session for future messages
         session->chat_database = strdup(jwt_result.claims->database);
         session->chat_claims = NULL;

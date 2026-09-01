@@ -45,6 +45,13 @@ void test_validate_jwt_claims_null_database(void);
 void test_validate_jwt_claims_empty_database(void);
 void test_validate_jwt_claims_success(void);
 void test_send_jwt_error_response(void);
+void test_validate_chat_jwt_claims_wrong_aud(void);
+void test_validate_chat_jwt_claims_missing_roles(void);
+void test_validate_chat_jwt_claims_success(void);
+void test_check_chat_jwt_claims_wrong_aud(void);
+void test_check_chat_jwt_claims_missing_roles(void);
+void test_check_chat_jwt_claims_success(void);
+void test_check_chat_jwt_claims_null_result(void);
 
 // Test fixtures
 void setUp(void) {
@@ -241,9 +248,120 @@ void test_validate_jwt_claims_success(void) {
 void test_send_jwt_error_response(void) {
     struct MHD_Connection *mock_connection = (void*)0x123;
     mock_mhd_set_queue_response_result(MHD_YES);
-    
+
     enum MHD_Result result = send_jwt_error_response(mock_connection, "Test error message", MHD_HTTP_UNAUTHORIZED);
     TEST_ASSERT_EQUAL(MHD_NO, result);
+}
+
+// Test validate_chat_jwt_claims with wrong audience
+void test_validate_chat_jwt_claims_wrong_aud(void) {
+    struct MHD_Connection *mock_connection = (void*)0x123;
+    mock_mhd_set_queue_response_result(MHD_YES);
+
+    jwt_validation_result_t jwt_result = {0};
+    jwt_result.valid = true;
+    jwt_result.claims = calloc(1, sizeof(jwt_claims_t));
+    TEST_ASSERT_NOT_NULL(jwt_result.claims);
+    jwt_result.claims->database = strdup("testdb");
+    jwt_result.claims->aud = strdup("wrong-audience");
+    jwt_result.claims->roles = strdup("chat");
+
+    bool result = validate_chat_jwt_claims(&jwt_result, mock_connection);
+    TEST_ASSERT_FALSE(result);
+
+    free_jwt_claims(jwt_result.claims);
+}
+
+// Test validate_chat_jwt_claims with missing roles
+void test_validate_chat_jwt_claims_missing_roles(void) {
+    struct MHD_Connection *mock_connection = (void*)0x123;
+    mock_mhd_set_queue_response_result(MHD_YES);
+
+    jwt_validation_result_t jwt_result = {0};
+    jwt_result.valid = true;
+    jwt_result.claims = calloc(1, sizeof(jwt_claims_t));
+    TEST_ASSERT_NOT_NULL(jwt_result.claims);
+    jwt_result.claims->database = strdup("testdb");
+    jwt_result.claims->aud = strdup("hydrogen-chat");
+    jwt_result.claims->roles = strdup("admin");
+
+    bool result = validate_chat_jwt_claims(&jwt_result, mock_connection);
+    TEST_ASSERT_FALSE(result);
+
+    free_jwt_claims(jwt_result.claims);
+}
+
+// Test validate_chat_jwt_claims success
+void test_validate_chat_jwt_claims_success(void) {
+    struct MHD_Connection *mock_connection = (void*)0x123;
+
+    jwt_validation_result_t jwt_result = {0};
+    jwt_result.valid = true;
+    jwt_result.claims = calloc(1, sizeof(jwt_claims_t));
+    TEST_ASSERT_NOT_NULL(jwt_result.claims);
+    jwt_result.claims->database = strdup("testdb");
+    jwt_result.claims->aud = strdup("hydrogen-chat");
+    jwt_result.claims->roles = strdup("chat");
+
+    bool result = validate_chat_jwt_claims(&jwt_result, mock_connection);
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_NOT_NULL(jwt_result.claims);
+
+    free_jwt_claims(jwt_result.claims);
+}
+
+// Test check_chat_jwt_claims with wrong audience
+void test_check_chat_jwt_claims_wrong_aud(void) {
+    jwt_validation_result_t jwt_result = {0};
+    jwt_result.valid = true;
+    jwt_result.claims = calloc(1, sizeof(jwt_claims_t));
+    TEST_ASSERT_NOT_NULL(jwt_result.claims);
+    jwt_result.claims->database = strdup("testdb");
+    jwt_result.claims->aud = strdup("wrong-audience");
+    jwt_result.claims->roles = strdup("chat");
+
+    bool result = check_chat_jwt_claims(&jwt_result);
+    TEST_ASSERT_FALSE(result);
+
+    free_jwt_claims(jwt_result.claims);
+}
+
+// Test check_chat_jwt_claims with missing roles
+void test_check_chat_jwt_claims_missing_roles(void) {
+    jwt_validation_result_t jwt_result = {0};
+    jwt_result.valid = true;
+    jwt_result.claims = calloc(1, sizeof(jwt_claims_t));
+    TEST_ASSERT_NOT_NULL(jwt_result.claims);
+    jwt_result.claims->database = strdup("testdb");
+    jwt_result.claims->aud = strdup("hydrogen-chat");
+    jwt_result.claims->roles = strdup("admin");
+
+    bool result = check_chat_jwt_claims(&jwt_result);
+    TEST_ASSERT_FALSE(result);
+
+    free_jwt_claims(jwt_result.claims);
+}
+
+// Test check_chat_jwt_claims success
+void test_check_chat_jwt_claims_success(void) {
+    jwt_validation_result_t jwt_result = {0};
+    jwt_result.valid = true;
+    jwt_result.claims = calloc(1, sizeof(jwt_claims_t));
+    TEST_ASSERT_NOT_NULL(jwt_result.claims);
+    jwt_result.claims->database = strdup("testdb");
+    jwt_result.claims->aud = strdup("hydrogen-chat");
+    jwt_result.claims->roles = strdup("chat");
+
+    bool result = check_chat_jwt_claims(&jwt_result);
+    TEST_ASSERT_TRUE(result);
+
+    free_jwt_claims(jwt_result.claims);
+}
+
+// Test check_chat_jwt_claims with NULL result
+void test_check_chat_jwt_claims_null_result(void) {
+    bool result = check_chat_jwt_claims(NULL);
+    TEST_ASSERT_FALSE(result);
 }
 
 int main(void) {
@@ -273,9 +391,20 @@ int main(void) {
     RUN_TEST(test_validate_jwt_claims_null_database);
     RUN_TEST(test_validate_jwt_claims_empty_database);
     RUN_TEST(test_validate_jwt_claims_success);
-    
-    // send_jwt_error_response tests
+
+    // send_jwt_error_response test
     RUN_TEST(test_send_jwt_error_response);
-    
+
+    // validate_chat_jwt_claims tests
+    RUN_TEST(test_validate_chat_jwt_claims_wrong_aud);
+    RUN_TEST(test_validate_chat_jwt_claims_missing_roles);
+    RUN_TEST(test_validate_chat_jwt_claims_success);
+
+    // check_chat_jwt_claims tests
+    RUN_TEST(test_check_chat_jwt_claims_wrong_aud);
+    RUN_TEST(test_check_chat_jwt_claims_missing_roles);
+    RUN_TEST(test_check_chat_jwt_claims_success);
+    RUN_TEST(test_check_chat_jwt_claims_null_result);
+
     return UNITY_END();
 }

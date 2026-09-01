@@ -136,13 +136,13 @@ bool validate_jwt_claims(jwt_validation_result_t* jwt_result, struct MHD_Connect
     if (!jwt_result || !jwt_result->valid) {
         return false;
     }
-    
+
     // Check for claims
     if (!jwt_result->claims) {
         send_jwt_error_response(connection, "JWT token missing claims", MHD_HTTP_UNAUTHORIZED);
         return false;
     }
-    
+
     // Check for database claim
     if (!jwt_result->claims->database) {
         free_jwt_claims(jwt_result->claims);
@@ -150,7 +150,7 @@ bool validate_jwt_claims(jwt_validation_result_t* jwt_result, struct MHD_Connect
         send_jwt_error_response(connection, "JWT token missing database claim", MHD_HTTP_UNAUTHORIZED);
         return false;
     }
-    
+
     // Check for empty database
     if (strlen(jwt_result->claims->database) == 0) {
         free_jwt_claims(jwt_result->claims);
@@ -158,6 +158,40 @@ bool validate_jwt_claims(jwt_validation_result_t* jwt_result, struct MHD_Connect
         send_jwt_error_response(connection, "JWT token has empty database", MHD_HTTP_UNAUTHORIZED);
         return false;
     }
-    
+
+    return true;
+}
+
+bool validate_chat_jwt_claims(jwt_validation_result_t* jwt_result, struct MHD_Connection *connection) {
+    if (!validate_jwt_claims(jwt_result, connection)) {
+        return false;
+    }
+
+    if (!jwt_result->claims->aud || strcmp(jwt_result->claims->aud, "hydrogen-chat") != 0) {
+        send_jwt_error_response(connection, "JWT token audience not valid for chat", MHD_HTTP_FORBIDDEN);
+        return false;
+    }
+
+    if (!jwt_result->claims->roles || strcmp(jwt_result->claims->roles, "chat") != 0) {
+        send_jwt_error_response(connection, "JWT token missing chat role", MHD_HTTP_FORBIDDEN);
+        return false;
+    }
+
+    return true;
+}
+
+bool check_chat_jwt_claims(const jwt_validation_result_t* jwt_result) {
+    if (!jwt_result || !jwt_result->valid || !jwt_result->claims) {
+        return false;
+    }
+
+    if (!jwt_result->claims->aud || strcmp(jwt_result->claims->aud, "hydrogen-chat") != 0) {
+        return false;
+    }
+
+    if (!jwt_result->claims->roles || strcmp(jwt_result->claims->roles, "chat") != 0) {
+        return false;
+    }
+
     return true;
 }

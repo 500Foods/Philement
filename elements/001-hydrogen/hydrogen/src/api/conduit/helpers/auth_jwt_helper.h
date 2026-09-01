@@ -46,6 +46,36 @@ const char* get_jwt_error_message(jwt_error_t error);
 bool validate_jwt_claims(jwt_validation_result_t* jwt_result, struct MHD_Connection *connection);
 
 /**
+ * @brief Validate JWT claims for chat endpoints (REST and WebSocket)
+ *
+ * Validates standard claims via validate_jwt_claims, then enforces:
+ * - aud == "hydrogen-chat"
+ * - roles == "chat"
+ *
+ * Sends HTTP error responses if validation fails.
+ *
+ * @param jwt_result The JWT validation result containing claims
+ * @param connection The MHD connection for sending error responses
+ * @return true if claims are valid for chat, false if error response was sent
+ */
+bool validate_chat_jwt_claims(jwt_validation_result_t* jwt_result, struct MHD_Connection *connection);
+
+/**
+ * @brief Check JWT claims for chat endpoints (no HTTP response)
+ *
+ * Validates standard claims via validate_jwt_claims check, then enforces:
+ * - aud == "hydrogen-chat"
+ * - roles == "chat"
+ *
+ * Does not send any HTTP response — caller handles error reporting.
+ * Use this for WebSocket paths where MHD is not available.
+ *
+ * @param jwt_result The JWT validation result containing claims
+ * @return true if claims are valid for chat, false otherwise
+ */
+bool check_chat_jwt_claims(const jwt_validation_result_t* jwt_result);
+
+/**
  * @brief Send JWT error response
  *
  * Helper function to send a standardized JWT error response.

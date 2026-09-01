@@ -278,7 +278,6 @@ bool register_api_endpoints(void) {
         log_this(SR_API, "― %s/conduit/alt_queries", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/auth_chat", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/auth_chats", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
-        log_this(SR_API, "― %s/conduit/auth_chat/stream", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/status", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/script", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/conduit/script/{job_id}", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
@@ -423,12 +422,11 @@ bool is_api_request(const char *url) {
         "conduit/alt_queries",
         "conduit/auth_chat",
         "conduit/auth_chats",
-        "conduit/auth_chat/stream",
         "conduit/script",
         "reporting/image_scale",
         NULL  // Sentinel
     };
-    
+
     for (int i = 0; protected_endpoints[i] != NULL; i++) {
         if (strcmp(path, protected_endpoints[i]) == 0) {
             return true;
@@ -479,12 +477,11 @@ bool is_api_request(const char *url) {
         "conduit/alt_queries",
         "conduit/auth_chat",
         "conduit/auth_chats",
-        "conduit/auth_chat/stream",
         "conduit/script",
         "reporting/image_scale",
         NULL  // Sentinel
     };
-    
+
     for (int i = 0; json_endpoints[i] != NULL; i++) {
         if (strcmp(path, json_endpoints[i]) == 0) {
             return true;
@@ -844,10 +841,6 @@ enum MHD_Result handle_api_request_dispatch(struct MHD_Connection *connection,
     else if (strcmp(path, "conduit/auth_chat") == 0) {
         return handle_auth_chat_request(connection, url, method, upload_data,
                                         upload_data_size, con_cls);
-    }
-    else if (strcmp(path, "conduit/auth_chat/stream") == 0) {
-        return handle_auth_chat_stream_request(connection, url, method, upload_data,
-                                               upload_data_size, con_cls);
     }
     else if (strcmp(path, "conduit/auth_chats") == 0) {
         return handle_auth_chats_request(connection, url, method, upload_data,

@@ -205,6 +205,55 @@ extract_jwt() {
     jq -r '.token // empty' "${file}" 2>/dev/null || true
 }
 
+# Mint a chat-scoped JWT (aud=hydrogen-chat, roles=chat) using the demo JWT key.
+# Required: HYDROGEN_DEMO_JWT_KEY env var. Prints token to stdout.
+# shellcheck disable=SC2154 # HYDROGEN_DEMO_JWT_KEY is an environment variable
+mint_chat_jwt() {
+    local database="${1:-Acuranzo}"
+    local now
+    now=$(date +%s)
+    local exp=$(( now + 3600 ))
+    local jti
+    jti=$(openssl rand -hex 16) || jti="0000000000000000"
+
+    local header='{"alg":"HS256","typ":"JWT"}'
+    local payload
+    payload=$(jq -n \
+        --arg iss "hydrogen-auth" \
+        --arg sub "1" \
+        --arg aud "hydrogen-chat" \
+        --argjson exp "${exp}" \
+        --argjson iat "${now}" \
+        --argjson nbf "${now}" \
+        --arg jti "${jti}" \
+        --argjson user_id 1 \
+        --argjson system_id 1 \
+        --argjson app_id 1 \
+        --arg username "demo" \
+        --arg email "demo@example.com" \
+        --arg roles "chat" \
+        --arg ip "127.0.0.1" \
+        --arg tz "America/Vancouver" \
+        --argjson tzoffset -480 \
+        --arg database "${database}" \
+        '{iss: $iss, sub: $sub, aud: $aud, exp: $exp, iat: $iat, nbf: $nbf, jti: $jti, user_id: $user_id, system_id: $system_id, app_id: $app_id, username: $username, email: $email, roles: $roles, ip: $ip, tz: $tz, tzoffset: $tzoffset, database: $database}')
+
+    b64url() {
+        printf '%s' "$1" | tr -d '\n' | openssl base64 -A | tr '+/' '-_' | tr -d '='
+    }
+
+    local header_b64
+    header_b64=$(b64url "${header}")
+    local payload_b64
+    payload_b64=$(b64url "${payload}")
+
+    local sig_input="${header_b64}.${payload_b64}"
+    local sig
+    sig=$(printf '%s' "${sig_input}" | openssl dgst -sha256 -hmac "${HYDROGEN_DEMO_JWT_KEY}" -binary | openssl base64 -A | tr '+/' '-_' | tr -d '=')
+
+    printf '%s.%s.%s\n' "${header_b64}" "${payload_b64}" "${sig}"
+}
+
 # Build a chat WebSocket URL and a websocat auth header for the hydrogen protocol.
 ws_chat_url() {
     echo "ws://127.0.0.1:${WS_PORT}/"
@@ -248,7 +297,7 @@ chat_ws_upload_media() {
     local msg
     # shellcheck disable=SC2310 # Build failure is non-fatal; we report empty hash
     msg=$(jq -cn \
-        --arg jwt "Bearer ${JWT_TOKEN}" \
+        --arg jwt "Bearer ${CHAT_JWT_TOKEN}" \
         --arg data "${b64}" \
         --arg mime "${mime_type}" \
         '{type:"media_upload", payload:{jwt:$jwt, data:$data, mime_type:$mime}}') || true
@@ -397,6 +446,14 @@ if [[ "${http_status}" != "200" || -z "${JWT_TOKEN}" ]]; then
 fi
 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "JWT acquired"
 
+# Mint a chat-scoped JWT (aud=hydrogen-chat, role=chat) for chat endpoint tests
+CHAT_JWT_TOKEN=$(mint_chat_jwt "Acuranzo")
+if [[ -z "${CHAT_JWT_TOKEN}" ]]; then
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to mint chat JWT"
+    exit 1
+fi
+print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Chat JWT minted"
+
 passed=0
 failed=0
 record() {
@@ -419,30 +476,41 @@ if [[ "${code}" == "401" ]]; then record 0 "401 without Authorization"; else rec
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat wrong method -> 405"
 out="${RESP_DIR}/get.json"
-code=$(api_request "GET" "${BASE_URL}/api/conduit/auth_chat" "" "${out}" "${JWT_TOKEN}")
+code=$(api_request "GET" "${BASE_URL}/api/conduit/auth_chat" "" "${out}" "${CHAT_JWT_TOKEN}")
 if [[ "${code}" == "405" ]]; then record 0 "405 on GET"; else record 1 "expected 405 got ${code}"; fi
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat invalid JSON -> 400"
 out="${RESP_DIR}/badjson.json"
-code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" "not-json" "${out}" "${JWT_TOKEN}")
+code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" "not-json" "${out}" "${CHAT_JWT_TOKEN}")
 if [[ "${code}" == "400" ]]; then record 0 "400 on invalid JSON"; else record 1 "expected 400 got ${code}"; fi
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat missing messages -> 400"
 out="${RESP_DIR}/nomsg.json"
-code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" '{"engine":"x"}' "${out}" "${JWT_TOKEN}")
+code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" '{"engine":"x"}' "${out}" "${CHAT_JWT_TOKEN}")
 if [[ "${code}" == "400" ]]; then record 0 "400 on missing messages"; else record 1 "expected 400 got ${code}"; fi
 
-print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat stream not implemented -> 501"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat non-chat JWT -> 403"
+out="${RESP_DIR}/nochatjwt.json"
+code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" \
+    '{"messages":[{"role":"user","content":"hi"}]}' "${out}" "${JWT_TOKEN}")
+if [[ "${code}" == "403" ]]; then record 0 "403 with non-chat JWT"; else record 1 "expected 403 got ${code}"; fi
+
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat stream -> 200 SSE"
 out="${RESP_DIR}/stream.json"
 code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" \
-    '{"messages":[{"role":"user","content":"hi"}],"stream":true}' "${out}" "${JWT_TOKEN}")
-if [[ "${code}" == "501" ]]; then record 0 "501 on stream=true"; else record 1 "expected 501 got ${code}"; fi
+    '{"messages":[{"role":"user","content":"hi"}],"stream":true}' "${out}" "${CHAT_JWT_TOKEN}")
+body_snip=$(head -c 200 "${out}" 2>/dev/null || true)
+if [[ "${code}" == "200" ]] && echo "${body_snip}" | "${GREP}" -q "data:"; then
+    record 0 "200 SSE stream started"
+else
+    record 1 "expected 200 SSE got ${code} body=${body_snip}"
+fi
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat success via mock LLM -> 200"
 out="${RESP_DIR}/success.json"
 code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" \
     '{"messages":[{"role":"user","content":"hello blackbox"}],"temperature":0.2,"max_tokens":64}' \
-    "${out}" "${JWT_TOKEN}")
+    "${out}" "${CHAT_JWT_TOKEN}")
 success=$(jq -r '.success // false' "${out}" 2>/dev/null || echo false)
 content=$(jq -r '.content // empty' "${out}" 2>/dev/null || true)
 if [[ "${code}" == "200" && "${success}" == "true" && -n "${content}" ]]; then
@@ -455,50 +523,14 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat named engine missing
 out="${RESP_DIR}/missing_engine.json"
 code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" \
     '{"messages":[{"role":"user","content":"hi"}],"engine":"does-not-exist-xyz"}' \
-    "${out}" "${JWT_TOKEN}")
+    "${out}" "${CHAT_JWT_TOKEN}")
 if [[ "${code}" == "400" ]]; then record 0 "400 on unknown engine"; else record 1 "expected 400 got ${code}"; fi
 
-print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat/stream no auth -> 401"
-out="${RESP_DIR}/stream_noauth.json"
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat/stream removed -> 404"
+out="${RESP_DIR}/stream_removed.json"
 code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat/stream" \
-    '{"messages":[{"role":"user","content":"hi"}]}' "${out}")
-if [[ "${code}" == "401" ]]; then record 0 "401 without Authorization"; else record 1 "expected 401 got ${code}"; fi
-
-print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat/stream wrong method -> 405"
-out="${RESP_DIR}/stream_get.json"
-code=$(api_request "GET" "${BASE_URL}/api/conduit/auth_chat/stream" "" "${out}" "${JWT_TOKEN}")
-if [[ "${code}" == "405" ]]; then record 0 "405 on GET"; else record 1 "expected 405 got ${code}"; fi
-
-print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat/stream invalid JSON -> 400"
-out="${RESP_DIR}/stream_badjson.json"
-code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat/stream" "not-json" "${out}" "${JWT_TOKEN}")
-if [[ "${code}" == "400" ]]; then record 0 "400 on invalid JSON"; else record 1 "expected 400 got ${code}"; fi
-
-print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat/stream missing messages -> 400"
-out="${RESP_DIR}/stream_nomsg.json"
-code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat/stream" '{"engine":"x"}' "${out}" "${JWT_TOKEN}")
-if [[ "${code}" == "400" ]]; then record 0 "400 on missing messages"; else record 1 "expected 400 got ${code}"; fi
-
-print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat/stream named engine missing -> 400"
-out="${RESP_DIR}/stream_missing_engine.json"
-code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat/stream" \
-    '{"messages":[{"role":"user","content":"hi"}],"engine":"does-not-exist-xyz"}' \
-    "${out}" "${JWT_TOKEN}")
-if [[ "${code}" == "400" ]]; then record 0 "400 on unknown engine"; else record 1 "expected 400 got ${code}"; fi
-
-# Streaming is stubbed: a successful auth+parse+engine path returns 200 with an
-# SSE body containing the intentional REST-SSE-unavailable error event.
-print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat/stream stub SSE -> 200"
-out="${RESP_DIR}/stream_stub.json"
-code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat/stream" \
-    '{"messages":[{"role":"user","content":"hello stream"}],"temperature":0.2,"max_tokens":64}' \
-    "${out}" "${JWT_TOKEN}")
-body_snip=$(head -c 200 "${out}" 2>/dev/null || true)
-if [[ "${code}" == "200" ]] && echo "${body_snip}" | "${GREP}" -q "REST SSE streaming unavailable"; then
-    record 0 "200 SSE stub with unavailable event"
-else
-    record 1 "stream stub failed HTTP ${code} body=${body_snip}"
-fi
+    '{"messages":[{"role":"user","content":"hi"}]}' "${out}" "${CHAT_JWT_TOKEN}")
+if [[ "${code}" == "404" ]]; then record 0 "404 on removed endpoint"; else record 1 "expected 404 got ${code}"; fi
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chats no auth -> 401"
 out="${RESP_DIR}/chats_noauth.json"
@@ -508,31 +540,31 @@ if [[ "${code}" == "401" ]]; then record 0 "401 without Authorization"; else rec
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chats wrong method -> 405"
 out="${RESP_DIR}/chats_get.json"
-code=$(api_request "GET" "${BASE_URL}/api/conduit/auth_chats" "" "${out}" "${JWT_TOKEN}")
+code=$(api_request "GET" "${BASE_URL}/api/conduit/auth_chats" "" "${out}" "${CHAT_JWT_TOKEN}")
 if [[ "${code}" == "405" ]]; then record 0 "405 on GET"; else record 1 "expected 405 got ${code}"; fi
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chats invalid JSON -> 400"
 out="${RESP_DIR}/chats_badjson.json"
-code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chats" "not-json" "${out}" "${JWT_TOKEN}")
+code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chats" "not-json" "${out}" "${CHAT_JWT_TOKEN}")
 if [[ "${code}" == "400" ]]; then record 0 "400 on invalid JSON"; else record 1 "expected 400 got ${code}"; fi
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chats missing engines -> 400"
 out="${RESP_DIR}/chats_noengines.json"
 code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chats" \
-    '{"messages":[{"role":"user","content":"hi"}]}' "${out}" "${JWT_TOKEN}")
+    '{"messages":[{"role":"user","content":"hi"}]}' "${out}" "${CHAT_JWT_TOKEN}")
 if [[ "${code}" == "400" ]]; then record 0 "400 on missing engines"; else record 1 "expected 400 got ${code}"; fi
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chats empty engines -> 400"
 out="${RESP_DIR}/chats_empty_engines.json"
 code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chats" \
-    '{"engines":[],"messages":[{"role":"user","content":"hi"}]}' "${out}" "${JWT_TOKEN}")
+    '{"engines":[],"messages":[{"role":"user","content":"hi"}]}' "${out}" "${CHAT_JWT_TOKEN}")
 if [[ "${code}" == "400" ]]; then record 0 "400 on empty engines"; else record 1 "expected 400 got ${code}"; fi
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chats too many engines -> 400"
 out="${RESP_DIR}/chats_toomany.json"
 code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chats" \
     '{"engines":["a","b","c","d","e","f","g","h","i","j","k"],"messages":[{"role":"user","content":"hi"}]}' \
-    "${out}" "${JWT_TOKEN}")
+    "${out}" "${CHAT_JWT_TOKEN}")
 if [[ "${code}" == "400" ]]; then record 0 "400 on >10 engines"; else record 1 "expected 400 got ${code}"; fi
 
 # Resolve a valid engine name from the prepared demo DB so the fan-out has at
@@ -546,7 +578,7 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chats success via mock LL
 out="${RESP_DIR}/chats_success.json"
 code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chats" \
     "{\"engines\":[\"${VALID_ENGINE}\"],\"messages\":[{\"role\":\"user\",\"content\":\"hello blackbox\"}],\"temperature\":0.2,\"max_tokens\":64}" \
-    "${out}" "${JWT_TOKEN}")
+    "${out}" "${CHAT_JWT_TOKEN}")
 success=$(jq -r '.success // false' "${out}" 2>/dev/null || echo false)
 req_count=$(jq -r '.engines_requested // 0' "${out}" 2>/dev/null || echo 0)
 ok_count=$(jq -r '.engines_succeeded // 0' "${out}" 2>/dev/null || echo 0)
@@ -560,14 +592,14 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chats all unknown engines
 out="${RESP_DIR}/chats_all_unknown.json"
 code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chats" \
     '{"engines":["nope-1","nope-2"],"messages":[{"role":"user","content":"hi"}]}' \
-    "${out}" "${JWT_TOKEN}")
+    "${out}" "${CHAT_JWT_TOKEN}")
 if [[ "${code}" == "400" ]]; then record 0 "400 when no valid engines"; else record 1 "expected 400 got ${code}"; fi
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chats valid+unknown engine -> 200 (unknown dropped)"
 out="${RESP_DIR}/chats_partial.json"
 code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chats" \
     "{\"engines\":[\"${VALID_ENGINE}\",\"does-not-exist-xyz\"],\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]}" \
-    "${out}" "${JWT_TOKEN}")
+    "${out}" "${CHAT_JWT_TOKEN}")
 req_count=$(jq -r '.engines_requested // 0' "${out}" 2>/dev/null || echo 0)
 ok_count=$(jq -r '.engines_succeeded // 0' "${out}" 2>/dev/null || echo 0)
 # Unknown engine names are silently skipped, so only the valid engine runs.
@@ -600,7 +632,7 @@ MEDIA_REF=$(jq -cn --arg hash "${MEDIA_HASH}" '{"messages":[{"role":"user","cont
 out="${RESP_DIR}/media_ref.json"
 if [[ -n "${MEDIA_REF}" ]]; then
     # shellcheck disable=SC2310 # Request failure is non-fatal; we check the log
-    api_request "POST" "${BASE_URL}/api/conduit/auth_chat" "${MEDIA_REF}" "${out}" "${JWT_TOKEN}" >/dev/null 2>&1 || true
+    api_request "POST" "${BASE_URL}/api/conduit/auth_chat" "${MEDIA_REF}" "${out}" "${CHAT_JWT_TOKEN}" >/dev/null 2>&1 || true
     # shellcheck disable=SC2310 # grep returning 1 (no marker) is handled below
     if [[ -f "${HYDROGEN_LOG}" ]] && "${GREP}" -q "QueryRef #072" "${HYDROGEN_LOG}"; then
         record 0 "retrieve_media + hex_to_binary executed"
@@ -621,7 +653,7 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WS streaming chat -> proxy_mq 
 STREAM_OUT="${RESP_DIR}/ws_stream.json"
 # shellcheck disable=SC2310 # Build failure is non-fatal; we report below
 STREAM_MSG=$(jq -cn \
-    --arg jwt "Bearer ${JWT_TOKEN}" \
+    --arg jwt "Bearer ${CHAT_JWT_TOKEN}" \
     --arg engine "${VALID_ENGINE}" \
     '{type:"chat", payload:{jwt:$jwt, engine:$engine, stream:true, messages:[{role:"user",content:"stream me"}]}}' 2>/dev/null) || true
 if [[ -n "${STREAM_MSG}" ]]; then
@@ -660,7 +692,7 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WS non-stream chat -> send_cha
 DONE_OUT="${RESP_DIR}/ws_chat_done.json"
 # shellcheck disable=SC2310 # Build failure is non-fatal; we report below
 DONE_MSG=$(jq -cn \
-    --arg jwt "Bearer ${JWT_TOKEN}" \
+    --arg jwt "Bearer ${CHAT_JWT_TOKEN}" \
     --arg engine "${VALID_ENGINE}" \
     '{type:"chat", id:"bb-done-1", payload:{jwt:$jwt, engine:$engine, stream:false, messages:[{role:"user",content:"hello nonstream"}]}}' 2>/dev/null) || true
 if [[ -n "${DONE_MSG}" ]]; then
