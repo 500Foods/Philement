@@ -153,6 +153,7 @@ enum MHD_Result handle_auth_chat_stream_request(struct MHD_Connection *connectio
     double temperature = -1.0;
     int max_tokens = -1;
     bool stream = false;
+    char *reasoning = NULL;
     char *error_message = NULL;
 
     // Note: auth_chat_parse_request expects a 'stream' parameter; we'll ignore it
@@ -160,7 +161,7 @@ enum MHD_Result handle_auth_chat_stream_request(struct MHD_Connection *connectio
                                              &messages, &context_hashes,
                                              &context_hash_count,
                                              &temperature, &max_tokens,
-                                             &stream, &error_message);
+                                             &stream, &reasoning, &error_message);
 
     if (!parse_ok) {
         free_jwt_validation_result(&jwt_result);
@@ -178,6 +179,7 @@ enum MHD_Result handle_auth_chat_stream_request(struct MHD_Connection *connectio
     DatabaseQueue *db_queue = database_queue_manager_get_database(global_queue_manager, database);
     if (!db_queue) {
         free(engine_name);
+        free(reasoning);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -188,6 +190,7 @@ enum MHD_Result handle_auth_chat_stream_request(struct MHD_Connection *connectio
     ChatEngineCache *cec = db_queue->chat_engine_cache;
     if (!cec) {
         free(engine_name);
+        free(reasoning);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -205,6 +208,7 @@ enum MHD_Result handle_auth_chat_stream_request(struct MHD_Connection *connectio
     if (!engine) {
         const char *engine_err = engine_name ? "Engine not found" : "No default engine configured";
         free(engine_name);
+        free(reasoning);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -214,6 +218,7 @@ enum MHD_Result handle_auth_chat_stream_request(struct MHD_Connection *connectio
     // Check engine health
     if (!engine->is_healthy) {
         free(engine_name);
+        free(reasoning);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -225,6 +230,7 @@ enum MHD_Result handle_auth_chat_stream_request(struct MHD_Connection *connectio
     json_decref(request_json);
     if (!request_json_str) {
         free(engine_name);
+        free(reasoning);
         free_jwt_validation_result(&jwt_result);
         chat_context_free_hash_array(context_hashes, context_hash_count);
         return auth_stream_send_sse_error_response(connection, "Failed to serialize request", MHD_HTTP_INTERNAL_SERVER_ERROR);
@@ -237,6 +243,7 @@ enum MHD_Result handle_auth_chat_stream_request(struct MHD_Connection *connectio
     // Cleanup
     free(request_json_str);
     free(engine_name);
+    free(reasoning);
     free_jwt_validation_result(&jwt_result);
     chat_context_free_hash_array(context_hashes, context_hash_count);
 
@@ -254,11 +261,12 @@ bool auth_chat_stream_parse_request(json_t *request_json,
                                     double *temperature,
                                     int *max_tokens,
                                     bool *stream,
+                                    char **reasoning,
                                     char **error_message) {
     // Reuse auth_chat_parse_request (same format)
     return auth_chat_parse_request(request_json, engine, messages, context_hashes,
                                    context_hash_count, temperature, max_tokens,
-                                   stream, error_message);
+                                   stream, reasoning, error_message);
 }
 
 /**

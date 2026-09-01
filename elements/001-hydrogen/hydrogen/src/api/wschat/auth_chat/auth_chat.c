@@ -403,15 +403,17 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
     double temperature = -1.0;
     int max_tokens = -1;
     bool stream = false;
+    char *reasoning = NULL;
     char *error_message = NULL;
 
     bool parse_ok = auth_chat_parse_request(request_json, &engine_name,
                                              &messages, &context_hashes,
                                              &context_hash_count,
                                              &temperature, &max_tokens,
-                                             &stream, &error_message);
+                                             &stream, &reasoning, &error_message);
 
     if (!parse_ok) {
+        free(reasoning);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -424,6 +426,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
     /* REST stream=true returns 501; interactive streaming is on WebSocket chat. */
     if (stream) {
         free(engine_name);
+        free(reasoning);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -437,6 +440,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
     DatabaseQueue *db_queue = database_queue_manager_get_database(global_queue_manager, database);
     if (!db_queue) {
         free(engine_name);
+        free(reasoning);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -449,6 +453,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
     ChatEngineCache *cec = db_queue->chat_engine_cache;
     if (!cec) {
         free(engine_name);
+        free(reasoning);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -467,6 +472,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
 
     if (!engine) {
         free(engine_name);
+        free(reasoning);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -478,6 +484,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
     // Check engine health
     if (!engine->is_healthy) {
         free(engine_name);
+        free(reasoning);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -486,7 +493,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         return ret;
     }
 
-    ChatRequestParams params = chat_resolve_request_params(engine, temperature, max_tokens, stream);
+    ChatRequestParams params = chat_resolve_request_params(engine, temperature, max_tokens, stream, reasoning);
     ChatMessage *chat_messages = auth_chat_messages_json_to_list(database, messages);
 
     // Build request JSON for provider
@@ -497,6 +504,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
 
     if (!request_body) {
         free(engine_name);
+        free(reasoning);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -510,6 +518,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
                                         error_buf, sizeof(error_buf))) {
         free(request_body);
         free(engine_name);
+        free(reasoning);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -546,6 +555,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
     // Parse response
     if (!request_success) {
         free(engine_name);
+        free(reasoning);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -563,6 +573,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
 
     if (!parsed || !parsed->success) {
         free(engine_name);
+        free(reasoning);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -590,6 +601,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
     if (!auth_chat_collect_segment_stats(database, messages, context_hashes, context_hash_count,
                                           parsed->content, &segment_stats)) {
         free(engine_name);
+        free(reasoning);
         free_jwt_validation_result(&jwt_result);
         json_decref(request_json);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -638,6 +650,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
 
     // Cleanup
     free(engine_name);
+    free(reasoning);
     free_jwt_validation_result(&jwt_result);
     json_decref(request_json);
     chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -657,9 +670,10 @@ bool auth_chat_parse_request(json_t *request_json,
                               double *temperature,
                               int *max_tokens,
                               bool *stream,
+                              char **reasoning,
                               char **error_message) {
     if (!request_json || !engine || !messages || !context_hashes || !context_hash_count ||
-        !temperature || !max_tokens || !stream || !error_message) {
+        !temperature || !max_tokens || !stream || !reasoning || !error_message) {
         if (error_message) {
             *error_message = strdup("Invalid parse request parameters");
         }
@@ -673,6 +687,7 @@ bool auth_chat_parse_request(json_t *request_json,
     *temperature = -1.0;
     *max_tokens = -1;
     *stream = false;
+    *reasoning = NULL;
     *error_message = NULL;
 
     // Extract messages (required)
@@ -727,6 +742,12 @@ bool auth_chat_parse_request(json_t *request_json,
     json_t *stream_obj = json_object_get(request_json, "stream");
     if (stream_obj && json_is_boolean(stream_obj)) {
         *stream = json_boolean_value(stream_obj);
+    }
+
+    // Extract reasoning (optional)
+    json_t *reasoning_obj = json_object_get(request_json, "reasoning");
+    if (reasoning_obj && json_is_string(reasoning_obj)) {
+        *reasoning = strdup(json_string_value(reasoning_obj));
     }
 
     return true;

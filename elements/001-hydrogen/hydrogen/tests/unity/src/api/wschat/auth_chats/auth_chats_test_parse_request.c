@@ -25,11 +25,11 @@ void tearDown(void) {
 }
 
 static bool parse(json_t *request, size_t *count, double *temperature,
-                  int *max_tokens, char **error) {
+                  int *max_tokens, char **reasoning, char **error) {
     json_t *engines = NULL;
     json_t *messages = NULL;
     return auth_chats_parse_request(request, &engines, &messages, count,
-                                    temperature, max_tokens, error);
+                                    temperature, max_tokens, reasoning, error);
 }
 
 void test_auth_chats_parse_request_rejects_invalid_parameters(void) {
@@ -39,9 +39,10 @@ void test_auth_chats_parse_request_rejects_invalid_parameters(void) {
     size_t count = 0;
     double temperature = 0.0;
     int max_tokens = 0;
+    char *reasoning = NULL;
 
     TEST_ASSERT_FALSE(auth_chats_parse_request(NULL, &engines, &messages, &count,
-                                               &temperature, &max_tokens, &error));
+                                               &temperature, &max_tokens, &reasoning, &error));
     TEST_ASSERT_EQUAL_STRING("Invalid parse request parameters", error);
     free(error);
 }
@@ -51,9 +52,10 @@ void test_auth_chats_parse_request_rejects_missing_engines(void) {
     size_t count = 0;
     double temperature = 0.0;
     int max_tokens = 0;
+    char *reasoning = NULL;
     char *error = NULL;
 
-    TEST_ASSERT_FALSE(parse(request, &count, &temperature, &max_tokens, &error));
+    TEST_ASSERT_FALSE(parse(request, &count, &temperature, &max_tokens, &reasoning, &error));
     TEST_ASSERT_EQUAL_STRING("Missing or invalid 'engines' array", error);
     free(error);
     json_decref(request);
@@ -64,9 +66,10 @@ void test_auth_chats_parse_request_rejects_empty_engines(void) {
     size_t count = 0;
     double temperature = 0.0;
     int max_tokens = 0;
+    char *reasoning = NULL;
     char *error = NULL;
 
-    TEST_ASSERT_FALSE(parse(request, &count, &temperature, &max_tokens, &error));
+    TEST_ASSERT_FALSE(parse(request, &count, &temperature, &max_tokens, &reasoning, &error));
     TEST_ASSERT_EQUAL_STRING("Engines array must contain 1-10 engine names", error);
     free(error);
     json_decref(request);
@@ -79,9 +82,10 @@ void test_auth_chats_parse_request_rejects_too_many_engines(void) {
     size_t count = 0;
     double temperature = 0.0;
     int max_tokens = 0;
+    char *reasoning = NULL;
     char *error = NULL;
 
-    TEST_ASSERT_FALSE(parse(request, &count, &temperature, &max_tokens, &error));
+    TEST_ASSERT_FALSE(parse(request, &count, &temperature, &max_tokens, &reasoning, &error));
     TEST_ASSERT_EQUAL_STRING("Engines array must contain 1-10 engine names", error);
     free(error);
     json_decref(request);
@@ -92,9 +96,10 @@ void test_auth_chats_parse_request_rejects_missing_messages(void) {
     size_t count = 0;
     double temperature = 0.0;
     int max_tokens = 0;
+    char *reasoning = NULL;
     char *error = NULL;
 
-    TEST_ASSERT_FALSE(parse(request, &count, &temperature, &max_tokens, &error));
+    TEST_ASSERT_FALSE(parse(request, &count, &temperature, &max_tokens, &reasoning, &error));
     TEST_ASSERT_EQUAL_STRING("Missing or invalid 'messages' array", error);
     free(error);
     json_decref(request);
@@ -105,29 +110,34 @@ void test_auth_chats_parse_request_applies_defaults(void) {
     size_t count = 0;
     double temperature = 9.0;
     int max_tokens = 9;
+    char *reasoning = NULL;
     char *error = NULL;
 
-    TEST_ASSERT_TRUE(parse(request, &count, &temperature, &max_tokens, &error));
+    TEST_ASSERT_TRUE(parse(request, &count, &temperature, &max_tokens, &reasoning, &error));
     TEST_ASSERT_EQUAL_UINT(1, count);
     TEST_ASSERT_EQUAL_DOUBLE(-1.0, temperature);
     TEST_ASSERT_EQUAL_INT(-1, max_tokens);
+    TEST_ASSERT_NULL(reasoning);
     TEST_ASSERT_NULL(error);
     json_decref(request);
 }
 
 void test_auth_chats_parse_request_extracts_optional_values(void) {
-    json_t *request = json_pack("{s:[s,s],s:[],s:f,s:i}",
+    json_t *request = json_pack("{s:[s,s],s:[],s:f,s:i,s:s}",
                                 "engines", "one", "two", "messages",
-                                "temperature", 0.4, "max_tokens", 321);
+                                "temperature", 0.4, "max_tokens", 321,
+                                "reasoning", "high");
     size_t count = 0;
     double temperature = 0.0;
     int max_tokens = 0;
+    char *reasoning = NULL;
     char *error = NULL;
 
-    TEST_ASSERT_TRUE(parse(request, &count, &temperature, &max_tokens, &error));
+    TEST_ASSERT_TRUE(parse(request, &count, &temperature, &max_tokens, &reasoning, &error));
     TEST_ASSERT_EQUAL_UINT(2, count);
     TEST_ASSERT_EQUAL_DOUBLE(0.4, temperature);
     TEST_ASSERT_EQUAL_INT(321, max_tokens);
+    TEST_ASSERT_EQUAL_STRING("high", reasoning);
     json_decref(request);
 }
 
