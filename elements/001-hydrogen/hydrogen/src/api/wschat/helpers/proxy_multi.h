@@ -84,6 +84,13 @@ typedef struct MultiStreamContext {
     void (*completion_callback)(void* user_data, bool success);
     void* completion_user_data;      // User data for completion callback
     
+    // Context hashing stats (collected before provider call, attached to chat_done)
+    bool has_context_hashing_stats;
+    size_t ctx_hashes_used;
+    size_t ctx_hashes_missed;
+    size_t ctx_bandwidth_saved_bytes;
+    double ctx_bandwidth_saved_percent;
+
     // Linked list pointers
     struct MultiStreamContext* next;
     struct MultiStreamContext* prev;

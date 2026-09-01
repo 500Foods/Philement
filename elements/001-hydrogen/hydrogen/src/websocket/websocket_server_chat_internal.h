@@ -36,7 +36,7 @@ int send_chat_proxy_result(struct lws *wsi, const char* request_id,
 // Message Conversion Helper
 // ============================================================================
 
-ChatMessage* convert_json_messages_to_chat_messages(json_t *messages);
+ChatMessage* convert_json_messages_to_chat_messages_with_media(const char *database, json_t *messages);
 
 // ============================================================================
 // Send Helpers
