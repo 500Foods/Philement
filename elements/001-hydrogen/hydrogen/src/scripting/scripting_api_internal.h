@@ -50,6 +50,7 @@ int H_lua_system_now(lua_State* L);
 int H_lua_system_now_iso(lua_State* L);
 int H_lua_system_instance_id(lua_State* L);
 int H_lua_system_version(lua_State* L);
+int H_lua_system_info(lua_State* L);
 
 int H_lua_gc_collect(lua_State* L);
 int H_lua_gc_step(lua_State* L);

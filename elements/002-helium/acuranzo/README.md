@@ -409,7 +409,8 @@ in the migrations themselves so that they get populated in the database directly
 | [1370](/elements/002-helium/acuranzo/migrations/acuranzo_1370.lua) | scripts | 1.0.0 | 2026-08-26 | 4 | ✗ | MCP Phase 10: seed Mcp.Echo fixture tool |
 | [1371](/elements/002-helium/acuranzo/migrations/acuranzo_1371.lua) | scripts | 1.0.0 | 2026-08-26 | 4 | ✗ | MCP Phase 10: seed Mcp.EchoStrict (tool-level isError on bad args) |
 | [1372](/elements/002-helium/acuranzo/migrations/acuranzo_1372.lua) | scripts | 1.0.0 | 2026-08-26 | 4 | ✗ | MCP Phase 10: seed Mcp.Sleep (timeout / cancel fixture) |
-| [1373](/elements/002-helium/acuranzo/migrations/acuranzo_1373.lua) | scripts | 1.0.0 | 2026-08-27 | 4 | ✗ | MCP Phase 15: extend Mcp.Server with resources/* and prompts/* |
+| [1373](/elements/002-helium/acuranzo/migrations/acuranzo_1373.lua) | scripts | 1.0.0 | 2026-08-27 | 4 | ✗ | MCP Phase 15: extend Mcp.Server with resources and prompts |
 | [1374](/elements/002-helium/acuranzo/migrations/acuranzo_1374.lua) | scripts | 1.0.0 | 2026-08-27 | 4 | ✗ | MCP Phase 15: seed Mcp.Info fixture resource |
 | [1375](/elements/002-helium/acuranzo/migrations/acuranzo_1375.lua) | scripts | 1.0.0 | 2026-08-27 | 4 | ✗ | MCP Phase 15: seed Mcp.Intro fixture prompt |
-| **376** | | | | **1920** | **376** | |
+| [1376](/elements/002-helium/acuranzo/migrations/acuranzo_1376.lua) | scripts | 1.0.0 | 2026-09-02 | 4 | ✗ | MCP Phase 14: seed System.Info (MCP tool calling H.system.info) |
+| **377** | | | | **1924** | **377** | |

@@ -8,10 +8,11 @@
 // Project includes
 #include <src/hydrogen.h>
 
-// System includes
+// Standard includes
 #include <fcntl.h>
 #include <unistd.h>
 #include <time.h>
+#include <string.h>
 
 // Third-party includes
 #include <lua.h>
@@ -24,6 +25,7 @@
 #include "lua_context.h"
 #include "scripting.h"
 #include "scoreboard.h"
+#include <src/api/system/info/info.h>
 
 // H.system.* implementations ///////////////////////////////////////////////
 
@@ -277,6 +279,17 @@ int H_lua_set_result_json(lua_State* L) {
     return 0;
 }
 
+int H_lua_system_info(lua_State* L) {
+    json_t *root = system_info_build_json(true);
+    if (!root) {
+        lua_pushnil(L);
+        return 1;
+    }
+    push_json_object_as_table(L, root);
+    json_decref(root);
+    return 1;
+}
+
 // Install functions ////////////////////////////////////////////////////////
 
 void H_lua_install_system(lua_State* L) {
@@ -300,6 +313,7 @@ void H_lua_install_system(lua_State* L) {
     lua_pushcfunction(L, H_lua_system_now_iso);     lua_setfield(L, -2, "now_iso");
     lua_pushcfunction(L, H_lua_system_instance_id); lua_setfield(L, -2, "instance_id");
     lua_pushcfunction(L, H_lua_system_version);     lua_setfield(L, -2, "version");
+    lua_pushcfunction(L, H_lua_system_info);        lua_setfield(L, -2, "info");
 
     lua_pop(L, 2);
 }

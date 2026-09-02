@@ -5412,6 +5412,61 @@
         }
       }
     },
+    "/system/jobs": {
+      "get": {
+        "summary": "Scripting job list endpoint",
+        "description": "Returns a paginated JSON array of scripting subsystem scoreboard job entries. Requires a valid JWT.",
+        "operationId": "getSystemJobs",
+        "tags": [
+          "System Service"
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "description": "Array of job objects"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Unauthorized"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Failed to generate job list"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/system/prometheus": {
       "get": {
         "summary": "System metrics endpoint (Prometheus)",

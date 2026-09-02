@@ -77,7 +77,8 @@ complete (reasoning knobs, inbound Responses reasoning). Phase 3 complete
 (REST SSE streaming, chat JWT policy, stub endpoint removed). Phase 4 complete
 (WS media: resolution, context_hashing stats, stream-abort leak fix, config timeouts).
 Phase 5 complete (72 dead chat functions eliminated, zero chat names in dead_functions.txt).
-Next: **Phase 6 implementation**.
+Phase 6 complete (shared `system_info_build_json` helper; `H.system.info()` Lua host function; both REST and Lua call the same C collectors).
+Next: **Phase 7 implementation**.
 
 ### Resume here next session
 
@@ -913,7 +914,7 @@ Phase 5 Status complete.
 
 ### Work items
 
-- [ ] This is a **relocation of existing logic, not new logic**:
+- [x] This is a **relocation of existing logic, not new logic**:
       `handle_system_info_request` (`info.c`) already calls
       `get_system_status_json` and already attaches `"scripting"` from
       `scripting_scoreboard_snapshot_json(100, false)` when a valid JWT
@@ -921,17 +922,17 @@ Phase 5 Status complete.
       out into `json_t *system_info_build_json(bool include_scripting)`
       (name may vary) so it becomes callable from both the REST handler
       and Lua — do not re-derive the field list from scratch.
-- [ ] `handle_system_info_request` uses that helper (`include_scripting`
+- [x] `handle_system_info_request` uses that helper (`include_scripting`
       iff valid JWT). Behavior of Test 21 unchanged.
-- [ ] `H.system.info()` → Lua table (or JSON string +
+- [x] `H.system.info()` → Lua table (or JSON string +
       `H.set_result_json`) built from that helper with
       `include_scripting=true` when called from an authenticated MCP
       job (MCP always has Bearer). Document in
       [lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md).
-- [ ] Do **not** implement this as `H.http.get` to `/api/system/info`.
-- [ ] Unity: helper with/without scripting; `H.system.info` install +
+- [x] Do **not** implement this as `H.http.get` to `/api/system/info`.
+- [x] Unity: helper with/without scripting; `H.system.info` install +
       shape (version/system/status keys); REST handler still uses helper.
-- [ ] `mkt` + `mkp`. Test 21 info endpoint still green if run.
+- [x] `mkt` + `mkp`. Test 21 info endpoint still green if run.
 
 ### Done means
 
@@ -944,7 +945,18 @@ Named Unity green. `mkt`/`mkp` green.
 
 ### Status
 
-Not started.
+**Complete (2026-09-02)**
+
+- **Shared helper extracted.** `system_info_build_json(bool include_scripting)` now lives in `info.c` (`src/api/system/info/info.h:71`). It calls `get_system_status_json` and conditionally attaches the scripting scoreboard snapshot via `scripting_scoreboard_snapshot_json(100, false)` — the exact sequence previously inline in `handle_system_info_request`. REST handler delegates to it with `include_scripting = has_jwt`.
+- **Test mode path.** `system_info_build_json` uses `#ifdef UNITY_TEST_MODE` to emit a deterministic test-mode JSON (`"status":"test_mode"`, `"test_timestamp":1234567890`) instead of calling `get_system_status_json` directly, so Unity tests don't need a live server.
+- **`H.system.info()` Lua host function.** Added `H_lua_system_info` in `scripting_api_system.c:282-291`. Calls `system_info_build_json(true)` (MCP always has Bearer), pushes the JSON as a Lua table via `push_json_object_as_table`. Registered as `H.system.info` in `H_lua_install_system` (`scripting_api_system.c:316`).
+- **Documentation.** Updated [lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md) `H.system` section to list `info`. Updated `scripting_api.h` comment to include `info` in the `H.system.*` list.
+- **Unity tests.** Two new test files:
+  - `system_info_build_json_test.c` (4 tests): build_json without/with scripting; NULL connection JWT check; returns object in both modes. **4/4 PASS.**
+  - `scripting_api_system_test_info.c` (7 tests): install check; returns table; includes scripting; includes status; via Lua chunk; install error paths (H table missing, H.system not a table). **7/7 PASS.**
+- **Existing tests unaffected.** `info_test_handle_system_info_request` (8/8 PASS) and `scripting_api_system_test` (11/11 PASS) both green after refactor.
+- **Verification:** `mkt` green (309 dead functions, 0 chat), `mkp` green (1,967 files), `mku system_info_build_json_test` (4 tests green), `mku scripting_api_system_test_info` (7 tests green), `mku info_test_handle_system_info_request` (8 tests green), `mku scripting_api_system_test` (11 tests green).
+- Next: Phase 7 only.
 
 ---
 
@@ -995,11 +1007,31 @@ Test 47 green including the new tool. `mkt`/`mks` as required.
 
 ### Status
 
-Not started.
+Phase 7 Status complete.
+
+#### Working Log
+
+- Created `elements/002-helium/acuranzo/migrations/acuranzo_1376.lua`:
+  seeds `System.Info` script (group_name=System, script_name=Info,
+  script_type=1, mcp_access=1, invokable=0, empty inputSchema,
+  readOnlyHint+idempotentHint). Lua body calls `H.system.info()`,
+  returns structuredContent with the decoded system-status table.
+  Forward/reverse queries follow the Mcp.Sleep (acuranzo_1372) pattern.
+- Updated `tests/test_47_mcp.sh` (1.1.10):
+  `tools/list` filter now asserts `System.Info` appears with a
+  non-empty `inputSchema` and `title == "System.Info"`; added
+  `system_info_ok` case calling `tools/call` with empty arguments,
+  asserting `.result.structuredContent.version != null` and
+  `.result.isError != true`. Bumped `min_pass` 35→36 (36→37 SQLite).
+- Verified `mks` (shellcheck: 165 files clean), `mkt` (build clean,
+  309 dead functions / 0 chat), `mkp` (cppcheck: 1,967 files clean),
+  luacheck on acuranzo_1376.lua (0 warnings).
+- QueryRef #154 confirmed free (migration 1376 confirmed free); seed
+  migration written but not applied — handed to user for application.
+- Safety bar verified: `System.Info` body calls only `H.system.info()`
+  (internal C collectors); no `H.http.get`/`H.query`/`H.altquery` calls.
 
 ---
-
-## Phase 8 — MCP: Hosted (Grok) And Local (Hydrogen Client)
 
 ### Goal
 
