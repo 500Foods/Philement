@@ -3,6 +3,10 @@
  */
 
 #include <src/hydrogen.h>
+#include <src/globals.h>
+#include <src/mcp/mcp_mint_token.h>
+#include <src/mcp/mcp_auth.h>
+#include <src/mcp/mcp_resource_url.h>
 #include "req_builder.h"
 
 // Default parameters
@@ -14,7 +18,51 @@ ChatRequestParams chat_request_params_default(void) {
     params.stream = false;
     params.reasoning = NULL;
     params.additional_params = NULL;
+    params.hosted_mcp_enabled = false;
+    params.hosted_mcp_sub = NULL;
+    params.hosted_mcp_database = NULL;
+    params.hosted_mcp_roles = NULL;
+    params.hosted_mcp_ttl_seconds = 0;
+    params.hosted_mcp_correlation_id = NULL;
     return params;
+}
+
+void chat_correlation_id_generate(char *buffer, size_t buffer_size) {
+    if (!buffer || buffer_size < 37) {
+        if (buffer && buffer_size > 0) {
+            buffer[0] = '\0';
+        }
+        return;
+    }
+    const char *hex = "0123456789abcdef";
+    size_t idx = 0;
+    for (int i = 0; i < 36; i++) {
+        if (i == 8 || i == 13 || i == 18 || i == 23) {
+            buffer[idx++] = '-';
+        } else {
+            buffer[idx++] = hex[(unsigned)rand() % 16];
+        }
+    }
+    buffer[14] = '4';
+    buffer[19] = hex[8 + ((unsigned)rand() % 4)];
+    buffer[36] = '\0';
+}
+
+void chat_request_params_apply_hosted_mcp(ChatRequestParams *params,
+                                          const ChatEngineConfig *engine,
+                                          const char *sub,
+                                          const char *database,
+                                          const char *roles,
+                                          const char *correlation_id) {
+    if (!params || !engine || !engine->use_responses_api) {
+        return;
+    }
+    params->hosted_mcp_enabled = true;
+    params->hosted_mcp_sub = sub;
+    params->hosted_mcp_database = database;
+    params->hosted_mcp_roles = roles;
+    params->hosted_mcp_ttl_seconds = 0;
+    params->hosted_mcp_correlation_id = correlation_id;
 }
 
 // Message management
@@ -448,6 +496,80 @@ json_t* chat_request_build_responses(const ChatEngineConfig* engine,
         json_t* reasoning_obj = json_object();
         json_object_set_new(reasoning_obj, "effort", json_string(params->reasoning));
         json_object_set_new(root, "reasoning", reasoning_obj);
+    }
+
+    // Hosted MCP (Phase 8b): append `type: mcp` connector so the
+    // provider (xAI/OpenAI Responses API) can call public MCP on the
+    // chat user's behalf. Mint a fresh short-TTL `aud` token per
+    // request, fail-closed on unreachable MCP URL or mint failure.
+    if (params->hosted_mcp_enabled) {
+        const MCPConfig *mcp_cfg = app_config ? &app_config->mcp : NULL;
+        const char *server_url = mcp_cfg ? mcp_auth_resource(mcp_cfg) : "";
+        const char *cid = params->hosted_mcp_correlation_id ? params->hosted_mcp_correlation_id : "-";
+
+        if (!mcp_cfg || !server_url || !server_url[0]) {
+            log_this("CHAT",
+                     "hosted_mcp: cfg has no MCP.Resource (cid=%s) — request fails closed",
+                     LOG_LEVEL_ERROR, 1, cid);
+            json_decref(root);
+            return NULL;
+        }
+        if (!mcp_mcp_resource_url_is_reachable(server_url)) {
+            log_this("CHAT",
+                     "hosted_mcp: resource url unreachable (loopback/internal/non-https) url=%s (cid=%s) — request fails closed",
+                     LOG_LEVEL_ERROR, 2, server_url, cid);
+            json_decref(root);
+            return NULL;
+        }
+        char *jwt = mcp_mint_resource_token(mcp_cfg,
+                                           params->hosted_mcp_sub,
+                                           params->hosted_mcp_database,
+                                           params->hosted_mcp_roles,
+                                           params->hosted_mcp_ttl_seconds,
+                                           cid);
+        if (!jwt) {
+            log_this("CHAT",
+                     "hosted_mcp: mint failed (cid=%s) — request fails closed",
+                     LOG_LEVEL_ERROR, 1, cid);
+            json_decref(root);
+            return NULL;
+        }
+        char *authz = NULL;
+        if (asprintf(&authz, "Bearer %s", jwt) == -1) {
+            authz = NULL;
+        }
+        free(jwt);
+        if (!authz) {
+            log_this("CHAT",
+                     "hosted_mcp: auth header alloc failed (cid=%s)",
+                     LOG_LEVEL_ERROR, 1, cid);
+            json_decref(root);
+            return NULL;
+        }
+
+        json_t *mcp_obj = json_object();
+        json_object_set_new(mcp_obj, "type", json_string("mcp"));
+        json_object_set_new(mcp_obj, "server_label", json_string("hydrogen"));
+        json_object_set_new(mcp_obj, "server_url", json_string(server_url));
+        json_object_set_new(mcp_obj, "authorization", json_string(authz));
+        json_t *allowed = json_array();
+        json_array_append_new(allowed, json_string("System.Info"));
+        json_object_set_new(mcp_obj, "allowed_tools", allowed);
+        free(authz);
+
+        json_t *tools_array = json_object_get(root, "tools");
+        if (!tools_array || !json_is_array(tools_array)) {
+            tools_array = json_array();
+            json_object_set_new(root, "tools", tools_array);
+        }
+        json_array_append_new(tools_array, mcp_obj);
+
+        log_this("CHAT",
+                 "hosted_mcp: connector injected sub=%s db=%s tools=System.Info (cid=%s)",
+                 LOG_LEVEL_STATE, 3,
+                 params->hosted_mcp_sub ? params->hosted_mcp_sub : "",
+                 params->hosted_mcp_database ? params->hosted_mcp_database : "",
+                 cid);
     }
 
     // Additional params overlay (merges last — explicit fields set the base)

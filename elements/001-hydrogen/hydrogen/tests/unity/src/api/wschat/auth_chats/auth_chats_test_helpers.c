@@ -106,7 +106,7 @@ void test_auth_chats_build_multi_requests_filters_engines(void) {
     TEST_ASSERT_NOT_NULL(requests);
     TEST_ASSERT_NOT_NULL(message);
 
-    size_t count = auth_chats_build_multi_requests(cache, engines, message, 0.3, 64, NULL, requests);
+    size_t count = auth_chats_build_multi_requests(cache, engines, message, 0.3, 64, NULL, requests, NULL, NULL, NULL, NULL);
     TEST_ASSERT_EQUAL_UINT(1, count);
     TEST_ASSERT_EQUAL_STRING("healthy", requests[0].engine_name);
     TEST_ASSERT_NOT_NULL(strstr(requests[0].request_json, "test-model"));
@@ -115,7 +115,7 @@ void test_auth_chats_build_multi_requests_filters_engines(void) {
     chat_message_destroy(message);
     json_decref(engines);
     chat_engine_cache_clear(cache);
-    TEST_ASSERT_EQUAL_UINT(0, auth_chats_build_multi_requests(NULL, NULL, NULL, 0, 0, NULL, NULL));
+    TEST_ASSERT_EQUAL_UINT(0, auth_chats_build_multi_requests(NULL, NULL, NULL, 0, 0, NULL, NULL, NULL, NULL, NULL, NULL));
 }
 
 void test_auth_chats_copy_engine_names_copies_values(void) {

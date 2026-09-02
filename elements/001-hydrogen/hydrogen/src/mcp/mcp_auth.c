@@ -273,6 +273,15 @@ bool mcp_try_hydrogen(const char *auth_header, const MCPConfig *cfg, McpAuthResu
         }
         return false;
     }
+    {
+        const char *resource = mcp_auth_resource(cfg);
+        if (resource && resource[0] != '\0' && jwt.claims->aud && jwt.claims->aud[0] != '\0' &&
+            strcmp(jwt.claims->aud, resource) != 0) {
+            mcp_auth_fail(out, MCP_AUTH_REJECT_AUD);
+            free_jwt_validation_result(&jwt);
+            return false;
+        }
+    }
     out->kind = MCP_AUTH_KIND_HYDROGEN_JWT;
     out->sub = jwt.claims->sub ? strdup(jwt.claims->sub) : NULL;
     out->iss = jwt.claims->iss ? strdup(jwt.claims->iss) : NULL;

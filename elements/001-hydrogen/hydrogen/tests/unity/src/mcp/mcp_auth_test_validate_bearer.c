@@ -30,6 +30,8 @@ void test_validate_bearer_rp_reject(void);
 void test_validate_bearer_rp_accept(void);
 void test_validate_bearer_aud_mismatch(void);
 void test_validate_bearer_scope_mismatch(void);
+void test_try_hydrogen_aud_mismatch(void);
+void test_try_hydrogen_aud_match(void);
 void test_www_authenticate_and_prm_shape(void);
 void test_send_unauthorized_header(void);
 void test_prm_rp_issuers(void);
@@ -475,6 +477,47 @@ void test_try_hydrogen_no_bearer(void) {
     TEST_ASSERT_FALSE(mcp_try_hydrogen("Token x", &test_app.mcp, &out));
 }
 
+void test_try_hydrogen_aud_mismatch(void) {
+    McpAuthResult out;
+    jwt_validation_result_t programmed;
+    jwt_claims_t claims;
+
+    memset(&out, 0, sizeof(out));
+    memset(&programmed, 0, sizeof(programmed));
+    memset(&claims, 0, sizeof(claims));
+    claims.sub = (char *)"user-1";
+    claims.database = (char *)"acuranzo";
+    claims.aud = (char *)"https://other-resource.example/mcp";
+    programmed.valid = true;
+    programmed.claims = &claims;
+    programmed.error = JWT_ERROR_NONE;
+    mock_auth_service_jwt_set_validation_result(programmed);
+
+    TEST_ASSERT_FALSE(mcp_try_hydrogen("Bearer x", &test_app.mcp, &out));
+    TEST_ASSERT_EQUAL(MCP_AUTH_REJECT_AUD, out.reject_reason);
+}
+
+void test_try_hydrogen_aud_match(void) {
+    McpAuthResult out;
+    jwt_validation_result_t programmed;
+    jwt_claims_t claims;
+
+    memset(&out, 0, sizeof(out));
+    memset(&programmed, 0, sizeof(programmed));
+    memset(&claims, 0, sizeof(claims));
+    claims.sub = (char *)"user-1";
+    claims.database = (char *)"acuranzo";
+    claims.aud = (char *)"http://127.0.0.1:3100/mcp";
+    programmed.valid = true;
+    programmed.claims = &claims;
+    programmed.error = JWT_ERROR_NONE;
+    mock_auth_service_jwt_set_validation_result(programmed);
+
+    TEST_ASSERT_TRUE(mcp_try_hydrogen("Bearer x", &test_app.mcp, &out));
+    TEST_ASSERT_EQUAL(MCP_AUTH_KIND_HYDROGEN_JWT, out.kind);
+    mcp_auth_result_cleanup(&out);
+}
+
 void test_rp_hook_aud_and_scope(void) {
     McpAuthResult auth;
 
@@ -644,6 +687,8 @@ int main(void) {
     RUN_TEST(test_scopes_and_aud_helpers);
     RUN_TEST(test_copy_oidc_and_cleanup_null);
     RUN_TEST(test_try_hydrogen_no_bearer);
+    RUN_TEST(test_try_hydrogen_aud_mismatch);
+    RUN_TEST(test_try_hydrogen_aud_match);
     RUN_TEST(test_rp_hook_aud_and_scope);
     RUN_TEST(test_rp_no_app);
     RUN_TEST(test_derived_resource);
