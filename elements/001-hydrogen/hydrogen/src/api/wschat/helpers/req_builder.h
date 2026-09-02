@@ -42,6 +42,19 @@ typedef struct ChatRequestParams {
     bool stream;                 // Enable streaming
     char* reasoning;             // Reasoning effort level (e.g., "low", "medium", "high") — NULL to omit
     json_t* additional_params;   // Additional provider-specific parameters
+
+    // Hosted MCP (Phase 8b): when set, the Responses builder appends
+    // a `type: mcp` connector to the provider body using a freshly
+    // minted short-TTL `aud=mcp_auth_resource(cfg)` token. Caller
+    // supplies the chat user's sub/database, the optional roles, the
+    // TTL (0 → default 900s), and a correlation id for log threading.
+    // Non-Responses builders ignore these fields.
+    bool hosted_mcp_enabled;
+    const char* hosted_mcp_sub;
+    const char* hosted_mcp_database;
+    const char* hosted_mcp_roles;
+    int hosted_mcp_ttl_seconds;
+    const char* hosted_mcp_correlation_id;
 } ChatRequestParams;
 
 // Function prototypes
@@ -90,6 +103,15 @@ char* chat_request_to_json_string(json_t* request, bool compact);
 
 // Default parameters
 ChatRequestParams chat_request_params_default(void);
+
+void chat_correlation_id_generate(char *buffer, size_t buffer_size);
+
+void chat_request_params_apply_hosted_mcp(ChatRequestParams *params,
+                                          const ChatEngineConfig *engine,
+                                          const char *sub,
+                                          const char *database,
+                                          const char *roles,
+                                          const char *correlation_id);
 
 /* ----------------------------------------------------------------------------
  * The following helpers are NOT part of the stable public API. They are exposed

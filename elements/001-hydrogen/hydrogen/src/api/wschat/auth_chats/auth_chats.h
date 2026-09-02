@@ -75,12 +75,16 @@ bool auth_chats_parse_request(json_t *request_json,
 ChatMessage *auth_chats_messages_json_to_list(json_t *messages);
 
 size_t auth_chats_build_multi_requests(ChatEngineCache *cache,
-                                       json_t *engines,
-                                       const ChatMessage *messages,
-                                       double temperature,
-                                       int max_tokens,
-                                       const char *reasoning,
-                                       ChatMultiRequest *requests);
+                                        json_t *engines,
+                                        const ChatMessage *messages,
+                                        double temperature,
+                                        int max_tokens,
+                                        const char *reasoning,
+                                        ChatMultiRequest *requests,
+                                        const char *hosted_mcp_sub,
+                                        const char *hosted_mcp_database,
+                                        const char *hosted_mcp_roles,
+                                        const char *hosted_mcp_cid);
 
 void auth_chats_free_multi_requests(ChatMultiRequest *requests, size_t request_count);
 

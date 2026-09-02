@@ -178,7 +178,11 @@ size_t auth_chats_build_multi_requests(ChatEngineCache *cache,
                                        double temperature,
                                        int max_tokens,
                                        const char *reasoning,
-                                       ChatMultiRequest *requests) {
+                                       ChatMultiRequest *requests,
+                                       const char *hosted_mcp_sub,
+                                       const char *hosted_mcp_database,
+                                       const char *hosted_mcp_roles,
+                                       const char *hosted_mcp_cid) {
     if (!cache || !engines || !json_is_array(engines) || !requests) {
         return 0;
     }
@@ -198,6 +202,9 @@ size_t auth_chats_build_multi_requests(ChatEngineCache *cache,
         }
 
         ChatRequestParams params = chat_resolve_request_params(engine, temperature, max_tokens, false, reasoning);
+        chat_request_params_apply_hosted_mcp(&params, engine,
+                                             hosted_mcp_sub, hosted_mcp_database,
+                                             hosted_mcp_roles, hosted_mcp_cid);
         json_t *provider_request = chat_request_build(engine, messages, &params);
         char *request_body = chat_request_to_json_string(provider_request, true);
         json_decref(provider_request);
@@ -448,8 +455,14 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
     }
 
     ChatMessage *chat_messages = auth_chats_messages_json_to_list(messages);
+    char hosted_mcp_cid[37];
+    chat_correlation_id_generate(hosted_mcp_cid, sizeof(hosted_mcp_cid));
     size_t valid_requests = auth_chats_build_multi_requests(
-        cec, engines_array, chat_messages, temperature, max_tokens, reasoning, multi_requests);
+        cec, engines_array, chat_messages, temperature, max_tokens, reasoning, multi_requests,
+        jwt_result.claims ? jwt_result.claims->sub : NULL,
+        database,
+        jwt_result.claims ? jwt_result.claims->roles : NULL,
+        hosted_mcp_cid);
     chat_message_list_destroy(chat_messages);
 
     if (valid_requests == 0) {

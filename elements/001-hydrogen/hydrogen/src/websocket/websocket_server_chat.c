@@ -9,6 +9,7 @@
 #include <src/hydrogen.h>
 #include <src/api/api_utils.h>
 #include <src/api/conduit/helpers/auth_jwt_helper.h>
+#include <src/api/auth/auth_service.h>
 #include "../api/wschat/auth_chat/auth_chat.h"
 
 // Local includes
@@ -265,9 +266,9 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
             return -1;
         }
 
-        // Store database name in session for future messages
         session->chat_database = strdup(jwt_result.claims->database);
-        session->chat_claims = NULL;
+        session->chat_claims = jwt_result.claims;
+        jwt_result.claims = NULL;
         free_jwt_validation_result(&jwt_result);
     }
 
@@ -329,6 +330,13 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     params.max_tokens = (max_tokens > 0) ? max_tokens : engine->max_tokens;
     params.stream = stream;
     if (reasoning) params.reasoning = reasoning;
+    char hosted_mcp_cid[37];
+    chat_correlation_id_generate(hosted_mcp_cid, sizeof(hosted_mcp_cid));
+    chat_request_params_apply_hosted_mcp(&params, engine,
+                                         session && session->chat_claims ? session->chat_claims->sub : NULL,
+                                         database,
+                                         session && session->chat_claims ? session->chat_claims->roles : NULL,
+                                         hosted_mcp_cid);
 
     // Convert messages JSON to ChatMessage list with media resolution
     ChatMessage *chat_messages = convert_json_messages_to_chat_messages_with_media(database, messages);
@@ -557,7 +565,10 @@ void chat_session_cleanup(WebSocketSessionData *session, struct lws *wsi) {
         session->chat_database = NULL;
     }
 
-    session->chat_claims = NULL;
+    if (session->chat_claims) {
+        free_jwt_claims(session->chat_claims);
+        session->chat_claims = NULL;
+    }
 
     (void)wsi;
 }

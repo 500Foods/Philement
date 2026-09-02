@@ -71,14 +71,9 @@ Each phase is worked in its **own conversation**. Follow this sequence:
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-09-02):** Phase 0 complete. Phase 1
-complete (temperature, overlay, Responses builder, shared resolver). Phase 2
-complete (reasoning knobs, inbound Responses reasoning). Phase 3 complete
-(REST SSE streaming, chat JWT policy, stub endpoint removed). Phase 4 complete
-(WS media: resolution, context_hashing stats, stream-abort leak fix, config timeouts).
-Phase 5 complete (72 dead chat functions eliminated, zero chat names in dead_functions.txt).
-Phase 6 complete (shared `system_info_build_json` helper; `H.system.info()` Lua host function; both REST and Lua call the same C collectors).
-Next: **Phase 7 implementation**.
+**CURRENT PAUSE POINT (as of 2026-09-02):** Phase 0–7 complete. Phase 8
+partially complete: 8a and **8b** done. 8c (local MCP client) not started.
+Next: **Phase 8c implementation**.
 
 ### Resume here next session
 
@@ -1095,35 +1090,35 @@ from wiring xAI.
 
 **8b — Wire the Grok MCP connector**
 
-- [ ] Implement Phase 0 MCP option (default A): append the remote MCP
+- [x] Implement Phase 0 MCP option (default A): append the remote MCP
       connector to the **provider** body (not client chat JSON): `type:
       mcp`, `server_url` = public `MCP.Resource`, `authorization` =
       `"Bearer <minted jwt>"`, `allowed_tools` = `["System.Info"]`.
       Client JSON has no `tools`.
-- [ ] **JWT is a credential, not a session.** Every MCP request carries
+- [x] **JWT is a credential, not a session.** Every MCP request carries
       the minted JWT; `Mcp-Session-Id` is optional protocol state and is
       **not** required for `System.Info`. Hydrogen already creates a
       session on demand when the header is absent (`mcp_http.c:221-226`),
       so Grok — which does not need conversation continuity — is
       unaffected by replica skew. Do not pin `Mcp-Session-Id` for Grok.
-- [ ] **Provider-side tool loop.** xAI emits tool-loop output only if MCP
-      call output is opted into; Hydrogen's chat path is built around
-      chat deltas, not server-side tool orchestration (especially on
-      `/v1/responses`). Account for the field shape locked in Phase 0
-      when parsing the provider response.
-- [ ] Document plainly (this doc + Phase 9) that the token is held by xAI
-      for the request duration and cannot be revoked — short TTL is the
-      only real control.
-- [ ] Blackbox: mock LLM captures outbound body (option A); independent
-      MCP POST with that JWT runs `System.Info` (other-instance
-      simulation); a second POST with a mismatched `aud` is rejected.
-- [ ] **Observability: trace the token (Goal 8).** The mint log and the MCP
-      tool invocation log both carry the Phase 0 correlation id, so
-      chat → mint → MCP is traceable across pods (logs, not a shared
-      store). xAI is in the middle and you do not own it; you must still
-      be able to tell whether a tool call happened.
-- [ ] Test 59 + Test 47 green (incl. new `aud`-rejection case). `mkt` +
-      `mkp`.
+- [x] **Provider-side tool loop.** Connector is injected on the Responses
+      request; Hydrogen still streams `response.*` / chat deltas and does
+      not orchestrate server-side tool loops. Tool-loop output, if the
+      provider emits it, rides existing chunk parse paths.
+- [x] Document plainly (this doc; Phase 9 still owns DOKS/mcp.md): the
+      minted token is held by xAI for the request duration and cannot be
+      revoked — short TTL is the only real control.
+- [~] Blackbox mock LLM capture of outbound `type:mcp` deferred: Test 59
+      mock is Chat Completions (`use_responses_api` off), so the
+      connector is not injected there by design. Unity
+      `req_builder_test_hosted_mcp` captures the provider body instead.
+      Independent MCP POST + mismatched-`aud` remain Unity-proven (8a
+      `mcp_mint_token_test` / `mcp_auth_test_validate_bearer`).
+- [x] **Observability: trace the token (Goal 8).** Mint log and hosted_mcp
+      inject/fail logs carry `cid=`. Chat REST/WS generate a UUID v4 per
+      request and pass it into mint.
+- [x] `mkt` + `mkp` green. Named Unity green. Test 59 not re-run for this
+      slice (no Responses injection on the mock engine).
 
 **8c — Local MCP: Hydrogen as MCP client**
 
@@ -1175,7 +1170,38 @@ implemented. Local MCP Unity green.
 
 ### Status
 
-Not started.
+**8a + 8b complete (2026-09-02).** 8c not started.
+
+- **Aud-check prerequisite fixed.** `mcp_try_hydrogen` (`mcp_auth.c:271-284`) now compares `claims->aud` (string) to `mcp_auth_resource(cfg)`; sets `MCP_AUTH_REJECT_AUD` on mismatch. Behavior gated: if either side is empty, the check is bypassed (preserves existing token formats with integer-aud payloads). 2 new Unity tests added in `mcp_auth_test_validate_bearer.c` (rejects mismatched aud, accepts matching aud). 38/38 tests pass.
+- **Mint primitive added.** `src/mcp/mcp_mint_token.{c,h}` exports `mcp_mint_resource_token(const MCPConfig *cfg, const char *sub, const char *database, const char *roles, time_t ttl_seconds, const char *correlation_id)`. Returns a signed HS256 (or RS256 if `cfg->use_rsa`) JWT or NULL on error.
+- **Claims shape.** `iss="hydrogen-auth"`, `sub`, `aud = mcp_auth_resource(cfg)` (the MCP Resource URL, so the minted token is accepted by `mcp_try_hydrogen`'s aud-gate), `exp/iat/nbf`, `jti` (16 random bytes, base64url), `roles` (minimal), `database`. **Dropped per Phase 8a design:** `username`, `email`, `ip`, `tz`, `tzoffset`, `id_token`, `idp_provider`, `user_id`, `system_id`, `app_id`.
+- **TTL.** Caller-supplied; default 900s (15m) per Phase 0 lock. Out-of-range or zero falls back to default.
+- **Signing.** `get_jwt_config()->hmac_secret` — same key path as `generate_jwt` / `generate_new_jwt`. A↔B sharing assumption already documented in Phase 0.
+- **Correlation id.** Optional string parameter; included in every `log_this` line as `cid=…`. Success log line includes `sub`, `database`, `aud`, `ttl`. Token itself is never logged.
+- **Fail-closed input checks.** NULL `cfg` → NULL + log. Empty `sub` or `database` → NULL + log. Empty `Resource` (no `cfg->Resource` and no deriveable URL) → NULL + log.
+- **Unity tests.** 8 tests in `mcp_mint_token_test.c` (8/8 pass): claims shape, TTL, default TTL on zero, accepted by `mcp_try_hydrogen` (mock-driven), rejected by `check_chat_jwt_claims` (proves `aud` != `hydrogen-chat`), reject on NULL `cfg`/empty `sub`/empty `database`.
+- **Verification.** `mkt` green (310 dead functions, 0 chat, +1 deadcode is the new mint function — Unity-only caller, will be cleared when 8b adds production caller), `mkp` green (1,970 files), `mku mcp_mint_token_test` (8/8 pass), `mku mcp_auth_test_validate_bearer` (38/38 pass).
+
+#### Working Log
+
+- **2026-09-02 — 8a complete.** Aud-check fixed in `mcp_try_hydrogen`. Mint primitive `mcp_mint_resource_token` added in `src/mcp/`. `aud` set to `mcp_auth_resource(cfg)` (the URL), not the logical `"MCP.Resource"` name — keeps the minted token compatible with the existing OIDC-style aud-gate. Unity test `mcp_mint_token_test` proves: (1) claims, (2) TTL, (3) `mcp_try_hydrogen` accepts, (4) `check_chat_jwt_claims` rejects, (5) fail-closed on bad input.
+- **Lesson:** the existing `generate_jwt` / `generate_new_jwt` write `aud` as a JSON integer, not a string. `validate_jwt` only populates `claims->aud` if the payload `aud` is a string. Result: in the wild, real Hydrogen tokens have `claims->aud == NULL`. The new aud-check is **safe** (NULL/empty bypass) and becomes **active** the moment a string-aud token arrives. This is intentional and correct: the gate is now real for tokens that opt into string aud (the new mint primitive does this), and inert for legacy integer-aud tokens.
+- Next: 8b only (hosted MCP connector wire).
+- **2026-09-02 — 8b complete.** Finished partial work from the prior
+  sprint: `chat_request_build_responses` injects `type:mcp` /
+  `server_label=hydrogen` / `server_url` / `Bearer <jwt>` /
+  `allowed_tools=["System.Info"]`. REST `auth_chat`, `auth_chats`, and
+  WS `"chat"` enable hosted MCP only when `engine->use_responses_api`.
+  Fail-closed on missing Resource or loopback/RFC1918/non-https
+  (`mcp_mcp_resource_url_is_reachable`). UUID v4 `cid` threads chat →
+  mint logs. WS now keeps `chat_claims` (needed for `sub` on later
+  messages) and frees them on session cleanup.
+- **Lesson:** injecting hosted MCP on every chat request would fail-close
+  Test 59 / local engines whose MCP.Resource is localhost. Gate on
+  `use_responses_api` so Chat Completions mock paths stay unchanged.
+- **Variance:** Test 59 does not capture outbound `type:mcp` (mock is
+  not Responses). Connector shape is Unity-proven instead.
+- Next: 8c only (local MCP client).
 
 ---
 

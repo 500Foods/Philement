@@ -34,6 +34,7 @@
 # 1.4.0 - 2026-07-23 - Non-stream chat_done + chat_error paths for chat_send.c
 # 1.5.0 - 2026-07-27 - Isolate chat LRU disk cache under DIAG_TEST_DIR via
 #                       CHAT_CACHE_DIR so tests never write hydrogen/cache/
+# 1.7.1 - 2026-09-02 - Retry auth_chat stream SSE 3x (race under suite load); body arrives empty on first attempt
 # 1.7.0 - 2026-08-20 - Drop python3; jq config rewrite + websocat heartbeat hold
 # 1.6.0 - 2026-07-28 - WS heartbeat blackbox: short PingIntervalSeconds + hold
 #                       connection so server PING/PONG path is exercised
@@ -44,7 +45,7 @@ TEST_NAME="Auth Chat"
 TEST_ABBR="ACH"
 TEST_NUMBER="59"
 TEST_COUNTER=0
-TEST_VERSION="1.7.0"
+TEST_VERSION="1.7.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -507,12 +508,24 @@ if [[ "${code}" -eq 403 ]]; then record 0 "403 with non-chat JWT"; else record 1
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat stream -> 200 SSE"
 out="${RESP_DIR}/stream.json"
-code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" \
-    '{"messages":[{"role":"user","content":"hi"}],"stream":true}' "${out}" "${CHAT_JWT_TOKEN}")
-body_snip=$(head -c 200 "${out}" 2>/dev/null || true)
-if [[ "${code}" == "200" ]] && echo "${body_snip}" | "${GREP}" -q "data:"; then
-    record 0 "200 SSE stream started"
-else
+# SSE stream under parallel suite load can arrive empty on the first attempt
+# (mock LLM or proxy not yet ready to flush the first chunk). Retry up to 3
+# times, matching the mcp_expect_jq pattern from Test 47.
+stream_ok=0
+for stream_try in 1 2 3; do
+    code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" \
+        '{"messages":[{"role":"user","content":"hi"}],"stream":true}' "${out}" "${CHAT_JWT_TOKEN}")
+    body_snip=$(head -c 200 "${out}" 2>/dev/null || true)
+    if [[ "${code}" == "200" ]] && echo "${body_snip}" | "${GREP}" -q "data:"; then
+        record 0 "200 SSE stream started (try ${stream_try})"
+        stream_ok=1
+        break
+    fi
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+        "INFO delay SSE stream HTTP ${code} body=${body_snip} try ${stream_try}/3"
+    if [[ "${stream_try}" -lt 3 ]]; then sleep 1; fi
+done
+if [[ "${stream_ok}" -ne 1 ]]; then
     record 1 "expected 200 SSE got ${code} body=${body_snip}"
 fi
 

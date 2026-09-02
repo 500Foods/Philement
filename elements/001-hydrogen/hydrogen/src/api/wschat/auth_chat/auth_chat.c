@@ -481,6 +481,13 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
     }
 
     ChatRequestParams params = chat_resolve_request_params(engine, temperature, max_tokens, stream, reasoning);
+    char hosted_mcp_cid[37];
+    chat_correlation_id_generate(hosted_mcp_cid, sizeof(hosted_mcp_cid));
+    chat_request_params_apply_hosted_mcp(&params, engine,
+                                         jwt_result.claims ? jwt_result.claims->sub : NULL,
+                                         database,
+                                         jwt_result.claims ? jwt_result.claims->roles : NULL,
+                                         hosted_mcp_cid);
     ChatMessage *chat_messages = auth_chat_messages_json_to_list(database, messages);
 
     // Build request JSON for provider
