@@ -57,4 +57,17 @@ void extract_websocket_metrics(WebSocketMetrics *metrics);
  * -------------------------------------------------------------------------- */
 bool system_info_has_valid_jwt(struct MHD_Connection *connection);
 
+/**
+  * Build the system info JSON object using the shared C collectors.
+  *
+  * When include_scripting is true, the scripting scoreboard snapshot is
+  * attached as the "scripting" key — matching the authenticated REST
+  * info endpoint behavior. The caller owns the returned json_t*.
+  *
+  * This is the single function that both handle_system_info_request
+  * (REST) and H.system.info() (Lua) call, so the field list is never
+  * duplicated.
+  */
+json_t* system_info_build_json(bool include_scripting);
+
 #endif /* HYDROGEN_SYSTEM_INFO_H */

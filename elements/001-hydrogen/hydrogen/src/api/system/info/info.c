@@ -60,34 +60,54 @@ void extract_websocket_metrics(WebSocketMetrics *metrics) {
     return valid;
 }
 
-enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
-{
-    log_this(SR_API, "Handling info endpoint request", LOG_LEVEL_DEBUG, 0);
-
-    json_t *root = NULL;
+/**
+  * Build the system info JSON object using the shared C collectors.
+  *
+  * When include_scripting is true, the scripting scoreboard snapshot is
+  * attached as the "scripting" key — matching the authenticated REST
+  * info endpoint behavior.
+  *
+  * This is the single function that both handle_system_info_request
+  * (REST) and H.system.info() (Lua) call, so the field list is never
+  * duplicated.
+  */
+json_t* system_info_build_json(bool include_scripting) {
     WebSocketMetrics metrics = {0};
-
     extract_websocket_metrics(&metrics);
 
 #ifdef UNITY_TEST_MODE
-    root = json_object();
+    json_t *root = json_object();
     if (root) {
         json_object_set_new(root, "status", json_string("test_mode"));
         json_object_set_new(root, "test_timestamp", json_integer(1234567890));
     }
 #else
-    root = get_system_status_json(ws_context ? &metrics : NULL);
+    json_t *root = get_system_status_json(ws_context ? &metrics : NULL);
 #endif
     if (!root) {
         log_this(SR_API, "Failed to generate system status", LOG_LEVEL_ERROR, 0);
-        return MHD_NO;
+        return NULL;
     }
 
-    if (system_info_has_valid_jwt(connection)) {
+    if (include_scripting) {
         json_t *scripting_json = scripting_scoreboard_snapshot_json(100, false);
         if (scripting_json) {
             json_object_set_new(root, "scripting", scripting_json);
         }
+    }
+
+    return root;
+}
+
+enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
+{
+    log_this(SR_API, "Handling info endpoint request", LOG_LEVEL_DEBUG, 0);
+
+    bool has_jwt = system_info_has_valid_jwt(connection);
+
+    json_t *root = system_info_build_json(has_jwt);
+    if (!root) {
+        return MHD_NO;
     }
 
     return api_send_json_response(connection, root, MHD_HTTP_OK);

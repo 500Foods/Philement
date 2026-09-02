@@ -10,6 +10,7 @@
 # run_disabled()
 
 # CHANGELOG
+# 1.1.10 - 2026-09-02 - Assert System.Info in tools/list + tools/call returns system JSON
 # 1.1.9 - 2026-08-29 - echo_ok via mcp_expect_jq (3 tries) like echostrict/resources/prompts;
 #                      CockroachDB RequestTimeoutSeconds 4→15 for nested DB query headroom.
 # 1.1.8 - 2026-08-27 - Score ping/echostrict/cursor/prompts via mcp_expect_jq (3 tries);
@@ -32,7 +33,7 @@ TEST_NAME="MCP Server"
 TEST_ABBR="MCP"
 TEST_NUMBER="47"
 TEST_COUNTER=0
-TEST_VERSION="1.1.9"
+TEST_VERSION="1.1.10"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -335,7 +336,9 @@ run_engine() {
     local tools_filter='
             ([.result.tools[].name] | index("Mcp.Echo"))
             and ([.result.tools[].name] | index("Mcp.EchoStrict"))
-            and ([.result.tools[] | select(.name=="Mcp.Echo") | .inputSchema] | length > 0)
+            and ([.result.tools[].name] | index("System.Info"))
+            and ([.result.tools[] | select(.name=="System.Info") | .inputSchema] | length > 0)
+            and ([.result.tools[] | select(.name=="System.Info") | .annotations.title] | .[0] == "System.Info")
             and ([.result.tools[].name] | index("Mcp.Server") | not)
             and ([.result.tools[].name] | index("Mcp.Helpers") | not)
             and ([.result.tools[].name] | index("Mcp.Info") | not)
@@ -416,6 +419,17 @@ run_engine() {
         echo "NON_MCP_HTTP=${http_st}" >> "${result_file}"
     fi
 
+    # shellcheck disable=SC2310 # systeminfo scored from helper
+    if http_st=$(mcp_expect_jq "${mcp_url}" "${jwt}" "${session}" \
+        '{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"System.Info","arguments":{}}}' \
+        "${result_file}.sysinfo.json" "${hdr}" \
+        '.result.content != null and .result.structuredContent.version != null and .result.isError != true'); then
+        record_case "${result_file}" "system_info_ok" 1
+    else
+        record_case "${result_file}" "system_info_ok" 0
+        echo "SYSINFO_HTTP=${http_st}" >> "${result_file}"
+    fi
+
     http_st=$(mcp_http "POST" "${mcp_url}" \
         '{"jsonrpc":"2.0","id":8,"method":"ping","_hydrogen":{"x":1}}' \
         "${body}" "${hdr}" "${jwt}" "${session}" "" 10)
@@ -457,8 +471,8 @@ run_engine() {
             new_hash=$(token_hash "${hijack_jwt}")
             sqlite3 "${db_copy}" \
                 "INSERT INTO tokens (token_hash, account_id, system_id, app_id, app_version, ip_address, valid_after, valid_until)
-                 SELECT '${new_hash}', account_id, system_id, app_id, app_version, ip_address, valid_after, valid_until
-                   FROM tokens WHERE token_hash = '${old_hash}' LIMIT 1;" >/dev/null 2>&1 || true
+                  SELECT '${new_hash}', account_id, system_id, app_id, app_version, ip_address, valid_after, valid_until
+                    FROM tokens WHERE token_hash = '${old_hash}' LIMIT 1;" >/dev/null 2>&1 || true
             http_st=$(mcp_http "POST" "${mcp_url}" \
                 '{"jsonrpc":"2.0","id":10,"method":"ping"}' \
                 "${body}" "${hdr}" "${hijack_jwt}" "${session}" "" 10)
@@ -676,9 +690,9 @@ analyze_engine() {
     pass_n=${pass_n:-0}
     fail_n=${fail_n:-0}
 
-    local min_pass=35
+    local min_pass=36
     if [[ "${description}" == "SQLite" ]]; then
-        min_pass=36
+        min_pass=37
     fi
 
     if [[ "${fail_n}" -eq 0 && "${pass_n}" -ge "${min_pass}" ]]; then

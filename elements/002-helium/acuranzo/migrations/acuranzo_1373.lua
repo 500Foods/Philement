@@ -1,5 +1,5 @@
 -- Migration: acuranzo_1373.lua
--- MCP Phase 15: extend Mcp.Server with resources/* and prompts/*
+-- MCP Phase 15: extend Mcp.Server with resources and prompts
 --
 -- luacheck: no max line length
 -- luacheck: no unused args

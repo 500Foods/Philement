@@ -5,7 +5,7 @@
  * to Lua via the H table.
  *
  *   H.log.{trace, debug, info, warn, error, fatal}
- *   H.system.{uptime, now, now_iso, instance_id, version}
+  *   H.system.{uptime, now, now_iso, instance_id, version, info} (Phase 6 adds info)
  *   H.set_current_state                            (Phase 9)
  *   H.gc.{collect, step, count, isrunning}         (Phase 8)
  *
@@ -39,12 +39,12 @@
 void H_lua_install_log(lua_State* L);
 
 /*
- * Populate H.system with the C functions that back
- * H.system.{uptime, now, now_iso, instance_id, version}.
- *
- * Expects H and H.system to already exist on the Lua stack's globals.
- * Idempotent: re-calling replaces the existing fields.
- */
+  * Populate H.system with the C functions that back
+  * H.system.{uptime, now, now_iso, instance_id, version, info}.
+  *
+  * Expects H and H.system to already exist on the Lua stack's globals.
+  * Idempotent: re-calling replaces the existing fields.
+  */
 void H_lua_install_system(lua_State* L);
 
 /*
