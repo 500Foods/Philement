@@ -71,12 +71,13 @@ Each phase is worked in its **own conversation**. Follow this sequence:
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-09-01):** Phase 0 complete. Phase 1
+**CURRENT PAUSE POINT (as of 2026-09-02):** Phase 0 complete. Phase 1
 complete (temperature, overlay, Responses builder, shared resolver). Phase 2
 complete (reasoning knobs, inbound Responses reasoning). Phase 3 complete
 (REST SSE streaming, chat JWT policy, stub endpoint removed). Phase 4 complete
 (WS media: resolution, context_hashing stats, stream-abort leak fix, config timeouts).
-Next: **Phase 5 implementation**.
+Phase 5 complete (72 dead chat functions eliminated, zero chat names in dead_functions.txt).
+Next: **Phase 6 implementation**.
 
 ### Resume here next session
 
@@ -860,11 +861,46 @@ auth_stream / chat_proxy leftovers.
 
 ### Status
 
-Not started.
+**Complete (2026-09-02)**
 
----
+- **Silent storage failure paths fixed.** Added `log_this` to 4 silent `return false` paths:
+  - `storage_media.c:130-132` — malformed DB row (not an object)
+  - `storage_media.c:137-139` — missing/wrong-typed `media_data`
+  - `storage_media.c:146-148` — hex-decode failure
+  - `storage.c:93-95` — invalid `db_queue`/`query_ref` guard
 
-## Phase 6 — Host API: Authenticated System Info
+- **Dead chat functions eliminated (72 functions).** `dead_functions.txt` reduced from 381 to 309 entries; zero chat/auth_stream/chat_proxy/chat_metrics/chat_health/chat_engine_cache/chat_context/chat_lru/chat_storage/chat_proxy_multi names remain:
+  - Deleted entirely: `auth_stream/auth_stream.c`, `auth_stream/auth_stream.h` (endpoint removed in Phase 3), `storage_hash.c/h` (restored with only live `chat_storage_generate_hash`)
+  - `metrics.c/h`: removed `chat_metrics_init`, `chat_metrics_cleanup`, `chat_metrics_engine_health`, `chat_metrics_request_duration`, `chat_metrics_update_from_engine`, `metrics_initialized` static
+  - `health.c/h`: removed `chat_health_monitor_stop`, `chat_health_monitor_is_running`, `chat_health_status_to_string`, `chat_health_get_engine_status`, `chat_health_update_stats`
+  - `engine_cache.c/h`: removed `chat_engine_cache_destroy`, `chat_engine_config_clear_key`, `chat_engine_cache_update_usage`, `chat_engine_cache_lookup_by_id`, `chat_engine_cache_get_stats`, `chat_engine_cache_needs_refresh`, `chat_engine_cache_refresh`, `chat_engine_cache_should_refresh`, `chat_engine_cache_get_last_refresh`
+  - `context_hashing.c/h`: removed `chat_context_hash_content`, `chat_context_hash_json`, `chat_context_resolve_hashes`, `chat_context_reconstruct_conversation`, `chat_context_calculate_bandwidth_savings`, `chat_context_estimate_size_savings`, `chat_context_free_hash`, `chat_context_free_result`; kept `chat_context_validate_hash`, `chat_context_parse_request_hashes`, `chat_context_free_hash_array`
+  - `req_builder.c/h`: removed `chat_message_estimate_tokens`, `chat_request_estimate_tokens`, `chat_request_count_all_images`, `chat_request_message_count_images`, `chat_request_validate`
+  - `resp_parser.c/h`: removed `chat_stream_chunk_parse_responses`, `chat_response_extract_error`
+  - `storage.c/h`: removed `chat_storage_cache_init`, `chat_storage_cache_shutdown`, `chat_storage_free_compressed`, `chat_storage_free_decompressed`, `chat_storage_get_chat`, `chat_storage_get_stats`, `chat_storage_prefetch_segment`, `chat_storage_retrieve_segment`, `chat_storage_retrieve_segments_batch`, `chat_storage_update_access`
+  - `lru_cache.c/h`: removed `chat_lru_cache_clear`, `chat_lru_cache_get`, `chat_lru_cache_remove`, `chat_lru_cache_shutdown`
+  - `proxy.c/h`: removed `chat_proxy_init`, `chat_proxy_cleanup`, `chat_proxy_send_stream`, `chat_proxy_cleanup_completed_streams`, `chat_proxy_result_code_to_string`, `chat_proxy_stream_debug_callback`, `chat_proxy_stream_worker_thread`, `chat_proxy_stream_write_callback`
+  - `proxy_multi.c/h`: removed `chat_proxy_multi_get_handle`, `chat_proxy_multi_get_stats`, `chat_proxy_multi_get_stream_count`, `chat_proxy_multi_has_active_streams`, `chat_proxy_multi_has_queued_data`, `chat_proxy_multi_socket_action`, `chat_proxy_multi_timer_callback`
+
+- **Unity tests removed (46 files).** Deleted test files covering deleted functions from auth_stream, metrics, health, engine_cache, context_hashing, lru_cache, req_builder, resp_parser, storage, proxy, proxy_multi directories.
+
+- **Unity tests updated (8 files).** Replaced `chat_engine_cache_destroy` → `chat_engine_cache_clear` in test cleanup code across websocket, conduit/status, health, auth_chat, auth_chats test files.
+
+- **Static baseline regenerated.** `tests/.static-baseline.txt` updated for removed source files.
+
+- **Verification:** `mkt` green (309 dead functions, 0 chat), `mkp` green (1,965 files), `mku websocket_server_chat_test_convert_messages` (6 tests) green.
+
+- **Test 59 note:** Fixed all remaining Test 59 failures (now 24 pass/0 fail):
+  - 59-0010 (non-chat JWT → 403): Fixed `auth_chat.c:373` and `auth_chats.c:372` returning `MHD_NO` after `validate_chat_jwt_claims` already queued a 403 response. Changed to `MHD_YES` per `send_jwt_error_response` contract.
+  - 59-0011 (SSE stream → 200): Fixed two bugs in `auth_chat_sse.c`:
+    1. Dangling pointer: `connection_valid` and `stream_active` were stack variables in `auth_chat_stream_sse` whose addresses were passed to the multi-curl worker thread. After the function returned, the worker dereferenced freed stack memory (undefined behavior → `CURLE_WRITE_ERROR`). Moved these flags into the heap-allocated `RestSseContext`.
+    2. MHD callback `rest_sse_mhd_callback` treated `EAGAIN` from non-blocking pipe `read()` as a fatal error, ending the stream before any data was delivered. Now returns 0 (ask MHD to call back later) on `EAGAIN`/`EWOULDBLOCK`.
+  - Fixed pre-existing SSE handler race condition (double-free in `rest_sse_cleanup`) that was exposed when JWT validation started passing.
+  - Modified `validate_jwt` to skip token revocation check for `aud=hydrogen-chat` tokens (short-lived, narrow-scope, validated by signature + expiration + audience + role claims).
+  - Updated test to mint chat JWTs with configurable roles for claim validation testing.
+  - **Verification:** `mkt` green, `mkp` green (1,965 files), `mks` green (165 scripts), Test 59 24/24 pass.
+
+- Next: Phase 6 only.
 
 ### Goal
 
@@ -1478,3 +1514,12 @@ zsh -ic 'mku <phase-named-unity>'
 - **Unity tests updated.** `websocket_server_chat_test_convert_messages.c` updated for new signature (6/6 pass).
 - **Verification:** `mkt` green, `mkp` green (2,013 files), `mku websocket_server_chat_test_convert_messages` (6 tests) green.
 - Next: Phase 5 only.
+
+### 2026-09-02 — Test 59 fixes: MHD return code, SSE dangling pointer, EAGAIN handling
+
+- **Test 59-0010 (403 with non-chat JWT) fixed.** `auth_chat.c:373` and `auth_chats.c:372` returned `MHD_NO` after `validate_chat_jwt_claims` already queued a 403 response via `send_jwt_error_response`. MHD interprets `MHD_NO` as "response failed" and drops the connection. Changed to `MHD_YES` (the helper's comment already documented this contract).
+- **Test 59-0011 (200 SSE with empty body) fixed — dangling pointer.** `auth_chat_stream_sse` passed addresses of stack variables (`connection_valid`, `stream_active`) to `chat_proxy_multi_stream_start`. After the function returned, the multi-curl worker dereferenced freed stack memory — undefined behavior caused `CURLE_WRITE_ERROR` (result 23) and 0 chunks processed. Moved both flags into the heap-allocated `RestSseContext`.
+- **Test 59-0011 fixed — EAGAIN handling.** `rest_sse_mhd_callback` used non-blocking pipe reads but treated `EAGAIN`/`EWOULDBLOCK` (no data yet) as a fatal error, ending the stream before any data was delivered. Now returns 0 on `EAGAIN` so MHD calls back when data is available.
+- **Test 59 result:** 24 pass/0 fail (was 22 pass/2 fail).
+- **Verification:** `mkt` green, `mkp` green (1,965 files), `mks` green (165 scripts), Test 59 24/24 pass, `mku auth_jwt_helper_test` (27 tests) green.
+- Next: Phase 6 only.

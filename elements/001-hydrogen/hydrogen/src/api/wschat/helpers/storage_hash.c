@@ -19,11 +19,3 @@ char* chat_storage_generate_hash(const char* content, size_t length) {
 
     return utils_sha256_hash((const unsigned char*)content, length);
 }
-
-char* chat_storage_generate_hash_from_json(const char* json_string) {
-    if (!json_string) {
-        return NULL;
-    }
-
-    return utils_sha256_hash((const unsigned char*)json_string, strlen(json_string));
-}

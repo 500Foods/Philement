@@ -369,7 +369,7 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
     if (!validate_chat_jwt_claims(&jwt_result, connection)) {
         api_free_post_buffer(con_cls);
         free_jwt_validation_result(&jwt_result);
-        return MHD_NO;
+        return MHD_YES;
     }
 
     // Extract database from JWT claim

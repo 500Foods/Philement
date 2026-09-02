@@ -547,13 +547,7 @@ void chat_proxy_multi_handle_completed_transfer(MultiStreamManager* manager,
     }
 }
 
-CURLM* chat_proxy_multi_get_handle(const MultiStreamManager* manager) {
-    return manager ? manager->multi_handle : NULL;
-}
 
-// ============================================================================
-// Stream Management Implementation
-// ============================================================================
 
 MultiStreamContext* chat_proxy_multi_stream_start(
     MultiStreamManager* manager,
@@ -814,27 +808,9 @@ void chat_proxy_multi_stream_stop(MultiStreamManager* manager, MultiStreamContex
     }
 }
 
-void chat_proxy_multi_socket_action(MultiStreamManager* manager, int sockfd, int action) {
-    if (!manager || !manager->initialized) {
-        return;
-    }
-    
-    int running_handles = 0;
-    curl_multi_socket_action(manager->multi_handle, (curl_socket_t)sockfd, action, &running_handles);
-}
-
-void chat_proxy_multi_timer_callback(const MultiStreamManager* manager, long timeout_ms) {
-    if (!manager || !manager->initialized) {
-        return;
-    }
-    
-    // Timer handling would be done by the event loop
-    (void)timeout_ms;
-}
-
 // ============================================================================
-// Queue Operations Implementation
-// ============================================================================
+ // Queue Operations Implementation
+ // ============================================================================
 
 int chat_proxy_multi_drain_queue(MultiStreamContext* context) {
     if (!context) {
@@ -873,13 +849,6 @@ int chat_proxy_multi_drain_queue(MultiStreamContext* context) {
     return chunks_written;
 }
 
-bool chat_proxy_multi_has_queued_data(const MultiStreamContext* context) {
-    if (!context) {
-        return false;
-    }
-    return chunk_queue_has_data(&context->chunk_queue);
-}
-
 void chat_proxy_multi_request_writable(MultiStreamContext* context) {
     if (!context || !context->wsi) {
         return;
@@ -898,50 +867,4 @@ void chat_proxy_multi_request_writable(MultiStreamContext* context) {
     }
 }
 
-// ============================================================================
-// Utility Functions Implementation
-// ============================================================================
 
-void chat_proxy_multi_get_stats(const MultiStreamContext* context, 
-                                size_t* chunks_queued, size_t* chunks_sent) {
-    if (!context) {
-        return;
-    }
-    
-    if (chunks_queued) {
-        *chunks_queued = chunk_queue_get_count(&context->chunk_queue);
-    }
-    if (chunks_sent) {
-        *chunks_sent = (size_t)context->chunk_index;
-    }
-}
-
-bool chat_proxy_multi_has_active_streams(const MultiStreamManager* manager) {
-    if (!manager || !manager->initialized) {
-        return false;
-    }
-    
-    pthread_mutex_lock((pthread_mutex_t*)&manager->streams_mutex);
-    bool has_streams = manager->active_streams != NULL;
-    pthread_mutex_unlock((pthread_mutex_t*)&manager->streams_mutex);
-    
-    return has_streams;
-}
-
-size_t chat_proxy_multi_get_stream_count(const MultiStreamManager* manager) {
-    if (!manager || !manager->initialized) {
-        return 0;
-    }
-    
-    size_t count = 0;
-    
-    pthread_mutex_lock((pthread_mutex_t*)&manager->streams_mutex);
-    MultiStreamContext* stream = manager->active_streams;
-    while (stream) {
-        count++;
-        stream = stream->next;
-    }
-    pthread_mutex_unlock((pthread_mutex_t*)&manager->streams_mutex);
-    
-    return count;
-}

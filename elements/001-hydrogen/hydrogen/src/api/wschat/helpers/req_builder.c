@@ -5,9 +5,6 @@
 #include <src/hydrogen.h>
 #include "req_builder.h"
 
-// Approximate tokens per character (rough estimate: 1 token ~= 4 chars)
-#define TOKEN_ESTIMATE_CHARS_PER_TOKEN 4
-
 // Default parameters
 ChatRequestParams chat_request_params_default(void) {
     ChatRequestParams params;
@@ -81,23 +78,6 @@ ChatMessageRole chat_message_role_from_string(const char* role_str) {
     if (strcasecmp(role_str, "assistant") == 0) return CHAT_ROLE_ASSISTANT;
     if (strcasecmp(role_str, "tool") == 0) return CHAT_ROLE_TOOL;
     return CHAT_ROLE_UNKNOWN;
-}
-
-// Token estimation (rough estimate)
-int chat_message_estimate_tokens(const char* content) {
-    if (!content) return 0;
-    return (int)(strlen(content) / TOKEN_ESTIMATE_CHARS_PER_TOKEN) + 1;
-}
-
-int chat_request_estimate_tokens(const ChatMessage* messages) {
-    int total = 0;
-    const ChatMessage* current = messages;
-    while (current) {
-        total += chat_message_estimate_tokens(current->content);
-        total += 4;  // Message overhead
-        current = current->next;
-    }
-    return total + 2;  // Base overhead
 }
 
 // Build OpenAI-compatible request
@@ -516,104 +496,4 @@ char* chat_request_to_json_string(json_t* request, bool compact) {
     return json_dumps(request, compact ? JSON_COMPACT : JSON_INDENT(2));
 }
 
-// Count images in message content
-// For multimodal messages, content is an array of objects with type "image_url" or "image"
- int chat_request_message_count_images(const char* content) {
-    if (!content) return 0;
 
-    // Try to parse as JSON array (multimodal format)
-    json_error_t error;
-    json_t* content_array = json_loads(content, 0, &error);
-    if (!content_array || !json_is_array(content_array)) {
-        if (content_array) json_decref(content_array);
-        return 0;  // Plain text, no images
-    }
-
-    int image_count = 0;
-    size_t index;
-    json_t* item;
-    json_array_foreach(content_array, index, item) {
-        if (!json_is_object(item)) continue;
-
-        json_t* type = json_object_get(item, "type");
-        if (type && json_is_string(type)) {
-            const char* type_str = json_string_value(type);
-            if (strcmp(type_str, "image_url") == 0 || strcmp(type_str, "image") == 0) {
-                image_count++;
-            }
-        }
-    }
-    
-    json_decref(content_array);
-    return image_count;
-}
-
-// Count total images across all messages
- int chat_request_count_all_images(const ChatMessage* messages) {
-    int total = 0;
-    const ChatMessage* current = messages;
-    while (current) {
-        total += chat_request_message_count_images(current->content);
-        current = current->next;
-    }
-    return total;
-}
-
-// Validate request
-bool chat_request_validate(const ChatEngineConfig* engine,
-                           const ChatMessage* messages,
-                           const ChatRequestParams* params,
-                           char** error_message) {
-    if (!engine) {
-        if (error_message) *error_message = strdup("No engine configuration");
-        return false;
-    }
-    if (!messages) {
-        if (error_message) *error_message = strdup("No messages provided");
-        return false;
-    }
-
-    // Check token limit
-    int estimated_tokens = chat_request_estimate_tokens(messages);
-    if (params->max_tokens > 0) {
-        estimated_tokens += params->max_tokens;
-    }
-    if (engine->max_tokens > 0 && estimated_tokens > engine->max_tokens) {
-        if (error_message) {
-            char buf[256];
-            snprintf(buf, sizeof(buf), "Estimated tokens (%d) exceeds engine limit (%d)",
-                     estimated_tokens, engine->max_tokens);
-            *error_message = strdup(buf);
-        }
-        return false;
-    }
-
-    // Check image count per message
-    const ChatMessage* current = messages;
-    while (current) {
-        int images_in_message = chat_request_message_count_images(current->content);
-        if (images_in_message > engine->max_images_per_message) {
-            if (error_message) {
-                char buf[256];
-                snprintf(buf, sizeof(buf), "Message contains %d images, exceeds limit of %d",
-                         images_in_message, engine->max_images_per_message);
-                *error_message = strdup(buf);
-            }
-            return false;
-        }
-        current = current->next;
-    }
-    
-    // Check engine supports image modality if images present
-    if (chat_request_count_all_images(messages) > 0) {
-        if (!(engine->supported_modalities & MODALITY_IMAGE)) {
-            if (error_message) {
-                *error_message = strdup("Engine does not support image modality");
-            }
-            return false;
-        }
-    }
-
-    (void)params;
-    return true;
-}

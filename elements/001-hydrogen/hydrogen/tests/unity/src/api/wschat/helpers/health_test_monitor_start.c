@@ -37,7 +37,7 @@ void test_chat_health_monitor_start_already_running(void) {
     c->health_monitor_thread = 1;  // arbitrary non-zero handle
     TEST_ASSERT_TRUE(chat_health_monitor_start(c));
     TEST_ASSERT_TRUE(c->health_monitor_running);
-    chat_engine_cache_destroy(c);
+    chat_engine_cache_clear(c);
 }
 
 void test_chat_health_monitor_start_no_liveliness(void) {
@@ -45,7 +45,7 @@ void test_chat_health_monitor_start_no_liveliness(void) {
     // No engines with liveliness enabled -> start is a no-op success.
     TEST_ASSERT_TRUE(chat_health_monitor_start(c));
     TEST_ASSERT_FALSE(c->health_monitor_running);
-    chat_engine_cache_destroy(c);
+    chat_engine_cache_clear(c);
 }
 
 void test_chat_health_monitor_start_create_failure(void) {
@@ -59,7 +59,7 @@ void test_chat_health_monitor_start_create_failure(void) {
     TEST_ASSERT_FALSE(chat_health_monitor_start(c));
     TEST_ASSERT_FALSE(c->health_monitor_running);
 
-    chat_engine_cache_destroy(c);
+    chat_engine_cache_clear(c);
 }
 
 int main(void) {

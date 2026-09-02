@@ -36,7 +36,6 @@
 #include <src/reporting/image_scale/image_scale.h>
 #include "api/wschat/auth_chat/auth_chat.h"
 #include "api/wschat/auth_chats/auth_chats.h"
-#include "api/wschat/auth_stream/auth_stream.h"
 #include "auth/login/login.h"
  #include "auth/renew/renew.h"
  #include "auth/logout/logout.h"

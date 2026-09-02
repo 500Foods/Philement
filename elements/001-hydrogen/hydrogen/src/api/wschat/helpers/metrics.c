@@ -40,7 +40,6 @@ typedef struct ChatMetricEntry {
 static ChatMetricEntry metric_entries[MAX_METRIC_ENTRIES];
 static size_t metric_entry_count = 0;
 static pthread_mutex_t metrics_mutex = PTHREAD_MUTEX_INITIALIZER;
-static bool metrics_initialized = false;
 
 // Find or create metric entry
  ChatMetricEntry* chat_metrics_get_metric_entry(const char* database, const char* engine) {
@@ -80,48 +79,6 @@ static bool metrics_initialized = false;
     
     pthread_mutex_unlock(&metrics_mutex);
     return NULL;  // No space available
-}
-
-// Initialize chat metrics subsystem
-bool chat_metrics_init(void) {
-    pthread_mutex_lock(&metrics_mutex);
-    if (metrics_initialized) {
-        pthread_mutex_unlock(&metrics_mutex);
-        return true;
-    }
-    
-    memset(metric_entries, 0, sizeof(metric_entries));
-    metric_entry_count = 0;
-    metrics_initialized = true;
-    
-    pthread_mutex_unlock(&metrics_mutex);
-    
-    log_this(SR_CHAT, "Chat metrics initialized", LOG_LEVEL_DEBUG, 0);
-    return true;
-}
-
-// Cleanup chat metrics
-void chat_metrics_cleanup(void) {
-    pthread_mutex_lock(&metrics_mutex);
-    metrics_initialized = false;
-    metric_entry_count = 0;
-    pthread_mutex_unlock(&metrics_mutex);
-}
-
-// Engine health gauge
-void chat_metrics_engine_health(const char* database, const char* engine,
-                                const char* provider, bool healthy) {
-    ChatMetricEntry* entry = chat_metrics_get_metric_entry(database, engine);
-    if (!entry) return;
-    
-    pthread_mutex_lock(&metrics_mutex);
-    entry->health = healthy ? 1.0 : 0.0;
-    if (provider && !entry->provider[0]) {
-        strncpy(entry->provider, provider, sizeof(entry->provider) - 1);
-        entry->provider[sizeof(entry->provider) - 1] = '\0';
-    }
-    entry->last_update = time(NULL);
-    pthread_mutex_unlock(&metrics_mutex);
 }
 
 // Response time gauge
@@ -180,47 +137,6 @@ void chat_metrics_error(const char* database, const char* engine,
     pthread_mutex_unlock(&metrics_mutex);
 }
 
-// Request duration histogram
-void chat_metrics_request_duration(const char* engine, double duration_seconds) {
-    // Find any entry for this engine (across all databases)
-    pthread_mutex_lock(&metrics_mutex);
-    for (size_t i = 0; i < metric_entry_count; i++) {
-        if (strcmp(metric_entries[i].engine, engine) == 0) {
-            metric_entries[i].request_duration_sum += duration_seconds;
-            metric_entries[i].request_duration_count++;
-            metric_entries[i].last_update = time(NULL);
-            break;
-        }
-    }
-    pthread_mutex_unlock(&metrics_mutex);
-}
-
-// Update all metrics for an engine from its current state
-void chat_metrics_update_from_engine(const char* database, ChatEngineConfig* engine) {
-    if (!database || !engine) return;
-    
-    const char* provider_str = chat_engine_provider_to_string(engine->provider);
-    
-    pthread_mutex_lock(&engine->health_mutex);
-    bool is_healthy = engine->is_healthy;
-    double avg_response = engine->avg_response_time_ms;
-    unsigned long long conversations = engine->conversations_24h;
-    unsigned long long tokens = engine->tokens_24h;
-    pthread_mutex_unlock(&engine->health_mutex);
-    
-    ChatMetricEntry* entry = chat_metrics_get_metric_entry(database, engine->name);
-    if (!entry) return;
-    
-    pthread_mutex_lock(&metrics_mutex);
-    entry->health = is_healthy ? 1.0 : 0.0;
-    strncpy(entry->provider, provider_str, sizeof(entry->provider) - 1);
-    entry->provider[sizeof(entry->provider) - 1] = '\0';
-    entry->response_time_ms = avg_response;
-    entry->conversations_total = conversations;
-    entry->tokens_completion_total = tokens;  // Simplified: store all tokens here
-    entry->last_update = time(NULL);
-    pthread_mutex_unlock(&metrics_mutex);
-}
 
 // Helper to write metric line to buffer
 size_t chat_metrics_write_metric(char* buffer, size_t offset, size_t buffer_size,

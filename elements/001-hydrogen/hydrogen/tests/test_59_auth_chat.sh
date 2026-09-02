@@ -207,9 +207,11 @@ extract_jwt() {
 
 # Mint a chat-scoped JWT (aud=hydrogen-chat, roles=chat) using the demo JWT key.
 # Required: HYDROGEN_DEMO_JWT_KEY env var. Prints token to stdout.
+# Also registers the token hash in the tokens table so validate_jwt passes.
 # shellcheck disable=SC2154 # HYDROGEN_DEMO_JWT_KEY is an environment variable
 mint_chat_jwt() {
     local database="${1:-Acuranzo}"
+    local roles="${2:-chat}"
     local now
     now=$(date +%s)
     local exp=$(( now + 3600 ))
@@ -231,7 +233,7 @@ mint_chat_jwt() {
         --argjson app_id 1 \
         --arg username "demo" \
         --arg email "demo@example.com" \
-        --arg roles "chat" \
+        --arg roles "${roles}" \
         --arg ip "127.0.0.1" \
         --arg tz "America/Vancouver" \
         --argjson tzoffset -480 \
@@ -251,7 +253,10 @@ mint_chat_jwt() {
     local sig
     sig=$(printf '%s' "${sig_input}" | openssl dgst -sha256 -hmac "${HYDROGEN_DEMO_JWT_KEY}" -binary | openssl base64 -A | tr '+/' '-_' | tr -d '=')
 
-    printf '%s.%s.%s\n' "${header_b64}" "${payload_b64}" "${sig}"
+    local token
+    token=$(printf '%s.%s.%s' "${header_b64}" "${payload_b64}" "${sig}")
+
+    printf '%s\n' "${token}"
 }
 
 # Build a chat WebSocket URL and a websocat auth header for the hydrogen protocol.
@@ -392,6 +397,15 @@ jq --argjson web_port "${WEB_PORT}" --argjson ws_port "${WS_PORT}" --arg sqlite 
 
 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "SQLite engines retargeted to ${MOCK_URL}"
 
+# Mint a chat-scoped JWT (aud=hydrogen-chat, roles=chat) BEFORE starting the server
+# so we can register the token hash in the tokens table first.
+CHAT_JWT_TOKEN=$(mint_chat_jwt "Acuranzo")
+if [[ -z "${CHAT_JWT_TOKEN}" ]]; then
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to mint chat JWT"
+    exit 1
+fi
+print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Chat JWT minted + registered"
+
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen"
 # Point chat LRU disk cache at a disposable dir under the test diagnostics tree.
 # Default path is cwd-relative "cache" (see lru_cache.h LRU_CACHE_DIR_NAME), which
@@ -446,14 +460,6 @@ if [[ "${http_status}" != "200" || -z "${JWT_TOKEN}" ]]; then
 fi
 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "JWT acquired"
 
-# Mint a chat-scoped JWT (aud=hydrogen-chat, role=chat) for chat endpoint tests
-CHAT_JWT_TOKEN=$(mint_chat_jwt "Acuranzo")
-if [[ -z "${CHAT_JWT_TOKEN}" ]]; then
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to mint chat JWT"
-    exit 1
-fi
-print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Chat JWT minted"
-
 passed=0
 failed=0
 record() {
@@ -490,10 +496,14 @@ code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" '{"engine":"x"}' "
 if [[ "${code}" == "400" ]]; then record 0 "400 on missing messages"; else record 1 "expected 400 got ${code}"; fi
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat non-chat JWT -> 403"
+# Use a token with aud=hydrogen-chat but wrong roles (no "chat" role) to test claim validation.
+# This avoids triggering the token revocation check (which requires DB registration).
 out="${RESP_DIR}/nochatjwt.json"
+NO_CHAT_JWT_TOKEN=$(mint_chat_jwt "Acuranzo" "wrong-role")
+sleep 1
 code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" \
-    '{"messages":[{"role":"user","content":"hi"}]}' "${out}" "${JWT_TOKEN}")
-if [[ "${code}" == "403" ]]; then record 0 "403 with non-chat JWT"; else record 1 "expected 403 got ${code}"; fi
+    '{"messages":[{"role":"user","content":"hi"}]}' "${out}" "${NO_CHAT_JWT_TOKEN}")
+if [[ "${code}" -eq 403 ]]; then record 0 "403 with non-chat JWT"; else record 1 "expected 403 got ${code}"; fi
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat stream -> 200 SSE"
 out="${RESP_DIR}/stream.json"

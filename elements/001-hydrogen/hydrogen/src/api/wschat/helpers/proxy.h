@@ -61,10 +61,6 @@ typedef struct ChatProxyConfig {
 
 // Function prototypes
 
-// Initialize proxy system
-bool chat_proxy_init(void);
-void chat_proxy_cleanup(void);
-
 // Create and destroy proxy results
 ChatProxyResult* chat_proxy_result_create(void);
 void chat_proxy_result_destroy(ChatProxyResult* result);
@@ -105,18 +101,7 @@ ChatMultiResult* chat_proxy_send_multi(const ChatMultiRequest* requests,
                                         size_t request_count,
                                         const ChatProxyConfig* config);
 
-// Streaming callback for each parsed chunk
-typedef void (*ChatProxyStreamChunkCallback)(const ChatStreamChunk* chunk, void* user_data);
-
-// Send request in streaming mode, calling callback for each chunk
-bool chat_proxy_send_stream(const ChatEngineConfig* engine,
-                            const char* request_json,
-                            const ChatProxyConfig* config,
-                            ChatProxyStreamChunkCallback chunk_callback,
-                            void* user_data);
-
 // Utility functions
-const char* chat_proxy_result_code_to_string(ChatProxyResultCode code);
 bool chat_proxy_result_is_success(const ChatProxyResult* result);
 bool chat_proxy_result_should_retry(const ChatProxyResult* result);
 
@@ -136,9 +121,5 @@ MultiStreamManager* chat_proxy_get_multi_manager(void);
  * (non-static) solely so the Unity test framework can call them directly.
  * -------------------------------------------------------------------------- */
 size_t chat_proxy_write_callback(const void* contents, size_t size, size_t nmemb, void* userp);
-size_t chat_proxy_stream_write_callback(const void* contents, size_t size, size_t nmemb, void* userp);
-int chat_proxy_stream_debug_callback(CURL* handle, curl_infotype type, char* data, size_t size, void* userptr);
-void* chat_proxy_stream_worker_thread(void* arg);
-void chat_proxy_cleanup_completed_streams(void);
 
 #endif // PROXY_H

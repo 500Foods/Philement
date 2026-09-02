@@ -489,47 +489,7 @@ ChatLRUCache* chat_lru_cache_init(const char* database, size_t max_size_bytes) {
     return cache;
 }
 
-/* Shutdown the LRU cache */
-void chat_lru_cache_shutdown(ChatLRUCache* cache) {
-    if (!cache) {
-        return;
-    }
 
-    log_this(SR_CHAT_LRU, "Shutting down LRU cache for: %s",
-             LOG_LEVEL_DEBUG, 1, cache->database);
-
-    /* Stop background sync thread */
-    if (cache->sync_running) {
-        cache->sync_running = false;
-        pthread_join(cache->sync_thread, NULL);
-    }
-
-    /* Final sync of dirty entries */
-    chat_lru_cache_flush(cache);
-
-    /* Save metadata */
-    chat_lru_cache_save_metadata(cache);
-
-    /* Free all entries */
-    ChatLRUCacheEntry* entry = cache->lru_head;
-    while (entry) {
-        ChatLRUCacheEntry* next = entry->lru_next;
-        chat_lru_cache_free_entry(entry);
-        entry = next;
-    }
-
-    /* Cleanup */
-    if (cache->mutex_initialized) {
-        pthread_mutex_destroy(&cache->cache_mutex);
-    }
-
-    free(cache->hash_table);
-    free(cache->cache_dir);
-    free(cache->database);
-    free(cache);
-}
-
-/* Check if segment exists in cache */
 bool chat_lru_cache_contains(ChatLRUCache* cache, const char* segment_hash) {
     if (!cache || !segment_hash) {
         return false;
@@ -551,55 +511,6 @@ bool chat_lru_cache_contains(ChatLRUCache* cache, const char* segment_hash) {
 
     pthread_mutex_unlock(&cache->cache_mutex);
     return found;
-}
-
-/* Retrieve segment from cache */
-char* chat_lru_cache_get(ChatLRUCache* cache, const char* segment_hash) {
-    if (!cache || !segment_hash) {
-        return NULL;
-    }
-
-    pthread_mutex_lock(&cache->cache_mutex);
-
-    size_t bucket = chat_lru_cache_hash_string(segment_hash);
-    ChatLRUCacheEntry* entry = cache->hash_table[bucket];
-
-    while (entry) {
-        if (strcmp(entry->hash, segment_hash) == 0) {
-            /* Cache hit - update LRU position */
-            chat_lru_cache_remove_entry(cache, entry);
-            chat_lru_cache_add_front(cache, entry);
-
-            entry->last_accessed = time(NULL);
-            entry->access_count++;
-            cache->stats.cache_hits++;
-
-            /* Update hit ratio */
-            uint64_t total = cache->stats.cache_hits + cache->stats.cache_misses;
-            cache->stats.hit_ratio = total > 0 ?
-                (double)cache->stats.cache_hits / (double)total : 0.0;
-
-            /* Return copy of content */
-            char* content = strdup(entry->content);
-
-            pthread_mutex_unlock(&cache->cache_mutex);
-
-            log_this(SR_CHAT_LRU, "Cache hit for: %s", LOG_LEVEL_DEBUG, 1, segment_hash);
-            return content;
-        }
-        entry = entry->hash_next;
-    }
-
-    /* Cache miss */
-    cache->stats.cache_misses++;
-    uint64_t total = cache->stats.cache_hits + cache->stats.cache_misses;
-    cache->stats.hit_ratio = total > 0 ?
-        (double)cache->stats.cache_hits / (double)total : 0.0;
-
-    pthread_mutex_unlock(&cache->cache_mutex);
-
-    log_this(SR_CHAT_LRU, "Cache miss for: %s", LOG_LEVEL_DEBUG, 1, segment_hash);
-    return NULL;
 }
 
 /* Store segment in cache */
@@ -696,50 +607,6 @@ bool chat_lru_cache_put(ChatLRUCache* cache, const char* segment_hash,
     return true;
 }
 
-/* Remove segment from cache */
-bool chat_lru_cache_remove(ChatLRUCache* cache, const char* segment_hash) {
-    if (!cache || !segment_hash) {
-        return false;
-    }
-
-    pthread_mutex_lock(&cache->cache_mutex);
-
-    size_t bucket = chat_lru_cache_hash_string(segment_hash);
-    ChatLRUCacheEntry** pp = &cache->hash_table[bucket];
-
-    while (*pp) {
-        ChatLRUCacheEntry* entry = *pp;
-        if (strcmp(entry->hash, segment_hash) == 0) {
-            /* Remove from hash table */
-            *pp = entry->hash_next;
-
-            /* Remove from LRU list */
-            chat_lru_cache_remove_entry(cache, entry);
-
-            /* Update stats */
-            cache->current_size_bytes -= entry->content_size;
-            cache->stats.total_entries--;
-            cache->stats.total_size_bytes = cache->current_size_bytes;
-
-            pthread_mutex_unlock(&cache->cache_mutex);
-
-            /* Remove file from disk */
-            char* path = chat_lru_cache_get_segment_path(cache->cache_dir, segment_hash);
-            if (path) {
-                unlink(path);
-                free(path);
-            }
-
-            chat_lru_cache_free_entry(entry);
-            return true;
-        }
-        pp = &(*pp)->hash_next;
-    }
-
-    pthread_mutex_unlock(&cache->cache_mutex);
-    return false;
-}
-
 /* Get cache statistics */
 bool chat_lru_cache_get_stats(ChatLRUCache* cache, ChatLRUCacheStats* stats) {
     if (!cache || !stats) {
@@ -798,48 +665,4 @@ int chat_lru_cache_flush(ChatLRUCache* cache) {
     return synced;
 }
 
-/* Clear all entries from cache */
-bool chat_lru_cache_clear(ChatLRUCache* cache) {
-    if (!cache) {
-        return false;
-    }
 
-    pthread_mutex_lock(&cache->cache_mutex);
-
-    /* Free all entries */
-    ChatLRUCacheEntry* entry = cache->lru_head;
-    while (entry) {
-        ChatLRUCacheEntry* next = entry->lru_next;
-        chat_lru_cache_free_entry(entry);
-        entry = next;
-    }
-
-    /* Reset hash table */
-    memset(cache->hash_table, 0, LRU_CACHE_HASH_TABLE_SIZE * sizeof(ChatLRUCacheEntry*));
-
-    /* Reset list pointers */
-    cache->lru_head = NULL;
-    cache->lru_tail = NULL;
-
-    /* Reset stats */
-    cache->current_size_bytes = 0;
-    cache->stats.total_entries = 0;
-    cache->stats.total_size_bytes = 0;
-
-    pthread_mutex_unlock(&cache->cache_mutex);
-
-    /* Remove all files from disk */
-    char cmd[512];
-    snprintf(cmd, sizeof(cmd), "rm -rf %s/*", cache->cache_dir);
-    system(cmd);
-
-    /* Recreate subdirectories */
-    for (int i = 0; i < 256; i++) {
-        char prefix_dir[256];
-        snprintf(prefix_dir, sizeof(prefix_dir), "%s/%02x", cache->cache_dir, i);
-        chat_lru_cache_ensure_directory_exists(prefix_dir);
-    }
-
-    log_this(SR_CHAT_LRU, "Cache cleared for: %s", LOG_LEVEL_STATE, 1, cache->database);
-    return true;
-}

@@ -88,18 +88,8 @@ ChatRequestParams chat_resolve_request_params(const ChatEngineConfig* engine,
 // Request to JSON string
 char* chat_request_to_json_string(json_t* request, bool compact);
 
-// Token estimation
-int chat_request_estimate_tokens(const ChatMessage* messages);
-int chat_message_estimate_tokens(const char* content);
-
 // Default parameters
 ChatRequestParams chat_request_params_default(void);
-
-// Validation
-bool chat_request_validate(const ChatEngineConfig* engine,
-                           const ChatMessage* messages,
-                           const ChatRequestParams* params,
-                           char** error_message);
 
 /* ----------------------------------------------------------------------------
  * The following helpers are NOT part of the stable public API. They are exposed
@@ -107,7 +97,5 @@ bool chat_request_validate(const ChatEngineConfig* engine,
  * -------------------------------------------------------------------------- */
 json_t* chat_request_build_messages_array(const ChatMessage* messages);
 json_t* chat_request_convert_openai_content_to_anthropic(const char* content_str);
-int chat_request_message_count_images(const char* content);
-int chat_request_count_all_images(const ChatMessage* messages);
 
 #endif // REQ_BUILDER_H

@@ -345,21 +345,34 @@ jwt_validation_result_t validate_jwt(const char* token, const char* database) {
         ip_address = json_string_value(ip_json_revocation);
     }
 
+    // Extract audience to check if revocation should be skipped
+    const char* aud_claim = NULL;
+    json_t* aud_check = json_object_get(payload_json, "aud");
+    if (aud_check && json_is_string(aud_check)) {
+        aud_claim = json_string_value(aud_check);
+    }
+
     if (db_to_use) {
-        char* token_hash = compute_token_hash(token);
-        int store_status = jwt_token_store_status(token_hash, ip_address, db_to_use);
-        free(token_hash);
-        if (store_status < 0) {
-            json_decref(payload_json);
-            free(token_copy);
-            result.error = JWT_ERROR_UNAVAILABLE;
-            return result;
-        }
-        if (store_status == 0) {
-            json_decref(payload_json);
-            free(token_copy);
-            result.error = JWT_ERROR_REVOKED;
-            return result;
+        // Skip token revocation check for chat-scoped tokens (aud=hydrogen-chat).
+        // Chat tokens are short-lived, narrow-scope, and validated by signature +
+        // expiration + audience + role claims.
+        bool skip_revocation = (aud_claim && strcmp(aud_claim, "hydrogen-chat") == 0);
+        if (!skip_revocation) {
+            char* token_hash = compute_token_hash(token);
+            int store_status = jwt_token_store_status(token_hash, ip_address, db_to_use);
+            free(token_hash);
+            if (store_status < 0) {
+                json_decref(payload_json);
+                free(token_copy);
+                result.error = JWT_ERROR_UNAVAILABLE;
+                return result;
+            }
+            if (store_status == 0) {
+                json_decref(payload_json);
+                free(token_copy);
+                result.error = JWT_ERROR_REVOKED;
+                return result;
+            }
         }
     } else {
         // If database not provided and not in JWT claims, return error

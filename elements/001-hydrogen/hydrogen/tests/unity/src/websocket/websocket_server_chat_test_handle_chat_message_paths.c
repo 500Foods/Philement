@@ -168,7 +168,7 @@ void tearDown(void) {
     }
 
     if (test_cache) {
-        chat_engine_cache_destroy(test_cache);
+        chat_engine_cache_clear(test_cache);
         test_cache = NULL;
     }
 

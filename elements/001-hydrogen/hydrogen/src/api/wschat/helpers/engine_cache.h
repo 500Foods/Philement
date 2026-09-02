@@ -96,16 +96,13 @@ typedef struct ChatEngineCache {
 
 // Create and destroy cache
 ChatEngineCache* chat_engine_cache_create(const char* database_name);
-void chat_engine_cache_destroy(ChatEngineCache* cache);
 void chat_engine_cache_clear(ChatEngineCache* cache);
 
 // Entry management
 bool chat_engine_cache_add_engine(ChatEngineCache* cache, ChatEngineConfig* engine);
 ChatEngineConfig* chat_engine_cache_lookup_by_name(ChatEngineCache* cache, const char* name);
-ChatEngineConfig* chat_engine_cache_lookup_by_id(ChatEngineCache* cache, int engine_id);
 ChatEngineConfig* chat_engine_cache_get_default(ChatEngineCache* cache);
 ChatEngineConfig** chat_engine_cache_get_all(ChatEngineCache* cache, size_t* count);
-void chat_engine_cache_update_usage(ChatEngineCache* cache, int engine_id);
 
 // Entry creation and cleanup
 ChatEngineConfig* chat_engine_config_create(int engine_id, const char* name, ChatEngineProvider provider,
@@ -115,7 +112,6 @@ ChatEngineConfig* chat_engine_config_create(int engine_id, const char* name, Cha
                                            int max_payload_mb, int max_concurrent_requests,
                                            int supported_modalities, bool use_native_api);
 void chat_engine_config_destroy(ChatEngineConfig* engine);
-void chat_engine_config_clear_key(ChatEngineConfig* engine);
 
 // Health tracking functions
 void chat_engine_config_update_health(ChatEngineConfig* engine, bool success, double response_time_ms);
@@ -128,8 +124,6 @@ const char* chat_engine_provider_to_string(ChatEngineProvider provider);
 
 // Statistics and monitoring
 size_t chat_engine_cache_get_engine_count(ChatEngineCache* cache);
-void chat_engine_cache_get_stats(ChatEngineCache* cache, char* buffer, size_t buffer_size);
-bool chat_engine_cache_needs_refresh(const ChatEngineCache* cache, int refresh_interval_seconds);
 
 // Bootstrap and refresh
 bool chat_engine_cache_load_from_database(ChatEngineCache* cache, const char* database_name);
@@ -138,14 +132,7 @@ bool chat_engine_cache_load_from_database(ChatEngineCache* cache, const char* da
 // Creates cache if needed and loads from database
 bool chat_engine_cache_bootstrap_for_database(const char* database_name);
 
-// Manual refresh - reloads cache from database
-bool chat_engine_cache_refresh(ChatEngineCache* cache);
 
-// Check if refresh is needed based on interval
-bool chat_engine_cache_should_refresh(const ChatEngineCache* cache, int refresh_interval_seconds);
-
-// Get last refresh timestamp
-time_t chat_engine_cache_get_last_refresh(const ChatEngineCache* cache);
 
 /* ----------------------------------------------------------------------------
  * The following helper is NOT part of the stable public API. It is exposed

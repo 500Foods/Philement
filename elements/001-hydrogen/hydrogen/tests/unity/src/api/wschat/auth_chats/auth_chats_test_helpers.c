@@ -114,7 +114,7 @@ void test_auth_chats_build_multi_requests_filters_engines(void) {
     auth_chats_free_multi_requests(requests, count);
     chat_message_destroy(message);
     json_decref(engines);
-    chat_engine_cache_destroy(cache);
+    chat_engine_cache_clear(cache);
     TEST_ASSERT_EQUAL_UINT(0, auth_chats_build_multi_requests(NULL, NULL, NULL, 0, 0, NULL, NULL));
 }
 
