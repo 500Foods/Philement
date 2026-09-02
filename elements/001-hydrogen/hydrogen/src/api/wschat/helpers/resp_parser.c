@@ -515,31 +515,4 @@ ChatStreamChunk* chat_stream_chunk_parse(const char* json_line) {
     return chunk;
 }
 
-// Parse Responses API stream chunk (direct call for testing)
-ChatStreamChunk* chat_stream_chunk_parse_responses(const char* json_line) {
-    return chat_stream_chunk_parse(json_line);
-}
 
-// Extract error from response
-char* chat_response_extract_error(const char* json_response) {
-    if (!json_response) return NULL;
-
-    json_error_t error;
-    json_t* root = json_loads(json_response, 0, &error);
-    if (!root) return NULL;
-
-    char* result = NULL;
-
-    json_t* error_obj = json_object_get(root, "error");
-    if (error_obj) {
-        json_t* msg = json_object_get(error_obj, "message");
-        if (msg && json_is_string(msg)) {
-            result = strdup(json_string_value(msg));
-        } else if (json_is_string(error_obj)) {
-            result = strdup(json_string_value(error_obj));
-        }
-    }
-
-    json_decref(root);
-    return result;
-}

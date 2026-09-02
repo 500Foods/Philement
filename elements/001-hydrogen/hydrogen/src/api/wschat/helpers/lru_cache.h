@@ -99,13 +99,6 @@ typedef struct ChatLRUCache {
 ChatLRUCache* chat_lru_cache_init(const char* database, size_t max_size_bytes);
 
 /**
- * Shutdown the LRU cache and free resources
- *
- * @param cache Cache to shutdown
- */
-void chat_lru_cache_shutdown(ChatLRUCache* cache);
-
-/**
  * Check if a segment exists in the cache
  *
  * @param cache Cache instance
@@ -113,16 +106,6 @@ void chat_lru_cache_shutdown(ChatLRUCache* cache);
  * @return true if found in cache, false otherwise
  */
 bool chat_lru_cache_contains(ChatLRUCache* cache, const char* segment_hash);
-
-/**
- * Retrieve a segment from the cache
- *
- * @param cache Cache instance
- * @param segment_hash Segment hash to retrieve
- * @return Allocated content string, or NULL if not found
- * @note Caller must free the returned string
- */
-char* chat_lru_cache_get(ChatLRUCache* cache, const char* segment_hash);
 
 /**
  * Store a segment in the cache
@@ -137,22 +120,6 @@ char* chat_lru_cache_get(ChatLRUCache* cache, const char* segment_hash);
 bool chat_lru_cache_put(ChatLRUCache* cache, const char* segment_hash,
                         const char* content, size_t content_size, bool is_dirty);
 
-/**
- * Remove a segment from the cache
- *
- * @param cache Cache instance
- * @param segment_hash Segment hash to remove
- * @return true if removed, false if not found
- */
-bool chat_lru_cache_remove(ChatLRUCache* cache, const char* segment_hash);
-
-/**
- * Get cache statistics
- *
- * @param cache Cache instance
- * @param stats Output statistics structure
- * @return true on success, false on error
- */
 bool chat_lru_cache_get_stats(ChatLRUCache* cache, ChatLRUCacheStats* stats);
 
 /**
@@ -169,14 +136,6 @@ void chat_lru_cache_request_sync(ChatLRUCache* cache);
  * @return Number of entries synced, or -1 on error
  */
 int chat_lru_cache_flush(ChatLRUCache* cache);
-
-/**
- * Clear all entries from cache
- *
- * @param cache Cache instance
- * @return true on success, false on error
- */
-bool chat_lru_cache_clear(ChatLRUCache* cache);
 
 /**
  * Get the cache directory path for a database

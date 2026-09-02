@@ -72,38 +72,6 @@ ChatEngineCache* chat_engine_cache_create(const char* database_name) {
     return cache;
 }
 
-// Destroy chat engine cache and all entries
-void chat_engine_cache_destroy(ChatEngineCache* cache) {
-    if (!cache) return;
-
-    // Acquire write lock for destruction
-    pthread_rwlock_wrlock(&cache->cache_lock);
-
-    // Clear all entries (this also securely wipes API keys)
-    for (size_t i = 0; i < cache->engine_count; i++) {
-        if (cache->engines[i]) {
-            chat_engine_config_destroy(cache->engines[i]);
-        }
-    }
-
-    // Free entries array
-    free(cache->engines);
-
-    // Free database name
-    free(cache->database_name);
-
-    // Unlock before destroying
-    pthread_rwlock_unlock(&cache->cache_lock);
-
-    // Destroy lock
-    pthread_rwlock_destroy(&cache->cache_lock);
-
-    // Free cache structure
-    free(cache);
-
-    log_this(SR_CHAT, "Chat engine cache destroyed", LOG_LEVEL_DEBUG, 0);
-}
-
 // Clear all entries from cache (but keep cache structure)
 void chat_engine_cache_clear(ChatEngineCache* cache) {
     if (!cache) return;
@@ -225,12 +193,6 @@ void chat_engine_config_destroy(ChatEngineConfig* engine) {
     free(engine);
 }
 
-// Securely clear API key from an engine config
-void chat_engine_config_clear_key(ChatEngineConfig* engine) {
-    if (!engine) return;
-    explicit_bzero(engine->api_key, sizeof(engine->api_key));
-}
-
 // Add entry to cache (assumes write lock is held)
 bool chat_engine_cache_add_engine_locked(ChatEngineCache* cache, ChatEngineConfig* engine) {
     // Check if we need to resize
@@ -310,38 +272,6 @@ ChatEngineConfig* chat_engine_cache_lookup_by_name(ChatEngineCache* cache, const
     return result;
 }
 
-// Lookup engine by ID (read lock)
-ChatEngineConfig* chat_engine_cache_lookup_by_id(ChatEngineCache* cache, int engine_id) {
-    if (!cache) return NULL;
-
-    // Acquire read lock
-    if (pthread_rwlock_rdlock(&cache->cache_lock) != 0) {
-        log_this(SR_CHAT, "Failed to acquire read lock for chat engine cache lookup", LOG_LEVEL_ERROR, 0);
-        return NULL;
-    }
-
-    ChatEngineConfig* result = NULL;
-
-    // Linear search by ID
-    for (size_t i = 0; i < cache->engine_count; i++) {
-        if (cache->engines[i] && cache->engines[i]->engine_id == engine_id) {
-            result = cache->engines[i];
-            break;
-        }
-    }
-
-    // Release read lock
-    pthread_rwlock_unlock(&cache->cache_lock);
-
-    if (result) {
-        // Update usage statistics
-        result->last_used = time(NULL);
-        __sync_fetch_and_add(&result->usage_count, 1);
-    }
-
-    return result;
-}
-
 // Get default engine (read lock)
 ChatEngineConfig* chat_engine_cache_get_default(ChatEngineCache* cache) {
     if (!cache) return NULL;
@@ -412,15 +342,6 @@ ChatEngineConfig** chat_engine_cache_get_all(ChatEngineCache* cache, size_t* cou
     return result;
 }
 
-// Update usage statistics for an engine
-void chat_engine_cache_update_usage(ChatEngineCache* cache, int engine_id) {
-    ChatEngineConfig* engine = chat_engine_cache_lookup_by_id(cache, engine_id);
-    if (engine) {
-        engine->last_used = time(NULL);
-        __sync_fetch_and_add(&engine->usage_count, 1);
-    }
-}
-
 // Convert provider string to enum
 ChatEngineProvider chat_engine_provider_from_string(const char* provider_str) {
     if (!provider_str) return CEC_PROVIDER_UNKNOWN;
@@ -462,48 +383,6 @@ size_t chat_engine_cache_get_engine_count(ChatEngineCache* cache) {
     pthread_rwlock_unlock(&cache->cache_lock);
 
     return count;
-}
-
-// Get cache statistics
-void chat_engine_cache_get_stats(ChatEngineCache* cache, char* buffer, size_t buffer_size) {
-    if (!cache || !buffer || buffer_size == 0) return;
-
-    // Acquire read lock
-    if (pthread_rwlock_rdlock(&cache->cache_lock) != 0) {
-        snprintf(buffer, buffer_size, "Failed to acquire chat engine cache lock");
-        return;
-    }
-
-    size_t total_usage = 0;
-    time_t oldest = time(NULL);
-    time_t newest = 0;
-    size_t default_count = 0;
-
-    for (size_t i = 0; i < cache->engine_count; i++) {
-        if (cache->engines[i]) {
-            total_usage += (size_t)cache->engines[i]->usage_count;
-            if (cache->engines[i]->last_used < oldest) oldest = cache->engines[i]->last_used;
-            if (cache->engines[i]->last_used > newest) newest = cache->engines[i]->last_used;
-            if (cache->engines[i]->is_default) default_count++;
-        }
-    }
-
-    // Release read lock
-    pthread_rwlock_unlock(&cache->cache_lock);
-
-    snprintf(buffer, buffer_size,
-             "Chat engines: %zu (default: %zu), Total usage: %zu, Last refresh: %ld",
-             cache->engine_count, default_count, total_usage, cache->last_refresh);
-}
-
-// Check if cache needs refresh
-bool chat_engine_cache_needs_refresh(const ChatEngineCache* cache, int refresh_interval_seconds) {
-    if (!cache) return false;
-
-    time_t now = time(NULL);
-    int interval = refresh_interval_seconds > 0 ? refresh_interval_seconds : CEC_DEFAULT_REFRESH_INTERVAL;
-
-    return (now - cache->last_refresh) > interval;
 }
 
 // Load chat engine configurations from database using internal QueryRef #061
@@ -755,33 +634,6 @@ bool chat_engine_cache_bootstrap_for_database(const char* database_name) {
     }
 
     return success;
-}
-
-// Manual refresh - reloads cache from database
-bool chat_engine_cache_refresh(ChatEngineCache* cache) {
-    if (!cache || !cache->database_name) {
-        log_this(SR_CHAT, "Cannot refresh: invalid cache or no database name", LOG_LEVEL_ERROR, 0);
-        return false;
-    }
-
-    log_this(SR_CHAT, "Manually refreshing chat engine cache for: %s", LOG_LEVEL_STATE, 1, cache->database_name);
-    return chat_engine_cache_load_from_database(cache, cache->database_name);
-}
-
-// Check if refresh is needed based on interval
-bool chat_engine_cache_should_refresh(const ChatEngineCache* cache, int refresh_interval_seconds) {
-    if (!cache) return false;
-
-    time_t now = time(NULL);
-    int interval = refresh_interval_seconds > 0 ? refresh_interval_seconds : 3600; // Default 1 hour
-
-    return (now - cache->last_refresh) >= interval;
-}
-
-// Get last refresh timestamp
-time_t chat_engine_cache_get_last_refresh(const ChatEngineCache* cache) {
-    if (!cache) return 0;
-    return cache->last_refresh;
 }
 
 // Update engine health after a request (Phase 2.5)

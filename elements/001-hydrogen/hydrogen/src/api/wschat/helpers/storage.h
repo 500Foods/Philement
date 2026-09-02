@@ -47,7 +47,6 @@ typedef enum {
 } ChatStorageResult;
 
 char* chat_storage_generate_hash(const char* content, size_t length);
-char* chat_storage_generate_hash_from_json(const char* json_string);
 
 bool chat_storage_compress_message(const char* message, size_t message_len,
                                     uint8_t** compressed_data, size_t* compressed_size);
@@ -55,10 +54,6 @@ bool chat_storage_decompress_message(const uint8_t* compressed_data, size_t comp
                                       char** decompressed_data, size_t* decompressed_size);
 
 char* chat_storage_store_segment(const char* database, const char* message, size_t message_len);
-
-char* chat_storage_retrieve_segment(const char* database, const char* segment_hash);
-
-bool chat_storage_update_access(const char* database, const char* segment_hash);
 
 bool chat_storage_segment_exists(const char* database, const char* segment_hash);
 
@@ -70,26 +65,6 @@ bool chat_storage_segment_exists(const char* database, const char* segment_hash)
  * @param hash_count Number of hashes in the array
  * @return JSON array of found segments (caller must free), or NULL on error
  */
-json_t* chat_storage_retrieve_segments_batch(const char* database,
-                                              const char** segment_hashes,
-                                              size_t hash_count);
-
-/**
- * Pre-fetch segments for a conversation (conservative approach)
- * Pre-fetches the segment following the given hash in the conversation
- *
- * @param database Database name
- * @param segment_hash Current segment hash
- * @return true if pre-fetch was initiated, false otherwise
- */
-bool chat_storage_prefetch_segment(const char* database, const char* segment_hash);
-
-bool chat_storage_get_stats(const char* database, const char* segment_hash,
-                            size_t* uncompressed_size,
-                            size_t* compressed_size,
-                            double* compression_ratio,
-                            int* access_count);
-
 char* chat_storage_store_chat(const char* database, const char* convos_ref,
                                const char** segment_hashes, size_t hash_count,
                                const char* engine_name, const char* model,
@@ -97,10 +72,6 @@ char* chat_storage_store_chat(const char* database, const char* convos_ref,
                                double cost_total, int user_id, int duration_ms,
                                const char* session_id);
 
-json_t* chat_storage_get_chat(const char* database, int convos_id);
-
-void chat_storage_free_compressed(uint8_t* data);
-void chat_storage_free_decompressed(char* data);
 void chat_storage_free_hash(char* hash);
 
 /* Phase 12: Media Assets Storage */
@@ -152,22 +123,6 @@ bool chat_storage_resolve_media_in_content(const char* database,
                                            char** error_message);
 
 /* Phase 9: LRU Cache Management */
-
-/**
- * Initialize LRU cache for a database
- *
- * @param database Database name
- * @param max_size_bytes Maximum cache size (0 for default)
- * @return true on success, false on error
- */
-bool chat_storage_cache_init(const char* database, size_t max_size_bytes);
-
-/**
- * Shutdown LRU cache for a database
- *
- * @param database Database name
- */
-void chat_storage_cache_shutdown(const char* database);
 
 /**
  * Get LRU cache for a database (creates if needed)

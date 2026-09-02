@@ -77,7 +77,7 @@ static DatabaseQueue* make_db_queue_with_engine(bool healthy, bool make_default)
 static void free_db_queue_with_engine(DatabaseQueue* dq) {
     if (!dq) return;
     if (dq->chat_engine_cache) {
-        chat_engine_cache_destroy(dq->chat_engine_cache);
+        chat_engine_cache_clear(dq->chat_engine_cache);
     }
     free(dq->database_name);
     free(dq);

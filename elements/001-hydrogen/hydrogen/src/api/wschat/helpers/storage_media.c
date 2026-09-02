@@ -128,6 +128,7 @@ bool chat_storage_retrieve_media(const char* database, const char* media_hash,
 
     json_t* row = json_array_get(root, 0);
     if (!json_is_object(row)) {
+        log_this(SR_CHAT_STORAGE_MEDIA, "Malformed media row (not an object) for hash: %s", LOG_LEVEL_ALERT, 1, media_hash);
         json_decref(root);
         return false;
     }
@@ -135,6 +136,7 @@ bool chat_storage_retrieve_media(const char* database, const char* media_hash,
     /* Extract media_data hex string */
     json_t* media_data_hex_json = json_object_get(row, "media_data");
     if (!media_data_hex_json || !json_is_string(media_data_hex_json)) {
+        log_this(SR_CHAT_STORAGE_MEDIA, "Missing or wrong-typed media_data for hash: %s", LOG_LEVEL_ALERT, 1, media_hash);
         json_decref(root);
         return false;
     }
@@ -144,6 +146,7 @@ bool chat_storage_retrieve_media(const char* database, const char* media_hash,
     uint8_t* binary_data = NULL;
     size_t binary_len = 0;
     if (!chat_storage_hex_to_binary(media_data_hex, &binary_data, &binary_len)) {
+        log_this(SR_CHAT_STORAGE_MEDIA, "Hex-decode failure for media hash: %s", LOG_LEVEL_ALERT, 1, media_hash);
         json_decref(root);
         return false;
     }

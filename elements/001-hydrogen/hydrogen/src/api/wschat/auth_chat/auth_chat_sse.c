@@ -30,6 +30,9 @@ typedef struct {
     int pipe_write;
     pthread_t callback_thread;
     volatile bool callback_done;
+    volatile bool cleanup_done;
+    volatile bool connection_valid;
+    volatile bool stream_active;
 } RestSseContext;
 
 static void *rest_sse_callback_thread(void *arg) {
@@ -84,6 +87,8 @@ static void *rest_sse_callback_thread(void *arg) {
 
 static void rest_sse_cleanup(RestSseContext *ctx) {
     if (!ctx) return;
+    if (ctx->cleanup_done) return;
+    ctx->cleanup_done = true;
 
     if (ctx->callback_thread && !ctx->callback_done) {
         pthread_join(ctx->callback_thread, NULL);
@@ -119,6 +124,8 @@ static void rest_sse_cleanup(RestSseContext *ctx) {
     free(ctx);
 }
 
+#include <errno.h>
+
 static ssize_t rest_sse_mhd_callback(void *cls, uint64_t pos,
                                       char *buf, size_t max) {
     (void)pos;
@@ -126,15 +133,10 @@ static ssize_t rest_sse_mhd_callback(void *cls, uint64_t pos,
     if (!ctx || ctx->pipe_read < 0) return MHD_CONTENT_READER_END_WITH_ERROR;
 
     if (ctx->callback_done) {
-        char tmp[256];
-        ssize_t r = read(ctx->pipe_read, tmp, sizeof(tmp));
-        if (r <= 0) {
-            rest_sse_cleanup(ctx);
-            return MHD_CONTENT_READER_END_OF_STREAM;
-        }
-        close(ctx->pipe_read);
-        ctx->pipe_read = -1;
-        return 0;
+        ssize_t r = read(ctx->pipe_read, buf, max);
+        if (r > 0) return r;
+        rest_sse_cleanup(ctx);
+        return MHD_CONTENT_READER_END_OF_STREAM;
     }
 
     ssize_t r = read(ctx->pipe_read, buf, max);
@@ -145,7 +147,7 @@ static ssize_t rest_sse_mhd_callback(void *cls, uint64_t pos,
         return MHD_CONTENT_READER_END_OF_STREAM;
     }
 
-    if (r == 0) return 0;
+    if (r == 0 || errno == EAGAIN || errno == EWOULDBLOCK) return 0;
 
     rest_sse_cleanup(ctx);
     return MHD_CONTENT_READER_END_WITH_ERROR;
@@ -195,9 +197,9 @@ enum MHD_Result auth_chat_stream_sse(struct MHD_Connection *connection,
     ctx->pipe_read = pipefd[0];
     ctx->pipe_write = pipefd[1];
     ctx->callback_done = false;
-
-    volatile bool connection_valid = true;
-    volatile bool stream_active = true;
+    ctx->cleanup_done = false;
+    ctx->connection_valid = true;
+    ctx->stream_active = true;
 
     ctx->stream_ctx = chat_proxy_multi_stream_start(
         manager,
@@ -205,8 +207,8 @@ enum MHD_Result auth_chat_stream_sse(struct MHD_Connection *connection,
         request_body,
         NULL,
         NULL,
-        &connection_valid,
-        &stream_active,
+        &ctx->connection_valid,
+        &ctx->stream_active,
         NULL,
         NULL,
         NULL,

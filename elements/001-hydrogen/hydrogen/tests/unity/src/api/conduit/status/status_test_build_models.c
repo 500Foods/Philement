@@ -45,7 +45,7 @@ void test_build_models_empty_cache(void) {
     if (cec) {
         json_t* models = conduit_status_build_models(cec);
         TEST_ASSERT_NULL(models);
-        chat_engine_cache_destroy(cec);
+        chat_engine_cache_clear(cec);
     }
 }
 
@@ -77,7 +77,7 @@ void test_build_models_single_engine_no_last_working(void) {
             }
             // engine is owned by the cache; destroyed with it
         }
-        chat_engine_cache_destroy(cec);
+        chat_engine_cache_clear(cec);
     }
 }
 
@@ -118,7 +118,7 @@ void test_build_models_single_engine_with_last_working(void) {
                 json_decref(models);
             }
         }
-        chat_engine_cache_destroy(cec);
+        chat_engine_cache_clear(cec);
     }
 }
 
@@ -143,7 +143,7 @@ void test_build_models_null_engine_skipped(void) {
                 json_decref(models);
             }
         }
-        chat_engine_cache_destroy(cec);
+        chat_engine_cache_clear(cec);
     }
 }
 

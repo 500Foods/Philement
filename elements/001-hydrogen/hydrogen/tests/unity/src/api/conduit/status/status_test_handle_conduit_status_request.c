@@ -209,7 +209,7 @@ void test_handle_conduit_status_request_with_chat_models(void) {
                              // Assert
                              TEST_ASSERT_EQUAL(MHD_YES, result);
 
-                             chat_engine_cache_destroy(cec);
+                              chat_engine_cache_clear(cec);
                          }
                      }
                     free(cache);

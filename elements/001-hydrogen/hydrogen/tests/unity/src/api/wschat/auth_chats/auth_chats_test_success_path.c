@@ -59,7 +59,7 @@ static DatabaseQueue *make_queue(bool with_cache, bool healthy) {
 
 static void free_queue(DatabaseQueue *queue) {
     if (!queue) return;
-    chat_engine_cache_destroy(queue->chat_engine_cache);
+    chat_engine_cache_clear(queue->chat_engine_cache);
     free(queue);
 }
 

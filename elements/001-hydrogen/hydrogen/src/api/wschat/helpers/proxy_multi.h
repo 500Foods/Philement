@@ -176,13 +176,6 @@ bool chat_proxy_multi_perform(MultiStreamManager* manager);
  */
 void chat_proxy_multi_handle_completed_transfer(MultiStreamManager* manager, CURL* easy, CURLcode res, long http_code);
 
-/**
- * Get the CURL multi handle for external integration
- * @param manager Manager instance
- * @return CURLM handle
- */
-CURLM* chat_proxy_multi_get_handle(const MultiStreamManager* manager);
-
 // ============================================================================
 // Stream Management
 // ============================================================================
@@ -223,21 +216,6 @@ MultiStreamContext* chat_proxy_multi_stream_start(
  */
 void chat_proxy_multi_stream_stop(MultiStreamManager* manager, MultiStreamContext* context);
 
-/**
- * Handle CURL socket activity (call from LWS when socket is ready)
- * @param manager Manager instance
- * @param sockfd Socket file descriptor
- * @param action Action bitmask (CURL_POLL_IN, CURL_POLL_OUT, etc.)
- */
-void chat_proxy_multi_socket_action(MultiStreamManager* manager, int sockfd, int action);
-
-/**
- * Handle CURL timer (call from LWS when timer fires)
- * @param manager Manager instance (const - not modified)
- * @param timeout_ms Timeout in milliseconds
- */
-void chat_proxy_multi_timer_callback(const MultiStreamManager* manager, long timeout_ms);
-
 // ============================================================================
 // Queue Operations (for LWS writable callback)
 // ============================================================================
@@ -251,13 +229,6 @@ void chat_proxy_multi_timer_callback(const MultiStreamManager* manager, long tim
 int chat_proxy_multi_drain_queue(MultiStreamContext* context);
 
 /**
- * Check if stream has queued data ready to write
- * @param context Stream context
- * @return true if queue has data
- */
-bool chat_proxy_multi_has_queued_data(const MultiStreamContext* context);
-
-/**
  * Request writable callback from LWS
  * @param context Stream context
  */
@@ -267,33 +238,6 @@ void chat_proxy_multi_request_writable(MultiStreamContext* context);
 // Utility Functions
 // ============================================================================
 
-/**
- * Get stream statistics
- * @param context Stream context
- * @param chunks_queued Output: chunks in queue
- * @param chunks_sent Output: total chunks sent
- */
-void chat_proxy_multi_get_stats(const MultiStreamContext* context, 
-                                size_t* chunks_queued, size_t* chunks_sent);
-
-/**
- * Check if manager has active streams
- * @param manager Manager instance
- * @return true if has active streams
- */
-bool chat_proxy_multi_has_active_streams(const MultiStreamManager* manager);
-
-/**
- * Get count of active streams
- * @param manager Manager instance
- * @return Number of active streams
- */
-size_t chat_proxy_multi_get_stream_count(const MultiStreamManager* manager);
-
-/* ----------------------------------------------------------------------------
- * The following helper is NOT part of the stable public API. It is exposed
- * (non-static) solely so the Unity test framework can call it directly.
- * -------------------------------------------------------------------------- */
 void* chat_proxy_multi_worker_thread(void* arg);
 
 #endif // PROXY_MULTI_H
