@@ -44,6 +44,9 @@
 #                       an optional third arg (sub); subtests exhaust sub-1's
 #                       bucket, verify sub-2 isolation, verify sub-1 recovers
 #                       after the window elapses.
+# 1.8.1 - 2026-09-03 - Add # shellcheck disable=SC2310 to three new
+#                       api_request call sites in the Phase 10b subtests
+#                       (api_request is invoked in an || context).
 
 set -euo pipefail
 
@@ -51,7 +54,7 @@ TEST_NAME="Auth Chat"
 TEST_ABBR="ACH"
 TEST_NUMBER="59"
 TEST_COUNTER=0
-TEST_VERSION="1.8.0"
+TEST_VERSION="1.8.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -815,6 +818,7 @@ else
     rl_out="${RESP_DIR}/rl_sub1_"
     rl_codes=()
     for i in 1 2 3 4; do
+        # shellcheck disable=SC2310 # api_request failure is non-fatal; we capture "ERR" and assert below
         code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" \
             '{"messages":[{"role":"user","content":"rl test"}]}' \
             "${rl_out}${i}.json" "${CHAT_JWT_SUB1}") || code="ERR"
@@ -839,6 +843,7 @@ else
     fi
 
     # Phase 10b step 2: sub-2 is unaffected (separate bucket).
+    # shellcheck disable=SC2310 # Failure is non-fatal; we assert the captured code below
     sub2_code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" \
         '{"messages":[{"role":"user","content":"rl test sub2"}]}' \
         "${rl_out}sub2.json" "${CHAT_JWT_SUB2}") || sub2_code="ERR"
@@ -852,6 +857,7 @@ else
     # verify sub-1 can send again (window reset).
     # We allow a small grace over IntervalSeconds for clock drift.
     sleep 6
+    # shellcheck disable=SC2310 # Failure is non-fatal; we assert the captured code below
     rl_recover_code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" \
         '{"messages":[{"role":"user","content":"rl test recover"}]}' \
         "${rl_out}recover.json" "${CHAT_JWT_SUB1}") || rl_recover_code="ERR"
