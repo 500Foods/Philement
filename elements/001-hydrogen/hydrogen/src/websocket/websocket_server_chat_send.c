@@ -11,14 +11,21 @@
 #include "websocket_server_chat_internal.h"
 #include "websocket_server_message.h"
 
-// Send a chat error response to the client
-void send_chat_error(struct lws *wsi, const char* error_message, const char* request_id) {
+// Send a chat error response to the client. When error_code > 0 the
+// payload includes "error_code" matching the conduit envelope
+// (4xxx range for chat subsystem throttle/limit conditions; Phase
+// 10b uses 4291/4292).
+void send_chat_error(struct lws *wsi, const char* error_message,
+                     const char* request_id, int error_code) {
     json_t* response = json_object();
     json_object_set_new(response, "type", json_string("chat_error"));
     if (request_id) {
         json_object_set_new(response, "id", json_string(request_id));
     }
     json_object_set_new(response, "error", json_string(error_message ? error_message : "Unknown error"));
+    if (error_code > 0) {
+        json_object_set_new(response, "error_code", json_integer(error_code));
+    }
 
     ws_write_json_response(wsi, response);
     json_decref(response);

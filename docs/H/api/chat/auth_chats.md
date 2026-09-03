@@ -126,6 +126,11 @@ Same matrix as `auth_chat` (see
 Same per-engine JSON config in the `chat_engines` collection; same
 `local_mcp` block (default off).
 
+Per-sub rate limiting (`Chat.RateLimit.*`, Phase 10b) is shared with
+`auth_chat` and applies once per inbound broadcast — completion tokens
+across the fanout are aggregated into the sub's token budget. See
+[`auth_chat.md` Per-sub Rate Limiting](/docs/H/api/chat/auth_chat.md#per-sub-rate-limiting-phase-10b).
+
 ## Testing
 
 - **Test 59** — exercises broadcast alongside the single-engine path.

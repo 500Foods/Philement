@@ -63,5 +63,6 @@ void initialize_config_defaults_scripting(AppConfig* config);
 void initialize_config_defaults_reporting(AppConfig* config);
 void initialize_config_defaults_webhooks(AppConfig* config);
 void initialize_config_defaults_mcp(AppConfig* config);
+void initialize_config_defaults_chat(AppConfig* config);
 
 #endif /* HYDROGEN_CONFIG_DEFAULTS_H */

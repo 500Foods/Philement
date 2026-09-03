@@ -30,7 +30,8 @@ int send_chat_proxy_result(struct lws *wsi, const char* request_id,
                            const ChatEngineConfig* engine,
                            ChatProxyResult* proxy_result,
                            struct timespec start_time,
-                           size_t message_count);
+                           size_t message_count,
+                           const char *rate_limit_sub);
 
 // ============================================================================
 // Message Conversion Helper
@@ -42,7 +43,7 @@ ChatMessage* convert_json_messages_to_chat_messages_with_media(const char *datab
 // Send Helpers
 // ============================================================================
 
-void send_chat_error(struct lws *wsi, const char* error_message, const char* request_id);
+void send_chat_error(struct lws *wsi, const char* error_message, const char* request_id, int error_code);
 
 void send_chat_done(struct lws *wsi, const char* request_id, const char* content,
                     const char* model, const char* finish_reason,

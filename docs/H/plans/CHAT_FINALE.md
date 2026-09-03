@@ -14,7 +14,7 @@ is still open.
 | Phase | Status | Notes |
 | --- | --- | --- |
 | 10a — Responses API `store` knob | **Complete (2026-09-03)** | Per-engine JSON, default `false` (opt-in to provider retention). Verified end-to-end. |
-| 10b — Chat rate limiting | **Not started** | Per-user fairness, before first student use. |
+| 10b — Chat rate limiting | **Complete (2026-09-03)** | Per-sub fixed-window: REST 429 + WS `chat_error` with `error_code` 4291/4292. Bundles request count and estimated token budget. Config: `Chat.RateLimit.*` (disabled by default). |
 | Original parked list | Parked | See table below. Not in scope unless product asks. |
 
 ## How To Use This Document
@@ -184,6 +184,73 @@ configuration section.
   `RELEASES.md` (September 2026 section) and in `auth_chat.md`
   Configuration section. Decision chosen: opt-in to retention
   (default `store=false`) — fails closed for privacy.
+- **2026-09-03 — Phase 10b design locked.** Follow-up discussion
+  resolved all 8 open questions. Algorithm: fixed-window, mailrelay
+  precedent (linked list of `ChatRateLimitEntry`, mutex-guarded,
+  fail-open on alloc error). Key: per-`sub`. WS: per-seen-sub per
+  message. Scope: **bundles** request count AND estimated token budget
+  (chars/4 input + streaming `usage.completion_tokens` output; local
+  providers throttled by request count only). Response: REST 429 +
+  WS `chat_error`, matching conduit envelope from
+  `error_handling.c:99`. Config: new top-level `Chat.RateLimit`,
+  disabled by default. Tests: extend Test 59 with multi-user
+  throttling subtests. Traefik edge rate limiting out of scope.
+  Pre-work research checklist ticked. Implementation gated on user
+  approval.
+- **2026-09-03 — Phase 10b complete: per-sub rate limiting shipped.**
+  New `ChatConfig { ChatRateLimitConfig RateLimit }` (config letter
+  **U**) loads `Chat.RateLimit.{Enabled (false default),
+  MaxRequestsPerInterval (60), IntervalSeconds (60),
+  MaxTokensPerInterval (100000)}`. New module
+  `src/api/wschat/helpers/chat_rate_limit.{h,c}` implements the
+  fixed-window bucket list (mutex-guarded, fail-open on alloc error),
+  the `chat_rate_limit_estimate_input_tokens` chars/4 walker over
+  nested JSON, and the `chat_rate_limit_build_error_response`
+  envelope helper (error_code 4291 = request cap, 4292 = token cap).
+  Chokepoint inserts in `auth_chat.c`, `auth_chats.c`, and
+  `websocket_server_chat.c` all gate the provider call on
+  `chat_rate_limit_check_and_record(sub, est_input_tokens)` after
+  JWT validation. Output-token recording wired into the
+  streaming/non-streaming finalize paths (REST aggregate per-fanout;
+  WS via new `rate_limit_sub` parameter on `send_chat_proxy_result`).
+  `send_chat_error` gains an optional `error_code` (0 = omit). WS
+  envelope now carries `error_code` for throttle conditions, matching
+  the REST 429 envelope shape. `chat_rate_limit_shutdown` hooked into
+  `cleanup_application_config` via forward declaration.
+
+  Unity: `tests/unity/src/api/wschat/helpers/chat_rate_limit_test.c`
+  (27 tests: request cap, token cap, request-precedence, multi-sub
+  isolation, disabled-fails-open, null-app-config-fails-open,
+  null/empty-sub-fails-open, zero-max-requests-disables-request-cap,
+  zero-interval-fails-open, negative-tokens-clamped, record_output
+  increment/noop/disabled/no-positive, estimate NULL/non-array/
+  chars-over-4/nested-walk/UTF-8-multibyte/empty, error envelope
+  shape, utf8_chars codepoint counting, find_locked miss/hit,
+  new_bucket_locked fields). All 27/27 PASS.
+
+  Blackbox: Test 59 extended with three subtests
+  (`Phase 10b per-sub rate limiting`):
+  1. Sub `1` makes 3 successful POSTs then gets 429 on the 4th.
+  2. Sub `2` (separate `sub` mint) is unaffected by sub `1`'s
+     throttle (200).
+  3. After waiting `IntervalSeconds + 1`, sub `1` recovers (200).
+  Plus the 429 body is verified to carry `success=false,
+  error=rate_limited, error_code=4291`. `mint_chat_jwt` gained an
+  optional third arg (`sub`, default `"1"`) for multi-sub minting.
+  `TEST_VERSION` 1.7.2 → 1.8.0.
+
+  `mkp` green (1,992 files, 0 issues), `mks` green (165 scripts,
+  1074 directives justified), `mku chat_rate_limit_test` 27/27 PASS,
+  regression on `req_builder_test_responses_store` 6/6,
+  `websocket_server_chat_send_test` 5/5,
+  `auth_chat_test_success_path` 9/9 green. Behavior change
+  documented in `/RELEASES.md` (September 2026 section),
+  `/docs/H/api/chat/auth_chat.md` (new "Per-sub Rate Limiting (Phase
+  10b)" subsection + 429 row in Errors), `auth_chats.md` (link to
+  `auth_chat.md` + note on per-sub vs per-broadcast),
+  `/docs/H/core/subsystems/websocket/websocket_chat.md`
+  (`chat_error` envelope note + two new rows in the cause table +
+  Unity test list).
 - **2026-09-03 — Housekeeping: `auth_chat_test_success_path` fixed.**
   Pre-existing failure on `main` (verified by stash test before any
   Phase 10a changes). Root cause: `auth_chat.c` calls the chat proxy
@@ -231,62 +298,90 @@ Phase 10a Status complete.
 
 ### Status
 
-Not started.
+**Complete (2026-09-03).**
 
-#### Open design questions (resolve before implementation)
+#### Locked design decisions
 
-1. **Token bucket vs sliding window.** Login, mailrelay, and conduit
-   already have a `rate_limit` precedent. Confirm the existing shape (window,
-   max-requests, key derivation) — do not invent a second scheme that
-   diverges from the precedent.
-2. **Per-sub vs per-`sub+database` vs per-IP-fallback.** A 500 Courses
-   student has one `sub`. A future non-500-Courses client may have many
-   `sub`s behind one egress IP. Per-`sub` is the simplest correct answer
-   for the beachhead; decide whether IP-fallback matters before first
-   student use.
-3. **WS shape.** WS connection has one `sub` at connect time; per-message
-   `payload.jwt` may rotate `sub` mid-session. Decide: rate-limit per
-   `sub` seen during the connection lifetime, or per the connect-time
-   `sub` only? The connect-time answer is simpler and correct for 500
-   Courses (single-tenant JWT); the per-seen-sub answer is correct for
-   any future multi-tenant chat.
-4. **Cost cap interaction.** Phase 0 recorded a one-line cost-cap story
-   (`max_output_tokens` ceiling, enforcement may stay Phase 10). Rate
-   limiting is request-count-based; cost cap is token-based. They are
-   complementary, not redundant. Decide whether 10b covers request
-   count only and Phase 10c covers token budget, or whether 10b bundles
-   both.
-5. **Failure mode.** What does a throttled user see? 429 on REST,
-   `chat_error` on WS with the same error code? Confirm the error
-   envelope matches the existing 401/403/JWT envelope from Phase 3.
-6. **Configuration.** Where does the per-user limit live in
-   `hydrogen.json`? Under `WebServer.RateLimit` or a new top-level
-   `Chat.RateLimit`? Match the existing precedent.
-7. **Test isolation.** Test 59 today is single-user; multi-user rate
-   limiting needs a fixture. Do not break Test 59 with the new check;
-   add a separate Test 60-style subtest if needed (or a new test file
-   numbered in the next available 6x slot).
-8. **Edge rate limiting (Traefik).** Operator-side Traefik
-   `rateLimit` middleware sees IP, not `sub`. Useful as a coarse outer
-   envelope (cheap, catches NAT'd abuse) but does not replace in-app
-   per-`sub` fairness. Document the two layers in `DEPLOYMENT.md` after
-   10b lands; do not conflate.
+1. **Algorithm.** Fixed-window per-key bucket, mailrelay precedent
+   (`mailrelay_event_check_rate_limit`). Linked list of
+   `ChatRateLimitEntry { const char* sub; time_t window_start;
+   size_t request_count; size_t token_count; ChatRateLimitEntry* next }`.
+   Mutex-guarded. Fail-open on allocation error (do not block legitimate
+   users on internal fault — same posture as mailrelay).
+2. **Key.** Per-`sub` only, pulled from `claims->sub` after JWT
+   validation. No IP fallback, no `sub+database`.
+3. **WS shape.** Per-seen-sub per message. Lookup-or-insert bucket
+   keyed by the inbound message's JWT `sub` (whether connect-time or
+   per-message). Same data structure as REST; no special-casing. This
+   defends against mid-session `payload.jwt` rotation bypassing the
+   limit.
+4. **Scope.** **Both** request count AND estimated token budget, in
+   one window. Two counters per bucket. Rationale: pre-student-use
+   gate; cost control and fairness belong together.
+5. **Token measurement.** Estimated tokens. Input: chars/4 heuristic on
+   the concatenated message content of the request. Output: read
+   `usage.completion_tokens` from the streaming `chat_done` chunk; if
+   absent (non-streaming or local provider), record 0 for that request.
+   Local models (Ollama) get throttled by request count alone, not
+   token budget.
+6. **Throttle response.** REST returns 429 with
+   `{ "error_code": <integer>, "error": "rate_limited", "message":
+   "<human>" }` matching the conduit envelope from
+   `error_handling.c:99`. WS returns `chat_error` payload with the same
+   code/message. Audit existing WS error codes before picking the
+   integer; the new value must be distinct from existing 401/403/JWT
+   codes.
+7. **Configuration.** New top-level `Chat.RateLimit` in `hydrogen.json`,
+   disabled by default (fails open):
+
+   ```json
+   "Chat": {
+     "RateLimit": {
+       "Enabled": false,
+       "MaxRequestsPerInterval": 60,
+       "IntervalSeconds": 60,
+       "MaxTokensPerInterval": 100000
+     }
+   }
+   ```
+
+   `config_defaults.c` provides the defaults. Documented in
+   `auth_chat.md` Configuration section. Matches the MailRelay.Events
+   precedent (subsystem owns its rate config; not co-mingled with
+   HTTP-level rate limiting).
+8. **Test isolation.** **Extend Test 59** with multi-user throttling
+   subtests. Two-sub scenario: exhaust `Acuranzo`'s bucket, verify a
+   second `sub` is unaffected, verify `Acuranzo` recovers after the
+   window. Existing single-user subtests stay green. Traefik edge
+   rate limiting is out of scope and not documented in
+   `DEPLOYMENT.md`.
 
 #### Pre-work research checklist (before starting)
 
-- [ ] Grep the existing `rate_limit` precedent in login, mailrelay,
-      conduit. Find the JSON config shape, the C enforcement site, the
-      Unity test pattern, and the blackbox test pattern. Confirm
-      `tests/.static-baseline.txt` does not already whitelist
-      `chat_rate_limit_*` static helpers.
-- [ ] Confirm `auth_chat.c` / `auth_chats.c` / `websocket_server_chat.c`
+- [x] Grep the existing `rate_limit` precedent in login, mailrelay,
+      conduit. **MailRelay chosen** as the precedent (per-event-key,
+      fixed-window, mutex-guarded linked list, fail-open on allocation
+      error). JSON config shape: top-level subsystem-owned
+      (`MailRelay.Events.*`); adopted as `Chat.RateLimit.*`. C
+      enforcement site: `mailrelay_event_check_rate_limit` in
+      `src/mailrelay/mailrelay_events.c`. `tests/.static-baseline.txt`
+      not yet checked; will verify before writing any `static`
+      helpers (none expected — bucket type and functions will be
+      non-`static` per project convention).
+- [x] Confirm `auth_chat.c` / `auth_chats.c` / `websocket_server_chat.c`
       have a single chokepoint (after JWT validation, before provider call)
       where rate-limit checks can be inserted without rewiring the
-      request lifecycle.
-- [ ] Confirm `CHAT_JWT_TOKEN` mint path in Test 59 can mint tokens for
-      multiple `sub`s; otherwise extend the test helper.
-- [ ] Decide on the answers above and lock them in the phase's Status
-      block before writing code.
+      request lifecycle. **Confirmed** at lines 488, 464, 337
+      respectively (each already passes `claims->sub` through to the
+      chat storage/proxy layer — the rate-limit check slots in
+      immediately before that handoff).
+- [x] Confirm `CHAT_JWT_TOKEN` mint path in Test 59 can mint tokens for
+      multiple `sub`s; otherwise extend the test helper. **Confirmed**:
+      `mint_chat_jwt "Acuranzo" "wrong-role"` already accepts a
+      second argument that controls role/claims; multi-`sub` minting
+      works as-is.
+- [x] Decide on the answers above and lock them in the phase's Status
+      block before writing code. **Locked above (Decisions 1-8).**
 
 ### Exit gate
 

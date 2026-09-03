@@ -4,15 +4,16 @@
  * Manages application configuration through a hierarchical system with fallbacks:
  * 1. JSON config file (optional, searched in standard locations)
  * 2. Environment variables (can override JSON values)
- * 3. Built-in defaults (secure baseline when nothing else specified)
+ * 3. Built-in defaults (secure baseline when nothing else available)
  *
- * Configuration Sections (A-P):
+ * Configuration Sections (A-U):
  * System Monitoring
  * A. Server        F. API           K. mDNS Client    P. Notify
- * B. Network       G. Swagger       L. Mail Relay
- * C. Database      H. WebSocket     M. Print
- * D. Logging       I. Terminal      N. Resources
- * E. WebServer     J. mDNS Server   O. OIDC
+ * B. Network       G. Swagger       L. Mail Relay     Q. Scripting
+ * C. Database      H. WebSocket     M. Print          R. Reporting
+ * D. Logging       I. Terminal      N. Resources      S. Webhooks
+ * E. WebServer     J. mDNS Server   O. OIDC           T. MCP
+ *                                                         U. Chat
  *
  * Core Principles:
  * - AppConfig structure holds ALL runtime configuration
@@ -51,6 +52,11 @@
 
 // Forward declaration for cleanup function
 void clean_app_config(AppConfig* config);
+
+// Phase 10b: forward declaration for chat rate-limit shutdown hook.
+// Avoids pulling chat_rate_limit.h into config.c (which would create a
+// chat -> config dependency for a single cleanup call).
+void chat_rate_limit_shutdown(void);
 
 // Standard system paths to check for configuration
 static const char* const CONFIG_PATHS[] = {
@@ -380,6 +386,7 @@ AppConfig* load_config(const char* cmdline_path) {
     LOAD_CONFIG("R", SR_REPORTING,       load_reporting_config);
     LOAD_CONFIG("S", SR_API,             load_webhooks_config);
     LOAD_CONFIG("T", SR_MCP,             load_mcp_config);
+    LOAD_CONFIG("U", SR_CHAT,            load_chat_config);
 
     #undef LOAD_SERVER_CONFIG
     #undef LOAD_CONFIG
@@ -539,6 +546,7 @@ void clean_app_config(AppConfig* config) {
     cleanup_reporting_config(&config->reporting);        // R. Reporting Configuration
     cleanup_webhooks_config(&config->webhooks);           // S. Webhooks Configuration
     cleanup_mcp_config(&config->mcp);                     // T. MCP Configuration
+    cleanup_chat_config(&config->chat);                   // U. Chat Configuration
 
 }
 
@@ -554,4 +562,6 @@ void cleanup_application_config(void) {
         free(app_config);
         app_config = NULL;
     }
+    /* Phase 10b: release chat rate-limit buckets before the OS reclaims. */
+    chat_rate_limit_shutdown();
 }

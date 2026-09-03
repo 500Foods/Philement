@@ -39,6 +39,11 @@
 # 1.7.0 - 2026-08-20 - Drop python3; jq config rewrite + websocat heartbeat hold
 # 1.6.0 - 2026-07-28 - WS heartbeat blackbox: short PingIntervalSeconds + hold
 #                       connection so server PING/PONG path is exercised
+# 1.8.0 - 2026-09-03 - Phase 10b: per-sub rate limiting blackbox. Config now
+#                       enables Chat.RateLimit (3 req/5s); mint_chat_jwt gains
+#                       an optional third arg (sub); subtests exhaust sub-1's
+#                       bucket, verify sub-2 isolation, verify sub-1 recovers
+#                       after the window elapses.
 
 set -euo pipefail
 
@@ -46,7 +51,7 @@ TEST_NAME="Auth Chat"
 TEST_ABBR="ACH"
 TEST_NUMBER="59"
 TEST_COUNTER=0
-TEST_VERSION="1.7.2"
+TEST_VERSION="1.8.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -214,6 +219,7 @@ extract_jwt() {
 mint_chat_jwt() {
     local database="${1:-Acuranzo}"
     local roles="${2:-chat}"
+    local sub_value="${3:-1}"
     local now
     now=$(date +%s)
     local exp=$(( now + 3600 ))
@@ -224,7 +230,7 @@ mint_chat_jwt() {
     local payload
     payload=$(jq -n \
         --arg iss "hydrogen-auth" \
-        --arg sub "1" \
+        --arg sub "${sub_value}" \
         --arg aud "hydrogen-chat" \
         --argjson exp "${exp}" \
         --argjson iat "${now}" \
@@ -405,6 +411,12 @@ jq --argjson web_port "${WEB_PORT}" --argjson ws_port "${WS_PORT}" --arg sqlite 
         StaleConnectionSeconds: 120
     }
     | .Databases.Connections |= map(.Database = $sqlite | .Chat = true)
+    | .Chat = { RateLimit: {
+        Enabled: true,
+        MaxRequestsPerInterval: 3,
+        IntervalSeconds: 5,
+        MaxTokensPerInterval: 100000
+    } }
 ' "${BASE_CONFIG}" > "${CONFIG_TEMP}"
 
 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "SQLite engines retargeted to ${MOCK_URL}"
@@ -785,6 +797,68 @@ else
         record 0 "heartbeat PING exercised (${ping_before}->${ping_after})"
     else
         record 1 "heartbeat PING not observed (${ping_before}->${ping_after}); body=$(head -c 160 "${HB_OUT}" 2>/dev/null || true)"
+    fi
+fi
+
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Phase 10b per-sub rate limiting"
+# Test config (see CONFIG_TEMP above): Chat.RateLimit.Enabled=true,
+# MaxRequestsPerInterval=3, IntervalSeconds=5. Mint a second JWT for a
+# different sub so we can verify multi-sub isolation. The
+# `mint_chat_jwt` helper now accepts a third optional sub argument
+# (defaults to "1" so existing call sites are unaffected).
+CHAT_JWT_SUB1="${CHAT_JWT_TOKEN}"
+CHAT_JWT_SUB2=$(mint_chat_jwt "Acuranzo" "chat" "2")
+if [[ -z "${CHAT_JWT_SUB2}" ]]; then
+    record 1 "failed to mint sub-2 chat JWT"
+else
+    # Phase 10b step 1: 3 successful requests under sub-1, then 4th = 429.
+    rl_out="${RESP_DIR}/rl_sub1_"
+    rl_codes=()
+    for i in 1 2 3 4; do
+        code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" \
+            '{"messages":[{"role":"user","content":"rl test"}]}' \
+            "${rl_out}${i}.json" "${CHAT_JWT_SUB1}") || code="ERR"
+        rl_codes+=("${code}")
+    done
+    if [[ "${rl_codes[0]}" == "200" && "${rl_codes[1]}" == "200" && \
+          "${rl_codes[2]}" == "200" && "${rl_codes[3]}" == "429" ]]; then
+        record 0 "sub-1: 3x 200 then 429 (codes: ${rl_codes[*]})"
+    else
+        record 1 "sub-1 unexpected codes: ${rl_codes[*]} (expected 200 200 200 429)"
+    fi
+
+    # Verify the 429 envelope shape (success=false, error=rate_limited,
+    # error_code=4291 for request cap).
+    rl_throttle_body="${rl_out}4.json"
+    if [[ -f "${rl_throttle_body}" ]] && \
+        jq -e '.success == false and .error == "rate_limited" and .error_code == 4291' \
+            "${rl_throttle_body}" >/dev/null 2>&1; then
+        record 0 "sub-1 429 envelope shape correct (success+error+error_code)"
+    else
+        record 1 "sub-1 429 envelope mismatch: $(head -c 200 "${rl_throttle_body}" 2>/dev/null || true)"
+    fi
+
+    # Phase 10b step 2: sub-2 is unaffected (separate bucket).
+    sub2_code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" \
+        '{"messages":[{"role":"user","content":"rl test sub2"}]}' \
+        "${rl_out}sub2.json" "${CHAT_JWT_SUB2}") || sub2_code="ERR"
+    if [[ "${sub2_code}" == "200" ]]; then
+        record 0 "sub-2 unaffected by sub-1 throttle (200)"
+    else
+        record 1 "sub-2 expected 200, got ${sub2_code}"
+    fi
+
+    # Phase 10b step 3: wait for the 5-second window to elapse, then
+    # verify sub-1 can send again (window reset).
+    # We allow a small grace over IntervalSeconds for clock drift.
+    sleep 6
+    rl_recover_code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" \
+        '{"messages":[{"role":"user","content":"rl test recover"}]}' \
+        "${rl_out}recover.json" "${CHAT_JWT_SUB1}") || rl_recover_code="ERR"
+    if [[ "${rl_recover_code}" == "200" ]]; then
+        record 0 "sub-1 recovered after window reset (200)"
+    else
+        record 1 "sub-1 expected 200 after window, got ${rl_recover_code}"
     fi
 fi
 
