@@ -16,21 +16,16 @@ When a plan finishes: move it into `complete/`, add `_COMPLETE` to the filename 
 
 Prioritized incomplete work with effort/done metrics. Start here.
 
-### [KEYCLOAK PLAN](/docs/H/plans/KEYCLOAK_PLAN.md)
+### [AUTH FINALE](/docs/H/plans/AUTH_FINALE.md)
 
-Production Keycloak SSO with Hydrogen as OIDC Relying Party. Phases 0–4 complete; Phase 5 real-IdP E2E in progress. Builds on historical RP work in [OIDC-PLAN.md](/docs/H/plans/OIDC-PLAN.md). Manual checklist: [OIDC_E2E_LOG.md](/docs/H/plans/OIDC_E2E_LOG.md).
-
-### [OIDC-PLAN (historical RP implementation)](/docs/H/plans/OIDC-PLAN.md)
-
-Full phase log for Lithium + Hydrogen OIDC RP (Phases 1–25+ shipped). Day-to-day remaining work is tracked under KEYCLOAK_PLAN / OIDC_E2E_LOG, not by reopening this document from scratch.
-
-### [OIDC IdP](/docs/H/plans/OIDC_IDP.md)
-
-Hydrogen as OIDC **Identity Provider** (separate from RP). Phases 0–15 complete
-(crypto through security hardening + Test 45). Docs/operator:
-[oidc_endpoints.md](/docs/H/api/oidc/oidc_endpoints.md),
-[OIDC_IDP_OPERATOR.md](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md). Remaining: Phase 16
-closeout items if any, Phase 17 optional post-MVP.
+Active auth / OIDC / Keycloak plan (P0). Register email, DefaultRoles, client
+roles, RP health/backchannel, terminal WS auth, login MFA, IdP durability and
+post-MVP, real-Keycloak E2E (Phase 11). History:
+[OIDC-PLAN_COMPLETE.md](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md),
+[KEYCLOAK_PLAN_COMPLETE.md](/docs/H/plans/complete/KEYCLOAK_PLAN_COMPLETE.md),
+[OIDC_IDP_COMPLETE.md](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md),
+[OIDC_E2E_LOG_COMPLETE.md](/docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md),
+[AUTH_PLAN_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md).
 
 ### [MAIL RELAY PLAN](/docs/H/plans/MAILRELAY_PLAN.md)
 
@@ -63,6 +58,10 @@ Full index: [`complete/README.md`](/docs/H/plans/complete/README.md). Highlights
 | Plan | File |
 | ------ | ------ |
 | Auth endpoints | [AUTH_PLAN_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md) |
+| OIDC RP (historical) | [OIDC-PLAN_COMPLETE.md](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md) |
+| Keycloak SSO ops | [KEYCLOAK_PLAN_COMPLETE.md](/docs/H/plans/complete/KEYCLOAK_PLAN_COMPLETE.md) |
+| OIDC IdP MVP | [OIDC_IDP_COMPLETE.md](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md) |
+| OIDC real-IdP E2E log | [OIDC_E2E_LOG_COMPLETE.md](/docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md) |
 | Cap / cap_query | [CAP_PLAN_QUERY-COMPLETE.md](/docs/H/plans/complete/CAP_PLAN_QUERY-COMPLETE.md) |
 | Chat Phases 1–12 | [CHAT_PLAN_PHASE_*_COMPLETE.md](/docs/H/plans/complete/) · [summary](/docs/H/plans/complete/CHAT_PLAN_SUMMARY_COMPLETE.md) |
 | Conduit | [CONDUIT_COMPLETE.md](/docs/H/plans/complete/CONDUIT_COMPLETE.md) |

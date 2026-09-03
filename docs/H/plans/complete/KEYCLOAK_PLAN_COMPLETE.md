@@ -1,6 +1,10 @@
 <!-- markdownlint-disable MD007 MD024 -->
 # Keycloak SSO (Hydrogen as OIDC Relying Party) Implementation Plan
 
+> **Superseded.** Remaining OIDC / Keycloak / auth work lives in
+> [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md). This file is
+> historical. Do not start work from it.
+
 ## Purpose
 
 Define a gated, phase-by-phase operational plan for production Keycloak SSO against Hydrogen: frontend apps redirect users to a Keycloak IdP, Hydrogen validates the OIDC response, links or auto-provisions a local `accounts` row, and mints the **same Hydrogen JWT** shape as password login so Conduit, renew, logout, and role gates need no special-casing.
@@ -51,8 +55,8 @@ Related:
 - `/elements/001-hydrogen/hydrogen/tests/lib/mock_keycloak/` — mock IdP for CI.
 - `/docs/H/api/auth/oidc_rp.md` — RP API contract.
 - `/docs/Li/LITHIUM-KEYCLOAK.md` — client SPA recipe (Lithium-oriented; Phase 5 generalizes).
-- `/docs/H/plans/OIDC-PLAN.md` — historical full implementation plan (Phases 1–26 done; 27 open).
-- `/docs/H/plans/OIDC_E2E_LOG.md` — manual real-Keycloak checklist (unsigned).
+- `/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md` — historical full implementation plan (Phases 1–26 done; 27 open).
+- `/docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md` — manual real-Keycloak checklist (unsigned).
 - Lithium SPA code exists but **frontend changes are deferred** per this plan until a later phase.
 
 Date of snapshot: 2026-07-11
@@ -155,13 +159,13 @@ JWT `roles` claim is comma-separated **role_id integers** (e.g. `"1,3"`), not ro
 - Mock Keycloak + `test_42_oidc_rp.sh` through link strategies and role mapping (101/101 as of 2026-07-23).
 - API docs: [`/docs/H/api/auth/oidc_rp.md`](/docs/H/api/auth/oidc_rp.md).
 - Client recipe: [`/docs/Li/LITHIUM-KEYCLOAK.md`](/docs/Li/LITHIUM-KEYCLOAK.md).
-- Historical plan Phases 1–26 + multi-provider Phase 31: ✅ in [`/docs/H/plans/OIDC-PLAN.md`](/docs/H/plans/OIDC-PLAN.md).
+- Historical plan Phases 1–26 + multi-provider Phase 31: ✅ in [`/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md`](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md).
 
 ### Open / incomplete
 
 | Item | Detail |
 |---|---|
-| Real Keycloak E2E | Phase 5 / OIDC Phase 27 checklist in [`OIDC_E2E_LOG.md`](/docs/H/plans/OIDC_E2E_LOG.md) **unsigned** (MFA/OTP blocker on test user) |
+| Real Keycloak E2E | Phase 5 / OIDC Phase 27 checklist in [`OIDC_E2E_LOG.md`](/docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md) **unsigned** (MFA/OTP blocker on test user) |
 | Dual-provider blackbox | Optional Test 42 second mock provider deferred (Unity covers named lookup) |
 | `idp_client_roles` | Not fully parsed from `resource_access` |
 | Health / backchannel logout | Post-MVP: Phase 8 discovery health, Phase 9 backchannel logout |
@@ -211,7 +215,7 @@ Match existing auth / OIDC RP patterns; do not invent parallel stacks.
 
 - Unity under `tests/unity/src/api/auth/oidc_rp/`; run `mku <base>`.
 - Blackbox: `tests/test_42_oidc_rp.sh` against mock IdP (ports per test-42 configs).
-- Manual real-IdP: update [`OIDC_E2E_LOG.md`](/docs/H/plans/OIDC_E2E_LOG.md).
+- Manual real-IdP: update [`OIDC_E2E_LOG.md`](/docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md).
 - After doc adds: `tests/test_04_check_links.sh`, `tests/test_90_markdownlint.sh`.
 
 ### Blackbox / ports
@@ -259,7 +263,7 @@ Confirm the shipped RP foundation, document remaining gaps with evidence, and lo
 
 ### Entry Gate
 
-- Clean tree understanding of this plan and [`OIDC-PLAN.md`](/docs/H/plans/OIDC-PLAN.md) phase index.
+- Clean tree understanding of this plan and [`OIDC-PLAN.md`](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md) phase index.
 - Ability to run `mkt` and `test_42_oidc_rp.sh`.
 
 ### Work Items
@@ -519,7 +523,7 @@ Sign off the full chain against the real Keycloak IdP (not mock). This is the pr
 
 - [ ] 5.1 Enable `OIDC_RP` in a non-prod environment with Phase 0/2/3 policy.
   - **Verify:** `GET /api/auth/oidc/start` returns 302 to real Keycloak authorize URL with state/nonce/challenge.
-- [ ] 5.2 Execute manual checklist in [`OIDC_E2E_LOG.md`](/docs/H/plans/OIDC_E2E_LOG.md) (or superseding checklist linked from this plan):
+- [ ] 5.2 Execute manual checklist in [`OIDC_E2E_LOG.md`](/docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md) (or superseding checklist linked from this plan):
   - Password login still works.
   - Existing account SSO links by email / sub.
   - Unknown user: `no_account` **or** provision success per policy.
@@ -748,9 +752,9 @@ No reverse migration required to disable the feature.
 
 | Document | Role |
 |---|---|
-| [`/docs/H/plans/OIDC-PLAN.md`](/docs/H/plans/OIDC-PLAN.md) | Historical full implementation (Phases 1–26 done). Use as archaeology, not day-to-day checklist. |
+| [`/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md`](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md) | Historical full implementation (Phases 1–26 done). Use as archaeology, not day-to-day checklist. |
 | This file (`KEYCLOAK_PLAN.md`) | Operational gated plan for production SSO, provision policy, client/IdP docs, E2E, post-MVP. |
-| [`/docs/H/plans/OIDC_E2E_LOG.md`](/docs/H/plans/OIDC_E2E_LOG.md) | Manual real-Keycloak results (Phase 5). |
+| [`/docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md`](/docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md) | Manual real-Keycloak results (Phase 5). |
 | [`/docs/H/api/auth/oidc_rp.md`](/docs/H/api/auth/oidc_rp.md) | Wire contract for RP endpoints. |
 | [`/docs/Li/LITHIUM-KEYCLOAK.md`](/docs/Li/LITHIUM-KEYCLOAK.md) | Lithium-oriented client recipe; Phase 4 generalizes for all clients. |
 | [`/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md`](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md) | Password auth / JWT baseline. |
@@ -764,7 +768,7 @@ Append discoveries, surprises, and decisions here as phases complete.
 
 ### Decisions log
 
-- (Plan authored, 2026-07-11) **KEYCLOAK_PLAN created.** Intent: gated production/SSO completion plan, not a rewrite of the shipped RP. Historical implementation remains in `/docs/H/plans/OIDC-PLAN.md` (1–26 ✅, 27 open). Hydrogen-as-IdP out of scope. Frontend coding deferred until Phase 6. Auto-provision is already implemented in RP linkers; Phase 3 locks operator policy and validates matrix. Client work in Phase 4 is documentation-only. Real Keycloak sign-off is Phase 5 via `OIDC_E2E_LOG.md`.
+- (Plan authored, 2026-07-11) **KEYCLOAK_PLAN created.** Intent: gated production/SSO completion plan, not a rewrite of the shipped RP. Historical implementation remains in `/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md` (1–26 ✅, 27 open). Hydrogen-as-IdP out of scope. Frontend coding deferred until Phase 6. Auto-provision is already implemented in RP linkers; Phase 3 locks operator policy and validates matrix. Client work in Phase 4 is documentation-only. Real Keycloak sign-off is Phase 5 via `OIDC_E2E_LOG.md`.
 - (Phase 0 confirmation, 2026-07-11) **Foundation verified complete.** Historical OIDC-PLAN.md Phases 1-26 are all ✅ COMPLETE. Test 42 passes 88/88 across mock blackbox coverage (disabled endpoints, method gates, mock IdP discovery/JWKS, /start redirect, /handoff exchange, /callback failure paths + happy path, all 4 linker strategies, role mapping). Policy defaults locked for production:
   - Production linking strategy: **`match_email_only`** (link by verified email only, no auto-provision)
   - Provisioning: **off** (`ProvisionDefaults.Enabled = false`)
@@ -850,7 +854,7 @@ The code is deployed but the live Keycloak sign-out behavior has not been confir
 1. **Rebuild and restart Hydrogen** so `POST /api/auth/oidc/end-session` exists in the production binary. Without this, global signout falls back to local logout only.
 2. **Add a valid post-logout redirect URI to the Keycloak client.** In the Keycloak admin console for the `lithium` client, add `https://lithium.philement.com/*` to **Valid post-logout redirect URIs**. Without this, Keycloak may reject or ignore the logout request.
 3. **Use a fresh OIDC login.** Any existing Hydrogen JWT that was minted before the C app was rebuilt will **not** contain the `id_token` claim, so it cannot drive IdP logout. After restarting Hydrogen, log in with 500 Passwords again to obtain a fresh JWT.
-4. **Run the manual RP-initiated logout checklist.** See `docs/H/plans/OIDC_E2E_LOG.md` (new Phase 10 section) for the exact steps and expected results.
+4. **Run the manual RP-initiated logout checklist.** See `docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md` (new Phase 10 section) for the exact steps and expected results.
 5. **If auto-login still occurs after the above**, capture the browser network log for the global-signout flow and the Hydrogen pod logs. The most likely remaining causes are:
    - Keycloak `id_token_hint` rejected (signature/expiration/session mismatch).
    - Wrong `post_logout_redirect_uri` being sent (check the URL in the browser network tab).

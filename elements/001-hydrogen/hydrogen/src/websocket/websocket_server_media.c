@@ -82,7 +82,8 @@ int handle_media_upload_message(struct lws *wsi, WebSocketSessionData *session, 
         
         // Store in session for future messages
         session->chat_database = strdup(jwt_result.claims->database);
-        session->chat_claims = jwt_result.claims; // ownership transferred
+        session->chat_claims = jwt_result.claims;
+        jwt_result.claims = NULL;
         free_jwt_validation_result(&jwt_result);
     }
     

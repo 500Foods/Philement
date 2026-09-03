@@ -1,5 +1,9 @@
 # OIDC LOGIN PLAN — Keycloak (500passwords.com) + Hydrogen + Lithium
 
+> **Superseded.** Remaining OIDC / Keycloak / auth work lives in
+> [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md). This file is
+> historical. Do not start work from it.
+
 ## Overview
 
 This plan describes how to add **OpenID Connect (OIDC) login via Keycloak** to the
@@ -4971,11 +4975,11 @@ Every phase block contains the same fields, in the same order:
   - Created: `docs/Li/LITHIUM-KEYCLOAK.md` (implementer reference for
     future Hydrogen client SPAs).
   - Created: `docs/H/api/auth/oidc_rp.md` (Hydrogen RP endpoint reference).
-  - Created: `docs/H/plans/OIDC_E2E_LOG.md` (manual test checklist).
+  - Created: `docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md` (manual test checklist).
   - Touched: `docs/Li/LITHIUM-TOC.md`, `docs/H/SITEMAP.md` (link new docs).
 - **Tests required:**
   - Manual test plan executed and ticked off (recorded in a
-    Markdown checklist committed under `docs/H/plans/OIDC_E2E_LOG.md`):
+    Markdown checklist committed under `docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md`):
     - [ ] Existing password user logs in with password.
     - [ ] Existing password user clicks "Sign in with 500 Passwords",
           logs in via Keycloak, lands in Lithium with the same
@@ -5308,15 +5312,15 @@ parentheses.
 
 **Last updated:** 2026-07-23
 **Owner:** Philement engineering
-**Status:** Phases 1–26 complete. Phase 27 (real Keycloak E2E) still **blocked on MFA/OTP** for the available test user. Operational follow-on lives in [`KEYCLOAK_PLAN.md`](/docs/H/plans/KEYCLOAK_PLAN.md). On 2026-07-23, multi-provider dispatch shipped (Phase 31 / KEYCLOAK Phase 7): `oidc_rp_find_provider`, state `provider_name`, `?provider=` on `/start`, Lithium always sends provider id. Test 42 **101/101**. Next code without OTP: health probe (28) or backchannel logout (29).
+**Status:** Phases 1–26 complete. Phase 27 (real Keycloak E2E) still **blocked on MFA/OTP** for the available test user. Operational follow-on lives in [`KEYCLOAK_PLAN.md`](/docs/H/plans/complete/KEYCLOAK_PLAN_COMPLETE.md). On 2026-07-23, multi-provider dispatch shipped (Phase 31 / KEYCLOAK Phase 7): `oidc_rp_find_provider`, state `provider_name`, `?provider=` on `/start`, Lithium always sends provider id. Test 42 **101/101**. Next code without OTP: health probe (28) or backchannel logout (29).
 
 Phase 27 documentation deliverables shipped:
 
 - `docs/H/api/auth/oidc_rp.md` — Hydrogen RP endpoint reference (operator-facing); updated to include live `token_*` error codes.
 - `docs/Li/LITHIUM-OIDC.md` — Lithium-side OIDC user/operator reference; updated to include live `token_*` error codes.
 - `docs/Li/LITHIUM-KEYCLOAK.md` — implementer recipe for new Hydrogen client SPAs.
-- `docs/H/plans/OIDC_E2E_LOG.md` — manual test checklist log, now populated with pre-flight verification and the OTP blocker.
-- `docs/H/plans/KEYCLOAK_PLAN.md` — operational phase plan, with Phases 1–4 complete and Phase 5 in progress.
+- `docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md` — manual test checklist log, now populated with pre-flight verification and the OTP blocker.
+- `docs/H/plans/complete/KEYCLOAK_PLAN_COMPLETE.md` — operational phase plan, with Phases 1–4 complete and Phase 5 in progress.
 - Example `hydrogen.json` updated with `Lithium` DB stub and `OIDC_RP`
   block (default `Enabled: false`).
 

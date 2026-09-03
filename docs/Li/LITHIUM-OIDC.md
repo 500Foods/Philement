@@ -7,8 +7,9 @@
 > **For Hydrogen-side endpoint contracts**, see
 > [oidc_rp.md](/docs/H/api/auth/oidc_rp.md).
 >
-> **For project architecture and rationale**, see
-> [OIDC-PLAN.md](/docs/H/plans/OIDC-PLAN.md).
+> **For remaining Hydrogen auth / OIDC work**, see
+> [AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md). History:
+> [OIDC-PLAN_COMPLETE.md](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md).
 
 ---
 
@@ -290,4 +291,5 @@ Vitest tests covering the OIDC path (per LITHIUM-TST.md patterns):
 - [LITHIUM-JWT.md](LITHIUM-JWT.md) — JWT lifecycle (same JWT for both methods).
 - [LITHIUM-CFG.md](LITHIUM-CFG.md) — `lithium.json` reference.
 - [oidc_rp.md](/docs/H/api/auth/oidc_rp.md) — Hydrogen RP endpoint contracts.
-- [OIDC-PLAN.md](/docs/H/plans/OIDC-PLAN.md) — Project plan and phase log.
+- [AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md) — Remaining Hydrogen auth / OIDC work.
+- [OIDC-PLAN_COMPLETE.md](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md) — Project plan and phase log.

@@ -88,7 +88,7 @@ only. See AGENTS.md.
 - New Hydrogen C endpoints or Canvas-named routes.
 - Filling in all ~22 placeholder managers (Dashboard, Mail, …). Collapse
   them; do not implement each.
-- Hydrogen-as-IdP, Keycloak realm admin, or KEYCLOAK_PLAN Phase 5 MFA
+- Hydrogen-as-IdP, Keycloak realm admin, or AUTH_FINALE Phase 11 MFA
   unblocking (ops).
 - Committing `dist-deploy-500courses/` as a product.
 - **Accessibility (a11y) audit/remediation.** ARIA usage is currently
@@ -1131,7 +1131,7 @@ recipe after sprint churn.
 
 - [ ] Working Log: enabled? start URL? provider id match?
 - [ ] `npm test`. If real Keycloak E2E still blocked on OTP, record
-      `[~]` and do **not** block the sprint on KEYCLOAK_PLAN Phase 5.
+      `[~]` and do **not** block the sprint on AUTH_FINALE Phase 11.
 
 **Status:** pending
 

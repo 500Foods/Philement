@@ -24,5 +24,5 @@ duplicated here:
 
 ## Related Hydrogen plans
 
-- [`/docs/H/plans/KEYCLOAK_PLAN.md`](/docs/H/plans/KEYCLOAK_PLAN.md) — OIDC RP
+- [`/docs/H/plans/AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) — remaining OIDC / Keycloak / auth (Hydrogen)
 - [`/docs/H/plans/complete/LUA_CLIENT_COMPLETE.md`](/docs/H/plans/complete/LUA_CLIENT_COMPLETE.md) — `/api/conduit/script`

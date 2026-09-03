@@ -53,7 +53,7 @@ per-engine background job, result markers, sequential analysis.
 
 ## Related
 
-- Plan: [OIDC_IDP.md](/docs/H/plans/OIDC_IDP.md) Phase 14 multi-engine
+- Plan: [AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md); history [OIDC_IDP_COMPLETE.md](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md) Phase 14 multi-engine
 - Endpoints: [oidc_endpoints.md](/docs/H/api/oidc/oidc_endpoints.md)
 - Operator: [OIDC_IDP_OPERATOR.md](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md)
 - RP blackbox: [test_42_oidc_rp.md](/docs/H/tests/test_42_oidc_rp.md)

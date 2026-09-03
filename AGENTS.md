@@ -57,7 +57,7 @@ Key: 💡 Idea/Planning, 🔨 Working on it, 🏆 Usable but incomplete.
 There is one canonical action backlog and phased plans.
 
 - **Active backlog:** [`docs/H/TODO.md`](/docs/H/TODO.md) — prioritized incomplete Hydrogen work only (effort/done/remaining/code paths). Start here for "what should I do next."
-- **Plan index:** [`docs/H/plans/README.md`](/docs/H/plans/README.md). Active plans include **CHAT_FINALE** (P0), **KEYCLOAK_PLAN**, **MAILRELAY_PLAN**, **OIDC_IDP**, **SCHEMAHELPER**, **UNITY_ASAN**; completed plans live in `plans/complete/` as `*_COMPLETE.md`.
+- **Plan index:** [`docs/H/plans/README.md`](/docs/H/plans/README.md). Active plans include **CHAT_FINALE** (P0), **AUTH_FINALE** (P0), **MAILRELAY_PLAN**, **SCHEMAHELPER**, **UNITY_ASAN**; completed plans live in `plans/complete/` as `*_COMPLETE.md`.
 - **Completed plans are history:** files in [`docs/H/plans/complete/`](/docs/H/plans/complete/) and any `*_SUPERSEDED.md` are archives. Implement against the active plan file named as the only current one, not the archives.
 - **All repo docs:** [`docs/H/SITEMAP.md`](/docs/H/SITEMAP.md) (markdown index), [`docs/H/STRUCTURE.md`](/docs/H/STRUCTURE.md) (file index). Use these to avoid reinventing a file that already exists.
 
@@ -154,7 +154,7 @@ For any element 004+, **read its `README.md` in place of assuming activity.** Mo
 
 ## Common "first questions" answered
 
-- **"What should I work on?"** → [`docs/H/TODO.md`](/docs/H/TODO.md). P0 is Chat Finale ([`docs/H/plans/CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md)): REST+WS chat, provider knobs, MCP tool surface.
+- **"What should I work on?"** → [`docs/H/TODO.md`](/docs/H/TODO.md). P0 is Chat Finale ([`docs/H/plans/CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md)) and Auth Finale ([`docs/H/plans/AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md)).
 - **"Where is the C code?"** → `elements/001-hydrogen/hydrogen/src/`. `src/hydrogen.h` is the umbrella header.
 - **"How do I build?"** → `zsh -ic 'mkt'` (trial) or `mka` (all targets). On a clean box, set `HYDROGEN_ROOT` and `HELIUM_ROOT` and run `elements/001-hydrogen/hydrogen/extras/make-trial.sh`.
 - **"How do I test one thing?"** → `zsh -ic 'mku <base_test_name>'` builds + runs a single Unity test (tab-completion is wired up). Blackbox tests are `tests/test_NN_*.sh`. The full orchestrator is `tests/test_00_all.sh`.

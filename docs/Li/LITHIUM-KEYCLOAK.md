@@ -12,7 +12,8 @@
 > **What this is not:** end-user documentation. For that, see
 > [LITHIUM-OIDC.md](LITHIUM-OIDC.md). For Hydrogen-side endpoint
 > contracts, see [oidc_rp.md](/docs/H/api/auth/oidc_rp.md). For the
-> project plan, see [OIDC-PLAN.md](/docs/H/plans/OIDC-PLAN.md).
+> remaining work, see [AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md).
+> History: [OIDC-PLAN_COMPLETE.md](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md).
 
 ---
 
@@ -692,4 +693,5 @@ Before declaring done, verify:
 - [LITHIUM-INS.md](LITHIUM-INS.md) — Mandatory coding standards.
 - [LITHIUM-TST.md](LITHIUM-TST.md) — Test framework.
 - [oidc_rp.md](/docs/H/api/auth/oidc_rp.md) — Hydrogen RP endpoint contracts.
-- [OIDC-PLAN.md](/docs/H/plans/OIDC-PLAN.md) — Project plan.
+- [AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md) — Remaining Hydrogen auth / OIDC work.
+- [OIDC-PLAN_COMPLETE.md](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md) — Project plan.

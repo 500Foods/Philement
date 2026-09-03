@@ -16,7 +16,7 @@ This document is the working document for the implementation. It is meant to be 
 
 ## Resuming Work on This Plan
 
-CURRENT PAUSE POINT (as of 2026-07-10): **Phase 7B Lua freeform complete (L.1–L.3).** `H.mail` supports template + freeform body. Next candidates: system template seeds (`system.server_started` migration **1263**), Phase 9 Lithium UI, Phase 10 ops remainder, or auth MFA wiring.
+CURRENT PAUSE POINT (as of 2026-07-10): **Phase 7B Lua freeform complete (L.1–L.3).** `H.mail` supports template + freeform body. Next candidates: system template seeds (`system.server_started` migration **1263**), Phase 9 Lithium UI, Phase 10 ops remainder. Login MFA wiring moved to [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) Phase 8.
 
 ### Resume here next session
 

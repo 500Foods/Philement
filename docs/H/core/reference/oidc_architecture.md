@@ -5,7 +5,8 @@ This document outlines the internal architecture of the OpenID Connect (OIDC)
 
 ## Implemented subset
 
-Canonical status: [OIDC_IDP.md](/docs/H/plans/OIDC_IDP.md).
+Canonical status: [AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md).
+History: [OIDC_IDP_COMPLETE.md](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md).
 HTTP surface: [oidc_endpoints.md](/docs/H/api/oidc/oidc_endpoints.md).
 Operators: [OIDC_IDP_OPERATOR.md](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md).
 

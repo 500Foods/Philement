@@ -1,6 +1,10 @@
 <!-- markdownlint-disable MD007 MD024 -->
 # Hydrogen as OIDC Identity Provider (IdP) Implementation Plan
 
+> **Superseded.** Remaining OIDC / Keycloak / auth work lives in
+> [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md). This file is
+> historical. Do not start work from it.
+
 ## Purpose
 
 Define a gated, phase-by-phase operational plan for finishing Hydrogen's OpenID
@@ -84,8 +88,8 @@ Related:
 - `/docs/H/core/subsystems/oidc/oidc.md` — original IdP architecture notes.
 - `/docs/H/core/reference/oidc_architecture.md` — component architecture.
 - `/docs/H/api/oidc/oidc_endpoints.md` — endpoint doc stubs (empty sections).
-- `/docs/H/plans/KEYCLOAK_PLAN.md` — RP plan; IdP explicitly out of scope there.
-- `/docs/H/plans/OIDC-PLAN.md` — RP implementation history (Phases 1–27).
+- `/docs/H/plans/complete/KEYCLOAK_PLAN_COMPLETE.md` — RP plan; IdP explicitly out of scope there.
+- `/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md` — RP implementation history (Phases 1–27).
 
 Date of snapshot: 2026-07-23
 
@@ -1601,8 +1605,8 @@ Append discoveries, surprises, and decisions here as phases complete.
 
 ## Related Documents
 
-- [KEYCLOAK_PLAN.md](/docs/H/plans/KEYCLOAK_PLAN.md) — Hydrogen as OIDC RP
-- [OIDC-PLAN.md](/docs/H/plans/OIDC-PLAN.md) — RP historical implementation plan
+- [KEYCLOAK_PLAN.md](/docs/H/plans/complete/KEYCLOAK_PLAN_COMPLETE.md) — Hydrogen as OIDC RP
+- [OIDC-PLAN.md](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md) — RP historical implementation plan
 - [oidc_rp.md](/docs/H/api/auth/oidc_rp.md) — RP API contract
 - [oidc.md](/docs/H/core/subsystems/oidc/oidc.md) — original IdP architecture notes
 - [oidc_architecture.md](/docs/H/core/reference/oidc_architecture.md)

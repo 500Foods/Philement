@@ -30,4 +30,4 @@ lists for lifecycle, XSS, Scripting invoke, or Course Builder UI.
 | Item | Where |
 |------|--------|
 | Course Builder pipeline CB-0..35 | `/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md` |
-| Keycloak real-IdP E2E | `/docs/H/plans/KEYCLOAK_PLAN.md` Phase 5 (OTP blocked) |
+| Keycloak real-IdP E2E | [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) Phase 11 (OTP blocked) |
