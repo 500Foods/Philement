@@ -289,6 +289,17 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
             list(APPEND MOCK_DEFINES_LIST "-include")
             list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_pthread.h")
         endif()
+        # auth_chat tests rely on auth_chat_deps mock to redirect the proxy
+        # call (chat_proxy_send_with_retry) inside chat_local_mcp_complete_request
+        # in local_mcp.c. Apply ONLY when compiling local_mcp.c — proxy.c must
+        # NOT be compiled with this rename or its real definition would collide
+        # with the mock in mock_auth_chat_deps.c. Same discipline as the
+        # health.c / mock_chat_proxy pair above.
+        if(${SOURCE_FILE} MATCHES "helpers/local_mcp\\.c")
+            list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_AUTH_CHAT_DEPS")
+            list(APPEND MOCK_DEFINES_LIST "-include")
+            list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_auth_chat_deps.h")
+        endif()
         set(MOCK_DEFINES ${MOCK_DEFINES_LIST})
         unset(MOCK_DEFINES_LIST)
     elseif(IS_DATABASE_SOURCE GREATER -1)
