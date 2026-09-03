@@ -16,6 +16,7 @@
 #include "../helpers/req_builder.h"
 #include "../helpers/resp_parser.h"
 #include "../helpers/proxy.h"
+#include "../helpers/local_mcp.h"
 #include "../helpers/metrics.h"
 #include "../helpers/storage.h"
 #include "../helpers/context_hashing.h"
@@ -488,12 +489,14 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
                                          database,
                                          jwt_result.claims ? jwt_result.claims->roles : NULL,
                                          hosted_mcp_cid);
+    json_t *local_mcp_tools = chat_request_params_apply_local_mcp(&params, engine, hosted_mcp_cid);
     ChatMessage *chat_messages = auth_chat_messages_json_to_list(database, messages);
 
     // Build request JSON for provider
     json_t *provider_request = chat_request_build(engine, chat_messages, &params);
     char *request_body = chat_request_to_json_string(provider_request, true);
     json_decref(provider_request);
+    json_decref(local_mcp_tools);
     chat_message_list_destroy(chat_messages);
 
     if (!request_body) {
@@ -533,11 +536,10 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
     }
 
     // Send request to AI API (non-streaming)
-    ChatProxyConfig proxy_config = chat_proxy_get_default_config();
     struct timespec start_time;
     clock_gettime(CLOCK_MONOTONIC, &start_time);
 
-    ChatProxyResult *proxy_result = chat_proxy_send_with_retry(engine, request_body, &proxy_config);
+    ChatProxyResult *proxy_result = chat_local_mcp_complete_request(engine, request_body, hosted_mcp_cid);
     free(request_body);
 
     struct timespec end_time;
