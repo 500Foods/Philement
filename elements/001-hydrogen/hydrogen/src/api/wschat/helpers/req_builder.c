@@ -507,6 +507,12 @@ json_t* chat_request_build_responses(const ChatEngineConfig* engine,
         json_object_set_new(root, "max_output_tokens", json_integer(max_tokens));
     }
 
+    // Data-residency knob (CHAT_FINALE Phase 10a): Responses API documents
+    // `store` as a top-level field. Omitting it leaves xAI's 30-day-retention
+    // default in effect, which is the privacy bug this fixes. Emit
+    // explicitly from engine config (default false = opt-in to retention).
+    json_object_set_new(root, "store", json_boolean(engine->store));
+
     // Stream
     if (params->stream) {
         json_object_set_new(root, "stream", json_true());

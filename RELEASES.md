@@ -192,6 +192,10 @@ QUALITY CHECKLIST (before completing)
 - [2026-Aug-27 (Thu)](/releases/2026-08/2026-08-27.md): (H) MCP subsystem complete — Streamable HTTP, Test 47, docs
 - [2026-Aug-09 (Sun)](/releases/2026-08/2026-08-09.md): (H) LUA_CLIENT complete — JWT `/api/conduit/script`, Test 46, docs
 
+## September 2026
+
+- 2026-09-03: (H) CHAT_FINALE Phases 0–9 complete (500 Courses beachhead). Phase 10a adds the Responses API `store` data-residency knob (per-engine JSON, default false). **Behavior change:** Responses requests now explicitly carry `store:false` for any engine collection that omits the field; xAI no longer silently retains request/response bodies for 30 days by default. Operators who want retention must set `"store": true` on the engine. Plan: [`/docs/H/plans/CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md).
+
 ## July 2026
 
 - [2026-Jul-29 (Wed)](/releases/2026-07/2026-07-29.md): (H) Reporting image_scale endpoint, MagickWand, Test 27
