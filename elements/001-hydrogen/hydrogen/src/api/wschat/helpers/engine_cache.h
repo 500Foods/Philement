@@ -39,6 +39,19 @@ typedef enum {
 #define MODALITY_ALL (MODALITY_TEXT | MODALITY_IMAGE | MODALITY_AUDIO | MODALITY_PDF | MODALITY_DOCUMENT)
 #define MODALITY_DEFAULT MODALITY_TEXT
 
+typedef struct ChatLocalMcpServer {
+    char *url;
+    char *authorization;
+    char **allowed_tools;
+    size_t allowed_tool_count;
+} ChatLocalMcpServer;
+
+typedef struct ChatLocalMcpConfig {
+    bool enabled;
+    ChatLocalMcpServer *servers;
+    size_t server_count;
+} ChatLocalMcpConfig;
+
 // Chat engine configuration entry
 typedef struct ChatEngineConfig {
     int engine_id;                    // Unique engine identifier (from database)
@@ -75,6 +88,8 @@ typedef struct ChatEngineConfig {
 
     // Supported modalities (Phase 12)
     int supported_modalities;         // Bitmask of ChatModality values
+
+    ChatLocalMcpConfig local_mcp;
 } ChatEngineConfig;
 
 // Chat Engine Cache structure (per database)

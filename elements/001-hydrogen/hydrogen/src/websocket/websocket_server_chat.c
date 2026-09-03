@@ -25,6 +25,7 @@
 #include "../api/wschat/helpers/resp_parser.h"
 #include "../api/wschat/helpers/proxy.h"
 #include "../api/wschat/helpers/proxy_multi.h"
+#include "../api/wschat/helpers/local_mcp.h"
 #include "../api/wschat/helpers/metrics.h"
 #include "../api/wschat/helpers/storage.h"
 #include "../api/wschat/helpers/context_hashing.h"
@@ -337,12 +338,14 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
                                          database,
                                          session && session->chat_claims ? session->chat_claims->roles : NULL,
                                          hosted_mcp_cid);
+    json_t *local_mcp_tools = chat_request_params_apply_local_mcp(&params, engine, hosted_mcp_cid);
 
     // Convert messages JSON to ChatMessage list with media resolution
     ChatMessage *chat_messages = convert_json_messages_to_chat_messages_with_media(database, messages);
 
     // Build proper request JSON for provider using chat_request_build
     json_t *provider_request = chat_request_build(engine, chat_messages, &params);
+    json_decref(local_mcp_tools);
     chat_message_list_destroy(chat_messages);
 
     // Collect context_hashing stats (before provider call, for attachment to chat_done)
@@ -466,8 +469,6 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
 
     } else {
         // Non-streaming mode
-        ChatProxyConfig proxy_config = chat_proxy_get_default_config();
-
         // Log that prompt is being sent to model server
         size_t request_size = strlen(request_json_str);
         log_this(SR_WEBSOCKET_CHAT, "Prompt sent to %s/%s/%s (non-streaming, %zu bytes)",
@@ -478,7 +479,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
                  engine->provider == CEC_PROVIDER_OLLAMA ? "Ollama" : "OpenAI",
                  request_size);
 
-        ChatProxyResult *proxy_result = chat_proxy_send_with_retry(engine, request_json_str, &proxy_config);
+        ChatProxyResult *proxy_result = chat_local_mcp_complete_request(engine, request_json_str, hosted_mcp_cid);
 
         // Attach context_hashing stats to response if available
         if (has_ctx_stats && proxy_result && proxy_result->code == CHAT_PROXY_OK && proxy_result->response_body) {

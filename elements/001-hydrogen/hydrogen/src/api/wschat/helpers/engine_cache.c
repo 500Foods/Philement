@@ -10,6 +10,7 @@
 // Local includes
 #include "engine_cache.h"
 #include "health.h"
+#include "local_mcp.h"
 
 // Database includes for bootstrap query
 #include <src/database/database.h>
@@ -142,6 +143,9 @@ ChatEngineConfig* chat_engine_config_create(int engine_id, const char* name, Cha
     // Initialize provider-specific settings (Phase 5)
     engine->use_native_api = use_native_api;
     engine->use_responses_api = false;
+    engine->local_mcp.enabled = false;
+    engine->local_mcp.servers = NULL;
+    engine->local_mcp.server_count = 0;
 
     // Initialize supported modalities (Phase 12)
     engine->supported_modalities = supported_modalities > 0 ? supported_modalities : MODALITY_DEFAULT;
@@ -181,6 +185,8 @@ ChatEngineConfig* chat_engine_config_create(int engine_id, const char* name, Cha
 // Destroy an engine configuration (securely wipes API key)
 void chat_engine_config_destroy(ChatEngineConfig* engine) {
     if (!engine) return;
+
+    chat_local_mcp_config_cleanup(&engine->local_mcp);
 
     // Destroy health mutex
     pthread_mutex_destroy(&engine->health_mutex);
@@ -562,6 +568,7 @@ bool chat_engine_cache_load_from_database(ChatEngineCache* cache, const char* da
                 );
                 if (engine) {
                     engine->use_responses_api = use_responses;
+                    chat_local_mcp_config_load(collection, &engine->local_mcp);
                 }
 
                 if (engine) {

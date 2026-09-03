@@ -8,6 +8,7 @@
 #include <src/mcp/mcp_auth.h>
 #include <src/mcp/mcp_resource_url.h>
 #include "req_builder.h"
+#include "local_mcp.h"
 
 // Default parameters
 ChatRequestParams chat_request_params_default(void) {
@@ -24,6 +25,7 @@ ChatRequestParams chat_request_params_default(void) {
     params.hosted_mcp_roles = NULL;
     params.hosted_mcp_ttl_seconds = 0;
     params.hosted_mcp_correlation_id = NULL;
+    params.local_mcp_tools = NULL;
     return params;
 }
 
@@ -63,6 +65,19 @@ void chat_request_params_apply_hosted_mcp(ChatRequestParams *params,
     params->hosted_mcp_roles = roles;
     params->hosted_mcp_ttl_seconds = 0;
     params->hosted_mcp_correlation_id = correlation_id;
+}
+
+json_t *chat_request_params_apply_local_mcp(ChatRequestParams *params,
+                                            const ChatEngineConfig *engine,
+                                            const char *correlation_id) {
+    json_t *tools;
+
+    if (!params || !engine || !engine->local_mcp.enabled) {
+        return NULL;
+    }
+    tools = chat_local_mcp_list_tools(engine, correlation_id);
+    params->local_mcp_tools = tools;
+    return tools;
 }
 
 // Message management
@@ -172,6 +187,8 @@ json_t* chat_request_build_openai(const ChatEngineConfig* engine,
     // Request retrieval info for RAG citations (e.g., DigitalOcean GradientAI)
     // This is safe to include for all providers - unused ones will ignore it
     json_object_set_new(root, "include_retrieval_info", json_true());
+
+    chat_request_append_local_mcp_tools(root, params->local_mcp_tools, CEC_PROVIDER_OPENAI, false);
 
     // Additional params overlay (merges last — explicit fields set the base)
     if (params->additional_params) {
@@ -354,6 +371,8 @@ json_t* chat_request_build_anthropic(const ChatEngineConfig* engine,
     // Request retrieval info for RAG citations
     json_object_set_new(root, "include_retrieval_info", json_true());
 
+    chat_request_append_local_mcp_tools(root, params->local_mcp_tools, CEC_PROVIDER_ANTHROPIC, false);
+
     // Additional params overlay (merges last — explicit fields set the base)
     if (params->additional_params) {
         const char* key;
@@ -412,6 +431,8 @@ json_t* chat_request_build_ollama(const ChatEngineConfig* engine,
     if (params->stream) {
         json_object_set_new(root, "stream", json_true());
     }
+
+    chat_request_append_local_mcp_tools(root, params->local_mcp_tools, CEC_PROVIDER_OLLAMA, false);
 
     // Additional params overlay (merges last — explicit fields set the base)
     if (params->additional_params) {
@@ -497,6 +518,8 @@ json_t* chat_request_build_responses(const ChatEngineConfig* engine,
         json_object_set_new(reasoning_obj, "effort", json_string(params->reasoning));
         json_object_set_new(root, "reasoning", reasoning_obj);
     }
+
+    chat_request_append_local_mcp_tools(root, params->local_mcp_tools, CEC_PROVIDER_OPENAI, true);
 
     // Hosted MCP (Phase 8b): append `type: mcp` connector so the
     // provider (xAI/OpenAI Responses API) can call public MCP on the

@@ -17,6 +17,7 @@
 // Project includes
 #include <src/hydrogen.h>
 #include <curl/curl.h>
+#include <jansson.h>
 
 // Local includes
 #include "engine_cache.h"
@@ -67,6 +68,10 @@ typedef struct MultiStreamContext {
     CURL* easy_handle;               // CURL easy handle for this stream
     struct curl_slist* headers;      // Request headers
     char* request_body;              // Owned copy of request JSON body
+    const ChatEngineConfig* engine;  // Not owned; used for local MCP continue
+    json_t* tool_call_acc;           // Accumulated streaming tool_calls
+    int local_mcp_round;
+    char* local_mcp_cid;
     
     // Stream state
     StreamChunkQueue chunk_queue;    // Thread-safe chunk queue
@@ -215,6 +220,10 @@ MultiStreamContext* chat_proxy_multi_stream_start(
  * @param context Stream context to stop
  */
 void chat_proxy_multi_stream_stop(MultiStreamManager* manager, MultiStreamContext* context);
+
+bool chat_proxy_multi_restart_easy(MultiStreamManager* manager,
+                                   MultiStreamContext* stream_ctx,
+                                   const char* request_json);
 
 // ============================================================================
 // Queue Operations (for LWS writable callback)

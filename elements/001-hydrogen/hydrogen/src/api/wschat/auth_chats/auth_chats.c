@@ -205,9 +205,11 @@ size_t auth_chats_build_multi_requests(ChatEngineCache *cache,
         chat_request_params_apply_hosted_mcp(&params, engine,
                                              hosted_mcp_sub, hosted_mcp_database,
                                              hosted_mcp_roles, hosted_mcp_cid);
+        json_t *local_mcp_tools = chat_request_params_apply_local_mcp(&params, engine, hosted_mcp_cid);
         json_t *provider_request = chat_request_build(engine, messages, &params);
         char *request_body = chat_request_to_json_string(provider_request, true);
         json_decref(provider_request);
+        json_decref(local_mcp_tools);
         if (!request_body) {
             continue;
         }

@@ -481,6 +481,13 @@ ChatStreamChunk* chat_stream_chunk_parse(const char* json_line) {
                     if (reasoning && json_is_string(reasoning)) {
                         chunk->reasoning_content = strdup(json_string_value(reasoning));
                     }
+                    json_t* tool_calls = json_object_get(delta, "tool_calls");
+                    if (tool_calls && json_is_array(tool_calls)) {
+                        if (!chunk->extra_fields) {
+                            chunk->extra_fields = json_object();
+                        }
+                        json_object_set(chunk->extra_fields, "tool_calls", tool_calls);
+                    }
                 }
 
                 // Check for finish reason

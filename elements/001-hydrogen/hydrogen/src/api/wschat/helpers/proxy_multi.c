@@ -12,6 +12,7 @@
 #include "proxy_multi.h"
 #include "resp_parser.h"
 #include "proxy.h"
+#include "local_mcp.h"
 
 // WebSocket message functions for ws_write_raw_data
 #include <src/websocket/websocket_server_message.h>
@@ -182,11 +183,15 @@ void chat_proxy_multi_cleanup(MultiStreamManager* manager) {
         }
         
         chunk_queue_destroy(&stream->chunk_queue);
-        free(stream->request_id);
-        free(stream->engine_name);
-        free(stream->finish_reason);
-        free(stream->request_body);
-        free(stream);
+                 free(stream->request_id);
+                 free(stream->engine_name);
+                 free(stream->finish_reason);
+                 free(stream->request_body);
+                 free(stream->local_mcp_cid);
+                 if (stream->tool_call_acc) {
+                     json_decref(stream->tool_call_acc);
+                 }
+                 free(stream);
         
         stream = next;
     }
@@ -356,6 +361,16 @@ void chat_proxy_multi_handle_completed_transfer(MultiStreamManager* manager,
                         if (chunk->is_done) {
                             curl_ctx->seen_done = true;
                         }
+                        if (chunk->finish_reason) {
+                            free(stream_ctx->finish_reason);
+                            stream_ctx->finish_reason = strdup(chunk->finish_reason);
+                        }
+                        if (chunk->extra_fields) {
+                            json_t *tool_calls = json_object_get(chunk->extra_fields, "tool_calls");
+                            if (tool_calls) {
+                                chat_local_mcp_accumulate_stream_tool_calls(&stream_ctx->tool_call_acc, tool_calls);
+                            }
+                        }
                         // Build and enqueue final chunk
                         json_t* response = json_object();
                         json_object_set_new(response, "type", json_string("chat_chunk"));
@@ -394,6 +409,27 @@ void chat_proxy_multi_handle_completed_transfer(MultiStreamManager* manager,
                         stream_ctx->chunk_index++;
                         chat_stream_chunk_destroy(chunk);
                     }
+                }
+            }
+
+            if (!http_error && res == CURLE_OK) {
+                char *next_body = chat_local_mcp_stream_next_body(stream_ctx);
+                if (next_body) {
+                    curl_multi_remove_handle(manager->multi_handle, easy);
+                    curl_easy_cleanup(easy);
+                    stream_ctx->easy_handle = NULL;
+                    free(curl_ctx->line_buffer);
+                    free(curl_ctx->post_done_buffer);
+                    free(curl_ctx);
+                    if (chat_proxy_multi_restart_easy(manager, stream_ctx, next_body)) {
+                        free(next_body);
+                        stream_ctx->stream_completed = false;
+                        if (stream_ctx->stream_active) {
+                            *stream_ctx->stream_active = true;
+                        }
+                        return;
+                    }
+                    free(next_body);
                 }
             }
 
@@ -588,6 +624,10 @@ MultiStreamContext* chat_proxy_multi_stream_start(
     stream_ctx->finish_reason = NULL;
     stream_ctx->chunk_index = 0;
     stream_ctx->first_chunk_logged = false;
+    stream_ctx->engine = engine;
+    stream_ctx->tool_call_acc = NULL;
+    stream_ctx->local_mcp_round = 0;
+    stream_ctx->local_mcp_cid = NULL;
     stream_ctx->has_context_hashing_stats = false;
     stream_ctx->ctx_hashes_used = 0;
     stream_ctx->ctx_hashes_missed = 0;
@@ -760,6 +800,76 @@ MultiStreamContext* chat_proxy_multi_stream_start(
     log_this(SR_CHAT, "Multi-stream started: %s", LOG_LEVEL_DEBUG, 1, engine->name);
     
     return stream_ctx;
+}
+
+bool chat_proxy_multi_restart_easy(MultiStreamManager* manager,
+                                   MultiStreamContext* stream_ctx,
+                                   const char* request_json) {
+    CurlStreamContext* curl_ctx;
+    const ChatEngineConfig* engine;
+    size_t request_len;
+    CURLMcode mc;
+    ChatProxyConfig stream_config;
+
+    if (!manager || !manager->initialized || !stream_ctx || !request_json || !stream_ctx->engine) {
+        return false;
+    }
+    engine = stream_ctx->engine;
+    free(stream_ctx->request_body);
+    stream_ctx->request_body = strdup(request_json);
+    if (!stream_ctx->request_body) {
+        return false;
+    }
+    stream_ctx->easy_handle = curl_easy_init();
+    if (!stream_ctx->easy_handle) {
+        return false;
+    }
+    curl_ctx = (CurlStreamContext*)calloc(1, sizeof(CurlStreamContext));
+    if (!curl_ctx) {
+        curl_easy_cleanup(stream_ctx->easy_handle);
+        stream_ctx->easy_handle = NULL;
+        return false;
+    }
+    curl_ctx->stream_ctx = stream_ctx;
+    curl_ctx->chunk_callback = stream_ctx->chunk_callback;
+    curl_ctx->user_data = stream_ctx->user_data;
+    curl_ctx->line_buffer_capacity = 4096;
+    curl_ctx->line_buffer = (char*)malloc(curl_ctx->line_buffer_capacity);
+    if (!curl_ctx->line_buffer) {
+        free(curl_ctx);
+        curl_easy_cleanup(stream_ctx->easy_handle);
+        stream_ctx->easy_handle = NULL;
+        return false;
+    }
+    curl_ctx->line_buffer[0] = '\0';
+    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_PRIVATE, curl_ctx);
+    request_len = strlen(request_json);
+    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_URL, engine->api_url);
+    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_POSTFIELDS, stream_ctx->request_body);
+    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_POSTFIELDSIZE, (long)request_len);
+    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_HTTPHEADER, stream_ctx->headers);
+    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_WRITEFUNCTION, multi_stream_write_callback);
+    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_WRITEDATA, curl_ctx);
+    stream_config = chat_proxy_get_streaming_config();
+    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_CONNECTTIMEOUT,
+                     (long)stream_config.connect_timeout_seconds);
+    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_TIMEOUT,
+                     (long)stream_config.request_timeout_seconds);
+    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_SSL_VERIFYPEER, 1L);
+    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_SSL_VERIFYHOST, 2L);
+    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_NOSIGNAL, 1L);
+    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_USERAGENT, "Hydrogen-Chat-Proxy-Multi/1.0");
+    mc = curl_multi_add_handle(manager->multi_handle, stream_ctx->easy_handle);
+    if (mc != CURLM_OK) {
+        free(curl_ctx->line_buffer);
+        free(curl_ctx);
+        curl_easy_cleanup(stream_ctx->easy_handle);
+        stream_ctx->easy_handle = NULL;
+        return false;
+    }
+    log_this(SR_CHAT, "local_mcp stream continue round=%d", LOG_LEVEL_STATE, 1,
+             stream_ctx->local_mcp_round);
+    return true;
 }
 
 void chat_proxy_multi_stream_stop(MultiStreamManager* manager, MultiStreamContext* context) {

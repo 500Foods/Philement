@@ -55,6 +55,7 @@ typedef struct ChatRequestParams {
     const char* hosted_mcp_roles;
     int hosted_mcp_ttl_seconds;
     const char* hosted_mcp_correlation_id;
+    json_t* local_mcp_tools;
 } ChatRequestParams;
 
 // Function prototypes
@@ -112,6 +113,10 @@ void chat_request_params_apply_hosted_mcp(ChatRequestParams *params,
                                           const char *database,
                                           const char *roles,
                                           const char *correlation_id);
+
+json_t *chat_request_params_apply_local_mcp(ChatRequestParams *params,
+                                            const ChatEngineConfig *engine,
+                                            const char *correlation_id);
 
 /* ----------------------------------------------------------------------------
  * The following helpers are NOT part of the stable public API. They are exposed

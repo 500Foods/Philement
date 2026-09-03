@@ -11,6 +11,7 @@
 // Local includes
 #include "proxy_multi.h"
 #include "resp_parser.h"
+#include "local_mcp.h"
 
 // System includes
 #include <string.h>
@@ -129,6 +130,16 @@ size_t multi_stream_write_callback(const void* contents, size_t size, size_t nme
                     // Mark when we see [DONE] so subsequent lines go to post_done_buffer
                     if (chunk->is_done) {
                         curl_ctx->seen_done = true;
+                    }
+                    if (chunk->finish_reason) {
+                        free(stream_ctx->finish_reason);
+                        stream_ctx->finish_reason = strdup(chunk->finish_reason);
+                    }
+                    if (chunk->extra_fields) {
+                        json_t *tool_calls = json_object_get(chunk->extra_fields, "tool_calls");
+                        if (tool_calls) {
+                            chat_local_mcp_accumulate_stream_tool_calls(&stream_ctx->tool_call_acc, tool_calls);
+                        }
                     }
 
                     curl_ctx->chunks_processed++;

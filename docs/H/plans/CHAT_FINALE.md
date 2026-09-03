@@ -71,9 +71,8 @@ Each phase is worked in its **own conversation**. Follow this sequence:
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-09-02):** Phase 0–7 complete. Phase 8
-partially complete: 8a and **8b** done. 8c (local MCP client) not started.
-Next: **Phase 8c implementation**.
+**CURRENT PAUSE POINT (as of 2026-09-03):** Phase 0–8 complete (8a mint,
+8b hosted MCP, 8c local MCP client). Next: **Phase 9 (docs and DOKS)**.
 
 ### Resume here next session
 
@@ -1127,27 +1126,27 @@ function-calling defs on any provider endpoint. The MCP protocol is
 already implemented on the server side (MCP_COMPLETE); this is the same
 protocol in reverse.
 
-- [ ] **MCP client transport.** Connect to configured external MCP servers
+- [x] **MCP client transport.** Connect to configured external MCP servers
       (`initialize`, cache `tools/list`, optional session binding). JSON-RPC
       2.0 client over Streamable HTTP. Reuse the protocol understanding
       from `src/mcp/` (envelope, `tools/call`, session semantics) — the
       wire format is identical, only the direction reverses.
-- [ ] **Tool conversion.** Convert MCP tool schemas (`inputSchema`) to
+- [x] **Tool conversion.** Convert MCP tool schemas (`inputSchema`) to
       OpenAI/Responses/Ollama function-calling definitions. Provider-agnostic:
       the same converted tools are usable on any endpoint.
-- [ ] **Tool call proxy.** When the LLM calls a local-MCP tool, Hydrogen
+- [x] **Tool call proxy.** When the LLM calls a local-MCP tool, Hydrogen
       proxies `tools/call` to the external MCP server and returns the result
       in the provider's expected format. Inline (not queued) to avoid the
       same deadlock risk MCP_COMPLETE solved for `H.mcp.call`.
-- [ ] **Engine config.** Per-engine JSON config for local MCP: server URLs,
+- [x] **Engine config.** Per-engine JSON config for local MCP: server URLs,
       enable/disable, tool allowlist. No C changes for new servers — config
       only.
-- [ ] **Safety bar (same as Phase 7).** MCP-exposed scripts — including
+- [x] **Safety bar (same as Phase 7).** MCP-exposed scripts — including
       tools proxied from external MCP servers — may not call `H.http.get` /
       `H.query` / `H.altquery` with caller-influenced values. The hard "no
       data-plane from MCP tools" bar applies regardless of whether the tool
       is local Lua or remote MCP.
-- [ ] Unity: client `initialize` + `tools/list` parse; tool conversion to
+- [x] Unity: client `initialize` + `tools/list` parse; tool conversion to
       function-calling def; tool call proxy; config load/cleanup. `mku` +
       `mkp`.
 
@@ -1170,7 +1169,7 @@ implemented. Local MCP Unity green.
 
 ### Status
 
-**8a + 8b complete (2026-09-02).** 8c not started.
+**Phase 8 complete (2026-09-03).** 8a + 8b + 8c done.
 
 - **Aud-check prerequisite fixed.** `mcp_try_hydrogen` (`mcp_auth.c:271-284`) now compares `claims->aud` (string) to `mcp_auth_resource(cfg)`; sets `MCP_AUTH_REJECT_AUD` on mismatch. Behavior gated: if either side is empty, the check is bypassed (preserves existing token formats with integer-aud payloads). 2 new Unity tests added in `mcp_auth_test_validate_bearer.c` (rejects mismatched aud, accepts matching aud). 38/38 tests pass.
 - **Mint primitive added.** `src/mcp/mcp_mint_token.{c,h}` exports `mcp_mint_resource_token(const MCPConfig *cfg, const char *sub, const char *database, const char *roles, time_t ttl_seconds, const char *correlation_id)`. Returns a signed HS256 (or RS256 if `cfg->use_rsa`) JWT or NULL on error.
@@ -1202,6 +1201,42 @@ implemented. Local MCP Unity green.
 - **Variance:** Test 59 does not capture outbound `type:mcp` (mock is
   not Responses). Connector shape is Unity-proven instead.
 - Next: 8c only (local MCP client).
+- **2026-09-03 — 8c complete.** Local MCP client in `src/mcp/mcp_client.c`
+  (JSON-RPC over Streamable HTTP via `oidc_rp_http_post_with_headers_slist`,
+  session header capture, SSE unwrap). Conversion OpenAI / Responses /
+  Anthropic. Engine collection JSON:
+
+  ```json
+  "local_mcp": {
+    "enabled": true,
+    "servers": [{
+      "url": "https://mcp.example.com/mcp",
+      "authorization": "Bearer …",
+      "allowed_tools": ["System.Info"]
+    }]
+  }
+  ```
+
+  Empty `allowed_tools` skips that server (fail-closed; never "all tools").
+  Builders inject converted tools. Non-stream loop
+  `chat_local_mcp_complete_request` (max 3 rounds, inline HTTP). Streaming:
+  accumulate `delta.tool_calls`, suppress `chat_done`,
+  `chat_proxy_multi_restart_easy` for the follow-up. Default off — no
+  engine JSON change required.
+- **Lesson:** Hydrogen cannot inspect a remote MCP server for
+  `H.http`/`H.query`/`H.altquery`. The Phase 7 data-plane bar on *this*
+  host still holds for Lua tools; remote tools are gated only by the
+  per-engine allowlist. Empty allowlist is not "allow all."
+- **Verification.** `mkq` green (309 dead / 0 chat), `mkp` green (1,986
+  files). Unity: `mcp_client_test_rpc_request` 3, `mcp_client_test_rpc_parse_result`
+  4, `mcp_client_test_tool_to_openai` 5, `mcp_client_test_initialize` 4,
+  `local_mcp_test_config_load` 4, `local_mcp_test_extract_tool_calls` 7,
+  `local_mcp_test_proxy_tool_calls` 2, `req_builder_test_local_mcp` 4,
+  `req_builder_test_hosted_mcp` 12, `req_builder_test_temperature` 19.
+- **Variance:** Test 59 / Test 47 not re-run this slice. `local_mcp`
+  defaults off, so the existing chat/MCP paths are unchanged unless an
+  engine collection enables it.
+- Next: Phase 9 only (docs and DOKS).
 
 ---
 
