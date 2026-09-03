@@ -23,6 +23,7 @@
 #include "../api/wschat/helpers/engine_cache.h"
 #include "../api/wschat/helpers/req_builder.h"
 #include "../api/wschat/helpers/resp_parser.h"
+#include "../api/wschat/helpers/chat_rate_limit.h"
 #include "../api/wschat/helpers/proxy.h"
 #include "../api/wschat/helpers/proxy_multi.h"
 #include "../api/wschat/helpers/local_mcp.h"
@@ -42,11 +43,12 @@ int send_chat_proxy_result(struct lws *wsi, const char* request_id,
                            const ChatEngineConfig* engine,
                            ChatProxyResult* proxy_result,
                            struct timespec start_time,
-                           size_t message_count) {
+                           size_t message_count,
+                           const char *rate_limit_sub) {
     if (!proxy_result || proxy_result->code != CHAT_PROXY_OK) {
         const char *error_msg = proxy_result && proxy_result->error_message ?
                                 proxy_result->error_message : "Request failed";
-        send_chat_error(wsi, error_msg, request_id);
+        send_chat_error(wsi, error_msg, request_id, 0);
         log_this(SR_WEBSOCKET_CHAT, "Non-streaming request failed for request %s: %s",
                  LOG_LEVEL_ERROR, 2, request_id ? request_id : "unknown", error_msg);
         chat_proxy_result_destroy(proxy_result);
@@ -84,7 +86,7 @@ int send_chat_proxy_result(struct lws *wsi, const char* request_id,
     if (!parsed || !parsed->success) {
         const char *error_msg = parsed && parsed->error_message ?
                                 parsed->error_message : "Failed to parse response";
-        send_chat_error(wsi, error_msg, request_id);
+        send_chat_error(wsi, error_msg, request_id, 0);
         log_this(SR_WEBSOCKET_CHAT, "Failed to parse response for request %s: %s",
                  LOG_LEVEL_ERROR, 2, request_id ? request_id : "unknown", error_msg);
         chat_parsed_response_destroy(parsed);
@@ -119,6 +121,13 @@ int send_chat_proxy_result(struct lws *wsi, const char* request_id,
              request_id ? request_id : "unknown",
              response_time_ms,
              content_length);
+
+    // Phase 10b: record actual completion tokens against the sub's
+    // token budget. Non-streaming/local providers emit no usage, so
+    // this is a no-op for them.
+    if (rate_limit_sub && rate_limit_sub[0] != '\0' && parsed->completion_tokens > 0) {
+        chat_rate_limit_record_output(rate_limit_sub, parsed->completion_tokens);
+    }
 
     chat_parsed_response_destroy(parsed);
     chat_proxy_result_destroy(proxy_result);
@@ -187,7 +196,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     // Extract payload
     json_t* payload = json_object_get(request_json, "payload");
     if (!payload || !json_is_object(payload)) {
-        send_chat_error(wsi, "Missing or invalid payload", request_id);
+        send_chat_error(wsi, "Missing or invalid payload", request_id, 0);
         json_decref(request_json);
         return -1;
     }
@@ -210,7 +219,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
                                              &stream, &reasoning, &error_message);
 
     if (!parse_ok) {
-        send_chat_error(wsi, error_message ? error_message : "Invalid request", request_id);
+        send_chat_error(wsi, error_message ? error_message : "Invalid request", request_id, 0);
         free(error_message);
         json_decref(request_json);
         return -1;
@@ -226,7 +235,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         // Need JWT from payload
         json_t* jwt_json = json_object_get(payload, "jwt");
         if (!jwt_json || !json_is_string(jwt_json)) {
-            send_chat_error(wsi, "JWT required for chat authentication", request_id);
+            send_chat_error(wsi, "JWT required for chat authentication", request_id, 0);
             free(engine_name);
             free(reasoning);
             chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -237,7 +246,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         const char* jwt = json_string_value(jwt_json);
         jwt_validation_result_t jwt_result = {0};
         if (!extract_and_validate_jwt(jwt, &jwt_result)) {
-            send_chat_error(wsi, "Invalid JWT", request_id);
+            send_chat_error(wsi, "Invalid JWT", request_id, 0);
             free(engine_name);
             free(reasoning);
             chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -247,7 +256,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
 
         // Extract database from claims
         if (!jwt_result.claims || !jwt_result.claims->database) {
-            send_chat_error(wsi, "JWT missing database claim", request_id);
+            send_chat_error(wsi, "JWT missing database claim", request_id, 0);
             free_jwt_validation_result(&jwt_result);
             free(engine_name);
             free(reasoning);
@@ -258,7 +267,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
 
         // Validate chat JWT policy (aud=hydrogen-chat, role=chat)
         if (!check_chat_jwt_claims(&jwt_result)) {
-            send_chat_error(wsi, "JWT not authorized for chat", request_id);
+            send_chat_error(wsi, "JWT not authorized for chat", request_id, 0);
             free_jwt_validation_result(&jwt_result);
             free(engine_name);
             free(reasoning);
@@ -279,7 +288,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     // Get database queue
     DatabaseQueue *db_queue = database_queue_manager_get_database(global_queue_manager, database);
     if (!db_queue) {
-        send_chat_error(wsi, "Database not found", request_id);
+        send_chat_error(wsi, "Database not found", request_id, 0);
         free(engine_name);
             free(reasoning);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -290,7 +299,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     // Get CEC
     ChatEngineCache *cec = db_queue->chat_engine_cache;
     if (!cec) {
-        send_chat_error(wsi, "Chat not enabled for this database", request_id);
+        send_chat_error(wsi, "Chat not enabled for this database", request_id, 0);
         free(engine_name);
             free(reasoning);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -307,7 +316,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     }
 
     if (!engine) {
-        send_chat_error(wsi, engine_name ? "Engine not found" : "No default engine configured", request_id);
+        send_chat_error(wsi, engine_name ? "Engine not found" : "No default engine configured", request_id, 0);
         free(engine_name);
             free(reasoning);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -317,7 +326,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
 
     // Check engine health
     if (!engine->is_healthy) {
-        send_chat_error(wsi, "Engine is currently unavailable", request_id);
+        send_chat_error(wsi, "Engine is currently unavailable", request_id, 0);
         free(engine_name);
             free(reasoning);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -331,10 +340,36 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     params.max_tokens = (max_tokens > 0) ? max_tokens : engine->max_tokens;
     params.stream = stream;
     if (reasoning) params.reasoning = reasoning;
+
+    // Phase 10b: per-seen-sub rate limiting (chokepoint — post-JWT,
+    // pre-provider; covers mid-session JWT rotation by re-keying per
+    // message). Look up sub from session->chat_claims which may have
+    // been refreshed via payload.jwt.
+    const char *ws_sub = (session && session->chat_claims) ? session->chat_claims->sub : NULL;
+    if (ws_sub && ws_sub[0] != '\0') {
+        long long est_input = chat_rate_limit_estimate_input_tokens(messages);
+        ChatRateLimitResult rl = chat_rate_limit_check_and_record(ws_sub, est_input);
+        if (rl != CHAT_RATE_LIMIT_ALLOWED) {
+            int err_code = (rl == CHAT_RATE_LIMIT_THROTTLED_REQUESTS) ? 4291 : 4292;
+            const char *msg = (rl == CHAT_RATE_LIMIT_THROTTLED_REQUESTS)
+                ? "Request rate limit exceeded"
+                : "Token budget exceeded";
+            free(engine_name);
+            free(reasoning);
+            chat_context_free_hash_array(context_hashes, context_hash_count);
+            json_decref(request_json);
+            log_this(SR_CHAT,
+                     "Rate limited sub=%s (reason=%d, est_input=%lld)",
+                     LOG_LEVEL_ALERT, 3, ws_sub, err_code, est_input);
+            send_chat_error(wsi, msg, request_id, err_code);
+            return -1;
+        }
+    }
+
     char hosted_mcp_cid[37];
     chat_correlation_id_generate(hosted_mcp_cid, sizeof(hosted_mcp_cid));
     chat_request_params_apply_hosted_mcp(&params, engine,
-                                         session && session->chat_claims ? session->chat_claims->sub : NULL,
+                                         ws_sub,
                                          database,
                                          session && session->chat_claims ? session->chat_claims->roles : NULL,
                                          hosted_mcp_cid);
@@ -359,7 +394,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     }
 
     if (!provider_request) {
-        send_chat_error(wsi, "Failed to build request", request_id);
+        send_chat_error(wsi, "Failed to build request", request_id, 0);
         free(engine_name);
             free(reasoning);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -371,7 +406,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     json_decref(provider_request);
 
     if (!request_json_str) {
-        send_chat_error(wsi, "Failed to serialize request", request_id);
+        send_chat_error(wsi, "Failed to serialize request", request_id, 0);
         free(engine_name);
             free(reasoning);
         chat_context_free_hash_array(context_hashes, context_hash_count);
@@ -408,7 +443,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         // Start streaming using multi_curl interface
         MultiStreamManager* manager = chat_proxy_get_multi_manager();
         if (!manager) {
-            send_chat_error(wsi, "Multi-stream manager not initialized", request_id);
+            send_chat_error(wsi, "Multi-stream manager not initialized", request_id, 0);
             log_this(SR_WEBSOCKET_CHAT, "Multi-stream manager not available for request %s",
                      LOG_LEVEL_ERROR, 1, request_id ? request_id : "unknown");
 
@@ -436,7 +471,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         );
 
         if (!multi_ctx) {
-            send_chat_error(wsi, "Failed to start streaming", request_id);
+            send_chat_error(wsi, "Failed to start streaming", request_id, 0);
             log_this(SR_WEBSOCKET_CHAT, "Failed to start multi-stream for request %s",
                      LOG_LEVEL_ERROR, 1, request_id ? request_id : "unknown");
 
@@ -501,7 +536,8 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
             }
         }
 
-        if (send_chat_proxy_result(wsi, request_id, engine, proxy_result, start_time, message_count) != 0) {
+        if (send_chat_proxy_result(wsi, request_id, engine, proxy_result, start_time, message_count,
+                              ws_sub) != 0) {
             free(request_json_str);
             free(engine_name);
             free(reasoning);

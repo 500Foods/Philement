@@ -149,6 +149,7 @@ struct AppConfig {
     ReportingConfig reporting;     // R. Reporting configuration
     WebhooksConfig webhooks;       // S. Webhooks (LUA_CLIENT Phase 14)
     MCPConfig mcp;                 // T. MCP configuration
+    ChatConfig chat;               // U. Chat configuration (Phase 10b)
 };
 
 // Defined in global.c

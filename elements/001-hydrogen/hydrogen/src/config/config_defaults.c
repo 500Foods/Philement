@@ -640,3 +640,11 @@ void initialize_config_defaults_mcp(AppConfig* config) {
         log_this(SR_CONFIG, "――― Applied config defaults for MCP", LOG_LEVEL_DEBUG, 0);
     }
 }
+
+void initialize_config_defaults_chat(AppConfig* config) {
+    if (config) {
+        memset(&config->chat, 0, sizeof(config->chat));
+        chat_config_apply_defaults(&config->chat);
+        log_this(SR_CONFIG, "――― Applied config defaults for Chat", LOG_LEVEL_DEBUG, 0);
+    }
+}

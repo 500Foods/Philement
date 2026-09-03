@@ -167,4 +167,11 @@ typedef struct WebhooksConfig WebhooksConfig;
 struct WebhookHook;
 typedef struct WebhookHook WebhookHook;
 
+// U. Chat Configuration
+struct ChatConfig;
+typedef struct ChatConfig ChatConfig;
+
+struct ChatRateLimitConfig;
+typedef struct ChatRateLimitConfig ChatRateLimitConfig;
+
 #endif /* CONFIG_FORWARD_H */

@@ -37,7 +37,7 @@ void tearDown(void) {
 
 void test_send_chat_proxy_result_null_result(void) {
     struct timespec start_time = {0};
-    int result = send_chat_proxy_result(test_wsi, "req-123", &test_engine, NULL, start_time, 1);
+    int result = send_chat_proxy_result(test_wsi, "req-123", &test_engine, NULL, start_time, 1, NULL);
     TEST_ASSERT_EQUAL_INT(-1, result);
 }
 
@@ -47,7 +47,7 @@ void test_send_chat_proxy_result_error_code(void) {
     proxy_result->error_message = strdup("Connection failed");
 
     struct timespec start_time = {0};
-    int result = send_chat_proxy_result(test_wsi, "req-123", &test_engine, proxy_result, start_time, 1);
+    int result = send_chat_proxy_result(test_wsi, "req-123", &test_engine, proxy_result, start_time, 1, NULL);
 
     TEST_ASSERT_EQUAL_INT(-1, result);
 }
@@ -59,7 +59,7 @@ void test_send_chat_proxy_result_parse_fails(void) {
     proxy_result->response_size = strlen(proxy_result->response_body);
 
     struct timespec start_time = {0};
-    int result = send_chat_proxy_result(test_wsi, "req-123", &test_engine, proxy_result, start_time, 1);
+    int result = send_chat_proxy_result(test_wsi, "req-123", &test_engine, proxy_result, start_time, 1, NULL);
 
     TEST_ASSERT_EQUAL_INT(-1, result);
 }
@@ -73,7 +73,7 @@ void test_send_chat_proxy_result_success(void) {
     mock_lws_set_write_result(200);
 
     struct timespec start_time = {0};
-    int result = send_chat_proxy_result(test_wsi, "req-123", &test_engine, proxy_result, start_time, 1);
+    int result = send_chat_proxy_result(test_wsi, "req-123", &test_engine, proxy_result, start_time, 1, NULL);
 
     TEST_ASSERT_EQUAL_INT(0, result);
 }
@@ -87,7 +87,7 @@ void test_send_chat_proxy_result_success_with_raw_response(void) {
     mock_lws_set_write_result(250);
 
     struct timespec start_time = {0};
-    int result = send_chat_proxy_result(test_wsi, "req-123", &test_engine, proxy_result, start_time, 1);
+    int result = send_chat_proxy_result(test_wsi, "req-123", &test_engine, proxy_result, start_time, 1, NULL);
 
     TEST_ASSERT_EQUAL_INT(0, result);
 }

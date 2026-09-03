@@ -158,6 +158,7 @@ leaked (Phase 4 fix to `chat_proxy_multi_stream_stop`).
 | `404` | `{"success":false,"error":"Engine '<name>' not found"}` | `chat_engine_cache_lookup_by_name` miss. |
 | `500` | `{"success":false,"error":"engine_key not yet loaded"}` / `"database_queue not available"` | Engine cache / Database subsystem not ready; usually transient during startup. |
 | `502`/`504` | SSE error event then connection close | Upstream provider failure propagated. |
+| `429` | `{"success":false,"error":"rate_limited","message":"...","error_code":4291}` | Per-sub request cap exceeded (`4291`) or token budget exceeded (`4292`). Phase 10b. Fails closed per request; the sub recovers after `Chat.RateLimit.IntervalSeconds` elapses. |
 
 `401` / `403` paths use the `send_jwt_error_response` helper. After that
 helper queues the response, the route handler must return **`MHD_YES`**
@@ -224,6 +225,47 @@ by default. Operators who want retention must explicitly add
 Chat Completions (`/v1/chat/completions`), Anthropic (`/v1/messages`),
 and Ollama adapters.
 
+### Per-sub Rate Limiting (Phase 10b)
+
+Subsystem-wide rate limiting is configured under the new top-level
+`Chat` section in `hydrogen.json`:
+
+```json
+"Chat": {
+  "RateLimit": {
+    "Enabled": false,
+    "MaxRequestsPerInterval": 60,
+    "IntervalSeconds": 60,
+    "MaxTokensPerInterval": 100000
+  }
+}
+```
+
+| Field | Default | Effect |
+| --- | --- | --- |
+| `Enabled` | `false` | Master switch. `false` short-circuits the check and every request is allowed. |
+| `MaxRequestsPerInterval` | `60` | Per-`sub` request cap inside the window. `0` disables the request cap (token cap still applies). |
+| `IntervalSeconds` | `60` | Fixed-window length. `<= 0` fails open. |
+| `MaxTokensPerInterval` | `100000` | Per-`sub` token-budget cap. Input tokens are estimated at request entry from concatenated message content (chars/4 heuristic). Output tokens are read from the streaming provider's `usage.completion_tokens`; non-streaming and local providers emit no usage, so output is recorded as `0` and the token cap throttles them by request count only. `0` disables the token cap. |
+
+The bucket key is the JWT `sub` claim. Different `sub`s are
+independent — throttling one user does not affect another. WebSocket
+chokepoints re-key per message so a connection that rotates its JWT
+mid-session cannot bypass the limit by changing `sub`.
+
+When `Enabled=true` and a request exceeds either cap the endpoint
+returns `429 Too Many Requests` with
+`{success:false, error:"rate_limited", message:"...", error_code:<4291|4292>}`.
+`4291` = request cap exceeded, `4292` = token budget exceeded. The
+sub's bucket is **not** advanced on a throttle, so a throttled request
+does not consume any capacity.
+
+The module fails **open** on allocation error (`calloc` returning
+NULL), on missing/disabled config, and on NULL/empty `sub` — the same
+posture as `mailrelay_event_check_rate_limit` for mail relay events.
+This is intentional: an internal fault must not lock out legitimate
+users.
+
 ## Testing
 
 - **Test 59** — REST + WS coverage. After Phase 3 the stream test
@@ -235,7 +277,9 @@ and Ollama adapters.
   `req_builder_test_temperature.c` (temperature / overlay / Responses
   routing), `resp_parser_test_responses.c` (Responses SSE parsing),
   `req_builder_test_hosted_mcp.c` (hosted MCP connector shape),
-  `req_builder_test_responses_store.c` (Responses `store` knob).
+  `req_builder_test_responses_store.c` (Responses `store` knob),
+  `chat_rate_limit_test.c` (per-sub request + token bucket, envelope
+  shape, fail-open paths).
 
 ## Related Documentation
 

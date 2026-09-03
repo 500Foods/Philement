@@ -16,6 +16,7 @@
 #include "../helpers/resp_parser.h"
 #include "../helpers/proxy.h"
 #include "../helpers/metrics.h"
+#include "../helpers/chat_rate_limit.h"
 #include <src/api/conduit/conduit_service.h>
 
 // Unity test mocks for network-dependent fan-out calls.
@@ -459,6 +460,29 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
     ChatMessage *chat_messages = auth_chats_messages_json_to_list(messages);
     char hosted_mcp_cid[37];
     chat_correlation_id_generate(hosted_mcp_cid, sizeof(hosted_mcp_cid));
+
+    // Phase 10b: per-sub rate limiting (chokepoint — post-JWT, pre-fanout)
+    if (jwt_result.claims && jwt_result.claims->sub) {
+        long long est_input = chat_rate_limit_estimate_input_tokens(messages);
+        ChatRateLimitResult rl = chat_rate_limit_check_and_record(
+            jwt_result.claims->sub, est_input);
+        if (rl != CHAT_RATE_LIMIT_ALLOWED) {
+            int err_code = (rl == CHAT_RATE_LIMIT_THROTTLED_REQUESTS) ? 4291 : 4292;
+            const char *msg = (rl == CHAT_RATE_LIMIT_THROTTLED_REQUESTS)
+                ? "Request rate limit exceeded"
+                : "Token budget exceeded";
+            auth_chats_free_multi_requests(multi_requests, engine_count);
+            free_jwt_validation_result(&jwt_result);
+            json_decref(request_json);
+            json_t *rl_error = chat_rate_limit_build_error_response(err_code, msg);
+            log_this(SR_CHAT,
+                     "Rate limited sub=%s (reason=%d, est_input=%lld)",
+                     LOG_LEVEL_ALERT, 3, jwt_result.claims->sub, err_code, est_input);
+            enum MHD_Result rl_ret = api_send_json_response(connection, rl_error, MHD_HTTP_TOO_MANY_REQUESTS);
+            return rl_ret;
+        }
+    }
+
     size_t valid_requests = auth_chats_build_multi_requests(
         cec, engines_array, chat_messages, temperature, max_tokens, reasoning, multi_requests,
         jwt_result.claims ? jwt_result.claims->sub : NULL,
@@ -498,6 +522,31 @@ enum MHD_Result handle_auth_chats_request(struct MHD_Connection *connection,
     // Generate broadcast ID
     char broadcast_id[37];
     auth_chats_generate_broadcast_id(broadcast_id, sizeof(broadcast_id));
+
+    // Phase 10b: record total completion tokens across the fanout
+    // against the sub's token budget. Walk multi_result once and
+    // record the aggregate. Token-budget enforcement is per-sub, not
+    // per-engine. Parsed-response extraction here matches what the
+    // response builder does downstream.
+    if (jwt_result.claims && jwt_result.claims->sub && multi_result) {
+        long long total_completion = 0;
+        for (size_t i = 0; i < multi_result->count; i++) {
+            ChatProxyResult *pr = multi_result->results[i];
+            if (!pr || pr->code != CHAT_PROXY_OK || !pr->response_body) {
+                continue;
+            }
+            ChatParsedResponse *parsed = chat_response_parse(pr->response_body, CEC_PROVIDER_OPENAI);
+            if (parsed) {
+                if (parsed->completion_tokens > 0) {
+                    total_completion += parsed->completion_tokens;
+                }
+                chat_parsed_response_destroy(parsed);
+            }
+        }
+        if (total_completion > 0) {
+            chat_rate_limit_record_output(jwt_result.claims->sub, total_completion);
+        }
+    }
 
     json_t *response = auth_chats_build_response(
         database, broadcast_id, engine_count, engine_names, multi_result);

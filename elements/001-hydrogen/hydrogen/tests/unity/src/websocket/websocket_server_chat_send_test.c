@@ -31,19 +31,19 @@ void tearDown(void) {
 }
 
 void test_send_chat_error_null_wsi(void) {
-    send_chat_error(NULL, "error message", "req-id");
+    send_chat_error(NULL, "error message", "req-id", 0);
     TEST_ASSERT_TRUE(1);
 }
 
 void test_send_chat_error_with_request_id(void) {
     mock_lws_set_write_result(50);
-    send_chat_error(test_wsi, "Something went wrong", "request-123");
+    send_chat_error(test_wsi, "Something went wrong", "request-123", 0);
     TEST_ASSERT_TRUE(1);
 }
 
 void test_send_chat_error_null_message(void) {
     mock_lws_set_write_result(30);
-    send_chat_error(test_wsi, NULL, NULL);
+    send_chat_error(test_wsi, NULL, NULL, 0);
     TEST_ASSERT_TRUE(1);
 }
 

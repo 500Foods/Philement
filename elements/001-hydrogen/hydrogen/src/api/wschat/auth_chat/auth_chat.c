@@ -21,6 +21,7 @@
 #include "../helpers/storage.h"
 #include "../helpers/context_hashing.h"
 #include "../helpers/lru_cache.h"
+#include "../helpers/chat_rate_limit.h"
 #include <src/api/conduit/conduit_service.h>
 
 // Unity test mocks (header-only, guarded by USE_MOCK_* defined by the Unity
@@ -481,6 +482,30 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         return ret;
     }
 
+    // Phase 10b: per-sub rate limiting (chokepoint — post-JWT, pre-provider)
+    if (jwt_result.claims && jwt_result.claims->sub) {
+        long long est_input = chat_rate_limit_estimate_input_tokens(messages);
+        ChatRateLimitResult rl = chat_rate_limit_check_and_record(
+            jwt_result.claims->sub, est_input);
+        if (rl != CHAT_RATE_LIMIT_ALLOWED) {
+            int err_code = (rl == CHAT_RATE_LIMIT_THROTTLED_REQUESTS) ? 4291 : 4292;
+            const char *msg = (rl == CHAT_RATE_LIMIT_THROTTLED_REQUESTS)
+                ? "Request rate limit exceeded"
+                : "Token budget exceeded";
+            free(engine_name);
+            free(reasoning);
+            free_jwt_validation_result(&jwt_result);
+            json_decref(request_json);
+            chat_context_free_hash_array(context_hashes, context_hash_count);
+            json_t *rl_error = chat_rate_limit_build_error_response(err_code, msg);
+            log_this(SR_CHAT,
+                     "Rate limited sub=%s (reason=%d, est_input=%lld)",
+                     LOG_LEVEL_ALERT, 3, jwt_result.claims->sub, err_code, est_input);
+            enum MHD_Result rl_ret = api_send_json_response(connection, rl_error, MHD_HTTP_TOO_MANY_REQUESTS);
+            return rl_ret;
+        }
+    }
+
     ChatRequestParams params = chat_resolve_request_params(engine, temperature, max_tokens, stream, reasoning);
     char hosted_mcp_cid[37];
     chat_correlation_id_generate(hosted_mcp_cid, sizeof(hosted_mcp_cid));
@@ -597,6 +622,10 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
     if (parsed->total_tokens > 0) {
         chat_metrics_tokens(database, engine->name, "prompt", parsed->prompt_tokens);
         chat_metrics_tokens(database, engine->name, "completion", parsed->completion_tokens);
+        if (jwt_result.claims && jwt_result.claims->sub && parsed->completion_tokens > 0) {
+            chat_rate_limit_record_output(jwt_result.claims->sub,
+                                          parsed->completion_tokens);
+        }
     }
 
     static int chat_counter = 0;
