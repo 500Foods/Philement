@@ -12,6 +12,7 @@ It also documents the HTTP-based health checking model that Kubernetes deploymen
 
 - [Deployment Overview](#deployment-overview)
 - [Health and Readiness Endpoints](#health-and-readiness-endpoints)
+- [MCP Resource, Ingress, and Stateless Hosting](#mcp-resource-ingress-and-stateless-hosting)
 - [Standalone Server on a VPS](#standalone-server-on-a-vps)
 - [Kubernetes / DOKS Deployment](#kubernetes--doks-deployment)
 - [Probe Configuration: TCP vs HTTP](#probe-configuration-tcp-vs-http)
@@ -74,6 +75,133 @@ The authoritative signal is the internal `server_ready` flag, which flips to rea
 ### `/api/system/info`
 
 A richer, read-only status endpoint that returns full system information (hardware, OS, runtime statistics, version, and WebSocket metrics) as JSON. It is useful for dashboards and diagnostics but is not intended as a probe target.
+
+## MCP Resource, Ingress, and Stateless Hosting
+
+When MCP is enabled, Hydrogen binds a **second listener** on its
+configured `MCP.Interface:MCP_PORT` (default `127.0.0.1:3100`). This
+listener serves the Streamable HTTP MCP transport, the PRM
+(`/mcp/.well-known/oauth-protected-resource` and the un-prefixed variant),
+and the `Mcp-Session-Id` lifecycle. The full listen surface is in
+[`/docs/H/core/subsystems/mcp/mcp.md`](/docs/H/core/subsystems/mcp/mcp.md);
+this section covers only what an operator needs to expose it externally.
+
+### Public MCP Resource (for hosted MCP / xAI Remote MCP)
+
+When 500 Courses chat routes Grok through Hydrogen as an MCP tool
+provider (see [`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md) Phase 8),
+the external model must be able to reach the MCP port over the public
+internet. That requires:
+
+1. **A routable `MCP.Resource` URL.** Set this to your public
+   `https://<host>/mcp` (or wherever the MCP path is served). Behind
+   TLS, the resource is the **canonical** identifier — it becomes the
+   `aud` claim on minted JWTs and is what `mcp_try_hydrogen` validates
+   against. The default `http://127.0.0.1:3100/mcp` is only suitable for
+   local development and will fail `mcp_mcp_resource_url_is_reachable`
+   on every chat request.
+
+   ```json
+   {
+     "MCP": {
+       "Enabled": true,
+       "Interface": "0.0.0.0",
+       "Port": 3100,
+       "Path": "/mcp",
+       "Resource": "https://mcp.example.com/mcp",
+       "AcceptHydrogenJWT": true
+     }
+   }
+   ```
+
+2. **TLS at the Ingress.** The MCP daemon speaks plain HTTP (the MCP
+   transport is HTTP). Use Traefik / nginx / your ingress to terminate
+   TLS and forward to `MCP.Port`. Do not enable `verify_ssl = false` on
+   the public side.
+
+3. **Loopback / RFC1918 rejection.** Hydrogen refuses to inject hosted
+   MCP when the configured `Resource` resolves to a loopback or
+   non-routable address. A loopback "Grok called MCP" smoke test would
+   otherwise lie — Grok cannot reach `127.0.0.1` or `10.x.y.z`. Pick a
+   public Resource URL before enabling hosted MCP on a chat engine.
+
+### Stateless MCP: no shared session store needed for the chat path
+
+`Mcp-Session-Id` is **optional** for the Grok path. Every MCP request
+from Grok carries a freshly minted JWT (`mcp_mint_resource_token`,
+15-minute TTL); Hydrogen creates a session on demand when the header is
+absent (`mcp_http.c:221-226`); replica skew is harmless.
+
+Concrete deployment consequences:
+
+- `replicas: N` is fine for the chat → MCP path. There is no need to
+  share session state across pods for this traffic.
+- Sticky ingress / `replicas: 1` is only required for clients that
+  **pin** a session (Cursor, persistent local agents). Other clients
+  keep working transparently if a request lands on a different pod.
+- A↔B sharing assumption (chat pod A, MCP pod B): both must share
+  signing keys (`API.JWTSecret` / `PAYLOAD_KEY`), have aligned clocks,
+  and use the same `sub` / `database` claim space. Without shared keys,
+  the minted JWT cannot be verified on the MCP side.
+
+### Ingress for MCP
+
+The MCP path needs a dedicated Ingress rule. A common shape (Traefik,
+cert-manager):
+
+```yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mcp-example
+  namespace: t-example
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: traefik
+  tls:
+  - hosts:
+    - mcp.example.com
+    secretName: fvl-tls-t-example-mcp
+  rules:
+  - host: mcp.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: www-example
+            port:
+              number: 3100
+```
+
+`Mcp-Session-Id` is the only piece of session state worth sticky-routing,
+and only when you have clients that actually use it. Configure
+session-affinity at the Ingress **only if** you have pinning clients;
+otherwise leave it off and accept session-creation overhead on first
+contact.
+
+### Health checking
+
+The MCP port also serves `<Path>/healthz` returning
+`{"status":"ok"}` with no auth. Use this as the MCP listener's liveness
+probe target (separate from the WebServer `/api/system/health`):
+
+```yaml
+livenessProbe:
+  httpGet:
+    path: /mcp/healthz
+    port: 3100
+  initialDelaySeconds: 10
+  periodSeconds: 30
+```
+
+For readiness, the MCP subsystem emits readiness gates during launch (`[MCP]
+Go: ...` / `[MCP] Decide: Go For Launch of MCP Subsystem`). There is no
+explicit readiness endpoint on the MCP port itself; readiness for
+external callers is the `MCP.Enabled` + `initialized` fields on
+`GET /api/mcp/status`.
 
 ## Standalone Server on a VPS
 

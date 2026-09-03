@@ -85,6 +85,9 @@ typedef struct ChatEngineConfig {
     // Provider-specific settings (Phase 5)
     bool use_native_api;              // Use provider's native API (not OpenAI-compatible)
     bool use_responses_api;           // Use Responses API (xAI/OpenAI) instead of Chat Completions
+    bool store;              // Responses API data-residency knob (CHAT_FINALE Phase 10a).
+                              // When true, the provider (xAI) retains request/response
+                              // bodies for 30 days. Default false (opt-in to retention).
 
     // Supported modalities (Phase 12)
     int supported_modalities;         // Bitmask of ChatModality values
