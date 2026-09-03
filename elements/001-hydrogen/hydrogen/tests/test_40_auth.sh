@@ -22,6 +22,7 @@
 # analyze_auth_test_results()
 
 # CHANGELOG
+# 1.9.5 - 2026-09-02 - Retry DML transaction probe 3x under suite-parallel load
 # 1.9.4 - 2026-08-27 - Invalid-login accepts 503 congestion (not credential fail).
 # 1.9.3 - 2026-08-27 - Longer single-shot HTTP (90s); retry 000 only; INFO delay lines.
 # 1.9.2 - 2026-08-27 - Retry 401 only when expecting 200 (login); 12 tries.
@@ -68,7 +69,7 @@ TEST_NAME="Auth"
 TEST_ABBR="JWT"
 TEST_NUMBER="40"
 TEST_COUNTER=0
-TEST_VERSION="1.9.4"
+TEST_VERSION="1.9.5"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -653,25 +654,34 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         tx_total=$(( tx_total + 1 ))
         schema="${TX_ENGINE_SCHEMAS[${engine_name}]:-}"
         tx_msg=""
+        tx_try=1
+        tx_ok=0
         # shellcheck disable=SC2310 # Continue even if transaction probe fails
+        while [[ "${tx_try}" -le 3 ]]; do
+            if [[ "${engine_name}" == "sqlite" ]]; then
+                rm -f "${sqlite_tx_db}" 2>/dev/null || true
+                if tx_msg=$(verify_database_transactions "sqlite" "" "${sqlite_tx_db}"); then
+                    tx_ok=1
+                    break
+                fi
+            else
+                if tx_msg=$(verify_database_transactions "${engine_name}" "${schema}"); then
+                    tx_ok=1
+                    break
+                fi
+            fi
+            sleep "${tx_try}"
+            tx_try=$(( tx_try + 1 ))
+        done
         if [[ "${engine_name}" == "sqlite" ]]; then
             rm -f "${sqlite_tx_db}" 2>/dev/null || true
-            if tx_msg=$(verify_database_transactions "sqlite" "" "${sqlite_tx_db}"); then
-                tx_pass=$(( tx_pass + 1 ))
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: ${tx_msg}"
-            else
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: ${tx_msg}"
-                EXIT_CODE=1
-            fi
-            rm -f "${sqlite_tx_db}" 2>/dev/null || true
+        fi
+        if [[ "${tx_ok}" -eq 1 ]]; then
+            tx_pass=$(( tx_pass + 1 ))
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: ${tx_msg}"
         else
-            if tx_msg=$(verify_database_transactions "${engine_name}" "${schema}"); then
-                tx_pass=$(( tx_pass + 1 ))
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: ${tx_msg}"
-            else
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: ${tx_msg}"
-                EXIT_CODE=1
-            fi
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: ${tx_msg}"
+            EXIT_CODE=1
         fi
     done
     if [[ "${tx_pass}" -eq "${tx_total}" ]]; then

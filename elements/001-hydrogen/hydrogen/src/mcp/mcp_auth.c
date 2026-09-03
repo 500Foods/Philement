@@ -82,6 +82,19 @@ const char *mcp_auth_resource(const MCPConfig *cfg) {
     return derived;
 }
 
+bool mcp_auth_aud_is_resource_uri(const char *aud) {
+    if (!aud || aud[0] == '\0') {
+        return false;
+    }
+    if (strncmp(aud, "http://", 7) == 0) {
+        return true;
+    }
+    if (strncmp(aud, "https://", 8) == 0) {
+        return true;
+    }
+    return false;
+}
+
 char *mcp_prm_metadata_url(const MCPConfig *cfg) {
     const char *resource = mcp_auth_resource(cfg);
     const char *path;
@@ -274,9 +287,17 @@ bool mcp_try_hydrogen(const char *auth_header, const MCPConfig *cfg, McpAuthResu
         return false;
     }
     {
-        const char *resource = mcp_auth_resource(cfg);
-        if (resource && resource[0] != '\0' && jwt.claims->aud && jwt.claims->aud[0] != '\0' &&
-            strcmp(jwt.claims->aud, resource) != 0) {
+        const char *resource;
+        const char *aud = jwt.claims->aud;
+
+        if (aud && aud[0] != '\0' && strcmp(aud, "hydrogen-chat") == 0) {
+            mcp_auth_fail(out, MCP_AUTH_REJECT_AUD);
+            free_jwt_validation_result(&jwt);
+            return false;
+        }
+        resource = mcp_auth_resource(cfg);
+        if (resource && resource[0] != '\0' && mcp_auth_aud_is_resource_uri(aud) &&
+            strcmp(aud, resource) != 0) {
             mcp_auth_fail(out, MCP_AUTH_REJECT_AUD);
             free_jwt_validation_result(&jwt);
             return false;

@@ -129,15 +129,10 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 ### Folder: /docs/H/plans
 
 - [README.md](/docs/H/plans/README.md): Plans folder index
+- [AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md): Auth finale (active P0 plan — OIDC, Keycloak, register, MFA, IdP leftovers)
 - [CHAT_FINALE.md](/docs/H/plans/CHAT_FINALE.md): Chat finale (active P0 plan)
-
-- [KEYCLOAK_PLAN.md](/docs/H/plans/KEYCLOAK_PLAN.md): Keycloak SSO / Hydrogen as OIDC RP (Phase 5 E2E in progress)
 - [MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md): Mail Relay subsystem implementation plan
-
 - [MIRAGE_PLAN.md](/docs/H/plans/MIRAGE_PLAN.md): Mirage distributed proxy architecture (deferred)
-- [OIDC-PLAN.md](/docs/H/plans/OIDC-PLAN.md): Historical OIDC RP implementation phase log
-- [OIDC_E2E_LOG.md](/docs/H/plans/OIDC_E2E_LOG.md): OIDC real-Keycloak manual E2E checklist
-- [OIDC_IDP.md](/docs/H/plans/OIDC_IDP.md): Hydrogen as OIDC Identity Provider (Phases 0–15 complete; Phase 16 docs)
 - [SCHEMAHELPER.md](/docs/H/plans/SCHEMAHELPER.md): SchemaHelper interactive SchemaTool front-end (implementation plan)
 - [UNITY_ASAN_PLAN.md](/docs/H/plans/UNITY_ASAN_PLAN.md): Separate ASAN Unity test variant plan
 
@@ -179,6 +174,7 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [CHAT_PLAN_PHASE_9_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_9_COMPLETE.md)
 - [CONDUIT_COMPLETE.md](/docs/H/plans/complete/CONDUIT_COMPLETE.md)
 - [IMAGE_PLAN_COMPLETE.md](/docs/H/plans/complete/IMAGE_PLAN_COMPLETE.md): Reporting image_scale (Phases 0–7)
+- [KEYCLOAK_PLAN_COMPLETE.md](/docs/H/plans/complete/KEYCLOAK_PLAN_COMPLETE.md): Keycloak SSO / OIDC RP ops (superseded by AUTH_FINALE)
 - [CONDUIT_DIAGRAMS_COMPLETE.md](/docs/H/plans/complete/CONDUIT_DIAGRAMS_COMPLETE.md)
 - [CONDUIT_FIX_COMPLETE.md](/docs/H/plans/complete/CONDUIT_FIX_COMPLETE.md)
 - [DATABASE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_PLAN_COMPLETE.md)
@@ -192,6 +188,9 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [MAILRELAY_BLACKBOX_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md)
 - [MDNS_UPGRADE_COMPLETE.md](/docs/H/plans/complete/MDNS_UPGRADE_COMPLETE.md): mDNS RFC server + real client (Phases 0–8)
 - [MIGRATIONS_COMPLETE.md](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md)
+- [OIDC-PLAN_COMPLETE.md](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md): OIDC RP implementation phase log (superseded by AUTH_FINALE)
+- [OIDC_IDP_COMPLETE.md](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md): Hydrogen as OIDC IdP Phases 0–16 (superseded by AUTH_FINALE)
+- [OIDC_E2E_LOG_COMPLETE.md](/docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md): Real-Keycloak E2E pre-flight (superseded by AUTH_FINALE Phase 11)
 - [SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md): SchemaTool migration drift auditor (CLI 1.7.1)
 - [STATIC_COMPLETE.md](/docs/H/plans/complete/STATIC_COMPLETE.md)
 - [TERMINAL_PLAN_COMPLETE.md](/docs/H/plans/complete/TERMINAL_PLAN_COMPLETE.md)

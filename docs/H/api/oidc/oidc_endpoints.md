@@ -6,7 +6,7 @@ first-party and trusted clients. Paths live under `/.well-known` and `/oauth/*`
 
 | Role | Config | Docs |
 | --- | --- | --- |
-| Hydrogen **IdP** (this document) | `OIDC` | Plan: [OIDC_IDP.md](/docs/H/plans/OIDC_IDP.md) |
+| Hydrogen **IdP** (this document) | `OIDC` | Remaining: [AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md); history: [OIDC_IDP_COMPLETE.md](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md) |
 | Hydrogen **RP** (Keycloak client) | `OIDC_RP` | [oidc_rp.md](/docs/H/api/auth/oidc_rp.md) |
 
 **Kill switch:** `OIDC.Enabled` defaults to `false`. When disabled, IdP routes
@@ -278,7 +278,8 @@ RP-initiated logout — deferred (Phase 17).
 ## Related
 
 - [OIDC_IDP_OPERATOR.md](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md) — enable, keys, TLS
-- [OIDC_IDP.md](/docs/H/plans/OIDC_IDP.md) — implementation plan
+- [AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md) — remaining IdP / RP work
+- [OIDC_IDP_COMPLETE.md](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md) — implementation history
 - [test_45_oidc_idp.md](/docs/H/tests/test_45_oidc_idp.md) — blackbox coverage
 - [oidc.md](/docs/H/core/subsystems/oidc/oidc.md) — subsystem overview
 - [oidc_rp.md](/docs/H/api/auth/oidc_rp.md) — when Hydrogen is the client of Keycloak

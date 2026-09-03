@@ -2,7 +2,8 @@
 
 How to enable and operate Hydrogen as an OpenID Connect **Identity Provider**.
 For request/response detail see [oidc_endpoints.md](/docs/H/api/oidc/oidc_endpoints.md).
-For implementation history see [OIDC_IDP.md](/docs/H/plans/OIDC_IDP.md).
+For implementation history see [OIDC_IDP_COMPLETE.md](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md).
+Remaining work: [AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md).
 
 ---
 
@@ -10,7 +11,7 @@ For implementation history see [OIDC_IDP.md](/docs/H/plans/OIDC_IDP.md).
 
 | Need | Use | Config |
 | --- | --- | --- |
-| External org SSO (Keycloak, etc.); Hydrogen apps accept IdP logins | Hydrogen as **RP** | `OIDC_RP` — [oidc_rp.md](/docs/H/api/auth/oidc_rp.md), [KEYCLOAK_PLAN.md](/docs/H/plans/KEYCLOAK_PLAN.md) |
+| External org SSO (Keycloak, etc.); Hydrogen apps accept IdP logins | Hydrogen as **RP** | `OIDC_RP` — [oidc_rp.md](/docs/H/api/auth/oidc_rp.md), [AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md) |
 | Hydrogen **issues** OIDC tokens for first-party / trusted clients | Hydrogen as **IdP** | `OIDC` — this runbook |
 
 Both stacks can coexist in one process, but they are separate code and config.
@@ -136,6 +137,7 @@ Also see
 
 ## Related plans
 
-- [OIDC_IDP.md](/docs/H/plans/OIDC_IDP.md) — IdP implementation
-- [KEYCLOAK_PLAN.md](/docs/H/plans/KEYCLOAK_PLAN.md) — external IdP + Hydrogen RP
-- [OIDC-PLAN.md](/docs/H/plans/OIDC-PLAN.md) — historical RP phase log
+- [AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md) — remaining auth / OIDC / Keycloak work
+- [OIDC_IDP_COMPLETE.md](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md) — IdP implementation history
+- [KEYCLOAK_PLAN_COMPLETE.md](/docs/H/plans/complete/KEYCLOAK_PLAN_COMPLETE.md) — RP ops history
+- [OIDC-PLAN_COMPLETE.md](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md) — historical RP phase log

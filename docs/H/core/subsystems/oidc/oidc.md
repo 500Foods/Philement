@@ -6,8 +6,10 @@ Hydrogen as a **Relying Party** instead.
 
 ## Implemented subset (source of truth)
 
-Implementation status and gates live in
-[OIDC_IDP.md](/docs/H/plans/OIDC_IDP.md) (Phases 0–15 complete as of 2026-07-23).
+Implementation history:
+[OIDC_IDP_COMPLETE.md](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md)
+(Phases 0–16 complete as of 2026-07-23). Remaining IdP work:
+[AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md).
 API contract: [oidc_endpoints.md](/docs/H/api/oidc/oidc_endpoints.md).
 Operators: [OIDC_IDP_OPERATOR.md](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md).
 
@@ -19,12 +21,12 @@ Operators: [OIDC_IDP_OPERATOR.md](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md).
 | UserInfo, introspect, revoke | Implemented |
 | Resource owners = Acuranzo accounts | Implemented |
 | Config kill switch `OIDC.Enabled` | Implemented (default off) |
-| Dynamic registration, end-session, implicit | Not MVP |
-| DB-backed auth codes / refresh (multi-process) | Deferred (in-memory MVP) |
-| Multi-engine blackbox (all 7 DBs) | Deferred (Test 45 SQLite) |
+| Dynamic registration, end-session, implicit | Not MVP — [AUTH_FINALE](/docs/H/plans/AUTH_FINALE.md) Phase 10 |
+| DB-backed auth codes / refresh (multi-process) | Deferred (in-memory MVP) — AUTH_FINALE Phase 9 |
+| Multi-engine blackbox (all 7 DBs) | Implemented (Test 45 7/7 as of 2026-07-23) |
 
 **RP (Keycloak client):** [oidc_rp.md](/docs/H/api/auth/oidc_rp.md),
-[KEYCLOAK_PLAN.md](/docs/H/plans/KEYCLOAK_PLAN.md). Do not confuse
+[AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md). Do not confuse
 `src/api/oidc/` (IdP) with `src/api/auth/oidc_rp/` (RP).
 
 Sections below retain historical architecture notes. Where they conflict with

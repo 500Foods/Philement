@@ -19,6 +19,10 @@ Active plans folder: [`/docs/H/plans/`](/docs/H/plans/).
 | [AUTH_PLAN_REVIEW_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_REVIEW_COMPLETE.md) | Auth plan review |
 | [AUTH_PLAN_SECURITY_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_SECURITY_COMPLETE.md) | Auth security |
 | [AUTH_PLAN_TESTS_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_TESTS_COMPLETE.md) | Auth tests |
+| [KEYCLOAK_PLAN_COMPLETE.md](/docs/H/plans/complete/KEYCLOAK_PLAN_COMPLETE.md) | Keycloak SSO / OIDC RP ops (superseded by AUTH_FINALE) |
+| [OIDC-PLAN_COMPLETE.md](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md) | OIDC RP Phases 1–26+31 (superseded by AUTH_FINALE) |
+| [OIDC_IDP_COMPLETE.md](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md) | Hydrogen as OIDC IdP Phases 0–16 (superseded by AUTH_FINALE) |
+| [OIDC_E2E_LOG_COMPLETE.md](/docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md) | Real-Keycloak E2E pre-flight (superseded by AUTH_FINALE Phase 11) |
 | [CAP_PLAN_QUERY-COMPLETE.md](/docs/H/plans/complete/CAP_PLAN_QUERY-COMPLETE.md) | Cap query endpoint |
 | [CHAT_PLAN_ORIGINAL_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_ORIGINAL_COMPLETE.md) | Chat original draft |
 | [CHAT_PLAN_SUMMARY_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_SUMMARY_COMPLETE.md) | Chat Phases 1–12 index (historical) |

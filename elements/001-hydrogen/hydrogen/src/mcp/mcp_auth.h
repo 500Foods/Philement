@@ -39,6 +39,7 @@ bool mcp_auth_body_has_hydrogen(const char *body, size_t body_len);
 bool mcp_auth_aud_contains(const OIDCTokenClaims *claims, const char *resource);
 bool mcp_auth_scopes_satisfied(const char *scope_csv, const MCPConfig *cfg);
 const char *mcp_auth_resource(const MCPConfig *cfg);
+bool mcp_auth_aud_is_resource_uri(const char *aud);
 char *mcp_prm_metadata_url(const MCPConfig *cfg);
 char *mcp_www_authenticate_value(const MCPConfig *cfg);
 

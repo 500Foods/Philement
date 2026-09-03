@@ -27,6 +27,17 @@ not open work unless listed below.
 
 ## P0 — Close the loop (high ROI, low–medium effort)
 
+### 1. Auth Finale — OIDC, Keycloak, register, MFA, IdP leftovers
+
+| | |
+| --- | --- |
+| **Plan** | [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) |
+| **Effort** | XL |
+| **Done** | Password login/renew/logout; OIDC RP Phases 1–26 + multi-provider; IdP Phases 0–16 + Test 45; Mail Relay OTP primitives |
+| **Remaining** | Gated Phases 0–12 (+8b, +10b): register email, DefaultRoles, client-role parse, RP health/backchannel, terminal WS auth, login MFA, password reset, IdP durability, optional IdP post-MVP, self-service session revoke, real-Keycloak E2E (Phase 11, ops-gated), docs |
+| **Why now** | One plan for remaining auth, same pattern as Chat Finale. Production SSO is coded; register/provision still lie; live Keycloak unsigned (OTP blocker) |
+| **Note** | History: [`OIDC-PLAN_COMPLETE.md`](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md), [`KEYCLOAK_PLAN_COMPLETE.md`](/docs/H/plans/complete/KEYCLOAK_PLAN_COMPLETE.md), [`OIDC_IDP_COMPLETE.md`](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md), [`AUTH_PLAN_COMPLETE.md`](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md). Chat JWT mint stays [`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md) |
+
 ### 2. Chat Finale — dual path, knobs, MCP System.Info
 
 | | |
@@ -37,28 +48,6 @@ not open work unless listed below.
 | **Remaining** | Gated Phases 0–9: contract, temperature, reasoning, REST, WS, dead chat functions, `H.system.info` reuse of JWT `/api/system/info`, MCP tool `System.Info`, Grok user-JWT MCP, docs/DOKS. Phase 10 parked |
 | **Why now** | 500 Courses first deploy: REST **or** WS, Grok, streaming/temperature/reasoning, Grok calls public MCP with the user's Hydrogen JWT (possibly another pod). One plan, high priority |
 | **Note** | History: [`CHAT_PLAN_SUMMARY_COMPLETE.md`](/docs/H/plans/complete/CHAT_PLAN_SUMMARY_COMPLETE.md). MCP protocol is done; do not reopen MCP_COMPLETE except 16–17 |
-
-### 1. Keycloak / OIDC RP real-IdP sign-off
-
-| | |
-| --- | --- |
-| **Plan** | [`KEYCLOAK_PLAN.md`](/docs/H/plans/KEYCLOAK_PLAN.md) (Phase 5) · checklist [`OIDC_E2E_LOG.md`](/docs/H/plans/OIDC_E2E_LOG.md) · history [`OIDC-PLAN.md`](/docs/H/plans/OIDC-PLAN.md) |
-| **Effort** | S–M (ops/manual; blocked on test-user MFA/OTP, not code) |
-| **Done** | ~90% — Phases 0–4 complete; mock Test 42 88/88; production config wired |
-| **Remaining** | Manual E2E against real Keycloak (password + OIDC login, provision, renew, logout, managers); optional Phase 26 last-method polish |
-| **Why now** | Unblocks production SSO. Implementation is done; only verification remains. |
-
-### 3. OIDC RP — provision DefaultRoles → `account_roles`
-
-| | |
-| --- | --- |
-| **Plan** | Follow-on to OIDC RP (role **mapping** at JWT time is live; this is DB seed on provision) |
-| **Code** | `src/api/auth/oidc_rp/oidc_rp_link_provision.c` · `oidc_rp_link_default.c` · config `ProvisionDefaults.DefaultRoles` |
-| **Effort** | S–M (QueryRef INSERT + call after #083/#081) |
-| **Done** | ~30% — config parsed; logs count when non-empty; no row writes |
-| **Remaining** | QueryRef (or reuse) to insert each default role_id into `account_roles`; call from both provision paths; Unity + Test 42 provision cases with DefaultRoles set |
-| **Why now** | Operators can configure DefaultRoles today and get only a log line; DATABASE role source then yields empty JWT roles for new users. |
-| **Note** | Distinct from `oidc_rp_roles.c` (JWT mapping). Distinct from IdP client-role parse (item 16). |
 
 ---
 
@@ -73,18 +62,6 @@ not open work unless listed below.
 | **Done** | 0% — plan only |
 | **Remaining** | `unity_asan` CMake tree, harness test, first-run triage (`detect_leaks=0`) |
 | **Why now** | Catches UAF/double-free on unit-only paths blackbox never hits. Separate build; does not touch gcov. |
-
-### 6. Auth register — persist email on `account_contacts`
-
-| | |
-| --- | --- |
-| **Plan** | No dedicated plan yet (auth suite complete; this is a follow-on gap) |
-| **Code** | `src/api/auth/auth_service_database.c` (`create_account_record`) · `src/api/auth/register/register.c` |
-| **Effort** | S–M (needs Acuranzo QueryRef + call site) |
-| **Done** | ~40% — account row via #051; password hash via #052 wired on register; email accepted by API but not stored |
-| **Remaining** | New migration QueryRef to `INSERT` email into `account_contacts` (contact type email); call from `create_account_record` or register; Unity + blackbox register coverage |
-| **Why now** | Register returns 201 with email in JSON but login-by-email / contact lookups stay empty unless fixtures seed contacts. |
-| **Note** | Do **not** reuse QueryRef #052 — that is password-hash storage only. |
 
 ### 9. DB queue health check — live connection probe
 
@@ -174,7 +151,7 @@ not open work unless listed below.
 | **Plan** | [`MAILRELAY_PLAN.md`](/docs/H/plans/MAILRELAY_PLAN.md) |
 | **Effort** | L–XL |
 | **Done** | ~70% — Phases 0–5, 7–8 done; Phase 6/10 partial; pause after 7B/8; `test_58` Events+Persist depth on non-MySQL engines |
-| **Remaining** | System template seeds, Phase 9 Lithium UI, Phase 10 ops remainder, Phases 11–15 (inbound/rewrite/security/docs as scoped), auth MFA wiring via OTP; **P1 defects 12d/12e** (MySQL Persist SEGV; MAX+1 insert confirm/retry at call sites) before treating Persist as multi-engine complete |
+| **Remaining** | System template seeds, Phase 9 Lithium UI, Phase 10 ops remainder, Phases 11–15 (inbound/rewrite/security/docs as scoped); **P1 defects 12d/12e** (MySQL Persist SEGV; MAX+1 insert confirm/retry at call sites) before treating Persist as multi-engine complete. Login MFA wiring moved to [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) Phase 8 |
 | **Why next** | Core send/API/Lua/OTP stack works (`test_57`/`test_58`). Remaining is product surface and ops polish. |
 | **Note** | Parallel session may complete subsets — re-check plan/tests before starting. |
 
@@ -190,16 +167,6 @@ not open work unless listed below.
 | **Why later** | SchemaTool already audits; v1 review + packets shipped. Not a Hydrogen subsystem. |
 | **Note** | Lua TUI in `extras/schematool/`. SchemaTool stays read-only. Packets, not full `design_NNNN.lua`. |
 
-### 15. Terminal WebSocket authentication
-
-| | |
-| --- | --- |
-| **Code** | `src/terminal/terminal_websocket.c` (`terminal_websocket_requires_auth`) |
-| **Effort** | M |
-| **Done** | ~10% — hook always returns false |
-| **Remaining** | Product decision (JWT/session cookie vs stay open on trusted nets); implement gate + blackbox |
-| **Why later** | Fine for lab; risk on exposed deployments. |
-
 ### 24. `H.externaldb` — ad-hoc external database connections from Lua scripts
 
 | | |
@@ -213,30 +180,9 @@ not open work unless listed below.
 | **Remaining** | (1) `H.externaldb.connect(conn_str)` → userdata handle with metatable for `:query(sql, params?)` and `:close()`; (2) resolve engine from connection string via `database_get_engine_interface` / `database_engine_get`; (3) build `ConnectionConfig` via `parse_connection_string`, call `engine->connect`; (4) `engine->execute_query` + format `QueryResult` as Lua table; (5) `engine->disconnect` + `free_connection_config` on close; (6) GC `__gc` to avoid leaks; (7) register `H_lua_install_db` in `lua_context.c:246`; (8) Unity unit tests (model `scripting_api_http_test.c`); (9) blackbox via Test 43. **Do not** call `database_create_and_start_queue` — it builds a DQM queue (worker threads + queue manager registration), which is the opposite of what an ad-hoc connection needs. |
 | **Why now** | Operators increasingly need to query external databases (Canvas, SIS, etc.) from scripts without provisioning them as Hydrogen databases. Reusing the existing `DatabaseEngineInterface` + `parse_connection_string` infra gives multi-engine support and named `QueryRef`-style parsing for free. |
 
-### 17. OIDC RP — parse IdP client roles (`resource_access`)
-
-| | |
-| --- | --- |
-| **Code** | `src/api/auth/oidc_rp/oidc_rp_idtoken.c` · `oidc_rp_roles.c` (`IDP_CLIENT_ROLES`) |
-| **Effort** | S–M |
-| **Done** | Config enum exists; mode falls back to realm roles |
-| **Remaining** | Parse `resource_access.<client>.roles` into claims; use in IDP_CLIENT_ROLES / MERGE; tests |
-| **Why later** | Only needed when operators choose client-scoped Keycloak roles. |
-
 ---
 
 ## P3 — Greenfield / deferred (keep visible, do not start casually)
-
-### 18. Hydrogen as OIDC Identity Provider (post-MVP)
-
-| | |
-| --- | --- |
-| **Plan** | [`OIDC_IDP.md`](/docs/H/plans/OIDC_IDP.md) |
-| **Effort** | M–L remaining (was XL) |
-| **Done** | ~90% — Phases 0–15 complete (protocol + Test 45 + hardening); Phase 16 docs; refresh via `oidc_refresh_tokens.c` |
-| **Remaining** | Phase 17 optional: end-session (`api/oidc/end_session` → 501), dynamic registration (`api/oidc/registration` → 501), client credentials, consent UI; DB-backed codes/refresh for multi-process; optional userinfo accounts-DB profile merge (`oidc_service_userinfo.c`); retire or replace scaffold `oidc_users.c` (test_user dummy) |
-| **Docs** | [oidc_endpoints.md](/docs/H/api/oidc/oidc_endpoints.md) · [OIDC_IDP_OPERATOR.md](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md) |
-| **Note** | Separate from OIDC **RP** (Keycloak). MVP IdP is usable behind kill switch; HA needs durable stores. |
 
 ### 19. Print subsystem — job → device / Beryllium handoff
 
@@ -321,6 +267,12 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 - [`DATABASE_UPDATE_PLAN_COMPLETE.md`](/docs/H/plans/complete/DATABASE_UPDATE_PLAN_COMPLETE.md) — Phases 5–6 verification/docs done; Unity param suites + `mkp`/`mks` green
 - Docs: [PARAMETER_TYPES.md](/docs/H/database/PARAMETER_TYPES.md), [PARAMETER_BINDING.md](/docs/H/database/PARAMETER_BINDING.md)
 
+**2026-09-02 AUTH_FINALE consolidation:**
+
+- Remaining OIDC / Keycloak / register / MFA / terminal-WS-auth / IdP post-MVP work gathered into [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md)
+- Historical plans moved: [`KEYCLOAK_PLAN_COMPLETE.md`](/docs/H/plans/complete/KEYCLOAK_PLAN_COMPLETE.md), [`OIDC-PLAN_COMPLETE.md`](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md), [`OIDC_IDP_COMPLETE.md`](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md), [`OIDC_E2E_LOG_COMPLETE.md`](/docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md)
+- TODO items 1, 3, 6, 15, 17, 18 collapsed into item 1 (Auth Finale). Login MFA wiring no longer listed under Mail Relay remainder
+
 **2026-08-07 dead API cleanup:**
 
 - Removed legacy no-op `oidc_generate_refresh_token` (+ header/Unity); live path remains `oidc_refresh_issue`
@@ -336,11 +288,9 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 
 | # | Item | Effort left | Done | Priority |
 | --- | ------ | ------------- | ------ | ---------- |
+| 1 | Auth Finale | XL | RP 1–26 + IdP 0–16 | P0 |
 | 2 | Chat Finale | XL | Phases 1–12 + MCP 0–15 | P0 |
-| 1 | Keycloak / OIDC RP E2E | S–M | ~90% | P0 |
-| 3 | Provision DefaultRoles → account_roles | S–M | ~30% | P0 |
 | 4 | Unity ASAN | M | 0% | P1 |
-| 6 | Register email → account_contacts | S–M | ~40% | P1 |
 | 9 | DB queue health probe | S–M | ~40% | P1 |
 | 9a | Config health SQL + bootstrap orphan DROP | S–M | hard-coded | P1 |
 | 12 | DB fault tolerance (crash/transient) | L | partial | P1 |
@@ -350,10 +300,7 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 12e | MAX+1 PK clients: confirm + retry | M | single-thread OK | P1 |
 | 13 | Mail Relay remainder | L–XL | ~70% | P2 |
 | 25 | SchemaHelper TUI | L | v1 | P2 |
-| 15 | Terminal WS auth | M | ~10% | P2 |
-| 17 | OIDC RP client-role parse | S–M | fallback | P2 |
 | 24 | `H.externaldb` — ad-hoc external DB from Lua | M | 0% | P2 |
-| 18 | OIDC IdP post-MVP | M–L | ~90% | P3 |
 | 19 | Print job → device / Beryllium | L–XL | ~30% | P3 |
 | 22 | Mirage | XL | 0% | P3 |
 | 23 | Reserved enums/fields | n/a | n/a | P3 |

@@ -25,7 +25,7 @@ Keycloak token.
 | Lithium SPA | `elements/003-lithium/` | This project |
 | Lithium docs | `docs/Li/` | TOC, INS, manager, table, API, OIDC |
 | Hydrogen | `elements/001-hydrogen/hydrogen/` | Auth, Conduit, scripting workers, WS |
-| Hydrogen docs | `docs/H/` | APIs, tests, plans (`LUA_CLIENT`, Keycloak) |
+| Hydrogen docs | `docs/H/` | APIs, tests, plans (`LUA_CLIENT`, AUTH_FINALE) |
 | Helium | `elements/002-helium/` | Acuranzo (and other) Lua migrations |
 | Helium docs | `docs/He/` | Migration authoring |
 | Reception | `/mnt/extra/Projects/500-Courses-Reception/` | Public 500 Courses SPA (sibling repo) |
@@ -252,7 +252,7 @@ Do not invent product C routes (`/api/coursebuilder/*`, `/api/enroll/*`).
 Docs: [`LITHIUM-OIDC.md`](/docs/Li/LITHIUM-OIDC.md),
 [`LITHIUM-KEYCLOAK.md`](/docs/Li/LITHIUM-KEYCLOAK.md),
 [`docs/H/api/auth/oidc_rp.md`](/docs/H/api/auth/oidc_rp.md),
-[`docs/H/plans/KEYCLOAK_PLAN.md`](/docs/H/plans/KEYCLOAK_PLAN.md).
+[`docs/H/plans/AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md).
 
 **Hard rule:** Keycloak `id_token` / `access_token` never enter the SPA.
 
@@ -353,7 +353,7 @@ config:
 ```
 
 `id` **must** match `OIDC_RP.Providers[].Name` on Hydrogen. Redirect URI is
-exact string match. KEYCLOAK_PLAN Phase 5 (real-IdP E2E) has been blocked on
+exact string match. AUTH_FINALE Phase 11 (real-IdP E2E) has been blocked on
 MFA/OTP for the test user — that is ops, not a reason to re-implement RP.
 
 Password login stays independent of IdP availability.

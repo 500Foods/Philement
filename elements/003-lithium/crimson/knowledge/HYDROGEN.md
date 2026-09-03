@@ -105,7 +105,8 @@ Hydrogen is currently designed for technical users who:
 - [**Database**](/docs/H/plans/complete/DATABASE_PLAN_COMPLETE.md) - Implementation plan for Database subsystem
 - [**Migrations**](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md) - Performance improvements to the Migration system
 - [**Conduit**](/docs/H/plans/complete/CONDUIT_COMPLETE.md) - Implementation plan for Conduit Service endpoints
-- [**Auth**](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md) - Implementation plan for Auth subsystem
+- [**Auth Finale**](/docs/H/plans/AUTH_FINALE.md) - Remaining OIDC / Keycloak / auth work (active)
+- [**Auth**](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md) - Implementation plan for Auth subsystem (historical)
 - [**MCP**](/docs/H/plans/complete/MCP_COMPLETE.md) - MCP server subsystem (Phases 0–14)
 - [**Conduit REST API**](/docs/H/core/subsystems/conduit/conduit_api.md) - Database query by reference
 

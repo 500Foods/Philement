@@ -1,8 +1,12 @@
 # OIDC End-to-End Test Log (Phase 27)
 
-> Manual test checklist for Phase 27 of [OIDC-PLAN.md](/docs/H/plans/OIDC-PLAN.md).
-> This document records the result of running the full sign-in flow
-> against the real Keycloak instance at
+> **Superseded.** Remaining ticks live in
+> [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) Phase 11. This file is
+> the historical pre-flight record (environment, defects found, OTP
+> blocker). Do not start work from it. RP implementation history:
+> [OIDC-PLAN_COMPLETE.md](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md).
+>
+> Original scope: full sign-in flow against real Keycloak at
 > `https://www.500passwords.com/realms/festival`, replacing the mock
 > Keycloak used in Phases 1–22.
 
