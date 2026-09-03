@@ -184,6 +184,32 @@ configuration section.
   `RELEASES.md` (September 2026 section) and in `auth_chat.md`
   Configuration section. Decision chosen: opt-in to retention
   (default `store=false`) — fails closed for privacy.
+- **2026-09-03 — Housekeeping: `auth_chat_test_success_path` fixed.**
+  Pre-existing failure on `main` (verified by stash test before any
+  Phase 10a changes). Root cause: `auth_chat.c` calls the chat proxy
+  through `chat_local_mcp_complete_request` (in `local_mcp.c`),
+  not `chat_proxy_send_with_retry` directly. The `USE_MOCK_AUTH_CHAT_DEPS`
+  rename (`chat_proxy_send_with_retry → mock_chat_proxy_send_with_retry`)
+  was only applied to AUTH source files (`auth_chat.c`), so `local_mcp.c`
+  kept the real symbol and made real CURL calls, which all failed with
+  "Could not resolve hostname" + 3 retries + 14 retry-attempts-exhausted
+  log lines per test. Result: `g_store_segment_count` never incremented
+  and the success-path test failed at line 128
+  (`mock_auth_chat_deps_store_segment_count() > 0`). Fix: in
+  `cmake/CMakeLists-unity.cmake` WSCHAT branch, add the
+  `USE_MOCK_AUTH_CHAT_DEPS` define **and** `-include mock_auth_chat_deps.h`
+  to `local_mcp.c` only (mirroring the existing `helpers/health.c` /
+  `USE_MOCK_CHAT_PROXY` precedent that guards against `proxy.c` being
+  compiled with the rename and colliding with `mock_chat_proxy.c`).
+  Same discipline: rename the call site, not the definition. Verified:
+  `mku auth_chat_test_success_path` 9/9 PASS (was 8/9); all 6 auth_chat
+  test files (56 tests) PASS; all 4 local_mcp tests PASS; `mkt`/`mkp`/
+  `mks` clean; 309 dead functions (0 chat), no new entries.
+  **Lesson:** the mock-pipeline is brittle when production code
+  refactors through a wrapper — the wrapper's call site becomes
+  invisible to the source-file filter that gates the mock rename.
+  Worth a future audit of every AUTH-source test that mocks
+  chat_proxy / chat_storage against the current call graph.
 - Next: Phase 10b (chat rate limiting) is the second pulled-forward
   item, **not yet started**. 10b design discussion deferred to a
   follow-up conversation (per the plan's "one phase per conversation"
@@ -268,11 +294,3 @@ Named Unity green. Test 59 (or its successor) green for single-user
 behavior unchanged + new multi-user rate-limit subtest green. `mkt`/`mkp`
 green. Behavior documented in `auth_chat.md`, `auth_chats.md`, and
 `websocket_chat.md`.
-
----
-
-## Working Log (Phase 10 only)
-
-See [Phase 10a Working Log](#working-log-1) above for the entries that
-moved from the archive. This section is for new entries made against
-Phase 10 work going forward.

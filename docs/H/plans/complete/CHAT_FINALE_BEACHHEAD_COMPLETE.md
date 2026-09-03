@@ -11,7 +11,7 @@ limiting pending) lives in the **active** plan at
 `plans/complete/` are history; the active plan is the one to read for new
 work.
 
-#### What the beachhead ships
+### What the beachhead ships
 
 - Dual REST + WebSocket paths (real SSE for WS, real SSE for REST streaming).
 - Provider knobs actually reach the wire: `temperature`, `max_tokens` /
@@ -1566,4 +1566,3 @@ configuration section.
   test source globbed; static-function gate clean), `mkp` green
   (1,987 files, 0 issues), `mks` green (165 scripts, 1074 directives
   justified), `mkl` clean (323 files, 2341/2341 links, 0 missing).
-
