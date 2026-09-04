@@ -15,12 +15,13 @@
 # (Helpers live in tests/lib/mailrelay_api_helpers.sh)
 
 # CHANGELOG
+# 2.8.2 - 2026-09-04 - Queue.Persist on for MySQL/MariaDB after LONGLONG bind fix.
 # 2.8.1 - 2026-08-21 - STARTTLS CAPath written into runtime config.
 # 2.8.0 - 2026-08-21 - Split helpers; sequential plaintext/STARTTLS per engine;
 #                      capped parallelism and longer waits under full-suite load.
 # 2.7.0 - 2026-08-21 - 11.4: second send with the same idempotency_key
 #                      returns the first message_id and does not double-deliver
-#                      when Queue.Persist is on (all engines except MySQL/MariaDB).
+#                      when Queue.Persist is on (all engines).
 # 2.6.0 - 2026-07-30 - MailRepoProbeOnLaunch: H.mail template/route/cleanup/event repo helpers via ephemeral Lua.
 # 2.5.0 - 2026-07-29 - OTP launch seam: wrong-code (otp_increment_attempts) + max-attempts (otp_mark_max_attempts) markers and DB status checks.
 # 2.4.0 - 2026-07-15 - Moved listeners from Linux ephemeral range 55800-55831 to dedicated 15800-15831 ports to prevent full-suite client connection collisions.
@@ -37,7 +38,7 @@ TEST_NAME="MailRelay API"
 TEST_ABBR="MRA"
 TEST_NUMBER="58"
 TEST_COUNTER=0
-TEST_VERSION="2.8.1"
+TEST_VERSION="2.8.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"

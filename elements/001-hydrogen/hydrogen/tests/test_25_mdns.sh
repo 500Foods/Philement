@@ -4,6 +4,8 @@
 # Tests the mDNS service discovery functionality: server announcements and client discovery.
 
 # CHANGELOG
+# 4.3.0 - 2026-09-04 - Fail if the main server dies before clean shutdown (goodbye tokens)
+# 4.2.0 - 2026-09-04 - Pair every TEST with one PASS/FAIL (Unpaired TEST / extra PASS/FAIL)
 # 4.1.0 - 2026-09-01 - Refactor: extract helpers to lib/mdns_test_helpers.sh; fix GOODBYE and tshark packet detection
 # 4.0.1 - 2026-09-01 - Phase 7: fix tshark AA filter, fix TTL=0 filter, fix API mdns.claimed array length, remove GOODBYE from startup log contract
 # 3.0.5 - 2026-08-31 - Dual-stack not required: one family is enough
@@ -25,7 +27,7 @@ TEST_NAME="mDNS"
 TEST_ABBR="DNS"
 TEST_NUMBER="25"
 TEST_COUNTER=0
-TEST_VERSION="4.1.0"
+TEST_VERSION="4.3.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -152,19 +154,13 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
         # Verify log contract tokens
         # shellcheck disable=SC2310 # We want to continue even if the test fails
-        if test_mdns_log_contract "${SERVER_LOG}"; then
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "mDNS log contract verified"
-        else
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "mDNS log contract verification failed"
+        if ! test_mdns_log_contract "${SERVER_LOG}"; then
             EXIT_CODE=1
         fi
 
         # Verify /api/system/info mDNS fields
         # shellcheck disable=SC2310 # We want to continue even if the test fails
-        if test_mdns_system_info "${SERVER_PORT}"; then
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "mDNS system/info fields verified"
-        else
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "mDNS system/info fields verification failed"
+        if ! test_mdns_system_info "${SERVER_PORT}"; then
             EXIT_CODE=1
         fi
 
@@ -190,10 +186,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
         # Two-process duplicate-name rename test
         # shellcheck disable=SC2310 # We want to continue even if the test fails
-        if test_mdns_duplicate_names "${SERVER_PORT}" "${SERVER_LOG}"; then
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Duplicate-name rename verified"
-        else
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Duplicate-name rename test failed"
+        if ! test_mdns_duplicate_names "${SERVER_PORT}" "${SERVER_LOG}"; then
             EXIT_CODE=1
         fi
 
@@ -214,10 +207,9 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             analyze_mdns_packets "${TRACED_LOG}" || true
         fi
 
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Enhanced mDNS Packet Analysis Complete"
-
         print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Packet Capture Active During Shutdown"
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Capture remains active through shutdown for goodbye packet analysis"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Capture remains active through shutdown"
 
     fi
 
@@ -239,6 +231,8 @@ if [[ -n "${HYDROGEN_PID}" ]] && ps -p "${HYDROGEN_PID}" > /dev/null 2>&1; then
     HYDROGEN_PID=""
 else
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server process already exited before shutdown test"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server process already exited before shutdown test"
+    EXIT_CODE=1
 fi
 
 # ---- VERIFY GOODBYE LOG TOKENS ----

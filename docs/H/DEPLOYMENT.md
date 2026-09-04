@@ -89,7 +89,7 @@ this section covers only what an operator needs to expose it externally.
 ### Public MCP Resource (for hosted MCP / xAI Remote MCP)
 
 When 500 Courses chat routes Grok through Hydrogen as an MCP tool
-provider (see [`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md) Phase 8),
+provider (see [`CHAT_FINALE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md) Phase 8),
 the external model must be able to reach the MCP port over the public
 internet. That requires:
 

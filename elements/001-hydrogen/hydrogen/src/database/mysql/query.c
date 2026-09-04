@@ -61,6 +61,7 @@ void mysql_cleanup_column_names(char** column_names, size_t column_count) {
 #define MYSQL_TYPE_STRING 254
 #define MYSQL_TYPE_SHORT 2
 #define MYSQL_TYPE_DOUBLE 5
+#define MYSQL_TYPE_LONGLONG 8
 #define MYSQL_TYPE_LONG_BLOB 251
 #define MYSQL_TYPE_DATE 10
 #define MYSQL_TYPE_TIME 11
@@ -76,17 +77,20 @@ typedef struct MYSQL_BIND_STRUCT {
     unsigned long* length;
     char* is_null;
     void* buffer;
-    unsigned long* error;
-    unsigned char* row_ptr;
-    void (*store_param_func)(void*, struct MYSQL_BIND_STRUCT*, unsigned char**, unsigned char**);
-    void (*fetch_result)(struct MYSQL_BIND_STRUCT*, unsigned int, unsigned char**);
-    void (*skip_result)(struct MYSQL_BIND_STRUCT*, unsigned int, unsigned char**);
+    char* error;
+    union {
+        unsigned char* row_ptr;
+        char* indicator;
+    } u;
+    void (*store_param_func)(void*, struct MYSQL_BIND_STRUCT*);
+    void (*fetch_result)(struct MYSQL_BIND_STRUCT*, void*, unsigned char**);
+    void (*skip_result)(struct MYSQL_BIND_STRUCT*, void*, unsigned char**);
     unsigned long buffer_length;
     unsigned long offset;
     unsigned long length_value;
-    unsigned int param_number;
+    unsigned int flags;
     unsigned int pack_length;
-    unsigned int buffer_type;  // MySQL type constant
+    unsigned int buffer_type;
     char error_value;
     char is_unsigned;
     char long_data_used;
@@ -110,9 +114,20 @@ typedef struct {
 /*
  * Fill MYSQL_BIND[param_index] from TypedParameter. Allocates value/length
  * storage into bound_values for mysql_cleanup_bound_values. DATE/TIME/DATETIME/
- * TIMESTAMP parse ISO text into MYSQL_TIME. is_null string-likes bind as empty
- * text (hand-rolled MYSQL_BIND layout cannot set client is_null safely).
+ * TIMESTAMP parse ISO text into MYSQL_TIME. Always point is_null/error at
+ * in-struct indicators; MariaDB bind_param dereferences them (NULL → SEGV).
  */
+void mysql_bind_attach_indicators(void* bind_ptr, unsigned int param_index, char is_null_flag) {
+    MYSQL_BIND* bind = (MYSQL_BIND*)bind_ptr;
+    if (!bind) {
+        return;
+    }
+    bind[param_index].is_null_value = is_null_flag;
+    bind[param_index].is_null = &bind[param_index].is_null_value;
+    bind[param_index].error_value = 0;
+    bind[param_index].error = &bind[param_index].error_value;
+}
+
 bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, TypedParameter* param,
                                          void** bound_values, size_t total_param_count, const char* designator) {
     MYSQL_BIND* bind = (MYSQL_BIND*)bind_ptr;
@@ -124,25 +139,13 @@ bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, Typed
     log_this(designator, "Binding parameter %u: name=%s, type=%d", LOG_LEVEL_TRACE, 3,
              param_index, param->name, param->type);
 
-    // Incomplete MYSQL_BIND layout cannot safely set is_null for the client
-    // library; bind empty text for null string-like values instead.
     if (param->is_null) {
-        char* str_copy = strdup("");
-        if (!str_copy) return false;
-        bound_values[param_index] = str_copy;
-        unsigned long* length = malloc(sizeof(unsigned long));
-        if (!length) {
-            free(str_copy);
-            return false;
-        }
-        *length = 0;
-        bound_values[total_param_count + param_index] = length;
-        bind[param_index].buffer_type = MYSQL_TYPE_STRING;
-        bind[param_index].buffer = str_copy;
-        bind[param_index].buffer_length = 1;
-        bind[param_index].is_null = NULL;
-        bind[param_index].length = length;
-        log_this(designator, "Bound NULL parameter %u as empty string: name=%s", LOG_LEVEL_TRACE, 2,
+        bind[param_index].buffer_type = MYSQL_TYPE_NULL;
+        bind[param_index].buffer = NULL;
+        bind[param_index].buffer_length = 0;
+        bind[param_index].length = NULL;
+        mysql_bind_attach_indicators(bind, param_index, 1);
+        log_this(designator, "Bound NULL parameter %u: name=%s", LOG_LEVEL_TRACE, 2,
                  param_index, param->name);
         return true;
     }
@@ -154,11 +157,11 @@ bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, Typed
             *int_val = param->value.int_value;
             bound_values[param_index] = int_val;
 
-            bind[param_index].buffer_type = MYSQL_TYPE_LONG;
+            bind[param_index].buffer_type = MYSQL_TYPE_LONGLONG;
             bind[param_index].buffer = int_val;
             bind[param_index].buffer_length = sizeof(long long);
-            bind[param_index].is_null = NULL;
             bind[param_index].length = NULL;
+            mysql_bind_attach_indicators(bind, param_index, 0);
 
             log_this(designator, "Bound INTEGER parameter %u: value=%lld", LOG_LEVEL_TRACE, 2,
                      param_index, *int_val);
@@ -182,8 +185,8 @@ bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, Typed
             bind[param_index].buffer_type = MYSQL_TYPE_STRING;
             bind[param_index].buffer = str_copy;
             bind[param_index].buffer_length = (unsigned long)(str_len + 1);
-            bind[param_index].is_null = NULL;
             bind[param_index].length = length;
+            mysql_bind_attach_indicators(bind, param_index, 0);
 
             log_this(designator, "Bound STRING parameter %u: value='%s', len=%zu", LOG_LEVEL_TRACE, 3,
                      param_index, str_copy, str_len);
@@ -198,8 +201,8 @@ bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, Typed
             bind[param_index].buffer_type = MYSQL_TYPE_SHORT;
             bind[param_index].buffer = bool_val;
             bind[param_index].buffer_length = sizeof(short);
-            bind[param_index].is_null = NULL;
             bind[param_index].length = NULL;
+            mysql_bind_attach_indicators(bind, param_index, 0);
 
             log_this(designator, "Bound BOOLEAN parameter %u: value=%d", LOG_LEVEL_TRACE, 2,
                      param_index, *bool_val);
@@ -214,8 +217,8 @@ bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, Typed
             bind[param_index].buffer_type = MYSQL_TYPE_DOUBLE;
             bind[param_index].buffer = float_val;
             bind[param_index].buffer_length = sizeof(double);
-            bind[param_index].is_null = NULL;
             bind[param_index].length = NULL;
+            mysql_bind_attach_indicators(bind, param_index, 0);
 
             log_this(designator, "Bound FLOAT parameter %u: value=%f", LOG_LEVEL_TRACE, 2,
                      param_index,*float_val);
@@ -239,8 +242,8 @@ bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, Typed
             bind[param_index].buffer_type = MYSQL_TYPE_LONG_BLOB;
             bind[param_index].buffer = text_copy;
             bind[param_index].buffer_length = (unsigned long)(text_len + 1);
-            bind[param_index].is_null = NULL;
             bind[param_index].length = length;
+            mysql_bind_attach_indicators(bind, param_index, 0);
 
             log_this(designator, "Bound TEXT parameter %u: len=%zu", LOG_LEVEL_TRACE, 2,
                      param_index, text_len);
@@ -273,8 +276,8 @@ bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, Typed
             bind[param_index].buffer_type = MYSQL_TYPE_DATE;
             bind[param_index].buffer = date_time;
             bind[param_index].buffer_length = sizeof(MYSQL_TIME);
-            bind[param_index].is_null = NULL;
             bind[param_index].length = NULL;
+            mysql_bind_attach_indicators(bind, param_index, 0);
 
             log_this(designator, "Bound DATE parameter %u: %04d-%02d-%02d", LOG_LEVEL_TRACE, 4,
                      param_index, year, month, day);
@@ -307,8 +310,8 @@ bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, Typed
             bind[param_index].buffer_type = MYSQL_TYPE_TIME;
             bind[param_index].buffer = date_time;
             bind[param_index].buffer_length = sizeof(MYSQL_TIME);
-            bind[param_index].is_null = NULL;
             bind[param_index].length = NULL;
+            mysql_bind_attach_indicators(bind, param_index, 0);
 
             log_this(designator, "Bound TIME parameter %u: %02d:%02d:%02d", LOG_LEVEL_TRACE, 4,
                      param_index, hour, minute, second);
@@ -348,8 +351,8 @@ bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, Typed
                 MYSQL_TYPE_DATETIME : MYSQL_TYPE_TIMESTAMP;
             bind[param_index].buffer = date_time;
             bind[param_index].buffer_length = sizeof(MYSQL_TIME);
-            bind[param_index].is_null = NULL;
             bind[param_index].length = NULL;
+            mysql_bind_attach_indicators(bind, param_index, 0);
 
             log_this(designator, "Bound DATETIME/TIMESTAMP parameter %u: %04d-%02d-%02d %02d:%02d:%02d.%03d",
                      LOG_LEVEL_TRACE, 8, param_index, year, month, day, hour, minute, second, milliseconds);

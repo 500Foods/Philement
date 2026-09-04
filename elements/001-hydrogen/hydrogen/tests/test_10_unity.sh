@@ -9,6 +9,7 @@
 # run_unity_tests()
 
 # CHANGELOG
+# 3.5.0 - 2026-09-04 - Pair cached Unity results with one TEST/PASS/FAIL; do not bump TEST counters without TESTs
 # 3.4.0 - 2025-10-01 - Complete cache rewrite: consolidated cache file with in-memory lookups for instant processing
 # 3.3.0 - 2025-10-01 - Optimized cached test processing using parallel xargs for instant results and fixed empty test array handling
 # 3.2.0 - 2025-09-15 - Added test times to each test, a long-running warning, and a long-running count at the end
@@ -32,7 +33,7 @@ TEST_NAME="Unity Unit Tests"
 TEST_ABBR="UNT"
 TEST_NUMBER="10"
 TEST_COUNTER=0
-TEST_VERSION="3.4.0"
+TEST_VERSION="3.5.0"
 TEST_TIMEOUT="30" # Seconds
 LONG_RUNNING="0.250" # Seconds
 
@@ -165,16 +166,16 @@ check_unity_tests_available() {
         test_count=$("${FIND}" "${UNITY_BUILD_DIR}/src" -name "*_test*" -type f -executable | wc -l || true)
         if [[ "${test_count}" -gt 0 ]]; then
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Unity tests available: ${test_count} test executables found in ${UNITY_BUILD_DIR#"${SCRIPT_DIR}"/..}/src"
-            cd "${SCRIPT_DIR}" || { print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to return to script directory"; return 1; }
+            cd "${SCRIPT_DIR}" || { print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Failed to return to script directory"; return 1; }
             return 0
         else
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No Unity test executables found in ${UNITY_BUILD_DIR#"${SCRIPT_DIR}"/..}/src"
-            cd "${SCRIPT_DIR}" || { print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to return to script directory"; return 1; }
+            cd "${SCRIPT_DIR}" || { print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Failed to return to script directory"; return 1; }
             return 1
         fi
     else
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Unity build directory not found: ${UNITY_BUILD_DIR#"${SCRIPT_DIR}"/..}/src - Run 'cmake --build . --target unity_tests' from cmake directory first"
-        cd "${SCRIPT_DIR}" || { print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to return to script directory"; return 1; }
+        cd "${SCRIPT_DIR}" || { print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Failed to return to script directory"; return 1; }
         return 1
     fi
 }
@@ -378,6 +379,7 @@ run_unity_tests() {
     local cached_failures=0
 
     if [[ "${cached_count}" -gt 0 ]]; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Process Cached Unity Tests"
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Processing ${cached_count} cached test results..."
 
         # Process all cached results using pure bash - no external commands
@@ -417,18 +419,16 @@ run_unity_tests() {
         TOTAL_UNITY_TESTS=$((TOTAL_UNITY_TESTS + cached_total))
         TOTAL_UNITY_PASSED=$((TOTAL_UNITY_PASSED + cached_passed))
         TOTAL_LONG_RUNNING=$((TOTAL_LONG_RUNNING + cached_long_running))
-        
-        # Update test framework counters
-        TEST_PASSED_COUNT=$((TEST_PASSED_COUNT + cached_pass_count))
-        TEST_FAILED_COUNT=$((TEST_FAILED_COUNT + cached_fail_count))
-        
-        # Note any failures
+
         if [[ "${cached_failures}" -gt 0 ]]; then
             overall_result=1
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${cached_failures} cached tests have failures"
             for failed_test in "${cached_failed_tests[@]}"; do
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  Cached failure: ${failed_test}"
             done
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${cached_count} cached (${cached_fail_count} failed files, ${cached_pass_count} passed)"
+        else
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${cached_count} cached tests processed (${cached_pass_count} passed)"
         fi
     fi
     

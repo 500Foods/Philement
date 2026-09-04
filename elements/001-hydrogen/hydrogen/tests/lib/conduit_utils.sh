@@ -12,6 +12,9 @@
 # test_conduit_multiple_queries_endpoint()
 
 # CHANGELOG
+# 1.7.6 - 2026-09-04 - disown hydrogen started by run_conduit_server (same as
+#                    start_hydrogen) so command-substitution return does not
+#                    reap the server with SIGHUP/SIGINT
 # 1.7.5 - 2026-07-27 - Fail fast on Signal 11 / process death during startup waits
 #                    - Avoid 300s+ hangs when hydrogen crashes after STARTUP COMPLETE
 # 1.7.4 - 2026-07-15 - Store acquired JWTs by database engine instead of position
@@ -563,6 +566,7 @@ run_conduit_server() {
     # shellcheck disable=SC2154 # HYDORGEN_BIN defined in framework.sh
     "${HYDROGEN_BIN}" "${config_file}" > "${log_file}" 2>&1 &
     local hydrogen_pid=$!
+    disown "${hydrogen_pid}" 2>/dev/null || true
     if declare -f register_hydrogen_pid >/dev/null 2>&1; then
         register_hydrogen_pid "${hydrogen_pid}"
     fi

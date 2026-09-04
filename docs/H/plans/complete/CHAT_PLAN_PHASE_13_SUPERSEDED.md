@@ -1,7 +1,7 @@
 # Chat Service - Phase 13: Advanced Features
 
 > **Superseded.** Remaining chat work, including items from this wishlist,
-> lives in [`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md). Do not start
+> lives in [`CHAT_FINALE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md). Do not start
 > work from this file.
 
 ## Objective

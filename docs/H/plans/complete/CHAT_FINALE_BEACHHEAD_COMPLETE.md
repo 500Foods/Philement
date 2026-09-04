@@ -7,7 +7,7 @@
 is the **archived** record of the 500 Courses chat+MCP beachhead delivered
 by this plan. Pulled-forward Phase 10 work (`store` knob done; chat rate
 limiting pending) lives in the **active** plan at
-[`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md). Per AGENTS.md, files in
+[`CHAT_FINALE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md). Per AGENTS.md, files in
 `plans/complete/` are history; the active plan is the one to read for new
 work.
 
@@ -58,7 +58,7 @@ leakage to a vendor you do not control) is replaced, not extended. Ship
 
 This document is the **archived** record of Phases 0–9 of the chat
 finale. It is **not** the active plan — see
-[`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md) for pulled-forward
+[`CHAT_FINALE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md) for pulled-forward
 Phase 10 work. Earlier history:
 [`CHAT_PLAN_SUMMARY_COMPLETE.md`](/docs/H/plans/complete/CHAT_PLAN_SUMMARY_COMPLETE.md),
 [`CHAT_PLAN_PHASE_13_SUPERSEDED.md`](/docs/H/plans/complete/CHAT_PLAN_PHASE_13_SUPERSEDED.md),
@@ -118,7 +118,7 @@ Each phase is worked in its **own conversation**. Follow this sequence:
 **CURRENT PAUSE POINT (as of 2026-09-03, archive snapshot):** Phases 0–9
 complete (0–8 implementation, 9 docs and DOKS). The beachhead is shipped.
 Pulled-forward Phase 10 work lives in the active plan — see
-[`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md). Per Completion Criteria
+[`CHAT_FINALE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md). Per Completion Criteria
 this archive represents: Phases 0–9 Status complete and Exit gates green
 in order; Test 59 (REST + WS) green; Test 47 green (hosted + local MCP);
 `System.Info` returns JWT `/api/system/info` JSON via shared C; zero chat
@@ -137,7 +137,7 @@ Courses client, product Lua tools beyond `System.Info`):
    (token leakage, per-tool authorization, prompt injection).
 2. The pulled-forward Phase 10 items (chat rate limiting, cost cap
    enforcement, parked wishlist) live in
-   [`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md), not here.
+   [`CHAT_FINALE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md), not here.
 
 ---
 

@@ -31,10 +31,6 @@ post-MVP, real-Keycloak E2E (Phase 11). History:
 
 SMTP mail relay subsystem. Core outbound/API/Lua/OTP delivered; later phases (UI, inbound, ops) remain.
 
-### [CHAT FINALE](/docs/H/plans/CHAT_FINALE.md)
-
-Active chat plan (P0). Dual REST+WS, provider knobs, MCP `System.Info`, Grok user-JWT MCP, dead-code gate. History: [CHAT_PLAN_SUMMARY_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_SUMMARY_COMPLETE.md).
-
 ### [UNITY ASAN PLAN](/docs/H/plans/UNITY_ASAN_PLAN.md)
 
 Separate ASAN Unity build/test variant for memory-safety gating without corrupting gcov coverage.
@@ -63,6 +59,7 @@ Full index: [`complete/README.md`](/docs/H/plans/complete/README.md). Highlights
 | OIDC IdP MVP | [OIDC_IDP_COMPLETE.md](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md) |
 | OIDC real-IdP E2E log | [OIDC_E2E_LOG_COMPLETE.md](/docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md) |
 | Cap / cap_query | [CAP_PLAN_QUERY-COMPLETE.md](/docs/H/plans/complete/CAP_PLAN_QUERY-COMPLETE.md) |
+| Chat Finale (beachhead 0–9 + Phase 10) | [CHAT_FINALE_COMPLETE.md](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md) · [beachhead](/docs/H/plans/complete/CHAT_FINALE_BEACHHEAD_COMPLETE.md) |
 | Chat Phases 1–12 | [CHAT_PLAN_PHASE_*_COMPLETE.md](/docs/H/plans/complete/) · [summary](/docs/H/plans/complete/CHAT_PLAN_SUMMARY_COMPLETE.md) |
 | Conduit | [CONDUIT_COMPLETE.md](/docs/H/plans/complete/CONDUIT_COMPLETE.md) |
 | Image / Reporting | [IMAGE_PLAN_COMPLETE.md](/docs/H/plans/complete/IMAGE_PLAN_COMPLETE.md) |

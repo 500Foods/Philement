@@ -57,7 +57,7 @@ Key: 💡 Idea/Planning, 🔨 Working on it, 🏆 Usable but incomplete.
 There is one canonical action backlog and phased plans.
 
 - **Active backlog:** [`docs/H/TODO.md`](/docs/H/TODO.md) — prioritized incomplete Hydrogen work only (effort/done/remaining/code paths). Start here for "what should I do next."
-- **Plan index:** [`docs/H/plans/README.md`](/docs/H/plans/README.md). Active plans include **CHAT_FINALE** (P0), **AUTH_FINALE** (P0), **MAILRELAY_PLAN**, **SCHEMAHELPER**, **UNITY_ASAN**; completed plans live in `plans/complete/` as `*_COMPLETE.md`.
+- **Plan index:** [`docs/H/plans/README.md`](/docs/H/plans/README.md). Active plans include **AUTH_FINALE** (P0), **MAILRELAY_PLAN**, **SCHEMAHELPER**, **UNITY_ASAN**; completed plans live in `plans/complete/` as `*_COMPLETE.md`. Chat Finale: [`CHAT_FINALE_COMPLETE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md).
 - **Completed plans are history:** files in [`docs/H/plans/complete/`](/docs/H/plans/complete/) and any `*_SUPERSEDED.md` are archives. Implement against the active plan file named as the only current one, not the archives.
 - **All repo docs:** [`docs/H/SITEMAP.md`](/docs/H/SITEMAP.md) (markdown index), [`docs/H/STRUCTURE.md`](/docs/H/STRUCTURE.md) (file index). Use these to avoid reinventing a file that already exists.
 
@@ -67,13 +67,13 @@ Plans are **phase-gated and each phase is its own conversation**:
 
 1. **Confirm the prior phase is actually done** — re-read its Status block; do not trust memory of a previous session.
 2. **Discuss the current phase first** — read its Goal + Work items + Done means + Exit gate; grep/read code **before** writing anything.
-3. **Get explicit approval before editing source** when work is under an active phased plan (`docs/H/plans/`, e.g. [`CHAT_FINALE`](/docs/H/plans/CHAT_FINALE.md)). For a small isolated fix with no plan file in play, follow [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) and the tests below. Migration packets are handed to the user (see item 7), not applied here.
+3. **Get explicit approval before editing source** when work is under an active phased plan (`docs/H/plans/`, e.g. [`AUTH_FINALE`](/docs/H/plans/AUTH_FINALE.md)). For a small isolated fix with no plan file in play, follow [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) and the tests below. Migration packets are handed to the user (see item 7), not applied here.
 4. **Ask questions as they arise** rather than guessing at ambiguous requirements.
 5. **Mark work items `[x]` and phase Status "complete" only after the named verification command actually passed** (`mkt`/`mku <base>`/`mkp`/`mks`/the named blackbox test). "Intent to verify" is not verification.
 6. **Update the phase's Status block and Working Log** at major milestones (not only at the end), and record lessons learned.
 7. **Never apply a database migration.** If a phase needs a Helium seed/schema/migration packet, prepare/generate it and hand it to the user to apply; do not run `schematool`/`schemahelper` apply steps yourself.
 
-These rules are baked into [`docs/H/plans/CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md) and apply repo-wide to phased work.
+These rules are baked into [`CHAT_FINALE_COMPLETE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md) and apply repo-wide to phased work.
 
 ## Environment & build tooling
 
@@ -154,7 +154,7 @@ For any element 004+, **read its `README.md` in place of assuming activity.** Mo
 
 ## Common "first questions" answered
 
-- **"What should I work on?"** → [`docs/H/TODO.md`](/docs/H/TODO.md). P0 is Chat Finale ([`docs/H/plans/CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md)) and Auth Finale ([`docs/H/plans/AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md)).
+- **"What should I work on?"** → [`docs/H/TODO.md`](/docs/H/TODO.md). P0 is Auth Finale ([`docs/H/plans/AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md)). Chat Finale is complete ([`CHAT_FINALE_COMPLETE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md)).
 - **"Where is the C code?"** → `elements/001-hydrogen/hydrogen/src/`. `src/hydrogen.h` is the umbrella header.
 - **"How do I build?"** → `zsh -ic 'mkt'` (trial) or `mka` (all targets). On a clean box, set `HYDROGEN_ROOT` and `HELIUM_ROOT` and run `elements/001-hydrogen/hydrogen/extras/make-trial.sh`.
 - **"How do I test one thing?"** → `zsh -ic 'mku <base_test_name>'` builds + runs a single Unity test (tab-completion is wired up). Blackbox tests are `tests/test_NN_*.sh`. The full orchestrator is `tests/test_00_all.sh`.

@@ -1,7 +1,7 @@
 # Chat Service Implementation Plan - Phased Approach
 
 > **Superseded for remaining work.** Active plan:
-> [`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md).
+> [`CHAT_FINALE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md).
 > Phases 1–12 below are historical. Phase 13 is not the backlog.
 
 ## Overview
@@ -154,7 +154,7 @@ Each phase depends on the successful completion of the previous phase's testable
 
 ## Next Steps
 
-Remaining work is [`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md), not Phase 13.
+Continuation is [`CHAT_FINALE_COMPLETE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md), not Phase 13.
 
 Historical Phase 13 notes (do not implement from here):
 

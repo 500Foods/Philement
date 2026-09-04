@@ -558,7 +558,7 @@ bool mysql_process_prepared_result(void* mysql_result, QueryResult* db_result, v
         size_t* col_caps = calloc(column_count, sizeof(size_t));
         unsigned long* col_lengths = calloc(column_count, sizeof(unsigned long));
         char* col_is_null = calloc(column_count, sizeof(char));
-        unsigned long* col_errors = calloc(column_count, sizeof(unsigned long));
+        char* col_errors = calloc(column_count, sizeof(char));
 
         if (!col_buffers || !col_caps || !col_lengths || !col_is_null || !col_errors) {
             free(col_buffers);
@@ -604,17 +604,20 @@ bool mysql_process_prepared_result(void* mysql_result, QueryResult* db_result, v
             unsigned long* length;
             char* is_null;
             void* buffer;
-            unsigned long* error;
-            unsigned char* row_ptr;
-            void (*store_param_func)(void*, void*, unsigned char**, unsigned char**);
-            void (*fetch_result)(void*, unsigned int, unsigned char**);
-            void (*skip_result)(void*, unsigned int, unsigned char**);
+            char* error;
+            union {
+                unsigned char* row_ptr;
+                char* indicator;
+            } u;
+            void (*store_param_func)(void*, void*);
+            void (*fetch_result)(void*, void*, unsigned char**);
+            void (*skip_result)(void*, void*, unsigned char**);
             unsigned long buffer_length;
             unsigned long offset;
             unsigned long length_value;
-            unsigned int param_number;
+            unsigned int flags;
             unsigned int pack_length;
-            unsigned int buffer_type;  // MySQL type constant
+            unsigned int buffer_type;
             char error_value;
             char is_unsigned;
             char long_data_used;

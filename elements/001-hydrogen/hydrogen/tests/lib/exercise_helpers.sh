@@ -6,6 +6,8 @@
 # shellcheck disable=SC2154 # Globals (TEST_NUMBER, TEST_COUNTER, GREP) set by framework before sourcing
 
 # CHANGELOG
+# 1.0.5 - 2026-09-04 - read_scrape_status always returns 0 (set -e abort when
+#                      HTTP code/attempts were already set: [[ -z ]] && default).
 # 1.0.4 - 2026-08-29 - scrape_metrics status written to SCRAPE_STATUS_FILE so
 #                      callers in command-substitution subshells can read the
 #                      real last HTTP code and attempt count (previously
@@ -20,7 +22,7 @@
 export EXERCISE_HELPERS_GUARD="true"
 
 EXERCISE_HELPERS_NAME="Exercise Test Helpers"
-EXERCISE_HELPERS_VERSION="1.0.4"
+EXERCISE_HELPERS_VERSION="1.0.5"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${EXERCISE_HELPERS_NAME} ${EXERCISE_HELPERS_VERSION}" "info"
 
 # shellcheck source=tests/lib/group40_http.sh # Shared 40-series HTTP timing
@@ -138,8 +140,13 @@ read_scrape_status() {
         SCRAPE_LAST_HTTP_CODE=$(head -1 "${_sf}" 2>/dev/null || echo "")
         SCRAPE_LAST_ATTEMPTS=$(sed -n '2p' "${_sf}" 2>/dev/null || echo "")
     fi
-    [[ -z "${SCRAPE_LAST_HTTP_CODE}" ]] && SCRAPE_LAST_HTTP_CODE="000"
-    [[ -z "${SCRAPE_LAST_ATTEMPTS}" ]] && SCRAPE_LAST_ATTEMPTS=0
+    if [[ -z "${SCRAPE_LAST_HTTP_CODE}" ]]; then
+        SCRAPE_LAST_HTTP_CODE="000"
+    fi
+    if [[ -z "${SCRAPE_LAST_ATTEMPTS}" ]]; then
+        SCRAPE_LAST_ATTEMPTS=0
+    fi
+    return 0
 }
 
 # get_metric metrics_text metric_name

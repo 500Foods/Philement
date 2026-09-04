@@ -11,7 +11,7 @@ For multi-engine broadcast see
 [`/docs/H/api/chat/auth_chats.md`](/docs/H/api/chat/auth_chats.md).
 
 This document is for Hydrogen **Phase 9**. The plan that produced this
-contract is [`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md) (Phases 0–3).
+contract is [`CHAT_FINALE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md) (Phases 0–3).
 
 ## Authentication
 
@@ -286,4 +286,4 @@ users.
 - [`/docs/H/api/chat/auth_chats.md`](/docs/H/api/chat/auth_chats.md) — multi-engine broadcast (non-stream only).
 - [`/docs/H/core/subsystems/websocket/websocket_chat.md`](/docs/H/core/subsystems/websocket/websocket_chat.md) — WebSocket equivalent (single socket, both stream + non-stream).
 - [`/docs/H/core/subsystems/mcp/mcp.md`](/docs/H/core/subsystems/mcp/mcp.md) — MCP server; Grok talks to the public Resource via hosted MCP.
-- [`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md) — plan of record.
+- [`CHAT_FINALE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md) — plan of record.

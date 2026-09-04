@@ -19,7 +19,7 @@ Native RSS measurement is a separate test: [test_44_exercise_native.md](/docs/H/
 | Test Name | Exercise ASAN |
 | Abbreviation | EXA |
 | Number | 41 |
-| Version | 4.0.1 |
+| Version | 4.0.5 |
 | Binary | `hydrogen_debug` (required) |
 | Port | 5410 |
 | Requests | 500 |
@@ -62,6 +62,9 @@ RSS growth under ASAN is expected (shadow/quarantine) and does **not** fail the 
 ## Changelog (script)
 
 ```text
+# 4.0.5 - 2026-09-04 - Do not abort after successful scrape (set -e + [[ -z ]] &&)
+# 4.0.4 - 2026-09-04 - Cache output until completion; start/scrape in-shell
+# 4.0.3 - 2026-09-04 - Pair TEST+PASS/FAIL; do not abort on conduit/scrape non-zero
 # 4.0.0 - 2026-07-09 - Split from combined exercise:
 #                     - ASAN-only test (native moved to test_44)
 #                     - Renamed test_41_exercise.sh -> test_41_exercise_asan.sh

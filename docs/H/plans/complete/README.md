@@ -26,6 +26,8 @@ Active plans folder: [`/docs/H/plans/`](/docs/H/plans/).
 | [CAP_PLAN_QUERY-COMPLETE.md](/docs/H/plans/complete/CAP_PLAN_QUERY-COMPLETE.md) | Cap query endpoint |
 | [CHAT_PLAN_ORIGINAL_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_ORIGINAL_COMPLETE.md) | Chat original draft |
 | [CHAT_PLAN_SUMMARY_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_SUMMARY_COMPLETE.md) | Chat Phases 1–12 index (historical) |
+| [CHAT_FINALE_COMPLETE.md](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md) | Chat Finale Phase 10 (`store` + rate limit); parked remainder out of scope |
+| [CHAT_FINALE_BEACHHEAD_COMPLETE.md](/docs/H/plans/complete/CHAT_FINALE_BEACHHEAD_COMPLETE.md) | Chat Finale Phases 0–9 (500 Courses beachhead) |
 | [CHAT_PLAN_PHASE_13_SUPERSEDED.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_13_SUPERSEDED.md) | Chat Phase 13 wishlist (superseded by CHAT_FINALE) |
 | [CHAT_PLAN_PHASE_1_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_1_COMPLETE.md) | Chat Phase 1 |
 | [CHAT_PLAN_PHASE_2_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_2_COMPLETE.md) | Chat Phase 2 |

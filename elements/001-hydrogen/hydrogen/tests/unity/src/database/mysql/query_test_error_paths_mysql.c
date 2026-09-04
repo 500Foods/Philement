@@ -130,8 +130,8 @@ void test_bind_null_parameter(void) {
     unsigned char bind_buf[512] = {0};
 
     TEST_ASSERT_TRUE(mysql_bind_single_parameter(bind_buf, 0, &param, bound, 1, "T"));
-    TEST_ASSERT_NOT_NULL(bound[0]);
-    TEST_ASSERT_NOT_NULL(bound[1]);
+    TEST_ASSERT_NULL(bound[0]);
+    TEST_ASSERT_NULL(bound[1]);
     mysql_cleanup_bound_values(bound, 1);
 }
 
@@ -191,7 +191,7 @@ void test_bind_null_length_malloc_fail(void) {
     unsigned char bind_buf[512] = {0};
 
     mock_system_set_malloc_failure(2);
-    TEST_ASSERT_FALSE(mysql_bind_single_parameter(bind_buf, 0, &param, bound, 1, "T"));
+    TEST_ASSERT_TRUE(mysql_bind_single_parameter(bind_buf, 0, &param, bound, 1, "T"));
     mock_system_reset_all();
 }
 

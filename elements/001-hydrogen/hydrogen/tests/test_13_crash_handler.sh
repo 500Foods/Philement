@@ -15,6 +15,7 @@
 # run_crash_test_with_build() 
 
 # CHANGELOG
+# 7.6.0 - 2026-09-04 - Pair every TEST with one PASS/FAIL; fix debug-symbol grep SIGPIPE under pipefail
 # 7.5.0 - 2026-07-28 - Fixed set -e causing subshell exit before GDB_RESULT written; added SIGSEGV fallback pattern for stripped backtraces
 # 7.4.0 - 2026-07-16 - Fixed Debug Symbols subtest incorrectly failing the run for development builds (debug symbols present is a PASS); clarified EXIT_CODE handling
 # 7.3.0 - 2025-12-02 - Simplified solution: skip ASAN builds entirely to focus on core crash handler functionality
@@ -67,7 +68,7 @@ TEST_NAME="Crash Handler"
 TEST_ABBR="BUG"
 TEST_NUMBER="13"
 TEST_COUNTER=0
-TEST_VERSION="7.5.0"
+TEST_VERSION="7.6.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -187,7 +188,9 @@ verify_debug_symbols() {
     
     # Use readelf to check for debug symbols
     # shellcheck disable=SC2312 # Expect an empty return if no debugging is available
-    if readelf --debug-dump=info "${binary}" 2>/dev/null | "${GREP}" -q -m 1 "DW_AT_name"; then
+    local has_debug
+    has_debug=$(readelf --debug-dump=info "${binary}" 2>/dev/null | "${GREP}" -c -m 1 "DW_AT_name" || true)
+    if [[ "${has_debug}" -gt 0 ]]; then
         if [[ "${expect_symbols}" -eq 1 ]]; then
             # print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Debug symbols found in ${binary_name} (as expected)"
             DEBUG_SYMBOL_CACHE[${binary_name}]=0
@@ -705,9 +708,7 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Test Configuration Fi
 # shellcheck disable=SC2310 # We want to continue even if config validation fails
 if validate_config_file "${TEST_CONFIG}"; then
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using minimal configuration for crash testing"
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Configuration validation passed"
 else
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Configuration validation failed"
     EXIT_CODE=1
     print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
     ${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
@@ -861,6 +862,7 @@ for pid in "${PARALLEL_PIDS[@]}"; do
 done
 # echo "DEBUG: All PIDs confirmed completed"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "All parallel tests completed, analyzing results..."
+print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Parallel crash tests completed for ${#BUILDS[@]} builds"
 
 # Process results sequentially for clean output
 # echo "DEBUG: Starting result processing loop"
@@ -890,19 +892,17 @@ for build in "${BUILDS[@]}"; do
     if [[ "${DEBUG_SYMBOL_RESULT}" -eq 0 ]]; then
         if [[ "${build_name}" == *"release"* ]] || [[ "${build_name}" == *"naked"* ]]; then
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Debug symbols correctly absent in release-style build"
-            BUILD_PASSED_SUBTESTS[${build_name}]=$(( BUILD_PASSED_SUBTESTS[${build_name}] + 1 ))
         else
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Debug symbols missing in development build"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Debug symbols found in development build"
         fi
-
+        BUILD_PASSED_SUBTESTS[${build_name}]=$(( BUILD_PASSED_SUBTESTS[${build_name}] + 1 ))
     else
         if [[ "${build_name}" == *"release"* ]] || [[ "${build_name}" == *"naked"* ]]; then
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Debug symbols unexpectedly found in release-style build"
-            EXIT_CODE=1
         else
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Debug symbols found in development build"
-            BUILD_PASSED_SUBTESTS[${build_name}]=$(( BUILD_PASSED_SUBTESTS[${build_name}] + 1 ))
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Debug symbols missing in development build"
         fi
+        EXIT_CODE=1
     fi
     
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Core File Generation - ${build_name}"
@@ -962,8 +962,12 @@ for build in "${BUILDS[@]}"; do
     fi
 done
                       
-if [[ "${successful_builds}" -ne "${#BUILDS[@]}" ]]; then
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Crash Handler Build Summary"
+if [[ "${successful_builds}" -eq "${#BUILDS[@]}" ]]; then
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All ${#BUILDS[@]} builds passed all crash handler tests"
+else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Not all builds passed all crash handler tests"
+    EXIT_CODE=1
 fi
 
 # echo "DEBUG: Successful builds calculation complete"

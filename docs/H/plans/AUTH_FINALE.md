@@ -112,7 +112,7 @@ phase has started. Next: **Phase 0 (contract lock, no C)**.
 | **First deploy** | Production SSO already wired; remaining is register honesty, provision roles, real-IdP sign-off, then optional IdP HA |
 
 TODO lists this as **one P0 item** (same pattern as
-[`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md)). Inside the plan, phases
+[`CHAT_FINALE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md)). Inside the plan, phases
 are ordered so **code that does not need a live Keycloak user ships
 first**. Real-IdP E2E is Phase 11.
 
@@ -163,7 +163,7 @@ Urgency inside the plan (not phase order):
 ## Non-Goals
 
 - **Chat JWT mint / MCP `aud` gate.** Owned by
-  [`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md) Phase 8. Do not
+  [`CHAT_FINALE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md) Phase 8. Do not
   duplicate a minting primitive here.
 - **Rewriting shipped RP, IdP MVP, or password login.** Prefer focused
   fixes. Do not reopen
@@ -1259,7 +1259,7 @@ No reverse migration required to disable features.
 | [`OIDC_IDP_OPERATOR.md`](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md) | IdP operator runbook |
 | [`LITHIUM-KEYCLOAK.md`](/docs/Li/LITHIUM-KEYCLOAK.md) | Client recipe |
 | [`MAILRELAY_PLAN.md`](/docs/H/plans/MAILRELAY_PLAN.md) | OTP engine; MFA wiring moved here |
-| [`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md) | Chat/MCP JWT mint — not this plan |
+| [`CHAT_FINALE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md) | Chat/MCP JWT mint — not this plan |
 | [`TESTING.md`](/docs/H/tests/TESTING.md) | Blackbox conventions |
 | [`TESTING_UNITY.md`](/docs/H/tests/TESTING_UNITY.md) | Unity conventions |
 | [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) | Build aliases |
