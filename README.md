@@ -64,34 +64,34 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-09-04 19:12:58 UTC
+Last updated at 2026-09-04 23:52:57 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                           506            440              0        1700497
+JSON                           507            440              0        1700733
 SVG                            301            587          11569         536988
-C                             1673          66383          57107         275843
-Text                           344            341              0         143721
-Markdown                       758          35033            254         106098
+C                             1676          66570          57372         276949
+Text                           346            452              0         145921
+Markdown                       758          35044            255         106221
 Lua                            423          11455           7271          91667
 JavaScript                     224          10445          13582          49798
-Bourne Shell                   178           8075         110331          44626
+Bourne Shell                   178           8075         110391          44626
 CSS                             84           2769           1563          14005
-C/C++ Header                   349           4156          13958          12961
+C/C++ Header                   349           4158          13984          12967
+CMake                           23            198            431           4194
 HTML                            42            258            219           2836
-CMake                           19            176            393           1453
 make                            11            112             75            607
 TOML                             1             55             35            449
+YAML                             3             23             15            309
 Python                           1             36              9            195
 SQL                             11             21             24            195
 zsh                              2             31             42             97
 Delphi Form                      1              1              0             43
-YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          4932         140393         216447        2982147
+SUM:                          4943         140741         216839        2988831
 -------------------------------------------------------------------------------
-1718 Files were skipped (duplicate, binary, or without source code):
+1723 Files were skipped (duplicate, binary, or without source code):
   svg: 1223
   css: 165
   html: 134
@@ -110,6 +110,7 @@ SUM:                          4932         140393         216447        2982147
   sqlite: 3
   json: 2
   lintignore-markdown: 2
+  ninja: 2
   sqruff_db2: 2
   sqruff_mysql: 2
   sqruff_postgresql: 2
@@ -120,6 +121,7 @@ SUM:                          4932         140393         216447        2982147
   auth_code_flow_debug: 1
   backup: 1
   bmp: 1
+  check_cache: 1
   client_credentials_debug: 1
   control: 1
   disabled: 1
@@ -133,6 +135,8 @@ SUM:                          4932         140393         216447        2982147
   lintignore-lua: 1
   lintignore: 1
   list: 1
+  ninja_deps: 1
+  ninja_log: 1
   password_flow_debug: 1
   payload_generated: 1
   stl: 1
