@@ -12,6 +12,7 @@
 # test_conduit_multiple_queries_endpoint()
 
 # CHANGELOG
+# 1.7.8 - 2026-09-04 - Pair JWT skip with print_result (not-ready engines)
 # 1.7.7 - 2026-09-04 - Pair TEST/PASS/FAIL in analyze_conduit_results
 # 1.7.6 - 2026-09-04 - disown hydrogen started by run_conduit_server (same as
 #                    start_hydrogen) so command-substitution return does not
@@ -304,6 +305,7 @@ acquire_jwt_tokens() {
         if ! "${GREP}" -q "DATABASE_READY_${db_engine}=true" "${result_file}" 2>/dev/null; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${db_engine} not ready, skipping JWT acquisition"
             jwt_tokens+=("")  # Add empty token to maintain array alignment
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "JWT Acquisition (${db_engine}) - Skipped (database not ready)"
             continue
         fi
 

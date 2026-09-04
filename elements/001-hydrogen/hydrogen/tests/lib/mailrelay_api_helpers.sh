@@ -9,6 +9,7 @@
 # shellcheck disable=SC2312 # Diagnostic substitutions swallow inner status; callers use || true
 
 # CHANGELOG
+# 1.0.4 - 2026-09-04 - Queue.Persist off for MySQL/MariaDB (stmt_bind_param SIGSEGV)
 # 1.0.3 - 2026-09-04 - Pair TEST/PASS/FAIL in analyze (print_subtest before result)
 # 1.0.2 - 2026-09-04 - Enable Queue.Persist for MySQL/MariaDB (INTEGER bind uses
 #                      MYSQL_TYPE_LONGLONG).
@@ -21,7 +22,7 @@
 export MAILRELAY_API_HELPERS_GUARD="true"
 
 MAILRELAY_API_HELPERS_NAME="MailRelay API Test Helpers"
-MAILRELAY_API_HELPERS_VERSION="1.0.3"
+MAILRELAY_API_HELPERS_VERSION="1.0.4"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${MAILRELAY_API_HELPERS_NAME} ${MAILRELAY_API_HELPERS_VERSION}" "info"
 
 MAILVAL_PIDS=()
@@ -230,7 +231,11 @@ mailrelay_api_rm_temp() {
 }
 
 mailrelay_api_persist_enabled() {
-    : "${1:-}"
+    local engine_name="${1:-}"
+    if [[ "${engine_name}" == "mysql" || "${engine_name}" == "mariadb" ]]; then
+        echo "false"
+        return 0
+    fi
     echo "true"
 }
 
