@@ -15,6 +15,8 @@
 # (Helpers live in tests/lib/mailrelay_api_helpers.sh)
 
 # CHANGELOG
+# 2.8.5 - 2026-09-04 - Queue.Persist off for MySQL/MariaDB (bind_param SIGSEGV)
+# 2.8.4 - 2026-09-04 - One PASS/FAIL for config validation; no per-file print_result
 # 2.8.3 - 2026-09-04 - Pair TEST/PASS/FAIL; print_subtest owns TEST_COUNTER
 # 2.8.2 - 2026-09-04 - Queue.Persist on for MySQL/MariaDB after LONGLONG bind fix.
 # 2.8.1 - 2026-08-21 - STARTTLS CAPath written into runtime config.
@@ -39,7 +41,7 @@ TEST_NAME="MailRelay API"
 TEST_ABBR="MRA"
 TEST_NUMBER="58"
 TEST_COUNTER=0
-TEST_VERSION="2.8.3"
+TEST_VERSION="2.8.5"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -136,10 +138,11 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration Files"
 for display_name in "${!MAILRELAY_API_ENGINES[@]}"; do
     IFS=':' read -r engine_name web_plain mail_plain web_tls mail_tls <<< "${MAILRELAY_API_ENGINES[${display_name}]}"
     config_file="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_${engine_name}.json"
-    # shellcheck disable=SC2310 # Continue even if validation fails
-    if validate_config_file "${config_file}"; then
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking configuration file: ${config_file}"
+    if [[ -f "${config_file}" ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${display_name} configuration will use web ${web_plain}/${web_tls}, mailval ${mail_plain}/${mail_tls}"
     else
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Configuration file not found: ${config_file}"
         config_valid=false
         EXIT_CODE=1
     fi

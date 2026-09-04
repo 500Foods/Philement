@@ -13,6 +13,7 @@
 # run_conduit_test_unified()
 
 # CHANGELOG
+# 1.1.2 - 2026-09-04 - Drop extra print_result after validate_config_file
 # 1.1.1 - 2026-09-04 - Pair TEST/PASS/FAIL; print_subtest owns TEST_COUNTER
 # 1.1.0 - 2026-01-25 - Updated to follow Test 50 structure
 #                    - Added comprehensive status endpoint testing
@@ -27,7 +28,7 @@ TEST_NAME="Conduit Queries"
 TEST_ABBR="CQM"
 TEST_NUMBER="51"
 TEST_COUNTER=0
-TEST_VERSION="1.1.1"
+TEST_VERSION="1.1.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -568,9 +569,7 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File"
 if validate_config_file "${CONDUIT_CONFIG_FILE}"; then
     port=$(get_webserver_port "${CONDUIT_CONFIG_FILE}")
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CONDUIT_DESCRIPTION} configuration will use port: ${port}"
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Unified configuration file validated successfully"
 else
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Unified configuration file validation failed"
     EXIT_CODE=1
 fi
 TEST_NAME="Conduit Queries  {BLUE}databases: ${#DATABASE_NAMES[@]}{RESET}"

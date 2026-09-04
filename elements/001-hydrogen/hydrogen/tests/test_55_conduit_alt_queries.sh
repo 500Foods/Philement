@@ -12,6 +12,7 @@
 # analyze_conduit_results()
 
 # CHANGELOG
+# 1.2.2 - 2026-09-04 - Drop extra print_result after validate_config_file
 # 1.2.1 - 2026-09-04 - Pair TEST/PASS/FAIL; print_subtest owns TEST_COUNTER
 # 1.2.0 - 2026-08-02 - Added blackbox error-case tests for alt_queries.c
 #                    - Missing Authorization header (401, middleware),
@@ -45,7 +46,7 @@ TEST_NAME="Conduit Alt Queries"
 TEST_ABBR="CFM"
 TEST_NUMBER="55"
 TEST_COUNTER=0
-TEST_VERSION="1.2.1"
+TEST_VERSION="1.2.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -551,10 +552,8 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Unified Configuration
 if validate_config_file "${CONDUIT_CONFIG_FILE}"; then
     port=$(get_webserver_port "${CONDUIT_CONFIG_FILE}")
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CONDUIT_DESCRIPTION} configuration will use port: ${port}"
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Unified configuration file validated successfully"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
 else
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Unified configuration file validation failed"
     EXIT_CODE=1
 fi
 

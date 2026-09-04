@@ -140,10 +140,23 @@ bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, Typed
              param_index, param->name, param->type);
 
     if (param->is_null) {
+        char* empty = strdup("");
+        unsigned long* length;
+        if (!empty) {
+            return false;
+        }
+        length = malloc(sizeof(unsigned long));
+        if (!length) {
+            free(empty);
+            return false;
+        }
+        *length = 0;
+        bound_values[param_index] = empty;
+        bound_values[total_param_count + param_index] = length;
         bind[param_index].buffer_type = MYSQL_TYPE_NULL;
-        bind[param_index].buffer = NULL;
-        bind[param_index].buffer_length = 0;
-        bind[param_index].length = NULL;
+        bind[param_index].buffer = empty;
+        bind[param_index].buffer_length = 1;
+        bind[param_index].length = length;
         mysql_bind_attach_indicators(bind, param_index, 1);
         log_this(designator, "Bound NULL parameter %u: name=%s", LOG_LEVEL_TRACE, 2,
                  param_index, param->name);
@@ -153,14 +166,22 @@ bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, Typed
     switch (param->type) {
         case PARAM_TYPE_INTEGER: {
             long long* int_val = malloc(sizeof(long long));
+            unsigned long* int_len;
             if (!int_val) return false;
             *int_val = param->value.int_value;
             bound_values[param_index] = int_val;
 
+            int_len = malloc(sizeof(unsigned long));
+            if (!int_len) {
+                free(int_val);
+                return false;
+            }
+            *int_len = sizeof(long long);
+            bound_values[total_param_count + param_index] = int_len;
             bind[param_index].buffer_type = MYSQL_TYPE_LONGLONG;
             bind[param_index].buffer = int_val;
             bind[param_index].buffer_length = sizeof(long long);
-            bind[param_index].length = NULL;
+            bind[param_index].length = int_len;
             mysql_bind_attach_indicators(bind, param_index, 0);
 
             log_this(designator, "Bound INTEGER parameter %u: value=%lld", LOG_LEVEL_TRACE, 2,
@@ -517,6 +538,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
         
         // Bind parameters to statement
         if (bind_success && mysql_stmt_bind_param_ptr) {
+            log_this(designator, "MySQL execute_query: mysql_stmt_bind_param for %zu parameters", LOG_LEVEL_TRACE, 1, ordered_count);
             if (mysql_stmt_bind_param_ptr(stmt, bind) != 0) {
                 log_this(designator, "MySQL execute_query: mysql_stmt_bind_param failed", LOG_LEVEL_ERROR, 0);
                 if (mysql_stmt_error_ptr) {
