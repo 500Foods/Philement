@@ -23,6 +23,8 @@
 # print_test_completion()
 
 # CHANGELOG
+# 4.7.0 - 2026-09-04 - Pair each TEST with exactly one PASS or FAIL (close
+#                     orphans on next TEST; extra PASS/FAIL become ERROR)
 # 4.6.0 - 2026-08-03 - Widened subtest counter from 3 digits (%03d) to 4 digits (%04d)
 #                     in all test_ref formatting (print_subtest, print_command, print_output,
 #                     print_result, print_warning, print_error, print_message, print_box,
@@ -80,7 +82,7 @@ export LOG_OUTPUT_GUARD="true"
 
 # Library metadata
 LOG_OUTPUT_NAME="Log Output Library"
-LOG_OUTPUT_VERSION="4.6.0"
+LOG_OUTPUT_VERSION="4.7.0"
 export LOG_OUTPUT_NAME LOG_OUTPUT_VERSION
 
 # Global variables for test/subtest numbering
@@ -329,11 +331,15 @@ EOF
 
 # Function to print subtest headers
 print_subtest() {
-    TEST_COUNTER=$(( TEST_COUNTER + 1 ))
-
     local subtest_number="$1"
     local subtest_counter="$2"
     local subtest_name="$3"
+
+    if [[ "${TEST_COUNTER}" -ne $((TEST_PASSED_COUNT + TEST_FAILED_COUNT)) ]]; then
+        print_result "${subtest_number}" "${TEST_COUNTER}" 1 "Unpaired TEST (missing PASS/FAIL)"
+    fi
+
+    TEST_COUNTER=$(( TEST_COUNTER + 1 ))
 
     local test_ref
     test_ref="${subtest_number}-$(${PRINTF} "%04d" "$((subtest_counter + 1))")"
@@ -429,7 +435,9 @@ print_result() {
     processed_message=$(process_message "${message}")
 
     local formatted_output
-    if [[ "${status}" -eq 0 ]]; then
+    if [[ "${TEST_COUNTER}" -eq $((TEST_PASSED_COUNT + TEST_FAILED_COUNT)) ]]; then
+        formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${WARN_COLOR}${WARN_ICON} ${WARN_COLOR}WARN${NC}     extra PASS/FAIL without TEST: ${processed_message}"
+    elif [[ "${status}" -eq 0 ]]; then
         TEST_PASSED_COUNT=$(( TEST_PASSED_COUNT + 1 ))
         formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${PASS_COLOR}${PASS_ICON} ${PASS_COLOR}PASS${NC}   ${PASS_COLOR}${processed_message}${NC}"
     else

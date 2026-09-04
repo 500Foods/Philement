@@ -273,6 +273,8 @@ Prints a formatted subtest header with timing and numbering. **NEW**: Now provid
 - Shows current test-subtest number (e.g., "10-0001")
 - Displays elapsed time since test start
 - Uses blue color formatting with bold text
+- **The only place `TEST_COUNTER` is incremented.** Test scripts must not assign or increment it.
+- If a previous TEST has no PASS/FAIL yet, closes it as FAIL (`Unpaired TEST`) before opening the new TEST.
 - **NEW**: Automatically dumps any cached output from previous test activities before starting new test
 - **NEW**: Clears output cache after dumping for fresh collection
 
@@ -392,6 +394,7 @@ Prints a test result with appropriate icon and color coding.
 - Uses green/red color with pass/fail icons (██ PASS/██ FAIL)
 - **NEW**: Result message content is now colored to match icon and label
 - Automatically updates TEST_PASSED_COUNT/TEST_FAILED_COUNT
+- Pairing: exactly one PASS or FAIL per open TEST. Extra `print_result` with no open TEST is WARN (does not increment `TEST_COUNTER`).
 
 **Usage:**
 
