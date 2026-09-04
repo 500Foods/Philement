@@ -212,6 +212,8 @@ When creating new test scripts, adhere to the following standards:
 3. **Shellcheck Compliance**: Ensure scripts pass `shellcheck` validation for quality and consistency.
 4. **Integration**: Ensure compatibility with `test_00_all.sh` for automatic discovery and execution.
 5. **Documentation**: Add corresponding documentation in the `docs/` directory and update this README.md.
+6. **`TEST_COUNTER` is library-owned.** Call `print_subtest` (it increments) and pass `"${TEST_NUMBER}" "${TEST_COUNTER}"` into `print_result` / `print_message` / `print_command`. Never assign or increment `TEST_COUNTER` in a test script.
+7. **TEST + PASS/FAIL cadence.** Every `print_subtest` (TEST line) must be followed by exactly one `print_result` (one PASS or one FAIL). INFO/DATA/EXEC/WARN may sit between them. Do not emit consecutive TEST lines or consecutive PASS/FAIL lines. `print_subtest` auto-closes an unpaired TEST as FAIL; an extra `print_result` with no open TEST is a WARN, not a second PASS/FAIL.
 
 ### Workflow for New Tests
 

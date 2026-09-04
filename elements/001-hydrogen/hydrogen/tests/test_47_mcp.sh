@@ -10,7 +10,8 @@
 # run_disabled()
 
 # CHANGELOG
-# 1.1.10 - 2026-09-02 - Assert System.Info in tools/list + tools/call returns system JSON
+# 1.1.11 - 2026-09-04 - Unique JSON-RPC id + extra retries for System.Info;
+#                      pair every TEST with PASS/FAIL (per-config validation)
 # 1.1.9 - 2026-08-29 - echo_ok via mcp_expect_jq (3 tries) like echostrict/resources/prompts;
 #                      CockroachDB RequestTimeoutSeconds 4→15 for nested DB query headroom.
 # 1.1.8 - 2026-08-27 - Score ping/echostrict/cursor/prompts via mcp_expect_jq (3 tries);
@@ -33,7 +34,7 @@ TEST_NAME="MCP Server"
 TEST_ABBR="MCP"
 TEST_NUMBER="47"
 TEST_COUNTER=0
-TEST_VERSION="1.1.10"
+TEST_VERSION="1.1.11"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -421,9 +422,10 @@ run_engine() {
 
     # shellcheck disable=SC2310 # systeminfo scored from helper
     if http_st=$(mcp_expect_jq "${mcp_url}" "${jwt}" "${session}" \
-        '{"jsonrpc":"2.0","id":7,"method":"tools/call","params":{"name":"System.Info","arguments":{}}}' \
+        '{"jsonrpc":"2.0","id":17,"method":"tools/call","params":{"name":"System.Info","arguments":{}}}' \
         "${result_file}.sysinfo.json" "${hdr}" \
-        '.result.content != null and .result.structuredContent.version != null and .result.isError != true'); then
+        '.result.content != null and .result.structuredContent.version != null and .result.isError != true' \
+        6); then
         record_case "${result_file}" "system_info_ok" 1
     else
         record_case "${result_file}" "system_info_ok" 0
@@ -793,7 +795,10 @@ for test_config in "${!SCRIPT_TEST_CONFIGS[@]}"; do
         port=$(get_webserver_port "${config_file}")
         mcp_port=$(jq -r '.MCP.Port // empty' "${config_file}")
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description} will use web ${port} mcp ${mcp_port}"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description} config valid (web ${port} mcp ${mcp_port})"
+        PASS_COUNT=$(( PASS_COUNT + 1 ))
     else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description} config invalid"
         config_valid=false
         EXIT_CODE=1
     fi
@@ -862,9 +867,13 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     done
 
     print_marker "${TEST_NUMBER}" "${TEST_COUNTER}"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "SQLite full MCP path"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
         "Summary: ${successful}/${#SCRIPT_TEST_CONFIGS[@]} engines ok (SQLite full fixture required)"
-    if [[ "${sqlite_full}" -ne 1 ]]; then
+    if [[ "${sqlite_full}" -eq 1 ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "SQLite full MCP path passed"
+        PASS_COUNT=$(( PASS_COUNT + 1 ))
+    else
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "SQLite full MCP path did not pass"
         EXIT_CODE=1
     fi
