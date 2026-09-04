@@ -44,6 +44,10 @@
 #                       an optional third arg (sub); subtests exhaust sub-1's
 #                       bucket, verify sub-2 isolation, verify sub-1 recovers
 #                       after the window elapses.
+# 1.8.2 - 2026-09-03 - Fix use-after-free in rate-limit log_this: save sub
+#                     before free_jwt_validation_result in auth_chat.c and
+#                     auth_chats.c. Mint separate subs (2/3/4) for non-rate-limit
+#                     tests so they don't collide with sub "1" rate-limit budget.
 # 1.8.1 - 2026-09-03 - Add # shellcheck disable=SC2310 to three new
 #                       api_request call sites in the Phase 10b subtests
 #                       (api_request is invoked in an || context).
@@ -54,7 +58,7 @@ TEST_NAME="Auth Chat"
 TEST_ABBR="ACH"
 TEST_NUMBER="59"
 TEST_COUNTER=0
-TEST_VERSION="1.8.1"
+TEST_VERSION="1.8.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -323,7 +327,7 @@ chat_ws_upload_media() {
     local msg
     # shellcheck disable=SC2310 # Build failure is non-fatal; we report empty hash
     msg=$(jq -cn \
-        --arg jwt "Bearer ${CHAT_JWT_TOKEN}" \
+    --arg jwt "Bearer ${CHAT_JWT_TOKEN2}" \
         --arg data "${b64}" \
         --arg mime "${mime_type}" \
         '{type:"media_upload", payload:{jwt:$jwt, data:$data, mime_type:$mime}}') || true
@@ -432,6 +436,24 @@ if [[ -z "${CHAT_JWT_TOKEN}" ]]; then
     exit 1
 fi
 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Chat JWT minted + registered"
+
+# Mint a second chat JWT with a different sub ("2") for non-rate-limit
+# REST tests that still need a valid chat-scoped token but must not
+# consume sub "1"'s Phase 10b rate-limit budget. Tests 59-0022,
+# 59-0023, and 59-0025 use CHAT_JWT_TOKEN2 to stay within the 3-req/5s
+# window.
+CHAT_JWT_TOKEN2=$(mint_chat_jwt "Acuranzo" "chat" "2")
+if [[ -n "${CHAT_JWT_TOKEN2}" ]]; then
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Secondary chat JWT minted (sub 2)"
+fi
+
+# Mint a third chat JWT with sub "5" for WebSocket chat tests that
+# need a fresh rate-limit bucket (59-0026, 59-0028) separate from sub
+# "1" (early tests) and sub "2" (REST tests 59-0022/23/25).
+CHAT_JWT_TOKEN3=$(mint_chat_jwt "Acuranzo" "chat" "5")
+if [[ -n "${CHAT_JWT_TOKEN3}" ]]; then
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Tertiary chat JWT minted (sub 5)"
+fi
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen"
 # Point chat LRU disk cache at a disposable dir under the test diagnostics tree.
@@ -641,14 +663,14 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chats all unknown engines
 out="${RESP_DIR}/chats_all_unknown.json"
 code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chats" \
     '{"engines":["nope-1","nope-2"],"messages":[{"role":"user","content":"hi"}]}' \
-    "${out}" "${CHAT_JWT_TOKEN}")
+    "${out}" "${CHAT_JWT_TOKEN2}")
 if [[ "${code}" == "400" ]]; then record 0 "400 when no valid engines"; else record 1 "expected 400 got ${code}"; fi
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chats valid+unknown engine -> 200 (unknown dropped)"
 out="${RESP_DIR}/chats_partial.json"
 code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chats" \
     "{\"engines\":[\"${VALID_ENGINE}\",\"does-not-exist-xyz\"],\"messages\":[{\"role\":\"user\",\"content\":\"hi\"}]}" \
-    "${out}" "${CHAT_JWT_TOKEN}")
+    "${out}" "${CHAT_JWT_TOKEN2}")
 req_count=$(jq -r '.engines_requested // 0' "${out}" 2>/dev/null || echo 0)
 ok_count=$(jq -r '.engines_succeeded // 0' "${out}" 2>/dev/null || echo 0)
 # Unknown engine names are silently skipped, so only the valid engine runs.
@@ -681,7 +703,7 @@ MEDIA_REF=$(jq -cn --arg hash "${MEDIA_HASH}" '{"messages":[{"role":"user","cont
 out="${RESP_DIR}/media_ref.json"
 if [[ -n "${MEDIA_REF}" ]]; then
     # shellcheck disable=SC2310 # Request failure is non-fatal; we check the log
-    api_request "POST" "${BASE_URL}/api/conduit/auth_chat" "${MEDIA_REF}" "${out}" "${CHAT_JWT_TOKEN}" >/dev/null 2>&1 || true
+    api_request "POST" "${BASE_URL}/api/conduit/auth_chat" "${MEDIA_REF}" "${out}" "${CHAT_JWT_TOKEN2}" >/dev/null 2>&1 || true
     # shellcheck disable=SC2310 # grep returning 1 (no marker) is handled below
     if [[ -f "${HYDROGEN_LOG}" ]] && "${GREP}" -q "QueryRef #072" "${HYDROGEN_LOG}"; then
         record 0 "retrieve_media + hex_to_binary executed"
@@ -702,7 +724,7 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WS streaming chat -> proxy_mq 
 STREAM_OUT="${RESP_DIR}/ws_stream.json"
 # shellcheck disable=SC2310 # Build failure is non-fatal; we report below
 STREAM_MSG=$(jq -cn \
-    --arg jwt "Bearer ${CHAT_JWT_TOKEN}" \
+    --arg jwt "Bearer ${CHAT_JWT_TOKEN3}" \
     --arg engine "${VALID_ENGINE}" \
     '{type:"chat", payload:{jwt:$jwt, engine:$engine, stream:true, messages:[{role:"user",content:"stream me"}]}}' 2>/dev/null) || true
 if [[ -n "${STREAM_MSG}" ]]; then
@@ -741,7 +763,7 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WS non-stream chat -> send_cha
 DONE_OUT="${RESP_DIR}/ws_chat_done.json"
 # shellcheck disable=SC2310 # Build failure is non-fatal; we report below
 DONE_MSG=$(jq -cn \
-    --arg jwt "Bearer ${CHAT_JWT_TOKEN}" \
+    --arg jwt "Bearer ${CHAT_JWT_TOKEN3}" \
     --arg engine "${VALID_ENGINE}" \
     '{type:"chat", id:"bb-done-1", payload:{jwt:$jwt, engine:$engine, stream:false, messages:[{role:"user",content:"hello nonstream"}]}}' 2>/dev/null) || true
 if [[ -n "${DONE_MSG}" ]]; then
@@ -805,16 +827,14 @@ fi
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Phase 10b per-sub rate limiting"
 # Test config (see CONFIG_TEMP above): Chat.RateLimit.Enabled=true,
-# MaxRequestsPerInterval=3, IntervalSeconds=5. Mint a second JWT for a
-# different sub so we can verify multi-sub isolation. The
-# `mint_chat_jwt` helper now accepts a third optional sub argument
-# (defaults to "1" so existing call sites are unaffected).
-CHAT_JWT_SUB1="${CHAT_JWT_TOKEN}"
-CHAT_JWT_SUB2=$(mint_chat_jwt "Acuranzo" "chat" "2")
-if [[ -z "${CHAT_JWT_SUB2}" ]]; then
-    record 1 "failed to mint sub-2 chat JWT"
+# MaxRequestsPerInterval=3, IntervalSeconds=5. Mint fresh JWTs with
+# distinct subs (3 and 4) so the Phase 10b rate-limit buckets don't
+# collide with the earlier sub "1" tests (59-0011/59-0012/59-0021).
+CHAT_JWT_SUB1=$(mint_chat_jwt "Acuranzo" "chat" "3")
+CHAT_JWT_SUB2=$(mint_chat_jwt "Acuranzo" "chat" "4")
+if [[ -z "${CHAT_JWT_SUB1}" || -z "${CHAT_JWT_SUB2}" ]]; then
+    record 1 "failed to mint Phase 10b chat JWTs"
 else
-    # Phase 10b step 1: 3 successful requests under sub-1, then 4th = 429.
     rl_out="${RESP_DIR}/rl_sub1_"
     rl_codes=()
     for i in 1 2 3 4; do

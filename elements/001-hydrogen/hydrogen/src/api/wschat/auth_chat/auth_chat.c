@@ -488,6 +488,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
         ChatRateLimitResult rl = chat_rate_limit_check_and_record(
             jwt_result.claims->sub, est_input);
         if (rl != CHAT_RATE_LIMIT_ALLOWED) {
+            const char *sub = jwt_result.claims->sub;
             int err_code = (rl == CHAT_RATE_LIMIT_THROTTLED_REQUESTS) ? 4291 : 4292;
             const char *msg = (rl == CHAT_RATE_LIMIT_THROTTLED_REQUESTS)
                 ? "Request rate limit exceeded"
@@ -500,7 +501,7 @@ enum MHD_Result handle_auth_chat_request(struct MHD_Connection *connection,
             json_t *rl_error = chat_rate_limit_build_error_response(err_code, msg);
             log_this(SR_CHAT,
                      "Rate limited sub=%s (reason=%d, est_input=%lld)",
-                     LOG_LEVEL_ALERT, 3, jwt_result.claims->sub, err_code, est_input);
+                     LOG_LEVEL_ALERT, 3, sub, err_code, est_input);
             enum MHD_Result rl_ret = api_send_json_response(connection, rl_error, MHD_HTTP_TOO_MANY_REQUESTS);
             return rl_ret;
         }

@@ -239,18 +239,34 @@ configuration section.
   optional third arg (`sub`, default `"1"`) for multi-sub minting.
   `TEST_VERSION` 1.7.2 → 1.8.0.
 
-  `mkp` green (1,992 files, 0 issues), `mks` green (165 scripts,
-  1074 directives justified), `mku chat_rate_limit_test` 27/27 PASS,
-  regression on `req_builder_test_responses_store` 6/6,
-  `websocket_server_chat_send_test` 5/5,
-  `auth_chat_test_success_path` 9/9 green. Behavior change
-  documented in `/RELEASES.md` (September 2026 section),
-  `/docs/H/api/chat/auth_chat.md` (new "Per-sub Rate Limiting (Phase
-  10b)" subsection + 429 row in Errors), `auth_chats.md` (link to
-  `auth_chat.md` + note on per-sub vs per-broadcast),
-  `/docs/H/core/subsystems/websocket/websocket_chat.md`
-  (`chat_error` envelope note + two new rows in the cause table +
-  Unity test list).
+   `mkp` green (1,992 files, 0 issues), `mks` green (165 scripts,
+   1074 directives justified), `mku chat_rate_limit_test` 27/27 PASS,
+   regression on `req_builder_test_responses_store` 6/6,
+   `websocket_server_chat_send_test` 5/5,
+   `auth_chat_test_success_path` 9/9 green. Behavior change
+   documented in `/RELEASES.md` (September 2026 section),
+   `/docs/H/api/chat/auth_chat.md` (new "Per-sub Rate Limiting (Phase
+   10b)" subsection + 429 row in Errors), `auth_chats.md` (link to
+   `auth_chat.md` + note on per-sub vs per-broadcast),
+   `/docs/H/core/subsystems/websocket/websocket_chat.md`
+   (`chat_error` envelope note + two new rows in the cause table +
+   Unity test list).
+- **2026-09-04 — Phase 10b bug-fix pass: SIGSEGV in rate-limit
+  chokepoint resolved.** Test 59 crashed (SIGSEGV, fault addr 0x8) when
+  the per-sub rate limiter triggered: in both `auth_chats.c:476` and
+  `auth_chat.c:498`, `free_jwt_validation_result(&jwt_result)` was
+  called *before* the subsequent `log_this(..., sub, ...)` call
+  dereferenced `jwt_result.claims->sub` — a use-after-free that freed
+  the JWT claims struct (and set `claims = NULL`) before reading `sub`.
+  Fix: hoist `const char *sub = jwt_result.claims->sub;` into a local
+  variable *before* any `free_jwt_validation_result` call, then use the
+  local copy in `log_this`. `websocket_server_chat.c` was already safe
+  (`ws_sub` saved at line 348 before any free). Also corrected Test 59
+  JWT `sub` allocation: non-rate-limit REST tests (59-0022/23/25) and
+  WebSocket tests (59-0026/28) each now get a distinct `sub` token so
+  they don't exhaust each other's 3-req/5s window. `TEST_VERSION` 1.8.0
+  → 1.8.2. `test_59_auth_chat.sh`: 28/28 PASS. `mkt`/`mkp`/`mks` all
+  green.
 - **2026-09-03 — Housekeeping: `auth_chat_test_success_path` fixed.**
   Pre-existing failure on `main` (verified by stash test before any
   Phase 10a changes). Root cause: `auth_chat.c` calls the chat proxy
@@ -298,7 +314,11 @@ Phase 10a Status complete.
 
 ### Status
 
-**Complete (2026-09-03).**
+**Complete (2026-09-03).** Bug-fix pass done (2026-09-04): SIGSEGV
+use-after-free in the rate-limit chokepoint resolved in `auth_chats.c`
+and `auth_chat.c`; Test 59 JWT `sub` allocation corrected to avoid
+rate-limit collisions between non-rate-limit subtests; 28/28 PASS;
+`mkt`/`mkp`/`mks` all green.
 
 #### Locked design decisions
 
