@@ -18,7 +18,7 @@
 bool mysql_connect(ConnectionConfig* config, DatabaseHandle** connection, const char* designator);
 bool mysql_disconnect(DatabaseHandle* connection);
 bool mysql_health_check(DatabaseHandle* connection);
-bool mysql_reset_connection(DatabaseHandle* connection);
+bool mysql_h_reset_connection(DatabaseHandle* connection);
 PreparedStatementCache* mysql_create_prepared_statement_cache(void);
 void mysql_destroy_prepared_statement_cache(PreparedStatementCache* cache);
 
@@ -464,28 +464,28 @@ void test_mysql_health_check_success(void) {
     TEST_ASSERT_EQUAL(0, connection.consecutive_failures);
 }
 
-// Test mysql_reset_connection with NULL connection
+// Test mysql_h_reset_connection with NULL connection
 void test_mysql_reset_connection_null_connection(void) {
-    bool result = mysql_reset_connection(NULL);
+    bool result = mysql_h_reset_connection(NULL);
     TEST_ASSERT_FALSE(result);
 }
 
-// Test mysql_reset_connection with wrong engine type
+// Test mysql_h_reset_connection with wrong engine type
 void test_mysql_reset_connection_wrong_engine_type(void) {
     DatabaseHandle connection = {
         .engine_type = DB_ENGINE_POSTGRESQL, // Wrong type
         .connection_handle = NULL
     };
-    bool result = mysql_reset_connection(&connection);
+    bool result = mysql_h_reset_connection(&connection);
     TEST_ASSERT_FALSE(result);
 }
 
-// Test mysql_reset_connection success case
+// Test mysql_h_reset_connection success case
 void test_mysql_reset_connection_success(void) {
     DatabaseHandle* connection = create_test_database_handle();
     TEST_ASSERT_NOT_NULL(connection);
 
-    bool result = mysql_reset_connection(connection);
+    bool result = mysql_h_reset_connection(connection);
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_EQUAL(DB_CONNECTION_CONNECTED, connection->status);
     TEST_ASSERT_EQUAL(0, connection->consecutive_failures);
@@ -552,7 +552,7 @@ int main(void) {
     RUN_TEST(test_mysql_health_check_store_result_failure);
     RUN_TEST(test_mysql_health_check_success);
 
-    // Test mysql_reset_connection
+    // Test mysql_h_reset_connection
     RUN_TEST(test_mysql_reset_connection_null_connection);
     RUN_TEST(test_mysql_reset_connection_wrong_engine_type);
     RUN_TEST(test_mysql_reset_connection_success);

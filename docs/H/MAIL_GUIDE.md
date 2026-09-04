@@ -761,6 +761,13 @@ With `Queue.Persist=true` and a configured `Database`:
 - Attempts append to `mail_attempts`.
 - Startup recovers stale `sending` rows older than `StaleTimeoutSeconds`.
 - Multi-instance claim uses conditional updates (`instance_id`, `claim_token`) so only one worker owns a row.
+- **All 7 engines are supported** as of 2026-09-04 (mysql, mariadb, postgres,
+  yugabytedb, sqlite, db2, cockroachdb). MySQL/MariaDB receive a
+  C-side ISO 8601 → DATETIME translation in `mailrelay_repository.c` via
+  `repo_add_datetime`; the other engines accept ISO 8601 unchanged. No
+  engine-specific configuration is required. Historical workaround and
+  bind-path guard details:
+  [`PERSIST_PLAN_COMPLETE.md`](/docs/H/plans/complete/PERSIST_PLAN_COMPLETE.md).
 
 ---
 

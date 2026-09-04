@@ -41,7 +41,7 @@ bool mysql_validate_connection_string(const char* connection_string) {
     return strncmp(connection_string, "mysql://", 8) == 0;
 }
 
-char* mysql_escape_string(const DatabaseHandle* connection, const char* input) {
+char* mysql_h_escape_string(const DatabaseHandle* connection, const char* input) {
     if (!connection || !input || connection->engine_type != DB_ENGINE_MYSQL) {
         return NULL;
     }

@@ -489,6 +489,33 @@ json_t* repo_params_new(void);
 bool repo_add_string(json_t* root, const char* name, const char* value);
 bool repo_add_int(json_t* root, const char* name, int value);
 bool repo_add_int64(json_t* root, const char* name, long long value);
+
+// PERSIST_PLAN Phase 2c: engine-aware ISO 8601 -> engine DATETIME translator.
+// MySQL/MariaDB Connector/C rejects the 'T' separator and trailing 'Z' on
+// TIMESTAMP/DATETIME columns; PostgreSQL/SQLite/DB2/Cockroach/Yugabyte accept
+// ISO 8601 unchanged. For DB_ENGINE_MYSQL the helper translates the value to
+// 'YYYY-MM-DD HH:MM:SS' (truncating fractional seconds, dropping trailing 'Z')
+// before storing it under the STRING bucket. For every other engine the value
+// passes through unchanged so the 5 working engines keep their existing shape.
+// `database_name` resolves to a DatabaseConnection whose `type` selects the
+// engine. Pass NULL or an unrecognised name to fall through unchanged (safe).
+bool repo_add_datetime(json_t* root, const char* name, const char* iso8601,
+                       const char* database_name);
+
+// PERSIST_PLAN Phase 2c: low-level ISO 8601 -> MySQL DATETIME translator.
+// Exposed (non-static) so Unity tests can exercise the transform directly
+// without a full app_config / DatabaseConnection fixture. The function is
+// pure: returns a heap-allocated string the caller must free, or NULL on
+// allocation failure. NULL/empty inputs and values without a 'T' at position
+// 10 are passed through unchanged (so the helper is idempotent for already-
+// MySQL-formatted values and never destroys caller-owned pointers).
+//
+//   "2026-09-04T22:10:57Z"          -> "2026-09-04 22:10:57"
+//   "2026-09-04T22:10:57.123Z"      -> "2026-09-04 22:10:57"   (fractional dropped)
+//   "2026-09-04 22:10:57"           -> "2026-09-04 22:10:57"   (pass-through)
+//   ""                              -> ""                    (pass-through)
+//   NULL                            -> NULL                  (preserved)
+char* mailrelay_repo_translate_iso8601_to_mysql(const char* iso8601);
 bool repo_execute_json(int query_ref, json_t* params,
                        mailrelay_repo_callback_fn callback,
                        void* user_data);

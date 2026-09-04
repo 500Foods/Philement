@@ -41,7 +41,7 @@ Verified 2026-09-04 against disk, `test_58` 2.8.5, helpers 1.0.4, and `src/datab
 
 | Item | Honest status |
 |---|---|
-| **12d MySQL/MariaDB Persist** | **Still broken / shielded.** Working plan: [PERSIST_PLAN.md](/docs/H/plans/PERSIST_PLAN.md). |
+| **12d MySQL/MariaDB Persist** | **Done (live-green, 14/14).** Shield off; `repo_add_datetime` translates ISO 8601 → MySQL DATETIME in `mailrelay_repository.c`. Plan: [PERSIST_PLAN_COMPLETE.md](/docs/H/plans/complete/PERSIST_PLAN_COMPLETE.md). |
 | Phase 9 Lithium Mail Manager | Placeholder (`elements/003-lithium/src/managers/mail-manager`). Lithium sprint owns UI conventions. |
 | Phase 10.2–10.5 | 10.1 counters exist on `GET /api/mailrelay/status`. No Mail Relay Prometheus series. Cleanup QueryRefs 123–126 exist in repo; no operator retention job. `MAIL_GUIDE.md` exists (10.5 partial). |
 | Phase 11.1–11.3 HA claim | QueryRef 096 is SELECT-only (not atomic). `claim_token` columns exist unused for multi-instance. |
@@ -61,7 +61,7 @@ REST send stays template-only. Freeform is Lua-only.
 
 ### Persist / TODO 12d
 
-Broken on MySQL/MariaDB (`mysql_stmt_bind_param` SIGSEGV on QueryRef 093). Shielded off in Test 58 helpers 1.0.4. **Do not re-bind-guess here.** Full issue, burned attempts, fix vectors, and post-fix checklist: [PERSIST_PLAN.md](/docs/H/plans/PERSIST_PLAN.md).
+**Done (live-green, 14/14).** MySQL/MariaDB Persist on, full 7-engine × plaintext/STARTTLS matrix passes in ~28s (helpers 1.0.11, test_58 2.9.2). Fix landed in two parts: (a) `mysql_process_prepared_result` honours `mysql_stmt_store_result` rc (no `mysql_stmt_fetch` on a NULL `fetch_row_func`); (b) `repo_add_datetime` engine-aware translator in `mailrelay_repository.c` for ISO 8601 → MySQL DATETIME on 9 timestamp fields. Full history: [PERSIST_PLAN_COMPLETE.md](/docs/H/plans/complete/PERSIST_PLAN_COMPLETE.md).
 
 ### Next product (after 12d, not instead of documenting it)
 
@@ -298,8 +298,13 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 
 ### Decisions log
 
-- (12d Persist SIGSEGV, 2026-09-04) **MySQL/MariaDB Queue.Persist is still shielded off.**
-  Working plan: [PERSIST_PLAN.md](/docs/H/plans/PERSIST_PLAN.md). Do not bind-guess in this file.
+- (12d Persist, 2026-09-04) **MySQL/MariaDB Queue.Persist is live-green.** 14/14
+  variants pass with Persist on (helpers 1.0.11, test_58 2.9.2). Fix landed in
+  two parts: (a) `mysql_process_prepared_result` honours `mysql_stmt_store_result`
+  rc (no `mysql_stmt_fetch` on NULL `fetch_row_func`); (b) `repo_add_datetime`
+  in `mailrelay_repository.c` translates ISO 8601 → MySQL DATETIME for the
+  `DB_ENGINE_MYSQL` connection, leaving the other 5 engines untouched. Plan
+  archived to [PERSIST_PLAN_COMPLETE.md](/docs/H/plans/complete/PERSIST_PLAN_COMPLETE.md).
 - (11.4 sequential, 2026-08-21) **Idempotent send is Persist-backed.**
   1. `producer_try_idempotency` already looked up QueryRef 095; with
      `Queue.Persist=false` the row never existed, so a retry minted a
@@ -1537,8 +1542,8 @@ Entry Gate: Phase 4 exit gate green.
   - Live (2026-08-21): `producer_try_idempotency` + QueryRef 095. Requires
     `Queue.Persist=true` so the first send writes `mail_queue`. Sequential
     retries only (no UNIQUE on `idempotency_key`; concurrent same-key can
-    still race). MySQL/MariaDB Persist still off as of 2026-09-04 (TODO 12d;
-    live SIGSEGV after bind-indicator fix). 11.1–11.3 multi-instance claim
+    still race). **MySQL/MariaDB Persist now on (2026-09-04 — TODO 12d live-green,
+    helpers 1.0.11).** 11.1–11.3 multi-instance claim
     still open. `test_58` asserts same `message_id` + one sink delivery when
     Persist is on.
 

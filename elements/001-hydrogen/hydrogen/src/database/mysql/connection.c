@@ -450,7 +450,7 @@ bool mysql_health_check(DatabaseHandle* connection) {
     return false;
 }
 
-bool mysql_reset_connection(DatabaseHandle* connection) {
+bool mysql_h_reset_connection(DatabaseHandle* connection) {
     if (!connection || connection->engine_type != DB_ENGINE_MYSQL) {
         return false;
     }

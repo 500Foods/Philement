@@ -75,6 +75,36 @@ pkg_check_modules(CURL REQUIRED libcurl)
 pkg_check_modules(MAGICKWAND REQUIRED MagickWand-7.Q16HDRI)
 pkg_check_modules(ZLIB REQUIRED zlib)
 
+# MySQL/MariaDB client headers. We dlopen libmysqlclient/libmariadb at
+# runtime; this is only for the include path so <mysql.h> / <mariadb_stmt.h>
+# resolve when building production code that needs the canonical MYSQL_BIND
+# struct definition (PERSIST_PLAN). The actual .so is loaded via dlsym in
+# connection.c, so MYSQL_LIBRARIES is intentionally not used here.
+pkg_check_modules(MYSQL libmariadb)
+if(NOT MYSQL_FOUND)
+    pkg_check_modules(MYSQL mariadb)
+endif()
+if(NOT MYSQL_FOUND)
+    pkg_check_modules(MYSQL mysqlclient)
+endif()
+if(NOT MYSQL_FOUND)
+    find_path(MYSQL_INCLUDE_DIRS
+        NAMES mysql.h mariadb_stmt.h
+        PATHS /usr/include/mysql /usr/include /usr/local/include/mysql /usr/local/include
+        NO_DEFAULT_PATH
+    )
+    if(MYSQL_INCLUDE_DIRS)
+        set(MYSQL_FOUND TRUE)
+    endif()
+endif()
+if(NOT MYSQL_FOUND)
+    message(FATAL_ERROR
+        "Hydrogen requires MySQL/MariaDB client headers (mysql.h). "
+        "Install mariadb-devel / libmysqlclient-dev or set "
+        "PKG_CONFIG_PATH so pkg-config can find libmariadb, mariadb, or mysqlclient.")
+endif()
+message(STATUS "MySQL client headers: ${MYSQL_INCLUDE_DIRS}")
+
 find_package(OpenSSL REQUIRED)
 find_package(Threads REQUIRED)
 
@@ -110,6 +140,7 @@ set(HYDROGEN_INCLUDE_DIRS
     ${CURL_INCLUDE_DIRS}
     ${MAGICKWAND_INCLUDE_DIRS}
     ${ZLIB_INCLUDE_DIRS}
+    ${MYSQL_INCLUDE_DIRS}
 )
 
 # Source file discovery
@@ -176,6 +207,7 @@ function(hydrogen_add_executable_target target_name build_type extra_cflags extr
                  ${CURL_CFLAGS}
                  ${MAGICKWAND_CFLAGS}
                  ${ZLIB_CFLAGS}
+                 ${MYSQL_CFLAGS}
                  ${PROJECT_INCLUDE_FLAGS}
                 -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
             DEPENDS ${SOURCE_FILE}

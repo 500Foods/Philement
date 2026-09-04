@@ -10,6 +10,13 @@
 #include <src/database/dbqueue/dbqueue.h>
 #include <src/database/database_params.h>
 
+// MySQL/MariaDB client header. Provides MYSQL_BIND, MYSQL_TIME, and the
+// MYSQL_TYPE_* enum. Must come BEFORE local headers so they pick up the
+// canonical struct typedefs without conflicting with the hand-rolled
+// definitions they used to carry (PERSIST_PLAN). The .so itself is still
+// loaded via dlsym at runtime.
+#include <mysql.h>
+
 // Local includes
 #include "types.h"
 #include "connection.h"
@@ -53,69 +60,41 @@ void mysql_cleanup_column_names(char** column_names, size_t column_count) {
 
 /*
  * MySQL Parameter Binding
+ *
+ * Uses the canonical MYSQL_BIND definition from <mysql.h> (PERSIST_PLAN).
+ * The struct layout was previously hand-rolled here and matched sizeof 112
+ * + key offsets vs. the client header on x86-64 with MariaDB Connector/C
+ * 10.11, but the hand-rolled typedef diverges from the client in three
+ * ways that bite on the wide Persist bind shape (12 mixed STRING + INTEGER
+ * + JSON-null params):
+ *
+ *   - `buffer_type` is `unsigned int` here, `enum enum_field_types` in
+ *     the header (same width, but the .so may dispatch on a typed enum).
+ *   - Function-pointer fields (store_param_func / fetch_result /
+ *     skip_result) have different arities than the header's.
+ *   - Future additions to the client struct would silently drift.
+ *
+ * Including <mysql.h> eliminates all three. The MariaDB Connector/C
+ * .so is still loaded via dlopen in connection.c; the header is used
+ * only at compile time so MYSQL_BIND has the canonical ABI shape.
+ *
+ * length=NULL invariant: every bind gets a non-NULL `length` pointer.
+ * MariaDB bind_param dereferences `length` for fixed-width bind types
+ * (MYSQL_TYPE_SHORT / DOUBLE / DATE / TIME / DATETIME / TIMESTAMP) as
+ * well as for variable-length types. NULL -> SIGSEGV.
  */
 
-// MySQL type constants (since we can't include mysql.h)
-#define MYSQL_TYPE_LONG 3
-#define MYSQL_TYPE_NULL 6
-#define MYSQL_TYPE_STRING 254
-#define MYSQL_TYPE_SHORT 2
-#define MYSQL_TYPE_DOUBLE 5
-#define MYSQL_TYPE_LONGLONG 8
-#define MYSQL_TYPE_LONG_BLOB 251
-#define MYSQL_TYPE_DATE 10
-#define MYSQL_TYPE_TIME 11
-#define MYSQL_TYPE_DATETIME 12
-#define MYSQL_TYPE_TIMESTAMP 7
-
-// Forward declaration for MYSQL_BIND
-// cppcheck-suppress unusedStructMember
-struct MYSQL_BIND_STRUCT;
-
-// MYSQL_BIND structure (simplified version to match libmysqlclient)
-typedef struct MYSQL_BIND_STRUCT {
-    unsigned long* length;
-    char* is_null;
-    void* buffer;
-    char* error;
-    union {
-        unsigned char* row_ptr;
-        char* indicator;
-    } u;
-    void (*store_param_func)(void*, struct MYSQL_BIND_STRUCT*);
-    void (*fetch_result)(struct MYSQL_BIND_STRUCT*, void*, unsigned char**);
-    void (*skip_result)(struct MYSQL_BIND_STRUCT*, void*, unsigned char**);
-    unsigned long buffer_length;
-    unsigned long offset;
-    unsigned long length_value;
-    unsigned int flags;
-    unsigned int pack_length;
-    unsigned int buffer_type;
-    char error_value;
-    char is_unsigned;
-    char long_data_used;
-    char is_null_value;
-    void* extension;
-} MYSQL_BIND;
-
-// MySQL DATE_TIME structure for date/time binding
-typedef struct {
-    unsigned int year;
-    unsigned int month;
-    unsigned int day;
-    unsigned int hour;
-    unsigned int minute;
-    unsigned int second;
-    unsigned long second_part;  // microseconds
-    char neg;
-    unsigned int time_type;
-} MYSQL_TIME;
+// MySQL/MariaDB client header. Provides MYSQL_BIND, MYSQL_TIME, and the
+// MYSQL_TYPE_* enum. The .so itself is still loaded via dlsym at runtime.
+#include <mysql.h>
 
 /*
  * Fill MYSQL_BIND[param_index] from TypedParameter. Allocates value/length
  * storage into bound_values for mysql_cleanup_bound_values. DATE/TIME/DATETIME/
  * TIMESTAMP parse ISO text into MYSQL_TIME. Always point is_null/error at
  * in-struct indicators; MariaDB bind_param dereferences them (NULL → SEGV).
+ * Always allocate a non-NULL length pointer so bind_param never dereferences
+ * NULL on fixed-width bind types (PERSIST_PLAN).
  */
 void mysql_bind_attach_indicators(void* bind_ptr, unsigned int param_index, char is_null_flag) {
     MYSQL_BIND* bind = (MYSQL_BIND*)bind_ptr;
@@ -215,14 +194,23 @@ bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, Typed
         }
         case PARAM_TYPE_BOOLEAN: {
             short* bool_val = malloc(sizeof(short));
+            unsigned long* bool_len;
             if (!bool_val) return false;
             *bool_val = param->value.bool_value ? 1 : 0;
             bound_values[param_index] = bool_val;
 
+            bool_len = malloc(sizeof(unsigned long));
+            if (!bool_len) {
+                free(bool_val);
+                return false;
+            }
+            *bool_len = sizeof(short);
+            bound_values[total_param_count + param_index] = bool_len;
+
             bind[param_index].buffer_type = MYSQL_TYPE_SHORT;
             bind[param_index].buffer = bool_val;
             bind[param_index].buffer_length = sizeof(short);
-            bind[param_index].length = NULL;
+            bind[param_index].length = bool_len;
             mysql_bind_attach_indicators(bind, param_index, 0);
 
             log_this(designator, "Bound BOOLEAN parameter %u: value=%d", LOG_LEVEL_TRACE, 2,
@@ -231,14 +219,23 @@ bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, Typed
         }
         case PARAM_TYPE_FLOAT: {
             double* float_val = malloc(sizeof(double));
+            unsigned long* float_len;
             if (!float_val) return false;
             *float_val = param->value.float_value;
             bound_values[param_index] = float_val;
 
+            float_len = malloc(sizeof(unsigned long));
+            if (!float_len) {
+                free(float_val);
+                return false;
+            }
+            *float_len = sizeof(double);
+            bound_values[total_param_count + param_index] = float_len;
+
             bind[param_index].buffer_type = MYSQL_TYPE_DOUBLE;
             bind[param_index].buffer = float_val;
             bind[param_index].buffer_length = sizeof(double);
-            bind[param_index].length = NULL;
+            bind[param_index].length = float_len;
             mysql_bind_attach_indicators(bind, param_index, 0);
 
             log_this(designator, "Bound FLOAT parameter %u: value=%f", LOG_LEVEL_TRACE, 2,
@@ -272,6 +269,7 @@ bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, Typed
         }
         case PARAM_TYPE_DATE: {
             MYSQL_TIME* date_time = calloc(1, sizeof(MYSQL_TIME));
+            unsigned long* date_len;
             if (!date_time) return false;
 
             const char* date_value = param->value.date_value ? param->value.date_value : "1970-01-01";
@@ -294,10 +292,18 @@ bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, Typed
 
             bound_values[param_index] = date_time;
 
+            date_len = malloc(sizeof(unsigned long));
+            if (!date_len) {
+                free(date_time);
+                return false;
+            }
+            *date_len = sizeof(MYSQL_TIME);
+            bound_values[total_param_count + param_index] = date_len;
+
             bind[param_index].buffer_type = MYSQL_TYPE_DATE;
             bind[param_index].buffer = date_time;
             bind[param_index].buffer_length = sizeof(MYSQL_TIME);
-            bind[param_index].length = NULL;
+            bind[param_index].length = date_len;
             mysql_bind_attach_indicators(bind, param_index, 0);
 
             log_this(designator, "Bound DATE parameter %u: %04d-%02d-%02d", LOG_LEVEL_TRACE, 4,
@@ -306,6 +312,7 @@ bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, Typed
         }
         case PARAM_TYPE_TIME: {
             MYSQL_TIME* date_time = calloc(1, sizeof(MYSQL_TIME));
+            unsigned long* time_len;
             if (!date_time) return false;
 
             const char* time_value = param->value.time_value ? param->value.time_value : "00:00:00";
@@ -328,10 +335,18 @@ bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, Typed
 
             bound_values[param_index] = date_time;
 
+            time_len = malloc(sizeof(unsigned long));
+            if (!time_len) {
+                free(date_time);
+                return false;
+            }
+            *time_len = sizeof(MYSQL_TIME);
+            bound_values[total_param_count + param_index] = time_len;
+
             bind[param_index].buffer_type = MYSQL_TYPE_TIME;
             bind[param_index].buffer = date_time;
             bind[param_index].buffer_length = sizeof(MYSQL_TIME);
-            bind[param_index].length = NULL;
+            bind[param_index].length = time_len;
             mysql_bind_attach_indicators(bind, param_index, 0);
 
             log_this(designator, "Bound TIME parameter %u: %02d:%02d:%02d", LOG_LEVEL_TRACE, 4,
@@ -341,6 +356,7 @@ bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, Typed
         case PARAM_TYPE_DATETIME:
         case PARAM_TYPE_TIMESTAMP: {
             MYSQL_TIME* date_time = calloc(1, sizeof(MYSQL_TIME));
+            unsigned long* dt_len;
             if (!date_time) return false;
 
             const char* datetime_value = (param->type == PARAM_TYPE_DATETIME) ?
@@ -368,11 +384,19 @@ bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, Typed
 
             bound_values[param_index] = date_time;
 
+            dt_len = malloc(sizeof(unsigned long));
+            if (!dt_len) {
+                free(date_time);
+                return false;
+            }
+            *dt_len = sizeof(MYSQL_TIME);
+            bound_values[total_param_count + param_index] = dt_len;
+
             bind[param_index].buffer_type = (param->type == PARAM_TYPE_DATETIME) ?
                 MYSQL_TYPE_DATETIME : MYSQL_TYPE_TIMESTAMP;
             bind[param_index].buffer = date_time;
             bind[param_index].buffer_length = sizeof(MYSQL_TIME);
-            bind[param_index].length = NULL;
+            bind[param_index].length = dt_len;
             mysql_bind_attach_indicators(bind, param_index, 0);
 
             log_this(designator, "Bound DATETIME/TIMESTAMP parameter %u: %04d-%02d-%02d %02d:%02d:%02d.%03d",
@@ -548,9 +572,11 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                     }
                 }
                 bind_success = false;
+            } else {
+                log_this(designator, "MySQL execute_query: mysql_stmt_bind_param succeeded for %zu parameters", LOG_LEVEL_TRACE, 1, ordered_count);
             }
         }
-        
+
         // Execute prepared statement and process results
         QueryResult* db_result = NULL;
         if (bind_success && mysql_stmt_execute_ptr) {
@@ -564,6 +590,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                 }
                 bind_success = false;
             } else {
+                log_this(designator, "MySQL execute_query: Prepared statement executed successfully", LOG_LEVEL_TRACE, 0);
                 // Create result structure and use helper to process results
                 db_result = calloc(1, sizeof(QueryResult));
                 if (db_result && !mysql_process_prepared_stmt_result(stmt, db_result, designator)) {

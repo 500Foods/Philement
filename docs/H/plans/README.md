@@ -31,9 +31,11 @@ post-MVP, real-Keycloak E2E (Phase 11). History:
 
 SMTP mail relay subsystem. Core outbound/API/Lua/OTP delivered; later phases (UI, inbound, ops) remain.
 
-### [PERSIST PLAN](/docs/H/plans/PERSIST_PLAN.md)
+### [PERSIST PLAN](/docs/H/plans/complete/PERSIST_PLAN_COMPLETE.md)
 
-TODO 12d: MySQL/MariaDB `Queue.Persist` SIGSEGV in `mysql_stmt_bind_param` (QueryRef 093). Shielded off in Test 58. Not Mail Relay product work.
+**Complete (2026-09-04).** TODO 12d closed: live `test_58` mysql+mariadb
+plaintext+STARTTLS green with Persist on (full 7-engine matrix 14/14 in 27.8s).
+Two parts landed: `mysql_process_prepared_result` honours `mysql_stmt_store_result` rc (no `mysql_stmt_fetch` on NULL `fetch_row_func`); `repo_add_datetime` translates ISO 8601 → MySQL DATETIME for `DB_ENGINE_MYSQL` only. Archive only.
 
 ### [UNITY ASAN PLAN](/docs/H/plans/UNITY_ASAN_PLAN.md)
 

@@ -54,6 +54,7 @@ void test_mysql_process_query_result_null_result(void);
 void test_mysql_process_query_result_success(void);
 void test_mysql_process_prepared_result_null_result(void);
 void test_mysql_process_prepared_result_success(void);
+void test_mysql_process_prepared_result_store_result_failure(void); // PERSIST_PLAN Phase 1b
 
 void setUp(void) {
     mock_system_reset_all();
@@ -365,6 +366,29 @@ void test_mysql_process_prepared_result_success(void) {
     free(db_result.data_json);
 }
 
+// PERSIST_PLAN Phase 1b: mysql_stmt_store_result failure must NOT crash via
+// mysql_stmt_fetch. The guard should free metadata, return success=true with
+// an empty JSON array and the affected_rows count (so Persist retry on
+// duplicate key sees the same shape as other engines' empty-RETURNING path).
+void test_mysql_process_prepared_result_store_result_failure(void) {
+    // Simulate an INSERT ... RETURNING on duplicate key: store_result fails.
+    mock_libmysqlclient_set_mysql_stmt_store_result_result(1);
+    mock_libmysqlclient_set_mysql_affected_rows_result(7);
+
+    QueryResult db_result = {0};
+    bool ret = mysql_process_prepared_result((void*)0x12345678, &db_result, (void*)0x87654321, "test");
+
+    TEST_ASSERT_TRUE(ret);
+    TEST_ASSERT_TRUE(db_result.success);
+    TEST_ASSERT_EQUAL(0, db_result.row_count);
+    TEST_ASSERT_EQUAL_STRING("[]", db_result.data_json);
+    TEST_ASSERT_EQUAL(7, db_result.affected_rows);
+
+    // Reset mock for the next test.
+    mock_libmysqlclient_set_mysql_stmt_store_result_result(0);
+    mock_libmysqlclient_set_mysql_affected_rows_result(1);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -414,6 +438,7 @@ int main(void) {
     // mysql_process_prepared_result tests
     RUN_TEST(test_mysql_process_prepared_result_null_result);
     RUN_TEST(test_mysql_process_prepared_result_success);
+    RUN_TEST(test_mysql_process_prepared_result_store_result_failure); // PERSIST_PLAN Phase 1b
 
     return UNITY_END();
 }

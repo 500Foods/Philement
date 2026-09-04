@@ -13,7 +13,7 @@
 // Forward declarations for functions being tested
 char* mysql_get_connection_string(const ConnectionConfig* config);
 bool mysql_validate_connection_string(const char* connection_string);
-char* mysql_escape_string(const DatabaseHandle* connection, const char* input);
+char* mysql_h_escape_string(const DatabaseHandle* connection, const char* input);
 
 // Function prototypes for test functions
 void test_mysql_get_connection_string_null_config(void);
@@ -84,23 +84,23 @@ void test_mysql_validate_connection_string_invalid(void) {
     TEST_ASSERT_FALSE(result);
 }
 
-// Test mysql_escape_string
+// Test mysql_h_escape_string
 void test_mysql_escape_string_null_connection(void) {
-    char* result = mysql_escape_string(NULL, "test");
+    char* result = mysql_h_escape_string(NULL, "test");
     TEST_ASSERT_NULL(result);
 }
 
 void test_mysql_escape_string_null_input(void) {
     DatabaseHandle connection = {0};
     connection.engine_type = DB_ENGINE_MYSQL;
-    char* result = mysql_escape_string(&connection, NULL);
+    char* result = mysql_h_escape_string(&connection, NULL);
     TEST_ASSERT_NULL(result);
 }
 
 void test_mysql_escape_string_wrong_engine_type(void) {
     DatabaseHandle connection = {0};
     connection.engine_type = DB_ENGINE_SQLITE; // Wrong engine type
-    char* result = mysql_escape_string(&connection, "test");
+    char* result = mysql_h_escape_string(&connection, "test");
     TEST_ASSERT_NULL(result);
 }
 
@@ -117,7 +117,7 @@ int main(void) {
     RUN_TEST(test_mysql_validate_connection_string_valid);
     RUN_TEST(test_mysql_validate_connection_string_invalid);
 
-    // Test mysql_escape_string
+    // Test mysql_h_escape_string
     RUN_TEST(test_mysql_escape_string_null_connection);
     RUN_TEST(test_mysql_escape_string_null_input);
     RUN_TEST(test_mysql_escape_string_wrong_engine_type);

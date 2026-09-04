@@ -79,8 +79,14 @@ extern mysql_thread_id_t mysql_thread_id_ptr;
 
 // Library handle (declared in connection.c)
 
-// Constants (defined since we can't include mysql.h)
+// MYSQL_OPT_RECONNECT comes from <mysql.h> (enum enum_mysql_option) in
+// translation units that include it (query.c). For other TUs (connection.c,
+// etc.) that don't pull in mysql.h, provide a numeric fallback that matches
+// the historical MariaDB Connector/C value. The enum value and the #define
+// agree by convention; do not change one without the other.
+#ifndef MYSQL_OPT_RECONNECT
 #define MYSQL_OPT_RECONNECT 20
+#endif
 
 // Prepared statement cache structure
 typedef struct PreparedStatementCache {

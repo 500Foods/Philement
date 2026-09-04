@@ -496,12 +496,17 @@ bool mysql_process_prepared_result(void* mysql_result, QueryResult* db_result, v
     db_result->success = true;
     
     if (mysql_result) {
-        // This is a SELECT query with results
-        if (mysql_stmt_store_result_ptr) {
-            mysql_stmt_store_result_ptr(stmt_handle);
-        }
+        // This is a SELECT query (or INSERT ... RETURNING) with results.
+        // PERSIST_PLAN Phase 1b: capture store_result rc. On INSERT ... RETURNING
+        // for an existing key (e.g. duplicate message_uuid), the .so returns non-zero
+        // here and leaves fetch_row_func NULL; the previous code then called
+        // mysql_stmt_fetch unconditionally, causing SIGSEGV inside the client .so
+        // (fetch_row_func was a NULL function pointer). Honour the rc: log the
+        // client error, free metadata, and return an empty result set with the
+        // affected_rows count so callers (Persist retry on duplicate key) see the
+        // same shape as other engines' empty-RETURNING path.
 
-        // Get column count
+        // Get column count up front so the failure path can report schema.
         unsigned int column_count = 0;
         if (mysql_stmt_field_count_ptr) {
             column_count = mysql_stmt_field_count_ptr(stmt_handle);
@@ -509,6 +514,44 @@ bool mysql_process_prepared_result(void* mysql_result, QueryResult* db_result, v
             column_count = mysql_num_fields_ptr(mysql_result);
         }
         db_result->column_count = (size_t)column_count;
+
+        int store_rc = 0;
+        if (mysql_stmt_store_result_ptr) {
+            store_rc = mysql_stmt_store_result_ptr(stmt_handle);
+            log_this(designator, "MySQL prepared stmt store_result rc=%d", LOG_LEVEL_TRACE, 1, store_rc);
+        }
+        if (store_rc != 0) {
+            if (mysql_stmt_error_ptr) {
+                const char* stmt_err = mysql_stmt_error_ptr(stmt_handle);
+                if (stmt_err && strlen(stmt_err) > 0) {
+                    log_this(designator, "MySQL prepared stmt store_result failed: %s", LOG_LEVEL_ERROR, 1, stmt_err);
+                } else {
+                    log_this(designator, "MySQL prepared stmt store_result failed (no detail)", LOG_LEVEL_ERROR, 0);
+                }
+            } else {
+                log_this(designator, "MySQL prepared stmt store_result failed", LOG_LEVEL_ERROR, 0);
+            }
+            if (mysql_stmt_free_result_ptr) {
+                mysql_stmt_free_result_ptr(stmt_handle);
+            }
+            if (mysql_free_result_ptr) {
+                mysql_free_result_ptr(mysql_result);
+            }
+            db_result->row_count = 0;
+            db_result->data_json = strdup("[]");
+            if (mysql_stmt_affected_rows_ptr) {
+                unsigned long long affected = mysql_stmt_affected_rows_ptr(stmt_handle);
+                #pragma GCC diagnostic push
+                #pragma GCC diagnostic ignored "-Wconversion"
+                db_result->affected_rows = (size_t)affected;
+                #pragma GCC diagnostic pop
+            } else {
+                db_result->affected_rows = 0;
+            }
+            db_result->success = true;
+            return true;
+        }
+        log_this(designator, "MySQL prepared stmt bind_result for %u columns", LOG_LEVEL_TRACE, 1, column_count);
 
         // Get field types and extract column names
         typedef struct {
@@ -667,6 +710,7 @@ bool mysql_process_prepared_result(void* mysql_result, QueryResult* db_result, v
             }
             return false;
         }
+        log_this(designator, "MySQL prepared stmt fetch loop start", LOG_LEVEL_TRACE, 0);
 
         size_t json_size = 8192;
         db_result->data_json = calloc(1, json_size);
