@@ -15,6 +15,7 @@
 # (Helpers live in tests/lib/mailrelay_api_helpers.sh)
 
 # CHANGELOG
+# 2.8.3 - 2026-09-04 - Pair TEST/PASS/FAIL; print_subtest owns TEST_COUNTER
 # 2.8.2 - 2026-09-04 - Queue.Persist on for MySQL/MariaDB after LONGLONG bind fix.
 # 2.8.1 - 2026-08-21 - STARTTLS CAPath written into runtime config.
 # 2.8.0 - 2026-08-21 - Split helpers; sequential plaintext/STARTTLS per engine;
@@ -38,7 +39,7 @@ TEST_NAME="MailRelay API"
 TEST_ABBR="MRA"
 TEST_NUMBER="58"
 TEST_COUNTER=0
-TEST_VERSION="2.8.2"
+TEST_VERSION="2.8.3"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -131,8 +132,8 @@ else
 fi
 
 config_valid=true
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration Files"
 for display_name in "${!MAILRELAY_API_ENGINES[@]}"; do
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File: ${display_name}"
     IFS=':' read -r engine_name web_plain mail_plain web_tls mail_tls <<< "${MAILRELAY_API_ENGINES[${display_name}]}"
     config_file="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_${engine_name}.json"
     # shellcheck disable=SC2310 # Continue even if validation fails
@@ -144,7 +145,6 @@ for display_name in "${!MAILRELAY_API_ENGINES[@]}"; do
     fi
 done
 
-print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration Files"
 if [[ "${config_valid}" = true ]]; then
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All configuration files validated successfully"
     PASS_COUNT=$(( PASS_COUNT + 1 ))

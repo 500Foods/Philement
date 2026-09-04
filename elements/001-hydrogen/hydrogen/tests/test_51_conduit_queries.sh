@@ -13,6 +13,7 @@
 # run_conduit_test_unified()
 
 # CHANGELOG
+# 1.1.1 - 2026-09-04 - Pair TEST/PASS/FAIL; print_subtest owns TEST_COUNTER
 # 1.1.0 - 2026-01-25 - Updated to follow Test 50 structure
 #                    - Added comprehensive status endpoint testing
 #                    - Added print_box separators for better readability
@@ -26,7 +27,7 @@ TEST_NAME="Conduit Queries"
 TEST_ABBR="CQM"
 TEST_NUMBER="51"
 TEST_COUNTER=0
-TEST_VERSION="1.1.0"
+TEST_VERSION="1.1.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -113,7 +114,6 @@ test_conduit_status_authenticated() {
     if validate_conduit_request "${base_url}/api/conduit/status" "GET" "" "200" "${response_file}" "${jwt_token}" "Authenticated status request" "true"; then
         # Show summary of authenticated response per database
         if command -v jq >/dev/null 2>&1 && [[ -f "${response_file}" ]]; then
-            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Authenticated status response summary"
             for db_engine in "${!DATABASE_NAMES[@]}"; do
                 local db_name="${DATABASE_NAMES[${db_engine}]}"
                 local db_name_pad="${DATABASE_NAMES[${db_engine}]}     "
@@ -137,10 +137,8 @@ test_conduit_status_authenticated() {
                 fi
             done
         fi
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Status endpoint authenticated test passed"
         echo "STATUS_AUTH_TESTS_PASSED=1" >> "${result_file}"
     else
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Status endpoint authenticated test failed"
         echo "STATUS_AUTH_TESTS_PASSED=0" >> "${result_file}"
     fi
     echo "STATUS_AUTH_TESTS_TOTAL=1" >> "${result_file}"
@@ -568,7 +566,6 @@ fi
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File"
 # shellcheck disable=SC2310 # We want to continue even if the test fails
 if validate_config_file "${CONDUIT_CONFIG_FILE}"; then
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Process Configuration File"
     port=$(get_webserver_port "${CONDUIT_CONFIG_FILE}")
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${CONDUIT_DESCRIPTION} configuration will use port: ${port}"
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Unified configuration file validated successfully"

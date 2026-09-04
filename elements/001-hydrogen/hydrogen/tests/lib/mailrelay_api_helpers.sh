@@ -9,6 +9,7 @@
 # shellcheck disable=SC2312 # Diagnostic substitutions swallow inner status; callers use || true
 
 # CHANGELOG
+# 1.0.3 - 2026-09-04 - Pair TEST/PASS/FAIL in analyze (print_subtest before result)
 # 1.0.2 - 2026-09-04 - Enable Queue.Persist for MySQL/MariaDB (INTEGER bind uses
 #                      MYSQL_TYPE_LONGLONG).
 # 1.0.1 - 2026-08-21 - STARTTLS: write CAPath in the patched JSON (export inside
@@ -20,7 +21,7 @@
 export MAILRELAY_API_HELPERS_GUARD="true"
 
 MAILRELAY_API_HELPERS_NAME="MailRelay API Test Helpers"
-MAILRELAY_API_HELPERS_VERSION="1.0.2"
+MAILRELAY_API_HELPERS_VERSION="1.0.3"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${MAILRELAY_API_HELPERS_NAME} ${MAILRELAY_API_HELPERS_VERSION}" "info"
 
 MAILVAL_PIDS=()
@@ -620,13 +621,13 @@ mailrelay_api_analyze() {
     local result_suffix="$2"
     local description="$3"
     local result_file="${LOG_PREFIX}_${result_suffix}.result"
+    print_marker "${TEST_NUMBER}" "${TEST_COUNTER}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Analyzing results"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: API End-to-End"
     if [[ ! -f "${result_file}" ]]; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: No result file found"
         return 1
     fi
-    print_marker "${TEST_NUMBER}" "${TEST_COUNTER}"
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Analyzing results"
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: API End-to-End"
     if "${GREP}" -q "ENGINE_TEST_COMPLETE" "${result_file}" 2>/dev/null; then
         echo "MAILRELAY_API_${test_name}_PASS" >> "${GLOBAL_RESULT_FILE:-${DIAG_TEST_DIR}/mailrelay_api_results.result}"
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: API test passed"

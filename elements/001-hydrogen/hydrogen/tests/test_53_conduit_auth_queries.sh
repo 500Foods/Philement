@@ -12,6 +12,7 @@
 # analyze_conduit_results()
 
 # CHANGELOG
+# 1.1.1 - 2026-09-04 - Pair TEST/PASS/FAIL; print_subtest owns TEST_COUNTER
 # 1.1.0 - 2026-08-02 - Added blackbox error-case tests for auth_queries.c
 #                    - Missing Authorization header (401, middleware),
 #                      invalid JWT (000, known server bug - see test comments),
@@ -31,7 +32,7 @@ TEST_NAME="Conduit Auth Queries"
 TEST_ABBR="CAM"
 TEST_NUMBER="53"
 TEST_COUNTER=0
-TEST_VERSION="1.1.0"
+TEST_VERSION="1.1.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -245,7 +246,7 @@ test_conduit_auth_queries_error_cases() {
 
         local invalid_jwt_status
         invalid_jwt_status=$(curl -s -X POST -H "Content-Type: application/json" -H "Authorization: Bearer ${invalid_jwt}" -d '{}' -w "%{http_code}" -o "${response_file_invalid_jwt}" --max-time 60 "${base_url}/api/conduit/auth_queries" 2>/dev/null) || true
-        TEST_COUNTER=$(( TEST_COUNTER + 1 ))
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Auth Multiple Queries: Invalid JWT Token (${db_engine})"
         if [[ "${invalid_jwt_status}" == "401" ]]; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP response code: ${invalid_jwt_status}"
             if "${GREP}" -q "\"success\"[[:space:]]*:[[:space:]]*false" "${response_file_invalid_jwt}" 2>/dev/null; then
@@ -275,7 +276,7 @@ test_conduit_auth_queries_error_cases() {
 
         local put_status
         put_status=$(curl -s -X PUT -H "Authorization: Bearer ${jwt_token}" -w "%{http_code}" -o "${response_file_put}" --max-time 60 "${base_url}/api/conduit/auth_queries" 2>/dev/null) || true
-        TEST_COUNTER=$(( TEST_COUNTER + 1 ))
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Auth Multiple Queries: PUT Method (${db_engine})"
         if [[ "${put_status}" == "400" ]]; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP response code: ${put_status}"
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Auth Multiple Queries: PUT Method (WebServer 400) (${db_engine}) - Request completed"
@@ -461,7 +462,7 @@ fi
 
 # Only proceed with conduit tests if prerequisites are met
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Running Conduit authenticated multiple queries endpoint tests on unified server"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running Conduit authenticated multiple queries endpoint tests on unified server"
 
     # Run single server test
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting unified conduit test server (${CONDUIT_DESCRIPTION})"
