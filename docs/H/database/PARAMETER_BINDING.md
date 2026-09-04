@@ -29,15 +29,29 @@ Source: [`postgresql/query.c`](/elements/001-hydrogen/hydrogen/src/database/post
 
 ## MySQL / MariaDB
 
-Source: [`mysql/query.c`](/elements/001-hydrogen/hydrogen/src/database/mysql/query.c)
+Source: [`mysql/query.c`](/elements/001-hydrogen/hydrogen/src/database/mysql/query.c),
+[`mysql/query_helpers.c`](/elements/001-hydrogen/hydrogen/src/database/mysql/query_helpers.c).
 
 - `mysql_bind_single_parameter()` fills `MYSQL_BIND` slots.
 - INTEGER → `MYSQL_TYPE_LONGLONG`; BOOLEAN → short; FLOAT → double;
   STRING → string; TEXT → long blob; DATE/TIME/DATETIME/TIMESTAMP →
   `MYSQL_TIME` parsed from ISO text.
-- Null string-like values bind as empty text when the hand-rolled
-  `MYSQL_BIND` layout cannot set client `is_null` safely.
+- Every bind slot carries a non-NULL `length` pointer (`length=NULL` triggers
+  SIGSEGV in Connector/C for fixed-width types — fixed in PERSIST_PLAN Phase 1).
+- `is_null` / `error` always point at in-struct `is_null_value` / `error_value`
+  indicators (NULL → `MYSQL_TYPE_NULL` requires both; fixed in Phase 1).
 - `mysql_cleanup_bound_values()` frees allocated bind storage after execute.
+- **INSERT … RETURNING result handling** ([PERSIST_PLAN Phase 1b](/docs/H/plans/complete/PERSIST_PLAN_COMPLETE.md)):
+  `mysql_process_prepared_result` honours `mysql_stmt_store_result` rc. On
+  non-zero (e.g. duplicate-key empty RETURNING) it logs `mysql_stmt_error`,
+  frees the result metadata, and returns `success=true` with `data_json="[]"`
+  + `affected_rows` from `mysql_stmt_affected_rows` — never calls
+  `mysql_stmt_fetch` with `fetch_row_func == NULL`. The previous code
+  ignored `store_result` rc and unconditionally called `mysql_stmt_fetch`,
+  which dereferenced the NULL function pointer and SIGSEGV'd inside
+  `libmysqlclient.so`. The result binds still use the hand-rolled
+  `MYSQL_BIND_COMPLETE` in `query_helpers.c` (Phase 1 only switched the
+  *param* binds to the canonical `<mysql.h>` definition).
 
 ## SQLite
 

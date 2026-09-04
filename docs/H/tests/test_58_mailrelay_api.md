@@ -48,7 +48,7 @@ The test runs in parallel against all configured engines:
 - `tests/configs/hydrogen_test_58_cockroachdb.json`
 - `tests/configs/hydrogen_test_58_yugabytedb.json`
 
-The script overrides the web port, mailval port, TLS settings, and `Servers[0].CAPath` (absolute mailval cert path for STARTTLS) in each config at runtime, so a single config file per engine supports both plaintext and STARTTLS variants. Secrets and database connection parameters are injected via `${env.*}` variables resolved by the config loader. `Queue.Persist` is on except MySQL and MariaDB.
+The script overrides the web port, mailval port, TLS settings, and `Servers[0].CAPath` (absolute mailval cert path for STARTTLS) in each config at runtime, so a single config file per engine supports both plaintext and STARTTLS variants. Secrets and database connection parameters are injected via `${env.*}` variables resolved by the config loader. `Queue.Persist` is on for all 7 engines (mysql, mariadb, postgres, yugabytedb, sqlite, db2, cockroachdb).
 
 Helpers live in [`/elements/001-hydrogen/hydrogen/tests/lib/mailrelay_api_helpers.sh`](/elements/001-hydrogen/hydrogen/tests/lib/mailrelay_api_helpers.sh). Each engine runs plaintext then STARTTLS in one job (at most four engine jobs at once) so a full-suite 50s batch does not start 14 Hydrogen processes at the same time.
 
@@ -96,7 +96,7 @@ bash tests/test_58_mailrelay_api.sh
 ## Related
 
 - Plan: [Mail Relay Subsystem Implementation Plan](/docs/H/plans/MAILRELAY_PLAN.md)
-- Persist SIGSEGV (MySQL/MariaDB): [PERSIST_PLAN.md](/docs/H/plans/PERSIST_PLAN.md)
+- Persist SIGSEGV fix (MySQL/MariaDB, live-green 2026-09-04): [PERSIST_PLAN_COMPLETE.md](/docs/H/plans/complete/PERSIST_PLAN_COMPLETE.md)
 - Outbound test: [Mail Relay Outbound Blackbox Test](/docs/H/tests/test_57_mailrelay_outbound.md)
 - Sink source: `/elements/001-hydrogen/hydrogen/extras/mailval/`
 - Phase 7 exit gate: authenticated clients can preview and queue templated emails.

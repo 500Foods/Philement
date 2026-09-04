@@ -21,7 +21,7 @@ static DatabaseEngineInterface mysql_engine_interface = {
     .connect = mysql_connect,
     .disconnect = mysql_disconnect,
     .health_check = mysql_health_check,
-    .reset_connection = mysql_reset_connection,
+    .reset_connection = mysql_h_reset_connection,
     .execute_query = mysql_execute_query,
     .execute_prepared = mysql_execute_prepared,
     .begin_transaction = mysql_begin_transaction,
@@ -31,7 +31,7 @@ static DatabaseEngineInterface mysql_engine_interface = {
     .unprepare_statement = mysql_unprepare_statement,
     .get_connection_string = mysql_get_connection_string,
     .validate_connection_string = mysql_validate_connection_string,
-    .escape_string = mysql_escape_string,
+    .escape_string = mysql_h_escape_string,
     .cancel_inflight = mysql_cancel_inflight
 };
 

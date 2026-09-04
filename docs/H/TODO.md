@@ -112,11 +112,11 @@ not open work unless listed below.
 | --- | --- |
 | **Code** | `src/database/mysql/query.c` (prepared bind/execute) · QueryRef **093** `acuranzo_1223.lua` · `mailrelay_repo_queue_insert` · workers Persist path |
 | **Effort** | M |
-| **Done** | INTEGER binds use `MYSQL_TYPE_LONGLONG`; hand-rolled `MYSQL_BIND` closer to MariaDB; `is_null`/`error` now point at in-struct indicators; SQL NULL → `MYSQL_TYPE_NULL`. Unity bind tests green. |
-| **Plan** | [`PERSIST_PLAN.md`](/docs/H/plans/PERSIST_PLAN.md) |
-| **Remaining** | **Live still SIGSEGV.** Persist off for mysql/mariadb (helpers 1.0.4). Next: Phase 0 ABI measurement in the Persist plan, then live `test_58`. |
-| **Why now** | Shield is a workaround. Bind ABI is still wrong in production. |
-| **Note** | Distinct from item 12e (pkey race). |
+| **Done** | Live `test_58` mysql+mariadb plaintext+STARTTLS green with Persist on (helpers 1.0.11, test_58 2.9.2; full 7-engine matrix 14/14 in 27.8s). Phase 0 ABI; Phase 1 `<mysql.h>` refactor + `length=NULL` invariant; Phase 1b `mysql_process_prepared_result` honours `mysql_stmt_store_result` rc (logs `mysql_stmt_error`, frees metadata, returns `success=true` with empty JSON + `affected_rows` on `store_result` failure); Phase 2c `repo_add_datetime` translates ISO 8601 → MySQL DATETIME for `DB_ENGINE_MYSQL` (9 timestamp fields in `mailrelay_repository.c`); 11 new Unity tests green. |
+| **Plan** | [`PERSIST_PLAN_COMPLETE.md`](/docs/H/plans/complete/PERSIST_PLAN_COMPLETE.md) |
+| **Remaining** | None — shield is OFF, Persist on for all 7 engines. |
+| **Why now** | n/a |
+| **Note** | Distinct from item 12e (pkey race). `Phase 2c` is the C-side datetime format fix (engine-aware translator in `mailrelay_repository.c`); not a Helium migration. |
 
 ### 12e. App-generated `MAX+1` PKs — clients must confirm insert + retry on conflict
 
@@ -140,8 +140,8 @@ not open work unless listed below.
 | --- | --- |
 | **Plan** | [`MAILRELAY_PLAN.md`](/docs/H/plans/MAILRELAY_PLAN.md) |
 | **Effort** | L–XL |
-| **Done** | ~75% — Phases 0–5, 7–8, 7A/7B done; templates/events seeds 1280–1282; Test 57/58 seams; Persist retry in C; 12d bind fix |
-| **Remaining** | 12d live MySQL/MariaDB Persist (still SIGSEGV; shielded). Phase 6.1b code/seeds exist (do not rewrite; status not gated). Phase 9 Lithium UI (placeholder); Phase 10.2–10.5; Phases 11.1–11.3 HA claim; 12–15 inbound/hardening/release. Login MFA → [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) Phase 8. Next free Acuranzo **1377** (re-check disk). |
+| **Done** | ~75% — Phases 0–5, 7–8, 7A/7B done; templates/events seeds 1280–1282; Test 57/58 seams; Persist retry in C; 12d **live-green** (mysql+mariadb Persist on, 14/14) |
+| **Remaining** | Phase 6.1b code/seeds exist (do not rewrite; status not gated). Phase 9 Lithium UI (placeholder); Phase 10.2–10.5; Phases 11.1–11.3 HA claim; 12–15 inbound/hardening/release. Login MFA → [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) Phase 8. Next free Acuranzo **1377** (re-check disk). |
 | **Why next** | Core send/API/Lua/OTP stack works (`test_57`/`test_58`). Remaining is product surface and ops polish. |
 | **Note** | Parallel session may complete subsets — re-check plan/tests before starting. |
 
@@ -286,7 +286,7 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 12 | DB fault tolerance (crash/transient) | L | partial | P1 |
 | 12a | DQM child auto-scale (optional) | L | no-op by design | P1 |
 | 12b | Scoreboard waiter condvar wake | M | poll only | P1 |
-| 12d | MailRelay Persist MySQL/MariaDB SEGV | M | bind attempts done; live still SEGV; Persist off | P1 |
+| 12d | MailRelay Persist MySQL/MariaDB SEGV | M | **done** — 14/14 live green; 12d closed | — |
 | 12e | MAX+1 PK clients: confirm + retry | M | single-thread OK | P1 |
 | 13 | Mail Relay remainder | L–XL | ~75% | P2 |
 | 25 | SchemaHelper TUI | L | v1 | P2 |

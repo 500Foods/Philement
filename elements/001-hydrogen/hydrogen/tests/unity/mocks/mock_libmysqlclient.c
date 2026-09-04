@@ -109,6 +109,7 @@ static int mock_mysql_stmt_prepare_result = 0; // 0 = success
 static int mock_mysql_stmt_execute_result = 0; // 0 = success
 static int mock_mysql_stmt_close_result = 0; // 0 = success
 static int mock_mysql_stmt_bind_param_result = 0; // 0 = success
+static int mock_mysql_stmt_store_result_result = 0; // 0 = success (PERSIST_PLAN Phase 1b)
 
 // Mock control to simulate unavailable functions
 static bool mock_mysql_ping_available = true;
@@ -275,7 +276,7 @@ void* mock_mysql_stmt_result_metadata(void* stmt) {
 
 int mock_mysql_stmt_store_result(void* stmt) {
     (void)stmt; // Suppress unused parameter
-    return 0; // Success
+    return mock_mysql_stmt_store_result_result; // PERSIST_PLAN Phase 1b
 }
 
 int mock_mysql_stmt_fetch(void* stmt) {
@@ -408,6 +409,10 @@ void mock_libmysqlclient_set_mysql_stmt_bind_param_result(int result) {
     mock_mysql_stmt_bind_param_result = result;
 }
 
+void mock_libmysqlclient_set_mysql_stmt_store_result_result(int result) {
+    mock_mysql_stmt_store_result_result = result;
+} // PERSIST_PLAN Phase 1b
+
 void mock_libmysqlclient_reset_all(void) {
     mock_mysql_init_result = (void*)0x12345678;
     mock_mysql_real_connect_result = (void*)0x12345678;
@@ -432,7 +437,8 @@ void mock_libmysqlclient_reset_all(void) {
     mock_mysql_stmt_prepare_result = 0;
     mock_mysql_stmt_execute_result = 0;
     mock_mysql_stmt_close_result = 0;
-    mock_mysql_stmt_bind_param_result = 0;
+mock_mysql_stmt_bind_param_result = 0;
+    mock_mysql_stmt_store_result_result = 0; // PERSIST_PLAN Phase 1b
 
     // Clear mock fields
     memset(mock_fields, 0, sizeof(mock_fields));

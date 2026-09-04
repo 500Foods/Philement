@@ -430,6 +430,7 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
             ${LUA_CFLAGS}
             ${MAGICKWAND_CFLAGS}
             ${ZLIB_CFLAGS}
+            ${MYSQL_CFLAGS}
             ${PROJECT_INCLUDE_FLAGS}
             -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
         DEPENDS ${SOURCE_FILE}
@@ -498,6 +499,7 @@ target_compile_options(unity_mocks PRIVATE
     ${LUA_CFLAGS}
     ${MAGICKWAND_CFLAGS}
     ${ZLIB_CFLAGS}
+    ${MYSQL_CFLAGS}
     ${PROJECT_INCLUDE_FLAGS}
 )
 
@@ -720,6 +722,7 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
             ${LUA_CFLAGS}
             ${MAGICKWAND_CFLAGS}
             ${ZLIB_CFLAGS}
+            ${MYSQL_CFLAGS}
             ${PROJECT_INCLUDE_FLAGS}
             -c ${TEST_SOURCE} -o ${TEST_OUTPUT_OBJ}
         DEPENDS ${TEST_SOURCE}

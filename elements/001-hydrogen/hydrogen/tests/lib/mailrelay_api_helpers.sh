@@ -9,6 +9,37 @@
 # shellcheck disable=SC2312 # Diagnostic substitutions swallow inner status; callers use || true
 
 # CHANGELOG
+# 1.0.11 - 2026-09-04 - PERSIST_PLAN Phase 2c: shield flipped OFF after the
+#                      repo_add_datetime helper landed. mailrelay_repository.c
+#                      now translates ISO 8601 -> MySQL DATETIME for mysql/
+#                      mariadb connections; the other 5 engines still pass
+#                      ISO 8601 through unchanged. If Test 58 fails on
+#                      mysql/mariadb variants, restore via 1.0.12.
+# 1.0.10 - 2026-09-04 - PERSIST_PLAN Phase 2.4: Phase 1b guard works (no SIGSEGV);
+#                      live Test 58 surfaced a separate pre-existing bug -
+#                      NEXT_ATTEMPT_AT bound as STRING '2026-09-04T22:10:57Z'
+#                      (ISO 8601) is rejected by MariaDB/MySQL DATETIME column.
+#                      Other 5 engines accept ISO; mysql/mariadb need the 'T'->' '
+#                      and trailing 'Z' translation. Out of scope for the
+#                      C-result-path guard. Shield restored. See Working Log.
+# 1.0.9 - 2026-09-04 - PERSIST_PLAN Phase 2: shield flipped OFF (mysql/mariadb now
+#                      return true) after Phase 1b store_result/fetch guard lands.
+#                      mysql_process_prepared_result honours mysql_stmt_store_result
+#                      rc; on non-zero (e.g. duplicate-key INSERT...RETURNING) it
+#                      logs mysql_stmt_error, frees metadata, returns success=true
+#                      with empty JSON + affected_rows so Persist retry runs. Same
+#                      shape as other engines' empty-RETURNING path.
+# 1.0.8 - 2026-09-04 - PERSIST_PLAN Phase 2 redo result: <mysql.h> refactor + length
+#                      fix did NOT eliminate the mariadb/mysql SIGSEGV. Shield
+#                      restored. See Working Log for evidence.
+# 1.0.7 - 2026-09-04 - PERSIST_PLAN Phase 2 redo: re-enable Persist on
+#                      mysql/mariadb after the <mysql.h> + length=NULL fix
+#                      in src/database/mysql/query.c (PERSIST_PLAN Phase 1).
+#                      Verified by live Test 58 mariadb/mysql variants.
+# 1.0.6 - 2026-09-04 - PERSIST_PLAN Phase 2.4: SIGSEGV reproduced live on mariadb/mysql;
+#                      shield restored (mysql/mariadb -> false). See Working Log.
+# 1.0.5 - 2026-09-04 - PERSIST_PLAN Phase 2 probe: re-enable Persist on mysql/mariadb.
+#                      Live Test 58 evidence will restore the shield in 1.0.6 if it SIGSEGVs.
 # 1.0.4 - 2026-09-04 - Queue.Persist off for MySQL/MariaDB (stmt_bind_param SIGSEGV)
 # 1.0.3 - 2026-09-04 - Pair TEST/PASS/FAIL in analyze (print_subtest before result)
 # 1.0.2 - 2026-09-04 - Enable Queue.Persist for MySQL/MariaDB (INTEGER bind uses
@@ -22,7 +53,7 @@
 export MAILRELAY_API_HELPERS_GUARD="true"
 
 MAILRELAY_API_HELPERS_NAME="MailRelay API Test Helpers"
-MAILRELAY_API_HELPERS_VERSION="1.0.4"
+MAILRELAY_API_HELPERS_VERSION="1.0.11"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${MAILRELAY_API_HELPERS_NAME} ${MAILRELAY_API_HELPERS_VERSION}" "info"
 
 MAILVAL_PIDS=()
@@ -233,7 +264,10 @@ mailrelay_api_rm_temp() {
 mailrelay_api_persist_enabled() {
     local engine_name="${1:-}"
     if [[ "${engine_name}" == "mysql" || "${engine_name}" == "mariadb" ]]; then
-        echo "false"
+        # PERSIST_PLAN Phase 2c: shield OFF after repo_add_datetime lands.
+        # See mailrelay_repository.{h,c} and the new repo_add_datetime /
+        # mailrelay_repo_translate_iso8601_to_mysql Unity tests.
+        echo "true"
         return 0
     fi
     echo "true"

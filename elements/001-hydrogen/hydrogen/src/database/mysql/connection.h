@@ -17,7 +17,7 @@ bool mysql_check_timeout_expired(time_t start_time, int timeout_seconds);
 bool mysql_connect(ConnectionConfig* config, DatabaseHandle** connection, const char* designator);
 bool mysql_disconnect(DatabaseHandle* connection);
 bool mysql_health_check(DatabaseHandle* connection);
-bool mysql_reset_connection(DatabaseHandle* connection);
+bool mysql_h_reset_connection(DatabaseHandle* connection);
 
 // Watchdog cancel hook - implements engine cancel_inflight
 void mysql_cancel_inflight(DatabaseHandle* connection);

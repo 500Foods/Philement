@@ -18,6 +18,7 @@
 #include <src/database/database_pending.h>
 #include <src/database/database.h>
 #include <src/database/dbqueue/dbqueue.h>
+#include <src/config/config_databases.h> // PERSIST_PLAN Phase 2c: DatabaseConnection for repo_add_datetime
 #include <src/api/conduit/query/query.h>
 
 // Mail Relay includes
@@ -342,6 +343,93 @@ bool repo_add_int64(json_t* root, const char* name, long long value) {
     return json_object_set_new(integer_obj, name, json_integer((json_int_t)value)) == 0;
 }
 
+// Translate ISO 8601 'YYYY-MM-DDTHH:MM:SS[.fff]Z' to MySQL DATETIME
+// 'YYYY-MM-DD HH:MM:SS'. Truncates fractional seconds and drops the trailing
+// 'Z'. NULL/empty input passes through unchanged (NULL stays NULL, empty
+// stays empty string). Already-formatted values are returned as-is.
+// Returns a heap-allocated string the caller must free. NULL on allocation
+// failure. See header for the full contract.
+char* mailrelay_repo_translate_iso8601_to_mysql(const char* iso8601) {
+    if (!iso8601) {
+        return NULL;
+    }
+    size_t n = strlen(iso8601);
+    if (n == 0) {
+        // Preserve empty as empty.
+        char* empty = malloc(1);
+        if (empty) {
+            empty[0] = '\0';
+        }
+        return empty;
+    }
+    // Need at least 'YYYY-MM-DDTHH:MM:SS' (19 chars). Anything shorter or
+    // without a 'T' at position 10 is already in MySQL DATETIME shape
+    // (or junk the engine will reject on its own); pass through unchanged.
+    if (n < 19 || iso8601[10] != 'T') {
+        char* copy = malloc(n + 1);
+        if (copy) {
+            memcpy(copy, iso8601, n + 1);
+        }
+        return copy;
+    }
+    // Compose 'YYYY-MM-DD HH:MM:SS' (19 chars) plus any tail (which we drop).
+    char* out = malloc(20);
+    if (!out) {
+        return NULL;
+    }
+    memcpy(out, iso8601, 10);           // YYYY-MM-DD
+    out[10] = ' ';
+    memcpy(out + 11, iso8601 + 11, 8);  // HH:MM:SS
+    out[19] = '\0';
+    return out;
+}
+
+// PERSIST_PLAN Phase 2c: see header for the contract. Engine lookup is by
+// DatabaseConnection->type ("mysql" -> DB_ENGINE_MYSQL). Any other engine,
+// an unresolved name, or a missing app_config falls through to repo_add_string
+// unchanged so the 5 working engines keep their current ISO 8601 behaviour.
+bool repo_add_datetime(json_t* root, const char* name, const char* iso8601,
+                       const char* database_name) {
+    if (!root || !name) {
+        return false;
+    }
+
+    // Default: pass through to repo_add_string (preserves NULL/empty handling
+    // and the JSON STRING bucket shape).
+    if (!app_config || !database_name || !iso8601) {
+        return repo_add_string(root, name, iso8601);
+    }
+
+    const DatabaseConnection* conn = find_database_connection(
+        &app_config->databases, database_name);
+    bool is_mysql = (conn && conn->type && strcmp(conn->type, "mysql") == 0);
+
+    if (!is_mysql) {
+        return repo_add_string(root, name, iso8601);
+    }
+
+    char* translated = mailrelay_repo_translate_iso8601_to_mysql(iso8601);
+    if (!translated) {
+        // Translation failed (OOM). Fall back to the original value rather
+        // than silently dropping the bind.
+        return repo_add_string(root, name, iso8601);
+    }
+
+    // Bypass repo_add_string so the translated buffer is always stored as a
+    // JSON string (never JSON null) even if it happens to be empty.
+    json_t* string_obj = json_object_get(root, "STRING");
+    if (!string_obj) {
+        free(translated);
+        return false;
+    }
+    json_t* jstr = json_string(translated);
+    free(translated);
+    if (!jstr) {
+        return false;
+    }
+    return json_object_set_new(string_obj, name, jstr) == 0;
+}
+
 /*
  * Execute a query ref with the given JSON parameter object. The parameter
  * object is consumed (decref'd) regardless of success or failure.
@@ -407,7 +495,8 @@ bool mailrelay_repo_queue_insert(const MailRelayRepoQueueInsert* params,
     repo_add_string(p, "BODY_HTML", params->body_html);
     repo_add_string(p, "HEADERS_JSON", params->headers_json);
     repo_add_string(p, "IDEMPOTENCY_KEY", params->idempotency_key);
-    repo_add_string(p, "NEXT_ATTEMPT_AT", params->next_attempt_at);
+    repo_add_datetime(p, "NEXT_ATTEMPT_AT", params->next_attempt_at,
+                      mailrelay_repo_resolve_database());
     return repo_execute_json(MAILRELAY_QREF_QUEUE_INSERT, p, callback, user_data);
 }
 
@@ -509,7 +598,8 @@ bool mailrelay_repo_queue_reschedule(const MailRelayRepoQueueReschedule* params,
         return false;
     }
     repo_add_int64(p, "QUEUE_ID", params->queue_id);
-    repo_add_string(p, "NEXT_ATTEMPT_AT", params->next_attempt_at);
+    repo_add_datetime(p, "NEXT_ATTEMPT_AT", params->next_attempt_at,
+                      mailrelay_repo_resolve_database());
     repo_add_int(p, "ATTEMPTS", params->attempts);
     return repo_execute_json(MAILRELAY_QREF_QUEUE_RESCHEDULE, p, callback, user_data);
 }
@@ -524,7 +614,8 @@ bool mailrelay_repo_queue_recover_stale(const MailRelayRepoQueueRecoverStale* pa
     if (!p) {
         return false;
     }
-    repo_add_string(p, "STALE_BEFORE", params->stale_before);
+    repo_add_datetime(p, "STALE_BEFORE", params->stale_before,
+                      mailrelay_repo_resolve_database());
     return repo_execute_json(MAILRELAY_QREF_QUEUE_RECOVER_STALE, p, callback, user_data);
 }
 
@@ -721,7 +812,8 @@ bool mailrelay_repo_otp_insert(const MailRelayRepoOtpInsert* params,
     repo_add_int64(p, "ACCOUNT_ID", params->account_id);
     repo_add_int(p, "PURPOSE_A66", params->purpose_a66);
     repo_add_int(p, "STATUS_A67", params->status_a67);
-    repo_add_string(p, "EXPIRY_AT", params->expiry_at);
+    repo_add_datetime(p, "EXPIRY_AT", params->expiry_at,
+                      mailrelay_repo_resolve_database());
     repo_add_int(p, "MAX_ATTEMPTS", params->max_attempts);
     return repo_execute_json(MAILRELAY_QREF_OTP_INSERT, p, callback, user_data);
 }
@@ -779,7 +871,8 @@ bool mailrelay_repo_otp_expire_old(const MailRelayRepoOtpExpireOld* params,
     if (!p) {
         return false;
     }
-    repo_add_string(p, "EXPIRY_CUTOFF_AT", params->expiry_cutoff_at);
+    repo_add_datetime(p, "EXPIRY_CUTOFF_AT", params->expiry_cutoff_at,
+                      mailrelay_repo_resolve_database());
     return repo_execute_json(MAILRELAY_QREF_OTP_EXPIRE_OLD, p, callback, user_data);
 }
 
@@ -921,7 +1014,8 @@ bool mailrelay_repo_cleanup_queue(const MailRelayRepoCleanupQueue* params,
     if (!p) {
         return false;
     }
-    repo_add_string(p, "CUTOFF_AT", params->cutoff_at);
+    repo_add_datetime(p, "CUTOFF_AT", params->cutoff_at,
+                      mailrelay_repo_resolve_database());
     return repo_execute_json(MAILRELAY_QREF_CLEANUP_QUEUE, p, callback, user_data);
 }
 
@@ -935,7 +1029,8 @@ bool mailrelay_repo_cleanup_events(const MailRelayRepoCleanupEvents* params,
     if (!p) {
         return false;
     }
-    repo_add_string(p, "CUTOFF_AT", params->cutoff_at);
+    repo_add_datetime(p, "CUTOFF_AT", params->cutoff_at,
+                      mailrelay_repo_resolve_database());
     return repo_execute_json(MAILRELAY_QREF_CLEANUP_EVENTS, p, callback, user_data);
 }
 
@@ -949,7 +1044,8 @@ bool mailrelay_repo_cleanup_attempts(const MailRelayRepoCleanupAttempts* params,
     if (!p) {
         return false;
     }
-    repo_add_string(p, "CUTOFF_AT", params->cutoff_at);
+    repo_add_datetime(p, "CUTOFF_AT", params->cutoff_at,
+                      mailrelay_repo_resolve_database());
     return repo_execute_json(MAILRELAY_QREF_CLEANUP_ATTEMPTS, p, callback, user_data);
 }
 
@@ -963,7 +1059,8 @@ bool mailrelay_repo_cleanup_otp(const MailRelayRepoCleanupOtp* params,
     if (!p) {
         return false;
     }
-    repo_add_string(p, "CUTOFF_AT", params->cutoff_at);
+    repo_add_datetime(p, "CUTOFF_AT", params->cutoff_at,
+                      mailrelay_repo_resolve_database());
     return repo_execute_json(MAILRELAY_QREF_CLEANUP_OTP, p, callback, user_data);
 }
 

@@ -15,6 +15,32 @@
 # (Helpers live in tests/lib/mailrelay_api_helpers.sh)
 
 # CHANGELOG
+# 2.9.2 - 2026-09-04 - PERSIST_PLAN Phase 2c: shield flipped OFF for mysql/mariadb
+#                      (helpers 1.0.11) after the repo_add_datetime helper lands.
+#                      9 timestamp fields in mailrelay_repository.c (NEXT_ATTEMPT_AT,
+#                      STALE_BEFORE, EXPIRY_AT, EXPIRY_CUTOFF_AT, CUTOFF_AT) now
+#                      translate ISO 8601 -> MySQL DATETIME for DB_ENGINE_MYSQL
+#                      connections; other engines pass through unchanged.
+# 2.9.1 - 2026-09-04 - PERSIST_PLAN Phase 2.4: shield restored (helpers 1.0.10).
+#                      Phase 1b guard works (no SIGSEGV). New evidence: MariaDB/
+#                      MySQL reject NEXT_ATTEMPT_AT ISO 8601 'T'/'Z' on the
+#                      DATETIME column. Pre-existing repo bug (all engines add
+#                      the field as STRING). Out of scope for the result-path
+#                      guard; needs separate work item. Test 58 mysql/mariadb
+#                      return to baseline (Persist off).
+# 2.9.0 - 2026-09-04 - PERSIST_PLAN Phase 2: shield flipped OFF for mysql/mariadb
+#                      (helpers 1.0.9). Phase 1b store_result/fetch guard lands
+#                      (query_helpers.c); mysql/mariadb Persist now exercised
+#                      live alongside the other 5 engines. Checked-in
+#                      hydrogen_test_58_mysql.json / hydrogen_test_58_mariadb.json
+#                      keep "Persist": false; the helper overwrites at runtime.
+# 2.8.9 - 2026-09-04 - PERSIST_PLAN Phase 2 redo: <mysql.h> + length fix did NOT
+#                      resolve mariadb/mysql SIGSEGV. Shield restored (helpers 1.0.8).
+# 2.8.8 - 2026-09-04 - PERSIST_PLAN Phase 2 redo: Persist on for all engines
+#                      (helpers 1.0.7) after <mysql.h> + length=NULL fix.
+# 2.8.7 - 2026-09-04 - PERSIST_PLAN Phase 2.4: SIGSEGV reproduced; shield back on (helpers 1.0.6).
+# 2.8.6 - 2026-09-04 - PERSIST_PLAN Phase 2 probe: Persist on for all engines
+#                      (helpers 1.0.5). Live evidence may restore 2.8.7 + shield.
 # 2.8.5 - 2026-09-04 - Queue.Persist off for MySQL/MariaDB (bind_param SIGSEGV)
 # 2.8.4 - 2026-09-04 - One PASS/FAIL for config validation; no per-file print_result
 # 2.8.3 - 2026-09-04 - Pair TEST/PASS/FAIL; print_subtest owns TEST_COUNTER
@@ -41,7 +67,7 @@ TEST_NAME="MailRelay API"
 TEST_ABBR="MRA"
 TEST_NUMBER="58"
 TEST_COUNTER=0
-TEST_VERSION="2.8.5"
+TEST_VERSION="2.9.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
