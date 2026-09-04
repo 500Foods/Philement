@@ -4,6 +4,7 @@
 # Builds installer script from Hydrogen release executable and associated files
 
 # CHANGELOG
+# 1.3.1 - 2026-09-04 - Stop incrementing TEST_COUNTER in the script; print_subtest owns pairing
 # 1.3.0 - 2025-12-03 - Restructured validation tests to match expected output format with separate tests for each embedded file type
 # 1.2.0 - 2025-12-03 - Validation now runs against most recent installer regardless of build status
 # 1.1.0 - 2025-12-03 - Added embedded file validation and signature verification
@@ -16,7 +17,7 @@ TEST_NAME="Installer Generator"
 TEST_ABBR="INS"
 TEST_NUMBER="70"
 TEST_COUNTER=0
-TEST_VERSION="1.3.0"
+TEST_VERSION="1.3.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -521,7 +522,6 @@ fi
 # Run validation tests against the most recent installer
 if [[ -n "${most_recent_installer}" ]] && [[ -f "${most_recent_installer}" ]]; then
     # Check current installer
-    TEST_COUNTER=$(( TEST_COUNTER + 1 ))
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Current Installer Check"
     if [[ -f "${most_recent_installer}" ]]; then
         installer_date=$(basename "${most_recent_installer}" | sed 's/hydrogen_installer_//' | sed 's/\.sh$//')
@@ -535,7 +535,6 @@ if [[ -n "${most_recent_installer}" ]] && [[ -f "${most_recent_installer}" ]]; t
     fi
 
     # Validate embedded executable
-    TEST_COUNTER=$(( TEST_COUNTER + 1 ))
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Embedded Executable"
     validate_embedded_executable "${most_recent_installer}"
     result=$?
@@ -546,7 +545,6 @@ if [[ -n "${most_recent_installer}" ]] && [[ -f "${most_recent_installer}" ]]; t
     fi
 
     # Validate embedded configuration
-    TEST_COUNTER=$(( TEST_COUNTER + 1 ))
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Embedded Configuration"
     validate_embedded_config "${most_recent_installer}"
     result=$?
@@ -557,7 +555,6 @@ if [[ -n "${most_recent_installer}" ]] && [[ -f "${most_recent_installer}" ]]; t
     fi
 
     # Validate embedded license
-    TEST_COUNTER=$(( TEST_COUNTER + 1 ))
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Embedded License"
     validate_embedded_license "${most_recent_installer}"
     result=$?
@@ -568,7 +565,6 @@ if [[ -n "${most_recent_installer}" ]] && [[ -f "${most_recent_installer}" ]]; t
     fi
 
     # Validate embedded signature
-    TEST_COUNTER=$(( TEST_COUNTER + 1 ))
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Embedded Signature"
     validate_embedded_signature "${most_recent_installer}"
     result=$?
@@ -579,7 +575,6 @@ if [[ -n "${most_recent_installer}" ]] && [[ -f "${most_recent_installer}" ]]; t
     fi
 
     # Verify installer signature
-    TEST_COUNTER=$(( TEST_COUNTER + 1 ))
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Verify Installer Signature"
     verify_installer_signature "${most_recent_installer}"
     result=$?
@@ -589,7 +584,8 @@ if [[ -n "${most_recent_installer}" ]] && [[ -f "${most_recent_installer}" ]]; t
         PASS_COUNT=$(( PASS_COUNT + 1 ))
     fi
 else
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "WARN No installer available for validation"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Installer"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "No installer available for validation"
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Validation skipped (no installer available)"
 fi
 

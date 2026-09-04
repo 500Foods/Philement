@@ -11,6 +11,7 @@
 # analyze_conduit_results()
 
 # CHANGELOG
+# 1.1.3 - 2026-09-04 - Pair TEST/PASS/FAIL; print_subtest owns TEST_COUNTER
 # 1.1.2 - 2026-07-15 - Use database-keyed JWT lookup when engines are skipped
 # 1.1.1 - 2026-03-03 - Fixed SC2129: Use grouped redirects instead of individual redirects
 # 1.1.0 - 2026-02-18 - Implemented 7x2 cross-database testing matrix
@@ -28,7 +29,7 @@ TEST_NAME="Conduit Alt Query"
 TEST_ABBR="CF1"
 TEST_NUMBER="54"
 TEST_COUNTER=0
-TEST_VERSION="1.1.2"
+TEST_VERSION="1.1.3"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -277,7 +278,7 @@ fi
 
 # Only proceed with conduit tests if prerequisites are met
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Running Conduit alt single query endpoint tests on unified server"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running Conduit alt single query endpoint tests on unified server"
 
     # Run single server test
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting unified conduit test server (${CONDUIT_DESCRIPTION})"
@@ -323,6 +324,9 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     elif "${GREP}" -q "ALT_SINGLE_QUERY_SKIPPED_NO_TOKEN" "${result_file}" 2>/dev/null; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${CONDUIT_DESCRIPTION}: Alt Single Query Tests skipped (no JWT token)"
         total_passed=$(( total_passed + 1 ))
+        total_tests=$(( total_tests + 1 ))
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${CONDUIT_DESCRIPTION}: Alt Single Query Tests - no results recorded"
         total_tests=$(( total_tests + 1 ))
     fi
 

@@ -12,6 +12,7 @@
 # analyze_conduit_results()
 
 # CHANGELOG
+# 1.2.1 - 2026-09-04 - Pair TEST/PASS/FAIL; print_subtest owns TEST_COUNTER
 # 1.2.0 - 2026-08-02 - Added blackbox error-case tests for alt_queries.c
 #                    - Missing Authorization header (401, middleware),
 #                      missing token field (000, known server bug),
@@ -44,7 +45,7 @@ TEST_NAME="Conduit Alt Queries"
 TEST_ABBR="CFM"
 TEST_NUMBER="55"
 TEST_COUNTER=0
-TEST_VERSION="1.2.0"
+TEST_VERSION="1.2.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -229,7 +230,7 @@ test_conduit_alt_queries_error_cases() {
 
     local missing_token_status
     missing_token_status=$(curl -s -X POST -H "Content-Type: application/json" -H "Authorization: Bearer dummy" -d "${payload_missing_token}" -w "%{http_code}" -o "${response_file_missing_token}" --max-time 60 "${base_url}/api/conduit/alt_queries" 2>/dev/null) || true
-    TEST_COUNTER=$(( TEST_COUNTER + 1 ))
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Alt Multiple Queries: Missing Token Field"
     if [[ "${missing_token_status}" == "400" ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP response code: ${missing_token_status}"
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Alt Multiple Queries: Missing Token Field - Request successful"
@@ -252,7 +253,7 @@ test_conduit_alt_queries_error_cases() {
 
     local missing_db_status
     missing_db_status=$(curl -s -X POST -H "Content-Type: application/json" -H "Authorization: Bearer dummy" -d "${payload_missing_db}" -w "%{http_code}" -o "${response_file_missing_db}" --max-time 60 "${base_url}/api/conduit/alt_queries" 2>/dev/null) || true
-    TEST_COUNTER=$(( TEST_COUNTER + 1 ))
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Alt Multiple Queries: Missing Database Field"
     if [[ "${missing_db_status}" == "400" ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP response code: ${missing_db_status}"
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Alt Multiple Queries: Missing Database Field - Request successful"
@@ -275,7 +276,7 @@ test_conduit_alt_queries_error_cases() {
 
     local empty_queries_status
     empty_queries_status=$(curl -s -X POST -H "Content-Type: application/json" -H "Authorization: Bearer dummy" -d "${payload_empty_queries}" -w "%{http_code}" -o "${response_file_empty_queries}" --max-time 60 "${base_url}/api/conduit/alt_queries" 2>/dev/null) || true
-    TEST_COUNTER=$(( TEST_COUNTER + 1 ))
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Alt Multiple Queries: Empty Queries Array"
     if [[ "${empty_queries_status}" == "400" ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP response code: ${empty_queries_status}"
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Alt Multiple Queries: Empty Queries Array - Request successful"
@@ -298,7 +299,7 @@ test_conduit_alt_queries_error_cases() {
 
     local non_array_status
     non_array_status=$(curl -s -X POST -H "Content-Type: application/json" -H "Authorization: Bearer dummy" -d "${payload_non_array}" -w "%{http_code}" -o "${response_file_non_array}" --max-time 60 "${base_url}/api/conduit/alt_queries" 2>/dev/null) || true
-    TEST_COUNTER=$(( TEST_COUNTER + 1 ))
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Alt Multiple Queries: Non-Array Queries"
     if [[ "${non_array_status}" == "400" ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP response code: ${non_array_status}"
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Alt Multiple Queries: Non-Array Queries - Request successful"
@@ -331,7 +332,7 @@ test_conduit_alt_queries_error_cases() {
 
     local put_status
     put_status=$(curl -s -X PUT -H "Authorization: Bearer dummy" -w "%{http_code}" -o "${response_file_put}" --max-time 60 "${base_url}/api/conduit/alt_queries" 2>/dev/null) || true
-    TEST_COUNTER=$(( TEST_COUNTER + 1 ))
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Alt Multiple Queries: PUT Method"
     if [[ "${put_status}" == "400" ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP response code: ${put_status}"
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Alt Multiple Queries: PUT Method (WebServer 400) - Request completed"
@@ -353,7 +354,7 @@ test_conduit_alt_queries_error_cases() {
 
     local jwt_status
     jwt_status=$(curl -s -X POST -H "Content-Type: application/json" -H "Authorization: Bearer dummy" -d "${payload_invalid_jwt}" -w "%{http_code}" -o "${response_file_invalid_jwt}" --max-time 60 "${base_url}/api/conduit/alt_queries" 2>/dev/null) || true
-    TEST_COUNTER=$(( TEST_COUNTER + 1 ))
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Alt Multiple Queries: Invalid JWT"
     if [[ "${jwt_status}" == "401" ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP response code: ${jwt_status}"
         if "${GREP}" -q "\"success\"[[:space:]]*:[[:space:]]*false" "${response_file_invalid_jwt}" 2>/dev/null; then
@@ -559,7 +560,7 @@ fi
 
 # Only proceed with conduit tests if prerequisites are met
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Running Conduit alt multiple queries endpoint tests on unified server"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running Conduit alt multiple queries endpoint tests on unified server"
 
     # Run single server test
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting unified conduit test server (${CONDUIT_DESCRIPTION})"
@@ -618,6 +619,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "  ^ MISMATCH: ${diag_db_engine} migration completed via 'Migration process completed' marker but readiness check only matches 'Migration completed'"
             fi
         done
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${CONDUIT_DESCRIPTION}: Database readiness diagnostics complete"
     fi
 
     # Custom analysis for Test 55 - only check results we actually produce
@@ -649,6 +651,9 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${CONDUIT_DESCRIPTION}: Alt Multiple Query Tests skipped (no JWT token)"
         total_passed=$(( total_passed + 1 ))
         total_tests=$(( total_tests + 1 ))
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${CONDUIT_DESCRIPTION}: Alt Multiple Query Tests - no results recorded"
+        total_tests=$(( total_tests + 1 ))
     fi
 
     # Check alt error case test results
@@ -663,6 +668,9 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         else
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${CONDUIT_DESCRIPTION}: Alt Error Case Tests (${alt_error_passed}/${alt_error_total} passed)"
         fi
+        total_tests=$(( total_tests + 1 ))
+    else
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${CONDUIT_DESCRIPTION}: Alt Error Case Tests - no results recorded"
         total_tests=$(( total_tests + 1 ))
     fi
 

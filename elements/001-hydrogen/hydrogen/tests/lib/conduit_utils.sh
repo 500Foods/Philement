@@ -12,6 +12,7 @@
 # test_conduit_multiple_queries_endpoint()
 
 # CHANGELOG
+# 1.7.7 - 2026-09-04 - Pair TEST/PASS/FAIL in analyze_conduit_results
 # 1.7.6 - 2026-09-04 - disown hydrogen started by run_conduit_server (same as
 #                    start_hydrogen) so command-substitution return does not
 #                    reap the server with SIGHUP/SIGINT
@@ -774,18 +775,21 @@ analyze_conduit_results() {
     local result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
 
     if [[ ! -f "${result_file}" ]]; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Result File"
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No result file found for conduit test"
         return 1
     fi
 
     # Check startup
     if ! "${GREP}" -q "STARTUP_SUCCESS" "${result_file}" 2>/dev/null; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Startup"
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: Failed to start Hydrogen"
         return 1
     fi
 
     # Check if conduit tests completed
     if ! "${GREP}" -q "CONDUIT_TEST_COMPLETE" "${result_file}" 2>/dev/null; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Completion"
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: Conduit tests did not complete"
         return 1
     fi
@@ -794,8 +798,8 @@ analyze_conduit_results() {
     local total_tests=0
 
     # Check single public query tests across all databases
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Single Public Query Tests"
     if "${GREP}" -q "^SINGLE_PUBLIC_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Single Public Query Tests"
         local single_public_passed single_public_total
         single_public_passed=$("${GREP}" "^SINGLE_PUBLIC_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
         single_public_total=$("${GREP}" "^SINGLE_PUBLIC_QUERY_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
@@ -810,8 +814,8 @@ analyze_conduit_results() {
     fi
 
     # Check single invalid query tests across all databases
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Single Invalid Query Tests"
     if "${GREP}" -q "^SINGLE_INVALID_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Single Invalid Query Tests"
         local single_invalid_passed single_invalid_total
         single_invalid_passed=$("${GREP}" "^SINGLE_INVALID_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
         single_invalid_total=$("${GREP}" "^SINGLE_INVALID_QUERY_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
@@ -826,8 +830,8 @@ analyze_conduit_results() {
     fi
 
     # Check multiple queries tests across all databases
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Multiple Queries Tests"
     if "${GREP}" -q "^MULTIPLE_QUERIES_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Multiple Queries Tests"
         local multiple_passed multiple_total
         multiple_passed=$("${GREP}" "^MULTIPLE_QUERIES_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
         multiple_total=$("${GREP}" "^MULTIPLE_QUERIES_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
@@ -842,8 +846,8 @@ analyze_conduit_results() {
     fi
 
     # Check comprehensive queries tests across all databases
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Comprehensive Queries Tests"
     if "${GREP}" -q "^QUERIES_COMPREHENSIVE_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Comprehensive Queries Tests"
         local queries_comprehensive_passed queries_comprehensive_total
         queries_comprehensive_passed=$("${GREP}" "^QUERIES_COMPREHENSIVE_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
         queries_comprehensive_total=$("${GREP}" "^QUERIES_COMPREHENSIVE_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
@@ -858,8 +862,8 @@ analyze_conduit_results() {
     fi
 
     # Check auth query comprehensive tests across all databases
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Auth Query Comprehensive Tests"
     if "${GREP}" -q "^AUTH_QUERY_COMPREHENSIVE_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Auth Query Comprehensive Tests"
         local auth_comprehensive_passed auth_comprehensive_total
         auth_comprehensive_passed=$("${GREP}" "^AUTH_QUERY_COMPREHENSIVE_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
         auth_comprehensive_total=$("${GREP}" "^AUTH_QUERY_COMPREHENSIVE_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
@@ -874,8 +878,8 @@ analyze_conduit_results() {
     fi
 
     # Check auth multiple query tests across all databases
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Auth Multiple Query Tests"
     if "${GREP}" -q "^AUTH_MULTIPLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Auth Multiple Query Tests"
         local auth_multiple_passed auth_multiple_total
         auth_multiple_passed=$("${GREP}" "^AUTH_MULTIPLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
         auth_multiple_total=$("${GREP}" "^AUTH_MULTIPLE_QUERY_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
@@ -888,14 +892,15 @@ analyze_conduit_results() {
         fi
         total_tests=$(( total_tests + 1 ))
     elif "${GREP}" -q "AUTH_MULTIPLE_QUERIES_SKIPPED_NO_TOKEN" "${result_file}" 2>/dev/null; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Auth Multiple Query Tests"
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Auth Multiple Query Tests skipped (no JWT token)"
         total_passed=$(( total_passed + 1 ))
         total_tests=$(( total_tests + 1 ))
     fi
 
     # Check alt single query tests across all databases
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Alt Single Query Tests"
     if "${GREP}" -q "^ALT_SINGLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Alt Single Query Tests"
         local alt_single_passed alt_single_total
         alt_single_passed=$("${GREP}" "^ALT_SINGLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
         alt_single_total=$("${GREP}" "^ALT_SINGLE_QUERY_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
@@ -908,14 +913,15 @@ analyze_conduit_results() {
         fi
         total_tests=$(( total_tests + 1 ))
     elif "${GREP}" -q "ALT_SINGLE_QUERY_SKIPPED_NO_TOKEN" "${result_file}" 2>/dev/null; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Alt Single Query Tests"
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Alt Single Query Tests skipped (no JWT token)"
         total_passed=$(( total_passed + 1 ))
         total_tests=$(( total_tests + 1 ))
     fi
 
     # Check alt multiple query tests across all databases
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Alt Multiple Query Tests"
     if "${GREP}" -q "^ALT_MULTIPLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Alt Multiple Query Tests"
         local alt_multiple_passed alt_multiple_total
         alt_multiple_passed=$("${GREP}" "^ALT_MULTIPLE_QUERY_TESTS_PASSED=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
         alt_multiple_total=$("${GREP}" "^ALT_MULTIPLE_QUERY_TESTS_TOTAL=" "${result_file}" 2>/dev/null | cut -d'=' -f2)
@@ -928,6 +934,7 @@ analyze_conduit_results() {
         fi
         total_tests=$(( total_tests + 1 ))
     elif "${GREP}" -q "ALT_MULTIPLE_QUERIES_SKIPPED_NO_TOKEN" "${result_file}" 2>/dev/null; then
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Alt Multiple Query Tests"
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: Alt Multiple Query Tests skipped (no JWT token)"
         total_passed=$(( total_passed + 1 ))
         total_tests=$(( total_tests + 1 ))
@@ -960,6 +967,7 @@ analyze_conduit_results() {
     fi
 
     # Overall result
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Overall Conduit Test Results"
     if [[ "${total_passed}" -eq "${total_tests}" ]]; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: All Conduit Tests Passed (${total_passed}/${total_tests})"
         return 0
