@@ -9,6 +9,14 @@
 # scrape_metrics() get_metric() run_auth_request() run_auth_batch()
 
 # CHANGELOG
+# 4.0.5 - 2026-09-04 - Do not abort after a successful scrape: read_scrape_status
+#                      and leak-count defaults must not use [[ -z ]] && under set -e.
+# 4.0.4 - 2026-09-04 - Run conduit start and Prometheus scrapes in this shell
+#                      (stdout to files) so OUTPUT_COLLECTION stays cached and
+#                      the server is not reaped when a command substitution ends.
+# 4.0.3 - 2026-09-04 - Pair each TEST with one PASS/FAIL (no nested print_subtest);
+#                      do not increment TEST_COUNTER; keep going after run_conduit_server
+#                      / scrape_metrics non-zero (set -e was aborting before completion).
 # 4.0.2 - 2026-08-28 - 3s settle before initial Prometheus scrape too (mirrors the
 #                      final-scrape fix): the DB-ready gate opens right as all 6
 #                      engines' queue threads spin up, and ASAN's thread-registry
@@ -23,7 +31,7 @@ TEST_NAME="Exercise ASAN"
 TEST_ABBR="EXA"
 TEST_NUMBER="41"
 TEST_COUNTER=0
-TEST_VERSION="4.0.2"
+TEST_VERSION="4.0.5"
 
 TOTAL_REQUESTS=500
 SNAPSHOT_INTERVAL=50
@@ -146,15 +154,12 @@ CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_exercise.json"
 if [[ -f "${CONFIG_FILE}" ]]; then
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if validate_config_file "${CONFIG_FILE}"; then
-        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Exercise Configuration"
         SERVER_PORT=$(get_webserver_port "${CONFIG_FILE}")
         API_PREFIX=$(jq -r '.API.Prefix // "/api"' "${CONFIG_FILE}" 2>/dev/null || echo "/api")
         DB_ENABLED=$(exercise_enabled_db_count "${CONFIG_FILE}")
         DB_LIST=$(exercise_enabled_db_names "${CONFIG_FILE}")
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Port: ${SERVER_PORT}, API prefix: ${API_PREFIX}, Enabled databases: ${DB_ENABLED} (${DB_LIST})"
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Configuration validated"
     else
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Configuration validation failed"
         EXIT_CODE=1
     fi
 else
@@ -204,7 +209,9 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ASAN_OPTIONS=${ASAN_OPTIONS}"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Startup timeouts: CONDUIT_STARTUP_TIMEOUT=${CONDUIT_STARTUP_TIMEOUT}s (multi-DB ASAN)"
 
-    server_info=$(run_conduit_server "${CONFIG_FILE}" "${EXERCISE_LOG_SUFFIX}" "Exercise-ASAN" "${RESULT_FILE}")
+    # shellcheck disable=SC2310 # Continue even if run_conduit_server returns non-zero
+    run_conduit_server "${CONFIG_FILE}" "${EXERCISE_LOG_SUFFIX}" "Exercise-ASAN" "${RESULT_FILE}" > "${RESULT_FILE}.server_info" || true
+    server_info=$(tail -n 1 "${RESULT_FILE}.server_info" 2>/dev/null || true)
 
     if [[ "${server_info}" == "FAILED:0" ]]; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server startup failed"
@@ -246,7 +253,9 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         # threads (Slow/Medium/Fast/Cache) spin up together. Under ASAN that thread
         # burst can stall the webserver thread servicing this scrape (same class of
         # stall the final-metrics scrape already settles 3s for after 500 auths).
-        INITIAL_METRICS=$(scrape_metrics "${PROMETHEUS_URL}" 3)
+        # shellcheck disable=SC2310 # Continue even if scrape_metrics returns non-zero
+        scrape_metrics "${PROMETHEUS_URL}" 3 > "${METRICS_LOG}.prom_initial" || true
+        INITIAL_METRICS=$(cat "${METRICS_LOG}.prom_initial" 2>/dev/null || true)
         read_scrape_status "${TEST_NUMBER}"
 
         if [[ -n "${INITIAL_METRICS}" ]] && echo "${INITIAL_METRICS}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then
@@ -311,7 +320,9 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
             if (( REQUEST_COUNT - LAST_SNAPSHOT_AT >= SNAPSHOT_INTERVAL )) || (( REQUEST_COUNT >= TOTAL_REQUESTS )); then
                 LAST_SNAPSHOT_AT="${REQUEST_COUNT}"
-                METRICS=$(scrape_metrics "${PROMETHEUS_URL}")
+                # shellcheck disable=SC2310 # Continue even if scrape_metrics returns non-zero
+                scrape_metrics "${PROMETHEUS_URL}" > "${METRICS_LOG}.prom_snap" || true
+                METRICS=$(cat "${METRICS_LOG}.prom_snap" 2>/dev/null || true)
                 read_scrape_status "${TEST_NUMBER}"
                 if [[ -n "${METRICS}" ]] && echo "${METRICS}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then
                     RSS=$(get_metric "${METRICS}" "hydrogen_process_resident_memory_bytes")
@@ -331,8 +342,10 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                     RSS_MB=$(echo "${RSS}" | awk '{printf "%.1f", $1/1024/1024}')
                     RSS_DELTA=$(echo "${RSS} ${INITIAL_RSS}" | awk '{printf "%.1f", ($1-$2)/1024/1024}')
 
-                    if [[ "${MIDPOINT_RSS}" -eq 0 && "${REQUEST_COUNT}" -ge "${MIDPOINT_REQUEST}" && "${RSS}" -gt 0 ]]; then
-                        MIDPOINT_RSS="${RSS}"
+                    rss_int="${RSS%%.*}"
+                    mid_int="${MIDPOINT_RSS%%.*}"
+                    if [[ "${mid_int}" -eq 0 && "${REQUEST_COUNT}" -ge "${MIDPOINT_REQUEST}" && "${rss_int}" -gt 0 ]]; then
+                        MIDPOINT_RSS="${rss_int}"
                     fi
 
                     printf "%-8s  %-10s  %-10s  %-10s  %-8s  %-10s  %-6s  %-8s  %-8s  %-7s  %-6s  %-6s  %-6s  %-7s  %-7s\n" \
@@ -365,7 +378,9 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Collect Final Metrics"
 
         sleep 3
-        FINAL_METRICS=$(scrape_metrics "${PROMETHEUS_URL}")
+        # shellcheck disable=SC2310 # Continue even if scrape_metrics returns non-zero
+        scrape_metrics "${PROMETHEUS_URL}" > "${METRICS_LOG}.prom_final" || true
+        FINAL_METRICS=$(cat "${METRICS_LOG}.prom_final" 2>/dev/null || true)
         read_scrape_status "${TEST_NUMBER}"
 
         if [[ -n "${FINAL_METRICS}" ]] && echo "${FINAL_METRICS}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then
@@ -430,7 +445,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     if [[ "${EXIT_CODE}" -eq 0 ]]; then
         print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Memory Leak Detection (RSS informational)"
 
-        if [[ "${MIDPOINT_RSS}" -gt 0 ]] && [[ "${FINAL_RSS}" -gt 0 ]]; then
+        if [[ "${MIDPOINT_RSS%%.*}" -gt 0 ]] && [[ "${FINAL_RSS%%.*}" -gt 0 ]]; then
             SECOND_HALF_REQUESTS=$(( TOTAL_REQUESTS - MIDPOINT_REQUEST ))
             SECOND_HALF_GROWTH_BYTES=$(echo "${FINAL_RSS} ${MIDPOINT_RSS}" | awk '{printf "%d", $1 - $2}')
             SECOND_HALF_GROWTH_KB=$(echo "${SECOND_HALF_GROWTH_BYTES}" | awk '{printf "%.1f", $1/1024}')
@@ -487,13 +502,13 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             if [[ -f "${ASAN_LOG_CANDIDATE}" ]]; then
                 cp "${ASAN_LOG_CANDIDATE}" "${METRICS_LOG%.log}_asan.log" 2>/dev/null || true
 
-                DIRECT_LEAKS=$("${GREP}" -c "Direct leak of" "${ASAN_LOG_CANDIDATE}" 2>/dev/null | head -1 || echo "0" || true)
-                INDIRECT_LEAKS=$("${GREP}" -c "Indirect leak of" "${ASAN_LOG_CANDIDATE}" 2>/dev/null | head -1 || echo "0" || true)
+                DIRECT_LEAKS=$("${GREP}" -c "Direct leak of" "${ASAN_LOG_CANDIDATE}" 2>/dev/null || true)
+                INDIRECT_LEAKS=$("${GREP}" -c "Indirect leak of" "${ASAN_LOG_CANDIDATE}" 2>/dev/null || true)
 
                 DIRECT_LEAKS=$(echo "${DIRECT_LEAKS}" | tr -d '\n\r' | "${GREP}" -o '[0-9]*' | head -1 || true)
                 INDIRECT_LEAKS=$(echo "${INDIRECT_LEAKS}" | tr -d '\n\r' | "${GREP}" -o '[0-9]*' | head -1 || true)
-                [[ -z "${DIRECT_LEAKS}" ]] && DIRECT_LEAKS=0
-                [[ -z "${INDIRECT_LEAKS}" ]] && INDIRECT_LEAKS=0
+                : "${DIRECT_LEAKS:=0}"
+                : "${INDIRECT_LEAKS:=0}"
 
                 {
                     echo ""

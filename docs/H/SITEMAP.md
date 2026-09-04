@@ -130,7 +130,6 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 
 - [README.md](/docs/H/plans/README.md): Plans folder index
 - [AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md): Auth finale (active P0 plan — OIDC, Keycloak, register, MFA, IdP leftovers)
-- [CHAT_FINALE.md](/docs/H/plans/CHAT_FINALE.md): Chat finale (active P0 plan)
 - [MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md): Mail Relay subsystem implementation plan
 - [MIRAGE_PLAN.md](/docs/H/plans/MIRAGE_PLAN.md): Mirage distributed proxy architecture (deferred)
 - [SCHEMAHELPER.md](/docs/H/plans/SCHEMAHELPER.md): SchemaHelper interactive SchemaTool front-end (implementation plan)
@@ -156,6 +155,8 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [AUTH_PLAN_SECURITY_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_SECURITY_COMPLETE.md)
 - [AUTH_PLAN_TESTS_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_TESTS_COMPLETE.md)
 - [CAP_PLAN_QUERY-COMPLETE.md](/docs/H/plans/complete/CAP_PLAN_QUERY-COMPLETE.md)
+- [CHAT_FINALE_BEACHHEAD_COMPLETE.md](/docs/H/plans/complete/CHAT_FINALE_BEACHHEAD_COMPLETE.md)
+- [CHAT_FINALE_COMPLETE.md](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md)
 - [CHAT_PLAN_ORIGINAL_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_ORIGINAL_COMPLETE.md)
 - [CHAT_PLAN_PHASE_13_SUPERSEDED.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_13_SUPERSEDED.md)
 - [CHAT_PLAN_SUMMARY_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_SUMMARY_COMPLETE.md)

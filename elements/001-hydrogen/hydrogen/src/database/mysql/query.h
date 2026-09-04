@@ -22,6 +22,7 @@ bool mysql_execute_prepared(DatabaseHandle* connection, const PreparedStatement*
  * (non-static) solely so the Unity test framework can call them directly.
  * -------------------------------------------------------------------------- */
 void mysql_cleanup_bound_values(void** bound_values, size_t count);
+void mysql_bind_attach_indicators(void* bind, unsigned int param_index, char is_null_flag);
 bool mysql_bind_single_parameter(void* bind, unsigned int param_index, TypedParameter* param,
                                  void** bound_values, size_t total_param_count, const char* designator);
 

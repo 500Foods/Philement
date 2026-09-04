@@ -3,19 +3,17 @@
 
 ## Status
 
-**Active (2026-09-03).** This is the **active** plan for chat work that
-the original CHAT_FINALE.md left parked or pulled forward after the
-500 Courses beachhead shipped. The beachhead itself (Phases 0–9) is
-archived at
+**Complete (2026-09-04).** Pulled-forward Phase 10 after the 500 Courses
+beachhead. The beachhead (Phases 0–9) is
 [`CHAT_FINALE_BEACHHEAD_COMPLETE.md`](/docs/H/plans/complete/CHAT_FINALE_BEACHHEAD_COMPLETE.md).
-Read that file for the implementation history; read this file for what
-is still open.
+Parked wishlist items below are **not** open work; pull them only if
+product asks.
 
 | Phase | Status | Notes |
 | --- | --- | --- |
 | 10a — Responses API `store` knob | **Complete (2026-09-03)** | Per-engine JSON, default `false` (opt-in to provider retention). Verified end-to-end. |
 | 10b — Chat rate limiting | **Complete (2026-09-03)** | Per-sub fixed-window: REST 429 + WS `chat_error` with `error_code` 4291/4292. Bundles request count and estimated token budget. Config: `Chat.RateLimit.*` (disabled by default). |
-| Original parked list | Parked | See table below. Not in scope unless product asks. |
+| Original parked list | Parked (out of scope) | See table below. Not required to close this plan. |
 
 ## How To Use This Document
 

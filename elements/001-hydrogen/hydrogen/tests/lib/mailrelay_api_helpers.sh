@@ -9,6 +9,8 @@
 # shellcheck disable=SC2312 # Diagnostic substitutions swallow inner status; callers use || true
 
 # CHANGELOG
+# 1.0.2 - 2026-09-04 - Enable Queue.Persist for MySQL/MariaDB (INTEGER bind uses
+#                      MYSQL_TYPE_LONGLONG).
 # 1.0.1 - 2026-08-21 - STARTTLS: write CAPath in the patched JSON (export inside
 #                      $() was lost).
 # 1.0.0 - 2026-08-21 - Split from test_58; sequential variants per engine;
@@ -18,7 +20,7 @@
 export MAILRELAY_API_HELPERS_GUARD="true"
 
 MAILRELAY_API_HELPERS_NAME="MailRelay API Test Helpers"
-MAILRELAY_API_HELPERS_VERSION="1.0.1"
+MAILRELAY_API_HELPERS_VERSION="1.0.2"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${MAILRELAY_API_HELPERS_NAME} ${MAILRELAY_API_HELPERS_VERSION}" "info"
 
 MAILVAL_PIDS=()
@@ -227,12 +229,7 @@ mailrelay_api_rm_temp() {
 }
 
 mailrelay_api_persist_enabled() {
-    local engine_name="$1"
-    # MySQL/MariaDB: prepared INSERT…RETURNING SEGV with multi-param binds.
-    if [[ "${engine_name}" == "mysql" || "${engine_name}" == "mariadb" ]]; then
-        echo "false"
-        return 0
-    fi
+    : "${1:-}"
     echo "true"
 }
 

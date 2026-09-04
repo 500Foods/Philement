@@ -16,16 +16,16 @@ This document is the working document for the implementation. It is meant to be 
 
 ## Resuming Work on This Plan
 
-CURRENT PAUSE POINT (as of 2026-07-10): **Phase 7B Lua freeform complete (L.1–L.3).** `H.mail` supports template + freeform body. Next candidates: system template seeds (`system.server_started` migration **1263**), Phase 9 Lithium UI, Phase 10 ops remainder. Login MFA wiring moved to [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) Phase 8.
+CURRENT PAUSE POINT (as of 2026-09-04): Core send/API/Lua/OTP shipped. **Do not use 1263 for mail seeds** — `acuranzo_1263` is QueryRef **129** (Insert Script). System templates/events are **1280–1282**. Highest Acuranzo on disk ~**1376**. Login MFA is [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) Phase 8.
+
+Shipped since the 2026-07-10 pause (do not re-implement): 7B freeform, Phase 8 OTP C API, event templates 1280, event scripts 1281, template tweak 1282, Test 57 `FailNextSendOnLaunch`, Test 58 OTP/idempotency seams, Persist empty-id retry, 12d MySQL INTEGER→`MYSQL_TYPE_LONGLONG` + `MYSQL_BIND` layout.
 
 ### Resume here next session
 
-1. Confirm Phase 7B freeform Status **complete**; baseline
-   `zsh -ic 'mku mailrelay_producer_test && mku scripting_api_test_mail'`.
-2. Next free migration: **1263** (re-check disk) — still needed for `system.server_started` / `system.server_stopped` seeds if startup admin mail is the goal.
-3. Next free QueryRef: **129**.
-4. Present next-phase plan (small chunks; qualifying questions first) before coding.
-5. REST send remains template-only; freeform is Lua-only via `mailrelay_send_direct`.
+1. Confirm `test_58` MySQL/MariaDB with `Queue.Persist=true` (enabled 2026-09-04; live matrix not run this session).
+2. Next free migration/QueryRef: **re-check disk** (not this file).
+3. Remaining product: Phase 9 Lithium Mail Manager (still placeholder), Phase 10.2–10.5, Phase 11.1–11.3 HA claim, 12–15.
+4. REST send remains template-only; freeform is Lua-only via `mailrelay_send_direct`.
 
 ### Blackbox coverage work (separate track — not part of Phase 7B+)
 

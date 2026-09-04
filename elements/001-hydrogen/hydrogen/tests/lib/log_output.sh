@@ -23,6 +23,10 @@
 # print_test_completion()
 
 # CHANGELOG
+# 4.7.2 - 2026-09-04 - Keep TEST/PASS/FAIL in OUTPUT_COLLECTION until completion
+#                     (do not dump on each print_subtest); still close an unpaired
+#                     TEST at print_test_completion
+# 4.7.1 - 2026-09-04 - Dump cached output when a new TEST opens (reverted in 4.7.2)
 # 4.7.0 - 2026-09-04 - Pair each TEST with exactly one PASS or FAIL (close
 #                     orphans on next TEST; extra PASS/FAIL become ERROR)
 # 4.6.0 - 2026-08-03 - Widened subtest counter from 3 digits (%03d) to 4 digits (%04d)
@@ -82,7 +86,7 @@ export LOG_OUTPUT_GUARD="true"
 
 # Library metadata
 LOG_OUTPUT_NAME="Log Output Library"
-LOG_OUTPUT_VERSION="4.7.0"
+LOG_OUTPUT_VERSION="4.7.2"
 export LOG_OUTPUT_NAME LOG_OUTPUT_VERSION
 
 # Global variables for test/subtest numbering
@@ -606,6 +610,10 @@ print_test_completion() {
     local test_abbr="$2"
     local test_number="$3"
     local test_version="$4"
+
+    if [[ "${TEST_COUNTER}" -ne $((TEST_PASSED_COUNT + TEST_FAILED_COUNT)) ]]; then
+        print_result "${test_number}" "${TEST_COUNTER}" 1 "Unpaired TEST (missing PASS/FAIL)"
+    fi
 
     # Calculate totals and elapsed time
     local total_subtests=$((TEST_PASSED_COUNT + TEST_FAILED_COUNT))

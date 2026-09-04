@@ -28,13 +28,15 @@
 # stop_mdns_packet_capture()
 
 # CHANGELOG
+# 1.2.0 - 2026-09-04 - Do not kill_owned_hydrogens after Hydrogen B; that reaped the main server
+# 1.1.0 - 2026-09-04 - Helpers that own a TEST print the only PASS/FAIL; others return status only
 # 1.0.0 - 2026-09-01 - Initial extraction from test_25_mdns.sh
 
 [[ -n "${MDNS_TEST_HELPERS_GUARD:-}" ]] && return 0
 export MDNS_TEST_HELPERS_GUARD="true"
 
 MDNS_TEST_HELPERS_NAME="mDNS Test Helpers Library"
-MDNS_TEST_HELPERS_VERSION="1.0.0"
+MDNS_TEST_HELPERS_VERSION="1.2.0"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${MDNS_TEST_HELPERS_NAME} ${MDNS_TEST_HELPERS_VERSION}" "info"
 
 # --- Capture cleanup / error hooks ---
@@ -247,7 +249,7 @@ test_mdns_server_claimed() {
         attempt=$((attempt + 1))
     done
 
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "MDNS_SERVER CLAIMED not found within 5 seconds"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "MDNS_SERVER CLAIMED not found within 5 seconds"
     return 1
 }
 
@@ -414,8 +416,6 @@ test_mdns_duplicate_names() {
     # shellcheck disable=SC2310 # We want to continue even if shutdown has issues
     stop_hydrogen "${HYDROGEN_DUP_PID}" "${DUP_LOG}" "${SHUTDOWN_TIMEOUT}" 5 "${DIAG_TEST_DIR}" || true
     HYDROGEN_DUP_PID=""
-    # shellcheck disable=SC2310 # Ensure process is gone
-    kill_owned_hydrogens 2>/dev/null || true
 
     local fail=0
     if [[ "${conflict_found}" == false ]]; then
@@ -563,7 +563,7 @@ test_mdns_server_announcements() {
         attempt=$((attempt + 1))
     done
 
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "mDNS server announcement activities not detected within ${max_wait} seconds"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "mDNS server announcement activities not detected within ${max_wait} seconds"
     return 1
 }
 
@@ -640,7 +640,6 @@ test_mdns_responder_loop() {
             local responder_activity
             responder_activity=$("${GREP}" -c "mDNSServer.*responder\|mDNSServer.*query\|mDNSServer.*response" "${SERVER_LOG}" 2>/dev/null || true)
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Found ${responder_activity} responder loop activities in server log"
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "mDNS responder loop activity detected in logs"
             return 0
         fi
     fi
@@ -663,7 +662,6 @@ test_mdns_responder_loop() {
     fi
 
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Could not trigger responder loop - no suitable tools available"
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Responder loop test attempted (tools not available)"
     return 0
 }
 

@@ -10,7 +10,7 @@ of `auth_chats`. For a single-engine stream, use
 `stream: true` (or the WebSocket `chat` frame).
 
 This document is for Hydrogen **Phase 9**. The plan that produced this
-contract is [`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md) (Phases 0–3).
+contract is [`CHAT_FINALE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md) (Phases 0–3).
 
 ## Authentication
 
@@ -140,4 +140,4 @@ across the fanout are aggregated into the sub's token budget. See
 
 - [`/docs/H/api/chat/auth_chat.md`](/docs/H/api/chat/auth_chat.md) — single-engine chat (streaming + non-stream).
 - [`/docs/H/core/subsystems/websocket/websocket_chat.md`](/docs/H/core/subsystems/websocket/websocket_chat.md) — WebSocket equivalent.
-- [`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md) — plan of record.
+- [`CHAT_FINALE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md) — plan of record.

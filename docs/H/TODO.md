@@ -36,18 +36,7 @@ not open work unless listed below.
 | **Done** | Password login/renew/logout; OIDC RP Phases 1–26 + multi-provider; IdP Phases 0–16 + Test 45; Mail Relay OTP primitives |
 | **Remaining** | Gated Phases 0–12 (+8b, +10b): register email, DefaultRoles, client-role parse, RP health/backchannel, terminal WS auth, login MFA, password reset, IdP durability, optional IdP post-MVP, self-service session revoke, real-Keycloak E2E (Phase 11, ops-gated), docs |
 | **Why now** | One plan for remaining auth, same pattern as Chat Finale. Production SSO is coded; register/provision still lie; live Keycloak unsigned (OTP blocker) |
-| **Note** | History: [`OIDC-PLAN_COMPLETE.md`](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md), [`KEYCLOAK_PLAN_COMPLETE.md`](/docs/H/plans/complete/KEYCLOAK_PLAN_COMPLETE.md), [`OIDC_IDP_COMPLETE.md`](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md), [`AUTH_PLAN_COMPLETE.md`](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md). Chat JWT mint stays [`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md) |
-
-### 2. Chat Finale — dual path, knobs, MCP System.Info
-
-| | |
-| --- | --- |
-| **Plan** | [`CHAT_FINALE.md`](/docs/H/plans/CHAT_FINALE.md) |
-| **Effort** | XL |
-| **Done** | Old chat Phases 1–12; WS stream + non-stream; REST non-stream `auth_chat`/`auth_chats`; MCP Phases 0–15 |
-| **Remaining** | Gated Phases 0–9: contract, temperature, reasoning, REST, WS, dead chat functions, `H.system.info` reuse of JWT `/api/system/info`, MCP tool `System.Info`, Grok user-JWT MCP, docs/DOKS. Phase 10 parked |
-| **Why now** | 500 Courses first deploy: REST **or** WS, Grok, streaming/temperature/reasoning, Grok calls public MCP with the user's Hydrogen JWT (possibly another pod). One plan, high priority |
-| **Note** | History: [`CHAT_PLAN_SUMMARY_COMPLETE.md`](/docs/H/plans/complete/CHAT_PLAN_SUMMARY_COMPLETE.md). MCP protocol is done; do not reopen MCP_COMPLETE except 16–17 |
+| **Note** | History: [`OIDC-PLAN_COMPLETE.md`](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md), [`KEYCLOAK_PLAN_COMPLETE.md`](/docs/H/plans/complete/KEYCLOAK_PLAN_COMPLETE.md), [`OIDC_IDP_COMPLETE.md`](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md), [`AUTH_PLAN_COMPLETE.md`](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md). Chat JWT mint: [`CHAT_FINALE_COMPLETE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md) |
 
 ---
 
@@ -123,10 +112,10 @@ not open work unless listed below.
 | --- | --- |
 | **Code** | `src/database/mysql/query.c` (prepared bind/execute) · QueryRef **093** `acuranzo_1223.lua` · `mailrelay_repo_queue_insert` · workers Persist path |
 | **Effort** | M |
-| **Done** | ~40% — Persist happy path green on SQLite/PG/Cockroach/Yugabyte/DB2 via `test_58` (Events + Persist + mark_sending/sent/attempt); JSON null params fixed (`TypedParameter.is_null`); `insert_callback` reads DQM array `[{queue_id}]` |
-| **Remaining** | Diagnose SEGV after successful multi-param bind on MySQL/MariaDB Persist insert (likely incomplete hand-rolled `MYSQL_BIND` ABI and/or `INSERT…RETURNING` via prepared stmt). Align bind struct with real client headers or engine-safe insert+key return. Re-enable `Queue.Persist` for mysql/mariadb in `test_58` once green. |
-| **Why now** | Any SEGV is a defect; Persist is off for those engines in blackbox only as a shield. Blocks full multi-engine queue durability. |
-| **Note** | Repro: enable Persist on `hydrogen_test_58_mysql.json` path; crash after binding all 12 params, no MySQL error string. Distinct from item 12e (pkey race). |
+| **Done** | INTEGER binds use `MYSQL_TYPE_LONGLONG` for 8-byte values; hand-rolled `MYSQL_BIND` aligned to MariaDB (`error` as `my_bool*`, `flags`, function-pointer arity). `test_58` Persist enabled for all engines including MySQL/MariaDB. |
+| **Remaining** | Confirm `test_58` MySQL/MariaDB Persist live (not run this session). |
+| **Why now** | Persist was shielded off those engines; bind ABI was the likely SEGV. |
+| **Note** | Distinct from item 12e (pkey race). |
 
 ### 12e. App-generated `MAX+1` PKs — clients must confirm insert + retry on conflict
 
@@ -150,8 +139,8 @@ not open work unless listed below.
 | --- | --- |
 | **Plan** | [`MAILRELAY_PLAN.md`](/docs/H/plans/MAILRELAY_PLAN.md) |
 | **Effort** | L–XL |
-| **Done** | ~70% — Phases 0–5, 7–8 done; Phase 6/10 partial; pause after 7B/8; `test_58` Events+Persist depth on non-MySQL engines |
-| **Remaining** | System template seeds, Phase 9 Lithium UI, Phase 10 ops remainder, Phases 11–15 (inbound/rewrite/security/docs as scoped); **P1 defects 12d/12e** (MySQL Persist SEGV; MAX+1 insert confirm/retry at call sites) before treating Persist as multi-engine complete. Login MFA wiring moved to [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) Phase 8 |
+| **Done** | ~75% — Phases 0–5, 7–8, 7A/7B done; templates/events seeds 1280–1282; Test 57/58 seams; Persist retry in C; 12d bind fix |
+| **Remaining** | Phase 6.1b custom DB event scripts if still wanted; Phase 9 Lithium UI (placeholder); Phase 10.2–10.5; Phases 11.1–11.3 HA claim; 12–15 inbound/hardening/release. Login MFA → [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) Phase 8. Do not use plan pause “migration 1263” — that number is QueryRef 129. |
 | **Why next** | Core send/API/Lua/OTP stack works (`test_57`/`test_58`). Remaining is product surface and ops polish. |
 | **Note** | Parallel session may complete subsets — re-check plan/tests before starting. |
 
@@ -296,9 +285,9 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 12 | DB fault tolerance (crash/transient) | L | partial | P1 |
 | 12a | DQM child auto-scale (optional) | L | no-op by design | P1 |
 | 12b | Scoreboard waiter condvar wake | M | poll only | P1 |
-| 12d | MailRelay Persist MySQL/MariaDB SEGV | M | ~40% | P1 |
+| 12d | MailRelay Persist MySQL/MariaDB SEGV | M | bind fix; live test_58 TBD | P1 |
 | 12e | MAX+1 PK clients: confirm + retry | M | single-thread OK | P1 |
-| 13 | Mail Relay remainder | L–XL | ~70% | P2 |
+| 13 | Mail Relay remainder | L–XL | ~75% | P2 |
 | 25 | SchemaHelper TUI | L | v1 | P2 |
 | 24 | `H.externaldb` — ad-hoc external DB from Lua | M | 0% | P2 |
 | 19 | Print job → device / Beryllium | L–XL | ~30% | P3 |
