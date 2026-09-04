@@ -31,6 +31,10 @@ post-MVP, real-Keycloak E2E (Phase 11). History:
 
 SMTP mail relay subsystem. Core outbound/API/Lua/OTP delivered; later phases (UI, inbound, ops) remain.
 
+### [PERSIST PLAN](/docs/H/plans/PERSIST_PLAN.md)
+
+TODO 12d: MySQL/MariaDB `Queue.Persist` SIGSEGV in `mysql_stmt_bind_param` (QueryRef 093). Shielded off in Test 58. Not Mail Relay product work.
+
 ### [UNITY ASAN PLAN](/docs/H/plans/UNITY_ASAN_PLAN.md)
 
 Separate ASAN Unity build/test variant for memory-safety gating without corrupting gcov coverage.

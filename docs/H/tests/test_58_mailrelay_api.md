@@ -96,6 +96,7 @@ bash tests/test_58_mailrelay_api.sh
 ## Related
 
 - Plan: [Mail Relay Subsystem Implementation Plan](/docs/H/plans/MAILRELAY_PLAN.md)
+- Persist SIGSEGV (MySQL/MariaDB): [PERSIST_PLAN.md](/docs/H/plans/PERSIST_PLAN.md)
 - Outbound test: [Mail Relay Outbound Blackbox Test](/docs/H/tests/test_57_mailrelay_outbound.md)
 - Sink source: `/elements/001-hydrogen/hydrogen/extras/mailval/`
 - Phase 7 exit gate: authenticated clients can preview and queue templated emails.
