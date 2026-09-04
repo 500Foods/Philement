@@ -112,9 +112,10 @@ not open work unless listed below.
 | --- | --- |
 | **Code** | `src/database/mysql/query.c` (prepared bind/execute) · QueryRef **093** `acuranzo_1223.lua` · `mailrelay_repo_queue_insert` · workers Persist path |
 | **Effort** | M |
-| **Done** | INTEGER binds use `MYSQL_TYPE_LONGLONG` for 8-byte values; hand-rolled `MYSQL_BIND` aligned to MariaDB (`error` as `my_bool*`, `flags`, function-pointer arity). `test_58` Persist enabled for all engines including MySQL/MariaDB. |
-| **Remaining** | Confirm `test_58` MySQL/MariaDB Persist live (not run this session). |
-| **Why now** | Persist was shielded off those engines; bind ABI was the likely SEGV. |
+| **Done** | INTEGER binds use `MYSQL_TYPE_LONGLONG`; hand-rolled `MYSQL_BIND` closer to MariaDB; `is_null`/`error` now point at in-struct indicators; SQL NULL → `MYSQL_TYPE_NULL`. Unity bind tests green. |
+| **Plan** | [`PERSIST_PLAN.md`](/docs/H/plans/PERSIST_PLAN.md) |
+| **Remaining** | **Live still SIGSEGV.** Persist off for mysql/mariadb (helpers 1.0.4). Next: Phase 0 ABI measurement in the Persist plan, then live `test_58`. |
+| **Why now** | Shield is a workaround. Bind ABI is still wrong in production. |
 | **Note** | Distinct from item 12e (pkey race). |
 
 ### 12e. App-generated `MAX+1` PKs — clients must confirm insert + retry on conflict
@@ -125,7 +126,7 @@ not open work unless listed below.
 | **Code (example)** | QueryRef **093** `acuranzo_1223.lua` (`mail_queue`); Hydrogen `mailrelay_persist_message` / `insert_callback`. Same SQL shape is **widespread** in Acuranzo migrations (`INSERT_KEY_START` / `WITH next_*_id AS (SELECT COALESCE(MAX…)+1)`). |
 | **Effort** | M (audit clients + add retry where concurrent inserts are possible) |
 | **Done** | Convention works single-threaded; `RETURNING` / result row gives the new id **only after a successful insert** |
-| **Remaining** | (1) **Audit** C (and any other) clients of `INSERT_KEY_*` / `MAX+1` QueryRefs for concurrent use. (2) On unique/duplicate PK (or missing returned id): **retry** the insert (bounded), then treat returned id as success. (3) Mail Relay Persist: lifecycle debounce + API send can collide today → flaky `mail_queue_pkey` under PG; `mailrelay_persist_message` fails once with no retry. (4) Document the contract: success = insert OK **and** new id in result; failure = retry or surface error — never assume `MAX+1` alone is race-free. |
+| **Remaining** | (1) **Audit** C (and any other) clients of `INSERT_KEY_*` / `MAX+1` QueryRefs for concurrent use. (2) On unique/duplicate PK (or missing returned id): **retry** the insert (bounded), then treat returned id as success. (3) Mail Relay: `mailrelay_persist_message` already retries empty `queue_id`; concurrent `mail_queue_pkey` under PG still possible (no UNIQUE idempotency). (4) Document the contract: success = insert OK **and** new id in result; failure = retry or surface error — never assume `MAX+1` alone is race-free. |
 | **Why now** | Concurrent Persist/workers will hit this; silent one-shot failure is worse than a short retry loop. |
 | **Note** | Orthogonal to 12d (MySQL SEGV). Do **not** “fix” only by serializing tests. Search migrations for `COALESCE(MAX(` / `INSERT_KEY_` to find the surface area; fix **call sites**, not the migration style. |
 
@@ -140,7 +141,7 @@ not open work unless listed below.
 | **Plan** | [`MAILRELAY_PLAN.md`](/docs/H/plans/MAILRELAY_PLAN.md) |
 | **Effort** | L–XL |
 | **Done** | ~75% — Phases 0–5, 7–8, 7A/7B done; templates/events seeds 1280–1282; Test 57/58 seams; Persist retry in C; 12d bind fix |
-| **Remaining** | Phase 6.1b custom DB event scripts if still wanted; Phase 9 Lithium UI (placeholder); Phase 10.2–10.5; Phases 11.1–11.3 HA claim; 12–15 inbound/hardening/release. Login MFA → [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) Phase 8. Do not use plan pause “migration 1263” — that number is QueryRef 129. |
+| **Remaining** | 12d live MySQL/MariaDB Persist (still SIGSEGV; shielded). Phase 6.1b code/seeds exist (do not rewrite; status not gated). Phase 9 Lithium UI (placeholder); Phase 10.2–10.5; Phases 11.1–11.3 HA claim; 12–15 inbound/hardening/release. Login MFA → [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) Phase 8. Next free Acuranzo **1377** (re-check disk). |
 | **Why next** | Core send/API/Lua/OTP stack works (`test_57`/`test_58`). Remaining is product surface and ops polish. |
 | **Note** | Parallel session may complete subsets — re-check plan/tests before starting. |
 
@@ -285,7 +286,7 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 12 | DB fault tolerance (crash/transient) | L | partial | P1 |
 | 12a | DQM child auto-scale (optional) | L | no-op by design | P1 |
 | 12b | Scoreboard waiter condvar wake | M | poll only | P1 |
-| 12d | MailRelay Persist MySQL/MariaDB SEGV | M | bind fix; live test_58 TBD | P1 |
+| 12d | MailRelay Persist MySQL/MariaDB SEGV | M | bind attempts done; live still SEGV; Persist off | P1 |
 | 12e | MAX+1 PK clients: confirm + retry | M | single-thread OK | P1 |
 | 13 | Mail Relay remainder | L–XL | ~75% | P2 |
 | 25 | SchemaHelper TUI | L | v1 | P2 |

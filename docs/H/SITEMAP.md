@@ -131,6 +131,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [README.md](/docs/H/plans/README.md): Plans folder index
 - [AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md): Auth finale (active P0 plan — OIDC, Keycloak, register, MFA, IdP leftovers)
 - [MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md): Mail Relay subsystem implementation plan
+- [PERSIST_PLAN.md](/docs/H/plans/PERSIST_PLAN.md): Mail Relay Persist MySQL/MariaDB bind SIGSEGV (TODO 12d)
 - [MIRAGE_PLAN.md](/docs/H/plans/MIRAGE_PLAN.md): Mirage distributed proxy architecture (deferred)
 - [SCHEMAHELPER.md](/docs/H/plans/SCHEMAHELPER.md): SchemaHelper interactive SchemaTool front-end (implementation plan)
 - [UNITY_ASAN_PLAN.md](/docs/H/plans/UNITY_ASAN_PLAN.md): Separate ASAN Unity test variant plan

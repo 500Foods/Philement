@@ -16,38 +16,72 @@ This document is the working document for the implementation. It is meant to be 
 
 ## Resuming Work on This Plan
 
-CURRENT PAUSE POINT (as of 2026-09-04): Core send/API/Lua/OTP shipped. **Do not use 1263 for mail seeds** — `acuranzo_1263` is QueryRef **129** (Insert Script). System templates/events are **1280–1282**. Highest Acuranzo on disk ~**1376**. Login MFA is [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) Phase 8.
+**This section is the source of truth.** Phase 0 “Current Observed State” below is a 2026-06-29 skeleton snapshot (empty `src/mailrelay/`, stub launch). Do not re-implement from it. Phase Status blocks lag reality in a few places; prefer this table.
 
-Shipped since the 2026-07-10 pause (do not re-implement): 7B freeform, Phase 8 OTP C API, event templates 1280, event scripts 1281, template tweak 1282, Test 57 `FailNextSendOnLaunch`, Test 58 OTP/idempotency seams, Persist empty-id retry, 12d MySQL INTEGER→`MYSQL_TYPE_LONGLONG` + `MYSQL_BIND` layout.
+Verified 2026-09-04 against disk, `test_58` 2.8.5, helpers 1.0.4, and `src/database/mysql/query.c`.
 
-### Resume here next session
+### What is actually shipped (do not re-implement)
 
-1. Confirm `test_58` MySQL/MariaDB with `Queue.Persist=true` (enabled 2026-09-04; live matrix not run this session).
-2. Next free migration/QueryRef: **re-check disk** (not this file).
-3. Remaining product: Phase 9 Lithium Mail Manager (still placeholder), Phase 10.2–10.5, Phase 11.1–11.3 HA claim, 12–15.
-4. REST send remains template-only; freeform is Lua-only via `mailrelay_send_direct`.
+| Area | Status | Where |
+|---|---|---|
+| Config / launch / landing | Done (Phase 0–1) | `src/config/config_mail_relay.*`, `launch_mail_relay.c`, `landing_mail_relay.c` |
+| libcurl SMTP + mailval | Done (Phase 2) | `src/mailrelay/mailrelay_smtp.*`, `extras/mailval/` |
+| In-memory queue / workers / retry / debounce | Done (Phase 3) | `mailrelay_queue.*`, `mailrelay_workers.*`, `mailrelay_retry.*`, `mailrelay_debounce.*` |
+| Tables + QueryRefs 093–128 | Done (Phase 4) | Helium `acuranzo_1211`–`1256`, `1262`; C `mailrelay_repository.*` |
+| Templates / `%MACRO%` / `mailrelay_send_template` | Done (Phase 5) | `mailrelay_template.*`, `mailrelay_producer.*` |
+| System events + DB-loaded Lua rules | **Code done**; Phase 6 Status still says 6.1a | `mailrelay_events.*`; seeds `acuranzo_1280` (templates), `1281` (Mail.Events.* scripts), `1282`. `test_58` patches `Events.Rules` and asserts lifecycle mail. Do not rewrite handlers. |
+| REST send / preview / status + Swagger | Done (Phase 7) | `src/api/mailrelay/`; tag **Mail Service**; send is **template-only** |
+| Lua `H.mail` template + freeform | Done (7A/7B) | `scripting_api_mail_notify.c`; freeform = `mailrelay_send_direct` (Lua only). `H.notify` = deferred-error shim forever |
+| OTP generate / send / verify | Done (Phase 8) **C API only** | `mailrelay_otp.*`. Login MFA is [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) Phase 8, not this plan |
+| Idempotent REST send | Done (11.4) when Persist is on | QueryRef 095; sequential only; no UNIQUE |
+| Persist empty-id retry | Done in C | `mailrelay_persist_message` retries when insert returns no `queue_id`. [`TODO.md`](/docs/H/TODO.md) 12e remaining-(3) “fails once with no retry” is **stale** |
+| Blackbox seams | **Scripts landed** (not just C) | Test 57 `FailNextSendOnLaunch`; Test 58 `SendOtpOnLaunch` + OTP/idempotency. The 2026-07-14 “Step 5 deferred” note in the blackbox plan is **stale** |
 
-### Blackbox coverage work (separate track — not part of Phase 7B+)
+### What is not shipped
 
-- **Detailed plan:** [Blackbox Improvements](/docs/H/plans/complete/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md) — launch-time
-  test seams (`SendOtpOnLaunch`, `FailNextSendOnLaunch`) to add blackbox coverage
-  for `mailrelay_otp.c` (Test 58) and `mailrelay_retry.c` (Test 57).
-- **Status (as of 2026-07-14):** Plan Steps 1–4 implemented and verified
-  (`mkt`/`mka`/`mkp` green; mailrelay Unity suites green). Seams land in
-  `config_mail_relay.{h,c}`, `config_defaults.c`, `mailrelay_otp.{h,c}`
-  (deterministic `mailrelay_otp_set_fixed_code`), and `launch_mail_relay.c`
-  (Seam A OTP send+verify, Seam B failing-then-succeeding transport). Both flags
-  default OFF — no production behavior change. The Test 57/58 **script edits**
-  (Step 5) and coverage validation (Step 6) remain deferred to a separate task.
+| Item | Honest status |
+|---|---|
+| **12d MySQL/MariaDB Persist** | **Still broken / shielded.** Working plan: [PERSIST_PLAN.md](/docs/H/plans/PERSIST_PLAN.md). |
+| Phase 9 Lithium Mail Manager | Placeholder (`elements/003-lithium/src/managers/mail-manager`). Lithium sprint owns UI conventions. |
+| Phase 10.2–10.5 | 10.1 counters exist on `GET /api/mailrelay/status`. No Mail Relay Prometheus series. Cleanup QueryRefs 123–126 exist in repo; no operator retention job. `MAIL_GUIDE.md` exists (10.5 partial). |
+| Phase 11.1–11.3 HA claim | QueryRef 096 is SELECT-only (not atomic). `claim_token` columns exist unused for multi-instance. |
+| Phase 12 inbound SMTP | Intentionally later (Phase 0). No `test_59`. |
+| Phase 13 extra Lua | No consumer beyond `H.mail`. Defer unless a concrete caller appears. |
+| Phase 14 / 15 | Not started. Do not mark the plan complete. |
+
+REST send stays template-only. Freeform is Lua-only.
+
+### Numbering (re-check disk; last verified 2026-09-04)
+
+- Highest Acuranzo on disk: **`acuranzo_1376.lua`**. Next free migration: **1377**.
+- **Do not use 1263 for mail seeds.** `acuranzo_1263` is QueryRef **129** (Insert Script).
+- Mail QueryRefs: 093–126 (core + cleanup), 127 Get Role By Name, 128 OTP mark-max-attempts.
+- System mail seeds: 1280–1282. OTP template: `acuranzo_1261` (`auth.otp_code`).
+- Blackbox: Test 57 ports 557x; Test 58 web/mail 15800–15831 (not 55800).
+
+### Persist / TODO 12d
+
+Broken on MySQL/MariaDB (`mysql_stmt_bind_param` SIGSEGV on QueryRef 093). Shielded off in Test 58 helpers 1.0.4. **Do not re-bind-guess here.** Full issue, burned attempts, fix vectors, and post-fix checklist: [PERSIST_PLAN.md](/docs/H/plans/PERSIST_PLAN.md).
+
+### Next product (after 12d, not instead of documenting it)
+
+1. Phase 9 Lithium dashboard — separate element; read [`elements/003-lithium/AGENTS.md`](/elements/003-lithium/AGENTS.md).
+2. Phase 10.2 Prometheus (follow chat metrics in `status_formatters.c`), 10.4 wire cleanup 123–126, 10.3 log redaction review.
+3. Phase 11.1–11.3 atomic claim (engine-specific QueryRefs; 096 is not enough).
+4. Phase 12–15 only with explicit approval. Inbound is opt-in trusted submission, never public MX.
+
+### Blackbox coverage track
+
+Design: [MAILRELAY_BLACKBOX_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md). C seams + Test 57/58 script assertions **exist**. Remaining: optional `extras/add_coverage.sh` combined gcov confirmation (Step 6), not a rewrite of the tests.
 
 ### Session checklist (every Mail Relay return)
 
-1. Confirm the latest completed phase via **Phase Status** blocks; active phase = first not complete.
-2. Re-read **Working Log** decisions/surprises that affect the next chunk.
-3. `zsh -ic 'mkt'`; relevant `mku` targets; inspect `src/mailrelay/` and `tests/unity/src/mailrelay/`.
-4. One small chunk: ask qualifying questions → present plan → implement → verify → update this plan → stop for review.
+1. Re-read **this resume section**, not Phase 0 prose.
+2. Re-check disk for next migration/QueryRef (`ls elements/002-helium/acuranzo/migrations/acuranzo_*.lua`).
+3. One chunk. Ask questions → implement → verify (`mkq` then `mkp`; `mks` for scripts; `mku` if Unity; live `test_58` if Persist). Update **this section** in the same change.
+4. Never apply Helium migrations; hand packets to the user.
 
-Build aliases: `zsh -ic '<alias>'` (`mkt`, `mka`, `mku <base>`, `mkp`, `mks`).
+Build: `zsh -ic 'mkq'` after ordinary C edits; `mkt` if `src/` files were added/removed. `mkp` after C. `mks` after Bash.
 
 ## Scope And Repo Areas
 
@@ -66,7 +100,7 @@ Date of snapshot: 2026-07-06 prep review update; original snapshot 2026-06-29
 
 ## Current Observed State
 
-Hydrogen has a Mail Relay subsystem that is a complete config/launch/landing skeleton with thorough config validation, but the actual relay engine is entirely stubbed. There is no SMTP sender, no worker threads, no queue producer/consumer, no templates, no API, and no database tables.
+**HISTORICAL (2026-06-29 prep snapshot).** The subsystem is no longer a stub. Live code is under `src/mailrelay/` (15 `.c` files), REST under `src/api/mailrelay/`, Helium mail tables/QueryRefs 093–128, Tests 57/58. For current status use **Resuming Work** above. The bullets below are kept as the original contract dump; line numbers and “empty directory” claims are stale.
 
 ### Existing Hydrogen source pieces (verified)
 
@@ -264,6 +298,8 @@ Append discoveries, surprises, and decisions here as we move through phases. Ear
 
 ### Decisions log
 
+- (12d Persist SIGSEGV, 2026-09-04) **MySQL/MariaDB Queue.Persist is still shielded off.**
+  Working plan: [PERSIST_PLAN.md](/docs/H/plans/PERSIST_PLAN.md). Do not bind-guess in this file.
 - (11.4 sequential, 2026-08-21) **Idempotent send is Persist-backed.**
   1. `producer_try_idempotency` already looked up QueryRef 095; with
      `Queue.Persist=false` the row never existed, so a retry minted a
@@ -1153,6 +1189,8 @@ Exit Gate: administrative event email works through the queue/templates path, is
 
 Phase 6 Status: partial complete (sub-chunk 6.1a). Date: 2026-07-08. Result: Event emission API implemented with built-in Lua handlers for `system.server_started`/`system.server_stopped`, per-event-key rate limiting, and config/schema updates. All Unity tests and lint pass. Variances: Custom DB-loaded event scripts and the extended `test_57_mailrelay_outbound.sh` blackbox verification are deferred to sub-chunk 6.1b. The original 6.1 wording assumed direct template/recipient mapping; the implemented design uses Lua-script-driven rules as decided by the user.
 
+Addendum 2026-09-04: 6.1b **code and seeds exist** (`acuranzo_1280`/`1281`/`1282`; `mailrelay_events.c` loads `Group.Name` from `Events.Rules`; `test_58` patches those rules and looks for lifecycle sink mail). Do not re-implement. Status not flipped to complete here because this session did not re-run the named blackbox gate.
+
 ---
 
 ## Phase 7 - REST API: Send, Preview, Status
@@ -1499,9 +1537,10 @@ Entry Gate: Phase 4 exit gate green.
   - Live (2026-08-21): `producer_try_idempotency` + QueryRef 095. Requires
     `Queue.Persist=true` so the first send writes `mail_queue`. Sequential
     retries only (no UNIQUE on `idempotency_key`; concurrent same-key can
-    still race). MySQL/MariaDB Persist stays off (TODO 12d). 11.1–11.3
-    multi-instance claim still open. `test_58` 2.7.0 asserts same
-    `message_id` + one sink delivery when Persist is on.
+    still race). MySQL/MariaDB Persist still off as of 2026-09-04 (TODO 12d;
+    live SIGSEGV after bind-indicator fix). 11.1–11.3 multi-instance claim
+    still open. `test_58` asserts same `message_id` + one sink delivery when
+    Persist is on.
 
 Exit Gate: multi-instance Hydrogen processes a shared mail queue with no normal duplicate sends and predictable crash recovery.
 
