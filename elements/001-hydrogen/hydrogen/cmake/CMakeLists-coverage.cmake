@@ -55,6 +55,8 @@ foreach(SOURCE_FILE ${HYDROGEN_SOURCES})
              ${LUA_CFLAGS}
              ${MAGICKWAND_CFLAGS}
              ${ZLIB_CFLAGS}
+             ${MYSQL_CFLAGS}  # PERSIST_PLAN Phase 1: coverage needs the MySQL/MariaDB
+                               # include path so <mysql.h> resolves in query.c.
              ${PROJECT_INCLUDE_FLAGS}
             -c ${SOURCE_FILE} -o ${OUTPUT_OBJ}
         DEPENDS ${SOURCE_FILE}
