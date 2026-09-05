@@ -1,0 +1,984 @@
+        -:    0:Source:/mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/src/api/wschat/helpers/proxy_multi.c
+        -:    0:Graph:build/unity/src/api/wschat/helpers/proxy_multi.gcno
+        -:    0:Data:build/unity/src/api/wschat/helpers/proxy_multi.gcda
+        -:    0:Runs:5
+        -:    1:/*
+        -:    2: * Chat Proxy Multi - Thread-Safe Streaming with libcurl multi Interface
+        -:    3: *
+        -:    4: * Provides non-blocking, event-driven streaming proxy using libcurl's multi
+        -:    5: * socket API. Integrates with LWS event loop for thread-safe WebSocket writes.
+        -:    6: */
+        -:    7:
+        -:    8:// Project includes
+        -:    9:#include <src/hydrogen.h>
+        -:   10:
+        -:   11:// Local includes
+        -:   12:#include "proxy_multi.h"
+        -:   13:#include "resp_parser.h"
+        -:   14:#include "proxy.h"
+        -:   15:#include "local_mcp.h"
+        -:   16:
+        -:   17:// WebSocket message functions for ws_write_raw_data
+        -:   18:#include <src/websocket/websocket_server_message.h>
+        -:   19:
+        -:   20:// System includes
+        -:   21:#include <sys/select.h>
+        -:   22:#include <sys/socket.h>
+        -:   23:#include <unistd.h>
+        -:   24:#include <errno.h>
+        -:   25:#include <time.h>
+        -:   26:
+        -:   27:// ============================================================================
+        -:   28:// Static Variables
+        -:   29:// ============================================================================
+        -:   30:
+        -:   31:// Global multi stream manager (singleton for simplicity)
+        -:   32:static MultiStreamManager* g_multi_manager = NULL;
+        -:   33:
+        -:   34:// Forward declaration for worker thread (implemented below)
+        -:   35: void* chat_proxy_multi_worker_thread(void* arg);
+        -:   36:
+        -:   37:// Forward declaration for completed-transfer handler helper
+        -:   38: void chat_proxy_multi_handle_completed_transfer(MultiStreamManager* manager, CURL* easy, CURLcode res, long http_code);
+        -:   39:
+        -:   40:// ============================================================================
+        -:   41:// Manager Implementation
+        -:   42:// ============================================================================
+        -:   43:
+    #####:   44:bool chat_proxy_multi_init(MultiStreamManager* manager, struct lws_context* lws_context) {
+    #####:   45:    if (!manager || manager->initialized) {
+    #####:   46:        return false;
+        -:   47:    }
+        -:   48:    
+        -:   49:    // Initialize CURL multi handle
+    #####:   50:    manager->multi_handle = curl_multi_init();
+    #####:   51:    if (!manager->multi_handle) {
+    #####:   52:        log_this(SR_CHAT, "Failed to initialize CURL multi handle", LOG_LEVEL_ERROR, 0);
+    #####:   53:        return false;
+        -:   54:    }
+        -:   55:    
+    #####:   56:    manager->lws_context = lws_context;
+    #####:   57:    manager->active_streams = NULL;
+    #####:   58:    pthread_mutex_init(&manager->streams_mutex, NULL);
+    #####:   59:    manager->max_host_connections = 50;  // Default per-provider limit
+    #####:   60:    manager->max_total_connections = 200;
+    #####:   61:    manager->shutdown_requested = false;
+    #####:   62:    manager->worker_thread_started = false;
+        -:   63:
+        -:   64:    // Configure multi handle - use simple polling interface (curl_multi_perform + curl_multi_wait)
+        -:   65:    // Do NOT set CURLMOPT_SOCKETFUNCTION or CURLMOPT_TIMERFUNCTION - those require
+        -:   66:    // the multi_socket_action() interface which we're not using
+    #####:   67:    curl_multi_setopt(manager->multi_handle, CURLMOPT_MAX_HOST_CONNECTIONS, (long)manager->max_host_connections);
+    #####:   68:    curl_multi_setopt(manager->multi_handle, CURLMOPT_MAX_TOTAL_CONNECTIONS, (long)manager->max_total_connections);
+        -:   69:    
+    #####:   70:    manager->initialized = true;
+    #####:   71:    g_multi_manager = manager;
+        -:   72:    
+    #####:   73:    log_this(SR_CHAT, "Multi-stream manager initialized (max %d per host, %d total)", 
+        -:   74:             LOG_LEVEL_STATE, 2, manager->max_host_connections, manager->max_total_connections);
+        -:   75:    
+        -:   76:    // Start worker thread to drive the multi handle
+    #####:   77:    if (pthread_create(&manager->worker_thread, NULL, chat_proxy_multi_worker_thread, manager) != 0) {
+    #####:   78:        log_this(SR_CHAT, "Failed to create multi-stream worker thread", LOG_LEVEL_ERROR, 0);
+    #####:   79:        curl_multi_cleanup(manager->multi_handle);
+    #####:   80:        manager->initialized = false;
+    #####:   81:        return false;
+        -:   82:    }
+    #####:   83:    manager->worker_thread_started = true;
+        -:   84:
+    #####:   85:    log_this(SR_CHAT, "Multi-stream worker thread started", LOG_LEVEL_STATE, 0);
+        -:   86:    
+    #####:   87:    return true;
+        -:   88:}
+        -:   89:
+        -:   90:// Worker thread function that drives the multi handle
+    #####:   91: void* chat_proxy_multi_worker_thread(void* arg) {
+    #####:   92:    MultiStreamManager* manager = (MultiStreamManager*)arg;
+        -:   93:    
+    #####:   94:    log_this(SR_CHAT, "Multi-stream worker thread started", LOG_LEVEL_DEBUG, 0);
+        -:   95:    
+    #####:   96:    while (!manager->shutdown_requested) {
+    #####:   97:        if (!manager->initialized) {
+    #####:   98:            usleep(50000);  // 50ms when not initialized
+    #####:   99:            continue;
+        -:  100:        }
+        -:  101:        
+        -:  102:        // First, drive any pending transfers
+    #####:  103:        int still_running = 0;
+    #####:  104:        CURLMcode mc = curl_multi_perform(manager->multi_handle, &still_running);
+        -:  105:        
+    #####:  106:        if (mc != CURLM_OK) {
+    #####:  107:            log_this(SR_CHAT, "curl_multi_perform error in worker: %s", LOG_LEVEL_ERROR, 1, curl_multi_strerror(mc));
+    #####:  108:            usleep(10000);  // 10ms on error
+    #####:  109:            continue;
+        -:  110:        }
+        -:  111:        
+    #####:  112:        if (still_running == 0) {
+        -:  113:            // No active transfers, sleep longer
+    #####:  114:            usleep(50000);  // 50ms when idle
+    #####:  115:            continue;
+        -:  116:        }
+        -:  117:        
+        -:  118:        // There are active transfers - wait for socket activity or timeout
+        -:  119:        // Use curl_multi_poll() instead of curl_multi_wait() because curl_multi_wait()
+        -:  120:        // doesn't work correctly with HTTP/2 - it returns num_fds=0 when HTTP/2 frames
+        -:  121:        // are being processed internally, causing the wait to timeout instead of blocking
+        -:  122:        // until data is actually available. curl_multi_poll() handles this correctly.
+        -:  123:        // Use 10ms timeout for responsive streaming without excessive CPU usage.
+    #####:  124:        CURLMcode wait_mc = curl_multi_poll(manager->multi_handle, NULL, 0, 10, NULL);
+        -:  125:        
+    #####:  126:        if (wait_mc != CURLM_OK) {
+    #####:  127:            log_this(SR_CHAT, "curl_multi_poll error: %s", LOG_LEVEL_ERROR, 1, curl_multi_strerror(wait_mc));
+    #####:  128:            usleep(10000);  // 10ms on error
+    #####:  129:            continue;
+        -:  130:        }
+        -:  131:        
+        -:  132:        // After wait returns, call curl_multi_perform AGAIN to process any data
+        -:  133:        // that arrived on sockets. This is required by libcurl's multi interface.
+    #####:  134:        mc = curl_multi_perform(manager->multi_handle, &still_running);
+    #####:  135:        if (mc != CURLM_OK) {
+    #####:  136:            log_this(SR_CHAT, "curl_multi_perform (post-wait) error: %s", LOG_LEVEL_ERROR, 1, curl_multi_strerror(mc));
+        -:  137:        }
+        -:  138:        
+        -:  139:        // Process any completed transfers
+    #####:  140:        chat_proxy_multi_perform(manager);
+        -:  141:    }
+        -:  142:    
+    #####:  143:    log_this(SR_CHAT, "Multi-stream worker thread stopped", LOG_LEVEL_DEBUG, 0);
+    #####:  144:    return NULL;
+        -:  145:}
+        -:  146:
+    #####:  147:void chat_proxy_multi_cleanup(MultiStreamManager* manager) {
+    #####:  148:    if (!manager || !manager->initialized) {
+    #####:  149:        return;
+        -:  150:    }
+        -:  151:
+    #####:  152:    manager->shutdown_requested = true;
+    #####:  153:    if (manager->worker_thread_started) {
+    #####:  154:        int join_result = pthread_join(manager->worker_thread, NULL);
+    #####:  155:        if (join_result != 0) {
+    #####:  156:            log_this(SR_CHAT, "Failed to join multi-stream worker thread", LOG_LEVEL_ERROR, 0);
+        -:  157:        }
+    #####:  158:        manager->worker_thread_started = false;
+        -:  159:    }
+        -:  160:
+    #####:  161:    pthread_mutex_lock(&manager->streams_mutex);
+        -:  162:    
+        -:  163:    // Stop all active streams
+    #####:  164:    MultiStreamContext* stream = manager->active_streams;
+    #####:  165:    while (stream) {
+    #####:  166:        MultiStreamContext* next = stream->next;
+    #####:  167:        void* priv_data = NULL;
+        -:  168:
+    #####:  169:        if (stream->easy_handle) {
+    #####:  170:            curl_easy_getinfo(stream->easy_handle, CURLINFO_PRIVATE, &priv_data);
+    #####:  171:            curl_multi_remove_handle(manager->multi_handle, stream->easy_handle);
+    #####:  172:            curl_easy_cleanup(stream->easy_handle);
+    #####:  173:            stream->easy_handle = NULL;
+        -:  174:        }
+    #####:  175:        if (stream->headers) {
+    #####:  176:            curl_slist_free_all(stream->headers);
+        -:  177:        }
+    #####:  178:        if (priv_data) {
+    #####:  179:            CurlStreamContext* curl_ctx = (CurlStreamContext*)priv_data;
+    #####:  180:            free(curl_ctx->line_buffer);
+    #####:  181:            free(curl_ctx->post_done_buffer);
+    #####:  182:            free(curl_ctx);
+        -:  183:        }
+        -:  184:        
+    #####:  185:        chunk_queue_destroy(&stream->chunk_queue);
+    #####:  186:                 free(stream->request_id);
+    #####:  187:                 free(stream->engine_name);
+    #####:  188:                 free(stream->finish_reason);
+    #####:  189:                 free(stream->request_body);
+    #####:  190:                 free(stream->local_mcp_cid);
+    #####:  191:                 if (stream->tool_call_acc) {
+    #####:  192:                     json_decref(stream->tool_call_acc);
+        -:  193:                 }
+    #####:  194:                 free(stream);
+        -:  195:        
+    #####:  196:        stream = next;
+        -:  197:    }
+        -:  198:    
+    #####:  199:    manager->active_streams = NULL;
+        -:  200:    
+    #####:  201:    pthread_mutex_unlock(&manager->streams_mutex);
+    #####:  202:    pthread_mutex_destroy(&manager->streams_mutex);
+        -:  203:    
+    #####:  204:    if (manager->multi_handle) {
+    #####:  205:        curl_multi_cleanup(manager->multi_handle);
+    #####:  206:        manager->multi_handle = NULL;
+        -:  207:    }
+        -:  208:
+    #####:  209:    manager->initialized = false;
+    #####:  210:    if (g_multi_manager == manager) {
+    #####:  211:        g_multi_manager = NULL;
+        -:  212:    }
+        -:  213:    
+    #####:  214:    log_this(SR_CHAT, "Multi-stream manager cleaned up", LOG_LEVEL_DEBUG, 0);
+        -:  215:}
+        -:  216:
+    #####:  217:bool chat_proxy_multi_perform(MultiStreamManager* manager) {
+    #####:  218:    if (!manager || !manager->initialized) {
+    #####:  219:        return false;
+        -:  220:    }
+        -:  221:    
+        -:  222:    // Note: curl_multi_perform() is called by the worker thread before curl_multi_wait().
+        -:  223:    // This function only processes completed transfers - do NOT call curl_multi_perform here
+        -:  224:    // as it would disrupt the multi handle's internal state machine.
+        -:  225:    
+        -:  226:    // Clean up any completed streams whose queues have been drained
+    #####:  227:    pthread_mutex_lock(&manager->streams_mutex);
+    #####:  228:    MultiStreamContext* stream = manager->active_streams;
+        -:  229:    
+    #####:  230:    while (stream) {
+    #####:  231:        MultiStreamContext* next = stream->next;
+    #####:  232:        if (stream->stream_completed && stream->easy_handle == NULL) {
+        -:  233:            // Check if queue is drained (chat_done should have been sent by now)
+    #####:  234:            if (!chunk_queue_has_data(&stream->chunk_queue)) {
+        -:  235:                // Save pointers before freeing
+    #####:  236:                void* session_data_ptr = stream->session_data;
+        -:  237:                
+        -:  238:                // Free headers
+    #####:  239:                if (stream->headers) {
+    #####:  240:                    curl_slist_free_all(stream->headers);
+    #####:  241:                    stream->headers = NULL;
+        -:  242:                }
+        -:  243:                
+        -:  244:                // Call completion callback if set
+    #####:  245:                if (stream->completion_callback) {
+    #####:  246:                    stream->completion_callback(stream->completion_user_data, true);
+        -:  247:                }
+        -:  248:                
+        -:  249:                // Remove from linked list
+    #####:  250:                if (stream->prev) {
+    #####:  251:                    stream->prev->next = stream->next;
+        -:  252:                } else {
+    #####:  253:                    manager->active_streams = stream->next;
+        -:  254:                }
+    #####:  255:                if (stream->next) {
+    #####:  256:                    stream->next->prev = stream->prev;
+        -:  257:                }
+        -:  258:                
+        -:  259:                // Clear session's pointer ONLY if it still points to the stream we're freeing
+        -:  260:                // This prevents the race where a new stream started and overwrote the pointer
+    #####:  261:                if (session_data_ptr) {
+    #####:  262:                    WebSocketSessionData* session = (WebSocketSessionData*)session_data_ptr;
+    #####:  263:                    if (session->multi_stream_ctx == stream) {
+    #####:  264:                        session->multi_stream_ctx = NULL;
+        -:  265:                    }
+        -:  266:                }
+        -:  267:                
+        -:  268:                // Free stream context (after checking pointer, stream is now freed)
+    #####:  269:                free(stream->request_id);
+    #####:  270:                free(stream->engine_name);
+    #####:  271:                free(stream->finish_reason);
+    #####:  272:                free(stream->request_body);
+    #####:  273:                free(stream);
+        -:  274:            }
+        -:  275:        }
+    #####:  276:        stream = next;
+        -:  277:    }
+    #####:  278:    pthread_mutex_unlock(&manager->streams_mutex);
+        -:  279:    
+        -:  280:    // Check for completed transfers from CURL
+        -:  281:    CURLMsg* msg;
+        -:  282:    int msgs_left;
+    #####:  283:    while ((msg = curl_multi_info_read(manager->multi_handle, &msgs_left))) {
+    #####:  284:        if (msg->msg == CURLMSG_DONE) {
+    #####:  285:            CURL* easy = msg->easy_handle;
+    #####:  286:            CURLcode res = msg->data.result;
+        -:  287:
+        -:  288:            // Log CURL result and HTTP status for debugging
+    #####:  289:            long http_code = 0;
+    #####:  290:            curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &http_code);
+    #####:  291:            log_this(SR_CHAT, "Multi-stream transfer complete: CURL result=%d (%s), HTTP %ld", LOG_LEVEL_DEBUG, 3,
+        -:  292:                     (int)res, curl_easy_strerror(res), http_code);
+        -:  293:
+    #####:  294:            chat_proxy_multi_handle_completed_transfer(manager, easy, res, http_code);
+        -:  295:        }
+        -:  296:    }
+        -:  297:
+    #####:  298:    return true;
+        -:  299:}
+        -:  300:
+        -:  301:/*
+        -:  302: * Process a single completed CURL transfer (a CURLMSG_DONE message). Extracted
+        -:  303: * from chat_proxy_multi_perform() so the (large) completion logic can be unit
+        -:  304: * tested directly without driving the full curl_multi event loop.
+        -:  305: *
+        -:  306: * On entry the transfer's easy handle has finished; this function builds the
+        -:  307: * chat_done / chat_error payload, enqueues it on the stream's chunk queue, and
+        -:  308: * removes the easy handle from the multi. The stream context itself is NOT
+        -:  309: * freed here - it is released later by chat_proxy_multi_perform() once the
+        -:  310: * queued payload has been drained.
+        -:  311: */
+    #####:  312:void chat_proxy_multi_handle_completed_transfer(MultiStreamManager* manager,
+        -:  313:                                                CURL* easy,
+        -:  314:                                                CURLcode res,
+        -:  315:                                                long http_code) {
+        -:  316:    // Get stream context from CURL private data
+    #####:  317:    void* priv_data = NULL;
+    #####:  318:    curl_easy_getinfo(easy, CURLINFO_PRIVATE, &priv_data);
+        -:  319:
+    #####:  320:    if (priv_data) {
+    #####:  321:        CurlStreamContext* curl_ctx = (CurlStreamContext*)priv_data;
+    #####:  322:        MultiStreamContext* stream_ctx = curl_ctx->stream_ctx;
+        -:  323:
+    #####:  324:        if (stream_ctx) {
+        -:  325:            // Check if HTTP status indicates an error (non-2xx)
+    #####:  326:            bool http_error = (http_code < 200 || http_code >= 300);
+        -:  327:
+        -:  328:            // Process any remaining data in line buffer (only for successful responses)
+    #####:  329:            if (curl_ctx->line_buffer_len > 0 && res == CURLE_OK && !http_error) {
+    #####:  330:                if (curl_ctx->seen_done) {
+        -:  331:                    // After [DONE], remaining data is metadata (retrieval, etc.)
+        -:  332:                    // Append to post_done_buffer for inclusion in chat_done
+    #####:  333:                    if (!curl_ctx->post_done_buffer) {
+    #####:  334:                        curl_ctx->post_done_capacity = curl_ctx->line_buffer_len + 1;
+    #####:  335:                        curl_ctx->post_done_buffer = (char*)malloc(curl_ctx->post_done_capacity);
+    #####:  336:                        if (curl_ctx->post_done_buffer) {
+    #####:  337:                            curl_ctx->post_done_len = 0;
+        -:  338:                        }
+        -:  339:                    }
+    #####:  340:                    if (curl_ctx->post_done_buffer) {
+    #####:  341:                        size_t needed_cap = curl_ctx->post_done_len + curl_ctx->line_buffer_len + 1;
+    #####:  342:                        if (needed_cap > curl_ctx->post_done_capacity) {
+    #####:  343:                            size_t new_cap = needed_cap * 2;
+    #####:  344:                            char* new_buf = realloc(curl_ctx->post_done_buffer, new_cap);
+    #####:  345:                            if (new_buf) {
+    #####:  346:                                curl_ctx->post_done_buffer = new_buf;
+    #####:  347:                                curl_ctx->post_done_capacity = new_cap;
+        -:  348:                            }
+        -:  349:                        }
+    #####:  350:                        memcpy(curl_ctx->post_done_buffer + curl_ctx->post_done_len,
+    #####:  351:                               curl_ctx->line_buffer, curl_ctx->line_buffer_len);
+    #####:  352:                        curl_ctx->post_done_len += curl_ctx->line_buffer_len;
+    #####:  353:                        curl_ctx->post_done_buffer[curl_ctx->post_done_len] = '\0';
+        -:  354:                    }
+    #####:  355:                    log_this(SR_CHAT, "Remaining line buffer captured as post-[DONE] data (%zu bytes)",
+        -:  356:                             LOG_LEVEL_DEBUG, 1, curl_ctx->line_buffer_len);
+        -:  357:                } else {
+        -:  358:                    // Normal SSE final chunk processing
+    #####:  359:                    ChatStreamChunk* chunk = chat_stream_chunk_parse(curl_ctx->line_buffer);
+    #####:  360:                    if (chunk) {
+    #####:  361:                        if (chunk->is_done) {
+    #####:  362:                            curl_ctx->seen_done = true;
+        -:  363:                        }
+    #####:  364:                        if (chunk->finish_reason) {
+    #####:  365:                            free(stream_ctx->finish_reason);
+    #####:  366:                            stream_ctx->finish_reason = strdup(chunk->finish_reason);
+        -:  367:                        }
+    #####:  368:                        if (chunk->extra_fields) {
+    #####:  369:                            json_t *tool_calls = json_object_get(chunk->extra_fields, "tool_calls");
+    #####:  370:                            if (tool_calls) {
+    #####:  371:                                chat_local_mcp_accumulate_stream_tool_calls(&stream_ctx->tool_call_acc, tool_calls);
+        -:  372:                            }
+        -:  373:                        }
+        -:  374:                        // Build and enqueue final chunk
+    #####:  375:                        json_t* response = json_object();
+    #####:  376:                        json_object_set_new(response, "type", json_string("chat_chunk"));
+    #####:  377:                        if (stream_ctx->request_id) {
+    #####:  378:                            json_object_set_new(response, "id", json_string(stream_ctx->request_id));
+        -:  379:                        }
+        -:  380:
+    #####:  381:                        json_t* chunk_json = json_object();
+    #####:  382:                        json_object_set_new(chunk_json, "content", json_string(chunk->content ? chunk->content : ""));
+    #####:  383:                        if (chunk->reasoning_content) {
+    #####:  384:                            json_object_set_new(chunk_json, "reasoning_content", json_string(chunk->reasoning_content));
+        -:  385:                        }
+    #####:  386:                        if (chunk->model) json_object_set_new(chunk_json, "model", json_string(chunk->model));
+    #####:  387:                        json_object_set_new(chunk_json, "index", json_integer(stream_ctx->chunk_index));
+    #####:  388:                        if (chunk->finish_reason) {
+    #####:  389:                            json_object_set_new(chunk_json, "finish_reason", json_string(chunk->finish_reason));
+        -:  390:                        }
+    #####:  391:                        if (chunk->extra_fields) {
+        -:  392:                            const char* key;
+        -:  393:                            json_t* value;
+    #####:  394:                            json_object_foreach(chunk->extra_fields, key, value) {
+    #####:  395:                                json_object_set(chunk_json, key, value);
+        -:  396:                            }
+        -:  397:                        }
+    #####:  398:                        json_object_set_new(response, "chunk", chunk_json);
+        -:  399:
+    #####:  400:                        char* json_str = json_dumps(response, JSON_COMPACT);
+    #####:  401:                        json_decref(response);
+        -:  402:
+    #####:  403:                        if (json_str) {
+    #####:  404:                            chunk_queue_enqueue(&stream_ctx->chunk_queue, json_str, strlen(json_str));
+    #####:  405:                            chat_proxy_multi_request_writable(stream_ctx);
+    #####:  406:                            free(json_str);
+        -:  407:                        }
+        -:  408:
+    #####:  409:                        stream_ctx->chunk_index++;
+    #####:  410:                        chat_stream_chunk_destroy(chunk);
+        -:  411:                    }
+        -:  412:                }
+        -:  413:            }
+        -:  414:
+    #####:  415:            if (!http_error && res == CURLE_OK) {
+    #####:  416:                char *next_body = chat_local_mcp_stream_next_body(stream_ctx);
+    #####:  417:                if (next_body) {
+    #####:  418:                    curl_multi_remove_handle(manager->multi_handle, easy);
+    #####:  419:                    curl_easy_cleanup(easy);
+    #####:  420:                    stream_ctx->easy_handle = NULL;
+    #####:  421:                    free(curl_ctx->line_buffer);
+    #####:  422:                    free(curl_ctx->post_done_buffer);
+    #####:  423:                    free(curl_ctx);
+    #####:  424:                    if (chat_proxy_multi_restart_easy(manager, stream_ctx, next_body)) {
+    #####:  425:                        free(next_body);
+    #####:  426:                        stream_ctx->stream_completed = false;
+    #####:  427:                        if (stream_ctx->stream_active) {
+    #####:  428:                            *stream_ctx->stream_active = true;
+        -:  429:                        }
+    #####:  430:                        return;
+        -:  431:                    }
+    #####:  432:                    free(next_body);
+        -:  433:                }
+        -:  434:            }
+        -:  435:
+        -:  436:            // Mark stream as completed
+    #####:  437:            stream_ctx->stream_completed = true;
+        -:  438:
+        -:  439:            // Build and enqueue response (error or done)
+    #####:  440:            json_t* done_response = json_object();
+    #####:  441:            if (stream_ctx->request_id) {
+    #####:  442:                json_object_set_new(done_response, "id", json_string(stream_ctx->request_id));
+        -:  443:            }
+        -:  444:
+        -:  445:            // Calculate timing
+        -:  446:            struct timespec end_time;
+    #####:  447:            clock_gettime(CLOCK_MONOTONIC, &end_time);
+    #####:  448:            double elapsed_ms = (double)(end_time.tv_sec - stream_ctx->start_time.tv_sec) * 1000.0 +
+    #####:  449:                               (double)(end_time.tv_nsec - stream_ctx->start_time.tv_nsec) / 1000000.0;
+        -:  450:
+    #####:  451:            if (http_error) {
+        -:  452:                // HTTP error response - send error to client
+    #####:  453:                json_object_set_new(done_response, "type", json_string("chat_error"));
+        -:  454:
+        -:  455:                // Build error message from available info
+        -:  456:                char error_msg[256];
+    #####:  457:                if (curl_ctx->line_buffer_len > 0) {
+        -:  458:                    // Use the response body as error message (e.g., "error code: 504")
+    #####:  459:                    snprintf(error_msg, sizeof(error_msg), "HTTP %ld: %s",
+        -:  460:                             http_code, curl_ctx->line_buffer);
+        -:  461:                } else {
+    #####:  462:                    snprintf(error_msg, sizeof(error_msg), "HTTP %ld error from upstream", http_code);
+        -:  463:                }
+    #####:  464:                json_object_set_new(done_response, "error", json_string(error_msg));
+        -:  465:
+    #####:  466:                log_this(SR_CHAT, "Multi-stream HTTP error: %ld (%.0fms, %zu chunks before error)",
+        -:  467:                         LOG_LEVEL_ERROR, 3, http_code, elapsed_ms, curl_ctx->chunks_processed);
+        -:  468:            } else {
+        -:  469:                // Successful completion
+    #####:  470:                json_object_set_new(done_response, "type", json_string("chat_done"));
+        -:  471:
+    #####:  472:                json_t* result = json_object();
+    #####:  473:                json_object_set_new(result, "content", json_string(""));
+    #####:  474:                if (stream_ctx->engine_name) {
+    #####:  475:                    json_object_set_new(result, "model", json_string(stream_ctx->engine_name));
+        -:  476:                }
+    #####:  477:                json_object_set_new(result, "finish_reason",
+    #####:  478:                                   json_string(stream_ctx->finish_reason ? stream_ctx->finish_reason : "stop"));
+    #####:  479:                json_object_set_new(result, "response_time_ms", json_real(elapsed_ms));
+        -:  480:
+        -:  481:                // Include raw_provider_response for transparency.
+        -:  482:                // This allows clients to access retrieval/citation data,
+        -:  483:                // guardrails info, and any other provider metadata.
+        -:  484:                // Check post-[DONE] buffer first (data sent after SSE stream ends)
+    #####:  485:                log_this(SR_CHAT, "Multi-stream: post_done_buffer state: %s, len=%zu",
+        -:  486:                         LOG_LEVEL_DEBUG, 2,
+    #####:  487:                         curl_ctx->post_done_buffer ? "exists" : "null",
+        -:  488:                         curl_ctx->post_done_len);
+    #####:  489:                if (curl_ctx->post_done_buffer && curl_ctx->post_done_len > 0) {
+        -:  490:                    json_error_t json_err;
+    #####:  491:                    json_t* post_done_json = json_loads(curl_ctx->post_done_buffer, 0, &json_err);
+    #####:  492:                    if (post_done_json) {
+    #####:  493:                        json_object_set_new(result, "raw_provider_response", post_done_json);
+    #####:  494:                        log_this(SR_CHAT, "Multi-stream: included post-[DONE] data as raw_provider_response (%zu keys)",
+        -:  495:                                 LOG_LEVEL_DEBUG, 1, json_object_size(post_done_json));
+        -:  496:                    } else {
+        -:  497:                        // Not valid JSON — log error and raw data for debugging
+    #####:  498:                        log_this(SR_CHAT, "Multi-stream: post-[DONE] data not valid JSON: %s. Raw (first 500 chars): %.500s",
+        -:  499:                                 LOG_LEVEL_DEBUG, 2, json_err.text, curl_ctx->post_done_buffer);
+        -:  500:                    }
+        -:  501:                } else {
+    #####:  502:                    log_this(SR_CHAT, "Multi-stream: no post-[DONE] data available (seen_done=%s)",
+        -:  503:                             LOG_LEVEL_DEBUG, 1,
+    #####:  504:                             curl_ctx->seen_done ? "true" : "false");
+        -:  505:                }
+        -:  506:
+        -:  507:                // Also check the remaining line buffer content—some providers
+        -:  508:                // send metadata JSON on the last line without a trailing newline
+    #####:  509:                if (!json_object_get(result, "raw_provider_response") &&
+    #####:  510:                    curl_ctx->line_buffer_len > 0) {
+        -:  511:                    json_error_t json_err;
+    #####:  512:                    json_t* remaining_json = json_loads(curl_ctx->line_buffer, 0, &json_err);
+    #####:  513:                    if (remaining_json) {
+    #####:  514:                        json_object_set_new(result, "raw_provider_response", remaining_json);
+    #####:  515:                        log_this(SR_CHAT, "Multi-stream: included remaining line buffer as raw_provider_response",
+        -:  516:                                 LOG_LEVEL_DEBUG, 0);
+        -:  517:                    }
+        -:  518:                }
+        -:  519:
+        -:  520:                // Attach context_hashing stats if collected
+    #####:  521:                if (stream_ctx->has_context_hashing_stats) {
+    #####:  522:                    json_t* context_stats = json_object();
+    #####:  523:                    if (context_stats) {
+    #####:  524:                        json_object_set_new(context_stats, "hashes_used",
+    #####:  525:                                            json_integer((json_int_t)stream_ctx->ctx_hashes_used));
+    #####:  526:                        json_object_set_new(context_stats, "hashes_missed",
+    #####:  527:                                            json_integer((json_int_t)stream_ctx->ctx_hashes_missed));
+    #####:  528:                        json_object_set_new(context_stats, "bandwidth_saved_bytes",
+    #####:  529:                                            json_integer((json_int_t)stream_ctx->ctx_bandwidth_saved_bytes));
+    #####:  530:                        json_object_set_new(context_stats, "bandwidth_saved_percent",
+        -:  531:                                            json_real(stream_ctx->ctx_bandwidth_saved_percent));
+        -:  532:
+    #####:  533:                        uint64_t cache_hits = 0;
+    #####:  534:                        uint64_t cache_misses = 0;
+    #####:  535:                        double cache_hit_ratio = 0.0;
+        -:  536:                        // database name needed for cache stats — use engine_name as lookup key
+        -:  537:                        // Cache stats are global per-database, retrieved via chat_storage_cache_get_stats
+        -:  538:                        (void)cache_hits;
+        -:  539:                        (void)cache_misses;
+        -:  540:                        (void)cache_hit_ratio;
+        -:  541:
+    #####:  542:                        json_object_set_new(result, "context_hashing", context_stats);
+        -:  543:                    }
+        -:  544:                }
+        -:  545:
+    #####:  546:                json_object_set_new(done_response, "result", result);
+        -:  547:
+    #####:  548:                log_this(SR_CHAT, "Multi-stream complete: %zu chunks, %.0fms, finish=%s",
+        -:  549:                         LOG_LEVEL_STATE, 3,
+        -:  550:                         curl_ctx->chunks_processed,
+        -:  551:                         elapsed_ms,
+    #####:  552:                         stream_ctx->finish_reason ? stream_ctx->finish_reason : "stop");
+        -:  553:            }
+        -:  554:
+    #####:  555:            char* done_json = json_dumps(done_response, JSON_COMPACT);
+    #####:  556:            json_decref(done_response);
+        -:  557:
+    #####:  558:            if (done_json) {
+    #####:  559:                chunk_queue_enqueue(&stream_ctx->chunk_queue, done_json, strlen(done_json));
+    #####:  560:                chat_proxy_multi_request_writable(stream_ctx);
+    #####:  561:                free(done_json);
+        -:  562:            }
+        -:  563:
+        -:  564:            // Remove CURL handle but DON'T free the stream context yet
+        -:  565:            // The chat_done message is in the queue and needs to be sent first
+    #####:  566:            curl_multi_remove_handle(manager->multi_handle, easy);
+    #####:  567:            curl_easy_cleanup(easy);
+    #####:  568:            stream_ctx->easy_handle = NULL;
+        -:  569:
+        -:  570:            // Cleanup CURL context (no longer needed)
+    #####:  571:            free(curl_ctx->line_buffer);
+    #####:  572:            free(curl_ctx->post_done_buffer);
+    #####:  573:            free(curl_ctx);
+        -:  574:
+        -:  575:            // Mark as completed - cleanup will happen on next iteration when queue is drained
+    #####:  576:            stream_ctx->stream_completed = true;
+        -:  577:
+        -:  578:            // Update session flag
+    #####:  579:            if (stream_ctx->stream_active) {
+    #####:  580:                *stream_ctx->stream_active = false;
+        -:  581:            }
+        -:  582:        }
+        -:  583:    }
+        -:  584:}
+        -:  585:
+        -:  586:
+        -:  587:
+        4:  588:MultiStreamContext* chat_proxy_multi_stream_start(
+        -:  589:    MultiStreamManager* manager,
+        -:  590:    const ChatEngineConfig* engine,
+        -:  591:    const char* request_json,
+        -:  592:    struct lws* wsi,
+        -:  593:    void* session_data,
+        -:  594:    volatile bool* connection_valid,
+        -:  595:    volatile bool* stream_active,
+        -:  596:    ChatProxyStreamChunkCallback chunk_callback,
+        -:  597:    void* user_data,
+        -:  598:    void (*completion_callback)(void* user_data, bool success),
+        -:  599:    void* completion_user_data
+        -:  600:) {
+       4*:  601:    if (!manager || !manager->initialized || !engine || !request_json) {
+        4:  602:        return NULL;
+        -:  603:    }
+        -:  604:
+        -:  605:    // Allocate stream context
+    #####:  606:    MultiStreamContext* stream_ctx = (MultiStreamContext*)calloc(1, sizeof(MultiStreamContext));
+    #####:  607:    if (!stream_ctx) {
+    #####:  608:        return NULL;
+        -:  609:    }
+        -:  610:    
+        -:  611:    // Initialize stream context
+    #####:  612:    stream_ctx->request_id = NULL;  // Will be set by caller if needed
+    #####:  613:    stream_ctx->engine_name = strdup(engine->name[0] ? engine->name : "unknown");
+    #####:  614:    stream_ctx->wsi = wsi;
+    #####:  615:    stream_ctx->session_data = session_data;
+    #####:  616:    stream_ctx->connection_valid = connection_valid;
+    #####:  617:    stream_ctx->stream_active = stream_active;
+    #####:  618:    stream_ctx->is_rest = (wsi == NULL);
+    #####:  619:    stream_ctx->chunk_callback = chunk_callback;
+    #####:  620:    stream_ctx->user_data = user_data;
+    #####:  621:    stream_ctx->completion_callback = completion_callback;
+    #####:  622:    stream_ctx->completion_user_data = completion_user_data;
+    #####:  623:    stream_ctx->stream_completed = false;
+    #####:  624:    stream_ctx->finish_reason = NULL;
+    #####:  625:    stream_ctx->chunk_index = 0;
+    #####:  626:    stream_ctx->first_chunk_logged = false;
+    #####:  627:    stream_ctx->engine = engine;
+    #####:  628:    stream_ctx->tool_call_acc = NULL;
+    #####:  629:    stream_ctx->local_mcp_round = 0;
+    #####:  630:    stream_ctx->local_mcp_cid = NULL;
+    #####:  631:    stream_ctx->has_context_hashing_stats = false;
+    #####:  632:    stream_ctx->ctx_hashes_used = 0;
+    #####:  633:    stream_ctx->ctx_hashes_missed = 0;
+    #####:  634:    stream_ctx->ctx_bandwidth_saved_bytes = 0;
+    #####:  635:    stream_ctx->ctx_bandwidth_saved_percent = 0.0;
+    #####:  636:    clock_gettime(CLOCK_MONOTONIC, &stream_ctx->start_time);
+        -:  637:    
+        -:  638:    // Initialize chunk queue
+    #####:  639:    chunk_queue_init(&stream_ctx->chunk_queue);
+        -:  640:    
+        -:  641:    // Allocate CURL easy handle
+    #####:  642:    stream_ctx->easy_handle = curl_easy_init();
+    #####:  643:    if (!stream_ctx->easy_handle) {
+    #####:  644:        log_this(SR_CHAT, "Failed to initialize CURL easy handle for multi-stream", LOG_LEVEL_ERROR, 0);
+    #####:  645:        chunk_queue_destroy(&stream_ctx->chunk_queue);
+    #####:  646:        free(stream_ctx->engine_name);
+    #####:  647:        free(stream_ctx);
+    #####:  648:        return NULL;
+        -:  649:    }
+        -:  650:    
+        -:  651:    // Allocate CURL stream context
+    #####:  652:    CurlStreamContext* curl_ctx = (CurlStreamContext*)calloc(1, sizeof(CurlStreamContext));
+    #####:  653:    if (!curl_ctx) {
+    #####:  654:        curl_easy_cleanup(stream_ctx->easy_handle);
+    #####:  655:        chunk_queue_destroy(&stream_ctx->chunk_queue);
+    #####:  656:        free(stream_ctx->engine_name);
+    #####:  657:        free(stream_ctx);
+    #####:  658:        return NULL;
+        -:  659:    }
+        -:  660:    
+    #####:  661:    curl_ctx->stream_ctx = stream_ctx;
+    #####:  662:    curl_ctx->chunk_callback = chunk_callback;
+    #####:  663:    curl_ctx->user_data = user_data;
+    #####:  664:    curl_ctx->line_buffer_capacity = 4096;
+    #####:  665:    curl_ctx->line_buffer = (char*)malloc(curl_ctx->line_buffer_capacity);
+    #####:  666:    if (!curl_ctx->line_buffer) {
+    #####:  667:        free(curl_ctx->post_done_buffer);
+    #####:  668:        free(curl_ctx);
+    #####:  669:        curl_easy_cleanup(stream_ctx->easy_handle);
+    #####:  670:        chunk_queue_destroy(&stream_ctx->chunk_queue);
+    #####:  671:        free(stream_ctx->engine_name);
+    #####:  672:        free(stream_ctx);
+    #####:  673:        return NULL;
+        -:  674:    }
+    #####:  675:    curl_ctx->line_buffer[0] = '\0';
+    #####:  676:    curl_ctx->line_buffer_len = 0;
+    #####:  677:    curl_ctx->bytes_received = 0;
+    #####:  678:    curl_ctx->chunks_processed = 0;
+    #####:  679:    curl_ctx->first_data_logged = false;
+        -:  680:    
+        -:  681:    // Store CURL context in CURL private data
+    #####:  682:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_PRIVATE, curl_ctx);
+        -:  683:    
+        -:  684:    // Build headers exactly like proxy.c (using local variable first)
+    #####:  685:    struct curl_slist* headers = NULL;
+    #####:  686:    headers = curl_slist_append(headers, "Content-Type: application/json");
+    #####:  687:    headers = curl_slist_append(headers, "Accept: text/event-stream");
+        -:  688:    
+        -:  689:    // Log provider type at TRACE for debugging
+    #####:  690:    log_this(SR_CHAT, "Multi-stream provider type: %d (OpenAI=%d, Anthropic=%d)", LOG_LEVEL_TRACE, 3,
+    #####:  691:             engine->provider, CEC_PROVIDER_OPENAI, CEC_PROVIDER_ANTHROPIC);
+        -:  692:    
+    #####:  693:    if (engine->provider == CEC_PROVIDER_ANTHROPIC) {
+        -:  694:        char auth_header[CEC_MAX_KEY_LEN + 32];
+    #####:  695:        snprintf(auth_header, sizeof(auth_header), "x-api-key: %s", engine->api_key);
+    #####:  696:        headers = curl_slist_append(headers, auth_header);
+    #####:  697:        headers = curl_slist_append(headers, "anthropic-version: 2023-06-01");
+    #####:  698:        log_this(SR_CHAT, "Multi-stream using Anthropic headers", LOG_LEVEL_DEBUG, 0);
+        -:  699:    } else {
+        -:  700:        char auth_header[CEC_MAX_KEY_LEN + 32];
+    #####:  701:        snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", engine->api_key);
+    #####:  702:        headers = curl_slist_append(headers, auth_header);
+    #####:  703:        log_this(SR_CHAT, "Multi-stream using OpenAI headers", LOG_LEVEL_DEBUG, 0);
+        -:  704:    }
+        -:  705:    
+        -:  706:    // Store in context for later cleanup
+    #####:  707:    stream_ctx->headers = headers;
+        -:  708:    
+        -:  709:    // Log the API URL for debugging
+    #####:  710:    log_this(SR_CHAT, "Multi-stream API URL: %s", LOG_LEVEL_TRACE, 1, engine->api_url);
+        -:  711:    
+        -:  712:    // Configure CURL options
+    #####:  713:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_URL, engine->api_url);
+        -:  714:    
+        -:  715:    // Log request size at DEBUG, full body at TRACE
+    #####:  716:    size_t request_len = strlen(request_json);
+    #####:  717:    log_this(SR_CHAT, "Multi-stream sending request (%zu bytes)", LOG_LEVEL_DEBUG, 1, request_len);
+    #####:  718:    log_this(SR_CHAT, "Request body: %.200s%s", LOG_LEVEL_TRACE, 2,
+        -:  719:             request_json, request_len > 200 ? "..." : "");
+        -:  720:    
+        -:  721:    // Warn if stream parameter is missing
+    #####:  722:    if (!strstr(request_json, "\"stream\"")) {
+    #####:  723:        log_this(SR_CHAT, "WARNING: Request does NOT contain stream parameter!", LOG_LEVEL_ERROR, 0);
+        -:  724:    }
+        -:  725:    
+        -:  726:    // Make a copy of the request body that we own (original may be freed)
+    #####:  727:    stream_ctx->request_body = strdup(request_json);
+    #####:  728:    if (!stream_ctx->request_body) {
+    #####:  729:        log_this(SR_CHAT, "Failed to copy request body", LOG_LEVEL_ERROR, 0);
+    #####:  730:        free(curl_ctx->line_buffer);
+    #####:  731:        free(curl_ctx->post_done_buffer);
+    #####:  732:        free(curl_ctx);
+    #####:  733:        curl_easy_cleanup(stream_ctx->easy_handle);
+    #####:  734:        chunk_queue_destroy(&stream_ctx->chunk_queue);
+    #####:  735:        free(stream_ctx->engine_name);
+    #####:  736:        free(stream_ctx);
+    #####:  737:        return NULL;
+        -:  738:    }
+        -:  739:    
+    #####:  740:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_POSTFIELDS, stream_ctx->request_body);
+    #####:  741:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_POSTFIELDSIZE, (long)request_len);
+    #####:  742:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_HTTPHEADER, stream_ctx->headers);
+    #####:  743:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_WRITEFUNCTION, multi_stream_write_callback);
+    #####:  744:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_WRITEDATA, curl_ctx);
+        -:  745:
+        -:  746:    // Use streaming config timeouts (from ChatProxyConfig) instead of hardcoded literals
+    #####:  747:    ChatProxyConfig stream_config = chat_proxy_get_streaming_config();
+    #####:  748:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_CONNECTTIMEOUT,
+        -:  749:                     (long)stream_config.connect_timeout_seconds);
+    #####:  750:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_TIMEOUT,
+        -:  751:                     (long)stream_config.request_timeout_seconds);
+        -:  752:
+        -:  753:    // Low-speed detection: if the provider trickles data slower than 100 bytes/sec
+        -:  754:    // for 30 seconds, abort the transfer so the stream slot isn't held indefinitely
+    #####:  755:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_LOW_SPEED_LIMIT, 100L);
+    #####:  756:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_LOW_SPEED_TIME, 30L);
+        -:  757:
+    #####:  758:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_SSL_VERIFYPEER, 1L);
+    #####:  759:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_SSL_VERIFYHOST, 2L);
+    #####:  760:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_FOLLOWLOCATION, 1L);
+    #####:  761:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_MAXREDIRS, 3L);
+    #####:  762:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_USERAGENT, "Hydrogen-Chat-Proxy-Multi/1.0");
+    #####:  763:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_NOSIGNAL, 1L);  // Thread-safe
+        -:  764:    
+        -:  765:    // Enable debug callback for connection diagnostics and header logging
+    #####:  766:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_DEBUGFUNCTION, multi_stream_debug_callback);
+    #####:  767:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_VERBOSE, 1L);
+        -:  768:    
+        -:  769:    // Add to multi handle
+    #####:  770:    CURLMcode mc = curl_multi_add_handle(manager->multi_handle, stream_ctx->easy_handle);
+    #####:  771:    if (mc != CURLM_OK) {
+    #####:  772:        log_this(SR_CHAT, "Failed to add handle to multi: %s", LOG_LEVEL_ERROR, 1, curl_multi_strerror(mc));
+    #####:  773:        free(curl_ctx->line_buffer);
+    #####:  774:        free(curl_ctx->post_done_buffer);
+    #####:  775:        free(curl_ctx);
+    #####:  776:        curl_slist_free_all(stream_ctx->headers);
+    #####:  777:        curl_easy_cleanup(stream_ctx->easy_handle);
+    #####:  778:        chunk_queue_destroy(&stream_ctx->chunk_queue);
+    #####:  779:        free(stream_ctx->engine_name);
+    #####:  780:        free(stream_ctx->request_body);
+    #####:  781:        free(stream_ctx);
+    #####:  782:        return NULL;
+        -:  783:    }
+        -:  784:    
+        -:  785:    // Add to active streams list
+    #####:  786:    pthread_mutex_lock(&manager->streams_mutex);
+    #####:  787:    stream_ctx->next = manager->active_streams;
+    #####:  788:    stream_ctx->prev = NULL;
+    #####:  789:    if (manager->active_streams) {
+    #####:  790:        manager->active_streams->prev = stream_ctx;
+        -:  791:    }
+    #####:  792:    manager->active_streams = stream_ctx;
+    #####:  793:    pthread_mutex_unlock(&manager->streams_mutex);
+        -:  794:    
+        -:  795:    // Mark stream as active
+    #####:  796:    if (stream_ctx->stream_active) {
+    #####:  797:        *stream_ctx->stream_active = true;
+        -:  798:    }
+        -:  799:    
+    #####:  800:    log_this(SR_CHAT, "Multi-stream started: %s", LOG_LEVEL_DEBUG, 1, engine->name);
+        -:  801:    
+    #####:  802:    return stream_ctx;
+        -:  803:}
+        -:  804:
+        3:  805:bool chat_proxy_multi_restart_easy(MultiStreamManager* manager,
+        -:  806:                                   MultiStreamContext* stream_ctx,
+        -:  807:                                   const char* request_json) {
+        -:  808:    CurlStreamContext* curl_ctx;
+        -:  809:    const ChatEngineConfig* engine;
+        -:  810:    size_t request_len;
+        -:  811:    CURLMcode mc;
+        -:  812:    ChatProxyConfig stream_config;
+        -:  813:
+       3*:  814:    if (!manager || !manager->initialized || !stream_ctx || !request_json || !stream_ctx->engine) {
+        3:  815:        return false;
+        -:  816:    }
+    #####:  817:    engine = stream_ctx->engine;
+    #####:  818:    free(stream_ctx->request_body);
+    #####:  819:    stream_ctx->request_body = strdup(request_json);
+    #####:  820:    if (!stream_ctx->request_body) {
+    #####:  821:        return false;
+        -:  822:    }
+    #####:  823:    stream_ctx->easy_handle = curl_easy_init();
+    #####:  824:    if (!stream_ctx->easy_handle) {
+    #####:  825:        return false;
+        -:  826:    }
+    #####:  827:    curl_ctx = (CurlStreamContext*)calloc(1, sizeof(CurlStreamContext));
+    #####:  828:    if (!curl_ctx) {
+    #####:  829:        curl_easy_cleanup(stream_ctx->easy_handle);
+    #####:  830:        stream_ctx->easy_handle = NULL;
+    #####:  831:        return false;
+        -:  832:    }
+    #####:  833:    curl_ctx->stream_ctx = stream_ctx;
+    #####:  834:    curl_ctx->chunk_callback = stream_ctx->chunk_callback;
+    #####:  835:    curl_ctx->user_data = stream_ctx->user_data;
+    #####:  836:    curl_ctx->line_buffer_capacity = 4096;
+    #####:  837:    curl_ctx->line_buffer = (char*)malloc(curl_ctx->line_buffer_capacity);
+    #####:  838:    if (!curl_ctx->line_buffer) {
+    #####:  839:        free(curl_ctx);
+    #####:  840:        curl_easy_cleanup(stream_ctx->easy_handle);
+    #####:  841:        stream_ctx->easy_handle = NULL;
+    #####:  842:        return false;
+        -:  843:    }
+    #####:  844:    curl_ctx->line_buffer[0] = '\0';
+    #####:  845:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_PRIVATE, curl_ctx);
+    #####:  846:    request_len = strlen(request_json);
+    #####:  847:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_URL, engine->api_url);
+    #####:  848:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_POSTFIELDS, stream_ctx->request_body);
+    #####:  849:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_POSTFIELDSIZE, (long)request_len);
+    #####:  850:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_HTTPHEADER, stream_ctx->headers);
+    #####:  851:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_WRITEFUNCTION, multi_stream_write_callback);
+    #####:  852:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_WRITEDATA, curl_ctx);
+    #####:  853:    stream_config = chat_proxy_get_streaming_config();
+    #####:  854:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_CONNECTTIMEOUT,
+        -:  855:                     (long)stream_config.connect_timeout_seconds);
+    #####:  856:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_TIMEOUT,
+        -:  857:                     (long)stream_config.request_timeout_seconds);
+    #####:  858:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_SSL_VERIFYPEER, 1L);
+    #####:  859:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_SSL_VERIFYHOST, 2L);
+    #####:  860:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_NOSIGNAL, 1L);
+    #####:  861:    curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_USERAGENT, "Hydrogen-Chat-Proxy-Multi/1.0");
+    #####:  862:    mc = curl_multi_add_handle(manager->multi_handle, stream_ctx->easy_handle);
+    #####:  863:    if (mc != CURLM_OK) {
+    #####:  864:        free(curl_ctx->line_buffer);
+    #####:  865:        free(curl_ctx);
+    #####:  866:        curl_easy_cleanup(stream_ctx->easy_handle);
+    #####:  867:        stream_ctx->easy_handle = NULL;
+    #####:  868:        return false;
+        -:  869:    }
+    #####:  870:    log_this(SR_CHAT, "local_mcp stream continue round=%d", LOG_LEVEL_STATE, 1,
+        -:  871:             stream_ctx->local_mcp_round);
+    #####:  872:    return true;
+        -:  873:}
+        -:  874:
+        2:  875:void chat_proxy_multi_stream_stop(MultiStreamManager* manager, MultiStreamContext* context) {
+        2:  876:    if (!manager || !context) {
+        2:  877:        return;
+        -:  878:    }
+        -:  879:
+        -:  880:    // NOTE: Don't set *connection_valid = false here!
+        -:  881:    // The connection_valid flag is shared across all streams for the same WebSocket session.
+        -:  882:    // Setting it to false would prevent subsequent streams from sending data.
+        -:  883:    // The flag is only set to false by chat_session_cleanup() when the actual WebSocket closes.
+        -:  884:
+        -:  885:    // Remove CURL handle from multi and free it completely.
+        -:  886:    // curl_multi_remove_handle() prevents CURLMSG_DONE from firing, so we must
+        -:  887:    // perform the same cleanup inline that chat_proxy_multi_handle_completed_transfer()
+        -:  888:    // does for the easy handle and CurlStreamContext — otherwise every client
+        -:  889:    // disconnect mid-stream leaks the easy handle, line buffers, and stream context.
+    #####:  890:    if (context->easy_handle) {
+    #####:  891:        void* priv_data = NULL;
+    #####:  892:        curl_easy_getinfo(context->easy_handle, CURLINFO_PRIVATE, &priv_data);
+        -:  893:
+    #####:  894:        curl_multi_remove_handle(manager->multi_handle, context->easy_handle);
+    #####:  895:        curl_easy_cleanup(context->easy_handle);
+    #####:  896:        context->easy_handle = NULL;
+        -:  897:
+    #####:  898:        if (priv_data) {
+    #####:  899:            CurlStreamContext* curl_ctx = (CurlStreamContext*)priv_data;
+    #####:  900:            free(curl_ctx->line_buffer);
+    #####:  901:            free(curl_ctx->post_done_buffer);
+    #####:  902:            free(curl_ctx);
+        -:  903:        }
+        -:  904:    }
+        -:  905:
+        -:  906:    // Free headers
+    #####:  907:    if (context->headers) {
+    #####:  908:        curl_slist_free_all(context->headers);
+    #####:  909:        context->headers = NULL;
+        -:  910:    }
+        -:  911:
+        -:  912:    // Mark stream as completed so chat_proxy_multi_perform() will free the context
+    #####:  913:    context->stream_completed = true;
+        -:  914:
+        -:  915:    // Update session flag
+    #####:  916:    if (context->stream_active) {
+    #####:  917:        *context->stream_active = false;
+        -:  918:    }
+        -:  919:}
+        -:  920:
+        -:  921:// ============================================================================
+        -:  922: // Queue Operations Implementation
+        -:  923: // ============================================================================
+        -:  924:
+        2:  925:int chat_proxy_multi_drain_queue(MultiStreamContext* context) {
+        2:  926:    if (!context) {
+    #####:  927:        return -1;
+        -:  928:    }
+        -:  929:    
+        2:  930:    int chunks_written = 0;
+        -:  931:    
+        3:  932:    while (chunk_queue_has_data(&context->chunk_queue)) {
+        1:  933:        StreamChunkNode* node = chunk_queue_dequeue(&context->chunk_queue);
+        1:  934:        if (!node) {
+    #####:  935:            break;
+        -:  936:        }
+        -:  937:        
+        -:  938:        // Check connection validity before writing
+       1*:  939:        if (context->connection_valid && !*context->connection_valid) {
+    #####:  940:            free(node->json_data);
+    #####:  941:            free(node);
+    #####:  942:            break;
+        -:  943:        }
+        -:  944:        
+        -:  945:        // Write to WebSocket (this MUST be called from LWS service thread)
+        1:  946:        int result = ws_write_raw_data(context->wsi, node->json_data, node->data_len);
+        -:  947:        
+        1:  948:        free(node->json_data);
+        1:  949:        free(node);
+        -:  950:        
+        1:  951:        if (result != 0) {
+    #####:  952:            log_this(SR_WEBSOCKET_CHAT, "Multi-stream write failed", LOG_LEVEL_DEBUG, 0);
+    #####:  953:            break;
+        -:  954:        }
+        -:  955:        
+        1:  956:        chunks_written++;
+        -:  957:    }
+        -:  958:    
+        2:  959:    return chunks_written;
+        -:  960:}
+        -:  961:
+        1:  962:void chat_proxy_multi_request_writable(MultiStreamContext* context) {
+       1*:  963:    if (!context || !context->wsi) {
+        1:  964:        return;
+        -:  965:    }
+        -:  966:    
+        -:  967:    // Request LWS writable callback
+        -:  968:    // This will trigger handle_chat_writable() on the LWS service thread
+    #####:  969:    lws_callback_on_writable(context->wsi);
+        -:  970:    
+        -:  971:    // Cancel the current lws_service() wait so the writable callback is processed immediately
+        -:  972:    // Without this, the LWS service loop would wait up to 50ms before checking for writable,
+        -:  973:    // causing chunks to queue up and potentially drop when the queue fills
+    #####:  974:    struct lws_context* ctx = lws_get_context(context->wsi);
+    #####:  975:    if (ctx) {
+    #####:  976:        lws_cancel_service(ctx);
+        -:  977:    }
+        -:  978:}
+        -:  979:
+        -:  980:

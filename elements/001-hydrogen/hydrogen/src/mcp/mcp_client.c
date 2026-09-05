@@ -256,6 +256,8 @@ bool mcp_client_initialize(const char *url,
         return false;
     }
     resp = mcp_client_http_post(url, authorization, NULL, req, &session);
+    fprintf(stderr, "DEBUG mcp_client_initialize: resp='%s' len=%zu\n",
+            resp ? resp : "(null)", resp ? strlen(resp) : 0);
     free(req);
     ok = mcp_client_rpc_parse_result(resp, &result, out_error);
     free(resp);
@@ -299,6 +301,8 @@ bool mcp_client_tools_list(const char *url,
         return false;
     }
     resp = mcp_client_http_post(url, authorization, session_id, req, NULL);
+    fprintf(stderr, "DEBUG mcp_client_tools_list: resp='%s' len=%zu\n",
+            resp ? resp : "(null)", resp ? strlen(resp) : 0);
     free(req);
     ok = mcp_client_rpc_parse_result(resp, &result, out_error);
     free(resp);
@@ -583,6 +587,7 @@ json_t *mcp_client_fetch_tools(const char *url,
         return NULL;
     }
     if (!mcp_client_initialize(url, authorization, &session, &error)) {
+        fprintf(stderr, "DEBUG fetch_tools: init failed url=%s err=%s\n", url, error ? error : "(none)");
         log_this(SR_MCP, "local_mcp initialize failed url=%s err=%s (cid=%s)",
                  LOG_LEVEL_ERROR, 3, url, error ? error : "unknown", cid);
         free(error);
@@ -590,6 +595,7 @@ json_t *mcp_client_fetch_tools(const char *url,
         return NULL;
     }
     if (!mcp_client_tools_list(url, authorization, session, &listed, &error)) {
+        fprintf(stderr, "DEBUG fetch_tools: tools_list failed url=%s err=%s\n", url, error ? error : "(none)");
         log_this(SR_MCP, "local_mcp tools/list failed url=%s err=%s (cid=%s)",
                  LOG_LEVEL_ERROR, 3, url, error ? error : "unknown", cid);
         free(error);
