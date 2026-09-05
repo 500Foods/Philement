@@ -47,8 +47,9 @@ size_t chat_metrics_generate_prometheus(char* buffer, size_t buffer_size);
 /* ----------------------------------------------------------------------------
  * The following helper is NOT part of the stable public API. It is exposed
  * (non-static) solely so the Unity test framework can call it directly.
- * -------------------------------------------------------------------------- */
-typedef struct ChatMetricEntry ChatMetricEntry;  /* opaque: defined privately in metrics.c */
+ * The full struct is defined here (not opaque) so tests can verify the
+ * internal fields after metric calls. */
+typedef struct ChatMetricEntry ChatMetricEntry;
 ChatMetricEntry* chat_metrics_get_metric_entry(const char* database, const char* engine);
 
 /* Writes a single Prometheus metric line ("name{labels} value") into buffer at
@@ -56,5 +57,28 @@ ChatMetricEntry* chat_metrics_get_metric_entry(const char* database, const char*
  * full / the write is truncated. Exposed (non-static) for Unity testing. */
 size_t chat_metrics_write_metric(char* buffer, size_t offset, size_t buffer_size,
                                  const char* name, const char* labels, double value);
+
+struct ChatMetricEntry {
+    char database[64];
+    char engine[64];
+    char provider[32];
+
+    /* Gauges */
+    double health;              // 1.0 = healthy, 0.0 = unhealthy
+    double response_time_ms;
+
+    /* Counters */
+    unsigned long long conversations_total;
+    unsigned long long tokens_prompt_total;
+    unsigned long long tokens_completion_total;
+    unsigned long long errors_total;
+
+    /* Request duration histogram (simplified: just track sum and count) */
+    double request_duration_sum;
+    unsigned long long request_duration_count;
+
+    /* Last update time */
+    time_t last_update;
+};
 
 #endif // METRICS_H
