@@ -1,0 +1,632 @@
+        -:    0:Source:/mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/src/api/wschat/helpers/proxy.c
+        -:    0:Graph:build/unity/src/api/wschat/helpers/proxy.gcno
+        -:    0:Data:build/unity/src/api/wschat/helpers/proxy.gcda
+        -:    0:Runs:5
+        -:    1:/*
+        -:    2: * Chat Proxy - HTTP Client for AI API Requests
+        -:    3: *
+        -:    4: * Uses libcurl to send HTTP POST requests to external AI APIs.
+        -:    5: * Handles request timing, response collection, and error conditions.
+        -:    6: */
+        -:    7:
+        -:    8:// Project includes
+        -:    9:#include <src/hydrogen.h>
+        -:   10:
+        -:   11:// Local includes
+        -:   12:#include "proxy.h"
+        -:   13:#include "resp_parser.h"
+        -:   14:#include "proxy_multi.h"
+        -:   15:#include <src/queue/queue.h>
+        -:   16:#include <src/threads/threads.h>
+        -:   17:
+        -:   18:// Global multi-stream manager instance (singleton)
+        -:   19:static MultiStreamManager g_multi_manager = {0};
+        -:   20:
+        -:   21:// Default proxy configuration
+        -:   22:#define DEFAULT_CONNECT_TIMEOUT_SECONDS 10
+        -:   23:#define DEFAULT_REQUEST_TIMEOUT_SECONDS 60
+        -:   24:#define DEFAULT_MAX_RETRIES 2
+        -:   25:#define DEFAULT_VERIFY_SSL true
+        -:   26:
+        -:   27:// Streaming configuration - longer timeout for AI responses
+        -:   28:#define STREAMING_CONNECT_TIMEOUT_SECONDS 10
+        -:   29:#define STREAMING_REQUEST_TIMEOUT_SECONDS 600  // 10 minutes for streaming AI responses
+        -:   30:#define STREAMING_MAX_RETRIES 0  // No retries for streaming (would restart the stream)
+        -:   31:#define STREAMING_VERIFY_SSL true
+        -:   32:
+        -:   33:// Initial response buffer size (64KB)
+        -:   34:#define INITIAL_RESPONSE_BUFFER_SIZE (64 * 1024)
+        -:   35:
+        -:   36:// Maximum response size (8MB to prevent memory exhaustion)
+        -:   37:#define MAX_RESPONSE_SIZE (8 * 1024 * 1024)
+        -:   38:
+        -:   39:// CURL write callback for collecting response data
+    #####:   40: size_t chat_proxy_write_callback(const void* contents, size_t size, size_t nmemb, void* userp) {
+    #####:   41:    size_t realsize = size * nmemb;
+    #####:   42:    ChatResponseBuffer* buffer = (ChatResponseBuffer*)userp;
+        -:   43:
+    #####:   44:    if (!buffer) {
+    #####:   45:        return 0;
+        -:   46:    }
+        -:   47:
+    #####:   48:    if (!contents) {
+    #####:   49:        return 0;
+        -:   50:    }
+        -:   51:
+        -:   52:    // Check for maximum size
+    #####:   53:    if (buffer->size + realsize > MAX_RESPONSE_SIZE) {
+    #####:   54:        log_this(SR_CHAT, "Response exceeds maximum size limit", LOG_LEVEL_ERROR, 0);
+    #####:   55:        return 0;  // This will cause CURL to return an error
+        -:   56:    }
+        -:   57:
+        -:   58:    // Resize buffer if needed
+    #####:   59:    if (buffer->size + realsize > buffer->capacity) {
+    #####:   60:        size_t new_capacity = buffer->capacity * 2;
+    #####:   61:        while (new_capacity < buffer->size + realsize) {
+    #####:   62:            new_capacity *= 2;
+        -:   63:        }
+        -:   64:
+    #####:   65:        char* new_data = (char*)realloc(buffer->data, new_capacity);
+    #####:   66:        if (!new_data) {
+    #####:   67:            log_this(SR_CHAT, "Failed to allocate memory for response buffer", LOG_LEVEL_ERROR, 0);
+    #####:   68:            return 0;
+        -:   69:        }
+        -:   70:
+    #####:   71:        buffer->data = new_data;
+    #####:   72:        buffer->capacity = new_capacity;
+        -:   73:    }
+        -:   74:
+        -:   75:    // Append data
+    #####:   76:    memcpy(buffer->data + buffer->size, contents, realsize);
+    #####:   77:    buffer->size += realsize;
+    #####:   78:    buffer->data[buffer->size] = '\0';
+        -:   79:
+    #####:   80:    return realsize;
+        -:   81:}
+        -:   82:
+        -:   83:// Create proxy result
+    #####:   84:ChatProxyResult* chat_proxy_result_create(void) {
+    #####:   85:    ChatProxyResult* result = (ChatProxyResult*)calloc(1, sizeof(ChatProxyResult));
+    #####:   86:    if (!result) {
+    #####:   87:        return NULL;
+        -:   88:    }
+    #####:   89:    result->code = CHAT_PROXY_ERROR_UNKNOWN;
+    #####:   90:    result->http_status = 0;
+    #####:   91:    result->response_body = NULL;
+    #####:   92:    result->response_size = 0;
+    #####:   93:    result->total_time_ms = 0.0;
+    #####:   94:    result->error_message = NULL;
+    #####:   95:    return result;
+        -:   96:}
+        -:   97:
+        -:   98:// Destroy proxy result
+    #####:   99:void chat_proxy_result_destroy(ChatProxyResult* result) {
+    #####:  100:    if (!result) return;
+    #####:  101:    free(result->response_body);
+    #####:  102:    free(result->error_message);
+    #####:  103:    free(result);
+        -:  104:}
+        -:  105:
+        -:  106:// Get default proxy configuration
+        4:  107:ChatProxyConfig chat_proxy_get_default_config(void) {
+        -:  108:    ChatProxyConfig config;
+        4:  109:    config.connect_timeout_seconds = DEFAULT_CONNECT_TIMEOUT_SECONDS;
+        4:  110:    config.request_timeout_seconds = DEFAULT_REQUEST_TIMEOUT_SECONDS;
+        4:  111:    config.max_retries = DEFAULT_MAX_RETRIES;
+        4:  112:    config.verify_ssl = DEFAULT_VERIFY_SSL;
+        4:  113:    return config;
+        -:  114:}
+        -:  115:
+        -:  116:// Get streaming-specific configuration with longer timeout
+    #####:  117:ChatProxyConfig chat_proxy_get_streaming_config(void) {
+        -:  118:    ChatProxyConfig config;
+    #####:  119:    config.connect_timeout_seconds = STREAMING_CONNECT_TIMEOUT_SECONDS;
+    #####:  120:    config.request_timeout_seconds = STREAMING_REQUEST_TIMEOUT_SECONDS;
+    #####:  121:    config.max_retries = STREAMING_MAX_RETRIES;
+    #####:  122:    config.verify_ssl = STREAMING_VERIFY_SSL;
+    #####:  123:    return config;
+        -:  124:}
+        -:  125:
+        -:  126:// Check if result is success
+        1:  127:bool chat_proxy_result_is_success(const ChatProxyResult* result) {
+       1*:  128:    return result && result->code == CHAT_PROXY_OK && result->http_status >= 200 && result->http_status < 300;
+        -:  129:}
+        -:  130:
+        -:  131:// Check if request should be retried
+    #####:  132:bool chat_proxy_result_should_retry(const ChatProxyResult* result) {
+    #####:  133:    if (!result) return false;
+        -:  134:
+        -:  135:    // Retry on specific result codes
+    #####:  136:    if (result->code == CHAT_PROXY_ERROR_TIMEOUT ||
+    #####:  137:        result->code == CHAT_PROXY_ERROR_NETWORK ||
+    #####:  138:        result->code == CHAT_PROXY_ERROR_CONNECT) {
+    #####:  139:        return true;
+        -:  140:    }
+        -:  141:
+        -:  142:    // Retry on specific HTTP status codes
+    #####:  143:    if (result->http_status == 429 ||  // Too Many Requests
+    #####:  144:        result->http_status == 502 ||  // Bad Gateway
+    #####:  145:        result->http_status == 503 ||  // Service Unavailable
+    #####:  146:        result->http_status == 504) {  // Gateway Timeout
+    #####:  147:        return true;
+        -:  148:    }
+        -:  149:
+    #####:  150:    return false;
+        -:  151:}
+        -:  152:
+        -:  153:// Main proxy function - send request to AI API
+    #####:  154:ChatProxyResult* chat_proxy_send_request(const ChatEngineConfig* engine,
+        -:  155:                                         const char* request_json,
+        -:  156:                                         const ChatProxyConfig* config) {
+    #####:  157:    ChatProxyResult* result = chat_proxy_result_create();
+    #####:  158:    if (!result) {
+    #####:  159:        return NULL;
+        -:  160:    }
+        -:  161:
+    #####:  162:    if (!engine || !request_json || !config || !engine->api_url[0]) {
+    #####:  163:        result->code = CHAT_PROXY_ERROR_INIT;
+    #####:  164:        result->error_message = strdup("Invalid parameters");
+    #####:  165:        return result;
+        -:  166:    }
+        -:  167:
+        -:  168:    // Initialize response buffer
+        -:  169:    ChatResponseBuffer response_buffer;
+    #####:  170:    response_buffer.data = (char*)malloc(INITIAL_RESPONSE_BUFFER_SIZE);
+    #####:  171:    if (!response_buffer.data) {
+    #####:  172:        result->code = CHAT_PROXY_ERROR_MEMORY;
+    #####:  173:        result->error_message = strdup("Failed to allocate response buffer");
+    #####:  174:        return result;
+        -:  175:    }
+    #####:  176:    response_buffer.data[0] = '\0';
+    #####:  177:    response_buffer.size = 0;
+    #####:  178:    response_buffer.capacity = INITIAL_RESPONSE_BUFFER_SIZE;
+        -:  179:
+        -:  180:    // Initialize CURL
+    #####:  181:    CURL* curl = curl_easy_init();
+    #####:  182:    if (!curl) {
+    #####:  183:        result->code = CHAT_PROXY_ERROR_INIT;
+    #####:  184:        result->error_message = strdup("Failed to initialize CURL");
+    #####:  185:        free(response_buffer.data);
+    #####:  186:        return result;
+        -:  187:    }
+        -:  188:
+        -:  189:    // Build headers based on provider
+    #####:  190:    struct curl_slist* headers = NULL;
+    #####:  191:    headers = curl_slist_append(headers, "Content-Type: application/json");
+        -:  192:
+    #####:  193:    if (engine->provider == CEC_PROVIDER_ANTHROPIC) {
+        -:  194:        // Anthropic uses x-api-key header
+        -:  195:        char auth_header[CEC_MAX_KEY_LEN + 32];
+    #####:  196:        snprintf(auth_header, sizeof(auth_header), "x-api-key: %s", engine->api_key);
+    #####:  197:        headers = curl_slist_append(headers, auth_header);
+        -:  198:        // Anthropic requires version header
+    #####:  199:        headers = curl_slist_append(headers, "anthropic-version: 2023-06-01");
+        -:  200:    } else {
+        -:  201:        // OpenAI-compatible providers use Bearer token
+        -:  202:        char auth_header[CEC_MAX_KEY_LEN + 32];
+    #####:  203:        snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", engine->api_key);
+    #####:  204:        headers = curl_slist_append(headers, auth_header);
+        -:  205:    }
+        -:  206:
+        -:  207:    // Configure CURL options
+    #####:  208:    curl_easy_setopt(curl, CURLOPT_URL, engine->api_url);
+    #####:  209:    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, request_json);
+    #####:  210:    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    #####:  211:    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, chat_proxy_write_callback);
+    #####:  212:    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void*)&response_buffer);
+    #####:  213:    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, (long)config->connect_timeout_seconds);
+    #####:  214:    curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)config->request_timeout_seconds);
+    #####:  215:    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, config->verify_ssl ? 1L : 0L);
+    #####:  216:    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, config->verify_ssl ? 2L : 0L);
+        -:  217:
+        -:  218:    // Enable following redirects (some APIs may redirect)
+    #####:  219:    curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
+    #####:  220:    curl_easy_setopt(curl, CURLOPT_MAXREDIRS, 3L);
+        -:  221:
+        -:  222:    // Set user agent
+    #####:  223:    curl_easy_setopt(curl, CURLOPT_USERAGENT, "Hydrogen-Chat-Proxy/1.0");
+        -:  224:
+        -:  225:    // Perform request
+    #####:  226:    CURLcode curl_result = curl_easy_perform(curl);
+        -:  227:
+        -:  228:    // Get timing info
+    #####:  229:    curl_easy_getinfo(curl, CURLINFO_TOTAL_TIME, &result->total_time_ms);
+    #####:  230:    result->total_time_ms *= 1000.0;  // Convert to milliseconds
+        -:  231:
+        -:  232:    // Get HTTP status
+    #####:  233:    long http_code = 0;
+    #####:  234:    curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &http_code);
+    #####:  235:    result->http_status = (int)http_code;
+        -:  236:
+        -:  237:    // Process result
+    #####:  238:    if (curl_result != CURLE_OK) {
+        -:  239:        // CURL error
+    #####:  240:        if (curl_result == CURLE_COULDNT_CONNECT ||
+        -:  241:            curl_result == CURLE_COULDNT_RESOLVE_HOST) {
+    #####:  242:            result->code = CHAT_PROXY_ERROR_CONNECT;
+    #####:  243:        } else if (curl_result == CURLE_OPERATION_TIMEDOUT) {
+    #####:  244:            result->code = CHAT_PROXY_ERROR_TIMEOUT;
+    #####:  245:        } else if (curl_result == CURLE_OUT_OF_MEMORY) {
+    #####:  246:            result->code = CHAT_PROXY_ERROR_MEMORY;
+    #####:  247:        } else if (curl_result == CURLE_WRITE_ERROR) {
+    #####:  248:            result->code = CHAT_PROXY_ERROR_MEMORY;
+        -:  249:        } else {
+    #####:  250:            result->code = CHAT_PROXY_ERROR_NETWORK;
+        -:  251:        }
+    #####:  252:        result->error_message = strdup(curl_easy_strerror(curl_result));
+    #####:  253:        log_this(SR_CHAT, "CURL error: %s", LOG_LEVEL_ERROR, 1, curl_easy_strerror(curl_result));
+        -:  254:    } else {
+        -:  255:        // HTTP response received
+    #####:  256:        result->response_body = response_buffer.data;
+    #####:  257:        result->response_size = response_buffer.size;
+        -:  258:
+    #####:  259:        if (http_code >= 200 && http_code < 300) {
+    #####:  260:            result->code = CHAT_PROXY_OK;
+    #####:  261:            log_this(SR_CHAT, "Request successful: HTTP %ld, %.2fms", LOG_LEVEL_DEBUG, 2, http_code, result->total_time_ms);
+    #####:  262:        } else if (http_code >= 400 && http_code < 500) {
+    #####:  263:            result->code = CHAT_PROXY_ERROR_HTTP_4XX;
+    #####:  264:            result->error_message = strdup("HTTP client error");
+    #####:  265:            log_this(SR_CHAT, "HTTP client error: %ld", LOG_LEVEL_ERROR, 1, http_code);
+    #####:  266:        } else if (http_code >= 500) {
+    #####:  267:            result->code = CHAT_PROXY_ERROR_HTTP_5XX;
+    #####:  268:            result->error_message = strdup("HTTP server error");
+    #####:  269:            log_this(SR_CHAT, "HTTP server error: %ld", LOG_LEVEL_ERROR, 1, http_code);
+        -:  270:        } else {
+    #####:  271:            result->code = CHAT_PROXY_ERROR_UNKNOWN;
+    #####:  272:            result->error_message = strdup("Unexpected HTTP response");
+    #####:  273:            log_this(SR_CHAT, "Unexpected HTTP response: %ld", LOG_LEVEL_ERROR, 1, http_code);
+        -:  274:        }
+        -:  275:    }
+        -:  276:
+        -:  277:    // Cleanup
+    #####:  278:    curl_slist_free_all(headers);
+    #####:  279:    curl_easy_cleanup(curl);
+        -:  280:
+        -:  281:    // If there was an error, free the response buffer
+    #####:  282:    if (result->code != CHAT_PROXY_OK && response_buffer.data != result->response_body) {
+    #####:  283:        free(response_buffer.data);
+        -:  284:    }
+        -:  285:
+    #####:  286:    return result;
+        -:  287:}
+        -:  288:
+        -:  289:// Send with retry logic
+    #####:  290:ChatProxyResult* chat_proxy_send_with_retry(const ChatEngineConfig* engine,
+        -:  291:                                             const char* request_json,
+        -:  292:                                             const ChatProxyConfig* config) {
+    #####:  293:    ChatProxyResult* result = NULL;
+    #####:  294:    int attempts = 0;
+    #####:  295:    int max_attempts = config->max_retries + 1;  // Initial attempt + retries
+        -:  296:
+    #####:  297:    while (attempts < max_attempts) {
+    #####:  298:        attempts++;
+        -:  299:
+        -:  300:        // Send request
+    #####:  301:        result = chat_proxy_send_request(engine, request_json, config);
+        -:  302:
+        -:  303:        // Check if successful or shouldn't retry
+    #####:  304:        if (chat_proxy_result_is_success(result) || !chat_proxy_result_should_retry(result)) {
+        -:  305:            break;
+        -:  306:        }
+        -:  307:
+        -:  308:        // Don't retry on last attempt
+    #####:  309:        if (attempts >= max_attempts) {
+    #####:  310:            log_this(SR_CHAT, "All retry attempts exhausted", LOG_LEVEL_ERROR, 0);
+    #####:  311:            break;
+        -:  312:        }
+        -:  313:
+        -:  314:        // Calculate backoff delay with jitter: base * 2^(attempt-1) + random(0-1000ms)
+    #####:  315:        int base_delay = 1000;  // 1 second base
+    #####:  316:        int delay_ms = base_delay * (1 << (attempts - 1));
+    #####:  317:        int jitter = rand() % 1000;  // 0-1000ms jitter
+    #####:  318:        delay_ms += jitter;
+        -:  319:
+    #####:  320:        log_this(SR_CHAT, "Retrying after %dms (attempt %d/%d)", LOG_LEVEL_DEBUG, 3, delay_ms, attempts, max_attempts);
+        -:  321:
+        -:  322:        // Sleep before retry (convert to microseconds for usleep)
+    #####:  323:        usleep((useconds_t)(delay_ms * 1000));
+        -:  324:
+        -:  325:        // Clean up failed result before retry
+    #####:  326:        chat_proxy_result_destroy(result);
+    #####:  327:        result = NULL;
+        -:  328:    }
+        -:  329:
+    #####:  330:    return result ? result : chat_proxy_result_create();
+        -:  331:}
+        -:  332:
+        -:  333:// Create multi-result structure
+    #####:  334:ChatMultiResult* chat_multi_result_create(size_t count) {
+    #####:  335:    ChatMultiResult* multi = (ChatMultiResult*)calloc(1, sizeof(ChatMultiResult));
+    #####:  336:    if (!multi) {
+    #####:  337:        return NULL;
+        -:  338:    }
+        -:  339:
+    #####:  340:    multi->results = (ChatProxyResult**)calloc(count, sizeof(ChatProxyResult*));
+    #####:  341:    if (!multi->results) {
+    #####:  342:        free(multi);
+    #####:  343:        return NULL;
+        -:  344:    }
+        -:  345:
+    #####:  346:    multi->count = count;
+    #####:  347:    multi->total_time_ms = 0.0;
+    #####:  348:    multi->success_count = 0;
+    #####:  349:    multi->failure_count = 0;
+        -:  350:
+    #####:  351:    return multi;
+        -:  352:}
+        -:  353:
+        -:  354:// Destroy multi-result structure
+    #####:  355:void chat_multi_result_destroy(ChatMultiResult* multi_result) {
+    #####:  356:    if (!multi_result) return;
+        -:  357:
+    #####:  358:    if (multi_result->results) {
+    #####:  359:        for (size_t i = 0; i < multi_result->count; i++) {
+    #####:  360:            chat_proxy_result_destroy(multi_result->results[i]);
+        -:  361:        }
+    #####:  362:        free(multi_result->results);
+        -:  363:    }
+        -:  364:
+    #####:  365:    free(multi_result);
+        -:  366:}
+        -:  367:
+        -:  368:// Structure to hold per-request context for curl_multi
+        -:  369:typedef struct MultiRequestContext {
+        -:  370:    ChatResponseBuffer buffer;
+        -:  371:    CURL* curl;
+        -:  372:    struct curl_slist* headers;
+        -:  373:    ChatProxyResult* result;
+        -:  374:    const ChatEngineConfig* engine;
+        -:  375:    char engine_name[CEC_MAX_NAME_LEN];
+        -:  376:} MultiRequestContext;
+        -:  377:
+        -:  378:// Send multiple requests in parallel using curl_multi
+    #####:  379:ChatMultiResult* chat_proxy_send_multi(const ChatMultiRequest* requests,
+        -:  380:                                        size_t request_count,
+        -:  381:                                        const ChatProxyConfig* config) {
+    #####:  382:    if (!requests || request_count == 0) {
+    #####:  383:        return NULL;
+        -:  384:    }
+        -:  385:
+    #####:  386:    ChatMultiResult* multi_result = chat_multi_result_create(request_count);
+    #####:  387:    if (!multi_result) {
+    #####:  388:        return NULL;
+        -:  389:    }
+        -:  390:
+        -:  391:    // Allocate context array for each request
+    #####:  392:    MultiRequestContext* contexts = (MultiRequestContext*)calloc(request_count, sizeof(MultiRequestContext));
+    #####:  393:    if (!contexts) {
+    #####:  394:        chat_multi_result_destroy(multi_result);
+    #####:  395:        return NULL;
+        -:  396:    }
+        -:  397:
+        -:  398:    // Initialize curl_multi handle
+    #####:  399:    CURLM* multi_handle = curl_multi_init();
+    #####:  400:    if (!multi_handle) {
+    #####:  401:        log_this(SR_CHAT, "Failed to initialize curl_multi handle", LOG_LEVEL_ERROR, 0);
+    #####:  402:        free(contexts);
+    #####:  403:        chat_multi_result_destroy(multi_result);
+    #####:  404:        return NULL;
+        -:  405:    }
+        -:  406:
+        -:  407:    // Track start time
+        -:  408:    struct timespec start_time;
+    #####:  409:    clock_gettime(CLOCK_MONOTONIC, &start_time);
+        -:  410:
+        -:  411:    // Setup all requests
+    #####:  412:    for (size_t i = 0; i < request_count; i++) {
+    #####:  413:        const ChatMultiRequest* req = &requests[i];
+    #####:  414:        MultiRequestContext* ctx = &contexts[i];
+        -:  415:
+        -:  416:        // Store engine reference and name
+    #####:  417:        ctx->engine = req->engine;
+    #####:  418:        if (req->engine) {
+    #####:  419:            snprintf(ctx->engine_name, CEC_MAX_NAME_LEN, "%s", req->engine->name);
+        -:  420:        } else {
+    #####:  421:            strcpy(ctx->engine_name, "unknown");
+        -:  422:        }
+        -:  423:
+        -:  424:        // Initialize response buffer
+    #####:  425:        ctx->buffer.data = (char*)malloc(INITIAL_RESPONSE_BUFFER_SIZE);
+    #####:  426:        if (!ctx->buffer.data) {
+    #####:  427:            ctx->result = chat_proxy_result_create();
+    #####:  428:            ctx->result->code = CHAT_PROXY_ERROR_MEMORY;
+    #####:  429:            ctx->result->error_message = strdup("Failed to allocate response buffer");
+    #####:  430:            multi_result->failure_count++;
+    #####:  431:            continue;
+        -:  432:        }
+    #####:  433:        ctx->buffer.data[0] = '\0';
+    #####:  434:        ctx->buffer.size = 0;
+    #####:  435:        ctx->buffer.capacity = INITIAL_RESPONSE_BUFFER_SIZE;
+        -:  436:
+        -:  437:        // Validate engine
+    #####:  438:        if (!req->engine || !req->request_json) {
+    #####:  439:            ctx->result = chat_proxy_result_create();
+    #####:  440:            ctx->result->code = CHAT_PROXY_ERROR_INIT;
+    #####:  441:            ctx->result->error_message = strdup("Invalid parameters");
+    #####:  442:            multi_result->failure_count++;
+    #####:  443:            continue;
+        -:  444:        }
+        -:  445:
+        -:  446:        // Create CURL easy handle
+    #####:  447:        ctx->curl = curl_easy_init();
+    #####:  448:        if (!ctx->curl) {
+    #####:  449:            ctx->result = chat_proxy_result_create();
+    #####:  450:            ctx->result->code = CHAT_PROXY_ERROR_INIT;
+    #####:  451:            ctx->result->error_message = strdup("Failed to initialize CURL");
+    #####:  452:            multi_result->failure_count++;
+    #####:  453:            continue;
+        -:  454:        }
+        -:  455:
+        -:  456:        // Build headers based on provider
+    #####:  457:        ctx->headers = NULL;
+    #####:  458:        ctx->headers = curl_slist_append(ctx->headers, "Content-Type: application/json");
+        -:  459:
+    #####:  460:        if (req->engine->provider == CEC_PROVIDER_ANTHROPIC) {
+        -:  461:            // Anthropic uses x-api-key header
+        -:  462:            char auth_header[CEC_MAX_KEY_LEN + 32];
+    #####:  463:            snprintf(auth_header, sizeof(auth_header), "x-api-key: %s", req->engine->api_key);
+    #####:  464:            ctx->headers = curl_slist_append(ctx->headers, auth_header);
+        -:  465:            // Anthropic requires version header
+    #####:  466:            ctx->headers = curl_slist_append(ctx->headers, "anthropic-version: 2023-06-01");
+        -:  467:        } else {
+        -:  468:            // OpenAI-compatible providers use Bearer token
+        -:  469:            char auth_header[CEC_MAX_KEY_LEN + 32];
+    #####:  470:            snprintf(auth_header, sizeof(auth_header), "Authorization: Bearer %s", req->engine->api_key);
+    #####:  471:            ctx->headers = curl_slist_append(ctx->headers, auth_header);
+        -:  472:        }
+        -:  473:
+        -:  474:        // Configure CURL options
+    #####:  475:        curl_easy_setopt(ctx->curl, CURLOPT_URL, req->engine->api_url);
+    #####:  476:        curl_easy_setopt(ctx->curl, CURLOPT_POSTFIELDS, req->request_json);
+    #####:  477:        curl_easy_setopt(ctx->curl, CURLOPT_HTTPHEADER, ctx->headers);
+    #####:  478:        curl_easy_setopt(ctx->curl, CURLOPT_WRITEFUNCTION, chat_proxy_write_callback);
+    #####:  479:        curl_easy_setopt(ctx->curl, CURLOPT_WRITEDATA, (void*)&ctx->buffer);
+    #####:  480:        curl_easy_setopt(ctx->curl, CURLOPT_CONNECTTIMEOUT, (long)config->connect_timeout_seconds);
+    #####:  481:        curl_easy_setopt(ctx->curl, CURLOPT_TIMEOUT, (long)config->request_timeout_seconds);
+    #####:  482:        curl_easy_setopt(ctx->curl, CURLOPT_SSL_VERIFYPEER, config->verify_ssl ? 1L : 0L);
+    #####:  483:        curl_easy_setopt(ctx->curl, CURLOPT_SSL_VERIFYHOST, config->verify_ssl ? 2L : 0L);
+    #####:  484:        curl_easy_setopt(ctx->curl, CURLOPT_FOLLOWLOCATION, 1L);
+    #####:  485:        curl_easy_setopt(ctx->curl, CURLOPT_MAXREDIRS, 3L);
+    #####:  486:        curl_easy_setopt(ctx->curl, CURLOPT_USERAGENT, "Hydrogen-Chat-Proxy/1.0");
+        -:  487:
+        -:  488:        // Add to multi handle
+    #####:  489:        curl_multi_add_handle(multi_handle, ctx->curl);
+        -:  490:    }
+        -:  491:
+        -:  492:    // Execute all requests in parallel
+    #####:  493:    int still_running = 0;
+    #####:  494:    curl_multi_perform(multi_handle, &still_running);
+        -:  495:
+        -:  496:    // Wait for all requests to complete
+    #####:  497:    while (still_running) {
+        -:  498:        struct timeval timeout;
+    #####:  499:        timeout.tv_sec = 0;
+    #####:  500:        timeout.tv_usec = 100000;  // 100ms
+        -:  501:
+        -:  502:        fd_set fdread, fdwrite, fdexcep;
+    #####:  503:        int maxfd = -1;
+    #####:  504:        FD_ZERO(&fdread);
+    #####:  505:        FD_ZERO(&fdwrite);
+    #####:  506:        FD_ZERO(&fdexcep);
+        -:  507:
+    #####:  508:        curl_multi_fdset(multi_handle, &fdread, &fdwrite, &fdexcep, &maxfd);
+        -:  509:
+    #####:  510:        if (maxfd == -1) {
+    #####:  511:            usleep(100000);  // 100ms
+        -:  512:        } else {
+    #####:  513:            select(maxfd + 1, &fdread, &fdwrite, &fdexcep, &timeout);
+        -:  514:        }
+        -:  515:
+    #####:  516:        curl_multi_perform(multi_handle, &still_running);
+        -:  517:    }
+        -:  518:
+        -:  519:    // Process results
+    #####:  520:    for (size_t i = 0; i < request_count; i++) {
+    #####:  521:        MultiRequestContext* ctx = &contexts[i];
+        -:  522:
+        -:  523:        // If result was already set (error during setup), use it
+    #####:  524:        if (ctx->result) {
+    #####:  525:            multi_result->results[i] = ctx->result;
+    #####:  526:            continue;
+        -:  527:        }
+        -:  528:
+        -:  529:        // Create result from CURL response
+    #####:  530:        ChatProxyResult* result = chat_proxy_result_create();
+    #####:  531:        if (!result) {
+    #####:  532:            result = chat_proxy_result_create();
+    #####:  533:            result->code = CHAT_PROXY_ERROR_MEMORY;
+    #####:  534:            result->error_message = strdup("Failed to create result");
+    #####:  535:            multi_result->results[i] = result;
+    #####:  536:            multi_result->failure_count++;
+    #####:  537:            continue;
+        -:  538:        }
+        -:  539:
+        -:  540:        // Get CURL result
+        -:  541:        CURLcode curl_result;
+    #####:  542:        curl_easy_getinfo(ctx->curl, CURLINFO_PRIVATE, &curl_result);
+    #####:  543:        curl_result = CURLE_OK;  // Default - we'll check from perform result
+        -:  544:
+        -:  545:        // Get timing and HTTP status
+    #####:  546:        curl_easy_getinfo(ctx->curl, CURLINFO_TOTAL_TIME, &result->total_time_ms);
+    #####:  547:        result->total_time_ms *= 1000.0;
+        -:  548:
+    #####:  549:        long http_code = 0;
+    #####:  550:        curl_easy_getinfo(ctx->curl, CURLINFO_RESPONSE_CODE, &http_code);
+    #####:  551:        result->http_status = (int)http_code;
+        -:  552:
+        -:  553:        // Read any error message from CURL
+    #####:  554:        const char* curl_error = curl_easy_strerror(curl_result);
+        -:  555:
+        -:  556:        // Process based on HTTP status
+    #####:  557:        if (http_code >= 200 && http_code < 300) {
+    #####:  558:            result->code = CHAT_PROXY_OK;
+    #####:  559:            result->response_body = ctx->buffer.data;
+    #####:  560:            result->response_size = ctx->buffer.size;
+    #####:  561:            multi_result->success_count++;
+    #####:  562:            log_this(SR_CHAT, "Multi-request successful for %s: HTTP %ld, %.2fms",
+    #####:  563:                     LOG_LEVEL_DEBUG, 3, ctx->engine_name, http_code, result->total_time_ms);
+    #####:  564:        } else if (http_code >= 400 && http_code < 500) {
+    #####:  565:            result->code = CHAT_PROXY_ERROR_HTTP_4XX;
+    #####:  566:            result->error_message = strdup("HTTP client error");
+    #####:  567:            result->response_body = ctx->buffer.data;
+    #####:  568:            result->response_size = ctx->buffer.size;
+    #####:  569:            multi_result->failure_count++;
+    #####:  570:            log_this(SR_CHAT, "Multi-request client error for %s: HTTP %ld",
+    #####:  571:                     LOG_LEVEL_ERROR, 2, ctx->engine_name, http_code);
+    #####:  572:        } else if (http_code >= 500) {
+    #####:  573:            result->code = CHAT_PROXY_ERROR_HTTP_5XX;
+    #####:  574:            result->error_message = strdup("HTTP server error");
+    #####:  575:            result->response_body = ctx->buffer.data;
+    #####:  576:            result->response_size = ctx->buffer.size;
+    #####:  577:            multi_result->failure_count++;
+    #####:  578:            log_this(SR_CHAT, "Multi-request server error for %s: HTTP %ld",
+    #####:  579:                     LOG_LEVEL_ERROR, 2, ctx->engine_name, http_code);
+        -:  580:        } else {
+    #####:  581:            result->code = CHAT_PROXY_ERROR_NETWORK;
+    #####:  582:            result->error_message = strdup(curl_error);
+    #####:  583:            free(ctx->buffer.data);
+    #####:  584:            multi_result->failure_count++;
+    #####:  585:            log_this(SR_CHAT, "Multi-request failed for %s: %s",
+    #####:  586:                     LOG_LEVEL_ERROR, 2, ctx->engine_name, curl_error);
+        -:  587:        }
+        -:  588:
+    #####:  589:        multi_result->results[i] = result;
+        -:  590:    }
+        -:  591:
+        -:  592:    // Cleanup
+    #####:  593:    for (size_t i = 0; i < request_count; i++) {
+    #####:  594:        MultiRequestContext* ctx = &contexts[i];
+    #####:  595:        if (ctx->curl) {
+    #####:  596:            curl_multi_remove_handle(multi_handle, ctx->curl);
+    #####:  597:            curl_easy_cleanup(ctx->curl);
+        -:  598:        }
+    #####:  599:        if (ctx->headers) {
+    #####:  600:            curl_slist_free_all(ctx->headers);
+        -:  601:        }
+        -:  602:        // Note: ctx->buffer.data is either freed or transferred to result
+        -:  603:    }
+        -:  604:
+    #####:  605:    curl_multi_cleanup(multi_handle);
+    #####:  606:    free(contexts);
+        -:  607:
+        -:  608:    // Calculate total time
+        -:  609:    struct timespec end_time;
+    #####:  610:    clock_gettime(CLOCK_MONOTONIC, &end_time);
+    #####:  611:    multi_result->total_time_ms = (double)(end_time.tv_sec - start_time.tv_sec) * 1000.0 +
+    #####:  612:                                   (double)(end_time.tv_nsec - start_time.tv_nsec) / 1000000.0;
+        -:  613:
+    #####:  614:    log_this(SR_CHAT, "Multi-request completed: %zu success, %zu failed, %.2fms total",
+        -:  615:             LOG_LEVEL_STATE, 3, multi_result->success_count, multi_result->failure_count,
+        -:  616:             multi_result->total_time_ms);
+        -:  617:
+    #####:  618:    return multi_result;
+        -:  619:}
+        -:  620:
+        -:  621:// ============================================================================
+        -:  622:// Multi-Stream Manager Access
+        -:  623:// ============================================================================
+        -:  624:
+        -:  625:// Get the global multi-stream manager instance
+    #####:  626:MultiStreamManager* chat_proxy_get_multi_manager(void) {
+    #####:  627:    return &g_multi_manager;
+        -:  628:}

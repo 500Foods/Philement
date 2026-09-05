@@ -1,0 +1,607 @@
+        -:    0:Source:/mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/src/mcp/mcp_client.c
+        -:    0:Graph:build/unity/src/mcp/mcp_client.gcno
+        -:    0:Data:build/unity/src/mcp/mcp_client.gcda
+        -:    0:Runs:5
+        -:    1:#include <src/hydrogen.h>
+        -:    2:#include <src/mcp/mcp_client.h>
+        -:    3:#include <src/api/auth/oidc_rp/oidc_rp_http.h>
+        -:    4:#include <src/globals.h>
+        -:    5:
+        -:    6:#include <curl/curl.h>
+        -:    7:#include <strings.h>
+        -:    8:
+        -:    9:static int mcp_client_rpc_seq = 1;
+        -:   10:
+       12:   11:int mcp_client_next_id(void) {
+       12:   12:    int id = mcp_client_rpc_seq;
+       12:   13:    mcp_client_rpc_seq += 1;
+       12:   14:    if (mcp_client_rpc_seq <= 0) {
+    #####:   15:        mcp_client_rpc_seq = 1;
+        -:   16:    }
+       12:   17:    return id;
+        -:   18:}
+        -:   19:
+       11:   20:char *mcp_client_rpc_request(int id, const char *method, json_t *params) {
+        -:   21:    json_t *root;
+        -:   22:    char *out;
+        -:   23:
+       11:   24:    if (!method || method[0] == '\0') {
+        2:   25:        return NULL;
+        -:   26:    }
+        9:   27:    root = json_object();
+        9:   28:    if (!root) {
+    #####:   29:        return NULL;
+        -:   30:    }
+        9:   31:    json_object_set_new(root, "jsonrpc", json_string("2.0"));
+        9:   32:    json_object_set_new(root, "id", json_integer(id));
+        9:   33:    json_object_set_new(root, "method", json_string(method));
+        9:   34:    if (params) {
+        6:   35:        json_object_set(root, "params", params);
+        -:   36:    } else {
+        3:   37:        json_object_set_new(root, "params", json_object());
+        -:   38:    }
+        9:   39:    out = json_dumps(root, JSON_COMPACT);
+        9:   40:    json_decref(root);
+        9:   41:    return out;
+        -:   42:}
+        -:   43:
+       14:   44:char *mcp_client_unwrap_body(const char *body) {
+        -:   45:    const char *cursor;
+        -:   46:    const char *last;
+        -:   47:    const char *nl;
+        -:   48:    size_t n;
+        -:   49:    char *out;
+        -:   50:
+       14:   51:    if (!body) {
+    #####:   52:        return NULL;
+        -:   53:    }
+       14:   54:    if (strncmp(body, "data:", 5) != 0 && strncmp(body, "event:", 6) != 0 &&
+       14:   55:        strstr(body, "\ndata:") == NULL) {
+       14:   56:        return strdup(body);
+        -:   57:    }
+    #####:   58:    last = NULL;
+    #####:   59:    cursor = body;
+    #####:   60:    while (cursor && *cursor) {
+    #####:   61:        if (strncmp(cursor, "data:", 5) == 0) {
+    #####:   62:            last = cursor + 5;
+    #####:   63:            if (*last == ' ') {
+    #####:   64:                last += 1;
+        -:   65:            }
+        -:   66:        }
+    #####:   67:        nl = strchr(cursor, '\n');
+    #####:   68:        if (!nl) {
+    #####:   69:            break;
+        -:   70:        }
+    #####:   71:        cursor = nl + 1;
+        -:   72:    }
+    #####:   73:    if (!last) {
+    #####:   74:        return strdup(body);
+        -:   75:    }
+    #####:   76:    nl = strchr(last, '\n');
+    #####:   77:    n = nl ? (size_t)(nl - last) : strlen(last);
+    #####:   78:    while (n > 0 && (last[n - 1] == '\r' || last[n - 1] == '\n')) {
+    #####:   79:        n -= 1;
+        -:   80:    }
+    #####:   81:    out = malloc(n + 1);
+    #####:   82:    if (!out) {
+    #####:   83:        return NULL;
+        -:   84:    }
+    #####:   85:    memcpy(out, last, n);
+    #####:   86:    out[n] = '\0';
+    #####:   87:    return out;
+        -:   88:}
+        -:   89:
+       16:   90:bool mcp_client_rpc_parse_result(const char *body, json_t **out_result, char **out_error) {
+        -:   91:    char *unwrapped;
+        -:   92:    json_t *root;
+        -:   93:    json_t *err;
+        -:   94:    json_t *msg;
+        -:   95:    json_t *result;
+        -:   96:
+       16:   97:    if (out_result) {
+       15:   98:        *out_result = NULL;
+        -:   99:    }
+       16:  100:    if (out_error) {
+       13:  101:        *out_error = NULL;
+        -:  102:    }
+       16:  103:    if (!body || body[0] == '\0') {
+        2:  104:        if (out_error) {
+        2:  105:            *out_error = strdup("empty mcp response");
+        -:  106:        }
+        2:  107:        return false;
+        -:  108:    }
+       14:  109:    unwrapped = mcp_client_unwrap_body(body);
+       14:  110:    if (!unwrapped) {
+    #####:  111:        if (out_error) {
+    #####:  112:            *out_error = strdup("unwrap failed");
+        -:  113:        }
+    #####:  114:        return false;
+        -:  115:    }
+       14:  116:    root = json_loads(unwrapped, 0, NULL);
+       14:  117:    free(unwrapped);
+       14:  118:    if (!root) {
+        5:  119:        if (out_error) {
+        5:  120:            *out_error = strdup("invalid mcp json");
+        -:  121:        }
+        5:  122:        return false;
+        -:  123:    }
+        9:  124:    err = json_object_get(root, "error");
+        9:  125:    if (err && !json_is_null(err)) {
+        3:  126:        msg = json_object_get(err, "message");
+        3:  127:        if (out_error) {
+        3:  128:            *out_error = strdup(msg && json_is_string(msg) ? json_string_value(msg) : "rpc error");
+        -:  129:        }
+        3:  130:        json_decref(root);
+        3:  131:        return false;
+        -:  132:    }
+        6:  133:    result = json_object_get(root, "result");
+        6:  134:    if (!result) {
+        2:  135:        json_decref(root);
+        2:  136:        if (out_error) {
+        2:  137:            *out_error = strdup("missing result");
+        -:  138:        }
+        2:  139:        return false;
+        -:  140:    }
+        4:  141:    if (out_result) {
+        3:  142:        *out_result = json_incref(result);
+        -:  143:    }
+        4:  144:    json_decref(root);
+        4:  145:    return true;
+        -:  146:}
+        -:  147:
+       18:  148:char *mcp_client_http_post(const char *url,
+        -:  149:                           const char *authorization,
+        -:  150:                           const char *session_id,
+        -:  151:                           const char *body,
+        -:  152:                           char **out_session_id) {
+       18:  153:    struct curl_slist *headers = NULL;
+        -:  154:    OidcRpHttpResponse *resp;
+       18:  155:    char *auth_hdr = NULL;
+       18:  156:    char *sess_hdr = NULL;
+       18:  157:    char *copied = NULL;
+        -:  158:
+       18:  159:    if (out_session_id) {
+       11:  160:        *out_session_id = NULL;
+        -:  161:    }
+       18:  162:    if (!url || url[0] == '\0' || !body) {
+        4:  163:        return NULL;
+        -:  164:    }
+       14:  165:    headers = curl_slist_append(headers, "Accept: application/json, text/event-stream");
+       14:  166:    headers = curl_slist_append(headers, "MCP-Protocol-Version: " MCP_CLIENT_PROTOCOL_VERSION);
+       14:  167:    if (authorization && authorization[0] != '\0') {
+        1:  168:        if (strncasecmp(authorization, "Bearer ", 7) == 0 ||
+        1:  169:            strncasecmp(authorization, "Authorization:", 14) == 0) {
+    #####:  170:            if (asprintf(&auth_hdr, "Authorization: %s",
+    #####:  171:                         strncasecmp(authorization, "Authorization:", 14) == 0
+        -:  172:                         ? authorization + 14 : authorization) != -1) {
+    #####:  173:                headers = curl_slist_append(headers, auth_hdr);
+        -:  174:            }
+        -:  175:        } else {
+        1:  176:            if (asprintf(&auth_hdr, "Authorization: Bearer %s", authorization) != -1) {
+        1:  177:                headers = curl_slist_append(headers, auth_hdr);
+        -:  178:            }
+        -:  179:        }
+        1:  180:        free(auth_hdr);
+        -:  181:    }
+       14:  182:    if (session_id && session_id[0] != '\0') {
+        1:  183:        if (asprintf(&sess_hdr, "Mcp-Session-Id: %s", session_id) != -1) {
+        1:  184:            headers = curl_slist_append(headers, sess_hdr);
+        1:  185:            free(sess_hdr);
+        -:  186:        }
+        -:  187:    }
+       14:  188:    resp = oidc_rp_http_post_with_headers_slist(url, true, body, "application/json",
+        -:  189:                                                headers, MCP_CLIENT_MAX_BODY, 30);
+       14:  190:    if (!resp) {
+    #####:  191:        return NULL;
+        -:  192:    }
+       14:  193:    if (out_session_id && resp->headers) {
+    #####:  194:        for (size_t i = 0; i < resp->headers_count; i++) {
+    #####:  195:            if (resp->headers[i].name &&
+    #####:  196:                strcasecmp(resp->headers[i].name, "mcp-session-id") == 0 &&
+    #####:  197:                resp->headers[i].value) {
+    #####:  198:                *out_session_id = strdup(resp->headers[i].value);
+    #####:  199:                break;
+        -:  200:            }
+        -:  201:        }
+        -:  202:    }
+       14:  203:    if (resp->http_status >= 200 && resp->http_status < 300 && resp->body) {
+       12:  204:        copied = strdup(resp->body);
+        2:  205:    } else if (resp->body) {
+        2:  206:        copied = strdup(resp->body);
+        -:  207:    }
+       14:  208:    oidc_rp_http_response_free(resp);
+       14:  209:    return copied;
+        -:  210:}
+        -:  211:
+        5:  212:bool mcp_client_initialize(const char *url,
+        -:  213:                           const char *authorization,
+        -:  214:                           char **out_session_id,
+        -:  215:                           char **out_error) {
+        -:  216:    json_t *params;
+        -:  217:    json_t *caps;
+        -:  218:    json_t *info;
+        5:  219:    json_t *result = NULL;
+        -:  220:    char *req;
+        -:  221:    char *resp;
+        -:  222:    const char *notify;
+        -:  223:    char *notify_resp;
+        5:  224:    char *session = NULL;
+        -:  225:    bool ok;
+        -:  226:
+        5:  227:    if (out_session_id) {
+        4:  228:        *out_session_id = NULL;
+        -:  229:    }
+        5:  230:    if (out_error) {
+        4:  231:        *out_error = NULL;
+        -:  232:    }
+        5:  233:    params = json_object();
+        5:  234:    caps = json_object();
+        5:  235:    info = json_object();
+        5:  236:    if (!params || !caps || !info) {
+    #####:  237:        json_decref(params);
+    #####:  238:        json_decref(caps);
+    #####:  239:        json_decref(info);
+    #####:  240:        if (out_error) {
+    #####:  241:            *out_error = strdup("alloc failed");
+        -:  242:        }
+    #####:  243:        return false;
+        -:  244:    }
+        5:  245:    json_object_set_new(params, "protocolVersion", json_string(MCP_CLIENT_PROTOCOL_VERSION));
+        5:  246:    json_object_set_new(info, "name", json_string("hydrogen"));
+        5:  247:    json_object_set_new(info, "version", json_string("1.0"));
+        5:  248:    json_object_set_new(params, "capabilities", caps);
+        5:  249:    json_object_set_new(params, "clientInfo", info);
+        5:  250:    req = mcp_client_rpc_request(mcp_client_next_id(), "initialize", params);
+        5:  251:    json_decref(params);
+        5:  252:    if (!req) {
+    #####:  253:        if (out_error) {
+    #####:  254:            *out_error = strdup("initialize encode failed");
+        -:  255:        }
+    #####:  256:        return false;
+        -:  257:    }
+        5:  258:    resp = mcp_client_http_post(url, authorization, NULL, req, &session);
+        5:  259:    free(req);
+        5:  260:    ok = mcp_client_rpc_parse_result(resp, &result, out_error);
+        5:  261:    free(resp);
+        5:  262:    if (result) {
+        1:  263:        json_decref(result);
+        -:  264:    }
+        5:  265:    if (!ok) {
+        4:  266:        free(session);
+        4:  267:        return false;
+        -:  268:    }
+        1:  269:    notify = "{\"jsonrpc\":\"2.0\",\"method\":\"notifications/initialized\"}";
+        1:  270:    notify_resp = mcp_client_http_post(url, authorization, session, notify, NULL);
+        1:  271:    free(notify_resp);
+        1:  272:    if (out_session_id) {
+    #####:  273:        *out_session_id = session;
+        -:  274:    } else {
+        1:  275:        free(session);
+        -:  276:    }
+        1:  277:    return true;
+        -:  278:}
+        -:  279:
+        3:  280:bool mcp_client_tools_list(const char *url,
+        -:  281:                           const char *authorization,
+        -:  282:                           const char *session_id,
+        -:  283:                           json_t **out_tools,
+        -:  284:                           char **out_error) {
+        3:  285:    json_t *result = NULL;
+        -:  286:    json_t *tools;
+        -:  287:    char *req;
+        -:  288:    char *resp;
+        -:  289:    bool ok;
+        -:  290:
+        3:  291:    if (out_tools) {
+        3:  292:        *out_tools = NULL;
+        -:  293:    }
+        3:  294:    req = mcp_client_rpc_request(mcp_client_next_id(), "tools/list", NULL);
+        3:  295:    if (!req) {
+    #####:  296:        if (out_error) {
+    #####:  297:            *out_error = strdup("tools/list encode failed");
+        -:  298:        }
+    #####:  299:        return false;
+        -:  300:    }
+        3:  301:    resp = mcp_client_http_post(url, authorization, session_id, req, NULL);
+        3:  302:    free(req);
+        3:  303:    ok = mcp_client_rpc_parse_result(resp, &result, out_error);
+        3:  304:    free(resp);
+        3:  305:    if (!ok) {
+        2:  306:        return false;
+        -:  307:    }
+        1:  308:    tools = json_object_get(result, "tools");
+       1*:  309:    if (!tools || !json_is_array(tools)) {
+        1:  310:        json_decref(result);
+        1:  311:        if (out_error) {
+        1:  312:            *out_error = strdup("tools/list missing tools array");
+        -:  313:        }
+        1:  314:        return false;
+        -:  315:    }
+    #####:  316:    if (out_tools) {
+    #####:  317:        *out_tools = json_incref(tools);
+        -:  318:    }
+    #####:  319:    json_decref(result);
+    #####:  320:    return true;
+        -:  321:}
+        -:  322:
+        3:  323:bool mcp_client_tools_call(const char *url,
+        -:  324:                           const char *authorization,
+        -:  325:                           const char *session_id,
+        -:  326:                           const char *name,
+        -:  327:                           json_t *arguments,
+        -:  328:                           json_t **out_result,
+        -:  329:                           char **out_error) {
+        -:  330:    json_t *params;
+        -:  331:    char *req;
+        -:  332:    char *resp;
+        -:  333:    bool ok;
+        -:  334:
+        3:  335:    if (out_result) {
+        3:  336:        *out_result = NULL;
+        -:  337:    }
+        3:  338:    if (!name || name[0] == '\0') {
+        2:  339:        if (out_error) {
+        2:  340:            *out_error = strdup("tool name required");
+        -:  341:        }
+        2:  342:        return false;
+        -:  343:    }
+        1:  344:    params = json_object();
+        1:  345:    if (!params) {
+    #####:  346:        if (out_error) {
+    #####:  347:            *out_error = strdup("alloc failed");
+        -:  348:        }
+    #####:  349:        return false;
+        -:  350:    }
+        1:  351:    json_object_set_new(params, "name", json_string(name));
+        1:  352:    if (arguments) {
+        1:  353:        json_object_set(params, "arguments", arguments);
+        -:  354:    } else {
+    #####:  355:        json_object_set_new(params, "arguments", json_object());
+        -:  356:    }
+        1:  357:    req = mcp_client_rpc_request(mcp_client_next_id(), "tools/call", params);
+        1:  358:    json_decref(params);
+        1:  359:    if (!req) {
+    #####:  360:        if (out_error) {
+    #####:  361:            *out_error = strdup("tools/call encode failed");
+        -:  362:        }
+    #####:  363:        return false;
+        -:  364:    }
+        1:  365:    resp = mcp_client_http_post(url, authorization, session_id, req, NULL);
+        1:  366:    free(req);
+        1:  367:    ok = mcp_client_rpc_parse_result(resp, out_result, out_error);
+        1:  368:    free(resp);
+        1:  369:    return ok;
+        -:  370:}
+        -:  371:
+        4:  372:bool mcp_client_tool_allowed(const char *name,
+        -:  373:                             char **allowed_tools,
+        -:  374:                             size_t allowed_count) {
+        -:  375:    size_t i;
+        -:  376:
+        4:  377:    if (!name || name[0] == '\0' || !allowed_tools || allowed_count == 0) {
+        1:  378:        return false;
+        -:  379:    }
+        5:  380:    for (i = 0; i < allowed_count; i++) {
+        3:  381:        if (allowed_tools[i] && strcmp(allowed_tools[i], name) == 0) {
+        1:  382:            return true;
+        -:  383:        }
+        -:  384:    }
+        2:  385:    return false;
+        -:  386:}
+        -:  387:
+        6:  388:json_t *mcp_client_tools_filter(json_t *tools,
+        -:  389:                                char **allowed_tools,
+        -:  390:                                size_t allowed_count) {
+        -:  391:    json_t *out;
+        -:  392:    size_t i;
+        -:  393:    size_t n;
+        -:  394:
+        6:  395:    if (!tools || !json_is_array(tools)) {
+        2:  396:        return json_array();
+        -:  397:    }
+        4:  398:    out = json_array();
+        4:  399:    if (!out) {
+    #####:  400:        return NULL;
+        -:  401:    }
+        4:  402:    n = json_array_size(tools);
+        8:  403:    for (i = 0; i < n; i++) {
+        4:  404:        json_t *tool = json_array_get(tools, i);
+        -:  405:        json_t *name_obj;
+        -:  406:        const char *name;
+        -:  407:
+        4:  408:        if (!json_is_object(tool)) {
+        1:  409:            continue;
+        -:  410:        }
+        3:  411:        name_obj = json_object_get(tool, "name");
+        3:  412:        if (!name_obj || !json_is_string(name_obj)) {
+        1:  413:            continue;
+        -:  414:        }
+        2:  415:        name = json_string_value(name_obj);
+        2:  416:        if (!mcp_client_tool_allowed(name, allowed_tools, allowed_count)) {
+        2:  417:            continue;
+        -:  418:        }
+    #####:  419:        json_array_append(out, tool);
+        -:  420:    }
+        4:  421:    return out;
+        -:  422:}
+        -:  423:
+        8:  424:json_t *mcp_client_mcp_schema(json_t *mcp_tool) {
+        -:  425:    json_t *schema;
+        -:  426:
+        8:  427:    if (!mcp_tool) {
+        1:  428:        return NULL;
+        -:  429:    }
+        7:  430:    schema = json_object_get(mcp_tool, "inputSchema");
+        7:  431:    if (!schema) {
+        2:  432:        schema = json_object_get(mcp_tool, "input_schema");
+        -:  433:    }
+        7:  434:    return schema;
+        -:  435:}
+        -:  436:
+        6:  437:json_t *mcp_client_tool_to_openai(json_t *mcp_tool) {
+        -:  438:    json_t *out;
+        -:  439:    json_t *fn;
+        -:  440:    json_t *name;
+        -:  441:    json_t *desc;
+        -:  442:    json_t *schema;
+        -:  443:
+        6:  444:    if (!mcp_tool || !json_is_object(mcp_tool)) {
+        2:  445:        return NULL;
+        -:  446:    }
+        4:  447:    name = json_object_get(mcp_tool, "name");
+        4:  448:    if (!name || !json_is_string(name)) {
+        2:  449:        return NULL;
+        -:  450:    }
+        2:  451:    out = json_object();
+        2:  452:    fn = json_object();
+        2:  453:    if (!out || !fn) {
+    #####:  454:        json_decref(out);
+    #####:  455:        json_decref(fn);
+    #####:  456:        return NULL;
+        -:  457:    }
+        2:  458:    json_object_set_new(out, "type", json_string("function"));
+        2:  459:    json_object_set(fn, "name", name);
+        2:  460:    desc = json_object_get(mcp_tool, "description");
+        2:  461:    if (desc) {
+        1:  462:        json_object_set(fn, "description", desc);
+        -:  463:    }
+        2:  464:    schema = mcp_client_mcp_schema(mcp_tool);
+        2:  465:    if (schema) {
+        2:  466:        json_object_set(fn, "parameters", schema);
+        -:  467:    } else {
+    #####:  468:        json_object_set_new(fn, "parameters", json_object());
+        -:  469:    }
+        2:  470:    json_object_set_new(out, "function", fn);
+        2:  471:    return out;
+        -:  472:}
+        -:  473:
+        4:  474:json_t *mcp_client_tool_to_responses(json_t *mcp_tool) {
+        -:  475:    json_t *out;
+        -:  476:    json_t *name;
+        -:  477:    json_t *desc;
+        -:  478:    json_t *schema;
+        -:  479:
+        4:  480:    if (!mcp_tool || !json_is_object(mcp_tool)) {
+        2:  481:        return NULL;
+        -:  482:    }
+        2:  483:    name = json_object_get(mcp_tool, "name");
+        2:  484:    if (!name || !json_is_string(name)) {
+        1:  485:        return NULL;
+        -:  486:    }
+        1:  487:    out = json_object();
+        1:  488:    if (!out) {
+    #####:  489:        return NULL;
+        -:  490:    }
+        1:  491:    json_object_set_new(out, "type", json_string("function"));
+        1:  492:    json_object_set(out, "name", name);
+        1:  493:    desc = json_object_get(mcp_tool, "description");
+        1:  494:    if (desc) {
+    #####:  495:        json_object_set(out, "description", desc);
+        -:  496:    }
+        1:  497:    schema = mcp_client_mcp_schema(mcp_tool);
+        1:  498:    if (schema) {
+        1:  499:        json_object_set(out, "parameters", schema);
+        -:  500:    } else {
+    #####:  501:        json_object_set_new(out, "parameters", json_object());
+        -:  502:    }
+        1:  503:    return out;
+        -:  504:}
+        -:  505:
+        4:  506:json_t *mcp_client_tool_to_anthropic(json_t *mcp_tool) {
+        -:  507:    json_t *out;
+        -:  508:    json_t *name;
+        -:  509:    json_t *desc;
+        -:  510:    json_t *schema;
+        -:  511:
+        4:  512:    if (!mcp_tool || !json_is_object(mcp_tool)) {
+        2:  513:        return NULL;
+        -:  514:    }
+        2:  515:    name = json_object_get(mcp_tool, "name");
+        2:  516:    if (!name || !json_is_string(name)) {
+        1:  517:        return NULL;
+        -:  518:    }
+        1:  519:    out = json_object();
+        1:  520:    if (!out) {
+    #####:  521:        return NULL;
+        -:  522:    }
+        1:  523:    json_object_set(out, "name", name);
+        1:  524:    desc = json_object_get(mcp_tool, "description");
+        1:  525:    if (desc) {
+    #####:  526:        json_object_set(out, "description", desc);
+        -:  527:    }
+        1:  528:    schema = mcp_client_mcp_schema(mcp_tool);
+        1:  529:    if (schema) {
+        1:  530:        json_object_set(out, "input_schema", schema);
+        -:  531:    } else {
+    #####:  532:        json_object_set_new(out, "input_schema", json_object());
+        -:  533:    }
+        1:  534:    return out;
+        -:  535:}
+        -:  536:
+        9:  537:json_t *mcp_client_tools_map(json_t *mcp_tools, json_t *(*convert)(json_t *)) {
+        -:  538:    json_t *out;
+        -:  539:    size_t i;
+        -:  540:    size_t n;
+        -:  541:
+        9:  542:    out = json_array();
+        9:  543:    if (!out) {
+    #####:  544:        return NULL;
+        -:  545:    }
+        9:  546:    if (!mcp_tools || !json_is_array(mcp_tools) || !convert) {
+        3:  547:        return out;
+        -:  548:    }
+        6:  549:    n = json_array_size(mcp_tools);
+       11:  550:    for (i = 0; i < n; i++) {
+        5:  551:        json_t *converted = convert(json_array_get(mcp_tools, i));
+        5:  552:        if (converted) {
+        4:  553:            json_array_append_new(out, converted);
+        -:  554:        }
+        -:  555:    }
+        6:  556:    return out;
+        -:  557:}
+        -:  558:
+        2:  559:json_t *mcp_client_tools_to_openai(json_t *mcp_tools) {
+        2:  560:    return mcp_client_tools_map(mcp_tools, mcp_client_tool_to_openai);
+        -:  561:}
+        -:  562:
+        1:  563:json_t *mcp_client_tools_to_responses(json_t *mcp_tools) {
+        1:  564:    return mcp_client_tools_map(mcp_tools, mcp_client_tool_to_responses);
+        -:  565:}
+        -:  566:
+        1:  567:json_t *mcp_client_tools_to_anthropic(json_t *mcp_tools) {
+        1:  568:    return mcp_client_tools_map(mcp_tools, mcp_client_tool_to_anthropic);
+        -:  569:}
+        -:  570:
+        2:  571:json_t *mcp_client_fetch_tools(const char *url,
+        -:  572:                               const char *authorization,
+        -:  573:                               char **allowed_tools,
+        -:  574:                               size_t allowed_count,
+        -:  575:                               const char *correlation_id) {
+        2:  576:    char *session = NULL;
+        2:  577:    char *error = NULL;
+        2:  578:    json_t *listed = NULL;
+        -:  579:    json_t *filtered;
+       2*:  580:    const char *cid = correlation_id ? correlation_id : "-";
+        -:  581:
+        2:  582:    if (!url || url[0] == '\0') {
+        1:  583:        return NULL;
+        -:  584:    }
+        1:  585:    if (!mcp_client_initialize(url, authorization, &session, &error)) {
+       1*:  586:        log_this(SR_MCP, "local_mcp initialize failed url=%s err=%s (cid=%s)",
+        1:  587:                 LOG_LEVEL_ERROR, 3, url, error ? error : "unknown", cid);
+        1:  588:        free(error);
+        1:  589:        free(session);
+        1:  590:        return NULL;
+        -:  591:    }
+    #####:  592:    if (!mcp_client_tools_list(url, authorization, session, &listed, &error)) {
+    #####:  593:        log_this(SR_MCP, "local_mcp tools/list failed url=%s err=%s (cid=%s)",
+    #####:  594:                 LOG_LEVEL_ERROR, 3, url, error ? error : "unknown", cid);
+    #####:  595:        free(error);
+    #####:  596:        free(session);
+    #####:  597:        return NULL;
+        -:  598:    }
+    #####:  599:    free(session);
+    #####:  600:    filtered = mcp_client_tools_filter(listed, allowed_tools, allowed_count);
+    #####:  601:    json_decref(listed);
+    #####:  602:    return filtered;
+        -:  603:}
