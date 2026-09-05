@@ -45,7 +45,7 @@ Source: [`mysql/query.c`](/elements/001-hydrogen/hydrogen/src/database/mysql/que
   `mysql_process_prepared_result` honours `mysql_stmt_store_result` rc. On
   non-zero (e.g. duplicate-key empty RETURNING) it logs `mysql_stmt_error`,
   frees the result metadata, and returns `success=true` with `data_json="[]"`
-  + `affected_rows` from `mysql_stmt_affected_rows` — never calls
+  - `affected_rows` from `mysql_stmt_affected_rows` — never calls
   `mysql_stmt_fetch` with `fetch_row_func == NULL`. The previous code
   ignored `store_result` rc and unconditionally called `mysql_stmt_fetch`,
   which dereferenced the NULL function pointer and SIGSEGV'd inside
