@@ -1,11 +1,10 @@
 /*
  * Unity Test File: mcp_mint_token_mock_error_paths
  *
- * Tests error paths in mcp_mint_token.c that require mock system and crypto
- * infrastructure. mcp_mint_token.c is compiled with USE_MOCK_CRYPTO and
- * USE_MOCK_SYSTEM (via CMake) so that utils_base64url_encode and asprintf
- * are redirected to mocks, and auth_service_jwt.c's get_jwt_config uses
- * mock calloc/strdup.
+ * Tests error paths in the mint-token module that require mock system and crypto
+ * infrastructure. The mint-token source pulls in system and crypto mocks under
+ * UNITY_TEST_MODE so utils_base64url_encode and asprintf are redirected.
+ * get_jwt_config uses mock calloc/strdup via CMake.
  */
 #include <src/hydrogen.h>
 #include <unity.h>

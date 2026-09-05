@@ -15,6 +15,18 @@
  * short TTL and narrow claims are the only controls.
  */
 #include <src/hydrogen.h>
+
+#ifdef UNITY_TEST_MODE
+#ifndef USE_MOCK_SYSTEM
+#define USE_MOCK_SYSTEM
+#endif
+#ifndef USE_MOCK_CRYPTO
+#define USE_MOCK_CRYPTO
+#endif
+#include <unity/mocks/mock_system.h>
+#include <unity/mocks/mock_crypto.h>
+#endif
+
 #include <src/mcp/mcp_mint_token.h>
 #include <src/mcp/mcp_auth.h>
 #include <src/api/auth/auth_service.h>
