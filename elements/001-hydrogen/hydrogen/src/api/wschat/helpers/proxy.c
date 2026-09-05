@@ -41,6 +41,14 @@ static MultiStreamManager g_multi_manager = {0};
     size_t realsize = size * nmemb;
     ChatResponseBuffer* buffer = (ChatResponseBuffer*)userp;
 
+    if (!buffer) {
+        return 0;
+    }
+
+    if (!contents) {
+        return 0;
+    }
+
     // Check for maximum size
     if (buffer->size + realsize > MAX_RESPONSE_SIZE) {
         log_this(SR_CHAT, "Response exceeds maximum size limit", LOG_LEVEL_ERROR, 0);

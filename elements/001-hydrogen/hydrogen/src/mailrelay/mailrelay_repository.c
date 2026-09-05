@@ -1,10 +1,8 @@
 /*
  * Mail Relay Repository implementation.
  *
- * Callback-based QueryRef execution for Mail Relay. The default executor
- * resolves the configured Mail Relay database, submits the query to the
- * database queue, waits for the result, and invokes the caller's callback.
- * Unit tests can replace the executor seam to assert on parameters.
+ * Callback-based QueryRef execution for Mail Relay. The default executor resolves the configured Mail Relay database, submits the query to the
+ * database queue, waits for the result, and invokes the caller's callback. Unit tests can replace the executor seam to assert on parameters.
  */
 
 // Project includes
@@ -38,17 +36,10 @@
 static mailrelay_repo_execute_fn g_executor = NULL;
 
 // Forward declaration of the default executor.
-bool mailrelay_repo_default_execute(int query_ref,
-                                           const char* params_json,
-                                           mailrelay_repo_callback_fn callback,
-                                           void* user_data);
+bool mailrelay_repo_default_execute(int query_ref, const char* params_json, mailrelay_repo_callback_fn callback, void* user_data);
 
-/*
- * Resolve the database name for Mail Relay queries.
- * Returns app_config->mail_relay.Database if set. If it is not set and there
- * is exactly one configured database connection, that connection's name is
- * returned. Otherwise returns NULL.
- */
+// Resolve the database name for Mail Relay queries. Returns app_config->mail_relay.Database if set. If it is not set and there
+// is exactly one configured database connection, that connection's name is returned. Otherwise returns NULL.
 const char* mailrelay_repo_resolve_database(void) {
     if (!app_config) {
         return NULL;
@@ -61,26 +52,17 @@ const char* mailrelay_repo_resolve_database(void) {
         app_config->databases.connections[0].name &&
         app_config->databases.connections[0].name[0] != '\0') {
         database = app_config->databases.connections[0].name;
-        log_this(SR_MAIL_RELAY,
-                 "Mail Relay repository: no explicit database configured; using single database '%s'",
-                 LOG_LEVEL_STATE, 1, database);
+        log_this(SR_MAIL_RELAY, "Mail Relay repository: no explicit database configured; using single database '%s'", LOG_LEVEL_STATE, 1, database);
         return database;
     }
-    log_this(SR_MAIL_RELAY,
-             "Mail Relay repository: no database configured and no single database to default to",
-             LOG_LEVEL_ERROR, 0);
+    log_this(SR_MAIL_RELAY, "Mail Relay repository: no database configured and no single database to default to", LOG_LEVEL_ERROR, 0);
     return NULL;
 }
 
 /*
  * Build the result object for a callback invocation.
  */
-void mailrelay_repo_invoke_callback(mailrelay_repo_callback_fn callback,
-                                             void* user_data,
-                                             MailRelayRepoStatus status,
-                                             const char* error_message,
-                                             json_t* data,
-                                             int affected_rows) {
+void mailrelay_repo_invoke_callback(mailrelay_repo_callback_fn callback, void* user_data, MailRelayRepoStatus status, const char* error_message, json_t* data, int affected_rows) {
     MailRelayRepoResult result = {
         .status = status,
         .error_message = error_message,
@@ -93,30 +75,19 @@ void mailrelay_repo_invoke_callback(mailrelay_repo_callback_fn callback,
     (void)result; // callback may be NULL in some test paths; result is on stack
 }
 
-/*
- * Default executor: resolve database, lookup QTC, submit query, wait, callback.
- */
-bool mailrelay_repo_default_execute(int query_ref,
-                                           const char* params_json,
-                                           mailrelay_repo_callback_fn callback,
-                                           void* user_data) {
+// Default executor: resolve database, lookup QTC, submit query, wait, callback.
+bool mailrelay_repo_default_execute(int query_ref, const char* params_json, mailrelay_repo_callback_fn callback, void* user_data) {
     (void)params_json;
 
     const char* database = mailrelay_repo_resolve_database();
     if (!database) {
-        mailrelay_repo_invoke_callback(callback, user_data,
-                                       MAILRELAY_REPO_NO_DATABASE,
-                                       "Mail Relay database not configured",
-                                       NULL, 0);
+        mailrelay_repo_invoke_callback(callback, user_data, MAILRELAY_REPO_NO_DATABASE, "Mail Relay database not configured", NULL, 0);
         return false;
     }
 
-    DatabaseQueue* db_queue = database_queue_manager_get_database(
-        global_queue_manager, database);
+    DatabaseQueue* db_queue = database_queue_manager_get_database(global_queue_manager, database);
     if (!db_queue) {
-        log_this(SR_MAIL_RELAY,
-                 "Mail Relay repository: database queue not found for '%s'",
-                 LOG_LEVEL_ERROR, 1, database);
+        log_this(SR_MAIL_RELAY, "Mail Relay repository: database queue not found for '%s'", LOG_LEVEL_ERROR, 1, database);
         mailrelay_repo_invoke_callback(callback, user_data,
                                        MAILRELAY_REPO_NO_DATABASE,
                                        "Mail Relay database queue not available",
@@ -127,9 +98,7 @@ bool mailrelay_repo_default_execute(int query_ref,
     QueryCacheEntry* cache_entry = query_cache_lookup(
         db_queue->query_cache, query_ref, SR_MAIL_RELAY);
     if (!cache_entry) {
-        log_this(SR_MAIL_RELAY,
-                 "Mail Relay repository: QueryRef %d not found in cache for database '%s'",
-                 LOG_LEVEL_ERROR, 2, query_ref, database);
+        log_this(SR_MAIL_RELAY, "Mail Relay repository: QueryRef %d not found in cache for database '%s'", LOG_LEVEL_ERROR, 2, query_ref, database);
         mailrelay_repo_invoke_callback(callback, user_data,
                                        MAILRELAY_REPO_QUERY_NOT_FOUND,
                                        "Mail Relay QueryRef not found in cache",
@@ -179,8 +148,7 @@ bool mailrelay_repo_default_execute(int query_ref,
         return false;
     }
 
-    PendingQueryResult* pending = pending_result_register(
-        pending_mgr, query_id, MAILRELAY_REPO_DEFAULT_TIMEOUT_SECONDS, SR_MAIL_RELAY);
+    PendingQueryResult* pending = pending_result_register(pending_mgr, query_id, MAILRELAY_REPO_DEFAULT_TIMEOUT_SECONDS, SR_MAIL_RELAY);
     if (!pending) {
         mailrelay_repo_invoke_callback(callback, user_data,
                                        MAILRELAY_REPO_SUBMIT_FAILED,
@@ -194,9 +162,7 @@ bool mailrelay_repo_default_execute(int query_ref,
 
     bool submit_success = database_queue_submit_query(db_queue, &db_query);
     if (!submit_success) {
-        log_this(SR_MAIL_RELAY,
-                 "Mail Relay repository: failed to submit query for QueryRef %d",
-                 LOG_LEVEL_ERROR, 1, query_ref);
+        log_this(SR_MAIL_RELAY, "Mail Relay repository: failed to submit query for QueryRef %d", LOG_LEVEL_ERROR, 1, query_ref);
         mailrelay_repo_invoke_callback(callback, user_data,
                                        MAILRELAY_REPO_SUBMIT_FAILED,
                                        "Failed to submit query",
@@ -210,9 +176,7 @@ bool mailrelay_repo_default_execute(int query_ref,
 
     int wait_result = pending_result_wait(pending, SR_MAIL_RELAY);
     if (wait_result != 0) {
-        log_this(SR_MAIL_RELAY,
-                 "Mail Relay repository: query timed out for QueryRef %d",
-                 LOG_LEVEL_ERROR, 1, query_ref);
+        log_this(SR_MAIL_RELAY, "Mail Relay repository: query timed out for QueryRef %d", LOG_LEVEL_ERROR, 1, query_ref);
         mailrelay_repo_invoke_callback(callback, user_data,
                                        MAILRELAY_REPO_TIMEOUT,
                                        "Query execution timed out",
@@ -232,18 +196,14 @@ bool mailrelay_repo_default_execute(int query_ref,
     const char* error_message = NULL;
 
     if (query_result && query_result->error_message) {
-        log_this(SR_MAIL_RELAY,
-                 "Mail Relay repository: query failed for QueryRef %d: %s",
-                 LOG_LEVEL_ERROR, 2, query_ref, query_result->error_message);
+        log_this(SR_MAIL_RELAY, "Mail Relay repository: query failed for QueryRef %d: %s", LOG_LEVEL_ERROR, 2, query_ref, query_result->error_message);
         repo_status = MAILRELAY_REPO_QUERY_ERROR;
         error_message = query_result->error_message;
     } else if (query_result && query_result->data_json && query_result->data_json[0] != '\0') {
         json_error_t err;
         data = json_loads(query_result->data_json, 0, &err);
         if (!data) {
-            log_this(SR_MAIL_RELAY,
-                     "Mail Relay repository: failed to parse result JSON for QueryRef %d: %s",
-                     LOG_LEVEL_ERROR, 2, query_ref, err.text);
+            log_this(SR_MAIL_RELAY, "Mail Relay repository: failed to parse result JSON for QueryRef %d: %s", LOG_LEVEL_ERROR, 2, query_ref, err.text);
             repo_status = MAILRELAY_REPO_PARSE_ERROR;
             error_message = "Failed to parse query result JSON";
         } else {
@@ -252,8 +212,7 @@ bool mailrelay_repo_default_execute(int query_ref,
         }
     }
 
-    mailrelay_repo_invoke_callback(callback, user_data, repo_status, error_message,
-                                   data, affected_rows);
+    mailrelay_repo_invoke_callback(callback, user_data, repo_status, error_message, data, affected_rows);
 
     if (data_owned && data) {
         json_decref(data);
@@ -267,9 +226,7 @@ bool mailrelay_repo_default_execute(int query_ref,
     return repo_status == MAILRELAY_REPO_OK;
 }
 
-/* --------------------------------------------------------------------------
- * Executor seam management
- * -------------------------------------------------------------------------- */
+// Executor seam management
 
 void mailrelay_repo_set_executor(mailrelay_repo_execute_fn executor) {
     g_executor = executor;
@@ -282,10 +239,8 @@ mailrelay_repo_execute_fn mailrelay_repo_get_executor(void) {
     return g_executor;
 }
 
-/* --------------------------------------------------------------------------
- * JSON parameter building helpers
- * -------------------------------------------------------------------------- */
-
+// JSON parameter building helpers
+ 
 json_t* repo_params_new(void) {
     json_t* root = json_object();
     if (!root) {
@@ -343,12 +298,9 @@ bool repo_add_int64(json_t* root, const char* name, long long value) {
     return json_object_set_new(integer_obj, name, json_integer((json_int_t)value)) == 0;
 }
 
-// Translate ISO 8601 'YYYY-MM-DDTHH:MM:SS[.fff]Z' to MySQL DATETIME
-// 'YYYY-MM-DD HH:MM:SS'. Truncates fractional seconds and drops the trailing
-// 'Z'. NULL/empty input passes through unchanged (NULL stays NULL, empty
-// stays empty string). Already-formatted values are returned as-is.
-// Returns a heap-allocated string the caller must free. NULL on allocation
-// failure. See header for the full contract.
+// Translate ISO 8601 'YYYY-MM-DDTHH:MM:SS[.fff]Z' to MySQL DATETIME 'YYYY-MM-DD HH:MM:SS'. Truncates fractional seconds and drops the trailing
+// 'Z'. NULL/empty input passes through unchanged (NULL stays NULL, empty stays empty string). Already-formatted values are returned as-is.
+// Returns a heap-allocated string the caller must free. NULL on allocation failure. See header for the full contract.
 char* mailrelay_repo_translate_iso8601_to_mysql(const char* iso8601) {
     if (!iso8601) {
         return NULL;
@@ -362,8 +314,7 @@ char* mailrelay_repo_translate_iso8601_to_mysql(const char* iso8601) {
         }
         return empty;
     }
-    // Need at least 'YYYY-MM-DDTHH:MM:SS' (19 chars). Anything shorter or
-    // without a 'T' at position 10 is already in MySQL DATETIME shape
+    // Need at least 'YYYY-MM-DDTHH:MM:SS' (19 chars). Anything shorter or without a 'T' at position 10 is already in MySQL DATETIME shape
     // (or junk the engine will reject on its own); pass through unchanged.
     if (n < 19 || iso8601[10] != 'T') {
         char* copy = malloc(n + 1);
@@ -384,24 +335,19 @@ char* mailrelay_repo_translate_iso8601_to_mysql(const char* iso8601) {
     return out;
 }
 
-// PERSIST_PLAN Phase 2c: see header for the contract. Engine lookup is by
-// DatabaseConnection->type ("mysql" -> DB_ENGINE_MYSQL). Any other engine,
-// an unresolved name, or a missing app_config falls through to repo_add_string
-// unchanged so the 5 working engines keep their current ISO 8601 behaviour.
-bool repo_add_datetime(json_t* root, const char* name, const char* iso8601,
-                       const char* database_name) {
+// PERSIST_PLAN Phase 2c: see header for the contract. Engine lookup is by DatabaseConnection->type ("mysql" -> DB_ENGINE_MYSQL). Any other engine,
+// an unresolved name, or a missing app_config falls through to repo_add_string unchanged so the 5 working engines keep their current ISO 8601 behaviour.
+bool repo_add_datetime(json_t* root, const char* name, const char* iso8601, const char* database_name) {
     if (!root || !name) {
         return false;
     }
 
-    // Default: pass through to repo_add_string (preserves NULL/empty handling
-    // and the JSON STRING bucket shape).
+    // Default: pass through to repo_add_string (preserves NULL/empty handling and the JSON STRING bucket shape).
     if (!app_config || !database_name || !iso8601) {
         return repo_add_string(root, name, iso8601);
     }
 
-    const DatabaseConnection* conn = find_database_connection(
-        &app_config->databases, database_name);
+    const DatabaseConnection* conn = find_database_connection(&app_config->databases, database_name);
     bool is_mysql = (conn && conn->type && strcmp(conn->type, "mysql") == 0);
 
     if (!is_mysql) {
@@ -410,13 +356,11 @@ bool repo_add_datetime(json_t* root, const char* name, const char* iso8601,
 
     char* translated = mailrelay_repo_translate_iso8601_to_mysql(iso8601);
     if (!translated) {
-        // Translation failed (OOM). Fall back to the original value rather
-        // than silently dropping the bind.
+        // Translation failed (OOM). Fall back to the original value rather than silently dropping the bind.
         return repo_add_string(root, name, iso8601);
     }
 
-    // Bypass repo_add_string so the translated buffer is always stored as a
-    // JSON string (never JSON null) even if it happens to be empty.
+    // Bypass repo_add_string so the translated buffer is always stored as a JSON string (never JSON null) even if it happens to be empty.
     json_t* string_obj = json_object_get(root, "STRING");
     if (!string_obj) {
         free(translated);
@@ -430,13 +374,9 @@ bool repo_add_datetime(json_t* root, const char* name, const char* iso8601,
     return json_object_set_new(string_obj, name, jstr) == 0;
 }
 
-/*
- * Execute a query ref with the given JSON parameter object. The parameter
- * object is consumed (decref'd) regardless of success or failure.
- */
-bool repo_execute_json(int query_ref, json_t* params,
-                              mailrelay_repo_callback_fn callback,
-                              void* user_data) {
+// Execute a query ref with the given JSON parameter object. The parameter object is consumed (decref'd) regardless of success or failure.
+
+bool repo_execute_json(int query_ref, json_t* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params) {
         mailrelay_repo_invoke_callback(callback, user_data,
                                        MAILRELAY_REPO_INVALID_ARGS,
@@ -460,23 +400,16 @@ bool repo_execute_json(int query_ref, json_t* params,
     return result;
 }
 
-/*
- * Helper for parameter-less queries. Builds an empty JSON parameter object.
- */
-bool repo_execute_empty(int query_ref,
-                               mailrelay_repo_callback_fn callback,
-                               void* user_data) {
+// Helper for parameter-less queries. Builds an empty JSON parameter object.
+
+bool repo_execute_empty(int query_ref, mailrelay_repo_callback_fn callback, void* user_data) {
     json_t* params = repo_params_new();
     return repo_execute_json(query_ref, params, callback, user_data);
 }
 
-/* --------------------------------------------------------------------------
- * Queue QueryRefs
- * -------------------------------------------------------------------------- */
+// Queue QueryRefs
 
-bool mailrelay_repo_queue_insert(const MailRelayRepoQueueInsert* params,
-                                 mailrelay_repo_callback_fn callback,
-                                 void* user_data) {
+bool mailrelay_repo_queue_insert(const MailRelayRepoQueueInsert* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -495,14 +428,11 @@ bool mailrelay_repo_queue_insert(const MailRelayRepoQueueInsert* params,
     repo_add_string(p, "BODY_HTML", params->body_html);
     repo_add_string(p, "HEADERS_JSON", params->headers_json);
     repo_add_string(p, "IDEMPOTENCY_KEY", params->idempotency_key);
-    repo_add_datetime(p, "NEXT_ATTEMPT_AT", params->next_attempt_at,
-                      mailrelay_repo_resolve_database());
+    repo_add_datetime(p, "NEXT_ATTEMPT_AT", params->next_attempt_at, mailrelay_repo_resolve_database());
     return repo_execute_json(MAILRELAY_QREF_QUEUE_INSERT, p, callback, user_data);
 }
 
-bool mailrelay_repo_queue_get_by_uuid(const MailRelayRepoQueueGetByUuid* params,
-                                      mailrelay_repo_callback_fn callback,
-                                      void* user_data) {
+bool mailrelay_repo_queue_get_by_uuid(const MailRelayRepoQueueGetByUuid* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -514,10 +444,7 @@ bool mailrelay_repo_queue_get_by_uuid(const MailRelayRepoQueueGetByUuid* params,
     return repo_execute_json(MAILRELAY_QREF_QUEUE_GET_BY_UUID, p, callback, user_data);
 }
 
-bool mailrelay_repo_queue_get_by_idempotency(
-    const MailRelayRepoQueueGetByIdempotency* params,
-    mailrelay_repo_callback_fn callback,
-    void* user_data) {
+bool mailrelay_repo_queue_get_by_idempotency(const MailRelayRepoQueueGetByIdempotency* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -529,17 +456,14 @@ bool mailrelay_repo_queue_get_by_idempotency(
     return repo_execute_json(MAILRELAY_QREF_QUEUE_GET_BY_IDEMPOTENCY, p, callback, user_data);
 }
 
-bool mailrelay_repo_queue_select_next_pending(mailrelay_repo_callback_fn callback,
-                                              void* user_data) {
+bool mailrelay_repo_queue_select_next_pending(mailrelay_repo_callback_fn callback, void* user_data) {
     if (!callback) {
         return false;
     }
     return repo_execute_empty(MAILRELAY_QREF_QUEUE_SELECT_NEXT_PENDING, callback, user_data);
 }
 
-bool mailrelay_repo_queue_mark_sending(const MailRelayRepoQueueMarkSending* params,
-                                       mailrelay_repo_callback_fn callback,
-                                       void* user_data) {
+bool mailrelay_repo_queue_mark_sending(const MailRelayRepoQueueMarkSending* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -553,9 +477,7 @@ bool mailrelay_repo_queue_mark_sending(const MailRelayRepoQueueMarkSending* para
     return repo_execute_json(MAILRELAY_QREF_QUEUE_MARK_SENDING, p, callback, user_data);
 }
 
-bool mailrelay_repo_queue_mark_sent(const MailRelayRepoQueueMarkSent* params,
-                                    mailrelay_repo_callback_fn callback,
-                                    void* user_data) {
+bool mailrelay_repo_queue_mark_sent(const MailRelayRepoQueueMarkSent* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -570,9 +492,7 @@ bool mailrelay_repo_queue_mark_sent(const MailRelayRepoQueueMarkSent* params,
     return repo_execute_json(MAILRELAY_QREF_QUEUE_MARK_SENT, p, callback, user_data);
 }
 
-bool mailrelay_repo_queue_mark_failed(const MailRelayRepoQueueMarkFailed* params,
-                                      mailrelay_repo_callback_fn callback,
-                                      void* user_data) {
+bool mailrelay_repo_queue_mark_failed(const MailRelayRepoQueueMarkFailed* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -587,9 +507,7 @@ bool mailrelay_repo_queue_mark_failed(const MailRelayRepoQueueMarkFailed* params
     return repo_execute_json(MAILRELAY_QREF_QUEUE_MARK_FAILED, p, callback, user_data);
 }
 
-bool mailrelay_repo_queue_reschedule(const MailRelayRepoQueueReschedule* params,
-                                     mailrelay_repo_callback_fn callback,
-                                     void* user_data) {
+bool mailrelay_repo_queue_reschedule(const MailRelayRepoQueueReschedule* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -598,15 +516,12 @@ bool mailrelay_repo_queue_reschedule(const MailRelayRepoQueueReschedule* params,
         return false;
     }
     repo_add_int64(p, "QUEUE_ID", params->queue_id);
-    repo_add_datetime(p, "NEXT_ATTEMPT_AT", params->next_attempt_at,
-                      mailrelay_repo_resolve_database());
+    repo_add_datetime(p, "NEXT_ATTEMPT_AT", params->next_attempt_at, mailrelay_repo_resolve_database());
     repo_add_int(p, "ATTEMPTS", params->attempts);
     return repo_execute_json(MAILRELAY_QREF_QUEUE_RESCHEDULE, p, callback, user_data);
 }
 
-bool mailrelay_repo_queue_recover_stale(const MailRelayRepoQueueRecoverStale* params,
-                                        mailrelay_repo_callback_fn callback,
-                                        void* user_data) {
+bool mailrelay_repo_queue_recover_stale(const MailRelayRepoQueueRecoverStale* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -614,18 +529,13 @@ bool mailrelay_repo_queue_recover_stale(const MailRelayRepoQueueRecoverStale* pa
     if (!p) {
         return false;
     }
-    repo_add_datetime(p, "STALE_BEFORE", params->stale_before,
-                      mailrelay_repo_resolve_database());
+    repo_add_datetime(p, "STALE_BEFORE", params->stale_before, mailrelay_repo_resolve_database());
     return repo_execute_json(MAILRELAY_QREF_QUEUE_RECOVER_STALE, p, callback, user_data);
 }
 
-/* --------------------------------------------------------------------------
- * Attempts QueryRefs
- * -------------------------------------------------------------------------- */
-
-bool mailrelay_repo_attempt_insert(const MailRelayRepoAttemptInsert* params,
-                                   mailrelay_repo_callback_fn callback,
-                                   void* user_data) {
+// Attempts QueryRefs
+ 
+bool mailrelay_repo_attempt_insert(const MailRelayRepoAttemptInsert* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -644,13 +554,9 @@ bool mailrelay_repo_attempt_insert(const MailRelayRepoAttemptInsert* params,
     return repo_execute_json(MAILRELAY_QREF_ATTEMPT_INSERT, p, callback, user_data);
 }
 
-/* --------------------------------------------------------------------------
- * Template QueryRefs
- * -------------------------------------------------------------------------- */
+// Template QueryRefs
 
-bool mailrelay_repo_template_get_by_key(const MailRelayRepoTemplateGetByKey* params,
-                                        mailrelay_repo_callback_fn callback,
-                                        void* user_data) {
+bool mailrelay_repo_template_get_by_key(const MailRelayRepoTemplateGetByKey* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -662,17 +568,14 @@ bool mailrelay_repo_template_get_by_key(const MailRelayRepoTemplateGetByKey* par
     return repo_execute_json(MAILRELAY_QREF_TEMPLATE_GET_BY_KEY, p, callback, user_data);
 }
 
-bool mailrelay_repo_template_list_active(mailrelay_repo_callback_fn callback,
-                                         void* user_data) {
+bool mailrelay_repo_template_list_active(mailrelay_repo_callback_fn callback, void* user_data) {
     if (!callback) {
         return false;
     }
     return repo_execute_empty(MAILRELAY_QREF_TEMPLATE_LIST_ACTIVE, callback, user_data);
 }
 
-bool mailrelay_repo_template_insert(const MailRelayRepoTemplateInsert* params,
-                                    mailrelay_repo_callback_fn callback,
-                                    void* user_data) {
+bool mailrelay_repo_template_insert(const MailRelayRepoTemplateInsert* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -690,9 +593,7 @@ bool mailrelay_repo_template_insert(const MailRelayRepoTemplateInsert* params,
     return repo_execute_json(MAILRELAY_QREF_TEMPLATE_INSERT, p, callback, user_data);
 }
 
-bool mailrelay_repo_template_update(const MailRelayRepoTemplateUpdate* params,
-                                    mailrelay_repo_callback_fn callback,
-                                    void* user_data) {
+bool mailrelay_repo_template_update(const MailRelayRepoTemplateUpdate* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -710,9 +611,7 @@ bool mailrelay_repo_template_update(const MailRelayRepoTemplateUpdate* params,
     return repo_execute_json(MAILRELAY_QREF_TEMPLATE_UPDATE, p, callback, user_data);
 }
 
-bool mailrelay_repo_template_soft_delete(const MailRelayRepoTemplateSoftDelete* params,
-                                         mailrelay_repo_callback_fn callback,
-                                         void* user_data) {
+bool mailrelay_repo_template_soft_delete(const MailRelayRepoTemplateSoftDelete* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -724,13 +623,9 @@ bool mailrelay_repo_template_soft_delete(const MailRelayRepoTemplateSoftDelete* 
     return repo_execute_json(MAILRELAY_QREF_TEMPLATE_SOFT_DELETE, p, callback, user_data);
 }
 
-/* --------------------------------------------------------------------------
- * Event QueryRefs
- * -------------------------------------------------------------------------- */
+// Event QueryRefs
 
-bool mailrelay_repo_event_insert(const MailRelayRepoEventInsert* params,
-                                 mailrelay_repo_callback_fn callback,
-                                 void* user_data) {
+bool mailrelay_repo_event_insert(const MailRelayRepoEventInsert* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -755,17 +650,14 @@ bool mailrelay_repo_event_insert(const MailRelayRepoEventInsert* params,
     return repo_execute_json(MAILRELAY_QREF_EVENT_INSERT, p, callback, user_data);
 }
 
-bool mailrelay_repo_event_list_pending(mailrelay_repo_callback_fn callback,
-                                       void* user_data) {
+bool mailrelay_repo_event_list_pending(mailrelay_repo_callback_fn callback, void* user_data) {
     if (!callback) {
         return false;
     }
     return repo_execute_empty(MAILRELAY_QREF_EVENT_LIST_PENDING, callback, user_data);
 }
 
-bool mailrelay_repo_event_mark_processed(const MailRelayRepoEventMarkProcessed* params,
-                                         mailrelay_repo_callback_fn callback,
-                                         void* user_data) {
+bool mailrelay_repo_event_mark_processed(const MailRelayRepoEventMarkProcessed* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -779,9 +671,7 @@ bool mailrelay_repo_event_mark_processed(const MailRelayRepoEventMarkProcessed* 
     return repo_execute_json(MAILRELAY_QREF_EVENT_MARK_PROCESSED, p, callback, user_data);
 }
 
-bool mailrelay_repo_event_mark_suppressed(const MailRelayRepoEventMarkSuppressed* params,
-                                          mailrelay_repo_callback_fn callback,
-                                          void* user_data) {
+bool mailrelay_repo_event_mark_suppressed(const MailRelayRepoEventMarkSuppressed* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -793,13 +683,9 @@ bool mailrelay_repo_event_mark_suppressed(const MailRelayRepoEventMarkSuppressed
     return repo_execute_json(MAILRELAY_QREF_EVENT_MARK_SUPPRESSED, p, callback, user_data);
 }
 
-/* --------------------------------------------------------------------------
- * OTP QueryRefs
- * -------------------------------------------------------------------------- */
+// OTP QueryRefs
 
-bool mailrelay_repo_otp_insert(const MailRelayRepoOtpInsert* params,
-                               mailrelay_repo_callback_fn callback,
-                               void* user_data) {
+bool mailrelay_repo_otp_insert(const MailRelayRepoOtpInsert* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -812,15 +698,12 @@ bool mailrelay_repo_otp_insert(const MailRelayRepoOtpInsert* params,
     repo_add_int64(p, "ACCOUNT_ID", params->account_id);
     repo_add_int(p, "PURPOSE_A66", params->purpose_a66);
     repo_add_int(p, "STATUS_A67", params->status_a67);
-    repo_add_datetime(p, "EXPIRY_AT", params->expiry_at,
-                      mailrelay_repo_resolve_database());
+    repo_add_datetime(p, "EXPIRY_AT", params->expiry_at, mailrelay_repo_resolve_database());
     repo_add_int(p, "MAX_ATTEMPTS", params->max_attempts);
     return repo_execute_json(MAILRELAY_QREF_OTP_INSERT, p, callback, user_data);
 }
 
-bool mailrelay_repo_otp_get_active(const MailRelayRepoOtpGetActive* params,
-                                   mailrelay_repo_callback_fn callback,
-                                   void* user_data) {
+bool mailrelay_repo_otp_get_active(const MailRelayRepoOtpGetActive* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -833,9 +716,7 @@ bool mailrelay_repo_otp_get_active(const MailRelayRepoOtpGetActive* params,
     return repo_execute_json(MAILRELAY_QREF_OTP_GET_ACTIVE, p, callback, user_data);
 }
 
-bool mailrelay_repo_otp_consume(const MailRelayRepoOtpConsume* params,
-                                mailrelay_repo_callback_fn callback,
-                                void* user_data) {
+bool mailrelay_repo_otp_consume(const MailRelayRepoOtpConsume* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -847,9 +728,7 @@ bool mailrelay_repo_otp_consume(const MailRelayRepoOtpConsume* params,
     return repo_execute_json(MAILRELAY_QREF_OTP_CONSUME, p, callback, user_data);
 }
 
-bool mailrelay_repo_otp_increment_attempts(const MailRelayRepoOtpIncrementAttempts* params,
-                                           mailrelay_repo_callback_fn callback,
-                                           void* user_data) {
+bool mailrelay_repo_otp_increment_attempts(const MailRelayRepoOtpIncrementAttempts* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -861,9 +740,7 @@ bool mailrelay_repo_otp_increment_attempts(const MailRelayRepoOtpIncrementAttemp
     return repo_execute_json(MAILRELAY_QREF_OTP_INCREMENT_ATTEMPTS, p, callback, user_data);
 }
 
-bool mailrelay_repo_otp_expire_old(const MailRelayRepoOtpExpireOld* params,
-                                   mailrelay_repo_callback_fn callback,
-                                   void* user_data) {
+bool mailrelay_repo_otp_expire_old(const MailRelayRepoOtpExpireOld* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -871,14 +748,11 @@ bool mailrelay_repo_otp_expire_old(const MailRelayRepoOtpExpireOld* params,
     if (!p) {
         return false;
     }
-    repo_add_datetime(p, "EXPIRY_CUTOFF_AT", params->expiry_cutoff_at,
-                      mailrelay_repo_resolve_database());
+    repo_add_datetime(p, "EXPIRY_CUTOFF_AT", params->expiry_cutoff_at, mailrelay_repo_resolve_database());
     return repo_execute_json(MAILRELAY_QREF_OTP_EXPIRE_OLD, p, callback, user_data);
 }
 
-bool mailrelay_repo_otp_get_by_id(const MailRelayRepoOtpGetById* params,
-                                  mailrelay_repo_callback_fn callback,
-                                  void* user_data) {
+bool mailrelay_repo_otp_get_by_id(const MailRelayRepoOtpGetById* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -890,9 +764,7 @@ bool mailrelay_repo_otp_get_by_id(const MailRelayRepoOtpGetById* params,
     return repo_execute_json(MAILRELAY_QREF_OTP_GET_BY_ID, p, callback, user_data);
 }
 
-bool mailrelay_repo_otp_mark_max_attempts(const MailRelayRepoOtpMarkMaxAttempts* params,
-                                          mailrelay_repo_callback_fn callback,
-                                          void* user_data) {
+bool mailrelay_repo_otp_mark_max_attempts(const MailRelayRepoOtpMarkMaxAttempts* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -904,14 +776,9 @@ bool mailrelay_repo_otp_mark_max_attempts(const MailRelayRepoOtpMarkMaxAttempts*
     return repo_execute_json(MAILRELAY_QREF_OTP_MARK_MAX_ATTEMPTS, p, callback, user_data);
 }
 
-/* --------------------------------------------------------------------------
- * Route QueryRefs
- * -------------------------------------------------------------------------- */
+// Route QueryRefs
 
-bool mailrelay_repo_route_get_by_sender_domain(
-    const MailRelayRepoRouteGetBySenderDomain* params,
-    mailrelay_repo_callback_fn callback,
-    void* user_data) {
+bool mailrelay_repo_route_get_by_sender_domain(const MailRelayRepoRouteGetBySenderDomain* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -923,17 +790,14 @@ bool mailrelay_repo_route_get_by_sender_domain(
     return repo_execute_json(MAILRELAY_QREF_ROUTE_GET_BY_SENDER_DOMAIN, p, callback, user_data);
 }
 
-bool mailrelay_repo_route_list_active(mailrelay_repo_callback_fn callback,
-                                      void* user_data) {
+bool mailrelay_repo_route_list_active(mailrelay_repo_callback_fn callback, void* user_data) {
     if (!callback) {
         return false;
     }
     return repo_execute_empty(MAILRELAY_QREF_ROUTE_LIST_ACTIVE, callback, user_data);
 }
 
-bool mailrelay_repo_route_insert(const MailRelayRepoRouteInsert* params,
-                                 mailrelay_repo_callback_fn callback,
-                                 void* user_data) {
+bool mailrelay_repo_route_insert(const MailRelayRepoRouteInsert* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -958,9 +822,7 @@ bool mailrelay_repo_route_insert(const MailRelayRepoRouteInsert* params,
     return repo_execute_json(MAILRELAY_QREF_ROUTE_INSERT, p, callback, user_data);
 }
 
-bool mailrelay_repo_route_update(const MailRelayRepoRouteUpdate* params,
-                                 mailrelay_repo_callback_fn callback,
-                                 void* user_data) {
+bool mailrelay_repo_route_update(const MailRelayRepoRouteUpdate* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -986,9 +848,7 @@ bool mailrelay_repo_route_update(const MailRelayRepoRouteUpdate* params,
     return repo_execute_json(MAILRELAY_QREF_ROUTE_UPDATE, p, callback, user_data);
 }
 
-bool mailrelay_repo_route_soft_delete(const MailRelayRepoRouteSoftDelete* params,
-                                      mailrelay_repo_callback_fn callback,
-                                      void* user_data) {
+bool mailrelay_repo_route_soft_delete(const MailRelayRepoRouteSoftDelete* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -1000,13 +860,9 @@ bool mailrelay_repo_route_soft_delete(const MailRelayRepoRouteSoftDelete* params
     return repo_execute_json(MAILRELAY_QREF_ROUTE_SOFT_DELETE, p, callback, user_data);
 }
 
-/* --------------------------------------------------------------------------
- * Cleanup QueryRefs
- * -------------------------------------------------------------------------- */
+// Cleanup QueryRefs
 
-bool mailrelay_repo_cleanup_queue(const MailRelayRepoCleanupQueue* params,
-                                  mailrelay_repo_callback_fn callback,
-                                  void* user_data) {
+bool mailrelay_repo_cleanup_queue(const MailRelayRepoCleanupQueue* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -1014,14 +870,11 @@ bool mailrelay_repo_cleanup_queue(const MailRelayRepoCleanupQueue* params,
     if (!p) {
         return false;
     }
-    repo_add_datetime(p, "CUTOFF_AT", params->cutoff_at,
-                      mailrelay_repo_resolve_database());
+    repo_add_datetime(p, "CUTOFF_AT", params->cutoff_at, mailrelay_repo_resolve_database());
     return repo_execute_json(MAILRELAY_QREF_CLEANUP_QUEUE, p, callback, user_data);
 }
 
-bool mailrelay_repo_cleanup_events(const MailRelayRepoCleanupEvents* params,
-                                   mailrelay_repo_callback_fn callback,
-                                   void* user_data) {
+bool mailrelay_repo_cleanup_events(const MailRelayRepoCleanupEvents* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -1029,14 +882,11 @@ bool mailrelay_repo_cleanup_events(const MailRelayRepoCleanupEvents* params,
     if (!p) {
         return false;
     }
-    repo_add_datetime(p, "CUTOFF_AT", params->cutoff_at,
-                      mailrelay_repo_resolve_database());
+    repo_add_datetime(p, "CUTOFF_AT", params->cutoff_at, mailrelay_repo_resolve_database());
     return repo_execute_json(MAILRELAY_QREF_CLEANUP_EVENTS, p, callback, user_data);
 }
 
-bool mailrelay_repo_cleanup_attempts(const MailRelayRepoCleanupAttempts* params,
-                                     mailrelay_repo_callback_fn callback,
-                                     void* user_data) {
+bool mailrelay_repo_cleanup_attempts(const MailRelayRepoCleanupAttempts* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -1044,14 +894,11 @@ bool mailrelay_repo_cleanup_attempts(const MailRelayRepoCleanupAttempts* params,
     if (!p) {
         return false;
     }
-    repo_add_datetime(p, "CUTOFF_AT", params->cutoff_at,
-                      mailrelay_repo_resolve_database());
+    repo_add_datetime(p, "CUTOFF_AT", params->cutoff_at, mailrelay_repo_resolve_database());
     return repo_execute_json(MAILRELAY_QREF_CLEANUP_ATTEMPTS, p, callback, user_data);
 }
 
-bool mailrelay_repo_cleanup_otp(const MailRelayRepoCleanupOtp* params,
-                                  mailrelay_repo_callback_fn callback,
-                                  void* user_data) {
+bool mailrelay_repo_cleanup_otp(const MailRelayRepoCleanupOtp* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;
     }
@@ -1059,18 +906,13 @@ bool mailrelay_repo_cleanup_otp(const MailRelayRepoCleanupOtp* params,
     if (!p) {
         return false;
     }
-    repo_add_datetime(p, "CUTOFF_AT", params->cutoff_at,
-                      mailrelay_repo_resolve_database());
+    repo_add_datetime(p, "CUTOFF_AT", params->cutoff_at, mailrelay_repo_resolve_database());
     return repo_execute_json(MAILRELAY_QREF_CLEANUP_OTP, p, callback, user_data);
 }
 
-/* --------------------------------------------------------------------------
- * Role QueryRefs
- * -------------------------------------------------------------------------- */
-
-bool mailrelay_repo_role_get_by_name(const char* name,
-                                     mailrelay_repo_callback_fn callback,
-                                     void* user_data) {
+// Role QueryRefs
+ 
+bool mailrelay_repo_role_get_by_name(const char* name, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!name || !callback) {
         return false;
     }

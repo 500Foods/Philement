@@ -12,30 +12,6 @@
 #include "health.h"
 
 // Simple metric storage (per-database, per-engine)
-typedef struct ChatMetricEntry {
-    char database[64];
-    char engine[64];
-    char provider[32];
-    
-    // Gauges
-    double health;              // 1.0 = healthy, 0.0 = unhealthy
-    double response_time_ms;
-    
-    // Counters
-    unsigned long long conversations_total;
-    unsigned long long tokens_prompt_total;
-    unsigned long long tokens_completion_total;
-    unsigned long long errors_total;
-    
-    // Request duration histogram (simplified: just track sum and count)
-    double request_duration_sum;
-    unsigned long long request_duration_count;
-    
-    // Last update time
-    time_t last_update;
-} ChatMetricEntry;
-
-// Simple fixed-size metric storage
 #define MAX_METRIC_ENTRIES 256
 static ChatMetricEntry metric_entries[MAX_METRIC_ENTRIES];
 static size_t metric_entry_count = 0;
