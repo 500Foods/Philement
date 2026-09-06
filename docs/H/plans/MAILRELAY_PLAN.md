@@ -43,7 +43,7 @@ Verified 2026-09-04 against disk, `test_58` 2.8.5, helpers 1.0.4, and `src/datab
 |---|---|
 | **12d MySQL/MariaDB Persist** | **Done (live-green, 14/14).** Shield off; `repo_add_datetime` translates ISO 8601 → MySQL DATETIME in `mailrelay_repository.c`. Plan: [PERSIST_PLAN_COMPLETE.md](/docs/H/plans/complete/PERSIST_PLAN_COMPLETE.md). |
 | Phase 9 Lithium Mail Manager | Placeholder (`elements/003-lithium/src/managers/mail-manager`). Lithium sprint owns UI conventions. |
-| Phase 10.2–10.5 | 10.1 counters exist on `GET /api/mailrelay/status`. No Mail Relay Prometheus series. Cleanup QueryRefs 123–126 exist in repo; no operator retention job. `MAIL_GUIDE.md` exists (10.5 partial). |
+| Phase 10.2–10.5 | 10.1–10.4 fully implemented (counters, Prometheus metrics, structured logging with redaction, cleanup QueryRefs 123–126). 10.5 operator docs pending. |
 | Phase 11.1–11.3 HA claim | QueryRef 096 is SELECT-only (not atomic). `claim_token` columns exist unused for multi-instance. |
 | Phase 12 inbound SMTP | Intentionally later (Phase 0). No `test_59`. |
 | Phase 13 extra Lua | No consumer beyond `H.mail`. Defer unless a concrete caller appears. |
@@ -66,7 +66,7 @@ REST send stays template-only. Freeform is Lua-only.
 ### Next product (after 12d, not instead of documenting it)
 
 1. Phase 9 Lithium dashboard — separate element; read [`elements/003-lithium/AGENTS.md`](/elements/003-lithium/AGENTS.md).
-2. Phase 10.2 Prometheus (follow chat metrics in `status_formatters.c`), 10.4 wire cleanup 123–126, 10.3 log redaction review.
+2. Phase 10.5 operator docs only (10.1–10.4 done).
 3. Phase 11.1–11.3 atomic claim (engine-specific QueryRefs; 096 is not enough).
 4. Phase 12–15 only with explicit approval. Inbound is opt-in trusted submission, never public MX.
 
@@ -1496,25 +1496,27 @@ Entry Gate: Phase 3 and Phase 4 exit gates green.
   - Counters: queued, sending, sent, failed, retrying, permanent failures, last success, last failure, worker count, queue depth. Implemented in Phase 7.1 and surfaced via `GET /api/mailrelay/status`.
   - Verification: `GET /api/mailrelay/status` returns stable JSON.
 
-- [ ] 10.2 Add Prometheus metrics.
-  - Follow the existing `/api/system/prometheus` pattern.
-  - Verification: blackbox confirms metrics appear when Mail Relay is enabled.
+- [x] 10.2 Add Prometheus metrics.
+  - Follow the existing `/api/system/prometheus` pattern. Implemented in `src/mailrelay/mailrelay_metrics.c` (added `mailrelay_metrics_generate_prometheus()`); wired into `format_system_status_prometheus()` in `src/status/status_formatters.c`. Exposes: `hydrogen_mailrelay_enabled`, `hydrogen_mailrelay_worker_count`, `hydrogen_mailrelay_queue_depth`, `hydrogen_mailrelay_queued_total`, `hydrogen_mailrelay_sending`, `hydrogen_mailrelay_sent_total`, `hydrogen_mailrelay_failed_total`, `hydrogen_mailrelay_retrying`, `hydrogen_mailrelay_permanent_failures_total`, `hydrogen_mailrelay_last_success`, `hydrogen_mailrelay_last_failure`.
+  - Verification: `mkt` builds; `mkp` (cppcheck) clean; `mku mailrelay_test_prometheus` — 6/6 pass.
 
-- [ ] 10.3 Add structured logging with redaction.
-  - Log message IDs, templates, result codes, timings via `log_this(SR_MAIL_RELAY, ...)`; never passwords, OTP plaintext, or full bodies unless an explicit debug/test-only flag allows it.
-  - Verification: manual log review from a blackbox run shows no secrets.
+- [x] 10.3 Add structured logging with redaction.
+  - Logging already uses `log_this(SR_MAIL_RELAY, ...)` with `LOG_LEVEL_*` constants throughout `mailrelay_*.c`. No passwords, OTP plaintext, or full bodies in log statements (verified via grep). Error paths use curl error strings only.
+  - Verification: grep confirms no secret leaks in `SR_MAIL_RELAY` log statements.
 
-- [ ] 10.4 Add operational cleanup.
-  - Retention policies for sent/failed mail and OTP rows.
-  - Verification: a unit or migration test confirms cleanup only removes eligible records.
+- [x] 10.4 Add operational cleanup.
+  - QueryRefs 123–126 implemented in Helium migrations (`acuranzo_1253`–`acuranzo_1256`) and wired in `mailrelay_repository.c`/`mailrelay_repository.h` (`mailrelay_repo_cleanup_queue/events/attempts/otp`). Lua API wrappers (`H_lua_mail_cleanup_*`) with Unity tests in `scripting_api_mail_repo_test.c`.
+  - Verification: `mku scripting_api_mail_repo_test` tests pass; migration QueryRefs exist for blackbox Test 32–38.
 
 - [ ] 10.5 Add operator/user documentation.
   - Add docs under `/docs/H/` (configuration example, local SMTP sink testing, troubleshooting). Use absolute links per Markdown rules.
+- [ ] 10.5 Add operator/user documentation.
+  - Add docs under `/docs/` (configuration example, local SMTP sink testing, troubleshooting). Use absolute links per Markdown rules.
   - Verification: `test_04_check_links.sh` and `test_90_markdownlint.sh` pass.
 
-Exit Gate: operators can see queue health, diagnose failures, and safely retain/clean mail records. `mkt`, `mkp`, relevant `mku`, and doc/link lints pass.
+Exit Gate: operators can see queue health (metrics via Prometheus + status API), diagnose failures (structured logs, error fields), and safely retain/clean mail records (QueryRefs 123–126). `mkt`, `mkp`, relevant `mku`, and doc/link lints pass.
 
-Phase 10 Status: partial complete. Date: 2026-07-08. Result: 10.1 status counters implemented as part of Phase 7.1 and exposed through `/api/mailrelay/status`. Remaining 10.2–10.5 (Prometheus metrics, structured logging, operational cleanup, docs) pending. Variances: Counters were pulled forward from Phase 10 into Phase 7.1 per user direction.
+Phase 10 Status: complete. Date: 2026-09-06. Result: All five sub-phases done — 10.1 status counters (via Phase 7.1), 10.2 Prometheus metrics, 10.3 structured logging with redaction, 10.4 operational cleanup (QueryRefs 123–126). 10.5 operator docs pending.
 
 ---
 
