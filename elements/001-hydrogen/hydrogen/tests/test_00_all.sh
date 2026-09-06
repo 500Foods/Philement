@@ -12,6 +12,8 @@
 # run_all_tests_parallel() 
 
 # CHANGELOG
+# 8.3.1 - 2026-09-06 - Fixed TEST/PASS/FAIL pairing: command availability results now emit as INFO
+#                     messages under the subtest, with a single final print_result (PASS or FAIL)
 # 8.3.0 - 2026-08-22 - Tests/Pass/Fail use tables num datatype (thousands separators)
 # 8.2.2 - 2026-08-02 - Updated Test 22 version to 7.5.0 (Brotli decompression + proxy/Host header tests)
 # 8.2.1 - 2026-07-29 - Wait for Oh SVG jobs before email; retry COVERAGE.svg without ANSI
@@ -67,7 +69,7 @@ TEST_NAME="Test Suite Orchestration"
 TEST_ABBR="ORC"
 TEST_NUMBER="00"
 TEST_COUNTER=0
-TEST_VERSION="8.3.0"
+TEST_VERSION="8.3.1"
 export TEST_NAME TEST_ABBR TEST_NUMBER TEST_VERSION
  
 # shellcheck disable=SC1091 # Resolve path statically
@@ -138,7 +140,7 @@ if [[ ${#to_process[@]} -gt 0 ]]; then
     done < <("${PRINTF}" "%s\n" "${to_process[@]}" | "${XARGS}" -P 0 -I {} bash -c '
         cmd="{}"
         if command -v "${cmd}" >/dev/null 2>&1; then
-            cmd_path=$(command -v "${cmd}")
+            cmd_path=$(command -v "${cmd}" 2>/dev/null || echo "")
             version=$("${cmd_path}" --version 2>&1 | "${GREP}" -oE "[0-9]+\.[0-9]+([.-][0-9a-zA-Z]+)*" | head -n 1)
             if [ -n "${version}" ]; then
                 echo "0|${cmd} @ ${cmd_path}|${version}"
@@ -170,12 +172,23 @@ while IFS= read -r line; do
     sorted_results+=("${line}")
 done < <("${PRINTF}" "%s\n" "${results[@]}" | sort -f -t'|' -k2 || true)
 
-# Process sorted results array and call print_result
+# Process sorted results array, emitting each as an INFO message (not PASS/FAIL)
+# so that the single opening TEST remains paired with one final print_result.
+missing_commands=0
 for result in "${sorted_results[@]}"; do
     # Split result into status, message, and version (format: "status|message|version")
     IFS='|' read -r status message version <<< "${result}"
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" "${status}" "${message}: ${version}"
+    if [[ "${status}" -ne 0 ]]; then
+        missing_commands=$((missing_commands + 1))
+    fi
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${message}: ${version}"
 done
+
+if [[ "${missing_commands}" -gt 0 ]]; then
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${missing_commands} command(s) not found"
+else
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All ${#sorted_results[@]} commands available (${cached} cached)"
+fi
 popd > /dev/null || return 1
 
 dump_collected_output
