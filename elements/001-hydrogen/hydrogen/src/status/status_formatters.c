@@ -9,6 +9,7 @@
 // Local includes
 #include "status_formatters.h"
 #include <src/api/wschat/helpers/metrics.h>
+#include <src/mailrelay/mailrelay_metrics.h>
 #include <src/mdns/mdns_client.h>
 
 // Convert system metrics to JSON format
@@ -769,6 +770,29 @@ char* format_system_status_prometheus(const SystemMetrics *metrics) {
             }
         }
         free(chat_buffer);
+    }
+
+    // Mail Relay Metrics
+    size_t mail_buffer_size = 4096;
+    char* mail_buffer = malloc(mail_buffer_size);
+    if (mail_buffer) {
+        size_t mail_len = mailrelay_metrics_generate_prometheus(mail_buffer, mail_buffer_size);
+        if (mail_len > 0) {
+            if (offset + mail_len >= buffer_size - 1) {
+                size_t new_size = buffer_size + mail_len + 1024;
+                char* new_buffer = realloc(output, new_size);
+                if (new_buffer) {
+                    output = new_buffer;
+                    buffer_size = new_size;
+                }
+            }
+            if (offset + mail_len < buffer_size) {
+                memcpy(output + offset, mail_buffer, mail_len);
+                offset += mail_len;
+                output[offset] = '\0';
+            }
+        }
+        free(mail_buffer);
     }
 
     #undef APPEND
