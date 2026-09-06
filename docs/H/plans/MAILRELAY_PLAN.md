@@ -43,7 +43,7 @@ Verified 2026-09-04 against disk, `test_58` 2.8.5, helpers 1.0.4, and `src/datab
 |---|---|
 | **12d MySQL/MariaDB Persist** | **Done (live-green, 14/14).** Shield off; `repo_add_datetime` translates ISO 8601 → MySQL DATETIME in `mailrelay_repository.c`. Plan: [PERSIST_PLAN_COMPLETE.md](/docs/H/plans/complete/PERSIST_PLAN_COMPLETE.md). |
 | Phase 6.1b blackbox re-verification | Code + seeds exist (`mailrelay_events.c`, `acuranzo_1280–1282`); `test_57`/`test_58` scripts assert lifecycle mail. Phase 6 Status not yet flipped to complete pending re-run of named blackbox gates. |
-| Phase 9 Lithium Mail Manager | **Permanently deferred.** Placeholder exists at `elements/003-lithium/src/managers/mail-manager` (confirms in [`elements/003-lithium/AGENTS.md`](elements/003-lithium/AGENTS.md) line 181); UI belongs to the Lithium element and will be added there separately. See note below. |
+| Phase 9 Lithium Mail Manager | **Permanently deferred.** Placeholder exists at `elements/003-lithium/src/managers/mail-manager`; UI belongs to the Lithium element and will be added there separately. See note below. |
 | Phase 10.5 operator docs | **Done.** [`docs/H/MAIL_GUIDE.md`](/docs/H/MAIL_GUIDE.md) (1007 lines) covers configuration examples, lifecycle, templates/macros, producing mail, debounce, events, OTP, queue/workers/retry, observability, security/policy, database objects, end-to-end scenarios, and error codes/troubleshooting. |
 | Phase 11.1–11.3 HA claim | QueryRef 096 is SELECT-only (not atomic). `claim_token` columns exist unused for multi-instance. Atomic claim-next-pending requires engine-specific QueryRefs. 11.4 idempotency is done. |
 | Phase 12 inbound SMTP | Intentionally later (Phase 0). `InboundEnabled` config flag exists but `mailrelay_smtp_listener.c` does not. No `test_59`. |
@@ -68,7 +68,7 @@ REST send stays template-only. Freeform is Lua-only.
 ### Next product (after 12d, not instead of documenting it)
 
 1. ~~Phase 6.1b blackbox re-verification~~ — **completed 2026-09-06.** `test_57`/`test_58` re-run green. Phase 6 Status now complete.
-2. Phase 9 Lithium dashboard — **permanently deferred** to the Lithium element (`elements/003-lithium/`); read [`elements/003-lithium/AGENTS.md`](/elements/003-lithium/AGENTS.md).
+2. Phase 9 Lithium dashboard — **permanently deferred** to the Lithium element (`elements/003-lithium/`)
 3. Phase 11.1–11.3 atomic claim (engine-specific QueryRefs; 096 is SELECT-only, not enough).
 4. Phase 14 security hardening (header injection rejection, API rate limits, sender-domain policy, TLS minimums — several documented in `MAIL_GUIDE.md` Security section but not yet implemented in code).
 5. Phase 12–15 only with explicit approval. Inbound is opt-in trusted submission, never public MX.
@@ -1527,7 +1527,7 @@ Entry Gate: Phase 7 exit gate green; Phase 10 status counters available (at leas
 
 Exit Gate: the placeholder Mail Manager becomes an operational dashboard/test console without exposing unrestricted raw mail sending. UI build/lint passes.
 
-Phase 9 Status: **permanently deferred**. Date: 2026-09-06. Result: Phase 9 is moved to the Lithium element (`/elements/003-lithium/`) and will be implemented there separately. The placeholder `MailManager` at `elements/003-lithium/src/managers/mail-manager` (confirmed in [`elements/003-lithium/AGENTS.md`](elements/003-lithium/AGENTS.md) line 181) renders "under development" and the Lithium AGENTS.md documents Mail Manager as a placeholder. This is a separate element with its own toolchain (Vite/Vitest/ESLint); not a Hydrogen worktree change. No further action on this plan until the Lithium sprint picks it up. Variances: none — UI work was always intended for the Lithium element.
+Phase 9 Status: **permanently deferred**. Date: 2026-09-06. Result: Phase 9 is moved to the Lithium element (`/elements/003-lithium/`) and will be implemented there separately. The placeholder `MailManager` at `elements/003-lithium/src/managers/mail-manager` renders "under development" and the Lithium AGENTS.md documents Mail Manager as a placeholder. This is a separate element with its own toolchain (Vite/Vitest/ESLint); not a Hydrogen worktree change. No further action on this plan until the Lithium sprint picks it up. Variances: none — UI work was always intended for the Lithium element.
 
 ---
 
@@ -1594,7 +1594,16 @@ Entry Gate: Phase 4 exit gate green.
 
 Exit Gate: multi-instance Hydrogen processes a shared mail queue with no normal duplicate sends and predictable crash recovery.
 
-Phase 11 Status: **partial (11.4 done, 11.1–11.3 pending)**. Date: 2026-09-06. Result: 11.4 idempotency is complete (Persist-backed via QueryRef 095; sequential only, no UNIQUE; `test_58` 2.7.0 asserts same `message_id` + one sink delivery). 11.1–11.3 (atomic claim-next-pending, stale-claim recovery) not implemented — QueryRef 096 is SELECT-only, `claim_token` columns exist but unused. Variances: none.
+Phase 11 Status: **in progress**. Date: 2026-09-06. Result:
+
+- 11.1: **done** — Atomic claim semantics designed using a single QueryRef #154 with a dialect-agnostic SQL template (UPDATE...WHERE queue_id = (subquery LIMIT 1) AND status_a63 = 0, no RETURNING). Eliminated per-engine QueryRefs (155-157) and engine-specific branches entirely. `worker_claim_cb` detects claim success via `affected_rows` (works across all engines).
+- 11.2: **done** — `mailrelay_repo_queue_claim_next()` uses `MAILRELAY_QREF_QUEUE_CLAIM_NEXT` (154) directly; no `mailrelay_repo_claim_query_ref_for_engine()` switch or per-engine defines. `MailRelayRepoQueueClaimNext` struct defined in `mailrelay_repository.h`. Worker uses `claim_next` instead of `mark_sending` when Persist is on (`mailrelay_workers.c`).
+- 11.3: **done** (stale-claim recovery) — reuses QueryRef 101 (`MAILRELAY_QREF_QUEUE_RECOVER_STALE`) via existing `mailrelay_recover_stale_sending_rows()` in `mailrelay.c`. `worker_claim_cb` callback in `mailrelay_workers.c` checks `affected_rows` for claim success.
+- Consolidation (2026-09-06): Removed all engine-specific branches from `acuranzo_1377.lua` (single query ref 154, single SQL template, no `if engine ==` conditionals). Removed `mailrelay_repo_claim_query_ref_for_engine()` switch from `mailrelay_repository.c`. Replaced per-engine defines (154-157) with single `MAILRELAY_QREF_QUEUE_CLAIM_NEXT` (154). SQL uses `UPDATE...WHERE queue_id = (subquery with LIMIT 1) AND status_a63 = 0` without `RETURNING`; caller checks `affected_rows`. This is dialect-agnostic across PostgreSQL, MySQL/MariaDB, SQLite, and DB2 11.1+.
+- Bug found & fixed: `heartbeat.c:117` — `database_queue_handle_connection_success()` stored the connection but never copied `db_handle->engine_type` to `db_queue->engine_type`, causing all engines to default to `DB_ENGINE_POSTGRESQL` (0) and use the PostgreSQL claim QueryRef 154. Fixed by adding `db_queue->engine_type = db_handle->engine_type;` at line 119. (No longer relevant after consolidation — engine_type is no longer consulted for claim query selection.)
+- Unity verification: `mailrelay_claim_test.c` 14/14 PASS; all 6 mailrelay Unity suites 117/117 PASS.
+- `mkt`: PASS. `mkp`: PASS (no issues in 2,029 files). `mks`: PASS (all 1079 directives justified).
+- Blackbox Test 58 (test_58 2.9.2): pending re-run after consolidation.
 
 ---
 

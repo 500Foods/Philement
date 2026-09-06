@@ -26,6 +26,20 @@ void worker_repo_noop_cb(MailRelayRepoResult* result, void* user_data) {
     (void)user_data;
 }
 
+void worker_claim_cb(MailRelayRepoResult* result, void* user_data) {
+    bool* claimed = (bool*)user_data;
+    if (!result || !claimed) {
+        return;
+    }
+    if (result->status == MAILRELAY_REPO_OK && result->affected_rows > 0) {
+        *claimed = true;
+    } else {
+        log_this(SR_MAIL_RELAY,
+                 "Mail Relay claim check: status=%d affected_rows=%d",
+                 LOG_LEVEL_DEBUG, 2, (int)result->status, result->affected_rows);
+    }
+}
+
 void worker_persist_outcome(const MailRelayQueueItem* item,
                             bool sent,
                             bool retrying,
@@ -137,12 +151,25 @@ void* mailrelay_worker_thread(void* arg) {
         if (item.message.queue_id > 0 && config->Queue.Persist) {
             char claim[64];
             snprintf(claim, sizeof(claim), "w-%lu", (unsigned long)pthread_self());
-            MailRelayRepoQueueMarkSending mark = {
+            MailRelayRepoQueueClaimNext claim_params = {
                 .queue_id = item.message.queue_id,
                 .instance_id = app_name,
                 .claim_token = claim
             };
-            (void)mailrelay_repo_queue_mark_sending(&mark, worker_repo_noop_cb, NULL);
+            bool claimed = false;
+            mailrelay_repo_queue_claim_next(&claim_params, worker_claim_cb, &claimed);
+            if (!claimed) {
+                pthread_mutex_lock(&mailrelay_runtime->mutex);
+                mailrelay_runtime->sending_count--;
+                mailrelay_runtime->permanent_failures_count++;
+                mailrelay_runtime->last_failure_at = time(NULL);
+                pthread_mutex_unlock(&mailrelay_runtime->mutex);
+                log_this(SR_MAIL_RELAY,
+                         "Atomic claim lost for message queue_id=%lld; another instance claimed it",
+                         LOG_LEVEL_DEBUG, 1, item.message.queue_id);
+                mailrelay_message_free(&item.message);
+                continue;
+            }
         }
 
         bool sent = mailrelay_send_raw(&item.message,

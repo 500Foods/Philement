@@ -16,6 +16,7 @@ in the migrations themselves so that they get populated in the database directly
 1. Scripts assume that working JSON_INGEST functionality is present across all engines.
 1. Database engines currently supported use the labels 'postgresql', 'mysql', 'sqlite', and 'db2'.
 1. Each Lua migration script is focused on one element, and contains both FORWARD and REVERSE migrations.
+1. **One migration = one logical change.** There are never per-engine migration files — one file covers all engines via macros. There is never more than one `query_ref` (QueryRef) added or modified in a single migration file. See `docs/He/GUIDE.md` → "One Migration = One Logical Change".
 1. Migrations that change the schema also include a DIAGRAM migration.
 1. Query and Subquery delimiters are required, particularly for DB2.
 1. Migrations are processed as individual transactions. Any errors at all rollback and stop the migration process.
@@ -376,7 +377,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1337](/elements/002-helium/acuranzo/migrations/acuranzo_1337.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.29: seed Catalog.SyncFromCanvas (not invokable) |
 | [1338](/elements/002-helium/acuranzo/migrations/acuranzo_1338.lua) | queries | 1.0.0 | 2026-08-20 | 6 | ✗ | PRIORITIZE 2.29: QueryRefs 147/148 SELECT tags |
 | [1339](/elements/002-helium/acuranzo/migrations/acuranzo_1339.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.27: seed Catalog.GetBySlug (invokable) enrolled unpublished detail |
-| [1340](/elements/002-helium/acuranzo/migrations/acuranzo_1340.lua) | account_canvas_alerts | -- 15s poll. Clock is accounts.created_at (2 minutes); this table | -- 15s poll. Clock is accounts.created_at (2 minutes); this table | 6 | ✓ | PRIORITIZE 2.1: account_canvas_alerts (one-shot unlinked admin mail) |
+| [1340](/elements/002-helium/acuranzo/migrations/acuranzo_1340.lua) | account_canvas_alerts | 1.0.0 | 2026-08-21 | 6 | ✓ | PRIORITIZE 2.1: account_canvas_alerts |
 | [1341](/elements/002-helium/acuranzo/migrations/acuranzo_1341.lua) | mail_templates | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.1: ops.canvas_user_unlinked mail template |
 | [1342](/elements/002-helium/acuranzo/migrations/acuranzo_1342.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.1: replace Provision.EnsureCanvasUser |
 | [1343](/elements/002-helium/acuranzo/migrations/acuranzo_1343.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.1: replace Orchestrators.Orchestrator |
@@ -413,4 +414,5 @@ in the migrations themselves so that they get populated in the database directly
 | [1374](/elements/002-helium/acuranzo/migrations/acuranzo_1374.lua) | scripts | 1.0.0 | 2026-08-27 | 4 | ✗ | MCP Phase 15: seed Mcp.Info fixture resource |
 | [1375](/elements/002-helium/acuranzo/migrations/acuranzo_1375.lua) | scripts | 1.0.0 | 2026-08-27 | 4 | ✗ | MCP Phase 15: seed Mcp.Intro fixture prompt |
 | [1376](/elements/002-helium/acuranzo/migrations/acuranzo_1376.lua) | scripts | 1.0.0 | 2026-09-02 | 4 | ✗ | MCP Phase 14: seed System.Info (MCP tool calling H.system.info) |
-| **377** | | | | **1924** | **377** | |
+| [1377](/elements/002-helium/acuranzo/migrations/acuranzo_1377.lua) | queries | 1.0.2 | 2026-09-06 | 16 | ✗ | QueryRef #154 - Atomic Claim Next Pending Mail Queue Row |
+| **378** | | | | **1940** | **378** | |

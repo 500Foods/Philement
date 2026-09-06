@@ -22,6 +22,16 @@ This guide explains how to create new database migrations for the Helium system.
 
 Only after the above should you write or modify a migration.
 
+### One Migration = One Logical Change (non-negotiable)
+
+A single migration file (`acuranzo_XXXX.lua`) must represent **exactly one logical unit of work**. The following are hard rules — never violate them:
+
+1. **No separate migrations per engine.** A migration is engine-agnostic by construction (macros handle dialect differences). Unless an `if engine == 'xxx'` conditional block is genuinely required for a dialect-specific quirk (see `acuranzo_1190.lua` as the canonical example), there is one migration file with one forward, one reverse, and (if schema) one diagram. Do **not** create `acuranzo_1339_postgresql.lua`, `acuranzo_1339_sqlite.lua`, etc. — there is only `acuranzo_1339.lua`.
+
+2. **No multiple QueryRefs (or query_ref changes) in the same migration.** Each migration seeds or modifies **exactly one** `query_ref` value. If you need to add, modify, or remove a second QueryRef, that is a separate migration with its own number. Never bundle two distinct QueryRefs into a single migration file under one `query_ref`. Similarly, never change a `query_ref` that belongs to an already-applied migration — create a new migration that updates the existing row, and document it clearly.
+
+**Why:** The migration system processes each file as a single transaction with a single `query_ref`. Splitting by engine fragments the state machine and breaks schemahelper/schematool diffing; bundling multiple QueryRefs in one file makes drift auditing ambiguous and complicates forward/reverse symmetry. If a concept genuinely spans multiple QueryRefs, each gets its own migration file.
+
 ### Non-Negotiable Rules for Every Migration You Generate
 
 - The migration file **must** be a Lua function with exact signature: `return function(engine, design_name, schema_name, cfg) ... return queries end`
@@ -51,6 +61,7 @@ If you cannot follow all of the above from the source material, ask for clarific
 
 ### Quick Canonical Checklist (use before emitting any migration)
 
+- [ ] One file covers all engines (no per-engine files); exactly one `query_ref` in this migration
 - [ ] Correct function signature and luacheck directives
 - [ ] CHANGELOG entry
 - [ ] cfg.TABLE + cfg.MIGRATION set
@@ -988,6 +999,7 @@ These templates provide a starting point for common migration patterns. Copy, mo
 
 ## Best Practices
 
+0. **One migration = one logical change.** Never create per-engine migration files (one file covers all engines via macros). Never add or modify multiple QueryRefs (`query_ref` values) in a single migration file — each QueryRef gets its own migration. See **"One Migration = One Logical Change"** above.
 1. **Always include reverse migrations** for testing (and use `${DROP_CHECK}` for table drops).
 2. **Forward ↔ reverse exact mirror** — reverse undoes only what forward did (CREATE↔DROP, INSERT↔DELETE same keys/tables). Zero-row reverse DML is a migration bug; DB2 SQL0100W is the intended alarm. See **Forward/Reverse Symmetry**. Never paper this over in the engine.
 3. **Use diagram migrations** for every schema change (table, significant column change). Include `object_ref` and `${COMMON_DIAGRAM}`.

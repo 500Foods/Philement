@@ -463,6 +463,41 @@ bool mailrelay_repo_queue_select_next_pending(mailrelay_repo_callback_fn callbac
     return repo_execute_empty(MAILRELAY_QREF_QUEUE_SELECT_NEXT_PENDING, callback, user_data);
 }
 
+
+bool mailrelay_repo_queue_claim_next(const MailRelayRepoQueueClaimNext* params,
+                                     mailrelay_repo_callback_fn callback,
+                                     void* user_data) {
+    if (!params || !callback) {
+        return false;
+    }
+
+    const char* database = mailrelay_repo_resolve_database();
+    if (!database) {
+        mailrelay_repo_invoke_callback(callback, user_data,
+                                       MAILRELAY_REPO_NO_DATABASE,
+                                       "Mail Relay database not configured",
+                                       NULL, 0);
+        return false;
+    }
+
+    DatabaseQueue* db_queue = database_queue_manager_get_database(global_queue_manager, database);
+    if (!db_queue) {
+        mailrelay_repo_invoke_callback(callback, user_data,
+                                       MAILRELAY_REPO_NO_DATABASE,
+                                       "Mail Relay database queue not available",
+                                       NULL, 0);
+        return false;
+    }
+
+    json_t* p = repo_params_new();
+    if (!p) {
+        return false;
+    }
+    repo_add_string(p, "INSTANCE_ID", params->instance_id);
+    repo_add_string(p, "CLAIM_TOKEN", params->claim_token);
+    return repo_execute_json(MAILRELAY_QREF_QUEUE_CLAIM_NEXT, p, callback, user_data);
+}
+
 bool mailrelay_repo_queue_mark_sending(const MailRelayRepoQueueMarkSending* params, mailrelay_repo_callback_fn callback, void* user_data) {
     if (!params || !callback) {
         return false;

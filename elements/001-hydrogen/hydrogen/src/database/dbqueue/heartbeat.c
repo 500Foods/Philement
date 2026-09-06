@@ -116,6 +116,7 @@ bool database_queue_handle_connection_success(DatabaseQueue* db_queue, DatabaseH
         }
         db_queue->persistent_connection = db_handle;
         db_queue->is_connected = true;
+        db_queue->engine_type = db_handle->engine_type;
 
         // CRITICAL: Validate the stored connection's mutex before unlocking
         if ((uintptr_t)&db_handle->connection_lock >= 0x1000) {
