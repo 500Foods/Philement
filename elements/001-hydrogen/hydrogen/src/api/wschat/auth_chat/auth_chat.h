@@ -14,6 +14,7 @@
 #include <src/api/auth/auth_service.h>
 #include <src/api/wschat/helpers/engine_cache.h>
 #include <src/api/wschat/helpers/req_builder.h>
+#include <src/api/wschat/helpers/proxy_multi.h>
 
 /**
  * Handle POST /api/conduit/auth_chat request
@@ -160,6 +161,23 @@ enum MHD_Result auth_chat_stream_sse(struct MHD_Connection *connection,
                                       const char *request_body,
                                       jwt_validation_result_t *jwt_result,
                                       const char *database);
+
+typedef struct RestSseContext {
+    MultiStreamContext *stream_ctx;
+    MultiStreamManager *manager;
+    int pipe_read;
+    int pipe_write;
+    pthread_t callback_thread;
+    volatile bool callback_done;
+    volatile bool cleanup_done;
+    volatile bool connection_valid;
+    volatile bool stream_active;
+} RestSseContext;
+
+void *rest_sse_callback_thread(void *arg);
+void rest_sse_cleanup(RestSseContext *ctx);
+ssize_t rest_sse_mhd_callback(void *cls, uint64_t pos, char *buf, size_t max);
+void rest_sse_free_cls(void *cls);
 
 /**
  * Build auth_chat error response

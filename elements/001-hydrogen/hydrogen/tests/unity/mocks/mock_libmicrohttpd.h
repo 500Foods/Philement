@@ -30,6 +30,11 @@ const char* MHD_lookup_connection_value(struct MHD_Connection *connection,
 struct MHD_Response* MHD_create_response_from_buffer(size_t size, void *buffer,
                                                      enum MHD_ResponseMemoryMode mode);
 struct MHD_Response* MHD_create_response_from_fd(size_t size, int fd);
+struct MHD_Response* MHD_create_response_from_callback(uint64_t size,
+                                                       size_t block_size,
+                                                       MHD_ContentReaderCallback crc,
+                                                       void *crc_cls,
+                                                       MHD_ContentReaderFreeCallback crfc);
 enum MHD_Result MHD_add_response_header(struct MHD_Response *response,
                                         const char *header, const char *content);
 enum MHD_Result MHD_queue_response(struct MHD_Connection *connection,
@@ -59,6 +64,7 @@ const char* mock_mhd_get_lookup_result(void);
 void mock_mhd_add_lookup(const char* key, const char* value);
 void mock_mhd_set_connection_info(const union MHD_ConnectionInfo *info);
 void mock_mhd_set_create_response_should_fail(bool should_fail);
+void mock_mhd_set_create_callback_response_should_fail(bool should_fail);
 void mock_mhd_set_add_header_should_fail(bool should_fail);
 void mock_mhd_set_queue_response_result(enum MHD_Result result);
 unsigned int mock_mhd_get_last_status_code(void);
@@ -90,5 +96,8 @@ void mock_session_set_stats(size_t connections, size_t max_connections);
 
 // Terminal WebSocket mock control functions
 void mock_mhd_set_is_terminal_websocket_request_result(bool result);
+void *mock_mhd_get_callback_cls(void);
+MHD_ContentReaderCallback mock_mhd_get_content_reader(void);
+MHD_ContentReaderFreeCallback mock_mhd_get_content_reader_free(void);
 
 #endif /* MOCK_LIBMICROHTTPD_H */

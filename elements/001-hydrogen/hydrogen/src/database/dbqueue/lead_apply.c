@@ -112,6 +112,10 @@ bool database_queue_apply_single_migration(DatabaseQueue* lead_queue, long long 
     Transaction* migration_transaction = NULL;
     if (!database_engine_begin_transaction(lead_queue->persistent_connection, DB_ISOLATION_READ_COMMITTED, &migration_transaction)) {
         log_this(dqm_label, "Failed to begin transaction for migration %lld", LOG_LEVEL_ERROR, 1, migration_id);
+        for (size_t i = 0; i < statement_count; i++) {
+            free(statements[i]);
+        }
+        free(statements);
         return false;
     }
 

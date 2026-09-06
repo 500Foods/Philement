@@ -15,6 +15,7 @@
 static const char* mock_mhd_lookup_result = NULL;
 static const union MHD_ConnectionInfo* mock_mhd_connection_info = NULL;
 static bool mock_mhd_create_response_should_fail = false;
+static bool mock_mhd_create_callback_response_should_fail = false;
 static bool mock_mhd_add_header_should_fail = false;
 static enum MHD_Result mock_mhd_queue_response_result = MHD_YES;
 static unsigned int mock_mhd_last_status_code = 0;
@@ -24,6 +25,9 @@ static bool mock_mhd_is_terminal_websocket_request_result = true;
 static int mock_mhd_suspend_count = 0;
 static int mock_mhd_resume_count = 0;
 static bool mock_mhd_suspend_should_fail = false;
+static MHD_ContentReaderCallback mock_mhd_cr_callback = NULL;
+static MHD_ContentReaderFreeCallback mock_mhd_cr_free = NULL;
+static void *mock_mhd_cr_cls = NULL;
 
 #define MOCK_MHD_MAX_HEADERS 32
 static char mock_header_names[MOCK_MHD_MAX_HEADERS][64];
@@ -161,6 +165,23 @@ struct MHD_Response* MHD_create_response_from_fd(size_t size, int fd) {
     return (struct MHD_Response*)0xDEADBEEF;
 }
 
+__attribute__((weak))
+struct MHD_Response* MHD_create_response_from_callback(uint64_t size,
+                                                       size_t block_size,
+                                                       MHD_ContentReaderCallback crc,
+                                                       void *crc_cls,
+                                                       MHD_ContentReaderFreeCallback crfc) {
+    (void)size;
+    (void)block_size;
+    if (mock_mhd_create_response_should_fail || mock_mhd_create_callback_response_should_fail) {
+        return NULL;
+    }
+    mock_mhd_cr_callback = crc;
+    mock_mhd_cr_free = crfc;
+    mock_mhd_cr_cls = crc_cls;
+    return (struct MHD_Response*)0xDEADBEEF;
+}
+
 /*
  * Mock implementation of MHD_add_response_header
  */
@@ -252,6 +273,7 @@ void mock_mhd_reset_all(void) {
     }
     mock_mhd_connection_info = NULL;
     mock_mhd_create_response_should_fail = false;
+    mock_mhd_create_callback_response_should_fail = false;
     mock_mhd_add_header_should_fail = false;
     mock_mhd_queue_response_result = MHD_YES;
     mock_mhd_last_status_code = 0;
@@ -261,6 +283,9 @@ void mock_mhd_reset_all(void) {
     mock_mhd_suspend_count = 0;
     mock_mhd_resume_count = 0;
     mock_mhd_suspend_should_fail = false;
+    mock_mhd_cr_callback = NULL;
+    mock_mhd_cr_free = NULL;
+    mock_mhd_cr_cls = NULL;
 
     // Reset key-based lookups
     for (int i = 0; i < mock_lookup_count; i++) {
@@ -285,6 +310,18 @@ bool mock_mhd_header_was_added(const char *header, const char *content) {
         }
     }
     return false;
+}
+
+void *mock_mhd_get_callback_cls(void) {
+    return mock_mhd_cr_cls;
+}
+
+MHD_ContentReaderCallback mock_mhd_get_content_reader(void) {
+    return mock_mhd_cr_callback;
+}
+
+MHD_ContentReaderFreeCallback mock_mhd_get_content_reader_free(void) {
+    return mock_mhd_cr_free;
 }
 
 /*
@@ -497,6 +534,10 @@ void mock_session_set_stats(size_t connections, size_t max_connections) {
  */
 void mock_mhd_set_create_response_should_fail(bool should_fail) {
     mock_mhd_create_response_should_fail = should_fail;
+}
+
+void mock_mhd_set_create_callback_response_should_fail(bool should_fail) {
+    mock_mhd_create_callback_response_should_fail = should_fail;
 }
 
 /*

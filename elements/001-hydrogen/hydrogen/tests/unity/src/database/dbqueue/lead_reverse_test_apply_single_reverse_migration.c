@@ -80,7 +80,6 @@ static void destroy_mock_lead_queue(DatabaseQueue* queue) {
 }
 
 void setUp(void) {
-    // Reset all mocks
     mock_system_reset_all();
     mock_database_engine_reset_all();
 }
@@ -341,7 +340,6 @@ void test_apply_single_reverse_migration_rollback_scenarios(void) {
     
     destroy_mock_lead_queue(queue);
 }
-
 
 int main(void) {
     UNITY_BEGIN();

@@ -63,6 +63,11 @@ void test_drain_queue_null(void);
 void test_drain_queue_connection_invalid(void);
 void test_drain_queue_partial_invalid(void);
 void test_drain_queue_success(void);
+void test_handle_done_reasoning_and_tool_calls(void);
+void test_handle_done_invalid_post_done_json(void);
+void test_handle_done_context_hashing(void);
+void test_perform_completion_callback_prev_next(void);
+void test_cleanup_with_tool_call_acc(void);
 
 // ---------------------------------------------------------------------------
 // Helpers to build a manager + completed stream
@@ -653,6 +658,142 @@ void test_handle_done_final_chunk_finish_reason(void) {
     tear_down_manager();
 }
 
+void test_handle_done_reasoning_and_tool_calls(void) {
+    build_manager_with_stream(true);
+    const char* line = "data: {\"choices\":[{\"delta\":{\"content\":\"hi\",\"reasoning_content\":\"think\",\"tool_calls\":[{\"index\":0,\"id\":\"c1\"}]}}]}";
+    size_t len = strlen(line);
+    memcpy(g_curl_ctx->line_buffer, line, len);
+    g_curl_ctx->line_buffer[len] = '\0';
+    g_curl_ctx->line_buffer_len = len;
+
+    chat_proxy_multi_handle_completed_transfer(&manager, stream_ctx.easy_handle, CURLE_OK, 200);
+
+    StreamChunkNode* n1 = chunk_queue_dequeue(&stream_ctx.chunk_queue);
+    TEST_ASSERT_NOT_NULL(n1);
+    TEST_ASSERT_NOT_NULL(strstr(n1->json_data, "reasoning_content"));
+    TEST_ASSERT_NOT_NULL(strstr(n1->json_data, "tool_calls"));
+    free(n1->json_data);
+    free(n1);
+    StreamChunkNode* n2 = chunk_queue_dequeue(&stream_ctx.chunk_queue);
+    TEST_ASSERT_NOT_NULL(n2);
+    free(n2->json_data);
+    free(n2);
+    if (stream_ctx.tool_call_acc) {
+        json_decref(stream_ctx.tool_call_acc);
+        stream_ctx.tool_call_acc = NULL;
+    }
+    tear_down_manager();
+}
+
+void test_handle_done_invalid_post_done_json(void) {
+    build_manager_with_stream(true);
+    g_curl_ctx->seen_done = true;
+    g_curl_ctx->post_done_buffer = strdup("not-json");
+    g_curl_ctx->post_done_len = 8;
+    g_curl_ctx->post_done_capacity = 9;
+    const char* line = "also-not-json";
+    size_t len = strlen(line);
+    memcpy(g_curl_ctx->line_buffer, line, len);
+    g_curl_ctx->line_buffer[len] = '\0';
+    g_curl_ctx->line_buffer_len = len;
+
+    chat_proxy_multi_handle_completed_transfer(&manager, stream_ctx.easy_handle, CURLE_OK, 200);
+    TEST_ASSERT_TRUE(chunk_queue_has_data(&stream_ctx.chunk_queue));
+    StreamChunkNode* n = chunk_queue_dequeue(&stream_ctx.chunk_queue);
+    TEST_ASSERT_NOT_NULL(n);
+    TEST_ASSERT_NULL(strstr(n->json_data, "raw_provider_response"));
+    free(n->json_data);
+    free(n);
+    tear_down_manager();
+}
+
+void test_handle_done_context_hashing(void) {
+    build_manager_with_stream(true);
+    stream_ctx.has_context_hashing_stats = true;
+    stream_ctx.ctx_hashes_used = 2;
+    stream_ctx.ctx_hashes_missed = 1;
+    stream_ctx.ctx_bandwidth_saved_bytes = 40;
+    stream_ctx.ctx_bandwidth_saved_percent = 12.5;
+    g_curl_ctx->line_buffer_len = 0;
+
+    chat_proxy_multi_handle_completed_transfer(&manager, stream_ctx.easy_handle, CURLE_OK, 200);
+    StreamChunkNode* n = chunk_queue_dequeue(&stream_ctx.chunk_queue);
+    TEST_ASSERT_NOT_NULL(n);
+    TEST_ASSERT_NOT_NULL(strstr(n->json_data, "context_hashing"));
+    TEST_ASSERT_NOT_NULL(strstr(n->json_data, "hashes_used"));
+    free(n->json_data);
+    free(n);
+    tear_down_manager();
+}
+
+static int g_completion_called;
+
+static void test_completion_cb(void *user_data, bool success) {
+    (void)user_data;
+    TEST_ASSERT_TRUE(success);
+    g_completion_called++;
+}
+
+void test_perform_completion_callback_prev_next(void) {
+    MultiStreamContext *prev;
+    MultiStreamContext *stream;
+    MultiStreamContext *next;
+
+    memset(&manager, 0, sizeof(manager));
+    pthread_mutex_init(&manager.streams_mutex, NULL);
+    manager.initialized = true;
+    manager.multi_handle = curl_multi_init();
+    TEST_ASSERT_NOT_NULL(manager.multi_handle);
+
+    prev = (MultiStreamContext*)calloc(1, sizeof(MultiStreamContext));
+    stream = (MultiStreamContext*)calloc(1, sizeof(MultiStreamContext));
+    next = (MultiStreamContext*)calloc(1, sizeof(MultiStreamContext));
+    TEST_ASSERT_NOT_NULL(prev);
+    TEST_ASSERT_NOT_NULL(stream);
+    TEST_ASSERT_NOT_NULL(next);
+    chunk_queue_init(&stream->chunk_queue);
+    stream->stream_completed = true;
+    stream->easy_handle = NULL;
+    stream->request_id = strdup("mid");
+    stream->engine_name = strdup("eng");
+    stream->completion_callback = test_completion_cb;
+    stream->prev = prev;
+    stream->next = next;
+    prev->next = stream;
+    next->prev = stream;
+    manager.active_streams = prev;
+    g_completion_called = 0;
+
+    TEST_ASSERT_TRUE(chat_proxy_multi_perform(&manager));
+    TEST_ASSERT_EQUAL_INT(1, g_completion_called);
+    TEST_ASSERT_EQUAL_PTR(next, prev->next);
+    TEST_ASSERT_EQUAL_PTR(prev, next->prev);
+
+    free(prev);
+    free(next);
+    curl_multi_cleanup(manager.multi_handle);
+    pthread_mutex_destroy(&manager.streams_mutex);
+}
+
+void test_cleanup_with_tool_call_acc(void) {
+    MultiStreamContext* stream;
+
+    memset(&manager, 0, sizeof(manager));
+    pthread_mutex_init(&manager.streams_mutex, NULL);
+    manager.initialized = true;
+    manager.multi_handle = curl_multi_init();
+    TEST_ASSERT_NOT_NULL(manager.multi_handle);
+
+    stream = (MultiStreamContext*)calloc(1, sizeof(MultiStreamContext));
+    TEST_ASSERT_NOT_NULL(stream);
+    chunk_queue_init(&stream->chunk_queue);
+    stream->engine_name = strdup("acc");
+    stream->tool_call_acc = json_array();
+    manager.active_streams = stream;
+    chat_proxy_multi_cleanup(&manager);
+    TEST_ASSERT_FALSE(manager.initialized);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -675,6 +816,11 @@ int main(void) {
     RUN_TEST(test_drain_queue_connection_invalid);
     RUN_TEST(test_drain_queue_partial_invalid);
     RUN_TEST(test_drain_queue_success);
+    RUN_TEST(test_handle_done_reasoning_and_tool_calls);
+    RUN_TEST(test_handle_done_invalid_post_done_json);
+    RUN_TEST(test_handle_done_context_hashing);
+    RUN_TEST(test_perform_completion_callback_prev_next);
+    RUN_TEST(test_cleanup_with_tool_call_acc);
 
     return UNITY_END();
 }

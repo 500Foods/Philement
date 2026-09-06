@@ -10,10 +10,6 @@ handle_script_get
 handle_script_post
 mailrelay_status_send_response
 reallocarray
-rest_sse_callback_thread
-rest_sse_cleanup
-rest_sse_free_cls
-rest_sse_mhd_callback
 scripting_fetch_script_source_by_queryref
 scripting_readiness_messages_add
 send_mailrelay_error
