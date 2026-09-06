@@ -64,34 +64,34 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-09-05 20:29:29 UTC
+Last updated at 2026-09-06 00:12:34 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                           508            441              0        1707891
-SVG                            301            587          11569         536988
-C                             1696          67303          57447         281897
-Text                           347            453              0         146504
-Markdown                       758          35044            255         106229
+JSON                           507            441              0        1707655
+SVG                            301            587          11569         536986
+C                             1706          67491          57534         283147
+Text                           345            342              0         144300
+Markdown                       758          35044            255         106230
 Lua                            423          11455           7271          91667
 JavaScript                     224          10445          13582          49798
-Bourne Shell                   178           8075         110573          44626
+Bourne Shell                   178           8075         110571          44626
 CSS                             84           2769           1563          14005
-C/C++ Header                   349           4163          13989          12981
-CMake                           23            198            432           4195
+C/C++ Header                   349           4165          13989          13006
 HTML                            42            258            219           2836
+CMake                           19            177            399           1483
 make                            11            112             75            607
 TOML                             1             55             35            449
-YAML                             3             23             15            309
 Python                           1             36              9            195
 SQL                             11             21             24            195
 zsh                              2             31             42             97
 Delphi Form                      1              1              0             43
+YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          4965         141481         217102        3001543
+SUM:                          4967         141524         217152        2997393
 -------------------------------------------------------------------------------
-1732 Files were skipped (duplicate, binary, or without source code):
+1720 Files were skipped (duplicate, binary, or without source code):
   svg: 1223
   css: 165
   html: 134
@@ -100,7 +100,6 @@ SUM:                          4965         141481         217102        3001543
   png: 23
   br: 16
   lua: 12
-  gcov: 9
   pem: 9
   kid: 8
   gitignore: 6
@@ -111,7 +110,6 @@ SUM:                          4965         141481         217102        3001543
   sqlite: 3
   json: 2
   lintignore-markdown: 2
-  ninja: 2
   sqruff_db2: 2
   sqruff_mysql: 2
   sqruff_postgresql: 2
@@ -122,7 +120,6 @@ SUM:                          4965         141481         217102        3001543
   auth_code_flow_debug: 1
   backup: 1
   bmp: 1
-  check_cache: 1
   client_credentials_debug: 1
   control: 1
   disabled: 1
@@ -136,10 +133,10 @@ SUM:                          4965         141481         217102        3001543
   lintignore-lua: 1
   lintignore: 1
   list: 1
-  ninja_deps: 1
-  ninja_log: 1
   password_flow_debug: 1
   payload_generated: 1
+  sqlite-shm: 1
+  sqlite-wal: 1
   stl: 1
   stylelintcache: 1
   stylelintrc: 1
