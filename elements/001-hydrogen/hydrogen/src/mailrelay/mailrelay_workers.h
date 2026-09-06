@@ -43,6 +43,7 @@ void* mailrelay_worker_thread(void* arg);
 
 /* Exposed for Unity / static-function policy; not stable public API. */
 void worker_repo_noop_cb(MailRelayRepoResult* result, void* user_data);
+void worker_claim_cb(MailRelayRepoResult* result, void* user_data);
 void worker_persist_outcome(const MailRelayQueueItem* item,
                             bool sent,
                             bool retrying,

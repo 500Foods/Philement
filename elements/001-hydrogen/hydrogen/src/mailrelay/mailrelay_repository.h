@@ -17,6 +17,9 @@
 // Third-party includes
 #include <jansson.h>
 
+#include <src/database/database_types.h>
+#include <src/database/dbqueue/dbqueue.h>
+
 // Project includes
 #include <src/config/config_mail_relay.h>
 #include <src/mailrelay/mailrelay_message.h>
@@ -39,6 +42,7 @@ extern "C" {
 #define MAILRELAY_QREF_QUEUE_MARK_FAILED      99
 #define MAILRELAY_QREF_QUEUE_RESCHEDULE      100
 #define MAILRELAY_QREF_QUEUE_RECOVER_STALE   101
+#define MAILRELAY_QREF_QUEUE_CLAIM_NEXT          154
 #define MAILRELAY_QREF_ATTEMPT_INSERT        102
 #define MAILRELAY_QREF_TEMPLATE_GET_BY_KEY   103
 #define MAILRELAY_QREF_TEMPLATE_LIST_ACTIVE  104
@@ -146,7 +150,17 @@ bool mailrelay_repo_queue_get_by_idempotency(
     void* user_data);
 
 bool mailrelay_repo_queue_select_next_pending(mailrelay_repo_callback_fn callback,
-                                              void* user_data);
+                                               void* user_data);
+
+typedef struct {
+    long long queue_id;
+    const char* instance_id;
+    const char* claim_token;
+} MailRelayRepoQueueClaimNext;
+
+bool mailrelay_repo_queue_claim_next(const MailRelayRepoQueueClaimNext* params,
+                                     mailrelay_repo_callback_fn callback,
+                                     void* user_data);
 
 typedef struct {
     long long queue_id;
@@ -520,8 +534,9 @@ bool repo_execute_json(int query_ref, json_t* params,
                        mailrelay_repo_callback_fn callback,
                        void* user_data);
 bool repo_execute_empty(int query_ref,
-                        mailrelay_repo_callback_fn callback,
-                        void* user_data);
+                         mailrelay_repo_callback_fn callback,
+                         void* user_data);
+
 
 #ifdef __cplusplus
 }

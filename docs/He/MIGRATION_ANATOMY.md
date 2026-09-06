@@ -218,6 +218,11 @@ DB2 is case-sensitive and uses uppercase for system objects, requiring different
 
 ## Common Patterns
 
+### One Migration = One Logical Change
+
+- **Never** create separate migration files per engine. One `acuranzo_XXXX.lua` file covers PostgreSQL, MySQL/SQLite, and DB2 via the macro system. Engine-specific quirks go in `if engine == 'xxx'` conditional blocks inside that single file (see `acuranzo_1190.lua`).
+- **Never** add or modify more than one `query_ref` (QueryRef) in a single migration file. If two QueryRefs are needed, that is two migration files.
+
 ### Table Creation Pattern
 
 ```lua

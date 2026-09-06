@@ -1,9 +1,9 @@
 -- Migration: acuranzo_1340.lua
--- PRIORITIZE 2.1: account_canvas_alerts (one-shot unlinked admin mail)
+-- PRIORITIZE 2.1: account_canvas_alerts
 --
 -- Durable "already alerted" flag. Mail Relay idempotency is not live
 -- (PRIORITIZE 2.24), so EnsureCanvasUser must not re-send on every
--- 15s poll. Clock is accounts.created_at (2 minutes); this table
+-- poll (15s). Clock is accounts.created_at (2 minutes); this table
 -- only records that the ops mail went out. Keep polling after alert.
 --
 -- luacheck: no max line length
