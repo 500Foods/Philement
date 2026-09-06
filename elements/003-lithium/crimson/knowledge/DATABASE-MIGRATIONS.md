@@ -414,5 +414,5 @@ in the migrations themselves so that they get populated in the database directly
 | [1374](/elements/002-helium/acuranzo/migrations/acuranzo_1374.lua) | scripts | 1.0.0 | 2026-08-27 | 4 | ✗ | MCP Phase 15: seed Mcp.Info fixture resource |
 | [1375](/elements/002-helium/acuranzo/migrations/acuranzo_1375.lua) | scripts | 1.0.0 | 2026-08-27 | 4 | ✗ | MCP Phase 15: seed Mcp.Intro fixture prompt |
 | [1376](/elements/002-helium/acuranzo/migrations/acuranzo_1376.lua) | scripts | 1.0.0 | 2026-09-02 | 4 | ✗ | MCP Phase 14: seed System.Info (MCP tool calling H.system.info) |
-| [1377](/elements/002-helium/acuranzo/migrations/acuranzo_1377.lua) | queries | 1.0.2 | 2026-09-06 | 16 | ✗ | QueryRef #154 - Atomic Claim Next Pending Mail Queue Row |
-| **378** | | | | **1940** | **378** | |
+| [1377](/elements/002-helium/acuranzo/migrations/acuranzo_1377.lua) | queries | 1.0.0 | 2026-09-06 | 4 | ✗ | QueryRef #154 - Atomic Claim Next Pending Mail Queue Row |
+| **378** | | | | **1928** | **378** | |

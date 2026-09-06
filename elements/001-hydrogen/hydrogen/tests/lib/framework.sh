@@ -19,6 +19,8 @@
 # evaluate_test_result_silent()
 
 # CHANGELOG
+# 3.4.1 - 2026-09-06 - Fixed unpaired TEST in "Checking Build Directory" subtest:
+#                     both success paths (dir exists, mkdir succeeds) now emit print_result
 # 3.4.0 - 2026-07-16 - TIMESTAMP now includes nanoseconds and PID so concurrent test
 #                     runs (e.g. multiple invocations within the same second under the
 #                     full suite) get isolated, non-colliding output/core/result dirs
@@ -95,7 +97,7 @@ fi
 
 # Library metadata
 FRAMEWORK_NAME="Framework Library"
-FRAMEWORK_VERSION="3.4.0"
+FRAMEWORK_VERSION="3.4.1"
 export FRAMEWORK_NAME FRAMEWORK_VERSION
 
 # Use this once
@@ -350,6 +352,7 @@ setup_orchestration_environment() {
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking Build Directory"
     if [[ -d "build" ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Nice Build directory you have there"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Build directory exists"
 
     else
         # Create the build directory and mount as tmpfs
@@ -357,6 +360,7 @@ setup_orchestration_environment() {
         print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "mkdir build"
         if mkdir build 2>/dev/null; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully created Build directory"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Build directory created"
         else
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to create Build directory"
             EXIT_CODE=1
