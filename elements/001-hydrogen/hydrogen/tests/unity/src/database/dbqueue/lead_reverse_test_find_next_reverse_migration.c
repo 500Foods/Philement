@@ -18,6 +18,7 @@ long long database_queue_find_next_reverse_migration_to_apply(DatabaseQueue* lea
 void test_database_queue_find_next_reverse_migration_to_apply_null_queue(void);
 void test_database_queue_find_next_reverse_migration_to_apply_no_cache(void);
 void test_database_queue_find_next_reverse_migration_to_apply_zero_apply(void);
+void test_database_queue_find_next_reverse_migration_to_apply_cache_hit(void);
 
 // Helper function to create a mock lead queue for testing
 static DatabaseQueue* create_mock_lead_queue(const char* db_name) {
@@ -89,12 +90,28 @@ void test_database_queue_find_next_reverse_migration_to_apply_zero_apply(void) {
     destroy_mock_lead_queue(queue);
 }
 
+void test_database_queue_find_next_reverse_migration_to_apply_cache_hit(void) {
+    DatabaseQueue* queue = create_mock_lead_queue("testdb");
+    QueryCacheEntry* entry;
+    TEST_ASSERT_NOT_NULL(queue);
+    queue->query_cache = query_cache_create("testdb");
+    TEST_ASSERT_NOT_NULL(queue->query_cache);
+    queue->latest_applied_migration = 5;
+    entry = query_cache_entry_create(
+        5, 1001, "SELECT 1;", "Reverse 5", "slow", 30, "testdb");
+    TEST_ASSERT_NOT_NULL(entry);
+    TEST_ASSERT_TRUE(query_cache_add_entry(queue->query_cache, entry, "testdb"));
+    TEST_ASSERT_EQUAL(5, database_queue_find_next_reverse_migration_to_apply(queue));
+    destroy_mock_lead_queue(queue);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
     RUN_TEST(test_database_queue_find_next_reverse_migration_to_apply_null_queue);
     RUN_TEST(test_database_queue_find_next_reverse_migration_to_apply_no_cache);
     RUN_TEST(test_database_queue_find_next_reverse_migration_to_apply_zero_apply);
+    RUN_TEST(test_database_queue_find_next_reverse_migration_to_apply_cache_hit);
 
     return UNITY_END();
 }

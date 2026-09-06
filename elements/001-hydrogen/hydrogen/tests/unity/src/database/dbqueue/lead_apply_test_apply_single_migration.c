@@ -48,7 +48,6 @@ static DatabaseQueue* create_mock_lead_queue(const char* db_name) {
     queue->latest_applied_migration = 0;
     queue->query_cache = NULL;
     
-    // Create a mock connection handle
     queue->persistent_connection = calloc(1, sizeof(DatabaseHandle));
 
     return queue;
@@ -70,7 +69,6 @@ static void destroy_mock_lead_queue(DatabaseQueue* queue) {
 }
 
 void setUp(void) {
-    // Reset all mocks before each test
     mock_system_reset_all();
     mock_database_engine_reset_all();
 }

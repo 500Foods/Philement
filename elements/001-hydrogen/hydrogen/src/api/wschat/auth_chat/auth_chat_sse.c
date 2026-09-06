@@ -23,19 +23,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 
-typedef struct {
-    MultiStreamContext *stream_ctx;
-    MultiStreamManager *manager;
-    int pipe_read;
-    int pipe_write;
-    pthread_t callback_thread;
-    volatile bool callback_done;
-    volatile bool cleanup_done;
-    volatile bool connection_valid;
-    volatile bool stream_active;
-} RestSseContext;
-
-static void *rest_sse_callback_thread(void *arg) {
+void *rest_sse_callback_thread(void *arg) {
     RestSseContext *ctx = (RestSseContext *)arg;
     if (!ctx || !ctx->stream_ctx) return NULL;
 
@@ -85,7 +73,7 @@ static void *rest_sse_callback_thread(void *arg) {
     return NULL;
 }
 
-static void rest_sse_cleanup(RestSseContext *ctx) {
+void rest_sse_cleanup(RestSseContext *ctx) {
     if (!ctx) return;
     if (ctx->cleanup_done) return;
     ctx->cleanup_done = true;
@@ -126,7 +114,7 @@ static void rest_sse_cleanup(RestSseContext *ctx) {
 
 #include <errno.h>
 
-static ssize_t rest_sse_mhd_callback(void *cls, uint64_t pos,
+ssize_t rest_sse_mhd_callback(void *cls, uint64_t pos,
                                       char *buf, size_t max) {
     (void)pos;
     RestSseContext *ctx = (RestSseContext *)cls;
@@ -153,7 +141,7 @@ static ssize_t rest_sse_mhd_callback(void *cls, uint64_t pos,
     return MHD_CONTENT_READER_END_WITH_ERROR;
 }
 
-static void rest_sse_free_cls(void *cls) {
+void rest_sse_free_cls(void *cls) {
     RestSseContext *ctx = (RestSseContext *)cls;
     rest_sse_cleanup(ctx);
 }
@@ -242,14 +230,17 @@ enum MHD_Result auth_chat_stream_sse(struct MHD_Connection *connection,
 
     if (!response) {
         ctx->callback_done = true;
+        if (ctx->stream_ctx) {
+            ctx->stream_ctx->stream_completed = true;
+        }
         if (ctx->pipe_write >= 0) {
             close(ctx->pipe_write);
             ctx->pipe_write = -1;
         }
         pthread_join(ctx->callback_thread, NULL);
+        ctx->callback_thread = 0;
         chat_proxy_multi_stream_stop(manager, ctx->stream_ctx);
-        close(pipefd[0]);
-        free(ctx);
+        rest_sse_cleanup(ctx);
         json_t *error = auth_chat_build_error_response("Failed to create response");
         return api_send_json_response(connection, error, MHD_HTTP_INTERNAL_SERVER_ERROR);
     }

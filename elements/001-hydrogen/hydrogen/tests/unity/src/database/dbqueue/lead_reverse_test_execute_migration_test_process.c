@@ -78,7 +78,6 @@ static void destroy_mock_lead_queue(DatabaseQueue* queue) {
 }
 
 void setUp(void) {
-    // Reset all mocks
     mock_system_reset_all();
     mock_database_engine_reset_all();
 }
@@ -278,7 +277,6 @@ void test_execute_migration_test_process_memory_failure(void) {
     
     destroy_mock_lead_queue(queue);
 }
-
 
 int main(void) {
     UNITY_BEGIN();
