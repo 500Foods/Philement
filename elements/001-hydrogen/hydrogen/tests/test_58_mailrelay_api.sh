@@ -15,6 +15,8 @@
 # (Helpers live in tests/lib/mailrelay_api_helpers.sh)
 
 # CHANGELOG
+# 2.9.3 - 2026-09-06 - Add INFO lines for mailval/hydrogen log file locations
+#                      (helpers 1.0.12), matching the convention from test_24/44/50.
 # 2.9.2 - 2026-09-04 - PERSIST_PLAN Phase 2c: shield flipped OFF for mysql/mariadb
 #                      (helpers 1.0.11) after the repo_add_datetime helper lands.
 #                      9 timestamp fields in mailrelay_repository.c (NEXT_ATTEMPT_AT,
@@ -67,7 +69,7 @@ TEST_NAME="MailRelay API"
 TEST_ABBR="MRA"
 TEST_NUMBER="58"
 TEST_COUNTER=0
-TEST_VERSION="2.9.2"
+TEST_VERSION="2.9.3"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"

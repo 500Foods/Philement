@@ -9,6 +9,11 @@
 # shellcheck disable=SC2312 # Diagnostic substitutions swallow inner status; callers use || true
 
 # CHANGELOG
+# 1.0.12 - 2026-09-06 - Add INFO lines for mailval/hydrogen log file locations
+#                      in mailrelay_api_run_variant and mailrelay_api_run_otp_launch,
+#                      and in mailrelay_api_analyze on failure, so the log path
+#                      is visible when a variant fails. Matches the convention
+#                      from test_24/44/50.
 # 1.0.11 - 2026-09-04 - PERSIST_PLAN Phase 2c: shield flipped OFF after the
 #                      repo_add_datetime helper landed. mailrelay_repository.c
 #                      now translates ISO 8601 -> MySQL DATETIME for mysql/
@@ -53,7 +58,7 @@
 export MAILRELAY_API_HELPERS_GUARD="true"
 
 MAILRELAY_API_HELPERS_NAME="MailRelay API Test Helpers"
-MAILRELAY_API_HELPERS_VERSION="1.0.11"
+MAILRELAY_API_HELPERS_VERSION="1.0.12"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${MAILRELAY_API_HELPERS_NAME} ${MAILRELAY_API_HELPERS_VERSION}" "info"
 
 MAILVAL_PIDS=()
@@ -393,6 +398,8 @@ mailrelay_api_run_variant() {
     maildata_dir="${DIAG_TEST_DIR}/mailval_${variant_tag}"
     mailval_log="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_mailval_${engine_name}_${variant_label}.log"
     hydrogen_log="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_hydrogen_${engine_name}_${variant_label}.log"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: mailval log: ${mailval_log}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: hydrogen log: ${hydrogen_log}"
     if [[ "${engine_name}" == "sqlite" ]]; then
         sqlite_temp_file="${DIAG_TEST_DIR}/hydrodemo_${variant_tag}.sqlite"
         sqlite_temp_config="${DIAG_TEST_DIR}/hydrogen_test_${TEST_NUMBER}_sqlite_${variant_tag}.json"
@@ -674,8 +681,17 @@ mailrelay_api_analyze() {
     fi
     if "${GREP}" -q "ENGINE_TEST_FAILED" "${result_file}" 2>/dev/null \
         || "${GREP}" -q "VARIANT_.*_FAIL" "${result_file}" 2>/dev/null; then
+        local fail_engine="${result_suffix%%-*}"
+        local fail_variant="${result_suffix##*-}"
+        if [[ "${fail_variant}" == "starttls" ]]; then
+            fail_variant="STARTTLS"
+        fi
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: hydrogen log: ${LOGS_DIR}/test_${TEST_NUMBER}_*_*_hydrogen_${fail_engine}_${fail_variant}.log"
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: API test failed"
     else
+        local incomple_variant="${result_suffix##*-}"
+        [[ "${incomple_variant}" == "starttls" ]] && incomple_variant="STARTTLS"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: hydrogen log: ${LOGS_DIR}/test_${TEST_NUMBER}_*_*_hydrogen_${result_suffix%%-*}_${incomple_variant}.log"
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: API test failed (incomplete result file)"
     fi
     return 1
@@ -693,6 +709,8 @@ mailrelay_api_run_otp_launch() {
     local maildata_dir="${DIAG_TEST_DIR}/mailval_${variant_tag}"
     local mailval_log="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_mailval_otp.log"
     local hydrogen_log="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_hydrogen_otp.log"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: mailval log: ${mailval_log}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: hydrogen log: ${hydrogen_log}"
     local sqlite_temp_file="${DIAG_TEST_DIR}/hydrodemo_${variant_tag}.sqlite"
     local sqlite_temp_config="${DIAG_TEST_DIR}/hydrogen_test_${TEST_NUMBER}_otp_${TIMESTAMP}.json"
     local jq_patch

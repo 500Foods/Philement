@@ -56,6 +56,35 @@ bool mailrelay_recover_stale_sending_rows(void) {
         return false;
     }
 
+    // The database bootstrap runs asynchronously on the Lead DQM thread.
+    // At startup we may race behind it, so wait for QueryRef 101
+    // (RECOVER_STALE) to appear in the QTC cache before executing.
+    // Without this wait, SQLite's local fast-path triggers the lookup
+    // before the cache is populated (other engines lose the race to
+    // network latency but are not guaranteed safe).
+    const char* database = config->Database;
+    if (database == NULL || database[0] == '\0') {
+        if (app_config->databases.connection_count >= 1 &&
+            app_config->databases.connections[0].name) {
+            database = app_config->databases.connections[0].name;
+        }
+    }
+    if (database && database[0] != '\0' && global_queue_manager) {
+        unsigned int waited = 0;
+        const unsigned int step_ms = 25;
+        const unsigned int timeout_ms = 30000;
+        while (waited < timeout_ms) {
+            DatabaseQueue* q = database_queue_manager_get_database(global_queue_manager, database);
+            if (q && q->query_cache &&
+                query_cache_lookup(q->query_cache, MAILRELAY_QREF_QUEUE_RECOVER_STALE, SR_MAIL_RELAY) != NULL) {
+                break;
+            }
+            struct timespec ts = {0, (long)step_ms * 1000000L};
+            nanosleep(&ts, NULL);
+            waited += step_ms;
+        }
+    }
+
     int stale_seconds = config->Queue.StaleTimeoutSeconds;
     if (stale_seconds <= 0) {
         stale_seconds = 300;
