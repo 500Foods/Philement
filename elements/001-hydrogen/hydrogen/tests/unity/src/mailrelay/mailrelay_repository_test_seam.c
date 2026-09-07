@@ -59,6 +59,7 @@ void test_translate_iso8601_no_t_separator_short(void);
 void test_repo_add_datetime_no_app_config_passes_through(void);
 void test_repo_add_datetime_non_mysql_engine_passes_through(void);
 void test_repo_add_datetime_mysql_engine_translates(void);
+void test_repo_add_datetime_sqlite_engine_translates(void);
 void test_repo_add_datetime_mysql_engine_translates_fractional(void);
 void test_repo_add_datetime_null_input_emits_null(void);
 
@@ -297,18 +298,19 @@ void test_invoke_callback_null_callback(void) {
 }
 
 // ----------------------------------------------------------------------------
-// PERSIST_PLAN Phase 2c: ISO 8601 -> MySQL DATETIME translator unit tests
+// PERSIST_PLAN Phase 2c: ISO 8601 -> text DATETIME translator unit tests
+// (applies to MySQL DATETIME and SQLite text columns)
 // ----------------------------------------------------------------------------
 
 void test_translate_iso8601_basic(void) {
-    char* out = mailrelay_repo_translate_iso8601_to_mysql("2026-09-04T22:10:57Z");
+    char* out = mailrelay_repo_translate_iso8601("2026-09-04T22:10:57Z");
     TEST_ASSERT_NOT_NULL(out);
     TEST_ASSERT_EQUAL_STRING("2026-09-04 22:10:57", out);
     free(out);
 }
 
 void test_translate_iso8601_with_fractional(void) {
-    char* out = mailrelay_repo_translate_iso8601_to_mysql("2026-09-04T22:10:57.123Z");
+    char* out = mailrelay_repo_translate_iso8601("2026-09-04T22:10:57.123Z");
     TEST_ASSERT_NOT_NULL(out);
     // Fractional seconds are dropped (column is DATETIME, not DATETIME(6)).
     TEST_ASSERT_EQUAL_STRING("2026-09-04 22:10:57", out);
@@ -316,27 +318,27 @@ void test_translate_iso8601_with_fractional(void) {
 }
 
 void test_translate_iso8601_already_mysql_format(void) {
-    char* out = mailrelay_repo_translate_iso8601_to_mysql("2026-09-04 22:10:57");
+    char* out = mailrelay_repo_translate_iso8601("2026-09-04 22:10:57");
     TEST_ASSERT_NOT_NULL(out);
     TEST_ASSERT_EQUAL_STRING("2026-09-04 22:10:57", out);
     free(out);
 }
 
 void test_translate_iso8601_empty_string(void) {
-    char* out = mailrelay_repo_translate_iso8601_to_mysql("");
+    char* out = mailrelay_repo_translate_iso8601("");
     TEST_ASSERT_NOT_NULL(out);
     TEST_ASSERT_EQUAL_STRING("", out);
     free(out);
 }
 
 void test_translate_iso8601_null_input(void) {
-    char* out = mailrelay_repo_translate_iso8601_to_mysql(NULL);
+    char* out = mailrelay_repo_translate_iso8601(NULL);
     TEST_ASSERT_NULL(out);
 }
 
 void test_translate_iso8601_no_t_separator_short(void) {
     // "2026-09" is too short and has no 'T'; pass through unchanged.
-    char* out = mailrelay_repo_translate_iso8601_to_mysql("2026-09");
+    char* out = mailrelay_repo_translate_iso8601("2026-09");
     TEST_ASSERT_NOT_NULL(out);
     TEST_ASSERT_EQUAL_STRING("2026-09", out);
     free(out);
@@ -396,7 +398,7 @@ void test_repo_add_datetime_non_mysql_engine_passes_through(void) {
     TEST_ASSERT_NOT_NULL(string_obj);
     const char* value = json_string_value(json_object_get(string_obj, "NEXT_ATTEMPT_AT"));
     TEST_ASSERT_NOT_NULL(value);
-    // 5 working engines accept ISO 8601 unchanged.
+    // PostgreSQL, DB2, CockroachDB, YugabyteDB: native timestamp types, pass through.
     TEST_ASSERT_EQUAL_STRING("2026-09-04T22:10:57Z", value);
     json_decref(root);
 
@@ -418,6 +420,28 @@ void test_repo_add_datetime_mysql_engine_translates(void) {
     const char* value = json_string_value(json_object_get(string_obj, "NEXT_ATTEMPT_AT"));
     TEST_ASSERT_NOT_NULL(value);
     // MySQL/MariaDB DATETIME shape: 'T' -> ' ', trailing 'Z' stripped.
+    TEST_ASSERT_EQUAL_STRING("2026-09-04 22:10:57", value);
+    json_decref(root);
+
+    app_config = NULL;
+    free_datetime_test_config(cfg);
+}
+
+void test_repo_add_datetime_sqlite_engine_translates(void) {
+    AppConfig* cfg = make_datetime_test_config("Acuranzo", "sqlite");
+    TEST_ASSERT_NOT_NULL(cfg);
+    app_config = cfg;
+
+    json_t* root = repo_params_new();
+    TEST_ASSERT_NOT_NULL(root);
+    TEST_ASSERT_TRUE(repo_add_datetime(root, "NEXT_ATTEMPT_AT",
+                                       "2026-09-04T22:10:57Z", "Acuranzo"));
+    json_t* string_obj = json_object_get(root, "STRING");
+    TEST_ASSERT_NOT_NULL(string_obj);
+    const char* value = json_string_value(json_object_get(string_obj, "NEXT_ATTEMPT_AT"));
+    TEST_ASSERT_NOT_NULL(value);
+    // SQLite stores DATETIME as TEXT; translate so string comparisons against
+    // CURRENT_TIMESTAMP ('YYYY-MM-DD HH:MM:SS') work correctly.
     TEST_ASSERT_EQUAL_STRING("2026-09-04 22:10:57", value);
     json_decref(root);
 
@@ -505,6 +529,7 @@ int main(void) {
     RUN_TEST(test_repo_add_datetime_no_app_config_passes_through);
     RUN_TEST(test_repo_add_datetime_non_mysql_engine_passes_through);
     RUN_TEST(test_repo_add_datetime_mysql_engine_translates);
+    RUN_TEST(test_repo_add_datetime_sqlite_engine_translates);
     RUN_TEST(test_repo_add_datetime_mysql_engine_translates_fractional);
     RUN_TEST(test_repo_add_datetime_null_input_emits_null);
 

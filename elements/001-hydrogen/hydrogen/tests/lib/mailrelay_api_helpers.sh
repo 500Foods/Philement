@@ -9,11 +9,16 @@
 # shellcheck disable=SC2312 # Diagnostic substitutions swallow inner status; callers use || true
 
 # CHANGELOG
-# 1.0.12 - 2026-09-06 - Add INFO lines for mailval/hydrogen log file locations
-#                      in mailrelay_api_run_variant and mailrelay_api_run_otp_launch,
-#                      and in mailrelay_api_analyze on failure, so the log path
-#                      is visible when a variant fails. Matches the convention
-#                      from test_24/44/50.
+# 1.0.14 - 2026-09-07 - Fix SQLite claim_next failure: repo_add_datetime now
+#                      translates ISO 8601 -> 'YYYY-MM-DD HH:MM:SS' for SQLite
+#                      (not just MySQL). SQLite stores DATETIME as TEXT and
+#                      CURRENT_TIMESTAMP returns 'YYYY-MM-DD HH:MM:SS' (space,
+#                      no Z), so the stored 'T'/'Z' format broke the claim_next
+#                      subquery string comparison (affected_rows=0 -> claim lost).
+# 1.0.13 - 2026-09-07 - Replace literal '*' wildcard log paths in mailrelay_api_analyze
+#                      with exact resolved file paths (TIMESTAMP is known at analyze time);
+#                      also print result file and response dir links on failure so they
+#                      are instantly accessible instead of requiring a manual glob.
 # 1.0.11 - 2026-09-04 - PERSIST_PLAN Phase 2c: shield flipped OFF after the
 #                      repo_add_datetime helper landed. mailrelay_repository.c
 #                      now translates ISO 8601 -> MySQL DATETIME for mysql/
@@ -58,7 +63,7 @@
 export MAILRELAY_API_HELPERS_GUARD="true"
 
 MAILRELAY_API_HELPERS_NAME="MailRelay API Test Helpers"
-MAILRELAY_API_HELPERS_VERSION="1.0.12"
+MAILRELAY_API_HELPERS_VERSION="1.0.14"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${MAILRELAY_API_HELPERS_NAME} ${MAILRELAY_API_HELPERS_VERSION}" "info"
 
 MAILVAL_PIDS=()
@@ -270,8 +275,9 @@ mailrelay_api_persist_enabled() {
     local engine_name="${1:-}"
     if [[ "${engine_name}" == "mysql" || "${engine_name}" == "mariadb" ]]; then
         # PERSIST_PLAN Phase 2c: shield OFF after repo_add_datetime lands.
-        # See mailrelay_repository.{h,c} and the new repo_add_datetime /
-        # mailrelay_repo_translate_iso8601_to_mysql Unity tests.
+        # repo_add_datetime now translates ISO 8601 -> 'YYYY-MM-DD HH:MM:SS' for
+        # both MySQL/MariaDB and SQLite (text DATETIME columns), so claim_next
+        # string comparisons against CURRENT_TIMESTAMP work correctly.
         echo "true"
         return 0
     fi
@@ -681,17 +687,38 @@ mailrelay_api_analyze() {
     fi
     if "${GREP}" -q "ENGINE_TEST_FAILED" "${result_file}" 2>/dev/null \
         || "${GREP}" -q "VARIANT_.*_FAIL" "${result_file}" 2>/dev/null; then
-        local fail_engine="${result_suffix%%-*}"
+         local fail_engine="${result_suffix%%-*}"
         local fail_variant="${result_suffix##*-}"
         if [[ "${fail_variant}" == "starttls" ]]; then
             fail_variant="STARTTLS"
         fi
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: hydrogen log: ${LOGS_DIR}/test_${TEST_NUMBER}_*_*_hydrogen_${fail_engine}_${fail_variant}.log"
+        local fail_variant_lower="${result_suffix##*-}"
+        local fail_hydrogen_log="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_hydrogen_${fail_engine}_${fail_variant_lower}.log"
+        local fail_result_file="${LOG_PREFIX}_${result_suffix}.result"
+        local fail_response_dir="${DIAG_TEST_DIR}/responses_${fail_engine}_${fail_variant_lower}_${TIMESTAMP}"
+        if [[ -f "${fail_hydrogen_log}" ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: hydrogen log: ${fail_hydrogen_log}"
+        else
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: hydrogen log (expected): ${fail_hydrogen_log}"
+        fi
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: result file: ${fail_result_file}"
+        if [[ -d "${fail_response_dir}" ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: response dir: ${fail_response_dir}"
+        fi
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: API test failed"
     else
         local incomple_variant="${result_suffix##*-}"
-        [[ "${incomple_variant}" == "starttls" ]] && incomple_variant="STARTTLS"
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: hydrogen log: ${LOGS_DIR}/test_${TEST_NUMBER}_*_*_hydrogen_${result_suffix%%-*}_${incomple_variant}.log"
+        local incomple_variant_lower="${result_suffix##*-}"
+        [[ "${incomple_variant}" == "starttls" ]] && incomple_variant="STARTTLS" && incomple_variant_lower="starttls"
+        local incomple_engine="${result_suffix%%-*}"
+        local incomple_hydrogen_log="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_hydrogen_${incomple_engine}_${incomple_variant_lower}.log"
+        local incomple_result_file="${LOG_PREFIX}_${result_suffix}.result"
+        if [[ -f "${incomple_hydrogen_log}" ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: hydrogen log: ${incomple_hydrogen_log}"
+        else
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: hydrogen log (expected): ${incomple_hydrogen_log}"
+        fi
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: result file: ${incomple_result_file}"
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: API test failed (incomplete result file)"
     fi
     return 1
