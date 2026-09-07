@@ -1,5 +1,5 @@
 /*
- * Unity Test File: mcp_mint_token_mock_error_paths
+ * Unity Test File: mcp_mint_token_test_mock_error_paths
  *
  * Tests error paths in the mint-token module that require mock system and crypto
  * infrastructure. The mint-token source pulls in system and crypto mocks under
