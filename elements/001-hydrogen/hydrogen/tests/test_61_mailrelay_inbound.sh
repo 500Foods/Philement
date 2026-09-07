@@ -13,6 +13,16 @@
 # by the config loader; no credentials are committed.
 
 # CHANGELOG
+# 1.0.4 - 2026-09-07 - Fix mailval data file glob: mailval writes mailval_smtp_*.json,
+#                      not session_*.json. Changed compgen and find patterns to *.json.
+# 1.0.3 - 2026-09-07 - Fix mailval session JSON check: .cmd -> .text for DATA command.
+#                      Remove double print_result after validate_config_file (which
+#                      calls print_result internally). Add print_test_completion.
+# 1.0.2 - 2026-09-07 - Fix C bug: smtp_enqueue_inbound_message now parses Subject
+#                      header from raw SMTP DATA body. Added missing
+#                      print_test_completion call for proper output flushing.
+# 1.0.1 - 2026-09-07 - Fix Hydrogen invocation: config as positional arg (not --config),
+#                      remove --port flag, wait for STARTUP COMPLETE log line before TCP probe.
 # 1.0.0 - 2026-09-07 - Initial MailRelay inbound SMTP relay blackbox test.
 
 set -euo pipefail
@@ -22,7 +32,7 @@ TEST_NAME="MailRelay Inbound SMTP Listener"
 TEST_ABBR="MRI"
 TEST_NUMBER="61"
 TEST_COUNTER=0
-TEST_VERSION="1.0.0"
+TEST_VERSION="1.0.4"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -65,7 +75,6 @@ HYDROGEN_BIN_BASE=''
 if find_hydrogen_binary "${PROJECT_DIR}"; then
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Hydrogen binary found and validated"
-    PASS_COUNT=$(( PASS_COUNT + 1 ))
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to find Hydrogen binary"
     EXIT_CODE=1
@@ -76,7 +85,6 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate mailval Binary"
 if [[ -x "${MAILVAL_BIN}" ]]; then
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using mailval binary: ${MAILVAL_BIN}"
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "mailval binary found and executable"
-    PASS_COUNT=$(( PASS_COUNT + 1 ))
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "mailval binary not found at ${MAILVAL_BIN} (build extras/mailval first)"
     EXIT_CODE=1
@@ -85,9 +93,9 @@ fi
 # --- Validate Configuration File ---
 CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mailrelay_inbound.json"
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File"
+# validate_config_file calls print_result internally; avoid double-printing.
 # shellcheck disable=SC2310 # We want to continue even if the test fails
 if validate_config_file "${CONFIG_FILE}"; then
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Configuration file found: $(basename "${CONFIG_FILE}")"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
 else
     EXIT_CODE=1
@@ -123,7 +131,6 @@ done
 
 if [[ "${sink_ready}" == "true" ]]; then
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "mailval SMTP sink is accepting connections on port ${SINK_PORT}"
-    PASS_COUNT=$(( PASS_COUNT + 1 ))
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "mailval SMTP sink failed to start on port ${SINK_PORT}"
     EXIT_CODE=1
@@ -134,17 +141,36 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen with inbound SM
 HYDROGEN_LOG="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_hydrogen.log"
 true > "${HYDROGEN_LOG}"
 
-print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "$(basename "${HYDROGEN_BIN}") --config ${CONFIG_FILE}"
 export MAILRELAY_INBOUND_TEST_MODE=1
-"${HYDROGEN_BIN}" --config "${CONFIG_FILE}" --port "${HYDROGEN_PORT:-0}" > "${HYDROGEN_LOG}" 2>&1 &
+print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "$(basename "${HYDROGEN_BIN}") $(basename "${CONFIG_FILE}")"
+launch_time_ms=$("${DATE}" +%s%3N)
+"${HYDROGEN_BIN}" "${CONFIG_FILE}" > "${HYDROGEN_LOG}" 2>&1 &
 HYDROGEN_PID=$!
 HYDROGEN_PIDS+=("${HYDROGEN_PID}")
 
-# Wait for Hydrogen to be ready (listen on inbound port).
+# Wait for Hydrogen to be ready (STARTUP COMPLETE in log, then TCP probe on inbound port).
 hydrogen_ready=false
-for _ in $(seq 1 250); do
-    if "${TIMEOUT}" 1 bash -c "</dev/tcp/127.0.0.1/${INBOUND_PORT}" 2>/dev/null; then
-        hydrogen_ready=true
+timeout_sec=60
+while true; do
+    current_ms=$("${DATE}" +%s%3N)
+    elapsed_s=$(( (current_ms - launch_time_ms) / 1000 ))
+    if [[ "${elapsed_s}" -ge "${timeout_sec}" ]]; then
+        print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "Startup timeout after ${elapsed_s}s"
+        break
+    fi
+    if "${GREP}" -q "STARTUP COMPLETE" "${HYDROGEN_LOG}" 2>/dev/null; then
+        # Startup complete — now wait for the inbound port to accept connections
+        for _ in $(seq 1 100); do
+            if "${TIMEOUT}" 1 bash -c "</dev/tcp/127.0.0.1/${INBOUND_PORT}" 2>/dev/null; then
+                hydrogen_ready=true
+                break
+            fi
+            # Check if process died
+            if ! kill -0 "${HYDROGEN_PID}" 2>/dev/null; then
+                break 2
+            fi
+            sleep 0.1
+        done
         break
     fi
     # Check if process died
@@ -156,7 +182,6 @@ done
 
 if [[ "${hydrogen_ready}" == "true" ]]; then
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Hydrogen is accepting SMTP connections on inbound port ${INBOUND_PORT}"
-    PASS_COUNT=$(( PASS_COUNT + 1 ))
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Hydrogen did not start inbound SMTP listener on port ${INBOUND_PORT}"
     EXIT_CODE=1
@@ -226,7 +251,6 @@ injected_ok=false
 
 if [[ "${injected_ok}" == "true" ]]; then
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "SMTP message injected and accepted (250 OK)"
-    PASS_COUNT=$(( PASS_COUNT + 1 ))
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "SMTP message injection failed"
     EXIT_CODE=1
@@ -236,9 +260,9 @@ fi
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Wait for message delivery to mailval sink"
 delivered=false
 for _ in $(seq 1 100); do
-    # Check mailval transcript for captured message
-    if compgen -G "${MAILDATA_DIR}/session_*.json" > /dev/null 2>&1; then
-        if jq -e '.commands[]? | select(.cmd == "DATA")' "${MAILDATA_DIR}"/session_*.json >/dev/null 2>&1; then
+    # Check mailval transcript for captured message via DATA command
+    if compgen -G "${MAILDATA_DIR}/*.json" > /dev/null 2>&1; then
+        if find "${MAILDATA_DIR}" -name '*.json' -exec jq -e '.commands[]? | select(.text == "DATA" and .dir == "command")' {} + >/dev/null 2>&1; then
             delivered=true
             break
         fi
@@ -248,7 +272,6 @@ done
 
 if [[ "${delivered}" == "true" ]]; then
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Message delivered to mailval sink"
-    PASS_COUNT=$(( PASS_COUNT + 1 ))
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Message was not delivered to mailval sink within timeout"
     EXIT_CODE=1
@@ -270,10 +293,8 @@ if [[ "${HYDROGEN_PID}" -gt 0 ]] && kill -0 "${HYDROGEN_PID}" 2>/dev/null; then
         kill -KILL "${HYDROGEN_PID}" 2>/dev/null || true
     fi
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Hydrogen shut down"
-    PASS_COUNT=$(( PASS_COUNT + 1 ))
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Hydrogen already shut down"
-    PASS_COUNT=$(( PASS_COUNT + 1 ))
 fi
 
 # Clean up mailval
@@ -285,4 +306,8 @@ done
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Test Summary"
 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" "${EXIT_CODE}" "Inbound SMTP relay test: ${PASS_COUNT} sub-tests passed"
 
-exit "${EXIT_CODE}"
+# Print test completion summary
+print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
+
+# Return status code if sourced, exit if run standalone
+${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"

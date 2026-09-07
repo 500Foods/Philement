@@ -207,7 +207,7 @@ declare -a TEST_ELAPSED
 # Command line argument parsing
 SKIP_TESTS=false
 SEQUENTIAL_MODE=false
-SEQUENTIAL_GROUPS=( )  # Default to group 4 (tests 40-49) sequentially
+SEQUENTIAL_GROUPS=( 6 )  # Default to group 6 (tests 60-69) sequentially as these are preformance-related and generally need the space
 TEST_ARGS=()
 
 # Parse all arguments                                                  

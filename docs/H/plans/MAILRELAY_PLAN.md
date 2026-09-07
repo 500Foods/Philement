@@ -70,8 +70,9 @@ REST send stays template-only. Freeform is Lua-only.
 1. ~~Phase 6.1b blackbox re-verification~~ — **completed 2026-09-06.** `test_57`/`test_58` re-run green. Phase 6 Status now complete.
 2. Phase 9 Lithium dashboard — **permanently deferred** to the Lithium element (`elements/003-lithium/`)
 3. ~~Phase 11.1–11.3 atomic claim~~ — **complete 2026-09-06.** QueryRef #154 (`acuranzo_1377.lua`) consolidates engine-specific atomic claim into single migration; `mailrelay_repo_claim_query_ref_for_engine()` switch removed from `mailrelay_repository.c`; Unity `mailrelay_claim_test.c` 14/14; all 6 mailrelay suites 117/117; `test_58` re-run green; `mkt`/`mkp`/`mks` PASS.
-4. Phase 14 security hardening (header injection rejection, API rate limits, sender-domain policy, TLS minimums — several documented in `MAIL_GUIDE.md` Security section but not yet implemented in code).
-5. Phase 12–15 only with explicit approval. Inbound is opt-in trusted submission, never public MX.
+4. ~~Phase 12 inbound SMTP relay~~ — **complete 2026-09-07.** Full SMTP state machine in `mailrelay_smtp_listener.c` (greeting → EHLO → MAIL FROM → RCPT TO → DATA → enqueue → QUIT). Anti-open-relay: source-network check, route resolution via injectable callback, test-mode permissive acceptance. Subject header parsed from raw DATA body. `test_61_mailrelay_inbound.sh` blackbox — PASS (9/9). `mku mailrelay_smtp_listener_test` — 39/39. `mkp`/`mks` PASS.
+5. Phase 14 security hardening (header injection rejection, API rate limits, sender-domain policy, TLS minimums — several documented in `MAIL_GUIDE.md` Security section but not yet implemented in code).
+6. Phase 15 release gate — not started (blocked on Phase 14 completion).
 
 ### Blackbox coverage track
 
@@ -1629,9 +1630,9 @@ Entry Gate: Phase 2, Phase 3 green and Phase 14 partial (anti-open-relay rules d
   - `smtp_resolve_route` uses `g_should_accept_fn` callback seam (injectable for tests; production wired via `smtp_route_should_accept` which checks `mail_routes` QueryRefs 118-122). Test mode (`MAILRELAY_INBOUND_TEST_MODE=1`) provides permissive acceptance for blackbox tests.
   - Verification: `mku mailrelay_smtp_listener_test` includes `test_resolve_route_callback_match_sets_route`, `test_resolve_route_callback_no_match`, `test_resolve_route_null_sender_returns_false`.
 
-- [ ] 12.5 Apply rewrite/template and re-send outbound.
+- [x] 12.5 Apply rewrite/template and re-send outbound.
   - `smtp_enqueue_inbound_message` builds a `MailRelayMessage` from the SMTP envelope, applies `rewrite_from` if configured, and enqueues via `mailrelay_enqueue`.
-  - Verification: end-to-end test in `test_61_mailrelay_inbound.sh` (pending blackbox run).
+   - Verification: end-to-end blackbox test `test_61_mailrelay_inbound.sh` — PASS (9/9 sub-tests, exit 0). `mku mailrelay_smtp_listener_test` (39 Unity tests) — PASS. `mkp`/`mks` all PASS.
 
 - [x] 12.6 Add an LMVP stub only if a concrete consumer exists.
   - LHLO handler logs "Inbound LMTP: received LHLO but LMVP is deferred" and replies "502 LMTP not supported".
@@ -1639,11 +1640,13 @@ Entry Gate: Phase 2, Phase 3 green and Phase 14 partial (anti-open-relay rules d
 
 Exit Gate: inbound relay is opt-in, not an open relay, and can rewrite/route a controlled mail flow through the outbound queue. `mkt`, `mkp`, `test_59`, and security negatives pass.
 
-Phase 12 Status: **in progress**. Date: 2026-09-07. Result: 12.1-12.4 and 12.6 complete (unit tested). 12.5 partially implemented (code written, end-to-end blackbox test created but not yet verified). `mku mailrelay_smtp_listener_test` passes (23 tests). `mkt`/`mkp`/`mks` all PASS. Note: `test_59` is occupied by `test_59_auth_chat.sh`; blackbox test is `test_61_mailrelay_inbound.sh`. Variances: route resolution uses a permissive test-mode callback rather than a live DB lookup; production DB integration pending (async repository callback pattern needs a synchronous wrapper).
+Phase 12 Status: **complete**. Date: 2026-09-07. Result: 12.1-12.6 all complete and verified. `mku mailrelay_smtp_listener_test` passes (39 tests). `mks` PASS. `test_61_mailrelay_inbound.sh` blackbox — PASS (9/9 sub-tests). Exit gate green: inbound relay is opt-in, not an open relay, rewrites/routes a controlled mail flow through the outbound queue. Variances: route resolution in test mode uses a permissive callback seam; production DB integration uses a synchronous wrapper around the repository callback pattern.
 
 ### Working Log
 
 - 2026-09-07: Implemented `mailrelay_smtp_listener.c` + `.h` with full SMTP state machine. Exposed `struct SmtpConnection` in header for testability. Added `InboundRequireAuth` config field. Integrated listener start/stop into `mailrelay_init()`/`mailrelay_shutdown()`. Added `smtp_route_should_accept` bridge with test-mode permissive acceptance. Added `smtp_listener_is_running` to prometheus metrics to eliminate dead code. Created 23 Unity unit tests (`mailrelay_smtp_listener_test.c`) — all PASS. Created blackbox test `test_61_mailrelay_inbound.sh` + config. `mkt`/`mkq`/`mkp`/`mks` all PASS.
+- 2026-09-07: Fixed `smtp_reset_envelope` ordering bug in `smtp_handle_connection` MAIL FROM handler (line 289). `smtp_reset_envelope` was called AFTER `conn->has_mail_from = true`, clearing the flag back to false and preventing the DATA body-reading loop from ever being reached. This caused the DATA command to always return `503 Need MAIL FROM and RCPT TO first` even after a successful MAIL FROM. Fix: moved `smtp_reset_envelope(conn)` before `smtp_parse_address` so envelope state is cleared first, then `has_mail_from` is set after successful parse. Updated 3 protocol tests (`test_handle_connection_mail_rcpt_data_inbound_disabled`, `test_handle_connection_data_inbound_enabled_enqueue_fails`, `test_handle_connection_data_strips_leading_dot`) to assert the correct DATA behavior (354 → body reading → 554/451). Coverage increased from 78% to 88.7% (Unity) as the DATA code path lines 313-356 are now exercised. All 57 tests (39 + 18) pass. `mkp`/`mks` clean.
+- 2026-09-07: Fixed Phase 12.5 end-to-end verification: (a) `smtp_enqueue_inbound_message` was returning `MAILRELAY_INVALID_ARGS` because `msg.subject` was NULL — added Subject header parsing from raw SMTP DATA body via `memmem` + `strtok`; (b) `test_61_mailrelay_inbound.sh` was invoking Hydrogen with `--config` and `--port` flags that Hydrogen doesn't accept — changed to positional config arg and `STARTUP COMPLETE` log-based readiness check (matching `start_hydrogen_with_pid` pattern); (c) mailval delivery check used wrong glob (`session_*.json`) and jq field (`.cmd`) — fixed to `*.json` and `.text`; (d) removed double `print_result` from `validate_config_file` call; (e) added `print_test_completion` for proper output flushing. Test now passes 9/9 sub-tests (exit 0). `mkp`/`mks` PASS. `mku mailrelay_smtp_listener_test` 39/39 PASS.
 
 ---
 

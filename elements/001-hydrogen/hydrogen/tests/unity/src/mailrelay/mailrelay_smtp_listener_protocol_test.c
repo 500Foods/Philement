@@ -170,17 +170,17 @@ static void test_handle_connection_mail_rcpt_data_inbound_disabled(void) {
     read_response(sv[1], resp, sizeof(resp));
     TEST_ASSERT_EQUAL_STRING("250 OK\r\n", resp);
 
-    /* DATA: has_mail_from is false due to smtp_reset_envelope bug in
-     * MAIL FROM handler. DATA handler does continue, so the next lines
-     * "Hello world" and "." are read as commands (unrecognized) -> 500. */
+    /* DATA: has_mail_from is true (bug fixed), so DATA enters the body
+     * loop, sends 354, reads body, then since InboundEnabled is false
+     * sends 554 + 451. */
     read_response(sv[1], resp, sizeof(resp));
-    TEST_ASSERT_EQUAL_STRING("503 Need MAIL FROM and RCPT TO first\r\n", resp);
+    TEST_ASSERT_EQUAL_STRING("354 End data with <CR><LF>.<CR><LF>\r\n", resp);
 
     read_response(sv[1], resp, sizeof(resp));
-    TEST_ASSERT_EQUAL_STRING("500 Command not recognized\r\n", resp);
+    TEST_ASSERT_EQUAL_STRING("554 Mail relay not configured for inbound\r\n", resp);
 
     read_response(sv[1], resp, sizeof(resp));
-    TEST_ASSERT_EQUAL_STRING("500 Command not recognized\r\n", resp);
+    TEST_ASSERT_EQUAL_STRING("451 Internal error\r\n", resp);
 
     /* QUIT response */
     read_response(sv[1], resp, sizeof(resp));
@@ -562,17 +562,13 @@ static void test_handle_connection_data_inbound_enabled_enqueue_fails(void) {
     read_response(sv[1], resp, sizeof(resp));
     TEST_ASSERT_EQUAL_STRING("250 OK\r\n", resp);
 
-    /* DATA: has_mail_from is false due to smtp_reset_envelope bug in
-     * MAIL FROM handler. DATA handler does continue, so the next lines
-     * "Hello world" and "." are read as commands (unrecognized) -> 500. */
+    /* DATA: 354 intermediate response before reading body */
     read_response(sv[1], resp, sizeof(resp));
-    TEST_ASSERT_EQUAL_STRING("503 Need MAIL FROM and RCPT TO first\r\n", resp);
+    TEST_ASSERT_EQUAL_STRING("354 End data with <CR><LF>.<CR><LF>\r\n", resp);
 
+    /* Enqueue fails because mailrelay_runtime is NULL (no mailrelay_init called). */
     read_response(sv[1], resp, sizeof(resp));
-    TEST_ASSERT_EQUAL_STRING("500 Command not recognized\r\n", resp);
-
-    read_response(sv[1], resp, sizeof(resp));
-    TEST_ASSERT_EQUAL_STRING("500 Command not recognized\r\n", resp);
+    TEST_ASSERT_EQUAL_STRING("451 Internal error\r\n", resp);
 
     /* QUIT */
     read_response(sv[1], resp, sizeof(resp));
@@ -651,17 +647,17 @@ static void test_handle_connection_data_strips_leading_dot(void) {
     read_response(sv[1], resp, sizeof(resp));
     TEST_ASSERT_EQUAL_STRING("250 OK\r\n", resp);
 
-    /* DATA: has_mail_from is false due to smtp_reset_envelope bug.
-     * DATA handler does continue, so the next lines "..hidden dot" and "."
-     * are read as commands -> 500. */
+    /* DATA: has_mail_from is true (bug fixed), enters body loop.
+     * "..hidden dot" has leading dot stripped to "hidden dot".
+     * InboundEnabled is false, so after reading body: 554 + 451. */
     read_response(sv[1], resp, sizeof(resp));
-    TEST_ASSERT_EQUAL_STRING("503 Need MAIL FROM and RCPT TO first\r\n", resp);
+    TEST_ASSERT_EQUAL_STRING("354 End data with <CR><LF>.<CR><LF>\r\n", resp);
 
     read_response(sv[1], resp, sizeof(resp));
-    TEST_ASSERT_EQUAL_STRING("500 Command not recognized\r\n", resp);
+    TEST_ASSERT_EQUAL_STRING("554 Mail relay not configured for inbound\r\n", resp);
 
     read_response(sv[1], resp, sizeof(resp));
-    TEST_ASSERT_EQUAL_STRING("500 Command not recognized\r\n", resp);
+    TEST_ASSERT_EQUAL_STRING("451 Internal error\r\n", resp);
 
     /* QUIT */
     read_response(sv[1], resp, sizeof(resp));

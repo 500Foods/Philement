@@ -239,6 +239,34 @@ bool smtp_enqueue_inbound_message(struct SmtpConnection* conn,
 
     msg.text_body = strndup(raw_body ? raw_body : "", body_len);
 
+    /* Parse the Subject header from the raw SMTP DATA body so the queued
+     * message carries a subject (required by mailrelay_validate_message). */
+    if (raw_body && body_len > 0) {
+        const char* hdr_end = memmem(raw_body, body_len, "\r\n\r\n", 4);
+        size_t headers_len = hdr_end ? (size_t)(hdr_end - raw_body) : body_len;
+        char* headers = strndup(raw_body, headers_len);
+        if (headers) {
+            char* line = strtok(headers, "\r\n");
+            while (line) {
+                if (strncasecmp(line, "Subject:", 8) == 0) {
+                    char* val = line + 8;
+                    while (*val == ' ' || *val == '\t') val++;
+                    while (*val == '\r' || *val == '\n') *val = '\0';
+                    if (*val) {
+                        msg.subject = strdup(val);
+                    }
+                    break;
+                }
+                line = strtok(NULL, "\r\n");
+            }
+            free(headers);
+        }
+    }
+
+    if (!msg.subject) {
+        msg.subject = strdup("");
+    }
+
     MailRelayStatus status = mailrelay_enqueue(&msg, 0);
     mailrelay_message_free(&msg);
 
@@ -286,9 +314,9 @@ void* smtp_handle_connection(void* arg) {
             smtp_send_line(conn, "250 OK");
             conn->state = SMTP_CONN_MAIL_FROM;
         } else if (strcasecmp(cmd, "MAIL") == 0) {
+            smtp_reset_envelope(conn);
             if (smtp_parse_address(line, "FROM:", conn->mail_from, sizeof(conn->mail_from))) {
                 conn->has_mail_from = true;
-                smtp_reset_envelope(conn);
                 smtp_send_line(conn, "250 OK");
             } else {
                 smtp_send_line(conn, "501 Bad sender address");
