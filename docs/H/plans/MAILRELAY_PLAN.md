@@ -55,7 +55,7 @@ REST send stays template-only. Freeform is Lua-only.
 
 ### Numbering (re-check disk; last verified 2026-09-04)
 
-- Highest Acuranzo on disk: **`acuranzo_1376.lua`**. Next free migration: **1377**.
+- Highest Acuranzo on disk: **`acuranzo_1377.lua`** (QueryRef #154, atomic claim). Next free migration: **1378**.
 - **Do not use 1263 for mail seeds.** `acuranzo_1263` is QueryRef **129** (Insert Script).
 - Mail QueryRefs: 093–126 (core + cleanup), 127 Get Role By Name, 128 OTP mark-max-attempts.
 - System mail seeds: 1280–1282. OTP template: `acuranzo_1261` (`auth.otp_code`).
@@ -69,7 +69,7 @@ REST send stays template-only. Freeform is Lua-only.
 
 1. ~~Phase 6.1b blackbox re-verification~~ — **completed 2026-09-06.** `test_57`/`test_58` re-run green. Phase 6 Status now complete.
 2. Phase 9 Lithium dashboard — **permanently deferred** to the Lithium element (`elements/003-lithium/`)
-3. Phase 11.1–11.3 atomic claim (engine-specific QueryRefs; 096 is SELECT-only, not enough).
+3. ~~Phase 11.1–11.3 atomic claim~~ — **complete 2026-09-06.** QueryRef #154 (`acuranzo_1377.lua`) consolidates engine-specific atomic claim into single migration; `mailrelay_repo_claim_query_ref_for_engine()` switch removed from `mailrelay_repository.c`; Unity `mailrelay_claim_test.c` 14/14; all 6 mailrelay suites 117/117; `test_58` re-run green; `mkt`/`mkp`/`mks` PASS.
 4. Phase 14 security hardening (header injection rejection, API rate limits, sender-domain policy, TLS minimums — several documented in `MAIL_GUIDE.md` Security section but not yet implemented in code).
 5. Phase 12–15 only with explicit approval. Inbound is opt-in trusted submission, never public MX.
 
@@ -116,15 +116,15 @@ Build: `zsh -ic 'mkq'` after ordinary C edits; `mkt` if `src/` files were added/
 | Phase | Status | What's needed |
 |---|---|---|
 | 9 Lithium UI | **Permanently deferred** | Moved to Lithium element (`elements/003-lithium/`); separate toolchain; picked up by Lithium sprint |
-| 11.1–11.3 HA | Pending | Engine-specific atomic claim QueryRefs (096 is SELECT-only) |
+| 11.1–11.3 HA | **Complete** (2026-09-06) | QueryRef #154 atomic claim (`acuranzo_1377.lua`); Unity 14/14, integration 117/117, `test_58` green |
 | 12 Inbound SMTP | Not started | `mailrelay_smtp_listener.c`; `test_59` |
 | 13 Extra Lua | **Deferred** | No consumer beyond `H.mail` |
 | 14 Security | **Partial** (1/6 done, 3/6 partial, 1/6 N/A, 1/6 not started) | Header-injection rejection, API rate limits, TLS minimums, sender-domain policy |
-| 15 Release Gate | Pending | Blocked on 11.1–11.3, 12, 14 (Phase 9 deferred) |
+| 15 Release Gate | Pending | Blocked on 12, 14 (Phase 9 deferred; Phase 11 complete) |
 
 ### Verdict
 
-The plan **cannot** be marked complete yet. The core deliverable — outbound templated mail through a durable async queue with REST/Lua API, OTP, observability, and system events — is code-complete and verified (including Phase 6.1b blackbox re-verification, 2026-09-06). Phase 9 (Lithium UI) is permanently deferred to the Lithium element. Remaining Hydrogen work is: multi-instance HA (Phase 11.1–11.3), inbound SMTP (Phase 12), and security hardening (Phase 14). Phase 13 is deferred (no consumer). Phases 12–15 require explicit approval per the Phase 0 design lock.
+The plan **cannot** be marked complete yet. The core deliverable — outbound templated mail through a durable async queue with REST/Lua API, OTP, observability, and system events — is code-complete and verified (including Phase 6.1b blackbox re-verification, 2026-09-06). Phase 9 (Lithium UI) is permanently deferred to the Lithium element. Remaining Hydrogen work is: inbound SMTP (Phase 12) and security hardening (Phase 14). Phase 13 is deferred (no consumer). Phase 9 (Lithium UI) is permanently deferred to the Lithium element. Phases 12–14 and 15 require explicit approval per the Phase 0 design lock.
 
 ## Scope And Repo Areas
 
