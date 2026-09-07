@@ -381,6 +381,7 @@ void initialize_config_defaults_mail_relay(AppConfig* config) {
         config->mail_relay.Enabled = false;
         config->mail_relay.OutboundEnabled = false;
         config->mail_relay.InboundEnabled = false;
+        config->mail_relay.InboundRequireAuth = false;
         config->mail_relay.Database = NULL;
         config->mail_relay.DefaultFrom = NULL;
         config->mail_relay.DefaultReplyTo = NULL;

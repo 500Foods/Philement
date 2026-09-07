@@ -384,6 +384,7 @@
         "Enabled": true,
         "OutboundEnabled": true,
         "InboundEnabled": false,
+        "InboundRequireAuth": true,
         "ListenPort": 587,
         "Workers": 2,
         "Queue": {

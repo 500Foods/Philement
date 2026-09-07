@@ -224,6 +224,8 @@ declare -a ENV_WHITELIST=(
     "CHAT_JWT_TOKEN2" "CHAT_JWT_TOKEN3"
     # First found in tests/test_60_performance.sh                         
     "PERF_CONFIG_FILE" "PERF_DESCRIPTION" "PERF_ITERATIONS" "PERF_LOG_SUFFIX" "PERF_MEASURED_COUNT"
+    # First found in tests/text_61_mail_relay_inbound.sh
+    "INBOUND_PORT" "MAILDATA_DIR" "MAILVAL_LOG" "SINK_PORT" "SMTP_INJECT_LOG"    
     # First found in tests/test_91_cppcheck.sh
     "CACHE_HITS_FMT" "FILES_TO_RUN_FMT" "OTHER_ISSUES_FMT"
     # First found in tests/test_93_jsonlint.sh

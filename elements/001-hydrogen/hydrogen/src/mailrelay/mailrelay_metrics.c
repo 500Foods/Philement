@@ -13,6 +13,7 @@
 // Local includes
 #include "mailrelay_metrics.h"
 #include <src/mailrelay/mailrelay.h>
+#include <src/mailrelay/mailrelay_smtp_listener.h>
 
 size_t mailrelay_metrics_generate_prometheus(char* buffer, size_t buffer_size) {
     if (buffer_size == 0) {
@@ -128,6 +129,14 @@ size_t mailrelay_metrics_generate_prometheus(char* buffer, size_t buffer_size) {
         "# TYPE hydrogen_mailrelay_queue_depth gauge\n"
         "hydrogen_mailrelay_queue_depth %.3f\n",
         counters.initialized ? (double)counters.queue_depth : 0.0);
+
+    if (offset >= buffer_size) return buffer_size;
+
+    offset += (size_t)snprintf(buffer + offset, buffer_size - offset,
+        "# HELP hydrogen_mailrelay_inbound_running Whether the inbound SMTP listener is running\n"
+        "# TYPE hydrogen_mailrelay_inbound_running gauge\n"
+        "hydrogen_mailrelay_inbound_running %.3f\n",
+        counters.initialized ? (smtp_listener_is_running() ? 1.0 : 0.0) : 0.0);
 
     if (offset >= buffer_size) return buffer_size;
 
