@@ -15,6 +15,15 @@
 # (Helpers live in tests/lib/mailrelay_api_helpers.sh)
 
 # CHANGELOG
+# 2.9.5 - 2026-09-07 - Fix SQLite-plaintext/STARTTLS failure: repo_add_datetime now
+#                      translates ISO 8601 -> 'YYYY-MM-DD HH:MM:SS' for SQLite too
+#                      (not just MySQL). SQLite stores DATETIME as TEXT and its
+#                      CURRENT_TIMESTAMP returns 'YYYY-MM-DD HH:MM:SS' (space, no Z),
+#                      so the stored 'T'/'Z' format broke string comparisons in the
+#                      claim_next subquery (affected_rows=0 -> claim lost -> no SMTP).
+#                      Bump helpers to 1.0.13.
+# 2.9.4 - 2026-09-07 - Bump helpers to 1.0.13: analyze now prints exact resolved
+#                      log/result/response paths instead of literal '*' globs.
 # 2.9.3 - 2026-09-06 - Add INFO lines for mailval/hydrogen log file locations
 #                      (helpers 1.0.12), matching the convention from test_24/44/50.
 # 2.9.2 - 2026-09-04 - PERSIST_PLAN Phase 2c: shield flipped OFF for mysql/mariadb
@@ -69,7 +78,7 @@ TEST_NAME="MailRelay API"
 TEST_ABBR="MRA"
 TEST_NUMBER="58"
 TEST_COUNTER=0
-TEST_VERSION="2.9.3"
+TEST_VERSION="2.9.5"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"

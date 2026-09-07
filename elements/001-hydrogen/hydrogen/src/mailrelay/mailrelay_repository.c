@@ -301,7 +301,10 @@ bool repo_add_int64(json_t* root, const char* name, long long value) {
 // Translate ISO 8601 'YYYY-MM-DDTHH:MM:SS[.fff]Z' to MySQL DATETIME 'YYYY-MM-DD HH:MM:SS'. Truncates fractional seconds and drops the trailing
 // 'Z'. NULL/empty input passes through unchanged (NULL stays NULL, empty stays empty string). Already-formatted values are returned as-is.
 // Returns a heap-allocated string the caller must free. NULL on allocation failure. See header for the full contract.
-char* mailrelay_repo_translate_iso8601_to_mysql(const char* iso8601) {
+//
+// Also applies to SQLite: SQLite CURRENT_TIMESTAMP returns 'YYYY-MM-DD HH:MM:SS' (space, no Z), so storing next_attempt_at
+// as ISO 8601 'YYYY-MM-DDTHH:MM:SSZ' would break string comparisons in claim/recover queries (e.g. 'T' > ' ' lexicographically).
+char* mailrelay_repo_translate_iso8601(const char* iso8601) {
     if (!iso8601) {
         return NULL;
     }
@@ -314,8 +317,8 @@ char* mailrelay_repo_translate_iso8601_to_mysql(const char* iso8601) {
         }
         return empty;
     }
-    // Need at least 'YYYY-MM-DDTHH:MM:SS' (19 chars). Anything shorter or without a 'T' at position 10 is already in MySQL DATETIME shape
-    // (or junk the engine will reject on its own); pass through unchanged.
+    // Need at least 'YYYY-MM-DDTHH:MM:SS' (19 chars). Anything shorter or without a 'T' at position 10 is already in
+    // MySQL DATETIME / SQLite text shape (or junk the engine will reject on its own); pass through unchanged.
     if (n < 19 || iso8601[10] != 'T') {
         char* copy = malloc(n + 1);
         if (copy) {
@@ -335,8 +338,10 @@ char* mailrelay_repo_translate_iso8601_to_mysql(const char* iso8601) {
     return out;
 }
 
-// PERSIST_PLAN Phase 2c: see header for the contract. Engine lookup is by DatabaseConnection->type ("mysql" -> DB_ENGINE_MYSQL). Any other engine,
-// an unresolved name, or a missing app_config falls through to repo_add_string unchanged so the 5 working engines keep their current ISO 8601 behaviour.
+// PERSIST_PLAN Phase 2c: see header for the contract. Engine lookup is by DatabaseConnection->type. MySQL and SQLite both store DATETIME as
+// text, so ISO 8601 'T'/'Z' format must be translated to 'YYYY-MM-DD HH:MM:SS' for string comparisons in claim/recover queries to work.
+// PostgreSQL and DB2 use native timestamp types where the engine handles format conversion; pass through unchanged.
+// A missing app_config, unresolved name, or NULL input falls through to repo_add_string unchanged.
 bool repo_add_datetime(json_t* root, const char* name, const char* iso8601, const char* database_name) {
     if (!root || !name) {
         return false;
@@ -348,13 +353,17 @@ bool repo_add_datetime(json_t* root, const char* name, const char* iso8601, cons
     }
 
     const DatabaseConnection* conn = find_database_connection(&app_config->databases, database_name);
-    bool is_mysql = (conn && conn->type && strcmp(conn->type, "mysql") == 0);
-
-    if (!is_mysql) {
+    if (!conn || !conn->type) {
         return repo_add_string(root, name, iso8601);
     }
 
-    char* translated = mailrelay_repo_translate_iso8601_to_mysql(iso8601);
+    bool needs_translation = (strcmp(conn->type, "mysql") == 0) || (strcmp(conn->type, "sqlite") == 0);
+
+    if (!needs_translation) {
+        return repo_add_string(root, name, iso8601);
+    }
+
+    char* translated = mailrelay_repo_translate_iso8601(iso8601);
     if (!translated) {
         // Translation failed (OOM). Fall back to the original value rather than silently dropping the bind.
         return repo_add_string(root, name, iso8601);
