@@ -1,0 +1,538 @@
+        -:    0:Source:/mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/src/mailrelay/mailrelay_smtp_listener.c
+        -:    0:Graph:build/unity/src/mailrelay/mailrelay_smtp_listener.gcno
+        -:    0:Data:build/unity/src/mailrelay/mailrelay_smtp_listener.gcda
+        -:    0:Runs:5
+        -:    1:/*
+        -:    2: * Mail Relay Inbound SMTP Listener
+        -:    3: *
+        -:    4: * A submission-only SMTP (and optional LMTP stub) listener for trusted /
+        -:    5: * internal clients. This is NOT a public MX / open relay. Each accepted
+        -:    6: * message is converted into a normal outbound queue item via the existing
+        -:    7: * template/producer path (12.5), optionally through a route template
+        -:    8: * configured in mail_routes (QueryRefs 118-122).
+        -:    9: *
+        -:   10: * Design:
+        -:   11: *   - One listening socket on MailRelay.ListenPort, accept loop thread.
+        -:   12: *   - Each accepted connection gets its own worker thread (tracked via
+        -:   13: *     mailrelay_threads).
+        -:   14: *   - Per-connection SMTP state machine: greeting -> EHLO -> optional
+        -:   15: *     STARTTLS/AUTH -> MAIL FROM -> RCPT TO -> DATA -> enqueue -> QUIT.
+        -:   16: *   - Anti-open-relay: source-network allowlist, optional AUTH, route
+        -:   17: *     matching. Unmatched messages are rejected before enqueue.
+        -:   18: *   - LMTP is a stub that logs "unsupported/deferred" (12.6).
+        -:   19: */
+        -:   20:
+        -:   21:#include <src/hydrogen.h>
+        -:   22:
+        -:   23:#include <src/mailrelay/mailrelay_smtp_listener.h>
+        -:   24:#include <src/mailrelay/mailrelay_internal.h>
+        -:   25:#include <src/mailrelay/mailrelay_message.h>
+        -:   26:#include <src/mailrelay/mailrelay_smtp.h>
+        -:   27:#include <src/mailrelay/mailrelay_repository.h>
+        -:   28:#include <src/mailrelay/mailrelay.h>
+        -:   29:#include <src/mailrelay/mailrelay_template.h>
+        -:   30:
+        -:   31:#include <src/threads/threads.h>
+        -:   32:#include <src/utils/utils_time.h>
+        -:   33:#include <src/utils/utils_uuid.h>
+        -:   34:
+        -:   35:#include <pthread.h>
+        -:   36:#include <signal.h>
+        -:   37:#include <sys/socket.h>
+        -:   38:#include <netinet/in.h>
+        -:   39:#include <arpa/inet.h>
+        -:   40:#include <unistd.h>
+        -:   41:#include <errno.h>
+        -:   42:#include <string.h>
+        -:   43:
+        -:   44:#define SMTP_LISTENER_BACKLOG 16
+        -:   45:#define SMTP_MAX_LINE 16384
+        -:   46:
+        -:   47:volatile sig_atomic_t smtp_listener_shutdown = 0;
+        -:   48:int smtp_listener_fd = -1;
+        -:   49:bool smtp_listener_running = false;
+        -:   50:
+        -:   51:smtp_listener_should_accept_fn g_should_accept_fn = NULL;
+        -:   52:
+       11:   53:void smtp_get_peer_ip(int fd, const struct sockaddr* addr,
+        -:   54:                       socklen_t addrlen, char* ip_out, size_t cap) {
+        -:   55:    (void)fd; (void)addrlen;
+       11:   56:    if (!addr || !ip_out || !cap) return;
+        9:   57:    if (addr->sa_family == AF_INET) {
+        5:   58:        const struct sockaddr_in* sin = (const struct sockaddr_in*)addr;
+        5:   59:        inet_ntop(AF_INET, &sin->sin_addr, ip_out, (socklen_t)cap);
+        4:   60:    } else if (addr->sa_family == AF_INET6) {
+        2:   61:        const struct sockaddr_in6* sin6 = (const struct sockaddr_in6*)addr;
+        2:   62:        inet_ntop(AF_INET6, &sin6->sin6_addr, ip_out, (socklen_t)cap);
+        -:   63:    } else {
+        2:   64:        snprintf(ip_out, cap, "unknown");
+        -:   65:    }
+        -:   66:}
+        -:   67:
+      409:   68:void smtp_send_line(struct SmtpConnection* conn, const char* line) {
+      409:   69:    if (!conn || conn->fd < 0 || !line) return;
+      401:   70:    size_t len = strlen(line);
+      401:   71:    char* buf = malloc(len + 3);
+     401*:   72:    if (!buf) return;
+      401:   73:    memcpy(buf, line, len);
+      401:   74:    buf[len] = '\r';
+      401:   75:    buf[len + 1] = '\n';
+      401:   76:    buf[len + 2] = '\0';
+      401:   77:    send(conn->fd, buf, len + 2, 0);
+      401:   78:    free(buf);
+        -:   79:}
+        -:   80:
+      183:   81:bool smtp_read_line(struct SmtpConnection* conn, char* buf, size_t cap) {
+      183:   82:    if (!conn || conn->fd < 0) return false;
+      177:   83:    size_t pos = 0;
+     2342:   84:    while (pos + 1 < cap) {
+        -:   85:        char ch;
+     2342:   86:        ssize_t n = recv(conn->fd, &ch, 1, 0);
+     2342:   87:        if (n <= 0) return false;
+     2340:   88:        if (ch == '\n') break;
+     2165:   89:        if (ch != '\r') buf[pos++] = ch;
+        -:   90:    }
+      175:   91:    buf[pos] = '\0';
+      175:   92:    return true;
+        -:   93:}
+        -:   94:
+       52:   95:void smtp_conn_free(struct SmtpConnection* conn) {
+       52:   96:    if (!conn) return;
+      831:   97:    for (int i = 0; i < conn->recipient_count; i++) {
+      781:   98:        free(conn->recipients[i]);
+      781:   99:        conn->recipients[i] = NULL;
+        -:  100:    }
+       50:  101:    conn->recipient_count = 0;
+        -:  102:}
+        -:  103:
+       20:  104:void smtp_reset_envelope(struct SmtpConnection* conn) {
+       20:  105:    conn->mail_from[0] = '\0';
+       20:  106:    conn->has_mail_from = false;
+       20:  107:    conn->auth_active = false;
+       20:  108:    conn->route_matched = false;
+       20:  109:    conn->route.rewrite_from = NULL;
+       20:  110:    conn->route.add_recipients = NULL;
+       20:  111:    conn->route.route_id = 0;
+       24:  112:    for (int i = 0; i < conn->recipient_count; i++) {
+        4:  113:        free(conn->recipients[i]);
+        4:  114:        conn->recipients[i] = NULL;
+        -:  115:    }
+       20:  116:    conn->recipient_count = 0;
+       20:  117:}
+        -:  118:
+       49:  119:bool smtp_parse_address(const char* line, const char* tag,
+        -:  120:                        char* out, size_t cap) {
+       49:  121:    if (!line || !tag || tag[0] == '\0' || !out || cap == 0) return false;
+       41:  122:    const char* p = strcasestr(line, tag);
+       41:  123:    if (!p) return false;
+       36:  124:    p += strlen(tag);
+      36*:  125:    while (*p == ' ') p++;
+       36:  126:    const char* start = p;
+       36:  127:    if (*p == '<') {
+       29:  128:        p++;
+       29:  129:        start = p;
+      585:  130:        while (*p && *p != '>') p++;
+        -:  131:    } else {
+       86:  132:        while (*p && *p != ' ' && *p != '\r' && *p != '\n') p++;
+        -:  133:    }
+       36:  134:    size_t len = (size_t)(p - start);
+       36:  135:    if (len >= cap) len = cap - 1;
+       36:  136:    memcpy(out, start, len);
+       36:  137:    out[len] = '\0';
+       36:  138:    return len > 0;
+        -:  139:}
+        -:  140:
+        8:  141:bool smtp_check_source_network(const char* ip, const MailRelayConfig* config) {
+        8:  142:    if (!config || !ip) return false;
+        -:  143:    /* TODO: implement AllowNetwork list from config. For now accept all
+        -:  144:     * (trusted internal network). The ip length is validated to ensure the
+        -:  145:     * address buffer was populated. */
+        4:  146:    return strlen(ip) > 0;
+        -:  147:}
+        -:  148:
+        -:  149:/*
+        -:  150: * Default route-resolution callback (Phase 12.4). Wires smtp_resolve_route to
+        -:  151: * the mail_relay_routes QueryRefs (118-122) via the repository.
+        -:  152: *
+        -:  153: * In test/blackbox mode (MAILRELAY_INBOUND_TEST_MODE=1 in the environment),
+        -:  154: * this acts as a permissive accept so blackbox scripts can exercise the
+        -:  155: * full SMTP->enqueue->deliver path without pre-seeding route rows in a DB.
+        -:  156: */
+        8:  157:bool smtp_route_should_accept(const char* sender_domain,
+        -:  158:                              const char* const* recipients,
+        -:  159:                              int recipient_count,
+        -:  160:                              MailRelayRouteMatch* out_route) {
+        -:  161:    (void)sender_domain;
+        -:  162:    (void)recipients;
+        -:  163:    (void)recipient_count;
+        -:  164:
+        8:  165:    const char* test_mode = getenv("MAILRELAY_INBOUND_TEST_MODE");
+        8:  166:    if (test_mode && test_mode[0] == '1') {
+        -:  167:        /* Test mode: accept everything, no rewrite. */
+        6:  168:        if (out_route) {
+        6:  169:            out_route->rewrite_from = NULL;
+        6:  170:            out_route->add_recipients = NULL;
+        6:  171:            out_route->route_id = 0;
+        -:  172:        }
+        6:  173:        return true;
+        -:  174:    }
+        -:  175:
+        -:  176:    /* Production: look up the route via QueryRef 118 (route_get_by_sender_domain).
+        -:  177:     * The repository is async; for now we fail closed. A future phase will
+        -:  178:     * add a synchronous DB lookup or a connection-scoped response queue. */
+        -:  179:    (void)out_route;
+        2:  180:    return false;
+        -:  181:}
+        -:  182:
+       14:  183:bool smtp_resolve_route(struct SmtpConnection* conn, const MailRelayConfig* config) {
+        -:  184:    (void)config;
+       14:  185:    conn->route_matched = false;
+       14:  186:    if (conn->mail_from[0] == '\0') return false;
+        -:  187:
+       12:  188:    char sender_domain[128] = {0};
+       12:  189:    const char* at = strrchr(conn->mail_from, '@');
+       12:  190:    if (at && at[1]) {
+       12:  191:        strncpy(sender_domain, at + 1, sizeof(sender_domain) - 1);
+        -:  192:    }
+        -:  193:
+       12:  194:    if (g_should_accept_fn) {
+        -:  195:        MailRelayRouteMatch route;
+       10:  196:        memset(&route, 0, sizeof(route));
+       10:  197:        bool found = g_should_accept_fn(sender_domain,
+       10:  198:                                        (const char* const*)conn->recipients,
+        -:  199:                                        conn->recipient_count, &route);
+       10:  200:        if (found) {
+        8:  201:            conn->route = route;
+        8:  202:            conn->route_matched = true;
+        -:  203:        }
+       10:  204:        return found;
+        -:  205:    }
+        -:  206:
+        -:  207:    /* Default: no routes configured — reject (fail closed). */
+        2:  208:    conn->route_matched = false;
+        2:  209:    return false;
+        -:  210:}
+        -:  211:
+        8:  212:bool smtp_enqueue_inbound_message(struct SmtpConnection* conn,
+        -:  213:                                   const MailRelayConfig* config,
+        -:  214:                                   const char* raw_body, size_t body_len) {
+        -:  215:    (void)body_len;
+        8:  216:    if (!conn->route_matched) {
+        2:  217:        log_this(SR_MAIL_RELAY,
+        -:  218:                 "Inbound SMTP: no route matched for sender domain; rejecting",
+        -:  219:                 LOG_LEVEL_ALERT, 0);
+        2:  220:        return false;
+        -:  221:    }
+        -:  222:
+        -:  223:    MailRelayMessage msg;
+        6:  224:    mailrelay_message_init(&msg);
+        -:  225:
+        6:  226:    const char* from_addr = conn->mail_from;
+        6:  227:    if (conn->route.rewrite_from && conn->route.rewrite_from[0]) {
+        2:  228:        from_addr = conn->route.rewrite_from;
+        -:  229:    }
+        6:  230:    mailrelay_message_set_from(&msg, from_addr);
+        -:  231:
+       12:  232:    for (int i = 0; i < conn->recipient_count; i++) {
+        6:  233:        mailrelay_message_add_to(&msg, conn->recipients[i]);
+        -:  234:    }
+        -:  235:
+        6:  236:    if (config->DefaultReplyTo && config->DefaultReplyTo[0]) {
+        2:  237:        mailrelay_message_set_reply_to(&msg, config->DefaultReplyTo);
+        -:  238:    }
+        -:  239:
+       6*:  240:    msg.text_body = strndup(raw_body ? raw_body : "", body_len);
+        -:  241:
+        6:  242:    MailRelayStatus status = mailrelay_enqueue(&msg, 0);
+        6:  243:    mailrelay_message_free(&msg);
+        -:  244:
+        6:  245:    if (status != MAILRELAY_OK) {
+        6:  246:        log_this(SR_MAIL_RELAY,
+        -:  247:                 "Inbound SMTP: enqueue failed (status=%d)",
+        -:  248:                 LOG_LEVEL_ERROR, 1, (int)status);
+        6:  249:        return false;
+        -:  250:    }
+        -:  251:
+    #####:  252:    log_this(SR_MAIL_RELAY,
+        -:  253:             "Inbound SMTP: message accepted and enqueued from %s",
+    #####:  254:             LOG_LEVEL_STATE, 1, conn->mail_from);
+    #####:  255:    return true;
+        -:  256:}
+        -:  257:
+       48:  258:void* smtp_handle_connection(void* arg) {
+       48:  259:    struct SmtpConnection* conn = (struct SmtpConnection*)arg;
+        -:  260:
+       48:  261:    add_service_thread(&mailrelay_threads, pthread_self());
+        -:  262:
+       48:  263:    smtp_send_line(conn, "220 mailrelay ESMTP ready");
+       48:  264:    conn->state = SMTP_CONN_EHLO;
+        -:  265:
+        -:  266:    char line[SMTP_MAX_LINE];
+      174:  267:    while (!smtp_listener_shutdown) {
+      171:  268:        if (!smtp_read_line(conn, line, sizeof(line))) {
+      45*:  269:            break;
+        -:  270:        }
+     183*:  271:        if (line[0] == '\0') continue;
+        -:  272:
+        -:  273:        char cmd[32];
+        -:  274:        char argval[SMTP_MAX_LINE];
+      171:  275:        cmd[0] = argval[0] = '\0';
+      171:  276:        sscanf(line, "%31s %16382[^\n]", cmd, argval);
+        -:  277:
+      171:  278:        if (strcasecmp(cmd, "QUIT") == 0) {
+       45:  279:            smtp_send_line(conn, "221 Bye");
+       45:  280:            break;
+      126:  281:        } else if (strcasecmp(cmd, "EHLO") == 0 || strcasecmp(cmd, "HELO") == 0) {
+       45:  282:            smtp_send_line(conn, "250-mailrelay");
+       45:  283:            smtp_send_line(conn, "250-PIPELINING");
+       45:  284:            smtp_send_line(conn, "250-SIZE 10485760");
+       45:  285:            smtp_send_line(conn, "250-8BITMIME");
+       45:  286:            smtp_send_line(conn, "250 OK");
+       45:  287:            conn->state = SMTP_CONN_MAIL_FROM;
+       81:  288:        } else if (strcasecmp(cmd, "MAIL") == 0) {
+       18:  289:            if (smtp_parse_address(line, "FROM:", conn->mail_from, sizeof(conn->mail_from))) {
+       15:  290:                conn->has_mail_from = true;
+       15:  291:                smtp_reset_envelope(conn);
+       15:  292:                smtp_send_line(conn, "250 OK");
+        -:  293:            } else {
+        3:  294:                smtp_send_line(conn, "501 Bad sender address");
+        -:  295:            }
+       63:  296:        } else if (strcasecmp(cmd, "RCPT") == 0) {
+        -:  297:            char addr[MV_ADDR_LEN];
+       15:  298:            if (smtp_parse_address(line, "TO:", addr, sizeof(addr))) {
+       15:  299:                if (conn->recipient_count < (int)MV_MAX_RECIPIENTS && mailrelay_is_valid_email(addr)) {
+        9:  300:                    conn->recipients[conn->recipient_count] = strdup(addr);
+        9:  301:                    if (conn->recipients[conn->recipient_count]) {
+        9:  302:                        conn->recipient_count++;
+        9:  303:                        smtp_send_line(conn, "250 OK");
+        -:  304:                    } else {
+    #####:  305:                        smtp_send_line(conn, "451 Out of memory");
+        -:  306:                    }
+        -:  307:                } else {
+        6:  308:                    smtp_send_line(conn, "553 Invalid or too many recipients");
+        -:  309:                }
+        -:  310:            } else {
+    #####:  311:                smtp_send_line(conn, "501 Bad recipient address");
+        -:  312:            }
+       48:  313:        } else if (strcasecmp(cmd, "DATA") == 0) {
+      12*:  314:            if (!conn->has_mail_from || conn->recipient_count == 0) {
+       12:  315:                smtp_send_line(conn, "503 Need MAIL FROM and RCPT TO first");
+       12:  316:                continue;
+        -:  317:            }
+    #####:  318:            smtp_send_line(conn, "354 End data with <CR><LF>.<CR><LF>");
+    #####:  319:            conn->state = SMTP_CONN_DATA;
+        -:  320:
+    #####:  321:            char* body_buf = NULL;
+    #####:  322:            size_t body_cap = 65536;
+    #####:  323:            size_t body_len = 0;
+    #####:  324:            body_buf = malloc(body_cap);
+    #####:  325:            if (!body_buf) {
+    #####:  326:                smtp_send_line(conn, "451 Out of memory");
+    #####:  327:                break;
+        -:  328:            }
+        -:  329:
+    #####:  330:            bool data_done = false;
+        -:  331:            for (;;) {
+    #####:  332:                if (!smtp_read_line(conn, line, sizeof(line))) {
+    #####:  333:                    free(body_buf);
+    #####:  334:                    goto cleanup;
+        -:  335:                }
+    #####:  336:                if (strcmp(line, ".") == 0) {
+    #####:  337:                    data_done = true;
+    #####:  338:                    break;
+        -:  339:                }
+    #####:  340:                if (body_len + strlen(line) + 3 >= body_cap) {
+    #####:  341:                    body_cap *= 2;
+    #####:  342:                    char* tmp = realloc(body_buf, body_cap);
+    #####:  343:                    if (!tmp) {
+    #####:  344:                        free(body_buf);
+    #####:  345:                        smtp_send_line(conn, "552 Message too large");
+    #####:  346:                        goto cleanup;
+        -:  347:                    }
+    #####:  348:                    body_buf = tmp;
+        -:  349:                }
+    #####:  350:                if (line[0] == '.') {
+    #####:  351:                    memmove(line, line + 1, strlen(line));
+        -:  352:                }
+    #####:  353:                strcat(body_buf + body_len, line);
+    #####:  354:                strcat(body_buf + body_len, "\r\n");
+    #####:  355:                body_len = strlen(body_buf);
+        -:  356:            }
+        -:  357:
+    #####:  358:            const MailRelayConfig* config = (app_config ? &app_config->mail_relay : NULL);
+    #####:  359:            bool accepted = false;
+    #####:  360:            if (config && config->InboundEnabled) {
+    #####:  361:                const char* ip = conn->remote_ip;
+    #####:  362:                bool net_ok = smtp_check_source_network(ip, config);
+    #####:  363:                if (!net_ok) {
+    #####:  364:                    smtp_send_line(conn, "554 Source network not allowed");
+    #####:  365:                } else if (!smtp_resolve_route(conn, config)) {
+    #####:  366:                    smtp_send_line(conn, "550 No routing rule for this sender/recipient");
+        -:  367:                } else {
+    #####:  368:                    accepted = smtp_enqueue_inbound_message(conn, config, body_buf, body_len);
+        -:  369:                }
+        -:  370:            } else {
+    #####:  371:                smtp_send_line(conn, "554 Mail relay not configured for inbound");
+        -:  372:            }
+    #####:  373:            free(body_buf);
+        -:  374:
+    #####:  375:            if (accepted) {
+    #####:  376:                smtp_send_line(conn, "250 OK message queued");
+    #####:  377:            } else if (!data_done) {
+        -:  378:                /* already sent error above */
+        -:  379:            } else {
+    #####:  380:                smtp_send_line(conn, "451 Internal error");
+        -:  381:            }
+    #####:  382:            conn->state = SMTP_CONN_EHLO;
+       36:  383:        } else if (strcasecmp(cmd, "RSET") == 0) {
+        3:  384:            smtp_reset_envelope(conn);
+        3:  385:            smtp_send_line(conn, "250 OK");
+       33:  386:        } else if (strcasecmp(cmd, "NOOP") == 0) {
+        3:  387:            smtp_send_line(conn, "250 OK");
+       30:  388:        } else if (strcasecmp(cmd, "STARTTLS") == 0) {
+        3:  389:            smtp_send_line(conn, "502 STARTTLS not supported in this build");
+       27:  390:        } else if (strcasecmp(cmd, "AUTH") == 0) {
+        3:  391:            smtp_send_line(conn, "535 Authentication required");
+       24:  392:        } else if (strcasecmp(cmd, "LHLO") == 0) {
+        -:  393:            /* LMVP: stub. Logs unsupported/deferred (12.6). */
+        3:  394:            log_this(SR_MAIL_RELAY,
+        -:  395:                     "Inbound LMTP: received LHLO but LMVP is deferred",
+        -:  396:                     LOG_LEVEL_ALERT, 0);
+        3:  397:            smtp_send_line(conn, "502 LMTP not supported");
+        -:  398:        } else {
+       21:  399:            smtp_send_line(conn, "500 Command not recognized");
+        -:  400:        }
+        -:  401:    }
+        -:  402:
+        3:  403:cleanup:
+       48:  404:    if (conn->fd >= 0) close(conn->fd);
+       48:  405:    smtp_conn_free(conn);
+       48:  406:    free(conn);
+       48:  407:    remove_service_thread(&mailrelay_threads, pthread_self());
+       48:  408:    return NULL;
+        -:  409:}
+        -:  410:
+        9:  411:void* smtp_listener_thread(void* arg) {
+        -:  412:    (void)arg;
+        9:  413:    add_service_thread(&mailrelay_threads, pthread_self());
+        -:  414:
+       9*:  415:    const MailRelayConfig* config = (app_config ? &app_config->mail_relay : NULL);
+        9:  416:    smtp_listener_start(config);
+        -:  417:
+        9:  418:    remove_service_thread(&mailrelay_threads, pthread_self());
+        9:  419:    return NULL;
+        -:  420:}
+        -:  421:
+       15:  422:bool smtp_listener_start(const MailRelayConfig* config) {
+       15:  423:    if (!config) {
+        2:  424:        return false;
+        -:  425:    }
+        -:  426:
+       13:  427:    if (!config->InboundEnabled) {
+        5:  428:        log_this(SR_MAIL_RELAY,
+        -:  429:                 "Inbound SMTP listener disabled - not starting",
+        -:  430:                 LOG_LEVEL_STATE, 0);
+        5:  431:        return true;
+        -:  432:    }
+        -:  433:
+        8:  434:    if (!app_config || !app_config->mail_relay.OutboundEnabled) {
+        2:  435:        log_this(SR_MAIL_RELAY,
+        -:  436:                 "Inbound relay requires outbound to be enabled for re-queueing",
+        -:  437:                 LOG_LEVEL_ALERT, 0);
+        2:  438:        return false;
+        -:  439:    }
+        -:  440:
+        6:  441:    smtp_listener_shutdown = 0;
+        -:  442:
+        6:  443:    smtp_listener_fd = socket(AF_INET, SOCK_STREAM, 0);
+        6:  444:    if (smtp_listener_fd < 0) {
+    #####:  445:        log_this(SR_MAIL_RELAY,
+        -:  446:                 "Inbound SMTP: failed to create listener socket: %s",
+    #####:  447:                 LOG_LEVEL_ERROR, 1, strerror(errno));
+    #####:  448:        return false;
+        -:  449:    }
+        -:  450:
+        6:  451:    int yes = 1;
+        6:  452:    setsockopt(smtp_listener_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes));
+        -:  453:
+        -:  454:    struct sockaddr_in addr;
+        6:  455:    memset(&addr, 0, sizeof(addr));
+        6:  456:    addr.sin_family = AF_INET;
+        6:  457:    addr.sin_addr.s_addr = htonl(INADDR_ANY);
+        6:  458:    addr.sin_port = htons((uint16_t)config->ListenPort);
+        -:  459:
+        6:  460:    if (bind(smtp_listener_fd, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
+        6:  461:        log_this(SR_MAIL_RELAY,
+        -:  462:                 "Inbound SMTP: failed to bind port %d: %s",
+        3:  463:                 LOG_LEVEL_ERROR, 2, config->ListenPort, strerror(errno));
+        3:  464:        close(smtp_listener_fd);
+        3:  465:        smtp_listener_fd = -1;
+        3:  466:        return false;
+        -:  467:    }
+        -:  468:
+        3:  469:    if (listen(smtp_listener_fd, SMTP_LISTENER_BACKLOG) < 0) {
+    #####:  470:        log_this(SR_MAIL_RELAY,
+        -:  471:                 "Inbound SMTP: failed to listen on port %d: %s",
+    #####:  472:                 LOG_LEVEL_ERROR, 2, config->ListenPort, strerror(errno));
+    #####:  473:        close(smtp_listener_fd);
+    #####:  474:        smtp_listener_fd = -1;
+    #####:  475:        return false;
+        -:  476:    }
+        -:  477:
+        3:  478:    smtp_listener_running = true;
+        3:  479:    log_this(SR_MAIL_RELAY,
+        -:  480:             "Inbound SMTP listener started on port %d (trusted submission only, not open relay)",
+        3:  481:             LOG_LEVEL_STATE, 1, config->ListenPort);
+        -:  482:
+        6:  483:    while (!smtp_listener_shutdown) {
+        -:  484:        struct sockaddr_storage peer_addr;
+        3:  485:        socklen_t peer_len = sizeof(peer_addr);
+        3:  486:        int client_fd = accept(smtp_listener_fd, (struct sockaddr*)&peer_addr, &peer_len);
+       3*:  487:        if (client_fd < 0) {
+    #####:  488:            if (smtp_listener_shutdown) break;
+    #####:  489:            continue;
+        -:  490:        }
+        -:  491:
+        3:  492:        struct SmtpConnection* conn_ptr = malloc(sizeof(struct SmtpConnection));
+       3*:  493:        if (!conn_ptr) {
+    #####:  494:            close(client_fd);
+    #####:  495:            continue;
+        -:  496:        }
+        3:  497:        memset(conn_ptr, 0, sizeof(struct SmtpConnection));
+        3:  498:        conn_ptr->fd = client_fd;
+        3:  499:        smtp_get_peer_ip(client_fd, (const struct sockaddr*)&peer_addr,
+        3:  500:                         peer_len, conn_ptr->remote_ip, sizeof(conn_ptr->remote_ip));
+        -:  501:
+        -:  502:        pthread_t tid;
+       3*:  503:        if (pthread_create(&tid, NULL, smtp_handle_connection, conn_ptr) != 0) {
+    #####:  504:            close(client_fd);
+    #####:  505:            free(conn_ptr);
+    #####:  506:            continue;
+        -:  507:        }
+        3:  508:        pthread_detach(tid);
+        -:  509:    }
+        -:  510:
+        3:  511:    smtp_listener_running = false;
+        3:  512:    log_this(SR_MAIL_RELAY, "Inbound SMTP listener stopped", LOG_LEVEL_STATE, 0);
+        3:  513:    return true;
+        -:  514:}
+        -:  515:
+      269:  516:void smtp_listener_stop(void) {
+      269:  517:    smtp_listener_shutdown = 1;
+      269:  518:    if (smtp_listener_fd >= 0) {
+        3:  519:        close(smtp_listener_fd);
+        3:  520:        smtp_listener_fd = -1;
+        -:  521:    }
+      269:  522:}
+        -:  523:
+       15:  524:bool smtp_listener_is_running(void) {
+       15:  525:    return smtp_listener_running;
+        -:  526:}
+        -:  527:
+      285:  528:void smtp_listener_set_should_accept(smtp_listener_should_accept_fn fn) {
+      285:  529:    g_should_accept_fn = fn;
+      285:  530:}
+        -:  531:
+        4:  532:smtp_listener_should_accept_fn smtp_listener_get_should_accept(void) {
+        4:  533:    return g_should_accept_fn;
+        -:  534:}
