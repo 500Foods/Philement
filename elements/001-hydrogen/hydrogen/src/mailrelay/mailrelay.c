@@ -9,6 +9,7 @@
 #include <src/mailrelay/mailrelay_internal.h>
 #include <src/mailrelay/mailrelay_repository.h>
 #include <src/mailrelay/mailrelay_smtp.h>
+#include <src/mailrelay/mailrelay_smtp_listener.h>
 #include <src/mailrelay/mailrelay_test_seams.h>
 #include <src/mailrelay/mailrelay_workers.h>
 
@@ -174,6 +175,22 @@ bool mailrelay_init(void) {
 
     init_service_threads(&mailrelay_threads, SR_MAIL_RELAY);
 
+    // Wire up inbound SMTP route resolution callback (Phase 12.4).
+    smtp_listener_set_should_accept(smtp_route_should_accept);
+
+    // Start inbound SMTP listener thread if configured.
+    if (app_config && app_config->mail_relay.InboundEnabled) {
+        pthread_t listener_tid;
+        if (pthread_create(&listener_tid, NULL, smtp_listener_thread, NULL) == 0) {
+            pthread_detach(listener_tid);
+            add_service_thread(&mailrelay_threads, listener_tid);
+        } else {
+            log_this(SR_MAIL_RELAY,
+                     "Failed to start inbound SMTP listener thread",
+                     LOG_LEVEL_ERROR, 0);
+        }
+    }
+
     log_this(SR_MAIL_RELAY, "Runtime initialized", LOG_LEVEL_DEBUG, 0);
     return true;
 }
@@ -184,6 +201,7 @@ void mailrelay_shutdown(void) {
     }
 
     mail_relay_system_shutdown = 1;
+    smtp_listener_stop();
     mailrelay_workers_stop();
     mailrelay_debounce_stop();
     mailrelay_event_free_all_rate_limits();

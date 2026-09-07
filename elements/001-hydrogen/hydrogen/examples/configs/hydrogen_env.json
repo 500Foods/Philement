@@ -280,6 +280,7 @@
         "Enabled": "${env.MAILRELAY_ENABLED}",
         "OutboundEnabled": "${env.MAILRELAY_OUTBOUND_ENABLED}",
         "InboundEnabled": "${env.MAILRELAY_INBOUND_ENABLED}",
+        "InboundRequireAuth": "${env.MAILRELAY_INBOUND_REQUIRE_AUTH}",
         "Database": "${env.MAILRELAY_DATABASE}",
         "DefaultFrom": "${env.MAILRELAY_DEFAULT_FROM}",
         "DefaultReplyTo": "${env.MAILRELAY_DEFAULT_REPLY_TO}",

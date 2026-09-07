@@ -767,6 +767,10 @@
                     "type": "boolean",
                     "description": "Enable inbound SMTP relay listener"
                 },
+                "InboundRequireAuth": {
+                    "type": "boolean",
+                    "description": "Require SMTP AUTH for inbound relay from untrusted networks"
+                },
                 "Database": {
                     "type": "string",
                     "description": "Database connection name for mail tables"

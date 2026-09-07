@@ -86,6 +86,7 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
     mail->Enabled = false;
     mail->OutboundEnabled = false;
     mail->InboundEnabled = false;
+    mail->InboundRequireAuth = false;
     mail->ListenPort = 25;
     mail->Workers = 2;
 
@@ -145,6 +146,7 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
     success = success && PROCESS_BOOL(root, mail, Enabled, "MailRelay.Enabled", "MailRelay");
     success = success && PROCESS_BOOL(root, mail, OutboundEnabled, "MailRelay.OutboundEnabled", "MailRelay");
     success = success && PROCESS_BOOL(root, mail, InboundEnabled, "MailRelay.InboundEnabled", "MailRelay");
+    success = success && PROCESS_BOOL(root, mail, InboundRequireAuth, "MailRelay.InboundRequireAuth", "MailRelay");
     success = success && PROCESS_STRING(root, mail, Database, "MailRelay.Database", "MailRelay");
     success = success && PROCESS_STRING(root, mail, DefaultFrom, "MailRelay.DefaultFrom", "MailRelay");
     success = success && PROCESS_STRING(root, mail, DefaultReplyTo, "MailRelay.DefaultReplyTo", "MailRelay");
@@ -378,6 +380,7 @@ void dump_mailrelay_config(const MailRelayConfig* config) {
     DUMP_BOOL2("――", "Enabled", config->Enabled);
     DUMP_BOOL2("――", "OutboundEnabled", config->OutboundEnabled);
     DUMP_BOOL2("――", "InboundEnabled", config->InboundEnabled);
+    DUMP_BOOL2("――", "InboundRequireAuth", config->InboundRequireAuth);
 
     char buffer[256];
     if (config->Database) {

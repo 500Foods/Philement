@@ -1,0 +1,38 @@
+{
+    "Server": {
+        "ServerName": "hydrogen-test-61"
+    },
+    "WebServer": {
+        "EnableIPv4": false,
+        "EnableIPv6": false
+    },
+    "MailRelay": {
+        "Enabled": true,
+        "OutboundEnabled": true,
+        "InboundEnabled": true,
+        "InboundRequireAuth": false,
+        "ListenPort": 5581,
+        "Workers": 1,
+        "DefaultFrom": "mailrelay-test@hydrogen.local",
+        "Queue": {
+            "MaxQueueSize": 1000,
+            "MaxInMemory": 1000,
+            "Persist": false,
+            "RetryAttempts": 3,
+            "RetryDelaySeconds": 300,
+            "InitialDelaySeconds": 10,
+            "MaxDelaySeconds": 3600,
+            "DebounceSeconds": 5
+        },
+        "Servers": [
+            {
+                "Host": "127.0.0.1",
+                "Port": "5580",
+                "UseTLS": false,
+                "TLSMode": 0,
+                "AuthMode": 0,
+                "TimeoutSeconds": 15
+            }
+        ]
+    }
+}

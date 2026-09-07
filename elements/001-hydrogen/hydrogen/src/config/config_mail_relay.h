@@ -95,6 +95,7 @@ typedef struct MailRelayConfig {
     bool Enabled;                           // Whether mail relay is enabled
     bool OutboundEnabled;                   // Whether outbound sending is enabled
     bool InboundEnabled;                    // Whether inbound relay listener is enabled
+    bool InboundRequireAuth;                // Whether inbound requires SMTP AUTH for untrusted networks
     char* Database;                         // Database connection name for mail tables
     char* DefaultFrom;                      // Default from address
     char* DefaultReplyTo;                   // Default reply-to address
