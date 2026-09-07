@@ -64,13 +64,13 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-09-07 19:35:47 UTC
+Last updated at 2026-09-07 22:53:46 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 JSON                           510            443              0        1722080
-SVG                            301            587          11569         537056
-C                             1711          67809          57721         284774
+SVG                            301            587          11569         537051
+C                             1712          68038          57825         285513
 Text                           347            344              0         145470
 Markdown                       758          35060            255         106285
 Lua                            424          11481           7298          91815
@@ -89,9 +89,9 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          4981         141954         217736        3015231
+SUM:                          4982         142183         217840        3015965
 -------------------------------------------------------------------------------
-1723 Files were skipped (duplicate, binary, or without source code):
+1724 Files were skipped (duplicate, binary, or without source code):
   svg: 1227
   css: 165
   html: 134
@@ -125,6 +125,7 @@ SUM:                          4981         141954         217736        3015231
   disabled: 1
   dproj: 1
   gcode: 1
+  gcov: 1
   ggignore: 1
   gitattributes: 1
   key: 1
