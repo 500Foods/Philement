@@ -11,15 +11,13 @@
 #include <unity/mocks/mock_dbqueue.h>
 #include <unity/mocks/mock_database_engine.h>
 
+#include <src/database/database_cache.h>
 #include <src/api/wschat/helpers/storage.h>
-
-/* Function prototype (declared in storage.c, exposed via header comment) */
-bool chat_storage_execute_query(DatabaseQueue* db_queue, int query_ref,
-                                const char* params_json, char** result_json);
 
 /* Shared mock queue/handle used by the tests */
 static DatabaseQueue* g_dbq = NULL;
 static DatabaseHandle* g_handle = NULL;
+static QueryCacheEntry* g_entry = NULL;
 
 void setUp(void) {
     mock_dbqueue_reset_all();
@@ -31,9 +29,15 @@ void setUp(void) {
     TEST_ASSERT_NOT_NULL(g_dbq);
     g_dbq->persistent_connection = g_handle;
     mock_dbqueue_set_get_database_result(g_dbq);
+
+    g_entry = query_cache_entry_create(62, 1, "SELECT 1", "test", "slow", 30, NULL);
+    TEST_ASSERT_NOT_NULL(g_entry);
+    mock_dbqueue_set_query_cache_lookup_result(g_entry);
 }
 
 void tearDown(void) {
+    query_cache_entry_destroy(g_entry);
+    g_entry = NULL;
     free(g_dbq);
     free(g_handle);
     g_dbq = NULL;
@@ -106,6 +110,25 @@ static void test_execute_query_success_no_output_pointer(void) {
     TEST_ASSERT_TRUE(result);
 }
 
+static void test_execute_query_missing_cache(void) {
+    mock_dbqueue_set_query_cache_lookup_result(NULL);
+    char* out = NULL;
+    bool result = chat_storage_execute_query(g_dbq, 62, "{}", &out);
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NULL(out);
+}
+
+static void test_execute_query_empty_sql_template(void) {
+    char empty_sql[1] = {'\0'};
+    char* saved = g_entry->sql_template;
+    g_entry->sql_template = empty_sql;
+    char* out = NULL;
+    bool result = chat_storage_execute_query(g_dbq, 62, "{}", &out);
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NULL(out);
+    g_entry->sql_template = saved;
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_execute_query_null_queue);
@@ -115,5 +138,7 @@ int main(void) {
     RUN_TEST(test_execute_query_result_not_success);
     RUN_TEST(test_execute_query_success_with_data);
     RUN_TEST(test_execute_query_success_no_output_pointer);
+    RUN_TEST(test_execute_query_missing_cache);
+    RUN_TEST(test_execute_query_empty_sql_template);
     return UNITY_END();
 }

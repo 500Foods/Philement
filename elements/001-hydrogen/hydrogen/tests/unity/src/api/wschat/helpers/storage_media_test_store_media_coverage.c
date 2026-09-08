@@ -16,10 +16,12 @@
 #define USE_MOCK_SYSTEM
 #include <unity/mocks/mock_system.h>
 
+#include <src/database/database_cache.h>
 #include <src/api/wschat/helpers/storage_media.h>
 
 static DatabaseQueue* g_dbq = NULL;
 static DatabaseHandle* g_handle = NULL;
+static QueryCacheEntry* g_entry = NULL;
 
 void setUp(void) {
     mock_dbqueue_reset_all();
@@ -31,9 +33,15 @@ void setUp(void) {
     TEST_ASSERT_NOT_NULL(g_dbq);
     g_dbq->persistent_connection = g_handle;
     mock_dbqueue_set_get_database_result(g_dbq);
+
+    g_entry = query_cache_entry_create(71, 1, "SELECT 1", "test", "slow", 30, NULL);
+    TEST_ASSERT_NOT_NULL(g_entry);
+    mock_dbqueue_set_query_cache_lookup_result(g_entry);
 }
 
 void tearDown(void) {
+    query_cache_entry_destroy(g_entry);
+    g_entry = NULL;
     free(g_dbq);
     free(g_handle);
     g_dbq = NULL;

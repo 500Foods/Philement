@@ -44,6 +44,7 @@
 #                       an optional third arg (sub); subtests exhaust sub-1's
 #                       bucket, verify sub-2 isolation, verify sub-1 recovers
 #                       after the window elapses.
+# 1.8.4 - 2026-09-08 - Pair JWT mint and rate-limit extras; assert media_upload_success hash
 # 1.8.3 - 2026-09-08 - Isolated SSE subject; empty SSE is a failure; media body checks
 # 1.8.2 - 2026-09-03 - Fix use-after-free in rate-limit log_this: save sub
 #                     before free_jwt_validation_result in auth_chat.c and
@@ -59,7 +60,7 @@ TEST_NAME="Auth Chat"
 TEST_ABBR="ACH"
 TEST_NUMBER="59"
 TEST_COUNTER=0
-TEST_VERSION="1.8.3"
+TEST_VERSION="1.8.4"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -332,7 +333,7 @@ chat_ws_upload_media() {
         '{type:"media_upload", payload:{jwt:$jwt, data:$data, mime_type:$mime}}') || true
     # shellcheck disable=SC2310 # Send failure is non-fatal; caller checks hash
     chat_ws_send "${msg}" "${out_file}" 10 || true
-    jq -r '.media_hash // empty' "${out_file}" 2>/dev/null || true
+    jq -r 'if .type == "media_upload_success" then (.data.media_hash // empty) else empty end' "${out_file}" 2>/dev/null || true
 }
 
 wait_for_http_ready() {
@@ -425,45 +426,19 @@ jq --argjson web_port "${WEB_PORT}" --argjson ws_port "${WS_PORT}" --arg sqlite 
     } }
 ' "${BASE_CONFIG}" > "${CONFIG_TEMP}"
 
-print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "SQLite engines retargeted to ${MOCK_URL}"
-
-# Mint a chat-scoped JWT (aud=hydrogen-chat, roles=chat) BEFORE starting the server
-# so we can register the token hash in the tokens table first.
+# Mint chat-scoped JWTs (aud=hydrogen-chat, roles=chat) BEFORE starting
+# the server. Distinct subs keep REST/WS/SSE/rate-limit buckets isolated.
 CHAT_JWT_TOKEN=$(mint_chat_jwt "Acuranzo")
-if [[ -z "${CHAT_JWT_TOKEN}" ]]; then
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to mint chat JWT"
+CHAT_JWT_TOKEN2=$(mint_chat_jwt "Acuranzo" "chat" "2")
+CHAT_JWT_TOKEN3=$(mint_chat_jwt "Acuranzo" "chat" "5")
+CHAT_JWT_SSE=$(mint_chat_jwt "Acuranzo" "chat" "6")
+CHAT_JWT_OK=$(mint_chat_jwt "Acuranzo" "chat" "7")
+if [[ -z "${CHAT_JWT_TOKEN}" || -z "${CHAT_JWT_TOKEN2}" || -z "${CHAT_JWT_TOKEN3}" ||
+      -z "${CHAT_JWT_SSE}" || -z "${CHAT_JWT_OK}" ]]; then
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to mint chat JWTs"
     exit 1
 fi
-print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Chat JWT minted + registered"
-
-# Mint a second chat JWT with a different sub ("2") for non-rate-limit
-# REST tests that still need a valid chat-scoped token but must not
-# consume sub "1"'s Phase 10b rate-limit budget. Tests 59-0022,
-# 59-0023, and 59-0025 use CHAT_JWT_TOKEN2 to stay within the 3-req/5s
-# window.
-CHAT_JWT_TOKEN2=$(mint_chat_jwt "Acuranzo" "chat" "2")
-if [[ -n "${CHAT_JWT_TOKEN2}" ]]; then
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Secondary chat JWT minted (sub 2)"
-fi
-
-# Mint a third chat JWT with sub "5" for WebSocket chat tests that
-# need a fresh rate-limit bucket (59-0026, 59-0028) separate from sub
-# "1" (early tests) and sub "2" (REST tests 59-0022/23/25).
-CHAT_JWT_TOKEN3=$(mint_chat_jwt "Acuranzo" "chat" "5")
-if [[ -n "${CHAT_JWT_TOKEN3}" ]]; then
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Tertiary chat JWT minted (sub 5)"
-fi
-
-CHAT_JWT_SSE=$(mint_chat_jwt "Acuranzo" "chat" "6")
-if [[ -n "${CHAT_JWT_SSE}" ]]; then
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "SSE chat JWT minted (sub 6)"
-fi
-CHAT_JWT_OK=$(mint_chat_jwt "Acuranzo" "chat" "7")
-if [[ -n "${CHAT_JWT_OK}" ]]; then
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Success-path chat JWT minted (sub 7)"
-fi
-CHAT_JWT_SSE="${CHAT_JWT_SSE:-${CHAT_JWT_TOKEN}}"
-CHAT_JWT_OK="${CHAT_JWT_OK:-${CHAT_JWT_TOKEN}}"
+print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "SQLite engines retargeted to ${MOCK_URL}; chat JWTs minted"
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen"
 # Point chat LRU disk cache at a disposable dir under the test diagnostics tree.
@@ -688,7 +663,7 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WS chat media upload -> store_
 MEDIA_OUT="${RESP_DIR}/ws_media_upload.json"
 MEDIA_HASH=$(chat_ws_upload_media "${MEDIA_OUT}")
 if [[ -n "${MEDIA_HASH}" ]] \
-    && jq -e '(.error // "") != "media_upload_error"' "${MEDIA_OUT}" >/dev/null 2>&1; then
+    && jq -e '.type == "media_upload_success"' "${MEDIA_OUT}" >/dev/null 2>&1; then
     record 0 "store_media + binary_to_hex executed (hash=${MEDIA_HASH:0:16})"
 else
     record 1 "store_media not reached; upload body=$(head -c 200 "${MEDIA_OUT}" 2>/dev/null || true)"
@@ -844,22 +819,12 @@ else
             "${rl_out}${i}.json" "${CHAT_JWT_SUB1}") || code="ERR"
         rl_codes+=("${code}")
     done
-    if [[ "${rl_codes[0]}" == "200" && "${rl_codes[1]}" == "200" && \
-          "${rl_codes[2]}" == "200" && "${rl_codes[3]}" == "429" ]]; then
-        record 0 "sub-1: 3x 200 then 429 (codes: ${rl_codes[*]})"
-    else
-        record 1 "sub-1 unexpected codes: ${rl_codes[*]} (expected 200 200 200 429)"
-    fi
-
-    # Verify the 429 envelope shape (success=false, error=rate_limited,
-    # error_code=4291 for request cap).
     rl_throttle_body="${rl_out}4.json"
+    rl_envelope_ok=0
     if [[ -f "${rl_throttle_body}" ]] && \
         jq -e '.success == false and .error == "rate_limited" and .error_code == 4291' \
             "${rl_throttle_body}" >/dev/null 2>&1; then
-        record 0 "sub-1 429 envelope shape correct (success+error+error_code)"
-    else
-        record 1 "sub-1 429 envelope mismatch: $(head -c 200 "${rl_throttle_body}" 2>/dev/null || true)"
+        rl_envelope_ok=1
     fi
 
     # Phase 10b step 2: sub-2 is unaffected (separate bucket).
@@ -867,11 +832,6 @@ else
     sub2_code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" \
         '{"messages":[{"role":"user","content":"rl test sub2"}]}' \
         "${rl_out}sub2.json" "${CHAT_JWT_SUB2}") || sub2_code="ERR"
-    if [[ "${sub2_code}" == "200" ]]; then
-        record 0 "sub-2 unaffected by sub-1 throttle (200)"
-    else
-        record 1 "sub-2 expected 200, got ${sub2_code}"
-    fi
 
     # Phase 10b step 3: wait for the 5-second window to elapse, then
     # verify sub-1 can send again (window reset).
@@ -881,10 +841,14 @@ else
     rl_recover_code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" \
         '{"messages":[{"role":"user","content":"rl test recover"}]}' \
         "${rl_out}recover.json" "${CHAT_JWT_SUB1}") || rl_recover_code="ERR"
-    if [[ "${rl_recover_code}" == "200" ]]; then
-        record 0 "sub-1 recovered after window reset (200)"
+
+    if [[ "${rl_codes[0]}" == "200" && "${rl_codes[1]}" == "200" && \
+          "${rl_codes[2]}" == "200" && "${rl_codes[3]}" == "429" && \
+          "${rl_envelope_ok}" -eq 1 && "${sub2_code}" == "200" && \
+          "${rl_recover_code}" == "200" ]]; then
+        record 0 "sub-1 3x200 then 429; envelope ok; sub-2 isolated; recovered"
     else
-        record 1 "sub-1 expected 200 after window, got ${rl_recover_code}"
+        record 1 "rate-limit unexpected: codes=${rl_codes[*]} envelope=${rl_envelope_ok} sub2=${sub2_code} recover=${rl_recover_code}"
     fi
 fi
 
