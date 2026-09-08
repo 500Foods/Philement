@@ -199,7 +199,7 @@ this plan defines exactly what that task must do.
 
 ### Step 7 — Docs / changelog
 
-- Update `docs/H/plans/MAILRELAY_PLAN.md` "Resume here" block to point at this
+- Update `docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md` "Resume here" block to point at this
   plan once seams land.
 - If the repo keeps a CHANGELOG, add an entry for the two new test seams
   (config flags + log markers), clearly marked as test-only / inert by default.

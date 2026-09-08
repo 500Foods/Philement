@@ -31,6 +31,7 @@ typedef struct MailRelaySmtpRequest {
     char url[512];                              /* smtp:// or smtps:// host:port */
     int use_ssl;                                /* 0 none, 1 try STARTTLS, 2 require */
     int tls_mode;                               /* resolved MAIL_TLS_MODE_* */
+    int min_tls;                                /* resolved CURL_SSLVERSION_* + CURL_SSLVERSION_MAX_DEFAULT */
     char mail_from[MV_ADDR_LEN];                /* envelope MAIL FROM */
     const char* recipients[MV_MAX_RECIPIENTS];  /* to + cc + bcc (bcc stays in envelope only) */
     int recipient_count;
@@ -77,6 +78,7 @@ bool mailrelay_smtp_transport_real(const MailRelaySmtpRequest* req, MailRelayRes
  * SMTP reply-code parsing directly. They are not part of the stable public API.
  */
 int resolve_tls_mode(const OutboundServer* server);
+int resolve_min_tls(const OutboundServer* server);
 bool build_request(const MailRelayMessage* msg,
                    const OutboundServer* server,
                    const char* default_from,

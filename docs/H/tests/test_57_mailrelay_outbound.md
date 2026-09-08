@@ -51,6 +51,6 @@ bash tests/test_57_mailrelay_outbound.sh
 
 ## Related
 
-- Plan: [Mail Relay Subsystem Implementation Plan](/docs/H/plans/MAILRELAY_PLAN.md)
+- Plan: [Mail Relay Subsystem Implementation Plan](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md)
 - Sink source: `/elements/001-hydrogen/hydrogen/extras/mailval/`
 - Phase 2 exit gate: one configured raw outbound email to a local C SMTP sink.

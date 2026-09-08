@@ -2,7 +2,7 @@
 
 Operator and developer guide for Hydrogen’s **Mail Relay** subsystem: how mail is produced, rewritten, queued, delivered, and how **Lua** participates at every useful stage.
 
-This document assumes the full design in [MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md) is implemented (outbound, templates, API, Lua `H.mail`, events, OTP, inbound rewrite/routing, security gates). For pure Lua language help see [LUA_FEATURES.md](/docs/H/LUA_FEATURES.md); for general scripting see [LUA_GUIDE.md](/docs/H/LUA_GUIDE.md); for the `H` host API contract see [lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md).
+This document assumes the full design in [MAILRELAY_PLAN.md](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md) is implemented (outbound, templates, API, Lua `H.mail`, events, OTP, inbound rewrite/routing, security gates). For pure Lua language help see [LUA_FEATURES.md](/docs/H/LUA_FEATURES.md); for general scripting see [LUA_GUIDE.md](/docs/H/LUA_GUIDE.md); for the `H` host API contract see [lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md).
 
 Subsystem overview: [mailrelay/README.md](/docs/H/core/subsystems/mailrelay/README.md).
 
@@ -985,7 +985,7 @@ Enabled + outbound? Launch Go? DB migrated + templates? Preview works? SMTP reac
 
 | Document | Use |
 |----------|-----|
-| [MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md) | Implementation phases and working log |
+| [MAILRELAY_PLAN.md](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md) | Implementation phases and working log |
 | [mailrelay/README.md](/docs/H/core/subsystems/mailrelay/README.md) | Subsystem blurb |
 | [LUA_GUIDE.md](/docs/H/LUA_GUIDE.md) | Lua + Hydrogen `H` intro |
 | [LUA_FEATURES.md](/docs/H/LUA_FEATURES.md) | Pure Lua strings/tables/dates |
@@ -1004,4 +1004,4 @@ Enabled + outbound? Launch Go? DB migrated + templates? Preview works? SMTP reac
 
 ---
 
-*This guide is intentionally under 1000 lines. When behavior and this document disagree, trust the implementation and update the guide—[MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md) remains the engineering working document.*
+*This guide is intentionally under 1000 lines. When behavior and this document disagree, trust the implementation and update the guide—[MAILRELAY_PLAN.md](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md) remains the engineering working document.*

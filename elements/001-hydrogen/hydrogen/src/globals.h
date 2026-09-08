@@ -312,6 +312,16 @@ void init_startup_log_level(void);
 #define MAIL_TLS_MODE_SMTPS 2
 #define MAIL_TLS_MODE_STARTTLS_REQUIRED 3
 
+// Mail Relay minimum TLS version for outbound SMTP
+// Corresponds to libcurl CURLOPT_SSLVERSION major values
+#define MAIL_TLS_VERSION_10 10
+#define MAIL_TLS_VERSION_11 11
+#define MAIL_TLS_VERSION_12 12
+#define MAIL_TLS_VERSION_13 13
+#define MAIL_TLS_DEFAULT_MIN_VERSION MAIL_TLS_VERSION_12  // Secure default
+#define MIN_MAIL_TLS_VERSION MAIL_TLS_VERSION_10
+#define MAX_MAIL_TLS_VERSION MAIL_TLS_VERSION_13
+
 #define MAIL_AUTH_MODE_NONE 0
 #define MAIL_AUTH_MODE_PLAIN 1
 #define MAIL_AUTH_MODE_CRAM_MD5 2

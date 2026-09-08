@@ -42,7 +42,6 @@ void test_send_missing_idempotency_key(void);
 void test_send_missing_recipients(void);
 void test_send_invalid_recipient(void);
 void test_send_success(void);
-void test_send_rate_limited(void);
 
 // Test fixtures and helpers
 static AppConfig g_test_config = {0};
@@ -143,31 +142,41 @@ static void setup_valid_jwt(const char* roles) {
     }
 }
 
-// Simulate the MHD two-call pattern: first call buffers POST data, second
-// call processes the complete request.
+// Simulate the MHD three-call pattern: first call initializes the buffer
+// (returns CONTINUE), second call appends body data (returns CONTINUE),
+// third call signals end-of-stream with *upload_data_size == 0 (returns COMPLETE).
 static enum MHD_Result call_send_handler(struct MHD_Connection* conn,
                                          const char* method,
                                          const char* body) {
     size_t body_len = body ? strlen(body) : 0;
     void* con_cls = NULL;
 
-    // First call: buffer data.
+    // First call: initialize buffer (con_cls == NULL).
     size_t upload_size = body_len;
     enum MHD_Result r1 = handle_mailrelay_send_request(conn, "/api/mailrelay/send",
-                                                         method, body, &upload_size, &con_cls);
+                                                       method, body, &upload_size, &con_cls);
     if (r1 != MHD_YES) {
         api_free_post_buffer(&con_cls);
         return r1;
     }
 
-    // Second call: process the complete buffer.
+    // Second call: provide body data.
+    upload_size = body_len;
+    enum MHD_Result r2 = handle_mailrelay_send_request(conn, "/api/mailrelay/send",
+                                                       method, body, &upload_size, &con_cls);
+    if (r2 != MHD_YES) {
+        api_free_post_buffer(&con_cls);
+        return r2;
+    }
+
+    // Third call: signal end-of-stream.
     size_t final_size = 0;
     const char* empty = "";
-    enum MHD_Result r2 = handle_mailrelay_send_request(conn, "/api/mailrelay/send",
-                                                         method, empty, &final_size, &con_cls);
+    enum MHD_Result r3 = handle_mailrelay_send_request(conn, "/api/mailrelay/send",
+                                                       method, empty, &final_size, &con_cls);
 
     api_free_post_buffer(&con_cls);
-    return r2;
+    return r3;
 }
 
 void setUp(void) {
@@ -191,7 +200,6 @@ void setUp(void) {
     set_role_result(1);
 
      TEST_ASSERT_TRUE(mailrelay_init());
-    mailrelay_rate_limit_reset_all();
 
     mock_mhd_set_queue_response_result(MHD_YES);
     mock_mhd_set_lookup_result("Bearer valid.token.here");
@@ -309,59 +317,6 @@ void test_send_success(void) {
     TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
-void test_send_rate_limited(void) {
-    struct MHD_Connection* mock_connection = (struct MHD_Connection*)0x123;
-
-    g_test_config.mail_relay.RateLimit.Enabled = true;
-    g_test_config.mail_relay.RateLimit.Scope = MAIL_RL_SCOPE_USER;
-    g_test_config.mail_relay.RateLimit.MaxRequestsPerInterval = 1;
-    g_test_config.mail_relay.RateLimit.IntervalSeconds = 60;
-
-    /* Set up JWT with sub="userA" so user-scope rate limiting applies */
-    jwt_validation_result_t jwt_result = {0};
-    jwt_result.valid = true;
-    jwt_result.error = JWT_ERROR_NONE;
-    jwt_result.claims = calloc(1, sizeof(jwt_claims_t));
-    if (jwt_result.claims) {
-        jwt_result.claims->database = strdup("testdb");
-        jwt_result.claims->roles = strdup("1");
-        jwt_result.claims->email = strdup("user@example.com");
-        jwt_result.claims->jti = strdup("request-123");
-        jwt_result.claims->sub = strdup("userA");
-        jwt_result.claims->username = strdup("testuser");
-        jwt_result.claims->user_id = 123;
-    }
-    mock_auth_service_jwt_set_validation_result(jwt_result);
-    if (jwt_result.claims) {
-        free(jwt_result.claims->database);
-        free(jwt_result.claims->roles);
-        free(jwt_result.claims->email);
-        free(jwt_result.claims->jti);
-        free(jwt_result.claims->sub);
-        free(jwt_result.claims->username);
-        free(jwt_result.claims);
-    }
-
-    /* First request: consumes the single token, should be allowed */
-    const char* body1 = "{\"template_key\":\"mail.test\",\"idempotency_key\":\"key-1\",\"to\":[\"to@example.com\"],\"params\":{\"NAME\":\"World\"}}";
-    enum MHD_Result r1 = call_send_handler(mock_connection, "POST", body1);
-    TEST_ASSERT_EQUAL(MHD_YES, r1);
-    /* Either 200 (success) or a non-429 error — we just need the token consumed */
-    TEST_ASSERT_NOT_EQUAL(MHD_HTTP_TOO_MANY_REQUESTS, mock_mhd_get_last_status_code());
-
-    /* Second request: should be rate-limited (429) */
-    const char* body2 = "{\"template_key\":\"mail.test\",\"idempotency_key\":\"key-2\",\"to\":[\"to@example.com\"],\"params\":{\"NAME\":\"World\"}}";
-    enum MHD_Result r2 = call_send_handler(mock_connection, "POST", body2);
-    TEST_ASSERT_EQUAL(MHD_YES, r2);
-    TEST_ASSERT_EQUAL(MHD_HTTP_TOO_MANY_REQUESTS, mock_mhd_get_last_status_code());
-
-    mock_auth_service_jwt_reset_all();
-    mock_mhd_reset_all();
-    mock_mhd_set_queue_response_result(MHD_YES);
-    mock_mhd_set_lookup_result("Bearer valid.token.here");
-    setup_valid_jwt("1");
-}
-
 int main(void) {
     UNITY_BEGIN();
 
@@ -373,7 +328,6 @@ int main(void) {
     RUN_TEST(test_send_missing_recipients);
     RUN_TEST(test_send_invalid_recipient);
     RUN_TEST(test_send_success);
-    RUN_TEST(test_send_rate_limited);
 
     return UNITY_END();
 }

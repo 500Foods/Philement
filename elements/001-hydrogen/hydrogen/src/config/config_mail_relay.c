@@ -30,6 +30,7 @@ void cleanup_server(OutboundServer* server) {
 
     server->UseTLS = false;
     server->TLSMode = MAIL_TLS_MODE_NONE;
+    server->MinTLS = MAIL_TLS_DEFAULT_MIN_VERSION;
     server->AuthMode = MAIL_AUTH_MODE_NONE;
     server->TimeoutSeconds = 0;
 }
@@ -445,6 +446,17 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
             success = success && PROCESS_SENSITIVE(server, &mail->Servers[index], Password, "Password", "MailRelay");
             success = success && PROCESS_BOOL(server, &mail->Servers[index], UseTLS, "UseTLS", "MailRelay");
             success = success && PROCESS_INT(server, &mail->Servers[index], TLSMode, "TLSMode", "MailRelay");
+            // MinTLS defaults to MAIL_TLS_DEFAULT_MIN_VERSION if not set; validate range
+            mail->Servers[index].MinTLS = MAIL_TLS_DEFAULT_MIN_VERSION;
+            success = success && PROCESS_INT(server, &mail->Servers[index], MinTLS, "MinTLS", "MailRelay");
+            if (mail->Servers[index].MinTLS < MIN_MAIL_TLS_VERSION ||
+                mail->Servers[index].MinTLS > MAX_MAIL_TLS_VERSION) {
+                log_this(SR_CONFIG,
+                         "MailRelay.Servers[%d].MinTLS out of range [%d, %d], using default %d",
+                         LOG_LEVEL_ERROR, 5, index, MIN_MAIL_TLS_VERSION, MAX_MAIL_TLS_VERSION,
+                         MAIL_TLS_DEFAULT_MIN_VERSION);
+                mail->Servers[index].MinTLS = MAIL_TLS_DEFAULT_MIN_VERSION;
+            }
             success = success && PROCESS_STRING(server, &mail->Servers[index], CAPath, "CAPath", "MailRelay");
             success = success && PROCESS_INT(server, &mail->Servers[index], AuthMode, "AuthMode", "MailRelay");
             success = success && PROCESS_INT(server, &mail->Servers[index], TimeoutSeconds, "TimeoutSeconds", "MailRelay");
@@ -685,6 +697,9 @@ void dump_mailrelay_config(const MailRelayConfig* config) {
         DUMP_TEXT("――――――", buffer);
 
         snprintf(buffer, sizeof(buffer), "TLSMode: %d", server->TLSMode);
+        DUMP_TEXT("――――――", buffer);
+
+        snprintf(buffer, sizeof(buffer), "MinTLS: %d", server->MinTLS);
         DUMP_TEXT("――――――", buffer);
 
         snprintf(buffer, sizeof(buffer), "CAPath: %s", server->CAPath ? server->CAPath : "(not set)");

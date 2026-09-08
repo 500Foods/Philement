@@ -303,7 +303,7 @@ App uses subsystems and a launch/landing system to control them. Details in src/
 
 When returning to a multi-phase subsystem such as Mail Relay, use this quick-start to avoid rediscovering state:
 
-1. Read the subsystem plan, e.g. [`/docs/H/plans/MAILRELAY_PLAN.md`](/docs/H/plans/MAILRELAY_PLAN.md).
+1. Read the subsystem plan, e.g. [`/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md`](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md).
 2. Check the current phase status blocks and the Working Log at the bottom of the plan.
 3. Verify the baseline build by running `zsh -ic 'mkt'` (full trial) or `zsh -ic 'mkq'` if `build/` is already configured.
 4. Run the existing Unity tests for the subsystem:

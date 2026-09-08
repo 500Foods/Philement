@@ -40,20 +40,8 @@ void mailrelay_rate_limit_shutdown(void) {
     pthread_mutex_unlock(&g_rate_limit_mutex);
 }
 
-void mailrelay_rate_limit_reset_all(void) {
-    pthread_mutex_lock(&g_rate_limit_mutex);
-    MailRelayApiRateLimitEntry* entry = g_rate_limit_head;
-    while (entry != NULL) {
-        MailRelayApiRateLimitEntry* next = entry->next;
-        free(entry->key);
-        free(entry);
-        entry = next;
-    }
-    g_rate_limit_head = NULL;
-    pthread_mutex_unlock(&g_rate_limit_mutex);
-}
-
 /*
+
  * Build the rate-limit bucket key from the configured scope. Returns NULL
  * for global scope (single bucket). Returns a malloc'd string otherwise.
  */
@@ -177,15 +165,4 @@ MailRelayRateLimitResult mailrelay_rate_limit_check_and_record(const char* sub,
     pthread_mutex_unlock(&g_rate_limit_mutex);
     free(key);
     return result;
-}
-
-int mailrelay_rate_limit_count_for_key(const char* key) {
-    int count = 0;
-    pthread_mutex_lock(&g_rate_limit_mutex);
-    MailRelayApiRateLimitEntry* entry = mailrelay_rate_limit_find_locked(key);
-    if (entry) {
-        count = entry->count;
-    }
-    pthread_mutex_unlock(&g_rate_limit_mutex);
-    return count;
 }

@@ -20,7 +20,7 @@ test_58 2.9.2; 14/14, 20/20 tests, 0 fails). Two parts landed:
    preserved.
 
 TODO 12d closed. See [TODO.md](/docs/H/TODO.md) and
-[MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md) for the upstream
+[MAILRELAY_PLAN.md](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md) for the upstream
 references; this archive is the canonical history of the bind ABI / fetch
 NULL investigation that took eight attempts before the live gdb + Vector D
 diagnostic identified `mysql_stmt_fetch` as the crash site.
@@ -31,7 +31,7 @@ Fix `Queue.Persist` on **MySQL and MariaDB** so QueryRef **093** (insert pending
 
 This is Hydrogen TODO **12d**. It is **not** Mail Relay product work (templates, API, OTP, HA claim). It is the MySQL prepared-statement **result** path: `store_result` failure left `fetch_row_func` NULL, then Hydrogen fetched anyway.
 
-Parent: [MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md). Distinct from TODO **12e** (MAX+1 PK race). Empty-id retry in `mailrelay_persist_message` already exists; do not invent UUID primary keys.
+Parent: [MAILRELAY_PLAN.md](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md). Distinct from TODO **12e** (MAX+1 PK race). Empty-id retry in `mailrelay_persist_message` already exists; do not invent UUID primary keys.
 
 ## How To Use This Document
 
@@ -213,7 +213,7 @@ Checked-in `tests/configs/hydrogen_test_58_*.json` may stay `"Persist": false` i
 | File | What |
 | --- | --- |
 | [`docs/H/TODO.md`](/docs/H/TODO.md) | 12d Done/Remaining/snapshot row: live-green, or remove 12d if closed |
-| [`docs/H/plans/MAILRELAY_PLAN.md`](/docs/H/plans/MAILRELAY_PLAN.md) | Resume “not shipped” / Persist section; 11.4 note; Working Log |
+| [`docs/H/plans/MAILRELAY_PLAN.md`](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md) | Resume “not shipped” / Persist section; 11.4 note; Working Log |
 | [`docs/H/plans/README.md`](/docs/H/plans/README.md) | Move this plan to completed |
 | [`docs/H/SITEMAP.md`](/docs/H/SITEMAP.md) | Path after the move |
 | This file | Status complete, then rename/move |

@@ -797,7 +797,7 @@ end
 | Lua language intro and scripting patterns | [LUA_GUIDE.md](/docs/H/LUA_GUIDE.md) |
 | Pure Lua language features (strings, tables, dates, patterns) | [LUA_FEATURES.md](/docs/H/LUA_FEATURES.md) |
 | Scripting subsystem config and lifecycle | [scripting README](/docs/H/core/subsystems/scripting/README.md) |
-| Mail Relay implementation plan and working log | [MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md) |
+| Mail Relay implementation plan and working log | [MAILRELAY_PLAN.md](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md) |
 | Mail Relay subsystem overview | [mailrelay README](/docs/H/core/subsystems/mailrelay/README.md) |
 | Reference Orchestrator source | [orchestrator.lua](/elements/001-hydrogen/hydrogen/src/scripting/orchestrator.lua) |
 | System event handler source (built-in + seeded) | [mailrelay_events.c](/elements/001-hydrogen/hydrogen/src/mailrelay/mailrelay_events.c) |

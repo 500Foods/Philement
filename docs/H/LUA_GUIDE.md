@@ -1009,7 +1009,7 @@ Run `tests/test_98_luacheck.sh` after editing `.lua` files.
 | [mcp_endpoints.md](/docs/H/api/mcp/mcp_endpoints.md) | MCP listen, PRM, `/api/mcp/status` |
 | [webhook.md](/docs/H/api/conduit/webhook.md) | `POST /api/conduit/webhook/{hook}` |
 | [MAIL_GUIDE.md](/docs/H/MAIL_GUIDE.md) | Mail Relay, rewrites, events, and Lua `H.mail` |
-| [MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md) | Mail Relay implementation plan |
+| [MAILRELAY_PLAN.md](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md) | Mail Relay implementation plan |
 | [docs/He/LUA_INTRO.md](/docs/He/LUA_INTRO.md) | Migration-only Lua basics |
 | [docs/He/GUIDE.md](/docs/He/GUIDE.md) | Writing Helium migrations |
 | [Test 43 scripting](/docs/H/tests/test_43_scripting.md) | End-to-end scripting tests |
