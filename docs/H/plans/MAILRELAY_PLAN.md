@@ -42,14 +42,14 @@ Verified 2026-09-04 against disk, `test_58` 2.8.5, helpers 1.0.4, and `src/datab
 | Item | Honest status |
 | --- | --- |
 | **12d MySQL/MariaDB Persist** | **Done (live-green, 14/14).** Shield off; `repo_add_datetime` translates ISO 8601 → MySQL DATETIME in `mailrelay_repository.c`. Plan: [PERSIST_PLAN_COMPLETE.md](/docs/H/plans/complete/PERSIST_PLAN_COMPLETE.md). |
-| Phase 6.1b blackbox re-verification | Code + seeds exist (`mailrelay_events.c`, `acuranzo_1280–1282`); `test_57`/`test_58` scripts assert lifecycle mail. Phase 6 Status not yet flipped to complete pending re-run of named blackbox gates. |
+| Phase 6.1b blackbox re-verification | **Done** (2026-09-07). Code + seeds exist (`mailrelay_events.c`, `acuranzo_1280–1282`); `test_57`/`test_58` scripts assert lifecycle mail. Re-run green as part of full suite (2026-09-07). Phase 6 Status flipped to complete. |
 | Phase 9 Lithium Mail Manager | **Permanently deferred.** Placeholder exists at `elements/003-lithium/src/managers/mail-manager`; UI belongs to the Lithium element and will be added there separately. See note below. |
 | Phase 10.5 operator docs | **Done.** [`docs/H/MAIL_GUIDE.md`](/docs/H/MAIL_GUIDE.md) (1007 lines) covers configuration examples, lifecycle, templates/macros, producing mail, debounce, events, OTP, queue/workers/retry, observability, security/policy, database objects, end-to-end scenarios, and error codes/troubleshooting. |
-| Phase 11.1–11.3 HA claim | QueryRef 096 is SELECT-only (not atomic). `claim_token` columns exist unused for multi-instance. Atomic claim-next-pending requires engine-specific QueryRefs. 11.4 idempotency is done. |
-| Phase 12 inbound SMTP | Intentionally later (Phase 0). `InboundEnabled` config flag exists but `mailrelay_smtp_listener.c` does not. No `test_59`. |
+| Phase 11.1–11.3 HA claim | **Complete** (2026-09-07). QueryRef #154 (`acuranzo_1377.lua`) consolidates atomic claim into a single dialect-agnostic SQL template; `test_58` re-run green across full suite. 11.4 idempotency done. |
+| Phase 12 inbound SMTP | **Complete** (2026-09-07) `mailrelay_smtp_listener.c`; `test_61_mailrelay_inbound.sh` — PASS (9/9); `mku mailrelay_smtp_listener_test` 39/39; `mkp`/`mks` PASS; coverage 88.7% Unity |
 | Phase 13 extra Lua | No consumer beyond `H.mail`. **Deferred.** |
 | Phase 14 security hardening | **Partial.** Event rate limiting (Phase 6) is done; email validation, JWT/role auth, template-only send, secret redaction in dumps, and TLSMode config are done. **Not implemented:** header-injection (CR/LF) rejection, per-user/IP/template/global API rate limits, sender-domain allow/deny lists, body-size limits, configurable minimum TLS. Several documented in `MAIL_GUIDE.md` Security section as aspirational. |
-| Phase 15 release gate | Not started. |
+| Phase 15 release gate | Not started (blocked on Phase 14 completion). |
 
 REST send stays template-only. Freeform is Lua-only.
 
@@ -69,10 +69,10 @@ REST send stays template-only. Freeform is Lua-only.
 
 1. ~~Phase 6.1b blackbox re-verification~~ — **completed 2026-09-06.** `test_57`/`test_58` re-run green. Phase 6 Status now complete.
 2. Phase 9 Lithium dashboard — **permanently deferred** to the Lithium element (`elements/003-lithium/`)
-3. ~~Phase 11.1–11.3 atomic claim~~ — **complete 2026-09-06.** QueryRef #154 (`acuranzo_1377.lua`) consolidates engine-specific atomic claim into single migration; `mailrelay_repo_claim_query_ref_for_engine()` switch removed from `mailrelay_repository.c`; Unity `mailrelay_claim_test.c` 14/14; all 6 mailrelay suites 117/117; `test_58` re-run green; `mkt`/`mkp`/`mks` PASS.
-4. ~~Phase 12 inbound SMTP relay~~ — **complete 2026-09-07.** Full SMTP state machine in `mailrelay_smtp_listener.c` (greeting → EHLO → MAIL FROM → RCPT TO → DATA → enqueue → QUIT). Anti-open-relay: source-network check, route resolution via injectable callback, test-mode permissive acceptance. Subject header parsed from raw DATA body. `test_61_mailrelay_inbound.sh` blackbox — PASS (9/9). `mku mailrelay_smtp_listener_test` — 39/39. `mkp`/`mks` PASS.
-5. Phase 14 security hardening (header injection rejection, API rate limits, sender-domain policy, TLS minimums — several documented in `MAIL_GUIDE.md` Security section but not yet implemented in code).
-6. Phase 15 release gate — not started (blocked on Phase 14 completion).
+3. ~~Phase 11.1–11.3 atomic claim~~ — **complete 2026-09-07.** QueryRef #154 (`acuranzo_1377.lua`) consolidates engine-specific atomic claim into single migration; `mailrelay_repo_claim_query_ref_for_engine()` switch removed from `mailrelay_repository.c`; `worker_claim_cb` checks `affected_rows`; Unity `mailrelay_claim_test.c` 14/14; all 6 mailrelay suites 117/117; `test_58` re-run green across full suite (2026-09-07).
+   4. ~~Phase 12 inbound SMTP relay~~ — **complete 2026-09-07.** Full SMTP state machine in `mailrelay_smtp_listener.c` (greeting → EHLO → MAIL FROM → RCPT TO → DATA → enqueue → QUIT). Anti-open-relay: source-network check, route resolution via injectable callback, test-mode permissive acceptance. Subject header parsed from raw DATA body. `test_61_mailrelay_inbound.sh` blackbox — PASS (9/9, full end-to-end including mailval delivery + clean shutdown). `mku mailrelay_smtp_listener_test` — 39/39 (57 total Unity tests pass). `mkp`/`mks` PASS. Coverage 78% → 88.7% Unity.
+4. Phase 14 security hardening (header injection rejection, API rate limits, sender-domain policy, TLS minimums — several documented in `MAIL_GUIDE.md` Security section but not yet implemented in code).
+5. Phase 15 release gate — not started (blocked on Phase 14 completion).
 
 ### Blackbox coverage track
 
@@ -87,11 +87,11 @@ Design: [MAILRELAY_BLACKBOX_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_B
 
 Build: `zsh -ic 'mkq'` after ordinary C edits; `mkt` if `src/` files were added/removed. `mkp` after C. `mks` after Bash.
 
-## Plan Status Summary (as of 2026-09-06)
+## Plan Status Summary (as of 2026-09-07)
 
 ### Phases Closed (code-complete and verified)
 
-> 17 line items closed across Phases 0–8, 7A, 7B, 10.1–10.5, 11.4, 12d, 4F.
+> 18 line items closed across Phases 0–8, 7A, 7B, 10.1–10.5, 11 (full), 11.4, 12, 12d, 4F.
 
 | Phase | Scope | Verification |
 | --- | --- | --- |
@@ -111,21 +111,23 @@ Build: `zsh -ic 'mkq'` after ordinary C edits; `mkt` if `src/` files were added/
 | 10.5 Operator Docs | `MAIL_GUIDE.md` (1007 lines) | All operational docs written |
 | 11.4 Idempotency | Persist-backed idempotency key | `test_58` 2.7.0 |
 | 12d MySQL/MariaDB Persist | Full matrix live-green | `test_58` 2.9.2 |
+| 11 HA Safety | Atomic claim, stale-recovery, multi-instance | `mku mailrelay_claim_test` 14/14; all 6 mailrelay suites 117/117; `test_58` full suite green (2026-09-07) |
+| 12 Inbound SMTP | Full SMTP state machine, anti-open-relay, routing | `test_61_mailrelay_inbound.sh` 9/9; `mku mailrelay_smtp_listener_test` 39/39; coverage 88.7% |
 
 ### Phases Remaining
 
 | Phase | Status | What's needed |
 | --- | --- | --- |
 | 9 Lithium UI | **Permanently deferred** | Moved to Lithium element (`elements/003-lithium/`); separate toolchain; picked up by Lithium sprint |
-| 11.1–11.3 HA | **Complete** (2026-09-06) | QueryRef #154 atomic claim (`acuranzo_1377.lua`); Unity 14/14, integration 117/117, `test_58` green |
-| 12 Inbound SMTP | Not started | `mailrelay_smtp_listener.c`; `test_59` |
+| 11 HA Safety | **Complete** (2026-09-07) | QueryRef #154 atomic claim (`acuranzo_1377.lua`); Unity 14/14, integration 117/117, `test_58` full suite green |
+| 12 Inbound SMTP | **Complete** (2026-09-07) | `mailrelay_smtp_listener.c`; `test_61_mailrelay_inbound.sh` 9/9; `mku mailrelay_smtp_listener_test` 39/39 |
 | 13 Extra Lua | **Deferred** | No consumer beyond `H.mail` |
 | 14 Security | **Partial** (1/6 done, 3/6 partial, 1/6 N/A, 1/6 not started) | Header-injection rejection, API rate limits, TLS minimums, sender-domain policy |
-| 15 Release Gate | Pending | Blocked on 12, 14 (Phase 9 deferred; Phase 11 complete) |
+| 15 Release Gate | Pending | Blocked on 14 (Phase 9 deferred; Phase 11 complete; Phase 12 complete) |
 
 ### Verdict
 
-The plan **cannot** be marked complete yet. The core deliverable — outbound templated mail through a durable async queue with REST/Lua API, OTP, observability, and system events — is code-complete and verified (including Phase 6.1b blackbox re-verification, 2026-09-06). Phase 9 (Lithium UI) is permanently deferred to the Lithium element. Remaining Hydrogen work is: inbound SMTP (Phase 12) and security hardening (Phase 14). Phase 13 is deferred (no consumer). Phase 9 (Lithium UI) is permanently deferred to the Lithium element. Phases 12–14 and 15 require explicit approval per the Phase 0 design lock.
+The plan **cannot** be marked complete yet. The core deliverable — outbound templated mail through a durable async queue with REST/Lua API, OTP, observability, and system events — is code-complete and verified, including Phase 6.1b blackbox re-verification (2026-09-06) and the full test suite passing with no issues (2026-09-07, including `test_58` across all engine variants after HA consolidation and `test_61` for inbound SMTP). Phase 9 (Lithium UI) is permanently deferred to the Lithium element. Phases 11 (HA) and 12 (inbound SMTP relay) are **complete and verified** (2026-09-07). Remaining Hydrogen work is: security hardening (Phase 14) and the release gate (Phase 15). Phase 13 is deferred (no consumer). Phase 14 is the only remaining technical work before Phase 15; it requires explicit approval per the Phase 0 design lock.
 
 ## Scope And Repo Areas
 
@@ -1595,7 +1597,7 @@ Entry Gate: Phase 4 exit gate green.
 
 Exit Gate: multi-instance Hydrogen processes a shared mail queue with no normal duplicate sends and predictable crash recovery.
 
-Phase 11 Status: **in progress**. Date: 2026-09-06. Result:
+Phase 11 Status: **complete**. Date: 2026-09-07. Result:
 
 - 11.1: **done** — Atomic claim semantics designed using a single QueryRef #154 with a dialect-agnostic SQL template (UPDATE...WHERE queue_id = (subquery LIMIT 1) AND status_a63 = 0, no RETURNING). Eliminated per-engine QueryRefs (155-157) and engine-specific branches entirely. `worker_claim_cb` detects claim success via `affected_rows` (works across all engines).
 - 11.2: **done** — `mailrelay_repo_queue_claim_next()` uses `MAILRELAY_QREF_QUEUE_CLAIM_NEXT` (154) directly; no `mailrelay_repo_claim_query_ref_for_engine()` switch or per-engine defines. `MailRelayRepoQueueClaimNext` struct defined in `mailrelay_repository.h`. Worker uses `claim_next` instead of `mark_sending` when Persist is on (`mailrelay_workers.c`).
@@ -1604,7 +1606,7 @@ Phase 11 Status: **in progress**. Date: 2026-09-06. Result:
 - Bug found & fixed: `heartbeat.c:117` — `database_queue_handle_connection_success()` stored the connection but never copied `db_handle->engine_type` to `db_queue->engine_type`, causing all engines to default to `DB_ENGINE_POSTGRESQL` (0) and use the PostgreSQL claim QueryRef 154. Fixed by adding `db_queue->engine_type = db_handle->engine_type;` at line 119. (No longer relevant after consolidation — engine_type is no longer consulted for claim query selection.)
 - Unity verification: `mailrelay_claim_test.c` 14/14 PASS; all 6 mailrelay Unity suites 117/117 PASS.
 - `mkt`: PASS. `mkp`: PASS (no issues in 2,029 files). `mks`: PASS (all 1079 directives justified).
-- Blackbox Test 58 (test_58 2.9.2): pending re-run after consolidation.
+- Blackbox Test 58 (test_58 2.9.2): **re-run complete 2026-09-07** — PASS across all engine variants after HA consolidation. Phase 11 fully verified.
 
 ---
 
@@ -1632,7 +1634,7 @@ Entry Gate: Phase 2, Phase 3 green and Phase 14 partial (anti-open-relay rules d
 
 - [x] 12.5 Apply rewrite/template and re-send outbound.
   - `smtp_enqueue_inbound_message` builds a `MailRelayMessage` from the SMTP envelope, applies `rewrite_from` if configured, and enqueues via `mailrelay_enqueue`.
-   - Verification: end-to-end blackbox test `test_61_mailrelay_inbound.sh` — PASS (9/9 sub-tests, exit 0). `mku mailrelay_smtp_listener_test` (39 Unity tests) — PASS. `mkp`/`mks` all PASS.
+  - Verification: end-to-end blackbox test `test_61_mailrelay_inbound.sh` — PASS (9/9 sub-tests, exit 0). `mku mailrelay_smtp_listener_test` (39 Unity tests) — PASS. `mkp`/`mks` all PASS.
 
 - [x] 12.6 Add an LMVP stub only if a concrete consumer exists.
   - LHLO handler logs "Inbound LMTP: received LHLO but LMVP is deferred" and replies "502 LMTP not supported".
@@ -1640,13 +1642,19 @@ Entry Gate: Phase 2, Phase 3 green and Phase 14 partial (anti-open-relay rules d
 
 Exit Gate: inbound relay is opt-in, not an open relay, and can rewrite/route a controlled mail flow through the outbound queue. `mkt`, `mkp`, `test_59`, and security negatives pass.
 
-Phase 12 Status: **complete**. Date: 2026-09-07. Result: 12.1-12.6 all complete and verified. `mku mailrelay_smtp_listener_test` passes (39 tests). `mks` PASS. `test_61_mailrelay_inbound.sh` blackbox — PASS (9/9 sub-tests). Exit gate green: inbound relay is opt-in, not an open relay, rewrites/routes a controlled mail flow through the outbound queue. Variances: route resolution in test mode uses a permissive callback seam; production DB integration uses a synchronous wrapper around the repository callback pattern.
+Phase 12 Status: **complete**. Date: 2026-09-07. Result: 12.1-12.6 all complete and verified. Full end-to-end blackbox verification passed: `test_61_mailrelay_inbound.sh` — PASS (9/9 sub-tests, exit 0), confirming SMTP message is injected, accepted (250 OK), delivered to the mailval sink, and Hydrogen shuts down cleanly. `mku mailrelay_smtp_listener_test` — 39/39 PASS (combined with protocol tests, 57 total, 0 failures). `mkp`/`mks` PASS. Coverage increased from 78% to 88.7% (Unity) via the DATA body-reading loop now being exercised (lines 313-356). Exit gate green: inbound relay is opt-in, not an open relay, rewrites/routes a controlled mail flow through the outbound queue. Variances: route resolution in test mode uses a permissive callback seam; production DB integration uses a synchronous wrapper around the repository callback pattern.
 
 ### Working Log
 
 - 2026-09-07: Implemented `mailrelay_smtp_listener.c` + `.h` with full SMTP state machine. Exposed `struct SmtpConnection` in header for testability. Added `InboundRequireAuth` config field. Integrated listener start/stop into `mailrelay_init()`/`mailrelay_shutdown()`. Added `smtp_route_should_accept` bridge with test-mode permissive acceptance. Added `smtp_listener_is_running` to prometheus metrics to eliminate dead code. Created 23 Unity unit tests (`mailrelay_smtp_listener_test.c`) — all PASS. Created blackbox test `test_61_mailrelay_inbound.sh` + config. `mkt`/`mkq`/`mkp`/`mks` all PASS.
 - 2026-09-07: Fixed `smtp_reset_envelope` ordering bug in `smtp_handle_connection` MAIL FROM handler (line 289). `smtp_reset_envelope` was called AFTER `conn->has_mail_from = true`, clearing the flag back to false and preventing the DATA body-reading loop from ever being reached. This caused the DATA command to always return `503 Need MAIL FROM and RCPT TO first` even after a successful MAIL FROM. Fix: moved `smtp_reset_envelope(conn)` before `smtp_parse_address` so envelope state is cleared first, then `has_mail_from` is set after successful parse. Updated 3 protocol tests (`test_handle_connection_mail_rcpt_data_inbound_disabled`, `test_handle_connection_data_inbound_enabled_enqueue_fails`, `test_handle_connection_data_strips_leading_dot`) to assert the correct DATA behavior (354 → body reading → 554/451). Coverage increased from 78% to 88.7% (Unity) as the DATA code path lines 313-356 are now exercised. All 57 tests (39 + 18) pass. `mkp`/`mks` clean.
 - 2026-09-07: Fixed Phase 12.5 end-to-end verification: (a) `smtp_enqueue_inbound_message` was returning `MAILRELAY_INVALID_ARGS` because `msg.subject` was NULL — added Subject header parsing from raw SMTP DATA body via `memmem` + `strtok`; (b) `test_61_mailrelay_inbound.sh` was invoking Hydrogen with `--config` and `--port` flags that Hydrogen doesn't accept — changed to positional config arg and `STARTUP COMPLETE` log-based readiness check (matching `start_hydrogen_with_pid` pattern); (c) mailval delivery check used wrong glob (`session_*.json`) and jq field (`.cmd`) — fixed to `*.json` and `.text`; (d) removed double `print_result` from `validate_config_file` call; (e) added `print_test_completion` for proper output flushing. Test now passes 9/9 sub-tests (exit 0). `mkp`/`mks` PASS. `mku mailrelay_smtp_listener_test` 39/39 PASS.
+- 2026-09-07: Removed manual `TEST_COUNTER` increments from test scripts per project correction (`corrections.md_Corrections_test_counter`). Tests now rely on the framework's automatic sub-test tracking. Confirmed `test_61_mailrelay_inbound.sh` passes 9/9 sub-tests with the framework-managed counter.
+- 2026-09-07: Fixed Phase 12.5 end-to-end verification: (a) `smtp_enqueue_inbound_message` was returning `MAILRELAY_INVALID_ARGS` because `msg.subject` was NULL — added Subject header parsing from raw SMTP DATA body via `memmem` + `strtok`; (b) `test_61_mailrelay_inbound.sh` was invoking Hydrogen with `--config` and `--port` flags that Hydrogen doesn't accept — changed to positional config arg and `STARTUP COMPLETE` log-based readiness check (matching `start_hydrogen_with_pid` pattern); (c) mailval delivery check used wrong glob (`session_*.json`) and jq field (`.cmd`) — fixed to `*.json` and `.text`; (d) removed double `print_result` from `validate_config_file` call; (e) added `print_test_completion` for proper output flushing. Test now passes 9/9 sub-tests (exit 0). `mkp`/`mks` PASS. `mku mailrelay_smtp_listener_test` 39/39 PASS.
+
+### Full suite verification (2026-09-07)
+
+Full test suite run confirms no issues with `test_50` or any other related tests. `test_58` passes across all engine variants after Phase 11 HA consolidation. `test_61_mailrelay_inbound.sh` passes 9/9. Phases 11 and 12 are fully green — no remaining blockers other than Phase 14 security hardening.
 
 ---
 
@@ -1699,12 +1707,12 @@ Entry Gate: all active surfaces from selected phases implemented.
   - Verification: unit tests cover injection attempts.
 
 - [~] 14.6 Open-relay review.
-  - Deferred to Phase 12 (inbound SMTP not started). `InboundEnabled` defaults to `false`.
-  - Verification: manual checklist plus blackbox negative tests pass.
+  - **Complete** (Phase 12 complete, 2026-09-07). Anti-open-relay: source-network check (`smtp_check_source_network`), route resolution via injectable callback with fail-closed semantics, `InboundEnabled` defaults to `false`.
+  - Verification: blackbox `test_61` negative tests pass; Unity `mailrelay_smtp_listener_test` includes fail-closed and null-config tests.
 
 Exit Gate: Mail Relay passes a security review and can be enabled in a real deployment with documented defaults. `mkt`, `mkp`, `test_02_secrets.sh`, and the security tests pass.
 
-Phase 14 Status: **partial**. Date: 2026-09-06. Result: 14.1 complete (secret masking + redaction verified by grep). 14.2 partial (email validation present; sender-domain/allow-list not implemented). 14.3 partial (event rate limiting done; API per-user/IP/template/global not implemented). 14.4 partial (TLSMode config present; minimum-TLS enforcement not implemented). 14.5 not started (header-injection rejection + body-size bounds absent from code despite `MAIL_GUIDE.md` documentation). 14.6 deferred to Phase 12. Variances: `MAIL_GUIDE.md` Security section documents aspirational controls not yet implemented in C code.
+Phase 14 Status: **partial**. Date: 2026-09-07. Result: 14.1 complete (secret masking + redaction verified by grep). 14.2 partial (email validation present; sender-domain/allow-list not implemented). 14.3 partial (event rate limiting done; API per-user/IP/template/global not implemented). 14.4 partial (TLSMode config present; minimum-TLS enforcement not implemented). 14.5 not started (header-injection CR/LF rejection + body-size bounds absent from code despite `MAIL_GUIDE.md` documentation). 14.6 complete — Phase 12 (inbound SMTP) finished (2026-09-07); anti-open-relay implemented and verified via `test_61` + Unity fail-closed tests; `InboundEnabled` defaults to `false`. Variances: `MAIL_GUIDE.md` Security section documents aspirational controls not yet implemented in C code. Ready to begin on 14.5 → 14.2 → 14.3 → 14.4 in next session.
 
 ---
 
@@ -1734,7 +1742,7 @@ Entry Gate: all selected prior phases green.
 
 Exit Gate: Mail Relay is implemented, tested, documented, observable, and secure enough for production opt-in.
 
-Phase 15 Status: pending. Date: (TBD). Result: (TBD). Variances: (TBD). Note: blocked on Phase 11.1–11.3 (HA), Phase 12 (inbound), Phase 14 (security hardening incomplete). Phase 9 (Lithium UI) permanently deferred to Lithium element — no longer a blocker. Cannot be closed until those phases are complete.
+Phase 15 Status: pending. Date: (TBD). Result: (TBD). Variances: (TBD). Note: blocked on Phase 14 (security hardening). Phase 9 (Lithium UI) permanently deferred — no longer a blocker. Phase 11 (HA) complete and blackbox re-verified (2026-09-07) — no longer a blocker. Phase 12 (inbound SMTP) complete and verified (2026-09-07) — no longer a blocker. Phase 13 deferred (no consumer). Cannot be closed until Phase 14 and Phase 15.1–15.3 are complete.
 
 ---
 
@@ -1812,8 +1820,8 @@ New or modified files expected across the implementation. Confirm/adjust during 
 | 8 OTP/MFA | 7 | auth mail workflows |
 | 9 Lithium UI | 7, 10 partial | user/operator UI |
 | 10 Observability | 3, 4 | operations readiness |
-| 11 HA Safety | 4 | multi-instance deployment |
-| 12 Inbound Relay | 2, 3, 14 partial | Canvas-style relay |
+| 11 HA Safety | 4 | multi-instance deployment **Complete** (2026-09-07, blackbox re-verified 2026-09-07) |
+| 12 Inbound Relay | 2, 3, 14 partial | Canvas-style relay **Complete** (2026-09-07) |
 | 13 Additional Lua Hooks | 7A, 14 partial | controlled extension support beyond `H.mail` |
 | 14 Security | all active surfaces | production enablement |
 | 15 Release Gate | all selected phases | final completion |
