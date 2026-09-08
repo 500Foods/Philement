@@ -27,8 +27,11 @@
 // Module under test and dependencies
 #include <src/api/api_utils.h>
 #include <src/api/mailrelay/send/send.h>
+#include <src/api/mailrelay/mailrelay_rate_limit.h>
 #include <src/mailrelay/mailrelay.h>
 #include <src/mailrelay/mailrelay_repository.h>
+
+#include <src/api/auth/auth_service.h>  // for jwt_claims_t
 
 // Forward declarations for test functions
 void test_send_wrong_method(void);
@@ -39,6 +42,7 @@ void test_send_missing_idempotency_key(void);
 void test_send_missing_recipients(void);
 void test_send_invalid_recipient(void);
 void test_send_success(void);
+void test_send_rate_limited(void);
 
 // Test fixtures and helpers
 static AppConfig g_test_config = {0};
@@ -186,7 +190,8 @@ void setUp(void) {
     set_idempotency_not_found();
     set_role_result(1);
 
-    TEST_ASSERT_TRUE(mailrelay_init());
+     TEST_ASSERT_TRUE(mailrelay_init());
+    mailrelay_rate_limit_reset_all();
 
     mock_mhd_set_queue_response_result(MHD_YES);
     mock_mhd_set_lookup_result("Bearer valid.token.here");
@@ -304,6 +309,59 @@ void test_send_success(void) {
     TEST_ASSERT_EQUAL(MHD_YES, result);
 }
 
+void test_send_rate_limited(void) {
+    struct MHD_Connection* mock_connection = (struct MHD_Connection*)0x123;
+
+    g_test_config.mail_relay.RateLimit.Enabled = true;
+    g_test_config.mail_relay.RateLimit.Scope = MAIL_RL_SCOPE_USER;
+    g_test_config.mail_relay.RateLimit.MaxRequestsPerInterval = 1;
+    g_test_config.mail_relay.RateLimit.IntervalSeconds = 60;
+
+    /* Set up JWT with sub="userA" so user-scope rate limiting applies */
+    jwt_validation_result_t jwt_result = {0};
+    jwt_result.valid = true;
+    jwt_result.error = JWT_ERROR_NONE;
+    jwt_result.claims = calloc(1, sizeof(jwt_claims_t));
+    if (jwt_result.claims) {
+        jwt_result.claims->database = strdup("testdb");
+        jwt_result.claims->roles = strdup("1");
+        jwt_result.claims->email = strdup("user@example.com");
+        jwt_result.claims->jti = strdup("request-123");
+        jwt_result.claims->sub = strdup("userA");
+        jwt_result.claims->username = strdup("testuser");
+        jwt_result.claims->user_id = 123;
+    }
+    mock_auth_service_jwt_set_validation_result(jwt_result);
+    if (jwt_result.claims) {
+        free(jwt_result.claims->database);
+        free(jwt_result.claims->roles);
+        free(jwt_result.claims->email);
+        free(jwt_result.claims->jti);
+        free(jwt_result.claims->sub);
+        free(jwt_result.claims->username);
+        free(jwt_result.claims);
+    }
+
+    /* First request: consumes the single token, should be allowed */
+    const char* body1 = "{\"template_key\":\"mail.test\",\"idempotency_key\":\"key-1\",\"to\":[\"to@example.com\"],\"params\":{\"NAME\":\"World\"}}";
+    enum MHD_Result r1 = call_send_handler(mock_connection, "POST", body1);
+    TEST_ASSERT_EQUAL(MHD_YES, r1);
+    /* Either 200 (success) or a non-429 error — we just need the token consumed */
+    TEST_ASSERT_NOT_EQUAL(MHD_HTTP_TOO_MANY_REQUESTS, mock_mhd_get_last_status_code());
+
+    /* Second request: should be rate-limited (429) */
+    const char* body2 = "{\"template_key\":\"mail.test\",\"idempotency_key\":\"key-2\",\"to\":[\"to@example.com\"],\"params\":{\"NAME\":\"World\"}}";
+    enum MHD_Result r2 = call_send_handler(mock_connection, "POST", body2);
+    TEST_ASSERT_EQUAL(MHD_YES, r2);
+    TEST_ASSERT_EQUAL(MHD_HTTP_TOO_MANY_REQUESTS, mock_mhd_get_last_status_code());
+
+    mock_auth_service_jwt_reset_all();
+    mock_mhd_reset_all();
+    mock_mhd_set_queue_response_result(MHD_YES);
+    mock_mhd_set_lookup_result("Bearer valid.token.here");
+    setup_valid_jwt("1");
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -315,6 +373,7 @@ int main(void) {
     RUN_TEST(test_send_missing_recipients);
     RUN_TEST(test_send_invalid_recipient);
     RUN_TEST(test_send_success);
+    RUN_TEST(test_send_rate_limited);
 
     return UNITY_END();
 }

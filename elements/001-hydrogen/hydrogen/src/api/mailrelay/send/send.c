@@ -15,6 +15,7 @@
 #include <src/api/api_utils.h>
 #include <src/api/conduit/helpers/auth_jwt_helper.h>
 #include <src/api/mailrelay/mailrelay_api_auth.h>
+#include <src/api/mailrelay/mailrelay_rate_limit.h>
 #include <src/mailrelay/mailrelay.h>
 #include <src/utils/utils_time.h>
 
@@ -419,6 +420,23 @@ enum MHD_Result handle_mailrelay_send_request(
         free((void*)bcc_arr);
         mailrelay_template_params_free(&params);
         return send_mailrelay_error(connection, code, message, http_status);
+    }
+
+    // Phase 14.3: API rate-limit check (fail-open when disabled)
+    const char* rl_sub = (jwt_result.claims && jwt_result.claims->sub) ? jwt_result.claims->sub : NULL;
+    const char* rl_ip = (jwt_result.claims && jwt_result.claims->ip) ? jwt_result.claims->ip : NULL;
+    if (mailrelay_rate_limit_check_and_record(rl_sub, rl_ip, req.template_key)
+        == MAIL_RELAY_RATE_THROTTLED) {
+        free_jwt_claims(jwt_result.claims);
+        jwt_result.claims = NULL;
+        json_decref(request_json);
+        free((void*)to_arr);
+        free((void*)cc_arr);
+        free((void*)bcc_arr);
+        mailrelay_template_params_free(&params);
+        return send_mailrelay_error(connection, "MAIL_RATE_LIMITED",
+                                    "Rate limit exceeded. Please retry after a short delay.",
+                                    429);
     }
 
     // Fill built-in macro sources from request context

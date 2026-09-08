@@ -438,6 +438,7 @@ void status_to_mail_error(MailRelayStatus status, const char* producer_err,
         case MAILRELAY_INVALID_ARGS:
         case MAILRELAY_TIMEOUT:
         case MAILRELAY_PERSIST_FAILED:
+        case MAILRELAY_RATE_LIMITED:
         default:
             snprintf(out, out_cap, "MAIL_INTERNAL_ERROR: send failed (status=%d)", (int)status);
             break;

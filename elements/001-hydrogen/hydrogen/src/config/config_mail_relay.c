@@ -34,6 +34,23 @@ void cleanup_server(OutboundServer* server) {
     server->TimeoutSeconds = 0;
 }
 
+// Helper function to cleanup mail relay security configuration
+void cleanup_mail_relay_security(MailRelaySecurity* security) {
+    if (!security) return;
+
+    for (int i = 0; i < security->AllowSenderCount; i++) {
+        free(security->AllowSenders[i]);
+        security->AllowSenders[i] = NULL;
+    }
+    security->AllowSenderCount = 0;
+
+    for (int i = 0; i < security->BlockSenderCount; i++) {
+        free(security->BlockSenders[i]);
+        security->BlockSenders[i] = NULL;
+    }
+    security->BlockSenderCount = 0;
+}
+
 // Helper function to cleanup mail relay test configuration
 void cleanup_mail_relay_test(MailRelayTest* test) {
     if (!test) return;
@@ -114,6 +131,23 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
     mail->Otp.Digits = 6;
     mail->Otp.ExpirySeconds = 300;
     mail->Otp.MaxAttempts = 5;
+
+    // Security defaults
+    mail->Security.SenderPolicy = MAIL_SENDER_POLICY_ALLOW_ALL;
+    mail->Security.AllowSenderCount = 0;
+    mail->Security.BlockSenderCount = 0;
+    for (int i = 0; i < MAX_MAIL_RELAY_ALLOW_SENDERS; i++) {
+        mail->Security.AllowSenders[i] = NULL;
+    }
+    for (int i = 0; i < MAX_MAIL_RELAY_BLOCK_SENDERS; i++) {
+        mail->Security.BlockSenders[i] = NULL;
+    }
+
+    // Rate-limit defaults (Phase 14.3)
+    mail->RateLimit.Enabled = false;
+    mail->RateLimit.Scope = MAIL_RL_SCOPE_GLOBAL;
+    mail->RateLimit.MaxRequestsPerInterval = 60;
+    mail->RateLimit.IntervalSeconds = 60;
 
     // Events defaults
     mail->Events.Enabled = false;
@@ -210,6 +244,102 @@ bool load_mailrelay_config(json_t* root, AppConfig* config) {
                 mail->Events.Rules[mail->Events.RuleCount].event_key = strdup(key);
                 mail->Events.Rules[mail->Events.RuleCount].script_name = strdup(script);
                 mail->Events.RuleCount++;
+             }
+         }
+     }
+ 
+    // Process rate-limit section (Phase 14.3)
+    json_t* rate_limit_section = mail_relay_section ? json_object_get(mail_relay_section, "RateLimit") : NULL;
+    if (rate_limit_section && json_is_object(rate_limit_section)) {
+        json_t* rl_enabled = json_object_get(rate_limit_section, "Enabled");
+        if (rl_enabled && json_is_boolean(rl_enabled)) {
+            mail->RateLimit.Enabled = json_boolean_value(rl_enabled);
+        }
+
+        json_t* rl_scope = json_object_get(rate_limit_section, "Scope");
+        if (rl_scope && json_is_integer(rl_scope)) {
+            int val = (int)json_integer_value(rl_scope);
+            if (val >= MAIL_RL_SCOPE_GLOBAL && val <= MAIL_RL_SCOPE_TEMPLATE) {
+                mail->RateLimit.Scope = val;
+            } else {
+                log_this(SR_CONFIG, "Invalid MailRelay.RateLimit.Scope value, using default", LOG_LEVEL_ERROR, 0);
+            }
+        }
+
+        json_t* rl_max = json_object_get(rate_limit_section, "MaxRequestsPerInterval");
+        if (rl_max && json_is_integer(rl_max)) {
+            mail->RateLimit.MaxRequestsPerInterval = (int)json_integer_value(rl_max);
+        }
+
+        json_t* rl_interval = json_object_get(rate_limit_section, "IntervalSeconds");
+        if (rl_interval && json_is_integer(rl_interval)) {
+            mail->RateLimit.IntervalSeconds = (int)json_integer_value(rl_interval);
+        }
+
+        if (mail->RateLimit.MaxRequestsPerInterval < 0 ||
+            mail->RateLimit.MaxRequestsPerInterval > MAX_MAIL_RL_REQUESTS) {
+            log_this(SR_CONFIG,
+                     "MailRelay.RateLimit.MaxRequestsPerInterval out of range [0, %d]",
+                     LOG_LEVEL_ERROR, 1, MAX_MAIL_RL_REQUESTS);
+            success = false;
+        }
+        if (mail->RateLimit.IntervalSeconds < MIN_MAIL_RL_INTERVAL ||
+            mail->RateLimit.IntervalSeconds > MAX_MAIL_RL_INTERVAL) {
+            log_this(SR_CONFIG,
+                     "MailRelay.RateLimit.IntervalSeconds out of range [%d, %d]",
+                     LOG_LEVEL_ERROR, 2, MIN_MAIL_RL_INTERVAL, MAX_MAIL_RL_INTERVAL);
+            success = false;
+        }
+    }
+
+    // Process security settings
+    json_t* security_section = mail_relay_section ? json_object_get(mail_relay_section, "Security") : NULL;
+    if (security_section && json_is_object(security_section)) {
+        json_t* sender_policy = json_object_get(security_section, "SenderPolicy");
+        if (sender_policy && json_is_integer(sender_policy)) {
+            int val = (int)json_integer_value(sender_policy);
+            if (val >= MAIL_SENDER_POLICY_ALLOW_ALL && val <= MAIL_SENDER_POLICY_BLOCKLIST) {
+                mail->Security.SenderPolicy = val;
+            } else {
+                log_this(SR_CONFIG, "Invalid SenderPolicy value, using default", LOG_LEVEL_ERROR, 0);
+            }
+        }
+
+        json_t* allow_arr = json_object_get(security_section, "AllowSenders");
+        if (allow_arr && json_is_array(allow_arr)) {
+            size_t idx;
+            json_t* val;
+            json_array_foreach(allow_arr, idx, val) {
+                if (mail->Security.AllowSenderCount >= MAX_MAIL_RELAY_ALLOW_SENDERS) {
+                    log_this(SR_CONFIG, "Too many allowed senders configured", LOG_LEVEL_ERROR, 0);
+                    break;
+                }
+                if (json_is_string(val)) {
+                    const char* v = json_string_value(val);
+                    if (v && *v) {
+                        mail->Security.AllowSenders[mail->Security.AllowSenderCount] = strdup(v);
+                        mail->Security.AllowSenderCount++;
+                    }
+                }
+            }
+        }
+
+        json_t* block_arr = json_object_get(security_section, "BlockSenders");
+        if (block_arr && json_is_array(block_arr)) {
+            size_t idx;
+            json_t* val;
+            json_array_foreach(block_arr, idx, val) {
+                if (mail->Security.BlockSenderCount >= MAX_MAIL_RELAY_BLOCK_SENDERS) {
+                    log_this(SR_CONFIG, "Too many blocked senders configured", LOG_LEVEL_ERROR, 0);
+                    break;
+                }
+                if (json_is_string(val)) {
+                    const char* v = json_string_value(val);
+                    if (v && *v) {
+                        mail->Security.BlockSenders[mail->Security.BlockSenderCount] = strdup(v);
+                        mail->Security.BlockSenderCount++;
+                    }
+                }
             }
         }
     }
@@ -353,6 +483,8 @@ void cleanup_mailrelay_config(MailRelayConfig* config) {
     free(config->DefaultReplyTo);
     config->DefaultReplyTo = NULL;
 
+    cleanup_mail_relay_security(&config->Security);
+
     for (int i = 0; i < config->AdminRecipientCount; i++) {
         free(config->AdminRecipients[i]);
         config->AdminRecipients[i] = NULL;
@@ -494,6 +626,39 @@ void dump_mailrelay_config(const MailRelayConfig* config) {
         snprintf(buffer, sizeof(buffer), "TestBody: %s", config->Test.TestBody);
         DUMP_TEXT("――――", buffer);
     }
+
+    // Dump security settings
+    DUMP_TEXT("――", "Security Settings");
+    if (config->Security.SenderPolicy == MAIL_SENDER_POLICY_ALLOWLIST) {
+        DUMP_TEXT("――――", "Sender Policy: allowlist");
+    } else if (config->Security.SenderPolicy == MAIL_SENDER_POLICY_BLOCKLIST) {
+        DUMP_TEXT("――――", "Sender Policy: blocklist");
+    } else {
+        DUMP_TEXT("――――", "Sender Policy: allow all");
+    }
+    snprintf(buffer, sizeof(buffer), "Allowed Senders: %d", config->Security.AllowSenderCount);
+    DUMP_TEXT("――――", buffer);
+    for (int i = 0; i < config->Security.AllowSenderCount; i++) {
+        snprintf(buffer, sizeof(buffer), "  Allow %d: %s", i + 1, config->Security.AllowSenders[i]);
+        DUMP_TEXT("――――――", buffer);
+    }
+    snprintf(buffer, sizeof(buffer), "Blocked Senders: %d", config->Security.BlockSenderCount);
+    DUMP_TEXT("――――", buffer);
+    for (int i = 0; i < config->Security.BlockSenderCount; i++) {
+        snprintf(buffer, sizeof(buffer), "  Block %d: %s", i + 1, config->Security.BlockSenders[i]);
+        DUMP_TEXT("――――――", buffer);
+    }
+
+    // Dump rate-limit settings (Phase 14.3)
+    DUMP_TEXT("――", "Rate Limit Settings");
+    snprintf(buffer, sizeof(buffer), "Enabled: %s", config->RateLimit.Enabled ? "true" : "false");
+    DUMP_TEXT("――――", buffer);
+    snprintf(buffer, sizeof(buffer), "Scope: %d", config->RateLimit.Scope);
+    DUMP_TEXT("――――", buffer);
+    snprintf(buffer, sizeof(buffer), "Max Requests Per Interval: %d", config->RateLimit.MaxRequestsPerInterval);
+    DUMP_TEXT("――――", buffer);
+    snprintf(buffer, sizeof(buffer), "Interval Seconds: %d", config->RateLimit.IntervalSeconds);
+    DUMP_TEXT("――――", buffer);
 
     // Dump outbound servers
     snprintf(buffer, sizeof(buffer), "Outbound Servers (%d)", config->OutboundServerCount);

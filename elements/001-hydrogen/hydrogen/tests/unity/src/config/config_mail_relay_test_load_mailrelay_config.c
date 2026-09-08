@@ -35,6 +35,11 @@ void test_cleanup_mailrelay_config_with_data(void);
 void test_dump_mailrelay_config_null_pointer(void);
 void test_dump_mailrelay_config_basic(void);
 void test_dump_mailrelay_config_redacts_password(void);
+void test_load_mailrelay_config_security_settings(void);
+void test_cleanup_mailrelay_config_security(void);
+void test_load_mailrelay_config_rate_limit_defaults(void);
+void test_load_mailrelay_config_rate_limit_enabled(void);
+void test_load_mailrelay_config_rate_limit_invalid_scope(void);
 
 // Test setup and teardown
 void setUp(void) {
@@ -406,6 +411,133 @@ void test_dump_mailrelay_config_redacts_password(void) {
     cleanup_mailrelay_config(&config);
 }
 
+void test_load_mailrelay_config_security_settings(void) {
+    AppConfig config = {0};
+    initialize_config_defaults(&config);
+
+    json_t* root = json_object();
+    json_t* mail_relay_section = json_object();
+    json_t* security_section = json_object();
+    json_t* allow_senders = json_array();
+    json_t* block_senders = json_array();
+
+    json_object_set(security_section, "SenderPolicy", json_integer(1));
+    json_array_append_new(allow_senders, json_string("example.com"));
+    json_array_append_new(allow_senders, json_string("*.trusted.org"));
+    json_object_set(security_section, "AllowSenders", allow_senders);
+    json_array_append_new(block_senders, json_string("spam.com"));
+    json_object_set(security_section, "BlockSenders", block_senders);
+
+    json_object_set(mail_relay_section, "Security", security_section);
+    json_object_set(root, "MailRelay", mail_relay_section);
+
+    bool result = load_mailrelay_config(root, &config);
+
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_EQUAL(MAIL_SENDER_POLICY_ALLOWLIST, config.mail_relay.Security.SenderPolicy);
+    TEST_ASSERT_EQUAL(2, config.mail_relay.Security.AllowSenderCount);
+    TEST_ASSERT_EQUAL_STRING("example.com", config.mail_relay.Security.AllowSenders[0]);
+    TEST_ASSERT_EQUAL_STRING("*.trusted.org", config.mail_relay.Security.AllowSenders[1]);
+    TEST_ASSERT_EQUAL(1, config.mail_relay.Security.BlockSenderCount);
+    TEST_ASSERT_EQUAL_STRING("spam.com", config.mail_relay.Security.BlockSenders[0]);
+
+    json_decref(root);
+    cleanup_mailrelay_config(&config.mail_relay);
+}
+
+void test_cleanup_mailrelay_config_security(void) {
+    MailRelayConfig config = {0};
+
+    config.Security.SenderPolicy = MAIL_SENDER_POLICY_ALLOWLIST;
+    config.Security.AllowSenders[0] = strdup("example.com");
+    config.Security.AllowSenderCount = 1;
+    config.Security.BlockSenders[0] = strdup("spam.com");
+    config.Security.BlockSenderCount = 1;
+
+    cleanup_mailrelay_config(&config);
+
+    TEST_ASSERT_EQUAL(0, config.Security.AllowSenderCount);
+    TEST_ASSERT_NULL(config.Security.AllowSenders[0]);
+     TEST_ASSERT_EQUAL(0, config.Security.BlockSenderCount);
+     TEST_ASSERT_NULL(config.Security.AllowSenders[0]);
+}
+
+// ===== RATE LIMIT TESTS (Phase 14.3) =====
+
+void test_load_mailrelay_config_rate_limit_defaults(void) {
+    AppConfig config = {0};
+    initialize_config_defaults(&config);
+
+    json_t* root = json_object();
+    json_t* mail_relay_section = json_object();
+    json_object_set(mail_relay_section, "Enabled", json_true());
+    json_object_set(root, "MailRelay", mail_relay_section);
+
+    bool result = load_mailrelay_config(root, &config);
+
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_FALSE(config.mail_relay.RateLimit.Enabled);
+    TEST_ASSERT_EQUAL(MAIL_RL_SCOPE_GLOBAL, config.mail_relay.RateLimit.Scope);
+    TEST_ASSERT_EQUAL(60, config.mail_relay.RateLimit.MaxRequestsPerInterval);
+    TEST_ASSERT_EQUAL(60, config.mail_relay.RateLimit.IntervalSeconds);
+
+    json_decref(root);
+    cleanup_mailrelay_config(&config.mail_relay);
+}
+
+void test_load_mailrelay_config_rate_limit_enabled(void) {
+    AppConfig config = {0};
+    initialize_config_defaults(&config);
+
+    json_t* root = json_object();
+    json_t* mail_relay_section = json_object();
+    json_t* rl_section = json_object();
+
+    json_object_set(rl_section, "Enabled", json_true());
+    json_object_set(rl_section, "Scope", json_integer(MAIL_RL_SCOPE_USER));
+    json_object_set(rl_section, "MaxRequestsPerInterval", json_integer(30));
+    json_object_set(rl_section, "IntervalSeconds", json_integer(120));
+
+    json_object_set(mail_relay_section, "RateLimit", rl_section);
+    json_object_set(root, "MailRelay", mail_relay_section);
+
+    bool result = load_mailrelay_config(root, &config);
+
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_TRUE(config.mail_relay.RateLimit.Enabled);
+    TEST_ASSERT_EQUAL(MAIL_RL_SCOPE_USER, config.mail_relay.RateLimit.Scope);
+    TEST_ASSERT_EQUAL(30, config.mail_relay.RateLimit.MaxRequestsPerInterval);
+    TEST_ASSERT_EQUAL(120, config.mail_relay.RateLimit.IntervalSeconds);
+
+    json_decref(root);
+    cleanup_mailrelay_config(&config.mail_relay);
+}
+
+void test_load_mailrelay_config_rate_limit_invalid_scope(void) {
+    AppConfig config = {0};
+    initialize_config_defaults(&config);
+
+    json_t* root = json_object();
+    json_t* mail_relay_section = json_object();
+    json_t* rl_section = json_object();
+
+    json_object_set(rl_section, "Enabled", json_true());
+    json_object_set(rl_section, "Scope", json_integer(99));
+    json_object_set(rl_section, "MaxRequestsPerInterval", json_integer(10));
+    json_object_set(rl_section, "IntervalSeconds", json_integer(60));
+
+    json_object_set(mail_relay_section, "RateLimit", rl_section);
+    json_object_set(root, "MailRelay", mail_relay_section);
+
+    bool result = load_mailrelay_config(root, &config);
+
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_EQUAL(MAIL_RL_SCOPE_GLOBAL, config.mail_relay.RateLimit.Scope);
+
+    json_decref(root);
+    cleanup_mailrelay_config(&config.mail_relay);
+}
+
 // ===== MAIN TEST RUNNER =====
 
 int main(void) {
@@ -432,6 +564,13 @@ int main(void) {
     RUN_TEST(test_dump_mailrelay_config_null_pointer);
     RUN_TEST(test_dump_mailrelay_config_basic);
     RUN_TEST(test_dump_mailrelay_config_redacts_password);
+    RUN_TEST(test_load_mailrelay_config_security_settings);
+    RUN_TEST(test_cleanup_mailrelay_config_security);
+
+    // Rate limit tests (Phase 14.3)
+    RUN_TEST(test_load_mailrelay_config_rate_limit_defaults);
+    RUN_TEST(test_load_mailrelay_config_rate_limit_enabled);
+    RUN_TEST(test_load_mailrelay_config_rate_limit_invalid_scope);
 
     return UNITY_END();
 }

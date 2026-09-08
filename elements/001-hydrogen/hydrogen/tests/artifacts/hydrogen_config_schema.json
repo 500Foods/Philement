@@ -893,6 +893,66 @@
                     },
                     "additionalProperties": false
                 },
+                "Security": {
+                    "type": "object",
+                    "description": "Sender policy security settings",
+                    "properties": {
+                        "SenderPolicy": {
+                            "type": "integer",
+                            "description": "Sender policy: 0=allow all, 1=allowlist, 2=blocklist",
+                            "minimum": 0,
+                            "maximum": 2
+                        },
+                        "AllowSenders": {
+                            "type": "array",
+                            "description": "List of allowed sender domains (when SenderPolicy=1)",
+                            "maxItems": 50,
+                            "items": {
+                                "type": "string",
+                                "description": "Allowed sender domain"
+                            }
+                        },
+                        "BlockSenders": {
+                            "type": "array",
+                            "description": "List of blocked sender domains (when SenderPolicy=2)",
+                            "maxItems": 50,
+                            "items": {
+                                "type": "string",
+                                "description": "Blocked sender domain"
+                            }
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "RateLimit": {
+                    "type": "object",
+                    "description": "API rate-limit settings for REST send/preview endpoints",
+                    "properties": {
+                        "Enabled": {
+                            "type": "boolean",
+                            "description": "Enable API rate limiting (fail-open when false)"
+                        },
+                        "Scope": {
+                            "type": "integer",
+                            "description": "Rate-limit scope: 0=global, 1=user, 2=IP, 3=template",
+                            "minimum": 0,
+                            "maximum": 3
+                        },
+                        "MaxRequestsPerInterval": {
+                            "type": "integer",
+                            "description": "Maximum API requests per interval per bucket",
+                            "minimum": 0,
+                            "maximum": 100000
+                        },
+                        "IntervalSeconds": {
+                            "type": "integer",
+                            "description": "Rate-limit window length in seconds",
+                            "minimum": 1,
+                            "maximum": 86400
+                        }
+                    },
+                    "additionalProperties": false
+                },
                 "Events": {
                     "type": "object",
                     "description": "Mail event rules",

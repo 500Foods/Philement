@@ -411,6 +411,23 @@ void initialize_config_defaults_mail_relay(AppConfig* config) {
         config->mail_relay.Otp.ExpirySeconds = 300;
         config->mail_relay.Otp.MaxAttempts = 5;
 
+        // Security configuration
+        config->mail_relay.Security.SenderPolicy = MAIL_SENDER_POLICY_ALLOW_ALL;
+        config->mail_relay.Security.AllowSenderCount = 0;
+        config->mail_relay.Security.BlockSenderCount = 0;
+        for (int i = 0; i < MAX_MAIL_RELAY_ALLOW_SENDERS; i++) {
+            config->mail_relay.Security.AllowSenders[i] = NULL;
+        }
+        for (int i = 0; i < MAX_MAIL_RELAY_BLOCK_SENDERS; i++) {
+            config->mail_relay.Security.BlockSenders[i] = NULL;
+        }
+
+        // Rate-limit configuration (Phase 14.3)
+        config->mail_relay.RateLimit.Enabled = false;
+        config->mail_relay.RateLimit.Scope = MAIL_RL_SCOPE_GLOBAL;
+        config->mail_relay.RateLimit.MaxRequestsPerInterval = 60;
+        config->mail_relay.RateLimit.IntervalSeconds = 60;
+
         // Events configuration
         config->mail_relay.Events.Enabled = false;
         config->mail_relay.Events.MaxEventsPerInterval = 10;

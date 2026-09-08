@@ -34,6 +34,36 @@ typedef struct {
     int ReloadIntervalSeconds;
 } MailRelayTemplateSettings;
 
+// Mail relay security sender-policy mode
+// 0 = allow all (default); 1 = allow only domains in AllowSenders
+// 2 = block domains in BlockSenders
+#define MAIL_SENDER_POLICY_ALLOW_ALL 0
+#define MAIL_SENDER_POLICY_ALLOWLIST 1
+#define MAIL_SENDER_POLICY_BLOCKLIST 2
+
+// Mail relay rate-limit scope: 0=global, 1=user (sub), 2=IP, 3=template
+#define MAIL_RL_SCOPE_GLOBAL 0
+#define MAIL_RL_SCOPE_USER 1
+#define MAIL_RL_SCOPE_IP 2
+#define MAIL_RL_SCOPE_TEMPLATE 3
+
+// Mail relay rate-limit configuration (Phase 14.3)
+typedef struct {
+    bool Enabled;                 // Fail-open when false
+    int Scope;                    // MAIL_RL_SCOPE_*
+    int MaxRequestsPerInterval;   // Tokens/bucket capacity
+    int IntervalSeconds;          // Fixed-window interval
+} MailRelayRateLimitConfig;
+
+// Mail relay security settings
+typedef struct {
+    int SenderPolicy;                    // MAIL_SENDER_POLICY_*
+    char* AllowSenders[MAX_MAIL_RELAY_ALLOW_SENDERS];  // allowed sender domains (policy 1)
+    int AllowSenderCount;
+    char* BlockSenders[MAX_MAIL_RELAY_BLOCK_SENDERS];  // blocked sender domains (policy 2)
+    int BlockSenderCount;
+} MailRelaySecurity;
+
 // Mail relay OTP / MFA settings
 typedef struct {
     int Digits;            // Numeric code length (default 6)
@@ -113,6 +143,12 @@ typedef struct MailRelayConfig {
     // OTP / MFA configuration
     MailRelayOtpSettings Otp;
 
+    // Security policy configuration
+    MailRelaySecurity Security;
+
+    // API rate-limit configuration (Phase 14.3)
+    MailRelayRateLimitConfig RateLimit;
+
     // Event configuration
     MailRelayEvents Events;
 
@@ -137,6 +173,13 @@ void cleanup_server(OutboundServer* server);
  * @param events Pointer to MailRelayEvents structure to cleanup
  */
 void cleanup_mail_relay_events(MailRelayEvents* events);
+
+/*
+ * Helper function to cleanup mail relay security configuration
+ *
+ * @param security Pointer to MailRelaySecurity structure to cleanup
+ */
+void cleanup_mail_relay_security(MailRelaySecurity* security);
 
 /*
  * Helper function to cleanup mail relay test configuration

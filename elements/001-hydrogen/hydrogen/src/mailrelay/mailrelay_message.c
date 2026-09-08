@@ -148,6 +148,57 @@ bool mailrelay_is_valid_email(const char* email) {
     return true;
 }
 
+bool mailrelay_is_safe_header_value(const char* value) {
+    if (!value) return true;
+    for (size_t i = 0; value[i] != '\0'; i++) {
+        if ((unsigned char)value[i] == '\r' ||
+            (unsigned char)value[i] == '\n') {
+            return false;
+        }
+    }
+    return true;
+}
+
+char* mailrelay_extract_domain(const char* email) {
+    if (!email) return NULL;
+    const char* at = strchr(email, '@');
+    if (!at || *(at + 1) == '\0') return NULL;
+    const char* domain = at + 1;
+    return strdup(domain);
+}
+
+bool mailrelay_domain_matches(const char* domain, const char* entry) {
+    if (!domain || !entry || !*domain || !*entry) return false;
+
+    if (strcmp(domain, entry) == 0) return true;
+
+    size_t entry_len = strlen(entry);
+    if (entry[0] == '*' && entry[1] == '.') {
+        const char* suffix = entry + 2;
+        size_t suffix_len = strlen(suffix);
+        if (suffix_len == 0) return false;
+        size_t domain_len = strlen(domain);
+        if (domain_len > suffix_len) {
+            const char* tail = domain + domain_len - suffix_len;
+            if (strcmp(tail, suffix) == 0 && *(tail - 1) == '.') {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    size_t domain_len = strlen(domain);
+    size_t entry_domain_len = entry_len;
+    if (domain_len > entry_domain_len) {
+        const char* sub = domain + domain_len - entry_domain_len;
+        if (strcmp(sub, entry) == 0 && sub > domain && *(sub - 1) == '.') {
+            return true;
+        }
+    }
+
+    return false;
+}
+
 bool add_recipient(char* arr[], int* count, const char* addr) {
     if (!arr || !count || !addr || !*addr) return false;
     if (*count >= MV_MAX_RECIPIENTS) return false;
@@ -230,8 +281,72 @@ bool mailrelay_validate_message(const MailRelayMessage* m, char* err, size_t err
         if (err) snprintf(err, err_cap, "message has no body");
         return false;
     }
-    if (strlen(m->subject) > 998) {
+    if (strlen(m->subject) > MV_MAX_SUBJECT_LEN) {
         if (err) snprintf(err, err_cap, "subject exceeds maximum length");
+        return false;
+    }
+    if (m->from && !mailrelay_is_safe_header_value(m->from)) {
+        if (err) snprintf(err, err_cap, "CRLF found in From header");
+        return false;
+    }
+    if (m->reply_to && !mailrelay_is_safe_header_value(m->reply_to)) {
+        if (err) snprintf(err, err_cap, "CRLF found in Reply-To header");
+        return false;
+    }
+    if (m->subject && !mailrelay_is_safe_header_value(m->subject)) {
+        if (err) snprintf(err, err_cap, "CRLF found in Subject header");
+        return false;
+    }
+    if (m->text_body && strlen(m->text_body) > MV_MAX_BODY_LEN) {
+        if (err) snprintf(err, err_cap, "text body exceeds maximum length");
+        return false;
+    }
+    if (m->html_body && strlen(m->html_body) > MV_MAX_BODY_LEN) {
+        if (err) snprintf(err, err_cap, "html body exceeds maximum length");
+        return false;
+    }
+    return true;
+}
+
+bool mailrelay_validate_sender_domain(const MailRelayMessage* m,
+                                      const MailRelaySecurity* security,
+                                      char* err, size_t err_cap) {
+    if (err && err_cap) err[0] = '\0';
+    if (!m || !m->from) return true;
+    if (!security) return true;
+
+    if (security->SenderPolicy == MAIL_SENDER_POLICY_ALLOW_ALL) {
+        return true;
+    }
+
+    char* domain = mailrelay_extract_domain(m->from);
+    if (!domain) {
+        if (err) snprintf(err, err_cap, "MAIL_RECIPIENT_INVALID: unable to extract domain from sender");
+        return false;
+    }
+
+    bool allowed = true;
+    if (security->SenderPolicy == MAIL_SENDER_POLICY_ALLOWLIST) {
+        allowed = false;
+        for (int i = 0; i < security->AllowSenderCount; i++) {
+            if (mailrelay_domain_matches(domain, security->AllowSenders[i])) {
+                allowed = true;
+                break;
+            }
+        }
+    } else if (security->SenderPolicy == MAIL_SENDER_POLICY_BLOCKLIST) {
+        for (int i = 0; i < security->BlockSenderCount; i++) {
+            if (mailrelay_domain_matches(domain, security->BlockSenders[i])) {
+                allowed = false;
+                break;
+            }
+        }
+    }
+
+    free(domain);
+
+    if (!allowed) {
+        if (err) snprintf(err, err_cap, "MAIL_RECIPIENT_INVALID: sender domain not permitted");
         return false;
     }
     return true;

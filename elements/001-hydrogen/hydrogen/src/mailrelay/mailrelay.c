@@ -5,6 +5,7 @@
 #include <src/hydrogen.h>
 
 #include <src/mailrelay/mailrelay.h>
+#include <src/api/mailrelay/mailrelay_rate_limit.h>
 #include <src/mailrelay/mailrelay_debounce.h>
 #include <src/mailrelay/mailrelay_internal.h>
 #include <src/mailrelay/mailrelay_repository.h>
@@ -104,6 +105,7 @@ bool mailrelay_recover_stale_sending_rows(void) {
 
 bool mailrelay_init(void) {
     mailrelay_reset_seams();
+    mailrelay_rate_limit_init();
 
     if (mailrelay_runtime_is_initialized()) {
         return true;
@@ -205,6 +207,7 @@ void mailrelay_shutdown(void) {
     mailrelay_workers_stop();
     mailrelay_debounce_stop();
     mailrelay_event_free_all_rate_limits();
+    mailrelay_rate_limit_shutdown();
 
     // Drain tracked worker threads with a bounded wait.
     bool drained = false;
