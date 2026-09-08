@@ -17,6 +17,7 @@
 #include "script_registry.h"
 
 static scripting_invoke_load_source_fn g_load_source_hook = NULL;
+static char scripting_wait_job_waiter_tag;
 
 void scripting_invoke_set_load_source_hook(scripting_invoke_load_source_fn fn) {
     g_load_source_hook = fn;
@@ -258,22 +259,39 @@ ScriptingWaitResult scripting_wait_job(const char* job_id,
     }
 
     struct timespec start;
+    ScriptingWaitResult wr = SCRIPTING_WAIT_INTERNAL;
+    bool attached_by_us = false;
+    bool has_waiter = false;
+    void* waiter_handle = NULL;
+
+    if (!scoreboard_attach_waiter(scripting_scoreboard, job_id,
+                                  &scripting_wait_job_waiter_tag, NULL)) {
+        return SCRIPTING_WAIT_NOT_FOUND;
+    }
+    if (scoreboard_get_waiter(scripting_scoreboard, job_id, &has_waiter,
+                              &waiter_handle, NULL)
+        && has_waiter
+        && waiter_handle == &scripting_wait_job_waiter_tag) {
+        attached_by_us = true;
+    }
+
     clock_gettime(CLOCK_MONOTONIC, &start);
 
     for (;;) {
         ScoreboardEntry* e = scoreboard_find(scripting_scoreboard, job_id);
         if (!e) {
-            return SCRIPTING_WAIT_NOT_FOUND;
+            wr = SCRIPTING_WAIT_NOT_FOUND;
+            break;
         }
 
         if (scripting_wait_status_is_terminal(e->status)) {
-            ScriptingWaitResult wr = scripting_wait_result_from_status(e->status);
+            wr = scripting_wait_result_from_status(e->status);
             if (out_entry) {
                 *out_entry = e;
             } else {
                 scoreboard_entry_free(e);
             }
-            return wr;
+            break;
         }
         scoreboard_entry_free(e);
 
@@ -287,16 +305,22 @@ ScriptingWaitResult scripting_wait_job(const char* job_id,
             if (out_entry) {
                 *out_entry = scoreboard_find(scripting_scoreboard, job_id);
             }
-            return SCRIPTING_WAIT_TIMEOUT;
+            wr = SCRIPTING_WAIT_TIMEOUT;
+            break;
         }
 
-        /* Poll interval: 10 ms; exit early if shutdown (clean HTTP fail). */
         if (scripting_system_shutdown != 0) {
             if (out_entry) {
                 *out_entry = scoreboard_find(scripting_scoreboard, job_id);
             }
-            return SCRIPTING_WAIT_SHUTDOWN;
+            wr = SCRIPTING_WAIT_SHUTDOWN;
+            break;
         }
         usleep(10000);
     }
+
+    if (attached_by_us) {
+        (void)scoreboard_clear_waiter(scripting_scoreboard, job_id);
+    }
+    return wr;
 }

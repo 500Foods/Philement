@@ -27,6 +27,8 @@ void test_register_replaces_existing(void);
 void test_lookup_unknown_returns_null(void);
 void test_count_reflects_inserts_and_replaces(void);
 void test_count_on_null_is_zero(void);
+void test_lookup_copy_owns_string(void);
+void test_lookup_copy_unknown_returns_null(void);
 
 void setUp(void) {
 }
@@ -106,6 +108,28 @@ void test_count_on_null_is_zero(void) {
     TEST_ASSERT_EQUAL_size_t(0, script_registry_count(NULL));
 }
 
+void test_lookup_copy_owns_string(void) {
+    ScriptRegistry* reg = script_registry_create();
+    char* copy;
+    TEST_ASSERT_NOT_NULL(reg);
+    TEST_ASSERT_TRUE(script_registry_register(reg, "greet", "return 1"));
+    copy = script_registry_lookup_copy(reg, "greet");
+    TEST_ASSERT_NOT_NULL(copy);
+    TEST_ASSERT_EQUAL_STRING("return 1", copy);
+    TEST_ASSERT_TRUE(script_registry_register(reg, "greet", "return 2"));
+    TEST_ASSERT_EQUAL_STRING("return 1", copy);
+    free(copy);
+    script_registry_destroy(reg);
+}
+
+void test_lookup_copy_unknown_returns_null(void) {
+    ScriptRegistry* reg = script_registry_create();
+    TEST_ASSERT_NOT_NULL(reg);
+    TEST_ASSERT_NULL(script_registry_lookup_copy(reg, "missing"));
+    TEST_ASSERT_NULL(script_registry_lookup_copy(NULL, "x"));
+    script_registry_destroy(reg);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -117,6 +141,8 @@ int main(void) {
     RUN_TEST(test_lookup_unknown_returns_null);
     RUN_TEST(test_count_reflects_inserts_and_replaces);
     RUN_TEST(test_count_on_null_is_zero);
+    RUN_TEST(test_lookup_copy_owns_string);
+    RUN_TEST(test_lookup_copy_unknown_returns_null);
 
     return UNITY_END();
 }

@@ -28,6 +28,7 @@ void test_wait_success_from_worker(void);
 void test_wait_failed_job(void);
 void test_wait_timeout_requests_kill(void);
 void test_wait_shutdown_mid_poll(void);
+void test_wait_survives_terminal_prune(void);
 
 void setUp(void) {
     memset(&mock_cfg, 0, sizeof(mock_cfg));
@@ -160,6 +161,25 @@ void test_wait_shutdown_mid_poll(void) {
     usleep(100000);
 }
 
+void test_wait_survives_terminal_prune(void) {
+    Scoreboard* sb = scripting_scoreboard;
+    char* id = scoreboard_submit(sb, "kept", NULL);
+    ScoreboardEntry* e = NULL;
+    ScriptingWaitResult wr;
+
+    TEST_ASSERT_NOT_NULL(id);
+    scoreboard_update_status(sb, id, SCOREBOARD_JOB_COMPLETED);
+    scoreboard_update_result_json(sb, id, "{\"kept\":true}");
+    TEST_ASSERT_EQUAL_size_t(0, scoreboard_prune_terminal(sb));
+
+    wr = scripting_wait_job(id, 2, &e);
+    TEST_ASSERT_EQUAL_INT(SCRIPTING_WAIT_COMPLETED, wr);
+    TEST_ASSERT_NOT_NULL(e);
+    TEST_ASSERT_EQUAL_STRING("{\"kept\":true}", e->result_json);
+    scoreboard_entry_free(e);
+    free(id);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_wait_result_names);
@@ -170,5 +190,6 @@ int main(void) {
     RUN_TEST(test_wait_failed_job);
     RUN_TEST(test_wait_timeout_requests_kill);
     RUN_TEST(test_wait_shutdown_mid_poll);
+    RUN_TEST(test_wait_survives_terminal_prune);
     return UNITY_END();
 }

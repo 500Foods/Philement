@@ -1,17 +1,12 @@
 /*
  * Scripting Subsystem - Scoreboard
  *
- * Phase 5 of the LUA_PLAN. Thread-safe in-memory scoreboard.
- * Phase 8 added per-job resource limits and progress fields.
- * Phase 9 added the current_state field for H.set_current_state.
- * Phase 10 added max_runtime_seconds, kill_requested, and the
- * scoreboard_request_kill / scoreboard_is_kill_requested C API.
- * See scoreboard.h for the v1 surface and the design rationale
- * (mutex-protected array, copy-on-find, on-demand growth).
+ * Phase 5 of the LUA_PLAN. Thread-safe in-memory scoreboard. Phase 8 added per-job resource limits and progress fields.
+ * Phase 9 added the current_state field for H.set_current_state. Phase 10 added max_runtime_seconds, kill_requested, and the scoreboard_request_kill / scoreboard_is_kill_requested C API.
+ * See scoreboard.h for the v1 surface and the design rationale (mutex-protected array, copy-on-find, on-demand growth).
  *
- * ID generation reuses Hydrogen's 5-char ID generator (generate_id in src/utils/utils_logging.c) to stay consistent with
- * the rest of the project. Collisions on a 12^5 ~ 248K-id space are extremely unlikely in v1 (the scoreboard's lifetime is one process)
- * and submit() retries on a collision.
+ * ID generation reuses Hydrogen's 5-char ID generator (generate_id in src/utils/utils_logging.c) to stay consistent with the rest of the project. 
+ * Collisions on a 12^5 ~ 248K-id space are extremely unlikely in v1 (the scoreboard's lifetime is one process) and submit() retries on a collision.
  */
 
  // Project includes
@@ -31,9 +26,7 @@
 
 // Helper: is this status a terminal state?
 bool is_terminal_status(ScoreboardJobStatus status) {
-    return status == SCOREBOARD_JOB_COMPLETED
-        || status == SCOREBOARD_JOB_FAILED
-        || status == SCOREBOARD_JOB_KILLED;
+    return status == SCOREBOARD_JOB_COMPLETED || status == SCOREBOARD_JOB_FAILED || status == SCOREBOARD_JOB_KILLED;
 }
 
 // Helper: free the strings owned by an entry and zero the struct. Does NOT free the entry pointer itself (caller owns the storage).
@@ -111,8 +104,7 @@ bool entries_grow_if_needed(Scoreboard* sb) {
     if (!new_entries) {
         return false;
     }
-    // Zero the new tail so any future find() of uninitialized slots
-    // sees predictable contents.
+    // Zero the new tail so any future find() of uninitialized slots sees predictable contents.
     memset(new_entries + sb->capacity, 0,
            (new_capacity - sb->capacity) * sizeof(ScoreboardEntry));
     sb->entries = new_entries;
@@ -171,10 +163,7 @@ void scoreboard_destroy(Scoreboard* sb) {
     free(sb);
 }
 
-char* scoreboard_submit_with_limits(Scoreboard* sb,
-                                    const char* script_name,
-                                    const char* params_json,
-                                    const ScoreboardJobLimits* limits) {
+char* scoreboard_submit_with_limits(Scoreboard* sb, const char* script_name, const char* params_json, const ScoreboardJobLimits* limits) {
     if (!sb) {
         return NULL;
     }
@@ -199,8 +188,7 @@ char* scoreboard_submit_with_limits(Scoreboard* sb,
 
     // Phase 8: resolve limits. We snapshot from app_config (if available) at submit time so later config edits don't change a
     // running job's contract. The hook reads from the entry copy (filled by scoreboard_find), not from app_config.
-    // Zero fields mean "use the config default" (or for hard_limit, SIZE_MAX means "no limit"). Non-NULL limits with all-zero fields
-    // is therefore identical to NULL.
+    // Zero fields mean "use the config default" (or for hard_limit, SIZE_MAX means "no limit"). Non-NULL limits with all-zero fields is therefore identical to NULL.
     int    hook_interval = 0;
     size_t soft_kb = 0;
     size_t hard_kb = 0;
@@ -233,16 +221,13 @@ char* scoreboard_submit_with_limits(Scoreboard* sb,
         // hook_interval was already left at 0 above if the caller didn't provide a positive value. max_runtime stays 0,
         // which the hook treats as "no limit" (only positive values are enforced).
     }
-
     pthread_mutex_lock(&sb->mutex);
-
     if (!entries_grow_if_needed(sb)) {
         pthread_mutex_unlock(&sb->mutex);
         free(dup_script);
         free(dup_params);
         return NULL;
     }
-
     char new_id[ID_LEN + 1];
     if (!generate_unique_id(sb, new_id)) {
         pthread_mutex_unlock(&sb->mutex);
@@ -252,7 +237,6 @@ char* scoreboard_submit_with_limits(Scoreboard* sb,
                  LOG_LEVEL_ERROR, 1, SCOREBOARD_ID_RETRY_LIMIT);
         return NULL;
     }
-
     ScoreboardEntry* entry = &sb->entries[sb->count];
     memset(entry, 0, sizeof(ScoreboardEntry));
     memcpy(entry->job_id, new_id, ID_LEN + 1);
@@ -276,9 +260,7 @@ char* scoreboard_submit_with_limits(Scoreboard* sb,
     entry->kill_requested = false;
 
     sb->count++;
-
     char* result = strdup(new_id);
-
     pthread_mutex_unlock(&sb->mutex);
 
     if (!result) {
@@ -291,7 +273,6 @@ char* scoreboard_submit_with_limits(Scoreboard* sb,
         pthread_mutex_unlock(&sb->mutex);
         return NULL;
     }
-
     return result;
 }
 
@@ -304,7 +285,6 @@ ScoreboardEntry* scoreboard_find(Scoreboard* sb, const char* job_id) {
     if (!sb || !job_id) {
         return NULL;
     }
-
     pthread_mutex_lock(&sb->mutex);
     ScoreboardEntry* match = NULL;
     for (size_t i = 0; i < sb->count; i++) {
@@ -313,14 +293,12 @@ ScoreboardEntry* scoreboard_find(Scoreboard* sb, const char* job_id) {
             break;
         }
     }
-
     ScoreboardEntry* copy = NULL;
     if (match) {
         copy = calloc(1, sizeof(ScoreboardEntry));
         if (copy) {
             *copy = *match;
-            // The match's script_name / params_json / current_state point at strings owned by the scoreboard. The copy must
-            // own its own strings so the caller can free it independently.
+            // The match's script_name / params_json / current_state point at strings owned by the scoreboard. The copy must own its own strings so the caller can free it independently.
             copy->script_name = match->script_name ? strdup(match->script_name) : NULL;
             copy->params_json = match->params_json ? strdup(match->params_json) : NULL;
             copy->current_state = match->current_state ? strdup(match->current_state) : NULL;
@@ -411,27 +389,93 @@ size_t scoreboard_count(Scoreboard* sb) {
     return c;
 }
 
-/*
- * Remove all terminal-state entries (COMPLETED, FAILED, KILLED) from
- * the scoreboard. Non-terminal (PENDING, RUNNING) entries are preserved
- * in their original relative order. Returns the number of entries
- * pruned.
- *
- * Thread-safe: takes the scoreboard mutex for the duration of the
- * compaction. The critical section is O(n) but cheap — freeing owned
- * strings + a memmove-style shift of POD struct fields. No external
- * allocations or blocking calls occur under the lock.
- */
-size_t scoreboard_prune_terminal(Scoreboard* sb) {
+bool scoreboard_terminal_is_expired(const ScoreboardEntry* entry, const struct timespec* now, int min_age_seconds) {
+    time_t finished;
+    time_t age;
+
+    if (!entry || !now) {
+        return false;
+    }
+    if (!is_terminal_status(entry->status)) {
+        return false;
+    }
+    if (entry->has_waiter) {
+        return false;
+    }
+    if (min_age_seconds <= 0) {
+        return true;
+    }
+    finished = entry->finished_at.tv_sec;
+    if (finished <= 0) {
+        return false;
+    }
+    age = now->tv_sec - finished;
+    return age >= (time_t)min_age_seconds;
+}
+
+void scoreboard_compact_after_prune(Scoreboard* sb, size_t write_idx) {
+    size_t i;
+    if (!sb) {
+        return;
+    }
+    for (i = write_idx; i < sb->count; i++) {
+        memset(&sb->entries[i], 0, sizeof(ScoreboardEntry));
+    }
+    sb->count = write_idx;
+}
+
+size_t scoreboard_drop_oldest_extra_terminals(Scoreboard* sb, size_t pruned) {
+    size_t i;
+    if (!sb) {
+        return pruned;
+    }
+    while (true) {
+        size_t oldest_idx = 0;
+        time_t oldest_finished = 0;
+        bool found_oldest = false;
+        size_t terminal_kept = 0;
+
+        for (i = 0; i < sb->count; i++) {
+            if (is_terminal_status(sb->entries[i].status)
+                && !sb->entries[i].has_waiter) {
+                terminal_kept++;
+                if (!found_oldest
+                    || sb->entries[i].finished_at.tv_sec < oldest_finished) {
+                    oldest_idx = i;
+                    oldest_finished = sb->entries[i].finished_at.tv_sec;
+                    found_oldest = true;
+                }
+            }
+        }
+        if (terminal_kept <= SCOREBOARD_TERMINAL_MAX_RETAINED || !found_oldest) {
+            break;
+        }
+        entry_clear_owned(&sb->entries[oldest_idx]);
+        for (i = oldest_idx; i + 1 < sb->count; i++) {
+            sb->entries[i] = sb->entries[i + 1];
+        }
+        sb->count--;
+        memset(&sb->entries[sb->count], 0, sizeof(ScoreboardEntry));
+        pruned++;
+    }
+    return pruned;
+}
+
+size_t scoreboard_prune_terminal_older_than(Scoreboard* sb, int min_age_seconds) {
+    struct timespec now;
+    size_t pruned;
+    size_t write_idx;
+    size_t i;
     if (!sb) {
         return 0;
     }
     pthread_mutex_lock(&sb->mutex);
 
-    size_t pruned = 0;
-    size_t write_idx = 0;
-    for (size_t i = 0; i < sb->count; i++) {
-        if (is_terminal_status(sb->entries[i].status)) {
+    timespec_now(&now);
+    pruned = 0;
+    write_idx = 0;
+    for (i = 0; i < sb->count; i++) {
+        if (scoreboard_terminal_is_expired(&sb->entries[i], &now, min_age_seconds)) {
             entry_clear_owned(&sb->entries[i]);
             pruned++;
         } else {
@@ -441,23 +485,18 @@ size_t scoreboard_prune_terminal(Scoreboard* sb) {
             write_idx++;
         }
     }
-
-    /* Zero the vacated tail slots so no stale job_id / status remains
-     * that could be matched by a subsequent scoreboard_find before the
-     * slot is reused by a new submit. */
-    for (size_t i = write_idx; i < sb->count; i++) {
-        memset(&sb->entries[i], 0, sizeof(ScoreboardEntry));
-    }
-
-    sb->count = write_idx;
+    scoreboard_compact_after_prune(sb, write_idx);
+    pruned = scoreboard_drop_oldest_extra_terminals(sb, pruned);
 
     pthread_mutex_unlock(&sb->mutex);
     return pruned;
 }
 
-bool scoreboard_update_progress(Scoreboard* sb, const char* job_id,
-                                uint64_t instruction_count,
-                                size_t memory_used_kb) {
+size_t scoreboard_prune_terminal(Scoreboard* sb) {
+    return scoreboard_prune_terminal_older_than(sb, SCOREBOARD_TERMINAL_RETENTION_SECONDS);
+}
+
+bool scoreboard_update_progress(Scoreboard* sb, const char* job_id, uint64_t instruction_count, size_t memory_used_kb) {
     if (!sb || !job_id) {
         return false;
     }
@@ -516,8 +555,7 @@ bool scoreboard_update_current_state(Scoreboard* sb, const char* job_id, const c
         if (strcmp(entry->job_id, job_id) != 0) {
             continue;
         }
-        // Free any prior value, then install the new one (which may be NULL to clear). The owned-string pattern is the same as
-        // script_name / params_json: copy in, copy out.
+        // Free any prior value, then install the new one (which may be NULL to clear). The owned-string pattern is the same as script_name / params_json: copy in, copy out.
         if (entry->current_state) {
             free(entry->current_state);
         }
@@ -581,9 +619,7 @@ bool scoreboard_is_kill_requested(Scoreboard* sb, const char* job_id, bool* out)
  * Orchestrator and any future introspection code use it to see the scoreboard at a point in time without holding the mutex.
  * Empty scoreboard: returns true with *out_list = NULL and out_count = 0 (a valid snapshot, just empty).
  */
-bool scoreboard_list(Scoreboard* sb,
-                     ScoreboardEntry*** out_list,
-                     size_t* out_count) {
+bool scoreboard_list(Scoreboard* sb, ScoreboardEntry*** out_list, size_t* out_count) {
     if (!out_list || !out_count) {
         return false;
     }
@@ -591,8 +627,7 @@ bool scoreboard_list(Scoreboard* sb,
     *out_count = 0;
 
     if (!sb) {
-        // A NULL scoreboard is treated as an empty snapshot, not a failure, so callers can use the same code path during
-        // tests that don't allocate a real scoreboard.
+        // A NULL scoreboard is treated as an empty snapshot, not a failure, so callers can use the same code path during tests that don't allocate a real scoreboard.                              
         return true;
     }
 
@@ -625,24 +660,15 @@ bool scoreboard_list(Scoreboard* sb,
         }
         *copy = sb->entries[i];
         // Strdup the owned strings, same as scoreboard_find, so the caller can free each entry independently with scoreboard_entry_free.
-        copy->script_name = sb->entries[i].script_name
-            ? strdup(sb->entries[i].script_name) : NULL;
-        copy->params_json = sb->entries[i].params_json
-            ? strdup(sb->entries[i].params_json) : NULL;
-        copy->current_state = sb->entries[i].current_state
-            ? strdup(sb->entries[i].current_state) : NULL;
-        copy->error_message = sb->entries[i].error_message
-            ? strdup(sb->entries[i].error_message) : NULL;
-        copy->error_traceback = sb->entries[i].error_traceback
-            ? strdup(sb->entries[i].error_traceback) : NULL;
-        copy->result_type = sb->entries[i].result_type
-            ? strdup(sb->entries[i].result_type) : NULL;
-        copy->result_location = sb->entries[i].result_location
-            ? strdup(sb->entries[i].result_location) : NULL;
-        copy->result_json = sb->entries[i].result_json
-            ? strdup(sb->entries[i].result_json) : NULL;
-        copy->submitted_by = sb->entries[i].submitted_by
-            ? strdup(sb->entries[i].submitted_by) : NULL;
+        copy->script_name = sb->entries[i].script_name         ? strdup(sb->entries[i].script_name) : NULL;
+        copy->params_json = sb->entries[i].params_json         ? strdup(sb->entries[i].params_json) : NULL;
+        copy->current_state = sb->entries[i].current_state     ? strdup(sb->entries[i].current_state) : NULL;
+        copy->error_message = sb->entries[i].error_message     ? strdup(sb->entries[i].error_message) : NULL;
+        copy->error_traceback = sb->entries[i].error_traceback ? strdup(sb->entries[i].error_traceback) : NULL;
+        copy->result_type = sb->entries[i].result_type         ? strdup(sb->entries[i].result_type) : NULL;
+        copy->result_location = sb->entries[i].result_location ? strdup(sb->entries[i].result_location) : NULL;
+        copy->result_json = sb->entries[i].result_json         ? strdup(sb->entries[i].result_json) : NULL;
+        copy->submitted_by = sb->entries[i].submitted_by       ? strdup(sb->entries[i].submitted_by) : NULL;
         if ((sb->entries[i].script_name && !copy->script_name)
             || (sb->entries[i].params_json && !copy->params_json)
             || (sb->entries[i].current_state && !copy->current_state)
@@ -690,9 +716,7 @@ void scoreboard_list_free(ScoreboardEntry** list, size_t count) {
         return false;
     }
     if (!waiter_handle && !result_ref) {
-        // A "tag only" attach (no handle, no result) is not useful
-        // and would surprise the worker (which would log a
-        // reject empty attach (no handle and no result_ref).
+        // A "tag only" attach (no handle, no result) is not useful and would surprise the worker (which would log a reject empty attach (no handle and no result_ref).
         return false;
     }
 
@@ -704,10 +728,8 @@ void scoreboard_list_free(ScoreboardEntry** list, size_t count) {
             continue;
         }
         if (!entry->has_waiter) {
-            // First writer wins. We deliberately do not overwrite a
-            // waiter that is already attached, even if the caller
-            // passed different pointers - the submitter that raced
-            // ahead is the authoritative owner of the waiter slot.
+            // First writer wins. We deliberately do not overwrite a waiter that is already attached, even if the caller
+            // passed different pointers - the submitter that raced ahead is the authoritative owner of the waiter slot.
             entry->has_waiter = true;
             entry->waiter_handle = waiter_handle;
             entry->result_ref = result_ref;
@@ -810,8 +832,7 @@ bool scoreboard_clear_waiter(Scoreboard* sb, const char* job_id) {
     return found;
 }
 
-// Phase 24: store structured error info for a failed job.
-// Thread-safe. Strings are strdup'd into scoreboard-owned memory.
+// Phase 24: store structured error info for a failed job. Thread-safe. Strings are strdup'd into scoreboard-owned memory.
 bool scoreboard_update_error(Scoreboard* sb, const char* job_id, const char* error_message, const char* error_traceback) {
     if (!sb || !job_id) {
         return false;
@@ -854,8 +875,7 @@ bool scoreboard_update_error(Scoreboard* sb, const char* job_id, const char* err
     return false;
 }
 
-// Phase 25: store artifact metadata for a completed job.
-// Thread-safe. Strings are strdup'd into scoreboard-owned memory.
+// Phase 25: store artifact metadata for a completed job. Thread-safe. Strings are strdup'd into scoreboard-owned memory.
 bool scoreboard_update_result(Scoreboard* sb, const char* job_id, const char* result_type, const char* result_location) {
     if (!sb || !job_id) {
         return false;

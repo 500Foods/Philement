@@ -169,8 +169,9 @@ char* auth_roles_from_database(int account_id, const char* database) {
     return NULL;
 }
 
-void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int system_id, int app_id, const char* database, const char* client_ip) {
+bool store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int system_id, int app_id, const char* database, const char* client_ip) {
     (void)account_id; (void)jwt_hash; (void)expires_at; (void)system_id; (void)app_id; (void)database; (void)client_ip;
+    return true;
 }
 
 void free_account_info(account_info_t* account) {

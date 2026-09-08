@@ -22,6 +22,7 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
 
 void *rest_sse_callback_thread(void *arg) {
     RestSseContext *ctx = (RestSseContext *)arg;
@@ -65,11 +66,11 @@ void *rest_sse_callback_thread(void *arg) {
         }
     }
 
-    ctx->callback_done = true;
     if (ctx->pipe_write >= 0) {
         close(ctx->pipe_write);
         ctx->pipe_write = -1;
     }
+    ctx->callback_done = true;
     return NULL;
 }
 
@@ -78,66 +79,44 @@ void rest_sse_cleanup(RestSseContext *ctx) {
     if (ctx->cleanup_done) return;
     ctx->cleanup_done = true;
 
-    if (ctx->callback_thread && !ctx->callback_done) {
-        pthread_join(ctx->callback_thread, NULL);
+    if (ctx->stream_ctx) {
+        ctx->stream_ctx->stream_completed = true;
     }
 
-    if (ctx->pipe_read >= 0) close(ctx->pipe_read);
-    if (ctx->pipe_write >= 0) close(ctx->pipe_write);
+    if (ctx->callback_thread_started) {
+        pthread_join(ctx->callback_thread, NULL);
+        ctx->callback_thread_started = false;
+    }
+
+    if (ctx->pipe_read >= 0) {
+        close(ctx->pipe_read);
+        ctx->pipe_read = -1;
+    }
+    if (ctx->pipe_write >= 0) {
+        close(ctx->pipe_write);
+        ctx->pipe_write = -1;
+    }
 
     if (ctx->manager && ctx->stream_ctx) {
-        pthread_mutex_lock(&ctx->manager->streams_mutex);
-        MultiStreamContext *sc = ctx->stream_ctx;
-        if (sc->prev) {
-            sc->prev->next = sc->next;
-        } else {
-            ctx->manager->active_streams = sc->next;
-        }
-        if (sc->next) {
-            sc->next->prev = sc->prev;
-        }
-        if (sc->headers) {
-            curl_slist_free_all(sc->headers);
-        }
-        pthread_mutex_unlock(&ctx->manager->streams_mutex);
-
-        chunk_queue_destroy(&sc->chunk_queue);
-        free(sc->request_id);
-        free(sc->engine_name);
-        free(sc->finish_reason);
-        free(sc->request_body);
-        free(sc);
+        chat_proxy_multi_stream_stop(ctx->manager, ctx->stream_ctx);
+        ctx->stream_ctx = NULL;
     }
 
     free(ctx);
 }
 
-#include <errno.h>
-
 ssize_t rest_sse_mhd_callback(void *cls, uint64_t pos,
-                                      char *buf, size_t max) {
-    (void)pos;
+                                       char *buf, size_t max) {
     RestSseContext *ctx = (RestSseContext *)cls;
+    ssize_t r;
+
+    (void)pos;
     if (!ctx || ctx->pipe_read < 0) return MHD_CONTENT_READER_END_WITH_ERROR;
 
-    if (ctx->callback_done) {
-        ssize_t r = read(ctx->pipe_read, buf, max);
-        if (r > 0) return r;
-        rest_sse_cleanup(ctx);
-        return MHD_CONTENT_READER_END_OF_STREAM;
-    }
-
-    ssize_t r = read(ctx->pipe_read, buf, max);
+    r = read(ctx->pipe_read, buf, max);
     if (r > 0) return r;
-
-    if (ctx->callback_done) {
-        rest_sse_cleanup(ctx);
-        return MHD_CONTENT_READER_END_OF_STREAM;
-    }
-
-    if (r == 0 || errno == EAGAIN || errno == EWOULDBLOCK) return 0;
-
-    rest_sse_cleanup(ctx);
+    if (r == 0) return MHD_CONTENT_READER_END_OF_STREAM;
+    if (errno == EAGAIN || errno == EWOULDBLOCK) return 0;
     return MHD_CONTENT_READER_END_WITH_ERROR;
 }
 
@@ -185,6 +164,7 @@ enum MHD_Result auth_chat_stream_sse(struct MHD_Connection *connection,
     ctx->pipe_read = pipefd[0];
     ctx->pipe_write = pipefd[1];
     ctx->callback_done = false;
+    ctx->callback_thread_started = false;
     ctx->cleanup_done = false;
     ctx->connection_valid = true;
     ctx->stream_active = true;
@@ -212,6 +192,7 @@ enum MHD_Result auth_chat_stream_sse(struct MHD_Connection *connection,
     }
 
     if (pthread_create(&ctx->callback_thread, NULL, rest_sse_callback_thread, ctx) != 0) {
+        ctx->callback_thread_started = false;
         chat_proxy_multi_stream_stop(manager, ctx->stream_ctx);
         close(pipefd[0]);
         close(pipefd[1]);
@@ -219,6 +200,7 @@ enum MHD_Result auth_chat_stream_sse(struct MHD_Connection *connection,
         json_t *error = auth_chat_build_error_response("Failed to start callback thread");
         return api_send_json_response(connection, error, MHD_HTTP_INTERNAL_SERVER_ERROR);
     }
+    ctx->callback_thread_started = true;
 
     struct MHD_Response *response = MHD_create_response_from_callback(
         MHD_SIZE_UNKNOWN,
@@ -238,6 +220,7 @@ enum MHD_Result auth_chat_stream_sse(struct MHD_Connection *connection,
             ctx->pipe_write = -1;
         }
         pthread_join(ctx->callback_thread, NULL);
+        ctx->callback_thread_started = false;
         ctx->callback_thread = 0;
         chat_proxy_multi_stream_stop(manager, ctx->stream_ctx);
         rest_sse_cleanup(ctx);

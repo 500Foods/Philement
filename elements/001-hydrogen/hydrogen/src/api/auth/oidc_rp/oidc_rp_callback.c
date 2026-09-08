@@ -640,8 +640,18 @@ enum MHD_Result handle_get_auth_oidc_callback(
     }
 
     time_t expires_at = issued_at + OIDC_RP_CALLBACK_JWT_LIFETIME;
-    store_jwt(account->id, jwt_hash, expires_at,
-              sys_info.system_id, sys_info.app_id, database, client_ip);
+    if (!store_jwt(account->id, jwt_hash, expires_at,
+                   sys_info.system_id, sys_info.app_id, database, client_ip)) {
+        free(jwt_hash);
+        callback_scrub_free(jwt_token);
+        free(id_token_copy);
+        free(client_ip);
+        free_account_info(account);
+        oidc_rp_idtoken_claims_free(claims);
+        oidc_rp_state_record_free(state_record);
+        return redirect_with_error(connection, provider, "server_error",
+                                   return_to);
+    }
     free(jwt_hash);
 
     // ---- Generate the handoff code and put the record ----

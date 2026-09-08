@@ -20,8 +20,8 @@
 void test_cleanup_null(void);
 void test_cleanup_already_done(void);
 void test_cleanup_pipes_only(void);
-void test_cleanup_unlinks_stream(void);
-void test_cleanup_middle_stream(void);
+void test_cleanup_stops_stream_without_freeing(void);
+void test_cleanup_middle_stream_leaves_list(void);
 
 void setUp(void) {
 }
@@ -53,7 +53,7 @@ void test_cleanup_pipes_only(void) {
     rest_sse_cleanup(ctx);
 }
 
-void test_cleanup_unlinks_stream(void) {
+void test_cleanup_stops_stream_without_freeing(void) {
     RestSseContext *ctx = calloc(1, sizeof(RestSseContext));
     MultiStreamManager *mgr = calloc(1, sizeof(MultiStreamManager));
     MultiStreamContext *sc = calloc(1, sizeof(MultiStreamContext));
@@ -75,12 +75,20 @@ void test_cleanup_unlinks_stream(void) {
     ctx->pipe_write = -1;
 
     rest_sse_cleanup(ctx);
-    TEST_ASSERT_NULL(mgr->active_streams);
+    TEST_ASSERT_EQUAL_PTR(sc, mgr->active_streams);
+    TEST_ASSERT_TRUE(sc->stream_completed);
+    TEST_ASSERT_NULL(sc->headers);
+    chunk_queue_destroy(&sc->chunk_queue);
+    free(sc->request_id);
+    free(sc->engine_name);
+    free(sc->finish_reason);
+    free(sc->request_body);
+    free(sc);
     pthread_mutex_destroy(&mgr->streams_mutex);
     free(mgr);
 }
 
-void test_cleanup_middle_stream(void) {
+void test_cleanup_middle_stream_leaves_list(void) {
     RestSseContext *ctx = calloc(1, sizeof(RestSseContext));
     MultiStreamManager *mgr = calloc(1, sizeof(MultiStreamManager));
     MultiStreamContext *prev = calloc(1, sizeof(MultiStreamContext));
@@ -107,8 +115,13 @@ void test_cleanup_middle_stream(void) {
     ctx->pipe_write = -1;
 
     rest_sse_cleanup(ctx);
-    TEST_ASSERT_EQUAL_PTR(next, prev->next);
-    TEST_ASSERT_EQUAL_PTR(prev, next->prev);
+    TEST_ASSERT_EQUAL_PTR(sc, prev->next);
+    TEST_ASSERT_EQUAL_PTR(sc, next->prev);
+    TEST_ASSERT_TRUE(sc->stream_completed);
+    chunk_queue_destroy(&sc->chunk_queue);
+    free(sc->request_id);
+    free(sc->engine_name);
+    free(sc);
     pthread_mutex_destroy(&mgr->streams_mutex);
     free(prev);
     free(next);
@@ -120,7 +133,7 @@ int main(void) {
     RUN_TEST(test_cleanup_null);
     RUN_TEST(test_cleanup_already_done);
     RUN_TEST(test_cleanup_pipes_only);
-    RUN_TEST(test_cleanup_unlinks_stream);
-    RUN_TEST(test_cleanup_middle_stream);
+    RUN_TEST(test_cleanup_stops_stream_without_freeing);
+    RUN_TEST(test_cleanup_middle_stream_leaves_list);
     return UNITY_END();
 }

@@ -157,6 +157,26 @@ const char* script_registry_lookup(ScriptRegistry* reg, const char* name) {
     return found;
 }
 
+char* script_registry_lookup_copy(ScriptRegistry* reg, const char* name) {
+    char* copy = NULL;
+
+    if (!reg || !name) {
+        return NULL;
+    }
+
+    pthread_mutex_lock(&reg->mutex);
+    for (size_t i = 0; i < reg->count; i++) {
+        if (strcmp(reg->entries[i].name, name) == 0) {
+            if (reg->entries[i].source) {
+                copy = strdup(reg->entries[i].source);
+            }
+            break;
+        }
+    }
+    pthread_mutex_unlock(&reg->mutex);
+    return copy;
+}
+
 /*
  * Count entries. Thread-safe.
  */

@@ -45,6 +45,10 @@ void test_prune_idempotent_second_call_returns_zero(void);
 void test_prune_frees_owned_strings(void);
 void test_prune_frees_result_json(void);
 void test_prune_frees_params_json(void);
+void test_prune_retains_fresh_terminal(void);
+void test_prune_skips_waiter(void);
+void test_prune_expired_terminal(void);
+void test_prune_null_older_than_returns_zero(void);
 
 void test_prune_null_scoreboard_returns_zero(void) {
     TEST_ASSERT_EQUAL_size_t(0, scoreboard_prune_terminal(NULL));
@@ -53,7 +57,7 @@ void test_prune_null_scoreboard_returns_zero(void) {
 void test_prune_empty_scoreboard_returns_zero(void) {
     Scoreboard* sb = scoreboard_create();
     TEST_ASSERT_NOT_NULL(sb);
-    TEST_ASSERT_EQUAL_size_t(0, scoreboard_prune_terminal(sb));
+    TEST_ASSERT_EQUAL_size_t(0, scoreboard_prune_terminal_older_than(sb, 0));
     TEST_ASSERT_EQUAL_size_t(0, scoreboard_count(sb));
     scoreboard_destroy(sb);
 }
@@ -71,7 +75,7 @@ void test_prune_all_completed_returns_count_and_empties(void) {
     scoreboard_update_status(sb, id2, SCOREBOARD_JOB_COMPLETED);
     scoreboard_update_status(sb, id3, SCOREBOARD_JOB_COMPLETED);
 
-    size_t pruned = scoreboard_prune_terminal(sb);
+    size_t pruned = scoreboard_prune_terminal_older_than(sb, 0);
     TEST_ASSERT_EQUAL_size_t(3, pruned);
     TEST_ASSERT_EQUAL_size_t(0, scoreboard_count(sb));
 
@@ -91,7 +95,7 @@ void test_prune_all_failed_returns_count_and_empties(void) {
     scoreboard_update_status(sb, id1, SCOREBOARD_JOB_FAILED);
     scoreboard_update_status(sb, id2, SCOREBOARD_JOB_FAILED);
 
-    size_t pruned = scoreboard_prune_terminal(sb);
+    size_t pruned = scoreboard_prune_terminal_older_than(sb, 0);
     TEST_ASSERT_EQUAL_size_t(2, pruned);
     TEST_ASSERT_EQUAL_size_t(0, scoreboard_count(sb));
 
@@ -107,7 +111,7 @@ void test_prune_all_killed_returns_count_and_empties(void) {
 
     scoreboard_update_status(sb, id, SCOREBOARD_JOB_KILLED);
 
-    size_t pruned = scoreboard_prune_terminal(sb);
+    size_t pruned = scoreboard_prune_terminal_older_than(sb, 0);
     TEST_ASSERT_EQUAL_size_t(1, pruned);
     TEST_ASSERT_EQUAL_size_t(0, scoreboard_count(sb));
 
@@ -127,7 +131,7 @@ void test_prune_preserves_pending_and_running(void) {
     scoreboard_update_status(sb, id_running, SCOREBOARD_JOB_RUNNING);
     scoreboard_update_status(sb, id_completed, SCOREBOARD_JOB_COMPLETED);
 
-    size_t pruned = scoreboard_prune_terminal(sb);
+    size_t pruned = scoreboard_prune_terminal_older_than(sb, 0);
     TEST_ASSERT_EQUAL_size_t(1, pruned);
     TEST_ASSERT_EQUAL_size_t(2, scoreboard_count(sb));
 
@@ -170,7 +174,7 @@ void test_prune_mixed_states_prunes_only_terminal(void) {
     scoreboard_update_status(sb, ids[3], SCOREBOARD_JOB_FAILED);
     scoreboard_update_status(sb, ids[5], SCOREBOARD_JOB_KILLED);
 
-    size_t pruned = scoreboard_prune_terminal(sb);
+    size_t pruned = scoreboard_prune_terminal_older_than(sb, 0);
     TEST_ASSERT_EQUAL_size_t(3, pruned);
     TEST_ASSERT_EQUAL_size_t(3, scoreboard_count(sb));
 
@@ -205,7 +209,7 @@ void test_prune_preserves_relative_order_of_non_terminal(void) {
     scoreboard_update_status(sb, id_b, SCOREBOARD_JOB_COMPLETED);
     scoreboard_update_status(sb, id_d, SCOREBOARD_JOB_FAILED);
 
-    size_t pruned = scoreboard_prune_terminal(sb);
+    size_t pruned = scoreboard_prune_terminal_older_than(sb, 0);
     TEST_ASSERT_EQUAL_size_t(2, pruned);
     TEST_ASSERT_EQUAL_size_t(3, scoreboard_count(sb));
 
@@ -237,7 +241,7 @@ void test_prune_then_submit_reuses_slots(void) {
     scoreboard_update_status(sb, id1, SCOREBOARD_JOB_COMPLETED);
     scoreboard_update_status(sb, id2, SCOREBOARD_JOB_FAILED);
 
-    size_t pruned = scoreboard_prune_terminal(sb);
+    size_t pruned = scoreboard_prune_terminal_older_than(sb, 0);
     TEST_ASSERT_EQUAL_size_t(2, pruned);
     TEST_ASSERT_EQUAL_size_t(0, scoreboard_count(sb));
 
@@ -264,10 +268,10 @@ void test_prune_idempotent_second_call_returns_zero(void) {
 
     scoreboard_update_status(sb, id, SCOREBOARD_JOB_COMPLETED);
 
-    size_t first = scoreboard_prune_terminal(sb);
+    size_t first = scoreboard_prune_terminal_older_than(sb, 0);
     TEST_ASSERT_EQUAL_size_t(1, first);
 
-    size_t second = scoreboard_prune_terminal(sb);
+    size_t second = scoreboard_prune_terminal_older_than(sb, 0);
     TEST_ASSERT_EQUAL_size_t(0, second);
 
     free(id);
@@ -282,7 +286,7 @@ void test_prune_frees_owned_strings(void) {
 
     scoreboard_update_status(sb, id, SCOREBOARD_JOB_COMPLETED);
 
-    size_t pruned = scoreboard_prune_terminal(sb);
+    size_t pruned = scoreboard_prune_terminal_older_than(sb, 0);
     TEST_ASSERT_EQUAL_size_t(1, pruned);
 
     /* destroy must not crash — the owned params_json was freed by prune. */
@@ -302,7 +306,7 @@ void test_prune_frees_result_json(void) {
 
     scoreboard_update_status(sb, id, SCOREBOARD_JOB_COMPLETED);
 
-    size_t pruned = scoreboard_prune_terminal(sb);
+    size_t pruned = scoreboard_prune_terminal_older_than(sb, 0);
     TEST_ASSERT_EQUAL_size_t(1, pruned);
 
     /* destroy must not crash — result_json was freed by prune. */
@@ -317,13 +321,70 @@ void test_prune_frees_params_json(void) {
 
     scoreboard_update_status(sb, id, SCOREBOARD_JOB_FAILED);
 
-    size_t pruned = scoreboard_prune_terminal(sb);
+    size_t pruned = scoreboard_prune_terminal_older_than(sb, 0);
     TEST_ASSERT_EQUAL_size_t(1, pruned);
     TEST_ASSERT_EQUAL_size_t(0, scoreboard_count(sb));
 
     /* destroy must not crash — params_json was freed by prune. */
     free(id);
     scoreboard_destroy(sb);
+}
+
+void test_prune_retains_fresh_terminal(void) {
+    Scoreboard* sb = scoreboard_create();
+    char* id = scoreboard_submit(sb, "fresh", NULL);
+    TEST_ASSERT_NOT_NULL(id);
+
+    scoreboard_update_status(sb, id, SCOREBOARD_JOB_COMPLETED);
+    TEST_ASSERT_EQUAL_size_t(0, scoreboard_prune_terminal(sb));
+    TEST_ASSERT_EQUAL_size_t(1, scoreboard_count(sb));
+    {
+        ScoreboardEntry* e = scoreboard_find(sb, id);
+        TEST_ASSERT_NOT_NULL(e);
+        scoreboard_entry_free(e);
+    }
+
+    free(id);
+    scoreboard_destroy(sb);
+}
+
+void test_prune_skips_waiter(void) {
+    Scoreboard* sb = scoreboard_create();
+    char* id = scoreboard_submit(sb, "waiting", NULL);
+    TEST_ASSERT_NOT_NULL(id);
+
+    scoreboard_update_status(sb, id, SCOREBOARD_JOB_COMPLETED);
+    TEST_ASSERT_TRUE(scoreboard_attach_waiter(sb, id, id, NULL));
+    TEST_ASSERT_EQUAL_size_t(0, scoreboard_prune_terminal_older_than(sb, 0));
+    {
+        ScoreboardEntry* e = scoreboard_find(sb, id);
+        TEST_ASSERT_NOT_NULL(e);
+        scoreboard_entry_free(e);
+    }
+
+    free(id);
+    scoreboard_destroy(sb);
+}
+
+void test_prune_expired_terminal(void) {
+    Scoreboard* sb = scoreboard_create();
+    char* id = scoreboard_submit(sb, "old", NULL);
+    TEST_ASSERT_NOT_NULL(id);
+
+    scoreboard_update_status(sb, id, SCOREBOARD_JOB_COMPLETED);
+    pthread_mutex_lock(&sb->mutex);
+    sb->entries[0].finished_at.tv_sec = time(NULL) - 120;
+    pthread_mutex_unlock(&sb->mutex);
+
+    TEST_ASSERT_EQUAL_size_t(1, scoreboard_prune_terminal(sb));
+    TEST_ASSERT_NULL(scoreboard_find(sb, id));
+
+    free(id);
+    scoreboard_destroy(sb);
+}
+
+void test_prune_null_older_than_returns_zero(void) {
+    TEST_ASSERT_EQUAL_size_t(0, scoreboard_prune_terminal_older_than(NULL, 0));
 }
 
 int main(void) {
@@ -342,6 +403,10 @@ int main(void) {
     RUN_TEST(test_prune_frees_owned_strings);
     RUN_TEST(test_prune_frees_result_json);
     RUN_TEST(test_prune_frees_params_json);
+    RUN_TEST(test_prune_retains_fresh_terminal);
+    RUN_TEST(test_prune_skips_waiter);
+    RUN_TEST(test_prune_expired_terminal);
+    RUN_TEST(test_prune_null_older_than_returns_zero);
 
     return UNITY_END();
 }

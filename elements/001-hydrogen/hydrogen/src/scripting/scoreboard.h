@@ -303,15 +303,27 @@ bool scoreboard_update_status(Scoreboard* sb, const char* job_id, ScoreboardJobS
  */
 size_t scoreboard_count(Scoreboard* sb);
 
+/* How long terminal job results stay findable for waiters / GET. */
+#define SCOREBOARD_TERMINAL_RETENTION_SECONDS 30
+#define SCOREBOARD_TERMINAL_MAX_RETAINED 256
+
 /*
- * Remove all terminal-state entries (COMPLETED, FAILED, KILLED)
- * from the scoreboard, preserving non-terminal (PENDING, RUNNING)
- * entries in their original order. Returns the number of entries
- * pruned. Safe with NULL.
+ * Remove terminal-state entries (COMPLETED, FAILED, KILLED) that are
+ * older than SCOREBOARD_TERMINAL_RETENTION_SECONDS, have no attached
+ * waiter, and exceed SCOREBOARD_TERMINAL_MAX_RETAINED. Non-terminal
+ * entries are preserved in their original order. Returns the number
+ * of entries pruned. Safe with NULL.
  *
  * Thread-safe: takes the scoreboard mutex for the compaction.
  */
 size_t scoreboard_prune_terminal(Scoreboard* sb);
+
+/*
+ * Same compaction as scoreboard_prune_terminal, with an explicit age
+ * floor in seconds. min_age_seconds <= 0 prunes every terminal entry
+ * that has no waiter (used by Unity compaction tests).
+ */
+size_t scoreboard_prune_terminal_older_than(Scoreboard* sb, int min_age_seconds);
 
 /*
  * Human-readable name for a status value (for logging). Returns
@@ -600,5 +612,10 @@ void timespec_clear(struct timespec* ts);
 void timespec_now(struct timespec* ts);
 bool entries_grow_if_needed(Scoreboard* sb);
 bool generate_unique_id(const Scoreboard* sb, char out[ID_LEN + 1]);
+bool scoreboard_terminal_is_expired(const ScoreboardEntry* entry,
+                                    const struct timespec* now,
+                                    int min_age_seconds);
+void scoreboard_compact_after_prune(Scoreboard* sb, size_t write_idx);
+size_t scoreboard_drop_oldest_extra_terminals(Scoreboard* sb, size_t pruned);
 
 #endif /* HYDROGEN_SCRIPTING_SCOREBOARD_H */

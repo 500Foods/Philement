@@ -23,10 +23,7 @@
 #include <unistd.h>
 #include <errno.h>
 #include <time.h>
-
-// ============================================================================
-// Static Variables
-// ============================================================================
+#include <pthread.h>
 
 // Global multi stream manager (singleton for simplicity)
 static MultiStreamManager* g_multi_manager = NULL;
@@ -36,10 +33,6 @@ static MultiStreamManager* g_multi_manager = NULL;
 
 // Forward declaration for completed-transfer handler helper
  void chat_proxy_multi_handle_completed_transfer(MultiStreamManager* manager, CURL* easy, CURLcode res, long http_code);
-
-// ============================================================================
-// Manager Implementation
-// ============================================================================
 
 bool chat_proxy_multi_init(MultiStreamManager* manager, struct lws_context* lws_context) {
     if (!manager || manager->initialized) {
@@ -56,14 +49,21 @@ bool chat_proxy_multi_init(MultiStreamManager* manager, struct lws_context* lws_
     manager->lws_context = lws_context;
     manager->active_streams = NULL;
     pthread_mutex_init(&manager->streams_mutex, NULL);
+    {
+        pthread_mutexattr_t attr;
+        pthread_mutexattr_init(&attr);
+        pthread_mutexattr_settype(&attr, PTHREAD_MUTEX_RECURSIVE);
+        pthread_mutex_init(&manager->multi_mutex, &attr);
+        pthread_mutexattr_destroy(&attr);
+        manager->multi_mutex_ready = true;
+    }
     manager->max_host_connections = 50;  // Default per-provider limit
     manager->max_total_connections = 200;
     manager->shutdown_requested = false;
     manager->worker_thread_started = false;
 
     // Configure multi handle - use simple polling interface (curl_multi_perform + curl_multi_wait)
-    // Do NOT set CURLMOPT_SOCKETFUNCTION or CURLMOPT_TIMERFUNCTION - those require
-    // the multi_socket_action() interface which we're not using
+    // Do NOT set CURLMOPT_SOCKETFUNCTION or CURLMOPT_TIMERFUNCTION - those require the multi_socket_action() interface which we're not using
     curl_multi_setopt(manager->multi_handle, CURLMOPT_MAX_HOST_CONNECTIONS, (long)manager->max_host_connections);
     curl_multi_setopt(manager->multi_handle, CURLMOPT_MAX_TOTAL_CONNECTIONS, (long)manager->max_total_connections);
     
@@ -77,7 +77,14 @@ bool chat_proxy_multi_init(MultiStreamManager* manager, struct lws_context* lws_
     if (pthread_create(&manager->worker_thread, NULL, chat_proxy_multi_worker_thread, manager) != 0) {
         log_this(SR_CHAT, "Failed to create multi-stream worker thread", LOG_LEVEL_ERROR, 0);
         curl_multi_cleanup(manager->multi_handle);
+        manager->multi_handle = NULL;
+        manager->multi_mutex_ready = false;
+        pthread_mutex_destroy(&manager->multi_mutex);
+        pthread_mutex_destroy(&manager->streams_mutex);
         manager->initialized = false;
+        if (g_multi_manager == manager) {
+            g_multi_manager = NULL;
+        }
         return false;
     }
     manager->worker_thread_started = true;
@@ -87,56 +94,65 @@ bool chat_proxy_multi_init(MultiStreamManager* manager, struct lws_context* lws_
     return true;
 }
 
-// Worker thread function that drives the multi handle
- void* chat_proxy_multi_worker_thread(void* arg) {
+void chat_proxy_multi_lock(MultiStreamManager* manager) {
+    if (manager->multi_mutex_ready) {
+        pthread_mutex_lock(&manager->multi_mutex);
+    }
+}
+
+void chat_proxy_multi_unlock(MultiStreamManager* manager) {
+    if (manager->multi_mutex_ready) {
+        pthread_mutex_unlock(&manager->multi_mutex);
+    }
+}
+
+void* chat_proxy_multi_worker_thread(void* arg) {
     MultiStreamManager* manager = (MultiStreamManager*)arg;
     
     log_this(SR_CHAT, "Multi-stream worker thread started", LOG_LEVEL_DEBUG, 0);
     
     while (!manager->shutdown_requested) {
+        int still_running = 0;
+        CURLMcode mc;
+        CURLMcode wait_mc;
+
         if (!manager->initialized) {
-            usleep(50000);  // 50ms when not initialized
+            usleep(50000);
             continue;
         }
-        
-        // First, drive any pending transfers
-        int still_running = 0;
-        CURLMcode mc = curl_multi_perform(manager->multi_handle, &still_running);
-        
+
+        chat_proxy_multi_lock(manager);
+        mc = curl_multi_perform(manager->multi_handle, &still_running);
+        chat_proxy_multi_unlock(manager);
+
         if (mc != CURLM_OK) {
             log_this(SR_CHAT, "curl_multi_perform error in worker: %s", LOG_LEVEL_ERROR, 1, curl_multi_strerror(mc));
-            usleep(10000);  // 10ms on error
+            usleep(10000);
             continue;
         }
-        
+
+        chat_proxy_multi_perform(manager);
+
         if (still_running == 0) {
-            // No active transfers, sleep longer
-            usleep(50000);  // 50ms when idle
+            usleep(50000);
             continue;
         }
-        
-        // There are active transfers - wait for socket activity or timeout
-        // Use curl_multi_poll() instead of curl_multi_wait() because curl_multi_wait()
-        // doesn't work correctly with HTTP/2 - it returns num_fds=0 when HTTP/2 frames
-        // are being processed internally, causing the wait to timeout instead of blocking
-        // until data is actually available. curl_multi_poll() handles this correctly.
-        // Use 10ms timeout for responsive streaming without excessive CPU usage.
-        CURLMcode wait_mc = curl_multi_poll(manager->multi_handle, NULL, 0, 10, NULL);
-        
+
+        chat_proxy_multi_lock(manager);
+        wait_mc = curl_multi_poll(manager->multi_handle, NULL, 0, 10, NULL);
         if (wait_mc != CURLM_OK) {
+            chat_proxy_multi_unlock(manager);
             log_this(SR_CHAT, "curl_multi_poll error: %s", LOG_LEVEL_ERROR, 1, curl_multi_strerror(wait_mc));
-            usleep(10000);  // 10ms on error
+            usleep(10000);
             continue;
         }
-        
-        // After wait returns, call curl_multi_perform AGAIN to process any data
-        // that arrived on sockets. This is required by libcurl's multi interface.
+
         mc = curl_multi_perform(manager->multi_handle, &still_running);
+        chat_proxy_multi_unlock(manager);
         if (mc != CURLM_OK) {
             log_this(SR_CHAT, "curl_multi_perform (post-wait) error: %s", LOG_LEVEL_ERROR, 1, curl_multi_strerror(mc));
         }
-        
-        // Process any completed transfers
+
         chat_proxy_multi_perform(manager);
     }
     
@@ -200,6 +216,10 @@ void chat_proxy_multi_cleanup(MultiStreamManager* manager) {
     
     pthread_mutex_unlock(&manager->streams_mutex);
     pthread_mutex_destroy(&manager->streams_mutex);
+    if (manager->multi_mutex_ready) {
+        manager->multi_mutex_ready = false;
+        pthread_mutex_destroy(&manager->multi_mutex);
+    }
     
     if (manager->multi_handle) {
         curl_multi_cleanup(manager->multi_handle);
@@ -234,18 +254,15 @@ bool chat_proxy_multi_perform(MultiStreamManager* manager) {
             if (!chunk_queue_has_data(&stream->chunk_queue)) {
                 // Save pointers before freeing
                 void* session_data_ptr = stream->session_data;
-                
                 // Free headers
                 if (stream->headers) {
                     curl_slist_free_all(stream->headers);
                     stream->headers = NULL;
                 }
-                
                 // Call completion callback if set
                 if (stream->completion_callback) {
                     stream->completion_callback(stream->completion_user_data, true);
                 }
-                
                 // Remove from linked list
                 if (stream->prev) {
                     stream->prev->next = stream->next;
@@ -255,7 +272,6 @@ bool chat_proxy_multi_perform(MultiStreamManager* manager) {
                 if (stream->next) {
                     stream->next->prev = stream->prev;
                 }
-                
                 // Clear session's pointer ONLY if it still points to the stream we're freeing
                 // This prevents the race where a new stream started and overwrote the pointer
                 if (session_data_ptr) {
@@ -264,7 +280,6 @@ bool chat_proxy_multi_perform(MultiStreamManager* manager) {
                         session->multi_stream_ctx = NULL;
                     }
                 }
-                
                 // Free stream context (after checking pointer, stream is now freed)
                 free(stream->request_id);
                 free(stream->engine_name);
@@ -277,46 +292,36 @@ bool chat_proxy_multi_perform(MultiStreamManager* manager) {
     }
     pthread_mutex_unlock(&manager->streams_mutex);
     
-    // Check for completed transfers from CURL
-    CURLMsg* msg;
-    int msgs_left;
-    while ((msg = curl_multi_info_read(manager->multi_handle, &msgs_left))) {
-        if (msg->msg == CURLMSG_DONE) {
-            CURL* easy = msg->easy_handle;
-            CURLcode res = msg->data.result;
-
-            // Log CURL result and HTTP status for debugging
-            long http_code = 0;
-            curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &http_code);
-            log_this(SR_CHAT, "Multi-stream transfer complete: CURL result=%d (%s), HTTP %ld", LOG_LEVEL_DEBUG, 3,
-                     (int)res, curl_easy_strerror(res), http_code);
-
-            chat_proxy_multi_handle_completed_transfer(manager, easy, res, http_code);
+    chat_proxy_multi_lock(manager);
+    {
+        CURLMsg* msg;
+        int msgs_left;
+        while ((msg = curl_multi_info_read(manager->multi_handle, &msgs_left))) {
+            if (msg->msg == CURLMSG_DONE) {
+                CURL* easy = msg->easy_handle;
+                CURLcode res = msg->data.result;
+                long http_code = 0;
+                curl_easy_getinfo(easy, CURLINFO_RESPONSE_CODE, &http_code);
+                log_this(SR_CHAT, "Multi-stream transfer complete: CURL result=%d (%s), HTTP %ld", LOG_LEVEL_DEBUG, 3, (int)res, curl_easy_strerror(res), http_code);
+                chat_proxy_multi_handle_completed_transfer(manager, easy, res, http_code);
+            }
         }
     }
-
+    chat_proxy_multi_unlock(manager);
     return true;
 }
 
-/*
- * Process a single completed CURL transfer (a CURLMSG_DONE message). Extracted
- * from chat_proxy_multi_perform() so the (large) completion logic can be unit
- * tested directly without driving the full curl_multi event loop.
- *
- * On entry the transfer's easy handle has finished; this function builds the
- * chat_done / chat_error payload, enqueues it on the stream's chunk queue, and
- * removes the easy handle from the multi. The stream context itself is NOT
- * freed here - it is released later by chat_proxy_multi_perform() once the
- * queued payload has been drained.
- */
-void chat_proxy_multi_handle_completed_transfer(MultiStreamManager* manager,
-                                                CURL* easy,
-                                                CURLcode res,
-                                                long http_code) {
-    // Get stream context from CURL private data
+// Process a single completed CURL transfer (a CURLMSG_DONE message). Extracted from chat_proxy_multi_perform() so the (large) completion logic can be unit
+// tested directly without driving the full curl_multi event loop.
+//
+// On entry the transfer's easy handle has finished; this function builds the chat_done / chat_error payload, enqueues it on the stream's chunk queue, and
+// removes the easy handle from the multi. The stream context itself is NOT freed here - it is released later by chat_proxy_multi_perform() once the queued payload has been drained.
+void chat_proxy_multi_handle_completed_transfer(MultiStreamManager* manager, CURL* easy, CURLcode res, long http_code) {
     void* priv_data = NULL;
+    if (!manager || !easy) {
+        return;
+    }
     curl_easy_getinfo(easy, CURLINFO_PRIVATE, &priv_data);
-
     if (priv_data) {
         CurlStreamContext* curl_ctx = (CurlStreamContext*)priv_data;
         MultiStreamContext* stream_ctx = curl_ctx->stream_ctx;
@@ -415,7 +420,9 @@ void chat_proxy_multi_handle_completed_transfer(MultiStreamManager* manager,
             if (!http_error && res == CURLE_OK) {
                 char *next_body = chat_local_mcp_stream_next_body(stream_ctx);
                 if (next_body) {
+                    chat_proxy_multi_lock(manager);
                     curl_multi_remove_handle(manager->multi_handle, easy);
+                    chat_proxy_multi_unlock(manager);
                     curl_easy_cleanup(easy);
                     stream_ctx->easy_handle = NULL;
                     free(curl_ctx->line_buffer);
@@ -432,9 +439,6 @@ void chat_proxy_multi_handle_completed_transfer(MultiStreamManager* manager,
                     free(next_body);
                 }
             }
-
-            // Mark stream as completed
-            stream_ctx->stream_completed = true;
 
             // Build and enqueue response (error or done)
             json_t* done_response = json_object();
@@ -478,10 +482,8 @@ void chat_proxy_multi_handle_completed_transfer(MultiStreamManager* manager,
                                    json_string(stream_ctx->finish_reason ? stream_ctx->finish_reason : "stop"));
                 json_object_set_new(result, "response_time_ms", json_real(elapsed_ms));
 
-                // Include raw_provider_response for transparency.
-                // This allows clients to access retrieval/citation data,
-                // guardrails info, and any other provider metadata.
-                // Check post-[DONE] buffer first (data sent after SSE stream ends)
+                // Include raw_provider_response for transparency. This allows clients to access retrieval/citation data,
+                // guardrails info, and any other provider metadata. Check post-[DONE] buffer first (data sent after SSE stream ends)
                 log_this(SR_CHAT, "Multi-stream: post_done_buffer state: %s, len=%zu",
                          LOG_LEVEL_DEBUG, 2,
                          curl_ctx->post_done_buffer ? "exists" : "null",
@@ -561,9 +563,9 @@ void chat_proxy_multi_handle_completed_transfer(MultiStreamManager* manager,
                 free(done_json);
             }
 
-            // Remove CURL handle but DON'T free the stream context yet
-            // The chat_done message is in the queue and needs to be sent first
+            chat_proxy_multi_lock(manager);
             curl_multi_remove_handle(manager->multi_handle, easy);
+            chat_proxy_multi_unlock(manager);
             curl_easy_cleanup(easy);
             stream_ctx->easy_handle = NULL;
 
@@ -766,8 +768,9 @@ MultiStreamContext* chat_proxy_multi_stream_start(
     curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_DEBUGFUNCTION, multi_stream_debug_callback);
     curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_VERBOSE, 1L);
     
-    // Add to multi handle
+    chat_proxy_multi_lock(manager);
     CURLMcode mc = curl_multi_add_handle(manager->multi_handle, stream_ctx->easy_handle);
+    chat_proxy_multi_unlock(manager);
     if (mc != CURLM_OK) {
         log_this(SR_CHAT, "Failed to add handle to multi: %s", LOG_LEVEL_ERROR, 1, curl_multi_strerror(mc));
         free(curl_ctx->line_buffer);
@@ -859,7 +862,9 @@ bool chat_proxy_multi_restart_easy(MultiStreamManager* manager,
     curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_SSL_VERIFYHOST, 2L);
     curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_NOSIGNAL, 1L);
     curl_easy_setopt(stream_ctx->easy_handle, CURLOPT_USERAGENT, "Hydrogen-Chat-Proxy-Multi/1.0");
+    chat_proxy_multi_lock(manager);
     mc = curl_multi_add_handle(manager->multi_handle, stream_ctx->easy_handle);
+    chat_proxy_multi_unlock(manager);
     if (mc != CURLM_OK) {
         free(curl_ctx->line_buffer);
         free(curl_ctx);
@@ -891,7 +896,9 @@ void chat_proxy_multi_stream_stop(MultiStreamManager* manager, MultiStreamContex
         void* priv_data = NULL;
         curl_easy_getinfo(context->easy_handle, CURLINFO_PRIVATE, &priv_data);
 
+        chat_proxy_multi_lock(manager);
         curl_multi_remove_handle(manager->multi_handle, context->easy_handle);
+        chat_proxy_multi_unlock(manager);
         curl_easy_cleanup(context->easy_handle);
         context->easy_handle = NULL;
 

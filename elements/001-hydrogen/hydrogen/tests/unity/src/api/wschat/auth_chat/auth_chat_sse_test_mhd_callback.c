@@ -25,6 +25,8 @@ void test_mhd_callback_end_of_stream(void);
 void test_mhd_callback_eagain(void);
 void test_mhd_callback_read_error(void);
 void test_mhd_callback_done_then_data(void);
+void test_mhd_callback_eagain_does_not_eof_when_done(void);
+void test_mhd_callback_eof_does_not_free_ctx(void);
 
 void setUp(void) {
     mock_system_reset_all();
@@ -75,6 +77,7 @@ void test_mhd_callback_end_of_stream(void) {
 
     TEST_ASSERT_EQUAL(MHD_CONTENT_READER_END_OF_STREAM,
                       rest_sse_mhd_callback(ctx, 0, buf, sizeof(buf)));
+    free(ctx);
 }
 
 void test_mhd_callback_eagain(void) {
@@ -99,6 +102,7 @@ void test_mhd_callback_read_error(void) {
 
     TEST_ASSERT_EQUAL(MHD_CONTENT_READER_END_WITH_ERROR,
                       rest_sse_mhd_callback(ctx, 0, buf, sizeof(buf)));
+    free(ctx);
 }
 
 void test_mhd_callback_done_then_data(void) {
@@ -117,6 +121,33 @@ void test_mhd_callback_done_then_data(void) {
     TEST_ASSERT_EQUAL_INT(3, (int)n);
 }
 
+void test_mhd_callback_eagain_does_not_eof_when_done(void) {
+    RestSseContext ctx;
+    char buf[16];
+
+    memset(&ctx, 0, sizeof(ctx));
+    ctx.pipe_read = 3;
+    ctx.pipe_write = -1;
+    ctx.callback_done = true;
+    mock_system_set_read_eagain(1);
+
+    TEST_ASSERT_EQUAL_INT(0, (int)rest_sse_mhd_callback(&ctx, 0, buf, sizeof(buf)));
+}
+
+void test_mhd_callback_eof_does_not_free_ctx(void) {
+    RestSseContext *ctx = calloc(1, sizeof(RestSseContext));
+    char buf[16];
+    TEST_ASSERT_NOT_NULL(ctx);
+    ctx->pipe_read = 3;
+    ctx->pipe_write = -1;
+    mock_system_set_read_result(0);
+
+    TEST_ASSERT_EQUAL(MHD_CONTENT_READER_END_OF_STREAM,
+                      rest_sse_mhd_callback(ctx, 0, buf, sizeof(buf)));
+    TEST_ASSERT_EQUAL_INT(3, ctx->pipe_read);
+    free(ctx);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_mhd_callback_null_ctx);
@@ -126,5 +157,7 @@ int main(void) {
     RUN_TEST(test_mhd_callback_eagain);
     RUN_TEST(test_mhd_callback_read_error);
     RUN_TEST(test_mhd_callback_done_then_data);
+    RUN_TEST(test_mhd_callback_eagain_does_not_eof_when_done);
+    RUN_TEST(test_mhd_callback_eof_does_not_free_ctx);
     return UNITY_END();
 }
