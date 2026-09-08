@@ -4,9 +4,10 @@
  * src/api/wschat/auth_chat/auth_chat_sse.c
  *
  * CHANGELOG:
+ * 2026-09-08: Success path lets rest_sse_cleanup own join/stop (no double join)
  * 2026-09-05: Initial coverage for REST SSE start/error/success paths
  *
- * TEST_VERSION: 1.0.0
+ * TEST_VERSION: 1.0.1
  */
 
 #include <src/hydrogen.h>
@@ -21,8 +22,6 @@
 #include <src/api/wschat/helpers/proxy.h>
 #include <src/api/wschat/helpers/proxy_multi.h>
 #include <src/api/wschat/helpers/engine_cache.h>
-
-#include <unistd.h>
 
 void test_stream_sse_null_args(void);
 void test_stream_sse_manager_unavailable(void);
@@ -124,6 +123,7 @@ void test_stream_sse_success(void) {
     struct MHD_Connection *conn = (struct MHD_Connection *)0x123;
     MultiStreamManager *mgr = chat_proxy_get_multi_manager();
     RestSseContext *ctx;
+    MultiStreamContext *stream;
     TEST_ASSERT_NOT_NULL(engine);
 
     pthread_mutex_init(&mgr->streams_mutex, NULL);
@@ -141,14 +141,23 @@ void test_stream_sse_success(void) {
     ctx = (RestSseContext *)mock_mhd_get_callback_cls();
     TEST_ASSERT_NOT_NULL(ctx);
     TEST_ASSERT_NOT_NULL(ctx->stream_ctx);
-    ctx->stream_ctx->stream_completed = true;
-    while (!ctx->callback_done) {
-        usleep(1000);
-    }
-    pthread_join(ctx->callback_thread, NULL);
-    ctx->callback_thread = 0;
-    chat_proxy_multi_stream_stop(mgr, ctx->stream_ctx);
+    TEST_ASSERT_TRUE(ctx->callback_thread_started);
+    stream = ctx->stream_ctx;
+
     rest_sse_cleanup(ctx);
+
+    TEST_ASSERT_TRUE(stream->stream_completed);
+    TEST_ASSERT_NULL(stream->easy_handle);
+    chunk_queue_destroy(&stream->chunk_queue);
+    free(stream->engine_name);
+    free(stream->request_body);
+    free(stream->request_id);
+    free(stream->finish_reason);
+    free(stream->local_mcp_cid);
+    if (stream->tool_call_acc) {
+        json_decref(stream->tool_call_acc);
+    }
+    free(stream);
 
     curl_multi_cleanup(mgr->multi_handle);
     pthread_mutex_destroy(&mgr->streams_mutex);

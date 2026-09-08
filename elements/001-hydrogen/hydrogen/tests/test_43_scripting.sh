@@ -43,6 +43,7 @@
 # start_mock_llm / stop_mock_llm
 
 # CHANGELOG
+# 2.7.3 - 2026-09-08 - Pair every TEST with PASS/FAIL (config files + prune skip).
 # 2.7.2 - 2026-08-27 - Startup/shutdown waits aligned with group40 (90s/30s).
 # 2.7.1 - 2026-08-24 - Added RSS growth monitoring and prune_terminal wiring
 #                      assertion to catch unbounded scoreboard growth (the
@@ -72,7 +73,7 @@ TEST_NAME="Scripting  {BLUE}engines: 7{RESET}"
 TEST_ABBR="SCR"
 TEST_NUMBER="43"
 TEST_COUNTER=0
-TEST_VERSION="2.7.2"
+TEST_VERSION="2.7.3"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -193,22 +194,21 @@ else
     EXIT_CODE=1
 fi
 
-# Validate all configuration files
+# Validate all configuration files (one TEST; per-file lines are INFO)
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration Files"
 config_valid=true
 for test_config in "${!SCRIPTING_TEST_CONFIGS[@]}"; do
     IFS=':' read -r config_file log_suffix _ description <<< "${SCRIPTING_TEST_CONFIGS[${test_config}]}"
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File: ${test_config}"
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if validate_config_file "${config_file}"; then
         port=$(get_webserver_port "${config_file}")
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description} will use port: ${port}"
     else
+        print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: invalid configuration file ${config_file}"
         config_valid=false
         EXIT_CODE=1
     fi
 done
-
-print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration Files"
 if [[ "${config_valid}" = true ]]; then
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All ${#SCRIPTING_TEST_CONFIGS[@]} configuration files validated successfully"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
@@ -326,7 +326,8 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: prune_terminal log line observed"
                 PASS_COUNT=$(( PASS_COUNT + 1 ))
             else
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: prune_terminal not exercised (DB fixture predates migration 1364) — RSS growth check is authoritative"
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${description}: prune_terminal not exercised (DB fixture predates migration 1364) — RSS growth check is authoritative"
+                PASS_COUNT=$(( PASS_COUNT + 1 ))
             fi
 
             # Assert RSS growth during the observation window is bounded.
