@@ -17,6 +17,7 @@
 #include <src/utils/utils_crypto.h>
 #include <src/logging/logging.h>
 #include <src/database/database.h>
+#include <src/database/database_cache.h>
 #include <src/database/dbqueue/dbqueue.h>
 
 #include "storage.h"
@@ -28,10 +29,6 @@
 static const char* SR_CHAT_STORAGE = "CHAT_STORAGE";
 
 extern DatabaseQueueManager* global_queue_manager;
-
-/* Query execution helper - accessible from chat_storage_media.c */
-bool chat_storage_execute_query(DatabaseQueue* db_queue, int query_ref,
-                                const char* params_json, char** result_json);
 
 /* LRU Cache storage for databases */
 #define MAX_CACHED_DATABASES 32
@@ -95,11 +92,25 @@ bool chat_storage_execute_query(DatabaseQueue* db_queue, int query_ref,
         return false;
     }
 
+    QueryCacheEntry* cache_entry = query_cache_lookup(db_queue->query_cache, query_ref, SR_CHAT_STORAGE);
+    if (!cache_entry || !cache_entry->sql_template || cache_entry->sql_template[0] == '\0') {
+        log_this(SR_CHAT_STORAGE, "QueryRef #%d not found in cache", LOG_LEVEL_ERROR, 1, query_ref);
+        return false;
+    }
+
     QueryRequest request = {0};
-    request.query_id = NULL;
-    request.sql_template = NULL;
+    request.sql_template = strdup(cache_entry->sql_template);
+    if (!request.sql_template) {
+        log_this(SR_CHAT_STORAGE, "Failed to duplicate QueryRef #%d SQL template", LOG_LEVEL_ERROR, 1, query_ref);
+        return false;
+    }
     request.parameters_json = params_json ? strdup(params_json) : strdup("{}");
-    request.timeout_seconds = 30;
+    if (!request.parameters_json) {
+        log_this(SR_CHAT_STORAGE, "Failed to duplicate QueryRef #%d parameters", LOG_LEVEL_ERROR, 1, query_ref);
+        free(request.sql_template);
+        return false;
+    }
+    request.timeout_seconds = cache_entry->timeout_seconds > 0 ? cache_entry->timeout_seconds : 30;
     request.isolation_level = DB_ISOLATION_READ_COMMITTED;
     request.use_prepared_statement = false;
 
@@ -111,6 +122,7 @@ bool chat_storage_execute_query(DatabaseQueue* db_queue, int query_ref,
                  result && result->error_message ? result->error_message : "Unknown error");
         if (result) database_engine_cleanup_result(result);
         free(request.parameters_json);
+        free(request.sql_template);
         return false;
     }
 
@@ -120,6 +132,7 @@ bool chat_storage_execute_query(DatabaseQueue* db_queue, int query_ref,
 
     database_engine_cleanup_result(result);
     free(request.parameters_json);
+    free(request.sql_template);
     return true;
 }
 

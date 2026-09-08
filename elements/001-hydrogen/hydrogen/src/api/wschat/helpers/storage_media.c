@@ -17,6 +17,7 @@
 #include <src/utils/utils_crypto.h>
 #include <src/logging/logging.h>
 
+#include "storage.h"
 #include "storage_media.h"
 #include "storage_hex.h"
 #include "storage_compress.h"
@@ -24,10 +25,6 @@
 static const char* SR_CHAT_STORAGE_MEDIA = "CHAT_STORAGE";
 
 extern DatabaseQueueManager* global_queue_manager;
-
-/* Query execution helper - declared as extern since it's in chat_storage.c */
-extern bool chat_storage_execute_query(DatabaseQueue* db_queue, int query_ref,
-                                        const char* params_json, char** result_json);
 
 bool chat_storage_store_media(const char* database, const char* media_hash,
                               const unsigned char* media_data, size_t media_size,
@@ -50,26 +47,37 @@ bool chat_storage_store_media(const char* database, const char* media_hash,
         return false;
     }
 
-    char params_json[4096];
-    snprintf(params_json, sizeof(params_json),
-        "{"
-        "\"MEDIA_HASH\": \"%s\","
-        "\"MEDIA_DATA\": \"%s\","
-        "\"MEDIA_SIZE\": %zu,"
-        "\"MIME_TYPE\": \"%s\""
-        "}",
-        media_hash,
-        media_data_hex,
-        media_size,
-        mime_type ? mime_type : ""
-    );
-
+    json_t* root = json_object();
+    json_t* strings = json_object();
+    json_t* integers = json_object();
+    if (!root || !strings || !integers) {
+        json_decref(root);
+        json_decref(strings);
+        json_decref(integers);
+        free(media_data_hex);
+        log_this(SR_CHAT_STORAGE_MEDIA, "Failed to allocate typed params for media hash: %s", LOG_LEVEL_ERROR, 1, media_hash);
+        return false;
+    }
+    json_object_set_new(strings, "MEDIAHASH", json_string(media_hash));
+    json_object_set_new(strings, "MEDIADATA", json_string(media_data_hex));
+    json_object_set_new(strings, "MIMETYPE", json_string(mime_type ? mime_type : ""));
+    json_object_set_new(integers, "MEDIASIZE", json_integer((json_int_t)media_size));
+    json_object_set_new(root, "STRING", strings);
+    json_object_set_new(root, "INTEGER", integers);
     free(media_data_hex);
+
+    char* params_json = json_dumps(root, JSON_COMPACT);
+    json_decref(root);
+    if (!params_json) {
+        log_this(SR_CHAT_STORAGE_MEDIA, "Failed to serialize typed params for media hash: %s", LOG_LEVEL_ERROR, 1, media_hash);
+        return false;
+    }
 
     log_this(SR_CHAT_STORAGE_MEDIA, "Storing media hash: %s (size: %zu)", LOG_LEVEL_DEBUG, 2, media_hash, media_size);
 
     char* result_json = NULL;
     bool query_success = chat_storage_execute_query(db_queue, 71, params_json, &result_json);
+    free(params_json);
 
     if (result_json) {
         free(result_json);
@@ -96,14 +104,27 @@ bool chat_storage_retrieve_media(const char* database, const char* media_hash,
         return false;
     }
 
-    char params_json[1024];
-    snprintf(params_json, sizeof(params_json),
-        "{\"MEDIA_HASH\": \"%s\"}",
-        media_hash
-    );
+    json_t* params_root = json_object();
+    json_t* strings = json_object();
+    if (!params_root || !strings) {
+        json_decref(params_root);
+        json_decref(strings);
+        log_this(SR_CHAT_STORAGE_MEDIA, "Failed to allocate typed params for media hash: %s", LOG_LEVEL_ERROR, 1, media_hash);
+        return false;
+    }
+    json_object_set_new(strings, "MEDIAHASH", json_string(media_hash));
+    json_object_set_new(params_root, "STRING", strings);
+
+    char* params_json = json_dumps(params_root, JSON_COMPACT);
+    json_decref(params_root);
+    if (!params_json) {
+        log_this(SR_CHAT_STORAGE_MEDIA, "Failed to serialize typed params for media hash: %s", LOG_LEVEL_ERROR, 1, media_hash);
+        return false;
+    }
 
     char* result_json = NULL;
     bool query_success = chat_storage_execute_query(db_queue, 72, params_json, &result_json);
+    free(params_json);
 
     if (!query_success || !result_json) {
         log_this(SR_CHAT_STORAGE_MEDIA, "Failed to execute QueryRef #072 for media hash: %s", LOG_LEVEL_ERROR, 1, media_hash);

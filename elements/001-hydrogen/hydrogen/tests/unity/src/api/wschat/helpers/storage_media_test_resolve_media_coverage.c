@@ -14,10 +14,12 @@
 #include <unity/mocks/mock_dbqueue.h>
 #include <unity/mocks/mock_database_engine.h>
 
+#include <src/database/database_cache.h>
 #include <src/api/wschat/helpers/storage_media.h>
 
 static DatabaseQueue* g_dbq = NULL;
 static DatabaseHandle* g_handle = NULL;
+static QueryCacheEntry* g_entry = NULL;
 
 static const char* SAMPLE_HEX = "89504e47";
 static const char* SAMPLE_MIME = "image/png";
@@ -33,6 +35,10 @@ void setUp(void) {
     g_dbq->persistent_connection = g_handle;
     mock_dbqueue_set_get_database_result(g_dbq);
 
+    g_entry = query_cache_entry_create(72, 1, "SELECT 1", "test", "slow", 30, NULL);
+    TEST_ASSERT_NOT_NULL(g_entry);
+    mock_dbqueue_set_query_cache_lookup_result(g_entry);
+
     /* Default: retrieve_media finds the media asset */
     char buf[1024];
     snprintf(buf, sizeof(buf),
@@ -43,6 +49,8 @@ void setUp(void) {
 }
 
 void tearDown(void) {
+    query_cache_entry_destroy(g_entry);
+    g_entry = NULL;
     free(g_dbq);
     free(g_handle);
     g_dbq = NULL;

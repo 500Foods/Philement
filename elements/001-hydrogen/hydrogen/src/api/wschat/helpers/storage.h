@@ -145,9 +145,13 @@ bool chat_storage_cache_get_stats(const char* database,
                                   uint64_t* hits, uint64_t* misses, double* hit_ratio);
 
 /* ----------------------------------------------------------------------------
- * The following helper is NOT part of the stable public API. It is exposed
- * (non-static) solely so the Unity test framework can call it directly.
+ * The following helpers are NOT part of the stable public API. They are
+ * exposed (non-static) solely so the Unity test framework can call them
+ * directly.
  * -------------------------------------------------------------------------- */
 ChatLRUCache* chat_storage_get_or_create_cache(const char* database);
+struct DatabaseQueue;
+bool chat_storage_execute_query(struct DatabaseQueue* db_queue, int query_ref,
+                                const char* params_json, char** result_json);
 
 #endif // STORAGE_H
