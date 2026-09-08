@@ -41,6 +41,13 @@ Interactive Lua TUI front-end to SchemaTool. Phases 0–4 shipped (review,
 skip, accept, packets). Phase 5 first slice: one-field apply. Operator guide:
 [`/docs/H/tools/SCHEMAHELPER.md`](/docs/H/tools/SCHEMAHELPER.md).
 
+### [NOTIFICATIONS / SUBSCRIBERS PLAN](/docs/H/plans/NOTIFICATIONS_PLAN.md)
+
+Web Push backend (RFC 8030/8291/8292): Subscribers API + dispatch queue.
+Letter **V** (U is Chat), launch 22. Exhaustive plan (Phases 0–15) with
+completeness and coverage fences. Phase 0 not approved. Lithium UI deferred.
+Does not reuse `Notify` SMTP scaffold or `H.notify`.
+
 ### [MIRAGE PLAN](/docs/H/plans/MIRAGE_PLAN.md)
 
 Distributed proxy architecture sketch. Implementation deferred.

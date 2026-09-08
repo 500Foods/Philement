@@ -168,6 +168,7 @@ typedef struct RestSseContext {
     int pipe_read;
     int pipe_write;
     pthread_t callback_thread;
+    bool callback_thread_started;
     volatile bool callback_done;
     volatile bool cleanup_done;
     volatile bool connection_valid;

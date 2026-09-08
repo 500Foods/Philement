@@ -10,6 +10,7 @@
 # run_disabled()
 
 # CHANGELOG
+# 1.1.12 - 2026-09-08 - Overlap Echo must reject JSON-RPC errors
 # 1.1.11 - 2026-09-04 - Unique JSON-RPC id + extra retries for System.Info;
 #                      pair every TEST with PASS/FAIL (per-config validation)
 # 1.1.9 - 2026-08-29 - echo_ok via mcp_expect_jq (3 tries) like echostrict/resources/prompts;
@@ -34,7 +35,7 @@ TEST_NAME="MCP Server"
 TEST_ABBR="MCP"
 TEST_NUMBER="47"
 TEST_COUNTER=0
-TEST_VERSION="1.1.11"
+TEST_VERSION="1.1.12"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -512,8 +513,8 @@ run_engine() {
         st_a=$(tail -1 "${result_file}.st_a" 2>/dev/null || echo 000)
         st_b=$(tail -1 "${result_file}.st_b" 2>/dev/null || echo 000)
         if [[ "${st_a}" == "200" && "${st_b}" == "200" ]] \
-            && jq -e '.result.isError != true' "${echo_a}" >/dev/null 2>&1 \
-            && jq -e '.result.isError != true' "${echo_b}" >/dev/null 2>&1; then
+            && jq -e '.error == null and .result != null and .result.isError != true' "${echo_a}" >/dev/null 2>&1 \
+            && jq -e '.error == null and .result != null and .result.isError != true' "${echo_b}" >/dev/null 2>&1; then
             overlap_ok=1
             break
         fi

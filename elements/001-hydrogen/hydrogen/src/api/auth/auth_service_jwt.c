@@ -258,18 +258,36 @@ jwt_validation_result_t validate_jwt(const char* token, const char* database) {
         return result;
     }
 
-    // Split token into parts
     char* token_copy = strdup(token);
+    char* header_b64;
+    char* payload_b64;
+    char* signature_b64;
+    char* dot1;
+    char* dot2;
+
     if (!token_copy) {
         result.error = JWT_ERROR_INVALID_FORMAT;
         return result;
     }
 
-    char* header_b64 = strtok(token_copy, ".");
-    char* payload_b64 = strtok(NULL, ".");
-    const char* signature_b64 = strtok(NULL, ".");
-
-    if (!header_b64 || !payload_b64 || !signature_b64) {
+    header_b64 = token_copy;
+    dot1 = strchr(token_copy, '.');
+    if (!dot1) {
+        free(token_copy);
+        result.error = JWT_ERROR_INVALID_FORMAT;
+        return result;
+    }
+    *dot1 = '\0';
+    payload_b64 = dot1 + 1;
+    dot2 = strchr(payload_b64, '.');
+    if (!dot2) {
+        free(token_copy);
+        result.error = JWT_ERROR_INVALID_FORMAT;
+        return result;
+    }
+    *dot2 = '\0';
+    signature_b64 = dot2 + 1;
+    if (header_b64[0] == '\0' || payload_b64[0] == '\0' || signature_b64[0] == '\0') {
         free(token_copy);
         result.error = JWT_ERROR_INVALID_FORMAT;
         return result;

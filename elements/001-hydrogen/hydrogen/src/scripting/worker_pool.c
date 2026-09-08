@@ -403,8 +403,8 @@ void scripting_worker_process_one(ScriptingWorkerPool* pool,
         return;
     }
 
-    const char* source = script_registry_lookup(pool->registry,
-                                                entry->script_name);
+    char* source = script_registry_lookup_copy(pool->registry,
+                                               entry->script_name);
     if (!source) {
         log_this(SR_SCRIPTING, "Worker [%s]: script not registered: %s",
                  LOG_LEVEL_ERROR, 2, job_id, entry->script_name);
@@ -418,6 +418,7 @@ void scripting_worker_process_one(ScriptingWorkerPool* pool,
     if (!L) {
         log_this(SR_SCRIPTING, "Worker [%s]: failed to create Lua state",
                  LOG_LEVEL_ERROR, 1, job_id);
+        free(source);
         scoreboard_update_status(scripting_scoreboard, job_id,
                                  SCOREBOARD_JOB_FAILED);
         scoreboard_entry_free(entry);
@@ -460,6 +461,7 @@ void scripting_worker_process_one(ScriptingWorkerPool* pool,
     H_lua_inject_job_params(L, entry->params_json);
 
     int rc = H_lua_run_string(L, source, chunk_name);
+    free(source);
 
     // Always tear down the hook and clear the context, even on error.
     // The hook was installed on a fresh per-job state, so uninstall

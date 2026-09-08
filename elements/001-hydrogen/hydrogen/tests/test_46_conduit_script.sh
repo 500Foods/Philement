@@ -14,6 +14,7 @@
 # analyze_engine()
 
 # CHANGELOG
+# 1.3.9 - 2026-09-08 - Do not skip-pass Echo 404; SQLite online backup
 # 1.3.8 - 2026-08-29 - Added /api/system/jobs blackbox tests: authenticated GET (200 + array), unauthenticated GET (401), POST (405), raised pass threshold to 18
 # 1.3.7 - 2026-08-28 - async_get flake fix: a 202-accepted job's scoreboard
 #                      registration can race the first GET's job_not_found
@@ -78,7 +79,7 @@ TEST_NAME="Conduit Script"
 TEST_ABBR="CSC"
 TEST_NUMBER="46"
 TEST_COUNTER=0
-TEST_VERSION="1.3.8"
+TEST_VERSION="1.3.9"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -268,12 +269,9 @@ prepare_sqlite_config() {
     local out_config="${work_dir}/config.json"
     local db_copy="${work_dir}/hydrodemo.sqlite"
     mkdir -p "${work_dir}"
-    cp -f "${BASELINE_SQLITE}" "${db_copy}"
-    if [[ -f "${BASELINE_SQLITE}-wal" ]]; then
-        cp -f "${BASELINE_SQLITE}-wal" "${db_copy}-wal" 2>/dev/null || true
-    fi
-    if [[ -f "${BASELINE_SQLITE}-shm" ]]; then
-        cp -f "${BASELINE_SQLITE}-shm" "${db_copy}-shm" 2>/dev/null || true
+    # shellcheck disable=SC2310 # backup failure is fatal for the SQLite engine run
+    if ! sqlite_online_backup "${BASELINE_SQLITE}" "${db_copy}"; then
+        return 1
     fi
     # shellcheck disable=SC2310 # Seed failure is fatal for the SQLite engine run
     if ! seed_sqlite_lua_client_fixture "${db_copy}"; then
@@ -484,10 +482,6 @@ run_engine() {
     else
         record_case "${result_file}" "echo_wait" 0
         echo "ECHO_HTTP=${http_st}" >> "${result_file}"
-        # Shared live DBs may not have migrations 1296–1298 yet.
-        if [[ "${http_st}" == "404" && "${engine_key}" != "sqlite" ]]; then
-            echo "ENGINE_SKIP=fixture_migrations" >> "${result_file}"
-        fi
     fi
 
     # --- wait:false → 202 + GET status ---
@@ -793,13 +787,6 @@ analyze_engine() {
         lh=$("${GREP}" "^LOGIN_HTTP=" "${result_file}" 2>/dev/null | head -1 | cut -d= -f2 || true)
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: login failed (HTTP ${lh:-?})"
         EXIT_CODE=1
-        return
-    fi
-
-    if "${GREP}" -q "^ENGINE_SKIP=" "${result_file}" 2>/dev/null; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 \
-            "${description}: skipped (Api.Echo / QueryRef 149 not migrated on live DB)"
-        PASS_COUNT=$(( PASS_COUNT + 1 ))
         return
     fi
 

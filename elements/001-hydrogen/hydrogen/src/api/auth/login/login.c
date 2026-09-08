@@ -422,9 +422,17 @@ enum MHD_Result handle_auth_login_request(
     const int JWT_LIFETIME = 3600;
     time_t expires_at = issued_at + JWT_LIFETIME;
     
-    // Store JWT hash in database
-    store_jwt(account->id, jwt_hash, expires_at, sys_info.system_id, sys_info.app_id, database, client_ip);
-    free(jwt_hash); // Clean up hash after storage
+    if (!store_jwt(account->id, jwt_hash, expires_at, sys_info.system_id, sys_info.app_id, database, client_ip)) {
+        int store_account_id = account->id;
+        free(jwt_hash);
+        free(jwt_token);
+        free_account_info(account);
+        free(client_ip);
+        json_decref(request);
+        auth_query_end_deadline();
+        return login_send_jwt_hash_error(connection, store_account_id);
+    }
+    free(jwt_hash);
     
     log_this(SR_AUTH, "JWT token stored for account_id=%d, expires_at=%ld", LOG_LEVEL_DEBUG, 2,
              account->id, expires_at);

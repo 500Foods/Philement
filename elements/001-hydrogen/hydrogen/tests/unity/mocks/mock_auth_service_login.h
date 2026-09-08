@@ -70,7 +70,7 @@ char* mock_auth_roles_from_database(int account_id, const char* database);
 char* mock_generate_jwt(account_info_t* account, system_info_t* system,
                         const char* client_ip, const char* tz, const char* database, time_t issued_at);
 char* mock_compute_token_hash(const char* token);
-void mock_store_jwt(int account_id, const char* jwt_hash, time_t expires_at,
+bool mock_store_jwt(int account_id, const char* jwt_hash, time_t expires_at,
                     int system_id, int app_id, const char* database, const char* client_ip);
 void mock_free_account_info(account_info_t* account);
 

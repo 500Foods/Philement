@@ -145,6 +145,17 @@ not open work unless listed below.
 | **Why next** | Core send/API/Lua/OTP stack works (`test_57`/`test_58`). Remaining is product surface and ops polish. |
 | **Note** | Parallel session may complete subsets — re-check plan/tests before starting. |
 
+### 26. Notifications / Subscribers — Web Push backend
+
+| | |
+| --- | --- |
+| **Plan** | [`NOTIFICATIONS_PLAN.md`](/docs/H/plans/NOTIFICATIONS_PLAN.md) |
+| **Effort** | L–XL |
+| **Done** | 0% — exhaustive plan; Phase 0 locks not approved |
+| **Remaining** | Phase 0 lock approval (letter **V**, launch 22, SSRF v1, coverage/completeness fences), then Phases 1–10/12/13/15. Lithium subscribe UI deferred (Phase 11). |
+| **Why later** | Lithium SW already displays pushes; Hydrogen has no subscribe/dispatch path. Mail Relay is the outbound analog. Do not reuse `Notify` SMTP scaffold or `H.notify`. |
+| **Note** | Web Push RFC 8030/8291/8292 to vendor endpoints (`fcm.googleapis.com`, `updates.push.mozilla.org`, `web.push.apple.com`). No proprietary FCM/APNs SDKs. No live vendor calls in CI. |
+
 ### 25. SchemaHelper — interactive SchemaTool front-end
 
 | | |
@@ -294,6 +305,7 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 12e | MAX+1 PK clients: confirm + retry | M | single-thread OK | P1 |
 | 13 | Mail Relay remainder | L–XL | ~75% | P2 |
 | 25 | SchemaHelper TUI | L | v1 | P2 |
+| 26 | Notifications / Subscribers | L–XL | 0% plan | P2 |
 | 24 | `H.externaldb` — ad-hoc external DB from Lua | M | 0% | P2 |
 | 19 | Print job → device / Beryllium | L–XL | ~30% | P3 |
 | 22 | Mirage | XL | 0% | P3 |

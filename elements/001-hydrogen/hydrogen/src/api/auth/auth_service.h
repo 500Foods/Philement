@@ -168,7 +168,7 @@ bool verify_password_and_status(const char* password, int account_id, const char
 // JWT functions
 char* generate_jwt(account_info_t* account, system_info_t* system,
                   const char* client_ip, const char* tz, const char* database, time_t issued_at);
-void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int system_id, int app_id, const char* database, const char* client_ip);
+bool store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int system_id, int app_id, const char* database, const char* client_ip);
 jwt_validation_result_t validate_jwt(const char* token, const char* database);
 char* generate_new_jwt(jwt_claims_t* old_claims);
 void update_jwt_storage(int account_id, const char* old_jwt_hash,

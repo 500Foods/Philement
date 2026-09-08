@@ -15,8 +15,10 @@
 # handle_timing_file()
 # test_file_download()
 # collect_timing_data()
+# sqlite_online_backup()
 
 # CHANGELOG
+# 2.1.0 - 2026-09-08 - sqlite_online_backup via SQLite backup API
 # 2.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 1.3.0 - 2025-09-19 - Added timing and file download functions from test_22_swagger.sh
 #                    - Added handle_timing_file(), test_file_download(), collect_timing_data()
@@ -48,7 +50,7 @@ export FILE_UTILS_GUARD="true"
 
 # Library metadata
 FILE_UTILS_NAME="File Utilities Library"
-FILE_UTILS_VERSION="2.0.0"
+FILE_UTILS_VERSION="2.1.0"
 # shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${FILE_UTILS_NAME} ${FILE_UTILS_VERSION}" "info"
 
@@ -258,4 +260,16 @@ collect_timing_data() {
     # Use eval to set the variables in the caller's scope
     eval "${total_time_var}=\"${total}\""
     eval "${count_var}=\"${count}\""
+}
+
+sqlite_online_backup() {
+    local src="$1"
+    local dest="$2"
+    if [[ ! -f "${src}" ]]; then
+        return 1
+    fi
+    if ! command -v sqlite3 >/dev/null 2>&1; then
+        return 1
+    fi
+    sqlite3 "${src}" ".backup '${dest}'"
 }

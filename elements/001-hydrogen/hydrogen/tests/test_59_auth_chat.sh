@@ -44,6 +44,7 @@
 #                       an optional third arg (sub); subtests exhaust sub-1's
 #                       bucket, verify sub-2 isolation, verify sub-1 recovers
 #                       after the window elapses.
+# 1.8.3 - 2026-09-08 - Isolated SSE subject; empty SSE is a failure; media body checks
 # 1.8.2 - 2026-09-03 - Fix use-after-free in rate-limit log_this: save sub
 #                     before free_jwt_validation_result in auth_chat.c and
 #                     auth_chats.c. Mint separate subs (2/3/4) for non-rate-limit
@@ -58,7 +59,7 @@ TEST_NAME="Auth Chat"
 TEST_ABBR="ACH"
 TEST_NUMBER="59"
 TEST_COUNTER=0
-TEST_VERSION="1.8.2"
+TEST_VERSION="1.8.3"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -172,12 +173,10 @@ prepare_sqlite_with_mock_endpoint() {
         return 1
     fi
 
-    cp "${BASELINE_SQLITE}" "${dest}"
-    if [[ -f "${BASELINE_SQLITE}-wal" ]]; then
-        cp "${BASELINE_SQLITE}-wal" "${dest}-wal" 2>/dev/null || true
-    fi
-    if [[ -f "${BASELINE_SQLITE}-shm" ]]; then
-        cp "${BASELINE_SQLITE}-shm" "${dest}-shm" 2>/dev/null || true
+    # shellcheck disable=SC2310 # backup failure is fatal for the SQLite engine run
+    if ! sqlite_online_backup "${BASELINE_SQLITE}" "${dest}"; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "sqlite backup failed"
+        return 1
     fi
 
     # Rewrite every engine collection endpoint to the local mock LLM.
@@ -455,6 +454,17 @@ if [[ -n "${CHAT_JWT_TOKEN3}" ]]; then
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Tertiary chat JWT minted (sub 5)"
 fi
 
+CHAT_JWT_SSE=$(mint_chat_jwt "Acuranzo" "chat" "6")
+if [[ -n "${CHAT_JWT_SSE}" ]]; then
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "SSE chat JWT minted (sub 6)"
+fi
+CHAT_JWT_OK=$(mint_chat_jwt "Acuranzo" "chat" "7")
+if [[ -n "${CHAT_JWT_OK}" ]]; then
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Success-path chat JWT minted (sub 7)"
+fi
+CHAT_JWT_SSE="${CHAT_JWT_SSE:-${CHAT_JWT_TOKEN}}"
+CHAT_JWT_OK="${CHAT_JWT_OK:-${CHAT_JWT_TOKEN}}"
+
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen"
 # Point chat LRU disk cache at a disposable dir under the test diagnostics tree.
 # Default path is cwd-relative "cache" (see lru_cache.h LRU_CACHE_DIR_NAME), which
@@ -556,24 +566,14 @@ if [[ "${code}" -eq 403 ]]; then record 0 "403 with non-chat JWT"; else record 1
 
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat stream -> 200 SSE"
 out="${RESP_DIR}/stream.json"
-# SSE stream under parallel suite load can arrive empty on the first attempt
-# (mock LLM or proxy not yet ready to flush the first chunk). Retry up to 3
-# times, matching the mcp_expect_jq pattern from Test 47.
-stream_ok=0
-for stream_try in 1 2 3; do
-    code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" \
-        '{"messages":[{"role":"user","content":"hi"}],"stream":true}' "${out}" "${CHAT_JWT_TOKEN}")
-    body_snip=$(head -c 200 "${out}" 2>/dev/null || true)
-    if [[ "${code}" == "200" ]] && echo "${body_snip}" | "${GREP}" -q "data:"; then
-        record 0 "200 SSE stream started (try ${stream_try})"
-        stream_ok=1
-        break
-    fi
+code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" \
+    '{"messages":[{"role":"user","content":"hi"}],"stream":true}' "${out}" "${CHAT_JWT_SSE}")
+body_snip=$(head -c 200 "${out}" 2>/dev/null || true)
+if [[ "${code}" == "200" ]] && echo "${body_snip}" | "${GREP}" -q "data:"; then
+    record 0 "200 SSE stream started"
+else
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
-        "INFO delay SSE stream HTTP ${code} body=${body_snip} try ${stream_try}/3"
-    if [[ "${stream_try}" -lt 3 ]]; then sleep 1; fi
-done
-if [[ "${stream_ok}" -ne 1 ]]; then
+        "SSE stream HTTP ${code} body=${body_snip}"
     record 1 "expected 200 SSE got ${code} body=${body_snip}"
 fi
 
@@ -581,7 +581,7 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "auth_chat success via mock LLM
 out="${RESP_DIR}/success.json"
 code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" \
     '{"messages":[{"role":"user","content":"hello blackbox"}],"temperature":0.2,"max_tokens":64}' \
-    "${out}" "${CHAT_JWT_TOKEN}")
+    "${out}" "${CHAT_JWT_OK}")
 success=$(jq -r '.success // false' "${out}" 2>/dev/null || echo false)
 content=$(jq -r '.content // empty' "${out}" 2>/dev/null || true)
 if [[ "${code}" == "200" && "${success}" == "true" && -n "${content}" ]]; then
@@ -687,8 +687,8 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WS chat media upload -> store_
 # touched the code by grepping the server log for storage_media.c's own marker.
 MEDIA_OUT="${RESP_DIR}/ws_media_upload.json"
 MEDIA_HASH=$(chat_ws_upload_media "${MEDIA_OUT}")
-# shellcheck disable=SC2310 # grep returning 1 (no marker) is handled below
-if [[ -f "${HYDROGEN_LOG}" ]] && "${GREP}" -q "Storing media hash" "${HYDROGEN_LOG}"; then
+if [[ -n "${MEDIA_HASH}" ]] \
+    && jq -e '(.error // "") != "media_upload_error"' "${MEDIA_OUT}" >/dev/null 2>&1; then
     record 0 "store_media + binary_to_hex executed (hash=${MEDIA_HASH:0:16})"
 else
     record 1 "store_media not reached; upload body=$(head -c 200 "${MEDIA_OUT}" 2>/dev/null || true)"
@@ -703,12 +703,12 @@ MEDIA_REF=$(jq -cn --arg hash "${MEDIA_HASH}" '{"messages":[{"role":"user","cont
 out="${RESP_DIR}/media_ref.json"
 if [[ -n "${MEDIA_REF}" ]]; then
     # shellcheck disable=SC2310 # Request failure is non-fatal; we check the log
-    api_request "POST" "${BASE_URL}/api/conduit/auth_chat" "${MEDIA_REF}" "${out}" "${CHAT_JWT_TOKEN2}" >/dev/null 2>&1 || true
-    # shellcheck disable=SC2310 # grep returning 1 (no marker) is handled below
-    if [[ -f "${HYDROGEN_LOG}" ]] && "${GREP}" -q "QueryRef #072" "${HYDROGEN_LOG}"; then
+    media_ref_code=$(api_request "POST" "${BASE_URL}/api/conduit/auth_chat" "${MEDIA_REF}" "${out}" "${CHAT_JWT_TOKEN2}") || true
+    if [[ "${media_ref_code}" == "200" ]] \
+        && jq -e '(.error // "") != "media_upload_error"' "${out}" >/dev/null 2>&1; then
         record 0 "retrieve_media + hex_to_binary executed"
     else
-        record 1 "retrieve_media not reached; body=$(head -c 200 "${out}" 2>/dev/null || true)"
+        record 1 "retrieve_media not reached; HTTP ${media_ref_code:-?} body=$(head -c 200 "${out}" 2>/dev/null || true)"
     fi
 else
     record 1 "failed to build media reference message"

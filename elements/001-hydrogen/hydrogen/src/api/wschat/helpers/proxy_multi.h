@@ -136,6 +136,8 @@ typedef struct {
     struct lws_context* lws_context; // LWS context for integration
     MultiStreamContext* active_streams; // Active streams list
     pthread_mutex_t streams_mutex;   // Protects active_streams list
+    pthread_mutex_t multi_mutex;     // Serializes all CURLM operations
+    bool multi_mutex_ready;
     int max_host_connections;        // Max connections per host
     int max_total_connections;       // Max total connections
     bool initialized;                // Initialization flag
@@ -248,5 +250,7 @@ void chat_proxy_multi_request_writable(MultiStreamContext* context);
 // ============================================================================
 
 void* chat_proxy_multi_worker_thread(void* arg);
+void chat_proxy_multi_lock(MultiStreamManager* manager);
+void chat_proxy_multi_unlock(MultiStreamManager* manager);
 
 #endif // PROXY_MULTI_H

@@ -67,8 +67,19 @@ bool script_registry_register(ScriptRegistry* reg,
  * the name is not registered. The pointer is valid until the entry is
  * replaced by another register() with the same name, or until the
  * registry is destroyed; callers must not free it.
+ *
+ * Concurrent register() of the same name can free that pointer while
+ * another thread still uses it. Production callers that compile or
+ * otherwise retain source must use script_registry_lookup_copy().
  */
 const char* script_registry_lookup(ScriptRegistry* reg, const char* name);
+
+/*
+ * Look up and copy the source for a registered name under the registry
+ * lock. Returns a heap string the caller must free, or NULL if the
+ * name is not registered or allocation failed.
+ */
+char* script_registry_lookup_copy(ScriptRegistry* reg, const char* name);
 
 /*
  * Number of entries currently in the registry. Thread-safe (briefly

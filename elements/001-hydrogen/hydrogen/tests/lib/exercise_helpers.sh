@@ -6,6 +6,7 @@
 # shellcheck disable=SC2154 # Globals (TEST_NUMBER, TEST_COUNTER, GREP) set by framework before sourcing
 
 # CHANGELOG
+# 1.0.6 - 2026-09-08 - Capture auth flood HTTP codes instead of discarding them
 # 1.0.5 - 2026-09-04 - read_scrape_status always returns 0 (set -e abort when
 #                      HTTP code/attempts were already set: [[ -z ]] && default).
 # 1.0.4 - 2026-08-29 - scrape_metrics status written to SCRAPE_STATUS_FILE so
@@ -22,7 +23,7 @@
 export EXERCISE_HELPERS_GUARD="true"
 
 EXERCISE_HELPERS_NAME="Exercise Test Helpers"
-EXERCISE_HELPERS_VERSION="1.0.5"
+EXERCISE_HELPERS_VERSION="1.0.6"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${EXERCISE_HELPERS_NAME} ${EXERCISE_HELPERS_VERSION}" "info"
 
 # shellcheck source=tests/lib/group40_http.sh # Shared 40-series HTTP timing
@@ -175,9 +176,21 @@ run_auth_request() {
         login_data="{\"database\": \"${db_name}\", \"login_id\": \"${HYDROGEN_DEMO_USER_NAME}\", \"password\": \"WrongPassword123!\", \"api_key\": \"${HYDROGEN_DEMO_API_KEY}\", \"tz\": \"America/Vancouver\"}"
     fi
 
-    curl -s -X POST -H "Content-Type: application/json" \
+    local http_code
+    http_code=$(curl -s -o /dev/null -w "%{http_code}" -X POST -H "Content-Type: application/json" \
         -d "${login_data}" --connect-timeout "${GROUP40_CONNECT_TIMEOUT}" --max-time 15 --compressed \
-        "${url}/api/auth/login" >/dev/null 2>&1 || true
+        "${url}/api/auth/login" 2>/dev/null || echo "000")
+    if (( req_num % 2 == 0 )); then
+        if [[ "${http_code}" != "200" && "${http_code}" != "429" ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+                "auth flood req ${req_num} unexpected HTTP ${http_code} (expected 200)"
+        fi
+    else
+        if [[ "${http_code}" != "401" && "${http_code}" != "429" ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+                "auth flood req ${req_num} unexpected HTTP ${http_code} (expected 401)"
+        fi
+    fi
 }
 
 # run_auth_batch url start_req batch_size db_array_name

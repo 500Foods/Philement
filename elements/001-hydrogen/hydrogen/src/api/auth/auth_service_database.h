@@ -58,7 +58,7 @@ int create_account_record(const char* username, const char* email,
                           const char* hashed_password, const char* full_name, const char* database);
 
 // JWT storage
-void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int system_id, int app_id, const char* database, const char* client_ip);
+bool store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int system_id, int app_id, const char* database, const char* client_ip);
 void update_jwt_storage(int account_id, const char* old_jwt_hash,
                         const char* new_jwt_hash, time_t new_expires, int system_id, int app_id, const char* database, const char* client_ip);
 void delete_jwt_from_storage(const char* jwt_hash, const char* database);

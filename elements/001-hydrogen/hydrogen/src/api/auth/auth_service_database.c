@@ -497,8 +497,10 @@ int create_account_record(const char* username, const char* email,
 /**
  * Store JWT in database
  */
-void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int system_id, int app_id, const char* database, const char* client_ip) {
-    if (!jwt_hash || account_id <= 0 || !database) return;
+bool store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int system_id, int app_id, const char* database, const char* client_ip) {
+    bool stored = false;
+
+    if (!jwt_hash || account_id <= 0 || !database) return false;
 
     // Create parameters for QueryRef #013: Store JWT
     // Use typed parameter format: {"STRING": {...}, "INTEGER": {...}}
@@ -527,10 +529,12 @@ void store_jwt(int account_id, const char* jwt_hash, time_t expires_at, int syst
     if (!result || !result->success) {
         log_this("AUTH", "Failed to store JWT: %s", LOG_LEVEL_ERROR, 1,
                 result ? result->error_message : "Unknown error");
+    } else {
+        stored = true;
     }
 
-    // Cleanup
     free_query_result(result);
+    return stored;
 }
 
 /**
@@ -544,10 +548,10 @@ void update_jwt_storage(int account_id, const char* old_jwt_hash,
     // Store first to ensure old token remains valid until new token is safely stored
     // This prevents a window where no valid token exists
 
-    // Step 1: Store new JWT (atomic operation)
-    store_jwt(account_id, new_jwt_hash, new_expires, system_id, app_id, database, client_ip);
+    if (!store_jwt(account_id, new_jwt_hash, new_expires, system_id, app_id, database, client_ip)) {
+        return;
+    }
 
-    // Step 2: Delete old JWT (old token remains valid until this point)
     delete_jwt_from_storage(old_jwt_hash, database);
 }
 

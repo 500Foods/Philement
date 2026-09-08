@@ -9,6 +9,7 @@
 # shellcheck disable=SC2312 # Diagnostic substitutions swallow inner status; callers use || true
 
 # CHANGELOG
+# 1.0.4 - 2026-09-08 - SQLite snapshot uses online backup
 # 1.0.3 - 2026-08-27 - mcp_expect_jq 3 tries; log body on mismatch
 # 1.0.2 - 2026-08-27 - Long wait, 000-only retry, INFO delay (group40_http)
 # 1.0.1 - 2026-08-27 - wait_http() for MHD/MCP bind lag under suite load
@@ -18,7 +19,7 @@
 export MCP_HELPERS_GUARD="true"
 
 MCP_HELPERS_NAME="MCP Test Helpers"
-MCP_HELPERS_VERSION="1.0.3"
+MCP_HELPERS_VERSION="1.0.4"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${MCP_HELPERS_NAME} ${MCP_HELPERS_VERSION}" "info"
 
 # shellcheck source=tests/lib/group40_http.sh # Shared 40-series HTTP timing
@@ -226,12 +227,10 @@ prepare_sqlite_config() {
     local out_config="${work_dir}/config.json"
     local db_copy="${work_dir}/hydrodemo.sqlite"
     mkdir -p "${work_dir}"
-    cp -f "${BASELINE_SQLITE}" "${db_copy}"
-    if [[ -f "${BASELINE_SQLITE}-wal" ]]; then
-        cp -f "${BASELINE_SQLITE}-wal" "${db_copy}-wal" 2>/dev/null || true
-    fi
-    if [[ -f "${BASELINE_SQLITE}-shm" ]]; then
-        cp -f "${BASELINE_SQLITE}-shm" "${db_copy}-shm" 2>/dev/null || true
+    if declare -f sqlite_online_backup >/dev/null 2>&1; then
+        sqlite_online_backup "${BASELINE_SQLITE}" "${db_copy}" || return 1
+    else
+        sqlite3 "${BASELINE_SQLITE}" ".backup '${db_copy}'" || return 1
     fi
     local seed_n
     seed_n=$(sqlite3 "${db_copy}" \

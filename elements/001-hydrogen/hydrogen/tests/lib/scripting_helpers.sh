@@ -26,6 +26,7 @@
 # shellcheck disable=SC2312 # Several diagnostic command substitutions intentionally swallow the inner exit code; helpers either fall back gracefully or || true the outer call
 
 # CHANGELOG
+# 2.8.0 - 2026-09-08 - Fix PID nameref collision; validate PIDs; verify shutdown
 # 2.7.0 - 2026-08-24 - Added RSS sampling (get_orch_rss_kb) + ORCH_RSS_* / ORCH_PRUNED markers
 #                      during the tick-settle window to catch scoreboard growth regressions
 # 2.6.0 - 2026-08-21 - Record ORCH_SYSTEM_PROBE / ORCH_API_ERROR_PROBE
@@ -47,7 +48,7 @@
 export SCRIPTING_HELPERS_GUARD="true"
 
 SCRIPTING_HELPERS_NAME="Scripting Test Helpers"
-SCRIPTING_HELPERS_VERSION="2.7.0"
+SCRIPTING_HELPERS_VERSION="2.8.0"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${SCRIPTING_HELPERS_NAME} ${SCRIPTING_HELPERS_VERSION}" "info"
 
 # Optional mock LLM (set by test_43 before parallel runs). Empty = skip rewrite.
@@ -75,7 +76,7 @@ scripting_start_instance() {
     local log_file="$2"
     local hydrogen_bin="$3"
     local pid_var="$4"
-    local hydrogen_pid
+    local started_pid
 
     eval "${pid_var}=''"
 
@@ -93,25 +94,28 @@ scripting_start_instance() {
     print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "$(basename "${hydrogen_bin}") $(basename "${config_file}")"
 
     "${hydrogen_bin}" "${config_file}" > "${log_file}" 2>&1 &
-    hydrogen_pid=$!
-    disown "${hydrogen_pid}" 2>/dev/null || true
+    started_pid=$!
+    if ! [[ "${started_pid}" =~ ^[1-9][0-9]*$ ]]; then
+        print_error "${TEST_NUMBER}" "${TEST_COUNTER}" "Hydrogen start produced invalid PID '${started_pid}'"
+        return 1
+    fi
+    disown "${started_pid}" 2>/dev/null || true
     if declare -f register_hydrogen_pid >/dev/null 2>&1; then
-        register_hydrogen_pid "${hydrogen_pid}"
+        register_hydrogen_pid "${started_pid}"
     fi
 
-    # Brief settle so an immediate crash shows up before we return
     sleep 0.5
 
-    if ! kill -0 "${hydrogen_pid}" 2>/dev/null; then
-        print_error "${TEST_NUMBER}" "${TEST_COUNTER}" "Hydrogen exited immediately (PID ${hydrogen_pid})"
+    if ! kill -0 "${started_pid}" 2>/dev/null; then
+        print_error "${TEST_NUMBER}" "${TEST_COUNTER}" "Hydrogen exited immediately (PID ${started_pid})"
         if declare -f unregister_hydrogen_pid >/dev/null 2>&1; then
-            unregister_hydrogen_pid "${hydrogen_pid}"
+            unregister_hydrogen_pid "${started_pid}"
         fi
         return 1
     fi
 
-    eval "${pid_var}='${hydrogen_pid}'"
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Hydrogen started with PID ${hydrogen_pid}"
+    eval "${pid_var}='${started_pid}'"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Hydrogen started with PID ${started_pid}"
     return 0
 }
 
@@ -179,6 +183,16 @@ scripting_shutdown_instance() {
     local pid="$1"
     local timeout="$2"
     local deadline
+    local kill_deadline
+
+    if ! [[ "${pid}" =~ ^[1-9][0-9]*$ ]]; then
+        print_error "${TEST_NUMBER}" "${TEST_COUNTER}" "Shutdown skipped: invalid PID '${pid}'"
+        return 1
+    fi
+
+    if ! kill -0 "${pid}" 2>/dev/null; then
+        return 0
+    fi
 
     kill -TERM "${pid}" 2>/dev/null || true
 
@@ -187,6 +201,14 @@ scripting_shutdown_instance() {
         if [[ $(date +%s) -ge ${deadline} ]]; then
             print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "Shutdown timeout after ${timeout}s; sending SIGKILL"
             kill -9 "${pid}" 2>/dev/null || true
+            kill_deadline=$(( $(date +%s) + 2 ))
+            while kill -0 "${pid}" 2>/dev/null; do
+                if [[ $(date +%s) -ge ${kill_deadline} ]]; then
+                    print_error "${TEST_NUMBER}" "${TEST_COUNTER}" "PID ${pid} still alive after SIGKILL"
+                    return 1
+                fi
+                sleep 0.1
+            done
             return 1
         fi
         sleep 0.2
@@ -334,12 +356,10 @@ scripting_run_engine_parallel() {
         if [[ -n "${SCRIPTING_MOCK_LLM_URL}" && -f "${sqlite_db}" ]]; then
             local temp_db="${log_file%.log}_orch.sqlite"
             local temp_cfg="${log_file%.log}_orch.json"
-            cp "${sqlite_db}" "${temp_db}" 2>/dev/null || true
-            if [[ -f "${sqlite_db}-wal" ]]; then
-                cp "${sqlite_db}-wal" "${temp_db}-wal" 2>/dev/null || true
-            fi
-            if [[ -f "${sqlite_db}-shm" ]]; then
-                cp "${sqlite_db}-shm" "${temp_db}-shm" 2>/dev/null || true
+            if declare -f sqlite_online_backup >/dev/null 2>&1; then
+                sqlite_online_backup "${sqlite_db}" "${temp_db}" || cp "${sqlite_db}" "${temp_db}" 2>/dev/null || true
+            else
+                sqlite3 "${sqlite_db}" ".backup '${temp_db}'" 2>/dev/null || cp "${sqlite_db}" "${temp_db}" 2>/dev/null || true
             fi
             if [[ -f "${temp_db}" ]]; then
                 scripting_seed_orchestrator_from_source "${temp_db}" || true

@@ -101,6 +101,7 @@ char* H_lua_mcp_fetch_list_rows_json(void) {
         free(query_id);
         return NULL;
     }
+    memset(&db_query, 0, sizeof(db_query));
     db_query.query_id = query_id;
     db_query.query_template = strdup(cache_entry->sql_template);
     db_query.parameter_json = params_json;
@@ -108,6 +109,7 @@ char* H_lua_mcp_fetch_list_rows_json(void) {
     db_query.submitted_at = time(NULL);
     db_query.processed_at = 0;
     db_query.retry_count = 0;
+    db_query.timeout_seconds = H_MCP_LIST_TIMEOUT_SECONDS;
     db_query.error_message = NULL;
     if (!db_query.query_template) {
         free(query_id);
