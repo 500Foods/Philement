@@ -40,6 +40,7 @@ void render_str(char** buf, size_t* len, size_t* cap, const char* s) {
 
 void render_header(char** buf, size_t* len, size_t* cap, const char* name, const char* value) {
     if (!value || !value[0]) return;
+    if (!mailrelay_is_safe_header_value(value)) return;
     size_t nlen = strlen(name);
     size_t vlen = strlen(value);
     render_grow(buf, len, cap, nlen + 2 + vlen + 2);

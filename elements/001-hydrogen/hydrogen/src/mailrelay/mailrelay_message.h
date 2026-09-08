@@ -9,6 +9,8 @@
 
 #define MV_MAX_RECIPIENTS 256
 #define MV_ADDR_LEN 256
+#define MV_MAX_SUBJECT_LEN 998
+#define MV_MAX_BODY_LEN (1024 * 1024)
 
 typedef struct MailRelayMessage {
     char* message_id;          /**< Stable message identifier (UUID). */
@@ -43,6 +45,17 @@ bool mailrelay_message_copy(MailRelayMessage* dst, const MailRelayMessage* src);
 /* Dedicated mailrelay email-address validator (decoupled from auth). */
 bool mailrelay_is_valid_email(const char* email);
 
+/* Extract the domain portion (after '@') of an email address. Returns a
+ * malloc'd string the caller must free, or NULL on failure. */
+char* mailrelay_extract_domain(const char* email);
+
+/* Check whether a sender domain matches a policy entry. Matches exact,
+ * subdomain, and wildcard patterns (e.g. "example.com", "*.example.com"). */
+bool mailrelay_domain_matches(const char* domain, const char* entry);
+
+/* Reject header-injection: returns false if value contains CR, LF, or NUL. */
+bool mailrelay_is_safe_header_value(const char* value);
+
 /* Set the From address (copied). Returns false if the address is invalid. */
 bool mailrelay_message_set_from(MailRelayMessage* m, const char* from);
 
@@ -59,6 +72,14 @@ bool mailrelay_validate_message(const MailRelayMessage* m, char* err, size_t err
 
 /* Count of all envelope recipients (to + cc + bcc). */
 int mailrelay_message_recipient_count(const MailRelayMessage* m);
+
+/* Validate the message's sender domain against a configured policy.
+ * Returns true if the sender is permitted by the policy.
+ * err, if provided, receives a human-readable error on rejection.
+ */
+bool mailrelay_validate_sender_domain(const MailRelayMessage* m,
+                                       const MailRelaySecurity* security,
+                                       char* err, size_t err_cap);
 
 /* Append a recipient to the given envelope array. Exposed (non-static) so the
  * Unity test suite can exercise the shared recipient-append logic directly.

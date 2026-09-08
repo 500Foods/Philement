@@ -241,6 +241,14 @@ MailRelayStatus producer_enqueue_message(MailRelayMessage* msg,
         return MAILRELAY_INVALID_ARGS;
     }
 
+    if (!mailrelay_validate_sender_domain(msg,
+            app_config ? &app_config->mail_relay.Security : NULL,
+            validate_err, sizeof(validate_err))) {
+        mailrelay_message_free(msg);
+        snprintf(err, err_cap, "%s", validate_err);
+        return MAILRELAY_INVALID_ARGS;
+    }
+
     MailRelayStatus status = mailrelay_enqueue(msg, priority);
     if (status != MAILRELAY_OK) {
         mailrelay_message_free(msg);

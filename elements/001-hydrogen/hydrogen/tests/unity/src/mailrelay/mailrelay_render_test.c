@@ -88,6 +88,8 @@ void test_render_cc_present(void);
 void test_render_uses_default_from(void);
 void test_render_deterministic_boundary(void);
 void test_render_deterministic_message_id(void);
+void test_render_strips_cr_in_subject(void);
+void test_render_strips_lf_in_from(void);
 
 int main(void) {
     UNITY_BEGIN();
@@ -104,6 +106,8 @@ int main(void) {
     RUN_TEST(test_render_uses_default_from);
     RUN_TEST(test_render_deterministic_boundary);
     RUN_TEST(test_render_deterministic_message_id);
+    RUN_TEST(test_render_strips_cr_in_subject);
+    RUN_TEST(test_render_strips_lf_in_from);
 
     return UNITY_END();
 }
@@ -265,6 +269,28 @@ void test_render_deterministic_message_id(void) {
     char expected[256];
     snprintf(expected, sizeof(expected), "Message-ID: my-custom-mid@myapp");
     TEST_ASSERT_NOT_NULL(strstr(out, expected));
+    free(out);
+    mailrelay_message_free(&m);
+}
+
+void test_render_strips_cr_in_subject(void) {
+    const char* to[] = {"to@example.com"};
+    MailRelayMessage m = build_message("from@example.com", NULL, "Subject\r\nX-Injected: bad", "text", NULL, to, 1, NULL, 0, NULL, 0);
+    char* out = NULL;
+    TEST_ASSERT_TRUE(render_and_check(&m, NULL, "app", &out));
+    TEST_ASSERT_NULL(strstr(out, "X-Injected: bad"));
+    free(out);
+    mailrelay_message_free(&m);
+}
+
+void test_render_strips_lf_in_from(void) {
+    const char* to[] = {"to@example.com"};
+    MailRelayMessage m = build_message("from@example.com", NULL, "Subject", "text", NULL, to, 1, NULL, 0, NULL, 0);
+    free(m.from);
+    m.from = strdup("from@example.com\nBcc: hack@evil.com");
+    char* out = NULL;
+    TEST_ASSERT_TRUE(render_and_check(&m, NULL, "app", &out));
+    TEST_ASSERT_NULL(strstr(out, "Bcc: hack@evil.com"));
     free(out);
     mailrelay_message_free(&m);
 }

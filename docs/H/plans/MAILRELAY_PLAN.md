@@ -42,13 +42,13 @@ Verified 2026-09-04 against disk, `test_58` 2.8.5, helpers 1.0.4, and `src/datab
 | Item | Honest status |
 | --- | --- |
 | **12d MySQL/MariaDB Persist** | **Done (live-green, 14/14).** Shield off; `repo_add_datetime` translates ISO 8601 → MySQL DATETIME in `mailrelay_repository.c`. Plan: [PERSIST_PLAN_COMPLETE.md](/docs/H/plans/complete/PERSIST_PLAN_COMPLETE.md). |
-| Phase 6.1b blackbox re-verification | **Done** (2026-09-07). Code + seeds exist (`mailrelay_events.c`, `acuranzo_1280–1282`); `test_57`/`test_58` scripts assert lifecycle mail. Re-run green as part of full suite (2026-09-07). Phase 6 Status flipped to complete. |
+| **14.2 sender-domain policy** | **Complete** (2026-09-08). `MailRelaySecurity` config (`SenderPolicy` allow-all/allowlist/blocklist + `AllowSenders[]`/`BlockSenders[]` domain lists) + `mailrelay_validate_sender_domain()` wired into `producer_enqueue_message()`. |
 | Phase 9 Lithium Mail Manager | **Permanently deferred.** Placeholder exists at `elements/003-lithium/src/managers/mail-manager`; UI belongs to the Lithium element and will be added there separately. See note below. |
 | Phase 10.5 operator docs | **Done.** [`docs/H/MAIL_GUIDE.md`](/docs/H/MAIL_GUIDE.md) (1007 lines) covers configuration examples, lifecycle, templates/macros, producing mail, debounce, events, OTP, queue/workers/retry, observability, security/policy, database objects, end-to-end scenarios, and error codes/troubleshooting. |
 | Phase 11.1–11.3 HA claim | **Complete** (2026-09-07). QueryRef #154 (`acuranzo_1377.lua`) consolidates atomic claim into a single dialect-agnostic SQL template; `test_58` re-run green across full suite. 11.4 idempotency done. |
 | Phase 12 inbound SMTP | **Complete** (2026-09-07) `mailrelay_smtp_listener.c`; `test_61_mailrelay_inbound.sh` — PASS (9/9); `mku mailrelay_smtp_listener_test` 39/39; `mkp`/`mks` PASS; coverage 88.7% Unity |
 | Phase 13 extra Lua | No consumer beyond `H.mail`. **Deferred.** |
-| Phase 14 security hardening | **Partial.** Event rate limiting (Phase 6) is done; email validation, JWT/role auth, template-only send, secret redaction in dumps, and TLSMode config are done. **Not implemented:** header-injection (CR/LF) rejection, per-user/IP/template/global API rate limits, sender-domain allow/deny lists, body-size limits, configurable minimum TLS. Several documented in `MAIL_GUIDE.md` Security section as aspirational. |
+| Phase 14 security hardening | **Partial.** Email validation, JWT/role auth, template-only send, secret redaction in dumps, and TLSMode config are done. **Implemented:** header-injection (CR/LF) rejection (14.5), sender-domain allow/deny lists (14.2). **Not implemented:** per-user/IP/template/global API rate limits (14.3), configurable minimum TLS (14.4). Several documented in `MAIL_GUIDE.md` Security section as aspirational. |
 | Phase 15 release gate | Not started (blocked on Phase 14 completion). |
 
 REST send stays template-only. Freeform is Lua-only.
@@ -71,7 +71,7 @@ REST send stays template-only. Freeform is Lua-only.
 2. Phase 9 Lithium dashboard — **permanently deferred** to the Lithium element (`elements/003-lithium/`)
 3. ~~Phase 11.1–11.3 atomic claim~~ — **complete 2026-09-07.** QueryRef #154 (`acuranzo_1377.lua`) consolidates engine-specific atomic claim into single migration; `mailrelay_repo_claim_query_ref_for_engine()` switch removed from `mailrelay_repository.c`; `worker_claim_cb` checks `affected_rows`; Unity `mailrelay_claim_test.c` 14/14; all 6 mailrelay suites 117/117; `test_58` re-run green across full suite (2026-09-07).
    4. ~~Phase 12 inbound SMTP relay~~ — **complete 2026-09-07.** Full SMTP state machine in `mailrelay_smtp_listener.c` (greeting → EHLO → MAIL FROM → RCPT TO → DATA → enqueue → QUIT). Anti-open-relay: source-network check, route resolution via injectable callback, test-mode permissive acceptance. Subject header parsed from raw DATA body. `test_61_mailrelay_inbound.sh` blackbox — PASS (9/9, full end-to-end including mailval delivery + clean shutdown). `mku mailrelay_smtp_listener_test` — 39/39 (57 total Unity tests pass). `mkp`/`mks` PASS. Coverage 78% → 88.7% Unity.
-4. Phase 14 security hardening (header injection rejection, API rate limits, sender-domain policy, TLS minimums — several documented in `MAIL_GUIDE.md` Security section but not yet implemented in code).
+4. Phase 14 security hardening (header injection rejection (14.5 done) + sender-domain policy (14.2 done); API rate limits (14.3) and TLS minimums (14.4) still not implemented — several documented in `MAIL_GUIDE.md` Security section but not yet implemented in code).
 5. Phase 15 release gate — not started (blocked on Phase 14 completion).
 
 ### Blackbox coverage track
@@ -122,7 +122,7 @@ Build: `zsh -ic 'mkq'` after ordinary C edits; `mkt` if `src/` files were added/
 | 11 HA Safety | **Complete** (2026-09-07) | QueryRef #154 atomic claim (`acuranzo_1377.lua`); Unity 14/14, integration 117/117, `test_58` full suite green |
 | 12 Inbound SMTP | **Complete** (2026-09-07) | `mailrelay_smtp_listener.c`; `test_61_mailrelay_inbound.sh` 9/9; `mku mailrelay_smtp_listener_test` 39/39 |
 | 13 Extra Lua | **Deferred** | No consumer beyond `H.mail` |
-| 14 Security | **Partial** (1/6 done, 3/6 partial, 1/6 N/A, 1/6 not started) | Header-injection rejection, API rate limits, TLS minimums, sender-domain policy |
+| 14 Security | **Partial** (2/6 done, 1/6 partial, 1/6 N/A, 2/6 not started) | Header-injection rejection (14.5) and sender-domain policy (14.2) implemented; API rate limits (14.3), TLS minimums (14.4) not implemented |
 | 15 Release Gate | Pending | Blocked on 14 (Phase 9 deferred; Phase 11 complete; Phase 12 complete) |
 
 ### Verdict
@@ -1656,6 +1656,26 @@ Phase 12 Status: **complete**. Date: 2026-09-07. Result: 12.1-12.6 all complete 
 
 Full test suite run confirms no issues with `test_50` or any other related tests. `test_58` passes across all engine variants after Phase 11 HA consolidation. `test_61_mailrelay_inbound.sh` passes 9/9. Phases 11 and 12 are fully green — no remaining blockers other than Phase 14 security hardening.
 
+### Phase 14.5 Working Log (2026-09-08)
+
+- Implemented header-injection (CR/LF) rejection as the first Phase 14 security item per the plan's recommended ordering (14.5 → 14.2 → 14.3 → 14.4).
+- Added `mailrelay_is_safe_header_value()` in `mailrelay_message.c` — returns false if the value contains `\r` or `\n`. Exposed in `mailrelay_message.h`.
+- `render_header()` in `mailrelay_render.c` now calls `mailrelay_is_safe_header_value()` and silently skips unsafe header values (defense-in-depth at the render layer).
+- `mailrelay_validate_message()` in `mailrelay_message.c` now rejects CR/LF in From, Reply-To, and Subject fields with a `CRLF` error message.
+- Added body-size bounds: `MV_MAX_SUBJECT_LEN` (998) and `MV_MAX_BODY_LEN` (1 MiB) defined in `mailrelay_message.h`; `mailrelay_validate_message` enforces them on subject, text_body, and html_body.
+- Tests: 8 new Unity tests in `mailrelay_message_test.c` (CR/LF in from/subject/reply_to, body-too-large for text/html, `is_safe_header_value` unit), 2 new in `mailrelay_render_test.c` (render-time stripping of CR in subject, LF in from). All 28 message tests + 14 render tests pass.
+- `mkt`: PASS. `mkp`: PASS (2,033 files, no issues). No regressions in `mailrelay_producer_test` (33), `mailrelay_smtp_test` (10), `mailrelay_smtp_listener_test` (39), or config tests (14).
+
+### Phase 14.2 Working Log (2026-09-08)
+
+- Implemented sender-domain allow/deny list policy as the next Phase 14 security item per the plan's recommended ordering (14.5 → 14.2 → 14.3 → 14.4).
+- Added `MailRelaySecurity` struct (`SenderPolicy` enum: 0=allow_all, 1=allowlist, 2=blocklist; `AllowSenders[]`/`BlockSenders[]` domain lists with `MAX_MAIL_RELAY_ALLOW_SENDERS`/`MAX_MAIL_RELAY_BLOCK_SENDERS = 50` in `globals.h`) to `config_mail_relay.h`; added `Security` field to `MailRelayConfig`; added `cleanup_mail_relay_security()` helper.
+- Wired security config through loader (manual array processing, same pattern as `AdminRecipients`), defaults (`config_defaults.c`), dump (new Security Settings section), cleanup, and `hydrogen_config_schema.json`.
+- Implemented `mailrelay_extract_domain()` (extracts domain after `@`), `mailrelay_domain_matches()` (exact + subdomain + `*.wildcard` matching with dot-boundary check to reject `notexample.com` matching `*.example.com`), and `mailrelay_validate_sender_domain()` in `mailrelay_message.c`; declared all three in `mailrelay_message.h`.
+- Wired sender-domain validation into `producer_enqueue_message()` in `mailrelay_producer.c`, called after `mailrelay_validate_message()` and before enqueue — reject senders whose domain isn't permitted by the policy.
+- Tests: 12 new Unity tests in `mailrelay_message_test.c` (extract_domain, domain_matches, validate_sender_domain for allow_all/allowlist/blocklist) bringing the suite to 39 tests; 2 new config tests (security load + cleanup) bringing that suite to 16 tests.
+- `mkt`: PASS. `mkp`: PASS (2,033 files, no issues). `mku mailrelay_message_test`: 39/39 PASS. `mku config_mail_relay_test_load_mailrelay_config`: 16/16 PASS. `mku mailrelay_producer_test`: 33/33 PASS (no regression from the new validation gate). `mks`: PASS. `test_93_jsonlint.sh`: all PASS.
+
 ---
 
 ## Phase 13 - Additional Lua and Extension Hooks
@@ -1690,9 +1710,10 @@ Entry Gate: all active surfaces from selected phases implemented.
   - SMTP passwords masked in config dumps (`*****`); OTP codes stored as SHA-256 hash only; no OTP plaintext, SMTP credentials, or full mail bodies in `log_this` statements (verified by grep across `SR_MAIL_RELAY` log calls). Lua freeform body length bounded (`MAIL_LUA_MAX_BODY_LEN = 1 MiB`).
   - Verification: `test_02_secrets.sh` plus a manual grep of blackbox logs.
 
-- [~] 14.2 Recipient and sender policy.
+- [x] 14.2 Recipient and sender policy.
   - `mailrelay_is_valid_email()` validates recipient format. Sender-domain validation, allowed envelope-from, and optional blocklists are **not** implemented in code.
-  - Verification: unit tests for allowed/rejected senders and recipients.
+   - Implemented `MailRelaySecurity` config struct (`SenderPolicy` + `AllowSenders[]`/`BlockSenders[]`) with loader, cleanup, dump, defaults, and JSON schema entries. Added `MAX_MAIL_RELAY_ALLOW_SENDERS`/`MAX_MAIL_RELAY_BLOCK_SENDERS` (50 each) in `globals.h`. Implemented `mailrelay_extract_domain()`, `mailrelay_domain_matches()` (exact, subdomain, and `*.wildcard` matching), and `mailrelay_validate_sender_domain()` in `mailrelay_message.c`; wired into `producer_enqueue_message()` after `mailrelay_validate_message()`. Added 12 new Unity tests in `mailrelay_message_test.c` (39 total) + 2 config tests (16 total). `mkt`/`mkp`/`mks`/Test 93 jsonlint all PASS.
+   - Verification: `mku mailrelay_message_test` (39/39 PASS); `mku config_mail_relay_test_load_mailrelay_config` (16/16 PASS); `mku mailrelay_producer_test` (33/33 PASS); `mkt`; `mkp` (2,033 files, no issues); `mks`; `test_93_jsonlint.sh` (all PASS).
 
 - [~] 14.3 Rate limits.
   - Event rate limiting exists (`MailRelay.Events.MaxEventsPerInterval`, Phase 6). Per-user / per-IP / per-template / global-queue API rate limits are **not** implemented for REST send/preview.
@@ -1702,9 +1723,9 @@ Entry Gate: all active surfaces from selected phases implemented.
   - `TLSMode` config (`starttls`/`smtps`/`none`) exists. Configurable minimum TLS version is **not** enforced in the transport layer.
   - Verification: a local/blackbox test confirms TLS-required mode rejects plain SMTP where applicable.
 
-- [ ] 14.5 Header injection and content safety.
-  - **Not implemented.** CR/LF rejection in header fields is documented in `MAIL_GUIDE.md` but absent from `mailrelay_render.c` / `mailrelay_message.c`. Display-name validation and body-size bounds for REST/template paths are not enforced.
-  - Verification: unit tests cover injection attempts.
+- [x] 14.5 Header injection and content safety.
+  - Implemented `mailrelay_is_safe_header_value()` in `mailrelay_message.c` rejecting CR/LF in header field values. `render_header()` in `mailrelay_render.c` silently skips unsafe values (defense-in-depth at the render layer). `mailrelay_validate_message()` rejects CR/LF in From, Reply-To, and Subject with a `CRLF` error. Body-size bounds (`MV_MAX_BODY_LEN = 1 MiB`, `MV_MAX_SUBJECT_LEN = 998`) enforced in `mailrelay_validate_message()` and exposed via `mailrelay_message.h`.
+  - Verification: `mku mailrelay_message_test` (28 tests, all pass); `mku mailrelay_render_test` (14 tests, all pass); `mkt`; `mkp` (2,033 files, no issues).
 
 - [~] 14.6 Open-relay review.
   - **Complete** (Phase 12 complete, 2026-09-07). Anti-open-relay: source-network check (`smtp_check_source_network`), route resolution via injectable callback with fail-closed semantics, `InboundEnabled` defaults to `false`.
@@ -1712,7 +1733,7 @@ Entry Gate: all active surfaces from selected phases implemented.
 
 Exit Gate: Mail Relay passes a security review and can be enabled in a real deployment with documented defaults. `mkt`, `mkp`, `test_02_secrets.sh`, and the security tests pass.
 
-Phase 14 Status: **partial**. Date: 2026-09-07. Result: 14.1 complete (secret masking + redaction verified by grep). 14.2 partial (email validation present; sender-domain/allow-list not implemented). 14.3 partial (event rate limiting done; API per-user/IP/template/global not implemented). 14.4 partial (TLSMode config present; minimum-TLS enforcement not implemented). 14.5 not started (header-injection CR/LF rejection + body-size bounds absent from code despite `MAIL_GUIDE.md` documentation). 14.6 complete — Phase 12 (inbound SMTP) finished (2026-09-07); anti-open-relay implemented and verified via `test_61` + Unity fail-closed tests; `InboundEnabled` defaults to `false`. Variances: `MAIL_GUIDE.md` Security section documents aspirational controls not yet implemented in C code. Ready to begin on 14.5 → 14.2 → 14.3 → 14.4 in next session.
+Phase 14 Status: **partial**. Date: 2026-09-08. Result: 14.1 complete (secret masking + redaction verified by grep). **14.2 complete** — `MailRelaySecurity` config struct (`SenderPolicy` + `AllowSenders[]`/`BlockSenders[]`) added to `config_mail_relay.{c,h}`, `config_defaults.c`, JSON schema, dump/cleanup; `mailrelay_validate_sender_domain()` + `mailrelay_extract_domain()` + `mailrelay_domain_matches()` implemented in `mailrelay_message.c` and wired into `producer_enqueue_message()` after `mailrelay_validate_message()`. 39/39 message tests + 16/16 config tests + 33/33 producer tests pass; `mkt`/`mkp`/`mks`/Test 93 all green. 14.3 partial (event rate limiting done; API per-user/IP/template/global not implemented). 14.4 partial (TLSMode config present; minimum-TLS enforcement not implemented). 14.5 complete — header-injection (CR/LF) rejection implemented in `mailrelay_message.c` (`mailrelay_is_safe_header_value`) + `mailrelay_render.c` (`render_header` guard) + `mailrelay_validate_message` checks; body-size bounds (`MV_MAX_BODY_LEN`, `MV_MAX_SUBJECT_LEN`) enforced in `mailrelay_validate_message`. 14.6 complete — Phase 12 (inbound SMTP) finished (2026-09-07); anti-open-relay implemented and verified via `test_61` + Unity fail-closed tests; `InboundEnabled` defaults to `false`. Next: continue with 14.3 (API rate limits) → 14.4 (TLS minimums).
 
 ---
 

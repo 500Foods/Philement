@@ -37,6 +37,7 @@ typedef enum MailRelayStatus {
     MAILRELAY_TIMEOUT,
     MAILRELAY_DISABLED,
     MAILRELAY_PERSIST_FAILED,
+    MAILRELAY_RATE_LIMITED,
 } MailRelayStatus;
 
 /*
