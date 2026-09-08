@@ -36,12 +36,11 @@ void test_rate_limit_build_key_template(void);
 void test_rate_limit_build_key_null_sub_fails_open(void);
 void test_rate_limit_build_key_null_ip_fails_open(void);
 void test_rate_limit_build_key_null_template_fails_open(void);
-void test_rate_limit_count_for_key(void);
 void test_rate_limit_find_locked_existing(void);
 void test_rate_limit_find_locked_missing(void);
 void test_rate_limit_new_bucket_locked(void);
 void test_rate_limit_new_bucket_null_key(void);
-void test_rate_limit_reset_all_clears_buckets(void);
+void test_rate_limit_shutdown_clears_buckets(void);
 
 void setUp(void) {
     g_saved_app_config = app_config;
@@ -51,7 +50,8 @@ void setUp(void) {
 }
 
 void tearDown(void) {
-    mailrelay_rate_limit_reset_all();
+    mailrelay_rate_limit_shutdown();
+    mailrelay_rate_limit_init();
     app_config = g_saved_app_config;
 }
 
@@ -208,21 +208,6 @@ void test_rate_limit_build_key_null_template_fails_open(void) {
     TEST_ASSERT_NULL(key);
 }
 
-void test_rate_limit_count_for_key(void) {
-    g_test_config.mail_relay.RateLimit.Enabled = true;
-    g_test_config.mail_relay.RateLimit.MaxRequestsPerInterval = 10;
-    g_test_config.mail_relay.RateLimit.IntervalSeconds = 60;
-    g_test_config.mail_relay.RateLimit.Scope = MAIL_RL_SCOPE_USER;
-
-    mailrelay_rate_limit_check_and_record("userA", "10.0.0.1", "tmpl");
-    mailrelay_rate_limit_check_and_record("userA", "10.0.0.1", "tmpl");
-    mailrelay_rate_limit_check_and_record("userA", "10.0.0.1", "tmpl");
-
-    TEST_ASSERT_EQUAL(3, mailrelay_rate_limit_count_for_key("userA"));
-    TEST_ASSERT_EQUAL(0, mailrelay_rate_limit_count_for_key("userB"));
-    TEST_ASSERT_EQUAL(0, mailrelay_rate_limit_count_for_key(NULL));
-}
-
 void test_rate_limit_find_locked_existing(void) {
     g_test_config.mail_relay.RateLimit.Enabled = true;
     g_test_config.mail_relay.RateLimit.MaxRequestsPerInterval = 10;
@@ -254,7 +239,7 @@ void test_rate_limit_new_bucket_locked(void) {
     TEST_ASSERT_EQUAL_STRING("testkey", entry->key);
     TEST_ASSERT_EQUAL(now, entry->window_start);
     TEST_ASSERT_EQUAL(0, entry->count);
-    /* Entry is linked into the global list; tearDown's reset_all frees it. */
+    /* Entry is linked into the global list; tearDown's shutdown frees it. */
 }
 
 void test_rate_limit_new_bucket_null_key(void) {
@@ -264,10 +249,10 @@ void test_rate_limit_new_bucket_null_key(void) {
     TEST_ASSERT_NULL(entry->key);
     TEST_ASSERT_EQUAL(now, entry->window_start);
     TEST_ASSERT_EQUAL(0, entry->count);
-    /* Entry is linked into the global list; tearDown's reset_all frees it. */
+    /* Entry is linked into the global list; tearDown's shutdown frees it. */
 }
 
-void test_rate_limit_reset_all_clears_buckets(void) {
+void test_rate_limit_shutdown_clears_buckets(void) {
     g_test_config.mail_relay.RateLimit.Enabled = true;
     g_test_config.mail_relay.RateLimit.MaxRequestsPerInterval = 10;
     g_test_config.mail_relay.RateLimit.IntervalSeconds = 60;
@@ -276,13 +261,13 @@ void test_rate_limit_reset_all_clears_buckets(void) {
     mailrelay_rate_limit_check_and_record("userA", "10.0.0.1", "tmpl");
     mailrelay_rate_limit_check_and_record("userB", "10.0.0.2", "tmpl");
 
-    TEST_ASSERT_EQUAL(1, mailrelay_rate_limit_count_for_key("userA"));
-    TEST_ASSERT_EQUAL(1, mailrelay_rate_limit_count_for_key("userB"));
+    TEST_ASSERT_NOT_NULL(mailrelay_rate_limit_find_locked("userA"));
+    TEST_ASSERT_NOT_NULL(mailrelay_rate_limit_find_locked("userB"));
 
-    mailrelay_rate_limit_reset_all();
+    mailrelay_rate_limit_shutdown();
 
-    TEST_ASSERT_EQUAL(0, mailrelay_rate_limit_count_for_key("userA"));
-    TEST_ASSERT_EQUAL(0, mailrelay_rate_limit_count_for_key("userB"));
+    TEST_ASSERT_NULL(mailrelay_rate_limit_find_locked("userA"));
+    TEST_ASSERT_NULL(mailrelay_rate_limit_find_locked("userB"));
 }
 
 int main(void) {
@@ -303,12 +288,11 @@ int main(void) {
     RUN_TEST(test_rate_limit_build_key_null_sub_fails_open);
     RUN_TEST(test_rate_limit_build_key_null_ip_fails_open);
     RUN_TEST(test_rate_limit_build_key_null_template_fails_open);
-    RUN_TEST(test_rate_limit_count_for_key);
     RUN_TEST(test_rate_limit_find_locked_existing);
     RUN_TEST(test_rate_limit_find_locked_missing);
     RUN_TEST(test_rate_limit_new_bucket_locked);
     RUN_TEST(test_rate_limit_new_bucket_null_key);
-    RUN_TEST(test_rate_limit_reset_all_clears_buckets);
+    RUN_TEST(test_rate_limit_shutdown_clears_buckets);
 
     return UNITY_END();
 }

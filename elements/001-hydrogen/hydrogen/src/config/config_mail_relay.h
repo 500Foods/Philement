@@ -102,6 +102,7 @@ typedef struct OutboundServer {
     char* Password;             // SMTP authentication password
     bool UseTLS;                // Whether to use TLS (legacy boolean)
     int TLSMode;                // TLS mode: MAIL_TLS_MODE_*
+    int MinTLS;                 // Minimum TLS version: MAIL_TLS_VERSION_* (default TLS 1.2)
     char* CAPath;               // Path to CA bundle
     int AuthMode;               // Auth mode: MAIL_AUTH_MODE_*
     int TimeoutSeconds;         // Connection and operation timeout

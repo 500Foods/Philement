@@ -95,7 +95,7 @@ bash tests/test_58_mailrelay_api.sh
 
 ## Related
 
-- Plan: [Mail Relay Subsystem Implementation Plan](/docs/H/plans/MAILRELAY_PLAN.md)
+- Plan: [Mail Relay Subsystem Implementation Plan](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md)
 - Persist SIGSEGV fix (MySQL/MariaDB, live-green 2026-09-04): [PERSIST_PLAN_COMPLETE.md](/docs/H/plans/complete/PERSIST_PLAN_COMPLETE.md)
 - Outbound test: [Mail Relay Outbound Blackbox Test](/docs/H/tests/test_57_mailrelay_outbound.md)
 - Sink source: `/elements/001-hydrogen/hydrogen/extras/mailval/`

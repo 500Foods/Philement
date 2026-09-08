@@ -55,11 +55,7 @@ void mailrelay_rate_limit_init(void);
 void mailrelay_rate_limit_shutdown(void);
 
 /*
- * Reset all buckets. Test seam only.
- */
-void mailrelay_rate_limit_reset_all(void);
 
-/*
  * Build the rate-limit bucket key for a request based on the configured
  * scope. Returns a malloc'd string the caller must free. Returns NULL when
  * the scope is GLOBAL (single bucket, key is NULL).
@@ -90,12 +86,6 @@ MailRelayRateLimitResult mailrelay_rate_limit_check_and_record(
     const char* template_key);
 
 /*
- * Return the current request count for a key. Returns 0 if the key has no
- * bucket or the module is uninitialized. Test seam.
- */
-int mailrelay_rate_limit_count_for_key(const char* key);
-
-/*
  * Look up the bucket for key. Caller must hold g_rate_limit_mutex.
  * Exposed for direct unit testing. Returns NULL if not found.
  */
@@ -107,6 +97,6 @@ MailRelayApiRateLimitEntry* mailrelay_rate_limit_find_locked(const char* key);
  * Returns NULL on allocation failure.
  */
 MailRelayApiRateLimitEntry* mailrelay_rate_limit_new_bucket_locked(const char* key,
-                                                                time_t now);
+                                                                 time_t now);
 
 #endif /* MAILRELAY_RATE_LIMIT_H */

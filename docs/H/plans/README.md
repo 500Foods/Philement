@@ -27,10 +27,6 @@ post-MVP, real-Keycloak E2E (Phase 11). History:
 [OIDC_E2E_LOG_COMPLETE.md](/docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md),
 [AUTH_PLAN_COMPLETE.md](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md).
 
-### [MAIL RELAY PLAN](/docs/H/plans/MAILRELAY_PLAN.md)
-
-SMTP mail relay subsystem. Core outbound/API/Lua/OTP delivered; later phases (UI, inbound, ops) remain.
-
 ### [PERSIST PLAN](/docs/H/plans/complete/PERSIST_PLAN_COMPLETE.md)
 
 **Complete (2026-09-04).** TODO 12d closed: live `test_58` mysql+mariadb
@@ -38,8 +34,6 @@ plaintext+STARTTLS green with Persist on (full 7-engine matrix 14/14 in 27.8s).
 Two parts landed: `mysql_process_prepared_result` honours `mysql_stmt_store_result` rc (no `mysql_stmt_fetch` on NULL `fetch_row_func`); `repo_add_datetime` translates ISO 8601 → MySQL DATETIME for `DB_ENGINE_MYSQL` only. Archive only.
 
 ### [UNITY ASAN PLAN](/docs/H/plans/UNITY_ASAN_PLAN.md)
-
-Separate ASAN Unity build/test variant for memory-safety gating without corrupting gcov coverage.
 
 ### [SCHEMAHELPER PLAN](/docs/H/plans/SCHEMAHELPER.md)
 

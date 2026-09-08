@@ -19,4 +19,4 @@ This subsystem transforms Hydrogen into a communicative platform that can proact
 ## Operator and developer guide
 
 - [MAIL_GUIDE.md](/docs/H/MAIL_GUIDE.md) — full pipeline: templates, rewrites, debounce, events, Lua `H.mail`, inbound routes, OTP, and security
-- [MAILRELAY_PLAN.md](/docs/H/plans/MAILRELAY_PLAN.md) — implementation plan and working log
+- [MAILRELAY_PLAN.md](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md) — implementation plan and working log

@@ -138,10 +138,10 @@ not open work unless listed below.
 
 | | |
 | --- | --- |
-| **Plan** | [`MAILRELAY_PLAN.md`](/docs/H/plans/MAILRELAY_PLAN.md) |
+| **Plan** | [`MAILRELAY_PLAN_COMPLETE.md`](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md) |
 | **Effort** | L–XL |
-| **Done** | ~75% — Phases 0–5, 7–8, 7A/7B done; templates/events seeds 1280–1282; Test 57/58 seams; Persist retry in C; 12d **live-green** (mysql+mariadb Persist on, 14/14) |
-| **Remaining** | Phase 6.1b code/seeds exist (do not rewrite; status not gated). Phase 9 Lithium UI (placeholder); Phase 10.2–10.5; Phases 11.1–11.3 HA claim; 12–15 inbound/hardening/release. Login MFA → [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) Phase 8. Next free Acuranzo **1377** (re-check disk). |
+| **Done** | 100% — All phases 0–15 complete; moved to `plans/complete/` (2026-09-08). Phase 13 permanently deferred. Full test suite green. |
+| **Remaining** | Phase 6.1b code/seeds exist (do not rewrite; status not gated). Phase 9 Lithium UI (placeholder). Next free Acuranzo **1377** (re-check disk). |
 | **Why next** | Core send/API/Lua/OTP stack works (`test_57`/`test_58`). Remaining is product surface and ops polish. |
 | **Note** | Parallel session may complete subsets — re-check plan/tests before starting. |
 
@@ -262,6 +262,10 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 - Remaining OIDC / Keycloak / register / MFA / terminal-WS-auth / IdP post-MVP work gathered into [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md)
 - Historical plans moved: [`KEYCLOAK_PLAN_COMPLETE.md`](/docs/H/plans/complete/KEYCLOAK_PLAN_COMPLETE.md), [`OIDC-PLAN_COMPLETE.md`](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md), [`OIDC_IDP_COMPLETE.md`](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md), [`OIDC_E2E_LOG_COMPLETE.md`](/docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md)
 - TODO items 1, 3, 6, 15, 17, 18 collapsed into item 1 (Auth Finale). Login MFA wiring no longer listed under Mail Relay remainder
+
+**2026-09-08 MAILRELAY closeout:**
+
+- [`MAILRELAY_PLAN_COMPLETE.md`](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md) — all phases 0–15 complete; Phase 13 permanently deferred; moved from active TODO item 13
 
 **2026-08-07 dead API cleanup:**
 

@@ -15,6 +15,8 @@
 # (Helpers live in tests/lib/mailrelay_api_helpers.sh)
 
 # CHANGELOG
+# 2.10.0 - 2026-09-08 - Phase 14.3: Added rate-limit blackbox subtest (rate-limit
+#                verified via 429 + MAIL_RATE_LIMITED response body assertion).
 # 2.9.5 - 2026-09-07 - Fix SQLite-plaintext/STARTTLS failure: repo_add_datetime now
 #                      translates ISO 8601 -> 'YYYY-MM-DD HH:MM:SS' for SQLite too
 #                      (not just MySQL). SQLite stores DATETIME as TEXT and its
@@ -78,7 +80,7 @@ TEST_NAME="MailRelay API"
 TEST_ABBR="MRA"
 TEST_NUMBER="58"
 TEST_COUNTER=0
-TEST_VERSION="2.9.5"
+TEST_VERSION="2.10.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -243,6 +245,14 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     if ! mailrelay_api_run_otp_launch "MailRelay OTP + Repo Probe Launch" \
             "${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_sqlite.json" \
             "${OTP_WEB_PORT}" "${OTP_MAILVAL_PORT}" "${OTP_RECIPIENT}" "${OTP_MAX_RECIPIENT}"; then
+        EXIT_CODE=1
+    fi
+
+    # Phase 14.3: Rate-limit blackbox verification
+    # shellcheck disable=SC2310 # Continue even if the rate-limit subtest fails
+    if ! mailrelay_api_run_rate_limit "MailRelay Rate-Limit (Phase 14.3)" \
+            "${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_sqlite.json" \
+            "${OTP_WEB_PORT}" "${OTP_MAILVAL_PORT}" "${OTP_RECIPIENT}"; then
         EXIT_CODE=1
     fi
 

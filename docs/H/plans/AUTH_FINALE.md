@@ -171,7 +171,7 @@ Urgency inside the plan (not phase order):
   or [`AUTH_PLAN_COMPLETE.md`](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md)
   as working plans.
 - **Mail Relay transport, templates, Lithium mail UI, inbound SMTP.**
-  Stay on [`MAILRELAY_PLAN.md`](/docs/H/plans/MAILRELAY_PLAN.md). This
+  Stay on [`MAILRELAY_PLAN.md`](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md). This
   plan only **consumes** OTP send/verify for login MFA.
 - **SPA-held Keycloak tokens.** Hard rule remains: SPAs hold Hydrogen
   JWTs only.
@@ -1258,7 +1258,7 @@ No reverse migration required to disable features.
 | [`oidc_endpoints.md`](/docs/H/api/oidc/oidc_endpoints.md) | IdP wire contract |
 | [`OIDC_IDP_OPERATOR.md`](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md) | IdP operator runbook |
 | [`LITHIUM-KEYCLOAK.md`](/docs/Li/LITHIUM-KEYCLOAK.md) | Client recipe |
-| [`MAILRELAY_PLAN.md`](/docs/H/plans/MAILRELAY_PLAN.md) | OTP engine; MFA wiring moved here |
+| [`MAILRELAY_PLAN.md`](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md) | OTP engine; MFA wiring moved here |
 | [`CHAT_FINALE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md) | Chat/MCP JWT mint — not this plan |
 | [`TESTING.md`](/docs/H/tests/TESTING.md) | Blackbox conventions |
 | [`TESTING_UNITY.md`](/docs/H/tests/TESTING_UNITY.md) | Unity conventions |

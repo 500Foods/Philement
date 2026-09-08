@@ -836,3 +836,160 @@ mailrelay_api_run_otp_launch() {
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label}: OTP / repo-probe launch coverage failed"
     return 1
 }
+
+mailrelay_api_run_rate_limit() {
+    local label="$1"
+    local config_file="$2"
+    local web_port="$3"
+    local mailval_port="$4"
+    local recipient="$5"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}"
+    local variant_tag="rate_limit_${TIMESTAMP}"
+    local maildata_dir="${DIAG_TEST_DIR}/mailval_${variant_tag}"
+    local mailval_log="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_mailval_ratelimit.log"
+    local hydrogen_log="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_hydrogen_ratelimit.log"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: mailval log: ${mailval_log}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: hydrogen log: ${hydrogen_log}"
+    local sqlite_temp_file="${DIAG_TEST_DIR}/hydrodemo_${variant_tag}.sqlite"
+    local sqlite_temp_config="${DIAG_TEST_DIR}/hydrogen_test_${TEST_NUMBER}_ratelimit_${TIMESTAMP}.json"
+    local mailval_pid
+    local hydrogen_pid_var="MAILRELAY_HYDROGEN_PID_ratelimit"
+    local hydrogen_pid=""
+    local failed=false
+    local http_status
+    local mailadmin_token
+    local response_dir="${DIAG_TEST_DIR}/responses_ratelimit_${variant_tag}"
+    local rate_limit_max=3
+    local rate_limit_interval=60
+
+    true > "${mailval_log}"
+    mkdir -p "${maildata_dir}" "${response_dir}"
+    if ! mailrelay_api_copy_sqlite "${sqlite_temp_file}"; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label}: Failed to copy baseline SQLite database"
+        return 1
+    fi
+
+    # Patch config: enable rate-limit with small window, plaintext SMTP
+    local jq_patch
+    jq_patch=$(jq --arg web_port "${web_port}" \
+                   --arg port "${mailval_port}" \
+                   --arg db "${sqlite_temp_file}" \
+                   --argjson rl_max "${rate_limit_max}" \
+                   --argjson rl_interval "${rate_limit_interval}" \
+                   '.WebServer.Port = ($web_port | tonumber) |
+                    .MailRelay.Database = .Databases.Connections[0].Name |
+                    .MailRelay.Servers[0].Port = $port |
+                    .MailRelay.Servers[0].UseTLS = false |
+                    .MailRelay.Servers[0].TLSMode = 0 |
+                    .MailRelay.Servers[0].CAPath = "" |
+                    .MailRelay.Queue.Persist = false |
+                    .Databases.Connections[0].Database = $db |
+                    .MailRelay.RateLimit = {
+                        Enabled: true,
+                        Scope: 0,
+                        MaxRequestsPerInterval: $rl_max,
+                        IntervalSeconds: $rl_interval
+                    }' \
+                   "${config_file}" 2>/dev/null) || true
+
+    if [[ -z "${jq_patch}" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label}: Failed to patch rate-limit config"
+        mailrelay_api_rm_temp "${sqlite_temp_config}" "${sqlite_temp_file}" "${sqlite_temp_file}-wal" "${sqlite_temp_file}-shm"
+        return 1
+    fi
+    echo "${jq_patch}" > "${sqlite_temp_config}"
+
+    mailval_pid=$(mailrelay_api_start_mailval "${mailval_port}" 0 "${maildata_dir}" "${mailval_log}") || {
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label}: mailval failed to start on port ${mailval_port}"
+        mailrelay_api_rm_temp "${sqlite_temp_config}" "${sqlite_temp_file}" "${sqlite_temp_file}-wal" "${sqlite_temp_file}-shm"
+        return 1
+    }
+
+    hydrogen_pid=$(mailrelay_api_start_hydrogen "${sqlite_temp_config}" "${hydrogen_log}" "${hydrogen_pid_var}") || {
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label}: Hydrogen failed to start"
+        mailrelay_api_stop_mailval "${mailval_pid}"
+        mailrelay_api_rm_temp "${sqlite_temp_config}" "${sqlite_temp_file}" "${sqlite_temp_file}-wal" "${sqlite_temp_file}-shm"
+        return 1
+    }
+
+    if ! mailrelay_api_wait_ready "${hydrogen_log}" "${READY_TIMEOUT}"; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: READY FOR REQUESTS signal not observed"
+        failed=true
+    fi
+
+    if [[ "${failed}" = false ]]; then
+        # Authenticate as mailadmin
+        local login_status
+        login_status=$(mailrelay_api_login "http://127.0.0.1:${web_port}" \
+            "${HYDROGEN_MAILADMIN_NAME}" "${HYDROGEN_MAILADMIN_PASS}" \
+            "${response_dir}/admin_login.json")
+        if [[ "${login_status}" != "200" ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: mailadmin login returned HTTP ${login_status}"
+            failed=true
+        else
+            mailadmin_token=$(mailrelay_api_extract_jwt "${response_dir}/admin_login.json")
+            if [[ -z "${mailadmin_token}" ]]; then
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: mailadmin login returned no JWT token"
+                failed=true
+            fi
+        fi
+    fi
+
+    if [[ "${failed}" = false ]] && [[ -n "${mailadmin_token}" ]]; then
+        local send_data
+        local i
+         local rate_limited=false
+
+        send_data=$(jq -n \
+            --arg template_key "mail.test" \
+            --arg idempotency_key "ratelimit_test_${TIMESTAMP}_${RANDOM}" \
+            --arg name "MailRelayRateLimit" \
+            '{template_key: $template_key, to: ["sink@mailval.local"], idempotency_key: $idempotency_key, params: {NAME: $name}}')
+
+        # Send up to rate_limit_max + 2 requests. The first N should succeed (200).
+        # Request N+1 and beyond should be rate-limited (429).
+        for (( i = 1; i <= rate_limit_max + 2; i++ )); do
+            http_status=$(mailrelay_api_request "POST" \
+                "http://127.0.0.1:${web_port}/api/mailrelay/send" \
+                "${send_data}" "${response_dir}/send_${i}.json" "${mailadmin_token}")
+            if [[ "${i}" -le "${rate_limit_max}" ]]; then
+                if [[ "${http_status}" != "200" ]]; then
+                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: Request ${i} expected 200, got ${http_status}"
+                    failed=true
+                fi
+            else
+                if [[ "${http_status}" == "429" ]]; then
+                    rate_limited=true
+                    # Verify the error marker in the response body
+                    if ! "${GREP}" -q "MAIL_RATE_LIMITED" "${response_dir}/send_${i}.json" 2>/dev/null; then
+                        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: Request ${i} returned 429 but response body missing MAIL_RATE_LIMITED"
+                        failed=true
+                    fi
+                    break
+                fi
+            fi
+        done
+
+        if [[ "${rate_limited}" != "true" ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: Expected 429 rate-limit response after ${rate_limit_max} requests, but none received"
+            failed=true
+        fi
+
+        if [[ "${failed}" = false ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: First ${rate_limit_max} sends returned 200; request ${rate_limit_max}+1 returned 429 (MAIL_RATE_LIMITED)"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${label}: Rate-limit window: ${rate_limit_interval}s, max requests: ${rate_limit_max}"
+        fi
+    fi
+
+    stop_hydrogen "${hydrogen_pid}" "${hydrogen_log}" "${SHUTDOWN_TIMEOUT}" "${SHUTDOWN_ACTIVITY_TIMEOUT}" "${DIAG_TEST_DIR}" || true
+    mailrelay_api_stop_mailval "${mailval_pid}"
+    mailrelay_api_rm_temp "${sqlite_temp_config}" "${sqlite_temp_file}" "${sqlite_temp_file}-wal" "${sqlite_temp_file}-shm"
+
+    if [[ "${failed}" = false ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${label}: Rate-limit enforced (200 for first ${rate_limit_max}, then 429 MAIL_RATE_LIMITED)"
+        PASS_COUNT=$(( PASS_COUNT + 1 ))
+        return 0
+    fi
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${label}: Rate-limit verification failed"
+    return 1
+}

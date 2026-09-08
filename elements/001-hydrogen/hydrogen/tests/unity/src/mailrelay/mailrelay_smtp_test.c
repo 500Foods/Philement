@@ -9,6 +9,7 @@
 #include <src/mailrelay/mailrelay_message.h>
 #include <src/mailrelay/mailrelay_result.h>
 
+#include <curl/curl.h>
 #include <unity.h>
 #include <stdlib.h>
 #include <string.h>
@@ -72,6 +73,7 @@ static OutboundServer make_server(int tls_mode, bool use_tls) {
     s.Port = SRV_PORT;
     s.UseTLS = use_tls;
     s.TLSMode = tls_mode;
+    s.MinTLS = MAIL_TLS_DEFAULT_MIN_VERSION;
     s.AuthMode = MAIL_AUTH_MODE_NONE;
     s.TimeoutSeconds = 15;
     return s;
@@ -218,6 +220,60 @@ static void test_render_failure_without_from_returns_false(void) {
     free_msg(&m);
 }
 
+static void test_resolve_min_tls_default_is_tls12(void) {
+    OutboundServer s = make_server(MAIL_TLS_MODE_NONE, false);
+    s.MinTLS = MAIL_TLS_DEFAULT_MIN_VERSION;
+    TEST_ASSERT_EQUAL_INT(CURL_SSLVERSION_TLSv1_2 | CURL_SSLVERSION_MAX_DEFAULT,
+                          resolve_min_tls(&s));
+}
+
+static void test_resolve_min_tls_tls10(void) {
+    OutboundServer s = make_server(MAIL_TLS_MODE_NONE, false);
+    s.MinTLS = MAIL_TLS_VERSION_10;
+    TEST_ASSERT_EQUAL_INT(CURL_SSLVERSION_TLSv1_0 | CURL_SSLVERSION_MAX_DEFAULT,
+                          resolve_min_tls(&s));
+}
+
+static void test_resolve_min_tls_tls11(void) {
+    OutboundServer s = make_server(MAIL_TLS_MODE_NONE, false);
+    s.MinTLS = MAIL_TLS_VERSION_11;
+    TEST_ASSERT_EQUAL_INT(CURL_SSLVERSION_TLSv1_1 | CURL_SSLVERSION_MAX_DEFAULT,
+                          resolve_min_tls(&s));
+}
+
+static void test_resolve_min_tls_tls13(void) {
+    OutboundServer s = make_server(MAIL_TLS_MODE_NONE, false);
+    s.MinTLS = MAIL_TLS_VERSION_13;
+    TEST_ASSERT_EQUAL_INT(CURL_SSLVERSION_TLSv1_3 | CURL_SSLVERSION_MAX_DEFAULT,
+                          resolve_min_tls(&s));
+}
+
+static void test_resolve_min_tls_below_minimum_clamps(void) {
+    OutboundServer s = make_server(MAIL_TLS_MODE_NONE, false);
+    s.MinTLS = 5; /* below MIN_MAIL_TLS_VERSION */
+    TEST_ASSERT_EQUAL_INT(CURL_SSLVERSION_TLSv1_0 | CURL_SSLVERSION_MAX_DEFAULT,
+                          resolve_min_tls(&s));
+}
+
+static void test_resolve_min_tls_above_maximum_clamps(void) {
+    OutboundServer s = make_server(MAIL_TLS_MODE_NONE, false);
+    s.MinTLS = 99; /* above MAX_MAIL_TLS_VERSION */
+    TEST_ASSERT_EQUAL_INT(CURL_SSLVERSION_TLSv1_3 | CURL_SSLVERSION_MAX_DEFAULT,
+                          resolve_min_tls(&s));
+}
+
+static void test_build_request_sets_min_tls(void) {
+    MailRelayMessage m = make_msg(true);
+    OutboundServer s = make_server(MAIL_TLS_MODE_STARTTLS, false);
+    s.MinTLS = MAIL_TLS_VERSION_13;
+    MailRelaySmtpRequest req;
+    bool ok = build_request(&m, &s, "app", NULL, &req);
+    TEST_ASSERT_TRUE(ok);
+    TEST_ASSERT_EQUAL_INT(CURL_SSLVERSION_TLSv1_3 | CURL_SSLVERSION_MAX_DEFAULT,
+                          req.min_tls);
+    free_msg(&m);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_send_invokes_transport_and_renders);
@@ -230,5 +286,12 @@ int main(void) {
     RUN_TEST(test_permanent_failure_propagates);
     RUN_TEST(test_invalid_args_return_false);
     RUN_TEST(test_render_failure_without_from_returns_false);
+    RUN_TEST(test_resolve_min_tls_default_is_tls12);
+    RUN_TEST(test_resolve_min_tls_tls10);
+    RUN_TEST(test_resolve_min_tls_tls11);
+    RUN_TEST(test_resolve_min_tls_tls13);
+    RUN_TEST(test_resolve_min_tls_below_minimum_clamps);
+    RUN_TEST(test_resolve_min_tls_above_maximum_clamps);
+    RUN_TEST(test_build_request_sets_min_tls);
     return UNITY_END();
 }

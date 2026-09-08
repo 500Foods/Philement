@@ -451,6 +451,7 @@ void initialize_config_defaults_mail_relay(AppConfig* config) {
         config->mail_relay.OutboundServerCount = 0;
         for (int i = 0; i < MAX_OUTBOUND_SERVERS; i++) {
             memset(&config->mail_relay.Servers[i], 0, sizeof(OutboundServer));
+            config->mail_relay.Servers[i].MinTLS = MAIL_TLS_DEFAULT_MIN_VERSION;
         }
         
         log_this(SR_CONFIG, "――― Applied config defaults for Mail Relay", LOG_LEVEL_DEBUG, 0);

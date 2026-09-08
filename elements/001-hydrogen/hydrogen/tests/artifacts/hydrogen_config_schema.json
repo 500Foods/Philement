@@ -1014,6 +1014,13 @@
                                 "minimum": 0,
                                 "maximum": 3
                             },
+                            "MinTLS": {
+                                "type": "integer",
+                                "description": "Minimum TLS version for outbound SMTP: 10=TLS1.0, 11=TLS1.1, 12=TLS1.2, 13=TLS1.3 (default 12)",
+                                "minimum": 10,
+                                "maximum": 13,
+                                "default": 12
+                            },
                             "CAPath": {
                                 "type": "string",
                                 "description": "Path to CA bundle"

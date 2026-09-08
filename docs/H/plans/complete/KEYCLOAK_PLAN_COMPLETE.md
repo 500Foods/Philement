@@ -758,7 +758,7 @@ No reverse migration required to disable the feature.
 | [`/docs/H/api/auth/oidc_rp.md`](/docs/H/api/auth/oidc_rp.md) | Wire contract for RP endpoints. |
 | [`/docs/Li/LITHIUM-KEYCLOAK.md`](/docs/Li/LITHIUM-KEYCLOAK.md) | Lithium-oriented client recipe; Phase 4 generalizes for all clients. |
 | [`/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md`](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md) | Password auth / JWT baseline. |
-| [`/docs/H/plans/MAILRELAY_PLAN.md`](/docs/H/plans/MAILRELAY_PLAN.md) | Structural model for gated plans. |
+| [`/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md`](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md) | Structural model for gated plans. |
 
 ---
 

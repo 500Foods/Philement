@@ -18,6 +18,7 @@
 
 /* Forward declarations (cppcheck: every function has a prototype). */
 int resolve_tls_mode(const OutboundServer* server);
+int resolve_min_tls(const OutboundServer* server);
 bool build_request(const MailRelayMessage* msg,
                           const OutboundServer* server,
                           const char* default_from,
@@ -41,6 +42,24 @@ int resolve_tls_mode(const OutboundServer* server) {
     return mode;
 }
 
+int resolve_min_tls(const OutboundServer* server) {
+    int min_version = server->MinTLS;
+    if (min_version < MIN_MAIL_TLS_VERSION) min_version = MIN_MAIL_TLS_VERSION;
+    if (min_version > MAX_MAIL_TLS_VERSION) min_version = MAX_MAIL_TLS_VERSION;
+
+    switch (min_version) {
+        case MAIL_TLS_VERSION_10:
+            return CURL_SSLVERSION_TLSv1_0 | CURL_SSLVERSION_MAX_DEFAULT;
+        case MAIL_TLS_VERSION_11:
+            return CURL_SSLVERSION_TLSv1_1 | CURL_SSLVERSION_MAX_DEFAULT;
+        case MAIL_TLS_VERSION_12:
+        default:
+            return CURL_SSLVERSION_TLSv1_2 | CURL_SSLVERSION_MAX_DEFAULT;
+        case MAIL_TLS_VERSION_13:
+            return CURL_SSLVERSION_TLSv1_3 | CURL_SSLVERSION_MAX_DEFAULT;
+    }
+}
+
 bool build_request(const MailRelayMessage* msg,
                           const OutboundServer* server,
                           const char* default_from,
@@ -50,6 +69,7 @@ bool build_request(const MailRelayMessage* msg,
 
     int mode = resolve_tls_mode(server);
     req->tls_mode = mode;
+    req->min_tls = resolve_min_tls(server);
     if (mode == MAIL_TLS_MODE_STARTTLS) {
         req->use_ssl = 1;
     } else if (mode == MAIL_TLS_MODE_STARTTLS_REQUIRED) {
@@ -211,6 +231,7 @@ bool mailrelay_smtp_transport_real(const MailRelaySmtpRequest* req, MailRelayRes
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, (long)req->timeout_seconds);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, (long)req->timeout_seconds);
     curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+    curl_easy_setopt(curl, CURLOPT_SSLVERSION, req->min_tls);
     /* SMTP server replies (220/250/354/221) are delivered to the header
      * callback, not the body write callback; capture both into resp. */
     curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, smtp_write_cb);
