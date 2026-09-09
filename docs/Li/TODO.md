@@ -1,29 +1,32 @@
 # Lithium TODO
 
 Actionable incomplete work only. Active plan body:
-[`/docs/Li/plans/LITHIUM_SPRINT.md`](/docs/Li/plans/LITHIUM_SPRINT.md).
+[`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md).
 Agent map: [`/elements/003-lithium/AGENTS.md`](/elements/003-lithium/AGENTS.md).
 
 ## How to use this file
 
 - Sorted by **immediate ROI vs effort**.
-- When the sprint plan finishes: move it to `plans/complete/` with a
-  `_COMPLETE` suffix, update links, empty this file back to leftovers.
+- When CATCHUP finishes: archive per that plan’s Phase 38, update
+  links, empty this file back to leftovers.
 
 ---
 
-## P0 — Sprint (do not fork)
+## P0 — Catchup (do not fork)
 
-Work **only** via `LITHIUM_SPRINT.md` phases. Do not open parallel fix
-lists for lifecycle, XSS, Scripting invoke, or Course Builder UI.
+Work **only** via [`CATCHUP.md`](/elements/003-lithium/CATCHUP.md)
+phases. Do not open parallel fix lists for lifecycle, XSS, login
+partners, Scripting invoke, Course Manager, or chat/MCP.
 
 | | |
 | --- | --- |
-| **Plan** | [LITHIUM_SPRINT.md](/docs/Li/plans/LITHIUM_SPRINT.md) |
+| **Plan** | [CATCHUP.md](/elements/003-lithium/CATCHUP.md) |
 | **Next** | Phase 0 — design lock |
-| **Effort** | XL (32 gated phases) |
-| **Done** | 0% — plan authored 2026-08-22 |
-| **Remaining** | Phases 0–31 |
+| **First deploy** | Band D — Course Manager (ID 34) |
+| **Effort** | XL (39 gated phases, 0–38) |
+| **Done** | 0% — plan authored 2026-09-09 |
+| **Remaining** | Phases 0–38 |
+| **Superseded** | [LITHIUM_SPRINT.md](/docs/Li/plans/LITHIUM_SPRINT.md) |
 
 ## Parallel (other repos)
 

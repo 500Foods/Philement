@@ -1,9 +1,14 @@
 <!-- markdownlint-disable MD007 MD024 -->
 # Lithium Sprint Plan
 
+> **SUPERSEDED 2026-09-09.** Do not implement from this file.
+> Active plan:
+> [`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md).
+> Course Manager is ID **34**; Course Builder is ID **35**.
+
 ## Purpose
 
-A gated, phase-by-phase plan for a lengthy Lithium sprint: close the
+**History only.** A gated, phase-by-phase plan for a lengthy Lithium sprint: close the
 2026-08-22 architecture-review defects, make the manager/lifecycle/ID layer
 honest, flesh out **Scripting Manager** so operators can manage and invoke
 the growing Helium Lua catalog, and add a **Course Builder** operator
@@ -48,8 +53,7 @@ only. See AGENTS.md.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-08-22):** Plan authored. **Next: Phase 0**
-(design lock). No implementation yet.
+**CURRENT PAUSE POINT:** Superseded by CATCHUP.md. Do not resume here.
 
 ### Resume here next session
 
