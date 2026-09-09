@@ -695,6 +695,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
   - [conduit_utils.sh](/elements/001-hydrogen/hydrogen/tests/lib/conduit_utils.sh) - Conduit endpoint testing utilities
   - [mailrelay_api_helpers.sh](/elements/001-hydrogen/hydrogen/tests/lib/mailrelay_api_helpers.sh) - Mail Relay API blackbox helpers (test_58)
   - [mcp_helpers.sh](/elements/001-hydrogen/hydrogen/tests/lib/mcp_helpers.sh) - MCP Streamable HTTP blackbox helpers (test_47)
+  - [schemahelper_helpers.sh](/elements/001-hydrogen/hydrogen/tests/lib/schemahelper_helpers.sh) - SchemaHelper blackbox helpers (test_72)
 
 </details>
 
@@ -731,7 +732,8 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [docs/H/tools/SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md) - SchemaTool operator guide
 - [docs/H/tools/SCHEMAHELPER.md](/docs/H/tools/SCHEMAHELPER.md) - SchemaHelper operator guide
 - [docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md) - SchemaTool implementation plan (complete)
-- [docs/H/plans/SCHEMAHELPER.md](/docs/H/plans/SCHEMAHELPER.md) - SchemaHelper implementation plan
+- [docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md) - SchemaHelper v2 implementation plan (complete)
+- [docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md) - SchemaHelper v1 implementation plan (complete)
 
 </details>
 

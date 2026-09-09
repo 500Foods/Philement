@@ -2,13 +2,13 @@
 -- SchemaTool wrapper discovery + metadata, plus path/sh quoting helpers.
 --
 -- CHANGELOG
+-- 0.6.2 - 2026-09-08 - Picker labels use connect.picker_blurb
 -- 0.5.8 - 2026-08-25 - Extracted from schemahelper.lua (wrapper cluster)
 
 local connect = require("schemahelper_connect")
 local C = require("schemahelper_const")
 
 local WRAPPER_ORDER = C.WRAPPER_ORDER
-local WRAPPER_BLURB = C.WRAPPER_BLURB
 
 local function read_tool_version(path)
     local f = io.open(path, "r")
@@ -95,7 +95,7 @@ end
 
 local function wrapper_label(item)
     local base = item.path:match("([^/]+)$") or item.path
-    local blurb = WRAPPER_BLURB[item.engine] or item.engine
+    local blurb = connect.picker_blurb(item.engine)
     return string.format("%-28s %s", base, blurb)
 end
 

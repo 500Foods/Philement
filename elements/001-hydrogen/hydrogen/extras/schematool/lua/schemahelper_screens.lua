@@ -6,6 +6,10 @@
 -- explore cursor + shared hotspot state; they are passed into build_screen.
 --
 -- CHANGELOG
+-- 0.6.5 - 2026-09-09 - Dashboard accepted list + [X] un-accept
+-- 0.6.3 - 2026-09-08 - SchemaTool eighths bar + issue list
+-- 0.6.1 - 2026-09-08 - Splash has no Instance block
+-- 0.6.0 - 2026-09-08 - Instance header on every screen
 -- 0.5.8 - 2026-08-25 - Extracted from schemahelper.lua (screen painters)
 
 local C = require("schemahelper_const")
@@ -43,13 +47,15 @@ local function packet_next(opts)
 end
 
 local function splash_content(self)
-    local row = self.inner_row
     local col = self.inner_col
     local height = self.inner_height
     local width = self.inner_width
     if height < 1 or width < 1 then
         return
     end
+    local UI = require("schemahelper_ui")
+    UI.hotspots_reset()
+    local row = self.inner_row
     local opts = self.opts
     local tool_ver, tool_date = W.read_tool_version(opts.schematool)
     local term_ver = t._VERSION or "0.1.0"
@@ -142,6 +148,7 @@ local function picker_content(self)
     local app = self.app
     local list = app.picker.list
     local selected = app.picker.selected
+    local header = I.instance_block(self.opts, app, self.inner_width)
     local lines = {
         { "Select SchemaTool target", ATTR.TITLE },
         { "", ATTR.PATH },
@@ -155,44 +162,59 @@ local function picker_content(self)
     for i = 1, #list do
         hotrows[i + 2] = "PICK:" .. i
     end
-    P.paint_framed(self, {}, lines, "[Enter] select   [ESC] exit", hotrows)
+    P.paint_framed(self, header, lines, "[Enter] select   [ESC] exit", hotrows)
 end
 
 local function running_content(self)
     local app = self.app
-    local lines = I.session_header(self.opts, app, self.inner_width)
-    lines[#lines + 1] = { "", ATTR.PATH }
-    lines[#lines + 1] = { app.status_note or "Working…", ATTR.TITLE }
+    local header = I.instance_block(self.opts, app, self.inner_width)
+    local body = {
+        { app.status_note or "Working…", ATTR.TITLE },
+    }
     local prog = app.progress
     if prog then
         local label = "  phase    " .. (prog.phase or "starting")
         if prog.phase == "expect" and prog.total and prog.total > 0 then
-            label = string.format("  expect   %d / %d", prog.current or 0, prog.total)
-            if prog.ref then
-                label = label .. "   ref " .. tostring(prog.ref)
+            local desc = prog.name
+            if not desc or desc == "" then
+                desc = prog.ref and ("ref " .. tostring(prog.ref)) or ""
             end
+            label = string.format("  expect   %d / %d", prog.current or 0, prog.total)
+            if desc ~= "" then
+                label = label .. "   " .. desc
+            end
+        elseif prog.phase == "compare" then
+            label = string.format("  compare  %d / %d",
+                prog.compare_current or prog.current or 0, prog.total or 0)
         elseif prog.total and prog.total > 0 and (prog.current or 0) > 0 then
             label = string.format("  %s     %d / %d",
                 prog.phase or "work", prog.current, prog.total)
         end
-        lines[#lines + 1] = { label, ATTR.VERSION }
-        local bar_w = math.max(10, (self.inner_width or 40) - 8)
-        local pct = ""
-        if prog.total and prog.total > 0 then
-            pct = string.format("  %d%%",
-                math.floor(100 * (prog.current or 0) / prog.total))
+        body[#body + 1] = { label, ATTR.VERSION }
+        body[#body + 1] = { spans = I.progress_bar_spans(prog) }
+        local issues = prog.issues or {}
+        local height = self.inner_height or 20
+        local vis = math.max(1, height - (#header + 6))
+        prog.issue_vis = vis
+        local n = #issues
+        local scroll = prog.issue_scroll or 0
+        local max_off = math.max(0, n - vis)
+        if scroll > max_off then
+            scroll = max_off
+            prog.issue_scroll = scroll
         end
-        lines[#lines + 1] = {
-            "  " .. I.progress_bar(bar_w, prog.current or 0, prog.total or 0) .. pct,
-            ATTR.SUB,
-        }
+        local last = n - scroll
+        local first = math.max(1, last - vis + 1)
+        if last >= first then
+            for i = first, last do
+                local it = issues[i]
+                local text = string.format("  ref %-6s  %s",
+                    tostring(it.ref or "-"), it.class)
+                body[#body + 1] = { text, I.issue_attr(it.class) }
+            end
+        end
     end
-    local header = I.session_header(self.opts, app, self.inner_width)
-    local body = {}
-    for i = #header + 1, #lines do
-        body[#body + 1] = lines[i]
-    end
-    P.paint_framed(self, header, body, "Running SchemaTool…")
+    P.paint_framed(self, header, body, "Running SchemaTool…   [j]/[k] issues")
 end
 
 local function result_content(self)
@@ -225,9 +247,28 @@ local function dashboard_content(self)
         reserved = reserved,
     })
     app.built = built
+    local acc = built.accepted or {}
+    local sel = app.accepted_index or 1
+    if sel < 1 then
+        sel = 1
+    elseif #acc > 0 and sel > #acc then
+        sel = #acc
+    end
+    app.accepted_index = sel
     local body = {}
     for i = 1, #dash_lines do
         body[#body + 1] = { dash_lines[i], ATTR.PATH }
+        if dash_lines[i]:match("^Accepted variations") then
+            if #acc == 0 then
+                body[#body + 1] = { "  (none)", ATTR.PATH }
+            else
+                for j = 1, #acc do
+                    local mark = j == sel and "● " or "○ "
+                    local attr = j == sel and ATTR.TITLE or ATTR.PATH
+                    body[#body + 1] = { "  " .. mark .. acc[j].id, attr }
+                end
+            end
+        end
     end
     if app.warn_in_repo then
         body[#body + 1] = { "", ATTR.PATH }
@@ -247,8 +288,11 @@ local function dashboard_content(self)
     if msg ~= "" and msg ~= "Catalog track failed; metadata findings kept" then
         body[#body + 1] = { msg, ATTR.OK }
     end
-    P.paint_framed(self, header, body,
-        "[Enter] begin review   [R]e-audit   [Q]uit")
+    local footer = "[Enter] begin review   [R]e-audit   [Q]uit"
+    if #acc > 0 then
+        footer = "[Enter] begin review   [X] un-accept   [R]e-audit   [Q]uit"
+    end
+    P.paint_framed(self, header, body, footer)
 end
 
 local function is_review_key_line(line)

@@ -8,6 +8,7 @@
 --     [--only-failures]
 --
 -- CHANGELOG
+-- 1.1.2 - 2026-09-08 - Stderr catalog lines for findings only
 -- 1.1.1 - 2026-08-23 - Pass expected column fold ref onto failures[]
 -- 1.1.0 - 2026-08-23 - Additive findings: failures[] + live_extras[] (tables unchanged)
 -- 1.0.0 - 2026-08-02 - Phase 7c catalog compare
@@ -166,6 +167,12 @@ local counts = {
     live_extra_column = 0,
 }
 
+local function emit_catalog(ref, class)
+    io.stderr:write(string.format(
+        "catalog ref %d %s\n", tonumber(ref) or 0, class))
+    io.stderr:flush()
+end
+
 local exp_names = {}
 for t, _ in pairs(exp_tables) do
     exp_names[#exp_names + 1] = t
@@ -185,6 +192,7 @@ for _, tname in ipairs(exp_names) do
             live = "missing",
             notes = "missing table",
         }
+        emit_catalog(0, "missing_table")
         goto continue_table
     end
 
@@ -212,6 +220,7 @@ for _, tname in ipairs(exp_names) do
                 notes = "missing column",
                 ref = exp.ref,
             }
+            emit_catalog(exp.ref, "missing_column")
             goto continue_col
         end
 
@@ -224,6 +233,7 @@ for _, tname in ipairs(exp_names) do
             status = "N"
             counts.nullability = counts.nullability + 1
             notes[#notes + 1] = "nullable exp=" .. exp_s .. " live=" .. live_s
+            emit_catalog(exp.ref, "nullability")
         end
 
         if status == "Y" then
@@ -269,6 +279,7 @@ for _, tname in ipairs(live_names) do
             live = "present",
             notes = "live table not in expected fold",
         }
+        emit_catalog(0, "extra_table")
         local col_names = {}
         for cn, _ in pairs(live_cols) do
             col_names[#col_names + 1] = cn
@@ -285,6 +296,7 @@ for _, tname in ipairs(live_names) do
                 live = "present",
                 notes = "live column not in expected fold",
             }
+            emit_catalog(0, "extra_column")
         end
     else
         local exp_cols = exp_map[tname] or {}
@@ -305,6 +317,7 @@ for _, tname in ipairs(live_names) do
                     live = "present",
                     notes = "live column not in expected fold",
                 }
+                emit_catalog(0, "extra_column")
             end
         end
     end

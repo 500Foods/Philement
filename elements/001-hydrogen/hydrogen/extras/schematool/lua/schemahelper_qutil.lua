@@ -3,6 +3,7 @@
 -- No internal module dependencies; safe to require first.
 --
 -- CHANGELOG
+-- 0.6.5 - 2026-09-09 - finding expected/live SHA for accept invalidation
 -- 0.5.8 - 2026-08-25 - Extracted from schemahelper_queue.lua (text/json helpers)
 
 local M = {}
@@ -309,6 +310,61 @@ function M.split_lines(text)
         lines[#lines + 1] = line
     end
     return lines
+end
+
+function M.sha256_hex(text)
+    text = tostring(text or "")
+    local tmp = (os.getenv("TMPDIR") or "/tmp")
+        .. "/schemahelper_h_"
+        .. tostring(os.time())
+        .. "_"
+        .. tostring(math.random(100000))
+    if not M.write_all(tmp, text) then
+        return ""
+    end
+    local h = io.popen('sha256sum "' .. tmp:gsub('"', '\\"') .. '" 2>/dev/null')
+    local line = ""
+    if h then
+        line = h:read("*l") or ""
+        h:close()
+    end
+    os.remove(tmp)
+    local hex = line:match("^([0-9a-fA-F]+)")
+    if hex then
+        return hex:lower()
+    end
+    return ""
+end
+
+function M.finding_sides(finding)
+    finding = finding or {}
+    local field = finding.field
+    local expected = finding.expected
+    local actual = finding.actual
+    local live = finding.live
+    if field and field ~= "" and type(expected) == "string" then
+        local exp_s = M.payload_raw(expected, field)
+        local live_s = M.payload_raw(actual or "", field)
+        if exp_s ~= "" or live_s ~= "" then
+            return exp_s, live_s
+        end
+    end
+    local exp_s = ""
+    local live_s = ""
+    if type(expected) == "string" then
+        exp_s = expected
+    end
+    if type(live) == "string" then
+        live_s = live
+    elseif type(actual) == "string" then
+        live_s = actual
+    end
+    return exp_s, live_s
+end
+
+function M.finding_hash(finding)
+    local exp_s, live_s = M.finding_sides(finding)
+    return M.sha256_hex(exp_s .. "\n" .. live_s)
 end
 
 return M

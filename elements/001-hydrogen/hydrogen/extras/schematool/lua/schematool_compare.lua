@@ -9,6 +9,7 @@
 --     [--only-failures] [--include-reverse] [--include-diagram]
 --
 -- CHANGELOG
+-- 1.0.1 - 2026-09-08 - Per-ref stderr: compare N/M ref R class
 -- 1.0.0 - 2026-07-29 - Phase 4 compare
 
 -- luacheck: globals arg package
@@ -527,6 +528,20 @@ for _, d in ipairs(disk) do
             notes = note_join(notes),
         }
     end
+
+    local class = "ok"
+    if is_anomaly then
+        class = "anomaly"
+    elseif not has_load then
+        class = "missing_load"
+    elseif not has_apply then
+        class = "missing_apply"
+    elseif is_fail then
+        class = "drift"
+    end
+    io.stderr:write(string.format(
+        "compare %d/%d ref %d %s\n", counts.total, #disk, ref, class))
+    io.stderr:flush()
 end
 
 local orphan_refs = {}
@@ -552,6 +567,9 @@ for _, ref in ipairs(orphan_refs) do
         ref = ref,
         rows = rows,
     }
+    io.stderr:write(string.format(
+        "compare %d/%d ref %d orphan\n", counts.total, counts.total, ref))
+    io.stderr:flush()
     checklist[#checklist + 1] = {
         ref = ref,
         file = "(orphan)",

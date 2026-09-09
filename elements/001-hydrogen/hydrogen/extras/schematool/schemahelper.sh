@@ -4,6 +4,14 @@
 # Lua 5.5 TUI over extras/schematool. Default is review-only.
 #
 # CHANGELOG
+# 0.6.6 - 2026-09-09 - --help docs URL → SCHEMAHELPER.md
+# 0.6.5 - 2026-09-09 - Phase 4: accept hash + dashboard un-accept
+# 0.6.4 - 2026-09-08 - Dark-grey progress bar background
+# 0.6.3 - 2026-09-08 - Phase 3: eighths progress + issue pane
+# 0.6.2 - 2026-09-08 - Target picker: real env names, not FAMILY_*
+# 0.6.1 - 2026-09-08 - Instance off splash; two-tone Instance labels
+# 0.6.0 - 2026-09-08 - Chrome titles + Instance (SchemaHelper v2 Phase 1)
+# 0.5.8 - 2026-09-08 - --help docs URL → SCHEMAHELPER_V2.md
 # 0.5.8 - 2026-08-25 - Per-run /tmp work-dir for intermediates; --work-dir/--keep-work-dir
 # 0.5.7 - 2026-08-24 - Mouseover highlighting on clickable options; click on release; capitalized option labels
 # 0.5.6 - 2026-08-24 - Mouse support: SGR 1006; click wrapper rows and click [key] actions
@@ -41,7 +49,7 @@ SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
 LUA_APP="${SCRIPT_DIR}/schemahelper.lua"
 SCHEMATOOL_SH="${SCRIPT_DIR}/schematool.sh"
 
-VERSION="0.5.8"
+VERSION="0.6.6"
 SCHEMATOOL_VERSION="1.9.0"
 
 print_help() {
@@ -88,7 +96,7 @@ Migrations default to the same Helium acuranzo tree the wrappers use
 Requires Lua 5.5 and the terminal rock:
   luarocks --lua-version=5.5 install terminal
 
-Docs: /docs/H/plans/SCHEMAHELPER.md
+Docs: /docs/H/tools/SCHEMAHELPER.md
 EOF
 }
 

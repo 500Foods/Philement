@@ -57,6 +57,8 @@ Active plans folder: [`/docs/H/plans/`](/docs/H/plans/).
 | [MDNS_UPGRADE_COMPLETE.md](/docs/H/plans/complete/MDNS_UPGRADE_COMPLETE.md) | mDNS RFC 6762/6763 server + real client (Phases 0–8) |
 | [MCP_COMPLETE.md](/docs/H/plans/complete/MCP_COMPLETE.md) | MCP server (Streamable HTTP + Lua) |
 | [MIGRATIONS_COMPLETE.md](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md) | Migration performance |
+| [SCHEMAHELPER_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md) | SchemaHelper v1 TUI (review queue, packets, apply; 0.5.8) |
+| [SCHEMAHELPER_V2_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md) | SchemaHelper v2 (Target, Instance, progress; 0.6.5) |
 | [SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md) | SchemaTool drift auditor (metadata + catalog, CLI 1.7.1) |
 | [STATIC_COMPLETE.md](/docs/H/plans/complete/STATIC_COMPLETE.md) | Static-function purge |
 | [TERMINAL_PLAN_COMPLETE.md](/docs/H/plans/complete/TERMINAL_PLAN_COMPLETE.md) | Terminal subsystem |

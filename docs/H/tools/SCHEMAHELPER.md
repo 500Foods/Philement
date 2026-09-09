@@ -5,8 +5,10 @@ Lua **5.5** TUI under
 It sits in front of the read-only SchemaTool auditor and turns a batch of
 drift findings into operator decisions.
 
-Implementation plan:
-[`/docs/H/plans/SCHEMAHELPER.md`](/docs/H/plans/SCHEMAHELPER.md).
+Implementation plan (v2 archive):
+[`/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md).
+v1 archive:
+[`/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md).
 
 SchemaTool operator guide:
 [`/docs/H/tools/SCHEMATOOL.md`](/docs/H/tools/SCHEMATOOL.md).
@@ -21,7 +23,8 @@ one by one:
 | See the whole picture | Dashboard: migrations found / perfect / accepted / findings for review |
 | Look closer | `[e]` explore (paged detail) |
 | Not now | `[s]` skip for now (still subject next launch) |
-| Known divergence | `[a]` accept permanent variance (sidecar) |
+| Known divergence | `[a]` accept permanent variance (sidecar; hidden until expected/live hash changes) |
+| Undo an accept | Dashboard `[x]` on the highlighted accepted id |
 | Live DB should become a migration | `[g]` reserve next ref and write a packet |
 | Official Lua should win | `[u]` update one field (`--allow-write`, type `REF.field`) |
 | DB ref is a keeper, not a refix | `[u]` delete an orphan ref (`--allow-write`, type `REF`; true orphans only) |
@@ -77,18 +80,18 @@ separate from `--work-dir` and persists by default.
 
 ## Wrappers
 
-`schemahelper.sh` discovers `extras/schematool/schematool_*.sh`. Each
-wrapper is an engine + env family:
+`schemahelper.sh` discovers `extras/schematool/schematool_*.sh`. The
+Target picker shows real env **names** (never password values):
 
-| Wrapper | Env family | Typical local target |
+| Wrapper | Picker blurb | Typical local target |
 | --- | --- | --- |
-| `schematool_sqlite.sh` | file | `tests/artifacts/database/sqlite/hydrodemo.sqlite` |
-| `schematool_postgresql.sh` | `ACURANZO_DB_*` | schema `demo` |
-| `schematool_mysql.sh` | `CANVAS_DB_*` | schema `demo` |
-| `schematool_mariadb.sh` | `CANVAS_DB_*` | schema `demomrdb` |
-| `schematool_db2.sh` | `HYDROTST_DB_*` | `localhost:55555` / `HYDROTST` |
-| `schematool_cockroachdb.sh` | `ACURANZO_DB_*` | schema `democrdb` |
-| `schematool_yugabytedb.sh` | `YUGABYTE_DB_*` | never `ACURANZO_DB_*` |
+| `schematool_sqlite.sh` | `hydrodemo.sqlite` | `tests/artifacts/database/sqlite/hydrodemo.sqlite` |
+| `schematool_postgresql.sh` | `ACURANZO_DB_HOST USER PASS NAME schema demo` | schema `demo` |
+| `schematool_mysql.sh` | `CANVAS_DB_HOST USER PASS NAME schema demo` | schema `demo` |
+| `schematool_mariadb.sh` | `CANVAS_DB_HOST USER PASS NAME schema demomrdb` | schema `demomrdb` |
+| `schematool_db2.sh` | `HYDROTST_DB_USER PASS NAME schema demo` | `localhost:55555` / `HYDROTST` |
+| `schematool_cockroachdb.sh` | `ACURANZO_DB_HOST USER PASS NAME schema democrdb` | schema `democrdb` |
+| `schematool_yugabytedb.sh` | `YUGABYTE_DB_HOST USER PASS NAME schema demo` | never `ACURANZO_DB_*` |
 
 A failed ping does **not** start SchemaTool. Press `[w]` to pick another
 wrapper, `[q]` to quit, or Enter to review artifacts already in
@@ -123,16 +126,25 @@ SchemaHelper warns once. Prefer `--out-dir /tmp/…` for real sessions. The
 
 ## Screens and keys
 
-1. **Splash** — versions. Enter continues, Esc exits.
-2. **Wrapper picker** — if no wrapper was passed. Up/down, Enter, Esc.
-3. **Connect / SchemaTool** — live ping, then audit unless `--reuse`.
-   Expect prints `expect N/M ref R` to the log; the running screen shows
-   a progress bar from those lines.
-4. **Dashboard** — migration totals, then **findings for review** (one
-    per drifted field plus catalog rows; not a migration count) +
-    variance classes + reserved packet refs. If the catalog track fails
-    after a successful metadata compare, the dashboard still opens on
-    metadata findings (warning on the dashboard).
+Chrome title is per mode (`SchemaHelper`, `SchemaHelper: Target`,
+`SchemaHelper: SchemaTool`, `Dashboard`, `Review`, `Explore`, `Apply`).
+Every screen except splash shows a four-line **Instance** block
+(`Wrapper` / `Logging` / `Working` / `Connect`). Labels are seven
+letters. On Target, Connect stays `Not Connected` and highlighting a
+wrapper updates Wrapper / Logging / Working without a DB ping. The first
+ping is SchemaTool (Enter).
+
+1. **Splash** — versions. Enter continues, Esc exits. No Instance.
+2. **Target** — wrapper picker if none was passed. Up/down, Enter, Esc.
+3. **SchemaTool** — live ping, then audit unless `--reuse`. Progress:
+   migration description, eighths bar of width `ceil(N/8)`, `%` after
+   the bar, fill during expect, cell tint + issue list during compare.
+   `j`/`k`/wheel scroll issues while SchemaTool still runs.
+4. **Dashboard** — Instance, totals, accepted list, **findings for
+   review** (one per drifted field plus catalog rows), variance classes,
+   and reserved packet refs. Catalog-track failure after a successful
+   metadata compare still opens metadata findings (warning on the
+   dashboard).
 5. **Review** — one field at a time. A SchemaTool drift with
    `code`+`name` is two items. Explore shows the stored text; Enter on a
    `BROTLI`/`CRYPTO` line opens the decoded payload (both sides, or one).
@@ -140,11 +152,14 @@ SchemaHelper warns once. Prefer `--out-dir /tmp/…` for real sessions. The
 | Key | Where | Effect |
 | --- | --- | --- |
 | Enter | Dashboard | Begin review |
+| `j` / `k` / arrows | Dashboard | Highlight an accepted id |
+| `x` | Dashboard | Un-accept the highlighted id (sidecar row removed) |
 | `r` | Dashboard / review | Re-run SchemaTool; sidecar decisions kept |
 | `q` / Esc | Most screens | Back or quit |
+| `j` / `k` / wheel | SchemaTool (running) | Scroll the issue list |
 | `e` | Review | Explore one field: Migration vs Database |
 | `s` | Review | Skip for now |
-| `a` | Review | Accept permanent variance |
+| `a` | Review | Accept permanent variance (stores expected/live hash) |
 | `u` | Review | Update a field (`--allow-write`; type `1223.code`) OR delete an orphan ref (type `1290`; true orphans only; anomalies refused) OR apply catalog DDL (type `accounts.id`; nullable/add-column only) |
 | `g` | Review | Generate a migration packet |
 | `m` | Review | Promote current packet to a `design_NNNN.lua` stub in Helium (`--allow-write`; requires an existing packet) |
@@ -165,9 +180,10 @@ Mouse behavior:
   it with a blue background in real time.
 - **Click** — left-click on a `[key]` action (e.g. `[E]xplore`, `[S]kip`,
   `[A]ccept`, `[U]pdate Database`, `[G]enerate Migration`, `[M] Promote`,
-  `[Enter]`, `[Q]uit`, `[R]e-audit`, `[W] pick another wrapper`) triggers it
-  on **release**. Only the bracketed tokens are clickable; the rest of the
-  line is not. Right-click and wheel are ignored.
+   `[Enter]`, `[Q]uit`, `[R]e-audit`, `[X] un-accept`, `[W] pick another
+   wrapper`) triggers it on **release**. Only the bracketed tokens are
+   clickable; the rest of the line is not. Right-click is ignored. Wheel
+   scrolls the SchemaTool issue list while the auditor runs.
 
 ## Sidecar
 
@@ -177,7 +193,10 @@ engines can share one folder. Actions: `skipped`, `accepted`, `applied`,
 `packet`. No passwords and no full `code` blobs.
 
 Skipped items stay in **findings for review**. Accepted / packet /
-applied drop out of the 1-by-1 queue.
+applied drop out of the 1-by-1 queue. Accept stores a SHA-256 of the
+finding’s expected vs live (or actual) text. A later audit that changes
+that payload re-queues the finding even if the id matches. Dashboard
+`[x]` removes that one `accepted` row and restores it to review.
 
 ## Packets
 
@@ -229,7 +248,8 @@ complete the INSERT-into-queries pattern before loading. The packet's
 
 ## Related
 
-- Plan: [`SCHEMAHELPER.md`](/docs/H/plans/SCHEMAHELPER.md)
+- Plan (v2 archive): [`SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md)
+- v1 archive: [`SCHEMAHELPER_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md)
 - Auditor: [`SCHEMATOOL.md`](/docs/H/tools/SCHEMATOOL.md)
 - Extras quick start:
   [`extras/schematool/README.md`](/elements/001-hydrogen/hydrogen/extras/schematool/README.md)

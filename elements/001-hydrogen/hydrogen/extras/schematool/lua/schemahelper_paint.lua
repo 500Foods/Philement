@@ -3,6 +3,9 @@
 -- panel painter, and hotspot recording used by mouse input.
 --
 -- CHANGELOG
+-- 0.6.3 - 2026-09-08 - Body lines may be span lists
+-- 0.6.1 - 2026-09-08 - Header lines: label attr then value attr
+-- 0.6.0 - 2026-09-08 - paint_header_block for Instance on custom screens
 -- 0.5.8 - 2026-08-25 - Extracted from schemahelper.lua (paint cluster)
 
 local C = require("schemahelper_const")
@@ -126,6 +129,57 @@ local function paint_vline_join(self, split_col, top, bot)
     t.output.write(t.text.push_seq(ATTR.RULE), "┴", t.text.pop_seq())
 end
 
+local function paint_header_line(row, col, width, item)
+    if type(item[2]) == "string" then
+        local label = tostring(item[1] or "")
+        local value = item[2]
+        local lattr = item[3] or ATTR.COLHEAD
+        local vattr = item[4] or ATTR.PATH
+        local lw = swidth(label)
+        local gap = 2
+        write_span(row, col + 1, lw, label, lattr)
+        local rest = width - 2 - lw - gap
+        if rest > 0 then
+            write_span(row, col + 1 + lw + gap, rest, value, vattr)
+        end
+        add_hotspots_for_line(label .. "  " .. value, row, col)
+        paint_hotspot_highlight_for_row(row, col, width, label .. "  " .. value,
+            vattr)
+        return
+    end
+    local text = item[1]
+    local attr = item[2] or ATTR.PATH
+    add_hotspots_for_line(text, row, col)
+    write_span(row, col + 1, width - 2, text, attr)
+    paint_hotspot_highlight_for_row(row, col, width, text, attr)
+end
+
+local function paint_header_block(self, header)
+    local row = self.inner_row
+    local col = self.inner_col
+    local height = self.inner_height
+    local width = self.inner_width
+    if height < 3 or width < 4 then
+        return row
+    end
+    local last = row + height - 1
+    local footer_rule = last - 1
+    local y = row
+    header = header or {}
+    for i = 1, #header do
+        if y >= footer_rule then
+            break
+        end
+        paint_header_line(y, col, width, header[i])
+        y = y + 1
+    end
+    if y < footer_rule then
+        paint_hline_join(self, y)
+        y = y + 1
+    end
+    return y
+end
+
 local function paint_framed(self, header, body, footer, hotrows)
     local row = self.inner_row
     local col = self.inner_col
@@ -138,28 +192,36 @@ local function paint_framed(self, header, body, footer, hotrows)
     local last = row + height - 1
     local footer_row = last
     local footer_rule = last - 1
-    local y = row
-    for i = 1, #header do
-        if y >= footer_rule then
-            break
-        end
-        add_hotspots_for_line(header[i][1], y, col)
-        write_span(y, col + 1, width - 2, header[i][1], header[i][2] or ATTR.PATH)
-        paint_hotspot_highlight_for_row(y, col, width, header[i][1], header[i][2] or ATTR.PATH)
-        y = y + 1
-    end
-    if y < footer_rule then
-        paint_hline_join(self, y)
-        y = y + 1
-    end
+    local y = paint_header_block(self, header)
     local vis = footer_rule - y
     if vis < 0 then
         vis = 0
     end
     for i = 1, math.min(#body, vis) do
-        add_hotspots_for_line(body[i][1], y + i - 1, col)
-        write_span(y + i - 1, col + 1, width - 2, body[i][1], body[i][2] or ATTR.PATH)
-        paint_hotspot_highlight_for_row(y + i - 1, col, width, body[i][1], body[i][2] or ATTR.PATH)
+        local item = body[i]
+        if item.spans then
+            local x = col + 1
+            local maxx = col + width - 2
+            for _, sp in ipairs(item.spans) do
+                if x > maxx then
+                    break
+                end
+                local text = sp[1] or ""
+                local attr = sp[2] or ATTR.PATH
+                local w = swidth(text)
+                if x + w - 1 > maxx then
+                    w = maxx - x + 1
+                end
+                if w > 0 then
+                    write_span(y + i - 1, x, w, text, attr)
+                    x = x + w
+                end
+            end
+        else
+            add_hotspots_for_line(item[1], y + i - 1, col)
+            write_span(y + i - 1, col + 1, width - 2, item[1], item[2] or ATTR.PATH)
+            paint_hotspot_highlight_for_row(y + i - 1, col, width, item[1], item[2] or ATTR.PATH)
+        end
     end
     if hotrows then
         for bi, key in pairs(hotrows) do
@@ -189,5 +251,6 @@ return {
     add_hotspots_for_line = add_hotspots_for_line,
     paint_hline_join = paint_hline_join,
     paint_vline_join = paint_vline_join,
+    paint_header_block = paint_header_block,
     paint_framed = paint_framed,
 }

@@ -134,7 +134,6 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [MAILRELAY_PLAN.md](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md): Mail Relay subsystem implementation plan
 - [PERSIST_PLAN_COMPLETE.md](/docs/H/plans/complete/PERSIST_PLAN_COMPLETE.md): Mail Relay Persist MySQL/MariaDB fetch SIGSEGV — closed 2026-09-04 (TODO 12d)
 - [MIRAGE_PLAN.md](/docs/H/plans/MIRAGE_PLAN.md): Mirage distributed proxy architecture (deferred)
-- [SCHEMAHELPER.md](/docs/H/plans/SCHEMAHELPER.md): SchemaHelper interactive SchemaTool front-end (implementation plan)
 - [UNITY_ASAN_PLAN.md](/docs/H/plans/UNITY_ASAN_PLAN.md): Separate ASAN Unity test variant plan
 
 ### Folder: /docs/H/plans/complete
@@ -194,6 +193,8 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [OIDC-PLAN_COMPLETE.md](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md): OIDC RP implementation phase log (superseded by AUTH_FINALE)
 - [OIDC_IDP_COMPLETE.md](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md): Hydrogen as OIDC IdP Phases 0–16 (superseded by AUTH_FINALE)
 - [OIDC_E2E_LOG_COMPLETE.md](/docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md): Real-Keycloak E2E pre-flight (superseded by AUTH_FINALE Phase 11)
+- [SCHEMAHELPER_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md): SchemaHelper v1 TUI (archived 2026-09-08)
+- [SCHEMAHELPER_V2_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md): SchemaHelper v2 Target/Instance/progress (archived 2026-09-09)
 - [SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md): SchemaTool migration drift auditor (CLI 1.7.1)
 - [STATIC_COMPLETE.md](/docs/H/plans/complete/STATIC_COMPLETE.md)
 - [TERMINAL_PLAN_COMPLETE.md](/docs/H/plans/complete/TERMINAL_PLAN_COMPLETE.md)

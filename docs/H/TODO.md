@@ -156,18 +156,6 @@ not open work unless listed below.
 | **Why later** | Lithium SW already displays pushes; Hydrogen has no subscribe/dispatch path. Mail Relay is the outbound analog. Do not reuse `Notify` SMTP scaffold or `H.notify`. |
 | **Note** | Web Push RFC 8030/8291/8292 to vendor endpoints (`fcm.googleapis.com`, `updates.push.mozilla.org`, `web.push.apple.com`). No proprietary FCM/APNs SDKs. No live vendor calls in CI. |
 
-### 25. SchemaHelper — interactive SchemaTool front-end
-
-| | |
-| --- | --- |
-| **Plan** | [`SCHEMAHELPER.md`](/docs/H/plans/SCHEMAHELPER.md) |
-| **Guide** | [`/docs/H/tools/SCHEMAHELPER.md`](/docs/H/tools/SCHEMAHELPER.md) |
-| **Effort** | L |
-| **Done** | v1 (Phases 0–4 + 6). Phase 5 first slice: one-field metadata apply. |
-| **Remaining** | Orphan/anomaly DELETE, live `[r]`, dashboard count wording |
-| **Why later** | SchemaTool already audits; v1 review + packets shipped. Not a Hydrogen subsystem. |
-| **Note** | Lua TUI in `extras/schematool/`. SchemaTool stays read-only. Packets, not full `design_NNNN.lua`. |
-
 ### 24. `H.externaldb` — ad-hoc external database connections from Lua scripts
 
 | | |
@@ -274,6 +262,10 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 - Historical plans moved: [`KEYCLOAK_PLAN_COMPLETE.md`](/docs/H/plans/complete/KEYCLOAK_PLAN_COMPLETE.md), [`OIDC-PLAN_COMPLETE.md`](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md), [`OIDC_IDP_COMPLETE.md`](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md), [`OIDC_E2E_LOG_COMPLETE.md`](/docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md)
 - TODO items 1, 3, 6, 15, 17, 18 collapsed into item 1 (Auth Finale). Login MFA wiring no longer listed under Mail Relay remainder
 
+**2026-09-09 SCHEMAHELPER v2 closeout:**
+
+- [`SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md) — Phases 0–5 complete (0.6.5); moved from active TODO item 25
+
 **2026-09-08 MAILRELAY closeout:**
 
 - [`MAILRELAY_PLAN_COMPLETE.md`](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md) — all phases 0–15 complete; Phase 13 permanently deferred; moved from active TODO item 13
@@ -304,7 +296,6 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 12d | MailRelay Persist MySQL/MariaDB SEGV | M | **done** — 14/14 live green; 12d closed | — |
 | 12e | MAX+1 PK clients: confirm + retry | M | single-thread OK | P1 |
 | 13 | Mail Relay remainder | L–XL | ~75% | P2 |
-| 25 | SchemaHelper TUI | L | v1 | P2 |
 | 26 | Notifications / Subscribers | L–XL | 0% plan | P2 |
 | 24 | `H.externaldb` — ad-hoc external DB from Lua | M | 0% | P2 |
 | 19 | Print job → device / Beryllium | L–XL | ~30% | P3 |

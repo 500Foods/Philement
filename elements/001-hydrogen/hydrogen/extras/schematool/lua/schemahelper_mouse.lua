@@ -5,6 +5,7 @@
 -- keyboard press would yield, so the existing input loops need no rewrites.
 --
 -- CHANGELOG
+-- 0.6.3 - 2026-09-08 - Wheel delta for issue-pane scroll
 -- 0.5.8 - 2026-08-25 - Extracted from schemahelper.lua (mouse cluster)
 
 local C = require("schemahelper_const")
@@ -68,6 +69,23 @@ local function find_hotspot(x, y)
     return nil
 end
 
+local function wheel_delta(raw)
+    if not is_mouse(raw) then
+        return nil
+    end
+    local m = parse_mouse(raw)
+    if not m then
+        return nil
+    end
+    if m.btn == 64 or m.btn == 96 then
+        return 1
+    end
+    if m.btn == 65 or m.btn == 97 then
+        return -1
+    end
+    return nil
+end
+
 local function mouse_vkey(raw)
     local m = parse_mouse(raw)
     if not m or m.btn ~= 0 then
@@ -108,5 +126,6 @@ return {
     map_hotkey = map_hotkey,
     find_hotspot = find_hotspot,
     mouse_vkey = mouse_vkey,
+    wheel_delta = wheel_delta,
     highlight_hotspot = highlight_hotspot,
 }

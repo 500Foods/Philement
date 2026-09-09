@@ -5,6 +5,11 @@
 -- into the run loops and main entry point.
 --
 -- CHANGELOG
+-- 0.6.5 - 2026-09-09 - Phase 4: accept hash + dashboard un-accept
+-- 0.6.4 - 2026-09-08 - Dark-grey progress bar background
+-- 0.6.3 - 2026-09-08 - Phase 3: eighths progress + issue pane
+-- 0.6.2 - 2026-09-08 - Target picker: real env names, not FAMILY_*
+-- 0.6.0 - 2026-09-08 - Chrome titles; Instance on every screen; planned work-dir
 -- 0.5.8 - 2026-08-25 - Per-run /tmp work_dir for intermediates + cleanup on exit
 -- 0.5.7 - 2026-08-24 - Mouseover highlighting on clickable options; click on release; capitalized option labels
 -- 0.5.6 - 2026-08-24 - Mouse support: SGR 1006; click wrapper rows and click [key] actions
@@ -177,6 +182,9 @@ end
 local show_mode
 show_mode = function(screen, app, mode)
     app.mode = mode
+    if app.chrome and app.chrome.border then
+        app.chrome.border.title = C.CHROME_TITLE[mode] or " SchemaHelper "
+    end
     screen:calculate_layout()
     screen:render()
 end
@@ -184,14 +192,17 @@ end
 local function explore_content(self)
     local app = self.app
     local col = self.inner_col
-    local row = self.inner_row
     local height = self.inner_height
     local width = self.inner_width
     if height < 5 or width < 16 then
         return
     end
+    local UI = require("schemahelper_ui")
+    UI.hotspots_reset()
+    local inst = I.instance_block(self.opts, app, width)
+    local row = P.paint_header_block(self, inst)
     local view = app.explore_view or { facts = {}, rows = {} }
-    local last = row + height - 1
+    local last = self.inner_row + height - 1
     local footer_row = last
     local footer_rule = last - 1
     local y = row
@@ -370,12 +381,13 @@ local function build_screen(opts, app)
         border = {
             format = t.draw.box_fmt.single,
             attr = { fg = "red", brightness = "bright" },
-            title = " SchemaHelper ",
+            title = C.CHROME_TITLE[app.mode] or " SchemaHelper ",
             title_attr = { fg = "yellow", brightness = "bright" },
         },
     }
     body.opts = opts
     body.app = app
+    app.chrome = body
     return Screen {
         body = body,
         name = "SchemaHelper",
@@ -402,13 +414,32 @@ local function promote_finding(screen, app, opts)
     return Actions.promote_finding(screen, app, opts)
 end
 
-local function run_dashboard(screen, app, opts, state)
+local function rebuild_queue(app, opts)
+    local state = Q.load_state(opts.state_file)
     app.state = state
     app.built = Q.build({
         out_dir = opts.work_dir,
         track = opts.track,
         state = state,
     })
+    local acc = app.built.accepted or {}
+    local idx = app.accepted_index or 1
+    if #acc == 0 then
+        app.accepted_index = 1
+    elseif idx > #acc then
+        app.accepted_index = #acc
+    elseif idx < 1 then
+        app.accepted_index = 1
+    end
+    local subj = app.built.subject or {}
+    if app.review_index and #subj > 0 and app.review_index > #subj then
+        app.review_index = #subj
+    end
+    return state
+end
+
+local function run_dashboard(screen, app, opts, _)
+    rebuild_queue(app, opts)
     show_mode(screen, app, "dashboard")
     while true do
         local raw, name = read_key(screen, app)
@@ -424,8 +455,34 @@ local function run_dashboard(screen, app, opts, state)
                     app.show_mode_msg = ""
                     return "review"
                 end
+            elseif raw == "x" then
+                local acc = app.built.accepted or {}
+                local f = acc[app.accepted_index or 1]
+                if f then
+                    local ok, why = Q.remove_decision(opts.state_file, f.id)
+                    if ok then
+                        app.show_mode_msg = "un-accepted: " .. f.id
+                    else
+                        app.show_mode_msg = "error: " .. tostring(why)
+                    end
+                    rebuild_queue(app, opts)
+                else
+                    app.show_mode_msg = "Nothing to un-accept"
+                end
+                show_mode(screen, app, "dashboard")
+            elseif raw == "j" or name == keys.down then
+                local acc = app.built.accepted or {}
+                if #acc > 0 then
+                    app.accepted_index = math.min(
+                        (app.accepted_index or 1) + 1, #acc)
+                end
+                show_mode(screen, app, "dashboard")
+            elseif raw == "k" or name == keys.up then
+                app.accepted_index = math.max(1, (app.accepted_index or 1) - 1)
+                show_mode(screen, app, "dashboard")
             elseif raw == "r" then
                 reaudit(screen, app, opts)
+                rebuild_queue(app, opts)
                 show_mode(screen, app, "dashboard")
             elseif raw == "q" or name == keys.escape then
                 return "quit"
@@ -530,9 +587,11 @@ local function run_review(screen, app, opts)
                     local f = app.built.subject[app.review_index]
                     if f then
                         local ok, why = Q.save_decision(
-                            opts.state_file, f.id, "accepted", nil)
+                            opts.state_file, f.id, "accepted",
+                            { hash = Q.finding_hash(f) })
                         if ok then
                             app.show_mode_msg = "accepted: " .. f.id
+                            rebuild_queue(app, opts)
                         else
                             app.show_mode_msg = "error: " .. tostring(why)
                         end
@@ -695,7 +754,22 @@ local function pick_wrapper(screen, app, opts)
     end
 end
 
-local function finish_paths(opts)
+local function plan_work_dir(opts, app)
+    if opts.work_dir ~= "" then
+        app.planned_work_dir = opts.work_dir
+        return
+    end
+    if app.planned_work_dir and app.planned_work_dir ~= "" then
+        return
+    end
+    local tmp = os.getenv("TMPDIR") or "/tmp"
+    local stamp = os.date("!%Y%m%dT%H%M%SZ")
+    local rand = tostring(math.random(100000, 999999))
+    app.planned_work_dir = string.format("%s/schemahelper-%s-%s",
+        tmp, stamp, rand)
+end
+
+local function finish_paths(opts, app)
     local design, engine, schema = W.wrapper_meta(opts.wrapper)
     opts.design = design
     opts.engine = engine
@@ -704,12 +778,9 @@ local function finish_paths(opts)
         opts.out_dir = W.wrapper_dir(opts.wrapper)
     end
     W.ensure_dir(opts.out_dir)
+    plan_work_dir(opts, app)
     if opts.work_dir == "" then
-        local tmp = os.getenv("TMPDIR") or "/tmp"
-        local stamp = os.date("!%Y%m%dT%H%M%SZ")
-        local rand = tostring(math.random(100000, 999999))
-        opts.work_dir = string.format("%s/schemahelper-%s-%s",
-            tmp, stamp, rand)
+        opts.work_dir = app.planned_work_dir
     end
     W.ensure_dir(opts.work_dir)
     if opts.packet_dir == "" then
@@ -772,7 +843,9 @@ local function main()
         explore_stack = {},
         show_mode_msg = "",
         catalog_degraded = false,
+        planned_work_dir = "",
     }
+    plan_work_dir(opts, app)
     local screen = build_screen(opts, app)
     show_mode(screen, app, "splash")
     Mouse.enable_mouse()
@@ -795,10 +868,10 @@ local function main()
             end
         end
 
-        finish_paths(opts)
+        finish_paths(opts, app)
         app.warn_in_repo = packet.in_git_tree(opts.packet_dir)
         app.catalog_degraded = false
-        app.log = opts.work_dir .. "/schemahelper_schematool.log"
+        app.log = opts.work_dir .. "/" .. C.INSTANCE_LOG
 
         app.status_note = "Connecting…"
         show_mode(screen, app, "running")
@@ -851,6 +924,9 @@ local function main()
             opts.work_dir = ""
             opts.reuse = false
             app.conn = nil
+            app.planned_work_dir = ""
+            app.log = "(none)"
+            plan_work_dir(opts, app)
         end
     end
 

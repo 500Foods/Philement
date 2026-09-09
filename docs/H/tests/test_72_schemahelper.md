@@ -33,7 +33,7 @@ data (no live database required). It exercises the full module stack:
 - **Test Name**: SchemaHelper
 - **Test Abbreviation**: SCH
 - **Test Number**: 72
-- **Version**: 1.1.0
+- **Version**: 1.2.0
 
 ## What It Does
 
@@ -125,6 +125,12 @@ directory (or `--packet-dir DIR`). Packet directories follow the pattern:
 - `jq`, `shellcheck`, `luacheck`
 - SchemaTool Lua scripts under `extras/schematool/lua/`
 - Checked-in fixtures under `extras/schematool/test/fixtures/sample_project/`
+
+Lua fixtures and shared bash helpers live under
+[`tests/lib/schemahelper/`](/elements/001-hydrogen/hydrogen/tests/lib/schemahelper)
+and
+[`schemahelper_helpers.sh`](/elements/001-hydrogen/hydrogen/tests/lib/schemahelper_helpers.sh)
+so `test_72_schemahelper.sh` stays under the 1000-line cap.
 
 ## Integration
 
