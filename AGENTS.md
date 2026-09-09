@@ -57,7 +57,7 @@ Key: 💡 Idea/Planning, 🔨 Working on it, 🏆 Usable but incomplete.
 There is one canonical action backlog and phased plans.
 
 - **Active backlog:** [`docs/H/TODO.md`](/docs/H/TODO.md) — prioritized incomplete Hydrogen work only (effort/done/remaining/code paths). Start here for "what should I do next."
-- **Plan index:** [`docs/H/plans/README.md`](/docs/H/plans/README.md). Active plans include **AUTH_FINALE** (P0), **MAILRELAY_PLAN**, **SCHEMAHELPER**, **UNITY_ASAN**; completed plans live in `plans/complete/` as `*_COMPLETE.md`. Chat Finale: [`CHAT_FINALE_COMPLETE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md).
+- **Plan index:** [`docs/H/plans/README.md`](/docs/H/plans/README.md). Active plans include **AUTH_FINALE** (P0), **UNITY_ASAN**; completed plans live in `plans/complete/` as `*_COMPLETE.md`. Chat Finale: [`CHAT_FINALE_COMPLETE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md). SchemaHelper v2: [`SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md).
 - **Completed plans are history:** files in [`docs/H/plans/complete/`](/docs/H/plans/complete/) and any `*_SUPERSEDED.md` are archives. Implement against the active plan file named as the only current one, not the archives.
 - **All repo docs:** [`docs/H/SITEMAP.md`](/docs/H/SITEMAP.md) (markdown index), [`docs/H/STRUCTURE.md`](/docs/H/STRUCTURE.md) (file index). Use these to avoid reinventing a file that already exists.
 

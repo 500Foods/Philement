@@ -10,6 +10,7 @@
 -- Prints one JSON object (single ref) or a JSON array (--all).
 --
 -- CHANGELOG
+-- 1.0.3 - 2026-09-08 - Stderr: expect N/M ref R name=<text>
 -- 1.0.2 - 2026-08-23 - Stderr progress: expect N/M ref R
 -- 1.0.1 - 2026-07-29 - extract_as_field: ignore commas inside SQL string literals
 -- 1.0.0 - 2026-07-29 - Phase 2 expected payload extraction
@@ -336,6 +337,26 @@ local function expect_one(ref)
     }
 end
 
+local function progress_name(result)
+    for _, p in ipairs(result.payloads or {}) do
+        if p.name and p.name ~= "" then
+            return p.name
+        end
+    end
+    for _, p in ipairs(result.payloads or {}) do
+        if p.summary and p.summary ~= "" then
+            return p.summary
+        end
+    end
+    return ""
+end
+
+local function oneline(s)
+    s = tostring(s or "")
+    s = s:gsub("[\r\n]+", " ")
+    return s
+end
+
 local function result_to_json(result)
     local buf = {
         string.format(
@@ -397,9 +418,12 @@ if mode_or_ref == "--all" then
     end
     local out = { "[" }
     for i, r in ipairs(refs) do
-        io.stderr:write(string.format("expect %d/%d ref %d\n", i, #refs, r))
+        local result = expect_one(r)
+        io.stderr:write(string.format(
+            "expect %d/%d ref %d name=%s\n",
+            i, #refs, r, oneline(progress_name(result))))
         io.stderr:flush()
-        out[#out + 1] = result_to_json(expect_one(r))
+        out[#out + 1] = result_to_json(result)
         if i < #refs then
             out[#out + 1] = ","
         end

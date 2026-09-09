@@ -1,6 +1,35 @@
 <!-- markdownlint-disable MD007 MD024 -->
 # SchemaHelper Plan — Interactive SchemaTool Front-End
 
+## Status
+
+**Complete (2026-09-08).** v1 shipped: Phases 0–6 plus Phase 7 partial
+(catalog DDL apply + promote-packet). Code at SchemaHelper **0.5.8**
+(2026-08-25): mouse, `--work-dir`, module split, Test 72.
+
+This archive is history. Do not reopen work here.
+
+- Operator guide: [`/docs/H/tools/SCHEMAHELPER.md`](/docs/H/tools/SCHEMAHELPER.md)
+- Follow-on: [`/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md)
+
+### Carried to v2 (incomplete in v1)
+
+| Item | v1 origin | Notes |
+| --- | --- | --- |
+| Accepted-list review + **un-accept** | Phase 3 `[~]` | Dashboard never listed accepted items |
+| Payload-**hash** accept invalidation | Phase 3 `[~]` | Hash stored in sidecar, never compared |
+| Custom SchemaTool extra flags | Phase 1 `[~]` | Wrappers work; no extra CLI pass-through |
+| `[m]` stub is not a full Lua author | locked non-goal | Stay non-goal unless v2 reopens it |
+
+### Left closed / not carried
+
+| Item | Why |
+| --- | --- |
+| `--batch` JSON decisions | Interactive-only lock; use SchemaTool headless |
+| Group catalog rows into one packet | Operator rejected 2026-08-24 |
+| Bitfield SchemaTool exit | SchemaTool-side, not SchemaHelper |
+| Drop-table / extra-column DDL apply | Locked non-goal |
+
 ## Purpose
 
 Define a gated, phase-by-phase plan for **SchemaHelper**: a Lua TUI that sits
@@ -31,13 +60,16 @@ exit gate is green. Record learnings in the Working Log.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-08-24):** Phase 5 complete (both slices,
+**ARCHIVED (2026-09-08).** v1 Definition of Done is met. Continue in
+[`SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md).
+
+**LAST v1 PAUSE POINT (as of 2026-08-24, superseded):** Phase 5 complete (both slices,
 v0.5.0 + v0.5.4). Phase 7 partial: catalog DDL apply (nullable/add-column with
 `object.column` confirm) and promote-packet helper both shipped (v0.5.5).
 Remaining Phase 7 items deferred/rejected by design: `--batch` (interactive-only
 lock), group-catalog-rows (confirmed not needed by operator), bitfield exit
 (SchemaTool-side). v1 Definition of Done is met. Lint: shellcheck + luacheck +
-Test 04 all clean.
+Test 04 all clean. Post-v1 code (not in this pause): **0.5.8** mouse + work-dir.
 
 Dashboard count wording is in: migration totals stay migration counts;
 the queue line is **Findings for review** (field-level + catalog).
@@ -50,17 +82,8 @@ const + catalog degrade; custom-wrapper connect (exec flags + sourced
 
 ### Resume here next session
 
-1. Confirm this document is the source of truth.
-2. Smoke: `schemahelper.sh --allow-write schematool_sqlite.sh`
-   — Enter review, `[u]` on a `code`/`name`/`summary` drift, type
-   `REF.field`. `[u]` on an orphan ref, type bare `REF` (e.g. `1290`).
-   `[u]` on a catalog nullable mismatch, type `object.column` (e.g.
-   `accounts.id`) — DDL runs in a transaction. `[g]` generates a packet;
-   `[m]` promotes it into Helium. Without the flag, `[u]`/`[m]` stay
-   disabled. `[r]` on the dashboard re-runs SchemaTool.
-3. Phase 5 fully closed (both slices + orphan DELETE). Phase 7 partial:
-   catalog DDL apply + promote-packet helper. Remaining Phase 7 items
-   deferred or rejected by design — see CURRENT PAUSE POINT.
+Do not resume this file. Use
+[`SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md).
 
 ### Session checklist
 
@@ -75,11 +98,11 @@ const + catalog degrade; custom-wrapper connect (exec flags + sourced
 | --- | --- |
 | **Band** | P2 — operator tooling, not a Hydrogen subsystem |
 | **Effort** | L (TUI + packet writer + optional confirmed metadata apply) |
-| **Done** | v1 (Phases 0–4 + 5 both slices + 6) + Phase 7 partial (catalog DDL apply + promote). |
+| **Done** | **v1 complete (archived 2026-09-08).** Phases 0–4 + 5 both slices + 6 + Phase 7 partial (catalog DDL apply + promote). Code 0.5.8. |
 | **Why this shape** | SchemaTool is complete and read-only. The missing piece is a decision loop over its findings, including “this live DB should become a new migration.” |
 | **Do not start casually** | Write paths can mutate `queries` or (later) live DDL. Phase 0 must lock safety before any apply code exists. |
 
-Backlog entry: [TODO.md item 25](/docs/H/TODO.md).
+Backlog entry: TODO item 25 (dropped 2026-09-09 with v2 archive).
 
 ---
 
@@ -218,7 +241,7 @@ backward-compatible.
 | TUI entry | [`extras/schematool/schemahelper.lua`](/elements/001-hydrogen/hydrogen/extras/schematool/) |
 | Lua modules | `extras/schematool/lua/schemahelper_*.lua` |
 | Operator docs | `/docs/H/tools/SCHEMAHELPER.md` |
-| This plan | `/docs/H/plans/SCHEMAHELPER.md` |
+| This plan | `/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md` (archive). v2: `/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md` |
 
 Rationale: same folder as the auditor and the Test 40 wrappers; same Lua
 runtime SchemaTool already requires; not `src/`; not a Hydrogen subsystem.
@@ -959,16 +982,14 @@ Phase 2 TUI.
       own `schemahelper_<design>_<engine>.json`.
 - [~] Accepted-list review on the dashboard: inspect accepted items and
       un-accept (returns the finding to subject-for-review).
-       (Deferred — not required for Phase 2/3 minimal; cursor reset on quit
-       handles the common case.)
+       Carried to v2.
 - [x] Sidecar contains no secrets and no full `code` blobs.
 
 ### Exit gate / validation
 
 - [x] Second launch against the same fixture hides accepted ids.
 - [~] Changing expected/live hash re-shows the finding if hash-gated.
-      (Hash field is stored but not yet compared; Phase 3+ will add
-      payload-hash comparison for invalidation.)
+      Hash field is stored but was never compared. Carried to v2.
 - [x] Waiver file contains no secrets and no full `code` blobs.
 
 ### Status
@@ -1179,18 +1200,20 @@ Not required for v1 “done.” Pick up only after Phase 6.
 - [x] Catalog live-only extras (done in Phase 1, SchemaTool-side `live_extras[]`).
 - [x] Confirmed single-statement catalog DDL apply (nullable / add column)
       with a louder confirm than metadata. SchemaHelper **0.5.5**.
-- [ ] `--batch` JSON decisions for non-interactive use.
+- [~] `--batch` JSON decisions for non-interactive use. Not carried to v2 (interactive-only lock).
 - [x] Promote-packet helper that copies a stub into Helium (still not a
       full Lua author). SchemaHelper **0.5.5**.
 - [x] Group related catalog rows (one table) into a single packet —
       confirmed not required by operator (2026-08-24).
-- [ ] Bitfield SchemaTool exit (noted as future in SchemaTool itself).
+- [~] Bitfield SchemaTool exit (noted as future in SchemaTool itself). Not carried to v2.
 
 ### Status
 
-Partial. Catalog DDL apply + promote-packet helper complete.
-`--batch` and bitfield exit remain deferred; group-catalog-rows confirmed
-not needed.
+Partial at v1 close. Catalog DDL apply + promote-packet helper complete.
+`--batch` and bitfield exit remain deferred (not carried to v2);
+group-catalog-rows confirmed not needed. Accept un-accept + hash
+invalidation carried to
+[`SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md).
 
 ---
 
@@ -1227,6 +1250,16 @@ catalog rows, bitfield exit) stay deferred.
 ---
 
 ## Working Log
+
+### 2026-09-08 — Archived as v1 complete
+
+- v1 DoD met (2026-08-24). Code later reached SchemaHelper **0.5.8**
+  (mouse, `--work-dir`, Test 72) without a new plan phase.
+- Moved to
+  [`/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md).
+- Follow-on: [`SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md).
+- Carried: un-accept UI, hash-gated accepts, optional extra SchemaTool flags.
+- Not carried: `--batch`, group-catalog-rows, bitfield exit, full Lua author.
 
 ### 2026-08-24 — Phase 6 smoke script closure
 

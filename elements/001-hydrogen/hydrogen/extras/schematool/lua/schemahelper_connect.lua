@@ -2,6 +2,7 @@
 -- Resolve wrapper credentials and ping the live DB. Never return passwords.
 --
 -- CHANGELOG
+-- 0.6.2 - 2026-09-08 - picker_blurb: real env names, never password values
 -- 0.5.0 - 2026-08-23 - Phase 5: non-RO exec_sql for one-field apply
 -- 0.4.8 - 2026-08-23 - Source wrapper exec line for computed host/password-env
 -- 0.4.5 - 2026-08-23 - Parse wrapper --engine/--host/--database flags for ping
@@ -198,6 +199,30 @@ local function scrub(text, pass)
         text = text:gsub(pass:gsub("(%W)", "%%%1"), "***")
     end
     return text
+end
+
+local function family_blurb(prefix, schema)
+    return prefix .. "_HOST " .. prefix .. "_USER " .. prefix .. "_PASS "
+        .. prefix .. "_NAME schema " .. schema
+end
+
+function M.picker_blurb(engine)
+    if engine == "postgresql" then
+        return family_blurb("ACURANZO_DB", "demo")
+    elseif engine == "cockroachdb" then
+        return family_blurb("ACURANZO_DB", "democrdb")
+    elseif engine == "mysql" then
+        return family_blurb("CANVAS_DB", "demo")
+    elseif engine == "mariadb" then
+        return family_blurb("CANVAS_DB", "demomrdb")
+    elseif engine == "db2" then
+        return "HYDROTST_DB_USER HYDROTST_DB_PASS HYDROTST_DB_NAME schema demo"
+    elseif engine == "yugabytedb" then
+        return family_blurb("YUGABYTE_DB", "demo")
+    elseif engine == "sqlite" then
+        return "hydrodemo.sqlite"
+    end
+    return engine or ""
 end
 
 local function apply_family(conn, engine, wrapper)

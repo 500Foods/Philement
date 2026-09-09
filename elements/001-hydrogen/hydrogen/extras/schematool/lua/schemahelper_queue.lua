@@ -4,6 +4,7 @@
 -- modules under lua/ (schemahelper_qutil, _qstate, _qload, _qdecode).
 --
 -- CHANGELOG
+-- 0.6.5 - 2026-09-09 - Accept hash gate + accepted list + un-accept
 -- 0.5.8 - 2026-08-25 - Split into lua/ submodules (qutil/qstate/qload/qdecode); this file is now the orchestrator
 -- 0.5.7 - 2026-08-24 - Decode MySQL/MariaDB lowercase brotli_decompress(FROM_BASE64('...'))
 -- 0.5.6 - 2026-08-24 - Decode DB2 brotli+base64; PostgreSQL brotli_decompress + CONVERT_FROM(DECODE)
@@ -75,6 +76,7 @@ function M.build(opts)
 
     local subject = {}
     local classes = {}
+    local accepted_list = {}
     local accepted = 0
     local applied = 0
     local packet = 0
@@ -84,14 +86,17 @@ function M.build(opts)
         local dec = state.by_id and state.by_id[item.id]
         local action = dec and dec.action or ""
         item.action = action
-        if action == "accepted" then
+        if action == "accepted" and M.accept_holds(dec, item) then
             accepted = accepted + 1
+            accepted_list[#accepted_list + 1] = item
         elseif action == "applied" then
             applied = applied + 1
         elseif action == "packet" then
             packet = packet + 1
         else
-            if action == "skipped" then
+            if action == "accepted" then
+                item.action = ""
+            elseif action == "skipped" then
                 skipped = skipped + 1
             end
             subject[#subject + 1] = item
@@ -119,6 +124,7 @@ function M.build(opts)
     return {
         findings = all,
         subject = subject,
+        accepted = accepted_list,
         classes = class_list,
         totals = {
             total = total,
@@ -754,6 +760,25 @@ end
 
 function M.save_decision(state_file, finding_id, action, extra)
     return S.save_decision(state_file, finding_id, action, extra)
+end
+
+function M.remove_decision(state_file, finding_id)
+    return S.remove_decision(state_file, finding_id)
+end
+
+function M.finding_hash(finding)
+    return U.finding_hash(finding)
+end
+
+function M.accept_holds(dec, item)
+    if not dec or dec.action ~= "accepted" then
+        return false
+    end
+    local got = U.finding_hash(item)
+    if got == "" or not dec.hash or dec.hash == "" then
+        return false
+    end
+    return dec.hash == got
 end
 
 function M.build_dashboard_lines(opts)

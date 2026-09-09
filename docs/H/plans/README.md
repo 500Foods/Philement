@@ -35,12 +35,6 @@ Two parts landed: `mysql_process_prepared_result` honours `mysql_stmt_store_resu
 
 ### [UNITY ASAN PLAN](/docs/H/plans/UNITY_ASAN_PLAN.md)
 
-### [SCHEMAHELPER PLAN](/docs/H/plans/SCHEMAHELPER.md)
-
-Interactive Lua TUI front-end to SchemaTool. Phases 0–4 shipped (review,
-skip, accept, packets). Phase 5 first slice: one-field apply. Operator guide:
-[`/docs/H/tools/SCHEMAHELPER.md`](/docs/H/tools/SCHEMAHELPER.md).
-
 ### [NOTIFICATIONS / SUBSCRIBERS PLAN](/docs/H/plans/NOTIFICATIONS_PLAN.md)
 
 Web Push backend (RFC 8030/8291/8292): Subscribers API + dispatch queue.
@@ -81,6 +75,8 @@ Full index: [`complete/README.md`](/docs/H/plans/complete/README.md). Highlights
 | MCP server | [MCP_COMPLETE.md](/docs/H/plans/complete/MCP_COMPLETE.md) |
 | mDNS upgrade | [MDNS_UPGRADE_COMPLETE.md](/docs/H/plans/complete/MDNS_UPGRADE_COMPLETE.md) |
 | Migrations perf | [MIGRATIONS_COMPLETE.md](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md) |
+| SchemaHelper v1 | [SCHEMAHELPER_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md) |
+| SchemaHelper v2 | [SCHEMAHELPER_V2_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md) |
 | SchemaTool | [SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md) |
 | Static-function purge | [STATIC_COMPLETE.md](/docs/H/plans/complete/STATIC_COMPLETE.md) |
 | Terminal | [TERMINAL_PLAN_COMPLETE.md](/docs/H/plans/complete/TERMINAL_PLAN_COMPLETE.md) |

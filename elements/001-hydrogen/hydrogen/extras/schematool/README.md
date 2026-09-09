@@ -9,7 +9,8 @@ object shape vs folded applied DDL).
 **Plan:** [`/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md)  
 **SchemaHelper:** `schemahelper.sh` —
 [`/docs/H/tools/SCHEMAHELPER.md`](/docs/H/tools/SCHEMAHELPER.md)
-(plan: [`/docs/H/plans/SCHEMAHELPER.md`](/docs/H/plans/SCHEMAHELPER.md))
+(v2: [`/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md);
+v1: [`/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md))
 
 ## One-liner (metadata)
 
@@ -74,8 +75,8 @@ lua/
   schemahelper_screens.lua      # per-screen content painters
   schemahelper_actions.lua      # apply / generate-packet / promote + queue lifecycle
   schemahelper_queue.lua        # findings merge (orchestrator over q* submodules)
-  schemahelper_qutil.lua        # pure text/json helpers
-  schemahelper_qstate.lua       # sidecar state load/create/update
+  schemahelper_qutil.lua        # pure text/json helpers + accept hash
+  schemahelper_qstate.lua       # sidecar state load/create/update/un-accept
   schemahelper_qload.lua        # metadata + catalog findings ingest
   schemahelper_qdecode.lua      # brotli/base64 decode + decode view
   schemahelper_connect.lua

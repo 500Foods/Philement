@@ -3,6 +3,7 @@
 -- artifact presence checks. Depends only on schemahelper_qutil.
 --
 -- CHANGELOG
+-- 0.6.5 - 2026-09-09 - remove_decision for un-accept
 -- 0.5.8 - 2026-08-25 - Extracted from schemahelper_queue.lua (state cluster)
 
 local U = require("schemahelper_qutil")
@@ -165,6 +166,18 @@ function M.save_decision(state_file, finding_id, action, extra)
     table.insert(parts, filter)
     local combined = table.concat(parts, " | ")
     return jq_update_state(state_file, combined)
+end
+
+function M.remove_decision(state_file, finding_id)
+    if not finding_id or finding_id == "" then
+        return false, "finding_id is required"
+    end
+    local esc_id = finding_id:gsub('"', '\\"')
+    local now = os.date("!%Y-%m-%dT%H:%M:%SZ")
+    local filter = string.format(
+        '.updated_utc = "%s" | .decisions |= map(select(.id != "%s"))',
+        now, esc_id)
+    return jq_update_state(state_file, filter)
 end
 
 return M
