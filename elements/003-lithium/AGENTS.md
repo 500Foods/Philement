@@ -3,10 +3,12 @@
 Read this file before changing Lithium. It is the session-start map so you do
 not re-derive architecture, IDs, APIs, or known defects. Coding rules live in
 [`/docs/Li/LITHIUM-INS.md`](/docs/Li/LITHIUM-INS.md) and **win** on style
-conflicts. Active sprint work lives in
-[`/docs/Li/plans/LITHIUM_SPRINT.md`](/docs/Li/plans/LITHIUM_SPRINT.md).
+conflicts. Active plan:
+[`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md)
+(supersedes
+[`/docs/Li/plans/LITHIUM_SPRINT.md`](/docs/Li/plans/LITHIUM_SPRINT.md)).
 
-**Last reviewed:** 2026-08-22 (architecture review + sprint kickoff).
+**Last reviewed:** 2026-09-09 (CATCHUP plan authored).
 
 ---
 
@@ -56,6 +58,7 @@ Live: https://lithium.philement.com — Coverage: https://lithium.philement.com/
 ```text
 elements/003-lithium/
 ├── AGENTS.md                 # This file
+├── CATCHUP.md                # Active gated plan (Phases 0–38)
 ├── index.html                # First-stage boot (SW, version, splash)
 ├── package.json
 ├── vite.config.js / vitest.config.js / eslint.config.js
@@ -126,7 +129,7 @@ OIDC return: `?oidc=1&handoff=` exchanged via `POST /api/auth/oidc/handoff`
 
 ## Managers
 
-### Lifecycle (code vs docs — fix in sprint Phase 1)
+### Lifecycle (code vs docs — fix in CATCHUP Phase 1)
 
 Docs say `constructor(app, container)` → `init()` → `render()` → `teardown()`.
 
@@ -155,18 +158,19 @@ and broke CSS order (`vite.config.js` comments).
 
 | Kind | Where | IDs |
 |------|-------|-----|
-| Menu | `ManagerLoader.managerRegistry` | **7–33** (CourseBuilder reserved **34**) |
+| Menu | `ManagerLoader.managerRegistry` | **7–33** (Course Manager reserved **34**, Course Builder **35**) |
 | Utility | `LithiumApp.utilityManagerRegistry` | `user-profile`=3, `session-log`=4, `terminal`=5 |
 | Special | Auth / Main / Tour / Crimson | Login + Main loaded outside registry. Tour is a side-effect import from Main. Crimson is a popout. |
 
 Sidebar labels/icons come from **server menu data** (`getMenu`), not the
 registry. Punchcard `getPermittedManagers()` is called **without a punchcard**
-today and returns `[7..33]`. Do not assume UI authz until Phase 9.
+today and returns `[7..33]`. Course Manager v1 uses JWT `roles` (CATCHUP
+L3). Do not assume punchcard authz.
 
 ### Canonical ID map (2026-08-22)
 
 Docs, `lithium.json` `managers`, fallback icons, and `_importManager` cases
-1–6 **disagree**. Until Phase 0 writes this table into `LITHIUM-MGR.md`, treat
+1–6 **disagree**. Until CATCHUP Phase 0 writes this table into `LITHIUM-MGR.md`, treat
 **`manager-loader.js` + `lithium.json`** as runtime truth for menu IDs:
 
 | ID | Name (config / registry) | Module |
@@ -190,7 +194,8 @@ Docs, `lithium.json` `managers`, fallback icons, and `_importManager` cases
 | 30–31 | Sync, Camera | placeholders |
 | 32 | Terminal (menu) | `terminal/` (also utility key `terminal`) |
 | 33 | Scripting | `scripting/` |
-| 34 | Course Builder | **not created yet** — reserve here |
+| 34 | Course Manager | **not created yet** — first 500 Courses deploy |
+| 35 | Course Builder | **not created yet** — COURSEBUILDER.md pipeline UI |
 
 Tour matching uses **numeric ID only** (`"003.Profile"` matches anything with
 3). Utility Terminal=5 can steal a Crimson tour. Do not add another ID 5.
@@ -213,8 +218,9 @@ wrong. Collapse to one `PlaceholderManager` rather than copy-paste.
 
 ### New manager checklist (corrected)
 
-1. Reserve the next menu ID (34+). Add to `managerRegistry`, `_importManager`
-   `switch`, and `config/lithium.json` `managers`.
+1. Reserve the next menu ID (36+; 34–35 are CATCHUP). Add to
+   `managerRegistry`, `_importManager` `switch`, and
+   `config/lithium.json` `managers`.
 2. Create `src/managers/<name>/<name>.{js,html,css}`.
 3. Export `default class` with `init()` and `cleanup()` (or the locked trio).
 4. Fetch HTML from `/src/managers/<name>/<name>.html` and run
@@ -269,7 +275,7 @@ Payload: `{ query_ref: N, params: { STRING: {…}, INTEGER: {…} } }`.
 
 `LITHIUM-API.md` still documents `GET /api/lookups` and `/api/styles` CRUD.
 **Runtime is Conduit QueryRefs** (lookups 001/030/053/054/060, etc.). Treat
-the API doc as stale until sprint Phase 12.
+the API doc as stale until CATCHUP Phase 37.
 
 ### Conduit script (Lua invoke)
 
@@ -297,8 +303,9 @@ use this surface, not new C.
 
 - `GET /api/system/health` — startup.
 - WebSocket — `src/shared/` + `LITHIUM-WSS.md`. Config `server.websocket_url`.
-- Chat proxy, mail relay, OIDC IdP are Hydrogen subsystems; Lithium managers
-  for some of those are still placeholders.
+- Chat WS (Crimson), mail relay, MCP, OIDC IdP are Hydrogen subsystems;
+  Lithium managers for Mail/Jobs/Chats/MCP are still placeholders.
+  CATCHUP Bands F–G.
 
 Hydrogen build aliases (C, not Lithium): `zsh -ic 'mkt'` trial, `mka` all,
 `mku <base>` Unity, `mkp` pretty, `mks` shell. After Helium migration edits
@@ -369,7 +376,7 @@ cap, `scripting-editors.js`, html, css).
 Lua tab, preview tab, font popup, undo/redo/fold, edit helper, save/duplicate
 via QueryRefs 129/130, audit footer, splitter.
 
-**Missing (sprint Phases 14–19):**
+**Missing (CATCHUP Phases 7–10):**
 
 - `POST /api/conduit/script` invoke UI (params JSON, wait/timeout, result pane)
 - `invokable` column visibility / edit
@@ -385,12 +392,16 @@ via QueryRefs 129/130, audit footer, splitter.
 
 ---
 
-## Course Builder
+## Course Manager (ID 34) and Course Builder (ID 35)
 
-Authoritative pipeline:  
+**First deploy:** Course Manager — PRIORITIZE Part 5 in
+`/mnt/extra/Projects/500-Courses-Reception/PRIORITIZE.md`. JWT `roles`
+staff/admin (CATCHUP L3). Not waiting on Hydrogen 2.23 `account_roles`.
+
+**Course Builder pipeline:**  
 `/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md` (CB-0..35).
 
-Architecture lock (2026-08-12):
+Architecture lock (2026-08-12, still true):
 
 - Background ticks: Orchestrator + `invokable=0` Lua.
 - Human buttons: JWT `POST /api/conduit/script` with `Build.Accept` /
@@ -400,9 +411,10 @@ Architecture lock (2026-08-12):
 - Human gates between expensive LLM stages (Submission, Approve, Review,
   Inspect, Publish). Do not skip Approve into Research.
 
-Lithium’s job in **this** sprint is the **operator manager (ID 34)** plus the
-script-invoke client those buttons need. Helium tables and `Build.*` seeds
-are entry gates, not an excuse to rewrite COURSEBUILDER.md inside Lithium.
+Lithium’s job in CATCHUP Band D is Course Manager (ID **34**). Band E is
+the Course Builder operator manager (ID **35**). Helium tables and
+`Build.*` seeds are entry gates, not an excuse to rewrite COURSEBUILDER.md
+inside Lithium.
 
 Reception (public catalog / Suggest a Course / Cap forms) is a **different
 SPA**. Do not merge Reception UI into Lithium.
@@ -461,7 +473,8 @@ Do not log JWTs, handoff codes, or Keycloak tokens.
 
 ## Known defects (do not rediscover)
 
-From the 2026-08-22 review. Tracked in `LITHIUM_SPRINT.md`.
+From the 2026-08-22 review. Tracked in
+[`CATCHUP.md`](/elements/003-lithium/CATCHUP.md).
 
 | Sev | Issue |
 |-----|--------|
@@ -497,7 +510,8 @@ Start: [`docs/Li/LITHIUM-TOC.md`](/docs/Li/LITHIUM-TOC.md).
 | API (stale in parts) | `LITHIUM-API.md` |
 | JWT / OIDC | `LITHIUM-JWT.md`, `LITHIUM-OIDC.md`, `LITHIUM-KEYCLOAK.md` |
 | Deploy | `LITHIUM-WEB.md` |
-| Sprint | `docs/Li/plans/LITHIUM_SPRINT.md` |
+| Catchup (active) | [`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md) |
+| Sprint (superseded) | `docs/Li/plans/LITHIUM_SPRINT.md` |
 | Hydrogen script API | `docs/H/api/conduit/script.md` |
 | Course Builder pipeline | `/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md` |
 
@@ -505,7 +519,8 @@ Start: [`docs/Li/LITHIUM-TOC.md`](/docs/Li/LITHIUM-TOC.md).
 
 ## Session checklist
 
-1. Read **CURRENT PAUSE POINT** in `docs/Li/plans/LITHIUM_SPRINT.md`.
+1. Read **CURRENT PAUSE POINT** in
+   [`CATCHUP.md`](/elements/003-lithium/CATCHUP.md).
 2. Re-read this file’s Known defects + ID map if touching managers or HTML.
 3. One phase at a time. Do not mark a gate green without the named command
    or check actually passing.
