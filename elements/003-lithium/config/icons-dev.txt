@@ -27,6 +27,7 @@
 <fa fa-bell></fa>
 <fa fa-book-open-lines class="crimson-citation-link-icon"></fa>
 <fa fa-book-open-lines></fa>
+<fa fa-book-open></fa>
 <fa fa-brackets-curly></fa>
 <fa fa-brackets-square></fa>
 <fa fa-briefcase></fa>
@@ -113,6 +114,7 @@
 <fa fa-party-horn></fa>
 <fa fa-pause></fa>
 <fa fa-pen-to-square></fa>
+<fa fa-pencil-ruler></fa>
 <fa fa-pencil></fa>
 <fa fa-person-running-fast></fa>
 <fa fa-phone></fa>

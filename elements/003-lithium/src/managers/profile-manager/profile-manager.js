@@ -9,6 +9,7 @@
 
 import { eventBus, Events } from '../../core/event-bus.js';
 import { getClaims, storeJWT } from '../../core/jwt.js';
+import { parseRoleIds } from '../../core/utils.js';
 import { getConfigValue } from '../../core/config.js';
 import { createRequest } from '../../core/json-request.js';
 import { LithiumSplitter } from '../../core/lithium-splitter.js';
@@ -445,7 +446,7 @@ export default class ProfileManager {
       id: claims.user_id,
       username: claims.username || 'User',
       email: claims.email || '-',
-      roles: claims.roles || [],
+      roles: parseRoleIds(claims.roles),
       database: claims.database || '-',
     };
 

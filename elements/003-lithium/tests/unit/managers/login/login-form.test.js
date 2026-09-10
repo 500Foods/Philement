@@ -173,7 +173,7 @@ describe('LoginForm', () => {
       const responseBody = {
         token: 'jwt.value.here',
         user_id: 42,
-        roles: ['admin', 'user'],
+        roles: [2, 3],
         expires_at: '2026-12-31T00:00:00Z',
       };
       global.fetch = vi.fn(() => Promise.resolve({
@@ -201,7 +201,7 @@ describe('LoginForm', () => {
       expect(eventBus.emit).toHaveBeenCalledWith('auth:login', expect.objectContaining({
         userId: 42,
         username: 'alice',
-        roles: ['admin', 'user'],
+        roles: [2, 3],
         expiresAt: '2026-12-31T00:00:00Z',
       }));
     });

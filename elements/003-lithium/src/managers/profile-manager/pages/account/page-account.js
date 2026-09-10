@@ -7,6 +7,7 @@
 
 import { BaseSettingsPage } from '../settings-page-base.js';
 import { getClaims } from '../../../../core/jwt.js';
+import { parseRoleIds } from '../../../../core/utils.js';
 import { log, Subsystems, Status } from '../../../../core/log.js';
 
 /**
@@ -39,7 +40,7 @@ export class AccountPage extends BaseSettingsPage {
     const fields = {
       '#profile-username': claims.username || '-',
       '#profile-email': claims.email || '-',
-      '#profile-roles': Array.isArray(claims.roles) ? claims.roles.join(', ') : claims.roles || '-',
+      '#profile-roles': Array.isArray(claims.roles) ? parseRoleIds(claims.roles).join(', ') : parseRoleIds(claims.roles).join(', ') || '-',
       '#profile-database': claims.database || '-',
     };
 

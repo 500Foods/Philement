@@ -3,6 +3,7 @@ import GlobalSettingsService from '../core/global-settings-service.js';
 import { loadConfig, getConfigValue } from '../core/config.js';
 import { eventBus, Events } from '../core/event-bus.js';
 import { retrieveJWT, clearJWT } from '../core/jwt.js';
+import { parseRoleIds } from '../core/utils.js';
 import { createRequest } from '../core/json-request.js';
 import { fetchLookups, init as initLookups } from '../shared/lookups.js';
 import { init as initIcons, preloadIconsFromConfig } from '../core/icons.js';
@@ -282,7 +283,7 @@ export class LithiumApp {
       this.auth.user = {
         id: data.userId,
         username: data.username,
-        roles: data.roles,
+        roles: parseRoleIds(data.roles),
       };
       // Sync user context and load settings from server before proceeding
       if (window.lithiumSettings) {

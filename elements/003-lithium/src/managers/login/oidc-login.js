@@ -37,6 +37,7 @@
 
 import { exchangeHandoff } from '../../core/oidc-client.js';
 import { storeJWT } from '../../core/jwt.js';
+import { parseRoleIds } from '../../core/utils.js';
 import { eventBus, Events } from '../../core/event-bus.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 
@@ -167,7 +168,7 @@ export async function processOidcReturn(loginManager, deps = {}) {
     bus.emit(Events.AUTH_LOGIN, {
       userId:    data.user_id,
       username:  data.username  ?? '',
-      roles:     data.roles     ?? [],
+       roles:     parseRoleIds(data.roles),
       expiresAt: data.expires_at,
     });
   } catch (err) {

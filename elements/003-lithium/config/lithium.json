@@ -3,8 +3,8 @@
     "url": "https://lithium.philement.com",
     "api_prefix": "/api",
     "websocket_url": "wss://lithium.philement.com/wss",
-    "websocket_key": "ABCDEFGHIJKLMNOP",
-    "websocket_protocol": "hydrogen"
+    "websocket_protocol": "hydrogen",
+    "terminal_path": "/terminal"
   },
   "auth": {
     "api_key": "EveryGoodBoyDeservesFudge",
@@ -90,6 +90,8 @@
     "030.Sync Manager": true,
     "031.Camera Manager": true,
     "032.Terminal": true,
-    "033.Scripting Manager": true
+    "033.Scripting Manager": true,
+    "034.Course Manager": true,
+    "035.Course Builder": true
   }
 }

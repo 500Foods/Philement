@@ -152,7 +152,7 @@ This creates menu items linking to:
 
 **Location:** `src/managers/style-manager/`
 
-**Type:** Menu Manager (ID: 10)
+**Type:** Menu Manager (ID: 22)
 
 **Purpose:** Theme management — list, apply, edit, create themes
 
@@ -596,49 +596,38 @@ These are registered in `app.js` but not yet implemented:
 
 ## Manager ID Registry
 
-Manager IDs correspond to the `lithium.json` `managers` section. Group 0 (IDs 1-6) are system managers hidden from the main menu.
+Canonical map locked in CATCHUP Phase 0
+([`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md)).
+Runtime menu IDs 7–33 today:
+`src/app/manager-loader.js` + `config/lithium.json`. Helium Lookup **042**
+(Modules) currently seeds 1–32 only (no 33/34/35) — sync in Phase 0a.
 
-### Group 0: System Managers (Hidden)
+Tour matching uses **numeric ID only**. Do not give utility Terminal
+numeric 5 (collides with Crimson tours).
 
-| ID | Manager | Status |
-|----|---------|--------|
-| 1 | Login | System (pre-auth) |
-| 2 | Menu | System (wrapper) |
-| 3 | Profile | ✅ Implemented (Utility) |
-| 4 | Session | ✅ Implemented (Utility) |
-| 5 | Crimson | System (AI agent) |
-| 6 | Tour | System (onboarding) |
-
-### Groups 1-4: Menu Managers (Visible)
-
-| ID | Manager | Status |
-|----|---------|--------|
-| 7 | Dashboard Manager | ✅ Implemented |
-| 8 | Mail Manager | ⬜ Placeholder |
-| 9 | Profile Manager | ⬜ Placeholder |
-| 10 | Session Manager | ⬜ Placeholder |
-| 11 | Version Manager | ✅ Implemented |
-| 12 | Calendar Manager | ⬜ Placeholder |
-| 13 | Contact Manager | ⬜ Placeholder |
-| 14 | File Manager | ⬜ Placeholder |
-| 15 | Document Manager | ✅ Implemented |
-| 16 | Media Manager | ✅ Implemented |
-| 17 | Diagram Manager | ✅ Implemented |
-| 18 | Chat Manager | ✅ Implemented |
-| 19 | Notification Manager | ⬜ Placeholder |
-| 20 | Annotation Manager | ⬜ Placeholder |
-| 21 | Ticketing Manager | ⬜ Placeholder |
-| 22 | Style Manager | ✅ **Implemented** |
-| 23 | Lookup Manager | ✅ **Implemented** |
-| 24 | Report Manager | ✅ Implemented |
-| 25 | Role Manager | ⬜ Placeholder |
-| 26 | Security Manager | ⬜ Placeholder |
-| 27 | AI Auditor Manager | ✅ Implemented |
-| 28 | Job Manager | ⬜ Placeholder |
-| 29 | Query Manager | ✅ **Implemented** |
-| 30 | Sync Manager | ⬜ Placeholder |
-| 31 | Camera Manager | ⬜ Placeholder |
-| 32 | Terminal | ⬜ Placeholder |
+| ID | Name | Module | Notes |
+|----|------|--------|-------|
+| 1 | Login | `managers/login/` | Not in menu registry |
+| 2 | Menu / Main | `managers/main/` | |
+| 3 | User Profile | `profile-manager/` | Utility |
+| 4 | Session Log | `session-log/` | Utility |
+| 5 | Crimson | `crimson/` | **Popout only.** Not a slot manager. |
+| 6 | Tour | `tour/` | Not a slot manager |
+| 7 | Dashboard | `dashboard/` | Placeholder until Band G |
+| 8 | Mail | `mail-manager/` | Placeholder until Band G |
+| 9 | Server Profiles | `server-profiles.js` | |
+| 10 | Server Sessions | `server-sessions.js` | |
+| 11 | Version | `version-history/` | |
+| 12–17, 19–21, 24, 26–28, 30–31 | Calendar…Camera | placeholders | Collapse in Phase 29 |
+| 18 | Chats | `chats/` | History manager. **Not** Crimson. Band F. |
+| 22 | Style | `style-manager/` | |
+| 23 | Lookups | `lookups/` | |
+| 25 | Role | `role-manager/` | Placeholder until Band G |
+| 29 | Queries | `queries/` | Canonical LithiumTable consumer |
+| 32 | Terminal | `terminal/` | Menu 32. Utility key `terminal` **without** numeric 5. |
+| 33 | Scripting | `scripting/` | In `manager-loader.js`; **added to Lookup 042 in migration 1378** |
+| **34** | **Course Manager** | `course-manager/` | **First deploy.** Stub created (Phase 0a). Band D implements. |
+| **35** | **Course Builder** | `course-builder/` | **Pipeline UI.** Stub created (Phase 0a). Band E implements. |
 
 ---
 

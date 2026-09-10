@@ -415,4 +415,9 @@ in the migrations themselves so that they get populated in the database directly
 | [1375](/elements/002-helium/acuranzo/migrations/acuranzo_1375.lua) | scripts | 1.0.0 | 2026-08-27 | 4 | ✗ | MCP Phase 15: seed Mcp.Intro fixture prompt |
 | [1376](/elements/002-helium/acuranzo/migrations/acuranzo_1376.lua) | scripts | 1.0.0 | 2026-09-02 | 4 | ✗ | MCP Phase 14: seed System.Info (MCP tool calling H.system.info) |
 | [1377](/elements/002-helium/acuranzo/migrations/acuranzo_1377.lua) | queries | 1.0.0 | 2026-09-06 | 4 | ✗ | QueryRef #154 - Atomic Claim Next Pending Mail Queue Row |
-| **378** | | | | **1928** | **378** | |
+| [1378](/elements/002-helium/acuranzo/migrations/acuranzo_1378.lua) | lookups | 1.0.0 | 2026-09-09 | 4 | ✗ | Additions to Lookup 042 - Modules (keys 33-35) |
+| [1379](/elements/002-helium/acuranzo/migrations/acuranzo_1379.lua) | lookups | 1.0.0 | 2026-09-09 | 4 | ✗ | Addition to Lookup 048 - Module Groups (Learning) |
+| [1380](/elements/002-helium/acuranzo/migrations/acuranzo_1380.lua) | roles | 1.0.0 | 2026-09-09 | 4 | ✗ | Seed staff/admin roles (role_id 2 and 3) |
+| [1381](/elements/002-helium/acuranzo/migrations/acuranzo_1381.lua) | roles | 1.0.0 | 2026-09-09 | 4 | ✗ | QueryRef #155 - Get Role Names By IDs |
+| [1382](/elements/002-helium/acuranzo/migrations/acuranzo_1382.lua) | lookups | 1.0.0 | 2026-09-09 | 8 | ✗ | Retarget Lookup 037 from Role Status to Role Origin |
+| **383** | | | | **1952** | **383** | |

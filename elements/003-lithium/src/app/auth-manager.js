@@ -1,5 +1,6 @@
 import { logAuth, Status } from '../core/log.js';
-import { retrieveJWT, validateJWT, storeJWT, clearJWT, getTimeUntilExpiry, consumeSloQuery } from '../core/jwt.js';
+import { retrieveJWT, validateJWT, storeJWT, clearJWT, getTimeUntilExpiry, consumeSloQuery, getClaims } from '../core/jwt.js';
+import { parseRoleIds } from '../core/utils.js';
 import { loadMacrosPostLogin } from '../shared/lookups.js';
 import { toast } from '../shared/toast.js';
 import { eventBus, Events } from '../core/event-bus.js';
@@ -38,7 +39,7 @@ export class AuthManager {
         id: validation.claims.user_id,
         username: validation.claims.username,
         email: validation.claims.email,
-        roles: validation.claims.roles,
+        roles: parseRoleIds(validation.claims.roles),
       };
 
       if (window.lithiumSettings) {

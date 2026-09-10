@@ -11,6 +11,7 @@ const DEFAULT_CONFIG = {
     url: 'http://localhost:8080',
     api_prefix: '/api',
     websocket_url: 'ws://localhost:8080/ws',
+    terminal_path: '/terminal',
   },
   auth: {
     api_key: '',

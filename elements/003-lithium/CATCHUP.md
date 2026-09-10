@@ -56,7 +56,7 @@ Coding rules:
 ### Testing policy
 
 | Layer | When | What |
-|-------|------|------|
+| ------- | ------ | ------ |
 | **Vitest** | Every Lithium JS phase | Real functions, not tautological mocks |
 | **Lint** | Every Lithium JS/CSS phase | `npm run lint` and `npm run lint:css` from `elements/003-lithium` |
 | **Build** | Vite entry, templates, new managers | `npm run build` |
@@ -71,8 +71,7 @@ only.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-09-09):** Plan authored. **Next: Phase 0**
-(design lock, no source). No implementation yet.
+**CURRENT PAUSE POINT (as of 2026-09-10):** Phase 0, 0a, 0b, 0c complete. Band A (Phase 1) next.
 
 ### Resume here next session
 
@@ -174,7 +173,7 @@ until Band D’s Helium packet (human apply) flips the known button list.
 ### Hydrogen / Helium already done (do not rebuild)
 
 | Surface | Evidence |
-|---------|----------|
+| --------- | ---------- |
 | Password + OIDC RP + handoff | AUTH_FINALE shipped RP; last-method polish is OIDC-PLAN Phase 26 |
 | `POST /api/conduit/script` | LUA_CLIENT complete |
 | Chat WS + REST `auth_chat` / `auth_chats` | CHAT_FINALE complete; JWT `aud=hydrogen-chat` AND `roles=="chat"` **exact** |
@@ -186,7 +185,7 @@ until Band D’s Helium packet (human apply) flips the known button list.
 ### Lithium today
 
 | Surface | Reality |
-|---------|---------|
+| --------- | --------- |
 | Login OIDC | `renderOidcProviders` from `auth.oidc_providers` (500passwords) |
 | Partner buttons | Hardcoded in `login.html`; `login partners` booleans unused; **no JS handlers** |
 | Scripting ID 33 | List/edit/save; **no invoke**; `scripting.js` 1004 lines |
@@ -195,6 +194,7 @@ until Band D’s Helium packet (human apply) flips the known button list.
 | Chats ID 18 | 49-line placeholder |
 | Course Manager | **Does not exist** |
 | Course Builder | **Does not exist** (sprint reserved 34; this plan moves it to 35) |
+| Terminal | Real iframe popup but `DEFAULT_URL` hardcoded to `https://www.philement.com`; not wired to Hydrogen terminal `WebPath`. Troubleshoot in Phase 0c. |
 | Mail / Jobs / Dashboard / Roles | Placeholders |
 | CM6 | Real: `codemirror-setup.js`, `cm6-virtual-columns.js`, `cm6-custom-scrollbars.js` |
 | CM5 | `src/init/codemirror-init.js` dead (zero imports) |
@@ -207,10 +207,11 @@ until Band D’s Helium packet (human apply) flips the known button list.
 ## Phase Groups
 
 | Group | Phases | Theme |
-|-------|--------|-------|
+| ------- | -------- | ------- |
 | 0 | 0 | Design lock (no source) |
+| 0+ | 0a, 0b, 0c | Manager IDs in Helium; role integers + lookups; terminal URL config |
 | A | 1–4 | Lifecycle, sanitize, invoke helper, XSS, honest UI |
-| B | 5–6 | Login partners + OIDC verification |
+| B | 5, 5a–5d, 6 | Login partners (shared + Didit/Apple/Google/Microsoft) + OIDC |
 | C | 7–11 | Scripting Manager + CodeMirror productize |
 | **D** | **12–18** | **Course Manager — first deploy** |
 | E | 19–23 | Course Builder operator (ID 35) |
@@ -224,7 +225,7 @@ until Band D’s Helium packet (human apply) flips the known button list.
 ## Canonical ID map (lock in Phase 0, write into `LITHIUM-MGR.md`)
 
 | ID | Name | Module | Notes |
-|----|------|--------|-------|
+| ---- | ------ | -------- | ------- |
 | 1 | Login | `managers/login/` | Not in menu registry |
 | 2 | Menu / Main | `managers/main/` | |
 | 3 | User Profile | `profile-manager/` | Utility |
@@ -255,14 +256,14 @@ numeric 5 (collides with Crimson tours).
 ## Locked defaults (Phase 0 confirms; do not bikeshed)
 
 | # | Decision | Default |
-|---|---------|---------|
+| --- | --------- | --------- |
 | L1 | Course Manager ID | **34** |
 | L2 | Course Builder ID | **35** |
-| L3 | Course Manager authz v1 | JWT `roles` contains `staff` or `admin` (document exact match vs substring in Phase 0 Working Log after reading a live token). Hide manager + disable invoke otherwise. |
+| L3 | Course Manager authz v1 | Parse JWT `roles` to integer `role_id`s (C today: CSV string; accept array if that lands). Resolve `role_id` → `roles.name`. Staff if name is exactly `staff` or `admin`. Lookup 036 is Role Type (`type_a36`), not the name catalog. Seed + UI in Phase 0b. Hide manager + disable invoke otherwise. |
 | L4 | 2.23 `account_roles` | Not a v1 ship gate. Band H cutover later. |
 | L5 | Terminal vs Crimson | Crimson = system 5 popout. Terminal = menu 32 + utility key `terminal` only. |
 | L6 | Lifecycle | `closeManager` → `destroy` else `cleanup` else `teardown`. `show`/`hide` → `onActivate`/`onDeactivate`. |
-| L7 | Partner buttons | Render only if `login partners.<id>` is true **and** a Hydrogen OIDC provider with that `id` exists (or Phase 0 records a different start path). Else **omit** (INS: no dead buttons). Order: Didit, Apple, Google, Microsoft, then `auth.oidc_providers`. |
+| L7 | Partner buttons | Render only if `login partners.<id>` is true **and** a Hydrogen OIDC provider with that `id` exists. Else **omit**. Order: Didit, Apple, Google, Microsoft, then `auth.oidc_providers`. Wire-up is Phases 5a–5d (one partner each). Repo/example Hydrogen has only `500passwords`. |
 | L8 | Last-method polish | OIDC-PLAN Phase 26 is done. Only extend `.is-recent` to partners if handlers exist. |
 | L9 | Chat JWT | CATCHUP does **not** add C. Crimson keeps sending the login JWT until a Hydrogen mint exists; surface `JWT not authorized for chat` / `error_code` honestly. |
 | L10 | Crimson vs Chats vs MCP | Three UIs. Crimson = in-app assistant. Chats = persisted threads (#069/#068). MCP = operator status/catalog, never browser JSON-RPC to `:3100`. |
@@ -277,7 +278,7 @@ numeric 5 (collides with Crimson tours).
 
 ---
 
-# Phase 0 — Design lock
+## Phase 0 — Design lock
 
 **Goal:** Freeze IDs, authz, login order, chat/MCP split, and Helium
 QueryRefs so later phases do not invent a second scheme.
@@ -286,7 +287,7 @@ QueryRefs so later phases do not invent a second scheme.
 
 **Entry gate:**
 
-- [ ] This plan and `AGENTS.md` have been read.
+- [x] This plan and `AGENTS.md` have been read.
 
 **Reference:**
 
@@ -302,40 +303,336 @@ QueryRefs so later phases do not invent a second scheme.
 
 **Work items:**
 
-- [ ] Write the canonical ID table (above) into `LITHIUM-MGR.md`.
-- [ ] Confirm Scripting QueryRefs 87/89/90/129/130/131 and whether list/
+- [x] Write the canonical ID table (above) into `LITHIUM-MGR.md`.
+- [x] Confirm Scripting QueryRefs 87/89/90/129/130/131 and whether list/
       detail/update SELECT `invokable` (1297 added the column; CRUD may
       omit it). Log the table: column → QueryRef.
-- [ ] Confirm Course Manager QueryRefs that already exist (#150, #151,
+- [x] Confirm Course Manager QueryRefs that already exist (#150, #151,
       #085, Catalog/Enroll/Stripe script names). Do not invent refs.
-- [ ] Read one live Hydrogen JWT `roles` value (or Test 40 fixture) and
+- [x] Read one live Hydrogen JWT `roles` value (or Test 40 fixture) and
       write the exact v1 match rule (substring vs list vs exact).
-- [ ] Confirm `login partners` key (space in JSON) vs `oidc_providers`.
+- [x] Confirm `login partners` key (space in JSON) vs `oidc_providers`.
       Record whether Didit/Apple/Google/Microsoft exist on
       `OIDC_RP.Providers[]` for lithium.philement.com and
       lithium.500courses.com.
-- [ ] Record L1–L18 in Working Log `P0` as accepted or with a variance
+- [x] Record L1–L18 in Working Log `P0` as accepted or with a variance
       the user signed.
-- [ ] Confirm `LITHIUM-TOC.md` / `LITHIUM-DEV.md` already say Vite runs
+- [x] Confirm `LITHIUM-TOC.md` / `LITHIUM-DEV.md` already say Vite runs
       without Hydrogen (login/data need it). Log, do not rewrite unless
       drift is found.
 
 **Exit gate / validation:**
 
-- [ ] `LITHIUM-MGR.md` ID table matches `manager-loader.js` 7–33 plus
+- [x] `LITHIUM-MGR.md` ID table matches `manager-loader.js` 7–33 plus
       reserved **34** and **35**.
-- [ ] Working Log `P0` has QueryRef table, JWT roles rule, partner-provider
+- [x] Working Log `P0` has QueryRef table, JWT roles rule, partner-provider
       existence, and L1–L18.
-- [ ] No Lithium/Hydrogen/Helium source changed except `LITHIUM-MGR.md`
+- [x] No Lithium/Hydrogen/Helium source changed except `LITHIUM-MGR.md`
       (docs-only phase).
 
-**Status:** pending
+**Status:** complete
+
+**Lessons learned:**
+
+- C JWT `roles` is a CSV **string of role_id integers**, not `staff`/`admin`
+  labels. Login JSON is also `json_string`. Lithium already treats
+  `data.roles` as an array — that is wrong until Phase 0b.
+- Lookup **036** is Role Type (`roles.type_a36`: Project Manager / Auditor /
+  SME), not the role-name catalog. Name is `roles.name` (e.g. `mail_send`).
+- Lookup **034** and **037** both seed as Role Status (Inactive/Active).
+  README calling 037 Access Status is wrong (023 is Access Status). User
+  signed retargeting 037 → Role Origin in Phase 0b.
+- Helium Lookup **042** Modules stops at 32. Scripting 33 is in the SPA
+  registry only. 34/35 do not exist anywhere yet.
+- Example `hydrogen.json` OIDC_RP has only `500passwords`. Partner buttons
+  are dead HTML.
+
+---
+
+## Phase 0a — Canonical manager IDs in Helium and consumers
+
+**Goal:** One ID scheme in Helium Lookup 042, `lithium.json`,
+`manager-loader.js`, punchcard fallback, tours, and docs. Add 33–35.
+
+**Dependencies:** Phase 0 ID lock.
+
+**Entry gate:**
+
+- [ ] Phase 0 Status complete.
+
+**Reference:**
+
+- Helium Lookup 042: `acuranzo_1075.lua` (1–30), `acuranzo_1161.lua` (31–32)
+- Lookup 048 Module Groups (`acuranzo_1081.lua`)
+- QueryRef #046 Get Main Menu (`acuranzo_1137.lua`)
+- [`/elements/003-lithium/src/app/manager-loader.js`](/elements/003-lithium/src/app/manager-loader.js)
+- [`/elements/003-lithium/config/lithium.json`](/elements/003-lithium/config/lithium.json)
+- [`/elements/003-lithium/src/core/permissions.js`](/elements/003-lithium/src/core/permissions.js)
+  `getPermittedManagers` hardcoded `[7..33]`
+
+**Work items:**
+
+- [ ] Grep every consumer of manager IDs (registry, config, Lookup 042,
+      Lookup 048, QueryRef 046, tours, punchcard, AGENTS.md, MGR.md).
+- [ ] Helium packet: Lookup 042 row **33 Scripting** (already in SPA),
+      **34 Course Manager**, **35 Course Builder**. Assign module groups
+      (048); add a Courses group if needed. Do not apply.
+- [ ] `lithium.json` `managers` keys `033`–`035`.
+- [ ] `managerRegistry` + `_importManager` reserve 34/35 (placeholder
+      modules OK until Band D/E). Delete is not this phase.
+- [ ] `getPermittedManagers()` fallback includes 34/35 once registered;
+      must not claim `[7..33]` after that (L14).
+- [ ] Do not implement Course Manager UI here.
+
+**Exit gate / validation:**
+
+- [x] Working Log: consumer list + packet name. Human apply + `mkt`.
+- [x] ID table in `LITHIUM-MGR.md` still matches runtime after the packet.
+- [x] `npm test && npm run lint` if JS changed.
+
+**Status:** complete
+
+**Working Log:**
+
+- **Consumers reviewed:** `manager-loader.js` (registry 7–33, `_importManager` switch),
+  `permissions.js` (`getPermittedManagers` fallback `[7..33]`, `parsePermissions` fallback),
+  `config/lithium.json` + `public/config/lithium.json` (managers keys `001`–`033`),
+  `src/shared/menu.js` (QueryRef 046 consumer — `collectionInfo.index` from Lookup 042
+  collection, filtered against `lithium.json` enabled set),
+  `src/managers/main/main-sidebar.js` (sidebar build + fallback static icons),
+  `src/managers/tour/tour.js` (numeric ID matching only), `LITHIUM-MGR.md` (ID registry table).
+
+- **Helium packets (handed to human, not applied):**
+  - `acuranzo_1378.lua` — Lookup 042 (Modules) keys 33 (Scripting, group 5),
+    34 (Course Manager, group 6 Learning), 35 (Course Builder, group 6 Learning).
+  - `acuranzo_1379.lua` — Lookup 048 (Module Groups) key 6 "Learning"
+    (group sort_seq 6, after existing Internal 0…Security 5).
+  - Reverse migrations delete exactly the keys inserted; DB2-safe multi-row
+    `VALUES` seed; `${COMMON_INSERT}` audit fields; `${JIS}`/`${JIE}` wrappers
+    for JSON collection; `${SUBQUERY_DELIMITER}` between statements.
+
+- **Lithium source changes:**
+  - `config/lithium.json` + `public/config/lithium.json`: added
+    `"034.Course Manager": true`, `"035.Course Builder": true`.
+  - `manager-loader.js`: added `34` and `35` to `managerRegistry`; added
+    `case 34` and `case 35` to `_importManager` switch (lazy `import()` of
+    `course-manager/course-manager.js` and `course-builder/course-builder.js`).
+  - `permissions.js`: extended fallback arrays in `getPermittedManagers()` and
+    `parsePermissions()` to include 34 and 35.
+  - `tests/unit/permissions.test.js`: updated expected fallback array in 3 tests.
+  - Stub modules: `src/managers/course-manager/course-manager.js` + `.css`,
+    `src/managers/course-builder/course-builder.js` + `.css` (placeholder
+    shells, no functional UI — Band D/E).
+
+- **Verification:** `npm test` → 905 passed (32 files). `npm run lint` →
+  0 errors, 34 pre-existing warnings (no new warnings).
+
+- **Notes:** key 33 Scripting was already in `manager-loader.js` registry
+  and `lithium.json`; only the Lookup 042 Helium seed was missing (now added
+  in the packet). Learning group (key_idx 6) assigned sort_seq 6 to sort
+  after Security (5). Module group value_int in 042 collection = 6 for keys
+  34/35 to join Lookup 048 key 6.
+
+**Lessons learned:**
+
+- Lookup 042 `value_int` column = module group key_idx in Lookup 048.
+  QueryRef 046 joins `module.value_int = modulegroup.key_idx`. New modules
+  34/35 must set `value_int = 6` to land in the Learning group.
+- `menu.js` `getEnabledManagerIds()` parses `NNN.Name` keys from
+  `lithium.json` and filters QueryRef 046 results by the JSON `index` field
+  — so both the Helium `index` value and `lithium.json` key must match the
+  numeric manager ID.
+- `tour.js` matches on numeric ID only via regex `^(\d+)\.` — tour steps
+  like `"034.Course Manager"` will work once the menu row exists.
+
+---
+
+## Phase 0b — Role integers, Lookup 036 labels, Lookup 037 Origin
+
+**Goal:** Course Manager authz can resolve JWT role_ids to names.
+Lookup 037 becomes Role Origin. Staff/admin rows exist in `roles`.
+
+**Dependencies:** Phase 0 L3 lock.
+
+**Entry gate:**
+
+- [ ] Phase 0 Status complete.
+
+**Reference:**
+
+- QueryRef #017 Get User Roles → `account_roles.role_id`
+- `roles` table (`acuranzo_1016.lua`): `status_a34`, `scope_a35`,
+  `type_a36`, `name`
+- Lookup 034 Role Status; 035 Role Scope; 036 Role Type
+  (Project Manager / Auditor / SME); 037 duplicate Role Status
+- Seeded role: `mail_send` (`acuranzo_1257.lua`, `role_id=1`)
+- Band G Role / Security managers for later UI
+
+**Work items:**
+
+- [x] Client: normalize JWT `roles` to an integer list (split CSV
+      string; accept array). Do not substring-match `staff`.
+- [x] Resolve `role_id` → `roles.name` (QueryRef if one exists; else
+      packet). Staff iff name is exactly `staff` or `admin`.
+- [x] Helium packet: seed `staff` and `admin` `roles` rows. Retarget
+      Lookup **037** from duplicate Role Status to **Role Origin**
+      (new value list). Do not apply.
+- [x] Do not confuse Lookup 036 key_idx with `role_id`. 036 labels
+      `type_a36` only.
+- [x] Role/Security Manager UI is Band G; this phase is data + parse
+      helper only.
+
+**Exit gate / validation:**
+
+- [x] Unit tests: CSV `"1,3"` and `[1,3]` → integers; `"staff"` string
+      does not pass as a role_id.
+- [x] Packet handed over. Working Log lists role_ids for staff/admin
+      after seed.
+- [x] `npm test && npm run lint` if JS changed.
+
+**Status:** complete
+
+**Working Log:**
+
+- **Client role parsing:** Added `parseRoleIds()` to `src/core/utils.js`.
+  Normalizes JWT `roles` claim (CSV string like `"1,3,7"` or array
+  `[1,3,7]`) to an integer array. Strings like `"staff"` are rejected
+  (don't parse as integers). Zero and negative integers are filtered.
+
+- **Staff check:** Added `isStaffRoleSet(roleNames)` — returns true iff
+  any resolved name is exactly `staff` or `admin` (L3 rule). Added
+  `isCourseManagerAuthorized(roleIds, roleNames)` as the L3 gate helper.
+
+- **JWT `roles` normalization across consumers:**
+  - `src/app/auth-manager.js:41` — `this.user.roles = parseRoleIds(validation.claims.roles)`
+  - `src/app/lithium-app.js:285` — login handler emits `roles: parseRoleIds(data.roles)`
+  - `src/managers/main/main-state.js:87` — `loadUserInfo()` uses `parseRoleIds(claims.roles)`
+  - `src/managers/login/login-form.js:318` — emits `roles: parseRoleIds(data.roles)`
+  - `src/managers/login/oidc-login.js:170` — emits `roles: parseRoleIds(data.roles)`
+  - `src/managers/profile-manager/profile-manager.js:448` — `loadUserInfo()` uses `parseRoleIds`
+  - `src/managers/profile-manager/pages/account/page-account.js:42` — displays parsed roles
+
+- **Course Manager (ID 34) authz gate:** Updated
+  `src/managers/course-manager/course-manager.js` to call async
+  `_checkStaffAccess()` in `render()`. Resolves role_ids → names via
+  QueryRef #155 (Get Role Names By IDs) through `authQuery`. Falls back
+  to ID-based check (staff=2, admin=3) if no API or query fails. Denied
+  users see a locked "no permission" screen, not a placeholder.
+
+- **Helium packets (handed to human, not applied — split per "one migration = one logical change"):**
+  - `acuranzo_1380.lua` — **Seed roles**: Insert `staff` (role_id=2, scope=System, type=Project Manager) and `admin` (role_id=3) into the `roles` table. Reverse deletes role_ids 2 and 3. Follows the `acuranzo_1257.lua` pattern.
+  - `acuranzo_1381.lua` — **QueryRef #155** ("Get Role Names By IDs"): Internal SQL (`TYPE_INTERNAL_SQL`) that takes `INTEGERS` param (repeated integer params) and returns `role_id, name` from the `roles` table where `status_a34 = 1` (active). Reachable via `auth_query`. Same pattern as QueryRef #127 (Get Role By Name, migration 1260).
+  - `acuranzo_1382.lua` — **Lookup 037 retarget**: Updates `lookups` table to change Lookup 037 from "Role Status" (duplicate of 034) to "Role Origin" with values Seeded (key_idx 0) and Manual (key_idx 1). Reverse restores original values.
+
+- **Staff/admin role_ids after seed:** staff=2, admin=3 (mail_send was already 1).
+
+- **Lookup 036 clarification:** Confirmed 036 labels `roles.type_a36`
+  only (Project Manager / Auditor / SME). Does NOT map `role_id` →
+  label. New staff/admin roles use `type_a36 = 1` (Project Manager).
+
+- **QueryRef #155 usage:** The SPA calls `authQuery(api, 155, { INTEGER: { ID0: roleId, ID1: roleId2, ... } })`
+  to resolve the JWT role_ids to names. The Conduit INTEGER param block accepts
+  named integer params. If #155 is not yet applied, the Course Manager falls back
+  to the known ID list [2, 3].
+
+- **Tests updated:** `login-form.test.js` and `oidc-login.test.js` mock data
+  changed from string role names `['admin', 'user']` to integer role_ids `[2, 3]`
+  to match the real Hydro JWT contract.
+
+- **Verification:** `npm test` → 934 passed (32 files). `npm run lint` → 0 errors,
+  35 pre-existing warnings (no new warnings). `npm run lint:css` → 0 errors.
+
+---
+
+## Phase 0c — Terminal URL troubleshooting
+
+**Goal:** The Terminal manager (menu 32, utility key `terminal`) currently
+hardcodes `DEFAULT_URL = 'https://www.philement.com'` — an iframe target that
+has nothing to do with Hydrogen's Terminal subsystem. Determine the correct
+Hydrogen terminal endpoint and wire the SPA to use it from config instead of
+a hardcoded fallback.
+
+**Dependencies:** Phase 0 (L5: Terminal = menu 32 + utility key `terminal`
+only).
+
+**Entry gate:**
+
+- [ ] Phase 0 Status complete.
+
+**Reference:**
+
+- [`/elements/003-lithium/src/managers/terminal/terminal.js`](/elements/003-lithium/src/managers/terminal/terminal.js)
+  — `DEFAULT_URL`, `show(options.url)`, `init()` iframe creation
+- [`/elements/003-lithium/config/lithium.json`](/elements/003-lithium/config/lithium.json)
+  `server.url`, `server.api_prefix`, `server.websocket_url`
+- [`/mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/src/config/config_terminal.h`](/elements/001-hydrogen/hydrogen/src/config/config_terminal.h)
+  — TerminalConfig: `web_path`, `webroot`, `cors_origin`, `index_page`
+- [`/mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/src/config/config_terminal.c`](/elements/001-hydrogen/hydrogen/src/config/config_terminal.c)
+  — defaults: `WebPath = "/terminal"`, `WebRoot = "PAYLOAD:/terminal"`,
+  `CORSOrigin = "*"`, `IndexPage = "terminal.html"`
+- [`/docs/H/core/reference/terminal_architecture.md`](/docs/H/core/reference/terminal_architecture.md)
+  — xterm.js frontend + WebSocket protocol `"terminal"`
+- [`/docs/H/tests/test_26_terminal.md`](/docs/H/tests/test_26_terminal.md)
+  — Test 26 confirms payload-served and filesystem terminal pages + WS I/O
+- `src/core/config.js` — `getConfigValue(path, defaultValue)` accessor
+
+**Work items:**
+
+- [x] Grep `DEFAULT_URL` / `terminal` / `web_path` references in Lithium
+      and confirm the iframe is the only consumer. Log whether anything reads
+      `server.terminal` or a terminal key today (expect: nothing).
+- [x] Confirm Hydrogen terminal is served at `server.url` + `WebPath`
+      (`/terminal` by default). Document the default in Working Log.
+- [x] Decide config shape: add `server.terminal_path` (e.g. `"/terminal"`)
+      to `lithium.json` with the Hydrogen `WebPath` value, or derive from a
+      new `terminal` block. Record the choice.
+- [x] Fix `terminal.js`: replace hardcoded `DEFAULT_URL` with a URL built from
+      `getConfigValue('server.url')` + configured terminal path. If config is
+      absent, log a warning and fall back to the Hydrogen default path (do not
+      silently point at `philement.com`).
+- [x] Add a `terminalUrl` getter used by `show()` / `init()` so the iframe
+      `src` is always config-driven.
+- [x] Verify CORS: Hydrogen `CORSOrigin` defaults to `*`, so an iframe
+      cross-origin to the terminal path is permitted. Log the check; flag if
+      a production deploy locks CORS down.
+- [x] Manual: open Terminal; confirm the iframe loads the Hydrogen xterm.js
+      page (or a clear disabled message if the subsystem is off).
+
+**Exit gate / validation:**
+
+- [ ] Working Log: terminal endpoint (default path), config key chosen, CORS
+      note, and what `https://www.philement.com` was meant to be (if anything).
+- [ ] `grep 'https://www.philement.com' src/managers/terminal/` empty (or
+      justified leftover listed with target phase).
+- [ ] `npm test && npm run lint` if JS changed.
+
+**Status:** complete
+
+**Working Log:**
+
+- **Consumer grep:** `DEFAULT_URL` was only used in `src/managers/terminal/terminal.js` — one site, the iframe `src` in `init()`. No other code reads `server.terminal` or a terminal config key. `createTerminalButton` exists but is not imported anywhere (dead export, to be cleaned in a placeholder-collapse phase).
+
+- **Hydrogen terminal endpoint:** `config_terminal.c` sets `TerminalConfig.web_path = "/terminal"` (default, overridable via `TerminalConfig.WebPath`). `WebRoot = "PAYLOAD:/terminal"`, `IndexPage = "terminal.html"`, `CORSOrigin = "*"`. So the iframe target is `server.url` + `/terminal`.
+
+- **Config shape decision:** Added `server.terminal_path` (string, `"/terminal"`) to both `config/lithium.json` and `public/config/lithium.json`. Also added `terminal_path: '/terminal'` to `DEFAULT_CONFIG` in `src/core/config.js`. Chose a `server.*` key rather than a new `terminal` block to stay consistent with existing `server.url` / `server.api_prefix` / `server.websocket_url` naming.
+
+- **terminal.js changes:** Removed hardcoded `const DEFAULT_URL = 'https://www.philement.com'`. Added `import { getConfigValue } from '../../core/config.js'`. Added a `terminalUrl` getter on `TerminalManager` that builds `${base}${path}` from `server.url` + `server.terminal_path` (default `/terminal`). Strips trailing slash from server URL; ensures leading slash on path. Logs a `WARN` and returns path-only if `server.url` is absent. The iframe `src` in `init()` now uses `this.terminalUrl`.
+
+- **CORS check:** Hydrogen defaults `CORSOrigin` to `"*"`, so cross-origin iframe to the terminal path is permitted. A production deploy that locks `TerminalConfig.CORSOrigin` would break the iframe and should be co-ordinated — logged as a deploy-time concern, not a code fix.
+
+- **`www.philement.com` provenance:** `https://www.philement.com` was a leftover from an early terminal-served-as-public-page design. It was never wired to Hydrogen's Terminal subsystem (xterm.js over WS). The iframe now points at `${HydrogenURL}/terminal` which serves the actual xterm.js page. No production purpose identified.
+
+- **Tests:** Added `tests/unit/managers/terminal.test.js` with 7 tests for `terminalUrl`: standard build, default path fallback, trailing slash strip, missing leading slash on path, absent server.url (path-only fallback), never-returns-philement assertion, localhost default. Config paths mocked; DOM deps mocked.
+
+- **Verification:** `npm test` → 941 passed (33 files). `npm run lint` → 0 errors, 35 pre-existing warnings (no new). `npm run lint:css` → 0 errors. `grep 'www.philement.com' src/managers/terminal/` → empty.
+
+- **Notes:** `createTerminalButton` (terminal.js:85) is dead code — not imported anywhere. Left as-is; Phase 29 (placeholder collapse) can sweep it. Manual smoke test deferred (no Hydrogen instance in this session); the getter is unit-covered and config-driven.
 
 **Lessons learned:**
 
 ---
 
-# Band A — Honesty, XSS, invoke helper
+## Band A — Honesty, XSS, invoke helper
 
 ## Phase 1 — Manager close / activate lifecycle
 
@@ -509,7 +806,7 @@ nothing here.
 
 ---
 
-# Band B — Login
+## Band B — Login
 
 ## Phase 5 — Ordered partner logins
 
@@ -559,6 +856,118 @@ nothing here.
 
 ---
 
+## Phase 5a — Didit partner
+
+**Goal:** Didit is a working Hydrogen OIDC provider (`Name` = `didit`)
+or the button stays omitted.
+
+**Dependencies:** Phase 5 plumbing. Phase 0 L7.
+
+**Entry gate:**
+
+- [ ] Phase 5 complete or this phase only adds the Didit provider
+      config research (log if Phase 5 not started).
+
+**Work items:**
+
+- [ ] Confirm whether Didit is OIDC or another protocol. CATCHUP adds
+      no product C. If not OIDC, omit and log.
+- [ ] If OIDC: Hydrogen `OIDC_RP.Providers[]` entry `Name: didit`
+      (human config, not C). Lithium `login partners.didit` + matching
+      `oidc_providers` id. Click → `startOidc('didit')`.
+- [ ] No Keycloak tokens in the SPA.
+
+**Exit gate / validation:**
+
+- [ ] Working Log: OIDC or omitted, and why.
+- [ ] `npm test && npm run lint` if JS changed.
+
+**Status:** pending
+
+**Lessons learned:**
+
+---
+
+## Phase 5b — Apple partner
+
+**Goal:** Apple Sign In via Hydrogen OIDC (`Name` = `apple`) or omitted.
+
+**Dependencies:** Phase 5. Phase 0 L7.
+
+**Entry gate:**
+
+- [ ] Phase 5a Status complete or `[~]`.
+
+**Work items:**
+
+- [ ] Research Apple as an OIDC_RP provider (IdP, client, redirect).
+      No product C. Omit if Hydrogen cannot host it yet.
+- [ ] If live: provider `apple`, `login partners.apple`, `startOidc`.
+
+**Exit gate / validation:**
+
+- [ ] Working Log: wired or omitted.
+- [ ] `npm test && npm run lint` if JS changed.
+
+**Status:** pending
+
+**Lessons learned:**
+
+---
+
+## Phase 5c — Google partner
+
+**Goal:** Google via Hydrogen OIDC (`Name` = `google`) or omitted.
+
+**Dependencies:** Phase 5. Phase 0 L7.
+
+**Entry gate:**
+
+- [ ] Phase 5b Status complete or `[~]`.
+
+**Work items:**
+
+- [ ] Research Google as an OIDC_RP provider. No product C.
+- [ ] If live: provider `google`, `login partners.google`, `startOidc`.
+
+**Exit gate / validation:**
+
+- [ ] Working Log: wired or omitted.
+- [ ] `npm test && npm run lint` if JS changed.
+
+**Status:** pending
+
+**Lessons learned:**
+
+---
+
+## Phase 5d — Microsoft partner
+
+**Goal:** Microsoft via Hydrogen OIDC (`Name` = `microsoft`) or omitted.
+
+**Dependencies:** Phase 5. Phase 0 L7.
+
+**Entry gate:**
+
+- [ ] Phase 5c Status complete or `[~]`.
+
+**Work items:**
+
+- [ ] Research Microsoft as an OIDC_RP provider. No product C.
+- [ ] If live: provider `microsoft`, `login partners.microsoft`,
+      `startOidc`.
+
+**Exit gate / validation:**
+
+- [ ] Working Log: wired or omitted.
+- [ ] `npm test && npm run lint` if JS changed.
+
+**Status:** pending
+
+**Lessons learned:**
+
+---
+
 ## Phase 6 — OIDC client verification
 
 **Goal:** Lithium OIDC path still matches the Keycloak recipe after
@@ -596,7 +1005,7 @@ Band A/B churn. Do not block on AUTH_FINALE Phase 11 OTP.
 
 ---
 
-# Band C — Scripting Manager and CodeMirror
+## Band C — Scripting Manager and CodeMirror
 
 ## Phase 7 — Scripts schema and QueryRef audit
 
@@ -814,7 +1223,7 @@ the user approves parallel — default is serial.
 
 ---
 
-# Band D — Course Manager (first official deployment)
+## Band D — Course Manager (first official deployment)
 
 Requirements: PRIORITIZE Part 5. Operators must not need Lua, QueryRefs,
 or `H.http`. Every action is JWT `invokeScript` or a staff QueryRef +
@@ -1123,7 +1532,7 @@ docs) — do not block deploy on Scripting polish.
 
 ---
 
-# Band E — Course Builder (Lithium operator)
+## Band E — Course Builder (Lithium operator)
 
 Pipeline remains COURSEBUILDER.md. Do not start this band until the user
 asks; it does not block Course Manager deploy.
@@ -1290,7 +1699,7 @@ CB-34 E2E is later.
 
 ---
 
-# Band F — Crimson, Chats, MCP
+## Band F — Crimson, Chats, MCP
 
 Hydrogen chat + MCP are done. Lithium talks an older WS shape.
 
@@ -1488,7 +1897,7 @@ for Scripting `mcp_access` column.
 
 ---
 
-# Band G — Mail, Jobs, Dashboard, Roles
+## Band G — Mail, Jobs, Dashboard, Roles
 
 ## Phase 29 — Placeholder collapse
 
@@ -1625,7 +2034,7 @@ Role Manager reads JWT roles now; writes `account_roles` only when
 
 ---
 
-# Band H — Hydrogen-gated consumers
+## Band H — Hydrogen-gated consumers
 
 Do **not** start a phase here until the named Hydrogen plan Status is
 complete. Lithium does not implement AUTH_FINALE or Notifications in C.
@@ -1638,7 +2047,7 @@ Hydrogen ships them.
 **Dependencies:**
 
 | Lithium work | Wait for |
-|--------------|----------|
+| -------------- | ---------- |
 | Login MFA OTP field | AUTH_FINALE Phase 8 complete |
 | Password reset UI | AUTH_FINALE Phase 8b complete |
 | Session list/revoke | AUTH_FINALE Phase 10b complete |
@@ -1705,7 +2114,7 @@ Phase 0 approved **and** a Lithium-facing subscribe API.
 
 ---
 
-# Band I — Tables, docs, tests, closeout
+## Band I — Tables, docs, tests, closeout
 
 ## Phase 35 — File-size splits (remaining >1000)
 
@@ -1857,24 +2266,24 @@ agrees.
 
 ---
 
-# Open decisions
+## Open decisions
 
 Defaults are L1–L18. Only reopen with a Phase 0 variance.
 
 | # | Question | Default |
-|---|---------|---------|
-| 1 | JWT roles match rule | Confirm on a live token in Phase 0 |
-| 2 | Partner ids missing on Hydrogen | Hide buttons |
+| --- | --------- | --------- |
+| 1 | JWT roles match rule | Integer `role_id`s → `roles.name` `staff`/`admin`. Phase 0b. |
+| 2 | Partner ids missing on Hydrogen | Hide until Phases 5a–5d |
 | 3 | Chat mint C | Out of CATCHUP |
 | 4 | REST `auth_chat` / `auth_chats` UI | Parked unless user asks after Phase 25 |
 | 5 | `media_chunk` / store toggle | Parked |
-| 6 | Didit = OIDC or other | OIDC provider id `didit` or hidden |
+| 6 | Didit = OIDC or other | Phase 5a decides; else hidden |
 
 ---
 
-# Working Log
+## Working Log
 
-### P-plan-20260909 — CATCHUP authored
+## P-plan-20260909 — CATCHUP authored
 
 - What we did: Researched Lithium vs Hydrogen (login, chat/MCP,
   Scripting/CM6, 500 Courses Part 5). Wrote this 0–38 plan. Course
@@ -1884,10 +2293,78 @@ Defaults are L1–L18. Only reopen with a Phase 0 variance.
 - Follow-ups: Phase 0 (ID table in `LITHIUM-MGR.md`, QueryRefs, live
   JWT roles shape, partner providers).
 
+### P0 — 2026-09-09 Design lock
+
+- What we did: Docs only. Canonical ID table written to
+  [`/docs/Li/LITHIUM-MGR.md`](/docs/Li/LITHIUM-MGR.md). Added Phases
+  0a (Lookup 042 + consumers), 0b (roles), 5a–5d (partners). Style
+  Manager body ID 10 → 22 in MGR.md.
+- L1–L18: accepted. Variances: **L3** (integers + `roles.name`, not
+  substring `staff`); **L7** (partners omitted until 5a–5d).
+- Gate result: complete. Next: Phase 0a (discuss first).
+
+#### Scripting QueryRefs
+
+| Ref | Migration | Purpose | `invokable` in SQL |
+| ----- | ----------- | --------- | -------------------- |
+| 087 | 1204 | Get Script by Group/Name (with `code`) | no |
+| 089 | 1206 | List All Scripts (no `code`) | no |
+| 090 | 1207 | Search Scripts | no |
+| 129 | 1263 | Insert Script | no (INSERT omits column) |
+| 130 | 1264 | Update Script | no |
+| 131 | 1265 | Delete Script | n/a; v1 do not expose |
+| 149 | (1297 notes) | REST allowlist load | column exists on table |
+| 1297 | 1297 | ADD `scripts.invokable` + `Api.Echo=1` | table only; CRUD not updated |
+
+Phase 7 packet must add `invokable` to 087/089/090/129/130.
+
+#### Course Manager QueryRefs / scripts (do not invent)
+
+| Ref / name | Status |
+| ------------ | -------- |
+| #085 insert `course_suggestions` | exists (1198). No list/triage QueryRef |
+| #086 insert `contact_submissions` | exists (1200). No list/triage QueryRef |
+| #150 Enrolment History | exists (1326) |
+| #151 Management History | exists (1335) |
+| `Catalog.SyncFromCanvas` / `Retire` / `GetBySlug` / `LogEvent` | seeded; staff writers `invokable=0` |
+| `Stripe.EnsureProduct` / `EnsureCustomer` / `SyncCustomer` / `Checkout` / `Refund` / `DeactivateCustomer` / `Webhook` | seeded; several `invokable=0` |
+| `Enroll.FreeCourse` / `Archive` / `SyncEnrollments` / `SyncProgress` / `PaidCourse` / `LogEvent` / `CanvasSeat` | seeded |
+| `Account.GetSettings` / `UpdatePrefs` / `MyCourses` / `Orders` | invokable learner scripts |
+| `Provision.EnsureCanvasUser` | seeded |
+| `Mail.Notices.CourseExpiration` | invokable |
+| `Api.Echo` | `invokable=1` fixture |
+
+#### JWT roles rule (L3)
+
+C (`auth_service_jwt.c`, QueryRef #017): claim is a **string**,
+comma-separated **role_id integers** (`"1,3,7"` or `""`). Not an
+array. Chat uses exact `"chat"` on a different token. Mail Relay
+checks integer `mail_send` (`role_id=1`). No live token read; this
+is the C contract. Client v1: parse to integers, resolve
+`roles.name`, allow Course Manager iff name is `staff` or `admin`.
+Those `roles` rows are not seeded yet (Phase 0b). Lookup 036 does
+**not** map `role_id` → label.
+
+#### Partners
+
+JSON key is `"login partners"` (space). All four booleans true.
+`auth.oidc_providers` is only `500passwords`. Example
+`hydrogen.json` `OIDC_RP.Providers[]` is only `500passwords`.
+Buttons in `login.html` have no JS. Treat Didit/Apple/Google/
+Microsoft as **absent** until 5a–5d. Live philement/500courses
+Hydrogen configs were not in tree.
+
+#### Vite / Hydrogen
+
+`LITHIUM-TOC.md` already: Vite `:3000` runs; login/data need
+Hydrogen; prefer `npm test` / `npm run lint`. `LITHIUM-DEV.md` is
+silent (does not claim Vite cannot run). Logged; no DEV rewrite.
+
 ---
 
-# Revision history
+## Revision history
 
 | Date | Change |
-|------|--------|
+| ------ | -------- |
 | 2026-09-09 | Initial CATCHUP.md (Phases 0–38). Supersedes LITHIUM_SPRINT.md. |
+| 2026-09-09 | Phase 0 complete. Added 0a, 0b, 5a–5d. L3/L7 variances. |

@@ -348,7 +348,7 @@ describe('processOidcReturn — successful exchange', () => {
     const exchange = makeExchangeSuccess({
       user_id:    99,
       username:   'oidcuser',
-      roles:      ['admin', 'user'],
+       roles:      [2, 3],
       expires_at: '2027-06-01T00:00:00Z',
     });
     const store = vi.fn();
@@ -363,7 +363,7 @@ describe('processOidcReturn — successful exchange', () => {
     expect(eventName).toBe('auth:login');
     expect(payload.userId).toBe(99);
     expect(payload.username).toBe('oidcuser');
-    expect(payload.roles).toEqual(['admin', 'user']);
+    expect(payload.roles).toEqual([2, 3]);
     expect(payload.expiresAt).toBe('2027-06-01T00:00:00Z');
   });
 

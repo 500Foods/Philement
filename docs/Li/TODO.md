@@ -21,11 +21,11 @@ partners, Scripting invoke, Course Manager, or chat/MCP.
 | | |
 | --- | --- |
 | **Plan** | [CATCHUP.md](/elements/003-lithium/CATCHUP.md) |
-| **Next** | Phase 0 — design lock |
+| **Next** | Phase 0a — manager IDs in Helium Lookup 042 |
 | **First deploy** | Band D — Course Manager (ID 34) |
-| **Effort** | XL (39 gated phases, 0–38) |
-| **Done** | 0% — plan authored 2026-09-09 |
-| **Remaining** | Phases 0–38 |
+| **Effort** | XL (gated phases 0, 0a, 0b, 1–38, 5a–5d) |
+| **Done** | Phase 0 complete 2026-09-09 |
+| **Remaining** | Phases 0a, 0b, 1–38, 5a–5d |
 | **Superseded** | [LITHIUM_SPRINT.md](/docs/Li/plans/LITHIUM_SPRINT.md) |
 
 ## Parallel (other repos)

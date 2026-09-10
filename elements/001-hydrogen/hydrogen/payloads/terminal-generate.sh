@@ -5,6 +5,7 @@
 # This script downloads xterm.js from GitHub and creates terminal interface assets
 
 # Change Log:
+# 2.1.1 - 2026-09-10 - Removed the ABDEFGHIJKLMNOP hardcoded WebSocket key fallback in connectToWebSocket; connection now fails loudly if config cannot be obtained
 # 2.0.0 - 2025-12-05 - Updated with proper path handling using HYDROGEN_ROOT environment variable
 # 1.1.0 - 2025-11-30 - Added copying of generated terminal files to tests/artifacts/terminal directory as payload-terminal.css and payload-terminal.html
 # 1.0.0 - 2025-08-31 - Initial release to download xterm.js and create terminal interface files
@@ -26,7 +27,7 @@ fi
 set -e
 
 # Display script information
-echo "terminal-generate.sh version 2.0.0"
+echo "terminal-generate.sh version 2.1.1"
 echo "xterm.js Payload Generator for Hydrogen Terminal"
 
 # xterm.js versions to use (latest available)
@@ -235,14 +236,98 @@ create_terminal_interface() {
         }
 
         function connectWebSocket() {
+            // Fetch terminal WebSocket configuration from the parent frame
+            // or from /api/system/info using the JWT stored in localStorage.
+            // The key and port are server-side secrets and must not be
+            // hardcoded in this static payload file.
+            showStatus('Fetching terminal configuration...');
+
+            fetchTerminalConfig().then(config => {
+                if (!config) {
+                    showStatus('Failed to fetch terminal configuration', true);
+                    return;
+                }
+
+                connectToWebSocket(config);
+            }).catch(err => {
+                showStatus('Configuration fetch error: ' + err.message, true);
+            });
+        }
+
+        function fetchTerminalConfig() {
+            // Try parent frame first (Lithium SPA passes JWT via postMessage)
+            return new Promise((resolve, reject) => {
+                let resolved = false;
+
+                function onMessage(event) {
+                    if (event.data && event.data.type === 'terminal-config' && event.data.config) {
+                        window.removeEventListener('message', onMessage);
+                        if (!resolved) {
+                            resolved = true;
+                            resolve(event.data.config);
+                        }
+                    }
+                }
+
+                function tryLocalStorage() {
+                    const token = localStorage.getItem('lithium_jwt');
+                    if (token) {
+                        const protocol = window.location.protocol;
+                        const apiBase = protocol + '//' + window.location.host;
+                        fetch(apiBase + '/api/system/info', {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        }).then(resp => resp.json()).then(data => {
+                            if (!resolved) {
+                                resolved = true;
+                                window.removeEventListener('message', onMessage);
+                                resolve({
+                                    port: data.terminal?.port || 5261,
+                                    key: data.terminal?.key
+                                });
+                            }
+                        }).catch(() => {
+                            // Fall through to rejection below
+                        });
+                    }
+                }
+
+                window.addEventListener('message', onMessage);
+
+                // Request config from parent frame
+                if (window.parent && window.parent !== window) {
+                    window.parent.postMessage({ type: 'terminal-config-request' }, '*');
+                }
+
+                // Fallback: try localStorage after a short delay
+                setTimeout(() => {
+                    if (!resolved) {
+                        tryLocalStorage();
+                    }
+                }, 250);
+
+                // Timeout
+                setTimeout(() => {
+                    if (!resolved) {
+                        resolved = true;
+                        window.removeEventListener('message', onMessage);
+                        reject(new Error('Terminal config fetch timed out'));
+                    }
+                }, 5000);
+            });
+        }
+
+        function connectToWebSocket(config) {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            // Connect to WebSocket server on port 5261
             const hostname = window.location.hostname;
-            const wsPort = '5261';
-            
-            // Get WebSocket key from environment or use a default
-            // In production, this should come from server-side configuration
-            const wsKey = 'ABDEFGHIJKLMNOP';
+            const wsPort = config.port || 5261;
+            const wsKey = config.key;
+            if (!wsKey) {
+                isConnected = false;
+                showStatus('WebSocket key not provided by server', true);
+                updateHeaderInfo();
+                term.writeln('\r\n\x1b[31mTerminal configuration error: no WebSocket key\x1b[0m\r\n$ ');
+                return;
+            }
             const wsUrl = `${protocol}//${hostname}:${wsPort}?key=${encodeURIComponent(wsKey)}`;
 
             showStatus('Connecting to terminal...');
