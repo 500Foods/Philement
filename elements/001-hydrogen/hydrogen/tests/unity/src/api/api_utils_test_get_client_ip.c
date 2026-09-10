@@ -31,6 +31,8 @@ void test_api_get_client_ip_no_connection_info(void);
 void test_api_get_client_ip_ipv4(void);
 void test_api_get_client_ip_ipv6(void);
 void test_api_get_client_ip_unsupported_family(void);
+void test_api_get_client_ip_xforwarded_for_single(void);
+void test_api_get_client_ip_xforwarded_for_first_in_chain(void);
 
 void setUp(void) {
     // Reset mocks before each test
@@ -120,6 +122,32 @@ void test_api_get_client_ip_unsupported_family(void) {
     free(result);
 }
 
+// Test api_get_client_ip with X-Forwarded-For header (single IP)
+void test_api_get_client_ip_xforwarded_for_single(void) {
+    mock_mhd_add_lookup("X-Forwarded-For", "203.0.113.5");
+
+    struct MockMHDConnection mock_conn;
+    char *result = api_get_client_ip((struct MHD_Connection *)&mock_conn);
+
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL_STRING("203.0.113.5", result);
+
+    free(result);
+}
+
+// Test api_get_client_ip with X-Forwarded-For header (first in chain)
+void test_api_get_client_ip_xforwarded_for_first_in_chain(void) {
+    mock_mhd_add_lookup("X-Forwarded-For", "203.0.113.5, 10.0.0.1, 198.51.100.2");
+
+    struct MockMHDConnection mock_conn;
+    char *result = api_get_client_ip((struct MHD_Connection *)&mock_conn);
+
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL_STRING("203.0.113.5", result);
+
+    free(result);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -128,6 +156,8 @@ int main(void) {
     RUN_TEST(test_api_get_client_ip_ipv4);
     RUN_TEST(test_api_get_client_ip_ipv6);
     RUN_TEST(test_api_get_client_ip_unsupported_family);
+    RUN_TEST(test_api_get_client_ip_xforwarded_for_single);
+    RUN_TEST(test_api_get_client_ip_xforwarded_for_first_in_chain);
 
     return UNITY_END();
 }

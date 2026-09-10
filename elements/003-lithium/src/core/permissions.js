@@ -71,7 +71,7 @@ export function getPermittedManagers(punchcard = null) {
   if (!punchcard) {
     // Return default manager IDs from lithium.json (007-033)
     // Excludes Group 0: System (001-006) which are hidden from main menu
-    return [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33];
+    return [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35];
   }
 
   return punchcard.managers || [];
@@ -107,7 +107,7 @@ export function parsePermissions(claims) {
       hasPunchcard: false,
       // Return default manager IDs from lithium.json (007-033)
       // Excludes Group 0: System (001-006) which are hidden from main menu
-      managers: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33],
+      managers: [7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35],
       features: {},
     };
   }

@@ -5,9 +5,17 @@
  * for monitoring and diagnostics.
  * 
  * When a valid JWT is provided in the Authorization header, the response
- * includes scripting subsystem metrics (worker counts, job counts, job list).
+ * includes a "terminal" section with the WebSocket port and key that the
+ * xterm.js iframe page needs to open a terminal session. The terminal
+ * section is gated on authentication and WebSocket server availability —
+ * it is independent of the scripting subsystem.
+ *
+ * When a valid JWT is provided and the scripting subsystem is available,
+ * the response also includes scripting subsystem metrics (worker counts,
+ * job counts, job list).
+ *
  * Without authentication, the endpoint returns basic system info without
- * scripting details.
+ * scripting or terminal details.
  */
 
 #include <src/hydrogen.h>
@@ -63,15 +71,22 @@ void extract_websocket_metrics(WebSocketMetrics *metrics) {
 /**
   * Build the system info JSON object using the shared C collectors.
   *
-  * When include_scripting is true, the scripting scoreboard snapshot is
-  * attached as the "scripting" key — matching the authenticated REST
-  * info endpoint behavior.
-  *
-  * This is the single function that both handle_system_info_request
-  * (REST) and H.system.info() (Lua) call, so the field list is never
-  * duplicated.
-  */
-json_t* system_info_build_json(bool include_scripting) {
+ * When include_scripting is true, the scripting scoreboard snapshot is
+ * attached as the "scripting" key — matching the authenticated REST
+ * info endpoint behavior.
+ *
+ * When has_jwt is true and the WebSocket server is running, a "terminal"
+ * object with the WebSocket server port and authentication key is also
+ * attached. The terminal key is only exposed to authenticated callers
+ * so the xterm.js iframe page can open a WebSocket connection without
+ * hardcoding the secret. Terminal is independent of scripting — it
+ * depends solely on authentication and WebSocket server availability.
+ *
+ * This is the single function that both handle_system_info_request
+ * (REST) and H.system.info() (Lua) call, so the field list is never
+ * duplicated.
+ */
+json_t* system_info_build_json(bool include_scripting, bool has_jwt) {
     WebSocketMetrics metrics = {0};
     extract_websocket_metrics(&metrics);
 
@@ -96,6 +111,17 @@ json_t* system_info_build_json(bool include_scripting) {
         }
     }
 
+    if (has_jwt && ws_context) {
+        json_t *terminal_json = json_object();
+        pthread_mutex_lock(&ws_context->mutex);
+        int ws_port = ws_context->port;
+        const char *ws_key = ws_context->auth_key;
+        pthread_mutex_unlock(&ws_context->mutex);
+        json_object_set_new(terminal_json, "port", json_integer(ws_port));
+        json_object_set_new(terminal_json, "key", json_string(ws_key));
+        json_object_set_new(root, "terminal", terminal_json);
+    }
+
     return root;
 }
 
@@ -105,7 +131,7 @@ enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
 
     bool has_jwt = system_info_has_valid_jwt(connection);
 
-    json_t *root = system_info_build_json(has_jwt);
+    json_t *root = system_info_build_json(has_jwt, has_jwt);
     if (!root) {
         return MHD_NO;
     }

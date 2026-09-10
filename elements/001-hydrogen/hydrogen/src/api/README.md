@@ -95,7 +95,7 @@ API utilities in `api_utils.c` provide common functionality such as:
 - `api_send_json_response(connection, json_obj, status_code)`: Sends a JSON response with automatic brotli compression when supported by the client
 - `api_extract_query_params(connection)`: Extracts and parses URL query parameters
 - `api_extract_post_data(connection)`: Extracts and parses POST form data
-- `api_get_client_ip(connection)`: Gets the client's IP address
+- `api_get_client_ip(connection)`: Gets the client's IP address (checks X-Forwarded-For header, falls back to TCP peer)
 - `api_extract_jwt_claims(connection, jwt_secret)`: Extracts and validates JWT claims
 - `api_validate_jwt(token, secret)`: Validates a JWT token
 - `api_create_jwt(claims, secret)`: Creates a new JWT token

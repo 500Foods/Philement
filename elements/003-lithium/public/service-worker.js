@@ -1,7 +1,7 @@
 // Lithium PWA Service Worker
 // Cache strategy: cache-first for statics, stale-while-revalidate for API data
 
-const CACHE_VERSION = 3426;
+const CACHE_VERSION = 3431;
 const STATIC_CACHE = `lithium-static-v${CACHE_VERSION}`;
 const API_CACHE = `lithium-api-v${CACHE_VERSION}`;
 
@@ -86,6 +86,13 @@ self.addEventListener('fetch', (event) => {
   // Version file — network-first (must return fresh data for update detection)
   if (url.pathname.endsWith('/version.json')) {
     event.respondWith(networkFirst(event.request, API_CACHE));
+    return;
+  }
+
+  // Terminal page — network-first, never cache stale (Hydrogen regenerates this
+  // payload and stale cache serves an old terminal.html with hardcoded secrets).
+  if (url.pathname.startsWith('/terminal/')) {
+    event.respondWith(networkFirst(event.request, STATIC_CACHE));
     return;
   }
 

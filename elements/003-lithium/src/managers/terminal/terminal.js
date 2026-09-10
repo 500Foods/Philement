@@ -15,6 +15,8 @@
 import { processIcons } from '../../core/icons.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { initTooltips } from '../../core/tooltip-api.js';
+import { getConfigValue } from '../../core/config.js';
+import { retrieveJWT } from '../../core/jwt.js';
 
 // Import CSS
 import './terminal.css';
@@ -22,8 +24,8 @@ import './terminal.css';
 // Singleton instance tracking
 let terminalInstance = null;
 
-// Default iframe URL
-const DEFAULT_URL = 'https://www.philement.com';
+// Hydrogen terminal WebPath default (from config_terminal.c)
+const HYDROGEN_TERMINAL_PATH = '/terminal';
 
 // LocalStorage keys for persistent state
 const STORAGE_KEYS = {
@@ -146,6 +148,32 @@ export class TerminalManager {
   }
 
   /**
+   * Build the Hydrogen terminal iframe URL from config.
+   *
+   * Hydrogen serves the terminal at `server.url` + `server.terminal_path`,
+   * where `terminal_path` defaults to `/terminal` (matching Hydrogen's
+   * `TerminalConfig.WebPath` default from config_terminal.c). If config is
+   * absent or the server URL cannot be resolved, a warning is logged and
+   * the Hydrogen default path is used so the iframe never silently points
+   * at an unrelated host.
+   *
+   * @returns {string} Fully-qualified terminal URL for the iframe src
+   */
+  get terminalUrl() {
+    const serverUrl = getConfigValue('server.url');
+    const terminalPath = getConfigValue('server.terminal_path', HYDROGEN_TERMINAL_PATH);
+
+    if (!serverUrl) {
+      log(Subsystems.MANAGER, Status.WARN, '[Terminal] No server.url configured; using Hydrogen default terminal path only.');
+      return terminalPath;
+    }
+
+    const base = serverUrl.replace(/\/+$/, '');
+    const path = terminalPath.startsWith('/') ? terminalPath : `/${terminalPath}`;
+    return `${base}${path}`;
+  }
+
+  /**
    * Initialize the Terminal popup (create DOM elements)
    */
   init() {
@@ -194,7 +222,7 @@ export class TerminalManager {
         </div>
       </div>
       <div class="terminal-content">
-        <iframe class="terminal-iframe" src="${DEFAULT_URL}" allow="fullscreen"></iframe>
+        <iframe class="terminal-iframe" src="${this.terminalUrl}" allow="fullscreen"></iframe>
         <div class="terminal-resize-overlay"></div>
       </div>
       <div class="terminal-resize-handle terminal-resize-handle-bl" data-tooltip="Resize"></div>
@@ -208,6 +236,13 @@ export class TerminalManager {
     this.iframe = this.popup.querySelector('.terminal-iframe');
     this.fullscreenBtn = this.popup.querySelector('.terminal-fullscreen-btn');
     this.resizeOverlay = this.popup.querySelector('.terminal-resize-overlay');
+
+    // Listen for terminal-config-request from the iframe
+    this._handleIframeMessage = this._handleIframeMessage.bind(this);
+    window.addEventListener('message', this._handleIframeMessage);
+
+    // When the iframe finishes loading, we don't need to push — the iframe
+    // will request config via postMessage itself.
 
     // Wire events
     const closeBtn = this.popup.querySelector('.terminal-header-close');
@@ -613,10 +648,35 @@ export class TerminalManager {
   }
 
   /**
+   * Handle messages from the terminal iframe (postMessage).
+   * Responds to terminal-config-request by passing the JWT
+   * so the iframe can authenticate against /api/system/info.
+   */
+  _handleIframeMessage(event) {
+    if (!event.data || typeof event.data !== 'object') return;
+
+    if (event.data.type === 'terminal-config-request') {
+      const jwt = retrieveJWT();
+      if (jwt) {
+        event.source?.postMessage(
+          { type: 'terminal-config', config: { jwt } },
+          '*'
+        );
+      } else {
+        event.source?.postMessage(
+          { type: 'terminal-config-error', error: 'No JWT available' },
+          '*'
+        );
+      }
+    }
+  }
+
+  /**
    * Clean up the Terminal instance
    */
   destroy() {
     document.removeEventListener('keydown', this.handleKeyDown);
+    window.removeEventListener('message', this._handleIframeMessage);
 
     this.overlay?.remove();
     this.popup?.remove();
@@ -625,6 +685,7 @@ export class TerminalManager {
     this.popup = null;
     this.iframe = null;
     this.fullscreenBtn = null;
+    this._handleIframeMessage = null;
     this._isInitialized = false;
     terminalInstance = null;
 

@@ -13,7 +13,7 @@ When a plan finishes: move it into `complete/`, update links, drop it from
 
 ### [CATCHUP](/elements/003-lithium/CATCHUP.md)
 
-Gated Phases 0–38. First official deployment is **Course Manager**
+Gated Phases 0, 0a, 0b, 1–38, 5a–5d. First official deployment is **Course Manager**
 (ID 34) for 500 Courses. Agent map:
 [`/elements/003-lithium/AGENTS.md`](/elements/003-lithium/AGENTS.md).
 

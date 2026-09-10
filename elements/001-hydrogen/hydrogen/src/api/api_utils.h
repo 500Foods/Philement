@@ -56,8 +56,9 @@ char *api_url_decode(const char *src);
 char *api_url_encode(const char *src);
 
 /**
- * Extract client IP address from a connection
- * Determines the client's IP address (IPv4 or IPv6)
+ * Extract client IP address from a connection.
+ * Checks X-Forwarded-For header first (for reverse proxy / K8s ingress),
+ * falling back to the TCP peer address.
  * Caller must free the returned string
  *
  * @param connection The MHD_Connection object

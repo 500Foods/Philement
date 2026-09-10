@@ -147,35 +147,61 @@ char *api_url_encode(const char *src) {
 }
 
 /**
- * Extract client IP address from a connection
+ * Extract client IP address from a connection.
+ *
+ * First checks for an X-Forwarded-For header (used behind reverse proxies
+ * / Kubernetes ingress). If present and non-empty, the first address in the
+ * comma-separated list is used. Otherwise falls back to the TCP peer address
+ * obtained from MHD_get_connection_info.
+ *
+ * Caller must free the returned string.
  */
 char *api_get_client_ip(struct MHD_Connection *connection) {
     if (!connection) return NULL;
-    
+
+    const char *xff = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "X-Forwarded-For");
+    if (xff) {
+        char *comma = strchr(xff, ',');
+        if (comma) {
+            size_t len = (size_t)(comma - xff);
+            while (len > 0 && (xff[len-1] == ' ' || xff[len-1] == '\t')) {
+                len--;
+            }
+            if (len > 0) {
+                char *ip_str = malloc(len + 1);
+                if (ip_str) {
+                    memcpy(ip_str, xff, len);
+                    ip_str[len] = '\0';
+                    return ip_str;
+                }
+            }
+        } else {
+            return strdup(xff);
+        }
+    }
+
     char *ip_str = NULL;
     const union MHD_ConnectionInfo *info;
     struct sockaddr *addr;
-    
+
     info = MHD_get_connection_info(connection, MHD_CONNECTION_INFO_CLIENT_ADDRESS);
     if (!info) return strdup("unknown");
-    
+
     addr = (struct sockaddr *)info->client_addr;
     if (addr->sa_family == AF_INET) {
-        // IPv4
         struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
         ip_str = malloc(INET_ADDRSTRLEN);
         if (ip_str) {
             inet_ntop(AF_INET, &(addr_in->sin_addr), ip_str, INET_ADDRSTRLEN);
         }
     } else if (addr->sa_family == AF_INET6) {
-        // IPv6
         struct sockaddr_in6 *addr_in6 = (struct sockaddr_in6 *)addr;
         ip_str = malloc(INET6_ADDRSTRLEN);
         if (ip_str) {
             inet_ntop(AF_INET6, &(addr_in6->sin6_addr), ip_str, INET6_ADDRSTRLEN);
         }
     }
-    
+
     return ip_str ? ip_str : strdup("unknown");
 }
 

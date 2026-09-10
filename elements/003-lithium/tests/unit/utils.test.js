@@ -18,6 +18,9 @@ import {
   generateId,
   deepClone,
   escapeHtml,
+  parseRoleIds,
+  isStaffRoleSet,
+  isCourseManagerAuthorized,
 } from '../../src/core/utils.js';
 
 // Mock localStorage
@@ -322,6 +325,129 @@ describe('Utils', () => {
 
     it('should return unchanged string without special chars', () => {
       expect(escapeHtml('plain text')).toBe('plain text');
+    });
+  });
+
+  describe('parseRoleIds', () => {
+    it('should parse a CSV string of integers', () => {
+      expect(parseRoleIds('1,3,7')).toEqual([1, 3, 7]);
+    });
+
+    it('should parse a single integer string', () => {
+      expect(parseRoleIds('3')).toEqual([3]);
+    });
+
+    it('should accept a JSON array of integers', () => {
+      expect(parseRoleIds([1, 3, 7])).toEqual([1, 3, 7]);
+    });
+
+    it('should accept a mixed array of numbers and numeric strings', () => {
+      expect(parseRoleIds([1, '3', 7])).toEqual([1, 3, 7]);
+    });
+
+    it('should handle empty CSV string', () => {
+      expect(parseRoleIds('')).toEqual([]);
+    });
+
+    it('should handle empty array', () => {
+      expect(parseRoleIds([])).toEqual([]);
+    });
+
+    it('should handle null', () => {
+      expect(parseRoleIds(null)).toEqual([]);
+    });
+
+    it('should handle undefined', () => {
+      expect(parseRoleIds(undefined)).toEqual([]);
+    });
+
+    it('should reject a bare "staff" string (not a valid integer)', () => {
+      expect(parseRoleIds('staff')).toEqual([]);
+    });
+
+    it('should reject a bare "admin" string', () => {
+      expect(parseRoleIds('admin')).toEqual([]);
+    });
+
+    it('should skip non-integer tokens in a CSV', () => {
+      expect(parseRoleIds('1,staff,3')).toEqual([1, 3]);
+    });
+
+    it('should handle whitespace in CSV', () => {
+      expect(parseRoleIds('1, 3, 7')).toEqual([1, 3, 7]);
+    });
+
+    it('should handle a single number', () => {
+      expect(parseRoleIds(5)).toEqual([5]);
+    });
+
+    it('should reject zero and negative integers', () => {
+      expect(parseRoleIds('0,-1,3')).toEqual([3]);
+    });
+
+    it('should handle unknown input type', () => {
+      expect(parseRoleIds({})).toEqual([]);
+    });
+  });
+
+  describe('isStaffRoleSet', () => {
+    it('should return true for staff', () => {
+      expect(isStaffRoleSet(['staff'])).toBe(true);
+    });
+
+    it('should return true for admin', () => {
+      expect(isStaffRoleSet(['admin'])).toBe(true);
+    });
+
+    it('should return true when staff is in a list', () => {
+      expect(isStaffRoleSet(['mail_send', 'staff', 'api_user'])).toBe(true);
+    });
+
+    it('should return true when admin is in a list', () => {
+      expect(isStaffRoleSet(['mail_send', 'admin', 'api_user'])).toBe(true);
+    });
+
+    it('should return false for non-staff roles', () => {
+      expect(isStaffRoleSet(['mail_send'])).toBe(false);
+    });
+
+    it('should return false for empty array', () => {
+      expect(isStaffRoleSet([])).toBe(false);
+    });
+
+    it('should return false for null', () => {
+      expect(isStaffRoleSet(null)).toBe(false);
+    });
+
+    it('should return false for non-array', () => {
+      expect(isStaffRoleSet('staff')).toBe(false);
+    });
+
+    it('should be case-insensitive', () => {
+      expect(isStaffRoleSet(['STAFF'])).toBe(true);
+      expect(isStaffRoleSet(['Admin'])).toBe(true);
+    });
+  });
+
+  describe('isCourseManagerAuthorized', () => {
+    it('should return true when roleNames includes staff', () => {
+      expect(isCourseManagerAuthorized([1, 2, 3], ['mail_send', 'staff', 'admin'])).toBe(true);
+    });
+
+    it('should return true when roleNames includes admin', () => {
+      expect(isCourseManagerAuthorized([1, 3], ['mail_send', 'admin'])).toBe(true);
+    });
+
+    it('should return false when roleNames has only non-staff roles', () => {
+      expect(isCourseManagerAuthorized([1], ['mail_send'])).toBe(false);
+    });
+
+    it('should return false for empty roleIds', () => {
+      expect(isCourseManagerAuthorized([], ['staff'])).toBe(false);
+    });
+
+    it('should return false for null roleIds', () => {
+      expect(isCourseManagerAuthorized(null, ['staff'])).toBe(false);
     });
   });
 });

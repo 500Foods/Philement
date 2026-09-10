@@ -17,6 +17,7 @@
 
 import { eventBus, Events } from '../../core/event-bus.js';
 import { storeJWT } from '../../core/jwt.js';
+import { parseRoleIds } from '../../core/utils.js';
 import { getConfigValue } from '../../core/config.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { hasLookup } from '../../shared/lookups.js';
@@ -315,7 +316,7 @@ export class LoginForm {
     eventBus.emit(Events.AUTH_LOGIN, {
       userId: data.user_id,
       username,
-      roles: data.roles || [],
+       roles: parseRoleIds(data.roles),
       expiresAt: data.expires_at,
     });
   }

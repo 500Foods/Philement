@@ -349,6 +349,80 @@ export function escapeHtml(text) {
   return div.innerHTML;
 }
 
+/**
+ * Normalize JWT `roles` claim to an array of integer role_ids.
+ *
+ * Hydrogen C emits `roles` as a CSV **string of integer role_ids**
+ * (e.g. `"1,3,7"` or `""`). Some deploys may send a JSON array of
+ * integers. This function accepts both and always returns a clean
+ * array of non-zero integers. A bare string like `"staff"` is
+ * rejected (does not parse as an integer).
+ *
+ * @param {string|number|Array<string|number>} roles - Raw roles claim
+ * @returns {number[]} Array of parsed integer role_ids (empty if none)
+ *
+ * @example
+ *   parseRoleIds("1,3,7")    // → [1, 3, 7]
+ *   parseRoleIds([1, 3, 7])   // → [1, 3, 7]
+ *   parseRoleIds("3")         // → [3]
+ *   parseRoleIds("")          // → []
+ *   parseRoleIds("staff")     // → []  (not a valid integer)
+ *   parseRoleIds("1,staff,3") // → [1, 3]  (non-integers silently skipped)
+ */
+export function parseRoleIds(roles) {
+  if (roles == null) return [];
+
+  if (Array.isArray(roles)) {
+    return roles
+      .map(r => parseInt(r, 10))
+      .filter(n => Number.isInteger(n) && n > 0);
+  }
+
+  if (typeof roles === 'number') {
+    const n = parseInt(roles, 10);
+    return Number.isInteger(n) && n > 0 ? [n] : [];
+  }
+
+  if (typeof roles === 'string') {
+    return roles
+      .split(',')
+      .map(s => parseInt(s.trim(), 10))
+      .filter(n => Number.isInteger(n) && n > 0);
+  }
+
+  return [];
+}
+
+/**
+ * Check whether a set of resolved role names includes a staff-level role.
+ * L3: Staff iff name is exactly `staff` or `admin`.
+ *
+ * @param {string[]} roleNames - Resolved role names from the roles table
+ * @returns {boolean} True if any name is exactly `staff` or `admin`
+ */
+export function isStaffRoleSet(roleNames) {
+  if (!Array.isArray(roleNames)) return false;
+  const lower = roleNames.map(n => String(n).toLowerCase());
+  return lower.includes('staff') || lower.includes('admin');
+}
+
+/**
+ * Determine whether the current JWT grants Course Manager (ID 34) access.
+ *
+ * The JWT `roles` claim holds integer role_ids. The client resolves
+ * those IDs to `roles.name` via QueryRef #155 (Get Role Names By IDs,
+ * or QueryRef #017 Get User Roles for the raw IDs). Staff/admin is
+ * granted iff any resolved name is exactly `staff` or `admin`.
+ *
+ * @param {number[]} roleIds - Integer role_ids from parseRoleIds()
+ * @param {string[]} roleNames - Resolved role names (from server)
+ * @returns {boolean} True if the user may access Course Manager
+ */
+export function isCourseManagerAuthorized(roleIds, roleNames) {
+  if (!roleIds || roleIds.length === 0) return false;
+  return isStaffRoleSet(roleNames);
+}
+
 // Default export
 export default {
   getPreferences,
@@ -365,4 +439,7 @@ export default {
   generateId,
   deepClone,
   escapeHtml,
+  parseRoleIds,
+  isStaffRoleSet,
+  isCourseManagerAuthorized,
 };

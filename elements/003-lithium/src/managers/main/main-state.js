@@ -4,6 +4,7 @@
  */
 
 import { getClaims } from '../../core/jwt.js';
+import { parseRoleIds } from '../../core/utils.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 
 // localStorage keys for sidebar state
@@ -84,7 +85,7 @@ export const stateMethods = {
         id: claims.user_id,
         username: claims.username || 'User',
         email: claims.email,
-        roles: claims.roles || [],
+        roles: parseRoleIds(claims.roles),
       };
     }
   },
