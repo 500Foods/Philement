@@ -167,6 +167,10 @@
                     "type": "string",
                     "description": "WebSocket encryption key"
                 },
+                "PublicUrl": {
+                    "type": "string",
+                    "description": "Explicit public WebSocket origin (scheme + host, optional port; no path, query, userinfo, or fragment). Required for production terminal access."
+                },
                 "MaxMessageSize": {
                     "type": "integer",
                     "description": "Maximum WebSocket message size in bytes",

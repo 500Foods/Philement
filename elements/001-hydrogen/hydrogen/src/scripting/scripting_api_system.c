@@ -280,7 +280,7 @@ int H_lua_set_result_json(lua_State* L) {
 }
 
 int H_lua_system_info(lua_State* L) {
-    json_t *root = system_info_build_json(true, true);
+    json_t *root = system_info_build_json(true, false);
     if (!root) {
         lua_pushnil(L);
         return 1;

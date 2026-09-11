@@ -39,6 +39,7 @@ struct WebSocketConfig {
     int port;                       // Port to listen on
     char* key;                      // WebSocket key for authentication
     char* protocol;                 // WebSocket protocol identifier
+    char* public_url;               // Explicit public WebSocket origin (scheme + host, optional port; no path/query)
     size_t max_message_size;        // Maximum allowed message size
     size_t rx_buffer_size;          // LWS receive buffer size (for WebSocket frames)
     WebSocketConnectionTimeouts connection_timeouts; // Connection timeout settings

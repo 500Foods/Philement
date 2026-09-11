@@ -13,13 +13,15 @@
         "EnableIPv6": true,
         "Port": 5261,
         "Protocol": "hydrogen",
-        "Key": "${env.WEBSOCKET_KEY}"
+        "Key": "${env.WEBSOCKET_KEY}",
+        "PublicUrl": "ws://localhost:5261"
     },
     "Terminal": {
         "Enabled": true,
         "ShellCommand": "/bin/bash",
         "MaxSessions": 2,
         "IdleTimeoutSeconds": 300,
-        "BufferSize": 2048
+        "BufferSize": 2048,
+        "CORSOrigin": "https://lithium.philement.com"
     }
 }

@@ -60,24 +60,51 @@ bool validate_protocol(const char* protocol) {
     return true;
 }
 
-// Validate key string
+// Known default / fallback literals that must never be accepted as a real key.
+static const char* const forbidden_keys[] = {
+    "default_key",
+    "default_websocket_key",
+    "ABCDEFGHIJKLMNOP",
+    NULL
+};
+
+// Minimum entropy/length required for a production WebSocket auth key.
+#define WEBSOCKET_MIN_KEY_LEN 32
+
+/*
+ * Validate key string
+ *
+ * Fail-closed validation per TERMINAL_FIX_PLAN Phase 2:
+ * - Must be non-NULL and non-empty.
+ * - Must be at least 32 printable-ASCII characters (no spaces/control).
+ * - Must not be an unresolved ${env.*} reference.
+ * - Must not be a known default/fallback literal.
+ */
 bool validate_key(const char* key) {
     if (!key || !key[0]) {
         return false;
     }
 
-    // Key must be:
-    // - At least 8 characters long
-    // - Contain only printable ASCII characters
-    // - No spaces or control characters
     size_t len = strlen(key);
-    if (len < 8) {
+    if (len < WEBSOCKET_MIN_KEY_LEN) {
         return false;
     }
 
     for (size_t i = 0; i < len; i++) {
         char c = key[i];
-        if (c < 33 || c > 126) {  // Non-printable ASCII or space
+        if (c < 33 || c > 126) {
+            return false;
+        }
+    }
+
+    // Reject unresolved environment-variable references.
+    if (strncmp(key, "${env.", 6) == 0) {
+        return false;
+    }
+
+    // Reject known default/fallback literals.
+    for (size_t i = 0; forbidden_keys[i] != NULL; i++) {
+        if (strcmp(key, forbidden_keys[i]) == 0) {
             return false;
         }
     }
@@ -244,10 +271,10 @@ LaunchReadiness check_websocket_launch_readiness(void) {
             }
         }
 
-        // 7. Validate key (use default if not set)
-        const char* key = app_config->websocket.key ? app_config->websocket.key : "default_websocket_key";
+        // 7. Validate key — fail closed. No default fallback literal.
+        const char* key = app_config->websocket.key ? app_config->websocket.key : NULL;
         if (!validate_key(key)) {
-            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid key format (must be at least 8 printable characters)"));
+            add_launch_message(&messages, &count, &capacity, strdup("  No-Go:   Invalid WebSocket key (missing, unresolved env ref, known default, or < 32 printable chars)"));
             ready = false;
         } else {
             add_launch_message(&messages, &count, &capacity, strdup("  Go:      Key format valid"));
@@ -331,9 +358,11 @@ int launch_websocket_subsystem(void) {
     // Step 2: Initialize websocket server
     log_this(SR_WEBSOCKET, "  Step 2: Initializing websocket server", LOG_LEVEL_STATE, 0);
     
-    // Use safe defaults for protocol and key if not configured
+    // Use configured protocol and key — no fallback literals. The key is
+    // validated fail-closed in check_websocket_launch_readiness; if it is
+    // missing/unresolved/weak, launch returns 0 (failure) before we get here.
     const char* protocol = app_config->websocket.protocol ? app_config->websocket.protocol : "hydrogen";
-    const char* key = app_config->websocket.key ? app_config->websocket.key : "default_websocket_key";
+    const char* key = app_config->websocket.key ? app_config->websocket.key : NULL;
     
     if (init_websocket_server(app_config->websocket.port, protocol, key) != 0) {
         log_this(SR_WEBSOCKET, "Failed to initialize websocket server", LOG_LEVEL_ERROR, 0);

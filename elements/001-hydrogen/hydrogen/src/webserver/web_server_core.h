@@ -86,6 +86,13 @@ const WebServerEndpoint* get_endpoint_for_url(const char* url);
 // Shared utility functions
 const char *cors_match_origin(const char *configured, const char *request_origin);
 void add_cors_headers(struct MHD_Response *response, struct MHD_Connection *connection);
+/*
+ * Add CORS headers using the Terminal.CORSOrigin allowlist instead of the
+ * global API/WebServer CORS setting. Used by terminal asset handlers and
+ * the authorized /api/system/info terminal response so the terminal origin
+ * policy is the single effective source for terminal access.
+ */
+void terminal_add_cors_headers(struct MHD_Response *response, struct MHD_Connection *connection);
 const char* get_upload_path(void);
 bool is_port_available(int port, bool check_ipv6);
 /* True if a TCP listener accepts on 127.0.0.1:port (used by is_port_available). */

@@ -671,24 +671,57 @@ export class TerminalManager {
    * Handle messages from the terminal iframe (postMessage).
    * Responds to terminal-config-request by passing the JWT
    * so the iframe can authenticate against /api/system/info.
+   * Uses exact targetOrigin — never wildcard '*' — to ensure the
+   * JWT is only delivered to the trusted terminal iframe.
    */
   _handleIframeMessage(event) {
     if (!event.data || typeof event.data !== 'object') return;
 
     if (event.data.type === 'terminal-config-request') {
+      // Validate origin against the expected terminal origin.
+      const allowedOrigin = this._getAllowedOrigin();
+      if (event.origin !== allowedOrigin) {
+        log(Subsystems.MANAGER, Status.WARN, '[Terminal] Ignoring config request from wrong origin');
+        return;
+      }
+
+      // Verify the sender is our terminal iframe
+      if (event.source !== this.iframe) {
+        log(Subsystems.MANAGER, Status.WARN, '[Terminal] Ignoring config request from wrong source');
+        return;
+      }
+
       const jwt = retrieveJWT();
       if (jwt) {
-        event.source?.postMessage(
+        event.source.postMessage(
           { type: 'terminal-config', config: { jwt } },
-          '*'
+          allowedOrigin
         );
       } else {
-        event.source?.postMessage(
+        event.source.postMessage(
           { type: 'terminal-config-error', error: 'No JWT available' },
-          '*'
+          allowedOrigin
         );
       }
     }
+  }
+
+  /**
+   * Get the allowed origin for terminal iframe messaging.
+   * Uses server.url scheme+host, or window.location.origin for local dev.
+   * @returns {string} The exact origin that is allowed to receive terminal config
+   */
+  _getAllowedOrigin() {
+    const serverUrl = getConfigValue('server.url');
+    if (serverUrl) {
+      try {
+        const parsed = new URL(serverUrl);
+        return parsed.origin;
+      } catch {
+        return window.location.origin;
+      }
+    }
+    return window.location.origin;
   }
 
   /**

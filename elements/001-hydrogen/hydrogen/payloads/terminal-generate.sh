@@ -5,7 +5,11 @@
 # This script downloads xterm.js from GitHub and creates terminal interface assets
 
 # Change Log:
-# 2.1.1 - 2026-09-10 - Removed the ABDEFGHIJKLMNOP hardcoded WebSocket key fallback in connectToWebSocket; connection now fails loudly if config cannot be obtained
+# 2.2.0 - 2026-09-11 - Phase 3 payload: removed localStorage JWT fallback, hardcoded
+#                    port/protocol fallbacks, wildcard postMessage, and full response
+#                    logging. Requires parent-frame JWT handoff with exact-origin
+#                    validation. URL/protocol/key consumed directly from API response.
+#                    Deterministic config-fetch and reconnect lifecycle.
 # 2.0.0 - 2025-12-05 - Updated with proper path handling using HYDROGEN_ROOT environment variable
 # 1.1.0 - 2025-11-30 - Added copying of generated terminal files to tests/artifacts/terminal directory as payload-terminal.css and payload-terminal.html
 # 1.0.0 - 2025-08-31 - Initial release to download xterm.js and create terminal interface files
@@ -27,7 +31,7 @@ fi
 set -e
 
 # Display script information
-echo "terminal-generate.sh version 2.1.1"
+echo "terminal-generate.sh version 2.3.0"
 echo "xterm.js Payload Generator for Hydrogen Terminal"
 
 # xterm.js versions to use (latest available)
@@ -145,283 +149,370 @@ create_terminal_interface() {
     <script src="xterm-addon-fit.js"></script>
 
     <script>
-        // Initialize terminal
-        const terminalElement = document.getElementById('terminal');
-        const headerInfo = document.getElementById('header-info');
-        const statusElement = document.getElementById('status');
+        (function() {
+            'use strict';
 
-        let term = null;
-        let websocket = null;
-        let isConnected = false;
+            // Initialize terminal
+            const terminalElement = document.getElementById('terminal');
+            const headerInfo = document.getElementById('header-info');
+            const statusElement = document.getElementById('status');
 
-        function showStatus(message, isError = false) {
-            statusElement.textContent = message;
-            statusElement.className = 'status' + (isError ? ' error' : '');
-            statusElement.style.display = 'block';
-            setTimeout(() => {
-                statusElement.style.display = 'none';
-            }, 3000);
-        }
+            let term = null;
+            let websocket = null;
+            let isConnected = false;
+            let messageListener = null;
+            let reconnectTimer = null;
+            let configTimeout = null;
 
-        function updateHeaderInfo() {
-            headerInfo.textContent = isConnected ? `[Connected - ${term.cols}x${term.rows}]` : '[Disconnected]';
-        }
+            function showStatus(message, isError) {
+                isError = isError || false;
+                statusElement.textContent = message;
+                statusElement.className = 'status' + (isError ? ' error' : '');
+                statusElement.style.display = 'block';
+                setTimeout(function() {
+                    statusElement.style.display = 'none';
+                }, 3000);
+            }
 
-        function initializeTerminal() {
-            term = new Terminal({
-                cursorBlink: true,
-                cursorStyle: 'block',
-                fontSize: 14,
-                fontFamily: "'Fira Code', 'Cascadia Code', 'Monaco', 'Courier New', monospace",
-                letterSpacing: 0.5,
-                lineHeight: 1.2,
-                theme: {
-                    background: '#1e1e1e',
-                    foreground: '#d4d4d4',
-                    black: '#000000',
-                    blue: '#569cd6',
-                    brightBlack: '#000000',
-                    brightBlue: '#569cd6',
-                    brightCyan: '#4ec9b0',
-                    brightGreen: '#6a9955',
-                    brightMagenta: '#c586c0',
-                    brightRed: '#f44747',
-                    brightWhite: '#d4d4d4',
-                    brightYellow: '#dcdcaa',
-                    cyan: '#4ec9b0',
-                    green: '#6a9955',
-                    magenta: '#c586c0',
-                    red: '#f44747',
-                    white: '#d4d4d4',
-                    yellow: '#dcdcaa'
+            function updateHeaderInfo() {
+                if (isConnected && term) {
+                    headerInfo.textContent = '[Connected - ' + term.cols + 'x' + term.rows + ']';
+                } else {
+                    headerInfo.textContent = '[Disconnected]';
                 }
-            });
+            }
 
-            // Load addons
-            const fitAddon = new FitAddon.FitAddon();
-            term.loadAddon(fitAddon);
+            function cleanupTimers() {
+                if (reconnectTimer !== null) {
+                    clearTimeout(reconnectTimer);
+                    reconnectTimer = null;
+                }
+                if (configTimeout !== null) {
+                    clearTimeout(configTimeout);
+                    configTimeout = null;
+                }
+                if (messageListener !== null) {
+                    window.removeEventListener('message', messageListener);
+                    messageListener = null;
+                }
+            }
 
-            // Open terminal
-            term.open(terminalElement);
+            function initializeTerminal() {
+                term = new Terminal({
+                    cursorBlink: true,
+                    cursorStyle: 'block',
+                    fontSize: 14,
+                    fontFamily: "'Fira Code', 'Cascadia Code', 'Monaco', 'Courier New', monospace",
+                    letterSpacing: 0.5,
+                    lineHeight: 1.2,
+                    theme: {
+                        background: '#1e1e1e',
+                        foreground: '#d4d4d4',
+                        black: '#000000',
+                        blue: '#569cd6',
+                        brightBlack: '#000000',
+                        brightBlue: '#569cd6',
+                        brightCyan: '#4ec9b0',
+                        brightGreen: '#6a9955',
+                        brightMagenta: '#c586c0',
+                        brightRed: '#f44747',
+                        brightWhite: '#d4d4d4',
+                        brightYellow: '#dcdcaa',
+                        cyan: '#4ec9b0',
+                        green: '#6a9955',
+                        magenta: '#c586c0',
+                        red: '#f44747',
+                        white: '#d4d4d4',
+                        yellow: '#dcdcaa'
+                    }
+                });
 
-            // Fit to container
-            fitAddon.fit();
+                const fitAddon = new FitAddon.FitAddon();
+                term.loadAddon(fitAddon);
 
-            // Handle resize
-            window.addEventListener('resize', () => {
+                term.open(terminalElement);
+
                 fitAddon.fit();
-                if (websocket && websocket.readyState === WebSocket.OPEN) {
+
+                window.addEventListener('resize', function() {
+                    fitAddon.fit();
+                    if (websocket && websocket.readyState === WebSocket.OPEN) {
+                        websocket.send(JSON.stringify({
+                            type: 'resize',
+                            cols: term.cols,
+                            rows: term.rows
+                        }));
+                    }
+                    updateHeaderInfo();
+                });
+
+                term.onData(function(data) {
+                    if (websocket && websocket.readyState === WebSocket.OPEN) {
+                        websocket.send(JSON.stringify({
+                            type: 'input',
+                            data: data
+                        }));
+                    }
+                });
+
+                term.writeln('\x1b[32mInitializing session...\x1b[0m');
+
+                updateHeaderInfo();
+            }
+
+            function fetchTerminalConfig() {
+                // Production path: require JWT from the parent frame (Lithium SPA).
+                // The parent origin is this iframe's origin (same-origin by
+                // deployment contract). Use exact targetOrigin — never wildcard.
+                // No localStorage JWT fallback in production.
+                return new Promise(function(resolve, reject) {
+                    const parentOrigin = window.location.origin || '*';
+
+                    // Timeout: if parent does not respond, fail.
+                    configTimeout = setTimeout(function() {
+                        cleanupTimers();
+                        reject(new Error('Terminal config fetch timed out — no response from parent frame'));
+                    }, 5000);
+
+                    // Listen for the parent's response. Validate origin against
+                    // this iframe's origin to prevent message spoofing.
+                    messageListener = function(event) {
+                        if (event.origin !== window.location.origin) {
+                            return;
+                        }
+                        if (!event.data || typeof event.data !== 'object') {
+                            return;
+                        }
+                        if (event.data.type === 'terminal-config' && event.data.config && event.data.config.jwt) {
+                            cleanupTimers();
+                            resolve(event.data.config.jwt);
+                        } else if (event.data.type === 'terminal-config-error') {
+                            cleanupTimers();
+                            reject(new Error('Parent reported terminal config error'));
+                        }
+                    };
+
+                    window.addEventListener('message', messageListener);
+
+                    // Request config from parent — exact targetOrigin, no wildcard.
+                    window.parent.postMessage({ type: 'terminal-config-request' }, parentOrigin);
+                });
+            }
+
+            function getApiBase() {
+                // Derive the API base from the iframe's own origin. The iframe
+                // is served from the same origin as the API (Hydrogen serves
+                // both the terminal page and /api).
+                return window.location.origin;
+            }
+
+            function fetchSystemInfo(jwt) {
+                const apiBase = getApiBase();
+                return fetch(apiBase + '/api/system/info', {
+                    headers: { 'Authorization': 'Bearer ' + jwt }
+                }).then(function(resp) {
+                    if (!resp.ok) {
+                        throw new Error('System info request failed (status: ' + resp.status + ')');
+                    }
+                    return resp.json();
+                }).then(function(data) {
+                    // Log only redacted status — never the full response or key.
+                    if (data && data.terminal) {
+                        showStatus('Terminal configuration obtained');
+                    } else {
+                        showStatus('No terminal configuration available', true);
+                    }
+                    return {
+                        url: data.terminal ? data.terminal.url : null,
+                        protocol: data.terminal ? data.terminal.protocol : null,
+                        key: data.terminal ? data.terminal.key : null
+                    };
+                });
+            }
+
+            function connectToWebSocket(config) {
+                const wsUrl = config.url;
+                const wsProtocol = config.protocol;
+                const wsKey = config.key;
+
+                if (!wsKey) {
+                    isConnected = false;
+                    showStatus('WebSocket key not provided by server', true);
+                    updateHeaderInfo();
+                    term.writeln('\r\n\x1b[31mTerminal configuration error: no WebSocket key\x1b[0m\r\n$ ');
+                    return;
+                }
+                if (!wsUrl || !wsProtocol) {
+                    isConnected = false;
+                    showStatus('Terminal configuration missing URL or protocol', true);
+                    updateHeaderInfo();
+                    term.writeln('\r\n\x1b[31mTerminal configuration error: missing URL or protocol\x1b[0m\r\n$ ');
+                    return;
+                }
+
+                // Validate the URL: must be wss in production, ws only for local.
+                // Reject userinfo, fragments, and embedded query strings.
+                if (!validateWsUrl(wsUrl)) {
+                    isConnected = false;
+                    showStatus('Invalid WebSocket URL from server', true);
+                    updateHeaderInfo();
+                    term.writeln('\r\n\x1b[31mTerminal configuration error: invalid WebSocket URL\x1b[0m\r\n$ ');
+                    return;
+                }
+
+                // Append the key as a query parameter using URL-safe construction.
+                // The browser WebSocket API cannot set custom headers.
+                let wsUrlWithKey;
+                if (wsUrl.indexOf('?') === -1) {
+                    wsUrlWithKey = wsUrl + '?key=' + encodeURIComponent(wsKey);
+                } else {
+                    wsUrlWithKey = wsUrl + '&key=' + encodeURIComponent(wsKey);
+                }
+
+                showStatus('Connecting to terminal...');
+
+                websocket = new WebSocket(wsUrlWithKey, wsProtocol);
+
+                websocket.onopen = function() {
+                    isConnected = true;
+                    showStatus('Terminal connected successfully');
+                    updateHeaderInfo();
+
                     websocket.send(JSON.stringify({
                         type: 'resize',
                         cols: term.cols,
                         rows: term.rows
                     }));
-                }
-                updateHeaderInfo();
-            });
+                };
 
-            // Handle terminal input
-            term.onData(data => {
-                if (websocket && websocket.readyState === WebSocket.OPEN) {
-                    websocket.send(JSON.stringify({
-                        type: 'input',
-                        data: data
-                    }));
-                }
-            });
+                websocket.onmessage = function(event) {
+                    try {
+                        const message = JSON.parse(event.data);
+                        if (message.type === 'output') {
+                            term.write(message.data);
+                        }
+                    } catch (e) {
+                        term.write(event.data);
+                    }
+                };
 
-            term.writeln('\x1b[32mInitializing session...\x1b[0m');
+                websocket.onclose = function() {
+                    isConnected = false;
+                    showStatus('Terminal disconnected', false);
+                    updateHeaderInfo();
+                    term.writeln('\r\n\x1b[31mTerminal disconnected\x1b[0m');
+                    term.writeln('$ ');
+                };
 
-            updateHeaderInfo();
-        }
-
-        function connectWebSocket() {
-            // Fetch terminal WebSocket configuration from the parent frame
-            // or from /api/system/info using the JWT stored in localStorage.
-            // The key and port are server-side secrets and must not be
-            // hardcoded in this static payload file.
-            showStatus('Fetching terminal configuration...');
-
-            fetchTerminalConfig().then(config => {
-                if (!config) {
-                    showStatus('Failed to fetch terminal configuration', true);
-                    return;
-                }
-
-                connectToWebSocket(config);
-            }).catch(err => {
-                showStatus('Configuration fetch error: ' + err.message, true);
-            });
-        }
-
-         function fetchTerminalConfig() {
-            // Try parent frame first (Lithium SPA passes JWT via postMessage).
-            // If parent responds with {jwt}, use it to call /api/system/info.
-            // Otherwise, fall back to localStorage and call /api/system/info directly.
-            // The key and port are server-side secrets and must not be
-            // hardcoded in this static payload file.
-            const protocol = window.location.protocol;
-            const apiBase = protocol + '//' + window.location.host;
-
-            function fetchConfigWithJwt(jwt) {
-                console.log('[Terminal] Fetching /api/system/info from:', apiBase);
-                return fetch(apiBase + '/api/system/info', {
-                    headers: { 'Authorization': 'Bearer ' + jwt }
-                }).then(resp => {
-                    console.log('[Terminal] /api/system/info response status:', resp.status);
-                    return resp.json();
-                }).then(data => {
-                    console.log('[Terminal] /api/system/info response:', data);
-                    return {
-                        port: data.terminal?.port || 5261,
-                        key: data.terminal?.key
-                    };
-                }).catch(err => {
-                    console.error('[Terminal] /api/system/info fetch failed:', err);
-                    return null;
-                });
+                websocket.onerror = function(error) {
+                    isConnected = false;
+                    showStatus('Connection error', true);
+                    updateHeaderInfo();
+                    term.writeln('\r\n\x1b[31mTerminal connection error\x1b[0m\r\n$ ');
+                };
             }
 
-            return new Promise((resolve, reject) => {
-                let resolved = false;
-
-                // Fallback: try localStorage after a short delay
-                setTimeout(() => {
-                    if (!resolved) {
-                        const token = localStorage.getItem('lithium_jwt');
-                        console.log('[Terminal] tryLocalStorage fallback, token present:', !!token);
-                        if (token) {
-                            fetchConfigWithJwt(token).then(result => {
-                                if (!resolved && result) {
-                                    resolved = true;
-                                    resolve(result);
-                                }
-                            });
-                        } else {
-                            console.warn('[Terminal] No lithium_jwt found in localStorage or parent');
-                        }
-                    }
-                }, 250);
-
-                // Primary: request config from parent frame
-                if (window.parent && window.parent !== window) {
-                    console.log('[Terminal] Sending terminal-config-request to parent');
-                    window.parent.postMessage({ type: 'terminal-config-request' }, '*');
-
-                    function onMessage(event) {
-                        if (event.data && typeof event.data === 'object') {
-                            if (event.data.type === 'terminal-config' && event.data.config) {
-                                console.log('[Terminal] postMessage received config from parent, jwt present:', !!event.data.config.jwt);
-                                window.removeEventListener('message', onMessage);
-                                if (!resolved && event.data.config.jwt) {
-                                    resolved = true;
-                                    fetchConfigWithJwt(event.data.config.jwt).then(result => {
-                                        if (!result) {
-                                            reject(new Error('Terminal config fetch returned no key'));
-                                        } else {
-                                            resolve(result);
-                                        }
-                                    }).catch(() => {
-                                        reject(new Error('Terminal config fetch failed'));
-                                    });
-                                } else if (!resolved && !event.data.config.jwt) {
-                                    // Parent responded but without JWT — ignore and wait for localStorage fallback
-                                }
-                            } else if (event.data.type === 'terminal-config-error') {
-                                console.warn('[Terminal] Parent reported config error:', event.data.error);
-                            }
-                        }
-                    }
-
-                    window.addEventListener('message', onMessage);
-                }
-
-                // Timeout
-                setTimeout(() => {
-                    if (!resolved) {
-                        resolved = true;
-                        reject(new Error('Terminal config fetch timed out'));
-                    }
-                }, 5000);
-            });
-         }
-
-        function connectToWebSocket(config) {
-            const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-            const hostname = window.location.hostname;
-            const wsPort = config.port || 5261;
-            const wsKey = config.key;
-            if (!wsKey) {
-                isConnected = false;
-                showStatus('WebSocket key not provided by server', true);
-                updateHeaderInfo();
-                term.writeln('\r\n\x1b[31mTerminal configuration error: no WebSocket key\x1b[0m\r\n$ ');
-                return;
-            }
-            const wsUrl = `${protocol}//${hostname}:${wsPort}?key=${encodeURIComponent(wsKey)}`;
-
-            showStatus('Connecting to terminal...');
-
-            // Create WebSocket with terminal protocol
-            websocket = new WebSocket(wsUrl, 'terminal');
-
-            websocket.onopen = () => {
-                isConnected = true;
-                showStatus('Terminal connected successfully');
-                updateHeaderInfo();
-
-                // Send initial terminal size
-                websocket.send(JSON.stringify({
-                    type: 'resize',
-                    cols: term.cols,
-                    rows: term.rows
-                }));
-            };
-
-            websocket.onmessage = (event) => {
+            function validateWsUrl(url) {
                 try {
-                    const message = JSON.parse(event.data);
-                    if (message.type === 'output') {
-                        term.write(message.data);
+                    var parsed = new URL(url);
+                    var scheme = parsed.protocol;
+                    var origin = window.location.origin || '';
+                    var isLocal = origin.indexOf('localhost') !== -1 || origin.indexOf('127.0.0.1') !== -1;
+
+                    // Reject userinfo
+                    if (parsed.username || parsed.password) {
+                        return false;
                     }
+                    // Reject fragments and embedded query strings
+                    if (parsed.hash && parsed.hash.length > 1) {
+                        return false;
+                    }
+                    if (parsed.search && parsed.search.length > 1) {
+                        return false;
+                    }
+                    // Require ws or wss scheme
+                    if (scheme !== 'ws:' && scheme !== 'wss:') {
+                        return false;
+                    }
+                    // Require wss in production (non-local)
+                    if (scheme === 'ws:' && !isLocal) {
+                        return false;
+                    }
+                    // Require host
+                    if (!parsed.host) {
+                        return false;
+                    }
+                    // Require path
+                    if (!parsed.pathname || parsed.pathname === '/') {
+                        return false;
+                    }
+                    return true;
                 } catch (e) {
-                    term.write(event.data);
+                    return false;
                 }
-            };
-
-            websocket.onclose = () => {
-                isConnected = false;
-                showStatus('Terminal disconnected', false);
-                updateHeaderInfo();
-                term.writeln('\r\n\x1b[31mTerminal disconnected\x1b[0m');
-                term.writeln('$ ');
-            };
-
-            websocket.onerror = (error) => {
-                isConnected = false;
-                showStatus('Connection error', true);
-                updateHeaderInfo();
-                term.writeln(`\r\n\x1b[31mTerminal connection error: ${error}\x1b[0m\r\n$ `);
-            };
-        }
-
-        // Initialize and connect
-        try {
-            initializeTerminal();
-            setTimeout(connectWebSocket, 500);
-        } catch (error) {
-            showStatus(`Initialization error: ${error.message}`, true);
-            console.error('Terminal initialization error:', error);
-        }
-
-        // Handle page visibility for reconnection
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden && websocket) {
-                websocket.close();
-            } else if (!document.hidden && !isConnected) {
-                connectWebSocket();
             }
-        });
+
+            function cleanupConnection() {
+                cleanupTimers();
+                if (websocket) {
+                    websocket.onclose = null;
+                    websocket.onerror = null;
+                    websocket.onopen = null;
+                    websocket.onmessage = null;
+                    if (websocket.readyState === WebSocket.OPEN || websocket.readyState === WebSocket.CONNECTING) {
+                        websocket.close();
+                    }
+                    websocket = null;
+                }
+                isConnected = false;
+            }
+
+            // Initialize and connect
+            try {
+                initializeTerminal();
+                setTimeout(function() {
+                    fetchTerminalConfig().then(function(jwt) {
+                        if (!jwt) {
+                            showStatus('No JWT provided by parent', true);
+                            term.writeln('\r\n\x1b[31mNo JWT provided by parent\x1b[0m\r\n$ ');
+                            return;
+                        }
+                        return fetchSystemInfo(jwt).then(function(config) {
+                            if (!config) {
+                                showStatus('Failed to fetch terminal configuration', true);
+                                return;
+                            }
+                            connectToWebSocket(config);
+                        });
+                    }).catch(function(err) {
+                        showStatus(err.message, true);
+                        term.writeln('\r\n\x1b[31m' + err.message + '\x1b[0m\r\n$ ');
+                    });
+                }, 500);
+            } catch (error) {
+                showStatus('Initialization error: ' + error.message, true);
+            }
+
+            // Handle page visibility for reconnection
+            document.addEventListener('visibilitychange', function() {
+                if (document.hidden && websocket) {
+                    cleanupConnection();
+                } else if (!document.hidden && !isConnected && websocket === null && term) {
+                    reconnectTimer = setTimeout(function() {
+                        reconnectTimer = null;
+                        fetchTerminalConfig().then(function(jwt) {
+                            if (!jwt) return;
+                            return fetchSystemInfo(jwt).then(function(config) {
+                                if (!config) return;
+                                connectToWebSocket(config);
+                            });
+                        }).catch(function(err) {
+                            showStatus('Reconnect failed: ' + err.message, true);
+                        });
+                    }, 1000);
+                }
+            });
+        })();
     </script>
 </body>
 </html>

@@ -133,78 +133,166 @@ describe('TerminalManager', () => {
       expect(terminal.terminalUrl).not.toContain('www.philement.com');
     });
 
-    it('should use localhost default when server.url is localhost', async () => {
-      getConfigValue.mockImplementation((path, defaultValue) => {
-        if (path === 'server.url') return 'http://localhost:8080';
-        if (path === 'server.terminal_path') return defaultValue;
-        return null;
-      });
+     it('should use localhost default when server.url is localhost', async () => {
+       getConfigValue.mockImplementation((path, defaultValue) => {
+         if (path === 'server.url') return 'http://localhost:8080';
+         if (path === 'server.terminal_path') return defaultValue;
+         return null;
+       });
 
-      const TerminalManager = await getTerminalManager();
-      const terminal = new TerminalManager();
+       const TerminalManager = await getTerminalManager();
+       const terminal = new TerminalManager();
 
-      expect(terminal.terminalUrl).toBe('http://localhost:8080/terminal');
-    });
-  });
+       expect(terminal.terminalUrl).toBe('http://localhost:8080/terminal');
+     });
+   });
+
+   describe('_getAllowedOrigin', () => {
+     it('should derive origin from server.url', async () => {
+       getConfigValue.mockImplementation((path) => {
+         if (path === 'server.url') return 'https://lithium.philement.com';
+         return null;
+       });
+
+       const TerminalManager = await getTerminalManager();
+       const terminal = new TerminalManager();
+
+       expect(terminal._getAllowedOrigin()).toBe('https://lithium.philement.com');
+     });
+
+     it('should derive origin with port from server.url', async () => {
+       getConfigValue.mockImplementation((path) => {
+         if (path === 'server.url') return 'http://localhost:8080';
+         return null;
+       });
+
+       const TerminalManager = await getTerminalManager();
+       const terminal = new TerminalManager();
+
+       expect(terminal._getAllowedOrigin()).toBe('http://localhost:8080');
+     });
+
+     it('should fall back to window.location.origin when server.url is absent', async () => {
+       getConfigValue.mockReturnValue(null);
+
+       const TerminalManager = await getTerminalManager();
+       const terminal = new TerminalManager();
+
+       const expected = window.location.origin || 'http://localhost:3000';
+       expect(terminal._getAllowedOrigin()).toBe(expected);
+     });
+   });
 
   describe('_handleIframeMessage', () => {
-    it('should respond with JWT on terminal-config-request', async () => {
+    let terminal;
+
+    beforeEach(async () => {
       const TerminalManager = await getTerminalManager();
-      const terminal = new TerminalManager();
+      terminal = new TerminalManager();
+    });
+
+    it('should respond with JWT on terminal-config-request from allowed origin and source', async () => {
       jwtMock.retrieveJWT.mockReturnValue('test.jwt.token');
 
+      const fakeOrigin = window.location.origin || 'http://localhost:3000';
       const fakeEvent = {
+        origin: fakeOrigin,
         data: { type: 'terminal-config-request' },
         source: {
           postMessage: vi.fn(),
         },
       };
+
+      // Simulate iframe set by init()
+      terminal.iframe = fakeEvent.source;
 
       terminal._handleIframeMessage(fakeEvent);
 
       expect(jwtMock.retrieveJWT).toHaveBeenCalledOnce();
       expect(fakeEvent.source.postMessage).toHaveBeenCalledWith(
         { type: 'terminal-config', config: { jwt: 'test.jwt.token' } },
-        '*'
+        fakeOrigin
       );
     });
 
-    it('should respond with error when no JWT available', async () => {
-      const TerminalManager = await getTerminalManager();
-      const terminal = new TerminalManager();
+    it('should respond with error when no JWT available from allowed origin/source', async () => {
       jwtMock.retrieveJWT.mockReturnValue(null);
 
+      const fakeOrigin = window.location.origin || 'http://localhost:3000';
       const fakeEvent = {
+        origin: fakeOrigin,
         data: { type: 'terminal-config-request' },
         source: {
           postMessage: vi.fn(),
         },
       };
 
+      terminal.iframe = fakeEvent.source;
       terminal._handleIframeMessage(fakeEvent);
 
       expect(fakeEvent.source.postMessage).toHaveBeenCalledWith(
         { type: 'terminal-config-error', error: 'No JWT available' },
-        '*'
+        fakeOrigin
       );
+    });
+
+    it('should ignore messages from wrong origin', async () => {
+      jwtMock.retrieveJWT.mockReturnValue('test.jwt.token');
+
+      const fakeEvent = {
+        origin: 'https://evil.example.com',
+        data: { type: 'terminal-config-request' },
+        source: { postMessage: vi.fn() },
+      };
+
+      terminal.iframe = fakeEvent.source;
+      terminal._handleIframeMessage(fakeEvent);
+
+      expect(jwtMock.retrieveJWT).not.toHaveBeenCalled();
+      expect(fakeEvent.source.postMessage).not.toHaveBeenCalled();
+    });
+
+    it('should ignore messages from wrong source', async () => {
+      jwtMock.retrieveJWT.mockReturnValue('test.jwt.token');
+
+      const fakeOrigin = window.location.origin || 'http://localhost:3000';
+      const fakeEvent = {
+        origin: fakeOrigin,
+        data: { type: 'terminal-config-request' },
+        source: { postMessage: vi.fn() },
+      };
+
+      // iframe is a different object than event.source
+      terminal.iframe = { postMessage: vi.fn() };
+      terminal._handleIframeMessage(fakeEvent);
+
+      expect(jwtMock.retrieveJWT).not.toHaveBeenCalled();
+      expect(fakeEvent.source.postMessage).not.toHaveBeenCalled();
     });
 
     it('should ignore messages without data', async () => {
       const TerminalManager = await getTerminalManager();
-      const terminal = new TerminalManager();
+      const localTerminal = new TerminalManager();
 
-      terminal._handleIframeMessage({ data: null });
-      terminal._handleIframeMessage({});
-      terminal._handleIframeMessage({ data: 'string' });
+      localTerminal._handleIframeMessage({ data: null });
+      localTerminal._handleIframeMessage({});
+      localTerminal._handleIframeMessage({ data: 'string' });
 
       expect(jwtMock.retrieveJWT).not.toHaveBeenCalled();
     });
 
     it('should ignore non-config-request messages', async () => {
-      const TerminalManager = await getTerminalManager();
-      const terminal = new TerminalManager();
+      jwtMock.retrieveJWT.mockReturnValue('test.jwt.token');
 
-      terminal._handleIframeMessage({ data: { type: 'some-other-message' } });
+      const fakeOrigin = window.location.origin || 'http://localhost:3000';
+      const fakeEvent = {
+        origin: fakeOrigin,
+        data: { type: 'some-other-message' },
+        source: { postMessage: vi.fn() },
+      };
+
+      terminal.iframe = fakeEvent.source;
+      terminal._handleIframeMessage(fakeEvent);
 
       expect(jwtMock.retrieveJWT).not.toHaveBeenCalled();
     });

@@ -122,7 +122,8 @@ get_config_path() {
 # Function: Validate WebSocket key format
 # Parameters: $1 - key name, $2 - key value
 # Returns: 0 if valid, 1 otherwise
-# Note: WebSocket key must be at least 8 printable ASCII characters (33-126, no spaces)
+# Note: WebSocket key must be at least 32 printable ASCII characters (33-126, no spaces,
+# no env references, no known defaults — fail-closed per TERMINAL_FIX_PLAN Phase 2)
 validate_websocket_key() {
     local key_name="$1"
     local key_value="$2"
@@ -133,9 +134,9 @@ validate_websocket_key() {
         return 1
     fi
     
-    # Check minimum length (8 characters)
-    if [[ ${#key_value} -lt 8 ]]; then
-        print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${key_name} must be at least 8 characters long (got ${#key_value})"
+    # Check minimum length (32 characters — TERMINAL_FIX_PLAN Phase 2)
+    if [[ ${#key_value} -lt 32 ]]; then
+        print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${key_name} must be at least 32 characters long (got ${#key_value})"
         return 1
     fi
     
@@ -150,8 +151,21 @@ validate_websocket_key() {
         print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${key_name} contains non-printable characters"
         return 1
     fi
+
+    # Reject unresolved env references and known default/fallback literals
+    if [[ "${key_value}" == "\${env."* ]]; then
+        print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${key_name} is an unresolved environment reference"
+        return 1
+    fi
+    case "${key_value}" in
+        "default_key"|"default_websocket_key"|"ABCDEFGHIJKLMNOP")
+            print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "✗ ${key_name} is a known default/fallback literal"
+            return 1
+            ;;
+        *) ;;
+    esac
     
-    # All checks passed
+    # All checks passed — display only a redacted fingerprint
     local display_value="${key_value:0:8}..."
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "✓ ${key_name} is a valid WebSocket key: ${display_value}"
     return 0
