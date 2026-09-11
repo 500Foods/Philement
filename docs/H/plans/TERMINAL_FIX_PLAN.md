@@ -17,7 +17,7 @@ the terminal opens and runs from the Lithium popup without requiring
 
 ## How To Use This Document
 
-- Work **one phase at a time**, top to bottom.
+- Work **one phase at a time**, in the order in the Phase Index.
 - **Do not start a phase until the previous phase Status is complete and
   its Exit gate is green.**
 - Each phase has one **Done means** line — that is the testable state.
@@ -26,10 +26,17 @@ the terminal opens and runs from the Lithium popup without requiring
 - After each phase: fill Status (date, result, variances), append Working
   Log, **stop for review**. Do not begin the next phase in the same turn
   unless asked.
-- Build aliases: `zsh -ic 'mkq'` (ordinary C), `mkt` (clean/configure),
-  `mku <base>`, `mkp`, `mka`, `mks`. Lithium: `npm test`, `npm run lint`.
+- Hydrogen build aliases: `zsh -ic 'mkq'` for an incremental C build,
+  `mkt` for a clean/configure build, `mku <base>` for a Unity test,
+  `mkp` for cppcheck, `mka` for build-all, and `mks` for shellcheck.
+- Test 26 is a blackbox test. Run it from the Hydrogen test directory with
+  `./test_00_all.sh 26_terminal` (or pass it alongside other test bases);
+  do **not** run it with `mku`.
+- Lithium: `npm test`, `npm run lint`, and `npm run build` when templates or
+  production assets change.
 - **Never apply a database migration.** Hand packets to the user.
-- **Never log client secrets, JWTs, or OTP plaintext** in logs or test artifacts.
+- **Never log client secrets, JWTs, WebSocket keys, passwords, or OTP
+  plaintext** in logs, browser output, test commands, or test artifacts.
 
 ## Implementor Workflow (every phase)
 
@@ -43,106 +50,166 @@ the terminal opens and runs from the Lithium popup without requiring
 7. **Mark work items `[x]` and the phase Status "complete" only after the
    phase's actual verification commands ran clean.** Intent to verify is not
    verification.
-8. **Follow existing project norms** for tests (Unity, blackbox `Test 26`),
+8. **Follow existing project norms** for tests (Unity, blackbox Test 26),
    lint (`mkp`, `mks`), and build aliases.
 
 ---
 
-## Architecture Overview (current state)
+## Overarching Theme: Fail Closed, No Hardcoded Keys, No Secret Leakage
+
+The WebSocket authentication key must **never** be hardcoded in source,
+defaults, generated payloads, tests, or fallback paths. It must come from
+runtime configuration (`WEBSOCKET_KEY` or `WebSocketServer.Key`) and be
+validated before the WebSocket server starts.
+
+**Security and configuration requirements:**
+
+1. **Fail closed when the key is missing or unresolved.** A default such as
+   `${env.WEBSOCKET_KEY}` is a configuration reference, not a usable key.
+   If the environment variable is absent or empty, Hydrogen must refuse to
+   start the WebSocket server (or fail the overall startup) rather than use
+   `default_key`, `default_websocket_key`, `ABCDEFGHIJKLMNOP`, or any other
+   literal.
+2. **No hardcoded key literals in production or test source.** Test keys are
+   supplied through the test environment/configuration and are ephemeral.
+   A local-development key is still configuration, never a source-code
+   fallback.
+3. **Key flow:** config → resolved `config->websocket.key` →
+   `ws_context->auth_key` → authorized `/api/system/info` terminal block →
+   iframe → `?key=` over TLS → WebSocket authentication. The key is
+   server-wide, not per-session.
+4. **Redact secrets everywhere.** Do not log the key, full request URI/query
+   string, JWT, password, `/api/system/info` response, or test command that
+   contains a key. Logs and test artifacts may record only redacted
+   fingerprints or pass/fail status.
+5. **Rotate without code changes.** Set a new strong `WEBSOCKET_KEY`, restart
+   Hydrogen, verify the new value through an authorized info response, and
+   verify the old key is rejected. The iframe obtains the new value on its
+   next config fetch.
+6. **Protocol is configuration, not identity.** The configured WebSocket
+   protocol name is the terminal subprotocol for this integration. The
+   server, generated iframe, and tests must all use that value; no layer may
+   hardcode `"terminal"` as the production protocol.
+7. **Proxy and origin boundaries are explicit.** Honor forwarded client IP
+   only from trusted proxy peers. Restrict iframe `postMessage` to an
+   allowlisted origin and validate `event.source`; never use wildcard origins
+   for production terminal access.
+
+---
+
+## Architecture Overview (audited current state)
 
 ### Components
 
 | Layer | Component | Location |
 | ------- | ----------- | ---------- |
 | Auth | Password / OIDC RP JWT | `src/api/auth/` — `login.c`, `auth_service_jwt.c` |
+| Client IP | Forwarded-peer extraction | `src/api/api_utils.c` — `api_get_client_ip` |
 | API | System Info (terminal config) | `src/api/system/info/info.c` |
 | WebSocket | Server + auth + dispatch | `src/websocket/` — `websocket_server_*.c` |
 | Terminal | Session + PTY bridge | `src/terminal/terminal_websocket.c` + `terminal_session.*` |
 | Payload | xterm.js + terminal.html | `payloads/` + `payloads/terminal-generate.sh` |
 | Client SPA | Terminal manager + iframe | `elements/003-lithium/src/managers/terminal/` |
 | Test | Blackbox terminal test | `tests/test_26_terminal.sh` |
-| Test | Lithium unit tests | `tests/unit/managers/terminal.test.js` |
+| Test | Lithium unit tests | `elements/003-lithium/tests/unit/managers/terminal.test.js` |
 | Proxy | DOKS LoadBalancer + Traefik | External (ops) |
 
 ### Key flows
 
 **JWT issuance (`src/api/auth/`):**
 
-- `generate_jwt_with_oidc` in `auth_service_jwt.c:96` embeds `client_ip` as
-  the `"ip"` claim.
-- `client_ip` comes from `api_get_client_ip` (`api_utils.c:188`) which checks
-  `X-Forwarded-For` header, falling back to the TCP peer address.
-- Behind Traefik/DOKS, `X-Forwarded-For` must be passed through for the
-  real client IP to appear in the JWT.
+- `generate_jwt_with_oidc` embeds `client_ip` as the `"ip"` claim.
+- `client_ip` comes from `api_get_client_ip`, which currently prefers an
+  `X-Forwarded-For` value and falls back to the TCP peer address.
+- The current helper trusts the header without proving that the peer is a
+  trusted proxy. Phase 1 must lock and enforce the Traefik/DOKS trust
+  boundary before the JWT claim is considered authoritative.
 
 **System Info (`src/api/system/info/info.c`):**
 
-- `system_info_has_valid_jwt` validates the `Authorization: Bearer <jwt>` header.
-- `system_info_build_json` includes a `"terminal"` object with `port` and
-  `key` only when `has_jwt && ws_context`.
-- The terminal key is `ws_context->auth_key` — the server-wide WebSocket auth
-  key, **not** a per-session key.
+- `system_info_has_valid_jwt` validates `Authorization: Bearer <jwt>`.
+- `system_info_build_json` currently includes `terminal.port` and
+  `terminal.key` whenever `has_jwt && ws_context` is true.
+- The terminal key is `ws_context->auth_key` — the server-wide WebSocket
+  auth key, not a per-session key.
+- The plan must add an explicit authorization decision: a valid JWT alone is
+  not sufficient unless terminal access is intentionally granted to every
+  authenticated account. The REST response and Lua `H.system.info()` path
+  must not expose the key to callers that are not authorized for terminal
+  access.
 
 **WebSocket auth (`src/websocket/websocket_server_dispatch.c`):**
 
-- `ws_context->auth_key` is set from `config->websocket.key` at startup
-  (`launch_websocket.c:248`, default `"default_websocket_key"`).
-- Config default: `config->websocket.key = strdup("${env.WEBSOCKET_KEY}")`
-  (`config_defaults.c:316`).
-- Three auth paths during `LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION`:
-  1. **Fallback key** `ABCDEFGHIJKLMNOP` — hardcoded in `websocket_server_dispatch.c:289`,
-     accepted only if `ws_context->auth_key` equals that fallback. This is a
-     dev/test convenience, **not** the production flow.
-  2. **Stored key** from HTTP upgrade — set during `LWS_CALLBACK_HTTP` when the
-     `Authorization: Key <value>` header or `?key=<value>` query param is
-     presented and matches `ws_context->auth_key`.
-  3. **Query param key** (re-parsed during protocol filtering).
+- `ws_context->auth_key` is copied from the resolved config in
+  `websocket_server_context.c`.
+- `config_defaults.c` and `config_websocket.c` use the `${env.WEBSOCKET_KEY}`
+  reference, but unresolved references can remain literal strings.
+- Current fallback paths are unsafe and must be removed:
+  `websocket_server_context.c` uses `default_key` when the key pointer is
+  null, `launch_websocket.c` uses `default_websocket_key` when config is
+  null, and `websocket_server_dispatch.c` contains the
+  `ABCDEFGHIJKLMNOP` fallback.
+- The dispatch callback authenticates the key; it does not validate the
+  configured protocol name. Protocol routing occurs later in
+  `websocket_server_message.c` and `websocket_server_terminal.c`.
 
 **Terminal iframe payload (`payloads/terminal-generate.sh`):**
 
-- Generates `terminal.html` with `fetchTerminalConfig()` which:
-  1. Tries `parent.postMessage({ type: 'terminal-config-request' })` to Lithium.
-  2. Falls back to `localStorage.getItem('lithium_jwt')` after 250ms.
-  3. Uses the JWT to call `/api/system/info` with `Authorization: Bearer <jwt>`.
-  4. Extracts `data.terminal.port` and `data.terminal.key` from the response.
-- `connectToWebSocket(config)` builds `wss://<hostname>:<port>?key=<key>`.
-- Version 2.1.1 removed the hardcoded `ABCDEFGHIJKLMNOP` fallback from
-  `connectToWebSocket` — the iframe now fails loudly if no key is received.
+- The generated inline script requests a JWT from the parent frame, falls
+  back to `localStorage`, calls `/api/system/info`, and builds a WebSocket
+  URL.
+- It currently hardcodes a fallback port (`5261`) and the subprotocol
+  (`terminal`), logs the complete `/api/system/info` response, and sends
+  `postMessage` with wildcard origin/target semantics.
+- The payload is inline HTML/JavaScript, not an importable ES module.
+  Lithium tests exercise the SPA manager's message contract, not these
+  inline functions directly.
 
 **Lithium Terminal Manager (`src/managers/terminal/terminal.js`):**
 
-- `terminalUrl` getter builds the iframe `src` from `server.url` +
-  `server.terminal_path` config (default `/terminal`).
-- `init()` creates the popup, iframe, and registers
-  `window.addEventListener('message', this._handleIframeMessage)`.
-- `_handleIframeMessage` responds to `terminal-config-request` by calling
-  `retrieveJWT()` and `postMessage({ type: 'terminal-config', config: { jwt } })`.
-- `destroy()` removes listeners and nulls DOM references, but must **not**
-  null `this._handleIframeMessage` (the bound handler) so it can be re-registered
-  on `init()`.
+- `_handleIframeMessage` is bound once in the constructor, registered in
+  `init()`, and retained across `destroy()`/`init()` cycles.
+- It responds to `terminal-config-request` by retrieving the Hydrogen JWT
+  and posting a response.
+- The current implementation uses `'*'` for `postMessage` target origin and
+  does not validate `event.origin` or `event.source`; Phase 4 must replace
+  that with an explicit origin allowlist and source check.
+
+### Protocol routing clarification
+
+- `LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION` in
+  `websocket_server_dispatch.c` checks authentication, not the configured
+  protocol name.
+- `websocket_server_message.c` routes terminal message types only when
+  `lws_get_protocol(wsi)->name` equals the hardcoded string `"terminal"`.
+- `websocket_server_terminal.c` has the same hardcoded check.
+- `setup_websocket_protocols` registers the protocol from
+  `config->websocket.protocol` (default `"hydrogen"`).
+- `terminal_websocket.c` still defines `TERMINAL_WS_PROTOCOL "terminal"` and
+  `terminal_websocket_requires_auth()` returns false. These legacy helpers
+  must be reconciled with the configured protocol and the real LWS auth
+  path; the false helper must not be treated as the product security gate.
 
 ### Current defects observed
 
-1. **`_handleIframeMessage is null` crash** in deployed Lithium:
-   `destroy()` nulled `this._handleIframeMessage`, then `init()` tried to
-   re-bind it via `this._handleIframeMessage.bind(this)` which fails on null.
-   **Fix already applied in `terminal.js:139-148,247,697-715`** — the bound
-   handler is now created once in the constructor and `destroy()` no longer
-   nulls it. Unit test updated and passing (947 tests).
-
-2. **WebSocket connects to port 7001 with key `ABCDEFGHIJKLMNOP`:**
-   The console log shows the iframe receiving config from `/api/system/info`
-   successfully (JWT valid, terminal object present with port 7001, key
-   `ABCDEFGHIJKLMNOP`). But the WebSocket connection to `wss://lithium.philement.com:7001/?key=ABCDEFGHIJKLMNOP`
-   fails. Port 7001 is likely not the configured WebSocket port and/or not
-   exposed through the DOKS LoadBalancer + Traefik.
-
-3. **Protocol mismatch:** The iframe opens WebSocket with protocol `'terminal'`
-   but Hydrogen's config default protocol is `'hydrogen'`. The `callback_http`
-   handler in `websocket_server.c` does not validate the protocol
-   string match — it checks the key only. But `websocket_server_dispatch.c`
-   `LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION` does check `lws_get_protocol(wsi)`
-   against the configured protocol name.
+1. **`_handleIframeMessage is null` crash** — the Lithium fix is already
+   applied: the handler is bound once and retained across lifecycle calls.
+2. **Unsafe key fallbacks** — `default_key`, `default_websocket_key`, and
+   `ABCDEFGHIJKLMNOP` remain in the server path; unresolved environment
+   references can also become literal keys.
+3. **Secret leakage** — WebSocket dispatch logs a stored key and request URI,
+   the generated payload logs the full system-info response, and Test 26
+   prints commands containing `WEBSOCKET_KEY`.
+4. **Protocol mismatch** — production defaults to `"hydrogen"` while the
+   iframe and terminal routing checks use `"terminal"`; Test 26 hides the
+   mismatch by configuring `"terminal"`.
+5. **Origin/auth contract is too broad** — wildcard `postMessage`, wildcard
+   target origins, and a system-info terminal block gated only by JWT
+   validity expose secrets beyond the intended trust boundary.
+6. **Test/documentation drift** — Test 26 is a blackbox test run through
+   `test_00_all.sh`, not `mku`; its script initializes `TEST_COUNTER` even
+   though the framework owns that counter, and it does not cover the
+   system-info/key/protocol contract.
 
 ---
 
@@ -150,15 +217,15 @@ the terminal opens and runs from the Lithium popup without requiring
 
 | Phase | Done means (one line) | Effort | Status |
 | ------- | ---------------------- | -------- | -------- |
-| 0 | Contract lock; architecture documented; root cause confirmed; JWT-IP, payload, WS-key, iframe-flow, debug tool, tests | S | pending |
-| 1 | JWT `ip` claim reflects real client IP behind Traefik/DOKS | S | pending |
-| 2 | `terminal-generate.sh` payload produces a `terminal.html` that fetches `/api/system/info` and passes JWT via postMessage from parent | S | pending |
-| 3 | WebSocket server key exposed via `/api/system/info` when authenticated; port is configurable and matches Hydrogen config | S | pending |
-| 4 | Lithium `_handleIframeMessage` bound once in constructor; destroy/init cycle safe; iframe receives JWT and fetches terminal config | S | pending |
-| 5 | WebSocket connection from iframe works end-to-end (port exposed, key matches, protocol accepted) | M | pending |
-| 6 | Test 26 terminal blackbox + Lithium unit tests cover the full flow; new debug/launcher tool in extras/ | S | pending |
+| 0 | Contract lock; audited architecture, root causes, security boundaries, and phase dependencies | S | complete |
+| 1 | Trusted-proxy JWT `ip` claim reflects the real client IP behind Traefik/DOKS | S | pending |
+| 2 | WebSocket config fails closed; key/protocol contract and authorized system-info response are implemented | M | pending |
+| 3 | Generated terminal payload uses API-provided port/protocol, exact-origin messaging, and redacted errors | M | pending |
+| 4 | Lithium manager uses exact-origin/source-checked `postMessage` and survives lifecycle cycles | S | pending |
+| 5 | Deployed endpoint, TLS/proxy routing, key rotation, and browser E2E terminal session succeed | M | pending |
+| 6 | Secure debug launcher and redacted Test 26/Lithium coverage prove the full flow | M | pending |
 
-Effort key: S = small/contained, M = moderate (networking/deployment + testing).
+Effort key: S = small/contained, M = moderate (security/networking/deployment + testing).
 
 ---
 
@@ -168,79 +235,131 @@ Effort key: S = small/contained, M = moderate (networking/deployment + testing).
 
 Document the current architecture, lock design decisions, and confirm the
 root cause of each defect before touching code. No production changes.
+Explicitly lock the **fail-closed, no-hardcoded-keys, no-secret-leakage**
+policy and correct the phase dependencies.
 
 ### Entry gate
 
-This document exists. Ability to read code in `src/api/`, `src/websocket/`,
-`src/terminal/`, `payloads/terminal-generate.sh`,
-`elements/003-lithium/src/managers/terminal/`, and `tests/test_26_terminal.sh`.
+This document exists. Ability to read code in `src/api/`, `src/config/`,
+`src/websocket/`, `src/terminal/`, `payloads/terminal-generate.sh`,
+`elements/003-lithium/src/managers/terminal/`, `tests/test_26_terminal.sh`,
+and the Hydrogen test runner documentation.
 
 ### Work items
 
-- [ ] Confirm the JWT `ip` claim source path: `api_get_client_ip` →
-      `X-Forwarded-For` → TCP peer. Document Traefik/DOKS requirement.
-      **Verify:** Status records the chain.
-- [ ] Confirm the WebSocket key flow: config → `ws_context->auth_key` →
-      `/api/system/info` → iframe → `?key=`. Document that it is server-wide,
+- [x] Confirm the JWT `ip` claim source path: `api_get_client_ip` →
+      `X-Forwarded-For` → TCP peer. Record that the current helper trusts the
+      header without a trusted-proxy check; Phase 1 must enforce the boundary.
+      **Verify:** Status records the chain and the trust-gap variance.
+- [x] Confirm the WebSocket key flow: config → resolved
+      `config->websocket.key` → `ws_context->auth_key` → authorized
+      `/api/system/info` → iframe → `?key=`. Record that it is server-wide,
       not per-session.
       **Verify:** Status records source files and flow.
-- [ ] Confirm the port: config default is 5001
-      (`config_defaults.c:304`); the console log shows 7001 on the deployed
-      instance — this is a **config override**, not the code default.
-      **Verify:** Status records that 7001 comes from `hydrogen.json`
-      `WebSocketServer.Port` and needs checking.
-- [ ] Confirm the protocol mismatch: iframe sends `'terminal'`, Hydrogen
-      default protocol is `'hydrogen'`. Document that `LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION`
-      in `websocket_server_dispatch.c:270` checks the protocol name.
-      **Verify:** Status records the mismatch and that both the config
-      `WebSocketServer.Protocol` and the iframe must agree.
-- [ ] Confirm the `_handleIframeMessage is null` root cause: `destroy()`
-      nulled the bound handler, `init()` tried to re-bind it.
-      **Verify:** Status records files `terminal.js:139-148,247,697-715`.
-      (Fix already applied — document it here.)
-- [ ] Lock decision: JWT `ip` claim should reflect the **real** client IP
-      behind the proxy. Traefik must be configured with
-      `forwardedHeaders.trustedIPs` or `proxyProtocol` and the
-      `X-Forwarded-For` header passed through.
+- [x] Confirm the key source: `ws_context_create` copies the resolved config
+      key. `launch_websocket.c` does not set the key at its readiness check.
+      Record the unsafe `default_key`, `default_websocket_key`, and
+      `ABCDEFGHIJKLMNOP` fallbacks and the unresolved `${env.WEBSOCKET_KEY}`
+      case.
+      **Verify:** Status records the correct source and all fallback paths.
+- [x] Confirm the port: the code default is 5001; the observed deployed 7001
+      value is a configuration/deployment override and must not be assumed by
+      the client or tests.
+      **Verify:** Status records the default and external verification need.
+- [x] Confirm protocol routing: dispatch authenticates the key; protocol-name
+      routing occurs in `websocket_server_message.c` and
+      `websocket_server_terminal.c`; protocol registration comes from
+      `config->websocket.protocol`.
+      **Verify:** Status records the correct locations and the hardcoded
+      `"terminal"` mismatch.
+- [x] Confirm the protocol mismatch: the iframe and legacy terminal helpers
+      use `"terminal"` while production defaults to `"hydrogen"`; Test 26
+      hides the mismatch by setting `"terminal"` in its config.
+      **Verify:** Status records the mismatch and the configured-protocol
+      contract.
+- [x] Confirm the `_handleIframeMessage` root cause: `destroy()` previously
+      nulled the bound handler and `init()` tried to re-bind it. The fix is
+      already present: bind once, retain the handler, and remove/re-add the
+      listener without nulling it.
+      **Verify:** Status records `terminal.js` lifecycle behavior.
+- [x] Document the payload boundary: `fetchTerminalConfig` and
+      `connectToWebSocket` are inline in generated `terminal.html`, not an
+      importable ES module. Record the current hardcoded port/protocol,
+      wildcard messaging, localStorage fallback, and full-response logging.
+      **Verify:** Status records the distinction and required fixes.
+- [x] Lock the trusted-proxy decision: forwarded client IP is authoritative
+      only when the immediate peer is a trusted Traefik/DOKS proxy; otherwise
+      use the TCP peer and reject spoofed forwarded headers.
       **Verify:** Decision in Status.
-- [ ] Lock decision: WebSocket port must be **configurable** and exposed
-      through DOKS + Traefik. Port 5001 default; the deployed 7001 override
-      must be validated.
+- [x] Lock the public endpoint decision: WebSocket port and public origin are
+      deployment configuration. Do not hardcode 7001, 5261, a hostname, or a
+      direct-port assumption in Lithium or the payload.
       **Verify:** Decision in Status.
-- [ ] Lock decision: The debug/launcher tool (Phase 6) will accept
-      `--server`, `--username`, `--password` as parameters, fetch a JWT
-      via `/api/auth/login`, then open a browser window pointing at the
-      terminal iframe URL. No hardcoded server.
+- [x] **Lock decision: fail closed and never hardcode keys.** The WebSocket
+      key comes exclusively from `WEBSOCKET_KEY` or
+      `WebSocketServer.Key`; missing, empty, unresolved, or weak values fail
+      startup. No source, default, generated payload, test, or debug tool may
+      contain a reusable key literal.
       **Verify:** Decision in Status.
-- [ ] Document the full end-to-end flow diagram from JWT issuance through
-      iframe WebSocket connection.
-      **Verify:** Status.
+- [x] Lock the authorization decision: `/api/system/info` may return the
+      terminal key only to an account authorized for terminal access; Lua
+      `H.system.info()` must not expose it through the generic system-info
+      path unless an explicit authorized caller contract is added.
+      **Verify:** Decision in Status.
+- [x] Lock the browser messaging decision: parent/child communication uses a
+      configured origin allowlist, validates `event.origin` and
+      `event.source`, and supplies an exact `targetOrigin`; wildcard origins
+      are local-development-only and forbidden in production.
+      **Verify:** Decision in Status.
+- [x] Lock the debug-tool decision: it accepts `--server`, `--username`, and
+      a password from stdin or a permission-restricted file (never a CLI
+      argument), fetches a JWT, and uses an in-memory postMessage handoff
+      without persisting the JWT or key.
+      **Verify:** Decision in Status.
+- [x] Document the full end-to-end flow from login/JWT issuance through
+      trusted-proxy IP extraction, authorized system-info retrieval,
+      exact-origin iframe handoff, configured WebSocket endpoint/protocol,
+      key authentication, and PTY I/O.
+      **Verify:** Status records the flow and trust boundaries.
+- [~] Inspect the live Traefik/DOKS manifests, deployed Hydrogen config, and
+      public WebSocket route. This requires deployment access and belongs in
+      Phase 5; do not infer it from local defaults.
+      **Verify:** Deferred to Phase 5.
 
 ### Done means
 
-Architecture, root causes, and design decisions are documented in Status.
-No C/JS changes.
+Architecture, root causes, security boundaries, and phase dependencies are
+documented in Status. The fail-closed/no-hardcoded-keys policy is locked.
+No C, JavaScript, payload, test, or deployment changes were made.
 
 ### Exit gate
 
-Status filled. Working Log has locked decisions for JWT-IP, payload, WS-key,
-iframe-flow, debug tool, tests.
+Status filled, live-deployment variance recorded, and Working Log contains
+the locked decisions for JWT-IP, proxy trust, WS key/protocol, system-info
+authorization, payload, iframe origin, debug tool, tests, and rotation.
 
 ### Status
 
-- **State:** pending
-- **Date:**
-- **Result:**
-- **Variances:**
+- **State:** complete
+- **Date:** 2026-09-11
+- **Result:** Code and test audit completed; contract and phase order upgraded.
+- **Variances:** Live Traefik/DOKS configuration, deployed Hydrogen config,
+  public route, and deployed key were not inspected in this session. Those
+  checks are deferred to Phase 5. Existing line references are audit aids and
+  must be refreshed after implementation.
+- **Key rotation policy:** Locked — key from env/config only; missing or
+  unresolved values fail closed; no reusable literal in source, defaults,
+  payload, tests, or debug tooling.
 
 ---
 
-## Phase 1 — JWT IP Claim Behind Traefik/DOKS
+## Phase 1 — Trusted Proxy and JWT IP Claim
 
 ### Goal
 
 Ensure the JWT `ip` claim reflects the actual client IP when Hydrogen is
-behind Traefik + DOKS LoadBalancer.
+behind Traefik + DOKS LoadBalancer, without allowing clients to spoof
+`X-Forwarded-For` from an untrusted peer.
 
 ### Entry gate
 
@@ -248,34 +367,40 @@ Phase 0 complete.
 
 ### Work items
 
-- [ ] Verify Traefik `forwardedHeaders.trustedIPs` includes the DOKS
-      LoadBalancer subnet, or that `proxyProtocol` is enabled end-to-end.
-      **Verify:** Check `traefik.yaml` / Helm values in the deployment.
-- [ ] Verify Hydrogen's `api_get_client_ip` (`api_utils.c:188`) correctly
-      parses the first non-internal IP from `X-Forwarded-For`.
-      **Verify:** `test_system_endpoint` test already checks client_ip at
-      `src/api/system/test/test.c:71-80` — confirm it works behind a proxy.
-- [ ] If the Traefik config cannot be changed, ensure DOKS passes the
-      original client IP. The DOKS LoadBalancer must forward the real
-      source IP, not the load balancer's.
-      **Verify:** Check DOKS service annotation
-      `service.beta.kubernetes.io/do-loadbalancer-preserve-client-ip: "true"`
-      or equivalent.
-- [ ] Add or extend a unit test for `api_get_client_ip` with a multi-hop
-      `X-Forwarded-For` header to confirm the public-IP selection logic.
-      **Verify:** Unity test passes.
-- [ ] `mkq` + `mkp`.
-      **Verify:** Build and lint clean.
+- [ ] Inspect the deployed Traefik configuration and record the trusted proxy
+      boundary: `forwardedHeaders.trustedIPs`, `proxyProtocol`, or the
+      current DOKS equivalent must cover only trusted load-balancer peers.
+      **Verify:** Deployment config or an explicit ops variance is recorded.
+- [ ] Verify DOKS preserves the original client source address or supplies a
+      trustworthy forwarded chain. Use the current DOKS mechanism rather than
+      assuming a specific annotation is still supported.
+      **Verify:** Service/load-balancer config or a live request trace.
+- [ ] Update the client-IP contract so `api_get_client_ip` honors forwarded
+      values only when the immediate TCP peer is trusted; otherwise use the
+      peer address and ignore client-supplied forwarding headers.
+      **Verify:** Code review and unit tests for trusted and untrusted peers.
+- [ ] Extend the existing `api_get_client_ip` Unity coverage with:
+      - a multi-hop `X-Forwarded-For` chain from a trusted peer;
+      - an untrusted peer supplying a public `X-Forwarded-For` value;
+      - the existing internal/public selection cases.
+      **Verify:** `mku api_utils_test_get_client_ip` passes.
+- [ ] Generate or inspect a live JWT after login and confirm its `ip` claim
+      matches the trusted public client address, not the load balancer or an
+      attacker-supplied header.
+      **Verify:** Redacted claim inspection recorded in Status.
+- [ ] Run `mkq` (or `mkt` when a clean/configure build is required) and
+      `mkp`.
+      **Verify:** Build and cppcheck are clean.
 
 ### Done means
 
-The JWT `ip` claim contains the real client IP when deployed behind
-Traefik + DOKS, as confirmed by inspecting a live JWT's `ip` field.
+The trusted-proxy boundary is documented, spoofed forwarded headers are
+ignored outside that boundary, and a live JWT contains the real client IP.
 
 ### Exit gate
 
-Traefik/DOKS config verified or documented. `mkq`/`mkp` green. Unit test
-for `api_get_client_ip` updated/added.
+Traefik/DOKS trust configuration verified or an explicit ops variance
+recorded; trusted/untrusted client-IP unit tests pass; `mkq`/`mkp` green.
 
 ### Status
 
@@ -286,14 +411,13 @@ for `api_get_client_ip` updated/added.
 
 ---
 
-## Phase 2 — Terminal Payload Regeneration
+## Phase 2 — WebSocket Configuration, Authorization, and Protocol Contract
 
 ### Goal
 
-Ensure `terminal-generate.sh` produces a `terminal.html` that correctly
-fetches `/api/system/info` using a JWT obtained from the parent frame (Lithium)
-via `postMessage`, and passes the terminal port + key to the WebSocket
-connection.
+Make the WebSocket server fail closed, expose a safe terminal configuration
+contract through authorized `/api/system/info`, and make protocol routing
+use the configured protocol rather than hardcoded terminal names.
 
 ### Entry gate
 
@@ -301,37 +425,59 @@ Phase 1 complete.
 
 ### Work items
 
-- [ ] Review the current `terminal.html` in the payload
-      (`payloads/terminal-generate.sh` lines 147–425). Confirm the
-      `fetchTerminalConfig()` logic:
-      - Sends `terminal-config-request` via `postMessage` to parent.
-      - Falls back to `localStorage.lithium_jwt` after 250ms.
-      - Calls `/api/system/info` with `Authorization: Bearer <jwt>`.
-      - Extracts `data.terminal.port` and `data.terminal.key`.
-      **Verify:** Code review; no hardcoded key fallback.
-- [ ] Confirm the WebSocket URL construction uses `wss://` when the page
-      is loaded over `https://`, and `ws://` for `http://`.
-      **Verify:** `connectToWebSocket` at line 350.
-- [ ] Confirm the WebSocket protocol sent by the iframe matches Hydrogen's
-      configured protocol. Currently the iframe sends `'terminal'` but
-      Hydrogen's default is `'hydrogen'`.
-      **Decision from Phase 0:** Either change the iframe to send the
-      configured protocol, or change Hydrogen's default to `'terminal'`.
-      **Verify:** Documented in Status.
-- [ ] Rebuild the Hydrogen payload after any `terminal-generate.sh` changes.
-      **Verify:** `mkt` (or `mka`).
-- [ ] `mkp` + `mks`.
-      **Verify:** Lint clean.
+- [ ] Resolve and validate `WebSocketServer.Key` before creating the LWS
+      context. Missing, empty, unresolved `${env.WEBSOCKET_KEY}`, or weak
+      values must prevent startup; remove `default_key`,
+      `default_websocket_key`, and `ABCDEFGHIJKLMNOP` fallbacks from
+      `websocket_server_context.c`, `launch_websocket.c`, and dispatch.
+      **Verify:** Missing/unresolved-key startup tests fail safely.
+- [ ] Ensure sensitive config logging redacts the value and never prints the
+      resolved key. Search server logs for the key, env reference, and query
+      string after startup and authentication attempts.
+      **Verify:** Log inspection contains no secret material.
+- [ ] Define the authorized system-info contract. Add an explicit terminal
+      authorization check for the REST endpoint and keep the generic Lua
+      `H.system.info()` response from exposing the key unless a separate
+      authorized API is deliberately introduced.
+      **Verify:** Unauthenticated, invalid-JWT, and non-terminal-authorized
+      requests cannot obtain `terminal.key`.
+- [ ] Extend the terminal object returned by authorized `/api/system/info`
+      with `port` and `protocol` from the active WebSocket config. Keep the
+      key server-wide and return it only after authorization succeeds.
+      **Verify:** Authorized response contains the configured port/protocol;
+      unauthorized response omits the terminal object or key.
+- [ ] Replace hardcoded `"terminal"` routing in
+      `websocket_server_message.c` and `websocket_server_terminal.c` with
+      the active configured protocol. Reconcile
+      `get_terminal_websocket_protocol()` and
+      `terminal_websocket_requires_auth()` so legacy helpers cannot bypass or
+      contradict the LWS authentication path.
+      **Verify:** Configured protocol accepts terminal traffic; a mismatched
+      subprotocol is rejected.
+- [ ] Lock the browser authentication transport: browsers send the key in
+      the WebSocket query string because the browser API cannot set custom
+      headers; require TLS in production and redact the full URI from logs.
+      Non-browser tests may use `Authorization: Key` where supported.
+      **Verify:** Correct key succeeds, wrong/old key fails, and no key is
+      logged.
+- [ ] Add focused C/Unity coverage for key validation, unresolved env
+      handling, configured-protocol routing, and authorized system-info
+      behavior. Do not add a static helper in Hydrogen `src/`.
+      **Verify:** Relevant Unity tests pass and `mkt` dead-code gate is clean.
+- [ ] Run `mkq` (or `mkt` when config/payload inputs changed) and `mkp`.
+      **Verify:** Build and cppcheck are clean.
 
 ### Done means
 
-`terminal.html` in the payload correctly obtains JWT from parent,
-fetches `/api/system/info`, and constructs the WebSocket URL with the
-correct port and key. Protocol mismatch resolved.
+Hydrogen starts only with a resolved strong key, authorized callers receive
+the active port/protocol/key contract, unauthorized callers do not, and
+terminal routing follows the configured protocol with no hardcoded key or
+protocol literal.
 
 ### Exit gate
 
-Payload rebuilt. `mkq`/`mkp`/`mks` green. Protocol mismatch fixed.
+Key-fail-closed, authorization, protocol, and redaction tests pass;
+`mkq`/`mkp` green; no secret appears in logs or test output.
 
 ### Status
 
@@ -342,12 +488,14 @@ Payload rebuilt. `mkq`/`mkp`/`mks` green. Protocol mismatch fixed.
 
 ---
 
-## Phase 3 — WebSocket Server Key + Port Exposure
+## Phase 3 — Terminal Payload Regeneration and Browser Security
 
 ### Goal
 
-Ensure the WebSocket server's auth key and port are correctly configured,
-exposed via `/api/system/info`, and reachable from the client (Lithium iframe).
+Ensure `terminal-generate.sh` produces a `terminal.html` that obtains an
+authorized JWT through the parent frame, fetches `/api/system/info`, and
+connects using API-provided port/protocol without hardcoded fallbacks,
+wildcard messaging, or secret logging.
 
 ### Entry gate
 
@@ -355,44 +503,54 @@ Phase 2 complete.
 
 ### Work items
 
-- [ ] Confirm the WebSocket port configuration path: `config_defaults.c:304`
-      sets default `5001`; the deployed instance shows `7001` in the
-      `/api/system/info` terminal block. Verify `hydrogen.json` on the
-      deployed server has `WebSocketServer.Port: 7001`.
-      **Verify:** Check deployed config or deployment manifest.
-- [ ] Confirm the WebSocket key: `config_defaults.c:316` sets default
-      `${env.WEBSOCKET_KEY}`. The `/api/system/info` response shows key
-      `ABCDEFGHIJKLMNOP` — check whether this is the fallback key in
-      `websocket_server_dispatch.c:289` or a real configured key.
-      **Verify:** If the key in `/api/system/info` matches
-      `ws_context->auth_key`, the fallback path is not being used. If it
-      is `ABCDEFGHIJKLMNOP`, the config may have that as the actual key.
-- [ ] Verify DOKS LoadBalancer exposes port 7001 for WebSocket traffic.
-      The DOKS LB must forward port 7001 to the Hydrogen pod(s), and
-      Traefik must route WebSocket traffic on that port.
-      **Verify:** Check DOKS service definition and Traefik ingress.
-- [ ] Verify Traefik `wsRoute` or `PassHostHeader` is configured for
-      WebSocket on port 7001. Traefik requires explicit WebSocket support
-      configuration.
-      **Verify:** Check Traefik `traefik.yaml` or Kubernetes IngressRoute
-      annotations.
-- [ ] Confirm `/api/system/info` returns the terminal block with the
-      correct port and key when authenticated. The console log shows this
-      is already working (status 200, terminal object present).
-      **Verify:** `system_info_build_json` in `info.c:119-128`.
-- [ ] `mkq` + `mkp`.
-      **Verify:** Build and lint clean.
+- [ ] Review the inline `fetchTerminalConfig()` and
+      `connectToWebSocket()` implementation in
+      `payloads/terminal-generate.sh`. Require the parent-frame handoff as
+      the production path; remove the silent `localStorage` JWT fallback
+      unless a separately approved same-origin local mode is retained.
+      **Verify:** Code review and generated HTML inspection.
+- [ ] Require `terminal.port` and `terminal.protocol` from the authorized
+      system-info response. Remove the hardcoded `5261` port fallback and
+      hardcoded `"terminal"` WebSocket subprotocol; fail visibly when either
+      value is absent or invalid.
+      **Verify:** Generated HTML contains no port/protocol literals used as
+      connection defaults.
+- [ ] Derive the API/WebSocket origin from the configured server and page
+      origin. Do not assume the iframe hostname, direct port, or
+      `wss://<hostname>:<port>` shape in production; use the public endpoint
+      contract established in Phase 2/5.
+      **Verify:** Same-origin and approved reverse-proxy configurations work.
+- [ ] Replace wildcard `postMessage` behavior with an exact target origin and
+      validate `event.origin` against an allowlist plus `event.source` against
+      the terminal iframe. Never accept config messages from an arbitrary
+      ancestor.
+      **Verify:** Unit/static checks and browser test reject a wrong origin.
+- [ ] Remove logging of JWTs, keys, full `/api/system/info` responses, full
+      request URIs, and message payloads. Log only non-sensitive state and
+      redacted error categories.
+      **Verify:** Browser/server logs and generated artifacts contain no
+      secret values.
+- [ ] Make config-fetch and reconnect lifecycle deterministic: remove stale
+      timers/listeners on success/failure, prevent duplicate WebSocket
+      connections after visibility changes, and use bounded reconnect behavior.
+      **Verify:** Destroy/reopen or visibility-cycle test leaves one active
+      connection and no unhandled rejection.
+- [ ] Rebuild the embedded Hydrogen payload after generator changes with
+      `mkt` (or `mka`), then run Test 26 through `test_00_all.sh`.
+      **Verify:** Embedded payload and filesystem artifact are both current.
+- [ ] Run `mks` for generator changes and `mkp` for any C changes.
+      **Verify:** Shellcheck/cppcheck are clean.
 
 ### Done means
 
-`/api/system/info` returns the correct WebSocket port and key, the key
-matches `ws_context->auth_key`, and port 7001 is exposed through DOKS +
-Traefik for WebSocket traffic.
+The generated terminal payload uses the authorized API contract, configured
+port/protocol, exact-origin messaging, and redacted diagnostics; it fails
+visibly instead of falling back to hardcoded secrets or unsafe origins.
 
 ### Exit gate
 
-WebSocket port/key verified in deployed config. DOKS + Traefik WebSocket
-exposure verified. `mkq`/`mkp` green.
+Payload rebuilt and embedded; generated HTML/static checks pass; Test 26,
+`mks`, and `mkp` are green with no secret leakage.
 
 ### Status
 
@@ -403,12 +561,12 @@ exposure verified. `mkq`/`mkp` green.
 
 ---
 
-## Phase 4 — Lithium Terminal Manager (Fix + Verify)
+## Phase 4 — Lithium Terminal Manager and Exact-Origin Messaging
 
 ### Goal
 
-Ensure the Lithium Terminal Manager correctly handles the iframe lifecycle,
-passes JWT via `postMessage`, and survives destroy/init cycles.
+Ensure the Lithium Terminal Manager safely passes the JWT to the terminal
+iframe, validates message origin/source, and survives destroy/init cycles.
 
 ### Entry gate
 
@@ -416,36 +574,37 @@ Phase 3 complete.
 
 ### Work items
 
-- [ ] Confirm the `_handleIframeMessage is null` fix in `terminal.js`:
-      - `_handleIframeMessage` is bound in the constructor (`terminal.js:148`).
-      - `init()` registers `window.addEventListener('message', this._handleIframeMessage)`
-        (`terminal.js:247`) — no re-binding.
-      - `destroy()` removes the listener but does **not** null
-        `this._handleIframeMessage` (`terminal.js:699`).
-      **Verify:** Read current `terminal.js` lines 139–148, 247, 697–715.
-- [ ] Confirm `_handleIframeMessage` correctly responds to
-      `terminal-config-request` by calling `retrieveJWT()` and posting
-      `{ type: 'terminal-config', config: { jwt } }` back to the iframe
-      (`terminal.js:675-692`).
-      **Verify:** Code review.
-- [ ] Verify the iframe `src` is set to `this.terminalUrl` which combines
-      `server.url` + `server.terminal_path` (`terminal.js:163-174,229`).
-      **Verify:** Config check — does `lithium.json` have the right
-      `server.url` and `server.terminal_path`?
-- [ ] Run Lithium unit tests: `npm test` from `elements/003-lithum/`.
-      **Verify:** 947 tests pass (updated terminal test included).
-- [ ] Run Lithium lint: `npm run lint`.
-      **Verify:** Lint clean.
+- [ ] Confirm the existing `_handleIframeMessage` fix remains intact:
+      bind once in the constructor, register the retained handler in
+      `init()`, remove it in `destroy()`, and never null it.
+      **Verify:** Read current `terminal.js` lifecycle code.
+- [ ] Replace wildcard `postMessage` calls with an exact `targetOrigin`
+      derived from the configured Hydrogen origin. Validate
+      `event.origin` against the same allowlist and verify `event.source`
+      is the terminal iframe before returning a JWT.
+      **Verify:** Unit tests prove wrong-origin and wrong-source messages
+      are ignored and no JWT is sent to `'*'`.
+- [ ] Validate `terminalUrl` and the iframe origin against configured
+      `server.url`/`server.terminal_path`; do not allow an arbitrary
+      cross-origin iframe to request terminal credentials.
+      **Verify:** URL construction and rejection tests pass.
+- [ ] Keep JWT retrieval and messaging free of console logging. Use the
+      existing Lithium logging facility for non-sensitive lifecycle events.
+      **Verify:** Source scan and test output contain no JWT.
+- [ ] Run Lithium unit tests with `npm test`, then lint with
+      `npm run lint`; run `npm run build` if templates or production assets
+      change, and `npm run templates:copy` after template edits.
+      **Verify:** All named commands are green.
 
 ### Done means
 
-Lithium Terminal Manager binds `_handleIframeMessage` once in the
-constructor, survives destroy/init cycles, correctly passes JWT to the
-iframe via `postMessage`, and all unit tests + lint pass.
+The manager sends the JWT only to the approved terminal iframe/origin,
+ignores hostile messages, and remains safe across popup lifecycle cycles.
 
 ### Exit gate
 
-`npm test` green. `npm run lint` green. `terminal.js` fix confirmed in code.
+`npm test` and `npm run lint` green; origin/source checks and lifecycle
+tests are present; no JWT appears in logs or test output.
 
 ### Status
 
@@ -456,13 +615,13 @@ iframe via `postMessage`, and all unit tests + lint pass.
 
 ---
 
-## Phase 5 — End-to-End WebSocket From Iframe
+## Phase 5 — Deployed Endpoint, Key Rotation, and Browser E2E
 
 ### Goal
 
-The terminal iframe opens a WebSocket connection to the Hydrogen WebSocket
-server and the terminal session works, all from within the Lithium popup
-(no "open in new window" workaround).
+Verify the production Traefik/DOKS route, TLS/origin configuration, active
+WebSocket port/protocol, and key rotation, then prove the terminal opens
+from the Lithium popup without a new-window workaround.
 
 ### Entry gate
 
@@ -470,39 +629,51 @@ Phase 4 complete.
 
 ### Work items
 
-- [ ] Open `https://lithium.philement.com` in a browser.
-- [ ] Log in and open the Terminal popup.
-- [ ] Open browser dev tools → Console → Network → WS.
-- [ ] Observe the iframe sends `terminal-config-request` via `postMessage`.
-- [ ] Observe Lithium responds with
-      `{ type: 'terminal-config', config: { jwt } }`.
-- [ ] Observe the iframe calls `/api/system/info` with
-      `Authorization: Bearer <jwt>` and receives
-      `{ terminal: { port: 7001, key: "..." } }`.
-- [ ] Observe the iframe opens `wss://lithium.philement.com:7001/?key=<key>`
-      with protocol `'terminal'`.
-- [ ] Observe the WebSocket `onopen` event fires (connection accepted).
-- [ ] If connection fails, check server logs for:
-      - Authentication failure (key mismatch).
-      - Protocol mismatch (iframe sends `'terminal'`, server expects `'hydrogen'`).
-      - Port not reachable (DOKS/Traefik not exposing 7001).
-- [ ] If the key in `/api/system/info` is `ABCDEFGHIJKLMNOP` and
-      `ws_context->auth_key` is also `ABCDEFGHIJKLMNOP`, the fallback path
-      in `websocket_server_dispatch.c:289` is matching. This is insecure
-      for production — the key should be set via `WEBSOCKET_KEY` env var.
-      **Verify:** Check deployed config for `WebSocketServer.Key`.
-- [ ] Fix any remaining issues (protocol mismatch, port exposure, key).
-- [ ] Confirm a shell prompt appears in the xterm.js terminal.
+- [ ] Inspect the deployed Hydrogen config and record the active
+      `WebSocketServer.Port`, `WebSocketServer.Protocol`, and key source.
+      Do not assume the local defaults or the previously observed 7001.
+      **Verify:** Redacted config evidence is recorded.
+- [ ] Inspect DOKS and Traefik routing for the actual public endpoint:
+      service target port, TLS termination, HTTP/1.1 Upgrade handling,
+      `passHostHeader`/equivalent, trusted forwarded headers, and firewall
+      exposure. Prefer a path-based HTTPS route; if a direct port is used,
+      document and restrict it.
+      **Verify:** Route trace or deployment manifest is recorded.
+- [ ] Verify CORS/origin policy for `/api/system/info` and the terminal
+      iframe. No wildcard production origin; only the approved Lithium
+      origin may request terminal credentials.
+      **Verify:** Browser/network test from allowed and disallowed origins.
+- [ ] Rotate the deployed key using a strong random value supplied through
+      `WEBSOCKET_KEY` or `WebSocketServer.Key`; restart Hydrogen and verify
+      the new key is returned only to an authorized caller. Record only a
+      redacted fingerprint, never the raw key.
+      **Verify:** New key accepted, old key rejected, no secret in logs.
+- [ ] Open the production Lithium URL, log in, and open Terminal. Confirm:
+      - the iframe requests config from the approved parent origin;
+      - Lithium replies with an exact-origin/source-checked message;
+      - `/api/system/info` returns the active port/protocol;
+      - the WebSocket uses the configured protocol and accepted key;
+      - `onopen` fires and a shell prompt appears.
+      **Verify:** Redacted browser/network evidence and shell prompt.
+- [ ] Exercise disconnect/reconnect and popup destroy/init cycles. Confirm
+      there is one active terminal connection and no stale listener, timer,
+      or duplicate iframe session.
+      **Verify:** Browser console/network inspection has no lifecycle errors.
+- [ ] If connection fails, diagnose only redacted categories: trusted-proxy
+      IP, authorization, key mismatch, protocol mismatch, route/port, TLS,
+      or origin policy. Never paste the key or JWT into logs/tickets.
+      **Verify:** Troubleshooting result recorded without secrets.
 
 ### Done means
 
-The terminal opens from the Lithium popup iframe, the WebSocket connection
-is accepted, and a shell prompt appears. No need to "open in new window."
+The deployed route and origin policy are verified, the key rotates without
+code changes, and the Lithium iframe establishes an authenticated terminal
+session with a shell prompt.
 
 ### Exit gate
 
-Manual E2E test against `https://lithium.philement.com` succeeds.
-All console log steps observable with no errors.
+Manual production E2E succeeds; route/TLS/origin evidence is recorded; new
+key works, old key fails, and all evidence is redacted.
 
 ### Status
 
@@ -513,13 +684,13 @@ All console log steps observable with no errors.
 
 ---
 
-## Phase 6 — Debug Tool + Test Coverage
+## Phase 6 — Secure Debug Launcher and Redacted Test Coverage
 
 ### Goal
 
-Add a debug/launcher tool in `extras/` that can fetch a JWT and open a
-terminal iframe directly (for troubleshooting), and write/extend tests to
-cover the terminal flow.
+Add a secure terminal launcher for troubleshooting, extend Test 26 and
+Lithium tests to cover the real contract, and prove key rotation without
+printing or persisting secrets.
 
 ### Entry gate
 
@@ -527,34 +698,60 @@ Phase 5 complete.
 
 ### Work items
 
-- [ ] Create `extras/terminal-launcher.sh` (or `.py`) — a script that:
-      - Accepts `--server <url>`, `--username <user>`, `--password <pass>`
-        as parameters (no hardcoded server).
-      - POSTs to `/api/auth/login` to obtain a JWT.
-      - Writes a minimal `launcher.html` that loads the terminal iframe
-        with the JWT injected via `postMessage`, or opens a browser window
-        pointing at `<server>/terminal/` with the JWT in `localStorage`.
-      **Verify:** Script runs without `--server` failing; documents usage.
-- [ ] Extend `tests/test_26_terminal.sh` to also verify:
-      - `/api/system/info` returns terminal config when authenticated.
-      - The WebSocket key in the response matches the configured key.
-      **Verify:** Test 26 green.
+- [ ] Create `extras/terminal-launcher.sh` (or the repository's established
+      launcher location) that accepts `--server`, `--username`, and a
+      password from stdin or a permission-restricted `--password-file`.
+      Never accept a password as a CLI argument, store it in shell history,
+      or print it in command diagnostics.
+      **Verify:** `--help` documents safe usage; missing/invalid inputs fail
+      without exposing credentials.
+- [ ] Have the launcher obtain a JWT through `/api/auth/login`, fetch the
+      authorized terminal config, and hand the JWT to a temporary in-memory
+      browser page via exact-origin `postMessage`. Do not write the JWT/key
+      to `launcher.html`, `localStorage`, logs, or world-readable files.
+      **Verify:** Static scan and runtime log inspection find no secrets.
+- [ ] Extend `tests/test_26_terminal.sh` to cover:
+      - authenticated `/api/system/info` returns port/protocol and omits
+        the terminal block when unauthorized;
+      - the returned key matches the configured key by redacted comparison;
+      - correct key succeeds and wrong/old keys fail;
+      - configured protocol succeeds and a mismatched subprotocol fails;
+      - missing/unresolved key fails startup;
+      - generated payload contains no hardcoded key/port/protocol fallback
+        and no full-response logging.
+      **Verify:** Test 26 green through `./test_00_all.sh 26_terminal`.
+- [ ] Update Test 26 to follow framework ownership rules: remove its local
+      `TEST_COUNTER=0` initialization, let `print_subtest` increment the
+      counter, pair every TEST with one result, and redact key-bearing
+      `print_command`/output lines.
+      **Verify:** `mks` and Test 26 output contain no secret or counter
+      ownership violation.
 - [ ] Extend `tests/unit/managers/terminal.test.js` to cover:
-      - `fetchTerminalConfig` logic (JWT retrieval, postMessage flow).
-      - `connectToWebSocket` URL construction with port and key.
+      - exact `targetOrigin` and allowed `event.origin`;
+      - rejection of wrong-origin/wrong-source messages;
+      - JWT response and no-JWT error behavior;
+      - destroy/init lifecycle with one retained handler;
+      - terminal URL construction from configured server/path.
       **Verify:** `npm test` green.
-- [ ] Run `mkp` + `mks` for any script changes.
-      **Verify:** Lint clean.
+- [ ] Verify rotation end to end: change `WEBSOCKET_KEY`, restart Hydrogen,
+      compare redacted fingerprints, confirm the new key is returned and
+      accepted and the old key is rejected. Do not record raw values.
+      **Verify:** Redacted rotation evidence in Status/test output.
+- [ ] Run `mkp` + `mks` for C/script changes, `npm test` + `npm run lint`
+      for Lithium changes, and `mkl` plus Test 90 after documentation
+      changes.
+      **Verify:** All named commands are green.
 
 ### Done means
 
-A debug tool exists in `extras/` for launching a terminal with credentials.
-Test 26 and Lithium unit tests cover the terminal config + WebSocket flow.
+A secure launcher exists, Test 26 and Lithium tests exercise authorization,
+origin, protocol, key rotation, and lifecycle behavior, and all diagnostics
+are redacted.
 
 ### Exit gate
 
-`extras/terminal-launcher.sh` exists and runs. Test 26 green.
-`npm test` green. `mkp`/`mks` green.
+Launcher help/runtime checks pass; Test 26, Lithium tests/lint, `mkp`,
+`mks`, and documentation checks are green; no raw secret appears anywhere.
 
 ### Status
 
@@ -567,32 +764,54 @@ Test 26 and Lithium unit tests cover the terminal config + WebSocket flow.
 
 ## Cross-Phase Rules
 
-- After every C change: `mkq` (or `mkt`), then `mkp`.
-- After WebSocket/server changes: Test 26 (`zsh -ic 'mku test_26_terminal'`).
-- After Lithium JS/CSS: `npm test` + `npm run lint`.
-- After payload changes: rebuild payload (`mkt`/`mka`), then Test 26.
-- After bash script changes: `mks` (shellcheck).
-- After docs: `mkl` (Test 04) + markdownlint (Test 90).
-- Never log JWTs, keys, or secrets in logs or test artifacts.
-- Follow existing test numbering and conventions; prefer extending existing
-  tests.
+- After every C change: `mkq` for incremental work or `mkt` for a clean
+  configure/build, then `mkp`.
+- After payload generation or embedding changes: run `mkt`/`mka`, then
+  Test 26 through `./test_00_all.sh 26_terminal`.
+- Test 26 is blackbox; never substitute `mku` for it. Use `mku <base>` only
+  for Unity tests.
+- After Lithium JS/CSS/HTML changes: `npm test`, `npm run lint`, and
+  `npm run build` when production assets change; run
+  `npm run templates:copy` after template edits.
+- After Bash changes: `mks`.
+- After documentation changes: `mkl` (Test 04) and Test 90 markdownlint.
+- **Never log or print JWTs, keys, passwords, full WebSocket URIs, or full
+  `/api/system/info` responses.** Redact test commands and artifacts.
+- **Never hardcode the WebSocket key or terminal protocol.** Both come from
+  runtime configuration; missing key values fail closed.
+- Honor forwarded client IP only from trusted proxy peers.
+- Use exact `postMessage` origins and validate `event.origin`/`event.source`.
+- Follow existing test numbering and conventions; extend existing tests
+  before creating new ones.
 
 ## Relationship To Other Documents
 
 | Document | Role |
 | --- | --- |
 | This file | Active terminal fix plan |
-| [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) | Phase 7 owns terminal WS auth gate (product lock) |
+| [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) | Authentication/product security relationship; terminal WS auth remains subject to its product gate |
 | [`test_26_terminal.md`](/docs/H/tests/test_26_terminal.md) | Blackbox test documentation |
+| [`TESTING.md`](/docs/H/tests/TESTING.md) | Test runner and blackbox invocation contract |
 | [`terminal_architecture.md`](/docs/H/core/reference/terminal_architecture.md) | Terminal subsystem architecture |
-| [`terminal-generate.sh`](/elements/001-hydrogen/hydrogen/payloads/terminal-generate.sh) | Payload generator |
+| [`terminal-generate.sh`](/elements/001-hydrogen/hydrogen/payloads/terminal-generate.sh) | Payload generator; inline `<script>` JS |
 | [`terminal.js`](/elements/003-lithium/src/managers/terminal/terminal.js) | Lithium Terminal Manager |
 | [`terminal.test.js`](/elements/003-lithium/tests/unit/managers/terminal.test.js) | Lithium unit tests |
-| [`websocket_server_dispatch.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_dispatch.c) | WebSocket auth + dispatch |
-| [`info.c`](/elements/001-hydrogen/hydrogen/src/api/system/info/info.c) | System info endpoint (terminal config) |
-| [`config_defaults.c`](/elements/001-hydrogen/hydrogen/src/config/config_defaults.c) | WebSocket config defaults |
-| [`launch_websocket.c`](/elements/001-hydrogen/hydrogen/src/launch/launch_websocket.c) | WebSocket server startup |
+| [`AGENTS.md`](/elements/003-lithium/AGENTS.md) | Lithium-specific workflow and verification rules |
+| [`websocket_server_dispatch.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_dispatch.c) | WebSocket auth and key handling |
+| [`websocket_server_message.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_message.c) | Protocol-name routing |
+| [`websocket_server_terminal.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_terminal.c) | Terminal protocol validation |
+| [`websocket_server_context.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_context.c) | `ws_context_create` and key copy |
+| [`websocket_server_startup.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_startup.c) | Configured protocol registration |
+| [`config_utils.c`](/elements/001-hydrogen/hydrogen/src/config/config_utils.c) | Environment-reference resolution and sensitive logging |
+| [`config.c`](/elements/001-hydrogen/hydrogen/src/config/config.c) | Config load/schema behavior |
+| [`info.c`](/elements/001-hydrogen/hydrogen/src/api/system/info/info.c) | System info endpoint and terminal config |
+| [`config_defaults.c`](/elements/001-hydrogen/hydrogen/src/config/config_defaults.c) | WebSocket defaults |
+| [`launch_websocket.c`](/elements/001-hydrogen/hydrogen/src/launch/launch_websocket.c) | WebSocket startup/readiness checks |
+| [`terminal_websocket.c`](/elements/001-hydrogen/hydrogen/src/terminal/terminal_websocket.c) | Legacy terminal protocol/auth helpers to reconcile |
 | [`api_utils.c`](/elements/001-hydrogen/hydrogen/src/api/api_utils.c) | Client IP extraction |
+| [`auth_service_jwt.c`](/elements/001-hydrogen/hydrogen/src/api/auth/auth_service_jwt.c) | JWT generation with `ip` claim |
+| [`hydrogen_test_26_terminal_payload.json`](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_26_terminal_payload.json) | Test config; currently sets Protocol to terminal |
+| [`examples/configs/hydrogen.json`](/elements/001-hydrogen/hydrogen/examples/configs/hydrogen.json) | Example WebSocket protocol/config |
 
 ## Working Log
 
@@ -607,18 +826,58 @@ Test 26 and Lithium unit tests cover the terminal config + WebSocket flow.
 - Read Lithium `terminal.js` (full file) — confirmed the
   `_handleIframeMessage` fix is already applied: bound in constructor
   (line 148), registered in `init()` (line 247), not nulled in `destroy()`
-  (line 699).
+  (line 699–715).
 - Read `terminal-generate.sh` — confirmed version 2.1.1 removed the
-  hardcoded `ABCDEFGHIJKLMNOP` fallback key.
+  hardcoded `ABCDEFGHIJKLMNOP` fallback key from `connectToWebSocket`.
 - Read `test_26_terminal.sh` — confirmed it tests WebSocket connections
   with `Authorization: Key ${WEBSOCKET_KEY}` header.
-- Read `terminal.test.js` — confirmed the updated test for re-init behavior
-  is present (line 228–240).
-- Confirmed the root cause of the production issue: WebSocket key
-  `ABCDEFGHIJKLMNOP` in `/api/system/info` response suggests the config
-  `WEBSOCKET_KEY` environment variable is either unset or set to that
-  literal string; the WebSocket port 7001 must be exposed through DOKS +
-  Traefik.
+- Read `terminal.test.js` — confirmed updated tests for re-init behavior
+  and postMessage flow.
+- **Corrected line references** from initial plan draft:
+  - `websocket_server_dispatch.c:270` → actual is line 262 (`FILTER_PROTOCOL_CONNECTION`),
+    and it checks the **key only**, not the protocol name.
+  - Protocol routing is in `websocket_server_message.c:215-224` (not in
+    `callback_http`).
+  - `websocket_server_terminal.c:33-43` — `validate_terminal_protocol`
+    hardcodes `"terminal"`.
+  - `websocket_server_context.c:38` — `ws_context_create` sets `auth_key`;
+    `launch_websocket.c:248` is `return 0`, not key assignment.
+  - `config_defaults.c:315` = protocol (`"hydrogen"`), line 316 = key
+    (`${env.WEBSOCKET_KEY}`); previous plan had these swapped.
 - Confirmed protocol mismatch: iframe sends `'terminal'`, Hydrogen default
-  is `'hydrogen'`.
-- This plan document authored.
+  is `'hydrogen'`. Test config sets `'terminal'` to make Test 26 pass.
+- Confirmed `terminal_websocket.c:25` defines `TERMINAL_WS_PROTOCOL "terminal"`,
+  used in `websocket_server_terminal.c:36` and `websocket_server_message.c:218`.
+- **Key rotation theme added:** The `ABCDEFGHIJKLMNOP` fallback
+  (`websocket_server_dispatch.c:289`) is dev/test only; production must
+  use a strong secret from `WEBSOCKET_KEY` env var or `WebSocketServer.Key`
+  config.
+- This plan document upgraded with all corrections and key rotation policy.
+
+### Session 2 (2026-09-11) — Plan upgrade audit
+
+- Re-read the full plan, Hydrogen config resolution/logging code, WebSocket
+  dispatch/context/startup/message/terminal code, generated payload, Test 26,
+  Lithium terminal manager/tests, Lithium AGENTS, and Hydrogen TESTING docs.
+- Confirmed the current key fallbacks are broader than the prior plan stated:
+  `default_key` in `websocket_server_context.c`, `default_websocket_key` in
+  `launch_websocket.c`, and `ABCDEFGHIJKLMNOP` in dispatch.
+- Confirmed `${env.WEBSOCKET_KEY}` can remain unresolved when the environment
+  variable is absent; the plan now requires fail-closed startup validation.
+- Confirmed secret leakage in dispatch URI/key logs, payload response logging,
+  and Test 26 command output; the plan now requires redaction at every layer.
+- Confirmed the payload has hardcoded port/protocol fallbacks, wildcard
+  messaging, and a localStorage JWT fallback; the plan now treats these as
+  Phase 3 work.
+- Confirmed Lithium uses wildcard `postMessage` target origin and does not
+  validate origin/source; the plan now requires exact origins and source
+  checks in Phase 4.
+- Confirmed Test 26 is a blackbox test invoked through `test_00_all.sh`, and
+  its local `TEST_COUNTER=0` conflicts with the framework-owned counter rule.
+- Reordered phases so server config/authorization/protocol (Phase 2) precedes
+  payload generation (Phase 3), and moved live deployment verification to
+  Phase 5.
+- Marked Phase 0 complete with the live Traefik/DOKS/deployed-config variance
+  deferred; no source, test, payload, or deployment changes were made.
+
+(End of file)
