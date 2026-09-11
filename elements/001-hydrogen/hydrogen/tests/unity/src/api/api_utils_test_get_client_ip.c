@@ -33,6 +33,12 @@ void test_api_get_client_ip_ipv6(void);
 void test_api_get_client_ip_unsupported_family(void);
 void test_api_get_client_ip_xforwarded_for_single(void);
 void test_api_get_client_ip_xforwarded_for_first_in_chain(void);
+void test_api_get_client_ip_xforwarded_for_skips_internal(void);
+void test_api_get_client_ip_xforwarded_for_all_internal(void);
+void test_api_get_client_ip_xforwarded_for_internal_then_external(void);
+void test_is_ip_internal_private_ranges(void);
+void test_is_ip_internal_public_ips(void);
+void test_is_ip_internal_invalid(void);
 
 void setUp(void) {
     // Reset mocks before each test
@@ -148,6 +154,78 @@ void test_api_get_client_ip_xforwarded_for_first_in_chain(void) {
     free(result);
 }
 
+// Test api_get_client_ip with X-Forwarded-For where first is internal,
+// should skip and return the first non-internal address
+void test_api_get_client_ip_xforwarded_for_skips_internal(void) {
+    mock_mhd_add_lookup("X-Forwarded-For", "10.118.0.19, 24.86.168.176");
+
+    struct MockMHDConnection mock_conn;
+    char *result = api_get_client_ip((struct MHD_Connection *)&mock_conn);
+
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL_STRING("24.86.168.176", result);
+
+    free(result);
+}
+
+// Test api_get_client_ip with all internal IPs, should fall back to first
+void test_api_get_client_ip_xforwarded_for_all_internal(void) {
+    mock_mhd_add_lookup("X-Forwarded-For", "10.0.0.1, 192.168.1.1");
+
+    struct MockMHDConnection mock_conn;
+    char *result = api_get_client_ip((struct MHD_Connection *)&mock_conn);
+
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL_STRING("10.0.0.1", result);
+
+    free(result);
+}
+
+// Test api_get_client_ip with internal IPs then an external one
+void test_api_get_client_ip_xforwarded_for_internal_then_external(void) {
+    mock_mhd_add_lookup("X-Forwarded-For", "10.0.0.1, 192.168.1.1, 8.8.8.8");
+
+    struct MockMHDConnection mock_conn;
+    char *result = api_get_client_ip((struct MHD_Connection *)&mock_conn);
+
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL_STRING("8.8.8.8", result);
+
+    free(result);
+}
+
+// Test is_ip_internal with private ranges
+void test_is_ip_internal_private_ranges(void) {
+    TEST_ASSERT_TRUE(is_ip_internal("10.0.0.1"));
+    TEST_ASSERT_TRUE(is_ip_internal("10.255.255.255"));
+    TEST_ASSERT_TRUE(is_ip_internal("172.16.0.1"));
+    TEST_ASSERT_TRUE(is_ip_internal("172.31.255.255"));
+    TEST_ASSERT_TRUE(is_ip_internal("192.168.1.1"));
+    TEST_ASSERT_TRUE(is_ip_internal("192.168.0.0"));
+    TEST_ASSERT_TRUE(is_ip_internal("127.0.0.1"));
+    TEST_ASSERT_TRUE(is_ip_internal("169.254.0.1"));
+    TEST_ASSERT_TRUE(is_ip_internal("0.0.0.0"));
+    TEST_ASSERT_TRUE(is_ip_internal("100.64.0.1"));
+}
+
+// Test is_ip_internal with public IPs
+void test_is_ip_internal_public_ips(void) {
+    TEST_ASSERT_FALSE(is_ip_internal("8.8.8.8"));
+    TEST_ASSERT_FALSE(is_ip_internal("203.0.113.5"));
+    TEST_ASSERT_FALSE(is_ip_internal("24.86.168.176"));
+    TEST_ASSERT_FALSE(is_ip_internal("1.1.1.1"));
+    TEST_ASSERT_FALSE(is_ip_internal("172.15.255.255"));
+    TEST_ASSERT_FALSE(is_ip_internal("172.32.0.1"));
+}
+
+// Test is_ip_internal with invalid input
+void test_is_ip_internal_invalid(void) {
+    TEST_ASSERT_TRUE(is_ip_internal(NULL));
+    TEST_ASSERT_TRUE(is_ip_internal("not.an.ip.address"));
+    TEST_ASSERT_TRUE(is_ip_internal(""));
+    TEST_ASSERT_TRUE(is_ip_internal("999.999.999.999"));
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -158,6 +236,12 @@ int main(void) {
     RUN_TEST(test_api_get_client_ip_unsupported_family);
     RUN_TEST(test_api_get_client_ip_xforwarded_for_single);
     RUN_TEST(test_api_get_client_ip_xforwarded_for_first_in_chain);
+    RUN_TEST(test_api_get_client_ip_xforwarded_for_skips_internal);
+    RUN_TEST(test_api_get_client_ip_xforwarded_for_all_internal);
+    RUN_TEST(test_api_get_client_ip_xforwarded_for_internal_then_external);
+    RUN_TEST(test_is_ip_internal_private_ranges);
+    RUN_TEST(test_is_ip_internal_public_ips);
+    RUN_TEST(test_is_ip_internal_invalid);
 
     return UNITY_END();
 }

@@ -107,6 +107,7 @@
 <fa fa-magnifying-glass></fa>
 <fa fa-maximize></fa>
 <fa fa-minimize></fa>
+<fa fa-minus></fa>
 <fa fa-note-sticky></fa>
 <fa fa-octagon></fa>
 <fa fa-palette></fa>

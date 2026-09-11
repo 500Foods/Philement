@@ -147,12 +147,41 @@ char *api_url_encode(const char *src) {
 }
 
 /**
+ * Check if an IPv4 address string is in a private/reserved range.
+ * Recognises: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16,
+ * 127.0.0.0/8, 169.254.0.0/16, 0.0.0.0/8, 100.64.0.0/10.
+ * Returns true for non-IPv4 or unparseable strings.
+ */
+bool is_ip_internal(const char *ip_str) {
+    if (!ip_str) return true;
+
+    struct in_addr addr;
+    if (inet_pton(AF_INET, ip_str, &addr) != 1) {
+        return true;
+    }
+
+    uint32_t ip = ntohl(addr.s_addr);
+
+    if ((ip & 0xff000000) == 0x0a000000) return true;       /* 10.0.0.0/8  */
+    if ((ip & 0xfff00000) == 0xac100000) return true;      /* 172.16.0.0/12 */
+    if ((ip & 0xffff0000) == 0xc0a80000) return true;       /* 192.168.0.0/16 */
+    if ((ip & 0xff000000) == 0x7f000000) return true;       /* 127.0.0.0/8 */
+    if ((ip & 0xffff0000) == 0xa9fe0000) return true;      /* 169.254.0.0/16 */
+    if ((ip & 0xff000000) == 0x00000000) return true;       /* 0.0.0.0/8 */
+    if ((ip & 0xffc00000) == 0x64400000) return true;       /* 100.64.0.0/10 */
+
+    return false;
+}
+
+/**
  * Extract client IP address from a connection.
  *
  * First checks for an X-Forwarded-For header (used behind reverse proxies
- * / Kubernetes ingress). If present and non-empty, the first address in the
- * comma-separated list is used. Otherwise falls back to the TCP peer address
- * obtained from MHD_get_connection_info.
+ * / Kubernetes ingress). The comma-separated list is iterated and the first
+ * non-internal (public) address is preferred. If all addresses are internal,
+ * the first address in the list is used (preserving valid internal scenarios).
+ * If X-Forwarded-For is absent, falls back to the TCP peer address obtained
+ * from MHD_get_connection_info.
  *
  * Caller must free the returned string.
  */
@@ -161,23 +190,54 @@ char *api_get_client_ip(struct MHD_Connection *connection) {
 
     const char *xff = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "X-Forwarded-For");
     if (xff) {
-        char *comma = strchr(xff, ',');
-        if (comma) {
-            size_t len = (size_t)(comma - xff);
-            while (len > 0 && (xff[len-1] == ' ' || xff[len-1] == '\t')) {
-                len--;
-            }
-            if (len > 0) {
-                char *ip_str = malloc(len + 1);
-                if (ip_str) {
-                    memcpy(ip_str, xff, len);
-                    ip_str[len] = '\0';
-                    return ip_str;
+        char *first_ip = NULL;
+
+        char *saveptr = NULL;
+        char *xff_copy = strdup(xff);
+        if (xff_copy) {
+            char *token = strtok_r(xff_copy, ",", &saveptr);
+            while (token) {
+                while (*token == ' ' || *token == '\t') token++;
+
+                size_t len = strlen(token);
+                while (len > 0 && (token[len-1] == ' ' || token[len-1] == '\t')) {
+                    len--;
                 }
+
+                if (len > 0) {
+                    char *ip = malloc(len + 1);
+                    if (ip) {
+                        memcpy(ip, token, len);
+                        ip[len] = '\0';
+
+                        bool internal = is_ip_internal(ip);
+
+                        if (!first_ip) {
+                            first_ip = ip;
+                            if (!internal) {
+                                free(xff_copy);
+                                return ip;
+                            }
+                        } else if (!internal) {
+                            free(xff_copy);
+                            free(first_ip);
+                            return ip;
+                        }
+                        if (ip != first_ip) {
+                            free(ip);
+                        }
+                    }
+                }
+                token = strtok_r(NULL, ",", &saveptr);
             }
-        } else {
-            return strdup(xff);
+            free(xff_copy);
         }
+
+        if (first_ip) {
+            return first_ip;
+        }
+
+        return strdup(xff);
     }
 
     char *ip_str = NULL;

@@ -254,67 +254,97 @@ create_terminal_interface() {
             });
         }
 
-        function fetchTerminalConfig() {
-            // Try parent frame first (Lithium SPA passes JWT via postMessage)
+         function fetchTerminalConfig() {
+            // Try parent frame first (Lithium SPA passes JWT via postMessage).
+            // If parent responds with {jwt}, use it to call /api/system/info.
+            // Otherwise, fall back to localStorage and call /api/system/info directly.
+            // The key and port are server-side secrets and must not be
+            // hardcoded in this static payload file.
+            const protocol = window.location.protocol;
+            const apiBase = protocol + '//' + window.location.host;
+
+            function fetchConfigWithJwt(jwt) {
+                console.log('[Terminal] Fetching /api/system/info from:', apiBase);
+                return fetch(apiBase + '/api/system/info', {
+                    headers: { 'Authorization': 'Bearer ' + jwt }
+                }).then(resp => {
+                    console.log('[Terminal] /api/system/info response status:', resp.status);
+                    return resp.json();
+                }).then(data => {
+                    console.log('[Terminal] /api/system/info response:', data);
+                    return {
+                        port: data.terminal?.port || 5261,
+                        key: data.terminal?.key
+                    };
+                }).catch(err => {
+                    console.error('[Terminal] /api/system/info fetch failed:', err);
+                    return null;
+                });
+            }
+
             return new Promise((resolve, reject) => {
                 let resolved = false;
-
-                function onMessage(event) {
-                    if (event.data && event.data.type === 'terminal-config' && event.data.config) {
-                        window.removeEventListener('message', onMessage);
-                        if (!resolved) {
-                            resolved = true;
-                            resolve(event.data.config);
-                        }
-                    }
-                }
-
-                function tryLocalStorage() {
-                    const token = localStorage.getItem('lithium_jwt');
-                    if (token) {
-                        const protocol = window.location.protocol;
-                        const apiBase = protocol + '//' + window.location.host;
-                        fetch(apiBase + '/api/system/info', {
-                            headers: { 'Authorization': 'Bearer ' + token }
-                        }).then(resp => resp.json()).then(data => {
-                            if (!resolved) {
-                                resolved = true;
-                                window.removeEventListener('message', onMessage);
-                                resolve({
-                                    port: data.terminal?.port || 5261,
-                                    key: data.terminal?.key
-                                });
-                            }
-                        }).catch(() => {
-                            // Fall through to rejection below
-                        });
-                    }
-                }
-
-                window.addEventListener('message', onMessage);
-
-                // Request config from parent frame
-                if (window.parent && window.parent !== window) {
-                    window.parent.postMessage({ type: 'terminal-config-request' }, '*');
-                }
 
                 // Fallback: try localStorage after a short delay
                 setTimeout(() => {
                     if (!resolved) {
-                        tryLocalStorage();
+                        const token = localStorage.getItem('lithium_jwt');
+                        console.log('[Terminal] tryLocalStorage fallback, token present:', !!token);
+                        if (token) {
+                            fetchConfigWithJwt(token).then(result => {
+                                if (!resolved && result) {
+                                    resolved = true;
+                                    resolve(result);
+                                }
+                            });
+                        } else {
+                            console.warn('[Terminal] No lithium_jwt found in localStorage or parent');
+                        }
                     }
                 }, 250);
+
+                // Primary: request config from parent frame
+                if (window.parent && window.parent !== window) {
+                    console.log('[Terminal] Sending terminal-config-request to parent');
+                    window.parent.postMessage({ type: 'terminal-config-request' }, '*');
+
+                    function onMessage(event) {
+                        if (event.data && typeof event.data === 'object') {
+                            if (event.data.type === 'terminal-config' && event.data.config) {
+                                console.log('[Terminal] postMessage received config from parent, jwt present:', !!event.data.config.jwt);
+                                window.removeEventListener('message', onMessage);
+                                if (!resolved && event.data.config.jwt) {
+                                    resolved = true;
+                                    fetchConfigWithJwt(event.data.config.jwt).then(result => {
+                                        if (!result) {
+                                            reject(new Error('Terminal config fetch returned no key'));
+                                        } else {
+                                            resolve(result);
+                                        }
+                                    }).catch(() => {
+                                        reject(new Error('Terminal config fetch failed'));
+                                    });
+                                } else if (!resolved && !event.data.config.jwt) {
+                                    // Parent responded but without JWT — ignore and wait for localStorage fallback
+                                }
+                            } else if (event.data.type === 'terminal-config-error') {
+                                console.warn('[Terminal] Parent reported config error:', event.data.error);
+                            }
+                        }
+                    }
+
+                    window.addEventListener('message', onMessage);
+                }
 
                 // Timeout
                 setTimeout(() => {
                     if (!resolved) {
                         resolved = true;
-                        window.removeEventListener('message', onMessage);
                         reject(new Error('Terminal config fetch timed out'));
                     }
                 }, 5000);
             });
-        }
+         }
 
         function connectToWebSocket(config) {
             const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';

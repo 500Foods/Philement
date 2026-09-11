@@ -145,6 +145,7 @@ export class TerminalManager {
     this.handleResizeStart = this.handleResizeStart.bind(this);
     this.handleResizeMove = this.handleResizeMove.bind(this);
     this.handleResizeEnd = this.handleResizeEnd.bind(this);
+    this._handleIframeMessage = this._handleIframeMessage.bind(this);
   }
 
   /**
@@ -213,10 +214,13 @@ export class TerminalManager {
             <span>Terminal</span>
           </button>
           <button type="button" class="terminal-header-placeholder" disabled></button>
+          <button type="button" class="terminal-header-minimize" data-tooltip="Minimize">
+            <fa fa-minus></fa>
+          </button>
           <button type="button" class="terminal-fullscreen-btn" data-tooltip="Toggle Fullscreen">
             <fa fa-maximize></fa>
           </button>
-          <button type="button" class="terminal-header-close" data-tooltip="Close (ESC)">
+          <button type="button" class="terminal-header-close" data-tooltip="Close Session (ESC)">
             <fa fa-xmark></fa>
           </button>
         </div>
@@ -235,20 +239,23 @@ export class TerminalManager {
     // Cache element references
     this.iframe = this.popup.querySelector('.terminal-iframe');
     this.fullscreenBtn = this.popup.querySelector('.terminal-fullscreen-btn');
+    this.minimizeBtn = this.popup.querySelector('.terminal-header-minimize');
+    this.closeBtn = this.popup.querySelector('.terminal-header-close');
     this.resizeOverlay = this.popup.querySelector('.terminal-resize-overlay');
 
     // Listen for terminal-config-request from the iframe
-    this._handleIframeMessage = this._handleIframeMessage.bind(this);
     window.addEventListener('message', this._handleIframeMessage);
 
     // When the iframe finishes loading, we don't need to push — the iframe
     // will request config via postMessage itself.
 
     // Wire events
-    const closeBtn = this.popup.querySelector('.terminal-header-close');
+    const closeBtn = this.closeBtn;
+    const minimizeBtn = this.minimizeBtn;
     const header = this.popup.querySelector('.terminal-header');
 
-    closeBtn.addEventListener('click', () => this.hide());
+    closeBtn.addEventListener('click', () => this.closeSession());
+    minimizeBtn.addEventListener('click', () => this.hide());
     this.fullscreenBtn?.addEventListener('click', () => this.toggleFullscreen());
 
     // Drag handlers
@@ -453,12 +460,25 @@ export class TerminalManager {
   }
 
   /**
-   * Handle keyboard events (ESC to close, F11 for fullscreen)
+   * Close the Terminal session entirely — destroys the iframe and listener so
+   * that reopening creates a fresh popup that re-requests the terminal key.
+   * Use this instead of hide() when the WebSocket auth has failed or a new
+   * key is needed (e.g. after a Hydrogen restart).
+   */
+  closeSession() {
+    if (!this.isVisible) return;
+    this.hide();
+    this.destroy();
+    log(Subsystems.MANAGER, Status.INFO, '[Terminal] Session closed');
+  }
+
+  /**
+   * Handle keyboard events (ESC to close session, F11 for fullscreen)
    */
   handleKeyDown(e) {
     if (e.key === 'Escape') {
       e.preventDefault();
-      this.hide();
+      this.closeSession();
     } else if (e.key === 'F11') {
       e.preventDefault();
       this.toggleFullscreen();
@@ -466,11 +486,11 @@ export class TerminalManager {
   }
 
   /**
-   * Handle overlay click (click outside to close)
+   * Handle overlay click (click outside to close session)
    */
   handleOverlayClick(e) {
     if (e.target === this.overlay) {
-      this.hide();
+      this.closeSession();
     }
   }
 
@@ -478,9 +498,9 @@ export class TerminalManager {
    * Handle drag start
    */
   handleDragStart(e) {
-    // Allow dragging from the title area, but not from actionable controls
     if (e.target.closest([
       '.terminal-header-close',
+      '.terminal-header-minimize',
       '.terminal-fullscreen-btn',
     ].join(', '))) return;
 
@@ -685,9 +705,11 @@ export class TerminalManager {
     this.popup = null;
     this.iframe = null;
     this.fullscreenBtn = null;
-    this._handleIframeMessage = null;
+    this.minimizeBtn = null;
+    this.closeBtn = null;
     this._isInitialized = false;
-    terminalInstance = null;
+    this.isVisible = false;
+    this.isFullscreen = false;
 
     log(Subsystems.MANAGER, Status.INFO, '[Terminal] Destroyed');
   }

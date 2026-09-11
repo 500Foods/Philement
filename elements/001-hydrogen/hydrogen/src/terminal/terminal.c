@@ -563,3 +563,11 @@ void cleanup_terminal_support(TerminalConfig *config __attribute__((unused))) {
 
     log_this(SR_TERMINAL, "Terminal subsystem cleanup completed", LOG_LEVEL_STATE, 0);
 }
+
+/**
+ * Check if the terminal subsystem has been initialized
+ * Exposed for status collection and reporting
+ */
+bool is_terminal_subsystem_initialized(void) {
+    return terminal_initialized;
+}

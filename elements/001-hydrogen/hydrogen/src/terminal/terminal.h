@@ -16,6 +16,10 @@
 bool init_terminal_support(TerminalConfig *config);
 void cleanup_terminal_support(TerminalConfig *config);
 
+// Check if the terminal subsystem has been initialized
+// Exposed for status collection and reporting
+bool is_terminal_subsystem_initialized(void);
+
 // Terminal URL validation and request handling
 bool is_terminal_request(const char *url, const TerminalConfig *config);
 enum MHD_Result handle_terminal_request(struct MHD_Connection *connection,

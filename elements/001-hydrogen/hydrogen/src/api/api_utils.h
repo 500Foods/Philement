@@ -56,9 +56,21 @@ char *api_url_decode(const char *src);
 char *api_url_encode(const char *src);
 
 /**
+ * Check if an IPv4 address string is in a private/reserved range.
+ * Recognises: 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16,
+ * 127.0.0.0/8, 169.254.0.0/16, 0.0.0.0/8, 100.64.0.0/10.
+ * Returns true for non-IPv4 or unparseable strings.
+ *
+ * @param ip_str The IP address string to check
+ * @return true if the IP is internal/private, false otherwise
+ */
+bool is_ip_internal(const char *ip_str);
+
+/**
  * Extract client IP address from a connection.
  * Checks X-Forwarded-For header first (for reverse proxy / K8s ingress),
- * falling back to the TCP peer address.
+ * preferring the first non-internal address. Falls back to the TCP peer
+ * address if X-Forwarded-For is absent.
  * Caller must free the returned string
  *
  * @param connection The MHD_Connection object
