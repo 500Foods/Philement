@@ -11,6 +11,8 @@
 #include <src/database/database.h>
 #include <src/scripting/scoreboard_json.h>
 #include <src/mcp/mcp_stats.h>
+#include <src/terminal/terminal.h>
+#include <src/terminal/terminal_session.h>
 #include <sys/socket.h>
 #include <sys/un.h>
 #include <netinet/in.h>
@@ -496,9 +498,22 @@ bool collect_service_metrics(SystemMetrics *metrics, const WebSocketMetrics *ws_
         metrics->mcp.specific.mcp.auth_rejected_scope = mcp_metrics.auth_rejected_scope;
         metrics->mcp.specific.mcp.origin_rejected = mcp_metrics.origin_rejected;
         metrics->mcp.specific.mcp.dispatch_timeouts = mcp_metrics.dispatch_timeouts;
-        metrics->mcp.specific.mcp.bytes_in = mcp_metrics.bytes_in;
-        metrics->mcp.specific.mcp.bytes_out = mcp_metrics.bytes_out;
-        metrics->mcp.specific.mcp.last_rpc_at = mcp_metrics.last_rpc_at;
+         metrics->mcp.specific.mcp.bytes_in = mcp_metrics.bytes_in;
+         metrics->mcp.specific.mcp.bytes_out = mcp_metrics.bytes_out;
+         metrics->mcp.specific.mcp.last_rpc_at = mcp_metrics.last_rpc_at;
+     }
+
+    // Terminal service metrics
+    metrics->terminal.enabled = is_terminal_subsystem_initialized();
+    metrics->terminal.specific.terminal.enabled = 
+        is_terminal_subsystem_initialized() ? 1 : 0;
+    size_t terminal_active = 0, terminal_max = 0;
+    if (get_session_manager_stats(&terminal_active, &terminal_max)) {
+        metrics->terminal.specific.terminal.max_sessions = (int)terminal_max;
+        metrics->terminal.specific.terminal.active_sessions = (int)terminal_active;
+    } else {
+        metrics->terminal.specific.terminal.max_sessions = 0;
+        metrics->terminal.specific.terminal.active_sessions = 0;
     }
 
     return true;

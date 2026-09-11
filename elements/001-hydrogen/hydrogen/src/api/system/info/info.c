@@ -62,6 +62,11 @@ void extract_websocket_metrics(WebSocketMetrics *metrics) {
     }
     jwt_validation_result_t result = {0};
     bool valid = extract_and_validate_jwt(auth_header, &result);
+    if (valid) {
+        log_this(SR_API, "Info endpoint: JWT validated successfully", LOG_LEVEL_DEBUG, 0);
+    } else {
+        log_this(SR_API, "Info endpoint: JWT validation failed: %s", LOG_LEVEL_DEBUG, 1, get_jwt_error_message(result.error));
+    }
     if (valid && result.claims) {
         free_jwt_claims(result.claims);
     }
@@ -130,6 +135,7 @@ enum MHD_Result handle_system_info_request(struct MHD_Connection *connection)
     log_this(SR_API, "Handling info endpoint request", LOG_LEVEL_DEBUG, 0);
 
     bool has_jwt = system_info_has_valid_jwt(connection);
+    log_this(SR_API, "Info endpoint: has_jwt=%d, ws_context=%s", LOG_LEVEL_DEBUG, 2, has_jwt, ws_context ? "yes" : "no");
 
     json_t *root = system_info_build_json(has_jwt, has_jwt);
     if (!root) {

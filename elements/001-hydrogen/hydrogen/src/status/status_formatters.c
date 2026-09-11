@@ -290,6 +290,20 @@ json_t* format_system_status_json(const SystemMetrics *metrics) {
         json_object_set_new(services, "scripting", scripting);
     }
 
+    // Terminal service
+    {
+        json_t *terminal = json_object();
+        json_object_set_new(terminal, "enabled", 
+            metrics->terminal.enabled ? json_true() : json_false());
+        json_t *terminal_status = json_object();
+        json_object_set_new(terminal_status, "activeSessions",
+            json_integer(metrics->terminal.specific.terminal.active_sessions));
+        json_object_set_new(terminal_status, "maxSessions",
+            json_integer(metrics->terminal.specific.terminal.max_sessions));
+        json_object_set_new(terminal, "status", terminal_status);
+        json_object_set_new(services, "terminal", terminal);
+    }
+
     {
         json_t *mcp = json_object();
         json_object_set_new(mcp, "enabled", metrics->mcp.enabled ? json_true() : json_false());
@@ -721,7 +735,20 @@ char* format_system_status_prometheus(const SystemMetrics *metrics) {
            metrics->mcp.specific.mcp.dispatch_timeouts,
            metrics->mcp.specific.mcp.bytes_in,
            metrics->mcp.specific.mcp.bytes_out,
-           (long)metrics->mcp.specific.mcp.last_rpc_at);
+            (long)metrics->mcp.specific.mcp.last_rpc_at);
+
+    APPEND("# HELP hydrogen_terminal_enabled Whether terminal subsystem is initialized (1) or not (0)\n"
+           "# TYPE hydrogen_terminal_enabled gauge\n"
+           "hydrogen_terminal_enabled %d\n"
+           "# HELP hydrogen_terminal_sessions_active Current active terminal sessions\n"
+           "# TYPE hydrogen_terminal_sessions_active gauge\n"
+           "hydrogen_terminal_sessions_active %d\n"
+           "# HELP hydrogen_terminal_sessions_max Maximum terminal sessions allowed\n"
+           "# TYPE hydrogen_terminal_sessions_max gauge\n"
+           "hydrogen_terminal_sessions_max %d\n",
+           metrics->terminal.specific.terminal.enabled,
+           metrics->terminal.specific.terminal.active_sessions,
+           metrics->terminal.specific.terminal.max_sessions);
 
     // Queue Metrics
     APPEND("# HELP hydrogen_queue_entries Current number of entries in queue\n"

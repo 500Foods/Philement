@@ -225,15 +225,18 @@ describe('TerminalManager', () => {
       expect(document.removeEventListener).toHaveBeenCalledWith('keydown', terminal.handleKeyDown);
     });
 
-    it('should null out _handleIframeMessage', async () => {
+    it('should keep _handleIframeMessage as a bound function for re-init', async () => {
       const TerminalManager = await getTerminalManager();
       const terminal = new TerminalManager();
+      const boundHandler = terminal._handleIframeMessage;
 
       expect(terminal._handleIframeMessage).toBeDefined();
 
       terminal.destroy();
 
-      expect(terminal._handleIframeMessage).toBeNull();
+      // The bound handler must remain so init() can re-register it
+      expect(terminal._handleIframeMessage).toBe(boundHandler);
+      expect(terminal._handleIframeMessage).not.toBeNull();
     });
   });
 });

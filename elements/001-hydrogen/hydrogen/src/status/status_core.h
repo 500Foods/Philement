@@ -157,6 +157,11 @@ typedef struct {
             int killed_jobs;
         } scripting;
         struct {
+            int enabled;
+            int max_sessions;
+            int active_sessions;
+        } terminal;
+        struct {
             unsigned long long sessions_active;
             unsigned long long sessions_total;
             unsigned long long sessions_expired;
@@ -218,6 +223,7 @@ typedef struct {
     ServiceMetrics print;
     ServiceMetrics database;
     ServiceMetrics scripting;
+    ServiceMetrics terminal;
     ServiceMetrics mcp;
     
     // Queue metrics
