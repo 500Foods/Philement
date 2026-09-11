@@ -2,7 +2,8 @@
  * Network Configuration
  *
  * Defines the configuration structure and handlers for network operations.
- * This includes settings for network interfaces, IP addresses, and port management.
+ * This includes settings for network interfaces, IP addresses, port management,
+ * and trusted proxy configuration for forwarded-header handling.
  */
 
 #ifndef HYDROGEN_CONFIG_NETWORK_H
@@ -12,6 +13,8 @@
 #include <stdbool.h>
 #include <jansson.h>
 #include "config_forward.h"  // For AppConfig forward declaration
+
+#define NETWORK_MAX_TRUSTED_PROXIES 64
 
 // Network validation limits structure
 struct NetworkLimits {
@@ -51,6 +54,11 @@ struct NetworkConfig {
         bool available;            // Whether the interface is available for use
     }* available_interfaces;       // Array of interface availability settings (sorted by name)
     size_t available_interfaces_count; // Number of interfaces with availability settings
+
+    // Trusted proxy CIDR entries (e.g. "10.0.0.0/8")
+    // Only peers matching these CIDRs may set X-Forwarded-For/X-Forwarded-Proto/X-Forwarded-Port.
+    char* trusted_proxies[NETWORK_MAX_TRUSTED_PROXIES];
+    size_t trusted_proxies_count;
 };
 typedef struct NetworkConfig NetworkConfig;
 
@@ -135,6 +143,7 @@ void cleanup_network_config(NetworkConfig* config);
  * - Key: Value for normal values
  * - Array elements with proper indentation
  * - Interface availability status
+ * - Trusted proxy CIDR entries (count and entries)
  *
  * @param config Pointer to NetworkConfig structure to dump
  */
@@ -172,5 +181,28 @@ int config_network_add_reserved_port(NetworkConfig* config, int port);
  * - If port is outside valid range
  */
 int config_network_is_port_reserved(const NetworkConfig* config, int port);
+
+/*
+ * Check if an IP address falls within a CIDR range
+ *
+ * Supports both IPv4 (e.g. "10.0.0.0/8") and IPv6 (e.g. "::1/128") CIDR notation.
+ *
+ * @param ip_str The IP address string to check
+ * @param cidr_str The CIDR range string (e.g. "10.0.0.0/8")
+ * @return true if the IP is within the CIDR range, false otherwise
+ */
+bool is_ip_in_cidr(const char *ip_str, const char *cidr_str);
+
+/*
+ * Check if an IP address is within the trusted proxy CIDR list
+ *
+ * Iterates the configured Network.TrustedProxies CIDR entries and returns
+ * true if the IP matches any of them. An empty trusted-proxy list means
+ * no peers are trusted, so this always returns false.
+ *
+ * @param ip_str The IP address string to check
+ * @return true if the IP matches a trusted proxy CIDR, false otherwise
+ */
+bool is_trusted_proxy(const char *ip_str);
 
 #endif /* HYDROGEN_CONFIG_NETWORK_H */

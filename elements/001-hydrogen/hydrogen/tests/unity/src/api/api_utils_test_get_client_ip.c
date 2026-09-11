@@ -9,6 +9,7 @@
 
 // Include necessary headers for the module being tested
 #include <src/api/api_utils.h>
+#include <src/config/config_network.h>
 #include <unity/mocks/mock_libmicrohttpd.h>
 
 // Include system headers for sockaddr structures
@@ -25,6 +26,10 @@ struct MockMHDConnection {
 static struct sockaddr_in mock_addr_ipv4;
 static struct sockaddr_in6 mock_addr_ipv6;
 
+// Test config with trusted proxies
+static AppConfig g_test_config;
+static AppConfig *g_saved_app_config = NULL;
+
 // Function declarations
 void test_api_get_client_ip_null_connection(void);
 void test_api_get_client_ip_no_connection_info(void);
@@ -36,6 +41,18 @@ void test_api_get_client_ip_xforwarded_for_first_in_chain(void);
 void test_api_get_client_ip_xforwarded_for_skips_internal(void);
 void test_api_get_client_ip_xforwarded_for_all_internal(void);
 void test_api_get_client_ip_xforwarded_for_internal_then_external(void);
+void test_api_get_client_ip_untrusted_peer_ignores_xff(void);
+void test_api_get_client_ip_trusted_peer_rightmost_external(void);
+void test_api_get_client_ip_trusted_peer_all_trusted_falls_back(void);
+void test_api_get_client_ip_trusted_peer_single_trusted(void);
+void test_api_get_client_ip_null_app_config_untrusted(void);
+void test_is_trusted_proxy_trusted(void);
+void test_is_trusted_proxy_untrusted(void);
+void test_is_trusted_proxy_null_app_config(void);
+void test_is_ip_in_cidr_ipv4(void);
+void test_is_ip_in_cidr_ipv6(void);
+void test_is_ip_in_cidr_no_prefix(void);
+void test_is_ip_in_cidr_invalid(void);
 void test_is_ip_internal_private_ranges(void);
 void test_is_ip_internal_public_ips(void);
 void test_is_ip_internal_invalid(void);
@@ -43,11 +60,48 @@ void test_is_ip_internal_invalid(void);
 void setUp(void) {
     // Reset mocks before each test
     mock_mhd_reset_all();
+
+    // Save and set up test config
+    g_saved_app_config = app_config;
+    memset(&g_test_config, 0, sizeof(g_test_config));
+    app_config = &g_test_config;
 }
 
 void tearDown(void) {
-    // Clean up after each test
+    // Restore original app_config
+    app_config = g_saved_app_config;
+
+    // Clean up mock
     mock_mhd_reset_all();
+}
+
+// Helper to set up IPv4 connection info with a given address
+static void setup_mock_ipv4(const char *ip_str) {
+    static union MHD_ConnectionInfo info;
+    memset(&mock_addr_ipv4, 0, sizeof(mock_addr_ipv4));
+    mock_addr_ipv4.sin_family = AF_INET;
+    inet_pton(AF_INET, ip_str, &mock_addr_ipv4.sin_addr);
+    info.client_addr = (struct sockaddr *)&mock_addr_ipv4;
+    mock_mhd_set_connection_info(&info);
+}
+
+// Helper to set up IPv6 connection info with a given address
+static void setup_mock_ipv6(const char *ip_str) {
+    static union MHD_ConnectionInfo info;
+    memset(&mock_addr_ipv6, 0, sizeof(mock_addr_ipv6));
+    mock_addr_ipv6.sin6_family = AF_INET6;
+    inet_pton(AF_INET6, ip_str, &mock_addr_ipv6.sin6_addr);
+    info.client_addr = (struct sockaddr *)&mock_addr_ipv6;
+    mock_mhd_set_connection_info(&info);
+}
+
+// Helper to configure a trusted proxy CIDR
+static void set_trusted_proxy(const char *cidr) {
+    NetworkConfig *net = &app_config->network;
+    if (net->trusted_proxies_count < NETWORK_MAX_TRUSTED_PROXIES) {
+        net->trusted_proxies[net->trusted_proxies_count] = strdup(cidr);
+        net->trusted_proxies_count++;
+    }
 }
 
 // Test api_get_client_ip with NULL connection
@@ -71,15 +125,10 @@ void test_api_get_client_ip_no_connection_info(void) {
     free(result);
 }
 
-// Test api_get_client_ip with IPv4 address
+// Test api_get_client_ip with IPv4 address (no trusted proxy set)
 void test_api_get_client_ip_ipv4(void) {
     // Set up mock IPv4 connection info
-    static union MHD_ConnectionInfo info;
-    memset(&mock_addr_ipv4, 0, sizeof(mock_addr_ipv4));
-    mock_addr_ipv4.sin_family = AF_INET;
-    inet_pton(AF_INET, "192.168.1.100", &mock_addr_ipv4.sin_addr);
-    info.client_addr = (struct sockaddr *)&mock_addr_ipv4;
-    mock_mhd_set_connection_info(&info);
+    setup_mock_ipv4("192.168.1.100");
 
     struct MockMHDConnection mock_conn;
     char *result = api_get_client_ip((struct MHD_Connection *)&mock_conn);
@@ -90,15 +139,10 @@ void test_api_get_client_ip_ipv4(void) {
     free(result);
 }
 
-// Test api_get_client_ip with IPv6 address
+// Test api_get_client_ip with IPv6 address (no trusted proxy set)
 void test_api_get_client_ip_ipv6(void) {
     // Set up mock IPv6 connection info
-    static union MHD_ConnectionInfo info;
-    memset(&mock_addr_ipv6, 0, sizeof(mock_addr_ipv6));
-    mock_addr_ipv6.sin6_family = AF_INET6;
-    inet_pton(AF_INET6, "::1", &mock_addr_ipv6.sin6_addr);
-    info.client_addr = (struct sockaddr *)&mock_addr_ipv6;
-    mock_mhd_set_connection_info(&info);
+    setup_mock_ipv6("::1");
 
     struct MockMHDConnection mock_conn;
     char *result = api_get_client_ip((struct MHD_Connection *)&mock_conn);
@@ -129,21 +173,105 @@ void test_api_get_client_ip_unsupported_family(void) {
 }
 
 // Test api_get_client_ip with X-Forwarded-For header (single IP)
+// No trusted proxy set, so XFF must be ignored
 void test_api_get_client_ip_xforwarded_for_single(void) {
+    setup_mock_ipv4("10.0.0.1");
+    mock_mhd_add_lookup("X-Forwarded-For", "203.0.113.5");
+
+    struct MockMHDConnection mock_conn;
+    char *result = api_get_client_ip((struct MHD_Connection *)&mock_conn);
+
+    // Without trusted proxy, XFF is ignored
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL_STRING("10.0.0.1", result);
+
+    free(result);
+}
+
+// Test api_get_client_ip with X-Forwarded-For header (first in chain)
+// No trusted proxy set, so XFF must be ignored
+void test_api_get_client_ip_xforwarded_for_first_in_chain(void) {
+    setup_mock_ipv4("10.0.0.1");
+    mock_mhd_add_lookup("X-Forwarded-For", "203.0.113.5, 10.0.0.1, 198.51.100.2");
+
+    struct MockMHDConnection mock_conn;
+    char *result = api_get_client_ip((struct MHD_Connection *)&mock_conn);
+
+    // Without trusted proxy, XFF is ignored
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL_STRING("10.0.0.1", result);
+
+    free(result);
+}
+
+// Test api_get_client_ip with X-Forwarded-For where first is internal
+// No trusted proxy set, so XFF must be ignored
+void test_api_get_client_ip_xforwarded_for_skips_internal(void) {
+    setup_mock_ipv4("10.0.0.1");
+    mock_mhd_add_lookup("X-Forwarded-For", "10.118.0.19, 24.86.168.176");
+
+    struct MockMHDConnection mock_conn;
+    char *result = api_get_client_ip((struct MHD_Connection *)&mock_conn);
+
+    // Without trusted proxy, XFF is ignored
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL_STRING("10.0.0.1", result);
+
+    free(result);
+}
+
+// Test api_get_client_ip with all internal IPs
+// No trusted proxy set, so XFF must be ignored
+void test_api_get_client_ip_xforwarded_for_all_internal(void) {
+    setup_mock_ipv4("10.0.0.1");
+    mock_mhd_add_lookup("X-Forwarded-For", "10.0.0.1, 192.168.1.1");
+
+    struct MockMHDConnection mock_conn;
+    char *result = api_get_client_ip((struct MHD_Connection *)&mock_conn);
+
+    // Without trusted proxy, XFF is ignored
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL_STRING("10.0.0.1", result);
+
+    free(result);
+}
+
+// Test api_get_client_ip with internal IPs then an external one
+// No trusted proxy set, so XFF must be ignored
+void test_api_get_client_ip_xforwarded_for_internal_then_external(void) {
+    setup_mock_ipv4("10.0.0.1");
+    mock_mhd_add_lookup("X-Forwarded-For", "10.0.0.1, 192.168.1.1, 8.8.8.8");
+
+    struct MockMHDConnection mock_conn;
+    char *result = api_get_client_ip((struct MHD_Connection *)&mock_conn);
+
+    // Without trusted proxy, XFF is ignored
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL_STRING("10.0.0.1", result);
+
+    free(result);
+}
+
+// Test: untrusted peer ignores X-Forwarded-For
+void test_api_get_client_ip_untrusted_peer_ignores_xff(void) {
+    setup_mock_ipv4("8.8.8.8");
+    set_trusted_proxy("10.0.0.0/8");
     mock_mhd_add_lookup("X-Forwarded-For", "203.0.113.5");
 
     struct MockMHDConnection mock_conn;
     char *result = api_get_client_ip((struct MHD_Connection *)&mock_conn);
 
     TEST_ASSERT_NOT_NULL(result);
-    TEST_ASSERT_EQUAL_STRING("203.0.113.5", result);
+    TEST_ASSERT_EQUAL_STRING("8.8.8.8", result);
 
     free(result);
 }
 
-// Test api_get_client_ip with X-Forwarded-For header (first in chain)
-void test_api_get_client_ip_xforwarded_for_first_in_chain(void) {
-    mock_mhd_add_lookup("X-Forwarded-For", "203.0.113.5, 10.0.0.1, 198.51.100.2");
+// Test: trusted peer with XFF, rightmost non-trusted address is returned
+void test_api_get_client_ip_trusted_peer_rightmost_external(void) {
+    setup_mock_ipv4("10.0.0.1");
+    set_trusted_proxy("10.0.0.0/8");
+    mock_mhd_add_lookup("X-Forwarded-For", "203.0.113.5, 10.0.0.10");
 
     struct MockMHDConnection mock_conn;
     char *result = api_get_client_ip((struct MHD_Connection *)&mock_conn);
@@ -154,23 +282,11 @@ void test_api_get_client_ip_xforwarded_for_first_in_chain(void) {
     free(result);
 }
 
-// Test api_get_client_ip with X-Forwarded-For where first is internal,
-// should skip and return the first non-internal address
-void test_api_get_client_ip_xforwarded_for_skips_internal(void) {
-    mock_mhd_add_lookup("X-Forwarded-For", "10.118.0.19, 24.86.168.176");
-
-    struct MockMHDConnection mock_conn;
-    char *result = api_get_client_ip((struct MHD_Connection *)&mock_conn);
-
-    TEST_ASSERT_NOT_NULL(result);
-    TEST_ASSERT_EQUAL_STRING("24.86.168.176", result);
-
-    free(result);
-}
-
-// Test api_get_client_ip with all internal IPs, should fall back to first
-void test_api_get_client_ip_xforwarded_for_all_internal(void) {
-    mock_mhd_add_lookup("X-Forwarded-For", "10.0.0.1, 192.168.1.1");
+// Test: trusted peer, all XFF addresses are trusted, falls back to peer
+void test_api_get_client_ip_trusted_peer_all_trusted_falls_back(void) {
+    setup_mock_ipv4("10.0.0.1");
+    set_trusted_proxy("10.0.0.0/8");
+    mock_mhd_add_lookup("X-Forwarded-For", "10.0.0.5, 10.0.0.6");
 
     struct MockMHDConnection mock_conn;
     char *result = api_get_client_ip((struct MHD_Connection *)&mock_conn);
@@ -181,9 +297,11 @@ void test_api_get_client_ip_xforwarded_for_all_internal(void) {
     free(result);
 }
 
-// Test api_get_client_ip with internal IPs then an external one
-void test_api_get_client_ip_xforwarded_for_internal_then_external(void) {
-    mock_mhd_add_lookup("X-Forwarded-For", "10.0.0.1, 192.168.1.1, 8.8.8.8");
+// Test: trusted peer, single XFF address from untrusted IP
+void test_api_get_client_ip_trusted_peer_single_trusted(void) {
+    setup_mock_ipv4("10.0.0.1");
+    set_trusted_proxy("10.0.0.0/8");
+    mock_mhd_add_lookup("X-Forwarded-For", "8.8.8.8");
 
     struct MockMHDConnection mock_conn;
     char *result = api_get_client_ip((struct MHD_Connection *)&mock_conn);
@@ -192,6 +310,76 @@ void test_api_get_client_ip_xforwarded_for_internal_then_external(void) {
     TEST_ASSERT_EQUAL_STRING("8.8.8.8", result);
 
     free(result);
+}
+
+// Test: NULL app_config, untrusted peer, uses TCP peer
+void test_api_get_client_ip_null_app_config_untrusted(void) {
+    app_config = NULL;
+    setup_mock_ipv4("8.8.8.8");
+    mock_mhd_add_lookup("X-Forwarded-For", "203.0.113.5");
+
+    struct MockMHDConnection mock_conn;
+    char *result = api_get_client_ip((struct MHD_Connection *)&mock_conn);
+
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL_STRING("8.8.8.8", result);
+
+    free(result);
+}
+
+// Test: is_trusted_proxy with trusted IPs
+void test_is_trusted_proxy_trusted(void) {
+    set_trusted_proxy("10.0.0.0/8");
+
+    TEST_ASSERT_TRUE(is_trusted_proxy("10.0.0.1"));
+    TEST_ASSERT_TRUE(is_trusted_proxy("10.255.255.255"));
+    TEST_ASSERT_TRUE(is_trusted_proxy("10.10.10.10"));
+}
+
+// Test: is_trusted_proxy with untrusted IPs
+void test_is_trusted_proxy_untrusted(void) {
+    set_trusted_proxy("10.0.0.0/8");
+
+    TEST_ASSERT_FALSE(is_trusted_proxy("8.8.8.8"));
+    TEST_ASSERT_FALSE(is_trusted_proxy("203.0.113.5"));
+    TEST_ASSERT_FALSE(is_trusted_proxy("192.168.1.1"));
+}
+
+// Test: is_trusted_proxy with NULL app_config
+void test_is_trusted_proxy_null_app_config(void) {
+    app_config = NULL;
+
+    TEST_ASSERT_FALSE(is_trusted_proxy("10.0.0.1"));
+    TEST_ASSERT_FALSE(is_trusted_proxy(NULL));
+}
+
+// Test: is_ip_in_cidr with IPv4 CIDR matching
+void test_is_ip_in_cidr_ipv4(void) {
+    TEST_ASSERT_TRUE(is_ip_in_cidr("10.0.0.1", "10.0.0.0/8"));
+    TEST_ASSERT_TRUE(is_ip_in_cidr("10.255.255.255", "10.0.0.0/8"));
+    TEST_ASSERT_FALSE(is_ip_in_cidr("11.0.0.1", "10.0.0.0/8"));
+    TEST_ASSERT_TRUE(is_ip_in_cidr("192.168.1.1", "192.168.0.0/16"));
+    TEST_ASSERT_FALSE(is_ip_in_cidr("192.169.1.1", "192.168.0.0/16"));
+}
+
+// Test: is_ip_in_cidr with IPv6 CIDR matching
+void test_is_ip_in_cidr_ipv6(void) {
+    TEST_ASSERT_TRUE(is_ip_in_cidr("::1", "::/0"));
+    TEST_ASSERT_TRUE(is_ip_in_cidr("2001:db8::1", "2001:db8::/32"));
+    TEST_ASSERT_FALSE(is_ip_in_cidr("2002:db8::1", "2001:db8::/32"));
+}
+
+// Test: is_ip_in_cidr with no prefix (should return false)
+void test_is_ip_in_cidr_no_prefix(void) {
+    TEST_ASSERT_FALSE(is_ip_in_cidr("10.0.0.1", "10.0.0.0"));
+    TEST_ASSERT_FALSE(is_ip_in_cidr("10.0.0.1", NULL));
+    TEST_ASSERT_FALSE(is_ip_in_cidr(NULL, "10.0.0.0/8"));
+}
+
+// Test: is_ip_in_cidr with invalid addresses
+void test_is_ip_in_cidr_invalid(void) {
+    TEST_ASSERT_FALSE(is_ip_in_cidr("not.an.ip", "10.0.0.0/8"));
+    TEST_ASSERT_FALSE(is_ip_in_cidr("10.0.0.1", "not-a-cidr"));
 }
 
 // Test is_ip_internal with private ranges
@@ -239,6 +427,18 @@ int main(void) {
     RUN_TEST(test_api_get_client_ip_xforwarded_for_skips_internal);
     RUN_TEST(test_api_get_client_ip_xforwarded_for_all_internal);
     RUN_TEST(test_api_get_client_ip_xforwarded_for_internal_then_external);
+    RUN_TEST(test_api_get_client_ip_untrusted_peer_ignores_xff);
+    RUN_TEST(test_api_get_client_ip_trusted_peer_rightmost_external);
+    RUN_TEST(test_api_get_client_ip_trusted_peer_all_trusted_falls_back);
+    RUN_TEST(test_api_get_client_ip_trusted_peer_single_trusted);
+    RUN_TEST(test_api_get_client_ip_null_app_config_untrusted);
+    RUN_TEST(test_is_trusted_proxy_trusted);
+    RUN_TEST(test_is_trusted_proxy_untrusted);
+    RUN_TEST(test_is_trusted_proxy_null_app_config);
+    RUN_TEST(test_is_ip_in_cidr_ipv4);
+    RUN_TEST(test_is_ip_in_cidr_ipv6);
+    RUN_TEST(test_is_ip_in_cidr_no_prefix);
+    RUN_TEST(test_is_ip_in_cidr_invalid);
     RUN_TEST(test_is_ip_internal_private_ranges);
     RUN_TEST(test_is_ip_internal_public_ips);
     RUN_TEST(test_is_ip_internal_invalid);

@@ -67,11 +67,25 @@ char *api_url_encode(const char *src);
 bool is_ip_internal(const char *ip_str);
 
 /**
+ * Extract the immediate TCP peer IP address from a connection.
+ * Uses MHD_get_connection_info to obtain the socket address of the
+ * connecting client (the peer immediately to the left of this server).
+ *
+ * @param connection The MHD_Connection object
+ * @return A newly allocated string with the peer IP address, or "unknown" on error
+ */
+char *api_get_tcp_peer_ip(struct MHD_Connection *connection);
+
+/**
  * Extract client IP address from a connection.
- * Checks X-Forwarded-For header first (for reverse proxy / K8s ingress),
- * preferring the first non-internal address. Falls back to the TCP peer
- * address if X-Forwarded-For is absent.
- * Caller must free the returned string
+ *
+ * Honors the trusted-proxy boundary: the immediate TCP peer must be in the
+ * Network.TrustedProxies CIDR list before X-Forwarded-For is consumed. For a
+ * trusted peer, walks X-Forwarded-For right-to-left and selects the first
+ * address outside the trusted set as the client IP. For an untrusted peer,
+ * uses the TCP peer address and ignores all client-supplied forwarding values.
+ *
+ * Caller must free the returned string.
  *
  * @param connection The MHD_Connection object
  * @return A newly allocated string with the IP address, or "unknown" on error

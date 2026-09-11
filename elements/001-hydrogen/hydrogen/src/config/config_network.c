@@ -5,8 +5,11 @@
  * including JSON parsing, environment variable handling, and validation.
  */
 
- // Global includes 
+  // Global includes 
 #include <src/hydrogen.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
 
 // Local includes
 #include "config_network.h"
@@ -127,6 +130,14 @@ bool load_network_config(json_t* root, AppConfig* config) {
         config->network.reserved_ports_count = ports.count;
     }
 
+    // Process TrustedProxies CIDR entries
+    success = success && process_string_array_config(root,
+        (ConfigStringArray){
+            .array = config->network.trusted_proxies,
+            .count = &config->network.trusted_proxies_count,
+            .capacity = NETWORK_MAX_TRUSTED_PROXIES
+        }, "Network.TrustedProxies", "Network");
+
         // Process interface availability
         json_t* network = json_object_get(root, "Network");
         json_t* available = network ? json_object_get(network, "Available") : NULL;
@@ -244,6 +255,8 @@ int config_network_init(NetworkConfig* config) {
     config->available_interfaces = NULL;
     config->available_interfaces_count = 0;
 
+    config->trusted_proxies_count = 0;
+
     return 0;
 }
 
@@ -284,6 +297,16 @@ void dump_network_config(const NetworkConfig* config) {
     } else {
         log_this(SR_CONFIG, "―――― None", LOG_LEVEL_DEBUG, 0);
     }
+
+    // Trusted proxies
+    DUMP_TEXT("――", "Trusted Proxies");
+    if (config->trusted_proxies_count > 0) {
+        for (size_t i = 0; i < config->trusted_proxies_count; i++) {
+            DUMP_STRING("――――", config->trusted_proxies[i]);
+        }
+    } else {
+        DUMP_TEXT("――――", "None (forwarded headers not trusted)");
+    }
 }
 
 // Free resources allocated for network configuration
@@ -302,6 +325,12 @@ void cleanup_network_config(NetworkConfig* config) {
         }
         free(config->available_interfaces);
     }
+
+    // Free trusted proxy CIDR strings
+    for (size_t i = 0; i < config->trusted_proxies_count; i++) {
+        free(config->trusted_proxies[i]);
+    }
+    config->trusted_proxies_count = 0;
 
     // Zero out the structure
     memset(config, 0, sizeof(NetworkConfig));
@@ -366,4 +395,94 @@ int config_network_is_port_reserved(const NetworkConfig* config, int port) {
     }
 
     return 0;
+}
+
+// Check if an IP address falls within a CIDR range
+// Supports both IPv4 and IPv6 CIDR notation.
+bool is_ip_in_cidr(const char *ip_str, const char *cidr_str) {
+    if (!ip_str || !cidr_str) return false;
+
+    // Split CIDR into address and prefix length
+    char cidr_copy[256];
+    strncpy(cidr_copy, cidr_str, sizeof(cidr_copy) - 1);
+    cidr_copy[sizeof(cidr_copy) - 1] = '\0';
+
+    char *slash = strchr(cidr_copy, '/');
+    if (!slash) return false;
+
+    *slash = '\0';
+    char *endptr;
+    long prefix_len = strtol(slash + 1, &endptr, 10);
+    if (*endptr != '\0' || prefix_len < 0 || prefix_len > 128) return false;
+
+    // Determine address family from the CIDR address
+    struct in_addr cidr_addr4;
+    struct in6_addr cidr_addr6;
+    int family = AF_UNSPEC;
+
+    if (inet_pton(AF_INET, cidr_copy, &cidr_addr4) == 1) {
+        family = AF_INET;
+    } else if (inet_pton(AF_INET6, cidr_copy, &cidr_addr6) == 1) {
+        family = AF_INET6;
+    } else {
+        return false;
+    }
+
+    // Parse the IP to check
+    struct in_addr ip_addr4;
+    struct in6_addr ip_addr6;
+
+    if (family == AF_INET) {
+        if (inet_pton(AF_INET, ip_str, &ip_addr4) != 1) return false;
+    } else {
+        if (inet_pton(AF_INET6, ip_str, &ip_addr6) != 1) return false;
+    }
+
+    if (prefix_len == 0) return true;
+
+    // Compare prefix bits
+    const unsigned char *cidr_bytes;
+    const unsigned char *ip_bytes;
+    size_t total_bytes;
+
+    if (family == AF_INET) {
+        cidr_bytes = (const unsigned char *)&cidr_addr4;
+        ip_bytes = (const unsigned char *)&ip_addr4;
+        total_bytes = 4;
+    } else {
+        cidr_bytes = (const unsigned char *)&cidr_addr6;
+        ip_bytes = (const unsigned char *)&ip_addr6;
+        total_bytes = 16;
+    }
+
+    size_t full_bytes = (size_t)(prefix_len / 8);
+    unsigned int remaining_bits = (unsigned int)(prefix_len % 8);
+
+    // Compare full bytes
+    for (size_t i = 0; i < full_bytes; i++) {
+        if (cidr_bytes[i] != ip_bytes[i]) return false;
+    }
+
+    // Compare remaining bits via mask
+    if (remaining_bits > 0 && full_bytes < total_bytes) {
+        unsigned char mask = (unsigned char)(0xFF << (8 - remaining_bits));
+        if ((cidr_bytes[full_bytes] & mask) != (ip_bytes[full_bytes] & mask)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+
+// Check if an IP address is within the trusted proxy CIDR list
+bool is_trusted_proxy(const char *ip_str) {
+    if (!ip_str || !app_config) return false;
+
+    const NetworkConfig *net = &app_config->network;
+    for (size_t i = 0; i < net->trusted_proxies_count; i++) {
+        if (is_ip_in_cidr(ip_str, net->trusted_proxies[i])) {
+            return true;
+        }
+    }
+    return false;
 }
