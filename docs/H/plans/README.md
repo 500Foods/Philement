@@ -33,6 +33,14 @@ post-MVP, real-Keycloak E2E (Phase 11). History:
 plaintext+STARTTLS green with Persist on (full 7-engine matrix 14/14 in 27.8s).
 Two parts landed: `mysql_process_prepared_result` honours `mysql_stmt_store_result` rc (no `mysql_stmt_fetch` on NULL `fetch_row_func`); `repo_add_datetime` translates ISO 8601 → MySQL DATETIME for `DB_ENGINE_MYSQL` only. Archive only.
 
+### [TERMINAL FIX PLAN](/docs/H/plans/TERMINAL_FIX_PLAN.md)
+
+Active plan for fixing the end-to-end terminal flow: JWT `ip` claim behind
+Traefik/DOKS, payload regeneration (`terminal-generate.sh`), WebSocket
+key/port exposure via `/api/system/info`, Lithium iframe `postMessage`
+hand-off (fixing the `_handleIframeMessage is null` crash), and E2E
+verification. Phases 0–6 with per-phase exit gates.
+
 ### [UNITY ASAN PLAN](/docs/H/plans/UNITY_ASAN_PLAN.md)
 
 ### [NOTIFICATIONS / SUBSCRIBERS PLAN](/docs/H/plans/NOTIFICATIONS_PLAN.md)

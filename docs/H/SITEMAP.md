@@ -135,6 +135,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [PERSIST_PLAN_COMPLETE.md](/docs/H/plans/complete/PERSIST_PLAN_COMPLETE.md): Mail Relay Persist MySQL/MariaDB fetch SIGSEGV — closed 2026-09-04 (TODO 12d)
 - [MIRAGE_PLAN.md](/docs/H/plans/MIRAGE_PLAN.md): Mirage distributed proxy architecture (deferred)
 - [UNITY_ASAN_PLAN.md](/docs/H/plans/UNITY_ASAN_PLAN.md): Separate ASAN Unity test variant plan
+- [TERMINAL_FIX_PLAN.md](/docs/H/plans/TERMINAL_FIX_PLAN.md): End-to-end terminal fix (JWT IP, payload, WebSocket key, iframe postMessage)
 
 ### Folder: /docs/H/plans/complete
 
