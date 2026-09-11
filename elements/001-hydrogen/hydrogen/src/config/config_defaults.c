@@ -313,6 +313,7 @@ void initialize_config_defaults_websocket(AppConfig* config) {
 
         // String fields
         config->websocket.protocol = strdup("hydrogen");
+        config->websocket.public_url = NULL;  // Must be explicitly configured for production
         config->websocket.key = strdup("${env.WEBSOCKET_KEY}");
 
         log_this(SR_CONFIG, "――― Applied config defaults for Websockets", LOG_LEVEL_DEBUG, 0);

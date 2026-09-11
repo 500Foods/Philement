@@ -32,8 +32,7 @@ set -euo pipefail
 TEST_NAME="Terminal"
 TEST_ABBR="TRM"
 TEST_NUMBER="26"
-TEST_COUNTER=0
-TEST_VERSION="2.4.0"  # Enhanced coverage for terminal_shell_ops.c and terminal_websocket_bridge.c
+TEST_VERSION="2.5.0"  # Fail-closed key, authorized system-info, configured protocol, terminal CORS, redaction
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -416,7 +415,7 @@ test_websocket_terminal_connection() {
     local response_file="$4"
 
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing WebSocket Terminal connection with authentication using websocat"
-    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${test_message}' | websocat --protocol='${protocol}' -H='Authorization: Key ${WEBSOCKET_KEY}' --ping-interval=30 --exit-on-eof '${ws_url}'"
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${test_message}' | websocat --protocol='${protocol}' -H='Authorization: Key **REDACTED**' --ping-interval=30 --exit-on-eof '${ws_url}'"
 
     # Retry logic for WebSocket subsystem readiness (reduced for parallel execution to prevent thundering herd)
     local max_attempts=5
@@ -434,7 +433,7 @@ test_websocket_terminal_connection() {
         # Test WebSocket connection with a 5-second timeout
         echo "${test_message}" | "${TIMEOUT}" 5 websocat \
             --protocol="${protocol}" \
-            -H="Authorization: Key ${WEBSOCKET_KEY}" \
+            -H="Authorization: Key **REDACTED**" \
             --ping-interval=30 \
             --exit-on-eof \
             "${ws_url}" > "${temp_file}" 2>&1
@@ -509,7 +508,7 @@ test_websocket_terminal_status() {
 
     # JSON message to request status (terminal-specific)
     local status_request='{"type": "ping"}'
-    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${status_request}' | websocat --protocol='${protocol}' -H='Authorization: Key ${WEBSOCKET_KEY}' --ping-interval=30 --one-message '${ws_url}'"
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${status_request}' | websocat --protocol='${protocol}' -H='Authorization: Key **REDACTED**' --ping-interval=30 --one-message '${ws_url}'"
 
     # Retry logic for WebSocket subsystem readiness (reduced for parallel execution to prevent thundering herd)
     local max_attempts=8
@@ -527,7 +526,7 @@ test_websocket_terminal_status() {
         # Test WebSocket status request with a 3-second timeout
         echo "${status_request}" | websocat \
             --protocol="${protocol}" \
-            -H="Authorization: Key ${WEBSOCKET_KEY}" \
+            -H="Authorization: Key **REDACTED**" \
             --ping-interval=30 \
             --one-message \
             "${ws_url}" > "${temp_file}" 2>&1
@@ -617,12 +616,12 @@ test_websocket_terminal_input_output() {
     local all_commands_successful=true
 
     for cmd in "${commands[@]}"; do
-        print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${cmd}' | websocat --protocol='${protocol}' -H='Authorization: Key ${WEBSOCKET_KEY}' --ping-interval=30 --one-message '${ws_url}'"
+        print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${cmd}' | websocat --protocol='${protocol}' -H='Authorization: Key **REDACTED**' --ping-interval=30 --one-message '${ws_url}'"
 
         # Send the command
         if ! echo "${cmd}" | websocat \
             --protocol="${protocol}" \
-            -H="Authorization: Key ${WEBSOCKET_KEY}" \
+            -H="Authorization: Key **REDACTED**" \
             --ping-interval=30 \
             --one-message \
             "${ws_url}" >> "${response_file}" 2>&1; then
@@ -671,12 +670,12 @@ test_websocket_terminal_resize() {
     local all_resize_successful=true
 
     for resize_command in "${resize_commands[@]}"; do
-        print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${resize_command}' | websocat --protocol='${protocol}' -H='Authorization: Key ${WEBSOCKET_KEY}' --ping-interval=30 --one-message '${ws_url}'"
+        print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${resize_command}' | websocat --protocol='${protocol}' -H='Authorization: Key **REDACTED**' --ping-interval=30 --one-message '${ws_url}'"
 
         # Send resize command - success means terminal_websocket.c resize function was called
         if ! echo "${resize_command}" | websocat \
             --protocol="${protocol}" \
-            -H="Authorization: Key ${WEBSOCKET_KEY}" \
+            -H="Authorization: Key **REDACTED**" \
             --ping-interval=30 \
             --one-message \
             "${ws_url}" >> "${response_file}" 2>&1; then
@@ -712,11 +711,11 @@ test_websocket_terminal_long_session() {
     
     for i in {1..4}; do
         local cmd='{"type": "input", "data": "echo Session iteration '${i}'\n"}'
-        print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${cmd}' | websocat --protocol='${protocol}' -H='Authorization: Key ${WEBSOCKET_KEY}' --ping-interval=30 --one-message '${ws_url}'"
+        print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${cmd}' | websocat --protocol='${protocol}' -H='Authorization: Key **REDACTED**' --ping-interval=30 --one-message '${ws_url}'"
         
         if ! echo "${cmd}" | websocat \
             --protocol="${protocol}" \
-            -H="Authorization: Key ${WEBSOCKET_KEY}" \
+            -H="Authorization: Key **REDACTED**" \
             --ping-interval=30 \
             --one-message \
             "${ws_url}" >> "${response_file}" 2>&1; then

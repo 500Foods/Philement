@@ -29,15 +29,16 @@ extern WebSocketServerContext *ws_context;
 
 // Terminal session management now uses WebSocketSessionData instead of globals
 
-// Terminal protocol validation
+// Terminal protocol validation — uses the configured terminal subprotocol
+// from ws_context->protocol, not a hardcoded "terminal" literal.
 int validate_terminal_protocol(struct lws *wsi)
 {
     const struct lws_protocols *protocol = lws_get_protocol(wsi);
-    if (protocol && strcmp(protocol->name, "terminal") == 0) {
+    if (protocol && ws_context && strcmp(protocol->name, ws_context->protocol) == 0) {
         log_this(SR_WEBSOCKET, "Routing terminal message to terminal session handlers", LOG_LEVEL_STATE, 0);
         return 0;
     } else {
-        log_this(SR_WEBSOCKET, "Terminal message received but protocol is not 'terminal': %s", LOG_LEVEL_ALERT, 1, protocol ? protocol->name : "unknown");
+        log_this(SR_WEBSOCKET, "Terminal message received but protocol is not the configured terminal protocol", LOG_LEVEL_ALERT, 0);
         return -1;
     }
 }

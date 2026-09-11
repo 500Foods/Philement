@@ -61,15 +61,21 @@ bool system_info_has_valid_jwt(struct MHD_Connection *connection);
   * Build the system info JSON object using the shared C collectors.
   *
   * When include_scripting is true, the scripting scoreboard snapshot is
-  * attached as the "scripting" key. When has_jwt is true and the WebSocket
-  * server context is available, a "terminal" object with port and auth key
-  * is attached — this is independent of include_scripting. The caller owns
-  * the returned json_t*.
-  *
-  * This is the single function that both handle_system_info_request
-  * (REST) and H.system.info() (Lua) call, so the field list is never
-  * duplicated.
+  * attached as the "scripting" key. When has_terminal is true (a valid JWT
+  * with the terminal role, the WebSocket server running, and
+  * Terminal.Enabled), a "terminal" object with the absolute WebSocket URL,
+  * configured protocol, and server-wide key is attached. The Lua
+  * H.system.info() path must pass has_terminal=false so script sandboxes
+  * never receive terminal authorization data. The caller owns the returned
+  * json_t*.
   */
-json_t* system_info_build_json(bool include_scripting, bool has_jwt);
+json_t* system_info_build_json(bool include_scripting, bool has_terminal);
+
+/*
+ * Check whether JWT claims carry the terminal role (role_id 32).
+ * Returns true only when claims are present and `roles` contains the
+ * terminal role token; never treats admin/chat/wildcard as a grant.
+ */
+bool system_info_has_terminal_role(const jwt_claims_t *claims);
 
 #endif /* HYDROGEN_SYSTEM_INFO_H */

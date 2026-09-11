@@ -33,12 +33,12 @@ WebSocketServerContext* ws_context_create(int port, const char* protocol, const 
         ctx->protocol[sizeof(ctx->protocol) - 1] = '\0';
     }
 
-    // Handle auth key
+    // Handle auth key — fail closed, no fallback literal.
+    // validate_key in check_websocket_launch_readiness guarantees a strong key
+    // before ws_context_create is ever called. If key is NULL here it is a
+    // programming error / invariant violation.
     if (key) {
         strncpy(ctx->auth_key, key, sizeof(ctx->auth_key) - 1);
-        ctx->auth_key[sizeof(ctx->auth_key) - 1] = '\0';
-    } else {
-        strncpy(ctx->auth_key, "default_key", sizeof(ctx->auth_key) - 1);
         ctx->auth_key[sizeof(ctx->auth_key) - 1] = '\0';
     }
 

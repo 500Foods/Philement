@@ -272,55 +272,31 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 return 0;  // Allow but don't proceed to terminal handling
             }
             {
-                // Debug: Log what we have for authentication
-                void *user_data = lws_wsi_user(wsi);
-                char protocol_buf[256];
-                int protocol_len = lws_hdr_total_length(wsi, WSI_TOKEN_PROTOCOL);
-                if (protocol_len > 0 && protocol_len < (int)sizeof(protocol_buf)) {
-                    lws_hdr_copy(wsi, protocol_buf, sizeof(protocol_buf), WSI_TOKEN_PROTOCOL);
-                    // log_this(SR_WEBSOCKET, "Filter protocol connection for protocol: %s", LOG_LEVEL_DEBUG, 1, protocol_buf);
-                } else {
-                    log_this(SR_WEBSOCKET, "Filter protocol connection for unknown protocol", LOG_LEVEL_DEBUG, 0);
-                }
+                // Authentication surfaces (both must agree on the resolved key):
+                //   1. HTTP-upgrade callback stored authenticated_key during upgrade
+                //   2. Query-parameter key (browser JS cannot set custom headers)
+                //   3. Authorization: Key <value> header (non-browser tests)
+                // The ABCDEFGHIJKLMNOP fallback literal has been removed; the only
+                // valid key is ws_context->auth_key, validated fail-closed at startup.
 
-                // FIRST: Hardcoded fallback for JavaScript WebSocket clients
-                // The JavaScript connects to ws://localhost:5261/?key=ABCDEFGHIJKLMNOP
-                // but URI headers show just '/'. Accept the key ABCDEFGHIJKLMNOP by default
-                const char *fallback_key = "ABCDEFGHIJKLMNOP";
-                if (ws_context && strcmp(fallback_key, ws_context->auth_key) == 0) {
-                    log_this(SR_WEBSOCKET, "Authentication successful via fallback key for JavaScript client", LOG_LEVEL_STATE, 0);
-                    // Store the key in session if possible
-                    if (user_data) {
-                        WebSocketSessionData *auth_session = (WebSocketSessionData *)user_data;
-                        auth_session->authenticated_key = strdup(fallback_key);
-                    }
-                    return 0;
-                }
-
-                // Second try to get the authenticated key from session data (set during HTTP upgrade)
-                if (user_data) {
-                    WebSocketSessionData *auth_session = (WebSocketSessionData *)user_data;
-                    if (auth_session->authenticated_key) {
-                        log_this(SR_WEBSOCKET, "Found stored key in session: %s", LOG_LEVEL_STATE, 1, auth_session->authenticated_key);
-                        if (strcmp(auth_session->authenticated_key, ws_context->auth_key) == 0) {
-                            log_this(SR_WEBSOCKET, "Authentication successful via stored key during protocol filtering", LOG_LEVEL_STATE, 0);
-                            return 0;
-                        } else {
-                            // log_this(SR_WEBSOCKET, "Stored key doesn't match server key", LOG_LEVEL_ALERT, 0);
-                        }
+                // First try: key stored in session data during HTTP upgrade auth
+                WebSocketSessionData *auth_session = session;
+                if (auth_session->authenticated_key) {
+                    if (strcmp(auth_session->authenticated_key, ws_context->auth_key) == 0) {
+                        log_this(SR_WEBSOCKET, "Authentication successful via stored key during protocol filtering", LOG_LEVEL_STATE, 0);
+                        return 0;
                     } else {
-                        log_this(SR_WEBSOCKET, "No authenticated_key stored in session", LOG_LEVEL_DEBUG, 0);
+                        log_this(SR_WEBSOCKET, "Stored key mismatch during protocol filtering", LOG_LEVEL_ALERT, 0);
                     }
                 } else {
-                    log_this(SR_WEBSOCKET, "No user_data available in lws_wsi_user", LOG_LEVEL_DEBUG, 0);
+                    log_this(SR_WEBSOCKET, "No authenticated_key stored in session", LOG_LEVEL_DEBUG, 0);
                 }
 
-                // Check for query parameter authentication
+                // Second try: query parameter authentication (browser clients)
                 char uri_buf[512];
                 int uri_len = lws_hdr_total_length(wsi, WSI_TOKEN_GET_URI);
                 if (uri_len > 0 && uri_len < (int)sizeof(uri_buf)) {
                     lws_hdr_copy(wsi, uri_buf, sizeof(uri_buf), WSI_TOKEN_GET_URI);
-                    log_this(SR_WEBSOCKET, "Request URI: %s", LOG_LEVEL_DEBUG, 1, uri_buf);
 
                     // Look for key parameter in query string
                     char *query = strchr(uri_buf, '?');
@@ -364,18 +340,15 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                             }
                             decoded_key[decoded_len] = '\0';
 
-                            log_this(SR_WEBSOCKET, "Query parameter key found: %s", LOG_LEVEL_STATE, 1, decoded_key);
-
                             if (ws_context && strcmp(decoded_key, ws_context->auth_key) == 0) {
                                 // Authentication successful via query parameter
-                                if (user_data) {
-                                    WebSocketSessionData *auth_session = (WebSocketSessionData *)user_data;
-                                    auth_session->authenticated_key = strdup(decoded_key);  // Store the authenticated key
+                                if (!session->authenticated_key) {
+                                    session->authenticated_key = strdup(decoded_key);
                                 }
                                 log_this(SR_WEBSOCKET, "Authentication successful via query parameter during protocol filtering", LOG_LEVEL_STATE, 0);
                                 return 0;
                             } else {
-                                log_this(SR_WEBSOCKET, "Query parameter key doesn't match server key", LOG_LEVEL_ALERT, 0);
+                                log_this(SR_WEBSOCKET, "Query parameter key does not match server key", LOG_LEVEL_ALERT, 0);
                             }
                         } else {
                             log_this(SR_WEBSOCKET, "No key parameter found in query string", LOG_LEVEL_DEBUG, 0);
@@ -385,24 +358,20 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                     }
                 }
 
-                // Fallback to checking Authorization header (validate directly, like query param)
+                // Third try: Authorization header (non-browser clients / tests)
                 {
                     int length = lws_hdr_total_length(wsi, WSI_TOKEN_HTTP_AUTHORIZATION);
                     if (length > 0 && length < 256) {
                         char buf[256];
                         lws_hdr_copy(wsi, buf, sizeof(buf), WSI_TOKEN_HTTP_AUTHORIZATION);
-                        log_this(SR_WEBSOCKET, "Found Authorization header: %s", LOG_LEVEL_DEBUG, 1, buf);
 
                         // Expect "Key <value>"
                         if (strncmp(buf, "Key ", 4) == 0) {
                             const char *key = buf + 4;
                             if (ws_context && strcmp(key, ws_context->auth_key) == 0) {
-                                // Authentication successful via header during protocol filtering
-                                if (user_data) {
-                                    WebSocketSessionData *auth_session = (WebSocketSessionData *)user_data;
-                                    if (!auth_session->authenticated_key) {
-                                        auth_session->authenticated_key = strdup(key);
-                                    }
+                                // Authentication successful via Authorization header
+                                if (!session->authenticated_key) {
+                                    session->authenticated_key = strdup(key);
                                 }
                                 log_this(SR_WEBSOCKET, "Authentication successful via Authorization header during protocol filtering", LOG_LEVEL_STATE, 0);
                                 return 0;

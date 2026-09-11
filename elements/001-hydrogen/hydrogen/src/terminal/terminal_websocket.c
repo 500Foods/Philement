@@ -21,7 +21,12 @@
 #include "terminal_session.h"
 #include "terminal_websocket.h"
 
-// WebSocket protocol name for terminal connections
+// WebSocket protocol name for terminal connections.
+// This constant is retained for legacy/test compatibility only. The live
+// libwebsockets path routes on ws_context->protocol (the configured
+// WebSocketServer.Protocol), NOT this literal. Do not introduce new callers
+// — phase 2 of TERMINAL_FIX_PLAN reconciled this; the terminal subprotocol
+// is the configured value, and this define must not bypass LWS auth.
 #define TERMINAL_WS_PROTOCOL "terminal"
 
 /**
@@ -86,7 +91,13 @@ bool is_terminal_websocket_request(struct MHD_Connection *connection __attribute
 /**
  * Get WebSocket subprotocol for terminal connections
  *
- * @return Protocol string for WebSocket handshake
+ * Returns the legacy TERMINAL_WS_PROTOCOL literal. The live libwebsockets
+ * path uses ws_context->protocol (the configured WebSocketServer.Protocol)
+ * instead — see TERMINAL_FIX_PLAN Phase 2. This helper is retained for
+ * backward compatibility with any external caller but is deprecated; do not
+ * use it as the production terminal subprotocol.
+ *
+ * @return Protocol string for WebSocket handshake (legacy literal)
  */
 const char *get_terminal_websocket_protocol(void) {
     return TERMINAL_WS_PROTOCOL;
@@ -95,7 +106,13 @@ const char *get_terminal_websocket_protocol(void) {
 /**
  * Check if session manager requires WebSocket authentication
  *
- * @param config Terminal configuration
+ * DEPRECATED — this is a legacy stub that always returns false. It is NOT
+ * the live terminal authentication gate. The libwebsockets path authenticates
+ * via ws_context->auth_key during the HTTP-upgrade callback and the
+ * LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION dispatch. Do not treat this return
+ * value as a security decision.
+ *
+ * @param config Terminal configuration (unused)
  * @return false — terminal WS auth not implemented (open until product requires it)
  */
 bool terminal_websocket_requires_auth(const TerminalConfig *config __attribute__((unused))) {

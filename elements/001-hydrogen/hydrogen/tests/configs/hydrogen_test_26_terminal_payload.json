@@ -14,6 +14,7 @@
         "Port": 5261,
         "Protocol": "terminal",
         "Key": "${env.WEBSOCKET_KEY}",
+        "PublicUrl": "wss://localhost:5261",
         "MaxMessageSize": 8192
     },
     "Terminal": {
@@ -21,7 +22,8 @@
         "ShellCommand": "/bin/zsh",
         "MaxSessions": 10,
         "IdleTimeoutSeconds": 300,
-        "BufferSize": 1024
+        "BufferSize": 1024,
+        "CORSOrigin": "https://lithium.philement.com"
     },
     "API": {
         "Enabled": true,

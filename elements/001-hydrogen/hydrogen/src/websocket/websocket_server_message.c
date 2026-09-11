@@ -213,9 +213,12 @@ int handle_message_type(struct lws *wsi, const char *type)
     // Terminal protocol uses 'input', 'resize', 'ping' message types
     // But ONLY if the connection is actually using the terminal protocol
     if (strcmp(type, "input") == 0 || strcmp(type, "resize") == 0 || strcmp(type, "ping") == 0) {
-        // Check protocol before routing to terminal handler
+        // Check protocol before routing to terminal handler — use the
+        // configured terminal subprotocol from ws_context->protocol, not a
+        // hardcoded "terminal" literal. The configured protocol is the single
+        // terminal subprotocol (TERMINAL_FIX_PLAN Phase 2).
         const struct lws_protocols *protocol = lws_get_protocol(wsi);
-        if (protocol && strcmp(protocol->name, "terminal") == 0) {
+        if (protocol && ws_context && strcmp(protocol->name, ws_context->protocol) == 0) {
             return handle_terminal_message(wsi);
         } else {
             // Non-terminal connection sent a terminal message type - just ignore it

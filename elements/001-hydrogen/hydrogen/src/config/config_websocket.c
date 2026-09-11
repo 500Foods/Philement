@@ -42,6 +42,10 @@ bool load_websocket_config(json_t* root, AppConfig* config) {
         ws->protocol = NULL; // Will be handled by WebSocket code
     }
 
+    // PublicUrl: explicit public WebSocket origin (scheme + host, optional
+    // port; no path, query, userinfo, or fragment). NULL means "not configured".
+    ws->public_url = NULL;
+
     ws->key = strdup("${env.WEBSOCKET_KEY}");
     if (!ws->key) {
         log_this(SR_CONFIG, "Failed to allocate key string, using hardcoded default", LOG_LEVEL_ALERT, 0);
@@ -68,6 +72,7 @@ bool load_websocket_config(json_t* root, AppConfig* config) {
     (void)PROCESS_INT(root, ws, port, "WebSocketServer.Port", "WebSocket");
     (void)PROCESS_STRING(root, ws, protocol, "WebSocketServer.Protocol", "WebSocket");
     (void)PROCESS_SENSITIVE(root, ws, key, "WebSocketServer.Key", "WebSocket");
+    (void)PROCESS_STRING(root, ws, public_url, "WebSocketServer.PublicUrl", "WebSocket");
     (void)PROCESS_SIZE(root, ws, max_message_size, "WebSocketServer.MaxMessageSize", "WebSocket");
     (void)PROCESS_SIZE(root, ws, rx_buffer_size, "WebSocketServer.RxBufferSize", "WebSocket");
     
@@ -107,9 +112,14 @@ void dump_websocket_config(const WebSocketConfig* config) {
     snprintf(value_str, sizeof(value_str), "Port: %d", config->port);
     DUMP_TEXT("――", value_str);
     
-    // Protocol
+     // Protocol
     snprintf(value_str, sizeof(value_str), "Protocol: %s", 
             config->protocol ? config->protocol : "(not set)");
+    DUMP_TEXT("――", value_str);
+
+    // Public URL (redacted — origin only, never full key)
+    snprintf(value_str, sizeof(value_str), "Public URL: %s",
+            config->public_url ? config->public_url : "(not set)");
     DUMP_TEXT("――", value_str);
             
     // Message size with units
@@ -171,6 +181,7 @@ void cleanup_websocket_config(WebSocketConfig* config) {
     // Free allocated strings
     free(config->protocol);
     free(config->key);
+    free(config->public_url);
 
     // Zero out the structure
     memset(config, 0, sizeof(WebSocketConfig));

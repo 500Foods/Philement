@@ -285,6 +285,41 @@ void add_cors_headers(struct MHD_Response *response, struct MHD_Connection *conn
     MHD_add_response_header(response, "Access-Control-Max-Age", "86400");
 }
 
+/*
+ * Add CORS headers for terminal assets and the terminal system-info response.
+ * Uses Terminal.CORSOrigin as the sole allowlist. If that field is unset or
+ * empty, falls back to "*" only for local/development safety — production
+ * deployments must set Terminal.CORSOrigin to exact origins.
+ */
+void terminal_add_cors_headers(struct MHD_Response *response, struct MHD_Connection *connection) {
+    if (!response) {
+        return;
+    }
+
+    const char *configured = "*";
+    if (app_config && app_config->terminal.cors_origin &&
+        app_config->terminal.cors_origin[0] != '\0') {
+        configured = app_config->terminal.cors_origin;
+    }
+
+    const char *request_origin = NULL;
+    if (connection) {
+        request_origin = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "Origin");
+    }
+    const char *allow_origin = cors_match_origin(configured, request_origin);
+    if (allow_origin) {
+        MHD_add_response_header(response, "Access-Control-Allow-Origin", allow_origin);
+        if (strcmp(allow_origin, "*") != 0) {
+            MHD_add_response_header(response, "Access-Control-Allow-Credentials", "true");
+            MHD_add_response_header(response, "Vary", "Origin");
+        }
+    }
+
+    MHD_add_response_header(response, "Access-Control-Allow-Methods", "GET, HEAD, OPTIONS");
+    MHD_add_response_header(response, "Access-Control-Allow-Headers",
+                          "Content-Type, Authorization, X-Requested-With");
+}
+
 bool init_web_server(WebServerConfig *web_config) {
     // Check for NULL config parameter
     if (web_config == NULL) {
