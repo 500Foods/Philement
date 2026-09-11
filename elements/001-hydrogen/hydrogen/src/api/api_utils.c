@@ -9,11 +9,12 @@
  * - JSON response formatting
  */
 
-// Project includes 
+  // Project includes 
 #include <src/hydrogen.h>
 #include <src/oidc/oidc_tokens.h>
 #include <src/webserver/web_server_compression.h>
 #include <src/utils/utils_crypto.h>
+#include <src/config/config_network.h>
 
 #include <openssl/evp.h>
 #include <openssl/hmac.h>
@@ -174,80 +175,22 @@ bool is_ip_internal(const char *ip_str) {
 }
 
 /**
- * Extract client IP address from a connection.
- *
- * First checks for an X-Forwarded-For header (used behind reverse proxies
- * / Kubernetes ingress). The comma-separated list is iterated and the first
- * non-internal (public) address is preferred. If all addresses are internal,
- * the first address in the list is used (preserving valid internal scenarios).
- * If X-Forwarded-For is absent, falls back to the TCP peer address obtained
- * from MHD_get_connection_info.
+ * Extract the immediate TCP peer IP address from a connection.
  *
  * Caller must free the returned string.
+ *
+ * @param connection The MHD_Connection object
+ * @return A newly allocated string with the peer IP address, or "unknown" on error
  */
-char *api_get_client_ip(struct MHD_Connection *connection) {
+char *api_get_tcp_peer_ip(struct MHD_Connection *connection) {
     if (!connection) return NULL;
 
-    const char *xff = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "X-Forwarded-For");
-    if (xff) {
-        char *first_ip = NULL;
-
-        char *saveptr = NULL;
-        char *xff_copy = strdup(xff);
-        if (xff_copy) {
-            char *token = strtok_r(xff_copy, ",", &saveptr);
-            while (token) {
-                while (*token == ' ' || *token == '\t') token++;
-
-                size_t len = strlen(token);
-                while (len > 0 && (token[len-1] == ' ' || token[len-1] == '\t')) {
-                    len--;
-                }
-
-                if (len > 0) {
-                    char *ip = malloc(len + 1);
-                    if (ip) {
-                        memcpy(ip, token, len);
-                        ip[len] = '\0';
-
-                        bool internal = is_ip_internal(ip);
-
-                        if (!first_ip) {
-                            first_ip = ip;
-                            if (!internal) {
-                                free(xff_copy);
-                                return ip;
-                            }
-                        } else if (!internal) {
-                            free(xff_copy);
-                            free(first_ip);
-                            return ip;
-                        }
-                        if (ip != first_ip) {
-                            free(ip);
-                        }
-                    }
-                }
-                token = strtok_r(NULL, ",", &saveptr);
-            }
-            free(xff_copy);
-        }
-
-        if (first_ip) {
-            return first_ip;
-        }
-
-        return strdup(xff);
-    }
-
-    char *ip_str = NULL;
-    const union MHD_ConnectionInfo *info;
-    struct sockaddr *addr;
-
-    info = MHD_get_connection_info(connection, MHD_CONNECTION_INFO_CLIENT_ADDRESS);
+    const union MHD_ConnectionInfo *info = MHD_get_connection_info(connection, MHD_CONNECTION_INFO_CLIENT_ADDRESS);
     if (!info) return strdup("unknown");
 
-    addr = (struct sockaddr *)info->client_addr;
+    struct sockaddr *addr = (struct sockaddr *)info->client_addr;
+    char *ip_str = NULL;
+
     if (addr->sa_family == AF_INET) {
         struct sockaddr_in *addr_in = (struct sockaddr_in *)addr;
         ip_str = malloc(INET_ADDRSTRLEN);
@@ -263,6 +206,83 @@ char *api_get_client_ip(struct MHD_Connection *connection) {
     }
 
     return ip_str ? ip_str : strdup("unknown");
+}
+
+/**
+ * Extract client IP address from a connection.
+ *
+ * Honors the trusted-proxy boundary: the immediate TCP peer must be in the
+ * Network.TrustedProxies CIDR list before X-Forwarded-For is consumed. For a
+ * trusted peer, walks X-Forwarded-For right-to-left and selects the first
+ * address outside the trusted set as the client IP. For an untrusted peer,
+ * uses the TCP peer address and ignores all client-supplied forwarding values.
+ *
+ * Caller must free the returned string.
+ *
+ * @param connection The MHD_Connection object
+ * @return A newly allocated string with the IP address, or "unknown" on error
+ */
+char *api_get_client_ip(struct MHD_Connection *connection) {
+    if (!connection) return NULL;
+
+    char *tcp_peer = api_get_tcp_peer_ip(connection);
+    bool peer_trusted = is_trusted_proxy(tcp_peer);
+
+    const char *xff = MHD_lookup_connection_value(connection, MHD_HEADER_KIND, "X-Forwarded-For");
+
+    if (!peer_trusted || !xff) {
+        char *result = strdup(tcp_peer ? tcp_peer : "unknown");
+        free(tcp_peer);
+        return result;
+    }
+
+    char *addrs[64];
+    size_t addr_count = 0;
+    char *xff_copy = strdup(xff);
+    if (xff_copy) {
+        char *saveptr = NULL;
+        char *token = strtok_r(xff_copy, ",", &saveptr);
+        while (token && addr_count < 64) {
+            while (*token == ' ' || *token == '\t') token++;
+            size_t len = strlen(token);
+            while (len > 0 && (token[len-1] == ' ' || token[len-1] == '\t')) {
+                len--;
+            }
+            if (len > 0) {
+                addrs[addr_count] = malloc(len + 1);
+                if (addrs[addr_count]) {
+                    memcpy(addrs[addr_count], token, len);
+                    addrs[addr_count][len] = '\0';
+                    addr_count++;
+                }
+            }
+            token = strtok_r(NULL, ",", &saveptr);
+        }
+        free(xff_copy);
+    }
+
+    char *result = NULL;
+    for (size_t i = addr_count; i > 0; i--) {
+        if (!is_trusted_proxy(addrs[i - 1])) {
+            result = addrs[i - 1];
+            addrs[i - 1] = NULL;
+            break;
+        }
+    }
+
+    for (size_t i = 0; i < addr_count; i++) {
+        free(addrs[i]);
+    }
+
+    if (result) {
+        free(tcp_peer);
+        return result;
+    }
+
+    // All XFF entries were trusted proxies; fall back to TCP peer
+    char *fallback = strdup(tcp_peer ? tcp_peer : "unknown");
+    free(tcp_peer);
+    return fallback;
 }
 
 /**
