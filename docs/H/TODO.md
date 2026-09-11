@@ -38,6 +38,17 @@ not open work unless listed below.
 | **Why now** | One plan for remaining auth, same pattern as Chat Finale. Production SSO is coded; register/provision still lie; live Keycloak unsigned (OTP blocker) |
 | **Note** | History: [`OIDC-PLAN_COMPLETE.md`](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md), [`KEYCLOAK_PLAN_COMPLETE.md`](/docs/H/plans/complete/KEYCLOAK_PLAN_COMPLETE.md), [`OIDC_IDP_COMPLETE.md`](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md), [`AUTH_PLAN_COMPLETE.md`](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md). Chat JWT mint: [`CHAT_FINALE_COMPLETE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md) |
 
+### 2. Terminal Subsystem End-to-End Fix
+
+| | |
+| --- | --- |
+| **Plan** | [`TERMINAL_FIX_PLAN.md`](/docs/H/plans/TERMINAL_FIX_PLAN.md) |
+| **Effort** | M |
+| **Done** | Lithium `_handleIframeMessage is null` crash fixed and deployed; payload `terminal.html` fetches `/api/system/info` with JWT |
+| **Remaining** | JWT `ip` claim behind Traefik/DOKS, WebSocket port/key exposure through DOKS+Traefik, protocol mismatch (`terminal` vs `hydrogen`), E2E verification of iframe WebSocket from Lithium popup |
+| **Why now** | Terminal is deployed but not working in production — the iframe fails to connect to WebSocket on port 7001. Root cause spans JWT → API → payload → WebSocket → iframe, needs a phased plan to debug systematically. |
+| **Note** | AUTH_FINALE Phase 7 locks the terminal WS auth product decision; this plan implements and verifies the full end-to-end flow. |
+
 ---
 
 ## P1 — Quality / safety gates (medium effort, durable ROI)
