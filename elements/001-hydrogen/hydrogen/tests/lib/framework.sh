@@ -19,6 +19,9 @@
 # evaluate_test_result_silent()
 
 # CHANGELOG
+# 3.4.2 - 2026-09-12 - reset_subtest_counter() now initializes TEST_COUNTER=0;
+#                     the framework owns TEST_COUNTER, fixing "unbound variable" in
+#                     standalone test runs where the test script did not set it
 # 3.4.1 - 2026-09-06 - Fixed unpaired TEST in "Checking Build Directory" subtest:
 #                     both success paths (dir exists, mkdir succeeds) now emit print_result
 # 3.4.0 - 2026-07-16 - TIMESTAMP now includes nanoseconds and PID so concurrent test
@@ -247,6 +250,7 @@ set_test_number() {
 
 # Function to reset subtest counter
 reset_subtest_counter() {
+    TEST_COUNTER=0
     SUBTEST_COUNTER=0
     CURRENT_SUBTEST_NUMBER="0000"
 }
