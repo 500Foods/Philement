@@ -66,6 +66,8 @@ These libraries provide testing utilities for the OIDC Relying Party endpoints (
 - **MCP Helpers** - MCP Streamable HTTP blackbox helpers for test_47. [Script](/elements/001-hydrogen/hydrogen/tests/lib/mcp_helpers.sh)
 - **SchemaHelper Helpers** - SchemaHelper fixture Lua runners and CLI/luacheck helpers for test_72. [Script](/elements/001-hydrogen/hydrogen/tests/lib/schemahelper_helpers.sh)
 - **Group40 HTTP** - Long-wait curl, 000-only retry, INFO delay lines for tests 40–47. [Script](/elements/001-hydrogen/hydrogen/tests/lib/group40_http.sh)
+- **Terminal Utils** - SQLite isolation, WebSocket config, HTTP/sysinfo helpers for test_26. [Script](/elements/001-hydrogen/hydrogen/tests/lib/terminal_utils.sh)
+- **Terminal WebSocket Helpers** - WebSocket connection/ping/I/O/resize/session helpers for test_26. [Script](/elements/001-hydrogen/hydrogen/tests/lib/terminal_ws_helpers.sh)
 
 ## Related Documentation
 

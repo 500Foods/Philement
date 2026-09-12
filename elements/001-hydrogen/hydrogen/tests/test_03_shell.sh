@@ -5,6 +5,7 @@
 # Validates that required and optional environment variables are properly configured
 
 # CHANGELOG
+# 1.4.4 - 2026-09-12 - Whitelist TERMINAL_WS_HELPERS_* and remaining Test 26 lib globals
 # 1.4.3 - 2026-08-27 - Whitelist MCP_HELPERS_* from tests/lib/mcp_helpers.sh
 # 1.4.2 - 2026-08-20 - Add PROFILE_START_CLOCK from profile_test_suite.sh
 # 1.4.1 - 2026-08-20 - Refresh profile_test_suite.sh names in ENV_WHITELIST
@@ -36,7 +37,7 @@ TEST_NAME="Shell Variables"
 TEST_ABBR="ZSH"
 TEST_NUMBER="03"
 TEST_COUNTER=0
-TEST_VERSION="1.4.3"
+TEST_VERSION="1.4.4"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "${HYDROGEN_ROOT}/tests/lib/framework.sh"
@@ -152,10 +153,12 @@ declare -a ENV_WHITELIST=(
     "BASH_COMMAND"                     
     "DUP_CONFIG_FILE" "DUP_LOG" "HYDROGEN_DUP_PID" "MDNS_TEST_HELPERS_NAME"
     "MDNS_TEST_HELPERS_VERSION"
-    # First found in tests/test_26_terminal.sh
-    "TERMINAL_LOGIN_JWT" "TERMINAL_WS_KEY"
-    "RESOLVED_WS_PROTOCOL" "RESOLVED_WS_URL" "SQLITE_ISOLATION_CONFIG" "SQLITE_ISOLATION_WORK_DIR"
-    "TERMINAL_UTILS_NAME" "TERMINAL_UTILS_VERSION"     
+    # First found in tests/test_26_terminal.sh / tests/lib/terminal_utils.sh / tests/lib/terminal_ws_helpers.sh
+    "TERMINAL_LOGIN_JWT" "TERMINAL_WS_KEY" "TERMINAL_WS_URL" "TERMINAL_WS_PROTOCOL"
+    "RESOLVED_WS_KEY" "RESOLVED_WS_PROTOCOL" "RESOLVED_WS_URL"
+    "SQLITE_ISOLATION_CONFIG" "SQLITE_ISOLATION_WORK_DIR"
+    "TERMINAL_UTILS_GUARD" "TERMINAL_UTILS_NAME" "TERMINAL_UTILS_VERSION"
+    "TERMINAL_WS_HELPERS_GUARD" "TERMINAL_WS_HELPERS_NAME" "TERMINAL_WS_HELPERS_VERSION"     
     # First found in tests/test_27_reporting_image_scale.sh
     "CURL_MAX_TIME" "FAIL_COUNT" "IMAGES_DIR" "PASS_COUNT" "RESULT_DIR" "TOTAL_COUNT"
     # First found in tests/test_40_auth.sh

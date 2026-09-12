@@ -4,17 +4,17 @@
 # Tests the Terminal functionality, payload serving, and WebRoot configurations.
 
 # FUNCTIONS
-# check_terminal_response_content()
-# test_sysinfo_no_terminal_without_jwt()
-# test_sysinfo_no_terminal_with_invalid_jwt()
-# test_sysinfo_cors_origin_enforcement()
-# login_for_terminal_tests()
-# test_sysinfo_terminal_with_valid_jwt()
+# (HTTP/sysinfo helpers live in tests/lib/terminal_utils.sh)
+# (WebSocket helpers live in tests/lib/terminal_ws_helpers.sh)
 # run_terminal_test_parallel()
 # analyze_terminal_test_results()
-# test_terminal_configuration()
 
 # CHANGELOG
+# 2.8.1 - 2026-09-12 - Source terminal libs via LIB_DIR after setup_test_environment
+#                    so standalone runs still find helpers after cwd changes.
+# 2.8.0 - 2026-09-12 - Completed 1000-line split: HTTP/sysinfo helpers in
+#                    lib/terminal_utils.sh; WebSocket helpers in
+#                    lib/terminal_ws_helpers.sh.
 # 2.7.0 - 2026-09-12 - Refactored: extracted terminal utilities into lib/terminal_utils.sh
 #                    (prepare_sqlite_isolation, resolve_terminal_websocket_config,
 #                    check_result_flag, redact_jwt_fingerprint, redact_sysinfo_body).
@@ -71,13 +71,17 @@ set -euo pipefail
 TEST_NAME="Terminal"
 TEST_ABBR="TRM"
 TEST_NUMBER="26"
-TEST_VERSION="2.7.0"  # Refactored: extracted terminal utilities to lib/terminal_utils.sh; fixed 0|0|0 sqlite3 stdout leak
+TEST_VERSION="2.8.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
-# shellcheck source=tests/lib/terminal_utils.sh # Terminal-specific helpers
-[[ -n "${TERMINAL_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/terminal_utils.sh"
 setup_test_environment
+# shellcheck source=tests/lib/terminal_utils.sh # Split for the 1000-line cap
+# shellcheck disable=SC1091 # LIB_DIR is set by setup_test_environment
+[[ -n "${TERMINAL_UTILS_GUARD:-}" ]] || source "${LIB_DIR}/terminal_utils.sh"
+# shellcheck source=tests/lib/terminal_ws_helpers.sh # Split for the 1000-line cap
+# shellcheck disable=SC1091 # LIB_DIR is set by setup_test_environment
+[[ -n "${TERMINAL_WS_HELPERS_GUARD:-}" ]] || source "${LIB_DIR}/terminal_ws_helpers.sh"
 
 # Parallel execution configuration
 declare -a PARALLEL_PIDS
@@ -98,320 +102,6 @@ TERMINAL_TEST_CONFIGS=(
 STARTUP_TIMEOUT=15
 SHUTDOWN_TIMEOUT=15  # Increased to allow more graceful cleanup and I/O processing
 
-# Function to check HTTP response content with retry logic for subsystem readiness
-check_terminal_response_content() {
-    local url="$1"
-    local expected_content="$2"
-    local response_file="$3"
-    local follow_redirects="$4"
-    
-    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "curl -s --max-time 10 --compressed ${follow_redirects:+-L} \"${url}\""
-
-    # Retry logic for subsystem readiness (especially important in parallel execution)
-    local max_attempts=25
-    local attempt=1
-    local curl_exit_code=0
-
-    while [[ "${attempt}" -le "${max_attempts}" ]]; do
-        if [[ "${attempt}" -gt 1 ]]; then
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HTTP request attempt ${attempt} of ${max_attempts} (waiting for subsystem initialization)..."
-        fi
-
-        # Run curl and capture exit code
-        if [[ "${follow_redirects}" = "true" ]]; then
-            curl -s --max-time 10 --compressed -L "${url}" > "${response_file}"
-            curl_exit_code=$?
-        else
-            curl -s --max-time 10 --compressed "${url}" > "${response_file}"
-            curl_exit_code=$?
-        fi
-        
-        if [[ "${curl_exit_code}" -eq 0 ]]; then
-            # Check if we got a 404 or other error response
-            if "${GREP}" -q "404 Not Found" "${response_file}" || "${GREP}" -q "<html>" "${response_file}"; then
-                # Check if this is actually the expected terminal test page
-                if "${GREP}" -q "HYDROGEN_TERMINAL_TEST_MARKER" "${response_file}" || "${GREP}" -q "Hydrogen Terminal Test Interface" "${response_file}"; then
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully received terminal page from ${url}"
-                    if [[ "${attempt}" -gt 1 ]]; then
-                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected content: ${expected_content} (succeeded on attempt ${attempt})"
-                    else
-                        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected content: ${expected_content}"
-                    fi
-                    return 0
-                fi
-                
-                if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Endpoint still not ready after ${max_attempts} attempts"
-                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Endpoint returned 404 or HTML error page"
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response content:"
-                    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "$(cat "${response_file}" || true)"
-                    return 1
-                else
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Endpoint not ready yet (got 404/HTML), retrying..."
-                    ((attempt++))
-                    continue
-                fi
-            fi
-            
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Successfully received response from ${url}"
-            
-            # Show response excerpt
-            local line_count
-            line_count=$(wc -l < "${response_file}")
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response contains ${line_count} lines"
-            
-            # Check for expected content
-            if "${GREP}" -q "${expected_content}" "${response_file}"; then
-                if [[ "${attempt}" -gt 1 ]]; then
-                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected content: ${expected_content} (succeeded on attempt ${attempt})"
-                else
-                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Response contains expected content: ${expected_content}"
-                fi
-                return 0
-            else
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Response doesn't contain expected content: ${expected_content}"
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response excerpt (first 10 lines):"
-                # Use process substitution to avoid subshell issue with OUTPUT_COLLECTION
-                while IFS= read -r line; do
-                    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
-                done < <(head -n 10 "${response_file}" || true)
-                return 1
-            fi
-        else
-            if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to connect to server at ${url} (curl exit code: ${curl_exit_code})"
-                return 1
-            else
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Connection failed on attempt ${attempt}, retrying..."
-                ((attempt++))
-                continue
-            fi
-        fi
-    done
-    
-    return 1
-}
-
-# Login to obtain a JWT for terminal authorization tests.
-# Performs retry logic for readiness under parallel load.
-# Sets the global variable TERMINAL_LOGIN_JWT on success.
-# Returns 0 on success, 1 on failure.
-login_for_terminal_tests() {
-    local base_url="$1"
-
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal login for JWT (pre-sysinfo step)"
-
-    TERMINAL_LOGIN_JWT=""
-
-    local demo_user="${HYDROGEN_DEMO_USER_NAME:-}"
-    local demo_pass="${HYDROGEN_DEMO_USER_PASS:-}"
-    local demo_api_key="${HYDROGEN_DEMO_API_KEY:-}"
-
-    local login_response=""
-    local login_http_code
-    for attempt in 1 2 3 4 5; do
-        if [[ "${attempt}" -gt 1 ]]; then
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Login retry ${attempt}/5 (server under parallel load)..."
-            sleep 1
-        fi
-        login_http_code=$(curl -s -o /tmp/test26_login_$$.json -w "%{http_code}" --max-time 15 \
-            -X POST "${base_url}/api/auth/login" \
-            -H "Content-Type: application/json" \
-            -d "{\"login_id\":\"${demo_user}\",\"password\":\"${demo_pass}\",\"api_key\":\"${demo_api_key}\",\"tz\":\"UTC\",\"database\":\"Acuranzo\"}" \
-            2>/dev/null || echo "000")
-        if [[ "${login_http_code}" == "200" ]]; then
-            login_response=$(cat /tmp/test26_login_$$.json 2>/dev/null || echo "")
-            rm -f /tmp/test26_login_$$.json 2>/dev/null || true
-            break
-        fi
-        rm -f /tmp/test26_login_$$.json 2>/dev/null || true
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Login HTTP ${login_http_code} (attempt ${attempt}), retrying..."
-    done
-
-    if [[ -z "${login_response}" || "${login_response}" == *"error"* ]]; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to obtain JWT via login"
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Login response:"
-        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${login_response}"
-        return 1
-    fi
-
-    TERMINAL_LOGIN_JWT=$(echo "${login_response}" | jq -r '.token // .access_token // .jwt // empty' 2>/dev/null || echo "")
-
-    if [[ -z "${TERMINAL_LOGIN_JWT}" || "${TERMINAL_LOGIN_JWT}" == "null" ]]; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No JWT in login response"
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Login response:"
-        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${login_response}"
-        return 1
-    fi
-
-    local jwt_fingerprint
-    jwt_fingerprint=$(redact_jwt_fingerprint "${TERMINAL_LOGIN_JWT}")
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Login succeeded, JWT obtained (fp: ${jwt_fingerprint})"
-    return 0
-}
-
-# System-info authorization contract tests
-# Verify that /api/system/info omits the terminal object when no valid
-# JWT with terminal role is present.
-
-# Test: no JWT -> no terminal object
-test_sysinfo_no_terminal_without_jwt() {
-    local base_url="$1"
-    local output_file="$2"
-
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "System-info: no JWT returns no terminal object"
-
-    local response
-    response=$(curl -s -o /dev/null -w "%{http_code}" "${base_url}/api/system/info" 2>/dev/null || echo "000")
-
-    if [[ "${response}" != "200" ]]; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Expected HTTP 200 from /api/system/info without JWT, got ${response}"
-        return 1
-    fi
-
-    # Fetch the body and check for absence of terminal authorization object
-    local body
-    body=$(curl -s "${base_url}/api/system/info" 2>/dev/null || echo "")
-
-    # The response may contain a generic "terminal" key under services.status,
-    # but the authorization block has "url", "protocol", and "key" fields.
-    # We check for the presence of the authorization-specific fields.
-    if echo "${body}" | jq -e '.terminal.url' >/dev/null 2>&1; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "terminal authorization object (url) present in /api/system/info without JWT (should be omitted)"
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response body (redacted):"
-        local redacted
-        redacted=$(redact_sysinfo_body "${body}")
-        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${redacted}"
-        return 1
-    fi
-
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No terminal authorization object in /api/system/info without JWT"
-    local redacted_body
-    redacted_body=$(redact_sysinfo_body "${body}")
-    echo "SYSINFO_NOJWT_BODY=${redacted_body}" >> "${output_file}"
-    return 0
-}
-
-# Test: invalid JWT -> no terminal object
-test_sysinfo_no_terminal_with_invalid_jwt() {
-    local base_url="$1"
-    local output_file="$2"
-
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "System-info: invalid JWT returns no terminal object"
-
-    local fake_jwt="eyJhbGci.eyJzdWIi.inZhbGlk"
-
-    # Fetch the body and check — the terminal authorization block has "url",
-    # "protocol", and "key" fields. Check for the URL specifically.
-    local body
-    body=$(curl -s -H "Authorization: Bearer ${fake_jwt}" "${base_url}/api/system/info" 2>/dev/null || echo "")
-
-    if echo "${body}" | jq -e '.terminal.url' >/dev/null 2>&1; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "terminal authorization object (url) present in /api/system/info with invalid JWT (should be omitted)"
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response body (redacted):"
-        local redacted
-        redacted=$(redact_sysinfo_body "${body}")
-        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${redacted}"
-        return 1
-    fi
-
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No terminal authorization object in /api/system/info with invalid JWT"
-    local redacted_body
-    redacted_body=$(redact_sysinfo_body "${body}")
-    echo "SYSINFO_BADJWT_BODY=${redacted_body}" >> "${output_file}"
-    return 0
-}
-
-# Test: CORS origin enforcement on /api/system/info
-# When terminal is enabled, the CORS allowlist should include the configured origin.
-# Without terminal role, CORS headers should not expose terminal-specific origins.
-test_sysinfo_cors_origin_enforcement() {
-    local base_url="$1"
-    local output_file="$2"
-
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "System-info: CORS origin enforcement"
-
-    local cors_origin
-    cors_origin=$(curl -s -D - -o /dev/null -H "Origin: http://example.com" "${base_url}/api/system/info" 2>/dev/null | tr -d '\r' || echo "")
-
-    # Without terminal role, the response should not contain Access-Control-Allow-Origin
-    # pointing to a terminal-specific origin. It may be "*"" (default) or the request origin.
-    if echo "${cors_origin}" | grep -qi "access-control-allow-origin: http://localhost"; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "CORS origin exposes localhost terminal origin without terminal role"
-        return 1
-    fi
-
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "CORS origin not exposing terminal-specific origin without terminal role"
-    echo "SYSINFO_CORS_HEADERS=${cors_origin}" >> "${output_file}"
-    return 0
-}
-
-# Test: valid terminal-role JWT -> terminal object present with key match
-# Uses a pre-obtained JWT (from login_for_terminal_tests) rather than logging in again.
-# Sets global variables TERMINAL_WS_URL, TERMINAL_WS_PROTOCOL, and TERMINAL_WS_KEY
-# from the sysinfo response so WebSocket tests can use them.
-# Requires HYDROGEN_DEMO_USER_NAME, HYDROGEN_DEMO_USER_PASS, HYDROGEN_DEMO_API_KEY
-test_sysinfo_terminal_with_valid_jwt() {
-    local base_url="$1"
-    local jwt="$2"
-    local output_file="$3"
-
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "System-info: valid terminal-role JWT returns terminal object"
-
-    if [[ -z "${jwt}" || "${jwt}" == "null" ]]; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No JWT available (login was not performed)"
-        return 1
-    fi
-
-    # Redacted fingerprint of the JWT
-    local jwt_fingerprint
-    jwt_fingerprint=$(redact_jwt_fingerprint "${jwt}")
-
-    # Fetch system/info with the JWT (retry under parallel load — the system
-    # status JSON queries the database, which can be slow when two servers
-    # and WebSocket stress tests are running simultaneously).
-    local sysinfo_body=""
-    local sysinfo_http_code
-    for attempt in 1 2 3 4 5; do
-        if [[ "${attempt}" -gt 1 ]]; then
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "System-info retry ${attempt}/5 (server under parallel load)..."
-            sleep 1
-        fi
-        sysinfo_http_code=$(curl -s -o /tmp/test26_sysinfo_$$.json -w "%{http_code}" --max-time 15 \
-            -H "Authorization: Bearer ${jwt}" "${base_url}/api/system/info" 2>/dev/null || echo "000")
-        if [[ "${sysinfo_http_code}" == "200" ]]; then
-            sysinfo_body=$(cat /tmp/test26_sysinfo_$$.json 2>/dev/null || echo "")
-            rm -f /tmp/test26_sysinfo_$$.json 2>/dev/null || true
-            break
-        fi
-        rm -f /tmp/test26_sysinfo_$$.json 2>/dev/null || true
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "System-info HTTP ${sysinfo_http_code} (attempt ${attempt}), retrying..."
-    done
-
-    echo "SYSINFO_VALIDJWT_JWT_FP=${jwt_fingerprint}" >> "${output_file}"
-    echo "SYSINFO_VALIDJWT_BODY=$(echo "${sysinfo_body}" | jq -c '.terminal // "omitted" | .key = "REDACTED"' 2>/dev/null || echo "omitted")" >> "${output_file}" || true
-    if ! echo "${sysinfo_body}" | jq -e '.terminal.url' >/dev/null 2>&1; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No terminal authorization object in /api/system/info with valid terminal-role JWT"
-        return 1
-    fi
-
-    # Extract terminal URL, protocol, and key from the sysinfo response.
-    # These are used by the WebSocket tests so they connect using the
-    # server-provided endpoint rather than reading config directly.
-    TERMINAL_WS_URL=$(echo "${sysinfo_body}" | jq -r '.terminal.url // empty' 2>/dev/null || echo "")
-    TERMINAL_WS_PROTOCOL=$(echo "${sysinfo_body}" | jq -r '.terminal.protocol // empty' 2>/dev/null || echo "")
-    TERMINAL_WS_KEY=$(echo "${sysinfo_body}" | jq -r '.terminal.key // empty' 2>/dev/null || echo "")
-
-    # Verify the terminal object has a non-empty key
-    if [[ -n "${TERMINAL_WS_KEY}" ]]; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal authorization object present with key (redacted fp: ${jwt_fingerprint})"
-        return 0
-    else
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal authorization object present but key is empty"
-        return 1
-    fi
-}
-
 # Function to test Terminal configuration in parallel
 run_terminal_test_parallel() {
     local test_name="$1"
@@ -419,18 +109,18 @@ run_terminal_test_parallel() {
     local log_suffix="$3"
     local description="$4"
     local expected_file="$5"
-    
+
     local log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
     local result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
     local port
     port=$(get_webserver_port "${config_file}")
-    
+
     # Initialize globals used for sysinfo/WebSocket test coordination
     TERMINAL_LOGIN_JWT=""
     TERMINAL_WS_URL=""
     TERMINAL_WS_PROTOCOL=""
     TERMINAL_WS_KEY=""
-    
+
     # SQLite isolation: copy hydrodemo.sqlite to a per-run file to prevent
     # write conflicts when both payload and filesystem configs run in parallel.
     # Uses prepare_sqlite_isolation from lib/terminal_utils.sh; falls back to
@@ -444,48 +134,48 @@ run_terminal_test_parallel() {
         echo "SQLITE_COPY=${SQLITE_ISOLATION_WORK_DIR}/hydrodemo.sqlite" >> "${result_file}"
     fi
     actual_config_file="${SQLITE_ISOLATION_CONFIG}"
-    
+
     # Clear result file
     true > "${result_file}"
-    
+
     # Start hydrogen server
     "${HYDROGEN_BIN}" "${actual_config_file}" > "${log_file}" 2>&1 &
     local hydrogen_pid=$!
     if declare -f register_hydrogen_pid >/dev/null 2>&1; then
         register_hydrogen_pid "${hydrogen_pid}"
     fi
-    
+
     # Store PID for later reference
     echo "PID=${hydrogen_pid}" >> "${result_file}"
-    
+
     # Wait for startup
     local startup_success=false
     local start_time
     start_time=${SECONDS}
-    
+
     while true; do
         if [[ $((SECONDS - start_time)) -ge "${STARTUP_TIMEOUT}" ]]; then
             break
         fi
-        
+
         if "${GREP}" -q "STARTUP COMPLETE" "${log_file}" 2>/dev/null; then
             startup_success=true
             break
         fi
         sleep 0.05
     done
-    
+
     if [[ "${startup_success}" = true ]]; then
         echo "STARTUP_SUCCESS" >> "${result_file}"
-        
+
         # Wait for server to be ready
         # shellcheck disable=SC2310 # We want to continue even if the test fails
         if wait_for_server_ready "http://localhost:${port}"; then
             echo "SERVER_READY" >> "${result_file}"
-            
+
             local base_url="http://localhost:${port}"
             local all_tests_passed=true
-            
+
             # Test terminal index page - use the expected content for this configuration
             local index_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_index.html"
             # shellcheck disable=SC2310 # We want to continue even if the test fails
@@ -495,7 +185,7 @@ run_terminal_test_parallel() {
                 echo "INDEX_TEST_FAILED" >> "${result_file}"
                 all_tests_passed=false
             fi
-            
+
             # Test specific files based on configuration mode
             if [[ "${log_suffix}" = "payload" ]]; then
                 # For payload mode, test that we can access the terminal interface
@@ -518,7 +208,7 @@ run_terminal_test_parallel() {
                     all_tests_passed=false
                 fi
             fi
-            
+
             # Test 404 behavior for the other config's file (cross-config test)
             local other_file=""
             if [[ "${expected_file}" = "terminal.html" ]]; then
@@ -536,8 +226,8 @@ run_terminal_test_parallel() {
                 # Note: This is expected behavior - files might be available in both configs
                 # Don't fail the test for this
             fi
-            
-            
+
+
              # --- System-info authorization contract tests ---
              # Run BEFORE WebSocket stress tests: get_system_status_json() calls
              # collect_file_descriptors() which is slow under parallel load with
@@ -678,7 +368,7 @@ run_terminal_test_parallel() {
         else
             echo "SERVER_NOT_READY" >> "${result_file}"
         fi
-        
+
         # Stop the server
         if ps -p "${hydrogen_pid}" > /dev/null 2>&1; then
             kill -SIGINT "${hydrogen_pid}" 2>/dev/null || true
@@ -690,17 +380,17 @@ run_terminal_test_parallel() {
                     kill -9 "${hydrogen_pid}" 2>/dev/null || true
                     break
                 fi
-                sleep 0.05  
+                sleep 0.05
             done
         fi
-        
+
         echo "TEST_COMPLETE" >> "${result_file}"
     else
         echo "STARTUP_FAILED" >> "${result_file}"
         echo "TEST_FAILED" >> "${result_file}"
         kill -9 "${hydrogen_pid}" 2>/dev/null || true
     fi
-    
+
     # Clean up per-run SQLite artifacts
     if [[ -n "${SQLITE_ISOLATION_WORK_DIR}" ]] && [[ -d "${SQLITE_ISOLATION_WORK_DIR}" ]]; then
         rm -rf "${SQLITE_ISOLATION_WORK_DIR}" 2>/dev/null || true
@@ -719,21 +409,21 @@ analyze_terminal_test_results() {
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No result file found for ${test_name}"
         return 1
     fi
-    
+
     # Check startup
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if ! check_result_flag "${result_file}" "STARTUP_SUCCESS"; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to start Hydrogen for ${description} test"
         return 1
     fi
-    
+
     # Check server readiness
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if ! check_result_flag "${result_file}" "SERVER_READY"; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server not ready for ${description} test"
         return 1
     fi
-    
+
     # Check individual terminal tests
     local index_test_passed=false
     local specific_file_test_passed=false
@@ -768,335 +458,6 @@ analyze_terminal_test_results() {
     fi
 }
 
-# Function to test WebSocket terminal connection with proper authentication and retry logic
-test_websocket_terminal_connection() {
-    local ws_url="$1"
-    local protocol="$2"
-    local test_message="$3"
-    local response_file="$4"
-
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing WebSocket Terminal connection with authentication using websocat"
-    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${test_message}' | websocat --protocol='${protocol}' -H='Authorization: Key ***' --ping-interval=30 --exit-on-eof '${ws_url}'"
-
-    # Retry logic for WebSocket subsystem readiness (reduced for parallel execution to prevent thundering herd)
-    local max_attempts=5
-    local attempt=1
-    local websocat_output
-    local websocat_exitcode
-    local temp_file="${LOG_PREFIX}${TIMESTAMP}_${protocol}_terminal_echo.log"
-
-    while [[ "${attempt}" -le "${max_attempts}" ]]; do
-        if [[ "${attempt}" -gt 1 ]]; then
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal WebSocket connection attempt ${attempt} of ${max_attempts} (waiting for terminal subsystem initialization)..."
-            sleep 0.05  # Brief delay between attempts to prevent thundering herd
-        fi
-
-        # Test WebSocket connection with a 5-second timeout
-        echo "${test_message}" | "${TIMEOUT}" 5 websocat \
-            --protocol="${protocol}" \
-            -H="Authorization: Key ${WEBSOCKET_KEY}" \
-            --ping-interval=30 \
-            --exit-on-eof \
-            "${ws_url}" > "${temp_file}" 2>&1
-        websocat_exitcode=$?
-        websocat_output=$(cat "${temp_file}" 2>/dev/null || echo "")
-
-        # Analyze the results
-        if [[ "${websocat_exitcode}" -eq 0 ]]; then
-            if [[ "${attempt}" -gt 1 ]]; then
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket connection successful (clean exit, succeeded on attempt ${attempt})"
-            else
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket connection successful (clean exit)"
-            fi
-            # Don't print server response to avoid cluttering output with shell prompts
-            return 0
-        elif [[ "${websocat_exitcode}" -eq 124 ]]; then
-            # Timeout occurred, but that's OK if connection was established
-            if [[ "${attempt}" -gt 1 ]]; then
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket connection successful (timeout after successful connection, succeeded on attempt ${attempt})"
-            else
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket connection successful (timeout after successful connection)"
-            fi
-            return 0
-        else
-            # Check for connection refused which might indicate WebSocket server not ready yet
-            if echo "${websocat_output}" | "${GREP}" -qi "connection refused"; then
-                if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket connection failed: Connection refused after ${max_attempts} attempts"
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server is not accepting Terminal WebSocket connections on the specified port"
-                    return 1
-                else
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal WebSocket server not ready yet (connection refused), retrying..."
-                    attempt=$(( attempt + 1 ))
-                    continue
-                fi
-            fi
-
-            # Check for authentication errors
-            if echo "${websocat_output}" | "${GREP}" -qi "401\|forbidden\|unauthorized"; then
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket connection failed: Authentication rejected"
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server rejected the provided WebSocket key"
-                return 1
-            elif echo "${websocat_output}" | "${GREP}" -qi "protocol.*not.*supported"; then
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket connection failed: Terminal protocol not supported"
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server does not support the 'terminal' protocol"
-                return 1
-            else
-                # Unknown error - retry if we have attempts left
-                if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket connection failed after ${max_attempts} attempts"
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Error: ${websocat_output}"
-                    return 1
-                else
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal WebSocket connection failed on attempt ${attempt}, retrying..."
-                    attempt=$(( attempt + 1 ))
-                    continue
-                fi
-            fi
-        fi
-    done
-
-    return 1
-}
-
-# Function to test WebSocket terminal status request
-test_websocket_terminal_status() {
-    local ws_url="$1"
-    local protocol="$2"
-    local response_file="$3"
-
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing Terminal WebSocket status request using websocat"
-
-    # JSON message to request status (terminal-specific)
-    local status_request='{"type": "ping"}'
-    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${status_request}' | websocat --protocol='${protocol}' -H='Authorization: Key ***' --ping-interval=30 --one-message '${ws_url}'"
-
-    # Retry logic for WebSocket subsystem readiness (reduced for parallel execution to prevent thundering herd)
-    local max_attempts=8
-    local attempt=1
-    local websocat_output
-    local websocat_exitcode
-    local temp_file="${LOG_PREFIX}${TIMESTAMP}_${protocol}_terminal_status.txt"
-
-    while [[ "${attempt}" -le "${max_attempts}" ]]; do
-        if [[ "${attempt}" -gt 1 ]]; then
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal WebSocket status request attempt ${attempt} of ${max_attempts}..."
-            sleep 0.05  # Brief delay between attempts to prevent thundering herd
-        fi
-
-        # Test WebSocket status request with a 3-second timeout
-        echo "${status_request}" | websocat \
-            --protocol="${protocol}" \
-            -H="Authorization: Key ${WEBSOCKET_KEY}" \
-            --ping-interval=30 \
-            --one-message \
-            "${ws_url}" > "${temp_file}" 2>&1
-        websocat_exitcode=$?
-        websocat_output=$(cat "${temp_file}" 2>/dev/null || echo "")
-
-        # For terminal protocol, we expect success (clean exit) - this tests that the protocol is accepted
-        if [[ "${websocat_exitcode}" -eq 0 ]]; then
-            if [[ "${attempt}" -gt 1 ]]; then
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket status ping successful (succeeded on attempt ${attempt})"
-            else
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket status ping successful"
-            fi
-            # Don't print protocol acceptance message to reduce output clutter
-            return 0
-        elif [[ "${websocat_exitcode}" -eq 124 ]]; then
-            # Timeout occurred, but ping should respond quickly
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal WebSocket ping timed out (protocol accepting but no response)"
-            if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket ping failed - protocol accepted but no response"
-                return 1
-            else
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal WebSocket ping attempt ${attempt} timed out, retrying..."
-                attempt=$(( attempt + 1 ))
-                continue
-            fi
-        else
-            # Check for connection issues that might indicate protocol incompatibility
-            if [[ "${websocat_exitcode}" -ne 0 ]] && [[ "${websocat_exitcode}" -ne 1 ]]; then
-                if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket ping failed - connection error (${websocat_exitcode})"
-                    return 1
-                else
-                    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal WebSocket ping attempt ${attempt} failed, retrying..."
-                    attempt=$(( attempt + 1 ))
-                    continue
-                fi
-            fi
-
-            # For other errors, fail immediately as they're likely permanent
-            if echo "${websocat_output}" | "${GREP}" -qi "401\|forbidden\|unauthorized"; then
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket ping failed: Authentication rejected"
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server rejected the provided WebSocket key for terminal protocol"
-                return 1
-            elif echo "${websocat_output}" | "${GREP}" -qi "protocol.*not.*supported"; then
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket ping failed: Terminal protocol not supported"
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server does not support the 'terminal' protocol - likely configuration issue"
-                return 1
-            fi
-
-            # If we reach here, either got failure or timeout, retry if we have attempts left
-            if [[ "${attempt}" -eq "${max_attempts}" ]]; then
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket ping failed after ${max_attempts} attempts"
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Final error: ${websocat_output}"
-                return 1
-            else
-                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal WebSocket ping attempt ${attempt} failed, retrying..."
-                attempt=$(( attempt + 1 ))
-            fi
-        fi
-    done
-
-    return 1
-}
-
-# Function to test WebSocket terminal input/output with shell command
-test_websocket_terminal_input_output() {
-    local ws_url="$1"
-    local protocol="$2"
-    local response_file="$3"
-
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing WebSocket Terminal input/output with multiple commands (extended for coverage)"
-
-    # Send multiple input commands to better exercise I/O processing
-    # Extended from 3 to 8 commands to increase coverage
-    local commands=(
-        '{"type": "input", "data": "echo hello\n"}'
-        '{"type": "input", "data": "pwd\n"}'
-        '{"type": "input", "data": "date\n"}'
-        '{"type": "input", "data": "whoami\n"}'
-        '{"type": "input", "data": "echo Coverage Test Line 1\n"}'
-        '{"type": "input", "data": "echo Coverage Test Line 2\n"}'
-        '{"type": "input", "data": "ls -la /tmp 2>/dev/null | head -n 5\n"}'
-        '{"type": "input", "data": "echo COVERAGE_TEST_COMPLETE\n"}'
-    )
-
-    local all_commands_successful=true
-
-    for cmd in "${commands[@]}"; do
-        print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${cmd}' | websocat --protocol='${protocol}' -H='Authorization: Key ***' --ping-interval=30 --one-message '${ws_url}'"
-
-        # Send the command
-        if ! echo "${cmd}" | websocat \
-            --protocol="${protocol}" \
-            -H="Authorization: Key ${WEBSOCKET_KEY}" \
-            --ping-interval=30 \
-            --one-message \
-            "${ws_url}" >> "${response_file}" 2>&1; then
-            all_commands_successful=false
-            break
-        fi
-
-        # Increased pause between commands from 0.5s to 1s to allow more bridge cycles
-        sleep 1
-    done
-
-    # Additional pause to allow I/O bridge thread to process multiple read cycles
-    # This ensures terminal_websocket_bridge.c functions get sufficient execution time
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Maintaining connection for I/O bridge coverage (additional 3 seconds)..."
-    sleep 3
-
-    if [[ "${all_commands_successful}" = true ]]; then
-        # The test passes if commands were sent successfully
-        # This exercises terminal_websocket.c input processing and pty_write_data
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal input commands sent successfully (terminal_websocket.c and terminal_shell.c exercised)"
-        return 0
-    else
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to send terminal input commands"
-        return 1
-    fi
-}
-
-# Function to test WebSocket terminal resize functionality
-test_websocket_terminal_resize() {
-    local ws_url="$1"
-    local protocol="$2"
-    local response_file="$3"
-
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing WebSocket Terminal resize functionality (multiple dimensions for coverage)"
-
-    # Send multiple resize commands with different dimensions
-    # This exercises terminal_shell_ops.c:pty_set_size() more thoroughly
-    local resize_commands=(
-        '{"type": "resize", "rows": 30, "cols": 100}'
-        '{"type": "resize", "rows": 40, "cols": 120}'
-        '{"type": "resize", "rows": 50, "cols": 132}'
-        '{"type": "resize", "rows": 24, "cols": 80}'   # Standard size
-        '{"type": "resize", "rows": 25, "cols": 85}'   # Different variation
-    )
-
-    local all_resize_successful=true
-
-    for resize_command in "${resize_commands[@]}"; do
-        print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${resize_command}' | websocat --protocol='${protocol}' -H='Authorization: Key ***' --ping-interval=30 --one-message '${ws_url}'"
-
-        # Send resize command - success means terminal_websocket.c resize function was called
-        if ! echo "${resize_command}" | websocat \
-            --protocol="${protocol}" \
-            -H="Authorization: Key ${WEBSOCKET_KEY}" \
-            --ping-interval=30 \
-            --one-message \
-            "${ws_url}" >> "${response_file}" 2>&1; then
-            all_resize_successful=false
-            break
-        fi
-
-        # Brief pause between resizes to allow processing
-        sleep 0.5
-    done
-
-    if [[ "${all_resize_successful}" = true ]]; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal resize commands sent successfully (terminal_websocket.c and terminal_shell_ops.c exercised)"
-        return 0
-    else
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to send terminal resize commands"
-        return 1
-    fi
-}
-
-# Function to test long-running WebSocket terminal session
-test_websocket_terminal_long_session() {
-    local ws_url="$1"
-    local protocol="$2"
-    local response_file="$3"
-    
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing WebSocket Terminal long-running session (pty_is_running coverage)"
-    
-    # Keep connection alive with periodic commands over 8 seconds
-    # This exercises terminal_shell_ops.c:pty_is_running() and ensures
-    # the I/O bridge thread maintains the session properly
-    local session_successful=true
-    
-    for i in {1..4}; do
-        local cmd='{"type": "input", "data": "echo Session iteration '${i}'\n"}'
-        print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "echo '${cmd}' | websocat --protocol='${protocol}' -H='Authorization: Key ***' --ping-interval=30 --one-message '${ws_url}'"
-        
-        if ! echo "${cmd}" | websocat \
-            --protocol="${protocol}" \
-            -H="Authorization: Key ${WEBSOCKET_KEY}" \
-            --ping-interval=30 \
-            --one-message \
-            "${ws_url}" >> "${response_file}" 2>&1; then
-            session_successful=false
-            break
-        fi
-        
-        # 2-second pause between commands to maintain session over time
-        sleep 2
-    done
-    
-    if [[ "${session_successful}" = true ]]; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Long-running session test completed (pty_is_running and should_continue_io_bridge exercised)"
-        return 0
-    else
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Long-running session test failed"
-        return 1
-    fi
-}
-
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate Hydrogen Binary"
 
 HYDROGEN_BIN=''
@@ -1117,7 +478,7 @@ for test_config in "${!TERMINAL_TEST_CONFIGS[@]}"; do
 
     # Parse test configuration
     IFS=':' read -r config_file log_suffix description expected_file <<< "${TERMINAL_TEST_CONFIGS[${test_config}]}"
-    
+
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if validate_config_file "${config_file}"; then
         port=$(get_webserver_port "${config_file}")
@@ -1169,38 +530,38 @@ fi
 
 # Only proceed with Terminal tests if prerequisites are met
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
-   
+
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Running Terminal tests in parallel"
-    
+
     # Start all Terminal tests in parallel with job limiting
     for test_config in "${!TERMINAL_TEST_CONFIGS[@]}"; do
         # shellcheck disable=SC2312 # Job control with wc -l is standard practice
         while (( $(jobs -r | wc -l) >= CORES )); do
             wait -n  # Wait for any job to finish
         done
-        
+
         # Parse test configuration
         IFS=':' read -r config_file log_suffix description expected_file <<< "${TERMINAL_TEST_CONFIGS[${test_config}]}"
-        
+
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting parallel test: ${test_config} (${description})"
-        
+
         # Run parallel Terminal test in background
         run_terminal_test_parallel "${test_config}" "${config_file}" "${log_suffix}" "${description}" "${expected_file}" &
         PARALLEL_PIDS+=($!)
     done
-    
+
     # Wait for all parallel tests to complete
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Waiting for ${#TERMINAL_TEST_CONFIGS[@]} parallel Terminal tests to complete"
     for pid in "${PARALLEL_PIDS[@]}"; do
         wait "${pid}"
     done
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All parallel tests completed, analyzing results"
-    
+
     # Process results sequentially for clean output
     for test_config in "${!TERMINAL_TEST_CONFIGS[@]}"; do
         # Parse test configuration
         IFS=':' read -r config_file log_suffix description expected_file <<< "${TERMINAL_TEST_CONFIGS[${test_config}]}"
-        
+
         log_file="${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${log_suffix}.log"
         result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${test_config} Server Log: ..${log_file}"
@@ -1216,7 +577,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal index page test failed"
                 EXIT_CODE=1
             fi
-            
+
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Specific File Access - ${description}"
             if [[ "${SPECIFIC_FILE_TEST_RESULT}" = true ]]; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Specific file (${expected_file}) test passed"
@@ -1224,7 +585,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Specific file (${expected_file}) test failed"
                 EXIT_CODE=1
             fi
-            
+
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Cross-Config 404 Test - ${description}"
             if [[ "${CROSS_CONFIG_404_TEST_RESULT}" = true ]]; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Cross-config 404 test passed (proper file isolation)"
@@ -1330,7 +691,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             EXIT_CODE=1
         fi
     done
-    
+
     # Print summary
     successful_configs=0
     for test_config in "${!TERMINAL_TEST_CONFIGS[@]}"; do
@@ -1341,10 +702,10 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             successful_configs=$(( successful_configs + 1 ))
         fi
     done
-    
+
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Summary: ${successful_configs}/${#TERMINAL_TEST_CONFIGS[@]} Terminal configurations passed all tests"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Parallel execution completed - SO_REUSEADDR allows immediate port reuse"
-    
+
 else
     # Skip Terminal tests if prerequisites failed
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping Terminal tests due to prerequisite failures"

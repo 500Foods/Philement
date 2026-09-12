@@ -63,6 +63,24 @@ The WebSocket connection uses settings from `config/lithium.json`:
 }
 ```
 
+### WebSocket Routes
+
+There are two WebSocket routes on the Hydrogen server (port 7001):
+
+| Path | Purpose | Protocol |
+|------|---------|----------|
+| `/wss` | App-wide chat/keepalive WebSocket (`app-ws.js`) | `hydrogen` (configured `WebSocketServer.Protocol`) |
+| `/terminal/ws` | Terminal session WebSocket (served from the `/terminal` iframe page) | `hydrogen` (same configured protocol) |
+
+Both routes are behind Traefik with sticky sessions and CrowdSec middleware.
+The terminal iframe obtains its WebSocket URL from `/api/system/info`, which
+constructs it as `WebSocketServer.PublicUrl` + `Terminal.WebPath` + `/ws`
+(e.g. `wss://lithium.philement.com/terminal/ws?key=...`).
+
+The `/terminal` HTTP path (port 7000) serves the terminal HTML page
+(`payloads/terminal.html`) that contains the xterm.js UI and inline
+`connectToWebSocket` logic.
+
 ### Configuration Fields
 
 | Field | Description | Default |

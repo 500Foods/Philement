@@ -10,8 +10,15 @@
 | [Phase 2 — WebSocket Config & Authorization](#phase-2--websocket-configuration-authorization-and-protocol-contract) | Fail-closed key validation, role-gated system-info, configured protocol routing, terminal CORS, redaction | **Complete** |
 | [Phase 3 — Payload & Browser Security](#phase-3--terminal-payload-regeneration-and-browser-security) | Generated payload uses API-provided URL/protocol, exact-origin messaging, redacted diagnostics | **Complete** |
 | [Phase 4 — Lithium Manager](#phase-4--lithium-terminal-manager-and-exact-origin-messaging) | Lithium manager exact-origin/postMessage, lifecycle safety | **Complete** |
-| [Phase 5 — Deployed E2E](#phase-5--deployed-endpoint-key-rotation-and-browser-e2e) | Live Traefik/DOKS route, TLS, key rotation, browser terminal session | **Pending (Ops)** |
-| [Phase 6 — Debug Launcher & Tests](#phase-6--secure-debug-launcher-and-redacted-test-coverage) | Secure launcher, extended redacted test coverage | **In Progress** |
+| [Phase 5 — Deployed E2E](#phase-5--deployed-endpoint-key-rotation-and-browser-e2e) | Original ops E2E (single-key contract) | **Skipped — superseded by Phase 12** |
+| [Phase 6 — Debug Launcher & Tests](#phase-6--secure-debug-launcher-and-redacted-test-coverage) | Secure launcher, Test 26 authorization contract, Unity role tests | **Complete** |
+| [Phase 7a — Config JSON Schema](#phase-7a--config-json-schema-test-93) | Test 93: schema allows C-loaded `Terminal.CORSOrigin` / `Network.TrustedProxies`; also `Terminal.Key`/`Protocol`; cap 16 | **Complete** |
+| [Phase 7 — Query-string Auth](#phase-7--query-string-websocket-authentication) | `WSI_TOKEN_HTTP_URI_ARGS` query-key parse so browser `?key=` upgrades succeed | **Not started** |
+| [Phase 8 — Split Terminal Key](#phase-8--terminalkey-protocol-and-dual-protocol-auth) | `Terminal.Key` / `Terminal.Protocol` / `Terminal.WebPath` distinct from chat WS | **Not started** |
+| [Phase 9 — Info Gating](#phase-9--apisysteminfo-public-vs-jwt-vs-terminal) | Short public info; full ops+scripting with JWT; `terminal` only with role 32 | **Not started** |
+| [Phase 10 — Lithium Chat WS](#phase-10--lithium-chat-websocket-hygiene) | Redact `app-ws.js` key log; no hardcoded chat-key fallback | **Not started** |
+| [Phase 11 — Test 26 & Launcher](#phase-11--test-26-and-terminal-launcher) | Two keys/protocols, query auth, info gating, [`terminal-launcher.sh`](/elements/001-hydrogen/hydrogen/extras/terminal-launcher.sh) | **Not started** |
+| [Phase 12 — Production E2E](#phase-12--production-config-secrets-and-doks-e2e) | bash, CORS, TrustedProxies, env keys, payload, Traefik/DOKS, rotation | **Not started** |
 
 ## Purpose
 
@@ -21,11 +28,16 @@ regeneration, WebSocket authentication key flow from `/api/system/info`,
 iframe `postMessage` hand-off from Lithium to the xterm.js iframe, and the
 `_handleIframeMessage is null` crash in the deployed Lithium terminal manager.
 
-The system is currently **not working in production** (deployed at
-`https://lithium.philement.com`). This plan starts from zero assumptions and
-walks through every layer — JWT → API → payload → WebSocket → iframe — until
-the terminal opens and runs from the Lithium popup without requiring
-"open in new window".
+The system is currently **not working in production**. The live 500 Courses
+instance is `https://lithium.500courses.com` (Hydrogen `1.0.0.2619`,
+2026-09-12). Source Phases 0–4, 6, and 7a are in the tree; query-string
+auth, split terminal vs chat keys (C loaders), public-vs-JWT info gating,
+Test 26, the launcher, and production config are Phases 7–12.
+
+This plan walks through every layer — JWT → API → payload → WebSocket →
+iframe — until the terminal opens from the Lithium popup without requiring
+"open in new window", and until the Lithium chat WebSocket at `/wss` also
+connects.
 
 ## How To Use This Document
 
@@ -44,6 +56,10 @@ the terminal opens and runs from the Lithium popup without requiring
 - Test 26 is a blackbox test. Run it from the Hydrogen test directory with
   `./test_00_all.sh 26_terminal` (or pass it alongside other test bases);
   do **not** run it with `mku`.
+- Test 93 (`./test_00_all.sh 93_jsonlint`) validates Hydrogen configs
+  against
+  [`hydrogen_config_schema.json`](/elements/001-hydrogen/hydrogen/tests/artifacts/hydrogen_config_schema.json).
+  After any config-key or schema change, that test must be green.
 - Lithium: `npm test`, `npm run lint`, and `npm run build` when templates or
   production assets change.
 - **Never apply a database migration.** Hand packets to the user.
@@ -69,39 +85,46 @@ the terminal opens and runs from the Lithium popup without requiring
 
 ## Overarching Theme: Fail Closed, No Hardcoded Keys, No Secret Leakage
 
-The WebSocket authentication key must **never** be hardcoded in source,
-defaults, generated payloads, tests, or fallback paths. It must come from
-runtime configuration (`WEBSOCKET_KEY` or `WebSocketServer.Key`) and be
-validated before the WebSocket server starts.
+WebSocket authentication keys must **never** be hardcoded in source,
+defaults, generated payloads, tests, or fallback paths. Chat and terminal
+each have their own key, resolved from runtime configuration and validated
+before the relevant listener accepts connections.
 
 **Security and configuration requirements:**
 
-1. **Fail closed when the key is missing or unresolved.** A default such as
-   `${env.WEBSOCKET_KEY}` is a configuration reference, not a usable key.
-   If the environment variable is absent or empty, Hydrogen must refuse to
-   start the WebSocket server (or fail the overall startup) rather than use
-   `default_key`, `default_websocket_key`, `ABCDEFGHIJKLMNOP`, or any other
-   literal.
+1. **Fail closed when a required key is missing or unresolved.** A default
+   such as `${env.WEBSOCKET_KEY}` or `${env.WEBSOCKET_TERMINAL_KEY}` is a
+   configuration reference, not a usable key. If the chat key is absent,
+   refuse to start the WebSocket server. If `Terminal.Enabled` is true and
+   the terminal key is absent, refuse to start the terminal WebSocket path
+   (or fail overall startup). Never use `default_key`,
+   `default_websocket_key`, `ABCDEFGHIJKLMNOP`, sequential alphabet strings,
+   or any other literal.
 2. **No hardcoded key literals in production or test source.** Test keys are
    supplied through the test environment/configuration and are ephemeral.
    A local-development key is still configuration, never a source-code
-   fallback.
-3. **Key flow:** config → resolved `config->websocket.key` →
-   `ws_context->auth_key` → authorized `/api/system/info` terminal block →
-   iframe → `?key=` over TLS → WebSocket authentication. The key is
-   server-wide, not per-session.
+   fallback. Lithium `app-ws.js` must not ship a default chat key.
+3. **Two key flows.** Chat: `WebSocketServer.Key` → `ws_context->auth_key` →
+   Lithium `lithium.json` / `?key=` on `/wss`. Terminal: `Terminal.Key` →
+   authorized `/api/system/info` `terminal.key` → iframe `?key=` on
+   `{PublicUrl}{WebPath}/ws`. The terminal key is **not** in downloadable
+   SPA config. Keys are server-wide per surface, not per-session.
 4. **Redact secrets everywhere.** Do not log the key, full request URI/query
    string, JWT, password, `/api/system/info` response, or test command that
    contains a key. Logs and test artifacts may record only redacted
-   fingerprints or pass/fail status.
-5. **Rotate without code changes.** Set a new strong `WEBSOCKET_KEY`, restart
-   Hydrogen, verify the new value through an authorized info response, and
-   verify the old key is rejected. The iframe obtains the new value on its
-   next config fetch.
-6. **Protocol is configuration, not identity.** The configured WebSocket
-   protocol name is the terminal subprotocol for this integration. The
-   server, generated iframe, and tests must all use that value; no layer may
-   hardcode `"terminal"` as the production protocol.
+   fingerprints or pass/fail status. Lithium must not log the chat WS URL
+   with the key query attached.
+5. **Rotate without code changes.** Chat rotation: new `WEBSOCKET_KEY`,
+   update `lithium.json`, restart. Terminal rotation: new
+   `WEBSOCKET_TERMINAL_KEY`, restart; the iframe obtains the new value on
+   its next authorized info fetch. Verify the old key is rejected on its
+   own path. Record only fingerprints.
+6. **Protocol is configuration, not identity.** Chat uses
+   `WebSocketServer.Protocol` (production `hydrogen`). Terminal uses
+   `Terminal.Protocol` (production `terminal`). Both must be registered
+   with libwebsockets when terminal is enabled. The two protocol names
+   must be distinct. No layer may hardcode a protocol as a fallback that
+   bypasses config.
 7. **Proxy and origin boundaries are explicit.** Honor forwarded client IP
    only from trusted proxy peers. Restrict iframe `postMessage` to an
    allowlisted origin and validate `event.source`; never use wildcard origins
@@ -112,40 +135,60 @@ validated before the WebSocket server starts.
 These decisions are binding for implementation. A deviation requires a plan
 amendment and review before source changes.
 
+Phases 0–6 implemented the original single-key contract below as written at
+the time. **Amendment 2026-09-12 (Phases 7a and 7–12) supersedes the
+conflicting bullets** in this section: two keys, two protocols,
+query-string URI_ARGS auth, and some-then-all `/api/system/info` gating.
+Completed Phase 0–6 Status blocks remain historical. Phase 7a is Test 93
+schema plus the approved `NETWORK_MAX_TRUSTED_PROXIES` 16 cap; it does
+not change the WebSocket runtime contract. `Terminal.Key`/`Protocol`
+exist in the schema; C still ignores them until Phase 8.
+
 ### Terminal authorization and system-info response
 
-- `GET /api/system/info` remains a generic system-information endpoint. A
-  request with no JWT, an invalid JWT, or a valid JWT without terminal
-  authorization receives the generic response with no `terminal` object; the
-  endpoint does not reveal whether a caller lacks the terminal role.
-- The `terminal` object is present only when all of these are true:
-  `Terminal.Enabled` is true, the WebSocket context exists, the JWT is valid,
-  and the JWT `roles` claim contains the exact `terminal` role token.
+- `GET /api/system/info` is a **some-then-all** endpoint. There is no
+  `/api/system/api`.
+- **No JWT or invalid JWT:** short public payload only — `version` and a
+  readiness-ish `status` (and optionally that WebSocket is enabled). No
+  file-descriptor dump, no filesystem/network internals, no `scripting`, no
+  `terminal` object. Do not signal "your JWT was almost valid."
+- **Valid JWT without the terminal role:** the full ops dump (current
+  `get_system_status_json` body) plus `scripting`. Still no `terminal`
+  object. The endpoint does not reveal whether the caller lacks the
+  terminal role.
+- **Valid JWT whose `roles` contain the exact terminal role token (role_id
+  32), `Terminal.Enabled`, WebSocket context present, and
+  `WebSocketServer.PublicUrl` set:** the full dump plus `scripting` plus
+  the `terminal` object.
 - Role matching must support a multi-role claim and must not treat an admin,
-  scripting, chat, or wildcard role as a terminal grant. Reuse the existing
-  role-token parser where practical or add a generic auth helper; do not use
-  a whole-string `strcmp` against `roles`.
-- Lua `H.system.info()` never receives the terminal object or key through the
-  generic system-info path. A separate authorized API would require a new
-  contract and test surface.
-- The authorized response shape is:
+  scripting, chat, or wildcard role as a terminal grant. Reuse
+  `mailrelay_api_has_role_id`; do not use a whole-string `strcmp` against
+  `roles`.
+- Lua `H.system.info()` keeps the full dump with scripting and **never**
+  receives the terminal object or key. A separate authorized API would
+  require a new contract and test surface.
+- The authorized `terminal` object shape is:
 
   ```json
   {
     "terminal": {
       "enabled": true,
-      "url": "wss://public-host:public-port/terminal",
-      "protocol": "configured-subprotocol",
-      "key": "<server-wide authentication key>"
+      "url": "wss://public-host/terminal/ws",
+      "protocol": "terminal",
+      "key": "<Terminal.Key>"
     }
   }
   ```
 
-  `url` is an absolute WebSocket URL without a query string or key. The
-  browser appends the key with URL-safe query construction. Production URLs
-  must use `wss`; `ws` is local-test-only. The URL must have a valid scheme,
-  host, and path and must reject userinfo, fragments, and embedded query
-  strings.
+  `url` is `WebSocketServer.PublicUrl` + `Terminal.WebPath` + `/ws`, with
+  no query string or key. The browser appends the key with URL-safe query
+  construction. Production URLs must use `wss`; `ws` is local-test-only.
+  Reject userinfo, fragments, and embedded query strings on `PublicUrl`.
+  `protocol` is `Terminal.Protocol`. `key` is `Terminal.Key`, never
+  `WebSocketServer.Key`.
+- There is **no** `Terminal.Url` field. `Terminal.WebPath` (default
+  `/terminal`) is the path; the public origin stays on
+  `WebSocketServer.PublicUrl`.
 - The response is authorized data, not a logging subject. Never log the full
   response, key, JWT, or constructed WebSocket URL.
 
@@ -174,24 +217,67 @@ amendment and review before source changes.
   must use the same allowlist. The current terminal CORS field is parsed but
   is not the effective source for terminal responses and must be reconciled.
 
-### WebSocket key and protocol
+### WebSocket keys, protocols, and query auth
 
-- `WebSocketServer.Key` resolves to exactly one runtime value. Missing,
-  empty, unresolved `${env.*}`, whitespace/control-containing, known-default,
-  or shorter-than-32-character values fail startup. There is no fallback key
-  in source, defaults, generated payloads, tests, or debug tooling.
-- Both authentication surfaces use the same resolved key: the HTTP-upgrade
-  callback and the libwebsockets protocol-filter callback. Browser clients
-  send the key in the WebSocket query string; non-browser tests may use
-  `Authorization: Key` where supported.
-- `WebSocketServer.Protocol` is the single terminal subprotocol. The current
-  default `hydrogen` may remain for compatibility, but production and tests
-  must configure it explicitly and every routing check must use the resolved
-  value. Remove or reconcile legacy `TERMINAL_WS_PROTOCOL` and
-  `terminal_websocket_requires_auth()` paths so they cannot bypass LWS auth.
-- The dead MHD terminal-upgrade helpers in `terminal_websocket.c` must be
-  removed or explicitly disabled and tested as unreachable; the live
-  terminal path is the libwebsockets path.
+- Chat and terminal are **two surfaces on one libwebsockets listener**:
+
+  | Surface | Path | Protocol field | Key field | Env | Who holds it |
+  | --- | --- | --- | --- | --- | --- |
+  | Chat / keepalive | `/wss` | `WebSocketServer.Protocol` (`hydrogen`) | `WebSocketServer.Key` | `WEBSOCKET_KEY` | Lithium `lithium.json` (downloadable) |
+  | Terminal | `{WebPath}/ws` | `Terminal.Protocol` (`terminal`) | `Terminal.Key` | `WEBSOCKET_TERMINAL_KEY` | Authorized `/api/system/info` only |
+
+- Hydrogen JSON shape (production-like):
+
+  ```json
+  "WebSocketServer": {
+    "Protocol": "hydrogen",
+    "Key": "${env.WEBSOCKET_KEY}",
+    "PublicUrl": "wss://lithium.500courses.com"
+  },
+  "Terminal": {
+    "Enabled": true,
+    "WebPath": "/terminal",
+    "Protocol": "terminal",
+    "Key": "${env.WEBSOCKET_TERMINAL_KEY}",
+    "ShellCommand": "/bin/bash",
+    "CORSOrigin": "https://lithium.500courses.com"
+  }
+  ```
+
+- Each key resolves to exactly one runtime value and uses the same
+  fail-closed rules as Phase 2 (`validate_key`: ≥32 printable ASCII, no
+  `${env.*}`, no known defaults). Chat key missing → WebSocket server does
+  not start. `Terminal.Enabled` true and terminal key missing/weak → fail
+  closed (do not accept terminal upgrades).
+- The two protocol names **must be distinct**. Register both with
+  libwebsockets when terminal is enabled (`http` + chat protocol + terminal
+  protocol + terminator). Expand `setup_websocket_protocols` beyond the
+  current 3-slot array.
+- Auth keys off **path or subprotocol**, then compares against that
+  surface's key. Chat key on `/terminal/ws` is denied. Terminal key on
+  `/wss` is denied. A valid key for the wrong surface is not a grant.
+- Both authentication surfaces (HTTP-upgrade in
+  [`websocket_server.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server.c)
+  and `LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION` in
+  [`websocket_server_dispatch.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_dispatch.c))
+  must use one helper, e.g. `ws_extract_query_auth_key` in
+  [`websocket_server_auth.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_auth.c).
+  **Query parse order:** `WSI_TOKEN_HTTP_URI_ARGS` first (libwebsockets
+  stores the query here, without `?`), then `WSI_TOKEN_GET_URI` fallback
+  for tests/mocks that still embed `?key=` in the path. `WSI_TOKEN_GET_URI`
+  alone is **not** sufficient — production libwebsockets strips the query
+  from GET_URI (`No query string in URI` → 502).
+- Browser clients send `?key=` (they cannot set `Authorization` on
+  `WebSocket()`). Non-browser tests may use `Authorization: Key`. Both must
+  work. Header-only success is not a pass for browser paths.
+- Reconcile legacy `TERMINAL_WS_PROTOCOL` and
+  `terminal_websocket_requires_auth()` so they cannot bypass LWS auth.
+  Terminal message routing uses `Terminal.Protocol` (stored on the
+  WebSocket context), not `WebSocketServer.Protocol` and not a hardcoded
+  `"terminal"` fallback that ignores config.
+- The dead MHD terminal-upgrade helpers in
+  [`terminal_websocket.c`](/elements/001-hydrogen/hydrogen/src/terminal/terminal_websocket.c)
+  remain out of the live path.
 
 ### Browser, TLS, rotation, and rollback
 
@@ -203,9 +289,10 @@ amendment and review before source changes.
 - Production terminal access requires HTTPS for the iframe/API and WSS for
   WebSocket. Traefik/DOKS must preserve the Upgrade handshake and trusted
   forwarding headers.
-- Key rotation is a restart operation: set a new strong runtime key, restart
-  Hydrogen, verify the new key through an authorized info response, and verify
-  the old key is rejected. Record only a redacted fingerprint.
+- Key rotation is a restart operation. Chat and terminal keys rotate
+  independently. Verify each new key on its own path and that the old key
+  for that path is rejected. Record only a redacted fingerprint. Never
+  paste keys into tickets, logs, or this plan.
 - Add redacted telemetry for config-load failure, authorized terminal config
   responses, key acceptance/rejection, protocol mismatch, origin rejection,
   and connection lifecycle. Never include key, JWT, full URI, or response
@@ -213,7 +300,33 @@ amendment and review before source changes.
 - Rollback uses `Terminal.Enabled=false` (or the existing terminal disable
   switch), restores the prior runtime config, restarts Hydrogen, and verifies
   that `/api/system/info` omits `terminal`, the iframe cannot connect, and
-  unrelated WebSocket protocols remain unaffected.
+  the chat WebSocket (`/wss`, `hydrogen`) remains available.
+
+---
+
+## Live Findings (2026-09-12)
+
+Inspected `https://lithium.500courses.com` (Hydrogen `1.0.0.2619` /
+`20260912`, started `2026-09-12T20:10:59Z`, pod
+`lithium-500courses-bbbd748bb-vqps6`, ns `t-500courses`, DOKS context
+`do-tor1-cluster-canada-001`). HTTP `:7000` healthy. WS `:7001` listening.
+Traefik WSS ingress (`/wss`, `/terminal/ws` → 7001) created
+`2026-09-12T21:49:34Z`; TLS upgrade works with `Authorization: Key` (101).
+
+| Finding | Detail | Phase |
+| --- | --- | --- |
+| Query-string auth 502 | SPA connects `wss://…/wss?key=…`. Hydrogen reads `WSI_TOKEN_GET_URI`, which has no query (`No query string in URI`). Header auth 101. Browsers cannot send custom WS headers. | 7 |
+| One shared key | `WebSocketServer.Key` is a 34-char sequential alphabet literal in both `hydrogen-lithium.json` and downloadable `/config/lithium.json`. That **is** the terminal key, so the role-32 gate is theater. | 8, 12 |
+| Info is a public dump | No JWT: `version`/`system`/`status`/`services`/`mdns`/open FDs. Any JWT adds `scripting`. Role 32 adds `terminal.{url,protocol,key}` using the **chat** key and `WebSocketServer.Protocol`. | 9 |
+| Lithium logs the key | [`app-ws.js`](/elements/003-lithium/src/shared/app-ws.js) logs `[WS] Connecting to ${url}` including `?key=`. Hardcoded fallback key is a known-default alphabet string. | 10 |
+| Test 26 / launcher | Test 26 and [`terminal-launcher.sh`](/elements/001-hydrogen/hydrogen/extras/terminal-launcher.sh) assume one `WEBSOCKET_KEY`, one protocol, header auth, and a full unauthenticated info dump minus `terminal`. | 11 |
+| Stale payload | On-disk `payload.tar.br.enc` Sep 10 vs binary Sep 12. Live `/terminal/` still has `localStorage`, hardcoded `5261`, wildcard `postMessage`, no `validateWsUrl`. | 12 |
+| Shell | `Terminal.ShellCommand` is `/bin/zsh`; `festival-base` image has `/bin/bash` only. | 12 |
+| CORS / proxies | No `Network.TrustedProxies`. No `Terminal.CORSOrigin` (defaults `*`). Web/API CORS is `www.500courses.com`/`500courses.com`, not `https://lithium.500courses.com`. Traefik pods observed `10.119.1.56`, `10.119.0.156`, `10.119.0.4` — re-check at deploy time; do not copy stale IPs without verifying. | 12 |
+| Secrets | k8s secret `t-500courses-secrets` has no `WEBSOCKET_KEY` / `WEBSOCKET_TERMINAL_KEY`. Keys are literals in config. | 12 |
+| Test 93 schema drift | C loads `Terminal.CORSOrigin` and `Network.TrustedProxies`; Test 26 configs set both. [`hydrogen_config_schema.json`](/elements/001-hydrogen/hydrogen/tests/artifacts/hydrogen_config_schema.json) uses `additionalProperties: false` and omits those keys (`CORSOrigin` exists only on WebServer/API/Swagger; `TrustedProxies` is absent). `WebSocketServer.PublicUrl` is already in the schema. | 7a |
+
+Configs (do not commit secrets): `/fvl/tnt/t-500courses/hydrogen/hydrogen-lithium.json`, `/fvl/tnt/t-500courses/lithium/config/lithium.json`. Deploy yaml lives in the Festival tenant tree (`t-500courses-lithium-deployment.yaml`, `t-500courses-lithium-ingress.yaml`). Lithium source is [`/elements/003-lithium`](/elements/003-lithium/AGENTS.md).
 
 ---
 
@@ -498,6 +611,13 @@ do not expose `terminal.key` to un-authorized callers.
 | 4 | Lithium manager uses exact-origin/source-checked `postMessage` and survives lifecycle cycles | S | complete |
 | 5 | Deployed endpoint, TLS/proxy routing, key rotation, and browser E2E terminal session succeed | M | skipped (ops) |
 | 6 | Secure debug launcher and redacted Test 26/Lithium coverage prove the full flow | M | complete |
+| 7a | Test 93 accepts Test 26 configs: schema allows `Terminal.CORSOrigin` and `Network.TrustedProxies` | S | complete |
+| 7 | Browser `?key=` upgrades succeed via `WSI_TOKEN_HTTP_URI_ARGS` | S | not started |
+| 8 | Distinct `Terminal.Key` / `Protocol` vs chat; cross-surface keys denied | M | not started |
+| 9 | Short public info; JWT full+scripting; role 32 adds `terminal` from `Terminal.*` | M | not started |
+| 10 | Lithium chat WS logs redact the key; no hardcoded chat-key fallback | S | not started |
+| 11 | Test 26 and `terminal-launcher.sh` prove two keys, query auth, info gating | M | not started |
+| 12 | Production bash, CORS, TrustedProxies, env keys, payload, Traefik/DOKS E2E | M | not started |
 
 Effort key: S = small/contained, M = moderate (security/networking/deployment + testing).
 
@@ -874,46 +994,46 @@ Phase 2 complete.
 
 ### Work items
 
-- [ ] Review the inline `fetchTerminalConfig()` and
+- [x] Review the inline `fetchTerminalConfig()` and
       `connectToWebSocket()` implementation in
-      `payloads/terminal-generate.sh`. Require the parent-frame handoff as
+      [`payloads/terminal-generate.sh`](/elements/001-hydrogen/hydrogen/payloads/terminal-generate.sh). Require the parent-frame handoff as
       the production path; remove the silent `localStorage` JWT fallback
       unless a separately approved same-origin local mode is retained.
       **Verify:** Code review and generated HTML inspection.
-- [ ] Require the locked `terminal` response fields: `enabled`, absolute
+- [x] Require the locked `terminal` response fields: `enabled`, absolute
       `url`, `protocol`, and `key`. Remove the hardcoded `5261` port fallback,
       hardcoded `"terminal"` subprotocol, and any client-side reconstruction
       of the public host/port. Fail visibly when the URL, protocol, or key is
       absent or invalid.
       **Verify:** Generated HTML contains no port/protocol literals used as
       connection defaults and performs URL-safe key query construction.
-- [ ] Consume the API-provided absolute `terminal.url` directly. Require
+- [x] Consume the API-provided absolute `terminal.url` directly. Require
       `wss` in production and `ws` only for explicitly marked local tests;
       reject userinfo, fragments, embedded query strings, and malformed
       schemes/hosts. Do not assume the iframe hostname, direct port, or
       `wss://<hostname>:<port>` shape.
       **Verify:** Same-origin and approved reverse-proxy configurations work;
       malformed and non-TLS production URLs are rejected.
-- [ ] Replace wildcard `postMessage` behavior with an exact target origin and
+- [x] Replace wildcard `postMessage` behavior with an exact target origin and
       validate `event.origin` against `Terminal.CORSOrigin` plus `event.source`
       against the terminal iframe. Never accept config messages from an
       arbitrary ancestor; wildcard origins are local-development-only.
       **Verify:** Unit/static checks and browser test reject a wrong origin
       and wrong source.
-- [ ] Remove logging of JWTs, keys, full `/api/system/info` responses, full
+- [x] Remove logging of JWTs, keys, full `/api/system/info` responses, full
       request URIs, and message payloads. Log only non-sensitive state and
       redacted error categories.
       **Verify:** Browser/server logs and generated artifacts contain no
       secret values.
-- [ ] Make config-fetch and reconnect lifecycle deterministic: remove stale
+- [x] Make config-fetch and reconnect lifecycle deterministic: remove stale
       timers/listeners on success/failure, prevent duplicate WebSocket
       connections after visibility changes, and use bounded reconnect behavior.
       **Verify:** Destroy/reopen or visibility-cycle test leaves one active
       connection and no unhandled rejection.
-- [ ] Rebuild the embedded Hydrogen payload after generator changes with
+- [x] Rebuild the embedded Hydrogen payload after generator changes with
       `mkt` (or `mka`), then run Test 26 through `test_00_all.sh`.
       **Verify:** Embedded payload and filesystem artifact are both current.
-- [ ] Run `mks` for generator changes and `mkp` for any C changes.
+- [x] Run `mks` for generator changes and `mkp` for any C changes.
       **Verify:** Shellcheck/cppcheck are clean.
 
 ### Done means
@@ -931,9 +1051,9 @@ origin.
 
 ### Status
 
-- **State:** pending
-- **Date:**
-- **Result:**
+- **State:** complete
+- **Date:** 2026-09-11
+- **Result:** `terminal-generate.sh` rewritten to v2.3.0: removed `localStorage` JWT fallback (parent-frame `postMessage` is the production path), removed hardcoded `5261` port fallback and `protocol`/`hostname` URL reconstruction (uses `config.url` from `/api/system/info`), replaced wildcard `'*'` `postMessage` targetOrigin with `window.location.origin`, added `event.origin` validation, removed all `console.log`/`console.error`/`console.warn` calls (status via `showStatus()` only), added `validateWsUrl()` (rejects userinfo, fragments, embedded query strings, non-wss in production, malformed URLs), added `cleanupTimers()`/`cleanupConnection()` for deterministic lifecycle with visibility handler to prevent duplicate connections, wrapped IIFE in `'use strict'`. Same JS rewrite applied to `payloads/xtermjs/terminal.html` and `tests/artifacts/terminal/payload-terminal.html`. `shellcheck` passes on `terminal-generate.sh` and `env_utils.sh`. Lithium terminal manager tests: 18/18 pass.
 - **Variances:** Production WSS URL comes from Hydrogen's `WebSocketServer.PublicUrl` (configured in test configs as `wss://localhost:526x`). The generator was not re-run against CDN (xterm.js already present in `payloads/xtermjs/`); output HTML files updated in place.
 
 ### Working Log
@@ -950,9 +1070,11 @@ origin.
 - Applied same JS rewrite to `payloads/xtermjs/terminal.html` and `tests/artifacts/terminal/payload-terminal.html` (artifacts copy).
 - Updated `tests/lib/env_utils.sh` comment to reflect 32-char minimum (was 8).
 - `shellcheck` passes on `terminal-generate.sh` and `env_utils.sh`.
-- Lithium terminal manager tests: 18/18 pass.
+    - Lithium terminal manager tests: 18/18 pass.
 
 ---
+
+## Phase 4 — Lithium Terminal Manager and exact-origin messaging
 
 ### Goal
 
@@ -1014,6 +1136,11 @@ tests are present; no JWT appears in logs or test output.
 - No `console.log` in terminal.js (uses `log(Subsystems.MANAGER, Status.*)` facility).
 - `npm test` — 18/18 terminal manager tests pass, full suite green.
 - `npm run lint` — 0 errors, only pre-existing warnings.
+
+### Lessons Learned
+
+- The `_handleIframeMessage` crash root cause (`destroy()` nulling the bound handler) was already fixed before this phase; Phase 4 verified the fix is intact rather than re-implementing it. The handler is bound once in the constructor (line 148), registered in `init()` (line 247), and removed in `destroy()` (line 732) without being nulled.
+- Source-code verification confirmed the plan's Working Log matches the current implementation: `_getAllowedOrigin()` (line 714) derives the exact origin from `server.url` via `new URL()`, `_handleIframeMessage()` (line 677) validates `event.origin` and `event.source === this.iframe` before postMessage, and `terminal.test.js` covers wrong-origin, wrong-source, and allowed-origin cases.
 
 ---
 
@@ -1087,14 +1214,20 @@ recorded; new key works, old key fails, and all evidence is redacted.
 
 ### Status
 
-- **State:** skipped (ops variance) — live deployment access required
-- **Date:** 2026-09-11
-- **Result:** Phase 5 requires live Traefik/DOKS deployment access, deployed Hydrogen config, and browser E2E testing — none available in this sandbox. Local verification (Test 26 authorization contract tests) covers the role-gate, CORS origin enforcement, and no-terminal-without-JWT behavior. Key rotation logic is implemented and tested via Unity tests.
+- **State:** skipped (superseded by Phase 12)
+- **Date:** 2026-09-11; live inspection 2026-09-12
+- **Result:** Original Phase 5 assumed the single-key / full-public-info
+  contract from Phases 0–6. A 2026-09-12 live inspection of
+  `https://lithium.500courses.com` was performed (kubectl available) and
+  recorded under [Live Findings (2026-09-12)](#live-findings-2026-09-12).
+  Remaining production E2E, rotation of **both** keys, payload rebuild, and
+  Traefik/DOKS work moves to Phase 12 after Phases 7–11 land the new
+  contract.
 - **Variances:**
-  - Deployed Traefik/DOKS route inspection deferred — requires ops access to Kubernetes manifests and live cluster.
-  - Deployed Hydrogen config (`Terminal.Enabled`, `Terminal.CORSOrigin`, `WebSocketServer.PublicUrl`, key source) deferred — not available locally.
-  - Browser E2E with real login flow and shell prompt deferred — no browser automation available.
-  - Local-test configs (`hydrogen_test_26_terminal_*.json`) use `wss://localhost` origins with loopback trusted proxies. These exercise the code path but not production TLS/routing.
+  - Live inspection happened; implementation of the findings was paused for
+    the 2026-09-12 contract amendment.
+  - Local-test configs (`hydrogen_test_26_terminal_*.json`) still use the
+    Phase 2 single-key / `Protocol: terminal` shape until Phase 11.
 
 ---
 
@@ -1194,6 +1327,535 @@ production origin appears anywhere.
   - The `terminal-launcher.sh` v1.0.1 correctly reports "Terminal config is incomplete" when authenticating as a user without the terminal role (role_id 32) — `/api/system/info` properly omits the `terminal` object for unauthorized accounts per the locked contract. This is correct fail-closed behavior, not a bug.
   - Live key rotation E2E (change `WEBSOCKET_KEY`, restart Hydrogen, verify new key accepted / old key rejected) is deferred to Phase 5 — requires live deployment access. Key rotation code path is implemented and tested via Unity tests.
   - The valid-JWT subtest in Test 26 is conditional on `HYDROGEN_DEMO_*` credentials being set; it skips gracefully when absent.
+  - **Post-completion lesson (2026-09-12):** Two issues surfaced when running `terminal-launcher.sh` against a live server:
+    1. **Misleading error message:** When the terminal object is absent from `/api/system/info` due to a missing `WebSocketServer.PublicUrl` config or a non-running WebSocket server (not due to the role), the launcher blames "the terminal role." The `/api/system/info` endpoint (info.c:202) requires `has_jwt && ws_context && app_config->terminal.enabled && system_info_has_terminal_role()` — any of the first three failing produces the same "no terminal object" result. The launcher's error text should be broadened to also suggest checking `WebSocketServer.PublicUrl` and WebSocket server status, not just the role.
+    2. **Launcher HTML deleted prematurely:** The `trap cleanup EXIT` removed `/tmp/terminal_launcher_*.html` immediately after launching `xdg-open &`, before the browser process could read the file. Fixed in terminal-launcher.sh v1.0.2 by removing the `rm -f` from `cleanup()` — the temp file persists until OS `/tmp` cleanup or session end, and only sensitive in-memory variables (password, JWT, key) are cleared on exit.
+
+---
+
+## Phase 7a — Config JSON Schema (Test 93)
+
+### Goal
+
+Test 93 (`test_93_jsonlint.sh`) accepts the Hydrogen JSON that C already
+loads. The schema, not the Test 26 configs, is what is wrong: C parses
+`Terminal.CORSOrigin` and `Network.TrustedProxies`, but
+[`hydrogen_config_schema.json`](/elements/001-hydrogen/hydrogen/tests/artifacts/hydrogen_config_schema.json)
+rejects them under `additionalProperties: false`.
+
+Do **not** move those keys onto `WebServer` / `API` to silence Test 93.
+`CORSOrigin` on Terminal is the terminal allowlist; `TrustedProxies` is a
+Network CIDR list. Schema descriptions must match the locked contract and
+the loaders.
+
+### Entry gate
+
+Phase 6 complete. Schema-only. No C, Lithium, payload, launcher, or
+production changes. Do not start Phase 7 until this phase's Exit gate is
+green.
+
+### Work items
+
+- [x] Add `Network.TrustedProxies` to the `Network` object: array of CIDR
+      strings (IPv4/IPv6). Empty array is valid (no forwarded headers
+      trusted). Match the C loader in
+      [`config_network.c`](/elements/001-hydrogen/hydrogen/src/config/config_network.c)
+      (`NETWORK_MAX_TRUSTED_PROXIES`). Do not invent a different key name.
+      **Verify:**
+      [`hydrogen_test_26_terminal_payload.json`](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_26_terminal_payload.json)
+      schema-validates with its existing `Network.TrustedProxies` list.
+- [x] Add `Terminal.CORSOrigin` to the `Terminal` object: string, same
+      syntax as `WebServer.CORSOrigin` (`*` or comma-separated exact
+      origins). C already loads it in
+      [`config_terminal.c`](/elements/001-hydrogen/hydrogen/src/config/config_terminal.c).
+      **Verify:** all three
+      `tests/configs/hydrogen_test_26_terminal_*.json` files schema-validate
+      with their existing `Terminal.CORSOrigin` values.
+- [x] Add `Terminal.IndexPage` (string). C already loads it; Unity
+      `config_terminal_test_load_terminal_config` sets it. Test 26 configs
+      do not use it today; adding it now prevents the next `additionalProperties`
+      failure.
+      **Verify:** schema lists `IndexPage`; Test 93 still green.
+- [x] Do **not** add `Terminal.Url`. **Amendment 2026-09-12:** add
+      `Terminal.Key` and `Terminal.Protocol` to the schema now (C loaders
+      still Phase 8). Do not change Test 26 config values in this phase
+      (still single-key until Phase 11).
+      **Verify:** grep the schema: no `Terminal.Url`; `Terminal.Key` and
+      `Terminal.Protocol` present.
+- [x] Confirm `WebSocketServer.PublicUrl` remains present (Phase 2 already
+      added it). No other schema sections unless Test 93 reports them.
+      **Verify:** `./test_00_all.sh 93_jsonlint` (or
+      `./test_93_jsonlint.sh`) from
+      [`tests/`](/elements/001-hydrogen/hydrogen/tests/) is green,
+      including the three Test 26 configs that currently fail.
+- [x] **Amendment 2026-09-12:** cut `NETWORK_MAX_TRUSTED_PROXIES` from 64
+      to 16 in
+      [`config_network.h`](/elements/001-hydrogen/hydrogen/src/config/config_network.h)
+      and set schema `maxItems` to 16. Run `mkq` then `mkp`. No secrets in
+      schema `description` text.
+
+### Done means
+
+Test 93 passes. Schema allows `Terminal.CORSOrigin`, `Terminal.IndexPage`,
+`Terminal.Key`, `Terminal.Protocol`, and `Network.TrustedProxies`
+(`maxItems` 16). Test 26 JSON files are unchanged. C cap is 16.
+
+### Exit gate
+
+`./test_00_all.sh 93_jsonlint` green; the three Test 26 configs no longer
+report unexpected `CORSOrigin` / `TrustedProxies`; `mkq`/`mkp` green for
+the cap change.
+
+### Status
+
+- **State:** complete
+- **Date:** 2026-09-12
+- **Result:** Test 93 121/121. Schema adds `Network.TrustedProxies`
+  (`maxItems` 16), `Terminal.CORSOrigin`, `Terminal.IndexPage`,
+  `Terminal.Key`, `Terminal.Protocol`. No `Terminal.Url`.
+  `NETWORK_MAX_TRUSTED_PROXIES` is 16. `mkq` green, `mkp` 2,037 files
+  clean, `mku api_utils_test_get_client_ip` 25/25. Test 26 JSON unchanged.
+- **Variances:**
+  - Schema includes `Terminal.Key` / `Terminal.Protocol` ahead of the
+    Phase 8 C loaders. Hydrogen still ignores those JSON keys until
+    Phase 8.
+  - Small C change (cap 64 → 16) was approved; original 7a was schema-only.
+
+### Working Log
+
+- Added `Network.TrustedProxies` to
+  [`hydrogen_config_schema.json`](/elements/001-hydrogen/hydrogen/tests/artifacts/hydrogen_config_schema.json):
+  string array, empty allowed, `maxItems` 16, unpatterned CIDR strings
+  (so `::1/128` validates).
+- Added `Terminal.CORSOrigin`, `IndexPage`, `Key`, `Protocol`. No
+  `Terminal.Url`. `WebSocketServer.PublicUrl` already present.
+- Cut `NETWORK_MAX_TRUSTED_PROXIES` 64 → 16 in `config_network.h`.
+- `./test_00_all.sh 93_jsonlint` → 121/121 (jsonlint 144 files, schema
+  120 files). `mkq` trial build complete. `mkp` clean. Unity client-IP
+  tests 25/25.
+
+### Lessons learned
+
+- Phase 1 added the C `TrustedProxies` loader but not the Test 93 schema
+  key; `additionalProperties: false` then failed Test 26 configs. Schema
+  and C loaders must land together, or schema first.
+- C silently truncates `TrustedProxies` past capacity; schema `maxItems`
+  matching the C cap is the lint-time fail-closed equivalent.
+- Putting `Terminal.Key`/`Protocol` in the schema before C loaders lets
+  Test 93 accept configs Hydrogen will ignore until Phase 8 — record that
+  gap; do not treat schema presence as runtime support.
+
+---
+
+## Phase 7 — Query-string WebSocket authentication
+
+### Goal
+
+Browser `WebSocket(url?key=…)` upgrades succeed. Hydrogen reads the query
+from `WSI_TOKEN_HTTP_URI_ARGS` (then GET_URI fallback). Header auth keeps
+working. No keys in logs.
+
+### Entry gate
+
+Phase 7a complete. This phase does **not** split keys yet; both surfaces
+still compare against `ws_context->auth_key`. It unblocks Lithium chat and
+the terminal iframe independently of Phases 8–9.
+
+### Work items
+
+- [ ] Add `ws_extract_query_auth_key(struct lws *wsi, char *out, size_t out_len)`
+      in
+      [`websocket_server_auth.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_auth.c)
+      (prototype in
+      [`websocket_server_internal.h`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_internal.h)).
+      Read `WSI_TOKEN_HTTP_URI_ARGS` first (query without `?`), then
+      `WSI_TOKEN_GET_URI` and scan for `?` / `key=`. URL-decode `%XX`.
+      Truncate at `&`. Do not log the raw URI or key.
+      **Verify:** Unity tests cover URI_ARGS-only, GET_URI-with-`?key=`,
+      missing key, empty key, extra query params, percent-encoding.
+- [ ] Call the helper from `callback_http` in
+      [`websocket_server.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server.c)
+      and from `LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION` in
+      [`websocket_server_dispatch.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_dispatch.c).
+      Remove the duplicated GET_URI-only parsers.
+      **Verify:** Existing callback_http / dispatch Unity tests still pass;
+      new cases prove URI_ARGS-only (no `?` in GET_URI) authenticates.
+- [ ] Extend
+      [`mock_libwebsockets.c`](/elements/001-hydrogen/hydrogen/tests/unity/mocks/mock_libwebsockets.c)
+      / [`.h`](/elements/001-hydrogen/hydrogen/tests/unity/mocks/mock_libwebsockets.h)
+      with `WSI_TOKEN_HTTP_URI_ARGS` storage and a setter
+      (`mock_lws_set_uri_args`). GET_URI mock remains path-only unless a
+      test explicitly puts `?` in it.
+      **Verify:** Mocks compile under `USE_MOCK_LIBWEBSOCKETS`.
+- [ ] No `static` functions in `src/`. Do not log keys or full URIs.
+      **Verify:** `mkq`, then `mku` for the new/updated auth tests, then
+      `mkp`.
+
+### Done means
+
+A WebSocket upgrade with `?key=` and no Authorization header succeeds when
+the key matches, including when GET_URI has no `?`. Wrong/missing key still
+fails closed. Logs stay redacted.
+
+### Exit gate
+
+Named Unity tests green; `mkq`/`mkp` green; no secret in logs.
+
+### Status
+
+- **State:** not started
+- **Date:**
+- **Result:**
+- **Variances:**
+
+---
+
+## Phase 8 — Terminal.Key, Protocol, and dual-protocol auth
+
+### Goal
+
+Chat and terminal use distinct configured keys and protocol names. Auth
+selects the expected key from path or subprotocol. `Terminal.WebPath`
+remains the path (`/terminal`); no `Terminal.Url` field.
+
+### Entry gate
+
+Phase 7 complete.
+
+### Work items
+
+- [ ] Add `Terminal.Key` (`PROCESS_SENSITIVE`, default
+      `${env.WEBSOCKET_TERMINAL_KEY}`) and `Terminal.Protocol` (default
+      `terminal`) to
+      [`config_terminal.h`](/elements/001-hydrogen/hydrogen/src/config/config_terminal.h)
+      / [`config_terminal.c`](/elements/001-hydrogen/hydrogen/src/config/config_terminal.c).
+      Cleanup, dump (fingerprint only, never the raw key). Schema keys
+      `Terminal.Key` / `Terminal.Protocol` already exist from Phase 7a;
+      Phase 8 still adds the C loaders. Update examples
+      [`hydrogen.json`](/elements/001-hydrogen/hydrogen/examples/configs/hydrogen.json)
+      / [`hydrogen_default.json`](/elements/001-hydrogen/hydrogen/examples/configs/hydrogen_default.json)
+      / [`hydrogen_env.json`](/elements/001-hydrogen/hydrogen/examples/configs/hydrogen_env.json).
+      **Verify:** Config load Unity tests; dump output has no raw key.
+- [ ] Fail-closed launch: if `Terminal.Enabled`, `validate_key` on
+      `Terminal.Key` (same rules as chat). Chat key still required to start
+      the WebSocket server. Distinct protocol names required when both
+      surfaces are enabled.
+      **Verify:** Unity/launch tests for missing/unresolved/short/default
+      terminal key; identical protocol names fail.
+- [ ] Store terminal protocol and key on
+      [`WebSocketServerContext`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_internal.h)
+      (e.g. `terminal_protocol`, `terminal_auth_key`) without logging them.
+      **Verify:** Context create/destroy tests.
+- [ ] Register both protocols in
+      [`setup_websocket_protocols`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_startup.c)
+      when terminal is enabled (`http` + chat + terminal + terminator).
+      Update the `protocols[3]` signature/tests in
+      [`websocket_server.h`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server.h)
+      and
+      [`websocket_server_startup_test_helpers.c`](/elements/001-hydrogen/hydrogen/tests/unity/src/websocket/websocket_server_startup_test_helpers.c).
+      **Verify:** Helper tests; both names present; terminator last.
+- [ ] Auth: resolve expected key from path (`Terminal.WebPath` + `/ws` vs
+      `/wss`) or `Sec-WebSocket-Protocol` / `lws_get_protocol`. Compare
+      extracted query key or `Authorization: Key` to **that** key only.
+      Cross-surface keys denied.
+      **Verify:** Unity tests for chat-key-on-terminal-path,
+      terminal-key-on-chat-path, each surface happy-path query and header.
+- [ ] Terminal message routing in
+      [`websocket_server_message.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_message.c)
+      and
+      [`websocket_server_terminal.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_terminal.c)
+      uses `Terminal.Protocol` from context, not `ws_context->protocol`
+      (chat) and not a hardcoded `"terminal"` that ignores config.
+      **Verify:** Existing terminal routing Unity tests updated.
+- [ ] `mkq` then `mkp`. No `static` in `src/`. Do not log keys.
+      After schema Key/Protocol properties: `./test_00_all.sh 93_jsonlint`.
+
+### Done means
+
+`/wss` + `hydrogen` accepts only `WebSocketServer.Key`. `{WebPath}/ws` +
+`Terminal.Protocol` accepts only `Terminal.Key`. Config fields exist and
+fail closed. Chat still works if terminal is disabled.
+
+### Exit gate
+
+Unity tests for config, launch, dual protocol, and cross-key denial green;
+`mkq`/`mkp` green.
+
+### Status
+
+- **State:** not started
+- **Date:**
+- **Result:**
+- **Variances:**
+
+---
+
+## Phase 9 — `/api/system/info` public vs JWT vs terminal
+
+### Goal
+
+Unauthenticated callers get a short public payload. A valid JWT gets the
+full ops dump plus `scripting`. Role 32 additionally gets `terminal` built
+from `Terminal.*` (not the chat key/protocol).
+
+### Entry gate
+
+Phase 8 complete (`Terminal.Key` / `Protocol` / `WebPath` exist).
+
+### Work items
+
+- [ ] Add a public builder (or an `include_full` flag) so the no-JWT /
+      invalid-JWT REST path does **not** call
+      `get_system_status_json` / FD enumeration. Public JSON: `version`
+      plus a small `status` (running/readiness). Optional websocket-enabled
+      boolean. Never `terminal`, never `scripting`, never FD/filesystem
+      dumps.
+      **Verify:** Unity: no-JWT object has `version`, lacks `system` FD
+      list / `scripting` / `terminal`.
+- [ ] REST with valid JWT: existing full `get_system_status_json` plus
+      `scripting`. REST with valid JWT + role 32 + terminal enabled +
+      PublicUrl: also emit `terminal.{enabled,url,protocol,key}` where
+      `url` = `PublicUrl` + `WebPath` + `/ws`, `protocol` =
+      `Terminal.Protocol`, `key` = `Terminal.Key`.
+      **Verify:** Unity for JWT-no-role (full, no terminal), JWT-role-32
+      (terminal present, key is terminal key not chat key), missing
+      PublicUrl omits terminal without leaking why.
+- [ ] Keep Lua `H.system.info()` as full dump + scripting,
+      `has_terminal=false`. Update
+      [`scripting_api_system_test_info.c`](/elements/001-hydrogen/hydrogen/tests/unity/src/scripting/scripting_api_system_test_info.c)
+      if assertions assume REST-shaped public JSON.
+      **Verify:** `mku scripting_api_system_test_info` and
+      `mku info_test_build_json`.
+- [ ] CORS: terminal CORS allowlist only when the terminal object is
+      present; otherwise API CORS. Invalid JWT is treated as no JWT.
+      **Verify:** Existing handle-request tests updated.
+- [ ] `mkq` then `mkp`. Never log the info body.
+
+### Done means
+
+Three REST shapes: short public, full+scripting, full+scripting+terminal.
+Terminal key in the object is `Terminal.Key`. Lua never sees `terminal`.
+
+### Exit gate
+
+Named Unity tests green; `mkq`/`mkp` green.
+
+### Status
+
+- **State:** not started
+- **Date:**
+- **Result:**
+- **Variances:**
+
+---
+
+## Phase 10 — Lithium chat WebSocket hygiene
+
+### Goal
+
+The Lithium SPA chat/keepalive WebSocket still uses `WebSocketServer.Key`
+via `lithium.json`, but never logs it, and never falls back to a hardcoded
+key.
+
+### Entry gate
+
+Phase 9 complete.
+
+### Work items
+
+- [ ] In
+      [`app-ws.js`](/elements/003-lithium/src/shared/app-ws.js),
+      stop logging the full URL. Log origin/path without query, or a
+      redacted fingerprint. Follow Lithium `log(Subsystems.WEBSOCKET, …)`
+      — no `console.log`.
+      **Verify:** Unit test or source scan: log line cannot contain `key=`.
+- [ ] Remove the hardcoded `ABCDEFGHIJKLMNOPQabcdefghijklmnopq` default in
+      `getWebSocketUrl`. Missing `server.websocket_key` fails visibly
+      (toast/session log), no connect attempt with a known-default.
+      **Verify:** Unit test for missing key.
+- [ ] Chat protocol remains `server.websocket_protocol` (production
+      `hydrogen`). Do not put `Terminal.Key` in `lithium.json`.
+      **Verify:** Config samples and live `lithium.json` contract documented
+      in this phase's Working Log (no raw keys).
+- [ ] `npm test` and `npm run lint` from `elements/003-lithium`.
+
+### Done means
+
+Chat WS URL construction still appends `?key=` for the browser handshake,
+but logs and source defaults never contain a key.
+
+### Exit gate
+
+`npm test` and `npm run lint` green; no key in Lithium logs or source
+fallbacks.
+
+### Status
+
+- **State:** not started
+- **Date:**
+- **Result:**
+- **Variances:**
+
+---
+
+## Phase 11 — Test 26 and terminal-launcher
+
+### Goal
+
+[`test_26_terminal.sh`](/elements/001-hydrogen/hydrogen/tests/test_26_terminal.sh),
+[`terminal_utils.sh`](/elements/001-hydrogen/hydrogen/tests/lib/terminal_utils.sh),
+[`terminal_ws_helpers.sh`](/elements/001-hydrogen/hydrogen/tests/lib/terminal_ws_helpers.sh),
+[`test_26_terminal.md`](/docs/H/tests/test_26_terminal.md),
+and
+[`terminal-launcher.sh`](/elements/001-hydrogen/hydrogen/extras/terminal-launcher.sh)
+match the amended contract: two keys, two protocols, query-string auth,
+some-then-all info.
+
+### Entry gate
+
+Phase 10 complete.
+
+### Work items
+
+- [ ] Split test configs
+      [`hydrogen_test_26_terminal_payload.json`](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_26_terminal_payload.json)
+      and
+      [`hydrogen_test_26_terminal_filesystem.json`](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_26_terminal_filesystem.json):
+      `WebSocketServer.Protocol` = `hydrogen`, `WebSocketServer.Key` =
+      `${env.WEBSOCKET_KEY}`; `Terminal.Protocol` = `terminal`,
+      `Terminal.Key` = `${env.WEBSOCKET_TERMINAL_KEY}`, `WebPath` =
+      `/terminal`. Require both env keys (ephemeral, ≥32 chars).
+      **Verify:** Configs parse; Hydrogen starts.
+- [ ] Test 26 / `terminal_utils.sh` contract tests (extend existing helpers;
+      do not create a new blackbox script; do not increment `TEST_COUNTER`):
+      - no JWT → short public JSON, no `terminal`, no FD dump
+      - invalid JWT → same public shape
+      - valid non-terminal JWT → full dump, `scripting`, no `terminal`
+      - valid terminal JWT → `terminal.url/protocol/key`; key fingerprint
+        matches `WEBSOCKET_TERMINAL_KEY`, not `WEBSOCKET_KEY`
+      - query-string `?key=` on `/terminal/ws` with terminal key → success
+      - `Authorization: Key` still succeeds for non-browser helpers
+      - chat key on terminal path fails; terminal key on `/wss` fails
+      - wrong protocol on terminal path fails
+      **Verify:** `./test_00_all.sh 26_terminal` green. Redacted
+      fingerprints only.
+- [ ] Update
+      [`test_26_terminal.md`](/docs/H/tests/test_26_terminal.md)
+      for two keys, query auth, and info gating. Absolute links. No `:line`
+      refs.
+      **Verify:** Test 90 / `mkl` after the doc change.
+- [ ] Update
+      [`terminal-launcher.sh`](/elements/001-hydrogen/hydrogen/extras/terminal-launcher.sh)
+      (the extras script; there is no `terminal-launch.sh`):
+      - Connect with `?key=` using `terminal.key` from info (terminal key,
+        not `WEBSOCKET_KEY`)
+      - Missing `terminal` object: list role 32, `Terminal.Enabled`,
+        WebSocket running, `PublicUrl`, **and** `Terminal.Key` / protocol
+        resolution — do not blame only the role
+      - Never print JWT, key, or full info body; fingerprints only
+      - `--help` documents the two-key world
+      **Verify:** `bash -n`; `mks`; `--help` clean.
+- [ ] `mks` for all script changes.
+
+### Done means
+
+Test 26 proves the amended contract including query-string auth and
+cross-key denial. The launcher opens a terminal using the info-provided
+terminal key over `?key=` and fails with useful, non-secret diagnostics
+when the object is absent.
+
+### Exit gate
+
+Test 26 green through `test_00_all.sh`; `mks` green; launcher help/runtime
+checks pass; `test_26_terminal.md` updated; no secrets in output.
+
+### Status
+
+- **State:** not started
+- **Date:**
+- **Result:**
+- **Variances:**
+
+---
+
+## Phase 12 — Production config, secrets, and DOKS E2E
+
+### Goal
+
+`https://lithium.500courses.com` chat `/wss` and terminal `/terminal/ws`
+both return 101 with `?key=`. Payload, shell, CORS, TrustedProxies, and
+both env keys are correct. Rotation and rollback proven. Evidence redacted.
+
+### Entry gate
+
+Phase 11 complete.
+
+### Work items
+
+- [ ] Rebuild Hydrogen payload + binary (`mkt`/`mka` as required so the
+      embedded `terminal.html` is the Phase 3 source, not the Sep 10
+      artifact). Copy to the tenant hydrogen dir. Do not log payload keys.
+      **Verify:** Live `/terminal/` has `validateWsUrl`, no `localStorage`
+      JWT fallback, no hardcoded `5261`.
+- [ ] Production `hydrogen-lithium.json`:
+      - `WebSocketServer.Key` = `${env.WEBSOCKET_KEY}`
+      - `WebSocketServer.Protocol` = `hydrogen`
+      - `WebSocketServer.PublicUrl` remains `wss://lithium.500courses.com`
+      - `Terminal.WebPath` = `/terminal`
+      - `Terminal.Protocol` = `terminal`
+      - `Terminal.Key` = `${env.WEBSOCKET_TERMINAL_KEY}`
+      - `Terminal.ShellCommand` = `/bin/bash`
+      - `Terminal.CORSOrigin` = `https://lithium.500courses.com`
+      - Web/API `CORSOrigin` includes `https://lithium.500courses.com`
+      - `Network.TrustedProxies` = current Traefik pod CIDRs (re-query;
+        do not reuse this plan's 2026-09-12 IPs blindly)
+      **Verify:** Redacted config evidence.
+- [ ] Generate strong distinct chat and terminal keys. Put
+      `WEBSOCKET_KEY` and `WEBSOCKET_TERMINAL_KEY` in the k8s secret.
+      Update deployment env. Put **only** the chat key in
+      `lithium.json` (`server.websocket_key` / `/wss` /
+      `websocket_protocol: hydrogen`). Never put the terminal key in
+      downloadable SPA config.
+      **Verify:** Secret keys present; `lithium.json` has chat key only
+      (do not paste values into the plan).
+- [ ] Restart the pod. Verify:
+      - in-pod and external `wss://lithium.500courses.com/wss?key=` → 101
+        with protocol `hydrogen`
+      - `wss://…/terminal/ws?key=` with terminal key → 101 with protocol
+        `terminal`
+      - swapped keys → not 101
+      - `Authorization: Key` still 101 for tests
+      - no JWT `/api/system/info` is short public
+      - terminal-role JWT info has `terminal.key` fingerprint matching
+        the terminal secret
+      **Verify:** Redacted curl/network evidence.
+- [ ] Browser E2E: log into Lithium, chat WS connected, Terminal popup
+      shows a shell prompt (`bash`, not zsh). Destroy/reopen one
+      connection.
+      **Verify:** Redacted screenshot/notes; no key in browser console.
+- [ ] Rotate each key independently; old rejected, new accepted.
+      Rollback: `Terminal.Enabled=false` omits `terminal`, chat `/wss`
+      still works.
+      **Verify:** Redacted fingerprints only.
+
+### Done means
+
+Production chat and terminal WebSockets work through Traefik with query
+keys. Terminal key is not in `lithium.json`. Payload, bash, CORS, and
+trusted proxies match the amended contract. Rotation and rollback are
+proven.
+
+### Exit gate
+
+Manual production E2E and rollback succeed; all evidence redacted; Phase 5
+items that still apply are covered here.
+
+### Status
+
+- **State:** not started
+- **Date:**
+- **Result:**
+- **Variances:**
 
 ---
 
@@ -1210,12 +1872,19 @@ production origin appears anywhere.
   `npm run templates:copy` after template edits.
 - After Bash changes: `mks`.
 - After documentation changes: `mkl` (Test 04) and Test 90 markdownlint.
+- After Hydrogen config JSON or
+  [`hydrogen_config_schema.json`](/elements/001-hydrogen/hydrogen/tests/artifacts/hydrogen_config_schema.json)
+  changes: Test 93 (`./test_00_all.sh 93_jsonlint`). Schema must allow every
+  key the C loaders accept; do not relocate keys to silence `additionalProperties`.
 - **Never log or print JWTs, keys, passwords, full WebSocket URIs, or full
   `/api/system/info` responses.** Redact test commands and artifacts.
-- **Never hardcode the WebSocket key or terminal protocol.** Both come from
-  runtime configuration; missing or weak key values fail closed.
-- Require the exact `terminal` JWT role for terminal config; never treat a
-  generic valid JWT as terminal authorization.
+- **Never hardcode WebSocket keys or protocol names as production
+  fallbacks.** Chat key/protocol come from `WebSocketServer.*`; terminal
+  key/protocol come from `Terminal.*`. Missing or weak required keys fail
+  closed.
+- Require the exact `terminal` JWT role for the `terminal` info object;
+  never treat a generic valid JWT as terminal authorization. No JWT means
+  short public info, not the full dump.
 - Require an explicit public WebSocket origin and WSS in production; never
   derive it from an untrusted `Host` or iframe location.
 - Honor forwarded client IP only from trusted proxy peers.
@@ -1240,11 +1909,16 @@ production origin appears anywhere.
 | [`terminal.js`](/elements/003-lithium/src/managers/terminal/terminal.js) | Lithium Terminal Manager |
 | [`terminal.test.js`](/elements/003-lithium/tests/unit/managers/terminal.test.js) | Lithium unit tests |
 | [`AGENTS.md`](/elements/003-lithium/AGENTS.md) | Lithium-specific workflow and verification rules |
+| [`websocket_server_auth.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_auth.c) | Query-key helper (`ws_extract_query_auth_key`) |
 | [`websocket_server_dispatch.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_dispatch.c) | WebSocket auth and key handling |
 | [`websocket_server_message.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_message.c) | Protocol-name routing |
 | [`websocket_server_terminal.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_terminal.c) | Terminal protocol validation |
 | [`websocket_server_context.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_context.c) | `ws_context_create` and key copy |
-| [`websocket_server_startup.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_startup.c) | Configured protocol registration |
+| [`websocket_server_startup.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_startup.c) | Dual protocol registration |
+| [`app-ws.js`](/elements/003-lithium/src/shared/app-ws.js) | Lithium chat WS `?key=` URL and log hygiene |
+| [`terminal-launcher.sh`](/elements/001-hydrogen/hydrogen/extras/terminal-launcher.sh) | Secure debug launcher |
+| [`test_26_terminal.sh`](/elements/001-hydrogen/hydrogen/tests/test_26_terminal.sh) | Blackbox terminal test |
+| [`terminal_utils.sh`](/elements/001-hydrogen/hydrogen/tests/lib/terminal_utils.sh) | Test 26 HTTP/sysinfo helpers |
 | [`config_utils.c`](/elements/001-hydrogen/hydrogen/src/config/config_utils.c) | Environment-reference resolution and sensitive logging |
 | [`config.c`](/elements/001-hydrogen/hydrogen/src/config/config.c) | Config load/schema behavior |
 | [`config_network.c`](/elements/001-hydrogen/hydrogen/src/config/config_network.c) | Trusted-proxy configuration target |
@@ -1256,8 +1930,9 @@ production origin appears anywhere.
 | [`terminal_websocket.c`](/elements/001-hydrogen/hydrogen/src/terminal/terminal_websocket.c) | Legacy terminal protocol/auth helpers to reconcile |
 | [`api_utils.c`](/elements/001-hydrogen/hydrogen/src/api/api_utils.c) | Client IP extraction |
 | [`auth_service_jwt.c`](/elements/001-hydrogen/hydrogen/src/api/auth/auth_service_jwt.c) | JWT generation with `ip` claim |
-| [`hydrogen_test_26_terminal_payload.json`](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_26_terminal_payload.json) | Test config; currently sets Protocol to terminal |
-| [`examples/configs/hydrogen.json`](/elements/001-hydrogen/hydrogen/examples/configs/hydrogen.json) | Example WebSocket protocol/config |
+| [`hydrogen_config_schema.json`](/elements/001-hydrogen/hydrogen/tests/artifacts/hydrogen_config_schema.json) | Test 93 schema; Phase 7a added `Terminal.CORSOrigin` / `IndexPage` / `Key` / `Protocol` and `Network.TrustedProxies` (`maxItems` 16). Phase 8 still adds the C loaders for `Terminal.Key` / `Protocol` |
+| [`hydrogen_test_26_terminal_payload.json`](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_26_terminal_payload.json) | Test 26 payload config; Phase 11 splits chat vs terminal key/protocol |
+| [`examples/configs/hydrogen.json`](/elements/001-hydrogen/hydrogen/examples/configs/hydrogen.json) | Example WebSocket and Terminal config |
 
 ## Working Log
 
@@ -1400,5 +2075,34 @@ production origin appears anywhere.
 - `mkt` (trial build) passes; `mkp` (cppcheck, Test 91) passes clean (2,037 files, 0 issues).
 - Phase 5 marked as "Pending (Ops)" — requires live Traefik/DOKS deployment access, deployed config, and browser E2E. Deferred to ops availability.
 - **Lessons learned:** The test 26 configs don't have a `Databases` section, so login-based JWT tests require either adding a database config or relying on demo credentials from the environment. The conditional (skip-if-absent) approach handles this gracefully. The `jwt_claims_t.roles` field is `char*` (non-const), requiring `char[]` arrays instead of string literals in Unity tests to avoid `-Werror=discarded-qualifiers`.
+
+### Session 5 (2026-09-12) — Phase 7a added (schema / Test 93)
+
+- Test 93 fails on the three Test 26 configs: `Terminal.CORSOrigin` is
+  unexpected (schema has `CORSOrigin` only on WebServer/API/Swagger);
+  `Network.TrustedProxies` is unexpected (Network schema has no such key).
+  C already loads both (`config_terminal.c`, `config_network.c`). Phase 1
+  marked "add TrustedProxies to the network configuration schema" complete
+  but only the C loader landed. Phase 2 added `WebSocketServer.PublicUrl`
+  to the schema and `CORSOrigin` to the configs, not to `Terminal` in the
+  schema.
+- Added **Phase 7a** (schema-only, no C) before Phase 7 so Test 93 is green
+  without relocating keys. `Terminal.IndexPage` is included because C
+  already loads it. `Terminal.Key` / `Protocol` stay in Phase 8 with the
+  C loaders. No `Terminal.Url`.
+- Remaining work is now Phase 7a, then 7–12. No source or config-value
+  changes in this session.
+
+### Session 6 (2026-09-12) — Phase 7a complete
+
+- Implemented schema keys: `Network.TrustedProxies`, `Terminal.CORSOrigin`,
+  `Terminal.IndexPage`, `Terminal.Key`, `Terminal.Protocol`. No
+  `Terminal.Url`. Test 26 JSON unchanged.
+- Amendment: `Terminal.Key`/`Protocol` in schema now; C loaders remain
+  Phase 8. Amendment: `NETWORK_MAX_TRUSTED_PROXIES` 64 → 16 with schema
+  `maxItems` 16.
+- Verified: `./test_00_all.sh 93_jsonlint` 121/121; `mkq` green; `mkp`
+  2,037 files clean; `mku api_utils_test_get_client_ip` 25/25.
+- Stopped for review. Do not start Phase 7 until asked.
 
 (End of file)

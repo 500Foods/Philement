@@ -696,6 +696,8 @@ This document provides a comprehensive overview of the Hydrogen project's file o
   - [mailrelay_api_helpers.sh](/elements/001-hydrogen/hydrogen/tests/lib/mailrelay_api_helpers.sh) - Mail Relay API blackbox helpers (test_58)
   - [mcp_helpers.sh](/elements/001-hydrogen/hydrogen/tests/lib/mcp_helpers.sh) - MCP Streamable HTTP blackbox helpers (test_47)
   - [schemahelper_helpers.sh](/elements/001-hydrogen/hydrogen/tests/lib/schemahelper_helpers.sh) - SchemaHelper blackbox helpers (test_72)
+  - [terminal_utils.sh](/elements/001-hydrogen/hydrogen/tests/lib/terminal_utils.sh) - Terminal SQLite/HTTP/sysinfo helpers (test_26)
+  - [terminal_ws_helpers.sh](/elements/001-hydrogen/hydrogen/tests/lib/terminal_ws_helpers.sh) - Terminal WebSocket helpers (test_26)
 
 </details>
 

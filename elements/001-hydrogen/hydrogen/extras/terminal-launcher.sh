@@ -36,6 +36,7 @@
 #
 # CHANGELOG
 # 1.0.1 - 2026-09-11 - Added --api-key argument; login payload now includes api_key field required by /api/auth/login (fixes HTTP 400)
+# 1.0.2 - 2026-09-12 - Fixed launcher HTML file being deleted before browser loads it; temp file persists until process exit or OS cleanup
 # =============================================================================
 
 set -euo pipefail
@@ -44,7 +45,7 @@ set -euo pipefail
 # Configuration defaults
 # ---------------------------------------------------------------------------
 SCRIPT_NAME="terminal-launcher"
-SCRIPT_VERSION="1.0.1"
+SCRIPT_VERSION="1.0.2"
 
 SERVER_URL=""
 USERNAME=""
@@ -85,10 +86,7 @@ redact() {
 }
 
 cleanup() {
-    if [[ -n "${LAUNCHER_FILE}" && -f "${LAUNCHER_FILE}" ]]; then
-        rm -f "${LAUNCHER_FILE}"
-    fi
-    # Clear sensitive variables
+    # Clear sensitive variables from shell memory on exit.
     PASSWORD=""
     JWT_TOKEN=""
     WEBSOCKET_KEY=""
@@ -303,8 +301,11 @@ fetch_terminal_config() {
 
     if [[ "${has_terminal}" != "true" ]]; then
         log_error "No terminal configuration in /api/system/info response."
-        log_error "The account '${USERNAME}' may not have the terminal role (role_id 32)."
-        log_error "Only JWT-bearing callers with the terminal role receive the terminal object."
+        log_error "Possible causes (checked in order by /api/system/info):"
+        log_error "  1. JWT lacks the terminal role (role_id 32)."
+        log_error "  2. WebSocket server is not running (check server logs for WebSocket launch status)."
+        log_error "  3. Terminal.Enabled is false in hydrogen.json."
+        log_error "  4. WebSocketServer.PublicUrl is not set (must be wss:// or ws://)."
         rm -f "${info_file}"
         exit 1
     fi
@@ -428,12 +429,12 @@ HTML_HEAD
         -e "s|__SERVER_ORIGIN__|${server_origin}|g" \
         "${LAUNCHER_FILE}"
 
-    log_info "Launcher page created (not persisted — removed on exit)"
+    log_info "Launcher page ready."
     log_info "Opening in browser..."
 
     if command -v "${BROWSER_CMD}" >/dev/null 2>&1; then
         "${BROWSER_CMD}" "file://${LAUNCHER_FILE}" 2>/dev/null &
-        log_info "Terminal launcher opened. Close the browser tab when done — the temp file will be cleaned up."
+        log_info "Terminal launcher opened. Close the browser tab when done."
     else
         log_error "Browser command '${BROWSER_CMD}' not found."
         log_error "Launcher file location: ${LAUNCHER_FILE}"
@@ -466,11 +467,11 @@ main() {
     echo "  WS URL:    ${TERMINAL_URL}"
     echo "  Protocol:  ${TERMINAL_PROTOCOL}"
     echo "  WS Key:    ${key_fp}"
-    echo "  Launcher:  ${LAUNCHER_FILE} (temp, auto-removed on exit)"
+    echo "  Launcher:  ${LAUNCHER_FILE} (temp file in /tmp)"
     echo ""
     echo "Security: Password was never stored in shell history."
     echo "          JWT and key are in-memory only."
-    echo "          Temporary HTML file will be deleted on exit."
+    echo "          Close the browser tab when done; /tmp is cleaned by the OS."
 }
 
 main "$@"
