@@ -243,6 +243,9 @@ declare -a ENV_WHITELIST=(
     # First found in extras/setup_victoria_logs_dev.sh
     "K8S_NAMESPACE" "K8S_NODE_NAME" "K8S_POD_NAME" "VICTORIALOGS_LVL" "VICTORIALOGS_URL"
     "K8S_CONTAINER_NAME"
+    # First found in extras/terminal-launcher.sh
+    "API_KEY" "BROWSER_CMD" "LAUNCHER_FILE" "PASSWORD" "PASSWORD_FILE" "SCRIPT_NAME" "SERVER_URL"
+    "TERMINAL_PROTOCOL" "TERMINAL_URL" "TZ" "USERNAME"
     # First found in extras/test-ws-connection.sh and friends     
     "MAINTENANCE_DURATION" "WS_KEY" "WS_URL" "DELAY_INTERVALS" "EXIT" "FAILED" "FIFO"
     "FULL_URL" "INTERVAL" "MAINTENANCE_PINGS" "MAINTENANCE_PING_INTERVAL" "PASSED" "PROTO"

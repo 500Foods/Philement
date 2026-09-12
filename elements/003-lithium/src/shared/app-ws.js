@@ -40,7 +40,7 @@ export class AppWebSocket {
 
   getWebSocketUrl() {
     const baseUrl = getConfigValue('server.websocket_url', 'wss://lithium.philement.com/wss');
-    const wsKey = getConfigValue('server.websocket_key', 'ABCDEFGHIJKLMNOP');
+    const wsKey = getConfigValue('server.websocket_key', 'ABCDEFGHIJKLMNOPQabcdefghijklmnopq');
     if (!wsKey) return baseUrl;
     const separator = baseUrl.includes('?') ? '&' : '?';
     return `${baseUrl}${separator}key=${encodeURIComponent(wsKey)}`;
