@@ -15,6 +15,10 @@
 # test_terminal_configuration()
 
 # CHANGELOG
+# 2.7.0 - 2026-09-12 - Refactored: extracted terminal utilities into lib/terminal_utils.sh
+#                    (prepare_sqlite_isolation, resolve_terminal_websocket_config,
+#                    check_result_flag, redact_jwt_fingerprint, redact_sysinfo_body).
+#                    Fixed spurious "0|0|0" output from sqlite3 wal_checkpoint stdout.
 # 2.6.5 - 2026-09-12 - Fixed WebSocket connection failures: strip wss:// -> ws://
 #                    for the local test server (which runs plain WebSocket without TLS).
 #                    Also ensure the WebSocket URL includes the /terminal/ws path
@@ -67,10 +71,12 @@ set -euo pipefail
 TEST_NAME="Terminal"
 TEST_ABBR="TRM"
 TEST_NUMBER="26"
-TEST_VERSION="2.6.5"  # Fixed WebSocket URL: strip wss:// -> ws:// for plain WS test server
+TEST_VERSION="2.7.0"  # Refactored: extracted terminal utilities to lib/terminal_utils.sh; fixed 0|0|0 sqlite3 stdout leak
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
+# shellcheck source=tests/lib/terminal_utils.sh # Terminal-specific helpers
+[[ -n "${TERMINAL_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/terminal_utils.sh"
 setup_test_environment
 
 # Parallel execution configuration
@@ -239,7 +245,7 @@ login_for_terminal_tests() {
     fi
 
     local jwt_fingerprint
-    jwt_fingerprint=$(echo -n "${TERMINAL_LOGIN_JWT}" | sha256sum | cut -c1-16 || echo "unknown")
+    jwt_fingerprint=$(redact_jwt_fingerprint "${TERMINAL_LOGIN_JWT}")
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Login succeeded, JWT obtained (fp: ${jwt_fingerprint})"
     return 0
 }
@@ -274,14 +280,14 @@ test_sysinfo_no_terminal_without_jwt() {
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "terminal authorization object (url) present in /api/system/info without JWT (should be omitted)"
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response body (redacted):"
         local redacted
-        redacted=$(echo "${body}" | jq -c '.terminal = "REDACTED"' 2>/dev/null || echo "${body:0:200}")
+        redacted=$(redact_sysinfo_body "${body}")
         print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${redacted}"
         return 1
     fi
 
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No terminal authorization object in /api/system/info without JWT"
     local redacted_body
-    redacted_body=$(echo "${body}" | jq -c '.terminal = "REDACTED"' 2>/dev/null || echo "parse_error")
+    redacted_body=$(redact_sysinfo_body "${body}")
     echo "SYSINFO_NOJWT_BODY=${redacted_body}" >> "${output_file}"
     return 0
 }
@@ -304,14 +310,14 @@ test_sysinfo_no_terminal_with_invalid_jwt() {
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "terminal authorization object (url) present in /api/system/info with invalid JWT (should be omitted)"
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Response body (redacted):"
         local redacted
-        redacted=$(echo "${body}" | jq -c '.terminal = "REDACTED"' 2>/dev/null || echo "${body:0:200}")
+        redacted=$(redact_sysinfo_body "${body}")
         print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${redacted}"
         return 1
     fi
 
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "No terminal authorization object in /api/system/info with invalid JWT"
     local redacted_body
-    redacted_body=$(echo "${body}" | jq -c '.terminal = "REDACTED"' 2>/dev/null || echo "parse_error")
+    redacted_body=$(redact_sysinfo_body "${body}")
     echo "SYSINFO_BADJWT_BODY=${redacted_body}" >> "${output_file}"
     return 0
 }
@@ -359,7 +365,7 @@ test_sysinfo_terminal_with_valid_jwt() {
 
     # Redacted fingerprint of the JWT
     local jwt_fingerprint
-    jwt_fingerprint=$(echo -n "${jwt}" | sha256sum | cut -c1-16 || echo "unknown")
+    jwt_fingerprint=$(redact_jwt_fingerprint "${jwt}")
 
     # Fetch system/info with the JWT (retry under parallel load — the system
     # status JSON queries the database, which can be slow when two servers
@@ -427,45 +433,17 @@ run_terminal_test_parallel() {
     
     # SQLite isolation: copy hydrodemo.sqlite to a per-run file to prevent
     # write conflicts when both payload and filesystem configs run in parallel.
-    local actual_config_file="${config_file}"
+    # Uses prepare_sqlite_isolation from lib/terminal_utils.sh; falls back to
+    # the original config if isolation fails.
     local sqlite_work_dir="${DIAG_TEST_DIR}/sqlite_${log_suffix}_${TIMESTAMP}_${$}"
-    local sqlite_db_path
-    sqlite_db_path=$(jq -r '.Databases.Connections[0].Database' "${config_file}" 2>/dev/null || echo "")
-    if [[ -n "${sqlite_db_path}" && "${sqlite_db_path}" != "null" ]]; then
-        local sqlite_copy="${sqlite_work_dir}/hydrodemo.sqlite"
-        mkdir -p "${sqlite_work_dir}" 2>/dev/null || true
-        # The source DB may be in WAL mode where recent data (e.g.
-        # account_roles) exists only in the -wal file. Checkpoint first so
-        # the main DB file is self-contained, then copy. If sqlite3 or the
-        # checkpoint is unavailable, fall back to copying -wal and -shm too.
-        local sqlite_checkpointed=false
-        if command -v sqlite3 >/dev/null 2>&1; then
-            sqlite3 "${sqlite_db_path}" "PRAGMA wal_checkpoint(TRUNCATE);" 2>/dev/null && sqlite_checkpointed=true
-        fi
-        if cp "${sqlite_db_path}" "${sqlite_copy}" 2>/dev/null; then
-            if [[ "${sqlite_checkpointed}" != "true" ]]; then
-                for _ext in -wal -shm; do
-                    if [[ -f "${sqlite_db_path}${_ext}" ]]; then
-                        cp "${sqlite_db_path}${_ext}" "${sqlite_copy}${_ext}" 2>/dev/null || true
-                    fi
-                done
-            fi
-            actual_config_file="${sqlite_work_dir}/config.json"
-            if ! jq --arg db "${sqlite_copy}" \
-               '.Databases.Connections |= map(
-                    if ((.Engine // "") | ascii_downcase) == "sqlite" then
-                        .Database = $db | .AutoMigration = false
-                    else . end
-                )' "${config_file}" > "${actual_config_file}" 2>/dev/null; then
-                actual_config_file="${config_file}"
-                sqlite_work_dir=""
-            else
-                echo "SQLITE_COPY=${sqlite_copy}" >> "${result_file}"
-            fi
-        else
-            echo "SQLITE_COPY_FAILED" >> "${result_file}"
-        fi
+    local actual_config_file="${config_file}"
+    # shellcheck disable=SC2310 # We want to continue even if isolation fails
+    if ! prepare_sqlite_isolation "${config_file}" "${sqlite_work_dir}"; then
+        echo "SQLITE_COPY_FAILED" >> "${result_file}"
+    elif [[ -n "${SQLITE_ISOLATION_WORK_DIR}" ]]; then
+        echo "SQLITE_COPY=${SQLITE_ISOLATION_WORK_DIR}/hydrodemo.sqlite" >> "${result_file}"
     fi
+    actual_config_file="${SQLITE_ISOLATION_CONFIG}"
     
     # Clear result file
     true > "${result_file}"
@@ -631,31 +609,11 @@ run_terminal_test_parallel() {
               # Test WebSocket terminal connection
               # Determine WebSocket URL, protocol, and key from the sysinfo response
               # (obtained during the valid-JWT sysinfo test). Fall back to config
-              # if sysinfo was skipped or unavailable.
-              local ws_url="${TERMINAL_WS_URL:-}"
-              local ws_port
-              if [[ -z "${ws_url}" ]]; then
-                  ws_port=$(jq -r '.WebSocketServer.Port // 5261' "${config_file}" 2>/dev/null || echo "5261")
-                  ws_url="ws://localhost:${ws_port}"
-              fi
-              # Strip wss:// -> ws:// for the test server, which runs plain
-              # WebSocket without TLS. The server's PublicUrl may advertise
-              # wss://, but the local test server does not serve TLS.
-              ws_url="${ws_url/wss:\/\//ws:\/\/}"
-              # Append the terminal WebSocket path if the URL lacks a path.
-              if [[ "${ws_url}" != *"/terminal/ws"* ]]; then
-                  ws_url="${ws_url}/terminal/ws"
-              fi
-
-              local websocket_protocol="${TERMINAL_WS_PROTOCOL:-}"
-              if [[ -z "${websocket_protocol}" ]]; then
-                  websocket_protocol=$(jq -r '.WebSocketServer.Protocol // "terminal"' "${config_file}" 2>/dev/null || echo "terminal")
-              fi
-
-              local websockets_key="${TERMINAL_WS_KEY:-${WEBSOCKET_KEY:-}}"
-              # Export so WebSocket test functions (which reference ${WEBSOCKET_KEY}) use the key
-              # obtained from the sysinfo response rather than reading it from the environment.
-              export WEBSOCKET_KEY="${websockets_key}"
+              # if sysinfo was skipped or unavailable. Uses resolve_terminal_websocket_config
+              # from lib/terminal_utils.sh.
+              resolve_terminal_websocket_config "${config_file}"
+              local ws_url="${RESOLVED_WS_URL}"
+              local websocket_protocol="${RESOLVED_WS_PROTOCOL}"
 
             # Test WebSocket terminal connection (basic connectivity test)
             local websocket_test_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_websocket_connection.json"
@@ -744,8 +702,8 @@ run_terminal_test_parallel() {
     fi
     
     # Clean up per-run SQLite artifacts
-    if [[ -n "${sqlite_work_dir}" ]] && [[ -d "${sqlite_work_dir}" ]]; then
-        rm -rf "${sqlite_work_dir}" 2>/dev/null || true
+    if [[ -n "${SQLITE_ISOLATION_WORK_DIR}" ]] && [[ -d "${SQLITE_ISOLATION_WORK_DIR}" ]]; then
+        rm -rf "${SQLITE_ISOLATION_WORK_DIR}" 2>/dev/null || true
     fi
 }
 
@@ -763,13 +721,15 @@ analyze_terminal_test_results() {
     fi
     
     # Check startup
-    if ! "${GREP}" -q "STARTUP_SUCCESS" "${result_file}" 2>/dev/null; then
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
+    if ! check_result_flag "${result_file}" "STARTUP_SUCCESS"; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to start Hydrogen for ${description} test"
         return 1
     fi
     
     # Check server readiness
-    if ! "${GREP}" -q "SERVER_READY" "${result_file}" 2>/dev/null; then
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
+    if ! check_result_flag "${result_file}" "SERVER_READY"; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server not ready for ${description} test"
         return 1
     fi
@@ -778,26 +738,30 @@ analyze_terminal_test_results() {
     local index_test_passed=false
     local specific_file_test_passed=false
     local cross_config_404_test_passed=false
-    
-    if "${GREP}" -q "INDEX_TEST_PASSED" "${result_file}" 2>/dev/null; then
+
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
+    if check_result_flag "${result_file}" "INDEX_TEST_PASSED"; then
         index_test_passed=true
     fi
-    
-    if "${GREP}" -q "SPECIFIC_FILE_TEST_PASSED" "${result_file}" 2>/dev/null; then
+
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
+    if check_result_flag "${result_file}" "SPECIFIC_FILE_TEST_PASSED"; then
         specific_file_test_passed=true
     fi
-    
-    if "${GREP}" -q "CROSS_CONFIG_404_TEST_PASSED" "${result_file}" 2>/dev/null; then
+
+    # shellcheck disable=SC2310 # We want to continue even if the test fails
+    if check_result_flag "${result_file}" "CROSS_CONFIG_404_TEST_PASSED"; then
         cross_config_404_test_passed=true
     fi
-    
+
     # Return results via global variables for detailed reporting
     INDEX_TEST_RESULT=${index_test_passed}
     SPECIFIC_FILE_TEST_RESULT=${specific_file_test_passed}
     CROSS_CONFIG_404_TEST_RESULT=${cross_config_404_test_passed}
-    
+
     # Return success only if critical tests passed (404 test is informational)
-    if "${GREP}" -q "ALL_TERMINAL_TESTS_PASSED" "${result_file}" 2>/dev/null; then
+    # shellcheck disable=SC2310 # Called in an if condition; failure is expected
+    if check_result_flag "${result_file}" "ALL_TERMINAL_TESTS_PASSED"; then
         return 0
     else
         return 1
@@ -1274,7 +1238,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
             # Check WebSocket connection test results
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WebSocket Terminal Connection - ${description}"
-            if "${GREP}" -q "WEBSOCKET_CONNECTION_TEST_PASSED" "${result_file}" 2>/dev/null; then
+            if check_result_flag "${result_file}" "WEBSOCKET_CONNECTION_TEST_PASSED"; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket connection test passed"
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket connection test failed"
@@ -1283,7 +1247,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
             # Check WebSocket ping test results
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WebSocket Terminal Ping - ${description}"
-            if "${GREP}" -q "WEBSOCKET_PING_TEST_PASSED" "${result_file}" 2>/dev/null; then
+            if check_result_flag "${result_file}" "WEBSOCKET_PING_TEST_PASSED"; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket ping test passed"
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket ping test failed"
@@ -1292,7 +1256,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
             # Check WebSocket I/O test results
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WebSocket Terminal I/O - ${description}"
-            if "${GREP}" -q "WEBSOCKET_IO_TEST_PASSED" "${result_file}" 2>/dev/null; then
+            if check_result_flag "${result_file}" "WEBSOCKET_IO_TEST_PASSED"; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket I/O test passed"
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket I/O test failed"
@@ -1301,7 +1265,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
             # Check WebSocket resize test results
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WebSocket Terminal Resize - ${description}"
-            if "${GREP}" -q "WEBSOCKET_RESIZE_TEST_PASSED" "${result_file}" 2>/dev/null; then
+            if check_result_flag "${result_file}" "WEBSOCKET_RESIZE_TEST_PASSED"; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket resize test passed"
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket resize test failed"
@@ -1310,7 +1274,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
             # Check WebSocket long-running session test results
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "WebSocket Terminal Long Session - ${description}"
-            if "${GREP}" -q "WEBSOCKET_LONG_SESSION_TEST_PASSED" "${result_file}" 2>/dev/null; then
+            if check_result_flag "${result_file}" "WEBSOCKET_LONG_SESSION_TEST_PASSED"; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal WebSocket long-running session test passed"
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal WebSocket long-running session test failed"
@@ -1319,7 +1283,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
             # Check system-info authorization contract test results
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "System-Info: No JWT - ${description}"
-            if "${GREP}" -q "SYSINFO_NOJWT_TEST_PASSED" "${result_file}" 2>/dev/null; then
+            if check_result_flag "${result_file}" "SYSINFO_NOJWT_TEST_PASSED"; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "System-info no-JWT contract test passed"
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "System-info no-JWT contract test failed"
@@ -1327,7 +1291,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             fi
 
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "System-Info: Invalid JWT - ${description}"
-            if "${GREP}" -q "SYSINFO_BADJWT_TEST_PASSED" "${result_file}" 2>/dev/null; then
+            if check_result_flag "${result_file}" "SYSINFO_BADJWT_TEST_PASSED"; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "System-info invalid-JWT contract test passed"
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "System-info invalid-JWT contract test failed"
@@ -1335,7 +1299,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             fi
 
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "System-Info: CORS Origin - ${description}"
-            if "${GREP}" -q "SYSINFO_CORS_TEST_PASSED" "${result_file}" 2>/dev/null; then
+            if check_result_flag "${result_file}" "SYSINFO_CORS_TEST_PASSED"; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "System-info CORS origin contract test passed"
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "System-info CORS origin contract test failed"
@@ -1343,18 +1307,18 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             fi
 
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal Login - ${description}"
-            if "${GREP}" -q "TERMINAL_LOGIN_PASSED" "${result_file}" 2>/dev/null; then
+            if check_result_flag "${result_file}" "TERMINAL_LOGIN_PASSED"; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal login for JWT succeeded"
-            elif "${GREP}" -q "SYSINFO_VALIDJWT_SKIPPED" "${result_file}" 2>/dev/null; then
+            elif check_result_flag "${result_file}" "SYSINFO_VALIDJWT_SKIPPED"; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal login skipped (no demo credentials)"
             else
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal login for JWT failed (informational - requires demo credentials)" 
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal login for JWT failed (informational - requires demo credentials)"
             fi
 
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "System-Info: Valid JWT (conditional) - ${description}"
-            if "${GREP}" -q "SYSINFO_VALIDJWT_TEST_PASSED" "${result_file}" 2>/dev/null; then
+            if check_result_flag "${result_file}" "SYSINFO_VALIDJWT_TEST_PASSED"; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "System-info valid-JWT contract test passed"
-            elif "${GREP}" -q "SYSINFO_VALIDJWT_SKIPPED" "${result_file}" 2>/dev/null; then
+            elif check_result_flag "${result_file}" "SYSINFO_VALIDJWT_SKIPPED"; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "System-info valid-JWT test skipped (no demo credentials)"
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "System-info valid-JWT contract test failed (requires live database connectivity for demo login) - informational"
@@ -1372,7 +1336,8 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     for test_config in "${!TERMINAL_TEST_CONFIGS[@]}"; do
         IFS=':' read -r config_file log_suffix description expected_file <<< "${TERMINAL_TEST_CONFIGS[${test_config}]}"
         result_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}.result"
-        if [[ -f "${result_file}" ]] && "${GREP}" -q "ALL_TERMINAL_TESTS_PASSED" "${result_file}" 2>/dev/null; then
+        # shellcheck disable=SC2310 # Called in an if condition; failure is expected
+        if [[ -f "${result_file}" ]] && check_result_flag "${result_file}" "ALL_TERMINAL_TESTS_PASSED"; then
             successful_configs=$(( successful_configs + 1 ))
         fi
     done
