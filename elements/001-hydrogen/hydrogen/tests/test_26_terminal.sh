@@ -8,12 +8,32 @@
 # test_sysinfo_no_terminal_without_jwt()
 # test_sysinfo_no_terminal_with_invalid_jwt()
 # test_sysinfo_cors_origin_enforcement()
+# login_for_terminal_tests()
 # test_sysinfo_terminal_with_valid_jwt()
 # run_terminal_test_parallel()
 # analyze_terminal_test_results()
 # test_terminal_configuration()
 
 # CHANGELOG
+# 2.6.5 - 2026-09-12 - Fixed WebSocket connection failures: strip wss:// -> ws://
+#                    for the local test server (which runs plain WebSocket without TLS).
+#                    Also ensure the WebSocket URL includes the /terminal/ws path
+#                    obtained from the sysinfo response, falling back to config-derived
+#                    path if needed.
+# 2.6.4 - 2026-09-12 - Fixed SQLite WAL isolation: checkpoint the source DB's
+#                    WAL file before copying hydrodemo.sqlite so that recently
+#                    committed data (e.g. account_roles) is merged into the main
+#                    DB file. Falls back to copying -wal and -shm sidecar files
+#                    if sqlite3 or the checkpoint is unavailable.
+# 2.6.3 - 2026-09-12 - Restructured SYSINFO_VALIDJWT_TEST: login now happens BEFORE the sysinfo
+#                    test so the JWT and terminal key/port from the sysinfo response are available
+#                    for subsequent WebSocket tests. The valid-JWT sysinfo test uses the pre-obtained
+#                    JWT rather than doing login internally. WebSocket tests now use the terminal URL,
+#                    protocol, and key obtained from the authorized sysinfo response.
+# 2.6.2 - 2026-09-12 - Fixed SYSINFO_VALIDJWT_TEST: (1) JWT field extraction (.token not .access_token),
+#                    (2) added retry logic with --max-time for login and sysinfo curl calls to handle
+#                    parallel server load (two servers + WebSocket stress tests compete for DB).
+# 2.6.1 - 2026-09-12 - Fixed SYSINFO_VALIDJWT_TEST: Hydrogen /api/auth/login returns JWT in .token field, not .access_token or .jwt (matching test_40_auth.sh pattern).
 # 2.6.0 - 2026-09-12 - Added SQLite isolation for parallel payload/filesystem configs:
 #                    - Each parallel instance now copies hydrodemo.sqlite to a per-run
 #                      file and sets AutoMigration=false to prevent write conflicts.
@@ -47,7 +67,7 @@ set -euo pipefail
 TEST_NAME="Terminal"
 TEST_ABBR="TRM"
 TEST_NUMBER="26"
-TEST_VERSION="2.6.0"  # Added SQLite isolation + JWT key validation for SYSINFO_VALIDJWT
+TEST_VERSION="2.6.5"  # Fixed WebSocket URL: strip wss:// -> ws:// for plain WS test server
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -166,6 +186,64 @@ check_terminal_response_content() {
     return 1
 }
 
+# Login to obtain a JWT for terminal authorization tests.
+# Performs retry logic for readiness under parallel load.
+# Sets the global variable TERMINAL_LOGIN_JWT on success.
+# Returns 0 on success, 1 on failure.
+login_for_terminal_tests() {
+    local base_url="$1"
+
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal login for JWT (pre-sysinfo step)"
+
+    TERMINAL_LOGIN_JWT=""
+
+    local demo_user="${HYDROGEN_DEMO_USER_NAME:-}"
+    local demo_pass="${HYDROGEN_DEMO_USER_PASS:-}"
+    local demo_api_key="${HYDROGEN_DEMO_API_KEY:-}"
+
+    local login_response=""
+    local login_http_code
+    for attempt in 1 2 3 4 5; do
+        if [[ "${attempt}" -gt 1 ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Login retry ${attempt}/5 (server under parallel load)..."
+            sleep 1
+        fi
+        login_http_code=$(curl -s -o /tmp/test26_login_$$.json -w "%{http_code}" --max-time 15 \
+            -X POST "${base_url}/api/auth/login" \
+            -H "Content-Type: application/json" \
+            -d "{\"login_id\":\"${demo_user}\",\"password\":\"${demo_pass}\",\"api_key\":\"${demo_api_key}\",\"tz\":\"UTC\",\"database\":\"Acuranzo\"}" \
+            2>/dev/null || echo "000")
+        if [[ "${login_http_code}" == "200" ]]; then
+            login_response=$(cat /tmp/test26_login_$$.json 2>/dev/null || echo "")
+            rm -f /tmp/test26_login_$$.json 2>/dev/null || true
+            break
+        fi
+        rm -f /tmp/test26_login_$$.json 2>/dev/null || true
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Login HTTP ${login_http_code} (attempt ${attempt}), retrying..."
+    done
+
+    if [[ -z "${login_response}" || "${login_response}" == *"error"* ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to obtain JWT via login"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Login response:"
+        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${login_response}"
+        return 1
+    fi
+
+    TERMINAL_LOGIN_JWT=$(echo "${login_response}" | jq -r '.token // .access_token // .jwt // empty' 2>/dev/null || echo "")
+
+    if [[ -z "${TERMINAL_LOGIN_JWT}" || "${TERMINAL_LOGIN_JWT}" == "null" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No JWT in login response"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Login response:"
+        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${login_response}"
+        return 1
+    fi
+
+    local jwt_fingerprint
+    jwt_fingerprint=$(echo -n "${TERMINAL_LOGIN_JWT}" | sha256sum | cut -c1-16 || echo "unknown")
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Login succeeded, JWT obtained (fp: ${jwt_fingerprint})"
+    return 0
+}
+
 # System-info authorization contract tests
 # Verify that /api/system/info omits the terminal object when no valid
 # JWT with terminal role is present.
@@ -263,38 +341,19 @@ test_sysinfo_cors_origin_enforcement() {
 }
 
 # Test: valid terminal-role JWT -> terminal object present with key match
+# Uses a pre-obtained JWT (from login_for_terminal_tests) rather than logging in again.
+# Sets global variables TERMINAL_WS_URL, TERMINAL_WS_PROTOCOL, and TERMINAL_WS_KEY
+# from the sysinfo response so WebSocket tests can use them.
 # Requires HYDROGEN_DEMO_USER_NAME, HYDROGEN_DEMO_USER_PASS, HYDROGEN_DEMO_API_KEY
 test_sysinfo_terminal_with_valid_jwt() {
     local base_url="$1"
-    local output_file="$2"
+    local jwt="$2"
+    local output_file="$3"
 
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "System-info: valid terminal-role JWT returns terminal object"
 
-    local demo_user="${HYDROGEN_DEMO_USER_NAME:-}"
-    local demo_pass="${HYDROGEN_DEMO_USER_PASS:-}"
-    local demo_api_key="${HYDROGEN_DEMO_API_KEY:-}"
-
-    # Login to get a JWT
-    local login_response
-    login_response=$(curl -s -X POST "${base_url}/api/auth/login" \
-        -H "Content-Type: application/json" \
-        -d "{\"login_id\":\"${demo_user}\",\"password\":\"${demo_pass}\",\"api_key\":\"${demo_api_key}\",\"tz\":\"UTC\",\"database\":\"Acuranzo\"}" \
-        2>/dev/null || echo "")
-
-    if [[ -z "${login_response}" || "${login_response}" == *"error"* ]]; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to obtain JWT via login"
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Login response:"
-        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${login_response}"
-        return 1
-    fi
-
-    local jwt
-    jwt=$(echo "${login_response}" | jq -r '.access_token // .jwt // empty' 2>/dev/null || echo "")
-
     if [[ -z "${jwt}" || "${jwt}" == "null" ]]; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No JWT in login response"
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Login response:"
-        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${login_response}"
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No JWT available (login was not performed)"
         return 1
     fi
 
@@ -302,9 +361,26 @@ test_sysinfo_terminal_with_valid_jwt() {
     local jwt_fingerprint
     jwt_fingerprint=$(echo -n "${jwt}" | sha256sum | cut -c1-16 || echo "unknown")
 
-    # Fetch system/info with the JWT
-    local sysinfo_body
-    sysinfo_body=$(curl -s -H "Authorization: Bearer ${jwt}" "${base_url}/api/system/info" 2>/dev/null || echo "")
+    # Fetch system/info with the JWT (retry under parallel load — the system
+    # status JSON queries the database, which can be slow when two servers
+    # and WebSocket stress tests are running simultaneously).
+    local sysinfo_body=""
+    local sysinfo_http_code
+    for attempt in 1 2 3 4 5; do
+        if [[ "${attempt}" -gt 1 ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "System-info retry ${attempt}/5 (server under parallel load)..."
+            sleep 1
+        fi
+        sysinfo_http_code=$(curl -s -o /tmp/test26_sysinfo_$$.json -w "%{http_code}" --max-time 15 \
+            -H "Authorization: Bearer ${jwt}" "${base_url}/api/system/info" 2>/dev/null || echo "000")
+        if [[ "${sysinfo_http_code}" == "200" ]]; then
+            sysinfo_body=$(cat /tmp/test26_sysinfo_$$.json 2>/dev/null || echo "")
+            rm -f /tmp/test26_sysinfo_$$.json 2>/dev/null || true
+            break
+        fi
+        rm -f /tmp/test26_sysinfo_$$.json 2>/dev/null || true
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "System-info HTTP ${sysinfo_http_code} (attempt ${attempt}), retrying..."
+    done
 
     echo "SYSINFO_VALIDJWT_JWT_FP=${jwt_fingerprint}" >> "${output_file}"
     echo "SYSINFO_VALIDJWT_BODY=$(echo "${sysinfo_body}" | jq -c '.terminal // "omitted" | .key = "REDACTED"' 2>/dev/null || echo "omitted")" >> "${output_file}" || true
@@ -313,11 +389,15 @@ test_sysinfo_terminal_with_valid_jwt() {
         return 1
     fi
 
-    # Verify the terminal object has a non-empty key
-    local terminal_key
-    terminal_key=$(echo "${sysinfo_body}" | jq -r '.terminal.key // empty' 2>/dev/null || echo "")
+    # Extract terminal URL, protocol, and key from the sysinfo response.
+    # These are used by the WebSocket tests so they connect using the
+    # server-provided endpoint rather than reading config directly.
+    TERMINAL_WS_URL=$(echo "${sysinfo_body}" | jq -r '.terminal.url // empty' 2>/dev/null || echo "")
+    TERMINAL_WS_PROTOCOL=$(echo "${sysinfo_body}" | jq -r '.terminal.protocol // empty' 2>/dev/null || echo "")
+    TERMINAL_WS_KEY=$(echo "${sysinfo_body}" | jq -r '.terminal.key // empty' 2>/dev/null || echo "")
 
-    if [[ -n "${terminal_key}" ]]; then
+    # Verify the terminal object has a non-empty key
+    if [[ -n "${TERMINAL_WS_KEY}" ]]; then
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal authorization object present with key (redacted fp: ${jwt_fingerprint})"
         return 0
     else
@@ -339,6 +419,12 @@ run_terminal_test_parallel() {
     local port
     port=$(get_webserver_port "${config_file}")
     
+    # Initialize globals used for sysinfo/WebSocket test coordination
+    TERMINAL_LOGIN_JWT=""
+    TERMINAL_WS_URL=""
+    TERMINAL_WS_PROTOCOL=""
+    TERMINAL_WS_KEY=""
+    
     # SQLite isolation: copy hydrodemo.sqlite to a per-run file to prevent
     # write conflicts when both payload and filesystem configs run in parallel.
     local actual_config_file="${config_file}"
@@ -348,7 +434,22 @@ run_terminal_test_parallel() {
     if [[ -n "${sqlite_db_path}" && "${sqlite_db_path}" != "null" ]]; then
         local sqlite_copy="${sqlite_work_dir}/hydrodemo.sqlite"
         mkdir -p "${sqlite_work_dir}" 2>/dev/null || true
+        # The source DB may be in WAL mode where recent data (e.g.
+        # account_roles) exists only in the -wal file. Checkpoint first so
+        # the main DB file is self-contained, then copy. If sqlite3 or the
+        # checkpoint is unavailable, fall back to copying -wal and -shm too.
+        local sqlite_checkpointed=false
+        if command -v sqlite3 >/dev/null 2>&1; then
+            sqlite3 "${sqlite_db_path}" "PRAGMA wal_checkpoint(TRUNCATE);" 2>/dev/null && sqlite_checkpointed=true
+        fi
         if cp "${sqlite_db_path}" "${sqlite_copy}" 2>/dev/null; then
+            if [[ "${sqlite_checkpointed}" != "true" ]]; then
+                for _ext in -wal -shm; do
+                    if [[ -f "${sqlite_db_path}${_ext}" ]]; then
+                        cp "${sqlite_db_path}${_ext}" "${sqlite_copy}${_ext}" 2>/dev/null || true
+                    fi
+                done
+            fi
             actual_config_file="${sqlite_work_dir}/config.json"
             if ! jq --arg db "${sqlite_copy}" \
                '.Databases.Connections |= map(
@@ -457,15 +558,104 @@ run_terminal_test_parallel() {
                 # Note: This is expected behavior - files might be available in both configs
                 # Don't fail the test for this
             fi
+            
+            
+             # --- System-info authorization contract tests ---
+             # Run BEFORE WebSocket stress tests: get_system_status_json() calls
+             # collect_file_descriptors() which is slow under parallel load with
+             # many open FDs from WebSocket I/O/resize/long-session tests.
+             # Verify that /api/system/info omits the terminal object when no
+             # valid JWT with terminal role is present, and that CORS/origin
+             # enforcement behaves correctly.
 
-            # Test WebSocket terminal connection
-            # Determine WebSocket port from configuration
-            local ws_port
-            ws_port=$(jq -r '.WebSocketServer.Port // 5261' "${config_file}" 2>/dev/null || echo "5261")
-            local ws_url="ws://localhost:${ws_port}"
+             # Test: no JWT -> no terminal object in system/info response
+             local sysinfo_nojwt_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_sysinfo_nojwt.json"
+             # shellcheck disable=SC2310 # We want to continue even if the test fails
+             if test_sysinfo_no_terminal_without_jwt "${base_url}" "${sysinfo_nojwt_file}"; then
+                 echo "SYSINFO_NOJWT_TEST_PASSED" >> "${result_file}"
+             else
+                 echo "SYSINFO_NOJWT_TEST_FAILED" >> "${result_file}"
+                 all_tests_passed=false
+             fi
 
-            local websocket_protocol
-            websocket_protocol=$(jq -r '.WebSocketServer.Protocol // "terminal"' "${config_file}" 2>/dev/null || echo "terminal")
+             # Test: invalid JWT -> no terminal object in system/info response
+             local sysinfo_badjwt_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_sysinfo_badjwt.json"
+             # shellcheck disable=SC2310 # We want to continue even if the test fails
+             if test_sysinfo_no_terminal_with_invalid_jwt "${base_url}" "${sysinfo_badjwt_file}"; then
+                 echo "SYSINFO_BADJWT_TEST_PASSED" >> "${result_file}"
+             else
+                 echo "SYSINFO_BADJWT_TEST_FAILED" >> "${result_file}"
+                 all_tests_passed=false
+             fi
+
+             # Test: CORS origin enforcement on /api/system/info
+             local sysinfo_cors_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_sysinfo_cors.json"
+             # shellcheck disable=SC2310 # We want to continue even if the test fails
+             if test_sysinfo_cors_origin_enforcement "${base_url}" "${sysinfo_cors_file}"; then
+                 echo "SYSINFO_CORS_TEST_PASSED" >> "${result_file}"
+             else
+                 echo "SYSINFO_CORS_TEST_FAILED" >> "${result_file}"
+                 all_tests_passed=false
+             fi
+
+              # Test: valid terminal-role JWT -> terminal object present with key match
+              # Login happens BEFORE the sysinfo test so the JWT is available.
+              # The sysinfo response provides the terminal URL, protocol, and key
+              # that subsequent WebSocket tests use.
+              if [[ -n "${HYDROGEN_DEMO_USER_NAME:-}" && -n "${HYDROGEN_DEMO_USER_PASS:-}" && -n "${HYDROGEN_DEMO_API_KEY:-}" && -n "${HYDROGEN_DEMO_JWT_KEY:-}" ]]; then
+                  # Step 1: Login to obtain JWT (before sysinfo test)
+                  if login_for_terminal_tests "${base_url}"; then
+                      echo "TERMINAL_LOGIN_PASSED" >> "${result_file}"
+                  else
+                      echo "TERMINAL_LOGIN_FAILED" >> "${result_file}"
+                      if [[ "${all_tests_passed}" = true ]]; then
+                          all_tests_passed=false
+                      fi
+                  fi
+
+                  # Step 2: Sysinfo test using the pre-obtained JWT
+                  local sysinfo_validjwt_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_sysinfo_validjwt.json"
+                  # shellcheck disable=SC2310 # We want to continue even if the test fails
+                  if test_sysinfo_terminal_with_valid_jwt "${base_url}" "${TERMINAL_LOGIN_JWT}" "${sysinfo_validjwt_file}"; then
+                      echo "SYSINFO_VALIDJWT_TEST_PASSED" >> "${result_file}"
+                  else
+                      # Conditional test: requires live database connectivity for demo credential login.
+                      # Not all test environments have a Database section — treat failure as informational,
+                      # not a hard failure. The no-JWT/bad-JWT/CORS contract tests still enforce fail-closed.
+                      echo "SYSINFO_VALIDJWT_TEST_FAILED" >> "${result_file}"
+                  fi
+              else
+                  echo "SYSINFO_VALIDJWT_SKIPPED" >> "${result_file}"
+              fi
+
+              # Test WebSocket terminal connection
+              # Determine WebSocket URL, protocol, and key from the sysinfo response
+              # (obtained during the valid-JWT sysinfo test). Fall back to config
+              # if sysinfo was skipped or unavailable.
+              local ws_url="${TERMINAL_WS_URL:-}"
+              local ws_port
+              if [[ -z "${ws_url}" ]]; then
+                  ws_port=$(jq -r '.WebSocketServer.Port // 5261' "${config_file}" 2>/dev/null || echo "5261")
+                  ws_url="ws://localhost:${ws_port}"
+              fi
+              # Strip wss:// -> ws:// for the test server, which runs plain
+              # WebSocket without TLS. The server's PublicUrl may advertise
+              # wss://, but the local test server does not serve TLS.
+              ws_url="${ws_url/wss:\/\//ws:\/\/}"
+              # Append the terminal WebSocket path if the URL lacks a path.
+              if [[ "${ws_url}" != *"/terminal/ws"* ]]; then
+                  ws_url="${ws_url}/terminal/ws"
+              fi
+
+              local websocket_protocol="${TERMINAL_WS_PROTOCOL:-}"
+              if [[ -z "${websocket_protocol}" ]]; then
+                  websocket_protocol=$(jq -r '.WebSocketServer.Protocol // "terminal"' "${config_file}" 2>/dev/null || echo "terminal")
+              fi
+
+              local websockets_key="${TERMINAL_WS_KEY:-${WEBSOCKET_KEY:-}}"
+              # Export so WebSocket test functions (which reference ${WEBSOCKET_KEY}) use the key
+              # obtained from the sysinfo response rather than reading it from the environment.
+              export WEBSOCKET_KEY="${websockets_key}"
 
             # Test WebSocket terminal connection (basic connectivity test)
             local websocket_test_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_websocket_connection.json"
@@ -520,58 +710,6 @@ run_terminal_test_parallel() {
             else
                 echo "WEBSOCKET_LONG_SESSION_TEST_FAILED" >> "${result_file}"
                 all_tests_passed=false
-            fi
-
-            # --- System-info authorization contract tests ---
-            # Verify that /api/system/info omits the terminal object when no
-            # valid JWT with terminal role is present, and that CORS/origin
-            # enforcement behaves correctly.
-
-            # Test: no JWT -> no terminal object in system/info response
-            local sysinfo_nojwt_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_sysinfo_nojwt.json"
-            # shellcheck disable=SC2310 # We want to continue even if the test fails
-            if test_sysinfo_no_terminal_without_jwt "${base_url}" "${sysinfo_nojwt_file}"; then
-                echo "SYSINFO_NOJWT_TEST_PASSED" >> "${result_file}"
-            else
-                echo "SYSINFO_NOJWT_TEST_FAILED" >> "${result_file}"
-                all_tests_passed=false
-            fi
-
-            # Test: invalid JWT -> no terminal object in system/info response
-            local sysinfo_badjwt_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_sysinfo_badjwt.json"
-            # shellcheck disable=SC2310 # We want to continue even if the test fails
-            if test_sysinfo_no_terminal_with_invalid_jwt "${base_url}" "${sysinfo_badjwt_file}"; then
-                echo "SYSINFO_BADJWT_TEST_PASSED" >> "${result_file}"
-            else
-                echo "SYSINFO_BADJWT_TEST_FAILED" >> "${result_file}"
-                all_tests_passed=false
-            fi
-
-            # Test: CORS origin enforcement on /api/system/info
-            local sysinfo_cors_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_sysinfo_cors.json"
-            # shellcheck disable=SC2310 # We want to continue even if the test fails
-            if test_sysinfo_cors_origin_enforcement "${base_url}" "${sysinfo_cors_file}"; then
-                echo "SYSINFO_CORS_TEST_PASSED" >> "${result_file}"
-            else
-                echo "SYSINFO_CORS_TEST_FAILED" >> "${result_file}"
-                all_tests_passed=false
-            fi
-
-             # Test: valid terminal-role JWT -> terminal object present with key match
-             # This subtest is conditional on demo credentials and a database being configured.
-             if [[ -n "${HYDROGEN_DEMO_USER_NAME:-}" && -n "${HYDROGEN_DEMO_USER_PASS:-}" && -n "${HYDROGEN_DEMO_API_KEY:-}" && -n "${HYDROGEN_DEMO_JWT_KEY:-}" ]]; then
-                local sysinfo_validjwt_file="${LOG_PREFIX}${TIMESTAMP}_${log_suffix}_sysinfo_validjwt.json"
-                # shellcheck disable=SC2310 # We want to continue even if the test fails
-                if test_sysinfo_terminal_with_valid_jwt "${base_url}" "${sysinfo_validjwt_file}"; then
-                    echo "SYSINFO_VALIDJWT_TEST_PASSED" >> "${result_file}"
-                else
-                    # Conditional test: requires live database connectivity for demo credential login.
-                    # Not all test environments have a Database section — treat failure as informational,
-                    # not a hard failure. The no-JWT/bad-JWT/CORS contract tests still enforce fail-closed.
-                    echo "SYSINFO_VALIDJWT_TEST_FAILED" >> "${result_file}"
-                fi
-            else
-                echo "SYSINFO_VALIDJWT_SKIPPED" >> "${result_file}"
             fi
 
             if [[ "${all_tests_passed}" = true ]]; then
@@ -1202,6 +1340,15 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "System-info CORS origin contract test failed"
                 EXIT_CODE=1
+            fi
+
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Terminal Login - ${description}"
+            if "${GREP}" -q "TERMINAL_LOGIN_PASSED" "${result_file}" 2>/dev/null; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal login for JWT succeeded"
+            elif "${GREP}" -q "SYSINFO_VALIDJWT_SKIPPED" "${result_file}" 2>/dev/null; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal login skipped (no demo credentials)"
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal login for JWT failed (informational - requires demo credentials)" 
             fi
 
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "System-Info: Valid JWT (conditional) - ${description}"

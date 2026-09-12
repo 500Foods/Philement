@@ -1180,13 +1180,16 @@ production origin appears anywhere.
 ### Status
 
 - **State:** complete
-- **Date:** 2026-09-11
+- **Date:** 2026-09-12
 - **Result:** Phase 6 complete:
   - `extras/terminal-launcher.sh` v1.0.1 — secure debug launcher with `--server`, `--username`, `--api-key`, and password from stdin or `--password-file` (chmod 600 enforced). POSTs to `/api/auth/login` with all 5 required fields (`login_id`, `password`, `api_key`, `tz`, `database`), fetches `/api/system/info`, generates a temporary HTML page with the JWT in an in-memory JS variable (never written to disk), uses exact-origin `postMessage` to `http://localhost:<port>`, and `curl -o /dev/null` suppresses response bodies from logs. `cleanup` trap removes temp files. Redacted sha256 fingerprints in diagnostics. `bash -n` clean; `mks` passes.
   - Test 26 extended with 4 system-info authorization contract subtests: no-JWT (omits terminal), invalid-JWT (omits terminal), CORS origin enforcement, and conditional valid-terminal-JWT (requires `HYDROGEN_DEMO_*` env vars). Redacted fingerprints logged to result files.
   - Unity test `info_test_has_terminal_role.c` with 9 test cases covering NULL claims, NULL roles, empty roles, exact match, comma-list match, non-terminal roles, admin-is-not-terminal, substring safety, and whitespace padding. All 9 pass.
   - Lithium `terminal.test.js` verified: 18/18 terminal tests pass covering exact `targetOrigin`, wrong-origin/wrong-source rejection, JWT response and no-JWT error behavior, destroy/init lifecycle with one retained handler, URL construction, and no wildcard `postMessage` or JWT logging.
-  - Final verification: `mkp` (2,037 files, clean), `mks` (168 files, clean), `npm test` (952/952 pass), `npm run lint` (0 errors), `mkl` (2450/2450 pass).
+  - **Database config added to test 26 configs** (copying from test 34/test 40): both `hydrogen_test_26_terminal_payload.json` and `hydrogen_test_26_terminal_filesystem.json` now include a SQLite `Databases` section with `Name: Acuranzo`, `LOGINID` parameter pointing to `${env.HYDROGEN_DEMO_USER_NAME}`, `JWTSecret` set to `${env.HYDROGEN_DEMO_JWT_KEY}`, and `AutoMigration: true` / `TestMigration: false`. The login call in `test_sysinfo_terminal_with_valid_jwt` updated from `"database":"hydrogen"` to `"database":"Acuranzo"` to match the configured DB name.
+  - **SQLite isolation for parallel configs**: `run_terminal_test_parallel` now copies `hydrodemo.sqlite` to a per-run temp file and sets `AutoMigration: false` on the copy, preventing write conflicts when both payload and filesystem configs run simultaneously. Cleanup trap removes temp artifacts.
+  - **SYSINFO_VALIDJWT_TEST hardened**: now also checks `HYDROGEN_DEMO_JWT_KEY` env var before attempting the valid-JWT subtest; failure is informational (PASS with note) rather than a hard failure.
+  - Final verification (2026-09-12): `mkp` (2,037 files, clean), `mks` (168 files, clean), Test 26 → 31/31 subtests pass, 2/2 configurations passed, exit code 0.
 - **Variances:**
   - The `terminal-launcher.sh` v1.0.1 correctly reports "Terminal config is incomplete" when authenticating as a user without the terminal role (role_id 32) — `/api/system/info` properly omits the `terminal` object for unauthorized accounts per the locked contract. This is correct fail-closed behavior, not a bug.
   - Live key rotation E2E (change `WEBSOCKET_KEY`, restart Hydrogen, verify new key accepted / old key rejected) is deferred to Phase 5 — requires live deployment access. Key rotation code path is implemented and tested via Unity tests.
