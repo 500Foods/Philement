@@ -35,11 +35,11 @@ Two parts landed: `mysql_process_prepared_result` honours `mysql_stmt_store_resu
 
 ### [TERMINAL FIX PLAN](/docs/H/plans/TERMINAL_FIX_PLAN.md)
 
-Active plan for fixing the end-to-end terminal flow: JWT `ip` claim behind
-Traefik/DOKS, payload regeneration (`terminal-generate.sh`), WebSocket
-key/port exposure via `/api/system/info`, Lithium iframe `postMessage`
-hand-off (fixing the `_handleIframeMessage is null` crash), and E2E
-verification. Phases 0–6 with per-phase exit gates.
+Active plan for the end-to-end terminal and chat WebSocket flow. Phases
+0–4, 6, and 7a are complete. Phase 5 skipped (superseded). Remaining
+Phases 7–12: query-string URI_ARGS auth, split `Terminal.Key` / `Protocol`
+C loaders vs chat, some-then-all `/api/system/info`, Lithium log hygiene,
+Test 26 + `terminal-launcher.sh`, and production Traefik/DOKS E2E.
 
 ### [UNITY ASAN PLAN](/docs/H/plans/UNITY_ASAN_PLAN.md)
 

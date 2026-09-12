@@ -14,7 +14,7 @@
 #include <jansson.h>
 #include "config_forward.h"  // For AppConfig forward declaration
 
-#define NETWORK_MAX_TRUSTED_PROXIES 64
+#define NETWORK_MAX_TRUSTED_PROXIES 16
 
 // Network validation limits structure
 struct NetworkLimits {

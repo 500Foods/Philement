@@ -286,6 +286,15 @@
                         }
                     },
                     "additionalProperties": false
+                },
+                "TrustedProxies": {
+                    "type": "array",
+                    "description": "CIDR list of trusted reverse-proxy peers (IPv4/IPv6). Empty array means no forwarded headers are trusted. Immediate TCP peer must match an entry before X-Forwarded-For, X-Forwarded-Proto, or X-Forwarded-Port are consumed.",
+                    "maxItems": 16,
+                    "items": {
+                        "type": "string",
+                        "description": "IPv4 or IPv6 CIDR (for example 10.0.0.0/8 or ::1/128)"
+                    }
                 }
             },
             "additionalProperties": false
@@ -716,6 +725,22 @@
                     "type": "integer",
                     "description": "Terminal buffer size",
                     "minimum": 1
+                },
+                "CORSOrigin": {
+                    "type": "string",
+                    "description": "Terminal origin allowlist: * or a comma-separated list of exact origins. Same syntax as WebServer.CORSOrigin. * is local-dev-only and forbidden in production."
+                },
+                "IndexPage": {
+                    "type": "string",
+                    "description": "Terminal index page filename (default terminal.html)"
+                },
+                "Protocol": {
+                    "type": "string",
+                    "description": "Terminal WebSocket subprotocol name, distinct from WebSocketServer.Protocol"
+                },
+                "Key": {
+                    "type": "string",
+                    "description": "Terminal WebSocket authentication key, distinct from WebSocketServer.Key. Prefer environment-variable syntax such as ${env.WEBSOCKET_TERMINAL_KEY}."
                 }
             },
             "additionalProperties": false

@@ -44,9 +44,9 @@ not open work unless listed below.
 | --- | --- |
 | **Plan** | [`TERMINAL_FIX_PLAN.md`](/docs/H/plans/TERMINAL_FIX_PLAN.md) |
 | **Effort** | M |
-| **Done** | Lithium `_handleIframeMessage is null` crash fixed and deployed; payload `terminal.html` fetches `/api/system/info` with JWT |
-| **Remaining** | JWT `ip` claim behind Traefik/DOKS, WebSocket port/key exposure through DOKS+Traefik, protocol mismatch (`terminal` vs `hydrogen`), E2E verification of iframe WebSocket from Lithium popup |
-| **Why now** | Terminal is deployed but not working in production — the iframe fails to connect to WebSocket on port 7001. Root cause spans JWT → API → payload → WebSocket → iframe, needs a phased plan to debug systematically. |
+| **Done** | Phases 0–4, 6, and 7a: trusted proxy, fail-closed chat key, role-32 terminal object, payload/manager exact-origin, Test 26 contract tests, `terminal-launcher.sh`, Test 93 schema (`Terminal.CORSOrigin`/`IndexPage`/`Key`/`Protocol`, `Network.TrustedProxies` cap 16). Live 2026-09-12 inspection of `lithium.500courses.com`. |
+| **Remaining** | Phases 7–12: URI_ARGS query auth, `Terminal.Key`/`Protocol` C loaders and dual-protocol auth, public-vs-JWT-vs-terminal info, Lithium `app-ws.js` redaction, Test 26 + launcher two-key contract, production bash/CORS/TrustedProxies/env keys/payload E2E |
+| **Why now** | Production chat and terminal WS fail: browsers send `?key=` and Hydrogen ignores URI_ARGS; chat and terminal share one downloadable key; `/api/system/info` dumps internals without a JWT. |
 | **Note** | AUTH_FINALE Phase 7 locks the terminal WS auth product decision; this plan implements and verifies the full end-to-end flow. |
 
 ---

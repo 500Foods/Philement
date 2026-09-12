@@ -8,8 +8,9 @@ The `test_26_terminal.sh` script provides comprehensive testing of the Hydrogen 
 
 - **Script**: `test_26_terminal.sh`
 - **Purpose**: Test terminal functionality, payload serving, and WebSocket connections
-- **Version**: 2.3.0
+- **Version**: 2.8.1
 - **Dependencies**: websocat, curl, standard Unix utilities
+- **Libraries**: [`terminal_utils.sh`](/elements/001-hydrogen/hydrogen/tests/lib/terminal_utils.sh), [`terminal_ws_helpers.sh`](/elements/001-hydrogen/hydrogen/tests/lib/terminal_ws_helpers.sh)
 
 ## Key Features
 
