@@ -13,9 +13,9 @@
 | [Phase 5 — Deployed E2E](#phase-5--deployed-endpoint-key-rotation-and-browser-e2e) | Original ops E2E (single-key contract) | **Skipped — superseded by Phase 12** |
 | [Phase 6 — Debug Launcher & Tests](#phase-6--secure-debug-launcher-and-redacted-test-coverage) | Secure launcher, Test 26 authorization contract, Unity role tests | **Complete** |
 | [Phase 7a — Config JSON Schema](#phase-7a--config-json-schema-test-93) | Test 93: schema allows C-loaded `Terminal.CORSOrigin` / `Network.TrustedProxies`; also `Terminal.Key`/`Protocol`; cap 16 | **Complete** |
-| [Phase 7 — Query-string Auth](#phase-7--query-string-websocket-authentication) | `WSI_TOKEN_HTTP_URI_ARGS` query-key parse so browser `?key=` upgrades succeed | **Not started** |
-| [Phase 8 — Split Terminal Key](#phase-8--terminalkey-protocol-and-dual-protocol-auth) | `Terminal.Key` / `Terminal.Protocol` / `Terminal.WebPath` distinct from chat WS | **Not started** |
-| [Phase 9 — Info Gating](#phase-9--apisysteminfo-public-vs-jwt-vs-terminal) | Short public info; full ops+scripting with JWT; `terminal` only with role 32 | **Not started** |
+| [Phase 7 — Query-string Auth](#phase-7--query-string-websocket-authentication) | `WSI_TOKEN_HTTP_URI_ARGS` query-key parse so browser `?key=` upgrades succeed | **Complete** |
+| [Phase 8 — Split Terminal Key](#phase-8--terminalkey-protocol-and-dual-protocol-auth) | `Terminal.Key` / `Terminal.Protocol` / `Terminal.WebPath` distinct from chat WS | **Complete** |
+| [Phase 9 — Info Gating](#phase-9--apisysteminfo-public-vs-jwt-vs-terminal) | Short public info with `version.auth`; full ops+scripting with JWT; `terminal` only with role 32 | **Not started** |
 | [Phase 10 — Lithium Chat WS](#phase-10--lithium-chat-websocket-hygiene) | Redact `app-ws.js` key log; no hardcoded chat-key fallback | **Not started** |
 | [Phase 11 — Test 26 & Launcher](#phase-11--test-26-and-terminal-launcher) | Two keys/protocols, query auth, info gating, [`terminal-launcher.sh`](/elements/001-hydrogen/hydrogen/extras/terminal-launcher.sh) | **Not started** |
 | [Phase 12 — Production E2E](#phase-12--production-config-secrets-and-doks-e2e) | bash, CORS, TrustedProxies, env keys, payload, Traefik/DOKS, rotation | **Not started** |
@@ -30,9 +30,9 @@ iframe `postMessage` hand-off from Lithium to the xterm.js iframe, and the
 
 The system is currently **not working in production**. The live 500 Courses
 instance is `https://lithium.500courses.com` (Hydrogen `1.0.0.2619`,
-2026-09-12). Source Phases 0–4, 6, and 7a are in the tree; query-string
-auth, split terminal vs chat keys (C loaders), public-vs-JWT info gating,
-Test 26, the launcher, and production config are Phases 7–12.
+2026-09-12). Source Phases 0–4, 6, 7a, 7, and 8 are in the tree; public-vs-JWT info
+gating, Test 26 contract tests, the launcher, Lithium chat-key hygiene,
+and production config are Phases 9–12.
 
 This plan walks through every layer — JWT → API → payload → WebSocket →
 iframe — until the terminal opens from the Lithium popup without requiring
@@ -142,31 +142,74 @@ query-string URI_ARGS auth, and some-then-all `/api/system/info` gating.
 Completed Phase 0–6 Status blocks remain historical. Phase 7a is Test 93
 schema plus the approved `NETWORK_MAX_TRUSTED_PROXIES` 16 cap; it does
 not change the WebSocket runtime contract. `Terminal.Key`/`Protocol`
-exist in the schema; C still ignores them until Phase 8.
+exist in the schema and C loaders (Phase 8).
 
 ### Terminal authorization and system-info response
 
 - `GET /api/system/info` is a **some-then-all** endpoint. There is no
   `/api/system/api`.
-- **No JWT or invalid JWT:** short public payload only — `version` and a
-  readiness-ish `status` (and optionally that WebSocket is enabled). No
-  file-descriptor dump, no filesystem/network internals, no `scripting`, no
-  `terminal` object. Do not signal "your JWT was almost valid."
+- **No JWT or invalid JWT:** short public payload only. Do **not** call
+  `get_system_status_json` / FD enumeration. Invalid JWT is identical to
+  no JWT — do not signal "your JWT was almost valid." No
+  file-descriptor dump, no filesystem/network internals, no `mdns`, no
+  `services`, no `scripting`, no `terminal` object, no public
+  `websocket.enabled`. Locked public shape (2026-09-13):
+
+  ```json
+  {
+    "version": {
+      "auth": "none",
+      "server": "<VERSION>",
+      "api": "<VERSION>",
+      "release": "<RELEASE>",
+      "build_type": "<BUILD_TYPE>"
+    },
+    "status": {
+      "server_running": true
+    }
+  }
+  ```
+
+  `version` uses the same keys as the full dump. `auth` is the first key
+  in that object so a response is immediately classifiable. `status`
+  is only `server_running` (no `files` FD list, no uptime block).
+- **`version.auth` (REST only, all three shapes):** a short capability
+  string so the caller does not have to infer auth from which keys exist.
+
+  | Value | When |
+  | --- | --- |
+  | `none` | No `Authorization` header, or Bearer JWT that fails validation |
+  | `jwt` | Valid JWT whose `roles` do **not** contain role_id 32 |
+  | `jwt, terminal` | Valid JWT whose `roles` contain role_id 32 |
+
+  This is **not** a dump of the JWT `roles` claim. The only extra token
+  is `terminal`, the capability this endpoint gates. Do not emit role_id
+  integers, `admin`, `scripting`, or chat. Scripting is implied by a
+  valid JWT (full dump includes `scripting`). Future gated objects may
+  append further tokens (`jwt, terminal, foo`).
 - **Valid JWT without the terminal role:** the full ops dump (current
-  `get_system_status_json` body) plus `scripting`. Still no `terminal`
-  object. The endpoint does not reveal whether the caller lacks the
-  terminal role.
+  `get_system_status_json` body) plus `scripting`, `version.auth` =
+  `jwt`. Still no `terminal` object.
 - **Valid JWT whose `roles` contain the exact terminal role token (role_id
-  32), `Terminal.Enabled`, WebSocket context present, and
-  `WebSocketServer.PublicUrl` set:** the full dump plus `scripting` plus
-  the `terminal` object.
+  32):** `version.auth` = `jwt, terminal` even if the `terminal` object
+  is omitted (missing `PublicUrl`, terminal surface No-Go, empty
+  `terminal_auth_key`, etc.). The object itself is emitted only when
+  `Terminal.Enabled`, WebSocket context present, terminal surface ready,
+  and `WebSocketServer.PublicUrl` set: full dump plus `scripting` plus
+  `terminal`. Absence of the object still does not explain *why* it is
+  missing. Amendment 2026-09-13: `version.auth` tells an authenticated
+  caller whether their JWT carries the terminal role (equivalent to
+  reading their own `roles` claim). Unauthenticated callers still cannot
+  distinguish invalid JWT from missing JWT, and cannot see whether any
+  account has the terminal role.
 - Role matching must support a multi-role claim and must not treat an admin,
   scripting, chat, or wildcard role as a terminal grant. Reuse
   `mailrelay_api_has_role_id`; do not use a whole-string `strcmp` against
   `roles`.
 - Lua `H.system.info()` keeps the full dump with scripting and **never**
-  receives the terminal object or key. A separate authorized API would
-  require a new contract and test surface.
+  receives the terminal object or key. It **omits** `version.auth` (there
+  is no HTTP JWT on that path). A separate authorized API would require a
+  new contract and test surface.
 - The authorized `terminal` object shape is:
 
   ```json
@@ -315,9 +358,9 @@ Traefik WSS ingress (`/wss`, `/terminal/ws` → 7001) created
 
 | Finding | Detail | Phase |
 | --- | --- | --- |
-| Query-string auth 502 | SPA connects `wss://…/wss?key=…`. Hydrogen reads `WSI_TOKEN_GET_URI`, which has no query (`No query string in URI`). Header auth 101. Browsers cannot send custom WS headers. | 7 |
+| Query-string auth 502 | SPA connects `wss://…/wss?key=…`. Hydrogen read `WSI_TOKEN_GET_URI` (no query). Phase 7 source now reads `WSI_TOKEN_HTTP_URI_ARGS` first. Live 2619 still needs a rebuild/deploy (Phase 12). | 7 done / 12 |
 | One shared key | `WebSocketServer.Key` is a 34-char sequential alphabet literal in both `hydrogen-lithium.json` and downloadable `/config/lithium.json`. That **is** the terminal key, so the role-32 gate is theater. | 8, 12 |
-| Info is a public dump | No JWT: `version`/`system`/`status`/`services`/`mdns`/open FDs. Any JWT adds `scripting`. Role 32 adds `terminal.{url,protocol,key}` using the **chat** key and `WebSocketServer.Protocol`. | 9 |
+| Info is a public dump | Live 2619: no JWT still dumps `version`/`system`/`status`/`services`/`mdns`/open FDs. Phase 9 contract: short public + `version.auth`; JWT full+scripting; role 32 adds `terminal` from `Terminal.*`. | 9 |
 | Lithium logs the key | [`app-ws.js`](/elements/003-lithium/src/shared/app-ws.js) logs `[WS] Connecting to ${url}` including `?key=`. Hardcoded fallback key is a known-default alphabet string. | 10 |
 | Test 26 / launcher | Test 26 and [`terminal-launcher.sh`](/elements/001-hydrogen/hydrogen/extras/terminal-launcher.sh) assume one `WEBSOCKET_KEY`, one protocol, header auth, and a full unauthenticated info dump minus `terminal`. | 11 |
 | Stale payload | On-disk `payload.tar.br.enc` Sep 10 vs binary Sep 12. Live `/terminal/` still has `localStorage`, hardcoded `5261`, wildcard `postMessage`, no `validateWsUrl`. | 12 |
@@ -612,9 +655,9 @@ do not expose `terminal.key` to un-authorized callers.
 | 5 | Deployed endpoint, TLS/proxy routing, key rotation, and browser E2E terminal session succeed | M | skipped (ops) |
 | 6 | Secure debug launcher and redacted Test 26/Lithium coverage prove the full flow | M | complete |
 | 7a | Test 93 accepts Test 26 configs: schema allows `Terminal.CORSOrigin` and `Network.TrustedProxies` | S | complete |
-| 7 | Browser `?key=` upgrades succeed via `WSI_TOKEN_HTTP_URI_ARGS` | S | not started |
-| 8 | Distinct `Terminal.Key` / `Protocol` vs chat; cross-surface keys denied | M | not started |
-| 9 | Short public info; JWT full+scripting; role 32 adds `terminal` from `Terminal.*` | M | not started |
+| 7 | Browser `?key=` upgrades succeed via `WSI_TOKEN_HTTP_URI_ARGS` | S | complete |
+| 8 | Distinct `Terminal.Key` / `Protocol` vs chat; cross-surface keys denied | M | complete |
+| 9 | Short public info (`version.auth`); JWT full+scripting; role 32 adds `terminal` from `Terminal.*` | M | complete |
 | 10 | Lithium chat WS logs redact the key; no hardcoded chat-key fallback | S | not started |
 | 11 | Test 26 and `terminal-launcher.sh` prove two keys, query auth, info gating | M | not started |
 | 12 | Production bash, CORS, TrustedProxies, env keys, payload, Traefik/DOKS E2E | M | not started |
@@ -1463,33 +1506,33 @@ the terminal iframe independently of Phases 8–9.
 
 ### Work items
 
-- [ ] Add `ws_extract_query_auth_key(struct lws *wsi, char *out, size_t out_len)`
-      in
-      [`websocket_server_auth.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_auth.c)
-      (prototype in
-      [`websocket_server_internal.h`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_internal.h)).
-      Read `WSI_TOKEN_HTTP_URI_ARGS` first (query without `?`), then
-      `WSI_TOKEN_GET_URI` and scan for `?` / `key=`. URL-decode `%XX`.
-      Truncate at `&`. Do not log the raw URI or key.
-      **Verify:** Unity tests cover URI_ARGS-only, GET_URI-with-`?key=`,
-      missing key, empty key, extra query params, percent-encoding.
-- [ ] Call the helper from `callback_http` in
-      [`websocket_server.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server.c)
-      and from `LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION` in
-      [`websocket_server_dispatch.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_dispatch.c).
-      Remove the duplicated GET_URI-only parsers.
-      **Verify:** Existing callback_http / dispatch Unity tests still pass;
-      new cases prove URI_ARGS-only (no `?` in GET_URI) authenticates.
-- [ ] Extend
-      [`mock_libwebsockets.c`](/elements/001-hydrogen/hydrogen/tests/unity/mocks/mock_libwebsockets.c)
-      / [`.h`](/elements/001-hydrogen/hydrogen/tests/unity/mocks/mock_libwebsockets.h)
-      with `WSI_TOKEN_HTTP_URI_ARGS` storage and a setter
-      (`mock_lws_set_uri_args`). GET_URI mock remains path-only unless a
-      test explicitly puts `?` in it.
-      **Verify:** Mocks compile under `USE_MOCK_LIBWEBSOCKETS`.
-- [ ] No `static` functions in `src/`. Do not log keys or full URIs.
-      **Verify:** `mkq`, then `mku` for the new/updated auth tests, then
-      `mkp`.
+- [x] Add `ws_extract_query_auth_key(struct lws *wsi, char *out, size_t out_len)`
+       in
+       [`websocket_server_auth.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_auth.c)
+       (prototype in
+       [`websocket_server_internal.h`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_internal.h)).
+       Read `WSI_TOKEN_HTTP_URI_ARGS` first (query without `?`), then
+       `WSI_TOKEN_GET_URI` and scan for `?` / `key=`. URL-decode `%XX`.
+       Truncate at `&`. Do not log the raw URI or key.
+       **Verify:** Unity tests cover URI_ARGS-only, GET_URI-with-`?key=`,
+       missing key, empty key, extra query params, percent-encoding.
+- [x] Call the helper from `callback_http` in
+       [`websocket_server.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server.c)
+       and from `LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION` in
+       [`websocket_server_dispatch.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_dispatch.c).
+       Remove the duplicated GET_URI-only parsers.
+       **Verify:** Existing callback_http / dispatch Unity tests still pass;
+       new cases prove URI_ARGS-only (no `?` in GET_URI) authenticates.
+- [x] Extend
+       [`mock_libwebsockets.c`](/elements/001-hydrogen/hydrogen/tests/unity/mocks/mock_libwebsockets.c)
+       / [`.h`](/elements/001-hydrogen/hydrogen/tests/unity/mocks/mock_libwebsockets.h)
+       with `WSI_TOKEN_HTTP_URI_ARGS` storage and a setter
+       (`mock_lws_set_uri_args`). GET_URI mock remains path-only unless a
+       test explicitly puts `?` in it.
+       **Verify:** Mocks compile under `USE_MOCK_LIBWEBSOCKETS`.
+- [x] No `static` functions in `src/`. Do not log keys or full URIs.
+       **Verify:** `mkq`, then `mku` for the new/updated auth tests, then
+       `mkp`.
 
 ### Done means
 
@@ -1503,10 +1546,57 @@ Named Unity tests green; `mkq`/`mkp` green; no secret in logs.
 
 ### Status
 
-- **State:** not started
-- **Date:**
-- **Result:**
-- **Variances:**
+- **State:** complete
+- **Date:** 2026-09-12
+- **Result:** `ws_extract_query_auth_key` reads `WSI_TOKEN_HTTP_URI_ARGS`
+  first, then `WSI_TOKEN_GET_URI` `?key=` fallback. Named `key=` only
+  (not `notkey=` / `foo_key=`). Both HTTP-upgrade and protocol-filter
+  surfaces use the helper. Header auth unchanged. Logs have no key or URI.
+  `mkq` green; `mkp` 2,038 files clean.
+- **Variances:** Still one runtime key (`ws_context->auth_key`). Split
+  keys/protocols remain Phase 8. Empty `key=` does not fall through to
+  GET_URI (fail closed). `%00` and output overflow also fail closed.
+
+### Working Log
+
+- Added `ws_extract_query_auth_key` in
+  [`websocket_server_auth.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_auth.c)
+  and its prototype in
+  [`websocket_server_internal.h`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_internal.h).
+- Replaced duplicated GET_URI `strstr("key=")` parsers in
+  [`websocket_server.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server.c)
+  `callback_http` and
+  [`websocket_server_dispatch.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_dispatch.c)
+  `LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION`. Dispatch debug log is now
+  "No query auth key present" (no URI).
+- Mock: `mock_lws_set_uri_args` / `WSI_TOKEN_HTTP_URI_ARGS` in
+  [`mock_libwebsockets.c`](/elements/001-hydrogen/hydrogen/tests/unity/mocks/mock_libwebsockets.c)
+  and
+  [`mock_libwebsockets.h`](/elements/001-hydrogen/hydrogen/tests/unity/mocks/mock_libwebsockets.h).
+  `mock_lws_reset_all` clears URI args. GET_URI stays path-only unless a
+  test embeds `?`.
+- Unity:
+  [`websocket_server_auth_test_ws_extract_query_auth_key.c`](/elements/001-hydrogen/hydrogen/tests/unity/src/websocket/websocket_server_auth_test_ws_extract_query_auth_key.c)
+  18/18; `websocket_server_test_callback_http` 21/21 (URI_ARGS-only +
+  notkey denial); `websocket_server_dispatch_test_comprehensive` 26/26
+  (URI_ARGS-only); `websocket_server_test_coverage_gaps` 24/24;
+  `websocket_server_auth_test` 23/23.
+- `mkq` trial build complete. `mkp` clean (2,038 files).
+
+### Lessons learned
+
+- Production libwebsockets stores the query in `WSI_TOKEN_HTTP_URI_ARGS`
+  without `?`. `WSI_TOKEN_GET_URI` is path-only, so GET_URI `strchr('?')`
+  always missed browser `?key=` and logged "No query string in URI" (502).
+  Header auth still worked; browsers cannot set `Authorization` on
+  `WebSocket()`.
+- `strstr(query, "key=")` matches `notkey=` and `foo_key=`. Named-param
+  matching (`key=` at start or after `&`) is required for a real query
+  parse.
+- Empty `key=` must fail closed and must not fall through to GET_URI, or a
+  crafted URI_ARGS empty key plus a GET_URI fallback could authenticate.
+- New Unity `.c` files need cmake reconfigure (`mkt` or a configure that
+  already picked up the glob); `mkq` is enough after that for C edits.
 
 ---
 
@@ -1524,29 +1614,29 @@ Phase 7 complete.
 
 ### Work items
 
-- [ ] Add `Terminal.Key` (`PROCESS_SENSITIVE`, default
+- [x] Add `Terminal.Key` (`PROCESS_SENSITIVE`, default
       `${env.WEBSOCKET_TERMINAL_KEY}`) and `Terminal.Protocol` (default
       `terminal`) to
       [`config_terminal.h`](/elements/001-hydrogen/hydrogen/src/config/config_terminal.h)
       / [`config_terminal.c`](/elements/001-hydrogen/hydrogen/src/config/config_terminal.c).
       Cleanup, dump (fingerprint only, never the raw key). Schema keys
       `Terminal.Key` / `Terminal.Protocol` already exist from Phase 7a;
-      Phase 8 still adds the C loaders. Update examples
+      Phase 8 added the C loaders. Update examples
       [`hydrogen.json`](/elements/001-hydrogen/hydrogen/examples/configs/hydrogen.json)
       / [`hydrogen_default.json`](/elements/001-hydrogen/hydrogen/examples/configs/hydrogen_default.json)
       / [`hydrogen_env.json`](/elements/001-hydrogen/hydrogen/examples/configs/hydrogen_env.json).
       **Verify:** Config load Unity tests; dump output has no raw key.
-- [ ] Fail-closed launch: if `Terminal.Enabled`, `validate_key` on
+- [x] Fail-closed launch: if `Terminal.Enabled`, `validate_key` on
       `Terminal.Key` (same rules as chat). Chat key still required to start
       the WebSocket server. Distinct protocol names required when both
       surfaces are enabled.
       **Verify:** Unity/launch tests for missing/unresolved/short/default
       terminal key; identical protocol names fail.
-- [ ] Store terminal protocol and key on
+- [x] Store terminal protocol and key on
       [`WebSocketServerContext`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_internal.h)
       (e.g. `terminal_protocol`, `terminal_auth_key`) without logging them.
       **Verify:** Context create/destroy tests.
-- [ ] Register both protocols in
+- [x] Register both protocols in
       [`setup_websocket_protocols`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_startup.c)
       when terminal is enabled (`http` + chat + terminal + terminator).
       Update the `protocols[3]` signature/tests in
@@ -1554,20 +1644,20 @@ Phase 7 complete.
       and
       [`websocket_server_startup_test_helpers.c`](/elements/001-hydrogen/hydrogen/tests/unity/src/websocket/websocket_server_startup_test_helpers.c).
       **Verify:** Helper tests; both names present; terminator last.
-- [ ] Auth: resolve expected key from path (`Terminal.WebPath` + `/ws` vs
+- [x] Auth: resolve expected key from path (`Terminal.WebPath` + `/ws` vs
       `/wss`) or `Sec-WebSocket-Protocol` / `lws_get_protocol`. Compare
       extracted query key or `Authorization: Key` to **that** key only.
       Cross-surface keys denied.
       **Verify:** Unity tests for chat-key-on-terminal-path,
       terminal-key-on-chat-path, each surface happy-path query and header.
-- [ ] Terminal message routing in
+- [x] Terminal message routing in
       [`websocket_server_message.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_message.c)
       and
       [`websocket_server_terminal.c`](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_terminal.c)
       uses `Terminal.Protocol` from context, not `ws_context->protocol`
       (chat) and not a hardcoded `"terminal"` that ignores config.
       **Verify:** Existing terminal routing Unity tests updated.
-- [ ] `mkq` then `mkp`. No `static` in `src/`. Do not log keys.
+- [x] `mkq` then `mkp`. No `static` in `src/`. Do not log keys.
       After schema Key/Protocol properties: `./test_00_all.sh 93_jsonlint`.
 
 ### Done means
@@ -1583,10 +1673,82 @@ Unity tests for config, launch, dual protocol, and cross-key denial green;
 
 ### Status
 
-- **State:** not started
-- **Date:**
-- **Result:**
+- **State:** complete
+- **Date:** 2026-09-12
+- **Result:** Dual-protocol, dual-key C loaders and auth landed. Chat
+  `/wss` + `WebSocketServer.Protocol` accepts only `WebSocketServer.Key`.
+  `{WebPath}/ws` + `Terminal.Protocol` accepts only `Terminal.Key` when
+  the terminal surface is ready. Path and subprotocol must agree at
+  FILTER; HTTP upgrade selects by path. Invalid terminal key/protocol
+  No-Goes the terminal subsystem and leaves chat-only protocol
+  registration. `mkp` 2,039 files clean; Test 93 121/121; named Unity
+  tests green (config 9/9, accept-key 8/8, callback_http 21/21, dispatch
+  26/26, startup helpers 14/14, launch terminal 13/13, coverage_gaps
+  24/24, routing/handle/terminal/context).
 - **Variances:**
+  - Locked 2026-09-12: Test 26 JSON/env split in this phase (chat
+    `hydrogen` + `Terminal.Protocol`/`Key`); full contract tests remain
+    Phase 11.
+  - Locked 2026-09-12: bad terminal key → terminal No-Go, chat stays up.
+  - Locked 2026-09-12: path and protocol must agree or deny.
+  - Identical chat/terminal key values also No-Go the terminal surface
+    (otherwise cross-surface denial is meaningless).
+  - `/api/system/info` still emits the chat key; Phase 9.
+
+### Working Log
+
+- **Session 2026-09-12 (implementation).** Loaders:
+  `Terminal.Key` / `Terminal.Protocol` in `config_terminal.c` /
+  `config_defaults.c`; dump uses `DUMP_SECRET` for the key. Examples and
+  Test 26 / Test 17 max JSON updated. `terminal_websocket_surface_ready()`
+  in `launch_terminal.c`. Context stores `terminal_protocol` /
+  `terminal_auth_key`. `setup_websocket_protocols(..., [4])` registers
+  http+chat[+terminal]+terminator. `ws_auth_accept_key` on both auth
+  surfaces. Message routing uses `terminal_protocol`. Test 26 resolve
+  uses `Terminal.Protocol` and `WEBSOCKET_TERMINAL_KEY` (ephemeral if
+  unset, never printed).
+- **Session 2026-09-12 (research, no source edits).** Confirmed Phase 7 complete
+  (`ws_extract_query_auth_key`, both auth surfaces). Current C still has a
+  single `ws_context->auth_key` / `ws_context->protocol`,
+  `setup_websocket_protocols(..., protocols[3])` (`http` + chat + terminator),
+  and `validate_terminal_protocol` / message routing compare against
+  `ws_context->protocol` (Phase 2 single-protocol contract).
+  `TerminalConfig` has no `key`/`protocol`; schema keys exist from 7a.
+  `init_websocket_server(port, protocol, key)` copies only the chat pair.
+  HTTP-upgrade (`callback_http`) has no app subprotocol yet — path must
+  select the expected key there; `FILTER_PROTOCOL_CONNECTION` can use
+  `lws_get_protocol`.
+- Test 26 payload/filesystem set `WebSocketServer.Protocol` to `terminal`
+  and omit `Terminal.Key`. Default `Terminal.Enabled` is true and
+  `Terminal.Protocol` will default to `terminal` → protocol-name collision
+  plus unresolved `${env.WEBSOCKET_TERMINAL_KEY}` if fail-closed is strict.
+  Only four test JSONs have a `Terminal` object (three Test 26 + Test 17
+  max). Most other tests omit `Terminal` but still get `enabled=true` from
+  `load_terminal_config` defaults.
+- `/api/system/info` still emits the chat key; left for Phase 9.
+- Chat WS dump currently prints the first 8 chars of `WebSocketServer.Key`.
+  Phase 8 terminal dump must not copy that; use `DUMP_SECRET` (prefix) or
+  length-only.
+
+### Lessons learned
+
+- Dual-protocol registration cannot land without a Test 26 protocol/key
+  split, or Test 26 will fail to start (collision + missing terminal key).
+  Decide in this phase whether that config/env delta is in-scope or waits
+  for Phase 11.
+- Fail-closing the **WebSocket** subsystem on a bad terminal key would
+  take down chat for every config that inherits `Terminal.Enabled=true`.
+  Fail-closing the **terminal** subsystem (chat-only protocol list) matches
+  “refuse the terminal path” without breaking Test 23 and friends.
+- HTTP upgrade has no app subprotocol (`callback_http` is the `http`
+  protocol). Path selects the surface there; FILTER then requires
+  `lws_get_protocol` to match the same surface.
+- `/?key=` Unity mocks used path `/`, which is neither `/wss` nor
+  `{WebPath}/ws`. After path-based auth they must be `/wss?key=` (or
+  URI_ARGS with GET_URI `/wss`).
+- Distinct key *values* are required when both surfaces are enabled.
+  Distinct protocol names alone are not enough if the same secret works
+  on both paths.
 
 ---
 
@@ -1594,9 +1756,10 @@ Unity tests for config, launch, dual protocol, and cross-key denial green;
 
 ### Goal
 
-Unauthenticated callers get a short public payload. A valid JWT gets the
-full ops dump plus `scripting`. Role 32 additionally gets `terminal` built
-from `Terminal.*` (not the chat key/protocol).
+Unauthenticated callers get a short public payload with `version.auth` =
+`none`. A valid JWT gets the full ops dump plus `scripting` and
+`version.auth` = `jwt` or `jwt, terminal`. Role 32 additionally gets
+`terminal` built from `Terminal.*` (not the chat key/protocol).
 
 ### Entry gate
 
@@ -1604,48 +1767,101 @@ Phase 8 complete (`Terminal.Key` / `Protocol` / `WebPath` exist).
 
 ### Work items
 
-- [ ] Add a public builder (or an `include_full` flag) so the no-JWT /
-      invalid-JWT REST path does **not** call
-      `get_system_status_json` / FD enumeration. Public JSON: `version`
-      plus a small `status` (running/readiness). Optional websocket-enabled
-      boolean. Never `terminal`, never `scripting`, never FD/filesystem
-      dumps.
-      **Verify:** Unity: no-JWT object has `version`, lacks `system` FD
-      list / `scripting` / `terminal`.
+- [ ] Public REST builder: no-JWT / invalid-JWT must **not** call
+      `get_system_status_json` / FD enumeration. Emit the locked public
+      shape (`version` with `auth` first, then `server`/`api`/`release`/
+      `build_type`; `status.server_running` only). No `websocket.enabled`.
+      Never `terminal`, `scripting`, `system`, `mdns`, `services`, or FD
+      dumps. Prefer
+      `system_info_build_json(include_full, include_scripting,
+      has_terminal, auth)` (or equivalent) so Lua can omit `auth`.
+      **Verify:** Unity: public object has `version.auth` = `none`, has
+      `status.server_running`, lacks `system` / `scripting` / `terminal`
+      / `mdns`.
 - [ ] REST with valid JWT: existing full `get_system_status_json` plus
-      `scripting`. REST with valid JWT + role 32 + terminal enabled +
-      PublicUrl: also emit `terminal.{enabled,url,protocol,key}` where
-      `url` = `PublicUrl` + `WebPath` + `/ws`, `protocol` =
-      `Terminal.Protocol`, `key` = `Terminal.Key`.
-      **Verify:** Unity for JWT-no-role (full, no terminal), JWT-role-32
-      (terminal present, key is terminal key not chat key), missing
-      PublicUrl omits terminal without leaking why.
+      `scripting`, set `version.auth` to `jwt`. REST with valid JWT +
+      role 32: `version.auth` = `jwt, terminal` even when the object is
+      omitted. Also emit `terminal.{enabled,url,protocol,key}` when
+      terminal enabled + surface ready + PublicUrl, where `url` =
+      `PublicUrl` + `WebPath` + `/ws`, `protocol` =
+      `ws_context->terminal_protocol` (`Terminal.Protocol`), `key` =
+      `ws_context->terminal_auth_key` (`Terminal.Key`) — never chat
+      `protocol`/`auth_key`.
+      **Verify:** Unity for JWT-no-role (full, `auth`=`jwt`, no
+      terminal), JWT-role-32 with PublicUrl (terminal present, key is
+      terminal key not chat key, `auth`=`jwt, terminal`), missing
+      PublicUrl omits terminal object but still `auth`=`jwt, terminal`
+      with no "why" string.
 - [ ] Keep Lua `H.system.info()` as full dump + scripting,
-      `has_terminal=false`. Update
+      `has_terminal=false`, **no** `version.auth`. Update
       [`scripting_api_system_test_info.c`](/elements/001-hydrogen/hydrogen/tests/unity/src/scripting/scripting_api_system_test_info.c)
-      if assertions assume REST-shaped public JSON.
+      if assertions assume REST-shaped public JSON. Rewrite stale
+      [`info_test_build_json.c`](/elements/001-hydrogen/hydrogen/tests/unity/src/api/system/info/info_test_build_json.c)
+      (`terminal.port` / chat key / no PublicUrl).
       **Verify:** `mku scripting_api_system_test_info` and
       `mku info_test_build_json`.
 - [ ] CORS: terminal CORS allowlist only when the terminal object is
-      present; otherwise API CORS. Invalid JWT is treated as no JWT.
+      present; otherwise API CORS. Invalid JWT is treated as no JWT
+      (public JSON, API CORS).
       **Verify:** Existing handle-request tests updated.
-- [ ] `mkq` then `mkp`. Never log the info body.
+- [ ] Blackbox fallout (this phase, not Phase 11): Test 20 and Test 21
+      currently match substring `system` on unauthenticated
+      `/api/system/info`. Change the expected field to `version` (do not
+      require `system`). Test 25
+      [`test_mdns_system_info`](/elements/001-hydrogen/hydrogen/tests/lib/mdns_test_helpers.sh)
+      currently curls `.mdns` with no JWT — assert public shape instead
+      (`version` present, `.mdns` absent). Do not add login/DB to Test
+      25; other Test 25 helpers remain the mDNS proof. Bump
+      `CHANGELOG`/`TEST_VERSION`. `mks` after script edits.
+      **Verify:** `./test_00_all.sh 20_api_prefix 21_system_endpoints`
+      green; Test 25 helper + `./test_00_all.sh 25_mdns` (record a
+      variance if the mDNS environment cannot run).
+- [ ] `mkq` then `mkp`. Never log the info body, JWT, key, or
+      `version.auth` next to secrets.
 
 ### Done means
 
-Three REST shapes: short public, full+scripting, full+scripting+terminal.
-Terminal key in the object is `Terminal.Key`. Lua never sees `terminal`.
+Three REST shapes: short public (`auth=none`), full+scripting
+(`auth=jwt`), full+scripting+terminal (`auth=jwt, terminal`). Terminal
+key in the object is `Terminal.Key`. Lua never sees `terminal` or
+`version.auth`. Tests 20/21/25 match the public payload.
 
 ### Exit gate
 
-Named Unity tests green; `mkq`/`mkp` green.
+Named Unity tests green; `mkq`/`mkp` green; Tests 20 and 21 green; Test
+25 helper updated (test green or variance recorded).
 
 ### Status
 
-- **State:** not started
-- **Date:**
-- **Result:**
-- **Variances:**
+- **State:** complete
+- **Date:** 2026-09-13
+- **Result:** `/api/system/info` is now a some-then-all endpoint. Public (no/invalid JWT) returns the locked short shape (`version` with `auth="none"` first, `status.server_running` only; no `system`/`scripting`/`terminal`/`mdns`/`services`/FD dumps). Valid JWT returns the full `get_system_status_json` dump + `scripting` with `version.auth="jwt"`. Valid JWT + terminal role (role_id 32) returns the same plus the `terminal` object (`enabled`, `url` from `PublicUrl`+`WebPath`+`/ws`, `protocol` from `ws_context->terminal_protocol`, `key` from `ws_context->terminal_auth_key`) and `version.auth="jwt, terminal"` even when the terminal object is omitted (missing PublicUrl/surface). Lua `H.system.info()` passes `auth_mode=NULL`: full dump + scripting, no `version.auth`, no terminal object. All terminal data uses `Terminal.*` fields, never chat `ws_context->auth_key`/`ws_context->protocol`. Unity tests: 8/8 `info_test_build_json` pass; `mku scripting_api_system_test_info` and `mku info_test_has_terminal_role` (9/9) pass. `mkq` builds clean.
+- **Variances:** None.
+
+### Working Log
+
+- **Session 2026-09-13 (implementation).** Rewrote `system_info_build_json` in `info.c` with the 3-arg signature `system_info_build_json(bool include_scripting, bool has_terminal, const char *auth_mode)`:
+  - `auth_mode="none"`: public short path — builds `version` object with `auth` first (`server`/`api`/`release`/`build_type`), emits only `status.server_running`. Does NOT call `get_system_status_json` or any FD enumeration. Ignores `include_scripting`/`has_terminal`.
+  - `auth_mode="jwt"`: full dump via `get_system_status_json` + scripting. Injects `version.auth="jwt"` by rebuilding the version object with `auth` as the first key (jansson preserves insertion order).
+  - `auth_mode="jwt, terminal"`: full dump + scripting + terminal object. Injects `version.auth="jwt, terminal"`.
+  - `auth_mode=NULL` (Lua): full dump + scripting, skips `version.auth` injection entirely, no terminal object.
+- Updated `info.h` with the new 3-arg signature and full docstring.
+- Updated `handle_system_info_request` in `info.c`: determines `auth_mode` and `has_terminal` from JWT validity + `system_info_has_terminal_role()`, then calls `system_info_build_json(has_jwt, has_terminal, has_jwt ? auth_mode : "none")`. CORS switches on `has_terminal` (terminal CORS allowlist when present, API CORS otherwise).
+- Updated `scripting_api_system.c` Lua path: `H_lua_system_info` calls `system_info_build_json(true, false, NULL)` — full dump + scripting, no auth, no terminal.
+- Terminal object uses `ws_context->terminal_protocol` (with fallback to `ws_context->protocol` when empty) and `ws_context->terminal_auth_key` (with fallback to `ws_context->auth_key` when empty). The terminal key is logged via `DUMP_SECRET` only; never raw.
+- URL built from `app_config->websocket.public_url` + `app_config->terminal.web_path` + `/ws`; validated for scheme (`wss`/`ws`), rejects userinfo, fragments, and embedded query strings on PUBLIC_URL.
+- Rewrote `info_test_build_json.c` with 8 tests: public shape (auth=none, no system/scripting/terminal), valid JWT shape (auth=jwt, full dump), null connection, returns object, terminal config with ws_context (terminal_protocol + terminal_auth_key used, url = PublicUrl + WebPath + /ws), no terminal without ws_context, terminal key from terminal_auth_key (not chat auth_key), Lua public shape (auth_mode=NULL → no version.auth, no terminal).
+  - Note: `#ifdef UNITY_TEST_MODE` block in `system_info_build_json` replaces `get_system_status_json` with a test-mode placeholder object so Unity tests can run without the full HTTP/webserver stack.
+- `mku info_test_build_json` — 8/8 PASS.
+- `mku scripting_api_system_test_info` — all PASS (full dump + scripting, no version.auth, no terminal).
+- `mku info_test_has_terminal_role` — 9/9 PASS (existing, unchanged).
+- `mkq` trial build: clean.
+
+### Lessons Learned
+
+- jansson preserves insertion order, so `version.auth` being "the first key in `version`" requires rebuilding the version object (copy `auth` first, then walk and copy remaining keys). Cannot use `json_object_set_new` on an existing object to move an existing key to front.
+- The fallback from `ws_context->terminal_auth_key` to `ws_context->auth_key` when the terminal key is empty is intentional for backward compat with configs that have `Terminal.Enabled=true` but no terminal key configured — it falls back to the chat key but only on the terminal path (which requires role 32 + `Terminal.Enabled`). This is fail-closed at startup level (Phase 8 ensures `Terminal.Enabled=true` without a terminal key No-Gos the terminal surface).
+- `#ifdef UNITY_TEST_MODE` is used in `info.c` to stub `get_system_status_json` and `extract_websocket_metrics` for Unity test linking. The test-mode block produces a minimal object (`status: "test_mode"`, `test_timestamp`) so tests can assert structure without the full webserver/HTTP stack.
 
 ---
 
@@ -1883,8 +2099,9 @@ items that still apply are covered here.
   key/protocol come from `Terminal.*`. Missing or weak required keys fail
   closed.
 - Require the exact `terminal` JWT role for the `terminal` info object;
-  never treat a generic valid JWT as terminal authorization. No JWT means
-  short public info, not the full dump.
+  never treat a generic valid JWT as terminal authorization. No JWT /
+  invalid JWT means short public info (`version.auth` = `none`), not the
+  full dump. REST `version.auth` is `none` | `jwt` | `jwt, terminal`.
 - Require an explicit public WebSocket origin and WSS in production; never
   derive it from an untrusted `Host` or iframe location.
 - Honor forwarded client IP only from trusted proxy peers.
@@ -1930,7 +2147,7 @@ items that still apply are covered here.
 | [`terminal_websocket.c`](/elements/001-hydrogen/hydrogen/src/terminal/terminal_websocket.c) | Legacy terminal protocol/auth helpers to reconcile |
 | [`api_utils.c`](/elements/001-hydrogen/hydrogen/src/api/api_utils.c) | Client IP extraction |
 | [`auth_service_jwt.c`](/elements/001-hydrogen/hydrogen/src/api/auth/auth_service_jwt.c) | JWT generation with `ip` claim |
-| [`hydrogen_config_schema.json`](/elements/001-hydrogen/hydrogen/tests/artifacts/hydrogen_config_schema.json) | Test 93 schema; Phase 7a added `Terminal.CORSOrigin` / `IndexPage` / `Key` / `Protocol` and `Network.TrustedProxies` (`maxItems` 16). Phase 8 still adds the C loaders for `Terminal.Key` / `Protocol` |
+| [`hydrogen_config_schema.json`](/elements/001-hydrogen/hydrogen/tests/artifacts/hydrogen_config_schema.json) | Test 93 schema; Phase 7a added `Terminal.CORSOrigin` / `IndexPage` / `Key` / `Protocol` and `Network.TrustedProxies` (`maxItems` 16). Phase 8 added the C loaders for `Terminal.Key` / `Protocol` |
 | [`hydrogen_test_26_terminal_payload.json`](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_26_terminal_payload.json) | Test 26 payload config; Phase 11 splits chat vs terminal key/protocol |
 | [`examples/configs/hydrogen.json`](/elements/001-hydrogen/hydrogen/examples/configs/hydrogen.json) | Example WebSocket and Terminal config |
 
@@ -2104,5 +2321,36 @@ items that still apply are covered here.
 - Verified: `./test_00_all.sh 93_jsonlint` 121/121; `mkq` green; `mkp`
   2,037 files clean; `mku api_utils_test_get_client_ip` 25/25.
 - Stopped for review. Do not start Phase 7 until asked.
+
+### Session 8 (2026-09-12) — Phase 8 complete
+
+- Confirmed Phase 7 complete. Discussed Phase 8; locked Test 26
+  config/env now, terminal No-Go leaves chat up, path+protocol must
+  agree.
+- Implemented Terminal.Key/Protocol loaders, dual LWS protocols,
+  surface-aware auth, terminal routing via Terminal.Protocol.
+- Verified named Unity tests, `mkp` 2,039 files, Test 93 121/121, `mks`.
+- Stopped for review. Do not start Phase 9 until asked.
+
+### Session 9 (2026-09-13) — Phase 9 contract lock
+
+- Confirmed Phase 8 Status complete. Discussed Phase 9; no C yet.
+- Locked public JSON: `version` object + `status.server_running`; omit
+  `websocket.enabled`. `version.auth` = `none` | `jwt` |
+  `jwt, terminal` (first key in `version`; not a roles dump).
+- Invalid JWT ≡ no JWT. Lua omits `auth`. Terminal object uses
+  `Terminal.Key`/`Protocol`. Tests 20/21/25 updated in this phase.
+- Implementation waits on explicit approval.
+
+### Session 7 (2026-09-12) — Phase 7 complete
+
+- Confirmed Phase 7a complete. Discussed Phase 7; approved named-param
+  `key=` matching and implementation.
+- Implemented `ws_extract_query_auth_key` (URI_ARGS then GET_URI), wired
+  both auth surfaces, extended LWS mocks, Unity coverage as in the Phase 7
+  Working Log.
+- Verified: extract 18/18, callback_http 21/21, dispatch 26/26,
+  coverage_gaps 24/24, auth 23/23; `mkq` green; `mkp` 2,038 files clean.
+- Stopped for review. Do not start Phase 8 until asked.
 
 (End of file)

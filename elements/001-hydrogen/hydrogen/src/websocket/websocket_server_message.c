@@ -218,7 +218,8 @@ int handle_message_type(struct lws *wsi, const char *type)
         // hardcoded "terminal" literal. The configured protocol is the single
         // terminal subprotocol (TERMINAL_FIX_PLAN Phase 2).
         const struct lws_protocols *protocol = lws_get_protocol(wsi);
-        if (protocol && ws_context && strcmp(protocol->name, ws_context->protocol) == 0) {
+        if (protocol && ws_context && ws_context->terminal_protocol[0] != '\0' &&
+            strcmp(protocol->name, ws_context->terminal_protocol) == 0) {
             return handle_terminal_message(wsi);
         } else {
             // Non-terminal connection sent a terminal message type - just ignore it

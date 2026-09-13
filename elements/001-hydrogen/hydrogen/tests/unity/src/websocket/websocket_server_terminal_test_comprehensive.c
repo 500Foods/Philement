@@ -67,6 +67,7 @@ void setUp(void) {
     test_context.start_time = time(NULL);
     test_context.max_message_size = 4096;
     test_context.message_length = 0;
+    strncpy(test_context.terminal_protocol, "terminal", sizeof(test_context.terminal_protocol) - 1);
 
     // Allocate message buffer
     test_context.message_buffer = malloc(test_context.max_message_size + 1);

@@ -10,6 +10,7 @@
 # analyze_terminal_test_results()
 
 # CHANGELOG
+# 2.8.2 - 2026-09-12 - Distinct Terminal.Key via WEBSOCKET_TERMINAL_KEY (ephemeral if unset)
 # 2.8.1 - 2026-09-12 - Source terminal libs via LIB_DIR after setup_test_environment
 #                    so standalone runs still find helpers after cwd changes.
 # 2.8.0 - 2026-09-12 - Completed 1000-line split: HTTP/sysinfo helpers in
@@ -71,7 +72,7 @@ set -euo pipefail
 TEST_NAME="Terminal"
 TEST_ABBR="TRM"
 TEST_NUMBER="26"
-TEST_VERSION="2.8.1"
+TEST_VERSION="2.8.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -509,6 +510,20 @@ if [[ -n "${WEBSOCKET_KEY}" ]]; then
     fi
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "WEBSOCKET_KEY environment variable is not set"
+    EXIT_CODE=1
+    print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
+    ${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"
+fi
+
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate WEBSOCKET_TERMINAL_KEY Environment Variable"
+if [[ -z "${WEBSOCKET_TERMINAL_KEY:-}" ]]; then
+    WEBSOCKET_TERMINAL_KEY="$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 32 || true)"
+    export WEBSOCKET_TERMINAL_KEY
+fi
+if [[ -n "${WEBSOCKET_TERMINAL_KEY:-}" && "${WEBSOCKET_TERMINAL_KEY}" != "${WEBSOCKET_KEY}" && "${#WEBSOCKET_TERMINAL_KEY}" -ge 32 ]]; then
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "WEBSOCKET_TERMINAL_KEY is set and distinct from the chat key"
+else
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "WEBSOCKET_TERMINAL_KEY missing, too short, or matches chat key"
     EXIT_CODE=1
     print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
     ${ORCHESTRATION:-false} && return "${EXIT_CODE}" || exit "${EXIT_CODE}"

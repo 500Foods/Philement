@@ -211,6 +211,8 @@
     "Terminal": {
         "Enabled": "${env.TERMINAL_ENABLED}",
         "WebPath": "${env.TERMINAL_WEBPATH}",
+        "Protocol": "${env.TERMINAL_PROTOCOL}",
+        "Key": "${env.WEBSOCKET_TERMINAL_KEY}",
         "ShellCommand": "${env.TERMINAL_SHELLCOMMAND}",
         "MaxSessions": "${env.TERMINAL_MAXSESSIONS}",
         "IdleTimeoutSeconds": "${env.TERMINAL_IDLETIMEOUTSECONDS}",

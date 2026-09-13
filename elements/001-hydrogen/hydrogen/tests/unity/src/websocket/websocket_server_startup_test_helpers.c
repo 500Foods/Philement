@@ -14,7 +14,7 @@
 
 // Forward declarations for functions being tested
 int validate_websocket_params(int port, const char* protocol, const char* key);
-void setup_websocket_protocols(struct lws_protocols protocols[3], const char* protocol);
+void setup_websocket_protocols(struct lws_protocols protocols[4], const char* protocol, const char* terminal_protocol);
 void configure_lws_context_info(struct lws_context_creation_info* info,
                                struct lws_protocols* protocols,
                                WebSocketServerContext* context);
@@ -33,6 +33,7 @@ void test_validate_websocket_params_null_key(void);
 void test_validate_websocket_params_empty_key(void);
 void test_setup_websocket_protocols_basic(void);
 void test_setup_websocket_protocols_custom_protocol(void);
+void test_setup_websocket_protocols_with_terminal(void);
 void test_configure_lws_context_info_basic(void);
 void test_configure_lws_vhost_info_basic(void);
 void test_verify_websocket_port_binding_available(void);
@@ -90,8 +91,8 @@ void test_validate_websocket_params_empty_key(void) {
 
 // Test protocol setup with basic configuration
 void test_setup_websocket_protocols_basic(void) {
-    struct lws_protocols protocols[3];
-    setup_websocket_protocols(protocols, "hydrogen-protocol");
+    struct lws_protocols protocols[4];
+    setup_websocket_protocols(protocols, "hydrogen-protocol", NULL);
 
     // Test HTTP protocol (first entry)
     TEST_ASSERT_EQUAL_STRING("http", protocols[0].name);
@@ -110,23 +111,34 @@ void test_setup_websocket_protocols_basic(void) {
 
 // Test protocol setup with different protocol name
 void test_setup_websocket_protocols_custom_protocol(void) {
-    struct lws_protocols protocols[3];
-    setup_websocket_protocols(protocols, "custom-ws-protocol");
+    struct lws_protocols protocols[4];
+    setup_websocket_protocols(protocols, "custom-ws-protocol", NULL);
 
     TEST_ASSERT_EQUAL_STRING("custom-ws-protocol", protocols[1].name);
     TEST_ASSERT_NULL(protocols[2].name); // Terminator
 }
 
+void test_setup_websocket_protocols_with_terminal(void) {
+    struct lws_protocols protocols[4];
+    setup_websocket_protocols(protocols, "hydrogen", "terminal");
+
+    TEST_ASSERT_EQUAL_STRING("http", protocols[0].name);
+    TEST_ASSERT_EQUAL_STRING("hydrogen", protocols[1].name);
+    TEST_ASSERT_EQUAL_STRING("terminal", protocols[2].name);
+    TEST_ASSERT_NOT_NULL(protocols[2].callback);
+    TEST_ASSERT_NULL(protocols[3].name);
+}
+
 // Test context info configuration
 void test_configure_lws_context_info_basic(void) {
     struct lws_context_creation_info info;
-    struct lws_protocols protocols[3];
+    struct lws_protocols protocols[4];
     WebSocketServerContext context;
 
     // Initialize test data
     memset(&context, 0, sizeof(context));
     context.port = 8080;
-    setup_websocket_protocols(protocols, "test-protocol");
+    setup_websocket_protocols(protocols, "test-protocol", NULL);
 
     // Configure context info
     configure_lws_context_info(&info, protocols, &context);
@@ -143,13 +155,13 @@ void test_configure_lws_context_info_basic(void) {
 // Test vhost info configuration
 void test_configure_lws_vhost_info_basic(void) {
     struct lws_context_creation_info vhost_info;
-    struct lws_protocols protocols[3];
+    struct lws_protocols protocols[4];
     WebSocketServerContext context;
 
     // Initialize test data
     memset(&context, 0, sizeof(context));
     context.port = 8080;
-    setup_websocket_protocols(protocols, "test-protocol");
+    setup_websocket_protocols(protocols, "test-protocol", NULL);
 
     // Configure vhost info
     configure_lws_vhost_info(&vhost_info, 8080, protocols, &context);
@@ -201,6 +213,7 @@ int main(void) {
     // Protocol setup tests
     RUN_TEST(test_setup_websocket_protocols_basic);
     RUN_TEST(test_setup_websocket_protocols_custom_protocol);
+    RUN_TEST(test_setup_websocket_protocols_with_terminal);
 
     // Configuration tests
     RUN_TEST(test_configure_lws_context_info_basic);

@@ -30,6 +30,8 @@ void test_validate_terminal_config_max_sessions_too_high(void);
 void test_validate_terminal_config_idle_timeout_too_low(void);
 void test_validate_terminal_config_idle_timeout_too_high(void);
 void test_validate_terminal_config_valid_configuration(void);
+void test_validate_terminal_config_unresolved_key(void);
+void test_validate_terminal_config_same_protocol(void);
 void test_terminal_readiness_webserver_not_enabled(void);
 void test_terminal_readiness_websocket_not_enabled(void);
 void test_terminal_readiness_valid_configuration(void);
@@ -47,9 +49,19 @@ static void setup_minimal_valid_config(void) {
     initialize_config_defaults(app_config);
     
     // Enable necessary subsystems for Terminal to work
-   app_config->webserver.enable_ipv4 = true;
+    app_config->webserver.enable_ipv4 = true;
     app_config->websocket.enable_ipv4 = true;
     app_config->terminal.enabled = true;
+    free(app_config->terminal.key);
+    app_config->terminal.key = strdup("0123456789abcdef0123456789abcdef");
+    free(app_config->websocket.key);
+    app_config->websocket.key = strdup("fedcba9876543210fedcba9876543210");
+    if (!app_config->terminal.protocol) {
+        app_config->terminal.protocol = strdup("terminal");
+    }
+    if (!app_config->websocket.protocol) {
+        app_config->websocket.protocol = strdup("hydrogen");
+    }
 }
 
 // Test helper to cleanup configuration
@@ -223,6 +235,44 @@ void test_validate_terminal_config_idle_timeout_too_high(void) {
     free(messages);
 }
 
+void test_validate_terminal_config_unresolved_key(void) {
+    setup_minimal_valid_config();
+    free(app_config->terminal.key);
+    app_config->terminal.key = strdup("${env.WEBSOCKET_TERMINAL_KEY}");
+
+    const char** messages = NULL;
+    size_t count = 0;
+    size_t capacity = 0;
+
+    bool result = validate_terminal_configuration(&messages, &count, &capacity);
+
+    TEST_ASSERT_FALSE(result);
+
+    for (size_t i = 0; i < count; i++) {
+        free((void*)messages[i]);
+    }
+    free(messages);
+}
+
+void test_validate_terminal_config_same_protocol(void) {
+    setup_minimal_valid_config();
+    free(app_config->terminal.protocol);
+    app_config->terminal.protocol = strdup("hydrogen");
+
+    const char** messages = NULL;
+    size_t count = 0;
+    size_t capacity = 0;
+
+    bool result = validate_terminal_configuration(&messages, &count, &capacity);
+
+    TEST_ASSERT_FALSE(result);
+
+    for (size_t i = 0; i < count; i++) {
+        free((void*)messages[i]);
+    }
+    free(messages);
+}
+
 void test_validate_terminal_config_valid_configuration(void) {
     setup_minimal_valid_config();
     
@@ -319,6 +369,8 @@ int main(void) {
     RUN_TEST(test_validate_terminal_config_idle_timeout_too_low);
     RUN_TEST(test_validate_terminal_config_idle_timeout_too_high);
     RUN_TEST(test_validate_terminal_config_valid_configuration);
+    RUN_TEST(test_validate_terminal_config_unresolved_key);
+    RUN_TEST(test_validate_terminal_config_same_protocol);
     
     // Readiness check tests
     RUN_TEST(test_terminal_readiness_webserver_not_enabled);

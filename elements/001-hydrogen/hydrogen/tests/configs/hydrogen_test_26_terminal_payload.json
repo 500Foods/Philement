@@ -12,13 +12,15 @@
         "EnableIPv4": true,
         "EnableIPv6": true,
         "Port": 5261,
-        "Protocol": "terminal",
+        "Protocol": "hydrogen",
         "Key": "${env.WEBSOCKET_KEY}",
         "PublicUrl": "wss://localhost:5261",
         "MaxMessageSize": 8192
     },
     "Terminal": {
         "Enabled": true,
+        "Protocol": "terminal",
+        "Key": "${env.WEBSOCKET_TERMINAL_KEY}",
         "ShellCommand": "/bin/zsh",
         "MaxSessions": 10,
         "IdleTimeoutSeconds": 300,

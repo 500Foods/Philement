@@ -277,6 +277,8 @@
     "Terminal": {
         "Enabled": true,
         "WebPath": "/terminal",
+        "Protocol": "terminal",
+        "Key": "${env.WEBSOCKET_TERMINAL_KEY}",
         "ShellCommand": "/bin/bash",
         "MaxSessions": 4,
         "IdleTimeoutSeconds": 600,

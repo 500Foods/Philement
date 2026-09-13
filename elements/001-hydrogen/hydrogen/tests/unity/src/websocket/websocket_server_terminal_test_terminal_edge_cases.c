@@ -21,6 +21,11 @@ int handle_message_type(struct lws *wsi, const char *type);
 TerminalSession* find_or_create_terminal_session(struct lws *wsi);
 
 // Test functions for terminal edge cases
+extern WebSocketServerContext *ws_context;
+
+static WebSocketServerContext test_context;
+static WebSocketServerContext *original_context;
+
 void test_handle_message_type_terminal_session_creation_failure(void);
 void test_handle_message_type_terminal_json_parsing_failure(void);
 void test_handle_message_type_terminal_missing_type_field(void);
@@ -33,12 +38,15 @@ void test_find_or_create_terminal_session_creation_failure(void);
 void test_find_or_create_terminal_session_session_reuse_path(void);
 
 void setUp(void) {
-    // Reset all mocks before each test
+    original_context = ws_context;
+    memset(&test_context, 0, sizeof(test_context));
+    strncpy(test_context.terminal_protocol, "terminal", sizeof(test_context.terminal_protocol) - 1);
+    ws_context = &test_context;
     mock_lws_reset_all();
 }
 
 void tearDown(void) {
-    // Clean up after each test
+    ws_context = original_context;
     mock_lws_reset_all();
 }
 

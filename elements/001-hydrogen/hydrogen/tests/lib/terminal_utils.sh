@@ -19,6 +19,7 @@
 # test_sysinfo_terminal_with_valid_jwt()
 
 # CHANGELOG
+# 1.2.0 - 2026-09-12 - Resolve Terminal.Protocol and WEBSOCKET_TERMINAL_KEY
 # 1.1.0 - 2026-09-12 - Added HTTP/sysinfo helpers from test_26_terminal.sh (1000-line cap)
 # 1.0.0 - 2026-09-12 - Extracted from test_26_terminal.sh: SQLite isolation, WebSocket config,
 #                      result-flag checking, JWT fingerprint, and sysinfo redaction helpers
@@ -47,7 +48,7 @@ export TERMINAL_UTILS_GUARD="true"
 
 # Library metadata
 TERMINAL_UTILS_NAME="Terminal Utilities Library"
-TERMINAL_UTILS_VERSION="1.1.0"
+TERMINAL_UTILS_VERSION="1.2.0"
 
 # Ensure framework is sourced (for GREP, JQ, etc.)
 # shellcheck disable=SC1091,SC2154 # Normal framework sourcing
@@ -172,10 +173,10 @@ resolve_terminal_websocket_config() {
 
     local websocket_protocol="${TERMINAL_WS_PROTOCOL:-}"
     if [[ -z "${websocket_protocol}" ]]; then
-        websocket_protocol=$(jq -r '.WebSocketServer.Protocol // "terminal"' "${config_file}" 2>/dev/null || echo "terminal")
+        websocket_protocol=$(jq -r '.Terminal.Protocol // "terminal"' "${config_file}" 2>/dev/null || echo "terminal")
     fi
 
-    local websockets_key="${TERMINAL_WS_KEY:-${WEBSOCKET_KEY:-}}"
+    local websockets_key="${TERMINAL_WS_KEY:-${WEBSOCKET_TERMINAL_KEY:-${WEBSOCKET_KEY:-}}}"
 
     RESOLVED_WS_URL="${ws_url}"
     RESOLVED_WS_PROTOCOL="${websocket_protocol}"

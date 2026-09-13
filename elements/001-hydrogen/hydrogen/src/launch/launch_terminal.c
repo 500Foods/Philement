@@ -133,6 +133,44 @@ bool validate_terminal_configuration(const char*** messages, size_t* count, size
     }
     add_launch_message(messages, count, capacity, strdup("  Go:      Idle Timeout Valid"));
 
+    if (!terminal_websocket_surface_ready()) {
+        add_launch_message(messages, count, capacity, strdup("  No-Go:   Terminal WebSocket key/protocol not ready"));
+        add_launch_message(messages, count, capacity, strdup("  Reason:  Key missing, unresolved, weak, same as chat, or protocol not distinct"));
+        return false;
+    }
+    add_launch_message(messages, count, capacity, strdup("  Go:      Terminal WebSocket key and protocol valid"));
+
+    return true;
+}
+
+bool terminal_websocket_surface_ready(void) {
+    const char *term_key;
+    const char *term_protocol;
+    const char *chat_key;
+    const char *chat_protocol;
+
+    if (!app_config || !app_config->terminal.enabled) {
+        return false;
+    }
+
+    term_key = app_config->terminal.key;
+    term_protocol = app_config->terminal.protocol;
+    chat_key = app_config->websocket.key;
+    chat_protocol = app_config->websocket.protocol;
+
+    if (!validate_key(term_key)) {
+        return false;
+    }
+    if (!term_protocol || !term_protocol[0] || !validate_protocol(term_protocol)) {
+        return false;
+    }
+    if (chat_protocol && strcmp(term_protocol, chat_protocol) == 0) {
+        return false;
+    }
+    if (chat_key && strcmp(term_key, chat_key) == 0) {
+        return false;
+    }
+
     return true;
 }
 

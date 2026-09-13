@@ -282,7 +282,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                 // First try: key stored in session data during HTTP upgrade auth
                 WebSocketSessionData *auth_session = session;
                 if (auth_session->authenticated_key) {
-                    if (strcmp(auth_session->authenticated_key, ws_context->auth_key) == 0) {
+                    if (ws_auth_accept_key(wsi, auth_session->authenticated_key, true)) {
                         log_this(SR_WEBSOCKET, "Authentication successful via stored key during protocol filtering", LOG_LEVEL_STATE, 0);
                         return 0;
                     } else {
@@ -292,70 +292,18 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                     log_this(SR_WEBSOCKET, "No authenticated_key stored in session", LOG_LEVEL_DEBUG, 0);
                 }
 
-                // Second try: query parameter authentication (browser clients)
-                char uri_buf[512];
-                int uri_len = lws_hdr_total_length(wsi, WSI_TOKEN_GET_URI);
-                if (uri_len > 0 && uri_len < (int)sizeof(uri_buf)) {
-                    lws_hdr_copy(wsi, uri_buf, sizeof(uri_buf), WSI_TOKEN_GET_URI);
-
-                    // Look for key parameter in query string
-                    char *query = strchr(uri_buf, '?');
-                    if (query) {
-                        query++; // Skip the '?'
-                        char *key_param = strstr(query, "key=");
-                        if (key_param) {
-                            key_param += 4; // Skip "key="
-                            
-                            // Find end of key value (next & or end of string)
-                            const char *key_end = strchr(key_param, '&');
-                            char key_value[256];
-                            if (key_end) {
-                                size_t key_len = (size_t)(key_end - key_param);
-                                if (key_len < sizeof(key_value)) {
-                                    strncpy(key_value, key_param, key_len);
-                                    key_value[key_len] = '\0';
-                                } else {
-                                    key_value[0] = '\0';
-                                }
-                            } else {
-                                strncpy(key_value, key_param, sizeof(key_value) - 1);
-                                key_value[sizeof(key_value) - 1] = '\0';
-                            }
-
-                            // URL decode the key value
-                            char decoded_key[256];
-                            size_t decoded_len = 0;
-                            for (size_t i = 0; key_value[i] && decoded_len < sizeof(decoded_key) - 1; i++) {
-                                if (key_value[i] == '%' && key_value[i+1] && key_value[i+2]) {
-                                    unsigned int hex_val;
-                                    if (sscanf(&key_value[i+1], "%2x", &hex_val) == 1) {
-                                        decoded_key[decoded_len++] = (char)hex_val;
-                                        i += 2;
-                                    } else {
-                                        decoded_key[decoded_len++] = key_value[i];
-                                    }
-                                } else {
-                                    decoded_key[decoded_len++] = key_value[i];
-                                }
-                            }
-                            decoded_key[decoded_len] = '\0';
-
-                            if (ws_context && strcmp(decoded_key, ws_context->auth_key) == 0) {
-                                // Authentication successful via query parameter
-                                if (!session->authenticated_key) {
-                                    session->authenticated_key = strdup(decoded_key);
-                                }
-                                log_this(SR_WEBSOCKET, "Authentication successful via query parameter during protocol filtering", LOG_LEVEL_STATE, 0);
-                                return 0;
-                            } else {
-                                log_this(SR_WEBSOCKET, "Query parameter key does not match server key", LOG_LEVEL_ALERT, 0);
-                            }
-                        } else {
-                            log_this(SR_WEBSOCKET, "No key parameter found in query string", LOG_LEVEL_DEBUG, 0);
+                char query_key[256];
+                if (ws_extract_query_auth_key(wsi, query_key, sizeof(query_key))) {
+                    if (ws_auth_accept_key(wsi, query_key, true)) {
+                        if (!session->authenticated_key) {
+                            session->authenticated_key = strdup(query_key);
                         }
-                    } else {
-                        log_this(SR_WEBSOCKET, "No query string in URI", LOG_LEVEL_DEBUG, 0);
+                        log_this(SR_WEBSOCKET, "Authentication successful via query parameter during protocol filtering", LOG_LEVEL_STATE, 0);
+                        return 0;
                     }
+                    log_this(SR_WEBSOCKET, "Query parameter key does not match server key", LOG_LEVEL_ALERT, 0);
+                } else {
+                    log_this(SR_WEBSOCKET, "No query auth key present", LOG_LEVEL_DEBUG, 0);
                 }
 
                 // Third try: Authorization header (non-browser clients / tests)
@@ -368,7 +316,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
                         // Expect "Key <value>"
                         if (strncmp(buf, "Key ", 4) == 0) {
                             const char *key = buf + 4;
-                            if (ws_context && strcmp(key, ws_context->auth_key) == 0) {
+                            if (ws_auth_accept_key(wsi, key, true)) {
                                 // Authentication successful via Authorization header
                                 if (!session->authenticated_key) {
                                     session->authenticated_key = strdup(key);

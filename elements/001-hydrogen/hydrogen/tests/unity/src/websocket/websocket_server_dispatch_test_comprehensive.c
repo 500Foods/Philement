@@ -42,6 +42,7 @@ void test_dispatch_filter_protocol_query_param_no_query(void);
 void test_dispatch_filter_protocol_query_param_url_encoded(void);
 void test_dispatch_filter_protocol_query_param_with_ampersand(void);
 void test_dispatch_filter_protocol_no_auth_header(void);
+void test_dispatch_filter_protocol_uri_args_only(void);
 
 // External references
 extern WebSocketServerContext *ws_context;
@@ -85,6 +86,8 @@ void setUp(void) {
 
     // Reset mocks for each test
     mock_lws_reset_all();
+    mock_lws_set_protocol_name("test-protocol");
+    mock_lws_set_uri_data("/wss");
 }
 
 void tearDown(void) {
@@ -292,7 +295,7 @@ void test_dispatch_filter_protocol_query_param_success(void) {
     mock_lws_set_wsi_user_result(&test_session);
     
     // Mock URI with valid key
-    const char *uri = "/?key=test_key_123";
+    const char *uri = "/wss?key=test_key_123";
     mock_lws_set_uri_data(uri);
     
     struct lws *mock_wsi = (struct lws *)0xAABBCCDD;
@@ -310,7 +313,7 @@ void test_dispatch_filter_protocol_query_param_wrong_key(void) {
     mock_lws_set_wsi_user_result(&test_session);
     
     // Mock URI with wrong key
-    const char *uri = "/?key=wrong_key_999";
+    const char *uri = "/wss?key=wrong_key_999";
     mock_lws_set_uri_data(uri);
     
     struct lws *mock_wsi = (struct lws *)0x11223344;
@@ -349,7 +352,7 @@ void test_dispatch_filter_protocol_query_param_url_encoded(void) {
     mock_lws_set_wsi_user_result(&test_session);
     
     // Mock URI with URL-encoded key (space = %20)
-    const char *uri = "/?key=test%20key%20123";
+    const char *uri = "/wss?key=test%20key%20123";
     mock_lws_set_uri_data(uri);
     
     struct lws *mock_wsi = (struct lws *)0x99AABBCC;
@@ -367,7 +370,7 @@ void test_dispatch_filter_protocol_query_param_with_ampersand(void) {
     mock_lws_set_wsi_user_result(&test_session);
     
     // Mock URI with key and other params
-    const char *uri = "/?key=test_key_123&other=value";
+    const char *uri = "/wss?key=test_key_123&other=value";
     mock_lws_set_uri_data(uri);
     
     struct lws *mock_wsi = (struct lws *)0xDDEEFF00;
@@ -394,6 +397,25 @@ void test_dispatch_filter_protocol_no_auth_header(void) {
     
     int result = ws_callback_dispatch(mock_wsi, LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION, &test_session, NULL, 0);
     TEST_ASSERT_EQUAL_INT(-1, result); // Should fail (no auth)
+}
+
+void test_dispatch_filter_protocol_uri_args_only(void) {
+    ws_context = &test_context;
+
+    test_session.authenticated_key = NULL;
+    mock_lws_set_wsi_user_result(&test_session);
+    mock_lws_set_uri_data("/wss");
+    mock_lws_set_uri_args("key=test_key_123");
+
+    struct lws *mock_wsi = (struct lws *)0x00ABCDEF;
+
+    int result = ws_callback_dispatch(mock_wsi, LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION, &test_session, NULL, 0);
+    TEST_ASSERT_EQUAL_INT(0, result);
+
+    if (test_session.authenticated_key) {
+        free(test_session.authenticated_key);
+        test_session.authenticated_key = NULL;
+    }
 }
 
 // Test other connection setup callbacks
@@ -503,6 +525,7 @@ int main(void) {
     RUN_TEST(test_dispatch_filter_protocol_query_param_url_encoded);
     RUN_TEST(test_dispatch_filter_protocol_query_param_with_ampersand);
     RUN_TEST(test_dispatch_filter_protocol_no_auth_header);
+    RUN_TEST(test_dispatch_filter_protocol_uri_args_only);
 
     // Connection setup tests
     RUN_TEST(test_dispatch_filter_network_connection);

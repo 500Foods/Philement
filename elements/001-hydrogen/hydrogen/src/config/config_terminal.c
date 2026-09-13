@@ -65,6 +65,40 @@ bool load_terminal_config(json_t* root, AppConfig* config) {
         return false;
     }
 
+    terminal->protocol = strdup("terminal");
+    if (!terminal->protocol) {
+        log_this(SR_TERMINAL, "Failed to allocate protocol string", LOG_LEVEL_ERROR, 0);
+        free(terminal->web_path);
+        free(terminal->shell_command);
+        free(terminal->webroot);
+        free(terminal->cors_origin);
+        free(terminal->index_page);
+        terminal->web_path = NULL;
+        terminal->shell_command = NULL;
+        terminal->webroot = NULL;
+        terminal->cors_origin = NULL;
+        terminal->index_page = NULL;
+        return false;
+    }
+
+    terminal->key = strdup("${env.WEBSOCKET_TERMINAL_KEY}");
+    if (!terminal->key) {
+        log_this(SR_TERMINAL, "Failed to allocate key string", LOG_LEVEL_ERROR, 0);
+        free(terminal->web_path);
+        free(terminal->shell_command);
+        free(terminal->webroot);
+        free(terminal->cors_origin);
+        free(terminal->index_page);
+        free(terminal->protocol);
+        terminal->web_path = NULL;
+        terminal->shell_command = NULL;
+        terminal->webroot = NULL;
+        terminal->cors_origin = NULL;
+        terminal->index_page = NULL;
+        terminal->protocol = NULL;
+        return false;
+    }
+
     // Process configuration values
     bool success = true;
 
@@ -82,6 +116,8 @@ bool load_terminal_config(json_t* root, AppConfig* config) {
 success = success && PROCESS_STRING(root, terminal, webroot, SR_TERMINAL ".WebRoot", SR_TERMINAL);
 success = success && PROCESS_STRING(root, terminal, cors_origin, SR_TERMINAL ".CORSOrigin", SR_TERMINAL);
 success = success && PROCESS_STRING(root, terminal, index_page, SR_TERMINAL ".IndexPage", SR_TERMINAL);
+success = success && PROCESS_STRING(root, terminal, protocol, SR_TERMINAL ".Protocol", SR_TERMINAL);
+success = success && PROCESS_SENSITIVE(root, terminal, key, SR_TERMINAL ".Key", SR_TERMINAL);
 
     
     return success;
@@ -97,6 +133,8 @@ void cleanup_terminal_config(TerminalConfig* config) {
     free(config->webroot);           // NEW
     free(config->cors_origin);       // NEW
     free(config->index_page);        // NEW
+    free(config->protocol);
+    free(config->key);
     memset(config, 0, sizeof(TerminalConfig));
 }
 
@@ -145,6 +183,9 @@ DUMP_STRING2("――", "CORS Origin", config->cors_origin);
 
 // NEW: Index Page
 DUMP_STRING2("――", "Index Page", config->index_page);
+
+DUMP_STRING2("――", "Protocol", config->protocol);
+DUMP_SECRET("―― Key", config->key);
 
     
 }

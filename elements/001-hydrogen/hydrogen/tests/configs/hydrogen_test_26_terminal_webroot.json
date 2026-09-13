@@ -18,6 +18,8 @@
     },
     "Terminal": {
         "Enabled": true,
+        "Protocol": "terminal",
+        "Key": "${env.WEBSOCKET_TERMINAL_KEY}",
         "ShellCommand": "/bin/bash",
         "MaxSessions": 2,
         "IdleTimeoutSeconds": 300,
