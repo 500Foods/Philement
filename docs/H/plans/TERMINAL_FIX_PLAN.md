@@ -1266,8 +1266,8 @@ recorded; new key works, old key fails, and all evidence is redacted.
 - **Result:** Original Phase 5 assumed the single-key / full-public-info
   contract from Phases 0–6. A 2026-09-12 live inspection of
   `https://lithium.500courses.com` was performed (kubectl available) and
-  recorded under [Live Findings (2026-09-12)](#live-findings-2026-09-12).
-  Remaining production E2E, rotation of **both** keys, payload rebuild, and
+  recorded under `Live Findings (2026-09-12)`.
+  Remaining production E2E, rotation of **both** keys, payload rebuild, an
   Traefik/DOKS work moves to Phase 12 after Phases 7–11 land the new
   contract.
 - **Variances:**
@@ -2200,6 +2200,12 @@ Phase 12 complete.
   that skips peer info extraction, or (b) make the Unity test provide a
   properly mocked `wsi` via the mock libwebsockets layer. **Verify:**
   `mku websocket_server_auth_test` passes all 23 tests.
+  - **Resolved (Session 12):** Root cause was stale mock state in `setUp()` —
+    protocol name mismatch (`"hydrogen-test"` vs mock's `"hydrogen"`) and no
+    mock URI data (`/wss`) set, causing `ws_auth_accept_key` to dereference an
+    unmocked `wsi`. Fixed by calling `mock_lws_set_protocol_name("hydrogen")`
+    + `mock_lws_set_uri_data("/wss")` in `setUp`, and `mock_lws_reset_all()`
+    in `tearDown`. All 23 tests pass (`mku websocket_server_auth_test`).
 - [~] **Investigate `terminal-launcher.sh` 502 Bad Gateway when run in
   production.** Requires `kubectl logs` + `websocat` diagnostic session to
   isolate the root cause. **Verify:** Deferred — requires production access. The launcher fetches `wss://…/terminal/ws?key=` from the
@@ -2219,6 +2225,18 @@ Phase 12 complete.
   fallback handler or remove and clean up the header. **Verify:** No dead
   `static` functions trigger `mkp` warnings; no unused-symbol warnings in
   release build.
+  - **Resolved (Session 12):** Removed `is_terminal_websocket_request`,
+    `handle_terminal_websocket_upgrade`, `get_terminal_websocket_protocol`,
+    `terminal_websocket_requires_auth`, `get_websocket_connection_stats`, and
+    the `TERMINAL_WS_PROTOCOL` `#define` from both `terminal_websocket.c` and
+    `terminal_websocket.h`. Removed exclusively-dead test files
+    (`terminal_websocket_test_basic_functions.c`,
+    `terminal_websocket_test_validation.c`,
+    `terminal_websocket_test_get_websocket_connection_stats.c`) and stripped
+    dead-function tests from 5 mixed test files. Removed the
+    `is_terminal_websocket_request` mock from `mock_terminal_websocket.{h,c}`
+    and `mock_libmicrohttpd.{h,c}`. `mkq`, `mkp`, and all terminal Unity tests
+    pass. Dead function list confirms zero `terminal_websocket` dead functions.
 - [ ] **Consolidate `Terminal.CORSOrigin` with the terminal file handler.**
   `config_terminal.c` parses `Terminal.CORSOrigin` but terminal file
   responses call the global `add_cors_headers()` which reads API/WebServer
@@ -2275,7 +2293,68 @@ Each work item above is completed or explicitly deferred with a plan. `mkp`,
 - **Date:** 2026-09-13
 - **Result:** Resolved the dead code and pre-existing test failure items (work
   items 1 and 3). Remaining items requiring production/deployment access or
-  Lithium changes are deferred.
+  Lithium changes are deferred. Next session will start with the
+  `terminal-launcher.sh` 502 diagnosis (item 2), which has production
+  diagnostic tooling available in this environment.
+
+### Session 14 (2026-09-13) — Phase 13 checkpoint and session handoff
+
+- Reviewed the full Phase 13 state: items 1 (test segfault) and 3 (dead code) are
+  marked complete; items 2 (terminal-launcher 502) and 7 (Traefik trusted IPs)
+  are deferred to production diagnostic sessions; items 4 (CORS consolidation), 9
+  (payload marker documentation) are unchecked.
+- Confirmed production diagnostic tooling is available in-environment per
+  Cross-Phase Deployment Notes: `kubectl` accessible; Festival repo at
+  `/mnt/extra/Projects/Festival` (`adm/traefik`, `t-500courses-lithium-deployment.yaml`,
+  `t-500courses-lithium-ingress.yaml`); deployed configs at `/fvl/tnt/t-500courses/hydrogen/hydrogen-lithium.json`
+  and `/fvl/tnt/t-500courses/lithium/config/lithium.json`.
+- **Lessons learned this session:**
+  1. Phase 13 items 1 and 3 had already been resolved in prior sessions (Session 12
+     and the Working Log); the plan Status block was stale — it described them as
+     in-progress rather than complete. The Working Log already contains the full
+     resolution details; this session's contribution is the checkpoint and handoff.
+  2. Items 2 and 7 are gated on production access (kubectl exec, Traefik ingress
+     YAML inspection) but the environment has `kubectl` configured and the Festival
+     repo deployed configs are readable. The next session can proceed immediately
+     without waiting for external access.
+  3. Items 4 and 9 require source/documentation changes only — no production access
+     needed. They can be picked up in any session alongside or without the ops items.
+- **Work remaining for next session:**
+  - **Item 2 (terminal-launcher.sh 502):** Run `kubectl logs lithium-500courses-bbbd748bb-vqps6`
+    to inspect Traefik routing errors on `/terminal/ws`; run `websocat` against the
+    terminal WebSocket URL to test end-to-end connectivity. Three candidate root
+    causes from the plan: (a) `Terminal.Enabled` false, (b) unresolved
+    `${env.WEBSOCKET_TERMINAL_KEY}`, (c) Traefik not forwarding WebSocket Upgrade
+    on the ingress. Verify against deployed `hydrogen-lithium.json`.
+  - **Item 4 (CORS consolidation):** Audit `config_terminal.c` and
+    `web_server_core.c` to wire `Terminal.CORSOrigin` as the effective allowlist
+    for terminal file handler responses, replacing the global
+    `add_cors_headers()` call. Extend Test 26 CORS subtests if needed.
+  - **Item 9 (payload marker docs):** Document the
+    `<<< HERE BE ME TREASURE >>>` embedding format (8-byte LE size) in
+    `docs/H/core/subsystems/payload/` or `terminal_architecture.md`.
+- No source, test, or deployment changes were made in this session; this is a
+  checkpoint and handoff entry only.
+
+### Session 12 (2026-09-13) — Fix failing `websocket_server_context_test_create`
+
+- **Root cause:** The test file
+  [`websocket_server_context_test_create.c`](file:///mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/tests/unity/src/websocket/websocket_server_context_test_create.c)
+  was stale — it still asserted `auth_key == "default_key"` when NULL key was
+  passed to `ws_context_create`, but the source
+  [`websocket_server_context.c`](file:///mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_context.c:61)
+  was already updated to fail closed (Phase 2): the `if (key)` guard leaves
+  `auth_key` as empty `'\0'` when key is NULL, with no hardcoded default.
+  The `default_key` string no longer exists in source (grep confirms zero hits).
+- **Fix:** Updated `test_ws_context_create_null_key` and
+  `test_ws_context_create_null_protocol_and_key` to assert
+  `TEST_ASSERT_EQUAL_STRING("", test_context->auth_key)` and updated test
+  comments to document the fail-closed contract (Phase 2/8: `validate_key`
+  at launch time guarantees a strong key before `ws_context_create` is ever
+  called; NULL key is an invariant violation, not a condition that receives
+  a default literal).
+- **Verified:** `mku websocket_server_context_test_create` → 7/7 PASS;
+  `mkp` → 2,034 files, 0 issues (clean).
 
 ### Working Log
 
@@ -2306,6 +2385,16 @@ Each work item above is completed or explicitly deferred with a plan. `mkp`,
 - **Confirmed schema already correct (item 5):** `Network.TrustedProxies` is in the schema at line 290 with `maxItems: 16`.
 - **Confirmed `app-ws.js` redaction (item 6):** URL is split on `?` before logging (`url.split('?')[0]`), key is not in console output.
 - **Confirmed `ws_auth_accept_key` Unity coverage (item 8):** `websocket_server_auth_test.c` includes `test_ws_auth_accept_key_query_key_success` with `require_protocol_match=true` using the mock libwebsockets layer. All 23 tests pass.
+
+### Session 13 (2026-09-13) — Fix failing Test 59 (`test_59_auth_chat.sh`)
+
+- **Root cause:** Two distinct issues caused 6 of 31 subtests to fail:
+  1. **WebSocket path mismatch:** `ws_chat_url()` and the heartbeat test used `ws://127.0.0.1:${WS_PORT}/` (path `/`), but `ws_auth_surface_from_path()` in `websocket_server_auth.c:241` only returns surface 1 for path `/wss`. Connecting to `/` returned surface 0, causing `ws_auth_accept_key()` to fail and the server to deny the connection with "All authentication methods failed, denying connection".
+  2. **Invalid `WEBSOCKET_KEY` length:** The environment `WEBSOCKET_KEY` was set to `ABDEFGHIJKLMNOP` (15 chars), but `validate_key()` in `launch_websocket.c:89` requires 32+ printable ASCII characters. The WebSocket subsystem never launched ("Invalid WebSocket key"), so all WS-based subtests failed.
+- **Fix:** 
+  1. Changed `ws_chat_url()` to use `/wss` path; changed the heartbeat websocat URL from `/` to `/wss`.
+  2. Added a `validate_websocket_key` check after prerequisites; if the env key is too short/invalid, generates a 64-char ephemeral key (`ephemeral_$(date +%s)_$(openssl rand -hex 24)`) and overrides `.WebSocketServer.Key` in the `jq` config materialization via `--arg ws_key`, plus bumped `TEST_VERSION` to 1.8.5.
+- **Verified:** `test_59_auth_chat.sh` → 31/31 PASS (25 check assertions, 0 failures); `mks` (Test 92) → 170 files, 0 issues.
 
 ### Deferred (requires production/ops access)
 

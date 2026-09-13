@@ -53,6 +53,8 @@
 # 1.8.1 - 2026-09-03 - Add # shellcheck disable=SC2310 to three new
 #                       api_request call sites in the Phase 10b subtests
 #                       (api_request is invoked in an || context).
+# 1.8.5 - 2026-09-13 - Fix WebSocket chat and heartbeat URLs to use /wss path
+#                       required by ws_auth_surface_from_path for chat auth.
 
 set -euo pipefail
 
@@ -60,7 +62,7 @@ TEST_NAME="Auth Chat"
 TEST_ABBR="ACH"
 TEST_NUMBER="59"
 TEST_COUNTER=0
-TEST_VERSION="1.8.4"
+TEST_VERSION="1.8.5"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -276,7 +278,7 @@ mint_chat_jwt() {
 
 # Build a chat WebSocket URL and a websocat auth header for the hydrogen protocol.
 ws_chat_url() {
-    echo "ws://127.0.0.1:${WS_PORT}/"
+    echo "ws://127.0.0.1:${WS_PORT}/wss"
 }
 
 # Send a single JSON message to the chat WebSocket and capture the server's
@@ -379,6 +381,14 @@ if [[ -z "${WEBSOCKET_KEY:-}" ]]; then
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "WEBSOCKET_KEY not set in environment"
     exit 1
 fi
+# Ensure the WebSocket key meets the 32-char minimum enforced by validate_key().
+# If the env var is too short or a known default, generate a strong ephemeral key
+# and override it for both the runtime config and WS auth headers below.
+# shellcheck disable=SC2310,SC2312 # validate_websocket_key may return nonzero; we handle it below
+if ! validate_websocket_key "WEBSOCKET_KEY" "${WEBSOCKET_KEY}" >/dev/null 2>&1; then
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "WEBSOCKET_KEY too short/invalid; generating ephemeral 64-char key"
+    WEBSOCKET_KEY="ephemeral_$(date +%s)_$(openssl rand -hex 24)"
+fi
 if [[ ! -f "${BASE_CONFIG}" ]]; then
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Missing config ${BASE_CONFIG}"
     exit 1
@@ -408,9 +418,10 @@ fi
 # port, and a short heartbeat interval so Test 59 can blackbox-cover
 # websocket_server_heartbeat.c without a long wait.
 # Generous PongTimeout so websocat chat steps (no auto-pong) are not closed mid-flight.
-jq --argjson web_port "${WEB_PORT}" --argjson ws_port "${WS_PORT}" --arg sqlite "${SQLITE_TEMP}" '
+jq --argjson web_port "${WEB_PORT}" --argjson ws_port "${WS_PORT}" --arg sqlite "${SQLITE_TEMP}" --arg ws_key "${WEBSOCKET_KEY}" '
     .WebServer.Port = $web_port
     | .WebSocketServer.Port = $ws_port
+    | .WebSocketServer.Key = $ws_key
     | .WebSocketServer.Heartbeat = {
         Enabled: true,
         PingIntervalSeconds: 1,
@@ -782,7 +793,7 @@ else
             -H="Authorization: Key ${WEBSOCKET_KEY}" \
             --ping-interval=30 \
             --no-close \
-            "ws://127.0.0.1:${WS_PORT}/" </dev/null >"${HB_OUT}" 2>&1 || true
+            "ws://127.0.0.1:${WS_PORT}/wss" </dev/null >"${HB_OUT}" 2>&1 || true
         ping_after=$(count_log_matches '\[WS\] PING sent')
         if [[ "${ping_after}" -gt "${ping_before}" ]]; then
             break
