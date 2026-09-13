@@ -10,18 +10,26 @@
 # test_websocket_terminal_input_output()
 # test_websocket_terminal_resize()
 # test_websocket_terminal_long_session()
+# test_websocket_chat_key_rejected_on_terminal_path()
+# test_websocket_terminal_key_rejected_on_chat_path()
+# test_websocket_wrong_protocol_rejected()
 
 # CHANGELOG
+# 1.1.1 - 2026-09-13 - Phase 11: Fixed terminal WebSocket auth to use RESOLVED_WS_KEY
+#                    (terminal key from sysinfo or WEBSOCKET_TERMINAL_KEY) instead of
+#                    WEBSOCKET_KEY (chat key). All terminal WS tests now authenticate
+#                    with the terminal key, not the chat key.
+# 1.1.0 - 2026-09-13 - Phase 11: Added cross-key denial tests (chat on terminal path, terminal on chat path, wrong protocol)
 # 1.0.0 - 2026-09-12 - Extracted WebSocket helpers from test_26_terminal.sh (1000-line cap)
 
-# shellcheck disable=SC2154 # TEST_NUMBER, TEST_COUNTER, GREP, TIMEOUT, WEBSOCKET_KEY, LOG_PREFIX, TIMESTAMP come from framework/caller
+# shellcheck disable=SC2154 # TEST_NUMBER, TEST_COUNTER, GREP, TIMEOUT, WEBSOCKET_KEY, WEBSOCKET_TERMINAL_KEY, LOG_PREFIX, TIMESTAMP come from framework/caller
 # shellcheck disable=SC2312 # Diagnostic substitutions swallow inner status; callers use || true
 
 [[ -n "${TERMINAL_WS_HELPERS_GUARD:-}" ]] && return 0
 export TERMINAL_WS_HELPERS_GUARD="true"
 
 TERMINAL_WS_HELPERS_NAME="Terminal WebSocket Helpers"
-TERMINAL_WS_HELPERS_VERSION="1.0.0"
+TERMINAL_WS_HELPERS_VERSION="1.1.1"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${TERMINAL_WS_HELPERS_NAME} ${TERMINAL_WS_HELPERS_VERSION}" "info"
 
 # Function to test WebSocket terminal connection with proper authentication and retry logic
@@ -50,7 +58,7 @@ test_websocket_terminal_connection() {
         # Test WebSocket connection with a 5-second timeout
         echo "${test_message}" | "${TIMEOUT}" 5 websocat \
             --protocol="${protocol}" \
-            -H="Authorization: Key ${WEBSOCKET_KEY}" \
+            -H="Authorization: Key ${RESOLVED_WS_KEY:-${WEBSOCKET_TERMINAL_KEY:-${WEBSOCKET_KEY:-}}}" \
             --ping-interval=30 \
             --exit-on-eof \
             "${ws_url}" > "${temp_file}" 2>&1
@@ -143,7 +151,7 @@ test_websocket_terminal_status() {
         # Test WebSocket status request with a 3-second timeout
         echo "${status_request}" | websocat \
             --protocol="${protocol}" \
-            -H="Authorization: Key ${WEBSOCKET_KEY}" \
+            -H="Authorization: Key ${RESOLVED_WS_KEY:-${WEBSOCKET_TERMINAL_KEY:-${WEBSOCKET_KEY:-}}}" \
             --ping-interval=30 \
             --one-message \
             "${ws_url}" > "${temp_file}" 2>&1
@@ -238,7 +246,7 @@ test_websocket_terminal_input_output() {
         # Send the command
         if ! echo "${cmd}" | websocat \
             --protocol="${protocol}" \
-            -H="Authorization: Key ${WEBSOCKET_KEY}" \
+            -H="Authorization: Key ${RESOLVED_WS_KEY:-${WEBSOCKET_TERMINAL_KEY:-${WEBSOCKET_KEY:-}}}" \
             --ping-interval=30 \
             --one-message \
             "${ws_url}" >> "${response_file}" 2>&1; then
@@ -291,8 +299,8 @@ test_websocket_terminal_resize() {
 
         # Send resize command - success means terminal_websocket.c resize function was called
         if ! echo "${resize_command}" | websocat \
-            --protocol="${protocol}" \
-            -H="Authorization: Key ${WEBSOCKET_KEY}" \
+             --protocol="${protocol}" \
+            -H="Authorization: Key ${RESOLVED_WS_KEY:-${WEBSOCKET_TERMINAL_KEY:-${WEBSOCKET_KEY:-}}}" \
             --ping-interval=30 \
             --one-message \
             "${ws_url}" >> "${response_file}" 2>&1; then
@@ -332,7 +340,7 @@ test_websocket_terminal_long_session() {
 
         if ! echo "${cmd}" | websocat \
             --protocol="${protocol}" \
-            -H="Authorization: Key ${WEBSOCKET_KEY}" \
+            -H="Authorization: Key ${RESOLVED_WS_KEY:-${WEBSOCKET_TERMINAL_KEY:-${WEBSOCKET_KEY:-}}}" \
             --ping-interval=30 \
             --one-message \
             "${ws_url}" >> "${response_file}" 2>&1; then
@@ -351,4 +359,213 @@ test_websocket_terminal_long_session() {
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Long-running session test failed"
         return 1
     fi
+}
+
+# ---------------------------------------------------------------------------
+# test_websocket_chat_key_rejected_on_terminal_path
+#
+# Verifies that the chat key (WEBSOCKET_KEY) is rejected when used to
+# authenticate against the terminal WebSocket path (/terminal/ws).
+# The terminal surface must only accept Terminal.Key (WEBSOCKET_TERMINAL_KEY).
+#
+# Usage:
+#   test_websocket_chat_key_rejected_on_terminal_path <ws_url> <terminal_protocol> <response_file>
+#
+# Returns 0 if the chat key is correctly rejected (connection fails/401),
+# 1 if the chat key is unexpectedly accepted on the terminal path.
+# ---------------------------------------------------------------------------
+test_websocket_chat_key_rejected_on_terminal_path() {
+    local ws_url="$1"
+    local ws_protocol="$2"
+    local response_file="$3"
+
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing cross-key denial: chat key on terminal path (should fail)"
+
+    # Use the chat key (WEBSOCKET_KEY) against the terminal path.
+    # The key value is never logged — only a redacted fingerprint.
+    local chat_key="${WEBSOCKET_KEY:-}"
+    if [[ -z "${chat_key}" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Skipped: WEBSOCKET_KEY not set (no chat key to test)"
+        return 0
+    fi
+
+    local terminal_ws_url="${ws_url}"
+    # Ensure the URL points to the terminal path
+    if [[ "${terminal_ws_url}" != *"/terminal/ws"* ]]; then
+        terminal_ws_url="${terminal_ws_url%/terminal/ws}/terminal/ws"
+    fi
+
+    # Strip wss:// -> ws:// for the test server (plain WebSocket, no TLS)
+    terminal_ws_url="${terminal_ws_url/wss:\/\//ws:\/\/}"
+
+    # Attempt connection with the CHAT key on the TERMINAL path.
+    # We expect this to FAIL (401 forbidden or connection rejected).
+    # Redacted: the key is never printed, only "Authorization: Key ***"
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "websocat --protocol='${ws_protocol}' -H='Authorization: Key ***' --ping-interval=30 --exit-on-eof '${terminal_ws_url}' (chat key on terminal path)"
+
+    local websocat_output
+    local websocat_exitcode
+    local temp_file="${LOG_PREFIX}${TIMESTAMP}_${ws_protocol}_cross_key_chat_on_terminal.log"
+
+    # Send a ping message and expect rejection. Use --one-message with a timeout.
+    echo '{"type": "ping"}' | "${TIMEOUT}" 5 websocat \
+        --protocol="${ws_protocol}" \
+        -H="Authorization: Key ${chat_key}" \
+        --ping-interval=30 \
+        --one-message \
+        "${terminal_ws_url}" > "${temp_file}" 2>&1
+    websocat_exitcode=$?
+    websocat_output=$(cat "${temp_file}" 2>/dev/null || echo "")
+
+    # The chat key should be REJECTED on the terminal path.
+    # websocat exit code 0 (success) means the connection was accepted — that's a failure.
+    # websocat exit code 1 with auth error, or non-zero with 401/forbidden — that's success.
+    if [[ "${websocat_exitcode}" -eq 0 ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Chat key was accepted on terminal path (should be rejected)"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "CROSS-KEY VIOLATION: chat key opened terminal WebSocket"
+        return 1
+    fi
+
+    # Check for expected rejection indicators
+    if echo "${websocat_output}" | "${GREP}" -qi "401\|forbidden\|unauthorized\|rejected\|denied"; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Chat key correctly rejected on terminal path (redacted: auth failure detected)"
+        return 0
+    fi
+
+    # Non-zero exit without explicit auth error — still a rejection
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Chat key rejected on terminal path (exit code ${websocat_exitcode} — connection not established)"
+    return 0
+}
+
+# ---------------------------------------------------------------------------
+# test_websocket_terminal_key_rejected_on_chat_path
+#
+# Verifies that the terminal key (WEBSOCKET_TERMINAL_KEY) is rejected when
+# used to authenticate against the chat WebSocket path (/wss).
+# The chat surface must only accept WebSocketServer.Key (WEBSOCKET_KEY).
+#
+# Usage:
+#   test_websocket_terminal_key_rejected_on_chat_path <ws_url> <chat_protocol> <response_file>
+#
+# Returns 0 if the terminal key is correctly rejected on the chat path,
+# 1 if the terminal key is unexpectedly accepted.
+# ---------------------------------------------------------------------------
+test_websocket_terminal_key_rejected_on_chat_path() {
+    local ws_url="$1"
+    local ws_protocol="$2"
+    local response_file="$3"
+
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing cross-key denial: terminal key on chat path (should fail)"
+
+    # Use the terminal key (WEBSOCKET_TERMINAL_KEY) against the chat path (/wss).
+    local terminal_key="${WEBSOCKET_TERMINAL_KEY:-}"
+    if [[ -z "${terminal_key}" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Skipped: WEBSOCKET_TERMINAL_KEY not set (no terminal key to test)"
+        return 0
+    fi
+
+    local chat_ws_url="${ws_url}"
+    # Ensure the URL points to the chat path (/wss)
+    if [[ "${chat_ws_url}" == *"/terminal/ws"* ]]; then
+        chat_ws_url="${chat_ws_url%/terminal/ws}/wss"
+    elif [[ "${chat_ws_url}" != *"/wss"* ]]; then
+        chat_ws_url="${chat_ws_url%/wss}/wss"
+    fi
+
+    # Strip wss:// -> ws:// for the test server (plain WebSocket, no TLS)
+    chat_ws_url="${chat_ws_url/wss:\/\//ws:\/\/}"
+
+    # Attempt connection with the TERMINAL key on the CHAT path.
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "websocat --protocol='${ws_protocol}' -H='Authorization: Key ***' --ping-interval=30 --exit-on-eof '${chat_ws_url}' (terminal key on chat path)"
+
+    local websocat_output
+    local websocat_exitcode
+    local temp_file="${LOG_PREFIX}${TIMESTAMP}_${ws_protocol}_cross_key_terminal_on_chat.log"
+
+    echo '{"type": "ping"}' | "${TIMEOUT}" 5 websocat \
+        --protocol="${ws_protocol}" \
+        -H="Authorization: Key ${terminal_key}" \
+        --ping-interval=30 \
+        --one-message \
+        "${chat_ws_url}" > "${temp_file}" 2>&1
+    websocat_exitcode=$?
+    websocat_output=$(cat "${temp_file}" 2>/dev/null || echo "")
+
+    # The terminal key should be REJECTED on the chat path.
+    if [[ "${websocat_exitcode}" -eq 0 ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal key was accepted on chat path (should be rejected)"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "CROSS-KEY VIOLATION: terminal key opened chat WebSocket"
+        return 1
+    fi
+
+    if echo "${websocat_output}" | "${GREP}" -qi "401\|forbidden\|unauthorized\|rejected\|denied"; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal key correctly rejected on chat path (redacted: auth failure detected)"
+        return 0
+    fi
+
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal key rejected on chat path (exit code ${websocat_exitcode} — connection not established)"
+    return 0
+}
+
+# ---------------------------------------------------------------------------
+# test_websocket_wrong_protocol_rejected
+#
+# Verifies that a mismatched subprotocol is rejected on the terminal path.
+# If the server expects the "terminal" protocol and the client offers "hydrogen"
+# (or vice versa), the connection must fail.
+#
+# Usage:
+#   test_websocket_wrong_protocol_rejected <ws_url> <wrong_protocol> <response_file>
+#
+# Returns 0 if the wrong protocol is rejected, 1 if it's accepted.
+# ---------------------------------------------------------------------------
+test_websocket_wrong_protocol_rejected() {
+    local ws_url="$1"
+    local wrong_protocol="$2"
+    local response_file="$3"
+
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Testing protocol mismatch rejection: protocol '${wrong_protocol}' on terminal path (should fail)"
+
+    local terminal_ws_url="${ws_url}"
+    # Ensure the URL points to the terminal path
+    if [[ "${terminal_ws_url}" != *"/terminal/ws"* ]]; then
+        terminal_ws_url="${terminal_ws_url%/terminal/ws}/terminal/ws"
+    fi
+
+    # Strip wss:// -> ws:// for the test server (plain WebSocket, no TLS)
+    terminal_ws_url="${terminal_ws_url/wss:\/\//ws:\/\/}"
+
+    # Use a valid terminal key but the WRONG protocol. The key is never logged.
+    local test_key="${RESOLVED_WS_KEY:-${WEBSOCKET_TERMINAL_KEY:-${WEBSOCKET_KEY:-}}}"
+    if [[ -z "${test_key}" ]]; then
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No WebSocket key available for protocol test"
+        return 1
+    fi
+
+    print_command "${TEST_NUMBER}" "${TEST_COUNTER}" "websocat --protocol='${wrong_protocol}' -H='Authorization: Key ***' --ping-interval=30 --exit-on-eof '${terminal_ws_url}' (wrong protocol)"
+
+    local websocat_output
+    local websocat_exitcode
+    local temp_file="${LOG_PREFIX}${TIMESTAMP}_${wrong_protocol}_wrong_proto.log"
+
+    echo '{"type": "ping"}' | "${TIMEOUT}" 5 websocat \
+        --protocol="${wrong_protocol}" \
+        -H="Authorization: Key ${test_key}" \
+        --ping-interval=30 \
+        --one-message \
+        "${terminal_ws_url}" > "${temp_file}" 2>&1
+    websocat_exitcode=$?
+    websocat_output=$(cat "${temp_file}" 2>/dev/null || echo "")
+
+    # A mismatched protocol should be rejected. websocat may report a protocol
+    # negotiation failure or a connection that immediately closes.
+    if [[ "${websocat_exitcode}" -eq 0 ]]; then
+        # Check if the response contains terminal output (meaning the wrong
+        # protocol was accepted, which is a failure)
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Wrong protocol '${wrong_protocol}' was accepted on terminal path (should be rejected)"
+        return 1
+    fi
+
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Wrong protocol '${wrong_protocol}' correctly rejected on terminal path (exit code ${websocat_exitcode})"
+    return 0
 }

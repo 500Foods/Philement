@@ -10,6 +10,12 @@
 # analyze_terminal_test_results()
 
 # CHANGELOG
+# 2.9.1 - 2026-09-13 - Phase 11: Fixed terminal WebSocket auth in helpers to use
+#                    RESOLVED_WS_KEY (terminal key) instead of WEBSOCKET_KEY (chat key)
+#                    so terminal WebSocket tests authenticate with the correct key.
+# 2.9.0 - 2026-09-13 - Phase 11: Added cross-key denial tests (chat key on terminal path,
+#                    terminal key on chat path, wrong protocol rejection). Reports results
+#                    for each with redacted logging.
 # 2.8.2 - 2026-09-12 - Distinct Terminal.Key via WEBSOCKET_TERMINAL_KEY (ephemeral if unset)
 # 2.8.1 - 2026-09-12 - Source terminal libs via LIB_DIR after setup_test_environment
 #                    so standalone runs still find helpers after cwd changes.
@@ -72,7 +78,7 @@ set -euo pipefail
 TEST_NAME="Terminal"
 TEST_ABBR="TRM"
 TEST_NUMBER="26"
-TEST_VERSION="2.8.2"
+TEST_VERSION="2.9.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -365,6 +371,34 @@ run_terminal_test_parallel() {
                 echo "ALL_TERMINAL_TESTS_PASSED" >> "${result_file}"
             else
                 echo "SOME_TERMINAL_TESTS_FAILED" >> "${result_file}"
+            fi
+
+            # Cross-key denial tests (Phase 11: dual-key contract)
+            # Chat key on terminal path must fail; terminal key on chat path must fail;
+            # wrong protocol on terminal path must fail.
+            # Uses redacted logging — no raw keys in output.
+            local terminal_key="${WEBSOCKET_TERMINAL_KEY:-}"
+            local chat_key="${WEBSOCKET_KEY:-}"
+            if [[ -n "${terminal_key}" && -n "${chat_key}" && "${terminal_key}" != "${chat_key}" ]]; then
+                if test_websocket_chat_key_rejected_on_terminal_path "${ws_url}" "${websocket_protocol}" "${result_file}"; then
+                    echo "CROSS_KEY_CHAT_ON_TERMINAL_TEST_PASSED" >> "${result_file}"
+                else
+                    echo "CROSS_KEY_CHAT_ON_TERMINAL_TEST_FAILED" >> "${result_file}"
+                fi
+
+                if test_websocket_terminal_key_rejected_on_chat_path "${ws_url}" "${websocket_protocol}" "${result_file}"; then
+                    echo "CROSS_KEY_TERMINAL_ON_CHAT_TEST_PASSED" >> "${result_file}"
+                else
+                    echo "CROSS_KEY_TERMINAL_ON_CHAT_TEST_FAILED" >> "${result_file}"
+                fi
+            else
+                echo "CROSS_KEY_DENIAL_SKIPPED" >> "${result_file}"
+            fi
+
+            if test_websocket_wrong_protocol_rejected "${ws_url}" "hydrogen" "${result_file}"; then
+                echo "WRONG_PROTOCOL_TEST_PASSED" >> "${result_file}"
+            else
+                echo "WRONG_PROTOCOL_TEST_FAILED" >> "${result_file}"
             fi
         else
             echo "SERVER_NOT_READY" >> "${result_file}"
@@ -698,6 +732,35 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "System-info valid-JWT test skipped (no demo credentials)"
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "System-info valid-JWT contract test failed (requires live database connectivity for demo login) - informational"
+            fi
+
+            # Cross-key denial tests (Phase 11)
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Cross-Key: Chat key on terminal path - ${description}"
+            if check_result_flag "${result_file}" "CROSS_KEY_CHAT_ON_TERMINAL_TEST_PASSED"; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Chat key correctly rejected on terminal path"
+            elif check_result_flag "${result_file}" "CROSS_KEY_DENIAL_SKIPPED"; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Cross-key denial tests skipped (keys not available or identical)"
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Chat key was accepted on terminal path (cross-key violation)"
+                EXIT_CODE=1
+            fi
+
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Cross-Key: Terminal key on chat path - ${description}"
+            if check_result_flag "${result_file}" "CROSS_KEY_TERMINAL_ON_CHAT_TEST_PASSED"; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Terminal key correctly rejected on chat path"
+            elif check_result_flag "${result_file}" "CROSS_KEY_DENIAL_SKIPPED"; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Cross-key denial tests skipped (keys not available or identical)"
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Terminal key was accepted on chat path (cross-key violation)"
+                EXIT_CODE=1
+            fi
+
+            print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Protocol: Wrong protocol rejected - ${description}"
+            if check_result_flag "${result_file}" "WRONG_PROTOCOL_TEST_PASSED"; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Wrong protocol correctly rejected on terminal path"
+            else
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Wrong protocol was accepted on terminal path"
+                EXIT_CODE=1
             fi
 
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: All Terminal tests passed"

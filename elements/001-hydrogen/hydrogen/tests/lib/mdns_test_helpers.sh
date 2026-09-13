@@ -28,6 +28,7 @@
 # stop_mdns_packet_capture()
 
 # CHANGELOG
+# 1.3.0 - 2026-09-13 - test_mdns_system_info now verifies Phase 9 public info shape (version.auth=none, no .mdns/.system on unauthenticated request) instead of expecting .mdns fields
 # 1.2.0 - 2026-09-04 - Do not kill_owned_hydrogens after Hydrogen B; that reaped the main server
 # 1.1.0 - 2026-09-04 - Helpers that own a TEST print the only PASS/FAIL; others return status only
 # 1.0.0 - 2026-09-01 - Initial extraction from test_25_mdns.sh
@@ -36,7 +37,7 @@
 export MDNS_TEST_HELPERS_GUARD="true"
 
 MDNS_TEST_HELPERS_NAME="mDNS Test Helpers Library"
-MDNS_TEST_HELPERS_VERSION="1.2.0"
+MDNS_TEST_HELPERS_VERSION="1.3.0"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${MDNS_TEST_HELPERS_NAME} ${MDNS_TEST_HELPERS_VERSION}" "info"
 
 # --- Capture cleanup / error hooks ---
@@ -319,12 +320,12 @@ test_mdns_log_contract() {
     return "${missing}"
 }
 
-# --- /api/system/info mDNS fields ---
+# --- /api/system/info public shape (Phase 9 info-gating contract) ---
 
 test_mdns_system_info() {
     local server_port="$1"
 
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Verify mDNS fields on /api/system/info"
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Verify public /api/system/info shape (no JWT)"
 
     local info_json
     info_json=$(curl -sf --max-time 3 "http://127.0.0.1:${server_port}/api/system/info" 2>/dev/null || echo "")
@@ -334,27 +335,36 @@ test_mdns_system_info() {
         return 1
     fi
 
-    local claimed_count
-    claimed_count=$(echo "${info_json}" | jq -r '.mdns.claimed | if type == "array" then length else 0 end' 2>/dev/null || echo "0")
-    claimed_count=$(echo "${claimed_count}" | tr -d '[:space:]')
-    local cache_count
-    cache_count=$(echo "${info_json}" | jq -r '.mdns.cache_count // 0' 2>/dev/null || echo "0")
-    local hostname_val
-    hostname_val=$(echo "${info_json}" | jq -r '.mdns.hostname // ""' 2>/dev/null || echo "")
+    local auth_val
+    auth_val=$(echo "${info_json}" | jq -r '.version.auth // ""' 2>/dev/null || echo "")
+    local server_running
+    server_running=$(echo "${info_json}" | jq -r '.status.server_running // false' 2>/dev/null || echo "false")
+    local has_mdns
+    has_mdns=$(echo "${info_json}" | jq -r 'if .mdns then "yes" else "no" end' 2>/dev/null || echo "no")
+    local has_system
+    has_system=$(echo "${info_json}" | jq -r 'if .system then "yes" else "no" end' 2>/dev/null || echo "no")
 
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "mdns.claimed_count=${claimed_count}, cache_count=${cache_count}, hostname=${hostname_val}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "version.auth=${auth_val}, status.server_running=${server_running}, has_mdns=${has_mdns}, has_system=${has_system}"
 
     local missing=0
-    if [[ "${claimed_count}" -lt 1 ]]; then
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Expected at least 1 claimed name"
+    if [[ "${auth_val}" != "none" ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Expected version.auth= none for unauthenticated request"
         missing=1
     fi
-    if [[ -z "${hostname_val}" ]]; then
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Expected non-empty hostname in mdns info"
+    if [[ "${server_running}" != "true" ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Expected status.server_running=true"
+        missing=1
+    fi
+    if [[ "${has_mdns}" == "yes" ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unauthenticated info should not include .mdns (Phase 9 contract)"
+        missing=1
+    fi
+    if [[ "${has_system}" == "yes" ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Unauthenticated info should not include .system (Phase 9 contract)"
         missing=1
     fi
 
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" "${missing}" "API system/info mDNS fields verified"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" "${missing}" "Public /api/system/info shape verified (version.auth=none, no mdns/system)"
     return "${missing}"
 }
 

@@ -12,6 +12,7 @@
 # analyze_api_prefix_test_results()
 
 # CHANGELOG
+# 7.1.0 - 2026-09-13 - Updated /api/system/info expected field from "system" to "version" per Phase 9 info-gating contract
 # 7.0.0 - 2025-08-08 - Major refactor: Implemented parallel execution of API prefix tests following Test 13/20 patterns. 
 #                    - Extracted modular functions run_api_prefix_test_parallel() and analyze_api_prefix_test_results(). 
 #                    - Now runs both /api and /myapi tests simultaneously instead of sequentially, significantly reducing execution time.
@@ -35,7 +36,7 @@ TEST_NAME="Prefix"
 TEST_ABBR="PRE"
 TEST_NUMBER="20"
 TEST_COUNTER=0
-TEST_VERSION="7.0.0"
+TEST_VERSION="7.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -204,7 +205,7 @@ run_api_prefix_test_parallel() {
             
             # Info endpoint test
             # shellcheck disable=SC2310 # We want to continue even if the test fails
-            if validate_api_request "${log_suffix}_info" "http://localhost:${port}${api_prefix}/system/info" "system"; then
+            if validate_api_request "${log_suffix}_info" "http://localhost:${port}${api_prefix}/system/info" "version"; then
                 echo "INFO_TEST_PASSED" >> "${result_file}"
             else
                 echo "INFO_TEST_FAILED" >> "${result_file}"

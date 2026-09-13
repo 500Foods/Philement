@@ -9,6 +9,8 @@
 # test_websocket_configuration() 
 
 # CHANGELOG
+# 3.2.2 - 2026-09-13 - Fixed WebSocket connection failures: ws_url now includes /wss path; fixed spurious websocat output leaking to terminal
+# 3.2.1 - 2026-09-13 - Removed manual TEST_COUNTER=0 initialization (framework owns the counter)
 # 3.2.0 - 2025-10-04 - Enhanced authentication testing to improve coverage: added header auth, query param auth, invalid key tests, and missing auth tests
 # 3.1.0 - 2025-08-09 - Updates to log file naming mostly
 # 3.0.0 - 2025-08-04 - That right there was Grok's rewrite - heh a modest 0.0.1
@@ -29,9 +31,8 @@ set -euo pipefail
 TEST_NAME="WebSockets"
 TEST_ABBR="WSS"
 TEST_NUMBER="23"
-TEST_COUNTER=0
-TEST_VERSION="3.2.0"
-export TEST_NAME TEST_ABBR TEST_NUMBER TEST_COUNTER TEST_VERSION
+TEST_VERSION="3.2.2"
+export TEST_NAME TEST_ABBR TEST_NUMBER TEST_VERSION
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -215,7 +216,14 @@ test_websocket_status() {
             else
                 # Log what we actually received for debugging
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Invalid JSON response or missing required fields:"
-                echo "${websocat_output}" | jq . 2>/dev/null | head -10 || echo "Non-JSON output: ${websocat_output}" || true
+                if echo "${websocat_output}" | jq -e '.' >/dev/null 2>&1; then
+                    # shellcheck disable=SC2310 # Invoked in || condition; we want to continue on failure
+                    echo "${websocat_output}" | jq . 2>/dev/null | head -10 | while IFS= read -r line; do
+                        print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "${line}"
+                    done || true
+                else
+                    print_output "${TEST_NUMBER}" "${TEST_COUNTER}" "Non-JSON output: ${websocat_output}"
+                fi
             fi
         fi
         
@@ -371,7 +379,7 @@ test_websocket_configuration() {
     # Global variables for server management
     local hydrogen_pid=""
     local base_url="http://localhost:${server_port}"
-    local ws_url="ws://localhost:${ws_port}"
+    local ws_url="ws://localhost:${ws_port}/wss"
     
     # Clear result file
     true > "${result_file}"
