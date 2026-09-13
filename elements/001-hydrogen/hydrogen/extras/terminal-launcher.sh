@@ -37,6 +37,7 @@
 # CHANGELOG
 # 1.0.1 - 2026-09-11 - Added --api-key argument; login payload now includes api_key field required by /api/auth/login (fixes HTTP 400)
 # 1.0.2 - 2026-09-12 - Fixed launcher HTML file being deleted before browser loads it; temp file persists until process exit or OS cleanup
+# 1.0.3 - 2026-09-13 - Phase 11: Renamed WEBSOCKET_KEY local to TERMINAL_KEY for clarity (holds terminal.key from sysinfo, not chat key); added --terminal-key note in help for two-key world
 # =============================================================================
 
 set -euo pipefail
@@ -45,7 +46,7 @@ set -euo pipefail
 # Configuration defaults
 # ---------------------------------------------------------------------------
 SCRIPT_NAME="terminal-launcher"
-SCRIPT_VERSION="1.0.2"
+SCRIPT_VERSION="1.0.3"
 
 SERVER_URL=""
 USERNAME=""
@@ -61,7 +62,7 @@ PASSWORD=""
 JWT_TOKEN=""
 TERMINAL_URL=""
 TERMINAL_PROTOCOL=""
-WEBSOCKET_KEY=""
+TERMINAL_KEY=""
 LAUNCHER_FILE=""
 
 # ---------------------------------------------------------------------------
@@ -89,7 +90,7 @@ cleanup() {
     # Clear sensitive variables from shell memory on exit.
     PASSWORD=""
     JWT_TOKEN=""
-    WEBSOCKET_KEY=""
+    TERMINAL_KEY=""
 }
 trap cleanup EXIT
 
@@ -119,6 +120,13 @@ OPTIONAL:
     --timeout <sec>       HTTP request timeout in seconds (default: 30)
     --browser <cmd>       Browser command to open (default: xdg-open or $BROWSER)
     --help, -h            Show this help
+
+TWO-KEY MODEL:
+    The chat WebSocket (/wss) uses WebSocketServer.Key (env WEBSOCKET_KEY)
+    via lithium.json. The terminal WebSocket (/terminal/ws) uses
+    Terminal.Key (env WEBSOCKET_TERMINAL_KEY). This launcher obtains the
+    TERMINAL key, protocol, and URL from the authorized /api/system/info
+    response — it is never read from a CLI argument or config file.
 
 SECURITY NOTES:
     - Password is NEVER accepted as a CLI argument
@@ -312,11 +320,11 @@ fetch_terminal_config() {
 
     TERMINAL_URL=$(jq -r '.terminal.url // empty' "${info_file}" 2>/dev/null)
     TERMINAL_PROTOCOL=$(jq -r '.terminal.protocol // empty' "${info_file}" 2>/dev/null)
-    WEBSOCKET_KEY=$(jq -r '.terminal.key // empty' "${info_file}" 2>/dev/null)
+    TERMINAL_KEY=$(jq -r '.terminal.key // empty' "${info_file}" 2>/dev/null)
 
     rm -f "${info_file}"
 
-    if [[ -z "${TERMINAL_URL}" || -z "${TERMINAL_PROTOCOL}" || -z "${WEBSOCKET_KEY}" ]]; then
+    if [[ -z "${TERMINAL_URL}" || -z "${TERMINAL_PROTOCOL}" || -z "${TERMINAL_KEY}" ]]; then
         log_error "Terminal config is incomplete (missing url, protocol, or key)"
         exit 1
     fi
@@ -324,7 +332,7 @@ fetch_terminal_config() {
     log_info "Terminal URL: ${TERMINAL_URL}"
     log_info "Protocol: ${TERMINAL_PROTOCOL}"
     local key_fp
-    key_fp=$(redact "${WEBSOCKET_KEY}")
+    key_fp=$(redact "${TERMINAL_KEY}")
     log_info "WebSocket key: ${key_fp}"
 }
 
@@ -462,12 +470,11 @@ main() {
     echo "  User:      ${USERNAME}"
     local jwt_fp key_fp
     jwt_fp=$(redact "${JWT_TOKEN}")
-    key_fp=$(redact "${WEBSOCKET_KEY}")
+    key_fp=$(redact "${TERMINAL_KEY}")
     echo "  JWT:       ${jwt_fp}"
     echo "  WS URL:    ${TERMINAL_URL}"
     echo "  Protocol:  ${TERMINAL_PROTOCOL}"
     echo "  WS Key:    ${key_fp}"
-    echo "  Launcher:  ${LAUNCHER_FILE} (temp file in /tmp)"
     echo ""
     echo "Security: Password was never stored in shell history."
     echo "          JWT and key are in-memory only."

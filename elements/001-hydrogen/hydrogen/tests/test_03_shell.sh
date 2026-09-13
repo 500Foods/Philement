@@ -156,7 +156,7 @@ declare -a ENV_WHITELIST=(
     # First found in tests/test_26_terminal.sh / tests/lib/terminal_utils.sh / tests/lib/terminal_ws_helpers.sh
     "TERMINAL_LOGIN_JWT" "TERMINAL_WS_KEY" "TERMINAL_WS_URL" "TERMINAL_WS_PROTOCOL"
     "RESOLVED_WS_KEY" "RESOLVED_WS_PROTOCOL" "RESOLVED_WS_URL"
-    "SQLITE_ISOLATION_CONFIG" "SQLITE_ISOLATION_WORK_DIR"
+    "SQLITE_ISOLATION_CONFIG" "SQLITE_ISOLATION_WORK_DIR" "TERMINAL_KEY"
     "TERMINAL_UTILS_GUARD" "TERMINAL_UTILS_NAME" "TERMINAL_UTILS_VERSION"
     "TERMINAL_WS_HELPERS_GUARD" "TERMINAL_WS_HELPERS_NAME" "TERMINAL_WS_HELPERS_VERSION"     
     # First found in tests/test_27_reporting_image_scale.sh
@@ -372,6 +372,7 @@ declare -a ENV_VARS=(
     "PAYLOAD_LOCK|02,12|Payload encryption key|RSA private key used for encrypting payload data. Must be base64 encoded and valid RSA format."
     "PAYLOAD_KEY|02,12|Payload encryption key|RSA private key used for encrypting payload data. Must be base64 encoded and valid RSA format."
     "WEBSOCKET_KEY|02,12|WebSocket authentication key|Key used for WebSocket connections and authentication."
+    "WEBSOCKET_TERMINAL_KEY|02,26|WebSocket terminal authentication key|Key used for WebSocket Terminal connections and authentication."
                    
     # MySQL demo
     "CANVAS_DB_HOST|30-35|Canvas database host|Hostname or IP address of the Canvas database server."

@@ -40,8 +40,10 @@ export class AppWebSocket {
 
   getWebSocketUrl() {
     const baseUrl = getConfigValue('server.websocket_url', 'wss://lithium.philement.com/wss');
-    const wsKey = getConfigValue('server.websocket_key', 'ABCDEFGHIJKLMNOPQabcdefghijklmnopq');
-    if (!wsKey) return baseUrl;
+    const wsKey = getConfigValue('server.websocket_key');
+    if (!wsKey) {
+      throw new Error('WebSocket key not configured (server.websocket_key)');
+    }
     const separator = baseUrl.includes('?') ? '&' : '?';
     return `${baseUrl}${separator}key=${encodeURIComponent(wsKey)}`;
   }
@@ -100,7 +102,8 @@ export class AppWebSocket {
 
       const url = this.getWebSocketUrl();
       const protocol = this.getWebSocketProtocol();
-      log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] Connecting to ${url}`);
+      const redactedUrl = url.split('?')[0];
+      log(Subsystems.WEBSOCKET, Status.DEBUG, `[WS] Connecting to ${redactedUrl}`);
 
       try {
         this.ws = new WebSocket(url, protocol);

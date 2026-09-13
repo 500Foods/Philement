@@ -176,12 +176,13 @@ resolve_terminal_websocket_config() {
         websocket_protocol=$(jq -r '.Terminal.Protocol // "terminal"' "${config_file}" 2>/dev/null || echo "terminal")
     fi
 
-    local websockets_key="${TERMINAL_WS_KEY:-${WEBSOCKET_TERMINAL_KEY:-${WEBSOCKET_KEY:-}}}"
+    # Resolve the terminal WebSocket key — prefer the sysinfo-provided key,
+    # then WEBSOCKET_TERMINAL_KEY, never the chat key (WEBSOCKET_KEY).
+    local terminal_key="${TERMINAL_WS_KEY:-${WEBSOCKET_TERMINAL_KEY:-}}"
 
     RESOLVED_WS_URL="${ws_url}"
     RESOLVED_WS_PROTOCOL="${websocket_protocol}"
-    RESOLVED_WS_KEY="${websockets_key}"
-    export WEBSOCKET_KEY="${websockets_key}"
+    RESOLVED_WS_KEY="${terminal_key}"
     export RESOLVED_WS_URL RESOLVED_WS_PROTOCOL RESOLVED_WS_KEY
 }
 

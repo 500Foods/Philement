@@ -21,6 +21,7 @@
 # test_system_endpoints()
 
 # CHANGELOG
+# 6.1.0 - 2026-09-13 - Fixed syntax error on print_message line (stray "4" concatenation to TEST_COUNTER); updated /api/system/info expected field from "system" to "version" per Phase 9 info-gating contract
 # 6.0.0 - 2025-09-19 - Added average response time calculation and display in test name for all system endpoints
 # 5.1.0 - 2025-08-09 - Mopping up after major factor, tweaking names of log files mostly
 # 5.0.0 - 2025-08-08 - Major refactor: Implemented parallel execution of endpoint requests against single server.
@@ -45,7 +46,7 @@ TEST_NAME="Endpoints"
 TEST_ABBR="SYS"
 TEST_NUMBER="21"
 TEST_COUNTER=0
-TEST_VERSION="6.0.0"
+TEST_VERSION="6.1.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -63,7 +64,7 @@ declare -A ENDPOINT_TEST_CONFIGS
 # Endpoint test configuration - format: "endpoint:expected_content:description"
 ENDPOINT_TEST_CONFIGS=(
     ["HEALTH"]="health:Yes, I'm alive, thanks!:Health Check"
-    ["INFO"]="info:system:System Information"
+    ["INFO"]="info:version:System Information"
     ["CONFIG"]="config:ServerName:Configuration Data"
     ["TEST"]="basic_get:client_ip:System Test"
     ["PROMETHEUS"]="prometheus:system_info:Prometheus Metrics"
@@ -560,7 +561,7 @@ HYDROGEN_BIN=''
 HYDROGEN_BIN_BASE=''
 # shellcheck disable=SC2310 # We want to continue even if the test fails
 if find_hydrogen_binary "${PROJECT_DIR}"; then
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}"4 "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Using Hydrogen binary: ${HYDROGEN_BIN_BASE}"
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Hydrogen binary found and validated"
 else
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to find Hydrogen binary"

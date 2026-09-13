@@ -4,6 +4,7 @@
 # Tests the mDNS service discovery functionality: server announcements and client discovery.
 
 # CHANGELOG
+# 4.3.1 - 2026-09-13 - Removed manual TEST_COUNTER=0 init; updated test_mdns_system_info to expect Phase 9 public info shape (version.auth=none, no .mdns on unauthenticated request)
 # 4.3.0 - 2026-09-04 - Fail if the main server dies before clean shutdown (goodbye tokens)
 # 4.2.0 - 2026-09-04 - Pair every TEST with one PASS/FAIL (Unpaired TEST / extra PASS/FAIL)
 # 4.1.0 - 2026-09-01 - Refactor: extract helpers to lib/mdns_test_helpers.sh; fix GOODBYE and tshark packet detection
@@ -26,8 +27,7 @@ set -Eeuo pipefail
 TEST_NAME="mDNS"
 TEST_ABBR="DNS"
 TEST_NUMBER="25"
-TEST_COUNTER=0
-TEST_VERSION="4.3.0"
+TEST_VERSION="4.3.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"

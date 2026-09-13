@@ -11,6 +11,8 @@ const DEFAULT_CONFIG = {
     url: 'http://localhost:8080',
     api_prefix: '/api',
     websocket_url: 'ws://localhost:8080/ws',
+    websocket_protocol: 'hydrogen',
+    websocket_key: null,
     terminal_path: '/terminal',
   },
   auth: {

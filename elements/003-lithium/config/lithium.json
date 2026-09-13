@@ -4,6 +4,7 @@
     "api_prefix": "/api",
     "websocket_url": "wss://lithium.philement.com/wss",
     "websocket_protocol": "hydrogen",
+    "websocket_key": "${env.WEBSOCKET_KEY}",
     "terminal_path": "/terminal"
   },
   "auth": {

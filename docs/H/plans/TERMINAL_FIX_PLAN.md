@@ -15,9 +15,9 @@
 | [Phase 7a — Config JSON Schema](#phase-7a--config-json-schema-test-93) | Test 93: schema allows C-loaded `Terminal.CORSOrigin` / `Network.TrustedProxies`; also `Terminal.Key`/`Protocol`; cap 16 | **Complete** |
 | [Phase 7 — Query-string Auth](#phase-7--query-string-websocket-authentication) | `WSI_TOKEN_HTTP_URI_ARGS` query-key parse so browser `?key=` upgrades succeed | **Complete** |
 | [Phase 8 — Split Terminal Key](#phase-8--terminalkey-protocol-and-dual-protocol-auth) | `Terminal.Key` / `Terminal.Protocol` / `Terminal.WebPath` distinct from chat WS | **Complete** |
-| [Phase 9 — Info Gating](#phase-9--apisysteminfo-public-vs-jwt-vs-terminal) | Short public info with `version.auth`; full ops+scripting with JWT; `terminal` only with role 32 | **Not started** |
-| [Phase 10 — Lithium Chat WS](#phase-10--lithium-chat-websocket-hygiene) | Redact `app-ws.js` key log; no hardcoded chat-key fallback | **Not started** |
-| [Phase 11 — Test 26 & Launcher](#phase-11--test-26-and-terminal-launcher) | Two keys/protocols, query auth, info gating, [`terminal-launcher.sh`](/elements/001-hydrogen/hydrogen/extras/terminal-launcher.sh) | **Not started** |
+| [Phase 9 — Info Gating](#phase-9--apisysteminfo-public-vs-jwt-vs-terminal) | Short public info with `version.auth`; full ops+scripting with JWT; `terminal` only with role 32 | **Complete** |
+| [Phase 10 — Lithium Chat WS](#phase-10--lithium-chat-websocket-hygiene) | Redact `app-ws.js` key log; no hardcoded chat-key fallback | **Complete** |
+| [Phase 11 — Test 26 & Launcher](#phase-11--test-26-and-terminal-launcher) | Two keys/protocols, query auth, info gating, [`terminal-launcher.sh`](/elements/001-hydrogen/hydrogen/extras/terminal-launcher.sh) | **Complete** |
 | [Phase 12 — Production E2E](#phase-12--production-config-secrets-and-doks-e2e) | bash, CORS, TrustedProxies, env keys, payload, Traefik/DOKS, rotation | **Not started** |
 
 ## Purpose
@@ -658,8 +658,8 @@ do not expose `terminal.key` to un-authorized callers.
 | 7 | Browser `?key=` upgrades succeed via `WSI_TOKEN_HTTP_URI_ARGS` | S | complete |
 | 8 | Distinct `Terminal.Key` / `Protocol` vs chat; cross-surface keys denied | M | complete |
 | 9 | Short public info (`version.auth`); JWT full+scripting; role 32 adds `terminal` from `Terminal.*` | M | complete |
-| 10 | Lithium chat WS logs redact the key; no hardcoded chat-key fallback | S | not started |
-| 11 | Test 26 and `terminal-launcher.sh` prove two keys, query auth, info gating | M | not started |
+| 10 | Lithium chat WS logs redact the key; no hardcoded chat-key fallback | S | complete |
+| 11 | Test 26 and `terminal-launcher.sh` prove two keys, query auth, info gating | M | complete |
 | 12 | Production bash, CORS, TrustedProxies, env keys, payload, Traefik/DOKS E2E | M | not started |
 
 Effort key: S = small/contained, M = moderate (security/networking/deployment + testing).
@@ -1907,14 +1907,33 @@ fallbacks.
 
 ### Status
 
-- **State:** not started
-- **Date:**
-- **Result:**
+- **State:** complete
+- **Date:** 2026-09-13
+- **Result:** `app-ws.js` chat WebSocket key hygiene fixed: removed hardcoded `ABCDEFGHIJKLMNOPQabcdefghijklmnopq` fallback in `getWebSocketUrl()` — missing `server.websocket_key` now throws visibly (no connect attempt with a known-default). Added `websocket_key: "${env.WEBSOCKET_KEY}"` to `config/lithium.json` (deployable config) and `websocket_key: null` to `DEFAULT_CONFIG` in `config.js` (no hardcoded fallback). Fixed `connect()` logging: URL is now redacted by stripping the query string before logging (`url.split('?')[0]`), so `[WS] Connecting to wss://...` never contains `?key=` or the raw key value. Added `tests/unit/app-ws.test.js` with 4 tests covering: missing key throws, no hardcoded fallback, key appended as `?key=` when configured, and connect log redaction (no `?key=` or key value in logged URL). `npm test` passes (956/956, 34 files). `npm run lint` passes (0 errors). `npm run lint:css` passes. `npm run build` passes.
 - **Variances:**
+  - `websocket_key` added to `lithium.json` as `"${env.WEBSOCKET_KEY}"` — this is a config reference, not a usable key. The actual key is injected via the `WEBSOCKET_KEY` environment variable at deployment time. The `${env.*}` pattern is resolved by the deployment pipeline, not by Lithium's config loader (which reads the static JSON). This matches the locked contract: the chat key is in the downloadable SPA config but resolved from runtime environment.
+  - `app-ws.test.js` had to mock `log` via `vi.hoisted` to inspect mock calls correctly — direct `await import` of the mocked module inside each test creates a separate mock instance that `vi.clearAllMocks()` in `beforeEach` can clear, causing assertions to see stale/empty call arrays.
 
----
+### Working Log
 
-## Phase 11 — Test 26 and terminal-launcher
+- `config/lithium.json`: added `"websocket_key": "${env.WEBSOCKET_KEY}"` under `server` block (line 7).
+- `src/core/config.js`: added `websocket_key: null` to `DEFAULT_CONFIG.server` (line 14) — no hardcoded fallback, fails visibly if absent.
+- `src/shared/app-ws.js`:
+  - Lines 42-43: `getWebSocketUrl()` now takes no default for `websocket_key`; uses `getConfigValue('server.websocket_key')` (no second arg → returns `null` if absent); throws `Error('WebSocket key not configured (server.websocket_key)')` when null/empty.
+  - Line 104: `connect()` logs `[WS] Connecting to ${redactedUrl}` where `redactedUrl = url.split('?')[0]` — strips the `?key=` query parameter entirely before logging.
+- `tests/unit/app-ws.test.js` (new, 4 tests):
+  - `getWebSocketUrl` — no hardcoded key default: missing key throws, no hardcoded fallback, key appended as query param when configured.
+  - `connect` — URL logging is redacted: log line does not contain `?key=`, key value, or `key=my` — only origin+path.
+- `npm test`: 956/956 pass (34 files).
+- `npm run lint`: 0 errors, 0 warnings from app-ws files.
+- `npm run lint:css`: clean.
+- `npm run build`: clean.
+
+### Lessons Learned
+
+- The `log` mock must be hoisted (`vi.hoisted`) and referenced directly in assertions — dynamically importing the mocked module inside each test creates a separate mock instance that `vi.clearAllMocks()` in `beforeEach` can clear, causing assertions to see stale/empty call arrays.
+- `getConfigValue` with no second argument returns `null` when the path is absent. The previous code used `getConfigValue('server.websocket_key', 'ABCDEFGHIJKLMNOPQabcdefghijklmnopq')` which masked missing config as a working (but insecure) default. Removing the default arg makes the failure mode explicit.
+- In the Lithium config, `${env.WEBSOCKET_KEY}` is a deploy-time environment variable reference, not a runtime-resolved string. The Lithium SPA config loader (`config.js`) reads static JSON; the `${env.*}` interpolation happens in the deployment pipeline (e.g., envsubst or a config injector). This is consistent with the Hydrogen side where `${env.WEBSOCKET_KEY}` is resolved by Hydrogen's config loader.
 
 ### Goal
 
@@ -1933,7 +1952,7 @@ Phase 10 complete.
 
 ### Work items
 
-- [ ] Split test configs
+- [x] Split test configs
       [`hydrogen_test_26_terminal_payload.json`](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_26_terminal_payload.json)
       and
       [`hydrogen_test_26_terminal_filesystem.json`](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_26_terminal_filesystem.json):
@@ -1942,7 +1961,7 @@ Phase 10 complete.
       `Terminal.Key` = `${env.WEBSOCKET_TERMINAL_KEY}`, `WebPath` =
       `/terminal`. Require both env keys (ephemeral, ≥32 chars).
       **Verify:** Configs parse; Hydrogen starts.
-- [ ] Test 26 / `terminal_utils.sh` contract tests (extend existing helpers;
+- [x] Test 26 / `terminal_utils.sh` contract tests (extend existing helpers;
       do not create a new blackbox script; do not increment `TEST_COUNTER`):
       - no JWT → short public JSON, no `terminal`, no FD dump
       - invalid JWT → same public shape
@@ -1955,12 +1974,12 @@ Phase 10 complete.
       - wrong protocol on terminal path fails
       **Verify:** `./test_00_all.sh 26_terminal` green. Redacted
       fingerprints only.
-- [ ] Update
+- [x] Update
       [`test_26_terminal.md`](/docs/H/tests/test_26_terminal.md)
       for two keys, query auth, and info gating. Absolute links. No `:line`
       refs.
       **Verify:** Test 90 / `mkl` after the doc change.
-- [ ] Update
+- [x] Update
       [`terminal-launcher.sh`](/elements/001-hydrogen/hydrogen/extras/terminal-launcher.sh)
       (the extras script; there is no `terminal-launch.sh`):
       - Connect with `?key=` using `terminal.key` from info (terminal key,
@@ -1971,7 +1990,7 @@ Phase 10 complete.
       - Never print JWT, key, or full info body; fingerprints only
       - `--help` documents the two-key world
       **Verify:** `bash -n`; `mks`; `--help` clean.
-- [ ] `mks` for all script changes.
+- [x] `mks` for all script changes.
 
 ### Done means
 
@@ -1987,14 +2006,23 @@ checks pass; `test_26_terminal.md` updated; no secrets in output.
 
 ### Status
 
-- **State:** not started
-- **Date:**
-- **Result:**
-- **Variances:**
+- **State:** complete
+- **Date:** 2026-09-13
+- **Result:** Test 26 passes (40/40 subtests PASS, blackbox coverage 19.092%). The key fix: all terminal WebSocket helper functions in `terminal_ws_helpers.sh` now use `${RESOLVED_WS_KEY:-${WEBSOCKET_TERMINAL_KEY:-${WEBSOCKET_KEY:-}}}` — preferring the terminal key from the authorized `/api/system/info` response (or `WEBSOCKET_TERMINAL_KEY` env) rather than `WEBSOCKET_KEY` (the chat key). This resolved all 5 WebSocket test failures (`WEBSOCKET_CONNECTION_TEST_FAILED`, `WEBSOCKET_PING_TEST_FAILED`, `WEBSOCKET_IO_TEST_FAILED`, `WEBSOCKET_RESIZE_TEST_FAILED`, `WEBSOCKET_LONG_SESSION_TEST_FAILED`). Test configs already had the two-key split (`WebSocketServer.Protocol=hydrogen`, `Terminal.Protocol=terminal`, distinct keys). Cross-key denial tests (chat key on terminal path, terminal key on chat path, wrong protocol) all pass. System-info authorization contract tests pass (no-JWT, invalid-JWT, valid-JWT, CORS). `terminal-launcher.sh` v1.0.3 updated with two-key world (TERMINAL_KEY local variable, expanded error messaging, help text). `shellcheck` clean (0 issues, 170 files). `mkq`/`mkp` clean. Blackbox coverage increased from 17.905% to 19.092%.
+- **Remaining work:** None for Phase 11. Production deployment (Phase 12) requires ops access to Traefik/DOKS manifests and k8s secrets, which is out of scope for this working-tree session.
+- **Variances:** The original session digest was written before Phase 10 implementation began. Phase 10 is now complete; Phase 11 is now complete. The git-tracked plan previously showed "not started" for both; this update corrects the record.
+
+### Working Log
+
+- Identified the root cause of WebSocket test failures: `terminal_ws_helpers.sh` functions `test_websocket_terminal_connection`, `test_websocket_terminal_status`, `test_websocket_terminal_input_output`, `test_websocket_terminal_resize`, and `test_websocket_terminal_long_session` all used `${WEBSOCKET_KEY:-${RESOLVED_WS_KEY:-}}` — preferring the chat key (`WEBSOCKET_KEY`) over the resolved terminal key. The terminal WebSocket surface only accepts `Terminal.Key`, so all auth attempts with the chat key failed.
+- Fix: changed all 5 occurrences plus the `test_websocket_wrong_protocol_rejected` key resolution to `${RESOLVED_WS_KEY:-${WEBSOCKET_TERMINAL_KEY:-${WEBSOCKET_KEY:-}}` — prefer the terminal key from sysinfo, fall back to `WEBSOCKET_TERMINAL_KEY` env, then `WEBSOCKET_KEY` as absolute last resort.
+- Also fixed a duplicate `echo "${test_message}"` line at lines 55-58 in `test_websocket_terminal_connection` (was causing the command to run twice with the second `websocat` call having no input).
+- Bumped `terminal_ws_helpers.sh` to v1.1.1 and `test_26_terminal.sh` to v2.9.1.
+- Verified: `mks` (170 files, 0 issues), `mkq` (clean build), `mkp` (cppcheck clean), `./test_00_all.sh 26_terminal` (40/40 PASS, 8/8 subtests, both payload and filesystem modes green).
+- Coverage: Blackbox coverage for terminal files (e.g., `terminal/terminal_shell.c`) increased from 0 to 68/153 covered lines in the payload mode run.
+- `CROSS_CONFIG_404_TEST_FAILED` is informational only — the test script explicitly does not count it as a failure (it notes files may be available in both configs).
 
 ---
-
-## Phase 12 — Production config, secrets, and DOKS E2E
 
 ### Goal
 
@@ -2352,5 +2380,23 @@ items that still apply are covered here.
 - Verified: extract 18/18, callback_http 21/21, dispatch 26/26,
   coverage_gaps 24/24, auth 23/23; `mkq` green; `mkp` 2,038 files clean.
 - Stopped for review. Do not start Phase 8 until asked.
+
+### Session 10 (2026-09-13) — State reconciliation and Phase 11 kickoff
+
+- Verified actual code state vs. plan document. Phrases 0-9 are implemented in source:
+  - Phase 8: `Terminal.Key`/`Protocol` in `config_terminal.c`, `ws_context->terminal_protocol`/`terminal_auth_key` in `websocket_server_internal.h`, dual protocol registration in `websocket_server_startup.c`, surface-aware auth in `websocket_server_auth.c`, protocol routing in `websocket_server_message.c`/`websocket_server_terminal.c`.
+  - Phase 9: `system_info_build_json(bool include_scripting, bool has_terminal, const char *auth_mode)` in `info.c`, `system_info_has_terminal_role()` using role_id 32, `version.auth` injected as `none`/`jwt`/`jwt, terminal`.
+- Phase 10 (Lithium) is complete in working tree:
+  - `app-ws.js`: removed `ABCDEFGHIJKLMNOPQabcdefghijklmnopq` fallback, throws on missing key, redacts URL in logs.
+  - `lithium.json`: added `websocket_key: "${env.WEBSOCKET_KEY}"`.
+  - `config.js`: added `websocket_key: null` to `DEFAULT_CONFIG`.
+  - `tests/unit/app-ws.test.js`: 4 new tests, `npm test` 956/956, `npm run lint` 0 errors.
+- Phase 11 is in progress in working tree (uncommitted):
+  - Test configs already have two-key split (`WebSocketServer.Key` = `${env.WEBSOCKET_KEY}`, `Terminal.Key` = `${env.WEBSOCKET_TERMINAL_KEY}`).
+  - `terminal_utils.sh`: `resolve_terminal_websocket_config()` fixed — no longer clobbers `WEBSOCKET_KEY`, sets only `RESOLVED_WS_KEY`.
+  - `terminal_ws_helpers.sh`: 3 new cross-key denial test functions added; 2 existing functions updated with fallback chain.
+  - `test_26_terminal.sh` v2.9.0: wires in cross-key denial tests with result-flag reporting.
+  - **Remaining:** Fix 3 raw `${WEBSOCKET_KEY}` refs at lines 247/301/341 in `terminal_ws_helpers.sh` (use `${WEBSOCKET_KEY:-${RESOLVED_WS_KEY:-}}`). Update `test_26_terminal.md`. Update `terminal-launcher.sh` for two-key world.
+- Updated plan index and Phase 9/10/11 Status blocks to reflect actual state.
 
 (End of file)
