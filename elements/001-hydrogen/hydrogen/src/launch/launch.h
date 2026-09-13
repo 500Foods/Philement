@@ -94,6 +94,7 @@ void free_webserver_resources(void);
 void register_websocket(void);
 bool validate_protocol(const char* protocol);
 bool validate_key(const char* key);
+bool terminal_websocket_surface_ready(void);
 
 // Forward declarations from launch_payload.c
 extern bool launch_payload(const AppConfig *config, const char *marker);

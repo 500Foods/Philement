@@ -105,6 +105,7 @@ void setUp(void) {
     test_context.message_length = 0;
     strncpy(test_context.protocol, "hydrogen-protocol", sizeof(test_context.protocol) - 1);
     strncpy(test_context.auth_key, "test_key_123", sizeof(test_context.auth_key) - 1);
+    strncpy(test_context.terminal_protocol, "terminal", sizeof(test_context.terminal_protocol) - 1);
 
     // Initialize mutex and condition variable
     pthread_mutex_init(&test_context.mutex, NULL);

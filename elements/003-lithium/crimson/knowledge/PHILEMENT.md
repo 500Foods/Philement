@@ -64,7 +64,7 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-09-12 14:23:15 UTC
+Last updated at 2026-09-12 19:28:17 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -75,7 +75,7 @@ Text                           353            349              0         148340
 Markdown                       762          36534            259         110813
 Lua                            443          11700           7395          93589
 JavaScript                     230          10592          13684          50404
-Bourne Shell                   181           8176         111650          45384
+Bourne Shell                   182           8206         111743          45454
 CSS                             87           2807           1612          14213
 C/C++ Header                   352           4230          14209          13218
 HTML                            42            272            219           3005
@@ -89,7 +89,7 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          5031         144548         219173        3064693
+SUM:                          5032         144578         219266        3064763
 -------------------------------------------------------------------------------
 1747 Files were skipped (duplicate, binary, or without source code):
   svg: 1247

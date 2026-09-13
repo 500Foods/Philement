@@ -336,6 +336,8 @@ void initialize_config_defaults_terminal(AppConfig* config) {
         config->terminal.webroot = strdup("PAYLOAD:/terminal");
         config->terminal.cors_origin = strdup("*");  // Allow all origins by default
         config->terminal.index_page = strdup("terminal.html");  // Configurable index page
+        config->terminal.protocol = strdup("terminal");
+        config->terminal.key = strdup("${env.WEBSOCKET_TERMINAL_KEY}");
 
         log_this(SR_CONFIG, "――― Applied config defaults for Terminal", LOG_LEVEL_DEBUG, 0);
     }

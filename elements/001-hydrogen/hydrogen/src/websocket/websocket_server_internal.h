@@ -40,8 +40,10 @@ typedef struct {
     
     // Server configuration
     int port;                           // Bound port number
-    char protocol[256];                 // Protocol name
-    char auth_key[256];                 // Authentication key
+    char protocol[256];                 // Chat protocol name
+    char auth_key[256];                 // Chat authentication key
+    char terminal_protocol[256];        // Terminal protocol name (empty if surface off)
+    char terminal_auth_key[256];        // Terminal authentication key (empty if surface off)
     
     // Server state
     volatile sig_atomic_t shutdown;     // Shutdown flag
@@ -93,6 +95,12 @@ void ws_context_destroy(WebSocketServerContext* ctx);
 int ws_handle_authentication(struct lws *wsi, WebSocketSessionData *session, const char *auth_header);
 bool ws_is_authenticated(const WebSocketSessionData *session);
 void ws_clear_authentication(WebSocketSessionData *session);
+bool ws_extract_query_auth_key(struct lws *wsi, char *out, size_t out_len);
+bool ws_copy_request_path(struct lws *wsi, char *out, size_t out_len);
+int ws_auth_surface_from_path(struct lws *wsi);
+int ws_auth_surface_from_protocol(struct lws *wsi);
+bool ws_auth_accept_key(struct lws *wsi, const char *presented, bool require_protocol_match);
+void ws_context_load_terminal_auth(WebSocketServerContext *ctx);
 
 // Connection handlers
 void ws_update_client_info(struct lws *wsi, WebSocketSessionData *session);

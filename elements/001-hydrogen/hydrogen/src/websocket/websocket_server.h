@@ -38,7 +38,7 @@ TerminalSession* find_or_create_terminal_session(struct lws *wsi);
 
 // WebSocket server startup helper functions (for testing)
 int validate_websocket_params(int port, const char* protocol, const char* key);
-void setup_websocket_protocols(struct lws_protocols protocols[3], const char* protocol);
+void setup_websocket_protocols(struct lws_protocols protocols[4], const char* protocol, const char* terminal_protocol);
 void configure_lws_context_info(struct lws_context_creation_info* info,
                                struct lws_protocols* protocols,
                                WebSocketServerContext* context);

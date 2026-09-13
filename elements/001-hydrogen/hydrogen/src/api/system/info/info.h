@@ -61,15 +61,31 @@ bool system_info_has_valid_jwt(struct MHD_Connection *connection);
   * Build the system info JSON object using the shared C collectors.
   *
   * When include_scripting is true, the scripting scoreboard snapshot is
-  * attached as the "scripting" key. When has_terminal is true (a valid JWT
-  * with the terminal role, the WebSocket server running, and
-  * Terminal.Enabled), a "terminal" object with the absolute WebSocket URL,
-  * configured protocol, and server-wide key is attached. The Lua
-  * H.system.info() path must pass has_terminal=false so script sandboxes
-  * never receive terminal authorization data. The caller owns the returned
-  * json_t*.
+  * attached as the "scripting" key.
+  *
+  * When has_terminal is true (a valid JWT with the terminal role, the
+  * WebSocket server running, and Terminal.Enabled), a "terminal" object
+  * with the absolute WebSocket URL, the terminal protocol, and the
+  * terminal key is attached. The terminal key is ws_context->terminal_auth_key
+  * (Terminal.Key), never ws_context->auth_key (the chat key). Unauthenticated,
+  * invalid-JWT, and valid-but-non-terminal callers receive no terminal object.
+  *
+  * auth_mode controls the public-vs-JWT shape:
+  *   NULL           — public (no/invalid JWT): short payload, no FD/system
+  *                    enumeration, version.auth absent, status.server_running
+  *                    only. The Lua H.system.info() path passes NULL so it
+  *                    never sees version.auth.
+  *   "none"         — same as NULL but for the REST path (explicit).
+  *   "jwt"          — valid JWT without terminal role: full dump + scripting.
+  *   "jwt, terminal"— valid JWT with terminal role: full dump + scripting +
+  *                    terminal object. version.auth = "jwt, terminal".
+  *
+  * This is the single function both handle_system_info_request (REST) and
+  * H.system.info() (Lua) call; the Lua path passes auth_mode=NULL and
+  * include_scripting=true so script sandboxes never receive version.auth or
+  * terminal data. The caller owns the returned json_t*.
   */
-json_t* system_info_build_json(bool include_scripting, bool has_terminal);
+json_t* system_info_build_json(bool include_scripting, bool has_terminal, const char *auth_mode);
 
 /*
  * Check whether JWT claims carry the terminal role (role_id 32).

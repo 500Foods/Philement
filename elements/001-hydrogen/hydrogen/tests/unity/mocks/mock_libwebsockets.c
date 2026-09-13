@@ -33,6 +33,8 @@ static char mock_auth_header_data[256] = "";
 static int mock_auth_header_len = 0;
 static char mock_uri_data[512] = "";
 static int mock_uri_len = 0;
+static char mock_uri_args[512] = "";
+static int mock_uri_args_len = 0;
 
 // Mock function implementations - matching real libwebsockets signatures
 int mock_lws_hdr_copy(struct lws *wsi, char *dest, int len, enum lws_token_indexes token)
@@ -61,6 +63,14 @@ int mock_lws_hdr_copy(struct lws *wsi, char *dest, int len, enum lws_token_index
             return (int)copy_len;
         }
         return 0;
+    } else if (token == WSI_TOKEN_HTTP_URI_ARGS) {
+        if (dest && len > 0 && mock_uri_args_len > 0) {
+            size_t copy_len = (mock_uri_args_len < len) ? (size_t)mock_uri_args_len : (size_t)len - 1;
+            strncpy(dest, mock_uri_args, copy_len);
+            dest[copy_len] = '\0';
+            return (int)copy_len;
+        }
+        return 0;
     }
 
     return 0;
@@ -80,6 +90,8 @@ int mock_lws_hdr_total_length(struct lws *wsi, enum lws_token_indexes token)
         return mock_auth_header_len;
     } else if (token == WSI_TOKEN_GET_URI) {
         return mock_uri_len;
+    } else if (token == WSI_TOKEN_HTTP_URI_ARGS) {
+        return mock_uri_args_len;
     }
 
     return 0;
@@ -235,6 +247,24 @@ void mock_lws_set_uri_data(const char* uri)
     }
 }
 
+void mock_lws_set_uri_args(const char* args)
+{
+    if (args) {
+        size_t args_len = strlen(args);
+        if (args_len < sizeof(mock_uri_args)) {
+            mock_uri_args_len = (int)args_len;
+            strcpy(mock_uri_args, args);
+        } else {
+            mock_uri_args_len = (int)sizeof(mock_uri_args) - 1;
+            strncpy(mock_uri_args, args, (size_t)mock_uri_args_len);
+            mock_uri_args[mock_uri_args_len] = '\0';
+        }
+    } else {
+        mock_uri_args[0] = '\0';
+        mock_uri_args_len = 0;
+    }
+}
+
 void mock_lws_set_hdr_total_length_result(int result)
 {
     mock_lws_hdr_total_length_result = result;
@@ -330,4 +360,6 @@ void mock_lws_reset_all(void)
     mock_auth_header_len = 0;
     mock_uri_data[0] = '\0';
     mock_uri_len = 0;
+    mock_uri_args[0] = '\0';
+    mock_uri_args_len = 0;
 }

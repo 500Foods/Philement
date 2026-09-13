@@ -71,6 +71,8 @@ void test_load_terminal_config_empty_json(void) {
     TEST_ASSERT_EQUAL_STRING("PAYLOAD:/terminal", config.terminal.webroot);  // Default value
     TEST_ASSERT_EQUAL_STRING("*", config.terminal.cors_origin);  // Default value
     TEST_ASSERT_EQUAL_STRING("terminal.html", config.terminal.index_page);  // Default value
+    TEST_ASSERT_EQUAL_STRING("terminal", config.terminal.protocol);
+    TEST_ASSERT_EQUAL_STRING("${env.WEBSOCKET_TERMINAL_KEY}", config.terminal.key);
     TEST_ASSERT_EQUAL(4, config.terminal.max_sessions);  // Default value
     TEST_ASSERT_EQUAL(300, config.terminal.idle_timeout_seconds);  // Default value
 
@@ -96,6 +98,8 @@ void test_load_terminal_config_basic_fields(void) {
     json_object_set(terminal_section, "WebRoot", json_string("/var/www/terminal"));
     json_object_set(terminal_section, "CORSOrigin", json_string("https://terminal.example.com"));
     json_object_set(terminal_section, "IndexPage", json_string("custom-index.html"));
+    json_object_set(terminal_section, "Protocol", json_string("term-proto"));
+    json_object_set(terminal_section, "Key", json_string("${env.WEBSOCKET_TERMINAL_KEY}"));
 
     json_object_set(root, "Terminal", terminal_section);
 
@@ -110,6 +114,8 @@ void test_load_terminal_config_basic_fields(void) {
     TEST_ASSERT_EQUAL_STRING("/var/www/terminal", config.terminal.webroot);
     TEST_ASSERT_EQUAL_STRING("https://terminal.example.com", config.terminal.cors_origin);
     TEST_ASSERT_EQUAL_STRING("custom-index.html", config.terminal.index_page);
+    TEST_ASSERT_EQUAL_STRING("term-proto", config.terminal.protocol);
+    TEST_ASSERT_EQUAL_STRING("${env.WEBSOCKET_TERMINAL_KEY}", config.terminal.key);
 
     json_decref(root);
     cleanup_terminal_config(&config.terminal);
@@ -162,6 +168,8 @@ void test_cleanup_terminal_config_empty_config(void) {
     TEST_ASSERT_NULL(config.webroot);
     TEST_ASSERT_NULL(config.cors_origin);
     TEST_ASSERT_NULL(config.index_page);
+    TEST_ASSERT_NULL(config.protocol);
+    TEST_ASSERT_NULL(config.key);
     TEST_ASSERT_EQUAL(0, config.max_sessions);
     TEST_ASSERT_EQUAL(0, config.idle_timeout_seconds);
 }
@@ -189,6 +197,8 @@ void test_cleanup_terminal_config_with_data(void) {
     TEST_ASSERT_NULL(config.webroot);
     TEST_ASSERT_NULL(config.cors_origin);
     TEST_ASSERT_NULL(config.index_page);
+    TEST_ASSERT_NULL(config.protocol);
+    TEST_ASSERT_NULL(config.key);
     TEST_ASSERT_EQUAL(0, config.max_sessions);
     TEST_ASSERT_EQUAL(0, config.idle_timeout_seconds);
 }

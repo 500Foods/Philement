@@ -70,11 +70,12 @@ int validate_websocket_params(int port, const char* protocol, const char* key) {
 }
 
 // Set up WebSocket protocol array
-void setup_websocket_protocols(struct lws_protocols protocols[3], const char* protocol) {
+void setup_websocket_protocols(struct lws_protocols protocols[4], const char* protocol, const char* terminal_protocol) {
     // Get rx_buffer_size from config, default to 64KB if not set
     size_t rx_buf_size = (app_config && app_config->websocket.rx_buffer_size > 0) 
                          ? app_config->websocket.rx_buffer_size 
                          : 65536;
+    int next = 2;
 
     // HTTP protocol for upgrade requests
     protocols[0] = (struct lws_protocols){
@@ -87,7 +88,7 @@ void setup_websocket_protocols(struct lws_protocols protocols[3], const char* pr
         .tx_packet_size = 0
     };
 
-    // Custom protocol - use configured rx_buffer_size to prevent message truncation
+    // Chat protocol
     protocols[1] = (struct lws_protocols){
         .name = protocol,
         .callback = callback_hydrogen,
@@ -98,8 +99,20 @@ void setup_websocket_protocols(struct lws_protocols protocols[3], const char* pr
         .tx_packet_size = 0
     };
 
-    // Terminator
-    protocols[2] = (struct lws_protocols){ NULL, NULL, 0, 0, 0, NULL, 0 };
+    if (terminal_protocol && terminal_protocol[0]) {
+        protocols[2] = (struct lws_protocols){
+            .name = terminal_protocol,
+            .callback = callback_hydrogen,
+            .per_session_data_size = sizeof(WebSocketSessionData),
+            .rx_buffer_size = rx_buf_size,
+            .id = 2,
+            .user = NULL,
+            .tx_packet_size = 0
+        };
+        next = 3;
+    }
+
+    protocols[next] = (struct lws_protocols){ NULL, NULL, 0, 0, 0, NULL, 0 };
 }
 
 // Configure libwebsockets context creation info
@@ -194,9 +207,10 @@ int init_websocket_server(int port, const char* protocol, const char* key)
         return -1;
     }
 
-    // Set up protocol array
-    struct lws_protocols protocols[3];
-    setup_websocket_protocols(protocols, protocol);
+    // Set up protocol array (http + chat [+ terminal] + terminator)
+    struct lws_protocols protocols[4];
+    const char *terminal_protocol = ws_context->terminal_protocol[0] ? ws_context->terminal_protocol : NULL;
+    setup_websocket_protocols(protocols, protocol, terminal_protocol);
 
     // Configure libwebsockets context
     struct lws_context_creation_info info;

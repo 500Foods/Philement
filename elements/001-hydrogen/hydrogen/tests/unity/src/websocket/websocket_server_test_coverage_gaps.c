@@ -112,6 +112,7 @@ void test_callback_http_strdup_allocation_header_path(void) {
     mock_lws_set_hdr_data("Key test_key_123");
     mock_lws_set_hdr_copy_result(1);
     mock_lws_set_hdr_total_length_result(20);
+    mock_lws_set_uri_data("/wss");
 
     // Create mock session data
     WebSocketSessionData session_data;
@@ -142,7 +143,7 @@ void test_callback_http_strdup_allocation_query_path(void) {
 
     // Setup mocks for query parameter authentication
     mock_lws_set_hdr_data("");  // No auth header
-    mock_lws_set_uri_data("/?key=test_key_123");
+    mock_lws_set_uri_data("/wss?key=test_key_123");
 
     // Create mock session data
     WebSocketSessionData session_data;
@@ -173,7 +174,7 @@ void test_callback_http_strdup_allocation_url_decoded_path(void) {
 
     // Setup mocks for URL-encoded query parameter
     mock_lws_set_hdr_data("");  // No auth header
-    mock_lws_set_uri_data("/?key=test%20key%20123");
+    mock_lws_set_uri_data("/wss?key=test%20key%20123");
 
     // Set the expected decoded key in context
     strncpy(test_context.auth_key, "test key 123", sizeof(test_context.auth_key) - 1);
@@ -278,7 +279,7 @@ void test_callback_http_query_param_invalid_key(void) {
 
     // Setup mocks for query parameter authentication with wrong key
     mock_lws_set_hdr_data("");  // No auth header
-    mock_lws_set_uri_data("/?key=wrong_key_456");
+    mock_lws_set_uri_data("/wss?key=wrong_key_456");
 
     // Create mock session data
     WebSocketSessionData session_data;
@@ -344,7 +345,7 @@ void test_callback_http_query_param_empty_key_value(void) {
 
     // Setup mocks for URL with empty key value
     mock_lws_set_hdr_data("");  // No auth header
-    mock_lws_set_uri_data("/?key=");
+    mock_lws_set_uri_data("/wss?key=");
 
     // Create mock session data
     WebSocketSessionData session_data;
@@ -367,7 +368,7 @@ void test_callback_http_url_decode_invalid_hex(void) {
 
     // Setup mocks for URL with invalid hex encoding
     mock_lws_set_hdr_data("");  // No auth header
-    mock_lws_set_uri_data("/?key=test%XXkey%20123");  // XX is invalid hex
+    mock_lws_set_uri_data("/wss?key=test%XXkey%20123");  // XX is invalid hex
 
     // Set the expected decoded key in context (without the invalid hex part)
     strncpy(test_context.auth_key, "test", sizeof(test_context.auth_key) - 1);
@@ -392,7 +393,7 @@ void test_callback_http_url_decode_buffer_overflow(void) {
 
     // Setup mocks for URL that could cause buffer issues
     mock_lws_set_hdr_data("");  // No auth header
-    mock_lws_set_uri_data("/?key=");  // Very short key to test boundary
+    mock_lws_set_uri_data("/wss?key=");  // Very short key to test boundary
 
     // Create mock session data
     WebSocketSessionData session_data;

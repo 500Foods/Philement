@@ -28,6 +28,8 @@ typedef struct TerminalConfig {
     char* webroot;                 /** NEW: PAYLOAD:/terminal or /filesystem/path */
     char* cors_origin;             /** NEW: Optional per-subsystem CORS override */
     char* index_page;              /** NEW: Configurable index page (default: "terminal.html") */
+    char* protocol;                /**< Terminal WebSocket subprotocol (distinct from chat) */
+    char* key;                     /**< Terminal WebSocket auth key (not the chat key) */
 } TerminalConfig;
 
 /**

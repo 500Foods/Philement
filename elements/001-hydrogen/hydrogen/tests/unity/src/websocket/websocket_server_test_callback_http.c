@@ -34,6 +34,8 @@ void test_callback_http_query_param_url_encoded(void);
 void test_callback_http_query_param_wrong_key(void);
 void test_callback_http_no_query_string(void);
 void test_callback_http_query_param_no_key_param(void);
+void test_callback_http_uri_args_only_authenticates(void);
+void test_callback_http_notkey_param_does_not_authenticate(void);
 
 // External variables that need to be accessible for testing
 extern WebSocketServerContext *ws_context;
@@ -217,6 +219,7 @@ void test_callback_http_successful_authentication_header(void) {
     mock_lws_set_hdr_data("Key test_key_123");  // Set the header data
     mock_lws_set_hdr_copy_result(1);  // lws_hdr_copy returns success
     mock_lws_set_hdr_total_length_result(20);  // Header length
+    mock_lws_set_uri_data("/wss");
 
     // Create a mock wsi structure (we'll use a dummy pointer)
     struct lws *mock_wsi = (struct lws *)0x12345678;
@@ -238,7 +241,7 @@ void test_callback_http_successful_authentication_query_param(void) {
     mock_lws_set_hdr_data("");  // No auth header
     
     // Mock URI to simulate query parameter with valid key
-    const char *mock_uri = "/?key=test_key_123";
+    const char *mock_uri = "/wss?key=test_key_123";
     mock_lws_set_uri_data(mock_uri);
 
     struct lws *mock_wsi = (struct lws *)0x87654321;
@@ -258,7 +261,7 @@ void test_callback_http_query_param_with_ampersand(void) {
     mock_lws_set_hdr_data("");
     
     // URI with key as first param and other params
-    const char *mock_uri = "/?key=test_key_123&other=value";
+    const char *mock_uri = "/wss?key=test_key_123&other=value";
     mock_lws_set_uri_data(mock_uri);
 
     struct lws *mock_wsi = (struct lws *)0x99999999;
@@ -280,7 +283,7 @@ void test_callback_http_query_param_url_encoded(void) {
     mock_lws_set_hdr_data("");
     
     // URI with URL-encoded key (space = %20)
-    const char *mock_uri = "/?key=test%20key%20123";
+    const char *mock_uri = "/wss?key=test%20key%20123";
     mock_lws_set_uri_data(mock_uri);
 
     struct lws *mock_wsi = (struct lws *)0xAAAAAAAA;
@@ -300,7 +303,7 @@ void test_callback_http_query_param_wrong_key(void) {
     mock_lws_set_hdr_data("");
     
     // URI with wrong key
-    const char *mock_uri = "/?key=wrong_key";
+    const char *mock_uri = "/wss?key=wrong_key";
     mock_lws_set_uri_data(mock_uri);
 
     struct lws *mock_wsi = (struct lws *)0xBBBBBBBB;
@@ -348,6 +351,36 @@ void test_callback_http_query_param_no_key_param(void) {
     int result = callback_http(mock_wsi, LWS_CALLBACK_HTTP, NULL, NULL, 0);
 
     // Should return -1 (missing authorization)
+    TEST_ASSERT_EQUAL_INT(-1, result);
+}
+
+void test_callback_http_uri_args_only_authenticates(void) {
+    ws_context = &test_context;
+    mock_lws_reset_all();
+
+    mock_lws_set_hdr_data("");
+    mock_lws_set_uri_data("/wss");
+    mock_lws_set_uri_args("key=test_key_123");
+
+    struct lws *mock_wsi = (struct lws *)0xEEEEEEEE;
+
+    int result = callback_http(mock_wsi, LWS_CALLBACK_HTTP, NULL, NULL, 0);
+
+    TEST_ASSERT_EQUAL_INT(0, result);
+}
+
+void test_callback_http_notkey_param_does_not_authenticate(void) {
+    ws_context = &test_context;
+    mock_lws_reset_all();
+
+    mock_lws_set_hdr_data("");
+    mock_lws_set_uri_data("/wss");
+    mock_lws_set_uri_args("notkey=test_key_123");
+
+    struct lws *mock_wsi = (struct lws *)0xFFFFFFFF;
+
+    int result = callback_http(mock_wsi, LWS_CALLBACK_HTTP, NULL, NULL, 0);
+
     TEST_ASSERT_EQUAL_INT(-1, result);
 }
 
@@ -445,6 +478,8 @@ int main(void) {
     RUN_TEST(test_callback_http_query_param_wrong_key);
     RUN_TEST(test_callback_http_no_query_string);
     RUN_TEST(test_callback_http_query_param_no_key_param);
+    RUN_TEST(test_callback_http_uri_args_only_authenticates);
+    RUN_TEST(test_callback_http_notkey_param_does_not_authenticate);
 
     return UNITY_END();
 }

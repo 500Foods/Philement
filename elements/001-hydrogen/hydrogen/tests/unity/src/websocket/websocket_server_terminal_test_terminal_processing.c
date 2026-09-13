@@ -19,6 +19,11 @@
 // Forward declarations for functions being tested
 int handle_message_type(struct lws *wsi, const char *type);
 
+extern WebSocketServerContext *ws_context;
+
+static WebSocketServerContext test_context;
+static WebSocketServerContext *original_context;
+
 // Test functions for remaining terminal processing gaps
 void test_handle_message_type_terminal_message_json_parsing(void);
 void test_handle_message_type_terminal_message_missing_type_field(void);
@@ -26,12 +31,15 @@ void test_handle_message_type_terminal_adapter_allocation_failure(void);
 void test_handle_message_type_terminal_message_processing_logic(void);
 
 void setUp(void) {
-    // Reset all mocks before each test
+    original_context = ws_context;
+    memset(&test_context, 0, sizeof(test_context));
+    strncpy(test_context.terminal_protocol, "terminal", sizeof(test_context.terminal_protocol) - 1);
+    ws_context = &test_context;
     mock_lws_reset_all();
 }
 
 void tearDown(void) {
-    // Clean up after each test
+    ws_context = original_context;
     mock_lws_reset_all();
 }
 

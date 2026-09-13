@@ -34,7 +34,8 @@ extern WebSocketServerContext *ws_context;
 int validate_terminal_protocol(struct lws *wsi)
 {
     const struct lws_protocols *protocol = lws_get_protocol(wsi);
-    if (protocol && ws_context && strcmp(protocol->name, ws_context->protocol) == 0) {
+    if (protocol && ws_context && ws_context->terminal_protocol[0] != '\0' &&
+        strcmp(protocol->name, ws_context->terminal_protocol) == 0) {
         log_this(SR_WEBSOCKET, "Routing terminal message to terminal session handlers", LOG_LEVEL_STATE, 0);
         return 0;
     } else {

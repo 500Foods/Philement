@@ -12,6 +12,26 @@
 
 // Local includes
 #include "websocket_server_internal.h"
+#include <src/launch/launch.h>
+
+void ws_context_load_terminal_auth(WebSocketServerContext *ctx)
+{
+    if (!ctx) {
+        return;
+    }
+
+    ctx->terminal_protocol[0] = '\0';
+    ctx->terminal_auth_key[0] = '\0';
+
+    if (!terminal_websocket_surface_ready()) {
+        return;
+    }
+
+    strncpy(ctx->terminal_protocol, app_config->terminal.protocol, sizeof(ctx->terminal_protocol) - 1);
+    ctx->terminal_protocol[sizeof(ctx->terminal_protocol) - 1] = '\0';
+    strncpy(ctx->terminal_auth_key, app_config->terminal.key, sizeof(ctx->terminal_auth_key) - 1);
+    ctx->terminal_auth_key[sizeof(ctx->terminal_auth_key) - 1] = '\0';
+}
 
 WebSocketServerContext* ws_context_create(int port, const char* protocol, const char* key)
 {
@@ -41,6 +61,8 @@ WebSocketServerContext* ws_context_create(int port, const char* protocol, const 
         strncpy(ctx->auth_key, key, sizeof(ctx->auth_key) - 1);
         ctx->auth_key[sizeof(ctx->auth_key) - 1] = '\0';
     }
+
+    ws_context_load_terminal_auth(ctx);
 
     // Initialize mutex and condition variable
     if (pthread_mutex_init(&ctx->mutex, NULL) != 0) {
