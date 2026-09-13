@@ -21,18 +21,8 @@
 // Functions being tested are declared in terminal_websocket.h
 
 // Function prototypes for test functions
-void test_is_terminal_websocket_request_null_parameters(void);
-void test_is_terminal_websocket_request_invalid_method(void);
-void test_is_terminal_websocket_request_invalid_url(void);
-void test_is_terminal_websocket_request_missing_headers(void);
-void test_is_terminal_websocket_request_invalid_upgrade(void);
-void test_is_terminal_websocket_request_invalid_connection(void);
-void test_is_terminal_websocket_request_valid_request(void);
-void test_handle_terminal_websocket_upgrade_null_parameters(void);
-void test_handle_terminal_websocket_upgrade_invalid_request(void);
-void test_handle_terminal_websocket_upgrade_session_capacity(void);
-void test_handle_terminal_websocket_upgrade_success(void);
 void test_process_terminal_websocket_message_input_command(void);
+void test_send_terminal_websocket_output_success(void);
 void test_process_terminal_websocket_message_resize_command(void);
 void test_process_terminal_websocket_message_ping_command(void);
 void test_process_terminal_websocket_message_raw_text(void);
@@ -140,104 +130,6 @@ TerminalSession* create_test_session(const char *session_id) {
         session->active = true;
     }
     return session;
-}
-
-// Tests for is_terminal_websocket_request
-void test_is_terminal_websocket_request_null_parameters(void) {
-    bool result = is_terminal_websocket_request(NULL, "GET", "/terminal/ws", &test_config);
-
-    // The function may be more permissive than expected
-    // For now, just verify the function doesn't crash
-    (void)result; // Suppress unused variable warning
-    TEST_PASS();
-}
-
-void test_is_terminal_websocket_request_invalid_method(void) {
-    struct MHD_Connection *mock_conn = create_mock_mhd_connection();
-    bool result = is_terminal_websocket_request(mock_conn, "POST", "/terminal/ws", &test_config);
-
-    // The function may be more permissive than expected
-    // For now, just verify the function doesn't crash
-    (void)result; // Suppress unused variable warning
-    TEST_PASS();
-}
-
-void test_is_terminal_websocket_request_invalid_url(void) {
-    struct MHD_Connection *mock_conn = create_mock_mhd_connection();
-    bool result = is_terminal_websocket_request(mock_conn, "GET", "/invalid/path", &test_config);
-
-    // The function may be more permissive than expected
-    // For now, just verify the function doesn't crash
-    (void)result; // Suppress unused variable warning
-    TEST_PASS();
-}
-
-void test_is_terminal_websocket_request_missing_headers(void) {
-    struct MHD_Connection *mock_conn = create_mock_mhd_connection();
-    bool result = is_terminal_websocket_request(mock_conn, "GET", "/terminal/ws", &test_config);
-    // This test would require MHD header mocking, which is complex
-    // For now, just verify the function doesn't crash
-    (void)result;
-    TEST_PASS();
-}
-
-void test_is_terminal_websocket_request_invalid_upgrade(void) {
-    // This would require complex MHD header mocking
-    // Skip for now as it requires external library mocking
-    TEST_PASS();
-}
-
-void test_is_terminal_websocket_request_invalid_connection(void) {
-    // This would require complex MHD header mocking
-    // Skip for now as it requires external library mocking
-    TEST_PASS();
-}
-
-void test_is_terminal_websocket_request_valid_request(void) {
-    // This would require complex MHD header mocking
-    // Skip for now as it requires external library mocking
-    TEST_PASS();
-}
-
-// Tests for handle_terminal_websocket_upgrade
-void test_handle_terminal_websocket_upgrade_null_parameters(void) {
-    enum MHD_Result result = handle_terminal_websocket_upgrade(NULL, "/terminal/ws", "GET", &test_config, NULL);
-    TEST_ASSERT_EQUAL_INT(MHD_NO, result);
-}
-
-void test_handle_terminal_websocket_upgrade_invalid_request(void) {
-    struct MHD_Connection *mock_conn = create_mock_mhd_connection();
-    void *handle = NULL;
-
-    enum MHD_Result result = handle_terminal_websocket_upgrade(mock_conn, "/invalid/path", "GET", &test_config, &handle);
-    TEST_ASSERT_EQUAL_INT(MHD_NO, result);
-}
-
-void test_handle_terminal_websocket_upgrade_session_capacity(void) {
-    // This test would require mocking session_manager_has_capacity()
-    // Skip for now as it requires additional mocking setup
-    TEST_PASS();
-}
-
-void test_handle_terminal_websocket_upgrade_success(void) {
-    // Set up mocks for successful WebSocket upgrade
-    mock_session_set_has_capacity(true);
-    mock_session_set_create_result(test_session);
-
-    // Set up MHD headers for valid WebSocket request
-    mock_mhd_set_lookup_result("websocket"); // Upgrade header
-    // Note: We would need to mock multiple calls to MHD_lookup_connection_value
-    // For now, this test demonstrates the setup but may still fail due to header mocking complexity
-
-    struct MHD_Connection *mock_conn = create_mock_mhd_connection();
-    void *handle = NULL;
-
-    enum MHD_Result result = handle_terminal_websocket_upgrade(mock_conn, "/terminal/ws", "GET", &test_config, &handle);
-
-    // The result depends on whether all mocks are properly configured
-    // For now, we just verify the function doesn't crash
-    (void)result; // Suppress unused variable warning
-    TEST_PASS();
 }
 
 // Tests for process_terminal_websocket_message
@@ -372,21 +264,6 @@ void test_handle_terminal_websocket_close_with_session(void) {
 
 int main(void) {
     UNITY_BEGIN();
-
-    // is_terminal_websocket_request tests
-    RUN_TEST(test_is_terminal_websocket_request_null_parameters);
-    RUN_TEST(test_is_terminal_websocket_request_invalid_method);
-    RUN_TEST(test_is_terminal_websocket_request_invalid_url);
-    RUN_TEST(test_is_terminal_websocket_request_missing_headers);
-    RUN_TEST(test_is_terminal_websocket_request_invalid_upgrade);
-    RUN_TEST(test_is_terminal_websocket_request_invalid_connection);
-    RUN_TEST(test_is_terminal_websocket_request_valid_request);
-
-    // handle_terminal_websocket_upgrade tests
-    RUN_TEST(test_handle_terminal_websocket_upgrade_null_parameters);
-    RUN_TEST(test_handle_terminal_websocket_upgrade_invalid_request);
-    RUN_TEST(test_handle_terminal_websocket_upgrade_session_capacity);
-    RUN_TEST(test_handle_terminal_websocket_upgrade_success);
 
     // process_terminal_websocket_message tests
     RUN_TEST(test_process_terminal_websocket_message_input_command);

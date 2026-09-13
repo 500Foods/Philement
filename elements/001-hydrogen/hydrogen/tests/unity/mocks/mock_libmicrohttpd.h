@@ -83,9 +83,6 @@ void update_session_activity(TerminalSession *session);
 bool resize_terminal_session(TerminalSession *session, int rows, int cols);
 bool get_session_manager_stats(size_t *connections, size_t *max_connections);
 
-// Terminal WebSocket specific mock functions
-bool is_terminal_websocket_request(struct MHD_Connection *connection, const char *method, const char *url, const struct TerminalConfig *config);
-
 // Mock control functions for session management
 void mock_session_reset_all(void);
 void mock_session_set_has_capacity(bool capacity);
@@ -94,8 +91,6 @@ void mock_session_set_send_result(int result);
 void mock_session_set_resize_result(bool result);
 void mock_session_set_stats(size_t connections, size_t max_connections);
 
-// Terminal WebSocket mock control functions
-void mock_mhd_set_is_terminal_websocket_request_result(bool result);
 void *mock_mhd_get_callback_cls(void);
 MHD_ContentReaderCallback mock_mhd_get_content_reader(void);
 MHD_ContentReaderFreeCallback mock_mhd_get_content_reader_free(void);

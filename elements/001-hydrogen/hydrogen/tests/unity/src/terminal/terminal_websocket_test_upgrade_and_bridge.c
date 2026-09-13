@@ -3,8 +3,6 @@
  *
  * Targets lines in src/terminal/terminal_websocket.c that were previously
  * uncovered by both the Unity and blackbox suites:
- *   - handle_terminal_websocket_upgrade full success path (152-193)
- *   - handle_terminal_websocket_upgrade bridge-start failure (186-189)
  *   - start_terminal_websocket_bridge pthread_create failure (572-574)
  *   - process_terminal_websocket_message raw-input activity update (266)
  *   - read_pty_with_select real select() error path (446, 452-453)
@@ -57,15 +55,7 @@ void mock_system_set_malloc_failure(int should_fail);
 void mock_system_set_calloc_failure(int should_fail);
 void mock_system_reset_all(void);
 
-// Forward declarations for functions under test (also in the header)
-enum MHD_Result handle_terminal_websocket_upgrade(struct MHD_Connection *connection,
-                                                const char *url,
-                                                const char *method,
-                                                const TerminalConfig *config,
-                                                void **websocket_handle);
-bool process_terminal_websocket_message(TerminalWSConnection *connection,
-                                       const char *message,
-                                       size_t message_size);
+
 bool send_terminal_websocket_output(TerminalWSConnection *connection,
                                    const char *data,
                                    size_t data_size);
@@ -84,8 +74,6 @@ void mock_pthread_reset_all(void);
 extern SessionManager *global_session_manager;
 
 // Test function prototypes
-void test_upgrade_full_success_path(void);
-void test_upgrade_bridge_start_failure(void);
 void test_start_bridge_pthread_create_failure(void);
 void test_process_message_raw_input_activity_update(void);
 void test_read_pty_with_select_error(void);
@@ -96,7 +84,6 @@ void test_close_joins_real_bridge_thread(void);
 void test_send_output_lws_write_failure_drops_frame(void);
 void test_send_output_lws_write_partial(void);
 void test_send_output_buffer_malloc_failure(void);
-void test_upgrade_ws_conn_calloc_failure(void);
 void test_io_bridge_thread_buffer_malloc_failure(void);
 
 // Test fixtures
@@ -158,73 +145,6 @@ void tearDown(void) {
     mock_pthread_reset_all();
     mock_system_reset_all();
     mock_lws_reset_all();
-}
-
-// Helper: install valid WebSocket upgrade headers for is_terminal_websocket_request
-static void add_valid_ws_headers(void) {
-    mock_mhd_add_lookup("Upgrade", "websocket");
-    mock_mhd_add_lookup("Connection", "Upgrade");
-    mock_mhd_add_lookup("Sec-WebSocket-Key", "dGhlIHNhbXBsZSBub25jZQ==");
-}
-
-/*
- * TEST: handle_terminal_websocket_upgrade full success path
- * Target: lines 152-193 (session creation, ws_conn init, bridge start, MHD_YES)
- *
- * Uses the real session subsystem: init_session_manager() gives capacity, and
- * create_terminal_session() inside the handler spawns a genuine PTY shell. The
- * source-side pthread_create is mocked and does NOT spawn a real thread, so the
- * returned ws_conn's bridge_thread handle is a sentinel. We free the returned
- * context directly (not via handle_terminal_websocket_close, which would join
- * the sentinel) and let cleanup_session_manager() reap the session/PTY.
- */
-void test_upgrade_full_success_path(void) {
-    add_valid_ws_headers();
-    TEST_ASSERT_TRUE(init_session_manager(10, 300));
-
-    struct MHD_Connection *mock_conn = (struct MHD_Connection *)0x1;
-    void *handle = NULL;
-
-    enum MHD_Result result = handle_terminal_websocket_upgrade(
-        mock_conn, "/terminal/ws", "GET", &test_config, &handle);
-
-    TEST_ASSERT_EQUAL_INT(MHD_YES, result);
-    TEST_ASSERT_NOT_NULL(handle);
-
-    // Verify the connection context was initialized from the created session.
-    TerminalWSConnection *ws_conn = (TerminalWSConnection *)handle;
-    TEST_ASSERT_NOT_NULL(ws_conn->session);
-    TEST_ASSERT_TRUE(ws_conn->active);
-    TEST_ASSERT_FALSE(ws_conn->authenticated);
-    TEST_ASSERT_NULL(ws_conn->incoming_buffer);
-    TEST_ASSERT_EQUAL_STRING(ws_conn->session->session_id, ws_conn->session_id);
-
-    // The bridge thread was "created" by the mocked pthread_create (no real
-    // thread), so free the context directly. The session is owned by the
-    // manager and reaped by cleanup_session_manager() in tearDown().
-    free(ws_conn);
-}
-
-/*
- * TEST: handle_terminal_websocket_upgrade with bridge-start failure
- * Target: lines 185-189 (start_terminal_websocket_bridge fails -> cleanup, MHD_NO)
- *         and 572-574 inside start_terminal_websocket_bridge.
- *
- * Force the source-side pthread_create to fail so start_terminal_websocket_bridge
- * returns false. remove_terminal_session and free(ws_conn) run, returning MHD_NO.
- */
-void test_upgrade_bridge_start_failure(void) {
-    add_valid_ws_headers();
-    TEST_ASSERT_TRUE(init_session_manager(10, 300));
-    mock_pthread_set_create_failure(1); // Bridge thread creation fails
-
-    struct MHD_Connection *mock_conn = (struct MHD_Connection *)0x1;
-    void *handle = NULL;
-
-    enum MHD_Result result = handle_terminal_websocket_upgrade(
-        mock_conn, "/terminal/ws", "GET", &test_config, &handle);
-
-    TEST_ASSERT_EQUAL_INT(MHD_NO, result);
 }
 
 /*
@@ -473,30 +393,6 @@ void test_send_output_buffer_malloc_failure(void) {
 }
 
 /*
- * TEST: handle_terminal_websocket_upgrade with ws_conn calloc failure
- * Target: lines 161-165 (calloc returns NULL -> log, remove session, MHD_NO)
- *
- * create_terminal_session (real, uncmocked malloc) succeeds, then the source's
- * calloc for the connection context (mock_calloc) is forced to fail.
- */
-void test_upgrade_ws_conn_calloc_failure(void) {
-    add_valid_ws_headers();
-    TEST_ASSERT_TRUE(init_session_manager(10, 300));
-
-    mock_system_set_calloc_failure(1); // ws_conn calloc fails
-
-    struct MHD_Connection *mock_conn = (struct MHD_Connection *)0x1;
-    void *handle = NULL;
-
-    enum MHD_Result result = handle_terminal_websocket_upgrade(
-        mock_conn, "/terminal/ws", "GET", &test_config, &handle);
-
-    mock_system_set_calloc_failure(0);
-
-    TEST_ASSERT_EQUAL_INT(MHD_NO, result);
-}
-
-/*
  * TEST: terminal_io_bridge_thread I/O buffer allocation failure
  * Target: lines 521-522 (malloc of the read buffer fails -> log, return NULL)
  *
@@ -522,8 +418,6 @@ void test_io_bridge_thread_buffer_malloc_failure(void) {
 int main(void) {
     UNITY_BEGIN();
 
-    RUN_TEST(test_upgrade_full_success_path);
-    RUN_TEST(test_upgrade_bridge_start_failure);
     RUN_TEST(test_start_bridge_pthread_create_failure);
     RUN_TEST(test_process_message_raw_input_activity_update);
     RUN_TEST(test_read_pty_with_select_error);
@@ -534,7 +428,6 @@ int main(void) {
     RUN_TEST(test_send_output_lws_write_failure_drops_frame);
     RUN_TEST(test_send_output_lws_write_partial);
     RUN_TEST(test_send_output_buffer_malloc_failure);
-    RUN_TEST(test_upgrade_ws_conn_calloc_failure);
     RUN_TEST(test_io_bridge_thread_buffer_malloc_failure);
 
     return UNITY_END();

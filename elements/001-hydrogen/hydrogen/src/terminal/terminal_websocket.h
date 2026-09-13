@@ -48,43 +48,6 @@ typedef struct TerminalWSConnection {
 } TerminalWSConnection;
 
 /**
- * Check if WebSocket upgrade request is for terminal
- *
- * This function validates whether an HTTP request is attempting to upgrade
- * to a WebSocket connection for terminal access.
- *
- * @param connection MHD connection object
- * @param method HTTP method (should be "GET")
- * @param url Request URL
- * @param config Terminal configuration
- * @return true if request is valid terminal WebSocket upgrade, false otherwise
- */
-bool is_terminal_websocket_request(struct MHD_Connection *connection,
-                                  const char *method,
-                                  const char *url,
-                                  const struct TerminalConfig *config);
-
-/**
- * Handle WebSocket upgrade for terminal connections
- *
- * When a client requests to upgrade to a WebSocket connection for terminal access,
- * this function validates the request, creates or retrieves a session, and prepares
- * for WebSocket communication.
- *
- * @param connection MHD connection object
- * @param url Request URL
- * @param method HTTP method
- * @param config Terminal configuration
- * @param websocket_handle Output parameter for WebSocket connection handle
- * @return MHD_Result indicating upgrade handling result
- */
-enum MHD_Result handle_terminal_websocket_upgrade(struct MHD_Connection *connection,
-                                                const char *url,
-                                                const char *method,
-                                                const struct TerminalConfig *config,
-                                                void **websocket_handle);
-
-/**
  * Process incoming WebSocket message for terminal
  *
  * This function handles messages received from the WebSocket client,
@@ -132,30 +95,6 @@ bool start_terminal_websocket_bridge(TerminalWSConnection *connection);
  * @param connection WebSocket connection context
  */
 void handle_terminal_websocket_close(TerminalWSConnection *connection);
-
-/**
- * Get WebSocket subprotocol for terminal connections
- *
- * @return Protocol string for WebSocket handshake
- */
-const char *get_terminal_websocket_protocol(void);
-
-/**
- * Check if session manager requires WebSocket authentication
- *
- * @param config Terminal configuration
- * @return false — terminal WS auth not implemented
- */
-bool terminal_websocket_requires_auth(const struct TerminalConfig *config);
-
-/**
- * Get current WebSocket connection statistics
- *
- * @param connections Pointer to store active connection count
- * @param max_connections Pointer to store maximum connection limit
- * @return true on success, false on failure
- */
-bool get_websocket_connection_stats(size_t *connections, size_t *max_connections);
 
 /**
  * Check if I/O bridge loop should continue
