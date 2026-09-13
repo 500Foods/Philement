@@ -183,13 +183,16 @@
                 // deployment contract). Use exact targetOrigin — never wildcard.
                 // No localStorage JWT fallback in production.
                 return new Promise(function(resolve, reject) {
-                    var parentOrigin = window.location.origin || '*';
+                    const parentOrigin = window.location.origin || '*';
 
+                    // Timeout: if parent does not respond, fail.
                     configTimeout = setTimeout(function() {
                         cleanupTimers();
                         reject(new Error('Terminal config fetch timed out — no response from parent frame'));
                     }, 5000);
 
+                    // Listen for the parent's response. Validate origin against
+                    // this iframe's origin to prevent message spoofing.
                     messageListener = function(event) {
                         if (event.origin !== window.location.origin) {
                             return;
@@ -208,16 +211,20 @@
 
                     window.addEventListener('message', messageListener);
 
+                    // Request config from parent — exact targetOrigin, no wildcard.
                     window.parent.postMessage({ type: 'terminal-config-request' }, parentOrigin);
                 });
             }
 
             function getApiBase() {
+                // Derive the API base from the iframe's own origin. The iframe
+                // is served from the same origin as the API (Hydrogen serves
+                // both the terminal page and /api).
                 return window.location.origin;
             }
 
             function fetchSystemInfo(jwt) {
-                var apiBase = getApiBase();
+                const apiBase = getApiBase();
                 return fetch(apiBase + '/api/system/info', {
                     headers: { 'Authorization': 'Bearer ' + jwt }
                 }).then(function(resp) {
@@ -226,6 +233,7 @@
                     }
                     return resp.json();
                 }).then(function(data) {
+                    // Log only redacted status — never the full response or key.
                     if (data && data.terminal) {
                         showStatus('Terminal configuration obtained');
                     } else {
@@ -239,44 +247,10 @@
                 });
             }
 
-            function validateWsUrl(url) {
-                try {
-                    var parsed = new URL(url);
-                    var scheme = parsed.protocol;
-                    var origin = window.location.origin || '';
-                    var isLocal = origin.indexOf('localhost') !== -1 || origin.indexOf('127.0.0.1') !== -1;
-
-                    if (parsed.username || parsed.password) {
-                        return false;
-                    }
-                    if (parsed.hash && parsed.hash.length > 1) {
-                        return false;
-                    }
-                    if (parsed.search && parsed.search.length > 1) {
-                        return false;
-                    }
-                    if (scheme !== 'ws:' && scheme !== 'wss:') {
-                        return false;
-                    }
-                    if (scheme === 'ws:' && !isLocal) {
-                        return false;
-                    }
-                    if (!parsed.host) {
-                        return false;
-                    }
-                    if (!parsed.pathname || parsed.pathname === '/') {
-                        return false;
-                    }
-                    return true;
-                } catch (e) {
-                    return false;
-                }
-            }
-
             function connectToWebSocket(config) {
-                var wsUrl = config.url;
-                var wsProtocol = config.protocol;
-                var wsKey = config.key;
+                const wsUrl = config.url;
+                const wsProtocol = config.protocol;
+                const wsKey = config.key;
 
                 if (!wsKey) {
                     isConnected = false;
@@ -293,6 +267,8 @@
                     return;
                 }
 
+                // Validate the URL: must be wss in production, ws only for local.
+                // Reject userinfo, fragments, and embedded query strings.
                 if (!validateWsUrl(wsUrl)) {
                     isConnected = false;
                     showStatus('Invalid WebSocket URL from server', true);
@@ -301,7 +277,9 @@
                     return;
                 }
 
-                var wsUrlWithKey;
+                // Append the key as a query parameter using URL-safe construction.
+                // The browser WebSocket API cannot set custom headers.
+                let wsUrlWithKey;
                 if (wsUrl.indexOf('?') === -1) {
                     wsUrlWithKey = wsUrl + '?key=' + encodeURIComponent(wsKey);
                 } else {
@@ -326,7 +304,7 @@
 
                 websocket.onmessage = function(event) {
                     try {
-                        var message = JSON.parse(event.data);
+                        const message = JSON.parse(event.data);
                         if (message.type === 'output') {
                             term.write(message.data);
                         }
@@ -349,6 +327,46 @@
                     updateHeaderInfo();
                     term.writeln('\r\n\x1b[31mTerminal connection error\x1b[0m\r\n$ ');
                 };
+            }
+
+            function validateWsUrl(url) {
+                try {
+                    var parsed = new URL(url);
+                    var scheme = parsed.protocol;
+                    var origin = window.location.origin || '';
+                    var isLocal = origin.indexOf('localhost') !== -1 || origin.indexOf('127.0.0.1') !== -1;
+
+                    // Reject userinfo
+                    if (parsed.username || parsed.password) {
+                        return false;
+                    }
+                    // Reject fragments and embedded query strings
+                    if (parsed.hash && parsed.hash.length > 1) {
+                        return false;
+                    }
+                    if (parsed.search && parsed.search.length > 1) {
+                        return false;
+                    }
+                    // Require ws or wss scheme
+                    if (scheme !== 'ws:' && scheme !== 'wss:') {
+                        return false;
+                    }
+                    // Require wss in production (non-local)
+                    if (scheme === 'ws:' && !isLocal) {
+                        return false;
+                    }
+                    // Require host
+                    if (!parsed.host) {
+                        return false;
+                    }
+                    // Require path
+                    if (!parsed.pathname || parsed.pathname === '/') {
+                        return false;
+                    }
+                    return true;
+                } catch (e) {
+                    return false;
+                }
             }
 
             function cleanupConnection() {

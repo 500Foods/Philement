@@ -50,6 +50,7 @@ static const struct lws_extension lws_extensions[] = {
 };
 
 // Validate WebSocket server initialization parameters
+__attribute__((used))
 int validate_websocket_params(int port, const char* protocol, const char* key) {
     if (port <= 0 || port > 65535) {
         log_this(SR_WEBSOCKET, "Invalid port number: %d", LOG_LEVEL_ERROR, 1, port);
@@ -193,6 +194,7 @@ int verify_websocket_port_binding(int port) {
 }
 
 // Initialize the WebSocket server
+__attribute__((used))
 int init_websocket_server(int port, const char* protocol, const char* key)
 {
     // Validate parameters

@@ -60,6 +60,10 @@ void test_load_terminal_config_empty_json(void) {
     AppConfig config = {0};
     initialize_config_defaults(&config);
 
+    // Unset WEBSOCKET_TERMINAL_KEY so the default ${env.WEBSOCKET_TERMINAL_KEY}
+    // reference stays unresolved (matches the fail-closed "no key in env" case).
+    unsetenv("WEBSOCKET_TERMINAL_KEY");
+
     json_t* root = json_object();
 
     bool result = load_terminal_config(root, &config);
@@ -72,7 +76,7 @@ void test_load_terminal_config_empty_json(void) {
     TEST_ASSERT_EQUAL_STRING("*", config.terminal.cors_origin);  // Default value
     TEST_ASSERT_EQUAL_STRING("terminal.html", config.terminal.index_page);  // Default value
     TEST_ASSERT_EQUAL_STRING("terminal", config.terminal.protocol);
-    TEST_ASSERT_EQUAL_STRING("${env.WEBSOCKET_TERMINAL_KEY}", config.terminal.key);
+    TEST_ASSERT_EQUAL_STRING("${env.WEBSOCKET_TERMINAL_KEY}", config.terminal.key);  // Unresolved env ref
     TEST_ASSERT_EQUAL(4, config.terminal.max_sessions);  // Default value
     TEST_ASSERT_EQUAL(300, config.terminal.idle_timeout_seconds);  // Default value
 
@@ -85,6 +89,10 @@ void test_load_terminal_config_empty_json(void) {
 void test_load_terminal_config_basic_fields(void) {
     AppConfig config = {0};
     initialize_config_defaults(&config);
+
+    // Unset WEBSOCKET_TERMINAL_KEY so the ${env.WEBSOCKET_TERMINAL_KEY} reference
+    // in the JSON stays unresolved regardless of the test environment.
+    unsetenv("WEBSOCKET_TERMINAL_KEY");
 
     json_t* root = json_object();
     json_t* terminal_section = json_object();
@@ -115,6 +123,7 @@ void test_load_terminal_config_basic_fields(void) {
     TEST_ASSERT_EQUAL_STRING("https://terminal.example.com", config.terminal.cors_origin);
     TEST_ASSERT_EQUAL_STRING("custom-index.html", config.terminal.index_page);
     TEST_ASSERT_EQUAL_STRING("term-proto", config.terminal.protocol);
+    // Unresolved env ref because WEBSOCKET_TERMINAL_KEY is unset
     TEST_ASSERT_EQUAL_STRING("${env.WEBSOCKET_TERMINAL_KEY}", config.terminal.key);
 
     json_decref(root);

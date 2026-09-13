@@ -14,6 +14,7 @@
 #include "websocket_server_internal.h"
 #include <src/launch/launch.h>
 
+__attribute__((used))
 void ws_context_load_terminal_auth(WebSocketServerContext *ctx)
 {
     if (!ctx) {
