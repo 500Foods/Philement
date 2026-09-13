@@ -1,0 +1,15 @@
+# Symbols to retain in release builds (--gc-sections must not strip these)
+# WebSocket authentication entry points (registered via libwebsockets callback structs,
+# which LTO+--gc-sections cannot trace through function-pointer indirection)
+ws_auth_accept_key
+ws_extract_query_auth_key
+ws_auth_surface_from_path
+ws_auth_surface_from_protocol
+ws_handle_authentication
+ws_auth_surface_from_protocol
+ws_is_authenticated
+ws_clear_authentication
+ws_copy_request_path
+callback_hydrogen
+init_websocket_server
+validate_websocket_params

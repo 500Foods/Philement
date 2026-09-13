@@ -16,6 +16,7 @@
 // External reference to the server context
 extern WebSocketServerContext *ws_context;
 
+__attribute__((used))
 int ws_handle_authentication(struct lws *wsi, WebSocketSessionData *session, const char *auth_header)
 {
     if (!session || !auth_header || !ws_context) {
@@ -53,12 +54,14 @@ int ws_handle_authentication(struct lws *wsi, WebSocketSessionData *session, con
 }
 
 // Helper function to check if a session is authenticated
+__attribute__((used))
 bool ws_is_authenticated(const WebSocketSessionData *session)
 {
     return session && session->authenticated;
 }
 
 // Helper function to clear authentication state
+__attribute__((used))
 void ws_clear_authentication(WebSocketSessionData *session)
 {
     if (session) {
@@ -70,6 +73,7 @@ void ws_clear_authentication(WebSocketSessionData *session)
     }
 }
 
+__attribute__((used))
 bool ws_extract_query_auth_key(struct lws *wsi, char *out, size_t out_len)
 {
     char source[512];
@@ -197,6 +201,7 @@ bool ws_extract_query_auth_key(struct lws *wsi, char *out, size_t out_len)
     return false;
 }
 
+__attribute__((used))
 bool ws_copy_request_path(struct lws *wsi, char *out, size_t out_len)
 {
     int uri_len;
@@ -222,6 +227,7 @@ bool ws_copy_request_path(struct lws *wsi, char *out, size_t out_len)
     return out[0] != '\0';
 }
 
+__attribute__((used))
 int ws_auth_surface_from_path(struct lws *wsi)
 {
     char path[256];
@@ -257,6 +263,7 @@ int ws_auth_surface_from_path(struct lws *wsi)
     return 0;
 }
 
+__attribute__((used))
 int ws_auth_surface_from_protocol(struct lws *wsi)
 {
     const struct lws_protocols *protocol;
@@ -278,6 +285,7 @@ int ws_auth_surface_from_protocol(struct lws *wsi)
     return 0;
 }
 
+__attribute__((used))
 bool ws_auth_accept_key(struct lws *wsi, const char *presented, bool require_protocol_match)
 {
     int path_surface;

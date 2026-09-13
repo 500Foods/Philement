@@ -51,7 +51,9 @@ add_custom_target(hydrogen_release
 # --dynamic-list (not -rdynamic): export only the Lua C API so C rocks
 # (e.g. brotli.so) can dlopen the static embed. -rdynamic exports every
 # Hydrogen symbol, defeats --gc-sections, and bloated naked ~335 KB -> ~555 KB.
+# --retain-symbols-file=websocket_export.list: keep WebSocket auth entry points
+# that LTO+--gc-sections cannot trace through libwebsockets callback indirection.
 hydrogen_add_executable_target(release "Release"
     "-Os -s -DNDEBUG -march=x86-64 -flto=auto -fno-stack-protector -fno-asynchronous-unwind-tables -fno-unwind-tables -ffunction-sections -fdata-sections"
-    "-flto=auto -Wl,--gc-sections -Wl,--strip-all -no-pie -Wl,--dynamic-list=${CMAKE_CURRENT_SOURCE_DIR}/scripts/lua_export.list"
+    "-flto=auto -Wl,--gc-sections -Wl,--strip-all -no-pie -Wl,--dynamic-list=${CMAKE_CURRENT_SOURCE_DIR}/scripts/lua_export.list -Wl,--undefined=ws_auth_accept_key -Wl,--undefined=ws_extract_query_auth_key -Wl,--undefined=ws_auth_surface_from_path -Wl,--undefined=ws_auth_surface_from_protocol -Wl,--undefined=ws_handle_authentication -Wl,--undefined=ws_is_authenticated -Wl,--undefined=ws_clear_authentication -Wl,--undefined=ws_copy_request_path -Wl,--undefined=callback_hydrogen -Wl,--undefined=init_websocket_server -Wl,--undefined=validate_websocket_params"
 )
