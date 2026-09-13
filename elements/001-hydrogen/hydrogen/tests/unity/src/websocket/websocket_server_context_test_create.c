@@ -88,23 +88,27 @@ void test_ws_context_create_null_protocol(void) {
 }
 
 void test_ws_context_create_null_key(void) {
-    // Test with NULL key (should use default)
+    // Test with NULL key — fail closed: auth_key stays empty, no hardcoded default.
+    // Phase 2/8 contract: validate_key at launch time guarantees a strong key
+    // before ws_context_create is called; a NULL key here is an invariant
+    // violation and must not receive a default literal.
     test_context = ws_context_create(9091, "custom-protocol", NULL);
     
     TEST_ASSERT_NOT_NULL(test_context);
     TEST_ASSERT_EQUAL_INT(9091, test_context->port);
     TEST_ASSERT_EQUAL_STRING("custom-protocol", test_context->protocol);
-    TEST_ASSERT_EQUAL_STRING("default_key", test_context->auth_key);
+    TEST_ASSERT_EQUAL_STRING("", test_context->auth_key);
 }
 
 void test_ws_context_create_null_protocol_and_key(void) {
-    // Test with both NULL protocol and key
+    // Test with both NULL protocol and NULL key.
+    // Fail-closed contract: NULL key yields empty auth_key (no default literal).
     test_context = ws_context_create(9092, NULL, NULL);
     
     TEST_ASSERT_NOT_NULL(test_context);
     TEST_ASSERT_EQUAL_INT(9092, test_context->port);
     TEST_ASSERT_EQUAL_STRING("hydrogen-protocol", test_context->protocol);
-    TEST_ASSERT_EQUAL_STRING("default_key", test_context->auth_key);
+    TEST_ASSERT_EQUAL_STRING("", test_context->auth_key);
 }
 
 void test_ws_context_create_edge_case_ports(void) {
