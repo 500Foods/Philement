@@ -62,16 +62,6 @@ static MockTerminalWSConnection test_connection;
 static MockTerminalSession test_session;
 static MockPTYShell test_pty_shell;
 
-// Forward declarations for tested functions
-bool is_terminal_websocket_request(struct MHD_Connection *connection,
-                                  const char *method,
-                                  const char *url,
-                                  const TerminalConfig *config);
-enum MHD_Result handle_terminal_websocket_upgrade(struct MHD_Connection *connection,
-                                                const char *url,
-                                                const char *method,
-                                                const TerminalConfig *config,
-                                                void **websocket_handle);
 bool process_terminal_websocket_message(TerminalWSConnection *connection,
                                        const char *message,
                                        size_t message_size);
@@ -84,9 +74,6 @@ bool process_pty_read_result(TerminalWSConnection *connection, const char *buffe
 void handle_terminal_websocket_close(TerminalWSConnection *connection);
 
 // Function prototypes for all test functions
-void test_is_terminal_websocket_request_valid_headers_success(void);
-void test_handle_terminal_websocket_upgrade_no_capacity(void);
-void test_handle_terminal_websocket_upgrade_calloc_failure(void);
 void test_process_terminal_websocket_message_input_updates_activity(void);
 void test_process_terminal_websocket_message_raw_input_updates_activity(void);
 void test_send_terminal_websocket_output_malloc_failure(void);
@@ -160,65 +147,6 @@ void tearDown(void) {
 
     // Clean up mutex
     pthread_mutex_destroy(&test_session.session_mutex);
-}
-
-/*
- * TEST SUITE: is_terminal_websocket_request - Success Path
- * Target: Lines 82-83 (success log)
- */
-void test_is_terminal_websocket_request_valid_headers_success(void) {
-    // Setup valid WebSocket headers
-    mock_mhd_add_lookup("Upgrade", "websocket");
-    mock_mhd_add_lookup("Connection", "Upgrade");
-    mock_mhd_add_lookup("Sec-WebSocket-Key", "dGhlIHNhbXBsZSBub25jZQ==");
-
-    struct MHD_Connection *mock_conn = (struct MHD_Connection*)0x12345678;
-    bool result = is_terminal_websocket_request(mock_conn, "GET", "/terminal/ws", &test_config);
-
-    // Should return true and log success message (lines 82-83)
-    TEST_ASSERT_TRUE(result);
-}
-
-/*
- * TEST SUITE: handle_terminal_websocket_upgrade - Error Paths
- * Target: Lines 146-189 (capacity, session creation, allocation failures)
- */
-void test_handle_terminal_websocket_upgrade_no_capacity(void) {
-    // Setup valid headers first
-    mock_mhd_add_lookup("Upgrade", "websocket");
-    mock_mhd_add_lookup("Connection", "Upgrade");
-    mock_mhd_add_lookup("Sec-WebSocket-Key", "test_key");
-
-    struct MHD_Connection *mock_conn = (struct MHD_Connection*)0x12345678;
-    void *handle = NULL;
-
-    // Note: Without ability to mock session_manager_has_capacity returning false,
-    // we document that lines 146-148 require integration testing
-    enum MHD_Result result = handle_terminal_websocket_upgrade(
-        mock_conn, "/terminal/ws", "GET", &test_config, &handle);
-
-    // Test passes if function doesn't crash
-    (void)result;
-    TEST_PASS();
-}
-
-void test_handle_terminal_websocket_upgrade_calloc_failure(void) {
-    // Setup valid headers
-    mock_mhd_add_lookup("Upgrade", "websocket");
-    mock_mhd_add_lookup("Connection", "Upgrade");
-    mock_mhd_add_lookup("Sec-WebSocket-Key", "test_key");
-
-    // Note: Cannot test calloc failure without mock_system
-    // This test documents that lines 162-165 require specialized testing
-    struct MHD_Connection *mock_conn = (struct MHD_Connection*)0x12345678;
-    void *handle = NULL;
-
-    enum MHD_Result result = handle_terminal_websocket_upgrade(
-        mock_conn, "/terminal/ws", "GET", &test_config, &handle);
-
-    // Test passes if function doesn't crash
-    (void)result;
-    TEST_PASS();
 }
 
 /*
@@ -417,13 +345,6 @@ void test_io_bridge_complete_flow(void) {
 // Main test runner
 int main(void) {
     UNITY_BEGIN();
-
-    // is_terminal_websocket_request success path
-    RUN_TEST(test_is_terminal_websocket_request_valid_headers_success);
-
-    // handle_terminal_websocket_upgrade error paths
-    RUN_TEST(test_handle_terminal_websocket_upgrade_no_capacity);
-    RUN_TEST(test_handle_terminal_websocket_upgrade_calloc_failure);
 
     // process_terminal_websocket_message activity updates
     RUN_TEST(test_process_terminal_websocket_message_input_updates_activity);

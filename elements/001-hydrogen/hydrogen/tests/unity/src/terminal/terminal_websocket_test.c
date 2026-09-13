@@ -24,27 +24,14 @@
 #include <unity/mocks/mock_system.h>
 
 // Forward declarations for functions being tested
-enum MHD_Result handle_terminal_websocket_upgrade(struct MHD_Connection *connection,
-                                                const char *url,
-                                                const char *method,
-                                                const TerminalConfig *config,
-                                                void **websocket_handle);
 bool process_terminal_websocket_message(TerminalWSConnection *connection,
-                                        const char *message,
-                                        size_t message_size);
+                                         const char *message,
+                                         size_t message_size);
 bool send_terminal_websocket_output(TerminalWSConnection *connection,
-                                   const char *data,
-                                   size_t data_size);
+                                    const char *data,
+                                    size_t data_size);
 
 // Function prototypes for test functions
-void test_handle_terminal_websocket_upgrade_null_parameters(void);
-void test_handle_terminal_websocket_upgrade_invalid_request(void);
-void test_handle_terminal_websocket_upgrade_session_manager_full(void);
-void test_handle_terminal_websocket_upgrade_session_creation_failure(void);
-void test_handle_terminal_websocket_upgrade_websocket_context_allocation_failure(void);
-void test_handle_terminal_websocket_upgrade_bridge_thread_failure(void);
-void test_handle_terminal_websocket_upgrade_success(void);
-
 void test_process_terminal_websocket_message_null_parameters(void);
 void test_process_terminal_websocket_message_null_session(void);
 void test_process_terminal_websocket_message_invalid_json(void);
@@ -108,118 +95,6 @@ void tearDown(void) {
     mock_mhd_reset_all();
     mock_terminal_websocket_reset_all();
     mock_system_reset_all();
-}
-
-// Test handle_terminal_websocket_upgrade with null parameters
-void test_handle_terminal_websocket_upgrade_null_parameters(void) {
-    void *websocket_handle = NULL;
-
-    // Test all null parameter combinations
-    TEST_ASSERT_EQUAL(MHD_NO, handle_terminal_websocket_upgrade(NULL, "/terminal", "GET", &test_terminal_config, &websocket_handle));
-    TEST_ASSERT_EQUAL(MHD_NO, handle_terminal_websocket_upgrade((void*)0x123, NULL, "GET", &test_terminal_config, &websocket_handle));
-    TEST_ASSERT_EQUAL(MHD_NO, handle_terminal_websocket_upgrade((void*)0x123, "/terminal", NULL, &test_terminal_config, &websocket_handle));
-    TEST_ASSERT_EQUAL(MHD_NO, handle_terminal_websocket_upgrade((void*)0x123, "/terminal", "GET", NULL, &websocket_handle));
-    TEST_ASSERT_EQUAL(MHD_NO, handle_terminal_websocket_upgrade((void*)0x123, "/terminal", "GET", &test_terminal_config, NULL));
-}
-
-// Test handle_terminal_websocket_upgrade with invalid request
-void test_handle_terminal_websocket_upgrade_invalid_request(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *websocket_handle = NULL;
-
-    // Mock invalid WebSocket request
-    mock_mhd_set_is_terminal_websocket_request_result(false);
-
-    enum MHD_Result result = handle_terminal_websocket_upgrade(mock_connection, "/terminal", "GET", &test_terminal_config, &websocket_handle);
-
-    TEST_ASSERT_EQUAL(MHD_NO, result);
-    TEST_ASSERT_NULL(websocket_handle);
-}
-
-// Test handle_terminal_websocket_upgrade with session manager at capacity
-void test_handle_terminal_websocket_upgrade_session_manager_full(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *websocket_handle = NULL;
-
-    // Mock valid WebSocket request but session manager full
-    mock_mhd_set_is_terminal_websocket_request_result(true);
-    mock_terminal_websocket_set_session_manager_has_capacity_result(false);
-
-    enum MHD_Result result = handle_terminal_websocket_upgrade(mock_connection, "/terminal", "GET", &test_terminal_config, &websocket_handle);
-
-    TEST_ASSERT_EQUAL(MHD_NO, result);
-    TEST_ASSERT_NULL(websocket_handle);
-}
-
-// Test handle_terminal_websocket_upgrade with session creation failure
-void test_handle_terminal_websocket_upgrade_session_creation_failure(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *websocket_handle = NULL;
-
-    // Mock valid request but session creation failure
-    mock_mhd_set_is_terminal_websocket_request_result(true);
-    mock_terminal_websocket_set_session_manager_has_capacity_result(true);
-    mock_terminal_websocket_set_create_terminal_session_result(NULL);
-
-    enum MHD_Result result = handle_terminal_websocket_upgrade(mock_connection, "/terminal", "GET", &test_terminal_config, &websocket_handle);
-
-    TEST_ASSERT_EQUAL(MHD_NO, result);
-    TEST_ASSERT_NULL(websocket_handle);
-}
-
-// Test handle_terminal_websocket_upgrade with WebSocket context allocation failure
-void test_handle_terminal_websocket_upgrade_websocket_context_allocation_failure(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *websocket_handle = NULL;
-
-    // Mock valid request and session creation but calloc failure
-    mock_mhd_set_is_terminal_websocket_request_result(true);
-    mock_terminal_websocket_set_session_manager_has_capacity_result(true);
-    mock_terminal_websocket_set_create_terminal_session_result(&test_terminal_session);
-
-    // Mock calloc to fail for TerminalWSConnection (use mock_system)
-    mock_system_set_malloc_failure(1);  // First calloc will fail
-
-    enum MHD_Result result = handle_terminal_websocket_upgrade(mock_connection, "/terminal", "GET", &test_terminal_config, &websocket_handle);
-
-    TEST_ASSERT_EQUAL(MHD_NO, result);
-    TEST_ASSERT_NULL(websocket_handle);
-}
-
-// Test handle_terminal_websocket_upgrade with bridge thread failure
-void test_handle_terminal_websocket_upgrade_bridge_thread_failure(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *websocket_handle = NULL;
-
-    // Mock valid request, session creation, and allocation but bridge thread failure
-    mock_mhd_set_is_terminal_websocket_request_result(true);
-    mock_terminal_websocket_set_session_manager_has_capacity_result(true);
-    mock_terminal_websocket_set_create_terminal_session_result(&test_terminal_session);
-    mock_terminal_websocket_set_start_terminal_websocket_bridge_result(false);
-
-    enum MHD_Result result = handle_terminal_websocket_upgrade(mock_connection, "/terminal", "GET", &test_terminal_config, &websocket_handle);
-
-    TEST_ASSERT_EQUAL(MHD_NO, result);
-    TEST_ASSERT_NULL(websocket_handle);
-}
-
-// Test handle_terminal_websocket_upgrade success path
-void test_handle_terminal_websocket_upgrade_success(void) {
-    struct MHD_Connection *mock_connection = (void*)0x123;
-    void *websocket_handle = NULL;
-
-    // Mock successful path
-    mock_mhd_set_is_terminal_websocket_request_result(true);
-    mock_terminal_websocket_set_session_manager_has_capacity_result(true);
-    mock_terminal_websocket_set_create_terminal_session_result(&test_terminal_session);
-    mock_terminal_websocket_set_start_terminal_websocket_bridge_result(true);
-
-    enum MHD_Result result = handle_terminal_websocket_upgrade(mock_connection, "/terminal", "GET", &test_terminal_config, &websocket_handle);
-
-    // The result depends on whether all mocks are properly configured
-    // For now, just verify the function doesn't crash
-    (void)result; // Suppress unused variable warning
-    TEST_PASS();
 }
 
 // Test process_terminal_websocket_message with null parameters
@@ -405,15 +280,6 @@ void test_send_terminal_websocket_output_success(void) {
 
 int main(void) {
     UNITY_BEGIN();
-
-    // handle_terminal_websocket_upgrade tests
-    RUN_TEST(test_handle_terminal_websocket_upgrade_null_parameters);
-    RUN_TEST(test_handle_terminal_websocket_upgrade_invalid_request);
-    RUN_TEST(test_handle_terminal_websocket_upgrade_session_manager_full);
-    RUN_TEST(test_handle_terminal_websocket_upgrade_session_creation_failure);
-    RUN_TEST(test_handle_terminal_websocket_upgrade_websocket_context_allocation_failure);
-    RUN_TEST(test_handle_terminal_websocket_upgrade_bridge_thread_failure);
-    RUN_TEST(test_handle_terminal_websocket_upgrade_success);
 
     // process_terminal_websocket_message tests
     RUN_TEST(test_process_terminal_websocket_message_null_parameters);

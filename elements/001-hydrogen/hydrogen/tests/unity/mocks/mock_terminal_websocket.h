@@ -22,7 +22,6 @@ struct TerminalSession;
 
 // Override specific functions with our mocks
 #define process_terminal_websocket_message mock_process_terminal_websocket_message
-#define is_terminal_websocket_request mock_is_terminal_websocket_request
 #define session_manager_has_capacity mock_session_manager_has_capacity
 #define create_terminal_session mock_create_terminal_session
 #define start_terminal_websocket_bridge mock_start_terminal_websocket_bridge
@@ -33,7 +32,6 @@ struct TerminalSession;
 bool mock_process_terminal_websocket_message(struct TerminalWSConnection *connection,
                                            const char *message,
                                            size_t message_size);
-bool mock_is_terminal_websocket_request(struct MHD_Connection *connection, const char *method, const char *url, const struct TerminalConfig *config);
 bool mock_session_manager_has_capacity(void);
 struct TerminalSession* mock_create_terminal_session(const char *shell_command, int rows, int cols);
 bool mock_start_terminal_websocket_bridge(struct TerminalWSConnection *ws_conn);
@@ -41,7 +39,6 @@ int mock_send_data_to_session(struct TerminalSession *session, const char *data,
 
 // Mock control functions for tests
 void mock_terminal_websocket_set_process_result(bool result);
-void mock_terminal_websocket_set_is_terminal_websocket_request_result(bool result);
 void mock_terminal_websocket_set_session_manager_has_capacity_result(bool result);
 void mock_terminal_websocket_set_create_terminal_session_result(struct TerminalSession* result);
 void mock_terminal_websocket_set_start_terminal_websocket_bridge_result(bool result);

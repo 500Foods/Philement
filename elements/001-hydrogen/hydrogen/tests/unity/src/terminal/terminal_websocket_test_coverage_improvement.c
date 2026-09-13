@@ -26,7 +26,6 @@ void test_process_terminal_websocket_message_json_resize_command(void);
 void test_process_terminal_websocket_message_json_ping_command(void);
 void test_process_terminal_websocket_message_raw_input(void);
 void test_process_terminal_websocket_message_invalid_json_fallback(void);
-void test_handle_terminal_websocket_upgrade_success_path(void);
 void test_send_terminal_websocket_output_validation_logic(void);
 void test_start_terminal_websocket_bridge_thread_creation(void);
 
@@ -179,31 +178,6 @@ void test_process_terminal_websocket_message_invalid_json_fallback(void) {
 }
 
 /*
- * TEST SUITE: handle_terminal_websocket_upgrade - Success Path
- * Tests the WebSocket upgrade success path with proper mocking
- */
-
-void test_handle_terminal_websocket_upgrade_success_path(void) {
-    // This test exercises the WebSocket upgrade logic even if mocking is incomplete
-    // The goal is to improve coverage by calling the function and exercising its code paths
-
-    // Set up mocks for successful upgrade (may not work due to weak symbol issues)
-    mock_session_set_has_capacity(true);
-    mock_session_set_create_result(test_session);
-
-    // Create a mock MHD connection
-    struct MHD_Connection *mock_conn = (struct MHD_Connection*)0x12345678;
-    void *handle = NULL;
-
-    enum MHD_Result result = handle_terminal_websocket_upgrade(mock_conn, "/terminal/ws", "GET", &test_config, &handle);
-
-    // The result depends on whether MHD header mocking works
-    // We've still exercised the upgrade logic for coverage improvement
-    (void)result; // Suppress unused variable warning
-    TEST_PASS(); // Test passes as long as no crash occurs - coverage goal achieved
-}
-
-/*
  * TEST SUITE: send_terminal_websocket_output - Data Sending
  * Tests the WebSocket output sending functionality
  */
@@ -299,9 +273,6 @@ int main(void) {
     RUN_TEST(test_process_terminal_websocket_message_json_ping_command);
     RUN_TEST(test_process_terminal_websocket_message_raw_input);
     RUN_TEST(test_process_terminal_websocket_message_invalid_json_fallback);
-
-    // WebSocket upgrade success path - exercises session creation code
-    RUN_TEST(test_handle_terminal_websocket_upgrade_success_path);
 
     // Output sending tests - exercises validation logic and WebSocket sending code
     RUN_TEST(test_send_terminal_websocket_output_validation_logic);

@@ -56,16 +56,23 @@ void setUp(void) {
     
     // Initialize test context
     memset(&test_context, 0, sizeof(WebSocketServerContext));
+     test_context.protocol[0] = '\0';
+    test_context.terminal_protocol[0] = '\0';
     test_context.port = 8080;
     test_context.shutdown = 0;
     test_context.active_connections = 0;
-    strncpy(test_context.protocol, "hydrogen-test", sizeof(test_context.protocol) - 1);
+    strncpy(test_context.protocol, "hydrogen", sizeof(test_context.protocol) - 1);
     strncpy(test_context.auth_key, "test_key_12345", sizeof(test_context.auth_key) - 1);
     pthread_mutex_init(&test_context.mutex, NULL);
     pthread_cond_init(&test_context.cond, NULL);
     
     // Set global context
     ws_context = &test_context;
+    
+    // Initialize mock LWS state for chat path (/wss)
+    mock_lws_reset_all();
+    mock_lws_set_uri_data("/wss");
+    mock_lws_set_protocol_name("hydrogen");
     
     // Initialize test session
     memset(&test_session, 0, sizeof(WebSocketSessionData));
@@ -84,6 +91,9 @@ void tearDown(void) {
         free(test_session.authenticated_key);
         test_session.authenticated_key = NULL;
     }
+    
+    // Reset mock LWS state
+    mock_lws_reset_all();
     
     // Clean up test context
     pthread_mutex_destroy(&test_context.mutex);

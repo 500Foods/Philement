@@ -21,10 +21,9 @@ static enum MHD_Result mock_mhd_queue_response_result = MHD_YES;
 static unsigned int mock_mhd_last_status_code = 0;
 static bool mock_mhd_start_daemon_should_fail = false;
 static const union MHD_DaemonInfo* mock_mhd_daemon_info_result = NULL;
-static bool mock_mhd_is_terminal_websocket_request_result = true;
+static bool mock_mhd_suspend_should_fail = false;
 static int mock_mhd_suspend_count = 0;
 static int mock_mhd_resume_count = 0;
-static bool mock_mhd_suspend_should_fail = false;
 static MHD_ContentReaderCallback mock_mhd_cr_callback = NULL;
 static MHD_ContentReaderFreeCallback mock_mhd_cr_free = NULL;
 static void *mock_mhd_cr_cls = NULL;
@@ -279,7 +278,6 @@ void mock_mhd_reset_all(void) {
     mock_mhd_last_status_code = 0;
     mock_mhd_start_daemon_should_fail = false;
     mock_mhd_daemon_info_result = NULL;
-    mock_mhd_is_terminal_websocket_request_result = true;
     mock_mhd_suspend_count = 0;
     mock_mhd_resume_count = 0;
     mock_mhd_suspend_should_fail = false;
@@ -556,26 +554,6 @@ void mock_mhd_set_queue_response_result(enum MHD_Result result) {
 
 unsigned int mock_mhd_get_last_status_code(void) {
     return mock_mhd_last_status_code;
-}
-
-/*
- * Mock implementation of is_terminal_websocket_request
- */
-__attribute__((weak))
-bool is_terminal_websocket_request(struct MHD_Connection *connection, const char *method, const char *url, const struct TerminalConfig *config) {
-    (void)connection; // Suppress unused parameter warning
-    (void)method;     // Suppress unused parameter warning
-    (void)url;        // Suppress unused parameter warning
-    (void)config;     // Suppress unused parameter warning
-
-    return mock_mhd_is_terminal_websocket_request_result;
-}
-
-/*
- * Set the result that is_terminal_websocket_request should return
- */
-void mock_mhd_set_is_terminal_websocket_request_result(bool result) {
-    mock_mhd_is_terminal_websocket_request_result = result;
 }
 
 /*
