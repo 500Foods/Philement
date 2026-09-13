@@ -64,22 +64,22 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-09-13 04:20:42 UTC
+Last updated at 2026-09-13 18:42:33 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                           515            448              0        1757084
-SVG                            301            587          11569         535271
-C                             1717          68561          58051         288555
-Text                           353            349              0         148267
-Markdown                       762          36702            259         111818
+JSON                           516            449              0        1764300
+SVG                            301            587          11569         522697
+C                             1717          68563          58056         288569
+Text                           353            350              0         148345
+Markdown                       762          36712            259         111849
 Lua                            443          11700           7395          93589
-JavaScript                     231          10620          13690          50513
-Bourne Shell                   183           8254         111886          45654
-CSS                             87           2807           1612          14213
+JavaScript                     228          10620          13687          50510
+Bourne Shell                   183           8254         111978          45654
+CSS                             86           2781           1565          14077
 C/C++ Header                   352           4230          14225          13230
-HTML                            42            272            219           3005
-CMake                           19            177            399           1483
+HTML                            42            272            219           3023
+CMake                           19            177            401           1483
 make                            11            112             75            607
 TOML                             1             55             35            449
 Python                           1             36              9            195
@@ -89,12 +89,12 @@ Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
 -------------------------------------------------------------------------------
-SUM:                          5036         144982         219505        3064336
+SUM:                          5033         144970         219554        3058980
 -------------------------------------------------------------------------------
-1747 Files were skipped (duplicate, binary, or without source code):
+1746 Files were skipped (duplicate, binary, or without source code):
   svg: 1247
-  css: 168
-  html: 135
+  css: 167
+  html: 134
   md: 39
   js: 24
   png: 23
@@ -109,6 +109,7 @@ SUM:                          5036         144982         219505        3064336
   ico: 3
   json: 2
   lintignore-markdown: 2
+  list: 2
   sqlite: 2
   sqruff_db2: 2
   sqruff_mysql: 2
@@ -132,7 +133,6 @@ SUM:                          5036         144982         219505        3064336
   lintignore-c: 1
   lintignore-lua: 1
   lintignore: 1
-  list: 1
   password_flow_debug: 1
   payload_generated: 1
   sqlite-shm: 1
