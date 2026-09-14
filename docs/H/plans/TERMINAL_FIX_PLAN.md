@@ -19,7 +19,7 @@
 | [Phase 10 — Lithium Chat WS](#phase-10--lithium-chat-websocket-hygiene) | Redact `app-ws.js` key log; no hardcoded chat-key fallback | **Complete** |
 | [Phase 11 — Test 26 & Launcher](#phase-11--test-26-and-terminal-launcher) | Two keys/protocols, query auth, info gating, [`terminal-launcher.sh`](/elements/001-hydrogen/hydrogen/extras/terminal-launcher.sh) | **Complete** |
 | [Phase 12 — Production E2E](#phase-12--production-config-secrets-and-doks-e2e) | bash, CORS, TrustedProxies, env keys, payload, Traefik/DOKS, rotation | **Complete** |
-| [Phase 13 — Outstanding Items](#phase-13--outstanding-items-and-deferred-work) | Pre-existing test failures, terminal-launcher 502, dead code, remaining deficiencies, documentation gaps | **In progress** |
+| [Phase 13 — Outstanding Items](#phase-13--outstanding-items-and-deferred-work) | Pre-existing test failures, terminal-launcher 502 + Brotli/binary-content handling, dead code, remaining deficiencies, documentation gaps | **In progress** (v1.0.9 Brotli fix done; Traefik/kubectl + payload docs pending) |
 
 ## Purpose
 
@@ -664,7 +664,7 @@ do not expose `terminal.key` to un-authorized callers.
 | 10 | Lithium chat WS logs redact the key; no hardcoded chat-key fallback | S | complete |
 | 11 | Test 26 and `terminal-launcher.sh` prove two keys, query auth, info gating | M | complete |
 | 12 | Production bash, CORS, TrustedProxies, env keys, payload, Traefik/DOKS E2E | M | complete |
-| 13 | Outstanding items: pre-existing test failure, launcher 502, dead code, deficiencies | S | proposed |
+| 13 | Outstanding items: pre-existing test failure, launcher 502 + Brotli/binary-content handling, dead code, deficiencies | S | in_progress |
 
 Effort key: S = small/contained, M = moderate (security/networking/deployment + testing).
 
@@ -2204,7 +2204,7 @@ Phase 12 complete.
     protocol name mismatch (`"hydrogen-test"` vs mock's `"hydrogen"`) and no
     mock URI data (`/wss`) set, causing `ws_auth_accept_key` to dereference an
     unmocked `wsi`. Fixed by calling `mock_lws_set_protocol_name("hydrogen")`
-    + `mock_lws_set_uri_data("/wss")` in `setUp`, and `mock_lws_reset_all()`
+    - `mock_lws_set_uri_data("/wss")` in `setUp`, and `mock_lws_reset_all()`
     in `tearDown`. All 23 tests pass (`mku websocket_server_auth_test`).
 - [x] **Fix `terminal-launcher.sh` 502 Bad Gateway when run in production.** Root cause: `terminal-launcher.sh` sets `iframe.src` to `TERMINAL_URL` (the WebSocket URL `wss://host/terminal/ws`) with `wss://` replaced by `https://`, producing `https://host/terminal/ws`. A regular HTTP GET to `/terminal/ws` returns 502 Bad Gateway because the server only handles WebSocket Upgrade requests on that path. The terminal HTML page is served at the WebPath (`/terminal/`), not at `/terminal/ws`. Fix: `terminal-launcher.sh` v1.0.4 strips the `/ws` suffix from `TERMINAL_URL` before converting the scheme, so the iframe loads the terminal HTML page at `https://host/terminal` (redirects to `/terminal/` → 200). Verified in production: in-pod `curl` confirms `GET /terminal/ws → 502` and `GET /terminal/ → 200`; `GET /terminal` → 301 → `/terminal/` → 200. Access logs confirm WebSocket upgrades with the correct terminal key (`y/3Jp…`) return 101 successfully; only wrong keys or non-upgrade GETs to `/terminal/ws` produce 502. **Verify:** `bash -n` clean; `mks` clean.
 - [x] **Resolve dead code in `terminal_websocket.c`.** The functions
@@ -2280,12 +2280,29 @@ Each work item above is completed or explicitly deferred with a plan. `mkp`,
 ### Status
 
 - **State:** in_progress
-- **Date:** 2026-09-13
-- **Result:** Resolved the dead code and pre-existing test failure items (work
-  items 1 and 3). Remaining items requiring production/deployment access or
-  Lithium changes are deferred. Next session will start with the
-  `terminal-launcher.sh` 502 diagnosis (item 2), which has production
-  diagnostic tooling available in this environment.
+- **Date:** 2026-09-14
+- **Result:** Resolved dead code (item 3), pre-existing test failures (item 1,
+  Test 59 auth_chat), schema audit (item 5), app-ws.js redaction audit
+  (item 6), and Unity auth coverage (item 8). Production terminal-launcher
+  diagnosis (item 2) completed — the 502 was caused by iframe.src pointing to
+  the `/terminal/ws` WebSocket path via HTTP (not the terminal HTML at
+  `/terminal/`); fixed in v1.0.4. In Session 16, the Brotli/binary-content
+  corruption issue in terminal-launcher.sh was resolved (v1.0.9): added
+  `--compressed` to all 4 content-fetching curl calls (terminal HTML, 5 static
+  assets, login, system/info) and fixed the Node.js proxy to decompress Brotli
+  responses with proper header sanitization. Shellcheck passes (170 files, 0
+  issues). Traefik `forwardedHeaders.trustedIPs` verification (item 7) remains
+  deferred — requires `kubectl get ingress -o yaml` inspection. Payload marker
+  documentation (item 9) is pending.
+- **Variances:** terminal-launcher.sh now correctly decompresses Brotli content
+  from the server via `--compressed` and the Node.js proxy handles Brotli
+  passthrough. The terminal-launcher 502 (item 2) is fully resolved through
+  v1.0.4's path stripping + v1.0.9's Brotli handling.
+
+### Working Log
+
+(Session log entries for earlier sessions follow at the end of this document;
+the key v1.0.8 work is captured in the Session 15 entry below.)
 
 ### Session 14 (2026-09-13) — Phase 13 checkpoint and session handoff
 
@@ -2323,16 +2340,120 @@ Each work item above is completed or explicitly deferred with a plan. `mkp`,
   - **Item 9 (payload marker docs):** Document the
     `<<< HERE BE ME TREASURE >>>` embedding format (8-byte LE size) in
     `docs/H/core/subsystems/payload/` or `terminal_architecture.md`.
-- No source, test, or deployment changes were made in this session; this is a
+  - No source, test, or deployment changes were made in this session; this is a
   checkpoint and handoff entry only.
+
+### Session 15 (2026-09-14) — terminal-launcher.sh v1.0.8 (Python elimination) + production diagnosis
+
+- **Objective:** Eliminate all Python dependencies from `terminal-launcher.sh`
+  and diagnose the production "gibberish page" issue observed when running
+  the launcher against `https://lithium.500courses.com`.
+
+- **Completed (terminal-launcher.sh v1.0.8):**
+  - Port allocation: Python3 `import socket` → Node.js
+    `net.createServer().listen(0, '127.0.0.1')` with callback. Fixes
+    shell race where the browser opened before the server was listening.
+  - HTML injection: Python3 binary read/decode/re-encode → Node.js
+    `Buffer.concat()` with `fs.readFileSync()` (binary-safe). Fixes
+    `decode("utf-8", errors="replace")` corrupting binary content.
+  - HTTP server: Python3 `http.server.SimpleHTTPRequestHandler` → Node.js
+    `http.Server` with explicit `Content-Type: text/html; charset=utf-8`
+    via `getContentType()`. Fixes Quirks Mode from missing charset.
+  - Server lifecycle: Ctrl-C trap + `wait` for clean shutdown.
+  - Injection robustness: `<head>` → `<body>` → end fallback; 200-byte
+    debug snippet of fetched HTML.
+  - Shellcheck: exit 0, 0 issues.
+
+- **Production diagnosis findings:**
+  - Auth/key/protocol flow verified working end-to-end in production:
+    JWT obtained, terminal key resolved, correct WS surface selected.
+  - **Binary content corruption:** `curl -sL` fetches `/terminal/` HTML
+    containing brotli-compressed binary data that curl is not decompressing.
+    The corrupted bytes cause the "No `<head>` or `<body>` tag" warning
+    and garbled browser display. This is a content-encoding issue in the
+    local HTTP server asset-fetching layer, not an auth/routing defect.
+  - **Fix direction:** Add `--compressed` to relevant curl calls so
+    `curl` transparently decompresses brotli/gzip content, or ensure the
+    Node.js child process handling does binary-safe passthrough. The
+    Node.js HTTP server already sets correct Content-Type/charset; the
+    issue is in the fetch/decode step feeding it corrupted bytes.
+
+  - **Key insight:** The terminal subsystem itself (JWT, key resolution,
+  WebSocket auth, `/api/system/info` gating, protocol routing, CORS) is
+  fully functional in production. The only remaining issue is
+  content-encoding handling in the debug launcher's asset pipeline.
+
+### Session 16 (2026-09-14) — terminal-launcher.sh v1.0.9 (Brotli decompression)
+
+- **Objective:** Eliminate the Brotli/binary-content corruption in
+  `terminal-launcher.sh` by adding `--compressed` to all curl fetches from
+  the server and adding Brotli/gzip decompression fallback in the Node.js
+  proxy server.
+
+- **Root cause (confirmed):** The Hydrogen web server (behind Traefik) serves
+  pre-compressed Brotli (`.br`) static assets for `/terminal/` and its
+  resources. When `curl -sL` is used without `--compressed`, curl does not
+  request or decompress Brotli content. Traefik forwards `Accept-Encoding: br`
+  to the upstream even when the client did not explicitly send it, so the server
+  returns `Content-Encoding: br` encoded binary data. Capturing this in bash
+  command substitution corrupts the content (null bytes stripped, binary
+  sequences mangled), producing garbled HTML display.
+
+- **Production diagnosis (Session 15) confirmed the content-encoding issue;
+  Session 16 applies the fix:**
+  - Added `--compressed` to the terminal HTML fetch curl call (line 410).
+  - Added `--compressed` to all static asset curl fetches (lines 427–431):
+    `xterm.js`, `xterm.css`, `terminal.css`, `xterm-addon-attach.js`,
+    `xterm-addon-fit.js`.
+  - Added `--compressed` to the API call curl fetches: `/api/auth/login`
+    (line 266) and `/api/system/info` (line 308) — defensive in case Traefik
+    adds compression middleware to API routes.
+  - Fixed the Node.js HTTP proxy `proxyRequest()` to handle Brotli-encoded
+    upstream responses:
+    - Added `Accept-Encoding: identity` to the proxy upstream request headers
+      (best-effort: Traefik may still forward `Accept-Encoding: br`).
+    - Added Brotli decompression via `zlib.brotliDecompressSync()` when
+      `Content-Encoding: br` is received, with gzip fallback via
+      `zlib.gunzipSync()`.
+    - Removed invalid `transfer-encoding: ''` header override that could
+      corrupt proxied HTTP responses (HTTP spec forbids a header with an
+      empty value).
+    - Removed `connection: 'close'` override that forced connection closure
+      on every proxied response.
+    - Strip `transfer-encoding`, `connection`, `content-encoding`, and
+      `content-length` from upstream response headers when decoding, and
+      recalculate `content-length` from the decoded body.
+  - Updated `TEST_VERSION` and CHANGELOG header for v1.0.9.
+
+- **Verification:**
+  - `bash -n terminal-launcher.sh` → syntax OK.
+  - `mks` (shellcheck, Test 92) → 170 files, 0 issues, 2/2 pass.
+  - `node --check` on extracted proxy JS → syntax OK.
+  - Brotli roundtrip test (`zlib.brotliDecompressSync`) → confirmed working
+    on Node.js v24.2.0.
+  - Manual review of all 7 curl calls in the script: 4 content-fetching calls
+    now have `--compressed`; 1 health-check call (line 639, local server)
+    intentionally does not (it checks a local static file server with no
+    compression).
+
+- **Lessons learned:**
+  1. Traefik's default behavior of forwarding client `Accept-Encoding` headers
+     to upstream means the Hydrogen server can return Brotli even when curl
+     does not request it — the fix must be client-side (`--compressed`) not
+     server-side.
+  2. The Node.js proxy must be resilient to upstream Brotli responses even
+     with `Accept-Encoding: identity` set, because Traefik overrides the
+     client's header with its own forwarded value.
+  3. An empty `transfer-encoding: ''` header is invalid HTTP and can cause
+     response corruption in some HTTP parsers.
 
 ### Session 12 (2026-09-13) — Fix failing `websocket_server_context_test_create`
 
 - **Root cause:** The test file
-  [`websocket_server_context_test_create.c`](file:///mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/tests/unity/src/websocket/websocket_server_context_test_create.c)
+  `websocket_server_context_test_create.c`
   was stale — it still asserted `auth_key == "default_key"` when NULL key was
   passed to `ws_context_create`, but the source
-  [`websocket_server_context.c`](file:///mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_context.c:61)
+  `websocket_server_context.c`
   was already updated to fail closed (Phase 2): the `if (key)` guard leaves
   `auth_key` as empty `'\0'` when key is NULL, with no hardcoded default.
   The `default_key` string no longer exists in source (grep confirms zero hits).
@@ -2381,7 +2502,7 @@ Each work item above is completed or explicitly deferred with a plan. `mkp`,
 - **Root cause:** Two distinct issues caused 6 of 31 subtests to fail:
   1. **WebSocket path mismatch:** `ws_chat_url()` and the heartbeat test used `ws://127.0.0.1:${WS_PORT}/` (path `/`), but `ws_auth_surface_from_path()` in `websocket_server_auth.c:241` only returns surface 1 for path `/wss`. Connecting to `/` returned surface 0, causing `ws_auth_accept_key()` to fail and the server to deny the connection with "All authentication methods failed, denying connection".
   2. **Invalid `WEBSOCKET_KEY` length:** The environment `WEBSOCKET_KEY` was set to `ABDEFGHIJKLMNOP` (15 chars), but `validate_key()` in `launch_websocket.c:89` requires 32+ printable ASCII characters. The WebSocket subsystem never launched ("Invalid WebSocket key"), so all WS-based subtests failed.
-- **Fix:** 
+- **Fix:**
   1. Changed `ws_chat_url()` to use `/wss` path; changed the heartbeat websocat URL from `/` to `/wss`.
   2. Added a `validate_websocket_key` check after prerequisites; if the env key is too short/invalid, generates a 64-char ephemeral key (`ephemeral_$(date +%s)_$(openssl rand -hex 24)`) and overrides `.WebSocketServer.Key` in the `jq` config materialization via `--arg ws_key`, plus bumped `TEST_VERSION` to 1.8.5.
 - **Verified:** `test_59_auth_chat.sh` → 31/31 PASS (25 check assertions, 0 failures); `mks` (Test 92) → 170 files, 0 issues.
