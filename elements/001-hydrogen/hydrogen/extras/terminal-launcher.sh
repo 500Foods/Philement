@@ -42,6 +42,8 @@
 # 1.0.5 - 2026-09-14 - Phase 14: Fixed "Terminal config fetch timed out — no response from parent frame". Root cause: terminal-launcher.sh served the launcher page via file:// with a cross-origin iframe to the Hydrogen terminal. The terminal page's postMessage to the parent used window.location.origin as targetOrigin, which didn't match the file:// parent origin, so the message was never delivered. Fix: terminal-launcher.sh now starts a local HTTP server on localhost, fetches the terminal HTML + assets from the Hydrogen server, injects the JWT as window.TERMINAL_JWT (in-memory only) and the server origin as window.TERMINAL_SERVER_ORIGIN, and serves the modified terminal page from the local server. The terminal page's fetchTerminalConfig() checks for window.TERMINAL_JWT first (standalone mode), bypassing postMessage entirely. getApiBase() uses window.TERMINAL_SERVER_ORIGIN for API calls. No JWT is persisted to localStorage or disk.
 # 1.0.6 - 2026-09-14 - Phase 14: Fixed binary corruption when fetching terminal HTML and xterm.js assets via curl. Curl output was captured in bash command substitution ($(...)), which strips null bytes and corrupts binary content in minified JS, causing Python UTF-8 decode errors. Fix: write curl output directly to files instead of capturing in bash variables; Python injection script now reads files in binary mode with errors="replace" fallback.
 # 1.0.7 - 2026-09-14 - Eliminated Python dependency entirely. HTML injection now uses Node.js binary-safe Buffer operations instead of Python3. The local HTTP server now uses Node.js http module instead of Python3 http.server, with explicit Content-Type headers including charset=utf-8 for HTML/JS/CSS to fix Quirks Mode and character encoding errors. Port allocation also switched from Python to Node.
+# 1.0.8 - 2026-09-14 - Fixed injection failure when terminal HTML has no <head> tag: falls back to <body> tag or appends at end. Added debug output showing first 200 bytes of fetched HTML for troubleshooting.
+# 1.0.9 - 2026-09-14 - Fixed Brotli/binary-content corruption: added --compressed to all curl fetches so curl transparently decompresses Brotli-encoded responses from the server (Traefik forwards Accept-Encoding: br to the upstream even when curl does not request it). Fixed Node.js proxy: removed invalid transfer-encoding: '' header override that could corrupt proxied HTTP responses; added Accept-Encoding: identity to proxy upstream requests; added Brotli decompression passthrough for any upstream response that arrives with Content-Encoding: br.
 # =============================================================================
 
 set -euo pipefail
@@ -50,7 +52,7 @@ set -euo pipefail
 # Configuration defaults
 # ---------------------------------------------------------------------------
 SCRIPT_NAME="terminal-launcher"
-SCRIPT_VERSION="1.0.7"
+SCRIPT_VERSION="1.0.9"
 
 SERVER_URL=""
 USERNAME=""
@@ -261,7 +263,7 @@ authenticate() {
         '{database: $database, login_id: $login_id, password: $password, api_key: $api_key, tz: $tz}')
 
     local http_code
-    http_code=$(curl -s -S \
+    http_code=$(curl -s -S --compressed \
         -X POST "${SERVER_URL}/api/auth/login" \
         -H "Content-Type: application/json" \
         -d "${login_payload}" \
@@ -303,7 +305,7 @@ fetch_terminal_config() {
     info_file=$(mktemp /tmp/terminal_launcher_info.XXXXXX.json)
 
     local http_code
-    http_code=$(curl -s -S \
+    http_code=$(curl -s -S --compressed \
         -X GET "${SERVER_URL}/api/system/info" \
         -H "Authorization: Bearer ${JWT_TOKEN}" \
         -o "${info_file}" \
@@ -396,11 +398,16 @@ create_and_open_launcher() {
     LAUNCHER_FILE="${server_dir}/index.html"
 
     # Fetch the terminal HTML from the Hydrogen server (authenticated).
+    # --compressed makes curl send Accept-Encoding and transparently decompress
+    # Brotli-encoded responses. The Hydrogen web server (behind Traefik) serves
+    # pre-compressed .br files for static terminal assets even when the client
+    # does not explicitly request compression, so --compressed is required to
+    # ensure we receive valid HTML/JS/CSS rather than binary Brotli data.
     # Write directly to a file to handle binary content safely (null bytes,
     # non-UTF-8 sequences in minified JS) without bash variable corruption.
     local raw_html_file="${server_dir}/_raw_terminal.html"
     local http_code
-    http_code=$(curl -sL "${SERVER_URL}/terminal/" \
+    http_code=$(curl -sL --compressed "${SERVER_URL}/terminal/" \
         -H "Authorization: Bearer ${JWT_TOKEN}" \
         -o "${raw_html_file}" \
         -w "%{http_code}")
@@ -414,12 +421,14 @@ create_and_open_launcher() {
     # Fetch static assets referenced by terminal.html with relative URLs.
     # Write directly to files in the local server directory to handle binary
     # content safely without bash variable corruption.
+    # --compressed ensures Brotli/gzip responses are decompressed (Traefik may
+    # compress static assets even without an explicit Accept-Encoding request).
     log_info "Fetching terminal assets from server..."
-    curl -sL "${SERVER_URL}/terminal/xterm.js" -o "${server_dir}/xterm.js" || true
-    curl -sL "${SERVER_URL}/terminal/xterm.css" -o "${server_dir}/xterm.css" || true
-    curl -sL "${SERVER_URL}/terminal/terminal.css" -o "${server_dir}/terminal.css" || true
-    curl -sL "${SERVER_URL}/terminal/xterm-addon-attach.js" -o "${server_dir}/xterm-addon-attach.js" || true
-    curl -sL "${SERVER_URL}/terminal/xterm-addon-fit.js" -o "${server_dir}/xterm-addon-fit.js" || true
+    curl -sL --compressed "${SERVER_URL}/terminal/xterm.js" -o "${server_dir}/xterm.js" || true
+    curl -sL --compressed "${SERVER_URL}/terminal/xterm.css" -o "${server_dir}/xterm.css" || true
+    curl -sL --compressed "${SERVER_URL}/terminal/terminal.css" -o "${server_dir}/terminal.css" || true
+    curl -sL --compressed "${SERVER_URL}/terminal/xterm-addon-attach.js" -o "${server_dir}/xterm-addon-attach.js" || true
+    curl -sL --compressed "${SERVER_URL}/terminal/xterm-addon-fit.js" -o "${server_dir}/xterm-addon-fit.js" || true
 
     # Inject JWT and local server origin into the terminal HTML.
     # window.TERMINAL_JWT: checked first in fetchTerminalConfig() — standalone mode
@@ -429,6 +438,12 @@ create_and_open_launcher() {
     export JWT_TOKEN
     export LOCAL_SERVER_PORT
 
+    # Debug: show first line of raw HTML for troubleshooting
+    local raw_snippet
+    raw_snippet=$(head -c 200 "${raw_html_file}" 2>/dev/null | tr -d '\n') || raw_snippet=""
+    log_info "Raw terminal HTML: ${raw_snippet:-'(empty)'}
+"
+
     node -e "
 const fs = require('fs');
 const jwt = process.env.JWT_TOKEN;
@@ -436,19 +451,30 @@ const localOrigin = 'http://127.0.0.1:' + process.env.LOCAL_SERVER_PORT;
 const rawPath = process.env.raw_html_file;
 const outPath = process.env.LAUNCHER_FILE;
 
-const inject = '<script>\\nwindow.TERMINAL_JWT = ' + JSON.stringify(jwt) + ';\\nwindow.TERMINAL_SERVER_ORIGIN = ' + JSON.stringify(localOrigin) + ';\\n</script>\\n';
-
 const content = fs.readFileSync(rawPath);
-const headIdx = content.indexOf('<head>');
-if (headIdx === -1) {
-  console.error('ERROR: <head> tag not found in terminal HTML');
-  process.exit(1);
+const inject = Buffer.from('<script>\\nwindow.TERMINAL_JWT = ' + JSON.stringify(jwt) + ';\\nwindow.TERMINAL_SERVER_ORIGIN = ' + JSON.stringify(localOrigin) + ';\\n</script>\\n', 'utf8');
+
+// Inject into <head> if present, otherwise after <body>, otherwise at end
+let insertIdx = content.indexOf('<head>');
+if (insertIdx !== -1) {
+  insertIdx += 6; // after <head>
+} else {
+  let bodyIdx = content.indexOf('<body>');
+  if (bodyIdx !== -1) {
+    insertIdx = bodyIdx + 6; // after <body>
+  }
 }
-const result = Buffer.concat([
-  content.slice(0, headIdx + 6),
-  Buffer.from(inject, 'utf8'),
-  content.slice(headIdx + 6)
-]);
+
+let result;
+if (insertIdx !== -1) {
+  result = Buffer.concat([content.slice(0, insertIdx), inject, content.slice(insertIdx)]);
+} else {
+  // No head or body tag found — append at end
+  const snippet = content.slice(0, 200).toString('utf8');
+  console.error('WARNING: No <head> or <body> tag found in terminal HTML');
+  console.error('First 200 bytes:', snippet);
+  result = Buffer.concat([content, inject]);
+}
 fs.writeFileSync(outPath, result);
 "
     rm -f "${raw_html_file}"
@@ -470,6 +496,7 @@ const http = require('http');
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const zlib = require('zlib');
 const { URL } = require('url');
 
 const SERVER_DIR = process.env.SERVER_DIR;
@@ -503,22 +530,72 @@ function proxyRequest(req, res) {
     headers: {
       'Authorization': 'Bearer ' + PROXY_JWT,
       'Accept': '*/*',
+      'Accept-Encoding': 'identity',
     },
   };
 
   const client = parsedUrl.protocol === 'https:' ? https : http;
   const proxyReq = client.request(options, (proxyRes) => {
-    res.writeHead(proxyRes.statusCode, {
-      ...proxyRes.headers,
-      'connection': 'close',
-      'transfer-encoding': '',
+    // Collect response body so we can decompress Brotli if the upstream ignored
+    // Accept-Encoding: identity (Traefik may still forward Accept-Encoding: br
+    // to the upstream, causing it to send Content-Encoding: br).
+    const chunks = [];
+    proxyRes.on('data', (chunk) => chunks.push(chunk));
+    proxyRes.on('end', () => {
+      const body = Buffer.concat(chunks);
+      const contentEncoding = proxyRes.headers['content-encoding'];
+      let decodedBody = body;
+      let decoded = false;
+
+      if (contentEncoding === 'br' || contentEncoding === 'brotli') {
+        try {
+          decodedBody = zlib.brotliDecompressSync(body);
+          decoded = true;
+        } catch (e) {
+          const errMsg = 'Brotli decompression failed: ' + e.message;
+          console.error(errMsg);
+          res.writeHead(502);
+          res.end(errMsg);
+          return;
+        }
+      } else if (contentEncoding === 'gzip') {
+        try {
+          decodedBody = zlib.gunzipSync(body);
+          decoded = true;
+        } catch (e) {
+          const errMsg = 'Gzip decompression failed: ' + e.message;
+          console.error(errMsg);
+          res.writeHead(502);
+          res.end(errMsg);
+          return;
+        }
+      }
+
+      // Strip hop-by-hop and content-encoding headers when we decoded the body
+      const responseHeaders = {};
+      for (const [key, value] of Object.entries(proxyRes.headers)) {
+        const lowerKey = key.toLowerCase();
+        if (lowerKey === 'transfer-encoding' || lowerKey === 'connection' ||
+            lowerKey === 'content-encoding' || lowerKey === 'content-length') {
+          continue;
+        }
+        responseHeaders[key] = value;
+      }
+
+      if (decoded) {
+        responseHeaders['content-length'] = decodedBody.length;
+      }
+
+      res.writeHead(proxyRes.statusCode, responseHeaders);
+      res.end(decodedBody);
     });
-    proxyRes.pipe(res);
   });
 
   proxyReq.on('error', (e) => {
+    const msg = 'Proxy error: ' + e.message;
+    console.error(msg);
     res.writeHead(502);
-    res.end(e.message);
+    res.end(msg);
   });
 
   if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
