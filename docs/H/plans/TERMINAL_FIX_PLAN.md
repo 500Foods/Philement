@@ -2206,17 +2206,7 @@ Phase 12 complete.
     unmocked `wsi`. Fixed by calling `mock_lws_set_protocol_name("hydrogen")`
     + `mock_lws_set_uri_data("/wss")` in `setUp`, and `mock_lws_reset_all()`
     in `tearDown`. All 23 tests pass (`mku websocket_server_auth_test`).
-- [~] **Investigate `terminal-launcher.sh` 502 Bad Gateway when run in
-  production.** Requires `kubectl logs` + `websocat` diagnostic session to
-  isolate the root cause. **Verify:** Deferred — requires production access. The launcher fetches `wss://…/terminal/ws?key=` from the
-  authorized `/api/system/info` response. A 502 from Traefik on the terminal
-  WebSocket path can occur if (a) the `Terminal.Enabled` flag is false and
-  the terminal protocol is not registered with libwebsockets, or (b) the
-  `Terminal.Key` resolves to a literal `${env.WEBSOCKET_TERMINAL_KEY}` because
-  the k8s secret name is wrong, or (c) Traefik is not forwarding the
-  WebSocket Upgrade header on `/terminal/ws`. This needs a production
-  diagnostic session with `kubectl logs` + `websocat` to isolate. **Verify:**
-  Document root cause and fix or workaround.
+- [x] **Fix `terminal-launcher.sh` 502 Bad Gateway when run in production.** Root cause: `terminal-launcher.sh` sets `iframe.src` to `TERMINAL_URL` (the WebSocket URL `wss://host/terminal/ws`) with `wss://` replaced by `https://`, producing `https://host/terminal/ws`. A regular HTTP GET to `/terminal/ws` returns 502 Bad Gateway because the server only handles WebSocket Upgrade requests on that path. The terminal HTML page is served at the WebPath (`/terminal/`), not at `/terminal/ws`. Fix: `terminal-launcher.sh` v1.0.4 strips the `/ws` suffix from `TERMINAL_URL` before converting the scheme, so the iframe loads the terminal HTML page at `https://host/terminal` (redirects to `/terminal/` → 200). Verified in production: in-pod `curl` confirms `GET /terminal/ws → 502` and `GET /terminal/ → 200`; `GET /terminal` → 301 → `/terminal/` → 200. Access logs confirm WebSocket upgrades with the correct terminal key (`y/3Jp…`) return 101 successfully; only wrong keys or non-upgrade GETs to `/terminal/ws` produce 502. **Verify:** `bash -n` clean; `mks` clean.
 - [x] **Resolve dead code in `terminal_websocket.c`.** The functions
   `is_terminal_websocket_request` (line 44) and `handle_terminal_websocket_upgrade`
   (line 130) are the MHD/libmicrohttpd WebSocket upgrade path. A grep across

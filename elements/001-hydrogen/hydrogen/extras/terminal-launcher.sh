@@ -38,6 +38,10 @@
 # 1.0.1 - 2026-09-11 - Added --api-key argument; login payload now includes api_key field required by /api/auth/login (fixes HTTP 400)
 # 1.0.2 - 2026-09-12 - Fixed launcher HTML file being deleted before browser loads it; temp file persists until process exit or OS cleanup
 # 1.0.3 - 2026-09-13 - Phase 11: Renamed WEBSOCKET_KEY local to TERMINAL_KEY for clarity (holds terminal.key from sysinfo, not chat key); added --terminal-key note in help for two-key world
+# 1.0.4 - 2026-09-14 - Phase 13: Fixed 502 Bad Gateway when loading iframe page. TERMINAL_URL is the WebSocket URL (wss://host/terminal/ws); the iframe must load the terminal HTML page at the WebPath (/terminal), not the WebSocket upgrade endpoint (/terminal/ws). Strip the /ws suffix before converting wss:// to https:// for the iframe src.
+# 1.0.5 - 2026-09-14 - Phase 14: Fixed "Terminal config fetch timed out — no response from parent frame". Root cause: terminal-launcher.sh served the launcher page via file:// with a cross-origin iframe to the Hydrogen terminal. The terminal page's postMessage to the parent used window.location.origin as targetOrigin, which didn't match the file:// parent origin, so the message was never delivered. Fix: terminal-launcher.sh now starts a local HTTP server on localhost, fetches the terminal HTML + assets from the Hydrogen server, injects the JWT as window.TERMINAL_JWT (in-memory only) and the server origin as window.TERMINAL_SERVER_ORIGIN, and serves the modified terminal page from the local server. The terminal page's fetchTerminalConfig() checks for window.TERMINAL_JWT first (standalone mode), bypassing postMessage entirely. getApiBase() uses window.TERMINAL_SERVER_ORIGIN for API calls. No JWT is persisted to localStorage or disk.
+# 1.0.6 - 2026-09-14 - Phase 14: Fixed binary corruption when fetching terminal HTML and xterm.js assets via curl. Curl output was captured in bash command substitution ($(...)), which strips null bytes and corrupts binary content in minified JS, causing Python UTF-8 decode errors. Fix: write curl output directly to files instead of capturing in bash variables; Python injection script now reads files in binary mode with errors="replace" fallback.
+# 1.0.7 - 2026-09-14 - Eliminated Python dependency entirely. HTML injection now uses Node.js binary-safe Buffer operations instead of Python3. The local HTTP server now uses Node.js http module instead of Python3 http.server, with explicit Content-Type headers including charset=utf-8 for HTML/JS/CSS to fix Quirks Mode and character encoding errors. Port allocation also switched from Python to Node.
 # =============================================================================
 
 set -euo pipefail
@@ -46,7 +50,7 @@ set -euo pipefail
 # Configuration defaults
 # ---------------------------------------------------------------------------
 SCRIPT_NAME="terminal-launcher"
-SCRIPT_VERSION="1.0.3"
+SCRIPT_VERSION="1.0.7"
 
 SERVER_URL=""
 USERNAME=""
@@ -64,6 +68,8 @@ TERMINAL_URL=""
 TERMINAL_PROTOCOL=""
 TERMINAL_KEY=""
 LAUNCHER_FILE=""
+LOCAL_SERVER_PORT=""
+LOCAL_SERVER_PID=""
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -91,6 +97,18 @@ cleanup() {
     PASSWORD=""
     JWT_TOKEN=""
     TERMINAL_KEY=""
+    # Kill the local HTTP server if running
+    if [[ -n "${LOCAL_SERVER_PID}" ]] && kill -0 "${LOCAL_SERVER_PID}" 2>/dev/null; then
+        kill "${LOCAL_SERVER_PID}" 2>/dev/null || true
+        wait "${LOCAL_SERVER_PID}" 2>/dev/null || true
+    fi
+    # Remove temp files
+    if [[ -n "${LAUNCHER_FILE}" && -f "${LAUNCHER_FILE}" ]]; then
+        rm -f "${LAUNCHER_FILE}"
+    fi
+    if [[ -n "${LOCAL_SERVER_PORT}" && -d "/tmp/terminal_launcher_${LOCAL_SERVER_PORT}" ]]; then
+        rm -rf "/tmp/terminal_launcher_${LOCAL_SERVER_PORT}"
+    fi
 }
 trap cleanup EXIT
 
@@ -342,112 +360,236 @@ fetch_terminal_config() {
 create_and_open_launcher() {
     log_info "Creating temporary terminal launcher page"
 
-    # Create a temp file for the launcher HTML
-    LAUNCHER_FILE=$(mktemp /tmp/terminal_launcher_XXXXXX.html)
+    # The terminal-launcher.sh serves a modified copy of the terminal HTML
+    # from a local HTTP server on localhost. This avoids the cross-origin
+    # postMessage issue that occurs when the launcher is served via file://.
+    #
+    # The local HTTP server:
+    # - Serves the modified terminal HTML (with JWT injected as window.TERMINAL_JWT)
+    # - Serves static assets (xterm.js, css) from the Hydrogen server
+    # - Proxies /api/* requests to the Hydrogen server with JWT in Authorization
+    #
+    # The terminal page:
+    # - Checks window.TERMINAL_JWT first (standalone mode), bypassing postMessage
+    # - Uses window.TERMINAL_SERVER_ORIGIN (the local proxy) for API calls
+    # - WebSocket URL comes from the proxy'd /api/system/info response
+    # - WebSocket connects directly to wss:// server (no CORS for WebSockets)
+    #
+    # JWT is never persisted to localStorage or disk — it exists only in the
+    # HTML file's memory and the shell variable during script execution.
+    #
+    # CORS note: The Hydrogen API CORS restricts to https://www.500courses.com
+    # and https://500courses.com. By proxying API calls through the local server,
+    # the browser makes same-origin requests — no CORS issue.
 
-    # Embed the JWT and terminal config into a temporary HTML page that:
-    # - Creates the terminal iframe
-    # - Receives postMessage from the iframe (terminal-config-request)
-    # - Replies with the JWT via exact-origin postMessage
-    # - Never persists the JWT to localStorage or any file
-    cat > "${LAUNCHER_FILE}" << 'HTML_HEAD'
-<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>Hydrogen Terminal Launcher</title>
-<style>
-  body { margin:0; padding:0; background:#1e1e1e; overflow:hidden; }
-  #container { width:100vw; height:100vh; }
-  #loading {
-    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
-    color:#cccccc; font-family:monospace; font-size:14px;
-  }
-</style>
-</head>
-<body>
-<div id="container">
-  <iframe id="terminal-iframe" style="width:100%;height:100vh;border:none;"
-          allow="fullscreen"></iframe>
-</div>
-<div id="loading">Loading terminal...</div>
-<script>
-(function() {
-    'use strict';
-
-    // These values are injected at runtime — never read from localStorage.
-    var JWT = "__JWT_TOKEN__";
-    var TERMINAL_URL = "__TERMINAL_URL__";
-    var TERMINAL_PROTOCOL = "__TERMINAL_PROTOCOL__";
-    var SERVER_ORIGIN = "__SERVER_ORIGIN__";
-
-    var iframe = document.getElementById('terminal-iframe');
-    var loading = document.getElementById('loading');
-
-    // Set the iframe src to the terminal page served by Hydrogen
-    iframe.src = TERMINAL_URL.replace(/^wss:\/\//, 'https://').replace(/^ws:\/\//, 'http://');
-
-    // Listen for config requests from the iframe
-    window.addEventListener('message', function(event) {
-        // Exact origin validation — only accept messages from the server origin
-        if (event.origin !== SERVER_ORIGIN) {
-            return;
-        }
-        // Verify the sender is our iframe
-        if (event.source !== iframe.contentWindow) {
-            return;
-        }
-        if (!event.data || typeof event.data !== 'object') {
-            return;
-        }
-        if (event.data.type === 'terminal-config-request') {
-            // Hand the JWT to the iframe via exact-origin postMessage
-            // JWT stays only in this page's memory — never persisted
-            event.source.postMessage(
-                { type: 'terminal-config', config: { jwt: JWT } },
-                SERVER_ORIGIN
-            );
-            loading.style.display = 'none';
-        }
-    });
-
-    // Clear the JWT from memory when the page is unloaded
-    window.addEventListener('beforeunload', function() {
-        JWT = '';
-    });
-})();
-</script>
-</body>
-</html>
-HTML_HEAD
-
-    # Inject redacted values (the JWT and key go into the HTML file only as
-    # runtime page content, not into logs or shell history)
-    # Extract scheme://host[:port] from SERVER_URL using parameter expansion
-    local scheme host_part
+    local scheme host_part server_origin
     scheme="${SERVER_URL%%://*}"
     host_part="${SERVER_URL#*://}"
     host_part="${host_part%%/*}"
     server_origin="${scheme}://${host_part}"
 
-    sed -i \
-        -e "s|__JWT_TOKEN__|${JWT_TOKEN}|g" \
-        -e "s|__TERMINAL_URL__|${TERMINAL_URL}|g" \
-        -e "s|__TERMINAL_PROTOCOL__|${TERMINAL_PROTOCOL}|g" \
-        -e "s|__SERVER_ORIGIN__|${server_origin}|g" \
-        "${LAUNCHER_FILE}"
+    # Pick a random port for the local HTTP server
+    LOCAL_SERVER_PORT=$(node -e "const s=require('net').createServer(); s.listen(0,'127.0.0.1',()=>{console.log(s.address().port); s.close()})")
+    local server_dir="/tmp/terminal_launcher_${LOCAL_SERVER_PORT}"
+    mkdir -p "${server_dir}"
+
+    LAUNCHER_FILE="${server_dir}/index.html"
+
+    # Fetch the terminal HTML from the Hydrogen server (authenticated).
+    # Write directly to a file to handle binary content safely (null bytes,
+    # non-UTF-8 sequences in minified JS) without bash variable corruption.
+    local raw_html_file="${server_dir}/_raw_terminal.html"
+    local http_code
+    http_code=$(curl -sL "${SERVER_URL}/terminal/" \
+        -H "Authorization: Bearer ${JWT_TOKEN}" \
+        -o "${raw_html_file}" \
+        -w "%{http_code}")
+
+    if [[ "${http_code}" != "200" ]] || [[ ! -s "${raw_html_file}" ]]; then
+        log_error "Failed to fetch terminal HTML from ${SERVER_URL}/terminal/ (HTTP ${http_code})"
+        rm -rf "${server_dir}"
+        exit 1
+    fi
+
+    # Fetch static assets referenced by terminal.html with relative URLs.
+    # Write directly to files in the local server directory to handle binary
+    # content safely without bash variable corruption.
+    log_info "Fetching terminal assets from server..."
+    curl -sL "${SERVER_URL}/terminal/xterm.js" -o "${server_dir}/xterm.js" || true
+    curl -sL "${SERVER_URL}/terminal/xterm.css" -o "${server_dir}/xterm.css" || true
+    curl -sL "${SERVER_URL}/terminal/terminal.css" -o "${server_dir}/terminal.css" || true
+    curl -sL "${SERVER_URL}/terminal/xterm-addon-attach.js" -o "${server_dir}/xterm-addon-attach.js" || true
+    curl -sL "${SERVER_URL}/terminal/xterm-addon-fit.js" -o "${server_dir}/xterm-addon-fit.js" || true
+
+    # Inject JWT and local server origin into the terminal HTML.
+    # window.TERMINAL_JWT: checked first in fetchTerminalConfig() — standalone mode
+    # window.TERMINAL_SERVER_ORIGIN: used by getApiBase() for API calls (local proxy)
+    export LAUNCHER_FILE
+    export raw_html_file
+    export JWT_TOKEN
+    export LOCAL_SERVER_PORT
+
+    node -e "
+const fs = require('fs');
+const jwt = process.env.JWT_TOKEN;
+const localOrigin = 'http://127.0.0.1:' + process.env.LOCAL_SERVER_PORT;
+const rawPath = process.env.raw_html_file;
+const outPath = process.env.LAUNCHER_FILE;
+
+const inject = '<script>\\nwindow.TERMINAL_JWT = ' + JSON.stringify(jwt) + ';\\nwindow.TERMINAL_SERVER_ORIGIN = ' + JSON.stringify(localOrigin) + ';\\n</script>\\n';
+
+const content = fs.readFileSync(rawPath);
+const headIdx = content.indexOf('<head>');
+if (headIdx === -1) {
+  console.error('ERROR: <head> tag not found in terminal HTML');
+  process.exit(1);
+}
+const result = Buffer.concat([
+  content.slice(0, headIdx + 6),
+  Buffer.from(inject, 'utf8'),
+  content.slice(headIdx + 6)
+]);
+fs.writeFileSync(outPath, result);
+"
+    rm -f "${raw_html_file}"
 
     log_info "Launcher page ready."
+
+    # Start a local HTTP server in the background that:
+    # - Serves static files (terminal HTML, xterm.js, css) from the server_dir
+    # - Proxies /api/* requests to the Hydrogen server with JWT
+    log_info "Starting local HTTP server on http://127.0.0.1:${LOCAL_SERVER_PORT}"
+
+    export PROXY_TARGET="${server_origin}"
+    export PROXY_JWT="${JWT_TOKEN}"
+    export SERVER_DIR="${server_dir}"
+    export LOCAL_SERVER_PORT
+
+    node -e "
+const http = require('http');
+const fs = require('fs');
+const path = require('path');
+const https = require('https');
+const { URL } = require('url');
+
+const SERVER_DIR = process.env.SERVER_DIR;
+const PROXY_TARGET = process.env.PROXY_TARGET;
+const PROXY_JWT = process.env.PROXY_JWT;
+
+function getContentType(filePath) {
+  const ext = path.extname(filePath).toLowerCase();
+  const types = {
+    '.html': 'text/html; charset=utf-8',
+    '.js': 'application/javascript; charset=utf-8',
+    '.css': 'text/css; charset=utf-8',
+    '.json': 'application/json; charset=utf-8',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.svg': 'image/svg+xml',
+    '.woff': 'font/woff',
+    '.woff2': 'font/woff2',
+  };
+  return types[ext] || 'application/octet-stream';
+}
+
+function proxyRequest(req, res) {
+  const targetUrl = PROXY_TARGET + req.url;
+  const parsedUrl = new URL(targetUrl);
+  const options = {
+    hostname: parsedUrl.hostname,
+    port: parsedUrl.port || (parsedUrl.protocol === 'https:' ? 443 : 80),
+    path: parsedUrl.pathname + parsedUrl.search,
+    method: req.method,
+    headers: {
+      'Authorization': 'Bearer ' + PROXY_JWT,
+      'Accept': '*/*',
+    },
+  };
+
+  const client = parsedUrl.protocol === 'https:' ? https : http;
+  const proxyReq = client.request(options, (proxyRes) => {
+    res.writeHead(proxyRes.statusCode, {
+      ...proxyRes.headers,
+      'connection': 'close',
+      'transfer-encoding': '',
+    });
+    proxyRes.pipe(res);
+  });
+
+  proxyReq.on('error', (e) => {
+    res.writeHead(502);
+    res.end(e.message);
+  });
+
+  if (req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH') {
+    req.pipe(proxyReq);
+  } else {
+    proxyReq.end();
+  }
+}
+
+const server = http.createServer((req, res) => {
+  if (req.url.startsWith('/api/')) {
+    proxyRequest(req, res);
+    return;
+  }
+
+  let filePath = '.' + req.url;
+  if (filePath === './') {
+    filePath = './index.html';
+  }
+  filePath = path.join(SERVER_DIR, filePath);
+
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      res.writeHead(404);
+      res.end('Not Found');
+    } else {
+      res.writeHead(200, { 'Content-Type': getContentType(filePath) });
+      res.end(data);
+    }
+  });
+});
+
+server.listen(parseInt(process.env.LOCAL_SERVER_PORT), '127.0.0.1', () => {
+  // Server is ready
+});
+" &
+    LOCAL_SERVER_PID=$!
+
+    # Wait for the server to start
+    local retries=0
+    while ! curl -s "http://127.0.0.1:${LOCAL_SERVER_PORT}/" --max-time 1 >/dev/null 2>&1; do
+        retries=$((retries + 1))
+        if [[ ${retries} -ge 20 ]]; then
+            log_error "Failed to start local HTTP server on port ${LOCAL_SERVER_PORT}"
+            kill "${LOCAL_SERVER_PID}" 2>/dev/null || true
+            rm -rf "${server_dir}"
+            exit 1
+        fi
+        sleep 0.2
+    done
+
     log_info "Opening in browser..."
 
     if command -v "${BROWSER_CMD}" >/dev/null 2>&1; then
-        "${BROWSER_CMD}" "file://${LAUNCHER_FILE}" 2>/dev/null &
+        "${BROWSER_CMD}" "http://127.0.0.1:${LOCAL_SERVER_PORT}/" --new-window 2>/dev/null &
         log_info "Terminal launcher opened. Close the browser tab when done."
     else
         log_error "Browser command '${BROWSER_CMD}' not found."
-        log_error "Launcher file location: ${LAUNCHER_FILE}"
-        log_info "Open this file in a browser: file://${LAUNCHER_FILE}"
+        log_info "Open this URL in a browser: http://127.0.0.1:${LOCAL_SERVER_PORT}/"
     fi
+
+    log_info "Local HTTP server running on http://127.0.0.1:${LOCAL_SERVER_PORT}"
+    log_info "Press Ctrl-C to stop the server and exit."
+
+    # Trap Ctrl-C and clean up
+    trap 'kill "${LOCAL_SERVER_PID}" 2>/dev/null; rm -rf "${server_dir}"; echo ""; echo "Server stopped."; exit 0' INT TERM
+
+    # Keep the script alive while the server runs; Ctrl-C will trigger the trap
+    wait "${LOCAL_SERVER_PID}" 2>/dev/null || true
+    kill "${LOCAL_SERVER_PID}" 2>/dev/null || true
+    rm -rf "${server_dir}"
 }
 
 # ---------------------------------------------------------------------------

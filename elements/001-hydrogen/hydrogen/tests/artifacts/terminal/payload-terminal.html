@@ -182,7 +182,18 @@
                 // The parent origin is this iframe's origin (same-origin by
                 // deployment contract). Use exact targetOrigin — never wildcard.
                 // No localStorage JWT fallback in production.
+                //
+                // Standalone path: when loaded outside an iframe (e.g. via
+                // terminal-launcher.sh), the JWT is injected as a global
+                // variable (window.TERMINAL_JWT) by the hosting page. This is
+                // in-memory only — never persisted to localStorage or disk.
                 return new Promise(function(resolve, reject) {
+                    // Check for standalone JWT injection first (terminal-launcher.sh)
+                    if (typeof window !== 'undefined' && window.TERMINAL_JWT) {
+                        resolve(window.TERMINAL_JWT);
+                        return;
+                    }
+
                     const parentOrigin = window.location.origin || '*';
 
                     // Timeout: if parent does not respond, fail.
@@ -217,6 +228,12 @@
             }
 
             function getApiBase() {
+                // In standalone mode (terminal-launcher.sh), the page is served
+                // from a local HTTP server. Use the injected server origin for
+                // API calls instead of the local server's origin.
+                if (typeof window !== 'undefined' && window.TERMINAL_SERVER_ORIGIN) {
+                    return window.TERMINAL_SERVER_ORIGIN;
+                }
                 // Derive the API base from the iframe's own origin. The iframe
                 // is served from the same origin as the API (Hydrogen serves
                 // both the terminal page and /api).

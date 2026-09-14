@@ -5,6 +5,12 @@
 # This script downloads xterm.js from GitHub and creates terminal interface assets
 
 # Change Log:
+# 2.3.0 - 2026-09-14 - Phase 14: Added standalone mode for terminal-launcher.sh.
+#                    terminal.html now checks window.TERMINAL_JWT before attempting
+#                    postMessage to parent frame, enabling in-memory JWT injection
+#                    without localStorage or filesystem persistence. getApiBase()
+#                    supports window.TERMINAL_SERVER_ORIGIN for local proxy mode.
+#                    Production Lithium SPA postMessage flow is unchanged.
 # 2.2.0 - 2026-09-11 - Phase 3 payload: removed localStorage JWT fallback, hardcoded
 #                    port/protocol fallbacks, wildcard postMessage, and full response
 #                    logging. Requires parent-frame JWT handoff with exact-origin
@@ -31,7 +37,7 @@ fi
 set -e
 
 # Display script information
-echo "terminal-generate.sh version 2.3.0"
+echo "terminal-generate.sh version 2.3.1"
 echo "xterm.js Payload Generator for Hydrogen Terminal"
 
 # xterm.js versions to use (latest available)
@@ -265,7 +271,18 @@ create_terminal_interface() {
                 // The parent origin is this iframe's origin (same-origin by
                 // deployment contract). Use exact targetOrigin — never wildcard.
                 // No localStorage JWT fallback in production.
+                //
+                // Standalone path: when loaded outside an iframe (e.g. via
+                // terminal-launcher.sh), the JWT is injected as a global
+                // variable (window.TERMINAL_JWT) by the hosting page. This is
+                // in-memory only — never persisted to localStorage or disk.
                 return new Promise(function(resolve, reject) {
+                    // Check for standalone JWT injection first (terminal-launcher.sh)
+                    if (typeof window !== 'undefined' && window.TERMINAL_JWT) {
+                        resolve(window.TERMINAL_JWT);
+                        return;
+                    }
+
                     const parentOrigin = window.location.origin || '*';
 
                     // Timeout: if parent does not respond, fail.
@@ -300,6 +317,12 @@ create_terminal_interface() {
             }
 
             function getApiBase() {
+                // In standalone mode (terminal-launcher.sh), the page is served
+                // from a local HTTP server. Use the injected server origin for
+                // API calls instead of the local server's origin.
+                if (typeof window !== 'undefined' && window.TERMINAL_SERVER_ORIGIN) {
+                    return window.TERMINAL_SERVER_ORIGIN;
+                }
                 // Derive the API base from the iframe's own origin. The iframe
                 // is served from the same origin as the API (Hydrogen serves
                 // both the terminal page and /api).
