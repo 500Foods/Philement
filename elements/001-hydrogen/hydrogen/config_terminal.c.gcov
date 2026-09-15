@@ -1,0 +1,195 @@
+        -:    0:Source:/mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/src/config/config_terminal.c
+        -:    0:Graph:build/unity/src/config/config_terminal.gcno
+        -:    0:Data:build/unity/src/config/config_terminal.gcda
+        -:    0:Runs:11
+        -:    1:/*
+        -:    2: * Terminal Configuration Implementation
+        -:    3: *
+        -:    4: * Implements the configuration handlers for the terminal subsystem,
+        -:    5: * including JSON parsing and environment variable handling.
+        -:    6: */
+        -:    7:
+        -:    8: // Global includes 
+        -:    9:#include <src/hydrogen.h>
+        -:   10:
+        -:   11:// Local includes
+        -:   12:#include "config_terminal.h"
+        -:   13:
+       29:   14:bool load_terminal_config(json_t* root, AppConfig* config) {
+        -:   15:    // Initialize with defaults
+       29:   16:    TerminalConfig* terminal = &config->terminal;
+       29:   17:    terminal->enabled = true;  // Enable by default for better UX
+       29:   18:    terminal->max_sessions = 4;  // Conservative default
+       29:   19:    terminal->idle_timeout_seconds = 300;  // 5 minutes idle timeout
+       29:   20:    terminal->buffer_size = 512;  // 512 bytes - small enough to fit in WebSocket with JSON overhead
+        -:   21:    
+        -:   22:    // Initialize string fields with defaults
+       29:   23:    terminal->web_path = strdup("/terminal");  // Standard web path
+       29:   24:    if (!terminal->web_path) {
+        3:   25:        log_this(SR_TERMINAL, "Failed to allocate web path string", LOG_LEVEL_ERROR, 0);
+        3:   26:        return false;
+        -:   27:    }
+        -:   28:
+       26:   29:    terminal->shell_command = strdup("/bin/zsh");  // Default shell
+       26:   30:    if (!terminal->shell_command) {
+        -:   31:        // Fallback to bash if zsh allocation fails
+        3:   32:        terminal->shell_command = strdup("/bin/bash");
+        3:   33:        if (!terminal->shell_command) {
+    #####:   34:            log_this(SR_TERMINAL, "Failed to allocate shell command string", LOG_LEVEL_ERROR, 0);
+    #####:   35:            free(terminal->web_path);
+    #####:   36:            terminal->web_path = NULL;
+    #####:   37:            return false;
+        -:   38:        }
+        -:   39:    }
+        -:   40:
+        -:   41:    // NEW: Initialize WebRoot and CORS fields
+       26:   42:    terminal->webroot = strdup("PAYLOAD:/terminal");  // Default WebRoot
+       26:   43:    if (!terminal->webroot) {
+        2:   44:        log_this(SR_TERMINAL, "Failed to allocate webroot string", LOG_LEVEL_ERROR, 0);
+        2:   45:        free(terminal->web_path);
+        2:   46:        free(terminal->shell_command);
+        2:   47:        terminal->web_path = NULL;
+        2:   48:        terminal->shell_command = NULL;
+        2:   49:        return false;
+        -:   50:    }
+        -:   51:
+       24:   52:    terminal->cors_origin = strdup("*");  // NEW: Allow all origins by default
+        -:   53:
+       24:   54:    terminal->index_page = strdup("terminal.html");  // NEW: Default index page
+       24:   55:    if (!terminal->index_page) {
+        2:   56:        log_this(SR_TERMINAL, "Failed to allocate index page string", LOG_LEVEL_ERROR, 0);
+        2:   57:        free(terminal->web_path);
+        2:   58:        free(terminal->shell_command);
+        2:   59:        free(terminal->webroot);
+        2:   60:        free(terminal->cors_origin);
+        2:   61:        terminal->web_path = NULL;
+        2:   62:        terminal->shell_command = NULL;
+        2:   63:        terminal->webroot = NULL;
+        2:   64:        terminal->cors_origin = NULL;
+        2:   65:        return false;
+        -:   66:    }
+        -:   67:
+       22:   68:    terminal->protocol = strdup("terminal");
+       22:   69:    if (!terminal->protocol) {
+        3:   70:        log_this(SR_TERMINAL, "Failed to allocate protocol string", LOG_LEVEL_ERROR, 0);
+        3:   71:        free(terminal->web_path);
+        3:   72:        free(terminal->shell_command);
+        3:   73:        free(terminal->webroot);
+        3:   74:        free(terminal->cors_origin);
+        3:   75:        free(terminal->index_page);
+        3:   76:        terminal->web_path = NULL;
+        3:   77:        terminal->shell_command = NULL;
+        3:   78:        terminal->webroot = NULL;
+        3:   79:        terminal->cors_origin = NULL;
+        3:   80:        terminal->index_page = NULL;
+        3:   81:        return false;
+        -:   82:    }
+        -:   83:
+       19:   84:    terminal->key = strdup("${env.WEBSOCKET_TERMINAL_KEY}");
+       19:   85:    if (!terminal->key) {
+        3:   86:        log_this(SR_TERMINAL, "Failed to allocate key string", LOG_LEVEL_ERROR, 0);
+        3:   87:        free(terminal->web_path);
+        3:   88:        free(terminal->shell_command);
+        3:   89:        free(terminal->webroot);
+        3:   90:        free(terminal->cors_origin);
+        3:   91:        free(terminal->index_page);
+        3:   92:        free(terminal->protocol);
+        3:   93:        terminal->web_path = NULL;
+        3:   94:        terminal->shell_command = NULL;
+        3:   95:        terminal->webroot = NULL;
+        3:   96:        terminal->cors_origin = NULL;
+        3:   97:        terminal->index_page = NULL;
+        3:   98:        terminal->protocol = NULL;
+        3:   99:        return false;
+        -:  100:    }
+        -:  101:
+        -:  102:    // Process configuration values
+       16:  103:    bool success = true;
+        -:  104:
+        -:  105:    // Process main section and enabled flag
+       16:  106:    success = PROCESS_SECTION(root, SR_TERMINAL);
+      16*:  107:    success = success && PROCESS_BOOL(root, terminal, enabled, SR_TERMINAL ".Enabled", SR_TERMINAL);
+        -:  108:    
+        -:  109:    
+      16*:  110:        success = success && PROCESS_STRING(root, terminal, web_path, SR_TERMINAL ".WebPath", SR_TERMINAL);
+      16*:  111:        success = success && PROCESS_STRING(root, terminal, shell_command, SR_TERMINAL ".ShellCommand", SR_TERMINAL);
+      16*:  112:        success = success && PROCESS_INT(root, terminal, max_sessions, SR_TERMINAL ".MaxSessions", SR_TERMINAL);
+      16*:  113:        success = success && PROCESS_INT(root, terminal, idle_timeout_seconds, SR_TERMINAL ".IdleTimeoutSeconds", SR_TERMINAL);
+      16*:  114:        success = success && PROCESS_INT(root, terminal, buffer_size, SR_TERMINAL ".BufferSize", SR_TERMINAL);
+        -:  115:// NEW: Process WebRoot, CORS, and IndexPage fields
+      16*:  116:success = success && PROCESS_STRING(root, terminal, webroot, SR_TERMINAL ".WebRoot", SR_TERMINAL);
+      16*:  117:success = success && PROCESS_STRING(root, terminal, cors_origin, SR_TERMINAL ".CORSOrigin", SR_TERMINAL);
+      16*:  118:success = success && PROCESS_STRING(root, terminal, index_page, SR_TERMINAL ".IndexPage", SR_TERMINAL);
+      16*:  119:success = success && PROCESS_STRING(root, terminal, protocol, SR_TERMINAL ".Protocol", SR_TERMINAL);
+      16*:  120:success = success && PROCESS_SENSITIVE(root, terminal, key, SR_TERMINAL ".Key", SR_TERMINAL);
+        -:  121:
+        -:  122:    
+       16:  123:    return success;
+        -:  124:}
+        -:  125:
+       22:  126:void cleanup_terminal_config(TerminalConfig* config) {
+       22:  127:    if (!config) {
+        2:  128:        return;
+        -:  129:    }
+        -:  130:
+       20:  131:    free(config->web_path);
+       20:  132:    free(config->shell_command);
+       20:  133:    free(config->webroot);           // NEW
+       20:  134:    free(config->cors_origin);       // NEW
+       20:  135:    free(config->index_page);        // NEW
+       20:  136:    free(config->protocol);
+       20:  137:    free(config->key);
+       20:  138:    memset(config, 0, sizeof(TerminalConfig));
+        -:  139:}
+        -:  140:
+        4:  141:void dump_terminal_config(const TerminalConfig* config) {
+        4:  142:    if (!config) {
+        2:  143:        DUMP_TEXT("", "Cannot dump NULL terminal config");
+        2:  144:        return;
+        -:  145:    }
+        -:  146:
+        -:  147:    // Dump enabled status
+       2*:  148:    DUMP_BOOL2("――", "Enabled", config->enabled);
+        -:  149:    
+        -:  150:        char value_str[256];
+        -:  151:        
+        -:  152:        // Web Path
+       2*:  153:        snprintf(value_str, sizeof(value_str), "Web Path: %s", 
+        2:  154:                config->web_path ? config->web_path : "(not set)");
+        2:  155:        DUMP_TEXT("――", value_str);
+        -:  156:        
+        -:  157:        // Shell Command
+       2*:  158:        snprintf(value_str, sizeof(value_str), "Shell Command: %s",
+        2:  159:                config->shell_command ? config->shell_command : "(not set)");
+        2:  160:        DUMP_TEXT("――", value_str);
+        -:  161:        
+        -:  162:        // Max Sessions
+        2:  163:        snprintf(value_str, sizeof(value_str), "Max Sessions: %d",
+        2:  164:                config->max_sessions);
+        2:  165:        DUMP_TEXT("――", value_str);
+        -:  166:        
+        -:  167:        // Idle Timeout
+        2:  168:        snprintf(value_str, sizeof(value_str), "Idle Timeout: %d seconds",
+        2:  169:                config->idle_timeout_seconds);
+        2:  170:        DUMP_TEXT("――", value_str);
+        -:  171:        
+        -:  172:        // Buffer Size
+        2:  173:        snprintf(value_str, sizeof(value_str), "Buffer Size: %d bytes",
+        2:  174:                config->buffer_size);
+        2:  175:        DUMP_TEXT("――", value_str);
+        -:  176:
+        -:  177:        // NEW: WebRoot
+       2*:  178:        snprintf(value_str, sizeof(value_str), "WebRoot: %s",
+        2:  179:                config->webroot ? config->webroot : "(not set)");
+        2:  180:        DUMP_TEXT("――", value_str);
+        -:  181:// NEW: CORS Origin
+       2*:  182:DUMP_STRING2("――", "CORS Origin", config->cors_origin);
+        -:  183:
+        -:  184:// NEW: Index Page
+       2*:  185:DUMP_STRING2("――", "Index Page", config->index_page);
+        -:  186:
+       2*:  187:DUMP_STRING2("――", "Protocol", config->protocol);
+       2*:  188:DUMP_SECRET("―― Key", config->key);
+        -:  189:
+        -:  190:    
+        -:  191:}

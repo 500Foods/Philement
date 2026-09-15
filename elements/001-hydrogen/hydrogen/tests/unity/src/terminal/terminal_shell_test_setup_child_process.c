@@ -1,7 +1,7 @@
 /*
  * Unity Test File: Terminal Shell setup_child_process Tests
- * Tests terminal_shell.c setup_child_process function using fork-based approach
- * Covers test_mode_force_execv_failure, test_mode_no_exit, and test_mode_force_tty_failure
+ * Tests terminal_shell.c setup_child_process function
+ * Uses test_mode variables to force specific failure paths
  */
 
 #include <src/hydrogen.h>
@@ -14,6 +14,16 @@
 #include <sys/wait.h>
 #include <sys/ioctl.h>
 #include <signal.h>
+
+// Include mocks for external dependencies
+#include <unity/mocks/mock_libwebsockets.h>
+#include <unity/mocks/mock_libmicrohttpd.h>
+
+// Include mock system (terminal sources are compiled with USE_MOCK_SYSTEM)
+#ifndef USE_MOCK_SYSTEM
+#define USE_MOCK_SYSTEM
+#endif
+#include <unity/mocks/mock_system.h>
 
 // Access to test mode variables - defined in terminal_shell.c under UNITY_TEST_MODE
 extern bool test_mode_force_execv_failure;
@@ -53,6 +63,11 @@ void reset_test_mode_vars(void) {
 }
 
 void setUp(void) {
+    // Reset mocks
+    mock_mhd_reset_all();
+    mock_session_reset_all();
+    mock_system_reset_all();
+
     test_session = create_test_session();
     reset_test_mode_vars();
 }
@@ -62,6 +77,7 @@ void tearDown(void) {
         free(test_session);
         test_session = NULL;
     }
+    mock_system_reset_all();
     reset_test_mode_vars();
 }
 
@@ -194,7 +210,7 @@ void test_setup_child_process_both_execs_fail_no_exit(void) {
 
 /*
  * TEST SUITE: setup_child_process - real ioctl failure with invalid fd
- * Passes a closed fd to trigger real EBADF on ioctl
+ * Uses mock ioctl failure to trigger the EBADF path (not test_mode path)
  */
 void test_setup_child_process_real_ioctl_failure(void) {
     int master_fd, slave_fd;
@@ -205,8 +221,11 @@ void test_setup_child_process_real_ioctl_failure(void) {
         return;
     }
 
-    // Close slave_fd before fork so child inherits it as closed
-    close(slave_fd);
+    // Configure: test_mode tty failure OFF, ioctl mocked to fail, no_exit OFF
+    // This exercises the real ioctl call path (lines 111-119) which is mocked to return -1
+    test_mode_force_tty_failure = false;
+    test_mode_no_exit = false;
+    mock_system_set_ioctl_failure(1);
 
     pid_t pid = fork();
     TEST_ASSERT_TRUE(pid >= 0);

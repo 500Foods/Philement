@@ -194,6 +194,11 @@ void test_pty_is_running_process_terminated_sets_running_false(void) {
     shell->running = true;
     shell->session = test_session;
 
+    // Simulate waitpid returning -1 (ECHILD = no child process)
+    // so pty_is_running detects the process is gone and sets running=false
+    mock_system_set_waitpid_result(-1);
+    errno = ECHILD;
+
     // Call pty_is_running - should detect process doesn't exist and set running=false
     bool result = pty_is_running(shell);
 

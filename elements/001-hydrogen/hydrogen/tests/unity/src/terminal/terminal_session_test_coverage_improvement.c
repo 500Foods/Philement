@@ -19,6 +19,13 @@ void terminal_session_enable_cleanup_thread(void);
 #include <unity/mocks/mock_libwebsockets.h>
 #include <unity/mocks/mock_libmicrohttpd.h>
 
+// Include mock system so fork/waitpid/close are mocked, not real
+// terminal sources are compiled with USE_MOCK_SYSTEM via CMake
+#ifndef USE_MOCK_SYSTEM
+#define USE_MOCK_SYSTEM
+#endif
+#include <unity/mocks/mock_system.h>
+
 // Include the actual header to get the real struct definitions
 #include <src/terminal/terminal_session.h>
 
@@ -82,9 +89,17 @@ void setUp(void) {
     terminal_session_disable_cleanup_thread(); // Don't start cleanup thread
     terminal_session_set_test_cleanup_interval(1); // Very short interval if enabled
 
-    // Reset mocks (only MHD since we don't need LWS for session tests)
+    // Reset mocks and configure mock system to avoid real fork/spawn
     mock_mhd_reset_all();
     mock_session_reset_all();
+    mock_system_reset_all();
+    // Use mocked fork (not real) to avoid spawning real shell processes
+    mock_use_real_fork = 0;
+    mock_fork_result = 99999;
+    mock_use_real_waitpid = 0;
+    mock_waitpid_result = 0;  // 0 = process still running (WNOHANG)
+    mock_use_real_close = 0;
+    mock_close_should_fail = 0;
 }
 
 void tearDown(void) {
@@ -93,6 +108,7 @@ void tearDown(void) {
         cleanup_session_manager();
     }
     global_session_manager = original_manager;
+    mock_system_reset_all();
 }
 
 

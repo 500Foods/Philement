@@ -15,7 +15,9 @@
 // #define USE_MOCK_LIBWEBSOCKETS  // Already defined by CMake
 #define USE_MOCK_LIBMICROHTTPD
 #define USE_MOCK_TERMINAL_WEBSOCKET
+#ifndef USE_MOCK_SYSTEM
 #define USE_MOCK_SYSTEM
+#endif
 
 // Include mocks
 #include <unity/mocks/mock_libwebsockets.h>

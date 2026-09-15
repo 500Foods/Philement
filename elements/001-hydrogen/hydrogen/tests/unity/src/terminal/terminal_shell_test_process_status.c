@@ -15,6 +15,13 @@
 #include <unity/mocks/mock_libwebsockets.h>
 #include <unity/mocks/mock_libmicrohttpd.h>
 
+// Include mock system for waitpid/kill mocking (terminal sources are compiled with USE_MOCK_SYSTEM)
+#ifndef USE_MOCK_SYSTEM
+#define USE_MOCK_SYSTEM
+#endif
+#include <unity/mocks/mock_system.h>
+#include <errno.h>
+
 // Test fixtures
 static PtyShell *test_shell = NULL;
 static TerminalSession *test_session = NULL;
@@ -34,6 +41,7 @@ void setUp(void) {
     // Reset mocks
     mock_mhd_reset_all();
     mock_session_reset_all();
+    mock_system_reset_all();
 
     // Create test fixtures
     test_session = create_mock_session_for_process_tests();
@@ -43,6 +51,7 @@ void setUp(void) {
 void tearDown(void) {
     // Clean up test resources
     cleanup_process_test_resources();
+    mock_system_reset_all();
 }
 
 // Helper function to create a mock terminal session for process tests
@@ -96,8 +105,9 @@ void cleanup_process_test_resources(void) {
 void test_pty_is_running_process_exited(void) {
     PtyShell *shell = create_mock_shell_for_process_tests();
 
-    // Mock a PID that doesn't exist (simulating exited process)
-    shell->pid = 99999; // Non-existent PID
+    // Mock waitpid to return the PID (process exited normally)
+    mock_system_set_waitpid_result(shell->pid);
+    mock_system_set_waitpid_status(0);
 
     bool result = pty_is_running(shell);
 
@@ -112,8 +122,9 @@ void test_pty_is_running_process_exited(void) {
 void test_pty_is_running_process_signaled(void) {
     PtyShell *shell = create_mock_shell_for_process_tests();
 
-    // Mock a PID that doesn't exist (simulating signaled process)
-    shell->pid = 99998; // Non-existent PID
+    // Mock waitpid to return the PID (process was signaled, SIGKILL=9)
+    mock_system_set_waitpid_result(shell->pid);
+    mock_system_set_waitpid_status(0x80 | 9);  // WIFSIGNALED
 
     bool result = pty_is_running(shell);
 
@@ -128,18 +139,19 @@ void test_pty_is_running_process_signaled(void) {
  * TEST SUITE: pty_terminate_shell - Process Termination Testing
  */
 
-// Test pty_terminate_shell when kill fails for non-existent process
+// Test pty_terminate_shell when kill succeeds (process terminated)
 void test_pty_terminate_shell_sigkill_path(void) {
     PtyShell *shell = create_mock_shell_for_process_tests();
 
-    // Use a non-existent PID to simulate process that doesn't exist
-    shell->pid = 99997; // Non-existent PID
+    // kill succeeds (mock default returns 0)
+    // pty_terminate_shell sends SIGTERM and returns true
+    // It does NOT call waitpid afterwards; it just sets running=false
 
     bool result = pty_terminate_shell(shell);
 
-    // Should fail to send signal to non-existent process
-    TEST_ASSERT_FALSE(result); // Function returns false when kill fails
-    // shell->running should still be true since termination didn't succeed
+    // kill succeeded, so pty_terminate_shell should return true
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_FALSE(shell->running); // Should be set to false
 
     cleanup_process_test_resources();
 }
@@ -148,8 +160,8 @@ void test_pty_terminate_shell_sigkill_path(void) {
 void test_pty_terminate_shell_waitpid_error(void) {
     PtyShell *shell = create_mock_shell_for_process_tests();
 
-    // Use a non-existent PID
-    shell->pid = 99996; // Non-existent PID
+    // Force kill to fail
+    mock_system_set_kill_failure(1);
 
     bool result = pty_terminate_shell(shell);
 

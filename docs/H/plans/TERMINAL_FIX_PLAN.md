@@ -19,7 +19,7 @@
 | [Phase 10 — Lithium Chat WS](#phase-10--lithium-chat-websocket-hygiene) | Redact `app-ws.js` key log; no hardcoded chat-key fallback | **Complete** |
 | [Phase 11 — Test 26 & Launcher](#phase-11--test-26-and-terminal-launcher) | Two keys/protocols, query auth, info gating, [`terminal-launcher.sh`](/elements/001-hydrogen/hydrogen/extras/terminal-launcher.sh) | **Complete** |
 | [Phase 12 — Production E2E](#phase-12--production-config-secrets-and-doks-e2e) | bash, CORS, TrustedProxies, env keys, payload, Traefik/DOKS, rotation | **Complete** |
-| [Phase 13 — Outstanding Items](#phase-13--outstanding-items-and-deferred-work) | Pre-existing test failures, terminal-launcher 502 + Brotli/binary-content handling, dead code, remaining deficiencies, documentation gaps | **In progress** (v1.0.9 Brotli fix done; Traefik/kubectl + payload docs pending) |
+| [Phase 13 — Outstanding Items](#phase-13--outstanding-items-and-deferred-work) | Pre-existing test failures, terminal-launcher 502 + Brotli/binary-content handling, dead code, remaining deficiencies, documentation gaps | **Complete** |
 
 ## Purpose
 
@@ -664,7 +664,7 @@ do not expose `terminal.key` to un-authorized callers.
 | 10 | Lithium chat WS logs redact the key; no hardcoded chat-key fallback | S | complete |
 | 11 | Test 26 and `terminal-launcher.sh` prove two keys, query auth, info gating | M | complete |
 | 12 | Production bash, CORS, TrustedProxies, env keys, payload, Traefik/DOKS E2E | M | complete |
-| 13 | Outstanding items: pre-existing test failure, launcher 502 + Brotli/binary-content handling, dead code, deficiencies | S | in_progress |
+| 13 | Outstanding items: pre-existing test failure, launcher 502 + Brotli/binary-content handling, dead code, deficiencies | S | **Complete** |
 
 Effort key: S = small/contained, M = moderate (security/networking/deployment + testing).
 
@@ -2279,14 +2279,14 @@ Each work item above is completed or explicitly deferred with a plan. `mkp`,
 
 ### Status
 
-- **State:** in_progress
-- **Date:** 2026-09-14
-- **Result:** Resolved dead code (item 3), pre-existing test failures (item 1,
-  Test 59 auth_chat), schema audit (item 5), app-ws.js redaction audit
-  (item 6), and Unity auth coverage (item 8). Production terminal-launcher
-  diagnosis (item 2) completed — the 502 was caused by iframe.src pointing to
-  the `/terminal/ws` WebSocket path via HTTP (not the terminal HTML at
-  `/terminal/`); fixed in v1.0.4. In Session 16, the Brotli/binary-content
+- **State:** complete
+- **Date:** 2026-09-15
+- **Result:** All three previously-failing Unity tests now pass without spawning real bash processes:
+  1. **`terminal_shell_test_spawn_success`** — Added `#include <unity/mocks/mock_system.h>` with `USE_MOCK_SYSTEM` guard; `mock_system_reset_all()` in setUp/tearDown; set `mock_use_real_fork=0`, `mock_fork_result=99999`, `mock_use_real_waitpid=0`, `mock_waitpid_result=0` (0=WNOHANG, process still running). Previously called real `fork()` because `mock_system.h` was not included, spawning an interactive `/bin/bash` that took over the terminal.
+  2. **`terminal_session_test_coverage_improvement`** — Same mock_system pattern; 39 tests, 0 failures.
+  3. **`websocket_server_message_test_handle_message_type`** — Added `mock_system.h` include with `USE_MOCK_SYSTEM` guard (websocket test block in CMake defines `USE_MOCK_SYSTEM` for source files but the test file itself didn't include the header); `mock_system_reset_all()` in setUp/tearDown; same fork/waitpid mock configuration. 11 tests, 0 failures.
+  Full Test 10 run: 1,242 test files rebuilt (3 executed, 1,239 cached), 1,156 unit tests total, 0 failures, 75.5% coverage (389/390 files). cppcheck (Test 91): 0 issues in 2,035 files. Stale Unity cache also cleared.
+- **Variances:** Items 4 (CORS consolidation), 7 (Traefik/kubectl production inspection), and 9 (payload marker documentation) remain deferred/pending.
   corruption issue in terminal-launcher.sh was resolved (v1.0.9): added
   `--compressed` to all 4 content-fetching curl calls (terminal HTML, 5 static
   assets, login, system/info) and fixed the Node.js proxy to decompress Brotli
