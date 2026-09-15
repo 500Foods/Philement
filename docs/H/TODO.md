@@ -42,7 +42,7 @@ not open work unless listed below.
 
 | | |
 | --- | --- |
-| **Plan** | [`TERMINAL_FIX_PLAN.md`](/docs/H/plans/TERMINAL_FIX_PLAN.md) |
+| **Plan** | [`TERMINAL_FIX_PLAN_COMPLETE.md`](/docs/H/plans/complete/TERMINAL_FIX_PLAN_COMPLETE.md) |
 | **Effort** | M |
 | **Done** | Phases 0–4, 6, and 7a: trusted proxy, fail-closed chat key, role-32 terminal object, payload/manager exact-origin, Test 26 contract tests, `terminal-launcher.sh`, Test 93 schema (`Terminal.CORSOrigin`/`IndexPage`/`Key`/`Protocol`, `Network.TrustedProxies` cap 16). Live 2026-09-12 inspection of `lithium.500courses.com`. |
 | **Remaining** | Phases 7–12: URI_ARGS query auth, `Terminal.Key`/`Protocol` C loaders and dual-protocol auth, public-vs-JWT-vs-terminal info, Lithium `app-ws.js` redaction, Test 26 + launcher two-key contract, production bash/CORS/TrustedProxies/env keys/payload E2E |

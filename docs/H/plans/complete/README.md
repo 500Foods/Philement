@@ -62,6 +62,7 @@ Active plans folder: [`/docs/H/plans/`](/docs/H/plans/).
 | [SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md) | SchemaTool drift auditor (metadata + catalog, CLI 1.7.1) |
 | [STATIC_COMPLETE.md](/docs/H/plans/complete/STATIC_COMPLETE.md) | Static-function purge |
 | [TERMINAL_PLAN_COMPLETE.md](/docs/H/plans/complete/TERMINAL_PLAN_COMPLETE.md) | Terminal subsystem |
+| [TERMINAL_FIX_PLAN_COMPLETE.md](/docs/H/plans/complete/TERMINAL_FIX_PLAN_COMPLETE.md) | End-to-end terminal + chat WebSocket fix (JWT IP, payload, WS key, iframe postMessage) |
 | [TEST_40_DEBUG_PLAN_COMPLETE.md](/docs/H/plans/complete/TEST_40_DEBUG_PLAN_COMPLETE.md) | Test 40 debug (historical) |
 | [TODO_COMPLETE.md](/docs/H/plans/complete/TODO_COMPLETE.md) | Old code-level TODO list |
 | [UNITY_CLEANUP_COMPLETE.md](/docs/H/plans/complete/UNITY_CLEANUP_COMPLETE.md) | Unity disabled-test cleanup (43 tests) |

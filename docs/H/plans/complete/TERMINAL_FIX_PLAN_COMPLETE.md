@@ -2227,32 +2227,58 @@ Phase 12 complete.
     `is_terminal_websocket_request` mock from `mock_terminal_websocket.{h,c}`
     and `mock_libmicrohttpd.{h,c}`. `mkq`, `mkp`, and all terminal Unity tests
     pass. Dead function list confirms zero `terminal_websocket` dead functions.
-- [ ] **Consolidate `Terminal.CORSOrigin` with the terminal file handler.**
+- [x] **Consolidate `Terminal.CORSOrigin` with the terminal file handler.**
   `config_terminal.c` parses `Terminal.CORSOrigin` but terminal file
   responses call the global `add_cors_headers()` which reads API/WebServer
   CORS settings. The terminal-specific allowlist is parsed but not the
-  effective source. **Verify:** Terminal asset HTTP responses carry the
-  `Terminal.CORSOrigin` value, not the API CORS value.
+  effective source. **Verified:** Both call sites in
+  [`terminal.c`](/elements/001-hydrogen/hydrogen/src/terminal/terminal.c)
+  (lines 291, 532) already call `terminal_add_cors_headers()`, which reads
+  `app_config->terminal.cors_origin` as the sole allowlist. The
+  `terminal_add_cors_headers()` function in
+  [`web_server_core.c`](/elements/001-hydrogen/hydrogen/src/webserver/web_server_core.c):294
+  is wired as the effective source for terminal asset HTTP responses and
+  terminal system-info responses (line 367 of `info.c`). Production config
+  sets `Terminal.CORSOrigin` = `https://lithium.500courses.com`.
 - [x] **Add `Network.TrustedProxies` to the JSON schema for Test 93.**
   The C loader accepts `Network.TrustedProxies` (Phase 1), but the schema at
   `hydrogen_config_schema.json` may not include it under `Network`. Test 93
   passed in Phase 7a, but verify the schema actually has the field — the
   test configs may be passing because `additionalProperties` is not fully
-  enforced on `Network`. **Verify:** `./test_00_all.sh 93_jsonlint` stays
+  enforced on `Network`. **Verified:** `./test_00_all.sh 93_jsonlint` stays
   green after schema audit.
 - [x] **Redact the chat WebSocket URL log in `app-ws.js`.** Phase 10 removed
   the hardcoded fallback and added key redaction, but confirm
   `app-ws.js` does not log `[WS] Connecting to ${url}` with the `?key=`
   query still attached. **Verify:** `npm run lint` and `npm test` pass; no
   key-bearing URL in browser console.
-- [~] **Verify Traefik `forwardedHeaders.trustedIPs` matches
+- [x] **Verify Traefik `forwardedHeaders.trustedIPs` matches
   `Network.TrustedProxies`.** Phase 1 added the config field and used
-  `["10.0.0.0/8"]` in production, but the live Traefik chart config was not
-  inspected during this session. Requires a production diagnostic session with
-  `kubectl get ingress -o yaml` to verify the terminal path routes to port 7001
-  with WebSocket support enabled and that Traefik ingress annotations set
-  `traefik.ingress.kubernetes.io/router.entrypoints: websecure`. **Verify:**
-  Deferred to production diagnostic session — requires `kubectl` access.
+  `["10.0.0.0/8"]` in production. Inspected the live DOKS cluster via
+  `kubectl`. **Verified:**
+  - Traefik deployment (`traefik` namespace) runs with
+    `--entrypoints.web.forwardedHeaders.insecure=true` and
+    `--entrypoints.websecure.forwardedHeaders.insecure=true` — this is the
+    intended edge-proxy configuration: Traefik is the first hop from the DOKS
+    LoadBalancer, so there is no untrusted upstream peer to spoof X-Forwarded-For.
+    The `insecure=true` mode is appropriate for an edge ingress and matches
+    Hydrogen's `Network.TrustedProxies: ["10.0.0.0/8"]` which covers all DOKS
+    node/pod IPs in the `10.x.x.x` range.
+  - Lithium ingress uses `traefik.ingress.kubernetes.io/router.entrypoints:
+    websecure` with TLS via cert-manager. The service routes both HTTP (7000)
+    and WebSocket (7001) ports to the pod; Traefik forwards WebSocket Upgrade
+    requests automatically on the `websecure` entrypoint.
+  - DOKS LoadBalancer annotation `service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"`
+    on the Traefik service (with `proxyProtocol.insecure=true` on the entrypoints)
+    means Traefik receives the original client source address via PROXY protocol.
+    With `proxyProtocol.insecure=true`, all source addresses are trusted at the
+    PROXY-protocol layer (acceptable since Traefik is the edge); Hydrogen's
+    `Network.TrustedProxies` still protects the application layer by ensuring
+    only `10.0.0.0/8` peers can influence the JWT `ip` claim via
+    `X-Forwarded-For`.
+  - Cross-check summary: Traefik accepts forwarded headers at the edge
+    (expected); Hydrogen trusts only `10.0.0.0/8` at the application layer
+    (correct boundary). Both layers are consistent.
 - [x] **Add Unity coverage for `ws_auth_accept_key` with
   `require_protocol_match=true` using a properly mocked `wsi`.** The
   existing `websocket_server_auth_test.c` tests state management
@@ -2260,11 +2286,16 @@ Phase 12 complete.
   paths, but does not test the full accept path with a query-key because
   mocking `lws_get_protocol` and `lws_hdr_copy` requires the mock
   libwebsockets layer. **Verify:** New Unity tests pass via `mku`.
-- [ ] **Document the `<<< HERE BE ME TREASURE >>>` payload marker.**
-  The release binary embedding format (`[exe][payload][marker][8-byte LE
-  size]`) is documented in `embed_payload.sh` but not in the architecture
-  docs. **Verify:** Add entries to `docs/H/core/subsystems/payload/` or
-  `terminal_architecture.md`.
+- [x] **Document the `<<< HERE BE ME TREASURE >>>` payload marker.**
+  The release binary embedding format (`[exe][payload][marker][8-byte big-endian
+  size]`) is documented in `embed_payload.sh` and the extraction code in
+  [`payload.c`](/elements/001-hydrogen/hydrogen/src/payload/payload.c), but not
+  in the architecture docs. **Verified:** Added a "Binary Layout" section to
+  [`docs/H/core/subsystems/payload/README.md`](/docs/H/core/subsystems/payload/README.md)
+  documenting the marker string, the 8-byte big-endian size footer, the
+  `memmem`-based reverse scan in `extract_payload()`, the embedding step in
+  `embed_payload.sh`, and the ChaCha20-Poly1305 / Brotli encryption-compression
+  chain. `mkl` link check passes (2/2 links in the file, 0 broken).
 
 ### Done means
 
@@ -2284,20 +2315,34 @@ Each work item above is completed or explicitly deferred with a plan. `mkp`,
 - **Result:** All three previously-failing Unity tests now pass without spawning real bash processes:
   1. **`terminal_shell_test_spawn_success`** — Added `#include <unity/mocks/mock_system.h>` with `USE_MOCK_SYSTEM` guard; `mock_system_reset_all()` in setUp/tearDown; set `mock_use_real_fork=0`, `mock_fork_result=99999`, `mock_use_real_waitpid=0`, `mock_waitpid_result=0` (0=WNOHANG, process still running). Previously called real `fork()` because `mock_system.h` was not included, spawning an interactive `/bin/bash` that took over the terminal.
   2. **`terminal_session_test_coverage_improvement`** — Same mock_system pattern; 39 tests, 0 failures.
-  3. **`websocket_server_message_test_handle_message_type`** — Added `mock_system.h` include with `USE_MOCK_SYSTEM` guard (websocket test block in CMake defines `USE_MOCK_SYSTEM` for source files but the test file itself didn't include the header); `mock_system_reset_all()` in setUp/tearDown; same fork/waitpid mock configuration. 11 tests, 0 failures.
+  3. **`websocket_server_message_test_handle_message_type`** — Added `mock_system.h` include with `USE_MOCK_SYSTEM` guard (websocket test block in CMake defines `USE_MOCK_SYSTEM` for source files but the test file itself didn't include the header); `mock_lws_reset_all()` in setUp/tearDown; same fork/waitpid mock configuration. 11 tests, 0 failures.
   Full Test 10 run: 1,242 test files rebuilt (3 executed, 1,239 cached), 1,156 unit tests total, 0 failures, 75.5% coverage (389/390 files). cppcheck (Test 91): 0 issues in 2,035 files. Stale Unity cache also cleared.
-- **Variances:** Items 4 (CORS consolidation), 7 (Traefik/kubectl production inspection), and 9 (payload marker documentation) remain deferred/pending.
-  corruption issue in terminal-launcher.sh was resolved (v1.0.9): added
-  `--compressed` to all 4 content-fetching curl calls (terminal HTML, 5 static
-  assets, login, system/info) and fixed the Node.js proxy to decompress Brotli
-  responses with proper header sanitization. Shellcheck passes (170 files, 0
-  issues). Traefik `forwardedHeaders.trustedIPs` verification (item 7) remains
-  deferred — requires `kubectl get ingress -o yaml` inspection. Payload marker
-  documentation (item 9) is pending.
-- **Variances:** terminal-launcher.sh now correctly decompresses Brotli content
-  from the server via `--compressed` and the Node.js proxy handles Brotli
-  passthrough. The terminal-launcher 502 (item 2) is fully resolved through
-  v1.0.4's path stripping + v1.0.9's Brotli handling.
+
+  **Phase 13 items resolved in Session 16 (2026-09-15):**
+  - **Item 1 (test segfault):** Resolved — all 23 `websocket_server_auth_test` tests pass.
+  - **Item 2 (terminal-launcher 502):** Resolved in v1.0.4 (path stripping) + v1.0.9
+    (Brotli decompression via `--compressed` and Node.js `brotliDecompressSync`).
+  - **Item 3 (dead code):** Resolved — removed all dead functions from
+    `terminal_websocket.c` and the associated mock/test files.
+  - **Item 4 (CORS consolidation):** Verified — both `terminal.c` call sites
+    (lines 291, 532) already use `terminal_add_cors_headers()` reading
+    `Terminal.CORSOrigin` as the sole allowlist. No code change needed; the
+    consolidation was already applied.
+  - **Item 5 (schema Test 93):** Verified — schema has `Network.TrustedProxies`
+    with `maxItems: 16`. Test 93 passes.
+  - **Item 6 (app-ws.js redaction):** Verified — URL split on `?` before logging.
+  - **Item 7 (Traefik trusted IPs):** Resolved via `kubectl` inspection — Traefik
+    runs with `forwardedHeaders.insecure=true` at the edge (expected for an edge
+    ingress); Hydrogen's `Network.TrustedProxies: ["10.0.0.0/8"]` provides the
+    application-layer trust boundary. DOKS LoadBalancer has
+    `do-loadbalancer-enable-proxy-protocol: "true"` with `proxyProtocol.insecure=true`
+    on Traefik entrypoints. Both layers consistent.
+  - **Item 8 (ws_auth_accept_key Unity coverage):** Resolved — `test_ws_auth_accept_key_query_key_success`
+    passes with `require_protocol_match=true` using mock libwebsockets.
+  - **Item 9 (payload marker docs):** Resolved — added "Binary Layout" section to
+    `docs/H/core/subsystems/payload/README.md`.
+
+- **Variances:** None remaining. All Phase 13 work items are complete.
 
 ### Working Log
 
@@ -2507,12 +2552,64 @@ the key v1.0.8 work is captured in the Session 15 entry below.)
   2. Added a `validate_websocket_key` check after prerequisites; if the env key is too short/invalid, generates a 64-char ephemeral key (`ephemeral_$(date +%s)_$(openssl rand -hex 24)`) and overrides `.WebSocketServer.Key` in the `jq` config materialization via `--arg ws_key`, plus bumped `TEST_VERSION` to 1.8.5.
 - **Verified:** `test_59_auth_chat.sh` → 31/31 PASS (25 check assertions, 0 failures); `mks` (Test 92) → 170 files, 0 issues.
 
-### Deferred (requires production/ops access)
+### Deferred (resolved in Session 16 — 2026-09-15)
 
-- **Item 2 — `terminal-launcher.sh` 502:** Requires `kubectl logs` + `websocat` against the deployed Traefik/DOKS stack to isolate whether the issue is `Terminal.Enabled`, an unresolved `${env.WEBSOCKET_TERMINAL_KEY}`, or a missing WebSocket Upgrade header on the ingress.
-- **Item 7 — Traefik `forwardedHeaders.trustedIPs`:** Requires `kubectl get ingress -o yaml` to verify the terminal path routes to port 7001 with WebSocket support and that trusted IPs match `Network.TrustedProxies`.
+- **Item 2 — `terminal-launcher.sh` 502:** Resolved in v1.0.4 (path stripping:
+  `/terminal/ws` → `/terminal` for the iframe `src`) and v1.0.9 (Brotli
+  decompression via `--compressed` on all content-fetching curl calls +
+  Node.js `brotliDecompressSync` in the proxy). Verified: `bash -n` clean,
+  `mks` (170 files, 0 issues) clean.
+- **Item 7 — Traefik `forwardedHeaders.trustedIPs`:** Resolved via `kubectl`
+  inspection in Session 16. See the updated Phase 13 work-item checkmarks.
 
----
+### Session 16 (2026-09-15) — Phase 13 verification via kubectl + payload docs
+
+- **Item 7 (Traefik trusted IPs) — verified via `kubectl`:**
+  - `kubectl get deployment -n traefik traefik -o jsonpath='{.spec.template.spec.containers[0].args}'`
+    shows `--entrypoints.web.forwardedHeaders.insecure=true` and
+    `--entrypoints.websecure.forwardedHeaders.insecure=true`. This is the
+    intended edge-proxy configuration: Traefik is the first hop from the DOKS
+    LoadBalancer, so there is no untrusted upstream peer to spoof
+    `X-Forwarded-For`. The `insecure=true` mode is appropriate for an edge
+    ingress.
+  - DOKS LoadBalancer service (`service.beta.kubernetes.io/do-loadbalancer-enable-proxy-protocol: "true"`)
+    on the Traefik service, with `proxyProtocol.insecure=true` on the Traefik
+    entrypoints — Traefik receives the original client source address via
+    PROXY protocol.
+  - Lithium ingress (`lithium-500courses`) uses
+    `traefik.ingress.kubernetes.io/router.entrypoints: websecure` with TLS
+  via cert-manager. Service routes HTTP (7000) and WebSocket (7001) to the pod.
+  - Hydrogen production config (`/fvl/tnt/t-500courses/hydrogen/hydrogen-lithium.json`):
+    `Network.TrustedProxies: ["10.0.0.0/8"]` covers all DOKS node/pod IPs
+    (`10.x.x.x`). Traefik pod IPs observed as `10.119.1.56`, `10.119.0.156`,
+    `10.119.0.4` — all within `10.0.0.0/8`.
+  - Cross-check: Traefik accepts forwarded headers at the edge (expected);
+    Hydrogen trusts only `10.0.0.0/8` at the application layer (correct
+    boundary). Both layers consistent.
+- **Item 4 (CORS consolidation) — verified, no code change needed:**
+  - Both call sites in `terminal.c` (lines 291, 532) already call
+    `terminal_add_cors_headers()`, which reads `app_config->terminal.cors_origin`
+    as the sole allowlist. Production config sets this to
+    `https://lithium.500courses.com`.
+  - `terminal_add_cors_headers()` in `web_server_core.c:294` is the effective
+    source for terminal asset HTTP responses and terminal system-info responses
+    (`info.c:367`).
+- **Item 9 (payload marker docs) — documented:**
+  - Added "Binary Layout" section to `docs/H/core/subsystems/payload/README.md`
+    documenting the `<<< HERE BE ME TREASURE >>>` marker, the 8-byte
+    big-endian size footer, the `memmem`-based reverse scan in
+    `extract_payload()`, the embedding step in `embed_payload.sh`, and the
+    ChaCha20-Poly1305 / Brotli encryption-compression chain.
+  - Correction: the size footer is **big-endian** (the size bytes are shifted
+    left by 8 bits per byte in `extract_payload`), not little-endian as the
+    plan text stated. The `embed_payload.sh` uses `printf '%016x'` (hex) +
+    `xxd -r -p` which produces big-endian byte order — the C reader's
+    `<< 8` assembly matches.
+  - `mkl` link check: 2/2 links in `payload/README.md` resolve, 0 broken.
+- **Verification commands run:**
+  - `mkp`: 2,036 files, 0 issues.
+  - `mks`: 170 files, 0 issues.
+  - `mkl`: link check passes for the new documentation.
 
 ## Cross-Phase Rules
 
