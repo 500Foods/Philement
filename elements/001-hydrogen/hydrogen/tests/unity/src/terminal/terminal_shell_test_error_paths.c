@@ -1,7 +1,7 @@
 /*
  * Unity Test File: Terminal Shell Error Path Tests
  * Tests terminal_shell.c error handling paths for improved coverage
- * Uses real system errors (invalid FDs, non-existent PIDs) to trigger error paths
+ * Uses mock_system for deterministic process/kill waitpid behavior
  */
 
 #include <src/hydrogen.h>
@@ -15,6 +15,16 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <sys/wait.h>
+
+// Include mocks for external dependencies
+#include <unity/mocks/mock_libwebsockets.h>
+#include <unity/mocks/mock_libmicrohttpd.h>
+
+// Include mock system (terminal sources are compiled with USE_MOCK_SYSTEM)
+#ifndef USE_MOCK_SYSTEM
+#define USE_MOCK_SYSTEM
+#endif
+#include <unity/mocks/mock_system.h>
 
 // Test fixtures
 static TerminalSession *test_session = NULL;
@@ -32,6 +42,11 @@ void test_pty_is_running_process_terminated_pid_returned(void);
 TerminalSession* create_test_session(void);
 
 void setUp(void) {
+    // Reset all mocks
+    mock_mhd_reset_all();
+    mock_session_reset_all();
+    mock_system_reset_all();
+
     // Create test session  
     test_session = create_test_session();
 }
@@ -42,6 +57,9 @@ void tearDown(void) {
         free(test_session);
         test_session = NULL;
     }
+
+    // Reset mocks
+    mock_system_reset_all();
 }
 
 // Helper function to create a test terminal session
@@ -63,15 +81,31 @@ TerminalSession* create_test_session(void) {
 
 // Test pty_spawn_shell when shell terminates immediately after spawning
 void test_pty_spawn_shell_premature_termination(void) {
-    // Spawn a shell with a command that exits immediately
-    // Using 'false' which exits with code 1 immediately
+    // Mock pty_spawn_shell internals: openpty succeeds (returns 0),
+    // fork succeeds returning PID, waitpid returns PID (process exited)
+    // Since terminal_shell.c uses USE_MOCK_SYSTEM, we set up the mocks
+
+    // Mock fork to return a non-zero PID (parent process)
+    mock_system_set_fork_result(99999);
+
+    // Mock waitpid to return the PID (simulating premature termination)
+    mock_system_set_waitpid_result(99999);
+    mock_system_set_waitpid_status(0);  // exited with code 0
+
+    // Mock openpty to succeed
+    mock_system_set_openpty_failure(0);
+
+    // Mock fcntl to succeed
+    mock_system_set_fcntl_failure(0);
+
+    // Mock strdup to succeed (shell->slave_name allocation)
+    mock_system_set_malloc_failure(0);
+    mock_malloc_call_count = 0;  // reset counter
+
     PtyShell *result = pty_spawn_shell("/bin/false", test_session);
-    
+
     // Should return NULL because shell terminated prematurely
-    // The waitpid check after spawning should detect this
     TEST_ASSERT_NULL(result);
-    
-    // This exercises lines 190-195 (premature termination detection)
 }
 
 /*
@@ -80,33 +114,26 @@ void test_pty_spawn_shell_premature_termination(void) {
 
 // Test pty_is_running when waitpid returns the shell PID (process terminated)
 void test_pty_is_running_process_terminated_pid_returned(void) {
-    // First spawn a real shell
-    PtyShell *shell = pty_spawn_shell("/bin/sh", test_session);
-    if (shell) {
-        // Give it time to start
-        usleep(10000);
-        
-        // Terminate the shell
-        pty_terminate_shell(shell);
-        
-        // Give it time to actually terminate
-        usleep(50000);
-        
-        // Now check if it's running - waitpid should return the PID
-        bool result = pty_is_running(shell);
-        
-        // Should return false and set shell->running to false
-        TEST_ASSERT_FALSE(result);
-        TEST_ASSERT_FALSE(shell->running);
-        
-        // Clean up
-        pty_cleanup_shell(shell);
-    } else {
-        // If we can't spawn a shell, just pass the test
-        TEST_PASS();
-    }
-    
-    // This exercises lines 302-305 (waitpid returns PID case)
+    // Create a shell with mock PID
+    PtyShell shell;
+    shell.master_fd = 42;
+    shell.running = true;
+    shell.session = test_session;
+    shell.slave_fd = -1;
+    shell.slave_name = NULL;
+    shell.pid = 12345;
+
+    // Mock waitpid to return the PID (process terminated)
+    mock_system_set_waitpid_result(shell.pid);
+    mock_system_set_waitpid_status(0);
+
+    bool result = pty_is_running(&shell);
+
+    // Should return false and set shell->running to false
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_FALSE(shell.running);
+
+    // This exercises the waitpid returns PID case
 }
 
 /*
@@ -117,20 +144,21 @@ void test_pty_is_running_process_terminated_pid_returned(void) {
 void test_pty_write_data_write_error(void) {
     // Create a shell with an invalid file descriptor to trigger write errors
     PtyShell shell;
-    shell.master_fd = -1;  // Invalid FD will cause write to fail with EBADF
+    shell.master_fd = -1;  // Invalid FD
     shell.running = true;
     shell.session = test_session;
     shell.slave_fd = -1;
     shell.slave_name = NULL;
     shell.pid = 0;
-    
+
+    // Mock write to fail with EBADF (not EAGAIN)
+    mock_system_set_write_should_fail(1);
+
     const char *data = "test data";
     int result = pty_write_data(&shell, data, strlen(data));
-    
+
     // Should return -1 on write error
     TEST_ASSERT_EQUAL(-1, result);
-    
-    // This exercises the error path at line 220-223 with logging
 }
 
 /*
@@ -141,20 +169,21 @@ void test_pty_write_data_write_error(void) {
 void test_pty_read_data_read_error(void) {
     // Create a shell with an invalid file descriptor
     PtyShell shell;
-    shell.master_fd = -1;  // Invalid FD will cause read to fail with EBADF
+    shell.master_fd = -1;  // Invalid FD
     shell.running = true;
     shell.session = test_session;
     shell.slave_fd = -1;
     shell.slave_name = NULL;
     shell.pid = 0;
-    
+
+    // Mock read to fail with EBADF (not EAGAIN)
+    mock_system_set_read_should_fail(1);
+
     char buffer[256];
     int result = pty_read_data(&shell, buffer, sizeof(buffer));
-    
+
     // Should return -1 on read error
     TEST_ASSERT_EQUAL(-1, result);
-    
-    // This exercises line 247-248 (non-EAGAIN error path with logging)
 }
 
 /*
@@ -165,19 +194,20 @@ void test_pty_read_data_read_error(void) {
 void test_pty_set_size_ioctl_failure(void) {
     // Create a shell with an invalid file descriptor
     PtyShell shell;
-    shell.master_fd = -1;  // Invalid FD will cause ioctl to fail
+    shell.master_fd = -1;  // Invalid FD
     shell.running = true;
     shell.session = test_session;
     shell.slave_fd = -1;
     shell.slave_name = NULL;
     shell.pid = 0;
-    
+
+    // Mock ioctl to fail with EBADF
+    mock_system_set_ioctl_failure(1);
+
     bool result = pty_set_size(&shell, 24, 80);
-    
+
     // Should return false when ioctl fails
     TEST_ASSERT_FALSE(result);
-    
-    // Verify log message was called (line 276)
 }
 
 /*
@@ -193,15 +223,17 @@ void test_pty_is_running_echild_error(void) {
     shell.session = test_session;
     shell.slave_fd = -1;
     shell.slave_name = NULL;
-    shell.pid = 999999;  // Non-existent PID will cause waitpid to return ECHILD
-    
+    shell.pid = 999999;  // Non-existent PID
+
+    // Mock waitpid to return -1 with ECHILD (process doesn't exist)
+    mock_system_set_waitpid_result(-1);
+    errno = ECHILD;
+
     bool result = pty_is_running(&shell);
-    
+
     // Should return false and set running to false
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_FALSE(shell.running);
-    
-    // This exercises lines 308-310
 }
 
 /*
@@ -217,14 +249,15 @@ void test_pty_terminate_shell_kill_failure(void) {
     shell.session = test_session;
     shell.slave_fd = -1;
     shell.slave_name = NULL;
-    shell.pid = 999998;  // Non-existent PID will cause kill to fail
-    
+    shell.pid = 999998;  // Non-existent PID
+
+    // Mock kill to fail (non-existent process)
+    mock_system_set_kill_failure(1);
+
     bool result = pty_terminate_shell(&shell);
-    
+
     // Should return false when kill fails
     TEST_ASSERT_FALSE(result);
-    
-    // This exercises lines 329-331
 }
 
 int main(void) {

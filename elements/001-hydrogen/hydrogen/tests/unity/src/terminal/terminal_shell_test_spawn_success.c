@@ -15,6 +15,13 @@
 #include <unity/mocks/mock_libwebsockets.h>
 #include <unity/mocks/mock_libmicrohttpd.h>
 
+// Include mock system so fork/waitpid/close are mocked, not real
+// terminal sources are compiled with USE_MOCK_SYSTEM via CMake
+#ifndef USE_MOCK_SYSTEM
+#define USE_MOCK_SYSTEM
+#endif
+#include <unity/mocks/mock_system.h>
+
 // Test fixtures
 static PtyShell *test_shell = NULL;
 static TerminalSession *test_session = NULL;
@@ -30,6 +37,14 @@ void setUp(void) {
     // Reset mocks
     mock_mhd_reset_all();
     mock_session_reset_all();
+    mock_system_reset_all();
+    // Use mocked fork (not real) to avoid spawning a real shell process
+    mock_use_real_fork = 0;
+    mock_fork_result = 99999;
+    mock_use_real_waitpid = 0;
+    mock_waitpid_result = 0;  // 0 = process still running (WNOHANG)
+    mock_use_real_close = 0;
+    mock_close_should_fail = 0;
 
     // Create test fixtures
     test_session = create_mock_session_for_spawn_test();
@@ -39,6 +54,7 @@ void setUp(void) {
 void tearDown(void) {
     // Clean up test resources
     cleanup_spawn_test_resources();
+    mock_system_reset_all();
 }
 
 // Helper function to create a mock terminal session for spawn tests

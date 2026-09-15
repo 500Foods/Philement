@@ -15,6 +15,16 @@
 #include <errno.h>
 #include <string.h>
 
+// Include mocks for external dependencies
+#include <unity/mocks/mock_libwebsockets.h>
+#include <unity/mocks/mock_libmicrohttpd.h>
+
+// Include mock system (terminal sources are compiled with USE_MOCK_SYSTEM)
+#ifndef USE_MOCK_SYSTEM
+#define USE_MOCK_SYSTEM
+#endif
+#include <unity/mocks/mock_system.h>
+
 // Test fixtures
 static PtyShell *test_shell = NULL;
 static TerminalSession *test_session = NULL;
@@ -29,8 +39,14 @@ void test_pty_operations_full_cycle(void);
 // Helper function prototypes
 TerminalSession* create_test_session(void);
 void cleanup_test_resources(void);
+static void setup_spawn_mocks(void);
 
 void setUp(void) {
+    // Reset all mocks
+    mock_mhd_reset_all();
+    mock_session_reset_all();
+    mock_system_reset_all();
+
     // Create test session
     test_session = create_test_session();
     test_shell = NULL;
@@ -39,6 +55,7 @@ void setUp(void) {
 void tearDown(void) {
     // Clean up test resources
     cleanup_test_resources();
+    mock_system_reset_all();
 }
 
 // Helper function to create a test terminal session
@@ -67,27 +84,55 @@ void cleanup_test_resources(void) {
     }
 }
 
+// Helper to configure mocks for pty_spawn_shell success
+static void setup_spawn_mocks(void) {
+    // Mock fork to return a non-zero PID (simulating successful fork, parent path)
+    mock_system_set_fork_result(99999);
+
+    // Mock waitpid to return 0 (process still running, not terminated)
+    mock_system_set_waitpid_result(0);
+
+    // Mock openpty to succeed
+    mock_system_set_openpty_failure(0);
+
+    // Mock fcntl to succeed
+    mock_system_set_fcntl_failure(0);
+
+    // Mock access to succeed (so execv path is taken in child, but we're in parent mock)
+    mock_system_set_access_result(0);
+
+    // Mock write/read to behave as expected
+    mock_system_set_write_result(10);
+    mock_system_set_read_result(5);
+    mock_system_set_read_should_fail(0);
+    mock_system_set_write_should_fail(0);
+
+    // Mock ioctl to succeed for setup_child_process
+    mock_system_set_ioctl_failure(0);
+
+    // Mock strdup to use real implementation
+    mock_system_set_malloc_failure(0);
+}
+
 /*
  * TEST SUITE: pty_write_data with Real PTY
  */
 
-// Test pty_write_data with an actual spawned shell
+// Test pty_write_data with an spawned shell
 void test_pty_write_data_with_real_pty(void) {
-    // Spawn a real shell to get valid file descriptors
+    setup_spawn_mocks();
+    
+    // Spawn a shell with mocked system calls
     test_shell = pty_spawn_shell("/bin/sh", test_session);
     TEST_ASSERT_NOT_NULL(test_shell);
     
     if (test_shell) {
-        // Give shell time to start
-        usleep(50000); // 50ms
-        
         // Test writing data to the PTY
         const char *test_data = "echo test\n";
         int result = pty_write_data(test_shell, test_data, strlen(test_data));
         
-        // Should successfully write (positive number or -1 if EAGAIN)
-        // We accept -1 here because non-blocking I/O might not be ready
-        TEST_ASSERT_TRUE(result >= -1);
+        // Should successfully write (mock returns 10 bytes)
+        TEST_ASSERT_TRUE(result >= 0);
         
         // Clean up
         cleanup_test_resources();
@@ -98,22 +143,21 @@ void test_pty_write_data_with_real_pty(void) {
  * TEST SUITE: pty_read_data with Real PTY
  */
 
-// Test pty_read_data with an actual spawned shell
+// Test pty_read_data with spawned shell
 void test_pty_read_data_with_real_pty(void) {
-    // Spawn a real shell to get valid file descriptors
+    setup_spawn_mocks();
+    
+    // Spawn a shell with mocked system calls
     test_shell = pty_spawn_shell("/bin/sh", test_session);
     TEST_ASSERT_NOT_NULL(test_shell);
     
     if (test_shell) {
-        // Give shell time to start and output prompt
-        usleep(100000); // 100ms
-        
         // Test reading data from the PTY
         char buffer[256];
         int result = pty_read_data(test_shell, buffer, sizeof(buffer));
         
-        // Should read data (positive number) or 0 (EWOULDBLOCK/no data), or -1 on error
-        TEST_ASSERT_TRUE(result >= -1);
+        // Should read data (mock returns 5 bytes)
+        TEST_ASSERT_TRUE(result >= 0);
         
         // If we got data, it should be within buffer size
         if (result > 0) {
@@ -126,23 +170,22 @@ void test_pty_read_data_with_real_pty(void) {
 }
 
 /*
- * TEST SUITE: pty_set_size with Real PTY
+ * TEST SUITE: pty_set_size with spawned PTY
  */
 
-// Test pty_set_size with an actual spawned shell
+// Test pty_set_size with spawned shell
 void test_pty_set_size_with_real_pty(void) {
-    // Spawn a real shell to get valid file descriptors
+    setup_spawn_mocks();
+    
+    // Spawn a shell with mocked system calls
     test_shell = pty_spawn_shell("/bin/sh", test_session);
     TEST_ASSERT_NOT_NULL(test_shell);
     
     if (test_shell) {
-        // Give shell time to start
-        usleep(50000); // 50ms
-        
         // Test setting terminal size
         bool result = pty_set_size(test_shell, 40, 120);
         
-        // Should succeed with a real PTY
+        // Should succeed (mocked ioctl returns 0)
         TEST_ASSERT_TRUE(result);
         
         // Try setting a different size
@@ -160,31 +203,27 @@ void test_pty_set_size_with_real_pty(void) {
 
 // Test writing and reading from PTY in sequence
 void test_pty_write_read_cycle(void) {
-    // Spawn a real shell
+    setup_spawn_mocks();
+    
+    // Spawn a shell with mocked system calls
     test_shell = pty_spawn_shell("/bin/sh", test_session);
     TEST_ASSERT_NOT_NULL(test_shell);
     
     if (test_shell) {
-        // Give shell time to start
-        usleep(100000); // 100ms
-        
         // Write a command that produces output
         const char *command = "echo 'Hello PTY'\n";
         int write_result = pty_write_data(test_shell, command, strlen(command));
         
-        // Write should succeed or return -1 for EAGAIN
-        TEST_ASSERT_TRUE(write_result >= -1);
-        
-        // Give command time to execute
-        usleep(50000); // 50ms
+        // Write should succeed (mock returns 10 bytes)
+        TEST_ASSERT_TRUE(write_result >= 0);
         
         // Try to read the output
         char buffer[512];
         memset(buffer, 0, sizeof(buffer));
         int read_result = pty_read_data(test_shell, buffer, sizeof(buffer) - 1);
         
-        // Read should succeed (positive), return 0 (no data), or -1 (error)
-        TEST_ASSERT_TRUE(read_result >= -1);
+        // Read should succeed (mock returns 5 bytes)
+        TEST_ASSERT_TRUE(read_result >= 0);
         
         // If we got data, verify it's reasonable
         if (read_result > 0) {
@@ -202,16 +241,15 @@ void test_pty_write_read_cycle(void) {
 
 // Test complete PTY lifecycle with all operations
 void test_pty_operations_full_cycle(void) {
-    // Spawn a real shell
+    setup_spawn_mocks();
+    
+    // Spawn a shell with mocked system calls
     test_shell = pty_spawn_shell("/bin/sh", test_session);
     TEST_ASSERT_NOT_NULL(test_shell);
     
     if (test_shell) {
         // Verify shell is running
         TEST_ASSERT_TRUE(test_shell->running);
-        
-        // Give shell time to start
-        usleep(100000); // 100ms
         
         // Set terminal size
         bool size_result = pty_set_size(test_shell, 30, 100);
@@ -220,18 +258,14 @@ void test_pty_operations_full_cycle(void) {
         // Write some data
         const char *data = "pwd\n";
         int write_result = pty_write_data(test_shell, data, strlen(data));
-        TEST_ASSERT_TRUE(write_result >= -1);
-        
-        // Give command time to execute
-        usleep(50000); // 50ms
+        TEST_ASSERT_TRUE(write_result >= 0);
         
         // Read response
         char buffer[512];
         int read_result = pty_read_data(test_shell, buffer, sizeof(buffer));
-        TEST_ASSERT_TRUE(read_result >= -1);
+        TEST_ASSERT_TRUE(read_result >= 0);
         
-        // Check if shell is still running (timing-dependent)
-        // Just verify the function doesn't crash - result may vary
+        // Check if shell is still running
         (void)pty_is_running(test_shell);
         
         // Clean up

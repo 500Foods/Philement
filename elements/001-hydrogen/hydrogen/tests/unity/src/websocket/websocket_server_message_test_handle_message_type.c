@@ -27,6 +27,14 @@ extern AppConfig *app_config;
 #include <unity/mocks/mock_status.h>
 #include <unity/mocks/mock_terminal_websocket.h>
 
+// Include mock system so fork/waitpid/close are mocked, not real
+// (websocket source files are compiled with USE_MOCK_SYSTEM via CMake;
+// the test file itself also needs the header to control mock state)
+#ifndef USE_MOCK_SYSTEM
+#define USE_MOCK_SYSTEM
+#endif
+#include <unity/mocks/mock_system.h>
+
 // Function prototypes for test functions
 void test_handle_message_type_status_request(void);
 void test_handle_message_type_terminal_input_success(void);
@@ -96,6 +104,14 @@ void setUp(void) {
     mock_mhd_reset_all();
     mock_status_reset_all();
     mock_terminal_websocket_reset_all();
+    mock_system_reset_all();
+    // Use mocked fork (not real) to avoid spawning real shell processes
+    mock_use_real_fork = 0;
+    mock_fork_result = 99999;
+    mock_use_real_waitpid = 0;
+    mock_waitpid_result = 0;  // 0 = process still running (WNOHANG)
+    mock_use_real_close = 0;
+    mock_close_should_fail = 0;
 }
 
 void tearDown(void) {
@@ -118,7 +134,7 @@ void tearDown(void) {
         test_context.message_buffer = NULL;
     }
     pthread_mutex_destroy(&test_context.mutex);
-
+    mock_system_reset_all();
 }
 
 // Test handle_message_type with status request - test logic only

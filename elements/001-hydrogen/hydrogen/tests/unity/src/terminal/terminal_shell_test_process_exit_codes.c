@@ -15,6 +15,13 @@
 #include <unity/mocks/mock_libwebsockets.h>
 #include <unity/mocks/mock_libmicrohttpd.h>
 
+// Include mock system (terminal sources are compiled with USE_MOCK_SYSTEM)
+#ifndef USE_MOCK_SYSTEM
+#define USE_MOCK_SYSTEM
+#endif
+#include <unity/mocks/mock_system.h>
+#include <errno.h>
+
 // Test fixtures
 static PtyShell *test_shell = NULL;
 static TerminalSession *test_session = NULL;
@@ -34,6 +41,7 @@ void setUp(void) {
     // Reset mocks
     mock_mhd_reset_all();
     mock_session_reset_all();
+    mock_system_reset_all();
 
     // Create test fixtures
     test_session = create_mock_session_for_exit_tests();
@@ -43,6 +51,7 @@ void setUp(void) {
 void tearDown(void) {
     // Clean up test resources
     cleanup_exit_test_resources();
+    mock_system_reset_all();
 }
 
 // Helper function to create a mock terminal session for exit tests
@@ -96,8 +105,9 @@ void cleanup_exit_test_resources(void) {
 void test_pty_is_running_process_exited_with_code(void) {
     PtyShell *shell = create_mock_shell_for_exit_tests();
 
-    // Use a PID that doesn't exist to simulate exited process
-    shell->pid = 99999; // Non-existent PID
+    // Mock waitpid to return the PID (process exited normally)
+    mock_system_set_waitpid_result(shell->pid);
+    mock_system_set_waitpid_status(6);  // exited with code 6
 
     bool result = pty_is_running(shell);
 
@@ -112,8 +122,10 @@ void test_pty_is_running_process_exited_with_code(void) {
 void test_pty_is_running_process_killed_by_signal(void) {
     PtyShell *shell = create_mock_shell_for_exit_tests();
 
-    // Use a PID that doesn't exist to simulate killed process
-    shell->pid = 99998; // Non-existent PID
+    // Mock waitpid to return the PID (process was signaled, SIGKILL=9)
+    // WIFSIGNALED status: low bits contain signal number with 0x80 high bit
+    mock_system_set_waitpid_result(shell->pid);
+    mock_system_set_waitpid_status(0x80 | 9);  // WIFSIGNALED with SIGKILL
 
     bool result = pty_is_running(shell);
 
@@ -128,12 +140,12 @@ void test_pty_is_running_process_killed_by_signal(void) {
  * TEST SUITE: pty_terminate_shell - Termination Path Coverage
  */
 
-// Test pty_terminate_shell when graceful termination times out
+// Test pty_terminate_shell when kill fails (non-existent process)
 void test_pty_terminate_shell_graceful_timeout(void) {
     PtyShell *shell = create_mock_shell_for_exit_tests();
 
-    // Use a PID that doesn't exist - kill will fail, but we test the timeout logic
-    shell->pid = 99997; // Non-existent PID
+    // Mock kill to fail (non-existent process)
+    mock_system_set_kill_failure(1);
 
     bool result = pty_terminate_shell(shell);
 
@@ -143,12 +155,12 @@ void test_pty_terminate_shell_graceful_timeout(void) {
     cleanup_exit_test_resources();
 }
 
-// Test pty_terminate_shell when force kill is required
+// Test pty_terminate_shell when force kill fails (non-existent process)
 void test_pty_terminate_shell_force_kill_required(void) {
     PtyShell *shell = create_mock_shell_for_exit_tests();
 
-    // Use a PID that doesn't exist - both SIGTERM and SIGKILL will fail
-    shell->pid = 99996; // Non-existent PID
+    // Mock kill to fail for both SIGTERM and SIGKILL
+    mock_system_set_kill_failure(1);
 
     bool result = pty_terminate_shell(shell);
 

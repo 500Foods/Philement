@@ -150,6 +150,7 @@ int mock_openpty_should_fail = 0;
 int mock_fcntl_should_fail = 0;
 pid_t mock_fork_result = 0;
 int mock_fork_should_fail = 0;
+int mock_use_real_fork = 0;
 int mock_ioctl_should_fail = 0;
 ssize_t mock_read_result = 0;
 int mock_read_should_fail = 0;
@@ -158,8 +159,10 @@ ssize_t mock_write_result = 0;
 int mock_write_should_fail = 0;
 pid_t mock_waitpid_result = 0;
 int mock_waitpid_status = 0;
+int mock_use_real_waitpid = 0;
 int mock_kill_should_fail = 0;
 int mock_close_should_fail = 0;
+int mock_use_real_close = 0;
 int mock_sem_init_should_fail = 0;
 int mock_select_result = 0;
 const void *mock_read_data = NULL;
@@ -391,6 +394,7 @@ void mock_system_set_fcntl_failure(int should_fail) {
 
 void mock_system_set_fork_result(pid_t result) {
     mock_fork_result = result;
+    mock_use_real_fork = 0;
 }
 
 void mock_system_set_fork_failure(int should_fail) {
@@ -432,6 +436,7 @@ void mock_system_set_write_should_fail(int should_fail) {
 
 void mock_system_set_waitpid_result(pid_t result) {
     mock_waitpid_result = result;
+    mock_use_real_waitpid = 0;
 }
 
 void mock_system_set_waitpid_status(int status) {
@@ -473,6 +478,7 @@ void mock_system_reset_all(void) {
     mock_fcntl_should_fail = 0;
     mock_fork_result = 0;
     mock_fork_should_fail = 0;
+    mock_use_real_fork = 1;
     mock_ioctl_should_fail = 0;
     mock_read_result = 0;
     mock_read_should_fail = 0;
@@ -483,8 +489,10 @@ void mock_system_reset_all(void) {
     mock_write_should_fail = 0;
     mock_waitpid_result = 0;
     mock_waitpid_status = 0;
+    mock_use_real_waitpid = 1;
     mock_kill_should_fail = 0;
     mock_close_should_fail = 0;
+    mock_use_real_close = 1;
     mock_select_result = 0;
     mock_sem_init_should_fail = 0;
     mock_asprintf_should_fail = 0;
@@ -566,6 +574,9 @@ pid_t mock_fork(void) {
         errno = EAGAIN;  // Common fork failure errno
         return -1;
     }
+    if (mock_use_real_fork) {
+        return fork();
+    }
     return mock_fork_result;
 }
 
@@ -622,13 +633,12 @@ ssize_t mock_write(int fd, const void *buf, size_t count) {
 
 // Mock implementation of waitpid
 pid_t mock_waitpid(pid_t pid, int *wstatus, int options) {
-    (void)pid;    // Suppress unused parameter
-    (void)options; // Suppress unused parameter
-
+    if (mock_use_real_waitpid) {
+        return waitpid(pid, wstatus, options);
+    }
     if (wstatus) {
         *wstatus = mock_waitpid_status;
     }
-
     return mock_waitpid_result;
 }
 
@@ -646,12 +656,12 @@ int mock_kill(pid_t pid, int sig) {
 
 // Mock implementation of close
 int mock_close(int fd) {
-    (void)fd; // Suppress unused parameter
-
     if (mock_close_should_fail) {
         return -1;
     }
-
+    if (mock_use_real_close) {
+        return close(fd);
+    }
     return 0;
 }
 

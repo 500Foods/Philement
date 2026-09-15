@@ -11,10 +11,26 @@
 #include <src/terminal/terminal_shell.h>
 #include <src/terminal/terminal_session.h>
 
+#include <unistd.h>
+#include <errno.h>
+
 // Include mocks for external dependencies
 #include <unity/mocks/mock_libwebsockets.h>
 #include <unity/mocks/mock_libmicrohttpd.h>
+
+// Include mock system (terminal sources are compiled with USE_MOCK_SYSTEM)
+#ifndef USE_MOCK_SYSTEM
+#define USE_MOCK_SYSTEM
+#endif
 #include <unity/mocks/mock_system.h>
+
+// Access to test mode variables - defined in terminal_shell.c under UNITY_TEST_MODE
+extern bool test_mode_force_openpty_failure;
+extern bool test_mode_force_calloc_failure;
+extern bool test_mode_force_strdup_failure;
+extern bool test_mode_force_fcntl_failure;
+extern bool test_mode_force_fork_failure;
+extern bool test_mode_force_execv_failure;
 
 // Test fixtures
 static PtyShell *test_shell = NULL;
@@ -60,6 +76,15 @@ void setUp(void) {
     // Reset mocks
     mock_mhd_reset_all();
     mock_session_reset_all();
+    mock_system_reset_all();
+
+    // Reset test mode variables
+    test_mode_force_openpty_failure = false;
+    test_mode_force_calloc_failure = false;
+    test_mode_force_strdup_failure = false;
+    test_mode_force_fcntl_failure = false;
+    test_mode_force_fork_failure = false;
+    test_mode_force_execv_failure = false;
 
     // Create test fixtures
     test_session = create_mock_session();
@@ -69,6 +94,7 @@ void setUp(void) {
 void tearDown(void) {
     // Clean up test resources
     cleanup_test_resources();
+    mock_system_reset_all();
 }
 
 // Helper function to create a mock terminal session
@@ -134,16 +160,22 @@ void test_pty_spawn_shell_null_parameters(void) {
 }
 
 void test_pty_spawn_shell_success(void) {
-    // This will create a real PTY and shell process
-    // In test environment, this should succeed but we need to clean up immediately
+    // Configure mocks for a successful spawn
+    mock_system_set_fork_result(99999);  // parent path
+    mock_system_set_waitpid_result(0);   // process still running
+    mock_system_set_openpty_failure(0);
+    mock_system_set_fcntl_failure(0);
+    mock_system_set_malloc_failure(0);
+
     PtyShell *result = pty_spawn_shell("/bin/bash", test_session);
 
-    // In test environment, PTY creation should succeed
+    // With mocked fork returning parent PID and waitpid returning 0, spawn succeeds
     TEST_ASSERT_NOT_NULL(result);
 
     if (result) {
-        // Clean up immediately to avoid hanging
+        // Clean up immediately
         pty_cleanup_shell(result);
+        test_shell = NULL;
     }
 }
 
@@ -158,6 +190,7 @@ void test_pty_write_data_null_shell(void) {
 
 void test_pty_write_data_not_running(void) {
     PtyShell *shell = create_mock_shell();
+    test_shell = shell;
     shell->running = false;
 
     int result = pty_write_data(shell, "test", 4);
@@ -168,6 +201,7 @@ void test_pty_write_data_not_running(void) {
 
 void test_pty_write_data_null_data(void) {
     PtyShell *shell = create_mock_shell();
+    test_shell = shell;
 
     int result = pty_write_data(shell, NULL, 4);
     TEST_ASSERT_EQUAL(-1, result);
@@ -177,6 +211,7 @@ void test_pty_write_data_null_data(void) {
 
 void test_pty_write_data_empty_data(void) {
     PtyShell *shell = create_mock_shell();
+    test_shell = shell;
 
     int result = pty_write_data(shell, "test", 0);
     TEST_ASSERT_EQUAL(-1, result);
@@ -186,16 +221,15 @@ void test_pty_write_data_empty_data(void) {
 
 void test_pty_write_data_success(void) {
     PtyShell *shell = create_mock_shell();
+    test_shell = shell;
 
-    // Use an invalid file descriptor to ensure write fails
-    shell->master_fd = 99999; // Invalid file descriptor
+    // Use an invalid file descriptor and force write to fail
+    shell->master_fd = 99999;
+    mock_system_set_write_should_fail(1);
 
-    // This will attempt to write to the invalid file descriptor
-    // Should fail with EBADF
     int result = pty_write_data(shell, "test", 4);
 
-    // We expect this to fail in test environment (invalid file descriptor)
-    // But it exercises the write logic
+    // Should return -1 when write fails
     TEST_ASSERT_EQUAL(-1, result);
 
     cleanup_test_resources();
@@ -213,6 +247,7 @@ void test_pty_read_data_null_shell(void) {
 
 void test_pty_read_data_not_running(void) {
     PtyShell *shell = create_mock_shell();
+    test_shell = shell;
     shell->running = false;
 
     char buffer[100];
@@ -224,6 +259,7 @@ void test_pty_read_data_not_running(void) {
 
 void test_pty_read_data_null_buffer(void) {
     PtyShell *shell = create_mock_shell();
+    test_shell = shell;
 
     int result = pty_read_data(shell, NULL, 100);
     TEST_ASSERT_EQUAL(-1, result);
@@ -233,6 +269,7 @@ void test_pty_read_data_null_buffer(void) {
 
 void test_pty_read_data_empty_size(void) {
     PtyShell *shell = create_mock_shell();
+    test_shell = shell;
     char buffer[100];
 
     int result = pty_read_data(shell, buffer, 0);
@@ -243,17 +280,16 @@ void test_pty_read_data_empty_size(void) {
 
 void test_pty_read_data_success(void) {
     PtyShell *shell = create_mock_shell();
+    test_shell = shell;
     char buffer[100];
 
-    // Use an invalid file descriptor to ensure read fails
-    shell->master_fd = 99999; // Invalid file descriptor
+    // Force read to fail (non-EAGAIN error)
+    shell->master_fd = 99999;
+    mock_system_set_read_should_fail(1);
 
-    // This will attempt to read from the invalid file descriptor
-    // Should fail with EBADF
     int result = pty_read_data(shell, buffer, sizeof(buffer));
 
-    // We expect this to fail in test environment (invalid file descriptor)
-    // But it exercises the read logic
+    // Should return -1 on read error
     TEST_ASSERT_EQUAL(-1, result);
 
     cleanup_test_resources();
@@ -261,18 +297,21 @@ void test_pty_read_data_success(void) {
 
 void test_pty_read_data_no_data_available(void) {
     PtyShell *shell = create_mock_shell();
+    test_shell = shell;
     char buffer[100];
 
-    // Use an invalid file descriptor to ensure read fails
-    shell->master_fd = 99999; // Invalid file descriptor
+    // Mock read to return EAGAIN (no data available)
+    shell->master_fd = 99999;
+    mock_system_set_read_should_fail(0);
+    mock_system_set_read_eagain(1);
 
-    // This will attempt to read from the invalid file descriptor
-    // Should fail with EBADF, but exercises the read logic
     int result = pty_read_data(shell, buffer, sizeof(buffer));
 
-    // We expect this to fail in test environment
-    // But it exercises the read logic
-    TEST_ASSERT_EQUAL(-1, result);
+    // Should return 0 when EAGAIN (no data available)
+    TEST_ASSERT_EQUAL(0, result);
+
+    // Reset EAGAIN for other tests
+    mock_system_set_read_eagain(0);
 
     cleanup_test_resources();
 }
@@ -288,6 +327,7 @@ void test_pty_set_size_null_shell(void) {
 
 void test_pty_set_size_not_running(void) {
     PtyShell *shell = create_mock_shell();
+    test_shell = shell;
     shell->running = false;
 
     bool result = pty_set_size(shell, 24, 80);
@@ -298,16 +338,15 @@ void test_pty_set_size_not_running(void) {
 
 void test_pty_set_size_success(void) {
     PtyShell *shell = create_mock_shell();
+    test_shell = shell;
 
-    // Use an invalid file descriptor to ensure ioctl fails
-    shell->master_fd = 99999; // Invalid file descriptor
+    // Force ioctl to fail
+    shell->master_fd = 99999;
+    mock_system_set_ioctl_failure(1);
 
-    // This will attempt to set size on the invalid file descriptor
-    // Should fail with EBADF
     bool result = pty_set_size(shell, 24, 80);
 
-    // We expect this to fail in test environment (invalid file descriptor)
-    // But it exercises the ioctl logic
+    // Should return false when ioctl fails
     TEST_ASSERT_FALSE(result);
 
     cleanup_test_resources();
@@ -324,6 +363,7 @@ void test_pty_is_running_null_shell(void) {
 
 void test_pty_is_running_not_running(void) {
     PtyShell *shell = create_mock_shell();
+    test_shell = shell;
     shell->running = false;
 
     bool result = pty_is_running(shell);
@@ -334,7 +374,12 @@ void test_pty_is_running_not_running(void) {
 
 void test_pty_is_running_process_terminated(void) {
     PtyShell *shell = create_mock_shell();
+    test_shell = shell;
     shell->pid = 99999; // Non-existent PID
+
+    // Mock waitpid to return -1 with ECHILD (process doesn't exist)
+    mock_system_set_waitpid_result(-1);
+    errno = ECHILD;
 
     bool result = pty_is_running(shell);
 
@@ -347,28 +392,41 @@ void test_pty_is_running_process_terminated(void) {
 
 void test_pty_is_running_process_exited(void) {
     PtyShell *shell = create_mock_shell();
-    // Mock PID doesn't exist, so should return false
+    test_shell = shell;
+
+    // Mock waitpid to return the PID (process exited)
+    mock_system_set_waitpid_result(shell->pid);
+    mock_system_set_waitpid_status(0);
+
     bool result = pty_is_running(shell);
-    TEST_ASSERT_FALSE(result); // Process doesn't exist
+    TEST_ASSERT_FALSE(result); // Process exited
 
     cleanup_test_resources();
 }
 
 void test_pty_is_running_process_signaled(void) {
     PtyShell *shell = create_mock_shell();
-    // Mock PID doesn't exist, so should return false
+    test_shell = shell;
+
+    // Mock waitpid to return the PID (process signaled, SIGKILL=9)
+    mock_system_set_waitpid_result(shell->pid);
+    mock_system_set_waitpid_status(0x80 | 9);
+
     bool result = pty_is_running(shell);
-    TEST_ASSERT_FALSE(result); // Process doesn't exist
+    TEST_ASSERT_FALSE(result); // Process signaled
 
     cleanup_test_resources();
 }
 
 void test_pty_is_running_success(void) {
     PtyShell *shell = create_mock_shell();
+    test_shell = shell;
 
-    // Mock PID doesn't exist, so should return false
+    // Mock waitpid to return 0 (process still running)
+    mock_system_set_waitpid_result(0);
+
     bool result = pty_is_running(shell);
-    TEST_ASSERT_FALSE(result); // Process doesn't exist
+    TEST_ASSERT_TRUE(result); // Process is running
 
     cleanup_test_resources();
 }
@@ -384,6 +442,7 @@ void test_pty_terminate_shell_null_shell(void) {
 
 void test_pty_terminate_shell_not_running(void) {
     PtyShell *shell = create_mock_shell();
+    test_shell = shell;
     shell->running = false;
 
     bool result = pty_terminate_shell(shell);
@@ -394,9 +453,12 @@ void test_pty_terminate_shell_not_running(void) {
 
 void test_pty_terminate_shell_kill_failure(void) {
     PtyShell *shell = create_mock_shell();
+    test_shell = shell;
     shell->pid = 99999; // Non-existent PID
 
-    // This will attempt to kill a non-existent process
+    // Force kill to fail
+    mock_system_set_kill_failure(1);
+
     bool result = pty_terminate_shell(shell);
 
     // Should fail to send signal to non-existent process
@@ -407,14 +469,15 @@ void test_pty_terminate_shell_kill_failure(void) {
 
 void test_pty_terminate_shell_success(void) {
     PtyShell *shell = create_mock_shell();
+    test_shell = shell;
 
-    // This will attempt to terminate the mock process
-    // In test environment, this will likely fail, but exercises the termination logic
+    // kill succeeds (mock default returns 0)
+    mock_system_set_kill_failure(0);
+
     bool result = pty_terminate_shell(shell);
 
-    // We expect this to fail in test environment (invalid PID)
-    // But it exercises the termination logic
-    TEST_ASSERT_FALSE(result);
+    // kill succeeded, so pty_terminate_shell should return true
+    TEST_ASSERT_TRUE(result);
 
     cleanup_test_resources();
 }

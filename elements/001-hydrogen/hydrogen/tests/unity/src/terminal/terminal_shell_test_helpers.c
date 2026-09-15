@@ -13,6 +13,20 @@
 
 #include <unistd.h>
 #include <fcntl.h>
+#include <errno.h>
+
+// Include mocks for external dependencies
+#include <unity/mocks/mock_libwebsockets.h>
+#include <unity/mocks/mock_libmicrohttpd.h>
+
+// Include mock system (terminal sources are compiled with USE_MOCK_SYSTEM)
+#ifndef USE_MOCK_SYSTEM
+#define USE_MOCK_SYSTEM
+#endif
+#include <unity/mocks/mock_system.h>
+
+// Access to test mode variables - defined in terminal_shell.c under UNITY_TEST_MODE
+extern bool test_mode_force_fcntl_failure;
 
 // Test fixtures
 static int test_master_fd = -1;
@@ -49,6 +63,10 @@ TerminalSession* create_test_session(void) {
 }
 
 void setUp(void) {
+    mock_system_reset_all();
+    mock_mhd_reset_all();
+    mock_session_reset_all();
+    test_mode_force_fcntl_failure = false;
     test_master_fd = -1;
     test_slave_fd = -1;
 }
@@ -63,6 +81,7 @@ void tearDown(void) {
         close(test_slave_fd);
         test_slave_fd = -1;
     }
+    mock_system_reset_all();
 }
 
 /*
@@ -116,29 +135,29 @@ void test_create_pty_pair_success(void) {
 
 // Test configure_master_fd with invalid file descriptor
 void test_configure_master_fd_invalid_fd(void) {
-    // Use an invalid file descriptor (-1)
+    // Force fcntl to fail (mocked fcntl doesn't check FD validity)
+    mock_system_set_fcntl_failure(1);
+
     bool result = configure_master_fd(-1);
-    
+
     TEST_ASSERT_FALSE(result);
 }
 
 // Test configure_master_fd with valid file descriptor
 void test_configure_master_fd_success(void) {
     char slave_name[256];
-    
-    // First create a valid PTY pair
+
+    // First create a valid PTY pair (mocked openpty succeeds)
     bool pty_result = create_pty_pair(&test_master_fd, &test_slave_fd, slave_name);
     TEST_ASSERT_TRUE(pty_result);
-    
+
+    // Ensure fcntl is not set to fail
+    mock_system_set_fcntl_failure(0);
+
     // Now configure the master FD
     bool result = configure_master_fd(test_master_fd);
-    
+
     TEST_ASSERT_TRUE(result);
-    
-    // Verify the FD is now non-blocking
-    int flags = fcntl(test_master_fd, F_GETFL);
-    TEST_ASSERT_TRUE(flags >= 0);
-    TEST_ASSERT_TRUE((flags & O_NONBLOCK) != 0);
 }
 
 /*

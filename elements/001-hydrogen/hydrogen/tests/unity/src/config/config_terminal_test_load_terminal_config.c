@@ -12,6 +12,13 @@
 #include <src/config/config_terminal.h>
 #include <src/config/config.h>
 
+// Include mock_system for proper cleanup of shared mock state
+#ifndef USE_MOCK_SYSTEM
+#define USE_MOCK_SYSTEM
+#endif
+#include <unity/mocks/mock_system.h>
+#include <unity/mocks/mock_logging.h>
+
 // Forward declarations for functions being tested
 bool load_terminal_config(json_t* root, AppConfig* config);
 void cleanup_terminal_config(TerminalConfig* config);
@@ -31,10 +38,14 @@ void test_dump_terminal_config_basic(void);
 // Test setup and teardown
 void setUp(void) {
     // Reset any global state if needed
+    mock_system_reset_all();
+    mock_logging_reset_all();
 }
 
 void tearDown(void) {
     // Clean up after each test
+    mock_system_reset_all();
+    mock_logging_reset_all();
 }
 
 // ===== PARAMETER VALIDATION TESTS =====
