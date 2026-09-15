@@ -348,7 +348,7 @@ Part of the comprehensive Hydrogen test suite:
 
 ## Related Documentation
 
-- [Terminal Fix Plan](/docs/H/plans/TERMINAL_FIX_PLAN.md) — full architecture and contract
+- [Terminal Fix Plan](/docs/H/plans/complete/TERMINAL_FIX_PLAN_COMPLETE.md) — full architecture and contract
 - [Test 23 WebSockets](/docs/H/tests/test_23_websockets.md) — general WebSocket testing
 - [Test Infrastructure](/docs/H/tests/TESTING.md) — test runner and framework contract
 - [Unity Unit Tests](/docs/H/tests/TESTING_UNITY.md) — C unit test framework
