@@ -35,7 +35,7 @@ By embedding resources directly in the executable, the Payload subsystem ensures
 The release binary embeds the encrypted payload at the end of the executable using a
 marker-based layout. The format is:
 
-```
+```layout
 [ executable code/data ] [ encrypted payload ] [ payload marker ] [ payload size ]
 ```
 
