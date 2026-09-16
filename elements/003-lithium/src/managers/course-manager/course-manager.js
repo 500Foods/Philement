@@ -64,10 +64,10 @@ export default class CourseManager {
     }
 
     try {
-      const rows = await authQuery(this.app.api, 155, {
-        INTEGER: roleIds.reduce((acc, id, i) => { acc[`ID${i}`] = id; return acc; }, {}),
-      });
-      return rows.map(r => r.name);
+      const results = await Promise.all(
+        roleIds.map((id) => authQuery(this.app.api, 155, { INTEGER: { ROLEID: id } }))
+      );
+      return results.flat().map((r) => r.name).filter(Boolean);
     } catch (err) {
       log(Subsystems.MANAGER, Status.WARN,
         `Course Manager: role name resolution failed, falling back to ID check: ${err.message}`);

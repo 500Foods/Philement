@@ -32,9 +32,11 @@ The script performs the following operations:
 3. **Metadata Extraction**: For each migration file, extracts:
    - Migration number from filename
    - Table name from `cfg.TABLE` configuration
-   - Version from CHANGELOG comments
-   - Release date from CHANGELOG comments
-   - Description from the second line of the file
+   - Version from CHANGELOG lines matching `-- N.N.N - YYYY-MM-DD` (highest
+     semver; wrap lines like `-- 34 (Course Manager)` are ignored)
+   - Release date from that same CHANGELOG line
+   - Description from the second line of the file only (the comment under
+     `-- Migration:`). Wrapped CHANGELOG text is never joined into the cell
    - Migration count (number of `table.insert(queries` calls + QUERY_DELIMITER occurrences)
    - Diagram presence (checks for `TYPE_DIAGRAM_MIGRATION`)
 4. **Table Generation**: Creates a markdown table with columns:

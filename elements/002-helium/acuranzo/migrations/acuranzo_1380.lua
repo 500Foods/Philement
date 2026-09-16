@@ -5,8 +5,8 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.0.0 - 2026-09-09 - Initial creation. Seeds staff (role_id 2) and admin
---              (role_id 3) into the roles table for Course Manager authz.
+-- 1.0.1 - 2026-09-16 - type_a36 = 0 (Project Manager, Lookup 036 key 0); 1 is Auditor.
+-- 1.0.0 - 2026-09-09 - Initial creation. Seeds staff (role_id 2) and admin (role_id 3) for Course Manager authz.
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
@@ -45,8 +45,8 @@ table.insert(queries,{sql=[[
                 ${COMMON_FIELDS}
             )
             VALUES
-                (2, 1, 1, 1, 'staff', 'Staff operator with full Course Manager access.', '{}', ${COMMON_VALUES}),
-                (3, 1, 1, 1, 'admin', 'Administrator with all role access.',                   '{}', ${COMMON_VALUES});
+                (2, 1, 1, 0, 'staff', 'Staff operator with full Course Manager access.', '{}', ${COMMON_VALUES}),
+                (3, 1, 1, 0, 'admin', 'Administrator with all role access.',                   '{}', ${COMMON_VALUES});
 
             ${SUBQUERY_DELIMITER}
 
@@ -62,7 +62,8 @@ table.insert(queries,{sql=[[
 
             Inserts `staff` (role_id 2) and `admin` (role_id 3) roles into
             the `roles` table. These are the v1 Course Manager authz roles
-            (CATCHUP Phase 0b). Both are System-scoped Project Managers.
+            (CATCHUP Phase 0b). Both are Active, System-scoped Project
+            Managers (`status_a34=1`, `scope_a35=1`, `type_a36=0`).
         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,

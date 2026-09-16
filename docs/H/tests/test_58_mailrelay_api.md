@@ -50,7 +50,9 @@ The test runs in parallel against all configured engines:
 
 The script overrides the web port, mailval port, TLS settings, and `Servers[0].CAPath` (absolute mailval cert path for STARTTLS) in each config at runtime, so a single config file per engine supports both plaintext and STARTTLS variants. Secrets and database connection parameters are injected via `${env.*}` variables resolved by the config loader. `Queue.Persist` is on for all 7 engines (mysql, mariadb, postgres, yugabytedb, sqlite, db2, cockroachdb).
 
-Helpers live in [`/elements/001-hydrogen/hydrogen/tests/lib/mailrelay_api_helpers.sh`](/elements/001-hydrogen/hydrogen/tests/lib/mailrelay_api_helpers.sh). Each engine runs plaintext then STARTTLS in one job (at most four engine jobs at once) so a full-suite 50s batch does not start 14 Hydrogen processes at the same time.
+Helpers live in [`/elements/001-hydrogen/hydrogen/tests/lib/mailrelay_api_helpers.sh`](/elements/001-hydrogen/hydrogen/tests/lib/mailrelay_api_helpers.sh). Each engine runs plaintext then STARTTLS in one job (at most four engine jobs at once) so a full-suite 50s batch does not start 14 Hydrogen processes at the same time. Engines start in a fixed order with Yugabyte last so the slowest Persist/QTC path is not in the first wave.
+
+`STARTUP_TIMEOUT` is 60s because `mailrelay_init` waits up to 30s for `MAILRELAY_QREF_QUEUE_RECOVER_STALE` when `Queue.Persist` is on; a 20s helper timeout `kill -9`'d Yugabyte during migration APPLY under suite load. The runtime patch also disables default mDNS (IPv4/IPv6) so the LAN client does not flood TRACE logs while that wait is in progress.
 
 Test 58 uses the dedicated `15800-15831` listener range. These ports are below Linux's default ephemeral client-port range (`32768-60999`), preventing unrelated outbound connections in the full test suite from temporarily occupying a Test 58 listener port.
 

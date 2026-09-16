@@ -515,24 +515,23 @@ Lookup 037 becomes Role Origin. Staff/admin rows exist in `roles`.
 - **Course Manager (ID 34) authz gate:** Updated
   `src/managers/course-manager/course-manager.js` to call async
   `_checkStaffAccess()` in `render()`. Resolves role_ids → names via
-  QueryRef #155 (Get Role Names By IDs) through `authQuery`. Falls back
+  QueryRef #155 (Get Role Name By ID, `:ROLEID`) through `authQuery`. Falls back
   to ID-based check (staff=2, admin=3) if no API or query fails. Denied
   users see a locked "no permission" screen, not a placeholder.
 
 - **Helium packets (handed to human, not applied — split per "one migration = one logical change"):**
   - `acuranzo_1380.lua` — **Seed roles**: Insert `staff` (role_id=2, scope=System, type=Project Manager) and `admin` (role_id=3) into the `roles` table. Reverse deletes role_ids 2 and 3. Follows the `acuranzo_1257.lua` pattern.
-  - `acuranzo_1381.lua` — **QueryRef #155** ("Get Role Names By IDs"): Internal SQL (`TYPE_INTERNAL_SQL`) that takes `INTEGERS` param (repeated integer params) and returns `role_id, name` from the `roles` table where `status_a34 = 1` (active). Reachable via `auth_query`. Same pattern as QueryRef #127 (Get Role By Name, migration 1260).
+  - `acuranzo_1381.lua` — **QueryRef #155** ("Get Role Name By ID"): `TYPE_SQL` SELECT `role_id, name` from `roles` where `role_id = :ROLEID` and `status_a34 = 1`. Same QueryRef shape as #127 (`acuranzo_1260.lua`) / #017 (`acuranzo_1108.lua`). `auth_query` blocks type 0 (internal). SPA calls once per role_id.
   - `acuranzo_1382.lua` — **Lookup 037 retarget**: Updates `lookups` table to change Lookup 037 from "Role Status" (duplicate of 034) to "Role Origin" with values Seeded (key_idx 0) and Manual (key_idx 1). Reverse restores original values.
 
 - **Staff/admin role_ids after seed:** staff=2, admin=3 (mail_send was already 1).
 
 - **Lookup 036 clarification:** Confirmed 036 labels `roles.type_a36`
   only (Project Manager / Auditor / SME). Does NOT map `role_id` →
-  label. New staff/admin roles use `type_a36 = 1` (Project Manager).
+  label. New staff/admin roles use `type_a36 = 0` (Project Manager).
 
-- **QueryRef #155 usage:** The SPA calls `authQuery(api, 155, { INTEGER: { ID0: roleId, ID1: roleId2, ... } })`
-  to resolve the JWT role_ids to names. The Conduit INTEGER param block accepts
-  named integer params. If #155 is not yet applied, the Course Manager falls back
+- **QueryRef #155 usage:** The SPA calls `authQuery(api, 155, { INTEGER: { ROLEID: id } })`
+  once per JWT role_id. If #155 is not yet applied, the Course Manager falls back
   to the known ID list [2, 3].
 
 - **Tests updated:** `login-form.test.js` and `oidc-login.test.js` mock data

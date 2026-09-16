@@ -19,8 +19,10 @@ Prioritized incomplete work with effort/done metrics. Start here.
 ### [AUTH FINALE](/docs/H/plans/AUTH_FINALE.md)
 
 Active auth / OIDC / Keycloak plan (P0). Register email, DefaultRoles, client
-roles, RP health/backchannel, terminal WS auth, login MFA, IdP durability and
-post-MVP, real-Keycloak E2E (Phase 11). History:
+roles, RP health/backchannel, login MFA, IdP durability and
+post-MVP, real-Keycloak E2E (Phase 11). Terminal WS E2E is
+[TERMINAL_FIX_PLAN_COMPLETE.md](/docs/H/plans/complete/TERMINAL_FIX_PLAN_COMPLETE.md).
+History:
 [OIDC-PLAN_COMPLETE.md](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md),
 [KEYCLOAK_PLAN_COMPLETE.md](/docs/H/plans/complete/KEYCLOAK_PLAN_COMPLETE.md),
 [OIDC_IDP_COMPLETE.md](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md),
@@ -43,6 +45,15 @@ Web Push backend (RFC 8030/8291/8292): Subscribers API + dispatch queue.
 Letter **V** (U is Chat), launch 22. Exhaustive plan (Phases 0–15) with
 completeness and coverage fences. Phase 0 not approved. Lithium UI deferred.
 Does not reuse `Notify` SMTP scaffold or `H.notify`.
+
+### [FIREBASE PLAN](/docs/H/plans/FIREBASE.md)
+
+Replace the CockroachDB operator slot with a real fifth Hydrogen engine
+(Cloud Firestore REST + SQL interpreter) and a fifth Helium dialect
+(`database_firebase.lua`, complete macro set). Brotli/Base64/SHA-256 live
+in-process (extras-UDF analog). Full Acuranzo AutoMigrations, no v1 subset.
+Cockroach is a PostgreSQL alias today (zero C). Yugabyte and MariaDB stay.
+Phases 0–16; Phase 0 complete (2026-09-16). Next: Phase 1 emulator extras.
 
 ### [MIRAGE PLAN](/docs/H/plans/MIRAGE_PLAN.md)
 

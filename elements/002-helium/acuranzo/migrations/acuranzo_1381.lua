@@ -1,22 +1,22 @@
 -- Migration: acuranzo_1381.lua
--- QueryRef #155 - Get Role Names By IDs
+-- QueryRef #155 - Get Role Name By ID
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.0.0 - 2026-09-09 - Initial creation. QueryRef #155 resolves integer
---              role_ids to role names for Course Manager authz (L3).
+-- 1.0.1 - 2026-09-16 - Match QueryRef #127/#017: TABLE=queries, TYPE_SQL, :ROLEID bind, reverse deletes the QueryRef from queries.
+-- 1.0.0 - 2026-09-09 - Initial creation. QueryRef #155 resolves a role_id to its name for Course Manager authz (L3).
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
 
-cfg.TABLE = "roles"
+cfg.TABLE = "queries"
 cfg.MIGRATION = "1381"
 cfg.QUERY_REF = "155"
-cfg.QUERY_NAME = "Get Role Names By IDs"
+cfg.QUERY_NAME = "Get Role Name By ID"
 -- ----------------------------------------------------------------------------
--- Forward: Populate QueryRef #155 - Get Role Names By IDs
+-- Forward: Populate QueryRef #155 - Get Role Name By ID
 -- ----------------------------------------------------------------------------
 table.insert(queries,{sql=[[
 
@@ -47,7 +47,7 @@ table.insert(queries,{sql=[[
                 new_query_id                                                        AS query_id,
                 ${QUERY_REF}                                                        AS query_ref,
                 ${STATUS_ACTIVE}                                                    AS query_status_a27,
-                ${TYPE_INTERNAL_SQL}                                                AS query_type_a28,
+                ${TYPE_SQL}                                                         AS query_type_a28,
                 ${DIALECT}                                                          AS query_dialect_a30,
                 ${QTC_FAST}                                                         AS query_queue_a58,
                 ${TIMEOUT}                                                          AS query_timeout,
@@ -56,26 +56,21 @@ table.insert(queries,{sql=[[
                         r.role_id,
                         r.name
                     FROM
-                        ${SCHEMA}${TABLE} r
+                        ${SCHEMA}roles r
                     WHERE
-                        r.role_id IN (
-                            ${INTEGERS}
-                        )
-                    AND r.status_a34 = 1
-                    ORDER BY
-                        r.role_id;
+                        (r.role_id = :ROLEID)
+                    AND (r.status_a34 = 1);
                 ]==]                                                                AS code,
                 '${QUERY_NAME}'                                                     AS name,
                 [==[
                     # QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-                    Resolves a list of integer `role_id` values to their
-                    human-readable `name` from the `roles` table.
+                    Resolves one integer `role_id` to its human-readable `name`
+                    from the `roles` table.
 
                     ## Parameters
 
-                    - `INTEGERS` (integer, repeated, required): One or more
-                      `role_id` values to resolve.
+                    - `ROLEID` (integer, required): The `role_id` to resolve.
 
                     ## Returns
 
@@ -84,15 +79,13 @@ table.insert(queries,{sql=[[
 
                     ## Tables
 
-                    - `${SCHEMA}${TABLE}` (migration 1016).
+                    - `${SCHEMA}roles` (migration 1016).
 
                     ## Security Notes
 
-                    - `query_type_a28` is `TYPE_INTERNAL_SQL` (0) so the inner
-                      query is not directly reachable via the REST API; the
-                      outer query_ref (${QUERY_REF}) is the only public handle.
-                    - Reachable via auth_query so JWT-bearing clients can
-                      resolve role_ids to names for the staff/admin check (L3).
+                    - `query_type_a28` is `TYPE_SQL` (1) so JWT-bearing clients
+                      can call this via `auth_query`. Internal SQL (type 0) is
+                      blocked on that endpoint.
                 ]==]
                                                                                     AS summary,
                 '{}'                                                                AS collection,
@@ -111,8 +104,8 @@ table.insert(queries,{sql=[[
         [=[
             # Forward Migration ${MIGRATION}: Populate QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-            This migration creates the internal SELECT query that resolves
-            role_ids to role names (QueryRef #${QUERY_REF}).
+            This migration creates the SELECT query that resolves a role_id
+            to its name (QueryRef #${QUERY_REF}).
         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,
@@ -122,7 +115,7 @@ table.insert(queries,{sql=[[
 ]]})
 
 -- ----------------------------------------------------------------------------
--- Reverse: Remove QueryRef #155 - Get Role Names By IDs
+-- Reverse: Remove QueryRef #155 - Get Role Name By ID
 -- ----------------------------------------------------------------------------
 table.insert(queries,{sql=[[
 
@@ -157,8 +150,7 @@ table.insert(queries,{sql=[[
         [=[
             # Reverse Migration ${MIGRATION}: Remove QueryRef #${QUERY_REF} - ${QUERY_NAME}
 
-            Deletes the internal SQL query for role_id -> name resolution
-            created by the forward migration.
+            This is provided for completeness when testing the migration system.
         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,

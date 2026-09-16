@@ -5,7 +5,9 @@
 
 One gated plan for **remaining Hydrogen authentication work**: password
 register gaps, OIDC Relying Party production sign-off, Hydrogen-as-IdP
-post-MVP, terminal WebSocket auth, and login MFA via Mail Relay OTP.
+post-MVP, and login MFA via Mail Relay OTP. Terminal WebSocket auth
+closed in
+[`TERMINAL_FIX_PLAN_COMPLETE.md`](/docs/H/plans/complete/TERMINAL_FIX_PLAN_COMPLETE.md).
 
 Password login/renew/logout, OIDC RP Phases 1–26 + multi-provider
 dispatch, and OIDC IdP Phases 0–16 are **shipped**. This document does
@@ -123,7 +125,7 @@ Urgency inside the plan (not phase order):
 | Keycloak / OIDC RP E2E | P0 (ops; OTP-blocked) | 11 |
 | Provision DefaultRoles | P0 | 2 |
 | Register email → `account_contacts` | P1 | 1 |
-| Terminal WS auth | P2 | 7 |
+| Terminal WS auth | done — [`TERMINAL_FIX_PLAN_COMPLETE.md`](/docs/H/plans/complete/TERMINAL_FIX_PLAN_COMPLETE.md) | 7 |
 | OIDC RP client-role parse | P2 | 3 |
 | Login MFA via Mail Relay OTP | P2 (was Mail Relay leftover) | 8 |
 | OIDC IdP post-MVP + durability | P3 | 9–10 |
@@ -205,7 +207,7 @@ and leftover protocol. Review risks here so later phases do not
 | RP-initiated logout unverified live | Code shipped; Keycloak post-logout URI + fresh `id_token` claim still operator checklist | Phase 11 |
 | No RP discovery health | Ops cannot see IdP down vs RP disabled | Phase 5 |
 | No backchannel logout | Keycloak SSO logout does not revoke Hydrogen JWTs | Phase 6 |
-| Terminal WS open | `terminal_websocket_requires_auth` always returns false | Phase 7 (product lock in Phase 0) |
+| Terminal WS open | Closed: split chat/terminal keys, query-string auth, role-32 info gating | Phase 7 complete via [`TERMINAL_FIX_PLAN_COMPLETE.md`](/docs/H/plans/complete/TERMINAL_FIX_PLAN_COMPLETE.md) |
 | Login MFA unwired | Mail Relay OTP generate/verify exist; `/api/auth/login` is password-only | Phase 8 |
 | No self-service password reset | Only fix today is an operator/DB edit; users with a forgotten password have no recovery path | Phase 8b |
 | No self-service session visibility/revoke | `logout` only ends the caller's own JWT; a user who suspects compromise cannot see or kill other active sessions | Phase 10b |
@@ -224,7 +226,7 @@ and leftover protocol. Review risks here so later phases do not
 | Password / session JWT | HS256 login, renew, logout, register | `src/api/auth/` | Phases 1, 8 |
 | OIDC **Relying Party** | Hydrogen is client of Keycloak | `src/api/auth/oidc_rp/`, `config_oidc_rp` | Phases 2–6, 11 |
 | OIDC **Identity Provider** | Hydrogen issues tokens | `src/oidc/`, `src/api/oidc/`, `config_oidc` | Phases 9–10 |
-| Terminal WS | Browser terminal | `src/terminal/terminal_websocket.c` | Phase 7 |
+| Terminal WS | Browser terminal | `src/websocket/websocket_server_*.c`, `src/terminal/` | Phase 7 complete (TERMINAL_FIX) |
 | Mail Relay OTP | Generate / verify codes | `src/mailrelay/mailrelay_otp.c` | Phase 8 consumes; does not own |
 
 ### RP flow (shipped)
@@ -322,7 +324,7 @@ Match existing auth / OIDC patterns; do not invent parallel stacks.
 | `tests/test_42_oidc_rp.sh` | RP mock Keycloak (`tests/lib/mock_keycloak/`) |
 | `tests/test_45_oidc_idp.sh` | IdP code+PKCE (ports 5450–5456) |
 | `tests/test_21_system_endpoints.sh` | System health fields (Phase 5) |
-| `tests/test_26_terminal.sh` | Terminal (Phase 7) |
+| `tests/test_26_terminal.sh` | Terminal (Phase 7 closed; owned by [`TERMINAL_FIX_PLAN_COMPLETE.md`](/docs/H/plans/complete/TERMINAL_FIX_PLAN_COMPLETE.md)) |
 | `tests/test_40_auth.sh` | Also owns password reset (Phase 8b) and session list/revoke (Phase 10b) cases |
 | Unity `tests/unity/src/api/auth/` | Password + RP helpers |
 | Unity `tests/unity/src/oidc/` + `api/oidc/` | IdP |
@@ -375,7 +377,7 @@ assigning numbers. Hand packets to the user. Do **not** reuse QueryRef
 | 4 | Optional second mock provider in Test 42 **or** `[~]` with rationale | S | pending |
 | 5 | System health exposes `oidc_rp_status` without secrets | M | pending |
 | 6 | Backchannel logout validates logout token and revokes Hydrogen JWTs | M | pending |
-| 7 | Terminal WS auth matches Phase 0 decision; Test 26 | S | pending |
+| 7 | Terminal WS auth matches Phase 0 decision; Test 26 | S | **complete** (via TERMINAL_FIX) |
 | 8 | Login MFA (and email verify if locked) uses Mail Relay OTP; Test 40 | M | pending |
 | 8b | Password reset via Mail Relay OTP; no enumeration leak; Test 40 | M | pending |
 | 9 | IdP codes/refresh on QueryRefs; userinfo can merge accounts; `oidc_users` resolved | L | pending |
@@ -414,11 +416,15 @@ This document exists. Ability to read historical plans in
 - [ ] Lock empty `AllowedEmailDomains` semantics when provision is
       later enabled: empty list must **not** mean all domains.
       **Verify:** Status + later Phase 2 must not contradict.
-- [ ] Lock **terminal WS auth** product: JWT in first message vs session
+- [x] Lock **terminal WS auth** product: JWT in first message vs session
       cookie vs stay-open on trusted nets. Default recommendation:
       require Hydrogen JWT (same shape as other WS), fail closed when
       Terminal is enabled on a public origin.
       **Verify:** Decision column in Status.
+      Locked by [`TERMINAL_FIX_PLAN_COMPLETE.md`](/docs/H/plans/complete/TERMINAL_FIX_PLAN_COMPLETE.md):
+      two keys/protocols, `?key=` URI_ARGS auth, role-32 for the
+      `terminal` info object; MHD `terminal_websocket_requires_auth`
+      hook removed as dead. Not JWT-in-first-message.
 - [ ] Lock **login MFA** product: default off; enable via config;
       purpose `login_mfa` (lookup 066); email verify on register in or
       out of Phase 8.
@@ -746,13 +752,17 @@ Phase 6 complete.
 
 ### Work items
 
-- [ ] Implement `terminal_websocket_requires_auth` (or delete the hook
+- [x] Implement `terminal_websocket_requires_auth` (or delete the hook
       if Phase 0 chose stay-open — then document the risk).
       **Verify:** Unity.
-- [ ] Blackbox: Test 26 rejects unauthenticated upgrade when required;
+      Done in TERMINAL_FIX Phase 13: hook deleted as dead MHD path;
+      live auth is libwebsockets key + protocol.
+- [x] Blackbox: Test 26 rejects unauthenticated upgrade when required;
       accepts valid JWT/cookie per decision.
       **Verify:** Test 26 green.
-- [ ] `mkq` + `mkp`. Docs: terminal operator note.
+      Done in TERMINAL_FIX: two keys/protocols, query-string `?key=`
+      auth, role-32 `terminal` info object.
+- [x] `mkq` + `mkp`. Docs: terminal operator note.
 
 ### Done means
 
@@ -765,10 +775,18 @@ Test 26 green. `mkq`/`mkp` green.
 
 ### Status
 
-- **State:** pending
-- **Date:**
-- **Result:**
-- **Variances:**
+- **State:** complete
+- **Date:** 2026-09-16
+- **Result:** Implemented and production-verified in
+  [`TERMINAL_FIX_PLAN_COMPLETE.md`](/docs/H/plans/complete/TERMINAL_FIX_PLAN_COMPLETE.md)
+  (Phases 0–13; Phase 5 skipped). Chat and terminal each have their own
+  key/protocol; browser `?key=` upgrades succeed; `/api/system/info`
+  gates `terminal` to role 32.
+- **Variances:** AUTH_FINALE Phase 0 had not run when this shipped.
+  Product lock is the TERMINAL_FIX two-key contract, not JWT-in-first-
+  message. `terminal_websocket_requires_auth` was removed, not
+  implemented. Phase 8 may start after Phase 6; this phase is not a
+  code dependency for MFA.
 
 ---
 
@@ -1260,6 +1278,7 @@ No reverse migration required to disable features.
 | [`LITHIUM-KEYCLOAK.md`](/docs/Li/LITHIUM-KEYCLOAK.md) | Client recipe |
 | [`MAILRELAY_PLAN.md`](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md) | OTP engine; MFA wiring moved here |
 | [`CHAT_FINALE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md) | Chat/MCP JWT mint — not this plan |
+| [`TERMINAL_FIX_PLAN_COMPLETE.md`](/docs/H/plans/complete/TERMINAL_FIX_PLAN_COMPLETE.md) | Terminal WS E2E (Phase 7 closed here) |
 | [`TESTING.md`](/docs/H/tests/TESTING.md) | Blackbox conventions |
 | [`TESTING_UNITY.md`](/docs/H/tests/TESTING_UNITY.md) | Unity conventions |
 | [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) | Build aliases |
@@ -1270,6 +1289,11 @@ No reverse migration required to disable features.
 
 ### Decisions log
 
+- **(2026-09-16)** Terminal WS auth (Phase 7) closed. Implementation and
+  production E2E live in
+  [`TERMINAL_FIX_PLAN_COMPLETE.md`](/docs/H/plans/complete/TERMINAL_FIX_PLAN_COMPLETE.md).
+  Dropped from TODO item 1 remaining and TODO item 2. AUTH_FINALE no
+  longer owns terminal WebSocket work.
 - **(Plan revised, 2026-09-03)** Added Phase 8b (password reset via the
   same Mail Relay OTP primitives as Phase 8, dedicated OTP purpose, no
   email-enumeration leak, revokes existing sessions on success) and

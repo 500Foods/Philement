@@ -5,9 +5,8 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.0.0 - 2026-09-09 - Initial creation. Retargets Lookup 037 from duplicate
---              "Role Status" to "Role Origin" (Seeded / Manual) for the
---              roles table origin_a37 column introduced in migration 1016.
+-- 1.0.1 - 2026-09-16 - Reverse restores 1062 header summary/collection and value-row icons/sort_seq. Forward clears those icons. No origin_a37 column on roles.
+-- 1.0.0 - 2026-09-09 - Initial creation. Retargets Lookup 037 from duplicate Role Status to Role Origin (Seeded / Manual).
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
@@ -38,7 +37,7 @@ table.insert(queries,{sql=[[
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
             -- Retarget the header row (lookup_id 0, key_idx 037) from
-            -- "Role Status" (duplicate of 034) to "Role Origin".
+            -- "Role Status" (duplicate of 034, seeded by 1062) to "Role Origin".
             UPDATE ${SCHEMA}${TABLE}
             SET value_txt = '${LOOKUP_NAME}',
                 value_int  = 0,
@@ -49,17 +48,34 @@ table.insert(queries,{sql=[[
                     Origin of a role assignment: whether it was database-seeded
                     or manually granted by an administrator.
                 ]==],
-                summary  = 'Origin of a role assignment: Seeded or Manual.',
-                collection = ${JIS}[==[{}]==]${JIE}
+                summary  = [==[
+                    # ${LOOKUP_ID} - ${LOOKUP_NAME}
+
+                    Origin of a role assignment: Seeded or Manual.
+                ]==],
+                collection = ${JSON_INGEST_START}
+                [==[
+                    {
+                        "Default": "JSONEditor",
+                        "CSSEditor": false,
+                        "HTMLEditor": true,
+                        "JSONEditor": true,
+                        "LookupEditor": false
+                    }
+                ]==]
+                ${JSON_INGEST_END}
             WHERE lookup_id = 0
               AND key_idx   = ${LOOKUP_ID};
 
             ${SUBQUERY_DELIMITER}
 
-            -- Retarget the two existing value rows (Inactive/Active) to Origin (Seeded/Manual)
             UPDATE ${SCHEMA}${TABLE}
             SET value_txt = 'Seeded',
-                value_int  = 0
+                value_int  = 0,
+                sort_seq   = 0,
+                code       = '',
+                summary    = '',
+                collection = ${JIS}[==[{}]==]${JIE}
             WHERE lookup_id = ${LOOKUP_ID}
               AND key_idx   = 0;
 
@@ -67,7 +83,11 @@ table.insert(queries,{sql=[[
 
             UPDATE ${SCHEMA}${TABLE}
             SET value_txt = 'Manual',
-                value_int  = 0
+                value_int  = 0,
+                sort_seq   = 1,
+                code       = '',
+                summary    = '',
+                collection = ${JIS}[==[{}]==]${JIE}
             WHERE lookup_id = ${LOOKUP_ID}
               AND key_idx   = 1;
 
@@ -83,10 +103,11 @@ table.insert(queries,{sql=[[
         [==[
             # Forward Migration ${MIGRATION}: Retarget Lookup ${LOOKUP_ID}
 
-            Changes Lookup ${LOOKUP_ID} from "Role Status" (a duplicate of 034)
-            to "Role Origin" with values Seeded (key_idx 0) and Manual
-            (key_idx 1). This distinguishes roles that were database-seeded
-            (e.g. mail_send, staff, admin) from manually granted roles.
+            Changes Lookup ${LOOKUP_ID} from "Role Status" (a duplicate of 034
+            seeded by migration 1062) to "Role Origin" with values Seeded
+            (key_idx 0) and Manual (key_idx 1). This is an UPDATE of those
+            existing rows, not an INSERT. The `roles` table has no origin
+            column yet; this lookup is the catalog for that meaning.
         ]==]
                                                                             AS summary,
         '{}'                                                                AS collection,
@@ -95,7 +116,7 @@ table.insert(queries,{sql=[[
 
 ]]})
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
--- Reverse: Restore Lookup 037 to Role Status
+-- Reverse: Restore Lookup 037 to Role Status as seeded by 1062
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -115,23 +136,39 @@ table.insert(queries,{sql=[[
         ${QTC_SLOW}                                                         AS query_queue_a58,
         ${TIMEOUT}                                                          AS query_timeout,
         [=[
-            -- Restore Lookup 037 header back to "Role Status"
             UPDATE ${SCHEMA}${TABLE}
             SET value_txt = 'Role Status',
                 value_int  = 0,
                 sort_seq   = 0,
                 code       = '',
-                summary  = '',
-                collection = ${JIS}[==[{}]==]${JIE}
+                summary  = [==[
+                    # 037 - Role Status
+
+                    Role status - active or inactive.
+                ]==],
+                collection = ${JSON_INGEST_START}
+                [==[
+                    {
+                        "Default": "JSONEditor",
+                        "CSSEditor": false,
+                        "HTMLEditor": true,
+                        "JSONEditor": true,
+                        "LookupEditor": false
+                    }
+                ]==]
+                ${JSON_INGEST_END}
             WHERE lookup_id = 0
               AND key_idx   = ${LOOKUP_ID};
 
             ${SUBQUERY_DELIMITER}
 
-            -- Restore value rows back to Inactive/Active
             UPDATE ${SCHEMA}${TABLE}
             SET value_txt = 'Inactive',
-                value_int  = 0
+                value_int  = 0,
+                sort_seq   = 0,
+                code       = '',
+                summary    = '',
+                collection = ${JIS}[==[{"icon":"<fa fa-xmark fa-swap-opacity style='color: #FF0000; filter: var(--ACZ-shadow-4);'></fa>"}]==]${JIE}
             WHERE lookup_id = ${LOOKUP_ID}
               AND key_idx   = 0;
 
@@ -139,7 +176,11 @@ table.insert(queries,{sql=[[
 
             UPDATE ${SCHEMA}${TABLE}
             SET value_txt = 'Active',
-                value_int  = 0
+                value_int  = 0,
+                sort_seq   = 1,
+                code       = '',
+                summary    = '',
+                collection = ${JIS}[==[{"icon":"<fa fa-check fa-swap-opacity style='color: #00FF00; filter: var(--ACZ-shadow-4);'></fa>"}]==]${JIE}
             WHERE lookup_id = ${LOOKUP_ID}
               AND key_idx   = 1;
 
@@ -157,7 +198,8 @@ table.insert(queries,{sql=[[
 
             Restores Lookup ${LOOKUP_ID} back to "Role Status" (duplicate of 034)
             with values Inactive (key_idx 0) and Active (key_idx 1), as
-            originally seeded by migration 1062.
+            originally seeded by migration 1062, including header summary,
+            editor collection, and value-row icons.
         ]==]
                                                                             AS summary,
         '{}'                                                                AS collection,
