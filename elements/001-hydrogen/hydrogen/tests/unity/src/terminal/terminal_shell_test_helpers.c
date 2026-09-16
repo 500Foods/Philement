@@ -69,6 +69,13 @@ void setUp(void) {
     test_mode_force_fcntl_failure = false;
     test_master_fd = -1;
     test_slave_fd = -1;
+
+    // Prevent real fork/exec from spawning a live shell that contaminates
+    // the terminal. Mirror the pattern used by terminal_shell_test_pty_operations.c
+    // setup_spawn_mocks(): fork returns a sentinel PID (no child process),
+    // waitpid returns 0 (process still running) so pty_is_running() stays true.
+    mock_system_set_fork_result(99999);
+    mock_system_set_waitpid_result(0);
 }
 
 void tearDown(void) {
