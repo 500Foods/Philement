@@ -1,4 +1,5 @@
 <!-- markdownlint-disable MD007 MD024 -->
+> NOTE: This plan fixed the Hydrogen terminal subsystem's end-to-end flow from JWT issuance through browser WebSocket upgrade to PTY I/O. The core problems were (1) a single shared WebSocket key for both chat and terminal surfaces, (2) the terminal WebSocket key being exposed to any authenticated user instead of only role-32 accounts, (3) wildcard CORS/origin postMessage in the iframe handoff, (4) a query-string auth bug where the browser-sent `?key=` parameter was silently dropped causing 502s, (5) a protocol-name mismatch between the `"hydrogen"` chat default and the hardcoded `"terminal"` routing checks, and (6) the `_handleIframeMessage is null` crash in the Lithium terminal manager. Phases 0–12 were implemented across Hydrogen (C) and Lithium (JS) source, configs, payload generation, and Test 26; the system was deployed and verified in production. Phase 13 captured deferred items (CORS consolidation, Traefik trustedIPs verification, payload marker documentation).
 # Terminal Fix Plan
 
 ## Quick Summary

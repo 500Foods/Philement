@@ -73,6 +73,10 @@ void mock_pthread_reset_all(void);
 // Real session manager controls (strong symbols win over the weak MHD mocks)
 extern SessionManager *global_session_manager;
 
+// Fork/waitpid control helpers (defined in mock_system.c, always available)
+void mock_system_set_fork_result(pid_t result);
+void mock_system_set_waitpid_result(pid_t result);
+
 // Test function prototypes
 void test_start_bridge_pthread_create_failure(void);
 void test_process_message_raw_input_activity_update(void);
@@ -120,6 +124,14 @@ void setUp(void) {
     mock_pthread_reset_all();
     mock_system_reset_all();
     mock_lws_reset_all();
+
+    // Prevent real fork/exec from spawning a live /bin/bash that contaminates
+    // the terminal. Mirror the pattern used by terminal_shell_test_pty_operations.c
+    // setUp(): fork returns a sentinel PID (no child process), waitpid returns
+    // 0 (process still running) so pty_is_running() stays true and the raw-input
+    // path in process_terminal_websocket_message proceeds normally.
+    mock_system_set_fork_result(99999);
+    mock_system_set_waitpid_result(0);
 
     // Use the real session subsystem with the cleanup thread disabled so the
     // upgrade path exercises genuine session creation.
