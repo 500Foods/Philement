@@ -203,8 +203,9 @@ describe('TerminalManager', () => {
         },
       };
 
-      // Simulate iframe set by init()
-      terminal.iframe = fakeEvent.source;
+      // Simulate iframe set by init() — in a real browser, this.iframe is
+      // an HTMLIFrameElement and event.source is its contentWindow.
+      terminal.iframe = { contentWindow: fakeEvent.source };
 
       terminal._handleIframeMessage(fakeEvent);
 
@@ -227,7 +228,7 @@ describe('TerminalManager', () => {
         },
       };
 
-      terminal.iframe = fakeEvent.source;
+      terminal.iframe = { contentWindow: fakeEvent.source };
       terminal._handleIframeMessage(fakeEvent);
 
       expect(fakeEvent.source.postMessage).toHaveBeenCalledWith(
@@ -262,8 +263,8 @@ describe('TerminalManager', () => {
         source: { postMessage: vi.fn() },
       };
 
-      // iframe is a different object than event.source
-      terminal.iframe = { postMessage: vi.fn() };
+      // iframe is a different window than event.source
+      terminal.iframe = { contentWindow: { postMessage: vi.fn() } };
       terminal._handleIframeMessage(fakeEvent);
 
       expect(jwtMock.retrieveJWT).not.toHaveBeenCalled();

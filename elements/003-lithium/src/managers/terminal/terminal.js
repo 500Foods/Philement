@@ -685,8 +685,10 @@ export class TerminalManager {
         return;
       }
 
-      // Verify the sender is our terminal iframe
-      if (event.source !== this.iframe) {
+      // Verify the sender is our terminal iframe.
+      // In a real browser, event.source is the iframe's contentWindow
+      // (a Window object), NOT the HTMLIFrameElement stored in this.iframe.
+      if (!this.iframe || event.source !== this.iframe.contentWindow) {
         log(Subsystems.MANAGER, Status.WARN, '[Terminal] Ignoring config request from wrong source');
         return;
       }
