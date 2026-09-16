@@ -5,6 +5,7 @@
 # Uses HELIUM_ROOT and HELIUM_DOCS_ROOT environment variables for path resolution
 
 # CHANGEHISTORY
+# 2.0.1 - 2026-09-16 - Notes that migration_index.sh 1.1.0 uses strict CHANGELOG semver.
 # 2.0.0 - 2025-12-15 - Added documentation quality checks (link validation and markdown linting)
 # 1.0.0 - 2025-11-24 - Initial version
 

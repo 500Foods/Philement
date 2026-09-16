@@ -5,8 +5,8 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.0.0 - 2026-09-09 - Initial creation. Adds keys 33 (Scripting),
---              34 (Course Manager), 35 (Course Builder) to Lookup 042 Modules.
+-- 1.0.1 - 2026-09-16 - Scripting icon fa-file-code (Terminal already uses fa-terminal on key 32).
+-- 1.0.0 - 2026-09-09 - Initial creation. Adds keys 33 (Scripting), 34 (Course Manager), 35 (Course Builder) to Lookup 042 Modules.
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
@@ -37,7 +37,7 @@ table.insert(queries,{sql=[[
             INSERT INTO ${SCHEMA}${TABLE}
                 (lookup_id, key_idx, status_a1, value_txt, value_int, sort_seq, code, summary, collection, ${COMMON_FIELDS})
             VALUES
-                (${LOOKUP_ID}, 33, 1, 'Scripting',          5, 33, '', '', ${JIS}[==[{"index": 33, "icon":"<fa fa-terminal></fa>"}]==]${JIE}, ${COMMON_VALUES}),
+                (${LOOKUP_ID}, 33, 1, 'Scripting',          5, 33, '', '', ${JIS}[==[{"index": 33, "icon":"<fa fa-file-code></fa>"}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID}, 34, 1, 'Course Manager',       6, 34, '', '', ${JIS}[==[{"index": 34, "icon":"<fa fa-book-open></fa>"}]==]${JIE}, ${COMMON_VALUES}),
                 (${LOOKUP_ID}, 35, 1, 'Course Builder',       6, 35, '', '', ${JIS}[==[{"index": 35, "icon":"<fa fa-pencil-ruler></fa>"}]==]${JIE}, ${COMMON_VALUES});
 

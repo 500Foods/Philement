@@ -15,6 +15,10 @@
 # (Helpers live in tests/lib/mailrelay_api_helpers.sh)
 
 # CHANGELOG
+# 2.10.1 - 2026-09-16 - Suite-only Yugabyte flake: STARTUP_TIMEOUT 20s was below
+#                      mailrelay_init's 30s Persist QTC wait, so start_hydrogen
+#                      kill -9'd Yugabyte during APPLY. Raise to 60s, start
+#                      Yugabyte last, disable default mDNS (helpers 1.0.15).
 # 2.10.0 - 2026-09-08 - Phase 14.3: Added rate-limit blackbox subtest (rate-limit
 #                verified via 429 + MAIL_RATE_LIMITED response body assertion).
 # 2.9.5 - 2026-09-07 - Fix SQLite-plaintext/STARTTLS failure: repo_add_datetime now
@@ -80,7 +84,7 @@ TEST_NAME="MailRelay API"
 TEST_ABBR="MRA"
 TEST_NUMBER="58"
 TEST_COUNTER=0
-TEST_VERSION="2.10.0"
+TEST_VERSION="2.10.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -103,8 +107,16 @@ MAILRELAY_API_ENGINES=(
     ["YugabyteDB"]="yugabytedb:15824:15825:15826:15827"
 )
 
-# Timeouts (seconds) — slightly generous so the 50s batch does not starve SMTP/HTTP.
-STARTUP_TIMEOUT=20
+# Hash order of MAILRELAY_API_ENGINES is not stable. Start fast engines first
+# so Yugabyte (slowest under suite load) is not in the first MAX_ENGINE_JOBS wave.
+MAILRELAY_API_ENGINE_ORDER=(
+    "SQLite" "PostgreSQL" "MySQL" "MariaDB" "DB2" "CockroachDB" "YugabyteDB"
+)
+
+# Timeouts (seconds). STARTUP_TIMEOUT must exceed mailrelay_init's 30s wait
+# for MAILRELAY_QREF_QUEUE_RECOVER_STALE when Queue.Persist is on, plus
+# Yugabyte APPLY under the 50s batch. wait_for_startup kill -9s on expiry.
+STARTUP_TIMEOUT=60
 SHUTDOWN_TIMEOUT=30
 SHUTDOWN_ACTIVITY_TIMEOUT=5
 HTTP_READY_TIMEOUT=20
@@ -204,7 +216,7 @@ true > "${GLOBAL_RESULT_FILE}"
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Running MailRelay API tests in parallel"
 
-    for display_name in "${!MAILRELAY_API_ENGINES[@]}"; do
+    for display_name in "${MAILRELAY_API_ENGINE_ORDER[@]}"; do
         # shellcheck disable=SC2312 # Job control with wc -l is standard practice
         while (( $(jobs -r | wc -l) >= MAX_ENGINE_JOBS )); do
             # shellcheck disable=SC2310 # Non-zero child exit must not abort the suite
@@ -225,7 +237,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     done
     print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "All parallel tests completed"
 
-    for display_name in "${!MAILRELAY_API_ENGINES[@]}"; do
+    for display_name in "${MAILRELAY_API_ENGINE_ORDER[@]}"; do
         IFS=':' read -r engine_name web_plain mail_plain web_tls mail_tls <<< "${MAILRELAY_API_ENGINES[${display_name}]}"
         # shellcheck disable=SC2310 # Continue even if analysis fails
         if mailrelay_api_analyze "${display_name}-plaintext" "${engine_name}-plaintext" "${display_name}-plaintext Engine"; then

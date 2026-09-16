@@ -34,20 +34,9 @@ not open work unless listed below.
 | **Plan** | [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) |
 | **Effort** | XL |
 | **Done** | Password login/renew/logout; OIDC RP Phases 1–26 + multi-provider; IdP Phases 0–16 + Test 45; Mail Relay OTP primitives |
-| **Remaining** | Gated Phases 0–12 (+8b, +10b): register email, DefaultRoles, client-role parse, RP health/backchannel, terminal WS auth, login MFA, password reset, IdP durability, optional IdP post-MVP, self-service session revoke, real-Keycloak E2E (Phase 11, ops-gated), docs |
+| **Remaining** | Gated Phases 0–6, 8–12 (+8b, +10b): register email, DefaultRoles, client-role parse, RP health/backchannel, login MFA, password reset, IdP durability, optional IdP post-MVP, self-service session revoke, real-Keycloak E2E (Phase 11, ops-gated), docs. Phase 7 (terminal WS) closed. |
 | **Why now** | One plan for remaining auth, same pattern as Chat Finale. Production SSO is coded; register/provision still lie; live Keycloak unsigned (OTP blocker) |
-| **Note** | History: [`OIDC-PLAN_COMPLETE.md`](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md), [`KEYCLOAK_PLAN_COMPLETE.md`](/docs/H/plans/complete/KEYCLOAK_PLAN_COMPLETE.md), [`OIDC_IDP_COMPLETE.md`](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md), [`AUTH_PLAN_COMPLETE.md`](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md). Chat JWT mint: [`CHAT_FINALE_COMPLETE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md) |
-
-### 2. Terminal Subsystem End-to-End Fix
-
-| | |
-| --- | --- |
-| **Plan** | [`TERMINAL_FIX_PLAN_COMPLETE.md`](/docs/H/plans/complete/TERMINAL_FIX_PLAN_COMPLETE.md) |
-| **Effort** | M |
-| **Done** | Phases 0–4, 6, and 7a: trusted proxy, fail-closed chat key, role-32 terminal object, payload/manager exact-origin, Test 26 contract tests, `terminal-launcher.sh`, Test 93 schema (`Terminal.CORSOrigin`/`IndexPage`/`Key`/`Protocol`, `Network.TrustedProxies` cap 16). Live 2026-09-12 inspection of `lithium.500courses.com`. |
-| **Remaining** | Phases 7–12: URI_ARGS query auth, `Terminal.Key`/`Protocol` C loaders and dual-protocol auth, public-vs-JWT-vs-terminal info, Lithium `app-ws.js` redaction, Test 26 + launcher two-key contract, production bash/CORS/TrustedProxies/env keys/payload E2E |
-| **Why now** | Production chat and terminal WS fail: browsers send `?key=` and Hydrogen ignores URI_ARGS; chat and terminal share one downloadable key; `/api/system/info` dumps internals without a JWT. |
-| **Note** | AUTH_FINALE Phase 7 locks the terminal WS auth product decision; this plan implements and verifies the full end-to-end flow. |
+| **Note** | History: [`OIDC-PLAN_COMPLETE.md`](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md), [`KEYCLOAK_PLAN_COMPLETE.md`](/docs/H/plans/complete/KEYCLOAK_PLAN_COMPLETE.md), [`OIDC_IDP_COMPLETE.md`](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md), [`AUTH_PLAN_COMPLETE.md`](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md). Chat JWT mint: [`CHAT_FINALE_COMPLETE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md). Terminal WS E2E is closed in [`TERMINAL_FIX_PLAN_COMPLETE.md`](/docs/H/plans/complete/TERMINAL_FIX_PLAN_COMPLETE.md) |
 
 ---
 
@@ -155,6 +144,17 @@ not open work unless listed below.
 | **Remaining** | Phase 6.1b code/seeds exist (do not rewrite; status not gated). Phase 9 Lithium UI (placeholder). Next free Acuranzo **1377** (re-check disk). |
 | **Why next** | Core send/API/Lua/OTP stack works (`test_57`/`test_58`). Remaining is product surface and ops polish. |
 | **Note** | Parallel session may complete subsets — re-check plan/tests before starting. |
+
+### 27. Firebase engine — replace CockroachDB slot
+
+| | |
+| --- | --- |
+| **Plan** | [`FIREBASE.md`](/docs/H/plans/FIREBASE.md) |
+| **Effort** | XL |
+| **Done** | ~6% — Phase 0 locks approved (2026-09-16); lock 20 `${SIZE_COLLECTION}` = `LENGTH(collection)` |
+| **Remaining** | Phase 1 extras/firebase_emulator, then complete `database_firebase.lua`, C interpreter, Test 37 full design, Cockroach retirement (Phase 11), docs |
+| **Why later** | Cockroach never had a C implementation (PostgreSQL alias + schema `testcrdb`/`democrdb`). Firebase cannot alias SQL and cannot load C UDFs. Auth Finale remains P0. |
+| **Note** | Fifth `DatabaseEngineInterface` (`src/database/firebase/`) and fifth Helium dialect with the same macro keys as the other four. UDFs are in-process in Hydrogen; extras/firebase_emulator is install/start only. No live Google in CI. |
 
 ### 26. Notifications / Subscribers — Web Push backend
 
@@ -273,6 +273,10 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 - Historical plans moved: [`KEYCLOAK_PLAN_COMPLETE.md`](/docs/H/plans/complete/KEYCLOAK_PLAN_COMPLETE.md), [`OIDC-PLAN_COMPLETE.md`](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md), [`OIDC_IDP_COMPLETE.md`](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md), [`OIDC_E2E_LOG_COMPLETE.md`](/docs/H/plans/complete/OIDC_E2E_LOG_COMPLETE.md)
 - TODO items 1, 3, 6, 15, 17, 18 collapsed into item 1 (Auth Finale). Login MFA wiring no longer listed under Mail Relay remainder
 
+**2026-09-16 TERMINAL_FIX closeout:**
+
+- [`TERMINAL_FIX_PLAN_COMPLETE.md`](/docs/H/plans/complete/TERMINAL_FIX_PLAN_COMPLETE.md) — Phases 0–13 complete (Phase 5 skipped, superseded by Phase 12); query-string auth, split chat/terminal keys, info gating, Test 26 two-key contract, production E2E on `lithium.500courses.com`; dropped from active TODO item 2
+
 **2026-09-09 SCHEMAHELPER v2 closeout:**
 
 - [`SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md) — Phases 0–5 complete (0.6.5); moved from active TODO item 25
@@ -297,7 +301,6 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | # | Item | Effort left | Done | Priority |
 | --- | ------ | ------------- | ------ | ---------- |
 | 1 | Auth Finale | XL | RP 1–26 + IdP 0–16 | P0 |
-| 2 | Chat Finale | XL | Phases 1–12 + MCP 0–15 | P0 |
 | 4 | Unity ASAN | M | 0% | P1 |
 | 9 | DB queue health probe | S–M | ~40% | P1 |
 | 9a | Config health SQL + bootstrap orphan DROP | S–M | hard-coded | P1 |
@@ -308,6 +311,7 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 12e | MAX+1 PK clients: confirm + retry | M | single-thread OK | P1 |
 | 13 | Mail Relay remainder | L–XL | ~75% | P2 |
 | 26 | Notifications / Subscribers | L–XL | 0% plan | P2 |
+| 27 | Firebase engine (replace Cockroach) | XL | 0% plan | P2 |
 | 24 | `H.externaldb` — ad-hoc external DB from Lua | M | 0% | P2 |
 | 19 | Print job → device / Beryllium | L–XL | ~30% | P3 |
 | 22 | Mirage | XL | 0% | P3 |

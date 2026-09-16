@@ -1,6 +1,9 @@
 <!-- markdownlint-disable MD007 MD024 -->
-> NOTE: This plan fixed the Hydrogen terminal subsystem's end-to-end flow from JWT issuance through browser WebSocket upgrade to PTY I/O. The core problems were (1) a single shared WebSocket key for both chat and terminal surfaces, (2) the terminal WebSocket key being exposed to any authenticated user instead of only role-32 accounts, (3) wildcard CORS/origin postMessage in the iframe handoff, (4) a query-string auth bug where the browser-sent `?key=` parameter was silently dropped causing 502s, (5) a protocol-name mismatch between the `"hydrogen"` chat default and the hardcoded `"terminal"` routing checks, and (6) the `_handleIframeMessage is null` crash in the Lithium terminal manager. Phases 0–12 were implemented across Hydrogen (C) and Lithium (JS) source, configs, payload generation, and Test 26; the system was deployed and verified in production. Phase 13 captured deferred items (CORS consolidation, Traefik trustedIPs verification, payload marker documentation).
 # Terminal Fix Plan
+
+## NOTE
+
+ This plan fixed the Hydrogen terminal subsystem's end-to-end flow from JWT issuance through browser WebSocket upgrade to PTY I/O. The core problems were (1) a single shared WebSocket key for both chat and terminal surfaces, (2) the terminal WebSocket key being exposed to any authenticated user instead of only role-32 accounts, (3) wildcard CORS/origin postMessage in the iframe handoff, (4) a query-string auth bug where the browser-sent `?key=` parameter was silently dropped causing 502s, (5) a protocol-name mismatch between the `"hydrogen"` chat default and the hardcoded `"terminal"` routing checks, and (6) the `_handleIframeMessage is null` crash in the Lithium terminal manager. Phases 0–12 were implemented across Hydrogen (C) and Lithium (JS) source, configs, payload generation, and Test 26; the system was deployed and verified in production. Phase 13 captured deferred items (CORS consolidation, Traefik trustedIPs verification, payload marker documentation).
 
 ## Quick Summary
 
@@ -2654,8 +2657,8 @@ the key v1.0.8 work is captured in the Session 15 entry below.)
 
 | Document | Role |
 | --- | --- |
-| This file | Active terminal fix plan |
-| [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) | Authentication/product security relationship; terminal WS auth remains subject to its product gate |
+| This file | Archive — terminal fix plan (Phases 0–13 complete) |
+| [`AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md) | Remaining auth/OIDC/Keycloak work; Phase 7 (terminal WS auth) closed here |
 | [`test_26_terminal.md`](/docs/H/tests/test_26_terminal.md) | Blackbox test documentation |
 | [`TESTING.md`](/docs/H/tests/TESTING.md) | Test runner and blackbox invocation contract |
 | [`terminal_architecture.md`](/docs/H/core/reference/terminal_architecture.md) | Terminal subsystem architecture |

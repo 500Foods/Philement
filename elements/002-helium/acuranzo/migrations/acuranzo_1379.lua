@@ -5,9 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.0.0 - 2026-09-09 - Initial creation. Adds key_idx 6 'Learning' to
---              Lookup 048 - Module Groups for Course Manager (34) and
---              Course Builder (35).
+-- 1.0.0 - 2026-09-09 - Initial creation. Adds key_idx 6 'Learning' to Lookup 048 - Module Groups for Course Manager (34) and Course Builder (35).
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}

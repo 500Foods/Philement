@@ -9,6 +9,9 @@
 # shellcheck disable=SC2312 # Diagnostic substitutions swallow inner status; callers use || true
 
 # CHANGELOG
+# 1.0.15 - 2026-09-16 - Disable default mDNS in the runtime patch (LAN TRACE
+#                      storm under suite load); write FAIL_REASON into the
+#                      result file so analyze can print the real failure.
 # 1.0.14 - 2026-09-07 - Fix SQLite claim_next failure: repo_add_datetime now
 #                      translates ISO 8601 -> 'YYYY-MM-DD HH:MM:SS' for SQLite
 #                      (not just MySQL). SQLite stores DATETIME as TEXT and
@@ -25,13 +28,7 @@
 #                      mariadb connections; the other 5 engines still pass
 #                      ISO 8601 through unchanged. If Test 58 fails on
 #                      mysql/mariadb variants, restore via 1.0.12.
-# 1.0.10 - 2026-09-04 - PERSIST_PLAN Phase 2.4: Phase 1b guard works (no SIGSEGV);
-#                      live Test 58 surfaced a separate pre-existing bug -
-#                      NEXT_ATTEMPT_AT bound as STRING '2026-09-04T22:10:57Z'
-#                      (ISO 8601) is rejected by MariaDB/MySQL DATETIME column.
-#                      Other 5 engines accept ISO; mysql/mariadb need the 'T'->' '
-#                      and trailing 'Z' translation. Out of scope for the
-#                      C-result-path guard. Shield restored. See Working Log.
+# 1.0.10 - 2026-09-04 - PERSIST_PLAN Phase 2.4: shield restored (ISO DATETIME).
 # 1.0.9 - 2026-09-04 - PERSIST_PLAN Phase 2: shield flipped OFF (mysql/mariadb now
 #                      return true) after Phase 1b store_result/fetch guard lands.
 #                      mysql_process_prepared_result honours mysql_stmt_store_result
@@ -63,7 +60,7 @@
 export MAILRELAY_API_HELPERS_GUARD="true"
 
 MAILRELAY_API_HELPERS_NAME="MailRelay API Test Helpers"
-MAILRELAY_API_HELPERS_VERSION="1.0.14"
+MAILRELAY_API_HELPERS_VERSION="1.0.15"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${MAILRELAY_API_HELPERS_NAME} ${MAILRELAY_API_HELPERS_VERSION}" "info"
 
 MAILVAL_PIDS=()
@@ -272,15 +269,7 @@ mailrelay_api_rm_temp() {
 }
 
 mailrelay_api_persist_enabled() {
-    local engine_name="${1:-}"
-    if [[ "${engine_name}" == "mysql" || "${engine_name}" == "mariadb" ]]; then
-        # PERSIST_PLAN Phase 2c: shield OFF after repo_add_datetime lands.
-        # repo_add_datetime now translates ISO 8601 -> 'YYYY-MM-DD HH:MM:SS' for
-        # both MySQL/MariaDB and SQLite (text DATETIME columns), so claim_next
-        # string comparisons against CURRENT_TIMESTAMP work correctly.
-        echo "true"
-        return 0
-    fi
+    : "${1:-}"
     echo "true"
 }
 
@@ -323,6 +312,10 @@ mailrelay_api_patch_runtime() {
         .MailRelay.AdminRecipients = ["events-sink@mailval.local"] |
         .MailRelay.Queue.Persist = $persist |
         .MailRelay.Queue.DebounceSeconds = 2 |
+        .mDNSServer.EnableIPv4 = false |
+        .mDNSServer.EnableIPv6 = false |
+        .mDNSClient.EnableIPv4 = false |
+        .mDNSClient.EnableIPv6 = false |
         .MailRelay.Events = {
             Enabled: true,
             MaxEventsPerInterval: 20,
@@ -441,6 +434,7 @@ mailrelay_api_run_variant() {
     mailval_pid=$(mailrelay_api_start_mailval "${mailval_port}" "${use_tls}" "${maildata_dir}" "${mailval_log}") || {
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: mailval failed to start on port ${mailval_port}"
         echo "VARIANT_${variant_label}_FAIL" >> "${result_file}"
+        echo "FAIL_REASON=mailval failed to start on port ${mailval_port}" >> "${result_file}"
         mailrelay_api_rm_temp "${temp_config}" "${sqlite_temp_file}" "${sqlite_temp_config}" "${sqlite_temp_file}-wal" "${sqlite_temp_file}-shm"
         return 0
     }
@@ -450,6 +444,7 @@ mailrelay_api_run_variant() {
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: Hydrogen failed to start"
         mailrelay_api_stop_mailval "${mailval_pid}"
         echo "VARIANT_${variant_label}_FAIL" >> "${result_file}"
+        echo "FAIL_REASON=STARTUP COMPLETE not seen within ${STARTUP_TIMEOUT}s (Persist QTC wait is 30s)" >> "${result_file}"
         mailrelay_api_rm_temp "${temp_config}" "${sqlite_temp_file}" "${sqlite_temp_config}" "${sqlite_temp_file}-wal" "${sqlite_temp_file}-shm"
         return 0
     }
@@ -704,6 +699,12 @@ mailrelay_api_analyze() {
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: result file: ${fail_result_file}"
         if [[ -d "${fail_response_dir}" ]]; then
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: response dir: ${fail_response_dir}"
+        fi
+        local fail_reason
+        fail_reason=$("${GREP}" '^FAIL_REASON=' "${result_file}" 2>/dev/null | tail -1 || true)
+        fail_reason="${fail_reason#FAIL_REASON=}"
+        if [[ -n "${fail_reason}" ]]; then
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: ${fail_reason}"
         fi
         print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${description}: API test failed"
     else

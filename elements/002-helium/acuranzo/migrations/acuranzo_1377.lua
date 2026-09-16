@@ -19,8 +19,8 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.0.0 - 2026-09-06 - Initial creation for MAILRELAY_PLAN Phase 11.1-11.3.
 -- 1.0.1 - 2026-09-06 - Consolidated to single QueryRef #154, no engine branches.
+-- 1.0.0 - 2026-09-06 - Initial creation for MAILRELAY_PLAN Phase 11.1-11.3.
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
