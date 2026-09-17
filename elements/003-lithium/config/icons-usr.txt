@@ -27,6 +27,7 @@
 <img src="assets/images/sql_dialect_oracle.png">
 <img src="assets/images/sql_dialect_postgres.png">
 <img src="assets/images/sql_dialect_sqlite.png">
+<img src="assets/images/sql_dialect_firebase.png">
 <img src="assets/images/login_didit.png">
 <img src="assets/images/login_apple.png">
 <img src="assets/images/login_apple.png">

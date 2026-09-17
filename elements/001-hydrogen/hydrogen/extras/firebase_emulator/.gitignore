@@ -1,0 +1,11 @@
+# Local install of pinned firebase-tools
+node_modules/
+
+# start.sh ownership record
+.emulator.pid
+
+# firebase-tools emulator cache / export in this folder
+.firebase/
+
+# firebase-tools and start.sh logs (also covered by hydrogen *.log)
+*.log

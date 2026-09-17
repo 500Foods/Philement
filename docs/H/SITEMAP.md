@@ -253,6 +253,7 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 ## Folder: /extras
 
 - [README.md](/elements/001-hydrogen/hydrogen/extras/README.md): Build scripts and diagnostic tools
+- [firebase_emulator/README.md](/elements/001-hydrogen/hydrogen/extras/firebase_emulator/README.md): Firestore emulator install/start (in-process functions in Hydrogen)
 - [schematool/README.md](/elements/001-hydrogen/hydrogen/extras/schematool/README.md): SchemaTool quick start (migration drift auditor)
 
 ## Folder: /docs/H/tools

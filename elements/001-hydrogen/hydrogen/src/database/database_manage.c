@@ -20,6 +20,7 @@ const char* postgresql_engine_get_description(void);
 const char* sqlite_engine_get_description(void);
 const char* mysql_engine_get_description(void);
 const char* db2_engine_get_description(void);
+const char* firebase_engine_get_description(void);
 
 // Global database subsystem instance
 extern DatabaseSubsystem* database_subsystem;
@@ -39,6 +40,8 @@ DatabaseEngineInterface* database_get_engine_interface(const char* engine) {
         return database_engine_get(DB_ENGINE_MYSQL);
     } else if (strcmp(engine, "db2") == 0) {
         return database_engine_get(DB_ENGINE_DB2);
+    } else if (strcmp(engine, "firebase") == 0) {
+        return database_engine_get(DB_ENGINE_FIREBASE);
     }
 
     return NULL;
@@ -144,6 +147,8 @@ bool database_add_database(const char* name, const char* engine, const char* con
         engine_type = DB_ENGINE_DB2;
     } else if (strcmp(engine, "sqlite") == 0) {
         engine_type = DB_ENGINE_SQLITE;
+    } else if (strcmp(engine, "firebase") == 0) {
+        engine_type = DB_ENGINE_FIREBASE;
     }
 
     const char* description = NULL;
@@ -159,6 +164,9 @@ bool database_add_database(const char* name, const char* engine, const char* con
             break;
         case DB_ENGINE_DB2:
             description = db2_engine_get_description();
+            break;
+        case DB_ENGINE_FIREBASE:
+            description = firebase_engine_get_description();
             break;
         case DB_ENGINE_AI:
         case DB_ENGINE_MAX:
@@ -176,7 +184,7 @@ bool database_add_database(const char* name, const char* engine, const char* con
         // log_this(SR_DATABASE, "Parsed host: %s", LOG_LEVEL_DEBUG, 1, parsed_config->host);
         // Check if host is not localhost or 127.0.0.1
         bool should_ping = true;
-        if (engine_type == DB_ENGINE_SQLITE) {
+        if (engine_type == DB_ENGINE_SQLITE || engine_type == DB_ENGINE_FIREBASE) {
             should_ping = false;
         }
         // if (strcmp(parsed_config->host, "localhost") == 0 ||

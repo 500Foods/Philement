@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 3.2.0 - 2026-09-16 - Skip JSON_INGEST CREATE FUNCTION for firebase (in-process)
 -- 3.1.0 - 2025-11-23 - Added DROP_CHECK to reverse migration
 -- 3.0.0 - 2025-10-30 - Another overhaul (thanks, MySQL) to have an alternate increment mechanism
 -- 2.0.0 - 2025-10-18 - Moved to latest migration format
@@ -39,7 +40,8 @@ table.insert(queries,{sql=[[
 ]]})
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- NOTE: SQLite has no JSON handling peculiarities, so no custom function is defined
-if engine ~= 'sqlite' then table.insert(queries,{sql=[[
+--       Firebase JSON ingest is in-process in Hydrogen (FB_JSON_INGEST)
+if engine ~= 'sqlite' and engine ~= 'firebase' then table.insert(queries,{sql=[[
 
     -- Defined in database_<engine>.lua as a macro
     ${JSON_INGEST_FUNCTION}

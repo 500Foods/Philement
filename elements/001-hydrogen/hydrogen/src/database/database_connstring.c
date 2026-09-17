@@ -12,9 +12,37 @@ static ConnectionPoolManager* global_connection_pool_manager = NULL;
 static pthread_mutex_t global_pool_manager_lock = PTHREAD_MUTEX_INITIALIZER;
 
 /*
+ * Extract a key=value from a URL query string (not DB2).
+ */
+char* database_connstring_extract_query_value(const char* query, const char* key) {
+    if (!query || !key || !*key) {
+        return NULL;
+    }
+    size_t key_len = strlen(key);
+    const char* p = query;
+    while (p && *p) {
+        if (strncmp(p, key, key_len) == 0 && p[key_len] == '=') {
+            const char* val = p + key_len + 1;
+            const char* end = strchr(val, '&');
+            size_t n = end ? (size_t)(end - val) : strlen(val);
+            char* out = calloc(1, n + 1);
+            if (out && n > 0) {
+                memcpy(out, val, n);
+            }
+            return out;
+        }
+        p = strchr(p, '&');
+        if (p) {
+            p++;
+        }
+    }
+    return NULL;
+}
+
+/*
  * Helper function to extract DB2 parameter value and strip quotes
  */
- char* database_connstring_extract_db2_value(const char* connection_string, const char* key) {
+char* database_connstring_extract_db2_value(const char* connection_string, const char* key) {
     char* pos = strstr(connection_string, key);
     if (!pos) return NULL;
 
@@ -474,6 +502,50 @@ ConnectionConfig* parse_connection_string(const char* connection_string) {
             }
         }
         config->connection_string = strdup(connection_string);
+
+    } else if (strncmp(connection_string, "firebase://", 11) == 0) {
+        char* temp = strdup(connection_string + 11);
+        if (!temp) {
+            free(config);
+            return NULL;
+        }
+        char* query = strchr(temp, '?');
+        if (query) {
+            *query = '\0';
+            query++;
+        }
+        char* slash = strchr(temp, '/');
+        if (slash) {
+            *slash = '\0';
+            config->username = strdup(temp);
+            config->database = strdup(slash + 1);
+        } else {
+            config->username = strdup(temp);
+            config->database = strdup("(default)");
+        }
+        if (query) {
+            char* host_val = database_connstring_extract_query_value(query, "host");
+            if (host_val) {
+                config->host = host_val;
+            }
+            char* port_val = database_connstring_extract_query_value(query, "port");
+            if (port_val) {
+                config->port = atoi(port_val);
+                free(port_val);
+            }
+        }
+        if (!config->host) {
+            config->host = strdup("127.0.0.1");
+        }
+        if (config->port == 0) {
+            config->port = 8080;
+        }
+        if (!config->database || config->database[0] == '\0') {
+            free(config->database);
+            config->database = strdup("(default)");
+        }
+        config->connection_string = strdup(connection_string);
+        free(temp);
 
     } else if (strstr(connection_string, ".db") || strcmp(connection_string, ":memory:") == 0) {
         // SQLite format: /path/to/database.db or :memory:

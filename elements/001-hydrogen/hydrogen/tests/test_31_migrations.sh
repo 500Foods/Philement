@@ -8,6 +8,7 @@
 # validate_migration()
 
 # CHANGELOG
+# 1.4.0 - 2026-09-16 - Added firebase engine; skip sqruff (FB_* is not postgres SQL)
 # 1.3.0 - 2025-11-16 - Modified unsubstituted variables check to only flag ${} patterns, not JSON braces
 # 1.2.0 - 2025-10-29 - Added check for unsubstituted variables in generated SQL
 # 1.1.0 - 2025-09-30 - Updated location of Helium migration files
@@ -20,7 +21,7 @@ TEST_NAME="Migrations"
 TEST_ABBR="MGR"
 TEST_NUMBER="31"
 TEST_COUNTER=0
-TEST_VERSION="1.3.0"
+TEST_VERSION="1.4.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -37,13 +38,13 @@ HELIUM_DIR="../../../elements/002-helium"
 DESIGNS=("helium" "acuranzo")
 
 # Supported database engines
-ENGINES=("postgresql" "sqlite" "mysql" "db2")
+ENGINES=("postgresql" "sqlite" "mysql" "db2" "firebase")
 
 # Schema mapping per design per engine (corresponding to ENGINES array order)
-# ENGINES=("postgresql" "sqlite" "mysql" "db2")
+# ENGINES=("postgresql" "sqlite" "mysql" "db2" "firebase")
 declare -A DESIGN_SCHEMAS
-DESIGN_SCHEMAS["helium"]="helium::helium:HELIUM"
-DESIGN_SCHEMAS["acuranzo"]="app::acuranzo:ACURANZO"
+DESIGN_SCHEMAS["helium"]="helium::helium:HELIUM:helium"
+DESIGN_SCHEMAS["acuranzo"]="app::acuranzo:ACURANZO:testfb"
 
 # Function to get file hash (using md5sum or equivalent)
 get_file_hash() {
@@ -121,6 +122,13 @@ validate_migration() {
         echo "❌ ${design} ${engine} ${migration} FAILED (unsubstituted variables)" > "${cache_file}"
         echo "fresh|${diags_file}"
         return 1
+    fi
+
+    # Firebase emits FB_* SQL that sqruff (postgres dialect) cannot lint
+    if [[ "${engine}" == "firebase" ]]; then
+        echo "✅ ${design} ${engine} ${migration} SKIPPED (sqruff not applicable)" > "${cache_file}"
+        echo "fresh|"
+        return 0
     fi
 
     # Check if sqruff is available

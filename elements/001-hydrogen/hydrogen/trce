@@ -1,0 +1,1710 @@
+[ 000 000 000 ]  2026-09-17 01:06:34.923Z  [ STATE ]  [ Startup              ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 000 001 ]  2026-09-17 01:06:34.923Z  [ ALERT ]  [ Startup              ]  HYDROGEN STARTUP
+[ 000 000 002 ]  2026-09-17 01:06:34.923Z  [ ALERT ]  [ Startup              ]  ― Version:  1.0.0.2636
+[ 000 000 003 ]  2026-09-17 01:06:34.923Z  [ ALERT ]  [ Startup              ]  ― Release:  20260916
+[ 000 000 004 ]  2026-09-17 01:06:34.923Z  [ STATE ]  [ Startup              ]  ― Build:    Release
+[ 000 000 005 ]  2026-09-17 01:06:34.923Z  [ STATE ]  [ Startup              ]  ― Size:     1148875 bytes
+[ 000 000 006 ]  2026-09-17 01:06:34.923Z  [ STATE ]  [ Startup              ]  ― Logging:  DEBUG
+[ 000 000 007 ]  2026-09-17 01:06:34.923Z  [ STATE ]  [ Startup              ]  ― PID:      2634469
+[ 000 000 008 ]  2026-09-17 01:06:34.923Z  [ STATE ]  [ Startup              ]  ― Hostname: angrin.500foods.com
+[ 000 000 009 ]  2026-09-17 01:06:34.923Z  [ STATE ]  [ Startup              ]  ― OS:       Fedora Linux 43 (Forty Three)
+[ 000 000 010 ]  2026-09-17 01:06:34.924Z  [ STATE ]  [ Startup              ]  ― Kernel:   7.1.5-101.fc43.x86_64
+[ 000 000 011 ]  2026-09-17 01:06:34.924Z  [ STATE ]  [ Startup              ]  ― Clocksrc: tsc
+[ 000 000 012 ]  2026-09-17 01:06:34.924Z  [ STATE ]  [ Startup              ]  ― vDSO:     15ns
+[ 000 000 013 ]  2026-09-17 01:06:34.924Z  [ STATE ]  [ Startup              ]  ― Mutex:    11ns
+[ 000 000 014 ]  2026-09-17 01:06:34.924Z  [ STATE ]  [ Startup              ]  ― CPUs:     12 (affinity)
+[ 000 000 015 ]  2026-09-17 01:06:34.924Z  [ STATE ]  [ Startup              ]  ― CPUQuota: (none)
+[ 000 000 016 ]  2026-09-17 01:06:34.924Z  [ STATE ]  [ Startup              ]  ― MemCur:   (n/a)
+[ 000 000 017 ]  2026-09-17 01:06:34.924Z  [ STATE ]  [ Startup              ]  ― MemMax:   (n/a)
+[ 000 000 018 ]  2026-09-17 01:06:34.924Z  [ STATE ]  [ Startup              ]  ― FDSoft:   524288
+[ 000 000 019 ]  2026-09-17 01:06:34.924Z  [ STATE ]  [ Startup              ]  ― FDHard:   524288
+[ 000 000 020 ]  2026-09-17 01:06:34.924Z  [ STATE ]  [ Startup              ]  ― Seccomp:  0
+[ 000 000 021 ]  2026-09-17 01:06:34.924Z  [ DEBUG ]  [ DepCheck             ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 000 022 ]  2026-09-17 01:06:34.924Z  [ DEBUG ]  [ DepCheck             ]  DEPENDENCY CHECKS
+[ 000 000 023 ]  2026-09-17 01:06:34.924Z  [ DEBUG ]  [ DepCheck             ]  ― pthreads. Expecting: 1.0 Found: 1.0 (COR) Status: Good
+[ 000 000 025 ]  2026-09-17 01:06:34.924Z  [ DEBUG ]  [ DepCheck             ]  ― jansson. Expecting: 2.13.1 Found: 2.14 (API) Status: Less Good
+[ 000 000 027 ]  2026-09-17 01:06:34.924Z  [ DEBUG ]  [ DepCheck             ]  ― microhttpd. Expecting: 1.0.2 Found: NoVersionFound (DLO) Status: Good
+[ 000 000 028 ]  2026-09-17 01:06:34.924Z  [ DEBUG ]  [ DepCheck             ]  ― libm. Expecting: 2.0 Found: 2.0 (COR) Status: Good
+[ 000 000 030 ]  2026-09-17 01:06:34.924Z  [ DEBUG ]  [ DepCheck             ]  ― libwebsockets. Expecting: 4.3.3 Found: 4.5.8-no_hash (SYM) Status: Less Good
+[ 000 000 032 ]  2026-09-17 01:06:34.924Z  [ DEBUG ]  [ DepCheck             ]  ― OpenSSL. Expecting: 3.2.4 Found: OpenSSL 3.5.8 25 Aug 2026 (SYM) Status: Less Good
+[ 000 000 034 ]  2026-09-17 01:06:34.924Z  [ DEBUG ]  [ DepCheck             ]  ― libbrotlidec. Expecting: 1.1.0 Found: 1.2.0 (SYM) Status: Less Good
+[ 000 000 038 ]  2026-09-17 01:06:34.925Z  [ DEBUG ]  [ DepCheck             ]  ― libtar. Expecting: 1.2.20 Found: 1.2.20 (SYM) Status: Good
+[ 000 000 039 ]  2026-09-17 01:06:34.925Z  [ DEBUG ]  [ DepCheck             ]  ― lua. Expecting: 5.5 Found: 5.5 (HDR) Status: Good
+[ 000 000 041 ]  2026-09-17 01:06:34.926Z  [ DEBUG ]  [ DepCheck             ]  ― libcurl. Expecting: 8.15.0 Found: libcurl/8.15.0 OpenSSL/3.5.8 zlib/1.3.1.zlib-ng brotli/1.2.0 libidn2/2.3.8 libpsl/0.21.5 libssh/0.11.5/openssl/zlib nghttp2/1.66.0 OpenLDAP/2.6.13 (SYM) Status: Good
+[ 000 000 043 ]  2026-09-17 01:06:34.926Z  [ DEBUG ]  [ DepCheck             ]  ― MagickWand. Expecting: 7.1 Found: 140.144 (SYM) Status: Less Good
+[ 000 000 045 ]  2026-09-17 01:06:34.927Z  [ DEBUG ]  [ DepCheck             ]  ― zlib. Expecting: 1.3.1 Found: 1.3.1.zlib-ng (SYM) Status: Good
+[ 000 000 046 ]  2026-09-17 01:06:34.928Z  [ DEBUG ]  [ DepCheck             ]  ― DB2. Expecting: 11.1.3.3 Found: 12.1.3.0 (CMD) Status: Less Good
+[ 000 000 047 ]  2026-09-17 01:06:34.928Z  [ DEBUG ]  [ DepCheck             ]  ― PostgreSQL. Expecting: 17.6 Found: 18.4 (CMD) Status: Less Good
+[ 000 000 048 ]  2026-09-17 01:06:34.928Z  [ DEBUG ]  [ DepCheck             ]  ― MySQL. Expecting: 8.0.42 Found: 10.8.8 (CMD) Status: Less Good
+[ 000 000 049 ]  2026-09-17 01:06:34.928Z  [ DEBUG ]  [ DepCheck             ]  ― SQLite. Expecting: 3.46.1 Found: 3.50.2 (CMD) Status: Less Good
+[ 000 000 050 ]  2026-09-17 01:06:34.928Z  [ DEBUG ]  [ DepCheck             ]  Timing Checks: 0.001s (4/4 cached), Total: 0.004s
+[ 000 000 051 ]  2026-09-17 01:06:34.928Z  [ DEBUG ]  [ DepCheck             ]  Critical Issues: 0
+[ 000 000 052 ]  2026-09-17 01:06:34.928Z  [ DEBUG ]  [ DepCheck             ]  DEPENDENCY CHECKS COMPLETE
+[ 000 000 053 ]  2026-09-17 01:06:34.929Z  [ DEBUG ]  [ Startup              ]  libcurl initialized successfully
+[ 000 000 054 ]  2026-09-17 01:06:34.929Z  [ DEBUG ]  [ Config               ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 000 055 ]  2026-09-17 01:06:34.929Z  [ DEBUG ]  [ Config               ]  CONFIGURATION
+[ 000 000 056 ]  2026-09-17 01:06:34.929Z  [ DEBUG ]  [ Config               ]  ― Using param config: ./tests/configs/hydrogen_test_32_postgres.json
+[ 000 000 057 ]  2026-09-17 01:06:34.929Z  [ DEBUG ]  [ Config               ]  Config Schema Validation
+[ 000 000 058 ]  2026-09-17 01:06:34.929Z  [ DEBUG ]  [ Config               ]  ― Using config file: OK
+[ 000 000 059 ]  2026-09-17 01:06:34.929Z  [ DEBUG ]  [ Config               ]  ― HYDROGEN_SCHEMA: OK
+[ 000 000 060 ]  2026-09-17 01:06:34.935Z  [ DEBUG ]  [ Config               ]  ― jsonschema-cli available: OK
+[ 000 000 061 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config               ]  ― /tmp/hydrogen_config_hkKcUh - VALID
+[ 000 000 062 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config               ]  ― Schema Validation: PASS
+[ 000 000 063 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config-Server        ]  Server
+[ 000 000 064 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config-Server        ]  ― ServerName: hydrogen-test-32-postgres
+[ 000 000 065 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config-Server        ]  ― ExecFile: /mnt/fvl/slw/tnt/t-500courses/hydrogen/hydrogen
+[ 000 000 066 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config-Server        ]  ― ConfigFile: ./tests/configs/hydrogen_test_32_postgres.json
+[ 000 000 067 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config-Server        ]  ― LogFile: /var/log/hydrogen/hydrogen.log *
+[ 000 000 068 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config-Server        ]  ― PayloadKey {PAYLOAD_KEY}: LS0tL...
+[ 000 000 069 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config-Server        ]  ― StartupDelay: 5 *
+[ 000 000 070 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config-Network       ]  Network
+[ 000 000 071 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config-Network       ]  ― Interfaces
+[ 000 000 072 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config-Network       ]  ――― MaxInterfaces: 16 *
+[ 000 000 073 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config-Network       ]  ――― MaxIPsPerInterface: 32 *
+[ 000 000 074 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config-Network       ]  ――― MaxInterfaceNameLength: 32 *
+[ 000 000 075 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config-Network       ]  ――― MaxIPAddressLength: 50 *
+[ 000 000 076 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config-Network       ]  ― PortAllocation
+[ 000 000 077 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config-Network       ]  ――― StartPort: 1024 *
+[ 000 000 078 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config-Network       ]  ――― EndPort: 65535 *
+[ 000 000 079 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config-Network       ]  ――― ReservedPorts
+[ 000 000 080 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config-Network       ]  ――― ReservedPorts: [none] *
+[ 000 000 081 ]  2026-09-17 01:06:34.961Z  [ DEBUG ]  [ Config-Network       ]  ― TrustedProxies: [none] *
+[ 000 000 082 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config               ]  ― Available *
+[ 000 000 083 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config               ]  ――― all: enabled *
+[ 000 000 084 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  Databases
+[ 000 000 085 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ― Connections
+[ 000 000 086 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ― ConnectionCount: 10 *
+[ 000 000 087 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ― BootstrapTimeoutSeconds: 30 *
+[ 000 000 088 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ― BootstrapRetries: 3 *
+[ 000 000 089 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ― WatchdogMinSeconds: 5 *
+[ 000 000 090 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ― WatchdogMaxSeconds: 3600 *
+[ 000 000 091 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ― MaxConnectionsPerDatabase: 32 *
+[ 000 000 092 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Current       ]  Database config: Loaded StmtCache: 100
+[ 000 000 093 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ――― ACZ
+[ 000 000 094 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ――――― Enabled: true *
+[ 000 000 095 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ――――― Type {ACURANZO_DB_TYPE}: postgresql
+[ 000 000 096 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ――――― Database: test *
+[ 000 000 097 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ――――― Host {ACURANZO_DB_HOST}: localhost
+[ 000 000 098 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ――――― Port {ACURANZO_DB_PORT}: 5432
+[ 000 000 099 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ――――― User {ACURANZO_DB_USER}: postgres
+[ 000 000 100 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ――――― Pass {ACURANZO_DB_PASS}: ForEn...
+[ 000 000 101 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ――――― Bootstrap: SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM test.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc; *
+[ 000 000 102 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ――――― Schema: test *
+[ 000 000 103 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ――――― AutoMigration: true *
+[ 000 000 104 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ――――― TestMigration: false *
+[ 000 000 105 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ――――― Migrations: PAYLOAD:acuranzo *
+[ 000 000 106 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Databases     ]  ――――― Chat: false *
+[ 000 000 107 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  Logging
+[ 000 000 108 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ― Levels
+[ 000 000 109 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――― Levels[0]: TRACE *
+[ 000 000 110 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――― Levels[1]: DEBUG *
+[ 000 000 111 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――― Levels[2]: STATE *
+[ 000 000 112 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――― Levels[3]: ALERT *
+[ 000 000 113 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――― Levels[4]: ERROR *
+[ 000 000 114 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――― Levels[5]: FATAL *
+[ 000 000 115 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――― Levels[6]: QUIET *
+[ 000 000 116 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ― Console
+[ 000 000 117 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――― Enabled: true *
+[ 000 000 118 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――― DefaultLevel: 0 (TRACE) *
+[ 000 000 119 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――― Subsystems
+[ 000 000 120 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――――― Shutdown: 0 (TRACE) *
+[ 000 000 121 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――――― Startup: 0 (TRACE) *
+[ 000 000 122 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ― File
+[ 000 000 123 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――― Enabled: true *
+[ 000 000 124 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――― DefaultLevel: 1 (DEBUG) *
+[ 000 000 125 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――― Subsystems
+[ 000 000 126 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――――― Shutdown: 1 (DEBUG) *
+[ 000 000 127 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――――― Startup: 1 (DEBUG) *
+[ 000 000 128 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ― Database
+[ 000 000 129 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――― Enabled: false *
+[ 000 000 130 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――― DefaultLevel: 2 (STATE) *
+[ 000 000 131 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――― Subsystems
+[ 000 000 132 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――――― Shutdown: 2 (STATE) *
+[ 000 000 133 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――――― Startup: 2 (STATE) *
+[ 000 000 134 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ― Notify
+[ 000 000 135 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――― Enabled: false *
+[ 000 000 136 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――― DefaultLevel: 4 (ERROR) *
+[ 000 000 137 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――― Subsystems
+[ 000 000 138 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――――― Shutdown: 4 (ERROR) *
+[ 000 000 139 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Logging       ]  ――――― Startup: 4 (ERROR) *
+[ 000 000 140 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-WebServer     ]  WebServer
+[ 000 000 141 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-WebServer     ]  ― EnableIPv4: true
+[ 000 000 142 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-WebServer     ]  ― EnableIPv6: false
+[ 000 000 143 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-WebServer     ]  ― Port: 5320
+[ 000 000 144 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-WebServer     ]  ― WebRoot: /tmp/hydrogen *
+[ 000 000 145 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-WebServer     ]  ― SpaFallback: false *
+[ 000 000 146 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-WebServer     ]  ― UploadPath: /upload *
+[ 000 000 147 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-WebServer     ]  ― UploadDir: /tmp/hydrogen *
+[ 000 000 148 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-WebServer     ]  ― MaxUploadSize: 104857600 *
+[ 000 000 149 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-WebServer     ]  ― ChaChaServer {CHACHA_SERVER}: https://chacha.500nodes.com
+[ 000 000 150 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-WebServer     ]  ― ChaChaSiteID {CHACHA_SITEID}: a9b8369d3b
+[ 000 000 151 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-WebServer     ]  ― ChaChaSecret {CHACHA_SECRET}: sk-YL...
+[ 000 000 152 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-WebServer     ]  ― CORSOrigin: * *
+[ 000 000 153 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-WebServer     ]  ― ThreadPoolSize: 20 *
+[ 000 000 154 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-WebServer     ]  ― MaxConnections: 200 *
+[ 000 000 155 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-WebServer     ]  ― MaxConnectionsPerIP: 100 *
+[ 000 000 156 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-WebServer     ]  ― ConnectionTimeout: 60 *
+[ 000 000 157 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-API           ]  API
+[ 000 000 158 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-API           ]  ― Enabled: true *
+[ 000 000 159 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-API           ]  ― Prefix: /api *
+[ 000 000 160 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-API           ]  ― JWTSecret {JWT_SECRET}: thisd...
+[ 000 000 161 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-API           ]  ― CORSOrigin: * *
+[ 000 000 162 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  Swagger
+[ 000 000 163 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ― Enabled: true *
+[ 000 000 164 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ― Prefix: /apidocs *
+[ 000 000 165 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ― WebRoot: PAYLOAD:/swagger *
+[ 000 000 166 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ― CORSOrigin: * *
+[ 000 000 167 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ― Metadata
+[ 000 000 168 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ――― Title: Hydrogen API *
+[ 000 000 169 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ――― Description: Hydrogen Server API *
+[ 000 000 170 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ――― Version: 1.0.0.2636 *
+[ 000 000 171 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ――― Contact
+[ 000 000 172 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ――――― Name: (not set) *
+[ 000 000 173 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ――――― Email: (not set) *
+[ 000 000 174 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ――――― URL: (not set) *
+[ 000 000 175 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ――― License
+[ 000 000 176 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ――――― Name: (not set) *
+[ 000 000 177 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ――――― URL: (not set) *
+[ 000 000 178 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ― UIOptions
+[ 000 000 179 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ――― TryItEnabled: true *
+[ 000 000 180 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ――― AlwaysExpanded: false *
+[ 000 000 181 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ――― DisplayOperationId: false *
+[ 000 000 182 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ――― DefaultModelsExpandDepth: 1 *
+[ 000 000 183 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ――― DefaultModelExpandDepth: 1 *
+[ 000 000 184 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ――― ShowExtensions: false *
+[ 000 000 185 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ――― ShowCommonExtensions: true *
+[ 000 000 186 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ――― DocExpansion: list *
+[ 000 000 187 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Swagger       ]  ――― SyntaxHighlightTheme: agate *
+[ 000 000 188 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config               ]  WebSocketServer section not found, using defaults
+[ 000 000 189 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Terminal      ]  Terminal
+[ 000 000 190 ]  2026-09-17 01:06:34.962Z  [ DEBUG ]  [ Config-Terminal      ]  ― Enabled: true *
+[ 000 000 191 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Terminal      ]  ― WebPath: /terminal *
+[ 000 000 192 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Terminal      ]  ― ShellCommand: /bin/zsh *
+[ 000 000 193 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Terminal      ]  ― MaxSessions: 4 *
+[ 000 000 194 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Terminal      ]  ― IdleTimeoutSeconds: 300 *
+[ 000 000 195 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Terminal      ]  ― BufferSize: 512 *
+[ 000 000 196 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Terminal      ]  ― WebRoot: PAYLOAD:/terminal *
+[ 000 000 197 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Terminal      ]  ― CORSOrigin: * *
+[ 000 000 198 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Terminal      ]  ― IndexPage: terminal.html *
+[ 000 000 199 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Terminal      ]  ― Protocol: terminal *
+[ 000 000 200 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Terminal      ]  ― Key {WEBSOCKET_TERMINAL_KEY}: abcde...
+[ 000 000 201 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-mDNSServer    ]  mDNSServer
+[ 000 000 202 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-mDNSServer    ]  ― EnableIPv4: false *
+[ 000 000 203 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-mDNSServer    ]  ― EnableIPv6: false *
+[ 000 000 204 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-mDNSServer    ]  ― DeviceId: hydrogen *
+[ 000 000 205 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-mDNSServer    ]  ― FriendlyName: Hydrogen Server *
+[ 000 000 206 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-mDNSServer    ]  ― Model: Hydrogen *
+[ 000 000 207 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-mDNSServer    ]  ― Manufacturer: Philement *
+[ 000 000 208 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-mDNSServer    ]  ― Version: 1.0.0.2636 *
+[ 000 000 209 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-mDNSServer    ]  ― Retries: 1 *
+[ 000 000 210 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-mDNSClient    ]  mDNSClient
+[ 000 000 211 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-mDNSClient    ]  ― EnableIPv4: true *
+[ 000 000 212 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-mDNSClient    ]  ― EnableIPv6: false *
+[ 000 000 213 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-mDNSClient    ]  ― ScanIntervalMs: 30 *
+[ 000 000 214 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-mDNSClient    ]  ― MaxServices: 100 *
+[ 000 000 215 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-mDNSClient    ]  ― RetryCount: 3 *
+[ 000 000 216 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-mDNSClient    ]  ― HealthCheck
+[ 000 000 217 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-mDNSClient    ]  ――― Enabled: true *
+[ 000 000 218 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-mDNSClient    ]  ――― IntervalMs: 60 *
+[ 000 000 219 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-mDNSClient    ]  ――― TimeoutMs: 1000 *
+[ 000 000 220 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-mDNSClient    ]  ――― RetryCount: 3 *
+[ 000 000 221 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  MailRelay
+[ 000 000 222 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ― Enabled: false *
+[ 000 000 223 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ― OutboundEnabled: false *
+[ 000 000 224 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ― InboundEnabled: false *
+[ 000 000 225 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ― InboundRequireAuth: false *
+[ 000 000 226 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ― Database: (not set) *
+[ 000 000 227 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ― DefaultFrom: (not set) *
+[ 000 000 228 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ― DefaultReplyTo: (not set) *
+[ 000 000 229 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ― ListenPort: 25 *
+[ 000 000 230 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ― Workers: 2 *
+[ 000 000 231 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ――― MaxInMemory: 1000 *
+[ 000 000 232 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ――― MaxQueueSize: 1000 *
+[ 000 000 233 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ――― Persist: false *
+[ 000 000 234 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ――― RetryAttempts: 3 *
+[ 000 000 235 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ――― RetryDelaySeconds: 300 *
+[ 000 000 236 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ――― InitialDelaySeconds: 10 *
+[ 000 000 237 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ――― MaxDelaySeconds: 3600 *
+[ 000 000 238 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ――― DebounceSeconds: 5 *
+[ 000 000 239 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ――― StaleTimeoutSeconds: 300 *
+[ 000 000 240 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ――― ReloadIntervalSeconds: 60 *
+[ 000 000 241 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ――― Digits: 6 *
+[ 000 000 242 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ――― ExpirySeconds: 300 *
+[ 000 000 243 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-MailRelay     ]  ――― MaxAttempts: 5 *
+[ 000 000 244 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  Print
+[ 000 000 245 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ― Enabled: true *
+[ 000 000 246 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ― MaxQueuedJobs: 100 *
+[ 000 000 247 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ― MaxConcurrentJobs: 4 *
+[ 000 000 248 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ― Priorities
+[ 000 000 249 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ――― DefaultPriority: 50 *
+[ 000 000 250 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ――― EmergencyPriority: 100 *
+[ 000 000 251 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ――― MaintenancePriority: 75 *
+[ 000 000 252 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ――― SystemPriority: 90 *
+[ 000 000 253 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ― Timeouts
+[ 000 000 254 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ――― ShutdownWaitMs: 5000 *
+[ 000 000 255 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ――― JobProcessingTimeoutMs: 300000 *
+[ 000 000 256 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ― Buffers
+[ 000 000 257 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ――― JobMessageSize: 4096 *
+[ 000 000 258 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ――― StatusMessageSize: 1024 *
+[ 000 000 259 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ― Motion
+[ 000 000 260 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ――― SmoothMoves: true *
+[ 000 000 261 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ――― MaxSpeed: 100.00 *
+[ 000 000 262 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ――― MaxSpeedXY: 100.00 *
+[ 000 000 263 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ――― MaxSpeedZ: 20.00 *
+[ 000 000 264 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ――― MaxSpeedTravel: 150.00 *
+[ 000 000 265 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ――― Acceleration: 500.00 *
+[ 000 000 266 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ――― ZAcceleration: 100.00 *
+[ 000 000 267 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ――― EAcceleration: 250.00 *
+[ 000 000 268 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Print         ]  ――― Jerk: 10.00 *
+[ 000 000 269 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  Resources
+[ 000 000 270 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ― Memory
+[ 000 000 271 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ――― MaxMemoryMB: 1024 *
+[ 000 000 272 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ――― MaxBufferSize: 1048576 *
+[ 000 000 273 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ――― MinBufferSize: 4096 *
+[ 000 000 274 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ― Queues
+[ 000 000 275 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ――― MaxQueueSize: 10000 *
+[ 000 000 276 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ――― MaxQueueMemoryMB: 256 *
+[ 000 000 277 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ――― MaxQueueBlocks: 1024 *
+[ 000 000 278 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ――― QueueTimeoutMS: 30000 *
+[ 000 000 279 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ― Threads
+[ 000 000 280 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ――― MinThreads: 4 *
+[ 000 000 281 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ――― MaxThreads: 32 *
+[ 000 000 282 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ――― ThreadStackSize: 65536 *
+[ 000 000 283 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ― Files
+[ 000 000 284 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ――― MaxOpenFiles: 1024 *
+[ 000 000 285 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ――― MaxFileSizeMB: 1024 *
+[ 000 000 286 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ――― MaxLogSizeMB: 100 *
+[ 000 000 287 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ― Monitoring
+[ 000 000 288 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ――― EnforceLimits: true *
+[ 000 000 289 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ――― LogUsage: true *
+[ 000 000 290 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-Resources     ]  ――― CheckIntervalMS: 5000 *
+[ 000 000 291 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-OIDC          ]  OIDC
+[ 000 000 292 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-OIDC          ]  ― Enabled: true *
+[ 000 000 293 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-OIDC          ]  ― Issuer: (not set) *
+[ 000 000 294 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-OIDC          ]  ― ClientId: (not set) *
+[ 000 000 295 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-OIDC          ]  ― ClientSecret: (not set) *
+[ 000 000 296 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-OIDC          ]  ― RedirectUri: (not set) *
+[ 000 000 297 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-OIDC          ]  ― Database: (not set) *
+[ 000 000 298 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-OIDC          ]  ― Port: 8443 *
+[ 000 000 299 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-OIDC          ]  ― AuthMethod: clien... *
+[ 000 000 300 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-OIDC          ]  ― Scope: openid profile email *
+[ 000 000 301 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-OIDC          ]  ― VerifySSL: true *
+[ 000 000 302 ]  2026-09-17 01:06:34.963Z  [ DEBUG ]  [ Config-OIDC          ]  ― Endpoints
+[ 000 000 303 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ――― Authorization: /oaut... *
+[ 000 000 304 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ――― Token: /oaut... *
+[ 000 000 305 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ――― UserInfo: /oauth/userinfo *
+[ 000 000 306 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ――― JWKS: /oauth/jwks *
+[ 000 000 307 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ――― EndSession: /oauth/end-session *
+[ 000 000 308 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ――― Introspection: /oauth/introspect *
+[ 000 000 309 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ――― Revocation: /oauth/revoke *
+[ 000 000 310 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ――― Registration: /oauth/register *
+[ 000 000 311 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ― Keys
+[ 000 000 312 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ――― SigningKey: (not set) *
+[ 000 000 313 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ――― EncryptionKey: (not set) *
+[ 000 000 314 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ――― JWKSUri: (not set) *
+[ 000 000 315 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ――― StoragePath: /var/... *
+[ 000 000 316 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ――― EncryptionEnabled: false *
+[ 000 000 317 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ――― RotationIntervalDays: 30 *
+[ 000 000 318 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ― Tokens
+[ 000 000 319 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ――― AccessTokenLifetime: 3600 *
+[ 000 000 320 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ――― RefreshTokenLifetime: 86400 *
+[ 000 000 321 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ――― IdTokenLifetime: 3600 *
+[ 000 000 322 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ――― SigningAlg: RS256... *
+[ 000 000 323 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-OIDC          ]  ――― EncryptionAlg: A256G... *
+[ 000 000 324 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Notify        ]  Notify
+[ 000 000 325 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Notify        ]  ― Enabled: true *
+[ 000 000 326 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Notify        ]  ― Notifier: none *
+[ 000 000 327 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Notify        ]  ― SMTP
+[ 000 000 328 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Notify        ]  ――― Host: (not set) *
+[ 000 000 329 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Notify        ]  ――― Port: 587 *
+[ 000 000 330 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Notify        ]  ――― Username: (not set) *
+[ 000 000 331 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Notify        ]  ――― Password: (not set) *
+[ 000 000 332 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Notify        ]  ――― UseTLS: true *
+[ 000 000 333 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Notify        ]  ――― Timeout: 30 *
+[ 000 000 334 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Notify        ]  ――― MaxRetries: 3 *
+[ 000 000 335 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Notify        ]  ――― FromAddress: (not set) *
+[ 000 000 336 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  Scripting
+[ 000 000 337 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ― Enabled: false *
+[ 000 000 338 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ― Orchestrator: (not set) *
+[ 000 000 339 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ― WorkerCount: 2 *
+[ 000 000 340 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ― DefaultDatabase: (not set) *
+[ 000 000 341 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ― DefaultQueryTimeout: 30 *
+[ 000 000 342 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ― DefaultMaxRuntime: 3600 *
+[ 000 000 343 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ― DefaultHTTPTimeout: 30 *
+[ 000 000 344 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ― HTTPWorkerCount: 4 *
+[ 000 000 345 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ― InstructionHookInterval: 5000 *
+[ 000 000 346 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ― MemorySampleEveryNHooks: 20 *
+[ 000 000 347 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ― MemorySoftLimitKB: 32768 *
+[ 000 000 348 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ― MemoryHardLimitKB: 65536 *
+[ 000 000 349 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ― AllowDBModuleLoad: false *
+[ 000 000 350 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ― ClientInvokeDefaultTimeout: 15 *
+[ 000 000 351 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ― ClientInvokeMaxTimeout: 60 *
+[ 000 000 352 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ― ClientInvokeMaxParamsBytes: 262144 *
+[ 000 000 353 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ― ClientInvokeMaxResultBytes: 1048576 *
+[ 000 000 354 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ― Sandbox
+[ 000 000 355 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ――― AllowOsTime: true *
+[ 000 000 356 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ――― AllowOsExecute: false *
+[ 000 000 357 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ――― AllowIo: false *
+[ 000 000 358 ]  2026-09-17 01:06:34.964Z  [ DEBUG ]  [ Config-Scripting     ]  ――― AllowDebug: false *
+[ 000 000 359 ]  2026-09-17 01:06:34.965Z  [ DEBUG ]  [ Config-Scripting     ]  ――― AllowLoadlib: false *
+[ 000 000 360 ]  2026-09-17 01:06:34.965Z  [ DEBUG ]  [ Config-Reporting     ]  Reporting
+[ 000 000 361 ]  2026-09-17 01:06:34.965Z  [ DEBUG ]  [ Config-Reporting     ]  ― Enabled: false *
+[ 000 000 362 ]  2026-09-17 01:06:34.965Z  [ DEBUG ]  [ Config-Reporting     ]  ― MaxImageSize: 8192 *
+[ 000 000 363 ]  2026-09-17 01:06:34.965Z  [ DEBUG ]  [ Config-Reporting     ]  ― MaxInputBytes: 52428800 *
+[ 000 000 364 ]  2026-09-17 01:06:34.965Z  [ DEBUG ]  [ Config-Reporting     ]  ― MaxOutputBytes: 52428800 *
+[ 000 000 365 ]  2026-09-17 01:06:34.965Z  [ DEBUG ]  [ Config-Reporting     ]  ― DefaultDPI: 72 *
+[ 000 000 366 ]  2026-09-17 01:06:34.965Z  [ DEBUG ]  [ Config-Reporting     ]  ― AllowedFormats: (not set) *
+[ 000 000 367 ]  2026-09-17 01:06:34.965Z  [ DEBUG ]  [ Config               ]  ― Reporting configuration loaded successfully
+[ 000 000 368 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-MCP           ]  MCP
+[ 000 000 369 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-MCP           ]  ― Enabled: false *
+[ 000 000 370 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-MCP           ]  ― Interface: 127.0.0.1 *
+[ 000 000 371 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-MCP           ]  ― Port: 3100 *
+[ 000 000 372 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-MCP           ]  ― Path: /mcp *
+[ 000 000 373 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-MCP           ]  ― Protocol: (not set) *
+[ 000 000 374 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-MCP           ]  ― RequireJWT: true *
+[ 000 000 375 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-MCP           ]  ― AcceptHydrogenJWT: true *
+[ 000 000 376 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-MCP           ]  ― AcceptOidcIdP: false *
+[ 000 000 377 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-MCP           ]  ― AcceptOidcRp: false *
+[ 000 000 378 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-MCP           ]  ― Resource: (not set) *
+[ 000 000 379 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-MCP           ]  ― RequiredScopes: [none] *
+[ 000 000 380 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-MCP           ]  ― Database: (not set) *
+[ 000 000 381 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-MCP           ]  ― MaxBodyBytes: 1048576 *
+[ 000 000 382 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-MCP           ]  ― MaxResultBytes: 262144 *
+[ 000 000 383 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-MCP           ]  ― RequestTimeoutSeconds: 30 *
+[ 000 000 384 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-MCP           ]  ― ThreadPoolSize: 4 *
+[ 000 000 385 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-MCP           ]  ― AllowedOrigins: [none] *
+[ 000 000 386 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-MCP           ]  ― SessionIdleTimeoutSeconds: 900 *
+[ 000 000 387 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-MCP           ]  ― MaxSessions: 256 *
+[ 000 000 388 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config               ]  ― MCP configuration loaded successfully
+[ 000 000 389 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-Chat          ]  Chat
+[ 000 000 390 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-Chat          ]  ――― Enabled: false *
+[ 000 000 391 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-Chat          ]  ――― MaxRequestsPerInterval: 60 *
+[ 000 000 392 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-Chat          ]  ――― IntervalSeconds: 60 *
+[ 000 000 393 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config-Chat          ]  ――― MaxTokensPerInterval: 100000 *
+[ 000 000 394 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config               ]  ― Chat configuration loaded successfully
+[ 000 000 395 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Config               ]  CONFIGURATION COMPLETE
+[ 000 000 396 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Registry             ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 000 397 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Registry             ]  REGISTRY INITIALIZATION
+[ 000 000 398 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Registry             ]  ― Resetting Registry Data
+[ 000 000 400 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Registry             ]  REGISTRY INITIALIZATION COMPLETE
+[ 000 000 401 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Queues               ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 000 402 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Queues               ]  QUEUE INITIALIZATION
+[ 000 000 403 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Queues               ]  ― Configuring queue limits for Logging
+[ 000 000 404 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Queues               ]  ― Configuring queue limits for WebServer
+[ 000 000 405 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Queues               ]  ― Configuring queue limits for WebSocket
+[ 000 000 406 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Queues               ]  ― Configuring queue limits for mDNSServer
+[ 000 000 407 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Queues               ]  ― Configuring queue limits for Print
+[ 000 000 408 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Queues               ]  ― Configuring queue limits for Database
+[ 000 000 409 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Queues               ]  ― Configuring queue limits for MailRelay
+[ 000 000 410 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Queues               ]  ― Configuring queue limits for Notify
+[ 000 000 411 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Queues               ]  QUEUE INITIALIZATION COMPLETE
+[ 000 000 412 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Launch               ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 000 413 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Launch               ]  LAUNCH READINESS
+[ 000 000 415 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Launch               ]  Registry
+[ 000 000 416 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Launch               ]    Go:      Server name validated
+[ 000 000 417 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Launch               ]    Go:      Log file path validated
+[ 000 000 418 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Launch               ]    Go:      Payload key validated
+[ 000 000 419 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Launch               ]    Go:      Startup delay validated
+[ 000 000 420 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Launch               ]    Go:      Server configuration validated
+[ 000 000 421 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Launch               ]    Go:      Registry initialized
+[ 000 000 422 ]  2026-09-17 01:06:34.966Z  [ DEBUG ]  [ Launch               ]    Decide:  Go For Launch of Registry
+[ 000 000 424 ]  2026-09-17 01:06:34.968Z  [ DEBUG ]  [ Launch               ]  Payload
+[ 000 000 425 ]  2026-09-17 01:06:34.969Z  [ DEBUG ]  [ Launch               ]    Go:      Registry dependency verified (launchable)
+[ 000 000 426 ]  2026-09-17 01:06:34.969Z  [ DEBUG ]  [ Launch               ]    Go:      System state ready
+[ 000 000 427 ]  2026-09-17 01:06:34.969Z  [ DEBUG ]  [ Launch               ]    Go:      Configuration loaded
+[ 000 000 428 ]  2026-09-17 01:06:34.969Z  [ DEBUG ]  [ Launch               ]    Go:      Payload found: 727,716 bytes
+[ 000 000 429 ]  2026-09-17 01:06:34.969Z  [ DEBUG ]  [ Launch               ]    Go:      Valid payload key available: LS0tL...
+[ 000 000 430 ]  2026-09-17 01:06:34.969Z  [ DEBUG ]  [ Launch               ]    Decide:  Go For Launch of Payload Subsystem
+[ 000 000 432 ]  2026-09-17 01:06:34.969Z  [ DEBUG ]  [ Launch               ]  Threads
+[ 000 000 433 ]  2026-09-17 01:06:34.970Z  [ DEBUG ]  [ Launch               ]    Go:      Registry dependency verified (launchable)
+[ 000 000 434 ]  2026-09-17 01:06:34.970Z  [ DEBUG ]  [ Launch               ]    Go:      System State Ready
+[ 000 000 435 ]  2026-09-17 01:06:34.970Z  [ DEBUG ]  [ Launch               ]    Go:      Thread Management System Ready
+[ 000 000 436 ]  2026-09-17 01:06:34.970Z  [ DEBUG ]  [ Launch               ]    Go:      Thread configuration validated
+[ 000 000 437 ]  2026-09-17 01:06:34.970Z  [ DEBUG ]  [ Launch               ]    Decide:  Go For Launch of Thread Management
+[ 000 000 439 ]  2026-09-17 01:06:34.970Z  [ DEBUG ]  [ Launch               ]  Network
+[ 000 000 440 ]  2026-09-17 01:06:34.970Z  [ DEBUG ]  [ Launch               ]    Go:      Network subsystem registered
+[ 000 000 441 ]  2026-09-17 01:06:34.970Z  [ DEBUG ]  [ Launch               ]    Go:      Threads dependency registered
+[ 000 000 442 ]  2026-09-17 01:06:34.970Z  [ DEBUG ]  [ Launch               ]    Go:      Network configuration validated
+[ 000 000 443 ]  2026-09-17 01:06:34.970Z  [ DEBUG ]  [ Launch               ]    Go:      8 Network interfaces available
+[ 000 000 444 ]  2026-09-17 01:06:34.970Z  [ DEBUG ]  [ Launch               ]    Go:      All Network interfaces enabled via config
+[ 000 000 445 ]  2026-09-17 01:06:34.970Z  [ DEBUG ]  [ Launch               ]    Go:      bridge0
+[ 000 000 446 ]  2026-09-17 01:06:34.970Z  [ DEBUG ]  [ Launch               ]    Go:      docker0
+[ 000 000 447 ]  2026-09-17 01:06:34.970Z  [ DEBUG ]  [ Launch               ]    Go:      lo
+[ 000 000 448 ]  2026-09-17 01:06:34.970Z  [ DEBUG ]  [ Launch               ]    Go:      virbr1
+[ 000 000 449 ]  2026-09-17 01:06:34.970Z  [ DEBUG ]  [ Launch               ]    Go:      vnet0
+[ 000 000 450 ]  2026-09-17 01:06:34.970Z  [ DEBUG ]  [ Launch               ]    Go:      vnet1
+[ 000 000 451 ]  2026-09-17 01:06:34.970Z  [ DEBUG ]  [ Launch               ]    Go:      vnet2
+[ 000 000 452 ]  2026-09-17 01:06:34.970Z  [ DEBUG ]  [ Launch               ]    Go:      wg0
+[ 000 000 453 ]  2026-09-17 01:06:34.970Z  [ DEBUG ]  [ Launch               ]    Decide:  Go For Launch of Network Subsystem (8 interfaces available)
+[ 000 000 455 ]  2026-09-17 01:06:34.971Z  [ DEBUG ]  [ Launch               ]  Database
+[ 000 000 456 ]  2026-09-17 01:06:34.971Z  [ DEBUG ]  [ Launch               ]    Go:      Registry dependency registered
+[ 000 000 457 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      Threads dependency registered
+[ 000 000 458 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      Network dependency registered
+[ 000 000 459 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      Queue configuration validated
+[ 000 000 460 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      PostgreSQL Databases: 1 (ACZ)
+[ 000 000 461 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      MySQL Databases: 0
+[ 000 000 462 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      SQLite Databases: 0
+[ 000 000 463 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      DB2 Databases: 0
+[ 000 000 464 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      Total databases configured: 1
+[ 000 000 465 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      PostgreSQL library loaded successfully (libpq.so 17.0.10 doesn't match 17.6)
+[ 000 000 466 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      Database ACZ configuration valid (Prepared Statement Cache: 100)
+[ 000 000 467 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      Using PAYLOAD:acuranzo Migrations for ACZ
+[ 000 000 468 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      Automatic Migration enabled for ACZ
+[ 000 000 469 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Decide:  Go For Launch of Database Subsystem
+[ 000 000 470 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]  Logging
+[ 000 000 471 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      Log levels defined: 7
+[ 000 000 472 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      Console logging enabled at level TRACE
+[ 000 000 473 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      File logging enabled at level DEBUG
+[ 000 000 474 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      Database logging disabled
+[ 000 000 475 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      Notification logging disabled
+[ 000 000 476 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    No-Go:   Logging subsystem not registered
+[ 000 000 477 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Decide:  No-Go For Launch of Logging subsystem
+[ 000 000 479 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]  WebServer
+[ 000 000 480 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      Threads dependency registered
+[ 000 000 481 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      Network dependency registered
+[ 000 000 482 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      Protocols enabled: IPv4
+[ 000 000 483 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      IPv4 interfaces available
+[ 000 000 484 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      Valid port number: 5320
+[ 000 000 485 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      Valid web root: /tmp/hydrogen
+[ 000 000 486 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Decide:  Go For Launch of WebServer Subsystem
+[ 000 000 488 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]  API
+[ 000 000 489 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      Registry subsystem Go for Launch
+[ 000 000 490 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      API endpoints enabled
+[ 000 000 491 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      Valid API prefix: /api
+[ 000 000 492 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Go:      JWT secret configured
+[ 000 000 493 ]  2026-09-17 01:06:34.972Z  [ DEBUG ]  [ Launch               ]    Decide:  Go For Launch of API Subsystem
+[ 000 000 495 ]  2026-09-17 01:06:34.973Z  [ DEBUG ]  [ Launch               ]  Swagger
+[ 000 000 496 ]  2026-09-17 01:06:34.974Z  [ DEBUG ]  [ Launch               ]    Go:      API subsystem ready
+[ 000 000 497 ]  2026-09-17 01:06:34.974Z  [ DEBUG ]  [ Launch               ]    Go:      Payload subsystem ready
+[ 000 000 498 ]  2026-09-17 01:06:34.974Z  [ DEBUG ]  [ Launch               ]    Go:      Valid Swagger prefix: /apidocs
+[ 000 000 499 ]  2026-09-17 01:06:34.974Z  [ DEBUG ]  [ Launch               ]    Go:      All configuration values validated
+[ 000 000 500 ]  2026-09-17 01:06:34.974Z  [ DEBUG ]  [ Launch               ]    Decide:  Go For Launch of Swagger Subsystem
+[ 000 000 502 ]  2026-09-17 01:06:34.974Z  [ DEBUG ]  [ Launch               ]  WebSocket
+[ 000 000 503 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Threads dependency registered
+[ 000 000 504 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Network dependency registered
+[ 000 000 505 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    No-Go:   IPv4 disabled
+[ 000 000 506 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:         IPv6 disabled
+[ 000 000 507 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    No-Go:      No interfaces enabled
+[ 000 000 508 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      IPv4 interfaces available
+[ 000 000 509 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Valid port number: 5001
+[ 000 000 510 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Protocol format valid: hydrogen
+[ 000 000 511 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    No-Go:   Invalid WebSocket key (missing, unresolved env ref, known default, or < 32 printable chars)
+[ 000 000 512 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Message size limits valid
+[ 000 000 513 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Exit wait timeout valid
+[ 000 000 514 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Decide:  No-Go For Launch of WebSocket Subsystem
+[ 000 000 516 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]  Terminal
+[ 000 000 517 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    No-Go:   WebSocket Not Enabled
+[ 000 000 518 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Reason:  Terminal Requires WebSocket
+[ 000 000 519 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Terminal System Enabled
+[ 000 000 520 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Web Path Configured
+[ 000 000 521 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Shell Command Configured
+[ 000 000 522 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Max Sessions Valid
+[ 000 000 523 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Idle Timeout Valid
+[ 000 000 524 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Terminal WebSocket key and protocol valid
+[ 000 000 525 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Decide:  No-Go For Launch of Terminal
+[ 000 000 527 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]  mDNSServer
+[ 000 000 528 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Network dependency registered
+[ 000 000 529 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Network subsystem will be available
+[ 000 000 530 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    No-Go:   mDNS server disabled in configuration
+[ 000 000 532 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]  mDNSClient
+[ 000 000 533 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Network dependency registered
+[ 000 000 534 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Network subsystem will be available
+[ 000 000 535 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      mDNS client enabled in configuration
+[ 000 000 536 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Scan interval valid
+[ 000 000 537 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Health check interval valid
+[ 000 000 538 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Decide:  Go For Launch of mDNS Client Subsystem
+[ 000 000 540 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]  MailRelay
+[ 000 000 541 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Network dependency registered
+[ 000 000 542 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Mail relay disabled - clean skip
+[ 000 000 543 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Decide:  Skip Launch of Mail Relay Subsystem
+[ 000 000 544 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]  Print
+[ 000 000 545 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Print queue enabled in configuration
+[ 000 000 546 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Max queued jobs within limits
+[ 000 000 547 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Max concurrent jobs within limits
+[ 000 000 548 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Priority settings and spreads valid
+[ 000 000 549 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Timeout settings valid
+[ 000 000 550 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Buffer settings valid
+[ 000 000 551 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Motion control settings valid
+[ 000 000 552 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Decide:  Go For Launch of Print Subsystem
+[ 000 000 553 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]  Resources
+[ 000 000 554 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Configuration loaded
+[ 000 000 555 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Memory limits valid
+[ 000 000 556 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Queue settings valid
+[ 000 000 557 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Thread limits valid
+[ 000 000 558 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      File limits valid
+[ 000 000 559 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Monitoring settings valid
+[ 000 000 560 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Decide:  Go For Launch of Resources Subsystem
+[ 000 000 562 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]  OIDC
+[ 000 000 563 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Configuration loaded
+[ 000 000 564 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Registry dependency verified (launchable)
+[ 000 000 565 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    No-Go:   OIDC issuer is required
+[ 000 000 566 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      No config client seed (registry/DB clients only)
+[ 000 000 567 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Decide:  No-Go For Launch of OIDC Subsystem
+[ 000 000 569 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]  Notify
+[ 000 000 570 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Configuration loaded
+[ 000 000 571 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Registry dependency verified (launchable)
+[ 000 000 572 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    No-Go:   Unsupported notifier type: none
+[ 000 000 573 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Decide:  No-Go For Launch of Notify Subsystem
+[ 000 000 575 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]  Scripting
+[ 000 000 576 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Database dependency registered
+[ 000 000 577 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    No-Go:   Scripting subsystem disabled in configuration
+[ 000 000 578 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Reporting            ]  Reporting subsystem is disabled
+[ 000 000 580 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]  MCP
+[ 000 000 581 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      Configuration loaded
+[ 000 000 582 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:      MCP disabled, skipping validation
+[ 000 000 583 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Decide:  Go For Launch of MCP Subsystem
+[ 000 000 584 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]  LAUNCH READINESS COMPLETE
+[ 000 000 585 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 000 586 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]  LAUNCH PLAN
+[ 000 000 587 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]  Total Subsystems Checked:  21
+[ 000 000 588 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]  Ready Subsystems:          14
+[ 000 000 589 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]  Not Ready Subsystems:       7
+[ 000 000 590 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:     Registry
+[ 000 000 591 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:     Payload
+[ 000 000 592 ]  2026-09-17 01:06:34.975Z  [ DEBUG ]  [ Launch               ]    Go:     Threads
+[ 000 000 593 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Launch               ]    Go:     Network
+[ 000 000 594 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Launch               ]    Go:     Database
+[ 000 000 595 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Launch               ]    No-Go:  Logging
+[ 000 000 596 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Launch               ]    Go:     WebServer
+[ 000 000 597 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Launch               ]    Go:     API
+[ 000 000 598 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Launch               ]    Go:     Swagger
+[ 000 000 599 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Launch               ]    No-Go:  WebSocket
+[ 000 000 600 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Launch               ]    No-Go:  Terminal
+[ 000 000 601 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Launch               ]    No-Go:  mDNSServer
+[ 000 000 602 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Launch               ]    Go:     mDNSClient
+[ 000 000 603 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Launch               ]    Go:     MailRelay
+[ 000 000 604 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Launch               ]    Go:     Print
+[ 000 000 605 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Launch               ]    Go:     Resources
+[ 000 000 606 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Launch               ]    No-Go:  OIDC
+[ 000 000 607 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Launch               ]    No-Go:  Notify
+[ 000 000 608 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Launch               ]    No-Go:  Scripting
+[ 000 000 609 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Launch               ]    Go:     Reporting
+[ 000 000 610 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Launch               ]    Go:     MCP
+[ 000 000 611 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Launch               ]  LAUNCH PLAN COMPLETE
+[ 000 000 612 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Registry             ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 000 613 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Registry             ]  LAUNCH: Registry
+[ 000 000 614 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Registry             ]  ― Registry system verified
+[ 000 000 615 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Registry             ]  ― Registry state set to running
+[ 000 000 616 ]  2026-09-17 01:06:34.976Z  [ DEBUG ]  [ Registry             ]  LAUNCH: Registry COMPLETE
+[ 000 000 617 ]  2026-09-17 01:06:34.977Z  [ DEBUG ]  [ Payload              ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 000 618 ]  2026-09-17 01:06:34.977Z  [ DEBUG ]  [ Payload              ]  LAUNCH: Payload
+[ 000 000 619 ]  2026-09-17 01:06:34.977Z  [ DEBUG ]  [ Payload              ]  Subsystem Dependency Check
+[ 000 000 620 ]  2026-09-17 01:06:34.978Z  [ DEBUG ]  [ Payload              ]  ― Registry dependency verified (running)
+[ 000 000 621 ]  2026-09-17 01:06:34.978Z  [ DEBUG ]  [ Payload              ]  ― All dependencies verified
+[ 000 000 622 ]  2026-09-17 01:06:34.978Z  [ DEBUG ]  [ Payload              ]  Payload Cache initialization
+[ 000 000 623 ]  2026-09-17 01:06:34.978Z  [ DEBUG ]  [ Payload              ]  ― Payload Cache initialized
+[ 000 000 624 ]  2026-09-17 01:06:34.978Z  [ DEBUG ]  [ Payload              ]  ― Loading Payload Cache
+[ 000 000 625 ]  2026-09-17 01:06:34.978Z  [ DEBUG ]  [ Payload              ]  ― Found encrypted payload: 727716 bytes
+[ 000 000 626 ]  2026-09-17 01:06:34.979Z  [ DEBUG ]  [ Payload              ]  ― Using key: LS0tL...
+[ 000 000 627 ]  2026-09-17 01:06:34.979Z  [ DEBUG ]  [ Payload              ]  Payload structure:
+[ 000 000 628 ]  2026-09-17 01:06:34.979Z  [ DEBUG ]  [ Payload              ]  ― Executable size:      1148875 bytes
+[ 000 000 629 ]  2026-09-17 01:06:34.979Z  [ DEBUG ]  [ Payload              ]  ― Payload size:          727716 bytes
+[ 000 000 630 ]  2026-09-17 01:06:34.979Z  [ DEBUG ]  [ Payload              ]  ― Key size:                 256 bytes
+[ 000 000 631 ]  2026-09-17 01:06:34.979Z  [ DEBUG ]  [ Payload              ]  ― Init Vector (IV):          16 bytes
+[ 000 000 632 ]  2026-09-17 01:06:34.979Z  [ DEBUG ]  [ Payload              ]  ― Encrypted size:        727440 bytes
+[ 000 000 633 ]  2026-09-17 01:06:34.979Z  [ DEBUG ]  [ Payload              ]  ― Base64 decoded key: 1704 bytes
+[ 000 000 634 ]  2026-09-17 01:06:34.979Z  [ DEBUG ]  [ Payload              ]  ― Key is base64-encoded PEM format
+[ 000 000 635 ]  2026-09-17 01:06:34.979Z  [ DEBUG ]  [ Payload              ]  ― PEM has proper END marker
+[ 000 000 636 ]  2026-09-17 01:06:34.979Z  [ DEBUG ]  [ Payload              ]  ― Key end (last 50 bytes): [LY2eBNftwpiiZgeXReJNtqv
+-----END PRIVATE KEY-----
+]
+[ 000 000 637 ]  2026-09-17 01:06:34.986Z  [ DEBUG ]  [ Payload              ]  ― Decrypted size:        727425 bytes
+[ 000 000 638 ]  2026-09-17 01:06:35.002Z  [ DEBUG ]  [ Payload              ]  ― Decompressed size:    5335040 bytes
+[ 000 000 639 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  Caching 429 files:
+[ 000 000 640 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―    25845 bytes: acuranzo/acuranzo_1000.lua
+[ 000 000 641 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―    10866 bytes: acuranzo/acuranzo_1001.lua
+[ 000 000 642 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―    10092 bytes: acuranzo/acuranzo_1002.lua
+[ 000 000 643 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―    10825 bytes: acuranzo/acuranzo_1003.lua
+[ 000 000 644 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     9922 bytes: acuranzo/acuranzo_1004.lua
+[ 000 000 645 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―    11123 bytes: acuranzo/acuranzo_1005.lua
+[ 000 000 646 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―    11897 bytes: acuranzo/acuranzo_1006.lua
+[ 000 000 647 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―    10011 bytes: acuranzo/acuranzo_1007.lua
+[ 000 000 648 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―    10636 bytes: acuranzo/acuranzo_1008.lua
+[ 000 000 649 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     9526 bytes: acuranzo/acuranzo_1009.lua
+[ 000 000 650 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―    11972 bytes: acuranzo/acuranzo_1010.lua
+[ 000 000 651 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     9491 bytes: acuranzo/acuranzo_1011.lua
+[ 000 000 652 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     9881 bytes: acuranzo/acuranzo_1012.lua
+[ 000 000 653 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     9482 bytes: acuranzo/acuranzo_1013.lua
+[ 000 000 654 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     9919 bytes: acuranzo/acuranzo_1014.lua
+[ 000 000 655 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―    10943 bytes: acuranzo/acuranzo_1015.lua
+[ 000 000 656 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     9963 bytes: acuranzo/acuranzo_1016.lua
+[ 000 000 657 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     9056 bytes: acuranzo/acuranzo_1017.lua
+[ 000 000 658 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―    11522 bytes: acuranzo/acuranzo_1018.lua
+[ 000 000 659 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     9507 bytes: acuranzo/acuranzo_1019.lua
+[ 000 000 660 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     9911 bytes: acuranzo/acuranzo_1020.lua
+[ 000 000 661 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―    10224 bytes: acuranzo/acuranzo_1021.lua
+[ 000 000 662 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     9883 bytes: acuranzo/acuranzo_1022.lua
+[ 000 000 663 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     9916 bytes: acuranzo/acuranzo_1023.lua
+[ 000 000 664 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     5695 bytes: acuranzo/acuranzo_1024.lua
+[ 000 000 665 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     7766 bytes: acuranzo/acuranzo_1025.lua
+[ 000 000 666 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     6972 bytes: acuranzo/acuranzo_1026.lua
+[ 000 000 667 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     6764 bytes: acuranzo/acuranzo_1027.lua
+[ 000 000 668 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     6783 bytes: acuranzo/acuranzo_1028.lua
+[ 000 000 669 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     6706 bytes: acuranzo/acuranzo_1029.lua
+[ 000 000 670 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     6793 bytes: acuranzo/acuranzo_1030.lua
+[ 000 000 671 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     6770 bytes: acuranzo/acuranzo_1031.lua
+[ 000 000 672 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     6751 bytes: acuranzo/acuranzo_1032.lua
+[ 000 000 673 ]  2026-09-17 01:06:35.007Z  [ DEBUG ]  [ Payload              ]  ―     6632 bytes: acuranzo/acuranzo_1033.lua
+[ 000 000 674 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7775 bytes: acuranzo/acuranzo_1034.lua
+[ 000 000 675 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6763 bytes: acuranzo/acuranzo_1035.lua
+[ 000 000 676 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6839 bytes: acuranzo/acuranzo_1036.lua
+[ 000 000 677 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6775 bytes: acuranzo/acuranzo_1037.lua
+[ 000 000 678 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6946 bytes: acuranzo/acuranzo_1038.lua
+[ 000 000 679 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6757 bytes: acuranzo/acuranzo_1039.lua
+[ 000 000 680 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6540 bytes: acuranzo/acuranzo_1040.lua
+[ 000 000 681 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6813 bytes: acuranzo/acuranzo_1041.lua
+[ 000 000 682 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6556 bytes: acuranzo/acuranzo_1042.lua
+[ 000 000 683 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6930 bytes: acuranzo/acuranzo_1043.lua
+[ 000 000 684 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6716 bytes: acuranzo/acuranzo_1044.lua
+[ 000 000 685 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7142 bytes: acuranzo/acuranzo_1045.lua
+[ 000 000 686 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7599 bytes: acuranzo/acuranzo_1046.lua
+[ 000 000 687 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6717 bytes: acuranzo/acuranzo_1047.lua
+[ 000 000 688 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6744 bytes: acuranzo/acuranzo_1048.lua
+[ 000 000 689 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6899 bytes: acuranzo/acuranzo_1049.lua
+[ 000 000 690 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6596 bytes: acuranzo/acuranzo_1050.lua
+[ 000 000 691 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6580 bytes: acuranzo/acuranzo_1051.lua
+[ 000 000 692 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6603 bytes: acuranzo/acuranzo_1052.lua
+[ 000 000 693 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7772 bytes: acuranzo/acuranzo_1053.lua
+[ 000 000 694 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6636 bytes: acuranzo/acuranzo_1054.lua
+[ 000 000 695 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7289 bytes: acuranzo/acuranzo_1055.lua
+[ 000 000 696 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6553 bytes: acuranzo/acuranzo_1056.lua
+[ 000 000 697 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6418 bytes: acuranzo/acuranzo_1057.lua
+[ 000 000 698 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     9418 bytes: acuranzo/acuranzo_1058.lua
+[ 000 000 699 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6737 bytes: acuranzo/acuranzo_1059.lua
+[ 000 000 700 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6731 bytes: acuranzo/acuranzo_1060.lua
+[ 000 000 701 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6533 bytes: acuranzo/acuranzo_1061.lua
+[ 000 000 702 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6739 bytes: acuranzo/acuranzo_1062.lua
+[ 000 000 703 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7531 bytes: acuranzo/acuranzo_1063.lua
+[ 000 000 704 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6477 bytes: acuranzo/acuranzo_1064.lua
+[ 000 000 705 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     8032 bytes: acuranzo/acuranzo_1065.lua
+[ 000 000 706 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     5952 bytes: acuranzo/acuranzo_1066.lua
+[ 000 000 707 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    28504 bytes: acuranzo/acuranzo_1067.lua
+[ 000 000 708 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    27512 bytes: acuranzo/acuranzo_1068.lua
+[ 000 000 709 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    27198 bytes: acuranzo/acuranzo_1069.lua
+[ 000 000 710 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    27953 bytes: acuranzo/acuranzo_1070.lua
+[ 000 000 711 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    28832 bytes: acuranzo/acuranzo_1071.lua
+[ 000 000 712 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    27524 bytes: acuranzo/acuranzo_1072.lua
+[ 000 000 713 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    27171 bytes: acuranzo/acuranzo_1073.lua
+[ 000 000 714 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    28533 bytes: acuranzo/acuranzo_1074.lua
+[ 000 000 715 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    11329 bytes: acuranzo/acuranzo_1075.lua
+[ 000 000 716 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    41376 bytes: acuranzo/acuranzo_1076.lua
+[ 000 000 717 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6463 bytes: acuranzo/acuranzo_1077.lua
+[ 000 000 718 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    29189 bytes: acuranzo/acuranzo_1078.lua
+[ 000 000 719 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6722 bytes: acuranzo/acuranzo_1079.lua
+[ 000 000 720 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6460 bytes: acuranzo/acuranzo_1080.lua
+[ 000 000 721 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6941 bytes: acuranzo/acuranzo_1081.lua
+[ 000 000 722 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6626 bytes: acuranzo/acuranzo_1082.lua
+[ 000 000 723 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6785 bytes: acuranzo/acuranzo_1083.lua
+[ 000 000 724 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7424 bytes: acuranzo/acuranzo_1084.lua
+[ 000 000 725 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7608 bytes: acuranzo/acuranzo_1085.lua
+[ 000 000 726 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    19897 bytes: acuranzo/acuranzo_1086.lua
+[ 000 000 727 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    14231 bytes: acuranzo/acuranzo_1087.lua
+[ 000 000 728 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7817 bytes: acuranzo/acuranzo_1088.lua
+[ 000 000 729 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6842 bytes: acuranzo/acuranzo_1089.lua
+[ 000 000 730 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7555 bytes: acuranzo/acuranzo_1090.lua
+[ 000 000 731 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6831 bytes: acuranzo/acuranzo_1091.lua
+[ 000 000 732 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7883 bytes: acuranzo/acuranzo_1092.lua
+[ 000 000 733 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7941 bytes: acuranzo/acuranzo_1093.lua
+[ 000 000 734 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7563 bytes: acuranzo/acuranzo_1094.lua
+[ 000 000 735 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7988 bytes: acuranzo/acuranzo_1095.lua
+[ 000 000 736 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7122 bytes: acuranzo/acuranzo_1096.lua
+[ 000 000 737 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7077 bytes: acuranzo/acuranzo_1097.lua
+[ 000 000 738 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     8004 bytes: acuranzo/acuranzo_1098.lua
+[ 000 000 739 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7191 bytes: acuranzo/acuranzo_1099.lua
+[ 000 000 740 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7274 bytes: acuranzo/acuranzo_1100.lua
+[ 000 000 741 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6961 bytes: acuranzo/acuranzo_1101.lua
+[ 000 000 742 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7314 bytes: acuranzo/acuranzo_1102.lua
+[ 000 000 743 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7950 bytes: acuranzo/acuranzo_1103.lua
+[ 000 000 744 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     8329 bytes: acuranzo/acuranzo_1104.lua
+[ 000 000 745 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     8362 bytes: acuranzo/acuranzo_1105.lua
+[ 000 000 746 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     8378 bytes: acuranzo/acuranzo_1106.lua
+[ 000 000 747 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7938 bytes: acuranzo/acuranzo_1107.lua
+[ 000 000 748 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7288 bytes: acuranzo/acuranzo_1108.lua
+[ 000 000 749 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7671 bytes: acuranzo/acuranzo_1109.lua
+[ 000 000 750 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6683 bytes: acuranzo/acuranzo_1110.lua
+[ 000 000 751 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6906 bytes: acuranzo/acuranzo_1111.lua
+[ 000 000 752 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     8572 bytes: acuranzo/acuranzo_1112.lua
+[ 000 000 753 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6919 bytes: acuranzo/acuranzo_1113.lua
+[ 000 000 754 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    10005 bytes: acuranzo/acuranzo_1114.lua
+[ 000 000 755 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6938 bytes: acuranzo/acuranzo_1115.lua
+[ 000 000 756 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7701 bytes: acuranzo/acuranzo_1116.lua
+[ 000 000 757 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7935 bytes: acuranzo/acuranzo_1117.lua
+[ 000 000 758 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7042 bytes: acuranzo/acuranzo_1118.lua
+[ 000 000 759 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7941 bytes: acuranzo/acuranzo_1119.lua
+[ 000 000 760 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     8679 bytes: acuranzo/acuranzo_1120.lua
+[ 000 000 761 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    10203 bytes: acuranzo/acuranzo_1121.lua
+[ 000 000 762 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    11657 bytes: acuranzo/acuranzo_1122.lua
+[ 000 000 763 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     9053 bytes: acuranzo/acuranzo_1123.lua
+[ 000 000 764 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     9654 bytes: acuranzo/acuranzo_1124.lua
+[ 000 000 765 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     8113 bytes: acuranzo/acuranzo_1125.lua
+[ 000 000 766 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     8351 bytes: acuranzo/acuranzo_1126.lua
+[ 000 000 767 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7893 bytes: acuranzo/acuranzo_1127.lua
+[ 000 000 768 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7552 bytes: acuranzo/acuranzo_1128.lua
+[ 000 000 769 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7103 bytes: acuranzo/acuranzo_1129.lua
+[ 000 000 770 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     8502 bytes: acuranzo/acuranzo_1130.lua
+[ 000 000 771 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     9069 bytes: acuranzo/acuranzo_1131.lua
+[ 000 000 772 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6704 bytes: acuranzo/acuranzo_1132.lua
+[ 000 000 773 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     8814 bytes: acuranzo/acuranzo_1133.lua
+[ 000 000 774 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7824 bytes: acuranzo/acuranzo_1134.lua
+[ 000 000 775 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    30528 bytes: acuranzo/acuranzo_1135.lua
+[ 000 000 776 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     9163 bytes: acuranzo/acuranzo_1136.lua
+[ 000 000 777 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     8569 bytes: acuranzo/acuranzo_1137.lua
+[ 000 000 778 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     9111 bytes: acuranzo/acuranzo_1138.lua
+[ 000 000 779 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7831 bytes: acuranzo/acuranzo_1139.lua
+[ 000 000 780 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     8311 bytes: acuranzo/acuranzo_1140.lua
+[ 000 000 781 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7602 bytes: acuranzo/acuranzo_1141.lua
+[ 000 000 782 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     8597 bytes: acuranzo/acuranzo_1142.lua
+[ 000 000 783 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     6907 bytes: acuranzo/acuranzo_1143.lua
+[ 000 000 784 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     9056 bytes: acuranzo/acuranzo_1144.lua
+[ 000 000 785 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7873 bytes: acuranzo/acuranzo_1145.lua
+[ 000 000 786 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7375 bytes: acuranzo/acuranzo_1146.lua
+[ 000 000 787 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7472 bytes: acuranzo/acuranzo_1147.lua
+[ 000 000 788 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7480 bytes: acuranzo/acuranzo_1148.lua
+[ 000 000 789 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7141 bytes: acuranzo/acuranzo_1149.lua
+[ 000 000 790 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7185 bytes: acuranzo/acuranzo_1150.lua
+[ 000 000 791 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    14412 bytes: acuranzo/acuranzo_1151.lua
+[ 000 000 792 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7272 bytes: acuranzo/acuranzo_1152.lua
+[ 000 000 793 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    20948 bytes: acuranzo/acuranzo_1153.lua
+[ 000 000 794 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    17852 bytes: acuranzo/acuranzo_1154.lua
+[ 000 000 795 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7838 bytes: acuranzo/acuranzo_1155.lua
+[ 000 000 796 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     5395 bytes: acuranzo/acuranzo_1156.lua
+[ 000 000 797 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     5358 bytes: acuranzo/acuranzo_1157.lua
+[ 000 000 798 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     8970 bytes: acuranzo/acuranzo_1158.lua
+[ 000 000 799 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    11074 bytes: acuranzo/acuranzo_1159.lua
+[ 000 000 800 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    13095 bytes: acuranzo/acuranzo_1160.lua
+[ 000 000 801 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     5170 bytes: acuranzo/acuranzo_1161.lua
+[ 000 000 802 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7588 bytes: acuranzo/acuranzo_1162.lua
+[ 000 000 803 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7787 bytes: acuranzo/acuranzo_1163.lua
+[ 000 000 804 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     8650 bytes: acuranzo/acuranzo_1164.lua
+[ 000 000 805 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7486 bytes: acuranzo/acuranzo_1165.lua
+[ 000 000 806 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7584 bytes: acuranzo/acuranzo_1166.lua
+[ 000 000 807 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     9486 bytes: acuranzo/acuranzo_1167.lua
+[ 000 000 808 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     9593 bytes: acuranzo/acuranzo_1168.lua
+[ 000 000 809 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    10851 bytes: acuranzo/acuranzo_1169.lua
+[ 000 000 810 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7718 bytes: acuranzo/acuranzo_1170.lua
+[ 000 000 811 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―    10514 bytes: acuranzo/acuranzo_1171.lua
+[ 000 000 812 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     5818 bytes: acuranzo/acuranzo_1172.lua
+[ 000 000 813 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7528 bytes: acuranzo/acuranzo_1173.lua
+[ 000 000 814 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7166 bytes: acuranzo/acuranzo_1174.lua
+[ 000 000 815 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     8189 bytes: acuranzo/acuranzo_1175.lua
+[ 000 000 816 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7732 bytes: acuranzo/acuranzo_1176.lua
+[ 000 000 817 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     7745 bytes: acuranzo/acuranzo_1177.lua
+[ 000 000 818 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     9589 bytes: acuranzo/acuranzo_1178.lua
+[ 000 000 819 ]  2026-09-17 01:06:35.008Z  [ DEBUG ]  [ Payload              ]  ―     5111 bytes: acuranzo/acuranzo_1179.lua
+[ 000 000 820 ]  2026-09-17 01:06:35.009Z  [ DEBUG ]  [ Payload              ]  ―     5135 bytes: acuranzo/acuranzo_1180.lua
+[ 000 000 821 ]  2026-09-17 01:06:35.009Z  [ DEBUG ]  [ Payload              ]  ―     5124 bytes: acuranzo/acuranzo_1181.lua
+[ 000 000 822 ]  2026-09-17 01:06:35.009Z  [ DEBUG ]  [ Payload              ]  ―    11125 bytes: acuranzo/acuranzo_1182.lua
+[ 000 000 823 ]  2026-09-17 01:06:35.009Z  [ DEBUG ]  [ Payload              ]  ―     5121 bytes: acuranzo/acuranzo_1183.lua
+[ 000 000 824 ]  2026-09-17 01:06:35.009Z  [ DEBUG ]  [ Payload              ]  ―     5127 bytes: acuranzo/acuranzo_1184.lua
+[ 000 000 825 ]  2026-09-17 01:06:35.009Z  [ DEBUG ]  [ Payload              ]  ―     5114 bytes: acuranzo/acuranzo_1185.lua
+[ 000 000 826 ]  2026-09-17 01:06:35.009Z  [ DEBUG ]  [ Payload              ]  ―     5127 bytes: acuranzo/acuranzo_1186.lua
+[ 000 000 827 ]  2026-09-17 01:06:35.009Z  [ DEBUG ]  [ Payload              ]  ―     5338 bytes: acuranzo/acuranzo_1187.lua
+[ 000 000 828 ]  2026-09-17 01:06:35.009Z  [ DEBUG ]  [ Payload              ]  ―     8012 bytes: acuranzo/acuranzo_1188.lua
+[ 000 000 829 ]  2026-09-17 01:06:35.009Z  [ DEBUG ]  [ Payload              ]  ―    11498 bytes: acuranzo/acuranzo_1189.lua
+[ 000 000 830 ]  2026-09-17 01:06:35.009Z  [ DEBUG ]  [ Payload              ]  ―    27870 bytes: acuranzo/acuranzo_1190.lua
+[ 000 000 831 ]  2026-09-17 01:06:35.009Z  [ DEBUG ]  [ Payload              ]  ―     8413 bytes: acuranzo/acuranzo_1191.lua
+[ 000 000 832 ]  2026-09-17 01:06:35.009Z  [ DEBUG ]  [ Payload              ]  ―     9889 bytes: acuranzo/acuranzo_1192.lua
+[ 000 000 833 ]  2026-09-17 01:06:35.009Z  [ DEBUG ]  [ Payload              ]  ―     8890 bytes: acuranzo/acuranzo_1193.lua
+[ 000 000 834 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―    10426 bytes: acuranzo/acuranzo_1194.lua
+[ 000 000 835 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     8352 bytes: acuranzo/acuranzo_1195.lua
+[ 000 000 836 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     5052 bytes: acuranzo/acuranzo_1196.lua
+[ 000 000 837 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―    13818 bytes: acuranzo/acuranzo_1197.lua
+[ 000 000 838 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     9939 bytes: acuranzo/acuranzo_1198.lua
+[ 000 000 839 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―    12238 bytes: acuranzo/acuranzo_1199.lua
+[ 000 000 840 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     9412 bytes: acuranzo/acuranzo_1200.lua
+[ 000 000 841 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―    11951 bytes: acuranzo/acuranzo_1201.lua
+[ 000 000 842 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     7246 bytes: acuranzo/acuranzo_1202.lua
+[ 000 000 843 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     6284 bytes: acuranzo/acuranzo_1203.lua
+[ 000 000 844 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     7517 bytes: acuranzo/acuranzo_1204.lua
+[ 000 000 845 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     7946 bytes: acuranzo/acuranzo_1205.lua
+[ 000 000 846 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     7219 bytes: acuranzo/acuranzo_1206.lua
+[ 000 000 847 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     7812 bytes: acuranzo/acuranzo_1207.lua
+[ 000 000 848 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     7537 bytes: acuranzo/acuranzo_1208.lua
+[ 000 000 849 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     7238 bytes: acuranzo/acuranzo_1209.lua
+[ 000 000 850 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     9885 bytes: acuranzo/acuranzo_1210.lua
+[ 000 000 851 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     8194 bytes: acuranzo/acuranzo_1211.lua
+[ 000 000 852 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     6975 bytes: acuranzo/acuranzo_1212.lua
+[ 000 000 853 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     8270 bytes: acuranzo/acuranzo_1213.lua
+[ 000 000 854 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     6970 bytes: acuranzo/acuranzo_1214.lua
+[ 000 000 855 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     7619 bytes: acuranzo/acuranzo_1215.lua
+[ 000 000 856 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     6421 bytes: acuranzo/acuranzo_1216.lua
+[ 000 000 857 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―    11479 bytes: acuranzo/acuranzo_1217.lua
+[ 000 000 858 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―    18298 bytes: acuranzo/acuranzo_1218.lua
+[ 000 000 859 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―    11768 bytes: acuranzo/acuranzo_1219.lua
+[ 000 000 860 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―    15934 bytes: acuranzo/acuranzo_1220.lua
+[ 000 000 861 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―    12906 bytes: acuranzo/acuranzo_1221.lua
+[ 000 000 862 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―    15461 bytes: acuranzo/acuranzo_1222.lua
+[ 000 000 863 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―    10128 bytes: acuranzo/acuranzo_1223.lua
+[ 000 000 864 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     7769 bytes: acuranzo/acuranzo_1224.lua
+[ 000 000 865 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     7999 bytes: acuranzo/acuranzo_1225.lua
+[ 000 000 866 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     8512 bytes: acuranzo/acuranzo_1226.lua
+[ 000 000 867 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     7566 bytes: acuranzo/acuranzo_1227.lua
+[ 000 000 868 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     7484 bytes: acuranzo/acuranzo_1228.lua
+[ 000 000 869 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     7511 bytes: acuranzo/acuranzo_1229.lua
+[ 000 000 870 ]  2026-09-17 01:06:35.010Z  [ DEBUG ]  [ Payload              ]  ―     7818 bytes: acuranzo/acuranzo_1230.lua
+[ 000 000 871 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7423 bytes: acuranzo/acuranzo_1231.lua
+[ 000 000 872 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     8829 bytes: acuranzo/acuranzo_1232.lua
+[ 000 000 873 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7306 bytes: acuranzo/acuranzo_1233.lua
+[ 000 000 874 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7294 bytes: acuranzo/acuranzo_1234.lua
+[ 000 000 875 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     8825 bytes: acuranzo/acuranzo_1235.lua
+[ 000 000 876 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7910 bytes: acuranzo/acuranzo_1236.lua
+[ 000 000 877 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7022 bytes: acuranzo/acuranzo_1237.lua
+[ 000 000 878 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     9938 bytes: acuranzo/acuranzo_1238.lua
+[ 000 000 879 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7685 bytes: acuranzo/acuranzo_1239.lua
+[ 000 000 880 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7400 bytes: acuranzo/acuranzo_1240.lua
+[ 000 000 881 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7059 bytes: acuranzo/acuranzo_1241.lua
+[ 000 000 882 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     8836 bytes: acuranzo/acuranzo_1242.lua
+[ 000 000 883 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7777 bytes: acuranzo/acuranzo_1243.lua
+[ 000 000 884 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7063 bytes: acuranzo/acuranzo_1244.lua
+[ 000 000 885 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     6892 bytes: acuranzo/acuranzo_1245.lua
+[ 000 000 886 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     6941 bytes: acuranzo/acuranzo_1246.lua
+[ 000 000 887 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7206 bytes: acuranzo/acuranzo_1247.lua
+[ 000 000 888 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7869 bytes: acuranzo/acuranzo_1248.lua
+[ 000 000 889 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7577 bytes: acuranzo/acuranzo_1249.lua
+[ 000 000 890 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    10177 bytes: acuranzo/acuranzo_1250.lua
+[ 000 000 891 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     8992 bytes: acuranzo/acuranzo_1251.lua
+[ 000 000 892 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     6987 bytes: acuranzo/acuranzo_1252.lua
+[ 000 000 893 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7277 bytes: acuranzo/acuranzo_1253.lua
+[ 000 000 894 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7169 bytes: acuranzo/acuranzo_1254.lua
+[ 000 000 895 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7098 bytes: acuranzo/acuranzo_1255.lua
+[ 000 000 896 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7248 bytes: acuranzo/acuranzo_1256.lua
+[ 000 000 897 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     5205 bytes: acuranzo/acuranzo_1257.lua
+[ 000 000 898 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     8446 bytes: acuranzo/acuranzo_1258.lua
+[ 000 000 899 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     5368 bytes: acuranzo/acuranzo_1259.lua
+[ 000 000 900 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     6972 bytes: acuranzo/acuranzo_1260.lua
+[ 000 000 901 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     5579 bytes: acuranzo/acuranzo_1261.lua
+[ 000 000 902 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7417 bytes: acuranzo/acuranzo_1262.lua
+[ 000 000 903 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     8451 bytes: acuranzo/acuranzo_1263.lua
+[ 000 000 904 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     8083 bytes: acuranzo/acuranzo_1264.lua
+[ 000 000 905 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     6835 bytes: acuranzo/acuranzo_1265.lua
+[ 000 000 906 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    11367 bytes: acuranzo/acuranzo_1266.lua
+[ 000 000 907 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     6394 bytes: acuranzo/acuranzo_1267.lua
+[ 000 000 908 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7041 bytes: acuranzo/acuranzo_1268.lua
+[ 000 000 909 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     6039 bytes: acuranzo/acuranzo_1269.lua
+[ 000 000 910 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     6155 bytes: acuranzo/acuranzo_1270.lua
+[ 000 000 911 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     8985 bytes: acuranzo/acuranzo_1271.lua
+[ 000 000 912 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     8585 bytes: acuranzo/acuranzo_1272.lua
+[ 000 000 913 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     6174 bytes: acuranzo/acuranzo_1273.lua
+[ 000 000 914 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     5804 bytes: acuranzo/acuranzo_1274.lua
+[ 000 000 915 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     5817 bytes: acuranzo/acuranzo_1275.lua
+[ 000 000 916 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     6028 bytes: acuranzo/acuranzo_1276.lua
+[ 000 000 917 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     5752 bytes: acuranzo/acuranzo_1277.lua
+[ 000 000 918 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     5792 bytes: acuranzo/acuranzo_1278.lua
+[ 000 000 919 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     5817 bytes: acuranzo/acuranzo_1279.lua
+[ 000 000 920 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     6393 bytes: acuranzo/acuranzo_1280.lua
+[ 000 000 921 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     8926 bytes: acuranzo/acuranzo_1281.lua
+[ 000 000 922 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     4580 bytes: acuranzo/acuranzo_1282.lua
+[ 000 000 923 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    11123 bytes: acuranzo/acuranzo_1283.lua
+[ 000 000 924 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    12985 bytes: acuranzo/acuranzo_1284.lua
+[ 000 000 925 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    10430 bytes: acuranzo/acuranzo_1285.lua
+[ 000 000 926 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7681 bytes: acuranzo/acuranzo_1286.lua
+[ 000 000 927 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     9525 bytes: acuranzo/acuranzo_1287.lua
+[ 000 000 928 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7398 bytes: acuranzo/acuranzo_1288.lua
+[ 000 000 929 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    20610 bytes: acuranzo/acuranzo_1289.lua
+[ 000 000 930 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    20510 bytes: acuranzo/acuranzo_1290.lua
+[ 000 000 931 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    12476 bytes: acuranzo/acuranzo_1291.lua
+[ 000 000 932 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     8977 bytes: acuranzo/acuranzo_1292.lua
+[ 000 000 933 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    12486 bytes: acuranzo/acuranzo_1293.lua
+[ 000 000 934 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     8637 bytes: acuranzo/acuranzo_1294.lua
+[ 000 000 935 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     8262 bytes: acuranzo/acuranzo_1295.lua
+[ 000 000 936 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     6372 bytes: acuranzo/acuranzo_1296.lua
+[ 000 000 937 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     5278 bytes: acuranzo/acuranzo_1297.lua
+[ 000 000 938 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7041 bytes: acuranzo/acuranzo_1298.lua
+[ 000 000 939 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     8135 bytes: acuranzo/acuranzo_1299.lua
+[ 000 000 940 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    17283 bytes: acuranzo/acuranzo_1300.lua
+[ 000 000 941 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    11420 bytes: acuranzo/acuranzo_1301.lua
+[ 000 000 942 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     8809 bytes: acuranzo/acuranzo_1302.lua
+[ 000 000 943 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    16177 bytes: acuranzo/acuranzo_1303.lua
+[ 000 000 944 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    10139 bytes: acuranzo/acuranzo_1304.lua
+[ 000 000 945 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    17931 bytes: acuranzo/acuranzo_1305.lua
+[ 000 000 946 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     5367 bytes: acuranzo/acuranzo_1306.lua
+[ 000 000 947 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    16913 bytes: acuranzo/acuranzo_1307.lua
+[ 000 000 948 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    19890 bytes: acuranzo/acuranzo_1308.lua
+[ 000 000 949 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    14265 bytes: acuranzo/acuranzo_1309.lua
+[ 000 000 950 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     5652 bytes: acuranzo/acuranzo_1310.lua
+[ 000 000 951 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    12683 bytes: acuranzo/acuranzo_1311.lua
+[ 000 000 952 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    15642 bytes: acuranzo/acuranzo_1312.lua
+[ 000 000 953 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    15383 bytes: acuranzo/acuranzo_1313.lua
+[ 000 000 954 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    12244 bytes: acuranzo/acuranzo_1314.lua
+[ 000 000 955 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    25279 bytes: acuranzo/acuranzo_1315.lua
+[ 000 000 956 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     6676 bytes: acuranzo/acuranzo_1316.lua
+[ 000 000 957 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    43133 bytes: acuranzo/acuranzo_1317.lua
+[ 000 000 958 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    25186 bytes: acuranzo/acuranzo_1318.lua
+[ 000 000 959 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     9767 bytes: acuranzo/acuranzo_1319.lua
+[ 000 000 960 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    25964 bytes: acuranzo/acuranzo_1320.lua
+[ 000 000 961 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    30576 bytes: acuranzo/acuranzo_1321.lua
+[ 000 000 962 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    35568 bytes: acuranzo/acuranzo_1322.lua
+[ 000 000 963 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    15252 bytes: acuranzo/acuranzo_1323.lua
+[ 000 000 964 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     9554 bytes: acuranzo/acuranzo_1324.lua
+[ 000 000 965 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    13126 bytes: acuranzo/acuranzo_1325.lua
+[ 000 000 966 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7734 bytes: acuranzo/acuranzo_1326.lua
+[ 000 000 967 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    18400 bytes: acuranzo/acuranzo_1327.lua
+[ 000 000 968 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    34538 bytes: acuranzo/acuranzo_1328.lua
+[ 000 000 969 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    43802 bytes: acuranzo/acuranzo_1329.lua
+[ 000 000 970 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    12616 bytes: acuranzo/acuranzo_1330.lua
+[ 000 000 971 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    39913 bytes: acuranzo/acuranzo_1331.lua
+[ 000 000 972 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    23304 bytes: acuranzo/acuranzo_1332.lua
+[ 000 000 973 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     5505 bytes: acuranzo/acuranzo_1333.lua
+[ 000 000 974 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    10214 bytes: acuranzo/acuranzo_1334.lua
+[ 000 000 975 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7366 bytes: acuranzo/acuranzo_1335.lua
+[ 000 000 976 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    17725 bytes: acuranzo/acuranzo_1336.lua
+[ 000 000 977 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    25722 bytes: acuranzo/acuranzo_1337.lua
+[ 000 000 978 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    15852 bytes: acuranzo/acuranzo_1338.lua
+[ 000 000 979 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    10629 bytes: acuranzo/acuranzo_1339.lua
+[ 000 000 980 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     9310 bytes: acuranzo/acuranzo_1340.lua
+[ 000 000 981 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     5956 bytes: acuranzo/acuranzo_1341.lua
+[ 000 000 982 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    45707 bytes: acuranzo/acuranzo_1342.lua
+[ 000 000 983 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     9801 bytes: acuranzo/acuranzo_1343.lua
+[ 000 000 984 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    38849 bytes: acuranzo/acuranzo_1344.lua
+[ 000 000 985 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    25183 bytes: acuranzo/acuranzo_1345.lua
+[ 000 000 986 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     4964 bytes: acuranzo/acuranzo_1346.lua
+[ 000 000 987 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    15945 bytes: acuranzo/acuranzo_1347.lua
+[ 000 000 988 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    13349 bytes: acuranzo/acuranzo_1348.lua
+[ 000 000 989 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    13548 bytes: acuranzo/acuranzo_1349.lua
+[ 000 000 990 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    42917 bytes: acuranzo/acuranzo_1350.lua
+[ 000 000 991 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    42741 bytes: acuranzo/acuranzo_1351.lua
+[ 000 000 992 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    44688 bytes: acuranzo/acuranzo_1352.lua
+[ 000 000 993 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    50397 bytes: acuranzo/acuranzo_1353.lua
+[ 000 000 994 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    56224 bytes: acuranzo/acuranzo_1354.lua
+[ 000 000 995 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     5584 bytes: acuranzo/acuranzo_1355.lua
+[ 000 000 996 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7437 bytes: acuranzo/acuranzo_1356.lua
+[ 000 000 997 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    11458 bytes: acuranzo/acuranzo_1357.lua
+[ 000 000 998 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    17335 bytes: acuranzo/acuranzo_1358.lua
+[ 000 000 999 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    27365 bytes: acuranzo/acuranzo_1359.lua
+[ 000 001 000 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7690 bytes: acuranzo/acuranzo_1360.lua
+[ 000 001 001 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    14684 bytes: acuranzo/acuranzo_1361.lua
+[ 000 001 002 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    13604 bytes: acuranzo/acuranzo_1362.lua
+[ 000 001 003 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    13369 bytes: acuranzo/acuranzo_1363.lua
+[ 000 001 004 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    11516 bytes: acuranzo/acuranzo_1364.lua
+[ 000 001 005 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     5840 bytes: acuranzo/acuranzo_1365.lua
+[ 000 001 006 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     6819 bytes: acuranzo/acuranzo_1366.lua
+[ 000 001 007 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7068 bytes: acuranzo/acuranzo_1367.lua
+[ 000 001 008 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―     7412 bytes: acuranzo/acuranzo_1368.lua
+[ 000 001 009 ]  2026-09-17 01:06:35.011Z  [ DEBUG ]  [ Payload              ]  ―    10237 bytes: acuranzo/acuranzo_1369.lua
+[ 000 001 010 ]  2026-09-17 01:06:35.012Z  [ DEBUG ]  [ Payload              ]  ―     5861 bytes: acuranzo/acuranzo_1370.lua
+[ 000 001 011 ]  2026-09-17 01:06:35.012Z  [ DEBUG ]  [ Payload              ]  ―     6555 bytes: acuranzo/acuranzo_1371.lua
+[ 000 001 012 ]  2026-09-17 01:06:35.012Z  [ DEBUG ]  [ Payload              ]  ―     5942 bytes: acuranzo/acuranzo_1372.lua
+[ 000 001 013 ]  2026-09-17 01:06:35.012Z  [ DEBUG ]  [ Payload              ]  ―    20814 bytes: acuranzo/acuranzo_1373.lua
+[ 000 001 014 ]  2026-09-17 01:06:35.012Z  [ DEBUG ]  [ Payload              ]  ―     5975 bytes: acuranzo/acuranzo_1374.lua
+[ 000 001 015 ]  2026-09-17 01:06:35.012Z  [ DEBUG ]  [ Payload              ]  ―     6098 bytes: acuranzo/acuranzo_1375.lua
+[ 000 001 016 ]  2026-09-17 01:06:35.012Z  [ DEBUG ]  [ Payload              ]  ―     6151 bytes: acuranzo/acuranzo_1376.lua
+[ 000 001 017 ]  2026-09-17 01:06:35.012Z  [ DEBUG ]  [ Payload              ]  ―     9559 bytes: acuranzo/acuranzo_1377.lua
+[ 000 001 018 ]  2026-09-17 01:06:35.012Z  [ DEBUG ]  [ Payload              ]  ―     5262 bytes: acuranzo/acuranzo_1378.lua
+[ 000 001 019 ]  2026-09-17 01:06:35.012Z  [ DEBUG ]  [ Payload              ]  ―     4935 bytes: acuranzo/acuranzo_1379.lua
+[ 000 001 020 ]  2026-09-17 01:06:35.012Z  [ DEBUG ]  [ Payload              ]  ―     5209 bytes: acuranzo/acuranzo_1380.lua
+[ 000 001 021 ]  2026-09-17 01:06:35.012Z  [ DEBUG ]  [ Payload              ]  ―     7584 bytes: acuranzo/acuranzo_1381.lua
+[ 000 001 022 ]  2026-09-17 01:06:35.012Z  [ DEBUG ]  [ Payload              ]  ―     7104 bytes: acuranzo/acuranzo_1382.lua
+[ 000 001 023 ]  2026-09-17 01:06:35.012Z  [ DEBUG ]  [ Payload              ]  ―    28752 bytes: acuranzo/database.lua
+[ 000 001 024 ]  2026-09-17 01:06:35.012Z  [ DEBUG ]  [ Payload              ]  ―     9504 bytes: acuranzo/database_db2.lua
+[ 000 001 025 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―     6010 bytes: acuranzo/database_mysql.lua
+[ 000 001 026 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―     5662 bytes: acuranzo/database_postgresql.lua
+[ 000 001 027 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―     4725 bytes: acuranzo/database_sqlite.lua
+[ 000 001 028 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―    27816 bytes: helium/database.lua
+[ 000 001 029 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―     3449 bytes: helium/database_db2.lua
+[ 000 001 030 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―     3363 bytes: helium/database_mysql.lua
+[ 000 001 031 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―     3090 bytes: helium/database_postgresql.lua
+[ 000 001 032 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―     1717 bytes: helium/database_sqlite.lua
+[ 000 001 033 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―    18255 bytes: helium/helium_4000.lua
+[ 000 001 034 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―      665 bytes: swagger/favicon-16x16.png
+[ 000 001 035 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―      628 bytes: swagger/favicon-32x32.png
+[ 000 001 036 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―     1872 bytes: swagger/hbm_browser.html.br
+[ 000 001 037 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―      558 bytes: swagger/hbm_browser.js.br
+[ 000 001 038 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―      613 bytes: swagger/hbm_browser.sh.br
+[ 000 001 039 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―      734 bytes: swagger/hbm_browser_all.json.br
+[ 000 001 040 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―      645 bytes: swagger/hbm_browser_auto.json.br
+[ 000 001 041 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―     1190 bytes: swagger/hbm_browser_base.css.br
+[ 000 001 042 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―     6384 bytes: swagger/hbm_browser_chart.js.br
+[ 000 001 043 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―     2968 bytes: swagger/hbm_browser_cli.js.br
+[ 000 001 044 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―      580 bytes: swagger/hbm_browser_color_picker.css.br
+[ 000 001 045 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―     2328 bytes: swagger/hbm_browser_control_panel.css.br
+[ 000 001 046 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―     5644 bytes: swagger/hbm_browser_core.js.br
+[ 000 001 047 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―     3061 bytes: swagger/hbm_browser_data_loading.js.br
+[ 000 001 048 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―     4840 bytes: swagger/hbm_browser_data_processing.js.br
+[ 000 001 049 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―      714 bytes: swagger/hbm_browser_defaults.json.br
+[ 000 001 050 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―      867 bytes: swagger/hbm_browser_simple.js.br
+[ 000 001 051 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―      859 bytes: swagger/hbm_browser_states.css.br
+[ 000 001 052 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―     3152 bytes: swagger/hbm_browser_ui_color.js.br
+[ 000 001 053 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―     4033 bytes: swagger/hbm_browser_ui_core.js.br
+[ 000 001 054 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―      870 bytes: swagger/hbm_browser_utils.js.br
+[ 000 001 055 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―       58 bytes: swagger/oauth2-redirect.html.br
+[ 000 001 056 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―      478 bytes: swagger/swagger-initializer.js
+[ 000 001 057 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―   340224 bytes: swagger/swagger-ui-bundle.js.br
+[ 000 001 058 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―    68941 bytes: swagger/swagger-ui-standalone-preset.js.br
+[ 000 001 059 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―    17082 bytes: swagger/swagger-ui.css.br
+[ 000 001 060 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―      843 bytes: swagger/swagger.html
+[ 000 001 061 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―   192671 bytes: swagger/swagger.json
+[ 000 001 062 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―      336 bytes: terminal/terminal.css.br
+[ 000 001 063 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―     3326 bytes: terminal/terminal.html.br
+[ 000 001 064 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―      652 bytes: terminal/xterm-addon-attach.js.br
+[ 000 001 065 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―      542 bytes: terminal/xterm-addon-fit.js.br
+[ 000 001 066 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―     1521 bytes: terminal/xterm.css.br
+[ 000 001 067 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―    54853 bytes: terminal/xterm.js.br
+[ 000 001 068 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  ―       68 bytes: terminal/xtermjs_version.txt
+[ 000 001 069 ]  2026-09-17 01:06:35.013Z  [ DEBUG ]  [ Payload              ]  Payload Cache populated with 429 files (4999099 bytes)
+[ 000 001 070 ]  2026-09-17 01:06:35.014Z  [ DEBUG ]  [ Payload              ]  Updating Payload in Registry
+[ 000 001 071 ]  2026-09-17 01:06:35.014Z  [ DEBUG ]  [ Payload              ]  LAUNCH: Payload COMPLETE
+[ 000 001 072 ]  2026-09-17 01:06:35.014Z  [ DEBUG ]  [ Threads              ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 073 ]  2026-09-17 01:06:35.014Z  [ DEBUG ]  [ Threads              ]  LAUNCH: Threads
+[ 000 001 074 ]  2026-09-17 01:06:35.015Z  [ DEBUG ]  [ Threads              ]  Subsystem Dependency Check
+[ 000 001 075 ]  2026-09-17 01:06:35.015Z  [ DEBUG ]  [ Threads              ]  ― Registry dependency verified (running)
+[ 000 001 076 ]  2026-09-17 01:06:35.015Z  [ DEBUG ]  [ Threads              ]  ― All dependencies verified
+[ 000 001 077 ]  2026-09-17 01:06:35.015Z  [ DEBUG ]  [ Threads              ]  Initializing Threads structures
+[ 000 001 078 ]  2026-09-17 01:06:35.015Z  [ DEBUG ]  [ Threads              ]  ― Logging threads
+[ 000 001 080 ]  2026-09-17 01:06:35.015Z  [ DEBUG ]  [ Threads              ]  ― Database threads
+[ 000 001 082 ]  2026-09-17 01:06:35.015Z  [ DEBUG ]  [ Threads              ]  ― WebServer threads
+[ 000 001 084 ]  2026-09-17 01:06:35.015Z  [ DEBUG ]  [ Threads              ]  ― WebSocket threads
+[ 000 001 086 ]  2026-09-17 01:06:35.015Z  [ DEBUG ]  [ Threads              ]  ― mDNSServer threads
+[ 000 001 088 ]  2026-09-17 01:06:35.015Z  [ DEBUG ]  [ Threads              ]  ― Print threads
+[ 000 001 090 ]  2026-09-17 01:06:35.015Z  [ DEBUG ]  [ Threads              ]  Threads structures initialized
+[ 000 001 091 ]  2026-09-17 01:06:35.015Z  [ DEBUG ]  [ Threads              ]  Registering main thread
+[ 000 001 094 ]  2026-09-17 01:06:35.015Z  [ DEBUG ]  [ Threads              ]  Main thread registered
+[ 000 001 095 ]  2026-09-17 01:06:35.015Z  [ DEBUG ]  [ Threads              ]  Updating Threads in Registry
+[ 000 001 096 ]  2026-09-17 01:06:35.015Z  [ DEBUG ]  [ Threads              ]  LAUNCH: Threads COMPLETE
+[ 000 001 097 ]  2026-09-17 01:06:35.015Z  [ DEBUG ]  [ Network              ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 098 ]  2026-09-17 01:06:35.015Z  [ DEBUG ]  [ Network              ]  LAUNCH: Network
+[ 000 001 099 ]  2026-09-17 01:06:35.015Z  [ DEBUG ]  [ Network              ]  Enumerating Network interfaces
+[ 000 001 100 ]  2026-09-17 01:06:35.018Z  [ DEBUG ]  [ Network              ]  ― bridge0
+[ 000 001 101 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― IPv4:  192.168.0.44
+[ 000 001 102 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― State: up
+[ 000 001 103 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― MTU:   1500
+[ 000 001 104 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― Ping:  0.056954ms
+[ 000 001 105 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ― bridge0
+[ 000 001 106 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― IPv6:  fd8f:a4ad:b5b8:4853:e22:5eed:45db:16b
+[ 000 001 107 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― State: up
+[ 000 001 108 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― MTU:   1500
+[ 000 001 109 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― Ping:  0.063222ms
+[ 000 001 110 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― Link:  false
+[ 000 001 111 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ― bridge0
+[ 000 001 112 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― IPv6:  fe80::192e:dfdd:dcc9:4f01
+[ 000 001 113 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― State: up
+[ 000 001 114 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― MTU:   1500
+[ 000 001 115 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― Ping:  0.042345ms
+[ 000 001 116 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― Link:  true
+[ 000 001 117 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ― docker0
+[ 000 001 118 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― IPv4:  172.17.0.1
+[ 000 001 119 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― State: down
+[ 000 001 120 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ― docker0
+[ 000 001 121 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― IPv6:  fd00:1::1
+[ 000 001 122 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― State: down
+[ 000 001 123 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― Link:  false
+[ 000 001 124 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ― docker0
+[ 000 001 125 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― IPv6:  fe80::6c0c:b5ff:fe21:18dd
+[ 000 001 126 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― State: down
+[ 000 001 127 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― Link:  true
+[ 000 001 128 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ― lo
+[ 000 001 129 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― IPv4:  127.0.0.1
+[ 000 001 130 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― State: up
+[ 000 001 131 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― MTU:   65536
+[ 000 001 132 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― Ping:  0.039000ms
+[ 000 001 133 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ― virbr1
+[ 000 001 134 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― IPv4:  192.168.100.1
+[ 000 001 135 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― State: up
+[ 000 001 136 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― MTU:   1500
+[ 000 001 137 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― Ping:  0.038873ms
+[ 000 001 138 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ― vnet0
+[ 000 001 139 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― IPv6:  fe80::fc54:ff:fe00:2d5e
+[ 000 001 140 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― State: up
+[ 000 001 141 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― MTU:   1500
+[ 000 001 142 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― Ping:  0.052393ms
+[ 000 001 143 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― Link:  true
+[ 000 001 144 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ― vnet1
+[ 000 001 145 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― IPv6:  fe80::fc54:ff:fea0:2c89
+[ 000 001 146 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― State: up
+[ 000 001 147 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― MTU:   1500
+[ 000 001 148 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― Ping:  0.040783ms
+[ 000 001 149 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― Link:  true
+[ 000 001 150 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ― vnet2
+[ 000 001 151 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― IPv6:  fe80::fc54:ff:fe47:742b
+[ 000 001 152 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― State: up
+[ 000 001 153 ]  2026-09-17 01:06:35.019Z  [ DEBUG ]  [ Network              ]  ――― MTU:   1500
+[ 000 001 154 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Network              ]  ――― Ping:  0.040446ms
+[ 000 001 155 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Network              ]  ――― Link:  true
+[ 000 001 156 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Network              ]  ― wg0
+[ 000 001 157 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Network              ]  ――― IPv4:  10.116.0.2
+[ 000 001 158 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Network              ]  ――― State: up
+[ 000 001 159 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Network              ]  ――― MTU:   1380
+[ 000 001 160 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Network              ]  ――― Ping:  0.040720ms
+[ 000 001 161 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Network              ]  Availabe interfaces: 9
+[ 000 001 162 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Network              ]  Updating Network in Registry
+[ 000 001 163 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Network              ]  LAUNCH: Network COMPLETE
+[ 000 001 164 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Database             ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 165 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Database             ]  LAUNCH: Database
+[ 000 001 166 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Database             ]  Database connections configured
+[ 000 001 167 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Database             ]  ― ACZ (postgresql)
+[ 000 001 168 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Database             ]  Initializing Database engine registry
+[ 000 001 169 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Database             ]  - Registering PostgreSQL engine: postgresql at index 0
+[ 000 001 174 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Database             ]  Initializing Database core
+[ 000 001 177 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Database             ]  Initializing Database query watchdog
+[ 000 001 178 ]  2026-09-17 01:06:35.020Z  [ STATE ]  [ Database             ]  Database query watchdog initialized (min=5s, max=3600s, default=30s, heartbeat=30s)
+[ 000 001 179 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Database             ]  Initializing Database queue system
+[ 000 001 180 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Database             ]  Starting database: ACZ
+[ 000 001 183 ]  2026-09-17 01:06:35.020Z  [ DEBUG ]  [ Database             ]  Engine description: PostgreSQL v17+ Supported
+[ 000 001 184 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ Database             ]  Host (localhost) ping time: 0.060237ms
+[ 000 001 189 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ Database             ]  Configured prepared statement cache size: 100
+[ 000 001 194 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ Database             ]  DQM launched successfully for ACZ
+[ 000 001 195 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ Database             ]  Total Lead queues started across all databases: 1
+[ 000 001 196 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ Database             ]  Updating Database in Registry
+[ 000 001 197 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ Database             ]  LAUNCH: Database COMPLETE
+[ 000 001 198 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 199 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  LAUNCH: WebServer
+[ 000 001 200 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  Verifying system state
+[ 000 001 201 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]      System state verified
+[ 000 001 202 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  Initializing web server
+[ 000 001 203 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  IPv4 port 5320 is available (SO_REUSEADDR enabled)
+[ 000 001 204 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  Starting web server initialization
+[ 000 001 205 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  Server Configuration:
+[ 000 001 206 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  ― Port: 5320
+[ 000 001 207 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  ― WebRoot: /tmp/hydrogen
+[ 000 001 208 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  ― Upload Path: /upload
+[ 000 001 209 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  ― Upload Dir: /tmp/hydrogen
+[ 000 001 210 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  ― Thread Pool Size: 20
+[ 000 001 211 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  ― Max Connections: 200
+[ 000 001 212 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  ― Max Connections Per IP: 100
+[ 000 001 213 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  ― Connection Timeout: 60 seconds
+[ 000 001 214 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  Upload directory already exists
+[ 000 001 215 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  Verifying configuration
+[ 000 001 216 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  ― IPv6 support: disabled
+[ 000 001 217 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  ― Port: 5320
+[ 000 001 218 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  ― WebRoot: /tmp/hydrogen
+[ 000 001 219 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  ― Upload Path: /upload
+[ 000 001 220 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  ― Upload Dir: /tmp/hydrogen
+[ 000 001 221 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  ― Thread Pool Size: 20
+[ 000 001 222 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  ― Max Connections: 200
+[ 000 001 223 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  ― Max Connections Per IP: 100
+[ 000 001 224 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  ― Connection Timeout: 60 seconds
+[ 000 001 225 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  Creating web server thread
+[ 000 001 228 ]  2026-09-17 01:06:35.021Z  [ DEBUG ]  [ WebServer            ]  Waiting for initialization
+[ 000 001 232 ]  2026-09-17 01:06:35.022Z  [ DEBUG ]  [ WebServer            ]  Starting web server daemon
+[ 000 001 233 ]  2026-09-17 01:06:35.022Z  [ DEBUG ]  [ WebServer            ]  Initializing network interfaces
+[ 000 001 234 ]  2026-09-17 01:06:35.022Z  [ DEBUG ]  [ WebServer            ]  Interface lo: 127.0.0.1 (IPv4)
+[ 000 001 235 ]  2026-09-17 01:06:35.022Z  [ DEBUG ]  [ WebServer            ]  Interface virbr1: 192.168.100.1 (IPv4)
+[ 000 001 236 ]  2026-09-17 01:06:35.022Z  [ DEBUG ]  [ WebServer            ]  Interface bridge0: 192.168.0.44 (IPv4)
+[ 000 001 237 ]  2026-09-17 01:06:35.022Z  [ DEBUG ]  [ WebServer            ]  Interface wg0: 10.116.0.2 (IPv4)
+[ 000 001 238 ]  2026-09-17 01:06:35.022Z  [ DEBUG ]  [ WebServer            ]  Interface docker0: 172.17.0.1 (IPv4)
+[ 000 001 239 ]  2026-09-17 01:06:35.022Z  [ DEBUG ]  [ WebServer            ]  Setting SO_REUSEADDR to enable immediate socket rebinding
+[ 000 001 240 ]  2026-09-17 01:06:35.022Z  [ DEBUG ]  [ WebServer            ]  Using internal polling thread with select
+[ 000 001 241 ]  2026-09-17 01:06:35.022Z  [ DEBUG ]  [ WebServer            ]  Maximum connections: 200
+[ 000 001 242 ]  2026-09-17 01:06:35.022Z  [ DEBUG ]  [ WebServer            ]  Maximum connections per IP: 100
+[ 000 001 243 ]  2026-09-17 01:06:35.022Z  [ DEBUG ]  [ WebServer            ]  Connection timeout: 60 seconds
+[ 000 001 246 ]  2026-09-17 01:06:35.024Z  [ DEBUG ]  [ WebServer            ]  Web server bound to port: 5320
+[ 000 001 247 ]  2026-09-17 01:06:35.026Z  [ DEBUG ]  [ WebServer            ]  Web server started successfully
+[ 000 001 248 ]  2026-09-17 01:06:35.026Z  [ DEBUG ]  [ WebServer            ]  Server status:
+[ 000 001 249 ]  2026-09-17 01:06:35.026Z  [ DEBUG ]  [ WebServer            ]  ― Bound to port: 5320
+[ 000 001 250 ]  2026-09-17 01:06:35.026Z  [ DEBUG ]  [ WebServer            ]  ― Active connections: 0
+[ 000 001 251 ]  2026-09-17 01:06:35.026Z  [ DEBUG ]  [ WebServer            ]  ― Thread mode: Single thread
+[ 000 001 252 ]  2026-09-17 01:06:35.026Z  [ DEBUG ]  [ WebServer            ]  ― IPv6: disabled
+[ 000 001 253 ]  2026-09-17 01:06:35.026Z  [ DEBUG ]  [ WebServer            ]  ― Max connections: 200
+[ 000 001 254 ]  2026-09-17 01:06:35.026Z  [ DEBUG ]  [ WebServer            ]  ― Network interfaces:
+[ 000 001 255 ]  2026-09-17 01:06:35.026Z  [ DEBUG ]  [ WebServer            ]  ――― lo: 127.0.0.1 (IPv4)
+[ 000 001 256 ]  2026-09-17 01:06:35.026Z  [ DEBUG ]  [ WebServer            ]  ――― virbr1: 192.168.100.1 (IPv4)
+[ 000 001 257 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ WebServer            ]  ――― bridge0: 192.168.0.44 (IPv4)
+[ 000 001 258 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ WebServer            ]  ――― wg0: 10.116.0.2 (IPv4)
+[ 000 001 259 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ WebServer            ]  ――― docker0: 172.17.0.1 (IPv4)
+[ 000 001 260 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ WebServer            ]  Updating WebServer in Registry
+[ 000 001 261 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ WebServer            ]  LAUNCH: WebServer COMPLETE
+[ 000 001 262 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 263 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  LAUNCH: API
+[ 000 001 264 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]      Registry dependency verified
+[ 000 001 265 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]      WebServer subsystem dependency verified
+[ 000 001 266 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]      All dependencies verified
+[ 000 001 267 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]    Initializing API endpoints
+[ 000 001 268 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  Initializing API endpoints
+[ 000 001 273 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ WebServer            ]  Registered endpoint with prefix: /api/version
+[ 000 001 274 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  Registered hardcoded endpoint: /api/version
+[ 000 001 275 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ WebServer            ]  Registered endpoint with prefix: /api/files/local
+[ 000 001 276 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  Registered hardcoded endpoint: /api/files/local
+[ 000 001 277 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ WebServer            ]  Registered endpoint with prefix: /webhook/
+[ 000 001 278 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  Registered hardcoded endpoint: /webhook/{hook}
+[ 000 001 279 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ WebServer            ]  Registered endpoint with prefix: /api
+[ 000 001 280 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  Registered API endpoints with prefix: /api
+[ 000 001 281 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  Available endpoints:
+[ 000 001 282 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/version (hardcoded, high precedence)
+[ 000 001 283 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/files/local (hardcoded, high precedence - upload alias)
+[ 000 001 284 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/version
+[ 000 001 285 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/auth/login
+[ 000 001 286 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/auth/renew
+[ 000 001 287 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/auth/logout
+[ 000 001 288 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/auth/register
+[ 000 001 289 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/auth/oidc/start
+[ 000 001 290 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/auth/oidc/callback
+[ 000 001 291 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/auth/oidc/handoff
+[ 000 001 292 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/system/info
+[ 000 001 293 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/system/jobs
+[ 000 001 294 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/system/health
+[ 000 001 295 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/system/readiness
+[ 000 001 296 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/system/test
+[ 000 001 297 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/system/version
+[ 000 001 298 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/system/config
+[ 000 001 299 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/system/prometheus
+[ 000 001 300 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/system/appconfig
+[ 000 001 301 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/system/recent
+[ 000 001 302 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/system/upload
+[ 000 001 303 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/conduit/query
+[ 000 001 304 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/conduit/queries
+[ 000 001 305 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/conduit/cap_query
+[ 000 001 306 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/conduit/alt_query
+[ 000 001 307 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/conduit/auth_query
+[ 000 001 308 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/conduit/auth_queries
+[ 000 001 309 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/conduit/alt_queries
+[ 000 001 310 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/conduit/auth_chat
+[ 000 001 311 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/conduit/auth_chats
+[ 000 001 312 ]  2026-09-17 01:06:35.027Z  [ DEBUG ]  [ API                  ]  ― /api/conduit/status
+[ 000 001 313 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ API                  ]  ― /api/conduit/script
+[ 000 001 314 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ API                  ]  ― /api/conduit/script/{job_id}
+[ 000 001 315 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ API                  ]  ― /api/conduit/webhook/{hook}
+[ 000 001 316 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ API                  ]  ― /api/webhook/{hook} (alias)
+[ 000 001 317 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ API                  ]  ― /webhook/{hook} (alias)
+[ 000 001 318 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ API                  ]  ― /api/mailrelay/status
+[ 000 001 319 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ API                  ]  ― /api/mailrelay/send
+[ 000 001 320 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ API                  ]  ― /api/mailrelay/preview
+[ 000 001 321 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ API                  ]  ― /api/mcp/status
+[ 000 001 322 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ API                  ]  ― /api/reporting/image_scale
+[ 000 001 325 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ API                  ]  API endpoints initialized successfully
+[ 000 001 326 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ API                  ]      API endpoints initialized successfully
+[ 000 001 327 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ API                  ]    Updating Registry subsystem
+[ 000 001 328 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ API                  ]  LAUNCH: API Success: Launched and running
+[ 000 001 329 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 330 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]  LAUNCH: Swagger
+[ 000 001 331 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]  Registering with registry
+[ 000 001 332 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]      Registration complete
+[ 000 001 333 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]    Step 2: Verifying system state
+[ 000 001 334 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]      System state verified
+[ 000 001 335 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]    Step 3: Verifying dependencies
+[ 000 001 336 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]      Registry dependency verified
+[ 000 001 337 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]      API subsystem dependency verified
+[ 000 001 338 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]      WebServer subsystem verified
+[ 000 001 339 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]      Payload subsystem verified
+[ 000 001 340 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]      Swagger files verified (28 files in cache):
+[ 000 001 341 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/favicon-16x16.png (medium file)
+[ 000 001 342 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/favicon-32x32.png (medium file)
+[ 000 001 343 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/hbm_browser.html.br (large file)
+[ 000 001 344 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/hbm_browser.js.br (medium file)
+[ 000 001 345 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/hbm_browser.sh.br (medium file)
+[ 000 001 346 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/hbm_browser_all.json.br (medium file)
+[ 000 001 347 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/hbm_browser_auto.json.br (medium file)
+[ 000 001 348 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/hbm_browser_base.css.br (large file)
+[ 000 001 349 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/hbm_browser_chart.js.br (large file)
+[ 000 001 350 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/hbm_browser_cli.js.br (large file)
+[ 000 001 351 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/hbm_browser_color_picker.css.br (medium file)
+[ 000 001 352 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/hbm_browser_control_panel.css.br (large file)
+[ 000 001 353 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/hbm_browser_core.js.br (large file)
+[ 000 001 354 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/hbm_browser_data_loading.js.br (large file)
+[ 000 001 355 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/hbm_browser_data_processing.js.br (large file)
+[ 000 001 356 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/hbm_browser_defaults.json.br (medium file)
+[ 000 001 357 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/hbm_browser_simple.js.br (medium file)
+[ 000 001 358 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/hbm_browser_states.css.br (medium file)
+[ 000 001 359 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/hbm_browser_ui_color.js.br (large file)
+[ 000 001 360 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/hbm_browser_ui_core.js.br (large file)
+[ 000 001 361 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/hbm_browser_utils.js.br (medium file)
+[ 000 001 362 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/oauth2-redirect.html.br (small file)
+[ 000 001 363 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/swagger-initializer.js (small file)
+[ 000 001 364 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/swagger-ui-bundle.js.br (large file)
+[ 000 001 365 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/swagger-ui-standalone-preset.js.br (large file)
+[ 000 001 366 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/swagger-ui.css.br (large file)
+[ 000 001 367 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/swagger.html (medium file)
+[ 000 001 368 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]        -> swagger/swagger.json (large file)
+[ 000 001 369 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]  Loaded 28 swagger files from payload cache
+[ 000 001 370 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]      All dependencies verified
+[ 000 001 371 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ WebServer            ]  Registered endpoint with prefix: /apidocs
+[ 000 001 372 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]  Configuration:
+[ 000 001 373 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]  ― Enabled: yes
+[ 000 001 374 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]  ― Prefix: /apidocs
+[ 000 001 375 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]  ― Title: Hydrogen API
+[ 000 001 376 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]  ― Version: 1.0.0.2636
+[ 000 001 377 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]  ― Payload: available
+[ 000 001 378 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]      Swagger subsystem initialized
+[ 000 001 379 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]    Updating Registry
+[ 000 001 380 ]  2026-09-17 01:06:35.028Z  [ DEBUG ]  [ Swagger              ]  LAUNCH: Swagger Success: Launched and running
+[ 000 001 381 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ mDNSClient           ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 382 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ mDNSClient           ]  LAUNCH: mDNSClient
+[ 000 001 383 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ mDNSClient           ]  Initializing mDNS client system
+[ 000 001 384 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ mDNSClient           ]  Starting mDNSClient service discovery
+[ 000 001 385 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ mDNSClient           ]    Updating Registry
+[ 000 001 386 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ mDNSClient           ]  LAUNCH: mDNSClient COMPLETE
+[ 000 001 387 ]  2026-09-17 01:06:35.029Z  [ STATE ]  [ MailRelay            ]  Mail Relay disabled - skipping launch
+[ 000 001 388 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 389 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  LAUNCH: Failed to get subsystem ID for 'Print'
+[ 000 001 390 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 391 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  LAUNCH: Failed to get subsystem ID for 'Resources'
+[ 000 001 392 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 393 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  LAUNCH: Failed to get subsystem ID for 'Reporting'
+[ 000 001 394 ]  2026-09-17 01:06:35.029Z  [ STATE ]  [ MCP                  ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 395 ]  2026-09-17 01:06:35.029Z  [ STATE ]  [ MCP                  ]  LAUNCH: MCP
+[ 000 001 396 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ MCP                  ]  MCP subsystem is disabled, skipping launch
+[ 000 001 399 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 400 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  LAUNCH REVIEW
+[ 000 001 401 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - Registry        Running
+[ 000 001 402 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - Payload         Running
+[ 000 001 403 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - Threads         Running
+[ 000 001 404 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - Network         Running
+[ 000 001 405 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - Database        Running
+[ 000 001 406 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - Logging         Not Launched
+[ 000 001 407 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - WebServer       Running
+[ 000 001 408 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - API             Running
+[ 000 001 409 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - Swagger         Running
+[ 000 001 410 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - WebSocket       Not Launched
+[ 000 001 411 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - Terminal        Not Launched
+[ 000 001 412 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - mDNSServer      Not Launched
+[ 000 001 413 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - mDNSClient      Running
+[ 000 001 414 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - MailRelay       Running
+[ 000 001 415 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - Print           Failed to Launch
+[ 000 001 416 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - Resources       Failed to Launch
+[ 000 001 417 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - OIDC            Not Launched
+[ 000 001 418 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - Notify          Not Launched
+[ 000 001 419 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - Scripting       Not Launched
+[ 000 001 420 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - Reporting       Failed to Launch
+[ 000 001 421 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  - MCP             Running
+[ 000 001 422 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  Subsystems:       21
+[ 000 001 423 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  Launch Attempts:  14
+[ 000 001 424 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  Launch Successes: 11
+[ 000 001 425 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Launch               ]  Launch Failures:   3
+[ 000 001 428 ]  2026-09-17 01:06:35.029Z  [ STATE ]  [ Startup              ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 429 ]  2026-09-17 01:06:35.029Z  [ STATE ]  [ Startup              ]  STARTUP COMPLETE
+[ 000 001 430 ]  2026-09-17 01:06:35.029Z  [ STATE ]  [ Startup              ]  ― Version:  1.0.0.2636
+[ 000 001 431 ]  2026-09-17 01:06:35.029Z  [ STATE ]  [ Startup              ]  ― Release:  20260916
+[ 000 001 432 ]  2026-09-17 01:06:35.029Z  [ STATE ]  [ Startup              ]  ― Build:    Release
+[ 000 001 433 ]  2026-09-17 01:06:35.029Z  [ STATE ]  [ Startup              ]  ― Size:     1148875 bytes
+[ 000 001 434 ]  2026-09-17 01:06:35.029Z  [ STATE ]  [ Startup              ]  ― PID:      2634469
+[ 000 001 435 ]  2026-09-17 01:06:35.029Z  [ STATE ]  [ Startup              ]  SERVICES
+[ 000 001 436 ]  2026-09-17 01:06:35.029Z  [ ALERT ]  [ Startup              ]  ― Web Server running:    http://localhost:5320
+[ 000 001 437 ]  2026-09-17 01:06:35.029Z  [ ALERT ]  [ Startup              ]  ― API Server running:    http://localhost:5320/api
+[ 000 001 438 ]  2026-09-17 01:06:35.029Z  [ ALERT ]  [ Startup              ]  ― Swagger running:       http://localhost:5320/apidocs
+[ 000 001 439 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― Terminal not running
+[ 000 001 440 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  RESOURCES
+[ 000 001 441 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― Memory (RSS):  29884.0 MB
+[ 000 001 442 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― AppConfig:       11712 Bytes
+[ 000 001 443 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  SUBSYSTEMS:           21 Registered
+[ 000 001 444 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― Active:             11
+[ 000 001 445 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― Failed:              3
+[ 000 001 446 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― Unused:              7
+[ 000 001 447 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  THREADS:               3 Total
+[ 000 001 448 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― Logging:             1
+[ 000 001 449 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― WebServer:           1
+[ 000 001 450 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― WebSocket:           0
+[ 000 001 451 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― mDNS:                0
+[ 000 001 452 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― Print:               0
+[ 000 001 453 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― Database:            1
+[ 000 001 454 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  QUEUES:                0 Total
+[ 000 001 455 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― Logging:             0
+[ 000 001 456 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― WebServer:           0
+[ 000 001 457 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― WebSocket:           0
+[ 000 001 458 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― mDNS:                0
+[ 000 001 459 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― Print:               0
+[ 000 001 460 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― Database:            0
+[ 000 001 461 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― MailRelay:           0
+[ 000 001 462 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― Notify:              0
+[ 000 001 463 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  DATABASES:             1 Total
+[ 000 001 464 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― PostgreSQL:          1
+[ 000 001 465 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― MySQL:               0
+[ 000 001 466 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― SQLite:              0
+[ 000 001 467 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― DB2:                 0
+[ 000 001 469 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  DB QUEUE MGRS:         1 Total
+[ 000 001 470 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― Lead:                1
+[ 000 001 471 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― Slow:                0
+[ 000 001 472 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― Medium:              0
+[ 000 001 473 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― Fast:                0
+[ 000 001 474 ]  2026-09-17 01:06:35.029Z  [ DEBUG ]  [ Startup              ]  ― Cache:               0
+[ 000 001 475 ]  2026-09-17 01:06:35.029Z  [ ALERT ]  [ Startup              ]  TIMING
+[ 000 001 476 ]  2026-09-17 01:06:35.029Z  [ ALERT ]  [ Startup              ]  ― System startup began:  2026-09-17T01:06:34.923Z
+[ 000 001 477 ]  2026-09-17 01:06:35.029Z  [ ALERT ]  [ Startup              ]  ― Current system clock:  2026-09-17T01:06:35.029Z
+[ 000 001 478 ]  2026-09-17 01:06:35.029Z  [ ALERT ]  [ Startup              ]  ― Startup elapsed time:  0.106s
+[ 000 001 479 ]  2026-09-17 01:06:35.029Z  [ STATE ]  [ Startup              ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 480 ]  2026-09-17 01:06:35.029Z  [ ALERT ]  [ Startup              ]  PRESS CTRL+C TO EXIT (SIGINT)
+[ 000 001 481 ]  2026-09-17 01:06:35.029Z  [ STATE ]  [ Startup              ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 485 ]  2026-09-17 01:06:35.030Z  [ DEBUG ]  [ Network              ]  Interface lo: enabled and included
+[ 000 001 486 ]  2026-09-17 01:06:35.030Z  [ DEBUG ]  [ Network              ]  Interface virbr1: enabled and included
+[ 000 001 487 ]  2026-09-17 01:06:35.031Z  [ DEBUG ]  [ Network              ]  Interface bridge0: enabled and included
+[ 000 001 488 ]  2026-09-17 01:06:35.031Z  [ DEBUG ]  [ Network              ]  Interface wg0: enabled and included
+[ 000 001 489 ]  2026-09-17 01:06:35.031Z  [ DEBUG ]  [ Network              ]  Interface docker0: enabled and included
+[ 000 001 490 ]  2026-09-17 01:06:35.031Z  [ DEBUG ]  [ Network              ]  Interface vnet0: enabled and included
+[ 000 001 491 ]  2026-09-17 01:06:35.031Z  [ DEBUG ]  [ Network              ]  Interface vnet1: enabled and included
+[ 000 001 492 ]  2026-09-17 01:06:35.031Z  [ DEBUG ]  [ Network              ]  Interface vnet2: enabled and included
+[ 000 001 493 ]  2026-09-17 01:06:35.031Z  [ DEBUG ]  [ Network              ]  Filtered 8 interfaces, 8 remaining
+[ 000 001 494 ]  2026-09-17 01:06:35.031Z  [ DEBUG ]  [ mDNSServer           ]  Created multicast socket on interface virbr1
+[ 000 001 496 ]  2026-09-17 01:06:35.031Z  [ DEBUG ]  [ mDNSServer           ]  Created multicast socket on interface bridge0
+[ 000 001 497 ]  2026-09-17 01:06:35.031Z  [ DEBUG ]  [ mDNSServer           ]  Created multicast socket on interface wg0
+[ 000 001 498 ]  2026-09-17 01:06:35.031Z  [ DEBUG ]  [ mDNSServer           ]  Created multicast socket on interface docker0
+[ 000 001 499 ]  2026-09-17 01:06:35.031Z  [ DEBUG ]  [ mDNSServer           ]  Created multicast socket on interface vnet0
+[ 000 001 500 ]  2026-09-17 01:06:35.031Z  [ DEBUG ]  [ mDNSServer           ]  Created multicast socket on interface vnet1
+[ 000 001 501 ]  2026-09-17 01:06:35.031Z  [ DEBUG ]  [ mDNSServer           ]  Created multicast socket on interface vnet2
+[ 000 001 503 ]  2026-09-17 01:06:35.039Z  [ DEBUG ]  [ DQM-ACZ-00-SMFC      ]  Database connection established successfully
+[ 000 001 528 ]  2026-09-17 01:06:35.058Z  [ DEBUG ]  [ DQM-ACZ-00-SMFC      ]  Health check completed, result: PASSED
+[ 000 001 540 ]  2026-09-17 01:06:35.064Z  [ DEBUG ]  [ DQM-ACZ-00-SMFC      ]  No parameters found in JSON
+[ 000 001 548 ]  2026-09-17 01:06:35.662Z  [ DEBUG ]  [ Database             ]  PostgreSQL query executed successfully
+[ 000 001 549 ]  2026-09-17 01:06:35.662Z  [ DEBUG ]  [ DQM-ACZ-00-SMFC      ]  Bootstrap query succeeded: 970 rows, 9 columns
+[ 000 001 550 ]  2026-09-17 01:06:35.662Z  [ DEBUG ]  [ DQM-ACZ-00-SMFC      ]  Query cache created successfully
+[ 000 001 551 ]  2026-09-17 01:06:35.662Z  [ DEBUG ]  [ DQM-ACZ-00-SMFC      ]  About to parse JSON data (length=1610901 bytes)
+[ 000 001 552 ]  2026-09-17 01:06:35.705Z  [ DEBUG ]  [ DQM-ACZ-00-SMFC      ]  Processing 970 bootstrap query rows for QTC and migrations
+[ 000 001 553 ]  2026-09-17 01:06:35.705Z  [ DEBUG ]  [ DQM-ACZ-00-SMFC      ]  First bootstrap row JSON: {"id":731,"ref":1339,"status":1,"type":1003,"engine":1,"queue":0,"timeout":5000,"name":"Seed Catalog.GetBySlug invokable script","query":"\nINSERT INTO test.scripts (\n    group_name,\n    script_name,\n    script_type,\n    schedule,\n    next_run,\n    last_run_start,\n    last_run_end,\n    status,\n    code,\n    summary,\n    invokable,\n                            valid_after,\n            valid_until,\n            created_id,\n            created_at,\n            updated_id,\n            updated_at\n        \n)\nVALUES (\n    'Catalog',\n    'GetBySlug',\n    1,\n    NULL, NULL, NULL, NULL,\n    1,\n    test.brotli_decompress(DECODE('G1AOAJwF7t6BdTMKRpxu2EU/lLZBFFJYZkoLzrVm/vm8drgUuEJaJaV1s8MJUVJAQb30AumB/9flp7SoJwF4GUqjZM99z5Y8W53WmseT0hv9Ci6NBvIor+E6PkuMgQrOTxefF0Wsqd4/H+B3u6ba+Lp8rzNgbTP+1f7V/sM2TIrJOU5XHtxe9UXuG1OFHWsx6Rpbjf2yxaT4/DIKyDLBrwTmXzr4zDgRyK7WxPRxeKyG4AfQGYShvPEVXQV2nZwAhqQxUjgflKsI
+[ 000 001 554 ]  2026-09-17 01:06:35.706Z  [ DEBUG ]  [ DQM-ACZ-00-SMFC      ]  First row extraction: query_type=1003, query_ref=1339
+[ 000 001 555 ]  2026-09-17 01:06:35.706Z  [ DEBUG ]  [ DQM-ACZ-00-SMFC      ]  Updated APPLY: row 0, type=1003, ref=1339, new APPLY=1339
+[ 000 001 558 ]  2026-09-17 01:06:35.708Z  [ DEBUG ]  [ Chat                 ]  Chat not enabled for database: ACZ
+[ 000 001 559 ]  2026-09-17 01:06:35.708Z  [ DEBUG ]  [ DQM-ACZ-00-SMFC      ]  Migration status: AVAIL=1382, LOAD=0, APPLY=1383
+[ 000 001 562 ]  2026-09-17 01:06:35.709Z  [ DEBUG ]  [ DQM-ACZ-00-SMFC      ]  Automatic Migration enabled - proceeding with LOAD and APPLY phases
+[ 000 001 564 ]  2026-09-17 01:06:35.714Z  [ DEBUG ]  [ DQM-ACZ-00-SMFC      ]  Migration Current: AVAIL = 1382, LOAD = 0, APPLY = 1383
+[ 000 001 565 ]  2026-09-17 01:06:35.714Z  [ STATE ]  [ DQM-ACZ-00-SMFC      ]  Migration completed in 0.005s
+[ 000 001 566 ]  2026-09-17 01:06:35.714Z  [ STATE ]  [ DQM-ACZ-00-SMFC      ]  Migration summary: available=1382 loaded=1383 applied=1383
+[ 000 001 567 ]  2026-09-17 01:06:35.714Z  [ DEBUG ]  [ DQM-ACZ-00-SMFC      ]  Migration process completed (success) - QTC populated from bootstrap queries
+[ 000 001 569 ]  2026-09-17 01:06:35.714Z  [ DEBUG ]  [ DQM-ACZ-00-SMFC      ]  Test Migration disabled - skipping migration test (REVERSE phase)
+[ 000 001 571 ]  2026-09-17 01:06:35.714Z  [ STATE ]  [ DQM-ACZ-00-SMFC      ]  Migration test finished - normal execution
+[ 000 001 590 ]  2026-09-17 01:06:35.714Z  [ DEBUG ]  [ DQM-ACZ-00-SMFC      ]  Lead DQM initialization is complete
+[ 000 001 592 ]  2026-09-17 01:06:35.714Z  [ STATE ]  [ Startup              ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 593 ]  2026-09-17 01:06:35.714Z  [ STATE ]  [ Startup              ]  READY FOR REQUESTS
+[ 000 001 594 ]  2026-09-17 01:06:35.714Z  [ STATE ]  [ Startup              ]  ― Databases ready:       1/1
+[ 000 001 595 ]  2026-09-17 01:06:35.714Z  [ STATE ]  [ Startup              ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 605 ]  2026-09-17 01:06:35.731Z  [ DEBUG ]  [ DQM-ACZ-02-S         ]  Database connection established successfully
+[ 000 001 630 ]  2026-09-17 01:06:35.732Z  [ DEBUG ]  [ DQM-ACZ-01-S         ]  Database connection established successfully
+[ 000 001 655 ]  2026-09-17 01:06:35.752Z  [ DEBUG ]  [ DQM-ACZ-01-S         ]  Health check completed, result: PASSED
+[ 000 001 659 ]  2026-09-17 01:06:35.754Z  [ DEBUG ]  [ DQM-ACZ-02-S         ]  Health check completed, result: PASSED
+
+[ 000 001 687 ]  2026-09-17 01:06:38.347Z  [ STATE ]  [ Shutdown             ]  SIGINT received, initiating shutdown
+[ 000 001 690 ]  2026-09-17 01:06:38.347Z  [ STATE ]  [ Shutdown             ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 691 ]  2026-09-17 01:06:38.347Z  [ STATE ]  [ Shutdown             ]  Initiating shutdown sequence
+[ 000 001 692 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 693 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  LANDING READINESS
+[ 000 001 694 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  Print
+[ 000 001 695 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go:   Print subsystem not running
+[ 000 001 696 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  MailRelay
+[ 000 001 697 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Go:      Mail relay running
+[ 000 001 698 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Go:      No active worker threads
+[ 000 001 699 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Go:      No dependent subsystems
+[ 000 001 700 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Decide:  Go For Landing of Mail Relay Subsystem
+[ 000 001 701 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  mDNSServer
+[ 000 001 702 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go:   mDNS Server not running
+[ 000 001 703 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Decide:  No-Go For Landing of mDNS Server
+[ 000 001 704 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  mDNSClient
+[ 000 001 705 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go:   Logging subsystem not running
+[ 000 001 706 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Decide:  No-Go For Landing of mDNS Client
+[ 000 001 707 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  Terminal
+[ 000 001 708 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go:   Terminal not running
+[ 000 001 709 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Decide:  No-Go For Landing of Terminal
+[ 000 001 710 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  WebSocket
+[ 000 001 711 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go:   WebSocket not running
+[ 000 001 712 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Decide:  No-Go For Landing of WebSocket
+[ 000 001 713 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  Swagger
+[ 000 001 714 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Go:      Swagger ready for shutdown
+[ 000 001 715 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Go:      WebServer ready for shutdown
+[ 000 001 716 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Decide:  Go For Landing of Swagger
+[ 000 001 717 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  API
+[ 000 001 718 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Go:      WebServer ready for shutdown
+[ 000 001 719 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Go:      API routes ready for cleanup
+[ 000 001 720 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Decide:  Go For Landing of API
+[ 000 001 721 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  WebServer
+[ 000 001 722 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Go:      WebServer thread ready for shutdown
+[ 000 001 723 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Go:      All resources ready for cleanup
+[ 000 001 724 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Decide:  Go For Landing of WebServer
+[ 000 001 725 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  Database
+[ 000 001 726 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Go:      3 database threads running
+[ 000 001 727 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Go:      1 databases with 3 total queues
+[ 000 001 728 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Decide:  Go For Landing of Database
+[ 000 001 729 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  Logging
+[ 000 001 730 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Go:      Buffer cleanup required
+[ 000 001 731 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Decide:  Go For Landing of Logging
+[ 000 001 732 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  Network
+[ 000 001 733 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Go:      Network interfaces ready for shutdown
+[ 000 001 734 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Decide:  Go For Landing of Network
+[ 000 001 735 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  Resources
+[ 000 001 736 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go:   Resources not running
+[ 000 001 737 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Decide:  No-Go For Landing of Resources
+[ 000 001 738 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  Notify
+[ 000 001 739 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go:   Notify not running
+[ 000 001 740 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Decide:  No-Go For Landing of Notify
+[ 000 001 741 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  OIDC
+[ 000 001 742 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go:   OIDC not running
+[ 000 001 743 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Decide:  No-Go For Landing of OIDC
+[ 000 001 744 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  Payload
+[ 000 001 745 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Go:      Payload subsystem is running
+[ 000 001 746 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Decide:  Go For Landing of Payload
+[ 000 001 747 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  Threads
+[ 000 001 748 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go:   Web threads still active
+[ 000 001 749 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Decide:  No-Go For Landing of Threads
+[ 000 001 750 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  MCP
+[ 000 001 751 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Go:      MCP subsystem is running
+[ 000 001 752 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Decide:  Go For Landing of MCP
+[ 000 001 753 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  Scripting
+[ 000 001 754 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Go:      Scripting subsystem not running
+[ 000 001 755 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  Registry
+[ 000 001 756 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go:      Active subsystems: 10
+[ 000 001 757 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go:   Other subsystems still active
+[ 000 001 758 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Decide:  No-Go For Landing of Registry
+[ 000 001 759 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 760 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  LANDING PLAN
+[ 000 001 761 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  Total Subsystems Checked:  21
+[ 000 001 762 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  Ready Subsystems:          11
+[ 000 001 763 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  Not Ready Subsystems:      10
+[ 000 001 764 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go: Notify
+[ 000 001 765 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go: OIDC
+[ 000 001 766 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go: Resources
+[ 000 001 767 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go: Print
+[ 000 001 768 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Go:    MailRelay
+[ 000 001 769 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go: mDNSServer
+[ 000 001 770 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go: mDNSClient
+[ 000 001 771 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go: Terminal
+[ 000 001 772 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go: WebSocket
+[ 000 001 773 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Go:    Swagger
+[ 000 001 774 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    API waiting for dependent Swagger to land
+[ 000 001 775 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go: API
+[ 000 001 776 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    WebServer waiting for dependent API to land
+[ 000 001 777 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go: WebServer
+[ 000 001 778 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Go:    Database
+[ 000 001 779 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go: Logging
+[ 000 001 780 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Network waiting for dependent Database to land
+[ 000 001 781 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go: Network
+[ 000 001 782 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Payload waiting for dependent Swagger to land
+[ 000 001 783 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go: Payload
+[ 000 001 784 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Threads waiting for dependent Network to land
+[ 000 001 785 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go: Threads
+[ 000 001 786 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    Registry waiting for dependent Database to land
+[ 000 001 787 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]    No-Go: Registry
+[ 000 001 788 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Landing              ]  LANDING PLAN: Go for landing
+[ 000 001 789 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ MailRelay            ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 790 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ MailRelay            ]  LANDING: MailRelay
+[ 000 001 791 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ MailRelay            ]  LANDING: MailRelay COMPLETE
+[ 000 001 792 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Swagger              ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 793 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Swagger              ]  LANDING: Swagger
+[ 000 001 794 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Swagger              ]  Signaled Swagger system to stop
+[ 000 001 795 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Swagger              ]  Swagger files cleaned up
+[ 000 001 796 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Swagger              ]  LANDING: Swagger COMPLETE
+[ 000 001 797 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ API                  ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 798 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ API                  ]  LANDING: API
+[ 000 001 799 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ API                  ]  Verifying state
+[ 000 001 800 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ API                  ]  LANDING: API - Already landed
+[ 000 001 801 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ WebServer            ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 802 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ WebServer            ]  LANDING: WebServer
+[ 000 001 803 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ WebServer            ]  Signaled WebServer thread to stop
+[ 000 001 804 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ WebServer            ]  Waiting for WebServer thread to complete
+[ 000 001 805 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ WebServer            ]  WebServer thread completed
+[ 000 001 809 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ WebServer            ]  LANDING: WebServer COMPLETE
+[ 000 001 810 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Database             ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 811 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Database             ]  LANDING: Database
+[ 000 001 812 ]  2026-09-17 01:06:38.347Z  [ DEBUG ]  [ Database             ]  Shutting down database queues
+[ 000 001 844 ]  2026-09-17 01:06:38.350Z  [ DEBUG ]  [ DQM-ACZ-00-SMFC      ]  Query cache destroyed
+[ 000 001 846 ]  2026-09-17 01:06:38.350Z  [ DEBUG ]  [ Database             ]  Database queue system destroyed
+[ 000 001 847 ]  2026-09-17 01:06:38.350Z  [ DEBUG ]  [ Database             ]  Cleaning up database configuration
+[ 000 001 848 ]  2026-09-17 01:06:38.350Z  [ DEBUG ]  [ Database             ]  Cleaning up pending result manager
+[ 000 001 849 ]  2026-09-17 01:06:38.350Z  [ DEBUG ]  [ Database             ]  Shutting down Database query watchdog
+[ 000 001 850 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Database             ]  LANDING: Database COMPLETE
+[ 000 001 851 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Landing              ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 852 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Landing              ]  LANDING: Network
+[ 000 001 853 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Landing              ]  Verifying subsystem state
+[ 000 001 854 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Landing              ]  Performing final interface tests
+[ 000 001 855 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  ― Interface lo (IPv4): up, MTU 65536
+[ 000 001 856 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  ― Interface virbr1 (IPv4): up, MTU 1500
+[ 000 001 857 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  ― Interface bridge0 (IPv4): up, MTU 1500
+[ 000 001 858 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  ― Interface bridge0 (IPv6): up, MTU 1500
+[ 000 001 859 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  ― Interface bridge0 (IPv6): up, MTU 1500
+[ 000 001 860 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  ― Interface wg0 (IPv4): up, MTU 1380
+[ 000 001 861 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  ― Interface docker0 (IPv4): down
+[ 000 001 862 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  ― Interface docker0 (IPv6): down
+[ 000 001 863 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  ― Interface docker0 (IPv6): down
+[ 000 001 864 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  ― Interface vnet0 (IPv6): up, MTU 1500
+[ 000 001 865 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  ― Interface vnet1 (IPv6): up, MTU 1500
+[ 000 001 866 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  ― Interface vnet2 (IPv6): up, MTU 1500
+[ 000 001 867 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Landing              ]  Shutting down network interfaces
+[ 000 001 868 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  Starting network shutdown...
+[ 000 001 869 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  Interface lo: cleaning up application resources
+[ 000 001 870 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  Interface virbr1: cleaning up application resources
+[ 000 001 871 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  Interface bridge0: cleaning up application resources
+[ 000 001 872 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  Interface wg0: cleaning up application resources
+[ 000 001 873 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  Interface docker0: cleaning up application resources
+[ 000 001 874 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  Interface vnet0: cleaning up application resources
+[ 000 001 875 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  Interface vnet1: cleaning up application resources
+[ 000 001 876 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  Interface vnet2: cleaning up application resources
+[ 000 001 877 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Network              ]  Network subsystem shutdown completed successfully
+[ 000 001 878 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Landing              ]    Step 4: Updating subsystem registry
+[ 000 001 879 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Landing              ]  LANDING: Landing COMPLETE
+[ 000 001 880 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Payload              ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 881 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Payload              ]  LANDING: Payload
+[ 000 001 882 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Payload              ]  Payload not running, skipping shutdown
+[ 000 001 883 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ MCP                  ]  MCP subsystem is not running, skipping landing
+[ 000 001 884 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Scripting            ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 885 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Scripting            ]  LANDING: Scripting
+[ 000 001 887 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Scripting            ]  LANDING: Scripting COMPLETE
+[ 000 001 888 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Landing              ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 889 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Landing              ]  LANDING REVIEW
+[ 000 001 890 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Landing              ]  Landing elapsed time: 0.000s
+[ 000 001 891 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Landing              ]  All threads cleaned up successfully
+[ 000 001 892 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Landing              ]  Total Subsystems:     21
+[ 000 001 893 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Landing              ]  Landing Success Rate: 52.4%
+[ 000 001 894 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Landing              ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 895 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Landing              ]  Subsystem Status:
+[ 000 001 896 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Landing              ]  Print:
+[ 000 001 897 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Landing              ]    Status: Landed
+[ 000 001 898 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Landing              ]    State:  Inactive
+[ 000 001 899 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Landing              ]  MailRelay:
+[ 000 001 900 ]  2026-09-17 01:06:38.351Z  [ DEBUG ]  [ Landing              ]    Status: Landed
+[ 000 001 901 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    State:  Inactive
+[ 000 001 902 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  mDNSServer:
+[ 000 001 903 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    Status: Landed
+[ 000 001 904 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    State:  Inactive
+[ 000 001 905 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  mDNSClient:
+[ 000 001 906 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    Status: Not Ready
+[ 000 001 907 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    State:  Running
+[ 000 001 908 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  Terminal:
+[ 000 001 909 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    Status: Landed
+[ 000 001 910 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    State:  Inactive
+[ 000 001 911 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  WebSocket:
+[ 000 001 912 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    Status: Landed
+[ 000 001 913 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    State:  Inactive
+[ 000 001 914 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  Swagger:
+[ 000 001 915 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    Status: Landed
+[ 000 001 916 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    State:  Inactive
+[ 000 001 917 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  API:
+[ 000 001 918 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    Status: Landed
+[ 000 001 919 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    State:  Inactive
+[ 000 001 920 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  WebServer:
+[ 000 001 921 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    Status: Landed
+[ 000 001 922 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    State:  Inactive
+[ 000 001 923 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  Database:
+[ 000 001 924 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    Status: Landed
+[ 000 001 925 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    State:  Inactive
+[ 000 001 926 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  Logging:
+[ 000 001 927 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    Status: Landed
+[ 000 001 928 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    State:  Inactive
+[ 000 001 929 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  Network:
+[ 000 001 930 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    Status: Landed
+[ 000 001 931 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    State:  Inactive
+[ 000 001 932 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  Resources:
+[ 000 001 933 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    Status: Landed
+[ 000 001 934 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    State:  Inactive
+[ 000 001 935 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  Notify:
+[ 000 001 936 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    Status: Landed
+[ 000 001 937 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    State:  Inactive
+[ 000 001 938 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  OIDC:
+[ 000 001 939 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    Status: Landed
+[ 000 001 940 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    State:  Inactive
+[ 000 001 941 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  Payload:
+[ 000 001 942 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    Status: Landed
+[ 000 001 943 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    State:  Inactive
+[ 000 001 944 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  Threads:
+[ 000 001 945 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    Status: Not Ready
+[ 000 001 946 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    State:  Running
+[ 000 001 947 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  MCP:
+[ 000 001 948 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    Status: Landed
+[ 000 001 949 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    State:  Inactive
+[ 000 001 950 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  Scripting:
+[ 000 001 951 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    Status: Landed
+[ 000 001 952 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    State:  Inactive
+[ 000 001 953 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  Reporting:
+[ 000 001 954 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    Status: Landed
+[ 000 001 955 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    State:  Inactive
+[ 000 001 956 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  Registry:
+[ 000 001 957 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    Status: Not Ready
+[ 000 001 958 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]    State:  Running
+[ 000 001 959 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 960 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  Landing Complete - Some Systems Failed to Land
+[ 000 001 961 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  Landed: 11/21
+[ 000 001 962 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 963 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Landing              ]  LANDING: REGISTRY (Final Step)
+[ 000 001 964 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Registry             ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 965 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Registry             ]  LANDING: Registry
+[ 000 001 966 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Registry             ]  Warning: 3 subsystems still active
+[ 000 001 967 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Registry             ]  LANDING: Registry COMPLETE
+[ 000 001 968 ]  2026-09-17 01:06:38.352Z  [ STATE ]  [ Shutdown             ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 969 ]  2026-09-17 01:06:38.352Z  [ STATE ]  [ Shutdown             ]  SHUTDOWN COMPLETE
+[ 000 001 970 ]  2026-09-17 01:06:38.352Z  [ STATE ]  [ Shutdown             ]  Shutdown elapsed time:  0.005s
+[ 000 001 971 ]  2026-09-17 01:06:38.352Z  [ STATE ]  [ Shutdown             ]  Total running time:     3.318s
+[ 000 001 972 ]  2026-09-17 01:06:38.352Z  [ STATE ]  [ Shutdown             ]  Total elapsed time:     3.323s
+[ 000 001 973 ]  2026-09-17 01:06:38.352Z  [ STATE ]  [ Shutdown             ]  ――――――――――――――――――――――――――――――――――――――――――――――――――――――――――――
+[ 000 001 976 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Payload              ]  Payload cache cleanup started
+[ 000 001 977 ]  2026-09-17 01:06:38.352Z  [ DEBUG ]  [ Config               ]  Cleaning up application configuration

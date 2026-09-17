@@ -4,6 +4,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 3.1.0 - 2026-09-16 - Added Firebase dialect (query_dialects = 6, underscore schema prefix)
 -- 3.0.0 - 2025-11-27 - Added Brotli compression for large base64-encoded strings (>1KB threshold)
 -- 2.2.0 - 2025-10-26 - Added more boilerplates for common_insert, common_create, common_diagram
 -- 2.1.2 - 2025-10-15 - Added info{} element to track version information
@@ -17,8 +18,8 @@ local database = {
     -- Database.lua versioning information
     info = {
       script = "database.lua",
-      version = "3.0.0",
-      release = "2025-11-27"
+      version = "3.1.0",
+      release = "2026-09-16"
     },
 
     -- Lookup #27 - Query Status
@@ -52,15 +53,17 @@ local database = {
         postgresql = true,
         sqlite = true,
         mysql = true,
-        db2 = true
+        db2 = true,
+        firebase = true
     },
 
-    -- Lookup #30 - Query Dialects
+    -- Lookup #30 - Query Dialects (key 5 is MS SQL Server; Firebase is 6)
     query_dialects = {
         postgresql = 1,
         sqlite = 2,
         mysql = 3,
-        db2 = 4
+        db2 = 4,
+        firebase = 6
     },
 
     -- Saves repeating it in virtually every single template
@@ -177,7 +180,8 @@ local database = {
         sqlite = require("database_sqlite"),
         postgresql = require("database_postgresql"),
         mysql = require("database_mysql"),
-        db2 = require("database_db2")
+        db2 = require("database_db2"),
+        firebase = require("database_firebase")
     },
 
     replace_query = function(self, template, engine, design_name, schema_name)
@@ -192,8 +196,13 @@ local database = {
         -- Perfectly acceptable for schema to be empty (typical for SQLite)
         local schema_prefix = ''
         if schema_name and schema_name ~= '' and schema_name ~= '.' then
-          local prefixed_name = (engine == 'db2') and schema_name:upper() or schema_name
-          schema_prefix = prefixed_name .. '.'
+          if engine == 'firebase' then
+            -- Collection prefix: testfb_queries, not testfb.queries
+            schema_prefix = schema_name .. '_'
+          else
+            local prefixed_name = (engine == 'db2') and schema_name:upper() or schema_name
+            schema_prefix = prefixed_name .. '.'
+          end
         end
 
         -- Add additional placeholders to cfg for unified processing
