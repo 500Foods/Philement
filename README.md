@@ -64,20 +64,20 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-09-16 17:09:25 UTC
+Last updated at 2026-09-17 16:44:20 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                           519            452              0        1785948
-SVG                            301            587          11569         537122
-C                             1714          68553          57964         288596
-Text                           356            353              0         150612
-Markdown                       762          36764            259         112317
-Lua                            443          11700           7395          93589
+JSON                           523            453              0        1801579
+SVG                            301            587          11569         538011
+C                             1744          68908          58092         291085
+Text                           357            354              0         151231
+Markdown                       763          37309            258         113957
+Lua                            445          11746           7436          93923
 JavaScript                     228          10620          13690          50510
-Bourne Shell                   183           8281         112234          45826
+Bourne Shell                   185           8317         112490          46072
 CSS                             86           2781           1565          14077
-C/C++ Header                   352           4224          14179          13216
+C/C++ Header                   366           4293          14222          13375
 HTML                            42            273            219           3039
 CMake                           19            177            401           1486
 make                            11            112             75            607
@@ -88,21 +88,22 @@ zsh                              2             31             42             97
 Delphi Form                      1              1              0             43
 YAML                             2              8             13             37
 Pascal                           2             11              2             31
+Snakemake                        1              0              0              8
 -------------------------------------------------------------------------------
-SUM:                          5036         145040         219675        3097992
+SUM:                          5091         146093         220142        3120007
 -------------------------------------------------------------------------------
-1746 Files were skipped (duplicate, binary, or without source code):
-  svg: 1247
+1758 Files were skipped (duplicate, binary, or without source code):
+  svg: 1251
   css: 167
   html: 134
-  md: 39
+  md: 40
   js: 24
-  png: 23
+  png: 24
   br: 16
-  lua: 12
+  lua: 15
   pem: 9
   kid: 8
-  gitignore: 6
+  gitignore: 7
   jpg: 5
   mp4: 5
   clp: 3
@@ -125,6 +126,7 @@ SUM:                          5036         145040         219675        3097992
   control: 1
   disabled: 1
   dproj: 1
+  firebaserc: 1
   gcode: 1
   ggignore: 1
   gitattributes: 1
@@ -141,6 +143,7 @@ SUM:                          5036         145040         219675        3097992
   stylelintcache: 1
   stylelintrc: 1
   supp: 1
+  trce: 1
   trial-ignore: 1
   webp: 1
 ```
