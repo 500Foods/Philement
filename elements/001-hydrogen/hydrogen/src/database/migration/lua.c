@@ -115,7 +115,7 @@ bool lua_load_database_module(lua_State* L, const char* migration_name,
                              PayloadFile* payload_files, size_t payload_count,
                              const char* dqm_label) {
     // First load all database engine modules that database.lua will require
-    const char* engines[] = {"sqlite", "postgresql", "mysql", "db2"};
+    const char* engines[] = {"sqlite", "postgresql", "mysql", "db2", "firebase"};
     size_t engine_count = sizeof(engines) / sizeof(engines[0]);
 
     for (size_t i = 0; i < engine_count; i++) {

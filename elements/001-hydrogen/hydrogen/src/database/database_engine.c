@@ -2,7 +2,7 @@
  * Database Engine Abstraction Layer
  *
  * Implements the multi-engine interface layer for database operations.
- * Provides unified interface for PostgreSQL, SQLite, MySQL, DB2, and future engines.
+ * Provides unified interface for PostgreSQL, SQLite, MySQL, DB2, Firebase, and future engines.
  *
  * Module split:
  *   - database_engine_registry.c    : engine registry lifecycle

@@ -70,5 +70,6 @@ void connection_pool_cleanup_idle(ConnectionPool* pool, time_t max_idle_seconds)
  * (non-static) solely so the Unity test framework can call it directly.
  * -------------------------------------------------------------------------- */
 char* database_connstring_extract_db2_value(const char* connection_string, const char* key);
+char* database_connstring_extract_query_value(const char* query, const char* key);
 
 #endif // DATABASE_CONNSTRING_H

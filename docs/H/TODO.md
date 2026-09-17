@@ -151,8 +151,8 @@ not open work unless listed below.
 | --- | --- |
 | **Plan** | [`FIREBASE.md`](/docs/H/plans/FIREBASE.md) |
 | **Effort** | XL |
-| **Done** | ~6% — Phase 0 locks approved (2026-09-16); lock 20 `${SIZE_COLLECTION}` = `LENGTH(collection)` |
-| **Remaining** | Phase 1 extras/firebase_emulator, then complete `database_firebase.lua`, C interpreter, Test 37 full design, Cockroach retirement (Phase 11), docs |
+| **Done** | ~30% — Phases 0–4 complete (2026-09-16); in-process FB_* Unity-green |
+| **Remaining** | Phase 5 SQL DDL, then DML/SELECT interpreter, Test 37 full design, Cockroach retirement (Phase 11), docs |
 | **Why later** | Cockroach never had a C implementation (PostgreSQL alias + schema `testcrdb`/`democrdb`). Firebase cannot alias SQL and cannot load C UDFs. Auth Finale remains P0. |
 | **Note** | Fifth `DatabaseEngineInterface` (`src/database/firebase/`) and fifth Helium dialect with the same macro keys as the other four. UDFs are in-process in Hydrogen; extras/firebase_emulator is install/start only. No live Google in CI. |
 

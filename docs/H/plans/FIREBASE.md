@@ -99,11 +99,12 @@ Each phase is worked in its **own conversation**. Follow this sequence:
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-09-16):** Phase 0 complete. Locks 1–19
-approved as written; lock 20 amends `${SIZE_COLLECTION}` to
-`LENGTH(collection)` (not a numeric `SIZE_*`). No C, Lua, tests, or
-Cockroach deletes. Next: **Phase 1 (emulator extras)**. Do not start
-Phase 1 until the user says go.
+**CURRENT PAUSE POINT (as of 2026-09-16):** Phase 4 complete.
+In-process `FB_*` functions Unity-green (Base64, Brotli q11, SHA-256
+login fixture matches SQLite, JSON ingest/`$ref`/extract, NOW + IANA
+CONVERT_TZ). `mkt`/`mkp` green, no new `static`. Next: **Phase 5
+(SQL DDL)**. Do not start Phase 5 until the user says go. No Test 37,
+no Cockroach deletes.
 
 Keep this block current when a phase finishes (date, result, next phase
 number). It is the first thing a new session reads.
@@ -147,7 +148,7 @@ number). It is the first thing a new session reads.
 | --- | --- |
 | **Band** | P2 — new engine, after Auth Finale / quality gates |
 | **Effort** | XL (SQL-on-Firestore interpreter + in-process UDF-class functions + Helium dialect + emulator CI + Cockroach retirement) |
-| **Done** | ~6% — Phase 0 locks approved |
+| **Done** | ~30% — Phases 0–4 complete |
 | **Why this shape** | Cockroach never earned a C implementation. Firebase cannot lean on PostgreSQL and cannot load C UDFs. The existing ~380 Lua files emit SQL; the engine must run that SQL. |
 | **Do not start casually** | Touches `DatabaseEngine` enum, registry, DQM, Helium `database.lua` for four designs, Test 31/37/71, the 7-engine blackbox matrix, SchemaTool, Lookup 030, and a SQL interpreter. |
 
@@ -906,10 +907,10 @@ fence. Do not wait until Phase 15.
 | Phase | Done means (one line) | Effort | Status |
 | --- | --- | --- | --- |
 | 0 | Locks approved (SQL-on-Firestore, full Acuranzo, in-process UDFs, FB_* names, enum, dialect 6, emulator); no C | S | complete |
-| 1 | `extras/firebase_emulator/` README + start/stop; Java/tools documented; extras README table row | S | pending |
-| 2 | Complete `database_firebase.lua` in four designs; Test 31 generates firebase SQL; `if engine` arms include firebase; lookup 030 key 6 packet | M | pending |
-| 3 | C engine registers, `firebase://`, connect + health vs emulator or seam | M | pending |
-| 4 | In-process Base64 / Brotli / SHA-256 / JSON ingest+extract Unity-green; hash and JSON contracts match other engines | M | pending |
+| 1 | `extras/firebase_emulator/` README + start/stop; Java/tools documented; extras README table row | S | complete |
+| 2 | Complete `database_firebase.lua` in four designs; Test 31 generates firebase SQL; `if engine` arms include firebase; lookup 030 key 6 packet | M | complete |
+| 3 | C engine registers, `firebase://`, connect + health vs emulator or seam | M | complete |
+| 4 | In-process Base64 / Brotli / SHA-256 / JSON ingest+extract Unity-green; hash and JSON contracts match other engines | M | complete |
 | 5 | CREATE/DROP TABLE, INDEX, ALTER, CREATE FUNCTION no-op against emulator/seam | L | pending |
 | 6 | INSERT VALUES / UPDATE / DELETE with FB_* expression eval | L | pending |
 | 7 | INSERT…SELECT, WITH, COALESCE(MAX)+1, RETURNING | L | pending |
@@ -1036,14 +1037,14 @@ Phase 0 Status complete.
 
 ### Work items
 
-- [ ] 1.1 Add `extras/firebase_emulator/README.md`: Node, Java,
+- [x] 1.1 Add `extras/firebase_emulator/README.md`: Node, Java,
       `firebase-tools`, ports, project id `hydrodemo`, no Google
       account required for emulator.
-- [ ] 1.2 `start.sh` / `stop.sh` / `firebase.json`. Idempotent start;
+- [x] 1.2 `start.sh` / `stop.sh` / `firebase.json`. Idempotent start;
       wait for port; stop only if started.
-- [ ] 1.3 extras README Database Extensions table: Firebase row
+- [x] 1.3 extras README Database Extensions table: Firebase row
       ("in-process functions in Hydrogen; emulator here").
-- [ ] 1.4 SECRETS.md draft names (values never committed).
+- [x] 1.4 SECRETS.md draft names (values never committed).
 
 ### Done means
 
@@ -1061,18 +1062,46 @@ the documented deps; README lists the UDF situation honestly.
 
 | | |
 | --- | --- |
-| **State** | pending |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-09-16 |
+| **Result** | `start.sh` brought up Firestore on `127.0.0.1:8080` (REST 200 `{}` for `hydrodemo`). Idempotent start, stop-only-if-started, restart all recorded. `mks` 172 files PASS. `mkl` 2527/2527. |
+| **Variances** | Extra files beyond the four-file sketch: `.firebaserc`, `firestore.rules` (emulator-open), local `package.json` pin `firebase-tools@15.30.1` + lockfile. Emulator UI disabled (`:4000` already occupied on this box). No `npm i -g`. |
 
 ### Working Log
 
-(empty until the phase runs)
+- **2026-09-16** Phase 0 Status re-read complete. User approved Phase 1
+  implementation (local pin, UI off, SECRETS names as proposed).
+- Layout:
+  [`extras/firebase_emulator/README.md`](/elements/001-hydrogen/hydrogen/extras/firebase_emulator/README.md)
+  plus `start.sh`, `stop.sh`, `firebase.json`, `.firebaserc`,
+  `firestore.rules`, `package.json` / `package-lock.json`.
+- Manual start/stop (this machine): Node v24, OpenJDK 25 on PATH,
+  Java 21 also installed. `npm install` in the extra (670 packages,
+  ~15s). First `start.sh`: pid 1574504, REST
+  `GET /v1/projects/hydrodemo/databases/(default)/documents/` → 200
+  `{}`. Second `start.sh` no-op. `stop.sh` killed the tree; `:8080`
+  closed. `stop.sh` with no pid file left the port alone. Restart pid
+  1575168 then stop. Emulator left down.
+- `mks` (Test 92) green: 172 scripts, 0 issues, 1116 directives
+  justified. `mkl` (Test 04) green. markdownlint on changed extras /
+  SECRETS / SITEMAP files clean.
+- SECRETS.md section 8: `FIREBASE_PROJECT`,
+  `FIREBASE_EMULATOR_HOST`, `FIREBASE_EMULATOR_PORT`,
+  `FIREBASE_SA_JSON` (empty on emulator). No SA JSON committed.
 
 ### Lessons learned
 
-(empty until the phase runs)
+- File-level `# shellcheck disable=SC2310` must sit **before** any
+  command (including `set -euo pipefail`) or Test 92 still flags
+  predicate helpers used in `if`/`||`.
+- `nohup firebase emulators:start` + recursive `pgrep -P` SIGTERM is
+  enough; the Java child dies with the CLI parent. `setsid` inside a
+  subshell would have saved the wrong pid.
+- Empty emulator REST is 200 `{}`, not 404 — a 2xx/4xx/5xx HTTP code
+  is a sufficient ready check.
+- This box already had something on `:4000`; disabling the emulator UI
+  is the difference between a clean `:8080` extra and a port fight.
+  Keep UI off unless a later phase needs it.
 
 ---
 
@@ -1090,18 +1119,18 @@ Phase 1 Status complete.
 
 ### Work items
 
-- [ ] 2.1 Write `database_firebase.lua` (four designs) with the complete
+- [x] 2.1 Write `database_firebase.lua` (four designs) with the complete
       key set. **Verify:** Lua snippet prints every key the other four
       files have; set difference is empty.
-- [ ] 2.2 `database.lua`: `engines.firebase`, `query_dialects.firebase
+- [x] 2.2 `database.lua`: `engines.firebase`, `query_dialects.firebase
       = 6`, `defaults.firebase`.
-- [ ] 2.3 Test 31: `ENGINES` includes firebase; skip sqruff; keep
+- [x] 2.3 Test 31: `ENGINES` includes firebase; skip sqruff; keep
       unsubstituted-macro check. **Verify:** Test 31 green.
-- [ ] 2.4 acuranzo_1000: skip CREATE FUNCTION for firebase like sqlite
+- [x] 2.4 acuranzo_1000: skip CREATE FUNCTION for firebase like sqlite
       where appropriate; `${BROTLI_DECOMPRESS_FUNCTION}` is a comment.
-- [ ] 2.5 firebase arms (or shared-with-sqlite) for 1190, 1135, 1151;
+- [x] 2.5 firebase arms (or shared-with-sqlite) for 1190, 1135, 1151;
       re-grep `if engine`.
-- [ ] 2.6 Lookup 030 key 6 packet (not applied). `test_98`.
+- [x] 2.6 Lookup 030 key 6 packet (not applied). `test_98`.
 
 ### Done means
 
@@ -1117,18 +1146,68 @@ Test 31 generates firebase SQL for every Acuranzo migration without
 
 | | |
 | --- | --- |
-| **State** | pending |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-09-16 |
+| **Result** | Test 31 1925/1925 PASS (firebase included, sqruff skipped). `test_98` 460 files PASS. `mks` 172 files PASS. Key-set diff empty (73/73). Packet `acuranzo_1383.lua` prepared, not applied. |
+| **Variances** | `database.lua` also uses underscore schema prefix for firebase (lock 8; required for generation). Lookup 030 icon uses `sql_dialect_firebase.png` copied into Lithium `public/assets/images/` (TNT source was named `sqli_dialect_firebase.png`). 1135 uses `json_object` + `FB_JSON_VALUE` (interpreter builtin, not a new lock). |
 
 ### Working Log
 
-(empty until the phase runs)
+- **2026-09-16** Phase 1 Status re-read complete. User approved Phase 2
+  with (1) 1135 `json_object` + `FB_JSON_VALUE` and (2) dialect PNG from
+  `/fvl/tnt/t-philement/lithium/assets/images/` (file on disk was
+  `sqli_dialect_firebase.png`; copied as
+  `sql_dialect_firebase.png` to match the other dialect icons).
+- `database_firebase.lua` written with the union of 73 keys and copied
+  to Acuranzo, Gaius, GLM, Helium. Gaius/GLM/Helium sibling dialects
+  still lag Acuranzo; firebase files are complete anyway.
+- `database.lua` (four designs): `engines.firebase`,
+  `query_dialects.firebase = 6` (key 5 unused MS SQL),
+  `defaults.firebase`, schema prefix `name_` not `name.`.
+- `if engine` re-grep: 1000 / gaius_2000 / glm_3000 / helium_4000 skip
+  JSON_INGEST CREATE FUNCTION for firebase; 1000 emits CONVERT_TZ
+  comment for firebase; 1190 shares sqlite rebuild; 1151
+  `engine ~= 'mysql'` already covers firebase; 1135 dedicated firebase
+  arm.
+- Test 31: `ENGINES` + fifth schema column (`testfb` / `helium`).
+  Explicit firebase sqruff skip after unsubstituted-macro check.
+  1925 combos, 0 failed, 1496 cached.
+- Lookup packet:
+  [`acuranzo_1383.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1383.lua)
+  additive key 6 only. User applies; agent did not.
+- Lithium:
+  [`public/assets/images/sql_dialect_firebase.png`](/elements/003-lithium/public/assets/images/sql_dialect_firebase.png)
+  and `config/icons-usr.txt` row. No Test 37, no Cockroach deletes.
+- **2026-09-17** AutoMigrations on existing engines failed:
+  `module 'database_firebase' not found`. `database.lua` requires the
+  dialect at load time; Hydrogen's payload Lua loader only preloaded
+  sqlite/postgresql/mysql/db2. Hotfix: add `"firebase"` to
+  `lua.c` `engines[]` (Phase 3 item 3.3 loader slice). Payload already
+  copies `database_*.lua`. Rebuild Hydrogen so the new C + payload
+  ship. Unity `lua_test_load_database_module` fixtures updated.
 
 ### Lessons learned
 
-(empty until the phase runs)
+- `${SCHEMA}` for firebase cannot be implemented in the dialect file
+  alone. `replace_query` always did `name.`; firebase needs `name_`.
+  That branch belongs in all four `database.lua` files.
+- Gaius/GLM/Helium `database_*.lua` files are not key-complete vs
+  Acuranzo. Copying the **complete** firebase table into those designs
+  is still correct: extra keys are unused, missing keys would fail
+  `replace_query`.
+- 1151 needed no new arm. `if engine ~= 'mysql'` is already the
+  shared-with-sqlite path.
+- QueryRef 044 (1135) hardcodes JSON constructors per engine. Sharing
+  sqlite would emit `collection ->>`, not `FB_JSON_VALUE`. Dedicated
+  arm; `json_object(...)` is an interpreter builtin for a later SELECT
+  phase (not a Helium macro).
+- TNT asset was `sqli_dialect_firebase.png` (extra `i`). Rename on copy
+  so Lookup 030 matches `sql_dialect_postgres.png` and friends.
+- Adding `require("database_firebase")` to Helium `database.lua` is
+  not enough for AutoMigrations. Hydrogen preloads dialects via
+  `lua.c` `engines[]` into `package.loaded` before executing
+  `database.lua`. Test 31 uses on-disk `require` and hid this until
+  a live DQM LOAD.
 
 ---
 
@@ -1144,12 +1223,14 @@ Phase 2 Status complete.
 
 ### Work items
 
-- [ ] 3.1 `DB_ENGINE_FIREBASE` after DB2, before AI. `mkt`.
-- [ ] 3.2 `interface`, `utils` (connstring/validate/mask), `connection`,
+- [x] 3.1 `DB_ENGINE_FIREBASE` after DB2, before AI. `mkt`.
+- [x] 3.2 `interface`, `utils` (connstring/validate/mask), `connection`,
       `http` seam. Unity.
-- [ ] 3.3 Registry, `normalize_engine_name`, `lua.c` engines[], lazy
-      init. `database_get_counts_by_type` decision implemented.
-- [ ] 3.4 Optional live emulator health (Phase 1 extras).
+- [x] 3.3 Registry, `normalize_engine_name`, lazy init.
+      `database_get_counts_by_type` decision implemented.
+      (`lua.c` `engines[]` already includes `"firebase"` — Phase 2
+      AutoMigrations hotfix 2026-09-17.)
+- [x] 3.4 Optional live emulator health (Phase 1 extras).
 
 ### Done means
 
@@ -1164,18 +1245,56 @@ Unity connects via the seam and reports healthy; `mkt` + `mkp`; no new
 
 | | |
 | --- | --- |
-| **State** | pending |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-09-16 |
+| **Result** | `mkt` green; `mkp` 2,062 files PASS; Unity connect+health via seam. Live emulator GET `documents/` HTTP 200 `{}`. |
+| **Variances** | Phase 3 connect is emulator-only (production host refused; SA JWT is Phase 16). `launch_database.c` readiness counts still omit firebase (Phase 15 / Test 37 config). Query/transaction/prepared are fail-closed stubs. |
 
 ### Working Log
 
-(empty until the phase runs)
+- **2026-09-16** Phase 2 Status re-read complete. User confirmed
+  `acuranzo_1383.lua` (Lookup 030 key 6) is applied. Explicit go to
+  implement Phase 3.
+- Enum: `DB_ENGINE_FIREBASE` after DB2, before AI. Grep of hardcoded
+  `4` meaning AI was empty; Unity mock tests use the enum name.
+- `database_get_counts_by_type` extended with a fifth
+  `firebase_count` out-param (launch.c + Unity). Registry lazy-loads
+  firebase when a configured connection has `type == "firebase"`.
+- `database_queue_determine_engine_type` recognizes `firebase://`
+  **before** the SQLite fallback. Connstring:
+  `firebase://PROJECT/DATABASE?host=&port=&emulator=1` (no SA path).
+- Health is HTTP GET
+  `/v1/projects/{project}/databases/{database}/documents/` (2xx).
+  Injectable seam `firebase_http_test_set_response` (OIDC RP
+  pattern: `CURLOPT_NOSIGNAL`, per-request easy handle).
+- Empty Pass + `firestore.googleapis.com` fails closed. Phase 3
+  does not implement production JWT.
+- Unity (seam): `interface_test_firebase`, `utils_test_firebase`,
+  `http_test_firebase`, `connection_test_firebase`, plus stub
+  query/transaction/prepared/firebase tests. Coverage fence:
+  connection 86%, http 91%, utils 86%, others 84–100%.
+- 3.4: extras `start.sh` → REST 200 `{}` for hydrodemo; `stop.sh`.
+- `hydrogen_config_schema.json` Engine enum gained `"firebase"`.
+  No Test 37, no Cockroach deletes.
 
 ### Lessons learned
 
-(empty until the phase runs)
+- Inserting `DB_ENGINE_FIREBASE` before AI does **not** break Unity
+  mock tests that use `DB_ENGINE_AI` by name; a numeric `4` would
+  have. Keep using the enum.
+- `database_get_counts_by_type`'s four-out-param shape had only
+  three callers. A fifth required pointer was cheaper than a new
+  helper plus dual paths.
+- The HTTP seam must be Firebase-owned, not a reuse of
+  `oidc_rp_http_*`, so later POST/PATCH/DELETE and emulator http
+  (no TLS) do not collide with OIDC fixtures.
+- cppcheck `constParameterPointer` on vtable stubs is a signature
+  lock, not a real const opportunity — suppress on the function
+  line the same way SQLite `execute_prepared` does.
+- `launch_database.c` duplicates engine counting instead of calling
+  `database_get_counts_by_type`. A firebase-only Hydrogen config
+  would still look like "no databases" at launch readiness until
+  that file grows a fifth count (Phase 15 / Test 37).
 
 ---
 
@@ -1193,23 +1312,23 @@ Phase 3 Status complete.
 
 ### Work items
 
-- [ ] 4.1 Base64 round-trip Unity.
-- [ ] 4.2 Brotli: compress with the same library Lua uses (quality 11)
+- [x] 4.1 Base64 round-trip Unity.
+- [x] 4.2 Brotli: compress with the same library Lua uses (quality 11)
       in a fixture, decompress in C, original bytes match. Mirror extras
       UDF tests. Include a real wrapped
       `FB_BROTLI_DECOMPRESS(FB_BASE64_DECODE('…'))` expression.
-- [ ] 4.3 SHA-256: fixture `account_id=0` + known password equals a
+- [x] 4.3 SHA-256: fixture `account_id=0` + known password equals a
       hash taken from SQLite or PostgreSQL (record the fixture in the
       test). **This is a login compatibility gate.**
-- [ ] 4.4 JSON ingest (the expensive contract):
+- [x] 4.4 JSON ingest (the expensive contract):
       already-valid JSON passthrough; `\n`/`\t`/`\r` inside a JSON
       string (the plpgsql/MySQL/DB2 fix-up); JSON Schema document with
       `$ref`/`$id`/`$schema` stored intact; garbage input still errors.
       **Verify:** Unity round-trip equals SQLite-style "store what ingest
       returned," not PG jsonb canonicalization.
-- [ ] 4.5 `FB_JSON_VALUE` / `${JRS}` path extract: `$.icon` on a lookup
+- [x] 4.5 `FB_JSON_VALUE` / `${JRS}` path extract: `$.icon` on a lookup
       `collection` fixture (QueryRef 1114 shape); missing path → NULL.
-- [ ] 4.6 NOW / CONVERT_TZ Unity with injectable clock.
+- [x] 4.6 NOW / CONVERT_TZ Unity with injectable clock.
 
 ### Done means
 
@@ -1224,18 +1343,64 @@ JSON ingest/`$ref`/extract fixtures green; `mkp` green.
 
 | | |
 | --- | --- |
-| **State** | pending |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-09-16 |
+| **Result** | `mkt`/`mkq` green; `mkp` 2,080 files PASS; named `mku` for each `fns_*` green. SHA-256 `0`+`testpass` = `CUQEdl7cgIo2iGBfQmsuosLbdT9uLVpbm/rRJGQlbw0=` matches SQLite `crypto_sha256`. Coverage: base64 100%, sha256 93%, brotli 67% (<100 lines), json 82%, tz 83%. |
+| **Variances** | `FB_TIME_ADD` / `FB_SESSION_SECS` deferred to Phase 6/8 (not in this phase's work items). Nested wrapper evaluated in Unity by extract-and-compose; no `sql_expr.c`. `FB_NOW` is UTC `YYYY-MM-DD HH:MM:SS`. CONVERT_TZ is mutex + `tzset` + OS zoneinfo. |
 
 ### Working Log
 
-(empty until the phase runs)
+- **2026-09-16** Phase 3 Status re-read complete. User said go with
+  recommended contracts (IANA CONVERT_TZ, SQL-style NOW, dummy SHA-256
+  fixture, no mini SQL evaluator, TIME_ADD deferred).
+- Files: `fns_base64`, `fns_brotli`, `fns_sha256`, `fns_json`,
+  `fns_tz` under `src/database/firebase/`. C names
+  `firebase_base64_decode` etc. (SQL `FB_*` mapping is Phase 6).
+- 4.1: wrap `utils_base64_*` (RFC 4648 `+/` with padding). Round-trip
+  including `+/8A`.
+- 4.2: `libbrotlidec`. lua-brotli quality 11 fixtures
+  (`iwWASGVsbG8gV29ybGQhAw==` → `Hello World!`; payload
+  `Phase4 firebase brotli quality 11 fixture`) plus extras UDF
+  `jwWASGVsbG8gV29ybGQhAw==`. Wrapped
+  `FB_BROTLI_DECOMPRESS(FB_BASE64_DECODE('…'))` in Unity. Fail closed
+  at `FIREBASE_MAX_FIELD_BYTES` (900 KiB).
+- 4.3: `firebase_sha256_b64(a, b)` concatenates UTF-8 strings, SHA-256,
+  standard base64. Fixture recorded in the test (SQLite + openssl).
+- 4.4: jansson fast-path returns original text; fix-up only `\n`/`\t`/`\r`
+  inside double-quoted strings; `$ref`/`$id`/`$schema` passthrough;
+  garbage → NULL.
+- 4.5: `$.icon`, `$.support prompts`, nested `$.a.b`, array `[n]`;
+  missing / JSON null → NULL.
+- 4.6: injectable `firebase_now_test_set_unix`. CONVERT_TZ DST-aware
+  (UTC→America/Vancouver winter `04:00:00`, summer `05:00:00`). Unknown
+  zone / path traversal → NULL. Same zone passthrough.
+- Keep-alive: `firebase_engine_test_functions` calls every `FB_*` with
+  NULL (and NOW) so `--gc-sections` does not drop them before Phase 6
+  `sql_expr`. `firebase_get_interface` references that function via an
+  always-false `connect == NULL` branch.
+- No Test 37, no Cockroach deletes, no Firestore in this phase.
 
 ### Lessons learned
 
-(empty until the phase runs)
+- `BrotliDecoderDecompressStream` on junk returns
+  `NEEDS_MORE_INPUT`, not `ERROR`. Treating only `ERROR`/`SUCCESS`
+  loops forever. Treat any non-SUCCESS except `NEEDS_MORE_OUTPUT` as
+  failure.
+- lua-brotli quality 11 and the extras UDF short fixture are **not**
+  the same bytes for `Hello World!` (`iwWA…` vs `jwWA…`); both
+  decompress. Lock quality 11 on the Lua compressor; the engine only
+  decompresses.
+- SHA-256 must take two **strings** (`'0'`, password), not an int.
+  `utils_password_hash` is the same concat for decimal ids but is
+  mocked in some Unity configs; OpenSSL `SHA256` + `utils_base64_encode`
+  is the stable path.
+- JSON ingest must not `json_dumps` the parse tree (that is PG jsonb
+  canonicalization). Valid input returns `strdup` of the original.
+- CONVERT_TZ on this box is DST-aware via `/usr/share/zoneinfo`. The
+  SQLite extra's 8-hour Vancouver stub would have failed the July
+  fixture (`05:00:00` vs `04:00:00`).
+- `TZ` + `tzset` + `mktime` must run under a mutex; Hydrogen is
+  multithreaded. QueryRefs do not call `CONVERT_TZ` today.
 
 ---
 
@@ -1869,14 +2034,33 @@ Port scheme: Test 37 → **537x**.
   Lock 18 kept fail-closed (900 KiB field, 500 writes/txn; split the
   migration, do not auto-chunk). Next free Acuranzo **1383**. Lookup
   030 still ends at key 5. Phase 1 waits for an explicit go.
+- **(2026-09-16, Phase 1 complete)** extras/firebase_emulator start/stop
+  verified on `:8080` with pinned `firebase-tools@15.30.1` (local npm,
+  no Google login). UI disabled. SECRETS names:
+  `FIREBASE_PROJECT` / `FIREBASE_EMULATOR_HOST` /
+  `FIREBASE_EMULATOR_PORT` / `FIREBASE_SA_JSON`. Next is Phase 2;
+  do not start until asked.
+- **(2026-09-16, Phase 3 complete)** C engine skeleton: enum after
+  DB2 before AI; `firebase://` before SQLite fallback; fifth
+  `firebase_count` out-param on `database_get_counts_by_type`;
+  HTTP GET health + Unity seam; emulator-only connect (production
+  JWT Phase 16). User applied Lookup 030 key 6 (`acuranzo_1383`).
+  Next is Phase 4; do not start until asked.
+- **(2026-09-16, Phase 4 complete)** In-process `FB_*` Unity-green:
+  Base64, Brotli (lua-brotli q11 + extras fixture), SHA-256 login
+  fixture matches SQLite, JSON ingest/`$ref`/extract, NOW + IANA
+  CONVERT_TZ. `FB_TIME_ADD`/`FB_SESSION_SECS` deferred to Phase 6/8.
+  Next is Phase 5 SQL DDL; do not start until asked.
 
 ### Surprises / deviations (historical, still true)
 
-- Helium Test 31 / Test 71 / `lua.c` already list **four** dialects,
-  not seven. Cockroach was never a Helium engine.
+- Helium Test 31 / Test 71 / `lua.c` listed **four** dialects at plan
+  authoring. Phase 2 added firebase (dialect 6); `lua.c` `engines[]`
+  now includes it. Cockroach was never a Helium engine.
 - Lookup 030 key 5 is "MS SQL Server" and unused; do not steal it.
-- `database_get_counts_by_type` has four out-params. Extending it is a
-  Phase 3 chore.
+  Key 6 (Firebase) is `acuranzo_1383.lua`, applied by the user.
+- `database_get_counts_by_type` now has five out-params
+  (`firebase_count` last). `launch_database.c` still counts four.
 - SQLite crypto/brotli/convert_tz are loaded from `/usr/local/lib/*.so`
   in `sqlite/connection.c` — Firebase has no equivalent load hook
   inside Google.

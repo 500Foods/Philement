@@ -48,6 +48,9 @@ tests/lib/node_modules/*
 # tests/lib/package*
 extras/hbm_browser/node_modules/*
 # extras/hbm_browser/package*
+extras/firebase_emulator/node_modules/
+extras/firebase_emulator/.emulator.pid
+extras/firebase_emulator/.firebase/
 
 # No clue where these are coming from all of a sudden?
 .cache/*

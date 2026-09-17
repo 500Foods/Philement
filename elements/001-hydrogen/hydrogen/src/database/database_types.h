@@ -10,7 +10,8 @@ typedef enum {
     DB_ENGINE_SQLITE,
     DB_ENGINE_MYSQL,
     DB_ENGINE_DB2,
-    DB_ENGINE_AI,         // For future AI/ML query processing
+    DB_ENGINE_FIREBASE,
+    DB_ENGINE_AI,         // Unity mock slot — do not reuse
     DB_ENGINE_MAX
 } DatabaseEngine;
 

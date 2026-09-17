@@ -53,6 +53,12 @@ This document provides a comprehensive reference for all environment variables u
    - [HYDROTST_DB_PASS](#hydrotst_db_pass)
    - [HYDROTST_DB_TYPE](#hydrotst_db_type)
 
+8. [Database Credentials - Firebase (Firestore)](#8-database-credentials---firebase-firestore)
+   - [FIREBASE_PROJECT](#firebase_project)
+   - [FIREBASE_EMULATOR_HOST](#firebase_emulator_host)
+   - [FIREBASE_EMULATOR_PORT](#firebase_emulator_port)
+   - [FIREBASE_SA_JSON](#firebase_sa_json)
+
 ---
 
 ## 1. Project Path Variables
@@ -733,6 +739,97 @@ export HYDROTST_DB_TYPE="db2"
 
 ---
 
+## 8. Database Credentials - Firebase (Firestore)
+
+These names are the Hydrogen config mapping for the fifth engine (see
+[FIREBASE.md](/docs/H/plans/FIREBASE.md) lock 9). The emulator does not
+need a Google account. **Never commit** a service-account JSON file or
+paste its contents into logs.
+
+Connection mapping: `User` = project id, `Pass` = SA JSON **path**
+(empty on emulator), `Host`/`Port` = emulator or
+`firestore.googleapis.com:443`, `Schema` prefix `testfb`.
+
+### FIREBASE_PROJECT
+
+**Description:** GCP project id. Maps to Hydrogen `User`. Emulator
+value is `hydrodemo` (no Google project required).
+
+**Tests:** none yet (Test 37 in FIREBASE Phase 10)
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/extras/firebase_emulator/README.md](/elements/001-hydrogen/hydrogen/extras/firebase_emulator/README.md)
+- [/elements/001-hydrogen/hydrogen/extras/firebase_emulator/start.sh](/elements/001-hydrogen/hydrogen/extras/firebase_emulator/start.sh)
+
+**Setup:**
+
+```bash
+export FIREBASE_PROJECT="hydrodemo"
+```
+
+### FIREBASE_EMULATOR_HOST
+
+**Description:** Firestore emulator host. Maps to Hydrogen `Host` when
+talking to the emulator. Production host is `firestore.googleapis.com`
+(not this variable).
+
+**Tests:** none yet (Test 37 in FIREBASE Phase 10)
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/extras/firebase_emulator/README.md](/elements/001-hydrogen/hydrogen/extras/firebase_emulator/README.md)
+- [/elements/001-hydrogen/hydrogen/extras/firebase_emulator/start.sh](/elements/001-hydrogen/hydrogen/extras/firebase_emulator/start.sh)
+
+**Setup:**
+
+```bash
+export FIREBASE_EMULATOR_HOST="127.0.0.1"
+```
+
+### FIREBASE_EMULATOR_PORT
+
+**Description:** Firestore emulator port. Maps to Hydrogen `Port` on
+the emulator (`8080`). Production port is `443`.
+
+**Tests:** none yet (Test 37 in FIREBASE Phase 10)
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/extras/firebase_emulator/README.md](/elements/001-hydrogen/hydrogen/extras/firebase_emulator/README.md)
+- [/elements/001-hydrogen/hydrogen/extras/firebase_emulator/firebase.json](/elements/001-hydrogen/hydrogen/extras/firebase_emulator/firebase.json)
+
+**Setup:**
+
+```bash
+export FIREBASE_EMULATOR_PORT="8080"
+```
+
+### FIREBASE_SA_JSON
+
+**Description:** Filesystem path to a Google service-account JSON key.
+Maps to Hydrogen `Pass`. **Empty on the emulator.** Production: a path
+only, never the JSON body. Empty `Pass` plus host
+`firestore.googleapis.com` must fail closed (C engine, Phase 3). Do
+not log this path's file contents.
+
+**Tests:** none yet (optional production, FIREBASE Phase 16)
+
+**Files:**
+
+- [/elements/001-hydrogen/hydrogen/extras/firebase_emulator/README.md](/elements/001-hydrogen/hydrogen/extras/firebase_emulator/README.md)
+- [/docs/H/plans/FIREBASE.md](/docs/H/plans/FIREBASE.md)
+
+**Setup:**
+
+```bash
+export FIREBASE_SA_JSON=""
+# production only (path, not the JSON):
+# export FIREBASE_SA_JSON="/path/to/service-account.json"
+```
+
+---
+
 ## Quick Setup Script
 
 Here's a complete script to set up all required environment variables:
@@ -801,6 +898,12 @@ export HYDROTST_DB_NAME="HYDROTST"
 export HYDROTST_DB_USER="db2admin"
 export HYDROTST_DB_PASS="your_db2_password"
 export HYDROTST_DB_TYPE="db2"
+
+# Firebase / Firestore emulator (no Google account; Pass empty)
+export FIREBASE_PROJECT="hydrodemo"
+export FIREBASE_EMULATOR_HOST="127.0.0.1"
+export FIREBASE_EMULATOR_PORT="8080"
+export FIREBASE_SA_JSON=""
 
 cd -
 echo "Environment setup complete!"
