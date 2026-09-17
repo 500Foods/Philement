@@ -10,6 +10,7 @@
 
 void test_firebase_execute_query_invalid(void);
 void test_firebase_execute_query_not_implemented(void);
+void test_firebase_execute_query_null_sql(void);
 void test_firebase_execute_prepared_not_implemented(void);
 
 void setUp(void) {
@@ -34,6 +35,19 @@ void test_firebase_execute_query_not_implemented(void) {
     TEST_ASSERT_EQUAL(DB_ERR_OTHER, result->error_class);
     TEST_ASSERT_NOT_NULL(result->error_message);
     free(result->error_message);
+    free(result->data_json);
+    free(result);
+}
+
+void test_firebase_execute_query_null_sql(void) {
+    DatabaseHandle handle = {0};
+    handle.engine_type = DB_ENGINE_FIREBASE;
+    QueryRequest request = {0};
+    QueryResult* result = NULL;
+    TEST_ASSERT_FALSE(firebase_execute_query(&handle, &request, &result));
+    TEST_ASSERT_NOT_NULL(result);
+    free(result->error_message);
+    free(result->data_json);
     free(result);
 }
 
@@ -46,6 +60,7 @@ void test_firebase_execute_prepared_not_implemented(void) {
     TEST_ASSERT_FALSE(firebase_execute_prepared(&handle, &stmt, &request, &result));
     TEST_ASSERT_NOT_NULL(result);
     free(result->error_message);
+    free(result->data_json);
     free(result);
 }
 
@@ -53,6 +68,7 @@ int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_firebase_execute_query_invalid);
     RUN_TEST(test_firebase_execute_query_not_implemented);
+    RUN_TEST(test_firebase_execute_query_null_sql);
     RUN_TEST(test_firebase_execute_prepared_not_implemented);
     return UNITY_END();
 }

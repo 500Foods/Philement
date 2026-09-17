@@ -23,6 +23,9 @@ void test_firebase_http_apply_curl_opts_null(void);
 void test_firebase_http_get_transport_failure(void);
 void test_firebase_http_test_queue_overflow_and_clear(void);
 void test_firebase_http_build_documents_url_defaults(void);
+void test_firebase_http_build_collection_and_document_url(void);
+void test_firebase_http_patch_and_delete_fixture(void);
+void test_firebase_http_method_matches(void);
 
 void setUp(void) {
     firebase_http_test_clear_responses();
@@ -145,7 +148,7 @@ void test_firebase_http_get_transport_failure(void) {
 }
 
 void test_firebase_http_test_queue_overflow_and_clear(void) {
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 40; i++) {
         firebase_http_test_set_response("overflow", 200, "{}");
     }
     firebase_http_test_clear_responses();
@@ -165,6 +168,51 @@ void test_firebase_http_build_documents_url_defaults(void) {
     free(url);
 }
 
+void test_firebase_http_build_collection_and_document_url(void) {
+    TEST_ASSERT_NULL(firebase_http_build_collection_url(NULL, "t"));
+    TEST_ASSERT_NULL(firebase_http_build_document_url("http://x/", NULL, "id"));
+    char* col = firebase_http_build_collection_url(
+        "http://127.0.0.1:8080/v1/projects/hydrodemo/databases/(default)/documents/",
+        "testfb_queries");
+    TEST_ASSERT_NOT_NULL(col);
+    TEST_ASSERT_NOT_NULL(strstr(col, "documents/testfb_queries"));
+    free(col);
+    char* doc = firebase_http_build_document_url(
+        "http://127.0.0.1:8080/v1/projects/hydrodemo/databases/(default)/documents/",
+        "_schema", "testfb_queries");
+    TEST_ASSERT_NOT_NULL(doc);
+    TEST_ASSERT_NOT_NULL(strstr(doc, "_schema/testfb_queries"));
+    free(doc);
+}
+
+void test_firebase_http_patch_and_delete_fixture(void) {
+    firebase_http_test_set_method_response("PATCH", "_schema/testfb_queries", 200, "{\"ok\":true}");
+    FirebaseHttpResponse* resp = firebase_http_patch(
+        "http://127.0.0.1:8080/v1/projects/hydrodemo/databases/(default)/documents/_schema/testfb_queries",
+        "{\"fields\":{}}", NULL, false, NULL, NULL);
+    TEST_ASSERT_NOT_NULL(resp);
+    TEST_ASSERT_EQUAL(200, resp->http_status);
+    TEST_ASSERT_EQUAL_STRING("{\"ok\":true}", resp->body);
+    TEST_ASSERT_EQUAL_STRING("PATCH", firebase_http_test_last_method());
+    firebase_http_response_free(resp);
+
+    firebase_http_test_set_method_response("DELETE", "_schema/testfb_queries", 200, "{}");
+    resp = firebase_http_delete(
+        "http://127.0.0.1:8080/v1/projects/hydrodemo/databases/(default)/documents/_schema/testfb_queries",
+        NULL, false, NULL, NULL);
+    TEST_ASSERT_NOT_NULL(resp);
+    TEST_ASSERT_EQUAL(200, resp->http_status);
+    TEST_ASSERT_EQUAL_STRING("DELETE", firebase_http_test_last_method());
+    firebase_http_response_free(resp);
+}
+
+void test_firebase_http_method_matches(void) {
+    TEST_ASSERT_TRUE(firebase_http_method_matches("GET", NULL));
+    TEST_ASSERT_TRUE(firebase_http_method_matches("PATCH", "patch"));
+    TEST_ASSERT_FALSE(firebase_http_method_matches("GET", "PATCH"));
+    TEST_ASSERT_FALSE(firebase_http_method_matches(NULL, "GET"));
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_firebase_http_response_alloc_free);
@@ -182,5 +230,8 @@ int main(void) {
     RUN_TEST(test_firebase_http_get_transport_failure);
     RUN_TEST(test_firebase_http_test_queue_overflow_and_clear);
     RUN_TEST(test_firebase_http_build_documents_url_defaults);
+    RUN_TEST(test_firebase_http_build_collection_and_document_url);
+    RUN_TEST(test_firebase_http_patch_and_delete_fixture);
+    RUN_TEST(test_firebase_http_method_matches);
     return UNITY_END();
 }

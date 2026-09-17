@@ -53,8 +53,8 @@ Replace the CockroachDB operator slot with a real fifth Hydrogen engine
 (`database_firebase.lua`, complete macro set). Brotli/Base64/SHA-256 live
 in-process (extras-UDF analog). Full Acuranzo AutoMigrations, no v1 subset.
 Cockroach is a PostgreSQL alias today (zero C). Yugabyte and MariaDB stay.
-Phases 0–16; Phases 0–4 complete (2026-09-16). Next: Phase 5 SQL DDL
-(wait for go).
+Phases 0–16; Phases 0–6 complete (2026-09-17). Next: Phase 7
+INSERT…SELECT / CTE / MAX+1 / RETURNING (wait for go).
 
 ### [MIRAGE PLAN](/docs/H/plans/MIRAGE_PLAN.md)
 
