@@ -99,11 +99,11 @@ Each phase is worked in its **own conversation**. Follow this sequence:
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-09-16):** Phase 4 complete.
-In-process `FB_*` functions Unity-green (Base64, Brotli q11, SHA-256
-login fixture matches SQLite, JSON ingest/`$ref`/extract, NOW + IANA
-CONVERT_TZ). `mkt`/`mkp` green, no new `static`. Next: **Phase 5
-(SQL DDL)**. Do not start Phase 5 until the user says go. No Test 37,
+**CURRENT PAUSE POINT (as of 2026-09-17):** Phase 6 complete.
+SQL DML Unity-green (INSERT VALUES, UPDATE, DELETE, FB_* eval,
+PK document id `30_6`, 900 KiB fail-closed). `mkt`/`mkp` green, no
+new `static`. Next: **Phase 7 (INSERT…SELECT / CTE / MAX+1 /
+RETURNING)**. Do not start Phase 7 until the user says go. No Test 37,
 no Cockroach deletes.
 
 Keep this block current when a phase finishes (date, result, next phase
@@ -148,7 +148,7 @@ number). It is the first thing a new session reads.
 | --- | --- |
 | **Band** | P2 — new engine, after Auth Finale / quality gates |
 | **Effort** | XL (SQL-on-Firestore interpreter + in-process UDF-class functions + Helium dialect + emulator CI + Cockroach retirement) |
-| **Done** | ~30% — Phases 0–4 complete |
+| **Done** | ~44% — Phases 0–6 complete |
 | **Why this shape** | Cockroach never earned a C implementation. Firebase cannot lean on PostgreSQL and cannot load C UDFs. The existing ~380 Lua files emit SQL; the engine must run that SQL. |
 | **Do not start casually** | Touches `DatabaseEngine` enum, registry, DQM, Helium `database.lua` for four designs, Test 31/37/71, the 7-engine blackbox matrix, SchemaTool, Lookup 030, and a SQL interpreter. |
 
@@ -911,8 +911,8 @@ fence. Do not wait until Phase 15.
 | 2 | Complete `database_firebase.lua` in four designs; Test 31 generates firebase SQL; `if engine` arms include firebase; lookup 030 key 6 packet | M | complete |
 | 3 | C engine registers, `firebase://`, connect + health vs emulator or seam | M | complete |
 | 4 | In-process Base64 / Brotli / SHA-256 / JSON ingest+extract Unity-green; hash and JSON contracts match other engines | M | complete |
-| 5 | CREATE/DROP TABLE, INDEX, ALTER, CREATE FUNCTION no-op against emulator/seam | L | pending |
-| 6 | INSERT VALUES / UPDATE / DELETE with FB_* expression eval | L | pending |
+| 5 | CREATE/DROP TABLE, INDEX, ALTER, CREATE FUNCTION no-op against emulator/seam | L | complete |
+| 6 | INSERT VALUES / UPDATE / DELETE with FB_* expression eval | L | complete |
 | 7 | INSERT…SELECT, WITH, COALESCE(MAX)+1, RETURNING | L | pending |
 | 8 | SELECT WHERE/ORDER/LIMIT, `:NAME` binds, PARAMETER_BINDING draft | M | pending |
 | 9 | JOIN / LEFT JOIN / LATERAL in-memory; QueryRef-shaped fixtures green | L | pending |
@@ -1417,11 +1417,11 @@ Phase 4 Status complete.
 
 ### Work items
 
-- [ ] 5.1 Parser for CREATE TABLE (columns, NOT NULL, PK, UNIQUE).
-- [ ] 5.2 DROP TABLE + DROP_CHECK.
-- [ ] 5.3 CREATE INDEX recorded; emulator smoke.
-- [ ] 5.4 ALTER ADD/DROP/RENAME; 1190-class rebuild path.
-- [ ] 5.5 CREATE FUNCTION no-op for known `FB_*` names.
+- [x] 5.1 Parser for CREATE TABLE (columns, NOT NULL, PK, UNIQUE).
+- [x] 5.2 DROP TABLE + DROP_CHECK.
+- [x] 5.3 CREATE INDEX recorded; emulator smoke.
+- [x] 5.4 ALTER ADD/DROP/RENAME; 1190-class rebuild path.
+- [x] 5.5 CREATE FUNCTION no-op for known `FB_*` names.
 
 ### Done means
 
@@ -1436,18 +1436,56 @@ when a row exists if DROP_CHECK is in the statement.
 
 | | |
 | --- | --- |
-| **State** | pending |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-09-17 |
+| **Result** | `mkt`/`mkq` green; `mkp` 2,093 files PASS; named `mku` for parse/DDL/query/http green. Coverage: sql_parse 78%, sql_ddl 76%, query 75% of 59 lines, http 91%. Emulator smoke: PATCH/GET/DELETE `_schema/testfb_queries` HTTP 200/200/200 then GET 404. |
+| **Variances** | Transactions and prepared statements stay fail-closed (`prepare` fails and `database_engine_execute` already falls back to `execute_query`). 1190 `INSERT … SELECT *` stays Phase 7. DROP_CHECK is a special-case `SELECT FB_REFUSE_DROP` (not a general SELECT interpreter). |
 
 ### Working Log
 
-(empty until the phase runs)
+- **2026-09-17** Phase 4 Status re-read complete. User said go as-is
+  (catalog `_schema` with doc ids = collection names; unqualified
+  `RENAME TO` gets the connection schema prefix; transactions
+  fail-closed; HTTP PATCH/DELETE on the existing seam). Scope locked
+  to `src/database/firebase/` plus Unity tests — no other-engine
+  edits.
+- Files: `sql_parse.{c,h}`, `sql_ddl.{c,h}`; `query.c` dispatches DDL;
+  `http.c` gained method-aware fixtures plus PATCH/DELETE.
+- 5.1: Acuranzo-shaped CREATE TABLE (types integer/bigint/real/text/
+  json/timestamp, NOT NULL, DEFAULT, table-level PK/UNIQUE). 1000
+  queries-shaped fixture and 1001 composite PK parse green.
+- 5.2: DROP TABLE deletes data docs then the catalog doc. DROP_CHECK
+  `SELECT FB_REFUSE_DROP('testfb_lookups') WHERE EXISTS (SELECT 1
+  FROM testfb_lookups)` fails with `DB_ERR_OTHER` when the collection
+  has documents; empty collection succeeds.
+- 5.3: CREATE INDEX / CREATE UNIQUE INDEX append to catalog
+  `indexes`. Live emulator: PATCH/GET `_schema/testfb_queries` 200,
+  index PATCH 200, DELETE 200, GET 404. Emulator left down.
+- 5.4: ALTER ADD/DROP COLUMN update catalog metadata. RENAME TO
+  copies catalog (and data docs if any) and prefixes unqualified
+  names (`accounts` → `testfb_accounts`). 1190 CREATE+DROP+RENAME
+  pieces work; INSERT SELECT is Phase 7.
+- 5.5: CREATE/DROP FUNCTION no-op for known `FB_*` names; unknown
+  CREATE FUNCTION errors; `DROP FUNCTION IF EXISTS` unknown succeeds.
+- No Test 37, no Cockroach deletes, no `sql_expr.c` / DML.
 
 ### Lessons learned
 
-(empty until the phase runs)
+- APPLY always sets `use_prepared_statement=true`, but a failing
+  `prepare_statement` already falls back to `execute_query`. Leaving
+  prepared fail-closed does not block later APPLY once transactions
+  exist.
+- `_schema` as a Firestore collection id is legal (not `__.*__`).
+  Emulator PATCH/GET/DELETE of `_schema/testfb_queries` worked on
+  first try.
+- 1190 `RENAME TO ${TABLE}` is unqualified. The interpreter must
+  apply `schema_` itself or the catalog doc lands at `accounts`
+  instead of `testfb_accounts`.
+- DROP_CHECK is a separate APPLY statement. A successful SELECT that
+  returns a row would not stop APPLY; `FB_REFUSE_DROP` must fail the
+  statement (`success=false`, `DB_ERR_OTHER`).
+- Method-aware HTTP fixtures are required: GET and PATCH of the same
+  `_schema/…` URL would otherwise steal each other's queue slots.
 
 ---
 
@@ -1464,11 +1502,11 @@ Phase 5 Status complete.
 
 ### Work items
 
-- [ ] 6.1 INSERT VALUES multi-row; PK → document id; UNIQUE/NOT NULL.
-- [ ] 6.2 Expression eval hooks Phase 4 functions (COMPRESS, SHA256,
+- [x] 6.1 INSERT VALUES multi-row; PK → document id; UNIQUE/NOT NULL.
+- [x] 6.2 Expression eval hooks Phase 4 functions (COMPRESS, SHA256,
       JSON_INGEST, NOW).
-- [ ] 6.3 UPDATE / DELETE WHERE on simple predicates.
-- [ ] 6.4 900 KiB fail closed.
+- [x] 6.3 UPDATE / DELETE WHERE on simple predicates.
+- [x] 6.4 900 KiB fail closed.
 
 ### Done means
 
@@ -1484,18 +1522,51 @@ and stores plaintext.
 
 | | |
 | --- | --- |
-| **State** | pending |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-09-17 |
+| **Result** | `mkt`/`mkq` green; `mkp` 2,104 files PASS; named `mku` for expr/parse/DML/query/http green. Coverage: sql_expr 80%, sql_dml 79%, sql_parse 80%, query 75% of 61 lines, http 91%. Lookups INSERT `030`/`6` → document id `30_6`; queries `code` stores Brotli plaintext. |
+| **Variances** | Transactions and prepared statements stay fail-closed (multi-row INSERT is sequential PATCH, not atomic). `FB_TIME_ADD` / `FB_SESSION_SECS` still Phase 8. `INSERT … SELECT` / `WITH` stay UNSUPPORTED (Phase 7). HTTP fixture queue cap raised 8 → 32. DML parse lives in `sql_expr.c` so `sql_dml.c` stays under 1000 lines. |
 
 ### Working Log
 
-(empty until the phase runs)
+- **2026-09-17** Phase 5 Status re-read complete. User said go as-is
+  (document id decimal no pad `30_6`; WHERE `IN (literals)`; timestamp
+  columns as RFC3339 `timestampValue`; transactions fail-closed;
+  `FB_TIME_ADD` deferred). Scope stayed `src/database/firebase/` plus
+  Unity — no Test 37, no Cockroach deletes.
+- Files: `sql_expr.{c,h}`, `sql_dml.{c,h}`; `sql_parse` gained INSERT /
+  UPDATE / DELETE kinds; `query.c` dispatches DML vs DDL.
+- 6.1: INSERT VALUES multi-row. Composite PK joined by `_` from
+  evaluated integers (`030` → `30`). Duplicate PK GET-then-reject.
+  UNIQUE scans the collection. NOT NULL and omitted columns (catalog
+  DEFAULT or null) enforced.
+- 6.2: Expression eval of literals, `NULL`, nested parens, and Phase 4
+  `FB_*` (binary-safe `FB_BROTLI_DECOMPRESS(FB_BASE64_DECODE(…))`).
+  SHA-256 fixture matches Phase 4. `FB_JSON_INGEST` and `FB_NOW()`
+  write JSON text and RFC3339 timestamps.
+- 6.3: UPDATE GET-merge-PATCH (REST PATCH without `updateMask` would
+  wipe fields). DELETE lists then deletes. WHERE: `=`, `AND`, `IS NULL`,
+  `IN (literals)`. No WHERE → fail closed.
+- 6.4: Field size after eval fail-closed at `FIREBASE_MAX_FIELD_BYTES`.
+- HTTP seam queue cap 32 for multi-row GET+PATCH fixtures.
+- No Test 37, no Cockroach deletes, no SELECT interpreter.
 
 ### Lessons learned
 
-(empty until the phase runs)
+- SQL integer `030` is decimal 30 (`strtoll` base 10, never base 0).
+  Document ids stringify the evaluated integer, so Lookup 030 key 6 is
+  `30_6`, not `030_6`.
+- Firestore REST PATCH without `updateMask` replaces the whole document.
+  UPDATE must GET, merge SET into existing `fields`, then PATCH.
+- Collection list URLs are prefixes of document URLs. Enqueue the list
+  GET before per-document GET/PATCH, or a `documents/testfb_lookups`
+  fixture steals `…/testfb_lookups/30_6`.
+- `sql_parse.c` was already ~800 lines; DML parse had to live elsewhere
+  (`sql_expr.c`) to stay under the 1000-line cap. `sql_dml.c` is execute
+  only.
+- Unity `TEST_ASSERT_*` plus `free(result->error_message)` on a reused
+  `QueryResult*` is a cppcheck `doubleFree` false positive. A small
+  `release_query_result` helper clears it.
 
 ---
 
@@ -2051,6 +2122,11 @@ Port scheme: Test 37 → **537x**.
   fixture matches SQLite, JSON ingest/`$ref`/extract, NOW + IANA
   CONVERT_TZ. `FB_TIME_ADD`/`FB_SESSION_SECS` deferred to Phase 6/8.
   Next is Phase 5 SQL DDL; do not start until asked.
+- **(2026-09-17, Phase 6 complete)** INSERT VALUES / UPDATE / DELETE
+  Unity-green. Document id from evaluated PK (`30_6`). Brotli
+  decompress-on-INSERT stores plaintext. Transactions still
+  fail-closed. Next is Phase 7 INSERT…SELECT / CTE / MAX+1 /
+  RETURNING; do not start until asked.
 
 ### Surprises / deviations (historical, still true)
 

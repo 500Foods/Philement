@@ -15,6 +15,7 @@
 #define FIREBASE_DEFAULT_DATABASE "(default)"
 #define FIREBASE_MAX_FIELD_BYTES (900 * 1024)
 #define FIREBASE_ZONEINFO_DIR "/usr/share/zoneinfo"
+#define FIREBASE_SCHEMA_COLLECTION "_schema"
 
 typedef struct FirebaseConnection {
     char* project;
