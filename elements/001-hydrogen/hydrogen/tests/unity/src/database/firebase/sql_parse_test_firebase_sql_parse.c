@@ -180,7 +180,7 @@ void test_firebase_sql_parse_unsupported(void) {
     firebase_sql_statement_free(stmt);
 
     stmt = firebase_sql_parse("INSERT INTO t (a) SELECT 1");
-    TEST_ASSERT_EQUAL(FIREBASE_SQL_KIND_UNSUPPORTED, stmt->kind);
+    TEST_ASSERT_NOT_NULL(stmt->error_message);
     firebase_sql_statement_free(stmt);
 
     stmt = firebase_sql_parse("CREATE VIEW v AS SELECT 1");

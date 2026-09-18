@@ -75,6 +75,14 @@ void test_firebase_expr_parse_call_nested(void) {
     TEST_ASSERT_EQUAL(FIREBASE_EXPR_INTEGER, expr->kind);
     TEST_ASSERT_EQUAL_STRING("42", expr->text);
     firebase_expr_free(expr);
+
+    sql = "COALESCE(MAX(query_id), 0) + 1";
+    expr = firebase_expr_parse(&sql, &err);
+    TEST_ASSERT_EQUAL(FIREBASE_EXPR_ADD, expr->kind);
+    TEST_ASSERT_EQUAL(2, expr->arg_count);
+    TEST_ASSERT_EQUAL(FIREBASE_EXPR_CALL, expr->args[0]->kind);
+    TEST_ASSERT_EQUAL_STRING("COALESCE", expr->args[0]->text);
+    firebase_expr_free(expr);
 }
 
 void test_firebase_expr_parse_errors(void) {

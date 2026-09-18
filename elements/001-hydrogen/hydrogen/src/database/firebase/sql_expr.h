@@ -15,7 +15,8 @@ typedef enum {
     FIREBASE_EXPR_NUMBER,
     FIREBASE_EXPR_STRING,
     FIREBASE_EXPR_IDENT,
-    FIREBASE_EXPR_CALL
+    FIREBASE_EXPR_CALL,
+    FIREBASE_EXPR_ADD
 } FirebaseExprKind;
 
 typedef struct FirebaseExpr FirebaseExpr;
@@ -58,6 +59,7 @@ bool firebase_value_set_int(FirebaseValue* value, long long number);
 bool firebase_value_set_double(FirebaseValue* value, double number);
 bool firebase_value_copy_text(FirebaseValue* value, const char* text);
 bool firebase_value_take_data(FirebaseValue* value, FirebaseValKind kind, char* data, size_t length);
+bool firebase_value_copy(FirebaseValue* dest, const FirebaseValue* src);
 char* firebase_value_as_text(const FirebaseValue* value);
 bool firebase_value_as_int(const FirebaseValue* value, long long* out);
 bool firebase_value_is_null(const FirebaseValue* value);

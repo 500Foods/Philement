@@ -12,6 +12,7 @@
 #include "sql_expr.h"
 #include "sql_ddl.h"
 #include "sql_dml.h"
+#include "sql_select.h"
 #include "fns_tz.h"
 
 #include <jansson.h>
@@ -391,6 +392,9 @@ bool firebase_dml_unique_conflict(json_t* unique_keys, json_t* new_fields, json_
 
 bool firebase_dml_insert(DatabaseHandle* connection, const FirebaseSqlStatement* stmt,
                          QueryResult** result) {
+    if (stmt && (stmt->insert.select.star || stmt->insert.select.item_count > 0)) {
+        return firebase_dml_insert_select(connection, stmt, result);
+    }
     FirebaseConnection* fb = firebase_ddl_connection(connection);
     if (!fb || !stmt || !stmt->insert.table) {
         return firebase_dml_fail(result, "INSERT: invalid connection");

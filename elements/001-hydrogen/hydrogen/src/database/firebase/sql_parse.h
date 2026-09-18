@@ -91,12 +91,33 @@ typedef struct FirebaseSqlInsertRow {
     size_t count;
 } FirebaseSqlInsertRow;
 
+typedef struct FirebaseSqlSelectItem {
+    FirebaseExpr* expr;
+    char* alias;
+} FirebaseSqlSelectItem;
+
+typedef struct FirebaseSqlSelect {
+    bool star;
+    FirebaseSqlSelectItem* items;
+    size_t item_count;
+    char* from_name;
+} FirebaseSqlSelect;
+
+typedef struct FirebaseSqlCte {
+    char* name;
+    FirebaseSqlSelect query;
+} FirebaseSqlCte;
+
 typedef struct FirebaseSqlInsert {
     char* table;
     char** columns;
     size_t column_count;
     FirebaseSqlInsertRow* rows;
     size_t row_count;
+    FirebaseSqlCte cte;
+    FirebaseSqlSelect select;
+    char** returning;
+    size_t returning_count;
 } FirebaseSqlInsert;
 
 typedef struct FirebaseSqlAssign {
@@ -169,6 +190,10 @@ bool firebase_sql_where_add(FirebaseSqlWhere* where, FirebaseSqlPredicate pred);
 bool firebase_sql_finish_statement(const char** cursor, FirebaseSqlStatement* stmt);
 
 void firebase_sql_where_free(FirebaseSqlWhere* where);
+void firebase_sql_select_item_free(FirebaseSqlSelectItem* item);
+void firebase_sql_select_free(FirebaseSqlSelect* sel);
+void firebase_sql_cte_free(FirebaseSqlCte* cte);
+bool firebase_sql_select_add_item(FirebaseSqlSelect* sel, FirebaseSqlSelectItem item);
 void firebase_sql_insert_free(FirebaseSqlInsert* insert);
 void firebase_sql_update_free(FirebaseSqlUpdate* update);
 void firebase_sql_delete_free(FirebaseSqlDelete* del);

@@ -354,6 +354,56 @@ void firebase_sql_where_free(FirebaseSqlWhere* where) {
     memset(where, 0, sizeof(*where));
 }
 
+void firebase_sql_select_item_free(FirebaseSqlSelectItem* item) {
+    if (!item) {
+        return;
+    }
+    firebase_expr_free(item->expr);
+    free(item->alias);
+    item->expr = NULL;
+    item->alias = NULL;
+}
+
+void firebase_sql_select_free(FirebaseSqlSelect* sel) {
+    if (!sel) {
+        return;
+    }
+    if (sel->items) {
+        for (size_t i = 0; i < sel->item_count; i++) {
+            firebase_sql_select_item_free(&sel->items[i]);
+        }
+        free(sel->items);
+    }
+    free(sel->from_name);
+    memset(sel, 0, sizeof(*sel));
+}
+
+void firebase_sql_cte_free(FirebaseSqlCte* cte) {
+    if (!cte) {
+        return;
+    }
+    free(cte->name);
+    firebase_sql_select_free(&cte->query);
+    memset(cte, 0, sizeof(*cte));
+}
+
+bool firebase_sql_select_add_item(FirebaseSqlSelect* sel, FirebaseSqlSelectItem item) {
+    if (!sel) {
+        firebase_sql_select_item_free(&item);
+        return false;
+    }
+    FirebaseSqlSelectItem* grown = realloc(sel->items,
+                                           (sel->item_count + 1) * sizeof(FirebaseSqlSelectItem));
+    if (!grown) {
+        firebase_sql_select_item_free(&item);
+        return false;
+    }
+    sel->items = grown;
+    sel->items[sel->item_count] = item;
+    sel->item_count++;
+    return true;
+}
+
 void firebase_sql_insert_free(FirebaseSqlInsert* insert) {
     if (!insert) {
         return;
@@ -375,6 +425,14 @@ void firebase_sql_insert_free(FirebaseSqlInsert* insert) {
             }
         }
         free(insert->rows);
+    }
+    firebase_sql_cte_free(&insert->cte);
+    firebase_sql_select_free(&insert->select);
+    if (insert->returning) {
+        for (size_t i = 0; i < insert->returning_count; i++) {
+            free(insert->returning[i]);
+        }
+        free(insert->returning);
     }
     memset(insert, 0, sizeof(*insert));
 }

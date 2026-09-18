@@ -1,6 +1,6 @@
 /*
- * Firebase engine - query execution. Phase 6 dispatches DDL and DML;
- * SELECT besides DROP_CHECK stays unimplemented.
+ * Firebase engine - query execution. Phase 7 dispatches DDL and DML
+ * including INSERT…SELECT / CTE / RETURNING. Standalone SELECT stays Phase 8.
  */
 
 #include <src/hydrogen.h>

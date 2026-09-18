@@ -8,6 +8,7 @@
 #include "types.h"
 #include "sql_parse.h"
 #include "sql_expr.h"
+#include "sql_select.h"
 #include "fns_base64.h"
 #include "fns_brotli.h"
 #include "fns_json.h"
@@ -179,7 +180,40 @@ FirebaseExpr* firebase_expr_parse_primary(const char** cursor, char** error) {
 }
 
 FirebaseExpr* firebase_expr_parse(const char** cursor, char** error) {
-    return firebase_expr_parse_primary(cursor, error);
+    FirebaseExpr* left = firebase_expr_parse_primary(cursor, error);
+    if (!left) {
+        return NULL;
+    }
+    firebase_sql_skip(cursor);
+    while (cursor && *cursor && **cursor == '+') {
+        (*cursor)++;
+        FirebaseExpr* right = firebase_expr_parse_primary(cursor, error);
+        if (!right) {
+            firebase_expr_free(left);
+            return NULL;
+        }
+        FirebaseExpr* add = firebase_expr_alloc(FIREBASE_EXPR_ADD);
+        if (!add) {
+            firebase_expr_free(left);
+            firebase_expr_free(right);
+            firebase_expr_set_eval_error(error, "out of memory");
+            return NULL;
+        }
+        if (!firebase_expr_add_arg(add, left)) {
+            firebase_expr_free(add);
+            firebase_expr_free(right);
+            firebase_expr_set_eval_error(error, "out of memory");
+            return NULL;
+        }
+        if (!firebase_expr_add_arg(add, right)) {
+            firebase_expr_free(add);
+            firebase_expr_set_eval_error(error, "out of memory");
+            return NULL;
+        }
+        left = add;
+        firebase_sql_skip(cursor);
+    }
+    return left;
 }
 
 void firebase_value_init(FirebaseValue* value) {
@@ -256,6 +290,33 @@ bool firebase_value_take_data(FirebaseValue* value, FirebaseValKind kind, char* 
     value->data = data;
     value->length = length;
     return true;
+}
+
+bool firebase_value_copy(FirebaseValue* dest, const FirebaseValue* src) {
+    if (!dest || !src) {
+        return false;
+    }
+    if (src->kind == FIREBASE_VAL_NULL) {
+        return firebase_value_set_null(dest);
+    }
+    if (src->kind == FIREBASE_VAL_INT) {
+        return firebase_value_set_int(dest, src->i);
+    }
+    if (src->kind == FIREBASE_VAL_DOUBLE) {
+        return firebase_value_set_double(dest, src->d);
+    }
+    if (!src->data && src->length > 0) {
+        return false;
+    }
+    char* copy = malloc(src->length + 1);
+    if (!copy) {
+        return false;
+    }
+    if (src->data && src->length > 0) {
+        memcpy(copy, src->data, src->length);
+    }
+    copy[src->length] = '\0';
+    return firebase_value_take_data(dest, src->kind, copy, src->length);
 }
 
 char* firebase_value_as_text(const FirebaseValue* value) {
@@ -399,6 +460,36 @@ bool firebase_expr_eval(const FirebaseExpr* expr, FirebaseExprLookup lookup, voi
         }
         return true;
     }
+    if (expr->kind == FIREBASE_EXPR_ADD) {
+        if (expr->arg_count != 2) {
+            return firebase_expr_set_eval_error(error, "invalid addition");
+        }
+        FirebaseValue left;
+        FirebaseValue right;
+        firebase_value_init(&left);
+        firebase_value_init(&right);
+        if (!firebase_expr_eval(expr->args[0], lookup, userdata, &left, error) ||
+            !firebase_expr_eval(expr->args[1], lookup, userdata, &right, error)) {
+            firebase_value_free(&left);
+            firebase_value_free(&right);
+            return false;
+        }
+        if (firebase_value_is_null(&left) || firebase_value_is_null(&right)) {
+            firebase_value_free(&left);
+            firebase_value_free(&right);
+            return firebase_value_set_null(out);
+        }
+        long long left_i = 0;
+        long long right_i = 0;
+        bool ok = firebase_value_as_int(&left, &left_i) && firebase_value_as_int(&right, &right_i) &&
+                  firebase_value_set_int(out, left_i + right_i);
+        firebase_value_free(&left);
+        firebase_value_free(&right);
+        if (!ok) {
+            return firebase_expr_set_eval_error(error, "addition requires integers");
+        }
+        return true;
+    }
     if (expr->kind == FIREBASE_EXPR_CALL) {
         return firebase_expr_eval_call(expr, lookup, userdata, out, error);
     }
@@ -529,17 +620,18 @@ bool firebase_sql_parse_insert(const char** cursor, FirebaseSqlStatement* stmt) 
         return firebase_sql_set_error(stmt, "INSERT: missing table name");
     }
     firebase_sql_skip(cursor);
-    if (**cursor != '(') {
-        stmt->kind = FIREBASE_SQL_KIND_UNSUPPORTED;
-        return true;
+    if (**cursor == '(') {
+        FirebaseSqlKey cols = {0};
+        if (!firebase_sql_parse_ident_list(cursor, &cols)) {
+            return firebase_sql_set_error(stmt, "INSERT: invalid column list");
+        }
+        stmt->insert.columns = cols.columns;
+        stmt->insert.column_count = cols.count;
     }
-    FirebaseSqlKey cols = {0};
-    if (!firebase_sql_parse_ident_list(cursor, &cols)) {
-        return firebase_sql_set_error(stmt, "INSERT: invalid column list");
-    }
-    stmt->insert.columns = cols.columns;
-    stmt->insert.column_count = cols.count;
     if (!firebase_sql_match_keyword(cursor, "VALUES")) {
+        return firebase_sql_parse_insert_source(cursor, stmt);
+    }
+    if (stmt->insert.column_count == 0) {
         stmt->kind = FIREBASE_SQL_KIND_UNSUPPORTED;
         return true;
     }
@@ -614,7 +706,7 @@ bool firebase_sql_parse_insert(const char** cursor, FirebaseSqlStatement* stmt) 
         }
         break;
     }
-    return true;
+    return firebase_sql_parse_returning(cursor, stmt);
 }
 
 bool firebase_sql_parse_update(const char** cursor, FirebaseSqlStatement* stmt) {
@@ -680,6 +772,9 @@ bool firebase_expr_eval_call(const FirebaseExpr* expr, FirebaseExprLookup lookup
                              FirebaseValue* out, char** error) {
     if (!expr || !expr->text || !out) {
         return firebase_expr_set_eval_error(error, "invalid function call");
+    }
+    if (strcasecmp(expr->text, "MAX") == 0) {
+        return firebase_expr_set_eval_error(error, "MAX is only valid in SELECT");
     }
 
     FirebaseValue* args = NULL;
@@ -825,6 +920,21 @@ bool firebase_expr_eval_call(const FirebaseExpr* expr, FirebaseExprLookup lookup
                 if (!ok) {
                     free(converted);
                     firebase_expr_set_eval_error(error, "FB_CONVERT_TZ failed");
+                }
+            }
+        }
+    } else if (strcasecmp(name, "COALESCE") == 0) {
+        if (expr->arg_count < 1) {
+            firebase_expr_set_eval_error(error, "COALESCE expects at least one argument");
+        } else {
+            ok = firebase_value_set_null(out);
+            for (size_t i = 0; i < expr->arg_count; i++) {
+                if (!firebase_value_is_null(&args[i])) {
+                    ok = firebase_value_copy(out, &args[i]);
+                    if (!ok) {
+                        firebase_expr_set_eval_error(error, "out of memory");
+                    }
+                    break;
                 }
             }
         }
