@@ -24,8 +24,9 @@ Firebird is a SQL RDBMS (`libfbclient`). Hydrogen sends Helium SQL to it.
 | 11 Docs | pending | **Quick** |
 | 12 Coverage / completeness | pending | **Moderate** |
 
-Remaining: 2 Difficult (7, 10), 6 Moderate (2, 3, 5, 6, 9, 12), 5 Quick
-(0, 1, 4, 8, 11).
+Remaining: 2 Difficult (7, 10), 6 Moderate (2, 5, 6, 9, 12), 4 Quick
+(0, 1, 4, 8). Phase 3 reduced to verification (C-level firebase already
+gone); Phase 4 is Lua-level cruft removal.
 
 **Parity:** Firebird is a Hydrogen `DatabaseEngineInterface`, not a new
 API. Match PostgreSQL / SQLite / MySQL / DB2: same `QueryRequest` /
@@ -248,9 +249,22 @@ Do not re-implement these; they are constraints.
 | MariaDB | **MySQL** | **mysql** | same as MySQL, schema `demomrdb` | Alias |
 | YugabyteDB | **PostgreSQL** | **postgresql** | `${env.YUGABYTE_DB_*}` | Alias; **stays** |
 | CockroachDB | **PostgreSQL** | **postgresql** | schema `testcrdb` / `democrdb` | Alias; **this plan retires it** |
-| Firebase | `src/database/firebase/` | `database_firebase.lua` | (not in the 7-engine matrix) | Wrong product; **Phases 3–4 delete** |
+| Firebase | **removed** | `database_firebase.lua` **missing**; `engines.firebase` / `require(...firebase...)` survive in Lua | (not in 7-engine matrix) | C-level gone; Lua-level cruft remains for Phase 4 |
 
-C enum today still has `DB_ENGINE_FIREBASE` after DB2, before AI.
+**`DB_ENGINE_FIREBASE` is already removed from `database_types.h`.** The enum
+currently is PostgreSQL=0, SQLite=1, MySQL=2, DB2=3, `DB_ENGINE_AI` (Unity mock),
+MAX — no firebase slot. `grep -rn firebase src/ tests/unity/ cmake/` finds
+**zero** C-level references. `lua.c` `engines[]` is `{"sqlite","postgresql","mysql","db2"}`
+(no firebase). `database_firebase.lua` does not exist on disk (all four designs).
+`extras/firebase_emulator/` is absent.
+
+However, Lua-level **cruft** remains: `database.lua` in all four Helium designs
+still sets `firebase = true`, `firebase = 6`, and calls
+`require("database_firebase")` (dangling). Migration files contain
+`if engine == 'firebase'` branches. Test 31 lists `firebase` in `ENGINES`.
+Config schema, SECRETS, and docs still reference firebase. Phase 4 removes this
+Lua-level cruft after Phase 2 provides `database_firebird.lua`.
+
 `grep` of `src/**/*.c` for `cockroach` is **empty**.
 
 ### This machine (Phase 1 baseline)
@@ -543,7 +557,8 @@ These are **proposed** until Phase 0 Status is complete.
    before the SQLite fallback.
 10. **Enum:** final order in [Coordination with MSSQL](#coordination-with-mssql).
     Phase 5 adds `DB_ENGINE_FIREBIRD` (and unused `DB_ENGINE_MSSQL`).
-    Phase 3 **removes** `DB_ENGINE_FIREBASE`.
+    `DB_ENGINE_FIREBASE` is **already removed** from `database_types.h`;
+    Phase 3 verifies it stays gone.
 11. **Lookup 030 key 6 = Firebird**, dialect id 6. Packet 1384 UPDATE,
     not a new key.
 12. **Yugabyte stays. MariaDB stays.** Only Cockroach is retired
@@ -612,7 +627,8 @@ structures** were skipped. Phase 12 re-checks the whole table.
 | `normalize_engine_name("firebird")` | |
 | `lua.c` engines[] includes `"firebird"` | Payload contains `database_firebird.lua` |
 | `database_queue_determine_engine_type` | `firebird://` |
-| `database_get_counts_by_type` | `firebird_count`; keep/replace `firebase_count` in Phase 3 |
+| `database_get_counts_by_type` | `firebird_count`; `firebase_count` already absent from C |
+| `lua.c` engines[] | already lacks `"firebase"`; firebird added Phase 5 |
 
 ### C tree (`src/database/firebird/`)
 
@@ -638,16 +654,16 @@ No `sql_*.c`, no `http.c`, no `fns_*.c`.
 
 | Must be gone | Notes |
 | --- | --- |
-| `src/database/firebase/` | Entire tree |
-| `tests/unity/src/database/firebase/` | Entire tree |
-| `DB_ENGINE_FIREBASE` | |
-| `extras/firebase_emulator/` | |
-| `database_firebase.lua` | All four designs |
-| `engines.firebase` / `query_dialects.firebase` | |
-| `lua.c` `"firebase"` | |
-| Test 31 `firebase` | |
-| config schema `"firebase"` | |
-| SECRETS `FIREBASE_*` | |
+| `src/database/firebase/` | Already absent (C cleanup done pre-plan) |
+| `tests/unity/src/database/firebase/` | Already absent |
+| `DB_ENGINE_FIREBASE` | Already removed from `database_types.h` |
+| `extras/firebase_emulator/` | Already absent |
+| `database_firebase.lua` | Already absent (file never existed on disk post-removal) |
+| `engines.firebase` / `query_dialects.firebase` | Phase 4 removes from `database.lua` |
+| `lua.c` `"firebase"` | Already absent from `engines[]` |
+| Test 31 `firebase` entry | Phase 4 replaces with firebird |
+| config schema `"firebase"` | Phase 4 drops; or verify already absent |
+| SECRETS `FIREBASE_*` | Phase 4 drops |
 
 ### Tests / docs
 
@@ -692,11 +708,11 @@ fence.
 
 | Phase | Done means (one line) | Effort | Status |
 | --- | --- | --- | --- |
-| 0 | Locks approved (Firebird 4, libfbclient, empty schema, key 6 relabel, enum, teardown-before-C); no C | S | pending |
+| 0 | Locks approved (Firebird 4, libfbclient, empty schema, key 6 relabel, enum, teardown-before-C, remaining cruft survey); no C | S | pending |
 | 1 | extras/firebird README + start/stop/create db; `dnf` Firebird 4 on 3050 documented | S | pending |
 | 2 | Complete `database_firebird.lua` in four designs; Test 31 generates firebird SQL; lookup 1384 packet | M | pending |
-| 3 | `src/database/firebase/` and Unity gone; enum/registry/connstring have no FIREBASE; `mkt`/`mkp` green | M | pending |
-| 4 | No `database_firebase.lua`; no emulator extra; Test 31 ENGINES has firebird not firebase | S | pending |
+| 3 | Verify firebase C-level code already deleted; no firebase symbols in C/Unity/CMake/config schema; `mkt`/`mkp` green | S | pending |
+| 4 | Firebase Lua-level references removed (database.lua, migration branches, Test 31, SECRETS, extras README); `rg -n firebase` clean | M | pending |
 | 5 | C engine registers, `firebird://`, connect + health vs SuperServer or mock | M | pending |
 | 6 | Brotli UDR + JSON ingest/extract + SHA-256 fixture green | M | pending |
 | 7 | Test 37 firebird AutoMigrations **full Acuranzo** green | L | pending |
@@ -733,10 +749,18 @@ SQLite extras UDF READMEs, and `dnf` Firebird 4 on this box.
 - [ ] 0.5 Confirm empty `${SCHEMA}`, `firebird://`, file `testfb.fdb`.
 - [ ] 0.6 Confirm Yugabyte + MariaDB stay; Test 37 keeps number 37.
 - [ ] 0.7 Confirm Test 31 firebird; bootstrap remains SQL.
-- [ ] 0.8 Confirm Phases 3–4 teardown Firestore **before** Firebird C.
-- [ ] 0.9 Confirm extras/firebird (service + `.fdb`), not firebase emulator.
+- [ ] 0.8 Confirm Firebase C-level code is already removed (`src/database/firebase/`
+      absent; no `DB_ENGINE_FIREBASE` in enum; no firebase in `lua.c` `engines[]`).
+      Search for remaining Lua-level / config / docs **cruft** referencing firebase:
+      `if engine == 'firebase'` branches, `database.lua` `engines.firebase` /
+      `query_dialects.firebase` / `require("database_firebase")`, Test 31 `firebase`
+      entry, config schema enum, SECRETS `FIREBASE_*`, extras README table. Phase 4
+      cleans up whatever survives.
+- [ ] 0.9 Confirm extras/firebird (service + `.fdb`); firebase emulator already absent.
 - [ ] 0.10 Confirm completeness + coverage fences for Phase 12.
 - [ ] 0.11 Record amendments in this document if any lock changes.
+- [ ] 0.12 Confirm Lookup 030 key 6 is still labelled `Firebase` and is relabelled
+      by packet 1384 (re-check disk for `acuranzo_1383.lua` and next free id).
 
 ### Done means
 
@@ -759,6 +783,24 @@ changed in this phase.
 
 ### Working Log
 
+- **2026-09-18 (Phase 0 survey)** Investigated Firebase cleanup state.
+  **C-level Firebase is fully removed:**
+  `src/database/firebase/` absent; `tests/unity/src/database/firebase/` absent;
+  `extras/firebase_emulator/` absent; `database_firebase.lua` does not exist in
+  any of the four Helium designs; `database_types.h` has no `DB_ENGINE_FIREBASE`
+  (enum is PostgreSQL=0, SQLite=1, MySQL=2, DB2=3, AI=4, MAX); `lua.c`
+  `engines[]` is `{"sqlite","postgresql","mysql","db2"}` (no firebase);
+  `grep -rn firebase src/ tests/unity/ cmake/ →` zero results.
+  **Lua-level Firebase cruft remains:** `database.lua` in all four designs still
+  sets `firebase = true`, `firebase = 6`, `query_dialects.firebase = 6`, and calls
+  `require("database_firebase")` (dangling — file does not exist). Migration files
+  with `if engine == 'firebase'` branches: `acuranzo_1000.lua`, `acuranzo_1135.lua`,
+  `acuranzo_1190.lua`, `gaius_2000.lua`, `helium_4000.lua`, `glm_3000.lua`. Test 31
+  `ENGINES` includes `"firebase"`. Config schema (`hydrogen_config_schema.json`)
+  enum may still contain `"firebase"`. SECRETS.md has `FIREBASE_*` sections.
+  Phase 0 adjusts to "search for remaining cruft" rather than listing specific
+  deletions. Phases 3–4 now verify C-level cleanup is complete and remove the
+  surviving Lua-level references.
 - **2026-09-18** Plan authored. Firestore plan superseded. Fedora 43
   has Firebird 4.0.7 in `dnf`, not installed. User asked for a fresh
   Firebird plan plus separate Firebase cleanup phases, and a parallel
@@ -883,12 +925,15 @@ Test 31 generates firebird SQL for every Acuranzo migration without
 
 ---
 
-## Phase 3 — Firebase C / Unity teardown
+## Phase 3 — Firebase C teardown verification
 
 ### Goal
 
-Hydrogen no longer compiles or registers a Firestore engine. This phase
-is **cleanup only**. Do not add Firebird C here.
+Confirm the Firebase C engine is fully removed and no Firebase symbols
+remain in the C build. This phase is **verification only**. Firebase was
+already deleted at the C level prior to this plan; Phase 3 proves it
+stays that way after Phase 2 adds firebird dialects. Do not add Firebird C
+here.
 
 ### Entry gate
 
@@ -897,31 +942,25 @@ AutoMigrations are not left without a fifth dialect file).
 
 ### Work items
 
-- [ ] 3.1 Delete `src/database/firebase/` and
-      `tests/unity/src/database/firebase/`.
-- [ ] 3.2 Remove `DB_ENGINE_FIREBASE` from `database_types.h`. Do
-      **not** add `DB_ENGINE_FIREBIRD` yet (Phase 5). AI numeric value
-      returns to the pre-Firestore slot until Phase 5.
-- [ ] 3.3 Registry, `database_manage.c`, `database_connstring.c`,
-      `dbqueue/heartbeat.c`, `database_params.c`,
-      `migration/transaction.c`, `database_get_counts_by_type`,
-      `launch.c` — no firebase symbols.
-- [ ] 3.4 `hydrogen_config_schema.json` Engine enum: drop `"firebase"`.
-- [ ] 3.5 Unity fixtures that shipped `database_firebase.lua` for
-      `lua_test_load_database_module` switch to firebird (Phase 2
-      payload) or drop the firebase extra file.
+- [ ] 3.1 Verify `src/database/firebase/` is absent; `tests/unity/src/database/firebase/`
+      absent. Confirm C enum has no `DB_ENGINE_FIREBASE`.
+- [ ] 3.2 Verify `database_types.h` has no `DB_ENGINE_FIREBASE`. `DB_ENGINE_AI`
+      remains the mock slot. Do **not** add `DB_ENGINE_FIREBIRD` here (Phase 5).
+- [ ] 3.3 Verify no firebase symbols in registry, `database_manage.c`,
+      `database_connstring.c`, `dbqueue/heartbeat.c`, `database_params.c`,
+      `migration/transaction.c`, `database_get_counts_by_type`, `launch.c`.
+- [ ] 3.4 Verify `hydrogen_config_schema.json` Engine enum has no `"firebase"`.
+- [ ] 3.5 Verify Unity fixtures have no `database_firebase.lua` reference.
 - [ ] 3.6 `mkt` then `mkp`. Dead-code gate has no firebase symbols.
-      Named `mku` that used to cover firebase are gone; do not leave
-      broken CMake/Unity globs.
 
 ### Done means
 
-`rg -n firebase src/ tests/unity/ cmake/` is empty (except comments
-pointing at this plan if any). `mkt`/`mkp` green.
+`rg -n firebase src/ tests/unity/ cmake/` is empty. `mkt`/`mkp` green.
 
 ### Exit gate
 
-- `mkt` then `mkp`; dead-code list cited in Status.
+- `mkt` then `mkp`; dead-code list cited in Status. If firebase C-level
+  references are found, delete them (this phase) — do not defer past Phase 3.
 
 ### Status
 
@@ -942,12 +981,15 @@ pointing at this plan if any). `mkt`/`mkp` green.
 
 ---
 
-## Phase 4 — Firebase Helium / extras teardown
+## Phase 4 — Firebase Lua-level cruft teardown
 
 ### Goal
 
-No Helium dialect, Test 31 engine, extras emulator, or SECRETS names
-for Firestore. Firebird dialect from Phase 2 remains.
+Remove all Lua-level, config, extras, and docs references to Firebase so
+that `database.lua` is clean with firebird only. Firebird dialect from
+Phase 2 remains. The C-level Firebase code is already gone (Phase 3);
+`database_firebase.lua` does not exist on disk but `database.lua` in all
+four designs still references it via `require("database_firebase")`.
 
 ### Entry gate
 
@@ -955,15 +997,17 @@ Phase 3 Status complete.
 
 ### Work items
 
-- [ ] 4.1 Delete `database_firebase.lua` from all four designs.
-      `database.lua`: drop `engines.firebase`, `query_dialects.firebase`,
-      `defaults.firebase`, underscore schema branch.
+- [ ] 4.1 `database.lua` (all four designs): drop `engines.firebase`,
+      `query_dialects.firebase`, `defaults.firebase`, and the
+      `require("database_firebase")` line. The file does not exist on disk;
+      the require is dangling.
 - [ ] 4.2 `if engine` firebase arms: 1000, 1135, 1190, gaius/glm/helium
-      JSON_INGEST skips. Re-grep `firebase`.
-- [ ] 4.3 `lua.c` `engines[]` and Test 31 `ENGINES`: firebird not
-      firebase. Remove firebase sqruff skip.
-- [ ] 4.4 Delete `extras/firebase_emulator/`. extras README: drop
-      Firestore row. SECRETS.md: drop `FIREBASE_*`.
+      JSON_INGEST skips. Re-grep `firebase` across Helium.
+- [ ] 4.3 `lua.c` `engines[]` (already has no firebase) and Test 31
+      `ENGINES`: ensure firebird, not firebase. Remove firebase sqruff skip.
+- [ ] 4.4 Delete any remaining `extras/firebase_emulator/` files (already
+      absent on this disk; verify). extras README: drop Firestore row if
+      present. SECRETS.md: drop `FIREBASE_*`.
 - [ ] 4.5 Lithium: keep `sql_dialect_firebase.png` only until 1384 is
       applied and `sql_dialect_firebird.png` exists; then drop the
       firebase asset and `icons-usr.txt` row if unused.
@@ -972,8 +1016,7 @@ Phase 3 Status complete.
 ### Done means
 
 `rg -n firebase elements/002-helium elements/001-hydrogen/hydrogen/extras elements/001-hydrogen/hydrogen/tests/test_31_migrations.sh docs/H/SECRETS.md`
-is empty or only historical metrics / this plan’s stub.
-Test 31 green with firebird.
+is empty (except this plan's stub). Test 31 green with firebird.
 
 ### Exit gate
 
@@ -1432,6 +1475,12 @@ Port scheme: Test 37 → **537x**.
 ### Surprises / deviations (historical, still true)
 
 - Fedora 43 packages Firebird **4.0.7**, not 5.
+- C-level Firebase is **already gone**; the enum has no `DB_ENGINE_FIREBASE`
+  slot, `lua.c` engines array has no firebase, `src/database/firebase/` and
+  `extras/firebase_emulator/` do not exist, `database_firebase.lua` does not
+  exist on disk. **Lua-level cruft survived:** `database.lua` still
+  `require("database_firebase")` (dangling), migration files still have
+  `if engine == 'firebase'` branches, Test 31 still lists firebase in ENGINES.
 - Lookup 030 key 5 is "MS SQL Server" and unused in C; do not steal it.
   Key 6 is still labelled Firebase until packet 1384.
 - Helium `database.lua` currently special-cases `engine == 'firebase'`

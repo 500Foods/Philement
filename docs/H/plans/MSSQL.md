@@ -602,7 +602,7 @@ no new `static` / no dead symbols). Mock ODBC in Unity.
 
 | Phase | Done means (one line) | Effort | Status |
 | --- | --- | --- | --- |
-| 0 | Locks approved (SQL Server 2022 Linux container, ODBC 18, key 5, Test 39, RETURNING rewrite, enum); no C | S | pending |
+| 0 | Locks approved (SQL Server 2022 Linux container, ODBC 18, key 5, Test 39, RETURNING rewrite, enum, no firebase collision); no C | S | pending |
 | 1 | extras/mssql_server start/stop; `sqlcmd` against local container; ODBC 18 (or FreeTDS amendment) on Fedora 43 | M | pending |
 | 2 | Complete `database_mssql.lua` in four designs; Test 31 generates mssql SQL | M | pending |
 | 3 | C engine registers, `mssql://`, connect + health vs container or ODBC mock | M | pending |
@@ -641,7 +641,11 @@ Podman / `dnf` state.
 - [ ] 0.8 Confirm Brotli CLR first, COMPRESS pre-eval only on failure.
 - [ ] 0.9 Confirm extras/mssql_server; SHA-256 UTF-8 fixture.
 - [ ] 0.10 Confirm completeness + coverage fences for Phase 9.
-- [ ] 0.11 Record amendments if any lock changes.
+- [ ] 0.11 Confirm no Firebase/SQL Server conflation: MSSQL uses **ODBC**
+       (`unixODBC` + `msodbcsql18`), not Firestore `firebase://` or
+       libpq. Survey existing firebase cruft in shared files for
+       collision risk (Phase 0 of FIREBIRD.md tracks this).
+- [ ] 0.12 Record amendments if any lock changes.
 
 ### Done means
 
@@ -667,7 +671,12 @@ changed in this phase.
 - **2026-09-18** Plan authored alongside FIREBIRD.md. Fedora 43 has
   Podman, no unixODBC, no Microsoft ODBC driver, no mssql-server RPM.
   Preferred path is official Linux container + ODBC 18. Phase 0 waits
-  for lock approval. No C this turn.
+  for lock approval. No C this turn. Note: C-level Firebase is already
+  removed (no `DB_ENGINE_FIREBASE` in enum); Lua-level firebase references
+  survive in Helium `database.lua` and migration files but do not collide
+  with MSSQL (different dialect name `mssql`, different Lookup key 5).
+  MSSQL Phase 3 introduces `DB_ENGINE_MSSQL` in its enum slot, not
+  firebase.
 
 ### Lessons learned
 
@@ -1167,6 +1176,11 @@ override).
 ### Surprises / deviations (historical, still true)
 
 - Fedora 43 does not ship `mssql-server`. Podman is already installed.
+- C-level Firebase is already removed (no `DB_ENGINE_FIREBASE` in enum).
+  Lua-level firebase references survive in Helium but use a different
+  dialect name (`firebase` vs `mssql`) and Lookup key (6 vs 5) — no
+  enum collision. MSSQL Phase 3 adds `DB_ENGINE_MSSQL` to its reserved
+  slot.
 - Lookup 030 key 5 has been “MS SQL Server” since 1055; no additive
   lookup is required.
 - DB2 C already uses ODBC typedefs — copy that shape, not Firestore.
