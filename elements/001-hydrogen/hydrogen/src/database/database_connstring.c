@@ -503,50 +503,6 @@ ConnectionConfig* parse_connection_string(const char* connection_string) {
         }
         config->connection_string = strdup(connection_string);
 
-    } else if (strncmp(connection_string, "firebase://", 11) == 0) {
-        char* temp = strdup(connection_string + 11);
-        if (!temp) {
-            free(config);
-            return NULL;
-        }
-        char* query = strchr(temp, '?');
-        if (query) {
-            *query = '\0';
-            query++;
-        }
-        char* slash = strchr(temp, '/');
-        if (slash) {
-            *slash = '\0';
-            config->username = strdup(temp);
-            config->database = strdup(slash + 1);
-        } else {
-            config->username = strdup(temp);
-            config->database = strdup("(default)");
-        }
-        if (query) {
-            char* host_val = database_connstring_extract_query_value(query, "host");
-            if (host_val) {
-                config->host = host_val;
-            }
-            char* port_val = database_connstring_extract_query_value(query, "port");
-            if (port_val) {
-                config->port = atoi(port_val);
-                free(port_val);
-            }
-        }
-        if (!config->host) {
-            config->host = strdup("127.0.0.1");
-        }
-        if (config->port == 0) {
-            config->port = 8080;
-        }
-        if (!config->database || config->database[0] == '\0') {
-            free(config->database);
-            config->database = strdup("(default)");
-        }
-        config->connection_string = strdup(connection_string);
-        free(temp);
-
     } else if (strstr(connection_string, ".db") || strcmp(connection_string, ":memory:") == 0) {
         // SQLite format: /path/to/database.db or :memory:
         config->database = strdup(connection_string);

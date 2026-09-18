@@ -145,16 +145,27 @@ not open work unless listed below.
 | **Why next** | Core send/API/Lua/OTP stack works (`test_57`/`test_58`). Remaining is product surface and ops polish. |
 | **Note** | Parallel session may complete subsets — re-check plan/tests before starting. |
 
-### 27. Firebase engine — replace CockroachDB slot
+### 27. Firebird engine — replace CockroachDB slot
 
 | | |
 | --- | --- |
-| **Plan** | [`FIREBASE.md`](/docs/H/plans/FIREBASE.md) |
+| **Plan** | [`FIREBIRD.md`](/docs/H/plans/FIREBIRD.md) |
 | **Effort** | XL |
-| **Done** | ~47% — Phases 0–7 complete (2026-09-17); INSERT…SELECT / CTE / MAX+1 Unity-green |
-| **Remaining** | Phase 8 SELECT/binds (Moderate), JOIN/LATERAL (Difficult), Test 37 full design (Difficult), Cockroach retirement (Quick), Tests 40–58 (Difficult), docs (Quick) |
-| **Why later** | Cockroach never had a C implementation (PostgreSQL alias + schema `testcrdb`/`democrdb`). Firebase cannot alias SQL and cannot load C UDFs. Auth Finale remains P0. |
-| **Note** | Fifth `DatabaseEngineInterface` (`src/database/firebase/`) and fifth Helium dialect with the same macro keys as the other four. UDFs are in-process in Hydrogen; extras/firebase_emulator is install/start only. No live Google in CI. |
+| **Done** | 0% — plan authored 2026-09-18; Phase 0 locks not approved |
+| **Remaining** | Phase 0 lock approval, Fedora Firebird 4 extras, Helium dialect + Lookup 030 key 6 relabel, Firebase teardown (Phases 3–4), `libfbclient` C engine, Brotli UDR + JSON, Test 37, Cockroach retirement, Tests 40–58, docs, fences |
+| **Why later** | Cockroach never had a C implementation (PostgreSQL alias). Firestore was the wrong fifth engine (superseded). Firebird is a SQL RDBMS Fedora already packages. Auth Finale remains P0. |
+| **Note** | `src/database/firebird/` + `database_firebird.lua`. No SQL interpreter. Firebase tree is deleted in FIREBIRD Phases 3–4, not reused. Sister plan: item 28 MSSQL. |
+
+### 28. MSSQL engine — implement Lookup 030 key 5
+
+| | |
+| --- | --- |
+| **Plan** | [`MSSQL.md`](/docs/H/plans/MSSQL.md) |
+| **Effort** | XL |
+| **Done** | 0% — plan authored 2026-09-18; Phase 0 locks not approved |
+| **Remaining** | Phase 0 lock approval, Fedora Podman SQL Server 2022 Linux + ODBC 18, Helium dialect, unixODBC C engine, T-SQL/CLR extras, Test 39, SchemaTool, grow matrix 7→8, docs, fences |
+| **Why later** | Key 5 has been a lookup row without a C engine. Fedora has no `mssql-server` RPM; official Linux container is the local free path. Auth Finale remains P0. Parallel with item 27, not a substitute. |
+| **Note** | `src/database/mssql/` + `database_mssql.lua`. Test **39** (37 is Firebird). Developer edition is test-only. No Windows. Shared enum lock with FIREBIRD.md. |
 
 ### 26. Notifications / Subscribers — Web Push backend
 
@@ -311,7 +322,8 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 12e | MAX+1 PK clients: confirm + retry | M | single-thread OK | P1 |
 | 13 | Mail Relay remainder | L–XL | ~75% | P2 |
 | 26 | Notifications / Subscribers | L–XL | 0% plan | P2 |
-| 27 | Firebase engine (replace Cockroach) | XL | ~47% | P2 |
+| 27 | Firebird engine (replace Cockroach) | XL | 0% plan | P2 |
+| 28 | MSSQL engine (Lookup 030 key 5) | XL | 0% plan | P2 |
 | 24 | `H.externaldb` — ad-hoc external DB from Lua | M | 0% | P2 |
 | 19 | Print job → device / Beryllium | L–XL | ~30% | P3 |
 | 22 | Mirage | XL | 0% | P3 |

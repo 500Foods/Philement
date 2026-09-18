@@ -32,8 +32,6 @@ const char* normalize_engine_name(const char* engine_name) {
         return "sqlite";
     } else if (strcmp(engine_name, "db2") == 0) {
         return "db2";
-    } else if (strcmp(engine_name, "firebase") == 0) {
-        return "firebase";
     }
 
     return NULL; // Unsupported engine

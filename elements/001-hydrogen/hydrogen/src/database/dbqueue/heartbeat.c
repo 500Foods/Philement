@@ -25,9 +25,7 @@ extern volatile sig_atomic_t database_stopping;
 DatabaseEngine database_queue_determine_engine_type(const char* connection_string) {
     if (!connection_string) return DB_ENGINE_SQLITE;
 
-    if (strncmp(connection_string, "firebase://", 11) == 0) {
-        return DB_ENGINE_FIREBASE;
-    } else if (strncmp(connection_string, "postgresql://", 13) == 0) {
+    if (strncmp(connection_string, "postgresql://", 13) == 0) {
         return DB_ENGINE_POSTGRESQL;
     } else if (strncmp(connection_string, "mysql://", 8) == 0) {
         return DB_ENGINE_MYSQL;
@@ -80,16 +78,6 @@ char* database_queue_mask_connection_string(const char* connection_string) {
             if (colon_pos && colon_pos < at_pos) {
                 // Mask from after colon to @
                 memset((char*)colon_pos + 1, '*', (size_t)(at_pos - (colon_pos + 1)));
-            }
-        }
-    } else if (strncmp(safe_conn_str, "firebase://", 11) == 0) {
-        // firebase:// does not embed the SA JSON path. Mask pass= if present.
-        char* pass_pos = strstr(safe_conn_str, "pass=");
-        if (pass_pos) {
-            char* end_pos = strchr(pass_pos, '&');
-            size_t n = end_pos ? (size_t)(end_pos - (pass_pos + 5)) : strlen(pass_pos + 5);
-            if (n > 0) {
-                memset(pass_pos + 5, '*', n);
             }
         }
     }

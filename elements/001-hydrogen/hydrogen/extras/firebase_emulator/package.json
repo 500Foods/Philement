@@ -1,8 +1,0 @@
-{
-  "name": "hydrogen-firebase-emulator",
-  "private": true,
-  "description": "Pinned firebase-tools for the Hydrogen Firestore emulator extra. Not a UDF package.",
-  "dependencies": {
-    "firebase-tools": "15.30.1"
-  }
-}
