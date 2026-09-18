@@ -29,6 +29,7 @@ Active plans folder: [`/docs/H/plans/`](/docs/H/plans/).
 | [CHAT_FINALE_COMPLETE.md](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md) | Chat Finale Phase 10 (`store` + rate limit); parked remainder out of scope |
 | [CHAT_FINALE_BEACHHEAD_COMPLETE.md](/docs/H/plans/complete/CHAT_FINALE_BEACHHEAD_COMPLETE.md) | Chat Finale Phases 0–9 (500 Courses beachhead) |
 | [CHAT_PLAN_PHASE_13_SUPERSEDED.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_13_SUPERSEDED.md) | Chat Phase 13 wishlist (superseded by CHAT_FINALE) |
+| [FIREBASE_SUPERSEDED.md](/docs/H/plans/complete/FIREBASE_SUPERSEDED.md) | Firestore fifth-engine attempt (superseded by FIREBIRD) |
 | [CHAT_PLAN_PHASE_1_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_1_COMPLETE.md) | Chat Phase 1 |
 | [CHAT_PLAN_PHASE_2_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_2_COMPLETE.md) | Chat Phase 2 |
 | [CHAT_PLAN_PHASE_2_5_COMPLETE.md](/docs/H/plans/complete/CHAT_PLAN_PHASE_2_5_COMPLETE.md) | Chat Phase 2.5 |

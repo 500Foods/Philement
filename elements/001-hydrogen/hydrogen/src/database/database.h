@@ -5,7 +5,7 @@
  * It implements the architecture described in DATABASE_PLAN.md.
  *
  * Phase 1 (Current): Queue-based processing with multi-queue system
- * Multi-engine interface layer: PostgreSQL, SQLite, MySQL, DB2, Firebase
+ * Multi-engine interface layer: PostgreSQL, SQLite, MySQL, DB2
  * Phase 3: Query caching and bootstrap system
  * Phase 4: Acuranzo integration and testing
  */
@@ -391,7 +391,7 @@ bool store_prepared_statement(DatabaseHandle* connection, PreparedStatement* stm
 // Statistics and counting functions
 int database_get_total_queue_count(void);
 void database_get_queue_counts_by_type(int* lead_count, int* slow_count, int* medium_count, int* fast_count, int* cache_count);
-void database_get_counts_by_type(int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count, int* firebase_count);
+void database_get_counts_by_type(int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count);
 
 // Readiness reporting
 // Per-database readiness snapshot used to build the readiness signal and the

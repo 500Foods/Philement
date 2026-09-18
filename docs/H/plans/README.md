@@ -46,16 +46,26 @@ Letter **V** (U is Chat), launch 22. Exhaustive plan (Phases 0–15) with
 completeness and coverage fences. Phase 0 not approved. Lithium UI deferred.
 Does not reuse `Notify` SMTP scaffold or `H.notify`.
 
-### [FIREBASE PLAN](/docs/H/plans/FIREBASE.md)
+### [FIREBIRD PLAN](/docs/H/plans/FIREBIRD.md)
 
-Replace the CockroachDB operator slot with a real fifth Hydrogen engine
-(Cloud Firestore REST + SQL interpreter) and a fifth Helium dialect
-(`database_firebase.lua`, complete macro set). Brotli/Base64/SHA-256 live
-in-process (extras-UDF analog). Full Acuranzo AutoMigrations, no v1 subset.
-Cockroach is a PostgreSQL alias today (zero C). Yugabyte and MariaDB stay.
-Phases 0–16; Phases 0–7 complete (2026-09-17). Next: Phase 8
-SELECT WHERE/ORDER/LIMIT and `:NAME` binds — same `?` bind path as
-SQLite (wait for go). Remaining: 3 Difficult / 3 Moderate / 3 Quick.
+Replace the CockroachDB operator slot with a real Firebird engine
+(`libfbclient`, Fedora 43 package 4.0.7) and Helium dialect
+`database_firebird.lua`. Helium still emits SQL; Hydrogen does not
+interpret it. Lookup 030 key 6 relabelled Firebase → Firebird.
+Firebase C/Helium/extras teardown is Phases 3–4. Test 37 stays 37.
+Phase 0 not approved.
+
+Firestore attempt (historical):
+[`FIREBASE_SUPERSEDED.md`](/docs/H/plans/complete/FIREBASE_SUPERSEDED.md).
+Stub: [`FIREBASE.md`](/docs/H/plans/FIREBASE.md).
+
+### [MSSQL PLAN](/docs/H/plans/MSSQL.md)
+
+Implement Lookup 030 key 5 (MS SQL Server) as a sixth C engine
+(`unixODBC` + Microsoft ODBC Driver 18) and `database_mssql.lua`.
+Fedora-local official Linux container via Podman (Developer edition,
+free for test; not Windows). Test **39**. Grows the operator matrix
+7 → 8. Sister plan of FIREBIRD (shared enum). Phase 0 not approved.
 
 ### [MIRAGE PLAN](/docs/H/plans/MIRAGE_PLAN.md)
 

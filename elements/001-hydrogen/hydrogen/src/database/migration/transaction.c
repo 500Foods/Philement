@@ -563,10 +563,6 @@ bool execute_transaction(DatabaseHandle* connection, const char* sql_result,
         case DB_ENGINE_DB2:
             success = execute_db2_migration(connection, statements, statement_count, migration_file, dqm_label);
             break;
-        case DB_ENGINE_FIREBASE:
-            log_this(dqm_label, "Firebase SQL interpreter is not implemented yet", LOG_LEVEL_ERROR, 0);
-            success = false;
-            break;
         case DB_ENGINE_AI:
         case DB_ENGINE_MAX:
         default:
