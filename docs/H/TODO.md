@@ -151,8 +151,8 @@ not open work unless listed below.
 | --- | --- |
 | **Plan** | [`FIREBASE.md`](/docs/H/plans/FIREBASE.md) |
 | **Effort** | XL |
-| **Done** | ~44% — Phases 0–6 complete (2026-09-17); SQL DML Unity-green |
-| **Remaining** | Phase 7 INSERT…SELECT / CTE / MAX+1, then SELECT/JOINs, Test 37 full design, Cockroach retirement (Phase 11), docs |
+| **Done** | ~47% — Phases 0–7 complete (2026-09-17); INSERT…SELECT / CTE / MAX+1 Unity-green |
+| **Remaining** | Phase 8 SELECT/binds (Moderate), JOIN/LATERAL (Difficult), Test 37 full design (Difficult), Cockroach retirement (Quick), Tests 40–58 (Difficult), docs (Quick) |
 | **Why later** | Cockroach never had a C implementation (PostgreSQL alias + schema `testcrdb`/`democrdb`). Firebase cannot alias SQL and cannot load C UDFs. Auth Finale remains P0. |
 | **Note** | Fifth `DatabaseEngineInterface` (`src/database/firebase/`) and fifth Helium dialect with the same macro keys as the other four. UDFs are in-process in Hydrogen; extras/firebase_emulator is install/start only. No live Google in CI. |
 
@@ -311,7 +311,7 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 12e | MAX+1 PK clients: confirm + retry | M | single-thread OK | P1 |
 | 13 | Mail Relay remainder | L–XL | ~75% | P2 |
 | 26 | Notifications / Subscribers | L–XL | 0% plan | P2 |
-| 27 | Firebase engine (replace Cockroach) | XL | 0% plan | P2 |
+| 27 | Firebase engine (replace Cockroach) | XL | ~47% | P2 |
 | 24 | `H.externaldb` — ad-hoc external DB from Lua | M | 0% | P2 |
 | 19 | Print job → device / Beryllium | L–XL | ~30% | P3 |
 | 22 | Mirage | XL | 0% | P3 |

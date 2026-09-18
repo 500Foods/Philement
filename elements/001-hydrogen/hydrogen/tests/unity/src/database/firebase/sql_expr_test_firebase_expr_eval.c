@@ -151,6 +151,26 @@ void test_firebase_expr_eval_encode_tz_lookup(void) {
     firebase_value_free(&val);
     firebase_expr_free(expr);
 
+    expr = parse_expr("COALESCE(NULL, 3)");
+    TEST_ASSERT_TRUE(firebase_expr_eval(expr, NULL, NULL, &val, &err));
+    TEST_ASSERT_EQUAL(3, val.i);
+    firebase_value_free(&val);
+    firebase_expr_free(expr);
+
+    expr = parse_expr("2 + 3");
+    TEST_ASSERT_TRUE(firebase_expr_eval(expr, NULL, NULL, &val, &err));
+    TEST_ASSERT_EQUAL(5, val.i);
+    firebase_value_free(&val);
+    firebase_expr_free(expr);
+
+    expr = parse_expr("MAX(query_id)");
+    TEST_ASSERT_FALSE(firebase_expr_eval(expr, NULL, NULL, &val, &err));
+    TEST_ASSERT_NOT_NULL(strstr(err, "only valid in SELECT"));
+    firebase_value_free(&val);
+    firebase_expr_free(expr);
+    free(err);
+    err = NULL;
+
     expr = parse_expr("FB_JSON_VALUE('{\"a\":1}', '$.missing')");
     TEST_ASSERT_TRUE(firebase_expr_eval(expr, NULL, NULL, &val, &err));
     TEST_ASSERT_TRUE(firebase_value_is_null(&val));

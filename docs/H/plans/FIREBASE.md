@@ -1,6 +1,43 @@
 <!-- markdownlint-disable MD007 MD024 -->
 # Firebase Engine Plan
 
+## Status at a glance
+
+Phases **0–7 complete** (2026-09-17). Next: **Phase 8** — discussed,
+locks in that phase's Working Log, **wait for go** (no C this pause).
+Eight of seventeen phases done. What is left is SELECT/JOINs, then the
+live Test 37 + 7-engine matrix — that is why this is still a long plan.
+
+| Phase | Status | Remaining |
+| --- | --- | --- |
+| 0 Contract lock | complete | — |
+| 1 Emulator extras | complete | — |
+| 2 Helium dialect | complete | — |
+| 3 C register / connect | complete | — |
+| 4 In-process `FB_*` | complete | — |
+| 5 DDL | complete | — |
+| 6 INSERT / UPDATE / DELETE | complete | — |
+| 7 INSERT…SELECT / RETURNING | complete | — |
+| 8 SELECT + `:NAME` binds | pending | **Moderate** |
+| 9 JOIN / LATERAL | pending | **Difficult** |
+| 10 Test 37 full Acuranzo | pending | **Difficult** |
+| 11 Retire Cockroach names | pending | **Quick** |
+| 12 SchemaTool / flush | pending | **Moderate** |
+| 13 Tests 40–58 firebase matrix | pending | **Difficult** |
+| 14 Docs | pending | **Quick** |
+| 15 Coverage / completeness | pending | **Moderate** |
+| 16 Production JWT (optional) | pending | **Quick** |
+
+Remaining: 3 Difficult (9, 10, 13), 3 Moderate (8, 12, 15), 3 Quick
+(11, 14, 16). Phase 16 may park.
+
+**Parity:** Firebase is the fifth Hydrogen engine, not a new API. Match
+PostgreSQL / SQLite / MySQL / DB2: same `QueryRequest` / `QueryResult`,
+same `parse_typed_parameters` → `convert_named_to_positional` → bind,
+same `data_json` array of row objects. Do not change those engines.
+Firestore has no SQL server, so C interprets the SQL; that is the only
+intentional difference.
+
 ## Purpose
 
 Replace the **CockroachDB** engine slot with a real **Firebase / Cloud
@@ -30,8 +67,9 @@ This is the only active plan for that swap.
 
 **Session brief:** A new conversation may start with only a pointer to
 this file. Do not reconstruct Cockroach vs Firebase from git history or
-from memory of a prior chat. Open [Resuming Work](#resuming-work), then
-the next incomplete phase only.
+from memory of a prior chat. Open [Status at a glance](#status-at-a-glance),
+then [Resuming Work](#resuming-work), then the next incomplete phase
+only.
 
 History that this plan does **not** reopen:
 
@@ -96,15 +134,24 @@ Each phase is worked in its **own conversation**. Follow this sequence:
 12. **Do not delete the Cockroach slot until Phase 11.** Earlier phases add
     Firebase beside it. Phase 11 is the swap so the 7-engine matrix never
     silently becomes six.
+13. **Mirror the other engines.** When a Firebase choice is ambiguous,
+    do what PostgreSQL / SQLite / MySQL / DB2 already do
+    (`PARAMETER_BINDING.md`, `QueryResult.data_json`, named `:NAME`
+    markers). Do not invent a Firebase-only execute path and do not
+    change the other engines to accommodate it.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-09-17):** Phase 6 complete.
-SQL DML Unity-green (INSERT VALUES, UPDATE, DELETE, FB_* eval,
-PK document id `30_6`, 900 KiB fail-closed). `mkt`/`mkp` green, no
-new `static`. Next: **Phase 7 (INSERT…SELECT / CTE / MAX+1 /
-RETURNING)**. Do not start Phase 7 until the user says go. No Test 37,
-no Cockroach deletes.
+**CURRENT PAUSE POINT (as of 2026-09-17):** Phase 7 complete.
+INSERT…SELECT / CTE / MAX+1 / RETURNING Unity-green. Two successive
+LOAD-shaped inserts get `query_id` 1 then 2; `RETURNING query_id`
+is `[{"query_id":1}]`. `mkt`/`mkp` green, no new `static`. Phase 7 C
+(`sql_select.{c,h}` and Unity) may still be uncommitted in the tree —
+do not revert it. Phase 8 discussed; locks are in the Phase 8 Working
+Log (mirror SQLite bind path; no `:NAME` literal splice). **Do not
+start Phase 8 C until the user says go.** No Test 37, no Cockroach
+deletes. Last numbered Acuranzo file on disk: `acuranzo_1383.lua`
+(Lookup 030 key 6 applied).
 
 Keep this block current when a phase finishes (date, result, next phase
 number). It is the first thing a new session reads.
@@ -113,9 +160,10 @@ number). It is the first thing a new session reads.
 
 1. This file is the source of truth. Do not start a second Firebase or
    "drop Cockroach" plan.
-2. Read **CURRENT PAUSE POINT**, the Phase Index **Status** column, and
-   **Working Log (cross-phase memory)** — including JSON / Brotli /
-   Base64 / SHA-256 locks.
+2. Read **Status at a glance**, **CURRENT PAUSE POINT**, the Phase
+   Index **Status** column, and **Working Log (cross-phase memory)** —
+   including JSON / Brotli / Base64 / SHA-256 locks. Parity with the
+   other four engines is a standing rule.
 3. Confirm the prior phase Status is actually complete (re-read its Exit
    gate; do not trust chat memory).
 4. Re-read **only** the next phase: Goal + Work items + Done means +
@@ -126,9 +174,9 @@ number). It is the first thing a new session reads.
 5. If the phase needs a Helium packet: re-check disk for the next
    Acuranzo migration / QueryRef
    (`ls elements/002-helium/acuranzo/migrations/acuranzo_*.lua`).
-   Snapshot at plan authoring: last **`acuranzo_1382.lua`**, Lookup
-   **030** ends at key **5**, firebase dialect id **6**. Do not trust
-   the snapshot; `DB_ENGINE_AI` is still the Unity mock slot.
+   Snapshot at this pause: last **`acuranzo_1383.lua`**, Lookup **030**
+   key **6** = Firebase (applied). `DB_ENGINE_AI` is still the Unity
+   mock slot. Do not trust the snapshot; re-check disk.
 6. Discuss, get explicit approval, implement that phase only, verify the
    Exit gate, update Status + Working Log + this pause point, **stop**.
 
@@ -148,7 +196,7 @@ number). It is the first thing a new session reads.
 | --- | --- |
 | **Band** | P2 — new engine, after Auth Finale / quality gates |
 | **Effort** | XL (SQL-on-Firestore interpreter + in-process UDF-class functions + Helium dialect + emulator CI + Cockroach retirement) |
-| **Done** | ~44% — Phases 0–6 complete |
+| **Done** | ~47% — Phases 0–7 complete; 3 Difficult / 3 Moderate / 3 Quick left |
 | **Why this shape** | Cockroach never earned a C implementation. Firebase cannot lean on PostgreSQL and cannot load C UDFs. The existing ~380 Lua files emit SQL; the engine must run that SQL. |
 | **Do not start casually** | Touches `DatabaseEngine` enum, registry, DQM, Helium `database.lua` for four designs, Test 31/37/71, the 7-engine blackbox matrix, SchemaTool, Lookup 030, and a SQL interpreter. |
 
@@ -913,7 +961,7 @@ fence. Do not wait until Phase 15.
 | 4 | In-process Base64 / Brotli / SHA-256 / JSON ingest+extract Unity-green; hash and JSON contracts match other engines | M | complete |
 | 5 | CREATE/DROP TABLE, INDEX, ALTER, CREATE FUNCTION no-op against emulator/seam | L | complete |
 | 6 | INSERT VALUES / UPDATE / DELETE with FB_* expression eval | L | complete |
-| 7 | INSERT…SELECT, WITH, COALESCE(MAX)+1, RETURNING | L | pending |
+| 7 | INSERT…SELECT, WITH, COALESCE(MAX)+1, RETURNING | L | complete |
 | 8 | SELECT WHERE/ORDER/LIMIT, `:NAME` binds, PARAMETER_BINDING draft | M | pending |
 | 9 | JOIN / LEFT JOIN / LATERAL in-memory; QueryRef-shaped fixtures green | L | pending |
 | 10 | Test 37 firebase AutoMigrations **full Acuranzo** green on emulator | L | pending |
@@ -1583,9 +1631,9 @@ Phase 6 Status complete.
 
 ### Work items
 
-- [ ] 7.1 WITH CTEs feeding INSERT…SELECT.
-- [ ] 7.2 Counters / MAX+1 on Lead; RETURNING.
-- [ ] 7.3 `${INSERT_KEY_*}` shape.
+- [x] 7.1 WITH CTEs feeding INSERT…SELECT.
+- [x] 7.2 Counters / MAX+1 on Lead; RETURNING.
+- [x] 7.3 `${INSERT_KEY_*}` shape.
 
 ### Done means
 
@@ -1600,18 +1648,44 @@ row present in `QueryResult`.
 
 | | |
 | --- | --- |
-| **State** | pending |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-09-17 |
+| **Result** | `mkt`/`mkq` green; `mkp` 2,111 files PASS; named `mku` for select/expr/parse/DML green. Coverage: sql_select 80% of 576, sql_expr 77%, sql_parse 81%, sql_dml 79%, query 74% of 61 (under the 100-line fence). Two LOAD inserts → `query_id` 1 then 2; RETURNING `[{"query_id":1}]`. |
+| **Variances** | No `{prefix}_counters` sidecar — MAX+1 lists the collection (SQL as written). Transactions stay fail-closed. `:NAME` binds and standalone SELECT stay Phase 8. |
 
 ### Working Log
 
-(empty until the phase runs)
+- **2026-09-17** Phase 6 Status re-read complete. User said go with
+  locked design: restricted INSERT-source SELECT (WITH CTE MAX+1 and
+  `SELECT *`); no counters document; RETURNING as a JSON array of row
+  objects; `CONCAT`/`CAST`/`||` deferred; scope `src/database/firebase/`
+  plus Unity.
+- Files: `sql_select.{c,h}`; `sql_expr` gained `+` / `COALESCE`;
+  `sql_parse` INSERT gained WITH/SELECT/RETURNING; `sql_dml_insert`
+  dispatches SELECT.
+- 7.1: `INSERT INTO t (cols) WITH cte AS (SELECT COALESCE(MAX(col),0)+1
+  AS alias FROM t) SELECT … FROM cte`. 1190 `INSERT INTO t_new SELECT *
+  FROM t` copies documents by id.
+- 7.2: Empty collection MAX is NULL → COALESCE 0 → +1 → `query_id` 1;
+  a second LOAD-shaped insert with existing max 1 → `query_id` 2.
+  RETURNING populates `QueryResult.data_json` / `row_count` /
+  `column_names`.
+- 7.3: Leading `-- col` (`INSERT_KEY_START`) is skipped by
+  `firebase_sql_skip`; trailing `RETURNING col` is parsed.
+- No Test 37, no Cockroach deletes, no standalone SELECT interpreter.
 
 ### Lessons learned
 
-(empty until the phase runs)
+- Generic `firebase_expr_eval_call` cannot evaluate `MAX(col)`: the
+  argument is a column ident, not a row value. CTE eval walks
+  `COALESCE`/`MAX`/`+` itself and scans the listed collection.
+- Collection list URLs remain prefixes of document URLs. Enqueue the
+  MAX list GET before the existence GET/PATCH of the new id.
+- `sql_parse.c` / `sql_expr.c` / `sql_dml.c` were already near the
+  1000-line cap, so INSERT…SELECT parse and execute live in
+  `sql_select.c`.
+- Helium `[=[…]=]` never reaches C; LOAD `code` is already
+  `FB_BASE64_DECODE` / `FB_BROTLI_DECOMPRESS`.
 
 ---
 
@@ -1628,11 +1702,17 @@ Phase 7 Status complete.
 
 ### Work items
 
-- [ ] 8.1 SELECT list, WHERE, ORDER BY, LIMIT, aliases.
-- [ ] 8.2 `parse_typed_parameters` → substitute `:NAME`.
+- [ ] 8.1 SELECT list, WHERE, ORDER BY, LIMIT, aliases (implicit
+      `col alias` and `AS`, same bootstrap SQL the other engines run).
+- [ ] 8.2 `parse_typed_parameters` → `convert_named_to_positional`
+      (`?`, already the Firebase case) → bind by 1-based index in
+      `firebase_execute_query`, same as `sqlite_execute_query`. Do
+      **not** splice values into the SQL text.
 - [ ] 8.3 Grep QueryRefs for `LIKE`, `IN`, subqueries; add or `[~]`
-      with the QueryRef id.
-- [ ] 8.4 Draft PARAMETER_BINDING firebase row.
+      with the QueryRef id. (Grep done in the pre-phase discussion;
+      record the `[~]` list in Status when the phase runs.)
+- [ ] 8.4 Draft PARAMETER_BINDING firebase row (`?` placeholder,
+      interpreter binds by index; same JSON types).
 
 ### Done means
 
@@ -1654,11 +1734,62 @@ collections in `QueryResult.data_json`.
 
 ### Working Log
 
-(empty until the phase runs)
+- **2026-09-17 (pre-implementation, waiting for go).** Phase 7 Status
+  re-read complete. User asked for a top-of-file remaining-effort
+  table (Quick / Moderate / Difficult) and a standing parity rule:
+  when a Firebase choice is ambiguous, do what PostgreSQL / SQLite /
+  MySQL / DB2 already do; do not change those engines.
+- Bind path (replaces an earlier splice-literals idea): copy
+  `sqlite_execute_query`. `parameters_json` → `parse_typed_parameters`
+  → `convert_named_to_positional(..., DB_ENGINE_FIREBASE)` which
+  already emits `?` → evaluate `?` against the ordered
+  `TypedParameter` list. Templates keep `:NAME` on the wire from
+  Helium/Conduit, same as every other engine.
+- `prepare_statement` stays fail-closed (Phase 6). APPLY already
+  falls back to `execute_query` in `database_engine_execute`. Direct
+  path still binds, as SQLite's `execute_query` does.
+- Bootstrap done-means SQL (firebase collection name):
+  `SELECT query_id id, query_ref ref, query_status_a27 status,
+  query_type_a28 type, query_dialect_a30 engine, query_queue_a58
+  queue, query_timeout timeout, name, code query FROM testfb_queries
+  WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;`
+  Implicit aliases without `AS`; parenthesized WHERE `=`; ORDER BY
+  DESC. QTC needs JSON integers for `ref`/`type`/`queue`/`timeout`
+  and strings for `query`/`name`.
+- One collection only. No JOIN / GROUP BY / LATERAL (Phase 9).
+  Optional WHERE, AND-chained predicates the DML WHERE already has
+  (`=`, `IS NULL`, `IN` literals) plus comparisons (`<>`, `<`, `>`,
+  `<=`, `>=`) and wrapping parens. ORDER BY one or more columns
+  ASC/DESC. LIMIT a non-negative integer.
+- Line caps: `sql_parse.c` ~940, `sql_expr.c` ~954, `sql_dml.c`
+  ~882. Standalone SELECT parse/execute in `sql_select.c` (~764).
+  Add `FIREBASE_SQL_KIND_SELECT`; dispatch from `query.c` (SELECT is
+  not DDL and not `firebase_sql_kind_is_dml`).
+- 8.3 grep (not yet `[x]`): `IN (literals)` already in DML WHERE.
+  `LIKE`+`OR`+`UPPER`+`||` in 1123 (single-table `queries`) and in
+  JOIN QueryRefs 1122 / 1124 / 1131. Scalar `(SELECT MAX…)` is the
+  Phase 7 CTE, not standalone SELECT. `CONCAT()` does not appear in
+  Acuranzo; concat is `||`. `CAST(:NAME AS …)` is 1151 (`FROM
+  numbers`). `FB_TIME_ADD` / `FB_SESSION_SECS` are 1096 / 1112.
+  Default: LIKE / `||` / CAST / time macros **[~]** unless bootstrap
+  needs them; JOIN-shaped QueryRefs stay Phase 9. That is capability
+  sequencing, not a smaller Firebase language.
+- Gaps vs other engines that are unfinished, not a new API:
+  `execute_query` ignores `parameters_json` today; prepare and
+  transactions still fail-closed; no standalone SELECT yet.
+- Session paused before go (token issues). No Phase 8 C in this
+  turn.
 
 ### Lessons learned
 
-(empty until the phase runs)
+- Splicing `:NAME` into SQL literals would be a Firebase-only path.
+  The other engines never do that; bind by index after
+  `convert_named_to_positional`.
+- DROP_CHECK was already per-engine (PG terminate, MySQL CHAR(0)
+  error, DB2 SIGNAL, SQLite SELECT string). `FB_REFUSE_DROP` failing
+  the statement is closer to MySQL/DB2 than a new invention.
+- MAX+1 with no counters sidecar matches the SQL the other engines
+  already run.
 
 ---
 
@@ -2125,8 +2256,18 @@ Port scheme: Test 37 → **537x**.
 - **(2026-09-17, Phase 6 complete)** INSERT VALUES / UPDATE / DELETE
   Unity-green. Document id from evaluated PK (`30_6`). Brotli
   decompress-on-INSERT stores plaintext. Transactions still
-  fail-closed. Next is Phase 7 INSERT…SELECT / CTE / MAX+1 /
-  RETURNING; do not start until asked.
+  fail-closed.
+- **(2026-09-17, Phase 7 complete)** INSERT…SELECT WITH CTE MAX+1,
+  1190 `SELECT *`, and RETURNING Unity-green. Two LOAD inserts get
+  `query_id` 1 then 2; RETURNING is `[{"query_id":1}]`. No counters
+  sidecar. Next is Phase 8 SELECT/binds; do not start until asked.
+- **(2026-09-17, pre-Phase 8)** Status-at-a-glance table added at the
+  top (Quick / Moderate / Difficult for remaining work). Standing
+  parity rule: Firebase follows the other engines' bind and
+  `QueryResult` contracts; do not splice `:NAME` into SQL literals;
+  do not change PG / SQLite / MySQL / DB2. Phase 8 locks written in
+  that phase's Working Log; implementation waits for go. Session
+  paused (token issues). Phase 7 C may still be uncommitted.
 
 ### Surprises / deviations (historical, still true)
 
