@@ -5,20 +5,17 @@
 --       SQL per engine. PostgreSQL and DB2 use ALTER COLUMN ... DROP NOT NULL.
 --       MySQL must MODIFY COLUMN with the full type. SQLite has no native
 --       column-nullability ALTER and requires a table-rebuild dance.
---       Firebase shares the SQLite rebuild path (interpreter has no ALTER
---       COLUMN nullability).
 
 -- db2
 -- mysql
 -- postgresql
 -- sqlite
--- firebase
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
--- 1.1.0 - 2026-09-16 - Firebase shares the SQLite table-rebuild path
+-- 1.1.0 - 2026-09-19 - Removed firebase from sqlite rebuild path (C-level Firebase fully removed)
 -- 1.0.0 - 2026-05-09 - Initial creation for OIDC Phase 16
 
 return function(engine, design_name, schema_name, cfg)
@@ -174,7 +171,7 @@ if engine == 'db2' then table.insert(queries,{sql=[[
 
 ]]}) end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-if engine == 'sqlite' or engine == 'firebase' then table.insert(queries,{sql=[[
+if engine == 'sqlite' then table.insert(queries,{sql=[[
 
     INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
@@ -402,7 +399,7 @@ if engine == 'db2' then table.insert(queries,{sql=[[
 
 ]]}) end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-if engine == 'sqlite' or engine == 'firebase' then table.insert(queries,{sql=[[
+if engine == 'sqlite' then table.insert(queries,{sql=[[
 
     INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}

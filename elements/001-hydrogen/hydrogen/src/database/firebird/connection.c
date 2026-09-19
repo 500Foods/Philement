@@ -1,0 +1,391 @@
+/*
+ * Firebird Database Engine - Connection Management Implementation
+ *
+ * Implements Firebird connection management via libfbclient (isc_* API).
+ * Function pointers are loaded via dlopen at runtime, or mocked in
+ * Unity tests via USE_MOCK_LIBFBC.
+ */
+
+// Project includes
+#include <src/hydrogen.h>
+#include <src/database/database.h>
+#include <src/database/dbqueue/dbqueue.h>
+
+// Local includes
+#include "types.h"
+#include "connection.h"
+#include "utils.h"
+
+/*
+ * ----------------------------------------------------------------------------
+ * isc_* function pointer definitions
+ *
+ * In production these are loaded from libfbclient via dlopen in
+ * load_libfbclient_functions(). In Unity tests, USE_MOCK_LIBFBC remaps
+ * them to mock_isc_* functions declared in mock_libfbclient.h.
+ * ----------------------------------------------------------------------------
+ */
+#ifdef USE_MOCK_LIBFBC
+#include <unity/mocks/mock_libfbclient.h>
+#endif
+
+isc_attach_database_t          isc_attach_database_ptr          = NULL;
+isc_detach_database_t          isc_detach_database_ptr          = NULL;
+isc_start_transaction_t        isc_start_transaction_ptr        = NULL;
+isc_commit_transaction_t       isc_commit_transaction_ptr       = NULL;
+isc_rollback_transaction_t     isc_rollback_transaction_ptr    = NULL;
+isc_dsql_allocate_t            isc_dsql_allocate_ptr           = NULL;
+isc_dsql_prepare_t             isc_dsql_prepare_ptr            = NULL;
+isc_dsql_execute_t             isc_dsql_execute_ptr            = NULL;
+isc_dsql_execute_immediate_t   isc_dsql_execute_immediate_ptr  = NULL;
+isc_dsql_free_statement_t      isc_dsql_free_statement_ptr     = NULL;
+isc_dsql_fetch_t               isc_dsql_fetch_ptr              = NULL;
+fb_cancel_operation_t          fb_cancel_operation_ptr         = NULL;
+
+#ifndef USE_MOCK_LIBFBC
+// Library handle for dynamic loading (only in production builds)
+static void* libfbclient_handle = NULL;
+static pthread_mutex_t libfbclient_mutex = PTHREAD_MUTEX_INITIALIZER;
+#endif
+
+/*
+ * ----------------------------------------------------------------------------
+ * Library loading
+ * ----------------------------------------------------------------------------
+ */
+bool load_libfbclient_functions(const char* designator) {
+#ifdef USE_MOCK_LIBFBC
+    (void)designator;
+    // In mock mode, assign the _ptr variables to the mock_* functions
+    // so that connection.c / query.c / transaction.c use the mocks.
+    isc_attach_database_ptr       = mock_isc_attach_database;
+    isc_detach_database_ptr       = mock_isc_detach_database;
+    isc_start_transaction_ptr     = mock_isc_start_transaction;
+    isc_commit_transaction_ptr    = mock_isc_commit_transaction;
+    isc_rollback_transaction_ptr  = mock_isc_rollback_transaction;
+    isc_dsql_allocate_ptr         = mock_isc_dsql_allocate;
+    isc_dsql_prepare_ptr          = mock_isc_dsql_prepare;
+    isc_dsql_execute_ptr          = mock_isc_dsql_execute;
+    isc_dsql_execute_immediate_ptr = mock_isc_dsql_execute_immediate;
+    isc_dsql_free_statement_ptr   = mock_isc_dsql_free_statement;
+    isc_dsql_fetch_ptr            = mock_isc_dsql_fetch;
+    fb_cancel_operation_ptr       = mock_fb_cancel_operation;
+    return true;
+#else
+    const char* log_subsystem = designator ? designator : SR_DATABASE;
+
+    MUTEX_LOCK(&libfbclient_mutex, log_subsystem);
+
+    if (libfbclient_handle) {
+        MUTEX_UNLOCK(&libfbclient_mutex, log_subsystem);
+        return true;
+    }
+
+    static const char* names[] = {
+        "libfbclient.so.2",
+        "libfbclient.so",
+        "libfbclient.so.40",
+        "libfbclient.so.30",
+        NULL
+    };
+
+    for (int i = 0; names[i]; i++) {
+        libfbclient_handle = dlopen(names[i], RTLD_LAZY);
+        if (libfbclient_handle) {
+            break;
+        }
+    }
+
+    if (!libfbclient_handle) {
+        MUTEX_UNLOCK(&libfbclient_mutex, log_subsystem);
+        return false;
+    }
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wpedantic"
+    isc_attach_database_ptr       = (isc_attach_database_t)          dlsym(libfbclient_handle, "isc_attach_database");
+    isc_detach_database_ptr       = (isc_detach_database_t)          dlsym(libfbclient_handle, "isc_detach_database");
+    isc_start_transaction_ptr     = (isc_start_transaction_t)         dlsym(libfbclient_handle, "isc_start_transaction");
+    isc_commit_transaction_ptr    = (isc_commit_transaction_t)        dlsym(libfbclient_handle, "isc_commit_transaction");
+    isc_rollback_transaction_ptr  = (isc_rollback_transaction_t)      dlsym(libfbclient_handle, "isc_rollback_transaction");
+    isc_dsql_allocate_ptr         = (isc_dsql_allocate_t)             dlsym(libfbclient_handle, "isc_dsql_allocate");
+    isc_dsql_prepare_ptr          = (isc_dsql_prepare_t)              dlsym(libfbclient_handle, "isc_dsql_prepare");
+    isc_dsql_execute_ptr          = (isc_dsql_execute_t)              dlsym(libfbclient_handle, "isc_dsql_execute");
+    isc_dsql_execute_immediate_ptr= (isc_dsql_execute_immediate_t)    dlsym(libfbclient_handle, "isc_dsql_execute_immediate");
+    isc_dsql_free_statement_ptr   = (isc_dsql_free_statement_t)       dlsym(libfbclient_handle, "isc_dsql_free_statement");
+    isc_dsql_fetch_ptr            = (isc_dsql_fetch_t)                dlsym(libfbclient_handle, "isc_dsql_fetch");
+    fb_cancel_operation_ptr       = (fb_cancel_operation_t)           dlsym(libfbclient_handle, "fb_cancel_operation");
+#pragma GCC diagnostic pop
+
+    MUTEX_UNLOCK(&libfbclient_mutex, log_subsystem);
+    return true;
+#endif
+}
+
+/*
+ * ----------------------------------------------------------------------------
+ * FirebirdConnection wrapper management
+ * ----------------------------------------------------------------------------
+ */
+FirebirdConnection* firebird_create_connection_wrapper(void) {
+    FirebirdConnection* fb_conn = calloc(1, sizeof(FirebirdConnection));
+    if (!fb_conn) {
+        return NULL;
+    }
+    fb_conn->db_handle   = NULL;
+    fb_conn->tr_handle   = NULL;
+    fb_conn->stmt_handle = NULL;
+    pthread_mutex_init(&fb_conn->stmt_lock, NULL);
+    return fb_conn;
+}
+
+void firebird_destroy_connection_wrapper(FirebirdConnection* fb_conn) {
+    if (!fb_conn) {
+        return;
+    }
+    pthread_mutex_destroy(&fb_conn->stmt_lock);
+    free(fb_conn);
+}
+
+FirebirdConnection* firebird_get_connection_wrapper(DatabaseHandle* connection) {
+    if (!connection || connection->engine_type != DB_ENGINE_FIREBIRD) {
+        return NULL;
+    }
+    return (FirebirdConnection*)connection->connection_handle;
+}
+
+/*
+ * ----------------------------------------------------------------------------
+ * Forward declaration for designator helper
+ * ----------------------------------------------------------------------------
+ */
+
+/*
+ * ----------------------------------------------------------------------------
+ * Connection management
+ * ----------------------------------------------------------------------------
+ */
+bool firebird_connect(ConnectionConfig* config, DatabaseHandle** connection, const char* designator) {
+    const char* log_subsystem = designator ? designator : SR_DATABASE;
+
+    if (!config || !connection) {
+        log_this(log_subsystem, "Invalid parameters for Firebird connection", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    if (!load_libfbclient_functions(designator)) {
+        log_this(log_subsystem, "Firebird connection failed: libfbclient not available", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    FirebirdConnection* fb_conn = firebird_create_connection_wrapper();
+    if (!fb_conn) {
+        log_this(log_subsystem, "Firebird connection failed: wrapper allocation failed", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    char* attach_params = firebird_build_attach_string(config);
+    if (!attach_params) {
+        log_this(log_subsystem, "Firebird connection failed: attach string allocation failed", LOG_LEVEL_ERROR, 0);
+        firebird_destroy_connection_wrapper(fb_conn);
+        return false;
+    }
+
+    const char* db_path = config->database ? config->database : "";
+
+    fb_status_t status[FB_STATUS_LENGTH];
+    memset(status, 0, sizeof(status));
+
+    fb_status_t result = isc_attach_database_ptr(
+        status,
+        (short)(db_path ? strlen(db_path) : 0),
+        db_path,
+        &fb_conn->db_handle,
+        0,
+        attach_params
+    );
+
+    free(attach_params);
+
+    if (result != FB_SQL_SUCCESS && result != FB_SQL_SUCCESS_INFO) {
+        firebird_status_to_error(status, log_subsystem);
+        firebird_destroy_connection_wrapper(fb_conn);
+        return false;
+    }
+
+    DatabaseHandle* db_handle = calloc(1, sizeof(DatabaseHandle));
+    if (!db_handle) {
+        if (isc_detach_database_ptr) {
+            isc_detach_database_ptr(status, fb_conn->db_handle);
+        }
+        firebird_destroy_connection_wrapper(fb_conn);
+        return false;
+    }
+
+    db_handle->engine_type        = DB_ENGINE_FIREBIRD;
+    db_handle->connection_handle  = fb_conn;
+    db_handle->config             = config;
+    db_handle->status             = DB_CONNECTION_CONNECTED;
+    db_handle->connected_since    = time(NULL);
+    db_handle->current_transaction = NULL;
+    db_handle->designator         = designator ? strdup(designator) : NULL;
+    db_handle->last_health_check  = 0;
+    db_handle->consecutive_failures = 0;
+    pthread_mutex_init(&db_handle->connection_lock, NULL);
+
+    *connection = db_handle;
+    return true;
+}
+
+bool firebird_disconnect(DatabaseHandle* connection) {
+    if (!connection || connection->engine_type != DB_ENGINE_FIREBIRD) {
+        return false;
+    }
+
+    FirebirdConnection* fb_conn = (FirebirdConnection*)connection->connection_handle;
+    if (fb_conn) {
+        if (fb_conn->tr_handle && isc_rollback_transaction_ptr) {
+            fb_status_t status[FB_STATUS_LENGTH];
+            memset(status, 0, sizeof(status));
+            (void)isc_rollback_transaction_ptr(status, &fb_conn->tr_handle);
+        }
+        if (fb_conn->db_handle && isc_detach_database_ptr) {
+            fb_status_t status[FB_STATUS_LENGTH];
+            memset(status, 0, sizeof(status));
+            isc_detach_database_ptr(status, &fb_conn->db_handle);
+        }
+        firebird_destroy_connection_wrapper(fb_conn);
+    }
+
+    connection->status = DB_CONNECTION_DISCONNECTED;
+    log_this(firebird_designator_safe(connection), "Firebird connection closed", LOG_LEVEL_TRACE, 0);
+
+    return true;
+}
+
+bool firebird_health_check(DatabaseHandle* connection) {
+    if (!connection || connection->engine_type != DB_ENGINE_FIREBIRD) {
+        return false;
+    }
+
+    FirebirdConnection* fb_conn = (FirebirdConnection*)connection->connection_handle;
+    if (!fb_conn || !fb_conn->db_handle) {
+        return false;
+    }
+
+    if (isc_dsql_execute_immediate_ptr) {
+        fb_status_t status[FB_STATUS_LENGTH];
+        memset(status, 0, sizeof(status));
+        fb_status_t result = isc_dsql_execute_immediate_ptr(
+            status,
+            fb_conn->db_handle,
+            fb_conn->tr_handle,
+            0,
+            "SELECT 1 FROM RDB$DATABASE",
+            0
+        );
+        if (result == FB_SQL_SUCCESS || result == FB_SQL_SUCCESS_INFO) {
+            connection->last_health_check = time(NULL);
+            connection->consecutive_failures = 0;
+            return true;
+        }
+    }
+
+    connection->consecutive_failures++;
+    log_this(firebird_designator_safe(connection), "Firebird health check failed", LOG_LEVEL_ERROR, 0);
+    return false;
+}
+
+bool firebird_reset_connection(DatabaseHandle* connection) {
+    if (!connection || connection->engine_type != DB_ENGINE_FIREBIRD) {
+        return false;
+    }
+
+    connection->status = DB_CONNECTION_CONNECTED;
+    connection->connected_since = time(NULL);
+    connection->consecutive_failures = 0;
+
+    log_this(firebird_designator_safe(connection), "Firebird connection reset", LOG_LEVEL_TRACE, 0);
+    return true;
+}
+
+/*
+ * ----------------------------------------------------------------------------
+ * Watchdog cancel support
+ * ----------------------------------------------------------------------------
+ * Phase 5 skeleton: no query execution path exists yet, so stmt_handle is
+ * always NULL here. The cancel hook logs and returns. Phase 5 sets up the
+ * tracking infrastructure (set / clear / cancel) so later phases can plug
+ * in real fb_cancel_operation calls once isc_dsql_execute exists.
+ */
+void firebird_cancel_inflight(DatabaseHandle* connection) {
+    if (!connection || connection->engine_type != DB_ENGINE_FIREBIRD) {
+        return;
+    }
+
+    FirebirdConnection* fb_conn = (FirebirdConnection*)connection->connection_handle;
+    if (!fb_conn) {
+        return;
+    }
+
+    pthread_mutex_lock(&fb_conn->stmt_lock);
+    void* stmt = fb_conn->stmt_handle;
+    pthread_mutex_unlock(&fb_conn->stmt_lock);
+
+    if (!stmt) {
+        return;
+    }
+
+    if (fb_cancel_operation_ptr) {
+        fb_status_t status[FB_STATUS_LENGTH];
+        memset(status, 0, sizeof(status));
+        fb_status_t result = fb_cancel_operation_ptr(status, fb_conn->db_handle, FB_CANCEL_CURRENT);
+        const char* desig = firebird_designator_safe(connection);
+        if (result != FB_SQL_SUCCESS && result != FB_SQL_SUCCESS_INFO) {
+            log_this(desig, "Firebird: fb_cancel_operation returned %d", LOG_LEVEL_ERROR, 1, (int)result);
+        } else {
+            log_this(desig, "Firebird: requested cancel of in-flight query", LOG_LEVEL_ALERT, 0);
+        }
+    } else {
+        log_this(firebird_designator_safe(connection),
+                 "Firebird: cancel requested but fb_cancel_operation unavailable (no in-flight statement)",
+                 LOG_LEVEL_ALERT, 0);
+    }
+}
+
+void firebird_active_stmt_set(DatabaseHandle* connection, void* stmt_handle) {
+    if (!connection || connection->engine_type != DB_ENGINE_FIREBIRD || !stmt_handle) {
+        return;
+    }
+    FirebirdConnection* fb_conn = (FirebirdConnection*)connection->connection_handle;
+    if (!fb_conn) {
+        return;
+    }
+    pthread_mutex_lock(&fb_conn->stmt_lock);
+    fb_conn->stmt_handle = stmt_handle;
+    pthread_mutex_unlock(&fb_conn->stmt_lock);
+}
+
+void firebird_active_stmt_clear(DatabaseHandle* connection, const void* stmt_handle) {
+    if (!connection || connection->engine_type != DB_ENGINE_FIREBIRD) {
+        return;
+    }
+    FirebirdConnection* fb_conn = (FirebirdConnection*)connection->connection_handle;
+    if (!fb_conn) {
+        return;
+    }
+    pthread_mutex_lock(&fb_conn->stmt_lock);
+    if (fb_conn->stmt_handle == stmt_handle) {
+        fb_conn->stmt_handle = NULL;
+    }
+    pthread_mutex_unlock(&fb_conn->stmt_lock);
+}
+
+/*
+ * ----------------------------------------------------------------------------
+ * Local helpers
+ * ----------------------------------------------------------------------------
+ */
+const char* firebird_designator_safe(const DatabaseHandle* connection) {
+    return connection && connection->designator ? connection->designator : SR_DATABASE;
+}

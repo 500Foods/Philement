@@ -46,7 +46,7 @@ void database_engine_cleanup_result(QueryResult* result);
 void database_engine_cleanup_transaction(Transaction* transaction);
 
 // Utility functions
-void database_get_counts_by_type(int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count);
+void database_get_counts_by_type(int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count, int* firebird_count);
 void database_get_supported_engines(char* buffer, size_t buffer_size);
 
 #endif // DATABASE_ENGINE_H

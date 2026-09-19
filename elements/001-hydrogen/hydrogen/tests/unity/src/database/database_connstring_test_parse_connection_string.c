@@ -38,7 +38,6 @@ void test_parse_connection_string_db2_no_hostname(void);
 void test_parse_connection_string_db2_no_port(void);
 void test_parse_connection_string_db2_no_uid(void);
 void test_parse_connection_string_db2_no_pwd(void);
-void test_parse_connection_string_firebase_format(void);
 
 void setUp(void) {
     // Set up test fixtures if needed
@@ -419,18 +418,6 @@ void test_parse_connection_string_db2_no_pwd(void) {
     free_connection_config(config);
 }
 
-void test_parse_connection_string_firebase_format(void) {
-    const char* conn_str = "firebase://hydrodemo/(default)?host=127.0.0.1&port=8080&emulator=1";
-    ConnectionConfig* config = parse_connection_string(conn_str);
-    TEST_ASSERT_NOT_NULL(config);
-    TEST_ASSERT_EQUAL_STRING("hydrodemo", config->username);
-    TEST_ASSERT_EQUAL_STRING("(default)", config->database);
-    TEST_ASSERT_EQUAL_STRING("127.0.0.1", config->host);
-    TEST_ASSERT_EQUAL(8080, config->port);
-    TEST_ASSERT_EQUAL_STRING(conn_str, config->connection_string);
-    free_connection_config(config);
-}
-
 int main(void) {
     UNITY_BEGIN();
 
@@ -459,7 +446,6 @@ int main(void) {
     RUN_TEST(test_parse_connection_string_empty_string);
     RUN_TEST(test_parse_connection_string_db2_minimal);
     RUN_TEST(test_parse_connection_string_db2_quoted_values);
-    RUN_TEST(test_parse_connection_string_firebase_format);
 
     return UNITY_END();
 }

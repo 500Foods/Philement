@@ -1130,7 +1130,7 @@ the documented deps; README lists the UDF situation honestly.
 - **2026-09-16** Phase 0 Status re-read complete. User approved Phase 1
   implementation (local pin, UI off, SECRETS names as proposed).
 - Layout:
-  [`extras/firebase_emulator/README.md`](/elements/001-hydrogen/hydrogen/extras/firebase_emulator/README.md)
+  `extras/firebase_emulator/README.md`
   plus `start.sh`, `stop.sh`, `firebase.json`, `.firebaserc`,
   `firestore.rules`, `package.json` / `package-lock.json`.
 - Manual start/stop (this machine): Node v24, OpenJDK 25 on PATH,

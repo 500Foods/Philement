@@ -529,13 +529,47 @@ ConnectionConfig* parse_connection_string(const char* connection_string) {
         if (!config->username) config->username = strdup("");
         if (!config->password) config->password = strdup("");
 
-        // Pull a CurrentSchema attribute out of the connection string, if present,
-        // so it is available to the engine through ConnectionConfig.schema.
-        char* cs = database_connstring_extract_db2_value(connection_string, "CurrentSchema=");
-        if (cs) {
-            free(config->schema);
-            config->schema = cs;
+         // Pull a CurrentSchema attribute out of the connection string, if present,
+         // so it is available to the engine through ConnectionConfig.schema.
+         char* cs = database_connstring_extract_db2_value(connection_string, "CurrentSchema=");
+         if (cs) {
+             free(config->schema);
+             config->schema = cs;
+         }
+    } else if (strstr(connection_string, "firebird://") == connection_string) {
+        // Firebird format: firebird://[user:password@host[:port]/]path.fdb[?user=..&password=..&schema=..]
+        // or:              firebird://path.fdb (embedded)
+        config->port = 3050;  // Firebird default port
+
+        // Copy the connection string for ConnectionConfig.connection_string
+        config->connection_string = strdup(connection_string);
+
+        // Use the firebird utility to parse the URL into components
+        char host[256], port_str[16], db_path[4096], user[256], pass[256], schema[256];
+        // Declare parse helper externally to avoid circular include
+        extern bool firebird_parse_connstring_url(const char*, char*, int, char*, int, char*, int, char*, int, char*, int, char*, int);
+
+        if (firebird_parse_connstring_url(connection_string,
+                                           host, sizeof(host),
+                                           port_str, sizeof(port_str),
+                                           db_path, sizeof(db_path),
+                                           user, sizeof(user),
+                                           pass, sizeof(pass),
+                                           schema, sizeof(schema))) {
+            if (*host)      config->host     = strdup(host);
+            if (*port_str)  config->port     = atoi(port_str);
+            // For Firebird, the database field may hold either the path
+            // or the host:database form. We store the path from the URL.
+            if (*db_path)   config->database = strdup(db_path);
+            if (*user)      config->username = strdup(user);
+            if (*pass)      config->password = strdup(pass);
+            if (*schema)    config->schema   = strdup(schema);
         }
+
+        // Set defaults
+        if (!config->host)     config->host     = strdup("localhost");
+        if (!config->username) config->username = strdup("");
+        if (!config->password) config->password = strdup("");
     } else {
         // Assume other format - store as-is
         config->database = strdup(connection_string);

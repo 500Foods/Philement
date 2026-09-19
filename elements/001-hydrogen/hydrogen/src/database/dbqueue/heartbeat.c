@@ -32,6 +32,8 @@ DatabaseEngine database_queue_determine_engine_type(const char* connection_strin
     } else if (strstr(connection_string, "DATABASE=") != NULL) {
         // DB2 connection string format contains "DATABASE="
         return DB_ENGINE_DB2;
+    } else if (strncmp(connection_string, "firebird://", 11) == 0) {
+        return DB_ENGINE_FIREBIRD;
     } else {
         // If it doesn't match other patterns, assume SQLite
         return DB_ENGINE_SQLITE;
@@ -77,6 +79,16 @@ char* database_queue_mask_connection_string(const char* connection_string) {
             const char* colon_pos = strchr(after_proto, ':');
             if (colon_pos && colon_pos < at_pos) {
                 // Mask from after colon to @
+                memset((char*)colon_pos + 1, '*', (size_t)(at_pos - (colon_pos + 1)));
+            }
+        }
+    } else if (strncmp(safe_conn_str, "firebird://", 11) == 0) {
+        // Firebird format: firebird://[user:password@]host[:port]/path or firebird://path
+        const char* after_proto = safe_conn_str + 11; // Skip "firebird://"
+        const char* at_pos = strchr(after_proto, '@');
+        if (at_pos) {
+            const char* colon_pos = strchr(after_proto, ':');
+            if (colon_pos && colon_pos < at_pos) {
                 memset((char*)colon_pos + 1, '*', (size_t)(at_pos - (colon_pos + 1)));
             }
         }

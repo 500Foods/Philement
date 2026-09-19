@@ -58,7 +58,7 @@ void test_database_get_supported_engines_parameter_validation(void) {
     database_get_supported_engines(buffer, sizeof(buffer));
     TEST_ASSERT_TRUE(strlen(buffer) > 0);
     TEST_ASSERT_TRUE(strstr(buffer, "PostgreSQL") != NULL);
-    TEST_ASSERT_TRUE(strstr(buffer, "Firebase") != NULL);
+    TEST_ASSERT_TRUE(strstr(buffer, "DB2") != NULL);
 }
 
 // Test database_get_supported_engines with NULL buffer
@@ -96,7 +96,7 @@ void test_database_get_supported_engines_valid(void) {
     database_get_supported_engines(buffer, sizeof(buffer));
     TEST_ASSERT_TRUE(strlen(buffer) > 0);
     TEST_ASSERT_TRUE(strstr(buffer, "PostgreSQL") != NULL);
-    TEST_ASSERT_TRUE(strstr(buffer, "Firebase") != NULL);
+    TEST_ASSERT_TRUE(strstr(buffer, "DB2") != NULL);
 }
 
 // Test database_get_counts_by_type with no config
@@ -105,14 +105,14 @@ void test_database_get_counts_by_type_no_config(void) {
     AppConfig* saved_config = app_config;
     app_config = NULL;
 
-    int postgres_count, mysql_count, sqlite_count, db2_count, firebase_count;
-    database_get_counts_by_type(&postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebase_count);
+    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count;
+    database_get_counts_by_type(&postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count);
 
     TEST_ASSERT_EQUAL(0, postgres_count);
     TEST_ASSERT_EQUAL(0, mysql_count);
     TEST_ASSERT_EQUAL(0, sqlite_count);
     TEST_ASSERT_EQUAL(0, db2_count);
-    TEST_ASSERT_EQUAL(0, firebase_count);
+    TEST_ASSERT_EQUAL(0, firebird_count);
 
     app_config = saved_config;
 }
@@ -121,15 +121,15 @@ void test_database_get_counts_by_type_no_config(void) {
 void test_database_get_counts_by_type_with_config(void) {
     // This would require setting up app_config with database connections
     // For now, just test that it doesn't crash
-    int postgres_count, mysql_count, sqlite_count, db2_count, firebase_count;
-    database_get_counts_by_type(&postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebase_count);
+    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count;
+    database_get_counts_by_type(&postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count);
 
     // Values depend on configuration
     TEST_ASSERT_TRUE(postgres_count >= 0);
     TEST_ASSERT_TRUE(mysql_count >= 0);
     TEST_ASSERT_TRUE(sqlite_count >= 0);
     TEST_ASSERT_TRUE(db2_count >= 0);
-    TEST_ASSERT_TRUE(firebase_count >= 0);
+    TEST_ASSERT_TRUE(firebird_count >= 0);
 }
 
 int main(void) {

@@ -132,7 +132,6 @@ void test_database_queue_wait_for_initial_connection_non_lead_queue(void) {
 // Test database_queue_determine_engine_type function
 void test_database_queue_determine_engine_type(void) {
     // Test PostgreSQL
-    TEST_ASSERT_EQUAL(DB_ENGINE_FIREBASE, database_queue_determine_engine_type("firebase://hydrodemo/(default)?host=127.0.0.1&port=8080&emulator=1"));
     TEST_ASSERT_EQUAL(DB_ENGINE_POSTGRESQL, database_queue_determine_engine_type("postgresql://user:pass@host:5432/db"));
 
     // Test MySQL
@@ -179,13 +178,6 @@ void test_database_queue_mask_connection_string(void) {
     TEST_ASSERT_NOT_NULL(result5);
     TEST_ASSERT_EQUAL_STRING("sqlite.db", result5); // Should be unchanged
     free(result5);
-
-    char* result6 = database_queue_mask_connection_string(
-        "firebase://hydrodemo/(default)?host=127.0.0.1&port=8080&emulator=1&pass=secretjson");
-    TEST_ASSERT_NOT_NULL(result6);
-    TEST_ASSERT_TRUE(strstr(result6, "secretjson") == NULL);
-    TEST_ASSERT_TRUE(strstr(result6, "pass=") != NULL);
-    free(result6);
 }
 
 // Test database_queue_signal_initial_connection_complete function

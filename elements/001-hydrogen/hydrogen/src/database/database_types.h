@@ -10,6 +10,8 @@ typedef enum {
     DB_ENGINE_SQLITE,
     DB_ENGINE_MYSQL,
     DB_ENGINE_DB2,
+    DB_ENGINE_MSSQL,      // key 5 — reserved for MSSQL.md; unused until then
+    DB_ENGINE_FIREBIRD,   // key 6
     DB_ENGINE_AI,         // Unity mock slot — do not reuse
     DB_ENGINE_MAX
 } DatabaseEngine;

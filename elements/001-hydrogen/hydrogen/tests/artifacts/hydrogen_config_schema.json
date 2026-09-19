@@ -1305,7 +1305,6 @@
                                     "mariadb",
                                     "mysql",
                                     "db2",
-                                    "firebase",
                                     "${env.ACURANZO_DB_TYPE}",
                                     "${env.CANVAS_DB_TYPE}",
                                     "${env.HYDROTST_DB_TYPE}",

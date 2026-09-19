@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 5.2.0 - 2026-09-19 - Removed firebase engine from CREATE FUNCTION skip and convert_tz arm
 -- 5.1.0 - 2026-09-16 - Skip CREATE FUNCTION for firebase (in-process FB_* like sqlite)
 -- 5.0.0 - 2026-01-16 - Added Timezone conversion UDF declarations for all database engines
 -- 4.0.0 - 2025-11-27 - Added Brotli decompression UDF declarations for all database engines
@@ -42,9 +43,9 @@ table.insert(queries,{sql=[[
 ]]})
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- NOTE: SQLite has no JSON handling peculiarities, so no custom function is defined
---       Firebase JSON ingest is in-process in Hydrogen (FB_JSON_INGEST)
---       Defined as macros in individual database_<engine>.lua files
-if engine ~= 'sqlite' and engine ~= 'firebase' then table.insert(queries,{sql=[[
+    -- NOTE: Firebase JSON ingest is in-process in Hydrogen (FB_JSON_INGEST)
+    -- Firebase has been removed; this condition only applies to SQLite
+    if engine ~= 'sqlite' then table.insert(queries,{sql=[[
 
     -- Defined in database_<engine>.lua as a macro
     ${JSON_INGEST_FUNCTION}
@@ -310,8 +311,8 @@ table.insert(queries,{sql=[[
 ]]})
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- NOTE: Timezone conversion function convert_tz added for SQLite (loadable)
---       and firebase (in-process comment; FB_CONVERT_TZ is in Hydrogen)
-if engine == 'sqlite' or engine == 'firebase' then table.insert(queries,{sql=[[
+--       Firebird handles timezone natively (TIMESTAMP WITH TIME ZONE)
+if engine == 'sqlite' then table.insert(queries,{sql=[[
 
     ${CONVERT_TZ_FUNCTION}
 

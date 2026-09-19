@@ -6,8 +6,7 @@ This folder contains utility scripts and one-off diagnostic tools for the Hydrog
 
 - [Database Extensions](#database-extensions)
   - [Available UDF Functions](#available-udf-functions)
-  - [firebase_emulator](/elements/001-hydrogen/hydrogen/extras/firebase_emulator/README.md)
-- [Build Scripts](#build-scripts)
+  - [Build Scripts](#build-scripts)
   - [`make-all.sh`](#make-allsh)
   - [`make-clean.sh`](#make-cleansh)
   - [`make-trial.sh`](#make-trialsh)
@@ -55,10 +54,6 @@ This folder contains utility scripts and one-off diagnostic tools for the Hydrog
 
 This is a collection of user-defined-functions (UDFs), all written in C and used consistently across DB2, MySQL/MariaDB, PostgreSQL, and SQLite.
 
-Firebase / Cloud Firestore cannot load C UDFs. Those functions run
-**in-process in Hydrogen**; this extras folder only starts the local
-emulator.
-
 Brotli is a popular compression algorithm that is particularly good at compressing text files like the JSON and CSS files that are found throughout the migration system.
 
 MySQL/MariaDB, PostgreSQL, and SQLite already have built-in support for Base64 encoding and decoding but it is less standard on DB2 (LUW) so we have UDFs for both encoding and decoding there.
@@ -70,7 +65,7 @@ MySQL/MariaDB, PostgreSQL, and SQLite already have built-in support for Base64 e
 - [brotli_udf_postgresql](/elements/001-hydrogen/hydrogen/extras/brotli_udf_postgresql/README.md) Brotli Decompress UDF for PostgreSQL
 - [brotli_udf_sqlite](/elements/001-hydrogen/hydrogen/extras/brotli_udf_sqlite/README.md) Brotli Decompress UDF for SQLite
 - [converttz_udf_sqlite](/elements/001-hydrogen/hydrogen/extras/converttz_udf_sqlite/README.md) Timezone Conversion UDF for SQLite
-- [firebase_emulator](/elements/001-hydrogen/hydrogen/extras/firebase_emulator/README.md) Firestore emulator (in-process functions in Hydrogen; emulator here)
+- [firebird](/elements/001-hydrogen/hydrogen/extras/firebird/README.md) Firebird 4.0 extras (SuperServer + embedded, test database creation)
 
 ### Available UDF Functions
 
@@ -80,12 +75,11 @@ MySQL/MariaDB, PostgreSQL, and SQLite already have built-in support for Base64 e
 | **MySQL** | `FROM_BASE64`¹<br>`TO_BASE64`¹ | `BROTLI_DECOMPRESS` | - |
 | **PostgreSQL** | `DECODE(..., 'base64')`<br>`ENCODE(..., 'base64')`<br>`CONVERT_FROM(..., 'UTF8')`² | `brotli_decompress` | - |
 | **SQLite** | `CRYPTO_DECODE`³<br>`CRYPTO_ENCODE`³ | `BROTLI_DECOMPRESS` | `CONVERT_TZ` |
-| **Firebase** | `FB_BASE64_*`⁴ | `FB_BROTLI_DECOMPRESS`⁴ | emulator only |
+| **Firebird** | `BASE64_ENCODE`¹<br>`BASE64_DECODE`¹ | `BROTLI_DECOMPRESS` | - |
 
 ¹ *Native MySQL function*  
 ² *Native PostgreSQL functions*  
-³ *Available via sqlean crypto extension*  
-⁴ *In-process in Hydrogen (`src/database/firebase/fns_*.c`), not an extras `.so`. This folder starts the Firestore emulator.*
+³ *Available via sqlean crypto extension*
 
 ## Build Scripts
 

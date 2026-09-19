@@ -20,6 +20,7 @@ const char* postgresql_engine_get_description(void);
 const char* sqlite_engine_get_description(void);
 const char* mysql_engine_get_description(void);
 const char* db2_engine_get_description(void);
+const char* firebird_engine_get_description(void);
 
 // Global database subsystem instance
 extern DatabaseSubsystem* database_subsystem;
@@ -39,6 +40,8 @@ DatabaseEngineInterface* database_get_engine_interface(const char* engine) {
         return database_engine_get(DB_ENGINE_MYSQL);
     } else if (strcmp(engine, "db2") == 0) {
         return database_engine_get(DB_ENGINE_DB2);
+    } else if (strcmp(engine, "firebird") == 0) {
+        return database_engine_get(DB_ENGINE_FIREBIRD);
     }
 
     return NULL;
@@ -142,6 +145,8 @@ bool database_add_database(const char* name, const char* engine, const char* con
         engine_type = DB_ENGINE_MYSQL;
     } else if (strcmp(engine, "db2") == 0) {
         engine_type = DB_ENGINE_DB2;
+    } else if (strcmp(engine, "firebird") == 0) {
+        engine_type = DB_ENGINE_FIREBIRD;
     } else if (strcmp(engine, "sqlite") == 0) {
         engine_type = DB_ENGINE_SQLITE;
     }
@@ -160,6 +165,10 @@ bool database_add_database(const char* name, const char* engine, const char* con
         case DB_ENGINE_DB2:
             description = db2_engine_get_description();
             break;
+        case DB_ENGINE_FIREBIRD:
+            description = firebird_engine_get_description();
+            break;
+        case DB_ENGINE_MSSQL:
         case DB_ENGINE_AI:
         case DB_ENGINE_MAX:
         default:

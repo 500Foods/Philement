@@ -8,6 +8,9 @@
 # validate_migration()
 
 # CHANGELOG
+# 1.7.0 - 2026-09-19 - Removed firebase engine (C-level Firebase fully removed)
+# 1.6.0 - 2026-09-19 - Fixed cache check to recognize SKIPPED results as success
+# 1.5.0 - 2026-09-18 - Added firebird engine to ENGINES array and DESIGN_SCHEMAS
 # 1.4.0 - 2026-09-16 - Added firebase engine; skip sqruff (FB_* is not postgres SQL)
 # 1.3.0 - 2025-11-16 - Modified unsubstituted variables check to only flag ${} patterns, not JSON braces
 # 1.2.0 - 2025-10-29 - Added check for unsubstituted variables in generated SQL
@@ -21,7 +24,7 @@ TEST_NAME="Migrations"
 TEST_ABBR="MGR"
 TEST_NUMBER="31"
 TEST_COUNTER=0
-TEST_VERSION="1.4.0"
+TEST_VERSION="1.7.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -38,13 +41,13 @@ HELIUM_DIR="../../../elements/002-helium"
 DESIGNS=("helium" "acuranzo")
 
 # Supported database engines
-ENGINES=("postgresql" "sqlite" "mysql" "db2" "firebase")
+ENGINES=("postgresql" "sqlite" "mysql" "db2" "firebird")
 
 # Schema mapping per design per engine (corresponding to ENGINES array order)
-# ENGINES=("postgresql" "sqlite" "mysql" "db2" "firebase")
+# ENGINES=("postgresql" "sqlite" "mysql" "db2" "firebird")
 declare -A DESIGN_SCHEMAS
-DESIGN_SCHEMAS["helium"]="helium::helium:HELIUM:helium"
-DESIGN_SCHEMAS["acuranzo"]="app::acuranzo:ACURANZO:testfb"
+DESIGN_SCHEMAS["helium"]="helium::helium:HELIUM:helium::"
+DESIGN_SCHEMAS["acuranzo"]="app::acuranzo:ACURANZO:testfb::"
 
 # Function to get file hash (using md5sum or equivalent)
 get_file_hash() {
@@ -85,7 +88,7 @@ validate_migration() {
         # Read cached result but don't output it
         local cached_result
         cached_result=$(cat "${cache_file}")
-        if [[ "${cached_result}" == *"PASSED"* ]]; then
+        if [[ "${cached_result}" == *"PASSED"* || "${cached_result}" == *"SKIPPED"* ]]; then
             # Return cache status via stdout (0 = cached, 1 = not cached)
             echo "cached|"
             return 0
@@ -124,8 +127,8 @@ validate_migration() {
         return 1
     fi
 
-    # Firebase emits FB_* SQL that sqruff (postgres dialect) cannot lint
-    if [[ "${engine}" == "firebase" ]]; then
+    # Firebird emits Firebird SQL that sqruff (postgres dialect) cannot lint
+    if [[ "${engine}" == "firebird" ]]; then
         echo "✅ ${design} ${engine} ${migration} SKIPPED (sqruff not applicable)" > "${cache_file}"
         echo "fresh|"
         return 0

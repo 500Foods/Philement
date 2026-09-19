@@ -32,13 +32,13 @@ in the migrations themselves so that they get populated in the database directly
 | [`database_postgresql.lua`](migrations/database_postgresql.lua) | PostgreSQL-specific database configuration |
 | [`database_sqlite.lua`](migrations/database_sqlite.lua) | SQLite-specific database configuration |
 | [`database_db2.lua`](migrations/database_db2.lua) | IBM DB2-specific database configuration |
-| [`database_firebase.lua`](migrations/database_firebase.lua) | Firebase / Cloud Firestore dialect (in-process FB_* functions) |
+| [`database_firebird.lua`](migrations/database_firebird.lua) | Firebird-specific database configuration |
 
 ## Migrations
 
 | M# | Table | Version | Updated | Stmts | Diagram | Description |
 | ---- | ------- | --------- | --------- | ------- | --------- | ------------- |
-| [1000](/elements/002-helium/acuranzo/migrations/acuranzo_1000.lua) | queries | 5.1.0 | 2026-09-16 | 19 | ✓ | Bootstraps the migration system by creating the queries table and supporting user-defined functions |
+| [1000](/elements/002-helium/acuranzo/migrations/acuranzo_1000.lua) | queries | 5.2.0 | 2026-09-19 | 19 | ✓ | Bootstraps the migration system by creating the queries table and supporting user-defined functions |
 | [1001](/elements/002-helium/acuranzo/migrations/acuranzo_1001.lua) | lookups | 3.1.0 | 2025-11-23 | 6 | ✓ | Creates the lookups table |
 | [1002](/elements/002-helium/acuranzo/migrations/acuranzo_1002.lua) | account_access | 3.1.0 | 2025-11-23 | 6 | ✓ | Creates the account_access table |
 | [1003](/elements/002-helium/acuranzo/migrations/acuranzo_1003.lua) | account_contacts | 3.1.0 | 2025-11-23 | 6 | ✓ | Creates the account_contacts table |
@@ -173,7 +173,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1132](/elements/002-helium/acuranzo/migrations/acuranzo_1132.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #041 (OBSOLETE) - Get Chat |
 | [1133](/elements/002-helium/acuranzo/migrations/acuranzo_1133.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #042 - Create Lookup Key |
 | [1134](/elements/002-helium/acuranzo/migrations/acuranzo_1134.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #043 - Update Lookup Key |
-| [1135](/elements/002-helium/acuranzo/migrations/acuranzo_1135.lua) | queries | 1.1.0 | 2026-09-16 | 12 | ✗ | QueryRef #044 - Get Filtered Lookup: AI Models |
+| [1135](/elements/002-helium/acuranzo/migrations/acuranzo_1135.lua) | queries | 1.3.0 | 2026-09-19 | 12 | ✗ | QueryRef #044 - Get Filtered Lookup: AI Models |
 | [1136](/elements/002-helium/acuranzo/migrations/acuranzo_1136.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #045 - Get Version History |
 | [1137](/elements/002-helium/acuranzo/migrations/acuranzo_1137.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #046 - Get Main Menu |
 | [1138](/elements/002-helium/acuranzo/migrations/acuranzo_1138.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #047 - Get Documents |
@@ -228,7 +228,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1187](/elements/002-helium/acuranzo/migrations/acuranzo_1187.lua) | lookups | 1.2.0 | 2026-04-11 | 4 | ✗ | LithiumTable version-manager (lookup_id 059, key_idx 10) |
 | [1188](/elements/002-helium/acuranzo/migrations/acuranzo_1188.lua) | queries | 1.0.0 | 2026-04-23 | 4 | ✗ | QueryRef #075 - Create Account Settings |
 | [1189](/elements/002-helium/acuranzo/migrations/acuranzo_1189.lua) | account_oidc_identities | 1.0.0 | 2026-05-09 | 7 | ✓ | Creates the account_oidc_identities table (OIDC RP Phase 15) |
-| [1190](/elements/002-helium/acuranzo/migrations/acuranzo_1190.lua) | accounts | 1.1.0 | 2026-09-16 | 25 | ✓ | Relax accounts.password_hash to NULL for OIDC-provisioned accounts (OIDC RP Phase 16) |
+| [1190](/elements/002-helium/acuranzo/migrations/acuranzo_1190.lua) | accounts | 1.1.0 | 2026-09-19 | 25 | ✓ | Relax accounts.password_hash to NULL for OIDC-provisioned accounts (OIDC RP Phase 16) |
 | [1191](/elements/002-helium/acuranzo/migrations/acuranzo_1191.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #080 - OIDC RP: Lookup OIDC Identity (Phase 17) |
 | [1192](/elements/002-helium/acuranzo/migrations/acuranzo_1192.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #081 - OIDC RP: Link OIDC Identity (Phase 17) |
 | [1193](/elements/002-helium/acuranzo/migrations/acuranzo_1193.lua) | queries | 1.1.0 | 2026-07-09 | 4 | ✗ | QueryRef #082 - OIDC RP: Lookup Account by Email (Phase 17) |
@@ -422,4 +422,5 @@ in the migrations themselves so that they get populated in the database directly
 | [1381](/elements/002-helium/acuranzo/migrations/acuranzo_1381.lua) | queries | 1.0.1 | 2026-09-16 | 4 | ✗ | QueryRef #155 - Get Role Name By ID |
 | [1382](/elements/002-helium/acuranzo/migrations/acuranzo_1382.lua) | lookups | 1.0.1 | 2026-09-16 | 8 | ✗ | Retarget Lookup 037 from Role Status to Role Origin |
 | [1383](/elements/002-helium/acuranzo/migrations/acuranzo_1383.lua) | lookups | 1.0.0 | 2026-09-16 | 4 | ✗ | Addition to Lookup 030 - Query Dialect (key 6 Firebase) |
-| **384** | | | | **1958** | **384** | |
+| [1384](/elements/002-helium/acuranzo/migrations/acuranzo_1384.lua) | lookups | 1.0.0 | 2026-09-18 | 4 | ✗ | UPDATE Lookup 030 - Query Dialect (key 6 Firebase → Firebird) |
+| **385** | | | | **1962** | **385** | |

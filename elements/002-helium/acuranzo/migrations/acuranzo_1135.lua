@@ -10,12 +10,14 @@
 -- mysql
 -- postgresql
 -- sqlite
--- firebase
+-- firebird
 
 -- luacheck: no max line length
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.3.0 - 2026-09-19 - Removed firebase engine arm (C-level Firebase fully removed)
+-- 1.2.0 - 2026-09-18 - Added Firebird arm: JSON_VALUE extracts via ${JRS}/${JRE} macros
 -- 1.1.0 - 2026-09-16 - Firebase arm: json_object + FB_JSON_VALUE extracts
 -- 1.0.2 - 2026-03-18 - Updated to use lower-case JSON keys, <fa>-style icon definitions
 -- 1.0.1 - 2026-01-01 - Fixed test conditions to be == instead of ~= (oopsie!)
@@ -570,8 +572,9 @@ if engine == 'sqlite' then table.insert(queries,{sql=[[
     FROM next_query_id;
 
 ]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-if engine == 'firebase' then table.insert(queries,{sql=[[
+if engine == 'firebird' then table.insert(queries,{sql=[[
 
     INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
@@ -609,7 +612,7 @@ if engine == 'firebase' then table.insert(queries,{sql=[[
                         key_idx,
                         value_txt,
                         value_int,
-                        json_object(
+                        JSON_OBJECT(
                             'name', ${JRS}collection${JRM}'$.name'${JRE},
                             'model', ${JRS}collection${JRM}'$.model'${JRE},
                             'icon', ${JRS}collection${JRM}'$.icon'${JRE},
@@ -678,11 +681,9 @@ if engine == 'firebase' then table.insert(queries,{sql=[[
                     excluding values. This means that in future, it may have to be
                     updated if other fields get added to the JSON collection and
                     need to get shared with the client applications.
-                    - Firebase uses json_object(...) with FB_JSON_VALUE extracts.
-                      json_object is an interpreter builtin (same shape as SQLite).
 
                 ]==]
-                                                                                    AS summary,
+                    AS summary,
                 '{}'                                                                AS collection,
                 ${COMMON_INSERT}
             FROM next_query_id;
@@ -690,9 +691,9 @@ if engine == 'firebase' then table.insert(queries,{sql=[[
             ${SUBQUERY_DELIMITER}
 
             UPDATE ${SCHEMA}${QUERIES}
-              SET query_type_a28 = ${TYPE_APPLIED_MIGRATION}
+            SET query_type_a28 = ${TYPE_APPLIED_MIGRATION}
             WHERE query_ref = ${MIGRATION}
-              and query_type_a28 = ${TYPE_FORWARD_MIGRATION};
+            and query_type_a28 = ${TYPE_FORWARD_MIGRATION};
         ]=]
                                                                             AS code,
         'Populate QueryRef #${QUERY_REF} - ${QUERY_NAME}'                   AS name,

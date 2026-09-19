@@ -302,7 +302,10 @@ declare -a ENV_WHITELIST=(
     # First found in payloads/terminal-generate.sh
     "ARTIFACTS_DIR" "XTERMJS_DIR" "XTERMJS_VERSION_FILE" "XTERM_ATTACH_VERSION" "XTERM_FIT_VERSION" "XTERM_JS_VERSION" 
     # First found in extras/hm_browser.sh
-    "DEFAULT_CONFIG" "DEFAULT_OUTPUT" "OUTPUT_DIR"
+    "DEFAULT_CONFIG" "DEFAULT_OUTPUT" "OUTPUT_DIR"                  
+    # First found in extras/firefbird/start.sh and friends
+    "DB_NAME" "DB_PATH" "FIREBIRD_HOST" "FIREBIRD_PORT" "FIREBIRD_SERVICE"
+    "FIREBIRD_SYSDBA_PASSWORD" "MAX_WAIT" "SERVER" "SYSDBA" "WAITED"    
     # first found in extras/mailval/gen_sert.sh
     "CERT" "HERE" "KEY" 
     # First found in extras/schematool.sh

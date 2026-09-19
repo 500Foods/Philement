@@ -4,6 +4,8 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 3.3.0 - 2026-09-19 - Removed Firebase dialect (C-level Firebase fully removed in Phase 3)
+-- 3.2.0 - 2026-09-18 - Added Firebird dialect (query_dialects = 6, empty schema prefix)
 -- 3.1.0 - 2026-09-16 - Added Firebase dialect (query_dialects = 6, underscore schema prefix)
 -- 3.0.0 - 2025-11-27 - Added Brotli compression for large base64-encoded strings (>1KB threshold)
 -- 2.2.0 - 2025-10-26 - Added more boilerplates for common_insert, common_create, common_diagram
@@ -18,9 +20,9 @@ local database = {
     -- Database.lua versioning information
     info = {
       script = "database.lua",
-      version = "3.1.0",
-      release = "2026-09-16"
-    },
+    version = "3.3.0",
+        release = "2026-09-19"
+     },
 
     -- Lookup #27 - Query Status
     query_status = {
@@ -56,16 +58,16 @@ local database = {
         sqlite = true,
         mysql = true,
         db2 = true,
-        firebase = true
+        firebird = true
     },
 
-    -- Lookup #30 - Query Dialects (key 5 is MS SQL Server; Firebase is 6)
+    -- Lookup #30 - Query Dialects (key 5 is MS SQL Server; Firebird is 6)
     query_dialects = {
         postgresql = 1,
         sqlite = 2,
         mysql = 3,
         db2 = 4,
-        firebase = 6
+        firebird = 6
     },
 
     -- Saves repeating it in virtually every single template
@@ -183,7 +185,7 @@ local database = {
         postgresql = require("database_postgresql"),
         mysql = require("database_mysql"),
         db2 = require("database_db2"),
-        firebase = require("database_firebase")
+        firebird = require("database_firebird")
     },
 
     replace_query = function(self, template, engine, design_name, schema_name)
@@ -198,9 +200,9 @@ local database = {
         -- Perfectly acceptable for schema to be empty (typical for SQLite)
         local schema_prefix = ''
         if schema_name and schema_name ~= '' and schema_name ~= '.' then
-          if engine == 'firebase' then
-            -- Collection prefix: testfb_queries, not testfb.queries
-            schema_prefix = schema_name .. '_'
+          if engine == 'firebird' then
+            -- Firebird has no schema support; schema prefix is empty
+            schema_prefix = ''
           else
             local prefixed_name = (engine == 'db2') and schema_name:upper() or schema_name
             schema_prefix = prefixed_name .. '.'

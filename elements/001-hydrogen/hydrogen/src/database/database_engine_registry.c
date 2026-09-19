@@ -14,6 +14,7 @@ DatabaseEngineInterface* postgresql_get_interface(void);
 DatabaseEngineInterface* sqlite_get_interface(void);
 DatabaseEngineInterface* mysql_get_interface(void);
 DatabaseEngineInterface* db2_get_interface(void);
+DatabaseEngineInterface* firebird_get_interface(void);
 
 // Global engine registry
 static DatabaseEngineInterface* engine_registry[DB_ENGINE_MAX] = {NULL};
@@ -32,7 +33,7 @@ bool database_engine_init(void) {
 
     memset(engine_registry, 0, sizeof(engine_registry));
 
-    int postgres_count = 0, mysql_count = 0, sqlite_count = 0, db2_count = 0;
+    int postgres_count = 0, mysql_count = 0, sqlite_count = 0, db2_count = 0, firebird_count = 0;
 
     if (app_config && app_config->databases.connection_count > 0) {
         for (int i = 0; i < app_config->databases.connection_count; i++) {
@@ -47,6 +48,8 @@ bool database_engine_init(void) {
                     sqlite_count++;
                 } else if (strcmp(engine_type, "db2") == 0) {
                     db2_count++;
+                } else if (strcmp(engine_type, "firebird") == 0) {
+                    firebird_count++;
                 }
             }
         }
@@ -100,6 +103,18 @@ bool database_engine_init(void) {
         }
     } else {
         log_this(SR_DATABASE, "- Skipping DB2 engine", LOG_LEVEL_TRACE, 0);
+    }
+
+    if (firebird_count > 0) {
+        DatabaseEngineInterface* firebird_engine = firebird_get_interface();
+        if (firebird_engine) {
+            log_this(SR_DATABASE, "- Registering Firebird engine: %s at index %d", LOG_LEVEL_DEBUG, 2,
+                firebird_engine->name ? firebird_engine->name : "NULL",
+                DB_ENGINE_FIREBIRD);
+            engine_registry[DB_ENGINE_FIREBIRD] = firebird_engine;
+        }
+    } else {
+        log_this(SR_DATABASE, "- Skipping Firebird engine", LOG_LEVEL_TRACE, 0);
     }
 
     engine_system_initialized = true;

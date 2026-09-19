@@ -22,5 +22,5 @@ For migration authoring rules and AI guidance, see the Helium docs: `/docs/He/GU
 
 | M# | Table | Version | Updated | Stmts | Diagram | Description |
 | ---- | ------- | --------- | --------- | ------- | --------- | ------------- |
-| [3000](/elements/002-helium/glm/migrations/glm_3000.lua) | queries | 3.2.0 | 2026-09-16 | 9 | ✓ | Bootstraps the migration system by creating the queries table and supporting user-defined functions |
+| [3000](/elements/002-helium/glm/migrations/glm_3000.lua) | queries | 3.3.0 | 2026-09-19 | 9 | ✓ | Bootstraps the migration system by creating the queries table and supporting user-defined functions |
 | **1** | | | | **9** | **1** | |
