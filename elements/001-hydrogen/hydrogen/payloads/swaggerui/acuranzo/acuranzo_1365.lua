@@ -1,0 +1,152 @@
+-- Migration: acuranzo_1365.lua
+-- MCP Phase 8: scripts.mcp_access allowlist + mcp_schema / mcp_annotations
+--
+-- luacheck: no max line length
+-- luacheck: no unused args
+--
+-- CHANGELOG
+-- 1.0.0 - 2026-08-26 - mcp_access DEFAULT 0; nullable JSON schema/annotations
+
+return function(engine, design_name, schema_name, cfg)
+local queries = {}
+
+cfg.TABLE = "scripts"
+cfg.MIGRATION = "1365"
+-- ----------------------------------------------------------------------------
+-- Forward: ADD mcp_access + mcp_schema + mcp_annotations
+-- ----------------------------------------------------------------------------
+table.insert(queries,{sql=[[
+
+    INSERT INTO ${SCHEMA}${QUERIES} (
+        ${QUERIES_INSERT}
+    )
+    WITH next_query_id AS (
+        SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+        FROM ${SCHEMA}${QUERIES}
+    )
+    SELECT
+        new_query_id                                                        AS query_id,
+        ${MIGRATION}                                                        AS query_ref,
+        ${STATUS_ACTIVE}                                                    AS query_status_a27,
+        ${TYPE_FORWARD_MIGRATION}                                           AS query_type_a28,
+        ${DIALECT}                                                          AS query_dialect_a30,
+        ${QTC_SLOW}                                                         AS query_queue_a58,
+        ${TIMEOUT}                                                          AS query_timeout,
+        [=[
+            ALTER TABLE ${SCHEMA}${TABLE}
+                ADD COLUMN mcp_access ${INTEGER_SMALL} NOT NULL DEFAULT 0;
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                ADD COLUMN mcp_schema ${JSON};
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                ADD COLUMN mcp_annotations ${JSON};
+
+            ${SUBQUERY_DELIMITER}
+
+            UPDATE ${SCHEMA}${QUERIES}
+              SET query_type_a28 = ${TYPE_APPLIED_MIGRATION}
+            WHERE query_ref = ${MIGRATION}
+              and query_type_a28 = ${TYPE_FORWARD_MIGRATION};
+        ]=]
+                                                                            AS code,
+        'Add scripts.mcp_access / mcp_schema / mcp_annotations'             AS name,
+        [=[
+            # Forward Migration ${MIGRATION}: MCP script columns
+
+            Adds the MCP allowlist and tool-descriptor columns to `TABLE`.
+
+            - **mcp_access**: INTEGER_SMALL NOT NULL DEFAULT 0. MCP
+              Streamable HTTP loads only rows with mcp_access <> 0
+              (QueryRef #153). Independent of `invokable` (QueryRef #149).
+            - **mcp_schema**: nullable JSON. Wrapper
+              `{"inputSchema":{...},"outputSchema":{...}}`. NULL →
+              Mcp.Server falls back to `{"type":"object"}`.
+            - **mcp_annotations**: nullable JSON. MCP tool hints
+              (`readOnlyHint`, `destructiveHint`, ...). NULL → omit.
+
+            Seeded per tool in later migrations, not by Mcp.Server.
+            No diagram (column add; same as 1297 / 1346).
+        ]=]
+                                                                            AS summary,
+        '{}'                                                                AS collection,
+        ${COMMON_INSERT}
+    FROM next_query_id;
+
+]]})
+-- ----------------------------------------------------------------------------
+-- Reverse
+-- ----------------------------------------------------------------------------
+table.insert(queries,{sql=[[
+
+    INSERT INTO ${SCHEMA}${QUERIES} (
+        ${QUERIES_INSERT}
+    )
+    WITH next_query_id AS (
+        SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+        FROM ${SCHEMA}${QUERIES}
+    )
+    SELECT
+        new_query_id                                                        AS query_id,
+        ${MIGRATION}                                                        AS query_ref,
+        ${STATUS_ACTIVE}                                                    AS query_status_a27,
+        ${TYPE_REVERSE_MIGRATION}                                           AS query_type_a28,
+        ${DIALECT}                                                          AS query_dialect_a30,
+        ${QTC_SLOW}                                                         AS query_queue_a58,
+        ${TIMEOUT}                                                          AS query_timeout,
+        [=[
+            ${REORG}
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                DROP COLUMN mcp_annotations;
+
+            ${SUBQUERY_DELIMITER}
+
+            ${REORG}
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                DROP COLUMN mcp_schema;
+
+            ${SUBQUERY_DELIMITER}
+
+            ${REORG}
+
+            ${SUBQUERY_DELIMITER}
+
+            ALTER TABLE ${SCHEMA}${TABLE}
+                DROP COLUMN mcp_access;
+
+            ${SUBQUERY_DELIMITER}
+
+            ${REORG}
+
+            ${SUBQUERY_DELIMITER}
+
+            UPDATE ${SCHEMA}${QUERIES}
+              SET query_type_a28 = ${TYPE_FORWARD_MIGRATION}
+            WHERE query_ref = ${MIGRATION}
+              and query_type_a28 = ${TYPE_APPLIED_MIGRATION};
+        ]=]
+                                                                            AS code,
+        'Drop scripts.mcp_access / mcp_schema / mcp_annotations'            AS name,
+        [=[
+            # Reverse Migration ${MIGRATION}: Drop MCP script columns
+
+            Exact undo. `REORG` around each DROP (DB2 SQL0668N rc7).
+        ]=]
+                                                                            AS summary,
+        '{}'                                                                AS collection,
+        ${COMMON_INSERT}
+    FROM next_query_id;
+
+]]})
+
+return queries end

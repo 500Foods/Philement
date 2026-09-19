@@ -3,6 +3,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 2.9.1 - 2026-09-19 - Added JSON_VALUE_FUNCTION UDR macro; fixed BROTLI_DECOMPRESS_FUNCTION to use ENGINE UDR
 -- 2.9.0 - 2026-07-04 - Added directional future-time macros TRFS/TRFE (seconds) and TRFMS/TRFME (minutes) for parity with SQLite fix (Test 41 SQLite JWT bug)
 -- 2.8.1 - 2026-07-02 - Added REORG TABLE macro
 -- 2.8.0 - 2026-07-02 - Added JSON_INGEST_SCHEMA (aliases json_ingest; JSON_VALUE accepts $ref/$id/$schema)
@@ -89,13 +90,16 @@ return {
     DROP_CHECK = "SELECT 'Refusing to drop table ${SCHEMA}${TABLE} – it contains data' WHERE EXISTS (SELECT 1 FROM ${SCHEMA}${TABLE})",
 
     -- Firebird 4 Brotli UDR
-    -- Requires: libbrotli, brotli_udf_firebird plugin in Firebird UDR directory
+    -- Requires: libbrotli, brotli_udf_firebird UDR in Firebird UDR plugin directory
     -- Installation handled via extras/brotli_udf_firebird/
+    -- The UDR shared library must be named brotli_decfn.so and placed in
+    -- the Firebird UDR plugins directory (default: /plugins/udr).
+    -- External name format: <module>!<routine> → brotli_decfn!brotli_decompress
     BROTLI_DECOMPRESS_FUNCTION = [[
         CREATE OR ALTER FUNCTION BROTLI_DECOMPRESS(compressed BLOB)
         RETURNS BLOB
-        EXTERNAL NAME 'brotli_decfn'
-        ENGINE BLR;
+        EXTERNAL NAME 'brotli_decfn!brotli_decompress'
+        ENGINE UDR;
     ]],
 
     JSON = "BLOB SUB_TYPE TEXT",
@@ -110,6 +114,21 @@ return {
     JSON_INGEST_SCHEMA_END = ")",
     JSON_INGEST_SCHEMA_FUNCTION = "",
 
+    -- Firebird 4 has no native JSON_VALUE (Firebird 6+). This UDR provides it.
+    -- Requires: libjansson, json_udf_firebird UDR in Firebird UDR plugin directory
+    -- Installation handled via extras/json_udf_firebird/
+    -- Must be created BEFORE json_ingest (PSQL below calls JSON_VALUE for validation).
+    -- External name format: <module>!<routine> → json_udfn!json_value
+    JSON_VALUE_FUNCTION = [[
+        CREATE OR ALTER FUNCTION JSON_VALUE(json_doc BLOB SUB_TYPE TEXT, json_path VARCHAR(255))
+        RETURNS BLOB SUB_TYPE TEXT
+        EXTERNAL NAME 'json_udfn!json_value'
+        ENGINE UDR;
+    ]],
+
+    -- json_ingest PSQL function: validates and normalizes JSON, escaping
+    -- control characters inside strings. Uses the JSON_VALUE UDR for validity
+    -- checking on the fast path. Must be created after JSON_VALUE_FUNCTION.
     JSON_INGEST_FUNCTION = [[
         CREATE OR ALTER FUNCTION json_ingest(s BLOB SUB_TYPE TEXT)
         RETURNS BLOB SUB_TYPE TEXT

@@ -306,6 +306,7 @@ declare -a ENV_WHITELIST=(
     # First found in extras/firefbird/start.sh and friends
     "DB_NAME" "DB_PATH" "FIREBIRD_HOST" "FIREBIRD_PORT" "FIREBIRD_SERVICE"
     "FIREBIRD_SYSDBA_PASSWORD" "MAX_WAIT" "SERVER" "SYSDBA" "WAITED"    
+    "FIREBIRD_INCLUDE" "SO_BROTLI" "SO_JSON" "UDR_DIR"
     # first found in extras/mailval/gen_sert.sh
     "CERT" "HERE" "KEY" 
     # First found in extras/schematool.sh

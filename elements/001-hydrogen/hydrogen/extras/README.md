@@ -61,21 +61,23 @@ MySQL/MariaDB, PostgreSQL, and SQLite already have built-in support for Base64 e
 - [brotli_udf_db2](/elements/001-hydrogen/hydrogen/extras/brotli_udf_db2/README.md) Brotli Decompress UDF for IBM DB2 (LUW)
 - [base64decode_udf_db2](/elements/001-hydrogen/hydrogen/extras/base64decode_udf_db2/README.md) Base64 Decode UDF for IBM DB2 (LUW)
 - [base64encode_udf_db2](/elements/001-hydrogen/hydrogen/extras/base64encode_udf_db2/README.md) Base64 Encode UDF for IBM DB2 (LUW)
+- [brotli_udf_firebird](/elements/001-hydrogen/hydrogen/extras/brotli_udf_firebird/README.md) Brotli Decompress UDR for Firebird
 - [brotli_udf_mysql](/elements/001-hydrogen/hydrogen/extras/brotli_udf_mysql/README.md) Brotli Decompress UDF for MySQL/MariaDB
 - [brotli_udf_postgresql](/elements/001-hydrogen/hydrogen/extras/brotli_udf_postgresql/README.md) Brotli Decompress UDF for PostgreSQL
 - [brotli_udf_sqlite](/elements/001-hydrogen/hydrogen/extras/brotli_udf_sqlite/README.md) Brotli Decompress UDF for SQLite
 - [converttz_udf_sqlite](/elements/001-hydrogen/hydrogen/extras/converttz_udf_sqlite/README.md) Timezone Conversion UDF for SQLite
 - [firebird](/elements/001-hydrogen/hydrogen/extras/firebird/README.md) Firebird 4.0 extras (SuperServer + embedded, test database creation)
+- [json_udf_firebird](/elements/001-hydrogen/hydrogen/extras/json_udf_firebird/README.md) JSON_VALUE UDR for Firebird
 
 ### Available UDF Functions
 
-| Database Engine | Base64 Functions | Brotli Functions | Test/Check Functions |
-| ---------------- | ------------------ | ------------------ | --------------------- |
-| **DB2** | `BASE64_DECODE_CHUNK`<br>`BASE64DECODE`<br>`BASE64_DECODE_CHUNK_BINARY`<br>`BASE64DECODEBINARY`<br>`BASE64_ENCODE_CHUNK`<br>`BASE64ENCODE`<br>`BASE64_ENCODE_CHUNK_BINARY`<br>`BASE64ENCODEBINARY` | `BROTLI_DECOMPRESS_CHUNK`<br>`BROTLI_DECOMPRESS` | `HYDROGEN_CHECK`<br>`ScalarUDF`<br>`HELIUM_BROTLI_CHECK` |
-| **MySQL** | `FROM_BASE64`¹<br>`TO_BASE64`¹ | `BROTLI_DECOMPRESS` | - |
-| **PostgreSQL** | `DECODE(..., 'base64')`<br>`ENCODE(..., 'base64')`<br>`CONVERT_FROM(..., 'UTF8')`² | `brotli_decompress` | - |
-| **SQLite** | `CRYPTO_DECODE`³<br>`CRYPTO_ENCODE`³ | `BROTLI_DECOMPRESS` | `CONVERT_TZ` |
-| **Firebird** | `BASE64_ENCODE`¹<br>`BASE64_DECODE`¹ | `BROTLI_DECOMPRESS` | - |
+| Database Engine | Base64 Functions | Brotli Functions | JSON Functions | Test/Check Functions |
+| ---------------- | ------------------ | ------------------ | -------------- | --------------------- |
+| **DB2** | `BASE64_DECODE_CHUNK`<br>`BASE64DECODE`<br>`BASE64_DECODE_CHUNK_BINARY`<br>`BASE64DECODEBINARY`<br>`BASE64_ENCODE_CHUNK`<br>`BASE64ENCODE`<br>`BASE64_ENCODE_CHUNK_BINARY`<br>`BASE64ENCODEBINARY` | `BROTLI_DECOMPRESS_CHUNK`<br>`BROTLI_DECOMPRESS` | `JSON2BSON`<br>`JSONVALID` | `HYDROGEN_CHECK`<br>`ScalarUDF`<br>`HELIUM_BROTLI_CHECK` |
+| **MySQL** | `FROM_BASE64`¹<br>`TO_BASE64`¹ | `BROTLI_DECOMPRESS` | Native `JSON_EXTRACT` | - |
+| **PostgreSQL** | `DECODE(..., 'base64')`<br>`ENCODE(..., 'base64')`<br>`CONVERT_FROM(..., 'UTF8')`² | `brotli_decompress` | Native `JSON_VALUE` | - |
+| **SQLite** | `CRYPTO_DECODE`³<br>`CRYPTO_ENCODE`³ | `BROTLI_DECOMPRESS` | Native `json_extract` | `CONVERT_TZ` |
+| **Firebird** | `BASE64_ENCODE`¹<br>`BASE64_DECODE`¹ | `BROTLI_DECOMPRESS` (UDR) | `JSON_VALUE` (UDR) | - |
 
 ¹ *Native MySQL function*  
 ² *Native PostgreSQL functions*  

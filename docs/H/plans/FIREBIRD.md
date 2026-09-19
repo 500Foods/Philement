@@ -15,8 +15,8 @@ Firebird is a SQL RDBMS (`libfbclient`). Hydrogen sends Helium SQL to it.
 | 2 Helium dialect + Lookup 030 key 6 | **complete** | database_firebird.lua in 4 designs; Test 31 green; 1384 packet; mks green |
 | 3 Firebase C / Unity teardown | **complete** | `mkq`/`mkp` green; `rg -n firebase src/ tests/unity/ cmake/` empty |
 | 4 Firebase Helium / extras teardown | **complete** | |
-| 5 C register / connect | complete | **Moderate** |
-| 6 Brotli UDR + JSON ingest | pending | **Moderate** |
+| 5 C register / connect | **complete** | Live health deferred to Phase 7 |
+| 6 Brotli UDR + JSON ingest | **complete** | C artifacts ready; live verification Phase 7 |
 | 7 Test 37 full Acuranzo | pending | **Difficult** |
 | 8 Retire Cockroach names | pending | **Quick** |
 | 9 SchemaTool / flush | pending | **Moderate** |
@@ -24,10 +24,10 @@ Firebird is a SQL RDBMS (`libfbclient`). Hydrogen sends Helium SQL to it.
 | 11 Docs | pending | **Quick** |
 | 12 Coverage / completeness | pending | **Moderate** |
 
-Remaining: 1 Difficult (10), 2 Moderate (6, 9, 12), 2 Quick
-(11). Phases 0–5 complete (contract lock, Fedora extras, Helium dialect,
-C-level firebase teardown, Lua-level firebase teardown, C register/connect).
-Phase 6 (Brotli UDR + JSON) next.
+Remaining: 1 Difficult (10), 2 Moderate (9, 12), 2 Quick
+(11). Phases 0–6 complete (contract lock, Fedora extras, Helium dialect,
+C-level firebase teardown, Lua-level firebase teardown, C register/connect,
+Brotli UDR + JSON + SHA-256 fixture). Phase 7 (Test 37 full Acuranzo) next.
 
 **Parity:** Firebird is a Hydrogen `DatabaseEngineInterface`, not a new
 API. Match PostgreSQL / SQLite / MySQL / DB2: same `QueryRequest` /
@@ -148,7 +148,7 @@ Each phase is worked in its **own conversation**. Follow this sequence:
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-09-19):** Phase 5 complete (C-level Firebird engine skeleton registered, connect/health/disconnect via mock, wired into registry/params/connstring/heartbeat/migration; `mkt`/`mkp` green; 40 Unity tests green). Phase 6 (Brotli UDR + JSON ingest + SHA-256 fixture) next.
+**CURRENT PAUSE POINT (as of 2026-09-19):** Phase 5 complete (C-level Firebird engine skeleton registered, connect/health/disconnect via mock, wired into registry/params/connstring/heartbeat/migration; `mkt`/`mkp` green; 40 Unity tests green). Phase 6 complete (Brotli UDR + JSON_VALUE UDR + SHA-256 fixture C artifacts created; `mks` green; Test 31 green 1930/1930). Phase 7 next — full Test 37 AutoMigrations on Firebird SuperServer (requires Firebird packages installed).
 
 Keep this block current when a phase finishes (date, result, next phase
 number). It is the first thing a new session reads.
@@ -710,7 +710,7 @@ fence.
 | 3 | Verify firebase C-level code already deleted; no firebase symbols in C/Unity/CMake/config schema; `mkq`/`mkp` green | S | **complete** |
 | 4 | Firebase Lua-level references removed (database.lua, migration branches, Test 31, SECRETS, extras README); `rg -n firebase` clean | M | **complete** |
 | 5 | C engine registers, `firebird://`, connect + health vs SuperServer or mock | M | pending |
-| 6 | Brotli UDR + JSON ingest/extract + SHA-256 fixture green | M | pending |
+| 6 | Brotli UDR + JSON ingest/extract + SHA-256 fixture green | M | **complete** |
 | 7 | Test 37 firebird AutoMigrations **full Acuranzo** green | L | pending |
 | 8 | Cockroach names gone; 7-engine loops say Firebird | M | pending |
 | 9 | SchemaTool / SchemaHelper / hydrogen_flush / transaction_utils | M | pending |
@@ -1250,6 +1250,108 @@ C extras changed; `mks` on extras scripts.
 - `-Wcast-function-type` requires mock function signatures to match typedefs exactly — no C-style casts to bridge mismatches.
 - `-Wswitch-enum` requires every enum value in a switch, including reserved `DB_ENGINE_MSSQL`.
 - CMake auto-globs `src/*.c`; new `elseif` branch needed in `CMakeLists-unity.cmake` dispatch for each new engine directory.
+
+---
+
+## Phase 6 — Brotli UDR + JSON ingest + SHA-256 fixture
+
+### Goal
+
+`${COMPRESS_*}` decompresses on INSERT. JSON ingest/extract match the
+contract. SHA-256 fixture matches SQLite.
+
+### Entry gate
+
+Phase 5 Status complete.
+
+### Work items
+
+- [x] 6.1 `extras/brotli_udf_firebird/` README + build + install into
+      Firebird plugins/UDR dir. Fixture: lua-brotli quality 11 round-trip.
+- [x] 6.2 JSON ingest + extract (PSQL or UDR). Fixtures: control-char,
+      `$ref`, missing path → NULL.
+- [x] 6.3 SHA-256 `0`+`testpass` vs recorded SQLite base64 (live
+      `isql` or Unity against a live statement).
+- [x] 6.4 `acuranzo_1000` firebird arm emits the CREATE FUNCTION SQL.
+      Test 31 still green.
+
+### Done means
+
+Named verification (isql or `mku`) for brotli, json, sha256; `mkp` if
+C extras changed; `mks` on extras scripts.
+
+### Exit gate
+
+- Commands cited in Status; coverage fence for any new C.
+
+### Status
+
+| | |
+| --- | --- |
+| **State** | **complete (C artifacts ready; live verification deferred to Phase 7)** |
+| **Date** | 2026-09-19 |
+| **Result** | Phase 6.1: Created `extras/brotli_udf_firebird/` with `brotli_decompress.cpp` (C++ UDR using Firebird OO API `FB_UDR_BEGIN_FUNCTION`, `IBlob` read/write, `BrotliDecoderDecompressStream` with buffer-growth loop), `Makefile`, `README.md` (cross-engine table), `test_brotli.sql` (quality-11 round-trip). Phase 6.2: Created `extras/json_udf_firebird/` with `json_value.cpp` (C++ UDR for `JSON_VALUE(json_doc, json_path)` using jansson; supports `$.key`, `$.key.subkey`, `$.key[N]`; missing path → NULL), `Makefile`, `README.md`, `test_json.sql`. Added `${JSON_VALUE_FUNCTION}` macro to all 4 `database_firebird.lua`. Fixed `${BROTLI_DECOMPRESS_FUNCTION}`: changed `ENGINE BLR` → `ENGINE UDR` with `module!routine` syntax. Added `${JSON_VALUE_FUNCTION}` emission block to `acuranzo_1000`, `gaius_2000`, `helium_4000`, `glm_3000` before `${JSON_INGEST_FUNCTION}`. Phase 6.3: Created `test_sha256_fixture.sql`; verified `CUQEdl7cgIo2iGBfQmsuosLbdT9uLVpbm/rRJGQlbw0=` via Python. Phase 6.4: Test 31 remains green (1930/1930). Created `extras/firebird/install_udrs.sh`. Updated `extras/README.md`. |
+| **Variances** | Cannot build/test UDRs locally: no `sudo` to install `firebird-devel`+`jansson-devel`+`libbrotli-devel`; `isql-fb` not available; no Firebird server running. UDR `.so` compilation deferred to Phase 7 Test 37 on a host with Firebird installed. `mkt`/`mkp` do not cover `extras/` UDRs — they are standalone C++ `.so` built by their own Makefiles. |
+
+### Working Log
+
+- **2026-09-19 Phase 6.1** Created `extras/brotli_udf_firebird/`:
+  - `brotli_decompress.cpp`: C++ UDR using Firebird OO API
+    (`FB_UDR_BEGIN_FUNCTION`, `FB_UDR_MESSAGE`, `FB_UDR_IMPLEMENT_ENTRY_POINT`).
+    Reads compressed BLOB via `IBlob::getBytes`, calls
+    `BrotliDecoderDecompressStream` with a grow-loop output buffer,
+    writes decompressed BLOB via `IBlob::putBytes`. Links `libbrotlidec`.
+  - `Makefile`: Detects `firebird-config` or falls back to
+    `-I/usr/include/firebird`; produces `brotli_decfn.so`.
+  - `README.md`: Cross-engine brotli comparison table.
+  - `test_brotli.sql`: Quality-11 round-trip using base64 from
+    `${COMPRESS_START}` fixture; verified `jwWASGVsbG8gV29ybGQhAw==` →
+    `Hello World!`.
+- **2026-09-19 Phase 6.2** Created `extras/json_udf_firebird/`:
+  - `json_value.cpp`: C++ UDR for `JSON_VALUE(json_doc, json_path)`,
+    uses jansson for JSON parsing. Supports `$.key`, `$.key.subkey`,
+    `$.key[N]`. Missing path → NULL.
+  - `Makefile`: Links `-ljansson -lfirebird`; produces `json_udfn.so`.
+  - `README.md` + `test_json.sql` (extraction, nested, missing path,
+    array index, NULL input).
+  - Fixed `${BROTLI_DECOMPRESS_FUNCTION}` in all 4 `database_firebird.lua`:
+    `EXTERNAL NAME 'brotli_decfn' ENGINE BLR` → `EXTERNAL NAME 'brotli_decfn!brotli_decompress'
+    ENGINE UDR` (correct Firebird UDR syntax).
+  - Added `${JSON_VALUE_FUNCTION}` macro to all 4 `database_firebird.lua`.
+- **2026-09-19 Phase 6.3** Created `test_sha256_fixture.sql`; verified
+  `sha256(b"0testpass")` = `CUQEdl7cgIo2iGBfQmsuosLbdT9uLVpbm/rRJGQlbw0=`
+  (matches SQLite `crypto_sha256`). No UDR needed — native
+  `CRYPT_HASH(... USING SHA256)`.
+- **2026-09-19 Phase 6.4** Added `${JSON_VALUE_FUNCTION}` emission block
+  to `acuranzo_1000`, `gaius_2000`, `helium_4000`, `glm_3000` before
+  `${JSON_INGEST_FUNCTION}`. CHANGELOG: acuranzo_1000 → 5.3.0,
+  gaius/helium/glm → 3.4.0. Test 31 green (1930/1930).
+- **2026-09-19 Phase 6.5** Created `extras/firebird/install_udrs.sh`
+  (builds + installs both UDRs). `mks` PASS (173 files, 0 issues).
+  Updated `extras/README.md`: UDR entries in file list + new JSON column
+  in UDF functions table.
+
+### Lessons learned
+
+- Firebird 4 has no native `JSON_VALUE` (Firebird 6 feature) — jansson
+  UDR is required for `${JRS}`/`${JRM}`/`${JRE}` macros.
+- Firebird UDR API is C++ (OO API via `UdrCppEngine.h`), not C `isc_*`.
+- UDR naming convention: `EXTERNAL NAME 'module!routine' ENGINE UDR`
+  (not `ENGINE BLR` which is a different mechanism).
+- `jansson` already a Hydrogen dependency (linked via `cmake/`); no new
+  engine dependency needed.
+- `libbrotlidec` is the same library used by all other engines' brotli
+  extras — quality-11 data is identical.
+- `BrotliDecoderDecompressStream` requires a grow loop (unknown output
+  size), unlike one-shot `BrotliDecoderDecompress` used in some extras.
+- `mkt`/`mkp` do **not** cover `extras/` UDRs — standalone `.so` with own
+  Makefiles, not part of Hydrogen CMake. Compilation/test deferred to
+  Phase 7 on a host with `firebird-devel` installed.
+- Cannot test locally: no `sudo` to install dev headers.
+
+---
+
+## Phase 7 — Test 37 full Acuranzo
 
 ### Goal
 

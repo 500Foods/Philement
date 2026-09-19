@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 3.4.0 - 2026-09-19 - Added JSON_VALUE_FUNCTION UDR emission for firebird (before json_ingest)
 -- 3.3.0 - 2026-09-19 - Removed firebase from CREATE FUNCTION skip (C-level Firebase fully removed)
 -- 3.2.0 - 2026-09-16 - Skip JSON_INGEST CREATE FUNCTION for firebase (in-process)
 -- 3.1.0 - 2025-11-23 - Added DROP_CHECK to reverse migration
@@ -42,6 +43,13 @@ table.insert(queries,{sql=[[
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 -- NOTE: SQLite has no JSON handling peculiarities, so no custom function is defined
     -- Firebase was removed; JSON ingest is native or via UDR
+    -- NOTE: Firebird has no native JSON_VALUE; the UDR must be created before json_ingest
+    if engine == 'firebird' then table.insert(queries,{sql=[[
+
+    -- Defined in database_firebird.lua as a macro
+    ${JSON_VALUE_FUNCTION}
+
+]]}) end
     if engine ~= 'sqlite' then table.insert(queries,{sql=[[
 
     -- Defined in database_<engine>.lua as a macro

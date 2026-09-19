@@ -18,5 +18,5 @@ Primary database target for the overall Helium project is PostgreSQL 15+ via Yug
 
 | M# | Table | Version | Updated | Stmts | Diagram | Description |
 | ---- | ------- | --------- | --------- | ------- | --------- | ------------- |
-| [2000](/elements/002-helium/gaius/migrations/gaius_2000.lua) | queries | 3.3.0 | 2026-09-19 | 9 | ✓ | Bootstraps the migration system by creating the queries table and supporting user-defined functions |
-| **1** | | | | **9** | **1** | |
+| [2000](/elements/002-helium/gaius/migrations/gaius_2000.lua) | queries | 3.4.0 | 2026-09-19 | 10 | ✓ | Bootstraps the migration system by creating the queries table and supporting user-defined functions |
+| **1** | | | | **10** | **1** | |

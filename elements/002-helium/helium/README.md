@@ -20,5 +20,5 @@ Primary target for Helium migrations overall is PostgreSQL 15+ via YugabyteDB. A
 
 | M# | Table | Version | Updated | Stmts | Diagram | Description |
 | ---- | ------- | --------- | --------- | ------- | --------- | ------------- |
-| [4000](/elements/002-helium/helium/migrations/helium_4000.lua) | queries | 3.3.0 | 2026-09-19 | 9 | ✓ | Bootstraps the migration system by creating the queries table and supporting user-defined functions |
-| **1** | | | | **9** | **1** | |
+| [4000](/elements/002-helium/helium/migrations/helium_4000.lua) | queries | 3.4.0 | 2026-09-19 | 10 | ✓ | Bootstraps the migration system by creating the queries table and supporting user-defined functions |
+| **1** | | | | **10** | **1** | |

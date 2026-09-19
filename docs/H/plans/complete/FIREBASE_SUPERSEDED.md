@@ -9,7 +9,7 @@
 > teardown is FIREBIRD Phases 3–4. This file is the historical Working Log
 > only.
 
-# Firebase Engine Plan
+## Firebase Engine Plan
 
 ## Status at a glance
 
