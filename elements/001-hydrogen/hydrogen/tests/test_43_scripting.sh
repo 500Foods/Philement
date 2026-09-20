@@ -9,7 +9,7 @@
 #
 # Like test_40_auth.sh, this runs one Hydrogen instance per database
 # engine in parallel (PostgreSQL, MySQL, SQLite, DB2, MariaDB,
-# CockroachDB, YugabyteDB), each with its own configuration file and
+# Firebird, YugabyteDB), each with its own configuration file and
 # WebServer port. Two variants are exercised per engine:
 #   - "with DefaultDatabase"    (Scripting.DefaultDatabase = "Acuranzo")
 #   - "without DefaultDatabase" (field omitted)
@@ -43,6 +43,7 @@
 # start_mock_llm / stop_mock_llm
 
 # CHANGELOG
+# 2.7.4 - 2026-09-20 - Replaced CockroachDB with Firebird engine
 # 2.7.3 - 2026-09-08 - Pair every TEST with PASS/FAIL (config files + prune skip).
 # 2.7.2 - 2026-08-27 - Startup/shutdown waits aligned with group40 (90s/30s).
 # 2.7.1 - 2026-08-24 - Added RSS growth monitoring and prune_terminal wiring
@@ -73,7 +74,7 @@ TEST_NAME="Scripting  {BLUE}engines: 7{RESET}"
 TEST_ABBR="SCR"
 TEST_NUMBER="43"
 TEST_COUNTER=0
-TEST_VERSION="2.7.3"
+TEST_VERSION="2.7.4"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -161,8 +162,8 @@ SCRIPTING_TEST_CONFIGS=(
     ["DB2-ND"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_scripting_db2_no_default.json:db2_nd:db2:DB2 (no default DB)"
     ["MariaDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_scripting_mariadb.json:mariadb:mariadb:MariaDB (default DB)"
     ["MariaDB-ND"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_scripting_mariadb_no_default.json:mariadb_nd:mariadb:MariaDB (no default DB)"
-    ["CockroachDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_scripting_cockroachdb.json:cockroachdb:cockroachdb:CockroachDB (default DB)"
-    ["CockroachDB-ND"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_scripting_cockroachdb_no_default.json:cockroachdb_nd:cockroachdb:CockroachDB (no default DB)"
+    ["Firebird"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_scripting_firebird.json:firebird:firebird:Firebird (default DB)"
+    ["Firebird-ND"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_scripting_firebird_no_default.json:firebird_nd:firebird:Firebird (no default DB)"
     ["YugabyteDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_scripting_yugabytedb.json:yugabytedb:yugabytedb:YugabyteDB (default DB)"
     ["YugabyteDB-ND"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_scripting_yugabytedb_no_default.json:yugabytedb_nd:yugabytedb:YugabyteDB (no default DB)"
 )

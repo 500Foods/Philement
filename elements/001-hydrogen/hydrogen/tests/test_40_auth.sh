@@ -47,8 +47,8 @@
 #                    - 2-minute timeout for migration completion
 # 1.4.0 - 2026-01-14 - Expanded to cover all 7 database engines
 #                    - Added MariaDB, CockroachDB, and YugabyteDB support
-#                    - Updated parallel execution to handle 7 concurrent database instances
 #                    - Added corresponding configuration files for new engines
+# 1.4.1 - 2026-09-20 - Replaced CockroachDB with Firebird engine
 # 1.3.0 - 2026-01-13 - Fixed JWT token passing for renew/logout endpoints
 #                    - Added Authorization: Bearer header support to validate_auth_request()
 #                    - Changed renew/logout to use empty JSON body with auth header
@@ -91,7 +91,7 @@ AUTH_TEST_CONFIGS=(
     ["SQLite"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_sqlite.json:sqlite:sqlite:SQLite Engine"
     ["DB2"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_db2.json:db2:db2:DB2 Engine"
     ["MariaDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mariadb.json:mariadb:mariadb:MariaDB Engine"
-    ["CockroachDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_cockroachdb.json:cockroachdb:cockroachdb:CockroachDB Engine"
+    ["Firebird"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_firebird.json:firebird:firebird:Firebird Engine"
     ["YugabyteDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_yugabytedb.json:yugabytedb:yugabytedb:YugabyteDB Engine"
 )
 
@@ -644,7 +644,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         ["mysql"]="demo"
         ["mariadb"]="demomrdb"
         ["db2"]="DEMO"
-        ["cockroachdb"]="democrdb"
+        ["firebird"]=""
         ["yugabytedb"]="demo"
         ["sqlite"]=""
     )

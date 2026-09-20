@@ -82,7 +82,7 @@ DATABASE_NAMES=(
     ["SQLite"]="Demo_SQL"
     ["DB2"]="Demo_DB2"
     ["MariaDB"]="Demo_MR"
-    ["CockroachDB"]="Demo_CR"
+    ["Firebird"]="Demo_FB"
     ["YugabyteDB"]="Demo_YB"
 )
 

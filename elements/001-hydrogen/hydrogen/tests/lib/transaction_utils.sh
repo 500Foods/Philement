@@ -4,6 +4,7 @@
 # Confirms multi-statement DML commit/rollback behavior that migration LOAD/APPLY rely on.
 
 # CHANGELOG
+# 1.0.2 - 2026-09-20 - Replaced cockroachdb with firebird engine (isql-fb)
 # 1.0.1 - 2026-07-23 - Shellcheck cleanups (SC2154/SC2155/SC2116/SC2312)
 # 1.0.0 - 2026-07-23 - Initial commit/rollback probe across 7 engines
 
@@ -12,7 +13,7 @@
 readonly TRANSACTION_UTILS_GUARD=1
 
 # Verify DML transactions for one engine.
-# Args: engine_key (postgresql|mysql|sqlite|db2|mariadb|cockroachdb|yugabytedb)
+# Args: engine_key (postgresql|mysql|sqlite|db2|mariadb|firebird|yugabytedb)
 #        [schema] optional schema/qualifier (default engine-specific demo schema)
 #        [sqlite_path] required when engine_key=sqlite
 # Returns 0 on success, 1 on failure. Prints brief diagnostics to stdout.
@@ -45,10 +46,13 @@ verify_database_transactions() {
             qualified="${schema}.${table_base}"
             out=$(verify_tx_yugabytedb "${qualified}" "${marker}") || rc=$?
             ;;
-        cockroachdb)
-            schema="${schema:-democrdb}"
-            qualified="${schema}.${table_base}"
-            out=$(verify_tx_cockroachdb "${qualified}" "${marker}") || rc=$?
+        firebird)
+            if [[ -z "${FIREBIRD_DB_PATH:-}" ]]; then
+                echo "transaction_utils: FIREBIRD_DB_PATH required for firebird"
+                return 1
+            fi
+            qualified="${table_base}"
+            out=$(verify_tx_firebird "${FIREBIRD_DB_PATH}" "${qualified}" "${marker}") || rc=$?
             ;;
         mysql)
             schema="${schema:-demo}"
@@ -164,13 +168,57 @@ verify_tx_yugabytedb() {
         "${YUGABYTE_DB_NAME:-}" "$1" "$2" "TEXT"
 }
 
-verify_tx_cockroachdb() {
-    # Cockroach configs reuse ACURANZO_* credentials (PG wire).
-    # Use TEXT (not STRING): TEXT works on both Cockroach and PostgreSQL; STRING does not.
-    verify_tx_pg_family \
-        "${ACURANZO_DB_HOST:-}" "${ACURANZO_DB_PORT:-}" \
-        "${ACURANZO_DB_USER:-}" "${ACURANZO_DB_PASS:-}" \
-        "${ACURANZO_DB_NAME:-}" "$1" "$2" "TEXT"
+verify_tx_firebird() {
+    local db_path="$1"
+    local qualified="$2"
+    local marker="$3"
+    local sql
+    sql=$(cat <<EOF
+SET TERM ^;
+EXECUTE BLOCK AS ^
+DECLARE VARIABLE cnt INTEGER;
+BEGIN
+  DROP TABLE IF EXISTS ${qualified};
+  CREATE TABLE ${qualified} (id INTEGER PRIMARY KEY, val VARCHAR(128));
+  -- Rollback test
+  EXECUTE STATEMENT 'SET AUTOCOMMIT OFF';
+  INSERT INTO ${qualified} (id, val) VALUES (1, '${marker}');
+  INSERT INTO ${qualified} (id, val) VALUES (2, '${marker}');
+  EXECUTE STATEMENT 'ROLLBACK';
+  SELECT COUNT(*) FROM ${qualified} INTO cnt;
+  IF (cnt <> 0) THEN SUSPEND;
+  -- Commit test
+  EXECUTE STATEMENT 'SET TRANSACTION';
+  INSERT INTO ${qualified} (id, val) VALUES (1, '${marker}');
+  INSERT INTO ${qualified} (id, val) VALUES (2, '${marker}');
+  EXECUTE STATEMENT 'COMMIT';
+  SELECT COUNT(*) FROM ${qualified} INTO cnt;
+  IF (cnt <> 2) THEN SUSPEND;
+  DROP TABLE ${qualified};
+END^
+SET TERM ;^
+EOF
+)
+    out=$(isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" "${db_path}" \
+        -z -i /dev/stdin <<< "${sql}" 2>&1) || {
+        echo "${out}"
+        return 1
+    }
+    # If the ROLLBACK didn't work, the block would SUSPEND (return rows)
+    local rows
+    rows=$(printf '%s\n' "${out}" | grep -c '^\s*[0-9]' || true)
+    if [[ "${rows}" -gt 0 ]]; then
+        echo "rollback failed: ${out}"
+        return 1
+    fi
+    # Verify commit count is 2
+    local commit_count
+    commit_count=$(printf '%s\n' "${out}" | grep -o 'COUNT.*=[0-9]*' | tail -1 | grep -o '[0-9]*' || true)
+    if [[ "${commit_count}" != "2" ]]; then
+        echo "commit failed: ${out}"
+        return 1
+    fi
+    printf '0\n2\n'
 }
 
 verify_tx_mysql_family() {

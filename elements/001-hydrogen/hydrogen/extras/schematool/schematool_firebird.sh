@@ -1,18 +1,19 @@
 #!/usr/bin/env bash
-# SchemaTool wrapper — CockroachDB (Test 40: hydrogen_test_40_cockroachdb.json)
+# SchemaTool wrapper — Firebird (Test 40: hydrogen_test_40_firebird.json)
 #
-# Sets connection env vars from the Test 40 CockroachDB config and calls schematool.sh.
-# Engine-specific env: ACURANZO_DB_{HOST,PORT,NAME,USER,PASS}
-# Schema:             democrdb
+# Sets connection env vars from the Test 40 Firebird config and calls schematool.sh.
+# Engine-specific env: FIREBIRD_DB_PATH, FIREBIRD_SYSDBA_PASSWORD
+# Schema:             (empty - Firebird uses database file isolation)
 # Design:             acuranzo
 #
 # CHANGELOG
+# 1.1.1 - 2026-09-20 - Renamed from CockroachDB wrapper to Firebird; uses isql-fb
 # 1.1.0 - 2026-08-22 - Resolve sibling schematool.sh, then HYDROGEN_ROOT
 # 1.0.0 - 2026-08-02 - Created as Test 40 config convenience wrapper
 
 set -euo pipefail
 
-# shellcheck disable=SC2154 # HELIUM_ROOT may be set by env; ACURANZO_DB_* from .zshrc
+# shellcheck disable=SC2154 # HELIUM_ROOT may be set by env; FIREBIRD_* from .zshrc
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -x "${HERE}/schematool.sh" ]]; then
     SCHEMATOOL="${HERE}/schematool.sh"
@@ -29,10 +30,13 @@ else
     MIGRATIONS_DIR="${SCRIPT_DIR}/../../../../002-helium/acuranzo/migrations"
 fi
 
-export SCHEMATOOL_DB_SCHEMA="democrdb"
+export SCHEMATOOL_DB_SCHEMA=""
+export SCHEMATOOL_DB_DATABASE="${FIREBIRD_DB_PATH:-}"
+export SCHEMATOOL_DB_USER="SYSDBA"
+export SCHEMATOOL_DB_PASSWORD_ENV="FIREBIRD_SYSDBA_PASSWORD"
 
 exec "${SCHEMATOOL}" \
     --migrations "${MIGRATIONS_DIR}" \
     --design acuranzo \
-    --engine postgresql \
+    --engine firebird \
     "$@"

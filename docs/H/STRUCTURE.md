@@ -629,7 +629,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_34_sqlite_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_34_sqlite_migrations.sh) - SQLite migration performance test
 - [tests/test_35_db2_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_35_db2_migrations.sh) - DB2 migration performance test
 - [tests/test_36_mariadb_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_36_mariadb_migrations.sh) - MariaDB migration performance test
-- [tests/test_37_cockroachdb_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_37_cockroachdb_migrations.sh) - CockroachDB migration performance test (being replaced by Firebird in Phase 8)
+- [tests/test_37_firebird_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_37_firebird_migrations.sh) - Firebird migration performance test
 - [tests/test_37_firebird_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_37_firebird_migrations.sh) - Firebird migration performance test
 - [tests/test_37_firebird_config.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_37_firebird.json) - Firebird test config (port 5376)
 - [tests/test_38_yugabytedb_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_38_yugabytedb_migrations.sh) - YugabyteDB migration performance test

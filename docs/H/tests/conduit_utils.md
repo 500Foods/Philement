@@ -28,7 +28,7 @@ DATABASE_NAMES=(
     ["SQLite"]="Demo_SQL"
     ["DB2"]="Demo_DB2"
     ["MariaDB"]="Demo_MR"
-    ["CockroachDB"]="Demo_CR"
+    ["Firebird"]="Demo_FB"
     ["YugabyteDB"]="Demo_YB"
 )
 ```
@@ -113,7 +113,7 @@ DATABASE_READY_MySQL=true
 DATABASE_READY_SQLite=true
 DATABASE_READY_DB2=false
 DATABASE_READY_MariaDB=true
-DATABASE_READY_CockroachDB=true
+DATABASE_READY_Firebird=true
 DATABASE_READY_YugabyteDB=false
 ```
 

@@ -2,7 +2,7 @@
 
 This directory provides convenience scripts and documentation for running
 a local Firebird 4.0 server (SuperServer) and creating test databases.
-Firebird is used as the CockroachDB replacement engine in the Acuranzo
+Firebird is used as the replacement engine in the Acuranzo
 migration matrix (Test 37).
 
 ## Packages (Fedora 43 / dnf)
@@ -42,7 +42,7 @@ See [SECRETS.md](/docs/H/SECRETS.md) for `FIREBIRD_SYSDBA_PASSWORD` and
 
 | Mode | When | Connection |
 | --- | --- | --- |
-| **SuperServer (Test 37 / 40 default)** | Networked SQL, like the Cockroach slot | `localhost/3050:/var/lib/firebird/data/testfb.fdb` |
+| **SuperServer (Test 37 / 40)** | Networked SQL, like the Firebird slot | `localhost/3050:/var/lib/firebird/data/testfb.fdb` |
 | **Embedded** | Appliance / no daemon | Database path, empty Host — `libfbclient` loads Engine plugin |
 
 Tests lock SuperServer unless Phase 0 amends.

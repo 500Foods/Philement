@@ -10,11 +10,12 @@
 # run_disabled()
 
 # CHANGELOG
+# 1.2.0 - 2026-09-20 - Replaced CockroachDB with Firebird engine
 # 1.1.12 - 2026-09-08 - Overlap Echo must reject JSON-RPC errors
 # 1.1.11 - 2026-09-04 - Unique JSON-RPC id + extra retries for System.Info;
 #                      pair every TEST with PASS/FAIL (per-config validation)
 # 1.1.9 - 2026-08-29 - echo_ok via mcp_expect_jq (3 tries) like echostrict/resources/prompts;
-#                      CockroachDB RequestTimeoutSeconds 4→15 for nested DB query headroom.
+#                      Firebird RequestTimeoutSeconds 4→15 for nested DB query headroom.
 # 1.1.8 - 2026-08-27 - Score ping/echostrict/cursor/prompts via mcp_expect_jq (3 tries);
 #                      overlap Echo retry on 401; drop 10–20s MCP max-times.
 # 1.1.7 - 2026-08-27 - 90s HTTP wait, 000-only retry, INFO delay (group40_http).
@@ -35,7 +36,7 @@ TEST_NAME="MCP Server"
 TEST_ABBR="MCP"
 TEST_NUMBER="47"
 TEST_COUNTER=0
-TEST_VERSION="1.1.12"
+TEST_VERSION="1.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -56,7 +57,7 @@ SCRIPT_TEST_CONFIGS=(
     ["SQLite"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mcp_sqlite.json:sqlite:sqlite:SQLite"
     ["DB2"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mcp_db2.json:db2:db2:DB2"
     ["MariaDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mcp_mariadb.json:mariadb:mariadb:MariaDB"
-    ["CockroachDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mcp_cockroachdb.json:cockroachdb:cockroachdb:CockroachDB"
+    ["Firebird"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mcp_firebird.json:firebird:firebird:Firebird"
     ["YugabyteDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mcp_yugabytedb.json:yugabytedb:yugabytedb:YugabyteDB"
 )
 

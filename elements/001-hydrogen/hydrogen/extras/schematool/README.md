@@ -117,11 +117,12 @@ Chosen from **requested** `--engine` (before alias):
 | yugabytedb | `YUGABYTE_DB_*` | `SCHEMATOOL_DB_*` |
 | mysql / mariadb | `CANVAS_DB_*` | `SCHEMATOOL_DB_*` |
 | db2 | `HYDROTST_DB_*` | `SCHEMATOOL_DB_*` |
+| firebird | `FIREBIRD_DB_PATH` / `FIREBIRD_SYSDBA_PASSWORD` | `SCHEMATOOL_DB_*` |
 | sqlite | `--database` path | `SCHEMATOOL_DB_NAME` as path |
 
 Password: `--password-env VAR` preferred (never printed).
 
-Test 40 wrappers: `schematool_{postgresql,mysql,mariadb,sqlite,db2,cockroachdb,yugabytedb}.sh`  
+Test 40 wrappers: `schematool_{postgresql,mysql,mariadb,sqlite,db2,firebird,yugabytedb}.sh`  
 Smoke (all 7, 1190 catalog): `./smoke_test40_catalog.sh`
 
 ## Safety

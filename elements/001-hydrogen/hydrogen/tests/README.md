@@ -86,7 +86,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_34_sqlite_migrations.sh](/docs/H/tests/test_34_sqlite_migrations.md)**: SQLite migration performance test
 - **[test_35_db2_migrations.sh](/docs/H/tests/test_35_db2_migrations.md)**: DB2 migration performance test
 - **[test_36_mariadb_migrations.sh](/docs/H/tests/test_36_mariadb_migrations.md)**: MariaDB migration performance test
-- **[test_37_cockroachdb_migrations.sh](/docs/H/tests/test_37_cockroachdb_migrations.md)**: CockroachDB migration performance test
+- **[test_37_firebird_migrations.sh](/docs/H/tests/test_37_firebird_migrations.md)**: Firebird migration performance test
 - **[test_38_yugabytedb_migrations.sh](/docs/H/tests/test_38_yugabytedb_migrations.md)**: YugabyteDB migration performance test
 - **[test_71_database_diagrams.sh](/docs/H/tests/test_71_database_diagrams.md)**: Database diagram generation
 

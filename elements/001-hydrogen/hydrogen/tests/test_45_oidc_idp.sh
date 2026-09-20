@@ -5,6 +5,7 @@
 # PKCE token, userinfo, refresh, error paths (inverse of Test 42).
 
 # CHANGELOG
+# 2.2.0 - 2026-09-20 - Replaced CockroachDB with Firebird engine
 # 2.1.1 - 2026-08-27 - Startup/shutdown waits aligned with group40 (90s/30s).
 # 2.1.0 - 2026-07-28 - Introspect/revoke/end-session/register blackbox probes
 # 2.0.0 - 2026-07-23 - Multi-engine parallel (5450-5456), test_40 pattern
@@ -18,7 +19,7 @@ TEST_NAME="OIDC Identity Provider"
 TEST_ABBR="IDP"
 TEST_NUMBER="45"
 TEST_COUNTER=0
-TEST_VERSION="2.1.1"
+TEST_VERSION="2.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Resolve path at runtime via BASH_SOURCE
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -48,7 +49,7 @@ IDP_TEST_CONFIGS=(
     ["SQLite"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_sqlite.json:sqlite:sqlite:SQLite Engine"
     ["DB2"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_db2.json:db2:db2:DB2 Engine"
     ["MariaDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mariadb.json:mariadb:mariadb:MariaDB Engine"
-    ["CockroachDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_cockroachdb.json:cockroachdb:cockroachdb:CockroachDB Engine"
+    ["Firebird"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_firebird.json:firebird:firebird:Firebird Engine"
     ["YugabyteDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_yugabytedb.json:yugabytedb:yugabytedb:YugabyteDB Engine"
 )
 

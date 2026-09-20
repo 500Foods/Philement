@@ -131,7 +131,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [README.md](/docs/H/plans/README.md): Plans folder index
 - [AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md): Auth finale (active P0 plan — OIDC, Keycloak, register, MFA, IdP leftovers)
 - [NOTIFICATIONS_PLAN.md](/docs/H/plans/NOTIFICATIONS_PLAN.md): Web Push / Subscribers subsystem plan (Phase 0 draft)
-- [FIREBIRD.md](/docs/H/plans/FIREBIRD.md): Firebird engine; retire CockroachDB slot; Firebase teardown (Phase 0 not approved)
+- [FIREBIRD.md](/docs/H/plans/FIREBIRD.md): Firebird engine; retire CockroachDB slot; Firebase teardown
 - [MSSQL.md](/docs/H/plans/MSSQL.md): MS SQL Server engine (Lookup 030 key 5); Fedora Podman Linux container (Phase 0 not approved)
 - [FIREBASE.md](/docs/H/plans/FIREBASE.md): Stub — Firestore plan superseded
 - [MAILRELAY_PLAN.md](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md): Mail Relay subsystem implementation plan
@@ -341,7 +341,7 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [test_34_sqlite_migrations.md](/docs/H/tests/test_34_sqlite_migrations.md): SQLite migration performance test
 - [test_35_db2_migrations.md](/docs/H/tests/test_35_db2_migrations.md): DB2 migration performance test
 - [test_36_mariadb_migrations.md](/docs/H/tests/test_36_mariadb_migrations.md): MariaDB migration performance test
-- [test_37_cockroachdb_migrations.md](/docs/H/tests/test_37_cockroachdb_migrations.md): CockroachDB migration performance test (being replaced by Firebird in Phase 8)
+- [test_37_firebird_migrations.md](/docs/H/tests/test_37_firebird_migrations.md): Firebird migration performance test
 - [test_37_firebird_migrations.md](/docs/H/tests/test_37_firebird_migrations.md): Firebird migration performance test
 - [test_38_yugabytedb_migrations.md](/docs/H/tests/test_38_yugabytedb_migrations.md): YugabyteDB migration performance test
 - [test_40_auth.md](/docs/H/tests/test_40_auth.md): Authentication endpoints testing (JWT tokens across multiple database engines)

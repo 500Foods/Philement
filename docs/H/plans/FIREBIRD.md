@@ -145,7 +145,7 @@ Each phase is worked in its **own conversation**. Follow this sequence:
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-09-20):** Phase 7 complete (Test 37 firebird config + script + docs created; `mkq`/`mkp`/`mks`/`mkl` green; live Firebird run deferred to user). Phase 8 next — retire Cockroach names.
+**CURRENT PAUSE POINT (as of 2026-09-20):** Phases 8 + 9 complete (Cockroach names retired; 7-engine loops say Firebird; configs/scripts/libs/schematool/schemahelper converted; `mkq`/`mkp`/`mks`/`mkl` green). Phase 10 next — Tests 40/43/45/46/47/58 firebird live runs (environment-dependent; Firebird not installed on this box).
 
 Keep this block current when a phase finishes (date, result, next phase
 number). It is the first thing a new session reads.
@@ -709,8 +709,8 @@ fence.
 | 5 | C engine registers, `firebird://`, connect + health vs SuperServer or mock | M | pending |
 | 6 | Brotli UDR + JSON ingest/extract + SHA-256 fixture green | M | **complete** |
 | 7 | Test 37 firebird AutoMigrations **full Acuranzo** green | L | **complete** |
-| 8 | Cockroach names gone; 7-engine loops say Firebird | M | pending |
-| 9 | SchemaTool / SchemaHelper / hydrogen_flush / transaction_utils | M | pending |
+| 8 | Cockroach names gone; 7-engine loops say Firebird | M | **complete** |
+| 9 | SchemaTool / SchemaHelper / hydrogen_flush / transaction_utils | M | **complete** |
 | 10 | Tests 40/43/45/46/47/58 firebird configs; each named green or `[~]` with cause | L | pending |
 | 11 | Docs/SITEMAP/MACRO_REFERENCE/DATABASES/SECRETS match; `mkl` green | S | pending |
 | 12 | Completeness + coverage fences; dead-code clean; `mkp` | M | pending |
@@ -1417,11 +1417,11 @@ Phase 7 Status complete.
 
 ### Work items
 
-- [ ] 8.1 Only firebird Test 37 remains.
-- [ ] 8.2 Replace Cockroach configs 40/43/45/46/47/58 with firebird.
-- [ ] 8.3 Engine loops, flush, SchemaTool names (behavior Phase 9).
-- [ ] 8.4 Config schema enum.
-- [ ] 8.5 `rg -i cockroach` on active trees: only metrics/,
+- [x] 8.1 Only firebird Test 37 remains.
+- [x] 8.2 Replace Cockroach configs 40/43/45/46/47/58 with firebird.
+- [x] 8.3 Engine loops, flush, SchemaTool names (behavior Phase 9).
+- [x] 8.4 Config schema enum.
+- [x] 8.5 `rg -i cockroach` on active trees: only metrics/,
       plans/complete/, and this plan's inventory.
 
 ### Done means
@@ -1436,18 +1436,23 @@ Phase 7 Status complete.
 
 | | |
 | --- | --- |
-| **State** | pending |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-09-20 |
+| **Result** | Phase 8.1: Deleted `tests/test_37_cockroachdb_migrations.sh` (firebird version existed from Phase 7). Phase 8.2: Converted configs 40/43/45/46/47/58 from cockroach to firebird (real Firebird configs with `FIREBIRD_DB_PATH`/`FIREBIRD_SYSDBA_PASSWORD`, port 5376, empty schema); deleted old cockroach configs. Phase 8.3: Updated 7-engine test scripts (test_40/43/45/46/47/58) + tests/lib/conduit_utils.sh + tests/lib/transaction_utils.sh (`verify_tx_firebird` via `isql-fb`) + extras/hydrogen_flush.sh + extras/schematool/schematool_firebird.sh (renamed from schematool_cockroachdb.sh) + smoke_test40_catalog.sh + schemahelper Lua files (const/connect/qdecode/qutil). Phase 8.4: Config schema enum already included `"firebird"` (Phase 5). Phase 8.5: `rg -i cockroach` on active trees returns only historical CHANGELOG comments, the intentional backward-compat alias (`cockroachdb`→`postgresql` in schematool.sh:333 + schemahelper_connect.lua:212), and `normalize_engine_name("cockroach")` Unity test. Verification: `mks` green (shellcheck 174 files 0 issues), `mkp` green (cppcheck 2,057 files 0 issues). |
+| **Variances** | `cockroachdb` retained as backward-compat alias mapping to `postgresql` (intentional, per plan constraint). Historical CHANGELOG comments in test scripts (e.g. test_40 line 49) left as-is — they describe past state. `normalize_engine_name("cockroach")` Unity test left — tests backward-compat mapping. |
 
 ### Working Log
 
-(empty until the phase runs)
+- **2026-09-20 Phase 8.1** Deleted `tests/test_37_cockroachdb_migrations.sh`; firebird version exists from Phase 7. Test 37 is now firebird-only.
+- **2026-09-20 Phase 8.2** Converted 7 cockroach configs (40/43/45/46/47/58) to firebird. New configs use `Engine: firebird`, `Port: 5376`, `Database: ${env.FIREBIRD_DB_PATH}`, empty `Schema`, `User: SYSDBA`, `Pass: ${env.FIREBIRD_SYSDBA_PASSWORD}`. Deleted old cockroach configs.
+- **2026-09-20 Phase 8.3** Updated 7-engine test scripts (CHANGELOG + TEST_VERSION bumped): test_40_auth.sh, test_43_scripting.sh, test_45_oidc_idp.sh, test_46_conduit_script.sh, test_47_mcp.sh, test_58_mailrelay_api.sh. Updated conduit_utils.sh (`DATABASE_NAMES["Firebird"]="Demo_FB"`), transaction_utils.sh (replaced `verify_tx_cockroachdb` with `verify_tx_firebird` using `isql-fb`, fixed SC2154 + SC2028). Renamed extras/schematool/schematool_cockroachdb.sh → schematool_firebird.sh (rewritten for `FIREBIRD_DB_PATH`/`FIREBIRD_SYSDBA_PASSWORD`). Updated schematool.sh (added firebird env resolution + validation), schemahelper_const.lua (WRAPPER_ORDER), schemahelper_connect.lua (ping_firebird, apply_family, ping_via_wrapper, probe), schemahelper_qdecode.lua (BASE64_DECODE + BROTLI_DECOMPRESS), schemahelper_qutil.lua (BASE64_DECODE), smoke_test40_catalog.sh, hydrogen_flush.sh (isql-fb flush).
+- **2026-09-20 Phase 8.5** `rg -i cockroach` inventory on active trees: remaining references are (a) historical CHANGELOG comments in test scripts, (b) intentional backward-compat alias `cockroachdb`→`postgresql` in schematool.sh:333 + schemahelper_connect.lua:212, (c) `normalize_engine_name("cockroach")` Unity test, (d) plan description text. Fixed firebird/README.md:5.
 
 ### Lessons learned
 
-(empty until the phase runs)
+- `cockroachdb` should be kept as a backward-compat alias mapping to `postgresql` (not deleted outright) — existing operator scripts may still reference the old name.
+- Historical CHANGELOG comments in test scripts describe past state and should not be rewritten; only new entries document the rename.
+- shellcheck SC2154 (unquoted `${GREP}` in subshell pipe) fixed by inlining `grep -o`; SC2028 (`echo "0\n2"`) fixed by `printf`.
 
 ---
 
@@ -1464,10 +1469,10 @@ Phase 8 Status complete.
 
 ### Work items
 
-- [ ] 9.1 `schematool_firebird.sh` (not an alias to postgresql).
-- [ ] 9.2 schemahelper connect/apply/const.
-- [ ] 9.3 `hydrogen_flush.sh` drop/recreate `testfb.fdb`.
-- [ ] 9.4 `transaction_utils.sh` firebird path.
+- [x] 9.1 `schematool_firebird.sh` (not an alias to postgresql).
+- [x] 9.2 schemahelper connect/apply/const.
+- [x] 9.3 `hydrogen_flush.sh` drop/recreate `testfb.fdb`.
+- [x] 9.4 `transaction_utils.sh` firebird path.
 
 ### Done means
 
@@ -1481,18 +1486,20 @@ No cockroach SchemaTool wrapper; firebird wrapper does not call `psql`.
 
 | | |
 | --- | --- |
-| **State** | pending |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-09-20 |
+| **Result** | All Phase 9 items completed as part of Phase 8. `schematool_firebird.sh` created (renamed from cockroachdb, uses `isql-fb` with `FIREBIRD_DB_PATH`/`FIREBIRD_SYSDBA_PASSWORD`). SchemaHelper updated: const (WRAPPER_ORDER), connect (ping_firebird, apply_family, ping_via_wrapper, probe), qdecode (BASE64_DECODE + BROTLI_DECOMPRESS), qutil (BASE64_DECODE). `hydrogen_flush.sh` updated with isql-fb firebird flush path (tests 37 + 40). `transaction_utils.sh` has `verify_tx_firebird` via `isql-fb`. Verification: `mks` green. |
+| **Variances** | `test_98` (luacheck) on schemahelper Lua deferred to Phase 11 — Lua linting requires the luacheck setup in test_98 which was not exercised here. |
 
 ### Working Log
 
-(empty until the phase runs)
+- **2026-09-20 Phase 9** (done with Phase 8): Created `schematool_firebird.sh` (renamed from `schematool_cockroachdb.sh`, rewritten to use `FIREBIRD_DB_PATH` + `FIREBIRD_SYSDBA_PASSWORD` env vars, `--engine firebird`). Updated `schematool.sh` with firebird env resolution + engine validation + help text. Updated schemahelper Lua files: `schemahelper_const.lua` (WRAPPER_ORDER), `schemahelper_connect.lua` (ping_firebird, apply_family, ping_via_wrapper, probe dispatch), `schemahelper_qdecode.lua` (BASE64_DECODE + BROTLI_DECOMPRESS patterns), `schemahelper_qutil.lua` (BASE64_DECODE). Updated `smoke_test40_catalog.sh` ENGINES (cockroachdb→firebird).
 
 ### Lessons learned
 
-(empty until the phase runs)
+- Renaming the schematool wrapper script (cockroachdb→firebird) required updating `smoke_test40_catalog.sh` ENGINES array simultaneously — both reference the wrapper filename.
+- SchemaHelper's `ping_via_wrapper` case statement needed a firebird entry mapping to `isql-fb` and `FIREBIRD_DB_PATH` env var, similar to how DB2 uses `db2 connect`.
+- The backward-compat alias `cockroachdb`→`postgresql` must be preserved in both `schematool.sh` and `schemahelper_connect.lua` so existing operator scripts don't break.
 
 ---
 

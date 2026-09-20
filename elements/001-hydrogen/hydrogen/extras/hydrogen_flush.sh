@@ -5,6 +5,7 @@
 # Used to reset databases before major migration changes
 
 # CHANGELOG
+# 1.0.4 - 2026-09-20 - Replaced CockroachDB with Firebird engine (isql-fb)
 # 1.0.3 - 2026-01-17 - Fix DB2 password handling with special characters by disabling history expansion
 
 set -euo pipefail
@@ -113,9 +114,9 @@ count_objects() {
                 count="0"
             fi
             ;;
-        cockroachdb)
-            if [[ -n "${schema}" ]]; then
-                count=$(cockroach sql --host="${host}:${port}" --user="${user}" --database="${database}" --execute="SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '${schema}';" 2>/dev/null | tail -1 | tr -d ' ' | grep -E '^[0-9]+$' || echo "0")
+        firebird)
+            if [[ -n "${FIREBIRD_DB_PATH:-}" ]]; then
+                count=$(isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" "${FIREBIRD_DB_PATH}" -z -i /dev/stdin <<< "SELECT COUNT(*) FROM RDB\$RELATIONS WHERE RDB\$SYSTEM_FLAG = 0 AND RDB\$VIEW_BLR IS NULL;" 2>/dev/null | grep -E '^[0-9]+$' | tail -1 || echo "0")
             else
                 count="0"
             fi
@@ -189,12 +190,16 @@ drop_schema() {
                 fi
             fi
             ;;
-        cockroachdb)
-            if [[ -n "${schema}" ]]; then
+        firebird)
+            if [[ -n "${FIREBIRD_DB_PATH:-}" ]]; then
                 if [[ "${DEBUG}" == true ]]; then
-                    cockroach sql --host="${host}:${port}" --user="${user}" --database="${database}" --execute="DROP SCHEMA IF EXISTS \"${schema}\" CASCADE; CREATE SCHEMA \"${schema}\";" || true
+                    isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" "${FIREBIRD_DB_PATH}" -z -i /dev/stdin <<< "SELECT RDB\$RELATION_NAME FROM RDB\$RELATIONS WHERE RDB\$SYSTEM_FLAG = 0 AND RDB\$VIEW_BLR IS NULL;" 2>&1 | while read -r table; do
+                        isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" "${FIREBIRD_DB_PATH}" -z -i /dev/stdin <<< "DROP TABLE ${table};" || true
+                    done
                 else
-                    cockroach sql --host="${host}:${port}" --user="${user}" --database="${database}" --execute="DROP SCHEMA IF EXISTS \"${schema}\" CASCADE; CREATE SCHEMA \"${schema}\";" > /dev/null 2>&1 || true
+                    isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" "${FIREBIRD_DB_PATH}" -z -i /dev/stdin <<< "SELECT RDB\$RELATION_NAME FROM RDB\$RELATIONS WHERE RDB\$SYSTEM_FLAG = 0 AND RDB\$VIEW_BLR IS NULL;" 2>/dev/null | while read -r table; do
+                        isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" "${FIREBIRD_DB_PATH}" -z -i /dev/stdin <<< "DROP TABLE ${table};" > /dev/null 2>&1 || true
+                    done
                 fi
             fi
             ;;
@@ -222,7 +227,7 @@ test_configs=(
     "34:SQLite:hydrogen_test_34_sqlite.json"
     "35:DB2:hydrogen_test_35_db2.json"
     "36:MariaDB:hydrogen_test_36_mariadb.json"
-    "37:CockroachDB:hydrogen_test_37_cockroachdb.json"
+    "37:Firebird:hydrogen_test_37_firebird.json"
     "38:YugabyteDB:hydrogen_test_38_yugabytedb.json"
 )
 
@@ -257,7 +262,7 @@ demo_configs=(
     "40:SQLite:hydrogen_test_40_sqlite.json"
     "40:DB2:hydrogen_test_40_db2.json"
     "40:MariaDB:hydrogen_test_40_mariadb.json"
-    "40:CockroachDB:hydrogen_test_40_cockroachdb.json"
+    "40:Firebird:hydrogen_test_40_firebird.json"
     "40:YugabyteDB:hydrogen_test_40_yugabytedb.json"
 )
 
@@ -353,7 +358,7 @@ cd "${HYDROGEN_ROOT}"
 # tests/test_34_sqlite_migrations.sh      2>&1 | grep -A3 -B1 "Test #"
 # tests/test_35_db2_migrations.sh         2>&1 | grep -A3 -B1 "Test #"
 # tests/test_36_mariadb_migrations.sh     2>&1 | grep -A3 -B1 "Test #"
-# tests/test_37_cockroachdb_migrations.sh 2>&1 | grep -A3 -B1 "Test #"
+# tests/test_37_firebird_migrations.sh    2>&1 | grep -A3 -B1 "Test #"
 # tests/test_38_yugabytedb_migrations.sh  2>&1 | grep -A3 -B1 "Test #"
 
 echo "Rebuilding DEMO databases"

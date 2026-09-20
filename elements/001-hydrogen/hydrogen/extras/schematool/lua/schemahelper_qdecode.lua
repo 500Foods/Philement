@@ -119,6 +119,20 @@ function M.decode_embedded(s)
             end
             return raw
         end)
+    s = s:gsub(
+        "[%w_]*%.?BASE64_DECODE%s*%(%s*'([^']+)'[^)]*%)",
+        function(b64)
+            local raw = base64_decode(b64)
+            if raw == "" then
+                return "«base64 decode failed»"
+            end
+            return raw
+        end)
+    s = s:gsub(
+        "[%w_]*%.?BROTLI_DECOMPRESS%s*%([%w_]*%.?BASE64_DECODE%s*%(%s*'([^']+)'[^)]*%)%s*%)",
+        function(b64)
+            return decode_brotli_b64(b64) or "«brotli decode failed»"
+        end)
     return s
 end
 

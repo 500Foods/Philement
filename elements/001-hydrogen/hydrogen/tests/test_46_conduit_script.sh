@@ -14,13 +14,14 @@
 # analyze_engine()
 
 # CHANGELOG
+# 1.4.0 - 2026-09-20 - Replaced CockroachDB with Firebird engine
 # 1.3.9 - 2026-09-08 - Do not skip-pass Echo 404; SQLite online backup
 # 1.3.8 - 2026-08-29 - Added /api/system/jobs blackbox tests: authenticated GET (200 + array), unauthenticated GET (401), POST (405), raised pass threshold to 18
 # 1.3.7 - 2026-08-28 - async_get flake fix: a 202-accepted job's scoreboard
 #                      registration can race the first GET's job_not_found
 #                      check by up to ~1-2s under suite load (observed on
 #                      MariaDB/MySQL, but reproduces on every engine incl.
-#                      PostgreSQL/CockroachDB). Previously a single 404
+#                      PostgreSQL/Firebird). Previously a single 404
 #                      job_not_found aborted the poll loop and burned one of
 #                      only 4 POST retries immediately. Now the GET loop
 #                      keeps polling the SAME job_id through a 5s grace
@@ -79,7 +80,7 @@ TEST_NAME="Conduit Script"
 TEST_ABBR="CSC"
 TEST_NUMBER="46"
 TEST_COUNTER=0
-TEST_VERSION="1.3.9"
+TEST_VERSION="1.4.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -100,7 +101,7 @@ SCRIPT_TEST_CONFIGS=(
     ["SQLite"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_conduit_script_sqlite.json:sqlite:sqlite:SQLite"
     ["DB2"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_conduit_script_db2.json:db2:db2:DB2"
     ["MariaDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_conduit_script_mariadb.json:mariadb:mariadb:MariaDB"
-    ["CockroachDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_conduit_script_cockroachdb.json:cockroachdb:cockroachdb:CockroachDB"
+    ["Firebird"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_conduit_script_firebird.json:firebird:firebird:Firebird"
     ["YugabyteDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_conduit_script_yugabytedb.json:yugabytedb:yugabytedb:YugabyteDB"
 )
 

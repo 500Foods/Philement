@@ -43,7 +43,7 @@ local WRAPPER_ORDER = {
     "mariadb",
     "sqlite",
     "db2",
-    "cockroachdb",
+    "firebird",
     "yugabytedb",
 }
 

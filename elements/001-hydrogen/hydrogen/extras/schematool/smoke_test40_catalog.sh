@@ -15,7 +15,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OUT_DIR="${TMPDIR:-/tmp}/schematool-t40-smoke-$$"
-ENGINES=(sqlite postgresql mysql mariadb cockroachdb db2 yugabytedb)
+ENGINES=(sqlite postgresql mysql mariadb db2 firebird yugabytedb)
 
 while [[ $# -gt 0 ]]; do
     case "$1" in

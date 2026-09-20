@@ -59,7 +59,7 @@ Usage:
 Required:
   --migrations DIR       Folder with database.lua and design_NNNN.lua
   --design NAME          Design prefix (e.g. acuranzo)
-  --engine ENGINE        postgresql|mysql|sqlite|db2 (aliases: mariadb→mysql)
+    --engine ENGINE        postgresql|mysql|sqlite|db2|firebird (aliases: mariadb→mysql)
 
 Connection (required for full audit / --dump-db; env fallbacks apply):
   --schema NAME          Schema prefix (empty OK for SQLite)
@@ -71,7 +71,7 @@ Connection (required for full audit / --dump-db; env fallbacks apply):
 
   Env precedence when flags omitted (first non-empty wins per field):
     1) Requested engine name (before alias) → primary env:
-         postgresql|postgres|cockroachdb → ACURANZO_DB_{HOST,PORT,USER,NAME,PASS}
+          postgresql|postgres|firebird → ACURANZO_DB_{HOST,PORT,USER,NAME,PASS} (PG wire) / FIREBIRD_DB_PATH+FIREBIRD_SYSDBA_PASSWORD (native)
          yugabytedb                      → YUGABYTE_DB_{HOST,PORT,USER,NAME,PASS}
          mysql|mariadb                   → CANVAS_DB_{HOST,PORT,USER,NAME,PASS}
          db2                             → HYDROTST_DB_{USER,NAME,PASS}
@@ -350,9 +350,9 @@ if [[ ! -f "${MIGRATIONS}/database.lua" ]]; then
 fi
 
 case "${ENGINE}" in
-    postgresql|mysql|sqlite|db2) ;;
+    postgresql|mysql|sqlite|db2|firebird) ;;
     *)
-        echo "Error: unsupported engine '${ENGINE}' (use postgresql|mysql|sqlite|db2)" >&2
+        echo "Error: unsupported engine '${ENGINE}' (use postgresql|mysql|sqlite|db2|firebird)" >&2
         exit 1
         ;;
 esac
@@ -409,6 +409,12 @@ case "${ENGINE_REQUESTED}" in
         [[ -z "${DATABASE}" ]] && DATABASE="${ACURANZO_DB_NAME:-}"
         [[ -z "${PASSWORD_ENV}" && -n "${ACURANZO_DB_PASS:-}" ]] && PASSWORD_ENV="ACURANZO_DB_PASS"
         [[ -z "${SCHEMA}" && -n "${ACURANZO_DB_SCHEMA:-}" ]] && SCHEMA="${ACURANZO_DB_SCHEMA}"
+        ;;
+    firebird)
+        [[ -z "${DATABASE}" ]] && DATABASE="${FIREBIRD_DB_PATH:-}"
+        [[ -z "${USER_NAME}" ]] && USER_NAME="SYSDBA"
+        [[ -z "${PASSWORD_ENV}" && -n "${FIREBIRD_SYSDBA_PASSWORD:-}" ]] && PASSWORD_ENV="FIREBIRD_SYSDBA_PASSWORD"
+        [[ -z "${SCHEMA}" ]] && SCHEMA=""
         ;;
     mysql|mariadb)
         [[ -z "${HOST}" ]] && HOST="${CANVAS_DB_HOST:-}"

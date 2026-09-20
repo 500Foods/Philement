@@ -270,6 +270,15 @@ local function apply_family(conn, engine, wrapper)
         conn.database = getenv("HYDROTST_DB_NAME")
         conn.password_env = "HYDROTST_DB_PASS"
         conn.schema = "demo"
+    elseif engine == "firebird" then
+        conn.family = "FIREBIRD_*"
+        conn.host = ""
+        conn.port = ""
+        conn.user = "SYSDBA"
+        conn.database = getenv("FIREBIRD_DB_PATH")
+        conn.password_env = "FIREBIRD_SYSDBA_PASSWORD"
+        conn.schema = ""
+        conn.engine_is_sqlite_like = true
     elseif engine == "sqlite" then
         conn.family = "file"
         local root = getenv("HYDROGEN_ROOT")
@@ -452,6 +461,22 @@ local function ping_db2(conn)
     return run_shell(script)
 end
 
+local function ping_firebird(conn)
+    if conn.database == "" then
+        return false, "missing database (FIREBIRD_DB_PATH)"
+    end
+    if conn.password_env ~= "" and getenv(conn.password_env) == "" then
+        return false, conn.password_env .. " not set"
+    end
+    local script = string.format(
+        "isql-fb -user %s -password ${%s} %s -z -i /dev/stdin <<< \"SELECT 1 FROM RDB$DATABASE;\"",
+        conn.user,
+        conn.password_env,
+        conn.database
+    )
+    return run_shell(script)
+end
+
 local function ping_via_wrapper(wrapper, conn)
     local script = string.format([[
 exec() {
@@ -491,6 +516,12 @@ exec() {
         sqlite)
             sqlite3 "file:${database}?mode=ro" "SELECT 1"
             ;;
+        firebird)
+            if [ -n "$password_env" ]; then
+                eval "export FIREBIRD_PASSWORD=\"\${$password_env}\""
+            fi
+            isql-fb -user "$user" -password "$FIREBIRD_PASSWORD" "$database" -z -i /dev/stdin <<< "SELECT 1 FROM RDB\$DATABASE;" 2>&1
+            ;;
         db2)
             . /home/db2inst1/sqllib/db2profile >/dev/null 2>&1 || true
             command -v db2 >/dev/null || { echo db2 client not found; exit 1; }
@@ -527,6 +558,8 @@ function M.probe(wrapper)
         ok, out = ping_mysql(conn)
     elseif conn.engine == "sqlite" then
         ok, out = ping_sqlite(conn)
+    elseif conn.engine == "firebird" then
+        ok, out = ping_firebird(conn)
     elseif conn.engine == "db2" then
         ok, out = ping_db2(conn)
     else

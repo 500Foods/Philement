@@ -165,7 +165,7 @@ All scripts include proper error handling and return appropriate exit codes:
 - Identifies all test databases (tests 32-38) and demo databases (test 40)
 - Counts objects in each schema before and after flushing
 - Drops all tables and recreates empty schemas
-- Supports all 7 database engines: PostgreSQL, MySQL, SQLite, DB2, MariaDB, CockroachDB, and YugabyteDB
+- Supports all 7 database engines: PostgreSQL, MySQL, SQLite, DB2, MariaDB, Firebird, and YugabyteDB
 - Provides detailed output showing flush results for each database
 - Requires confirmation (type "HYDROGEN" in all caps) to prevent accidental execution
 
@@ -198,7 +198,7 @@ TESTS:
 - Test 34 - SQLite      - /path/to/acuranzo_test_34.db
 - Test 35 - DB2         - Acuranzo/
 - Test 36 - MariaDB     - Acuranzo/acuranzo
-- Test 37 - CockroachDB - Acuranzo/acuranzo
+- Test 37 - Firebird   - Acuranzo/acuranzo
 - Test 38 - YugabyteDB  - Acuranzo/acuranzo
 
 DEMOS:
@@ -207,7 +207,7 @@ DEMOS:
 - Test 40 - SQLite      - /path/to/acuranzo_test_40.db
 - Test 40 - DB2         - Acuranzo/
 - Test 40 - MariaDB     - Acuranzo/acuranzo
-- Test 40 - CockroachDB - Acuranzo/acuranzo
+- Test 40 - Firebird   - Acuranzo/acuranzo
 - Test 40 - YugabyteDB  - Acuranzo/acuranzo
 
 Enter HYDROGEN in all caps to continue: HYDROGEN

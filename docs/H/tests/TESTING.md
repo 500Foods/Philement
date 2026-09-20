@@ -87,7 +87,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_34_sqlite_migrations.sh](/docs/H/tests/test_34_sqlite_migrations.md)**: SQLite migration performance test
 - **[test_35_db2_migrations.sh](/docs/H/tests/test_35_db2_migrations.md)**: DB2 migration performance test
 - **[test_36_mariadb_migrations.sh](/docs/H/tests/test_36_mariadb_migrations.md)**: MariaDB migration performance test
-- **[test_37_cockroachdb_migrations.sh](/docs/H/tests/test_37_cockroachdb_migrations.md)**: CockroachDB migration performance test (being replaced by Firebird in Phase 8)
+- **[test_37_firebird_migrations.sh](/docs/H/tests/test_37_firebird_migrations.md)**: Firebird migration performance test
 - **[test_37_firebird_migrations.sh](/docs/H/tests/test_37_firebird_migrations.md)**: Firebird migration performance test
 - **[test_38_yugabytedb_migrations.sh](/docs/H/tests/test_38_yugabytedb_migrations.md)**: YugabyteDB migration performance test
 
@@ -154,7 +154,7 @@ Where:
 | Test 40 | SQLite | 5402 | `hydrogen_test_40_sqlite.json` |
 | Test 40 | DB2 | 5403 | `hydrogen_test_40_db2.json` |
 | Test 40 | MariaDB | 5404 | `hydrogen_test_40_mariadb.json` |
-| Test 40 | CockroachDB | 5405 | `hydrogen_test_40_cockroachdb.json` |
+| Test 40 | Firebird | 5407 | `hydrogen_test_40_firebird.json` |
 | Test 40 | YugabyteDB | 5406 | `hydrogen_test_40_yugabytedb.json` |
 | Test 51 | PostgreSQL | 5510 | `hydrogen_test_51_postgres.json` |
 | Test 51 | MySQL | 5511 | `hydrogen_test_51_mysql.json` |
