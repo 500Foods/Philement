@@ -107,7 +107,8 @@ tests/          Test framework
 - tests/test_34_sqlite_migrations.sh - SQLite migration performance test
 - tests/test_35_db2_migrations.sh - DB2 migration performance test
 - tests/test_36_mariadb_migrations.sh - MariaDB migration performance test
-- tests/test_37_cockroachdb_migrations.sh - CockroachDB migration performance test
+- tests/test_37_cockroachdb_migrations.sh - CockroachDB migration performance test (being replaced by Firebird in Phase 8)
+- tests/test_37_firebird_migrations.sh - Firebird migration performance test
 - tests/test_38_yugabytedb_migrations.sh - YugabyteDB migration performance test
 - tests/test_40_auth.sh - Authentication endpoints testing (JWT tokens across multiple database engines)
 - tests/test_41_exercise_asan.sh - Memory exercise ASAN (500 concurrent auth requests across 6 DBs + LeakSanitizer; YugabyteDB disabled)

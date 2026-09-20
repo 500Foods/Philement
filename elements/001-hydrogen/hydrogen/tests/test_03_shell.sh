@@ -5,6 +5,7 @@
 # Validates that required and optional environment variables are properly configured
 
 # CHANGELOG
+# 1.4.5 - 2026-09-19 - Added FIREBIRD_SYSDBA_PASSWORD and FIREBIRD_DB_PATH env vars (Test 37, 40)
 # 1.4.4 - 2026-09-12 - Whitelist TERMINAL_WS_HELPERS_* and remaining Test 26 lib globals
 # 1.4.3 - 2026-08-27 - Whitelist MCP_HELPERS_* from tests/lib/mcp_helpers.sh
 # 1.4.2 - 2026-08-20 - Add PROFILE_START_CLOCK from profile_test_suite.sh
@@ -37,7 +38,7 @@ TEST_NAME="Shell Variables"
 TEST_ABBR="ZSH"
 TEST_NUMBER="03"
 TEST_COUNTER=0
-TEST_VERSION="1.4.4"
+TEST_VERSION="1.4.5"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "${HYDROGEN_ROOT}/tests/lib/framework.sh"
@@ -407,6 +408,10 @@ declare -a ENV_VARS=(
     "HYDROTST_DB_USER|30-35|Acuranzo database user|Username for connecting to the Acuranzo database."
     "HYDROTST_DB_PASS|30-35|Acuranzo database password|Password for connecting to the Acuranzo database."
     "HYDROTST_DB_TYPE|30-35|Acuranzo database type|Type of the Acuranzo database (e.g., postgres)."
+
+    # Firebird demo
+    "FIREBIRD_SYSDBA_PASSWORD|37,40|Firebird sysadmin password|Password for the Firebird SYSDBA user. Maps to Hydrogen Pass."
+    "FIREBIRD_DB_PATH|37,40|Firebird database path|Filesystem path to the Firebird database file. Maps to Hydrogen Database."
 
     # Cap server aka ChaCha 
     "CHACHA_SECRET|56|ChaCha (Cap) Server secret|Secret key."

@@ -94,4 +94,5 @@ isql-fb -user SYSDBA -password "$FIREBIRD_SYSDBA_PASSWORD" localhost/3050:/var/l
 
 - [FIREBIRD.md](/docs/H/plans/FIREBIRD.md) — full engine plan
 - [SECRETS.md](/docs/H/SECRETS.md) — environment variable reference
-- `brotli_udf_firebird/` — Brotli decompression UDR (Phase 6, not yet created)
+- `brotli_udf_firebird/` — Brotli decompression UDR (Phase 6)
+- `json_udf_firebird/` — JSON_VALUE extraction UDR (Phase 6)

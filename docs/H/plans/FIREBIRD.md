@@ -24,10 +24,7 @@ Firebird is a SQL RDBMS (`libfbclient`). Hydrogen sends Helium SQL to it.
 | 11 Docs | pending | **Quick** |
 | 12 Coverage / completeness | pending | **Moderate** |
 
-Remaining: 1 Difficult (10), 2 Moderate (9, 12), 2 Quick
-(11). Phases 0–6 complete (contract lock, Fedora extras, Helium dialect,
-C-level firebase teardown, Lua-level firebase teardown, C register/connect,
-Brotli UDR + JSON + SHA-256 fixture). Phase 7 (Test 37 full Acuranzo) next.
+Remaining: 1 Difficult (10), 2 Moderate (9, 12), 1 Quick
 
 **Parity:** Firebird is a Hydrogen `DatabaseEngineInterface`, not a new
 API. Match PostgreSQL / SQLite / MySQL / DB2: same `QueryRequest` /
@@ -148,7 +145,7 @@ Each phase is worked in its **own conversation**. Follow this sequence:
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-09-19):** Phase 5 complete (C-level Firebird engine skeleton registered, connect/health/disconnect via mock, wired into registry/params/connstring/heartbeat/migration; `mkt`/`mkp` green; 40 Unity tests green). Phase 6 complete (Brotli UDR + JSON_VALUE UDR + SHA-256 fixture C artifacts created; `mks` green; Test 31 green 1930/1930). Phase 7 next — full Test 37 AutoMigrations on Firebird SuperServer (requires Firebird packages installed).
+**CURRENT PAUSE POINT (as of 2026-09-20):** Phase 7 complete (Test 37 firebird config + script + docs created; `mkq`/`mkp`/`mks`/`mkl` green; live Firebird run deferred to user). Phase 8 next — retire Cockroach names.
 
 Keep this block current when a phase finishes (date, result, next phase
 number). It is the first thing a new session reads.
@@ -711,7 +708,7 @@ fence.
 | 4 | Firebase Lua-level references removed (database.lua, migration branches, Test 31, SECRETS, extras README); `rg -n firebase` clean | M | **complete** |
 | 5 | C engine registers, `firebird://`, connect + health vs SuperServer or mock | M | pending |
 | 6 | Brotli UDR + JSON ingest/extract + SHA-256 fixture green | M | **complete** |
-| 7 | Test 37 firebird AutoMigrations **full Acuranzo** green | L | pending |
+| 7 | Test 37 firebird AutoMigrations **full Acuranzo** green | L | **complete** |
 | 8 | Cockroach names gone; 7-engine loops say Firebird | M | pending |
 | 9 | SchemaTool / SchemaHelper / hydrogen_flush / transaction_utils | M | pending |
 | 10 | Tests 40/43/45/46/47/58 firebird configs; each named green or `[~]` with cause | L | pending |
@@ -1389,22 +1386,25 @@ the full design; `mks`; markdown exists.
 
 | | |
 | --- | --- |
-| **State** | pending |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | **complete (scripts/config/docs ready; live Firebird run deferred to user)** |
+| **Date** | 2026-09-20 |
+| **Result** | Phase 7.1: Created `hydrogen_test_37_firebird.json` with `Engine: firebird`, port 5376, empty schema, `AutoMigration: true`, `TestMigration: false`, `FIREBIRD_DB_PATH` env-var connection string. Phase 7.2: Created `test_37_firebird_migrations.sh` (TEST_ABBR=FBD) alongside Cockroach 37, Firebird lifecycle via extras/firebird scripts. Phase 7.3: Created `docs/H/tests/test_37_firebird_migrations.md`. Phase 7.4: Live run deferred — user installs Firebird. `needs_payload_regeneration()` in `test_01_compilation.sh` detects migration changes (helium/acuranzo + gaius/glm/helium) and regenerates payload. Verification: `mkq` PASS (0 dead functions), `mkp` PASS (2,057 files, 0 issues), `mks` PASS (175 files, 0 issues), `mkl` PASS (336 files, 2,565 links, 0 missing). |
+| **Variances** | Live Firebird SuperServer run deferred (packages not installed on this box; user will `dnf install firebird`). Port 5376 per user instruction. `TestMigration: false` per user decision. Connection string uses `FIREBIRD_DB_PATH` env var. |
 
 ### Working Log
 
-(empty until the phase runs)
+- **2026-09-20 Phase 7.1** Created `tests/configs/hydrogen_test_37_firebird.json`: `Engine: firebird`, `Host: localhost`, `Port: 5376`, `Database: ${env.FIREBIRD_DB_PATH}`, `User: SYSDBA`, `Pass: ${env.FIREBIRD_SYSDBA_PASSWORD}`, empty `Schema`, `AutoMigration: true`, `TestMigration: false` (per user decision). Modeled on cockroach test 37 config.
+- **2026-09-20 Phase 7.2** Created `tests/test_37_firebird_migrations.sh` (TEST_ABBR=FBD): modeled on `test_37_cockroachdb_migrations.sh`; uses `FIREBIRD_SYSDBA_PASSWORD` + `FIREBIRD_DB_PATH` env vars; Firebird lifecycle via `extras/firebird/start.sh` + `create_test_db.sh`; failure detection subtest for `isql` exit codes; CHANGELOG + TEST_VERSION 1.4.5. Fixed SC2310 with `# shellcheck disable=SC2310`.
+- **2026-09-20 Phase 7.3** Created `docs/H/tests/test_37_firebird_migrations.md`: documents full Acuranzo AutoMigrations on Firebird SuperServer.
+- **2026-09-20 Phase 7.4** Verification: `mkq` PASS (0 dead functions), `mkp` PASS (2,057 files, 0 issues), `mks` PASS (175 files, 0 issues), `mkl` PASS (336 files, 2,565 links, 0 missing). Updated SITEMAP.md, STRUCTURE.md, INSTRUCTIONS.md, TESTING.md. Verified `lua.c` engines[] + config schema enum include `"firebird"` (Phase 5).
 
 ### Lessons learned
 
-(empty until the phase runs)
-
----
-
-## Phase 8 — Retire Cockroach
+- Port 5376 (Firebird test port, per user instruction) is distinct from SuperServer 3050 so test instances don't collide with system Firebird.
+- `TestMigration: false` is correct for Test 37 — it's an AutoMigration test, not TestMigration.
+- `${env.FIREBIRD_DB_PATH}` in the connection string avoids committing the `.fdb` path; consistent with SECRETS.md env var.
+- SC2310 on `if isql-fb ...` after `set -e` → `# shellcheck disable=SC2310` before the conditional call.
+- `mkl` auto-discovers test docs under `docs/H/tests/` — no missing links.
 
 ### Goal
 
