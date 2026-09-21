@@ -10,14 +10,13 @@ This test validates that Firebird database migrations execute successfully and p
 
 ## Test Flow
 
-1. **Lifecycle Setup**: Start Firebird SuperServer via `extras/firebird/start.sh` and create `testfb.fdb`
-2. **Binary Validation**: Ensures hydrogen binary is available and executable
-3. **Configuration Check**: Validates Firebird test configuration file
-4. **Server Launch**: Starts hydrogen with migration-enabled Firebird config
-5. **Migration Monitoring**: Waits for "Migration test completed in X.XXXs" message
-6. **Performance Capture**: Extracts and reports migration completion time
-7. **Failure Detection**: Scans server log for migration APPLY/REVERSE/transaction errors
-8. **Cleanup**: Gracefully shuts down server and stops Firebird via `extras/firebird/stop.sh`
+1. **Binary Validation**: Ensures hydrogen binary is available and executable
+2. **Configuration Check**: Validates Firebird test configuration file
+3. **Server Launch**: Starts hydrogen with migration-enabled Firebird config
+4. **Migration Monitoring**: Waits for "Migration test completed in X.XXXs" message
+5. **Performance Capture**: Extracts and reports migration completion time
+6. **Failure Detection**: Scans server log for migration APPLY/REVERSE/transaction errors
+7. **Cleanup**: Gracefully shuts down server
 
 ## Configuration
 
@@ -36,7 +35,6 @@ This test validates that Firebird database migrations execute successfully and p
 
 ## Success Criteria
 
-- Firebird SuperServer starts and test database is created
 - Hydrogen server starts successfully
 - Migration completion message appears within 1800-second timeout
 - Server shuts down cleanly
@@ -45,11 +43,12 @@ This test validates that Firebird database migrations execute successfully and p
 
 ## Dependencies
 
-- Firebird 4.0 SuperServer running (Fedora 43 package: `firebird`)
+- Firebird 4.0 SuperServer running on port 3050 (started via `extras/firebird/start.sh`)
 - `FIREBIRD_SYSDBA_PASSWORD` environment variable set
 - `FIREBIRD_DB_PATH` environment variable set (defaults to `/var/lib/firebird/data/testfb.fdb`)
+- Test database `testfb.fdb` created separately via `extras/firebird/create_test_db.sh` — the test treats the database as pre-existing
 - Hydrogen binary built and available
-- Extras scripts: `extras/firebird/start.sh`, `extras/firebird/stop.sh`, `extras/firebird/create_test_db.sh`
+- Config file: `tests/configs/hydrogen_test_37_firebird.json`
 
 ## Performance Metrics
 

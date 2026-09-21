@@ -11,7 +11,7 @@
 #include <src/database/firebird/types.h>
 #include <src/database/firebird/utils.h>
 
-extern char* firebird_build_attach_string(const ConnectionConfig* config);
+extern char* firebird_build_attach_string(const ConnectionConfig* config, size_t* out_dpb_len);
 extern bool firebird_validate_connection_string(const char* connection_string);
 extern char* firebird_escape_string(const DatabaseHandle* connection, const char* input);
 extern bool firebird_parse_connstring_url(
@@ -64,7 +64,8 @@ void test_firebird_validate_firebird_embedded(void) {
 }
 
 void test_firebird_validate_dpb_string(void) {
-    TEST_ASSERT_TRUE(firebird_validate_connection_string("user = SYSDBA password = secret dbname = test.fdb"));
+    // DPB validation is no longer supported (binary DPB replaces text format)
+    TEST_ASSERT_FALSE(firebird_validate_connection_string("user = SYSDBA password = secret dbname = test.fdb"));
 }
 
 void test_firebird_validate_invalid(void) {
@@ -104,19 +105,24 @@ void test_firebird_build_attach_string(void) {
     config.username = strdup("SYSDBA");
     config.password = strdup("secret");
     config.database = strdup("/var/lib/firebird/data/test.fdb");
-    config.schema = strdup("MYSCHEMA");;
+    config.schema = strdup("MYSCHEMA");
 
-    char* dpb = firebird_build_attach_string(&config);
+    size_t dpb_len = 0;
+    char* dpb = firebird_build_attach_string(&config, &dpb_len);
     TEST_ASSERT_NOT_NULL(dpb);
-    TEST_ASSERT_NOT_NULL(strstr(dpb, "user = SYSDBA"));
-    TEST_ASSERT_NOT_NULL(strstr(dpb, "password = secret"));
-    TEST_ASSERT_NOT_NULL(strstr(dpb, "dbname = /var/lib/firebird/data/test.fdb"));
-    TEST_ASSERT_NOT_NULL(strstr(dpb, "schema = MYSCHEMA"));
+    TEST_ASSERT_GREATER_THAN(0, dpb_len);
+
+    // Verify binary DPB format: version byte + user entries
+    TEST_ASSERT_EQUAL_UINT8(FB_DPB_VERSION1, (unsigned char)dpb[0]);
+
+    // Verify length is within buffer
+    TEST_ASSERT_TRUE(dpb_len <= 512);
+
     free(dpb);
 }
 
 void test_firebird_build_attach_string_null(void) {
-    TEST_ASSERT_NULL(firebird_build_attach_string(NULL));
+    TEST_ASSERT_NULL(firebird_build_attach_string(NULL, NULL));
 }
 
 void test_firebird_parse_url_host_port_path(void) {

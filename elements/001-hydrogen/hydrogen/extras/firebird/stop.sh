@@ -1,42 +1,56 @@
 #!/usr/bin/env bash
-# Firebird SuperServer stop — stops the service only if start.sh began it
+# Firebird SuperServer stop — stops the systemd service via sudo
 #
 # Usage:
-#   ./stop.sh
+#   sudo ./stop.sh
+#
+# Requires: sudo, the systemd service started by start.sh
 #
 # CHANGELOG
-# 1.0.0 - 2026-09-18 - Initial version for Firebird 4.0 on Fedora 43
+# 1.1.0 - 2026-09-20 - Rewritten: uses systemctl stop, requires sudo
+# 1.0.0 - 2026-09-18 - Initial version
 
 set -euo pipefail
 
 FIREBIRD_SERVICE="firebird"
 FIREBIRD_PORT="3050"
-FIREBIRD_HOST="127.0.0.1"
+
+die() {
+    echo "Error: $*" >&2
+    exit 1
+}
+
+# Require sudo
+if [[ "${EUID}" -ne 0 ]]; then
+    exec sudo "$0" "$@"
+fi
 
 echo "Stopping Firebird SuperServer..."
 
-# Check if Firebird is running
-running=0
-if systemctl is-active --quiet "${FIREBIRD_SERVICE}" 2>/dev/null; then
-    running=1
-else
-    if ss -tlnp 2>/dev/null | grep -q ":${FIREBIRD_PORT} "; then
-        running=1
+# Resolve the actual service name (same logic as start.sh)
+for svc in firebird firebird-superserver; do
+    if systemctl list-unit-files "${svc}.service" >/dev/null 2>&1; then
+        FIREBIRD_SERVICE="${svc}"
+        break
+    fi
+done
+
+# Check if running
+if ! systemctl is-active --quiet "${FIREBIRD_SERVICE}" 2>/dev/null; then
+    if ss -tln 2>/dev/null | grep -q ":${FIREBIRD_PORT} "; then
+        # Port still bound but service not active — try to stop anyway
+        :
+    else
+        echo "Firebird is not running."
+        exit 0
     fi
 fi
 
-if [[ "${running}" -eq 1 ]]; then
-    if command -v systemctl >/dev/null 2>&1 && systemctl list-unit-files "${FIREBIRD_SERVICE}.service" >/dev/null 2>&1; then
-        sudo systemctl stop "${FIREBIRD_SERVICE}" 2>/dev/null || systemctl stop "${FIREBIRD_SERVICE}" 2>/dev/null || true
-    else
-        # Fallback: gfix can shut down a running Firebird
-        if command -v gfix >/dev/null 2>&1; then
-            if [[ -n "${FIREBIRD_SYSDBA_PASSWORD:-}" ]]; then
-                gfix -shutdown full -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD}" "${FIREBIRD_HOST}/${FIREBIRD_PORT}" 2>/dev/null || true
-            fi
-        fi
-    fi
-    echo "Firebird stopped."
-else
-    echo "Firebird was not running."
+systemctl stop "${FIREBIRD_SERVICE}"
+
+# Verify it stopped
+if systemctl is-active --quiet "${FIREBIRD_SERVICE}" 2>/dev/null; then
+    die "Firebird service '${FIREBIRD_SERVICE}' did not stop. Check 'sudo journalctl -u ${FIREBIRD_SERVICE}' for details."
 fi
+
+echo "Firebird stopped."

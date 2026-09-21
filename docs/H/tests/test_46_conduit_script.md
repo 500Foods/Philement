@@ -40,7 +40,7 @@ Dedicated ports in the `1546x` range (outside the Linux ephemeral client range):
 | SQLite | 15462 |
 | DB2 | 15463 |
 | MariaDB | 15464 |
-| CockroachDB | 15465 |
+| Firebird | 15465 |
 | YugabyteDB | 15466 |
 
 ## Configuration Files
@@ -50,7 +50,7 @@ Dedicated ports in the `1546x` range (outside the Linux ephemeral client range):
 - `hydrogen_test_46_conduit_script_sqlite.json` (isolated DB copy under diagnostics)
 - `hydrogen_test_46_conduit_script_db2.json`
 - `hydrogen_test_46_conduit_script_mariadb.json`
-- `hydrogen_test_46_conduit_script_cockroachdb.json`
+- `hydrogen_test_46_conduit_script_firebird.json`
 - `hydrogen_test_46_conduit_script_yugabytedb.json`
 
 Each enables **API** (JWT) and **Scripting** (workers + DefaultDatabase `Acuranzo`).

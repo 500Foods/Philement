@@ -6,9 +6,17 @@
 
 # FUNCTIONS
 # run_migration_test()
-# setup_firebird_lifecycle()
 
 # CHANGELOG
+# 1.4.0 - 2026-09-21 - Test now uses FIREBIRD_DB_USER and FIREBIRD_DB_PASS env vars
+#           for its own database work (instead of SYSDBA). SYSDBA credentials
+#           (FIREBIRD_SYSDBA_PASSWORD) are used only by create_test_db.sh for
+#           initial database creation. Fixed typo in env var comment.
+# 1.3.0 - 2026-09-21 - Database creation removed from test lifecycle; test now treats
+#           the database as pre-existing (created separately via create_test_db.sh),
+#           matching the pattern of other engine tests (32/33/35/36/38).
+# 1.2.0 - 2026-09-20 - Skip DB creation if database already exists and is accessible
+# 1.1.0 - 2026-09-20 - Export FIREBIRD_DB_PATH and FIREBIRD_SYSDBA_PASSWORD for Hydrogen config
 # 1.0.0 - 2026-09-19 - Initial implementation for Firebird migration testing
 
 set -euo pipefail
@@ -18,11 +26,19 @@ TEST_NAME="Firebird Migration"
 TEST_ABBR="FBD"
 TEST_NUMBER="37"
 TEST_COUNTER=0
-TEST_VERSION="1.0.0"
+TEST_VERSION="1.4.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
+
+# Firebird env vars for Hydrogen config ${env.FIREBIRD_DB_PATH} and ${env.FIREBIRD_SYSDBA_PASSWORD}
+# Test work uses FIREBIRD_DB_USER/FIREBIRD_DB_PASS (non-SYSDBA account); SYSDBA
+# credentials are only for create_test_db.sh initial database creation.
+export FIREBIRD_DB_PATH="${FIREBIRD_DB_PATH:-/var/lib/firebird/data/testfb.fdb}"
+export FIREBIRD_SYSDBA_PASSWORD="${FIREBIRD_SYSDBA_PASSWORD:-masterkey}"
+export FIREBIRD_DB_USER="${FIREBIRD_DB_USER:-SYSDBA}"
+export FIREBIRD_DB_PASS="${FIREBIRD_DB_PASS:-${FIREBIRD_SYSDBA_PASSWORD:-masterkey}}"
 
 # Migration test parameters (customize for different engines)
 ENGINE_NAME="Firebird"
@@ -34,49 +50,6 @@ LOG_LINE_PATTERN="Migration test completed in"
 TIMEOUT=1800
 STARTUP_TIMEOUT=15
 SHUTDOWN_TIMEOUT=15
-
-# Firebird lifecycle scripts
-FIREBIRD_EXTRAS_DIR="${PROJECT_DIR}/extras/firebird"
-FIREBIRD_START_SCRIPT="${FIREBIRD_EXTRAS_DIR}/start.sh"
-FIREBIRD_STOP_SCRIPT="${FIREBIRD_EXTRAS_DIR}/stop.sh"
-FIREBIRD_CREATE_DB_SCRIPT="${FIREBIRD_EXTRAS_DIR}/create_test_db.sh"
-
-# Function to set up Firebird lifecycle (start service + create test database)
-setup_firebird_lifecycle() {
-    local setup_failed=false
-
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Starting Firebird SuperServer..."
-    if [[ -x "${FIREBIRD_START_SCRIPT}" ]]; then
-        if ! "${FIREBIRD_START_SCRIPT}" > /dev/null 2>&1; then
-            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Warning: Firebird start.sh reported non-success (may already be running)"
-        fi
-    else
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Warning: Firebird start.sh not found at ${FIREBIRD_START_SCRIPT}"
-    fi
-
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Creating Firebird test database..."
-    if [[ -x "${FIREBIRD_CREATE_DB_SCRIPT}" ]]; then
-        if ! "${FIREBIRD_CREATE_DB_SCRIPT}" > /dev/null 2>&1; then
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Failed to create Firebird test database (testfb.fdb)"
-            setup_failed=true
-        fi
-    else
-        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Warning: Firebird create_test_db.sh not found at ${FIREBIRD_CREATE_DB_SCRIPT}"
-    fi
-
-    if [[ "${setup_failed}" == true ]]; then
-        return 1
-    fi
-    return 0
-}
-
-# Function to tear down Firebird lifecycle
-teardown_firebird_lifecycle() {
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Stopping Firebird SuperServer..."
-    if [[ -x "${FIREBIRD_STOP_SCRIPT}" ]]; then
-        "${FIREBIRD_STOP_SCRIPT}" > /dev/null 2>&1 || true
-    fi
-}
 
 # Function to run migration test
 run_migration_test() {
@@ -174,21 +147,7 @@ run_migration_test() {
     fi
 }
 
-# Set up Firebird lifecycle before tests
-print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Firebird Lifecycle Setup"
-
-# shellcheck disable=SC2310 # We want to continue even if the test fails
-if setup_firebird_lifecycle; then
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Firebird SuperServer started and test database created"
-    PASS_COUNT=$(( PASS_COUNT + 1 ))
-else
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Firebird lifecycle setup failed"
-    EXIT_CODE=1
-fi
-
-# Only proceed with migration test if FireBird is set up
-if [[ "${EXIT_CODE}" -eq 0 ]]; then
-
+# Locate the Hydrogen binary
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate Hydrogen Binary"
 
 HYDROGEN_BIN=''
@@ -369,15 +328,6 @@ else
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping ${ENGINE_NAME} migration test due to prerequisite failures"
     EXIT_CODE=1
 fi
-
-else
-    # Skip if Firebird lifecycle setup failed
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Skipping ${ENGINE_NAME} migration test due to lifecycle setup failure"
-    EXIT_CODE=1
-fi
-
-# Tear down Firebird lifecycle (always, even on failure)
-teardown_firebird_lifecycle
 
 # Print test completion summary
 print_test_completion "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"

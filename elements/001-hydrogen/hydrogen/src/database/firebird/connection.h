@@ -30,9 +30,9 @@ bool load_libfbclient_functions(const char* designator);
 FirebirdConnection* firebird_create_connection_wrapper(void);
 void firebird_destroy_connection_wrapper(FirebirdConnection* fb_conn);
 
-// Firebird-specific utility for connection-string building
+// Firebird-specific utility for DPB building
 // (shared between utils.c and connection.c)
-char* firebird_build_attach_string(const ConnectionConfig* config);
+char* firebird_build_attach_string(const ConnectionConfig* config, size_t* out_dpb_len);
 
 // Firebird-specific utility for connection-string building
 // (shared between utils.c and connection.c)

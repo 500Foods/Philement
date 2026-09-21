@@ -20,20 +20,22 @@ void validate_migration_config(const DatabaseConnection* conn, const char*** mes
 // Validate database configuration and count databases by type
 void validate_database_configuration(const DatabaseConfig* db_config, const char*** messages,
                                     size_t* count, size_t* capacity, bool* overall_readiness,
-                                    int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count) {
+                                    int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count, int* firebird_count) {
     // Queue configuration is validated during JSON parsing
     add_launch_message(messages, count, capacity, strdup("  Go:      Queue configuration validated"));
+
+    char* postgres_names = NULL;
+    char* mysql_names = NULL;
+    char* sqlite_names = NULL;
+    char* db2_names = NULL;
+    char* firebird_names = NULL;
 
     // Initialize counters
     *postgres_count = 0;
     *mysql_count = 0;
     *sqlite_count = 0;
     *db2_count = 0;
-
-    char* postgres_names = NULL;
-    char* mysql_names = NULL;
-    char* sqlite_names = NULL;
-    char* db2_names = NULL;
+    *firebird_count = 0;
 
     for (int i = 0; i < db_config->connection_count; i++) {
         const DatabaseConnection* conn = &db_config->connections[i];
@@ -93,6 +95,20 @@ void validate_database_configuration(const DatabaseConfig* db_config, const char
                         strcat(new_names, ", ");
                         strcat(new_names, new_name);
                         db2_names = new_names;
+                    }
+                }
+            } else if (strcmp(engine_type, "firebird") == 0) {
+                (*firebird_count)++;
+                if (*firebird_count == 1) {
+                    firebird_names = strdup(conn->connection_name ? conn->connection_name : "Unknown");
+                } else {
+                    const char* new_name = conn->connection_name ? conn->connection_name : "Unknown";
+                    size_t new_size = strlen(firebird_names) + 2 + strlen(new_name) + 1;
+                    char* new_names = realloc(firebird_names, new_size);
+                    if (new_names) {
+                        strcat(new_names, ", ");
+                        strcat(new_names, new_name);
+                        firebird_names = new_names;
                     }
                 }
             }
@@ -160,6 +176,19 @@ void validate_database_configuration(const DatabaseConfig* db_config, const char
         // Note: db2_names is freed by caller in test environment
     }
 
+    if (*firebird_count > 0 && firebird_names) {
+        char* firebird_msg = malloc(512);
+        if (firebird_msg) {
+            if (*firebird_count > 3) {
+                firebird_names[50] = 0;
+                snprintf(firebird_msg, 512, "  Go:      Firebird Databases: %d (%s...)", *firebird_count, firebird_names);
+            } else {
+                snprintf(firebird_msg, 512, "  Go:      Firebird Databases: %d (%s)", *firebird_count, firebird_names);
+            }
+            add_launch_message(messages, count, capacity, firebird_msg);
+        }
+    }
+
     // Handle cases with 0 databases
     if (*postgres_count == 0) {
         add_launch_message(messages, count, capacity, strdup("  Go:      PostgreSQL Databases: 0"));
@@ -177,8 +206,12 @@ void validate_database_configuration(const DatabaseConfig* db_config, const char
         add_launch_message(messages, count, capacity, strdup("  Go:      DB2 Databases: 0"));
     }
 
+    if (*firebird_count == 0) {
+        add_launch_message(messages, count, capacity, strdup("  Go:      Firebird Databases: 0"));
+    }
+
     // Total database count check
-    int total_databases = *postgres_count + *mysql_count + *sqlite_count + *db2_count;
+    int total_databases = *postgres_count + *mysql_count + *sqlite_count + *db2_count + *firebird_count;
     if (total_databases == 0) {
         add_launch_message(messages, count, capacity, strdup("  No-Go:   No databases configured - database subsystem not needed"));
         *overall_readiness = false;
@@ -199,7 +232,7 @@ void validate_database_configuration(const DatabaseConfig* db_config, const char
 
 // Check library dependencies for database engines
 void check_database_library_dependencies(const char*** messages, size_t* count, size_t* capacity, bool* overall_readiness,
-                                       int postgres_count, int mysql_count, int sqlite_count, int db2_count) {
+                                       int postgres_count, int mysql_count, int sqlite_count, int db2_count, int firebird_count) {
     // Check PostgreSQL library if needed
     if (postgres_count > 0) {
         void* libpq_handle = dlopen("libpq.so.5", RTLD_LAZY);
@@ -387,6 +420,41 @@ void check_database_library_dependencies(const char*** messages, size_t* count, 
 
             free(loaded_version);
             dlclose(db2_handle);
+        }
+    }
+
+    // Check Firebird library if needed
+    if (firebird_count > 0) {
+        void* libfbclient_handle = dlopen("libfbclient.so.2", RTLD_LAZY);
+        if (!libfbclient_handle) {
+            libfbclient_handle = dlopen("libfbclient.so", RTLD_LAZY);
+            if (!libfbclient_handle) {
+                libfbclient_handle = dlopen("libfbclient2.so", RTLD_LAZY);
+            }
+        }
+
+        if (!libfbclient_handle) {
+            const char* error_msg = dlerror();
+            char* lib_msg = malloc(512);
+            if (lib_msg) {
+                snprintf(lib_msg, 512, "  No-Go:   Firebird library not found: %s", error_msg ? error_msg : "unknown error");
+                add_launch_message(messages, count, capacity, lib_msg);
+            }
+            *overall_readiness = false;
+        } else {
+            char* loaded_version = get_library_version(libfbclient_handle, "Firebird");
+            char* lib_msg = malloc(512);
+            if (lib_msg) {
+                if (loaded_version && strlen(loaded_version) > 0) {
+                    snprintf(lib_msg, 512, "  Go:      Firebird library loaded successfully (libfbclient.so %s)", loaded_version);
+                } else {
+                    snprintf(lib_msg, 512, "  Go:      Firebird library loaded successfully (libfbclient.so version-unknown)");
+                }
+                add_launch_message(messages, count, capacity, lib_msg);
+            }
+
+            free(loaded_version);
+            dlclose(libfbclient_handle);
         }
     }
 }
@@ -633,16 +701,16 @@ LaunchReadiness check_database_launch_readiness(void) {
     }
 
     // Validate database configuration
-    int postgres_count, mysql_count, sqlite_count, db2_count;
+    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count;
     validate_database_configuration(&app_config->databases, &messages, &count, &capacity, &overall_readiness,
-                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count);
+                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count);
 
-    int total_databases = postgres_count + mysql_count + sqlite_count + db2_count;
+    int total_databases = postgres_count + mysql_count + sqlite_count + db2_count + firebird_count;
 
     // For non-zero database count, check library dependencies
     if (total_databases > 0) {
         check_database_library_dependencies(&messages, &count, &capacity, &overall_readiness,
-                                          postgres_count, mysql_count, sqlite_count, db2_count);
+                                         postgres_count, mysql_count, sqlite_count, db2_count, firebird_count);
     }
 
     // Validate individual database connections

@@ -162,15 +162,15 @@
             },
             {
                 "Enabled": true,
-                "Name": "Demo_CR",
-                "Engine": "${env.ACURANZO_DB_TYPE}",
-                "Host": "${env.ACURANZO_DB_HOST}",
-                "Port": "${env.ACURANZO_DB_PORT}",
-                "Database": "${env.ACURANZO_DB_NAME}",
-                "User": "${env.ACURANZO_DB_USER}",
-                "Pass": "${env.ACURANZO_DB_PASS}",
+                "Name": "Demo_FB",
+                "Engine": "firebird",
+                "Host": "localhost",
+                "Port": 3050,
+                "Database": "${env.FIREBIRD_DB_PATH}",
+                "User": "SYSDBA",
+                "Pass": "${env.FIREBIRD_SYSDBA_PASSWORD}",
                 "StmtCache": 100,
-                "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM democrdb.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
+                "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
                 "AutoMigration": true,
                 "TestMigration": false,
                 "Parameters": {
@@ -178,14 +178,13 @@
                     "IPADDRESS": "10.10.10.10",
                     "LOGINID": "${env.HYDROGEN_DEMO_USER_NAME}"
                 },
-                "Schema": "democrdb",
+                "Schema": "",
                 "Migrations": "PAYLOAD:acuranzo",
                 "Queues": {
                     "Slow": {
                         "start": 2
                     }
-                },
-                "MaxQueriesPerRequest": 12
+                }
             },
             {
                 "Enabled": true,

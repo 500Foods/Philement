@@ -30,10 +30,10 @@ Tests a 7x2 matrix where each database's JWT token is used to query two other da
 |--------------|---------------|
 | PostgreSQL | MySQL, SQLite |
 | MySQL | DB2, MariaDB |
-| SQLite | CockroachDB, YugabyteDB |
+| SQLite | Firebird, YugabyteDB |
 | DB2 | PostgreSQL, MySQL |
-| MariaDB | SQLite, CockroachDB |
-| CockroachDB | DB2, YugabyteDB |
+| MariaDB | SQLite, Firebird |
+| Firebird | DB2, YugabyteDB |
 | YugabyteDB | PostgreSQL, SQLite |
 
 This validates that JWT tokens can be used to query databases different from the one used during login.

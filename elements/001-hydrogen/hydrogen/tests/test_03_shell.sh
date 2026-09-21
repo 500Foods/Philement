@@ -5,6 +5,7 @@
 # Validates that required and optional environment variables are properly configured
 
 # CHANGELOG
+# 1.4.6 - 2026-09-21 - Added FIREBIRD_DB_USER and FIREBIRD_DB_PASS env vars (Test 37, 40)
 # 1.4.5 - 2026-09-19 - Added FIREBIRD_SYSDBA_PASSWORD and FIREBIRD_DB_PATH env vars (Test 37, 40)
 # 1.4.4 - 2026-09-12 - Whitelist TERMINAL_WS_HELPERS_* and remaining Test 26 lib globals
 # 1.4.3 - 2026-08-27 - Whitelist MCP_HELPERS_* from tests/lib/mcp_helpers.sh
@@ -38,7 +39,7 @@ TEST_NAME="Shell Variables"
 TEST_ABBR="ZSH"
 TEST_NUMBER="03"
 TEST_COUNTER=0
-TEST_VERSION="1.4.5"
+TEST_VERSION="1.4.6"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "${HYDROGEN_ROOT}/tests/lib/framework.sh"
@@ -308,6 +309,8 @@ declare -a ENV_WHITELIST=(
     "DB_NAME" "DB_PATH" "FIREBIRD_HOST" "FIREBIRD_PORT" "FIREBIRD_SERVICE"
     "FIREBIRD_SYSDBA_PASSWORD" "MAX_WAIT" "SERVER" "SYSDBA" "WAITED"    
     "FIREBIRD_INCLUDE" "SO_BROTLI" "SO_JSON" "UDR_DIR"
+    "EUID" "FIREBIRD_CREATE_DB_SCRIPT" "FIREBIRD_EXTRAS_DIR" "FIREBIRD_START_SCRIPT"
+    "FIREBIRD_STOP_SCRIPT" "FIREBIRD_USER" "LOCKDIR" "SECPATH"
     # first found in extras/mailval/gen_sert.sh
     "CERT" "HERE" "KEY" 
     # First found in extras/schematool.sh
@@ -410,8 +413,10 @@ declare -a ENV_VARS=(
     "HYDROTST_DB_TYPE|30-35|Acuranzo database type|Type of the Acuranzo database (e.g., postgres)."
 
     # Firebird demo
-    "FIREBIRD_SYSDBA_PASSWORD|37,40|Firebird sysadmin password|Password for the Firebird SYSDBA user. Maps to Hydrogen Pass."
+    "FIREBIRD_SYSDBA_PASSWORD|37,40|Firebird sysadmin password|Password for the Firebird SYSDBA user. Used by create_test_db.sh for initial database creation. Maps to Hydrogen Pass."
     "FIREBIRD_DB_PATH|37,40|Firebird database path|Filesystem path to the Firebird database file. Maps to Hydrogen Database."
+    "FIREBIRD_DB_USER|37,40|Firebird database user|Username for the Firebird database account used by tests (non-SYSDBA). Falls back to SYSDBA."
+    "FIREBIRD_DB_PASS|37,40|Firebird database password|Password for the Firebird database account used by tests. Falls back to FIREBIRD_SYSDBA_PASSWORD."
 
     # Cap server aka ChaCha 
     "CHACHA_SECRET|56|ChaCha (Cap) Server secret|Secret key."

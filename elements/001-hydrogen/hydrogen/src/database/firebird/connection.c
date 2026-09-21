@@ -184,28 +184,78 @@ bool firebird_connect(ConnectionConfig* config, DatabaseHandle** connection, con
         return false;
     }
 
-    char* attach_params = firebird_build_attach_string(config);
+    size_t dpb_len = 0;
+    char* attach_params = firebird_build_attach_string(config, &dpb_len);
     if (!attach_params) {
         log_this(log_subsystem, "Firebird connection failed: attach string allocation failed", LOG_LEVEL_ERROR, 0);
         firebird_destroy_connection_wrapper(fb_conn);
         return false;
     }
 
+    // Build the dbname string. Firebird isc_attach_database expects:
+    //   - Embedded mode: a bare filesystem path like "/var/lib/.../test.fdb"
+    //   - Network mode:  "host:/path/to/db.fdb" or "host:port:/path/to/db.fdb"
     const char* db_path = config->database ? config->database : "";
+    char* db_name = NULL;
+
+    if (config->host && *config->host &&
+        strcmp(config->host, "localhost") != 0 &&
+        strcmp(config->host, "127.0.0.1") != 0) {
+        // Remote host — build "host:port:/path" or "host:/path"
+        size_t host_len = strlen(config->host);
+        size_t path_len = strlen(db_path);
+        db_name = malloc(host_len + path_len + 32);
+        if (!db_name) {
+            free(attach_params);
+            firebird_destroy_connection_wrapper(fb_conn);
+            return false;
+        }
+        if (config->port > 0) {
+            snprintf(db_name, host_len + path_len + 32, "%s:%d:/%s", config->host, config->port, db_path);
+        } else {
+            snprintf(db_name, host_len + path_len + 32, "%s:/%s", config->host, db_path);
+        }
+    } else if (config->host && *config->host &&
+               (strcmp(config->host, "localhost") == 0 ||
+                strcmp(config->host, "127.0.0.1") == 0)) {
+        // Local network connection — use "host:port:/path" format
+        size_t host_len = strlen(config->host);
+        size_t path_len = strlen(db_path);
+        db_name = malloc(host_len + path_len + 32);
+        if (!db_name) {
+            free(attach_params);
+            firebird_destroy_connection_wrapper(fb_conn);
+            return false;
+        }
+        if (config->port > 0) {
+            snprintf(db_name, host_len + path_len + 32, "%s:%d:/%s", config->host, config->port, db_path);
+        } else {
+            snprintf(db_name, host_len + path_len + 32, "%s:%s", config->host, db_path);
+        }
+    } else {
+        // Embedded mode — just the bare path
+        db_name = strdup(db_path);
+        if (!db_name) {
+            free(attach_params);
+            firebird_destroy_connection_wrapper(fb_conn);
+            return false;
+        }
+    }
 
     fb_status_t status[FB_STATUS_LENGTH];
     memset(status, 0, sizeof(status));
 
     fb_status_t result = isc_attach_database_ptr(
         status,
-        (short)(db_path ? strlen(db_path) : 0),
-        db_path,
+        (short)(db_name ? strlen(db_name) : 0),
+        db_name,
         &fb_conn->db_handle,
-        0,
+        (short)dpb_len,
         attach_params
     );
 
     free(attach_params);
+    free(db_name);
 
     if (result != FB_SQL_SUCCESS && result != FB_SQL_SUCCESS_INFO) {
         firebird_status_to_error(status, log_subsystem);

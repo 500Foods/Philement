@@ -10,16 +10,16 @@
 #define DATABASE_ENGINE_FIREBIRD_TYPES_H
 
 #include <src/database/database.h>
+#include <stdint.h>
 
 /*
  * Firebird / IBase type aliases (we do not include <ibase.h> in the build
  * to avoid requiring firebird-devel on every dev box; Unity tests mock
- * these via USE_MOCK_LIBFBC). The real libfbclient signatures are:
- *   isc_status_t = signed short (ISC_STATUS array element)
- *   ISC_STATUS   = unsigned long on some platforms, signed short on others.
- * We use a broad int-compatible type.
+ * these via USE_MOCK_LIBFBC). The real libfbclient signatures use:
+ *   ISC_STATUS = intptr_t (typically long on 64-bit).
+ * We use intptr_t so the status vector has the correct element size.
  */
-typedef short fb_status_t;          /* ISC_STATUS (array element) */
+typedef intptr_t fb_status_t;       /* ISC_STATUS (array element) */
 typedef unsigned char fb_uchar_t;
 
 /*
@@ -102,5 +102,15 @@ typedef struct FirebirdConnection {
 
 /* Firebird isc_status sentinel: 20-element status vector */
 #define FB_STATUS_LENGTH        20
+
+/*
+ * Firebird DPB (Database Parameter Buffer) constants.
+ * These mirror the values in ibase.h / consts_pub.h so we do
+ * not need to include ibase.h in the build (kept from design).
+ */
+#define FB_DPB_VERSION1         1
+#define FB_DPB_USER_NAME        28
+#define FB_DPB_PASSWORD         29
+#define FB_DPB_SQL_ROLE_NAME    76
 
 #endif // DATABASE_ENGINE_FIREBIRD_TYPES_H

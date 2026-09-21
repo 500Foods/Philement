@@ -35,7 +35,7 @@ The test runs in parallel against all configured engines:
 - SQLite
 - DB2
 - MariaDB
-- CockroachDB
+- Firebird
 - YugabyteDB
 
 ## Config Files
@@ -45,10 +45,10 @@ The test runs in parallel against all configured engines:
 - `tests/configs/hydrogen_test_58_sqlite.json`
 - `tests/configs/hydrogen_test_58_db2.json`
 - `tests/configs/hydrogen_test_58_mariadb.json`
-- `tests/configs/hydrogen_test_58_cockroachdb.json`
+- `tests/configs/hydrogen_test_58_firebird.json`
 - `tests/configs/hydrogen_test_58_yugabytedb.json`
 
-The script overrides the web port, mailval port, TLS settings, and `Servers[0].CAPath` (absolute mailval cert path for STARTTLS) in each config at runtime, so a single config file per engine supports both plaintext and STARTTLS variants. Secrets and database connection parameters are injected via `${env.*}` variables resolved by the config loader. `Queue.Persist` is on for all 7 engines (mysql, mariadb, postgres, yugabytedb, sqlite, db2, cockroachdb).
+The script overrides the web port, mailval port, TLS settings, and `Servers[0].CAPath` (absolute mailval cert path for STARTTLS) in each config at runtime, so a single config file per engine supports both plaintext and STARTTLS variants. Secrets and database connection parameters are injected via `${env.*}` variables resolved by the config loader. `Queue.Persist` is on for all 7 engines (mysql, mariadb, postgres, yugabytedb, sqlite, db2, firebird).
 
 Helpers live in [`/elements/001-hydrogen/hydrogen/tests/lib/mailrelay_api_helpers.sh`](/elements/001-hydrogen/hydrogen/tests/lib/mailrelay_api_helpers.sh). Each engine runs plaintext then STARTTLS in one job (at most four engine jobs at once) so a full-suite 50s batch does not start 14 Hydrogen processes at the same time. Engines start in a fixed order with Yugabyte last so the slowest Persist/QTC path is not in the first wave.
 

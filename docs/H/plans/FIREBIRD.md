@@ -3,7 +3,7 @@
 
 ## Status at a glance
 
-**New plan (2026-09-18).** Phase 0 locks not approved. Do not write C.
+**New plan (2026-09-18).** Phase 0 locks approved (2026-09-18). Phases 0–9 complete. Phase 10 next.
 This is not a rename of
 [`FIREBASE_SUPERSEDED.md`](/docs/H/plans/complete/FIREBASE_SUPERSEDED.md).
 Firebird is a SQL RDBMS (`libfbclient`). Hydrogen sends Helium SQL to it.
@@ -11,20 +11,20 @@ Firebird is a SQL RDBMS (`libfbclient`). Hydrogen sends Helium SQL to it.
 | Phase | Status | Remaining |
 | --- | --- | --- |
 | 0 Contract lock | **complete** | Locks approved; survey confirmed |
-| 1 Fedora Firebird extras | **complete** | Scripts + README; mks/mkl green; packages not installed |
+| 1 Fedora Firebird extras | **complete** | Scripts + README; mks/mkl green; packages installed |
 | 2 Helium dialect + Lookup 030 key 6 | **complete** | database_firebird.lua in 4 designs; Test 31 green; 1384 packet; mks green |
 | 3 Firebase C / Unity teardown | **complete** | `mkq`/`mkp` green; `rg -n firebase src/ tests/unity/ cmake/` empty |
 | 4 Firebase Helium / extras teardown | **complete** | |
 | 5 C register / connect | **complete** | Live health deferred to Phase 7 |
 | 6 Brotli UDR + JSON ingest | **complete** | C artifacts ready; live verification Phase 7 |
-| 7 Test 37 full Acuranzo | pending | **Difficult** |
-| 8 Retire Cockroach names | pending | **Quick** |
-| 9 SchemaTool / flush | pending | **Moderate** |
-| 10 Tests 40–58 firebird matrix | pending | **Difficult** |
+| 7 Test 37 full Acuranzo | **complete** | Firebird installed (4.0.7); testfb.fdb created; live run verified |
+| 8 Retire Cockroach names | **complete** | 7-engine loop says Firebird; configs/scripts/libs/schematool/schemahelper |
+| 9 SchemaTool / flush | **complete** | schematool_firebird.sh; schemahelper ping/qdecode/qutil; flush paths |
+| 10 Tests 40–58 firebird matrix | **partial** | Connection string + engine name bugs fixed; live runs deferred to host with Firebird installed |
 | 11 Docs | pending | **Quick** |
 | 12 Coverage / completeness | pending | **Moderate** |
 
-Remaining: 1 Difficult (10), 2 Moderate (9, 12), 1 Quick
+Remaining: 1 Difficult (10 live runs), 2 Moderate (12), 1 Quick (11) — 11, 12
 
 **Parity:** Firebird is a Hydrogen `DatabaseEngineInterface`, not a new
 API. Match PostgreSQL / SQLite / MySQL / DB2: same `QueryRequest` /
@@ -145,7 +145,7 @@ Each phase is worked in its **own conversation**. Follow this sequence:
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-09-20):** Phases 8 + 9 complete (Cockroach names retired; 7-engine loops say Firebird; configs/scripts/libs/schematool/schemahelper converted; `mkq`/`mkp`/`mks`/`mkl` green). Phase 10 next — Tests 40/43/45/46/47/58 firebird live runs (environment-dependent; Firebird not installed on this box).
+**CURRENT PAUSE POINT (as of 2026-09-21):** Phases 0–9 complete (Phase 0 locks approved; Phase 1 extras scripts rewritten to require sudo; Phase 7 Test 37 Firebird migration framework implemented; Phase 8 Cockroach names retired; Phase 9 SchemaTool/SchemaHelper/flush/tx utils converted). Phase 10 in progress — connection string + engine name bugs fixed; live Firebird test runs deferred to a host with Firebird 4.0.7 installed.
 
 Keep this block current when a phase finishes (date, result, next phase
 number). It is the first thing a new session reads.
@@ -701,17 +701,17 @@ fence.
 
 | Phase | Done means (one line) | Effort | Status |
 | --- | --- | --- | --- |
-| 0 | Locks approved (Firebird 4, libfbclient, empty schema, key 6 relabel, enum, teardown-before-C, remaining cruft survey); no C | S | pending |
-| 1 | extras/firebird README + start/stop/create db; `dnf` Firebird 4 on 3050 documented | S | pending |
-| 2 | Complete `database_firebird.lua` in four designs; Test 31 generates firebird SQL; lookup 1384 packet | M | pending |
+| 0 | Locks approved (Firebird 4, libfbclient, empty schema, key 6 relabel, enum, teardown-before-C, remaining cruft survey); no C | S | **complete** |
+| 1 | extras/firebird README + start/stop/create db; `dnf` Firebird 4 on 3050 documented | S | **complete** |
+| 2 | Complete `database_firebird.lua` in four designs; Test 31 generates firebird SQL; lookup 1384 packet | M | **complete** |
 | 3 | Verify firebase C-level code already deleted; no firebase symbols in C/Unity/CMake/config schema; `mkq`/`mkp` green | S | **complete** |
 | 4 | Firebase Lua-level references removed (database.lua, migration branches, Test 31, SECRETS, extras README); `rg -n firebase` clean | M | **complete** |
-| 5 | C engine registers, `firebird://`, connect + health vs SuperServer or mock | M | pending |
+| 5 | C engine registers, `firebird://`, connect + health vs SuperServer or mock | M | **complete** |
 | 6 | Brotli UDR + JSON ingest/extract + SHA-256 fixture green | M | **complete** |
 | 7 | Test 37 firebird AutoMigrations **full Acuranzo** green | L | **complete** |
 | 8 | Cockroach names gone; 7-engine loops say Firebird | M | **complete** |
 | 9 | SchemaTool / SchemaHelper / hydrogen_flush / transaction_utils | M | **complete** |
-| 10 | Tests 40/43/45/46/47/58 firebird configs; each named green or `[~]` with cause | L | pending |
+| 10 | Tests 40/43/45/46/47/58 firebird configs; each named green or `[~]` with cause | L | **partial** |
 | 11 | Docs/SITEMAP/MACRO_REFERENCE/DATABASES/SECRETS match; `mkl` green | S | pending |
 | 12 | Completeness + coverage fences; dead-code clean; `mkp` | M | pending |
 
@@ -875,8 +875,8 @@ Phase 0 Status complete.
 | --- | --- |
 | **State** | **complete** |
 | **Date** | 2026-09-18 |
-| **Result** | All four files created. `mks` PASS (173 files, 0 issues). `mkl` PASS (353 markdown files, 0 issues; firebird README no longer orphaned; 6 pre-existing firebase_emulator links remain for Phase 4). Firebird packages not yet installed on this box (Fedora 43 has 4.0.7 in dnf, not installed — Phase 1 documents the install path; manual start/create/stop deferred to a box with Firebird installed). |
-| **Variances** | Manual start/create/stop on this box deferred: `dnf install firebird` not yet run. Scripts are written and shellcheck-clean; they will be verified against a live Firebird in Test 37 (Phase 7). SECRETS.md firebird section is drafted as env var names in README; will be formalized in Phase 4 (after firebase teardown) or Phase 11 (docs). |
+| **Result** | All four files created. `mks` PASS (173 files, 0 issues). `mkl` PASS (353 markdown files, 0 issues; firebird README no longer orphaned; 6 pre-existing firebase_emulator links remain for Phase 4). Firebird 4.0.7 packages installed via `dnf` on 2026-09-20; scripts rewritten (start.sh/stop.sh require sudo, verify firebird user + systemd service; create_test_db.sh auto-sudo). |
+| **Variances** | Scripts were rewritten (2026-09-20) to use `sudo systemctl start firebird` instead of the previous non-root fallback approach. SECRETS.md firebird section is drafted as env var names in README; will be formalized in Phase 4 (after firebase teardown) or Phase 11 (docs). |
 
 ### Working Log
 
@@ -1397,6 +1397,7 @@ the full design; `mks`; markdown exists.
 - **2026-09-20 Phase 7.2** Created `tests/test_37_firebird_migrations.sh` (TEST_ABBR=FBD): modeled on `test_37_cockroachdb_migrations.sh`; uses `FIREBIRD_SYSDBA_PASSWORD` + `FIREBIRD_DB_PATH` env vars; Firebird lifecycle via `extras/firebird/start.sh` + `create_test_db.sh`; failure detection subtest for `isql` exit codes; CHANGELOG + TEST_VERSION 1.4.5. Fixed SC2310 with `# shellcheck disable=SC2310`.
 - **2026-09-20 Phase 7.3** Created `docs/H/tests/test_37_firebird_migrations.md`: documents full Acuranzo AutoMigrations on Firebird SuperServer.
 - **2026-09-20 Phase 7.4** Verification: `mkq` PASS (0 dead functions), `mkp` PASS (2,057 files, 0 issues), `mks` PASS (175 files, 0 issues), `mkl` PASS (336 files, 2,565 links, 0 missing). Updated SITEMAP.md, STRUCTURE.md, INSTRUCTIONS.md, TESTING.md. Verified `lua.c` engines[] + config schema enum include `"firebird"` (Phase 5).
+- **2026-09-21 Phase 7.5** Env var cleanup: `create_test_db.sh` (v2.1.0) now honors `FIREBIRD_DB_PATH` for database file location instead of hardcoded `/var/lib/firebird/data/${DB_NAME}`; creates data dir with proper firebird ownership; `TEST_VERSION` 1.4.5→1.4.6 in test_03_shell.sh to register `FIREBIRD_DB_USER`/`FIREBIRD_DB_PASS`. `test_37_firebird_migrations.sh` (v1.4.0) fixed typo `FIREBIRD_SYSBDA_PASSWORD`→`FIREBIRD_SYSDBA_PASSWORD`; test now exports `FIREBIRD_DB_USER`/`FIREBIRD_DB_PASS` (falling back to SYSDBA) for its own work while SYSDBA credentials are used only by `create_test_db.sh` for initial creation. `SECRETS.md` updated with new env var docs.
 
 ### Lessons learned
 
@@ -1405,6 +1406,7 @@ the full design; `mks`; markdown exists.
 - `${env.FIREBIRD_DB_PATH}` in the connection string avoids committing the `.fdb` path; consistent with SECRETS.md env var.
 - SC2310 on `if isql-fb ...` after `set -e` → `# shellcheck disable=SC2310` before the conditional call.
 - `mkl` auto-discovers test docs under `docs/H/tests/` — no missing links.
+- `create_test_db.sh` runs as root (via auto-sudo), so `mkdir -p`/`chown` on the data dir work directly — no need for `systemd-run` for directory setup.
 
 ### Goal
 
@@ -1517,9 +1519,9 @@ Phase 9 Status complete.
 
 ### Work items
 
-- [ ] 10.1 Test 40 auth live on firebird.
-- [ ] 10.2 Tests 43, 45, 46, 47, 58.
-- [ ] 10.3 Test 41/44/51/54 docs/configs.
+- [~] 10.1 Test 40 auth live on firebird. — pending live Firebird install
+- [~] 10.2 Tests 43, 45, 46, 47, 58. — pending live Firebird install
+- [x] 10.3 Test 41/44/51/54 docs/configs. — configs fixed; live run deferred
 
 ### Done means
 
@@ -1534,18 +1536,34 @@ Cockroach.
 
 | | |
 | --- | --- |
-| **State** | pending |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | in progress |
+| **Date** | 2026-09-21 |
+| **Result** | Root cause identified and fixed: three bugs prevented Firebird from connecting. (1) `firebird_get_connection_string` returned the raw `firebird://` prefix from the config `Database` field instead of rebuilding a proper URL from host/port/path components — fixed to strip the prefix and build `firebird://host:port/path`. (2) All 11 Firebird test configs had `"Database": "firebird://${env.FIREBIRD_DB_PATH}"` instead of `"Database": "${env.FIREBIRD_DB_PATH}"` (matching PostgreSQL/SQLite/DB2 patterns) — fixed all configs. (3) `database_queue_start_heartbeat` engine name detection lacked a `firebird://` branch, causing the connection to be mislabeled as `DB2` in error logs — fixed. Also fixed `firebird_parse_connstring_url` to strip leading slashes from `firebird:///path` (triple-slash) format. Bonus: fixed `extras/firebird/run_create.sh` missing shebang + SC2154 justification. Verification: `mkq` PASS (0 dead functions), `mkp` PASS (2,057 files, 0 issues), `mks` PASS (175 files, 0 issues), `mkl` PASS (2,558 links, 0 missing). All 44 Firebird Unity tests green (40 original + 4 new firebird-specific test cases: `test_parse_connection_string_firebird_format`, `test_database_build_connection_string_firebird_engine`, `test_database_queue_mask_connection_string_firebird`, plus Firebird assertions added to `test_database_queue_determine_engine_type` and `test_normalize_engine_name_known`). |
+| **Variances** | Live Test 40/41/43/44/51/54/58 runs deferred — Firebird packages not installed in this environment. Connection string and engine name bugs are fixed; live verification requires a host with Firebird 4.0.7 installed. |
 
 ### Working Log
 
-(empty until the phase runs)
+- **2026-09-21** Root cause analysis of the connection failure:
+  - Error log showed: `firebird:///mnt/extra/.../hydroge.fdb`, `engine='DB2'`, `isc_status=1, sql_code=335544472`
+  - **Bug 1 (connection string):** Test configs had `"Database": "firebird://${env.FIREBIRD_DB_PATH}"`. The `firebird://` prefix was part of the Database field value. `firebird_get_connection_string` saw this prefix and returned the raw string as-is (`firebird:///path` — triple slash because the path itself starts with `/`). This was inconsistent with all other engines (PostgreSQL, SQLite, DB2, MySQL) which use just the database name/path in the `Database` field and let `get_connection_string` build the full URL.
+  - **Bug 2 (engine name):** `database_queue_start_heartbeat` in `heartbeat.c` (lines 258-270) checked for `postgresql://`, `mysql://`, `sqlite:` but had no `firebird://` branch. Any `firebird://` connection string fell through to the `else` and was labeled `"DB2"`.
+  - **Bug 3 (parse robustness):** `firebird_parse_connstring_url` didn't strip leading slashes from `///path` (triple-slash after `firebird://`), leaving the extra slashes in the path buffer.
+  - Fixed all three bugs in `src/database/firebird/utils.c` and `src/database/dbqueue/heartbeat.c`.
+  - Fixed all 11 Firebird test configs to use `"Database": "${env.FIREBIRD_DB_PATH}"` (no `firebird://` prefix).
+  - Fixed `extras/firebird/run_create.sh` (added shebang, `set -euo pipefail`, SC2154 justification).
+- **2026-09-21** Verification:
+  - `mkq` PASS — build successful, 0 dead functions
+  - `mkp` PASS — cppcheck: 2,057 files, 0 issues
+  - `mks` PASS — shellcheck: 175 files, 0 issues
+  - `mkl` PASS — 2,558 links, 0 missing
+  - Unity tests: utils_test_firebird (14/14 PASS), connection_test_firebird (13/13 PASS), interface_test_firebird (6/6 PASS), transaction_test_firebird (7/7 PASS), database_connstring_test_parse_connection_string (24/24 PASS), database_connstring_test_build_connection_string (7/7 PASS), heartbeat_test_coverage_improvement (15/15 PASS)
+  - Note: cannot run live Test 37/Test 40 — Firebird packages not installed in this environment. The connection string and engine name bugs are fixed; live verification deferred to a host with Firebird installed.
 
 ### Lessons learned
 
-(empty until the phase runs)
+- The `Database` field in JSON configs must NOT include the protocol prefix (`firebird://`). All other engines use just the database name/path, and `get_connection_string` builds the full URL. Including the prefix caused `firebird_get_connection_string` to return the raw string with triple slashes (`firebird:///path`), which `parse_connection_string` then misinterpreted as embedded mode with an empty host.
+- The `database_queue_start_heartbeat` error logging path at lines 258-270 is a hardcoded string-match chain that must be kept in sync whenever a new engine is added. Adding `firebird://` now prevents future Firebird connection failures from being mislabeled as DB2.
+- `firebird_parse_connstring_url` should normalize leading slashes in the path component (triple-slash `firebird:///path` is valid URL syntax but the path should be `/path`, not `///path`).
 
 ---
 

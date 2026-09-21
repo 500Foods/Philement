@@ -273,7 +273,17 @@ if (*endptr == '\0') {
     return json_string(env_value);
 }
 
+/**
+ * Replace embedded ${env.NAME} references in a string with their values.
+ * Returns:
+ *   - Resolved string if the entire value is ${env.NAME} (legacy path)
+ *   - Resolved string if value contains one or more ${env.NAME} references
+ *   - NULL if no ${env.NAME} pattern is found (caller falls back to strdup)
+ */
 char* process_env_variable_string(const char* value) {
+    if (!value) return NULL;
+
+    // If the entire string is exactly ${env.NAME}, use the original fast path
     json_t *result = process_env_variable(value);
     if (result && json_is_string(result)) {
         char *env_string = strdup(json_string_value(result));
@@ -281,7 +291,102 @@ char* process_env_variable_string(const char* value) {
         return env_string;
     }
     json_decref(result);
-    return NULL;
+
+    // Check if there are any embedded ${env.NAME} references
+    const char* ref = strstr(value, "${env.");
+    if (!ref) {
+        return NULL;  // No embedded env vars at all
+    }
+
+    // Handle embedded env var references — build result by copying and replacing
+    size_t cap = strlen(value) + 1;
+    char* out = malloc(cap);
+    if (!out) return NULL;
+    size_t out_len = 0;
+    out[0] = '\0';
+
+    const char* p = value;
+    const char* ref_start = ref;
+
+    // Copy the part before the first ${env.
+    size_t prefix_len = (size_t)(ref_start - p);
+    if (out_len + prefix_len + 1 > cap) {
+        cap = out_len + prefix_len + 256;
+        char* tmp = realloc(out, cap);
+        if (!tmp) { free(out); return NULL; }
+        out = tmp;
+    }
+    memcpy(out + out_len, p, prefix_len);
+    out_len += prefix_len;
+    out[out_len] = '\0';
+
+    // Now process each ${env.NAME} reference
+    while (ref_start) {
+        // Skip past ${env. to get variable name
+        const char* var_start = ref_start + 6;  // past "${env."
+        const char* var_end = strchr(var_start, '}');
+        if (!var_end) break;  // Malformed — no closing brace
+
+        size_t var_name_len = (size_t)(var_end - var_start);
+        char* var_name = malloc(var_name_len + 1);
+        if (!var_name) {
+            free(out);
+            return NULL;
+        }
+        memcpy(var_name, var_start, var_name_len);
+        var_name[var_name_len] = '\0';
+
+        const char* env_val = getenv(var_name);
+        free(var_name);
+
+        if (env_val) {
+            size_t val_len = strlen(env_val);
+            if (out_len + val_len + 1 > cap) {
+                cap = out_len + val_len + 256;
+                char* tmp = realloc(out, cap);
+                if (!tmp) { free(out); return NULL; }
+                out = tmp;
+            }
+            memcpy(out + out_len, env_val, val_len);
+            out_len += val_len;
+            out[out_len] = '\0';
+        }
+
+        // Advance past the }
+        p = var_end + 1;
+
+        // Find next ${env.
+        ref = strstr(p, "${env.");
+        if (ref) {
+            ref_start = ref;
+            // Copy the part between this var and the next
+            size_t segment_len = (size_t)(ref - p);
+            if (out_len + segment_len + 1 > cap) {
+                cap = out_len + segment_len + 256;
+                char* tmp = realloc(out, cap);
+                if (!tmp) { free(out); return NULL; }
+                out = tmp;
+            }
+            memcpy(out + out_len, p, segment_len);
+            out_len += segment_len;
+            out[out_len] = '\0';
+        } else {
+            // Copy the remainder
+            size_t rem_len = strlen(p);
+            if (out_len + rem_len + 1 > cap) {
+                cap = out_len + rem_len + 256;
+                char* tmp = realloc(out, cap);
+                if (!tmp) { free(out); return NULL; }
+                out = tmp;
+            }
+            memcpy(out + out_len, p, rem_len);
+            out_len += rem_len;
+            out[out_len] = '\0';
+            break;
+        }
+    }
+
+    return out;
 }
 
 // Format and log a configuration value

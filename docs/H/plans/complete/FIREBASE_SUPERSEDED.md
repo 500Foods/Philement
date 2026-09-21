@@ -252,7 +252,9 @@ Test 31, and Test 71 all list **four** dialects. Cockroach never had
 
 ### How Cockroach actually runs
 
-[`hydrogen_test_37_cockroachdb.json`](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_37_cockroachdb.json):
+`hydrogen_test_37_cockroachdb.json` (now
+`hydrogen_test_37_firebird.json` under
+[`docs/H/plans/FIREBIRD.md`](/docs/H/plans/FIREBIRD.md)):
 
 - `"Engine": "${env.ACURANZO_DB_TYPE}"` (value `postgresql`)
 - Host/port/user/pass from `ACURANZO_DB_*` (same Postgres host as Test 32)
@@ -266,10 +268,10 @@ Replace in Phase 11, not before:
 
 | Path |
 | --- |
-| [`tests/test_37_cockroachdb_migrations.sh`](/elements/001-hydrogen/hydrogen/tests/test_37_cockroachdb_migrations.sh) |
-| [`docs/H/tests/test_37_cockroachdb_migrations.md`](/docs/H/tests/test_37_cockroachdb_migrations.md) |
-| `tests/configs/hydrogen_test_{37,40,43,45,46,47,58}_*cockroachdb*.json` (8 files; 43 has `_no_default`) |
-| [`extras/schematool/schematool_cockroachdb.sh`](/elements/001-hydrogen/hydrogen/extras/schematool/schematool_cockroachdb.sh) |
+| `tests/test_37_cockroachdb_migrations.sh` (renamed `test_37_firebird_migrations.sh`) |
+| `docs/H/tests/test_37_cockroachdb_migrations.md` (renamed `test_37_firebird_migrations.md`) |
+| `tests/configs/hydrogen_test_{37,40,43,45,46,47,58}_*cockroachdb*.json` (8 files; renamed `*_firebird.json`; 43 has `_no_default`) |
+| `extras/schematool/schematool_cockroachdb.sh` (renamed `schematool_firebird.sh`) |
 | `tests/artifacts/oidc_idp_keys_45_cockroachdb/` |
 
 Edit-in-place: Test 40/41/43/45/46/47/51/54/58 scripts and markdown;

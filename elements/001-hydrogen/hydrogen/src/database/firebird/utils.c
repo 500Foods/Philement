@@ -13,67 +13,142 @@
 #include "utils.h"
 
 /*
- * Build the Firebird DPB (Database Parameter Buffer) string for
- * isc_attach_database. Firebird DPB entries are semicolon-separated
- * key=value pairs, e.g.:
+ * Build the Firebird DBP (Database Parameter Buffer) for isc_attach_database.
  *
- *   "user = SYSDBA password = secret dbname = /var/lib/test.fdb"
+ * A binary DPB has the format:
+ *   [isc_dpb_version1] [dpb_key] [length] [data] ... (repeating key/length/data)
  *
- * The dbname (database path) is included here because isc_attach_database's
- * 4th argument is the attachment handle and the database path is the 3rd
- * positional argument in the C call — we pass it separately in connection.c,
- * but we also embed dbname in the DPB for compatibility.
+ * The dbname (database path) is NOT part of the DPB — it is passed as the
+ * 3rd argument to isc_attach_database (the "dbname" positional argument).
  *
- * Returns a malloc'd string the caller must free (or NULL on failure).
+ * Returns a malloc'd binary buffer the caller must free (or NULL on failure).
  */
-char* firebird_build_attach_string(const ConnectionConfig* config) {
+char* firebird_build_attach_string(const ConnectionConfig* config, size_t* out_dpb_len) {
     if (!config) {
         return NULL;
     }
 
     /*
-     * Estimate buffer size: each of user/password/dbname/schema up to 1024 chars
-     * plus key labels and separators, plus trailing NUL.
+     * Estimate buffer size: version byte + overhead per entry.
+     * Each entry: 1 (key) + 1 (length) + data. User/password up to 255 each.
      */
-    size_t bufsize = 5120;
+    size_t bufsize = 512;
     char* buf = calloc(1, bufsize);
     if (!buf) {
         return NULL;
     }
 
     size_t used = 0;
-    int n;
+
+    // DPB starts with version byte
+    buf[used++] = (char)FB_DPB_VERSION1;
+
+    // Helper macro to append a DPB entry: key, length, data
+    #define DPB_APPEND(key, data, data_len) do { \
+        if (used + 2 + (data_len) > bufsize) { \
+            size_t newsize = used + 2 + (data_len) + 256; \
+            char* tmp = realloc(buf, newsize); \
+            if (!tmp) { free(buf); return NULL; } \
+            buf = tmp; \
+            bufsize = newsize; \
+        } \
+        buf[used++] = (char)(key); \
+        buf[used++] = (char)(data_len); \
+        memcpy(buf + used, (data), (data_len)); \
+        used += (data_len); \
+    } while(0)
 
     if (config->username && *config->username) {
-        n = snprintf(buf + used, bufsize - used, "user = %s ", config->username);
-        if (n < 0 || (size_t)n >= bufsize - used) { free(buf); return NULL; }
-        used += (size_t)n;
-    }
-    if (config->password && *config->password) {
-        n = snprintf(buf + used, bufsize - used, "password = %s ", config->password);
-        if (n < 0 || (size_t)n >= bufsize - used) { free(buf); return NULL; }
-        used += (size_t)n;
-    }
-    if (config->database && *config->database) {
-        n = snprintf(buf + used, bufsize - used, "dbname = %s ", config->database);
-        if (n < 0 || (size_t)n >= bufsize - used) { free(buf); return NULL; }
-        used += (size_t)n;
-    }
-    if (config->schema && *config->schema) {
-        n = snprintf(buf + used, bufsize - used, "schema = %s ", config->schema);
-        if (n < 0 || (size_t)n >= bufsize - used) { free(buf); return NULL; }
-        used += (size_t)n;
+        size_t ulen = strlen(config->username);
+        if (ulen > 255) ulen = 255;
+        DPB_APPEND(FB_DPB_USER_NAME, config->username, ulen);
     }
 
-    (void)used;  // final accumulation is not read after this point
+    if (config->password && *config->password) {
+        size_t plen = strlen(config->password);
+        if (plen > 255) plen = 255;
+        DPB_APPEND(FB_DPB_PASSWORD, config->password, plen);
+    }
+
+    #undef DPB_APPEND
+
+    if (out_dpb_len) {
+        *out_dpb_len = used;
+    }
+
     return buf;
 }
 
 /*
- * Backwards-compatible wrapper: builds and returns the DPB string.
+ * Backwards-compatible wrapper: returns the firebird:// URL as a text
+ * connection string suitable for engine detection and config parsing.
+ * The binary DPB is built separately by firebird_build_attach_string
+ * at connect time (see connection.c).
  */
 char* firebird_get_connection_string(const ConnectionConfig* config) {
-    return firebird_build_attach_string(config);
+    if (!config) return NULL;
+
+    // The Database field in JSON configs may include the firebird:// prefix.
+    // Strip it so we can rebuild the URL from host/port/path components below,
+    // matching how PostgreSQL/MySQL/DB2 build their connection strings from
+    // separate config fields. Leading slashes left after stripping (e.g.
+    // firebird:///path → ///path) are also trimmed so the URL is well-formed.
+    const char* db_field = config->database;
+    char* stripped = NULL;
+    if (db_field && strncmp(db_field, "firebird://", 11) == 0) {
+        stripped = strdup(db_field + 11);
+        // Trim leading slashes so firebird:///path becomes /path
+        while (stripped && *stripped == '/') {
+            memmove(stripped, stripped + 1, strlen(stripped));
+        }
+        db_field = stripped;
+    }
+
+    size_t bufsize = 4096;
+    char* url = calloc(1, bufsize);
+    if (!url) { free(stripped); return NULL; }
+
+    size_t used = 0;
+    int n = snprintf(url + used, bufsize - used, "firebird://");
+    if (n < 0 || (size_t)n >= bufsize - used) { free(stripped); free(url); return NULL; }
+    used += (size_t)n;
+
+    if (config->host && *config->host) {
+        n = snprintf(url + used, bufsize - used, "%s", config->host);
+        if (n < 0 || (size_t)n >= bufsize - used) { free(stripped); free(url); return NULL; }
+        used += (size_t)n;
+
+        if (config->port > 0) {
+            n = snprintf(url + used, bufsize - used, ":%d", config->port);
+            if (n < 0 || (size_t)n >= bufsize - used) { free(stripped); free(url); return NULL; }
+            used += (size_t)n;
+        }
+
+        // db_field may already start with '/' (absolute path), so don't prepend another
+        const char* path_sep = (db_field && *db_field == '/') ? "" : "/";
+        n = snprintf(url + used, bufsize - used, "%s%s", path_sep, db_field ? db_field : "");
+        if (n < 0 || (size_t)n >= bufsize - used) { free(stripped); free(url); return NULL; }
+        used += (size_t)n;
+
+        if (config->username || config->password) {
+            n = snprintf(url + used, bufsize - used, "?user=%s", config->username ? config->username : "");
+            if (n < 0 || (size_t)n >= bufsize - used) { free(stripped); free(url); return NULL; }
+            used += (size_t)n;
+            if (config->password) {
+                n = snprintf(url + used, bufsize - used, "&password=%s", config->password);
+                if (n < 0 || (size_t)n >= bufsize - used) { free(stripped); free(url); return NULL; }
+                used += (size_t)n;
+            }
+        }
+    } else if (db_field) {
+        n = snprintf(url + used, bufsize - used, "%s", db_field);
+        if (n < 0 || (size_t)n >= bufsize - used) { free(stripped); free(url); return NULL; }
+        used += (size_t)n;
+    }
+
+    url[used] = '\0';
+    free(stripped);
+    return url;
 }
 
 /*
@@ -82,7 +157,6 @@ char* firebird_get_connection_string(const ConnectionConfig* config) {
  *   - firebird://HOST:PORT/PATH     (SuperServer)
  *   - firebird://HOST/PATH          (SuperServer, port 3050 default)
  *   - firebird://PATH               (embedded, path starts with / or bare filename)
- *   - A DPB-style string with "user =" / "password =" / "dbname ="
  */
 bool firebird_validate_connection_string(const char* connection_string) {
     if (!connection_string || *connection_string == '\0') {
@@ -97,13 +171,6 @@ bool firebird_validate_connection_string(const char* connection_string) {
     if (strncmp(connection_string, "firebird://", 11) == 0) {
         const char* after_proto = connection_string + 11;
         return (*after_proto != '\0');
-    }
-
-    // DPB form
-    if (strstr(connection_string, "user =") != NULL ||
-        strstr(connection_string, "password =") != NULL ||
-        strstr(connection_string, "dbname =") != NULL) {
-        return true;
     }
 
     return false;
@@ -249,6 +316,19 @@ bool firebird_parse_connstring_url(const char* conn_str,
     //   host/path                         — SuperServer
     //   host:3050/path                    — SuperServer with port
     //   host:3050:dir/path                — SuperServer with embedded port (alternate separator)
+    //
+    // If the path starts with '/', there is no host — it's an embedded/local
+    // database path, so the entire string is the database path.
+    // Strip leading slashes that arise from firebird:///path (triple slash
+    // after the protocol) so the path is /path not ///path.
+    while (path_out[0] == '/' && path_out[1] == '/') {
+        memmove(path_out, path_out + 1, strlen(path_out));
+    }
+    if (path_out[0] == '/') {
+        // Embedded mode — path_out already holds the full database path
+        return true;
+    }
+
     char* saveptr = NULL;
     char* segment = strtok_r(path_out, "/", &saveptr);
 
@@ -324,9 +404,7 @@ void firebird_status_to_error(const fb_status_t* status, const char* designator)
     fb_status_t fb_err = status[0];
     fb_status_t sql_code = status[1];
 
-    log_this(designator, "Firebird error: isc_status=%d, sql_code=%d", LOG_LEVEL_ERROR, 0);
-    (void)fb_err;
-    (void)sql_code;
+    log_this(designator, "Firebird error: isc_status=%d, sql_code=%d", LOG_LEVEL_ERROR, 2, fb_err, sql_code);
     // Note: real implementation would call isc_interpret / fb_sqlstate
     // to extract the human-readable message. Phase 5 skeleton logs the codes only.
 }

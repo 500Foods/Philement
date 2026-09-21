@@ -56,6 +56,8 @@ This document provides a comprehensive reference for all environment variables u
 8. [Database Credentials - Firebird (Firebird 4)](#8-database-credentials---firebird-firebird-4)
    - [FIREBIRD_SYSDBA_PASSWORD](#firebird_sysdba_password)
    - [FIREBIRD_DB_PATH](#firebird_db_path)
+   - [FIREBIRD_DB_USER](#firebird_db_user)
+   - [FIREBIRD_DB_PASS](#firebird_db_pass)
 
 ---
 
@@ -769,6 +771,34 @@ export FIREBIRD_SYSDBA_PASSWORD="your_sysdba_password"
 export FIREBIRD_DB_PATH="/var/lib/firebird/data/testfb.fdb"
 ```
 
+### FIREBIRD_DB_USER
+
+**Description:** Username for the Firebird database account used by tests
+(non-SYSDBA). Falls back to `SYSDBA` when unset. Used by `test_37_firebird_migrations.sh`
+and `connection_utils.sh` for verification queries. `FIREBIRD_SYSDBA_PASSWORD` is
+used only by `create_test_db.sh` for initial database creation.
+
+**Tests:** 37, 40
+
+**Setup:**
+
+```bash
+export FIREBIRD_DB_USER="test_user"
+```
+
+### FIREBIRD_DB_PASS
+
+**Description:** Password for the Firebird database account used by tests.
+Falls back to `FIREBIRD_SYSDBA_PASSWORD` when unset.
+
+**Tests:** 37, 40
+
+**Setup:**
+
+```bash
+export FIREBIRD_DB_PASS="your_test_password"
+```
+
 ---
 
 ## Quick Setup Script
@@ -843,6 +873,8 @@ export HYDROTST_DB_TYPE="db2"
 # Firebird (Firebird 4) - customize for your environment
 export FIREBIRD_SYSDBA_PASSWORD="your_sysdba_password"
 export FIREBIRD_DB_PATH="/var/lib/firebird/data/testfb.fdb"
+export FIREBIRD_DB_USER="SYSDBA"
+export FIREBIRD_DB_PASS="${FIREBIRD_SYSDBA_PASSWORD}"
 
 cd -
 echo "Environment setup complete!"

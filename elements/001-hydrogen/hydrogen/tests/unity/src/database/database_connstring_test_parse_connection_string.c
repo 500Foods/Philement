@@ -38,6 +38,7 @@ void test_parse_connection_string_db2_no_hostname(void);
 void test_parse_connection_string_db2_no_port(void);
 void test_parse_connection_string_db2_no_uid(void);
 void test_parse_connection_string_db2_no_pwd(void);
+void test_parse_connection_string_firebird_format(void);
 
 void setUp(void) {
     // Set up test fixtures if needed
@@ -398,6 +399,22 @@ void test_parse_connection_string_db2_no_uid(void) {
     free_connection_config(config);
 }
 
+// Test Firebird connection string format
+void test_parse_connection_string_firebird_format(void) {
+    const char* conn_str = "firebird://localhost:3050/var/lib/firebird/data/test.fdb?user=SYSDBA&password=secret";
+    ConnectionConfig* config = parse_connection_string(conn_str);
+
+    TEST_ASSERT_NOT_NULL(config);
+    TEST_ASSERT_EQUAL_STRING("localhost", config->host);
+    TEST_ASSERT_EQUAL(3050, config->port);
+    TEST_ASSERT_EQUAL_STRING("/var/lib/firebird/data/test.fdb", config->database);
+    TEST_ASSERT_EQUAL_STRING("SYSDBA", config->username);
+    TEST_ASSERT_EQUAL_STRING("secret", config->password);
+    TEST_ASSERT_EQUAL_STRING(conn_str, config->connection_string);
+
+    free_connection_config(config);
+}
+
 // Test DB2 connection string without PWD (covers line 487-500)
 void test_parse_connection_string_db2_no_pwd(void) {
     const char* conn_str = "DRIVER={IBM DB2 ODBC DRIVER};DATABASE=testdb;HOSTNAME=host;PORT=50000;UID=user;";
@@ -446,6 +463,7 @@ int main(void) {
     RUN_TEST(test_parse_connection_string_empty_string);
     RUN_TEST(test_parse_connection_string_db2_minimal);
     RUN_TEST(test_parse_connection_string_db2_quoted_values);
+    RUN_TEST(test_parse_connection_string_firebird_format);
 
     return UNITY_END();
 }

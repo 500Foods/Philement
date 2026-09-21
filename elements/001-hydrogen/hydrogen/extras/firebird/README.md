@@ -8,7 +8,7 @@ migration matrix (Test 37).
 ## Packages (Fedora 43 / dnf)
 
 ```bash
-sudo dnf install firebird libfbclient2 firebird-utils libfbclient2-devel firebird-devel
+sudo dnf install firebird firebird-utils firebird-devel libfbclient2 libfbclient2-devel
 ```
 
 | Package | Why |
@@ -17,7 +17,10 @@ sudo dnf install firebird libfbclient2 firebird-utils libfbclient2-devel firebir
 | `libfbclient2` | Runtime client library (`libfbclient.so`) |
 | `libfbclient2-devel` / `firebird-devel` | Headers (`ibase.h`) for linking Hydrogen |
 | `firebird-utils` | `isql-fb`, `gfix`, `nbackup` CLI tools |
-| `libbrotli` | Brotli library for the UDR extra (extras/brotli_udf_firebird) |
+
+The `firebird` package creates a **system user** named `firebird` and a **systemd
+service** named `firebird` (or `firebird-superserver` on some distributions).
+Both are required by the scripts in this directory.
 
 Firebird 4.0 on Fedora 43 is **4.0.7.3271**. Firebird 5 packages are only
 available on Fedora 44+ and are **not** required.
@@ -25,9 +28,7 @@ available on Fedora 44+ and are **not** required.
 ## SYSDBA Password
 
 The `SYSDBA` user is the Firebird superuser. On Fedora, the default password
-is set in `/etc/firebird/firebird.conf` under `RemoteAccess` and the password
-database `/var/lib/firebird/aliases.conf`. The default password is typically
-`masterkey` for a standalone install.
+is `masterkey`.
 
 **Never commit the SYSDBA password.** Set it via an environment variable:
 
@@ -58,19 +59,23 @@ The default data directory is `/var/lib/firebird/data/`.
 
 ## Scripts
 
-- `/elements/001-hydrogen/hydrogen/extras/firebird/start.sh` — Starts the Firebird service if not running; waits for port 3050.
-- `/elements/001-hydrogen/hydrogen/extras/firebird/stop.sh` — Stops the Firebird service if this script started it.
-- `/elements/001-hydrogen/hydrogen/extras/firebird/create_test_db.sh` — Creates `testfb.fdb` with the SYSDBA user.
+- `start.sh` — Starts the Firebird systemd service. **Requires `sudo`** (the
+  scripts use `sudo` internally to call `systemctl start firebird`).
+- `stop.sh` — Stops the Firebird systemd service. **Requires `sudo`**.
+- `create_test_db.sh` — Creates `testfb.fdb` and grants SYSDBA privileges.
+  Run as `sudo` or as a user with write access to `/var/lib/firebird/data/`.
 
-## Database Extensions Table
+## Setup
 
-| Engine | Base64 | Brotli | SHA-256 | JSON ingest |
-| --- | --- | --- | --- | --- |
-| PostgreSQL | native | C extra | native | plpgsql |
-| MySQL | native | plugin extra | native | stored fn |
-| SQLite | sqlean | loadable extra | sqlean | passthrough |
-| DB2 | UDF extras | UDF extra | UDF extra | SQL UDF |
-| **Firebird** | native `BASE64_ENCODE` / `BASE64_DECODE` | UDR extra | native `CRYPT_HASH(... USING SHA256)` | PSQL function or UDR |
+After installing the packages, verify the service and user exist:
+
+```bash
+sudo systemctl status firebird       # or firebird-superserver
+id firebird
+```
+
+If the service is named differently (e.g. `firebird-superserver`), the scripts
+auto-detect it.
 
 ## Usage
 

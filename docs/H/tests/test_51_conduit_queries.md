@@ -37,7 +37,7 @@ Test 51 comprehensively tests all Conduit Service endpoints that execute pre-def
 - **SQLite**: Full parameter support with prepared statements
 - **DB2**: Full parameter support with SQLBindParameter()
 - **MariaDB**: Full parameter support with prepared statements
-- **CockroachDB**: Full parameter support with prepared statements
+- **Firebird**: Full parameter support with prepared statements
 - **YugabyteDB**: Full parameter support with prepared statements
 
 ## Query Test Cases
@@ -158,7 +158,7 @@ Test 51 comprehensively tests all Conduit Service endpoints that execute pre-def
 
 ## Dependencies
 
-- **Database Engines**: All 7 supported engines (PostgreSQL, MySQL, SQLite, DB2, MariaDB, CockroachDB, YugabyteDB)
+- **Database Engines**: All 7 supported engines (PostgreSQL, MySQL, SQLite, DB2, MariaDB, Firebird, YugabyteDB)
 - **Conduit Service**: All 4 conduit endpoints fully implemented
 - **Authentication Service**: JWT token generation and validation
 - **Query Table Cache**: Pre-defined Acuranzo queries loaded during bootstrap

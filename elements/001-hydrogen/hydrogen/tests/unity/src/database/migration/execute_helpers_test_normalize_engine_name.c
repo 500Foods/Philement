@@ -23,6 +23,7 @@ void test_normalize_engine_name_known(void) {
     TEST_ASSERT_EQUAL_STRING("mysql", normalize_engine_name("mysql"));
     TEST_ASSERT_EQUAL_STRING("sqlite", normalize_engine_name("sqlite"));
     TEST_ASSERT_EQUAL_STRING("db2", normalize_engine_name("db2"));
+    TEST_ASSERT_EQUAL_STRING("firebird", normalize_engine_name("firebird"));
 }
 
 void test_normalize_engine_name_unknown(void) {

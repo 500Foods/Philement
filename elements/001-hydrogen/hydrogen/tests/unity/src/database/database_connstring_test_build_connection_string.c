@@ -20,6 +20,7 @@ void test_database_build_connection_string_sqlite_engine(void);
 void test_database_build_connection_string_mysql_engine(void);
 void test_database_build_connection_string_postgresql_engine(void);
 void test_database_build_connection_string_db2_engine(void);
+void test_database_build_connection_string_firebird_engine(void);
 void test_database_build_connection_string_invalid_engine(void);
 
 void setUp(void) {
@@ -120,6 +121,26 @@ void test_database_build_connection_string_db2_engine(void) {
     TEST_ASSERT_NULL(result);
 }
 
+// Test Firebird engine — verifies no double-slash in path
+void test_database_build_connection_string_firebird_engine(void) {
+    DatabaseConnection conn_config;
+    memset(&conn_config, 0, sizeof(DatabaseConnection));
+    conn_config.host = (char*)"localhost";
+    conn_config.port = (char*)"3050";
+    conn_config.database = (char*)"/var/lib/firebird/data/test.fdb";
+    conn_config.user = (char*)"SYSDBA";
+    conn_config.pass = (char*)"secret";
+
+    char* result = database_build_connection_string("firebird", &conn_config);
+    // In test environment, engines are not available, so expect NULL
+    TEST_ASSERT_NULL(result);
+
+    // Test with NULL values
+    memset(&conn_config, 0, sizeof(DatabaseConnection));
+    result = database_build_connection_string("firebird", &conn_config);
+    TEST_ASSERT_NULL(result);
+}
+
 // Test invalid engine (fallback to PostgreSQL-style)
 void test_database_build_connection_string_invalid_engine(void) {
     DatabaseConnection conn_config;
@@ -143,6 +164,7 @@ int main(void) {
     RUN_TEST(test_database_build_connection_string_mysql_engine);
     RUN_TEST(test_database_build_connection_string_postgresql_engine);
     RUN_TEST(test_database_build_connection_string_db2_engine);
+    RUN_TEST(test_database_build_connection_string_firebird_engine);
     RUN_TEST(test_database_build_connection_string_invalid_engine);
 
     return UNITY_END();

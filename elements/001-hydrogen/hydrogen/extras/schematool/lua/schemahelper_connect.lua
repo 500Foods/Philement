@@ -9,6 +9,8 @@
 -- 0.4.1 - 2026-08-23 - Only resolve sqlite database as a file path
 -- 0.2.2 - 2026-08-23 - Lua connect probe (replaces schemahelper_connect.sh)
 
+-- luacheck: no max line length
+
 local M = {}
 
 local function getenv(name)

@@ -33,6 +33,7 @@ void test_database_queue_wait_for_initial_connection_null_queue(void);
 void test_database_queue_wait_for_initial_connection_non_lead_queue(void);
 void test_database_queue_determine_engine_type(void);
 void test_database_queue_mask_connection_string(void);
+void test_database_queue_mask_connection_string_firebird(void);
 void test_database_queue_signal_initial_connection_complete(void);
 
 void setUp(void) {
@@ -140,6 +141,10 @@ void test_database_queue_determine_engine_type(void) {
     // Test DB2
     TEST_ASSERT_EQUAL(DB_ENGINE_DB2, database_queue_determine_engine_type("DATABASE=testdb;HOSTNAME=localhost"));
 
+    // Test Firebird
+    TEST_ASSERT_EQUAL(DB_ENGINE_FIREBIRD, database_queue_determine_engine_type("firebird://localhost:3050/test.fdb"));
+    TEST_ASSERT_EQUAL(DB_ENGINE_FIREBIRD, database_queue_determine_engine_type("firebird:///var/lib/firebird/data/test.fdb"));
+
     // Test SQLite (default)
     TEST_ASSERT_EQUAL(DB_ENGINE_SQLITE, database_queue_determine_engine_type("sqlite.db"));
     TEST_ASSERT_EQUAL(DB_ENGINE_SQLITE, database_queue_determine_engine_type(NULL));
@@ -178,6 +183,22 @@ void test_database_queue_mask_connection_string(void) {
     TEST_ASSERT_NOT_NULL(result5);
     TEST_ASSERT_EQUAL_STRING("sqlite.db", result5); // Should be unchanged
     free(result5);
+}
+
+// Test Firebird password masking
+void test_database_queue_mask_connection_string_firebird(void) {
+    // Test Firebird format with password in URL
+    char* result = database_queue_mask_connection_string("firebird://SYSDBA:secretpass@localhost:3050/var/lib/firebird/data/test.fdb");
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_TRUE(strstr(result, "SYSDBA:**********@localhost") != NULL);
+    TEST_ASSERT_TRUE(strstr(result, "secretpass") == NULL);
+    free(result);
+
+    // Test Firebird embedded format (no password)
+    result = database_queue_mask_connection_string("firebird:///var/lib/firebird/data/test.fdb");
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL_STRING("firebird:///var/lib/firebird/data/test.fdb", result);
+    free(result);
 }
 
 // Test database_queue_signal_initial_connection_complete function
@@ -337,6 +358,7 @@ int main(void) {
     RUN_TEST(test_database_queue_wait_for_initial_connection_non_lead_queue);
     RUN_TEST(test_database_queue_determine_engine_type);
     RUN_TEST(test_database_queue_mask_connection_string);
+    RUN_TEST(test_database_queue_mask_connection_string_firebird);
     RUN_TEST(test_database_queue_signal_initial_connection_complete);
 
     return UNITY_END();

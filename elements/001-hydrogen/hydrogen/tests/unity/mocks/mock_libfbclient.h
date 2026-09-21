@@ -15,12 +15,13 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
 
 /*
- * fb_status_t is typedef'd as `short` in firebird/types.h.
+ * fb_status_t is typedef'd as `intptr_t` in firebird/types.h.
  * We redefine it here so the mock header is self-contained.
  */
-typedef short fb_status_t;
+typedef intptr_t fb_status_t;
 
 /*
  * Mock function prototypes — must match types.h typedefs exactly.

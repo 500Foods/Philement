@@ -54,7 +54,7 @@ The test uses 14 configuration files, two per engine (with/without `DefaultDatab
 - `hydrogen_test_43_scripting_sqlite.json` and `hydrogen_test_43_scripting_sqlite_no_default.json`
 - `hydrogen_test_43_scripting_db2.json` and `hydrogen_test_43_scripting_db2_no_default.json`
 - `hydrogen_test_43_scripting_mariadb.json` and `hydrogen_test_43_scripting_mariadb_no_default.json`
-- `hydrogen_test_43_scripting_cockroachdb.json` and `hydrogen_test_43_scripting_cockroachdb_no_default.json`
+- `hydrogen_test_43_scripting_firebird.json` and `hydrogen_test_43_scripting_firebird_no_default.json`
 - `hydrogen_test_43_scripting_yugabytedb.json` and `hydrogen_test_43_scripting_yugabytedb_no_default.json`
 
 ### Port Assignment
@@ -68,7 +68,7 @@ All test configs use dedicated ports in the `1543x` / `1544x` range. These ports
 | SQLite | 15432 | 15442 |
 | DB2 | 15433 | 15443 |
 | MariaDB | 15434 | 15444 |
-| CockroachDB | 15435 | 15445 |
+| Firebird | 15435 | 15445 |
 | YugabyteDB | 15436 | 15446 |
 
 ## Test Subtests

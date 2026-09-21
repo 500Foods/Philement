@@ -27,7 +27,7 @@ engines** (same set as Test 40), plus a sequential OIDC-disabled gate.
 | `hydrogen_test_45_sqlite.json` | 5452 | SQLite |
 | `hydrogen_test_45_db2.json` | 5453 | DB2 |
 | `hydrogen_test_45_mariadb.json` | 5454 | MariaDB |
-| `hydrogen_test_45_cockroachdb.json` | 5455 | CockroachDB |
+| `hydrogen_test_45_firebird.json` | 5455 | Firebird |
 | `hydrogen_test_45_yugabytedb.json` | 5456 | YugabyteDB |
 
 Each enabled config seeds a public client via:

@@ -56,7 +56,7 @@ Test 43 / 46). Do not use 547x.
 | SQLite | 15472 | 15482 |
 | DB2 | 15473 | 15483 |
 | MariaDB | 15474 | 15484 |
-| CockroachDB | 15475 | 15485 |
+| Firebird | 15475 | 15485 |
 | YugabyteDB | 15476 | 15486 |
 | Disabled (SQLite) | 15477 | 15487 |
 
@@ -67,7 +67,7 @@ Test 43 / 46). Do not use 547x.
 - `hydrogen_test_47_mcp_sqlite.json` (isolated DB copy under diagnostics)
 - `hydrogen_test_47_mcp_db2.json`
 - `hydrogen_test_47_mcp_mariadb.json`
-- `hydrogen_test_47_mcp_cockroachdb.json`
+- `hydrogen_test_47_mcp_firebird.json`
 - `hydrogen_test_47_mcp_yugabytedb.json`
 - `hydrogen_test_47_mcp_disabled.json`
 

@@ -28,7 +28,7 @@ Native RSS measurement is a separate test: [test_44_exercise_native.md](/docs/H/
 
 ### Engines
 
-Six enabled: PostgreSQL, MySQL, SQLite, DB2, MariaDB, CockroachDB. **YugabyteDB** is present but `Enabled: false` (covered by tests 38/40; remote migrate too slow for exercise).
+Six enabled: PostgreSQL, MySQL, SQLite, DB2, MariaDB, Firebird. **YugabyteDB** is present but `Enabled: false` (covered by tests 38/40; remote migrate too slow for exercise).
 
 ### Shared library
 

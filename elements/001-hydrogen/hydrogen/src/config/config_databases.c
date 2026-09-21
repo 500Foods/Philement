@@ -281,7 +281,13 @@ bool load_database_config(json_t* root, AppConfig* config) {
 
                 json_t* pass_obj = json_object_get(conn_obj, "Pass");
                 if (pass_obj && json_is_string(pass_obj)) {
-                    conn->pass = strdup(json_string_value(pass_obj));
+                    const char* pass_str = json_string_value(pass_obj);
+                    char* resolved_pass = process_env_variable_string(pass_str);
+                    if (resolved_pass) {
+                        conn->pass = resolved_pass;
+                    } else {
+                        conn->pass = strdup(pass_str);
+                    }
                 }
             }
 

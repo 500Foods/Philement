@@ -39,7 +39,7 @@
                 "Engine": "firebird",
                 "Host": "localhost",
                 "Port": 3050,
-                "Database": "firebird://${env.FIREBIRD_DB_PATH}",
+                "Database": "${env.FIREBIRD_DB_PATH}",
                 "User": "SYSDBA",
                 "Pass": "${env.FIREBIRD_SYSDBA_PASSWORD}",
                 "StmtCache": 100,
