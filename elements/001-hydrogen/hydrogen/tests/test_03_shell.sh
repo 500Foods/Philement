@@ -311,6 +311,7 @@ declare -a ENV_WHITELIST=(
     "FIREBIRD_INCLUDE" "SO_BROTLI" "SO_JSON" "UDR_DIR"
     "EUID" "FIREBIRD_CREATE_DB_SCRIPT" "FIREBIRD_EXTRAS_DIR" "FIREBIRD_START_SCRIPT"
     "FIREBIRD_STOP_SCRIPT" "FIREBIRD_USER" "LOCKDIR" "SECPATH"
+    "FIREBIRD" "SYSDBA_PASSWORD"    
     # first found in extras/mailval/gen_sert.sh
     "CERT" "HERE" "KEY" 
     # First found in extras/schematool.sh

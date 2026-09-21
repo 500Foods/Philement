@@ -48,8 +48,7 @@ const char* get_top_level_section(const char* section) {
 }
 
 // Process a log level with its name display
-bool process_level_config(json_t* root, int* level_ptr, const char* level_name, 
-                         const char* path, const char* section, int default_value) {
+bool process_level_config(json_t* root, int* level_ptr, const char* level_name, const char* path, const char* section, int default_value) {
     if (!level_ptr || !path || !section) return false;
 
     // Check if the path exists in JSON
@@ -94,12 +93,7 @@ bool process_level_config(json_t* root, int* level_ptr, const char* level_name,
     const char* indent = get_indent(temp_path);
     
     // Log with level name format
-    log_this(category, "%s%s: %d (%s)%s", LOG_LEVEL_DEBUG, 5,
-            indent, 
-            key, 
-            *level_ptr, 
-            level_name ? level_name : "unknown",
-            using_default ? " *" : "");
+    log_this(category, "%s%s: %d (%s)%s", LOG_LEVEL_DEBUG, 5, indent, key, *level_ptr, level_name ? level_name : "unknown", using_default ? " *" : "");
             
     return true;
 }
@@ -169,11 +163,7 @@ const char* format_sensitive(const char* value) {
 bool is_sensitive_value(const char* name) {
     if (!name) return false;
     
-    const char* sensitive_terms[] = {
-        "key", "token", "pass", "secret", "auth", "cred", 
-        "cert", "jwt", "seed", "private", "hash", "salt",
-        "cipher", "encrypt", "signature", "access"
-    };
+    const char* sensitive_terms[] = {"key", "token", "pass", "secret", "auth", "cred", "cert", "jwt", "seed", "private", "hash", "salt", "cipher", "encrypt", "signature", "access"};
     
     for (size_t i = 0; i < sizeof(sensitive_terms)/sizeof(sensitive_terms[0]); i++) {
         if (strcasestr(name, sensitive_terms[i])) {
@@ -194,10 +184,7 @@ const char* format_int_buffer(int value) {
     return format_int(value);
 }
 
-/*
- * Process environment variable references and convert to appropriate JSON types
- * Handles type inference and conversion for environment values
- */
+// Process environment variable references and convert to appropriate JSON types. Handles type inference and conversion for environment values.
 json_t* process_env_variable(const char* value) {
     if (!value || strncmp(value, "${env.", 6) != 0) {
         return NULL;
@@ -250,7 +237,6 @@ json_t* process_env_variable(const char* value) {
     }
     
 // Check if it's a number
-
 char* endptr;
 // Try parsing as integer first
 long long int_value = strtoll(env_value, &endptr, 10);
@@ -273,13 +259,11 @@ if (*endptr == '\0') {
     return json_string(env_value);
 }
 
-/**
- * Replace embedded ${env.NAME} references in a string with their values.
- * Returns:
- *   - Resolved string if the entire value is ${env.NAME} (legacy path)
- *   - Resolved string if value contains one or more ${env.NAME} references
- *   - NULL if no ${env.NAME} pattern is found (caller falls back to strdup)
- */
+// Replace embedded ${env.NAME} references in a string with their values.
+// Returns:
+//  - Resolved string if the entire value is ${env.NAME} (legacy path)
+//  - Resolved string if value contains one or more ${env.NAME} references
+//  - NULL if no ${env.NAME} pattern is found (caller falls back to strdup)
 char* process_env_variable_string(const char* value) {
     if (!value) return NULL;
 
@@ -339,18 +323,21 @@ char* process_env_variable_string(const char* value) {
         const char* env_val = getenv(var_name);
         free(var_name);
 
-        if (env_val) {
-            size_t val_len = strlen(env_val);
-            if (out_len + val_len + 1 > cap) {
-                cap = out_len + val_len + 256;
-                char* tmp = realloc(out, cap);
-                if (!tmp) { free(out); return NULL; }
-                out = tmp;
-            }
-            memcpy(out + out_len, env_val, val_len);
-            out_len += val_len;
-            out[out_len] = '\0';
+        if (!env_val) {
+            free(out);
+            return NULL;
         }
+
+        size_t val_len = strlen(env_val);
+        if (out_len + val_len + 1 > cap) {
+            cap = out_len + val_len + 256;
+            char* tmp = realloc(out, cap);
+            if (!tmp) { free(out); return NULL; }
+            out = tmp;
+        }
+        memcpy(out + out_len, env_val, val_len);
+        out_len += val_len;
+        out[out_len] = '\0';
 
         // Advance past the }
         p = var_end + 1;
@@ -441,8 +428,7 @@ void log_value(const char* path, const char* value, bool is_default, bool is_sen
 }
 
 // Process a configuration value with full context
-bool process_config_value(json_t* root, ConfigValue value, ConfigValueType type,
-                         const char* path, const char* section) {
+bool process_config_value(json_t* root, ConfigValue value, ConfigValueType type, const char* path, const char* section) {
     if (!path) return false;
     
     // Handle section headers
@@ -957,9 +943,7 @@ bool process_direct_bool_value(ConfigValue value, const char* path, const char* 
 }
 
 // Process a direct configuration value (no JSON lookup)
-bool process_direct_value(ConfigValue value, ConfigValueType type,
-                        const char* path, const char* section,
-                        const char* direct_value) {
+bool process_direct_value(ConfigValue value, ConfigValueType type, const char* path, const char* section, const char* direct_value) {
     if (!path || !direct_value) return false;
     
     bool is_sensitive = (type == CONFIG_TYPE_SENSITIVE) || is_sensitive_value(path);
