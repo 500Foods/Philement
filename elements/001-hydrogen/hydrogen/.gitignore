@@ -51,6 +51,7 @@ extras/hbm_browser/node_modules/*
 extras/firebase_emulator/node_modules/
 extras/firebase_emulator/.emulator.pid
 extras/firebase_emulator/.firebase/
+*.fdb
 
 # No clue where these are coming from all of a sudden?
 .cache/*

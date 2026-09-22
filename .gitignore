@@ -82,9 +82,12 @@ TMSWeb/
 # Linux core dumps: 'core', 'core.PID', 'binary.core.PID', or numeric patterns
 core
 core.*
+*.core.*
 *.core
 vgcore.*
 # Numeric-only filenames (e.g., "0.2476250" from Linux core_pattern %e.%p)
 [0-9].[0-9]*
 [0-9][0-9].[0-9]*
 [0-9][0-9][0-9].[0-9]*
+
+
