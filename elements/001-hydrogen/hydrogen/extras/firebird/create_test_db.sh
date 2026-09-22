@@ -22,6 +22,11 @@
 #           (should be <<'SQL' or <<SQL). The unterminated quote caused bash
 #           to reject the script with "unexpected EOF while looking for matching `'`.
 #           Changed to unquoted <<SQL since DB_PATH is already expanded.
+# 2.2.1 - 2026-09-22 - Fix: bash '#' comment inside isql heredoc prevented CREATE;
+#           require .fdb on disk after create; honor PKEXEC_UID for group; open DB_DIR.
+# 2.2.0 - 2026-09-22 - After create: chgrp to sudo caller's group, chmod g+rw,o+rw
+#           so developers can read/write the .fdb under a repo path without
+#           being in the firebird group. PAGE_SIZE default raised to 32768.
 # 2.1.1 - 2026-09-21 - Fix: create_script passed ${SERVER} connection string to
 #           isql-fb, causing it to try connecting to a non-existent DB before
 #           executing CREATE DATABASE. Removed the connection string argument;
@@ -157,7 +162,8 @@ fix_lockdir() {
 ensure_data_dir() {
     mkdir -p "${DB_DIR}"
     chown "${FIREBIRD_USER}:${FIREBIRD_USER}" "${DB_DIR}" 2>/dev/null || true
-    chmod 755 "${DB_DIR}" 2>/dev/null || true
+    # u=rwx for firebird; g/o=rwx so repo checkouts are listable/writable for recreate
+    chmod 777 "${DB_DIR}" 2>/dev/null || chmod a+rwx "${DB_DIR}" 2>/dev/null || true
 }
 
 # --- Helper: stop the firebird service ---
@@ -219,7 +225,7 @@ if [[ "${1:-}" == "--init-security" ]]; then
 
     # Create the security database and SYSDBA user in embedded mode as the firebird user.
     # Embedded mode: isql-fb with a direct file path, no network, no password needed.
-    init_script="rm -f '${SECPATH}' && echo \"CREATE DATABASE '${SECPATH}' PAGE_SIZE 4096 DEFAULT CHARACTER SET UTF8;\" | isql-fb && echo \"CREATE USER SYSDBA PASSWORD '${SYSDBA_PASSWORD}';\" | isql-fb '${SECPATH}' -user SYSDBA"
+    init_script="rm -f '${SECPATH}' && echo \"CREATE DATABASE '${SECPATH}' PAGE_SIZE 32768 DEFAULT CHARACTER SET UTF8;\" | isql-fb && echo \"CREATE USER SYSDBA PASSWORD '${SYSDBA_PASSWORD}';\" | isql-fb '${SECPATH}' -user SYSDBA"
 
     # shellcheck disable=SC2310 # Function invoked in if condition, error handling intentional
     if as_firebird "${init_script}" 2>&1; then
@@ -257,26 +263,54 @@ echo "Checking for existing ${DB_NAME} at ${DB_PATH}..."
 as_firebird "rm -f '${DB_PATH}'" 2>/dev/null || true
 
 # --- Create the database (as firebird user, via network) ---
+# PAGE_SIZE 32768: UTF8 UNIQUE(varchar(500),varchar(500)) needs >4KB key (page/4 limit).
+# Do not put bash '#' comments inside the isql heredoc — isql will choke / no-op.
 echo "Creating database ${DB_NAME}..."
-    create_script="isql-fb -user SYSDBA -password '${SYSDBA_PASSWORD}' <<SQL"
-create_script+="
-CREATE DATABASE '${DB_PATH}' PAGE_SIZE 4096 DEFAULT CHARACTER SET UTF8;
+create_script="isql-fb -user SYSDBA -password '${SYSDBA_PASSWORD}' <<SQL
+CREATE DATABASE '${DB_PATH}' PAGE_SIZE 32768 DEFAULT CHARACTER SET UTF8;
 SQL"
 
 # shellcheck disable=SC2310 # Function invoked in if condition, error handling intentional
 if as_firebird "${create_script}" 2>&1; then
-    echo "Database ${DB_NAME} created at ${SERVER}"
+    echo "Database ${DB_NAME} create command finished for ${SERVER}"
 else
     die "Failed to create database ${DB_NAME}"
 fi
 
-# --- Verify it was created ---
+# --- Verify the file exists on disk (connect checks alone can false-pass) ---
+if [[ ! -f "${DB_PATH}" ]]; then
+    die "CREATE reported success but file missing at ${DB_PATH} (check Firebird DatabaseAccess / dir perms for ${FIREBIRD_USER})"
+fi
+echo "Database file present: $(ls -l "${DB_PATH}")"
+
 # shellcheck disable=SC2310 # Function invoked in if condition, verification intentional
 if test_auth >/dev/null 2>&1; then
     echo "Database ${DB_NAME} verified connectable."
 else
     die "Failed to verify database ${DB_NAME}"
 fi
+
+# --- Permissions: firebird owns the file (server); group/other get rw so
+# developers can inspect or wipe it under a repo path without joining the
+# firebird group. Prefer the elevating caller's primary group (sudo or pkexec).
+inv_user="${SUDO_USER:-}"
+if [[ -z "${inv_user}" && -n "${PKEXEC_UID:-}" ]]; then
+    inv_user="$(getent passwd "${PKEXEC_UID}" | cut -d: -f1 || true)"
+fi
+inv_gid=""
+if [[ -n "${inv_user}" ]]; then
+    inv_gid="$(id -g "${inv_user}" 2>/dev/null || true)"
+fi
+if [[ -n "${inv_gid}" ]]; then
+    chown "${FIREBIRD_USER}:${inv_gid}" "${DB_PATH}" 2>/dev/null || \
+        chown "${FIREBIRD_USER}:${FIREBIRD_USER}" "${DB_PATH}" 2>/dev/null || true
+else
+    chown "${FIREBIRD_USER}:${FIREBIRD_USER}" "${DB_PATH}" 2>/dev/null || true
+fi
+# Also make the containing dir group/other traversable+listable when we own the tree
+chmod 666 "${DB_PATH}" 2>/dev/null || chmod a+rw "${DB_PATH}" 2>/dev/null || true
+chmod a+rwX "${DB_DIR}" 2>/dev/null || true
+echo "Permissions on ${DB_PATH}: $(ls -l "${DB_PATH}" 2>/dev/null | awk '{print $1, $3, $4}')"
 
 # --- Database is ready (SYSDBA has full privileges by default in Firebird) ---
 echo "Database is ready for migrations."

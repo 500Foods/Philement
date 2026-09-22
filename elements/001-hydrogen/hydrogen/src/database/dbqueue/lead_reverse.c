@@ -105,6 +105,39 @@ bool database_queue_apply_single_reverse_migration(DatabaseQueue* lead_queue, lo
 
     free(migration_sql); // No longer needed after splitting
 
+    // Firebird: uncommitted DDL is not visible to later DSQL in the same
+    // transaction. Reuse commit-after-DDL executor from migration/transaction.c.
+    {
+        DatabaseEngine eng = lead_queue->engine_type;
+        if (lead_queue->persistent_connection) {
+            eng = lead_queue->persistent_connection->engine_type;
+        }
+        if (eng == DB_ENGINE_FIREBIRD) {
+            if (!lead_queue->persistent_connection) {
+                log_this(dqm_label, "No persistent connection available for Firebird migration %lld",
+                         LOG_LEVEL_ERROR, 1, migration_id);
+                for (size_t i = 0; i < statement_count; i++) {
+                    free(statements[i]);
+                }
+                free(statements);
+                return false;
+            }
+            char mig_label[64];
+            snprintf(mig_label, sizeof(mig_label), "%lld", migration_id);
+            bool fb_ok = execute_firebird_migration(lead_queue->persistent_connection,
+                                                    statements, statement_count,
+                                                    mig_label, dqm_label);
+            for (size_t i = 0; i < statement_count; i++) {
+                free(statements[i]);
+            }
+            free(statements);
+            if (fb_ok) {
+                log_this(dqm_label, "Migration %lld REVERSE was successful", LOG_LEVEL_STATE, 1, migration_id);
+            }
+            return fb_ok;
+        }
+    }
+
     // Step 3: Execute all statements within a single transaction
     // Begin transaction for the entire reverse migration
     Transaction* migration_transaction = NULL;

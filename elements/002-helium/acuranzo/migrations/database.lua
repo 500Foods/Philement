@@ -4,6 +4,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 3.4.2 - 2026-09-22 - Firebird: rewrite ALTER TABLE ADD/DROP COLUMN to ADD/DROP (no COLUMN keyword)
 -- 3.4.1 - 2026-09-22 - Firebird: also rewrite CTE AS (VALUES ...) bodies to SELECT...UNION ALL FROM RDB$DATABASE
 -- 3.4.0 - 2026-09-22 - Firebird: rewrite multi-row INSERT VALUES to INSERT...SELECT...UNION ALL in replace_query
 -- 3.3.0 - 2026-09-19 - Removed Firebase dialect (C-level Firebase fully removed in Phase 3)
@@ -22,7 +23,7 @@ local database = {
     -- Database.lua versioning information
     info = {
       script = "database.lua",
-    version = "3.4.1",
+    version = "3.4.2",
         release = "2026-09-22"
      },
 
@@ -566,8 +567,145 @@ local database = {
             return table.concat(out)
         end
 
+
+        -- Firebird: ALTER TABLE ... ADD|DROP COLUMN ...  →  ADD|DROP (no COLUMN keyword).
+        local function firebird_rewrite_alter_column_keyword(src)
+            local n = #src
+            local out = {}
+            local i = 1
+            local in_sq, in_dq = false, false
+
+            local function match_word_at(pos, word)
+                local last = pos + #word - 1
+                if last > n then
+                    return false
+                end
+                if src:sub(pos, last):lower() ~= word:lower() then
+                    return false
+                end
+                local before = (pos > 1) and src:sub(pos - 1, pos - 1) or ""
+                if before ~= "" and before:match("[%w_]") then
+                    return false
+                end
+                local after = src:sub(last + 1, last + 1)
+                if after ~= "" and after:match("[%w_]") then
+                    return false
+                end
+                return true
+            end
+
+            local function skip_ws(pos)
+                while pos <= n do
+                    local c = src:sub(pos, pos)
+                    if c == " " or c == "\t" or c == "\n" or c == "\r" then
+                        pos = pos + 1
+                    elseif c == "-" and src:sub(pos + 1, pos + 1) == "-" then
+                        while pos <= n and src:sub(pos, pos) ~= "\n" do
+                            pos = pos + 1
+                        end
+                    elseif c == "/" and src:sub(pos + 1, pos + 1) == "*" then
+                        pos = pos + 2
+                        while pos <= n and not (src:sub(pos, pos) == "*" and src:sub(pos + 1, pos + 1) == "/") do
+                            pos = pos + 1
+                        end
+                        if pos <= n then
+                            pos = pos + 2
+                        end
+                    else
+                        break
+                    end
+                end
+                return pos
+            end
+
+            while i <= n do
+                local c = src:sub(i, i)
+                if in_sq then
+                    out[#out + 1] = c
+                    if c == "'" then
+                        if src:sub(i + 1, i + 1) == "'" then
+                            out[#out + 1] = "'"
+                            i = i + 2
+                        else
+                            in_sq = false
+                            i = i + 1
+                        end
+                    else
+                        i = i + 1
+                    end
+                elseif in_dq then
+                    out[#out + 1] = c
+                    if c == '"' then
+                        if src:sub(i + 1, i + 1) == '"' then
+                            out[#out + 1] = '"'
+                            i = i + 2
+                        else
+                            in_dq = false
+                            i = i + 1
+                        end
+                    else
+                        i = i + 1
+                    end
+                elseif c == "'" then
+                    in_sq = true
+                    out[#out + 1] = c
+                    i = i + 1
+                elseif c == '"' then
+                    in_dq = true
+                    out[#out + 1] = c
+                    i = i + 1
+                elseif c == "-" and src:sub(i + 1, i + 1) == "-" then
+                    out[#out + 1] = c
+                    i = i + 1
+                    out[#out + 1] = src:sub(i, i)
+                    i = i + 1
+                    while i <= n and src:sub(i, i) ~= "\n" do
+                        out[#out + 1] = src:sub(i, i)
+                        i = i + 1
+                    end
+                elseif c == "/" and src:sub(i + 1, i + 1) == "*" then
+                    out[#out + 1] = "/*"
+                    i = i + 2
+                    while i <= n and not (src:sub(i, i) == "*" and src:sub(i + 1, i + 1) == "/") do
+                        out[#out + 1] = src:sub(i, i)
+                        i = i + 1
+                    end
+                    if i <= n then
+                        out[#out + 1] = "*/"
+                        i = i + 2
+                    end
+                elseif match_word_at(i, "add") or match_word_at(i, "drop") then
+                    local kw = match_word_at(i, "add") and "add" or "drop"
+                    local kw_end = i + #kw - 1
+                    -- emit ADD/DROP as in source (preserve case of first keyword)
+                    out[#out + 1] = src:sub(i, kw_end)
+                    local j = skip_ws(kw_end + 1)
+                    -- copy intervening whitespace/comments already skipped — emit them
+                    if j > kw_end + 1 then
+                        out[#out + 1] = src:sub(kw_end + 1, j - 1)
+                    end
+                    if match_word_at(j, "column") then
+                        -- Skip COLUMN and its trailing whitespace. Leading ws before
+                        -- COLUMN was already copied; if there was none, emit one space.
+                        local after_col = skip_ws(j + 6)
+                        if j == kw_end + 1 then
+                            out[#out + 1] = " "
+                        end
+                        i = after_col
+                    else
+                        i = j
+                    end
+                else
+                    out[#out + 1] = c
+                    i = i + 1
+                end
+            end
+            return table.concat(out)
+        end
+
         if engine == "firebird" then
             sql = firebird_rewrite_multi_row_values(sql)
+            sql = firebird_rewrite_alter_column_keyword(sql)
         end
 
         -- Brotli compression function
