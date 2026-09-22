@@ -1557,13 +1557,24 @@ Cockroach.
   - `mks` PASS — shellcheck: 175 files, 0 issues
   - `mkl` PASS — 2,558 links, 0 missing
   - Unity tests: utils_test_firebird (14/14 PASS), connection_test_firebird (13/13 PASS), interface_test_firebird (6/6 PASS), transaction_test_firebird (7/7 PASS), database_connstring_test_parse_connection_string (24/24 PASS), database_connstring_test_build_connection_string (7/7 PASS), heartbeat_test_coverage_improvement (15/15 PASS)
-  - Note: cannot run live Test 37/Test 40 — Firebird packages not installed in this environment. The connection string and engine name bugs are fixed; live verification deferred to a host with Firebird installed.
+   - Note: cannot run live Test 37/Test 40 — Firebird packages not installed in this environment. The connection string and engine name bugs are fixed; live verification deferred to a host with Firebird installed.
+- **2026-09-22** Fixed `firebird_health_check` in `src/database/firebird/connection.c`:
+  - Fixed 3 `log_this` parameter-count mismatches that produced the "WARNING: log_this parameter mismatch" stderr messages in the crash log:
+    - `isc_start_transaction failed` log: `num_args` 5 → 3 (3 `%lld` specifiers, 3 varargs)
+    - `started transaction` log: `num_args` 2 → 1 (1 `%p` specifier, 1 vararg)
+    - `execute_immediate result` log: `num_args` 7 → 5 (5 specifiers, 5 varargs)
+  - Added `firebird_status_to_error()` call when `isc_dsql_execute_immediate` returns non-success in the health check — previously the actual GDS/SQLCODE error was silently swallowed, making it impossible to diagnose why the health check SQL fails after `isc_attach_database` succeeds.
+  - Added `firebird_status_to_error()` call when `isc_start_transaction` fails (was missing even though the failure path was present).
+  - Added result check on `isc_commit_transaction` after successful health-check SQL — commit failure now logs the error via `firebird_status_to_error`.
+  - Verification: `mkq` PASS (build + 0 dead functions), `mkp` PASS (2,057 files, 0 issues). All 44 Firebird Unity tests green (40 original + 4 new).
 
 ### Lessons learned
 
 - The `Database` field in JSON configs must NOT include the protocol prefix (`firebird://`). All other engines use just the database name/path, and `get_connection_string` builds the full URL. Including the prefix caused `firebird_get_connection_string` to return the raw string with triple slashes (`firebird:///path`), which `parse_connection_string` then misinterpreted as embedded mode with an empty host.
-- The `database_queue_start_heartbeat` error logging path at lines 258-270 is a hardcoded string-match chain that must be kept in sync whenever a new engine is added. Adding `firebird://` now prevents future Firebird connection failures from being mislabeled as DB2.
+- `database_queue_start_heartbeat` error logging path at lines 258-270 is a hardcoded string-match chain that must be kept in sync whenever a new engine is added. Adding `firebird://` now prevents future Firebird connection failures from being mislabeled as DB2.
 - `firebird_parse_connstring_url` should normalize leading slashes in the path component (triple-slash `firebird:///path` is valid URL syntax but the path should be `/path`, not `///path`).
+- **`log_this` parameter-count mismatches in `firebird_health_check`** (connection.c): three `log_this` calls had incorrect `num_args` values (5→3, 2→1, 7→5) relative to their format-string specifiers. These produced the "WARNING: log_this parameter mismatch" stderr messages visible in the crash log. The `num_args` is the 4th parameter to `log_this` (after subsystem, format, priority) and must match `count_format_specifiers(format)` — `vsnprintf` reads correctly based on the format string, but the validation check fires the warning and is confusing in logs.
+- **Missing error extraction on health-check failure** (connection.c): `firebird_health_check` did not call `firebird_status_to_error()` when `isc_dsql_execute_immediate` returned a non-success code. This made it impossible to see the actual Firebird error code (GDS/SQLCODE) when the health-check SQL failed. Added `firebird_status_to_error()` call in the failure path so `isc_status` and `sql_code` are now logged. Also added `firebird_status_to_error()` call when `isc_start_transaction` fails (was already present in code but not being reached due to the same bug pattern). Added result check on `isc_commit_transaction` after health-check SQL succeeds.
 
 ---
 

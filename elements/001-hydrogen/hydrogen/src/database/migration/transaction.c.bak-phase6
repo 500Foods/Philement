@@ -520,152 +520,6 @@ bool execute_sqlite_migration(DatabaseHandle* connection, char** statements, siz
 }
 
 /*
- * Firebird metadata (CREATE/ALTER/DROP/RECREATE) is only visible to later
- * DSQL after commit. Detect leading DDL keywords (skip whitespace/comments).
- */
-bool firebird_migration_sql_is_ddl(const char* sql) {
-    const char* p = sql;
-    if (!p) {
-        return false;
-    }
-    for (;;) {
-        while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') {
-            p++;
-        }
-        if (p[0] == '-' && p[1] == '-') {
-            while (*p && *p != '\n') {
-                p++;
-            }
-            continue;
-        }
-        if (p[0] == '/' && p[1] == '*') {
-            p += 2;
-            while (*p && !(p[0] == '*' && p[1] == '/')) {
-                p++;
-            }
-            if (*p) {
-                p += 2;
-            }
-            continue;
-        }
-        break;
-    }
-    static const char* const kws[] = { "CREATE", "ALTER", "DROP", "RECREATE", NULL };
-    for (size_t i = 0; kws[i]; i++) {
-        size_t n = strlen(kws[i]);
-        if (strncasecmp(p, kws[i], n) == 0) {
-            unsigned char c = (unsigned char)p[n];
-            if (c == '\0' || (!isalnum(c) && c != '_')) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
-bool execute_firebird_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
-                              const char* migration_file, const char* dqm_label) {
-    /*
-     * Firebird does not expose uncommitted DDL to later DSQL in the same
-     * transaction (metadata cache). Commit after each successful DDL so
-     * following DML can see new objects; keep consecutive DML in one
-     * transaction so batches stay atomic. Prior DDL commits stay applied
-     * if a later statement fails (Firebird migration reality).
-     */
-    log_this(dqm_label, "Starting Firebird migration %s (%zu statements, commit-after-DDL)", LOG_LEVEL_TRACE, 2, migration_file, statement_count);
-
-    Transaction* fb_transaction = NULL;
-    if (!database_engine_begin_transaction(connection, DB_ISOLATION_READ_COMMITTED, &fb_transaction)) {
-        log_this(dqm_label, "Failed to begin Firebird transaction for migration %s", LOG_LEVEL_ERROR, 1, migration_file);
-        return false;
-    }
-
-    for (size_t j = 0; j < statement_count; j++) {
-        QueryRequest* stmt_request = calloc(1, sizeof(QueryRequest));
-        if (!stmt_request) {
-            log_this(dqm_label, "Failed to allocate statement request", LOG_LEVEL_ERROR, 0);
-            (void)database_engine_rollback_transaction(connection, fb_transaction);
-            database_engine_cleanup_transaction(fb_transaction);
-            return false;
-        }
-
-        char stmt_hash[64];
-        get_stmt_hash("MPSC", statements[j], 16, stmt_hash);
-
-        log_this(dqm_label, "Statement %zu using prepared statement hash: %s", LOG_LEVEL_TRACE, 2, j + 1, stmt_hash);
-        log_this(dqm_label, "Statement %zu SQL: %.100s%s", LOG_LEVEL_TRACE, 3, j + 1, statements[j], strlen(statements[j]) > 100 ? "..." : "");
-
-        stmt_request->query_id = strdup("migration_statement");
-        stmt_request->sql_template = strdup(statements[j]);
-        stmt_request->parameters_json = strdup("{}");
-        stmt_request->timeout_seconds = 30;
-        stmt_request->isolation_level = DB_ISOLATION_READ_COMMITTED;
-        stmt_request->use_prepared_statement = true;
-        stmt_request->prepared_statement_name = strdup(stmt_hash);
-
-        QueryResult* stmt_result = NULL;
-        bool stmt_success = database_engine_execute(connection, stmt_request, &stmt_result);
-
-        if (stmt_request->query_id) free(stmt_request->query_id);
-        if (stmt_request->sql_template) free(stmt_request->sql_template);
-        if (stmt_request->parameters_json) free(stmt_request->parameters_json);
-        if (stmt_request->prepared_statement_name) free(stmt_request->prepared_statement_name);
-        free(stmt_request);
-
-        bool ok = stmt_success && stmt_result && stmt_result->success;
-        if (ok) {
-            log_this(dqm_label, "Statement %zu executed successfully (hash: %s): affected %lld rows", LOG_LEVEL_TRACE, 3, j + 1, stmt_hash, (long long)stmt_result->affected_rows);
-        } else {
-            log_this(dqm_label, "Statement %zu failed (hash: %s)", LOG_LEVEL_ERROR, 2, j + 1, stmt_hash);
-        }
-
-        if (stmt_result) {
-            database_engine_cleanup_result(stmt_result);
-        }
-
-        if (!ok) {
-            if (!database_engine_rollback_transaction(connection, fb_transaction)) {
-                log_this(dqm_label, "Failed to rollback migration %s after statement %zu", LOG_LEVEL_ERROR, 2, migration_file, j + 1);
-            } else {
-                log_this(dqm_label, "Migration %s rolled back open transaction after statement %zu (earlier DDL already committed)", LOG_LEVEL_TRACE, 2, migration_file, j + 1);
-            }
-            database_engine_cleanup_transaction(fb_transaction);
-            return false;
-        }
-
-        if (firebird_migration_sql_is_ddl(statements[j])) {
-            if (!database_engine_commit_transaction(connection, fb_transaction)) {
-                log_this(dqm_label, "Failed to commit migration %s after DDL statement %zu", LOG_LEVEL_ERROR, 2, migration_file, j + 1);
-                database_engine_cleanup_transaction(fb_transaction);
-                return false;
-            }
-            database_engine_cleanup_transaction(fb_transaction);
-            fb_transaction = NULL;
-
-            if (j + 1 < statement_count) {
-                if (!database_engine_begin_transaction(connection, DB_ISOLATION_READ_COMMITTED, &fb_transaction)) {
-                    log_this(dqm_label, "Failed to begin Firebird transaction after DDL in migration %s (next statement %zu)", LOG_LEVEL_ERROR, 2, migration_file, j + 2);
-                    return false;
-                }
-            }
-        }
-    }
-
-    if (fb_transaction) {
-        if (!database_engine_commit_transaction(connection, fb_transaction)) {
-            log_this(dqm_label, "Failed to commit migration %s final DML batch", LOG_LEVEL_ERROR, 1, migration_file);
-            database_engine_cleanup_transaction(fb_transaction);
-            return false;
-        }
-        database_engine_cleanup_transaction(fb_transaction);
-    }
-
-    log_this(dqm_label, "Migration %s APPLY was successful", LOG_LEVEL_TRACE, 1, migration_file);
-    return true;
-}
-
-
-/*
  * Execute migration SQL as a transaction for any database engine
  */
 bool execute_transaction(DatabaseHandle* connection, const char* sql_result,
@@ -710,7 +564,9 @@ bool execute_transaction(DatabaseHandle* connection, const char* sql_result,
             success = execute_db2_migration(connection, statements, statement_count, migration_file, dqm_label);
             break;
         case DB_ENGINE_FIREBIRD:
-            success = execute_firebird_migration(connection, statements, statement_count, migration_file, dqm_label);
+            // Phase 5: Firebird migrations are a Phase 6 concern
+            log_this(dqm_label, "Firebird migrations not yet available (Phase 6)", LOG_LEVEL_ERROR, 0);
+            success = false;
             break;
         case DB_ENGINE_MSSQL:
         case DB_ENGINE_AI:

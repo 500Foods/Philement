@@ -17,7 +17,6 @@
 #include "types.h"
 #include "connection.h"
 #include "transaction.h"
-#include "utils.h"
 
 /*
  * Build a minimal Firebird TPB (Transaction Parameter Buffer) for a
@@ -76,16 +75,7 @@ bool firebird_begin_transaction(DatabaseHandle* connection,
     }
 
     FirebirdConnection* fb_conn = (FirebirdConnection*)connection->connection_handle;
-    if (!fb_conn || !fb_conn->db_handle) {
-        return false;
-    }
-
-    if (!isc_start_transaction_ptr) {
-        return false;
-    }
-
-    /* One active isc transaction per connection wrapper for now. */
-    if (fb_conn->tr_handle != NULL || connection->current_transaction != NULL) {
+    if (!fb_conn) {
         return false;
     }
 
@@ -95,101 +85,56 @@ bool firebird_begin_transaction(DatabaseHandle* connection,
     }
 
     const char* tpb = firebird_build_tpb(level);
-    fb_status_t status[FB_STATUS_LENGTH];
-    memset(status, 0, sizeof(status));
-
-    fb_status_t rc = isc_start_transaction_ptr(
-        status,
-        &fb_conn->tr_handle,
-        1,
-        &fb_conn->db_handle,
-        (short)strlen(tpb),
-        tpb
-    );
-    if ((rc != FB_SQL_SUCCESS && rc != FB_SQL_SUCCESS_INFO) || fb_conn->tr_handle == NULL) {
-        firebird_status_to_error(status, firebird_designator_safe(connection));
-        free(txn);
-        fb_conn->tr_handle = NULL;
-        return false;
-    }
 
     txn->isolation_level = level;
-    txn->started_at = time(NULL);
-    txn->active = true;
-    txn->transaction_id = NULL;
-    txn->engine_specific_handle = fb_conn->tr_handle;
+    txn->started_at      = time(NULL);
+    txn->active          = true;
+    txn->transaction_id  = NULL;
+    // engine_specific_handle is where Phase 6 will store the isc_tr_handle.
+    // For the skeleton we leave it NULL — no real isc_start_transaction.
+    txn->engine_specific_handle = NULL;
+
+    (void)tpb;  // TPB is built but not used until Phase 6
 
     *transaction = txn;
     connection->current_transaction = txn;
     return true;
 }
 
+/*
+ * Commit a Firebird transaction.
+ * Phase 5: frees the Transaction struct. No isc_commit_transaction call.
+ */
 bool firebird_commit_transaction(DatabaseHandle* connection, Transaction* transaction) {
     if (!connection || connection->engine_type != DB_ENGINE_FIREBIRD || !transaction) {
         return false;
     }
 
-    if (!connection->current_transaction || connection->current_transaction != transaction) {
+    if (!connection->current_transaction) {
         return false;
-    }
-
-    FirebirdConnection* fb_conn = (FirebirdConnection*)connection->connection_handle;
-    if (!fb_conn) {
-        return false;
-    }
-
-    if (fb_conn->tr_handle && isc_commit_transaction_ptr) {
-        fb_status_t status[FB_STATUS_LENGTH];
-        memset(status, 0, sizeof(status));
-        fb_status_t rc = isc_commit_transaction_ptr(status, &fb_conn->tr_handle);
-        fb_conn->tr_handle = NULL;
-        if (rc != FB_SQL_SUCCESS && rc != FB_SQL_SUCCESS_INFO) {
-            firebird_status_to_error(status, firebird_designator_safe(connection));
-            transaction->active = false;
-            connection->current_transaction = NULL;
-            /* Caller owns Transaction* — database_engine_cleanup_transaction frees it. */
-            return false;
-        }
-    } else {
-        fb_conn->tr_handle = NULL;
     }
 
     transaction->active = false;
     connection->current_transaction = NULL;
-    /* Caller owns Transaction* — database_engine_cleanup_transaction frees it. */
+    free(transaction);
     return true;
 }
 
+/*
+ * Rollback a Firebird transaction.
+ * Phase 5: frees the Transaction struct. No isc_rollback_transaction call.
+ */
 bool firebird_rollback_transaction(DatabaseHandle* connection, Transaction* transaction) {
     if (!connection || connection->engine_type != DB_ENGINE_FIREBIRD || !transaction) {
         return false;
     }
 
-    if (!connection->current_transaction || connection->current_transaction != transaction) {
+    if (!connection->current_transaction) {
         return false;
-    }
-
-    FirebirdConnection* fb_conn = (FirebirdConnection*)connection->connection_handle;
-    if (!fb_conn) {
-        return false;
-    }
-
-    if (fb_conn->tr_handle && isc_rollback_transaction_ptr) {
-        fb_status_t status[FB_STATUS_LENGTH];
-        memset(status, 0, sizeof(status));
-        fb_status_t rc = isc_rollback_transaction_ptr(status, &fb_conn->tr_handle);
-        fb_conn->tr_handle = NULL;
-        if (rc != FB_SQL_SUCCESS && rc != FB_SQL_SUCCESS_INFO) {
-            firebird_status_to_error(status, firebird_designator_safe(connection));
-            /* Still clear wrappers so callers can recover. */
-        }
-    } else {
-        fb_conn->tr_handle = NULL;
     }
 
     transaction->active = false;
     connection->current_transaction = NULL;
-    /* Caller owns Transaction* — database_engine_cleanup_transaction frees it.
-     * Freeing here double-frees after execute_*_migration rollback + cleanup. */
+    free(transaction);
     return true;
 }

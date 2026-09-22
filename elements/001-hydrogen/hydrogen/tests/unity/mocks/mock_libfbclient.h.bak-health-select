@@ -39,16 +39,12 @@ fb_status_t mock_isc_commit_transaction(fb_status_t*, void**);
 fb_status_t mock_isc_rollback_transaction(fb_status_t*, void**);
 
 /* DSQL */
-fb_status_t mock_isc_dsql_allocate(fb_status_t*, void**, void**);
+fb_status_t mock_isc_dsql_allocate(fb_status_t*, void**, short, void**);
 fb_status_t mock_isc_dsql_prepare(fb_status_t*, void**, void**, short, const char*, short, void*);
 fb_status_t mock_isc_dsql_execute(fb_status_t*, void**, void**, short, const void*);
 fb_status_t mock_isc_dsql_execute_immediate(fb_status_t*, void**, void**, short, const char*, short, const void*);
 fb_status_t mock_isc_dsql_free_statement(fb_status_t*, void**, short);
 fb_status_t mock_isc_dsql_fetch(fb_status_t*, void**, short, void*);
-fb_status_t mock_isc_open_blob2(fb_status_t*, void**, void**, void**, void*, short, const char*);
-fb_status_t mock_isc_get_segment(fb_status_t*, void**, unsigned short*, unsigned short, char*);
-fb_status_t mock_isc_close_blob(fb_status_t*, void**);
-long mock_fb_interpret(char*, unsigned int, const fb_status_t**);
 
 /* Cancel */
 fb_status_t mock_fb_cancel_operation(fb_status_t*, void**, unsigned short);

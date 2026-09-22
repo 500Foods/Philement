@@ -86,34 +86,28 @@ fb_status_t mock_isc_detach_database(fb_status_t* status, void** db_handle) {
 
 fb_status_t mock_isc_start_transaction(fb_status_t* status, void** tr_handle, short num_db, ...) {
     mock_isc_start_transaction_calls++;
+    (void)tr_handle;
     (void)num_db;
     if (status) {
         memset(status, 0, 20 * sizeof(fb_status_t));
-    }
-    if (tr_handle && mock_isc_start_transaction_result == 0) {
-        *tr_handle = (void*)0xBEEF0001;
     }
     return (fb_status_t)mock_isc_start_transaction_result;
 }
 
 fb_status_t mock_isc_commit_transaction(fb_status_t* status, void** tr_handle) {
     mock_isc_commit_transaction_calls++;
+    (void)tr_handle;
     if (status) {
         memset(status, 0, 20 * sizeof(fb_status_t));
-    }
-    if (tr_handle && mock_isc_commit_transaction_result == 0) {
-        *tr_handle = NULL;
     }
     return (fb_status_t)mock_isc_commit_transaction_result;
 }
 
 fb_status_t mock_isc_rollback_transaction(fb_status_t* status, void** tr_handle) {
     mock_isc_rollback_transaction_calls++;
+    (void)tr_handle;
     if (status) {
         memset(status, 0, 20 * sizeof(fb_status_t));
-    }
-    if (tr_handle && mock_isc_rollback_transaction_result == 0) {
-        *tr_handle = NULL;
     }
     return (fb_status_t)mock_isc_rollback_transaction_result;
 }
@@ -121,11 +115,9 @@ fb_status_t mock_isc_rollback_transaction(fb_status_t* status, void** tr_handle)
 fb_status_t mock_isc_dsql_allocate(fb_status_t* status, void** db_handle, void** stmt) {
     mock_isc_dsql_allocate_calls++;
     (void)db_handle;
+    (void)stmt;
     if (status) {
         memset(status, 0, 20 * sizeof(fb_status_t));
-    }
-    if (stmt && mock_isc_dsql_allocate_result == 0) {
-        *stmt = (void*)0xBEEF0002;
     }
     return (fb_status_t)mock_isc_dsql_allocate_result;
 }
@@ -194,37 +186,6 @@ fb_status_t mock_isc_dsql_fetch(fb_status_t* status, void** stmt_handle, short u
         memset(status, 0, 20 * sizeof(fb_status_t));
     }
     return (fb_status_t)mock_isc_dsql_fetch_result;
-}
-
-
-fb_status_t mock_isc_open_blob2(fb_status_t* status, void** db_handle, void** tr_handle,
-                                void** blob_handle, void* blob_id, short bpb_len, const char* bpb) {
-    (void)db_handle; (void)tr_handle; (void)blob_id; (void)bpb_len; (void)bpb;
-    if (status) { status[0] = 0; status[1] = 0; }
-    if (blob_handle) *blob_handle = (void*)0xB10BU;
-    return 0;
-}
-
-fb_status_t mock_isc_get_segment(fb_status_t* status, void** blob_handle,
-                                 unsigned short* actual_len, unsigned short buf_len, char* buf) {
-    (void)blob_handle; (void)buf_len; (void)buf;
-    if (actual_len) *actual_len = 0;
-    if (status) { status[0] = 1; status[1] = 335544367; } /* isc_segstr_eof */
-    return 335544367;
-}
-
-fb_status_t mock_isc_close_blob(fb_status_t* status, void** blob_handle) {
-    if (blob_handle) *blob_handle = NULL;
-    if (status) { status[0] = 0; status[1] = 0; }
-    return 0;
-}
-
-long mock_fb_interpret(char* buf, unsigned int buflen, const fb_status_t** status_vector) {
-    (void)status_vector;
-    if (buf && buflen > 0) {
-        buf[0] = '\0';
-    }
-    return 0; /* no message lines in default mock */
 }
 
 fb_status_t mock_fb_cancel_operation(fb_status_t* status, void** db_handle, unsigned short option) {

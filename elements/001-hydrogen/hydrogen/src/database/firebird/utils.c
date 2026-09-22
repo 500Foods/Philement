@@ -398,13 +398,36 @@ void firebird_status_to_error(const fb_status_t* status, const char* designator)
     }
 
     if (status[0] == 0) {
-        return;  // No error
+        return;  /* No error */
     }
 
-    fb_status_t fb_err = status[0];
-    fb_status_t sql_code = status[1];
+    /*
+     * Status vector layout: [0]=isc_arg_* (often isc_arg_gds=1), [1]=GDS code,
+     * then more arg pairs until isc_arg_end. The old "sql_code" label was the
+     * GDS facility code (e.g. 335544569 = isc_dsql_error), not SQLCODE.
+     */
+    fb_status_t arg0 = status[0];
+    fb_status_t gds_code = status[1];
 
-    log_this(designator, "Firebird error: isc_status=%d, sql_code=%d", LOG_LEVEL_ERROR, 2, fb_err, sql_code);
-    // Note: real implementation would call isc_interpret / fb_sqlstate
-    // to extract the human-readable message. Phase 5 skeleton logs the codes only.
+    log_this(designator, "Firebird error: status_arg=%d, gds_code=%d", LOG_LEVEL_ERROR, 2,
+             (int)arg0, (int)gds_code);
+
+    if (!fb_interpret_ptr) {
+        log_this(designator, "Firebird error text unavailable (fb_interpret not loaded)", LOG_LEVEL_ERROR, 0);
+        return;
+    }
+
+    const fb_status_t* pvector = status;
+    char msg[512];
+    int line = 0;
+    while (line < 16) {
+        memset(msg, 0, sizeof(msg));
+        long n = fb_interpret_ptr(msg, (unsigned int)(sizeof(msg) - 1u), &pvector);
+        if (n <= 0) {
+            break;
+        }
+        msg[sizeof(msg) - 1u] = '\0';
+        log_this(designator, "Firebird: %s", LOG_LEVEL_ERROR, 1, msg);
+        line++;
+    }
 }

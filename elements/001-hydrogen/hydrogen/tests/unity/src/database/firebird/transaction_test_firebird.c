@@ -104,6 +104,7 @@ void test_firebird_commit_transaction_success(void) {
     bool result = firebird_commit_transaction(conn, txn);
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_NULL(conn->current_transaction);
+    free(txn);
 
     firebird_disconnect(conn);
     pthread_mutex_destroy(&conn->connection_lock);
@@ -127,6 +128,7 @@ void test_firebird_rollback_transaction_success(void) {
     bool result = firebird_rollback_transaction(conn, txn);
     TEST_ASSERT_TRUE(result);
     TEST_ASSERT_NULL(conn->current_transaction);
+    free(txn);
 
     firebird_disconnect(conn);
     pthread_mutex_destroy(&conn->connection_lock);

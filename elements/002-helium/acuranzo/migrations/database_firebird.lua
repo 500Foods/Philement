@@ -3,6 +3,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 1.2.0 - 2026-09-22 - JSON_INGEST_FUNCTION: Firebird 4 UDR call shape (no DEFAULT/SUSPEND); JRE drops DEFAULT NULL ON ERROR
 -- 1.1.0 - 2026-09-19 - Added JSON_VALUE_FUNCTION UDR macro; fixed BROTLI_DECOMPRESS_FUNCTION to use ENGINE UDR with module!routine format
 -- 1.0.0 - 2026-09-18 - Initial Firebird dialect (Lookup 030 key 6 relabel from Firebase)
 
@@ -29,7 +30,7 @@ return {
     INTEGER_SMALL = "SMALLINT",
     JRS = "JSON_VALUE(",
     JRM = ", ",
-    JRE = " DEFAULT NULL ON ERROR)",
+    JRE = ")",
     NOW = "CURRENT_TIMESTAMP",
     PRIMARY = "PRIMARY KEY",
     REORG = "-- REORG TABLE",
@@ -119,6 +120,8 @@ return {
     -- json_ingest PSQL function: validates and normalizes JSON, escaping
     -- control characters inside strings. Uses the JSON_VALUE UDR for validity
     -- checking on the fast path. Must be created after JSON_VALUE_FUNCTION.
+    -- Firebird 4 UDR is 2-arg only (no DEFAULT NULL ON ERROR). Invalid JSON /
+    -- missing path already return NULL from json_udfn. No SUSPEND in FUNCTIONs.
     JSON_INGEST_FUNCTION = [[
         CREATE OR ALTER FUNCTION json_ingest(s BLOB SUB_TYPE TEXT)
         RETURNS BLOB SUB_TYPE TEXT
@@ -136,11 +139,9 @@ return {
             i = 1;
             L = CHAR_LENGTH(s);
 
-            -- fast path: check validity without exception
-            -- Firebird has no TRY/CATCH JSON parse; use JSON_VALUE to test
-            IF (JSON_VALUE(s, '$' DEFAULT NULL ON ERROR) IS NOT NULL) THEN
+            -- fast path: UDR returns NULL on invalid JSON
+            IF (JSON_VALUE(s, '$') IS NOT NULL) THEN
             BEGIN
-                SUSPEND;
                 RETURN s;
             END
 
@@ -182,13 +183,12 @@ return {
                 i = i + 1;
             END
 
-            -- ensure result is JSON
-            IF (JSON_VALUE(out, '$' DEFAULT NULL ON ERROR) IS NULL) THEN
+            -- ensure result is JSON; NULL if still invalid
+            IF (JSON_VALUE(out, '$') IS NULL) THEN
             BEGIN
-                EXCEPTION CREATE EXCEPTION 32749 'Invalid JSON after normalization';
+                RETURN NULL;
             END
 
-            SUSPEND;
             RETURN out;
         END
     ]],
