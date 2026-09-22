@@ -57,3 +57,7 @@ extras/firebase_emulator/.firebase/
 .cache/*
 # Local lua-brotli C module for migration host (Lua 5.5)
 brotli.so
+
+# SQLite sidecar files
+*.sqlite-shm
+*.sqlite-wal
