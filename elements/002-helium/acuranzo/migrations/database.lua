@@ -4,6 +4,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 3.4.0 - 2026-09-22 - Firebird: rewrite multi-row INSERT VALUES to INSERT...SELECT...UNION ALL in replace_query
 -- 3.3.0 - 2026-09-19 - Removed Firebase dialect (C-level Firebase fully removed in Phase 3)
 -- 3.2.0 - 2026-09-18 - Added Firebird dialect (query_dialects = 6, empty schema prefix)
 -- 3.1.0 - 2026-09-16 - Added Firebase dialect (query_dialects = 6, underscore schema prefix)
@@ -20,8 +21,8 @@ local database = {
     -- Database.lua versioning information
     info = {
       script = "database.lua",
-    version = "3.3.0",
-        release = "2026-09-19"
+    version = "3.4.0",
+        release = "2026-09-22"
      },
 
     -- Lookup #27 - Query Status
@@ -271,6 +272,234 @@ local database = {
             else
               unresolved = 0
             end
+        end
+
+
+        -- Firebird does not support multi-row INSERT ... VALUES (...), (...);
+        -- (langref: VALUES inserts exactly one row; CORE1978 still open). Rewrite
+        -- those statements to INSERT ... SELECT ... FROM RDB$DATABASE UNION ALL
+        -- before [=[...]=] encoding seals them into queries.code.
+        local function firebird_rewrite_multi_row_values(src)
+            local n = #src
+
+            local function skip_ws_and_comments(i)
+                while i <= n do
+                    local c = src:sub(i, i)
+                    if c == " " or c == "\t" or c == "\n" or c == "\r" then
+                        i = i + 1
+                    elseif c == "-" and src:sub(i + 1, i + 1) == "-" then
+                        i = i + 2
+                        while i <= n and src:sub(i, i) ~= "\n" do
+                            i = i + 1
+                        end
+                    elseif c == "/" and src:sub(i + 1, i + 1) == "*" then
+                        i = i + 2
+                        while i <= n and not (src:sub(i, i) == "*" and src:sub(i + 1, i + 1) == "/") do
+                            i = i + 1
+                        end
+                        if i <= n then
+                            i = i + 2
+                        end
+                    else
+                        break
+                    end
+                end
+                return i
+            end
+
+            -- Balanced (...) starting at open paren; respects quotes and -- comments.
+            local function scan_paren_group(open_i)
+                if src:sub(open_i, open_i) ~= "(" then
+                    return nil
+                end
+                local depth = 0
+                local i = open_i
+                local in_sq, in_dq = false, false
+                while i <= n do
+                    local c = src:sub(i, i)
+                    if in_sq then
+                        if c == "'" then
+                            if src:sub(i + 1, i + 1) == "'" then
+                                i = i + 2
+                            else
+                                in_sq = false
+                                i = i + 1
+                            end
+                        else
+                            i = i + 1
+                        end
+                    elseif in_dq then
+                        if c == '"' then
+                            if src:sub(i + 1, i + 1) == '"' then
+                                i = i + 2
+                            else
+                                in_dq = false
+                                i = i + 1
+                            end
+                        else
+                            i = i + 1
+                        end
+                    elseif c == "'" then
+                        in_sq = true
+                        i = i + 1
+                    elseif c == '"' then
+                        in_dq = true
+                        i = i + 1
+                    elseif c == "(" then
+                        depth = depth + 1
+                        i = i + 1
+                    elseif c == ")" then
+                        depth = depth - 1
+                        i = i + 1
+                        if depth == 0 then
+                            return i - 1
+                        end
+                    elseif c == "-" and src:sub(i + 1, i + 1) == "-" then
+                        i = i + 2
+                        while i <= n and src:sub(i, i) ~= "\n" do
+                            i = i + 1
+                        end
+                    else
+                        i = i + 1
+                    end
+                end
+                return nil
+            end
+
+            local function match_word(i, word)
+                local last = i + #word - 1
+                if last > n then
+                    return false
+                end
+                if src:sub(i, last):lower() ~= word:lower() then
+                    return false
+                end
+                local after = src:sub(last + 1, last + 1)
+                if after ~= "" and after:match("[%w_]") then
+                    return false
+                end
+                return true
+            end
+
+            local function scan_identifier(i)
+                i = skip_ws_and_comments(i)
+                if i > n then
+                    return nil
+                end
+                if src:sub(i, i) == '"' then
+                    i = i + 1
+                    while i <= n do
+                        if src:sub(i, i) == '"' then
+                            if src:sub(i + 1, i + 1) == '"' then
+                                i = i + 2
+                            else
+                                return i + 1
+                            end
+                        else
+                            i = i + 1
+                        end
+                    end
+                    return nil
+                end
+                if not src:sub(i, i):match("[%a_]") then
+                    return nil
+                end
+                i = i + 1
+                while i <= n and src:sub(i, i):match("[%w_]") do
+                    i = i + 1
+                end
+                return i
+            end
+
+            -- Try to parse one INSERT...VALUES multi-row statement at start_i.
+            -- Returns end index (inclusive of ';') and rewritten text, or nil.
+            local function try_rewrite_at(start_i)
+                if not match_word(start_i, "insert") then
+                    return nil
+                end
+                local prev = (start_i > 1) and src:sub(start_i - 1, start_i - 1) or ""
+                if prev ~= "" and prev:match("[%w_]") then
+                    return nil
+                end
+                local j = skip_ws_and_comments(start_i + 6)
+                if not match_word(j, "into") then
+                    return nil
+                end
+                j = skip_ws_and_comments(j + 4)
+                local table_start = j
+                local after_table = scan_identifier(j)
+                if not after_table then
+                    return nil
+                end
+                j = after_table
+                local k = skip_ws_and_comments(j)
+                if src:sub(k, k) == "." then
+                    after_table = scan_identifier(k + 1)
+                    if not after_table then
+                        return nil
+                    end
+                    j = after_table
+                end
+                local table_end = j -- exclusive
+                j = skip_ws_and_comments(j)
+                local cols_start, cols_end
+                if src:sub(j, j) == "(" then
+                    cols_start = j
+                    cols_end = scan_paren_group(j)
+                    if not cols_end then
+                        return nil
+                    end
+                    j = skip_ws_and_comments(cols_end + 1)
+                end
+                if not match_word(j, "values") then
+                    return nil
+                end
+                j = skip_ws_and_comments(j + 6)
+                local rows = {}
+                while src:sub(j, j) == "(" do
+                    local close_r = scan_paren_group(j)
+                    if not close_r then
+                        return nil
+                    end
+                    rows[#rows + 1] = src:sub(j + 1, close_r - 1)
+                    j = skip_ws_and_comments(close_r + 1)
+                    if src:sub(j, j) == "," then
+                        j = skip_ws_and_comments(j + 1)
+                    else
+                        break
+                    end
+                end
+                if #rows < 2 or src:sub(j, j) ~= ";" then
+                    return nil
+                end
+                local prefix = "INSERT INTO " .. src:sub(table_start, table_end - 1)
+                if cols_start then
+                    prefix = prefix .. " " .. src:sub(cols_start, cols_end)
+                end
+                local parts = {}
+                for r = 1, #rows do
+                    parts[#parts + 1] = "SELECT " .. rows[r] .. " FROM RDB$DATABASE"
+                end
+                return j, prefix .. "\n" .. table.concat(parts, "\nUNION ALL\n") .. ";"
+            end
+
+            local out = {}
+            local i = 1
+            while i <= n do
+                local end_i, rewritten = try_rewrite_at(i)
+                if rewritten then
+                    out[#out + 1] = rewritten
+                    i = end_i + 1
+                else
+                    out[#out + 1] = src:sub(i, i)
+                    i = i + 1
+                end
+            end
+            return table.concat(out)
+        end
+
+        if engine == "firebird" then
+            sql = firebird_rewrite_multi_row_values(sql)
         end
 
         -- Brotli compression function
