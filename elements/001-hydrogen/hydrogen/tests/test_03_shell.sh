@@ -415,7 +415,9 @@ declare -a ENV_VARS=(
 
     # Firebird demo
     "FIREBIRD_SYSDBA_PASSWORD|37,40|Firebird sysadmin password|Password for the Firebird SYSDBA user. Used by create_test_db.sh for initial database creation. Maps to Hydrogen Pass."
-    "FIREBIRD_DB_PATH|37,40|Firebird database path|Filesystem path to the Firebird database file. Maps to Hydrogen Database."
+    "FIREBIRD_DB_PATH_TEST|37|Firebird test DB path|Filesystem path to hydrogen_test.fdb (Test 37). Maps to Hydrogen Database."
+    "FIREBIRD_DB_PATH_DEMO|40,43,45,46,47,58|Firebird demo DB path|Filesystem path to hydrogen_demo.fdb (Test 40+). Maps to Hydrogen Database."
+    "FIREBIRD_DB_PATH|37,40|Firebird database path (deprecated)|Deprecated singular path; prefer FIREBIRD_DB_PATH_TEST / _DEMO. Map TEST as primary."
     "FIREBIRD_DB_USER|37,40|Firebird database user|Username for the Firebird database account used by tests (non-SYSDBA). Falls back to SYSDBA."
     "FIREBIRD_DB_PASS|37,40|Firebird database password|Password for the Firebird database account used by tests. Falls back to FIREBIRD_SYSDBA_PASSWORD."
 

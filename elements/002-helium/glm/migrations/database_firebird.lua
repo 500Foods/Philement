@@ -3,6 +3,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 2.9.3 - 2026-09-22 - DATEADD macros use DATEADD(UNIT, 0 +/- n, NOW) so named→? binds are not unary-negated
 -- 2.9.2 - 2026-09-22 - JSON_INGEST_FUNCTION: Firebird 4 UDR call shape (no DEFAULT/SUSPEND); JRE drops DEFAULT NULL ON ERROR
 -- 2.9.1 - 2026-09-19 - Added JSON_VALUE_FUNCTION UDR macro; fixed BROTLI_DECOMPRESS_FUNCTION to use ENGINE UDR
 -- 2.9.0 - 2026-07-04 - Added directional future-time macros TRFS/TRFE (seconds) and TRFMS/TRFME (minutes) for parity with SQLite fix (Test 41 SQLite JWT bug)
@@ -58,12 +59,12 @@ return {
     TIME = "TIME",
     TIMESTAMP = "TIMESTAMP",
     TIMESTAMP_TZ = "TIMESTAMP WITH TIME ZONE",
-    TRMS = "DATEADD(-",
-    TRME = " MINUTE TO ${NOW})",
-    TRFS = "DATEADD(+",
-    TRFE = " SECOND TO ${NOW})",
-    TRFMS = "DATEADD(+",
-    TRFME = " MINUTE TO ${NOW})",
+    TRMS = "DATEADD(MINUTE, 0 - ",
+    TRME = ", ${NOW})",
+    TRFS = "DATEADD(SECOND, 0 + ",
+    TRFE = ", ${NOW})",
+    TRFMS = "DATEADD(MINUTE, 0 + ",
+    TRFME = ", ${NOW})",
     UNIQUE = "UNIQUE",
     VARCHAR_20 = "varchar(20)",
     VARCHAR_50 = "varchar(50)",

@@ -55,7 +55,9 @@ This document provides a comprehensive reference for all environment variables u
 
 8. [Database Credentials - Firebird (Firebird 4)](#8-database-credentials---firebird-firebird-4)
    - [FIREBIRD_SYSDBA_PASSWORD](#firebird_sysdba_password)
-   - [FIREBIRD_DB_PATH](#firebird_db_path)
+   - [FIREBIRD_DB_PATH_TEST](#firebird_db_path_test)
+   - [FIREBIRD_DB_PATH_DEMO](#firebird_db_path_demo)
+   - [FIREBIRD_DB_PATH](#firebird_db_path) (deprecated)
    - [FIREBIRD_DB_USER](#firebird_db_user)
    - [FIREBIRD_DB_PASS](#firebird_db_pass)
 
@@ -758,17 +760,50 @@ Fedora 43, SuperServer on port 3050). See
 export FIREBIRD_SYSDBA_PASSWORD="your_sysdba_password"
 ```
 
-### FIREBIRD_DB_PATH
+### FIREBIRD_DB_PATH_TEST
 
-**Description:** Filesystem path to the Firebird database file (e.g.
-`/var/lib/firebird/data/testfb.fdb`). Maps to Hydrogen `Database`.
+**Description:** Filesystem path to the Firebird **migration/test** database
+file (`hydrogen_test.fdb`). Maps to Hydrogen `Database` for Test 37.
 
-**Tests:** 37, 40
+**Tests:** 37
 
 **Setup:**
 
 ```bash
-export FIREBIRD_DB_PATH="/var/lib/firebird/data/testfb.fdb"
+export FIREBIRD_DB_PATH_TEST="/path/to/hydrogen/tests/artifacts/database/firebird/hydrogen_test.fdb"
+```
+
+### FIREBIRD_DB_PATH_DEMO
+
+**Description:** Filesystem path to the Firebird **demo** database file
+(`hydrogen_demo.fdb`). Maps to Hydrogen `Database` for Tests 40, 43, 45, 46,
+47, 58 (and multi-engine Firebird slots).
+
+**Tests:** 40, 43, 45, 46, 47, 58, …
+
+**Setup:**
+
+```bash
+export FIREBIRD_DB_PATH_DEMO="/path/to/hydrogen/tests/artifacts/database/firebird/hydrogen_demo.fdb"
+```
+
+### FIREBIRD_DB_PATH
+
+**Description:** **Deprecated.** Former singular path. Prefer
+`FIREBIRD_DB_PATH_TEST` + `FIREBIRD_DB_PATH_DEMO`. Older helpers that still
+read the singular name should map **TEST as primary** (do not silently use one
+file for both roles). `create_test_db.sh` treats a lone `FIREBIRD_DB_PATH` as
+a one-off single-file create.
+
+**Tests:** legacy
+
+**Setup:**
+
+```bash
+# Prefer dual vars instead:
+# export FIREBIRD_DB_PATH_TEST="…/hydrogen_test.fdb"
+# export FIREBIRD_DB_PATH_DEMO="…/hydrogen_demo.fdb"
+export FIREBIRD_DB_PATH="${FIREBIRD_DB_PATH_TEST}"  # back-compat alias only
 ```
 
 ### FIREBIRD_DB_USER
@@ -872,7 +907,10 @@ export HYDROTST_DB_TYPE="db2"
 
 # Firebird (Firebird 4) - customize for your environment
 export FIREBIRD_SYSDBA_PASSWORD="your_sysdba_password"
-export FIREBIRD_DB_PATH="/var/lib/firebird/data/testfb.fdb"
+export FIREBIRD_DB_PATH_TEST="/path/to/hydrogen/tests/artifacts/database/firebird/hydrogen_test.fdb"
+export FIREBIRD_DB_PATH_DEMO="/path/to/hydrogen/tests/artifacts/database/firebird/hydrogen_demo.fdb"
+# Deprecated singular — map TEST as primary if something still needs it:
+export FIREBIRD_DB_PATH="${FIREBIRD_DB_PATH_TEST}"
 export FIREBIRD_DB_USER="SYSDBA"
 export FIREBIRD_DB_PASS="${FIREBIRD_SYSDBA_PASSWORD}"
 

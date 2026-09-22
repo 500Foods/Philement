@@ -3,7 +3,10 @@
 
 ## Status at a glance
 
-**New plan (2026-09-18).** Phase 0 locks approved (2026-09-18). Phases 0–9 complete. Phase 10 next.
+**New plan (2026-09-18).** Phase 0 locks approved (2026-09-18). Phases 0–9 complete.
+Phase 10 still **partial** (connstring fixes landed; live 40–58 deferred).
+**2026-09-22:** Test 37 APPLY corpus green on FB 4.0.7; reverse validation
+pending. See [Status 2026-09-22](#status-2026-09-22).
 This is not a rename of
 [`FIREBASE_SUPERSEDED.md`](/docs/H/plans/complete/FIREBASE_SUPERSEDED.md).
 Firebird is a SQL RDBMS (`libfbclient`). Hydrogen sends Helium SQL to it.
@@ -17,14 +20,63 @@ Firebird is a SQL RDBMS (`libfbclient`). Hydrogen sends Helium SQL to it.
 | 4 Firebase Helium / extras teardown | **complete** | |
 | 5 C register / connect | **complete** | Live health deferred to Phase 7 |
 | 6 Brotli UDR + JSON ingest | **complete** | C artifacts ready; live verification Phase 7 |
-| 7 Test 37 full Acuranzo | **complete** | Firebird installed (4.0.7); testfb.fdb created; live run verified |
+| 7 Test 37 full Acuranzo | **complete** (APPLY green 2026-09-22; reverse pending) | FB 4.0.7; APPLY through corpus; TestMigration reverse not fully confirmed |
 | 8 Retire Cockroach names | **complete** | 7-engine loop says Firebird; configs/scripts/libs/schematool/schemahelper |
 | 9 SchemaTool / flush | **complete** | schematool_firebird.sh; schemahelper ping/qdecode/qutil; flush paths |
-| 10 Tests 40–58 firebird matrix | **partial** | Connection string + engine name bugs fixed; live runs deferred to host with Firebird installed |
+| 10 Tests 40–58 firebird matrix | **partial** | Connstring/engine-name fixed; live 40–58 still deferred (host has FB now — rerun when ready) |
 | 11 Docs | pending | **Quick** |
 | 12 Coverage / completeness | pending | **Moderate** |
 
-Remaining: 1 Difficult (10 live runs), 2 Moderate (12), 1 Quick (11) — 11, 12
+Remaining: Test 37 reverse confirmation; Phase 10 live runs (40–58); Phase 11 docs; Phase 12 fences; prepare/StmtCache; UDR host install if needed.
+
+## Status 2026-09-22
+
+Carmine/Andrew Firebird migration push (live `hydrogen_test_37_firebird` on
+Firebird **4.0.7**). FB5 upgrade **not** required for the dialect gaps hit so
+far. Staying on 4.0.7.
+
+**Working now (mark done in logs below; do not claim Phase 10/11/12 complete):**
+
+- Hydrogen: real `firebird_health_check` prepare/execute/fetch SELECT; 
+  `firebird_execute_query` + result shaping; migrations unblocked in
+  `migration/transaction.c`; DDL via `isc_dsql_execute_immediate`; free()/invalid
+  pointer around failed stmts fixed; `queries.code` BLOB→JSON (`0x80` parse);
+  `execute_firebird_migration` commit-after-DDL (CREATE/ALTER/DROP/RECREATE), DML
+  stays one txn; `lead_apply.c` / `lead_reverse.c` route Firebird there;
+  `fb_interpret` multi-line status logging; `libjson_udfn` build path (host
+  install may still need sudo).
+- Extras DB scripts: `create_test_db.sh` / `run_create.sh` **PAGE_SIZE 32768**
+  (was 4096; needed for wide UTF8 UNIQUE e.g. 1189), firebird owner +
+  SUDO_USER/PKEXEC_UID group + 666, isql heredoc comment-outside-heredoc fix.
+  **Dual files (2026-09-22):** `hydrogen_test.fdb` + `hydrogen_demo.fdb` via
+  `FIREBIRD_DB_PATH_TEST` / `FIREBIRD_DB_PATH_DEMO` (modes `both|test|demo`).
+  Test 37 configs use `_TEST`; 40+ Firebird slots use `_DEMO`. No SQL schemas
+  on FB 4/5 — file is the isolation boundary.
+- Helium dialect (Option D family): multi-row INSERT→UNION ALL FROM
+  `RDB$DATABASE` (database.lua 3.4.0+); CTE VALUES rewrite (D2 3.4.1); strip
+  `COLUMN` after ADD/DROP (D3 3.4.2); `NOT NULL DEFAULT`→`DEFAULT … NOT NULL`
+  (D4 3.4.3); `database_firebird.lua` 1.3.0 `DROP_CHECK` uses
+  `FROM RDB$DATABASE WHERE EXISTS`; ASCII hyphen in refuse message;
+  `acuranzo_1190.lua` Firebird forward/reverse ALTER `password_hash`
+  DROP|SET NOT NULL.
+- Live Test 37: **APPLY completed through end of corpus** (past 1197 etc.).
+  TestMigration reverse started; 1342–1341 OK; 1340 DROP_CHECK failed then
+  fixed; **full reverse green still pending confirmation** (retest in flight
+  at doc update time).
+
+**Still open (do not mark done without evidence):**
+
+- Full TestMigration reverse end-to-end green.
+- `firebird_prepare_statement` / live `isc_dsql_prepare` into StmtCache
+  (app StmtCache exists; prepare path still Phase-5/6 stub — **no** real
+  statement cache).
+- Remaining per-engine missing branches in individual migrations (1190 was
+  one class).
+- RETURNING / QueryRefs runtime paths if exercised outside APPLY.
+- UDR install on host if not already installed (sudo).
+- Unity/mock completeness for new Firebird paths.
+- Phase 10 live suites 40/43/45/46/47/58; Phase 11 docs; Phase 12 fences.
+
 
 **Parity:** Firebird is a Hydrogen `DatabaseEngineInterface`, not a new
 API. Match PostgreSQL / SQLite / MySQL / DB2: same `QueryRequest` /
@@ -145,7 +197,7 @@ Each phase is worked in its **own conversation**. Follow this sequence:
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-09-21):** Phases 0–9 complete (Phase 0 locks approved; Phase 1 extras scripts rewritten to require sudo; Phase 7 Test 37 Firebird migration framework implemented; Phase 8 Cockroach names retired; Phase 9 SchemaTool/SchemaHelper/flush/tx utils converted). Phase 10 in progress — connection string + engine name bugs fixed; live Firebird test runs deferred to a host with Firebird 4.0.7 installed.
+**CURRENT PAUSE POINT (as of 2026-09-22):** Phases 0–9 complete. Phase 10 still partial (connection string + engine name bugs fixed 2026-09-21). **Live Test 37 APPLY** completed through end of Acuranzo corpus on Firebird 4.0.7 (Carmine/Andrew migration push). TestMigration **reverse** started (1342–1341 OK; 1340 DROP_CHECK fixed; full reverse green **not yet confirmed**). Next: confirm reverse pass, then Phase 10 live suites and/or remaining runtime gaps (`firebird_prepare_statement`/StmtCache, QueryRefs/RETURNING, UDR install, Unity mocks). See [Status 2026-09-22](#status-2026-09-22).
 
 Keep this block current when a phase finishes (date, result, next phase
 number). It is the first thing a new session reads.
@@ -893,7 +945,7 @@ Phase 0 Status complete.
   - `stop.sh`: Stops service only via `systemctl`; falls back to
     `gfix -shutdown` if service management unavailable.
   - `create_test_db.sh`: Creates `testfb.fdb` (or custom name) with
-    `PAGE_SIZE 4096` and `UTF8` charset; drops existing database first;
+    `PAGE_SIZE 4096` (later **32768** on 2026-09-22) and `UTF8` charset; drops existing database first;
     requires `FIREBIRD_SYSDBA_PASSWORD`.
   - All scripts have CHANGELOG headers, `set -euo pipefail`, and pass
     shellcheck (173 files, 0 issues).
@@ -901,6 +953,14 @@ Phase 0 Status complete.
     and SITEMAP.md firebird README entry.
   - Firebird packages not installed on this box (noted as variance);
     scripts are ready for Phase 7 Test 37 verification.
+
+- **2026-09-22** `create_test_db.sh` / `run_create.sh` updates (live APPLY needs):
+  - **PAGE_SIZE 32768** (was 4096) — required for wide UTF8 UNIQUE indexes
+    (e.g. migration 1189 key length).
+  - Permissions: firebird owner; group from `SUDO_USER`/`PKEXEC_UID`; mode
+    `666` so Hydrogen (non-firebird user) can attach.
+  - isql heredoc: comments must stay **outside** the heredoc (comment inside
+    produced false “success” with missing `.fdb`).
 
 ### Lessons learned
 
@@ -1288,7 +1348,7 @@ C extras changed; `mks` on extras scripts.
 | **State** | **complete (C artifacts ready; live verification deferred to Phase 7)** |
 | **Date** | 2026-09-19 |
 | **Result** | Phase 6.1: Created `extras/brotli_udf_firebird/` with `brotli_decompress.cpp` (C++ UDR using Firebird OO API `FB_UDR_BEGIN_FUNCTION`, `IBlob` read/write, `BrotliDecoderDecompressStream` with buffer-growth loop), `Makefile`, `README.md` (cross-engine table), `test_brotli.sql` (quality-11 round-trip). Phase 6.2: Created `extras/json_udf_firebird/` with `json_value.cpp` (C++ UDR for `JSON_VALUE(json_doc, json_path)` using jansson; supports `$.key`, `$.key.subkey`, `$.key[N]`; missing path → NULL), `Makefile`, `README.md`, `test_json.sql`. Added `${JSON_VALUE_FUNCTION}` macro to all 4 `database_firebird.lua`. Fixed `${BROTLI_DECOMPRESS_FUNCTION}`: changed `ENGINE BLR` → `ENGINE UDR` with `module!routine` syntax. Added `${JSON_VALUE_FUNCTION}` emission block to `acuranzo_1000`, `gaius_2000`, `helium_4000`, `glm_3000` before `${JSON_INGEST_FUNCTION}`. Phase 6.3: Created `test_sha256_fixture.sql`; verified `CUQEdl7cgIo2iGBfQmsuosLbdT9uLVpbm/rRJGQlbw0=` via Python. Phase 6.4: Test 31 remains green (1930/1930). Created `extras/firebird/install_udrs.sh`. Updated `extras/README.md`. |
-| **Variances** | Cannot build/test UDRs locally: no `sudo` to install `firebird-devel`+`jansson-devel`+`libbrotli-devel`; `isql-fb` not available; no Firebird server running. UDR `.so` compilation deferred to Phase 7 Test 37 on a host with Firebird installed. `mkt`/`mkp` do not cover `extras/` UDRs — they are standalone C++ `.so` built by their own Makefiles. |
+| **Variances** | Cannot build/test UDRs locally: no `sudo` to install `firebird-devel`+`jansson-devel`+`libbrotli-devel`; `isql-fb` not available; no Firebird server running. UDR `.so` compilation deferred to Phase 7 Test 37 on a host with Firebird installed. `mkt`/`mkp` do not cover `extras/` UDRs — they are standalone C++ `.so` built by their own Makefiles. **2026-09-22:** `libjson_udfn` build path exists; **host UDR install may still need sudo** — do not assume installed until verified. |
 
 ### Working Log
 
@@ -1398,6 +1458,25 @@ the full design; `mks`; markdown exists.
 - **2026-09-20 Phase 7.3** Created `docs/H/tests/test_37_firebird_migrations.md`: documents full Acuranzo AutoMigrations on Firebird SuperServer.
 - **2026-09-20 Phase 7.4** Verification: `mkq` PASS (0 dead functions), `mkp` PASS (2,057 files, 0 issues), `mks` PASS (175 files, 0 issues), `mkl` PASS (336 files, 2,565 links, 0 missing). Updated SITEMAP.md, STRUCTURE.md, INSTRUCTIONS.md, TESTING.md. Verified `lua.c` engines[] + config schema enum include `"firebird"` (Phase 5).
 - **2026-09-21 Phase 7.5** Env var cleanup: `create_test_db.sh` (v2.1.0) now honors `FIREBIRD_DB_PATH` for database file location instead of hardcoded `/var/lib/firebird/data/${DB_NAME}`; creates data dir with proper firebird ownership; `TEST_VERSION` 1.4.5→1.4.6 in test_03_shell.sh to register `FIREBIRD_DB_USER`/`FIREBIRD_DB_PASS`. `test_37_firebird_migrations.sh` (v1.4.0) fixed typo `FIREBIRD_SYSBDA_PASSWORD`→`FIREBIRD_SYSDBA_PASSWORD`; test now exports `FIREBIRD_DB_USER`/`FIREBIRD_DB_PASS` (falling back to SYSDBA) for its own work while SYSDBA credentials are used only by `create_test_db.sh` for initial creation. `SECRETS.md` updated with new env var docs.
+
+
+- **2026-09-22 Carmine/Andrew live migration push (Test 37):**
+  - Hydrogen path unblocked for APPLY: real `firebird_health_check`
+    (prepare/execute/fetch SELECT, not execute_immediate stub);
+    `firebird_execute_query` + result shaping; `migration/transaction.c`
+    unblocked; DDL via `isc_dsql_execute_immediate` (not prepare/fetch);
+    free()/invalid pointer on failed stmts fixed; `queries.code` BLOB→JSON
+    (`0x80`); `execute_firebird_migration` commit-after-DDL
+    (CREATE/ALTER/DROP/RECREATE), DML one txn; `lead_apply.c` /
+    `lead_reverse.c` route Firebird to that path (APPLY metadata visibility);
+    `fb_interpret` multi-line Firebird status logging.
+  - Helium Option D–D4 + `DROP_CHECK`/`1190` fixes (see Status 2026-09-22).
+  - **APPLY completed through end of corpus** (past 1197 etc.).
+  - TestMigration reverse: 1342–1341 OK; 1340 failed on DROP_CHECK → fixed
+    (`database_firebird.lua` 1.3.0); **full reverse pass pending confirmation**.
+  - Staying on Firebird **4.0.7**; FB5 **not** required for dialect gaps hit.
+  - **Not done:** `firebird_prepare_statement` still stub (no live
+    `isc_dsql_prepare` into StmtCache).
 
 ### Lessons learned
 
@@ -1568,6 +1647,18 @@ Cockroach.
   - Added result check on `isc_commit_transaction` after successful health-check SQL — commit failure now logs the error via `firebird_status_to_error`.
   - Verification: `mkq` PASS (build + 0 dead functions), `mkp` PASS (2,057 files, 0 issues). All 44 Firebird Unity tests green (40 original + 4 new).
 
+- **2026-09-22 (supersedes earlier health_check execute_immediate notes):**
+  `firebird_health_check` now uses real prepare/execute/fetch SELECT (parity
+  with other engines). Earlier log_this / `firebird_status_to_error` fixes
+  remain useful; execute_immediate is for **DDL**, not health SELECT.
+- **2026-09-22** Helium dialect Option D/D2/D3/D4 + DROP_CHECK + 1190 Firebird
+  ALTER arms landed (see [Status 2026-09-22](#status-2026-09-22)). These
+  unblock Test 37 APPLY/reverse; they are not Phase 10 suite green by
+  themselves.
+- **2026-09-22** Phase 10 live 40–58 still **open** — host now has Firebird
+  4.0.7 and Test 37 APPLY works, but named suite runs for 40/43/45/46/47/58
+  were not claimed green in this update.
+
 ### Lessons learned
 
 - The `Database` field in JSON configs must NOT include the protocol prefix (`firebird://`). All other engines use just the database name/path, and `get_connection_string` builds the full URL. Including the prefix caused `firebird_get_connection_string` to return the raw string with triple slashes (`firebird:///path`), which `parse_connection_string` then misinterpreted as embedded mode with an empty host.
@@ -1718,6 +1809,13 @@ Port scheme: Test 37 → **537x**.
   key 6 is relabelled, not reused from key 5. Sister plan
   [`MSSQL.md`](/docs/H/plans/MSSQL.md).
 
+- **(2026-09-22 Carmine/Andrew)** Stay on Firebird **4.0.7**; do not block on
+  FB5 for Option D / ALTER COLUMN / DROP_CHECK class issues — those are
+  Helium rewrite + Hydrogen txn/DDL path fixes. App StmtCache exists but
+  `firebird_prepare_statement` remains a stub until a later pass wires
+  `isc_dsql_prepare` into the cache. Test 37 APPLY corpus green; reverse
+  confirmation still the near-term gate before treating migrations “done.”
+
 ### Surprises / deviations (historical, still true)
 
 - Fedora 43 packages Firebird **4.0.7**, not 5.
@@ -1744,5 +1842,14 @@ Port scheme: Test 37 → **537x**.
 - Payload rebuild (`mkt`) is required before Test 31–38 see new
   `database_firebird.lua`.
 - Do not `dlopen` libpq for firebird.
+
+- Firebird DDL generally needs commit-after-DDL for metadata visibility;
+  DML can stay in one transaction (`execute_firebird_migration`).
+- Wide UTF8 UNIQUE indexes need `PAGE_SIZE 32768` (4096 fails ~1189).
+- Multi-row `INSERT … VALUES (…),(…)` is not Firebird — rewrite to
+  `INSERT…SELECT…UNION ALL FROM RDB$DATABASE` (Option D).
+- `ALTER … ADD|DROP COLUMN` → Firebird wants ADD/DROP **without** COLUMN.
+- `NOT NULL DEFAULT` order → `DEFAULT … NOT NULL` on Firebird.
+- `DROP_CHECK` must be `SELECT … FROM RDB$DATABASE WHERE EXISTS (…)`.
 - Cross-check SHA-256 against SQLite `crypto_sha256` before declaring
   login green.

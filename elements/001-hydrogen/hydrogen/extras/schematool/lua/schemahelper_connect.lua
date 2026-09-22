@@ -277,7 +277,7 @@ local function apply_family(conn, engine, wrapper)
         conn.host = ""
         conn.port = ""
         conn.user = "SYSDBA"
-        conn.database = getenv("FIREBIRD_DB_PATH")
+        conn.database = getenv("FIREBIRD_DB_PATH_DEMO") or getenv("FIREBIRD_DB_PATH_TEST") or getenv("FIREBIRD_DB_PATH")
         conn.password_env = "FIREBIRD_SYSDBA_PASSWORD"
         conn.schema = ""
         conn.engine_is_sqlite_like = true
@@ -465,7 +465,7 @@ end
 
 local function ping_firebird(conn)
     if conn.database == "" then
-        return false, "missing database (FIREBIRD_DB_PATH)"
+        return false, "missing database (FIREBIRD_DB_PATH_DEMO / _TEST / deprecated FIREBIRD_DB_PATH)"
     end
     if conn.password_env ~= "" and getenv(conn.password_env) == "" then
         return false, conn.password_env .. " not set"

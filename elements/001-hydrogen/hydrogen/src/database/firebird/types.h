@@ -44,6 +44,11 @@ typedef fb_status_t (*isc_dsql_execute_t)(fb_status_t*, void**, void**, short, c
 typedef fb_status_t (*isc_dsql_execute_immediate_t)(fb_status_t*, void**, void**, short, const char*, short, const void*);
 typedef fb_status_t (*isc_dsql_free_statement_t)(fb_status_t*, void**, short);
 typedef fb_status_t (*isc_dsql_fetch_t)(fb_status_t*, void**, short, void*);
+typedef fb_status_t (*isc_dsql_describe_bind_t)(fb_status_t*, void**, unsigned short, void*);
+/* Decode ISC_DATE / ISC_TIME / ISC_TIMESTAMP into struct tm (void return). */
+typedef void (*isc_decode_sql_date_t)(const void*, void*);
+typedef void (*isc_decode_sql_time_t)(const void*, void*);
+typedef void (*isc_decode_timestamp_t)(const void*, void*);
 
 /* Cancel */
 typedef fb_status_t (*fb_cancel_operation_t)(fb_status_t*, void**, unsigned short);
@@ -77,6 +82,10 @@ extern isc_dsql_execute_t             isc_dsql_execute_ptr;
 extern isc_dsql_execute_immediate_t   isc_dsql_execute_immediate_ptr;
 extern isc_dsql_free_statement_t      isc_dsql_free_statement_ptr;
 extern isc_dsql_fetch_t               isc_dsql_fetch_ptr;
+extern isc_dsql_describe_bind_t        isc_dsql_describe_bind_ptr;
+extern isc_decode_sql_date_t           isc_decode_sql_date_ptr;
+extern isc_decode_sql_time_t           isc_decode_sql_time_ptr;
+extern isc_decode_timestamp_t          isc_decode_timestamp_ptr;
 extern fb_cancel_operation_t          fb_cancel_operation_ptr;
 extern isc_open_blob2_t               isc_open_blob2_ptr;
 extern isc_get_segment_t              isc_get_segment_ptr;

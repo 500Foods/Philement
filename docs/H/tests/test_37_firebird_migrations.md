@@ -24,7 +24,7 @@ This test validates that Firebird database migrations execute successfully and p
 - **Database**: Firebird 4.0 SuperServer on port 3050
 - **Server Port**: 5376
 - **Migration Trigger**: `"AutoMigration": true, "TestMigration": false`
-- **Database File**: `/var/lib/firebird/data/testfb.fdb` (via `${env.FIREBIRD_DB_PATH}`)
+- **Database File**: `hydrogen_test.fdb` (via `${env.FIREBIRD_DB_PATH_TEST}`)
 - **Schema**: empty (Firebird uses file-based isolation, no schema prefix)
 
 ## Output Format
@@ -45,8 +45,8 @@ This test validates that Firebird database migrations execute successfully and p
 
 - Firebird 4.0 SuperServer running on port 3050 (started via `extras/firebird/start.sh`)
 - `FIREBIRD_SYSDBA_PASSWORD` environment variable set
-- `FIREBIRD_DB_PATH` environment variable set (defaults to `/var/lib/firebird/data/testfb.fdb`)
-- Test database `testfb.fdb` created separately via `extras/firebird/create_test_db.sh` — the test treats the database as pre-existing
+- `FIREBIRD_DB_PATH_TEST` environment variable set (defaults to `tests/artifacts/database/firebird/hydrogen_test.fdb`)
+- Test database `hydrogen_test.fdb` created separately via `extras/firebird/create_test_db.sh test` (or `both`) — the test treats the database as pre-existing
 - Hydrogen binary built and available
 - Config file: `tests/configs/hydrogen_test_37_firebird.json`
 

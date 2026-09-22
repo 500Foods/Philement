@@ -216,7 +216,7 @@ CLI flags always win. For each empty field, env is chosen from the **requested**
    - `yugabytedb` → `YUGABYTE_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`
    - `mysql` / `mariadb` → `CANVAS_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`
    - `db2` → `HYDROTST_DB_{USER,NAME,PASS,SCHEMA}`
-   - `firebird` → `FIREBIRD_DB_PATH` + `FIREBIRD_SYSDBA_PASSWORD`
+   - `firebird` → `FIREBIRD_DB_PATH_DEMO` (or `_TEST` / deprecated `FIREBIRD_DB_PATH`) + `FIREBIRD_SYSDBA_PASSWORD`
 2. **Generic** `SCHEMATOOL_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`
 3. Default ports: postgresql 5432, mysql 3306
 
@@ -229,7 +229,7 @@ SQLite: `--database` is the file path (or `SCHEMATOOL_DB_NAME`); host/user unuse
 | Wrapper | Schema | Primary credentials |
 | --------- | -------- | --------------------- |
 | `schematool_postgresql.sh` | `demo` | `ACURANZO_DB_*` |
-| `schematool_firebird.sh` | _(empty)_ | `FIREBIRD_DB_PATH` + `FIREBIRD_SYSDBA_PASSWORD` |
+| `schematool_firebird.sh` | _(empty)_ | `FIREBIRD_DB_PATH_DEMO` (or `_TEST`) + `FIREBIRD_SYSDBA_PASSWORD` |
 | `schematool_yugabytedb.sh` | `demo` | **`YUGABYTE_DB_*`** (explicit flags; never ACURANZO) |
 | `schematool_mysql.sh` | `demo` | `CANVAS_DB_*` |
 | `schematool_mariadb.sh` | `demomrdb` | `CANVAS_DB_*` |

@@ -8,6 +8,7 @@
 # run_migration_test()
 
 # CHANGELOG
+# 1.4.1 - 2026-09-22 - Prefer FIREBIRD_DB_PATH_TEST (dual-DB); map singular FIREBIRD_DB_PATH → TEST
 # 1.4.0 - 2026-09-21 - Test now uses FIREBIRD_DB_USER and FIREBIRD_DB_PASS env vars
 #           for its own database work (instead of SYSDBA). SYSDBA credentials
 #           (FIREBIRD_SYSDBA_PASSWORD) are used only by create_test_db.sh for
@@ -26,16 +27,21 @@ TEST_NAME="Firebird Migration"
 TEST_ABBR="FBD"
 TEST_NUMBER="37"
 TEST_COUNTER=0
-TEST_VERSION="1.4.0"
+TEST_VERSION="1.4.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
 setup_test_environment
 
-# Firebird env vars for Hydrogen config ${env.FIREBIRD_DB_PATH} and ${env.FIREBIRD_SYSDBA_PASSWORD}
+# Firebird env vars for Hydrogen config ${env.FIREBIRD_DB_PATH_TEST} and ${env.FIREBIRD_SYSDBA_PASSWORD}
 # Test work uses FIREBIRD_DB_USER/FIREBIRD_DB_PASS (non-SYSDBA account); SYSDBA
 # credentials are only for create_test_db.sh initial database creation.
-export FIREBIRD_DB_PATH="${FIREBIRD_DB_PATH:-/var/lib/firebird/data/testfb.fdb}"
+# Dual-path wiring: Test 37 uses FIREBIRD_DB_PATH_TEST. Singular FIREBIRD_DB_PATH
+# is deprecated; if still set alone, map it as TEST for back-compat.
+_ART="${SCRIPT_DIR}/artifacts/database/firebird/hydrogen_test.fdb"
+export FIREBIRD_DB_PATH_TEST="${FIREBIRD_DB_PATH_TEST:-${FIREBIRD_DB_PATH:-${_ART}}}"
+# Deprecated alias — keep TEST as primary so older helpers do not break silently
+export FIREBIRD_DB_PATH="${FIREBIRD_DB_PATH:-${FIREBIRD_DB_PATH_TEST}}"
 export FIREBIRD_SYSDBA_PASSWORD="${FIREBIRD_SYSDBA_PASSWORD:-masterkey}"
 export FIREBIRD_DB_USER="${FIREBIRD_DB_USER:-SYSDBA}"
 export FIREBIRD_DB_PASS="${FIREBIRD_DB_PASS:-${FIREBIRD_SYSDBA_PASSWORD:-masterkey}}"

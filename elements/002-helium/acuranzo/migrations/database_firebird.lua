@@ -3,6 +3,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 1.2.1 - 2026-09-22 - DATEADD macros use DATEADD(UNIT, 0 +/- n, NOW) so named→? binds are not unary-negated
 -- 1.2.0 - 2026-09-22 - JSON_INGEST_FUNCTION: Firebird 4 UDR call shape (no DEFAULT/SUSPEND); JRE drops DEFAULT NULL ON ERROR
 -- 1.1.0 - 2026-09-19 - Added JSON_VALUE_FUNCTION UDR macro; fixed BROTLI_DECOMPRESS_FUNCTION to use ENGINE UDR with module!routine format
 -- 1.0.0 - 2026-09-18 - Initial Firebird dialect (Lookup 030 key 6 relabel from Firebase)
@@ -11,7 +12,7 @@
 -- Firebird 4 native functions: BASE64_ENCODE/BASE64_DECODE, CRYPT_HASH(... USING SHA256).
 -- Brotli decompression via UDR in extras/brotli_udf_firebird/.
 -- JSON stored as BLOB SUB_TYPE TEXT; JSON_VALUE not native until Firebird 6 — use UDR/PSQL.
--- ${SCHEMA} is empty; database file (testfb.fdb) is the isolation boundary.
+-- ${SCHEMA} is empty; database file (hydrogen_test.fdb) is the isolation boundary.
 
 return {
     CHAR_2 = "CHAR(2)",
@@ -48,12 +49,12 @@ return {
     TIME = "TIME",
     TIMESTAMP = "TIMESTAMP",
     TIMESTAMP_TZ = "TIMESTAMP WITH TIME ZONE",
-    TRMS = "DATEADD(-",
-    TRME = " MINUTE TO ${NOW})",
-    TRFS = "DATEADD(+",
-    TRFE = " SECOND TO ${NOW})",
-    TRFMS = "DATEADD(+",
-    TRFME = " MINUTE TO ${NOW})",
+    TRMS = "DATEADD(MINUTE, 0 - ",
+    TRME = ", ${NOW})",
+    TRFS = "DATEADD(SECOND, 0 + ",
+    TRFE = ", ${NOW})",
+    TRFMS = "DATEADD(MINUTE, 0 + ",
+    TRFME = ", ${NOW})",
     UNIQUE = "UNIQUE",
     VARCHAR_20 = "varchar(20)",
     VARCHAR_50 = "varchar(50)",

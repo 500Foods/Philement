@@ -71,7 +71,7 @@ Connection (required for full audit / --dump-db; env fallbacks apply):
 
   Env precedence when flags omitted (first non-empty wins per field):
     1) Requested engine name (before alias) → primary env:
-          postgresql|postgres|firebird → ACURANZO_DB_{HOST,PORT,USER,NAME,PASS} (PG wire) / FIREBIRD_DB_PATH+FIREBIRD_SYSDBA_PASSWORD (native)
+          postgresql|postgres|firebird → ACURANZO_DB_{HOST,PORT,USER,NAME,PASS} (PG wire) / FIREBIRD_DB_PATH_DEMO|_TEST (or deprecated FIREBIRD_DB_PATH)+FIREBIRD_SYSDBA_PASSWORD (native)
          yugabytedb                      → YUGABYTE_DB_{HOST,PORT,USER,NAME,PASS}
          mysql|mariadb                   → CANVAS_DB_{HOST,PORT,USER,NAME,PASS}
          db2                             → HYDROTST_DB_{USER,NAME,PASS}
@@ -411,7 +411,7 @@ case "${ENGINE_REQUESTED}" in
         [[ -z "${SCHEMA}" && -n "${ACURANZO_DB_SCHEMA:-}" ]] && SCHEMA="${ACURANZO_DB_SCHEMA}"
         ;;
     firebird)
-        [[ -z "${DATABASE}" ]] && DATABASE="${FIREBIRD_DB_PATH:-}"
+        [[ -z "${DATABASE}" ]] && DATABASE="${FIREBIRD_DB_PATH_DEMO:-${FIREBIRD_DB_PATH_TEST:-${FIREBIRD_DB_PATH:-}}}"
         [[ -z "${USER_NAME}" ]] && USER_NAME="SYSDBA"
         [[ -z "${PASSWORD_ENV}" && -n "${FIREBIRD_SYSDBA_PASSWORD:-}" ]] && PASSWORD_ENV="FIREBIRD_SYSDBA_PASSWORD"
         [[ -z "${SCHEMA}" ]] && SCHEMA=""

@@ -24,4 +24,9 @@ bool firebird_execute_prepared(DatabaseHandle* connection,
                                QueryRequest* request,
                                QueryResult** result);
 
+/* Temporal JSON + DATEADD(- ?) rewrite (Test 40 auth). */
+bool firebird_append_temporal_json(char** buf, size_t* size, size_t* cap,
+                                   short typ, const char* sqldata, short sqllen);
+char* firebird_rewrite_dateadd_params(const char* sql, bool* oom);
+
 #endif /* DATABASE_ENGINE_FIREBIRD_QUERY_H */

@@ -3,7 +3,7 @@
 This directory provides convenience scripts and documentation for running
 a local Firebird 4.0 server (SuperServer) and creating test databases.
 Firebird is used as the replacement engine in the Acuranzo
-migration matrix (Test 37).
+migration matrix (Test 37) and demo suites (Test 40+).
 
 ## Packages (Fedora 43 / dnf)
 
@@ -36,34 +36,51 @@ is `masterkey`.
 export FIREBIRD_SYSDBA_PASSWORD="masterkey"
 ```
 
-See [SECRETS.md](/docs/H/SECRETS.md) for `FIREBIRD_SYSDBA_PASSWORD` and
-`FIREBIRD_DB_PATH`.
+See [SECRETS.md](/docs/H/SECRETS.md) for `FIREBIRD_SYSDBA_PASSWORD`,
+`FIREBIRD_DB_PATH_TEST`, and `FIREBIRD_DB_PATH_DEMO`.
+(`FIREBIRD_DB_PATH` singular is deprecated — prefer the dual vars.)
 
 ## SuperServer vs Embedded
 
 | Mode | When | Connection |
 | --- | --- | --- |
-| **SuperServer (Test 37 / 40)** | Networked SQL, like the Firebird slot | `localhost/3050:/var/lib/firebird/data/testfb.fdb` |
+| **SuperServer (Test 37 / 40)** | Networked SQL, like the Firebird slot | `localhost/3050:/path/to/hydrogen_test.fdb` |
 | **Embedded** | Appliance / no daemon | Database path, empty Host — `libfbclient` loads Engine plugin |
 
 Tests lock SuperServer unless Phase 0 amends.
 
 ## Database Files
 
-| File | Purpose |
-| --- | --- |
-| `testfb.fdb` | Acuranzo Test 37 / Test 40 test database |
-| `demofb.fdb` | Demo / development database |
+| File | Env var | Purpose |
+| --- | --- | --- |
+| `hydrogen_test.fdb` | `FIREBIRD_DB_PATH_TEST` | Acuranzo Test 37 migration isolation DB |
+| `hydrogen_demo.fdb` | `FIREBIRD_DB_PATH_DEMO` | Demo / Test 40+ (auth, scripting, OIDC, …) |
 
-The default data directory is `/var/lib/firebird/data/`.
+Default location when env vars are unset:
+
+`${HYDROGEN_ROOT}/tests/artifacts/database/firebird/`
+
+(Old defaults `testfb.fdb` / `demofb.fdb` are retired.)
+
+Example (Andrew):
+
+```bash
+export FIREBIRD_DB_PATH_DEMO="/mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/tests/artifacts/database/firebird/hydrogen_demo.fdb"
+export FIREBIRD_DB_PATH_TEST="/mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/tests/artifacts/database/firebird/hydrogen_test.fdb"
+```
 
 ## Scripts
 
 - `start.sh` — Starts the Firebird systemd service. **Requires `sudo`** (the
   scripts use `sudo` internally to call `systemctl start firebird`).
 - `stop.sh` — Stops the Firebird systemd service. **Requires `sudo`**.
-- `create_test_db.sh` — Creates `testfb.fdb` and grants SYSDBA privileges.
-  Run as `sudo` or as a user with write access to `/var/lib/firebird/data/`.
+- `create_test_db.sh` — Creates `hydrogen_test.fdb` and/or `hydrogen_demo.fdb`
+  (modes: `both` default, `test`, `demo`, or a one-off `.fdb` path). Prefer
+  `FIREBIRD_DB_PATH_TEST` / `FIREBIRD_DB_PATH_DEMO`. Run via `sudo` or
+  `run_create.sh` (pkexec).
+- `run_create.sh` — pkexec wrapper; forwards dual env vars and mode args.
+
+Creating **test** only does **not** drop/recreate **demo** (and vice versa).
 
 ## Setup
 
@@ -79,20 +96,31 @@ auto-detect it.
 
 ## Usage
 
-### Quick Start (Test 37 / Test 40)
+### Quick Start (both DBs)
 
 ```bash
+export HYDROGEN_ROOT="/path/to/hydrogen"
 export FIREBIRD_SYSDBA_PASSWORD="masterkey"
+export FIREBIRD_DB_PATH_TEST="…/tests/artifacts/database/firebird/hydrogen_test.fdb"
+export FIREBIRD_DB_PATH_DEMO="…/tests/artifacts/database/firebird/hydrogen_demo.fdb"
 ./start.sh
-./create_test_db.sh
-# ... run Test 37 or Test 40 ...
+# both (default):
+./run_create.sh
+# or: sudo ./create_test_db.sh both
+# test only / demo only:
+./run_create.sh test
+./run_create.sh demo
+# ... run Test 37 (TEST) or Test 40+ (DEMO) ...
 ./stop.sh
 ```
 
 ### Manual Connection
 
 ```bash
-isql-fb -user SYSDBA -password "$FIREBIRD_SYSDBA_PASSWORD" localhost/3050:/var/lib/firebird/data/testfb.fdb
+isql-fb -user SYSDBA -password "$FIREBIRD_SYSDBA_PASSWORD" \
+  "localhost/3050:${FIREBIRD_DB_PATH_TEST}"
+isql-fb -user SYSDBA -password "$FIREBIRD_SYSDBA_PASSWORD" \
+  "localhost/3050:${FIREBIRD_DB_PATH_DEMO}"
 ```
 
 ## Related

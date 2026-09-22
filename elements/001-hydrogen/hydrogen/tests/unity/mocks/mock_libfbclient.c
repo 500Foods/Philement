@@ -8,6 +8,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 #include <stdbool.h>
 #include <stddef.h>
 
@@ -28,6 +29,7 @@ static int mock_isc_dsql_execute_result = 0;
 static int mock_isc_dsql_execute_immediate_result = 0;
 static int mock_isc_dsql_free_statement_result = 0;
 static int mock_isc_dsql_fetch_result = 0;
+static int mock_isc_dsql_describe_bind_result = 0;
 static int mock_fb_cancel_operation_result = 0;
 
 // Output handle for attach (so callers see a "real" handle)
@@ -45,6 +47,7 @@ static int mock_isc_dsql_execute_calls = 0;
 static int mock_isc_dsql_execute_immediate_calls = 0;
 static int mock_isc_dsql_free_statement_calls = 0;
 static int mock_isc_dsql_fetch_calls = 0;
+static int mock_isc_dsql_describe_bind_calls = 0;
 static int mock_fb_cancel_operation_calls = 0;
 
 // Last attach args (for assertion in tests)
@@ -196,6 +199,39 @@ fb_status_t mock_isc_dsql_fetch(fb_status_t* status, void** stmt_handle, short u
     return (fb_status_t)mock_isc_dsql_fetch_result;
 }
 
+fb_status_t mock_isc_dsql_describe_bind(fb_status_t* status, void** stmt_handle,
+                                        unsigned short da_version, void* xsqlda) {
+    mock_isc_dsql_describe_bind_calls++;
+    (void)stmt_handle;
+    (void)da_version;
+    (void)xsqlda;
+    if (status) {
+        memset(status, 0, 20 * sizeof(fb_status_t));
+    }
+    return (fb_status_t)mock_isc_dsql_describe_bind_result;
+}
+
+void mock_isc_decode_sql_date(const void* nday, void* times_arg) {
+    (void)nday;
+    if (times_arg) {
+        memset(times_arg, 0, sizeof(struct tm));
+    }
+}
+
+void mock_isc_decode_sql_time(const void* ntime, void* times_arg) {
+    (void)ntime;
+    if (times_arg) {
+        memset(times_arg, 0, sizeof(struct tm));
+    }
+}
+
+void mock_isc_decode_timestamp(const void* ts, void* times_arg) {
+    (void)ts;
+    if (times_arg) {
+        memset(times_arg, 0, sizeof(struct tm));
+    }
+}
+
 
 fb_status_t mock_isc_open_blob2(fb_status_t* status, void** db_handle, void** tr_handle,
                                 void** blob_handle, void* blob_id, short bpb_len, const char* bpb) {
@@ -254,6 +290,7 @@ void mock_libfbc_reset_all(void) {
     mock_isc_dsql_execute_immediate_result = 0;
     mock_isc_dsql_free_statement_result = 0;
     mock_isc_dsql_fetch_result = 0;
+    mock_isc_dsql_describe_bind_result = 0;
     mock_fb_cancel_operation_result = 0;
 
     mock_isc_attach_database_output_handle = (void*)0xDEADBEEF;
@@ -269,6 +306,7 @@ void mock_libfbc_reset_all(void) {
     mock_isc_dsql_execute_immediate_calls = 0;
     mock_isc_dsql_free_statement_calls = 0;
     mock_isc_dsql_fetch_calls = 0;
+    mock_isc_dsql_describe_bind_calls = 0;
     mock_fb_cancel_operation_calls = 0;
 
     last_attach_dbname = NULL;
@@ -317,6 +355,10 @@ void mock_libfbc_set_isc_dsql_free_statement_result(int result) {
 
 void mock_libfbc_set_isc_dsql_fetch_result(int result) {
     mock_isc_dsql_fetch_result = result;
+}
+
+void mock_libfbc_set_isc_dsql_describe_bind_result(int result) {
+    mock_isc_dsql_describe_bind_result = result;
 }
 
 void mock_libfbc_set_fb_cancel_operation_result(int result) {

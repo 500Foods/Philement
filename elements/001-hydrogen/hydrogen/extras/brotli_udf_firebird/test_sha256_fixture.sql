@@ -10,7 +10,7 @@
 -- The ${SHA256_HASH_START}${SHA256_HASH_MID}${SHA256_HASH_END} macros
 -- expand to BASE64_ENCODE(CRYPT_HASH((<id> || <password>) USING SHA256))
 --
--- Usage: isql-fb -user SYSDBA -password <pass> testfb.fdb < test_sha256_fixture.sql
+-- Usage: isql-fb -user SYSDBA -password <pass> hydrogen_test.fdb < test_sha256_fixture.sql
 
 SELECT '=== SHA-256 Password Hash Fixture ===' AS test FROM RDB$DATABASE;
 

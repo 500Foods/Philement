@@ -228,7 +228,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1187](/elements/002-helium/acuranzo/migrations/acuranzo_1187.lua) | lookups | 1.2.0 | 2026-04-11 | 4 | ✗ | LithiumTable version-manager (lookup_id 059, key_idx 10) |
 | [1188](/elements/002-helium/acuranzo/migrations/acuranzo_1188.lua) | queries | 1.0.0 | 2026-04-23 | 4 | ✗ | QueryRef #075 - Create Account Settings |
 | [1189](/elements/002-helium/acuranzo/migrations/acuranzo_1189.lua) | account_oidc_identities | 1.0.0 | 2026-05-09 | 7 | ✓ | Creates the account_oidc_identities table (OIDC RP Phase 15) |
-| [1190](/elements/002-helium/acuranzo/migrations/acuranzo_1190.lua) | accounts | 1.1.0 | 2026-09-19 | 25 | ✓ | Relax accounts.password_hash to NULL for OIDC-provisioned accounts (OIDC RP Phase 16) |
+| [1190](/elements/002-helium/acuranzo/migrations/acuranzo_1190.lua) | accounts | 1.1.0 | 2026-09-19 | 29 | ✓ | Relax accounts.password_hash to NULL for OIDC-provisioned accounts (OIDC RP Phase 16) |
 | [1191](/elements/002-helium/acuranzo/migrations/acuranzo_1191.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #080 - OIDC RP: Lookup OIDC Identity (Phase 17) |
 | [1192](/elements/002-helium/acuranzo/migrations/acuranzo_1192.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #081 - OIDC RP: Link OIDC Identity (Phase 17) |
 | [1193](/elements/002-helium/acuranzo/migrations/acuranzo_1193.lua) | queries | 1.1.0 | 2026-07-09 | 4 | ✗ | QueryRef #082 - OIDC RP: Lookup Account by Email (Phase 17) |
@@ -423,4 +423,4 @@ in the migrations themselves so that they get populated in the database directly
 | [1382](/elements/002-helium/acuranzo/migrations/acuranzo_1382.lua) | lookups | 1.0.1 | 2026-09-16 | 8 | ✗ | Retarget Lookup 037 from Role Status to Role Origin |
 | [1383](/elements/002-helium/acuranzo/migrations/acuranzo_1383.lua) | lookups | 1.0.0 | 2026-09-16 | 4 | ✗ | Addition to Lookup 030 - Query Dialect (key 6 Firebase) |
 | [1384](/elements/002-helium/acuranzo/migrations/acuranzo_1384.lua) | lookups | 1.0.0 | 2026-09-18 | 4 | ✗ | UPDATE Lookup 030 - Query Dialect (key 6 Firebase → Firebird) |
-| **385** | | | | **1963** | **385** | |
+| **385** | | | | **1967** | **385** | |

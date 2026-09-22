@@ -9,6 +9,8 @@
 # 1.0.3 - 2026-01-17 - Fix DB2 password handling with special characters by disabling history expansion
 
 set -euo pipefail
+# Firebird path: prefer DEMO, then TEST, then deprecated singular (TEST-primary policy)
+FB_FLUSH_PATH="${FIREBIRD_DB_PATH_DEMO:-${FIREBIRD_DB_PATH_TEST:-${FIREBIRD_DB_PATH:-}}}"
 set +H  # Disable history expansion to handle passwords with special characters
 
 # Parse command line arguments
@@ -115,8 +117,8 @@ count_objects() {
             fi
             ;;
         firebird)
-            if [[ -n "${FIREBIRD_DB_PATH:-}" ]]; then
-                count=$(isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" "${FIREBIRD_DB_PATH}" -z -i /dev/stdin <<< "SELECT COUNT(*) FROM RDB\$RELATIONS WHERE RDB\$SYSTEM_FLAG = 0 AND RDB\$VIEW_BLR IS NULL;" 2>/dev/null | grep -E '^[0-9]+$' | tail -1 || echo "0")
+            if [[ -n "${FB_FLUSH_PATH}" ]]; then
+                count=$(isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" "${FB_FLUSH_PATH}" -z -i /dev/stdin <<< "SELECT COUNT(*) FROM RDB\$RELATIONS WHERE RDB\$SYSTEM_FLAG = 0 AND RDB\$VIEW_BLR IS NULL;" 2>/dev/null | grep -E '^[0-9]+$' | tail -1 || echo "0")
             else
                 count="0"
             fi
@@ -191,14 +193,14 @@ drop_schema() {
             fi
             ;;
         firebird)
-            if [[ -n "${FIREBIRD_DB_PATH:-}" ]]; then
+            if [[ -n "${FB_FLUSH_PATH}" ]]; then
                 if [[ "${DEBUG}" == true ]]; then
-                    isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" "${FIREBIRD_DB_PATH}" -z -i /dev/stdin <<< "SELECT RDB\$RELATION_NAME FROM RDB\$RELATIONS WHERE RDB\$SYSTEM_FLAG = 0 AND RDB\$VIEW_BLR IS NULL;" 2>&1 | while read -r table; do
-                        isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" "${FIREBIRD_DB_PATH}" -z -i /dev/stdin <<< "DROP TABLE ${table};" || true
+                    isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" "${FB_FLUSH_PATH}" -z -i /dev/stdin <<< "SELECT RDB\$RELATION_NAME FROM RDB\$RELATIONS WHERE RDB\$SYSTEM_FLAG = 0 AND RDB\$VIEW_BLR IS NULL;" 2>&1 | while read -r table; do
+                        isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" "${FB_FLUSH_PATH}" -z -i /dev/stdin <<< "DROP TABLE ${table};" || true
                     done
                 else
-                    isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" "${FIREBIRD_DB_PATH}" -z -i /dev/stdin <<< "SELECT RDB\$RELATION_NAME FROM RDB\$RELATIONS WHERE RDB\$SYSTEM_FLAG = 0 AND RDB\$VIEW_BLR IS NULL;" 2>/dev/null | while read -r table; do
-                        isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" "${FIREBIRD_DB_PATH}" -z -i /dev/stdin <<< "DROP TABLE ${table};" > /dev/null 2>&1 || true
+                    isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" "${FB_FLUSH_PATH}" -z -i /dev/stdin <<< "SELECT RDB\$RELATION_NAME FROM RDB\$RELATIONS WHERE RDB\$SYSTEM_FLAG = 0 AND RDB\$VIEW_BLR IS NULL;" 2>/dev/null | while read -r table; do
+                        isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" "${FB_FLUSH_PATH}" -z -i /dev/stdin <<< "DROP TABLE ${table};" > /dev/null 2>&1 || true
                     done
                 fi
             fi

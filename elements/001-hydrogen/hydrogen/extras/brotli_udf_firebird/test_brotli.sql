@@ -2,7 +2,7 @@
 --
 -- This test file verifies the BROTLI_DECOMPRESS UDR function.
 -- Requires: brotli_decfn UDR installed in Firebird UDR plugin directory
--- Usage:     isql-fb -user SYSDBA -password <pass> testfb.fdb < test_brotli.sql
+-- Usage:     isql-fb -user SYSDBA -password <pass> hydrogen_test.fdb < test_brotli.sql
 --
 -- Test data uses the same Brotli quality 11 compressed samples as the
 -- PostgreSQL, MySQL, and SQLite extras for cross-engine consistency.

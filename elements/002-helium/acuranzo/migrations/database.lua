@@ -4,6 +4,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 3.4.3 - 2026-09-22 - Firebird: rewrite NOT NULL DEFAULT <v> to DEFAULT <v> NOT NULL
 -- 3.4.2 - 2026-09-22 - Firebird: rewrite ALTER TABLE ADD/DROP COLUMN to ADD/DROP (no COLUMN keyword)
 -- 3.4.1 - 2026-09-22 - Firebird: also rewrite CTE AS (VALUES ...) bodies to SELECT...UNION ALL FROM RDB$DATABASE
 -- 3.4.0 - 2026-09-22 - Firebird: rewrite multi-row INSERT VALUES to INSERT...SELECT...UNION ALL in replace_query
@@ -23,7 +24,7 @@ local database = {
     -- Database.lua versioning information
     info = {
       script = "database.lua",
-    version = "3.4.2",
+    version = "3.4.3",
         release = "2026-09-22"
      },
 
@@ -703,9 +704,165 @@ local database = {
             return table.concat(out)
         end
 
+
+        -- Firebird column defs require DEFAULT before NOT NULL.
+        -- SQLite/PG accept "NOT NULL DEFAULT 0"; Firebird rejects with token DEFAULT.
+        local function firebird_rewrite_not_null_default_order(src)
+            local n = #src
+            local out = {}
+            local i = 1
+            local in_sq, in_dq = false, false
+
+            local function match_word_at(pos, word)
+                local last = pos + #word - 1
+                if last > n then return false end
+                if src:sub(pos, last):lower() ~= word:lower() then return false end
+                local before = (pos > 1) and src:sub(pos - 1, pos - 1) or ""
+                if before ~= "" and before:match("[%w_]") then return false end
+                local after = src:sub(last + 1, last + 1)
+                if after ~= "" and after:match("[%w_]") then return false end
+                return true
+            end
+
+            local function skip_ws(pos)
+                while pos <= n do
+                    local c = src:sub(pos, pos)
+                    if c == " " or c == "\t" or c == "\n" or c == "\r" then
+                        pos = pos + 1
+                    elseif c == "-" and src:sub(pos + 1, pos + 1) == "-" then
+                        while pos <= n and src:sub(pos, pos) ~= "\n" do pos = pos + 1 end
+                    elseif c == "/" and src:sub(pos + 1, pos + 1) == "*" then
+                        pos = pos + 2
+                        while pos <= n and not (src:sub(pos, pos) == "*" and src:sub(pos + 1, pos + 1) == "/") do
+                            pos = pos + 1
+                        end
+                        if pos <= n then pos = pos + 2 end
+                    else
+                        break
+                    end
+                end
+                return pos
+            end
+
+            -- Parse a DEFAULT value starting at pos; return exclusive end index.
+            local function scan_default_value(pos)
+                pos = skip_ws(pos)
+                if pos > n then return nil end
+                local c = src:sub(pos, pos)
+                if c == "'" then
+                    pos = pos + 1
+                    while pos <= n do
+                        if src:sub(pos, pos) == "'" then
+                            if src:sub(pos + 1, pos + 1) == "'" then
+                                pos = pos + 2
+                            else
+                                return pos + 1
+                            end
+                        else
+                            pos = pos + 1
+                        end
+                    end
+                    return nil
+                end
+                if c == "+" or c == "-" then
+                    pos = pos + 1
+                    c = src:sub(pos, pos)
+                end
+                if c:match("%d") then
+                    while pos <= n and src:sub(pos, pos):match("[%d%.]") do
+                        pos = pos + 1
+                    end
+                    return pos
+                end
+                if c:match("[%a_]") then
+                    while pos <= n and src:sub(pos, pos):match("[%w_]") do
+                        pos = pos + 1
+                    end
+                    return pos
+                end
+                return nil
+            end
+
+            while i <= n do
+                local c = src:sub(i, i)
+                if in_sq then
+                    out[#out + 1] = c
+                    if c == "'" then
+                        if src:sub(i + 1, i + 1) == "'" then
+                            out[#out + 1] = "'"
+                            i = i + 2
+                        else
+                            in_sq = false
+                            i = i + 1
+                        end
+                    else
+                        i = i + 1
+                    end
+                elseif in_dq then
+                    out[#out + 1] = c
+                    if c == '"' then
+                        if src:sub(i + 1, i + 1) == '"' then
+                            out[#out + 1] = '"'
+                            i = i + 2
+                        else
+                            in_dq = false
+                            i = i + 1
+                        end
+                    else
+                        i = i + 1
+                    end
+                elseif c == "'" then
+                    in_sq = true
+                    out[#out + 1] = c
+                    i = i + 1
+                elseif c == '"' then
+                    in_dq = true
+                    out[#out + 1] = c
+                    i = i + 1
+                elseif c == "-" and src:sub(i + 1, i + 1) == "-" then
+                    out[#out + 1] = c
+                    i = i + 1
+                    out[#out + 1] = src:sub(i, i)
+                    i = i + 1
+                    while i <= n and src:sub(i, i) ~= "\n" do
+                        out[#out + 1] = src:sub(i, i)
+                        i = i + 1
+                    end
+                elseif match_word_at(i, "not") then
+                    local after_not = skip_ws(i + 3)
+                    if match_word_at(after_not, "null") then
+                        local after_null = skip_ws(after_not + 4)
+                        if match_word_at(after_null, "default") then
+                            local val_start = skip_ws(after_null + 7)
+                            local val_end = scan_default_value(val_start)
+                            if val_end then
+                                local val = src:sub(val_start, val_end - 1)
+                                out[#out + 1] = "DEFAULT " .. val .. " NOT NULL"
+                                i = val_end
+                            else
+                                out[#out + 1] = c
+                                i = i + 1
+                            end
+                        else
+                            out[#out + 1] = src:sub(i, after_not + 3)
+                            i = after_not + 4
+                        end
+                    else
+                        out[#out + 1] = c
+                        i = i + 1
+                    end
+                else
+                    out[#out + 1] = c
+                    i = i + 1
+                end
+            end
+            return table.concat(out)
+        end
+
         if engine == "firebird" then
             sql = firebird_rewrite_multi_row_values(sql)
             sql = firebird_rewrite_alter_column_keyword(sql)
+            sql = firebird_rewrite_not_null_default_order(sql)
         end
 
         -- Brotli compression function

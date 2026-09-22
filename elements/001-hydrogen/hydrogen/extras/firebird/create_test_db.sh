@@ -1,32 +1,56 @@
 #!/usr/bin/env bash
-# Firebird test database creation — creates testfb.fdb (drops existing first)
+# Firebird test/demo database creation — hydrogen_test.fdb + hydrogen_demo.fdb
 #
 # Usage:
-#   sudo ./create_test_db.sh [database.fdb]
-#   sudo FIREBIRD_DB_PATH=/path/to/test.fdb ./create_test_db.sh
+#   sudo ./create_test_db.sh                 # default: both (recreate test + demo)
+#   sudo ./create_test_db.sh both            # same as default
+#   sudo ./create_test_db.sh test            # recreate hydrogen_test.fdb only
+#   sudo ./create_test_db.sh demo            # recreate hydrogen_demo.fdb only
+#   sudo ./create_test_db.sh /path/one.fdb   # one-off single path (legacy)
+#   sudo FIREBIRD_CREATE_MODE=test ./create_test_db.sh
 #   sudo ./create_test_db.sh --init-security
 #
-# Environment:
-#   FIREBIRD_DB_PATH         Path to the database file (default: /var/lib/firebird/data/testfb.fdb)
-#   FIREBIRD_SYSDBA_PASSWORD Password for the SYSDBA user (default: masterkey)
+# Environment (preferred — Andrew / Test 37+40 wiring):
+#   FIREBIRD_DB_PATH_TEST  Path for migration/test DB (default: <artifacts>/hydrogen_test.fdb)
+#   FIREBIRD_DB_PATH_DEMO  Path for demo/dev DB      (default: <artifacts>/hydrogen_demo.fdb)
+#   FIREBIRD_SYSDBA_PASSWORD  SYSDBA password (default: masterkey)
+#   FIREBIRD_CREATE_MODE   both|test|demo (overridden by positional mode arg)
+#   HYDROGEN_ROOT          Hydrogen tree root (for default artifacts dir)
 #
-# Requires: sudo, Firebird SuperServer running on 3050, the firebird system user.
+# Deprecated / back-compat:
+#   FIREBIRD_DB_PATH (singular) — deprecated. If set while the dual vars are
+#   unset, it is treated as a one-off single create target (same as passing a
+#   path argument). Prefer FIREBIRD_DB_PATH_TEST + FIREBIRD_DB_PATH_DEMO.
+#   When only one of the dual vars is needed by older tools, map TEST as the
+#   primary singular stand-in (do not silently point both roles at one file).
 #
-# --init-security: Stop the server, initialize the security database
-#   (security4.fdb) with a SYSDBA user in embedded mode, restart the server.
-#   This only needs to be run once, or whenever the security database is
-#   missing or corrupted.
+# Default artifacts dir (when dual env unset):
+#   ${HYDROGEN_ROOT}/tests/artifacts/database/firebird/
+#   filenames: hydrogen_test.fdb , hydrogen_demo.fdb
+#   (replaces old testfb.fdb / demofb.fdb defaults)
+#
+# Requires: sudo, Firebird SuperServer on 3050, firebird system user.
+#
+# --init-security: Stop the server, initialize security4.fdb with SYSDBA in
+#   embedded mode, restart. Run once (or when security DB is missing/corrupt).
 #
 # CHANGELOG
-# 2.1.2 - 2026-09-21 - Fix: heredoc delimiter <<'SQL' was missing closing quote
-#           (should be <<'SQL' or <<SQL). The unterminated quote caused bash
-#           to reject the script with "unexpected EOF while looking for matching `'`.
-#           Changed to unquoted <<SQL since DB_PATH is already expanded.
+# 2.3.1 - 2026-09-22 - Default both: do not one-off on legacy FIREBIRD_DB_PATH
+#           (hydrogen.fdb/testfb.fdb/demofb.fdb); map other singular → TEST and
+#           still create DEMO. Explicit path arg still one-off.
+# 2.3.0 - 2026-09-22 - Dual DB: FIREBIRD_DB_PATH_TEST + FIREBIRD_DB_PATH_DEMO;
+#           modes both|test|demo; defaults hydrogen_test.fdb / hydrogen_demo.fdb
+#           under tests/artifacts/database/firebird/; deprecate singular
+#           FIREBIRD_DB_PATH (one-off / TEST-primary back-compat).
 # 2.2.1 - 2026-09-22 - Fix: bash '#' comment inside isql heredoc prevented CREATE;
 #           require .fdb on disk after create; honor PKEXEC_UID for group; open DB_DIR.
 # 2.2.0 - 2026-09-22 - After create: chgrp to sudo caller's group, chmod g+rw,o+rw
 #           so developers can read/write the .fdb under a repo path without
 #           being in the firebird group. PAGE_SIZE default raised to 32768.
+# 2.1.2 - 2026-09-21 - Fix: heredoc delimiter <<'SQL' was missing closing quote
+#           (should be <<'SQL' or <<SQL). The unterminated quote caused bash
+#           to reject the script with "unexpected EOF while looking for matching `'`.
+#           Changed to unquoted <<SQL since DB_PATH is already expanded.
 # 2.1.1 - 2026-09-21 - Fix: create_script passed ${SERVER} connection string to
 #           isql-fb, causing it to try connecting to a non-existent DB before
 #           executing CREATE DATABASE. Removed the connection string argument;
@@ -60,21 +84,17 @@
 
 set -euo pipefail
 
-DB_NAME="${1:-testfb.fdb}"
-# Honor FIREBIRD_DB_PATH for the database file location; fall back to the
-# default data directory. When --init-security is passed, $1 is the flag
-# and DB_NAME keeps its default.
-if [[ "${1:-}" == "--init-security" ]]; then
-    DB_NAME="testfb.fdb"
-fi
-DB_PATH="${FIREBIRD_DB_PATH:-/var/lib/firebird/data/${DB_NAME}}"
-DB_DIR="$(dirname "${DB_PATH}")"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+HYDROGEN_ROOT="${HYDROGEN_ROOT:-$(cd "${SCRIPT_DIR}/../.." && pwd)}"
+ARTIFACTS_DIR="${HYDROGEN_ROOT}/tests/artifacts/database/firebird"
+DEFAULT_TEST_PATH="${ARTIFACTS_DIR}/hydrogen_test.fdb"
+DEFAULT_DEMO_PATH="${ARTIFACTS_DIR}/hydrogen_demo.fdb"
+
 HOST="127.0.0.1"
 PORT="3050"
 SYSDBA_PASSWORD="${FIREBIRD_SYSDBA_PASSWORD:-masterkey}"
 # shellcheck disable=SC2034 # Named account constant for clarity / future use
 SYSDBA_USER="SYSDBA"
-SERVER="${HOST}/${PORT}:${DB_PATH}"
 SECPATH="/var/lib/firebird/secdb/security4.fdb"
 LOCKDIR="/tmp/firebird"
 FIREBIRD_SERVICE="firebird"
@@ -91,9 +111,75 @@ if [[ "${FIREBIRD_SYSDBA_PASSWORD:-}" == "" ]]; then
     echo "Warning: FIREBIRD_SYSDBA_PASSWORD is not set. Using default 'masterkey'." >&2
 fi
 
-if [[ -z "${FIREBIRD_DB_PATH:-}" ]]; then
-    echo "Info: FIREBIRD_DB_PATH not set. Using default '${DB_PATH}'." >&2
+# --- Resolve create mode and target path list ---
+# Positional: --init-security | both|test|demo | /path/to.fdb | (empty → both)
+CREATE_MODE="${FIREBIRD_CREATE_MODE:-both}"
+ONEOFF_PATH=""
+ARG1="${1:-}"
+
+if [[ "${ARG1}" == "--init-security" ]]; then
+    CREATE_MODE="init-security"
+elif [[ "${ARG1}" == "both" || "${ARG1}" == "test" || "${ARG1}" == "demo" ]]; then
+    CREATE_MODE="${ARG1}"
+elif [[ -n "${ARG1}" ]]; then
+    # One-off: treat as a single database path (legacy / ad-hoc)
+    CREATE_MODE="oneoff"
+    ONEOFF_PATH="${ARG1}"
+elif [[ -n "${FIREBIRD_DB_PATH:-}" && -z "${FIREBIRD_DB_PATH_TEST:-}" && -z "${FIREBIRD_DB_PATH_DEMO:-}" ]]; then
+    # Deprecated singular alone: do NOT silently recreate the old single file on
+    # default "both". Map singular → TEST path and still create DEMO at default
+    # (or warn and ignore singular if it looks like a legacy shared name).
+    echo "Warning: FIREBIRD_DB_PATH is deprecated; prefer FIREBIRD_DB_PATH_TEST / FIREBIRD_DB_PATH_DEMO." >&2
+    base="$(basename "${FIREBIRD_DB_PATH}")"
+    if [[ "${base}" == "hydrogen.fdb" || "${base}" == "testfb.fdb" || "${base}" == "demofb.fdb" ]]; then
+        echo "Warning: ignoring legacy singular path '${FIREBIRD_DB_PATH}' for mode=both; using hydrogen_test.fdb + hydrogen_demo.fdb defaults." >&2
+        # leave CREATE_MODE as both; dual paths stay at defaults
+        :
+    else
+        # Non-legacy singular: treat as TEST override, still create DEMO default
+        FIREBIRD_DB_PATH_TEST="${FIREBIRD_DB_PATH}"
+        echo "Info: mapping FIREBIRD_DB_PATH → FIREBIRD_DB_PATH_TEST='${FIREBIRD_DB_PATH_TEST}' (demo still default)." >&2
+    fi
 fi
+
+TEST_PATH="${FIREBIRD_DB_PATH_TEST:-${DEFAULT_TEST_PATH}}"
+DEMO_PATH="${FIREBIRD_DB_PATH_DEMO:-${DEFAULT_DEMO_PATH}}"
+
+# Build TARGET_PATHS array for the selected mode
+TARGET_PATHS=()
+case "${CREATE_MODE}" in
+    both)
+        TARGET_PATHS+=("${TEST_PATH}" "${DEMO_PATH}")
+        ;;
+    test)
+        TARGET_PATHS+=("${TEST_PATH}")
+        ;;
+    demo)
+        TARGET_PATHS+=("${DEMO_PATH}")
+        ;;
+    oneoff)
+        TARGET_PATHS+=("${ONEOFF_PATH}")
+        ;;
+    init-security)
+        ;;
+    *)
+        die "Unknown create mode '${CREATE_MODE}' (use both|test|demo or a .fdb path)"
+        ;;
+esac
+
+if [[ "${CREATE_MODE}" != "init-security" ]]; then
+    echo "Info: create mode=${CREATE_MODE}; targets: ${TARGET_PATHS[*]}" >&2
+    if [[ -z "${FIREBIRD_DB_PATH_TEST:-}" && "${CREATE_MODE}" != "oneoff" && "${CREATE_MODE}" != "demo" ]]; then
+        echo "Info: FIREBIRD_DB_PATH_TEST unset; using default '${TEST_PATH}'." >&2
+    fi
+    if [[ -z "${FIREBIRD_DB_PATH_DEMO:-}" && "${CREATE_MODE}" != "oneoff" && "${CREATE_MODE}" != "test" ]]; then
+        echo "Info: FIREBIRD_DB_PATH_DEMO unset; using default '${DEMO_PATH}'." >&2
+    fi
+fi
+
+# Auth / connect string uses the first target (or TEST default for init-security)
+PRIMARY_PATH="${TARGET_PATHS[0]:-${TEST_PATH}}"
+SERVER="${HOST}/${PORT}:${PRIMARY_PATH}"
 
 # --- Helper: get the firebird user's UID ---
 get_firebird_uid() {
@@ -122,16 +208,18 @@ as_firebird() {
     return "${rc}"
 }
 
-# --- Helper: test if SYSDBA can authenticate via network ---
-test_auth() {
+# --- Helper: test if SYSDBA can authenticate via network to a path ---
+test_auth_path() {
+    local db_path="$1"
     local uid
     uid=$(get_firebird_uid)
+    local server="${HOST}/${PORT}:${db_path}"
     systemd-run --uid="${uid}" --wait \
         -p "User=${FIREBIRD_USER}" \
         -p "StandardOutput=inherit" \
         -p "StandardError=inherit" \
         -E "FIREBIRD=${FIREBIRD}" \
-        isql-fb -user SYSDBA -password "${SYSDBA_PASSWORD}" "${SERVER}" <<'SQL' 2>&1
+        isql-fb -user SYSDBA -password "${SYSDBA_PASSWORD}" "${server}" <<'SQL' 2>&1
 SELECT 1 FROM RDB$DATABASE;
 SQL
 }
@@ -158,12 +246,13 @@ fix_lockdir() {
     export FIREBIRD="${LOCKDIR}"
 }
 
-# --- Helper: ensure data directory exists and is owned by firebird ---
-ensure_data_dir() {
-    mkdir -p "${DB_DIR}"
-    chown "${FIREBIRD_USER}:${FIREBIRD_USER}" "${DB_DIR}" 2>/dev/null || true
+# --- Helper: ensure a directory exists and is usable by firebird + developers ---
+ensure_dir() {
+    local dir="$1"
+    mkdir -p "${dir}"
+    chown "${FIREBIRD_USER}:${FIREBIRD_USER}" "${dir}" 2>/dev/null || true
     # u=rwx for firebird; g/o=rwx so repo checkouts are listable/writable for recreate
-    chmod 777 "${DB_DIR}" 2>/dev/null || chmod a+rwx "${DB_DIR}" 2>/dev/null || true
+    chmod 777 "${dir}" 2>/dev/null || chmod a+rwx "${dir}" 2>/dev/null || true
 }
 
 # --- Helper: stop the firebird service ---
@@ -205,20 +294,102 @@ resolve_service() {
     done
 }
 
+# --- Apply ownership/mode on a created .fdb ---
+apply_perms() {
+    local db_path="$1"
+    local db_dir
+    db_dir="$(dirname "${db_path}")"
+    # Permissions: firebird owns the file (server); group/other get rw so
+    # developers can inspect or wipe it under a repo path without joining the
+    # firebird group. Prefer the elevating caller's primary group (sudo or pkexec).
+    local inv_user="${SUDO_USER:-}"
+    if [[ -z "${inv_user}" && -n "${PKEXEC_UID:-}" ]]; then
+        inv_user="$(getent passwd "${PKEXEC_UID}" | cut -d: -f1 || true)"
+    fi
+    local inv_gid=""
+    if [[ -n "${inv_user}" ]]; then
+        inv_gid="$(id -g "${inv_user}" 2>/dev/null || true)"
+    fi
+    if [[ -n "${inv_gid}" ]]; then
+        chown "${FIREBIRD_USER}:${inv_gid}" "${db_path}" 2>/dev/null || \
+            chown "${FIREBIRD_USER}:${FIREBIRD_USER}" "${db_path}" 2>/dev/null || true
+    else
+        chown "${FIREBIRD_USER}:${FIREBIRD_USER}" "${db_path}" 2>/dev/null || true
+    fi
+    chmod 666 "${db_path}" 2>/dev/null || chmod a+rw "${db_path}" 2>/dev/null || true
+    chmod a+rwX "${db_dir}" 2>/dev/null || true
+    echo "Permissions on ${db_path}: $(ls -l "${db_path}" 2>/dev/null | awk '{print $1, $3, $4}')"
+}
+
+# --- Create (drop+recreate) one database file ---
+create_one_db() {
+    local db_path="$1"
+    local db_name
+    db_name="$(basename "${db_path}")"
+    local db_dir
+    db_dir="$(dirname "${db_path}")"
+    local server="${HOST}/${PORT}:${db_path}"
+
+    ensure_dir "${db_dir}"
+
+    echo "Checking for existing ${db_name} at ${db_path}..."
+    # shellcheck disable=SC2310 # Function invoked in || condition, rm failure is non-fatal
+    as_firebird "rm -f '${db_path}'" 2>/dev/null || true
+
+    # PAGE_SIZE 32768: UTF8 UNIQUE(varchar(500),varchar(500)) needs >4KB key (page/4 limit).
+    # Do not put bash '#' comments inside the isql heredoc — isql will choke / no-op.
+    echo "Creating database ${db_name}..."
+    local create_script
+    create_script="isql-fb -user SYSDBA -password '${SYSDBA_PASSWORD}' <<SQL
+CREATE DATABASE '${db_path}' PAGE_SIZE 32768 DEFAULT CHARACTER SET UTF8;
+SQL"
+
+    # shellcheck disable=SC2310 # Function invoked in if condition, error handling intentional
+    if as_firebird "${create_script}" 2>&1; then
+        echo "Database ${db_name} create command finished for ${server}"
+    else
+        die "Failed to create database ${db_name}"
+    fi
+
+    # --- Verify the file exists on disk (connect checks alone can false-pass) ---
+    if [[ ! -f "${db_path}" ]]; then
+        die "CREATE reported success but file missing at ${db_path} (check Firebird DatabaseAccess / dir perms for ${FIREBIRD_USER})"
+    fi
+    echo "Database file present: $(ls -l "${db_path}")"
+
+    # shellcheck disable=SC2310 # Function invoked in if condition, verification intentional
+    if test_auth_path "${db_path}" >/dev/null 2>&1; then
+        echo "Database ${db_name} verified connectable."
+    else
+        die "Failed to verify database ${db_name}"
+    fi
+
+    apply_perms "${db_path}"
+    echo "Database ${db_name} is ready for migrations."
+}
+
 # --- Require sudo ---
 if [[ "${EUID}" -ne 0 ]]; then
     echo "Firebird database management requires sudo privileges."
-    echo "Run this script with: sudo $0"
+    echo "Run this script with: sudo $0 $*"
     echo ""
-    exec sudo "$0" "$@"
+    exec sudo --preserve-env=FIREBIRD_DB_PATH_TEST,FIREBIRD_DB_PATH_DEMO,FIREBIRD_DB_PATH,FIREBIRD_SYSDBA_PASSWORD,FIREBIRD_CREATE_MODE,HYDROGEN_ROOT,FIREBIRD "$0" "$@"
 fi
 
 resolve_service
 fix_lockdir
-ensure_data_dir
+
+# Ensure dirs for all targets up front
+if [[ "${CREATE_MODE}" != "init-security" ]]; then
+    for p in "${TARGET_PATHS[@]}"; do
+        ensure_dir "$(dirname "${p}")"
+    done
+else
+    ensure_dir "$(dirname "${SECPATH}")"
+fi
 
 # --- Handle --init-security flag ---
-if [[ "${1:-}" == "--init-security" ]]; then
+if [[ "${CREATE_MODE}" == "init-security" ]]; then
     echo "Initializing Firebird security database at ${SECPATH}..."
 
     stop_service
@@ -247,70 +418,34 @@ if ! check_security_db; then
     die "Security database at ${SECPATH} does not exist or is empty."
 fi
 
-# --- Test authentication ---
+# --- Test authentication (against primary target; may not exist yet — Firebird still auths) ---
 echo "Testing SYSDBA authentication..."
+# Prefer an existing .fdb among targets for a cleaner auth probe; else primary path.
+AUTH_PROBE="${PRIMARY_PATH}"
+for p in "${TARGET_PATHS[@]}"; do
+    if [[ -f "${p}" ]]; then
+        AUTH_PROBE="${p}"
+        break
+    fi
+done
 # shellcheck disable=SC2310 # Function invoked in ! condition, auth failure is a hard error
-if ! test_auth >/dev/null 2>&1; then
-    echo "Warning: Cannot authenticate as SYSDBA. The security database may need re-initialization."
-    echo "Run: sudo $0 --init-security"
-    die "Cannot authenticate as SYSDBA at ${SERVER}"
-fi
-echo "SYSDBA authentication OK."
-
-# --- Drop existing database if it exists ---
-echo "Checking for existing ${DB_NAME} at ${DB_PATH}..."
-# shellcheck disable=SC2310 # Function invoked in || condition, rm failure is non-fatal
-as_firebird "rm -f '${DB_PATH}'" 2>/dev/null || true
-
-# --- Create the database (as firebird user, via network) ---
-# PAGE_SIZE 32768: UTF8 UNIQUE(varchar(500),varchar(500)) needs >4KB key (page/4 limit).
-# Do not put bash '#' comments inside the isql heredoc — isql will choke / no-op.
-echo "Creating database ${DB_NAME}..."
-create_script="isql-fb -user SYSDBA -password '${SYSDBA_PASSWORD}' <<SQL
-CREATE DATABASE '${DB_PATH}' PAGE_SIZE 32768 DEFAULT CHARACTER SET UTF8;
-SQL"
-
-# shellcheck disable=SC2310 # Function invoked in if condition, error handling intentional
-if as_firebird "${create_script}" 2>&1; then
-    echo "Database ${DB_NAME} create command finished for ${SERVER}"
+if ! test_auth_path "${AUTH_PROBE}" >/dev/null 2>&1; then
+    # If no DB file yet, auth against security via creating a throwaway connect can fail;
+    # fall through with warning only when no file exists — hard fail if file existed.
+    if [[ -f "${AUTH_PROBE}" ]]; then
+        echo "Warning: Cannot authenticate as SYSDBA. The security database may need re-initialization."
+        echo "Run: sudo $0 --init-security"
+        die "Cannot authenticate as SYSDBA at ${HOST}/${PORT}:${AUTH_PROBE}"
+    else
+        echo "Info: No existing target .fdb for auth probe; continuing to CREATE (SYSDBA password will be used)."
+    fi
 else
-    die "Failed to create database ${DB_NAME}"
+    echo "SYSDBA authentication OK."
 fi
 
-# --- Verify the file exists on disk (connect checks alone can false-pass) ---
-if [[ ! -f "${DB_PATH}" ]]; then
-    die "CREATE reported success but file missing at ${DB_PATH} (check Firebird DatabaseAccess / dir perms for ${FIREBIRD_USER})"
-fi
-echo "Database file present: $(ls -l "${DB_PATH}")"
+# --- Create selected databases (only those in TARGET_PATHS — never touch the other) ---
+for p in "${TARGET_PATHS[@]}"; do
+    create_one_db "${p}"
+done
 
-# shellcheck disable=SC2310 # Function invoked in if condition, verification intentional
-if test_auth >/dev/null 2>&1; then
-    echo "Database ${DB_NAME} verified connectable."
-else
-    die "Failed to verify database ${DB_NAME}"
-fi
-
-# --- Permissions: firebird owns the file (server); group/other get rw so
-# developers can inspect or wipe it under a repo path without joining the
-# firebird group. Prefer the elevating caller's primary group (sudo or pkexec).
-inv_user="${SUDO_USER:-}"
-if [[ -z "${inv_user}" && -n "${PKEXEC_UID:-}" ]]; then
-    inv_user="$(getent passwd "${PKEXEC_UID}" | cut -d: -f1 || true)"
-fi
-inv_gid=""
-if [[ -n "${inv_user}" ]]; then
-    inv_gid="$(id -g "${inv_user}" 2>/dev/null || true)"
-fi
-if [[ -n "${inv_gid}" ]]; then
-    chown "${FIREBIRD_USER}:${inv_gid}" "${DB_PATH}" 2>/dev/null || \
-        chown "${FIREBIRD_USER}:${FIREBIRD_USER}" "${DB_PATH}" 2>/dev/null || true
-else
-    chown "${FIREBIRD_USER}:${FIREBIRD_USER}" "${DB_PATH}" 2>/dev/null || true
-fi
-# Also make the containing dir group/other traversable+listable when we own the tree
-chmod 666 "${DB_PATH}" 2>/dev/null || chmod a+rw "${DB_PATH}" 2>/dev/null || true
-chmod a+rwX "${DB_DIR}" 2>/dev/null || true
-echo "Permissions on ${DB_PATH}: $(ls -l "${DB_PATH}" 2>/dev/null | awk '{print $1, $3, $4}')"
-
-# --- Database is ready (SYSDBA has full privileges by default in Firebird) ---
-echo "Database is ready for migrations."
+echo "All requested databases ready."

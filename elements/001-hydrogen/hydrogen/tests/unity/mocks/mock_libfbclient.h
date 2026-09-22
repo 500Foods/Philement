@@ -45,6 +45,10 @@ fb_status_t mock_isc_dsql_execute(fb_status_t*, void**, void**, short, const voi
 fb_status_t mock_isc_dsql_execute_immediate(fb_status_t*, void**, void**, short, const char*, short, const void*);
 fb_status_t mock_isc_dsql_free_statement(fb_status_t*, void**, short);
 fb_status_t mock_isc_dsql_fetch(fb_status_t*, void**, short, void*);
+fb_status_t mock_isc_dsql_describe_bind(fb_status_t*, void**, unsigned short, void*);
+void mock_isc_decode_sql_date(const void*, void*);
+void mock_isc_decode_sql_time(const void*, void*);
+void mock_isc_decode_timestamp(const void*, void*);
 fb_status_t mock_isc_open_blob2(fb_status_t*, void**, void**, void**, void*, short, const char*);
 fb_status_t mock_isc_get_segment(fb_status_t*, void**, unsigned short*, unsigned short, char*);
 fb_status_t mock_isc_close_blob(fb_status_t*, void**);
@@ -69,6 +73,7 @@ void mock_libfbc_set_isc_dsql_execute_result(int result);
 void mock_libfbc_set_isc_dsql_execute_immediate_result(int result);
 void mock_libfbc_set_isc_dsql_free_statement_result(int result);
 void mock_libfbc_set_isc_dsql_fetch_result(int result);
+void mock_libfbc_set_isc_dsql_describe_bind_result(int result);
 void mock_libfbc_set_fb_cancel_operation_result(int result);
 
 int  mock_libfbc_get_isc_attach_database_call_count(void);
