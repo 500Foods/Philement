@@ -75,7 +75,7 @@ fb_status_t mock_isc_attach_database(fb_status_t* status, short name_length, con
     return (fb_status_t)mock_isc_attach_database_result;
 }
 
-fb_status_t mock_isc_detach_database(fb_status_t* status, void* db_handle) {
+fb_status_t mock_isc_detach_database(fb_status_t* status, void** db_handle) {
     mock_isc_detach_database_calls++;
     (void)db_handle;
     if (status) {
@@ -84,20 +84,17 @@ fb_status_t mock_isc_detach_database(fb_status_t* status, void* db_handle) {
     return (fb_status_t)mock_isc_detach_database_result;
 }
 
-fb_status_t mock_isc_start_transaction(fb_status_t* status, void* db_handle, void** tr_handle,
-                                        int tpb_len, const char* tpb) {
+fb_status_t mock_isc_start_transaction(fb_status_t* status, void** tr_handle, short num_db, ...) {
     mock_isc_start_transaction_calls++;
-    (void)db_handle;
     (void)tr_handle;
-    (void)tpb_len;
-    (void)tpb;
+    (void)num_db;
     if (status) {
         memset(status, 0, 20 * sizeof(fb_status_t));
     }
     return (fb_status_t)mock_isc_start_transaction_result;
 }
 
-fb_status_t mock_isc_commit_transaction(fb_status_t* status, void* tr_handle) {
+fb_status_t mock_isc_commit_transaction(fb_status_t* status, void** tr_handle) {
     mock_isc_commit_transaction_calls++;
     (void)tr_handle;
     if (status) {
@@ -106,7 +103,7 @@ fb_status_t mock_isc_commit_transaction(fb_status_t* status, void* tr_handle) {
     return (fb_status_t)mock_isc_commit_transaction_result;
 }
 
-fb_status_t mock_isc_rollback_transaction(fb_status_t* status, void* tr_handle) {
+fb_status_t mock_isc_rollback_transaction(fb_status_t* status, void** tr_handle) {
     mock_isc_rollback_transaction_calls++;
     (void)tr_handle;
     if (status) {
@@ -115,62 +112,63 @@ fb_status_t mock_isc_rollback_transaction(fb_status_t* status, void* tr_handle) 
     return (fb_status_t)mock_isc_rollback_transaction_result;
 }
 
-fb_status_t mock_isc_dsql_allocate(fb_status_t* status, void* db_handle, short stmt_handle, void* unused) {
+fb_status_t mock_isc_dsql_allocate(fb_status_t* status, void** db_handle, short stmt_handle, void** stmt) {
     mock_isc_dsql_allocate_calls++;
     (void)db_handle;
     (void)stmt_handle;
-    (void)unused;
+    (void)stmt;
     if (status) {
         memset(status, 0, 20 * sizeof(fb_status_t));
     }
     return (fb_status_t)mock_isc_dsql_allocate_result;
 }
 
-fb_status_t mock_isc_dsql_prepare(fb_status_t* status, void* stmt, void* db_handle,
-                                   short tr_handle, const char* sql, short dialect, const char* unused) {
+fb_status_t mock_isc_dsql_prepare(fb_status_t* status, void** tr_handle, void** stmt_handle,
+                                   short length, const char* sql, short dialect, void* xsqlda) {
     mock_isc_dsql_prepare_calls++;
-    (void)stmt;
-    (void)db_handle;
     (void)tr_handle;
+    (void)stmt_handle;
+    (void)length;
     (void)sql;
     (void)dialect;
-    (void)unused;
+    (void)xsqlda;
     if (status) {
         memset(status, 0, 20 * sizeof(fb_status_t));
     }
     return (fb_status_t)mock_isc_dsql_prepare_result;
 }
 
-fb_status_t mock_isc_dsql_execute(fb_status_t* status, void* stmt, void* tr_handle,
-                                   short unused1, const char* unused2, short unused3) {
+fb_status_t mock_isc_dsql_execute(fb_status_t* status, void** tr_handle, void** stmt_handle,
+                                   short unused1, const void* unused2) {
     mock_isc_dsql_execute_calls++;
-    (void)stmt;
     (void)tr_handle;
+    (void)stmt_handle;
     (void)unused1;
     (void)unused2;
-    (void)unused3;
     if (status) {
         memset(status, 0, 20 * sizeof(fb_status_t));
     }
     return (fb_status_t)mock_isc_dsql_execute_result;
 }
 
-fb_status_t mock_isc_dsql_execute_immediate(fb_status_t* status, void* db_handle,
-                                             void* tr_handle, short dialect,
-                                             const char* sql, short param_count) {
+fb_status_t mock_isc_dsql_execute_immediate(fb_status_t* status, void** db_handle,
+                                             void** tr_handle, short dialect,
+                                             const char* sql, short param_count,
+                                             const void* xsqlda) {
     mock_isc_dsql_execute_immediate_calls++;
     (void)db_handle;
     (void)tr_handle;
     (void)dialect;
     (void)sql;
     (void)param_count;
+    (void)xsqlda;
     if (status) {
         memset(status, 0, 20 * sizeof(fb_status_t));
     }
     return (fb_status_t)mock_isc_dsql_execute_immediate_result;
 }
 
-fb_status_t mock_isc_dsql_free_statement(fb_status_t* status, void* stmt_handle, short option) {
+fb_status_t mock_isc_dsql_free_statement(fb_status_t* status, void** stmt_handle, short option) {
     mock_isc_dsql_free_statement_calls++;
     (void)stmt_handle;
     (void)option;
@@ -180,7 +178,7 @@ fb_status_t mock_isc_dsql_free_statement(fb_status_t* status, void* stmt_handle,
     return (fb_status_t)mock_isc_dsql_free_statement_result;
 }
 
-fb_status_t mock_isc_dsql_fetch(fb_status_t* status, void* stmt_handle, short unused1, void* unused2) {
+fb_status_t mock_isc_dsql_fetch(fb_status_t* status, void** stmt_handle, short unused1, void* unused2) {
     mock_isc_dsql_fetch_calls++;
     (void)stmt_handle;
     (void)unused1;
@@ -191,7 +189,7 @@ fb_status_t mock_isc_dsql_fetch(fb_status_t* status, void* stmt_handle, short un
     return (fb_status_t)mock_isc_dsql_fetch_result;
 }
 
-fb_status_t mock_fb_cancel_operation(fb_status_t* status, void* db_handle, unsigned int option) {
+fb_status_t mock_fb_cancel_operation(fb_status_t* status, void** db_handle, unsigned short option) {
     mock_fb_cancel_operation_calls++;
     (void)db_handle;
     (void)option;

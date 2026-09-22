@@ -31,23 +31,23 @@ typedef intptr_t fb_status_t;
 
 /* Attachment / detach */
 fb_status_t mock_isc_attach_database(fb_status_t*, short, const char*, void**, short, const char*);
-fb_status_t mock_isc_detach_database(fb_status_t*, void*);
+fb_status_t mock_isc_detach_database(fb_status_t*, void**);
 
 /* Transactions */
-fb_status_t mock_isc_start_transaction(fb_status_t*, void*, void**, int, const char*);
-fb_status_t mock_isc_commit_transaction(fb_status_t*, void*);
-fb_status_t mock_isc_rollback_transaction(fb_status_t*, void*);
+fb_status_t mock_isc_start_transaction(fb_status_t*, void**, short, ...);
+fb_status_t mock_isc_commit_transaction(fb_status_t*, void**);
+fb_status_t mock_isc_rollback_transaction(fb_status_t*, void**);
 
 /* DSQL */
-fb_status_t mock_isc_dsql_allocate(fb_status_t*, void*, short, void*);
-fb_status_t mock_isc_dsql_prepare(fb_status_t*, void*, void*, short, const char*, short, const char*);
-fb_status_t mock_isc_dsql_execute(fb_status_t*, void*, void*, short, const char*, short);
-fb_status_t mock_isc_dsql_execute_immediate(fb_status_t*, void*, void*, short, const char*, short);
-fb_status_t mock_isc_dsql_free_statement(fb_status_t*, void*, short);
-fb_status_t mock_isc_dsql_fetch(fb_status_t*, void*, short, void*);
+fb_status_t mock_isc_dsql_allocate(fb_status_t*, void**, short, void**);
+fb_status_t mock_isc_dsql_prepare(fb_status_t*, void**, void**, short, const char*, short, void*);
+fb_status_t mock_isc_dsql_execute(fb_status_t*, void**, void**, short, const void*);
+fb_status_t mock_isc_dsql_execute_immediate(fb_status_t*, void**, void**, short, const char*, short, const void*);
+fb_status_t mock_isc_dsql_free_statement(fb_status_t*, void**, short);
+fb_status_t mock_isc_dsql_fetch(fb_status_t*, void**, short, void*);
 
 /* Cancel */
-fb_status_t mock_fb_cancel_operation(fb_status_t*, void*, unsigned int);
+fb_status_t mock_fb_cancel_operation(fb_status_t*, void**, unsigned short);
 
 /*
  * Mock control functions for tests

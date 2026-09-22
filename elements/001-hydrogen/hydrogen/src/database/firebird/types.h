@@ -30,25 +30,23 @@ typedef unsigned char fb_uchar_t;
 
 /* Attachment / detach */
 typedef fb_status_t (*isc_attach_database_t)(fb_status_t*, short, const char*, void**, short, const char*);
-typedef fb_status_t (*isc_detach_database_t)(fb_status_t*, void*);
+typedef fb_status_t (*isc_detach_database_t)(fb_status_t*, void**);
 
 /* Transactions */
-typedef fb_status_t (*isc_start_transaction_t)(fb_status_t*, void*, void**, int, const char*);
-typedef fb_status_t (*isc_commit_transaction_t)(fb_status_t*, void*);
-typedef fb_status_t (*isc_rollback_transaction_t)(fb_status_t*, void*);
+typedef fb_status_t (*isc_start_transaction_t)(fb_status_t*, void**, short, ...);
+typedef fb_status_t (*isc_commit_transaction_t)(fb_status_t*, void**);
+typedef fb_status_t (*isc_rollback_transaction_t)(fb_status_t*, void**);
 
 /* DSQL (dynamic SQL) */
-typedef fb_status_t (*isc_dsql_allocate_t)(fb_status_t*, void*, short, void*);
-typedef fb_status_t (*isc_dsql_prepare_t)(fb_status_t*, void*, void*, short, const char*, short, const char*);
-typedef fb_status_t (*isc_dsql_execute_t)(fb_status_t*, void*, void*, short, const char*, short);
-typedef fb_status_t (*isc_dsql_execute_immediate_t)(fb_status_t*, void*, void*, short, const char*, short);
-typedef fb_status_t (*isc_dsql_free_statement_t)(fb_status_t*, void*, short);
-
-/* Cursor-style fetch */
-typedef fb_status_t (*isc_dsql_fetch_t)(fb_status_t*, void*, short, void*);
+typedef fb_status_t (*isc_dsql_allocate_t)(fb_status_t*, void**, short, void**);
+typedef fb_status_t (*isc_dsql_prepare_t)(fb_status_t*, void**, void**, short, const char*, short, void*);
+typedef fb_status_t (*isc_dsql_execute_t)(fb_status_t*, void**, void**, short, const void*);
+typedef fb_status_t (*isc_dsql_execute_immediate_t)(fb_status_t*, void**, void**, short, const char*, short, const void*);
+typedef fb_status_t (*isc_dsql_free_statement_t)(fb_status_t*, void**, short);
+typedef fb_status_t (*isc_dsql_fetch_t)(fb_status_t*, void**, short, void*);
 
 /* Cancel */
-typedef fb_status_t (*fb_cancel_operation_t)(fb_status_t*, void*, unsigned int);
+typedef fb_status_t (*fb_cancel_operation_t)(fb_status_t*, void**, unsigned short);
 
 /*
  * Firebird function pointers — loaded via dlopen (real) or assigned from

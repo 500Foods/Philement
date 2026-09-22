@@ -14,6 +14,7 @@
 // Local includes
 #include "types.h"
 #include "connection.h"
+#include "transaction.h"
 #include "utils.h"
 
 /*
@@ -194,14 +195,18 @@ bool firebird_connect(ConnectionConfig* config, DatabaseHandle** connection, con
 
     // Build the dbname string. Firebird isc_attach_database expects:
     //   - Embedded mode: a bare filesystem path like "/var/lib/.../test.fdb"
-    //   - Network mode:  "host:/path/to/db.fdb" or "host:port:/path/to/db.fdb"
+    //   - Network mode:  "host:/path/to/db.fdb" or "host/port:/path/to/db.fdb"
+    //    (the separator between host and port is '/', not ':')
+    // Note: db_path may already start with '/' (absolute path), so we must not
+    // prepend another '/' — that would produce 'host/port://path' (double slash).
     const char* db_path = config->database ? config->database : "";
+    bool db_path_is_absolute = (db_path[0] == '/');
     char* db_name = NULL;
 
     if (config->host && *config->host &&
         strcmp(config->host, "localhost") != 0 &&
         strcmp(config->host, "127.0.0.1") != 0) {
-        // Remote host — build "host:port:/path" or "host:/path"
+        // Remote host — build "host/port:/path" or "host:/path"
         size_t host_len = strlen(config->host);
         size_t path_len = strlen(db_path);
         db_name = malloc(host_len + path_len + 32);
@@ -211,14 +216,22 @@ bool firebird_connect(ConnectionConfig* config, DatabaseHandle** connection, con
             return false;
         }
         if (config->port > 0) {
-            snprintf(db_name, host_len + path_len + 32, "%s:%d:/%s", config->host, config->port, db_path);
+            if (db_path_is_absolute) {
+                snprintf(db_name, host_len + path_len + 32, "%s/%d:%s", config->host, config->port, db_path);
+            } else {
+                snprintf(db_name, host_len + path_len + 32, "%s/%d:/%s", config->host, config->port, db_path);
+            }
         } else {
-            snprintf(db_name, host_len + path_len + 32, "%s:/%s", config->host, db_path);
+            if (db_path_is_absolute) {
+                snprintf(db_name, host_len + path_len + 32, "%s:%s", config->host, db_path);
+            } else {
+                snprintf(db_name, host_len + path_len + 32, "%s:/%s", config->host, db_path);
+            }
         }
     } else if (config->host && *config->host &&
                (strcmp(config->host, "localhost") == 0 ||
                 strcmp(config->host, "127.0.0.1") == 0)) {
-        // Local network connection — use "host:port:/path" format
+        // Local network connection — use "host/path:/path" format
         size_t host_len = strlen(config->host);
         size_t path_len = strlen(db_path);
         db_name = malloc(host_len + path_len + 32);
@@ -228,9 +241,17 @@ bool firebird_connect(ConnectionConfig* config, DatabaseHandle** connection, con
             return false;
         }
         if (config->port > 0) {
-            snprintf(db_name, host_len + path_len + 32, "%s:%d:/%s", config->host, config->port, db_path);
+            if (db_path_is_absolute) {
+                snprintf(db_name, host_len + path_len + 32, "%s/%d:%s", config->host, config->port, db_path);
+            } else {
+                snprintf(db_name, host_len + path_len + 32, "%s/%d:/%s", config->host, config->port, db_path);
+            }
         } else {
-            snprintf(db_name, host_len + path_len + 32, "%s:%s", config->host, db_path);
+            if (db_path_is_absolute) {
+                snprintf(db_name, host_len + path_len + 32, "%s:%s", config->host, db_path);
+            } else {
+                snprintf(db_name, host_len + path_len + 32, "%s:/%s", config->host, db_path);
+            }
         }
     } else {
         // Embedded mode — just the bare path
@@ -266,7 +287,7 @@ bool firebird_connect(ConnectionConfig* config, DatabaseHandle** connection, con
     DatabaseHandle* db_handle = calloc(1, sizeof(DatabaseHandle));
     if (!db_handle) {
         if (isc_detach_database_ptr) {
-            isc_detach_database_ptr(status, fb_conn->db_handle);
+            isc_detach_database_ptr(status, &fb_conn->db_handle);
         }
         firebird_destroy_connection_wrapper(fb_conn);
         return false;
@@ -326,15 +347,56 @@ bool firebird_health_check(DatabaseHandle* connection) {
     if (isc_dsql_execute_immediate_ptr) {
         fb_status_t status[FB_STATUS_LENGTH];
         memset(status, 0, sizeof(status));
+
+        // Firebird requires an active transaction for DSQL execution.
+        // Start one if needed.
+        if (fb_conn->tr_handle == NULL && isc_start_transaction_ptr) {
+            const char* tpb = firebird_build_tpb(DB_ISOLATION_READ_COMMITTED);
+            fb_status_t tr_result = isc_start_transaction_ptr(
+                status,
+                &fb_conn->tr_handle,
+                1,
+                &fb_conn->db_handle,
+                (short)strlen(tpb),
+                tpb
+            );
+            if (tr_result != FB_SQL_SUCCESS && tr_result != FB_SQL_SUCCESS_INFO) {
+                log_this(firebird_designator_safe(connection),
+                         "Firebird health check: isc_start_transaction failed, result=%lld, status[0]=%lld, status[1]=%lld",
+                         LOG_LEVEL_DEBUG, 5,
+                         (long long)tr_result,
+                         (long long)status[0], (long long)status[1]);
+                connection->consecutive_failures++;
+                log_this(firebird_designator_safe(connection), "Firebird health check failed", LOG_LEVEL_ERROR, 0);
+                return false;
+            }
+            log_this(firebird_designator_safe(connection),
+                     "DEBUG: health check: started transaction, tr_handle=%p",
+                     LOG_LEVEL_DEBUG, 2, fb_conn->tr_handle);
+        }
+
+        memset(status, 0, sizeof(status));
         fb_status_t result = isc_dsql_execute_immediate_ptr(
             status,
-            fb_conn->db_handle,
-            fb_conn->tr_handle,
-            0,
+            &fb_conn->db_handle,
+            &fb_conn->tr_handle,
+            (short)strlen("SELECT 1 FROM RDB$DATABASE"),
             "SELECT 1 FROM RDB$DATABASE",
-            0
+            3,
+            NULL
         );
+        log_this(firebird_designator_safe(connection),
+                 "DEBUG: health check result=%lld, status[0]=%lld, status[1]=%lld, db_handle=%p, tr_handle=%p",
+                 LOG_LEVEL_DEBUG, 7,
+                 (long long)result,
+                 (long long)status[0], (long long)status[1],
+                 fb_conn->db_handle, fb_conn->tr_handle);
         if (result == FB_SQL_SUCCESS || result == FB_SQL_SUCCESS_INFO) {
+            // Commit the implicit health check transaction
+            if (fb_conn->tr_handle && isc_commit_transaction_ptr) {
+                memset(status, 0, sizeof(status));
+                isc_commit_transaction_ptr(status, &fb_conn->tr_handle);
+            }
             connection->last_health_check = time(NULL);
             connection->consecutive_failures = 0;
             return true;
@@ -389,7 +451,7 @@ void firebird_cancel_inflight(DatabaseHandle* connection) {
     if (fb_cancel_operation_ptr) {
         fb_status_t status[FB_STATUS_LENGTH];
         memset(status, 0, sizeof(status));
-        fb_status_t result = fb_cancel_operation_ptr(status, fb_conn->db_handle, FB_CANCEL_CURRENT);
+        fb_status_t result = fb_cancel_operation_ptr(status, &fb_conn->db_handle, FB_CANCEL_CURRENT);
         const char* desig = firebird_designator_safe(connection);
         if (result != FB_SQL_SUCCESS && result != FB_SQL_SUCCESS_INFO) {
             log_this(desig, "Firebird: fb_cancel_operation returned %d", LOG_LEVEL_ERROR, 1, (int)result);

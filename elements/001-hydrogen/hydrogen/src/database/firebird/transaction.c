@@ -24,29 +24,38 @@
  * read/write mode, isolation level, and lock resolution.
  *
  * Firebird TPB format (version 1):
- *   byte 0: isc_tpb_version_1 (value 0x01 after length byte)
- *   followed by param/type/value triples.
+ *   byte 0: isc_tpb_version1 (value 0x01)
+ *   followed by parameter bytes (each parameter is a single byte;
+ *   parameters that take a value follow the param byte).
+ *
+ * TPB constants from ibase.h:
+ *   isc_tpb_version1            = 1
+ *   isc_tpb_consistency         = 1
+ *   isc_tpb_concurrency         = 2
+ *   isc_tpb_wait                = 6
+ *   isc_tpb_read                = 8
+ *   isc_tpb_read_committed      = 15
+ *   isc_tpb_rec_version         = 17
+ *   isc_tpb_no_rec_version      = 18
  *
  * Raw TPB bytes for common isolation levels:
- *   Read committed:   \x04\x01\x00\x08\x20\x01  (version 1, read, read_committed, no_rec_version)
- *   Serializable:    \x04\x01\x00\x08\x04\x02  (version 1, read, consistency, table_spi)
- *   Repeatable read: \x04\x01\x00\x08\x04\x03  (version 1, read, consistency, table_rs)
- *   Read uncommitted:\x04\x01\x00\x08\x20\x01\x15 (version 1, read, read_committed, rec_version)
+ *   Read committed:    \x01\x0F\x12  (version1, read_committed, no_rec_version)
+ *   Serializable:      \x01\x02\x06  (version1, concurrency, wait)
+ *   Repeatable read:   \x01\x02\x06  (version1, concurrency, wait)
+ *   Read uncommitted:  \x01\x0F\x11  (version1, read_committed, rec_version)
  *
- * We return a static string per level — not owned by the caller.
  */
 const char* firebird_build_tpb(DatabaseIsolationLevel level) {
     switch (level) {
         case DB_ISOLATION_SERIALIZABLE:
-            return "\x04\x01\x00\x08\x04\x02";
+            return "\x01\x02\x06";
         case DB_ISOLATION_READ_COMMITTED:
         default:
-            return "\x04\x01\x00\x08\x20\x01";
+            return "\x01\x0F\x12";
         case DB_ISOLATION_READ_UNCOMMITTED:
-            // read_committed + rec_version (allows non-repeatable reads)
-            return "\x04\x01\x00\x08\x20\x01\x15";
+            return "\x01\x0F\x11";
         case DB_ISOLATION_REPEATABLE_READ:
-            return "\x04\x01\x00\x08\x04\x03";
+            return "\x01\x02\x06";
     }
 }
 
