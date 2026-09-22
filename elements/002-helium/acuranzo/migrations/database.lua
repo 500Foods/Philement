@@ -4,6 +4,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 3.4.1 - 2026-09-22 - Firebird: also rewrite CTE AS (VALUES ...) bodies to SELECT...UNION ALL FROM RDB$DATABASE
 -- 3.4.0 - 2026-09-22 - Firebird: rewrite multi-row INSERT VALUES to INSERT...SELECT...UNION ALL in replace_query
 -- 3.3.0 - 2026-09-19 - Removed Firebase dialect (C-level Firebase fully removed in Phase 3)
 -- 3.2.0 - 2026-09-18 - Added Firebird dialect (query_dialects = 6, empty schema prefix)
@@ -21,7 +22,7 @@ local database = {
     -- Database.lua versioning information
     info = {
       script = "database.lua",
-    version = "3.4.0",
+    version = "3.4.1",
         release = "2026-09-22"
      },
 
@@ -483,10 +484,77 @@ local database = {
                 return j, prefix .. "\n" .. table.concat(parts, "\nUNION ALL\n") .. ";"
             end
 
+            -- CTE / derived: WITH name(cols) AS ( VALUES (...),(... ) )
+            -- Firebird rejects multi-row VALUES here; rewrite body only (keep AS parens).
+            local function try_rewrite_cte_values_at(start_i)
+                if not match_word(start_i, "values") then
+                    return nil
+                end
+                local prev = (start_i > 1) and src:sub(start_i - 1, start_i - 1) or ""
+                if prev ~= "" and prev:match("[%w_]") then
+                    return nil
+                end
+
+                -- Lookbehind must be: AS (
+                local k = start_i - 1
+                while k >= 1 and src:sub(k, k):match("[ \t\n\r]") do
+                    k = k - 1
+                end
+                if k < 1 or src:sub(k, k) ~= "(" then
+                    return nil
+                end
+                k = k - 1
+                while k >= 1 and src:sub(k, k):match("[ \t\n\r]") do
+                    k = k - 1
+                end
+                if k < 2 or src:sub(k - 1, k):lower() ~= "as" then
+                    return nil
+                end
+                local before_as = (k - 2 >= 1) and src:sub(k - 2, k - 2) or ""
+                if before_as ~= "" and before_as:match("[%w_]") then
+                    return nil
+                end
+
+                local j = skip_ws_and_comments(start_i + 6)
+                local rows = {}
+                local last_close = nil
+                while src:sub(j, j) == "(" do
+                    local close_r = scan_paren_group(j)
+                    if not close_r then
+                        return nil
+                    end
+                    rows[#rows + 1] = src:sub(j + 1, close_r - 1)
+                    last_close = close_r
+                    j = skip_ws_and_comments(close_r + 1)
+                    if src:sub(j, j) == "," then
+                        j = skip_ws_and_comments(j + 1)
+                    else
+                        break
+                    end
+                end
+                if #rows < 2 or not last_close then
+                    return nil
+                end
+                j = skip_ws_and_comments(j)
+                -- CTE body ends at closing paren of AS (...); do not consume it.
+                if src:sub(j, j) ~= ")" then
+                    return nil
+                end
+
+                local parts = {}
+                for r = 1, #rows do
+                    parts[#parts + 1] = "SELECT " .. rows[r] .. " FROM RDB$DATABASE"
+                end
+                return last_close, table.concat(parts, "\nUNION ALL\n")
+            end
+
             local out = {}
             local i = 1
             while i <= n do
                 local end_i, rewritten = try_rewrite_at(i)
+                if not rewritten then
+                    end_i, rewritten = try_rewrite_cte_values_at(i)
+                end
                 if rewritten then
                     out[#out + 1] = rewritten
                     i = end_i + 1
