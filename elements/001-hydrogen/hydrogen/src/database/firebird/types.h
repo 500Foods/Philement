@@ -41,14 +41,22 @@ typedef fb_status_t (*isc_rollback_transaction_t)(fb_status_t*, void**);
 typedef fb_status_t (*isc_dsql_allocate_t)(fb_status_t*, void**, void**);  /* isc_dsql_allocate_statement */
 typedef fb_status_t (*isc_dsql_prepare_t)(fb_status_t*, void**, void**, short, const char*, short, void*);
 typedef fb_status_t (*isc_dsql_execute_t)(fb_status_t*, void**, void**, short, const void*);
+/* execute2 takes input SQLDA then output SQLDA. Required for singleton RETURNING. */
+typedef fb_status_t (*isc_dsql_execute2_t)(fb_status_t*, void**, void**, short, const void*, const void*);
 typedef fb_status_t (*isc_dsql_execute_immediate_t)(fb_status_t*, void**, void**, short, const char*, short, const void*);
 typedef fb_status_t (*isc_dsql_free_statement_t)(fb_status_t*, void**, short);
 typedef fb_status_t (*isc_dsql_fetch_t)(fb_status_t*, void**, short, void*);
+/* isc_dsql_sql_info(status, &stmt, item_len, items, buf_len, buf) */
+typedef fb_status_t (*isc_dsql_sql_info_t)(fb_status_t*, void**, short, const char*, short, char*);
 typedef fb_status_t (*isc_dsql_describe_bind_t)(fb_status_t*, void**, unsigned short, void*);
 /* Decode ISC_DATE / ISC_TIME / ISC_TIMESTAMP into struct tm (void return). */
 typedef void (*isc_decode_sql_date_t)(const void*, void*);
 typedef void (*isc_decode_sql_time_t)(const void*, void*);
 typedef void (*isc_decode_timestamp_t)(const void*, void*);
+/* Encode struct tm into ISC_DATE / ISC_TIME / ISC_TIMESTAMP. */
+typedef void (*isc_encode_sql_date_t)(const void*, void*);
+typedef void (*isc_encode_sql_time_t)(const void*, void*);
+typedef void (*isc_encode_timestamp_t)(const void*, void*);
 
 /* Cancel */
 typedef fb_status_t (*fb_cancel_operation_t)(fb_status_t*, void**, unsigned short);
@@ -79,13 +87,18 @@ extern isc_rollback_transaction_t     isc_rollback_transaction_ptr;
 extern isc_dsql_allocate_t            isc_dsql_allocate_ptr;
 extern isc_dsql_prepare_t             isc_dsql_prepare_ptr;
 extern isc_dsql_execute_t             isc_dsql_execute_ptr;
+extern isc_dsql_execute2_t            isc_dsql_execute2_ptr;
 extern isc_dsql_execute_immediate_t   isc_dsql_execute_immediate_ptr;
 extern isc_dsql_free_statement_t      isc_dsql_free_statement_ptr;
 extern isc_dsql_fetch_t               isc_dsql_fetch_ptr;
+extern isc_dsql_sql_info_t            isc_dsql_sql_info_ptr;
 extern isc_dsql_describe_bind_t        isc_dsql_describe_bind_ptr;
 extern isc_decode_sql_date_t           isc_decode_sql_date_ptr;
 extern isc_decode_sql_time_t           isc_decode_sql_time_ptr;
 extern isc_decode_timestamp_t          isc_decode_timestamp_ptr;
+extern isc_encode_sql_date_t           isc_encode_sql_date_ptr;
+extern isc_encode_sql_time_t           isc_encode_sql_time_ptr;
+extern isc_encode_timestamp_t          isc_encode_timestamp_ptr;
 extern fb_cancel_operation_t          fb_cancel_operation_ptr;
 extern isc_open_blob2_t               isc_open_blob2_ptr;
 extern isc_get_segment_t              isc_get_segment_ptr;
@@ -125,6 +138,18 @@ typedef struct FirebirdConnection {
 #define FB_DSQL_CLOSE           1
 #define FB_DSQL_DEALLOCATE      2
 #define FB_DSQL_DROP_INV         8
+
+/* isc_dsql_sql_info item and statement-type values (inf_pub.h). */
+#define FB_INFO_SQL_STMT_TYPE    21
+#define FB_STMT_SELECT            1
+#define FB_STMT_EXEC_PROCEDURE    8
+#define FB_STMT_SELECT_FOR_UPD   12
+/* isc_info_sql_records cluster: insert/update/delete counts after DML. */
+#define FB_INFO_SQL_RECORDS      23
+#define FB_INFO_END               1
+#define FB_INFO_REQ_INSERT_COUNT 14
+#define FB_INFO_REQ_UPDATE_COUNT 15
+#define FB_INFO_REQ_DELETE_COUNT 16
 
 /* Firebird isc_status sentinel: 20-element status vector */
 #define FB_STATUS_LENGTH        20

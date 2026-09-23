@@ -15,6 +15,7 @@
 # wait_for_dqm_initialization()
 
 # CHANGELOG
+# 1.5.0 - 2026-09-23 - Added Firebird as a fifth engine (dedicated config plus Multi)
 # 1.4.2 - 2025-09-22 - Fixed bash syntax errors in arithmetic comparisons
 #                    - Fixed: [[ ${var} -lt ${var} ]] syntax errors at lines 117 and 123
 #                    - Added proper variable quoting to prevent expansion issues
@@ -41,20 +42,20 @@
 # 1.2.0 - 2025-09-08 - Updated to check for DQM Lead queue worker thread startup
 #                    - Changed from generic database initialization checks to specific DQM startup verification
 #                    - Now looks for "[ DQM-{DatabaseName} ] Lead queue worker thread started" message
-# 1.1.0 - 2025-09-05 - Added MULTI configuration test with all four database engines in single config
+# 1.1.0 - 2025-09-05 - Added MULTI configuration test with all database engines in single config
 # 1.0.0 - 2025-09-04 - Initial implementation based on test_22_swagger.sh pattern
-#                    - Added parallel execution for all four database engines (PostgreSQL, MySQL, SQLite, DB2)
+#                    - Added parallel execution for PostgreSQL, MySQL, SQLite, and DB2
 #                    - Configured separate test configs for each engine with different ports
 #                    - Basic connectivity test focusing on successful startup/shutdown
 
 set -euo pipefail
 
 # Test Configuration
-TEST_NAME="Databases  {BLUE}engines: 4{RESET}"
+TEST_NAME="Databases  {BLUE}engines: 5{RESET}"
 TEST_ABBR="DBS"
 TEST_NUMBER="30"
 TEST_COUNTER=0
-TEST_VERSION="1.4.2"
+TEST_VERSION="1.5.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -70,6 +71,7 @@ DATABASE_TEST_CONFIGS=(
     ["MySQL"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mysql.json:mysql:mysql:MySQL Engine"
     ["SQLite"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_sqlite.json:sqlite:sqlite:SQLite Engine"
     ["DB2"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_db2.json:db2:db2:DB2 Engine"
+    ["Firebird"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_firebird.json:firebird:firebird:Firebird Engine"
     ["Multi"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_multi.json:multi:multi:Multi Engine"
 )
 

@@ -35,6 +35,8 @@
 #   embedded mode, restart. Run once (or when security DB is missing/corrupt).
 #
 # CHANGELOG
+# 2.3.2 - 2026-09-23 - Shellcheck: drop unused SERVER; report perms via stat;
+#           do not mask ls in the present-file message.
 # 2.3.1 - 2026-09-22 - Default both: do not one-off on legacy FIREBIRD_DB_PATH
 #           (hydrogen.fdb/testfb.fdb/demofb.fdb); map other singular → TEST and
 #           still create DEMO. Explicit path arg still one-off.
@@ -177,9 +179,8 @@ if [[ "${CREATE_MODE}" != "init-security" ]]; then
     fi
 fi
 
-# Auth / connect string uses the first target (or TEST default for init-security)
+# First target (or the TEST default) is the auth probe when no .fdb exists yet.
 PRIMARY_PATH="${TARGET_PATHS[0]:-${TEST_PATH}}"
-SERVER="${HOST}/${PORT}:${PRIMARY_PATH}"
 
 # --- Helper: get the firebird user's UID ---
 get_firebird_uid() {
@@ -318,7 +319,9 @@ apply_perms() {
     fi
     chmod 666 "${db_path}" 2>/dev/null || chmod a+rw "${db_path}" 2>/dev/null || true
     chmod a+rwX "${db_dir}" 2>/dev/null || true
-    echo "Permissions on ${db_path}: $(ls -l "${db_path}" 2>/dev/null | awk '{print $1, $3, $4}')"
+    local perm_line
+    perm_line=$(stat -c '%A %U %G' "${db_path}" 2>/dev/null || true)
+    echo "Permissions on ${db_path}: ${perm_line}"
 }
 
 # --- Create (drop+recreate) one database file ---
@@ -355,7 +358,7 @@ SQL"
     if [[ ! -f "${db_path}" ]]; then
         die "CREATE reported success but file missing at ${db_path} (check Firebird DatabaseAccess / dir perms for ${FIREBIRD_USER})"
     fi
-    echo "Database file present: $(ls -l "${db_path}")"
+    echo "Database file present: $(ls -l "${db_path}" || true)"
 
     # shellcheck disable=SC2310 # Function invoked in if condition, verification intentional
     if test_auth_path "${db_path}" >/dev/null 2>&1; then

@@ -38,13 +38,18 @@ isc_rollback_transaction_t     isc_rollback_transaction_ptr    = NULL;
 isc_dsql_allocate_t            isc_dsql_allocate_ptr           = NULL;
 isc_dsql_prepare_t             isc_dsql_prepare_ptr            = NULL;
 isc_dsql_execute_t             isc_dsql_execute_ptr            = NULL;
+isc_dsql_execute2_t            isc_dsql_execute2_ptr           = NULL;
 isc_dsql_execute_immediate_t   isc_dsql_execute_immediate_ptr  = NULL;
 isc_dsql_free_statement_t      isc_dsql_free_statement_ptr     = NULL;
 isc_dsql_fetch_t               isc_dsql_fetch_ptr              = NULL;
+isc_dsql_sql_info_t            isc_dsql_sql_info_ptr           = NULL;
 isc_dsql_describe_bind_t       isc_dsql_describe_bind_ptr      = NULL;
 isc_decode_sql_date_t          isc_decode_sql_date_ptr         = NULL;
 isc_decode_sql_time_t          isc_decode_sql_time_ptr         = NULL;
 isc_decode_timestamp_t         isc_decode_timestamp_ptr        = NULL;
+isc_encode_sql_date_t          isc_encode_sql_date_ptr         = NULL;
+isc_encode_sql_time_t          isc_encode_sql_time_ptr         = NULL;
+isc_encode_timestamp_t         isc_encode_timestamp_ptr        = NULL;
 fb_cancel_operation_t          fb_cancel_operation_ptr         = NULL;
 isc_open_blob2_t               isc_open_blob2_ptr              = NULL;
 isc_get_segment_t              isc_get_segment_ptr             = NULL;
@@ -56,6 +61,40 @@ fb_interpret_t                 fb_interpret_ptr                = NULL;
 static void* libfbclient_handle = NULL;
 static pthread_mutex_t libfbclient_mutex = PTHREAD_MUTEX_INITIALIZER;
 #endif
+
+/* One isc_attach_database at a time. libChaCha's TomCrypt setup is not thread-safe. */
+static pthread_mutex_t firebird_attach_mutex = PTHREAD_MUTEX_INITIALIZER;
+static int firebird_wire_crypt_loaded = 0;
+
+void firebird_preload_wire_crypt(void) {
+    pthread_mutex_lock(&firebird_attach_mutex);
+    if (firebird_wire_crypt_loaded) {
+        pthread_mutex_unlock(&firebird_attach_mutex);
+        return;
+    }
+
+    const char* fb_root = getenv("FIREBIRD");
+    char from_env[512];
+    const char* paths[3];
+    int npaths = 0;
+    if (fb_root && fb_root[0] != '\0') {
+        snprintf(from_env, sizeof(from_env), "%s/plugins/libChaCha.so", fb_root);
+        paths[npaths++] = from_env;
+    }
+    paths[npaths++] = "/usr/lib64/firebird/plugins/libChaCha.so";
+    paths[npaths++] = "/usr/lib/firebird/plugins/libChaCha.so";
+
+    for (int i = 0; i < npaths; i++) {
+        /* RTLD_NOW binds sha256_init to libtomcrypt immediately.
+         * Do not dlclose: a later load would rebind against crypto.so. */
+        void* handle = dlopen(paths[i], RTLD_NOW | RTLD_LOCAL);
+        if (handle) {
+            firebird_wire_crypt_loaded = 1;
+            break;
+        }
+    }
+    pthread_mutex_unlock(&firebird_attach_mutex);
+}
 
 /*
  * ----------------------------------------------------------------------------
@@ -131,13 +170,18 @@ bool load_libfbclient_functions(const char* designator) {
     }
     isc_dsql_prepare_ptr          = (isc_dsql_prepare_t)              dlsym(libfbclient_handle, "isc_dsql_prepare");
     isc_dsql_execute_ptr          = (isc_dsql_execute_t)              dlsym(libfbclient_handle, "isc_dsql_execute");
+    isc_dsql_execute2_ptr         = (isc_dsql_execute2_t)             dlsym(libfbclient_handle, "isc_dsql_execute2");
     isc_dsql_execute_immediate_ptr= (isc_dsql_execute_immediate_t)    dlsym(libfbclient_handle, "isc_dsql_execute_immediate");
     isc_dsql_free_statement_ptr   = (isc_dsql_free_statement_t)       dlsym(libfbclient_handle, "isc_dsql_free_statement");
     isc_dsql_fetch_ptr            = (isc_dsql_fetch_t)                dlsym(libfbclient_handle, "isc_dsql_fetch");
+    isc_dsql_sql_info_ptr         = (isc_dsql_sql_info_t)             dlsym(libfbclient_handle, "isc_dsql_sql_info");
     isc_dsql_describe_bind_ptr    = (isc_dsql_describe_bind_t)        dlsym(libfbclient_handle, "isc_dsql_describe_bind");
     isc_decode_sql_date_ptr       = (isc_decode_sql_date_t)           dlsym(libfbclient_handle, "isc_decode_sql_date");
     isc_decode_sql_time_ptr       = (isc_decode_sql_time_t)           dlsym(libfbclient_handle, "isc_decode_sql_time");
     isc_decode_timestamp_ptr      = (isc_decode_timestamp_t)          dlsym(libfbclient_handle, "isc_decode_timestamp");
+    isc_encode_sql_date_ptr       = (isc_encode_sql_date_t)           dlsym(libfbclient_handle, "isc_encode_sql_date");
+    isc_encode_sql_time_ptr       = (isc_encode_sql_time_t)           dlsym(libfbclient_handle, "isc_encode_sql_time");
+    isc_encode_timestamp_ptr      = (isc_encode_timestamp_t)          dlsym(libfbclient_handle, "isc_encode_timestamp");
     fb_cancel_operation_ptr       = (fb_cancel_operation_t)           dlsym(libfbclient_handle, "fb_cancel_operation");
     isc_open_blob2_ptr            = (isc_open_blob2_t)                dlsym(libfbclient_handle, "isc_open_blob2");
     isc_get_segment_ptr           = (isc_get_segment_t)               dlsym(libfbclient_handle, "isc_get_segment");
@@ -205,6 +249,7 @@ bool firebird_connect(ConnectionConfig* config, DatabaseHandle** connection, con
         log_this(log_subsystem, "Firebird connection failed: libfbclient not available", LOG_LEVEL_ERROR, 0);
         return false;
     }
+    firebird_preload_wire_crypt();
 
     FirebirdConnection* fb_conn = firebird_create_connection_wrapper();
     if (!fb_conn) {
@@ -293,6 +338,7 @@ bool firebird_connect(ConnectionConfig* config, DatabaseHandle** connection, con
     fb_status_t status[FB_STATUS_LENGTH];
     memset(status, 0, sizeof(status));
 
+    pthread_mutex_lock(&firebird_attach_mutex);
     fb_status_t result = isc_attach_database_ptr(
         status,
         (short)(db_name ? strlen(db_name) : 0),
@@ -301,6 +347,7 @@ bool firebird_connect(ConnectionConfig* config, DatabaseHandle** connection, con
         (short)dpb_len,
         attach_params
     );
+    pthread_mutex_unlock(&firebird_attach_mutex);
 
     free(attach_params);
     free(db_name);

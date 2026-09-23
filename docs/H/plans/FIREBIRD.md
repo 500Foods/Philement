@@ -37,7 +37,7 @@ far. Staying on 4.0.7.
 
 **Working now (mark done in logs below; do not claim Phase 10/11/12 complete):**
 
-- Hydrogen: real `firebird_health_check` prepare/execute/fetch SELECT; 
+- Hydrogen: real `firebird_health_check` prepare/execute/fetch SELECT;
   `firebird_execute_query` + result shaping; migrations unblocked in
   `migration/transaction.c`; DDL via `isc_dsql_execute_immediate`; free()/invalid
   pointer around failed stmts fixed; `queries.code` BLOB→JSON (`0x80` parse);
@@ -76,7 +76,6 @@ far. Staying on 4.0.7.
 - UDR install on host if not already installed (sudo).
 - Unity/mock completeness for new Firebird paths.
 - Phase 10 live suites 40/43/45/46/47/58; Phase 11 docs; Phase 12 fences.
-
 
 **Parity:** Firebird is a Hydrogen `DatabaseEngineInterface`, not a new
 API. Match PostgreSQL / SQLite / MySQL / DB2: same `QueryRequest` /
@@ -197,7 +196,7 @@ Each phase is worked in its **own conversation**. Follow this sequence:
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-09-22):** Phases 0–9 complete. Phase 10 still partial (connection string + engine name bugs fixed 2026-09-21). **Live Test 37 APPLY** completed through end of Acuranzo corpus on Firebird 4.0.7 (Carmine/Andrew migration push). TestMigration **reverse** started (1342–1341 OK; 1340 DROP_CHECK fixed; full reverse green **not yet confirmed**). Next: confirm reverse pass, then Phase 10 live suites and/or remaining runtime gaps (`firebird_prepare_statement`/StmtCache, QueryRefs/RETURNING, UDR install, Unity mocks). See [Status 2026-09-22](#status-2026-09-22).
+**CURRENT PAUSE POINT (as of 2026-09-23):** Phases 0–9 complete. Phase 10 still partial. Test 37 APPLY is green on Firebird 4.0.7; reverse is still unconfirmed. Client gaps are in source and **not yet rebuilt** into the binary the 07:00 suite is running: (1) singleton `RETURNING` uses `isc_dsql_execute2` instead of `isc_dsql_fetch` (Test 40 register, SQLCODE -504); (2) Test 41 never reaches READY because SQLite's `sqlite3_load_extension` publishes `sha256_init` from `/usr/local/lib/crypto.so` and libChaCha binds that instead of libtomcrypt. `firebird_preload_wire_crypt()` loads libChaCha with `RTLD_NOW` before any engine thread starts. The attach mutex did not fix this (rebuilt debug binary still failed). (3) Test 50 QueryRefs #030/#056/#057: `LENGTH()` rewritten to `CHAR_LENGTH()`, untyped division cast to INTEGER, and DATE/TIME/TIMESTAMP/BOOLEAN parameters plus FLOAT/timestamp JSON now match the other engines. Live rebuild and Test 50 are still outstanding. See [Status 2026-09-22](#status-2026-09-22).
 
 Keep this block current when a phase finishes (date, result, next phase
 number). It is the first thing a new session reads.
@@ -1459,7 +1458,6 @@ the full design; `mks`; markdown exists.
 - **2026-09-20 Phase 7.4** Verification: `mkq` PASS (0 dead functions), `mkp` PASS (2,057 files, 0 issues), `mks` PASS (175 files, 0 issues), `mkl` PASS (336 files, 2,565 links, 0 missing). Updated SITEMAP.md, STRUCTURE.md, INSTRUCTIONS.md, TESTING.md. Verified `lua.c` engines[] + config schema enum include `"firebird"` (Phase 5).
 - **2026-09-21 Phase 7.5** Env var cleanup: `create_test_db.sh` (v2.1.0) now honors `FIREBIRD_DB_PATH` for database file location instead of hardcoded `/var/lib/firebird/data/${DB_NAME}`; creates data dir with proper firebird ownership; `TEST_VERSION` 1.4.5→1.4.6 in test_03_shell.sh to register `FIREBIRD_DB_USER`/`FIREBIRD_DB_PASS`. `test_37_firebird_migrations.sh` (v1.4.0) fixed typo `FIREBIRD_SYSBDA_PASSWORD`→`FIREBIRD_SYSDBA_PASSWORD`; test now exports `FIREBIRD_DB_USER`/`FIREBIRD_DB_PASS` (falling back to SYSDBA) for its own work while SYSDBA credentials are used only by `create_test_db.sh` for initial creation. `SECRETS.md` updated with new env var docs.
 
-
 - **2026-09-22 Carmine/Andrew live migration push (Test 37):**
   - Hydrogen path unblocked for APPLY: real `firebird_health_check`
     (prepare/execute/fetch SELECT, not execute_immediate stub);
@@ -1636,7 +1634,7 @@ Cockroach.
   - `mks` PASS — shellcheck: 175 files, 0 issues
   - `mkl` PASS — 2,558 links, 0 missing
   - Unity tests: utils_test_firebird (14/14 PASS), connection_test_firebird (13/13 PASS), interface_test_firebird (6/6 PASS), transaction_test_firebird (7/7 PASS), database_connstring_test_parse_connection_string (24/24 PASS), database_connstring_test_build_connection_string (7/7 PASS), heartbeat_test_coverage_improvement (15/15 PASS)
-   - Note: cannot run live Test 37/Test 40 — Firebird packages not installed in this environment. The connection string and engine name bugs are fixed; live verification deferred to a host with Firebird installed.
+  - Note: cannot run live Test 37/Test 40 — Firebird packages not installed in this environment. The connection string and engine name bugs are fixed; live verification deferred to a host with Firebird installed.
 - **2026-09-22** Fixed `firebird_health_check` in `src/database/firebird/connection.c`:
   - Fixed 3 `log_this` parameter-count mismatches that produced the "WARNING: log_this parameter mismatch" stderr messages in the crash log:
     - `isc_start_transaction failed` log: `num_args` 5 → 3 (3 `%lld` specifiers, 3 varargs)
@@ -1658,6 +1656,23 @@ Cockroach.
 - **2026-09-22** Phase 10 live 40–58 still **open** — host now has Firebird
   4.0.7 and Test 37 APPLY works, but named suite runs for 40/43/45/46/47/58
   were not claimed green in this update.
+- **2026-09-23** Client parity, not yet rebuilt. Test 40 Firebird register
+  failed SQLCODE -504 "Cursor is not open" on QueryRef #051
+  (`INSERT … RETURNING`). That statement type is
+  `isc_info_sql_stmt_exec_procedure`; `isc_dsql_fetch` is the wrong call.
+  `firebird_execute_sql` now reads the statement type and uses
+  `isc_dsql_execute2` for the singleton row. Test 41 never logged READY
+  FOR REQUESTS. The rebuilt debug binary still failed every Firebird
+  attach with "TomCrypt library error initializing sha256: Invalid error
+  code." The running process's libChaCha GOT for `sha256_init` pointed at
+  `/usr/local/lib/crypto.so`, which SQLite loads `RTLD_GLOBAL` via
+  `sqlite3_load_extension`. Serializing attach did not change that.
+  `firebird_preload_wire_crypt()` now `dlopen`s libChaCha with `RTLD_NOW`
+  before any engine thread starts, so the slot binds to libtomcrypt and
+  stays there. `RTLD_DEEPBIND` is not used (AddressSanitizer rejects it).
+  Live rebuild of `hydrogen_debug` and Test 41 are still outstanding.
+- **2026-09-23** Test 50 (conduit single query) client gaps, in source, not yet rebuilt (the 07:00 suite is using the previous binary). Probed the demo database: QueryRef #057's nine parameters describe as INTEGER, CHAR, BOOLEAN, FLOAT, CHAR, DATE, TIME, TIMESTAMP, TIMESTAMP WITH TIME ZONE (12-byte). Inputs for DATE/TIME/TIMESTAMP/BOOLEAN were left zero, so the row could not match the other engines. FLOAT is binary32 and prints `3.1415901184082`; the other engines emit `3.1415899999999999`, so `CAST(? AS FLOAT)` is rewritten to `DOUBLE PRECISION` and doubles print with `%.17g`. Timestamp output now keeps milliseconds when the 1/10000-second ticks are non-zero (`2023-12-25 14:30:00.123`) and leaves a whole-second datetime as `2023-12-25 14:30:00`. QueryRef #056 `numbers / ?` fails prepare in dialect 3 ("Invalid data type for division"); rewritten to `/ CAST(? AS INTEGER)`, and the comparison parameter then infers INTEGER. QueryRef #030 calls `LENGTH()`, which Firebird rejects; rewritten to `CHAR_LENGTH()` (the `code` blob form prepares). A direct prepare/execute of the #057 statement returned integer 42, boolean 1, float 3.14159, date `2023-12-25`, time `14:30:00`, datetime `2023-12-25 14:30:00`, timestamp `2023-12-25 14:30:00.123`. Touched files compiled with the regular `-Werror` flags to `/tmp` only. `mkq`/`mkt` and Test 50 were not run.
+- **2026-09-23** Test 58 Firebird plaintext and STARTTLS both failed the API check with empty response dirs. Hydrogen reached READY. QueryRef #154 (`UPDATE mail_queue … ORDER BY … LIMIT 1`) is token `LIMIT` (SQLCODE -104). The worker then treated the error as a lost claim, so the lifecycle mail never left and the API steps never ran. QueryRef #103's later failure is connection shutdown during stop. Firebird execute now rewrites `LIMIT n` to `FETCH FIRST n ROWS ONLY` (verified on the demo database, including `ROWS` plural, then rolled back). Parameterized DML was reporting `affected_rows` 0, so a successful claim would still look lost; `isc_info_sql_records` insert+update+delete counts are now stored (a one-row update on `mail_queue` returned update count 1). `query.c` and `query_bind.c` compiled with the regular `-Werror` flags to `/tmp`. Test 58 was not rerun.
 
 ### Lessons learned
 

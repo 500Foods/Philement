@@ -4,6 +4,8 @@
 # Confirms multi-statement DML commit/rollback behavior that migration LOAD/APPLY rely on.
 
 # CHANGELOG
+# 1.0.4 - 2026-09-23 - Collapse isql diagnostics with one tr so an intermediate
+#           pipeline status is not masked.
 # 1.0.3 - 2026-09-22 - verify_tx_firebird: network SuperServer connect, no -z, simple AUTODDL script, collapse isql errors
 # 1.0.2 - 2026-09-20 - Replaced cockroachdb with firebird engine (isql-fb)
 # 1.0.1 - 2026-07-23 - Shellcheck cleanups (SC2154/SC2155/SC2116/SC2312)
@@ -206,7 +208,7 @@ EOF
     # Network SuperServer (same as create script); FIREBIRD for isql child only; no -z.
     result=$(FIREBIRD="${fb_env}" isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" \
         "${server}" -i /dev/stdin <<< "${sql}" 2>&1) || {
-        collapsed=$(printf '%s' "${result}" | tr '\n' ' ' | tr -s '[:space:]' ' ')
+        collapsed=$(printf '%s' "${result}" | tr -s '[:space:]' ' ')
         echo "isql_error:${collapsed}"
         return 1
     }
@@ -215,7 +217,7 @@ EOF
         echo "counts=0,2"
         return 0
     fi
-    collapsed=$(printf '%s' "${result}" | tr '\n' ' ' | tr -s '[:space:]' ' ')
+    collapsed=$(printf '%s' "${result}" | tr -s '[:space:]' ' ')
     echo "unexpected_counts:${counts//$'\n'/,} out:${collapsed}"
     return 1
 }

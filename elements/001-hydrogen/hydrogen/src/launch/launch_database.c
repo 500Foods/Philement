@@ -6,6 +6,7 @@
 #include <src/database/database.h>
 #include <src/database/database_watchdog.h>
 #include <src/database/dbqueue/dbqueue.h>
+#include <src/database/firebird/connection.h>
 #include <src/queue/queue.h>
 
 // Local includes
@@ -228,6 +229,7 @@ void validate_database_configuration(const DatabaseConfig* db_config, const char
     free(mysql_names);
     free(sqlite_names);
     free(db2_names);
+    free(firebird_names);
 }
 
 // Check library dependencies for database engines
@@ -454,7 +456,10 @@ void check_database_library_dependencies(const char*** messages, size_t* count, 
             }
 
             free(loaded_version);
-            dlclose(libfbclient_handle);
+            /* Do not dlclose. Unloading libfbclient drops its client
+             * pool without freeing it (LeakSanitizer: 72KB from this
+             * dlopen). The dynamic linker keeps the mapping; the live
+             * connect reuses it. */
         }
     }
 }
@@ -847,6 +852,17 @@ int launch_database_subsystem(void) {
     // Connect to configured databases and start queues
     int connected_databases = 0;
     int total_queues_started = 0;
+
+    /* Before any engine thread runs. SQLite's extension load publishes
+     * sha256_init from /usr/local/lib/crypto.so; Firebird's ChaCha plugin
+     * must already be bound to libtomcrypt. */
+    for (int i = 0; i < db_config->connection_count; i++) {
+        const DatabaseConnection* conn = &db_config->connections[i];
+        if (conn->enabled && conn->type && strcasecmp(conn->type, "firebird") == 0) {
+            firebird_preload_wire_crypt();
+            break;
+        }
+    }
 
     for (int i = 0; i < db_config->connection_count; i++) {
         const DatabaseConnection* conn = &db_config->connections[i];

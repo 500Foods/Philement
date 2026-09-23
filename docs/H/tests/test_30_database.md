@@ -8,7 +8,7 @@ The test_30_database.sh script validates that the Database Queue Manager (DQM) s
 
 ## Features
 
-- Parallel testing across multiple database engines (PostgreSQL, MySQL, SQLite, DB2)
+- Parallel testing across multiple database engines (PostgreSQL, MySQL, SQLite, DB2, Firebird)
 - DQM startup verification
 - Log message validation
 - Configuration testing

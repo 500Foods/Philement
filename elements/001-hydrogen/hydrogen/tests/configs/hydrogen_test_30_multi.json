@@ -9,7 +9,7 @@
         "Port": 5304
     },
     "Databases": {
-        "ConnectionCount": 4,
+        "ConnectionCount": 5,
         "Connections": [
             {
                 "Enabled": true,
@@ -154,6 +154,52 @@
                 "Bootstrap":"SELECT * FROM acuranzo.queries;",
                 "Design": "acuranzo",
                 "Schema": "acuranzo",
+                "Queues": {
+                    "Slow": {
+                        "start": 1,
+                        "min": 1,
+                        "max": 4,
+                        "up": 10,
+                        "down": 2,
+                        "inactivity": 300
+                    },
+                    "Medium": {
+                        "start": 2,
+                        "min": 1,
+                        "max": 8,
+                        "up": 15,
+                        "down": 3,
+                        "inactivity": 240
+                    },
+                    "Fast": {
+                        "start": 4,
+                        "min": 2,
+                        "max": 16,
+                        "up": 20,
+                        "down": 5,
+                        "inactivity": 180
+                    },
+                    "Cache": {
+                        "start": 1,
+                        "min": 1,
+                        "max": 4,
+                        "up": 5,
+                        "down": 1,
+                        "inactivity": 600
+                    }
+                }
+            },
+            {
+                "Enabled": true,
+                "Name": "FB",
+                "Engine": "firebird",
+                "Host": "localhost",
+                "Port": 3050,
+                "Database": "${env.FIREBIRD_DB_PATH_DEMO}",
+                "User": "SYSDBA",
+                "Pass": "${env.FIREBIRD_SYSDBA_PASSWORD}",
+                "Schema": "",
+                "Bootstrap": "SELECT * FROM queries;",
                 "Queues": {
                     "Slow": {
                         "start": 1,

@@ -10,9 +10,17 @@
 #     → prefers hydrogen_perf (debug info, no ASAN) over packed release
 #   EXERCISE_NATIVE_BIN=/path/to/binary ./tests/test_44_exercise_native.sh
 #   EXERCISE_NATIVE_LOG_LEVEL=DEBUG|TRACE|STATE (default STATE)
+#   EXERCISE_NATIVE_HEAPMON=0 skips the malloc-caller preload (smaps still runs)
 
-# FUNCTIONS (lib/exercise_helpers.sh)
+# FUNCTIONS (lib/exercise_helpers.sh, lib/heapmon.sh)
 # scrape_metrics() get_metric() run_auth_request() run_auth_batch()
+# heapmon_prepare() heapmon_capture() heapmon_report()
+
+# CHANGELOG
+# 1.2.0 - 2026-09-23 - Steady-state heap analysis: smaps mapping delta, glibc
+#                     in-use versus RSS, and callers that still hold live
+#                     bytes. EXERCISE_NATIVE_HEAPMON=0 skips the preload.
+#                     EXERCISE_NATIVE_DIAG=1 names Hydrogen functions.
 
 set -euo pipefail
 
@@ -20,7 +28,7 @@ TEST_NAME="Exercise Native"
 TEST_ABBR="EXN"
 TEST_NUMBER="44"
 TEST_COUNTER=0
-TEST_VERSION="1.1.0"
+TEST_VERSION="1.2.0"
 
 TOTAL_REQUESTS=5000
 SNAPSHOT_INTERVAL=500
@@ -46,6 +54,8 @@ setup_test_environment
 [[ -n "${CONDUIT_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/conduit_utils.sh"
 # shellcheck source=tests/lib/exercise_helpers.sh # Shared auth exercise scrape/batch helpers
 [[ -n "${EXERCISE_HELPERS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/exercise_helpers.sh"
+# shellcheck source=tests/lib/heapmon.sh # Midpoint-to-end heap site and mapping snapshots
+[[ -n "${HEAPMON_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/heapmon.sh"
 
 # ── Locate Hydrogen Binary ──────────────────────────────────────────
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate Hydrogen Binary"
@@ -234,8 +244,10 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     # Prefer cores when diagnosing (no-op if already unlimited / hard limit blocks)
     ulimit -c unlimited 2>/dev/null || true
 
-    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Launching native (${NATIVE_BIN_LABEL}): ${HYDROGEN_BIN}"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Launching native (${NATIVE_BIN_LABEL}): ${RELEASE_BIN}"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "HYDROGEN_LOG_LEVEL=${HYDROGEN_LOG_LEVEL}"
+    # shellcheck disable=SC2310 # Prepare never aborts the RSS exercise; ACTIVE stays 0 on failure
+    heapmon_prepare "${RELEASE_BIN}" || true
 
     server_info=$(run_conduit_server "${CONFIG_FILE}" "${EXERCISE_LOG_SUFFIX}" "Exercise-Native" "${RESULT_FILE}")
 
@@ -314,6 +326,8 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         N_SERVER_DIED=false
         N_MAX_CONSEC_FAILS=2
 
+        heapmon_capture "init" "${HYDROGEN_PID}"
+
         while (( N_CNT < TOTAL_REQUESTS )); do
             n_batch="${CONCURRENCY}"
             n_remaining=$(( TOTAL_REQUESTS - N_CNT ))
@@ -355,6 +369,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
                     if [[ "${N_MID}" -eq 0 && "${N_CNT}" -ge "${MIDPOINT_REQUEST}" && "${NR}" -gt 0 ]]; then
                         N_MID="${NR}"
+                        heapmon_capture "mid" "${HYDROGEN_PID}"
                     fi
 
                     printf "%-8s  %-10s  %-10s  %-10s  %-8s  %-10s  %-6s  %-8s  %-8s  %-7s  %-6s  %-6s  %-6s  %-7s  %-7s\n" \
@@ -402,6 +417,10 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Final RSS: ${NF_MB} MB | Growth: ${NG_MB} MB over ${N_CNT} requests (target ${TOTAL_REQUESTS})"
 
+        if [[ -n "${HYDROGEN_PID:-}" ]] && kill -0 "${HYDROGEN_PID}" 2>/dev/null; then
+            heapmon_capture "end" "${HYDROGEN_PID}"
+        fi
+
         N_RESPONSIVE_NOTE="yes"
         if [[ "${N_SERVER_DIED}" == true ]]; then
             N_RESPONSIVE_NOTE="NO (unresponsive after ${N_CNT} requests)"
@@ -424,6 +443,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server stopped"
 
         if [[ "${N_SERVER_DIED}" == true ]]; then
+            heapmon_report "0" ""
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Server hung/crashed under load; check ${LOGS_DIR}/test_${TEST_NUMBER}_${TIMESTAMP}_${EXERCISE_LOG_SUFFIX}.log"
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Server became unresponsive after ${N_CNT} requests (${N_SNAPSHOTS_OK} good / ${N_SNAPSHOTS_FAIL} failed snapshots)"
             echo "NATIVE_SERVER_DIED=true" >> "${RESULT_FILE}"
@@ -439,6 +459,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Warmup (first ${MIDPOINT_REQUEST} reqs): ${NFH} KB"
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Steady-state (last ${NSH} reqs): ${NSK} KB/request (${NSB} B/req) (threshold: ${LEAK_THRESHOLD_KB_PER_REQ})"
+            heapmon_report "${NSH}" "${NSB}"
 
             {
                 echo ""
@@ -460,6 +481,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 PASS_COUNT=$(( PASS_COUNT + 1 ))
             fi
         else
+            heapmon_report "0" ""
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Insufficient data for analysis (good snapshots: ${N_SNAPSHOTS_OK}, midpoint RSS: ${N_MID}, final RSS: ${NF_RSS})"
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Measurement incomplete - could not compute steady-state growth"
             echo "NATIVE_MEASUREMENT_INCOMPLETE=true" >> "${RESULT_FILE}"

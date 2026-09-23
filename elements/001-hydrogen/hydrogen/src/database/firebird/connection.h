@@ -26,6 +26,17 @@ void firebird_active_stmt_clear(DatabaseHandle* connection, const void* stmt_han
 // Library loading
 bool load_libfbclient_functions(const char* designator);
 
+/*
+ * Load libChaCha.so with RTLD_NOW before any other subsystem publishes
+ * sha256_init into the global namespace. SQLite's sqlite3_load_extension
+ * opens /usr/local/lib/crypto.so with RTLD_GLOBAL, and that library also
+ * defines sha256_init. If ChaCha is loaded after that, its relocation
+ * binds the wrong function and every Firebird attach fails with
+ * "TomCrypt library error initializing sha256: Invalid error code."
+ * RTLD_DEEPBIND is not used: AddressSanitizer rejects it.
+ */
+void firebird_preload_wire_crypt(void);
+
 // Prepared-statement cache helpers
 FirebirdConnection* firebird_create_connection_wrapper(void);
 void firebird_destroy_connection_wrapper(FirebirdConnection* fb_conn);
