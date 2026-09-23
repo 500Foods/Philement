@@ -49,7 +49,7 @@ unsigned int firebird_fraction_ticks(const char* frac) {
     if (!frac) {
         return 0;
     }
-    while (frac[n] && n < 4 && frac[n] >= '0' && frac[n] <= '9') {
+    while (n < 4 && frac[n] >= '0' && frac[n] <= '9') {
         pad[n] = frac[n];
         n++;
     }
@@ -786,12 +786,7 @@ char* firebird_rewrite_engine_sql(const char* sql, bool* oom) {
                 size_t j = i + 5;
                 size_t num_at;
                 size_t num_len;
-                size_t off_at = 0;
-                size_t off_len = 0;
                 char count_txt[10];
-                char off_txt[10];
-                char repl[96];
-                int repl_len = 0;
                 while (sql[j] == ' ' || sql[j] == '\t' || sql[j] == '\n' || sql[j] == '\r') {
                     j++;
                 }
@@ -802,6 +797,11 @@ char* firebird_rewrite_engine_sql(const char* sql, bool* oom) {
                 num_len = j - num_at;
                 if (num_len > 0 && num_len < sizeof(count_txt)) {
                     size_t k = j;
+                    size_t off_at = 0;
+                    size_t off_len = 0;
+                    char off_txt[10];
+                    char repl[96];
+                    int repl_len;
                     while (sql[k] == ' ' || sql[k] == '\t' || sql[k] == '\n' || sql[k] == '\r') {
                         k++;
                     }
