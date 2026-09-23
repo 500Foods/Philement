@@ -95,3 +95,7 @@ vgcore.*
 
 # Hydrogen parent cmake build dir
 elements/001-hydrogen/build/
+
+# Test databases
+elements/001-hydrogen/hydrogen/tests/artifacts/database/sqlite/hydrodemo.sqlite
+elements/001-hydrogen/hydrogen/tests/artifacts/database/sqlite/hydrotest.sqlite
