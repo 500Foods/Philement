@@ -314,7 +314,7 @@ declare -a ENV_WHITELIST=(
     "FIREBIRD_INCLUDE" "SO_BROTLI" "SO_JSON" "UDR_DIR"
     "EUID" "FIREBIRD_CREATE_DB_SCRIPT" "FIREBIRD_EXTRAS_DIR" "FIREBIRD_START_SCRIPT"
     "FIREBIRD_STOP_SCRIPT" "FIREBIRD_USER" "LOCKDIR" "SECPATH"
-    "FIREBIRD" "SYSDBA_PASSWORD"    
+    "FIREBIRD" "SYSDBA_PASSWORD" "FIREBIRD_DB_PATH"
     "ARG1" "AUTH_PROBE" "CREATE_MODE" "DEFAULT_DEMO_PATH" "DEFAULT_TEST_PATH" "DEMO_PATH"
     "FB_FLUSH_PATH" "ONEOFF_PATH" "PKEXEC_UID" "PRIMARY_PATH" "TEST_PATH" "_ART"
     # first found in extras/mailval/gen_sert.sh
@@ -422,7 +422,6 @@ declare -a ENV_VARS=(
     "FIREBIRD_SYSDBA_PASSWORD|37,40|Firebird sysadmin password|Password for the Firebird SYSDBA user. Used by create_test_db.sh for initial database creation. Maps to Hydrogen Pass."
     "FIREBIRD_DB_PATH_TEST|37|Firebird test DB path|Filesystem path to hydrogen_test.fdb (Test 37). Maps to Hydrogen Database."
     "FIREBIRD_DB_PATH_DEMO|40,43,45,46,47,58|Firebird demo DB path|Filesystem path to hydrogen_demo.fdb (Test 40+). Maps to Hydrogen Database."
-    "FIREBIRD_DB_PATH|37,40|Firebird database path (deprecated)|Deprecated singular path; prefer FIREBIRD_DB_PATH_TEST / _DEMO. Map TEST as primary."
     "FIREBIRD_DB_USER|37,40|Firebird database user|Username for the Firebird database account used by tests (non-SYSDBA). Falls back to SYSDBA."
     "FIREBIRD_DB_PASS|37,40|Firebird database password|Password for the Firebird database account used by tests. Falls back to FIREBIRD_SYSDBA_PASSWORD."
 
