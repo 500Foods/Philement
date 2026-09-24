@@ -30,7 +30,7 @@ QueryCacheEntry* mock_query_cache_lookup(QueryTableCache* cache, int query_ref, 
 QueryCacheEntry* mock_query_cache_lookup_by_ref_and_type(QueryTableCache* cache, int query_ref, int query_type, const char* dqm_label);
 
 // Mock implementation of database_queue_submit_query
-bool mock_database_queue_submit_query(DatabaseQueue* queue, const DatabaseQuery* query);
+bool mock_database_queue_submit_query(DatabaseQueue* queue, DatabaseQuery* query);
 
 // Mock implementation of database_queue_get_stats_json
 json_t* mock_database_queue_get_stats_json(DatabaseQueue* db_queue);
@@ -149,7 +149,8 @@ void mock_dbqueue_set_query_cache_lookup_by_ref_and_type_result(QueryCacheEntry*
 }
 
 // Mock implementation of database_queue_submit_query
-bool mock_database_queue_submit_query(DatabaseQueue* queue, const DatabaseQuery* query) {
+// cppcheck-suppress constParameterPointer
+bool mock_database_queue_submit_query(DatabaseQueue* queue, DatabaseQuery* query) {
     (void)queue; // Unused parameter
 
     mock_submit_query_called = true;

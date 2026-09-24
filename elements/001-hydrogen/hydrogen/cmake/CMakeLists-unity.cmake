@@ -107,6 +107,7 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
     string(FIND "${SOURCE_FILE}" "/oidc/oidc_" IS_OIDC_SOURCE)
     string(FIND "${SOURCE_FILE}" "auth" IS_AUTH_SOURCE)
     string(FIND "${SOURCE_FILE}" "wschat" IS_WSCHAT_SOURCE)
+    string(FIND "${SOURCE_FILE}" "/dbqueue/" IS_DBQUEUE_SOURCE)
     string(FIND "${SOURCE_FILE}" "database" IS_DATABASE_SOURCE)
     string(FIND "${SOURCE_FILE}" "readiness/readiness.c" IS_READINESS_SOURCE)
     string(FIND "${SOURCE_FILE}" "scripting_api_llm.c" IS_SCRIPTING_LLM_SOURCE)
@@ -114,6 +115,7 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
     string(FIND "${SOURCE_FILE}" "scripting_api_query_submit.c" IS_SCRIPTING_QUERY_SUBMIT_SOURCE)
     string(FIND "${SOURCE_FILE}" "scripting_api_query_resolve.c" IS_SCRIPTING_QUERY_RESOLVE_SOURCE)
     string(FIND "${SOURCE_FILE}" "system/jobs/jobs.c" IS_SYSTEM_JOBS_SOURCE)
+    string(FIND "${SOURCE_FILE}" "mutex/mutex.c" IS_MUTEX_SOURCE)
     if(IS_WEBSOCKET_SOURCE GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_LIBWEBSOCKETS")
@@ -239,6 +241,38 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
     elseif(IS_LAUNCH_SOURCE GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         set(MOCK_DEFINES "-DUSE_MOCK_LAUNCH")
+    elseif(IS_MUTEX_SOURCE GREATER -1)
+        # mutex.c contains mutex_lock_with_timeout which calls pthread_mutex_timedlock.
+        # When USE_MOCK_PTHREAD is defined, that call redirects to mock_pthread_mutex_timedlock
+        # (defined in mock_pthread.c). The mock delegates to the real function when no
+        # failure is requested, so existing mutex tests that rely on real pthread behavior
+        # continue to work. Tests needing to force a timed-lock failure (e.g.
+        # heartbeat_test_missing_coverage) use mock_pthread_set_mutex_timedlock_failure(1).
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_PTHREAD")
+        list(APPEND MOCK_DEFINES_LIST "-include")
+        list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_pthread.h")
+        set(MOCK_DEFINES ${MOCK_DEFINES_LIST})
+        unset(MOCK_DEFINES_LIST)
+    elseif(IS_DBQUEUE_SOURCE GREATER -1)
+        # dbqueue source files need database engine mocks so database_engine_*
+        # calls redirect to mocks during testing. We do NOT enable USE_MOCK_DBQUEUE
+        # here because that would redefine dbqueue function names in those source
+        # files, conflicting with the mock implementations in mock_dbqueue.c.
+        # The dbqueue functions themselves are provided by mock_dbqueue.c at link
+        # time via the test binary.
+        set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_DATABASE_ENGINE")
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_SYSTEM")
+        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_PTHREAD")
+        list(APPEND MOCK_DEFINES_LIST "-include")
+        list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_system.h")
+        list(APPEND MOCK_DEFINES_LIST "-include")
+        list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_database_engine.h")
+        list(APPEND MOCK_DEFINES_LIST "-include")
+        list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_pthread.h")
+        set(MOCK_DEFINES ${MOCK_DEFINES_LIST})
+        unset(MOCK_DEFINES_LIST)
     elseif(IS_QUEUE_SOURCE GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_SYSTEM")

@@ -36,6 +36,10 @@ void test_apply_single_migration_no_persistent_connection(void);
 void test_apply_single_migration_execute_failure(void);
 void test_apply_single_migration_commit_failure(void);
 void test_apply_single_migration_rollback_path(void);
+void test_apply_single_migration_success(void);
+void test_apply_single_migration_rollback_success_path(void);
+void test_apply_single_migration_firebird_success(void);
+void test_apply_single_migration_firebird_no_connection(void);
 
 // Helper function to create a mock lead queue for testing
 static DatabaseQueue* create_mock_lead_queue(const char* db_name) {
@@ -188,28 +192,33 @@ void test_apply_single_migration_begin_transaction_failure(void) {
 void test_apply_single_migration_statement_calloc_failure(void) {
     DatabaseQueue* queue = create_mock_lead_queue("testdb");
     TEST_ASSERT_NOT_NULL(queue);
-    
+
     // Create query cache and add an entry
     queue->query_cache = query_cache_create("testdb");
     TEST_ASSERT_NOT_NULL(queue->query_cache);
-    
+
     QueryCacheEntry* entry = query_cache_entry_create(
         1, 1000, "SELECT 1;", "Test migration", "slow", 30, "testdb");
     TEST_ASSERT_NOT_NULL(entry);
     TEST_ASSERT_TRUE(query_cache_add_entry(queue->query_cache, entry, "testdb"));
-    
+
     // Make begin transaction succeed
     mock_database_engine_set_begin_result(true);
-    
-    // Make calloc fail on first call (for stmt_request)
-    mock_system_set_calloc_failure(1);
-    
+
+    // Make calloc fail on the stmt_request allocation. The malloc/calloc
+    // counter is shared globally across all mock memory operations.
+    // Observed sequence for this test path:
+    // call 1: internal (test setUp / mock_database_engine_reset_all)
+    // call 4: Transaction in mock_database_engine_begin_transaction (size=40)
+    // call 6: calloc(QueryRequest) in lead_apply.c (size=56) -- FAIL HERE
+    mock_system_set_calloc_failure(6);
+
     // Make rollback succeed so we clean up properly
     mock_database_engine_set_rollback_result(true);
-    
+
     bool result = database_queue_apply_single_migration(queue, 1, "Test-01");
     TEST_ASSERT_FALSE(result);
-    
+
     query_cache_destroy(queue->query_cache, "testdb");
     queue->query_cache = NULL;
     destroy_mock_lead_queue(queue);
@@ -372,6 +381,118 @@ void test_apply_single_migration_rollback_path(void) {
     destroy_mock_lead_queue(queue);
 }
 
+// Test database_queue_apply_single_migration success path
+void test_apply_single_migration_success(void) {
+    DatabaseQueue* queue = create_mock_lead_queue("testdb");
+    TEST_ASSERT_NOT_NULL(queue);
+
+    queue->query_cache = query_cache_create("testdb");
+    TEST_ASSERT_NOT_NULL(queue->query_cache);
+
+    QueryCacheEntry* entry = query_cache_entry_create(
+        1, 1000, "SELECT 1;", "Test migration", "slow", 30, "testdb");
+    TEST_ASSERT_NOT_NULL(entry);
+    TEST_ASSERT_TRUE(query_cache_add_entry(queue->query_cache, entry, "testdb"));
+
+    mock_database_engine_set_begin_result(true);
+    mock_database_engine_set_execute_result(true);
+    mock_database_engine_set_commit_result(true);
+    mock_database_engine_set_affected_rows(1);
+
+    bool result = database_queue_apply_single_migration(queue, 1, "Test-01");
+    TEST_ASSERT_TRUE(result);
+
+    query_cache_destroy(queue->query_cache, "testdb");
+    queue->query_cache = NULL;
+    destroy_mock_lead_queue(queue);
+}
+
+// Test database_queue_apply_single_migration rollback succeeds on execute failure
+void test_apply_single_migration_rollback_success_path(void) {
+    DatabaseQueue* queue = create_mock_lead_queue("testdb");
+    TEST_ASSERT_NOT_NULL(queue);
+
+    queue->query_cache = query_cache_create("testdb");
+    TEST_ASSERT_NOT_NULL(queue->query_cache);
+
+    QueryCacheEntry* entry = query_cache_entry_create(
+        1, 1000, "SELECT 1;", "Test migration", "slow", 30, "testdb");
+    TEST_ASSERT_NOT_NULL(entry);
+    TEST_ASSERT_TRUE(query_cache_add_entry(queue->query_cache, entry, "testdb"));
+
+    mock_database_engine_set_begin_result(true);
+    mock_database_engine_set_execute_result(false);
+    mock_database_engine_set_rollback_result(true);
+
+    bool result = database_queue_apply_single_migration(queue, 1, "Test-01");
+    TEST_ASSERT_FALSE(result);
+
+    query_cache_destroy(queue->query_cache, "testdb");
+    queue->query_cache = NULL;
+    destroy_mock_lead_queue(queue);
+}
+
+// Test database_queue_apply_single_migration with Firebird engine (success)
+void test_apply_single_migration_firebird_success(void) {
+    DatabaseQueue* queue = create_mock_lead_queue("testdb");
+    TEST_ASSERT_NOT_NULL(queue);
+
+    queue->query_cache = query_cache_create("testdb");
+    TEST_ASSERT_NOT_NULL(queue->query_cache);
+
+    QueryCacheEntry* entry = query_cache_entry_create(
+        1, 1000, "CREATE TABLE test (id int);", "Test migration", "slow", 30, "testdb");
+    TEST_ASSERT_NOT_NULL(entry);
+    TEST_ASSERT_TRUE(query_cache_add_entry(queue->query_cache, entry, "testdb"));
+
+    // Set engine to Firebird
+    queue->persistent_connection->engine_type = DB_ENGINE_FIREBIRD;
+
+    // Mock will be used for database_engine_* calls inside execute_firebird_migration
+    mock_database_engine_set_begin_result(true);
+    mock_database_engine_set_execute_result(true);
+    mock_database_engine_set_commit_result(true);
+    mock_database_engine_set_affected_rows(0);
+
+    bool result = database_queue_apply_single_migration(queue, 1, "Test-01");
+    TEST_ASSERT_TRUE(result);
+
+    query_cache_destroy(queue->query_cache, "testdb");
+    queue->query_cache = NULL;
+    destroy_mock_lead_queue(queue);
+}
+
+// Test database_queue_apply_single_migration with Firebird engine but no connection
+void test_apply_single_migration_firebird_no_connection(void) {
+    DatabaseQueue* queue = create_mock_lead_queue("testdb");
+    TEST_ASSERT_NOT_NULL(queue);
+
+    queue->query_cache = query_cache_create("testdb");
+    TEST_ASSERT_NOT_NULL(queue->query_cache);
+
+    QueryCacheEntry* entry = query_cache_entry_create(
+        1, 1000, "SELECT 1;", "Test migration", "slow", 30, "testdb");
+    TEST_ASSERT_NOT_NULL(entry);
+    TEST_ASSERT_TRUE(query_cache_add_entry(queue->query_cache, entry, "testdb"));
+
+    // Set engine to Firebird before removing connection
+    queue->persistent_connection->engine_type = DB_ENGINE_FIREBIRD;
+    queue->engine_type = DB_ENGINE_FIREBIRD;
+
+    // Remove persistent connection
+    free(queue->persistent_connection);
+    queue->persistent_connection = NULL;
+
+    bool result = database_queue_apply_single_migration(queue, 1, "Test-01");
+    TEST_ASSERT_FALSE(result);
+
+    queue->persistent_connection = NULL;
+
+    query_cache_destroy(queue->query_cache, "testdb");
+    queue->query_cache = NULL;
+    destroy_mock_lead_queue(queue);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -386,6 +507,10 @@ int main(void) {
     RUN_TEST(test_apply_single_migration_execute_failure);
     RUN_TEST(test_apply_single_migration_commit_failure);
     RUN_TEST(test_apply_single_migration_rollback_path);
+    RUN_TEST(test_apply_single_migration_success);
+    RUN_TEST(test_apply_single_migration_rollback_success_path);
+    RUN_TEST(test_apply_single_migration_firebird_success);
+    RUN_TEST(test_apply_single_migration_firebird_no_connection);
 
     return UNITY_END();
 }

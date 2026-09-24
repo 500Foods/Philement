@@ -15,6 +15,7 @@
 #include <unity/mocks/mock_system.h>
 #include <unity/mocks/mock_logging.h>
 #include <unity/mocks/mock_database_engine.h>
+#include <unity/mocks/mock_pthread.h>
 
 // Include source headers after mocks
 #include <src/database/database.h>
@@ -31,12 +32,10 @@ void mock_database_queue_signal_initial_connection_complete(DatabaseQueue* db_qu
 size_t mock_database_queue_get_depth_with_designator(DatabaseQueue* db_queue, const char* designator);
 PendingResultManager* mock_get_pending_result_manager(void);
 size_t mock_pending_result_cleanup_expired(PendingResultManager* manager, const char* designator);
-MutexResult mock_mutex_lock(pthread_mutex_t* mutex, const char* designator);
 
 // Mock state variables
 static bool mock_connect_success = true;
 static bool mock_engine_init_success = true;
-static bool mock_mutex_lock_success = true;
 static bool mock_signal_called = false;
 static size_t mock_queue_depth = 0;
 static PendingResultManager* mock_pending_manager = NULL;
@@ -99,12 +98,6 @@ size_t mock_pending_result_cleanup_expired(PendingResultManager* manager, const 
     return mock_cleanup_count;
 }
 
-MutexResult mock_mutex_lock(pthread_mutex_t* mutex, const char* designator) {
-    (void)mutex;
-    (void)designator;
-    return mock_mutex_lock_success ? MUTEX_SUCCESS : MUTEX_ERROR;
-}
-
 // Override functions with mocks
 #define database_engine_connect_with_designator mock_database_engine_connect_with_designator
 #define database_engine_health_check mock_database_engine_health_check
@@ -116,7 +109,7 @@ MutexResult mock_mutex_lock(pthread_mutex_t* mutex, const char* designator) {
 #define pending_result_cleanup_expired mock_pending_result_cleanup_expired
 
 // Test function prototypes
-void test_corrupted_mutex_detection_in_handle_connection_success(void);
+void test_mutex_lock_failure_in_handle_connection_success(void);
 void test_health_check_failure_after_connection(void);
 void test_config_database_logging_path(void);
 void test_engine_init_failure_in_check_connection(void);
@@ -140,11 +133,12 @@ void setUp(void) {
     // Reset our mock state
     mock_connect_success = true;
     mock_engine_init_success = true;
-    mock_mutex_lock_success = true;
     mock_signal_called = false;
     mock_queue_depth = 0;
     mock_pending_manager = NULL;
     mock_cleanup_count = 0;
+
+    mock_pthread_reset_all();
 }
 
 void tearDown(void) {
@@ -153,34 +147,35 @@ void tearDown(void) {
     mock_logging_reset_all();
 }
 
-// Test corrupted mutex detection in database_queue_handle_connection_success (lines 115-132)
-void test_corrupted_mutex_detection_in_handle_connection_success(void) {
+// Test mutex lock failure in handle_connection_success (lines 147-151)
+void test_mutex_lock_failure_in_handle_connection_success(void) {
     // Create a test queue
-    DatabaseQueue* test_queue = database_queue_create_lead("testdb_corrupt",
+    DatabaseQueue* test_queue = database_queue_create_lead("testdb_mutex_fail",
         "postgresql://user:pass@host:5432/db", NULL);
     TEST_ASSERT_NOT_NULL(test_queue);
 
-    // Create a mock connection with corrupted mutex
+    // Create a mock connection
     DatabaseHandle* mock_conn = calloc(1, sizeof(DatabaseHandle));
     TEST_ASSERT_NOT_NULL(mock_conn);
     mock_conn->engine_type = DB_ENGINE_POSTGRESQL;
     mock_conn->designator = strdup("test-conn");
     mock_conn->status = DB_CONNECTION_CONNECTED;
     mock_conn->connected_since = time(NULL);
-
-    // Initialize mutex first
     pthread_mutex_init(&mock_conn->connection_lock, NULL);
-    // Then corrupt it by setting to invalid address (below 0x1000)
-    *(uintptr_t*)&mock_conn->connection_lock = 0x100;
 
-    // Test handle_connection_success - should detect corrupted mutex
+     // Set mutex timedlock to fail
+    mock_pthread_set_mutex_timedlock_failure(1);
+
+    // Test handle_connection_success - should fail due to mutex lock failure
     bool result = database_queue_handle_connection_success(test_queue, mock_conn);
 
-    // Should fail due to corrupted mutex
+    // Should fail due to mutex lock failure on connection_lock
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_FALSE(test_queue->is_connected);
     TEST_ASSERT_FALSE(test_queue->persistent_connection);
 
+    // Reset mutex lock success for cleanup
+    mock_pthread_set_mutex_timedlock_failure(0);
     database_queue_destroy(test_queue);
 }
 
@@ -336,8 +331,8 @@ void test_lock_acquisition_failure_in_wait_for_initial_connection(void) {
         "postgresql://user:pass@host:5432/db", NULL);
     TEST_ASSERT_NOT_NULL(lead_queue);
 
-    // Set mutex lock to fail
-    mock_mutex_lock_success = false;
+    // Set mutex timedlock to fail
+    mock_pthread_set_mutex_timedlock_failure(1);
 
     // Test wait_for_initial_connection - should fail to acquire lock
     bool result = database_queue_wait_for_initial_connection(lead_queue, 1);
@@ -345,6 +340,8 @@ void test_lock_acquisition_failure_in_wait_for_initial_connection(void) {
     // Should fail due to lock acquisition failure
     TEST_ASSERT_FALSE(result);
 
+    // Reset for cleanup
+    mock_pthread_set_mutex_timedlock_failure(0);
     database_queue_destroy(lead_queue);
 }
 
@@ -370,7 +367,7 @@ void test_initial_connection_completion_logging(void) {
 int main(void) {
     UNITY_BEGIN();
 
-    RUN_TEST(test_corrupted_mutex_detection_in_handle_connection_success);
+    RUN_TEST(test_mutex_lock_failure_in_handle_connection_success);
     RUN_TEST(test_health_check_failure_after_connection);
     RUN_TEST(test_config_database_logging_path);
     RUN_TEST(test_engine_init_failure_in_check_connection);

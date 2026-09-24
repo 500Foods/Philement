@@ -211,14 +211,20 @@ void test_apply_single_reverse_migration_statement_request_allocation_failure(vo
     query_cache_add_entry(queue->query_cache, entry, "testdb");
     
     // Make begin_transaction succeed
-    mock_database_engine_set_begin_result(true);
+     mock_database_engine_set_begin_result(true);
     
-    // Make calloc fail for QueryRequest allocation (after successful transaction begin)
-    // Count allocations: strdup(migration_sql), parse allocations, transaction, then QueryRequest
-    mock_system_set_malloc_failure(5);
+     // Make calloc fail for QueryRequest allocation (after successful transaction begin)
+     // Allocation count (mock malloc/calloc/strdup share counter):
+     // 1: strdup(migration_sql) in lead_reverse.c
+     // 2: strdup(sql_copy) in parse_sql_statements
+     // 3: strdup(stmt) in parse_sql_statements
+     // 4: calloc(Transaction) in mock_database_engine_begin_transaction
+     // 5: strdup("mock_engine_tx") in mock_database_engine_begin_transaction
+     // 6: calloc(QueryRequest) in lead_reverse.c loop
+     mock_system_set_malloc_failure(6);
     
-    bool result = database_queue_apply_single_reverse_migration(queue, 1, "TEST");
-    TEST_ASSERT_FALSE(result);
+     bool result = database_queue_apply_single_reverse_migration(queue, 1, "TEST");
+     TEST_ASSERT_FALSE(result);
     
     destroy_mock_lead_queue(queue);
 }
@@ -239,9 +245,11 @@ void test_apply_single_reverse_migration_request_fields_allocation_failure(void)
     // Make begin_transaction succeed
     mock_database_engine_set_begin_result(true);
     
-    // Make strdup fail for one of the request fields (query_id, sql_template, etc.)
-    // This happens after QueryRequest calloc succeeds
-    mock_system_set_malloc_failure(6);
+     // Make strdup fail for one of the request fields (query_id, sql_template, etc.)
+     // This happens after QueryRequest calloc succeeds
+     // Allocation: ...calloc(Transaction)->4, strdup("mock_engine_tx")->5,
+     // calloc(QueryRequest)->6, strdup("reverse_migration_statement")->7 (fails)
+     mock_system_set_malloc_failure(7);
     
     bool result = database_queue_apply_single_reverse_migration(queue, 1, "TEST");
     TEST_ASSERT_FALSE(result);

@@ -20,7 +20,9 @@
 #undef pthread_setcancelstate
 #undef pthread_setcanceltype
 #undef pthread_mutex_init
+#undef pthread_mutex_unlock
 #undef pthread_cond_init
+#undef pthread_mutex_timedlock
 
 // Function prototypes - these are defined in the header when USE_MOCK_PTHREAD is set
 int mock_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
@@ -55,6 +57,7 @@ int mock_pthread_cond_timedwait_should_fail = 0;
 int mock_pthread_mutex_lock_should_fail = 0;
 int mock_pthread_mutex_init_should_fail = 0;
 int mock_pthread_cond_init_should_fail = 0;
+int mock_pthread_mutex_timedlock_should_fail = 0;
 int mock_pthread_mutex_init_call_count = 0;
 int mock_pthread_cond_init_call_count = 0;
 
@@ -149,11 +152,22 @@ int mock_pthread_mutex_lock(pthread_mutex_t *mutex) {
     return 0;
 }
 
+int mock_pthread_mutex_timedlock(pthread_mutex_t *mutex, const struct timespec *timeout) {
+    (void)timeout;
+
+    if (mock_pthread_mutex_timedlock_should_fail) {
+        return ETIMEDOUT;  // Return timeout error to simulate lock failure
+    }
+
+    // Call the real function to actually attempt the timed lock
+    return pthread_mutex_timedlock(mutex, timeout);
+}
+
 // Mock implementation of pthread_mutex_unlock
 int mock_pthread_mutex_unlock(pthread_mutex_t *mutex) {
-    (void)mutex;  // Suppress unused parameter
-
-    return 0;
+    // Undo the #define to call the real function
+    #undef pthread_mutex_unlock
+    return pthread_mutex_unlock(mutex);
 }
 
 // Mock implementation of pthread_mutex_init
@@ -211,6 +225,10 @@ void mock_pthread_set_mutex_lock_failure(int should_fail) {
     mock_pthread_mutex_lock_should_fail = should_fail;
 }
 
+void mock_pthread_set_mutex_timedlock_failure(int should_fail) {
+    mock_pthread_mutex_timedlock_should_fail = should_fail;
+}
+
 void mock_pthread_set_mutex_init_failure(int should_fail) {
     mock_pthread_mutex_init_should_fail = should_fail;
 }
@@ -229,6 +247,7 @@ void mock_pthread_reset_all(void) {
     mock_pthread_mutex_lock_should_fail = 0;
     mock_pthread_mutex_init_should_fail = 0;
     mock_pthread_cond_init_should_fail = 0;
+    mock_pthread_mutex_timedlock_should_fail = 0;
     mock_pthread_mutex_init_call_count = 0;
     mock_pthread_cond_init_call_count = 0;
 }

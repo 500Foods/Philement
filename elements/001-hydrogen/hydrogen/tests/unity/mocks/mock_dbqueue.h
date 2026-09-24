@@ -29,7 +29,7 @@
 DatabaseQueue* mock_database_queue_manager_get_database(DatabaseQueueManager* manager, const char* name);
 QueryCacheEntry* mock_query_cache_lookup(QueryTableCache* cache, int query_ref, const char* dqm_label);
 QueryCacheEntry* mock_query_cache_lookup_by_ref_and_type(QueryTableCache* cache, int query_ref, int query_type, const char* dqm_label);
-bool mock_database_queue_submit_query(DatabaseQueue* queue, const DatabaseQuery* query);
+bool mock_database_queue_submit_query(DatabaseQueue* queue, DatabaseQuery* query);
 json_t* mock_database_queue_get_stats_json(DatabaseQueue* db_queue);
 DatabaseQuery* mock_database_queue_await_result(DatabaseQueue* db_queue, const char* query_id, int timeout_seconds);
 

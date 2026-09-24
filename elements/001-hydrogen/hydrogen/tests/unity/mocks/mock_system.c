@@ -184,12 +184,10 @@ void *mock_malloc(size_t size) {
 // NOTE: calloc shares the malloc counter since both are memory allocation operations
 void *mock_calloc(size_t num, size_t size) {
     mock_malloc_call_count++;
-    // Check both malloc and calloc failure flags
     if ((mock_malloc_should_fail > 0 && mock_malloc_call_count == mock_malloc_should_fail) ||
         (mock_calloc_should_fail > 0 && mock_malloc_call_count == mock_calloc_should_fail)) {
         return NULL;
     }
-    // Now we can call the real calloc since we undefined the macro
     return calloc(num, size);
 }
 
@@ -212,7 +210,6 @@ void mock_free(void *ptr) {
 // Mock implementation of strdup
 // NOTE: strdup uses malloc internally, so it shares the malloc counter
 char *mock_strdup(const char *s) {
-    // Handle NULL input gracefully - strdup(NULL) is undefined behavior
     if (s == NULL) {
         return NULL;
     }
@@ -221,7 +218,6 @@ char *mock_strdup(const char *s) {
     if (mock_malloc_should_fail > 0 && mock_malloc_call_count == mock_malloc_should_fail) {
         return NULL;
     }
-    // Call the real strdup function
     return strdup(s);
 }
 

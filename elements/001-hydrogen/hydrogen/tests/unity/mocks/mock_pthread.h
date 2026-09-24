@@ -32,6 +32,7 @@
 #define pthread_mutex_lock mock_pthread_mutex_lock
 #define pthread_mutex_unlock mock_pthread_mutex_unlock
 #define pthread_mutex_init mock_pthread_mutex_init
+#define pthread_mutex_timedlock mock_pthread_mutex_timedlock
 #define pthread_cond_init mock_pthread_cond_init
 
 #endif // USE_MOCK_PTHREAD
@@ -46,6 +47,7 @@ int mock_pthread_cond_timedwait(pthread_cond_t *cond, pthread_mutex_t *mutex, co
 int mock_pthread_mutex_lock(pthread_mutex_t *mutex);
 int mock_pthread_mutex_unlock(pthread_mutex_t *mutex);
 int mock_pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr);
+int mock_pthread_mutex_timedlock(pthread_mutex_t *mutex, const struct timespec *timeout);
 int mock_pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr);
 
 // Mock control functions for tests - always available
@@ -56,6 +58,7 @@ void mock_pthread_set_setcanceltype_failure(int should_fail);
 void mock_pthread_set_testcancel_should_exit(int should_exit);
 void mock_pthread_set_cond_timedwait_failure(int should_fail);
 void mock_pthread_set_mutex_lock_failure(int should_fail);
+void mock_pthread_set_mutex_timedlock_failure(int should_fail);
 void mock_pthread_set_mutex_init_failure(int should_fail);
 void mock_pthread_set_cond_init_failure(int should_fail);
 void mock_pthread_reset_all(void);
@@ -70,6 +73,7 @@ extern int mock_pthread_testcancel_should_exit;
 extern int mock_pthread_cond_timedwait_should_fail;
 extern int mock_pthread_mutex_lock_should_fail;
 extern int mock_pthread_mutex_init_should_fail;
+extern int mock_pthread_mutex_timedlock_should_fail;
 extern int mock_pthread_mutex_init_call_count;
 extern int mock_pthread_cond_init_should_fail;
 extern int mock_pthread_cond_init_call_count;

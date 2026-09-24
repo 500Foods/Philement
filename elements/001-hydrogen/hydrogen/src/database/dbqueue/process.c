@@ -199,6 +199,9 @@ void database_queue_process_single_query(DatabaseQueue* db_queue) {
  */
 void* database_queue_worker_thread(void* arg) {
     DatabaseQueue* db_queue = (DatabaseQueue*)arg;
+    if (!db_queue) {
+        return NULL;
+    }
 
     // Create DQM component name with full label for logging
     char* dqm_label = database_queue_generate_label(db_queue);
