@@ -152,6 +152,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [src/database/database_types.h](/elements/001-hydrogen/hydrogen/src/database/database_types.h) - Database type definitions
 - [src/database/prepared_cache.h](/elements/001-hydrogen/hydrogen/src/database/prepared_cache.h) - Prepared statement cache
 - [src/database/db2/](/elements/001-hydrogen/hydrogen/src/database/db2/) - DB2-specific database implementation
+- [src/database/firebird/](/elements/001-hydrogen/hydrogen/src/database/firebird/) - Firebird 4 (`libfbclient`) database implementation
 - [src/database/dbqueue/](/elements/001-hydrogen/hydrogen/src/database/dbqueue/) - Database queue system
 - [src/database/migration/](/elements/001-hydrogen/hydrogen/src/database/migration/) - Database migration system
 - [src/database/mysql/](/elements/001-hydrogen/hydrogen/src/database/mysql/) - MySQL-specific database implementation
@@ -630,7 +631,6 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_35_db2_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_35_db2_migrations.sh) - DB2 migration performance test
 - [tests/test_36_mariadb_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_36_mariadb_migrations.sh) - MariaDB migration performance test
 - [tests/test_37_firebird_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_37_firebird_migrations.sh) - Firebird migration performance test
-- [tests/test_37_firebird_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_37_firebird_migrations.sh) - Firebird migration performance test
 - [tests/test_37_firebird_config.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_37_firebird.json) - Firebird test config (port 5376)
 - [tests/test_38_yugabytedb_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_38_yugabytedb_migrations.sh) - YugabyteDB migration performance test
 - [tests/test_40_auth.sh](/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh) - Authentication endpoints testing (JWT tokens across multiple database engines)
@@ -751,6 +751,9 @@ Database User-Defined Functions (UDFs) for extending database capabilities:
 - [extras/brotli_udf_mysql/](/elements/001-hydrogen/hydrogen/extras/brotli_udf_mysql/) - Brotli compression UDF for MySQL/MariaDB
 - [extras/brotli_udf_postgresql/](/elements/001-hydrogen/hydrogen/extras/brotli_udf_postgresql/) - Brotli compression UDF for PostgreSQL
 - [extras/brotli_udf_sqlite/](/elements/001-hydrogen/hydrogen/extras/brotli_udf_sqlite/) - Brotli compression UDF for SQLite
+- [extras/brotli_udf_firebird/](/elements/001-hydrogen/hydrogen/extras/brotli_udf_firebird/) - Brotli decompression UDR for Firebird
+- [extras/json_udf_firebird/](/elements/001-hydrogen/hydrogen/extras/json_udf_firebird/) - JSON_VALUE UDR for Firebird
+- [extras/firebird/](/elements/001-hydrogen/hydrogen/extras/firebird/) - Firebird 4 SuperServer install and `.fdb` scripts
 
 Each UDF directory contains C source code, compiled shared libraries, Makefiles, and test scripts for the respective database engine.
 

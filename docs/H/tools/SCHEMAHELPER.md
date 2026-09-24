@@ -90,7 +90,7 @@ Target picker shows real env **names** (never password values):
 | `schematool_mysql.sh` | `CANVAS_DB_HOST USER PASS NAME schema demo` | schema `demo` |
 | `schematool_mariadb.sh` | `CANVAS_DB_HOST USER PASS NAME schema demomrdb` | schema `demomrdb` |
 | `schematool_db2.sh` | `HYDROTST_DB_USER PASS NAME schema demo` | `localhost:55555` / `HYDROTST` |
-| `schematool_cockroachdb.sh` | `ACURANZO_DB_HOST USER PASS NAME schema democrdb` | schema `democrdb` |
+| `schematool_firebird.sh` | `FIREBIRD_DB_PATH_DEMO` + `FIREBIRD_SYSDBA_PASSWORD` | empty schema; `.fdb` file |
 | `schematool_yugabytedb.sh` | `YUGABYTE_DB_HOST USER PASS NAME schema demo` | never `ACURANZO_DB_*` |
 
 A failed ping does **not** start SchemaTool. Press `[w]` to pick another

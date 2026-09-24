@@ -181,6 +181,27 @@ DB2 follows the same pattern as BASE64DECODE with chunked processing:
 - brotli_decompress.so in sqllib/function
 - See: `extras/brotli_udf_db2/README.md`
 
+#### Firebird
+
+**Functions:**
+
+- `BROTLI_DECOMPRESS()` — UDR (`ENGINE UDR`, external name `brotli_decfn!brotli_decompress`)
+
+**Macros:** (`database_firebird.lua`)
+
+```lua
+COMPRESS_START = "BROTLI_DECOMPRESS(BASE64_DECODE("
+COMPRESS_END = "))"
+```
+
+Base64 itself is native (`BASE64_DECODE`). Brotli is not.
+
+**Requirements:**
+
+- libbrotli
+- `brotli_decfn.so` in the Firebird UDR plugin directory
+- See: [extras/brotli_udf_firebird/README.md](/elements/001-hydrogen/hydrogen/extras/brotli_udf_firebird/README.md)
+
 ### 3. Migration Integration
 
 #### Function Declaration (acuranzo_1000.lua)

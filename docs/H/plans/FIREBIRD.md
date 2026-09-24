@@ -3,10 +3,12 @@
 
 ## Status at a glance
 
-**New plan (2026-09-18).** Phase 0 locks approved (2026-09-18). Phases 0–9 complete.
-Phase 10 still **partial** (connstring fixes landed; live 40–58 deferred).
-**2026-09-22:** Test 37 APPLY corpus green on FB 4.0.7; reverse validation
-pending. See [Status 2026-09-22](#status-2026-09-22).
+**New plan (2026-09-18).** Phase 0 locks approved (2026-09-18). Phases 0–11 complete.
+Phase 12 is deferred. The only remaining implementation item is the prepared-statement
+handle cache, and it is not a blocker.
+**2026-09-23:** User reports the current suite 100% passing. Migration issues
+found on the way (APPLY, reverse, and the Phase 10 client gaps) are fixed.
+Stay on Firebird 4.0.7. See [Status 2026-09-23](#status-2026-09-23).
 This is not a rename of
 [`FIREBASE_SUPERSEDED.md`](/docs/H/plans/complete/FIREBASE_SUPERSEDED.md).
 Firebird is a SQL RDBMS (`libfbclient`). Hydrogen sends Helium SQL to it.
@@ -20,14 +22,14 @@ Firebird is a SQL RDBMS (`libfbclient`). Hydrogen sends Helium SQL to it.
 | 4 Firebase Helium / extras teardown | **complete** | |
 | 5 C register / connect | **complete** | Live health deferred to Phase 7 |
 | 6 Brotli UDR + JSON ingest | **complete** | C artifacts ready; live verification Phase 7 |
-| 7 Test 37 full Acuranzo | **complete** (APPLY green 2026-09-22; reverse pending) | FB 4.0.7; APPLY through corpus; TestMigration reverse not fully confirmed |
+| 7 Test 37 full Acuranzo | **complete** | APPLY and reverse green. User reports the suite 100% passing (2026-09-23) |
 | 8 Retire Cockroach names | **complete** | 7-engine loop says Firebird; configs/scripts/libs/schematool/schemahelper |
 | 9 SchemaTool / flush | **complete** | schematool_firebird.sh; schemahelper ping/qdecode/qutil; flush paths |
-| 10 Tests 40–58 firebird matrix | **partial** | Connstring/engine-name fixed; live 40–58 still deferred (host has FB now — rerun when ready) |
-| 11 Docs | pending | **Quick** |
-| 12 Coverage / completeness | pending | **Moderate** |
+| 10 Tests 40–58 firebird matrix | **complete** | User reports the current suite green (2026-09-23), including 40–58 |
+| 11 Docs | **complete** | Firebird column and engine pages; Cockroach and Firestore are historical in active docs |
+| 12 Coverage / completeness | **deferred** | User 2026-09-23: suite already green. Not a blocker. Do not archive the plan while the cache follow-up is still noted here. |
 
-Remaining: Test 37 reverse confirmation; Phase 10 live runs (40–58); Phase 11 docs; Phase 12 fences; prepare/StmtCache; UDR host install if needed.
+Remaining: `firebird_prepare_statement` still stores SQL text only (each execute prepares and frees the `isc_stmt_handle`). Worth doing for consistency with the other engines. Not a blocker. Firebird 4.0.7 is sufficient. Do not upgrade to Firebird 5 for it.
 
 ## Status 2026-09-22
 
@@ -64,18 +66,46 @@ far. Staying on 4.0.7.
   fixed; **full reverse green still pending confirmation** (retest in flight
   at doc update time).
 
-**Still open (do not mark done without evidence):**
+**Still open as of 2026-09-22 (superseded where noted in [Status 2026-09-23](#status-2026-09-23)):**
 
-- Full TestMigration reverse end-to-end green.
+- Full TestMigration reverse end-to-end green. **Closed 2026-09-23.**
 - `firebird_prepare_statement` / live `isc_dsql_prepare` into StmtCache
   (app StmtCache exists; prepare path still Phase-5/6 stub — **no** real
-  statement cache).
+  statement cache). **Still open.** Optional; Firebird 4.0.7 is sufficient.
 - Remaining per-engine missing branches in individual migrations (1190 was
-  one class).
+  one class). **Closed 2026-09-23** for every gap the suite hit.
 - RETURNING / QueryRefs runtime paths if exercised outside APPLY.
-- UDR install on host if not already installed (sudo).
-- Unity/mock completeness for new Firebird paths.
-- Phase 10 live suites 40/43/45/46/47/58; Phase 11 docs; Phase 12 fences.
+  **Closed 2026-09-23** for paths the green suite exercises.
+- UDR install on host if not already installed (sudo). **Closed** as a
+  migration blocker by the green APPLY run.
+- Unity/mock completeness for new Firebird paths. **Still open;** user is
+  covering this separately. Phase 12 re-checks the fence.
+- Phase 10 live suites 40/43/45/46/47/58. **Closed 2026-09-23.**
+  Phase 11 docs and Phase 12 fences remain.
+
+## Status 2026-09-23
+
+User report, not an agent rerun of the suite: the current tests are 100%
+passing, and the migration issues encountered on the way there are fixed.
+That closes Test 37 reverse and the Phase 10 live runs (40, 41, 43, 44, 45,
+46, 47, 50, 51, 54, 58 and the rest of the current matrix). Phases 0–10 are
+complete on that report. Next is Phase 11.
+
+Unity coverage of the newer Firebird paths is in progress separately and
+stays a Phase 12 fence, not a Phase 11 blocker.
+
+`firebird_prepare_statement` is still a stub: the per-connection cache stores
+the SQL text, and `firebird_execute_prepared` calls `firebird_execute_sql`,
+which allocates, prepares, executes, and frees an `isc_stmt_handle` every
+time. Holding that handle is client work on the Firebird 4.0.7 `libfbclient`
+already in use (`isc_dsql_allocate_statement`, `isc_dsql_prepare`,
+`isc_dsql_execute` / `isc_dsql_execute2`, `isc_dsql_free_statement`). Firebird
+5's compiled-statement cache (`MaxStatementCacheSize`) is a server-side cache
+for clients that re-prepare the same text. It does not replace the handle
+cache, and Fedora 43 does not ship Firebird 5. Stay on 4.0.7. A Firebird 5
+move also changes multi-row DML `RETURNING` from `isc_info_sql_stmt_exec_procedure`
+to a selectable statement; singleton `INSERT … VALUES … RETURNING` does not
+change.
 
 **Parity:** Firebird is a Hydrogen `DatabaseEngineInterface`, not a new
 API. Match PostgreSQL / SQLite / MySQL / DB2: same `QueryRequest` /
@@ -196,7 +226,7 @@ Each phase is worked in its **own conversation**. Follow this sequence:
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-09-23):** Phases 0–9 complete. Phase 10 still partial. Test 37 APPLY is green on Firebird 4.0.7; reverse is still unconfirmed. Client gaps are in source and **not yet rebuilt** into the binary the 07:00 suite is running: (1) singleton `RETURNING` uses `isc_dsql_execute2` instead of `isc_dsql_fetch` (Test 40 register, SQLCODE -504); (2) Test 41 never reaches READY because SQLite's `sqlite3_load_extension` publishes `sha256_init` from `/usr/local/lib/crypto.so` and libChaCha binds that instead of libtomcrypt. `firebird_preload_wire_crypt()` loads libChaCha with `RTLD_NOW` before any engine thread starts. The attach mutex did not fix this (rebuilt debug binary still failed). (3) Test 50 QueryRefs #030/#056/#057: `LENGTH()` rewritten to `CHAR_LENGTH()`, untyped division cast to INTEGER, and DATE/TIME/TIMESTAMP/BOOLEAN parameters plus FLOAT/timestamp JSON now match the other engines. Live rebuild and Test 50 are still outstanding. See [Status 2026-09-22](#status-2026-09-22).
+**CURRENT PAUSE POINT (as of 2026-09-23):** Phases 0–11 complete. Phase 12 is deferred: the user reports the current suite 100% passing, and the fence re-check is not outstanding. The only remaining implementation item is `firebird_prepare_statement`, which stores SQL text and still prepares and frees an `isc_stmt_handle` on every execute. That follow-up is for consistency with the other engines, stays on Firebird 4.0.7, and is not a blocker. Firebird 5's compiled-statement cache is not a reason to upgrade. See [Status 2026-09-23](#status-2026-09-23).
 
 Keep this block current when a phase finishes (date, result, next phase
 number). It is the first thing a new session reads.
@@ -238,7 +268,7 @@ number). It is the first thing a new session reads.
 | --- | --- |
 | **Band** | P2 — new engine, after Auth Finale / quality gates |
 | **Effort** | XL (C `libfbclient` engine + Helium dialect + Brotli/JSON extras + Test 37 + Cockroach retirement + Firebase teardown) |
-| **Done** | 0% — plan authored, Phase 0 not approved |
+| **Done** | Phases 0–11 complete (2026-09-23). Phase 12 deferred. Prepared-statement handle cache is the only follow-up and is not a blocker. |
 | **Why this shape** | Cockroach never earned a C implementation. Firebird is a SQL engine Fedora already packages. The existing ~380 Lua files emit SQL; Firebird runs that SQL. |
 | **Do not start casually** | Touches `DatabaseEngine` enum, registry, DQM, Helium `database.lua` for four designs, Test 31/37/71, the 7-engine blackbox matrix, SchemaTool, Lookup 030, and deletes the Firestore tree. |
 
@@ -279,6 +309,8 @@ Test **37** stays Firebird (was Cockroach). MSSQL gets a new Test **39**.
 The 7-engine matrix stays 7 until MSSQL Phase 7 grows it to 8.
 
 ## Snapshot: what exists today (2026-09-18)
+
+This section stays dated 2026-09-18. It is the baseline the phases started from, not the current tree. After Phase 8, Cockroach names are retired from the active matrix and Firebird is the seventh operator. Firestore is historical only ([FIREBASE_SUPERSEDED.md](/docs/H/plans/complete/FIREBASE_SUPERSEDED.md)). Current state is [Status at a glance](#status-at-a-glance).
 
 Do not re-implement these; they are constraints.
 
@@ -762,9 +794,9 @@ fence.
 | 7 | Test 37 firebird AutoMigrations **full Acuranzo** green | L | **complete** |
 | 8 | Cockroach names gone; 7-engine loops say Firebird | M | **complete** |
 | 9 | SchemaTool / SchemaHelper / hydrogen_flush / transaction_utils | M | **complete** |
-| 10 | Tests 40/43/45/46/47/58 firebird configs; each named green or `[~]` with cause | L | **partial** |
-| 11 | Docs/SITEMAP/MACRO_REFERENCE/DATABASES/SECRETS match; `mkl` green | S | pending |
-| 12 | Completeness + coverage fences; dead-code clean; `mkp` | M | pending |
+| 10 | Tests 40/43/45/46/47/58 firebird configs; each named green or `[~]` with cause | L | **complete** |
+| 11 | Docs/SITEMAP/MACRO_REFERENCE/DATABASES/SECRETS match; `mkl` green | S | **complete** |
+| 12 | Completeness + coverage fences; dead-code clean; `mkp` | M | **deferred** |
 
 Effort key: S = small, M = moderate, L = large.
 
@@ -1475,6 +1507,9 @@ the full design; `mks`; markdown exists.
   - Staying on Firebird **4.0.7**; FB5 **not** required for dialect gaps hit.
   - **Not done:** `firebird_prepare_statement` still stub (no live
     `isc_dsql_prepare` into StmtCache).
+- **2026-09-23** User reports the current suite 100% passing, including
+  Test 37 reverse. The "full reverse pass pending confirmation" note above
+  is closed. Prepared-statement handle caching is still not done.
 
 ### Lessons learned
 
@@ -1596,9 +1631,9 @@ Phase 9 Status complete.
 
 ### Work items
 
-- [~] 10.1 Test 40 auth live on firebird. — pending live Firebird install
-- [~] 10.2 Tests 43, 45, 46, 47, 58. — pending live Firebird install
-- [x] 10.3 Test 41/44/51/54 docs/configs. — configs fixed; live run deferred
+- [x] 10.1 Test 40 auth live on firebird. — user reports the suite green (2026-09-23)
+- [x] 10.2 Tests 43, 45, 46, 47, 58. — user reports the suite green (2026-09-23)
+- [x] 10.3 Test 41/44/51/54 docs/configs. — configs fixed; live run included in the 2026-09-23 green suite
 
 ### Done means
 
@@ -1613,10 +1648,10 @@ Cockroach.
 
 | | |
 | --- | --- |
-| **State** | in progress |
-| **Date** | 2026-09-21 |
+| **State** | **complete** |
+| **Date** | 2026-09-23 |
 | **Result** | Root cause identified and fixed: three bugs prevented Firebird from connecting. (1) `firebird_get_connection_string` returned the raw `firebird://` prefix from the config `Database` field instead of rebuilding a proper URL from host/port/path components — fixed to strip the prefix and build `firebird://host:port/path`. (2) All 11 Firebird test configs had `"Database": "firebird://${env.FIREBIRD_DB_PATH}"` instead of `"Database": "${env.FIREBIRD_DB_PATH}"` (matching PostgreSQL/SQLite/DB2 patterns) — fixed all configs. (3) `database_queue_start_heartbeat` engine name detection lacked a `firebird://` branch, causing the connection to be mislabeled as `DB2` in error logs — fixed. Also fixed `firebird_parse_connstring_url` to strip leading slashes from `firebird:///path` (triple-slash) format. Bonus: fixed `extras/firebird/run_create.sh` missing shebang + SC2154 justification. Verification: `mkq` PASS (0 dead functions), `mkp` PASS (2,057 files, 0 issues), `mks` PASS (175 files, 0 issues), `mkl` PASS (2,558 links, 0 missing). All 44 Firebird Unity tests green (40 original + 4 new firebird-specific test cases: `test_parse_connection_string_firebird_format`, `test_database_build_connection_string_firebird_engine`, `test_database_queue_mask_connection_string_firebird`, plus Firebird assertions added to `test_database_queue_determine_engine_type` and `test_normalize_engine_name_known`). |
-| **Variances** | Live Test 40/41/43/44/51/54/58 runs deferred — Firebird packages not installed in this environment. Connection string and engine name bugs are fixed; live verification requires a host with Firebird 4.0.7 installed. |
+| **Variances** | 2026-09-21 deferred the live runs. Closed 2026-09-23: the user reports the current suite 100% passing, including these Firebird suites and the migration fixes. This session did not rerun the suite. Unity coverage of newer Firebird paths is separate (Phase 12). `firebird_prepare_statement` is still a SQL-text stub and is outside this phase. |
 
 ### Working Log
 
@@ -1673,6 +1708,7 @@ Cockroach.
   Live rebuild of `hydrogen_debug` and Test 41 are still outstanding.
 - **2026-09-23** Test 50 (conduit single query) client gaps, in source, not yet rebuilt (the 07:00 suite is using the previous binary). Probed the demo database: QueryRef #057's nine parameters describe as INTEGER, CHAR, BOOLEAN, FLOAT, CHAR, DATE, TIME, TIMESTAMP, TIMESTAMP WITH TIME ZONE (12-byte). Inputs for DATE/TIME/TIMESTAMP/BOOLEAN were left zero, so the row could not match the other engines. FLOAT is binary32 and prints `3.1415901184082`; the other engines emit `3.1415899999999999`, so `CAST(? AS FLOAT)` is rewritten to `DOUBLE PRECISION` and doubles print with `%.17g`. Timestamp output now keeps milliseconds when the 1/10000-second ticks are non-zero (`2023-12-25 14:30:00.123`) and leaves a whole-second datetime as `2023-12-25 14:30:00`. QueryRef #056 `numbers / ?` fails prepare in dialect 3 ("Invalid data type for division"); rewritten to `/ CAST(? AS INTEGER)`, and the comparison parameter then infers INTEGER. QueryRef #030 calls `LENGTH()`, which Firebird rejects; rewritten to `CHAR_LENGTH()` (the `code` blob form prepares). A direct prepare/execute of the #057 statement returned integer 42, boolean 1, float 3.14159, date `2023-12-25`, time `14:30:00`, datetime `2023-12-25 14:30:00`, timestamp `2023-12-25 14:30:00.123`. Touched files compiled with the regular `-Werror` flags to `/tmp` only. `mkq`/`mkt` and Test 50 were not run.
 - **2026-09-23** Test 58 Firebird plaintext and STARTTLS both failed the API check with empty response dirs. Hydrogen reached READY. QueryRef #154 (`UPDATE mail_queue … ORDER BY … LIMIT 1`) is token `LIMIT` (SQLCODE -104). The worker then treated the error as a lost claim, so the lifecycle mail never left and the API steps never ran. QueryRef #103's later failure is connection shutdown during stop. Firebird execute now rewrites `LIMIT n` to `FETCH FIRST n ROWS ONLY` (verified on the demo database, including `ROWS` plural, then rolled back). Parameterized DML was reporting `affected_rows` 0, so a successful claim would still look lost; `isc_info_sql_records` insert+update+delete counts are now stored (a one-row update on `mail_queue` returned update count 1). `query.c` and `query_bind.c` compiled with the regular `-Werror` flags to `/tmp`. Test 58 was not rerun.
+- **2026-09-23 (later)** User reports the current suite 100% passing. Migration issues encountered through APPLY, reverse, and the Phase 10 client gaps (RETURNING `execute2`, ChaCha preload, Test 50 rewrites, Test 58 `LIMIT` / affected rows) are fixed. Phase 10 marked complete on that report. This session did not rerun the suite. Unity coverage of newer Firebird paths continues separately. `firebird_prepare_statement` remains a stub and is not part of this exit gate.
 
 ### Lessons learned
 
@@ -1698,12 +1734,12 @@ Phase 10 Status complete.
 
 ### Work items
 
-- [ ] 11.1 Helium GUIDE, MACRO_REFERENCE, DATABASES, TESTING_GUIDE,
+- [x] 11.1 Helium GUIDE, MACRO_REFERENCE, DATABASES, TESTING_GUIDE,
       BROTLI_COMPRESSION, design READMEs, `docs/He/DATABASES/database_firebird.md`.
-- [ ] 11.2 Hydrogen TESTING, INSTRUCTIONS, PARAMETER_BINDING, SECRETS,
+- [x] 11.2 Hydrogen TESTING, INSTRUCTIONS, PARAMETER_BINDING, SECRETS,
       STRUCTURE, SITEMAP, MAIL_GUIDE, SchemaTool/SchemaHelper, tests README.
-- [ ] 11.3 Lithium `DATABASE-MIGRATIONS.md`.
-- [ ] 11.4 Snapshot section stays dated 2026-09-18; add an “after Phase
+- [x] 11.3 Lithium `DATABASE-MIGRATIONS.md`.
+- [x] 11.4 Snapshot section stays dated 2026-09-18; add an “after Phase
       8” pointer.
 
 ### Done means
@@ -1719,18 +1755,19 @@ claims Firestore is an engine.
 
 | | |
 | --- | --- |
-| **State** | pending |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | **complete** |
+| **Date** | 2026-09-23 |
+| **Result** | Active docs name Firebird as an engine. `MACRO_REFERENCE` has a Firebird column. `docs/He/DATABASES/database_firebird.md` covers the empty schema, native Base64, and Brotli as a UDR. Cockroach is a retired PostgreSQL alias. Firestore is historical. `mkl` (Test 04): 335 files, 2,569 links, 0 missing. Markdownlint on the touched files: clean after removing a trailing space inside a code span. |
+| **Variances** | `SECRETS.md`, `MAIL_GUIDE.md`, and `tests/README.md` already described Firebird and did not claim Cockroach or Firestore as a current engine. Duplicate Firebird test lines in `INSTRUCTIONS.md`, `SITEMAP.md`, and `STRUCTURE.md` were removed. |
 
 ### Working Log
 
-(empty until the phase runs)
+- **2026-09-23** Docs sweep. New [database_firebird.md](/docs/He/DATABASES/database_firebird.md). Firebird column added to [MACRO_REFERENCE.md](/docs/He/MACRO_REFERENCE.md). Engine lists updated in Helium GUIDE, DATABASES, TESTING_GUIDE, BROTLI_COMPRESSION, `database.md`, the Helium README, and the four design READMEs. Hydrogen `DATABASES.md`, `PARAMETER_BINDING.md` (Firebird `?` / `XSQLDA`; Cockroach removed from the current placeholder table), `STRUCTURE.md` (`src/database/firebird/` and the UDR extras), `SITEMAP.md`, `INSTRUCTIONS.md`. SchemaHelper wrapper table now lists `schematool_firebird.sh`. SchemaTool notes that `cockroachdb` is a historical PostgreSQL alias. Lithium `DATABASE-MIGRATIONS.md` lists `firebird`. Snapshot section kept its 2026-09-18 date and gained an after-Phase-8 pointer.
 
 ### Lessons learned
 
-(empty until the phase runs)
+- The 2026-09-18 snapshot is a baseline, not the current tree. Point at Status at a glance instead of rewriting it.
+- `firebird_prepare_statement` is still a text cache. The binding doc says so, so a later reader does not treat the handle cache as done.
 
 ---
 
@@ -1747,10 +1784,10 @@ Phase 11 Status complete.
 
 ### Work items
 
-- [ ] 12.1 Walk completeness table.
-- [ ] 12.2 Walk coverage fences; `extras/add_coverage.sh` as needed.
-- [ ] 12.3 `mkt` dead-code gate.
-- [ ] 12.4 `mkp`, `mks`, `test_98`, Test 31, Test 37, Test 40.
+- [~] 12.1 Walk completeness table. — deferred 2026-09-23; suite already green; not a blocker
+- [~] 12.2 Walk coverage fences; `extras/add_coverage.sh` as needed. — same
+- [~] 12.3 `mkt` dead-code gate. — same
+- [~] 12.4 `mkp`, `mks`, `test_98`, Test 31, Test 37, Test 40. — user reports the current suite 100% passing; this pass was not rerun
 
 ### Done means
 
@@ -1765,18 +1802,18 @@ to `plans/complete/FIREBIRD_COMPLETE.md`; drop TODO 27; `mkl`.
 
 | | |
 | --- | --- |
-| **State** | pending |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | **deferred** |
+| **Date** | 2026-09-23 |
+| **Result** | Not run. The user directed that the only remaining item is the prepared-statement handle cache. The current suite is already reported 100% passing. Archiving this plan and dropping TODO 27 would hide that follow-up. |
+| **Variances** | The cache is outside this phase. It stays on Firebird 4.0.7 and is not a blocker. |
 
 ### Working Log
 
-(empty until the phase runs)
+- **2026-09-23** Deferred by user direction after Phase 11. Do not treat Phase 12 as open work. The follow-up is `firebird_prepare_statement` keeping an `isc_stmt_handle`.
 
 ### Lessons learned
 
-(empty until the phase runs)
+- A green suite and a deferred fence pass can coexist. The plan stays active so the cache follow-up remains visible.
 
 ---
 
@@ -1830,6 +1867,17 @@ Port scheme: Test 37 → **537x**.
   `firebird_prepare_statement` remains a stub until a later pass wires
   `isc_dsql_prepare` into the cache. Test 37 APPLY corpus green; reverse
   confirmation still the near-term gate before treating migrations “done.”
+
+- **(2026-09-23)** User reports the current suite 100% passing and the
+  migration issues encountered along the way fixed. Phases 0–10 complete
+  on that report. Next is Phase 11. Unity coverage of newer Firebird paths
+  is a separate effort and remains a Phase 12 item.
+  `firebird_prepare_statement` still caches SQL text only. Do not upgrade
+  to Firebird 5 for that: the missing piece is keeping the `isc_stmt_handle`
+  the 4.0.7 client already knows how to prepare. Firebird 5's
+  `MaxStatementCacheSize` is a server-side compiled-text cache for clients
+  that re-prepare, and a 5.0 move changes multi-row DML `RETURNING` to a
+  selectable statement. Stay on 4.0.7.
 
 ### Surprises / deviations (historical, still true)
 

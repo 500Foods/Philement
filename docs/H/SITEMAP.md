@@ -22,6 +22,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [STRUCTURE.md](/docs/H/STRUCTURE.md): An index to all of the files in the project
 - [TODO.md](/docs/H/TODO.md): Prioritized incomplete plans and actionable backlog
 - [DATABASES.md](/docs/H/DATABASES.md): Multi-engine SQL notes and design constraints
+- [database_firebird.md](/docs/He/DATABASES/database_firebird.md): Firebird 4 Helium macros (empty schema, native Base64, Brotli and JSON_VALUE UDRs)
 
 ## Folder: /docs/H/database
 
@@ -341,7 +342,6 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [test_34_sqlite_migrations.md](/docs/H/tests/test_34_sqlite_migrations.md): SQLite migration performance test
 - [test_35_db2_migrations.md](/docs/H/tests/test_35_db2_migrations.md): DB2 migration performance test
 - [test_36_mariadb_migrations.md](/docs/H/tests/test_36_mariadb_migrations.md): MariaDB migration performance test
-- [test_37_firebird_migrations.md](/docs/H/tests/test_37_firebird_migrations.md): Firebird migration performance test
 - [test_37_firebird_migrations.md](/docs/H/tests/test_37_firebird_migrations.md): Firebird migration performance test
 - [test_38_yugabytedb_migrations.md](/docs/H/tests/test_38_yugabytedb_migrations.md): YugabyteDB migration performance test
 - [test_40_auth.md](/docs/H/tests/test_40_auth.md): Authentication endpoints testing (JWT tokens across multiple database engines)

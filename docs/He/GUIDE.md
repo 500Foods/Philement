@@ -73,7 +73,7 @@ If you cannot follow all of the above from the source material, ask for clarific
 - [ ] Multi-row seeds use `INSERT … VALUES (row), (row);` + `${COMMON_FIELDS}` / `${COMMON_VALUES}` (not `VALUES AS v(cols)`, not bare `UNION ALL` derived tables)
 - [ ] Structural ALTER (ADD/DROP/ALTER COLUMN): `${REORG}` after change on reverse (and as needed on forward) — DB2 SQL0668N rc7
 - [ ] Summary Markdown is clear and explains purpose, columns, indexes, and any engine quirks
-- [ ] Tested mentally against PostgreSQL 15 / YugabyteDB **and** SQLite + DB2 seed syntax (primary target is PG; seeds must still apply everywhere)
+- [ ] Tested mentally against PostgreSQL 15 / YugabyteDB **and** SQLite, DB2, and Firebird seed syntax (primary target is PG; seeds must still apply everywhere)
 
 ## Lua Basics for Migrations
 
@@ -553,7 +553,7 @@ For inserting reference or initial data:
 
 ### Portable Multi-Row Data Seeds
 
-Helium migrations run on **PostgreSQL, MariaDB/MySQL, SQLite, and DB2**.
+Helium migrations run on **PostgreSQL, MariaDB/MySQL, SQLite, DB2, and Firebird**.
 A seed that only works on PostgreSQL will fail Hydrogen tests 33–35 and break
 AutoMigration on other engines.
 
@@ -1003,7 +1003,7 @@ These templates provide a starting point for common migration patterns. Copy, mo
 1. **Always include reverse migrations** for testing (and use `${DROP_CHECK}` for table drops).
 2. **Forward ↔ reverse exact mirror** — reverse undoes only what forward did (CREATE↔DROP, INSERT↔DELETE same keys/tables). Zero-row reverse DML is a migration bug; DB2 SQL0100W is the intended alarm. See **Forward/Reverse Symmetry**. Never paper this over in the engine.
 3. **Use diagram migrations** for every schema change (table, significant column change). Include `object_ref` and `${COMMON_DIAGRAM}`.
-4. **Test migrations** on all supported databases, with primary focus on PostgreSQL 15 / YugabyteDB (see Hydrogen `test_38_yugabytedb_migrations.sh` and `test_32_postgres_migrations.sh`). **Always** smoke multi-row seeds on SQLite and DB2 — that is where portable-SQL mistakes surface first. DB2 reverse is where symmetry mistakes surface.
+4. **Test migrations** on all supported databases, with primary focus on PostgreSQL 15 / YugabyteDB (see Hydrogen `test_38_yugabytedb_migrations.sh` and `test_32_postgres_migrations.sh`). **Always** smoke multi-row seeds on SQLite, DB2, and Firebird — that is where portable-SQL mistakes surface first. DB2 reverse is where symmetry mistakes surface. Firebird full AutoMigrations are `test_37_firebird_migrations.sh`.
 5. **Use descriptive names** and summaries. Summaries should explain purpose, columns, indexes, and any engine-specific behavior.
 6. **Include CHANGELOG** entries at the top of every migration file.
 7. **Leverage macros** for database portability — never hard-code engine-specific syntax except in rare guarded `if engine == 'xxx'` blocks.

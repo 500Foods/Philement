@@ -4,7 +4,7 @@ This project makes heavy use of SQL-style databases. It is in effect a SQL-gatew
 
 But, while SQL is used extensively, it is important to note that there is ZERO SQL embedded in the actual C app directly. This is a deliberate design choice based mostly on the fact that SQL itself isn't as portable as we'd like to think it is, and because we expect folks to point this at databases where we have zero advanced notice about their configuration. Different schemas, conventions, and so on. And, we'd like to be as DB-agnostic as we can.
 
-Currently, we've built this with support for four database engines - PostgreSQL, MySQL/MariaDB, SQLite, and IBM's DB2 (LUW variant). We've assumed current versions of these, though that distinction doesn't matter all that much as we, or the integrators, have full control over what is sent to the engine, so any issues can be resolved at run-time rather than at build time.
+Currently, we've built this with support for five database engines - PostgreSQL, MySQL/MariaDB, SQLite, IBM's DB2 (LUW variant), and Firebird 4. We've assumed current versions of these, though that distinction doesn't matter all that much as we, or the integrators, have full control over what is sent to the engine, so any issues can be resolved at run-time rather than at build time.
 
 There are of course variations in what these database engines are each capable of. In the sections that follow, the issues that have been encountered are listed. None of these have been showstoppers, but these may be the kinds of things that will help when looking to add additional database engines, and also help explain some of the design choices made so far.
 
@@ -79,3 +79,10 @@ For more details on Lua scripting, sqruff usage, and the migration system, see [
 - **BROTLI.** Custom [BROTLI UDF](/elements/001-hydrogen/hydrogen/extras/brotli_udf_db2/README.md) for decoding brotli data.
 
 - **PERFORMANCE.** Technically, DB2 should be soundly beating the crap out of everyone else in this party in benchmarks. However, for our migrations, DB2 tends to run at about half the speed of the others. Some time was spent trying to figure out why this is. The culprit seems to be DB2's strong desire to ensure changes are written out to disk before continuing. The others all have caches they write to, not durable storage, so they kind of cheat a little bit. Beyond migrations, we should see DB2 perk up a bit when that isn't the major part of the equation. Don't think of this as a bad thing - DB2 is designed first and foremost to be ultra-reliable. Which it certainly is. Whereas SQLite, in comparison, doesn't even have a database manager and writes everything to a single file. These things are not the same.
+
+## Firebird
+
+- **FILE, NOT SCHEMA.** `${SCHEMA}` is empty. `hydrogen_test.fdb` and `hydrogen_demo.fdb` are the isolation boundary. SuperServer listens on port 3050. The client is `libfbclient`.
+- **NATIVE AND UDR.** Base64 and SHA-256 are built in. Brotli decompression and `JSON_VALUE` are UDRs under `extras/brotli_udf_firebird` and `extras/json_udf_firebird`. JSON is stored as `BLOB SUB_TYPE TEXT` until Firebird 6.
+- **SQL SHAPE.** Multi-row `INSERT … VALUES (…), (…)` is rewritten to `UNION ALL` from `RDB$DATABASE`. `LIMIT` is rewritten to `FETCH FIRST … ROWS ONLY` on the execute path. A singleton `INSERT … RETURNING` uses `isc_dsql_execute2`.
+- **WHERE IT SITS.** Firebird replaced the CockroachDB operator slot. Cockroach was a PostgreSQL alias and is not a current engine. Firestore was an earlier attempt at a fifth engine and is historical only. Macros: [database_firebird.md](/docs/He/DATABASES/database_firebird.md).

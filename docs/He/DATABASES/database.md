@@ -13,9 +13,10 @@ The module is structured as a Lua table with the following key components:
 Defines supported database engines and their configurations:
 
 - PostgreSQL
-- MySQL/MariaDB  
+- MySQL/MariaDB
 - SQLite
 - IBM DB2
+- Firebird (`${SCHEMA}` empty; dialect id 6)
 
 ### Query Types & Status
 
@@ -43,7 +44,7 @@ The primary function that transforms template SQL into engine-specific SQL:
 **Parameters:**
 
 - `template`: SQL template string with macros
-- `engine`: Target database engine ('postgresql', 'mysql', 'sqlite', 'db2')
+- `engine`: Target database engine ('postgresql', 'mysql', 'sqlite', 'db2', 'firebird')
 - `design_name`: Schema design identifier
 - `schema_name`: Database schema name
 

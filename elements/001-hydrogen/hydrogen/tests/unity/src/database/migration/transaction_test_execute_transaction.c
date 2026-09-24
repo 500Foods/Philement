@@ -69,6 +69,17 @@ void test_database_migrations_execute_transaction_empty_sql(void);
 void test_database_migrations_execute_transaction_parse_failure(void);
 void test_database_migrations_execute_transaction_no_statements(void);
 void test_database_migrations_execute_transaction_unsupported_engine(void);
+void test_parse_sql_statements_null_delimiter(void);
+void test_execute_mysql_migration_begin_failure(void);
+void test_execute_mysql_migration_calloc_failure(void);
+void test_execute_mysql_migration_rollback_failure(void);
+void test_execute_sqlite_migration_begin_failure(void);
+void test_execute_sqlite_migration_calloc_failure(void);
+void test_execute_sqlite_migration_rollback_failure(void);
+void test_execute_db2_migration_rollback_failure(void);
+void test_execute_postgresql_migration_rollback_failure(void);
+void test_database_migrations_execute_transaction_success_firebird(void);
+void test_database_migrations_execute_transaction_parse_failure_strdup(void);
 
 void setUp(void) {
     // Reset all mocks
@@ -83,6 +94,7 @@ void setUp(void) {
 
 void tearDown(void) {
     // Reset mocks
+    mock_system_reset_all();
     mock_db2_transaction_reset_all();
     mock_database_engine_reset_all();
 
@@ -536,6 +548,216 @@ void test_database_migrations_execute_transaction_unsupported_engine(void) {
     TEST_ASSERT_FALSE(result);
 }
 
+void test_database_migrations_execute_transaction_success_firebird(void) {
+    const char* sql = "CREATE TABLE test (id INT);\n-- QUERY DELIMITER\nINSERT INTO test VALUES (1);";
+    test_connection.engine_type = DB_ENGINE_FIREBIRD;
+    mock_database_engine_set_begin_result(true);
+    mock_database_engine_set_execute_result(true);
+    mock_database_engine_set_affected_rows(1);
+    mock_database_engine_set_commit_result(true);
+
+    bool result = execute_transaction(&test_connection, sql, strlen(sql), "test.sql", DB_ENGINE_FIREBIRD, "test");
+
+    TEST_ASSERT_TRUE(result);
+}
+
+void test_database_migrations_execute_transaction_parse_failure_strdup(void) {
+    const char* sql = "SELECT 1;";
+
+    // Mock strdup failure on call #1 (the strdup(sql_result) in parse_sql_statements)
+    mock_system_set_malloc_failure(1);
+
+    bool result = execute_transaction(&test_connection, sql, strlen(sql), "test.sql", DB_ENGINE_POSTGRESQL, "test");
+
+    TEST_ASSERT_FALSE(result);
+
+    mock_system_reset_all();
+}
+
+void test_parse_sql_statements_null_delimiter(void) {
+    const char* sql = "SELECT 1;";
+    char** statements = NULL;
+    size_t statement_count = 0;
+    size_t statements_capacity = 0;
+
+    bool result = parse_sql_statements(sql, strlen(sql), &statements, &statement_count, &statements_capacity, NULL, "test");
+
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NULL(statements);
+    TEST_ASSERT_EQUAL(0, statement_count);
+}
+
+void test_parse_sql_statements_strdup_failure(void) {
+    const char* sql = "SELECT 1;";
+    char** statements = NULL;
+    size_t statement_count = 0;
+    size_t statements_capacity = 0;
+
+    // The first allocation in parse_sql_statements is strdup(sql_result) at line 114.
+    // Set malloc failure to 1 to make this fail.
+    mock_system_set_malloc_failure(1);
+
+    bool result = parse_sql_statements(sql, strlen(sql), &statements, &statement_count, &statements_capacity, "-- QUERY DELIMITER\n", "test");
+
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NULL(statements);
+
+    mock_system_reset_all();
+}
+
+void test_parse_sql_statements_realloc_failure(void) {
+    char** statements = NULL;
+    size_t statement_count = 0;
+    size_t statements_capacity = 0;
+
+    // parse_sql_statements calls realloc when statement_count reaches 0 (initial capacity is 0).
+    // The realloc happens after strdup(sql_result) (malloc counter) and strdup(stmt) (another malloc counter),
+    // but realloc has its own counter. Set realloc failure to trigger on the first realloc call.
+    mock_system_set_realloc_failure(1);
+
+    const char* sql = "SELECT 1;";
+
+    bool result = parse_sql_statements(sql, strlen(sql), &statements, &statement_count, &statements_capacity, "-- QUERY DELIMITER\n", "test");
+
+    TEST_ASSERT_FALSE(result);
+
+    mock_system_reset_all();
+
+    // Clean up any partial allocations
+    if (statements) {
+        for (size_t i = 0; i < statement_count; i++) {
+            free(statements[i]);
+        }
+        free(statements);
+    }
+}
+
+// Test: malloc failure in execute_db2_migration
+void test_execute_db2_migration_calloc_failure(void) {
+    mock_database_engine_set_begin_result(true);
+    // Mock begin_transaction calls calloc (call #1) and strdup (call #2) internally.
+    // stmt_request calloc is call #3.
+    mock_system_set_malloc_failure(3);
+
+    const char* statements[] = {"SELECT 1"};
+    bool result = execute_db2_migration(&test_connection, (char**)statements, 1, "test.sql", "test");
+
+    TEST_ASSERT_FALSE(result);
+}
+
+// Test: rollback failure in execute_db2_migration
+void test_execute_db2_migration_rollback_failure(void) {
+    mock_database_engine_set_begin_result(true);
+    mock_database_engine_set_execute_result(false);
+    mock_database_engine_set_rollback_result(false);
+
+    const char* statements[] = {"SELECT 1"};
+    bool result = execute_db2_migration(&test_connection, (char**)statements, 1, "test.sql", "test");
+
+    TEST_ASSERT_FALSE(result);
+}
+
+// Test: malloc failure in execute_postgresql_migration
+void test_execute_postgresql_migration_calloc_failure(void) {
+    mock_database_engine_set_begin_result(true);
+    // Mock begin_transaction calls calloc (call #1) and strdup (call #2) internally.
+    // stmt_request calloc is call #3.
+    mock_system_set_malloc_failure(3);
+
+    const char* statements[] = {"SELECT 1"};
+    bool result = execute_postgresql_migration(&test_connection, (char**)statements, 1, "test.sql", "test");
+
+    TEST_ASSERT_FALSE(result);
+}
+
+// Test: rollback failure in execute_postgresql_migration
+void test_execute_postgresql_migration_rollback_failure(void) {
+    mock_database_engine_set_begin_result(true);
+    mock_database_engine_set_execute_result(false);
+    mock_database_engine_set_rollback_result(false);
+
+    const char* statements[] = {"SELECT 1"};
+    bool result = execute_postgresql_migration(&test_connection, (char**)statements, 1, "test.sql", "test");
+
+    TEST_ASSERT_FALSE(result);
+}
+
+// Test: begin transaction failure in execute_mysql_migration
+void test_execute_mysql_migration_begin_failure(void) {
+    test_connection.engine_type = DB_ENGINE_MYSQL;
+    mock_database_engine_set_begin_result(false);
+
+    const char* statements[] = {"SELECT 1"};
+    bool result = execute_mysql_migration(&test_connection, (char**)statements, 1, "test.sql", "test");
+
+    TEST_ASSERT_FALSE(result);
+}
+
+// Test: malloc failure in execute_mysql_migration
+void test_execute_mysql_migration_calloc_failure(void) {
+    test_connection.engine_type = DB_ENGINE_MYSQL;
+    mock_database_engine_set_begin_result(true);
+    // Mock begin_transaction calls calloc (call #1) and strdup (call #2) internally.
+    // stmt_request calloc is call #3.
+    mock_system_set_malloc_failure(3);
+
+    const char* statements[] = {"SELECT 1"};
+    bool result = execute_mysql_migration(&test_connection, (char**)statements, 1, "test.sql", "test");
+
+    TEST_ASSERT_FALSE(result);
+}
+
+// Test: rollback failure in execute_mysql_migration
+void test_execute_mysql_migration_rollback_failure(void) {
+    test_connection.engine_type = DB_ENGINE_MYSQL;
+    mock_database_engine_set_begin_result(true);
+    mock_database_engine_set_execute_result(false);
+    mock_database_engine_set_rollback_result(false);
+
+    const char* statements[] = {"SELECT 1"};
+    bool result = execute_mysql_migration(&test_connection, (char**)statements, 1, "test.sql", "test");
+
+    TEST_ASSERT_FALSE(result);
+}
+
+// Test: begin transaction failure in execute_sqlite_migration
+void test_execute_sqlite_migration_begin_failure(void) {
+    test_connection.engine_type = DB_ENGINE_SQLITE;
+    mock_database_engine_set_begin_result(false);
+
+    const char* statements[] = {"SELECT 1"};
+    bool result = execute_sqlite_migration(&test_connection, (char**)statements, 1, "test.sql", "test");
+
+    TEST_ASSERT_FALSE(result);
+}
+
+// Test: malloc failure in execute_sqlite_migration
+void test_execute_sqlite_migration_calloc_failure(void) {
+    test_connection.engine_type = DB_ENGINE_SQLITE;
+    mock_database_engine_set_begin_result(true);
+    // Mock begin_transaction calls calloc (call #1) and strdup (call #2) internally.
+    // stmt_request calloc is call #3.
+    mock_system_set_malloc_failure(3);
+
+    const char* statements[] = {"SELECT 1"};
+    bool result = execute_sqlite_migration(&test_connection, (char**)statements, 1, "test.sql", "test");
+
+    TEST_ASSERT_FALSE(result);
+}
+
+// Test: rollback failure in execute_sqlite_migration
+void test_execute_sqlite_migration_rollback_failure(void) {
+    test_connection.engine_type = DB_ENGINE_SQLITE;
+    mock_database_engine_set_begin_result(true);
+    mock_database_engine_set_execute_result(false);
+    mock_database_engine_set_rollback_result(false);
+
+    const char* statements[] = {"SELECT 1"};
+    bool result = execute_sqlite_migration(&test_connection, (char**)statements, 1, "test.sql", "test");
+
+    TEST_ASSERT_FALSE(result);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -559,28 +781,41 @@ int main(void) {
     RUN_TEST(test_parse_sql_statements_empty_statements);
     RUN_TEST(test_parse_sql_statements_comment_only_statement);
     RUN_TEST(test_parse_sql_statements_single_no_delimiter);
+    RUN_TEST(test_parse_sql_statements_null_delimiter);
+    RUN_TEST(test_parse_sql_statements_strdup_failure);
+    RUN_TEST(test_parse_sql_statements_realloc_failure);
 
     // Test execute_db2_migration function
     RUN_TEST(test_execute_db2_migration_success);
     RUN_TEST(test_execute_db2_migration_transaction_begin_failure);
     RUN_TEST(test_execute_db2_migration_statement_failure);
     RUN_TEST(test_execute_db2_migration_commit_failure);
+    RUN_TEST(test_execute_db2_migration_calloc_failure);
+    RUN_TEST(test_execute_db2_migration_rollback_failure);
 
     // Test execute_postgresql_migration function
     RUN_TEST(test_execute_postgresql_migration_success);
     RUN_TEST(test_execute_postgresql_migration_begin_failure);
+    RUN_TEST(test_execute_postgresql_migration_calloc_failure);
     RUN_TEST(test_execute_postgresql_migration_statement_failure);
     RUN_TEST(test_execute_postgresql_migration_commit_failure);
+    RUN_TEST(test_execute_postgresql_migration_rollback_failure);
 
     // Test execute_mysql_migration function
     RUN_TEST(test_execute_mysql_migration_success);
+    RUN_TEST(test_execute_mysql_migration_begin_failure);
+    RUN_TEST(test_execute_mysql_migration_calloc_failure);
     RUN_TEST(test_execute_mysql_migration_statement_failure);
     RUN_TEST(test_execute_mysql_migration_commit_failure);
+    RUN_TEST(test_execute_mysql_migration_rollback_failure);
 
     // Test execute_sqlite_migration function
     RUN_TEST(test_execute_sqlite_migration_success);
+    RUN_TEST(test_execute_sqlite_migration_begin_failure);
+    RUN_TEST(test_execute_sqlite_migration_calloc_failure);
     RUN_TEST(test_execute_sqlite_migration_statement_failure);
     RUN_TEST(test_execute_sqlite_migration_commit_failure);
+    RUN_TEST(test_execute_sqlite_migration_rollback_failure);
 
     // Test main function
     RUN_TEST(test_database_migrations_execute_transaction_success_postgresql);
@@ -591,6 +826,8 @@ int main(void) {
     RUN_TEST(test_database_migrations_execute_transaction_empty_sql);
     RUN_TEST(test_database_migrations_execute_transaction_no_statements);
     RUN_TEST(test_database_migrations_execute_transaction_unsupported_engine);
+    RUN_TEST(test_database_migrations_execute_transaction_success_firebird);
+    RUN_TEST(test_database_migrations_execute_transaction_parse_failure_strdup);
 
     return UNITY_END();
 }

@@ -87,10 +87,11 @@ IN addtion, [Test 01 - Compilation](/docs/H/tests/test_01_compilation.md) builds
 - [**database_mysql.lua**](/docs/He/DATABASES/database_mysql.md) (sample: [Acuranzo](/elements/002-helium/acuranzo/migrations/database_mysql.lua)) - MySQL/MariaDB-specific configuration
 - [**database_sqlite.lua**](/docs/He/DATABASES/database_sqlite.md) (sample: [Acuranzo](/elements/002-helium/acuranzo/migrations/database_sqlite.lua)) - SQLite-specific configuration
 - [**database_db2.lua**](/docs/He/DATABASES/database_db2.md) (sample: [Acuranzo](/elements/002-helium/acuranzo/migrations/database_db2.lua)) - IBM DB2-specific configuration
+- [**database_firebird.lua**](/docs/He/DATABASES/database_firebird.md) (sample: [Acuranzo](/elements/002-helium/acuranzo/migrations/database_firebird.lua)) - Firebird 4 configuration (empty schema, native Base64, Brotli and JSON_VALUE UDRs)
 
 ### Schemas
 
-Each schema provides a complete database design with migrations, supporting PostgreSQL, MySQL/MariaDB, SQLite, and IBM DB2.
+Each schema provides a complete database design with migrations, supporting PostgreSQL, MySQL/MariaDB, SQLite, IBM DB2, and Firebird.
 
 - [**Main Helium README**](/elements/002-helium/README.md) - Overview of all schemas and scripts
 - [**Acuranzo Schema**](/elements/002-helium/acuranzo/README.md) - Frontend web application schema

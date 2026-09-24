@@ -1,0 +1,741 @@
+        -:    0:Source:/mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/src/database/migration/transaction.c
+        -:    0:Graph:build/unity/src/database/migration/transaction.gcno
+        -:    0:Data:build/unity/src/database/migration/transaction.gcda
+        -:    0:Runs:3
+        -:    1:/*
+        -:    2: * Database Migration Transaction Handling
+        -:    3: *
+        -:    4: * Provides unified transaction handling for all database engines.
+        -:    5: * Supports PostgreSQL, MySQL, SQLite, and DB2 with explicit transaction control.
+        -:    6: */
+        -:    7:
+        -:    8:// Project includes
+        -:    9:#include <src/hydrogen.h>
+        -:   10:
+        -:   11:// Unity test mode - enable mocks BEFORE including real headers
+        -:   12:#ifdef UNITY_TEST_MODE
+        -:   13:#ifdef USE_MOCK_SYSTEM
+        -:   14:#include <unity/mocks/mock_system.h>
+        -:   15:#endif
+        -:   16:#ifdef USE_MOCK_DATABASE_ENGINE
+        -:   17:#include <unity/mocks/mock_database_engine.h>
+        -:   18:#endif
+        -:   19:#ifdef USE_MOCK_DB2_TRANSACTION
+        -:   20:#include <unity/mocks/mock_db2_transaction.h>
+        -:   21:#endif
+        -:   22:#endif
+        -:   23:
+        -:   24:#include <src/database/database.h>
+        -:   25:#include <src/database/dbqueue/dbqueue.h>
+        -:   26:#include <src/utils/utils_hash.h>
+        -:   27:
+        -:   28:// Local includes
+        -:   29:#include "migration.h"
+        -:   30:
+        -:   31:// DB2 includes for transaction control
+        -:   32:#include <src/database/db2/types.h>
+        -:   33:#include <src/database/db2/connection.h>
+        -:   34:#include <src/database/db2/transaction.h>
+        -:   35:
+        -:   36:/*
+        -:   37: * Determine whether a SQL statement contains any executable content
+        -:   38: *
+        -:   39: * Returns true if the statement has at least one non-whitespace, non-comment
+        -:   40: * character. Returns false for statements that are empty, whitespace-only, or
+        -:   41: * composed entirely of SQL comments (line comments starting with "--" and/or
+        -:   42: * block comments delimited by C-style markers).
+        -:   43: *
+        -:   44: * This guards the migration path against comment-only statements, which some
+        -:   45: * engines (e.g. DB2) legitimately produce when an engine-specific command is
+        -:   46: * rendered as a comment for other engines. Passing such a statement to the
+        -:   47: * driver's prepare call would otherwise fail the entire migration.
+        -:   48: *
+        -:   49: * Note: this deliberately does NOT parse string/identifier literals. Migration
+        -:   50: * statements are generated, delimiter-separated units, and the goal is only to
+        -:   51: * detect the presence of executable content, not to strip comments from valid
+        -:   52: * SQL.
+        -:   53: */
+       29:   54:bool statement_has_executable_sql(const char* stmt) {
+       29:   55:    if (!stmt) {
+        1:   56:        return false;
+        -:   57:    }
+        -:   58:
+       28:   59:    const char* ptr = stmt;
+       59:   60:    while (*ptr != '\0') {
+        -:   61:        // Skip whitespace
+       49:   62:        if (isspace((unsigned char)*ptr)) {
+       22:   63:            ptr++;
+       22:   64:            continue;
+        -:   65:        }
+        -:   66:
+        -:   67:        // Skip line comments: "--" through end of line
+       27:   68:        if (ptr[0] == '-' && ptr[1] == '-') {
+        5:   69:            ptr += 2;
+       87:   70:            while (*ptr != '\0' && *ptr != '\n') {
+       82:   71:                ptr++;
+        -:   72:            }
+        5:   73:            continue;
+        -:   74:        }
+        -:   75:
+        -:   76:        // Skip block comments: "/* ... */" (may span multiple lines)
+       22:   77:        if (ptr[0] == '/' && ptr[1] == '*') {
+        4:   78:            ptr += 2;
+       76:   79:            while (*ptr != '\0' && !(ptr[0] == '*' && ptr[1] == '/')) {
+       72:   80:                ptr++;
+        -:   81:            }
+        4:   82:            if (*ptr != '\0') {
+        3:   83:                ptr += 2;  // Consume the closing "*/"
+        -:   84:            }
+        4:   85:            continue;
+        -:   86:        }
+        -:   87:
+        -:   88:        // Found a character that is neither whitespace nor a comment marker
+       18:   89:        return true;
+        -:   90:    }
+        -:   91:
+       10:   92:    return false;
+        -:   93:}
+        -:   94:
+        -:   95:/*
+        -:   96: * Parse multi-statement SQL into individual statements
+        -:   97: */
+       15:   98:bool parse_sql_statements(const char* sql_result, size_t sql_length, char*** statements,
+        -:   99:                         size_t* statement_count, size_t* statements_capacity,
+        -:  100:                         const char* delimiter, const char* dqm_label) {
+        -:  101:    (void)sql_length; // Suppress unused parameter warning
+        -:  102:
+       15:  103:    if (!sql_result || sql_length == 0) {
+        2:  104:        log_this(dqm_label, "SQL result is NULL or empty", LOG_LEVEL_ERROR, 0);
+        2:  105:        return false;
+        -:  106:    }
+        -:  107:
+       13:  108:    if (!delimiter) {
+        1:  109:        log_this(dqm_label, "Delimiter is NULL", LOG_LEVEL_ERROR, 0);
+        1:  110:        return false;
+        -:  111:    }
+        -:  112:
+        -:  113:    // Parse the SQL into individual statements using the specified delimiter
+       12:  114:    char* sql_copy = strdup(sql_result);
+       12:  115:    if (!sql_copy) {
+        1:  116:        log_this(dqm_label, "Failed to allocate memory for SQL parsing", LOG_LEVEL_ERROR, 0);
+        1:  117:        return false;
+        -:  118:    }
+        -:  119:
+        -:  120:    // Split on the specified delimiter manually (strtok doesn't work well with multi-char delimiters)
+       11:  121:    size_t delimiter_len = strlen(delimiter);
+       11:  122:    char* sql_ptr = sql_copy;
+       11:  123:    bool parse_success = true;
+        -:  124:
+       18:  125:    while (*sql_ptr != '\0') {
+        -:  126:        // Find the next delimiter
+       18:  127:        char* delimiter_pos = strstr(sql_ptr, delimiter);
+        -:  128:
+        -:  129:        // If delimiter found, temporarily null-terminate it
+       18:  130:        if (delimiter_pos) {
+        7:  131:            *delimiter_pos = '\0';
+        -:  132:        }
+        -:  133:
+        -:  134:        // Process the current statement
+       18:  135:        char* stmt = sql_ptr;
+        -:  136:
+        -:  137:        // Trim whitespace
+       32:  138:        while (*stmt && isspace((unsigned char)*stmt)) stmt++;
+       18:  139:        char* end = stmt + strlen(stmt) - 1;
+       32:  140:        while (end > stmt && isspace((unsigned char)*end)) {
+       14:  141:            *end = '\0';
+       14:  142:            end--;
+        -:  143:        }
+        -:  144:
+        -:  145:        // Skip empty, whitespace-only, and comment-only statements
+       18:  146:        if (statement_has_executable_sql(stmt)) {
+        -:  147:            // Add to statements array
+       15:  148:            if (*statement_count >= *statements_capacity) {
+      10*:  149:                *statements_capacity = *statements_capacity == 0 ? 10 : *statements_capacity * 2;
+       10:  150:                char** new_statements = realloc(*statements, *statements_capacity * sizeof(char*));
+       10:  151:                if (!new_statements) {
+        1:  152:                    log_this(dqm_label, "Failed to allocate memory for statements array", LOG_LEVEL_ERROR, 0);
+        1:  153:                    parse_success = false;
+        1:  154:                    break;
+        -:  155:                }
+        9:  156:                *statements = new_statements;
+        -:  157:            }
+       14:  158:            (*statements)[*statement_count] = strdup(stmt);
+       14:  159:            (*statement_count)++;
+        -:  160:        }
+        -:  161:
+        -:  162:        // Move to next statement
+       17:  163:        if (delimiter_pos) {
+        -:  164:            // Restore the delimiter and move past it
+        7:  165:            *delimiter_pos = '-';  // Restore first char of delimiter
+        7:  166:            sql_ptr = delimiter_pos + delimiter_len;
+        -:  167:        } else {
+        -:  168:            // No more delimiters, we're done
+       10:  169:            break;
+        -:  170:        }
+        -:  171:    }
+        -:  172:
+       11:  173:    free(sql_copy);
+       11:  174:    return parse_success;
+        -:  175:}
+        -:  176:
+        -:  177:/*
+        -:  178: * Execute migration statements for DB2 with explicit transaction control
+        -:  179: * Updated to use database_engine functions for consistency with other engines
+        -:  180: */
+        7:  181:bool execute_db2_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
+        -:  182:                          const char* migration_file, const char* dqm_label) {
+        -:  183:    // Execute all statements within a transaction using database_engine functions
+        7:  184:    Transaction* db2_transaction = NULL;
+        7:  185:    if (!database_engine_begin_transaction(connection, DB_ISOLATION_READ_COMMITTED, &db2_transaction)) {
+        1:  186:        log_this(dqm_label, "Failed to begin DB2 transaction for migration %s", LOG_LEVEL_ERROR, 1, migration_file);
+        1:  187:        return false;
+        -:  188:    }
+        -:  189:
+        6:  190:    log_this(dqm_label, "Started DB2 transaction for migration %s (%zu statements)", LOG_LEVEL_TRACE, 2, migration_file, statement_count);
+        -:  191:
+        6:  192:    bool transaction_success = true;
+        -:  193:
+        -:  194:    // Execute all statements
+       11:  195:    for (size_t j = 0; j < statement_count && transaction_success; j++) {
+        6:  196:        QueryRequest* stmt_request = calloc(1, sizeof(QueryRequest));
+        6:  197:        if (!stmt_request) {
+        1:  198:            log_this(dqm_label, "Failed to allocate statement request", LOG_LEVEL_ERROR, 0);
+        1:  199:            transaction_success = false;
+        1:  200:            break;
+        -:  201:        }
+        -:  202:
+        -:  203:        // Generate hash for prepared statement caching
+        -:  204:        char stmt_hash[64];  // Sufficient buffer for hash (prefix + 16 hex chars + null)
+        5:  205:        get_stmt_hash("MPSC", statements[j], 16, stmt_hash);
+        -:  206:
+        5:  207:        log_this(dqm_label, "Statement %zu using prepared statement hash: %s", LOG_LEVEL_TRACE, 2, j + 1, stmt_hash);
+       5*:  208:        log_this(dqm_label, "Statement %zu SQL: %.100s%s", LOG_LEVEL_TRACE, 3, j + 1, statements[j], strlen(statements[j]) > 100 ? "..." : "");
+        -:  209:
+        5:  210:        stmt_request->query_id = strdup("migration_statement");
+        5:  211:        stmt_request->sql_template = strdup(statements[j]);
+        5:  212:        stmt_request->parameters_json = strdup("{}");
+        5:  213:        stmt_request->timeout_seconds = 30;
+        5:  214:        stmt_request->isolation_level = DB_ISOLATION_READ_COMMITTED;
+        5:  215:        stmt_request->use_prepared_statement = true;
+        5:  216:        stmt_request->prepared_statement_name = strdup(stmt_hash);
+        -:  217:
+        5:  218:        QueryResult* stmt_result = NULL;
+        5:  219:        bool stmt_success = database_engine_execute(connection, stmt_request, &stmt_result);
+        -:  220:
+        -:  221:        // Clean up request
+        5:  222:        if (stmt_request->query_id) free(stmt_request->query_id);
+        5:  223:        if (stmt_request->sql_template) free(stmt_request->sql_template);
+        5:  224:        if (stmt_request->parameters_json) free(stmt_request->parameters_json);
+        5:  225:        if (stmt_request->prepared_statement_name) free(stmt_request->prepared_statement_name);
+        5:  226:        free(stmt_request);
+        -:  227:
+        5:  228:        if (stmt_success && stmt_result && stmt_result->success) {
+        3:  229:            log_this(dqm_label, "Statement %zu executed successfully (hash: %s): affected %lld rows", LOG_LEVEL_TRACE, 3, j + 1, stmt_hash, stmt_result->affected_rows);
+        -:  230:        } else {
+        2:  231:            log_this(dqm_label, "Statement %zu failed (hash: %s)", LOG_LEVEL_ERROR, 2, j + 1, stmt_hash);
+        2:  232:            transaction_success = false;
+        -:  233:        }
+        -:  234:
+        5:  235:        if (stmt_result) {
+        5:  236:            database_engine_cleanup_result(stmt_result);
+        -:  237:        }
+        -:  238:    }
+        -:  239:
+        -:  240:    // Commit or rollback based on success
+        6:  241:    if (transaction_success) {
+        -:  242:        // Commit the transaction
+        3:  243:        if (!database_engine_commit_transaction(connection, db2_transaction)) {
+        1:  244:            log_this(dqm_label, "Failed to commit migration %s", LOG_LEVEL_ERROR, 1, migration_file);
+        1:  245:            transaction_success = false;
+        -:  246:        } else {
+        2:  247:            log_this(dqm_label, "Migration %s APPLY was successful", LOG_LEVEL_TRACE, 1, migration_file);
+        -:  248:        }
+        -:  249:    } else {
+        -:  250:        // Rollback the transaction
+        3:  251:        if (!database_engine_rollback_transaction(connection, db2_transaction)) {
+        1:  252:            log_this(dqm_label, "Failed to rollback migration %s", LOG_LEVEL_ERROR, 1, migration_file);
+        -:  253:        } else {
+        2:  254:            log_this(dqm_label, "Migration %s rolled back due to errors", LOG_LEVEL_TRACE, 1, migration_file);
+        -:  255:        }
+        -:  256:    }
+        -:  257:
+        -:  258:    // Clean up transaction structure
+        6:  259:    database_engine_cleanup_transaction(db2_transaction);
+        -:  260:
+        6:  261:    return transaction_success;
+        -:  262:}
+        -:  263:
+        -:  264:/*
+        -:  265: * Execute migration statements for PostgreSQL with explicit transaction control using PostgreSQL transaction functions
+        -:  266: */
+        7:  267:bool execute_postgresql_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
+        -:  268:                                 const char* migration_file, const char* dqm_label) {
+        -:  269:    // Execute all statements within a transaction using proper PostgreSQL transaction functions
+        7:  270:    Transaction* pg_transaction = NULL;
+        7:  271:    if (!database_engine_begin_transaction(connection, DB_ISOLATION_READ_COMMITTED, &pg_transaction)) {
+        1:  272:        log_this(dqm_label, "Failed to begin PostgreSQL transaction for migration %s", LOG_LEVEL_ERROR, 1, migration_file);
+        1:  273:        return false;
+        -:  274:    }
+        -:  275:
+        6:  276:    log_this(dqm_label, "Started PostgreSQL transaction for migration %s (%zu statements)", LOG_LEVEL_TRACE, 2, migration_file, statement_count);
+        -:  277:
+        6:  278:    bool transaction_success = true;
+        -:  279:
+        -:  280:    // Execute all statements
+       12:  281:    for (size_t j = 0; j < statement_count && transaction_success; j++) {
+        7:  282:        QueryRequest* stmt_request = calloc(1, sizeof(QueryRequest));
+        7:  283:        if (!stmt_request) {
+        1:  284:            log_this(dqm_label, "Failed to allocate statement request", LOG_LEVEL_ERROR, 0);
+        1:  285:            transaction_success = false;
+        1:  286:            break;
+        -:  287:        }
+        -:  288:
+        -:  289:        // Generate hash for prepared statement caching
+        -:  290:        char stmt_hash[64];  // Sufficient buffer for hash (prefix + 16 hex chars + null)
+        6:  291:        get_stmt_hash("MPSC", statements[j], 16, stmt_hash);
+        -:  292:
+        6:  293:        log_this(dqm_label, "Statement %zu using prepared statement hash: %s", LOG_LEVEL_TRACE, 2, j + 1, stmt_hash);
+       6*:  294:        log_this(dqm_label, "Statement %zu SQL: %.100s%s", LOG_LEVEL_TRACE, 3, j + 1, statements[j], strlen(statements[j]) > 100 ? "..." : "");
+        -:  295:
+        6:  296:        stmt_request->query_id = strdup("migration_statement");
+        6:  297:        stmt_request->sql_template = strdup(statements[j]);
+        6:  298:        stmt_request->parameters_json = strdup("{}");
+        6:  299:        stmt_request->timeout_seconds = 30;
+        6:  300:        stmt_request->isolation_level = DB_ISOLATION_READ_COMMITTED;
+        6:  301:        stmt_request->use_prepared_statement = true;
+        6:  302:        stmt_request->prepared_statement_name = strdup(stmt_hash);
+        -:  303:
+        6:  304:        QueryResult* stmt_result = NULL;
+        6:  305:        bool stmt_success = database_engine_execute(connection, stmt_request, &stmt_result);
+        -:  306:
+        -:  307:        // Clean up request
+        6:  308:        if (stmt_request->query_id) free(stmt_request->query_id);
+        6:  309:        if (stmt_request->sql_template) free(stmt_request->sql_template);
+        6:  310:        if (stmt_request->parameters_json) free(stmt_request->parameters_json);
+        6:  311:        if (stmt_request->prepared_statement_name) free(stmt_request->prepared_statement_name);
+        6:  312:        free(stmt_request);
+        -:  313:
+        6:  314:        if (stmt_success && stmt_result && stmt_result->success) {
+        4:  315:            log_this(dqm_label, "Statement %zu executed successfully (hash: %s): affected %lld rows", LOG_LEVEL_TRACE, 3, j + 1, stmt_hash, stmt_result->affected_rows);
+        -:  316:        } else {
+        2:  317:            log_this(dqm_label, "Statement %zu failed (hash: %s)", LOG_LEVEL_ERROR, 2, j + 1, stmt_hash);
+        2:  318:            transaction_success = false;
+        -:  319:        }
+        -:  320:
+        6:  321:        if (stmt_result) {
+        6:  322:            database_engine_cleanup_result(stmt_result);
+        -:  323:        }
+        -:  324:    }
+        -:  325:
+        -:  326:    // Commit or rollback based on success
+        6:  327:    if (transaction_success) {
+        -:  328:        // Commit the transaction
+        3:  329:        if (!database_engine_commit_transaction(connection, pg_transaction)) {
+        1:  330:            log_this(dqm_label, "Failed to commit migration %s", LOG_LEVEL_ERROR, 1, migration_file);
+        1:  331:            transaction_success = false;
+        -:  332:        } else {
+        2:  333:            log_this(dqm_label, "Migration %s APPLY was successful", LOG_LEVEL_TRACE, 1, migration_file);
+        -:  334:        }
+        -:  335:    } else {
+        -:  336:        // Rollback the transaction
+        3:  337:        if (!database_engine_rollback_transaction(connection, pg_transaction)) {
+        1:  338:            log_this(dqm_label, "Failed to rollback migration %s", LOG_LEVEL_ERROR, 1, migration_file);
+        -:  339:        } else {
+        2:  340:            log_this(dqm_label, "Migration %s rolled back due to errors", LOG_LEVEL_TRACE, 1, migration_file);
+        -:  341:        }
+        -:  342:    }
+        -:  343:
+        -:  344:    // Clean up transaction structure
+        6:  345:    database_engine_cleanup_transaction(pg_transaction);
+        -:  346:
+        6:  347:    return transaction_success;
+        -:  348:}
+        -:  349:
+        -:  350:/*
+        -:  351: * Execute migration statements for MySQL with explicit transaction control using MySQL transaction functions
+        -:  352: */
+        7:  353:bool execute_mysql_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
+        -:  354:                            const char* migration_file, const char* dqm_label) {
+        -:  355:    // Execute all statements within a transaction using proper MySQL transaction functions
+        7:  356:    Transaction* mysql_transaction = NULL;
+        7:  357:    if (!database_engine_begin_transaction(connection, DB_ISOLATION_READ_COMMITTED, &mysql_transaction)) {
+        1:  358:        log_this(dqm_label, "Failed to begin MySQL transaction for migration %s", LOG_LEVEL_ERROR, 1, migration_file);
+        1:  359:        return false;
+        -:  360:    }
+        -:  361:
+        6:  362:    log_this(dqm_label, "Started MySQL transaction for migration %s (%zu statements)", LOG_LEVEL_TRACE, 2, migration_file, statement_count);
+        -:  363:
+        6:  364:    bool transaction_success = true;
+        -:  365:
+        -:  366:    // Execute all statements
+       11:  367:    for (size_t j = 0; j < statement_count && transaction_success; j++) {
+        6:  368:        QueryRequest* stmt_request = calloc(1, sizeof(QueryRequest));
+        6:  369:        if (!stmt_request) {
+        1:  370:            log_this(dqm_label, "Failed to allocate statement request", LOG_LEVEL_ERROR, 0);
+        1:  371:            transaction_success = false;
+        1:  372:            break;
+        -:  373:        }
+        -:  374:
+        -:  375:        // Generate hash for prepared statement caching
+        -:  376:        char stmt_hash[64];  // Sufficient buffer for hash (prefix + 16 hex chars + null)
+        5:  377:        get_stmt_hash("MPSC", statements[j], 16, stmt_hash);
+        -:  378:
+        5:  379:        log_this(dqm_label, "Statement %zu using prepared statement hash: %s", LOG_LEVEL_TRACE, 2, j + 1, stmt_hash);
+       5*:  380:        log_this(dqm_label, "Statement %zu SQL: %.100s%s", LOG_LEVEL_TRACE, 3, j + 1, statements[j], strlen(statements[j]) > 100 ? "..." : "");
+        -:  381:
+        5:  382:        stmt_request->query_id = strdup("migration_statement");
+        5:  383:        stmt_request->sql_template = strdup(statements[j]);
+        5:  384:        stmt_request->parameters_json = strdup("{}");
+        5:  385:        stmt_request->timeout_seconds = 30;
+        5:  386:        stmt_request->isolation_level = DB_ISOLATION_READ_COMMITTED;
+        5:  387:        stmt_request->use_prepared_statement = true;
+        5:  388:        stmt_request->prepared_statement_name = strdup(stmt_hash);
+        -:  389:
+        5:  390:        QueryResult* stmt_result = NULL;
+        5:  391:        bool stmt_success = database_engine_execute(connection, stmt_request, &stmt_result);
+        -:  392:
+        -:  393:        // Clean up request
+        5:  394:        if (stmt_request->query_id) free(stmt_request->query_id);
+        5:  395:        if (stmt_request->sql_template) free(stmt_request->sql_template);
+        5:  396:        if (stmt_request->parameters_json) free(stmt_request->parameters_json);
+        5:  397:        if (stmt_request->prepared_statement_name) free(stmt_request->prepared_statement_name);
+        5:  398:        free(stmt_request);
+        -:  399:
+        5:  400:        if (stmt_success && stmt_result && stmt_result->success) {
+        3:  401:            log_this(dqm_label, "Statement %zu executed successfully (hash: %s): affected %lld rows", LOG_LEVEL_TRACE, 3, j + 1, stmt_hash, stmt_result->affected_rows);
+        -:  402:        } else {
+        2:  403:            log_this(dqm_label, "Statement %zu failed (hash: %s)", LOG_LEVEL_ERROR, 2, j + 1, stmt_hash);
+        2:  404:            transaction_success = false;
+        -:  405:        }
+        -:  406:
+        5:  407:        if (stmt_result) {
+        5:  408:            database_engine_cleanup_result(stmt_result);
+        -:  409:        }
+        -:  410:    }
+        -:  411:
+        -:  412:    // Commit or rollback based on success
+        6:  413:    if (transaction_success) {
+        -:  414:        // Commit the transaction
+        3:  415:        if (!database_engine_commit_transaction(connection, mysql_transaction)) {
+        1:  416:            log_this(dqm_label, "Failed to commit migration %s", LOG_LEVEL_ERROR, 1, migration_file);
+        1:  417:            transaction_success = false;
+        -:  418:        } else {
+        2:  419:            log_this(dqm_label, "Migration %s APPLY was successful", LOG_LEVEL_TRACE, 1, migration_file);
+        -:  420:        }
+        -:  421:    } else {
+        -:  422:        // Rollback the transaction
+        3:  423:        if (!database_engine_rollback_transaction(connection, mysql_transaction)) {
+        1:  424:            log_this(dqm_label, "Failed to rollback migration %s", LOG_LEVEL_ERROR, 1, migration_file);
+        -:  425:        } else {
+        2:  426:            log_this(dqm_label, "Migration %s rolled back due to errors", LOG_LEVEL_TRACE, 1, migration_file);
+        -:  427:        }
+        -:  428:    }
+        -:  429:
+        -:  430:    // Clean up transaction structure
+        6:  431:    database_engine_cleanup_transaction(mysql_transaction);
+        -:  432:
+        6:  433:    return transaction_success;
+        -:  434:}
+        -:  435:
+        -:  436:/*
+        -:  437: * Execute migration statements for SQLite with explicit transaction control using SQLite transaction functions
+        -:  438: */
+        7:  439:bool execute_sqlite_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
+        -:  440:                             const char* migration_file, const char* dqm_label) {
+        -:  441:    // Execute all statements within a transaction using proper SQLite transaction functions
+        7:  442:    Transaction* sqlite_transaction = NULL;
+        7:  443:    if (!database_engine_begin_transaction(connection, DB_ISOLATION_READ_COMMITTED, &sqlite_transaction)) {
+        1:  444:        log_this(dqm_label, "Failed to begin SQLite transaction for migration %s", LOG_LEVEL_ERROR, 1, migration_file);
+        1:  445:        return false;
+        -:  446:    }
+        -:  447:
+        6:  448:    log_this(dqm_label, "Started SQLite transaction for migration %s (%zu statements)", LOG_LEVEL_TRACE, 2, migration_file, statement_count);
+        -:  449:
+        6:  450:    bool transaction_success = true;
+        -:  451:
+        -:  452:    // Execute all statements
+       11:  453:    for (size_t j = 0; j < statement_count && transaction_success; j++) {
+        6:  454:        QueryRequest* stmt_request = calloc(1, sizeof(QueryRequest));
+        6:  455:        if (!stmt_request) {
+        1:  456:            log_this(dqm_label, "Failed to allocate statement request", LOG_LEVEL_ERROR, 0);
+        1:  457:            transaction_success = false;
+        1:  458:            break;
+        -:  459:        }
+        -:  460:
+        -:  461:        // Generate hash for prepared statement caching
+        -:  462:        char stmt_hash[64];  // Sufficient buffer for hash (prefix + 16 hex chars + null)
+        5:  463:        get_stmt_hash("MPSC", statements[j], 16, stmt_hash);
+        -:  464:
+        5:  465:        log_this(dqm_label, "Statement %zu using prepared statement hash: %s", LOG_LEVEL_TRACE, 2, j + 1, stmt_hash);
+       5*:  466:        log_this(dqm_label, "Statement %zu SQL: %.100s%s", LOG_LEVEL_TRACE, 3, j + 1, statements[j], strlen(statements[j]) > 100 ? "..." : "");
+        -:  467:
+        5:  468:        stmt_request->query_id = strdup("migration_statement");
+        5:  469:        stmt_request->sql_template = strdup(statements[j]);
+        5:  470:        stmt_request->parameters_json = strdup("{}");
+        5:  471:        stmt_request->timeout_seconds = 30;
+        5:  472:        stmt_request->isolation_level = DB_ISOLATION_READ_COMMITTED;
+        5:  473:        stmt_request->use_prepared_statement = true;
+        5:  474:        stmt_request->prepared_statement_name = strdup(stmt_hash);
+        -:  475:
+        5:  476:        QueryResult* stmt_result = NULL;
+        5:  477:        bool stmt_success = database_engine_execute(connection, stmt_request, &stmt_result);
+        -:  478:
+        -:  479:        // Clean up request
+        5:  480:        if (stmt_request->query_id) free(stmt_request->query_id);
+        5:  481:        if (stmt_request->sql_template) free(stmt_request->sql_template);
+        5:  482:        if (stmt_request->parameters_json) free(stmt_request->parameters_json);
+        5:  483:        if (stmt_request->prepared_statement_name) free(stmt_request->prepared_statement_name);
+        5:  484:        free(stmt_request);
+        -:  485:
+        5:  486:        if (stmt_success && stmt_result && stmt_result->success) {
+        3:  487:            log_this(dqm_label, "Statement %zu executed successfully (hash: %s): affected %lld rows", LOG_LEVEL_TRACE, 3, j + 1, stmt_hash, stmt_result->affected_rows);
+        -:  488:        } else {
+        2:  489:            log_this(dqm_label, "Statement %zu failed (hash: %s)", LOG_LEVEL_ERROR, 2, j + 1, stmt_hash);
+        2:  490:            transaction_success = false;
+        -:  491:        }
+        -:  492:
+        5:  493:        if (stmt_result) {
+        5:  494:            database_engine_cleanup_result(stmt_result);
+        -:  495:        }
+        -:  496:    }
+        -:  497:
+        -:  498:    // Commit or rollback based on success
+        6:  499:    if (transaction_success) {
+        -:  500:        // Commit the transaction
+        3:  501:        if (!database_engine_commit_transaction(connection, sqlite_transaction)) {
+        1:  502:            log_this(dqm_label, "Failed to commit migration %s", LOG_LEVEL_ERROR, 1, migration_file);
+        1:  503:            transaction_success = false;
+        -:  504:        } else {
+        2:  505:            log_this(dqm_label, "Migration %s APPLY was successful", LOG_LEVEL_TRACE, 1, migration_file);
+        -:  506:        }
+        -:  507:    } else {
+        -:  508:        // Rollback the transaction
+        3:  509:        if (!database_engine_rollback_transaction(connection, sqlite_transaction)) {
+        1:  510:            log_this(dqm_label, "Failed to rollback migration %s", LOG_LEVEL_ERROR, 1, migration_file);
+        -:  511:        } else {
+        2:  512:            log_this(dqm_label, "Migration %s rolled back due to errors", LOG_LEVEL_TRACE, 1, migration_file);
+        -:  513:        }
+        -:  514:    }
+        -:  515:
+        -:  516:    // Clean up transaction structure
+        6:  517:    database_engine_cleanup_transaction(sqlite_transaction);
+        -:  518:
+        6:  519:    return transaction_success;
+        -:  520:}
+        -:  521:
+        -:  522:/*
+        -:  523: * Firebird metadata (CREATE/ALTER/DROP/RECREATE) is only visible to later
+        -:  524: * DSQL after commit. Detect leading DDL keywords (skip whitespace/comments).
+        -:  525: */
+       59:  526:bool firebird_migration_sql_is_ddl(const char* sql) {
+       59:  527:    const char* p = sql;
+       59:  528:    if (!p) {
+        1:  529:        return false;
+        -:  530:    }
+        -:  531:    for (;;) {
+      104:  532:        while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') {
+       29:  533:            p++;
+        -:  534:        }
+       75:  535:        if (p[0] == '-' && p[1] == '-') {
+      104:  536:            while (*p && *p != '\n') {
+       96:  537:                p++;
+        -:  538:            }
+        8:  539:            continue;
+        -:  540:        }
+       67:  541:        if (p[0] == '/' && p[1] == '*') {
+        9:  542:            p += 2;
+      163:  543:            while (*p && !(p[0] == '*' && p[1] == '/')) {
+      154:  544:                p++;
+        -:  545:            }
+        9:  546:            if (*p) {
+        8:  547:                p += 2;
+        -:  548:            }
+        9:  549:            continue;
+        -:  550:        }
+       58:  551:        break;
+        -:  552:    }
+        -:  553:    static const char* const kws[] = { "CREATE", "ALTER", "DROP", "RECREATE", NULL };
+      190:  554:    for (size_t i = 0; kws[i]; i++) {
+      161:  555:        size_t n = strlen(kws[i]);
+      161:  556:        if (strncasecmp(p, kws[i], n) == 0) {
+       34:  557:            unsigned char c = (unsigned char)p[n];
+       34:  558:            if (c == '\0' || (!isalnum(c) && c != '_')) {
+       29:  559:                return true;
+        -:  560:            }
+        -:  561:        }
+        -:  562:    }
+       29:  563:    return false;
+        -:  564:}
+        -:  565:
+       13:  566:bool execute_firebird_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
+        -:  567:                              const char* migration_file, const char* dqm_label) {
+        -:  568:    /*
+        -:  569:     * Firebird does not expose uncommitted DDL to later DSQL in the same
+        -:  570:     * transaction (metadata cache). Commit after each successful DDL so
+        -:  571:     * following DML can see new objects; keep consecutive DML in one
+        -:  572:     * transaction so batches stay atomic. Prior DDL commits stay applied
+        -:  573:     * if a later statement fails (Firebird migration reality).
+        -:  574:     */
+       13:  575:    log_this(dqm_label, "Starting Firebird migration %s (%zu statements, commit-after-DDL)", LOG_LEVEL_TRACE, 2, migration_file, statement_count);
+        -:  576:
+       13:  577:    Transaction* fb_transaction = NULL;
+       13:  578:    if (!database_engine_begin_transaction(connection, DB_ISOLATION_READ_COMMITTED, &fb_transaction)) {
+        1:  579:        log_this(dqm_label, "Failed to begin Firebird transaction for migration %s", LOG_LEVEL_ERROR, 1, migration_file);
+        1:  580:        return false;
+        -:  581:    }
+        -:  582:
+       24:  583:    for (size_t j = 0; j < statement_count; j++) {
+       16:  584:        QueryRequest* stmt_request = calloc(1, sizeof(QueryRequest));
+       16:  585:        if (!stmt_request) {
+        1:  586:            log_this(dqm_label, "Failed to allocate statement request", LOG_LEVEL_ERROR, 0);
+        1:  587:            (void)database_engine_rollback_transaction(connection, fb_transaction);
+        1:  588:            database_engine_cleanup_transaction(fb_transaction);
+        4:  589:            return false;
+        -:  590:        }
+        -:  591:
+        -:  592:        char stmt_hash[64];
+       15:  593:        get_stmt_hash("MPSC", statements[j], 16, stmt_hash);
+        -:  594:
+       15:  595:        log_this(dqm_label, "Statement %zu using prepared statement hash: %s", LOG_LEVEL_TRACE, 2, j + 1, stmt_hash);
+      15*:  596:        log_this(dqm_label, "Statement %zu SQL: %.100s%s", LOG_LEVEL_TRACE, 3, j + 1, statements[j], strlen(statements[j]) > 100 ? "..." : "");
+        -:  597:
+       15:  598:        stmt_request->query_id = strdup("migration_statement");
+       15:  599:        stmt_request->sql_template = strdup(statements[j]);
+       15:  600:        stmt_request->parameters_json = strdup("{}");
+       15:  601:        stmt_request->timeout_seconds = 30;
+       15:  602:        stmt_request->isolation_level = DB_ISOLATION_READ_COMMITTED;
+       15:  603:        stmt_request->use_prepared_statement = true;
+       15:  604:        stmt_request->prepared_statement_name = strdup(stmt_hash);
+        -:  605:
+       15:  606:        QueryResult* stmt_result = NULL;
+       15:  607:        bool stmt_success = database_engine_execute(connection, stmt_request, &stmt_result);
+        -:  608:
+       15:  609:        if (stmt_request->query_id) free(stmt_request->query_id);
+       15:  610:        if (stmt_request->sql_template) free(stmt_request->sql_template);
+       15:  611:        if (stmt_request->parameters_json) free(stmt_request->parameters_json);
+       15:  612:        if (stmt_request->prepared_statement_name) free(stmt_request->prepared_statement_name);
+       15:  613:        free(stmt_request);
+        -:  614:
+       15:  615:        bool ok = stmt_success && stmt_result && stmt_result->success;
+       15:  616:        if (ok) {
+       13:  617:            log_this(dqm_label, "Statement %zu executed successfully (hash: %s): affected %lld rows", LOG_LEVEL_TRACE, 3, j + 1, stmt_hash, (long long)stmt_result->affected_rows);
+        -:  618:        } else {
+        2:  619:            log_this(dqm_label, "Statement %zu failed (hash: %s)", LOG_LEVEL_ERROR, 2, j + 1, stmt_hash);
+        -:  620:        }
+        -:  621:
+       15:  622:        if (stmt_result) {
+       15:  623:            database_engine_cleanup_result(stmt_result);
+        -:  624:        }
+        -:  625:
+       15:  626:        if (!ok) {
+        2:  627:            if (!database_engine_rollback_transaction(connection, fb_transaction)) {
+        1:  628:                log_this(dqm_label, "Failed to rollback migration %s after statement %zu", LOG_LEVEL_ERROR, 2, migration_file, j + 1);
+        -:  629:            } else {
+        1:  630:                log_this(dqm_label, "Migration %s rolled back open transaction after statement %zu (earlier DDL already committed)", LOG_LEVEL_TRACE, 2, migration_file, j + 1);
+        -:  631:            }
+        2:  632:            database_engine_cleanup_transaction(fb_transaction);
+        2:  633:            return false;
+        -:  634:        }
+        -:  635:
+       13:  636:        if (firebird_migration_sql_is_ddl(statements[j])) {
+        5:  637:            if (!database_engine_commit_transaction(connection, fb_transaction)) {
+        1:  638:                log_this(dqm_label, "Failed to commit migration %s after DDL statement %zu", LOG_LEVEL_ERROR, 2, migration_file, j + 1);
+        1:  639:                database_engine_cleanup_transaction(fb_transaction);
+        1:  640:                return false;
+        -:  641:            }
+        4:  642:            database_engine_cleanup_transaction(fb_transaction);
+        4:  643:            fb_transaction = NULL;
+        -:  644:
+        4:  645:            if (j + 1 < statement_count) {
+        2:  646:                if (!database_engine_begin_transaction(connection, DB_ISOLATION_READ_COMMITTED, &fb_transaction)) {
+    #####:  647:                    log_this(dqm_label, "Failed to begin Firebird transaction after DDL in migration %s (next statement %zu)", LOG_LEVEL_ERROR, 2, migration_file, j + 2);
+    #####:  648:                    return false;
+        -:  649:                }
+        -:  650:            }
+        -:  651:        }
+        -:  652:    }
+        -:  653:
+        8:  654:    if (fb_transaction) {
+        6:  655:        if (!database_engine_commit_transaction(connection, fb_transaction)) {
+        2:  656:            log_this(dqm_label, "Failed to commit migration %s final DML batch", LOG_LEVEL_ERROR, 1, migration_file);
+        2:  657:            database_engine_cleanup_transaction(fb_transaction);
+        2:  658:            return false;
+        -:  659:        }
+        4:  660:        database_engine_cleanup_transaction(fb_transaction);
+        -:  661:    }
+        -:  662:
+        6:  663:    log_this(dqm_label, "Migration %s APPLY was successful", LOG_LEVEL_TRACE, 1, migration_file);
+        6:  664:    return true;
+        -:  665:}
+        -:  666:
+        -:  667:
+        -:  668:/*
+        -:  669: * Execute migration SQL as a transaction for any database engine
+        -:  670: */
+        8:  671:bool execute_transaction(DatabaseHandle* connection, const char* sql_result,
+        -:  672:                                          size_t sql_length, const char* migration_file,
+        -:  673:                                          DatabaseEngine engine_type, const char* dqm_label) {
+        8:  674:    if (!sql_result || sql_length == 0) {
+        2:  675:        log_this(dqm_label, "No SQL generated for migration: %s", LOG_LEVEL_TRACE, 1, migration_file);
+        2:  676:        return false;
+        -:  677:    }
+        -:  678:
+        6:  679:    log_this(dqm_label, "Executing migration %s as transaction", LOG_LEVEL_TRACE, 1, migration_file);
+        -:  680:
+        -:  681:    // Parse the SQL into individual statements
+        6:  682:    char** statements = NULL;
+        6:  683:    size_t statement_count = 0;
+        6:  684:    size_t statements_capacity = 0;
+        -:  685:
+        6:  686:    if (!parse_sql_statements(sql_result, sql_length, &statements, &statement_count, &statements_capacity, "-- QUERY DELIMITER\n", dqm_label)) {
+    #####:  687:        return false;
+        -:  688:    }
+        -:  689:
+        6:  690:    if (statement_count == 0) {
+        1:  691:        log_this(dqm_label, "No valid statements found in migration: %s", LOG_LEVEL_TRACE, 1, migration_file);
+        1:  692:        free(statements);
+        1:  693:        return false;
+        -:  694:    }
+        -:  695:
+        5:  696:    bool success = false;
+        -:  697:
+        -:  698:    // Execute based on database engine
+        5:  699:    switch (engine_type) {
+        1:  700:        case DB_ENGINE_POSTGRESQL:
+        1:  701:            success = execute_postgresql_migration(connection, statements, statement_count, migration_file, dqm_label);
+        1:  702:            break;
+        1:  703:        case DB_ENGINE_MYSQL:
+        1:  704:            success = execute_mysql_migration(connection, statements, statement_count, migration_file, dqm_label);
+        1:  705:            break;
+        1:  706:        case DB_ENGINE_SQLITE:
+        1:  707:            success = execute_sqlite_migration(connection, statements, statement_count, migration_file, dqm_label);
+        1:  708:            break;
+        1:  709:        case DB_ENGINE_DB2:
+        1:  710:            success = execute_db2_migration(connection, statements, statement_count, migration_file, dqm_label);
+        1:  711:            break;
+    #####:  712:        case DB_ENGINE_FIREBIRD:
+    #####:  713:            success = execute_firebird_migration(connection, statements, statement_count, migration_file, dqm_label);
+    #####:  714:            break;
+        1:  715:        case DB_ENGINE_MSSQL:
+        -:  716:        case DB_ENGINE_AI:
+        -:  717:        case DB_ENGINE_MAX:
+        -:  718:        default:
+        1:  719:            log_this(dqm_label, "Unsupported database engine for migration: %d", LOG_LEVEL_ERROR, 1, engine_type);
+        1:  720:            success = false;
+        1:  721:            break;
+        -:  722:    }
+        -:  723:
+        -:  724:    // Cleanup statements
+       11:  725:    for (size_t j = 0; j < statement_count; j++) {
+        6:  726:        free(statements[j]);
+        -:  727:    }
+        5:  728:    free(statements);
+        -:  729:
+        5:  730:    if (!success) {
+        1:  731:        log_this(dqm_label, "Migration %s failed - transaction rolled back", LOG_LEVEL_TRACE, 1, migration_file);
+        -:  732:    } else {
+        4:  733:        log_this(dqm_label, "Migration %s LOAD was successful", LOG_LEVEL_STATE, 1, migration_file);
+        -:  734:    }
+        -:  735:
+        5:  736:    return success;
+        -:  737:}

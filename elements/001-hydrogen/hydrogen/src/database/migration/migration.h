@@ -16,7 +16,7 @@
 
 // Forward declarations
 struct DatabaseQueue;
-struct DatabaseHandle;
+typedef struct DatabaseHandle DatabaseHandle;
 
 // Include payload types
 #include <src/payload/payload.h>

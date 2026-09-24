@@ -13,10 +13,13 @@ Types and JSON format: [PARAMETER_TYPES.md](/docs/H/database/PARAMETER_TYPES.md)
 
 | Engine | Placeholder style | Primary execute path |
 | --- | --- | --- |
-| PostgreSQL, CockroachDB, YugabyteDB | `$1`, `$2`, … | `PQexecParams` / prepared with param arrays |
+| PostgreSQL, YugabyteDB | `$1`, `$2`, … | `PQexecParams` / prepared with param arrays |
 | MySQL, MariaDB | `?` | Prepared statement + `MYSQL_BIND` |
 | SQLite | `?` | `sqlite3_prepare_v2` + bind_* |
 | DB2 | `?` | `SQLPrepare` + `SQLBindParameter` |
+| Firebird | `?` | `isc_dsql_prepare` + `XSQLDA` input |
+
+CockroachDB used the PostgreSQL row above. It was a `libpq` alias, not its own engine, and that operator slot is now Firebird.
 
 ## PostgreSQL family
 
@@ -74,6 +77,26 @@ Source: [`db2/query.c`](/elements/001-hydrogen/hydrogen/src/database/db2/query.c
   TIMESTAMP only).
 - Bound buffers live in `bound_values` until
   `db2_cleanup_bound_values()`.
+
+## Firebird
+
+Source: [`firebird/query.c`](/elements/001-hydrogen/hydrogen/src/database/firebird/query.c),
+[`firebird/query_bind.c`](/elements/001-hydrogen/hydrogen/src/database/firebird/query_bind.c).
+
+- Named `:markers` become `?`. Values are written into an input `XSQLDA`.
+- INTEGER and BOOLEAN use typed SQL slots. FLOAT is sent as `DOUBLE PRECISION`
+  because Firebird `FLOAT` is binary32 and does not match the other engines'
+  printed value.
+- DATE, TIME, TIMESTAMP, and TIMESTAMP WITH TIME ZONE are parsed from ISO text
+  into the ISC date/time structures. Timestamp JSON keeps milliseconds when
+  the 1/10000-second ticks are non-zero.
+- A singleton `INSERT … RETURNING` is statement type
+  `isc_info_sql_stmt_exec_procedure` and runs through `isc_dsql_execute2`.
+  `isc_dsql_fetch` on that type returns SQLCODE -504.
+- `firebird_prepare_statement` stores the SQL text on the connection cache.
+  Each execute still allocates, prepares, and frees the `isc_stmt_handle`.
+  Holding that handle is a later consistency pass on Firebird 4.0.7. It is
+  not required for correct results.
 
 ## Parameterless queries
 

@@ -151,9 +151,9 @@ not open work unless listed below.
 | --- | --- |
 | **Plan** | [`FIREBIRD.md`](/docs/H/plans/FIREBIRD.md) |
 | **Effort** | XL |
-| **Done** | 0% — plan authored 2026-09-18; Phase 0 locks not approved |
-| **Remaining** | Phase 0 lock approval, Fedora Firebird 4 extras, Helium dialect + Lookup 030 key 6 relabel, Firebase teardown (Phases 3–4), `libfbclient` C engine, Brotli UDR + JSON, Test 37, Cockroach retirement, Tests 40–58, docs, fences |
-| **Why later** | Cockroach never had a C implementation (PostgreSQL alias). Firestore was the wrong fifth engine (superseded). Firebird is a SQL RDBMS Fedora already packages. Auth Finale remains P0. |
+| **Done** | Phases 0–11 complete (2026-09-23). Suite reported 100% passing. Phase 12 fence pass deferred. |
+| **Remaining** | Prepared-statement handle cache (`firebird_prepare_statement` stores SQL text; each execute still prepares and frees). Consistency follow-up on Firebird 4.0.7. Not a blocker. |
+| **Why later** | Correctness does not depend on reusing the `isc_stmt_handle`. Firebird 5's compiled-statement cache is a different mechanism and is not required. |
 | **Note** | `src/database/firebird/` + `database_firebird.lua`. No SQL interpreter. Firebase tree is deleted in FIREBIRD Phases 3–4, not reused. Sister plan: item 28 MSSQL. |
 
 ### 28. MSSQL engine — implement Lookup 030 key 5
@@ -322,7 +322,7 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 12e | MAX+1 PK clients: confirm + retry | M | single-thread OK | P1 |
 | 13 | Mail Relay remainder | L–XL | ~75% | P2 |
 | 26 | Notifications / Subscribers | L–XL | 0% plan | P2 |
-| 27 | Firebird engine (replace Cockroach) | XL | 0% plan | P2 |
+| 27 | Firebird engine (replace Cockroach) | XL | Phases 0–11 done; cache follow-up | P2 |
 | 28 | MSSQL engine (Lookup 030 key 5) | XL | 0% plan | P2 |
 | 24 | `H.externaldb` — ad-hoc external DB from Lua | M | 0% | P2 |
 | 19 | Print job → device / Beryllium | L–XL | ~30% | P3 |

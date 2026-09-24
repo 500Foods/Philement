@@ -1,6 +1,6 @@
 # Macro Reference
 
-This document lists all available macros in the Helium migration system. Macros are placeholders that get automatically replaced with database-specific values, enabling single migrations to work across PostgreSQL, MySQL, SQLite, and IBM DB2.
+This document lists all available macros in the Helium migration system. Macros are placeholders that get automatically replaced with database-specific values, enabling single migrations to work across PostgreSQL, MySQL, SQLite, IBM DB2, and Firebird.
 
 ## How Macros Work
 
@@ -10,52 +10,52 @@ Macros use the `${MACRO_NAME}` syntax and are expanded at runtime by the `databa
 
 ### Schema and Table References
 
-| Macro | Description | PostgreSQL | MySQL | SQLite | DB2 | Source |
-|-------|-------------|------------|-------|--------|-----|--------|
-| `${SCHEMA}` | Schema prefix with proper separator | `public.` | `schema.` | `` (empty) | `SCHEMA.` | `database.lua` |
-| `${TABLE}` | Configured table name from cfg.TABLE | User-defined | User-defined | User-defined | User-defined | Migration cfg |
-| `${QUERIES}` | Queries table name | `queries` | `queries` | `queries` | `queries` | `database.lua` |
+| Macro | Description | PostgreSQL | MySQL | SQLite | DB2 | Firebird | Source |
+|-------|-------------|------------|-------|--------|-----|----------|--------|
+| `${SCHEMA}` | Schema prefix with proper separator | `public.` | `schema.` | `` (empty) | `SCHEMA.` | `` (empty) | `database.lua` |
+| `${TABLE}` | Configured table name from cfg.TABLE | User-defined | User-defined | User-defined | User-defined | User-defined | Migration cfg |
+| `${QUERIES}` | Queries table name | `queries` | `queries` | `queries` | `queries` | `queries` | `database.lua` |
 
 ### Data Types
 
-| Macro | Description | PostgreSQL | MySQL | SQLite | DB2 | Source |
-|-------|-------------|------------|-------|--------|-----|--------|
-| `${INTEGER}` | Standard integer type | `integer` | `int` | `integer` | `INTEGER` | `database_*.lua` |
-| `${TEXT}` | Variable-length text | `text` | `text` | `text` | `VARCHAR(250)` | `database_*.lua` |
-| `${TEXT_BIG}` | Large text content | `text` | `text` | `text` | `CLOB(1M)` | `database_*.lua` |
-| `${JSON}` | JSON storage type | `jsonb` | `longtext` | `text` | `CLOB(1M)` | `database_*.lua` |
-| `${TIMESTAMP_TZ}` | Timestamp with timezone | `timestamptz` | `timestamp` | `text` | `TIMESTAMP` | `database_*.lua` |
-| `${VARCHAR_20}` | VARCHAR(20) | `varchar(20)` | `varchar(20)` | `varchar(20)` | `VARCHAR(20)` | `database_*.lua` |
-| `${VARCHAR_50}` | VARCHAR(50) | `varchar(50)` | `varchar(50)` | `varchar(50)` | `VARCHAR(50)` | `database_*.lua` |
-| `${VARCHAR_100}` | VARCHAR(100) | `varchar(100)` | `varchar(100)` | `varchar(100)` | `VARCHAR(100)` | `database_*.lua` |
-| `${VARCHAR_128}` | VARCHAR(128) | `varchar(128)` | `varchar(128)` | `varchar(128)` | `VARCHAR(128)` | `database_*.lua` |
-| `${VARCHAR_500}` | VARCHAR(500) | `varchar(500)` | `varchar(500)` | `varchar(500)` | `VARCHAR(500)` | `database_*.lua` |
-| `${CHAR_2}` | CHAR(2) | `char(2)` | `char(2)` | `char(2)` | `CHAR(2)` | `database_*.lua` |
-| `${CHAR_20}` | CHAR(20) | `char(20)` | `char(20)` | `char(20)` | `CHAR(20)` | `database_*.lua` |
-| `${CHAR_50}` | CHAR(50) | `char(50)` | `char(50)` | `char(50)` | `CHAR(50)` | `database_*.lua` |
-| `${CHAR_128}` | CHAR(128) | `char(128)` | `char(128)` | `char(128)` | `CHAR(128)` | `database_*.lua` |
+| Macro | Description | PostgreSQL | MySQL | SQLite | DB2 | Firebird | Source |
+|-------|-------------|------------|-------|--------|-----|----------|--------|
+| `${INTEGER}` | Standard integer type | `integer` | `int` | `integer` | `INTEGER` | `INTEGER` | `database_*.lua` |
+| `${TEXT}` | Variable-length text | `text` | `text` | `text` | `VARCHAR(250)` | `VARCHAR(255)` | `database_*.lua` |
+| `${TEXT_BIG}` | Large text content | `text` | `text` | `text` | `CLOB(1M)` | `BLOB SUB_TYPE TEXT` | `database_*.lua` |
+| `${JSON}` | JSON storage type | `jsonb` | `longtext` | `text` | `CLOB(1M)` | `BLOB SUB_TYPE TEXT` | `database_*.lua` |
+| `${TIMESTAMP_TZ}` | Timestamp with timezone | `timestamptz` | `timestamp` | `text` | `TIMESTAMP` | `TIMESTAMP WITH TIME ZONE` | `database_*.lua` |
+| `${VARCHAR_20}` | VARCHAR(20) | `varchar(20)` | `varchar(20)` | `varchar(20)` | `VARCHAR(20)` | `varchar(20)` | `database_*.lua` |
+| `${VARCHAR_50}` | VARCHAR(50) | `varchar(50)` | `varchar(50)` | `varchar(50)` | `VARCHAR(50)` | `varchar(50)` | `database_*.lua` |
+| `${VARCHAR_100}` | VARCHAR(100) | `varchar(100)` | `varchar(100)` | `varchar(100)` | `VARCHAR(100)` | `varchar(100)` | `database_*.lua` |
+| `${VARCHAR_128}` | VARCHAR(128) | `varchar(128)` | `varchar(128)` | `varchar(128)` | `VARCHAR(128)` | `varchar(128)` | `database_*.lua` |
+| `${VARCHAR_500}` | VARCHAR(500) | `varchar(500)` | `varchar(500)` | `varchar(500)` | `VARCHAR(500)` | `varchar(500)` | `database_*.lua` |
+| `${CHAR_2}` | CHAR(2) | `char(2)` | `char(2)` | `char(2)` | `CHAR(2)` | `CHAR(2)` | `database_*.lua` |
+| `${CHAR_20}` | CHAR(20) | `char(20)` | `char(20)` | `char(20)` | `CHAR(20)` | `CHAR(20)` | `database_*.lua` |
+| `${CHAR_50}` | CHAR(50) | `char(50)` | `char(50)` | `char(50)` | `CHAR(50)` | `CHAR(50)` | `database_*.lua` |
+| `${CHAR_128}` | CHAR(128) | `char(128)` | `char(128)` | `char(128)` | `CHAR(128)` | `CHAR(128)` | `database_*.lua` |
 
 ### Constraints and Keys
 
-| Macro | Description | PostgreSQL | MySQL | SQLite | DB2 | Source |
-|-------|-------------|------------|-------|--------|-----|--------|
-| `${PRIMARY}` | PRIMARY KEY constraint | `PRIMARY KEY` | `PRIMARY KEY` | `PRIMARY KEY` | `PRIMARY KEY` | `database_*.lua` |
-| `${UNIQUE}` | UNIQUE constraint | `UNIQUE` | `UNIQUE` | `UNIQUE` | `UNIQUE` | `database_*.lua` |
-| `${SERIAL}` | Auto-incrementing integer | `serial` | `int auto increment` | `integer AUTOINCREMENT` | `INTEGER GENERATED ALWAYS AS IDENTITY` | `database_*.lua` |
+| Macro | Description | PostgreSQL | MySQL | SQLite | DB2 | Firebird | Source |
+|-------|-------------|------------|-------|--------|-----|----------|--------|
+| `${PRIMARY}` | PRIMARY KEY constraint | `PRIMARY KEY` | `PRIMARY KEY` | `PRIMARY KEY` | `PRIMARY KEY` | `PRIMARY KEY` | `database_*.lua` |
+| `${UNIQUE}` | UNIQUE constraint | `UNIQUE` | `UNIQUE` | `UNIQUE` | `UNIQUE` | `UNIQUE` | `database_*.lua` |
+| `${SERIAL}` | Auto-incrementing integer | `serial` | `int auto increment` | `integer AUTOINCREMENT` | `INTEGER GENERATED ALWAYS AS IDENTITY` | `INTEGER GENERATED BY DEFAULT AS IDENTITY` | `database_*.lua` |
 
 ### Functions
 
-| Macro | Description | PostgreSQL | MySQL | SQLite | DB2 | Source |
-|-------|-------------|------------|-------|--------|-----|--------|
-| `${NOW}` | Current timestamp | `CURRENT_TIMESTAMP` | `CURRENT_TIMESTAMP` | `CURRENT_TIMESTAMP` | `CURRENT TIMESTAMP` | `database_*.lua` |
+| Macro | Description | PostgreSQL | MySQL | SQLite | DB2 | Firebird | Source |
+|-------|-------------|------------|-------|--------|-----|----------|--------|
+| `${NOW}` | Current timestamp | `CURRENT_TIMESTAMP` | `CURRENT_TIMESTAMP` | `CURRENT_TIMESTAMP` | `CURRENT TIMESTAMP` | `CURRENT_TIMESTAMP` | `database_*.lua` |
 
 ### Query Metadata
 
-| Macro | Description | PostgreSQL | MySQL | SQLite | DB2 | Source |
-|-------|-------------|------------|-------|--------|-----|--------|
-| `${QUERIES_INSERT}` | Column list for queries table INSERT | `query_id, query_ref, ...` | `query_id, query_ref, ...` | `query_id, query_ref, ...` | `query_id, query_ref, ...` | `database.lua` |
-| `${TIMEOUT}` | Default query timeout (ms) | `5000` | `5000` | `5000` | `5000` | `database.lua` |
-| `${DIALECT}` | Database dialect ID | `1` | `3` | `2` | `4` | `database.lua` |
+| Macro | Description | PostgreSQL | MySQL | SQLite | DB2 | Firebird | Source |
+|-------|-------------|------------|-------|--------|-----|----------|--------|
+| `${QUERIES_INSERT}` | Column list for queries table INSERT | `query_id, query_ref, ...` | `query_id, query_ref, ...` | `query_id, query_ref, ...` | `query_id, query_ref, ...` | `query_id, query_ref, ...` | `database.lua` |
+| `${TIMEOUT}` | Default query timeout (ms) | `5000` | `5000` | `5000` | `5000` | `5000` | `database.lua` |
+| `${DIALECT}` | Database dialect ID | `1` | `3` | `2` | `4` | `6` | `database.lua` |
 
 ### Status and Types
 
@@ -94,26 +94,26 @@ Macros use the `${MACRO_NAME}` syntax and are expanded at runtime by the `databa
 
 ### Content Encoding
 
-| Macro | Description | PostgreSQL | MySQL | SQLite | DB2 | Source |
-|-------|-------------|------------|-------|--------|-----|--------|
-| `${BASE64_START}` | Base64 decode function start | `CONVERT_FROM(DECODE(` | `cast(FROM_BASE64(` | `CRYPTO_DECODE(` | `${SCHEMA}BASE64DECODE(` | `database_*.lua` |
-| `${BASE64_END}` | Base64 decode function end | `, 'base64'), 'UTF8')` | `) as char character set utf8mb4)` | `,'base64')` | `)` | `database_*.lua` |
-| `${COMPRESS_START}` | Brotli decompress start | `${SCHEMA}brotli_decompress(DECODE(` | `brotli_decompress(FROM_BASE64(` | `BROTLI_DECOMPRESS(CRYPTO_DECODE(` | `${SCHEMA}BROTLI_DECOMPRESS(${SCHEMA}BASE64DECODEBINARY(` | `database_*.lua` |
-| `${COMPRESS_END}` | Brotli decompress end | `, 'base64'))` | `))` | `,'base64'))` | `))` | `database_*.lua` |
+| Macro | Description | PostgreSQL | MySQL | SQLite | DB2 | Firebird | Source |
+|-------|-------------|------------|-------|--------|-----|----------|--------|
+| `${BASE64_START}` | Base64 decode function start | `CONVERT_FROM(DECODE(` | `cast(FROM_BASE64(` | `CRYPTO_DECODE(` | `${SCHEMA}BASE64DECODE(` | `CAST(BASE64_DECODE(` | `database_*.lua` |
+| `${BASE64_END}` | Base64 decode function end | `, 'base64'), 'UTF8')` | `) as char character set utf8mb4)` | `,'base64')` | `)` | `) AS BLOB SUB_TYPE TEXT)` | `database_*.lua` |
+| `${COMPRESS_START}` | Brotli decompress start | `${SCHEMA}brotli_decompress(DECODE(` | `brotli_decompress(FROM_BASE64(` | `BROTLI_DECOMPRESS(CRYPTO_DECODE(` | `${SCHEMA}BROTLI_DECOMPRESS(${SCHEMA}BASE64DECODEBINARY(` | `BROTLI_DECOMPRESS(BASE64_DECODE(` | `database_*.lua` |
+| `${COMPRESS_END}` | Brotli decompress end | `, 'base64'))` | `))` | `,'base64'))` | `))` | `))` | `database_*.lua` |
 
 ### JSON Processing
 
-| Macro | Description | PostgreSQL | MySQL | SQLite | DB2 | Source |
-|-------|-------------|------------|-------|--------|-----|--------|
-| `${JSON_INGEST_START}` | JSON ingest function start | `${SCHEMA}json_ingest (` | `${SCHEMA}json_ingest(` | `(` | `${SCHEMA}JSON_INGEST(` | `database_*.lua` |
-| `${JSON_INGEST_END}` | JSON ingest function end | `)` | `)` | `)` | `)` | `database_*.lua` |
+| Macro | Description | PostgreSQL | MySQL | SQLite | DB2 | Firebird | Source |
+|-------|-------------|------------|-------|--------|-----|----------|--------|
+| `${JSON_INGEST_START}` | JSON ingest function start | `${SCHEMA}json_ingest (` | `${SCHEMA}json_ingest(` | `(` | `${SCHEMA}JSON_INGEST(` | `json_ingest(` | `database_*.lua` |
+| `${JSON_INGEST_END}` | JSON ingest function end | `)` | `)` | `)` | `)` | `)` | `database_*.lua` |
 
 ### Safety Checks
 
-| Macro | Description | PostgreSQL | MySQL | SQLite | DB2 | Source |
-|-------|-------------|------------|-------|--------|-----|--------|
-| `${DROP_CHECK}` | Check for data before DROP | `SELECT pg_catalog.pg_terminate_backend...` | `DO IF(EXISTS(SELECT 1 FROM...` | `SELECT 'Refusing to drop...` | `BEGIN IF EXISTS(SELECT 1...` | `database_*.lua` |
-| `${REORG}` | Table reorg after structural ALTER | `-- REORG TABLE` (no-op) | `-- REORG TABLE` (no-op) | `-- REORG TABLE` (no-op) | `CALL SYSPROC.ADMIN_CMD('REORG TABLE ${SCHEMA}${TABLE}');` | `database_*.lua` |
+| Macro | Description | PostgreSQL | MySQL | SQLite | DB2 | Firebird | Source |
+|-------|-------------|------------|-------|--------|-----|----------|--------|
+| `${DROP_CHECK}` | Check for data before DROP | `SELECT pg_catalog.pg_terminate_backend...` | `DO IF(EXISTS(SELECT 1 FROM...` | `SELECT 'Refusing to drop...` | `BEGIN IF EXISTS(SELECT 1...` | `SELECT 'Refusing to drop...' WHERE EXISTS` | `database_*.lua` |
+| `${REORG}` | Table reorg after structural ALTER | `-- REORG TABLE` (no-op) | `-- REORG TABLE` (no-op) | `-- REORG TABLE` (no-op) | `CALL SYSPROC.ADMIN_CMD('REORG TABLE ${SCHEMA}${TABLE}');` | `-- REORG TABLE` (no-op) | `database_*.lua` |
 
 **`${REORG}` / DB2:** After `ADD COLUMN`, `DROP COLUMN`, or some `ALTER COLUMN` changes, DB2 marks the table **reorg-pending**. Further DML fails with **SQL0668N reason code 7** until REORG runs. Put `${REORG}` **after** each structural change (and often before the next DROP on the same table — see `acuranzo_1172`, `acuranzo_1297`). On non-DB2 engines the macro is a SQL comment.
 
@@ -214,11 +214,11 @@ VALUES (1, 'Example', ${COMMON_VALUES});
 
 ## Notes
 
-- **Case Sensitivity**: DB2 macros are uppercase, others are lowercase
-- **Extensions Required**: Some features require database extensions (Brotli, crypto functions)
-- **Schema Handling**: SQLite typically uses no schema prefix
-- **JSON Support**: Varies significantly between databases
-- **Auto-Increment**: Each database has different syntax for auto-incrementing fields
+- **Case Sensitivity**: DB2 macros are uppercase. Firebird unquoted identifiers fold to uppercase. Other engines are lowercase.
+- **Extensions Required**: Brotli is an extension or UDR on every engine. Firebird Base64 and SHA-256 are native. Firebird `JSON_VALUE` is a UDR until Firebird 6.
+- **Schema Handling**: SQLite and Firebird use an empty schema prefix. On Firebird the database file is the isolation boundary.
+- **JSON Support**: Varies significantly between databases. Firebird stores JSON as `BLOB SUB_TYPE TEXT`.
+- **Auto-Increment**: Each database has different syntax for auto-incrementing fields. Firebird uses `GENERATED BY DEFAULT AS IDENTITY`.
 
 ## Source Files
 
@@ -227,3 +227,4 @@ VALUES (1, 'Example', ${COMMON_VALUES});
 - `database_mysql.lua` - MySQL/MariaDB-specific expansions
 - `database_sqlite.lua` - SQLite-specific expansions
 - `database_db2.lua` - IBM DB2-specific expansions
+- `database_firebird.lua` - Firebird-specific expansions. See [database_firebird.md](/docs/He/DATABASES/database_firebird.md).

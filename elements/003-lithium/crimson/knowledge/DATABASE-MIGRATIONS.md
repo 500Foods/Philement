@@ -1,6 +1,6 @@
 # Acuranzo Database Design
 
-This folder contains the migrations (aka database DDL and SQL) for creating a new instance of an Acuranzo database. Current supported engines include PostgreSQL 15+ (primary target via YugabyteDB), MySQL/MariaDB, SQLite, and IBM DB2.
+This folder contains the migrations (aka database DDL and SQL) for creating a new instance of an Acuranzo database. Current supported engines include PostgreSQL 15+ (primary target via YugabyteDB), MySQL/MariaDB, SQLite, IBM DB2, and Firebird 4.
 
 All active development and AI-assisted migration work targets PostgreSQL 15 semantics (exercised primarily through YugabyteDB — see Hydrogen `test_38_yugabytedb_migrations.sh`). See the authoritative guidance in `/docs/He/GUIDE.md` (section "For AI / LLM Migration Generation") and `/docs/He/MIGRATION_ANATOMY.md`.
 
@@ -14,7 +14,7 @@ in the migrations themselves so that they get populated in the database directly
 1. Some tables do not have a primary key, such as "sessions".  This is deliberate.
 1. Scripts assume that working Base64 Decode funtionality is present across all engines.
 1. Scripts assume that working JSON_INGEST functionality is present across all engines.
-1. Database engines currently supported use the labels 'postgresql', 'mysql', 'sqlite', and 'db2'.
+1. Database engines currently supported use the labels 'postgresql', 'mysql', 'sqlite', 'db2', and 'firebird'.
 1. Each Lua migration script is focused on one element, and contains both FORWARD and REVERSE migrations.
 1. **One migration = one logical change.** There are never per-engine migration files — one file covers all engines via macros. There is never more than one `query_ref` (QueryRef) added or modified in a single migration file. See `docs/He/GUIDE.md` → "One Migration = One Logical Change".
 1. Migrations that change the schema also include a DIAGRAM migration.

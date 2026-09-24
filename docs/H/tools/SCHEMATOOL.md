@@ -212,7 +212,7 @@ CLI flags always win. For each empty field, env is chosen from the **requested**
 `ACURANZO_DB_*`):
 
 1. **Requested-engine env**
-   - `postgresql` / `postgres` / `cockroachdb` → `ACURANZO_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`
+   - `postgresql` / `postgres` / `yugabytedb` → `ACURANZO_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`. `cockroachdb` is accepted as a historical name for that same PostgreSQL path.
    - `yugabytedb` → `YUGABYTE_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`
    - `mysql` / `mariadb` → `CANVAS_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`
    - `db2` → `HYDROTST_DB_{USER,NAME,PASS,SCHEMA}`
@@ -277,7 +277,7 @@ later ALTERs changed live objects.
 
 | Engine flag | Client | Notes |
 | ------------- | -------- | ------- |
-| `postgresql` | `psql` | Aliases: `postgres`, `cockroachdb`, `yugabytedb` |
+| `postgresql` | `psql` | Aliases: `postgres`, `yugabytedb`. `cockroachdb` is a historical name for this same PostgreSQL path, not a Firebird connection. |
 | `mysql` | `mysql` | Alias: `mariadb` |
 | `sqlite` | `sqlite3` | No schema qualifier |
 | `db2` | `db2` EXPORT LOBS | Schema often uppercase (`DEMO`) |

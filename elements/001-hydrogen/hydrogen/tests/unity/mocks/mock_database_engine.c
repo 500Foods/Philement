@@ -18,6 +18,8 @@ extern bool mock_database_engine_execute(DatabaseHandle* connection, QueryReques
 
 // Static mock state
 static bool mock_begin_result = true;
+static int mock_begin_call_count = 0;
+static int mock_begin_failure_on_call = 0;  // 0 = never fail, N = fail on Nth call
 static bool mock_commit_result = true;
 static bool mock_rollback_result = true;
 static bool mock_execute_success = true;
@@ -43,30 +45,40 @@ static bool mock_readiness_all_ready = false;
 
 bool mock_database_engine_begin_transaction(DatabaseHandle* connection, DatabaseIsolationLevel level, Transaction** transaction) {
     (void)connection;
+    mock_begin_call_count++;
 
-    // Only create transaction if begin will succeed
-    if (mock_begin_result) {
-        if (!mock_tx) {
-            mock_tx = calloc(1, sizeof(Transaction));
-            if (mock_tx) {
-                mock_tx->transaction_id = strdup("mock_engine_tx");
-                mock_tx->isolation_level = level;
-                mock_tx->started_at = time(NULL);
-                mock_tx->active = true;
-            }
-        }
+    // Check if this call should fail (call-count based)
+    bool should_fail = false;
+    if (mock_begin_failure_on_call > 0 && mock_begin_call_count == mock_begin_failure_on_call) {
+        should_fail = true;
+    } else if (!mock_begin_result) {
+        should_fail = true;
+    }
 
-        if (transaction) {
-            *transaction = mock_tx;
-        }
-    } else {
+    if (should_fail) {
         // Begin failed, return NULL transaction
         if (transaction) {
             *transaction = NULL;
         }
+        return false;
     }
 
-    return mock_begin_result;
+    // Only create transaction if begin will succeed
+    if (!mock_tx) {
+        mock_tx = calloc(1, sizeof(Transaction));
+        if (mock_tx) {
+            mock_tx->transaction_id = strdup("mock_engine_tx");
+            mock_tx->isolation_level = level;
+            mock_tx->started_at = time(NULL);
+            mock_tx->active = true;
+        }
+    }
+
+    if (transaction) {
+        *transaction = mock_tx;
+    }
+
+    return true;
 }
 
 bool mock_database_engine_commit_transaction(DatabaseHandle* connection, Transaction* transaction) {
@@ -210,15 +222,15 @@ void mock_database_engine_cleanup_transaction(Transaction* transaction) {
     mock_rollback_result = true;
     mock_execute_success = true;
     mock_affected_rows = 0;
-    mock_begin_result = true;
-    mock_commit_result = true;
-    mock_rollback_result = true;
-    mock_execute_success = true;
-    mock_affected_rows = 0;
+    // Note: do NOT reset mock_begin_failure_on_call or mock_begin_call_count here,
+    // as the production code calls cleanup_transaction between re-begin attempts
+    // and tests need the call-count state to persist across those calls.
 }
 
 void mock_database_engine_reset_all(void) {
     mock_begin_result = true;
+    mock_begin_call_count = 0;
+    mock_begin_failure_on_call = 0;
     mock_commit_result = true;
     mock_rollback_result = true;
     mock_execute_success = true;
@@ -261,6 +273,18 @@ void mock_database_engine_reset_execute_call_count(void) {
 
 void mock_database_engine_set_begin_result(bool result) {
     mock_begin_result = result;
+}
+
+void mock_database_engine_set_begin_failure_on_call(int call_num) {
+    mock_begin_failure_on_call = call_num;
+}
+
+int mock_database_engine_get_begin_call_count(void) {
+    return mock_begin_call_count;
+}
+
+void mock_database_engine_reset_begin_call_count(void) {
+    mock_begin_call_count = 0;
 }
 
 void mock_database_engine_set_commit_result(bool result) {

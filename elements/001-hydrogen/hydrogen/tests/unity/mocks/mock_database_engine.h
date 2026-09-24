@@ -40,6 +40,7 @@ void mock_database_engine_reset_cancel_call_count(void);
 // Mock control functions
 void mock_database_engine_reset_all(void);
 void mock_database_engine_set_begin_result(bool result);
+void mock_database_engine_set_begin_failure_on_call(int call_num);
 void mock_database_engine_set_commit_result(bool result);
 void mock_database_engine_set_rollback_result(bool result);
 void mock_database_engine_set_execute_result(bool success);
@@ -50,6 +51,8 @@ void mock_database_engine_set_health_check_result(bool result);
 void mock_database_engine_set_execute_error_class(DatabaseErrorClass err_class);
 int mock_database_engine_get_execute_call_count(void);
 void mock_database_engine_reset_execute_call_count(void);
+int mock_database_engine_get_begin_call_count(void);
+void mock_database_engine_reset_begin_call_count(void);
 
 // database_get_readiness override: when armed, mock_database_get_readiness
 // copies the provided snapshot into the caller's buffer and returns all_ready.
