@@ -90,6 +90,7 @@ int  mock_libfbc_get_isc_detach_database_call_count(void);
 int  mock_libfbc_get_isc_dsql_execute_immediate_call_count(void);
 int  mock_libfbc_get_isc_dsql_execute_call_count(void);
 int  mock_libfbc_get_isc_dsql_execute2_call_count(void);
+int  mock_libfbc_get_fb_cancel_operation_call_count(void);
 void mock_libfbc_get_last_attach_args(const char** dbname, const char** params);
 
 /* Extended control for isc_dsql_describe_bind mock to fill in SQLDA */

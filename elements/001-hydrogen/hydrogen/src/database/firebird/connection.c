@@ -280,18 +280,18 @@ bool firebird_connect(ConnectionConfig* config, DatabaseHandle** connection, con
     bool db_path_is_absolute = (db_path[0] == '/');
     char* db_name = NULL;
 
-    if (config->host && *config->host &&
-        strcmp(config->host, "localhost") != 0 &&
-        strcmp(config->host, "127.0.0.1") != 0) {
-        // Remote host — build "host/port:/path" or "host:/path"
-        size_t host_len = strlen(config->host);
-        size_t path_len = strlen(db_path);
-        db_name = malloc(host_len + path_len + 32);
-        if (!db_name) {
-            free(attach_params);
-            firebird_destroy_connection_wrapper(fb_conn);
-            return false;
-        }
+     if (config->host && *config->host &&
+         strcmp(config->host, "localhost") != 0 &&
+         strcmp(config->host, "127.0.0.1") != 0) {
+         // Remote host — build "host/port:/path" or "host:/path"
+         size_t host_len = strlen(config->host);
+         size_t path_len = strlen(db_path);
+          db_name = malloc(host_len + path_len + 32);
+          if (!db_name) {
+             free(attach_params);
+             firebird_destroy_connection_wrapper(fb_conn);
+             return false;
+         }
         if (config->port > 0) {
             if (db_path_is_absolute) {
                 snprintf(db_name, host_len + path_len + 32, "%s/%d:%s", config->host, config->port, db_path);
@@ -343,18 +343,18 @@ bool firebird_connect(ConnectionConfig* config, DatabaseHandle** connection, con
     fb_status_t status[FB_STATUS_LENGTH];
     memset(status, 0, sizeof(status));
 
-    pthread_mutex_lock(&firebird_attach_mutex);
-    fb_status_t result = isc_attach_database_ptr(
-        status,
-        (short)(db_name ? strlen(db_name) : 0),
-        db_name,
-        &fb_conn->db_handle,
-        (short)dpb_len,
-        attach_params
-    );
-    pthread_mutex_unlock(&firebird_attach_mutex);
+     pthread_mutex_lock(&firebird_attach_mutex);
+     fb_status_t result = isc_attach_database_ptr(
+         status,
+         (short)(db_name ? strlen(db_name) : 0),
+         db_name,
+         &fb_conn->db_handle,
+         (short)dpb_len,
+         attach_params
+     );
+      pthread_mutex_unlock(&firebird_attach_mutex);
 
-    free(attach_params);
+     free(attach_params);
     free(db_name);
 
     if (result != FB_SQL_SUCCESS && result != FB_SQL_SUCCESS_INFO) {
@@ -363,8 +363,8 @@ bool firebird_connect(ConnectionConfig* config, DatabaseHandle** connection, con
         return false;
     }
 
-    DatabaseHandle* db_handle = calloc(1, sizeof(DatabaseHandle));
-    if (!db_handle) {
+     DatabaseHandle* db_handle = calloc(1, sizeof(DatabaseHandle));
+     if (!db_handle) {
         if (isc_detach_database_ptr) {
             isc_detach_database_ptr(status, &fb_conn->db_handle);
         }
@@ -383,8 +383,8 @@ bool firebird_connect(ConnectionConfig* config, DatabaseHandle** connection, con
     db_handle->consecutive_failures = 0;
     pthread_mutex_init(&db_handle->connection_lock, NULL);
 
-    *connection = db_handle;
-    return true;
+     *connection = db_handle;
+     return true;
 }
 
 bool firebird_disconnect(DatabaseHandle* connection) {

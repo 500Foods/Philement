@@ -72,9 +72,11 @@ static const char* last_attach_params = NULL;
  */
 fb_status_t mock_isc_attach_database(fb_status_t* status, short name_length, const char* name,
                                       void** db_handle, short param_length, const char* params) {
-    mock_isc_attach_database_calls++;
-    last_attach_dbname = name;
-    last_attach_params = params;
+     mock_isc_attach_database_calls++;
+     free((void*)last_attach_dbname);
+     last_attach_dbname = name ? strdup(name) : NULL;
+     free((void*)last_attach_params);
+     last_attach_params = params ? strdup(params) : NULL;
     (void)name_length;
     (void)param_length;
 
@@ -398,8 +400,10 @@ void mock_libfbc_reset_all(void) {
     mock_isc_dsql_describe_bind_calls = 0;
     mock_fb_cancel_operation_calls = 0;
 
-    last_attach_dbname = NULL;
-    last_attach_params = NULL;
+     free((void*)last_attach_dbname);
+     free((void*)last_attach_params);
+     last_attach_dbname = NULL;
+     last_attach_params = NULL;
 }
 
 void mock_libfbc_set_isc_attach_database_result(int result) {
@@ -506,6 +510,10 @@ int mock_libfbc_get_isc_dsql_execute_call_count(void) {
 
 int mock_libfbc_get_isc_dsql_execute2_call_count(void) {
     return mock_isc_dsql_execute2_calls;
+}
+
+int mock_libfbc_get_fb_cancel_operation_call_count(void) {
+    return mock_fb_cancel_operation_calls;
 }
 
 void mock_libfbc_get_last_attach_args(const char** dbname, const char** params) {
