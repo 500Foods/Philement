@@ -1,0 +1,769 @@
+        -:    0:Source:/mnt/extra/Projects/Philement/elements/001-hydrogen/hydrogen/src/database/firebird/query.c
+        -:    0:Graph:build/unity/src/database/firebird/query.gcno
+        -:    0:Data:build/unity/src/database/firebird/query.gcda
+        -:    0:Runs:9
+        -:    1:/*
+        -:    2: * Firebird Database Engine - Query Execution
+        -:    3: *
+        -:    4: * Implements firebird_execute_query / firebird_execute_prepared via
+        -:    5: * isc_dsql allocate / prepare / execute / fetch. Parity with other engines:
+        -:    6: * results returned as JSON array of row objects.
+        -:    7: *
+        -:    8: * Row JSON, blobs, and XSQLDA buffers: query_result.c.
+        -:    9: * Parameter binding and the DATEADD rewrite: query_bind.c.
+        -:   10: */
+        -:   11:
+        -:   12:#include <src/hydrogen.h>
+        -:   13:#include <src/database/database.h>
+        -:   14:#include <src/database/database_params.h>
+        -:   15:
+        -:   16:#include "types.h"
+        -:   17:#include "connection.h"
+        -:   18:#include "transaction.h"
+        -:   19:#include "utils.h"
+        -:   20:#include "query_internal.h"
+        -:   21:
+        -:   22:#include <ctype.h>
+        -:   23:
+        -:   24:/*
+        -:   25: * True when SQL is expected to produce a result set (prepare/fetch path).
+        -:   26: * DDL/DML without rows uses isc_dsql_execute_immediate — prepare+XSQLDA on
+        -:   27: * large CREATE OR ALTER FUNCTION bodies has corrupted the Firebird client heap.
+        -:   28: */
+       28:   29:bool firebird_sql_expects_rows(const char* sql) {
+       28:   30:    const char* p = sql;
+       28:   31:    if (!p) {
+        1:   32:        return false;
+        -:   33:    }
+        -:   34:    for (;;) {
+       41:   35:        while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') {
+       10:   36:            p++;
+        -:   37:        }
+       31:   38:        if (p[0] == '-' && p[1] == '-') {
+       29:   39:            while (*p && *p != '\n') {
+       27:   40:                p++;
+        -:   41:            }
+        2:   42:            continue;
+        -:   43:        }
+       29:   44:        if (p[0] == '/' && p[1] == '*') {
+        2:   45:            p += 2;
+       32:   46:            while (*p && !(p[0] == '*' && p[1] == '/')) {
+       30:   47:                p++;
+        -:   48:            }
+        2:   49:            if (*p) {
+        1:   50:                p += 2;
+        -:   51:            }
+        2:   52:            continue;
+        -:   53:        }
+       27:   54:        break;
+        -:   55:    }
+       27:   56:    if (strncasecmp(p, "SELECT", 6) == 0) {
+        8:   57:        unsigned char c = (unsigned char)p[6];
+        8:   58:        if (c == '\0' || (!isalnum(c) && c != '_')) {
+        7:   59:            return true;
+        -:   60:        }
+        -:   61:    }
+       20:   62:    if (strncasecmp(p, "WITH", 4) == 0) {
+        3:   63:        unsigned char c = (unsigned char)p[4];
+        3:   64:        if (c == '\0' || (!isalnum(c) && c != '_')) {
+        2:   65:            return true;
+        -:   66:        }
+        -:   67:    }
+        -:   68:    /* INSERT/UPDATE … RETURNING yields a result set (e.g. QueryRef #051). */
+        -:   69:    {
+       18:   70:        const char* s = p;
+      397:   71:        while (*s) {
+      382:   72:            if ((s[0] == 'R' || s[0] == 'r') &&
+       23:   73:                strncasecmp(s, "RETURNING", 9) == 0) {
+        4:   74:                unsigned char c = (unsigned char)s[9];
+        4:   75:                if (c == '\0' || (!isalnum(c) && c != '_')) {
+        3:   76:                    return true;
+        -:   77:                }
+        -:   78:            }
+      379:   79:            s++;
+        -:   80:        }
+        -:   81:    }
+       15:   82:    return false;
+        -:   83:}
+        -:   84:
+       23:   85:QueryResult* firebird_build_error_result(const char* error_msg, DatabaseErrorClass err_class) {
+       23:   86:    QueryResult* db_result = calloc(1, sizeof(QueryResult));
+       23:   87:    if (!db_result) {
+        2:   88:        return NULL;
+        -:   89:    }
+       21:   90:    db_result->success = false;
+       21:   91:    db_result->error_class = err_class;
+       21:   92:    db_result->error_message = error_msg ? strdup(error_msg) : strdup("Firebird query failed");
+       21:   93:    db_result->data_json = strdup("[]");
+       21:   94:    db_result->row_count = 0;
+       21:   95:    db_result->column_count = 0;
+       21:   96:    db_result->affected_rows = -1;
+       21:   97:    return db_result;
+        -:   98:}
+        -:   99:
+        -:  100:
+        -:  101:/*
+        -:  102: * isc_info_sql_stmt_type after prepare. Returns 0 when the info call is
+        -:  103: * unavailable so the caller can keep the SELECT/RETURNING text heuristic.
+        -:  104: * INSERT/UPDATE/DELETE … RETURNING that Firebird proves is a singleton is
+        -:  105: * FB_STMT_EXEC_PROCEDURE, not a selectable cursor.
+        -:  106: */
+        9:  107:short firebird_statement_type(void* stmt_handle, const char* desig) {
+        9:  108:    if (!stmt_handle || !isc_dsql_sql_info_ptr) {
+        2:  109:        return 0;
+        -:  110:    }
+        -:  111:
+        7:  112:    char item = (char)FB_INFO_SQL_STMT_TYPE;
+        -:  113:    char info[8];
+        7:  114:    memset(info, 0, sizeof(info));
+        -:  115:
+        -:  116:    fb_status_t status[FB_STATUS_LENGTH];
+        7:  117:    memset(status, 0, sizeof(status));
+        7:  118:    fb_status_t rc = isc_dsql_sql_info_ptr(
+        -:  119:        status, &stmt_handle, 1, &item, (short)sizeof(info), info);
+        7:  120:    if (rc != FB_SQL_SUCCESS && rc != FB_SQL_SUCCESS_INFO) {
+        1:  121:        firebird_status_to_error(status, desig);
+        1:  122:        return 0;
+        -:  123:    }
+        6:  124:    if ((unsigned char)info[0] != (unsigned char)FB_INFO_SQL_STMT_TYPE) {
+        1:  125:        return 0;
+        -:  126:    }
+        -:  127:
+        5:  128:    int len = (unsigned char)info[1] | ((unsigned char)info[2] << 8);
+        -:  129:    /* info[8] is item + 2-byte length + at most 4 value bytes. */
+        5:  130:    if (len < 1 || len > 4) {
+        2:  131:        return 0;
+        -:  132:    }
+        -:  133:
+        3:  134:    int type = 0;
+        6:  135:    for (int i = 0; i < len; i++) {
+        3:  136:        type |= ((unsigned char)info[3 + i]) << (8 * i);
+        -:  137:    }
+        3:  138:    return (short)type;
+        -:  139:}
+        -:  140:
+        -:  141:/* Insert + update + delete counts from isc_info_sql_records. -1 if unavailable. */
+       38:  142:int firebird_rows_affected(void* stmt_handle) {
+        -:  143:    char item;
+        -:  144:    char info[64];
+        -:  145:    fb_status_t status[FB_STATUS_LENGTH];
+        -:  146:    fb_status_t rc;
+        -:  147:    int cluster;
+        -:  148:    int pos;
+        -:  149:    int end;
+       38:  150:    int changed = 0;
+        -:  151:
+       38:  152:    if (!stmt_handle || !isc_dsql_sql_info_ptr) {
+        6:  153:        return -1;
+        -:  154:    }
+       32:  155:    item = (char)FB_INFO_SQL_RECORDS;
+       32:  156:    memset(info, 0, sizeof(info));
+       32:  157:    memset(status, 0, sizeof(status));
+       32:  158:    rc = isc_dsql_sql_info_ptr(
+        -:  159:        status, &stmt_handle, 1, &item, (short)sizeof(info), info);
+       32:  160:    if (rc != FB_SQL_SUCCESS && rc != FB_SQL_SUCCESS_INFO) {
+        3:  161:        return -1;
+        -:  162:    }
+       29:  163:    if ((unsigned char)info[0] != (unsigned char)FB_INFO_SQL_RECORDS) {
+        3:  164:        return -1;
+        -:  165:    }
+       26:  166:    cluster = (unsigned char)info[1] | ((unsigned char)info[2] << 8);
+       26:  167:    if (cluster < 1) {
+        6:  168:        return 0;
+        -:  169:    }
+       20:  170:    pos = 3;
+       20:  171:    end = 3 + cluster;
+       20:  172:    if (end > (int)sizeof(info)) {
+        3:  173:        end = (int)sizeof(info);
+        -:  174:    }
+       38:  175:    while (pos < end) {
+        -:  176:        unsigned char code;
+        -:  177:        int vlen;
+       26:  178:        int value = 0;
+        -:  179:        int i;
+       26:  180:        code = (unsigned char)info[pos];
+       26:  181:        pos++;
+       26:  182:        if (code == (unsigned char)FB_INFO_END) {
+        6:  183:            break;
+        -:  184:        }
+       20:  185:        if (pos + 2 > end) {
+        1:  186:            break;
+        -:  187:        }
+       19:  188:        vlen = (unsigned char)info[pos] | ((unsigned char)info[pos + 1] << 8);
+       19:  189:        pos += 2;
+       19:  190:        if (vlen < 1 || pos + vlen > end) {
+        -:  191:            break;
+        -:  192:        }
+       90:  193:        for (i = 0; i < vlen && i < 4; i++) {
+       72:  194:            value |= ((unsigned char)info[pos + i]) << (8 * i);
+        -:  195:        }
+       18:  196:        pos += vlen;
+       18:  197:        if (code == (unsigned char)FB_INFO_REQ_INSERT_COUNT ||
+        6:  198:            code == (unsigned char)FB_INFO_REQ_UPDATE_COUNT ||
+        -:  199:            code == (unsigned char)FB_INFO_REQ_DELETE_COUNT) {
+       18:  200:            changed += value;
+        -:  201:        }
+        -:  202:    }
+       20:  203:    return changed;
+        -:  204:}
+        -:  205:
+       17:  206:bool firebird_execute_sql(DatabaseHandle* connection,
+        -:  207:                          const char* sql,
+        -:  208:                          const char* parameters_json,
+        -:  209:                          QueryResult** result) {
+       17:  210:    if (!connection || connection->engine_type != DB_ENGINE_FIREBIRD || !sql || !result) {
+        4:  211:        return false;
+        -:  212:    }
+        -:  213:
+       13:  214:    const char* desig = firebird_designator_safe(connection);
+       13:  215:    FirebirdConnection* fb_conn = (FirebirdConnection*)connection->connection_handle;
+       13:  216:    if (!fb_conn || !fb_conn->db_handle) {
+        2:  217:        *result = firebird_build_error_result("Invalid Firebird connection handle", DB_ERR_TRANSPORT);
+        2:  218:        return false;
+        -:  219:    }
+        -:  220:
+       11:  221:    if (!isc_dsql_allocate_ptr || !isc_dsql_prepare_ptr || !isc_dsql_execute_ptr ||
+       10:  222:        !isc_dsql_fetch_ptr || !isc_dsql_free_statement_ptr) {
+        1:  223:        *result = firebird_build_error_result("Firebird DSQL function pointers unavailable", DB_ERR_TRANSPORT);
+        1:  224:        return false;
+        -:  225:    }
+        -:  226:
+       10:  227:    ParameterList* param_list = NULL;
+       10:  228:    TypedParameter** ordered_params = NULL;
+       10:  229:    size_t ordered_count = 0;
+       10:  230:    char* positional_sql = NULL;
+       10:  231:    const char* sql_to_execute = sql;
+        -:  232:
+        -:  233:    /* Empty / "{}" — leave SQL unchanged (migrations). */
+       10:  234:    bool has_params = parameters_json && strlen(parameters_json) > 2;
+       10:  235:    if (has_params) {
+        1:  236:        param_list = parse_typed_parameters(parameters_json, desig);
+        1:  237:        if (!param_list) {
+        1:  238:            *result = firebird_build_error_result("Failed to parse Firebird parameters", DB_ERR_OTHER);
+        1:  239:            return false;
+        -:  240:        }
+    #####:  241:        positional_sql = convert_named_to_positional(
+        -:  242:            sql, param_list, DB_ENGINE_FIREBIRD,
+        -:  243:            &ordered_params, &ordered_count, desig);
+    #####:  244:        if (!positional_sql) {
+    #####:  245:            free_parameter_list(param_list);
+    #####:  246:            *result = firebird_build_error_result("Failed to convert Firebird named parameters", DB_ERR_OTHER);
+    #####:  247:            return false;
+        -:  248:        }
+    #####:  249:        sql_to_execute = positional_sql;
+        -:  250:    }
+        -:  251:
+        -:  252:    /* Legacy DATEADD(+/- ? UNIT TO …) → DATEADD(UNIT, 0 +/- ?, …) for already-loaded QueryRefs. */
+        -:  253:    {
+        9:  254:        bool rewrite_oom = false;
+        9:  255:        char* rewritten = firebird_rewrite_dateadd_params(sql_to_execute, &rewrite_oom);
+        9:  256:        if (rewrite_oom) {
+    #####:  257:            free(positional_sql);
+    #####:  258:            free(ordered_params);
+    #####:  259:            free_parameter_list(param_list);
+    #####:  260:            *result = firebird_build_error_result("Out of memory rewriting Firebird DATEADD", DB_ERR_OTHER);
+    #####:  261:            return false;
+        -:  262:        }
+        9:  263:        if (rewritten) {
+    #####:  264:            free(positional_sql);
+    #####:  265:            positional_sql = rewritten;
+    #####:  266:            sql_to_execute = positional_sql;
+        -:  267:        }
+        -:  268:    }
+        -:  269:
+        -:  270:    /* LENGTH() and untyped division, for QueryRefs already stored on disk. */
+        -:  271:    {
+        9:  272:        bool rewrite_oom = false;
+        9:  273:        char* rewritten = firebird_rewrite_engine_sql(sql_to_execute, &rewrite_oom);
+        9:  274:        if (rewrite_oom) {
+        1:  275:            free(positional_sql);
+        1:  276:            free(ordered_params);
+        1:  277:            free_parameter_list(param_list);
+        1:  278:            *result = firebird_build_error_result("Out of memory rewriting Firebird SQL", DB_ERR_OTHER);
+        1:  279:            return false;
+        -:  280:        }
+        8:  281:        if (rewritten) {
+    #####:  282:            free(positional_sql);
+    #####:  283:            positional_sql = rewritten;
+    #####:  284:            sql_to_execute = positional_sql;
+        -:  285:        }
+        -:  286:    }
+        -:  287:
+        8:  288:    bool own_txn = false;
+        8:  289:    void* stmt_handle = NULL;
+        8:  290:    fb_xsqlda_min* out_sqlda = NULL;
+        8:  291:    fb_xsqlda_min* in_sqlda = NULL;
+        8:  292:    bool out_buffers_owned = false;
+        8:  293:    bool in_buffers_owned = false;
+        -:  294:    fb_status_t status[FB_STATUS_LENGTH];
+        -:  295:    fb_status_t rc;
+        8:  296:    QueryResult* db_result = calloc(1, sizeof(QueryResult));
+        8:  297:    if (!db_result) {
+    #####:  298:        free(positional_sql);
+    #####:  299:        free(ordered_params);
+    #####:  300:        free_parameter_list(param_list);
+    #####:  301:        return false;
+        -:  302:    }
+        8:  303:    db_result->success = false;
+        8:  304:    db_result->error_class = DB_ERR_OTHER;
+        -:  305:
+        -:  306:    /* Ensure a transaction exists (migrations begin one; ad-hoc queries may not). */
+        8:  307:    if (fb_conn->tr_handle == NULL) {
+        8:  308:        if (!isc_start_transaction_ptr) {
+        1:  309:            free(db_result);
+        1:  310:            free(positional_sql);
+        1:  311:            free(ordered_params);
+        1:  312:            free_parameter_list(param_list);
+        1:  313:            *result = firebird_build_error_result("Firebird start_transaction unavailable", DB_ERR_TRANSPORT);
+        1:  314:            return false;
+        -:  315:        }
+        7:  316:        const char* tpb = firebird_build_tpb(DB_ISOLATION_READ_COMMITTED);
+        7:  317:        memset(status, 0, sizeof(status));
+        7:  318:        rc = isc_start_transaction_ptr(
+        -:  319:            status, &fb_conn->tr_handle, 1, &fb_conn->db_handle,
+        7:  320:            (short)strlen(tpb), tpb);
+        7:  321:        if ((rc != FB_SQL_SUCCESS && rc != FB_SQL_SUCCESS_INFO) || !fb_conn->tr_handle) {
+        1:  322:            firebird_status_to_error(status, desig);
+        1:  323:            free(db_result);
+        1:  324:            free(positional_sql);
+        1:  325:            free(ordered_params);
+        1:  326:            free_parameter_list(param_list);
+        1:  327:            *result = firebird_build_error_result("Firebird failed to start transaction", DB_ERR_TRANSPORT);
+        1:  328:            return false;
+        -:  329:        }
+        6:  330:        own_txn = true;
+        -:  331:    }
+        -:  332:
+        6:  333:    bool expects_rows = firebird_sql_expects_rows(sql_to_execute);
+        -:  334:    /* Parameterized non-DDL uses prepare+execute; migrations keep execute_immediate. */
+       6*:  335:    bool use_prepare = expects_rows || ordered_count > 0;
+        -:  336:
+        6:  337:    if (!use_prepare) {
+        6:  338:        if (!isc_dsql_execute_immediate_ptr) {
+    #####:  339:            if (own_txn && fb_conn->tr_handle && isc_rollback_transaction_ptr) {
+    #####:  340:                memset(status, 0, sizeof(status));
+    #####:  341:                (void)isc_rollback_transaction_ptr(status, &fb_conn->tr_handle);
+    #####:  342:                fb_conn->tr_handle = NULL;
+        -:  343:            }
+    #####:  344:            free(db_result);
+    #####:  345:            free(positional_sql);
+    #####:  346:            free(ordered_params);
+    #####:  347:            free_parameter_list(param_list);
+    #####:  348:            *result = firebird_build_error_result("Firebird execute_immediate unavailable", DB_ERR_TRANSPORT);
+    #####:  349:            return false;
+        -:  350:        }
+        6:  351:        memset(status, 0, sizeof(status));
+        6:  352:        rc = isc_dsql_execute_immediate_ptr(
+        -:  353:            status, &fb_conn->db_handle, &fb_conn->tr_handle,
+        -:  354:            0, sql_to_execute, 3, NULL);
+        6:  355:        if (rc != FB_SQL_SUCCESS && rc != FB_SQL_SUCCESS_INFO) {
+        1:  356:            firebird_status_to_error(status, desig);
+        1:  357:            if (own_txn && fb_conn->tr_handle && isc_rollback_transaction_ptr) {
+        1:  358:                memset(status, 0, sizeof(status));
+        1:  359:                (void)isc_rollback_transaction_ptr(status, &fb_conn->tr_handle);
+        1:  360:                fb_conn->tr_handle = NULL;
+        -:  361:            }
+       1*:  362:            log_this(desig, "Firebird query failed SQL: %.200s%s", LOG_LEVEL_ERROR, 2,
+        1:  363:                     sql_to_execute, strlen(sql_to_execute) > 200 ? "..." : "");
+        1:  364:            db_result->error_class = DB_ERR_OTHER;
+        1:  365:            db_result->error_message = strdup("Firebird query failed");
+        1:  366:            db_result->data_json = strdup("[]");
+        1:  367:            free(positional_sql);
+        1:  368:            free(ordered_params);
+        1:  369:            free_parameter_list(param_list);
+        1:  370:            *result = db_result;
+        1:  371:            return false;
+        -:  372:        }
+        5:  373:        db_result->success = true;
+        5:  374:        db_result->error_class = DB_ERR_NONE;
+        5:  375:        db_result->data_json = strdup("[]");
+        5:  376:        db_result->row_count = 0;
+        5:  377:        db_result->affected_rows = 0;
+        5:  378:        if (own_txn && fb_conn->tr_handle && isc_commit_transaction_ptr) {
+        5:  379:            memset(status, 0, sizeof(status));
+        5:  380:            rc = isc_commit_transaction_ptr(status, &fb_conn->tr_handle);
+        5:  381:            fb_conn->tr_handle = NULL;
+       5*:  382:            if (rc != FB_SQL_SUCCESS && rc != FB_SQL_SUCCESS_INFO) {
+    #####:  383:                firebird_status_to_error(status, desig);
+    #####:  384:                database_engine_cleanup_result(db_result);
+    #####:  385:                free(positional_sql);
+    #####:  386:                free(ordered_params);
+    #####:  387:                free_parameter_list(param_list);
+    #####:  388:                *result = firebird_build_error_result("Firebird commit failed after query", DB_ERR_TRANSPORT);
+    #####:  389:                return false;
+        -:  390:            }
+        -:  391:        }
+        5:  392:        free(positional_sql);
+        5:  393:        free(ordered_params);
+        5:  394:        free_parameter_list(param_list);
+        5:  395:        *result = db_result;
+        5:  396:        return true;
+        -:  397:    }
+        -:  398:
+    #####:  399:    memset(status, 0, sizeof(status));
+    #####:  400:    rc = isc_dsql_allocate_ptr(status, &fb_conn->db_handle, &stmt_handle);
+    #####:  401:    if (rc != FB_SQL_SUCCESS && rc != FB_SQL_SUCCESS_INFO) {
+    #####:  402:        firebird_status_to_error(status, desig);
+    #####:  403:        goto fail_transport;
+        -:  404:    }
+    #####:  405:    firebird_active_stmt_set(connection, stmt_handle);
+        -:  406:
+    #####:  407:    out_sqlda = firebird_alloc_sqlda(FB_SQLDA_INIT_COLS);
+    #####:  408:    if (!out_sqlda) {
+    #####:  409:        goto fail_other;
+        -:  410:    }
+        -:  411:
+    #####:  412:    memset(status, 0, sizeof(status));
+    #####:  413:    rc = isc_dsql_prepare_ptr(
+        -:  414:        status, &fb_conn->tr_handle, &stmt_handle,
+        -:  415:        0, sql_to_execute, 3, out_sqlda);
+    #####:  416:    if (rc != FB_SQL_SUCCESS && rc != FB_SQL_SUCCESS_INFO) {
+    #####:  417:        firebird_status_to_error(status, desig);
+    #####:  418:        goto fail_other;
+        -:  419:    }
+        -:  420:
+        -:  421:    /* Prepare fills descriptors only; never free engine-owned pointers. */
+    #####:  422:    for (short ci = 0; ci < out_sqlda->sqln; ci++) {
+    #####:  423:        out_sqlda->sqlvar[ci].sqldata = NULL;
+    #####:  424:        out_sqlda->sqlvar[ci].sqlind = NULL;
+        -:  425:    }
+        -:  426:
+    #####:  427:    if (out_sqlda->sqld > out_sqlda->sqln) {
+    #####:  428:        short need = out_sqlda->sqld;
+    #####:  429:        if (need > 512) {
+    #####:  430:            firebird_status_to_error(status, desig);
+    #####:  431:            goto fail_other;
+        -:  432:        }
+    #####:  433:        firebird_free_sqlda_buffers(out_sqlda);
+    #####:  434:        free(out_sqlda);
+    #####:  435:        out_sqlda = firebird_alloc_sqlda(need);
+    #####:  436:        if (!out_sqlda) {
+    #####:  437:            goto fail_other;
+        -:  438:        }
+    #####:  439:        memset(status, 0, sizeof(status));
+    #####:  440:        rc = isc_dsql_prepare_ptr(
+        -:  441:            status, &fb_conn->tr_handle, &stmt_handle,
+        -:  442:            0, sql_to_execute, 3, out_sqlda);
+    #####:  443:        if (rc != FB_SQL_SUCCESS && rc != FB_SQL_SUCCESS_INFO) {
+    #####:  444:            firebird_status_to_error(status, desig);
+    #####:  445:            goto fail_other;
+        -:  446:        }
+    #####:  447:        for (short ci = 0; ci < out_sqlda->sqln; ci++) {
+    #####:  448:            out_sqlda->sqlvar[ci].sqldata = NULL;
+    #####:  449:            out_sqlda->sqlvar[ci].sqlind = NULL;
+        -:  450:        }
+        -:  451:    }
+        -:  452:
+    #####:  453:    if (out_sqlda->sqld > 0) {
+    #####:  454:        if (!firebird_bind_sqlda_buffers(out_sqlda)) {
+    #####:  455:            goto fail_other;
+        -:  456:        }
+    #####:  457:        out_buffers_owned = true;
+        -:  458:    }
+        -:  459:
+    #####:  460:    if (ordered_count > 0) {
+    #####:  461:        if (!firebird_build_input_sqlda(&stmt_handle, ordered_params, ordered_count, &in_sqlda, desig)) {
+    #####:  462:            goto fail_other;
+        -:  463:        }
+    #####:  464:        in_buffers_owned = (in_sqlda != NULL && in_sqlda->sqld > 0);
+        -:  465:    }
+        -:  466:
+    #####:  467:    short stmt_type = firebird_statement_type(stmt_handle, desig);
+    #####:  468:    bool exec_proc = (stmt_type == FB_STMT_EXEC_PROCEDURE);
+        -:  469:    /*
+        -:  470:     * Selectable statements are fetched. A singleton RETURNING statement is
+        -:  471:     * exec_procedure: isc_dsql_execute2 writes the one output row, and
+        -:  472:     * isc_dsql_fetch on it returns SQLCODE -504 (cursor is not open).
+        -:  473:     * stmt_type 0 keeps the previous text heuristic for mock builds.
+        -:  474:     */
+    #####:  475:    bool fetch_rows = false;
+    #####:  476:    if (!exec_proc) {
+    #####:  477:        if (stmt_type == FB_STMT_SELECT || stmt_type == FB_STMT_SELECT_FOR_UPD) {
+    #####:  478:            fetch_rows = true;
+    #####:  479:        } else if (stmt_type == 0 && (expects_rows || (out_sqlda && out_sqlda->sqld > 0))) {
+    #####:  480:            fetch_rows = true;
+        -:  481:        }
+        -:  482:    }
+        -:  483:
+    #####:  484:    memset(status, 0, sizeof(status));
+    #####:  485:    if (exec_proc) {
+    #####:  486:        if (!isc_dsql_execute2_ptr) {
+    #####:  487:            db_result->error_message = strdup("Firebird execute2 unavailable");
+    #####:  488:            goto fail_transport;
+        -:  489:        }
+    #####:  490:        const void* out_arg = (out_sqlda && out_sqlda->sqld > 0) ? (const void*)out_sqlda : NULL;
+    #####:  491:        rc = isc_dsql_execute2_ptr(
+        -:  492:            status, &fb_conn->tr_handle, &stmt_handle, 1,
+        -:  493:            in_sqlda ? (const void*)in_sqlda : NULL, out_arg);
+    #####:  494:        if (rc == FB_FETCH_EOF) {
+        -:  495:            /* Singleton RETURNING matched zero rows. */
+    #####:  496:            exec_proc = false;
+    #####:  497:            rc = FB_SQL_SUCCESS;
+        -:  498:        }
+        -:  499:    } else {
+    #####:  500:        rc = isc_dsql_execute_ptr(status, &fb_conn->tr_handle, &stmt_handle, 1,
+        -:  501:                                  in_sqlda ? (const void*)in_sqlda : NULL);
+        -:  502:    }
+    #####:  503:    if (rc != FB_SQL_SUCCESS && rc != FB_SQL_SUCCESS_INFO) {
+    #####:  504:        firebird_status_to_error(status, desig);
+    #####:  505:        goto fail_other;
+        -:  506:    }
+        -:  507:
+    #####:  508:    bool one_row = exec_proc && out_sqlda && out_sqlda->sqld > 0;
+        -:  509:
+    #####:  510:    if (!fetch_rows && !one_row) {
+        -:  511:        /* Parameterized DML with no output columns. */
+    #####:  512:        db_result->success = true;
+    #####:  513:        db_result->error_class = DB_ERR_NONE;
+    #####:  514:        db_result->data_json = strdup("[]");
+    #####:  515:        db_result->row_count = 0;
+        -:  516:        {
+    #####:  517:            int changed_rows = firebird_rows_affected(stmt_handle);
+    #####:  518:            db_result->affected_rows = changed_rows < 0 ? 0 : changed_rows;
+        -:  519:        }
+    #####:  520:        db_result->column_count = 0;
+        -:  521:
+    #####:  522:        firebird_active_stmt_clear(connection, stmt_handle);
+    #####:  523:        memset(status, 0, sizeof(status));
+    #####:  524:        (void)isc_dsql_free_statement_ptr(status, &stmt_handle, FB_DSQL_DEALLOCATE);
+    #####:  525:        stmt_handle = NULL;
+    #####:  526:        if (in_buffers_owned) {
+    #####:  527:            firebird_free_sqlda_buffers(in_sqlda);
+        -:  528:        }
+    #####:  529:        free(in_sqlda);
+    #####:  530:        in_sqlda = NULL;
+    #####:  531:        if (out_buffers_owned) {
+    #####:  532:            firebird_free_sqlda_buffers(out_sqlda);
+        -:  533:        }
+    #####:  534:        free(out_sqlda);
+    #####:  535:        out_sqlda = NULL;
+        -:  536:
+    #####:  537:        if (own_txn && fb_conn->tr_handle && isc_commit_transaction_ptr) {
+    #####:  538:            memset(status, 0, sizeof(status));
+    #####:  539:            rc = isc_commit_transaction_ptr(status, &fb_conn->tr_handle);
+    #####:  540:            fb_conn->tr_handle = NULL;
+    #####:  541:            if (rc != FB_SQL_SUCCESS && rc != FB_SQL_SUCCESS_INFO) {
+    #####:  542:                firebird_status_to_error(status, desig);
+    #####:  543:                database_engine_cleanup_result(db_result);
+    #####:  544:                free(positional_sql);
+    #####:  545:                free(ordered_params);
+    #####:  546:                free_parameter_list(param_list);
+    #####:  547:                *result = firebird_build_error_result("Firebird commit failed after query", DB_ERR_TRANSPORT);
+    #####:  548:                return false;
+        -:  549:            }
+        -:  550:        }
+    #####:  551:        free(positional_sql);
+    #####:  552:        free(ordered_params);
+    #####:  553:        free_parameter_list(param_list);
+    #####:  554:        *result = db_result;
+    #####:  555:        return true;
+        -:  556:    }
+        -:  557:
+    #####:  558:    db_result->column_count = (size_t)(out_sqlda->sqld > 0 ? out_sqlda->sqld : 0);
+    #####:  559:    if (db_result->column_count > 0) {
+    #####:  560:        db_result->column_names = calloc(db_result->column_count, sizeof(char*));
+    #####:  561:        if (!db_result->column_names) {
+    #####:  562:            goto fail_other;
+        -:  563:        }
+    #####:  564:        for (size_t i = 0; i < db_result->column_count; i++) {
+        -:  565:            char label[33];
+    #####:  566:            firebird_column_label_copy(&out_sqlda->sqlvar[i], label, sizeof(label));
+    #####:  567:            db_result->column_names[i] = strdup(label[0] ? label : "col");
+    #####:  568:            if (!db_result->column_names[i]) {
+    #####:  569:                goto fail_other;
+        -:  570:            }
+        -:  571:        }
+        -:  572:    }
+        -:  573:
+    #####:  574:    size_t json_cap = 1024;
+    #####:  575:    size_t json_size = 0;
+    #####:  576:    char* json_buf = calloc(1, json_cap);
+    #####:  577:    if (!json_buf) {
+    #####:  578:        goto fail_other;
+        -:  579:    }
+    #####:  580:    if (!firebird_json_buffer_append(&json_buf, &json_size, &json_cap, "[")) {
+    #####:  581:        free(json_buf);
+    #####:  582:        goto fail_other;
+        -:  583:    }
+        -:  584:
+    #####:  585:    size_t row_count = 0;
+    #####:  586:    if (out_sqlda->sqld > 0 && (fetch_rows || one_row)) {
+        -:  587:        for (;;) {
+    #####:  588:            if (!one_row) {
+    #####:  589:                memset(status, 0, sizeof(status));
+    #####:  590:                rc = isc_dsql_fetch_ptr(status, &stmt_handle, 1, out_sqlda);
+    #####:  591:                if (rc == FB_FETCH_EOF) {
+    #####:  592:                    break;
+        -:  593:                }
+    #####:  594:                if (rc != FB_SQL_SUCCESS && rc != FB_SQL_SUCCESS_INFO) {
+    #####:  595:                    firebird_status_to_error(status, desig);
+    #####:  596:                    free(json_buf);
+    #####:  597:                    goto fail_other;
+        -:  598:                }
+        -:  599:            }
+    #####:  600:            if (row_count > 0) {
+    #####:  601:                if (!firebird_json_buffer_append(&json_buf, &json_size, &json_cap, ",")) {
+    #####:  602:                    free(json_buf);
+    #####:  603:                    goto fail_other;
+        -:  604:                }
+        -:  605:            }
+    #####:  606:            if (!firebird_json_buffer_append(&json_buf, &json_size, &json_cap, "{")) {
+    #####:  607:                free(json_buf);
+    #####:  608:                goto fail_other;
+        -:  609:            }
+    #####:  610:            for (size_t c = 0; c < db_result->column_count; c++) {
+    #####:  611:                if (c > 0) {
+    #####:  612:                    if (!firebird_json_buffer_append(&json_buf, &json_size, &json_cap, ",")) {
+    #####:  613:                        free(json_buf);
+    #####:  614:                        goto fail_other;
+        -:  615:                    }
+        -:  616:                }
+    #####:  617:                if (!firebird_json_append_escaped(&json_buf, &json_size, &json_cap, db_result->column_names[c])) {
+    #####:  618:                    free(json_buf);
+    #####:  619:                    goto fail_other;
+        -:  620:                }
+    #####:  621:                if (!firebird_json_buffer_append(&json_buf, &json_size, &json_cap, ":")) {
+    #####:  622:                    free(json_buf);
+    #####:  623:                    goto fail_other;
+        -:  624:                }
+    #####:  625:                if (!firebird_append_cell_json(&json_buf, &json_size, &json_cap, fb_conn, &out_sqlda->sqlvar[c])) {
+    #####:  626:                    free(json_buf);
+    #####:  627:                    goto fail_other;
+        -:  628:                }
+        -:  629:            }
+    #####:  630:            if (!firebird_json_buffer_append(&json_buf, &json_size, &json_cap, "}")) {
+    #####:  631:                free(json_buf);
+    #####:  632:                goto fail_other;
+        -:  633:            }
+    #####:  634:            row_count++;
+    #####:  635:            if (one_row) {
+    #####:  636:                break;
+        -:  637:            }
+        -:  638:        }
+        -:  639:    }
+        -:  640:
+    #####:  641:    if (!firebird_json_buffer_append(&json_buf, &json_size, &json_cap, "]")) {
+    #####:  642:        free(json_buf);
+    #####:  643:        goto fail_other;
+        -:  644:    }
+        -:  645:
+    #####:  646:    db_result->data_json = json_buf;
+    #####:  647:    db_result->row_count = row_count;
+    #####:  648:    db_result->affected_rows = (out_sqlda->sqld > 0) ? (int)row_count : 0;
+    #####:  649:    db_result->success = true;
+    #####:  650:    db_result->error_class = DB_ERR_NONE;
+        -:  651:
+    #####:  652:    firebird_active_stmt_clear(connection, stmt_handle);
+    #####:  653:    memset(status, 0, sizeof(status));
+    #####:  654:    (void)isc_dsql_free_statement_ptr(status, &stmt_handle, FB_DSQL_DEALLOCATE);
+    #####:  655:    stmt_handle = NULL;
+    #####:  656:    if (in_buffers_owned) {
+    #####:  657:        firebird_free_sqlda_buffers(in_sqlda);
+        -:  658:    }
+    #####:  659:    free(in_sqlda);
+    #####:  660:    in_sqlda = NULL;
+    #####:  661:    if (out_buffers_owned) {
+    #####:  662:        firebird_free_sqlda_buffers(out_sqlda);
+        -:  663:    }
+    #####:  664:    free(out_sqlda);
+    #####:  665:    out_sqlda = NULL;
+        -:  666:
+    #####:  667:    if (own_txn && fb_conn->tr_handle && isc_commit_transaction_ptr) {
+    #####:  668:        memset(status, 0, sizeof(status));
+    #####:  669:        rc = isc_commit_transaction_ptr(status, &fb_conn->tr_handle);
+    #####:  670:        fb_conn->tr_handle = NULL;
+    #####:  671:        if (rc != FB_SQL_SUCCESS && rc != FB_SQL_SUCCESS_INFO) {
+    #####:  672:            firebird_status_to_error(status, desig);
+    #####:  673:            database_engine_cleanup_result(db_result);
+    #####:  674:            free(positional_sql);
+    #####:  675:            free(ordered_params);
+    #####:  676:            free_parameter_list(param_list);
+    #####:  677:            *result = firebird_build_error_result("Firebird commit failed after query", DB_ERR_TRANSPORT);
+    #####:  678:            return false;
+        -:  679:        }
+        -:  680:    }
+        -:  681:
+    #####:  682:    free(positional_sql);
+    #####:  683:    free(ordered_params);
+    #####:  684:    free_parameter_list(param_list);
+    #####:  685:    *result = db_result;
+    #####:  686:    return true;
+        -:  687:
+    #####:  688:fail_transport:
+    #####:  689:    db_result->error_class = DB_ERR_TRANSPORT;
+    #####:  690:    goto fail_common;
+    #####:  691:fail_other:
+    #####:  692:    db_result->error_class = DB_ERR_OTHER;
+    #####:  693:fail_common:
+    #####:  694:    if (stmt_handle) {
+    #####:  695:        firebird_active_stmt_clear(connection, stmt_handle);
+    #####:  696:        memset(status, 0, sizeof(status));
+    #####:  697:        if (isc_dsql_free_statement_ptr) {
+    #####:  698:            (void)isc_dsql_free_statement_ptr(status, &stmt_handle, FB_DSQL_DEALLOCATE);
+        -:  699:        }
+        -:  700:    }
+    #####:  701:    if (in_buffers_owned) {
+    #####:  702:        firebird_free_sqlda_buffers(in_sqlda);
+        -:  703:    }
+    #####:  704:    free(in_sqlda);
+    #####:  705:    in_sqlda = NULL;
+    #####:  706:    if (out_buffers_owned) {
+    #####:  707:        firebird_free_sqlda_buffers(out_sqlda);
+        -:  708:    }
+    #####:  709:    free(out_sqlda);
+    #####:  710:    out_sqlda = NULL;
+    #####:  711:    if (own_txn && fb_conn->tr_handle && isc_rollback_transaction_ptr) {
+    #####:  712:        memset(status, 0, sizeof(status));
+    #####:  713:        (void)isc_rollback_transaction_ptr(status, &fb_conn->tr_handle);
+    #####:  714:        fb_conn->tr_handle = NULL;
+        -:  715:    }
+    #####:  716:    if (db_result->column_names) {
+    #####:  717:        for (size_t i = 0; i < db_result->column_count; i++) {
+    #####:  718:            free(db_result->column_names[i]);
+        -:  719:        }
+    #####:  720:        free(db_result->column_names);
+    #####:  721:        db_result->column_names = NULL;
+        -:  722:    }
+    #####:  723:    log_this(desig, "Firebird query failed SQL: %.200s%s", LOG_LEVEL_ERROR, 2,
+    #####:  724:             sql_to_execute, strlen(sql_to_execute) > 200 ? "..." : "");
+    #####:  725:    if (!db_result->error_message) {
+    #####:  726:        db_result->error_message = strdup("Firebird query failed");
+        -:  727:    }
+    #####:  728:    if (!db_result->data_json) {
+    #####:  729:        db_result->data_json = strdup("[]");
+        -:  730:    }
+    #####:  731:    free(positional_sql);
+    #####:  732:    free(ordered_params);
+    #####:  733:    free_parameter_list(param_list);
+    #####:  734:    *result = db_result;
+    #####:  735:    return false;
+        -:  736:}
+        -:  737:
+        -:  738:
+        -:  739:// cppcheck-suppress constParameterPointer
+        -:  740:// Justification: Database engine interface requires non-const QueryRequest* parameter
+        6:  741:bool firebird_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryResult** result) {
+        6:  742:    if (!connection || !request || !result || connection->engine_type != DB_ENGINE_FIREBIRD) {
+        4:  743:        return false;
+        -:  744:    }
+        2:  745:    if (!request->sql_template) {
+        1:  746:        *result = firebird_build_error_result("Missing SQL template", DB_ERR_OTHER);
+        1:  747:        return false;
+        -:  748:    }
+        1:  749:    return firebird_execute_sql(connection, request->sql_template, request->parameters_json, result);
+        -:  750:}
+        -:  751:
+        -:  752:// cppcheck-suppress constParameterPointer
+        -:  753:// Justification: Database engine interface requires non-const QueryRequest* parameter
+        7:  754:bool firebird_execute_prepared(DatabaseHandle* connection, const PreparedStatement* stmt, QueryRequest* request, QueryResult** result) {
+        7:  755:    if (!connection || !stmt || !result || connection->engine_type != DB_ENGINE_FIREBIRD) {
+        4:  756:        return false;
+        -:  757:    }
+        3:  758:    const char* sql = stmt->sql_template;
+       3*:  759:    const char* params = request ? request->parameters_json : NULL;
+        3:  760:    if (!sql) {
+        1:  761:        *result = firebird_build_error_result("Prepared statement missing SQL", DB_ERR_OTHER);
+        1:  762:        return false;
+        -:  763:    }
+        2:  764:    return firebird_execute_sql(connection, sql, params, result);
+        -:  765:}

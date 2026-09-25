@@ -13,6 +13,7 @@
 #include <stddef.h>
 
 #include "mock_libfbclient.h"
+#include <src/database/firebird/query_internal.h>
 
 /*
  * Mock control state — each function returns its configured result code
@@ -30,8 +31,15 @@ static int mock_isc_dsql_execute_immediate_result = 0;
 static int mock_isc_dsql_free_statement_result = 0;
 static int mock_isc_dsql_fetch_result = 0;
 static int mock_isc_dsql_describe_bind_result = 0;
+static fb_xsqlda_min* mock_describe_bind_sqlda_ptr = NULL;
+static short mock_describe_bind_set_sqld = 0;
+static int mock_describe_bind_should_set_sqld = 0;
+static short mock_describe_bind_sqltype = FB_SQL_TEXT;
 static int mock_fb_cancel_operation_result = 0;
-
+/* isc_dsql_sql_info mock state */
+static int mock_isc_dsql_sql_info_result = 0;
+static unsigned char mock_sql_info_data[32] = {0};
+static short mock_sql_info_data_len = 0;
 // Output handle for attach (so callers see a "real" handle)
 static void* mock_isc_attach_database_output_handle = (void*)0xDEADBEEF;
 
@@ -44,6 +52,7 @@ static int mock_isc_rollback_transaction_calls = 0;
 static int mock_isc_dsql_allocate_calls = 0;
 static int mock_isc_dsql_prepare_calls = 0;
 static int mock_isc_dsql_execute_calls = 0;
+static int mock_isc_dsql_execute2_calls = 0;
 static int mock_isc_dsql_execute_immediate_calls = 0;
 static int mock_isc_dsql_free_statement_calls = 0;
 static int mock_isc_dsql_fetch_calls = 0;
@@ -199,12 +208,61 @@ fb_status_t mock_isc_dsql_fetch(fb_status_t* status, void** stmt_handle, short u
     return (fb_status_t)mock_isc_dsql_fetch_result;
 }
 
+int mock_isc_dsql_sql_info_calls = 0;
+
+fb_status_t mock_isc_dsql_sql_info(fb_status_t* status, void** stmt_handle,
+                                    short item_len, const char* items,
+                                    short buf_len, char* buf) {
+    mock_isc_dsql_sql_info_calls++;
+    (void)stmt_handle;
+    (void)item_len;
+    (void)items;
+    if (status) {
+        memset(status, 0, 20 * sizeof(fb_status_t));
+    }
+    /* Fill the buffer with mock data if configured */
+    if (buf && mock_sql_info_data_len > 0 && mock_sql_info_data_len <= buf_len) {
+        memcpy(buf, mock_sql_info_data, (size_t)mock_sql_info_data_len);
+    } else if (buf && buf_len > 0) {
+        memset(buf, 0, (size_t)buf_len);
+    }
+    return (fb_status_t)mock_isc_dsql_sql_info_result;
+}
+
+fb_status_t mock_isc_dsql_execute2(fb_status_t* status, void** tr_handle, void** stmt_handle,
+                                     short unused1, const void* unused2, const void* unused3) {
+    mock_isc_dsql_execute2_calls++;
+    (void)tr_handle;
+    (void)stmt_handle;
+    (void)unused1;
+    (void)unused2;
+    (void)unused3;
+    if (status) {
+        memset(status, 0, 20 * sizeof(fb_status_t));
+    }
+    return (fb_status_t)mock_isc_dsql_execute_result;
+}
+
 fb_status_t mock_isc_dsql_describe_bind(fb_status_t* status, void** stmt_handle,
                                         unsigned short da_version, void* xsqlda) {
     mock_isc_dsql_describe_bind_calls++;
     (void)stmt_handle;
     (void)da_version;
-    (void)xsqlda;
+
+    if (mock_describe_bind_should_set_sqld && xsqlda) {
+        fb_xsqlda_min* sqlda = (fb_xsqlda_min*)xsqlda;
+        /* Only set sqld — sqln stays at the initial allocation value.
+           This simulates Firebird returning sqld > sqln, which triggers
+           the reallocation path in firebird_build_input_sqlda. */
+        sqlda->sqld = mock_describe_bind_set_sqld;
+        /* Initialize sqlvar entries up to sqln (not sqld) */
+        for (short ci = 0; ci < sqlda->sqln && ci < sqlda->sqld; ci++) {
+            sqlda->sqlvar[ci].sqltype = mock_describe_bind_sqltype;
+            sqlda->sqlvar[ci].sqllen = 4;
+        }
+        mock_describe_bind_sqlda_ptr = sqlda;
+    }
+
     if (status) {
         memset(status, 0, 20 * sizeof(fb_status_t));
     }
@@ -229,6 +287,27 @@ void mock_isc_decode_timestamp(const void* ts, void* times_arg) {
     (void)ts;
     if (times_arg) {
         memset(times_arg, 0, sizeof(struct tm));
+    }
+}
+
+void mock_isc_encode_sql_date(const void* tm_in, void* out) {
+    (void)tm_in;
+    if (out) {
+        memset(out, 0xAB, 4);
+    }
+}
+
+void mock_isc_encode_sql_time(const void* tm_in, void* out) {
+    (void)tm_in;
+    if (out) {
+        memset(out, 0xCD, 4);
+    }
+}
+
+void mock_isc_encode_timestamp(const void* tm_in, void* out) {
+    (void)tm_in;
+    if (out) {
+        memset(out, 0xEF, 8);
     }
 }
 
@@ -291,7 +370,17 @@ void mock_libfbc_reset_all(void) {
     mock_isc_dsql_free_statement_result = 0;
     mock_isc_dsql_fetch_result = 0;
     mock_isc_dsql_describe_bind_result = 0;
+    mock_describe_bind_sqlda_ptr = NULL;
+    mock_describe_bind_should_set_sqld = 0;
+    mock_describe_bind_set_sqld = 0;
+    mock_describe_bind_sqltype = FB_SQL_TEXT;
     mock_fb_cancel_operation_result = 0;
+    mock_isc_dsql_sql_info_result = 0;
+    mock_sql_info_data_len = 0;
+    mock_isc_dsql_sql_info_calls = 0;
+    memset(mock_sql_info_data, 0, sizeof(mock_sql_info_data));
+    mock_isc_dsql_execute_calls = 0;
+    mock_isc_dsql_execute2_calls = 0;
 
     mock_isc_attach_database_output_handle = (void*)0xDEADBEEF;
 
@@ -361,8 +450,42 @@ void mock_libfbc_set_isc_dsql_describe_bind_result(int result) {
     mock_isc_dsql_describe_bind_result = result;
 }
 
+void mock_libfbc_set_isc_dsql_sql_info_result(int result) {
+    mock_isc_dsql_sql_info_result = result;
+}
+
+void mock_libfbc_set_isc_dsql_sql_info_data(const unsigned char* data, short len) {
+    if (len > 0 && len <= (short)sizeof(mock_sql_info_data) && data) {
+        memcpy(mock_sql_info_data, data, (size_t)len);
+        mock_sql_info_data_len = len;
+    } else {
+        mock_sql_info_data_len = 0;
+    }
+}
+
+void mock_libfbc_set_isc_dsql_describe_bind_sqlda(void* sqlda) {
+    mock_describe_bind_sqlda_ptr = (fb_xsqlda_min*)sqlda;
+}
+
+void mock_libfbc_set_isc_dsql_describe_bind_set_sqld(short sqld) {
+    mock_describe_bind_should_set_sqld = 1;
+    mock_describe_bind_set_sqld = sqld;
+}
+
+void mock_libfbc_set_isc_dsql_describe_bind_sqltype(short sqltype) {
+    mock_describe_bind_sqltype = sqltype;
+}
+
+void* mock_libfbc_get_isc_dsql_describe_bind_sqlda(void) {
+    return mock_describe_bind_sqlda_ptr;
+}
+
 void mock_libfbc_set_fb_cancel_operation_result(int result) {
     mock_fb_cancel_operation_result = result;
+}
+
+void mock_libfbc_set_isc_dsql_execute2_result(int result) {
+    mock_isc_dsql_execute_result = result;
 }
 
 int mock_libfbc_get_isc_attach_database_call_count(void) {
@@ -375,6 +498,14 @@ int mock_libfbc_get_isc_detach_database_call_count(void) {
 
 int mock_libfbc_get_isc_dsql_execute_immediate_call_count(void) {
     return mock_isc_dsql_execute_immediate_calls;
+}
+
+int mock_libfbc_get_isc_dsql_execute_call_count(void) {
+    return mock_isc_dsql_execute_calls;
+}
+
+int mock_libfbc_get_isc_dsql_execute2_call_count(void) {
+    return mock_isc_dsql_execute2_calls;
 }
 
 void mock_libfbc_get_last_attach_args(const char** dbname, const char** params) {

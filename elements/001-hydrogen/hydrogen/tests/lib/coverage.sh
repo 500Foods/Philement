@@ -56,7 +56,7 @@ export COVERAGE_GUARD="true"
 # Different #ifdef paths (Unity vs blackbox builds) change instrumented line counts.
 # When Test 00 reports a mismatch, set these to the recommended values it prints.
 DISCREPANCY_UNITY=418
-DISCREPANCY_COVERAGE=113
+DISCREPANCY_COVERAGE=118
   
 # Library metadata
 COVERAGE_NAME="Coverage Library"

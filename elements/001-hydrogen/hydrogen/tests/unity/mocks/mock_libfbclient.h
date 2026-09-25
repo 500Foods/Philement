@@ -45,10 +45,15 @@ fb_status_t mock_isc_dsql_execute(fb_status_t*, void**, void**, short, const voi
 fb_status_t mock_isc_dsql_execute_immediate(fb_status_t*, void**, void**, short, const char*, short, const void*);
 fb_status_t mock_isc_dsql_free_statement(fb_status_t*, void**, short);
 fb_status_t mock_isc_dsql_fetch(fb_status_t*, void**, short, void*);
+fb_status_t mock_isc_dsql_sql_info(fb_status_t*, void**, short, const char*, short, char*);
+fb_status_t mock_isc_dsql_execute2(fb_status_t*, void**, void**, short, const void*, const void*);
 fb_status_t mock_isc_dsql_describe_bind(fb_status_t*, void**, unsigned short, void*);
 void mock_isc_decode_sql_date(const void*, void*);
 void mock_isc_decode_sql_time(const void*, void*);
 void mock_isc_decode_timestamp(const void*, void*);
+void mock_isc_encode_sql_date(const void*, void*);
+void mock_isc_encode_sql_time(const void*, void*);
+void mock_isc_encode_timestamp(const void*, void*);
 fb_status_t mock_isc_open_blob2(fb_status_t*, void**, void**, void**, void*, short, const char*);
 fb_status_t mock_isc_get_segment(fb_status_t*, void**, unsigned short*, unsigned short, char*);
 fb_status_t mock_isc_close_blob(fb_status_t*, void**);
@@ -74,11 +79,23 @@ void mock_libfbc_set_isc_dsql_execute_immediate_result(int result);
 void mock_libfbc_set_isc_dsql_free_statement_result(int result);
 void mock_libfbc_set_isc_dsql_fetch_result(int result);
 void mock_libfbc_set_isc_dsql_describe_bind_result(int result);
+void mock_libfbc_set_isc_dsql_sql_info_result(int result);
+void mock_libfbc_set_isc_dsql_sql_info_data(const unsigned char* data, short len);
+extern int mock_isc_dsql_sql_info_calls;
+void mock_libfbc_set_isc_dsql_execute2_result(int result);
 void mock_libfbc_set_fb_cancel_operation_result(int result);
 
 int  mock_libfbc_get_isc_attach_database_call_count(void);
 int  mock_libfbc_get_isc_detach_database_call_count(void);
 int  mock_libfbc_get_isc_dsql_execute_immediate_call_count(void);
+int  mock_libfbc_get_isc_dsql_execute_call_count(void);
+int  mock_libfbc_get_isc_dsql_execute2_call_count(void);
 void mock_libfbc_get_last_attach_args(const char** dbname, const char** params);
+
+/* Extended control for isc_dsql_describe_bind mock to fill in SQLDA */
+void mock_libfbc_set_isc_dsql_describe_bind_sqlda(void* sqlda);
+void mock_libfbc_set_isc_dsql_describe_bind_set_sqld(short sqld);
+void mock_libfbc_set_isc_dsql_describe_bind_sqltype(short sqltype);
+void* mock_libfbc_get_isc_dsql_describe_bind_sqlda(void);
 
 #endif // MOCK_LIBFBC_H
