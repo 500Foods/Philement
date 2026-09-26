@@ -192,6 +192,7 @@ local database = {
         sqlite = require("database_sqlite"),
         postgresql = require("database_postgresql"),
         mysql = require("database_mysql"),
+        mariadb = require("database_mariadb"),
         db2 = require("database_db2"),
         firebird = require("database_firebird")
     },

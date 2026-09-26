@@ -665,8 +665,8 @@ void dump_database_config(const DatabaseConfig* config) {
     log_this(SR_CONFIG_CURRENT, "――― Connections", LOG_LEVEL_STATE, 0);
 
     // Count databases by type for summary
-    int postgres_count = 0, mysql_count = 0, sqlite_count = 0, db2_count = 0, mariadb_count = 0;
-    char postgres_name[64] = "", mysql_name[64] = "", sqlite_name[64] = "", db2_name[64] = "", mariadb_name[64] = "";
+    int postgres_count = 0, mysql_count = 0, sqlite_count = 0, db2_count = 0, firebird_count = 0, mariadb_count = 0;
+    char postgres_name[64] = "", mysql_name[64] = "", sqlite_name[64] = "", db2_name[64] = "", firebird_name[64] = "", mariadb_name[64] = "";
 
     for (int i = 0; i < config->connection_count; i++) {
         const DatabaseConnection* conn = &config->connections[i];
@@ -695,6 +695,11 @@ void dump_database_config(const DatabaseConfig* config) {
                 db2_count++;
                 if (db2_count == 1 && conn->connection_name) {
                     strcpy(db2_name, conn->connection_name);
+                }
+            } else if (strcmp(conn->type, "firebird") == 0) {
+                firebird_count++;
+                if (firebird_count == 1 && conn->connection_name) {
+                    strcpy(firebird_name, conn->connection_name);
                 }
             }
         }
@@ -735,7 +740,7 @@ void dump_database_config(const DatabaseConfig* config) {
         log_this(SR_CONFIG_CURRENT, "――― DB2 Databases: 0", LOG_LEVEL_STATE, 0);
     }
 
-    int total_databases = postgres_count + mysql_count + sqlite_count + db2_count;
+    int total_databases = postgres_count + mysql_count + sqlite_count + db2_count + firebird_count + mariadb_count;
     log_this(SR_CONFIG_CURRENT, "――― Total databases configured: %d", LOG_LEVEL_STATE, 1, total_databases);
 
     // Dump each connection details

@@ -2,7 +2,7 @@
 
 -- luacheck: no max line length
 
--- CHANGELOG       
+-- CHANGELOG
 -- 3.0.0 - 2026-09-25 - Created as part of the MariaDB/MySQL split
 -- 2.9.0 - 2026-07-04 - Added directional future-time macros TRFS/TRFE (seconds) and TRFMS/TRFME (minutes) for parity with SQLite fix (Test 41 SQLite JWT bug)
 -- 2.8.1 - 2026-07-02 - Added REORG TABLE macro

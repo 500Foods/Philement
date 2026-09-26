@@ -19,8 +19,12 @@ local sq = connect.picker_blurb('sqlite')
 assert(sq == 'hydrodemo.sqlite', sq)
 
 local mysql = connect.picker_blurb('mysql')
-assert(mysql:find('CANVAS_DB_HOST', 1, true), mysql)
-assert(not mysql:find('CANVAS_DB_*', 1, true), mysql)
+assert(mysql:find('MYSQL_DB_HOST', 1, true), mysql)
+assert(not mysql:find('MYSQL_DB_*', 1, true), mysql)
+
+local mariadb = connect.picker_blurb('mariadb')
+assert(mariadb:find('MARIADB_DB_HOST', 1, true), mariadb)
+assert(not mariadb:find('MARIADB_DB_*', 1, true), mariadb)
 
 local db2 = connect.picker_blurb('db2')
 assert(db2:find('HYDROTST_DB_USER', 1, true), db2)
@@ -30,5 +34,5 @@ local label = W.wrapper_label({ engine = 'postgresql', path = '/tmp/schematool_p
 assert(label:find('ACURANZO_DB_HOST', 1, true), label)
 assert(not label:find('ACURANZO_DB_*', 1, true), label)
 
-print('OK: picker blurbs use env names; yugabyte is never ACURANZO')
+print('OK: picker blurbs use env names')
 os.exit(0)

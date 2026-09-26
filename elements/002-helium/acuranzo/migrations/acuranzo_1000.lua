@@ -315,7 +315,7 @@ if engine == 'mysql' then table.insert(queries,{sql=[[
 --       Installation handled via extras/brotli_udf_mysql/
 if engine == 'mariadb' then table.insert(queries,{sql=[[
 
-    DROP FUNCTION IF EXISTS brotli_decompress;           
+    DROP FUNCTION IF EXISTS brotli_decompress;
 
 ]]}) end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --

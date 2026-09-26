@@ -163,6 +163,19 @@ void validate_database_configuration(const DatabaseConfig* db_config, const char
         // Note: mysql_names is freed by caller in test environment
     }
 
+    if (*mariadb_count > 0 && mariadb_names) {
+        char* mariadb_msg = malloc(512);
+        if (mariadb_msg) {
+            if (*mariadb_count > 3) {
+                mariadb_names[50] = 0;
+                snprintf(mariadb_msg, 512, "  Go:      MariaDB Databases: %d (%s...)", *mariadb_count, mariadb_names);
+            } else {
+                snprintf(mariadb_msg, 512, "  Go:      MariaDB Databases: %d (%s)", *mariadb_count, mariadb_names);
+            }
+            add_launch_message(messages, count, capacity, mariadb_msg);
+        }
+    }
+
     if (*sqlite_count > 0 && sqlite_names) {
         char* sqlite_msg = malloc(512);
         if (sqlite_msg) {
@@ -215,6 +228,10 @@ void validate_database_configuration(const DatabaseConfig* db_config, const char
         add_launch_message(messages, count, capacity, strdup("  Go:      MySQL Databases: 0"));
     }
 
+    if (*mariadb_count == 0) {
+        add_launch_message(messages, count, capacity, strdup("  Go:      MariaDB Databases: 0"));
+    }
+
     if (*sqlite_count == 0) {
         add_launch_message(messages, count, capacity, strdup("  Go:      SQLite Databases: 0"));
     }
@@ -228,7 +245,7 @@ void validate_database_configuration(const DatabaseConfig* db_config, const char
     }
 
     // Total database count check
-    int total_databases = *postgres_count + *mysql_count + *sqlite_count + *db2_count + *firebird_count;
+    int total_databases = *postgres_count + *mysql_count + *sqlite_count + *db2_count + *firebird_count + *mariadb_count;
     if (total_databases == 0) {
         add_launch_message(messages, count, capacity, strdup("  No-Go:   No databases configured - database subsystem not needed"));
         *overall_readiness = false;
@@ -243,6 +260,7 @@ void validate_database_configuration(const DatabaseConfig* db_config, const char
     // Free allocated name strings
     free(postgres_names);
     free(mysql_names);
+    free(mariadb_names);
     free(sqlite_names);
     free(db2_names);
     free(firebird_names);

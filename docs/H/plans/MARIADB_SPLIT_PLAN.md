@@ -1,11 +1,13 @@
 # MariaDB Engine Split Plan
 
 ## Goal
+
 Formally split MariaDB from MySQL in the codebase. Create a new `src/database/mariadb/` directory mirroring `src/database/mysql/`, add `DB_ENGINE_MARIADB` to the engine enum, and wire up all conditions that check for MySQL to also handle MariaDB.
 
 ## Status: COMPLETE
 
 ## Phases Complete
+
 - Phase 1: Engine enum, function signatures, test params
 - Phase 2: 16 source files mirroring mysql/
 - Phase 3: Split conditions across 10 source files
@@ -16,6 +18,7 @@ Formally split MariaDB from MySQL in the codebase. Create a new `src/database/ma
 - Phase 8: Build & verify (mkt, mkp, mks, mku all pass)
 
 ## Issues Resolved During Implementation
+
 1. `mariadb_connect` macro conflict in `<mysql.h>` (line 932: `#define mariadb_connect(hdl, conn_str) ...`)
    — Added `#undef mariadb_connect` after `#include <mysql.h>` in `src/database/mariadb/query.c` and
    `tests/unity/src/database/mariadb/query_test_mariadb_bind_persist_shape.c`
@@ -30,12 +33,15 @@ Formally split MariaDB from MySQL in the codebase. Create a new `src/database/ma
 ## Phases
 
 ### Phase 1: Engine Enum & Type Definitions
+
 - Add `DB_ENGINE_MARIADB` to `DatabaseEngine` enum in `src/database/database_types.h` (after `DB_ENGINE_MSSQL`, before `DB_ENGINE_FIREBIRD`)
 - Update `database.h`: add `database_get_counts_by_type` signature to include mariadb count parameter
 - Update `database_types.h` to reflect new count
 
 ### Phase 2: Create mariadb/ Source Files
+
 Create 16 files in `src/database/mariadb/` mirroring `src/database/mysql/`:
+
 - `mariadb.h` / `mariadb.c` — engine version/info functions (`mariadb_engine_get_version`, `mariadb_engine_is_available`, `mariadb_engine_get_description`)
 - `types.h` — function pointer typedefs and globals (prefixed `mariadb_`, loading `libmariadb.so` / `libmariadb.so.3`)
 - `connection.h` / `connection.c` — connect/disconnect/health_check/reset/cancel/cache management (`mariadb_connect`, `mariadb_disconnect`, etc.)
@@ -47,6 +53,7 @@ Create 16 files in `src/database/mariadb/` mirroring `src/database/mysql/`:
 - `utils.h` / `utils.c` — utility functions (`mariadb_get_connection_string`, `mariadb_validate_connection_string`, etc.)
 
 Key changes in mariadb files vs mysql mirror:
+
 - `dlopen("libmariadb.so.3")` / `dlopen("libmariadb.so")` instead of `libmysqlclient.so.*`
 - `DB_ENGINE_MARIADB` instead of `DB_ENGINE_MYSQL` in all engine_type checks
 - Function names: `mariadb_*` instead of `mysql_*`
@@ -56,6 +63,7 @@ Key changes in mariadb files vs mysql mirror:
 - Log messages: "MariaDB" instead of "MySQL"
 
 ### Phase 3: Split Conditions Across Source Files
+
 Update all files that check `strcmp(..., "mysql") == 0` to also check `"mariadb"`:
 
 1. `src/database/database_engine_registry.c` — line 45: add `else if (strcmp(engine_type, "mariadb") == 0)` branch; register mariadb engine interface
@@ -74,12 +82,15 @@ Update all files that check `strcmp(..., "mysql") == 0` to also check `"mariadb"
 14. `src/mailrelay/mailrelay_repository.c` — line 360: add `"mariadb"` to translation check
 
 ### Phase 4: Database Engine Registration
+
 - `database_engine_registry.c`: forward declare `mariadb_get_interface()`, add mariadb_count counter, register mariadb engine in `database_engine_init()`
 
 ### Phase 5: Migration Execution
+
 - `migration/transaction.c`: add `execute_mariadb_migration()` function (mirrors `execute_mysql_migration`, using mariadb function pointers) and add case in switch
 
 ### Phase 6: Mock Framework
+
 - Create `tests/unity/mocks/mock_libmariadb.h` / `mock_libmariadb.c` — mirror of `mock_libmysqlclient.h` / `.c` with `mariadb_*` names
 - Update `cmake/CMakeLists-unity.cmake`:
   - Add `mock_libmariadb.c` to `UNITY_MOCK_SOURCES`
@@ -88,15 +99,18 @@ Update all files that check `strcmp(..., "mysql") == 0` to also check `"mariadb"
   - Add test detection for mariadb test files
 
 ### Phase 7: Unit Tests
+
 - Create `tests/unity/src/database/mariadb/` directory with mirrored test files from `tests/unity/src/database/mysql/`
 - 22 test files mirroring the mysql tests, with `mariadb_*` function names
 - Add `IS_MARIADB_TEST` detection in CMakeLists-unity.cmake
 
 ### Phase 8: Build & Verify
+
 - `mkt` — full trial build, verify no new static functions, dead code check
 - `mkp` — cppcheck lint
 - `mks` — shellcheck lint
 - `mku <mariadb_test_name>` — run mariadb unity tests
 
 ## Exit Gate
+
 All phases complete, `mkt` builds cleanly, `mku` mariadb tests pass, `mkp` and `mks` are clean.

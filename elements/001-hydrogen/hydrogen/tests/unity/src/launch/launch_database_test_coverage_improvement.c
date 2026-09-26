@@ -21,9 +21,9 @@ int launch_database_subsystem(void);
 // Forward declarations for extracted static functions (accessible via source include)
 void validate_database_configuration(const DatabaseConfig* db_config, const char*** messages,
                                    size_t* count, size_t* capacity, bool* overall_readiness,
-                                   int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count, int* firebird_count);
+                                   int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count, int* firebird_count, int* mariadb_count);
 void check_database_library_dependencies(const char*** messages, size_t* count, size_t* capacity, bool* overall_readiness,
-                                       int postgres_count, int mysql_count, int sqlite_count, int db2_count, int firebird_count);
+                                       int postgres_count, int mysql_count, int sqlite_count, int db2_count, int firebird_count, int mariadb_count);
 bool validate_database_connections(const DatabaseConfig* db_config, const char*** messages,
                                  size_t* count, size_t* capacity);
 
@@ -166,16 +166,17 @@ void test_validate_database_configuration_empty(void) {
     bool overall_readiness = true;
 
     DatabaseConfig db_config = {0}; // Empty config
-    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count;
+    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count, mariadb_count;
 
     validate_database_configuration(&db_config, &messages, &count, &capacity, &overall_readiness,
-                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count);
+                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count, &mariadb_count);
 
     TEST_ASSERT_EQUAL(0, postgres_count);
     TEST_ASSERT_EQUAL(0, mysql_count);
     TEST_ASSERT_EQUAL(0, sqlite_count);
     TEST_ASSERT_EQUAL(0, db2_count);
     TEST_ASSERT_EQUAL(0, firebird_count);
+    TEST_ASSERT_EQUAL(0, mariadb_count);
     TEST_ASSERT_EQUAL(0, firebird_count);
     TEST_ASSERT_FALSE(overall_readiness); // Should be false due to no databases
     TEST_ASSERT_NOT_NULL(messages);
@@ -198,16 +199,17 @@ void test_validate_database_configuration_with_databases(void) {
     db_config.connections[1].type = strdup("mysql");
     db_config.connections[1].connection_name = strdup("test_mysql");
 
-    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count;
+    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count, mariadb_count;
 
-validate_database_configuration(&db_config, &messages, &count, &capacity, &overall_readiness,
-                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count);
+    validate_database_configuration(&db_config, &messages, &count, &capacity, &overall_readiness,
+                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count, &mariadb_count);
 
     TEST_ASSERT_EQUAL(1, postgres_count);
     TEST_ASSERT_EQUAL(1, mysql_count);
     TEST_ASSERT_EQUAL(0, sqlite_count);
     TEST_ASSERT_EQUAL(0, db2_count);
     TEST_ASSERT_EQUAL(0, firebird_count);
+    TEST_ASSERT_EQUAL(0, mariadb_count);
     TEST_ASSERT_TRUE(overall_readiness); // Should be true with databases configured
     TEST_ASSERT_NOT_NULL(messages);
 
@@ -303,7 +305,7 @@ void test_validate_database_configuration_direct(void) {
     size_t count = 0;
     size_t capacity = 0;
     bool overall_readiness = true;
-    int postgres_count = 0, mysql_count = 0, sqlite_count = 0, db2_count = 0, firebird_count = 0;
+    int postgres_count = 0, mysql_count = 0, sqlite_count = 0, db2_count = 0, firebird_count = 0, mariadb_count = 0;
 
     // Create test database config with multiple database types
     DatabaseConfig db_config = {0};
@@ -331,13 +333,14 @@ void test_validate_database_configuration_direct(void) {
 
     // Call the function directly - this should exercise the database counting logic
     validate_database_configuration(&db_config, &messages, &count, &capacity, &overall_readiness,
-                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count);
+                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count, &mariadb_count);
 
     // Verify counts
     TEST_ASSERT_EQUAL(1, postgres_count);
     TEST_ASSERT_EQUAL(1, mysql_count);
     TEST_ASSERT_EQUAL(1, sqlite_count);
     TEST_ASSERT_EQUAL(1, db2_count);
+    TEST_ASSERT_EQUAL(0, mariadb_count);
 
     // Clean up
     free(db_config.connections[0].name);
@@ -415,16 +418,17 @@ void test_validate_database_configuration_multiple_same_type(void) {
     db_config.connections[3].type = strdup("mysql");
     db_config.connections[3].connection_name = strdup("mysql2");
 
-    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count;
+    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count, mariadb_count;
 
-validate_database_configuration(&db_config, &messages, &count, &capacity, &overall_readiness,
-                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count);
+    validate_database_configuration(&db_config, &messages, &count, &capacity, &overall_readiness,
+                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count, &mariadb_count);
 
     TEST_ASSERT_EQUAL(2, postgres_count);
     TEST_ASSERT_EQUAL(2, mysql_count);
     TEST_ASSERT_EQUAL(0, sqlite_count);
     TEST_ASSERT_EQUAL(0, db2_count);
     TEST_ASSERT_EQUAL(0, firebird_count);
+    TEST_ASSERT_EQUAL(0, mariadb_count);
     TEST_ASSERT_TRUE(overall_readiness);
 
     // Clean up
@@ -461,16 +465,17 @@ void test_validate_database_configuration_multiple_postgres(void) {
     db_config.connections[2].type = strdup("postgresql");
     db_config.connections[2].connection_name = strdup("pg3");
 
-    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count;
+    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count, mariadb_count;
 
-validate_database_configuration(&db_config, &messages, &count, &capacity, &overall_readiness,
-                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count);
+    validate_database_configuration(&db_config, &messages, &count, &capacity, &overall_readiness,
+                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count, &mariadb_count);
 
     TEST_ASSERT_EQUAL(3, postgres_count);
     TEST_ASSERT_EQUAL(0, mysql_count);
     TEST_ASSERT_EQUAL(0, sqlite_count);
     TEST_ASSERT_EQUAL(0, db2_count);
     TEST_ASSERT_EQUAL(0, firebird_count);
+    TEST_ASSERT_EQUAL(0, mariadb_count);
     TEST_ASSERT_TRUE(overall_readiness);
 
     // Clean up
@@ -502,16 +507,17 @@ void test_validate_database_configuration_multiple_mysql(void) {
     db_config.connections[2].type = strdup("mysql");
     db_config.connections[2].connection_name = strdup("mysql3");
 
-    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count;
+    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count, mariadb_count;
 
-validate_database_configuration(&db_config, &messages, &count, &capacity, &overall_readiness,
-                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count);
+    validate_database_configuration(&db_config, &messages, &count, &capacity, &overall_readiness,
+                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count, &mariadb_count);
 
     TEST_ASSERT_EQUAL(0, postgres_count);
     TEST_ASSERT_EQUAL(3, mysql_count);
     TEST_ASSERT_EQUAL(0, sqlite_count);
     TEST_ASSERT_EQUAL(0, db2_count);
     TEST_ASSERT_EQUAL(0, firebird_count);
+    TEST_ASSERT_EQUAL(0, mariadb_count);
     TEST_ASSERT_TRUE(overall_readiness);
 
     // Clean up
@@ -543,16 +549,17 @@ void test_validate_database_configuration_multiple_sqlite(void) {
     db_config.connections[2].type = strdup("sqlite");
     db_config.connections[2].connection_name = strdup("sqlite3");
 
-    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count;
+    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count, mariadb_count;
 
-validate_database_configuration(&db_config, &messages, &count, &capacity, &overall_readiness,
-                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count);
+    validate_database_configuration(&db_config, &messages, &count, &capacity, &overall_readiness,
+                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count, &mariadb_count);
 
     TEST_ASSERT_EQUAL(0, postgres_count);
     TEST_ASSERT_EQUAL(0, mysql_count);
     TEST_ASSERT_EQUAL(3, sqlite_count);
     TEST_ASSERT_EQUAL(0, db2_count);
     TEST_ASSERT_EQUAL(0, firebird_count);
+    TEST_ASSERT_EQUAL(0, mariadb_count);
     TEST_ASSERT_TRUE(overall_readiness);
 
     // Clean up
@@ -584,15 +591,17 @@ void test_validate_database_configuration_multiple_db2(void) {
     db_config.connections[2].type = strdup("db2");
     db_config.connections[2].connection_name = strdup("db2_3");
 
-    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count;
+    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count, mariadb_count;
 
-validate_database_configuration(&db_config, &messages, &count, &capacity, &overall_readiness,
-                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count);
+    validate_database_configuration(&db_config, &messages, &count, &capacity, &overall_readiness,
+                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count, &mariadb_count);
 
     TEST_ASSERT_EQUAL(0, postgres_count);
     TEST_ASSERT_EQUAL(0, mysql_count);
     TEST_ASSERT_EQUAL(0, sqlite_count);
     TEST_ASSERT_EQUAL(3, db2_count);
+    TEST_ASSERT_EQUAL(0, firebird_count);
+    TEST_ASSERT_EQUAL(0, mariadb_count);
     TEST_ASSERT_TRUE(overall_readiness);
 
     // Clean up
@@ -621,10 +630,10 @@ void test_validate_database_configuration_truncation(void) {
         db_config.connections[i].connection_name = strdup(name);
     }
 
-    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count;
+    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count, mariadb_count;
 
-validate_database_configuration(&db_config, &messages, &count, &capacity, &overall_readiness,
-                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count);
+    validate_database_configuration(&db_config, &messages, &count, &capacity, &overall_readiness,
+                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count, &mariadb_count);
 
     TEST_ASSERT_EQUAL(4, postgres_count);
     TEST_ASSERT_TRUE(overall_readiness);
@@ -791,7 +800,7 @@ void test_check_database_library_dependencies_postgres(void) {
 
     // Test with PostgreSQL count > 0
     check_database_library_dependencies(&messages, &count, &capacity, &overall_readiness,
-                                      1, 0, 0, 0, 0); // postgres=1, others=0
+                                      1, 0, 0, 0, 0, 0); // postgres=1, others=0
 
     // Function should attempt to load library and add messages
     TEST_ASSERT_NOT_NULL(messages);
@@ -807,7 +816,7 @@ void test_check_database_library_dependencies_mysql(void) {
 
     // Test with MySQL count > 0
     check_database_library_dependencies(&messages, &count, &capacity, &overall_readiness,
-                                      0, 1, 0, 0, 0); // mysql=1, others=0
+                                      0, 1, 0, 0, 0, 0); // mysql=1, others=0
 
     // Function should attempt to load library and add messages
     TEST_ASSERT_NOT_NULL(messages);
@@ -823,7 +832,7 @@ void test_check_database_library_dependencies_db2(void) {
 
     // Test with DB2 count > 0
     check_database_library_dependencies(&messages, &count, &capacity, &overall_readiness,
-                                      0, 0, 0, 1, 0); // db2=1, others=0
+                                      0, 0, 0, 1, 0, 0); // db2=1, others=0
 
     // Function should attempt to load library and add messages
     TEST_ASSERT_NOT_NULL(messages);

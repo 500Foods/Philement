@@ -12,7 +12,7 @@
         "Connections": [
             {
                 "Enabled": true,
-                "Name": "CNV",
+                "Name": "test-mariadb",
                 "Engine": "${env.MARIADB_DB_TYPE}",
                 "Host": "${env.MARIADB_DB_HOST}",
                 "Port": "${env.MARIADB_DB_PORT}",
@@ -20,11 +20,11 @@
                 "User": "${env.MARIADB_DB_USER}",
                 "Pass": "${env.MARIADB_DB_PASS}",
                 "StmtCache": 100,
-                "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM testmrdb.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
+                "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM test.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
                 "AutoMigration": true,
                 "TestMigration": false,
                 "Migrations":"PAYLOAD:acuranzo",
-                "Schema": "testmrdb",
+                "Schema": "test",
                 "Queues": {
                     "Slow": {
                         "start": 2
