@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 5.5.0 - 2026-09-26 - Added DROP FUNCTION IF EXISTS json_ingest for MySQL before json_ingest creation (MySQL does not support CREATE OR REPLACE FUNCTION for stored functions)
 -- 5.4.0 - 2026-09-25 - Formal split of MariaDB/MySQL code
 -- 5.3.0 - 2026-09-19 - Added JSON_VALUE_FUNCTION UDR emission for firebird (before json_ingest)
 -- 5.2.0 - 2026-09-19 - Removed firebase engine from CREATE FUNCTION skip and convert_tz arm
@@ -52,6 +53,16 @@ table.insert(queries,{sql=[[
 
     -- Defined in database_firebird.lua as a macro
     ${JSON_VALUE_FUNCTION}
+
+]]}) end
+    -- NOTE: json_ingest PSQL function: validates and normalizes JSON, escaping
+    --       control characters inside strings.
+    -- NOTE: MySQL does not support CREATE OR REPLACE FUNCTION for stored functions,
+    --       so we DROP FUNCTION IF EXISTS before creating it. MariaDB supports
+    --       CREATE OR REPLACE and does not need this drop.
+    if engine == 'mysql' then table.insert(queries,{sql=[[
+
+    DROP FUNCTION IF EXISTS ${SCHEMA}json_ingest;
 
 ]]}) end
     if engine ~= 'sqlite' then table.insert(queries,{sql=[[

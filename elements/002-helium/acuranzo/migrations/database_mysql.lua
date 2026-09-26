@@ -3,6 +3,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 3.0.0 - 2026-09-26 - Changed json_ingest from CREATE OR REPLACE FUNCTION to CREATE FUNCTION (MySQL does not support OR REPLACE for stored functions); DROP FUNCTION handled in migration 1000
 -- 2.9.0 - 2026-07-04 - Added directional future-time macros TRFS/TRFE (seconds) and TRFMS/TRFME (minutes) for parity with SQLite fix (Test 41 SQLite JWT bug)
 -- 2.8.1 - 2026-07-02 - Added REORG TABLE macro
 -- 2.8.0 - 2026-07-02 - Added JSON_INGEST_SCHEMA (aliases json_ingest; JSON_VALID accepts $ref/$id/$schema)
@@ -105,11 +106,13 @@ return {
     -- documents using $ref/$id/$schema are handled by the normal json_ingest. These
     -- macros alias json_ingest; no separate function object is required.
     -- (The DB2 engine needs a distinct function because JSON2BSON rejects nested $ref.)
+    -- NOTE: MySQL does not support CREATE OR REPLACE FUNCTION for stored functions.
+    --       The migration (acuranzo_1000) emits DROP FUNCTION IF EXISTS before this.
     JSON_INGEST_SCHEMA_START = "${SCHEMA}json_ingest(",
     JSON_INGEST_SCHEMA_END = ")",
     JSON_INGEST_SCHEMA_FUNCTION = "",
     JSON_INGEST_FUNCTION = [[
-        CREATE OR REPLACE FUNCTION ${SCHEMA}json_ingest(s longtext)
+        CREATE FUNCTION ${SCHEMA}json_ingest(s longtext)
         RETURNS longtext
         DETERMINISTIC
         BEGIN
