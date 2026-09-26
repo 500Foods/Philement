@@ -68,7 +68,7 @@ verify_database_transactions() {
                 "${MYSQL_DB_NAME:-${CANVAS_DB_NAME:-}}") || rc=$?
             ;;
         mariadb)
-            schema="${schema:-demomrdb}"
+            schema="${schema:-demo}"
             qualified="${schema}.${table_base}"
             out=$(verify_tx_mysql_family "${qualified}" "${marker}" \
                 "${MARIADB_DB_HOST:-${CANVAS_DB_HOST:-}}" "${MARIADB_DB_PORT:-${CANVAS_DB_PORT:-}}" \

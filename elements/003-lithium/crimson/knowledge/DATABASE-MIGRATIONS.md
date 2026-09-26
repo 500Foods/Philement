@@ -210,7 +210,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1169](/elements/002-helium/acuranzo/migrations/acuranzo_1169.lua) | queries | 1.0.0 | 2026-03-22 | 4 | ✗ | QueryRef #069: Get Chats List (with segment count and storage metrics) |
 | [1170](/elements/002-helium/acuranzo/migrations/acuranzo_1170.lua) | queries | 1.0.0 | 2026-03-23 | 4 | ✗ | QueryRef #070: Get Conversation Segments by Hash (BATCH retrieval) |
 | [1171](/elements/002-helium/acuranzo/migrations/acuranzo_1171.lua) | media_assets | 1.0.0 | 2026-03-23 | 8 | ✓ | Creates the media_assets table for Phase 12: Advanced Multi-modal Features |
-| [1172](/elements/002-helium/acuranzo/migrations/acuranzo_1172.lua) | convo_segs | 1.0.0 | 2026-03-23 | 12 | ✗ | Extend convo_segs table with content_type, mime_type, metadata columns for Phase 12 |
+| [1172](/elements/002-helium/acuranzo/migrations/acuranzo_1172.lua) | convo_segs | 1.1.0 | 2026-09-26 | 16 | ✗ | Extend convo_segs table with content_type, mime_type, metadata columns for Phase 12 |
 | [1173](/elements/002-helium/acuranzo/migrations/acuranzo_1173.lua) | queries | 1.0.0 | 2026-03-23 | 4 | ✗ | QueryRef #071: Store Media Asset (with deduplication) |
 | [1174](/elements/002-helium/acuranzo/migrations/acuranzo_1174.lua) | queries | 1.0.0 | 2026-03-23 | 4 | ✗ | QueryRef #072: Retrieve Media Asset by Hash |
 | [1175](/elements/002-helium/acuranzo/migrations/acuranzo_1175.lua) | account_settings | 1.0.0 | 2026-04-09 | 6 | ✓ | Creates the account_settings table |
@@ -255,7 +255,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1214](/elements/002-helium/acuranzo/migrations/acuranzo_1214.lua) | lookups | 1.0.0 | 2026-07-07 | 8 | ✗ | Lookup 066 - Mail OTP Purpose for the Hydrogen Mail Relay Subsystem (Phase 4A) |
 | [1215](/elements/002-helium/acuranzo/migrations/acuranzo_1215.lua) | lookups | 1.0.0 | 2026-07-07 | 9 | ✗ | Lookup 067 - Mail OTP Status for the Hydrogen Mail Relay Subsystem (Phase 4A) |
 | [1216](/elements/002-helium/acuranzo/migrations/acuranzo_1216.lua) | lookups | 1.0.0 | 2026-07-07 | 7 | ✗ | Lookup 068 - Mail Route Status for the Hydrogen Mail Relay Subsystem (Phase 4A) |
-| [1217](/elements/002-helium/acuranzo/migrations/acuranzo_1217.lua) | mail_templates | 1.0.0 | 2026-07-07 | 7 | ✓ | Creates the mail_templates table for the Hydrogen Mail Relay Subsystem (Phase 4B) |
+| [1217](/elements/002-helium/acuranzo/migrations/acuranzo_1217.lua) | mail_templates | 1.1.0 | 2026-09-26 | 10 | ✓ | Creates the mail_templates table for the Hydrogen Mail Relay Subsystem (Phase 4B) |
 | [1218](/elements/002-helium/acuranzo/migrations/acuranzo_1218.lua) | mail_queue | 1.0.0 | 2026-07-07 | 9 | ✓ | Creates the mail_queue table for the Hydrogen Mail Relay Subsystem (Phase 4B) |
 | [1219](/elements/002-helium/acuranzo/migrations/acuranzo_1219.lua) | mail_attempts | 1.0.0 | 2026-07-07 | 7 | ✓ | Creates the mail_attempts table for the Hydrogen Mail Relay Subsystem (Phase 4B) |
 | [1220](/elements/002-helium/acuranzo/migrations/acuranzo_1220.lua) | mail_events | 1.0.0 | 2026-07-07 | 8 | ✓ | Creates the mail_events table for the Hydrogen Mail Relay Subsystem (Phase 4B) |
@@ -423,4 +423,4 @@ in the migrations themselves so that they get populated in the database directly
 | [1382](/elements/002-helium/acuranzo/migrations/acuranzo_1382.lua) | lookups | 1.0.1 | 2026-09-16 | 8 | ✗ | Retarget Lookup 037 from Role Status to Role Origin |
 | [1383](/elements/002-helium/acuranzo/migrations/acuranzo_1383.lua) | lookups | 1.0.0 | 2026-09-16 | 4 | ✗ | Addition to Lookup 030 - Query Dialect (key 6 Firebase) |
 | [1384](/elements/002-helium/acuranzo/migrations/acuranzo_1384.lua) | lookups | 1.0.0 | 2026-09-18 | 4 | ✗ | UPDATE Lookup 030 - Query Dialect (key 6 Firebase → Firebird) |
-| **385** | | | | **1980** | **385** | |
+| **385** | | | | **1987** | **385** | |

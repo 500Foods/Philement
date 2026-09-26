@@ -5,6 +5,11 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.1.0 - 2026-09-26 - Split forward migration: MySQL/MariaDB omit inline UNIQUE on
+--        (issuer, subject) due to 3072-byte index key limit with utf8mb4; instead
+--        uses CREATE UNIQUE INDEX with prefix lengths (issuer(255), subject(255))
+--        Also split reverse migration: MySQL/MariaDB drop the unique index before
+--        DROP TABLE (inline UNIQUE drops automatically with DROP TABLE on non-MySQL).
 -- 1.0.0 - 2026-05-09 - Initial creation for OIDC Phase 15
 
 return function(engine, design_name, schema_name, cfg)
@@ -13,7 +18,111 @@ local queries = {}
 cfg.TABLE = "account_oidc_identities"
 cfg.MIGRATION = "1189"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-table.insert(queries,{sql=[[
+-- MySQL and MariaDB share the 3072-byte InnoDB index key prefix limit.
+-- VARCHAR(500) with utf8mb4 (4 bytes/char) and two columns exceeds this:
+--   500 * 4 * 2 = 4000 bytes > 3072 bytes. We omit the inline UNIQUE constraint
+--   and instead use CREATE UNIQUE INDEX with 255-char prefixes (255 * 4 * 2 = 2040).
+-- PostgreSQL, SQLite, DB2, and Firebird have no such limit.
+if engine == 'mysql' or engine == 'mariadb' then table.insert(queries,{sql=[[
+
+    INSERT INTO ${SCHEMA}${QUERIES} (
+        ${QUERIES_INSERT}
+    )
+    WITH next_query_id AS (
+        SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+        FROM ${SCHEMA}${QUERIES}
+    )
+    SELECT
+        new_query_id                                                        AS query_id,
+        ${MIGRATION}                                                        AS query_ref,
+        ${STATUS_ACTIVE}                                                    AS query_status_a27,
+        ${TYPE_FORWARD_MIGRATION}                                           AS query_type_a28,
+        ${DIALECT}                                                          AS query_dialect_a30,
+        ${QTC_SLOW}                                                         AS query_queue_a58,
+        ${TIMEOUT}                                                          AS query_timeout,
+        [=[
+            CREATE TABLE ${SCHEMA}${TABLE}
+            (
+                identity_id             ${INTEGER}          NOT NULL,
+                account_id              ${INTEGER}          NOT NULL,
+                issuer                  ${VARCHAR_500}      NOT NULL,
+                subject                 ${VARCHAR_500}      NOT NULL,
+                email                   ${VARCHAR_500}              ,
+                email_verified          ${INTEGER_SMALL}            ,
+                last_seen_at            ${TIMESTAMP_TZ}     NOT NULL,
+                ${COMMON_CREATE}
+                ${PRIMARY}(identity_id)
+            );
+
+            ${SUBQUERY_DELIMITER}
+
+            CREATE UNIQUE INDEX ${TABLE}_idx_issuer_subject
+                ON ${SCHEMA}${TABLE}(issuer(255), subject(255));
+
+            ${SUBQUERY_DELIMITER}
+
+            CREATE INDEX ${TABLE}_idx_account
+                ON ${SCHEMA}${TABLE}(account_id);
+
+            ${SUBQUERY_DELIMITER}
+
+            UPDATE ${SCHEMA}${QUERIES}
+              SET query_type_a28 = ${TYPE_APPLIED_MIGRATION}
+            WHERE query_ref = ${MIGRATION}
+              and query_type_a28 = ${TYPE_FORWARD_MIGRATION};
+        ]=]
+                                                                            AS code,
+        'Create ${TABLE} Table'                                             AS name,
+        [=[
+            # Forward Migration ${MIGRATION}: Create ${TABLE} Table
+
+            This migration creates the ${TABLE} table for the OIDC Relying
+            Party. Each row links a Hydrogen ${SCHEMA}accounts row to an
+            external OIDC identity (identified by `(issuer, subject)` per
+            OIDC Core 1.0 §2). One account can have multiple identities (one
+            per IdP); each `(issuer, subject)` maps to exactly one account.
+
+            ## Schema
+
+            - **identity_id**: Surrogate primary key.
+            - **account_id**: Foreign reference to ${SCHEMA}accounts (no SQL
+              FK constraint — same convention as account_roles).
+            - **issuer**: OIDC `iss` claim verbatim. Compared byte-for-byte
+              per OIDC Core §3.1.3.7.
+            - **subject**: OIDC `sub` claim verbatim. Opaque per IdP; stable
+              across an account's lifetime.
+            - **email**: Optional cached email at link time. Updated by
+              QueryRef #084 on each successful login (Phase 17).
+            - **email_verified**: 0/1; whether the IdP marked the email as
+              verified at link time.
+            - **last_seen_at**: Updated on each successful sign-in via
+              QueryRef #084.
+
+            ## Indexes
+
+            - PRIMARY KEY on `identity_id`.
+            - UNIQUE on `(issuer, subject)` — one row per IdP-side identity.
+              MySQL/MariaDB use prefix lengths (255) to stay within the
+              3072-byte InnoDB index key limit with utf8mb4.
+            - INDEX on `account_id` — supports reverse lookup (all
+              identities for an account, used at admin-side merge).
+
+            ## Notes
+
+            This migration is additive. Existing `accounts` rows are not
+            touched. No code reads from this table yet (Phase 17 adds the
+            QueryRefs; Phase 18 adds the linker that calls them).
+        ]=]
+                                                                            AS summary,
+        '{}'                                                                AS collection,
+        ${COMMON_INSERT}
+    FROM next_query_id;
+
+]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- Non-MySQL/non-MariaDB engines (PostgreSQL, SQLite, DB2, Firebird) support full
+-- VARCHAR(500) in inline UNIQUE constraints without prefix index limits.
+if engine ~= 'mysql' and engine ~= 'mariadb' then table.insert(queries,{sql=[[
 
     INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
@@ -102,9 +211,74 @@ table.insert(queries,{sql=[[
         ${COMMON_INSERT}
     FROM next_query_id;
 
-]]})
+]]}) end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
-table.insert(queries,{sql=[[
+-- MySQL and MariaDB: DROP INDEX before DROP TABLE because the unique index was
+-- created separately via CREATE UNIQUE INDEX. On non-MySQL engines the inline
+-- UNIQUE constraint is dropped automatically with DROP TABLE.
+if engine == 'mysql' or engine == 'mariadb' then table.insert(queries,{sql=[[
+
+    INSERT INTO ${SCHEMA}${QUERIES} (
+        ${QUERIES_INSERT}
+    )
+    WITH next_query_id AS (
+        SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+        FROM ${SCHEMA}${QUERIES}
+    )
+    SELECT
+        new_query_id                                                        AS query_id,
+        ${MIGRATION}                                                        AS query_ref,
+        ${STATUS_ACTIVE}                                                    AS query_status_a27,
+        ${TYPE_REVERSE_MIGRATION}                                           AS query_type_a28,
+        ${DIALECT}                                                          AS query_dialect_a30,
+        ${QTC_SLOW}                                                         AS query_queue_a58,
+        ${TIMEOUT}                                                          AS query_timeout,
+        [=[
+            DROP INDEX ${TABLE}_idx_issuer_subject;
+
+            ${SUBQUERY_DELIMITER}
+
+            DROP INDEX ${TABLE}_idx_account;
+
+            ${SUBQUERY_DELIMITER}
+
+            ${DROP_CHECK};
+
+            ${SUBQUERY_DELIMITER}
+
+            DROP TABLE ${SCHEMA}${TABLE};
+
+            ${SUBQUERY_DELIMITER}
+
+            UPDATE ${SCHEMA}${QUERIES}
+              SET query_type_a28 = ${TYPE_FORWARD_MIGRATION}
+            WHERE query_ref = ${MIGRATION}
+              and query_type_a28 = ${TYPE_APPLIED_MIGRATION};
+        ]=]
+                                                                            AS code,
+        'Drop ${TABLE} Table'                                               AS name,
+        [=[
+            # Reverse Migration ${MIGRATION}: Drop ${TABLE} Table
+
+            This is provided for completeness when testing the migration
+            system to ensure that forward and reverse migrations are
+            complete. Production rollback is documented in the OIDC plan
+            but not automated.
+
+            MySQL/MariaDB: explicitly drop the unique index and the account
+            index (they were created separately via CREATE UNIQUE INDEX /
+            CREATE INDEX), then drop the table.
+        ]=]
+                                                                            AS summary,
+        '{}'                                                                AS collection,
+        ${COMMON_INSERT}
+    FROM next_query_id;
+
+]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- Non-MySQL/non-MariaDB engines: the inline UNIQUE constraint drops automatically
+-- with DROP TABLE, so we only need to drop the table itself.
+if engine ~= 'mysql' and engine ~= 'mariadb' then table.insert(queries,{sql=[[
 
     INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
@@ -152,7 +326,7 @@ table.insert(queries,{sql=[[
         ${COMMON_INSERT}
     FROM next_query_id;
 
-]]})
+]]}) end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 

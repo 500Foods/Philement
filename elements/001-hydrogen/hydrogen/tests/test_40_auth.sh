@@ -642,7 +642,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     declare -A TX_ENGINE_SCHEMAS=(
         ["postgresql"]="demo"
         ["mysql"]="demo"
-        ["mariadb"]="demomrdb"
+        ["mariadb"]="demo"
         ["db2"]="DEMO"
         ["firebird"]=""
         ["yugabytedb"]="demo"
