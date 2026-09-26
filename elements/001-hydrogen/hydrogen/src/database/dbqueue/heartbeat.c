@@ -27,6 +27,8 @@ DatabaseEngine database_queue_determine_engine_type(const char* connection_strin
 
     if (strncmp(connection_string, "postgresql://", 13) == 0) {
         return DB_ENGINE_POSTGRESQL;
+    } else if (strncmp(connection_string, "mariadb://", 10) == 0) {
+        return DB_ENGINE_MARIADB;
     } else if (strncmp(connection_string, "mysql://", 8) == 0) {
         return DB_ENGINE_MYSQL;
     } else if (strstr(connection_string, "DATABASE=") != NULL) {
@@ -59,6 +61,17 @@ char* database_queue_mask_connection_string(const char* connection_string) {
         } else {
             // Password at end of string
             memset(pwd_pos + 4, '*', strlen(pwd_pos + 4));
+        }
+    } else if (strncmp(safe_conn_str, "mariadb://", 10) == 0) {
+        // MariaDB format: mariadb://user:password@host:port/database
+        const char* after_proto = safe_conn_str + 10; // Skip "mariadb://"
+        const char* at_pos = strchr(after_proto, '@');
+        if (at_pos) {
+            const char* colon_pos = strchr(after_proto, ':');
+            if (colon_pos && colon_pos < at_pos) {
+                // Mask from after colon to @
+                memset((char*)colon_pos + 1, '*', (size_t)(at_pos - (colon_pos + 1)));
+            }
         }
     } else if (strncmp(safe_conn_str, "mysql://", 8) == 0) {
         // MySQL format: mysql://user:password@host:port/database
@@ -259,6 +272,8 @@ void database_queue_start_heartbeat(DatabaseQueue* db_queue) {
         if (db_queue->connection_string) {
             if (strncmp(db_queue->connection_string, "postgresql://", 13) == 0) {
                 engine_name = "PostgreSQL";
+            } else if (strncmp(db_queue->connection_string, "mariadb://", 10) == 0) {
+                engine_name = "MariaDB";
             } else if (strncmp(db_queue->connection_string, "mysql://", 8) == 0) {
                 engine_name = "MySQL";
             } else if (strncmp(db_queue->connection_string, "sqlite:", 7) == 0) {

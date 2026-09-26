@@ -89,6 +89,8 @@ bool execute_postgresql_migration(DatabaseHandle* connection, char** statements,
                                 const char* migration_file, const char* dqm_label);
 bool execute_mysql_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
                            const char* migration_file, const char* dqm_label);
+bool execute_mariadb_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
+                              const char* migration_file, const char* dqm_label);
 bool execute_sqlite_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
                             const char* migration_file, const char* dqm_label);
 bool execute_firebird_migration(DatabaseHandle* connection, char** statements, size_t statement_count,

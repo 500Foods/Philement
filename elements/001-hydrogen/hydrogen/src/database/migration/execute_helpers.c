@@ -28,6 +28,8 @@ const char* normalize_engine_name(const char* engine_name) {
         return "postgresql";
     } else if (strcmp(engine_name, "mysql") == 0) {
         return "mysql";
+    } else if (strcmp(engine_name, "mariadb") == 0) {
+        return "mariadb";
     } else if (strcmp(engine_name, "sqlite") == 0) {
         return "sqlite";
     } else if (strcmp(engine_name, "db2") == 0) {

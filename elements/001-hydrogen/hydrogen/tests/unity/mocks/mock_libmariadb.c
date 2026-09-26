@@ -1,0 +1,542 @@
+/*
+ * Mock libmariadb functions for unit testing
+ *
+ * This file provides mock implementations of libmariadb functions
+ * to enable testing of MariaDB database operations.
+ */
+
+#include <stdlib.h>
+#include <string.h>
+#include <stdbool.h>
+
+// Include the header to get type definitions
+#include "mock_libmariadb.h"
+
+// Function prototypes
+void* mock_mariadb_init(void* mysql);
+void* mock_mariadb_real_connect(void* mysql, const char* host, const char* user, const char* passwd,
+                               const char* db, unsigned int port, const char* unix_socket, unsigned long client_flag);
+int mock_mariadb_options(void* mysql, int option, const void* arg);
+void mock_mariadb_close(void* mysql);
+int mock_mariadb_ping(void* mysql);
+void* mock_mariadb_store_result(void* mysql);
+void mock_mariadb_free_result(void* result);
+int mock_mariadb_query(void* mysql, const char* query);
+int mock_mariadb_autocommit(void* mysql, int mode);
+int mock_mariadb_commit(void* mysql);
+int mock_mariadb_rollback(void* mysql);
+const char* mock_mariadb_error(void* mysql);
+unsigned long long mock_mariadb_affected_rows(void* mysql);
+unsigned long long mock_mariadb_num_rows(void* result);
+unsigned int mock_mariadb_num_fields(void* result);
+void* mock_mariadb_fetch_fields(void* result);
+void* mock_mariadb_fetch_row(void* result);
+int mock_mariadb_kill(void* mysql, unsigned long pid);
+unsigned long mock_mariadb_thread_id(void* mysql);
+void mock_libmariadb_set_kill_result(int result);
+void mock_libmariadb_set_thread_id_result(unsigned long result);
+void* mock_mariadb_stmt_init(void* mysql);
+int mock_mariadb_stmt_prepare(void* stmt, const char* query, unsigned long length);
+int mock_mariadb_stmt_execute(void* stmt);
+int mock_mariadb_stmt_close(void* stmt);
+void* mock_mariadb_stmt_result_metadata(void* stmt);
+int mock_mariadb_stmt_store_result(void* stmt);
+int mock_mariadb_stmt_fetch(void* stmt);
+int mock_mariadb_stmt_bind_param(void* stmt, void* bind);
+int mock_mariadb_stmt_bind_result(void* stmt, void* bind);
+const char* mock_mariadb_stmt_error(void* stmt);
+unsigned long long mock_mariadb_stmt_affected_rows(void* stmt);
+int mock_mariadb_stmt_free_result(void* stmt);
+unsigned int mock_mariadb_stmt_field_count(void* stmt);
+void mock_libmariadb_set_mysql_init_result(void* result);
+void mock_libmariadb_set_mysql_real_connect_result(void* result);
+void mock_libmariadb_set_mysql_options_result(int result);
+void mock_libmariadb_set_mysql_ping_result(int result);
+void mock_libmariadb_set_mysql_store_result_result(void* result);
+void mock_libmariadb_set_mysql_query_result(int result);
+void mock_libmariadb_set_mysql_autocommit_result(int result);
+void mock_libmariadb_set_mysql_commit_result(int result);
+void mock_libmariadb_set_mysql_rollback_result(int result);
+void mock_libmariadb_set_mysql_error_result(const char* error);
+void mock_libmariadb_set_mysql_ping_available(bool available);
+void mock_libmariadb_set_mysql_query_available(bool available);
+void mock_libmariadb_set_mysql_affected_rows_result(unsigned long long result);
+void mock_libmariadb_set_mysql_num_rows_result(unsigned long long result);
+void mock_libmariadb_set_mysql_num_fields_result(unsigned int result);
+void mock_libmariadb_set_mysql_fetch_fields_result(void* result);
+void mock_libmariadb_set_mysql_fetch_row_result(char** result);
+void mock_libmariadb_reset_all(void);
+void mock_libmariadb_setup_fields(size_t num_fields, const char** column_names);
+void mock_libmariadb_setup_result_data(size_t num_rows, size_t num_fields, const char** column_names, char*** row_data);
+
+// Static variables to store mock state
+static void* mock_mariadb_init_result = (void*)0x12345678; // Non-NULL = success
+static void* mock_mariadb_real_connect_result = (void*)0x12345678; // Non-NULL = success
+static int mock_mariadb_options_result = 0; // 0 = success
+static int mock_mariadb_ping_result = 0; // 0 = success
+static void* mock_mariadb_store_result_result = (void*)0x87654321; // Non-NULL = success
+static int mock_mariadb_query_result = 0; // 0 = success
+static int mock_mariadb_autocommit_result = 0; // 0 = success
+static int mock_mariadb_commit_result = 0; // 0 = success
+static int mock_mariadb_rollback_result = 0; // 0 = success
+static const char* mock_mariadb_error_result = NULL;
+static unsigned long long mock_mariadb_affected_rows_result = 1;
+static unsigned long long mock_mariadb_num_rows_result = 2;
+static unsigned int mock_mariadb_num_fields_result = 3;
+static void* mock_mariadb_fetch_fields_result = (void*)0x12345678;
+static char** mock_mariadb_fetch_row_result = NULL;
+
+// Prepared statement mock results
+static void* mock_mariadb_stmt_init_result = (void*)0x87654321; // Non-NULL = success
+static int mock_mariadb_stmt_prepare_result = 0; // 0 = success
+static int mock_mariadb_stmt_execute_result = 0; // 0 = success
+static int mock_mariadb_stmt_close_result = 0; // 0 = success
+static int mock_mariadb_stmt_bind_param_result = 0; // 0 = success
+static int mock_mariadb_stmt_store_result_result = 0; // 0 = success (PERSIST_PLAN Phase 1b)
+
+// Mock control to simulate unavailable functions
+static bool mock_mariadb_ping_available = true;
+static bool mock_mariadb_query_available = true;
+
+// Mock data for results
+static MockMYSQL_RES* mock_result_data = NULL;
+static size_t mock_current_row = 0;
+
+// Mock MYSQL_FIELD data
+static MockMYSQL_FIELD mock_fields[10] = {0}; // Support up to 10 fields
+static size_t mock_num_fields = 0;
+
+// Mock implementation of mariadb_init
+void* mock_mariadb_init(void* mysql) {
+    (void)mysql; // Suppress unused parameter
+    return mock_mariadb_init_result;
+}
+
+// Mock implementation of mariadb_real_connect
+void* mock_mariadb_real_connect(void* mysql, const char* host, const char* user, const char* passwd,
+                              const char* db, unsigned int port, const char* unix_socket, unsigned long client_flag) {
+    (void)mysql; // Suppress unused parameter
+    (void)host; // Suppress unused parameter
+    (void)user; // Suppress unused parameter
+    (void)passwd; // Suppress unused parameter
+    (void)db; // Suppress unused parameter
+    (void)port; // Suppress unused parameter
+    (void)unix_socket; // Suppress unused parameter
+    (void)client_flag; // Suppress unused parameter
+    return mock_mariadb_real_connect_result;
+}
+
+// Mock implementation of mariadb_options
+int mock_mariadb_options(void* mysql, int option, const void* arg) {
+    (void)mysql; // Suppress unused parameter
+    (void)option; // Suppress unused parameter
+    (void)arg; // Suppress unused parameter
+    return mock_mariadb_options_result;
+}
+
+// Mock implementation of mariadb_close
+void mock_mariadb_close(void* mysql) {
+    (void)mysql; // Suppress unused parameter
+    // Do nothing in mock
+}
+
+// Mock implementation of mariadb_ping
+int mock_mariadb_ping(void* mysql) {
+    (void)mysql; // Suppress unused parameter
+    if (!mock_mariadb_ping_available) {
+        return 1; // Return failure to simulate unavailability
+    }
+    return mock_mariadb_ping_result;
+}
+
+// Mock implementation of mariadb_store_result
+void* mock_mariadb_store_result(void* mysql) {
+    (void)mysql; // Suppress unused parameter
+    return mock_mariadb_store_result_result;
+}
+
+// Mock implementation of mariadb_free_result
+void mock_mariadb_free_result(void* result) {
+    (void)result; // Suppress unused parameter
+    // Do nothing in mock
+}
+
+// Mock implementation of mariadb_query
+int mock_mariadb_query(void* mysql, const char* query) {
+    (void)mysql;  // Suppress unused parameter
+    (void)query; // Suppress unused parameter
+    if (!mock_mariadb_query_available) {
+        return 1; // Return failure to simulate unavailability
+    }
+    return mock_mariadb_query_result;
+}
+
+// Mock implementation of mariadb_autocommit
+int mock_mariadb_autocommit(void* mysql, int mode) {
+    (void)mysql;  // Suppress unused parameter
+    (void)mode;   // Suppress unused parameter
+    return mock_mariadb_autocommit_result;
+}
+
+// Mock implementation of mariadb_commit
+int mock_mariadb_commit(void* mysql) {
+    (void)mysql; // Suppress unused parameter
+    return mock_mariadb_commit_result;
+}
+
+// Mock implementation of mariadb_rollback
+int mock_mariadb_rollback(void* mysql) {
+    (void)mysql; // Suppress unused parameter
+    return mock_mariadb_rollback_result;
+}
+
+// Mock implementation of mariadb_error
+const char* mock_mariadb_error(void* mysql) {
+    (void)mysql; // Suppress unused parameter
+    return mock_mariadb_error_result ? mock_mariadb_error_result : "";
+}
+
+// Mock implementation of mariadb_affected_rows
+unsigned long long mock_mariadb_affected_rows(void* mysql) {
+    (void)mysql; // Suppress unused parameter
+    return mock_mariadb_affected_rows_result;
+}
+
+// Mock implementation of mariadb_num_rows
+unsigned long long mock_mariadb_num_rows(void* result) {
+    (void)result; // Suppress unused parameter
+    return mock_mariadb_num_rows_result;
+}
+
+// Mock implementation of mariadb_num_fields
+unsigned int mock_mariadb_num_fields(void* result) {
+    (void)result; // Suppress unused parameter
+    return mock_mariadb_num_fields_result;
+}
+
+// Mock implementation of mariadb_fetch_fields
+void* mock_mariadb_fetch_fields(void* result) {
+    (void)result; // Suppress unused parameter
+    return mock_fields; // Return the mock fields array
+}
+
+// Mock implementation of mariadb_fetch_row
+void* mock_mariadb_fetch_row(void* result) {
+    (void)result; // Suppress unused parameter
+    if (mock_result_data && mock_current_row < mock_result_data->num_rows) {
+        return mock_result_data->rows[mock_current_row++];
+    }
+    return NULL;
+}
+
+// Prepared statement mocks
+void* mock_mariadb_stmt_init(void* mysql) {
+    (void)mysql; // Suppress unused parameter
+    return mock_mariadb_stmt_init_result;
+}
+
+int mock_mariadb_stmt_prepare(void* stmt, const char* query, unsigned long length) {
+    (void)stmt; // Suppress unused parameter
+    (void)query; // Suppress unused parameter
+    (void)length; // Suppress unused parameter
+    return mock_mariadb_stmt_prepare_result;
+}
+
+int mock_mariadb_stmt_execute(void* stmt) {
+    (void)stmt; // Suppress unused parameter
+    return mock_mariadb_stmt_execute_result;
+}
+
+int mock_mariadb_stmt_close(void* stmt) {
+    (void)stmt; // Suppress unused parameter
+    return mock_mariadb_stmt_close_result;
+}
+
+void* mock_mariadb_stmt_result_metadata(void* stmt) {
+    (void)stmt; // Suppress unused parameter
+    return mock_mariadb_store_result_result;
+}
+
+int mock_mariadb_stmt_store_result(void* stmt) {
+    (void)stmt; // Suppress unused parameter
+    return mock_mariadb_stmt_store_result_result; // PERSIST_PLAN Phase 1b
+}
+
+int mock_mariadb_stmt_fetch(void* stmt) {
+    (void)stmt; // Suppress unused parameter
+    if (mock_result_data && mock_current_row < mock_result_data->num_rows) {
+        mock_current_row++;
+        return 0; // Success
+    }
+    return 1; // No more rows
+}
+
+int mock_mariadb_stmt_bind_param(void* stmt, void* bind) {
+    (void)stmt; // Suppress unused parameter
+    (void)bind; // Suppress unused parameter
+    return mock_mariadb_stmt_bind_param_result;
+}
+
+int mock_mariadb_stmt_bind_result(void* stmt, void* bind) {
+    (void)stmt; // Suppress unused parameter
+    (void)bind; // Suppress unused parameter
+    return 0; // Success
+}
+
+const char* mock_mariadb_stmt_error(void* stmt) {
+    (void)stmt; // Suppress unused parameter
+    return mock_mariadb_error_result ? mock_mariadb_error_result : "";
+}
+
+unsigned long long mock_mariadb_stmt_affected_rows(void* stmt) {
+    (void)stmt; // Suppress unused parameter
+    return mock_mariadb_affected_rows_result;
+}
+
+int mock_mariadb_stmt_free_result(void* stmt) {
+    (void)stmt; // Suppress unused parameter
+    return 0; // Success
+}
+
+unsigned int mock_mariadb_stmt_field_count(void* stmt) {
+    (void)stmt; // Suppress unused parameter
+    return mock_mariadb_num_fields_result;
+}
+
+// Mock control functions
+void mock_libmariadb_set_mysql_init_result(void* result) {
+    mock_mariadb_init_result = result;
+}
+
+void mock_libmariadb_set_mysql_real_connect_result(void* result) {
+    mock_mariadb_real_connect_result = result;
+}
+
+void mock_libmariadb_set_mysql_options_result(int result) {
+    mock_mariadb_options_result = result;
+}
+
+void mock_libmariadb_set_mysql_ping_result(int result) {
+    mock_mariadb_ping_result = result;
+}
+
+void mock_libmariadb_set_mysql_store_result_result(void* result) {
+    mock_mariadb_store_result_result = result;
+}
+
+void mock_libmariadb_set_mysql_query_result(int result) {
+    mock_mariadb_query_result = result;
+}
+
+void mock_libmariadb_set_mysql_autocommit_result(int result) {
+    mock_mariadb_autocommit_result = result;
+}
+
+void mock_libmariadb_set_mysql_commit_result(int result) {
+    mock_mariadb_commit_result = result;
+}
+
+void mock_libmariadb_set_mysql_rollback_result(int result) {
+    mock_mariadb_rollback_result = result;
+}
+
+void mock_libmariadb_set_mysql_error_result(const char* error) {
+    mock_mariadb_error_result = error;
+}
+
+void mock_libmariadb_set_mysql_ping_available(bool available) {
+    mock_mariadb_ping_available = available;
+}
+
+void mock_libmariadb_set_mysql_query_available(bool available) {
+    mock_mariadb_query_available = available;
+}
+
+void mock_libmariadb_set_mysql_affected_rows_result(unsigned long long result) {
+    mock_mariadb_affected_rows_result = result;
+}
+
+void mock_libmariadb_set_mysql_num_rows_result(unsigned long long result) {
+    mock_mariadb_num_rows_result = result;
+}
+
+void mock_libmariadb_set_mysql_num_fields_result(unsigned int result) {
+    mock_mariadb_num_fields_result = result;
+}
+
+void mock_libmariadb_set_mysql_fetch_fields_result(void* result) {
+    mock_mariadb_fetch_fields_result = result;
+}
+
+void mock_libmariadb_set_mysql_fetch_row_result(char** result) {
+    mock_mariadb_fetch_row_result = result;
+}
+
+void mock_libmariadb_set_mysql_stmt_init_result(void* result) {
+    mock_mariadb_stmt_init_result = result;
+}
+
+void mock_libmariadb_set_mysql_stmt_prepare_result(int result) {
+    mock_mariadb_stmt_prepare_result = result;
+}
+
+void mock_libmariadb_set_mysql_stmt_execute_result(int result) {
+    mock_mariadb_stmt_execute_result = result;
+}
+
+void mock_libmariadb_set_mysql_stmt_close_result(int result) {
+    mock_mariadb_stmt_close_result = result;
+}
+
+void mock_libmariadb_set_mysql_stmt_bind_param_result(int result) {
+    mock_mariadb_stmt_bind_param_result = result;
+}
+
+void mock_libmariadb_set_mysql_stmt_store_result_result(int result) {
+    mock_mariadb_stmt_store_result_result = result;
+} // PERSIST_PLAN Phase 1b
+
+void mock_libmariadb_reset_all(void) {
+    mock_mariadb_init_result = (void*)0x12345678;
+    mock_mariadb_real_connect_result = (void*)0x12345678;
+    mock_mariadb_options_result = 0;
+    mock_mariadb_ping_result = 0;
+    mock_mariadb_store_result_result = (void*)0x87654321;
+    mock_mariadb_query_result = 0;
+    mock_mariadb_autocommit_result = 0;
+    mock_mariadb_commit_result = 0;
+    mock_mariadb_rollback_result = 0;
+    mock_mariadb_error_result = NULL;
+    mock_mariadb_affected_rows_result = 1;
+    mock_mariadb_num_rows_result = 2;
+    mock_mariadb_num_fields_result = 3;
+    mock_mariadb_fetch_fields_result = (void*)0x12345678;
+    mock_mariadb_fetch_row_result = NULL;
+    mock_mariadb_ping_available = true;
+    mock_mariadb_query_available = true;
+
+    // Reset prepared statement mocks
+    mock_mariadb_stmt_init_result = (void*)0x87654321;
+    mock_mariadb_stmt_prepare_result = 0;
+    mock_mariadb_stmt_execute_result = 0;
+    mock_mariadb_stmt_close_result = 0;
+    mock_mariadb_stmt_bind_param_result = 0;
+    mock_mariadb_stmt_store_result_result = 0; // PERSIST_PLAN Phase 1b
+
+    // Clear mock fields
+    memset(mock_fields, 0, sizeof(mock_fields));
+    mock_num_fields = 0;
+
+    // Clean up mock data
+    if (mock_result_data) {
+        // Free fields
+        if (mock_result_data->fields) {
+            for (size_t i = 0; i < mock_result_data->num_fields; i++) {
+                free(mock_result_data->fields[i].name);
+            }
+            free(mock_result_data->fields);
+        }
+        // Free rows
+        if (mock_result_data->rows) {
+            for (size_t i = 0; i < mock_result_data->num_rows; i++) {
+                if (mock_result_data->rows[i]) {
+                    for (size_t j = 0; j < mock_result_data->num_fields; j++) {
+                        free(mock_result_data->rows[i][j]);
+                    }
+                    free(mock_result_data->rows[i]);
+                }
+            }
+            free(mock_result_data->rows);
+        }
+        free(mock_result_data);
+        mock_result_data = NULL;
+    }
+    mock_current_row = 0;
+}
+
+void mock_libmariadb_setup_fields(size_t num_fields, const char** column_names) {
+    mock_num_fields = num_fields < 10 ? num_fields : 10; // Limit to array size
+
+    for (size_t i = 0; i < mock_num_fields; i++) {
+        if (column_names && column_names[i]) {
+            mock_fields[i].name = (char*)column_names[i]; // Note: not copying, just pointing
+        } else {
+            mock_fields[i].name = NULL;
+        }
+        // Default to VARCHAR/STRING type (253) for string escaping tests
+        mock_fields[i].type = 253;
+    }
+}
+
+void mock_libmariadb_set_field_type(size_t field_index, unsigned int field_type) {
+    if (field_index < 10) {
+        mock_fields[field_index].type = field_type;
+    }
+}
+
+void mock_libmariadb_setup_result_data(size_t num_rows, size_t num_fields, const char** column_names, char*** row_data) {
+    // Clean up existing data
+    if (mock_result_data) {
+        mock_libmariadb_reset_all();
+    }
+
+    // Reset the row counter to start from the beginning
+    mock_current_row = 0;
+
+    mock_result_data = calloc(1, sizeof(MockMYSQL_RES));
+    if (!mock_result_data) return;
+
+    mock_result_data->num_rows = num_rows;
+    mock_result_data->num_fields = num_fields;
+    mock_result_data->current_row = 0;
+
+    // Set up fields
+    if (num_fields > 0 && column_names) {
+        mock_result_data->fields = calloc(num_fields, sizeof(MockMYSQL_FIELD));
+        if (mock_result_data->fields) {
+            for (size_t i = 0; i < num_fields; i++) {
+                mock_result_data->fields[i].name = column_names[i] ? strdup(column_names[i]) : NULL;
+            }
+        }
+
+        // Also set up the global mock_fields array so mariadb_fetch_fields() works
+        mock_libmariadb_setup_fields(num_fields, column_names);
+    }
+
+    // Set up rows
+    if (num_rows > 0 && num_fields > 0 && row_data) {
+        mock_result_data->rows = calloc(num_rows, sizeof(char**));
+        if (mock_result_data->rows) {
+            for (size_t i = 0; i < num_rows; i++) {
+                if (row_data[i]) {
+                    mock_result_data->rows[i] = calloc(num_fields, sizeof(char*));
+                    if (mock_result_data->rows[i]) {
+                        for (size_t j = 0; j < num_fields; j++) {
+                            mock_result_data->rows[i][j] = row_data[i][j] ? strdup(row_data[i][j]) : NULL;
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+static int mock_kill_result = 0;
+static unsigned long mock_thread_id_result = 1;
+
+int mock_mariadb_kill(void* mysql, unsigned long pid) {
+    (void)mysql; (void)pid;
+    return mock_kill_result;
+}
+
+unsigned long mock_mariadb_thread_id(void* mysql) {
+    (void)mysql;
+    return mock_thread_id_result;
+}
+
+void mock_libmariadb_set_kill_result(int result) {
+    mock_kill_result = result;
+}
+
+void mock_libmariadb_set_thread_id_result(unsigned long result) {
+    mock_thread_id_result = result;
+}

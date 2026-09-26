@@ -1,0 +1,900 @@
+/*
+ * MariaDB Database Engine - Query Helper Functions
+ *
+ * Helper functions for MariaDB query processing, extracted for better testability
+ * following the DB2 pattern of non-static helper functions.
+ */
+
+#include <src/hydrogen.h>
+#include <src/database/database.h>
+#include <src/database/mariadb/types.h>
+#include <src/database/mariadb/connection.h>
+#include <src/database/mariadb/query.h>
+#include <src/database/mariadb/query_helpers.h>
+#include <stdlib.h>
+#include <string.h>
+#include <stdio.h>
+
+// MariaDB type constants (from mysql_com.h)
+#define MARIADB_TYPE_DECIMAL      0
+#define MARIADB_TYPE_TINY         1
+#define MARIADB_TYPE_SHORT        2
+#define MARIADB_TYPE_LONG         3
+#define MARIADB_TYPE_FLOAT        4
+#define MARIADB_TYPE_DOUBLE       5
+#define MARIADB_TYPE_LONGLONG     8
+#define MARIADB_TYPE_INT24        9
+#define MARIADB_TYPE_NEWDECIMAL   246
+#define MARIADB_NO_DATA           100
+#define MARIADB_DATA_TRUNCATED    101
+#define MARIADB_PREPARED_COL_FLOOR 65536
+#define MARIADB_PREPARED_COL_CAP  (1024 * 1024)
+
+// External declarations for libmariadb function pointers
+extern mariadb_fetch_fields_t mariadb_fetch_fields_ptr;
+
+// Helper function to trim trailing whitespace from strings (MariaDB-specific, for consistency across engines)
+ char* mariadb_trim_trailing_whitespace(char* str) {
+    if (!str) return NULL;
+
+    // Find the end of the string
+    char* end = str + strlen(str) - 1;
+
+    // Move backwards from the end, removing whitespace
+    while (end >= str && (*end == ' ' || *end == '\t' || *end == '\n' || *end == '\r')) {
+        *end = '\0';
+        end--;
+    }
+
+    return str;
+}
+
+// Helper function to check if MariaDB type is numeric
+bool mariadb_is_numeric_type(unsigned int type) {
+    switch (type) {
+        case MARIADB_TYPE_DECIMAL:
+        case MARIADB_TYPE_TINY:
+        case MARIADB_TYPE_SHORT:
+        case MARIADB_TYPE_LONG:
+        case MARIADB_TYPE_FLOAT:
+        case MARIADB_TYPE_DOUBLE:
+        case MARIADB_TYPE_LONGLONG:
+        case MARIADB_TYPE_INT24:
+        case MARIADB_TYPE_NEWDECIMAL:
+            return true;
+        default:
+            return false;
+    }
+}
+
+// Helper function to extract column names (non-static for testing)
+char** mariadb_extract_column_names(void* mariadb_result, size_t column_count) {
+    if (!mariadb_result || column_count == 0 || !mariadb_fetch_fields_ptr) {
+        return NULL;
+    }
+
+    // Complete MYSQL_FIELD structure definition to match libmariadb
+    typedef struct {
+        char *name;                  /* Name of column */
+        char *org_name;              /* Original column name, if an alias */
+        char *table;                 /* Table of column if column was a field */
+        char *org_table;             /* Org table name, if table was an alias */
+        char *db;                    /* Database for table */
+        char *catalog;               /* Catalog for table */
+        char *def;                   /* Default value (set by mysql_list_fields) */
+        unsigned long length;        /* Width of column (create length) */
+        unsigned long max_length;    /* Max width for selected set */
+        unsigned int name_length;
+        unsigned int org_name_length;
+        unsigned int table_length;
+        unsigned int org_table_length;
+        unsigned int db_length;
+        unsigned int catalog_length;
+        unsigned int def_length;
+        unsigned int flags;          /* Div flags */
+        unsigned int decimals;       /* Number of decimals in field */
+        unsigned int charsetnr;      /* Character set */
+        unsigned int type;           /* Type of field */
+        void *extension;
+    } MYSQL_FIELD_COMPLETE;
+
+    const MYSQL_FIELD_COMPLETE* fields = (const MYSQL_FIELD_COMPLETE*)mariadb_fetch_fields_ptr(mariadb_result);
+    if (!fields) {
+        return NULL;
+    }
+
+    char** column_names = calloc(column_count, sizeof(char*));
+    if (!column_names) {
+        return NULL;
+    }
+
+    for (size_t i = 0; i < column_count; i++) {
+        // Extract actual field name from MYSQL_FIELD structure
+        if (fields[i].name) {
+            column_names[i] = strdup(fields[i].name);
+        } else {
+            // Fallback for NULL field names
+            char col_name[32];
+            snprintf(col_name, sizeof(col_name), "col_%zu", i);
+            column_names[i] = strdup(col_name);
+        }
+
+        if (!column_names[i]) {
+            // Cleanup on allocation failure
+            for (size_t j = 0; j < i; j++) {
+                free(column_names[j]);
+            }
+            free(column_names);
+            return NULL;
+        }
+    }
+
+    return column_names;
+}
+
+// Helper function to build JSON from MariaDB result (non-static for testing)
+bool mariadb_build_json_from_result(void* mariadb_result, size_t row_count, size_t column_count,
+                                   char** column_names, char** json_buffer) {
+    if (!mariadb_result || row_count == 0 || column_count == 0 || !json_buffer) {
+        if (json_buffer) {
+            *json_buffer = strdup("[]");
+        }
+        return json_buffer && *json_buffer;
+    }
+
+    // Get field types to determine numeric vs string columns
+    typedef struct {
+        char *name;
+        char *org_name;
+        char *table;
+        char *org_table;
+        char *db;
+        char *catalog;
+        char *def;
+        unsigned long length;
+        unsigned long max_length;
+        unsigned int name_length;
+        unsigned int org_name_length;
+        unsigned int table_length;
+        unsigned int org_table_length;
+        unsigned int db_length;
+        unsigned int catalog_length;
+        unsigned int def_length;
+        unsigned int flags;
+        unsigned int decimals;
+        unsigned int charsetnr;
+        unsigned int type;           /* Type of field - CRITICAL for numeric detection */
+        void *extension;
+    } MYSQL_FIELD_COMPLETE;
+
+    const MYSQL_FIELD_COMPLETE* fields = mariadb_fetch_fields_ptr ? (const MYSQL_FIELD_COMPLETE*)mariadb_fetch_fields_ptr(mariadb_result) : NULL;
+
+    size_t json_size = 1024 * row_count;
+    *json_buffer = calloc(1, json_size);
+    if (!*json_buffer) {
+        return false;
+    }
+
+    strcpy(*json_buffer, "[");
+    for (size_t row = 0; row < row_count; row++) {
+        if (row > 0) strcat(*json_buffer, ",");
+
+        // MYSQL_ROW is char** (array of strings)
+        char** row_data = (char**)mariadb_fetch_row_ptr(mariadb_result);
+        if (row_data) {
+            strcat(*json_buffer, "{");
+            for (size_t col = 0; col < column_count; col++) {
+                if (col > 0) strcat(*json_buffer, ",");
+
+                // Build column JSON
+                const char* col_name = column_names ? column_names[col] : "unknown";
+
+                // Check for NULL value
+                if (row_data[col] == NULL) {
+                    // Ensure buffer has room for null value
+                    size_t needed = strlen(col_name) + 10; // "name":null plus comma
+                    if (strlen(*json_buffer) + needed >= json_size) {
+                        json_size = json_size * 2 + needed;
+                        char* new_json = realloc(*json_buffer, json_size);
+                        if (!new_json) break;
+                        *json_buffer = new_json;
+                    }
+                    char* pos = *json_buffer + strlen(*json_buffer);
+                    snprintf(pos, json_size - strlen(*json_buffer), "\"%s\":null", col_name);
+                } else {
+                    // Check if column is numeric type
+                    bool is_numeric = fields && mariadb_is_numeric_type(fields[col].type);
+
+                    if (is_numeric) {
+                        // Numeric types - no quotes around value (JSON number)
+                        size_t needed = strlen(col_name) + strlen(row_data[col]) + 10;
+                        if (strlen(*json_buffer) + needed >= json_size) {
+                            json_size = json_size * 2 + needed;
+                            char* new_json = realloc(*json_buffer, json_size);
+                            if (!new_json) break;
+                            *json_buffer = new_json;
+                        }
+                        char* pos = *json_buffer + strlen(*json_buffer);
+                        snprintf(pos, json_size - strlen(*json_buffer), "\"%s\":%s", col_name, row_data[col]);
+                    } else {
+                        // String types - trim trailing whitespace, escape and quote the value
+                        // For large strings (like migration SQL), use dynamic allocation for escaped data
+                        // row_data[col] is guaranteed non-NULL here (in else block of NULL check)
+
+                        // Duplicate and trim the value
+                        char* trimmed_value = strdup(row_data[col]);
+                        if (trimmed_value) {
+                            mariadb_trim_trailing_whitespace(trimmed_value);
+                        }
+
+                        size_t escaped_size = (trimmed_value ? strlen(trimmed_value) : strlen(row_data[col])) * 2 + 1;
+                        char* escaped_data = calloc(1, escaped_size);
+                        if (!escaped_data) {
+                            free(trimmed_value);
+                            size_t needed = strlen(col_name) + 10;
+                            if (strlen(*json_buffer) + needed >= json_size) {
+                                json_size = json_size * 2 + needed;
+                                char* new_json = realloc(*json_buffer, json_size);
+                                if (!new_json) break;
+                                *json_buffer = new_json;
+                            }
+                            char* pos = *json_buffer + strlen(*json_buffer);
+                            snprintf(pos, json_size - strlen(*json_buffer), "\"%s\":null", col_name);
+                        } else {
+                            mariadb_json_escape_string(trimmed_value ? trimmed_value : row_data[col], escaped_data, escaped_size);
+                            size_t needed = strlen(col_name) + strlen(escaped_data) + 10;
+                            if (strlen(*json_buffer) + needed >= json_size) {
+                                json_size = json_size * 2 + needed;
+                                char* new_json = realloc(*json_buffer, json_size);
+                                if (!new_json) {
+                                    free(escaped_data);
+                                    free(trimmed_value);
+                                    break;
+                                }
+                                *json_buffer = new_json;
+                            }
+                            char* pos = *json_buffer + strlen(*json_buffer);
+                            snprintf(pos, json_size - strlen(*json_buffer), "\"%s\":\"%s\"", col_name, escaped_data);
+                            free(escaped_data);
+                            free(trimmed_value);
+                        }
+                    }
+                }
+            }
+            strcat(*json_buffer, "}");
+        }
+    }
+    strcat(*json_buffer, "]");
+
+    return true;
+}
+
+// Helper function to calculate JSON buffer size (non-static for testing)
+size_t mariadb_calculate_json_buffer_size(size_t row_count, size_t column_count __attribute__((unused))) {
+    // Estimate: 1024 bytes per row as a reasonable default
+    return 1024 * row_count;
+}
+
+// Helper function to validate query parameters (non-static for testing)
+bool mariadb_validate_query_parameters(const DatabaseHandle* connection, const QueryRequest* request, QueryResult** result) {
+    if (!connection || !request || !result || connection->engine_type != DB_ENGINE_MARIADB) {
+        return false;
+    }
+    return true;
+}
+
+// Helper function to execute query statement (non-static for testing)
+bool mariadb_execute_query_statement(void* mariadb_connection, const char* sql_template, const char* designator) {
+    if (!mariadb_query_ptr) {
+        log_this(designator, "MariaDB query function not available", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    if (mariadb_query_ptr(mariadb_connection, sql_template) != 0) {
+        log_this(designator, "MariaDB query execution failed", LOG_LEVEL_TRACE, 0);
+        if (mariadb_error_ptr) {
+            const char* error_msg = mariadb_error_ptr(mariadb_connection);
+            if (error_msg && strlen(error_msg) > 0) {
+                log_this(designator, "MariaDB query error: %s", LOG_LEVEL_TRACE, 1, error_msg);
+            }
+        }
+        return false;
+    }
+    return true;
+}
+
+// Helper function to store query result (non-static for testing)
+void* mariadb_store_query_result(void* mariadb_connection, const char* designator) {
+    if (!mariadb_store_result_ptr) {
+        return NULL;
+    }
+
+    void* mariadb_result = mariadb_store_result_ptr(mariadb_connection);
+    if (!mariadb_result) {
+        log_this(designator, "MariaDB execute_query: No result set returned", LOG_LEVEL_TRACE, 0);
+    }
+    return mariadb_result;
+}
+
+// Helper function to process query result (non-static for testing)
+bool mariadb_process_query_result(void* mariadb_result, QueryResult* db_result, const char* designator) {
+    if (!mariadb_result) {
+        // No result set (e.g., INSERT, UPDATE, DELETE)
+        db_result->row_count = 0;
+        db_result->column_count = 0;
+        db_result->data_json = strdup("[]");
+        // Note: affected_rows is handled by the caller since we don't have access to mariadb_conn here
+        db_result->affected_rows = 0;
+        return true;
+    }
+
+    // Get field types for numeric detection
+    typedef struct {
+        char *name;
+        char *org_name;
+        char *table;
+        char *org_table;
+        char *db;
+        char *catalog;
+        char *def;
+        unsigned long length;
+        unsigned long max_length;
+        unsigned int name_length;
+        unsigned int org_name_length;
+        unsigned int table_length;
+        unsigned int org_table_length;
+        unsigned int db_length;
+        unsigned int catalog_length;
+        unsigned int def_length;
+        unsigned int flags;
+        unsigned int decimals;
+        unsigned int charsetnr;
+        unsigned int type;              /* Type of field - CRITICAL for numeric detection */
+        void *extension;
+    } MYSQL_FIELD_COMPLETE;
+
+    const MYSQL_FIELD_COMPLETE* fields = mariadb_fetch_fields_ptr ? (const MYSQL_FIELD_COMPLETE*)mariadb_fetch_fields_ptr(mariadb_result) : NULL;
+
+    // Process result metadata and data
+    if (mariadb_num_rows_ptr && mariadb_num_fields_ptr) {
+        db_result->row_count = (size_t)mariadb_num_rows_ptr(mariadb_result);
+        db_result->column_count = (size_t)mariadb_num_fields_ptr(mariadb_result);
+
+        // Extract column names
+        if (db_result->column_count > 0 && fields) {
+            db_result->column_names = calloc(db_result->column_count, sizeof(char*));
+            if (db_result->column_names) {
+                for (size_t i = 0; i < db_result->column_count; i++) {
+                    // Extract actual field name from MYSQL_FIELD structure
+                    if (fields[i].name) {
+                        db_result->column_names[i] = strdup(fields[i].name);
+                    } else {
+                        // Fallback for NULL field names
+                        char col_name[32];
+                        snprintf(col_name, sizeof(col_name), "col_%zu", i);
+                        db_result->column_names[i] = strdup(col_name);
+                    }
+                }
+            }
+        }
+
+        // Convert result to JSON
+        if (db_result->row_count > 0 && db_result->column_count > 0 && mariadb_fetch_row_ptr) {
+            size_t json_size = 1024 * db_result->row_count;
+            db_result->data_json = calloc(1, json_size);
+            if (db_result->data_json) {
+                strcpy(db_result->data_json, "[");
+                for (size_t row = 0; row < db_result->row_count; row++) {
+                    if (row > 0) strcat(db_result->data_json, ",");
+
+                    // MYSQL_ROW is char** (array of strings)
+                    char** row_data = (char**)mariadb_fetch_row_ptr(mariadb_result);
+                    if (row_data) {
+                        strcat(db_result->data_json, "{");
+                        for (size_t col = 0; col < db_result->column_count; col++) {
+                            if (col > 0) strcat(db_result->data_json, ",");
+
+                            // Build column JSON
+                            const char* col_name = db_result->column_names ? db_result->column_names[col] : "unknown";
+
+                            // Check for NULL value
+                            if (row_data[col] == NULL) {
+                                // Ensure buffer has room for null value
+                                size_t needed = strlen(col_name) + 10; // "name":null plus comma
+                                if (strlen(db_result->data_json) + needed >= json_size) {
+                                    json_size = json_size * 2 + needed;
+                                    char* new_json = realloc(db_result->data_json, json_size);
+                                    if (!new_json) break;
+                                    db_result->data_json = new_json;
+                                }
+                                char* pos = db_result->data_json + strlen(db_result->data_json);
+                                snprintf(pos, json_size - strlen(db_result->data_json), "\"%s\":null", col_name);
+                            } else {
+                                // Check if column is numeric type
+                                bool is_numeric = fields && mariadb_is_numeric_type(fields[col].type);
+
+                                if (is_numeric) {
+                                    // Numeric types - no quotes around value (JSON number)
+                                    size_t needed = strlen(col_name) + strlen(row_data[col]) + 10;
+                                    if (strlen(db_result->data_json) + needed >= json_size) {
+                                        json_size = json_size * 2 + needed;
+                                        char* new_json = realloc(db_result->data_json, json_size);
+                                        if (!new_json) break;
+                                        db_result->data_json = new_json;
+                                    }
+                                    char* pos = db_result->data_json + strlen(db_result->data_json);
+                                    snprintf(pos, json_size - strlen(db_result->data_json), "\"%s\":%s", col_name, row_data[col]);
+                                } else {
+                                    // String types - trim trailing whitespace, escape and quote the value
+                                    // For large strings (like migration SQL), use dynamic allocation for escaped data
+                                    // row_data[col] is guaranteed non-NULL here (in else block of NULL check)
+
+                                    // Duplicate and trim the value
+                                    char* trimmed_value = strdup(row_data[col]);
+                                    if (trimmed_value) {
+                                        mariadb_trim_trailing_whitespace(trimmed_value);
+                                    }
+
+                                    size_t escaped_size = (trimmed_value ? strlen(trimmed_value) : strlen(row_data[col])) * 2 + 1;
+                                    char* escaped_data = calloc(1, escaped_size);
+                                    if (!escaped_data) {
+                                        free(trimmed_value);
+                                        size_t needed = strlen(col_name) + 10;
+                                        if (strlen(db_result->data_json) + needed >= json_size) {
+                                            json_size = json_size * 2 + needed;
+                                            char* new_json = realloc(db_result->data_json, json_size);
+                                            if (!new_json) break;
+                                            db_result->data_json = new_json;
+                                        }
+                                        char* pos = db_result->data_json + strlen(db_result->data_json);
+                                        snprintf(pos, json_size - strlen(db_result->data_json), "\"%s\":null", col_name);
+                                    } else {
+                                        mariadb_json_escape_string(trimmed_value ? trimmed_value : row_data[col], escaped_data, escaped_size);
+                                        size_t needed = strlen(col_name) + strlen(escaped_data) + 10;
+                                        if (strlen(db_result->data_json) + needed >= json_size) {
+                                            json_size = json_size * 2 + needed;
+                                            char* new_json = realloc(db_result->data_json, json_size);
+                                            if (!new_json) {
+                                                free(escaped_data);
+                                                free(trimmed_value);
+                                                break;
+                                            }
+                                            db_result->data_json = new_json;
+                                        }
+                                        char* pos = db_result->data_json + strlen(db_result->data_json);
+                                        snprintf(pos, json_size - strlen(db_result->data_json), "\"%s\":\"%s\"", col_name, escaped_data);
+                                        free(escaped_data);
+                                        free(trimmed_value);
+                                    }
+                                }
+                            }
+                        }
+                        strcat(db_result->data_json, "}");
+                    }
+                }
+                strcat(db_result->data_json, "]");
+
+                log_this(designator, "MariaDB execute_query: Generated result JSON", LOG_LEVEL_TRACE, 0);
+            }
+        } else {
+            db_result->data_json = strdup("[]");
+            log_this(designator, "MariaDB execute_query: Query returned no data", LOG_LEVEL_TRACE, 0);
+        }
+    }
+
+    // Free result
+    if (mariadb_free_result_ptr) {
+        mariadb_free_result_ptr(mariadb_result);
+    }
+
+    return true;
+}
+
+// Helper function to process prepared statement result (non-static for testing)
+bool mariadb_process_prepared_result(void* mariadb_result, QueryResult* db_result, void* stmt_handle, const char* designator) {
+    // Set success flag (similar to mariadb_process_direct_result)
+    db_result->success = true;
+
+    if (mariadb_result) {
+        // This is a SELECT query (or INSERT ... RETURNING) with results.
+        // PERSIST_PLAN Phase 1b: capture store_result rc. On INSERT ... RETURNING
+        // for an existing key (e.g. duplicate message_uuid), the .so returns non-zero
+        // here and leaves fetch_row_func NULL; the previous code then called
+        // mariadb_stmt_fetch unconditionally, causing SIGSEGV inside the client .so
+        // (fetch_row_func was a NULL function pointer). Honour the rc: log the
+        // client error, free metadata, and return an empty result set with the
+        // affected_rows count so callers (Persist retry on duplicate key) see the
+        // same shape as other engines' empty-RETURNING path.
+
+        // Get column count up front so the failure path can report schema.
+        unsigned int column_count = 0;
+        if (mariadb_stmt_field_count_ptr) {
+            column_count = mariadb_stmt_field_count_ptr(stmt_handle);
+        } else if (mariadb_num_fields_ptr) {
+            column_count = mariadb_num_fields_ptr(mariadb_result);
+        }
+        db_result->column_count = (size_t)column_count;
+
+        int store_rc = 0;
+        if (mariadb_stmt_store_result_ptr) {
+            store_rc = mariadb_stmt_store_result_ptr(stmt_handle);
+            log_this(designator, "MariaDB prepared stmt store_result rc=%d", LOG_LEVEL_TRACE, 1, store_rc);
+        }
+        if (store_rc != 0) {
+            if (mariadb_stmt_error_ptr) {
+                const char* stmt_err = mariadb_stmt_error_ptr(stmt_handle);
+                if (stmt_err && strlen(stmt_err) > 0) {
+                    log_this(designator, "MariaDB prepared stmt store_result failed: %s", LOG_LEVEL_ERROR, 1, stmt_err);
+                } else {
+                    log_this(designator, "MariaDB prepared stmt store_result failed (no detail)", LOG_LEVEL_ERROR, 0);
+                }
+            } else {
+                log_this(designator, "MariaDB prepared stmt store_result failed", LOG_LEVEL_ERROR, 0);
+            }
+            if (mariadb_stmt_free_result_ptr) {
+                mariadb_stmt_free_result_ptr(stmt_handle);
+            }
+            if (mariadb_free_result_ptr) {
+                mariadb_free_result_ptr(mariadb_result);
+            }
+            db_result->row_count = 0;
+            db_result->data_json = strdup("[]");
+            if (mariadb_stmt_affected_rows_ptr) {
+                unsigned long long affected = mariadb_stmt_affected_rows_ptr(stmt_handle);
+                #pragma GCC diagnostic push
+                #pragma GCC diagnostic ignored "-Wconversion"
+                db_result->affected_rows = (size_t)affected;
+                #pragma GCC diagnostic pop
+            } else {
+                db_result->affected_rows = 0;
+            }
+            db_result->success = true;
+            return true;
+        }
+        log_this(designator, "MariaDB prepared stmt bind_result for %u columns", LOG_LEVEL_TRACE, 1, column_count);
+
+        // Get field types and extract column names
+        typedef struct {
+            char *name;
+            char *org_name;
+            char *table;
+            char *org_table;
+            char *db;
+            char *catalog;
+            char *def;
+            unsigned long length;
+            unsigned long max_length;
+            unsigned int name_length;
+            unsigned int org_name_length;
+            unsigned int table_length;
+            unsigned int org_table_length;
+            unsigned int db_length;
+            unsigned int catalog_length;
+            unsigned int def_length;
+            unsigned int flags;
+            unsigned int decimals;
+            unsigned int charsetnr;
+            unsigned int type;              /* Type of field - CRITICAL for numeric detection */
+            void *extension;
+        } MYSQL_FIELD_COMPLETE;
+
+        const MYSQL_FIELD_COMPLETE* fields = NULL;
+        if (column_count > 0 && mariadb_fetch_fields_ptr) {
+            fields = (const MYSQL_FIELD_COMPLETE*)mariadb_fetch_fields_ptr(mariadb_result);
+            if (fields) {
+                db_result->column_names = calloc(db_result->column_count, sizeof(char*));
+                if (db_result->column_names) {
+                    for (size_t i = 0; i < db_result->column_count; i++) {
+                        if (fields[i].name) {
+                            db_result->column_names[i] = strdup(fields[i].name);
+                        } else {
+                            char col_name[32];
+                            snprintf(col_name, sizeof(col_name), "col_%zu", i);
+                            db_result->column_names[i] = strdup(col_name);
+                        }
+                    }
+                }
+            }
+        }
+
+        char** col_buffers = calloc(column_count, sizeof(char*));
+        size_t* col_caps = calloc(column_count, sizeof(size_t));
+        unsigned long* col_lengths = calloc(column_count, sizeof(unsigned long));
+        char* col_is_null = calloc(column_count, sizeof(char));
+        char* col_errors = calloc(column_count, sizeof(char));
+
+        if (!col_buffers || !col_caps || !col_lengths || !col_is_null || !col_errors) {
+            free(col_buffers);
+            free(col_caps);
+            free(col_lengths);
+            free(col_is_null);
+            free(col_errors);
+            if (mariadb_result && mariadb_free_result_ptr) {
+                mariadb_free_result_ptr(mariadb_result);
+            }
+            return false;
+        }
+
+        for (size_t i = 0; i < column_count; i++) {
+            size_t cap = MARIADB_PREPARED_COL_FLOOR;
+            if (fields && fields[i].max_length + 1 > cap) {
+                cap = (size_t)fields[i].max_length + 1;
+            }
+            if (cap > MARIADB_PREPARED_COL_CAP) {
+                cap = MARIADB_PREPARED_COL_CAP;
+            }
+            col_caps[i] = cap;
+            col_buffers[i] = calloc(1, cap);
+            if (!col_buffers[i]) {
+                for (size_t j = 0; j < i; j++) {
+                    free(col_buffers[j]);
+                }
+                free(col_buffers);
+                free(col_caps);
+                free(col_lengths);
+                free(col_is_null);
+                free(col_errors);
+                if (mariadb_result && mariadb_free_result_ptr) {
+                    mariadb_free_result_ptr(mariadb_result);
+                }
+                return false;
+            }
+        }
+
+        // Create MYSQL_BIND structures for result binding
+        // Must match the MYSQL_BIND structure defined in query.c
+        typedef struct {
+            unsigned long* length;
+            char* is_null;
+            void* buffer;
+            char* error;
+            union {
+                unsigned char* row_ptr;
+                char* indicator;
+            } u;
+            void (*store_param_func)(void*, void*);
+            void (*fetch_result)(void*, void*, unsigned char**);
+            void (*skip_result)(void*, void*, unsigned char**);
+            unsigned long buffer_length;
+            unsigned long offset;
+            unsigned long length_value;
+            unsigned int flags;
+            unsigned int pack_length;
+            unsigned int buffer_type;
+            char error_value;
+            char is_unsigned;
+            char long_data_used;
+            char is_null_value;
+            void* extension;
+        } MYSQL_BIND_COMPLETE;
+
+        MYSQL_BIND_COMPLETE* bind = calloc(column_count, sizeof(MYSQL_BIND_COMPLETE));
+        if (!bind) {
+            for (size_t i = 0; i < column_count; i++) {
+                free(col_buffers[i]);
+            }
+            free(col_buffers);
+            free(col_caps);
+            free(col_lengths);
+            free(col_is_null);
+            free(col_errors);
+            if (mariadb_result && mariadb_free_result_ptr) {
+                mariadb_free_result_ptr(mariadb_result);
+            }
+            return false;
+        }
+
+        for (size_t i = 0; i < column_count; i++) {
+            memset(&bind[i], 0, sizeof(MYSQL_BIND_COMPLETE));
+            bind[i].buffer_type = 253;
+            bind[i].buffer = col_buffers[i];
+            bind[i].buffer_length = col_caps[i];
+            bind[i].length = &col_lengths[i];
+            bind[i].is_null = &col_is_null[i];
+            bind[i].error = &col_errors[i];
+        }
+
+        if (mariadb_stmt_bind_result_ptr && mariadb_stmt_bind_result_ptr(stmt_handle, bind) != 0) {
+            log_this(designator, "MariaDB prepared statement bind result failed", LOG_LEVEL_ERROR, 0);
+            free(bind);
+            for (size_t i = 0; i < column_count; i++) {
+                free(col_buffers[i]);
+            }
+            free(col_buffers);
+            free(col_caps);
+            free(col_lengths);
+            free(col_is_null);
+            free(col_errors);
+            if (mariadb_result && mariadb_free_result_ptr) {
+                mariadb_free_result_ptr(mariadb_result);
+            }
+            return false;
+        }
+        log_this(designator, "MariaDB prepared stmt fetch loop start", LOG_LEVEL_TRACE, 0);
+
+        size_t json_size = 8192;
+        db_result->data_json = calloc(1, json_size);
+        if (db_result->data_json) {
+            strcpy(db_result->data_json, "[");
+            size_t row_count = 0;
+
+            while (mariadb_stmt_fetch_ptr) {
+                int fetch_rc = mariadb_stmt_fetch_ptr(stmt_handle);
+                if (fetch_rc == MARIADB_NO_DATA) {
+                    break;
+                }
+                if (fetch_rc != 0 && fetch_rc != MARIADB_DATA_TRUNCATED) {
+                    break;
+                }
+                if (row_count > 0) {
+                    strcat(db_result->data_json, ",");
+                }
+
+                strcat(db_result->data_json, "{");
+                for (size_t col = 0; col < column_count; col++) {
+                    if (col > 0) {
+                        strcat(db_result->data_json, ",");
+                    }
+
+                    const char* col_name = db_result->column_names ? db_result->column_names[col] : "unknown";
+
+                    if (col_is_null[col]) {
+                        size_t needed = strlen(col_name) + 10;
+                        if (strlen(db_result->data_json) + needed >= json_size) {
+                            json_size = json_size * 2 + needed;
+                            char* new_json = realloc(db_result->data_json, json_size);
+                            if (!new_json) {
+                                break;
+                            }
+                            db_result->data_json = new_json;
+                        }
+                        char* pos = db_result->data_json + strlen(db_result->data_json);
+                        snprintf(pos, json_size - strlen(db_result->data_json), "\"%s\":null", col_name);
+                    } else {
+                        unsigned long raw_len = col_lengths[col];
+                        if (raw_len >= col_caps[col]) {
+                            raw_len = col_caps[col] - 1;
+                        }
+                        col_buffers[col][raw_len] = '\0';
+
+                        bool is_numeric = fields && mariadb_is_numeric_type(fields[col].type);
+                        if (is_numeric) {
+                            size_t needed = strlen(col_name) + strlen(col_buffers[col]) + 10;
+                            if (strlen(db_result->data_json) + needed >= json_size) {
+                                json_size = json_size * 2 + needed;
+                                char* new_json = realloc(db_result->data_json, json_size);
+                                if (!new_json) {
+                                    break;
+                                }
+                                db_result->data_json = new_json;
+                            }
+                            char* pos = db_result->data_json + strlen(db_result->data_json);
+                            snprintf(pos, json_size - strlen(db_result->data_json), "\"%s\":%s",
+                                     col_name, col_buffers[col]);
+                        } else {
+                            mariadb_trim_trailing_whitespace(col_buffers[col]);
+                            size_t escaped_size = strlen(col_buffers[col]) * 2 + 1;
+                            char* escaped_data = calloc(1, escaped_size);
+                            if (!escaped_data) {
+                                size_t needed = strlen(col_name) + 10;
+                                if (strlen(db_result->data_json) + needed >= json_size) {
+                                    json_size = json_size * 2 + needed;
+                                    char* new_json = realloc(db_result->data_json, json_size);
+                                    if (!new_json) {
+                                        break;
+                                    }
+                                    db_result->data_json = new_json;
+                                }
+                                char* pos = db_result->data_json + strlen(db_result->data_json);
+                                snprintf(pos, json_size - strlen(db_result->data_json), "\"%s\":null", col_name);
+                            } else {
+                                mariadb_json_escape_string(col_buffers[col], escaped_data, escaped_size);
+                                size_t needed = strlen(col_name) + strlen(escaped_data) + 10;
+                                if (strlen(db_result->data_json) + needed >= json_size) {
+                                    json_size = json_size * 2 + needed;
+                                    char* new_json = realloc(db_result->data_json, json_size);
+                                    if (!new_json) {
+                                        free(escaped_data);
+                                        break;
+                                    }
+                                    db_result->data_json = new_json;
+                                }
+                                char* pos = db_result->data_json + strlen(db_result->data_json);
+                                snprintf(pos, json_size - strlen(db_result->data_json),
+                                         "\"%s\":\"%s\"", col_name, escaped_data);
+                                free(escaped_data);
+                            }
+                        }
+                    }
+                }
+                strcat(db_result->data_json, "}");
+                row_count++;
+            }
+            strcat(db_result->data_json, "]");
+            db_result->row_count = row_count;
+        }
+
+        free(bind);
+        for (size_t i = 0; i < column_count; i++) {
+            free(col_buffers[i]);
+        }
+        free(col_buffers);
+        free(col_caps);
+        free(col_lengths);
+        free(col_is_null);
+        free(col_errors);
+
+        if (mariadb_stmt_free_result_ptr) {
+            mariadb_stmt_free_result_ptr(stmt_handle);
+        }
+        if (mariadb_result && mariadb_free_result_ptr) {
+            mariadb_free_result_ptr(mariadb_result);
+        }
+    } else {
+        // No result set (e.g., INSERT, UPDATE, DELETE)
+        db_result->row_count = 0;
+        db_result->column_count = 0;
+        db_result->data_json = strdup("[]");
+
+        // Get affected rows
+        if (mariadb_stmt_affected_rows_ptr) {
+            unsigned long long affected = mariadb_stmt_affected_rows_ptr(stmt_handle);
+            #pragma GCC diagnostic push
+            #pragma GCC diagnostic ignored "-Wconversion"
+            db_result->affected_rows = (size_t)affected;
+            #pragma GCC diagnostic pop
+        } else {
+            db_result->affected_rows = 0;
+        }
+    }
+
+    return true;
+}
+
+// New streamlined helper for processing prepared statement results
+// This consolidates the repetitive MYSQL_BIND result binding and fetching code
+bool mariadb_process_prepared_stmt_result(void* stmt, QueryResult* result, const char* designator) {
+    if (!stmt || !result) {
+        return false;
+    }
+
+    // Get result metadata
+    void* mariadb_result = NULL;
+    if (mariadb_stmt_result_metadata_ptr) {
+        mariadb_result = mariadb_stmt_result_metadata_ptr(stmt);
+    }
+
+    // Use existing mariadb_process_prepared_result helper
+    return mariadb_process_prepared_result(mariadb_result, result, stmt, designator);
+}
+
+// New streamlined helper for processing direct query results
+// This consolidates the direct execution result processing code
+bool mariadb_process_direct_result(void* mariadb_conn, void* mariadb_result, QueryResult* result, const char* designator) {
+    if (!result) {
+        return false;
+    }
+
+    result->success = true;
+
+    if (!mariadb_result) {
+        // No result set (INSERT/UPDATE/DELETE)
+        result->row_count = 0;
+        result->column_count = 0;
+        result->data_json = strdup("[]");
+
+        if (mariadb_affected_rows_ptr && mariadb_conn) {
+            unsigned long long affected = mariadb_affected_rows_ptr(mariadb_conn);
+            #pragma GCC diagnostic push
+            #pragma GCC diagnostic ignored "-Wconversion"
+            result->affected_rows = (size_t)affected;
+            #pragma GCC diagnostic pop
+        } else {
+            result->affected_rows = 0;
+        }
+        return true;
+    }
+
+    // Use existing mariadb_process_query_result helper
+    return mariadb_process_query_result(mariadb_result, result, designator);
+}

@@ -13,6 +13,7 @@
 DatabaseEngineInterface* postgresql_get_interface(void);
 DatabaseEngineInterface* sqlite_get_interface(void);
 DatabaseEngineInterface* mysql_get_interface(void);
+DatabaseEngineInterface* mariadb_get_interface(void);
 DatabaseEngineInterface* db2_get_interface(void);
 DatabaseEngineInterface* firebird_get_interface(void);
 
@@ -33,17 +34,19 @@ bool database_engine_init(void) {
 
     memset(engine_registry, 0, sizeof(engine_registry));
 
-    int postgres_count = 0, mysql_count = 0, sqlite_count = 0, db2_count = 0, firebird_count = 0;
+    int postgres_count = 0, mysql_count = 0, sqlite_count = 0, db2_count = 0, firebird_count = 0, mariadb_count = 0;
 
     if (app_config && app_config->databases.connection_count > 0) {
         for (int i = 0; i < app_config->databases.connection_count; i++) {
             const DatabaseConnection* conn = &app_config->databases.connections[i];
             if (conn->enabled && conn->type) {
                 const char* engine_type = conn->type;
-                if (strcmp(engine_type, "postgresql") == 0 || strcmp(engine_type, "postgres") == 0) {
+                 if (strcmp(engine_type, "postgresql") == 0 || strcmp(engine_type, "postgres") == 0) {
                     postgres_count++;
                 } else if (strcmp(engine_type, "mysql") == 0) {
                     mysql_count++;
+                } else if (strcmp(engine_type, "mariadb") == 0) {
+                    mariadb_count++;
                 } else if (strcmp(engine_type, "sqlite") == 0) {
                     sqlite_count++;
                 } else if (strcmp(engine_type, "db2") == 0) {
@@ -91,6 +94,18 @@ bool database_engine_init(void) {
         }
     } else {
         log_this(SR_DATABASE, "- Skipping MySQL engine", LOG_LEVEL_TRACE, 0);
+    }
+
+    if (mariadb_count > 0) {
+        DatabaseEngineInterface* mariadb_engine = mariadb_get_interface();
+        if (mariadb_engine) {
+            log_this(SR_DATABASE, "- Registering MariaDB engine: %s at index %d", LOG_LEVEL_DEBUG, 2,
+                mariadb_engine->name ? mariadb_engine->name : "NULL",
+                DB_ENGINE_MARIADB);
+            engine_registry[DB_ENGINE_MARIADB] = mariadb_engine;
+        }
+    } else {
+        log_this(SR_DATABASE, "- Skipping MariaDB engine", LOG_LEVEL_TRACE, 0);
     }
 
     if (db2_count > 0) {

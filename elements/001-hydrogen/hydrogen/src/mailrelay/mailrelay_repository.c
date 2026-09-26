@@ -357,7 +357,7 @@ bool repo_add_datetime(json_t* root, const char* name, const char* iso8601, cons
         return repo_add_string(root, name, iso8601);
     }
 
-    bool needs_translation = (strcmp(conn->type, "mysql") == 0) || (strcmp(conn->type, "sqlite") == 0);
+    bool needs_translation = (strcmp(conn->type, "mysql") == 0) || (strcmp(conn->type, "mariadb") == 0) || (strcmp(conn->type, "sqlite") == 0);
 
     if (!needs_translation) {
         return repo_add_string(root, name, iso8601);

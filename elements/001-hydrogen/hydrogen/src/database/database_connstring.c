@@ -503,6 +503,56 @@ ConnectionConfig* parse_connection_string(const char* connection_string) {
         }
         config->connection_string = strdup(connection_string);
 
+    } else if (strstr(connection_string, "mariadb://") == connection_string) {
+        // MariaDB format: mariadb://user:password@host:port/database
+        config->port = 3306;  // MariaDB default
+
+        // Similar parsing logic as PostgreSQL
+        char* temp = strdup(connection_string + 10);  // Skip "mariadb://"
+        if (!temp) {
+            free(config);
+            return NULL;
+        }
+
+        char* at_pos = strchr(temp, '@');
+        if (at_pos) {
+            *at_pos = '\0';
+            // Parse user:password - split by colon
+            char* colon_pos = strchr(temp, ':');
+            if (colon_pos) {
+                *colon_pos = '\0';
+                config->username = strdup(temp);
+                config->password = strdup(colon_pos + 1);
+            } else {
+                config->username = strdup(temp);
+            }
+
+            char* host_start = at_pos + 1;
+            char* slash_pos = strchr(host_start, '/');
+            if (slash_pos) {
+                *slash_pos = '\0';
+                config->database = strdup(slash_pos + 1);
+            }
+
+            char* port_colon = strchr(host_start, ':');
+            if (port_colon) {
+                *port_colon = '\0';
+                config->host = strdup(host_start);
+                config->port = atoi(port_colon + 1);
+            } else {
+                config->host = strdup(host_start);
+            }
+        }
+        free(temp);
+
+        // Set defaults for MariaDB
+        if (at_pos) {
+            if (!config->database) {
+                config->database = strdup("mariadb");
+            }
+        }
+        config->connection_string = strdup(connection_string);
+
     } else if (strstr(connection_string, ".db") || strcmp(connection_string, ":memory:") == 0) {
         // SQLite format: /path/to/database.db or :memory:
         config->database = strdup(connection_string);

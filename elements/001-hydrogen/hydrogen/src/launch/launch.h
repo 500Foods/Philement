@@ -116,9 +116,9 @@ int version_matches(const char* loaded_version, const char* expected_version);
 // Database subsystem validation functions
 void validate_database_configuration(const DatabaseConfig* db_config, const char*** messages,
                                     size_t* count, size_t* capacity, bool* overall_readiness,
-                                    int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count, int* firebird_count);
+                                    int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count, int* firebird_count, int* mariadb_count);
 void check_database_library_dependencies(const char*** messages, size_t* count, size_t* capacity, bool* overall_readiness,
-                                       int postgres_count, int mysql_count, int sqlite_count, int db2_count, int firebird_count);
+                                       int postgres_count, int mysql_count, int sqlite_count, int db2_count, int firebird_count, int mariadb_count);
 bool validate_database_connections(const DatabaseConfig* db_config, const char*** messages,
                                   size_t* count, size_t* capacity);
 

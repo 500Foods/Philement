@@ -665,8 +665,8 @@ void dump_database_config(const DatabaseConfig* config) {
     log_this(SR_CONFIG_CURRENT, "――― Connections", LOG_LEVEL_STATE, 0);
 
     // Count databases by type for summary
-    int postgres_count = 0, mysql_count = 0, sqlite_count = 0, db2_count = 0;
-    char postgres_name[64] = "", mysql_name[64] = "", sqlite_name[64] = "", db2_name[64] = "";
+    int postgres_count = 0, mysql_count = 0, sqlite_count = 0, db2_count = 0, mariadb_count = 0;
+    char postgres_name[64] = "", mysql_name[64] = "", sqlite_name[64] = "", db2_name[64] = "", mariadb_name[64] = "";
 
     for (int i = 0; i < config->connection_count; i++) {
         const DatabaseConnection* conn = &config->connections[i];
@@ -680,6 +680,11 @@ void dump_database_config(const DatabaseConfig* config) {
                 mysql_count++;
                 if (mysql_count == 1 && conn->connection_name) {
                     strcpy(mysql_name, conn->connection_name);
+                }
+            } else if (strcmp(conn->type, "mariadb") == 0) {
+                mariadb_count++;
+                if (mariadb_count == 1 && conn->connection_name) {
+                    strcpy(mariadb_name, conn->connection_name);
                 }
             } else if (strcmp(conn->type, "sqlite") == 0) {
                 sqlite_count++;
@@ -710,6 +715,12 @@ void dump_database_config(const DatabaseConfig* config) {
         log_this(SR_CONFIG_CURRENT, "――― MySQL Databases: %d", LOG_LEVEL_STATE, 1, mysql_count);
     } else {
         log_this(SR_CONFIG_CURRENT, "――― MySQL Databases: 0", LOG_LEVEL_STATE, 0);
+    }
+
+    if (mariadb_count > 0) {
+        log_this(SR_CONFIG_CURRENT, "――― MariaDB Databases: %d", LOG_LEVEL_STATE, 1, mariadb_count);
+    } else {
+        log_this(SR_CONFIG_CURRENT, "――― MariaDB Databases: 0", LOG_LEVEL_STATE, 0);
     }
 
     if (sqlite_count > 0) {

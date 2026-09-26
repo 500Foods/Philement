@@ -20,8 +20,8 @@ void validate_migration_config(const DatabaseConnection* conn, const char*** mes
 
 // Validate database configuration and count databases by type
 void validate_database_configuration(const DatabaseConfig* db_config, const char*** messages,
-                                    size_t* count, size_t* capacity, bool* overall_readiness,
-                                    int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count, int* firebird_count) {
+                                     size_t* count, size_t* capacity, bool* overall_readiness,
+                                     int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count, int* firebird_count, int* mariadb_count) {
     // Queue configuration is validated during JSON parsing
     add_launch_message(messages, count, capacity, strdup("  Go:      Queue configuration validated"));
 
@@ -30,6 +30,7 @@ void validate_database_configuration(const DatabaseConfig* db_config, const char
     char* sqlite_names = NULL;
     char* db2_names = NULL;
     char* firebird_names = NULL;
+    char* mariadb_names = NULL;
 
     // Initialize counters
     *postgres_count = 0;
@@ -37,6 +38,7 @@ void validate_database_configuration(const DatabaseConfig* db_config, const char
     *sqlite_count = 0;
     *db2_count = 0;
     *firebird_count = 0;
+    *mariadb_count = 0;
 
     for (int i = 0; i < db_config->connection_count; i++) {
         const DatabaseConnection* conn = &db_config->connections[i];
@@ -68,6 +70,20 @@ void validate_database_configuration(const DatabaseConfig* db_config, const char
                         strcat(new_names, ", ");
                         strcat(new_names, new_name);
                         mysql_names = new_names;
+                    }
+                }
+            } else if (strcmp(engine_type, "mariadb") == 0) {
+                (*mariadb_count)++;
+                if (*mariadb_count == 1) {
+                    mariadb_names = strdup(conn->connection_name ? conn->connection_name : "Unknown");
+                } else {
+                    const char* new_name = conn->connection_name ? conn->connection_name : "Unknown";
+                    size_t new_size = strlen(mariadb_names) + 2 + strlen(new_name) + 1; // existing + ", " + new_name + null
+                    char* new_names = realloc(mariadb_names, new_size);
+                    if (new_names) {
+                        strcat(new_names, ", ");
+                        strcat(new_names, new_name);
+                        mariadb_names = new_names;
                     }
                 }
             } else if (strcmp(engine_type, "sqlite") == 0) {
@@ -234,7 +250,7 @@ void validate_database_configuration(const DatabaseConfig* db_config, const char
 
 // Check library dependencies for database engines
 void check_database_library_dependencies(const char*** messages, size_t* count, size_t* capacity, bool* overall_readiness,
-                                       int postgres_count, int mysql_count, int sqlite_count, int db2_count, int firebird_count) {
+                                       int postgres_count, int mysql_count, int sqlite_count, int db2_count, int firebird_count, int mariadb_count) {
     // Check PostgreSQL library if needed
     if (postgres_count > 0) {
         void* libpq_handle = dlopen("libpq.so.5", RTLD_LAZY);
@@ -325,6 +341,42 @@ void check_database_library_dependencies(const char*** messages, size_t* count, 
 
             free(loaded_version);
             dlclose(mysql_handle);
+        }
+    }
+
+    // Check MariaDB library if needed
+    if (mariadb_count > 0) {
+        void* mariadb_handle = dlopen("libmariadb.so.3", RTLD_LAZY);
+        if (!mariadb_handle) {
+            // Try alternative version if first fails
+            mariadb_handle = dlopen("libmariadb.so", RTLD_LAZY);
+        }
+
+        if (!mariadb_handle) {
+            const char* error_msg = dlerror();
+            char* lib_msg = malloc(512);
+            if (lib_msg) {
+                snprintf(lib_msg, 512, "  No-Go:   MariaDB library not found: %s", error_msg ? error_msg : "unknown error");
+                add_launch_message(messages, count, capacity, lib_msg);
+            }
+            *overall_readiness = false;
+        } else {
+            // Extract version information
+            char* loaded_version = get_library_version(mariadb_handle, "MariaDB");
+
+            // Format success message with version information
+            char* lib_msg = malloc(512);
+            if (lib_msg) {
+                if (loaded_version && strlen(loaded_version) > 0) {
+                    snprintf(lib_msg, 512, "  Go:      MariaDB library loaded successfully (libmariadb.so %s)", loaded_version);
+                } else {
+                    snprintf(lib_msg, 512, "  Go:      MariaDB library loaded successfully (libmariadb.so version-unknown)");
+                }
+                add_launch_message(messages, count, capacity, lib_msg);
+            }
+
+            free(loaded_version);
+            dlclose(mariadb_handle);
         }
     }
 
@@ -705,17 +757,19 @@ LaunchReadiness check_database_launch_readiness(void) {
         add_launch_message(&messages, &count, &capacity, strdup("  Go:      Database subsystem already registered"));
     }
 
-    // Validate database configuration
-    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count;
+        // Validate database configuration
+    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count, mariadb_count;
     validate_database_configuration(&app_config->databases, &messages, &count, &capacity, &overall_readiness,
-                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count);
+                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count, &mariadb_count);
 
-    int total_databases = postgres_count + mysql_count + sqlite_count + db2_count + firebird_count;
+    int total_databases = postgres_count + mysql_count + sqlite_count + db2_count + firebird_count + mariadb_count;
 
     // For non-zero database count, check library dependencies
     if (total_databases > 0) {
         check_database_library_dependencies(&messages, &count, &capacity, &overall_readiness,
-                                         postgres_count, mysql_count, sqlite_count, db2_count, firebird_count);
+                                         postgres_count, mysql_count, sqlite_count, db2_count, firebird_count, mariadb_count);
+
+
     }
 
     // Validate individual database connections

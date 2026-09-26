@@ -617,12 +617,13 @@ int startup_hydrogen(const char* config_path) {
         log_this(SR_STARTUP, "― MailRelay:   %'9d", LOG_LEVEL_DEBUG, 1, mail_relay_queue_memory.entry_count);
         log_this(SR_STARTUP, "― Notify:      %'9d", LOG_LEVEL_DEBUG, 1, notify_queue_memory.entry_count);
 
-        int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count;
-        database_get_counts_by_type(&postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count);
-        int total_databases = postgres_count + mysql_count + sqlite_count + db2_count + firebird_count;
+        int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count, mariadb_count;
+        database_get_counts_by_type(&postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count, &mariadb_count);
+        int total_databases = postgres_count + mysql_count + sqlite_count + db2_count + firebird_count + mariadb_count;
         log_this(SR_STARTUP, "DATABASES:     %'9d Total", LOG_LEVEL_DEBUG, 1, total_databases);
         log_this(SR_STARTUP, "― PostgreSQL:  %'9d", LOG_LEVEL_DEBUG, 1, postgres_count);
         log_this(SR_STARTUP, "― MySQL:       %'9d", LOG_LEVEL_DEBUG, 1, mysql_count);
+        log_this(SR_STARTUP, "― MariaDB:     %'9d", LOG_LEVEL_DEBUG, 1, mariadb_count);
         log_this(SR_STARTUP, "― SQLite:      %'9d", LOG_LEVEL_DEBUG, 1, sqlite_count);
         log_this(SR_STARTUP, "― DB2:         %'9d", LOG_LEVEL_DEBUG, 1, db2_count);
         log_this(SR_STARTUP, "― Firebird:    %'9d", LOG_LEVEL_DEBUG, 1, firebird_count);

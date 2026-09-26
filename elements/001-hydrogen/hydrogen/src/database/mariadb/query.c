@@ -1,0 +1,768 @@
+/*
+  * MariaDB Database Engine - Query Execution Implementation
+  *
+  * Implements MariaDB query execution functions.
+  */
+
+// Project includes
+#include <src/hydrogen.h>
+#include <src/database/database.h>
+#include <src/database/dbqueue/dbqueue.h>
+#include <src/database/database_params.h>
+
+// MariaDB/MySQL client header. Provides MYSQL_BIND, MYSQL_TIME, and the
+// MYSQL_TYPE_* enum. Must come BEFORE local headers so they pick up the
+// canonical struct typedefs without conflicting with the hand-rolled
+// definitions they used to carry (PERSIST_PLAN). The .so itself is still
+// loaded via dlsym at runtime.
+#include <mysql.h>
+
+// Undefine the mariadb_connect macro from mysql.h to avoid conflict with
+// our mariadb_connect() function declaration in connection.h
+#undef mariadb_connect
+
+// Local includes
+#include "types.h"
+#include "connection.h"
+#include "query.h"
+#include "query_helpers.h"
+#include "utils.h"
+
+// External declarations for libmariadb function pointers (defined in connection.c)
+extern mariadb_store_result_t mariadb_store_result_ptr;
+extern mariadb_num_rows_t mariadb_num_rows_ptr;
+extern mariadb_num_fields_t mariadb_num_fields_ptr;
+extern mariadb_fetch_row_t mariadb_fetch_row_ptr;
+extern mariadb_fetch_fields_t mariadb_fetch_fields_ptr;
+extern mariadb_free_result_t mariadb_free_result_ptr;
+extern mariadb_error_t mariadb_error_ptr;
+extern mariadb_query_t mariadb_query_ptr;
+extern mariadb_affected_rows_t mariadb_affected_rows_ptr;
+extern mariadb_stmt_execute_t mariadb_stmt_execute_ptr;
+extern mariadb_stmt_result_metadata_t mariadb_stmt_result_metadata_ptr;
+extern mariadb_stmt_fetch_t mariadb_stmt_fetch_ptr;
+extern mariadb_stmt_bind_param_t mariadb_stmt_bind_param_ptr;
+extern mariadb_stmt_error_t mariadb_stmt_error_ptr;
+extern mariadb_stmt_affected_rows_t mariadb_stmt_affected_rows_ptr;
+extern mariadb_stmt_store_result_t mariadb_stmt_store_result_ptr;
+extern mariadb_stmt_free_result_t mariadb_stmt_free_result_ptr;
+extern mariadb_stmt_field_count_t mariadb_stmt_field_count_ptr;
+
+/*
+ * Helper Functions
+ */
+
+// Helper function to cleanup column names
+void mariadb_cleanup_column_names(char** column_names, size_t column_count) {
+    if (column_names) {
+        for (size_t i = 0; i < column_count; i++) {
+            free(column_names[i]);
+        }
+        free(column_names);
+    }
+}
+
+/*
+ * MariaDB Parameter Binding
+ *
+ * Uses the canonical MYSQL_BIND definition from <mysql.h> (PERSIST_PLAN).
+ * The MariaDB Connector/C .so is still loaded via dlopen in connection.c;
+ * the header is used only at compile time so MYSQL_BIND has the canonical ABI shape.
+ *
+ * length=NULL invariant: every bind gets a non-NULL `length` pointer.
+ * MariaDB bind_param dereferences `length` for fixed-width bind types
+ * (MYSQL_TYPE_SHORT / DOUBLE / DATE / TIME / DATETIME / TIMESTAMP) as
+ * well as for variable-length types. NULL -> SIGSEGV.
+ */
+
+// MariaDB/MySQL client header. Provides MYSQL_BIND, MYSQL_TIME, and the
+// MYSQL_TYPE_* enum. The .so itself is still loaded via dlsym at runtime.
+#include <mysql.h>
+
+/*
+ * Fill MYSQL_BIND[param_index] from TypedParameter. Allocates value/length
+ * storage into bound_values for mariadb_cleanup_bound_values. DATE/TIME/DATETIME/
+ * TIMESTAMP parse ISO text into MYSQL_TIME. Always point is_null/error at
+ * in-struct indicators; MariaDB bind_param dereferences them (NULL → SEGV).
+ * Always allocate a non-NULL length pointer so bind_param never dereferences
+ * NULL on fixed-width bind types (PERSIST_PLAN).
+ */
+void mariadb_bind_attach_indicators(void* bind_ptr, unsigned int param_index, char is_null_flag) {
+    MYSQL_BIND* bind = (MYSQL_BIND*)bind_ptr;
+    if (!bind) {
+        return;
+    }
+    bind[param_index].is_null_value = is_null_flag;
+    bind[param_index].is_null = &bind[param_index].is_null_value;
+    bind[param_index].error_value = 0;
+    bind[param_index].error = &bind[param_index].error_value;
+}
+
+bool mariadb_bind_single_parameter(void* bind_ptr, unsigned int param_index, TypedParameter* param,
+                                          void** bound_values, size_t total_param_count, const char* designator) {
+    MYSQL_BIND* bind = (MYSQL_BIND*)bind_ptr;
+    if (!bind || !param || !bound_values) {
+        log_this(designator, "mariadb_bind_single_parameter: invalid parameters", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    log_this(designator, "Binding parameter %u: name=%s, type=%d", LOG_LEVEL_TRACE, 3,
+             param_index, param->name, param->type);
+
+    if (param->is_null) {
+        char* empty = strdup("");
+        unsigned long* length;
+        if (!empty) {
+            return false;
+        }
+        length = malloc(sizeof(unsigned long));
+        if (!length) {
+            free(empty);
+            return false;
+        }
+        *length = 0;
+        bound_values[param_index] = empty;
+        bound_values[total_param_count + param_index] = length;
+        bind[param_index].buffer_type = MYSQL_TYPE_NULL;
+        bind[param_index].buffer = empty;
+        bind[param_index].buffer_length = 1;
+        bind[param_index].length = length;
+        mariadb_bind_attach_indicators(bind, param_index, 1);
+        log_this(designator, "Bound NULL parameter %u: name=%s", LOG_LEVEL_TRACE, 2,
+                 param_index, param->name);
+        return true;
+    }
+
+    switch (param->type) {
+        case PARAM_TYPE_INTEGER: {
+            long long* int_val = malloc(sizeof(long long));
+            unsigned long* int_len;
+            if (!int_val) return false;
+            *int_val = param->value.int_value;
+            bound_values[param_index] = int_val;
+
+            int_len = malloc(sizeof(unsigned long));
+            if (!int_len) {
+                free(int_val);
+                return false;
+            }
+            *int_len = sizeof(long long);
+            bound_values[total_param_count + param_index] = int_len;
+            bind[param_index].buffer_type = MYSQL_TYPE_LONGLONG;
+            bind[param_index].buffer = int_val;
+            bind[param_index].buffer_length = sizeof(long long);
+            bind[param_index].length = int_len;
+            mariadb_bind_attach_indicators(bind, param_index, 0);
+
+            log_this(designator, "Bound INTEGER parameter %u: value=%lld", LOG_LEVEL_TRACE, 2,
+                     param_index, *int_val);
+            break;
+        }
+        case PARAM_TYPE_STRING: {
+            const char* str_val = param->value.string_value ? param->value.string_value : "";
+            size_t str_len = strlen(str_val);
+            char* str_copy = strdup(str_val);
+            if (!str_copy) return false;
+            bound_values[param_index] = str_copy;
+
+            unsigned long* length = malloc(sizeof(unsigned long));
+            if (!length) {
+                free(str_copy);
+                return false;
+            }
+            *length = (unsigned long)str_len;
+            bound_values[total_param_count + param_index] = length;  // Store length pointer in second half
+
+            bind[param_index].buffer_type = MYSQL_TYPE_STRING;
+            bind[param_index].buffer = str_copy;
+            bind[param_index].buffer_length = (unsigned long)(str_len + 1);
+            bind[param_index].length = length;
+            mariadb_bind_attach_indicators(bind, param_index, 0);
+
+            log_this(designator, "Bound STRING parameter %u: value='%s', len=%zu", LOG_LEVEL_TRACE, 3,
+                     param_index, str_copy, str_len);
+            break;
+        }
+        case PARAM_TYPE_BOOLEAN: {
+            short* bool_val = malloc(sizeof(short));
+            unsigned long* bool_len;
+            if (!bool_val) return false;
+            *bool_val = param->value.bool_value ? 1 : 0;
+            bound_values[param_index] = bool_val;
+
+            bool_len = malloc(sizeof(unsigned long));
+            if (!bool_len) {
+                free(bool_val);
+                return false;
+            }
+            *bool_len = sizeof(short);
+            bound_values[total_param_count + param_index] = bool_len;
+
+            bind[param_index].buffer_type = MYSQL_TYPE_SHORT;
+            bind[param_index].buffer = bool_val;
+            bind[param_index].buffer_length = sizeof(short);
+            bind[param_index].length = bool_len;
+            mariadb_bind_attach_indicators(bind, param_index, 0);
+
+            log_this(designator, "Bound BOOLEAN parameter %u: value=%d", LOG_LEVEL_TRACE, 2,
+                     param_index, *bool_val);
+            break;
+        }
+        case PARAM_TYPE_FLOAT: {
+            double* float_val = malloc(sizeof(double));
+            unsigned long* float_len;
+            if (!float_val) return false;
+            *float_val = param->value.float_value;
+            bound_values[param_index] = float_val;
+
+            float_len = malloc(sizeof(unsigned long));
+            if (!float_len) {
+                free(float_val);
+                return false;
+            }
+            *float_len = sizeof(double);
+            bound_values[total_param_count + param_index] = float_len;
+
+            bind[param_index].buffer_type = MYSQL_TYPE_DOUBLE;
+            bind[param_index].buffer = float_val;
+            bind[param_index].buffer_length = sizeof(double);
+            bind[param_index].length = float_len;
+            mariadb_bind_attach_indicators(bind, param_index, 0);
+
+            log_this(designator, "Bound FLOAT parameter %u: value=%f", LOG_LEVEL_TRACE, 2,
+                     param_index,*float_val);
+            break;
+        }
+        case PARAM_TYPE_TEXT: {
+            const char* text_val = param->value.text_value ? param->value.text_value : "";
+            size_t text_len = strlen(text_val);
+            char* text_copy = strdup(text_val);
+            if (!text_copy) return false;
+            bound_values[param_index] = text_copy;
+
+            unsigned long* length = malloc(sizeof(unsigned long));
+            if (!length) {
+                free(text_copy);
+                return false;
+            }
+            *length = (unsigned long)text_len;
+            bound_values[total_param_count + param_index] = length;  // Store length pointer in second half
+
+            bind[param_index].buffer_type = MYSQL_TYPE_LONG_BLOB;
+            bind[param_index].buffer = text_copy;
+            bind[param_index].buffer_length = (unsigned long)(text_len + 1);
+            bind[param_index].length = length;
+            mariadb_bind_attach_indicators(bind, param_index, 0);
+
+            log_this(designator, "Bound TEXT parameter %u: len=%zu", LOG_LEVEL_TRACE, 2,
+                     param_index, text_len);
+            break;
+        }
+        case PARAM_TYPE_DATE: {
+            MYSQL_TIME* date_time = calloc(1, sizeof(MYSQL_TIME));
+            unsigned long* date_len;
+            if (!date_time) return false;
+
+            const char* date_value = param->value.date_value ? param->value.date_value : "1970-01-01";
+            int year = 0, month = 0, day = 0;
+            if (sscanf(date_value, "%d-%d-%d", &year, &month, &day) != 3) {
+                log_this(designator, "Invalid DATE format (expected YYYY-MM-DD): %s", LOG_LEVEL_ERROR, 1, date_value);
+                free(date_time);
+                return false;
+            }
+
+            date_time->year = (unsigned int)year;
+            date_time->month = (unsigned int)month;
+            date_time->day = (unsigned int)day;
+            date_time->hour = 0;
+            date_time->minute = 0;
+            date_time->second = 0;
+            date_time->second_part = 0;
+            date_time->neg = 0;
+            date_time->time_type = 1;  // MYSQL_TIMESTAMP_DATE
+
+            bound_values[param_index] = date_time;
+
+            date_len = malloc(sizeof(unsigned long));
+            if (!date_len) {
+                free(date_time);
+                return false;
+            }
+            *date_len = sizeof(MYSQL_TIME);
+            bound_values[total_param_count + param_index] = date_len;
+
+            bind[param_index].buffer_type = MYSQL_TYPE_DATE;
+            bind[param_index].buffer = date_time;
+            bind[param_index].buffer_length = sizeof(MYSQL_TIME);
+            bind[param_index].length = date_len;
+            mariadb_bind_attach_indicators(bind, param_index, 0);
+
+            log_this(designator, "Bound DATE parameter %u: %04d-%02d-%02d", LOG_LEVEL_TRACE, 4,
+                     param_index, year, month, day);
+            break;
+        }
+        case PARAM_TYPE_TIME: {
+            MYSQL_TIME* date_time = calloc(1, sizeof(MYSQL_TIME));
+            unsigned long* time_len;
+            if (!date_time) return false;
+
+            const char* time_value = param->value.time_value ? param->value.time_value : "00:00:00";
+            int hour = 0, minute = 0, second = 0;
+            if (sscanf(time_value, "%d:%d:%d", &hour, &minute, &second) != 3) {
+                log_this(designator, "Invalid TIME format (expected HH:MM:SS): %s", LOG_LEVEL_ERROR, 1, time_value);
+                free(date_time);
+                return false;
+            }
+
+            date_time->year = 0;
+            date_time->month = 0;
+            date_time->day = 0;
+            date_time->hour = (unsigned int)hour;
+            date_time->minute = (unsigned int)minute;
+            date_time->second = (unsigned int)second;
+            date_time->second_part = 0;
+            date_time->neg = 0;
+            date_time->time_type = 2;  // MYSQL_TIMESTAMP_TIME
+
+            bound_values[param_index] = date_time;
+
+            time_len = malloc(sizeof(unsigned long));
+            if (!time_len) {
+                free(date_time);
+                return false;
+            }
+            *time_len = sizeof(MYSQL_TIME);
+            bound_values[total_param_count + param_index] = time_len;
+
+            bind[param_index].buffer_type = MYSQL_TYPE_TIME;
+            bind[param_index].buffer = date_time;
+            bind[param_index].buffer_length = sizeof(MYSQL_TIME);
+            bind[param_index].length = time_len;
+            mariadb_bind_attach_indicators(bind, param_index, 0);
+
+            log_this(designator, "Bound TIME parameter %u: %02d:%02d:%02d", LOG_LEVEL_TRACE, 4,
+                     param_index, hour, minute, second);
+            break;
+        }
+        case PARAM_TYPE_DATETIME:
+        case PARAM_TYPE_TIMESTAMP: {
+            MYSQL_TIME* date_time = calloc(1, sizeof(MYSQL_TIME));
+            unsigned long* dt_len;
+            if (!date_time) return false;
+
+            const char* datetime_value = (param->type == PARAM_TYPE_DATETIME) ?
+                (param->value.datetime_value ? param->value.datetime_value : "1970-01-01 00:00:00") :
+                (param->value.timestamp_value ? param->value.timestamp_value : "1970-01-01 00:00:00.000");
+
+            int year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0, milliseconds = 0;
+            int parsed = sscanf(datetime_value, "%d-%d-%d %d:%d:%d.%d",
+                               &year, &month, &day, &hour, &minute, &second, &milliseconds);
+            if (parsed < 6) {
+                log_this(designator, "Invalid DATETIME/TIMESTAMP format: %s", LOG_LEVEL_ERROR, 1, datetime_value);
+                free(date_time);
+                return false;
+            }
+
+            date_time->year = (unsigned int)year;
+            date_time->month = (unsigned int)month;
+            date_time->day = (unsigned int)day;
+            date_time->hour = (unsigned int)hour;
+            date_time->minute = (unsigned int)minute;
+            date_time->second = (unsigned int)second;
+            date_time->second_part = (parsed >= 7) ? (unsigned long)(milliseconds * 1000) : 0;
+            date_time->neg = 0;
+            date_time->time_type = 3;  // MYSQL_TIMESTAMP_DATETIME
+
+            bound_values[param_index] = date_time;
+
+            dt_len = malloc(sizeof(unsigned long));
+            if (!dt_len) {
+                free(date_time);
+                return false;
+            }
+            *dt_len = sizeof(MYSQL_TIME);
+            bound_values[total_param_count + param_index] = dt_len;
+
+            bind[param_index].buffer_type = (param->type == PARAM_TYPE_DATETIME) ?
+                MYSQL_TYPE_DATETIME : MYSQL_TYPE_TIMESTAMP;
+            bind[param_index].buffer = date_time;
+            bind[param_index].buffer_length = sizeof(MYSQL_TIME);
+            bind[param_index].length = dt_len;
+            mariadb_bind_attach_indicators(bind, param_index, 0);
+
+            log_this(designator, "Bound DATETIME/TIMESTAMP parameter %u: %04d-%02d-%02d %02d:%02d:%02d.%03d",
+                     LOG_LEVEL_TRACE, 8, param_index, year, month, day, hour, minute, second, milliseconds);
+            break;
+        }
+        default: {
+            log_this(designator, "Unsupported parameter type %d for parameter %u", LOG_LEVEL_ERROR, 2,
+                     param->type, param_index);
+            return false;
+        }
+    }
+
+    log_this(designator, "Successfully bound parameter %u", LOG_LEVEL_TRACE, 1, param_index);
+    return true;
+}
+
+// Helper function to cleanup bound values (will be used in Step 3)
+// cppcheck-suppress unusedFunction
+ void mariadb_cleanup_bound_values(void** bound_values, size_t count) __attribute__((unused));
+ void mariadb_cleanup_bound_values(void** bound_values, size_t count) {
+    if (bound_values) {
+        for (size_t i = 0; i < count; i++) {
+            free(bound_values[i]);  // Free buffer
+            free(bound_values[count + i]);  // Free length pointer if exists (stored in second half)
+        }
+        free(bound_values);
+    }
+}
+
+/*
+ * Query Execution
+ */
+
+bool mariadb_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryResult** result) {
+    if (!connection || !request || !result || connection->engine_type != DB_ENGINE_MARIADB) {
+        const char* designator = connection ? (connection->designator ? connection->designator : SR_DATABASE) : SR_DATABASE;
+        log_this(designator, "MariaDB execute_query: Invalid parameters", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+    log_this(designator, "mariadb_execute_query: ENTER - connection=%p, request=%p, result=%p", LOG_LEVEL_TRACE, 3, (void*)connection, (void*)request, (void*)result);
+
+    // cppcheck-suppress constVariablePointer
+    // Justification: MySQL API requires non-const MYSQL* connection handle
+    const MariadbConnection* mariadb_conn = (const MariadbConnection*)connection->connection_handle;
+    if (!mariadb_conn || !mariadb_conn->connection) {
+        log_this(designator, "MariaDB execute_query: Invalid connection handle", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    log_this(designator, "MariaDB execute_query: Executing query: %s", LOG_LEVEL_TRACE, 1, request->sql_template);
+
+    // Check if we have parameters to bind
+    bool has_parameters = (request->parameters_json && strlen(request->parameters_json) > 2);  // More than "{}"
+
+    if (has_parameters) {
+        log_this(designator, "MariaDB execute_query: Parameters detected, using prepared statement path", LOG_LEVEL_TRACE, 0);
+
+        // Parse typed parameters
+        ParameterList* param_list = parse_typed_parameters(request->parameters_json, designator);
+        if (!param_list) {
+            log_this(designator, "MariaDB execute_query: Failed to parse parameters", LOG_LEVEL_ERROR, 0);
+            return false;
+        }
+
+        // Convert named to positional parameters
+        TypedParameter** ordered_params = NULL;
+        size_t ordered_count = 0;
+
+        char* positional_sql = convert_named_to_positional(request->sql_template, param_list, DB_ENGINE_MARIADB,
+                                                            &ordered_params, &ordered_count, designator);
+
+        if (!positional_sql) {
+            log_this(designator, "MariaDB execute_query: Failed to convert parameters", LOG_LEVEL_ERROR, 0);
+            free_parameter_list(param_list);
+            return false;
+        }
+
+        log_this(designator, "MariaDB execute_query: Converted to positional SQL with %zu parameters", LOG_LEVEL_TRACE, 1, ordered_count);
+
+        // Initialize prepared statement
+        void* stmt = NULL;
+        if (mariadb_stmt_init_ptr) {
+            stmt = mariadb_stmt_init_ptr(mariadb_conn->connection);
+        }
+
+        if (!stmt) {
+            log_this(designator, "MariaDB execute_query: Failed to initialize prepared statement", LOG_LEVEL_ERROR, 0);
+            free(positional_sql);
+            free(ordered_params);
+            free_parameter_list(param_list);
+            return false;
+        }
+
+        // Prepare statement
+        if (!mariadb_stmt_prepare_ptr || mariadb_stmt_prepare_ptr(stmt, positional_sql, (unsigned long)strlen(positional_sql)) != 0) {
+            log_this(designator, "MariaDB execute_query: Failed to prepare statement", LOG_LEVEL_ERROR, 0);
+            char* error_message = NULL;
+            if (mariadb_stmt_error_ptr) {
+                const char* error_msg = mariadb_stmt_error_ptr(stmt);
+                if (error_msg && strlen(error_msg) > 0) {
+                    error_message = strdup(error_msg);
+                    log_this(designator, "MariaDB prepare error: %s", LOG_LEVEL_ERROR, 1, error_msg);
+                }
+            }
+            if (!error_message) {
+                error_message = strdup("MariaDB prepared statement preparation failed (no error details)");
+            }
+
+            // Create error result
+            QueryResult* error_result = calloc(1, sizeof(QueryResult));
+            if (error_result) {
+                error_result->success = false;
+                error_result->error_class = DB_ERR_OTHER;
+                error_result->error_message = error_message;
+                error_result->row_count = 0;
+                error_result->column_count = 0;
+                error_result->data_json = strdup("[]");
+                error_result->execution_time_ms = 0;
+                error_result->affected_rows = 0;
+                *result = error_result;
+            } else {
+                free(error_message);
+            }
+
+            if (mariadb_stmt_close_ptr) {
+                mariadb_stmt_close_ptr(stmt);
+            }
+            free(positional_sql);
+            free(ordered_params);
+            free_parameter_list(param_list);
+            return false;
+        }
+
+        // Allocate MYSQL_BIND array and bound values storage
+        MYSQL_BIND* bind = calloc(ordered_count, sizeof(MYSQL_BIND));
+        void** bound_values = calloc(ordered_count * 2, sizeof(void*));  // *2 for length indicators
+
+        if (!bind || !bound_values) {
+            log_this(designator, "MariaDB execute_query: Failed to allocate binding structures", LOG_LEVEL_ERROR, 0);
+            free(bind);
+            free(bound_values);
+            if (mariadb_stmt_close_ptr) {
+                mariadb_stmt_close_ptr(stmt);
+            }
+            free(positional_sql);
+            free(ordered_params);
+            free_parameter_list(param_list);
+            return false;
+        }
+
+        // Bind each parameter
+        bool bind_success = true;
+        for (size_t i = 0; i < ordered_count; i++) {
+            if (!mariadb_bind_single_parameter(bind, (unsigned int)i, ordered_params[i], bound_values, ordered_count, designator)) {
+                log_this(designator, "MariaDB execute_query: Failed to bind parameter %zu", LOG_LEVEL_ERROR, 1, i);
+                bind_success = false;
+                break;
+            }
+        }
+
+        // Bind parameters to statement
+        if (bind_success && mariadb_stmt_bind_param_ptr) {
+            log_this(designator, "MariaDB execute_query: mariadb_stmt_bind_param for %zu parameters", LOG_LEVEL_TRACE, 1, ordered_count);
+            if (mariadb_stmt_bind_param_ptr(stmt, bind) != 0) {
+                log_this(designator, "MariaDB execute_query: mariadb_stmt_bind_param failed", LOG_LEVEL_ERROR, 0);
+                if (mariadb_stmt_error_ptr) {
+                    const char* error_msg = mariadb_stmt_error_ptr(stmt);
+                    if (error_msg && strlen(error_msg) > 0) {
+                        log_this(designator, "MariaDB bind error: %s", LOG_LEVEL_ERROR, 1, error_msg);
+                    }
+                }
+                bind_success = false;
+            } else {
+                log_this(designator, "MariaDB execute_query: mariadb_stmt_bind_param succeeded for %zu parameters", LOG_LEVEL_TRACE, 1, ordered_count);
+            }
+        }
+
+        // Execute prepared statement and process results
+        QueryResult* db_result = NULL;
+        if (bind_success && mariadb_stmt_execute_ptr) {
+            if (mariadb_stmt_execute_ptr(stmt) != 0) {
+                log_this(designator, "MariaDB execute_query: Prepared statement execution failed", LOG_LEVEL_ERROR, 0);
+                if (mariadb_stmt_error_ptr) {
+                    const char* error_msg = mariadb_stmt_error_ptr(stmt);
+                    if (error_msg && strlen(error_msg) > 0) {
+                        log_this(designator, "MariaDB execution error: %s", LOG_LEVEL_ERROR, 1, error_msg);
+                    }
+                }
+                bind_success = false;
+            } else {
+                log_this(designator, "MariaDB execute_query: Prepared statement executed successfully", LOG_LEVEL_TRACE, 0);
+                // Create result structure and use helper to process results
+                db_result = calloc(1, sizeof(QueryResult));
+                if (db_result && !mariadb_process_prepared_stmt_result(stmt, db_result, designator)) {
+                    free(db_result->data_json);
+                    free(db_result);
+                    db_result = NULL;
+                    bind_success = false;
+                }
+            }
+        }
+
+        // Cleanup
+        mariadb_cleanup_bound_values(bound_values, ordered_count);
+        free(bind);
+        if (mariadb_stmt_close_ptr) {
+            mariadb_stmt_close_ptr(stmt);
+        }
+        free(positional_sql);
+        free(ordered_params);
+        free_parameter_list(param_list);
+
+        if (!bind_success || !db_result) {
+            if (db_result) {
+                free(db_result->data_json);
+                free(db_result);
+            }
+            return false;
+        }
+
+        *result = db_result;
+        log_this(designator, "MariaDB execute_query: Prepared statement completed successfully", LOG_LEVEL_DEBUG, 0);
+        return true;
+    }
+
+    // No parameters - use direct execution path
+    log_this(designator, "MariaDB execute_query: No parameters, using direct execution", LOG_LEVEL_TRACE, 0);
+
+    // Execute query
+    if (mariadb_query_ptr(mariadb_conn->connection, request->sql_template) != 0) {
+        log_this(designator, "MariaDB query execution failed", LOG_LEVEL_TRACE, 0);
+        char* error_message = NULL;
+        if (mariadb_error_ptr) {
+            const char* error_msg = mariadb_error_ptr(mariadb_conn->connection);
+            if (error_msg && strlen(error_msg) > 0) {
+                error_message = strdup(error_msg);
+                log_this(designator, "MariaDB query error: %s", LOG_LEVEL_TRACE, 1, error_msg);
+            }
+        }
+        if (!error_message) {
+            error_message = strdup("MariaDB query execution failed (no error details)");
+        }
+        /*
+         * Classify: common transient MariaDB client errors include
+         * CR_SERVER_GONE_ERROR (2006), CR_SERVER_LOST (2013), and
+         * lost-connection variants. Without mysql_errno (not
+         * currently loaded) we do a substring match on the message
+         * - good enough for the common cases; sophisticated mapping
+         * can be added later by loading mysql_errno.
+         */
+        DatabaseErrorClass err_class = DB_ERR_OTHER;
+        if (error_message) {
+            const char* m = error_message;
+            if (strstr(m, "server has gone away") || strstr(m, "Lost connection") ||
+                strstr(m, "MariaDB server has gone away") || strstr(m, "Broken pipe") ||
+                strstr(m, "Can't connect") || strstr(m, "Connection refused")) {
+                err_class = DB_ERR_TRANSPORT;
+            } else if (strstr(m, "Lock wait timeout") || strstr(m, "Query execution was interrupted")) {
+                err_class = DB_ERR_TIMEOUT;
+            }
+        }
+        QueryResult* error_result = calloc(1, sizeof(QueryResult));
+        if (error_result) {
+            error_result->success = false;
+            error_result->error_class = err_class;
+            error_result->error_message = error_message;
+            error_result->data_json = strdup("[]");
+            *result = error_result;
+        } else {
+            free(error_message);
+        }
+        return false;
+    }
+
+    // Store result
+    void* mariadb_result = mariadb_store_result_ptr ? mariadb_store_result_ptr(mariadb_conn->connection) : NULL;
+
+    // Create result structure and use helper to process results
+    QueryResult* db_result = calloc(1, sizeof(QueryResult));
+    if (!db_result) {
+        if (mariadb_result && mariadb_free_result_ptr) {
+            mariadb_free_result_ptr(mariadb_result);
+        }
+        return false;
+    }
+
+    // Use helper function to process the direct query result
+    if (!mariadb_process_direct_result(mariadb_conn->connection, mariadb_result, db_result, designator)) {
+        free(db_result);
+        return false;
+    }
+
+    *result = db_result;
+    log_this(designator, "MariaDB execute_query: Query completed successfully", LOG_LEVEL_DEBUG, 0);
+    return true;
+}
+
+bool mariadb_execute_prepared(DatabaseHandle* connection, const PreparedStatement* stmt, QueryRequest* request, QueryResult** result) {
+    if (!connection || !stmt || !request || !result || connection->engine_type != DB_ENGINE_MARIADB) {
+        const char* designator = connection ? (connection->designator ? connection->designator : SR_DATABASE) : SR_DATABASE;
+        log_this(designator, "MariaDB execute_prepared: Invalid parameters", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+    log_this(designator, "mariadb_execute_prepared: ENTER - connection=%p, stmt=%p, request=%p, result=%p", LOG_LEVEL_TRACE, 4, (void*)connection, (void*)stmt, (void*)request, (void*)result);
+
+    // cppcheck-suppress constVariablePointer
+    // Justification: MySQL API requires non-const MYSQL* connection handle
+    MariadbConnection* mariadb_conn = (MariadbConnection*)connection->connection_handle;
+    if (!mariadb_conn || !mariadb_conn->connection) {
+        log_this(designator, "MariaDB execute_prepared: Invalid connection handle", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    // Get the prepared statement handle
+    void* stmt_handle = stmt->engine_specific_handle;
+    if (!stmt_handle) {
+        // Statement had no executable SQL (e.g., only comments after macro processing)
+        // Return successful empty result instead of error
+        log_this(designator, "MariaDB prepared statement: No executable SQL (statement was not actionable)", LOG_LEVEL_DEBUG, 0);
+
+        QueryResult* db_result = calloc(1, sizeof(QueryResult));
+        if (!db_result) {
+            return false;
+        }
+
+        db_result->success = true;
+        db_result->row_count = 0;
+        db_result->column_count = 0;
+        db_result->affected_rows = 0;
+        db_result->execution_time_ms = 0;
+        db_result->data_json = strdup("[]");
+
+        *result = db_result;
+        return true;
+    }
+
+    // Check if required functions are available
+    if (!mariadb_stmt_execute_ptr) {
+        log_this(designator, "MariaDB execute_prepared: mariadb_stmt_execute function not available", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    log_this(designator, "MariaDB execute_prepared: Executing prepared statement", LOG_LEVEL_TRACE, 0);
+
+    // Execute the prepared statement
+    if (mariadb_stmt_execute_ptr(stmt_handle) != 0) {
+        log_this(designator, "MariaDB prepared statement execution failed", LOG_LEVEL_ERROR, 0);
+        if (mariadb_stmt_error_ptr) {
+            const char* error_msg = mariadb_stmt_error_ptr(stmt_handle);
+            if (error_msg && strlen(error_msg) > 0) {
+                log_this(designator, "MariaDB prepared statement error: %s", LOG_LEVEL_ERROR, 1, error_msg);
+            }
+        }
+        return false;
+    }
+
+    // Create result structure and use helper to process results
+    QueryResult* db_result = calloc(1, sizeof(QueryResult));
+    if (!db_result) {
+        return false;
+    }
+
+    // Use helper function to process prepared statement results
+    if (!mariadb_process_prepared_stmt_result(stmt_handle, db_result, designator)) {
+        free(db_result->data_json);
+        free(db_result);
+        return false;
+    }
+
+    *result = db_result;
+    log_this(designator, "MariaDB execute_prepared: Query completed successfully", LOG_LEVEL_TRACE, 0);
+    return true;
+}

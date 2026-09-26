@@ -19,6 +19,7 @@
 const char* postgresql_engine_get_description(void);
 const char* sqlite_engine_get_description(void);
 const char* mysql_engine_get_description(void);
+const char* mariadb_engine_get_description(void);
 const char* db2_engine_get_description(void);
 const char* firebird_engine_get_description(void);
 
@@ -38,6 +39,8 @@ DatabaseEngineInterface* database_get_engine_interface(const char* engine) {
         return database_engine_get(DB_ENGINE_SQLITE);
     } else if (strcmp(engine, "mysql") == 0) {
         return database_engine_get(DB_ENGINE_MYSQL);
+    } else if (strcmp(engine, "mariadb") == 0) {
+        return database_engine_get(DB_ENGINE_MARIADB);
     } else if (strcmp(engine, "db2") == 0) {
         return database_engine_get(DB_ENGINE_DB2);
     } else if (strcmp(engine, "firebird") == 0) {
@@ -143,6 +146,8 @@ bool database_add_database(const char* name, const char* engine, const char* con
         engine_type = DB_ENGINE_POSTGRESQL;
     } else if (strcmp(engine, "mysql") == 0) {
         engine_type = DB_ENGINE_MYSQL;
+    } else if (strcmp(engine, "mariadb") == 0) {
+        engine_type = DB_ENGINE_MARIADB;
     } else if (strcmp(engine, "db2") == 0) {
         engine_type = DB_ENGINE_DB2;
     } else if (strcmp(engine, "firebird") == 0) {
@@ -161,6 +166,9 @@ bool database_add_database(const char* name, const char* engine, const char* con
             break;
         case DB_ENGINE_MYSQL:
             description = mysql_engine_get_description();
+            break;
+        case DB_ENGINE_MARIADB:
+            description = mariadb_engine_get_description();
             break;
         case DB_ENGINE_DB2:
             description = db2_engine_get_description();

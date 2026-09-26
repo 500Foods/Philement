@@ -284,6 +284,7 @@ char* convert_named_to_positional(
 
             case DB_ENGINE_SQLITE:
             case DB_ENGINE_MYSQL:
+            case DB_ENGINE_MARIADB:
             case DB_ENGINE_DB2:
             case DB_ENGINE_FIREBIRD:
             case DB_ENGINE_MSSQL:

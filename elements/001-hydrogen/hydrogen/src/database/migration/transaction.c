@@ -434,6 +434,92 @@ bool execute_mysql_migration(DatabaseHandle* connection, char** statements, size
 }
 
 /*
+ * Execute migration statements for MariaDB with explicit transaction control using MariaDB transaction functions
+ */
+bool execute_mariadb_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
+                              const char* migration_file, const char* dqm_label) {
+    // Execute all statements within a transaction using proper MariaDB transaction functions
+    Transaction* mariadb_transaction = NULL;
+    if (!database_engine_begin_transaction(connection, DB_ISOLATION_READ_COMMITTED, &mariadb_transaction)) {
+        log_this(dqm_label, "Failed to begin MariaDB transaction for migration %s", LOG_LEVEL_ERROR, 1, migration_file);
+        return false;
+    }
+
+    log_this(dqm_label, "Started MariaDB transaction for migration %s (%zu statements)", LOG_LEVEL_TRACE, 2, migration_file, statement_count);
+
+    bool transaction_success = true;
+
+    // Execute all statements
+    for (size_t j = 0; j < statement_count && transaction_success; j++) {
+        QueryRequest* stmt_request = calloc(1, sizeof(QueryRequest));
+        if (!stmt_request) {
+            log_this(dqm_label, "Failed to allocate statement request", LOG_LEVEL_ERROR, 0);
+            transaction_success = false;
+            break;
+        }
+
+        // Generate hash for prepared statement caching
+        char stmt_hash[64];  // Sufficient buffer for hash (prefix + 16 hex chars + null)
+        get_stmt_hash("MPSC", statements[j], 16, stmt_hash);
+
+        log_this(dqm_label, "Statement %zu using prepared statement hash: %s", LOG_LEVEL_TRACE, 2, j + 1, stmt_hash);
+        log_this(dqm_label, "Statement %zu SQL: %.100s%s", LOG_LEVEL_TRACE, 3, j + 1, statements[j], strlen(statements[j]) > 100 ? "..." : "");
+
+        stmt_request->query_id = strdup("migration_statement");
+        stmt_request->sql_template = strdup(statements[j]);
+        stmt_request->parameters_json = strdup("{}");
+        stmt_request->timeout_seconds = 30;
+        stmt_request->isolation_level = DB_ISOLATION_READ_COMMITTED;
+        stmt_request->use_prepared_statement = true;
+        stmt_request->prepared_statement_name = strdup(stmt_hash);
+
+        QueryResult* stmt_result = NULL;
+        bool stmt_success = database_engine_execute(connection, stmt_request, &stmt_result);
+
+        // Clean up request
+        if (stmt_request->query_id) free(stmt_request->query_id);
+        if (stmt_request->sql_template) free(stmt_request->sql_template);
+        if (stmt_request->parameters_json) free(stmt_request->parameters_json);
+        if (stmt_request->prepared_statement_name) free(stmt_request->prepared_statement_name);
+        free(stmt_request);
+
+        if (stmt_success && stmt_result && stmt_result->success) {
+            log_this(dqm_label, "Statement %zu executed successfully (hash: %s): affected %lld rows", LOG_LEVEL_TRACE, 3, j + 1, stmt_hash, stmt_result->affected_rows);
+        } else {
+            log_this(dqm_label, "Statement %zu failed (hash: %s)", LOG_LEVEL_ERROR, 2, j + 1, stmt_hash);
+            transaction_success = false;
+        }
+
+        if (stmt_result) {
+            database_engine_cleanup_result(stmt_result);
+        }
+    }
+
+    // Commit or rollback based on success
+    if (transaction_success) {
+        // Commit the transaction
+        if (!database_engine_commit_transaction(connection, mariadb_transaction)) {
+            log_this(dqm_label, "Failed to commit migration %s", LOG_LEVEL_ERROR, 1, migration_file);
+            transaction_success = false;
+        } else {
+            log_this(dqm_label, "Migration %s APPLY was successful", LOG_LEVEL_TRACE, 1, migration_file);
+        }
+    } else {
+        // Rollback the transaction
+        if (!database_engine_rollback_transaction(connection, mariadb_transaction)) {
+            log_this(dqm_label, "Failed to rollback migration %s", LOG_LEVEL_ERROR, 1, migration_file);
+        } else {
+            log_this(dqm_label, "Migration %s rolled back due to errors", LOG_LEVEL_TRACE, 1, migration_file);
+        }
+    }
+
+    // Clean up transaction structure
+    database_engine_cleanup_transaction(mariadb_transaction);
+
+    return transaction_success;
+}
+
+/*
  * Execute migration statements for SQLite with explicit transaction control using SQLite transaction functions
  */
 bool execute_sqlite_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
@@ -702,6 +788,9 @@ bool execute_transaction(DatabaseHandle* connection, const char* sql_result,
             break;
         case DB_ENGINE_MYSQL:
             success = execute_mysql_migration(connection, statements, statement_count, migration_file, dqm_label);
+            break;
+        case DB_ENGINE_MARIADB:
+            success = execute_mariadb_migration(connection, statements, statement_count, migration_file, dqm_label);
             break;
         case DB_ENGINE_SQLITE:
             success = execute_sqlite_migration(connection, statements, statement_count, migration_file, dqm_label);
