@@ -8,6 +8,7 @@
 
 -- db2
 -- mysql
+-- mariadb
 -- postgresql
 -- sqlite
 -- firebird
@@ -16,6 +17,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.4.0 - 2026-09-26 - Added MariaDB arm mirroring MySQL for QueryRef #044 (MariaDB supports same JSON syntax)
 -- 1.3.0 - 2026-09-19 - Removed firebase engine arm (C-level Firebase fully removed)
 -- 1.2.0 - 2026-09-18 - Added Firebird arm: JSON_VALUE extracts via ${JRS}/${JRE} macros
 -- 1.1.0 - 2026-09-16 - Firebase arm: json_object + FB_JSON_VALUE extracts
@@ -302,7 +304,143 @@ if engine == 'mysql' then table.insert(queries,{sql=[[
 
 ]]}) end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
--- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- NOTE: MariaDB uses the same JSON syntax (->>, JSON_OBJECT) as MySQL; duplicate
+--       the MySQL arm with engine == 'mariadb' so the query is installed.
+if engine == 'mariadb' then table.insert(queries,{sql=[[
+    INSERT INTO ${SCHEMA}${QUERIES} (
+        ${QUERIES_INSERT}
+    )
+    WITH next_query_id AS (
+        SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+        FROM ${SCHEMA}${QUERIES}
+    )
+    SELECT
+        new_query_id                                                        AS query_id,
+        ${MIGRATION}                                                        AS query_ref,
+        ${STATUS_ACTIVE}                                                    AS query_status_a27,
+        ${TYPE_FORWARD_MIGRATION}                                           AS query_type_a28,
+        ${DIALECT}                                                          AS query_dialect_a30,
+        ${QTC_SLOW}                                                         AS query_queue_a58,
+        ${TIMEOUT}                                                          AS query_timeout,
+        [=[
+            INSERT INTO ${SCHEMA}${QUERIES} (
+                ${QUERIES_INSERT}
+            )
+            WITH next_query_id AS (
+                SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+                FROM ${SCHEMA}${QUERIES}
+            )
+            SELECT
+                new_query_id                                                        AS query_id,
+                ${QUERY_REF}                                                        AS query_ref,
+                ${STATUS_ACTIVE}                                                    AS query_status_a27,
+                ${TYPE_SQL}                                                         AS query_type_a28,
+                ${DIALECT}                                                          AS query_dialect_a30,
+                ${QTC_MEDIUM}                                                       AS query_queue_a58,
+                ${TIMEOUT}                                                          AS query_timeout,
+                [==[
+                    SELECT
+                        key_idx,
+                        value_txt,
+                        value_int,
+                        JSON_OBJECT(
+                            'name', collection->>'name',
+                            'model', collection->>'model',
+                            'icon', collection->>'icon',
+                            'authority', collection->>'authority',
+                            'location', collection->>'location',
+                            'country', collection->>'country',
+                            'engine', collection->>'engine',
+                            'support prompts', collection->>'support prompts',
+                            'demo', collection->>'demo'
+                        ) AS collection,
+                        valid_after,
+                        valid_until,
+                        created_id,
+                        created_at,
+                        updated_id,
+                        updated_at
+                    FROM
+                        ${SCHEMA}lookups
+                    WHERE
+                        (lookup_id = :LOOKUPID)
+                        AND (status_a1 = 1)
+                        AND (
+                            (valid_after IS NULL)
+                            OR (valid_after <= ${NOW})
+                        )
+                        AND (
+                            (valid_until IS NULL)
+                            OR (valid_until >= ${NOW})
+                        )
+                    ORDER BY
+                        sort_seq,
+                        collection->>'Name'
+                ]==]                                                                AS code,
+                '${QUERY_NAME}'                                                     AS name,
+                [==[
+                    #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
+
+                    This query retrieves a list of AI models from the lookups table,
+                    but filters the JSON data to hide sensitive information like AI
+                    model API keys and other details not relevant to the client.
+
+                    ## Parameters
+
+                    - `:LOOKUPID`: The lookup ID to retrieve the AI models for.
+
+                    ## Returns
+
+                    - key_idx: The unique identifier for the lookup entry.
+                    - value_txt: The text value associated with the lookup entry.
+                    - value_int: The integer value associated with the lookup entry.
+                    - collection: A JSON object containing filtered details about the AI model.
+                    - valid_after: The timestamp after which the lookup entry is valid.
+                    - valid_until: The timestamp until which the lookup entry is valid.
+                    - created_id: The ID of the user who created the lookup entry.
+                    - created_at: The timestamp when the lookup entry was created.
+                    - updated_id: The ID of the user who last updated the lookup entry.
+                    - updated_at: The timestamp when the lookup entry was last updated.
+
+                    ## Tables
+
+                    - `${SCHEMA}lookups`: Stores lookup keys
+
+                    ## Notes
+
+                    - The filter is constructed as fields explicity added, rather than
+                    excluding values. This means that in future, it may have to be
+                    updated if other fields get added to the JSON collection and
+                    need to get shared with the client applications.
+
+                ]==]
+                                        AS summary,
+                '{}'                                                                AS collection,
+        ${COMMON_INSERT}
+            FROM next_query_id;
+
+            ${SUBQUERY_DELIMITER}
+
+            UPDATE ${SCHEMA}${QUERIES}
+              SET query_type_a28 = ${TYPE_APPLIED_MIGRATION}
+            WHERE query_ref = ${MIGRATION}
+              and query_type_a28 = ${TYPE_FORWARD_MIGRATION};
+        ]=]
+                                            AS code,
+        'Populate QueryRef #${QUERY_REF} - ${QUERY_NAME}'                   AS name,
+        [=[
+            # Forward Migration ${MIGRATION}: Poulate QueryRef #${QUERY_REF} - ${QUERY_NAME}
+
+            This migration creates the query for QueryRef #${QUERY_REF} - ${QUERY_NAME}
+        ]=]
+                                            AS summary,
+        '{}'                                                                AS collection,
+        ${COMMON_INSERT}
+    FROM next_query_id;
+
+]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 if engine == 'postgresql' then table.insert(queries,{sql=[[
 
     INSERT INTO ${SCHEMA}${QUERIES} (

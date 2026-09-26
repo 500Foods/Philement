@@ -38,7 +38,7 @@ in the migrations themselves so that they get populated in the database directly
 
 | M# | Table | Version | Updated | Stmts | Diagram | Description |
 | ---- | ------- | --------- | --------- | ------- | --------- | ------------- |
-| [1000](/elements/002-helium/acuranzo/migrations/acuranzo_1000.lua) | queries | 5.4.0 | 2026-09-25 | 21 | ✓ | Bootstraps the migration system by creating the queries table and supporting user-defined functions |
+| [1000](/elements/002-helium/acuranzo/migrations/acuranzo_1000.lua) | queries | 5.5.0 | 2026-09-26 | 22 | ✓ | Bootstraps the migration system by creating the queries table and supporting user-defined functions |
 | [1001](/elements/002-helium/acuranzo/migrations/acuranzo_1001.lua) | lookups | 3.1.0 | 2025-11-23 | 6 | ✓ | Creates the lookups table |
 | [1002](/elements/002-helium/acuranzo/migrations/acuranzo_1002.lua) | account_access | 3.1.0 | 2025-11-23 | 6 | ✓ | Creates the account_access table |
 | [1003](/elements/002-helium/acuranzo/migrations/acuranzo_1003.lua) | account_contacts | 3.1.0 | 2025-11-23 | 6 | ✓ | Creates the account_contacts table |
@@ -173,7 +173,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1132](/elements/002-helium/acuranzo/migrations/acuranzo_1132.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #041 (OBSOLETE) - Get Chat |
 | [1133](/elements/002-helium/acuranzo/migrations/acuranzo_1133.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #042 - Create Lookup Key |
 | [1134](/elements/002-helium/acuranzo/migrations/acuranzo_1134.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #043 - Update Lookup Key |
-| [1135](/elements/002-helium/acuranzo/migrations/acuranzo_1135.lua) | queries | 1.3.0 | 2026-09-19 | 12 | ✗ | QueryRef #044 - Get Filtered Lookup: AI Models |
+| [1135](/elements/002-helium/acuranzo/migrations/acuranzo_1135.lua) | queries | 1.4.0 | 2026-09-26 | 14 | ✗ | QueryRef #044 - Get Filtered Lookup: AI Models |
 | [1136](/elements/002-helium/acuranzo/migrations/acuranzo_1136.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #045 - Get Version History |
 | [1137](/elements/002-helium/acuranzo/migrations/acuranzo_1137.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #046 - Get Main Menu |
 | [1138](/elements/002-helium/acuranzo/migrations/acuranzo_1138.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #047 - Get Documents |
@@ -185,11 +185,11 @@ in the migrations themselves so that they get populated in the database directly
 | [1144](/elements/002-helium/acuranzo/migrations/acuranzo_1144.lua) | queries | 1.1.0 | 2026-01-10 | 6 | ✗ | Create Auth Test Accounts |
 | [1145](/elements/002-helium/acuranzo/migrations/acuranzo_1145.lua) | queries | 1.4.0 | 2026-01-11 | 7 | ✗ | Test Data - Auth Test API Keys |
 | [1146](/elements/002-helium/acuranzo/migrations/acuranzo_1146.lua) | queries | 1.0.0 | 2026-01-13 | 4 | ✗ | QueryRef #053 - Get Themes |
-| [1147](/elements/002-helium/acuranzo/migrations/acuranzo_1147.lua) | numbers | 1.0.0 | 2026-01-16 | 6 | ✓ | Creates and populates the numbers table |
+| [1147](/elements/002-helium/acuranzo/migrations/acuranzo_1147.lua) | numbers | 1.1.0 | 2026-09-26 | 9 | ✓ | Creates and populates the numbers table |
 | [1148](/elements/002-helium/acuranzo/migrations/acuranzo_1148.lua) | queries | 1.0.0 | 2026-01-17 | 4 | ✗ | QueryRef #054 - Get Icons |
 | [1149](/elements/002-helium/acuranzo/migrations/acuranzo_1149.lua) | queries | 1.0.0 | 2026-01-19 | 4 | ✗ | QueryRef #055 - Get Number Range |
 | [1150](/elements/002-helium/acuranzo/migrations/acuranzo_1150.lua) | queries | 1.0.0 | 2026-01-20 | 4 | ✗ | QueryRef #056 - Query Error Handling |
-| [1151](/elements/002-helium/acuranzo/migrations/acuranzo_1151.lua) | queries | 1.3.0 | 2026-01-22 | 6 | ✗ | QueryRef #057 - Query Params Test |
+| [1151](/elements/002-helium/acuranzo/migrations/acuranzo_1151.lua) | queries | 1.5.0 | 2026-09-26 | 8 | ✗ | QueryRef #057 - Query Params Test |
 | [1152](/elements/002-helium/acuranzo/migrations/acuranzo_1152.lua) | lookups | 1.0.1 | 2026-04-11 | 4 | ✗ | Lookup 059 - Table Definitions |
 | [1153](/elements/002-helium/acuranzo/migrations/acuranzo_1153.lua) | lookups | 1.0.2 | 2026-04-19 | 4 | ✗ | LithiumTable Column Types (lookup_id 059, key_idx 0) |
 | [1154](/elements/002-helium/acuranzo/migrations/acuranzo_1154.lua) | lookups | 1.5.0 | 2026-07-02 | 4 | ✗ | LithiumTable JSON Schema (lookup_id 059, key_idx 1) |
@@ -210,7 +210,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1169](/elements/002-helium/acuranzo/migrations/acuranzo_1169.lua) | queries | 1.0.0 | 2026-03-22 | 4 | ✗ | QueryRef #069: Get Chats List (with segment count and storage metrics) |
 | [1170](/elements/002-helium/acuranzo/migrations/acuranzo_1170.lua) | queries | 1.0.0 | 2026-03-23 | 4 | ✗ | QueryRef #070: Get Conversation Segments by Hash (BATCH retrieval) |
 | [1171](/elements/002-helium/acuranzo/migrations/acuranzo_1171.lua) | media_assets | 1.0.0 | 2026-03-23 | 8 | ✓ | Creates the media_assets table for Phase 12: Advanced Multi-modal Features |
-| [1172](/elements/002-helium/acuranzo/migrations/acuranzo_1172.lua) | convo_segs | 1.0.0 | 2026-03-23 | 12 | ✗ | Extend convo_segs table with content_type, mime_type, metadata columns for Phase 12 |
+| [1172](/elements/002-helium/acuranzo/migrations/acuranzo_1172.lua) | convo_segs | 1.1.0 | 2026-09-26 | 16 | ✗ | Extend convo_segs table with content_type, mime_type, metadata columns for Phase 12 |
 | [1173](/elements/002-helium/acuranzo/migrations/acuranzo_1173.lua) | queries | 1.0.0 | 2026-03-23 | 4 | ✗ | QueryRef #071: Store Media Asset (with deduplication) |
 | [1174](/elements/002-helium/acuranzo/migrations/acuranzo_1174.lua) | queries | 1.0.0 | 2026-03-23 | 4 | ✗ | QueryRef #072: Retrieve Media Asset by Hash |
 | [1175](/elements/002-helium/acuranzo/migrations/acuranzo_1175.lua) | account_settings | 1.0.0 | 2026-04-09 | 6 | ✓ | Creates the account_settings table |
@@ -228,7 +228,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1187](/elements/002-helium/acuranzo/migrations/acuranzo_1187.lua) | lookups | 1.2.0 | 2026-04-11 | 4 | ✗ | LithiumTable version-manager (lookup_id 059, key_idx 10) |
 | [1188](/elements/002-helium/acuranzo/migrations/acuranzo_1188.lua) | queries | 1.0.0 | 2026-04-23 | 4 | ✗ | QueryRef #075 - Create Account Settings |
 | [1189](/elements/002-helium/acuranzo/migrations/acuranzo_1189.lua) | account_oidc_identities | 1.0.0 | 2026-05-09 | 7 | ✓ | Creates the account_oidc_identities table (OIDC RP Phase 15) |
-| [1190](/elements/002-helium/acuranzo/migrations/acuranzo_1190.lua) | accounts | 1.1.0 | 2026-09-19 | 29 | ✓ | Relax accounts.password_hash to NULL for OIDC-provisioned accounts (OIDC RP Phase 16) |
+| [1190](/elements/002-helium/acuranzo/migrations/acuranzo_1190.lua) | accounts | 1.2.0 | 2026-09-26 | 33 | ✓ | Relax accounts.password_hash to NULL for OIDC-provisioned accounts (OIDC RP Phase 16) |
 | [1191](/elements/002-helium/acuranzo/migrations/acuranzo_1191.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #080 - OIDC RP: Lookup OIDC Identity (Phase 17) |
 | [1192](/elements/002-helium/acuranzo/migrations/acuranzo_1192.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #081 - OIDC RP: Link OIDC Identity (Phase 17) |
 | [1193](/elements/002-helium/acuranzo/migrations/acuranzo_1193.lua) | queries | 1.1.0 | 2026-07-09 | 4 | ✗ | QueryRef #082 - OIDC RP: Lookup Account by Email (Phase 17) |
@@ -255,7 +255,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1214](/elements/002-helium/acuranzo/migrations/acuranzo_1214.lua) | lookups | 1.0.0 | 2026-07-07 | 8 | ✗ | Lookup 066 - Mail OTP Purpose for the Hydrogen Mail Relay Subsystem (Phase 4A) |
 | [1215](/elements/002-helium/acuranzo/migrations/acuranzo_1215.lua) | lookups | 1.0.0 | 2026-07-07 | 9 | ✗ | Lookup 067 - Mail OTP Status for the Hydrogen Mail Relay Subsystem (Phase 4A) |
 | [1216](/elements/002-helium/acuranzo/migrations/acuranzo_1216.lua) | lookups | 1.0.0 | 2026-07-07 | 7 | ✗ | Lookup 068 - Mail Route Status for the Hydrogen Mail Relay Subsystem (Phase 4A) |
-| [1217](/elements/002-helium/acuranzo/migrations/acuranzo_1217.lua) | mail_templates | 1.0.0 | 2026-07-07 | 7 | ✓ | Creates the mail_templates table for the Hydrogen Mail Relay Subsystem (Phase 4B) |
+| [1217](/elements/002-helium/acuranzo/migrations/acuranzo_1217.lua) | mail_templates | 1.1.0 | 2026-09-26 | 10 | ✓ | Creates the mail_templates table for the Hydrogen Mail Relay Subsystem (Phase 4B) |
 | [1218](/elements/002-helium/acuranzo/migrations/acuranzo_1218.lua) | mail_queue | 1.0.0 | 2026-07-07 | 9 | ✓ | Creates the mail_queue table for the Hydrogen Mail Relay Subsystem (Phase 4B) |
 | [1219](/elements/002-helium/acuranzo/migrations/acuranzo_1219.lua) | mail_attempts | 1.0.0 | 2026-07-07 | 7 | ✓ | Creates the mail_attempts table for the Hydrogen Mail Relay Subsystem (Phase 4B) |
 | [1220](/elements/002-helium/acuranzo/migrations/acuranzo_1220.lua) | mail_events | 1.0.0 | 2026-07-07 | 8 | ✓ | Creates the mail_events table for the Hydrogen Mail Relay Subsystem (Phase 4B) |
@@ -423,4 +423,4 @@ in the migrations themselves so that they get populated in the database directly
 | [1382](/elements/002-helium/acuranzo/migrations/acuranzo_1382.lua) | lookups | 1.0.1 | 2026-09-16 | 8 | ✗ | Retarget Lookup 037 from Role Status to Role Origin |
 | [1383](/elements/002-helium/acuranzo/migrations/acuranzo_1383.lua) | lookups | 1.0.0 | 2026-09-16 | 4 | ✗ | Addition to Lookup 030 - Query Dialect (key 6 Firebase) |
 | [1384](/elements/002-helium/acuranzo/migrations/acuranzo_1384.lua) | lookups | 1.0.0 | 2026-09-18 | 4 | ✗ | UPDATE Lookup 030 - Query Dialect (key 6 Firebase → Firebird) |
-| **385** | | | | **1968** | **385** | |
+| **385** | | | | **1987** | **385** | |
