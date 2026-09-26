@@ -62,7 +62,9 @@ local database = {
         sqlite = true,
         mysql = true,
         db2 = true,
-        firebird = true
+        mssql = true,
+        firebird = true,
+        mariadb = true
     },
 
     -- Lookup #30 - Query Dialects (key 5 is MS SQL Server; Firebird is 6)
@@ -71,7 +73,9 @@ local database = {
         sqlite = 2,
         mysql = 3,
         db2 = 4,
-        firebird = 6
+        mssql = 5,
+        firebird = 6,
+        mariadb = 7
     },
 
     -- Saves repeating it in virtually every single template

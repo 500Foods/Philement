@@ -330,7 +330,7 @@ declare -a ENV_WHITELIST=(
     "AUDIT_EXIT" "CONN_OK" "COUNTS_LINE" "DB_MAX_APPLY" "DISK_ALL_JSON" "DISK_JSON" "DISK_MAX"
     "FINDINGS_JSON" "FOOTER" "FULL_AUDIT" "MIG_PATH" "OTP_MAX_RECIPIENT"
     "SAVED_FROM" "SAVED_TO" "SUBTITLE" "OTP_STATUS_CONSUMED" "OTP_STATUS_MAX_ATTEMPTS"
-    "ACURANZO_DB_SCHEMA" "CANVAS_DB_SCHEMA" "CNT_DRIFT" "CNT_MAPPLY" "CNT_MLOAD" "CNT_OK" "CNT_ORPHAN"
+    "ACURANZO_DB_SCHEMA" "MYSQL_DB_SCHEMA" "MARIADB_DB_SCHEMA" "CNT_DRIFT" "CNT_MAPPLY" "CNT_MLOAD" "CNT_OK" "CNT_ORPHAN"
     "EXIT_LABEL" "HYDROTST_DB_SCHEMA" "SCHEMATOOL_DB_SCHEMA" "TITLE_DB" "SCHEMATOOL"
     "CATALOG" "CATALOG_AUDIT" "CATALOG_EXIT" "CAT_CHK" "CAT_DATA_JSON" "CAT_EXIT_LABEL" "CAT_EXPECTED_JSON"
     "CAT_FINDINGS_JSON" "CAT_LIVE_JSON" "CAT_MC" "CAT_MT" "CAT_NULL" "CAT_OK" "CAT_OUT" "CAT_ROWS" "COLS_JSON"
@@ -389,12 +389,20 @@ declare -a ENV_VARS=(
     "WEBSOCKET_TERMINAL_KEY|02,26|WebSocket terminal authentication key|Key used for WebSocket Terminal connections and authentication."
                    
     # MySQL demo
-    "CANVAS_DB_HOST|30-35|Canvas database host|Hostname or IP address of the Canvas database server."
-    "CANVAS_DB_NAME|30-35|Canvas database name|Name of the Canvas database."
-    "CANVAS_DB_USER|30-35|Canvas database user|Username for connecting to the Canvas database."
-    "CANVAS_DB_PASS|30-35|Canvas database password|Password for connecting to the Canvas database."
-    "CANVAS_DB_PORT|30-35|Canvas database port|Port number for the Canvas database server."
-    "CANVAS_DB_TYPE|30-35|Canvas database type|Type of the Canvas database (e.g., sqlite)."
+    "MYSQL_DB_HOST|30-35|MySQL database host|Hostname or IP address of the MySQL database server."
+    "MYSQL_DB_NAME|30-35|MySQL database name|Name of the MySQL database."
+    "MYSQL_DB_USER|30-35|MySQL database user|Username for connecting to the MySQL database."
+    "MYSQL_DB_PASS|30-35|MySQL database password|Password for connecting to the MySQL database."
+    "MYSQL_DB_PORT|30-35|MySQL database port|Port number for the MySQL database server."
+    "MYSQL_DB_TYPE|30-35|MySQL database type|Type of the MySQL database (e.g., mysql)."
+
+    # MariaDB demo
+    "MARIADB_DB_HOST|30-35|MariaDB database host|Hostname or IP address of the MariaDB database server."
+    "MARIADB_DB_NAME|30-35|MariaDB database name|Name of the MariaDB database."
+    "MARIADB_DB_USER|30-35|MariaDB database user|Username for connecting to the MariaDB database."
+    "MARIADB_DB_PASS|30-35|MariaDB database password|Password for connecting to the MariaDB database."
+    "MARIADB_DB_PORT|30-35|MariaDB database port|Port number for the MariaDB database server."
+    "MARIADB_DB_TYPE|30-35|MariaDB database type|Type of the MariaDB database (e.g., mariadb)."
 
     # PostgreSQL demo
     "ACURANZO_DB_HOST|30-35|Acuranzo database host|Hostname or IP address of the Acuranzo database server."

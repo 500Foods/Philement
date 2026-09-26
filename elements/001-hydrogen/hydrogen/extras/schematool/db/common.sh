@@ -56,12 +56,19 @@ schematool_apply_env_fallbacks() {
             : "${SCHEMATOOL_FB_DATABASE:=${ACURANZO_DB_NAME:-}}"
             : "${SCHEMATOOL_FB_PASSWORD_ENV:=ACURANZO_DB_PASS}"
             ;;
-        mysql)
-            : "${SCHEMATOOL_FB_HOST:=${CANVAS_DB_HOST:-}}"
-            : "${SCHEMATOOL_FB_PORT:=${CANVAS_DB_PORT:-}}"
-            : "${SCHEMATOOL_FB_USER:=${CANVAS_DB_USER:-}}"
-            : "${SCHEMATOOL_FB_DATABASE:=${CANVAS_DB_NAME:-}}"
-            : "${SCHEMATOOL_FB_PASSWORD_ENV:=CANVAS_DB_PASS}"
+         mysql)
+            : "${SCHEMATOOL_FB_HOST:=${MYSQL_DB_HOST:-${CANVAS_DB_HOST:-}}}"
+            : "${SCHEMATOOL_FB_PORT:=${MYSQL_DB_PORT:-${CANVAS_DB_PORT:-}}}"
+            : "${SCHEMATOOL_FB_USER:=${MYSQL_DB_USER:-${CANVAS_DB_USER:-}}}"
+            : "${SCHEMATOOL_FB_DATABASE:=${MYSQL_DB_NAME:-${CANVAS_DB_NAME:-}}}"
+            : "${SCHEMATOOL_FB_PASSWORD_ENV:=MYSQL_DB_PASS}"
+            ;;
+         mariadb)
+            : "${SCHEMATOOL_FB_HOST:=${MARIADB_DB_HOST:-${CANVAS_DB_HOST:-}}}"
+            : "${SCHEMATOOL_FB_PORT:=${MARIADB_DB_PORT:-${CANVAS_DB_PORT:-}}}"
+            : "${SCHEMATOOL_FB_USER:=${MARIADB_DB_USER:-${CANVAS_DB_USER:-}}}"
+            : "${SCHEMATOOL_FB_DATABASE:=${MARIADB_DB_NAME:-${CANVAS_DB_NAME:-}}}"
+            : "${SCHEMATOOL_FB_PASSWORD_ENV:=MARIADB_DB_PASS}"
             ;;
         db2)
             : "${SCHEMATOOL_FB_HOST:=localhost}"

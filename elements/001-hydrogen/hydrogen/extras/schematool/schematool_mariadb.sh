@@ -2,7 +2,7 @@
 # SchemaTool wrapper — MariaDB (Test 40: hydrogen_test_40_mariadb.json)
 #
 # Sets connection env vars from the Test 40 MariaDB config and calls schematool.sh.
-# Engine-specific env: CANVAS_DB_{HOST,PORT,NAME,USER,PASS}
+# Engine-specific env: MARIADB_DB_{HOST,PORT,NAME,USER,PASS}
 # Schema:             demomrdb
 # Design:             acuranzo
 #
@@ -12,7 +12,7 @@
 
 set -euo pipefail
 
-# shellcheck disable=SC2154 # HELIUM_ROOT may be set by env; CANVAS_DB_* from .zshrc
+# shellcheck disable=SC2154 # HELIUM_ROOT may be set by env; MARIADB_DB_* from .zshrc
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -x "${HERE}/schematool.sh" ]]; then
     SCHEMATOOL="${HERE}/schematool.sh"
@@ -34,5 +34,5 @@ export SCHEMATOOL_DB_SCHEMA="demomrdb"
 exec "${SCHEMATOOL}" \
     --migrations "${MIGRATIONS_DIR}" \
     --design acuranzo \
-    --engine mysql \
+    --engine mariadb \
     "$@"

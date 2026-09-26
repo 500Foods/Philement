@@ -1307,6 +1307,8 @@
                                     "db2",
                                     "${env.ACURANZO_DB_TYPE}",
                                     "${env.CANVAS_DB_TYPE}",
+                                    "${env.MYSQL_DB_TYPE}",
+                                    "${env.MARIADB_DB_TYPE}",
                                     "${env.HYDROTST_DB_TYPE}",
                                     "${env.YUGABYTE_DB_TYPE}",
                                     "firebird"

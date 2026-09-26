@@ -63,17 +63,17 @@ verify_database_transactions() {
             schema="${schema:-demo}"
             qualified="${schema}.${table_base}"
             out=$(verify_tx_mysql_family "${qualified}" "${marker}" \
-                "${CANVAS_DB_HOST:-}" "${CANVAS_DB_PORT:-}" \
-                "${CANVAS_DB_USER:-}" "${CANVAS_DB_PASS:-}" \
-                "${CANVAS_DB_NAME:-}") || rc=$?
+                "${MYSQL_DB_HOST:-${CANVAS_DB_HOST:-}}" "${MYSQL_DB_PORT:-${CANVAS_DB_PORT:-}}" \
+                "${MYSQL_DB_USER:-${CANVAS_DB_USER:-}}" "${MYSQL_DB_PASS:-${CANVAS_DB_PASS:-}}" \
+                "${MYSQL_DB_NAME:-${CANVAS_DB_NAME:-}}") || rc=$?
             ;;
         mariadb)
             schema="${schema:-demomrdb}"
             qualified="${schema}.${table_base}"
             out=$(verify_tx_mysql_family "${qualified}" "${marker}" \
-                "${CANVAS_DB_HOST:-}" "${CANVAS_DB_PORT:-}" \
-                "${CANVAS_DB_USER:-}" "${CANVAS_DB_PASS:-}" \
-                "${CANVAS_DB_NAME:-}") || rc=$?
+                "${MARIADB_DB_HOST:-${CANVAS_DB_HOST:-}}" "${MARIADB_DB_PORT:-${CANVAS_DB_PORT:-}}" \
+                "${MARIADB_DB_USER:-${CANVAS_DB_USER:-}}" "${MARIADB_DB_PASS:-${CANVAS_DB_PASS:-}}" \
+                "${MARIADB_DB_NAME:-${CANVAS_DB_NAME:-}}") || rc=$?
             ;;
         db2)
             schema="${schema:-DEMO}"

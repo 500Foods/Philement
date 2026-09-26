@@ -73,7 +73,8 @@ Connection (required for full audit / --dump-db; env fallbacks apply):
     1) Requested engine name (before alias) → primary env:
           postgresql|postgres|firebird → ACURANZO_DB_{HOST,PORT,USER,NAME,PASS} (PG wire) / FIREBIRD_DB_PATH_DEMO|_TEST (or deprecated FIREBIRD_DB_PATH)+FIREBIRD_SYSDBA_PASSWORD (native)
          yugabytedb                      → YUGABYTE_DB_{HOST,PORT,USER,NAME,PASS}
-         mysql|mariadb                   → CANVAS_DB_{HOST,PORT,USER,NAME,PASS}
+          mysql                           → MYSQL_DB_{HOST,PORT,USER,NAME,PASS} (fallback: CANVAS_DB_*)
+          mariadb                       → MARIADB_DB_{HOST,PORT,USER,NAME,PASS} (fallback: CANVAS_DB_*)
          db2                             → HYDROTST_DB_{USER,NAME,PASS}
     2) Generic SCHEMATOOL_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}
     3) sqlite → --database path (or SCHEMATOOL_DB_NAME as file path)
@@ -416,12 +417,24 @@ case "${ENGINE_REQUESTED}" in
         [[ -z "${PASSWORD_ENV}" && -n "${FIREBIRD_SYSDBA_PASSWORD:-}" ]] && PASSWORD_ENV="FIREBIRD_SYSDBA_PASSWORD"
         [[ -z "${SCHEMA}" ]] && SCHEMA=""
         ;;
-    mysql|mariadb)
-        [[ -z "${HOST}" ]] && HOST="${CANVAS_DB_HOST:-}"
-        [[ -z "${PORT}" ]] && PORT="${CANVAS_DB_PORT:-}"
-        [[ -z "${USER_NAME}" ]] && USER_NAME="${CANVAS_DB_USER:-}"
-        [[ -z "${DATABASE}" ]] && DATABASE="${CANVAS_DB_NAME:-}"
+    mysql)
+        [[ -z "${HOST}" ]] && HOST="${MYSQL_DB_HOST:-${CANVAS_DB_HOST:-}}"
+        [[ -z "${PORT}" ]] && PORT="${MYSQL_DB_PORT:-${CANVAS_DB_PORT:-}}"
+        [[ -z "${USER_NAME}" ]] && USER_NAME="${MYSQL_DB_USER:-${CANVAS_DB_USER:-}}"
+        [[ -z "${DATABASE}" ]] && DATABASE="${MYSQL_DB_NAME:-${CANVAS_DB_NAME:-}}"
+        [[ -z "${PASSWORD_ENV}" && -n "${MYSQL_DB_PASS:-}" ]] && PASSWORD_ENV="MYSQL_DB_PASS"
         [[ -z "${PASSWORD_ENV}" && -n "${CANVAS_DB_PASS:-}" ]] && PASSWORD_ENV="CANVAS_DB_PASS"
+        [[ -z "${SCHEMA}" && -n "${MYSQL_DB_SCHEMA:-}" ]] && SCHEMA="${MYSQL_DB_SCHEMA}"
+        [[ -z "${SCHEMA}" && -n "${CANVAS_DB_SCHEMA:-}" ]] && SCHEMA="${CANVAS_DB_SCHEMA}"
+        ;;
+    mariadb)
+        [[ -z "${HOST}" ]] && HOST="${MARIADB_DB_HOST:-${CANVAS_DB_HOST:-}}"
+        [[ -z "${PORT}" ]] && PORT="${MARIADB_DB_PORT:-${CANVAS_DB_PORT:-}}"
+        [[ -z "${USER_NAME}" ]] && USER_NAME="${MARIADB_DB_USER:-${CANVAS_DB_USER:-}}"
+        [[ -z "${DATABASE}" ]] && DATABASE="${MARIADB_DB_NAME:-${CANVAS_DB_NAME:-}}"
+        [[ -z "${PASSWORD_ENV}" && -n "${MARIADB_DB_PASS:-}" ]] && PASSWORD_ENV="MARIADB_DB_PASS"
+        [[ -z "${PASSWORD_ENV}" && -n "${CANVAS_DB_PASS:-}" ]] && PASSWORD_ENV="CANVAS_DB_PASS"
+        [[ -z "${SCHEMA}" && -n "${MARIADB_DB_SCHEMA:-}" ]] && SCHEMA="${MARIADB_DB_SCHEMA}"
         [[ -z "${SCHEMA}" && -n "${CANVAS_DB_SCHEMA:-}" ]] && SCHEMA="${CANVAS_DB_SCHEMA}"
         ;;
     db2)

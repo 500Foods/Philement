@@ -214,9 +214,9 @@ function M.picker_blurb(engine)
     elseif engine == "cockroachdb" then
         return family_blurb("ACURANZO_DB", "democrdb")
     elseif engine == "mysql" then
-        return family_blurb("CANVAS_DB", "demo")
+        return family_blurb("MYSQL_DB", "demo") .. " (fallback: CANVAS_DB)"
     elseif engine == "mariadb" then
-        return family_blurb("CANVAS_DB", "demomrdb")
+        return family_blurb("MARIADB_DB", "demomrdb") .. " (fallback: CANVAS_DB)"
     elseif engine == "db2" then
         return "HYDROTST_DB_USER HYDROTST_DB_PASS HYDROTST_DB_NAME schema demo"
     elseif engine == "yugabytedb" then
@@ -253,17 +253,38 @@ local function apply_family(conn, engine, wrapper)
         conn.database = getenv("ACURANZO_DB_NAME")
         conn.password_env = "ACURANZO_DB_PASS"
         conn.schema = engine == "cockroachdb" and "democrdb" or "demo"
-    elseif engine == "mysql" or engine == "mariadb" then
-        conn.family = "CANVAS_DB_*"
-        conn.host = getenv("CANVAS_DB_HOST")
-        conn.port = getenv("CANVAS_DB_PORT")
+    elseif engine == "mysql" then
+        conn.family = "MYSQL_DB_*"
+        conn.host = getenv("MYSQL_DB_HOST")
+        if conn.host == "" then conn.host = getenv("CANVAS_DB_HOST") end
+        conn.port = getenv("MYSQL_DB_PORT")
+        if conn.port == "" then conn.port = getenv("CANVAS_DB_PORT") end
         if conn.port == "" then
             conn.port = "3306"
         end
-        conn.user = getenv("CANVAS_DB_USER")
-        conn.database = getenv("CANVAS_DB_NAME")
-        conn.password_env = "CANVAS_DB_PASS"
-        conn.schema = engine == "mariadb" and "demomrdb" or "demo"
+        conn.user = getenv("MYSQL_DB_USER")
+        if conn.user == "" then conn.user = getenv("CANVAS_DB_USER") end
+        conn.database = getenv("MYSQL_DB_NAME")
+        if conn.database == "" then conn.database = getenv("CANVAS_DB_NAME") end
+        conn.password_env = "MYSQL_DB_PASS"
+        if getenv("MYSQL_DB_PASS") == "" then conn.password_env = "CANVAS_DB_PASS" end
+        conn.schema = "demo"
+    elseif engine == "mariadb" then
+        conn.family = "MARIADB_DB_*"
+        conn.host = getenv("MARIADB_DB_HOST")
+        if conn.host == "" then conn.host = getenv("CANVAS_DB_HOST") end
+        conn.port = getenv("MARIADB_DB_PORT")
+        if conn.port == "" then conn.port = getenv("CANVAS_DB_PORT") end
+        if conn.port == "" then
+            conn.port = "3306"
+        end
+        conn.user = getenv("MARIADB_DB_USER")
+        if conn.user == "" then conn.user = getenv("CANVAS_DB_USER") end
+        conn.database = getenv("MARIADB_DB_NAME")
+        if conn.database == "" then conn.database = getenv("CANVAS_DB_NAME") end
+        conn.password_env = "MARIADB_DB_PASS"
+        if getenv("MARIADB_DB_PASS") == "" then conn.password_env = "CANVAS_DB_PASS" end
+        conn.schema = "demomrdb"
     elseif engine == "db2" then
         conn.family = "HYDROTST_DB_*"
         conn.host = "localhost"

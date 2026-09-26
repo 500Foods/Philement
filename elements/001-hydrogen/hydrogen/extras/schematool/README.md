@@ -115,7 +115,8 @@ Chosen from **requested** `--engine` (before alias):
 | ------------------ | ------------- | ------ |
 | postgresql / cockroachdb | `ACURANZO_DB_*` | `SCHEMATOOL_DB_*` |
 | yugabytedb | `YUGABYTE_DB_*` | `SCHEMATOOL_DB_*` |
-| mysql / mariadb | `CANVAS_DB_*` | `SCHEMATOOL_DB_*` |
+| mysql | `MYSQL_DB_*` (fallback: `CANVAS_DB_*`) | `SCHEMATOOL_DB_*` |
+| mariadb | `MARIADB_DB_*` (fallback: `CANVAS_DB_*`) | `SCHEMATOOL_DB_*` |
 | db2 | `HYDROTST_DB_*` | `SCHEMATOOL_DB_*` |
 | firebird | `FIREBIRD_DB_PATH_DEMO` (or `_TEST` / deprecated `FIREBIRD_DB_PATH`) / `FIREBIRD_SYSDBA_PASSWORD` | `SCHEMATOOL_DB_*` |
 | sqlite | `--database` path | `SCHEMATOOL_DB_NAME` as path |

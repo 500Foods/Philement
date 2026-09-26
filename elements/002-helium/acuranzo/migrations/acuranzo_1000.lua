@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 5.4.0 - 2026-09-25 - Formal split of MariaDB/MySQL code
 -- 5.3.0 - 2026-09-19 - Added JSON_VALUE_FUNCTION UDR emission for firebird (before json_ingest)
 -- 5.2.0 - 2026-09-19 - Removed firebase engine from CREATE FUNCTION skip and convert_tz arm
 -- 5.1.0 - 2026-09-16 - Skip CREATE FUNCTION for firebase (in-process FB_* like sqlite)
@@ -306,6 +307,15 @@ if engine == 'db2' then table.insert(queries,{sql=[[
 if engine == 'mysql' then table.insert(queries,{sql=[[
 
     DROP FUNCTION IF EXISTS brotli_decompress;
+
+]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- NOTE: MariaDB UDF for Brotli decompression
+--       Requires: libbrotli-dev and brotli_decompress.so in plugin directory
+--       Installation handled via extras/brotli_udf_mysql/
+if engine == 'mariadb' then table.insert(queries,{sql=[[
+
+    DROP FUNCTION IF EXISTS brotli_decompress;           
 
 ]]}) end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
