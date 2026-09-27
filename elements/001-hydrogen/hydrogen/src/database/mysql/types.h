@@ -88,18 +88,32 @@ extern mysql_thread_id_t mysql_thread_id_ptr;
 #define MYSQL_OPT_RECONNECT 20
 #endif
 
-// Timeout options for MySQL connections. These come from enum mysql_option
-// in <mysql.h>. For TUs that don't include mysql.h, provide fallback values
-// matching the canonical enum positions (MySQL 8.0 / MariaDB Connector/C).
+// MYSQL_OPT_SSL_ENFORCE (enum value 38 in mysql.h) disables/enables SSL
+// requirement. Setting it to 0 ensures the client does not force SSL on
+// servers that don't support TLS (e.g. local MariaDB). Servers that require
+// SSL will reject the connection regardless; this just avoids a client-side
+// abort when the server doesn't negotiate TLS.
+#ifndef MYSQL_OPT_SSL_ENFORCE
+#define MYSQL_OPT_SSL_ENFORCE 38
+#endif
+
+// Timeout and buffer option constants. These come from <mysql.h> (enum
+// enum_mysql_option) in translation units that include it (query.c). For
+// other TUs (connection.c) that don't pull in <mysql.h>, provide numeric
+// fallbacks matching the MySQL 8.0 enum values. These guards ensure the values
+// are only defined when <mysql.h> did not already define them.
 #ifndef MYSQL_OPT_CONNECT_TIMEOUT
 #define MYSQL_OPT_CONNECT_TIMEOUT 0
 #endif
+
 #ifndef MYSQL_OPT_READ_TIMEOUT
 #define MYSQL_OPT_READ_TIMEOUT 11
 #endif
+
 #ifndef MYSQL_OPT_WRITE_TIMEOUT
 #define MYSQL_OPT_WRITE_TIMEOUT 12
 #endif
+
 #ifndef MYSQL_OPT_NET_BUFFER_LENGTH
 #define MYSQL_OPT_NET_BUFFER_LENGTH 40
 #endif

@@ -21,7 +21,6 @@ Prioritized incomplete work with effort/done metrics. Start here.
 Support for MariaDB/MySQL was originally developed as one thing - no distinction was made. This was probably true a long time ago
 but isn't true today, so despite the optimism, these have to be cleanly split into entirely separate database paths in the code.
 
-
 ### [AUTH FINALE](/docs/H/plans/AUTH_FINALE.md)
 
 Active auth / OIDC / Keycloak plan (P0). Register email, DefaultRoles, client
