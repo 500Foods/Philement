@@ -88,6 +88,22 @@ extern mysql_thread_id_t mysql_thread_id_ptr;
 #define MYSQL_OPT_RECONNECT 20
 #endif
 
+// Timeout options for MySQL connections. These come from enum mysql_option
+// in <mysql.h>. For TUs that don't include mysql.h, provide fallback values
+// matching the canonical enum positions (MySQL 8.0 / MariaDB Connector/C).
+#ifndef MYSQL_OPT_CONNECT_TIMEOUT
+#define MYSQL_OPT_CONNECT_TIMEOUT 0
+#endif
+#ifndef MYSQL_OPT_READ_TIMEOUT
+#define MYSQL_OPT_READ_TIMEOUT 11
+#endif
+#ifndef MYSQL_OPT_WRITE_TIMEOUT
+#define MYSQL_OPT_WRITE_TIMEOUT 12
+#endif
+#ifndef MYSQL_OPT_NET_BUFFER_LENGTH
+#define MYSQL_OPT_NET_BUFFER_LENGTH 40
+#endif
+
 // Prepared statement cache structure
 typedef struct PreparedStatementCache {
     char** names;

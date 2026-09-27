@@ -261,10 +261,27 @@ bool mysql_connect(ConnectionConfig* config, DatabaseHandle** connection, const 
         return false;
     }
 
-    // Set auto-reconnect option
+    // Set connection and network timeout options to prevent indefinite hangs
+    // on remote MySQL clusters (e.g. DOKS) when the server is slow to respond
+    // or the prepared-statement protocol stalls. MariaDB Connector/C has
+    // different default behavior; libmysqlclient defaults to infinite timeouts.
     if (mysql_options_ptr) {
         int reconnect = 1;
         mysql_options_ptr(mysql_conn, MYSQL_OPT_RECONNECT, &reconnect);
+
+        unsigned int connect_timeout = 10;
+        mysql_options_ptr(mysql_conn, MYSQL_OPT_CONNECT_TIMEOUT, &connect_timeout);
+
+        unsigned int read_timeout = 30;
+        mysql_options_ptr(mysql_conn, MYSQL_OPT_READ_TIMEOUT, &read_timeout);
+
+        unsigned int write_timeout = 30;
+        mysql_options_ptr(mysql_conn, MYSQL_OPT_WRITE_TIMEOUT, &write_timeout);
+
+        unsigned long net_buffer_length = 16384;
+        mysql_options_ptr(mysql_conn, MYSQL_OPT_NET_BUFFER_LENGTH, &net_buffer_length);
+    } else {
+        log_this(SR_DATABASE, "mysql_options not available - cannot set connection timeouts", LOG_LEVEL_ALERT, 0);
     }
 
     // Establish connection
