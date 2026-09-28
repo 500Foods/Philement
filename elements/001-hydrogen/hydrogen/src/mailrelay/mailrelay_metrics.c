@@ -100,11 +100,16 @@ size_t mailrelay_metrics_generate_prometheus(char* buffer, size_t buffer_size) {
 
     if (offset >= buffer_size) return buffer_size;
 
+    double last_success_val = counters.initialized ? (double)counters.last_success : 0.0;
+    double last_failure_val = counters.initialized ? (double)counters.last_failure : 0.0;
+    double worker_count_val = counters.initialized ? (double)counters.worker_count : 0.0;
+    double queue_depth_val = counters.initialized ? (double)counters.queue_depth : 0.0;
+
     offset += (size_t)snprintf(buffer + offset, buffer_size - offset,
         "# HELP hydrogen_mailrelay_last_success Unix timestamp of last successful delivery\n"
         "# TYPE hydrogen_mailrelay_last_success gauge\n"
         "hydrogen_mailrelay_last_success %.3f\n",
-        counters.initialized ? (double)counters.last_success : 0.0);
+        last_success_val);
 
     if (offset >= buffer_size) return buffer_size;
 
@@ -112,7 +117,7 @@ size_t mailrelay_metrics_generate_prometheus(char* buffer, size_t buffer_size) {
         "# HELP hydrogen_mailrelay_last_failure Unix timestamp of last failure\n"
         "# TYPE hydrogen_mailrelay_last_failure gauge\n"
         "hydrogen_mailrelay_last_failure %.3f\n",
-        counters.initialized ? (double)counters.last_failure : 0.0);
+        last_failure_val);
 
     if (offset >= buffer_size) return buffer_size;
 
@@ -120,7 +125,7 @@ size_t mailrelay_metrics_generate_prometheus(char* buffer, size_t buffer_size) {
         "# HELP hydrogen_mailrelay_worker_count Active mail relay worker threads\n"
         "# TYPE hydrogen_mailrelay_worker_count gauge\n"
         "hydrogen_mailrelay_worker_count %.3f\n",
-        counters.initialized ? (double)counters.worker_count : 0.0);
+        worker_count_val);
 
     if (offset >= buffer_size) return buffer_size;
 
@@ -128,7 +133,7 @@ size_t mailrelay_metrics_generate_prometheus(char* buffer, size_t buffer_size) {
         "# HELP hydrogen_mailrelay_queue_depth Current in-memory queue depth\n"
         "# TYPE hydrogen_mailrelay_queue_depth gauge\n"
         "hydrogen_mailrelay_queue_depth %.3f\n",
-        counters.initialized ? (double)counters.queue_depth : 0.0);
+        queue_depth_val);
 
     if (offset >= buffer_size) return buffer_size;
 

@@ -1,5 +1,5 @@
 /*
- * Unity Test: mdns_client_test_mdns_client_registry.c
+ * Unity Test: mdns_client_registry_test_mdns_client_registry.c
  * Tests mdns_client_registry.c functions: add_browse_type, lookup_by_type,
  * service_visible, count, info_json
  *
