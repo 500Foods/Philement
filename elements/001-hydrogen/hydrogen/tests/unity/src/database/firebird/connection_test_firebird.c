@@ -573,6 +573,7 @@ void test_firebird_health_check_fetch_failure(void) {
     TEST_ASSERT_NOT_NULL(conn);
 
     mock_libfbc_set_isc_dsql_fetch_result(2);
+    mock_libfbc_set_isc_dsql_fetch_calls_before_eof(1);
     bool result = firebird_health_check(conn);
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_EQUAL(1, conn->consecutive_failures);
@@ -601,6 +602,7 @@ void test_firebird_health_check_rollback_success(void) {
     TEST_ASSERT_NOT_NULL(conn);
 
     mock_libfbc_set_isc_dsql_fetch_result(2);
+    mock_libfbc_set_isc_dsql_fetch_calls_before_eof(1);
     bool result = firebird_health_check(conn);
     TEST_ASSERT_FALSE(result);
     TEST_ASSERT_EQUAL(1, conn->consecutive_failures);

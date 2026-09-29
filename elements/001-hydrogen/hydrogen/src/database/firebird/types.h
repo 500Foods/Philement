@@ -125,6 +125,10 @@ typedef struct FirebirdConnection {
 #define FB_SQL_SUCCESS          0
 #define FB_SQL_SUCCESS_INFO     1
 
+/* isc_dsql_fetch returns this (same as historical SQLCODE 100) when
+ * there are no more rows. It is not an error. */
+#define FB_FETCH_EOF            100
+
 /* isc_open_blob / isc_fetch_blob sub-constants */
 #define FB_BLOB_OK               0
 #define FB_BLOB_EOF              1

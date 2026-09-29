@@ -550,8 +550,10 @@ bool firebird_health_check(DatabaseHandle* connection) {
 
     memset(status, 0, sizeof(status));
     rc = isc_dsql_fetch_ptr(status, &stmt_handle, 1, &out_sqlda);
-    if (rc != FB_SQL_SUCCESS && rc != FB_SQL_SUCCESS_INFO) {
-        /* EOF / zero rows or fetch error => health fail */
+    /* For a health-check SELECT, FB_FETCH_EOF (100) means the row was
+     * fetched and there are no more rows — that is a healthy result.
+     * Only genuine error codes (not 0, 1, or 100) are failures. */
+    if (rc != FB_SQL_SUCCESS && rc != FB_SQL_SUCCESS_INFO && rc != FB_FETCH_EOF) {
         firebird_status_to_error(status, desig);
         goto health_done;
     }

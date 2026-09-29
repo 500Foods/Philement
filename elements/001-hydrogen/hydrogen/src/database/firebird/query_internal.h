@@ -9,8 +9,7 @@
 #include "query.h"
 #include "types.h"
 
-/* Fetch EOF from isc_dsql_fetch (same numeric value as historical SQLCODE 100). */
-#define FB_FETCH_EOF 100
+/* FB_FETCH_EOF is defined in types.h */
 
 /*
  * Minimal XSQLDA / XSQLVAR layouts (ibase.h not included in the build).
