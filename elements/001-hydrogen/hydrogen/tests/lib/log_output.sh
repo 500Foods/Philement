@@ -529,7 +529,7 @@ print_message() {
     fi
 
     if [[ "${TEST_COUNTER}" -ne $((TEST_PASSED_COUNT + TEST_FAILED_COUNT)) ]]; then
-        local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO${NC}     ${processed_message}"
+        local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO   ───${NC} ${processed_message}"
     else
         local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${INFO_COLOR}${INFO_ICON} ${INFO_COLOR}INFO${NC}   ${processed_message}"
     fi

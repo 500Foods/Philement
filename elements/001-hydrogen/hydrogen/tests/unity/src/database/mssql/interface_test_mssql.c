@@ -12,6 +12,10 @@
 
 // Forward declarations for functions being tested
 DatabaseEngineInterface* mssql_get_interface(void);
+const char* mssql_engine_get_version(void);
+bool mssql_engine_is_available(void);
+const char* mssql_engine_get_description(void);
+void mssql_engine_test_functions(void);
 
 // Function prototypes for test functions
 void test_mssql_get_interface_not_null(void);
@@ -20,6 +24,8 @@ void test_mssql_get_interface_function_pointers(void);
 void test_mssql_engine_get_version(void);
 void test_mssql_engine_get_description(void);
 void test_mssql_engine_is_available(void);
+void test_mssql_engine_is_available_in_mock_mode(void);
+void test_mssql_engine_test_functions_runs_without_crash(void);
 
 void setUp(void) {
     // Set up test fixtures, if any
@@ -73,6 +79,16 @@ void test_mssql_engine_is_available(void) {
     TEST_ASSERT_TRUE(available);
 }
 
+void test_mssql_engine_is_available_in_mock_mode(void) {
+    bool available = mssql_engine_is_available();
+    TEST_ASSERT_TRUE(available);
+}
+
+void test_mssql_engine_test_functions_runs_without_crash(void) {
+    mssql_engine_test_functions();
+    TEST_ASSERT_TRUE(true);
+}
+
 int main(void) {
     UNITY_BEGIN();
 
@@ -85,6 +101,8 @@ int main(void) {
     RUN_TEST(test_mssql_engine_get_version);
     RUN_TEST(test_mssql_engine_get_description);
     RUN_TEST(test_mssql_engine_is_available);
+    RUN_TEST(test_mssql_engine_is_available_in_mock_mode);
+    RUN_TEST(test_mssql_engine_test_functions_runs_without_crash);
 
     return UNITY_END();
 }

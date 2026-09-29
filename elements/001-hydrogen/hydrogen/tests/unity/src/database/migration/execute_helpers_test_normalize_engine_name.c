@@ -24,12 +24,13 @@ void test_normalize_engine_name_known(void) {
     TEST_ASSERT_EQUAL_STRING("sqlite", normalize_engine_name("sqlite"));
     TEST_ASSERT_EQUAL_STRING("db2", normalize_engine_name("db2"));
     TEST_ASSERT_EQUAL_STRING("firebird", normalize_engine_name("firebird"));
+    TEST_ASSERT_EQUAL_STRING("mssql", normalize_engine_name("mssql"));
+    TEST_ASSERT_EQUAL_STRING("mssql", normalize_engine_name("sqlserver"));
 }
 
 void test_normalize_engine_name_unknown(void) {
     TEST_ASSERT_NULL(normalize_engine_name(NULL));
     TEST_ASSERT_NULL(normalize_engine_name("cockroach"));
-    TEST_ASSERT_NULL(normalize_engine_name("mssql"));
 }
 
 int main(void) {

@@ -20,7 +20,9 @@ const char* mssql_engine_get_version(void) {
 }
 
 bool mssql_engine_is_available(void) {
-    // Try to load the unixODBC library
+#ifdef USE_MOCK_LIBODBC
+    return true;
+#else
     void* test_handle = dlopen("libodbc.so", RTLD_LAZY);
     if (!test_handle) {
         test_handle = dlopen("libodbc.so.2", RTLD_LAZY);
@@ -32,6 +34,7 @@ bool mssql_engine_is_available(void) {
     }
 
     return false;
+#endif
 }
 
 const char* mssql_engine_get_description(void) {
