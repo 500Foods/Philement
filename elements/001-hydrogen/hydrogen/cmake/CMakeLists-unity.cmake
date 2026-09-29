@@ -144,8 +144,22 @@ foreach(SOURCE_FILE ${UNITY_HYDROGEN_SOURCES})
         list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_THREADS")
         list(APPEND MOCK_DEFINES_LIST "-include")
         list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_system.h")
+        # Add USE_MOCK_NETWORK for mdns source files that CALL (but do not
+        # DEFINE) network functions like get_network_info and create_multicast_socket.
+        # This allows error-path tests to mock those calls within the source code
+        # itself (not just in the test file). mdns_server_socket.c DEFINES
+        # create_multicast_socket and must be excluded — including mock_network.h
+        # there would rename its own definition to mock_create_multicast_socket,
+        # colliding with the mock implementation in mock_network.c.
+        string(FIND "${SOURCE_FILE}" "mdns_server_socket.c" IS_MDNS_SOCKET_SOURCE)
+        if(IS_MDNS_SOCKET_SOURCE EQUAL -1)
+            list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_NETWORK")
+            list(APPEND MOCK_DEFINES_LIST "-include")
+            list(APPEND MOCK_DEFINES_LIST "${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks/mock_network.h")
+        endif()
         set(MOCK_DEFINES ${MOCK_DEFINES_LIST})
         unset(MOCK_DEFINES_LIST)
+        unset(IS_MDNS_SOCKET_SOURCE)
     elseif(IS_POSTGRESQL_SOURCE GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
         list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_LIBPQ")
@@ -659,11 +673,24 @@ foreach(TEST_SOURCE ${UNITY_TEST_SOURCES})
         set(MOCK_DEFINES "-DUSE_MOCK_LIBMICROHTTPD")
     elseif(IS_MDNS_TEST GREATER -1)
         set(MOCK_INCLUDES "-I${CMAKE_CURRENT_SOURCE_DIR}/../tests/unity/mocks")
-        list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_NETWORK")
         list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_SYSTEM")
         list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_THREADS")
         list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_LOGGING")
         list(APPEND MOCK_DEFINES_LIST "-Dlog_this=mock_log_this")
+        # Test files that test create_multicast_socket directly must NOT have
+        # USE_MOCK_NETWORK defined, because the test calls the real function.
+        # Source files (except mdns_server_socket.c) now have USE_MOCK_NETWORK
+        # applied via -include mock_network.h, so calls FROM source code to
+        # create_multicast_socket are redirected to the mock. But these test
+        # files call create_multicast_socket directly to test socket creation
+        # behavior, so they need the real function.
+        string(FIND "${TEST_SOURCE}" "mdns_server_socket_test_create_multicast_socket.c" IS_MDNS_SOCKET_TEST)
+        string(FIND "${TEST_SOURCE}" "mdns_server_test_coverage_helpers.c" IS_MDNS_COVERAGE_TEST)
+        if(IS_MDNS_SOCKET_TEST EQUAL -1 AND IS_MDNS_COVERAGE_TEST EQUAL -1)
+            list(APPEND MOCK_DEFINES_LIST "-DUSE_MOCK_NETWORK")
+        endif()
+        unset(IS_MDNS_SOCKET_TEST)
+        unset(IS_MDNS_COVERAGE_TEST)
         set(MOCK_DEFINES ${MOCK_DEFINES_LIST})
         unset(MOCK_DEFINES_LIST)
     elseif(IS_POSTGRESQL_TEST GREATER -1)

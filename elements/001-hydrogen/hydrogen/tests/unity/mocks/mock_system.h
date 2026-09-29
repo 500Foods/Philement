@@ -8,7 +8,7 @@
 #ifndef MOCK_SYSTEM_H
 #define MOCK_SYSTEM_H
 
-#include <stddef.h>
+ #include <stddef.h>
 #include <unistd.h>
 #include <sys/socket.h>
 #include <fcntl.h>
@@ -18,6 +18,13 @@
 #include <poll.h>
 #include <semaphore.h>
 #include <sys/time.h>
+#include <sys/types.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <net/if.h>
+#include <string.h>
+#include <errno.h>
+#include <time.h>
 
 // Mock function declarations - these will override the real ones when USE_MOCK_SYSTEM is defined
 #ifdef USE_MOCK_SYSTEM
@@ -50,6 +57,13 @@
 #define sem_init mock_sem_init
 #define gettimeofday mock_gettimeofday
 #define asprintf mock_asprintf
+#define socket mock_socket
+#define setsockopt mock_setsockopt
+#define bind mock_bind
+#define if_nametoindex mock_if_nametoindex
+#define inet_addr mock_inet_addr
+#define inet_pton mock_inet_pton
+#define sendto mock_sendto
 
 // Always declare mock function prototypes for the .c file
 void *mock_malloc(size_t size);
@@ -79,6 +93,13 @@ int mock_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, 
 int mock_sem_init(sem_t *sem, int pshared, unsigned int value);
 int mock_gettimeofday(struct timeval *tv, void *tz);
 int mock_asprintf(char **strp, const char *fmt, ...);
+int mock_socket(int domain, int type, int protocol);
+int mock_setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen);
+int mock_bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+unsigned int mock_if_nametoindex(const char *ifname);
+unsigned int mock_inet_addr(const char *cp);
+int mock_inet_pton(int af, const char *src, void *dst);
+ssize_t mock_sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
 
 // Mock control functions for tests - always available
 void mock_system_set_malloc_failure(int should_fail);
@@ -114,6 +135,15 @@ void mock_system_set_gettimeofday_time(time_t sec, suseconds_t usec);
 void mock_system_set_gettimeofday_failure(int should_fail);
 void mock_system_set_asprintf_failure(int should_fail);
 void mock_system_set_read_data(const void *data, size_t len);
+void mock_system_set_socket_failure(int should_fail);
+void mock_system_set_setsockopt_failure(int should_fail);
+void mock_system_set_setsockopt_fail_at(int call_num);
+void mock_system_set_bind_failure(int should_fail);
+void mock_system_set_if_nametoindex_result(unsigned int result);
+void mock_system_set_inet_addr_result(unsigned int result);
+void mock_system_set_inet_pton_failure(int should_fail);
+void mock_system_set_sendto_failure(int should_fail);
+void mock_system_set_sendto_result(ssize_t result);
 void mock_system_reset_all(void);
 
 // Extern declarations for global mock state variables (defined in mock_system.c)
@@ -161,6 +191,16 @@ extern int mock_gettimeofday_should_fail;
 extern int mock_asprintf_should_fail;
 extern int mock_asprintf_call_count;
 extern int mock_select_result;
+extern int mock_socket_should_fail;
+extern int mock_setsockopt_should_fail;
+extern int mock_setsockopt_call_count;
+extern int mock_setsockopt_fail_at_call;
+extern int mock_bind_should_fail;
+extern unsigned int mock_if_nametoindex_result;
+extern unsigned int mock_inet_addr_result;
+extern int mock_inet_pton_should_fail;
+extern int mock_sendto_should_fail;
+extern ssize_t mock_sendto_result;
 
 #endif // USE_MOCK_SYSTEM
 

@@ -9,23 +9,37 @@
 #include <src/hydrogen.h>
 #include <unity.h>
 
-// Include necessary headers for the module being tested
 #include <src/mdns/mdns_keys.h>
 #include <src/mdns/mdns_server.h>
+#include <src/network/network.h>
+#include <unity/mocks/mock_network.h>
+#include <unity/mocks/mock_system.h>
 
 // Test function prototypes
 void test_mdns_server_shutdown_null_server(void);
 void test_mdns_server_shutdown_empty_server(void);
 void test_mdns_server_shutdown_server_with_interfaces(void);
+void test_mdns_server_shutdown_with_open_sockets(void);
 void test_mdns_server_shutdown_server_with_services(void);
 void test_mdns_server_shutdown_double_shutdown(void);
 
 void setUp(void) {
-    // Set up test fixtures, if any
+    // Set up mock network info so mdns_server_shutdown can send goodbye packets
+    static network_info_t mock_net_info;
+    memset(&mock_net_info, 0, sizeof(mock_net_info));
+    mock_net_info.count = 1;
+    mock_net_info.primary_index = 0;
+    strcpy(mock_net_info.interfaces[0].name, "eth0");
+    mock_net_info.interfaces[0].ip_count = 1;
+    strcpy(mock_net_info.interfaces[0].ips[0], "192.168.1.100");
+    mock_network_set_get_network_info_result(&mock_net_info);
+    mock_network_set_filter_enabled_interfaces_result(&mock_net_info);
+    mock_network_set_create_multicast_socket_result(0);
 }
 
 void tearDown(void) {
-    // Clean up test fixtures, if any
+    mock_network_reset_all();
+    mock_system_reset_all();
 }
 
 // Test shutting down with NULL server - should not crash
@@ -68,8 +82,8 @@ void test_mdns_server_shutdown_server_with_interfaces(void) {
     // Initialize interface with test data
     mdns_server_interface_t *iface = &server->interfaces[0];
     iface->if_name = strdup("test_interface");
-    iface->sockfd_v4 = -1;  // Invalid socket
-    iface->sockfd_v6 = -1;  // Invalid socket
+    iface->sockfd_v4 = -1;
+    iface->sockfd_v6 = -1;
     iface->num_addresses = 1;
     iface->ip_addresses = calloc(1, sizeof(char*));
     TEST_ASSERT_NOT_NULL(iface->ip_addresses);
@@ -79,6 +93,44 @@ void test_mdns_server_shutdown_server_with_interfaces(void) {
     mdns_server_shutdown(server);
 
     // Server is freed by shutdown, so we don't free it here
+    TEST_PASS();
+}
+
+// Test shutdown with active sockets on interfaces (covers close + log lines)
+void test_mdns_server_shutdown_with_open_sockets(void) {
+    mdns_server_t *server = calloc(1, sizeof(mdns_server_t));
+    TEST_ASSERT_NOT_NULL(server);
+    memset(server, 0, sizeof(mdns_server_t));
+
+    server->num_interfaces = 1;
+    server->interfaces = calloc(1, sizeof(mdns_server_interface_t));
+    TEST_ASSERT_NOT_NULL(server->interfaces);
+
+    mdns_server_interface_t *iface = &server->interfaces[0];
+    iface->if_name = strdup("test_eth0");
+    // Use real socket fds so close_mdns_server_interfaces exercises the close path
+    iface->sockfd_v4 = socket(AF_INET, SOCK_DGRAM, 0);
+    iface->sockfd_v6 = socket(AF_INET6, SOCK_DGRAM, 0);
+    iface->num_addresses = 1;
+    iface->ip_addresses = calloc(1, sizeof(char*));
+    iface->ip_addresses[0] = strdup("192.168.1.100");
+
+    // Mark hostname as claimed so goodbye packet path is triggered
+    server->hostname_claimed = 1;
+    server->hostname = strdup("test.local");
+    server->service_name = strdup("TestApp");
+    server->device_id = strdup("device123");
+    server->friendly_name = strdup("Test Device");
+    server->model = strdup("Test Model");
+    server->manufacturer = strdup("Test Manufacturer");
+    server->sw_version = strdup("1.0.0");
+    server->hw_version = strdup("1.0.0");
+    server->config_url = strdup("http://test.local");
+    server->secret_key = generate_secret_mdns_key();
+
+    // Shutdown should send goodbye packets and close sockets
+    mdns_server_shutdown(server);
+
     TEST_PASS();
 }
 
@@ -145,6 +197,7 @@ int main(void) {
     RUN_TEST(test_mdns_server_shutdown_null_server);
     RUN_TEST(test_mdns_server_shutdown_empty_server);
     RUN_TEST(test_mdns_server_shutdown_server_with_interfaces);
+    RUN_TEST(test_mdns_server_shutdown_with_open_sockets);
     RUN_TEST(test_mdns_server_shutdown_server_with_services);
     RUN_TEST(test_mdns_server_shutdown_double_shutdown);
 

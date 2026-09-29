@@ -36,10 +36,29 @@ static short mock_describe_bind_set_sqld = 0;
 static int mock_describe_bind_should_set_sqld = 0;
 static short mock_describe_bind_sqltype = FB_SQL_TEXT;
 static int mock_fb_cancel_operation_result = 0;
+/* isc_dsql_prepare mock state: optionally set sqld on output SQLDA */
+static short mock_prepare_set_sqld = 0;
+static int mock_prepare_should_set_sqld = 0;
+/* isc_dsql_fetch mock state */
+static short mock_fetch_set_sqld = 0;
+static short mock_fetch_sqltype = FB_SQL_LONG;
+static short mock_fetch_sqllen = 4;
+static const void* mock_fetch_sqldata = NULL;
+static char mock_fetch_aliasname[32] = "col";
+static short mock_fetch_aliasname_length = 3;
+static int mock_fetch_data_set = 0;
+static int mock_fetch_calls_before_eof = 0;
+static int mock_fetch_success_call_count = 0;
 /* isc_dsql_sql_info mock state */
 static int mock_isc_dsql_sql_info_result = 0;
 static unsigned char mock_sql_info_data[32] = {0};
 static short mock_sql_info_data_len = 0;
+/* Blob mock state */
+static int mock_isc_open_blob2_result = 0;
+static const unsigned char* mock_get_segment_data = NULL;
+static unsigned short mock_get_segment_data_len = 0;
+static int mock_get_segment_call_count = 0;
+static int mock_get_segment_total_calls = 0; /* 0 = unlimited same-data calls */
 // Output handle for attach (so callers see a "real" handle)
 static void* mock_isc_attach_database_output_handle = (void*)0xDEADBEEF;
 
@@ -152,7 +171,20 @@ fb_status_t mock_isc_dsql_prepare(fb_status_t* status, void** tr_handle, void** 
     (void)length;
     (void)sql;
     (void)dialect;
-    (void)xsqlda;
+    if (mock_prepare_should_set_sqld && xsqlda) {
+        fb_xsqlda_min* sqlda = (fb_xsqlda_min*)xsqlda;
+        sqlda->sqld = mock_prepare_set_sqld;
+        /* Initialize sqltype/sqllen for each column up to sqld */
+        for (short ci = 0; ci < sqlda->sqld && ci < sqlda->sqln; ci++) {
+            sqlda->sqlvar[ci].sqltype = mock_describe_bind_sqltype;
+            sqlda->sqlvar[ci].sqllen = 4;
+            sqlda->sqlvar[ci].sqlname_length = (short)sizeof("COL");
+            memcpy(sqlda->sqlvar[ci].sqlname, "COL", 4);
+            /* Set alias name so firebird_column_label_copy picks it up */
+            sqlda->sqlvar[ci].aliasname_length = (short)sizeof("col");
+            memcpy(sqlda->sqlvar[ci].aliasname, "col", 4);
+        }
+    }
     if (status) {
         memset(status, 0, 20 * sizeof(fb_status_t));
     }
@@ -203,11 +235,38 @@ fb_status_t mock_isc_dsql_fetch(fb_status_t* status, void** stmt_handle, short u
     mock_isc_dsql_fetch_calls++;
     (void)stmt_handle;
     (void)unused1;
-    (void)unused2;
+
+    if (mock_fetch_data_set && unused2) {
+        fb_xsqlda_min* sqlda = (fb_xsqlda_min*)unused2;
+        /* Set sqld on the output SQLDA so the caller knows how many columns */
+        sqlda->sqld = mock_fetch_set_sqld;
+        /* Fill sqlvar entries with configured data */
+        for (short ci = 0; ci < sqlda->sqld && ci < sqlda->sqln; ci++) {
+            sqlda->sqlvar[ci].sqltype = mock_fetch_sqltype;
+            sqlda->sqlvar[ci].sqllen = mock_fetch_sqllen;
+            sqlda->sqlvar[ci].aliasname_length = mock_fetch_aliasname_length;
+            memcpy(sqlda->sqlvar[ci].aliasname, mock_fetch_aliasname,
+                   (size_t)mock_fetch_aliasname_length + 1);
+            if (mock_fetch_sqldata) {
+                memcpy(sqlda->sqlvar[ci].sqldata, mock_fetch_sqldata, (size_t)mock_fetch_sqllen);
+            }
+        }
+    }
+
+    /* Before returning EOF, return a configurable number of success rows.
+     * If mock_fetch_calls_before_eof is 0 (default), return EOF immediately. */
+    if (mock_fetch_success_call_count < mock_fetch_calls_before_eof) {
+        mock_fetch_success_call_count++;
+        if (status) {
+            memset(status, 0, 20 * sizeof(fb_status_t));
+        }
+        return (fb_status_t)mock_isc_dsql_fetch_result;
+    }
+
     if (status) {
         memset(status, 0, 20 * sizeof(fb_status_t));
     }
-    return (fb_status_t)mock_isc_dsql_fetch_result;
+    return (fb_status_t)FB_FETCH_EOF;
 }
 
 int mock_isc_dsql_sql_info_calls = 0;
@@ -315,19 +374,58 @@ void mock_isc_encode_timestamp(const void* tm_in, void* out) {
 
 
 fb_status_t mock_isc_open_blob2(fb_status_t* status, void** db_handle, void** tr_handle,
-                                void** blob_handle, void* blob_id, short bpb_len, const char* bpb) {
+                                 void** blob_handle, void* blob_id, short bpb_len, const char* bpb) {
     (void)db_handle; (void)tr_handle; (void)blob_id; (void)bpb_len; (void)bpb;
     if (status) { status[0] = 0; status[1] = 0; }
-    if (blob_handle) *blob_handle = (void*)0xB10BU;
-    return 0;
+    if (blob_handle && mock_isc_open_blob2_result == 0) {
+        *blob_handle = (void*)0xB10BU;
+    }
+    return (fb_status_t)mock_isc_open_blob2_result;
+}
+
+void mock_isc_set_get_segment_data(const unsigned char* data, unsigned short len) {
+    mock_get_segment_data = data;
+    mock_get_segment_data_len = len;
+}
+
+void mock_isc_set_isc_open_blob2_result(int result) {
+    mock_isc_open_blob2_result = result;
+}
+
+void mock_isc_set_get_segment_total_calls(int total) {
+    mock_get_segment_total_calls = total;
 }
 
 fb_status_t mock_isc_get_segment(fb_status_t* status, void** blob_handle,
-                                 unsigned short* actual_len, unsigned short buf_len, char* buf) {
-    (void)blob_handle; (void)buf_len; (void)buf;
-    if (actual_len) *actual_len = 0;
-    if (status) { status[0] = 1; status[1] = 335544367; } /* isc_segstr_eof */
-    return 335544367;
+                                  unsigned short* actual_len, unsigned short buf_len, char* buf) {
+    (void)blob_handle;
+    if (status) {
+        status[0] = 0;
+        status[1] = 0;
+    }
+
+    /* Multi-segment mode: first (total-1) calls return data with success,
+     * the last call returns EOF with no data. */
+    if (mock_get_segment_total_calls > 0 && mock_get_segment_call_count >= mock_get_segment_total_calls) {
+        if (actual_len) {
+            *actual_len = 0;
+        }
+        return FB_ISC_SEGSTR_EOF;
+    }
+    mock_get_segment_call_count++;
+
+    if (actual_len) {
+        *actual_len = mock_get_segment_data_len;
+    }
+    if (buf && mock_get_segment_data_len > 0 && mock_get_segment_data_len <= buf_len) {
+        memcpy(buf, mock_get_segment_data, mock_get_segment_data_len);
+    }
+    /* In multi-segment mode, return success so the loop continues.
+     * In default mode (total=0), return EOF after one data call. */
+    if (mock_get_segment_total_calls > 0) {
+        return FB_SQL_SUCCESS;
+    }
+    return FB_ISC_SEGSTR_EOF;
 }
 
 fb_status_t mock_isc_close_blob(fb_status_t* status, void** blob_handle) {
@@ -381,8 +479,28 @@ void mock_libfbc_reset_all(void) {
     mock_sql_info_data_len = 0;
     mock_isc_dsql_sql_info_calls = 0;
     memset(mock_sql_info_data, 0, sizeof(mock_sql_info_data));
+    mock_isc_open_blob2_result = 0;
+    mock_get_segment_data = NULL;
+    mock_get_segment_data_len = 0;
+    mock_get_segment_call_count = 0;
+    mock_get_segment_total_calls = 0;
     mock_isc_dsql_execute_calls = 0;
     mock_isc_dsql_execute2_calls = 0;
+
+    /* Reset prepare sqld mock state */
+    mock_prepare_set_sqld = 0;
+    mock_prepare_should_set_sqld = 0;
+
+    /* Reset fetch mock state */
+    mock_fetch_set_sqld = 0;
+    mock_fetch_sqltype = FB_SQL_LONG;
+    mock_fetch_sqllen = 4;
+    mock_fetch_sqldata = NULL;
+    mock_fetch_aliasname_length = 3;
+    memcpy(mock_fetch_aliasname, "col", 4);
+    mock_fetch_data_set = 0;
+    mock_fetch_calls_before_eof = 0;
+    mock_fetch_success_call_count = 0;
 
     mock_isc_attach_database_output_handle = (void*)0xDEADBEEF;
 
@@ -482,6 +600,38 @@ void mock_libfbc_set_isc_dsql_describe_bind_sqltype(short sqltype) {
 
 void* mock_libfbc_get_isc_dsql_describe_bind_sqlda(void) {
     return mock_describe_bind_sqlda_ptr;
+}
+
+void mock_libfbc_set_isc_dsql_prepare_sqlda(short sqld) {
+    mock_prepare_should_set_sqld = 1;
+    mock_prepare_set_sqld = sqld;
+}
+
+void mock_libfbc_set_isc_dsql_prepare_should_set_sqld(int should_set) {
+    mock_prepare_should_set_sqld = should_set;
+}
+
+void mock_libfbc_set_isc_dsql_fetch_return_data(short sqld, short sqltype,
+                                                  short sqllen, const void* sqldata,
+                                                  const char* aliasname, short aliasname_length) {
+    mock_fetch_data_set = 1;
+    mock_fetch_set_sqld = sqld;
+    mock_fetch_sqltype = sqltype;
+    mock_fetch_sqllen = sqllen;
+    mock_fetch_sqldata = sqldata;
+    if (aliasname && aliasname_length > 0 && aliasname_length < (short)sizeof(mock_fetch_aliasname)) {
+        memcpy(mock_fetch_aliasname, aliasname, (size_t)aliasname_length);
+        mock_fetch_aliasname[aliasname_length] = '\0';
+        mock_fetch_aliasname_length = aliasname_length;
+    } else {
+        memcpy(mock_fetch_aliasname, "col", 4);
+        mock_fetch_aliasname_length = 3;
+    }
+}
+
+void mock_libfbc_set_isc_dsql_fetch_calls_before_eof(int count) {
+    mock_fetch_calls_before_eof = count;
+    mock_fetch_success_call_count = 0;
 }
 
 void mock_libfbc_set_fb_cancel_operation_result(int result) {

@@ -63,6 +63,13 @@ typedef long ssize_t;
 #undef close
 #undef gettimeofday
 #undef asprintf
+#undef socket
+#undef setsockopt
+#undef bind
+#undef if_nametoindex
+#undef inet_addr
+#undef inet_pton
+#undef sendto
 
 // Function prototypes - these are defined in the header when USE_MOCK_SYSTEM is set
 void *mock_malloc(size_t size);
@@ -91,6 +98,13 @@ int mock_close(int fd);
 int mock_sem_init(sem_t *sem, int pshared, unsigned int value);
 int mock_gettimeofday(struct timeval *tv, void *tz);
 int mock_asprintf(char **strp, const char *fmt, ...);
+int mock_socket(int domain, int type, int protocol);
+int mock_setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen);
+int mock_bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen);
+unsigned int mock_if_nametoindex(const char *ifname);
+unsigned int mock_inet_addr(const char *cp);
+int mock_inet_pton(int af, const char *src, void *dst);
+ssize_t mock_sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen);
 void mock_system_set_malloc_failure(int should_fail);
 void mock_system_set_calloc_failure(int should_fail);
 void mock_system_set_realloc_failure(int should_fail);
@@ -169,6 +183,16 @@ const void *mock_read_data = NULL;
 size_t mock_read_data_len = 0;
 int mock_asprintf_should_fail = 0;
 int mock_asprintf_call_count = 0;
+int mock_socket_should_fail = 0;
+int mock_setsockopt_should_fail = 0;
+int mock_setsockopt_call_count = 0;
+int mock_setsockopt_fail_at_call = 0;
+int mock_bind_should_fail = 0;
+unsigned int mock_if_nametoindex_result = 0;
+unsigned int mock_inet_addr_result = 0;
+int mock_inet_pton_should_fail = 0;
+int mock_sendto_should_fail = 0;
+ssize_t mock_sendto_result = 0;
 
 // Mock implementation of malloc
 void *mock_malloc(size_t size) {
@@ -493,6 +517,16 @@ void mock_system_reset_all(void) {
     mock_sem_init_should_fail = 0;
     mock_asprintf_should_fail = 0;
     mock_asprintf_call_count = 0;
+    mock_socket_should_fail = 0;
+    mock_setsockopt_should_fail = 0;
+    mock_setsockopt_call_count = 0;
+    mock_setsockopt_fail_at_call = 0;
+    mock_bind_should_fail = 0;
+    mock_if_nametoindex_result = 0;
+    mock_inet_addr_result = 0;
+    mock_inet_pton_should_fail = 0;
+    mock_sendto_should_fail = 0;
+    mock_sendto_result = 0;
 }
 
 // Mock implementation of dlopen
@@ -685,7 +719,131 @@ int mock_select(int nfds, fd_set *readfds, fd_set *writefds, fd_set *exceptfds, 
     return mock_select_result;
 }
 
-// Mock implementation of asprintf
+// Mock implementation of socket
+int mock_socket(int domain, int type, int protocol) {
+    (void)domain;
+    (void)type;
+    (void)protocol;
+
+    if (mock_socket_should_fail) {
+        errno = EACCES;
+        return -1;
+    }
+
+    return 42;
+}
+
+// Mock implementation of setsockopt
+int mock_setsockopt(int sockfd, int level, int optname, const void *optval, socklen_t optlen) {
+    (void)sockfd;
+    (void)level;
+    (void)optname;
+    (void)optval;
+    (void)optlen;
+
+    mock_setsockopt_call_count++;
+
+    if (mock_setsockopt_should_fail ||
+        (mock_setsockopt_fail_at_call > 0 && mock_setsockopt_call_count == mock_setsockopt_fail_at_call)) {
+        errno = ENOPROTOOPT;
+        return -1;
+    }
+
+    return 0;
+}
+
+// Mock implementation of bind
+int mock_bind(int sockfd, const struct sockaddr *addr, socklen_t addrlen) {
+    (void)sockfd;
+    (void)addr;
+    (void)addrlen;
+
+    if (mock_bind_should_fail) {
+        errno = EADDRINUSE;
+        return -1;
+    }
+
+    return 0;
+}
+
+// Mock implementation of if_nametoindex
+unsigned int mock_if_nametoindex(const char *ifname) {
+    (void)ifname;
+
+    return mock_if_nametoindex_result;
+}
+
+// Mock implementation of inet_addr
+unsigned int mock_inet_addr(const char *cp) {
+    (void)cp;
+
+    return (unsigned int)mock_inet_addr_result;
+}
+
+// Mock implementation of inet_pton
+int mock_inet_pton(int af, const char *src, void *dst) {
+    if (mock_inet_pton_should_fail) {
+        return -1;
+    }
+
+    return inet_pton(af, src, dst);
+}
+
+// Mock implementation of sendto
+ssize_t mock_sendto(int sockfd, const void *buf, size_t len, int flags, const struct sockaddr *dest_addr, socklen_t addrlen) {
+    (void)sockfd;
+    (void)buf;
+    (void)len;
+    (void)flags;
+    (void)dest_addr;
+    (void)addrlen;
+
+    if (mock_sendto_should_fail) {
+        errno = EPERM;
+        return -1;
+    }
+
+    return mock_sendto_result;
+}
+
+// Mock implementations of socket-related control functions
+void mock_system_set_socket_failure(int should_fail) {
+    mock_socket_should_fail = should_fail;
+}
+
+void mock_system_set_setsockopt_failure(int should_fail) {
+    mock_setsockopt_should_fail = should_fail;
+}
+
+void mock_system_set_setsockopt_fail_at(int call_num) {
+    mock_setsockopt_fail_at_call = call_num;
+}
+
+void mock_system_set_bind_failure(int should_fail) {
+    mock_bind_should_fail = should_fail;
+}
+
+void mock_system_set_if_nametoindex_result(unsigned int result) {
+    mock_if_nametoindex_result = result;
+}
+
+void mock_system_set_inet_addr_result(unsigned int result) {
+    mock_inet_addr_result = result;
+}
+
+void mock_system_set_inet_pton_failure(int should_fail) {
+    mock_inet_pton_should_fail = should_fail;
+}
+
+void mock_system_set_sendto_failure(int should_fail) {
+    mock_sendto_should_fail = should_fail;
+}
+
+void mock_system_set_sendto_result(ssize_t result) {
+    mock_sendto_result = result;
+}
+
+// Mock control function for asprintf
 int mock_asprintf(char **strp, const char *fmt, ...) {
     mock_asprintf_call_count++;
     if (mock_asprintf_should_fail > 0 && mock_asprintf_call_count == mock_asprintf_should_fail) {

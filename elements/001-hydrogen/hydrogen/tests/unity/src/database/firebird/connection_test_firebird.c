@@ -88,11 +88,13 @@ static void destroy_test_connection(DatabaseHandle* conn);
 void setUp(void) {
     mock_libfbc_reset_all();
     mock_system_reset_all();
+    load_libfbclient_functions("test");
 }
 
 void tearDown(void) {
     mock_libfbc_reset_all();
     mock_system_reset_all();
+    load_libfbclient_functions("test");
 }
 
 /*

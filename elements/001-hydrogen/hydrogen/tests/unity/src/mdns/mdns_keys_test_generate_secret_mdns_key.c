@@ -1,5 +1,5 @@
 /*
- * Unity Test: mdns_keys_test.c
+ * Unity Test: mdns_keys_test_generate_secret_mdns_key.c
  * Tests the mdns_keys.c functions for secret key generation
  */
 

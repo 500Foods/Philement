@@ -1,5 +1,5 @@
 /*
- * Unity Test: mdns_server_init_test.c
+ * Unity Test: mdns_server_init_test_mdns_server_init.c
  * Tests mdns_server_init function for comprehensive coverage
  * This function is large and covers significant portions of the codebase
  */
@@ -11,6 +11,7 @@
 #include <src/mdns/mdns_keys.h>
 #include <src/mdns/mdns_server.h>
 #include <src/network/network.h>
+#include <unity/mocks/mock_network.h>
 
 // Forward declarations for helper functions being tested
 mdns_server_t *mdns_server_allocate(void);
@@ -25,6 +26,9 @@ int mdns_server_init_service_info(mdns_server_t *server, const char *app_name, c
                                   const char *friendly_name, const char *model, const char *manufacturer,
                                   const char *sw_version, const char *hw_version, const char *config_url);
 void mdns_server_cleanup(mdns_server_t *server, network_info_t *net_info_instance);
+
+// Mock network info used for happy-path tests
+static network_info_t mock_net_info;
 
 // Test function prototypes
 void test_mdns_server_init_basic_success(void);
@@ -44,11 +48,21 @@ void test_mdns_server_init_services(void);
 void test_mdns_server_init_service_info(void);
 
 void setUp(void) {
-    // Set up test fixtures, if any
+    // Set up mock network info so mdns_server_init succeeds
+    memset(&mock_net_info, 0, sizeof(mock_net_info));
+    mock_net_info.count = 1;
+    strcpy(mock_net_info.interfaces[0].name, "eth0");
+    mock_net_info.interfaces[0].ip_count = 1;
+    strcpy(mock_net_info.interfaces[0].ips[0], "192.168.1.100");
+    mock_network_set_get_network_info_result(&mock_net_info);
+    mock_network_set_filter_enabled_interfaces_result(&mock_net_info);
+    mock_network_set_create_multicast_socket_result(0);
+    mock_system_reset_all();
 }
 
 void tearDown(void) {
-    // Clean up test fixtures, if any
+    mock_network_reset_all();
+    mock_system_reset_all();
 }
 
 // Test basic successful initialization

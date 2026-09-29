@@ -57,6 +57,9 @@ void mock_isc_encode_timestamp(const void*, void*);
 fb_status_t mock_isc_open_blob2(fb_status_t*, void**, void**, void**, void*, short, const char*);
 fb_status_t mock_isc_get_segment(fb_status_t*, void**, unsigned short*, unsigned short, char*);
 fb_status_t mock_isc_close_blob(fb_status_t*, void**);
+void mock_isc_set_get_segment_data(const unsigned char* data, unsigned short len);
+void mock_isc_set_isc_open_blob2_result(int result);
+void mock_isc_set_get_segment_total_calls(int total);
 long mock_fb_interpret(char*, unsigned int, const fb_status_t**);
 
 /* Cancel */
@@ -98,5 +101,18 @@ void mock_libfbc_set_isc_dsql_describe_bind_sqlda(void* sqlda);
 void mock_libfbc_set_isc_dsql_describe_bind_set_sqld(short sqld);
 void mock_libfbc_set_isc_dsql_describe_bind_sqltype(short sqltype);
 void* mock_libfbc_get_isc_dsql_describe_bind_sqlda(void);
+
+/* Extended control for isc_dsql_prepare mock to fill in SQLDA sqld */
+void mock_libfbc_set_isc_dsql_prepare_sqlda(short sqld);
+void mock_libfbc_set_isc_dsql_prepare_should_set_sqld(int should_set);
+
+/* Extended control for isc_dsql_fetch mock:
+ * - Set sqld on the out_sqlda before fetch so column_names get populated
+ * - Set sqldata/sqllen/sqltype on the sqlda entries so firebird_append_cell_json works
+ * - Control how many fetch calls return success before EOF */
+void mock_libfbc_set_isc_dsql_fetch_return_data(short sqld, short sqltype,
+                                                  short sqllen, const void* sqldata,
+                                                  const char* aliasname, short aliasname_length);
+void mock_libfbc_set_isc_dsql_fetch_calls_before_eof(int count);
 
 #endif // MOCK_LIBFBC_H

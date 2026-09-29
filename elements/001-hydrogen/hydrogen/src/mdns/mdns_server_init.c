@@ -19,8 +19,6 @@
 
 extern AppConfig *app_config;
 
-int create_multicast_socket(int family, const char *group, const char *if_name);
-
 // Function prototypes for helper functions - made non-static for testing
 mdns_server_t *mdns_server_allocate(void);
 network_info_t *mdns_server_get_network_info(mdns_server_t *server);
