@@ -80,4 +80,12 @@ time_t parse_http_date(const char *http_date);
 
 bool web_server_url_looks_like_file(const char *url);
 
+/*
+ * Reconstruct the query string from the connection's GET argument values.
+ * Decodes and re-encodes each parameter to normalize encoding.
+ * Caller must free the returned string; returns NULL when there are no
+ * query parameters.
+ */
+char *web_server_get_query_string(struct MHD_Connection *connection);
+
 #endif // WEB_SERVER_REQUEST_H

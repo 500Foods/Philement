@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.6.0 - 2026-09-29 - Added MSSQL to ?-style parameter placeholder exclusion (mssql uses ? like mysql/mariadb)
 -- 1.5.0 - 2026-09-26 - Fixed status_status_a27 typo in mariadb block (should be query_status_a27)
 -- 1.4.0 - 2026-09-26 - Added MariaDB arm mirroring MySQL for Query Params Test (?-style parameter syntax)
 -- 1.3.0 - 2026-01-22 - Revert CAST for text types, investigate DB2 untyped parameter issue
@@ -17,10 +18,10 @@ cfg.MIGRATION = "1151"
 cfg.QUERY_REF = "057"
 cfg.QUERY_NAME = "Query Params Test"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
--- NOTE: MySQL and MariaDB both use ?-style parameter placeholders natively,
+-- NOTE: MySQL, MariaDB, and MSSQL all use ?-style parameter placeholders natively,
 --       so the CAST(:PARAM AS <type>) form used by PostgreSQL/SQLite/DB2/Firebird
---       does not apply. The MySQL arm below is duplicated for MariaDB.
-if engine ~= 'mysql' and engine ~= 'mariadb' then table.insert(queries,{sql=[[
+--       does not apply.
+if engine ~= 'mysql' and engine ~= 'mariadb' and engine ~= 'mssql' then table.insert(queries,{sql=[[
     INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
     )
@@ -356,6 +357,122 @@ if engine == 'mariadb' then table.insert(queries,{sql=[[
             This migration creates the query for QueryRef #${QUERY_REF} - ${QUERY_NAME}
         ]=]
                                             AS summary,
+        '{}'                                                                AS collection,
+        ${COMMON_INSERT}
+    FROM next_query_id;
+
+]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- NOTE: MSSQL uses ?-style parameter placeholders natively (same as MySQL/MariaDB);
+--       the CAST(:PARAM AS <type>) form does not apply.
+if engine == 'mssql' then table.insert(queries,{sql=[[
+    INSERT INTO ${SCHEMA}${QUERIES} (
+        ${QUERIES_INSERT}
+    )
+    WITH next_query_id AS (
+        SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+        FROM ${SCHEMA}${QUERIES}
+    )
+    SELECT
+        new_query_id                                                        AS query_id,
+        ${MIGRATION}                                                        AS query_ref,
+        ${STATUS_ACTIVE}                                                    AS query_status_a27,
+        ${TYPE_FORWARD_MIGRATION}                                           AS query_type_a28,
+        ${DIALECT}                                                          AS query_dialect_a30,
+        ${QTC_SLOW}                                                         AS query_queue_a58,
+        ${TIMEOUT}                                                          AS query_timeout,
+        [=[
+            INSERT INTO ${SCHEMA}${QUERIES} (
+                ${QUERIES_INSERT}
+            )
+            WITH next_query_id AS (
+                SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+                FROM ${SCHEMA}${QUERIES}
+            )
+            SELECT
+                new_query_id                                                        AS query_id,
+                ${QUERY_REF}                                                        AS query_ref,
+                ${STATUS_ACTIVE}                                                    AS query_status_a27,
+                ${TYPE_PUBLIC}                                                      AS query_type_a28,
+                ${DIALECT}                                                          AS query_dialect_a30,
+                ${QTC_FAST}                                                         AS query_queue_a58,
+                ${TIMEOUT}                                                          AS query_timeout,
+                [==[
+                    SELECT
+                        CAST(? AS ${INTEGER}) as integer_test,
+                        CAST(? AS ${CHAR_20}) as string_test,
+                        CASE WHEN ? THEN 1 ELSE 0 END as boolean_test,
+                        CAST(? AS ${FLOAT}) as float_test,
+                        CAST(? AS ${CHAR_50}) as text_test,
+                        CAST(? AS ${DATE}) as date_test,
+                        CAST(? as ${TIME}) as time_test,
+                        CAST(? as ${DATETIME}) as datetime_test,
+                        CAST(? AS ${TIMESTAMP_TZ}) as timestamp_test
+                    FROM
+                        ${SCHEMA}numbers
+                    WHERE
+                        numbers = 1;
+                ]==]                                                                AS code,
+                '${QUERY_NAME}'                                                     AS name,
+                [==[
+                    #  QueryRef #${QUERY_REF} - ${QUERY_NAME}
+
+                    This query tests all supported parameter datatypes in the Conduit service.
+
+                    ## Parameters
+
+                    - INTEGER(integer) - Integer parameter test
+                    - STRING(string) - String parameter test
+                    - BOOLEAN(boolean) - Boolean parameter test
+                    - FLOAT(float) - Float parameter test
+                    - TEXT(text) - Text parameter test
+                    - DATE(date) - Date parameter test
+                    - TIME(time) - Time parameter test
+                    - DATETIME(datetime) - Datetime parameter test
+                    - TIMESTAMP(timestamp) - Timestamp parameter test
+
+                    ## Returns
+
+                    - `integer_test`: The provided INTEGER parameter value
+                    - `string_test`: The provided STRING parameter value
+                    - `boolean_test`: The provided BOOLEAN parameter value
+                    - `float_test`: The provided FLOAT parameter value
+                    - `text_test`: The provided TEXT parameter value
+                    - `date_test`: The provided DATE parameter value
+                    - `time_test`: The provided TIME parameter value
+                    - `datetime_test`: The provided DATETIME parameter value
+                    - `timestamp_test`: The provided TIMESTAMP parameter value
+
+                    ## Tables
+
+                    - `${SCHEMA}numbers`: The numbers table - see migration 1147
+
+                    ## Notes
+
+                    This is a public query intended to test parameter processing for all supported datatypes.
+                    All parameters are required to validate proper type handling across database engines.
+
+                ]==]
+                                                                                    AS summary,
+                '{}'                                                                AS collection,
+                ${COMMON_INSERT}
+            FROM next_query_id;
+
+            ${SUBQUERY_DELIMITER}
+
+            UPDATE ${SCHEMA}${QUERIES}
+              SET query_type_a28 = ${TYPE_APPLIED_MIGRATION}
+            WHERE query_ref = ${MIGRATION}
+              and query_type_a28 = ${TYPE_FORWARD_MIGRATION};
+        ]=]
+                                                AS code,
+        'Populate QueryRef #${QUERY_REF} - ${QUERY_NAME}'                   AS name,
+        [=[
+            # Forward Migration ${MIGRATION}: Poulate QueryRef #${QUERY_REF} - ${QUERY_NAME}
+
+            This migration creates the query for QueryRef #${QUERY_REF} - ${QUERY_NAME}
+        ]=]
+                                                AS summary,
         '{}'                                                                AS collection,
         ${COMMON_INSERT}
     FROM next_query_id;

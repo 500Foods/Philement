@@ -4,6 +4,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 3.4.0 - 2026-09-29 - Added MSSQL dialect (query_dialects = 5)
 -- 3.3.0 - 2026-09-19 - Removed Firebase dialect (C-level Firebase fully removed in Phase 3)
 -- 3.2.0 - 2026-09-18 - Added Firebird dialect (query_dialects = 6, empty schema prefix)
 -- 3.1.0 - 2026-09-16 - Added Firebase dialect (query_dialects = 6, underscore schema prefix)
@@ -20,8 +21,8 @@ local database = {
     -- Database.lua versioning information
     info = {
       script = "database.lua",
-    version = "3.3.0",
-        release = "2026-09-19"
+    version = "3.4.0",
+        release = "2026-09-29"
      },
 
     -- Lookup #27 - Query Status
@@ -56,6 +57,7 @@ local database = {
         sqlite = true,
         mysql = true,
         db2 = true,
+        mssql = true,
         firebird = true
     },
 
@@ -65,6 +67,7 @@ local database = {
         sqlite = 2,
         mysql = 3,
         db2 = 4,
+        mssql = 5,
         firebird = 6
     },
 
@@ -182,6 +185,7 @@ local database = {
         sqlite = require("database_sqlite"),
         postgresql = require("database_postgresql"),
         mysql = require("database_mysql"),
+        mssql = require("database_mssql"),
         db2 = require("database_db2"),
         firebird = require("database_firebird")
     },

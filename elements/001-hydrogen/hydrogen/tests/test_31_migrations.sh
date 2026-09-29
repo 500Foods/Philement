@@ -8,6 +8,7 @@
 # validate_migration()
 
 # CHANGELOG
+# 1.8.0 - 2026-09-29 - Added mssql engine to ENGINES array and DESIGN_SCHEMAS; skip sqruff for mssql
 # 1.7.0 - 2026-09-19 - Removed firebase engine (C-level Firebase fully removed)
 # 1.6.0 - 2026-09-19 - Fixed cache check to recognize SKIPPED results as success
 # 1.5.0 - 2026-09-18 - Added firebird engine to ENGINES array and DESIGN_SCHEMAS
@@ -24,7 +25,7 @@ TEST_NAME="Migrations"
 TEST_ABBR="MGR"
 TEST_NUMBER="31"
 TEST_COUNTER=0
-TEST_VERSION="1.7.0"
+TEST_VERSION="1.8.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -41,13 +42,13 @@ HELIUM_DIR="../../../elements/002-helium"
 DESIGNS=("helium" "acuranzo")
 
 # Supported database engines
-ENGINES=("postgresql" "sqlite" "mysql" "db2" "firebird")
+ENGINES=("postgresql" "sqlite" "mysql" "db2" "firebird" "mssql")
 
 # Schema mapping per design per engine (corresponding to ENGINES array order)
-# ENGINES=("postgresql" "sqlite" "mysql" "db2" "firebird")
+# ENGINES=("postgresql" "sqlite" "mysql" "db2" "firebird" "mssql")
 declare -A DESIGN_SCHEMAS
-DESIGN_SCHEMAS["helium"]="helium::helium:HELIUM:helium::"
-DESIGN_SCHEMAS["acuranzo"]="app::acuranzo:ACURANZO:testfb::"
+DESIGN_SCHEMAS["helium"]="helium::helium:HELIUM:helium:testms:"
+DESIGN_SCHEMAS["acuranzo"]="app::acuranzo:ACURANZO:testfb:testms:"
 
 # Function to get file hash (using md5sum or equivalent)
 get_file_hash() {
@@ -127,8 +128,8 @@ validate_migration() {
         return 1
     fi
 
-    # Firebird emits Firebird SQL that sqruff (postgres dialect) cannot lint
-    if [[ "${engine}" == "firebird" ]]; then
+# Firebird and MSSQL emit SQL that sqruff (postgres dialect) cannot lint
+if [[ "${engine}" == "firebird" || "${engine}" == "mssql" ]]; then
         echo "✅ ${design} ${engine} ${migration} SKIPPED (sqruff not applicable)" > "${cache_file}"
         echo "fresh|"
         return 0

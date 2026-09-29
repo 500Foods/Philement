@@ -78,6 +78,7 @@ MySQL/MariaDB, PostgreSQL, and SQLite already have built-in support for Base64 e
 | **PostgreSQL** | `DECODE(..., 'base64')`<br>`ENCODE(..., 'base64')`<br>`CONVERT_FROM(..., 'UTF8')`² | `brotli_decompress` | Native `JSON_VALUE` | - |
 | **SQLite** | `CRYPTO_DECODE`³<br>`CRYPTO_ENCODE`³ | `BROTLI_DECOMPRESS` | Native `json_extract` | `CONVERT_TZ` |
 | **Firebird** | `BASE64_ENCODE`¹<br>`BASE64_DECODE`¹ | `BROTLI_DECOMPRESS` (UDR) | `JSON_VALUE` (UDR) | - |
+| **SQL Server** | `base64_encode`<br>`base64_decode` (T-SQL) | `brotli_decompress` (CLR) | `JSON_VALUE` (native) | - |
 
 ¹ *Native MySQL function*  
 ² *Native PostgreSQL functions*  

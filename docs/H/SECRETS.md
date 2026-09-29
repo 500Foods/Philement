@@ -54,12 +54,16 @@ This document provides a comprehensive reference for all environment variables u
    - [HYDROTST_DB_TYPE](#hydrotst_db_type)
 
 8. [Database Credentials - Firebird (Firebird 4)](#8-database-credentials---firebird-firebird-4)
-   - [FIREBIRD_SYSDBA_PASSWORD](#firebird_sysdba_password)
-   - [FIREBIRD_DB_PATH_TEST](#firebird_db_path_test)
-   - [FIREBIRD_DB_PATH_DEMO](#firebird_db_path_demo)
-   - [FIREBIRD_DB_PATH](#firebird_db_path) (deprecated)
-   - [FIREBIRD_DB_USER](#firebird_db_user)
-   - [FIREBIRD_DB_PASS](#firebird_db_pass)
+    - [FIREBIRD_SYSDBA_PASSWORD](#firebird_sysdba_password)
+    - [FIREBIRD_DB_PATH_TEST](#firebird_db_path_test)
+    - [FIREBIRD_DB_PATH_DEMO](#firebird_db_path_demo)
+    - [FIREBIRD_DB_PATH](#firebird_db_path) (deprecated)
+    - [FIREBIRD_DB_USER](#firebird_db_user)
+    - [FIREBIRD_DB_PASS](#firebird_db_pass)
+
+9. [Database Credentials - MSSQL (SQL Server 2022)](#9-database-credentials---mssql-sql-server-2022)
+    - [MSSQL_SA_PASSWORD](#mssql_sa_password)
+    - [MSSQL_TEST_DB](#mssql_test_db)
 
 ---
 
@@ -836,6 +840,49 @@ export FIREBIRD_DB_PASS="your_test_password"
 
 ---
 
+## 9. Database Credentials - MSSQL (SQL Server 2022)
+
+These variables configure the SQL Server 2022 Linux container connection for
+the MSSQL Acuranzo migration matrix (Test 39). See
+[`docs/H/plans/MSSQL.md`](/docs/H/plans/MSSQL.md) for the full plan.
+
+The `MSSQL_SA_PASSWORD` is used both for the Podman container's
+`MSSQL_SA_PASSWORD` environment variable and for Hydrogen's database `Pass`
+field. **Never committed.**
+
+**Tests:** 39, 40
+
+### MSSQL_SA_PASSWORD
+
+**Description:** Password for the SQL Server `sa` (system administrator) account.
+Maps to Hydrogen `Pass`.
+
+**Setup:**
+
+```bash
+export MSSQL_SA_PASSWORD="your_strong_password_here"
+```
+
+**Notes:**
+
+- Must meet SQL Server complexity requirements (8+ chars, upper/lowercase,
+  digits, symbols).
+- In development, generate with: `openssl rand -base64 32`
+- **Developer edition is not production.** Document accordingly.
+
+### MSSQL_TEST_DB
+
+**Description:** Name of the MSSQL test database (default: `hydrotst`). Maps
+to Hydrogen `Database` for Test 39.
+
+**Setup:**
+
+```bash
+export MSSQL_TEST_DB="hydrotst"
+```
+
+---
+
 ## Quick Setup Script
 
 Here's a complete script to set up all required environment variables:
@@ -913,6 +960,10 @@ export FIREBIRD_DB_PATH_DEMO="/path/to/hydrogen/tests/artifacts/database/firebir
 export FIREBIRD_DB_PATH="${FIREBIRD_DB_PATH_TEST}"
 export FIREBIRD_DB_USER="SYSDBA"
 export FIREBIRD_DB_PASS="${FIREBIRD_SYSDBA_PASSWORD}"
+
+# MSSQL (SQL Server 2022 Linux container) - customize for your environment
+export MSSQL_SA_PASSWORD="your_strong_password_here"
+export MSSQL_TEST_DB="hydrotst"
 
 cd -
 echo "Environment setup complete!"

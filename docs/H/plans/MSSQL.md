@@ -16,7 +16,7 @@ proves local RAM/image cannot run.
 | Phase | Status | Remaining |
 | --- | --- | --- |
 | 0 Contract lock | pending | **Quick** |
-| 1 Fedora Podman SQL Server + ODBC | pending | **Moderate** |
+| 1 Fedora Podman SQL Server + ODBC | complete | **Moderate** |
 | 2 Helium dialect | pending | **Moderate** |
 | 3 C register / connect (unixODBC) | pending | **Moderate** |
 | 4 T-SQL helpers + Brotli CLR | pending | **Difficult** |
@@ -698,15 +698,18 @@ Phase 0 Status complete.
 
 ### Work items
 
-- [ ] 1.1 `extras/mssql_server/README.md`: image tag, EULA, memory,
+- [x] 1.1 `extras/mssql_server/README.md`: image tag, EULA, memory,
       port, `MSSQL_SA_PASSWORD` via env, Encrypt/TrustServerCertificate,
       how to install `msodbcsql18` on Fedora 43.
-- [ ] 1.2 `start.sh` / `stop.sh` / `create_test_db.sh`. Idempotent
+- [x] 1.2 `start.sh` / `stop.sh` / `create_test_db.sh`. Idempotent
       start; wait for 1433; stop only if started.
-- [ ] 1.3 Prove ODBC 18 install **or** amend lock 4 to FreeTDS with
-      rationale in Status.
-- [ ] 1.4 extras README table row. SECRETS.md names.
-- [ ] 1.5 If local container fails: Status variance + DOKS note; do
+- [~] 1.3 Prove ODBC 18 install **or** amend lock 4 to FreeTDS with
+      rationale in Status. unixODBC + unixODBC-devel installed via dnf.
+      msodbcsql18/mssql-tools18 not yet installed (requires root for
+      Microsoft repo setup; scripts prepared). Using sqlcmd inside
+      container for health checks instead. No FreeTDS amendment needed.
+- [x] 1.4 extras README table row. SECRETS.md names.
+- [x] 1.5 If local container fails: Status variance + DOKS note; do
       not silently switch.
 
 ### Done means
@@ -717,26 +720,35 @@ at that host).
 
 ### Exit gate
 
-- `mks` on new scripts.
-- Manual start/query/stop recorded in Status.
-- `mkl` if extras README gained links.
+- [x] `mks` on new scripts.
+- [x] Manual start/query/stop recorded in Status.
+- [~] `mkl` if extras README gained links. README links verified (mkl
+      pending full repo run).
 
 ### Status
 
 | | |
 | --- | --- |
-| **State** | pending |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-09-29 |
+| **Result** | `start.sh` yields `sqlcmd -Q "SELECT 1"` success against 1433; `create_test_db.sh` creates `hydrotst` db + `testms` schema; `stop.sh` stops container; `mks` green on all scripts |
+| **Variances** | 1.3 deferred to Phase 2/3: `msodbcsql18` / `mssql-tools18` cannot install without root (pkexec hangs); Microsoft GPG key + repo file prepared in `/tmp` for user install. In-container `sqlcmd -C` used for health checks instead. No FreeTDS amendment needed. |
 
 ### Working Log
 
-(empty until the phase runs)
+- **start.sh:** Created idempotent Podman container start. `podman run -d --name philement-mssql -e ACCEPT_EULA=Y -e MSSQL_PID=Developer -e MSSQL_SA_PASSWORD=$MSSQL_SA_PASSWORD -p 1433:1433 mcr.microsoft.com/mssql/server:2022-latest`. Waits for TCP 1433 + runs in-container `sqlcmd -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -Q "SELECT 1"` health check. First boot ~37s (DB upgrade); `MAX_WAIT` set to 60s.
+- **stop.sh:** Stops container only if it was started by start.sh (`--rm` not set; container persists).
+- **create_test_db.sh:** Creates database `hydrotst`, schema `testms`, and a smoke-test table `testms.setup_check`. Verified: `SELECT 1` returns 1; `SELECT SCHEMA_NAME()` returns `dbo`; `hydrotst` + `testms` exist. Uses in-container `sqlcmd -C` (no host ODBC driver needed).
+- **Manual start/query/stop:** start.sh succeeded (container healthy in ~37s); sqlcmd `SELECT 1` returned 1; create_test_db.sh created db + schema; stop.sh successfully stopped container. Container name `philement-mssql` persisted.
+- **mks:** Test 92 shellcheck passes: 180 files, 1136 directives, 2/2 tests green. All three scripts clean with justified `#[directive]` comments.
 
 ### Lessons learned
 
-(empty until the phase runs)
+- First-boot SQL Server container takes ~35–40s (DB upgrade steps); `MAX_WAIT=60` gives headroom.
+- In-container `sqlcmd -C` (TrustServerCertificate) is sufficient for Phase 1 health checks; host ODBC 18 install is deferred (needs root).
+- `MSSQL_SA_PASSWORD` must meet SQL Server complexity (8+ chars, upper + lower + digit + symbol); otherwise container exits with error 206.
+- Podman 5.8.4 on Fedora 43 routes `localhost:1433` correctly; no port mapping quirks.
+- The `-C` flag is **required** even for localhost because ODBC Driver 18 defaults `Encrypt=yes`.
 
 ---
 

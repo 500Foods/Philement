@@ -16,6 +16,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.3.0 - 2026-09-26 - Added MSSQL arm for ALTER COLUMN DROP/SET NOT NULL
 -- 1.2.0 - 2026-09-26 - Added MariaDB arms mirroring MySQL for both forward and reverse migrations (MODIFY COLUMN syntax)
 -- 1.1.0 - 2026-09-19 - Removed firebase from sqlite rebuild path (C-level Firebase fully removed)
 -- 1.0.0 - 2026-05-09 - Initial creation for OIDC Phase 16
@@ -315,7 +316,55 @@ if engine == 'firebird' then table.insert(queries,{sql=[[
     FROM next_query_id;
 
 ]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+if engine == 'mssql' then table.insert(queries,{sql=[[
 
+    INSERT INTO ${SCHEMA}${QUERIES} (
+        ${QUERIES_INSERT}
+    )
+    WITH next_query_id AS (
+        SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+        FROM ${SCHEMA}${QUERIES}
+    )
+    SELECT
+        new_query_id                                                        AS query_id,
+        ${MIGRATION}                                                        AS query_ref,
+        ${STATUS_ACTIVE}                                                    AS query_status_a27,
+        ${TYPE_FORWARD_MIGRATION}                                           AS query_type_a28,
+        ${DIALECT}                                                          AS query_dialect_a30,
+        ${QTC_SLOW}                                                         AS query_queue_a58,
+        ${TIMEOUT}                                                          AS query_timeout,
+        [=[
+            ALTER TABLE ${SCHEMA}${TABLE}
+                ALTER COLUMN password_hash ${CHAR_128} NULL;
+
+            ${SUBQUERY_DELIMITER}
+
+            UPDATE ${SCHEMA}${QUERIES}
+              SET query_type_a28 = ${TYPE_APPLIED_MIGRATION}
+            WHERE query_ref = ${MIGRATION}
+              and query_type_a28 = ${TYPE_FORWARD_MIGRATION};
+        ]=]
+                                                                            AS code,
+        'Relax ${TABLE}.password_hash to NULL'                              AS name,
+        [=[
+            # Forward Migration ${MIGRATION}: Relax ${TABLE}.password_hash to NULL
+
+            This migration relaxes the NOT NULL constraint on
+            ${SCHEMA}${TABLE}.password_hash so that OIDC-provisioned accounts
+            (Phase 20) can be created without a password hash.
+
+            Existing rows are untouched. SQL Server requires the full column
+            type in ALTER COLUMN; ${CHAR_128} matches the original definition
+            from acuranzo_1005.
+        ]=]
+                                                                            AS summary,
+        '{}'                                                                AS collection,
+        ${COMMON_INSERT}
+    FROM next_query_id;
+
+]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 if engine == 'sqlite' then table.insert(queries,{sql=[[
 
     INSERT INTO ${SCHEMA}${QUERIES} (
@@ -590,7 +639,54 @@ if engine == 'firebird' then table.insert(queries,{sql=[[
     FROM next_query_id;
 
 ]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+if engine == 'mssql' then table.insert(queries,{sql=[[
 
+    INSERT INTO ${SCHEMA}${QUERIES} (
+        ${QUERIES_INSERT}
+    )
+    WITH next_query_id AS (
+        SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id
+        FROM ${SCHEMA}${QUERIES}
+    )
+    SELECT
+        new_query_id                                                        AS query_id,
+        ${MIGRATION}                                                        AS query_ref,
+        ${STATUS_ACTIVE}                                                    AS query_status_a27,
+        ${TYPE_REVERSE_MIGRATION}                                           AS query_type_a28,
+        ${DIALECT}                                                          AS query_dialect_a30,
+        ${QTC_SLOW}                                                         AS query_queue_a58,
+        ${TIMEOUT}                                                          AS query_timeout,
+        [=[
+            ALTER TABLE ${SCHEMA}${TABLE}
+                ALTER COLUMN password_hash ${CHAR_128} NOT NULL;
+
+            ${SUBQUERY_DELIMITER}
+
+            UPDATE ${SCHEMA}${QUERIES}
+              SET query_type_a28 = ${TYPE_FORWARD_MIGRATION}
+            WHERE query_ref = ${MIGRATION}
+              and query_type_a28 = ${TYPE_APPLIED_MIGRATION};
+        ]=]
+                                                                            AS code,
+        'Re-tighten ${TABLE}.password_hash to NOT NULL'                     AS name,
+        [=[
+            # Reverse Migration ${MIGRATION}: Re-tighten ${TABLE}.password_hash to NOT NULL
+
+            Re-applies the NOT NULL constraint. Will fail if any
+            ${TABLE} row has NULL in password_hash; operators must
+            delete or assign passwords to such rows first.
+
+            SQL Server requires the full column type in ALTER COLUMN;
+            ${CHAR_128} matches the original definition from acuranzo_1005.
+        ]=]
+                                                                            AS summary,
+        '{}'                                                                AS collection,
+        ${COMMON_INSERT}
+    FROM next_query_id;
+
+]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 if engine == 'sqlite' then table.insert(queries,{sql=[[
 
     INSERT INTO ${SCHEMA}${QUERIES} (

@@ -4,6 +4,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 3.5.0 - 2026-09-29 - Added MSSQL dialect (query_dialects = 5)
 -- 3.4.3 - 2026-09-22 - Firebird: rewrite NOT NULL DEFAULT <v> to DEFAULT <v> NOT NULL
 -- 3.4.2 - 2026-09-22 - Firebird: rewrite ALTER TABLE ADD/DROP COLUMN to ADD/DROP (no COLUMN keyword)
 -- 3.4.1 - 2026-09-22 - Firebird: also rewrite CTE AS (VALUES ...) bodies to SELECT...UNION ALL FROM RDB$DATABASE
@@ -24,8 +25,8 @@ local database = {
     -- Database.lua versioning information
     info = {
       script = "database.lua",
-    version = "3.4.3",
-        release = "2026-09-22"
+    version = "3.5.0",
+        release = "2026-09-29"
      },
 
     -- Lookup #27 - Query Status
@@ -193,6 +194,7 @@ local database = {
         postgresql = require("database_postgresql"),
         mysql = require("database_mysql"),
         mariadb = require("database_mariadb"),
+        mssql = require("database_mssql"),
         db2 = require("database_db2"),
         firebird = require("database_firebird")
     },

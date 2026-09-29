@@ -18,6 +18,7 @@ time_t parse_http_date(const char *http_date);
 bool build_static_etag(const struct stat *file_stat, bool use_br_file, char *etag, size_t etag_size);
 void add_static_metadata_headers(struct MHD_Response *response, const struct stat *file_stat, const char *etag);
 bool is_static_file_not_modified(struct MHD_Connection *connection, const char *etag, const struct stat *file_stat);
+enum MHD_Result query_string_iterator(void *cls, enum MHD_ValueKind kind, const char *key, const char *value);
 
 // Helper function to check if a file path matches a pattern
 // Supports wildcard (*) matching
@@ -65,6 +66,76 @@ static volatile size_t http_post_requests = 0;
     const char *last_slash = strrchr(url, '/');
     const char *last_dot = strrchr(url, '.');
     return last_dot && (!last_slash || last_dot > last_slash);
+}
+
+// Iterator for collecting query parameters into a query string buffer.
+// Decodes then re-encodes each value to normalize encoding, and URL-encodes
+// keys so values with special characters survive the round-trip.
+enum MHD_Result query_string_iterator(void *cls, enum MHD_ValueKind kind,
+                                      const char *key, const char *value) {
+    (void)kind;
+    struct { char *buf; size_t len; size_t cap; } *ctx = (void *)cls;
+
+    if (!key || !value) return MHD_YES;
+
+    // Ensure we have room for at least key + '=' + encoded value + '&' + NUL
+    char *decoded = api_url_decode(value);
+    char *encoded_val = api_url_encode(decoded ? decoded : value);
+    char *encoded_key = api_url_encode(key);
+
+    if (decoded) free(decoded);
+
+    if (!encoded_val || !encoded_key) {
+        if (encoded_val) free(encoded_val);
+        if (encoded_key) free(encoded_key);
+        return MHD_YES;
+    }
+
+    // Separator: '&' if there is existing content, else nothing
+    const char *sep = (ctx->len > 0) ? "&" : "";
+    size_t needed = ctx->len + strlen(sep) + strlen(encoded_key) + 1 + strlen(encoded_val) + 1;
+
+    if (needed > ctx->cap) {
+        size_t new_cap = ctx->cap * 2;
+        while (needed > new_cap) new_cap *= 2;
+        char *new_buf = (char *)realloc(ctx->buf, new_cap);
+        if (!new_buf) {
+            free(encoded_val);
+            free(encoded_key);
+            return MHD_YES;  // keep whatever we have
+        }
+        ctx->buf = new_buf;
+        ctx->cap = new_cap;
+    }
+
+    int written = snprintf(ctx->buf + ctx->len, ctx->cap - ctx->len, "%s%s=%s", sep, encoded_key, encoded_val);
+    free(encoded_val);
+    free(encoded_key);
+
+    if (written < 0 || (size_t)written >= ctx->cap - ctx->len) return MHD_YES;
+    ctx->len += (size_t)written;
+
+    return MHD_YES;
+}
+
+// Reconstruct the query string from connection GET argument values.
+// Caller must free the returned string, or NULL if no query parameters.
+char *web_server_get_query_string(struct MHD_Connection *connection) {
+    if (!connection) return NULL;
+
+    struct { char *buf; size_t len; size_t cap; } ctx = { .buf = NULL, .len = 0, .cap = 256 };
+    ctx.buf = (char *)malloc(ctx.cap);
+    if (!ctx.buf) return NULL;
+    ctx.buf[0] = '\0';
+
+    MHD_get_connection_values(connection, MHD_GET_ARGUMENT_KIND, query_string_iterator, &ctx);
+
+    if (ctx.len == 0) {
+        free(ctx.buf);
+        return NULL;
+    }
+
+    return ctx.buf;
 }
 
 bool resolve_static_file_path(const char *url, char *resolved_path, size_t resolved_path_size) {
@@ -510,9 +581,18 @@ enum MHD_Result handle_request(void *cls, struct MHD_Connection *connection,
                          app_config->webserver.web_root, url) < (int)sizeof(temp_path)) {
                 struct stat path_stat;
                 if (stat(temp_path, &path_stat) == 0 && S_ISDIR(path_stat.st_mode)) {
-                    // This is a directory without trailing slash - redirect
-                    char redirect_url[PATH_MAX];
-                    if (snprintf(redirect_url, sizeof(redirect_url), "%s/", url) < (int)sizeof(redirect_url)) {
+                     // This is a directory without trailing slash - redirect
+                     char redirect_url[PATH_MAX];
+                     int written = snprintf(redirect_url, sizeof(redirect_url), "%s/", url);
+                     if (written > 0 && (size_t)written < sizeof(redirect_url)) {
+                         size_t used = (size_t)written;
+                         // Append original query string so share links like ?code=… survive the redirect
+                         char *qs = web_server_get_query_string(connection);
+                         if (qs) {
+                             (void)snprintf(redirect_url + used, sizeof(redirect_url) - used,
+                                            "?%s", qs);
+                             free(qs);
+                         }
                         struct MHD_Response *redirect_response = MHD_create_response_from_buffer(0, NULL, MHD_RESPMEM_PERSISTENT);
                         if (redirect_response) {
                             MHD_add_response_header(redirect_response, "Location", redirect_url);
