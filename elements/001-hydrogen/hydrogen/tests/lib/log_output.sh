@@ -385,7 +385,7 @@ print_command() {
     else
         truncated_cmd="${processed_cmd}"
     fi
-    local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${EXEC_COLOR}${EXEC_ICON} ${EXEC_COLOR}EXEC${NC}     ${EXEC_COLOR}${truncated_cmd}${NC}"
+    local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${EXEC_COLOR}${EXEC_ICON} ${EXEC_COLOR}EXEC   ──${NC} ${EXEC_COLOR}${truncated_cmd}${NC}"
     if [[ "${COLLECT_OUTPUT_MODE}" == "true" ]]; then
         OUTPUT_COLLECTION+="${formatted_output}\n"
     else
