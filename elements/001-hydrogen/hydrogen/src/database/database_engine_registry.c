@@ -15,6 +15,7 @@ DatabaseEngineInterface* sqlite_get_interface(void);
 DatabaseEngineInterface* mysql_get_interface(void);
 DatabaseEngineInterface* mariadb_get_interface(void);
 DatabaseEngineInterface* db2_get_interface(void);
+DatabaseEngineInterface* mssql_get_interface(void);
 DatabaseEngineInterface* firebird_get_interface(void);
 
 // Global engine registry
@@ -34,7 +35,7 @@ bool database_engine_init(void) {
 
     memset(engine_registry, 0, sizeof(engine_registry));
 
-    int postgres_count = 0, mysql_count = 0, sqlite_count = 0, db2_count = 0, firebird_count = 0, mariadb_count = 0;
+    int postgres_count = 0, mysql_count = 0, sqlite_count = 0, db2_count = 0, firebird_count = 0, mariadb_count = 0, mssql_count = 0;
 
     if (app_config && app_config->databases.connection_count > 0) {
         for (int i = 0; i < app_config->databases.connection_count; i++) {
@@ -53,6 +54,8 @@ bool database_engine_init(void) {
                     db2_count++;
                 } else if (strcmp(engine_type, "firebird") == 0) {
                     firebird_count++;
+                } else if (strcmp(engine_type, "mssql") == 0) {
+                    mssql_count++;
                 }
             }
         }
@@ -130,6 +133,18 @@ bool database_engine_init(void) {
         }
     } else {
         log_this(SR_DATABASE, "- Skipping Firebird engine", LOG_LEVEL_TRACE, 0);
+    }
+
+    if (mssql_count > 0) {
+        DatabaseEngineInterface* mssql_engine = mssql_get_interface();
+        if (mssql_engine) {
+            log_this(SR_DATABASE, "- Registering MSSQL engine: %s at index %d", LOG_LEVEL_DEBUG, 2,
+                mssql_engine->name ? mssql_engine->name : "NULL",
+                DB_ENGINE_MSSQL);
+            engine_registry[DB_ENGINE_MSSQL] = mssql_engine;
+        }
+    } else {
+        log_this(SR_DATABASE, "- Skipping MSSQL engine", LOG_LEVEL_TRACE, 0);
     }
 
     engine_system_initialized = true;

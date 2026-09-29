@@ -36,6 +36,8 @@ const char* normalize_engine_name(const char* engine_name) {
         return "db2";
     } else if (strcmp(engine_name, "firebird") == 0) {
         return "firebird";
+    } else if (strcmp(engine_name, "mssql") == 0 || strcmp(engine_name, "sqlserver") == 0) {
+        return "mssql";
     }
 
     return NULL; // Unsupported engine

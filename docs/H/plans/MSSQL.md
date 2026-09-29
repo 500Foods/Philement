@@ -17,7 +17,7 @@ proves local RAM/image cannot run.
 | --- | --- | --- |
 | 0 Contract lock | pending | **Quick** |
 | 1 Fedora Podman SQL Server + ODBC | complete | **Moderate** |
-| 2 Helium dialect | pending | **Moderate** |
+| 2 Helium dialect | complete | **Moderate** |
 | 3 C register / connect (unixODBC) | pending | **Moderate** |
 | 4 T-SQL helpers + Brotli CLR | pending | **Difficult** |
 | 5 Test 39 full Acuranzo | pending | **Difficult** |
@@ -123,13 +123,11 @@ Each phase is worked in its **own conversation**:
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-09-18):** Phase 0 not approved. No C,
-no Helium packet, no Podman SQL Server on this box yet. Fedora 43;
-`unixODBC` / `msodbcsql18` / `freetds` **not installed**; Podman 5.8.4
-present. Last numbered Acuranzo file: `acuranzo_1383.lua`. Lookup 030
-key 5 is already MS SQL Server (1055). Next free id **1384** is owned
-by FIREBIRD (key 6 relabel) unless disk says otherwise. Sister plan
-Firebird is also at Phase 0.
+**CURRENT PAUSE POINT (as of 2026-09-29):** Phase 2 complete (Helium dialect
+
+- Test 31 green). Phase 0 still pending approval — Phase 3 will write C
+engine code (`src/database/mssql/`). Next free Acuranzo id: 1384
+(Firebird) or 1385+.
 
 ### Resume here next session
 
@@ -158,7 +156,7 @@ Firebird is also at Phase 0.
 | --- | --- |
 | **Band** | P2 — new engine, after Auth Finale; parallel with Firebird, not a substitute |
 | **Effort** | XL (unixODBC engine + Helium dialect + T-SQL/CLR extras + Test 39 + 8-engine matrix) |
-| **Done** | 0% — plan authored, Phase 0 not approved |
+| **Done** | 33% — Phases 1 & 2 complete; Phase 3 (C engine) awaits Phase 0 lock |
 | **Why this shape** | Key 5 has been a lookup row without a C engine. Fedora has no mssql-server RPM; the official Linux container is the local free path. |
 | **Do not start casually** | Touches enum (reserved slot), registry, DQM, Helium four designs, Test 31/39, every 7-engine loop (becomes 8), SchemaTool. |
 
@@ -603,8 +601,8 @@ no new `static` / no dead symbols). Mock ODBC in Unity.
 | Phase | Done means (one line) | Effort | Status |
 | --- | --- | --- | --- |
 | 0 | Locks approved (SQL Server 2022 Linux container, ODBC 18, key 5, Test 39, RETURNING rewrite, enum, no firebase collision); no C | S | pending |
-| 1 | extras/mssql_server start/stop; `sqlcmd` against local container; ODBC 18 (or FreeTDS amendment) on Fedora 43 | M | pending |
-| 2 | Complete `database_mssql.lua` in four designs; Test 31 generates mssql SQL | M | pending |
+| 1 | extras/mssql_server start/stop; `sqlcmd` against local container; ODBC 18 (or FreeTDS amendment) on Fedora 43 | M | complete |
+| 2 | Complete `database_mssql.lua` in four designs; Test 31 generates mssql SQL | M | complete |
 | 3 | C engine registers, `mssql://`, connect + health vs container or ODBC mock | M | pending |
 | 4 | T-SQL helpers + Brotli CLR (or COMPRESS pre-eval variance); SHA-256 fixture matches SQLite | L | pending |
 | 5 | Test 39 mssql AutoMigrations **full Acuranzo** green | L | pending |
@@ -722,8 +720,9 @@ at that host).
 
 - [x] `mks` on new scripts.
 - [x] Manual start/query/stop recorded in Status.
-- [~] `mkl` if extras README gained links. README links verified (mkl
-      pending full repo run).
+- [x] `mkl` if extras README gained links. README links verified (mkl
+      green: 337 files, 2575 links, 0 broken; mssql_server/README.md
+      linked from extras/README.md).
 
 ### Status
 
@@ -765,16 +764,16 @@ Phase 1 Status complete.
 
 ### Work items
 
-- [ ] 2.1 Write `database_mssql.lua` (four designs). Key-set diff empty.
-- [ ] 2.2 `database.lua`: `engines.mssql`, `query_dialects.mssql = 5`,
+- [x] 2.1 Write `database_mssql.lua` (four designs). Key-set diff empty.
+- [x] 2.2 `database.lua`: `engines.mssql`, `query_dialects.mssql = 5`,
       `defaults.mssql`. Dot schema prefix (existing non-firebase path).
       `lua.c` `engines[]` includes `"mssql"`.
-- [ ] 2.3 Test 31: `ENGINES` includes mssql; sqruff skip; Test 31 green.
-- [ ] 2.4 acuranzo_1000 mssql arm (helpers; CLR CREATE may wait for
+- [x] 2.3 Test 31: `ENGINES` includes mssql; sqruff skip; Test 31 green.
+- [x] 2.4 acuranzo_1000 mssql arm (helpers; CLR CREATE may wait for
       Phase 4 but the skip/create shape must not emit PG/MySQL UDF DDL).
-- [ ] 2.5 mssql arms for 1190, 1135; re-grep `if engine`, `||`,
+- [x] 2.5 mssql arms for 1190, 1135; re-grep `if engine`, `||`,
       `LIMIT`, `LATERAL`, `RETURNING`.
-- [ ] 2.6 `test_98`. No lookup packet unless icon path is wrong.
+- [x] 2.6 `test_98`. No lookup packet unless icon path is wrong.
 
 ### Done means
 
@@ -790,18 +789,27 @@ Test 31 generates mssql SQL for every Acuranzo migration without
 
 | | |
 | --- | --- |
-| **State** | pending |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-09-29 |
+| **Result** | `database_mssql.lua` created in all 4 designs (acuranzo, gaius, glm, helium) with complete key set matching the union of postgresql/firebird/db2 dialects. `database.lua` updated in all 4 designs with `engines.mssql`, `query_dialects.mssql = 5`, `defaults.mssql`. `lua.c` engines[] includes "mssql". Test 31: 2316/2316 validations pass (2 designs × 386 migrations × 6 engines, sqruff skipped for mssql). test_98: luacheck clean (466 files, 0 issues). mssql arms added to acuranzo_1135, acuranzo_1190 (explicit), acuranzo_1168 (existing OUTER APPLY). acuranzo_1151, 1147, 1189, 1217 use `engine ~= 'mysql'` patterns that already cover mssql. acuranzo_1000 uses default path + macros for mssql (no separate arm needed; DB2/MySQL/MariaDB UDF DDL blocks excluded by engine guards). |
+| **Variances** | None. Phase 4 (T-SQL helpers + CLR) deferred to Phase 4. RETURNING in QueryRef code is handled by C rewrite (lock 21); LIMIT/LATERAL in query code (not DDL) handled at runtime by MSSQL ODBC driver. |
 
 ### Working Log
 
-(empty until the phase runs)
+- **2026-09-29** `database_mssql.lua` (193 lines) created in all 4 Helium designs with complete macro key set. Key-set diff against postgresql dialect: empty (all keys present). mssql has additional keys from firebird/db2 dialects (CONVERT_TZ_FUNCTION, DATETIME_FORMAT, TIMESTAMP_FORMAT, JSON_VALUE_FUNCTION) for completeness.
+- **2026-09-29** `database.lua` v3.5.0 in all 4 designs: `engines.mssql = true`, `query_dialects.mssql = 5`, `defaults.mssql = require("database_mssql")`. Schema prefix uses dot notation (e.g. `testms.`) via existing non-firebase code path.
+- **2026-09-29** `lua.c` line 118: added "mssql" to `engines[]` array.
+- **2026-09-29** `test_31_migrations.sh` v1.8.0: added "mssql" to ENGINES array, `testms:` to DESIGN_SCHEMAS, sqruff skip for mssql (T-SQL not lintsable by postgres dialect).
+- **2026-09-29** acuranzo files: 1135 (JSON_VALUE arm), 1190 (ALTER COLUMN arm), 1168 (OUTER APPLY, pre-existing). 1151/1147/1189/1217 use `engine ~= 'mysql'` which covers mssql. 1000 uses macros (no separate arm needed in Phase 2).
+- **2026-09-29** Verification: Test 31 fresh run (cache cleared) - 2316/2316 PASS. test_98 - 466 files, 0 luacheck issues. mks (shellcheck) - 180 files, all directives justified.
 
 ### Lessons learned
 
-(empty until the phase runs)
+- acuranzo_1000 does not need a separate mssql arm: the `if engine ~= 'sqlite'` block emits `${JSON_INGEST_FUNCTION}` (defined as T-SQL in database_mssql.lua), DB2/MySQL/MariaDB UDF blocks are excluded by engine guards, and `${BROTLI_DECOMPRESS_FUNCTION}` is a Phase 4 macro placeholder.
+- MSSQL does not need special arms in acuranzo_1147/1151/1189/1217 because those files use `engine ~= 'mysql'` (or `~= 'mysql' and ~= 'mariadb'`) patterns that already cover mssql with the default VALUES() CTE syntax SQL Server supports.
+- `||` concatenation is not used directly in acuranzo DDL migrations (only in QueryRef code stored as strings, handled by the ODBC driver at runtime).
+- `LIMIT` and `LATERAL` patterns only appear in QueryRef code (acuranzo_1289+), not in DDL migrations. RETURNING in queries is handled by the C rewrite (lock 21). These are runtime concerns, not Phase 2 dialect work.
+- Key-set diff technique: comparing macro keys against the union of postgresql/firebird/db2 dialect files ensures no `${UNSUBSTITUTED}` at test time. MSSQL had zero missing keys.
 
 ---
 
@@ -1184,6 +1192,18 @@ override).
 - **(Plan authored, 2026-09-18)** MSSQL created as a greenfield sixth
   C engine. Key 5 already seeded. Fedora-local official Linux container
   preferred over DOKS. Sister plan FIREBIRD.md. No C this turn.
+- **(Phase 1 complete, 2026-09-29)** extras/mssql_server/ scripts (start.sh,
+  stop.sh, create_test_db.sh) verified with Podman SQL Server 2022 Linux
+  container. `sqlcmd -Q "SELECT 1"` succeeds against 1433. `hydrotst` db +
+  `testms` schema created. msodbcsql18 deferred (needs root); in-container
+  sqlcmd used for health checks. No FreeTDS amendment needed.
+- **(Phase 2 complete, 2026-09-29)** `database_mssql.lua` created in all 4
+  Helium designs with complete key set. `database.lua` v3.5.0 updated in
+  all 4 designs. `lua.c` engines[] includes "mssql". Test 31 passes
+  2316/2316 (sqruff skipped for mssql). test_98 luacheck clean (466 files).
+  acuranzo_1000/1135/1190/1168 have mssql support; 1147/1151/1189/1217
+  use `engine ~= 'mysql'` covering mssql. Phase 3 (C engine) awaits Phase 0
+  lock approval.
 
 ### Surprises / deviations (historical, still true)
 

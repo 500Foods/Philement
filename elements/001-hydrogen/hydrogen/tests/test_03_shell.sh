@@ -317,8 +317,11 @@ declare -a ENV_WHITELIST=(
     "FIREBIRD" "SYSDBA_PASSWORD" "FIREBIRD_DB_PATH"
     "ARG1" "AUTH_PROBE" "CREATE_MODE" "DEFAULT_DEMO_PATH" "DEFAULT_TEST_PATH" "DEMO_PATH"
     "FB_FLUSH_PATH" "ONEOFF_PATH" "PKEXEC_UID" "PRIMARY_PATH" "TEST_PATH" "_ART"
-    # first found in extras/mailval/gen_sert.sh
+    # First found in extras/mailval/gen_sert.sh
     "CERT" "HERE" "KEY" 
+    # First found in extras/mssql_server/start.sh and friends
+    "CONTAINER_NAME" "DROP_EXISTING" "IMAGE_NAME" "MSSQL_HOST" "MSSQL_PORT" "SA_PASSWORD" "TEST_DB"
+    "TEST_SCHEMA" "TOTAL_MEM_GB"
     # First found in extras/schematool.sh
     "ADAPTER" "DATABASE" "DATA_JSON" "DATE_CMD" "DB_DIR" "DB_JSON" "DB_LABEL" "DEL_FILE" "DISPLAY_STAMP" "DRY_DISK"
     "DUMP_DB" "DUMP_DB_PATH" "DUMP_OUT" "EMIT_EXPECTED" "EMIT_EXPECTED_PATH" "EXPECTED_JSON" "EXPECT_OUT"

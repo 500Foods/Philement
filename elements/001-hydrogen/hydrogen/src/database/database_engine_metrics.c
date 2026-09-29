@@ -31,7 +31,7 @@ volatile unsigned long long db_connections_created = 0;
 volatile unsigned long long db_connections_closed = 0;
 volatile unsigned long long db_connection_errors = 0;
 
-void database_get_counts_by_type(int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count, int* firebird_count, int* mariadb_count) {
+void database_get_counts_by_type(int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count, int* firebird_count, int* mariadb_count, int* mssql_count) {
     if (!app_config) {
         *postgres_count = 0;
         *mysql_count = 0;
@@ -39,6 +39,7 @@ void database_get_counts_by_type(int* postgres_count, int* mysql_count, int* sql
         *db2_count = 0;
         *firebird_count = 0;
         *mariadb_count = 0;
+        *mssql_count = 0;
         return;
     }
 
@@ -50,6 +51,7 @@ void database_get_counts_by_type(int* postgres_count, int* mysql_count, int* sql
     *db2_count = 0;
     *firebird_count = 0;
     *mariadb_count = 0;
+    *mssql_count = 0;
 
     for (int i = 0; i < db_config->connection_count; i++) {
         const DatabaseConnection* conn = &db_config->connections[i];
@@ -66,6 +68,8 @@ void database_get_counts_by_type(int* postgres_count, int* mysql_count, int* sql
                 (*db2_count)++;
             } else if (strcmp(conn->type, "firebird") == 0) {
                 (*firebird_count)++;
+            } else if (strcmp(conn->type, "mssql") == 0) {
+                (*mssql_count)++;
             }
         }
     }
@@ -81,7 +85,7 @@ void database_get_supported_engines(char* buffer, size_t buffer_size) {
         return;
     }
 
-    const char* engines = "PostgreSQL, SQLite, MySQL, MariaDB, DB2, Firebird";
+    const char* engines = "PostgreSQL, SQLite, MySQL, MariaDB, DB2, Firebird, MSSQL";
     strncpy(buffer, engines, buffer_size - 1);
     buffer[buffer_size - 1] = '\0';
 }

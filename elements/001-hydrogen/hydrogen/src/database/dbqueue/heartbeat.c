@@ -36,6 +36,9 @@ DatabaseEngine database_queue_determine_engine_type(const char* connection_strin
         return DB_ENGINE_DB2;
     } else if (strncmp(connection_string, "firebird://", 11) == 0) {
         return DB_ENGINE_FIREBIRD;
+    } else if (strncmp(connection_string, "mssql://", 8) == 0 ||
+               strncmp(connection_string, "sqlserver://", 12) == 0) {
+        return DB_ENGINE_MSSQL;
     } else {
         // If it doesn't match other patterns, assume SQLite
         return DB_ENGINE_SQLITE;

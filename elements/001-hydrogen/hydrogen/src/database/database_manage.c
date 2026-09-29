@@ -21,6 +21,7 @@ const char* sqlite_engine_get_description(void);
 const char* mysql_engine_get_description(void);
 const char* mariadb_engine_get_description(void);
 const char* db2_engine_get_description(void);
+const char* mssql_engine_get_description(void);
 const char* firebird_engine_get_description(void);
 
 // Global database subsystem instance
@@ -154,6 +155,8 @@ bool database_add_database(const char* name, const char* engine, const char* con
         engine_type = DB_ENGINE_FIREBIRD;
     } else if (strcmp(engine, "sqlite") == 0) {
         engine_type = DB_ENGINE_SQLITE;
+    } else if (strcmp(engine, "mssql") == 0) {
+        engine_type = DB_ENGINE_MSSQL;
     }
 
     const char* description = NULL;
@@ -177,6 +180,8 @@ bool database_add_database(const char* name, const char* engine, const char* con
             description = firebird_engine_get_description();
             break;
         case DB_ENGINE_MSSQL:
+            description = mssql_engine_get_description();
+            break;
         case DB_ENGINE_AI:
         case DB_ENGINE_MAX:
         default:

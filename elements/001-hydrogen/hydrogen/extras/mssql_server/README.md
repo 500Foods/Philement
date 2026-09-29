@@ -73,7 +73,7 @@ podman pull mcr.microsoft.com/mssql/server:2022-latest
 
 ### Connection String
 
-```
+```connection
 Driver=ODBC Driver 18 for SQL Server;Server=127.0.0.1,1433;Database=hydrotst;UID=sa;PWD=<password>;TrustServerCertificate=yes;
 ```
 

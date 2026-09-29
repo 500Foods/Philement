@@ -105,8 +105,8 @@ void test_database_get_counts_by_type_no_config(void) {
     AppConfig* saved_config = app_config;
     app_config = NULL;
 
-    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count, mariadb_count;
-    database_get_counts_by_type(&postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count, &mariadb_count);
+    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count, mariadb_count, mssql_count;
+    database_get_counts_by_type(&postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count, &mariadb_count, &mssql_count);
 
     TEST_ASSERT_EQUAL(0, postgres_count);
     TEST_ASSERT_EQUAL(0, mysql_count);
@@ -114,6 +114,7 @@ void test_database_get_counts_by_type_no_config(void) {
     TEST_ASSERT_EQUAL(0, db2_count);
     TEST_ASSERT_EQUAL(0, firebird_count);
     TEST_ASSERT_EQUAL(0, mariadb_count);
+    TEST_ASSERT_EQUAL(0, mssql_count);
 
     app_config = saved_config;
 }
@@ -122,8 +123,8 @@ void test_database_get_counts_by_type_no_config(void) {
 void test_database_get_counts_by_type_with_config(void) {
     // This would require setting up app_config with database connections
     // For now, just test that it doesn't crash
-    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count, mariadb_count;
-    database_get_counts_by_type(&postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count, &mariadb_count);
+    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count, mariadb_count, mssql_count;
+    database_get_counts_by_type(&postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count, &mariadb_count, &mssql_count);
 
     // Values depend on configuration
     TEST_ASSERT_TRUE(postgres_count >= 0);
@@ -132,6 +133,7 @@ void test_database_get_counts_by_type_with_config(void) {
     TEST_ASSERT_TRUE(db2_count >= 0);
     TEST_ASSERT_TRUE(firebird_count >= 0);
     TEST_ASSERT_TRUE(mariadb_count >= 0);
+    TEST_ASSERT_TRUE(mssql_count >= 0);
 }
 
 int main(void) {
