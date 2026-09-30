@@ -1,9 +1,10 @@
 /*
- * Unity Test File: MSSQL RETURNING → OUTPUT Rewrite
+ * Unity Test File: MSSQL RETURNING → OUTPUT and INSERT...WITH rewrites
  *
- * Tests for mssql_rewrite_returning_to_output() and its helpers.
- * Covers the INSERT ... WITH cte ... SELECT ... RETURNING col shape
- * emitted by Helium QueryRefs.
+ * Tests for mssql_rewrite_returning_to_output(),
+ * mssql_rewrite_insert_with_to_with_insert(), and their helpers.
+ * Covers the INSERT ... WITH cte ... SELECT shape emitted by Helium
+ * QueryRef migrations, including a trailing RETURNING column.
  */
 
 #include <src/hydrogen.h>
@@ -41,6 +42,23 @@ void test_rewrite_preserves_cte_and_select(void);
 void test_rewrite_output_after_column_list(void);
 void test_rewrite_no_insert_returns_null(void);
 void test_rewrite_empty_string_returns_null(void);
+void test_rewrite_insert_with_moves_cte_before_insert(void);
+void test_rewrite_insert_with_preserves_quoted_payload(void);
+void test_rewrite_insert_with_plain_insert_returns_null(void);
+void test_rewrite_insert_with_select_returns_null(void);
+void test_rewrite_insert_with_already_valid_returns_null(void);
+void test_rewrite_insert_with_null_returns_null(void);
+void test_rewrite_insert_with_cte_column_list(void);
+void test_rewrite_cte_values_wraps_values_list(void);
+void test_rewrite_cte_values_leaves_select_body(void);
+void test_rewrite_cte_values_ignores_quoted_text(void);
+void test_rewrite_cte_values_null_returns_null(void);
+void test_rewrite_migration_sql_numbers_insert(void);
+void test_rewrite_add_column_strips_keyword(void);
+void test_rewrite_add_column_keeps_drop_column(void);
+void test_rewrite_add_column_ignores_quoted_text(void);
+void test_rewrite_add_column_null_returns_null(void);
+void test_rewrite_migration_sql_add_column(void);
 
 void setUp(void) {
     /* Set up fixtures if needed */
@@ -267,6 +285,221 @@ void test_rewrite_empty_string_returns_null(void) {
     TEST_ASSERT_NULL(result);
 }
 
+/* ---- Lock 22: INSERT ... WITH cte ... SELECT → WITH cte ... INSERT ... SELECT ---- */
+
+void test_rewrite_insert_with_moves_cte_before_insert(void) {
+    const char* sql =
+        "INSERT INTO testms.queries (\n"
+        "    query_id,\n"
+        "    code\n"
+        ")\n"
+        "WITH next_query_id AS (\n"
+        "    SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id\n"
+        "    FROM testms.queries\n"
+        ")\n"
+        "SELECT new_query_id, 'x' AS code\n"
+        "FROM next_query_id;";
+    char* result = mssql_rewrite_insert_with_to_with_insert(sql);
+    TEST_ASSERT_NOT_NULL(result);
+
+    const char* with_pos = strstr(result, "WITH next_query_id AS");
+    const char* insert_pos = strstr(result, "INSERT INTO testms.queries");
+    const char* select_pos = strstr(result, "SELECT new_query_id, 'x' AS code");
+    TEST_ASSERT_NOT_NULL(with_pos);
+    TEST_ASSERT_NOT_NULL(insert_pos);
+    TEST_ASSERT_NOT_NULL(select_pos);
+    TEST_ASSERT_TRUE(with_pos < insert_pos);
+    TEST_ASSERT_TRUE(insert_pos < select_pos);
+    TEST_ASSERT_NOT_NULL(strstr(result, "FROM next_query_id;"));
+    free(result);
+}
+
+void test_rewrite_insert_with_preserves_quoted_payload(void) {
+    /* The stored QueryRef body is a quoted string that itself contains
+     * WITH and parentheses. The CTE closer must stop at the real CTE. */
+    const char* sql =
+        "INSERT INTO testms.queries (query_id, code)\n"
+        "WITH next_query_id AS (\n"
+        "    SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id\n"
+        "    FROM testms.queries\n"
+        ")\n"
+        "SELECT new_query_id, 'WITH fake AS (not real) ) tail' AS code\n"
+        "FROM next_query_id;";
+    char* result = mssql_rewrite_insert_with_to_with_insert(sql);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_NOT_NULL(strstr(result, "'WITH fake AS (not real) ) tail'"));
+    TEST_ASSERT_NOT_NULL(strstr(result, "COALESCE(MAX(query_id), 0) + 1"));
+
+    const char* with_pos = strstr(result, "WITH next_query_id AS");
+    const char* insert_pos = strstr(result, "INSERT INTO testms.queries");
+    TEST_ASSERT_NOT_NULL(with_pos);
+    TEST_ASSERT_NOT_NULL(insert_pos);
+    TEST_ASSERT_TRUE(with_pos < insert_pos);
+    free(result);
+}
+
+void test_rewrite_insert_with_plain_insert_returns_null(void) {
+    const char* sql = "INSERT INTO testms.lookups (lookup_id, key_idx) VALUES (1, 2);";
+    char* result = mssql_rewrite_insert_with_to_with_insert(sql);
+    TEST_ASSERT_NULL(result);
+}
+
+void test_rewrite_insert_with_select_returns_null(void) {
+    const char* sql = "SELECT 1 FROM testms.queries";
+    char* result = mssql_rewrite_insert_with_to_with_insert(sql);
+    TEST_ASSERT_NULL(result);
+}
+
+void test_rewrite_insert_with_already_valid_returns_null(void) {
+    const char* sql =
+        "WITH next_query_id AS (\n"
+        "    SELECT COALESCE(MAX(query_id), 0) + 1 AS new_query_id\n"
+        "    FROM testms.queries\n"
+        ")\n"
+        "INSERT INTO testms.queries (query_id, code)\n"
+        "SELECT new_query_id, 'x' AS code\n"
+        "FROM next_query_id;";
+    char* result = mssql_rewrite_insert_with_to_with_insert(sql);
+    TEST_ASSERT_NULL(result);
+}
+
+void test_rewrite_insert_with_null_returns_null(void) {
+    char* result = mssql_rewrite_insert_with_to_with_insert(NULL);
+    TEST_ASSERT_NULL(result);
+}
+
+void test_rewrite_insert_with_cte_column_list(void) {
+    const char* sql =
+        "INSERT INTO testms.numbers (\n"
+        "    numbers\n"
+        ")\n"
+        "WITH digits(i) AS (\n"
+        "    SELECT 0 AS i\n"
+        ")\n"
+        "SELECT i FROM digits;";
+    char* result = mssql_rewrite_insert_with_to_with_insert(sql);
+    TEST_ASSERT_NOT_NULL(result);
+    const char* with_pos = strstr(result, "WITH digits(i) AS");
+    const char* insert_pos = strstr(result, "INSERT INTO testms.numbers");
+    TEST_ASSERT_NOT_NULL(with_pos);
+    TEST_ASSERT_NOT_NULL(insert_pos);
+    TEST_ASSERT_TRUE(with_pos < insert_pos);
+    TEST_ASSERT_NOT_NULL(strstr(result, "SELECT 0 AS i"));
+    TEST_ASSERT_NULL(strstr(result, "SELECT * FROM"));
+    free(result);
+}
+
+void test_rewrite_cte_values_wraps_values_list(void) {
+    const char* sql =
+        "WITH digits(i) AS (\n"
+        "    VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9)\n"
+        ")\n"
+        "SELECT i FROM digits;";
+    char* result = mssql_rewrite_cte_values(sql);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_NOT_NULL(strstr(result,
+        "AS (SELECT * FROM (VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) AS v(i))"));
+    TEST_ASSERT_NULL(strstr(result, "AS (VALUES"));
+    TEST_ASSERT_NOT_NULL(strstr(result, "SELECT i FROM digits;"));
+    free(result);
+}
+
+void test_rewrite_cte_values_leaves_select_body(void) {
+    const char* sql = "WITH digits(i) AS (SELECT 0 AS i) SELECT i FROM digits";
+    char* result = mssql_rewrite_cte_values(sql);
+    TEST_ASSERT_NULL(result);
+}
+
+void test_rewrite_cte_values_ignores_quoted_text(void) {
+    const char* sql = "SELECT 'WITH digits(i) AS (VALUES (0),(1))' AS code";
+    char* result = mssql_rewrite_cte_values(sql);
+    TEST_ASSERT_NULL(result);
+}
+
+void test_rewrite_cte_values_null_returns_null(void) {
+    char* result = mssql_rewrite_cte_values(NULL);
+    TEST_ASSERT_NULL(result);
+}
+
+void test_rewrite_migration_sql_numbers_insert(void) {
+    const char* sql =
+        "INSERT INTO testms.numbers (\n"
+        "    numbers\n"
+        ")\n"
+        "WITH digits(i) AS (\n"
+        "    VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9)\n"
+        ")\n"
+        "SELECT\n"
+        "    thousands.i * 1000\n"
+        "    + hundreds.i * 100\n"
+        "    + tens.i * 10\n"
+        "    + units.i\n"
+        "FROM\n"
+        "    digits units,\n"
+        "    digits tens,\n"
+        "    digits hundreds,\n"
+        "    digits thousands;";
+    char* result = mssql_rewrite_migration_sql(sql);
+    TEST_ASSERT_NOT_NULL(result);
+
+    const char* with_pos = strstr(result, "WITH digits(i) AS");
+    const char* insert_pos = strstr(result, "INSERT INTO testms.numbers");
+    const char* select_pos = strstr(result, "thousands.i * 1000");
+    TEST_ASSERT_NOT_NULL(with_pos);
+    TEST_ASSERT_NOT_NULL(insert_pos);
+    TEST_ASSERT_NOT_NULL(select_pos);
+    TEST_ASSERT_TRUE(with_pos < insert_pos);
+    TEST_ASSERT_TRUE(insert_pos < select_pos);
+    TEST_ASSERT_NOT_NULL(strstr(result,
+        "AS (SELECT * FROM (VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9)) AS v(i))"));
+    TEST_ASSERT_NOT_NULL(strstr(result, "digits thousands;"));
+    free(result);
+}
+
+void test_rewrite_add_column_strips_keyword(void) {
+    const char* sql =
+        "ALTER TABLE testms.convos\n"
+        "    ADD COLUMN segment_refs NVARCHAR(MAX);\n"
+        "ALTER TABLE testms.convos\n"
+        "    ADD COLUMN engine_name NVARCHAR(50);";
+    char* result = mssql_rewrite_add_column(sql);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_NOT_NULL(strstr(result, "ADD segment_refs NVARCHAR(MAX);"));
+    TEST_ASSERT_NOT_NULL(strstr(result, "ADD engine_name NVARCHAR(50);"));
+    TEST_ASSERT_NULL(strstr(result, "COLUMN"));
+    free(result);
+}
+
+void test_rewrite_add_column_keeps_drop_column(void) {
+    const char* sql = "ALTER TABLE testms.convos DROP COLUMN segment_refs;";
+    char* result = mssql_rewrite_add_column(sql);
+    TEST_ASSERT_NULL(result);
+}
+
+void test_rewrite_add_column_ignores_quoted_text(void) {
+    const char* sql = "SELECT 'ADD COLUMN secret' AS name";
+    char* result = mssql_rewrite_add_column(sql);
+    TEST_ASSERT_NULL(result);
+}
+
+void test_rewrite_add_column_null_returns_null(void) {
+    char* result = mssql_rewrite_add_column(NULL);
+    TEST_ASSERT_NULL(result);
+}
+
+void test_rewrite_migration_sql_add_column(void) {
+    const char* sql =
+        "ALTER TABLE testms.convos\n"
+        "    ADD COLUMN segment_refs NVARCHAR(MAX);";
+    char* result = mssql_rewrite_migration_sql(sql);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_EQUAL_STRING(
+        "ALTER TABLE testms.convos\n"
+        "    ADD segment_refs NVARCHAR(MAX);",
+        result);
+    free(result);
+}
+
 /* ---- Runner ---- */
 
 int main(void) {
@@ -305,6 +538,26 @@ int main(void) {
     RUN_TEST(test_rewrite_output_after_column_list);
     RUN_TEST(test_rewrite_no_insert_returns_null);
     RUN_TEST(test_rewrite_empty_string_returns_null);
+
+    RUN_TEST(test_rewrite_insert_with_moves_cte_before_insert);
+    RUN_TEST(test_rewrite_insert_with_preserves_quoted_payload);
+    RUN_TEST(test_rewrite_insert_with_plain_insert_returns_null);
+    RUN_TEST(test_rewrite_insert_with_select_returns_null);
+    RUN_TEST(test_rewrite_insert_with_already_valid_returns_null);
+    RUN_TEST(test_rewrite_insert_with_null_returns_null);
+    RUN_TEST(test_rewrite_insert_with_cte_column_list);
+
+    RUN_TEST(test_rewrite_cte_values_wraps_values_list);
+    RUN_TEST(test_rewrite_cte_values_leaves_select_body);
+    RUN_TEST(test_rewrite_cte_values_ignores_quoted_text);
+    RUN_TEST(test_rewrite_cte_values_null_returns_null);
+    RUN_TEST(test_rewrite_migration_sql_numbers_insert);
+
+    RUN_TEST(test_rewrite_add_column_strips_keyword);
+    RUN_TEST(test_rewrite_add_column_keeps_drop_column);
+    RUN_TEST(test_rewrite_add_column_ignores_quoted_text);
+    RUN_TEST(test_rewrite_add_column_null_returns_null);
+    RUN_TEST(test_rewrite_migration_sql_add_column);
 
     return UNITY_END();
 }

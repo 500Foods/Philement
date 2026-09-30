@@ -13,6 +13,7 @@
 #include "types.h"
 #include "connection.h"
 #include "prepared.h"
+#include "rewrite.h"
 
 // ODBC type definitions for MSSQL
 typedef short SQLSMALLINT;
@@ -145,16 +146,30 @@ bool mssql_prepare_statement(DatabaseHandle* connection, const char* name, const
         return false;
     }
 
+    /* APPLY prepares every statement. SQL Server rejects
+     * INSERT INTO ... WITH cte ... SELECT (syntax 156 near WITH) and a
+     * CTE body that is a bare VALUES list (syntax 156 near VALUES).
+     * FreeTDS reports both as 8180 at SQLExecute. execute_query rewrites
+     * those shapes, and RETURNING, before it runs. Do the same here. */
+    char* rewritten = mssql_rewrite_migration_sql(sql);
+    const char* effective_sql = rewritten ? rewritten : sql;
+    char* prepare_sql = strdup(effective_sql);
+    free(rewritten);
+    if (!prepare_sql) {
+        return false;
+    }
+
     // Allocate statement handle
     void* stmt_handle = NULL;
     SQLRETURN rc = (SQLRETURN)mssql_SQLAllocHandle_ptr(SQL_HANDLE_STMT, mssql_conn->connection, &stmt_handle);
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
         log_this(SR_DATABASE, "MSSQL statement handle allocation failed", LOG_LEVEL_ERROR, 0);
+        free(prepare_sql);
         return false;
     }
 
     // Prepare the statement
-    rc = (SQLRETURN)mssql_SQLPrepare_ptr(stmt_handle, (SQLCHAR*)sql, SQL_NTS);
+    rc = (SQLRETURN)mssql_SQLPrepare_ptr(stmt_handle, (SQLCHAR*)prepare_sql, SQL_NTS);
     if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
         SQLCHAR sqlstate[6];
         SQLCHAR message[SQL_MAX_MESSAGE_LENGTH];
@@ -168,8 +183,10 @@ bool mssql_prepare_statement(DatabaseHandle* connection, const char* name, const
             mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
         } else {
             log_this(SR_DATABASE, "mssql_SQLFreeHandle_ptr not available for freeing statement", LOG_LEVEL_ERROR, 0);
+            free(prepare_sql);
             return false;
         }
+        free(prepare_sql);
         return false;
     }
 
@@ -180,13 +197,16 @@ bool mssql_prepare_statement(DatabaseHandle* connection, const char* name, const
             mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
         } else {
             log_this(SR_DATABASE, "mssql_SQLFreeHandle_ptr not available for freeing statement", LOG_LEVEL_ERROR, 0);
+            free(prepare_sql);
             return false;
         }
+        free(prepare_sql);
         return false;
     }
 
     prepared_stmt->name = strdup(name);
-    prepared_stmt->sql_template = strdup(sql);
+    prepared_stmt->sql_template = prepare_sql;
+    prepare_sql = NULL;
     prepared_stmt->engine_specific_handle = stmt_handle;
     prepared_stmt->created_at = time(NULL);
     prepared_stmt->usage_count = 0;

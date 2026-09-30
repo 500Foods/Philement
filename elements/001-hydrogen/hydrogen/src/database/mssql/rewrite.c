@@ -278,14 +278,23 @@ const char* mssql_find_cte_open_paren(const char* sql) {
     const char* p = sql;
     while (*p) {
         size_t adv = 0;
-        if (mssql_match_word(p, "WITH", &adv)) {
-            p = mssql_skip_ws(p + adv);
-            /* CTE name (identifier) */
-            while (*p && !isspace((unsigned char)*p) && *p != '(' && *p != ';') p++;
-            p = mssql_skip_ws(p);
-            if (mssql_match_word(p, "AS", &adv)) {
-                p = mssql_skip_ws(p + adv);
-                if (*p == '(') return p;
+        bool boundary = (p == sql) ||
+            !(isalnum((unsigned char)p[-1]) || p[-1] == '_' || p[-1] == '$');
+        if (boundary && mssql_match_word(p, "WITH", &adv)) {
+            const char* q = mssql_skip_ws(p + adv);
+            const char* name = q;
+            /* CTE name, then an optional column list: WITH digits(i) AS ( */
+            while (*q && (isalnum((unsigned char)*q) || *q == '_' || *q == '.')) q++;
+            if (q != name) {
+                q = mssql_skip_ws(q);
+                if (*q == '(') {
+                    const char* cols_close = mssql_find_insert_col_list_close(sql, (long)(q - sql));
+                    if (cols_close) q = mssql_skip_ws(cols_close + 1);
+                }
+                if (mssql_match_word(q, "AS", &adv)) {
+                    q = mssql_skip_ws(q + adv);
+                    if (*q == '(') return q;
+                }
             }
         }
         p++;
@@ -373,4 +382,232 @@ char* mssql_rewrite_insert_with_to_with_insert(const char* sql) {
     result[pos] = '\0';
 
     return result;
+}
+
+/*
+ * PostgreSQL accepts WITH name(cols) AS (VALUES (...),(...)).
+ * SQL Server requires a SELECT. Wrap the list as
+ * SELECT * FROM (VALUES ...) AS v(cols). One CTE per call.
+ * Returns NULL when this shape is absent.
+ */
+char* mssql_rewrite_cte_values(const char* sql) {
+    if (!sql || !*sql) return NULL;
+
+    const char* p = sql;
+    const char* cte_open = NULL;
+    const char* cte_close = NULL;
+    const char* values_at = NULL;
+    const char* cols = NULL;
+    size_t cols_len = 0;
+
+    while (*p && !cte_open) {
+        if (*p == '\'') {
+            p++;
+            while (*p) {
+                if (*p == '\'' && p[1] == '\'') {
+                    p += 2;
+                    continue;
+                }
+                if (*p == '\'') {
+                    p++;
+                    break;
+                }
+                p++;
+            }
+            continue;
+        }
+        if (*p == '-' && p[1] == '-') {
+            while (*p && *p != '\n') p++;
+            continue;
+        }
+
+        size_t adv = 0;
+        bool boundary = (p == sql) ||
+            !(isalnum((unsigned char)p[-1]) || p[-1] == '_' || p[-1] == '$');
+        if (boundary && mssql_match_word(p, "WITH", &adv)) {
+            const char* q = mssql_skip_ws(p + adv);
+            const char* name = q;
+            while (*q && (isalnum((unsigned char)*q) || *q == '_' || *q == '.')) q++;
+            if (q != name) {
+                q = mssql_skip_ws(q);
+                const char* col_s = NULL;
+                const char* col_e = NULL;
+                if (*q == '(') {
+                    const char* col_close = mssql_find_insert_col_list_close(sql, (long)(q - sql));
+                    if (col_close) {
+                        col_s = q + 1;
+                        col_e = col_close;
+                        q = mssql_skip_ws(col_close + 1);
+                    }
+                }
+                if (col_s && mssql_match_word(q, "AS", &adv)) {
+                    q = mssql_skip_ws(q + adv);
+                    if (*q == '(') {
+                        const char* open = q;
+                        const char* close = mssql_find_insert_col_list_close(sql, (long)(open - sql));
+                        if (close) {
+                            const char* body = mssql_skip_ws(open + 1);
+                            if (mssql_match_word(body, "VALUES", &adv)) {
+                                while (col_s < col_e && isspace((unsigned char)*col_s)) col_s++;
+                                while (col_e > col_s && isspace((unsigned char)col_e[-1])) col_e--;
+                                if (col_s < col_e) {
+                                    cte_open = open;
+                                    cte_close = close;
+                                    values_at = body;
+                                    cols = col_s;
+                                    cols_len = (size_t)(col_e - col_s);
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        p++;
+    }
+
+    if (!cte_open || !cte_close || !values_at || !cols || cols_len == 0) return NULL;
+
+    const char* prefix_wrap = "SELECT * FROM (";
+    const char* mid_wrap = ") AS v(";
+    const char* end_wrap = ")";
+    size_t prefix_len = strlen(prefix_wrap);
+    size_t mid_len = strlen(mid_wrap);
+    size_t end_len = strlen(end_wrap);
+    size_t values_len = (size_t)(cte_close - values_at);
+    while (values_len > 0 && isspace((unsigned char)values_at[values_len - 1])) values_len--;
+
+    size_t head_len = (size_t)(cte_open - sql) + 1;
+    size_t tail_len = strlen(cte_close);
+    size_t total = head_len + prefix_len + values_len + mid_len + cols_len + end_len + tail_len + 1;
+    char* result = calloc(1, total);
+    if (!result) return NULL;
+
+    size_t pos = 0;
+    memcpy(result + pos, sql, head_len);
+    pos += head_len;
+    memcpy(result + pos, prefix_wrap, prefix_len);
+    pos += prefix_len;
+    memcpy(result + pos, values_at, values_len);
+    pos += values_len;
+    memcpy(result + pos, mid_wrap, mid_len);
+    pos += mid_len;
+    memcpy(result + pos, cols, cols_len);
+    pos += cols_len;
+    memcpy(result + pos, end_wrap, end_len);
+    pos += end_len;
+    memcpy(result + pos, cte_close, tail_len);
+    pos += tail_len;
+    result[pos] = '\0';
+    return result;
+}
+
+/*
+ * PostgreSQL ALTER TABLE ... ADD COLUMN col becomes T-SQL ADD col.
+ * DROP COLUMN is already valid T-SQL and is left unchanged.
+ * Returns NULL when no ADD COLUMN keyword is present outside strings.
+ */
+char* mssql_rewrite_add_column(const char* sql) {
+    if (!sql || !*sql) return NULL;
+
+    size_t cap = strlen(sql) + 1;
+    char* out = malloc(cap);
+    if (!out) return NULL;
+
+    size_t n = 0;
+    bool changed = false;
+    const char* p = sql;
+
+    while (*p) {
+        if (*p == '\'') {
+            out[n++] = *p++;
+            while (*p) {
+                if (*p == '\'' && p[1] == '\'') {
+                    out[n++] = *p++;
+                    out[n++] = *p++;
+                    continue;
+                }
+                out[n++] = *p;
+                if (*p == '\'') {
+                    p++;
+                    break;
+                }
+                p++;
+            }
+            continue;
+        }
+        if (*p == '-' && p[1] == '-') {
+            while (*p && *p != '\n') out[n++] = *p++;
+            continue;
+        }
+
+        size_t adv = 0;
+        bool boundary = (p == sql) ||
+            !(isalnum((unsigned char)p[-1]) || p[-1] == '_' || p[-1] == '$');
+        if (boundary && mssql_match_word(p, "ADD", &adv)) {
+            const char* after_add = mssql_skip_ws(p + adv);
+            size_t col_adv = 0;
+            if (mssql_match_word(after_add, "COLUMN", &col_adv)) {
+                size_t keep = (size_t)(after_add - p);
+                memcpy(out + n, p, keep);
+                n += keep;
+                p = mssql_skip_ws(after_add + col_adv);
+                changed = true;
+                continue;
+            }
+        }
+        out[n++] = *p++;
+    }
+
+    if (!changed) {
+        free(out);
+        return NULL;
+    }
+    out[n] = '\0';
+    return out;
+}
+
+/*
+ * Apply the MSSQL rewrites used by both direct execution and prepare:
+ * RETURNING, then a bare VALUES CTE body, then INSERT...WITH order,
+ * then ADD COLUMN → ADD. Returns NULL when sql needs none of them.
+ */
+char* mssql_rewrite_migration_sql(const char* sql) {
+    if (!sql) return NULL;
+
+    char* current = NULL;
+    const char* base = sql;
+
+    char* returning = mssql_rewrite_returning_to_output(sql);
+    if (returning) {
+        current = returning;
+        base = current;
+    } else {
+        char* values = NULL;
+        for (int pass = 0; pass < 4; pass++) {
+            char* next = mssql_rewrite_cte_values(base);
+            if (!next) break;
+            free(values);
+            values = next;
+            base = values;
+        }
+
+        char* moved = mssql_rewrite_insert_with_to_with_insert(base);
+        if (moved) {
+            free(values);
+            current = moved;
+            base = current;
+        } else if (values) {
+            current = values;
+            base = current;
+        }
+    }
+
+    char* added = mssql_rewrite_add_column(base);
+    if (added) {
+        free(current);
+        return added;
+    }
+    return current;
 }

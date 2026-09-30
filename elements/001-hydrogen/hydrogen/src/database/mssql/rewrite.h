@@ -4,6 +4,8 @@
  * Bounded rewriters for locks 21-22 in MSSQL.md:
  * - Lock 21: Convert PostgreSQL-style RETURNING to T-SQL OUTPUT
  * - Lock 22: Rewrite INSERT INTO ... WITH cte ... SELECT to WITH cte ... INSERT INTO ... SELECT
+ * - Bare CTE body VALUES (...) becomes SELECT * FROM (VALUES ...) AS v(cols)
+ * - ALTER TABLE ... ADD COLUMN col becomes ADD col (DROP COLUMN stays)
  *
  * Fail-closed: returns NULL when the shape cannot be parsed, so callers
  * pass the original SQL through untouched.
@@ -32,7 +34,7 @@ const char* mssql_find_insert_col_list_close(const char* sql, long paren_open_of
 /* Find offset of the '(' opening INSERT column list, or -1 */
 long mssql_find_insert_column_list_open(const char* sql);
 
-/* Find the opening '(' of a CTE definition (after "WITH name AS") */
+/* Find the opening '(' of a CTE body (after "WITH name[(cols)] AS") */
 const char* mssql_find_cte_open_paren(const char* sql);
 
 /*
@@ -49,5 +51,26 @@ char* mssql_rewrite_returning_to_output(const char* sql);
  * if the shape does not match (caller passes original SQL through).
  */
 char* mssql_rewrite_insert_with_to_with_insert(const char* sql);
+
+/*
+ * Rewrite the first WITH name(cols) AS (VALUES ...) body to
+ * WITH name(cols) AS (SELECT * FROM (VALUES ...) AS v(cols)).
+ * Returns a new string (caller frees) or NULL when the shape is absent.
+ */
+char* mssql_rewrite_cte_values(const char* sql);
+
+/*
+ * Rewrite ALTER TABLE ... ADD COLUMN col to ADD col.
+ * DROP COLUMN is unchanged. Returns a new string (caller frees)
+ * or NULL when the keyword is absent.
+ */
+char* mssql_rewrite_add_column(const char* sql);
+
+/*
+ * RETURNING, then bare VALUES CTE bodies, then INSERT...WITH order,
+ * then ADD COLUMN. Returns a new string (caller frees) or NULL
+ * when sql is unchanged.
+ */
+char* mssql_rewrite_migration_sql(const char* sql);
 
 #endif /* DATABASE_ENGINE_MSSQL_REWRITE_H */

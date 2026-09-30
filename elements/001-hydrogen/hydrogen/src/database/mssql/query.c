@@ -783,24 +783,16 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
         return false;
     }
 
-    /* Lock 21: Rewrite PostgreSQL-style RETURNING to T-SQL OUTPUT.
-     * If the SQL has no RETURNING, mssql_rewrite_returning_to_output
-     * returns NULL and we pass the original through. */
-    char* rewritten_sql = mssql_rewrite_returning_to_output(request->sql_template);
-    char* rewritten_sql2 = NULL;
-    if (!rewritten_sql) {
-        /* Lock 22: Rewrite INSERT INTO ... WITH cte ... SELECT to WITH cte ... INSERT INTO ... SELECT.
-         * SQL Server requires the CTE to come before INSERT INTO. */
-        rewritten_sql2 = mssql_rewrite_insert_with_to_with_insert(request->sql_template);
-    }
-    const char* effective_sql = rewritten_sql ? rewritten_sql : (rewritten_sql2 ? rewritten_sql2 : request->sql_template);
+    /* RETURNING, a bare VALUES CTE body, then INSERT...WITH order.
+     * NULL means the statement needs no rewrite. */
+    char* rewritten = mssql_rewrite_migration_sql(request->sql_template);
+    const char* effective_sql = rewritten ? rewritten : request->sql_template;
 
     /* Serialize ODBC use of this connection handle (CLI is not free-threaded). */
     MutexResult conn_lock = MUTEX_LOCK(&connection->connection_lock, designator);
     if (conn_lock != MUTEX_SUCCESS) {
         log_this(designator, "MSSQL execute_query: Failed to lock connection", LOG_LEVEL_ERROR, 0);
-        free(rewritten_sql);
-        free(rewritten_sql2);
+        free(rewritten);
         return false;
     }
 
@@ -809,7 +801,7 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
     if (mssql_SQLAllocHandle_ptr(SQL_HANDLE_STMT, mssql_conn->connection, &stmt_handle) != SQL_SUCCESS) {
         log_this(designator, "MSSQL execute_query: Failed to allocate statement handle", LOG_LEVEL_ERROR, 0);
         mutex_unlock(&connection->connection_lock);
-        free(rewritten_sql);
+        free(rewritten);
         return false;
     }
 
@@ -850,7 +842,7 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                 mssql_active_stmt_clear(connection, stmt_handle);
                 mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
                 mutex_unlock(&connection->connection_lock);
-                free(rewritten_sql);
+                free(rewritten);
                 return false;
             }
 
@@ -870,7 +862,7 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                     mssql_active_stmt_clear(connection, stmt_handle);
                     mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
                     mutex_unlock(&connection->connection_lock);
-                    free(rewritten_sql);
+                    free(rewritten);
                     return false;
                 }
 
@@ -887,7 +879,7 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                     mssql_active_stmt_clear(connection, stmt_handle);
                     mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
                     mutex_unlock(&connection->connection_lock);
-                    free(rewritten_sql);
+                    free(rewritten);
                     return false;
                 }
 
@@ -904,7 +896,7 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                         mssql_active_stmt_clear(connection, stmt_handle);
                         mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
                         mutex_unlock(&connection->connection_lock);
-                        free(rewritten_sql);
+                        free(rewritten);
                         return false;
                     }
                 }
@@ -939,7 +931,7 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                 mssql_active_stmt_clear(connection, stmt_handle);
                 mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
                 mutex_unlock(&connection->connection_lock);
-                free(rewritten_sql);
+                free(rewritten);
                 return false;
             }
             exec_result = mssql_SQLExecDirect_ptr(stmt_handle, (char*)effective_sql, SQL_NTS);
@@ -1017,8 +1009,7 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
         mssql_active_stmt_clear(connection, stmt_handle);
         mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
         mutex_unlock(&connection->connection_lock);
-        free(rewritten_sql);
-        free(rewritten_sql2);
+        free(rewritten);
         return false;
     }
 
@@ -1036,8 +1027,7 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
     mssql_active_stmt_clear(connection, stmt_handle);
     mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
     mutex_unlock(&connection->connection_lock);
-    free(rewritten_sql);
-    free(rewritten_sql2);
+    free(rewritten);
 
     if (process_result) {
         log_this(designator, "MSSQL execute_query: Query completed successfully", LOG_LEVEL_DEBUG, 0);
