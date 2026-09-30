@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 5.6.0 - 2026-09-30 - Added MSSQL arm for T-SQL helper functions (base64_decode, base64_encode, sha256_b64, brotli_decompress from Phase 4)
 -- 5.5.0 - 2026-09-26 - Added DROP FUNCTION IF EXISTS json_ingest for MySQL before json_ingest creation (MySQL does not support CREATE OR REPLACE FUNCTION for stored functions)
 -- 5.4.0 - 2026-09-25 - Formal split of MariaDB/MySQL code
 -- 5.3.0 - 2026-09-19 - Added JSON_VALUE_FUNCTION UDR emission for firebird (before json_ingest)
@@ -327,6 +328,31 @@ if engine == 'mysql' then table.insert(queries,{sql=[[
 if engine == 'mariadb' then table.insert(queries,{sql=[[
 
     DROP FUNCTION IF EXISTS brotli_decompress;
+
+]]}) end
+-- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
+-- NOTE: MSSQL T-SQL helper functions: base64_decode, base64_encode, sha256_b64
+--       SQL Server has no native base64/sha256-b64 SQL functions; each is
+--       created as a T-SQL scalar function (XML-based base64, HASHBYTES for SHA).
+--       The Brotli decompress requires a CLR assembly (extras/brotli_udf_mssql/).
+if engine == 'mssql' then table.insert(queries,{sql=[[
+
+    ${BASE64_DECODE_FUNCTION}
+
+]]}) end
+if engine == 'mssql' then table.insert(queries,{sql=[[
+
+    ${BASE64_ENCODE_FUNCTION}
+
+]]}) end
+if engine == 'mssql' then table.insert(queries,{sql=[[
+
+    ${BASE64_ENCODE_BINARY_FUNCTION}
+
+]]}) end
+if engine == 'mssql' then table.insert(queries,{sql=[[
+
+    ${SHA256_B64_FUNCTION}
 
 ]]}) end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --

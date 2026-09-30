@@ -12,6 +12,7 @@
 #include "connection.h"
 #include "query.h"
 #include "query_helpers.h"
+#include "rewrite.h"
 
 // External declarations for ODBC function pointers (defined in connection.c)
 extern SQLAllocHandle_t mssql_SQLAllocHandle_ptr;
@@ -677,29 +678,37 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
         return false;
     }
 
-    // Serialize ODBC use of this connection handle (CLI is not free-threaded).
+    /* Lock 21: Rewrite PostgreSQL-style RETURNING to T-SQL OUTPUT.
+     * If the SQL has no RETURNING, mssql_rewrite_returning_to_output
+     * returns NULL and we pass the original through. */
+    char* rewritten_sql = mssql_rewrite_returning_to_output(request->sql_template);
+    const char* effective_sql = rewritten_sql ? rewritten_sql : request->sql_template;
+
+    /* Serialize ODBC use of this connection handle (CLI is not free-threaded). */
     MutexResult conn_lock = MUTEX_LOCK(&connection->connection_lock, designator);
     if (conn_lock != MUTEX_SUCCESS) {
         log_this(designator, "MSSQL execute_query: Failed to lock connection", LOG_LEVEL_ERROR, 0);
+        free(rewritten_sql);
         return false;
     }
 
-    // Allocate statement handle
+    /* Allocate statement handle */
     void* stmt_handle = NULL;
     if (mssql_SQLAllocHandle_ptr(SQL_HANDLE_STMT, mssql_conn->connection, &stmt_handle) != SQL_SUCCESS) {
         log_this(designator, "MSSQL execute_query: Failed to allocate statement handle", LOG_LEVEL_ERROR, 0);
         mutex_unlock(&connection->connection_lock);
+        free(rewritten_sql);
         return false;
     }
 
-    // Register the statement with the watchdog so it can be cancelled
+    /* Register the statement with the watchdog so it can be cancelled */
     mssql_active_stmt_set(connection, stmt_handle);
 
-    // Start timing before query execution
+    /* Start timing before query execution */
     struct timespec start_time;
     clock_gettime(CLOCK_MONOTONIC, &start_time);
 
-    // Variables for parameter binding
+    /* Variables for parameter binding */
     ParameterList* param_list = NULL;
     TypedParameter** ordered_params = NULL;
     size_t param_count = 0;
@@ -708,18 +717,18 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
     long* str_len_indicators = NULL;
     int exec_result = -1;
 
-    // Check if we have parameters to bind
-    bool has_params = request->parameters_json && strlen(request->parameters_json) > 2; // More than "{}"
+    /* Check if we have parameters to bind */
+    bool has_params = request->parameters_json && strlen(request->parameters_json) > 2; /* More than "{}" */
 
     if (has_params && mssql_SQLPrepare_ptr && mssql_SQLBindParameter_ptr) {
-        // Parse parameters
+        /* Parse parameters */
         log_this(designator, "MSSQL execute_query: Parsing parameters: %s", LOG_LEVEL_TRACE, 1, request->parameters_json);
         param_list = parse_typed_parameters(request->parameters_json, designator);
 
         if (param_list && param_list->count > 0) {
-            // Convert named parameters to positional
+            /* Convert named parameters to positional */
             positional_sql = convert_named_to_positional(
-                request->sql_template, param_list, DB_ENGINE_MSSQL,
+                effective_sql, param_list, DB_ENGINE_MSSQL,
                 &ordered_params, &param_count, designator
             );
 
@@ -729,6 +738,7 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                 mssql_active_stmt_clear(connection, stmt_handle);
                 mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
                 mutex_unlock(&connection->connection_lock);
+                free(rewritten_sql);
                 return false;
             }
 
@@ -745,6 +755,7 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                 mssql_active_stmt_clear(connection, stmt_handle);
                 mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
                 mutex_unlock(&connection->connection_lock);
+                free(rewritten_sql);
                 return false;
             }
 
@@ -761,6 +772,7 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                 mssql_active_stmt_clear(connection, stmt_handle);
                 mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
                 mutex_unlock(&connection->connection_lock);
+                free(rewritten_sql);
                 return false;
             }
 
@@ -777,6 +789,7 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                     mssql_active_stmt_clear(connection, stmt_handle);
                     mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
                     mutex_unlock(&connection->connection_lock);
+                    free(rewritten_sql);
                     return false;
                 }
             }
@@ -800,13 +813,14 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                 mssql_active_stmt_clear(connection, stmt_handle);
                 mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
                 mutex_unlock(&connection->connection_lock);
+                free(rewritten_sql);
                 return false;
             }
-            exec_result = mssql_SQLExecDirect_ptr(stmt_handle, (char*)request->sql_template, SQL_NTS);
+            exec_result = mssql_SQLExecDirect_ptr(stmt_handle, (char*)effective_sql, SQL_NTS);
         }
     } else {
         // No parameters, use direct execution
-        exec_result = mssql_SQLExecDirect_ptr(stmt_handle, (char*)request->sql_template, SQL_NTS);
+        exec_result = mssql_SQLExecDirect_ptr(stmt_handle, (char*)effective_sql, SQL_NTS);
     }
 
     if (exec_result != SQL_SUCCESS && exec_result != SQL_SUCCESS_WITH_INFO) {
@@ -832,7 +846,7 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
             error_message = strdup((char*)error_msg);
             log_this(designator, "MSSQL query execution failed - MESSAGE: %s", LOG_LEVEL_TRACE, 1, (char*)error_msg);
             log_this(designator, "MSSQL query execution failed - SQLSTATE: %s, Native Error: %ld", LOG_LEVEL_TRACE, 2, (char*)sql_state, (long int)native_error);
-            log_this(designator, "MSSQL query execution failed - STATEMENT:\n%s", LOG_LEVEL_TRACE, 1, request->sql_template);
+            log_this(designator, "MSSQL query execution failed - STATEMENT:\n%s", LOG_LEVEL_TRACE, 1, effective_sql);
 
         } else {
             error_message = strdup("MSSQL query execution failed (could not get error details)");
@@ -877,6 +891,7 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
         mssql_active_stmt_clear(connection, stmt_handle);
         mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
         mutex_unlock(&connection->connection_lock);
+        free(rewritten_sql);
         return false;
     }
 
@@ -894,6 +909,7 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
     mssql_active_stmt_clear(connection, stmt_handle);
     mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
     mutex_unlock(&connection->connection_lock);
+    free(rewritten_sql);
 
     if (process_result) {
         log_this(designator, "MSSQL execute_query: Query completed successfully", LOG_LEVEL_DEBUG, 0);

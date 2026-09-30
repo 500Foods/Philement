@@ -69,6 +69,7 @@ MySQL/MariaDB, PostgreSQL, and SQLite already have built-in support for Base64 e
 - [firebird](/elements/001-hydrogen/hydrogen/extras/firebird/README.md) Firebird 4.0 extras (SuperServer + embedded, test database creation)
 - [json_udf_firebird](/elements/001-hydrogen/hydrogen/extras/json_udf_firebird/README.md) JSON_VALUE UDR for Firebird
 - [mssql_server](/elements/001-hydrogen/hydrogen/extras/mssql_server/README.md) MSSQL Server extras (Podman container, test DB setup, ODBC 18)
+- [brotli_udf_mssql](/elements/001-hydrogen/hydrogen/extras/brotli_udf_mssql/README.md) Brotli Decompress CLR Assembly for SQL Server (C# / libbrotlidec)
 
 ### Available UDF Functions
 
