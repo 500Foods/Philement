@@ -22,7 +22,7 @@ extern volatile sig_atomic_t database_stopping;
 /*
  * Determine database engine type from connection string
  */
-DatabaseEngine database_queue_determine_engine_type(const char* connection_string) {
+ DatabaseEngine database_queue_determine_engine_type(const char* connection_string) {
     if (!connection_string) return DB_ENGINE_SQLITE;
 
     if (strncmp(connection_string, "postgresql://", 13) == 0) {
@@ -31,14 +31,17 @@ DatabaseEngine database_queue_determine_engine_type(const char* connection_strin
         return DB_ENGINE_MARIADB;
     } else if (strncmp(connection_string, "mysql://", 8) == 0) {
         return DB_ENGINE_MYSQL;
-    } else if (strstr(connection_string, "DATABASE=") != NULL) {
-        // DB2 connection string format contains "DATABASE="
-        return DB_ENGINE_DB2;
+    } else if (strncmp(connection_string, "sqlite:", 7) == 0) {
+        return DB_ENGINE_SQLITE;
     } else if (strncmp(connection_string, "firebird://", 11) == 0) {
         return DB_ENGINE_FIREBIRD;
     } else if (strncmp(connection_string, "mssql://", 8) == 0 ||
-               strncmp(connection_string, "sqlserver://", 12) == 0) {
+               strncmp(connection_string, "sqlserver://", 12) == 0 ||
+               strstr(connection_string, "DRIVER=") != NULL) {
         return DB_ENGINE_MSSQL;
+    } else if (strstr(connection_string, "DATABASE=") != NULL) {
+        // DB2 connection string format contains "DATABASE="
+        return DB_ENGINE_DB2;
     } else {
         // If it doesn't match other patterns, assume SQLite
         return DB_ENGINE_SQLITE;

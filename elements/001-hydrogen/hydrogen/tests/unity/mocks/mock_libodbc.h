@@ -42,6 +42,7 @@ int mssql_mock_SQLBindParameter(void* statementHandle, unsigned short parameterN
                            short valueType, short parameterType, unsigned long columnSize, short decimalDigits,
                            void* parameterValue, long bufferLength, long* strLenOrIndPtr);
 int mssql_mock_SQLCancel(void* statementHandle);
+int mssql_mock_SQLSetEnvAttr(void* environmentHandle, int attribute, long* value, int stringLength);
 
 // Mock control functions for tests (always available)
 void mssql_mock_libodbc_set_SQLAllocHandle_result(int result);

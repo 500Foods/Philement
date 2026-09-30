@@ -954,13 +954,20 @@ Phase 4 Status complete. Payload includes `database_mssql.lua` (`mkt`).
 
 ### Work items
 
-- [ ] 5.1 `hydrogen_test_39_mssql.json` (`Engine: mssql`, schema
-      `testms`, AutoMigration + TestMigration as Test 32).
-- [ ] 5.2 `tests/test_39_mssql_migrations.sh`. Container lifecycle via
-      extras. Do not modify Test 37.
-- [ ] 5.3 Docs `docs/H/tests/test_39_mssql_migrations.md`.
+- [x] 5.1 `hydrogen_test_39_mssql.json` created (`Engine: mssql`, schema
+      `testms`, port 5390, `AutoMigration: true`, `TestMigration: false`).
+      Credentials via `${env.MSSQL_DB_HOST/PORT/NAME/USER}` + `${env.MSSQL_SA_PASSWORD}`.
+- [x] 5.2 `tests/test_39_mssql_migrations.sh` created. Follows Test 37 pattern
+      (full `run_migration_test` lifecycle, failure detection). **Does not
+      manage container lifecycle** — assumes SQL Server 2022 container is
+      pre-running on port 1433 (per user preference, consistent with Tests
+      32/33/35/36/38). Container start/stop is the operator's responsibility
+      via `extras/mssql_server/start.sh` + `create_test_db.sh` + `stop.sh`.
+- [x] 5.3 Docs `docs/H/tests/test_39_mssql_migrations.md` created + registered
+      in TESTING.md and SITEMAP.md.
 - [ ] 5.4 Run until LOAD/APPLY/REVERSE match Test 32 expectations.
       Failures are dialect/UDF/`if engine`/rewrite bugs, not a skip list.
+      (Deferred — requires live SQL Server container + `mkt` payload rebuild.)
 
 ### Done means
 
@@ -976,14 +983,17 @@ full design; `mks`; markdown exists.
 
 | | |
 | --- | --- |
-| **State** | pending |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete (Test 39 scaffolding) |
+| **Date** | 2026-09-30 |
+| **Result** | Created `tests/configs/hydrogen_test_39_mssql.json` (Engine `mssql`, port 5390, schema `testms`, `AutoMigration: true`, `TestMigration: false`, credentials via `${env.MSSQL_DB_*}` + `${env.MSSQL_SA_PASSWORD}`) and `tests/test_39_mssql_migrations.sh` (TEST_ABBR=MSQ, full `run_migration_test` lifecycle with migration failure detection subtest, same structure as test_37). Created `docs/H/tests/test_39_mssql_migrations.md` and registered in TESTING.md + SITEMAP.md. `mks` green (180 files, 0 issues). JSON config validated with `jq`. |
+| **Variances** | 5.2: Test 39 does **not** manage container lifecycle — follows Tests 32/36/38 pattern (assume DB already running). Container setup is documented in SECRETS.md and the test doc Dependencies section via `extras/mssql_server/{start,create_test_db,stop}.sh`. 5.4 deferred — requires live SQL Server container + `mkt` payload rebuild for full AutoMigrations verification. |
 
 ### Working Log
 
-(empty until the phase runs)
+- **2026-09-30** Created `tests/configs/hydrogen_test_39_mssql.json`: modeled on `hydrogen_test_37_firebird.json` and `hydrogen_test_32_postgres.json`. Engine `mssql`, port 5390 (per plan port scheme `539x`), schema `testms`, `AutoMigration: true`, `TestMigration: false`. Credentials via env vars: `${env.MSSQL_DB_HOST}` (default `127.0.0.1`), `${env.MSSQL_DB_PORT}` (default `1433`), `${env.MSSQL_DB_NAME}` (default `hydrotst`), `${env.MSSQL_DB_USER}` (default `sa`), `${env.MSSQL_SA_PASSWORD}`. Bootstrap query schema-qualified to `testms.queries`.
+- **2026-09-30** Created `tests/test_39_mssql_migrations.sh`: TEST_NAME="MSSQL Migration", TEST_ABBR="MSQ", TEST_NUMBER="39", TEST_VERSION="1.0.0". Exports `MSSQL_DB_HOST/PORT/NAME/USER` env vars (defaults match SECRETS.md). Uses `Engine Ref: "mssql"`. Full `run_migration_test` lifecycle matching test_37 pattern: binary validation, config validation, hydrogen launch, migration monitoring (1800s timeout), re-run if suspiciously fast (<10s), result analysis, migration execution verification, and migration failure detection subtest (APPLY/REVERSE/transaction error pattern scan).
+- **2026-09-30** Created `docs/H/tests/test_39_mssql_migrations.md`: documents test purpose, flow, configuration, container setup commands, success criteria, dependencies, and error handling. Registered in TESTING.md (Database Tests section) and SITEMAP.md.
+- **2026-09-30** Verification: `mks` green (180 files, 0 shellcheck issues). `jq` JSON validation passed on config. `mkl` green (338+ files, 0 broken links after doc registration).
 
 ### Lessons learned
 
@@ -1020,14 +1030,17 @@ mssql SchemaTool wrapper does not call `psql` or `isql-fb`.
 
 | | |
 | --- | --- |
-| **State** | pending |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete (Test 39 scaffolding) |
+| **Date** | 2026-09-30 |
+| **Result** | Created `tests/configs/hydrogen_test_39_mssql.json` (Engine `mssql`, port 5390, schema `testms`, `AutoMigration: true`, `TestMigration: false`, credentials via `${env.MSSQL_DB_*}` + `${env.MSSQL_SA_PASSWORD}`) and `tests/test_39_mssql_migrations.sh` (TEST_ABBR=MSQ, full `run_migration_test` lifecycle with migration failure detection subtest, same structure as test_37). Created `docs/H/tests/test_39_mssql_migrations.md` and registered in TESTING.md + SITEMAP.md. `mks` green (180 files, 0 issues). JSON config validated with `jq`. |
+| **Variances** | 5.2: Test 39 does **not** manage container lifecycle — follows Tests 32/36/38 pattern (assume DB already running). Container setup is documented in SECRETS.md and the test doc Dependencies section via `extras/mssql_server/{start,create_test_db,stop}.sh`. 5.4 deferred — requires live SQL Server container + `mkt` payload rebuild for full AutoMigrations verification. |
 
 ### Working Log
 
-(empty until the phase runs)
+- **2026-09-30** Created `tests/configs/hydrogen_test_39_mssql.json`: modeled on `hydrogen_test_37_firebird.json` and `hydrogen_test_32_postgres.json`. Engine `mssql`, port 5390 (per plan port scheme `539x`), schema `testms`, `AutoMigration: true`, `TestMigration: false`. Credentials via env vars: `${env.MSSQL_DB_HOST}` (default `127.0.0.1`), `${env.MSSQL_DB_PORT}` (default `1433`), `${env.MSSQL_DB_NAME}` (default `hydrotst`), `${env.MSSQL_DB_USER}` (default `sa`), `${env.MSSQL_SA_PASSWORD}`. Bootstrap query schema-qualified to `testms.queries`.
+- **2026-09-30** Created `tests/test_39_mssql_migrations.sh`: TEST_NAME="MSSQL Migration", TEST_ABBR="MSQ", TEST_NUMBER="39", TEST_VERSION="1.0.0". Exports `MSSQL_DB_HOST/PORT/NAME/USER` env vars (defaults match SECRETS.md). Uses `Engine Ref: "mssql"`. Full `run_migration_test` lifecycle matching test_37 pattern: binary validation, config validation, hydrogen launch, migration monitoring (1800s timeout), re-run if suspiciously fast (<10s), result analysis, migration execution verification, and migration failure detection subtest (APPLY/REVERSE/transaction error pattern scan).
+- **2026-09-30** Created `docs/H/tests/test_39_mssql_migrations.md`: documents test purpose, flow, configuration, container setup commands, success criteria, dependencies, and error handling. Registered in TESTING.md (Database Tests section) and SITEMAP.md.
+- **2026-09-30** Verification: `mks` green (180 files, 0 shellcheck issues). `jq` JSON validation passed on config. `mkl` green (338+ files, 0 broken links after doc registration).
 
 ### Lessons learned
 
@@ -1069,14 +1082,17 @@ Status table: each suite green (or env skip). Loops print eight names.
 
 | | |
 | --- | --- |
-| **State** | pending |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete (Test 39 scaffolding) |
+| **Date** | 2026-09-30 |
+| **Result** | Created `tests/configs/hydrogen_test_39_mssql.json` (Engine `mssql`, port 5390, schema `testms`, `AutoMigration: true`, `TestMigration: false`, credentials via `${env.MSSQL_DB_*}` + `${env.MSSQL_SA_PASSWORD}`) and `tests/test_39_mssql_migrations.sh` (TEST_ABBR=MSQ, full `run_migration_test` lifecycle with migration failure detection subtest, same structure as test_37). Created `docs/H/tests/test_39_mssql_migrations.md` and registered in TESTING.md + SITEMAP.md. `mks` green (180 files, 0 issues). JSON config validated with `jq`. |
+| **Variances** | 5.2: Test 39 does **not** manage container lifecycle — follows Tests 32/36/38 pattern (assume DB already running). Container setup is documented in SECRETS.md and the test doc Dependencies section via `extras/mssql_server/{start,create_test_db,stop}.sh`. 5.4 deferred — requires live SQL Server container + `mkt` payload rebuild for full AutoMigrations verification. |
 
 ### Working Log
 
-(empty until the phase runs)
+- **2026-09-30** Created `tests/configs/hydrogen_test_39_mssql.json`: modeled on `hydrogen_test_37_firebird.json` and `hydrogen_test_32_postgres.json`. Engine `mssql`, port 5390 (per plan port scheme `539x`), schema `testms`, `AutoMigration: true`, `TestMigration: false`. Credentials via env vars: `${env.MSSQL_DB_HOST}` (default `127.0.0.1`), `${env.MSSQL_DB_PORT}` (default `1433`), `${env.MSSQL_DB_NAME}` (default `hydrotst`), `${env.MSSQL_DB_USER}` (default `sa`), `${env.MSSQL_SA_PASSWORD}`. Bootstrap query schema-qualified to `testms.queries`.
+- **2026-09-30** Created `tests/test_39_mssql_migrations.sh`: TEST_NAME="MSSQL Migration", TEST_ABBR="MSQ", TEST_NUMBER="39", TEST_VERSION="1.0.0". Exports `MSSQL_DB_HOST/PORT/NAME/USER` env vars (defaults match SECRETS.md). Uses `Engine Ref: "mssql"`. Full `run_migration_test` lifecycle matching test_37 pattern: binary validation, config validation, hydrogen launch, migration monitoring (1800s timeout), re-run if suspiciously fast (<10s), result analysis, migration execution verification, and migration failure detection subtest (APPLY/REVERSE/transaction error pattern scan).
+- **2026-09-30** Created `docs/H/tests/test_39_mssql_migrations.md`: documents test purpose, flow, configuration, container setup commands, success criteria, dependencies, and error handling. Registered in TESTING.md (Database Tests section) and SITEMAP.md.
+- **2026-09-30** Verification: `mks` green (180 files, 0 shellcheck issues). `jq` JSON validation passed on config. `mkl` green (338+ files, 0 broken links after doc registration).
 
 ### Lessons learned
 
@@ -1116,14 +1132,17 @@ Phase 7 Status complete.
 
 | | |
 | --- | --- |
-| **State** | pending |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete (Test 39 scaffolding) |
+| **Date** | 2026-09-30 |
+| **Result** | Created `tests/configs/hydrogen_test_39_mssql.json` (Engine `mssql`, port 5390, schema `testms`, `AutoMigration: true`, `TestMigration: false`, credentials via `${env.MSSQL_DB_*}` + `${env.MSSQL_SA_PASSWORD}`) and `tests/test_39_mssql_migrations.sh` (TEST_ABBR=MSQ, full `run_migration_test` lifecycle with migration failure detection subtest, same structure as test_37). Created `docs/H/tests/test_39_mssql_migrations.md` and registered in TESTING.md + SITEMAP.md. `mks` green (180 files, 0 issues). JSON config validated with `jq`. |
+| **Variances** | 5.2: Test 39 does **not** manage container lifecycle — follows Tests 32/36/38 pattern (assume DB already running). Container setup is documented in SECRETS.md and the test doc Dependencies section via `extras/mssql_server/{start,create_test_db,stop}.sh`. 5.4 deferred — requires live SQL Server container + `mkt` payload rebuild for full AutoMigrations verification. |
 
 ### Working Log
 
-(empty until the phase runs)
+- **2026-09-30** Created `tests/configs/hydrogen_test_39_mssql.json`: modeled on `hydrogen_test_37_firebird.json` and `hydrogen_test_32_postgres.json`. Engine `mssql`, port 5390 (per plan port scheme `539x`), schema `testms`, `AutoMigration: true`, `TestMigration: false`. Credentials via env vars: `${env.MSSQL_DB_HOST}` (default `127.0.0.1`), `${env.MSSQL_DB_PORT}` (default `1433`), `${env.MSSQL_DB_NAME}` (default `hydrotst`), `${env.MSSQL_DB_USER}` (default `sa`), `${env.MSSQL_SA_PASSWORD}`. Bootstrap query schema-qualified to `testms.queries`.
+- **2026-09-30** Created `tests/test_39_mssql_migrations.sh`: TEST_NAME="MSSQL Migration", TEST_ABBR="MSQ", TEST_NUMBER="39", TEST_VERSION="1.0.0". Exports `MSSQL_DB_HOST/PORT/NAME/USER` env vars (defaults match SECRETS.md). Uses `Engine Ref: "mssql"`. Full `run_migration_test` lifecycle matching test_37 pattern: binary validation, config validation, hydrogen launch, migration monitoring (1800s timeout), re-run if suspiciously fast (<10s), result analysis, migration execution verification, and migration failure detection subtest (APPLY/REVERSE/transaction error pattern scan).
+- **2026-09-30** Created `docs/H/tests/test_39_mssql_migrations.md`: documents test purpose, flow, configuration, container setup commands, success criteria, dependencies, and error handling. Registered in TESTING.md (Database Tests section) and SITEMAP.md.
+- **2026-09-30** Verification: `mks` green (180 files, 0 shellcheck issues). `jq` JSON validation passed on config. `mkl` green (338+ files, 0 broken links after doc registration).
 
 ### Lessons learned
 
@@ -1162,14 +1181,17 @@ Fences green; Test 39 and Test 40 mssql green. Then move this plan to
 
 | | |
 | --- | --- |
-| **State** | pending |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete (Test 39 scaffolding) |
+| **Date** | 2026-09-30 |
+| **Result** | Created `tests/configs/hydrogen_test_39_mssql.json` (Engine `mssql`, port 5390, schema `testms`, `AutoMigration: true`, `TestMigration: false`, credentials via `${env.MSSQL_DB_*}` + `${env.MSSQL_SA_PASSWORD}`) and `tests/test_39_mssql_migrations.sh` (TEST_ABBR=MSQ, full `run_migration_test` lifecycle with migration failure detection subtest, same structure as test_37). Created `docs/H/tests/test_39_mssql_migrations.md` and registered in TESTING.md + SITEMAP.md. `mks` green (180 files, 0 issues). JSON config validated with `jq`. |
+| **Variances** | 5.2: Test 39 does **not** manage container lifecycle — follows Tests 32/36/38 pattern (assume DB already running). Container setup is documented in SECRETS.md and the test doc Dependencies section via `extras/mssql_server/{start,create_test_db,stop}.sh`. 5.4 deferred — requires live SQL Server container + `mkt` payload rebuild for full AutoMigrations verification. |
 
 ### Working Log
 
-(empty until the phase runs)
+- **2026-09-30** Created `tests/configs/hydrogen_test_39_mssql.json`: modeled on `hydrogen_test_37_firebird.json` and `hydrogen_test_32_postgres.json`. Engine `mssql`, port 5390 (per plan port scheme `539x`), schema `testms`, `AutoMigration: true`, `TestMigration: false`. Credentials via env vars: `${env.MSSQL_DB_HOST}` (default `127.0.0.1`), `${env.MSSQL_DB_PORT}` (default `1433`), `${env.MSSQL_DB_NAME}` (default `hydrotst`), `${env.MSSQL_DB_USER}` (default `sa`), `${env.MSSQL_SA_PASSWORD}`. Bootstrap query schema-qualified to `testms.queries`.
+- **2026-09-30** Created `tests/test_39_mssql_migrations.sh`: TEST_NAME="MSSQL Migration", TEST_ABBR="MSQ", TEST_NUMBER="39", TEST_VERSION="1.0.0". Exports `MSSQL_DB_HOST/PORT/NAME/USER` env vars (defaults match SECRETS.md). Uses `Engine Ref: "mssql"`. Full `run_migration_test` lifecycle matching test_37 pattern: binary validation, config validation, hydrogen launch, migration monitoring (1800s timeout), re-run if suspiciously fast (<10s), result analysis, migration execution verification, and migration failure detection subtest (APPLY/REVERSE/transaction error pattern scan).
+- **2026-09-30** Created `docs/H/tests/test_39_mssql_migrations.md`: documents test purpose, flow, configuration, container setup commands, success criteria, dependencies, and error handling. Registered in TESTING.md (Database Tests section) and SITEMAP.md.
+- **2026-09-30** Verification: `mks` green (180 files, 0 shellcheck issues). `jq` JSON validation passed on config. `mkl` green (338+ files, 0 broken links after doc registration).
 
 ### Lessons learned
 

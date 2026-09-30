@@ -90,6 +90,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_37_firebird_migrations.sh](/docs/H/tests/test_37_firebird_migrations.md)**: Firebird migration performance test
 - **[test_37_firebird_migrations.sh](/docs/H/tests/test_37_firebird_migrations.md)**: Firebird migration performance test
 - **[test_38_yugabytedb_migrations.sh](/docs/H/tests/test_38_yugabytedb_migrations.md)**: YugabyteDB migration performance test
+- **[test_39_mssql_migrations.sh](/docs/H/tests/test_39_mssql_migrations.md)**: MSSQL migration performance test
 
 ### API
 

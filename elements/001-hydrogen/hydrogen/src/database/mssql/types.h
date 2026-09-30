@@ -29,8 +29,8 @@ typedef int (*SQLBindParameter_t)(void*, unsigned short, short, short, short, un
 // Additional function pointers for connection and error handling
 typedef int (*SQLDriverConnect_t)(void*, void*, unsigned char*, short, unsigned char*, short, short*, unsigned short);
 typedef int (*SQLGetDiagRec_t)(short, void*, short, unsigned char*, long*, unsigned char*, short, short*);
-// Transaction control function
 typedef int (*SQLSetConnectAttr_t)(void*, int, long, int);
+typedef int (*SQLSetEnvAttr_t)(void*, int, long*, int);
 typedef int (*SQLCancel_t)(void*);
 
 // MSSQL function pointers (loaded dynamically or mocked) - mssql_ prefix avoids collision with DB2
@@ -52,6 +52,7 @@ extern SQLBindParameter_t mssql_SQLBindParameter_ptr;
 extern SQLDriverConnect_t mssql_SQLDriverConnect_ptr;
 extern SQLGetDiagRec_t mssql_SQLGetDiagRec_ptr;
 extern SQLSetConnectAttr_t mssql_SQLSetConnectAttr_ptr;
+extern SQLSetEnvAttr_t mssql_SQLSetEnvAttr_ptr;
 extern SQLCancel_t mssql_SQLCancel_ptr;
 
 // ODBC constants (same ODBC API shape as DB2)
@@ -60,6 +61,10 @@ extern SQLCancel_t mssql_SQLCancel_ptr;
 #define SQL_HANDLE_STMT 3
 #define SQL_SUCCESS 0
 #define SQL_SUCCESS_WITH_INFO 1
+#define SQL_ATTR_ODBC_VERSION 20
+#define SQL_OV_ODBC3 3
+#define SQL_IS_INTEGER -6
+#define SQL_IS_UINTEGER -5
 #define SQL_COMMIT 0
 #define SQL_ROLLBACK 1
 #define SQL_CLOSE 0

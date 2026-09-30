@@ -19,16 +19,29 @@ char* mssql_get_connection_string(const ConnectionConfig* config) {
     if (config->connection_string) {
         strcpy(conn_str, config->connection_string);
     } else {
-        // MSSQL ODBC connection string format (Driver 18)
-        // Format: DRIVER={ODBC Driver 18 for SQL Server};SERVER=host,port;DATABASE=database;UID=username;PWD=password;Encrypt=yes;TrustServerCertificate=yes;
         int port = config->port > 0 ? config->port : 1433;
+        const char* driver = getenv("MSSQL_ODBC_DRIVER");
+        char driver_bracketed[256];
+        if (!driver || *driver == '\0') {
+            driver = "ODBC Driver 18 for SQL Server";
+        }
+        if (driver[0] == '{') {
+            snprintf(driver_bracketed, sizeof(driver_bracketed), "%s", driver);
+        } else {
+            snprintf(driver_bracketed, sizeof(driver_bracketed), "{%s}", driver);
+        }
         snprintf(conn_str, 1024,
-                 "DRIVER={ODBC Driver 18 for SQL Server};SERVER=%s,%d;DATABASE=%s;UID=%s;PWD=%s;Encrypt=yes;TrustServerCertificate=yes;",
+                 "DRIVER=%s;SERVER=%s,%d;DATABASE=%s;UID=%s;PWD=%s;",
+                 driver_bracketed,
                  config->host ? config->host : "localhost",
                  port,
                  config->database ? config->database : "",
                  config->username ? config->username : "",
                  config->password ? config->password : "");
+        if (strstr(driver_bracketed, "FreeTDS") != NULL) {
+            size_t used = strlen(conn_str);
+            snprintf(conn_str + used, 1024 - used, "TDS_VERSION=7.4;");
+        }
     }
 
     // Pin unqualified DDL/queries to the configured schema so migrations

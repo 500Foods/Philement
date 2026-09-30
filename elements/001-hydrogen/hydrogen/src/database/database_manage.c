@@ -46,6 +46,8 @@ DatabaseEngineInterface* database_get_engine_interface(const char* engine) {
         return database_engine_get(DB_ENGINE_DB2);
     } else if (strcmp(engine, "firebird") == 0) {
         return database_engine_get(DB_ENGINE_FIREBIRD);
+    } else if (strcmp(engine, "mssql") == 0) {
+        return database_engine_get(DB_ENGINE_MSSQL);
     }
 
     return NULL;

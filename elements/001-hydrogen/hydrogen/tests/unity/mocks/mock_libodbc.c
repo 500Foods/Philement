@@ -64,6 +64,8 @@ int mssql_mock_SQLDescribeCol(void* statementHandle, int columnNumber, unsigned 
 int mssql_mock_SQLGetDiagRec(short handleType, void* handle, short recNumber, unsigned char* sqlState,
                        long* nativeError, unsigned char* messageText, short bufferLength, short* textLength);
 
+int mssql_mock_SQLSetEnvAttr(void* environmentHandle, int attribute, long* value, int stringLength);
+
 void mssql_mock_libodbc_set_SQLAllocHandle_result(int result);
 void mssql_mock_libodbc_set_SQLAllocHandle_output_handle(void* handle);
 void mssql_mock_libodbc_set_SQLDriverConnect_result(int result);
@@ -330,6 +332,14 @@ int mssql_mock_SQLBindParameter(void* statementHandle, unsigned short parameterN
 
 int mssql_mock_SQLCancel(void* statementHandle) {
     (void)statementHandle;
+    return 0; // Always success
+}
+
+int mssql_mock_SQLSetEnvAttr(void* environmentHandle, int attribute, long* value, int stringLength) {
+    (void)environmentHandle;
+    (void)attribute;
+    (void)value;
+    (void)stringLength;
     return 0; // Always success
 }
 

@@ -57,6 +57,8 @@ SQLExecute_t mssql_SQLExecute_ptr = NULL;
 SQLFreeStmt_t mssql_SQLFreeStmt_ptr = NULL;
 SQLDescribeCol_t mssql_SQLDescribeCol_ptr = NULL;
 SQLBindParameter_t mssql_SQLBindParameter_ptr = NULL;
+SQLSetEnvAttr_t mssql_SQLSetEnvAttr_ptr = NULL;
+
 // Transaction control function
 SQLSetConnectAttr_t mssql_SQLSetConnectAttr_ptr = NULL;
 SQLDriverConnect_t mssql_SQLDriverConnect_ptr = NULL;
@@ -96,6 +98,7 @@ bool load_msobdc_functions(const char* designator __attribute__((unused))) {
     mssql_SQLSetConnectAttr_ptr = mssql_mock_SQLSetConnectAttr;
     mssql_SQLBindParameter_ptr = mssql_mock_SQLBindParameter;
     mssql_SQLCancel_ptr = mssql_mock_SQLCancel;
+    mssql_SQLSetEnvAttr_ptr = mssql_mock_SQLSetEnvAttr;
     return true;
 #else
     const char* log_subsystem = designator ? designator : SR_DATABASE;
@@ -140,6 +143,7 @@ bool load_msobdc_functions(const char* designator __attribute__((unused))) {
     mssql_SQLSetConnectAttr_ptr = (SQLSetConnectAttr_t)(void*)dlsym(libodbc_handle, "SQLSetConnectAttr");
     mssql_SQLBindParameter_ptr = (SQLBindParameter_t)dlsym(libodbc_handle, "SQLBindParameter");
     mssql_SQLCancel_ptr = (SQLCancel_t)dlsym(libodbc_handle, "SQLCancel");
+    mssql_SQLSetEnvAttr_ptr = (SQLSetEnvAttr_t)dlsym(libodbc_handle, "SQLSetEnvAttr");
 #pragma GCC diagnostic pop
 
     // Check if all required functions were loaded
@@ -230,6 +234,15 @@ bool mssql_connect(ConnectionConfig* config, DatabaseHandle** connection, const 
     if (mssql_SQLAllocHandle_ptr(SQL_HANDLE_ENV, NULL, &env_handle) != SQL_SUCCESS) {
         log_this(log_subsystem, "MSSQL connection failed: Environment handle allocation failed", LOG_LEVEL_ERROR, 0);
         return false;
+    }
+
+    // Set ODBC version to 3 (required for SQLDriverConnect)
+    if (mssql_SQLSetEnvAttr_ptr) {
+        long odbc_version = SQL_OV_ODBC3;
+        int rc = mssql_SQLSetEnvAttr_ptr(env_handle, SQL_ATTR_ODBC_VERSION, &odbc_version, 0);
+        if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
+            log_this(log_subsystem, "MSSQL: WARNING - SQLSetEnvAttr(ODBC_VERSION) returned %d (will try to continue)", LOG_LEVEL_ALERT, 1, rc);
+        }
     }
 
     // Allocate connection handle

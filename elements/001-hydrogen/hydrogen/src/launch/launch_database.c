@@ -21,7 +21,7 @@ void validate_migration_config(const DatabaseConnection* conn, const char*** mes
 // Validate database configuration and count databases by type
 void validate_database_configuration(const DatabaseConfig* db_config, const char*** messages,
                                      size_t* count, size_t* capacity, bool* overall_readiness,
-                                     int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count, int* firebird_count, int* mariadb_count) {
+                                     int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count, int* firebird_count, int* mariadb_count, int* mssql_count) {
     // Queue configuration is validated during JSON parsing
     add_launch_message(messages, count, capacity, strdup("  Go:      Queue configuration validated"));
 
@@ -31,6 +31,7 @@ void validate_database_configuration(const DatabaseConfig* db_config, const char
     char* db2_names = NULL;
     char* firebird_names = NULL;
     char* mariadb_names = NULL;
+    char* mssql_names = NULL;
 
     // Initialize counters
     *postgres_count = 0;
@@ -39,6 +40,7 @@ void validate_database_configuration(const DatabaseConfig* db_config, const char
     *db2_count = 0;
     *firebird_count = 0;
     *mariadb_count = 0;
+    *mssql_count = 0;
 
     for (int i = 0; i < db_config->connection_count; i++) {
         const DatabaseConnection* conn = &db_config->connections[i];
@@ -126,6 +128,20 @@ void validate_database_configuration(const DatabaseConfig* db_config, const char
                         strcat(new_names, ", ");
                         strcat(new_names, new_name);
                         firebird_names = new_names;
+                    }
+                }
+            } else if (strcmp(engine_type, "mssql") == 0) {
+                (*mssql_count)++;
+                if (*mssql_count == 1) {
+                    mssql_names = strdup(conn->connection_name ? conn->connection_name : "Unknown");
+                } else {
+                    const char* new_name = conn->connection_name ? conn->connection_name : "Unknown";
+                    size_t new_size = strlen(mssql_names) + 2 + strlen(new_name) + 1;
+                    char* new_names = realloc(mssql_names, new_size);
+                    if (new_names) {
+                        strcat(new_names, ", ");
+                        strcat(new_names, new_name);
+                        mssql_names = new_names;
                     }
                 }
             }
@@ -219,6 +235,19 @@ void validate_database_configuration(const DatabaseConfig* db_config, const char
         }
     }
 
+    if (*mssql_count > 0 && mssql_names) {
+        char* mssql_msg = malloc(512);
+        if (mssql_msg) {
+            if (*mssql_count > 3) {
+                mssql_names[50] = 0;
+                snprintf(mssql_msg, 512, "  Go:      MSSQL Databases: %d (%s...)", *mssql_count, mssql_names);
+            } else {
+                snprintf(mssql_msg, 512, "  Go:      MSSQL Databases: %d (%s)", *mssql_count, mssql_names);
+            }
+            add_launch_message(messages, count, capacity, mssql_msg);
+        }
+    }
+
     // Handle cases with 0 databases
     if (*postgres_count == 0) {
         add_launch_message(messages, count, capacity, strdup("  Go:      PostgreSQL Databases: 0"));
@@ -244,8 +273,12 @@ void validate_database_configuration(const DatabaseConfig* db_config, const char
         add_launch_message(messages, count, capacity, strdup("  Go:      Firebird Databases: 0"));
     }
 
+    if (*mssql_count == 0) {
+        add_launch_message(messages, count, capacity, strdup("  Go:      MSSQL Databases: 0"));
+    }
+
     // Total database count check
-    int total_databases = *postgres_count + *mysql_count + *sqlite_count + *db2_count + *firebird_count + *mariadb_count;
+    int total_databases = *postgres_count + *mysql_count + *sqlite_count + *db2_count + *firebird_count + *mariadb_count + *mssql_count;
     if (total_databases == 0) {
         add_launch_message(messages, count, capacity, strdup("  No-Go:   No databases configured - database subsystem not needed"));
         *overall_readiness = false;
@@ -264,11 +297,12 @@ void validate_database_configuration(const DatabaseConfig* db_config, const char
     free(sqlite_names);
     free(db2_names);
     free(firebird_names);
+    free(mssql_names);
 }
 
 // Check library dependencies for database engines
 void check_database_library_dependencies(const char*** messages, size_t* count, size_t* capacity, bool* overall_readiness,
-                                       int postgres_count, int mysql_count, int sqlite_count, int db2_count, int firebird_count, int mariadb_count) {
+                                       int postgres_count, int mysql_count, int sqlite_count, int db2_count, int firebird_count, int mariadb_count, int mssql_count) {
     // Check PostgreSQL library if needed
     if (postgres_count > 0) {
         void* libpq_handle = dlopen("libpq.so.5", RTLD_LAZY);
@@ -525,13 +559,45 @@ void check_database_library_dependencies(const char*** messages, size_t* count, 
                 add_launch_message(messages, count, capacity, lib_msg);
             }
 
+        free(loaded_version);
+        /* Do not dlclose. Unloading libfbclient drops its client
+         * pool without freeing it (LeakSanitizer: 72KB from this
+         * dlopen). The dynamic linker keeps the mapping; the live
+         * connect reuses it. */
+    }
+
+    // Check MSSQL library if needed
+    if (mssql_count > 0) {
+        void* odbc_handle = dlopen("libodbc.so", RTLD_LAZY);
+        if (!odbc_handle) {
+            odbc_handle = dlopen("libodbc.so.2", RTLD_LAZY);
+        }
+
+        if (!odbc_handle) {
+            const char* error_msg = dlerror();
+            char* lib_msg = malloc(512);
+            if (lib_msg) {
+                snprintf(lib_msg, 512, "  No-Go:   MSSQL/ODBC library not found: %s", error_msg ? error_msg : "unknown error");
+                add_launch_message(messages, count, capacity, lib_msg);
+            }
+            *overall_readiness = false;
+        } else {
+            char* loaded_version = get_library_version(odbc_handle, "ODBC");
+            char* lib_msg = malloc(512);
+            if (lib_msg) {
+                if (loaded_version && strlen(loaded_version) > 0) {
+                    snprintf(lib_msg, 512, "  Go:      MSSQL/ODBC library loaded successfully (libodbc.so %s)", loaded_version);
+                } else {
+                    snprintf(lib_msg, 512, "  Go:      MSSQL/ODBC library loaded successfully (libodbc.so version-unknown)");
+                }
+                add_launch_message(messages, count, capacity, lib_msg);
+            }
+
             free(loaded_version);
-            /* Do not dlclose. Unloading libfbclient drops its client
-             * pool without freeing it (LeakSanitizer: 72KB from this
-             * dlopen). The dynamic linker keeps the mapping; the live
-             * connect reuses it. */
+            dlclose(odbc_handle);
         }
     }
+}
 }
 
 // Validate migration configuration for a database connection
@@ -776,16 +842,16 @@ LaunchReadiness check_database_launch_readiness(void) {
     }
 
         // Validate database configuration
-    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count, mariadb_count;
+    int postgres_count, mysql_count, sqlite_count, db2_count, firebird_count, mariadb_count, mssql_count;
     validate_database_configuration(&app_config->databases, &messages, &count, &capacity, &overall_readiness,
-                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count, &mariadb_count);
+                                   &postgres_count, &mysql_count, &sqlite_count, &db2_count, &firebird_count, &mariadb_count, &mssql_count);
 
-    int total_databases = postgres_count + mysql_count + sqlite_count + db2_count + firebird_count + mariadb_count;
+    int total_databases = postgres_count + mysql_count + sqlite_count + db2_count + firebird_count + mariadb_count + mssql_count;
 
     // For non-zero database count, check library dependencies
     if (total_databases > 0) {
         check_database_library_dependencies(&messages, &count, &capacity, &overall_readiness,
-                                         postgres_count, mysql_count, sqlite_count, db2_count, firebird_count, mariadb_count);
+                                         postgres_count, mysql_count, sqlite_count, db2_count, firebird_count, mariadb_count, mssql_count);
 
 
     }
