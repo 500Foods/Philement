@@ -238,8 +238,7 @@ bool mssql_connect(ConnectionConfig* config, DatabaseHandle** connection, const 
 
     // Set ODBC version to 3 (required for SQLDriverConnect)
     if (mssql_SQLSetEnvAttr_ptr) {
-        long odbc_version = SQL_OV_ODBC3;
-        int rc = mssql_SQLSetEnvAttr_ptr(env_handle, SQL_ATTR_ODBC_VERSION, &odbc_version, 0);
+        int rc = mssql_SQLSetEnvAttr_ptr(env_handle, SQL_ATTR_ODBC_VERSION, (void*)(long)SQL_OV_ODBC3, 0);
         if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
             log_this(log_subsystem, "MSSQL: WARNING - SQLSetEnvAttr(ODBC_VERSION) returned %d (will try to continue)", LOG_LEVEL_ALERT, 1, rc);
         }
@@ -307,7 +306,8 @@ bool mssql_connect(ConnectionConfig* config, DatabaseHandle** connection, const 
 
         // 1. Query timeout
         if (mssql_SQLSetConnectAttr_ptr) {
-            rc = mssql_SQLSetConnectAttr_ptr(conn_handle, SQL_ATTR_QUERY_TIMEOUT, (long)30, 0);
+            SQLUINTEGER query_timeout = 30;
+            rc = mssql_SQLSetConnectAttr_ptr(conn_handle, SQL_ATTR_QUERY_TIMEOUT, (void*)&query_timeout, SQL_IS_UINTEGER);
             if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
                 log_this(log_subsystem, "Failed to set query timeout", LOG_LEVEL_ALERT, 0);
             }
@@ -315,7 +315,7 @@ bool mssql_connect(ConnectionConfig* config, DatabaseHandle** connection, const 
 
         // 2. AUTOCOMMIT OFF - required so multi-statement LOAD/APPLY can roll back
         if (mssql_SQLSetConnectAttr_ptr) {
-            rc = mssql_SQLSetConnectAttr_ptr(conn_handle, SQL_ATTR_AUTOCOMMIT, (long)SQL_AUTOCOMMIT_OFF, SQL_IS_UINTEGER);
+            rc = mssql_SQLSetConnectAttr_ptr(conn_handle, SQL_ATTR_AUTOCOMMIT, (void*)(long)SQL_AUTOCOMMIT_OFF, SQL_IS_UINTEGER);
             if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
                 log_this(log_subsystem, "Failed to disable autocommit", LOG_LEVEL_ALERT, 0);
             }
@@ -324,7 +324,7 @@ bool mssql_connect(ConnectionConfig* config, DatabaseHandle** connection, const 
         // 3. Row array size - optional, but nice for bulk fetches later
         if (mssql_SQLSetConnectAttr_ptr) {
             SQLUINTEGER rows = 100;
-            rc = mssql_SQLSetConnectAttr_ptr(conn_handle, SQL_ATTR_ROW_ARRAY_SIZE, (long)rows, SQL_IS_UINTEGER);
+            rc = mssql_SQLSetConnectAttr_ptr(conn_handle, SQL_ATTR_ROW_ARRAY_SIZE, (void*)&rows, SQL_IS_UINTEGER);
             if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) {
                 log_this(log_subsystem, "Failed to set row array size", LOG_LEVEL_ALERT, 0);
             }

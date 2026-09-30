@@ -1,10 +1,9 @@
 /*
- * MSSQL Database Engine - RETURNING to OUTPUT Rewrite Header
+ * MSSQL Database Engine - SQL Rewrite Header
  *
- * Bounded rewriter for lock 21 in MSSQL.md: converts
- *   INSERT INTO table (cols) ... RETURNING col
- * to
- *   INSERT INTO table (cols) OUTPUT INSERTED.col ...
+ * Bounded rewriters for locks 21-22 in MSSQL.md:
+ * - Lock 21: Convert PostgreSQL-style RETURNING to T-SQL OUTPUT
+ * - Lock 22: Rewrite INSERT INTO ... WITH cte ... SELECT to WITH cte ... INSERT INTO ... SELECT
  *
  * Fail-closed: returns NULL when the shape cannot be parsed, so callers
  * pass the original SQL through untouched.
@@ -33,11 +32,22 @@ const char* mssql_find_insert_col_list_close(const char* sql, long paren_open_of
 /* Find offset of the '(' opening INSERT column list, or -1 */
 long mssql_find_insert_column_list_open(const char* sql);
 
+/* Find the opening '(' of a CTE definition (after "WITH name AS") */
+const char* mssql_find_cte_open_paren(const char* sql);
+
 /*
- * Main rewrite entry point.
- * Returns newly allocated rewritten string (caller frees) or NULL.
- * When NULL, caller should use the original SQL unmodified.
+ * Rewrite INSERT INTO ... RETURNING col  ->  INSERT INTO ... OUTPUT INSERTED.col
+ * Returns newly allocated string (caller frees) or NULL.
  */
 char* mssql_rewrite_returning_to_output(const char* sql);
+
+/*
+ * Rewrite `INSERT INTO table (cols) WITH cte AS (...) SELECT ... FROM cte`
+ * into T-SQL-compatible `WITH cte AS (...) INSERT INTO table (cols) SELECT ... FROM cte`.
+ *
+ * Lock 22 in MSSQL.md. Returns newly allocated string (caller frees) or NULL
+ * if the shape does not match (caller passes original SQL through).
+ */
+char* mssql_rewrite_insert_with_to_with_insert(const char* sql);
 
 #endif /* DATABASE_ENGINE_MSSQL_REWRITE_H */

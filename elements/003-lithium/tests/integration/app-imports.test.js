@@ -9,17 +9,17 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 // Mock fetch globally
 global.fetch = vi.fn();
-global.sessionStorage = {
+vi.stubGlobal('sessionStorage', {
   getItem: vi.fn(),
   setItem: vi.fn(),
   removeItem: vi.fn(),
-};
-global.localStorage = {
+});
+vi.stubGlobal('localStorage', {
   getItem: vi.fn(),
   setItem: vi.fn(),
   removeItem: vi.fn(),
-};
-global.document = {
+});
+vi.stubGlobal('document', {
   createElement: vi.fn(),
   documentElement: {
     style: {},
@@ -33,12 +33,12 @@ global.document = {
       remove: vi.fn(),
     },
   },
-};
-global.window = {
+});
+vi.stubGlobal('window', {
   addEventListener: vi.fn(),
   removeEventListener: vi.fn(),
   location: { reload: vi.fn() },
-};
+});
 
 describe('App Import Verification', () => {
   beforeEach(() => {

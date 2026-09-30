@@ -91,8 +91,10 @@ return {
 
     -- Brotli decompression: Phase 4 (CREATE ASSEMBLY + CREATE FUNCTION from extras)
     -- Requires: extras/brotli_udf_mssql/ with compiled C# assembly
-    COMPRESS_START = "${SCHEMA}brotli_decompress(${SCHEMA}base64_decode(",
-    COMPRESS_END = "))",
+    -- Phase 5: Compression disabled until CLR assembly is deployed
+    BROTLI_DECOMPRESS_FUNCTION = "-- Phase 4: CREATE ASSEMBLY brotli_assembly + CREATE FUNCTION brotli_decompress (CLR)",
+    COMPRESS_START = nil,
+    COMPRESS_END = nil,
 
     -- DROP_CHECK: raise if rows exist
     DROP_CHECK = "IF EXISTS(SELECT 1 FROM ${SCHEMA}${TABLE}) THROW 51000, 'Refusing to drop table ${SCHEMA}${TABLE} – it contains data', 1;",
@@ -183,6 +185,9 @@ return {
     -- SQL Server has no native base64 decode; XML-based approach is the
     -- standard workaround. Uses NVARCHAR(MAX) / VARBINARY(MAX) conversion.
     -- Alphabet: standard base64 with +/ and = padding.
+    -- NOTE: SQL Server does not allow BEGIN TRY/BEGIN CATCH inside user-defined
+    -- functions (only stored procedures), so we use ISNULL to gracefully
+    -- fall back to the original string when the XML/base64 cast fails.
     BASE64_DECODE_FUNCTION = [[
         CREATE OR ALTER FUNCTION ${SCHEMA}base64_decode(@s NVARCHAR(MAX))
         RETURNS NVARCHAR(MAX)
@@ -191,20 +196,12 @@ return {
             DECLARE @result NVARCHAR(MAX) = '';
             IF @s IS NULL OR LEN(@s) = 0
                 RETURN @result;
-            -- Use XML-based base64 decoding: cast base64 to XML, then extract value
-            -- This is the standard SQL Server approach for base64 decode
-            DECLARE @xml XML;
-            BEGIN TRY
-                SET @xml = N'<root><b64>' + REPLACE(REPLACE(@s, CHAR(13), ''), CHAR(10), '') + N'</b64></root>';
-                -- Cast VARBINARY from base64 string via XML
-                DECLARE @bin VARBINARY(MAX) = CAST(N'<x>' + REPLACE(REPLACE(@s, CHAR(13), ''), CHAR(10), '') + N'</x>' AS XML).value('(/x)[1]', 'VARBINARY(MAX)');
-                SET @result = CAST(@bin AS NVARCHAR(MAX));
-            END TRY
-            BEGIN CATCH
-                -- If XML method fails (e.g. non-UTF8 binary), return original string
-                -- This allows brotli_decompress to handle binary via base64_encode_binary
-                SET @result = @s;
-            END CATCH
+            -- Strip CR/LF that may be embedded in the base64 payload
+            DECLARE @clean NVARCHAR(MAX) = REPLACE(REPLACE(@s, CHAR(13), ''), CHAR(10), '');
+            -- Cast VARBINARY from base64 string via XML; returns NULL on invalid input
+            DECLARE @bin VARBINARY(MAX) = CAST(N'<x>' + @clean + N'</x>' AS XML).value('(/x)[1]', 'VARBINARY(MAX)');
+            -- If cast failed (NULL), return original string; otherwise decode to NVARCHAR
+            SET @result = ISNULL(CAST(@bin AS NVARCHAR(MAX)), @s);
             RETURN @result;
         END
     ]],
@@ -253,7 +250,7 @@ return {
             -- Latin1_General_100_CI_AS_SC_UTF8 is available in SQL Server 2019+
             DECLARE @combined NVARCHAR(MAX) = @prefix + ISNULL(@password, '');
             -- Cast to VARCHAR with UTF-8 collation to get UTF-8 bytes
-            DECLARE @utf8 VARBINARY(MAX) = CAST(@combined AS VARCHAR(MAX)) COLLATE Latin1_General_100_CI_AS_SC_UTF8;
+            DECLARE @utf8 VARBINARY(MAX) = CAST(CAST(@combined AS VARCHAR(MAX)) COLLATE Latin1_General_100_CI_AS_SC_UTF8 AS VARBINARY(MAX));
             -- SHA-256 hash
             DECLARE @hash VARBINARY(32) = HASHBYTES('SHA2_256', @utf8);
             -- Base64 encode the hash
@@ -261,21 +258,6 @@ return {
         END
     ]],
 
-    -- Brotli decompression via SQL CLR assembly.
-    -- The assembly wraps libbrotlidec (quality 11 encoder side stays in Helium).
-    -- CREATE ASSEMBLY requires TRUSTWORTHY ON or asymmetric key + SAFE permission set.
-    -- Developer edition in Linux container allows CLR with UNSAFE (for Brotli).
-    BROTLI_DECOMPRESS_FUNCTION = [[
-        -- Phase 4: CREATE ASSEMBLY brotli_assembly
-        -- FROM 'extras/brotli_udf_mssql/BrotliUdf.dll'
-        -- WITH PERMISSION_SET = UNSAFE;
-        -- GO
-        -- CREATE FUNCTION ${SCHEMA}brotli_decompress(@data VARBINARY(MAX))
-        -- RETURNS VARBINARY(MAX)
-        -- AS BrotliUdf.BrotliDecompress
-        -- GO
-        -- See extras/brotli_udf_mssql/README.md for build + deploy instructions
-    ]],
     JSON_VALUE_FUNCTION = "-- SQL Server has native JSON_VALUE; no UDR required",
 
     -- Timezone conversion: SQL Server uses AT TIME ZONE natively (no UDF needed)

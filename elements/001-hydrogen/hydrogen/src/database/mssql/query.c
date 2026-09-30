@@ -682,13 +682,20 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
      * If the SQL has no RETURNING, mssql_rewrite_returning_to_output
      * returns NULL and we pass the original through. */
     char* rewritten_sql = mssql_rewrite_returning_to_output(request->sql_template);
-    const char* effective_sql = rewritten_sql ? rewritten_sql : request->sql_template;
+    char* rewritten_sql2 = NULL;
+    if (!rewritten_sql) {
+        /* Lock 22: Rewrite INSERT INTO ... WITH cte ... SELECT to WITH cte ... INSERT INTO ... SELECT.
+         * SQL Server requires the CTE to come before INSERT INTO. */
+        rewritten_sql2 = mssql_rewrite_insert_with_to_with_insert(request->sql_template);
+    }
+    const char* effective_sql = rewritten_sql ? rewritten_sql : (rewritten_sql2 ? rewritten_sql2 : request->sql_template);
 
     /* Serialize ODBC use of this connection handle (CLI is not free-threaded). */
     MutexResult conn_lock = MUTEX_LOCK(&connection->connection_lock, designator);
     if (conn_lock != MUTEX_SUCCESS) {
         log_this(designator, "MSSQL execute_query: Failed to lock connection", LOG_LEVEL_ERROR, 0);
         free(rewritten_sql);
+        free(rewritten_sql2);
         return false;
     }
 
@@ -745,43 +752,29 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
             log_this(designator, "MSSQL execute_query: Converted SQL: %s", LOG_LEVEL_TRACE, 1, positional_sql);
             log_this(designator, "MSSQL execute_query: Parameter count: %zu", LOG_LEVEL_TRACE, 1, param_count);
 
-            // Prepare the statement
-            int prepare_result = mssql_SQLPrepare_ptr(stmt_handle, (unsigned char*)positional_sql, SQL_NTS);
-            if (prepare_result != SQL_SUCCESS && prepare_result != SQL_SUCCESS_WITH_INFO) {
-                log_this(designator, "MSSQL execute_query: SQLPrepare failed with result %d", LOG_LEVEL_ERROR, 1, prepare_result);
-                free(positional_sql);
-                free(ordered_params);
-                free_parameter_list(param_list);
-                mssql_active_stmt_clear(connection, stmt_handle);
-                mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
-                mutex_unlock(&connection->connection_lock);
-                free(rewritten_sql);
-                return false;
-            }
+            // If there are no actual placeholders in the SQL, use direct execution
+            // (SQL Server's SQLPrepare fails on some statements like INSERT...WITH...SELECT)
+            if (param_count > 0) {
+                // Prepare the statement
+                int prepare_result = mssql_SQLPrepare_ptr(stmt_handle, (unsigned char*)positional_sql, SQL_NTS);
+                if (prepare_result != SQL_SUCCESS && prepare_result != SQL_SUCCESS_WITH_INFO) {
+                    log_this(designator, "MSSQL execute_query: SQLPrepare failed with result %d", LOG_LEVEL_ERROR, 1, prepare_result);
+                    free(positional_sql);
+                    free(ordered_params);
+                    free_parameter_list(param_list);
+                    mssql_active_stmt_clear(connection, stmt_handle);
+                    mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
+                    mutex_unlock(&connection->connection_lock);
+                    free(rewritten_sql);
+                    return false;
+                }
 
-            // Allocate arrays for bound values and indicators
-            bound_values = calloc(param_count, sizeof(void*));
-            str_len_indicators = calloc(param_count, sizeof(long));
-            if (!bound_values || !str_len_indicators) {
-                log_this(designator, "MSSQL execute_query: Failed to allocate binding arrays", LOG_LEVEL_ERROR, 0);
-                free(bound_values);
-                free(str_len_indicators);
-                free(positional_sql);
-                free(ordered_params);
-                free_parameter_list(param_list);
-                mssql_active_stmt_clear(connection, stmt_handle);
-                mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
-                mutex_unlock(&connection->connection_lock);
-                free(rewritten_sql);
-                return false;
-            }
-
-            // Bind each parameter
-            for (size_t i = 0; i < param_count; i++) {
-                if (!mssql_bind_single_parameter(stmt_handle, (unsigned short)(i + 1), ordered_params[i],
-                                                 bound_values, str_len_indicators, designator)) {
-                    log_this(designator, "MSSQL execute_query: Failed to bind parameter %zu", LOG_LEVEL_ERROR, 1, i + 1);
-                    mssql_cleanup_bound_values(bound_values, i);
+                // Allocate arrays for bound values and indicators
+                bound_values = calloc(param_count, sizeof(void*));
+                str_len_indicators = calloc(param_count, sizeof(long));
+                if (!bound_values || !str_len_indicators) {
+                    log_this(designator, "MSSQL execute_query: Failed to allocate binding arrays", LOG_LEVEL_ERROR, 0);
+                    free(bound_values);
                     free(str_len_indicators);
                     free(positional_sql);
                     free(ordered_params);
@@ -792,17 +785,45 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                     free(rewritten_sql);
                     return false;
                 }
+
+                // Bind each parameter
+                for (size_t i = 0; i < param_count; i++) {
+                    if (!mssql_bind_single_parameter(stmt_handle, (unsigned short)(i + 1), ordered_params[i],
+                                                     bound_values, str_len_indicators, designator)) {
+                        log_this(designator, "MSSQL execute_query: Failed to bind parameter %zu", LOG_LEVEL_ERROR, 1, i + 1);
+                        mssql_cleanup_bound_values(bound_values, i);
+                        free(str_len_indicators);
+                        free(positional_sql);
+                        free(ordered_params);
+                        free_parameter_list(param_list);
+                        mssql_active_stmt_clear(connection, stmt_handle);
+                        mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
+                        mutex_unlock(&connection->connection_lock);
+                        free(rewritten_sql);
+                        return false;
+                    }
+                }
+
+                // Execute the prepared statement
+                exec_result = mssql_SQLExecute_ptr(stmt_handle);
+
+                free(positional_sql);
+                free(ordered_params);
+                free_parameter_list(param_list);
+                positional_sql = NULL;
+                ordered_params = NULL;
+                param_list = NULL;
+            } else {
+                // No placeholders in SQL - use direct execution
+                log_this(designator, "MSSQL execute_query: No placeholders, using SQLExecDirect", LOG_LEVEL_TRACE, 0);
+                exec_result = mssql_SQLExecDirect_ptr(stmt_handle, (char*)positional_sql, SQL_NTS);
+                free(positional_sql);
+                free(ordered_params);
+                free_parameter_list(param_list);
+                positional_sql = NULL;
+                ordered_params = NULL;
+                param_list = NULL;
             }
-
-            // Execute the prepared statement
-            exec_result = mssql_SQLExecute_ptr(stmt_handle);
-
-            free(positional_sql);
-            free(ordered_params);
-            free_parameter_list(param_list);
-            positional_sql = NULL;
-            ordered_params = NULL;
-            param_list = NULL;
         } else {
             // No actual parameters or parsing failed
             if (param_list) {
@@ -823,7 +844,7 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
         exec_result = mssql_SQLExecDirect_ptr(stmt_handle, (char*)effective_sql, SQL_NTS);
     }
 
-    if (exec_result != SQL_SUCCESS && exec_result != SQL_SUCCESS_WITH_INFO) {
+    if (exec_result != SQL_SUCCESS && exec_result != SQL_SUCCESS_WITH_INFO && exec_result != SQL_NO_DATA) {
         // Get detailed error information
         unsigned char sql_state[6] = {0};
         long int native_error = 0;
@@ -892,6 +913,7 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
         mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
         mutex_unlock(&connection->connection_lock);
         free(rewritten_sql);
+        free(rewritten_sql2);
         return false;
     }
 
@@ -910,6 +932,7 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
     mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
     mutex_unlock(&connection->connection_lock);
     free(rewritten_sql);
+    free(rewritten_sql2);
 
     if (process_result) {
         log_this(designator, "MSSQL execute_query: Query completed successfully", LOG_LEVEL_DEBUG, 0);
@@ -969,7 +992,7 @@ bool mssql_execute_prepared(DatabaseHandle* connection, const PreparedStatement*
 
     // Execute the prepared statement
     int exec_result = mssql_SQLExecute_ptr(stmt_handle);
-    if (exec_result != SQL_SUCCESS && exec_result != SQL_SUCCESS_WITH_INFO) {
+    if (exec_result != SQL_SUCCESS && exec_result != SQL_SUCCESS_WITH_INFO && exec_result != SQL_NO_DATA) {
         // Get detailed error information
         unsigned char sql_state[6] = {0};
         long int native_error = 0;

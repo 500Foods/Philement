@@ -94,7 +94,9 @@ bool execute_mariadb_migration(DatabaseHandle* connection, char** statements, si
 bool execute_sqlite_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
                             const char* migration_file, const char* dqm_label);
 bool execute_firebird_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
-                              const char* migration_file, const char* dqm_label);
+                            const char* migration_file, const char* dqm_label);
+bool execute_mssql_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
+                           const char* migration_file, const char* dqm_label);
 bool firebird_migration_sql_is_ddl(const char* sql);
 
 // LOAD phase functions (metadata population only)

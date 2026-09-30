@@ -48,6 +48,8 @@
     "keyframes-name-pattern": null,
     "no-descending-specificity": null,
     "declaration-property-value-keyword-no-deprecated": null,
-    "font-family-no-missing-generic-family-keyword": null
+    "font-family-no-missing-generic-family-keyword": null,
+    "property-no-deprecated": null,
+    "color-function-alias-notation": null
   }
 }

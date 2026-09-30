@@ -268,3 +268,109 @@ char* mssql_rewrite_returning_to_output(const char* sql) {
     free(returning_col);
     return result;
 }
+
+/*
+ * Helper: find the opening '(' of a CTE definition, i.e., the '(' right after
+ * "WITH name AS".  Returns pointer into `sql` or NULL.
+ */
+const char* mssql_find_cte_open_paren(const char* sql) {
+    if (!sql) return NULL;
+    const char* p = sql;
+    while (*p) {
+        size_t adv = 0;
+        if (mssql_match_word(p, "WITH", &adv)) {
+            p = mssql_skip_ws(p + adv);
+            /* CTE name (identifier) */
+            while (*p && !isspace((unsigned char)*p) && *p != '(' && *p != ';') p++;
+            p = mssql_skip_ws(p);
+            if (mssql_match_word(p, "AS", &adv)) {
+                p = mssql_skip_ws(p + adv);
+                if (*p == '(') return p;
+            }
+        }
+        p++;
+    }
+    return NULL;
+}
+
+/*
+ * Rewrite `INSERT INTO table (cols) WITH cte AS (...) SELECT ...`
+ * into `WITH cte AS (...) INSERT INTO table (cols) SELECT ...`.
+ */
+char* mssql_rewrite_insert_with_to_with_insert(const char* sql) {
+    if (!sql) return NULL;
+
+    /* Look for INSERT keyword */
+    long insert_offset = -1;
+    const char* p = sql;
+    while (*p) {
+        size_t adv = 0;
+        if (mssql_match_word(p, "INSERT", &adv)) {
+            const char* after_insert = p + adv;
+            after_insert = mssql_skip_ws(after_insert);
+            if (mssql_match_word(after_insert, "INTO", &adv)) {
+                insert_offset = (long)(p - sql);
+                break;
+            }
+        }
+        p++;
+    }
+    if (insert_offset < 0) return NULL;
+
+    /* Find the WITH keyword that follows the INSERT...INTO...table...(cols) */
+    size_t adv = 0;
+    const char* after_into = p + strlen("INSERT");
+    after_into = mssql_skip_ws(after_into);
+    if (!mssql_match_word(after_into, "INTO", &adv)) return NULL;
+    const char* past_into = mssql_skip_ws(after_into + adv);
+    /* Skip table name */
+    while (*past_into && !isspace((unsigned char)*past_into) && *past_into != '(' && *past_into != ';') {
+        past_into++;
+    }
+    past_into = mssql_skip_ws(past_into);
+
+    /* If there's a column list, skip past its closing ')' */
+    if (*past_into == '(') {
+        const char* close_paren = mssql_find_insert_col_list_close(sql, (long)(past_into - sql));
+        if (!close_paren) return NULL;
+        past_into = mssql_skip_ws(close_paren + 1);
+    }
+
+    /* Now past_into should point at "WITH" */
+    if (!mssql_match_word(past_into, "WITH", &adv)) {
+        return NULL;
+    }
+
+    const char* with_ptr = past_into;
+    long with_offset = (long)(with_ptr - sql);
+
+    /* Find matching ')' for the CTE definition */
+    const char* cte_open = mssql_find_cte_open_paren(sql);
+    if (!cte_open) return NULL;
+    const char* cte_close = mssql_find_insert_col_list_close(sql, (long)(cte_open - sql));
+    if (!cte_close) return NULL;
+
+    /* Build: WITH ... cte ... INSERT INTO ... (cols) SELECT ... */
+    /* = [with_offset .. cte_close] + [insert_offset .. with_offset] + [cte_close+1 .. end] */
+    size_t cte_len = (size_t)(cte_close - with_ptr) + 1;  /* WITH ... cte ... ) */
+    size_t insert_len = (size_t)(with_offset - insert_offset);  /* INSERT INTO ... */
+    size_t rest_start = (size_t)(cte_close - sql) + 1;
+    size_t rest_len = strlen(sql + rest_start);
+
+    size_t total = cte_len + insert_len + rest_len + 3;
+    char* result = calloc(1, total);
+    if (!result) return NULL;
+
+    size_t pos = 0;
+    memcpy(result + pos, with_ptr, cte_len);
+    pos += cte_len;
+    result[pos] = '\n';
+    pos++;
+    memcpy(result + pos, sql + insert_offset, insert_len);
+    pos += insert_len;
+    memcpy(result + pos, sql + rest_start, rest_len);
+    pos += rest_len;
+    result[pos] = '\0';
+
+    return result;
+}

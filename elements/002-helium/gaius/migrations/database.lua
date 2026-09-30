@@ -367,9 +367,10 @@ local database = {
                 -- Strip indentation
                 local stripped_content = strip_base_indent(content)
 
-                -- Check if content exceeds compression threshold
+-- Check if content exceeds compression threshold
                 local content_size = #stripped_content
-                local should_compress = content_size > COMPRESSION_THRESHOLD
+                local has_compress = cfg.COMPRESS_START and cfg.COMPRESS_END
+                local should_compress = has_compress and content_size > COMPRESSION_THRESHOLD
 
                 -- Compress if needed, then encode
                 local data_to_encode = stripped_content

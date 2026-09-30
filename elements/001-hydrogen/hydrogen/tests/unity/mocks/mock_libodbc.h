@@ -14,59 +14,59 @@
 #include <stdbool.h>
 
 // Mock function prototypes (always available) - must match types.h exactly
-int mssql_mock_SQLAllocHandle(int handleType, void* inputHandle, void** outputHandle);
-int mssql_mock_SQLConnect(void* connectionHandle, char* serverName, int nameLength,
+short mssql_mock_SQLAllocHandle(short handleType, void* inputHandle, void** outputHandle);
+short mssql_mock_SQLConnect(void* connectionHandle, char* serverName, int nameLength,
                    char* userName, int userLength, char* password, int passwordLength);
-int mssql_mock_SQLDriverConnect(void* connectionHandle, void* windowHandle, unsigned char* connectionString,
-                          short stringLength, unsigned char* outConnectionString, short bufferLength,
-                          short* stringLengthPtr, unsigned short driverCompletion);
-int mssql_mock_SQLExecDirect(void* statementHandle, char* statementText, int textLength);
-int mssql_mock_SQLFetch(void* statementHandle);
-int mssql_mock_SQLGetData(void* statementHandle, int columnNumber, int targetType,
-                    void* targetValue, int bufferLength, int* strLenOrIndPtr);
-int mssql_mock_SQLNumResultCols(void* statementHandle, int* columnCount);
-int mssql_mock_SQLRowCount(void* statementHandle, int* rowCount);
-int mssql_mock_SQLFreeHandle(int handleType, void* handle);
-int mssql_mock_SQLDisconnect(void* connectionHandle);
-int mssql_mock_SQLEndTran(int handleType, void* handle, int completionType);
-int mssql_mock_SQLPrepare(void* statementHandle, unsigned char* statementText, int textLength);
-int mssql_mock_SQLExecute(void* statementHandle);
-int mssql_mock_SQLFreeStmt(void* statementHandle, int option);
-int mssql_mock_SQLDescribeCol(void* statementHandle, int columnNumber, unsigned char* columnName,
-                        int bufferLength, short* nameLength, int* dataType, int* columnSize,
-                        short* decimalDigits, short* nullable);
-int mssql_mock_SQLGetDiagRec(short handleType, void* handle, short recNumber, unsigned char* sqlState,
+short mssql_mock_SQLDriverConnect(void* connectionHandle, void* windowHandle, unsigned char* connectionString,
+                           short stringLength, unsigned char* outConnectionString, short bufferLength,
+                           short* stringLengthPtr, unsigned short driverCompletion);
+short mssql_mock_SQLExecDirect(void* statementHandle, char* statementText, int textLength);
+short mssql_mock_SQLFetch(void* statementHandle);
+short mssql_mock_SQLGetData(void* statementHandle, int columnNumber, int targetType,
+                     void* targetValue, int bufferLength, int* strLenOrIndPtr);
+short mssql_mock_SQLNumResultCols(void* statementHandle, int* columnCount);
+short mssql_mock_SQLRowCount(void* statementHandle, int* rowCount);
+short mssql_mock_SQLFreeHandle(short handleType, void* handle);
+short mssql_mock_SQLDisconnect(void* connectionHandle);
+short mssql_mock_SQLEndTran(short handleType, void* handle, int completionType);
+short mssql_mock_SQLPrepare(void* statementHandle, unsigned char* statementText, int textLength);
+short mssql_mock_SQLExecute(void* statementHandle);
+short mssql_mock_SQLFreeStmt(void* statementHandle, int option);
+short mssql_mock_SQLDescribeCol(void* statementHandle, int columnNumber, unsigned char* columnName,
+                         int bufferLength, short* nameLength, int* dataType, int* columnSize,
+                         short* decimalDigits, short* nullable);
+short mssql_mock_SQLGetDiagRec(short handleType, void* handle, short recNumber, unsigned char* sqlState,
                        long* nativeError, unsigned char* messageText, short bufferLength, short* textLength);
-int mssql_mock_SQLSetConnectAttr(void* connectionHandle, int attribute, long value, int stringLength);
-int mssql_mock_SQLBindParameter(void* statementHandle, unsigned short parameterNumber, short inputOutputType,
+short mssql_mock_SQLSetConnectAttr(void* connectionHandle, int attribute, void* value, int stringLength);
+short mssql_mock_SQLBindParameter(void* statementHandle, unsigned short parameterNumber, short inputOutputType,
                            short valueType, short parameterType, unsigned long columnSize, short decimalDigits,
                            void* parameterValue, long bufferLength, long* strLenOrIndPtr);
-int mssql_mock_SQLCancel(void* statementHandle);
-int mssql_mock_SQLSetEnvAttr(void* environmentHandle, int attribute, long* value, int stringLength);
+short mssql_mock_SQLCancel(void* statementHandle);
+short mssql_mock_SQLSetEnvAttr(void* environmentHandle, int attribute, void* value, int stringLength);
 
 // Mock control functions for tests (always available)
-void mssql_mock_libodbc_set_SQLAllocHandle_result(int result);
+void mssql_mock_libodbc_set_SQLAllocHandle_result(short result);
 void mssql_mock_libodbc_set_SQLAllocHandle_output_handle(void* handle);
-void mssql_mock_libodbc_set_SQLDriverConnect_result(int result);
-void mssql_mock_libodbc_set_SQLExecDirect_result(int result);
-void mssql_mock_libodbc_set_SQLExecute_result(int result);
-void mssql_mock_libodbc_set_SQLFetch_result(int result);
-void mssql_mock_libodbc_set_SQLNumResultCols_result(int result, int column_count);
-void mssql_mock_libodbc_set_SQLRowCount_result(int result, int row_count);
-void mssql_mock_libodbc_set_SQLDescribeCol_result(int result);
+void mssql_mock_libodbc_set_SQLDriverConnect_result(short result);
+void mssql_mock_libodbc_set_SQLExecDirect_result(short result);
+void mssql_mock_libodbc_set_SQLExecute_result(short result);
+void mssql_mock_libodbc_set_SQLFetch_result(short result);
+void mssql_mock_libodbc_set_SQLNumResultCols_result(short result, int column_count);
+void mssql_mock_libodbc_set_SQLRowCount_result(short result, int row_count);
+void mssql_mock_libodbc_set_SQLDescribeCol_result(short result);
 void mssql_mock_libodbc_set_SQLDescribeCol_column_name(const char* name);
-void mssql_mock_libodbc_set_SQLGetData_result(int result);
+void mssql_mock_libodbc_set_SQLGetData_result(short result);
 void mssql_mock_libodbc_set_SQLGetData_data(const char* data, int data_len);
-void mssql_mock_libodbc_set_SQLGetDiagRec_result(int result);
+void mssql_mock_libodbc_set_SQLGetDiagRec_result(short result);
 void mssql_mock_libodbc_set_SQLGetDiagRec_error(const char* sqlstate, long native_error, const char* message);
 void mssql_mock_libodbc_set_fetch_row_count(int count);
-void mssql_mock_libodbc_set_SQLFreeHandle_result(int result);
-void mssql_mock_libodbc_set_SQLEndTran_result(int result);
-void mssql_mock_libodbc_set_SQLSetConnectAttr_result(int result);
+void mssql_mock_libodbc_set_SQLFreeHandle_result(short result);
+void mssql_mock_libodbc_set_SQLEndTran_result(short result);
+void mssql_mock_libodbc_set_SQLSetConnectAttr_result(short result);
 int mssql_mock_libodbc_get_SQLSetConnectAttr_autocommit_off_seen(void);
 int mssql_mock_libodbc_get_SQLSetConnectAttr_call_count(void);
-void mssql_mock_libodbc_set_SQLPrepare_result(int result);
-void mssql_mock_libodbc_set_SQLBindParameter_result(int result);
+void mssql_mock_libodbc_set_SQLPrepare_result(short result);
+void mssql_mock_libodbc_set_SQLBindParameter_result(short result);
 void mssql_mock_libodbc_reset_all(void);
 
 #endif // MOCK_LIBODBC_H

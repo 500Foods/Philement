@@ -286,6 +286,8 @@ void database_queue_start_heartbeat(DatabaseQueue* db_queue) {
                 engine_name = "SQLite";
             } else if (strncmp(db_queue->connection_string, "firebird://", 11) == 0) {
                 engine_name = "Firebird";
+            } else if (strstr(db_queue->connection_string, "DRIVER=") != NULL) {
+                engine_name = "MSSQL";
             } else {
                 // For DB2 and other engines, the connection string is just the database name
                 engine_name = "DB2";

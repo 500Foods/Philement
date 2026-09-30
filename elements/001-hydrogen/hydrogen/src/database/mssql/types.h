@@ -10,28 +10,29 @@
 #include <src/database/database.h>
 
 // Function pointer types for unixODBC functions (same ODBC API shape as DB2)
-typedef int (*SQLAllocHandle_t)(int, void*, void**);
-typedef int (*SQLConnect_t)(void*, char*, int, char*, int, char*, int);
-typedef int (*SQLExecDirect_t)(void*, char*, int);
-typedef int (*SQLFetch_t)(void*);
-typedef int (*SQLGetData_t)(void*, int, int, void*, int, int*);
-typedef int (*SQLNumResultCols_t)(void*, int*);
-typedef int (*SQLRowCount_t)(void*, int*);
-typedef int (*SQLFreeHandle_t)(int, void*);
-typedef int (*SQLDisconnect_t)(void*);
-typedef int (*SQLEndTran_t)(int, void*, int);
-typedef int (*SQLPrepare_t)(void*, unsigned char*, int);
-typedef int (*SQLExecute_t)(void*);
-typedef int (*SQLFreeStmt_t)(void*, int);
-typedef int (*SQLDescribeCol_t)(void*, int, unsigned char*, int, short*, int*, int*, short*, short*);
-typedef int (*SQLBindParameter_t)(void*, unsigned short, short, short, short, unsigned long, short, void*, long, long*);
+typedef short (*SQLAllocHandle_t)(short, void*, void**);
+typedef short (*SQLConnect_t)(void*, char*, int, char*, int, char*, int);
+typedef short (*SQLExecDirect_t)(void*, char*, int);
+typedef short (*SQLFetch_t)(void*);
+typedef short (*SQLGetData_t)(void*, int, int, void*, int, int*);
+typedef short (*SQLNumResultCols_t)(void*, int*);
+typedef short (*SQLRowCount_t)(void*, int*);
+typedef short (*SQLFreeHandle_t)(short, void*);
+typedef short (*SQLDisconnect_t)(void*);
+typedef short (*SQLEndTran_t)(short, void*, int);
+typedef short (*SQLPrepare_t)(void*, unsigned char*, int);
+typedef short (*SQLExecute_t)(void*);
+typedef short (*SQLFreeStmt_t)(void*, int);
+typedef short (*SQLDescribeCol_t)(void*, int, unsigned char*, int, short*, int*, int*, short*, short*);
+typedef short (*SQLBindParameter_t)(void*, unsigned short, short, short, short, unsigned long, short, void*, long, long*);
 
 // Additional function pointers for connection and error handling
-typedef int (*SQLDriverConnect_t)(void*, void*, unsigned char*, short, unsigned char*, short, short*, unsigned short);
-typedef int (*SQLGetDiagRec_t)(short, void*, short, unsigned char*, long*, unsigned char*, short, short*);
-typedef int (*SQLSetConnectAttr_t)(void*, int, long, int);
-typedef int (*SQLSetEnvAttr_t)(void*, int, long*, int);
-typedef int (*SQLCancel_t)(void*);
+typedef short (*SQLDriverConnect_t)(void*, void*, unsigned char*, short, unsigned char*, short, short*, unsigned short);
+typedef short (*SQLGetDiagRec_t)(short, void*, short, unsigned char*, long*, unsigned char*, short, short*);
+// Transaction control function
+typedef short (*SQLSetConnectAttr_t)(void*, int, void*, int);
+typedef short (*SQLSetEnvAttr_t)(void*, int, void*, int);
+typedef short (*SQLCancel_t)(void*);
 
 // MSSQL function pointers (loaded dynamically or mocked) - mssql_ prefix avoids collision with DB2
 extern SQLAllocHandle_t mssql_SQLAllocHandle_ptr;
@@ -61,7 +62,7 @@ extern SQLCancel_t mssql_SQLCancel_ptr;
 #define SQL_HANDLE_STMT 3
 #define SQL_SUCCESS 0
 #define SQL_SUCCESS_WITH_INFO 1
-#define SQL_ATTR_ODBC_VERSION 20
+#define SQL_ATTR_ODBC_VERSION 200
 #define SQL_OV_ODBC3 3
 #define SQL_IS_INTEGER -6
 #define SQL_IS_UINTEGER -5

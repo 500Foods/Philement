@@ -543,6 +543,20 @@ bool build_parameter_array(
                 continue;
             }
 
+            // Skip XML Schema type casts in SQL Server (xs:base64Binary, etc.)
+            // These appear in sql:variable() expressions, not as named parameters
+            if (strcmp(param_name, "base64Binary") == 0) {
+                search_ptr += match.rm_eo;
+                continue;
+            }
+
+            // Skip sql:variable() references in SQL Server XML functions
+            // The :variable pattern is not a named parameter but part of sql:variable("@var")
+            if (strcmp(param_name, "variable") == 0) {
+                search_ptr += match.rm_eo;
+                continue;
+            }
+
             // Check if we've already added this parameter to the ordered array
             bool already_added = false;
             for (size_t i = 0; i < seen_count; i++) {
