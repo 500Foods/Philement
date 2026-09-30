@@ -4,6 +4,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 1.3.1 - 2026-09-30 - Keep the newline after SUBQUERY DELIMITER when moving INSERT...WITH
 -- 1.3.0 - 2026-09-30 - Statement-shape repairs (RETURNING, VALUES CTE, INSERT...WITH, ADD/DROP COLUMN)
 -- 1.2.0 - 2026-09-30 - base64_decode and base64_encode use UTF-8 bytes, same as the other engines
 -- 1.1.0 - 2026-09-30 - Added Phase 4 T-SQL helper function bodies: base64_decode, base64_encode, sha256_b64, brotli_decompress (CLR)
@@ -214,7 +215,10 @@ local function rewrite_insert_with(s)
     if not cte_open then return nil end
     local cte_close = find_close(s, cte_open)
     if not cte_close then return nil end
-    return s:sub(past, cte_close) .. "\n" .. s:sub(insert_at, past - 1) .. s:sub(cte_close + 1)
+    -- Text before INSERT stays put. That prefix holds the newline after
+    -- "-- SUBQUERY DELIMITER"; dropping it glues WITH onto the comment,
+    -- so APPLY never splits the next statement (migration 1147).
+    return s:sub(1, insert_at - 1) .. s:sub(past, cte_close) .. "\n" .. s:sub(insert_at, past - 1) .. s:sub(cte_close + 1)
 end
 
 local function rewrite_cte_values(s)
@@ -485,8 +489,12 @@ local function rewrite_statement_list(s)
         local piece = a and s:sub(pos, a - 1) or s:sub(pos)
         out[#out + 1] = rewrite_statement(piece)
         if not a then break end
-        out[#out + 1] = DELIM
+        -- APPLY splits on this marker plus a newline. Put the newline on
+        -- the marker and consume one that already follows it, so a second
+        -- pass does not insert a blank line.
+        out[#out + 1] = DELIM .. "\n"
         pos = b + 1
+        if s:sub(pos, pos) == "\n" then pos = pos + 1 end
     end
     return table.concat(out)
 end

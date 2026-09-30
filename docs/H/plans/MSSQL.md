@@ -20,17 +20,17 @@ proves local RAM/image cannot run.
 | 2 Helium dialect | complete | **Moderate** |
 | 3 C register / connect (unixODBC) | complete | **Moderate** |
 | 4 T-SQL helpers + Brotli CLR | complete | **Difficult** |
-| 5 Test 39 full Acuranzo | in progress | **Difficult** |
+| 5 Test 39 full Acuranzo | complete | **Difficult** |
 | 6 SchemaTool / flush | not started | **Moderate** |
 | 7 Grow matrix 7 → 8 | not started | **Difficult** |
 | 8 Docs | not started | **Quick** |
 | 9 Coverage / completeness | not started | **Moderate** |
 
-Remaining: Phase 5 (Difficult, in progress), Phase 6 (Moderate),
-Phase 7 (Difficult), Phase 9 (Moderate), Phase 8 (Quick). Phases 0–4
-are complete. Phases 6–9 are not started: work items unchecked, Status
-tables say not started. The Test 39 file-creation notes that had been
-copied into those working logs now live under Phase 5.
+Remaining: Phase 6 (Moderate), Phase 7 (Difficult), Phase 9 (Moderate),
+Phase 8 (Quick). Phases 0–5 are complete. Phases 6–9 are not started:
+work items unchecked, Status tables say not started. The Test 39
+file-creation notes that had been copied into those working logs now
+live under Phase 5.
 
 **Parity:** MSSQL is a Hydrogen `DatabaseEngineInterface`, not a new
 API. Match PostgreSQL / SQLite / MySQL / DB2: same `QueryRequest` /
@@ -130,7 +130,7 @@ Each phase is worked in its **own conversation**:
 Lua landed 2026-09-30, and the C rewriter was removed the same day.
 `acuranzo/migrations/database.lua` 3.6.0 calls
 `cfg.rewrite_migration_sql` immediately after the Firebird block.
-The passes live in `acuranzo/migrations/database_mssql.lua` 1.3.0.
+The passes live in `acuranzo/migrations/database_mssql.lua` 1.3.1.
 `src/database/mssql/rewrite.c`, `rewrite.h`, and
 `tests/unity/src/database/mssql/rewrite_test_mssql.c` are gone.
 Prepare and execute send the statement text they are given.
@@ -139,18 +139,24 @@ A Lua parity run matched the old C fixtures, including a nested
 `[=[ [==[ ]==] ]=]` template, and all 385 Acuranzo migrations
 generated for `mssql` with no mask token and no top-level
 `ADD COLUMN`, `RETURNING`, bare `VALUES` CTE, or `DROP COLUMN`.
-`luacheck` on those two files was clean. `mkt` reconfigures CMake
+`luacheck` on those two files was clean. 1.3.1 keeps the newline
+after `-- SUBQUERY DELIMITER` when it moves `INSERT…WITH`. A
+generation sweep of all 385 Acuranzo migrations found no glued
+delimiter, every delimiter followed by a newline, and a second
+pass identical to the first. `mkt` reconfigures CMake
 and builds `hydrogen`. It does not regenerate
 `payloads/payload.tar.br.enc`, and it does not rebuild
 `hydrogen_release`. Test 39 launches `hydrogen_coverage` when that
 file exists, otherwise `hydrogen_release`. `mka` regenerates the
 payload when the Acuranzo Lua is newer than the tarball, then
-rebuilds those binaries and embeds the tarball. An existing
-`queries` row still has the shared spelling, so the next Test 39
-needs that table dropped first. Phase 5 Status records the C-rewriter cycle and stays in
-progress until this reload is green. That cycle's reverse finished
-2026-09-30 19:50Z: migrations 1003 through 1000 reversed, then
-`Migration test finished - normal execution`.
+rebuilds those binaries and embeds the tarball. The closing Test 39
+log is
+`build/tests/logs/test_39_20260930_151436_342589048_519453_mssql.log`.
+Summary available=loaded=applied=1384, 385 reverses through
+migration 1000, normal execution at 498.021s, no `[ ERROR ]`
+lines. Phase 5 is complete. The C-rewriter cycle's
+reverse finished 2026-09-30 19:50Z: migrations 1003 through 1000
+reversed, then `Migration test finished - normal execution`.
 
 Two reasons to move the text repairs out of C:
 
@@ -236,15 +242,16 @@ Lua changes show up only when those rows are absent and LOAD runs.
 2. Prove text parity against the fixtures that were in
    `tests/unity/src/database/mssql/rewrite_test_mssql.c`, and
    `luacheck` (Test 98) on the dialect file. Done. That Unity file
-   was removed with the C rewriter. The payload tarball and
-   `hydrogen_release` have not been rebuilt. `mkt` does not do
-   that rebuild; `mka` does, after CMake is reconfigured so the
-   deleted `rewrite.c` leaves the source glob.
+   was removed with the C rewriter. `mkt` does not regenerate the
+   payload or rebuild `hydrogen_release`; `mka` does, after CMake
+   is reconfigured so the deleted `rewrite.c` leaves the source
+   glob. The 21:12Z Test 39 ran a payload that already had the
+   1.3.0 passes. The closing run is the 22:14Z log below.
 3. Drop `testms.queries` (or the `hydrotst` database) and run Test 39
-   forward, then reverse. Inspect one stored row for each pass
-   (a `RETURNING` insert, migration 1147's `VALUES` CTE, an
-   `ADD COLUMN`, migration 1365's `DROP COLUMN`) and confirm the
-   stored text is already the T-SQL spelling. Not run yet.
+   forward, then reverse. Done 2026-09-30 22:14Z. Log
+   `build/tests/logs/test_39_20260930_151436_342589048_519453_mssql.log`.
+   Summary available=loaded=applied=1384. Reverse 1384 through 1000
+   (385). Migration 1147 APPLY succeeded. No `[ ERROR ]` lines.
 4. Remove the five C passes. Done 2026-09-30, before the reload,
    because the next Test 39 will start from an empty `queries` table.
    `rewrite.c`, `rewrite.h`, and `rewrite_test_mssql.c` are deleted.
@@ -252,7 +259,7 @@ Lua changes show up only when those rows are absent and LOAD runs.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-09-30):** Phases 0–4 complete. Phase 5 is in progress. A C-rewriter binary applied all 1384 Acuranzo migrations and, after `SQLFreeStmt` before rollback, reversed through migration 1000. The spelling now lives in Acuranzo Lua and `rewrite.c` is gone. That tree has not been through Test 39. Phase 6 waits on a green reload from an empty `testms.queries`. Phases 6–9 are not started.
+**CURRENT PAUSE POINT (as of 2026-09-30):** Phases 0–5 complete. Phase 6 is next (SchemaTool / flush). Test 40 is Phase 7 item 7.1, after Phase 6. The closing Test 39 log is `build/tests/logs/test_39_20260930_151436_342589048_519453_mssql.log`: available=loaded=applied=1384, 385 reverses through migration 1000, `Migration test finished - normal execution` at 498.021s, no `[ ERROR ]` lines.
 
 ### Resume here next session
 
@@ -281,7 +288,7 @@ Lua changes show up only when those rows are absent and LOAD runs.
 | --- | --- |
 | **Band** | P2 — new engine, after Auth Finale; parallel with Firebird, not a substitute |
 | **Effort** | XL (unixODBC engine + Helium dialect + T-SQL/CLR extras + Test 39 + 8-engine matrix) |
-| **Done** | Phases 0–4 complete. Phase 5 in progress. Phases 6–9 not started |
+| **Done** | Phases 0–5 complete. Phases 6–9 not started |
 | **Why this shape** | Key 5 has been a lookup row without a C engine. Fedora has no mssql-server RPM; the official Linux container is the local free path. |
 | **Do not start casually** | Touches enum (reserved slot), registry, DQM, Helium four designs, Test 31/39, every 7-engine loop (becomes 8), SchemaTool. |
 
@@ -731,7 +738,7 @@ no new `static` / no dead symbols). Mock ODBC in Unity.
 | 2 | Complete `database_mssql.lua` in four designs; Test 31 generates mssql SQL | M | complete |
 | 3 | C engine registers, `mssql://`, connect + health vs container or ODBC mock | M | complete |
 | 4 | T-SQL helpers + Brotli CLR (or COMPRESS pre-eval variance); SHA-256 fixture matches SQLite | L | complete |
-| 5 | Test 39 mssql AutoMigrations **full Acuranzo** green | L | in progress |
+| 5 | Test 39 mssql AutoMigrations **full Acuranzo** green | L | complete |
 | 6 | SchemaTool / SchemaHelper / hydrogen_flush / transaction_utils | M | pending |
 | 7 | Tests 40/43/45/46/47/58 include mssql; 8-engine loops | L | pending |
 | 8 | Docs/SITEMAP/MACRO_REFERENCE/DATABASES/SECRETS match; `mkl` green | S | pending |
@@ -1096,7 +1103,7 @@ Phase 4 Status complete. Payload includes `database_mssql.lua` (`mkt`).
       via `extras/mssql_server/start.sh` + `create_test_db.sh` + `stop.sh`.
 - [x] 5.3 Docs `docs/H/tests/test_39_mssql_migrations.md` created + registered
       in TESTING.md and SITEMAP.md.
-- [ ] 5.4 Run until LOAD/APPLY/REVERSE match Test 32 expectations on
+- [x] 5.4 Run until LOAD/APPLY/REVERSE match Test 32 expectations on
       the current tree: payload rebuilt with the Lua spelling, binary
       without `rewrite.c`, `testms.queries` empty at start.
       Against the C rewriter, before that move: ~18:17Z
@@ -1112,7 +1119,17 @@ Phase 4 Status complete. Payload includes `database_mssql.lua` (`mkt`).
       normal execution`. No log file for that run is in the tree, and
       its summary counts were not captured. The 54.373s line
       available=0 loaded=0 applied=0 is the orphan-bootstrap path,
-      not this apply.
+      not this apply. At 21:12Z the Lua-spelling payload (`rewrite.c`
+      already gone) applied through 1146 of 1384 and stopped on
+      migration 1147 statement 1, hash `MPSC7B529F508B0D4593`,
+      FreeTDS 208, invalid object name `digits`. Reverse of 1146,
+      1145, and 1144 then succeeded. `database_mssql.lua` 1.3.1
+      keeps the delimiter newline. Closed by
+      `build/tests/logs/test_39_20260930_151436_342589048_519453_mssql.log`
+      (22:14:36Z–22:22:54Z): available=loaded=applied=1384, migration
+      1147 APPLY succeeded, 385 REVERSE lines from 1384 through 1000,
+      `Migration test finished - normal execution` at 498.021s, no
+      `[ ERROR ]` lines. Result file: MIGRATION_COMPLETED.
 
 ### Done means
 
@@ -1128,9 +1145,9 @@ full design; `mks`; markdown exists.
 
 | | |
 | --- | --- |
-| **State** | in progress |
+| **State** | complete |
 | **Date** | 2026-09-30 |
-| **Result** | Not closed. The 54.373s summary available=0 loaded=0 applied=0 is the orphan bootstrap (empty `testms.queries` dropped, APPLY never starts). The real APPLY was ~18:17Z `hydrogen_release`: available=loaded=applied=1384, 972 query rows, max `query_ref` 1384, `testms.numbers` 10000, zero ERROR lines. REVERSE was off. 18:59Z REVERSE died on migration 1365 (`DROP COLUMN mcp_access`, 5074, default `DF__scripts__mcp_acc__0D99FE17`) and rollback failed until `SQLFreeStmt(SQL_CLOSE)`. 19:50Z the console tail showed REVERSE through migration 1000 and normal execution. No log file for that run is in the tree. Those runs used the C rewriter. Spelling is now Acuranzo `database.lua` 3.6.0 / `database_mssql.lua` 1.3.0, and `rewrite.c` is removed. `mkt` has not been run, and it would not put this tree into the binary Test 39 launches. `mka` regenerates the payload when the Lua is newer and rebuilds `hydrogen_release` (and `hydrogen_coverage` if built). Test 39 has not been run on that tree. Exit gate still wants a live log path. `TestMigration` in the config is true. |
+| **Result** | Complete. Log `build/tests/logs/test_39_20260930_151436_342589048_519453_mssql.log` (22:14:36Z–22:22:54Z). Summary available=loaded=applied=1384. 384 `Migration N APPLY was successful` lines plus migration 1000 at TRACE. 385 REVERSE lines, 1384 through 1000. Migration 1147 APPLY succeeded. `Migration test finished - normal execution` at 498.021s. No `[ ERROR ]` lines. Diagnostics result file records MIGRATION_COMPLETED / 498.021s. FreeTDS still logs non-fatal "Failed to set query timeout" and "Failed to set row array size" (3 each). `mks` and `mkl` were green for the test scaffold. Earlier: The 54.373s summary available=0 loaded=0 applied=0 is the orphan bootstrap (empty `testms.queries` dropped, APPLY never starts). The real APPLY was ~18:17Z `hydrogen_release`: available=loaded=applied=1384, 972 query rows, max `query_ref` 1384, `testms.numbers` 10000, zero ERROR lines. REVERSE was off. 18:59Z REVERSE died on migration 1365 (`DROP COLUMN mcp_access`, 5074, default `DF__scripts__mcp_acc__0D99FE17`) and rollback failed until `SQLFreeStmt(SQL_CLOSE)`. 19:50Z the console tail showed REVERSE through migration 1000 and normal execution. No log file for that run is in the tree. Those runs used the C rewriter. Spelling is now Acuranzo `database.lua` 3.6.0 / `database_mssql.lua` 1.3.1, and `rewrite.c` is removed. At 21:12Z a rebuilt 1.3.0 payload applied through migration 1146, then migration 1147 statement 1 (hash `MPSC7B529F508B0D4593`) failed: FreeTDS 208, invalid object name `digits`. The `INSERT…WITH` move had dropped the newline after `-- SUBQUERY DELIMITER`, so the CTE was commented out and CREATE plus INSERT stayed one batch. 1.3.1 keeps that newline and the text before `INSERT`. The corrected statement inserted 10000 rows inside a transaction that was rolled back. The stored 1147 row is still the broken spelling until `testms.queries` or `hydrotst` is dropped and LOAD runs again. `mka` regenerates the payload when the Lua is newer and rebuilds `hydrogen_release` (and `hydrogen_coverage` if built). `TestMigration` in the config is true. The closing run is the log named at the start of this cell. |
 | **Variances** | FreeTDS (`libtdsodbc`) instead of `msodbcsql18` (lock 4). Acuranzo `COMPRESS_START` / `COMPRESS_END` are nil; the Brotli CLR assembly is not deployed. Statement spelling (RETURNING → OUTPUT, bare VALUES CTE, INSERT…WITH order, ADD COLUMN, single-column DROP COLUMN plus its default) is Lua in Acuranzo only. Gaius, glm, and helium do not carry those passes. The live SHA-256 fixture from Phase 4 was not compared on the server. `SQL_ATTR_QUERY_TIMEOUT` and `SQL_ATTR_ROW_ARRAY_SIZE` still log non-fatal FreeTDS alerts. |
 
 ### Working Log
@@ -1153,6 +1170,8 @@ full design; `mks`; markdown exists.
 - **2026-09-30** Statement-shape repairs moved to Acuranzo `replace_query` (`database.lua` 3.6.0 calling `database_mssql.lua` `rewrite_migration_sql`). Lua parity matched the old C fixtures. All 385 Acuranzo migrations generated for mssql. `luacheck` on the two files was clean.
 - **2026-09-30** Removed `src/database/mssql/rewrite.c`, `rewrite.h`, and `tests/unity/src/database/mssql/rewrite_test_mssql.c`. Prepare and execute pass the statement through. Phase 5 stays open until Test 39 runs on a rebuilt payload from an empty `testms.queries`.
 - **2026-09-30** Test 99 line cap. Row JSON moved from `query.c` to `query_result.c` (706 and 425 lines). `launch_database.c` engine checks moved to `launch_database_check.c` (462 and 589). `launch_database_test_coverage_improvement.c` split into `launch_database_check_test_edges.c` (403 and 660). Prototypes stayed in `query.h` and `launch.h`.
+- **2026-09-30** 21:12Z APPLY stopped on migration 1147 statement 1, hash `MPSC7B529F508B0D4593`: FreeTDS 208, invalid object name `digits`. available=loaded=1384, applied=1146. Reverse of 1146, 1145, and 1144 succeeded. `rewrite_insert_with` had dropped the text before `INSERT`, which is the newline after `-- SUBQUERY DELIMITER`, so `WITH digits` was commented out and CREATE plus INSERT stayed one batch. `database_mssql.lua` 1.3.1 keeps that prefix and writes the newline on the delimiter. A second pass matches the first. All 385 Acuranzo migrations generated. The repaired statement, pointed at a scratch table, inserted 10000 rows; the transaction rolled back and the scratch table was gone. `luacheck` on `database_mssql.lua` was clean (831 lines).
+- **2026-09-30** Test 39 script run, log `build/tests/logs/test_39_20260930_151436_342589048_519453_mssql.log`. 22:14:36Z–22:22:54Z. Summary available=loaded=applied=1384. Migration 1147 APPLY succeeded. 385 REVERSE lines, 1384 through 1000. `Migration test finished - normal execution` at 498.021s. No `[ ERROR ]` lines. Diagnostics result: MIGRATION_COMPLETED. Phase 5 complete. Direct `hydrogen` launches do not write this file; the test script does.
 
 ### Lessons learned
 
@@ -1168,6 +1187,8 @@ full design; `mks`; markdown exists.
 - **Orphan bootstrap:** A successful bootstrap query with `row_count` 0 drops `testms.queries` and zeros available, loaded, and applied. APPLY then never starts. Test 39 treats that drop as a pass. A green script line can exist with every counter at zero. The 54.373s log is that path.
 - **LOAD does not rewrite stored SQL.** Reverse flips query type and leaves `queries.code` as it was. Lua spelling appears only after `testms.queries` (or `hydrotst`) is dropped and LOAD runs again.
 - **Which binary Test 39 runs.** `find_hydrogen_binary` prefers `hydrogen_coverage`, then `hydrogen_release`, then `hydrogen`. `mkt` reconfigures CMake (required: sources are globbed at configure time) and builds `hydrogen` only. `mka` regenerates `payload.tar.br.enc` when `database.lua` or `database_*.lua` is newer, then builds the release and coverage binaries, which embed that tarball. The cmake `payload` target does not regenerate the tarball.
+- **Where the Test 39 log is.** `setup_test_environment` sets `LOGS_DIR` to `build/tests/logs`. The script writes `test_39_<timestamp>_mssql.log` there, and the PID/time result beside it under `build/tests/diagnostics/`. A direct launch of the binary does not create those files.
+- **Delimiter newline:** APPLY splits on the bytes `-- SUBQUERY DELIMITER` plus a newline. The text before `INSERT` has to stay when `WITH` moves in front of it. Dropping that text glues `WITH` onto the comment, the CTE is commented out, and the next statement stays in the same batch. Migration 1147 then fails on statement 1 with invalid object name `digits` (208). A text sweep that only checks "WITH before INSERT" inside the piece misses this, because the piece's leading newline was the delimiter separator.
 
 ## Phase 6 — SchemaTool / flush
 
