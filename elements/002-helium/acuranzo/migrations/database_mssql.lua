@@ -4,6 +4,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 1.2.0 - 2026-09-30 - base64_decode and base64_encode use UTF-8 bytes, same as the other engines
 -- 1.1.0 - 2026-09-30 - Added Phase 4 T-SQL helper function bodies: base64_decode, base64_encode, sha256_b64, brotli_decompress (CLR)
 -- 1.0.0 - 2026-09-29 - Initial MSSQL dialect (Phase 2 of MSSQL.md)
 
@@ -14,7 +15,7 @@
 -- JSON functions use native SQL Server 2016+ JSON_VALUE / OPENJSON.
 -- Brotli decompression via CLR (extras/brotli_udf_mssql/ C# assembly).
 -- sha256_b64 via HASHBYTES('SHA2_256') + XML base64 encoding (Phase 4).
--- base64_decode via XML VARBINARY casting (Phase 4).
+-- base64_decode via XML bytes interpreted as UTF-8 (SQL Server 2019+).
 -- ISJSON() available in SQL Server 2016+ for JSON validation.
 
 return {
@@ -181,13 +182,14 @@ return {
         END
     ]],
 
-    -- base64_decode: T-SQL function using XML casting method.
-    -- SQL Server has no native base64 decode; XML-based approach is the
-    -- standard workaround. Uses NVARCHAR(MAX) / VARBINARY(MAX) conversion.
-    -- Alphabet: standard base64 with +/ and = padding.
-    -- NOTE: SQL Server does not allow BEGIN TRY/BEGIN CATCH inside user-defined
-    -- functions (only stored procedures), so we use ISNULL to gracefully
-    -- fall back to the original string when the XML/base64 cast fails.
+    -- base64_decode: XML base64 to bytes, read as UTF-8, stored as NVARCHAR.
+    -- SQL Server has no native base64 decode. The XML value() method yields
+    -- the raw bytes. A Windows code-page database collation would read those
+    -- bytes as that code page. Inserting them into a
+    -- UTF-8 column interprets the bytes as UTF-8, matching PostgreSQL
+    -- CONVERT_FROM(..., 'UTF8') and MySQL utf8mb4. Invalid base64 returns
+    -- the original string. A user-defined function cannot CATCH a bad UTF-8
+    -- sequence; migration text is valid UTF-8.
     BASE64_DECODE_FUNCTION = [[
         CREATE OR ALTER FUNCTION ${SCHEMA}base64_decode(@s NVARCHAR(MAX))
         RETURNS NVARCHAR(MAX)
@@ -196,18 +198,20 @@ return {
             DECLARE @result NVARCHAR(MAX) = '';
             IF @s IS NULL OR LEN(@s) = 0
                 RETURN @result;
-            -- Strip CR/LF that may be embedded in the base64 payload
             DECLARE @clean NVARCHAR(MAX) = REPLACE(REPLACE(@s, CHAR(13), ''), CHAR(10), '');
-            -- Cast VARBINARY from base64 string via XML; returns NULL on invalid input
             DECLARE @bin VARBINARY(MAX) = CAST(N'<x>' + @clean + N'</x>' AS XML).value('(/x)[1]', 'VARBINARY(MAX)');
-            -- If cast failed (NULL), return original string; otherwise decode to NVARCHAR
-            SET @result = ISNULL(CAST(@bin AS NVARCHAR(MAX)), @s);
+            IF @bin IS NULL
+                RETURN @s;
+            DECLARE @utf8 TABLE (v VARCHAR(MAX) COLLATE Latin1_General_100_CI_AS_SC_UTF8);
+            INSERT INTO @utf8(v) VALUES (@bin);
+            SELECT @result = v FROM @utf8;
             RETURN @result;
         END
     ]],
 
-    -- base64_encode: T-SQL function using XML casting method.
-    -- Casts the input string to VARBINARY then to base64 via XML.
+    -- base64_encode: UTF-8 bytes of the string, then XML base64.
+    -- CAST(nvarchar AS varbinary) is UTF-16LE. The other engines encode
+    -- UTF-8. Same collation sha256_b64 uses (SQL Server 2019+).
     BASE64_ENCODE_FUNCTION = [[
         CREATE OR ALTER FUNCTION ${SCHEMA}base64_encode(@s NVARCHAR(MAX))
         RETURNS NVARCHAR(MAX)
@@ -216,8 +220,7 @@ return {
             DECLARE @result NVARCHAR(MAX) = '';
             IF @s IS NULL OR LEN(@s) = 0
                 RETURN @result;
-            -- Encode using SQL Server's native base64 via FOR XML / CAST
-            DECLARE @bin VARBINARY(MAX) = CAST(@s AS VARBINARY(MAX));
+            DECLARE @bin VARBINARY(MAX) = CAST(CAST(@s AS VARCHAR(MAX)) COLLATE Latin1_General_100_CI_AS_SC_UTF8 AS VARBINARY(MAX));
             SET @result = CAST(N'' AS XML).value('xs:base64Binary(sql:variable("@bin"))', 'NVARCHAR(MAX)');
             RETURN @result;
         END

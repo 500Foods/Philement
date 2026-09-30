@@ -14,9 +14,11 @@ typedef short (*SQLAllocHandle_t)(short, void*, void**);
 typedef short (*SQLConnect_t)(void*, char*, int, char*, int, char*, int);
 typedef short (*SQLExecDirect_t)(void*, char*, int);
 typedef short (*SQLFetch_t)(void*);
-typedef short (*SQLGetData_t)(void*, int, int, void*, int, int*);
+/* BufferLength and StrLen_or_Ind are unixODBC SQLLEN, which is long on LP64.
+ * An int is 4 bytes; the driver writes 8 and would clobber the next local. */
+typedef short (*SQLGetData_t)(void*, int, int, void*, long, long*);
 typedef short (*SQLNumResultCols_t)(void*, int*);
-typedef short (*SQLRowCount_t)(void*, int*);
+typedef short (*SQLRowCount_t)(void*, long*);
 typedef short (*SQLFreeHandle_t)(short, void*);
 typedef short (*SQLDisconnect_t)(void*);
 typedef short (*SQLEndTran_t)(short, void*, int);
@@ -30,7 +32,7 @@ typedef short (*SQLBindParameter_t)(void*, unsigned short, short, short, short, 
 typedef short (*SQLDriverConnect_t)(void*, void*, unsigned char*, short, unsigned char*, short, short*, unsigned short);
 typedef short (*SQLGetDiagRec_t)(short, void*, short, unsigned char*, long*, unsigned char*, short, short*);
 // Transaction control function
-typedef short (*SQLSetConnectAttr_t)(void*, int, void*, int);
+typedef short (*SQLSetConnectAttr_t)(void*, int, const void*, int);
 typedef short (*SQLSetEnvAttr_t)(void*, int, void*, int);
 typedef short (*SQLCancel_t)(void*);
 
@@ -71,6 +73,7 @@ extern SQLCancel_t mssql_SQLCancel_ptr;
 #define SQL_CLOSE 0
 #define SQL_NTS -3
 #define SQL_NULL_DATA -1
+#define SQL_NO_TOTAL -4
 #define SQL_C_CHAR 1
 // SQL data types for column type detection
 #define SQL_INTEGER 4

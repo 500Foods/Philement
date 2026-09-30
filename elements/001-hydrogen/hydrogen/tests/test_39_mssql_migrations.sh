@@ -8,6 +8,7 @@
 # run_migration_test()
 
 # CHANGELOG
+# 1.0.1 - 2026-09-30 - Fail when the final migration summary is available=0 loaded=0 applied=0
 # 1.0.0 - 2026-09-30 - Initial implementation for MSSQL migration testing
 
 set -euo pipefail
@@ -17,7 +18,7 @@ TEST_NAME="MSSQL Migration"
 TEST_ABBR="MSQ"
 TEST_NUMBER="39"
 TEST_COUNTER=0
-TEST_VERSION="1.0.0"
+TEST_VERSION="1.0.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -241,16 +242,30 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Verify Migration Execution"
 
     if [[ -f "${log_file}" ]]; then
-        # Check for evidence that migrations actually ran
+        # Check for evidence that migrations actually ran.
+        # The orphan-drop line is also logged when an empty leftover table is
+        # removed at startup and the later LOAD/APPLY succeeds, so that string
+        # alone is not a failure. A final summary of all zeros means bootstrap
+        # never counted the rows it had just loaded, and APPLY did not run.
         if "${GREP}" -q "Migration test finished" "${log_file}" 2>/dev/null; then
-            # Check if orphaned table cleanup occurred
-            if "${GREP}" -q "orphaned queries table was dropped" "${log_file}" 2>/dev/null; then
+            summary_line=""
+            while IFS= read -r candidate || [[ -n "${candidate}" ]]; do
+                [[ -z "${candidate}" ]] && continue
+                summary_line="${candidate}"
+            done < <("${GREP}" "Migration summary:" "${log_file}" 2>/dev/null || true)
+
+            if [[ -z "${summary_line}" ]] || [[ "${summary_line}" == *"available=0 loaded=0 applied=0"* ]]; then
+                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Migration summary stayed at available=0 loaded=0 applied=0"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: bootstrap did not return the loaded migration rows, so APPLY did not run"
+                EXIT_CODE=1
+            elif "${GREP}" -q "orphaned queries table was dropped" "${log_file}" 2>/dev/null; then
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Migration executed with orphaned table cleanup"
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Note: Empty queries table was detected and recreated"
+                PASS_COUNT=$(( PASS_COUNT + 1 ))
             else
                 print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Migration executed normally"
+                PASS_COUNT=$(( PASS_COUNT + 1 ))
             fi
-            PASS_COUNT=$(( PASS_COUNT + 1 ))
         else
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Migration test completed but no execution evidence found - possible false positive"
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "ERROR: 'Migration test finished' log entry not found"

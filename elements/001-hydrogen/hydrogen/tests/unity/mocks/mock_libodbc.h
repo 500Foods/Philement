@@ -23,9 +23,9 @@ short mssql_mock_SQLDriverConnect(void* connectionHandle, void* windowHandle, un
 short mssql_mock_SQLExecDirect(void* statementHandle, char* statementText, int textLength);
 short mssql_mock_SQLFetch(void* statementHandle);
 short mssql_mock_SQLGetData(void* statementHandle, int columnNumber, int targetType,
-                     void* targetValue, int bufferLength, int* strLenOrIndPtr);
+                     void* targetValue, long bufferLength, long* strLenOrIndPtr);
 short mssql_mock_SQLNumResultCols(void* statementHandle, int* columnCount);
-short mssql_mock_SQLRowCount(void* statementHandle, int* rowCount);
+short mssql_mock_SQLRowCount(void* statementHandle, long* rowCount);
 short mssql_mock_SQLFreeHandle(short handleType, void* handle);
 short mssql_mock_SQLDisconnect(void* connectionHandle);
 short mssql_mock_SQLEndTran(short handleType, void* handle, int completionType);
@@ -37,7 +37,7 @@ short mssql_mock_SQLDescribeCol(void* statementHandle, int columnNumber, unsigne
                          short* decimalDigits, short* nullable);
 short mssql_mock_SQLGetDiagRec(short handleType, void* handle, short recNumber, unsigned char* sqlState,
                        long* nativeError, unsigned char* messageText, short bufferLength, short* textLength);
-short mssql_mock_SQLSetConnectAttr(void* connectionHandle, int attribute, void* value, int stringLength);
+short mssql_mock_SQLSetConnectAttr(void* connectionHandle, int attribute, const void* value, int stringLength);
 short mssql_mock_SQLBindParameter(void* statementHandle, unsigned short parameterNumber, short inputOutputType,
                            short valueType, short parameterType, unsigned long columnSize, short decimalDigits,
                            void* parameterValue, long bufferLength, long* strLenOrIndPtr);

@@ -4,6 +4,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 3.5.1 - 2026-09-30 - Brotli-compress long blocks only when COMPRESS_START is set
 -- 3.5.0 - 2026-09-29 - Added MSSQL dialect (query_dialects = 5)
 -- 3.4.3 - 2026-09-22 - Firebird: rewrite NOT NULL DEFAULT <v> to DEFAULT <v> NOT NULL
 -- 3.4.2 - 2026-09-22 - Firebird: rewrite ALTER TABLE ADD/DROP COLUMN to ADD/DROP (no COLUMN keyword)
@@ -25,8 +26,8 @@ local database = {
     -- Database.lua versioning information
     info = {
       script = "database.lua",
-    version = "3.5.0",
-        release = "2026-09-29"
+    version = "3.5.1",
+        release = "2026-09-30"
      },
 
     -- Lookup #27 - Query Status
@@ -970,9 +971,11 @@ local database = {
                 -- Strip indentation
                 local stripped_content = strip_base_indent(content)
 
-                -- Check if content exceeds compression threshold
+                -- Brotli only when this engine wraps the payload in a decompressor.
+                -- MSSQL leaves COMPRESS_START nil until the CLR assembly exists.
                 local content_size = #stripped_content
-                local should_compress = content_size > COMPRESSION_THRESHOLD
+                local has_compress = cfg.COMPRESS_START and cfg.COMPRESS_END
+                local should_compress = has_compress and content_size > COMPRESSION_THRESHOLD
 
                 -- Compress if needed, then encode
                 local data_to_encode = stripped_content

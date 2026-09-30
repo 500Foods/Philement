@@ -195,41 +195,105 @@ bool mssql_fetch_row_data(void* stmt_handle, char** column_names, int column_cou
         bool is_numeric = got_type && mssql_is_numeric_type(sql_type);
         bool is_datetime = got_type && (sql_type == SQL_TYPE_DATE || sql_type == SQL_TYPE_TIME || sql_type == SQL_TYPE_TIMESTAMP);
 
-        // Get column data - use dynamic allocation for large columns (like migration SQL)
-        int data_len = 0;
-
-        // First call to get the actual data length
-        (void)mssql_SQLGetData_ptr (stmt_handle, col + 1, SQL_C_CHAR, NULL, 0, &data_len);
-
+        /* FreeTDS rejects SQLGetData(NULL, 0) and does not report a length.
+         * Read SQL_C_CHAR in chunks so nvarchar migration SQL and INSERT
+         * OUTPUT columns come back whole. 256 bytes truncates them. */
         char* col_data = NULL;
-        int fetch_result = -1;
+        bool is_null = false;
+        size_t col_cap = 4096;
+        size_t col_used = 0;
+        const size_t col_max = 32u * 1024u * 1024u;
 
-        if (data_len == SQL_NULL_DATA) {
-            // Data is NULL - handle it directly
-            fetch_result = SQL_SUCCESS;
-        } else if (data_len > 0) {
-            // Allocate buffer for actual data length + null terminator
-            col_data = calloc(1, (size_t)data_len + 1);
-            if (!col_data) {
-                return false;
-            }
-
-            // Second call to get the actual data
-            fetch_result = mssql_SQLGetData_ptr(stmt_handle, col + 1, SQL_C_CHAR, col_data, data_len + 1, &data_len);
-        } else {
-            // Fallback for empty or small data
-            col_data = calloc(1, 256);
-            if (!col_data) {
-                return false;
-            }
-            fetch_result = mssql_SQLGetData_ptr ? mssql_SQLGetData_ptr(stmt_handle, col + 1, SQL_C_CHAR, col_data, 256, &data_len) : -1;
+        if (!mssql_SQLGetData_ptr) {
+            return false;
         }
 
-        if (fetch_result == SQL_SUCCESS || fetch_result == SQL_SUCCESS_WITH_INFO) {
-            // Calculate needed space for JSON (column name + value + quotes + escaping)
-            // Use strlen(col_data) only if data_len indicates valid data (> 0)
-            // Don't trust data_len if it's negative or zero as it's an SQL indicator
-            size_t actual_data_len = (col_data && data_len > 0) ? strlen(col_data) : 0;
+        col_data = calloc(1, col_cap);
+        if (!col_data) {
+            return false;
+        }
+
+        for (;;) {
+            long ind = 0;
+            size_t space;
+            size_t room;
+            size_t visible;
+            size_t got;
+            short get_rc;
+            bool need_more;
+
+            if (col_cap - col_used < 2) {
+                size_t new_cap = col_cap * 2;
+                char* grown;
+
+                if (new_cap < col_cap || new_cap > col_max) {
+                    free(col_data);
+                    return false;
+                }
+                grown = realloc(col_data, new_cap);
+                if (!grown) {
+                    free(col_data);
+                    return false;
+                }
+                memset(grown + col_used, 0, new_cap - col_used);
+                col_data = grown;
+                col_cap = new_cap;
+            }
+
+            space = col_cap - col_used;
+            get_rc = mssql_SQLGetData_ptr(stmt_handle, col + 1, SQL_C_CHAR,
+                                          col_data + col_used, (long)space, &ind);
+            if (get_rc == SQL_NO_DATA) {
+                break;
+            }
+            if (get_rc != SQL_SUCCESS && get_rc != SQL_SUCCESS_WITH_INFO) {
+                free(col_data);
+                return false;
+            }
+            if (ind == SQL_NULL_DATA) {
+                free(col_data);
+                col_data = NULL;
+                is_null = true;
+                break;
+            }
+
+            room = space - 1;
+            visible = 0;
+            while (visible < room && col_data[col_used + visible] != '\0') {
+                visible++;
+            }
+
+            /* SUCCESS_WITH_INFO with an unknown or oversized indicator is
+             * truncation (FreeTDS SQLSTATE 01004). A later call continues
+             * at column_text_sqlgetdatapos. SUCCESS means this chunk is
+             * the end, even when the mock's indicator is larger than the
+             * bytes it copied. */
+            need_more = (get_rc == SQL_SUCCESS_WITH_INFO &&
+                         (ind < 0 || (size_t)ind >= space));
+            got = visible;
+            if (!need_more && ind >= 0 && (size_t)ind < got) {
+                got = (size_t)ind;
+            }
+            if (need_more && got == 0) {
+                free(col_data);
+                return false;
+            }
+            if (got > col_max - col_used) {
+                free(col_data);
+                return false;
+            }
+            col_used += got;
+            if (!need_more) {
+                break;
+            }
+        }
+
+        if (col_data) {
+            col_data[col_used] = '\0';
+        }
+
+        if (is_null || col_data) {
+            size_t actual_data_len = col_data ? strlen(col_data) : 0;
             size_t needed_json_space = strlen(column_names[col]) + (actual_data_len * 2) + 20;
 
             // Ensure we have enough capacity
@@ -241,7 +305,7 @@ bool mssql_fetch_row_data(void* stmt_handle, char** column_names, int column_cou
             // Build JSON for this column
             char* current_pos = *json_buffer + *json_buffer_size;
 
-            if (data_len == SQL_NULL_DATA) {
+            if (is_null) {
                 int written = snprintf(current_pos, needed_json_space, "\"%s\":null", column_names[col]);
                 // Check for truncation - snprintf returns what WOULD be written, not what WAS written
                 if (written >= (int)needed_json_space) {
@@ -298,8 +362,6 @@ bool mssql_fetch_row_data(void* stmt_handle, char** column_names, int column_cou
                 free(escaped_data);
             }
         } else {
-            // SQLGetData failed - cannot retrieve column data, fail the entire row
-            free(col_data);
             return false;
         }
 
@@ -330,11 +392,26 @@ bool mssql_process_query_results(void* stmt_handle, const char* designator, stru
 
     db_result->success = true;
 
-    // Get column count
+    /* A failed or missing column count used to leave column_count at 0.
+     * Bootstrap then treated the SELECT as an empty table and dropped it. */
     int column_count = 0;
-    if (mssql_SQLNumResultCols_ptr && mssql_SQLNumResultCols_ptr(stmt_handle, &column_count) == SQL_SUCCESS) {
-        db_result->column_count = (size_t)column_count;
+    int num_rc;
+
+    if (!mssql_SQLNumResultCols_ptr) {
+        log_this(designator, "MSSQL SQLNumResultCols unavailable", LOG_LEVEL_ERROR, 0);
+        free(db_result);
+        return false;
     }
+    num_rc = mssql_SQLNumResultCols_ptr(stmt_handle, &column_count);
+    if (num_rc != SQL_SUCCESS && num_rc != SQL_SUCCESS_WITH_INFO) {
+        log_this(designator, "MSSQL SQLNumResultCols failed: %d", LOG_LEVEL_ERROR, 1, num_rc);
+        free(db_result);
+        return false;
+    }
+    if (column_count < 0) {
+        column_count = 0;
+    }
+    db_result->column_count = (size_t)column_count;
 
     // Get column names using helper function
     char** column_names = mssql_get_column_names(stmt_handle, column_count);
@@ -343,10 +420,20 @@ bool mssql_process_query_results(void* stmt_handle, const char* designator, stru
         return false;
     }
 
-    // Get row count
-    int sql_row_count = 0;
-    if (mssql_SQLRowCount_ptr && mssql_SQLRowCount_ptr(stmt_handle, &sql_row_count) == SQL_SUCCESS) {
-        db_result->affected_rows = (size_t)sql_row_count;
+    /* SQLRowCount writes a SQLLEN. On a SELECT FreeTDS stores -1 (unknown).
+     * Keep that as affected_rows -1; a 4-byte int would spill into column_count. */
+    long sql_row_count = 0;
+    if (mssql_SQLRowCount_ptr) {
+        int row_rc = mssql_SQLRowCount_ptr(stmt_handle, &sql_row_count);
+        if (row_rc == SQL_SUCCESS || row_rc == SQL_SUCCESS_WITH_INFO) {
+            if (sql_row_count < 0) {
+                db_result->affected_rows = -1;
+            } else if (sql_row_count > 2147483647L) {
+                db_result->affected_rows = 2147483647;
+            } else {
+                db_result->affected_rows = (int)sql_row_count;
+            }
+        }
     }
 
     // Fetch all result rows - only if there are result columns
@@ -369,10 +456,28 @@ bool mssql_process_query_results(void* stmt_handle, const char* designator, stru
         strcpy(json_buffer, "[");
         json_buffer_size = 1;
 
-        while (mssql_SQLFetch_ptr) {
+        if (!mssql_SQLFetch_ptr) {
+            log_this(designator, "MSSQL SQLFetch unavailable", LOG_LEVEL_ERROR, 0);
+            free(json_buffer);
+            mssql_cleanup_column_names(column_names, column_count);
+            free(db_result);
+            return false;
+        }
+
+        for (;;) {
             int fetch_rc = mssql_SQLFetch_ptr(stmt_handle);
-            if (fetch_rc != SQL_SUCCESS && fetch_rc != SQL_SUCCESS_WITH_INFO) {
+            /* SQL_NO_DATA ends the cursor. Any other failure must not be
+             * reported as a successful empty result: bootstrap drops the
+             * FROM table when row_count is 0. */
+            if (fetch_rc == SQL_NO_DATA) {
                 break;
+            }
+            if (fetch_rc != SQL_SUCCESS && fetch_rc != SQL_SUCCESS_WITH_INFO) {
+                log_this(designator, "MSSQL SQLFetch failed: %d", LOG_LEVEL_ERROR, 1, fetch_rc);
+                free(json_buffer);
+                mssql_cleanup_column_names(column_names, column_count);
+                free(db_result);
+                return false;
             }
             bool first_row = (row_count == 0);
             if (!mssql_fetch_row_data(stmt_handle, column_names, column_count,

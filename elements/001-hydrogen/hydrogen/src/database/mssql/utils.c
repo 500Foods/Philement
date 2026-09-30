@@ -40,7 +40,9 @@ char* mssql_get_connection_string(const ConnectionConfig* config) {
                  config->password ? config->password : "");
         if (strstr(driver_bracketed, "FreeTDS") != NULL) {
             size_t used = strlen(conn_str);
-            snprintf(conn_str + used, 1024 - used, "TDS_VERSION=7.4;");
+            /* FreeTDS defaults to a single-byte client charset. NVARCHAR is
+             * returned through SQL_C_CHAR, so the client charset has to be UTF-8. */
+            snprintf(conn_str + used, 1024 - used, "TDS_VERSION=7.4;ClientCharset=UTF-8;");
         }
     }
 
