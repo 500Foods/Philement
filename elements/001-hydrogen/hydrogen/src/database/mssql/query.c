@@ -12,19 +12,13 @@
 #include "connection.h"
 #include "query.h"
 #include "query_helpers.h"
-#include "rewrite.h"
 
 // External declarations for ODBC function pointers (defined in connection.c)
 extern SQLAllocHandle_t mssql_SQLAllocHandle_ptr;
 extern SQLExecDirect_t mssql_SQLExecDirect_ptr;
 extern SQLExecute_t mssql_SQLExecute_ptr;
-extern SQLFetch_t mssql_SQLFetch_ptr;
-extern SQLGetData_t mssql_SQLGetData_ptr;
-extern SQLNumResultCols_t mssql_SQLNumResultCols_ptr;
-extern SQLRowCount_t mssql_SQLRowCount_ptr;
 extern SQLFreeHandle_t mssql_SQLFreeHandle_ptr;
 extern SQLFreeStmt_t mssql_SQLFreeStmt_ptr;
-extern SQLDescribeCol_t mssql_SQLDescribeCol_ptr;
 extern SQLGetDiagRec_t mssql_SQLGetDiagRec_ptr;
 extern SQLPrepare_t mssql_SQLPrepare_ptr;
 extern SQLBindParameter_t mssql_SQLBindParameter_ptr;
@@ -122,414 +116,6 @@ char* mssql_format_timestamp_string(char* str) {
     return str;
 }
 
-// Helper function to cleanup column names (non-static for testing)
-void mssql_cleanup_column_names(char** column_names, int column_count) {
-    if (column_names) {
-        for (int i = 0; i < column_count; i++) {
-            free(column_names[i]);
-        }
-        free(column_names);
-    }
-}
-
-// Helper function to get column names (non-static for testing)
-char** mssql_get_column_names(void* stmt_handle, int column_count) {
-    if (column_count <= 0) {
-        return NULL;
-    }
-
-    char** column_names = calloc((size_t)column_count, sizeof(char*));
-    if (!column_names) {
-        return NULL;
-    }
-
-    for (int col = 0; col < column_count; col++) {
-        if (!mssql_get_column_name(stmt_handle, col, &column_names[col])) {
-            // Cleanup on failure
-            for (int i = 0; i < col; i++) {
-                free(column_names[i]);
-            }
-            free(column_names);
-            return NULL;
-        }
-    }
-
-    return column_names;
-}
-
-// Helper function to fetch and format a single row (non-static for testing)
-bool mssql_fetch_row_data(void* stmt_handle, char** column_names, int column_count, char** json_buffer, size_t* json_buffer_size, size_t* json_buffer_capacity, bool first_row) {
-    if (!stmt_handle || !json_buffer || !json_buffer_size || !json_buffer_capacity) {
-        return false;
-    }
-
-    // Add comma between rows if not first row
-    if (!first_row) {
-        if (!mssql_ensure_json_buffer_capacity(json_buffer, *json_buffer_size, json_buffer_capacity, 2)) {
-            return false;
-        }
-        strcat(*json_buffer, ",");
-        (*json_buffer_size)++;
-    }
-
-    // Start JSON object for this row
-    if (!mssql_ensure_json_buffer_capacity(json_buffer, *json_buffer_size, json_buffer_capacity, 2)) {
-        return false;
-    }
-    strcat(*json_buffer, "{");
-    (*json_buffer_size)++;
-
-    // Fetch each column
-    for (int col = 0; col < column_count; col++) {
-        if (col > 0) {
-            if (!mssql_ensure_json_buffer_capacity(json_buffer, *json_buffer_size, json_buffer_capacity, 2)) {
-                return false;
-            }
-            strcat(*json_buffer, ",");
-            (*json_buffer_size)++;
-        }
-
-        // Get column type to determine if we should quote the value
-        int sql_type = 0;
-        bool got_type = mssql_get_column_type(stmt_handle, col, &sql_type);
-        bool is_numeric = got_type && mssql_is_numeric_type(sql_type);
-        bool is_datetime = got_type && (sql_type == SQL_TYPE_DATE || sql_type == SQL_TYPE_TIME || sql_type == SQL_TYPE_TIMESTAMP);
-
-        /* FreeTDS rejects SQLGetData(NULL, 0) and does not report a length.
-         * Read SQL_C_CHAR in chunks so nvarchar migration SQL and INSERT
-         * OUTPUT columns come back whole. 256 bytes truncates them. */
-        char* col_data = NULL;
-        bool is_null = false;
-        size_t col_cap = 4096;
-        size_t col_used = 0;
-        const size_t col_max = 32u * 1024u * 1024u;
-
-        if (!mssql_SQLGetData_ptr) {
-            return false;
-        }
-
-        col_data = calloc(1, col_cap);
-        if (!col_data) {
-            return false;
-        }
-
-        for (;;) {
-            long ind = 0;
-            size_t space;
-            size_t room;
-            size_t visible;
-            size_t got;
-            short get_rc;
-            bool need_more;
-
-            if (col_cap - col_used < 2) {
-                size_t new_cap = col_cap * 2;
-                char* grown;
-
-                if (new_cap < col_cap || new_cap > col_max) {
-                    free(col_data);
-                    return false;
-                }
-                grown = realloc(col_data, new_cap);
-                if (!grown) {
-                    free(col_data);
-                    return false;
-                }
-                memset(grown + col_used, 0, new_cap - col_used);
-                col_data = grown;
-                col_cap = new_cap;
-            }
-
-            space = col_cap - col_used;
-            get_rc = mssql_SQLGetData_ptr(stmt_handle, col + 1, SQL_C_CHAR,
-                                          col_data + col_used, (long)space, &ind);
-            if (get_rc == SQL_NO_DATA) {
-                break;
-            }
-            if (get_rc != SQL_SUCCESS && get_rc != SQL_SUCCESS_WITH_INFO) {
-                free(col_data);
-                return false;
-            }
-            if (ind == SQL_NULL_DATA) {
-                free(col_data);
-                col_data = NULL;
-                is_null = true;
-                break;
-            }
-
-            room = space - 1;
-            visible = 0;
-            while (visible < room && col_data[col_used + visible] != '\0') {
-                visible++;
-            }
-
-            /* SUCCESS_WITH_INFO with an unknown or oversized indicator is
-             * truncation (FreeTDS SQLSTATE 01004). A later call continues
-             * at column_text_sqlgetdatapos. SUCCESS means this chunk is
-             * the end, even when the mock's indicator is larger than the
-             * bytes it copied. */
-            need_more = (get_rc == SQL_SUCCESS_WITH_INFO &&
-                         (ind < 0 || (size_t)ind >= space));
-            got = visible;
-            if (!need_more && ind >= 0 && (size_t)ind < got) {
-                got = (size_t)ind;
-            }
-            if (need_more && got == 0) {
-                free(col_data);
-                return false;
-            }
-            if (got > col_max - col_used) {
-                free(col_data);
-                return false;
-            }
-            col_used += got;
-            if (!need_more) {
-                break;
-            }
-        }
-
-        if (col_data) {
-            col_data[col_used] = '\0';
-        }
-
-        if (is_null || col_data) {
-            size_t actual_data_len = col_data ? strlen(col_data) : 0;
-            size_t needed_json_space = strlen(column_names[col]) + (actual_data_len * 2) + 20;
-
-            // Ensure we have enough capacity
-            if (!mssql_ensure_json_buffer_capacity(json_buffer, *json_buffer_size, json_buffer_capacity, needed_json_space)) {
-                free(col_data);
-                return false;
-            }
-
-            // Build JSON for this column
-            char* current_pos = *json_buffer + *json_buffer_size;
-
-            if (is_null) {
-                int written = snprintf(current_pos, needed_json_space, "\"%s\":null", column_names[col]);
-                // Check for truncation - snprintf returns what WOULD be written, not what WAS written
-                if (written >= (int)needed_json_space) {
-                    written = (int)needed_json_space - 1; // Actual bytes written (excluding null terminator)
-                }
-                *json_buffer_size += (size_t)written;
-            } else if (is_numeric) {
-                // Numeric types - no quotes around value
-                int written = snprintf(current_pos, needed_json_space, "\"%s\":%s", column_names[col], col_data);
-                // Check for truncation - snprintf returns what WOULD be written, not what WAS written
-                if (written >= (int)needed_json_space) {
-                    written = (int)needed_json_space - 1; // Actual bytes written (excluding null terminator)
-                }
-                *json_buffer_size += (size_t)written;
-            } else {
-                // String types - apply MSSQL-specific formatting, trim trailing whitespace, then quote and escape the value
-                // For large strings (like migration SQL), use dynamic allocation for escaped data
-
-                // Apply datetime/timestamp formatting for MSSQL
-                if (is_datetime) {
-                    // Check column name to determine formatting (since MSSQL uses DATETIME2 for both DATETIME and TIMESTAMP columns)
-                    if (strstr(column_names[col], "datetime") != NULL) {
-                        mssql_format_datetime_string(col_data);
-                    } else if (strstr(column_names[col], "timestamp") != NULL) {
-                        mssql_format_timestamp_string(col_data);
-                    } else {
-                        // Fallback to SQL type
-                        if (sql_type == SQL_TYPE_TIMESTAMP) {
-                            mssql_format_timestamp_string(col_data);
-                        } else if (sql_type == SQL_TYPE_DATE || sql_type == SQL_TYPE_TIME) {
-                            mssql_format_datetime_string(col_data);
-                        }
-                    }
-                }
-
-                // Trim trailing whitespace (MSSQL-specific)
-                mssql_trim_trailing_whitespace(col_data);
-
-                size_t escaped_size = (col_data ? strlen(col_data) * 2 : 0) + 1;
-                char* escaped_data = calloc(1, escaped_size);
-                if (!escaped_data) {
-                    free(col_data);
-                    return false;
-                }
-
-                database_json_escape_string(col_data, escaped_data, escaped_size);
-                int written = snprintf(current_pos, needed_json_space, "\"%s\":\"%s\"", column_names[col], escaped_data);
-                // Check for truncation - snprintf returns what WOULD be written, not what WAS written
-                if (written >= (int)needed_json_space) {
-                    written = (int)needed_json_space - 1; // Actual bytes written (excluding null terminator)
-                }
-                *json_buffer_size += (size_t)written;
-
-                free(escaped_data);
-            }
-        } else {
-            return false;
-        }
-
-        free(col_data);
-    }
-
-    // End JSON object for this row
-    if (!mssql_ensure_json_buffer_capacity(json_buffer, *json_buffer_size, json_buffer_capacity, 2)) {
-        return false;
-    }
-    strcat(*json_buffer, "}");
-    (*json_buffer_size)++;
-
-    return true;
-}
-
-// Helper function to process query results (non-static for testing)
-bool mssql_process_query_results(void* stmt_handle, const char* designator, struct timespec start_time, QueryResult** result) {
-    if (!stmt_handle || !designator || !result) {
-        return false;
-    }
-
-    // Create result structure
-    QueryResult* db_result = calloc(1, sizeof(QueryResult));
-    if (!db_result) {
-        return false;
-    }
-
-    db_result->success = true;
-
-    /* A failed or missing column count used to leave column_count at 0.
-     * Bootstrap then treated the SELECT as an empty table and dropped it. */
-    int column_count = 0;
-    int num_rc;
-
-    if (!mssql_SQLNumResultCols_ptr) {
-        log_this(designator, "MSSQL SQLNumResultCols unavailable", LOG_LEVEL_ERROR, 0);
-        free(db_result);
-        return false;
-    }
-    num_rc = mssql_SQLNumResultCols_ptr(stmt_handle, &column_count);
-    if (num_rc != SQL_SUCCESS && num_rc != SQL_SUCCESS_WITH_INFO) {
-        log_this(designator, "MSSQL SQLNumResultCols failed: %d", LOG_LEVEL_ERROR, 1, num_rc);
-        free(db_result);
-        return false;
-    }
-    if (column_count < 0) {
-        column_count = 0;
-    }
-    db_result->column_count = (size_t)column_count;
-
-    // Get column names using helper function
-    char** column_names = mssql_get_column_names(stmt_handle, column_count);
-    if (column_count > 0 && !column_names) {
-        free(db_result);
-        return false;
-    }
-
-    /* SQLRowCount writes a SQLLEN. On a SELECT FreeTDS stores -1 (unknown).
-     * Keep that as affected_rows -1; a 4-byte int would spill into column_count. */
-    long sql_row_count = 0;
-    if (mssql_SQLRowCount_ptr) {
-        int row_rc = mssql_SQLRowCount_ptr(stmt_handle, &sql_row_count);
-        if (row_rc == SQL_SUCCESS || row_rc == SQL_SUCCESS_WITH_INFO) {
-            if (sql_row_count < 0) {
-                db_result->affected_rows = -1;
-            } else if (sql_row_count > 2147483647L) {
-                db_result->affected_rows = 2147483647;
-            } else {
-                db_result->affected_rows = (int)sql_row_count;
-            }
-        }
-    }
-
-    // Fetch all result rows - only if there are result columns
-    size_t row_count = 0;
-    char* json_buffer = NULL;
-    size_t json_buffer_size = 0;
-    size_t json_buffer_capacity = 1024;
-
-    // Check if this statement returns result columns (not DDL statements)
-    if (column_count > 0) {
-        json_buffer = calloc(1, json_buffer_capacity);
-        if (!json_buffer) {
-            // Cleanup column names using helper
-            mssql_cleanup_column_names(column_names, column_count);
-            free(db_result);
-            return false;
-        }
-
-        // Start JSON array
-        strcpy(json_buffer, "[");
-        json_buffer_size = 1;
-
-        if (!mssql_SQLFetch_ptr) {
-            log_this(designator, "MSSQL SQLFetch unavailable", LOG_LEVEL_ERROR, 0);
-            free(json_buffer);
-            mssql_cleanup_column_names(column_names, column_count);
-            free(db_result);
-            return false;
-        }
-
-        for (;;) {
-            int fetch_rc = mssql_SQLFetch_ptr(stmt_handle);
-            /* SQL_NO_DATA ends the cursor. Any other failure must not be
-             * reported as a successful empty result: bootstrap drops the
-             * FROM table when row_count is 0. */
-            if (fetch_rc == SQL_NO_DATA) {
-                break;
-            }
-            if (fetch_rc != SQL_SUCCESS && fetch_rc != SQL_SUCCESS_WITH_INFO) {
-                log_this(designator, "MSSQL SQLFetch failed: %d", LOG_LEVEL_ERROR, 1, fetch_rc);
-                free(json_buffer);
-                mssql_cleanup_column_names(column_names, column_count);
-                free(db_result);
-                return false;
-            }
-            bool first_row = (row_count == 0);
-            if (!mssql_fetch_row_data(stmt_handle, column_names, column_count,
-                                      &json_buffer, &json_buffer_size, &json_buffer_capacity, first_row)) {
-                free(json_buffer);
-                mssql_cleanup_column_names(column_names, column_count);
-                free(db_result);
-                return false;
-            }
-            row_count++;
-        }
-    } else {
-        // DDL statement or statement with no result columns - create empty JSON array
-        json_buffer = strdup("[]");
-        if (!json_buffer) {
-            mssql_cleanup_column_names(column_names, column_count);
-            free(db_result);
-            return false;
-        }
-        json_buffer_size = 2; // Length of "[]"
-        json_buffer_capacity = 3; // CRITICAL FIX: Update capacity to match actual allocation (2 chars + null terminator)
-    }
-
-    // End JSON array - only for queries with result columns. For DDL statements, "[]" is already complete, don't append anything
-    if (column_count > 0) {
-        if (!mssql_ensure_json_buffer_capacity(&json_buffer, json_buffer_size, &json_buffer_capacity, 2)) {
-            free(json_buffer);
-            mssql_cleanup_column_names(column_names, column_count);
-            free(db_result);
-            return false;
-        }
-        strcat(json_buffer, "]");
-    }
-
-    db_result->row_count = row_count;
-    db_result->data_json = json_buffer;
-
-    // End timing after all result processing is complete
-    struct timespec end_time;
-    clock_gettime(CLOCK_MONOTONIC, &end_time);
-    db_result->execution_time_ms = (end_time.tv_sec - start_time.tv_sec) * 1000000 +
-                                   (end_time.tv_nsec - start_time.tv_nsec) / 1000;
-
-    log_this(designator, "MSSQL query results: %zu columns, %zu rows, %d affected", LOG_LEVEL_TRACE, 3,
-        db_result->column_count, db_result->row_count, db_result->affected_rows);
-
-    // Clean up column names using helper
-    mssql_cleanup_column_names(column_names, column_count);
-
-    *result = db_result;
-    return true;
-}
 
 // Bind one TypedParameter via SQLBindParameter (1-based index).
 // INTEGER/BOOLEAN/FLOAT use native C types; STRING/TEXT as CHAR/LONGVARCHAR;
@@ -783,16 +369,10 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
         return false;
     }
 
-    /* RETURNING, a bare VALUES CTE body, then INSERT...WITH order.
-     * NULL means the statement needs no rewrite. */
-    char* rewritten = mssql_rewrite_migration_sql(request->sql_template);
-    const char* effective_sql = rewritten ? rewritten : request->sql_template;
-
     /* Serialize ODBC use of this connection handle (CLI is not free-threaded). */
     MutexResult conn_lock = MUTEX_LOCK(&connection->connection_lock, designator);
     if (conn_lock != MUTEX_SUCCESS) {
         log_this(designator, "MSSQL execute_query: Failed to lock connection", LOG_LEVEL_ERROR, 0);
-        free(rewritten);
         return false;
     }
 
@@ -801,7 +381,6 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
     if (mssql_SQLAllocHandle_ptr(SQL_HANDLE_STMT, mssql_conn->connection, &stmt_handle) != SQL_SUCCESS) {
         log_this(designator, "MSSQL execute_query: Failed to allocate statement handle", LOG_LEVEL_ERROR, 0);
         mutex_unlock(&connection->connection_lock);
-        free(rewritten);
         return false;
     }
 
@@ -832,7 +411,7 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
         if (param_list && param_list->count > 0) {
             /* Convert named parameters to positional */
             positional_sql = convert_named_to_positional(
-                effective_sql, param_list, DB_ENGINE_MSSQL,
+                request->sql_template, param_list, DB_ENGINE_MSSQL,
                 &ordered_params, &param_count, designator
             );
 
@@ -842,7 +421,6 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                 mssql_active_stmt_clear(connection, stmt_handle);
                 mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
                 mutex_unlock(&connection->connection_lock);
-                free(rewritten);
                 return false;
             }
 
@@ -862,7 +440,6 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                     mssql_active_stmt_clear(connection, stmt_handle);
                     mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
                     mutex_unlock(&connection->connection_lock);
-                    free(rewritten);
                     return false;
                 }
 
@@ -879,7 +456,6 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                     mssql_active_stmt_clear(connection, stmt_handle);
                     mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
                     mutex_unlock(&connection->connection_lock);
-                    free(rewritten);
                     return false;
                 }
 
@@ -896,7 +472,6 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                         mssql_active_stmt_clear(connection, stmt_handle);
                         mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
                         mutex_unlock(&connection->connection_lock);
-                        free(rewritten);
                         return false;
                     }
                 }
@@ -931,14 +506,13 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                 mssql_active_stmt_clear(connection, stmt_handle);
                 mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
                 mutex_unlock(&connection->connection_lock);
-                free(rewritten);
                 return false;
             }
-            exec_result = mssql_SQLExecDirect_ptr(stmt_handle, (char*)effective_sql, SQL_NTS);
+            exec_result = mssql_SQLExecDirect_ptr(stmt_handle, (char*)request->sql_template, SQL_NTS);
         }
     } else {
         // No parameters, use direct execution
-        exec_result = mssql_SQLExecDirect_ptr(stmt_handle, (char*)effective_sql, SQL_NTS);
+        exec_result = mssql_SQLExecDirect_ptr(stmt_handle, (char*)request->sql_template, SQL_NTS);
     }
 
     if (exec_result != SQL_SUCCESS && exec_result != SQL_SUCCESS_WITH_INFO && exec_result != SQL_NO_DATA) {
@@ -964,7 +538,7 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
             error_message = strdup((char*)error_msg);
             log_this(designator, "MSSQL query execution failed - MESSAGE: %s", LOG_LEVEL_TRACE, 1, (char*)error_msg);
             log_this(designator, "MSSQL query execution failed - SQLSTATE: %s, Native Error: %ld", LOG_LEVEL_TRACE, 2, (char*)sql_state, (long int)native_error);
-            log_this(designator, "MSSQL query execution failed - STATEMENT:\n%s", LOG_LEVEL_TRACE, 1, effective_sql);
+            log_this(designator, "MSSQL query execution failed - STATEMENT:\n%s", LOG_LEVEL_TRACE, 1, request->sql_template);
 
         } else {
             error_message = strdup("MSSQL query execution failed (could not get error details)");
@@ -1009,7 +583,6 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
         mssql_active_stmt_clear(connection, stmt_handle);
         mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
         mutex_unlock(&connection->connection_lock);
-        free(rewritten);
         return false;
     }
 
@@ -1027,7 +600,6 @@ bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
     mssql_active_stmt_clear(connection, stmt_handle);
     mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
     mutex_unlock(&connection->connection_lock);
-    free(rewritten);
 
     if (process_result) {
         log_this(designator, "MSSQL execute_query: Query completed successfully", LOG_LEVEL_DEBUG, 0);
@@ -1112,6 +684,12 @@ bool mssql_execute_prepared(DatabaseHandle* connection, const PreparedStatement*
             log_this(designator, "MSSQL prepared statement execution failed - result: %d (could not get error details)", LOG_LEVEL_ERROR, 1, exec_result);
         }
 
+        /* A failed SQLExecute leaves the statement active. FreeTDS then
+         * rejects SQLEndTran until the cursor is closed, so a reverse
+         * migration cannot roll back. SQL_CLOSE keeps the prepared plan. */
+        if (mssql_SQLFreeStmt_ptr) {
+            mssql_SQLFreeStmt_ptr(stmt_handle, SQL_CLOSE);
+        }
         mssql_complete_standalone_statement(connection, false);
         return false;
     }

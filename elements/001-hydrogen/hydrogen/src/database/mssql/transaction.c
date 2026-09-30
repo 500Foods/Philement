@@ -117,8 +117,21 @@ bool mssql_rollback_transaction(DatabaseHandle* connection, Transaction* transac
     if (mssql_SQLEndTran_ptr) {
         int result = mssql_SQLEndTran_ptr(SQL_HANDLE_DBC, mssql_conn->connection, SQL_ROLLBACK);
 
-        if (result != SQL_SUCCESS) {
-            log_this(log_subsystem, "MSSQL SQLEndTran rollback failed", LOG_LEVEL_ERROR, 0);
+        if (result != SQL_SUCCESS && result != SQL_SUCCESS_WITH_INFO) {
+            unsigned char sql_state[6] = {0};
+            long int native_error = 0;
+            unsigned char error_msg[512] = {0};
+            short msg_len = 0;
+            int diag_result = mssql_SQLGetDiagRec_ptr
+                ? mssql_SQLGetDiagRec_ptr(SQL_HANDLE_DBC, mssql_conn->connection, 1,
+                    sql_state, &native_error, error_msg, (short)sizeof error_msg, &msg_len)
+                : -1;
+            if (diag_result == SQL_SUCCESS || diag_result == SQL_SUCCESS_WITH_INFO) {
+                log_this(log_subsystem, "MSSQL SQLEndTran rollback failed - SQLSTATE: %s, Native Error: %ld, MESSAGE: %s",
+                         LOG_LEVEL_ERROR, 3, (char*)sql_state, native_error, (char*)error_msg);
+            } else {
+                log_this(log_subsystem, "MSSQL SQLEndTran rollback failed", LOG_LEVEL_ERROR, 0);
+            }
             return false;
         }
     }

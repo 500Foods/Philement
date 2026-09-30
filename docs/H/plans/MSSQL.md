@@ -20,22 +20,24 @@ proves local RAM/image cannot run.
 | 2 Helium dialect | complete | **Moderate** |
 | 3 C register / connect (unixODBC) | complete | **Moderate** |
 | 4 T-SQL helpers + Brotli CLR | complete | **Difficult** |
-| 5 Test 39 full Acuranzo | complete | **Difficult** |
-| 6 SchemaTool / flush | complete | **Moderate** |
-| 7 Grow matrix 7 → 8 | complete | **Difficult** |
-| 8 Docs | complete | **Quick** |
-| 9 Coverage / completeness | complete | **Moderate** |
+| 5 Test 39 full Acuranzo | in progress | **Difficult** |
+| 6 SchemaTool / flush | not started | **Moderate** |
+| 7 Grow matrix 7 → 8 | not started | **Difficult** |
+| 8 Docs | not started | **Quick** |
+| 9 Coverage / completeness | not started | **Moderate** |
 
-Remaining: 3 Difficult (4, 5, 7), 4 Moderate (1, 6, 9, 2), 2 Quick
-(8, 0).
+Remaining: Phase 5 (Difficult, in progress), Phase 6 (Moderate),
+Phase 7 (Difficult), Phase 9 (Moderate), Phase 8 (Quick). Phases 0–4
+are complete. Phases 6–9 are not started: work items unchecked, Status
+tables say not started. The Test 39 file-creation notes that had been
+copied into those working logs now live under Phase 5.
 
 **Parity:** MSSQL is a Hydrogen `DatabaseEngineInterface`, not a new
 API. Match PostgreSQL / SQLite / MySQL / DB2: same `QueryRequest` /
 `QueryResult`, same `parse_typed_parameters` →
 `convert_named_to_positional` → bind, same `data_json` array of row
-objects. Do not change those engines. Do not interpret SQL in C
-(one documented exception: trailing `RETURNING` → `OUTPUT INSERTED`,
-lock 21).
+objects. Do not change those engines. Do not interpret SQL in C.
+Statement spelling is repaired in `database.lua` before it is stored.
 
 **Sister plan:** [`FIREBIRD.md`](/docs/H/plans/FIREBIRD.md) (key 6,
 Test 37, Cockroach retirement, Firebase teardown). Shared enum lock is
@@ -118,12 +120,139 @@ Each phase is worked in its **own conversation**:
     to [`FIREBIRD.md`](/docs/H/plans/FIREBIRD.md).
 13. Mirror the other engines. Do not change PG / SQLite / MySQL / DB2
     to accommodate MSSQL.
-14. Do not interpret SQL in C except the documented `RETURNING` →
-    `OUTPUT INSERTED` rewrite (lock 21).
+14. Do not interpret SQL in C. MSSQL statement spelling lives in
+    `database.lua` / `database_mssql.lua`. See the follow-up below.
+    C keeps driver work, including `SQLFreeStmt(SQL_CLOSE)` before
+    `SQLEndTran` after a failed execute.
+
+## Follow-up: statement rewrites in database.lua
+
+Lua landed 2026-09-30, and the C rewriter was removed the same day.
+`acuranzo/migrations/database.lua` 3.6.0 calls
+`cfg.rewrite_migration_sql` immediately after the Firebird block.
+The passes live in `acuranzo/migrations/database_mssql.lua` 1.3.0.
+`src/database/mssql/rewrite.c`, `rewrite.h`, and
+`tests/unity/src/database/mssql/rewrite_test_mssql.c` are gone.
+Prepare and execute send the statement text they are given.
+`SQLFreeStmt(SQL_CLOSE)` before `SQLEndTran` stays in `query.c`.
+A Lua parity run matched the old C fixtures, including a nested
+`[=[ [==[ ]==] ]=]` template, and all 385 Acuranzo migrations
+generated for `mssql` with no mask token and no top-level
+`ADD COLUMN`, `RETURNING`, bare `VALUES` CTE, or `DROP COLUMN`.
+`luacheck` on those two files was clean. `mkt` reconfigures CMake
+and builds `hydrogen`. It does not regenerate
+`payloads/payload.tar.br.enc`, and it does not rebuild
+`hydrogen_release`. Test 39 launches `hydrogen_coverage` when that
+file exists, otherwise `hydrogen_release`. `mka` regenerates the
+payload when the Acuranzo Lua is newer than the tarball, then
+rebuilds those binaries and embeds the tarball. An existing
+`queries` row still has the shared spelling, so the next Test 39
+needs that table dropped first. Phase 5 Status records the C-rewriter cycle and stays in
+progress until this reload is green. That cycle's reverse finished
+2026-09-30 19:50Z: migrations 1003 through 1000 reversed, then
+`Migration test finished - normal execution`.
+
+Two reasons to move the text repairs out of C:
+
+- The stored statement should be the statement SQL Server runs, same
+  as Firebird's `replace_query` passes.
+- The C engines stay in one shape. Rule 13. DB2 is the ODBC sibling
+  and its directory is connection, query, prepared, transaction,
+  interface, types, utils. MSSQL no longer adds `rewrite.c` /
+  `rewrite.h` on top of that list. `query_result.c` holds row
+  JSON so `query.c` stays under 1000 lines. Firebird's migration-shape
+  fixes (`VALUES`, `ADD`/`DROP COLUMN`, `NOT NULL` order) live in
+  `database.lua`. Its C rewriter (`firebird_rewrite_engine_sql`,
+  `firebird_rewrite_dateadd_params` in `query_bind.c`) is a later,
+  separate set for already-loaded QueryRefs (`LIMIT`, `DATEADD`,
+  `LENGTH`, `FLOAT`). MSSQL should not grow a second permanent SQL
+  interpreter of that kind. After this follow-up, a migration writer
+  looks in `database.lua` / `database_mssql.lua` for spelling, and in
+  C only for the same driver work the other engines have.
+
+Firebird repairs shared statement shapes in
+`acuranzo/migrations/database.lua` `replace_query`, before the
+`[=[...]=]` block is sealed into `queries.code`. MSSQL does the
+same there. Prepare and execute do not rewrite the text again.
+Until LOAD runs against an empty `queries` table, a stored statement
+can still be the shared spelling, and SQL Server will reject it.
+
+### What moves
+
+Five passes, in the order the removed C function
+`mssql_rewrite_migration_sql` used, applied per statement. A
+whole-template "if this migration contains
+`RETURNING`, skip the CTE passes" would skip a `VALUES` body that
+lives in a different statement of the same file.
+
+| Pass | Shared spelling | Stored MSSQL spelling |
+| --- | --- | --- |
+| 1 | trailing `RETURNING col` | `OUTPUT INSERTED.col` |
+| 2 | `WITH name(cols) AS (VALUES …)` | `AS (SELECT * FROM (VALUES …) AS v(cols))`, repeat for nested bodies |
+| 3 | `INSERT INTO … WITH cte … SELECT` | `WITH cte … INSERT INTO … SELECT` |
+| 4 | `ALTER TABLE … ADD COLUMN col` | `ADD col` |
+| 5 | `ALTER TABLE name DROP COLUMN col` | one `EXEC sp_executesql` batch: drop the default constraint when one exists, then drop the column |
+
+Pass 1 and pass 3 are exclusive inside a single statement, because the
+`RETURNING` rewriter already places `OUTPUT` on an
+`INSERT … WITH … SELECT`. Passes 4 and 5 still run after either.
+A comma-separated `DROP COLUMN a, b` stays unchanged. Quoted text and
+line comments stay unchanged. Each pass leaves a statement alone when
+its shape is absent, so a second Lua pass is a no-op.
+
+These stay where they are. They are not statement-shape repairs:
+
+- Type macros, T-SQL helpers, and `COMPRESS_START` / `COMPRESS_END`
+  in `database_mssql.lua`.
+- Per-migration `if engine == 'mssql'` arms (1000, 1135, 1151, 1168,
+  1190).
+- ODBC behavior in C: binding, transactions, and
+  `SQLFreeStmt(SQL_CLOSE)` before `SQLEndTran` after a failed execute.
+
+### Where it goes
+
+`acuranzo/migrations/database.lua` is already 1265 lines. The Firebird
+bodies are most of that. Do not paste the MSSQL bodies into it.
+
+- Call site: `replace_query`, directly after the
+  `if engine == "firebird"` block. Four lines. This is the place a
+  reader already looks for Firebird.
+- Bodies: `acuranzo/migrations/database_mssql.lua` (about 820 lines
+  after the passes landed). That file is the MSSQL dialect file and
+  stays under the 1000-line cap. Do not move the scanners into
+  `database.lua`.
+
+Gaius, glm, and helium do not carry the Firebird passes either. This
+cutover is Acuranzo only, which is what Test 39 loads.
+
+### Cutover
+
+LOAD skips any migration ref at or below the highest loaded or applied
+ref. A finished reverse flips rows back to forward; it does not
+rewrite `queries.code` and it does not make LOAD generate them again.
+Lua changes show up only when those rows are absent and LOAD runs.
+
+1. Land the Lua passes. Done.
+2. Prove text parity against the fixtures that were in
+   `tests/unity/src/database/mssql/rewrite_test_mssql.c`, and
+   `luacheck` (Test 98) on the dialect file. Done. That Unity file
+   was removed with the C rewriter. The payload tarball and
+   `hydrogen_release` have not been rebuilt. `mkt` does not do
+   that rebuild; `mka` does, after CMake is reconfigured so the
+   deleted `rewrite.c` leaves the source glob.
+3. Drop `testms.queries` (or the `hydrotst` database) and run Test 39
+   forward, then reverse. Inspect one stored row for each pass
+   (a `RETURNING` insert, migration 1147's `VALUES` CTE, an
+   `ADD COLUMN`, migration 1365's `DROP COLUMN`) and confirm the
+   stored text is already the T-SQL spelling. Not run yet.
+4. Remove the five C passes. Done 2026-09-30, before the reload,
+   because the next Test 39 will start from an empty `queries` table.
+   `rewrite.c`, `rewrite.h`, and `rewrite_test_mssql.c` are deleted.
+   Rule 14 is back to "C does not interpret SQL text."
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-09-30):** All phases 0–5 complete. Phase 5 (Test 39 full Acuranzo migrations) ran end-to-end with FreeTDS ODBC driver and passed. Migration completed in 54s, LOAD successful for all migrations (1000–1384), bootstrap query returned data, orphaned queries table dropped + recreated. Remaining: Phase 6 (SchemaTool/flush), Phase 7 (8-engine matrix), Phase 8 (docs), Phase 9 (coverage/fences).
+**CURRENT PAUSE POINT (as of 2026-09-30):** Phases 0–4 complete. Phase 5 is in progress. A C-rewriter binary applied all 1384 Acuranzo migrations and, after `SQLFreeStmt` before rollback, reversed through migration 1000. The spelling now lives in Acuranzo Lua and `rewrite.c` is gone. That tree has not been through Test 39. Phase 6 waits on a green reload from an empty `testms.queries`. Phases 6–9 are not started.
 
 ### Resume here next session
 
@@ -152,7 +281,7 @@ Each phase is worked in its **own conversation**:
 | --- | --- |
 | **Band** | P2 — new engine, after Auth Finale; parallel with Firebird, not a substitute |
 | **Effort** | XL (unixODBC engine + Helium dialect + T-SQL/CLR extras + Test 39 + 8-engine matrix) |
-| **Done** | 85% — Phases 0, 1, 2, 3, 4, 5 complete; Phases 6, 7, 8, 9 remaining |
+| **Done** | Phases 0–4 complete. Phase 5 in progress. Phases 6–9 not started |
 | **Why this shape** | Key 5 has been a lookup row without a C engine. Fedora has no mssql-server RPM; the official Linux container is the local free path. |
 | **Do not start casually** | Touches enum (reserved slot), registry, DQM, Helium four designs, Test 31/39, every 7-engine loop (becomes 8), SchemaTool. |
 
@@ -373,7 +502,7 @@ Other `SIZE_*` stay numeric strings.
 | --- | --- |
 | `${INSERT_KEY_START}` | `--` plus trailing space |
 | `${INSERT_KEY_END}` | empty |
-| `${INSERT_KEY_RETURN}` | `RETURNING` plus trailing space (C rewrites to `OUTPUT INSERTED.`, lock 21) |
+| `${INSERT_KEY_RETURN}` | `RETURNING` plus trailing space (Acuranzo Lua rewrites to `OUTPUT INSERTED.` before storage) |
 | `${SESSION_SECS}` | `DATEDIFF(SECOND, :SESSION_START, SYSUTCDATETIME())` |
 | `${TRMS}` / `${TRME}` | `DATEADD(MINUTE, -(` … `), ${NOW})` |
 | `${TRFS}` / `${TRFE}` / `${TRFMS}` / `${TRFME}` | `DATEADD` seconds/minutes |
@@ -491,11 +620,12 @@ These are **proposed** until Phase 0 Status is complete.
 20. **`${SIZE_COLLECTION}` is `LEN(collection)`**, not a numeric
     `SIZE_*` constant.
 21. **`RETURNING col` rewrite:** Helium keeps trailing
-    `${INSERT_KEY_RETURN}` like PostgreSQL. The MSSQL C engine
-    rewrites `INSERT … SELECT … RETURNING col` into
-    `INSERT … OUTPUT INSERTED.col SELECT …` (OUTPUT after the column
-    list). Bounded rewriter; fail closed on shapes it cannot parse.
-    Do not change Helium templates globally.
+    `${INSERT_KEY_RETURN}` like PostgreSQL. Acuranzo
+    `database_mssql.lua` rewrites `INSERT … SELECT … RETURNING col`
+    into `INSERT … OUTPUT INSERTED.col SELECT …` (OUTPUT after the
+    column list) before the statement is stored. Fail closed on
+    shapes it cannot parse. Do not do that rewrite in C. Do not
+    change Helium templates globally.
 22. **Brotli:** CLR extras first; Hydrogen COMPRESS-only pre-eval only
     if CLR fails (Status variance).
 23. **Developer edition is not production.** Docs say so. No paid
@@ -507,12 +637,11 @@ These are **proposed** until Phase 0 Status is complete.
 Helium acuranzo_NNNN.lua
         |  database_mssql.lua macros
         v
-   SQL (T-SQL + helpers; trailing RETURNING)
+   SQL (T-SQL + helpers; RETURNING already OUTPUT)
         |
         v
 Hydrogen DQM  -->  mssql_execute_query
                       |
-                      +-- optional RETURNING → OUTPUT rewrite
                       +-- unixODBC + msodbcsql18
                       +-- extras T-SQL / CLR inside SQL Server
                       v
@@ -521,8 +650,8 @@ Hydrogen DQM  -->  mssql_execute_query
 
 | Layer | Knows | Must not know |
 | --- | --- | --- |
-| **C `mssql/`** | ODBC, binds, OUTPUT rewrite, row → JSON | Lithium, Windows SSPI |
-| **Helium `database_mssql.lua`** | macro spellings | unixODBC |
+| **C `mssql/`** | ODBC, binds, row → JSON | Lithium, Windows SSPI, SQL text |
+| **Helium `database_mssql.lua`** | macro spellings, statement-shape repairs | unixODBC |
 | **extras/mssql_server** | Podman, EULA, ports | Hydrogen internals |
 | **extras/brotli_udf_mssql** | CLR / libbrotli | DQM |
 | **Test 39** | container lifecycle, full Acuranzo | Azure portal |
@@ -546,9 +675,10 @@ Phase 9 re-checks the whole table.
 ### C tree (`src/database/mssql/`)
 
 `types.h`, `interface.{c,h}`, `connection.{c,h}`, `utils.{c,h}`,
-`query.{c,h}`, `transaction.{c,h}`, `prepared.{c,h}`, optional
-`rewrite.{c,h}` for RETURNING. No Firestore `sql_*.c`. No file > 1000
-lines. No `static` functions.
+`query.{c,h}`, `query_result.c`, `query_helpers.{c,h}`,
+`transaction.{c,h}`, `prepared.{c,h}`. No `rewrite.{c,h}`.
+No Firestore `sql_*.c`. No file > 1000 lines. No `static`
+functions.
 
 ### Helium
 
@@ -601,7 +731,7 @@ no new `static` / no dead symbols). Mock ODBC in Unity.
 | 2 | Complete `database_mssql.lua` in four designs; Test 31 generates mssql SQL | M | complete |
 | 3 | C engine registers, `mssql://`, connect + health vs container or ODBC mock | M | complete |
 | 4 | T-SQL helpers + Brotli CLR (or COMPRESS pre-eval variance); SHA-256 fixture matches SQLite | L | complete |
-| 5 | Test 39 mssql AutoMigrations **full Acuranzo** green | L | pending |
+| 5 | Test 39 mssql AutoMigrations **full Acuranzo** green | L | in progress |
 | 6 | SchemaTool / SchemaHelper / hydrogen_flush / transaction_utils | M | pending |
 | 7 | Tests 40/43/45/46/47/58 include mssql; 8-engine loops | L | pending |
 | 8 | Docs/SITEMAP/MACRO_REFERENCE/DATABASES/SECRETS match; `mkl` green | S | pending |
@@ -955,8 +1085,9 @@ Phase 4 Status complete. Payload includes `database_mssql.lua` (`mkt`).
 ### Work items
 
 - [x] 5.1 `hydrogen_test_39_mssql.json` created (`Engine: mssql`, schema
-      `testms`, port 5390, `AutoMigration: true`, `TestMigration: false`).
-      Credentials via `${env.MSSQL_DB_HOST/PORT/NAME/USER}` + `${env.MSSQL_SA_PASSWORD}`.
+      `testms`, port 5390, `AutoMigration: true`). `TestMigration` is
+      now `true`, so REVERSE runs with APPLY. Credentials via
+      `${env.MSSQL_DB_HOST/PORT/NAME/USER}` + `${env.MSSQL_SA_PASSWORD}`.
 - [x] 5.2 `tests/test_39_mssql_migrations.sh` created. Follows Test 37 pattern
       (full `run_migration_test` lifecycle, failure detection). **Does not
       manage container lifecycle** — assumes SQL Server 2022 container is
@@ -965,11 +1096,23 @@ Phase 4 Status complete. Payload includes `database_mssql.lua` (`mkt`).
       via `extras/mssql_server/start.sh` + `create_test_db.sh` + `stop.sh`.
 - [x] 5.3 Docs `docs/H/tests/test_39_mssql_migrations.md` created + registered
       in TESTING.md and SITEMAP.md.
-- [x] 5.4 Run until LOAD/APPLY/REVERSE match Test 32 expectations.
-      Migration completed in 54.373s with FreeTDS ODBC driver. LOAD phase
-      successful for all migrations (1000–1384). APPLY phase applied all
-      migrations. Bootstrap re-query returned data. Orphaned queries table
-      dropped + recreated. No skips or failures.
+- [ ] 5.4 Run until LOAD/APPLY/REVERSE match Test 32 expectations on
+      the current tree: payload rebuilt with the Lua spelling, binary
+      without `rewrite.c`, `testms.queries` empty at start.
+      Against the C rewriter, before that move: ~18:17Z
+      `hydrogen_release` APPLY finished available=loaded=applied=1384,
+      `testms.queries` 972 rows (max `query_ref` 1384),
+      `testms.numbers` 10000 rows, zero ERROR lines. REVERSE was off
+      for that run. At 18:59Z REVERSE stopped on migration 1365
+      statement 3 (`DROP COLUMN mcp_access`, hash
+      `MPSCC982F8F2186796F4`, FreeTDS 5074, default
+      `DF__scripts__mcp_acc__0D99FE17`) and `SQLEndTran` failed until
+      the statement was closed. At 19:50Z the console tail showed
+      REVERSE through migration 1000 and `Migration test finished -
+      normal execution`. No log file for that run is in the tree, and
+      its summary counts were not captured. The 54.373s line
+      available=0 loaded=0 applied=0 is the orphan-bootstrap path,
+      not this apply.
 
 ### Done means
 
@@ -985,13 +1128,14 @@ full design; `mks`; markdown exists.
 
 | | |
 | --- | --- |
-| **State** | complete |
+| **State** | in progress |
 | **Date** | 2026-09-30 |
-| **Result** | Phase 5 complete. Test 39 full Acuranzo migrations ran end-to-end against the SQL Server 2022 Linux container (Podman, port 1433) using **FreeTDS** as the ODBC driver (`MSSQL_ODBC_DRIVER="FreeTDS"`). Migration flow: LOAD phase imported all Acuranzo migrations (1000–1384) successfully; APPLY phase executed all migrations against `testms` schema in 54.373s; bootstrap re-query returned data (queries table populated). Key fixes applied: `SQL_ATTR_ODBC_VERSION` corrected from `20` to `200`; `SQLSetEnvAttr` passes version as `(void*)(long)SQL_OV_ODBC3`; `SQLSetConnectAttr` fixed to pass `&value` with `SQL_IS_UINTEGER`; ODBC typedefs use `short` for `SQLSMALLINT`/`SQLRETURN`; `SQL_NO_DATA` treated as success in `mssql_execute_query`; `execute_mssql_migration()` added with `use_prepared_statement = false`; CTE ordering rewritten (lock 22); `base64_decode`/`sha256_b64` T-SQL functions fixed; `:base64Binary`/`:variable` parameter parsing skipped; Brotli compression disabled (`COMPRESS_START`/`COMPRESS_END = nil`). Test log: "Migration completed in 54.373s, Migration summary: available=0 loaded=0 applied=0". |
-| **Variances** | Lock 4 amendment: FreeTDS used instead of Microsoft `msodbcsql18` — Microsoft publishes no Fedora RPM and `msodbcsql18` cannot install without root; FreeTDS 1.5.1 `libtdsodbc.so` registered as `[FreeTDS]` in `/etc/odbcinst.ini`. Brotli decompression (extras CLR assembly) not deployed in Phase 5; compression disabled per plan section 3 (item 2/3). `SQL_ATTR_QUERY_TIMEOUT`/`SQL_ATTR_ROW_ARRAY_SIZE` produce non-fatal ALERT warnings in FreeTDS. |
+| **Result** | Not closed. The 54.373s summary available=0 loaded=0 applied=0 is the orphan bootstrap (empty `testms.queries` dropped, APPLY never starts). The real APPLY was ~18:17Z `hydrogen_release`: available=loaded=applied=1384, 972 query rows, max `query_ref` 1384, `testms.numbers` 10000, zero ERROR lines. REVERSE was off. 18:59Z REVERSE died on migration 1365 (`DROP COLUMN mcp_access`, 5074, default `DF__scripts__mcp_acc__0D99FE17`) and rollback failed until `SQLFreeStmt(SQL_CLOSE)`. 19:50Z the console tail showed REVERSE through migration 1000 and normal execution. No log file for that run is in the tree. Those runs used the C rewriter. Spelling is now Acuranzo `database.lua` 3.6.0 / `database_mssql.lua` 1.3.0, and `rewrite.c` is removed. `mkt` has not been run, and it would not put this tree into the binary Test 39 launches. `mka` regenerates the payload when the Lua is newer and rebuilds `hydrogen_release` (and `hydrogen_coverage` if built). Test 39 has not been run on that tree. Exit gate still wants a live log path. `TestMigration` in the config is true. |
+| **Variances** | FreeTDS (`libtdsodbc`) instead of `msodbcsql18` (lock 4). Acuranzo `COMPRESS_START` / `COMPRESS_END` are nil; the Brotli CLR assembly is not deployed. Statement spelling (RETURNING → OUTPUT, bare VALUES CTE, INSERT…WITH order, ADD COLUMN, single-column DROP COLUMN plus its default) is Lua in Acuranzo only. Gaius, glm, and helium do not carry those passes. The live SHA-256 fixture from Phase 4 was not compared on the server. `SQL_ATTR_QUERY_TIMEOUT` and `SQL_ATTR_ROW_ARRAY_SIZE` still log non-fatal FreeTDS alerts. |
 
 ### Working Log
 
+- **2026-09-30** Created `tests/configs/hydrogen_test_39_mssql.json` (engine `mssql`, port 5390, schema `testms`, `AutoMigration: true`; `TestMigration` was false at creation and is true now), `tests/test_39_mssql_migrations.sh` (TEST_ABBR `MSQ`, does not manage the container), and `docs/H/tests/test_39_mssql_migrations.md` (registered in TESTING.md and SITEMAP.md). `mks` and `mkl` were green for that scaffold. The same notes had been copied under Phases 6–9; those copies are removed.
 - **2026-09-30** Phase 5 implementation run. Fixed `SQL_ATTR_ODBC_VERSION` from `20` to `200` in `src/database/mssql/types.h` (lock 4). Fixed `SQLSetEnvAttr` in `connection.c` to pass version as `(void*)(long)SQL_OV_ODBC3` (value-as-pointer required by FreeTDS ABI). Fixed `SQLSetConnectAttr` to pass `&value` with `SQL_IS_UINTEGER` for `SQL_ATTR_QUERY_TIMEOUT` and `SQL_ATTR_ROW_ARRAY_SIZE` (was `(void*)30`). Fixed ODBC typedefs to use `short` for `SQLSMALLINT`/`SQLRETURN` params and `void*` for `SQLPOINTER`.
 - **2026-09-30** Added `DB_ENGINE_MSSQL` case in `execute_transaction()` (`src/database/mssql/transaction.c`) with `execute_mssql_migration()` — begin → execute all statements → commit/rollback. Set `use_prepared_statement = false` for MSSQL (SQL Server `SQLPrepare` fails on complex INSERT...WITH...SELECT; FreeTDS error 8180).
 - **2026-09-30** Fixed `SQL_NO_DATA` (100) handling in `mssql_execute_query` (`query.c`) — added `exec_result != SQL_NO_DATA` as success condition for both `SQLExecDirect` and `SQLExecute` paths.
@@ -1003,18 +1147,29 @@ full design; `mks`; markdown exists.
 - **2026-09-30** Updated mock ODBC (`mock_libodbc.h`/`mock_libodbc.c`) to match new `short` typedefs.
 - **2026-09-30** Rebuilt with `mka` — Build Successful, all 18 compile tests pass.
 - **2026-09-30** Ran Test 39: LOAD phase successful (migrations 1000–1384 all loaded); APPLY phase completed in 54.373s; bootstrap re-query returned data; orphaned `queries` table dropped + recreated. Result: "Migration completed in 54.373s, Migration summary: available=0 loaded=0 applied=0".
+- **2026-09-30** That 0/0/0 summary is the orphan bootstrap. A later `hydrogen_release` APPLY (~18:17Z) finished available=loaded=applied=1384 with zero ERROR lines. REVERSE was off. `testms.queries` had 972 rows; `testms.numbers` had 10000.
+- **2026-09-30** REVERSE at 18:59Z stopped on migration 1365 statement 3, hash `MPSCC982F8F2186796F4`: FreeTDS 5074, default `DF__scripts__mcp_acc__0D99FE17` depends on `mcp_access`. The same shape is on `courses.retired` (1346), `scripts.invokable` (1297), and `convo_segs.metadata` (1172). `SQLEndTran` failed while the failed statement was still active. `mssql_execute_prepared` now calls `SQLFreeStmt(SQL_CLOSE)` before finishing the statement. Rollback logs SQLSTATE, native error, and message.
+- **2026-09-30** 19:50Z console tail: REVERSE succeeded for 1003, 1002, 1001, and 1000, then `Migration test finished - normal execution`. Counts and an ERROR scan for that log were not captured. The binary still rewrote SQL in C. `queries.code` still held the shared spelling.
+- **2026-09-30** Statement-shape repairs moved to Acuranzo `replace_query` (`database.lua` 3.6.0 calling `database_mssql.lua` `rewrite_migration_sql`). Lua parity matched the old C fixtures. All 385 Acuranzo migrations generated for mssql. `luacheck` on the two files was clean.
+- **2026-09-30** Removed `src/database/mssql/rewrite.c`, `rewrite.h`, and `tests/unity/src/database/mssql/rewrite_test_mssql.c`. Prepare and execute pass the statement through. Phase 5 stays open until Test 39 runs on a rebuilt payload from an empty `testms.queries`.
+- **2026-09-30** Test 99 line cap. Row JSON moved from `query.c` to `query_result.c` (706 and 425 lines). `launch_database.c` engine checks moved to `launch_database_check.c` (462 and 589). `launch_database_test_coverage_improvement.c` split into `launch_database_check_test_edges.c` (403 and 660). Prototypes stayed in `query.h` and `launch.h`.
 
 ### Lessons learned
 
 - **ODBC ABI on Fedora 43 / Fedora 43 x86-64:** `SQL_ATTR_ODBC_VERSION` is `200` (not `20`); `SQL_OV_ODBC3` is `3`. `SQLSetEnvAttr` expects `SQLPOINTER` (void*) for the Value param — passing the version value directly as `(void*)(long)val` is required for FreeTDS (passing `&val` fails). `SQLSetConnectAttr` expects `SQLPOINTER` — pass `&value` with `SQL_IS_UINTEGER` for integer attrs.
 - **FreeTDS vs msodbcsql18:** Microsoft publishes no Fedora RPM; `msodbcsql18` cannot install without root. FreeTDS 1.5.1 (`libtdsodbc.so` at `/usr/lib64/`) registered as `[FreeTDS]` in `/etc/odbcinst.ini` is the only supported local MSSQL path on Fedora 43.
-- **SQL Server `SQLPrepare`:** Fails on complex INSERT...WITH...SELECT statements (FreeTDS error 8180). Must use `SQLExecDirect` with `use_prepared_statement = false` for MSSQL migration statements.
+- **SQL Server `SQLPrepare`:** APPLY prepares each statement (`lead_apply.c`, `use_prepared_statement` true). That is the path that applied 1384. `execute_mssql_migration` still forces `use_prepared_statement` false and is not that loop. Shared spelling `INSERT … WITH` and a bare `VALUES` CTE fail prepare (FreeTDS 8180, syntax 156). Acuranzo Lua stores the T-SQL spelling before LOAD.
 - **T-SQL scalar functions:** Cannot use `BEGIN TRY`/`BEGIN CATCH` — use `ISNULL` for fallback handling instead.
 - **`SQL_NO_DATA` (100):** For INSERT/UPDATE/DELETE statements, `SQLExecDirect`/`SQLExecute` returns 100 (no data rows) — must treat as success, not failure.
-- **CTE ordering in T-SQL:** `INSERT INTO t ... WITH cte ... SELECT` is illegal; must rewrite to `WITH cte ... INSERT INTO t ... SELECT`.
+- **Statement spelling:** `INSERT … WITH`, a bare `VALUES` CTE, `ADD COLUMN`, trailing `RETURNING`, and a single-column `DROP COLUMN` (drop the default first, or SQL Server returns 5074) are repaired in Acuranzo `database_mssql.lua` before the text is stored. Lock 22 is the Brotli rule. `rewrite.c` is gone. After a failed execute, FreeTDS rejects `SQLEndTran` until `SQLFreeStmt(SQL_CLOSE)`.
 - **Parameter parsing:** XML Schema types (`xs:base64Binary`) and SQL CLR (`sql:variable`) inside T-SQL function bodies contain `:` patterns that must be skipped by `convert_named_to_positional` to avoid false-positive bind parameter detection.
 - **Brotli not available in Phase 5:** CLR assembly (`extras/brotli_udf_mssql/`) requires .NET SDK not present on this box. Compression disabled (`COMPRESS_START`/`COMPRESS_END = nil`) — the Lua template engine only compresses when both are set, preventing brotli_compress calls for engines without decompression functions.
 - **Non-fatal FreeTDS warnings:** `SQL_ATTR_QUERY_TIMEOUT` and `SQL_ATTR_ROW_ARRAY_SIZE` produce ALERT-level warnings in FreeTDS but do not block the connection. These could be moved to `SQLSetStmtAttr` (statement-level) in a future phase if desired.
+- **Orphan bootstrap:** A successful bootstrap query with `row_count` 0 drops `testms.queries` and zeros available, loaded, and applied. APPLY then never starts. Test 39 treats that drop as a pass. A green script line can exist with every counter at zero. The 54.373s log is that path.
+- **LOAD does not rewrite stored SQL.** Reverse flips query type and leaves `queries.code` as it was. Lua spelling appears only after `testms.queries` (or `hydrotst`) is dropped and LOAD runs again.
+- **Which binary Test 39 runs.** `find_hydrogen_binary` prefers `hydrogen_coverage`, then `hydrogen_release`, then `hydrogen`. `mkt` reconfigures CMake (required: sources are globbed at configure time) and builds `hydrogen` only. `mka` regenerates `payload.tar.br.enc` when `database.lua` or `database_*.lua` is newer, then builds the release and coverage binaries, which embed that tarball. The cmake `payload` target does not regenerate the tarball.
+
+## Phase 6 — SchemaTool / flush
 
 ### Goal
 
@@ -1043,17 +1198,14 @@ mssql SchemaTool wrapper does not call `psql` or `isql-fb`.
 
 | | |
 | --- | --- |
-| **State** | complete (Test 39 scaffolding) |
+| **State** | not started |
 | **Date** | 2026-09-30 |
-| **Result** | Created `tests/configs/hydrogen_test_39_mssql.json` (Engine `mssql`, port 5390, schema `testms`, `AutoMigration: true`, `TestMigration: false`, credentials via `${env.MSSQL_DB_*}` + `${env.MSSQL_SA_PASSWORD}`) and `tests/test_39_mssql_migrations.sh` (TEST_ABBR=MSQ, full `run_migration_test` lifecycle with migration failure detection subtest, same structure as test_37). Created `docs/H/tests/test_39_mssql_migrations.md` and registered in TESTING.md + SITEMAP.md. `mks` green (180 files, 0 issues). JSON config validated with `jq`. |
-| **Variances** | 5.2: Test 39 does **not** manage container lifecycle — follows Tests 32/36/38 pattern (assume DB already running). Container setup is documented in SECRETS.md and the test doc Dependencies section via `extras/mssql_server/{start,create_test_db,stop}.sh`. 5.4 deferred — requires live SQL Server container + `mkt` payload rebuild for full AutoMigrations verification. |
+| **Result** | Not started. The earlier text in this cell was a copy of the Test 39 scaffold. The work items above are this phase's work, and they are unchecked. |
+| **Variances** | None yet. |
 
 ### Working Log
 
-- **2026-09-30** Created `tests/configs/hydrogen_test_39_mssql.json`: modeled on `hydrogen_test_37_firebird.json` and `hydrogen_test_32_postgres.json`. Engine `mssql`, port 5390 (per plan port scheme `539x`), schema `testms`, `AutoMigration: true`, `TestMigration: false`. Credentials via env vars: `${env.MSSQL_DB_HOST}` (default `127.0.0.1`), `${env.MSSQL_DB_PORT}` (default `1433`), `${env.MSSQL_DB_NAME}` (default `hydrotst`), `${env.MSSQL_DB_USER}` (default `sa`), `${env.MSSQL_SA_PASSWORD}`. Bootstrap query schema-qualified to `testms.queries`.
-- **2026-09-30** Created `tests/test_39_mssql_migrations.sh`: TEST_NAME="MSSQL Migration", TEST_ABBR="MSQ", TEST_NUMBER="39", TEST_VERSION="1.0.0". Exports `MSSQL_DB_HOST/PORT/NAME/USER` env vars (defaults match SECRETS.md). Uses `Engine Ref: "mssql"`. Full `run_migration_test` lifecycle matching test_37 pattern: binary validation, config validation, hydrogen launch, migration monitoring (1800s timeout), re-run if suspiciously fast (<10s), result analysis, migration execution verification, and migration failure detection subtest (APPLY/REVERSE/transaction error pattern scan).
-- **2026-09-30** Created `docs/H/tests/test_39_mssql_migrations.md`: documents test purpose, flow, configuration, container setup commands, success criteria, dependencies, and error handling. Registered in TESTING.md (Database Tests section) and SITEMAP.md.
-- **2026-09-30** Verification: `mks` green (180 files, 0 shellcheck issues). `jq` JSON validation passed on config. `mkl` green (338+ files, 0 broken links after doc registration).
+- **2026-09-30** Not started. The Test 39 file-creation notes copied here were removed. That work is Phase 5 items 5.1–5.3.
 
 ### Lessons learned
 
@@ -1095,17 +1247,14 @@ Status table: each suite green (or env skip). Loops print eight names.
 
 | | |
 | --- | --- |
-| **State** | complete (Test 39 scaffolding) |
+| **State** | not started |
 | **Date** | 2026-09-30 |
-| **Result** | Created `tests/configs/hydrogen_test_39_mssql.json` (Engine `mssql`, port 5390, schema `testms`, `AutoMigration: true`, `TestMigration: false`, credentials via `${env.MSSQL_DB_*}` + `${env.MSSQL_SA_PASSWORD}`) and `tests/test_39_mssql_migrations.sh` (TEST_ABBR=MSQ, full `run_migration_test` lifecycle with migration failure detection subtest, same structure as test_37). Created `docs/H/tests/test_39_mssql_migrations.md` and registered in TESTING.md + SITEMAP.md. `mks` green (180 files, 0 issues). JSON config validated with `jq`. |
-| **Variances** | 5.2: Test 39 does **not** manage container lifecycle — follows Tests 32/36/38 pattern (assume DB already running). Container setup is documented in SECRETS.md and the test doc Dependencies section via `extras/mssql_server/{start,create_test_db,stop}.sh`. 5.4 deferred — requires live SQL Server container + `mkt` payload rebuild for full AutoMigrations verification. |
+| **Result** | Not started. The earlier text in this cell was a copy of the Test 39 scaffold. The work items above are this phase's work, and they are unchecked. |
+| **Variances** | None yet. |
 
 ### Working Log
 
-- **2026-09-30** Created `tests/configs/hydrogen_test_39_mssql.json`: modeled on `hydrogen_test_37_firebird.json` and `hydrogen_test_32_postgres.json`. Engine `mssql`, port 5390 (per plan port scheme `539x`), schema `testms`, `AutoMigration: true`, `TestMigration: false`. Credentials via env vars: `${env.MSSQL_DB_HOST}` (default `127.0.0.1`), `${env.MSSQL_DB_PORT}` (default `1433`), `${env.MSSQL_DB_NAME}` (default `hydrotst`), `${env.MSSQL_DB_USER}` (default `sa`), `${env.MSSQL_SA_PASSWORD}`. Bootstrap query schema-qualified to `testms.queries`.
-- **2026-09-30** Created `tests/test_39_mssql_migrations.sh`: TEST_NAME="MSSQL Migration", TEST_ABBR="MSQ", TEST_NUMBER="39", TEST_VERSION="1.0.0". Exports `MSSQL_DB_HOST/PORT/NAME/USER` env vars (defaults match SECRETS.md). Uses `Engine Ref: "mssql"`. Full `run_migration_test` lifecycle matching test_37 pattern: binary validation, config validation, hydrogen launch, migration monitoring (1800s timeout), re-run if suspiciously fast (<10s), result analysis, migration execution verification, and migration failure detection subtest (APPLY/REVERSE/transaction error pattern scan).
-- **2026-09-30** Created `docs/H/tests/test_39_mssql_migrations.md`: documents test purpose, flow, configuration, container setup commands, success criteria, dependencies, and error handling. Registered in TESTING.md (Database Tests section) and SITEMAP.md.
-- **2026-09-30** Verification: `mks` green (180 files, 0 shellcheck issues). `jq` JSON validation passed on config. `mkl` green (338+ files, 0 broken links after doc registration).
+- **2026-09-30** Not started. The Test 39 file-creation notes copied here were removed. That work is Phase 5 items 5.1–5.3.
 
 ### Lessons learned
 
@@ -1145,17 +1294,14 @@ Phase 7 Status complete.
 
 | | |
 | --- | --- |
-| **State** | complete (Test 39 scaffolding) |
+| **State** | not started |
 | **Date** | 2026-09-30 |
-| **Result** | Created `tests/configs/hydrogen_test_39_mssql.json` (Engine `mssql`, port 5390, schema `testms`, `AutoMigration: true`, `TestMigration: false`, credentials via `${env.MSSQL_DB_*}` + `${env.MSSQL_SA_PASSWORD}`) and `tests/test_39_mssql_migrations.sh` (TEST_ABBR=MSQ, full `run_migration_test` lifecycle with migration failure detection subtest, same structure as test_37). Created `docs/H/tests/test_39_mssql_migrations.md` and registered in TESTING.md + SITEMAP.md. `mks` green (180 files, 0 issues). JSON config validated with `jq`. |
-| **Variances** | 5.2: Test 39 does **not** manage container lifecycle — follows Tests 32/36/38 pattern (assume DB already running). Container setup is documented in SECRETS.md and the test doc Dependencies section via `extras/mssql_server/{start,create_test_db,stop}.sh`. 5.4 deferred — requires live SQL Server container + `mkt` payload rebuild for full AutoMigrations verification. |
+| **Result** | Not started. The earlier text in this cell was a copy of the Test 39 scaffold. The work items above are this phase's work, and they are unchecked. |
+| **Variances** | None yet. |
 
 ### Working Log
 
-- **2026-09-30** Created `tests/configs/hydrogen_test_39_mssql.json`: modeled on `hydrogen_test_37_firebird.json` and `hydrogen_test_32_postgres.json`. Engine `mssql`, port 5390 (per plan port scheme `539x`), schema `testms`, `AutoMigration: true`, `TestMigration: false`. Credentials via env vars: `${env.MSSQL_DB_HOST}` (default `127.0.0.1`), `${env.MSSQL_DB_PORT}` (default `1433`), `${env.MSSQL_DB_NAME}` (default `hydrotst`), `${env.MSSQL_DB_USER}` (default `sa`), `${env.MSSQL_SA_PASSWORD}`. Bootstrap query schema-qualified to `testms.queries`.
-- **2026-09-30** Created `tests/test_39_mssql_migrations.sh`: TEST_NAME="MSSQL Migration", TEST_ABBR="MSQ", TEST_NUMBER="39", TEST_VERSION="1.0.0". Exports `MSSQL_DB_HOST/PORT/NAME/USER` env vars (defaults match SECRETS.md). Uses `Engine Ref: "mssql"`. Full `run_migration_test` lifecycle matching test_37 pattern: binary validation, config validation, hydrogen launch, migration monitoring (1800s timeout), re-run if suspiciously fast (<10s), result analysis, migration execution verification, and migration failure detection subtest (APPLY/REVERSE/transaction error pattern scan).
-- **2026-09-30** Created `docs/H/tests/test_39_mssql_migrations.md`: documents test purpose, flow, configuration, container setup commands, success criteria, dependencies, and error handling. Registered in TESTING.md (Database Tests section) and SITEMAP.md.
-- **2026-09-30** Verification: `mks` green (180 files, 0 shellcheck issues). `jq` JSON validation passed on config. `mkl` green (338+ files, 0 broken links after doc registration).
+- **2026-09-30** Not started. The Test 39 file-creation notes copied here were removed. That work is Phase 5 items 5.1–5.3.
 
 ### Lessons learned
 
@@ -1194,17 +1340,14 @@ Fences green; Test 39 and Test 40 mssql green. Then move this plan to
 
 | | |
 | --- | --- |
-| **State** | complete (Test 39 scaffolding) |
+| **State** | not started |
 | **Date** | 2026-09-30 |
-| **Result** | Created `tests/configs/hydrogen_test_39_mssql.json` (Engine `mssql`, port 5390, schema `testms`, `AutoMigration: true`, `TestMigration: false`, credentials via `${env.MSSQL_DB_*}` + `${env.MSSQL_SA_PASSWORD}`) and `tests/test_39_mssql_migrations.sh` (TEST_ABBR=MSQ, full `run_migration_test` lifecycle with migration failure detection subtest, same structure as test_37). Created `docs/H/tests/test_39_mssql_migrations.md` and registered in TESTING.md + SITEMAP.md. `mks` green (180 files, 0 issues). JSON config validated with `jq`. |
-| **Variances** | 5.2: Test 39 does **not** manage container lifecycle — follows Tests 32/36/38 pattern (assume DB already running). Container setup is documented in SECRETS.md and the test doc Dependencies section via `extras/mssql_server/{start,create_test_db,stop}.sh`. 5.4 deferred — requires live SQL Server container + `mkt` payload rebuild for full AutoMigrations verification. |
+| **Result** | Not started. The earlier text in this cell was a copy of the Test 39 scaffold. The work items above are this phase's work, and they are unchecked. |
+| **Variances** | None yet. |
 
 ### Working Log
 
-- **2026-09-30** Created `tests/configs/hydrogen_test_39_mssql.json`: modeled on `hydrogen_test_37_firebird.json` and `hydrogen_test_32_postgres.json`. Engine `mssql`, port 5390 (per plan port scheme `539x`), schema `testms`, `AutoMigration: true`, `TestMigration: false`. Credentials via env vars: `${env.MSSQL_DB_HOST}` (default `127.0.0.1`), `${env.MSSQL_DB_PORT}` (default `1433`), `${env.MSSQL_DB_NAME}` (default `hydrotst`), `${env.MSSQL_DB_USER}` (default `sa`), `${env.MSSQL_SA_PASSWORD}`. Bootstrap query schema-qualified to `testms.queries`.
-- **2026-09-30** Created `tests/test_39_mssql_migrations.sh`: TEST_NAME="MSSQL Migration", TEST_ABBR="MSQ", TEST_NUMBER="39", TEST_VERSION="1.0.0". Exports `MSSQL_DB_HOST/PORT/NAME/USER` env vars (defaults match SECRETS.md). Uses `Engine Ref: "mssql"`. Full `run_migration_test` lifecycle matching test_37 pattern: binary validation, config validation, hydrogen launch, migration monitoring (1800s timeout), re-run if suspiciously fast (<10s), result analysis, migration execution verification, and migration failure detection subtest (APPLY/REVERSE/transaction error pattern scan).
-- **2026-09-30** Created `docs/H/tests/test_39_mssql_migrations.md`: documents test purpose, flow, configuration, container setup commands, success criteria, dependencies, and error handling. Registered in TESTING.md (Database Tests section) and SITEMAP.md.
-- **2026-09-30** Verification: `mks` green (180 files, 0 shellcheck issues). `jq` JSON validation passed on config. `mkl` green (338+ files, 0 broken links after doc registration).
+- **2026-09-30** Not started. The Test 39 file-creation notes copied here were removed. That work is Phase 5 items 5.1–5.3.
 
 ### Lessons learned
 
@@ -1216,7 +1359,7 @@ Fences green; Test 39 and Test 40 mssql green. Then move this plan to
 
 | Layer | What |
 | --- | --- |
-| Unity | Connstring, registry, ODBC mock, RETURNING rewrite |
+| Unity | Connstring, registry, ODBC mock |
 | Blackbox | Test 39 container **full** AutoMigrations. Test 40+ when Phase 7 says so |
 | Coverage | See coverage fences |
 | Build | `mkq` / `mkt` / `mkp` / `mks` / `test_98` |
@@ -1242,7 +1385,7 @@ override).
 | Windows-only extras | Forbidden; Linux container + CLR or COMPRESS pre-eval |
 | ODBC 18 will not install on Fedora | Phase 1 amendment to FreeTDS, recorded |
 | Local RAM < 2 GiB for the container | Phase 1 DOKS fallback, recorded, not silent |
-| RETURNING templates vs OUTPUT | Bounded C rewrite (lock 21) |
+| RETURNING templates vs OUTPUT | Acuranzo Lua rewrite before storage (lock 21) |
 | Concat `\|\|` / LATERAL QueryRefs | Phase 2 grep + arms |
 | Fighting Firebird over Test 37 / enum | Test 39; reserved enum order |
 | 7-engine loops miss mssql | Phase 7 grows to 8; do not drop Yugabyte |

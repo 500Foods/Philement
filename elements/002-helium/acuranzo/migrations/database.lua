@@ -4,6 +4,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 3.6.0 - 2026-09-30 - MSSQL: repair statement shapes in replace_query, same hook as Firebird
 -- 3.5.1 - 2026-09-30 - Brotli-compress long blocks only when COMPRESS_START is set
 -- 3.5.0 - 2026-09-29 - Added MSSQL dialect (query_dialects = 5)
 -- 3.4.3 - 2026-09-22 - Firebird: rewrite NOT NULL DEFAULT <v> to DEFAULT <v> NOT NULL
@@ -26,7 +27,7 @@ local database = {
     -- Database.lua versioning information
     info = {
       script = "database.lua",
-    version = "3.5.1",
+    version = "3.6.0",
         release = "2026-09-30"
      },
 
@@ -871,6 +872,9 @@ local database = {
             sql = firebird_rewrite_multi_row_values(sql)
             sql = firebird_rewrite_alter_column_keyword(sql)
             sql = firebird_rewrite_not_null_default_order(sql)
+        end
+        if engine == "mssql" and cfg.rewrite_migration_sql then
+            sql = cfg.rewrite_migration_sql(sql)
         end
 
         -- Brotli compression function

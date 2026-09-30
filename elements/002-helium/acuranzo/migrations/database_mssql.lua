@@ -4,6 +4,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 1.3.0 - 2026-09-30 - Statement-shape repairs (RETURNING, VALUES CTE, INSERT...WITH, ADD/DROP COLUMN)
 -- 1.2.0 - 2026-09-30 - base64_decode and base64_encode use UTF-8 bytes, same as the other engines
 -- 1.1.0 - 2026-09-30 - Added Phase 4 T-SQL helper function bodies: base64_decode, base64_encode, sha256_b64, brotli_decompress (CLR)
 -- 1.0.0 - 2026-09-29 - Initial MSSQL dialect (Phase 2 of MSSQL.md)
@@ -17,6 +18,557 @@
 -- sha256_b64 via HASHBYTES('SHA2_256') + XML base64 encoding (Phase 4).
 -- base64_decode via XML bytes interpreted as UTF-8 (SQL Server 2019+).
 -- ISJSON() available in SQL Server 2016+ for JSON validation.
+
+-- Statement-shape repairs. One pass per statement, so one RETURNING does
+-- not suppress a VALUES body elsewhere. replace_query runs this before
+-- [=[ ]=] blocks are sealed into queries.code.
+
+local function skip_ws(s, i)
+    local n = #s
+    while i <= n do
+        local c = s:sub(i, i)
+        if c ~= " " and c ~= "\t" and c ~= "\n" and c ~= "\r" then break end
+        i = i + 1
+    end
+    return i
+end
+
+local function is_ident(c)
+    return c:match("[%w_$]") ~= nil
+end
+
+-- Word match. Returns the index after the word, or nil.
+-- The following character must be whitespace, semicolon, or end.
+local function match_word(s, i, word)
+    local n = #word
+    if i + n - 1 > #s then return nil end
+    if s:sub(i, i + n - 1):lower() ~= word:lower() then return nil end
+    local nxt = s:sub(i + n, i + n)
+    if nxt ~= "" and nxt ~= ";" and not nxt:match("%s") then return nil end
+    return i + n
+end
+
+local function boundary_ok(s, i)
+    if i <= 1 then return true end
+    return not is_ident(s:sub(i - 1, i - 1))
+end
+
+-- Index of the ')' matching the '(' at open_i. Skips strings and line comments.
+local function find_close(s, open_i)
+    local depth, in_string, in_comment = 0, false, false
+    local i, n = open_i, #s
+    while i <= n do
+        local c = s:sub(i, i)
+        if in_comment then
+            if c == "\n" then in_comment = false end
+            i = i + 1
+        elseif in_string then
+            if c == "'" and s:sub(i + 1, i + 1) == "'" then
+                i = i + 2
+            elseif c == "'" then
+                in_string = false
+                i = i + 1
+            else
+                i = i + 1
+            end
+        elseif c == "-" and s:sub(i + 1, i + 1) == "-" then
+            in_comment = true
+            i = i + 2
+        elseif c == "'" then
+            in_string = true
+            i = i + 1
+        elseif c == "(" then
+            depth = depth + 1
+            i = i + 1
+        elseif c == ")" then
+            depth = depth - 1
+            if depth == 0 then return i end
+            i = i + 1
+        else
+            i = i + 1
+        end
+    end
+    return nil
+end
+
+local function find_returning(s)
+    local i, n = 1, #s
+    while i <= n do
+        local after = match_word(s, i, "RETURNING")
+        if after then
+            if boundary_ok(s, i) then return i end
+            i = i + 1
+        else
+            i = i + 1
+        end
+    end
+    return nil
+end
+
+local function find_insert_col_open(s)
+    local i, n = 1, #s
+    while i <= n do
+        local after = match_word(s, i, "INSERT")
+        if after then
+            local j = skip_ws(s, after)
+            local into = match_word(s, j, "INTO")
+            if into then
+                j = skip_ws(s, into)
+                while j <= n do
+                    local c = s:sub(j, j)
+                    if c:match("%s") or c == "(" or c == ";" then break end
+                    j = j + 1
+                end
+                j = skip_ws(s, j)
+                if s:sub(j, j) == "(" then return j end
+            end
+        end
+        i = i + 1
+    end
+    return nil
+end
+
+local function rewrite_returning(s)
+    local ret_at = find_returning(s)
+    if not ret_at then return nil end
+    local after = match_word(s, ret_at, "RETURNING")
+    local col_at = skip_ws(s, after)
+    local col_end = col_at
+    while col_end <= #s do
+        local c = s:sub(col_end, col_end)
+        if c:match("%s") or c == ";" or c == "," then break end
+        col_end = col_end + 1
+    end
+    if col_end == col_at then return nil end
+    local col = s:sub(col_at, col_end - 1)
+    local open_at = find_insert_col_open(s)
+    if not open_at then return nil end
+    local close_at = find_close(s, open_at)
+    if not close_at then return nil end
+    local result = s:sub(1, close_at) .. "\nOUTPUT INSERTED." .. col .. "\n" .. s:sub(close_at + 1, ret_at - 1)
+    return (result:gsub("%s+$", ""))
+end
+
+local function find_cte_open(s)
+    local i, n = 1, #s
+    while i <= n do
+        local after = match_word(s, i, "WITH")
+        if after and boundary_ok(s, i) then
+            local q = skip_ws(s, after)
+            local name = q
+            while q <= n do
+                local c = s:sub(q, q)
+                if not (c:match("[%w_%.]")) then break end
+                q = q + 1
+            end
+            if q ~= name then
+                q = skip_ws(s, q)
+                if s:sub(q, q) == "(" then
+                    local cols_close = find_close(s, q)
+                    if cols_close then q = skip_ws(s, cols_close + 1) end
+                end
+                local as_at = match_word(s, q, "AS")
+                if as_at then
+                    q = skip_ws(s, as_at)
+                    if s:sub(q, q) == "(" then return q end
+                end
+            end
+        end
+        i = i + 1
+    end
+    return nil
+end
+
+local function rewrite_insert_with(s)
+    local i, n = 1, #s
+    local insert_at
+    while i <= n do
+        local after = match_word(s, i, "INSERT")
+        if after then
+            local j = skip_ws(s, after)
+            if match_word(s, j, "INTO") then
+                insert_at = i
+                break
+            end
+        end
+        i = i + 1
+    end
+    if not insert_at then return nil end
+    local past = skip_ws(s, insert_at + 6)
+    local into = match_word(s, past, "INTO")
+    if not into then return nil end
+    past = skip_ws(s, into)
+    while past <= n do
+        local c = s:sub(past, past)
+        if c:match("%s") or c == "(" or c == ";" then break end
+        past = past + 1
+    end
+    past = skip_ws(s, past)
+    if s:sub(past, past) == "(" then
+        local close_at = find_close(s, past)
+        if not close_at then return nil end
+        past = skip_ws(s, close_at + 1)
+    end
+    if not match_word(s, past, "WITH") then return nil end
+    local cte_open = find_cte_open(s)
+    if not cte_open then return nil end
+    local cte_close = find_close(s, cte_open)
+    if not cte_close then return nil end
+    return s:sub(past, cte_close) .. "\n" .. s:sub(insert_at, past - 1) .. s:sub(cte_close + 1)
+end
+
+local function rewrite_cte_values(s)
+    if not s or s == "" then return nil end
+    local i, n = 1, #s
+    local cte_open, cte_close, values_at, cols
+    while i <= n and not cte_open do
+        local c = s:sub(i, i)
+        if c == "'" then
+            i = i + 1
+            while i <= n do
+                if s:sub(i, i) == "'" and s:sub(i + 1, i + 1) == "'" then
+                    i = i + 2
+                elseif s:sub(i, i) == "'" then
+                    i = i + 1
+                    break
+                else
+                    i = i + 1
+                end
+            end
+        elseif c == "-" and s:sub(i + 1, i + 1) == "-" then
+            while i <= n and s:sub(i, i) ~= "\n" do i = i + 1 end
+        else
+            local after = match_word(s, i, "WITH")
+            local advanced = false
+            if after and boundary_ok(s, i) then
+                local q = skip_ws(s, after)
+                local name = q
+                while q <= n and s:sub(q, q):match("[%w_%.]") do q = q + 1 end
+                if q ~= name then
+                    q = skip_ws(s, q)
+                    local col_s, col_e
+                    if s:sub(q, q) == "(" then
+                        local col_close = find_close(s, q)
+                        if col_close then
+                            col_s, col_e = q + 1, col_close
+                            q = skip_ws(s, col_close + 1)
+                        end
+                    end
+                    local as_at = col_s and match_word(s, q, "AS")
+                    if as_at then
+                        q = skip_ws(s, as_at)
+                        if s:sub(q, q) == "(" then
+                            local close_at = find_close(s, q)
+                            if close_at then
+                                local body = skip_ws(s, q + 1)
+                                if match_word(s, body, "VALUES") then
+                                    while col_s < col_e and s:sub(col_s, col_s):match("%s") do col_s = col_s + 1 end
+                                    while col_e > col_s and s:sub(col_e - 1, col_e - 1):match("%s") do col_e = col_e - 1 end
+                                    if col_s < col_e then
+                                        cte_open, cte_close = q, close_at
+                                        values_at = body
+                                        cols = s:sub(col_s, col_e - 1)
+                                        advanced = true
+                                    end
+                                end
+                            end
+                        end
+                    end
+                end
+            end
+            if not advanced then i = i + 1 end
+        end
+    end
+    if not cte_open or not cols or cols == "" then return nil end
+    local values_end = cte_close
+    while values_end > values_at and s:sub(values_end - 1, values_end - 1):match("%s") do
+        values_end = values_end - 1
+    end
+    return s:sub(1, cte_open) .. "SELECT * FROM (" .. s:sub(values_at, values_end - 1) .. ") AS v(" .. cols .. ")" .. s:sub(cte_close)
+end
+
+local function copy_quoted(s, i, out)
+    out[#out + 1] = "'"
+    i = i + 1
+    local n = #s
+    while i <= n do
+        if s:sub(i, i) == "'" and s:sub(i + 1, i + 1) == "'" then
+            out[#out + 1] = "''"
+            i = i + 2
+        else
+            out[#out + 1] = s:sub(i, i)
+            if s:sub(i, i) == "'" then return i + 1 end
+            i = i + 1
+        end
+    end
+    return i
+end
+
+local function rewrite_add_column(s)
+    if not s or s == "" then return nil end
+    local out, changed = {}, false
+    local i, n = 1, #s
+    while i <= n do
+        local c = s:sub(i, i)
+        if c == "'" then
+            i = copy_quoted(s, i, out)
+        elseif c == "-" and s:sub(i + 1, i + 1) == "-" then
+            local start = i
+            while i <= n and s:sub(i, i) ~= "\n" do i = i + 1 end
+            out[#out + 1] = s:sub(start, i - 1)
+        else
+            local after = match_word(s, i, "ADD")
+            local column_at = after and boundary_ok(s, i) and skip_ws(s, after)
+            local col_after = column_at and match_word(s, column_at, "COLUMN")
+            if col_after then
+                out[#out + 1] = s:sub(i, column_at - 1)
+                i = skip_ws(s, col_after)
+                changed = true
+            else
+                out[#out + 1] = c
+                i = i + 1
+            end
+        end
+    end
+    if not changed then return nil end
+    return table.concat(out)
+end
+
+local function take_sql_name(s, i, allow_dot)
+    local start, parts, n = i, 0, #s
+    while true do
+        local c = s:sub(i, i)
+        if c == "[" then
+            local bracket = i
+            i = i + 1
+            while i <= n do
+                if s:sub(i, i + 1) == "]]" then
+                    i = i + 2
+                elseif s:sub(i, i) == "]" then
+                    i = i + 1
+                    break
+                else
+                    i = i + 1
+                end
+            end
+            if i == bracket + 1 or s:sub(i - 1, i - 1) ~= "]" then return nil end
+        elseif c:match("%a") or c == "_" then
+            i = i + 1
+            while i <= n and s:sub(i, i):match("[%w_@#$]") do i = i + 1 end
+        else
+            return nil
+        end
+        parts = parts + 1
+        if allow_dot and parts == 1 and s:sub(i, i) == "." then
+            i = i + 1
+        else
+            break
+        end
+    end
+    local raw = s:sub(start, i - 1)
+    if raw == "" or raw:find("'", 1, true) or raw:find(";", 1, true) or raw:find('"', 1, true) then
+        return nil
+    end
+    return i, raw
+end
+
+local function unbracket(raw)
+    if raw:sub(1, 1) ~= "[" then return raw end
+    if #raw < 3 or raw:sub(-1) ~= "]" then return nil end
+    local lit, i = {}, 2
+    while i < #raw do
+        if raw:sub(i, i + 1) == "]]" then
+            lit[#lit + 1] = "]"
+            i = i + 2
+        else
+            lit[#lit + 1] = raw:sub(i, i)
+            i = i + 1
+        end
+    end
+    if #lit == 0 then return nil end
+    return table.concat(lit)
+end
+
+local function drop_batch(table_raw, column_raw)
+    local column_lit = unbracket(column_raw)
+    if not column_lit then return nil end
+    local batch = string.format(
+        "DECLARE @df sysname; DECLARE @drop nvarchar(512); " ..
+        "SELECT @df = dc.name FROM sys.default_constraints AS dc " ..
+        "INNER JOIN sys.columns AS c ON c.object_id = dc.parent_object_id " ..
+        "AND c.column_id = dc.parent_column_id " ..
+        "WHERE dc.parent_object_id = OBJECT_ID(N'%s') AND c.name = N'%s'; " ..
+        "IF @df IS NOT NULL BEGIN " ..
+        "SET @drop = N'ALTER TABLE %s DROP CONSTRAINT ' + QUOTENAME(@df); " ..
+        "EXEC sp_executesql @drop; END " ..
+        "ALTER TABLE %s DROP COLUMN %s;",
+        table_raw, column_lit, table_raw, table_raw, column_raw)
+    return "EXEC sp_executesql N'" .. batch:gsub("'", "''") .. "'"
+end
+
+local function rewrite_drop_column(s)
+    if not s or s == "" then return nil end
+    local out, changed = {}, false
+    local i, n = 1, #s
+    while i <= n do
+        local c = s:sub(i, i)
+        if c == "'" then
+            i = copy_quoted(s, i, out)
+        elseif c == "-" and s:sub(i + 1, i + 1) == "-" then
+            local start = i
+            while i <= n and s:sub(i, i) ~= "\n" do i = i + 1 end
+            out[#out + 1] = s:sub(start, i - 1)
+        else
+            local after = match_word(s, i, "ALTER")
+            local replaced = false
+            if after and boundary_ok(s, i) then
+                local q = skip_ws(s, after)
+                local table_at = match_word(s, q, "TABLE")
+                local name_end, table_raw
+                if table_at then
+                    name_end, table_raw = take_sql_name(s, skip_ws(s, table_at), true)
+                end
+                local drop_at = name_end and match_word(s, skip_ws(s, name_end), "DROP")
+                local column_word = drop_at and match_word(s, skip_ws(s, drop_at), "COLUMN")
+                local col_end, column_raw
+                if column_word then
+                    col_end, column_raw = take_sql_name(s, skip_ws(s, column_word), false)
+                end
+                if col_end and s:sub(skip_ws(s, col_end), skip_ws(s, col_end)) ~= "," then
+                    local repl = drop_batch(table_raw, column_raw)
+                    if repl then
+                        out[#out + 1] = repl
+                        i = col_end
+                        changed = true
+                        replaced = true
+                    end
+                end
+            end
+            if not replaced then
+                out[#out + 1] = c
+                i = i + 1
+            end
+        end
+    end
+    if not changed then return nil end
+    return table.concat(out)
+end
+
+local function rewrite_statement(s)
+    if not s or s == "" then return s end
+    local current = s
+    local returning = rewrite_returning(current)
+    if returning then
+        current = returning
+    else
+        for _ = 1, 4 do
+            local wrapped = rewrite_cte_values(current)
+            if not wrapped then break end
+            current = wrapped
+        end
+        local moved = rewrite_insert_with(current)
+        if moved then current = moved end
+    end
+    local added = rewrite_add_column(current)
+    if added then current = added end
+    local dropped = rewrite_drop_column(current)
+    if dropped then current = dropped end
+    return current
+end
+
+local DELIM = "-- SUBQUERY DELIMITER"
+
+local function rewrite_statement_list(s)
+    local out, pos, n = {}, 1, #s
+    while pos <= n + 1 do
+        local a, b = s:find(DELIM, pos, true)
+        local piece = a and s:sub(pos, a - 1) or s:sub(pos)
+        out[#out + 1] = rewrite_statement(piece)
+        if not a then break end
+        out[#out + 1] = DELIM
+        pos = b + 1
+    end
+    return table.concat(out)
+end
+
+local function map_blocks(s, level, fn)
+    local open = "[" .. string.rep("=", level) .. "["
+    local close = "]" .. string.rep("=", level) .. "]"
+    local out, pos, n = {}, 1, #s
+    while pos <= n do
+        local i = s:find(open, pos, true)
+        if not i then
+            out[#out + 1] = s:sub(pos)
+            break
+        end
+        local j = s:find(close, i + #open, true)
+        if not j then
+            out[#out + 1] = s:sub(pos)
+            break
+        end
+        out[#out + 1] = s:sub(pos, i + #open - 1)
+        out[#out + 1] = fn(s:sub(i + #open, j - 1))
+        out[#out + 1] = close
+        pos = j + #close
+    end
+    return table.concat(out)
+end
+
+-- Placeholders hide an already-rewritten long-string body from the parent
+-- statement. Nested [=[ [==[ ]==] ]=] blocks save inner tokens inside outer
+-- bodies, so restore has to walk into those bodies too.
+local function restore_tokens(s, saved)
+    local function subst(text)
+        local n = 1
+        while n <= #saved do
+            local token = "MSSQLLONG" .. n .. "ENDLONG"
+            local at = text:find(token, 1, true)
+            if not at then
+                n = n + 1
+            else
+                text = text:sub(1, at - 1) .. subst(saved[n]) .. text:sub(at + #token)
+            end
+        end
+        return text
+    end
+    return subst(s)
+end
+
+local function mask_levels(s, lo, hi, saved)
+    for level = hi, lo, -1 do
+        s = map_blocks(s, level, function(content)
+            saved[#saved + 1] = content
+            return "MSSQLLONG" .. #saved .. "ENDLONG"
+        end)
+    end
+    return s
+end
+
+local function rewrite_migration_sql(s)
+    if not s or s == "" then return s end
+    local max_level = 0
+    for equals in s:gmatch("%[(=+)%[") do
+        if #equals > max_level and #equals <= 5 then max_level = #equals end
+    end
+    for level = max_level, 1, -1 do
+        s = map_blocks(s, level, function(content)
+            local saved = {}
+            if level < max_level then
+                content = mask_levels(content, level + 1, max_level, saved)
+            end
+            content = rewrite_statement_list(content)
+            if #saved > 0 then content = restore_tokens(content, saved) end
+            return content
+        end)
+    end
+    local saved = {}
+    if max_level > 0 then
+        s = mask_levels(s, 1, max_level, saved)
+    end
+    s = rewrite_statement_list(s)
+    if #saved > 0 then s = restore_tokens(s, saved) end
+    return s
+end
 
 return {
     -- Types
@@ -265,4 +817,7 @@ return {
 
     -- Timezone conversion: SQL Server uses AT TIME ZONE natively (no UDF needed)
     CONVERT_TZ_FUNCTION = "-- SQL Server uses AT TIME ZONE for timezone conversion",
+
+    -- Called from database.lua replace_query. Not a ${macro}.
+    rewrite_migration_sql = rewrite_migration_sql,
 }

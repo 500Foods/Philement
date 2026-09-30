@@ -14,7 +14,7 @@
 bool mssql_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryResult** result);
 bool mssql_execute_prepared(DatabaseHandle* connection, const PreparedStatement* stmt, QueryRequest* request, QueryResult** result);
 
-// Helper functions for processing query results (non-static for testing)
+// Result rows are assembled in query_result.c (non-static for testing)
 bool mssql_process_query_results(void* stmt_handle, const char* designator, struct timespec start_time, QueryResult** result);
 char** mssql_get_column_names(void* stmt_handle, int column_count);
 bool mssql_fetch_row_data(void* stmt_handle, char** column_names, int column_count,

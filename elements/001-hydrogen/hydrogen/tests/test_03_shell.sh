@@ -437,6 +437,14 @@ declare -a ENV_VARS=(
     "FIREBIRD_DB_USER|37,40|Firebird database user|Username for the Firebird database account used by tests (non-SYSDBA). Falls back to SYSDBA."
     "FIREBIRD_DB_PASS|37,40|Firebird database password|Password for the Firebird database account used by tests. Falls back to FIREBIRD_SYSDBA_PASSWORD."
 
+    # MS SQL Server demo
+    "MSSQL_DB_NAME|39,40|MS SQL Server database name|Name of the MS SQL Server database."
+    "MSSQL_DB_USER|39,40|MS SQL Server database user|Username for connecting to the MS SQL Server database."
+    "MSSQL_SA_PASSWORD|39,40|MS SQL Server database password|Password for connecting to the MS SQL Server database."
+    "MSSQL_DB_PORT|39,40|MS SQL Server database port|Port number for the MS SQL Server database server."
+    "MSSQL_DB_TYPE|39,40|MS SQL Server database type|Type of the MS SQL Server database (e.g., mssql)."
+    "MSSQL_DB_HOST|39,40|MS SQL Server database host|Hostname or IP address of the MS SQL Server database server."
+
     # Cap server aka ChaCha 
     "CHACHA_SECRET|56|ChaCha (Cap) Server secret|Secret key."
     "CHACHA_SITEID|56|ChaCha (Cap) Server SiteID|Unique identifier for this usage."

@@ -13,7 +13,6 @@
 #include "types.h"
 #include "connection.h"
 #include "prepared.h"
-#include "rewrite.h"
 
 // ODBC type definitions for MSSQL
 typedef short SQLSMALLINT;
@@ -146,15 +145,7 @@ bool mssql_prepare_statement(DatabaseHandle* connection, const char* name, const
         return false;
     }
 
-    /* APPLY prepares every statement. SQL Server rejects
-     * INSERT INTO ... WITH cte ... SELECT (syntax 156 near WITH) and a
-     * CTE body that is a bare VALUES list (syntax 156 near VALUES).
-     * FreeTDS reports both as 8180 at SQLExecute. execute_query rewrites
-     * those shapes, and RETURNING, before it runs. Do the same here. */
-    char* rewritten = mssql_rewrite_migration_sql(sql);
-    const char* effective_sql = rewritten ? rewritten : sql;
-    char* prepare_sql = strdup(effective_sql);
-    free(rewritten);
+    char* prepare_sql = strdup(sql);
     if (!prepare_sql) {
         return false;
     }
