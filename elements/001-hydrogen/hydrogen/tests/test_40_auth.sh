@@ -22,6 +22,7 @@
 # analyze_auth_test_results()
 
 # CHANGELOG
+# 1.10.0 - 2026-09-30 - Eighth engine: MSSQL, schema demoms, port 5409
 # 1.9.5 - 2026-09-02 - Retry DML transaction probe 3x under suite-parallel load
 # 1.9.4 - 2026-08-27 - Invalid-login accepts 503 congestion (not credential fail).
 # 1.9.3 - 2026-08-27 - Longer single-shot HTTP (90s); retry 000 only; INFO delay lines.
@@ -69,7 +70,7 @@ TEST_NAME="Auth"
 TEST_ABBR="JWT"
 TEST_NUMBER="40"
 TEST_COUNTER=0
-TEST_VERSION="1.9.5"
+TEST_VERSION="1.10.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -93,6 +94,7 @@ AUTH_TEST_CONFIGS=(
     ["MariaDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mariadb.json:mariadb:mariadb:MariaDB Engine"
     ["Firebird"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_firebird.json:firebird:firebird:Firebird Engine"
     ["YugabyteDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_yugabytedb.json:yugabytedb:yugabytedb:YugabyteDB Engine"
+    ["MSSQL"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mssql.json:mssql:mssql:MSSQL Engine"
 )
 
 # Test timeouts (seconds)
@@ -647,6 +649,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         ["firebird"]=""
         ["yugabytedb"]="demo"
         ["sqlite"]=""
+        ["mssql"]="demoms"
     )
     sqlite_tx_db="${DIAG_TEST_DIR}/hydro_tx_probe_${TIMESTAMP}.sqlite"
     for test_config in "${!AUTH_TEST_CONFIGS[@]}"; do

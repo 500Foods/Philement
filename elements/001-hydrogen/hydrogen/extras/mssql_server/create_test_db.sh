@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# MSSQL Server create test database — creates the hydrotst database and testms schema.
+# MSSQL Server create test database — creates the hydrotst database and
+# the testms (Test 39) and demoms (matrix) schemas.
 #
 # Usage:
 #   ./create_test_db.sh [--drop]
@@ -8,13 +9,14 @@
 #
 # shellcheck shell=bash # Scripts are bash-specific (process substitution, arrays)
 # CHANGELOG
+# 1.1.0 - 2026-09-30 - Also create schema demoms for Tests 40/43/45/46/47/58
 # 1.0.0 - 2026-09-29 - Initial version
 
 set -euo pipefail
 
 CONTAINER_NAME="philement-mssql"
 TEST_DB="${MSSQL_TEST_DB:-hydrotst}"
-TEST_SCHEMA="testms"
+TEST_SCHEMAS=(testms demoms)
 
 die() {
     echo "Error: $*" >&2
@@ -66,9 +68,10 @@ BEGIN
     PRINT 'Database already exists: ${TEST_DB}';
 END"
 
-echo "Creating schema '${TEST_SCHEMA}'..."
+for TEST_SCHEMA in "${TEST_SCHEMAS[@]}"; do
+    echo "Creating schema '${TEST_SCHEMA}'..."
 
-run_sql -d "${TEST_DB}" -Q "
+    run_sql -d "${TEST_DB}" -Q "
 IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = '${TEST_SCHEMA}')
 BEGIN
     EXEC('CREATE SCHEMA [${TEST_SCHEMA}]');
@@ -78,9 +81,10 @@ ELSE
 BEGIN
     PRINT 'Schema already exists: ${TEST_SCHEMA}';
 END"
+done
 
 echo ""
-echo "Test database '${TEST_DB}' and schema '${TEST_SCHEMA}' are ready."
+echo "Test database '${TEST_DB}' and schemas ${TEST_SCHEMAS[*]} are ready."
 echo "Configure Hydrogen with:"
 echo "  Engine: mssql"
 echo "  Host: 127.0.0.1"
@@ -88,4 +92,4 @@ echo "  Port: 1433"
 echo "  Database: ${TEST_DB}"
 echo "  User: sa"
 echo "  Password: <from MSSQL_SA_PASSWORD env>"
-echo "  Schema: ${TEST_SCHEMA}"
+echo "  Schemas: ${TEST_SCHEMAS[*]} (testms is Test 39; demoms is the matrix)"

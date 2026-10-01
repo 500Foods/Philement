@@ -165,7 +165,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1124](/elements/002-helium/acuranzo/migrations/acuranzo_1124.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #033 - Get Session Logs List + Search |
 | [1125](/elements/002-helium/acuranzo/migrations/acuranzo_1125.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #034 - Get Lookup List |
 | [1126](/elements/002-helium/acuranzo/migrations/acuranzo_1126.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #035 - Get Lookup Key |
-| [1127](/elements/002-helium/acuranzo/migrations/acuranzo_1127.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #036 (OBSOLETE) - Store Chat |
+| [1127](/elements/002-helium/acuranzo/migrations/acuranzo_1127.lua) | queries | 1.0.1 | 2026-09-30 | 4 | ✗ | QueryRef #036 (OBSOLETE) - Store Chat |
 | [1128](/elements/002-helium/acuranzo/migrations/acuranzo_1128.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #037 - Chats Missing Icon+Keywords |
 | [1129](/elements/002-helium/acuranzo/migrations/acuranzo_1129.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #038 - Update Chat Icon+Keywords |
 | [1130](/elements/002-helium/acuranzo/migrations/acuranzo_1130.lua) | queries | 1.0.0 | 2025-12-31 | 4 | ✗ | QueryRef #039 (OBSOLETE) - Get Chats List |
@@ -205,7 +205,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1164](/elements/002-helium/acuranzo/migrations/acuranzo_1164.lua) | queries | 1.0.0 | 2026-03-22 | 4 | ✗ | QueryRef #064: Reconstruct Conversation (get hashes + metadata) |
 | [1165](/elements/002-helium/acuranzo/migrations/acuranzo_1165.lua) | queries | 1.0.0 | 2026-03-22 | 4 | ✗ | QueryRef #065: Find Conversations by Segment Content (audit) |
 | [1166](/elements/002-helium/acuranzo/migrations/acuranzo_1166.lua) | queries | 1.0.0 | 2026-03-22 | 4 | ✗ | QueryRef #066: Get Conversation Storage Statistics |
-| [1167](/elements/002-helium/acuranzo/migrations/acuranzo_1167.lua) | queries | 1.0.0 | 2026-03-22 | 4 | ✗ | QueryRef #067: Store Chat (with hash-based content-addressable storage) |
+| [1167](/elements/002-helium/acuranzo/migrations/acuranzo_1167.lua) | queries | 1.0.1 | 2026-09-30 | 4 | ✗ | QueryRef #067: Store Chat (with hash-based content-addressable storage) |
 | [1168](/elements/002-helium/acuranzo/migrations/acuranzo_1168.lua) | queries | 1.1.0 | 2026-09-29 | 6 | ✗ | QueryRef #068: Get Chat (reconstruct from hash-based storage) |
 | [1169](/elements/002-helium/acuranzo/migrations/acuranzo_1169.lua) | queries | 1.0.0 | 2026-03-22 | 4 | ✗ | QueryRef #069: Get Chats List (with segment count and storage metrics) |
 | [1170](/elements/002-helium/acuranzo/migrations/acuranzo_1170.lua) | queries | 1.0.0 | 2026-03-23 | 4 | ✗ | QueryRef #070: Get Conversation Segments by Hash (BATCH retrieval) |

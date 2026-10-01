@@ -7,6 +7,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.1 - 2026-09-30 - Comma after new_convos_id in the INSERT...SELECT list
 -- 1.0.0 - 2026-03-22 - Initial creation for Phase 7 - Chat Service
 --                     Replaces legacy #036 with content-addressable storage
 
@@ -75,7 +76,7 @@ table.insert(queries,{sql=[[
                             FROM ${SCHEMA}convos
                         )
                         SELECT
-                            new_convos_id
+                            new_convos_id,
                             :CONVOREF,
                             :SEGMENT_REFS,
                             :ENGINE_NAME,

@@ -36,9 +36,20 @@ extern volatile sig_atomic_t database_stopping;
     } else if (strncmp(connection_string, "firebird://", 11) == 0) {
         return DB_ENGINE_FIREBIRD;
     } else if (strncmp(connection_string, "mssql://", 8) == 0 ||
-               strncmp(connection_string, "sqlserver://", 12) == 0 ||
-               strstr(connection_string, "DRIVER=") != NULL) {
+               strncmp(connection_string, "sqlserver://", 12) == 0) {
         return DB_ENGINE_MSSQL;
+    } else if (strstr(connection_string, "DRIVER=") != NULL) {
+        /*
+         * Both ODBC engines carry DRIVER=. SQL Server has SERVER= and no
+         * HOSTNAME=. DB2 has HOSTNAME= and no SERVER=. Treating every
+         * DRIVER= string as MSSQL made a DB2-only process skip connect.
+         */
+        bool has_server = strstr(connection_string, "SERVER=") != NULL;
+        bool has_hostname = strstr(connection_string, "HOSTNAME=") != NULL;
+        if (has_server && !has_hostname) {
+            return DB_ENGINE_MSSQL;
+        }
+        return DB_ENGINE_DB2;
     } else if (strstr(connection_string, "DATABASE=") != NULL) {
         // DB2 connection string format contains "DATABASE="
         return DB_ENGINE_DB2;
@@ -273,24 +284,21 @@ void database_queue_start_heartbeat(DatabaseQueue* db_queue) {
     } else {
         log_this(dqm_label, "Connection attempt: FAILED", LOG_LEVEL_ERROR, 0);
 
-        // Determine engine type from connection string for better error reporting
+        // Label the engine the detector actually selected.
         const char* engine_name = "unknown";
         if (db_queue->connection_string) {
-            if (strncmp(db_queue->connection_string, "postgresql://", 13) == 0) {
-                engine_name = "PostgreSQL";
-            } else if (strncmp(db_queue->connection_string, "mariadb://", 10) == 0) {
-                engine_name = "MariaDB";
-            } else if (strncmp(db_queue->connection_string, "mysql://", 8) == 0) {
-                engine_name = "MySQL";
-            } else if (strncmp(db_queue->connection_string, "sqlite:", 7) == 0) {
-                engine_name = "SQLite";
-            } else if (strncmp(db_queue->connection_string, "firebird://", 11) == 0) {
-                engine_name = "Firebird";
-            } else if (strstr(db_queue->connection_string, "DRIVER=") != NULL) {
-                engine_name = "MSSQL";
-            } else {
-                // For DB2 and other engines, the connection string is just the database name
-                engine_name = "DB2";
+            switch (database_queue_determine_engine_type(db_queue->connection_string)) {
+                case DB_ENGINE_POSTGRESQL: engine_name = "PostgreSQL"; break;
+                case DB_ENGINE_SQLITE:     engine_name = "SQLite"; break;
+                case DB_ENGINE_MYSQL:      engine_name = "MySQL"; break;
+                case DB_ENGINE_MARIADB:    engine_name = "MariaDB"; break;
+                case DB_ENGINE_DB2:        engine_name = "DB2"; break;
+                case DB_ENGINE_MSSQL:      engine_name = "MSSQL"; break;
+                case DB_ENGINE_FIREBIRD:   engine_name = "Firebird"; break;
+                case DB_ENGINE_AI:
+                case DB_ENGINE_MAX:
+                    engine_name = "unknown";
+                    break;
             }
         }
 

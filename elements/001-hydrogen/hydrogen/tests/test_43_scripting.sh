@@ -9,7 +9,7 @@
 #
 # Like test_40_auth.sh, this runs one Hydrogen instance per database
 # engine in parallel (PostgreSQL, MySQL, SQLite, DB2, MariaDB,
-# Firebird, YugabyteDB), each with its own configuration file and
+# Firebird, YugabyteDB, MSSQL), each with its own configuration file and
 # WebServer port. Two variants are exercised per engine:
 #   - "with DefaultDatabase"    (Scripting.DefaultDatabase = "Acuranzo")
 #   - "without DefaultDatabase" (field omitted)
@@ -43,6 +43,7 @@
 # start_mock_llm / stop_mock_llm
 
 # CHANGELOG
+# 2.8.0 - 2026-09-30 - Eighth engine: MSSQL on schema demoms (ports 15437, 15447)
 # 2.7.4 - 2026-09-20 - Replaced CockroachDB with Firebird engine
 # 2.7.3 - 2026-09-08 - Pair every TEST with PASS/FAIL (config files + prune skip).
 # 2.7.2 - 2026-08-27 - Startup/shutdown waits aligned with group40 (90s/30s).
@@ -70,11 +71,11 @@
 set -euo pipefail
 
 # Test Configuration
-TEST_NAME="Scripting  {BLUE}engines: 7{RESET}"
+TEST_NAME="Scripting  {BLUE}engines: 8{RESET}"
 TEST_ABBR="SCR"
 TEST_NUMBER="43"
 TEST_COUNTER=0
-TEST_VERSION="2.7.4"
+TEST_VERSION="2.8.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -166,6 +167,8 @@ SCRIPTING_TEST_CONFIGS=(
     ["Firebird-ND"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_scripting_firebird_no_default.json:firebird_nd:firebird:Firebird (no default DB)"
     ["YugabyteDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_scripting_yugabytedb.json:yugabytedb:yugabytedb:YugabyteDB (default DB)"
     ["YugabyteDB-ND"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_scripting_yugabytedb_no_default.json:yugabytedb_nd:yugabytedb:YugabyteDB (no default DB)"
+    ["MSSQL"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_scripting_mssql.json:mssql:mssql:MSSQL (default DB)"
+    ["MSSQL-ND"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_scripting_mssql_no_default.json:mssql_nd:mssql:MSSQL (no default DB)"
 )
 
 # Timeouts (seconds). Fixtures are assumed pre-migrated, so READY is

@@ -22,15 +22,16 @@ proves local RAM/image cannot run.
 | 4 T-SQL helpers + Brotli CLR | complete | **Difficult** |
 | 5 Test 39 full Acuranzo | complete | **Difficult** |
 | 6 SchemaTool / flush | not started | **Moderate** |
-| 7 Grow matrix 7 → 8 | not started | **Difficult** |
+| 7 Grow matrix 7 → 8 | in progress | **Difficult** |
 | 8 Docs | not started | **Quick** |
 | 9 Coverage / completeness | not started | **Moderate** |
 
-Remaining: Phase 6 (Moderate), Phase 7 (Difficult), Phase 9 (Moderate),
-Phase 8 (Quick). Phases 0–5 are complete. Phases 6–9 are not started:
-work items unchecked, Status tables say not started. The Test 39
-file-creation notes that had been copied into those working logs now
-live under Phase 5.
+Remaining: Phase 7 (Difficult, in progress), Phase 6 (Moderate),
+Phase 9 (Moderate), Phase 8 (Quick). Phases 0–5 are complete.
+Phase 7 started ahead of SchemaTool on 2026-09-30 so the full suite
+can include MSSQL. Phase 6 items 6.1–6.3 are still unchecked.
+Item 6.4 (the Test 40 transaction probe) moved into this Phase 7
+slice. Phases 8–9 are not started.
 
 **Parity:** MSSQL is a Hydrogen `DatabaseEngineInterface`, not a new
 API. Match PostgreSQL / SQLite / MySQL / DB2: same `QueryRequest` /
@@ -259,7 +260,7 @@ Lua changes show up only when those rows are absent and LOAD runs.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-09-30):** Phases 0–5 complete. Phase 6 is next (SchemaTool / flush). Test 40 is Phase 7 item 7.1, after Phase 6. The closing Test 39 log is `build/tests/logs/test_39_20260930_151436_342589048_519453_mssql.log`: available=loaded=applied=1384, 385 reverses through migration 1000, `Migration test finished - normal execution` at 498.021s, no `[ ERROR ]` lines.
+**CURRENT PAUSE POINT (as of 2026-09-30):** Phases 0–5 complete. Phase 7 is in progress, ahead of Phase 6 items 6.1–6.3. Item 6.4 landed with this slice. Matrix schema is `demoms` in `hydrotst`; Test 39 keeps `testms`. Configs and loops for Tests 40, 43, 45, 46, 47, and 58 are written. Verification is the operator's suite run, after one forward apply into `demoms`. The closing Test 39 log is `build/tests/logs/test_39_20260930_151436_342589048_519453_mssql.log`: available=loaded=applied=1384, 385 reverses through migration 1000, `Migration test finished - normal execution` at 498.021s, no `[ ERROR ]` lines.
 
 ### Resume here next session
 
@@ -288,7 +289,7 @@ Lua changes show up only when those rows are absent and LOAD runs.
 | --- | --- |
 | **Band** | P2 — new engine, after Auth Finale; parallel with Firebird, not a substitute |
 | **Effort** | XL (unixODBC engine + Helium dialect + T-SQL/CLR extras + Test 39 + 8-engine matrix) |
-| **Done** | Phases 0–5 complete. Phases 6–9 not started |
+| **Done** | Phases 0–5 complete. Phase 7 in progress (ahead of 6.1–6.3). Phases 8–9 not started |
 | **Why this shape** | Key 5 has been a lookup row without a C engine. Fedora has no mssql-server RPM; the official Linux container is the local free path. |
 | **Do not start casually** | Touches enum (reserved slot), registry, DQM, Helium four designs, Test 31/39, every 7-engine loop (becomes 8), SchemaTool. |
 
@@ -739,8 +740,8 @@ no new `static` / no dead symbols). Mock ODBC in Unity.
 | 3 | C engine registers, `mssql://`, connect + health vs container or ODBC mock | M | complete |
 | 4 | T-SQL helpers + Brotli CLR (or COMPRESS pre-eval variance); SHA-256 fixture matches SQLite | L | complete |
 | 5 | Test 39 mssql AutoMigrations **full Acuranzo** green | L | complete |
-| 6 | SchemaTool / SchemaHelper / hydrogen_flush / transaction_utils | M | pending |
-| 7 | Tests 40/43/45/46/47/58 include mssql; 8-engine loops | L | pending |
+| 6 | SchemaTool / SchemaHelper / hydrogen_flush (6.4 is in Phase 7) | M | pending |
+| 7 | Tests 40/43/45/46/47/58 include mssql; 8-engine loops | L | in progress |
 | 8 | Docs/SITEMAP/MACRO_REFERENCE/DATABASES/SECRETS match; `mkl` green | S | pending |
 | 9 | Completeness + coverage fences; dead-code clean; `mkp` | M | pending |
 
@@ -1205,7 +1206,10 @@ Phase 5 Status complete.
 - [ ] 6.1 `schematool_mssql.sh`.
 - [ ] 6.2 schemahelper connect/apply/const.
 - [ ] 6.3 `hydrogen_flush.sh` mssql path (drop/recreate schema or db).
-- [ ] 6.4 `transaction_utils.sh` mssql path.
+- [~] 6.4 `transaction_utils.sh` mssql path. Moved to Phase 7 on
+      2026-09-30. Test 40 probes every engine it launches, so the
+      matrix cannot land without this case. SchemaTool, SchemaHelper,
+      and `hydrogen_flush.sh` stay here.
 
 ### Done means
 
@@ -1221,12 +1225,13 @@ mssql SchemaTool wrapper does not call `psql` or `isql-fb`.
 | --- | --- |
 | **State** | not started |
 | **Date** | 2026-09-30 |
-| **Result** | Not started. The earlier text in this cell was a copy of the Test 39 scaffold. The work items above are this phase's work, and they are unchecked. |
-| **Variances** | None yet. |
+| **Result** | Items 6.1–6.3 not started. Item 6.4 moved to Phase 7: Test 40's DML probe calls `transaction_utils.sh` for every engine, and that case is `verify_tx_mssql` (in-container `sqlcmd`, schema `demoms`). |
+| **Variances** | 6.4 runs during Phase 7, before 6.1–6.3. |
 
 ### Working Log
 
 - **2026-09-30** Not started. The Test 39 file-creation notes copied here were removed. That work is Phase 5 items 5.1–5.3.
+- **2026-09-30** Operator asked to run the full suite before SchemaTool. Item 6.4 is the only Phase 6 piece on that path. It moved to Phase 7. 6.1–6.3 stay here.
 
 ### Lessons learned
 
@@ -1244,9 +1249,11 @@ implemented."
 
 ### Entry gate
 
-Phase 6 Status complete. Firebird may or may not have retired Cockroach;
+Phase 5 Status complete. Phase 6 items 6.1–6.3 are still open; their
+entry gate was waived on 2026-09-30 so this matrix can run. Item 6.4
+is part of this phase. Firebird may or may not have retired Cockroach;
 this phase **adds** mssql either way. Do not drop an existing engine to
-keep the count at 7.
+keep the count at 7. Matrix schema is `demoms`. Test 39 keeps `testms`.
 
 ### Work items
 
@@ -1268,18 +1275,22 @@ Status table: each suite green (or env skip). Loops print eight names.
 
 | | |
 | --- | --- |
-| **State** | not started |
+| **State** | in progress |
 | **Date** | 2026-09-30 |
-| **Result** | Not started. The earlier text in this cell was a copy of the Test 39 scaffold. The work items above are this phase's work, and they are unchecked. |
-| **Variances** | None yet. |
+| **Result** | Configs and loops are written. Work items stay open until the operator runs Tests 40, 43, 45, 46, 47, and 58 against `demoms`. `verify_tx_mssql` is in `tests/lib/transaction_utils.sh` 1.0.5 (in-container `sqlcmd`). Engine order: the existing seven, then MSSQL. Test 58's `MAILRELAY_API_ENGINE_ORDER` lists MSSQL after Yugabyte so it stays out of the first wave of four. Ports: 40 → 5409, 43 → 15437 and 15447, 45 → 5458, 46 → 15467, 47 → 15478 / 15488, 58 → 15832–15835. Tests 41, 44, 51, and 54 stay on their current engines. |
+| **Variances** | Started before Phase 6 items 6.1–6.3. Schema is `demoms`, not `demo`. |
 
 ### Working Log
 
 - **2026-09-30** Not started. The Test 39 file-creation notes copied here were removed. That work is Phase 5 items 5.1–5.3.
+- **2026-09-30** Operator created schema `demoms` in `hydrotst` and approved this slice ahead of SchemaTool. Added `hydrogen_test_{40,45}_mssql.json`, `hydrogen_test_43_scripting_mssql.json` plus the no-default twin, `hydrogen_test_46_conduit_script_mssql.json`, `hydrogen_test_47_mcp_mssql.json`, and `hydrogen_test_58_mssql.json`. Each uses `Schema: demoms`, `TestMigration: false`, and the Test 39 connection env vars. Test 43 keeps `AutoMigration: false`, matching the other engines. The rest keep `AutoMigration: true`. `create_test_db.sh` 1.1.0 creates `demoms` as well as `testms`. Boxes stay open until the suite is run.
+- **2026-09-30** Test 40 register failed on DB2, MySQL, and MSSQL for three separate reasons. `database_queue_determine_engine_type` treated every `DRIVER=` string as MSSQL, so a DB2-only process never called DB2 connect. `database_mssql.lua` 1.3.2 no longer skips the INSERT...WITH move after writing OUTPUT, skips `OUTPUT INSERTED.col` (the dot is not whitespace), and moves the whole CTE list. Oracle MySQL rejects `RETURNING`; the MySQL execute path wraps the selected `new_<column>` in `LAST_INSERT_ID` and reads `mysql_stmt_insert_id`. Firebird's failure is environmental: the package is installed, the unit is inactive, and port 3050 is closed. Boxes stay open until the operator re-runs the suite on a rebuilt `hydrogen_coverage`. The next apply still needs a payload built after this Lua change.
 
 ### Lessons learned
 
-(empty until the phase runs)
+- An empty `demoms` is not a migrated database. Test 43 does not apply. Tests 40, 45, 46, 47, and 58 apply on startup and will race each other on the first apply. One forward apply into `demoms` (Test 40 alone, `TestMigration` false) has to finish before the parallel 40s group.
+- A DB2 ODBC string contains `DRIVER=` and `HOSTNAME=`. SQL Server contains `DRIVER=` and `SERVER=` and no `HOSTNAME=`. Classifying every `DRIVER=` string as MSSQL makes every DB2 blackbox launch fail the same way.
+- `INSERT ... OUTPUT ... WITH` is not valid T-SQL. The CTE list has to come first, and a second CTE after a comma has to move with the first. FreeTDS reports the syntax error as native 8180, "Statement(s) could not be prepared."
 
 ---
 

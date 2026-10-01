@@ -4,6 +4,11 @@
 # Confirms multi-statement DML commit/rollback behavior that migration LOAD/APPLY rely on.
 
 # CHANGELOG
+# 1.0.6 - 2026-09-30 - Firebird probe no longer sets FIREBIRD=/tmp/firebird.
+#           That lock dir is mode 770 after fbguard starts, so isql stat fails
+#           with HY000 before any SQL. Network isql uses the client default.
+# 1.0.5 - 2026-09-30 - MSSQL commit/rollback probe via in-container sqlcmd
+#           on schema demoms. Does not call psql or isql-fb.
 # 1.0.4 - 2026-09-23 - Collapse isql diagnostics with one tr so an intermediate
 #           pipeline status is not masked.
 # 1.0.3 - 2026-09-22 - verify_tx_firebird: network SuperServer connect, no -z, simple AUTODDL script, collapse isql errors
@@ -16,7 +21,7 @@
 readonly TRANSACTION_UTILS_GUARD=1
 
 # Verify DML transactions for one engine.
-# Args: engine_key (postgresql|mysql|sqlite|db2|mariadb|firebird|yugabytedb)
+# Args: engine_key (postgresql|mysql|sqlite|db2|mariadb|firebird|yugabytedb|mssql)
 #        [schema] optional schema/qualifier (default engine-specific demo schema)
 #        [sqlite_path] required when engine_key=sqlite
 # Returns 0 on success, 1 on failure. Prints brief diagnostics to stdout.
@@ -89,6 +94,10 @@ verify_database_transactions() {
             fi
             qualified="${table_base}"
             out=$(verify_tx_sqlite "${sqlite_path}" "${qualified}" "${marker}") || rc=$?
+            ;;
+        mssql)
+            schema="${schema:-demoms}"
+            out=$(verify_tx_mssql "${schema}" "${marker}") || rc=$?
             ;;
         *)
             echo "transaction_utils: unsupported engine_key=${engine_key}"
@@ -182,11 +191,12 @@ verify_tx_firebird() {
     local counts
     local collapsed
     local server="localhost/3050:${db_path}"
-    local fb_env="${FIREBIRD:-/tmp/firebird}"
 
     # Best-effort drop so CREATE is clean (FB4 has no DROP TABLE IF EXISTS).
     # Run separately so a missing table does not abort the probe script.
-    FIREBIRD="${fb_env}" isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" \
+    # Do not set FIREBIRD. /tmp/firebird is the server lock dir, mode 770
+    # firebird:firebird, and isql treats FIREBIRD as its install root.
+    isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" \
         "${server}" <<< "DROP TABLE ${qualified};" >/dev/null 2>&1 || true
 
     sql=$(cat <<EOF
@@ -205,8 +215,8 @@ DROP TABLE ${qualified};
 COMMIT;
 EOF
 )
-    # Network SuperServer (same as create script); FIREBIRD for isql child only; no -z.
-    result=$(FIREBIRD="${fb_env}" isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" \
+    # Network SuperServer. No -z, and no FIREBIRD override (see the drop above).
+    result=$(isql-fb -user SYSDBA -password "${FIREBIRD_SYSDBA_PASSWORD:-}" \
         "${server}" -i /dev/stdin <<< "${sql}" 2>&1) || {
         collapsed=$(printf '%s' "${result}" | tr -s '[:space:]' ' ')
         echo "isql_error:${collapsed}"
@@ -373,5 +383,76 @@ EOF
     tail_snip=$(printf '%s\n' "${result}" | tail -5)
     tail_snip=$(printf '%s' "${tail_snip}" | tr '\n' ';')
     echo "unexpected_counts:${counts//$'\n'/,};tail=${tail_snip}"
+    return 1
+}
+
+# SQL Server autocommits DDL. The DML blocks are explicit transactions.
+# sqlcmd runs inside the Podman container; the host has no mssql-tools RPM.
+verify_tx_mssql() {
+    local schema="$1"
+    local marker="$2"
+    local container="philement-mssql"
+    local db="${MSSQL_DB_NAME:-hydrotst}"
+    local user="${MSSQL_DB_USER:-sa}"
+    local pass="${MSSQL_SA_PASSWORD:-}"
+    local sqlcmd="/opt/mssql-tools18/bin/sqlcmd"
+    local qualified
+    local sql
+    local result
+    local counts
+    local collapsed
+
+    if [[ -z "${pass}" ]]; then
+        echo "mssql_error:MSSQL_SA_PASSWORD required"
+        return 1
+    fi
+    if [[ ! "${schema}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+        echo "mssql_error:schema must be a plain identifier"
+        return 1
+    fi
+    if ! command -v podman >/dev/null 2>&1; then
+        echo "mssql_error:podman not found"
+        return 1
+    fi
+    # shellcheck disable=SC2312 # Container lookup is the probe's own precondition
+    if ! podman ps --format '{{.Names}}' 2>/dev/null | grep -qx "${container}"; then
+        echo "mssql_error:container ${container} is not running"
+        return 1
+    fi
+
+    qualified="[${schema}].[hydro_tx_probe]"
+    marker="${marker//\'/\'\'}"
+    sql=$(cat <<EOF
+SET NOCOUNT ON;
+SET XACT_ABORT ON;
+DROP TABLE IF EXISTS ${qualified};
+CREATE TABLE ${qualified} (id INT NOT NULL PRIMARY KEY, val NVARCHAR(128));
+BEGIN TRANSACTION;
+INSERT INTO ${qualified} (id, val) VALUES (1, N'${marker}');
+INSERT INTO ${qualified} (id, val) VALUES (2, N'${marker}');
+ROLLBACK TRANSACTION;
+SELECT COUNT(*) FROM ${qualified};
+BEGIN TRANSACTION;
+INSERT INTO ${qualified} (id, val) VALUES (1, N'${marker}');
+INSERT INTO ${qualified} (id, val) VALUES (2, N'${marker}');
+COMMIT TRANSACTION;
+SELECT COUNT(*) FROM ${qualified};
+DROP TABLE ${qualified};
+EOF
+)
+    result=$(podman exec -i "${container}" "${sqlcmd}" \
+        -S localhost -U "${user}" -P "${pass}" -C -d "${db}" \
+        -h-1 -W -b -i /dev/stdin <<< "${sql}" 2>&1) || {
+        collapsed=$(printf '%s' "${result}" | tr -s '[:space:]' ' ')
+        echo "sqlcmd_error:${collapsed}"
+        return 1
+    }
+    counts=$(printf '%s\n' "${result}" | tr -d ' ' | grep -E '^[0-9]+$' || true)
+    if _tx_counts_ok "${counts}"; then
+        echo "counts=0,2"
+        return 0
+    fi
+    collapsed=$(printf '%s' "${result}" | tr -s '[:space:]' ' ')
+    echo "unexpected_counts:${counts//$'\n'/,} out:${collapsed}"
     return 1
 }

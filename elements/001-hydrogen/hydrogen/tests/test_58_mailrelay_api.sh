@@ -15,6 +15,8 @@
 # (Helpers live in tests/lib/mailrelay_api_helpers.sh)
 
 # CHANGELOG
+# 2.12.0 - 2026-09-30 - Eighth engine: MSSQL on schema demoms, after Yugabyte
+#                      (web/mail 15832-15835; 15830-15831 stay the OTP listeners)
 # 2.11.0 - 2026-09-20 - Replaced CockroachDB with Firebird engine
 # 2.10.1 - 2026-09-16 - Suite-only Yugabyte flake: STARTUP_TIMEOUT 20s was below
 #                      mailrelay_init's 30s Persist QTC wait, so start_hydrogen
@@ -85,7 +87,7 @@ TEST_NAME="MailRelay API"
 TEST_ABBR="MRA"
 TEST_NUMBER="58"
 TEST_COUNTER=0
-TEST_VERSION="2.11.0"
+TEST_VERSION="2.12.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -106,12 +108,13 @@ MAILRELAY_API_ENGINES=(
     ["MariaDB"]="mariadb:15816:15817:15818:15819"
     ["Firebird"]="firebird:15820:15821:15822:15823"
     ["YugabyteDB"]="yugabytedb:15824:15825:15826:15827"
+    ["MSSQL"]="mssql:15832:15833:15834:15835"
 )
 
 # Hash order of MAILRELAY_API_ENGINES is not stable. Start fast engines first
 # so Yugabyte (slowest under suite load) is not in the first MAX_ENGINE_JOBS wave.
 MAILRELAY_API_ENGINE_ORDER=(
-    "SQLite" "PostgreSQL" "MySQL" "MariaDB" "DB2" "Firebird" "YugabyteDB"
+    "SQLite" "PostgreSQL" "MySQL" "MariaDB" "DB2" "Firebird" "YugabyteDB" "MSSQL"
 )
 
 # Timeouts (seconds). STARTUP_TIMEOUT must exceed mailrelay_init's 30s wait

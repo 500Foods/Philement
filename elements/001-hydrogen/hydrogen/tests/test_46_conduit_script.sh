@@ -14,6 +14,7 @@
 # analyze_engine()
 
 # CHANGELOG
+# 1.5.0 - 2026-09-30 - Eighth engine: MSSQL on schema demoms (port 15467)
 # 1.4.0 - 2026-09-20 - Replaced CockroachDB with Firebird engine
 # 1.3.9 - 2026-09-08 - Do not skip-pass Echo 404; SQLite online backup
 # 1.3.8 - 2026-08-29 - Added /api/system/jobs blackbox tests: authenticated GET (200 + array), unauthenticated GET (401), POST (405), raised pass threshold to 18
@@ -80,7 +81,7 @@ TEST_NAME="Conduit Script"
 TEST_ABBR="CSC"
 TEST_NUMBER="46"
 TEST_COUNTER=0
-TEST_VERSION="1.4.0"
+TEST_VERSION="1.5.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -103,6 +104,7 @@ SCRIPT_TEST_CONFIGS=(
     ["MariaDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_conduit_script_mariadb.json:mariadb:mariadb:MariaDB"
     ["Firebird"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_conduit_script_firebird.json:firebird:firebird:Firebird"
     ["YugabyteDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_conduit_script_yugabytedb.json:yugabytedb:yugabytedb:YugabyteDB"
+    ["MSSQL"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_conduit_script_mssql.json:mssql:mssql:MSSQL"
 )
 
 # shellcheck disable=SC2034 # Reserved for log messages / future fail-fast bounds

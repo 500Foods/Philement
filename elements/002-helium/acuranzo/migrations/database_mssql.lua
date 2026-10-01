@@ -4,6 +4,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 1.3.2 - 2026-09-30 - RETURNING no longer skips the INSERT...WITH move; OUTPUT before WITH is skipped
 -- 1.3.1 - 2026-09-30 - Keep the newline after SUBQUERY DELIMITER when moving INSERT...WITH
 -- 1.3.0 - 2026-09-30 - Statement-shape repairs (RETURNING, VALUES CTE, INSERT...WITH, ADD/DROP COLUMN)
 -- 1.2.0 - 2026-09-30 - base64_decode and base64_encode use UTF-8 bytes, same as the other engines
@@ -21,8 +22,10 @@
 -- ISJSON() available in SQL Server 2016+ for JSON validation.
 
 -- Statement-shape repairs. One pass per statement, so one RETURNING does
--- not suppress a VALUES body elsewhere. replace_query runs this before
--- [=[ ]=] blocks are sealed into queries.code.
+-- not suppress a VALUES body elsewhere. An OUTPUT clause left between the
+-- INSERT column list and WITH is skipped, so a second pass repairs SQL
+-- already stored as INSERT ... OUTPUT ... WITH. replace_query runs this
+-- before [=[ ]=] blocks are sealed into queries.code.
 
 local function skip_ws(s, i)
     local n = #s
@@ -150,34 +153,37 @@ local function rewrite_returning(s)
     return (result:gsub("%s+$", ""))
 end
 
-local function find_cte_open(s)
-    local i, n = 1, #s
-    while i <= n do
-        local after = match_word(s, i, "WITH")
-        if after and boundary_ok(s, i) then
-            local q = skip_ws(s, after)
-            local name = q
-            while q <= n do
-                local c = s:sub(q, q)
-                if not (c:match("[%w_%.]")) then break end
-                q = q + 1
-            end
-            if q ~= name then
-                q = skip_ws(s, q)
-                if s:sub(q, q) == "(" then
-                    local cols_close = find_close(s, q)
-                    if cols_close then q = skip_ws(s, cols_close + 1) end
-                end
-                local as_at = match_word(s, q, "AS")
-                if as_at then
-                    q = skip_ws(s, as_at)
-                    if s:sub(q, q) == "(" then return q end
-                end
-            end
+-- Index of the ')' that closes the last CTE in the WITH list starting at with_at.
+-- A following comma continues the list, so INSERT ... WITH a AS (...), b AS (...)
+-- moves both CTEs, not only the first.
+local function cte_list_end(s, with_at)
+    local after = match_word(s, with_at, "WITH")
+    if not after then return nil end
+    local q, n = skip_ws(s, after), #s
+    local recursive = match_word(s, q, "RECURSIVE")
+    if recursive then q = skip_ws(s, recursive) end
+    local last_close
+    while true do
+        local name = q
+        while q <= n and s:sub(q, q):match("[%w_%.]") do q = q + 1 end
+        if q == name then return nil end
+        q = skip_ws(s, q)
+        if s:sub(q, q) == "(" then
+            local cols_close = find_close(s, q)
+            if not cols_close then return nil end
+            q = skip_ws(s, cols_close + 1)
         end
-        i = i + 1
+        local as_at = match_word(s, q, "AS")
+        if not as_at then return nil end
+        q = skip_ws(s, as_at)
+        if s:sub(q, q) ~= "(" then return nil end
+        local body_close = find_close(s, q)
+        if not body_close then return nil end
+        last_close = body_close
+        q = skip_ws(s, body_close + 1)
+        if s:sub(q, q) ~= "," then return last_close end
+        q = skip_ws(s, q + 1)
     end
-    return nil
 end
 
 local function rewrite_insert_with(s)
@@ -210,10 +216,26 @@ local function rewrite_insert_with(s)
         if not close_at then return nil end
         past = skip_ws(s, close_at + 1)
     end
+    -- An earlier RETURNING pass leaves OUTPUT INSERTED.col between the
+    -- column list and WITH. Skip that clause so the CTE can still move.
+    -- SQL Server rejects INSERT ... OUTPUT ... WITH (FreeTDS native 8180).
+    local output_at = match_word(s, past, "OUTPUT")
+    if output_at then
+        past = skip_ws(s, output_at)
+        -- match_word rejects INSERTED.col because the dot is not whitespace.
+        if s:sub(past, past + 7):lower() ~= "inserted" then return nil end
+        local after_inserted = past + 8
+        local boundary = s:sub(after_inserted, after_inserted)
+        if boundary ~= "." and boundary ~= "" and not boundary:match("%s") then return nil end
+        past = skip_ws(s, after_inserted)
+        if s:sub(past, past) ~= "." then return nil end
+        past = past + 1
+        if not s:sub(past, past):match("[%a_]") then return nil end
+        while past <= n and s:sub(past, past):match("[%w_]") do past = past + 1 end
+        past = skip_ws(s, past)
+    end
     if not match_word(s, past, "WITH") then return nil end
-    local cte_open = find_cte_open(s)
-    if not cte_open then return nil end
-    local cte_close = find_close(s, cte_open)
+    local cte_close = cte_list_end(s, past)
     if not cte_close then return nil end
     -- Text before INSERT stays put. That prefix holds the newline after
     -- "-- SUBQUERY DELIMITER"; dropping it glues WITH onto the comment,
@@ -461,18 +483,15 @@ end
 local function rewrite_statement(s)
     if not s or s == "" then return s end
     local current = s
-    local returning = rewrite_returning(current)
-    if returning then
-        current = returning
-    else
-        for _ = 1, 4 do
-            local wrapped = rewrite_cte_values(current)
-            if not wrapped then break end
-            current = wrapped
-        end
-        local moved = rewrite_insert_with(current)
-        if moved then current = moved end
+    for _ = 1, 4 do
+        local wrapped = rewrite_cte_values(current)
+        if not wrapped then break end
+        current = wrapped
     end
+    local returning = rewrite_returning(current)
+    if returning then current = returning end
+    local moved = rewrite_insert_with(current)
+    if moved then current = moved end
     local added = rewrite_add_column(current)
     if added then current = added end
     local dropped = rewrite_drop_column(current)

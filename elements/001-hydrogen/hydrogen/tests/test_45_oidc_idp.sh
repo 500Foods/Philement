@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 
 # Test: OIDC Identity Provider — multi-engine parallel blackbox
-# Drives Hydrogen as IdP across 7 DBs: discovery, JWKS, authorize login,
+# Drives Hydrogen as IdP across 8 DBs: discovery, JWKS, authorize login,
 # PKCE token, userinfo, refresh, error paths (inverse of Test 42).
 
 # CHANGELOG
+# 2.3.0 - 2026-09-30 - Eighth engine: MSSQL on schema demoms (port 5458)
 # 2.2.0 - 2026-09-20 - Replaced CockroachDB with Firebird engine
 # 2.1.1 - 2026-08-27 - Startup/shutdown waits aligned with group40 (90s/30s).
 # 2.1.0 - 2026-07-28 - Introspect/revoke/end-session/register blackbox probes
@@ -19,7 +20,7 @@ TEST_NAME="OIDC Identity Provider"
 TEST_ABBR="IDP"
 TEST_NUMBER="45"
 TEST_COUNTER=0
-TEST_VERSION="2.2.0"
+TEST_VERSION="2.3.0"
 
 # shellcheck source=tests/lib/framework.sh # Resolve path at runtime via BASH_SOURCE
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -51,6 +52,7 @@ IDP_TEST_CONFIGS=(
     ["MariaDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mariadb.json:mariadb:mariadb:MariaDB Engine"
     ["Firebird"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_firebird.json:firebird:firebird:Firebird Engine"
     ["YugabyteDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_yugabytedb.json:yugabytedb:yugabytedb:YugabyteDB Engine"
+    ["MSSQL"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mssql.json:mssql:mssql:MSSQL Engine"
 )
 
 pass_subtest() {

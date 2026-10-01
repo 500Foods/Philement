@@ -43,6 +43,7 @@ extern mysql_stmt_affected_rows_t mysql_stmt_affected_rows_ptr;
 extern mysql_stmt_store_result_t mysql_stmt_store_result_ptr;
 extern mysql_stmt_free_result_t mysql_stmt_free_result_ptr;
 extern mysql_stmt_field_count_t mysql_stmt_field_count_ptr;
+extern mysql_stmt_insert_id_t mysql_stmt_insert_id_ptr;
 
 /*
  * Helper Functions
@@ -427,6 +428,94 @@ bool mysql_bind_single_parameter(void* bind_ptr, unsigned int param_index, Typed
     }
 }
 
+#define MYSQL_IS_IDENT(c) \
+    (((c) >= 'A' && (c) <= 'Z') || ((c) >= 'a' && (c) <= 'z') || \
+     ((c) >= '0' && (c) <= '9') || (c) == '_')
+
+/*
+ * Oracle MySQL 8 parses RETURNING as an alias and then rejects the column
+ * name. LAST_INSERT_ID(expr) still reports an explicit key, including one
+ * computed by MAX+1, and mysql_stmt_insert_id returns it after execute.
+ * The AS new_<column> alias is left alone; the later selected token is wrapped.
+ */
+char* mysql_rewrite_insert_returning(const char* sql, char* column_name, size_t column_name_len) {
+    if (!sql || !column_name || column_name_len < 2) return NULL;
+    column_name[0] = '\0';
+
+    size_t len = strlen(sql);
+    while (len > 0 && strchr(" \t\n\r", sql[len - 1]) != NULL) len--;
+    if (len > 0 && sql[len - 1] == ';') {
+        len--;
+        while (len > 0 && strchr(" \t\n\r", sql[len - 1]) != NULL) len--;
+    }
+
+    size_t col_end = len;
+    size_t col_at = col_end;
+    while (col_at > 0 && MYSQL_IS_IDENT(sql[col_at - 1])) col_at--;
+    if (col_at == col_end || col_at == 0 || (sql[col_at] >= '0' && sql[col_at] <= '9')) return NULL;
+
+    size_t gap = col_at;
+    while (gap > 0 && strchr(" \t\n\r", sql[gap - 1]) != NULL) gap--;
+    if (gap < 9 || strncasecmp(sql + gap - 9, "RETURNING", 9) != 0) return NULL;
+    if (gap > 9 && MYSQL_IS_IDENT(sql[gap - 10])) return NULL;
+    size_t ret_at = gap - 9;
+
+    size_t col_len = col_end - col_at;
+    if (col_len + 1 > column_name_len || col_len > 123) return NULL;
+    memcpy(column_name, sql + col_at, col_len);
+    column_name[col_len] = '\0';
+
+    char needle[128];
+    memcpy(needle, "new_", 4);
+    memcpy(needle + 4, column_name, col_len + 1);
+    size_t needle_len = 4 + col_len;
+
+    const char* found = NULL;
+    for (size_t i = 0; i + needle_len <= ret_at; i++) {
+        if (strncasecmp(sql + i, needle, needle_len) != 0) continue;
+        if (i > 0 && MYSQL_IS_IDENT(sql[i - 1])) continue;
+        if (i + needle_len < ret_at && MYSQL_IS_IDENT(sql[i + needle_len])) continue;
+        size_t p = i;
+        while (p > 0 && strchr(" \t\n\r", sql[p - 1]) != NULL) p--;
+        if (p >= 2 && strncasecmp(sql + p - 2, "AS", 2) == 0 &&
+            (p == 2 || !MYSQL_IS_IDENT(sql[p - 3]))) {
+            continue;
+        }
+        found = sql + i;
+    }
+    if (!found) {
+        column_name[0] = '\0';
+        return NULL;
+    }
+
+    size_t prefix = (size_t)(found - sql);
+    size_t mid_at = prefix + needle_len;
+    size_t mid_len = ret_at - mid_at;
+    const char wrap[] = "LAST_INSERT_ID(";
+    size_t open_len = sizeof(wrap) - 1;
+    size_t out_len = prefix + open_len + needle_len + 1 + mid_len;
+    char* out = malloc(out_len + 1);
+    if (!out) {
+        column_name[0] = '\0';
+        return NULL;
+    }
+    memcpy(out, sql, prefix);
+    memcpy(out + prefix, wrap, open_len);
+    memcpy(out + prefix + open_len, found, needle_len);
+    out[prefix + open_len + needle_len] = ')';
+    if (mid_len > 0) {
+        memcpy(out + prefix + open_len + needle_len + 1, sql + mid_at, mid_len);
+    }
+    out[out_len] = '\0';
+    while (out_len > 0 && strchr(" \t\n\r", out[out_len - 1]) != NULL) {
+        out_len--;
+        out[out_len] = '\0';
+    }
+    return out;
+}
+
+#undef MYSQL_IS_IDENT
+
 /*
  * Query Execution
  */
@@ -478,7 +567,12 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
         }
         
         log_this(designator, "MySQL execute_query: Converted to positional SQL with %zu parameters", LOG_LEVEL_TRACE, 1, ordered_count);
-        
+
+        char returning_column[64] = "";
+        char* rewritten_sql = mysql_rewrite_insert_returning(positional_sql, returning_column, sizeof(returning_column));
+        const char* prepare_sql = rewritten_sql ? rewritten_sql : positional_sql;
+        unsigned long long inserted_id = 0;
+
         // Initialize prepared statement
         void* stmt = NULL;
         if (mysql_stmt_init_ptr) {
@@ -487,6 +581,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
         
         if (!stmt) {
             log_this(designator, "MySQL execute_query: Failed to initialize prepared statement", LOG_LEVEL_ERROR, 0);
+            free(rewritten_sql);
             free(positional_sql);
             free(ordered_params);
             free_parameter_list(param_list);
@@ -494,7 +589,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
         }
         
         // Prepare statement
-        if (!mysql_stmt_prepare_ptr || mysql_stmt_prepare_ptr(stmt, positional_sql, (unsigned long)strlen(positional_sql)) != 0) {
+        if (!mysql_stmt_prepare_ptr || mysql_stmt_prepare_ptr(stmt, prepare_sql, (unsigned long)strlen(prepare_sql)) != 0) {
             log_this(designator, "MySQL execute_query: Failed to prepare statement", LOG_LEVEL_ERROR, 0);
             char* error_message = NULL;
             if (mysql_stmt_error_ptr) {
@@ -527,6 +622,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
             if (mysql_stmt_close_ptr) {
                 mysql_stmt_close_ptr(stmt);
             }
+            free(rewritten_sql);
             free(positional_sql);
             free(ordered_params);
             free_parameter_list(param_list);
@@ -544,6 +640,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
             if (mysql_stmt_close_ptr) {
                 mysql_stmt_close_ptr(stmt);
             }
+            free(rewritten_sql);
             free(positional_sql);
             free(ordered_params);
             free_parameter_list(param_list);
@@ -591,6 +688,9 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                 bind_success = false;
             } else {
                 log_this(designator, "MySQL execute_query: Prepared statement executed successfully", LOG_LEVEL_TRACE, 0);
+                if (rewritten_sql && mysql_stmt_insert_id_ptr) {
+                    inserted_id = mysql_stmt_insert_id_ptr(stmt);
+                }
                 // Create result structure and use helper to process results
                 db_result = calloc(1, sizeof(QueryResult));
                 if (db_result && !mysql_process_prepared_stmt_result(stmt, db_result, designator)) {
@@ -598,6 +698,19 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                     free(db_result);
                     db_result = NULL;
                     bind_success = false;
+                } else if (db_result && inserted_id > 0 && returning_column[0] != '\0') {
+                    char id_json[96];
+                    int wrote = snprintf(id_json, sizeof(id_json), "[{\"%s\":%llu}]", returning_column, inserted_id);
+                    if (wrote > 0 && (size_t)wrote < sizeof(id_json)) {
+                        char* id_copy = strdup(id_json);
+                        if (id_copy) {
+                            free(db_result->data_json);
+                            db_result->data_json = id_copy;
+                            db_result->row_count = 1;
+                            db_result->column_count = 1;
+                            db_result->success = true;
+                        }
+                    }
                 }
             }
         }
@@ -608,6 +721,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
         if (mysql_stmt_close_ptr) {
             mysql_stmt_close_ptr(stmt);
         }
+        free(rewritten_sql);
         free(positional_sql);
         free(ordered_params);
         free_parameter_list(param_list);

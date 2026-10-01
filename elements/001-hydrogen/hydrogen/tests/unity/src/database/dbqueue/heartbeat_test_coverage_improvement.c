@@ -140,6 +140,19 @@ void test_database_queue_determine_engine_type(void) {
 
     // Test DB2
     TEST_ASSERT_EQUAL(DB_ENGINE_DB2, database_queue_determine_engine_type("DATABASE=testdb;HOSTNAME=localhost"));
+    TEST_ASSERT_EQUAL(DB_ENGINE_DB2, database_queue_determine_engine_type(
+        "DRIVER={IBM DB2 ODBC DRIVER};DATABASE=testdb;HOSTNAME=localhost;PORT=50000;PROTOCOL=TCPIP;UID=user;PWD=password;CurrentSchema=demo;"));
+    TEST_ASSERT_EQUAL(DB_ENGINE_DB2, database_queue_determine_engine_type(
+        "DRIVER={DB2};DATABASE=testdb;HOSTNAME=localhost;PORT=50000;PROTOCOL=TCPIP;UID=user;PWD=password;"));
+
+    // Test MSSQL. SERVER= without HOSTNAME= is SQL Server; mssql:// is explicit.
+    TEST_ASSERT_EQUAL(DB_ENGINE_MSSQL, database_queue_determine_engine_type(
+        "DRIVER={FreeTDS};SERVER=127.0.0.1,1433;DATABASE=hydrotst;UID=sa;PWD=secret;TDS_VERSION=7.4;"));
+    TEST_ASSERT_EQUAL(DB_ENGINE_MSSQL, database_queue_determine_engine_type("mssql://sa:secret@127.0.0.1:1433/hydrotst"));
+    TEST_ASSERT_EQUAL(DB_ENGINE_MSSQL, database_queue_determine_engine_type("sqlserver://sa:secret@127.0.0.1:1433/hydrotst"));
+
+    // Test MariaDB
+    TEST_ASSERT_EQUAL(DB_ENGINE_MARIADB, database_queue_determine_engine_type("mariadb://user:pass@host:3306/db"));
 
     // Test Firebird
     TEST_ASSERT_EQUAL(DB_ENGINE_FIREBIRD, database_queue_determine_engine_type("firebird://localhost:3050/test.fdb"));

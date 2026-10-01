@@ -50,6 +50,7 @@ mysql_stmt_affected_rows_t mysql_stmt_affected_rows_ptr = mock_mysql_stmt_affect
 mysql_stmt_store_result_t mysql_stmt_store_result_ptr = mock_mysql_stmt_store_result;
 mysql_stmt_free_result_t mysql_stmt_free_result_ptr = mock_mysql_stmt_free_result;
 mysql_stmt_field_count_t mysql_stmt_field_count_ptr = mock_mysql_stmt_field_count;
+mysql_stmt_insert_id_t mysql_stmt_insert_id_ptr = NULL;
 mysql_kill_t mysql_kill_ptr = mock_mysql_kill;
 mysql_thread_id_t mysql_thread_id_ptr = mock_mysql_thread_id;
 #else
@@ -83,6 +84,7 @@ mysql_stmt_affected_rows_t mysql_stmt_affected_rows_ptr = NULL;
 mysql_stmt_store_result_t mysql_stmt_store_result_ptr = NULL;
 mysql_stmt_free_result_t mysql_stmt_free_result_ptr = NULL;
 mysql_stmt_field_count_t mysql_stmt_field_count_ptr = NULL;
+mysql_stmt_insert_id_t mysql_stmt_insert_id_ptr = NULL;
 mysql_kill_t mysql_kill_ptr = NULL;
 mysql_thread_id_t mysql_thread_id_ptr = NULL;
 #endif
@@ -161,6 +163,7 @@ bool load_libmysql_functions(const char* designator __attribute__((unused))) {
     mysql_stmt_store_result_ptr = (mysql_stmt_store_result_t)dlsym(libmysql_handle, "mysql_stmt_store_result");
     mysql_stmt_free_result_ptr = (mysql_stmt_free_result_t)dlsym(libmysql_handle, "mysql_stmt_free_result");
     mysql_stmt_field_count_ptr = (mysql_stmt_field_count_t)dlsym(libmysql_handle, "mysql_stmt_field_count");
+    mysql_stmt_insert_id_ptr = (mysql_stmt_insert_id_t)dlsym(libmysql_handle, "mysql_stmt_insert_id");
     mysql_kill_ptr = (mysql_kill_t)dlsym(libmysql_handle, "mysql_kill");
     mysql_thread_id_ptr = (mysql_thread_id_t)dlsym(libmysql_handle, "mysql_thread_id");
 #pragma GCC diagnostic pop
@@ -189,6 +192,9 @@ bool load_libmysql_functions(const char* designator __attribute__((unused))) {
     }
     if (!mysql_stmt_init_ptr || !mysql_stmt_prepare_ptr || !mysql_stmt_execute_ptr || !mysql_stmt_close_ptr) {
         log_this(log_subsystem, "Prepared statement functions not available - prepared statements will be limited", LOG_LEVEL_TRACE, 0);
+    }
+    if (!mysql_stmt_insert_id_ptr) {
+        log_this(log_subsystem, "mysql_stmt_insert_id function not available - INSERT RETURNING will not return the new key", LOG_LEVEL_TRACE, 0);
     }
     if (!mysql_kill_ptr || !mysql_thread_id_ptr) {
         log_this(log_subsystem, "mysql_kill / mysql_thread_id not available - watchdog cancel will be a no-op for MySQL", LOG_LEVEL_ALERT, 0);

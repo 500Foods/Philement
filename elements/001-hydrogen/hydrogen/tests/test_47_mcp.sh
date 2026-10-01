@@ -10,6 +10,7 @@
 # run_disabled()
 
 # CHANGELOG
+# 1.3.0 - 2026-09-30 - Eighth engine: MSSQL on schema demoms (web 15478, MCP 15488)
 # 1.2.0 - 2026-09-20 - Replaced CockroachDB with Firebird engine
 # 1.1.12 - 2026-09-08 - Overlap Echo must reject JSON-RPC errors
 # 1.1.11 - 2026-09-04 - Unique JSON-RPC id + extra retries for System.Info;
@@ -36,7 +37,7 @@ TEST_NAME="MCP Server"
 TEST_ABBR="MCP"
 TEST_NUMBER="47"
 TEST_COUNTER=0
-TEST_VERSION="1.2.0"
+TEST_VERSION="1.3.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -59,6 +60,7 @@ SCRIPT_TEST_CONFIGS=(
     ["MariaDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mcp_mariadb.json:mariadb:mariadb:MariaDB"
     ["Firebird"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mcp_firebird.json:firebird:firebird:Firebird"
     ["YugabyteDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mcp_yugabytedb.json:yugabytedb:yugabytedb:YugabyteDB"
+    ["MSSQL"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mcp_mssql.json:mssql:mssql:MSSQL"
 )
 
 DISABLED_CONFIG="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mcp_disabled.json"

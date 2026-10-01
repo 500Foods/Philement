@@ -87,7 +87,7 @@ See `docs/H/SECRETS.md` for `MSSQL_SA_PASSWORD`.
 | --- | --- | --- |
 | `hydrotst` | `MSSQL_TEST_DB` | Acuranzo Test 39 migration isolation database |
 
-The `testms` schema within `hydrotst` is analogous to `testcrdb` / `testfb`.
+`hydrotst` holds two schemas. `testms` is Test 39 and is reversed with that test. `demoms` is the matrix schema for Tests 40, 43, 45, 46, 47, and 58. `create_test_db.sh` creates both.
 
 Example:
 
