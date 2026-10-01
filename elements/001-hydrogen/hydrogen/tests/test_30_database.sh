@@ -15,6 +15,7 @@
 # wait_for_dqm_initialization()
 
 # CHANGELOG
+# 1.6.0 - 2026-10-01 - Added MariaDB, YugabyteDB, and MSSQL (eight engines plus Multi)
 # 1.5.0 - 2026-09-23 - Added Firebird as a fifth engine (dedicated config plus Multi)
 # 1.4.2 - 2025-09-22 - Fixed bash syntax errors in arithmetic comparisons
 #                    - Fixed: [[ ${var} -lt ${var} ]] syntax errors at lines 117 and 123
@@ -51,11 +52,11 @@
 set -euo pipefail
 
 # Test Configuration
-TEST_NAME="Databases  {BLUE}engines: 5{RESET}"
+TEST_NAME="Databases  {BLUE}engines: 8{RESET}"
 TEST_ABBR="DBS"
 TEST_NUMBER="30"
 TEST_COUNTER=0
-TEST_VERSION="1.5.0"
+TEST_VERSION="1.6.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -66,12 +67,17 @@ declare -a PARALLEL_PIDS
 declare -A DATABASE_TEST_CONFIGS
 
 # Database test configuration - format: "config_file:log_suffix:engine_name:description"
+# Eight engines, then the combined config. YugabyteDB uses the PostgreSQL
+# driver (YUGABYTE_DB_TYPE); it is still its own server and its own config.
 DATABASE_TEST_CONFIGS=(
     ["PostGreSQL"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_postgres.json:postgres:postgresql:PostgreSQL Engine"
     ["MySQL"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mysql.json:mysql:mysql:MySQL Engine"
     ["SQLite"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_sqlite.json:sqlite:sqlite:SQLite Engine"
     ["DB2"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_db2.json:db2:db2:DB2 Engine"
+    ["MariaDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mariadb.json:mariadb:mariadb:MariaDB Engine"
     ["Firebird"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_firebird.json:firebird:firebird:Firebird Engine"
+    ["YugabyteDB"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_yugabytedb.json:yugabytedb:yugabytedb:YugabyteDB Engine"
+    ["MSSQL"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_mssql.json:mssql:mssql:MSSQL Engine"
     ["Multi"]="${SCRIPT_DIR}/configs/hydrogen_test_${TEST_NUMBER}_multi.json:multi:multi:Multi Engine"
 )
 

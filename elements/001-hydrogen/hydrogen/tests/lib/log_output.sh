@@ -411,7 +411,7 @@ print_output() {
     # Skip output if message is empty or contains only whitespace
     if [[ -n "${processed_message}" && ! "${processed_message}" =~ ^[[:space:]]*$ ]]; then
         if [[ "${TEST_COUNTER}" -ne $((TEST_PASSED_COUNT + TEST_FAILED_COUNT)) ]]; then
-            local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${DATA_COLOR}${DATA_ICON} ${DATA_COLOR}DATA${NC}     ${DATA_COLOR}${processed_message}${NC}"
+            local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${DATA_COLOR}${DATA_ICON} ${DATA_COLOR}DATA   ───${NC} ${DATA_COLOR}${processed_message}${NC}"
         else
             local formatted_output=" ${NC} ${test_ref}   ${elapsed}   ${DATA_COLOR}${DATA_ICON} ${DATA_COLOR}DATA${NC}   ${DATA_COLOR}${processed_message}${NC}"
         fi

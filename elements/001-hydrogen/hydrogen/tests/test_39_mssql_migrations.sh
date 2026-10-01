@@ -8,6 +8,7 @@
 # run_migration_test()
 
 # CHANGELOG
+# 1.0.2 - 2026-10-01 - Config check keeps the single result from validate_config_file
 # 1.0.1 - 2026-09-30 - Fail when the final migration summary is available=0 loaded=0 applied=0
 # 1.0.0 - 2026-09-30 - Initial implementation for MSSQL migration testing
 
@@ -18,7 +19,7 @@ TEST_NAME="MSSQL Migration"
 TEST_ABBR="MSQ"
 TEST_NUMBER="39"
 TEST_COUNTER=0
-TEST_VERSION="1.0.1"
+TEST_VERSION="1.0.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -164,10 +165,10 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File"
 if validate_config_file "${CONFIG_FILE}"; then
     port=$(get_webserver_port "${CONFIG_FILE}")
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${ENGINE_NAME} migration configuration will use port: ${port}"
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Configuration file validated successfully"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Configuration file validated successfully"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
 else
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Configuration file validation failed"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Configuration file validation failed"
     EXIT_CODE=1
 fi
 

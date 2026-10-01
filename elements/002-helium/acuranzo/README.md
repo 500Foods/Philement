@@ -189,7 +189,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1148](/elements/002-helium/acuranzo/migrations/acuranzo_1148.lua) | queries | 1.0.0 | 2026-01-17 | 4 | ✗ | QueryRef #054 - Get Icons |
 | [1149](/elements/002-helium/acuranzo/migrations/acuranzo_1149.lua) | queries | 1.0.0 | 2026-01-19 | 4 | ✗ | QueryRef #055 - Get Number Range |
 | [1150](/elements/002-helium/acuranzo/migrations/acuranzo_1150.lua) | queries | 1.0.0 | 2026-01-20 | 4 | ✗ | QueryRef #056 - Query Error Handling |
-| [1151](/elements/002-helium/acuranzo/migrations/acuranzo_1151.lua) | queries | 1.6.0 | 2026-09-29 | 10 | ✗ | QueryRef #057 - Query Params Test |
+| [1151](/elements/002-helium/acuranzo/migrations/acuranzo_1151.lua) | queries | 1.7.0 | 2026-10-01 | 10 | ✗ | QueryRef #057 - Query Params Test |
 | [1152](/elements/002-helium/acuranzo/migrations/acuranzo_1152.lua) | lookups | 1.0.1 | 2026-04-11 | 4 | ✗ | Lookup 059 - Table Definitions |
 | [1153](/elements/002-helium/acuranzo/migrations/acuranzo_1153.lua) | lookups | 1.0.2 | 2026-04-19 | 4 | ✗ | LithiumTable Column Types (lookup_id 059, key_idx 0) |
 | [1154](/elements/002-helium/acuranzo/migrations/acuranzo_1154.lua) | lookups | 1.5.0 | 2026-07-02 | 4 | ✗ | LithiumTable JSON Schema (lookup_id 059, key_idx 1) |
@@ -423,4 +423,5 @@ in the migrations themselves so that they get populated in the database directly
 | [1382](/elements/002-helium/acuranzo/migrations/acuranzo_1382.lua) | lookups | 1.0.1 | 2026-09-16 | 8 | ✗ | Retarget Lookup 037 from Role Status to Role Origin |
 | [1383](/elements/002-helium/acuranzo/migrations/acuranzo_1383.lua) | lookups | 1.0.0 | 2026-09-16 | 4 | ✗ | Addition to Lookup 030 - Query Dialect (key 6 Firebase) |
 | [1384](/elements/002-helium/acuranzo/migrations/acuranzo_1384.lua) | lookups | 1.0.0 | 2026-09-18 | 4 | ✗ | UPDATE Lookup 030 - Query Dialect (key 6 Firebase → Firebird) |
-| **385** | | | | **2010** | **385** | |
+| [1385](/elements/002-helium/acuranzo/migrations/acuranzo_1385.lua) | queries | 1.0.0 | 2026-10-01 | 4 | ✗ | QueryRef #154 claim: derived pick so MySQL and SQL Server accept it |
+| **386** | | | | **2014** | **386** | |

@@ -1,0 +1,33 @@
+{
+    "Server": {
+        "ServerName": "hydrogen-test-30-yugabytedb",
+        "PayloadKey": "${env.PAYLOAD_KEY}"
+    },
+    "WebServer": {
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "Port": 5307
+    },
+    "Databases": {
+        "ConnectionCount": 1,
+        "Connections": [
+            {
+                "Enabled": true,
+                "Name": "YB",
+                "Engine": "${env.YUGABYTE_DB_TYPE}",
+                "Host": "${env.YUGABYTE_DB_HOST}",
+                "Port": "${env.YUGABYTE_DB_PORT}",
+                "Database": "${env.YUGABYTE_DB_NAME}",
+                "User": "${env.YUGABYTE_DB_USER}",
+                "Pass": "${env.YUGABYTE_DB_PASS}",
+                "Schema": "demo",
+                "Bootstrap": "SELECT * FROM demo.queries;",
+                "Queues": {
+                    "Slow": {
+                        "start": 2
+                    }
+                }
+            }
+        ]
+    }
+}

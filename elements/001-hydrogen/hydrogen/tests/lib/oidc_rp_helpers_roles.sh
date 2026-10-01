@@ -40,6 +40,7 @@
 #   - seed_provision_queryrefs
 #
 # CHANGELOG
+# 1.2.1 - 2026-10-01 - Config checks keep the single result from validate_config_file
 # 1.2.0 - 2026-08-31 - Fix two bugs causing Phase 22 database-source sub-test
 #                    failure (Expected roles to contain '42', got: ''):
 #                    (1) seed_role_row/unseed_role_row used raw sqlite3 with
@@ -510,14 +511,14 @@ run_phase22_roles_tests() {
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate default-config for Phase 22 (database source)"
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if ! validate_config_file "${p22_default_config}"; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Phase 22 default-config validation failed"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Phase 22 default-config validation failed"
         EXIT_CODE=1
         return
     fi
     local p22_default_port
     p22_default_port=$(get_webserver_port "${p22_default_config}")
     local p22_default_base_url="http://localhost:${p22_default_port}"
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Phase 22 default-config validated (port ${p22_default_port})"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Phase 22 default-config validated (port ${p22_default_port})"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
 
     # Seed QueryRefs BEFORE Hydrogen starts.
@@ -582,14 +583,14 @@ run_phase22_roles_tests() {
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate idp-roles-config (idp_realm_roles)"
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if ! validate_config_file "${config_path_idp}"; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "idp-roles-config validation failed"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "idp-roles-config validation failed"
         EXIT_CODE=1
         return
     fi
     local idp_port
     idp_port=$(get_webserver_port "${config_path_idp}")
     local idp_base_url="http://localhost:${idp_port}"
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "idp-roles-config validated (port ${idp_port})"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "idp-roles-config validated (port ${idp_port})"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
 
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen Server (idp-roles config)"
@@ -648,14 +649,14 @@ run_phase22_roles_tests() {
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate merge-config (merge + IdpRolePrefix=kc:)"
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if ! validate_config_file "${config_path_merge}"; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "merge-config validation failed"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "merge-config validation failed"
         EXIT_CODE=1
         return
     fi
     local merge_port
     merge_port=$(get_webserver_port "${config_path_merge}")
     local merge_base_url="http://localhost:${merge_port}"
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "merge-config validated (port ${merge_port})"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "merge-config validated (port ${merge_port})"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
 
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen Server (merge config)"

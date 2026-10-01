@@ -2,7 +2,7 @@
 
 # Test: Conduit Alt Single Query Endpoint
 # Tests the /api/conduit/alt_query endpoint for single authenticated query with database override
-# Launches unified server with 7 database engines and tests alt single query functionality
+# Launches unified server with 8 database engines and tests alt single query functionality
 
 # FUNCTIONS
 # validate_conduit_request()
@@ -11,6 +11,7 @@
 # analyze_conduit_results()
 
 # CHANGELOG
+# 1.1.5 - 2026-10-01 - Eighth engine: MSSQL (Demo_MS, schema demoms)
 # 1.1.4 - 2026-09-04 - Drop extra print_result after validate_config_file
 # 1.1.3 - 2026-09-04 - Pair TEST/PASS/FAIL; print_subtest owns TEST_COUNTER
 # 1.1.2 - 2026-07-15 - Use database-keyed JWT lookup when engines are skipped
@@ -30,7 +31,7 @@ TEST_NAME="Conduit Alt Query"
 TEST_ABBR="CF1"
 TEST_NUMBER="54"
 TEST_COUNTER=0
-TEST_VERSION="1.1.4"
+TEST_VERSION="1.1.5"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -38,7 +39,7 @@ TEST_VERSION="1.1.4"
 [[ -n "${CONDUIT_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/conduit_utils.sh"
 setup_test_environment
 
-# Single server configuration with all 7 database engines
+# Single server configuration with all 8 database engines
 CONDUIT_CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_54_conduit_alt_query.json"
 CONDUIT_LOG_SUFFIX="conduit_alt_query"
 CONDUIT_DESCRIPTION="Conduit Alt Single Query"
@@ -64,7 +65,7 @@ DEMO_EMAIL="${HYDROGEN_DEMO_EMAIL:-}"
 DEMO_API_KEY="${HYDROGEN_DEMO_API_KEY:-}"
 
 # Function to test conduit alt single query endpoint with cross-database testing
-# Tests 7x2 matrix: Each of 7 databases' JWT tokens used to query 2 different databases
+# Tests an 8x2 matrix: each ready database's JWT is used to query 2 other databases
 test_conduit_alt_single_query() {
     local base_url="$1"
     local result_file="$2"

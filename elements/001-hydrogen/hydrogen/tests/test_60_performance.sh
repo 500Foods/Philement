@@ -1,16 +1,25 @@
 #!/usr/bin/env bash
 
 # Test: Performance Testing
-# Tests API performance across 7 database engines with timing measurements
-# Runs 5 iterations of query sequences to measure response times and caching effectiveness
+# Tests API performance across 8 database engines with timing measurements
+# Runs 5 iterations. Each iteration signs in, then scans the query catalog
+# repeatedly and reads the lookup list. The comparison uses the median of
+# the warm, successful query times. Sign-in time is reported beside that.
 
 # FUNCTIONS
 # run_performance_test_iteration()
 # get_jwt_token()
 # run_query_sequence()
 # print_performance_summary()
+# median_ms()
+# format_seconds()
 
 # CHANGELOG
+# 1.0.4 - 2026-10-01 - Score the median of warm catalog scans, not the fastest sample
+#                    - QueryRef 25 (Get Queries List) repeated, plus QueryRef 30
+#                    - Sign-in time is reported and left out of the comparison
+#                    - A run that returned an error cannot win
+# 1.0.3 - 2026-10-01 - Eighth engine: MSSQL (Demo_MS, schema demoms)
 # 1.0.2 - 2026-07-15 - Preserve conduit database mappings across sourced suite tests
 #                    - Shared maps are now global instead of disappearing after the
 #                      first run_single_test() function returns
@@ -31,7 +40,7 @@ TEST_NAME="Performance Test"
 TEST_ABBR="PRF"
 TEST_NUMBER="60"
 TEST_COUNTER=0
-TEST_VERSION="1.0.2"
+TEST_VERSION="1.0.4"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -39,16 +48,26 @@ TEST_VERSION="1.0.2"
 [[ -n "${CONDUIT_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/conduit_utils.sh"
 setup_test_environment
 
-# Single server configuration with all 7 database engines
+# Single server configuration with all 8 database engines
 PERF_CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_60_performance.json"
 PERF_LOG_SUFFIX="performance"
 PERF_DESCRIPTION="PERF"
 
-# Number of iterations for performance testing
+# Number of iterations for performance testing. Iteration 1 is warmup and
+# is shown in the table, then left out of the median.
 PERF_ITERATIONS=5
 
-# Arrays to store timing results per database per iteration
+# QueryRef 25 reads every stored query and computes the length of its name,
+# summary, and code. That table is the largest body of text each migrated
+# engine actually holds. Repeating it spends the iteration on that scan
+# instead of on another HTTP round trip. QueryRef 30, the lookup list, runs
+# once after these scans.
+PERF_CATALOG_REPEATS=3
+
+# Arrays to store timing results per database per iteration.
+# PERF_TIMINGS is query time only. Sign-in time is kept separately.
 declare -A PERF_TIMINGS
+declare -A PERF_LOGIN_TIMINGS
 declare -A PERF_DATA_TRANSFERRED
 declare -A PERF_ERROR_COUNTS
 
@@ -56,6 +75,43 @@ declare -A PERF_ERROR_COUNTS
 # detect the case where every database was skipped (not ready / not reachable) so
 # the test can fail honestly instead of reporting a bogus winner.
 PERF_MEASURED_COUNT=0
+
+# Milliseconds as d.ddd seconds.
+format_seconds() {
+    local ms="$1"
+    printf "%d.%03d" $((ms / 1000)) $((ms % 1000))
+}
+
+# Median of integer millisecond samples. An even count averages the two
+# middle values. Prints nothing when there are no samples.
+median_ms() {
+    local -a samples=("$@")
+    local count=${#samples[@]}
+    if [[ ${count} -eq 0 ]]; then
+        return 0
+    fi
+
+    # Five samples at most. Sort here so the median does not depend on sort(1).
+    local -a sorted=("${samples[@]}")
+    local i j key
+    for ((i=1; i<count; i++)); do
+        key="${sorted[${i}]}"
+        j=$((i - 1))
+        while [[ ${j} -ge 0 && ${sorted[${j}]} -gt ${key} ]]; do
+            sorted[j + 1]="${sorted[${j}]}"
+            j=$((j - 1))
+        done
+        sorted[j + 1]="${key}"
+    done
+
+    local mid=$((count / 2))
+    if [[ $((count % 2)) -eq 1 ]]; then
+        echo "${sorted[${mid}]}"
+    else
+        local low=$((mid - 1))
+        echo $(( (sorted[low] + sorted[mid]) / 2 ))
+    fi
+}
 
 # Demo credentials from environment variables
 # shellcheck disable=SC2034 # Variables used in heredocs for JSON payloads
@@ -171,71 +227,13 @@ run_single_query_timed() {
     echo "${elapsed_ms}:${data_transferred}:${error}"
 }
 
-# Function to run a batched queries request and measure timing
-# Returns: "elapsed_time_ms:data_transferred_bytes:error"
-run_batched_queries_timed() {
-    local base_url="$1"
-    local db_name="$2"
-    local jwt_token="$3"
-    local response_file="$4"
-
-    local payload
-    payload=$(cat <<EOF
-{
-  "database": "${db_name}",
-  "queries": [
-    {"query_ref": 53, "params": {}},
-    {"query_ref": 54, "params": {}},
-    {"query_ref": 55, "params": {"INTEGER": {"START": 500, "FINISH": 600}}}
-  ]
-}
-EOF
-)
-
-    local start_time end_time elapsed_ms
-    start_time=$(date +%s%N)
-
-    local curl_cmd=(curl -s -X POST "${base_url}/api/conduit/queries")
-
-    # Add headers
-    curl_cmd+=(-H "Content-Type: application/json")
-    if [[ -n "${jwt_token}" ]]; then
-        curl_cmd+=(-H "Authorization: Bearer ${jwt_token}")
-    fi
-
-    # Add payload and output options
-    curl_cmd+=(-d "${payload}")
-    curl_cmd+=(-w "%{http_code}\n%{size_download}")
-    curl_cmd+=(-o "${response_file}")
-
-    local http_status
-    http_status=$("${curl_cmd[@]}" 2>/dev/null)
-
-    end_time=$(date +%s%N)
-    elapsed_ms=$(((end_time - start_time) / 1000000))
-
-    # Parse response - http_code is on first line, size_download on second
-    local data_transferred
-    data_transferred=$(echo "${http_status}" | tail -n1)
-    http_status=$(echo "${http_status}" | head -n1)
-
-    local error=0
-    if [[ "${http_status}" != "200" ]]; then
-        error=1
-    fi
-
-    echo "${elapsed_ms}:${data_transferred}:${error}"
-}
-
 # Function to run the complete query sequence for a database
 # Returns total timing and data info
 run_query_sequence() {
     local base_url="$1"
     local db_engine="$2"
-    local db_name="$3"
-    local jwt_token="$4"
-    local result_file="$5"
-    local iteration="$6"
+    local jwt_token="$3"
+    local iteration="$4"
 
     local total_time=0
     local total_data=0
@@ -245,72 +243,28 @@ run_query_sequence() {
     local responses_dir="${DIAG_TEST_DIR}/responses/iter${iteration}/${db_engine}"
     mkdir -p "${responses_dir}"
 
-    # Query 53: Get Themes (public query)
-    local payload53
-    payload53=$(cat <<EOF
+    # Query 25: Get Queries List. Each call reads the stored statements and
+    # computes LENGTH of name, summary, and code.
+    local payload25
+    payload25=$(cat <<EOF
 {
-  "query_ref": 53,
-  "database": "${db_name}",
+  "query_ref": 25,
   "params": {}
 }
 EOF
 )
-    local response53="${responses_dir}/q53_themes.json"
-    local result53
-    result53=$(run_single_query_timed "${base_url}" "/api/conduit/query" "${payload53}" "" "${response53}")
-    total_time=$((total_time + $(echo "${result53}" | cut -d: -f1)))
-    total_data=$((total_data + $(echo "${result53}" | cut -d: -f2)))
-    # shellcheck disable=SC2004 # Arithmetic expansion with command substitution requires $
-    total_errors=$((total_errors + $(echo "${result53}" | cut -d: -f3)))
+    local repeat
+    for ((repeat=1; repeat<=PERF_CATALOG_REPEATS; repeat++)); do
+        local response25="${responses_dir}/q25_queries_${repeat}.json"
+        local result25
+        result25=$(run_single_query_timed "${base_url}" "/api/conduit/auth_query" "${payload25}" "${jwt_token}" "${response25}")
+        total_time=$((total_time + $(echo "${result25}" | cut -d: -f1)))
+        total_data=$((total_data + $(echo "${result25}" | cut -d: -f2)))
+        # shellcheck disable=SC2004 # Arithmetic expansion with command substitution requires $
+        total_errors=$((total_errors + $(echo "${result25}" | cut -d: -f3)))
+    done
 
-    # Query 54: Get Icons (public query)
-    local payload54
-    payload54=$(cat <<EOF
-{
-  "query_ref": 54,
-  "database": "${db_name}",
-  "params": {}
-}
-EOF
-)
-    local response54="${responses_dir}/q54_icons.json"
-    local result54
-    result54=$(run_single_query_timed "${base_url}" "/api/conduit/query" "${payload54}" "" "${response54}")
-    total_time=$((total_time + $(echo "${result54}" | cut -d: -f1)))
-    total_data=$((total_data + $(echo "${result54}" | cut -d: -f2)))
-    # shellcheck disable=SC2004 # Arithmetic expansion with command substitution requires $
-    total_errors=$((total_errors + $(echo "${result54}" | cut -d: -f3)))
-
-    # Query 55: Get Number Range (public query with params)
-    local payload55
-    payload55=$(cat <<EOF
-{
-  "query_ref": 55,
-  "database": "${db_name}",
-  "params": {
-    "INTEGER": {"START": 500, "FINISH": 600}
-  }
-}
-EOF
-)
-    local response55="${responses_dir}/q55_numbers.json"
-    local result55
-    result55=$(run_single_query_timed "${base_url}" "/api/conduit/query" "${payload55}" "" "${response55}")
-    total_time=$((total_time + $(echo "${result55}" | cut -d: -f1)))
-    total_data=$((total_data + $(echo "${result55}" | cut -d: -f2)))
-    # shellcheck disable=SC2004 # Arithmetic expansion with command substitution requires $
-    total_errors=$((total_errors + $(echo "${result55}" | cut -d: -f3)))
-
-    # Batched queries (53, 54, 55 in one request)
-    local response_batch="${responses_dir}/batch_queries.json"
-    local result_batch
-    result_batch=$(run_batched_queries_timed "${base_url}" "${db_name}" "" "${response_batch}")
-    total_time=$((total_time + $(echo "${result_batch}" | cut -d: -f1)))
-    total_data=$((total_data + $(echo "${result_batch}" | cut -d: -f2)))
-    # shellcheck disable=SC2004 # Arithmetic expansion with command substitution requires $
-    total_errors=$((total_errors + $(echo "${result_batch}" | cut -d: -f3)))
-
-    # Query 30: Get Lookups List (authenticated query)
+    # Query 30: Get Lookups List. The authenticated list the app loads.
     local payload30
     payload30=$(cat <<EOF
 {
@@ -360,8 +314,6 @@ run_performance_iteration() {
         jwt_token=$(echo "${jwt_result}" | cut -d: -f1)
         local jwt_time
         jwt_time=$(echo "${jwt_result}" | cut -d: -f2)
-        local jwt_data
-        jwt_data=$(echo "${jwt_result}" | cut -d: -f3)
         local jwt_error
         jwt_error=$(echo "${jwt_result}" | cut -d: -f4)
 
@@ -373,7 +325,7 @@ run_performance_iteration() {
 
         # Run query sequence with timing
         local sequence_result
-        sequence_result=$(run_query_sequence "${base_url}" "${db_engine}" "${db_name}" "${jwt_token}" "${result_file}" "${iteration}")
+        sequence_result=$(run_query_sequence "${base_url}" "${db_engine}" "${jwt_token}" "${iteration}")
 
         local seq_time
         seq_time=$(echo "${sequence_result}" | cut -d: -f1)
@@ -382,24 +334,22 @@ run_performance_iteration() {
         local seq_errors
         seq_errors=$(echo "${sequence_result}" | cut -d: -f3)
 
-        # Calculate totals
-        local total_time=$((jwt_time + seq_time))
-        local total_data=$((jwt_data + seq_data))
+        # Query time is the comparison. Sign-in is stored beside it.
         local total_errors=$((jwt_error + seq_errors))
 
-        # Store results
-        PERF_TIMINGS["${db_engine}_${iteration}"]="${total_time}"
-        PERF_DATA_TRANSFERRED["${db_engine}_${iteration}"]="${total_data}"
+        PERF_TIMINGS["${db_engine}_${iteration}"]="${seq_time}"
+        PERF_LOGIN_TIMINGS["${db_engine}_${iteration}"]="${jwt_time}"
+        PERF_DATA_TRANSFERRED["${db_engine}_${iteration}"]="${seq_data}"
         PERF_ERROR_COUNTS["${db_engine}_${iteration}"]="${total_errors}"
         PERF_MEASURED_COUNT=$((PERF_MEASURED_COUNT + 1))
 
-        # Convert to seconds for display with leading zero
-        local total_time_sec
-        total_time_sec=$(printf "0.%03d" "${total_time}")
+        local query_sec login_sec
+        query_sec=$(format_seconds "${seq_time}")
+        login_sec=$(format_seconds "${jwt_time}")
 
         local formatted_data
-        formatted_data=$(format_number "${total_data}")
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" "${total_errors}" "${db_engine} Iter ${iteration}: ${total_time_sec}s, ${formatted_data} bytes, ${total_errors} errors"
+        formatted_data=$(format_number "${seq_data}")
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" "${total_errors}" "${db_engine} Iter ${iteration}: ${query_sec}s queries, ${login_sec}s login, ${formatted_data} bytes, ${total_errors} errors"
 
         iter_errors=$((iter_errors + total_errors))
     done
@@ -421,7 +371,8 @@ print_performance_summary() {
     for ((i=1; i<=PERF_ITERATIONS; i++)); do
         timing_output+="$(printf " %10s" "Run${i}")"
     done
-    timing_output+="$(printf " %10s" "Best")"
+    timing_output+="$(printf " %10s" "Median")"
+    timing_output+="$(printf " %10s" "Login")"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${timing_output}"
 
     # Print separator
@@ -431,9 +382,11 @@ print_performance_summary() {
         timing_output+="$(printf " %10s" "──────────")"
     done
     timing_output+="$(printf " %10s" "──────────")"
+    timing_output+="$(printf " %10s" "──────────")"
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${timing_output}"
 
-    # Track overall winner
+    # Winner is the lowest median of iterations 2-5 that returned no errors.
+    # One clean warm run is not enough to crown an engine.
     local best_overall_db=""
     local best_overall_time=999999999
     local measured_count=0
@@ -441,77 +394,98 @@ print_performance_summary() {
     # Print results for each database
     for db_engine in "${!DATABASE_NAMES[@]}"; do
         local db_name="${DATABASE_NAMES[${db_engine}]}"
-        local timings=()
-        local min_time=999999999
-        local db_measured=false
+        local -a timings=()
+        local -a errored=()
+        local -a clean_samples=()
+        local -a login_samples=()
 
-        # Collect timings for this database
+        # Collect timings for this database. A skipped iteration (not ready,
+        # or sign-in failed) leaves the key unset. Do not treat that as 0s.
         for ((i=1; i<=PERF_ITERATIONS; i++)); do
             local timing_key="${db_engine}_${i}"
-            # Only treat a database as measured if a real timing was captured for
-            # this iteration. Databases that were skipped (not ready / JWT failed)
-            # leave the key unset; defaulting those to 0 via ":-0" would let an
-            # UNMEASURED database "win" with a fake 0.000s time.
             local timing_ms="${PERF_TIMINGS[${timing_key}]:-}"
+            local login_ms="${PERF_LOGIN_TIMINGS[${timing_key}]:-}"
+            local error_count="${PERF_ERROR_COUNTS[${timing_key}]:-0}"
+
+            if [[ -n "${login_ms}" ]]; then
+                login_samples+=("${login_ms}")
+            fi
             if [[ -z "${timing_ms}" ]]; then
                 timings+=("n/a")
+                errored+=(0)
                 continue
             fi
 
-            db_measured=true
             timings+=("${timing_ms}")
-
-            # Track minimum for this database
-            if [[ ${timing_ms} -lt ${min_time} ]]; then
-                min_time=${timing_ms}
+            if [[ ${error_count} -gt 0 ]]; then
+                errored+=(1)
+            else
+                errored+=(0)
+                # Iteration 1 warms the statement and the page cache.
+                if [[ ${i} -gt 1 ]]; then
+                    clean_samples+=("${timing_ms}")
+                fi
             fi
         done
 
-        # Only consider databases that were actually measured for the overall winner
-        if [[ "${db_measured}" = true ]]; then
+        local median_ms=""
+        if [[ ${#clean_samples[@]} -ge 2 ]]; then
+            median_ms=$(median_ms "${clean_samples[@]}")
             measured_count=$((measured_count + 1))
-            if [[ ${min_time} -lt ${best_overall_time} ]]; then
-                best_overall_time=${min_time}
+            if [[ ${median_ms} -lt ${best_overall_time} ]]; then
+                best_overall_time=${median_ms}
                 best_overall_db="${db_name}"
             fi
+        fi
+
+        local login_ms_median=""
+        if [[ ${#login_samples[@]} -gt 0 ]]; then
+            login_ms_median=$(median_ms "${login_samples[@]}")
         fi
 
         # Build output line
         timing_output=""
         timing_output+="$(printf "%-12s" "${db_name}:")"
 
-        # Print all timings with proper seconds formatting
-        for timing_ms in "${timings[@]}"; do
-            if [[ "${timing_ms}" == "n/a" ]]; then
-                timing_output+="$(printf " %9ss" "n/a")"
+        local idx
+        for idx in "${!timings[@]}"; do
+            local cell
+            if [[ "${timings[${idx}]}" == "n/a" ]]; then
+                cell="n/a"
             else
-                local timing_sec
-                timing_sec=$(printf "%d.%03d" $((timing_ms / 1000)) $((timing_ms % 1000)))
-                timing_output+="$(printf " %9ss" "${timing_sec}")"
+                cell="$(format_seconds "${timings[${idx}]}")s"
+                if [[ "${errored[${idx}]}" == "1" ]]; then
+                    cell="${cell}*"
+                fi
             fi
+            timing_output+="$(printf " %10s" "${cell}")"
         done
 
-        # Print best time with proper seconds formatting
-        if [[ "${db_measured}" = true ]]; then
-            local min_sec
-            min_sec=$(printf "%d.%03d" $((min_time / 1000)) $((min_time % 1000)))
-            timing_output+="$(printf " %9ss" "${min_sec}")"
-        else
-            timing_output+="$(printf " %9ss" "n/a")"
+        local median_cell="n/a"
+        local login_cell="n/a"
+        if [[ -n "${median_ms}" ]]; then
+            median_cell="$(format_seconds "${median_ms}")s"
         fi
+        if [[ -n "${login_ms_median}" ]]; then
+            login_cell="$(format_seconds "${login_ms_median}")s"
+        fi
+        timing_output+="$(printf " %10s" "${median_cell}")"
+        timing_output+="$(printf " %10s" "${login_cell}")"
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${timing_output}"
     done
 
-    # Announce the winner (or report that nothing was measured)
-    local best_overall_sec
-    best_overall_sec=$(printf "%d.%03d" $((best_overall_time / 1000)) $((best_overall_time % 1000)))
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Median uses iterations 2-${PERF_ITERATIONS} with no errors. Run 1 is warmup. A star marks a run that returned an error. Login is sign-in time and is not part of the runs."
+
+    # Announce the winner (or report that nothing qualified)
     if [[ -z "${best_overall_db}" ]]; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Winner: NONE - no database timings were captured (databases not ready / not reachable)"
-        TEST_NAME=$(echo "Performance Test  {BLUE}winner: NONE - no timings captured{RESET}" || true)
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Winner: NONE - no engine had two clean warm runs"
+        TEST_NAME=$(echo "Performance Test  {BLUE}winner: NONE - no clean warm runs{RESET}" || true)
         EXIT_CODE=1
     else
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Winner: ${best_overall_db} with ${best_overall_sec}s (${measured_count} database/iteration measurements)"
-        TEST_NAME=$(echo "Performance Test  {BLUE}winner:  ${best_overall_db} with ${best_overall_sec}s{RESET}" || true)
+        local best_overall_sec
+        best_overall_sec=$(format_seconds "${best_overall_time}")
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Winner: ${best_overall_db} median ${best_overall_sec}s (${measured_count} engines with a clean warm median)"
+        TEST_NAME=$(echo "Performance Test  {BLUE}winner:  ${best_overall_db} median ${best_overall_sec}s{RESET}" || true)
     fi
 
     # Print data transferred summary

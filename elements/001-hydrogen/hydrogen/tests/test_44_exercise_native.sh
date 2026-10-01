@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 
 # Test: Memory Exercise Native - Multi-engine auth stress RSS measurement
-# Single Hydrogen (hydrogen_release by default) with six DBs (YugabyteDB disabled), 5000 concurrent
-# auth requests, steady-state RSS growth analysis. Companion to test_41 (ASAN/LSAN).
+# Single Hydrogen (hydrogen_release by default) with seven enabled DBs
+# (YugabyteDB disabled, MSSQL included) and 5000 concurrent auth requests.
+# Steady-state RSS growth analysis. Companion to test_41 (ASAN/LSAN).
 # Separate test number so the suite can run 41 and 44 in parallel (different ports).
 #
 # Diagnosis (symbols / easier cores), like test_41's ASAN binary selection:
@@ -17,6 +18,8 @@
 # heapmon_prepare() heapmon_capture() heapmon_report()
 
 # CHANGELOG
+# 1.2.1 - 2026-10-01 - Seventh enabled engine: MSSQL (Demo_MS, schema demoms).
+#                     YugabyteDB stays disabled.
 # 1.2.0 - 2026-09-23 - Steady-state heap analysis: smaps mapping delta, glibc
 #                     in-use versus RSS, and callers that still hold live
 #                     bytes. EXERCISE_NATIVE_HEAPMON=0 skips the preload.
@@ -28,7 +31,7 @@ TEST_NAME="Exercise Native"
 TEST_ABBR="EXN"
 TEST_NUMBER="44"
 TEST_COUNTER=0
-TEST_VERSION="1.2.0"
+TEST_VERSION="1.2.1"
 
 TOTAL_REQUESTS=5000
 SNAPSHOT_INTERVAL=500
@@ -284,7 +287,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         done
 
         if [[ ${#READY_DATABASES[@]} -gt 0 ]]; then
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Databases ready: ${#READY_DATABASES[@]}/${DB_ENABLED:-6} enabled"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Databases ready: ${#READY_DATABASES[@]}/${DB_ENABLED:-7} enabled"
             PASS_COUNT=$(( PASS_COUNT + 1 ))
         else
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No databases ready - cannot run exercise"

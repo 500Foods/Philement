@@ -4,6 +4,7 @@
 -- luacheck: no max line length
 
 -- CHANGELOG
+-- 1.3.3 - 2026-10-01 - LENGTH() becomes LEN(); CHAR_LENGTH and DATALENGTH stay
 -- 1.3.2 - 2026-09-30 - RETURNING no longer skips the INSERT...WITH move; OUTPUT before WITH is skipped
 -- 1.3.1 - 2026-09-30 - Keep the newline after SUBQUERY DELIMITER when moving INSERT...WITH
 -- 1.3.0 - 2026-09-30 - Statement-shape repairs (RETURNING, VALUES CTE, INSERT...WITH, ADD/DROP COLUMN)
@@ -24,8 +25,9 @@
 -- Statement-shape repairs. One pass per statement, so one RETURNING does
 -- not suppress a VALUES body elsewhere. An OUTPUT clause left between the
 -- INSERT column list and WITH is skipped, so a second pass repairs SQL
--- already stored as INSERT ... OUTPUT ... WITH. replace_query runs this
--- before [=[ ]=] blocks are sealed into queries.code.
+-- already stored as INSERT ... OUTPUT ... WITH. LENGTH() becomes LEN().
+-- CHAR_LENGTH, DATALENGTH, OCTET_LENGTH, and CHARACTER_LENGTH stay.
+-- replace_query runs this before [=[ ]=] blocks are sealed into queries.code.
 
 local function skip_ws(s, i)
     local n = #s
@@ -480,6 +482,50 @@ local function rewrite_drop_column(s)
     return table.concat(out)
 end
 
+-- SQL Server has LEN, not LENGTH. The character before LENGTH must not be
+-- an identifier character, and optional whitespace then '(' must follow.
+-- Strings and -- line comments stay. LEN( is left alone.
+local function rewrite_length(s)
+    local out, i, n, changed = {}, 1, #s, false
+    local in_string, in_comment = false, false
+    while i <= n do
+        local c = s:sub(i, i)
+        if in_comment then
+            out[#out + 1] = c
+            if c == "\n" then in_comment = false end
+            i = i + 1
+        elseif in_string then
+            if c == "'" and s:sub(i + 1, i + 1) == "'" then
+                out[#out + 1] = "''"
+                i = i + 2
+            else
+                out[#out + 1] = c
+                if c == "'" then in_string = false end
+                i = i + 1
+            end
+        elseif c == "-" and s:sub(i + 1, i + 1) == "-" then
+            in_comment = true
+            out[#out + 1] = "--"
+            i = i + 2
+        elseif c == "'" then
+            in_string = true
+            out[#out + 1] = c
+            i = i + 1
+        elseif boundary_ok(s, i)
+            and s:sub(i, i + 5):lower() == "length"
+            and s:sub(skip_ws(s, i + 6), skip_ws(s, i + 6)) == "(" then
+            out[#out + 1] = "LEN"
+            i = i + 6
+            changed = true
+        else
+            out[#out + 1] = c
+            i = i + 1
+        end
+    end
+    if not changed then return nil end
+    return table.concat(out)
+end
+
 local function rewrite_statement(s)
     if not s or s == "" then return s end
     local current = s
@@ -496,6 +542,8 @@ local function rewrite_statement(s)
     if added then current = added end
     local dropped = rewrite_drop_column(current)
     if dropped then current = dropped end
+    local length_sql = rewrite_length(current)
+    if length_sql then current = length_sql end
     return current
 end
 

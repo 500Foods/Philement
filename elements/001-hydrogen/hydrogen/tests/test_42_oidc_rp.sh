@@ -21,6 +21,7 @@
 # The endpoint helper functions, mock-Keycloak lifecycle, and per-phase sub-test functions live in tests/lib/oidc_rp_helpers.sh; this script is the orchestrator (server lifecycle + sub-test invocation).
 
 # CHANGELOG
+# 2.4.1 - 2026-10-01 - Config checks keep the single result from validate_config_file
 # 2.4.0 - 2026-07-17 - Phase 23: /callback deep-error coverage — token_invalid_grant, id_token_kid_unknown, and no_api_key (missing + rejected SystemApiKey) branches driven via mock Keycloak error-mode toggles and DB-backed instances lacking a valid SystemApiKey; new helper lib oidc_rp_helpers_callback_errors.sh; mock gains /_test/set-mode admin endpoint; new configs hydrogen_test_42_oidc_rp_no_api_key.json / _bad_api_key.json
 # 2.3.0 - 2026-07-13 - Phase 22: RP-initiated logout /end-session sub-test; POST the OIDC JWT -> 200 + IdP redirect_url (id_token_hint + post_logout_redirect_uri + client_id), GET -> 405
 # 2.2.1 - 2026-07-09 - Phase 19 seed flake: rely on oidc_rp_helpers_link busy_timeout/retry + verified seed_email_contact; ambiguous path scrubs then requires both seeds
@@ -46,7 +47,7 @@ TEST_NAME="OIDC Relying Party"
 TEST_ABBR="ORP"
 TEST_NUMBER="42"
 TEST_COUNTER=0
-TEST_VERSION="2.4.0"
+TEST_VERSION="2.4.1"
 
 # Phase 9: mock Keycloak port. Picked outside the typical Hydrogen port range (5000s) and the test config's WebServer port (5242). If this collides on someone's machine, override via MOCK_KC_PORT.
 MOCK_KC_PORT="${MOCK_KC_PORT:-7042}"
@@ -111,10 +112,10 @@ print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration File"
 if validate_config_file "${CONFIG_PATH}"; then
     SERVER_PORT=$(get_webserver_port "${CONFIG_PATH}")
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Configuration will use port: ${SERVER_PORT}"
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Configuration file validated"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Configuration file validated"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
 else
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Configuration file validation failed"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Configuration file validation failed"
     EXIT_CODE=1
 fi
 
@@ -219,10 +220,10 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         if validate_config_file "${CONFIG_PATH_ENABLED}"; then
             ENABLED_PORT=$(get_webserver_port "${CONFIG_PATH_ENABLED}")
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Enabled config will use port: ${ENABLED_PORT}"
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Enabled config validated"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Enabled config validated"
             PASS_COUNT=$(( PASS_COUNT + 1 ))
         else
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Enabled config validation failed"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Enabled config validation failed"
             EXIT_CODE=1
         fi
 
@@ -320,7 +321,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         if validate_config_file "${CONFIG_PATH_FULL}"; then
             FULL_PORT=$(get_webserver_port "${CONFIG_PATH_FULL}")
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Full config will use port: ${FULL_PORT}"
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Full-config validated"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Full-config validated"
             PASS_COUNT=$(( PASS_COUNT + 1 ))
 
              # Seed QueryRefs + identity row for adminuser (account_id=1)
@@ -416,7 +417,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 check_time_wait_sockets "${FULL_PORT}" || true
             fi
         else
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Full-config validation failed"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Full-config validation failed"
             EXIT_CODE=1
         fi
     elif [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]]; then
@@ -465,11 +466,11 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate ${nak_desc} config"
             # shellcheck disable=SC2310 # We want to continue even if the test fails
             if ! validate_config_file "${nak_cfg}"; then
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${nak_desc} config validation failed"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${nak_desc} config validation failed"
                 EXIT_CODE=1
                 return
             fi
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${nak_desc} config validated"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${nak_desc} config validated"
             PASS_COUNT=$(( PASS_COUNT + 1 ))
 
             local nak_pid="" nak_pid_var="NAK_PID_$$"
@@ -577,7 +578,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         if validate_config_file "${CONFIG_PATH_SUB}"; then
             SUB_PORT=$(get_webserver_port "${CONFIG_PATH_SUB}")
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Sub config will use port: ${SUB_PORT}"
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Sub-config validated"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Sub-config validated"
             PASS_COUNT=$(( PASS_COUNT + 1 ))
 
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen Server (sub config, match_sub_only)"
@@ -641,7 +642,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             # No DB copy to clean up — Phase 18 uses the shared demo DB
             # with idempotent INSERT OR IGNORE for the seeded rows.
         else
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Sub-config validation failed"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Sub-config validation failed"
             EXIT_CODE=1
         fi
     elif [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]]; then
@@ -672,7 +673,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         if validate_config_file "${CONFIG_PATH_EMAIL}"; then
             EMAIL_PORT=$(get_webserver_port "${CONFIG_PATH_EMAIL}")
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Email config will use port: ${EMAIL_PORT}"
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Email-config validated"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Email-config validated"
             PASS_COUNT=$(( PASS_COUNT + 1 ))
 
             print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Start Hydrogen Server (email config, match_email_only)"
@@ -741,7 +742,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 check_time_wait_sockets "${EMAIL_PORT}" || true
             fi
         else
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Email-config validation failed"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Email-config validation failed"
             EXIT_CODE=1
         fi
     elif [[ "${MOCK_KC_STARTED:-0}" -eq 1 ]]; then
@@ -775,7 +776,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         if validate_config_file "${CONFIG_PATH_PROVISION}"; then
             PROVISION_PORT=$(get_webserver_port "${CONFIG_PATH_PROVISION}")
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Provision config will use port: ${PROVISION_PORT}"
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Provision-config validated"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Provision-config validated"
             PASS_COUNT=$(( PASS_COUNT + 1 ))
 
             # Seed QueryRefs BEFORE Hydrogen starts so the QTC bootstrap
@@ -843,7 +844,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 check_time_wait_sockets "${PROVISION_PORT}" || true
             fi
         else
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Provision-config validation failed"
+            print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Provision-config validation failed"
             EXIT_CODE=1
         fi
 
@@ -854,7 +855,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             if validate_config_file "${CONFIG_PATH_PROVISION_BLOCKED}"; then
                 BLOCKED_PORT=$(get_webserver_port "${CONFIG_PATH_PROVISION_BLOCKED}")
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Provision-blocked config will use port: ${BLOCKED_PORT}"
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Provision-blocked-config validated"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Provision-blocked-config validated"
                 PASS_COUNT=$(( PASS_COUNT + 1 ))
 
                 # Seed QueryRefs BEFORE Hydrogen starts (idempotent — already done above for the provision-config instance,
@@ -917,7 +918,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                     check_time_wait_sockets "${BLOCKED_PORT}" || true
                 fi
             else
-                print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Provision-blocked-config validation failed"
+                print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Provision-blocked-config validation failed"
                 EXIT_CODE=1
             fi
         fi

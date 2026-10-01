@@ -2,7 +2,7 @@
 
 # Test: Conduit Single Query Endpoint
 # Tests the /api/conduit/query endpoint for single public query execution
-# Launches unified server with 7 database engines and tests single query functionality
+# Launches unified server with 8 database engines and tests single query functionality
 
 # FUNCTIONS
 # validate_conduit_request()
@@ -10,6 +10,7 @@
 # run_conduit_test_unified()
 
 # CHANGELOG
+# 1.8.2 - 2026-10-01 - Eighth engine: MSSQL (Demo_MS, schema demoms)
 # 1.8.1 - 2026-07-09 - QueryRef #30 (Get Lookups List) is TYPE_PUBLIC in acuranzo_1121; expect success on public /query
 # 1.8.0 - 2026-01-24 - Added Conduit status endpoint testing after database startup confirmation
 #                    - Verifies /api/conduit/status reports same databases as ready that were confirmed via log monitoring
@@ -39,7 +40,7 @@ TEST_NAME="Conduit Query"
 TEST_ABBR="CQ1"
 TEST_NUMBER="50"
 TEST_COUNTER=0
-TEST_VERSION="1.8.1"
+TEST_VERSION="1.8.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -47,7 +48,7 @@ TEST_VERSION="1.8.1"
 [[ -n "${CONDUIT_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/conduit_utils.sh"
 setup_test_environment
 
-# Single server configuration with all 7 database engines
+# Single server configuration with all 8 database engines
 CONDUIT_CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_50_conduit_query.json"
 CONDUIT_LOG_SUFFIX="conduit_query"
 CONDUIT_DESCRIPTION="CSQ"

@@ -12,6 +12,7 @@
 # test_conduit_multiple_queries_endpoint()
 
 # CHANGELOG
+# 1.7.9 - 2026-10-01 - Eighth engine: MSSQL maps to Demo_MS (schema demoms)
 # 1.7.8 - 2026-09-04 - Pair JWT skip with print_result (not-ready engines)
 # 1.7.7 - 2026-09-04 - Pair TEST/PASS/FAIL in analyze_conduit_results
 # 1.7.6 - 2026-09-04 - disown hydrogen started by run_conduit_server (same as
@@ -84,6 +85,7 @@ DATABASE_NAMES=(
     ["MariaDB"]="Demo_MR"
     ["Firebird"]="Demo_FB"
     ["YugabyteDB"]="Demo_YB"
+    ["MSSQL"]="Demo_MS"
 )
 
 # Query references for conduit testing

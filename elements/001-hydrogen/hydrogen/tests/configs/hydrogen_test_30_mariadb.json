@@ -1,0 +1,33 @@
+{
+    "Server": {
+        "ServerName": "hydrogen-test-30-mariadb",
+        "PayloadKey": "${env.PAYLOAD_KEY}"
+    },
+    "WebServer": {
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "Port": 5306
+    },
+    "Databases": {
+        "ConnectionCount": 1,
+        "Connections": [
+            {
+                "Enabled": true,
+                "Name": "MDB",
+                "Engine": "${env.MARIADB_DB_TYPE}",
+                "Host": "${env.MARIADB_DB_HOST}",
+                "Port": "${env.MARIADB_DB_PORT}",
+                "Database": "${env.MARIADB_DB_NAME}",
+                "User": "${env.MARIADB_DB_USER}",
+                "Pass": "${env.MARIADB_DB_PASS}",
+                "Schema": "demo",
+                "Bootstrap": "SELECT * FROM demo.queries;",
+                "Queues": {
+                    "Slow": {
+                        "start": 2
+                    }
+                }
+            }
+        ]
+    }
+}

@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.7.0 - 2026-10-01 - MSSQL QueryRef 57 uses named :PARAM markers; C converts them to ?
 -- 1.6.0 - 2026-09-29 - Added MSSQL to ?-style parameter placeholder exclusion (mssql uses ? like mysql/mariadb)
 -- 1.5.0 - 2026-09-26 - Fixed status_status_a27 typo in mariadb block (should be query_status_a27)
 -- 1.4.0 - 2026-09-26 - Added MariaDB arm mirroring MySQL for Query Params Test (?-style parameter syntax)
@@ -18,9 +19,8 @@ cfg.MIGRATION = "1151"
 cfg.QUERY_REF = "057"
 cfg.QUERY_NAME = "Query Params Test"
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
--- NOTE: MySQL, MariaDB, and MSSQL all use ?-style parameter placeholders natively,
---       so the CAST(:PARAM AS <type>) form used by PostgreSQL/SQLite/DB2/Firebird
---       does not apply.
+-- NOTE: MySQL, MariaDB, and MSSQL have their own arms below.
+--       CAST(:PARAM AS <type>) is the PostgreSQL/SQLite/DB2/Firebird form.
 if engine ~= 'mysql' and engine ~= 'mariadb' and engine ~= 'mssql' then table.insert(queries,{sql=[[
     INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
@@ -363,8 +363,10 @@ if engine == 'mariadb' then table.insert(queries,{sql=[[
 
 ]]}) end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
--- NOTE: MSSQL uses ?-style parameter placeholders natively (same as MySQL/MariaDB);
---       the CAST(:PARAM AS <type>) form does not apply.
+-- NOTE: Named :PARAM markers. Hydrogen converts them to ? in name order.
+--       A stored ? has no name, so the converter binds nothing.
+--       Boolean compares to 1 because the binder sends SMALLINT 1/0.
+--       Date and time display uses CONVERT styles that match the other engines.
 if engine == 'mssql' then table.insert(queries,{sql=[[
     INSERT INTO ${SCHEMA}${QUERIES} (
         ${QUERIES_INSERT}
@@ -399,15 +401,15 @@ if engine == 'mssql' then table.insert(queries,{sql=[[
                 ${TIMEOUT}                                                          AS query_timeout,
                 [==[
                     SELECT
-                        CAST(? AS ${INTEGER}) as integer_test,
-                        CAST(? AS ${CHAR_20}) as string_test,
-                        CASE WHEN ? THEN 1 ELSE 0 END as boolean_test,
-                        CAST(? AS ${FLOAT}) as float_test,
-                        CAST(? AS ${CHAR_50}) as text_test,
-                        CAST(? AS ${DATE}) as date_test,
-                        CAST(? as ${TIME}) as time_test,
-                        CAST(? as ${DATETIME}) as datetime_test,
-                        CAST(? AS ${TIMESTAMP_TZ}) as timestamp_test
+                        :INTEGER as integer_test,
+                        :STRING as string_test,
+                        CASE WHEN :BOOLEAN = 1 THEN 1 ELSE 0 END as boolean_test,
+                        :FLOAT as float_test,
+                        :TEXT as text_test,
+                        CONVERT(varchar(10), CAST(:DATE AS ${DATE}), 23) as date_test,
+                        CONVERT(varchar(8), CAST(:TIME AS time(0)), 108) as time_test,
+                        CONVERT(varchar(19), CAST(:DATETIME AS ${DATETIME}), 120) as datetime_test,
+                        CONVERT(varchar(23), CAST(:TIMESTAMP AS ${TIMESTAMP}), 121) as timestamp_test
                     FROM
                         ${SCHEMA}numbers
                     WHERE

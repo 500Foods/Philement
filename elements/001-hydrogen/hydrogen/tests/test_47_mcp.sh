@@ -10,6 +10,7 @@
 # run_disabled()
 
 # CHANGELOG
+# 1.3.1 - 2026-10-01 - sqlite3 skips ~/.sqliterc; MySQL login retries HTTP 503
 # 1.3.0 - 2026-09-30 - Eighth engine: MSSQL on schema demoms (web 15478, MCP 15488)
 # 1.2.0 - 2026-09-20 - Replaced CockroachDB with Firebird engine
 # 1.1.12 - 2026-09-08 - Overlap Echo must reject JSON-RPC errors
@@ -37,7 +38,7 @@ TEST_NAME="MCP Server"
 TEST_ABBR="MCP"
 TEST_NUMBER="47"
 TEST_COUNTER=0
-TEST_VERSION="1.3.0"
+TEST_VERSION="1.3.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -244,7 +245,8 @@ run_engine() {
         '{database:"Acuranzo",login_id:$login_id,password:$password,api_key:$api_key,tz:"America/Vancouver"}')
     local jwt=""
     local login_try=1
-    while [[ "${login_try}" -le 2 ]]; do
+    local login_max=2
+    while [[ "${login_try}" -le "${login_max}" ]]; do
         # shellcheck disable=SC2312 # Intentionally swallow curl exit code; we use the HTTP status
         http_st=$(api_request "POST" "${base_url}/api/auth/login" "${login_payload}" "${login_file}" "" \
             "${GROUP40_HTTP_MAX_TIME}")
@@ -252,8 +254,19 @@ run_engine() {
         if [[ "${http_st}" == "200" && -n "${jwt}" ]]; then
             break
         fi
+        # 503 is "Authentication service unavailable": the account lookup's
+        # 20s budget expired. On MySQL that happens when the first Medium
+        # worker is still in its 10s handshake plus the 30s heartbeat before
+        # it reconnects, and it drops the query instead of holding it. Two
+        # tries both land in that window. Two more tries run after it is up.
+        if [[ "${http_st}" == "503" && "${login_max}" -lt 4 ]]; then
+            login_max=4
+        fi
+        if [[ "${login_try}" -ge "${login_max}" ]]; then
+            break
+        fi
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
-            "INFO delay ${description}: login HTTP ${http_st} (try ${login_try}/2)"
+            "INFO delay ${description}: login HTTP ${http_st} (try ${login_try}/${login_max})"
         sleep 2
         login_try=$(( login_try + 1 ))
     done
@@ -475,7 +488,7 @@ run_engine() {
         if [[ -n "${hijack_jwt}" ]]; then
             old_hash=$(token_hash "${jwt}")
             new_hash=$(token_hash "${hijack_jwt}")
-            sqlite3 "${db_copy}" \
+            sqlite3 -batch -init /dev/null "${db_copy}" \
                 "INSERT INTO tokens (token_hash, account_id, system_id, app_id, app_version, ip_address, valid_after, valid_until)
                   SELECT '${new_hash}', account_id, system_id, app_id, app_version, ip_address, valid_after, valid_until
                     FROM tokens WHERE token_hash = '${old_hash}' LIMIT 1;" >/dev/null 2>&1 || true

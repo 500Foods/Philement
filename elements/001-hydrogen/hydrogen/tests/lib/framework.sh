@@ -19,6 +19,10 @@
 # evaluate_test_result_silent()
 
 # CHANGELOG
+# 3.4.3 - 2026-10-01 - Standalone setup wraps the initial library load in
+#                     TEST "Loading Testing Framework" / PASS "Testing Framework Loaded"
+#                     so every script gets the separator without its own print_subtest.
+#                     The suite path uses the same two labels.
 # 3.4.2 - 2026-09-12 - reset_subtest_counter() now initializes TEST_COUNTER=0;
 #                     the framework owns TEST_COUNTER, fixing "unbound variable" in
 #                     standalone test runs where the test script did not set it
@@ -100,7 +104,7 @@ fi
 
 # Library metadata
 FRAMEWORK_NAME="Framework Library"
-FRAMEWORK_VERSION="3.4.1"
+FRAMEWORK_VERSION="3.4.3"
 export FRAMEWORK_NAME FRAMEWORK_VERSION
 
 # Use this once
@@ -335,8 +339,9 @@ setup_orchestration_environment() {
     # shellcheck disable=SC2154,SC2153 # TEST_NAME, TEST_ABBR, TEST_NUMBER, TEST_VERSION defined externally in caller
     print_test_suite_header "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
 
-    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Loading Test Suite Libraries"
-    # Print framework and log output versions as they are already sourced
+    print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Loading Testing Framework"
+    # Framework and log output are already sourced. ORCHESTRATION is set above,
+    # so these two announcements are skipped; sourced libraries still announce.
     [[ -n "${ORCHESTRATION:-}" ]] || print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
     [[ -n "${ORCHESTRATION:-}" ]] || print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
     # shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
@@ -351,7 +356,7 @@ setup_orchestration_environment() {
     [[ -n "${CLOC_GUARD:-}" ]] || source "${LIB_DIR}/cloc.sh"
     # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
     [[ -n "${FILE_UTILS_GUARD:-}" ]] || source "${LIB_DIR}/file_utils.sh"
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Test Suite libraries initialized"
+    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Testing Framework Loaded"
 
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Checking Build Directory"
     if [[ -d "build" ]]; then
@@ -458,7 +463,9 @@ setup_test_environment() {
     print_test_header "${TEST_NAME}" "${TEST_ABBR}" "${TEST_NUMBER}" "${TEST_VERSION}"
     
     if [[ -z "${ORCHESTRATION:-}" ]]; then
-         # Print framework and log output versions as they are already sourced
+        # print_subtest advances TEST_COUNTER, so the announcements and the
+        # PASS share that number. The script's first print_subtest is next.
+        print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Loading Testing Framework"
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${FRAMEWORK_NAME} ${FRAMEWORK_VERSION}" "info"
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${LOG_OUTPUT_NAME} ${LOG_OUTPUT_VERSION}" "info"
         # shellcheck source=tests/lib/lifecycle.sh # Resolve path statically
@@ -473,7 +480,7 @@ setup_test_environment() {
         [[ -n "${CLOC_GUARD:-}" ]] || source "${LIB_DIR}/cloc.sh"
         # shellcheck source=tests/lib/file_utils.sh # Resolve path statically
         [[ -n "${FILE_UTILS_GUARD:-}" ]] || source "${LIB_DIR}/file_utils.sh"
-
+        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Testing Framework Loaded"
     fi
 
     # Reap PIDs left by a prior (possibly aborted) run of THIS test only,

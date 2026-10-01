@@ -224,6 +224,9 @@ void database_queue_stop_worker(DatabaseQueue* db_queue);
 // Helper function for processing queries (extracted for testability)
 void database_queue_process_single_query(DatabaseQueue* db_queue);
 
+// Wake a waiter when a MySQL connection is still down after the 1040 retry.
+void database_queue_signal_connection_unavailable(DatabaseQueue* db_queue, const DatabaseQuery* query, const char* dqm_label);
+
 // Lead queue management
 bool database_queue_spawn_child_queue(DatabaseQueue* lead_queue, const char* queue_type);
 bool database_queue_shutdown_child_queue(DatabaseQueue* lead_queue, const char* queue_type);

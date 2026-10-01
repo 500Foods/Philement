@@ -260,60 +260,98 @@ bool mysql_connect(ConnectionConfig* config, DatabaseHandle** connection, const 
         return false;
     }
 
-    // Initialize MySQL connection
-    void* mysql_conn = mysql_init_ptr(NULL);
-    if (!mysql_conn) {
-        log_this(SR_DATABASE, "MySQL connection initialization failed", LOG_LEVEL_ERROR, 0);
-        return false;
-    }
+    /*
+     * ER_CON_COUNT_ERROR ("Too many connections") fails immediately, so a
+     * short backoff can catch a slot opening during the suite's connect
+     * burst. Delays are 200, 400, 800, 1600 ms (about 3s) so a 5s auth
+     * budget still has time to run the query. Handshake timeouts are not
+     * retried: each one burns the 10s connect timeout.
+     */
+    const unsigned int retry_delay_ms[] = {200, 400, 800, 1600};
+    const unsigned int max_attempts = 5;
+    void* mysql_conn = NULL;
+    void* result = NULL;
 
-    // Set connection and network timeout options to prevent indefinite hangs
-    // on remote MySQL clusters (e.g. DOKS) when the server is slow to respond
-    // or the prepared-statement protocol stalls. MariaDB Connector/C has
-    // different default behavior; libmysqlclient defaults to infinite timeouts.
-    if (mysql_options_ptr) {
-        int reconnect = 1;
-        mysql_options_ptr(mysql_conn, MYSQL_OPT_RECONNECT, &reconnect);
+    for (unsigned int attempt = 1; attempt <= max_attempts; attempt++) {
+        mysql_conn = mysql_init_ptr(NULL);
+        if (!mysql_conn) {
+            log_this(SR_DATABASE, "MySQL connection initialization failed", LOG_LEVEL_ERROR, 0);
+            return false;
+        }
 
-        unsigned int connect_timeout = 10;
-        mysql_options_ptr(mysql_conn, MYSQL_OPT_CONNECT_TIMEOUT, &connect_timeout);
+        // Set connection and network timeout options to prevent indefinite hangs
+        // on remote MySQL clusters (e.g. DOKS) when the server is slow to respond
+        // or the prepared-statement protocol stalls. MariaDB Connector/C has
+        // different default behavior; libmysqlclient defaults to infinite timeouts.
+        if (mysql_options_ptr) {
+            int reconnect = 1;
+            mysql_options_ptr(mysql_conn, MYSQL_OPT_RECONNECT, &reconnect);
 
-        unsigned int read_timeout = 30;
-        mysql_options_ptr(mysql_conn, MYSQL_OPT_READ_TIMEOUT, &read_timeout);
+            unsigned int connect_timeout = 10;
+            mysql_options_ptr(mysql_conn, MYSQL_OPT_CONNECT_TIMEOUT, &connect_timeout);
 
-        unsigned int write_timeout = 30;
-        mysql_options_ptr(mysql_conn, MYSQL_OPT_WRITE_TIMEOUT, &write_timeout);
+            unsigned int read_timeout = 30;
+            mysql_options_ptr(mysql_conn, MYSQL_OPT_READ_TIMEOUT, &read_timeout);
 
-        unsigned long net_buffer_length = 16384;
-        mysql_options_ptr(mysql_conn, MYSQL_OPT_NET_BUFFER_LENGTH, &net_buffer_length);
-    } else {
-        log_this(SR_DATABASE, "mysql_options not available - cannot set connection timeouts", LOG_LEVEL_ALERT, 0);
-    }
+            unsigned int write_timeout = 30;
+            mysql_options_ptr(mysql_conn, MYSQL_OPT_WRITE_TIMEOUT, &write_timeout);
 
-    // Establish connection
-    void* result = mysql_real_connect_ptr(
-        mysql_conn,
-        config->host ? config->host : "localhost",
-        config->username ? config->username : "",
-        config->password ? config->password : "",
-        config->database ? config->database : "",
-        (unsigned int)(config->port > 0 ? config->port : 3306),
-        NULL,  // unix_socket
-        0      // client_flag
-    );
+            unsigned long net_buffer_length = 16384;
+            mysql_options_ptr(mysql_conn, MYSQL_OPT_NET_BUFFER_LENGTH, &net_buffer_length);
+        } else if (attempt == 1) {
+            log_this(SR_DATABASE, "mysql_options not available - cannot set connection timeouts", LOG_LEVEL_ALERT, 0);
+        }
 
-    if (!result) {
-        log_this(SR_DATABASE, "MySQL connection failed", LOG_LEVEL_ERROR, 0);
+        result = mysql_real_connect_ptr(
+            mysql_conn,
+            config->host ? config->host : "localhost",
+            config->username ? config->username : "",
+            config->password ? config->password : "",
+            config->database ? config->database : "",
+            (unsigned int)(config->port > 0 ? config->port : 3306),
+            NULL,  // unix_socket
+            0      // client_flag
+        );
+
+        if (result) {
+            break;
+        }
+
+        /*
+         * mysql_error's pointer is invalid after mysql_close, so copy
+         * the text before releasing the handle.
+         */
+        char error_copy[256];
+        error_copy[0] = '\0';
         if (mysql_error_ptr) {
             const char* error_msg = mysql_error_ptr(mysql_conn);
-            if (error_msg && strlen(error_msg) > 0) {
-                log_this(SR_DATABASE, error_msg, LOG_LEVEL_ERROR, 0);
+            if (error_msg && error_msg[0] != '\0') {
+                snprintf(error_copy, sizeof(error_copy), "%s", error_msg);
             }
         }
+        bool too_many = strstr(error_copy, "Too many connections") != NULL;
+        bool retry = too_many && attempt < max_attempts;
+        unsigned int delay_ms = 0;
+        if (retry) {
+            delay_ms = retry_delay_ms[attempt - 1];
+        }
+
         if (mysql_close_ptr) {
             mysql_close_ptr(mysql_conn);
         }
-        return false;
+        mysql_conn = NULL;
+
+        if (!retry) {
+            log_this(SR_DATABASE, "MySQL connection failed", LOG_LEVEL_ERROR, 0);
+            if (error_copy[0] != '\0') {
+                log_this(SR_DATABASE, "%s", LOG_LEVEL_ERROR, 1, error_copy);
+            }
+            return false;
+        }
+
+        log_this(SR_DATABASE, "MySQL refused the connection (too many connections), retrying in %u ms",
+                 LOG_LEVEL_ALERT, 1, delay_ms);
+        usleep(delay_ms * 1000U);
     }
 
     // Create database handle

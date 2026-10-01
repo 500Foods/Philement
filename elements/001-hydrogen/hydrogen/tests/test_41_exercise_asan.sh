@@ -1,14 +1,17 @@
 #!/usr/bin/env bash
 
 # Test: Memory Exercise ASAN - Multi-engine auth stress under LeakSanitizer
-# Single Hydrogen (hydrogen_debug) with six DBs (YugabyteDB disabled), 500 concurrent
-# auth requests, RSS snapshots (informational under ASAN), post-shutdown LSAN scan.
+# Single Hydrogen (hydrogen_debug) with seven enabled DBs (YugabyteDB disabled,
+# MSSQL included) and 500 concurrent auth requests. RSS snapshots are
+# informational under ASAN, followed by a post-shutdown LSAN scan.
 # Native RSS measurement lives in test_44_exercise_native.sh (suite-parallel).
 
 # FUNCTIONS (lib/exercise_helpers.sh)
 # scrape_metrics() get_metric() run_auth_request() run_auth_batch()
 
 # CHANGELOG
+# 4.0.6 - 2026-10-01 - Seventh enabled engine: MSSQL (Demo_MS, schema demoms).
+#                      YugabyteDB stays disabled.
 # 4.0.5 - 2026-09-04 - Do not abort after a successful scrape: read_scrape_status
 #                      and leak-count defaults must not use [[ -z ]] && under set -e.
 # 4.0.4 - 2026-09-04 - Run conduit start and Prometheus scrapes in this shell
@@ -31,7 +34,7 @@ TEST_NAME="Exercise ASAN"
 TEST_ABBR="EXA"
 TEST_NUMBER="41"
 TEST_COUNTER=0
-TEST_VERSION="4.0.5"
+TEST_VERSION="4.0.6"
 
 TOTAL_REQUESTS=500
 SNAPSHOT_INTERVAL=50
@@ -238,7 +241,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         done
 
         if [[ ${#READY_DATABASES[@]} -gt 0 ]]; then
-            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Databases ready: ${#READY_DATABASES[@]}/${DB_ENABLED:-6} enabled"
+            print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Databases ready: ${#READY_DATABASES[@]}/${DB_ENABLED:-7} enabled"
             PASS_COUNT=$(( PASS_COUNT + 1 ))
         else
             print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "No databases ready - cannot run exercise"
@@ -249,7 +252,7 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
     if [[ "${EXIT_CODE}" -eq 0 ]]; then
         print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Collect Initial Metrics"
         # 3s settle: "Build Ready Databases List" fires the instant the last engine's
-        # Lead DQM reports ready, which is also when all 6 engines' queue worker
+        # Lead DQM reports ready, which is also when every enabled engine's queue worker
         # threads (Slow/Medium/Fast/Cache) spin up together. Under ASAN that thread
         # burst can stall the webserver thread servicing this scrape (same class of
         # stall the final-metrics scrape already settles 3s for after 500 auths).

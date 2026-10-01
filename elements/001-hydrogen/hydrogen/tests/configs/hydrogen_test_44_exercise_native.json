@@ -217,7 +217,7 @@
                 "Pass": "${env.FIREBIRD_SYSDBA_PASSWORD}",
                 "StmtCache": 100,
                 "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
-                "AutoMigration": true,
+                "AutoMigration": false,
                 "TestMigration": false,
                 "Parameters": {
                     "LOGINRETRYWINDOW": 15,
@@ -262,6 +262,42 @@
                     "LOGINMAXATTEMPTS": 100000
                 },
                 "Schema": "demo",
+                "Migrations": "PAYLOAD:acuranzo",
+                "Queues": {
+                    "Slow": {
+                        "start": 2
+                    },
+                    "Medium": {
+                        "start": 4
+                    },
+                    "Fast": {
+                        "start": 4
+                    },
+                    "Cache": {
+                        "start": 2
+                    }
+                }
+            },
+            {
+                "Enabled": true,
+                "Name": "Demo_MS",
+                "Engine": "mssql",
+                "Host": "${env.MSSQL_DB_HOST}",
+                "Port": "${env.MSSQL_DB_PORT}",
+                "Database": "${env.MSSQL_DB_NAME}",
+                "User": "${env.MSSQL_DB_USER}",
+                "Pass": "${env.MSSQL_SA_PASSWORD}",
+                "StmtCache": 100,
+                "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM demoms.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
+                "AutoMigration": false,
+                "TestMigration": false,
+                "Parameters": {
+                    "LOGINRETRYWINDOW": 15,
+                    "IPADDRESS": "10.10.10.10",
+                    "LOGINID": "${env.HYDROGEN_DEMO_USER_NAME}",
+                    "LOGINMAXATTEMPTS": 100000
+                },
+                "Schema": "demoms",
                 "Migrations": "PAYLOAD:acuranzo",
                 "Queues": {
                     "Slow": {

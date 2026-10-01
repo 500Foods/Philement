@@ -5,6 +5,7 @@
 # PKCE token, userinfo, refresh, error paths (inverse of Test 42).
 
 # CHANGELOG
+# 2.3.1 - 2026-10-01 - Config checks keep the single result from validate_config_file
 # 2.3.0 - 2026-09-30 - Eighth engine: MSSQL on schema demoms (port 5458)
 # 2.2.0 - 2026-09-20 - Replaced CockroachDB with Firebird engine
 # 2.1.1 - 2026-08-27 - Startup/shutdown waits aligned with group40 (90s/30s).
@@ -20,7 +21,7 @@ TEST_NAME="OIDC Identity Provider"
 TEST_ABBR="IDP"
 TEST_NUMBER="45"
 TEST_COUNTER=0
-TEST_VERSION="2.3.0"
+TEST_VERSION="2.3.1"
 
 # shellcheck source=tests/lib/framework.sh # Resolve path at runtime via BASH_SOURCE
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -676,9 +677,11 @@ fi
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate disabled config"
 # shellcheck disable=SC2310 # Continue even if validation fails
 if validate_config_file "${CONFIG_DISABLED}"; then
-    pass_subtest "Disabled config OK"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Disabled config OK"
+    PASS_COUNT=$(( PASS_COUNT + 1 ))
 else
-    fail_subtest "Disabled config invalid"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Disabled config invalid"
+    EXIT_CODE=1
 fi
 
 config_valid=true
@@ -689,11 +692,11 @@ for test_config in "${!IDP_TEST_CONFIGS[@]}"; do
     if validate_config_file "${config_file}"; then
         port=$(get_webserver_port "${config_file}")
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description} port ${port}"
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "${test_config} config valid"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${test_config} config valid"
         PASS_COUNT=$(( PASS_COUNT + 1 ))
     else
         config_valid=false
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "${test_config} config invalid"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${test_config} config invalid"
         EXIT_CODE=1
     fi
 done

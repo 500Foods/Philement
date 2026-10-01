@@ -43,6 +43,7 @@
 # start_mock_llm / stop_mock_llm
 
 # CHANGELOG
+# 2.8.1 - 2026-10-01 - Config checks keep one result for the configuration-file subtest
 # 2.8.0 - 2026-09-30 - Eighth engine: MSSQL on schema demoms (ports 15437, 15447)
 # 2.7.4 - 2026-09-20 - Replaced CockroachDB with Firebird engine
 # 2.7.3 - 2026-09-08 - Pair every TEST with PASS/FAIL (config files + prune skip).
@@ -75,7 +76,7 @@ TEST_NAME="Scripting  {BLUE}engines: 8{RESET}"
 TEST_ABBR="SCR"
 TEST_NUMBER="43"
 TEST_COUNTER=0
-TEST_VERSION="2.8.0"
+TEST_VERSION="2.8.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -198,16 +199,18 @@ else
     EXIT_CODE=1
 fi
 
-# Validate all configuration files (one TEST; per-file lines are INFO)
+# One TEST for every engine/variant file. validate_config_file records its
+# own PASS/FAIL, so the per-file check stays here and only the summary closes it.
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate Configuration Files"
 config_valid=true
 for test_config in "${!SCRIPTING_TEST_CONFIGS[@]}"; do
     IFS=':' read -r config_file log_suffix _ description <<< "${SCRIPTING_TEST_CONFIGS[${test_config}]}"
-    # shellcheck disable=SC2310 # We want to continue even if the test fails
-    if validate_config_file "${config_file}"; then
+    if [[ -f "${config_file}" ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: configuration file found"
         port=$(get_webserver_port "${config_file}")
         print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description} will use port: ${port}"
     else
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: configuration file not found"
         print_warning "${TEST_NUMBER}" "${TEST_COUNTER}" "${description}: invalid configuration file ${config_file}"
         config_valid=false
         EXIT_CODE=1

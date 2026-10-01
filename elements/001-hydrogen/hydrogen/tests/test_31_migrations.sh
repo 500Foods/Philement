@@ -42,13 +42,13 @@ HELIUM_DIR="../../../elements/002-helium"
 DESIGNS=("helium" "acuranzo")
 
 # Supported database engines
-ENGINES=("postgresql" "sqlite" "mysql" "db2" "firebird" "mssql")
+ENGINES=("postgresql" "sqlite" "mysql" "db2" "mariadb" "firebird" "mssql")
 
 # Schema mapping per design per engine (corresponding to ENGINES array order)
-# ENGINES=("postgresql" "sqlite" "mysql" "db2" "firebird" "mssql")
+# ENGINES=("postgresql" "sqlite" "mysql" "db2" "mariadb" "firebird" "mssql")
 declare -A DESIGN_SCHEMAS
-DESIGN_SCHEMAS["helium"]="helium::helium:HELIUM:helium:testms:"
-DESIGN_SCHEMAS["acuranzo"]="app::acuranzo:ACURANZO:testfb:testms:"
+DESIGN_SCHEMAS["helium"]="helium::helium:HELIUM:helium:helium:testms:"
+DESIGN_SCHEMAS["acuranzo"]="app::acuranzo:ACURANZO:test:testfb:testms:"
 
 # Function to get file hash (using md5sum or equivalent)
 get_file_hash() {

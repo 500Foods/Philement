@@ -18,6 +18,7 @@
 # sqlite_online_backup()
 
 # CHANGELOG
+# 2.1.1 - 2026-10-01 - sqlite3 backup is batch and skips ~/.sqliterc
 # 2.1.0 - 2026-09-08 - sqlite_online_backup via SQLite backup API
 # 2.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
 # 1.3.0 - 2025-09-19 - Added timing and file download functions from test_22_swagger.sh
@@ -50,7 +51,7 @@ export FILE_UTILS_GUARD="true"
 
 # Library metadata
 FILE_UTILS_NAME="File Utilities Library"
-FILE_UTILS_VERSION="2.1.0"
+FILE_UTILS_VERSION="2.1.1"
 # shellcheck disable=SC2154 # TEST_NUMBER and TEST_COUNTER defined by caller
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${FILE_UTILS_NAME} ${FILE_UTILS_VERSION}" "info"
 
@@ -271,5 +272,6 @@ sqlite_online_backup() {
     if ! command -v sqlite3 >/dev/null 2>&1; then
         return 1
     fi
-    sqlite3 "${src}" ".backup '${dest}'"
+    # -batch skips the interactive "-- Loading resources from ~/.sqliterc" line.
+    sqlite3 -batch -init /dev/null "${src}" ".backup '${dest}'"
 }

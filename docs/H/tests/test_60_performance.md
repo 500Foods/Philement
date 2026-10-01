@@ -2,7 +2,7 @@
 
 ## Overview
 
-The [`test_60_performance.sh`](/elements/001-hydrogen/hydrogen/tests/test_60_performance.sh) script measures API performance across all 7 database engines, running 5 iterations to assess caching effects and response time consistency.
+The [`test_60_performance.sh`](/elements/001-hydrogen/hydrogen/tests/test_60_performance.sh) script measures API performance across all 8 database engines, running 5 iterations. The comparison is the median query time of the warm, successful runs.
 
 ## Purpose
 
@@ -19,26 +19,23 @@ This test validates:
 - **Test Name**: Performance Test
 - **Test Abbreviation**: PRF
 - **Test Number**: 60
-- **Version**: 1.0.0
+- **Version**: 1.0.4
 
 ## Key Features
 
 ### Performance Iterations
 
-Runs 5 iterations of the same query sequence to measure:
-
-1. **Warmup effect**: First iteration may be slower due to cache misses
-2. **Caching**: Subsequent iterations should show improved performance
-3. **Consistency**: Performance should be stable across iterations
+Runs 5 iterations of the same query sequence. Iteration 1 is warmup. The median is taken from iterations 2 through 5, and only from runs that returned HTTP 200. A run that returned an error is marked with a star and cannot win. An engine needs two such clean warm runs before it has a median.
 
 ### Timing Metrics
 
 Measures elapsed time in milliseconds for:
 
-- JWT acquisition (login endpoint)
-- Single queries (QueryRef #53, #54, #55)
-- Batched queries (queries #53, #54, #55 in single request)
-- Authenticated queries (QueryRef #30)
+- Sign-in, reported in the Login column and left out of the comparison
+- QueryRef #25, Get Queries List, three times per iteration
+- QueryRef #30, Get Lookups List, once per iteration
+
+QueryRef #25 reads every stored query and computes the length of its name, summary, and code. After migration that table is the largest body of text each engine holds, so the timing reflects reading it rather than the cost of opening a connection. Themes, icons, and a short number range mostly timed the HTTP round trip, and the fastest of five samples was often only a few milliseconds apart.
 
 ### Data Collection
 
@@ -52,10 +49,7 @@ Each iteration executes:
 
 | Query | Endpoint | Description | Auth Required |
 |-------|----------|-------------|---------------|
-| #53 | `/api/conduit/query` | Get Themes | No |
-| #54 | `/api/conduit/query` | Get Icons | No |
-| #55 | `/api/conduit/query` | Number Range (params) | No |
-| Batch | `/api/conduit/queries` | Queries #53, #54, #55 | No |
+| #25 × 3 | `/api/conduit/auth_query` | Get Queries List | Yes (JWT) |
 | #30 | `/api/conduit/auth_query` | Lookup List | Yes (JWT) |
 
 ## Test Flow
@@ -77,12 +71,14 @@ Each iteration executes:
 The test generates a summary table:
 
 ```table
-Database        Run1         Run2         Run3         Run4         Run5         Best
-Demo_PG:      2.345s       1.892s       1.456s       1.421s       1.398s    1.398s
-Demo_MY:      2.412s       1.934s       1.512s       1.489s       1.467s    1.467s
+Database        Run1         Run2         Run3         Run4         Run5       Median      Login
+Demo_PG:      0.420s       0.310s       0.298s       0.305s       0.301s      0.303s     0.041s
+Demo_MY:      0.880s       0.640s       0.655s       0.648s       0.660s      0.652s     0.090s
 ...
-Winner: Demo_SQL with 1.234s
+Winner: Demo_PG median 0.303s
 ```
+
+`Run1` is warmup. `Median` ignores it, and ignores any starred run. `Login` is the median sign-in time.
 
 Also reports:
 
@@ -99,7 +95,7 @@ Also reports:
 **`hydrogen_test_60_performance.json`**:
 
 - Port: 5600
-- All 7 database engines configured
+- All 8 database engines configured
 - Standard demo Acuranzo schema
 
 ## Response Files
@@ -107,10 +103,7 @@ Also reports:
 Saved to `${DIAG_TEST_DIR}/responses/iter{1-5}/{db_name}/`:
 
 - `login.json` - JWT acquisition response
-- `q53_themes.json` - Themes query
-- `q54_icons.json` - Icons query
-- `q55_numbers.json` - Number range query
-- `batch_queries.json` - Batch query response
+- `q25_queries_1.json`, `q25_queries_2.json`, `q25_queries_3.json` - Query catalog scans
 - `q30_lookups.json` - Authenticated lookup query
 
 ## Related Documentation

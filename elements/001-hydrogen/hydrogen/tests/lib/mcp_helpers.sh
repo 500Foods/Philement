@@ -9,6 +9,7 @@
 # shellcheck disable=SC2312 # Diagnostic substitutions swallow inner status; callers use || true
 
 # CHANGELOG
+# 1.0.5 - 2026-10-01 - sqlite3 calls are batch and skip ~/.sqliterc
 # 1.0.4 - 2026-09-08 - SQLite snapshot uses online backup
 # 1.0.3 - 2026-08-27 - mcp_expect_jq 3 tries; log body on mismatch
 # 1.0.2 - 2026-08-27 - Long wait, 000-only retry, INFO delay (group40_http)
@@ -19,7 +20,7 @@
 export MCP_HELPERS_GUARD="true"
 
 MCP_HELPERS_NAME="MCP Test Helpers"
-MCP_HELPERS_VERSION="1.0.4"
+MCP_HELPERS_VERSION="1.0.5"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${MCP_HELPERS_NAME} ${MCP_HELPERS_VERSION}" "info"
 
 # shellcheck source=tests/lib/group40_http.sh # Shared 40-series HTTP timing
@@ -230,10 +231,10 @@ prepare_sqlite_config() {
     if declare -f sqlite_online_backup >/dev/null 2>&1; then
         sqlite_online_backup "${BASELINE_SQLITE}" "${db_copy}" || return 1
     else
-        sqlite3 "${BASELINE_SQLITE}" ".backup '${db_copy}'" || return 1
+        sqlite3 -batch -init /dev/null "${BASELINE_SQLITE}" ".backup '${db_copy}'" || return 1
     fi
     local seed_n
-    seed_n=$(sqlite3 "${db_copy}" \
+    seed_n=$(sqlite3 -batch -init /dev/null "${db_copy}" \
         "SELECT COUNT(*) FROM scripts WHERE group_name='Mcp' AND script_name='Server' AND mcp_access<>0;" \
         2>/dev/null || echo 0)
     if [[ "${seed_n}" -lt 1 ]]; then

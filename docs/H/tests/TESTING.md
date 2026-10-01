@@ -81,7 +81,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 
 ### Database Tests
 
-- **[test_30_database.sh](/docs/H/tests/test_30_database.md)**: All Engines Parallel Operational Test
+- **[test_30_database.sh](/docs/H/tests/test_30_database.md)**: All Engines Parallel Operational Test (PostgreSQL, MySQL, SQLite, DB2, MariaDB, Firebird, YugabyteDB, MSSQL, plus a combined config)
 - **[test_32_postgres_migrations.sh](/docs/H/tests/test_32_postgres_migrations.md)**: PostgreSQL migration performance test
 - **[test_33_mysql_migrations.sh](/docs/H/tests/test_33_mysql_migrations.md)**: MySQL migration performance test
 - **[test_34_sqlite_migrations.sh](/docs/H/tests/test_34_sqlite_migrations.md)**: SQLite migration performance test

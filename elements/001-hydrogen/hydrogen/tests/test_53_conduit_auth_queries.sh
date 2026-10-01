@@ -2,7 +2,7 @@
 
 # Test: Conduit Authenticated Multiple Queries Endpoint
 # Tests the /api/conduit/auth_queries endpoint for multiple authenticated query execution
-# Launches unified server with 7 database engines and tests authenticated multiple query functionality
+# Launches unified server with 8 database engines and tests authenticated multiple query functionality
 
 # FUNCTIONS
 # validate_conduit_request()
@@ -12,6 +12,7 @@
 # analyze_conduit_results()
 
 # CHANGELOG
+# 1.1.3 - 2026-10-01 - Eighth engine: MSSQL (Demo_MS, schema demoms)
 # 1.1.2 - 2026-09-04 - Drop extra print_result after validate_config_file
 # 1.1.1 - 2026-09-04 - Pair TEST/PASS/FAIL; print_subtest owns TEST_COUNTER
 # 1.1.0 - 2026-08-02 - Added blackbox error-case tests for auth_queries.c
@@ -33,7 +34,7 @@ TEST_NAME="Conduit Auth Queries"
 TEST_ABBR="CAM"
 TEST_NUMBER="53"
 TEST_COUNTER=0
-TEST_VERSION="1.1.2"
+TEST_VERSION="1.1.3"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -41,7 +42,7 @@ TEST_VERSION="1.1.2"
 [[ -n "${CONDUIT_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/conduit_utils.sh"
 setup_test_environment
 
-# Single server configuration with all 7 database engines
+# Single server configuration with all 8 database engines
 CONDUIT_CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_53_conduit_auth_queries.json"
 CONDUIT_LOG_SUFFIX="conduit_auth_queries"
 CONDUIT_DESCRIPTION="Conduit Auth Multiple Queries"

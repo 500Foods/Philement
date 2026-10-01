@@ -571,7 +571,6 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
         char returning_column[64] = "";
         char* rewritten_sql = mysql_rewrite_insert_returning(positional_sql, returning_column, sizeof(returning_column));
         const char* prepare_sql = rewritten_sql ? rewritten_sql : positional_sql;
-        unsigned long long inserted_id = 0;
 
         // Initialize prepared statement
         void* stmt = NULL;
@@ -688,6 +687,7 @@ bool mysql_execute_query(DatabaseHandle* connection, QueryRequest* request, Quer
                 bind_success = false;
             } else {
                 log_this(designator, "MySQL execute_query: Prepared statement executed successfully", LOG_LEVEL_TRACE, 0);
+                unsigned long long inserted_id = 0;
                 if (rewritten_sql && mysql_stmt_insert_id_ptr) {
                     inserted_id = mysql_stmt_insert_id_ptr(stmt);
                 }

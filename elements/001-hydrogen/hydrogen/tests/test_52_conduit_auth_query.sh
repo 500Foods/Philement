@@ -2,7 +2,7 @@
 
 # Test: Conduit Authenticated Single Query Endpoint
 # Tests the /api/conduit/auth_query endpoint for single authenticated query execution
-# Launches unified server with 7 database engines and tests authenticated single query functionality
+# Launches unified server with 8 database engines and tests authenticated single query functionality
 
 # FUNCTIONS
 # validate_conduit_request()
@@ -11,6 +11,7 @@
 # analyze_conduit_results()
 
 # CHANGELOG
+# 1.1.4 - 2026-10-01 - Eighth engine: MSSQL (Demo_MS, schema demoms)
 # 1.1.3 - 2026-09-04 - Drop extra print_result after validate_config_file
 # 1.1.2 - 2026-09-04 - Pair TEST/PASS/FAIL; print_subtest owns TEST_COUNTER
 # 1.1.1 - 2026-07-15 - Use database-keyed JWT lookup when engines are skipped
@@ -32,7 +33,7 @@ TEST_NAME="Conduit Auth Query"
 TEST_ABBR="CA1"
 TEST_NUMBER="52"
 TEST_COUNTER=0
-TEST_VERSION="1.1.3"
+TEST_VERSION="1.1.4"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -40,7 +41,7 @@ TEST_VERSION="1.1.3"
 [[ -n "${CONDUIT_UTILS_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/conduit_utils.sh"
 setup_test_environment
 
-# Single server configuration with all 7 database engines
+# Single server configuration with all 8 database engines
 CONDUIT_CONFIG_FILE="${SCRIPT_DIR}/configs/hydrogen_test_52_conduit_auth_query.json"
 CONDUIT_LOG_SUFFIX="conduit_auth_query"
 CONDUIT_DESCRIPTION="SSQ"

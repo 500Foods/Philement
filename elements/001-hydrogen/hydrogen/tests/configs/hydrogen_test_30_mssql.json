@@ -1,0 +1,33 @@
+{
+    "Server": {
+        "ServerName": "hydrogen-test-30-mssql",
+        "PayloadKey": "${env.PAYLOAD_KEY}"
+    },
+    "WebServer": {
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "Port": 5308
+    },
+    "Databases": {
+        "ConnectionCount": 1,
+        "Connections": [
+            {
+                "Enabled": true,
+                "Name": "MS",
+                "Engine": "mssql",
+                "Host": "${env.MSSQL_DB_HOST}",
+                "Port": "${env.MSSQL_DB_PORT}",
+                "Database": "${env.MSSQL_DB_NAME}",
+                "User": "${env.MSSQL_DB_USER}",
+                "Pass": "${env.MSSQL_SA_PASSWORD}",
+                "Schema": "demoms",
+                "Bootstrap": "SELECT * FROM demoms.queries;",
+                "Queues": {
+                    "Slow": {
+                        "start": 2
+                    }
+                }
+            }
+        ]
+    }
+}

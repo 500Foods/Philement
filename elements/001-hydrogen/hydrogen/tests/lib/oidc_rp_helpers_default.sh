@@ -42,6 +42,7 @@
 # project-wide 1,000-line cap (LITHIUM-INS.md rule equivalent for Hydrogen).
 #
 # CHANGELOG
+# 1.2.1 - 2026-10-01 - Config check keeps the single result from validate_config_file
 # 1.2.0 - 2026-06-20 - Speed-up: replace broken tail-offset migration-wait loop with
 #                      wait_for_migration_ready (canonical "READY FOR REQUESTS" signal).
 # 1.1.0 - 2026-06-20 - Parallel-safety fix: provision path cleans up the linker-reported account_id
@@ -303,7 +304,7 @@ run_phase21_default_tests() {
     print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Validate default-config (match_email_then_provision)"
     # shellcheck disable=SC2310 # We want to continue even if the test fails
     if ! validate_config_file "${config_path}"; then
-        print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 1 "Default-config validation failed"
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Default-config validation failed"
         EXIT_CODE=1
         return
     fi
@@ -311,7 +312,7 @@ run_phase21_default_tests() {
     local default_port
     default_port=$(get_webserver_port "${config_path}")
     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Default config will use port: ${default_port}"
-    print_result "${TEST_NUMBER}" "${TEST_COUNTER}" 0 "Default-config validated"
+    print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Default-config validated"
     PASS_COUNT=$(( PASS_COUNT + 1 ))
 
     # Seed QueryRefs BEFORE Hydrogen starts (idempotent).

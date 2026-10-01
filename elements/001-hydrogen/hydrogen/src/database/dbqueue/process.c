@@ -54,6 +54,52 @@ bool database_queue_start_worker(DatabaseQueue* db_queue) {
 }
 
 /*
+ * The connect retry in mysql_connect gave up. Tell the waiter now so
+ * login does not sit for the rest of its budget with no result.
+ */
+void database_queue_signal_connection_unavailable(DatabaseQueue* db_queue, const DatabaseQuery* query, const char* dqm_label) {
+    if (!db_queue || !query) {
+        return;
+    }
+
+    const char* label = dqm_label ? dqm_label : SR_DATABASE;
+    log_this(label, "MySQL connection still unavailable after retry", LOG_LEVEL_ERROR, 0);
+
+    if (db_queue->queue_type) {
+        int queue_type_index = database_queue_type_from_string(db_queue->queue_type);
+        if (queue_type_index >= 0 && queue_type_index < 4) {
+            database_queue_record_query_failure(db_queue, queue_type_index);
+        } else if (db_queue->is_lead_queue) {
+            database_queue_record_query_failure(db_queue, 4);
+        }
+    }
+    if (database_subsystem) {
+        __sync_fetch_and_add(&database_subsystem->failed_queries, 1);
+    }
+
+    if (!query->query_id) {
+        return;
+    }
+
+    QueryResult* error_result = calloc(1, sizeof(QueryResult));
+    if (!error_result) {
+        return;
+    }
+    error_result->success = false;
+    error_result->error_class = DB_ERR_TRANSPORT;
+    error_result->error_message = strdup("Too many connections");
+    error_result->data_json = strdup("[]");
+
+    PendingResultManager* pending_mgr = get_pending_result_manager();
+    if (!pending_mgr) {
+        database_engine_cleanup_result(error_result);
+        return;
+    }
+    /* Takes ownership, and frees the result itself when no waiter is registered. */
+    pending_result_signal_ready(pending_mgr, query->query_id, error_result, label);
+}
+
+/*
  * Helper function: Process a single query from the queue
  * Extracted for testability - can be called directly in unit tests
  */
@@ -67,6 +113,18 @@ void database_queue_process_single_query(DatabaseQueue* db_queue) {
     if (query) {
         char* dqm_label_exec = database_queue_generate_label(db_queue);
         
+        /*
+         * A MySQL worker whose connect was refused (error 1040) has no
+         * handle yet. Retry before this query is abandoned. mysql_connect
+         * backs off only on "Too many connections".
+         */
+        if (!db_queue->persistent_connection && query->query_template &&
+            db_queue->connection_string &&
+            strncmp(db_queue->connection_string, "mysql://", 8) == 0) {
+            log_this(dqm_label_exec, "MySQL connection missing, retrying before this query", LOG_LEVEL_ALERT, 0);
+            database_queue_check_connection(db_queue);
+        }
+
         // Execute actual database query if we have a persistent connection
         if (db_queue->persistent_connection && query->query_template) {
             // Create QueryRequest from DatabaseQuery
@@ -163,6 +221,9 @@ void database_queue_process_single_query(DatabaseQueue* db_queue) {
                    __sync_fetch_and_add(&database_subsystem->failed_queries, 1);
                }
             }
+        } else if (query->query_template && db_queue->connection_string &&
+                   strncmp(db_queue->connection_string, "mysql://", 8) == 0) {
+            database_queue_signal_connection_unavailable(db_queue, query, dqm_label_exec);
         } else {
             // No persistent connection or query template - simulate processing time
             if (strcmp(db_queue->queue_type, "slow") == 0) {
