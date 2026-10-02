@@ -133,6 +133,78 @@ int main(void) {
 }
 ```
 
+### 🔠 **Critical: Test File Naming Conventions**
+
+Unity test file naming has two independent constraints that must both be satisfied. Failing either one triggers Test 89 (coverage validation) or a CMake/CTest build error.
+
+**Constraint 1: Coverage Orphan Detection (Test 89)**
+
+Test 89's orphan-detection logic strips everything from `_test` onwards from the test filename to derive the expected source file basename. The test file **must** map to an existing source file in `src/`:
+
+```bash
+# Test script logic (test_89_coverage.sh, line 348):
+#   src_f="${f/tests\/unity\/src/src}"       # swap tests/unity/src → src
+#   src_f="${src_f%%_test*.c}.c"             # strip from _test onward, add .c
+#   [[ ! -f "${src_f}" ]] && echo "ORPHAN"   # file must exist in src/
+
+# ✅ CORRECT — maps to src/database/mssql/query.c
+tests/unity/src/database/mssql/query_test_format_helpers.c
+
+# ❌ WRONG — maps to src/database/mssql/mssql_query.c (does not exist!)
+tests/unity/src/database/mssql/mssql_query_test_format_helpers.c
+```
+
+**Rule**: The portion of the test filename *before* `_test` must exactly match the source file basename (minus `.c`). Since the source file is `query.c`, the test file must start with `query_test_`, **not** `mssql_query_test_`.
+
+**Constraint 2: CMake/CTest Basename Uniqueness**
+
+CTest registers tests by basename (path and `.c` suffix stripped). If two test files in the same CMake `add_test` scope produce the same basename, CMake errors out:
+
+```cmake
+# These collide because both produce basename "connection_test_check"
+tests/unity/src/database/postgresql/connection_test_check_timeout_expired.c → connection_test_check_timeout_expired
+tests/unity/src/database/mssql/connection_test_check_timeout_expired.c     → connection_test_check_timeout_expired  # COLLISION
+```
+
+**Rule for engine-specific source files with identically-named functions**: When two different modules share the same function name (e.g., `connection_test_check_timeout_expired.c` exists for both PostgreSQL and MSSQL), use a **per-engine suffix** to disambiguate the *entire basename*:
+
+```bash
+# ✅ CORRECT — unique basenames across both modules
+tests/unity/src/database/postgresql/connection_test_check_timeout_expired.c
+tests/unity/src/database/mssql/connection_test_mssql_check_timeout_expired.c
+
+# The engine suffix goes right after "connection_test_", not as a prefix
+# This keeps the orphan-detection mapping intact (maps to connection.c)
+# since "mssql_" is part of the function-specific portion, not the source basename.
+```
+
+**Combined checklist for new test files**:
+
+1. Verify the target source file exists in `src/` (e.g., `src/database/mssql/connection.c`)
+2. Start the test filename with the exact source basename + `_test_` (e.g., `connection_test_`)
+3. Check whether any existing test file in `tests/unity/src/` already uses the same basename after CMake strips the path — if so, add a disambiguating suffix
+4. Run `mkt` to confirm CMake accepts the naming (basename collisions surface as CMake configuration errors)
+5. Run `test_89` (or the coverage orphan-check section) to confirm no orphan warnings
+
+**Example: Correct naming for MSSQL module**
+
+Source files: `src/database/mssql/query.c`, `src/database/mssql/connection.c`
+
+| Test file | Maps to (orphan check) | CMake basename |
+|---|---|---|
+| `query_test_format_helpers.c` | `src/database/mssql/query.c` ✓ | `query_test_format_helpers` |
+| `connection_test_mssql_connect.c` | `src/database/mssql/connection.c` ✓ | `connection_test_mssql_connect` |
+
+### File Naming Issues Encountered
+
+During MSSQL coverage improvement work, two naming issues were hit and resolved:
+
+1. **Orphan false-positives**: Test files were initially named `mssql_query_test_*.c`, which the orphan detector mapped to the non-existent `src/database/mssql/mssql_query.c`. Renamed to `query_test_*.c` to correctly map to `query.c`.
+
+2. **CMake basename collisions**: MSSQL connection test files (`connection_test_*.c`) collided with PostgreSQL connection test files (`connection_test_*.c`) sharing identical basenames. Resolved by renaming MSSQL connection tests to `connection_test_mssql_*.c`, inserting the engine suffix after the `connection_test_` prefix so the orphan mapping still resolves to `connection.c`.
+
+3. **Misleading test names for split implementations**: The `api/conduit/query/` module splits implementation across multiple files (query.c, helpers/request_parsing.c, helpers/database_operations.c, helpers/query_execution.c, etc.), but test files under `tests/unity/src/api/conduit/query/` are named `query_test_<function>.c` regardless of which source file the function actually lives in. For example, `query_test_validate_http_method.c` tests `validate_http_method()` which is defined in `src/api/conduit/helpers/request_parsing.c`, not `query.c`. The orphan-detection constraint (Constraint 1) is still satisfied because the filename prefix `query_test_` correctly maps to `query.c` — the test *file* belongs to the query test suite. However, the test name is misleading: it implies the function is in `query.c` when it lives in a helper. When coverage drops unexpectedly on a source file, verify that the test file actually exercises that file's functions, not just that the filename prefix matches. The file `query_test_handle_conduit_query_request.c` is especially problematic: it is named for `handle_conduit_query_request()` but does not actually test that function (the main handler requires an MHD connection context that cannot be easily mocked); it tests smaller helpers instead. To avoid confusion, rename test files to reflect the actual function under test, or include a clear comment indicating which function is being tested and which source file it is defined in.
+
 ## CMake Build Integration
 
 Unity tests are **automatically discovered and integrated** with the CMake build system. The system uses dynamic discovery to find all Unity test files and build them with coverage instrumentation.
