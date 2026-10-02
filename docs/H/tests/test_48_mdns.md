@@ -1,8 +1,8 @@
-# Test 25: mDNS Server and Client
+# Test 48: mDNS Server and Client
 
 ## Overview
 
-`test_25_mdns.sh` validates both the mDNS server and the mDNS client. It is the blackbox gate for the [mDNS Upgrade](/docs/H/plans/complete/MDNS_UPGRADE_COMPLETE.md) plan.
+`test_48_mdns.sh` validates both the mDNS server and the mDNS client. It is the blackbox gate for the [mDNS Upgrade](/docs/H/plans/complete/MDNS_UPGRADE_COMPLETE.md) plan.
 
 ## Purpose
 
@@ -10,7 +10,7 @@ The script proves that the server probes, claims, announces, responds selectivel
 
 ## Script Details
 
-- **Script Name**: `test_25_mdns.sh`
+- **Script Name**: `test_48_mdns.sh`
 - **Test Name**: mDNS
 - **Version**: 4.1.0
 - **Dependencies**: `tests/lib/mdns_test_helpers.sh`, `lib/`, tshark (optional)
@@ -49,14 +49,14 @@ When tshark cannot capture loopback multicast, server log evidence of announceme
 
 ## Configuration Files
 
-- `hydrogen_test_25_mdns.json` — enables mDNS server + client
-- `hydrogen_test_25_mdns_dup.json` — same instance name, different ports (for the duplicate-name test)
+- `hydrogen_test_48_mdns.json` — enables mDNS server + client (WebServer port 5480)
+- `hydrogen_test_48_mdns_dup.json` — same instance name, different ports (WebServer port 5490)
 
 ## Usage
 
 ```bash
 # Run individually
-./test_25_mdns.sh
+./test_48_mdns.sh
 
 # Run as part of the full suite
 ./test_00_all.sh all
@@ -65,8 +65,8 @@ When tshark cannot capture loopback multicast, server log evidence of announceme
 ## Results
 
 - **Results directory**: `tests/results/`
-- **Server logs**: `tests/logs/test_25_mdns_[timestamp]_server.log`
-- **Packet capture**: `tests/logs/test_25_mdns_[timestamp]_traced.log`
+- **Server logs**: `tests/logs/test_48_mdns_[timestamp]_server.log`
+- **Packet capture**: `tests/logs/test_48_mdns_[timestamp]_traced.log`
 
 ## Related Documentation
 

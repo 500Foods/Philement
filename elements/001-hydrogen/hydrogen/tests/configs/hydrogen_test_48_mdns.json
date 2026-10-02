@@ -8,7 +8,7 @@
     "WebServer": {
         "EnableIPv4": true,
         "EnableIPv6": true,
-        "Port": 5250
+        "Port": 5480
     },
     "API": {
         "Enabled": true,
@@ -25,7 +25,7 @@
     "mDNSClient": {
         "EnableIPv4": true,
         "EnableIPv6": true,
-        "ScanIntervalMs": 5251,
+        "ScanIntervalMs": 5481,
         "ServiceTypes": [
             "_http._tcp.local",
             "_websocket._tcp.local",
@@ -52,23 +52,23 @@
         "FriendlyName": "Hydrogen mDNS Test Server",
         "Model": "HydrogenTest",
         "Manufacturer": "Philement Test",
-        "Version": "25.0.0-test",
+        "Version": "48.0.0-test",
         "Retries": 1,
         "Services": [
             {
                 "Name": "Hydrogen_Test_Web_Interface",
                 "Type": "_http._tcp.local",
-                "Port": 5252,
+                "Port": 5482,
                 "TxtRecords": [
                     "test=true",
-                    "version=25.0.0-test",
+                    "version=48.0.0-test",
                     "path=/api"
                 ]
             },
             {
                 "Name": "Hydrogen_Test_WebSocket",
                 "Type": "_websocket._tcp.local",
-                "Port": 5253,
+                "Port": 5483,
                 "TxtRecords": [
                     "test=true",
                     "protocol=test-protocol"
@@ -77,7 +77,7 @@
             {
                 "Name": "Hydrogen_Test_Service",
                 "Type": "_hydrogen._tcp.local",
-                "Port": 5254,
+                "Port": 5484,
                 "TxtRecords": [
                     "test=true",
                     "services=http,websocket,api"
@@ -86,7 +86,7 @@
             {
             "Name": "Hydrogen_Test_Octoprint",
             "Type": "_octoprint._tcp.local",
-            "Port": 5250,
+            "Port": 5480,
             "TxtRecords": [
                 "path=/",
                 "model=Ender 3",

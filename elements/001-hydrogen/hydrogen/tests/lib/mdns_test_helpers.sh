@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # mDNS Test Helpers Library
-# Provides mDNS-specific test functions for test_25_mdns.sh
+# Provides mDNS-specific test functions for test_48_mdns.sh
 
 # This library uses variables defined by the calling test (TEST_NUMBER,
 # TEST_COUNTER, GREP, HYDROGEN_BIN, etc.). Disable SC2154 globally.
@@ -31,7 +31,7 @@
 # 1.3.0 - 2026-09-13 - test_mdns_system_info now verifies Phase 9 public info shape (version.auth=none, no .mdns/.system on unauthenticated request) instead of expecting .mdns fields
 # 1.2.0 - 2026-09-04 - Do not kill_owned_hydrogens after Hydrogen B; that reaped the main server
 # 1.1.0 - 2026-09-04 - Helpers that own a TEST print the only PASS/FAIL; others return status only
-# 1.0.0 - 2026-09-01 - Initial extraction from test_25_mdns.sh
+# 1.0.0 - 2026-09-01 - Initial extraction from test_48_mdns.sh
 
 [[ -n "${MDNS_TEST_HELPERS_GUARD:-}" ]] && return 0
 export MDNS_TEST_HELPERS_GUARD="true"
@@ -743,7 +743,7 @@ wait_for_hydrogen_mdns_packets() {
     while [[ "${attempt}" -lt "${max_attempts}" ]]; do
         # shellcheck disable=SC2310 # Want false to mean not yet captured
         if capture_contains_hydrogen; then
-            # shellcheck disable=SC2034 # Set for caller (test_25_mdns.sh) to read
+            # shellcheck disable=SC2034 # Set for caller (test_48_mdns.sh) to read
             HYDROGEN_MDNS_CAPTURED=1
             print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Hydrogen mDNS names observed in capture"
             return 0

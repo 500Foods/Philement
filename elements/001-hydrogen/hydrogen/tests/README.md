@@ -75,8 +75,8 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_22_swagger.sh](/docs/H/tests/test_22_swagger.md)**: Verifies Swagger documentation and UI integration.
 - **[test_23_websockets.sh](/docs/H/tests/test_23_websockets.md)**: Tests WebSocket server functionality and integration.
 - **[test_24_uploads.sh](/docs/H/tests/test_24_uploads.md)**: Tests uploading a file to the server
-- **[test_25_mdns.sh](/docs/H/tests/test_25_mdns.md)**: Tests mDNS server and client functionality and integration
 - **[test_26_terminal.sh](/docs/H/tests/test_26_terminal.md)**: Tests terminal functionality, payload serving, and WebSocket connections
+- **[test_48_mdns.sh](/docs/H/tests/test_48_mdns.md)**: Tests mDNS server and client functionality and integration
 
 ### Database Tests
 

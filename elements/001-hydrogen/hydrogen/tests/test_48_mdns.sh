@@ -4,6 +4,7 @@
 # Tests the mDNS service discovery functionality: server announcements and client discovery.
 
 # CHANGELOG
+# 4.3.2 - 2026-10-02 - Renumbered from Test 25 to Test 48; updated config filenames, port numbers (5250 -> 5480, 5260 -> 5490, services 525x -> 548x, 526x -> 549x), and version strings (25.0.0 -> 48.0.0)
 # 4.3.1 - 2026-09-13 - Removed manual TEST_COUNTER=0 init; updated test_mdns_system_info to expect Phase 9 public info shape (version.auth=none, no .mdns on unauthenticated request)
 # 4.3.0 - 2026-09-04 - Fail if the main server dies before clean shutdown (goodbye tokens)
 # 4.2.0 - 2026-09-04 - Pair every TEST with one PASS/FAIL (Unpaired TEST / extra PASS/FAIL)
@@ -26,8 +27,8 @@ set -Eeuo pipefail
 # Test Configuration
 TEST_NAME="mDNS"
 TEST_ABBR="DNS"
-TEST_NUMBER="25"
-TEST_VERSION="4.3.1"
+TEST_NUMBER="48"
+TEST_VERSION="4.3.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -42,8 +43,8 @@ trap on_mdns_err ERR
 trap cleanup_mdns_capture EXIT
 
 # Configuration
-CONFIG_FILE="${CONFIG_DIR}/hydrogen_test_25_mdns.json"
-DUP_CONFIG_FILE="${CONFIG_DIR}/hydrogen_test_25_mdns_dup.json"
+CONFIG_FILE="${CONFIG_DIR}/hydrogen_test_48_mdns.json"
+DUP_CONFIG_FILE="${CONFIG_DIR}/hydrogen_test_48_mdns_dup.json"
 TRACED_LOG="${LOG_PREFIX}_traced.log"
 CAPTURE_LOG="${LOG_PREFIX}_capture.log"
 PACKET_LOG="${LOG_PREFIX}_packet.log"

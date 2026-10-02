@@ -1815,15 +1815,15 @@ Phase 8 complete (`Terminal.Key` / `Protocol` / `WebPath` exist).
 - [ ] Blackbox fallout (this phase, not Phase 11): Test 20 and Test 21
       currently match substring `system` on unauthenticated
       `/api/system/info`. Change the expected field to `version` (do not
-      require `system`). Test 25
+       require `system`). Test 48
       [`test_mdns_system_info`](/elements/001-hydrogen/hydrogen/tests/lib/mdns_test_helpers.sh)
       currently curls `.mdns` with no JWT — assert public shape instead
       (`version` present, `.mdns` absent). Do not add login/DB to Test
-      25; other Test 25 helpers remain the mDNS proof. Bump
-      `CHANGELOG`/`TEST_VERSION`. `mks` after script edits.
-      **Verify:** `./test_00_all.sh 20_api_prefix 21_system_endpoints`
-      green; Test 25 helper + `./test_00_all.sh 25_mdns` (record a
-      variance if the mDNS environment cannot run).
+       48; other Test 48 helpers remain the mDNS proof. Bump
+       `CHANGELOG`/`TEST_VERSION`. `mks` after script edits.
+       **Verify:** `./test_00_all.sh 20_api_prefix 21_system_endpoints`
+       green; Test 48 helper + `./test_00_all.sh 48_mdns` (record a
+       variance if the mDNS environment cannot run).
 - [ ] `mkq` then `mkp`. Never log the info body, JWT, key, or
       `version.auth` next to secrets.
 

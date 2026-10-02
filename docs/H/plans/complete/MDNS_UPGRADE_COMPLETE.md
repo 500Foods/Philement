@@ -7,7 +7,7 @@ Bring Hydrogen's mDNS **server** to RFC 6762 / 6763 feature parity
 (probe/claim, selective answers, QU/legacy unicast, known-answer
 suppression, NSEC, cache-flush, overflow-safe codec, name defense,
 shared-record delay, probe tiebreak), replace the mDNS **client scaffold**
-with browse/resolve + a queryable registry, and make Test 25 prove
+with browse/resolve + a queryable registry, and make Test 48 prove
 discovery, goodbye, **duplicate-name rename**, and on-the-wire broadcasts.
 
 This document is the **only** active mDNS plan. It absorbs the old TODO
@@ -46,7 +46,7 @@ Each phase is its **own conversation**:
 8. Never apply a database migration (none expected here).
 9. Follow Unity one-file-per-function, no `static` in `src/`, `mkt`/`mkp`
    after C, `mks` after scripts. Do **not** create a new blackbox test
-   number — extend [`test_25_mdns.sh`](/elements/001-hydrogen/hydrogen/tests/test_25_mdns.sh).
+    number — extend [`test_48_mdns.sh`](/elements/001-hydrogen/hydrogen/tests/test_48_mdns.sh).
 
 ## Resuming Work
 
@@ -64,7 +64,7 @@ for the current operator docs.
 | --- | --- |
 | **Band** | P2 — [TODO.md item 20](/docs/H/TODO.md) |
 | **Effort** | L–XL |
-| **Why** | Server announcements work (Test 25) but are not RFC-complete; client launch is a registry scaffold. Printers on a shared LAN will collide names and miss legacy/QU queriers. |
+| **Why** | Server announcements work (Test 48) but are not RFC-complete; client launch is a registry scaffold. Printers on a shared LAN will collide names and miss legacy/QU queriers. |
 
 ## Goals
 
@@ -84,9 +84,9 @@ for the current operator docs.
 6. **Registry** other subsystems can query (C snapshot +
    `/api/system/info` + Lua `H.mdns.list`). TCP connect health on the
    advertised port when `HealthCheck.Enabled`. `MonitoredServices`
-   filters (own / printer types).
-7. Test 25 asserts **log contract**, **duplicate-name claim** (two
-   processes, same instance → `(2)`), and **wire contents** when tshark
+    filters (own / printer types).
+7. Test 48 asserts **log contract**, **duplicate-name claim** (two
+    processes, same instance → `(2)`), and **wire contents** when tshark
    is present (PTR/SRV/TXT/A|AAAA, probe, TTL-0 goodbye).
 8. After Phase 0, `mdns-proj/` is gone from the repo.
 
@@ -120,8 +120,8 @@ are Non-Goal.
 - Dual-stack one-socket (`IPV6_V6ONLY` stays on).
 - HTTP `auto_connect`, HTTP health URLs, round-robin/weighted job
   routing, Lithium UI.
-- New blackbox test **number** (extend Test 25; a second Hydrogen
-  process inside Test 25 is allowed).
+- New blackbox test **number** (extend Test 48; a second Hydrogen
+  process inside Test 48 is allowed).
 - Avahi/Bonjour daemon replacement beyond coexistence on 5353
   (`SO_REUSEADDR`/`SO_REUSEPORT` already present).
 - Cloud monitors, extra protocols, DNS-SD subtypes (`._sub._`),
@@ -136,7 +136,7 @@ are Non-Goal.
   [`mdns_server_announce.c`](/elements/001-hydrogen/hydrogen/src/mdns/mdns_server_announce.c)).
 - Multi-service config, device identity, secret key, launch/landing.
 - Announce + responder threads, goodbye ×3 on shutdown.
-- Unity layout and Test 25 harness (pcap/tshark cleanup, `set -e` traps).
+- Unity layout and Test 48 harness (pcap/tshark cleanup, `set -e` traps).
 
 ### Steal (ideas + appendix snippets — not a file copy)
 
@@ -180,24 +180,24 @@ Paths relative to `/elements/001-hydrogen/hydrogen/` unless noted.
 | Flags | `MDNS_FLAG_RESPONSE 0x8400` already includes AA; ORed again with `0x0400` |
 | Client | [`launch_mdns_client.c`](/elements/001-hydrogen/hydrogen/src/launch/launch_mdns_client.c) — config + registry only. Comment: "no browse/query worker" |
 | Config | Client: `scan_interval`, `max_services`, `retry_count`, `health_check_*`, `service_types[]` already parsed |
-| Tests | Unity under `tests/unity/src/mdns/`; blackbox [`tests/test_25_mdns.sh`](/elements/001-hydrogen/hydrogen/tests/test_25_mdns.sh) (v3.0.3) |
-| Docs | [`/docs/H/core/subsystems/mdnsserver/mdnsserver.md`](/docs/H/core/subsystems/mdnsserver/mdnsserver.md), [`/docs/H/tests/test_25_mdns.md`](/docs/H/tests/test_25_mdns.md) |
+| Tests | Unity under `tests/unity/src/mdns/`; blackbox [`tests/test_48_mdns.sh`](/elements/001-hydrogen/hydrogen/tests/test_48_mdns.sh) (v4.1.0) |
+| Docs | [`/docs/H/core/subsystems/mdnsserver/mdnsserver.md`](/docs/H/core/subsystems/mdnsserver/mdnsserver.md), [`/docs/H/tests/test_48_mdns.md`](/docs/H/tests/test_48_mdns.md) |
 
 Client config already exists; do not invent parallel JSON. Wire the worker
 to `app_config->mdns_client`.
 
 ## Config debt (fix while wiring the client)
 
-Test 25 JSON and the loader disagree today — the client worker will be
+Test 48 JSON and the loader disagree today — the client worker will be
 blind unless this is fixed in Phase 6 / 6a:
 
 | Field | JSON / schema | Loader today |
 | --- | --- | --- |
-| `ServiceTypes` | Test 25: **array of strings**. Unity: array of **objects** `{Type, Required, AutoConnect}` | Objects only; string array is skipped → **zero types** |
+| `ServiceTypes` | Test 48: **array of strings**. Unity: array of **objects** `{Type, Required, AutoConnect}` | Objects only; string array is skipped → **zero types** |
 | `ScanIntervalMs` | milliseconds | `PROCESS_INT` into `scan_interval` documented as **seconds** |
 | `HealthCheck.IntervalMs` | milliseconds | same seconds confusion |
 | `HealthCheck.TimeoutMs` / `RetryCount` | in JSON | not stored on `MDNSClientConfig` |
-| `MonitoredServices.*` | in Test 25 + schema | **not parsed** |
+| `MonitoredServices.*` | in Test 48 + schema | **not parsed** |
 | `MaxServices` | schema | parsed |
 
 Accept **both** ServiceTypes shapes (string or object). Store intervals
@@ -222,9 +222,9 @@ landing_mdns_client.c     set shutdown, join thread
 Server and client **share the codec**. They do **not** share a socket:
 server keeps per-iface fds; client may use the same `create_multicast_socket`
 helper (preferred) or its own fds with the same options. Same host must
-hear itself (`IP_MULTICAST_LOOP` already on) so Test 25 can use one process.
+hear itself (`IP_MULTICAST_LOOP` already on) so Test 48 can use one process.
 
-### Log contract (Test 25 pass criteria)
+### Log contract (Test 48 pass criteria)
 
 Use `log_this` with these **stable substrings** (exact tokens, then details):
 
@@ -243,7 +243,7 @@ Use `log_this` with these **stable substrings** (exact tokens, then details):
 | `MDNS_CLIENT HEALTH` | TCP check result (`ok`/`fail` `<instance> <addr>:<port>`) |
 | `MDNS_CLIENT DROP` | evicted (TTL expiry or max_services) |
 
-Test 25 greps these tokens in the **Hydrogen server log**, not tshark.
+Test 48 greps these tokens in the **Hydrogen server log**, not tshark.
 Keep pcap/avahi as diagnostic/optional subtests.
 
 ## RFC / constant table (lock in Phase 0, code in Phase 1–2)
@@ -402,16 +402,16 @@ vs RR TTL. Add `IPV6_V6ONLY` and PKTINFO on **existing** per-iface sockets.
 - [x] Retarget existing Unity (`mdns_dns_utils_*`, announce, process_query)
       so they still pass. Deprecate `mdns_dns_utils.c` if unused — do not
       leave dead `write_dns_*`.
-- [x] `mkt` `mkp`; Test 25 still green (behavior change: TTLs in pcap).
+- [x] `mkt` `mkp`; Test 48 still green (behavior change: TTLs in pcap).
 
 ### Done means
 
-Server packets are built/parsed with the codec; Test 25 still finds
+Server packets are built/parsed with the codec; Test 48 still finds
 announcements; no dead `write_dns_*`.
 
 ### Exit gate
 
-`zsh -ic 'mkt'`; `mkp`; existing mdns `mku` tests; `tests/test_25_mdns.sh`.
+`zsh -ic 'mkt'`; `mkp`; existing mdns `mku` tests; `tests/test_48_mdns.sh`.
 
 ---
 
@@ -444,19 +444,19 @@ what was asked; suppress known answers; honor QU and legacy unicast.
 - [x] QU bit → unicast **and** multicast (appendix `send_records`).
 - [x] Reply on the **same socket** the query arrived on (v4 vs v6).
 - [x] Do not answer until `claimed` (Phase 4 adds the flag; until then
-      treat claimed=1 so Test 25 stays green).
+      treat claimed=1 so Test 48 stays green).
 - [x] Unity: known-answer strip; QU vs QM; legacy port; dns-sd name;
       case-insensitive type match (`_HTTP._TCP.local`).
-- [x] Test 25 still green (more selective packets; tshark may see fewer
+- [x] Test 48 still green (more selective packets; tshark may see fewer
       RRs per reply — do not require full dump).
 
 ### Done means
 
-Responder is question-shaped; Unity covers strip/QU/legacy; Test 25 green.
+Responder is question-shaped; Unity covers strip/QU/legacy; Test 48 green.
 
 ### Exit gate
 
-`mkt` `mkp`; new `mku`; `test_25_mdns.sh`.
+`mkt` `mkp`; new `mku`; `test_48_mdns.sh`.
 
 ---
 
@@ -471,7 +471,7 @@ whole server fails (`probe_failed`, all claimed flags cleared, no announce /
 answer / goodbye). Probe helpers live in
 [`mdns_server_probe.c`](/elements/001-hydrogen/hydrogen/src/mdns/mdns_server_probe.c);
 the 3×250 ms loop is `mdns_server_run_probe` in the announce thread (no
-random first delay). Test 25 greps `MDNS_SERVER CLAIMED` (5 names in the
+random first delay). Test 48 greps `MDNS_SERVER CLAIMED` (5 names in the
 default fixture). Two-process duplicate-name run remains Phase 7.
 
 ### Goal
@@ -496,7 +496,7 @@ conflict: append `-2` to the host label (document the rule in Status).
       did not own).
 - [x] Unity: conflict detector; next_name formatting; probe packet
       has nscount > 0 and qdcount ≥ 2.
-- [x] Test 25 (single process): grep `MDNS_SERVER CLAIMED`. Two-process
+- [x] Test 48 (single process): grep `MDNS_SERVER CLAIMED`. Two-process
       duplicate-name run is **Phase 7** (required, not optional).
 
 ### Done means
@@ -506,7 +506,7 @@ Single Hydrogen greps CLAIMED. Unity covers conflict detector and
 
 ### Exit gate
 
-`mkt` `mkp`; `mku` probe tests; `test_25_mdns.sh` includes CLAIMED.
+`mkt` `mkp`; `mku` probe tests; `test_48_mdns.sh` includes CLAIMED.
 
 ---
 
@@ -519,7 +519,7 @@ the iface + NSEC). Missing family drops `W_A` / `W_AAAA` and sets
 `W_NSEC`. `mdns_server_want_empty` counts NSEC so an NSEC-only reply is
 not skipped. `mdns_put_rr_nsec` is reached from
 `mdns_server_put_host_nsec`; `mdns_wire_keep_linked` still holds
-`mdns_rdata_*` / `mdns_txt_get` until Phase 6. Test 25 tshark A/AAAA
+`mdns_rdata_*` / `mdns_txt_get` until Phase 6. Test 48 tshark A/AAAA
 counts are diagnostic; one family is enough.
 
 ### Goal
@@ -533,16 +533,16 @@ queries — send NSEC listing types that **do** exist (appendix NSEC).
 - [x] Same for AAAA / v6.
 - [x] NSEC next-domain = hostname; bitmap window 0; types present + NSEC.
 - [x] Unity: IPv4-only host answering AAAA query yields NSEC, not AAAA.
-- [x] Test 25: if dual-stack, ADDR log may be v4 and/or v6; do not require
+- [x] Test 48: if dual-stack, ADDR log may be v4 and/or v6; do not require
       both families.
 
 ### Done means
 
-NSEC emitted on missing family; Unity proves it; Test 25 green.
+NSEC emitted on missing family; Unity proves it; Test 48 green.
 
 ### Exit gate
 
-`mkt` `mkp`; `mku`; `test_25_mdns.sh`.
+`mkt` `mkp`; `mku`; `test_48_mdns.sh`.
 
 ---
 
@@ -621,7 +621,7 @@ renumbering). Record the final numbers in Status once changed.
 
 ### Exit gate
 
-`mkt` `mkp`; client `mku`; Test 25 not yet rewritten but must not regress
+`mkt` `mkp`; client `mku`; Test 48 not yet rewritten but must not regress
 (client log greps already look for `mDNSClient` — they will still pass).
 
 ---
@@ -632,7 +632,7 @@ renumbering). Record the final numbers in Status once changed.
 
 Config: `TimeoutMs` / `HealthCheck.RetryCount`, `MonitoredServices` (Own /
 Printer / Custom; LoadBalancers logged once). Snapshot APIs + TCP health +
-`mdns` object on `/api/system/info` + `H.mdns.list`. Test 25 info curl left
+`mdns` object on `/api/system/info` + `H.mdns.list`. Test 48 info curl left
 to Phase 7. Unity listen-socket TCP is `TEST_IGNORE` under `USE_MOCK_SYSTEM`.
 
 ### Goal
@@ -661,8 +661,8 @@ code can read. Health is TCP to the advertised port. No job router.
       count, up to N instances (name, type, port, addrs, healthy).
 - [x] Lua `H.mdns.list()` → table of the snapshot (read-only). No
       `H.mdns.connect`. Unity or Test 43 only if scripting is already
-      on in Test 25 — prefer Unity + a Test 25 log line that info was
-      dumped, plus a curl of `/api/system/info` in Test 25.
+      on in Test 48 — prefer Unity + a Test 48 log line that info was
+      dumped, plus a curl of `/api/system/info` in Test 48.
 - [x] Optional `mdns_client_on_change` function-pointer for in-process
       listeners (found/lost/health). Default NULL. Unity that it fires.
 
@@ -673,14 +673,14 @@ local web port; `OwnServices` filter has a Unity case.
 
 ### Exit gate
 
-`mkt` `mkp`; new `mku`; Test 25 still green (may add info curl this
+`mkt` `mkp`; new `mku`; Test 48 still green (may add info curl this
 phase or Phase 7).
 
 ---
 
 ## Phase 6b — Defend, delay, tiebreak, split packets
 
-**Status:** complete. All items 1–5 implemented, Unit-tested, and verified. Item 6 deferred per plan (Phase 8 doc note). Exit gate cleared: `mkt` green, `mkp` green, all mDNS Unity tests pass, Test 25 17/17.
+**Status:** complete. All items 1–5 implemented, Unit-tested, and verified. Item 6 deferred per plan (Phase 8 doc note). Exit gate cleared: `mkt` green, `mkp` green, all mDNS Unity tests pass, Test 48 17/17.
 
 ### Goal
 
@@ -719,11 +719,11 @@ collisions.
 ### Done means
 
 Unity for defend, delay bounds, tiebreak loser, overflow split.
-Test 25 still green (delays may need slightly longer wait).
+Test 48 still green (delays may need slightly longer wait).
 
 ### Exit gate
 
-`mkt` `mkp`; listed `mku`; `test_25_mdns.sh`.
+`mkt` `mkp`; listed `mku`; `test_48_mdns.sh`.
 
 ### Working Log
 
@@ -740,7 +740,7 @@ Test 25 still green (delays may need slightly longer wait).
     fit instead of dropping entirely. Loop guards on `!b.overflow` prevent
     further writes after overflow.
   - Item 6 (interface change): deferred per plan, will be a Phase 8 doc note.
-  - Verification: `mkt` green, `mkp` green, all 8 `mku` pass, Test 25 9/11
+  - Verification: `mkt` green, `mkp` green, all 8 `mku` pass, Test 48 9/11
     (same 2 pre-existing tshark-only timeouts).
 - 2026-08-31: Completion pass (this session).
   - Item 3 (rate limit): `mdns_server_want_apply_rate_limit` unit tests
@@ -762,20 +762,20 @@ Test 25 still green (delays may need slightly longer wait).
     `calloc` (15 calls) — uninitialized `name_base`/`hostname_base`
     pointers caused `free()` crash. 5/5 tests pass.
   - Final verification: `mkp` green (1,999 files, 0 issues). 44 mDNS
-    Unity tests across 6 suites all green. Test 25: 9/11 (2 pre-existing
+    Unity tests across 6 suites all green. Test 48: 9/11 (2 pre-existing
     tshark packet-capture timeouts, not mDNS-logic failures).
   - Phase 6b exit gate: `mkt` green, `mkp` green, listed `mku` pass,
-    `test_25_mdns.sh` 9/11 (within expected baseline).
+    `test_48_mdns.sh` 9/11 (within expected baseline).
 
 ---
 
-## Phase 7 — Test 25 + Unity coverage for the new paths
+## Phase 7 — Test 48 + Unity coverage for the new paths
 
-**Status:** complete. Test 25 17/17 green (was 9/11 with 3 failures). Coverage improved: mdns_server_announce.c and mdns_server_respond.c now have comprehensive Unity coverage for helper functions. All lint clean (mkp/mks).
+**Status:** complete. Test 48 17/17 green (was 9/11 with 3 failures). Coverage improved: mdns_server_announce.c and mdns_server_respond.c now have comprehensive Unity coverage for helper functions. All lint clean (mkp/mks).
 
 ### Goal
 
-Test 25 fails closed on discovery, goodbye, duplicate names, and (when
+Test 48 fails closed on discovery, goodbye, duplicate names, and (when
 tshark exists) on-the-wire records. Unity covers new functions.
 
 ### Work
@@ -791,7 +791,7 @@ tshark exists) on-the-wire records. Unity covers new functions.
 - [x] Shutdown; wait for `MDNS_SERVER GOODBYE` and `MDNS_CLIENT GOODBYE`
       per Phase 6 landing order.
 - [x] All new greps use `grep -c ... || true` / `set -e` safety
-      (Test 25 3.0.3 lesson).
+      (Test 48 3.0.3 lesson).
 
 #### Duplicate names (always gating — two processes)
 
@@ -836,26 +836,26 @@ tshark exists) on-the-wire records. Unity covers new functions.
 - [x] `add_coverage.sh` on `src/mdns/`; no new `static` functions.
 
 - [x] Bump `TEST_VERSION` + CHANGELOG.
-- [ ] Update [`/docs/H/tests/test_25_mdns.md`](/docs/H/tests/test_25_mdns.md).
-- [x] `mks`; run Test 25 **3 consecutive** passes.
+- [ ] Update [`/docs/H/tests/test_48_mdns.md`](/docs/H/tests/test_48_mdns.md).
+- [x] `mks`; run Test 48 **3 consecutive** passes.
 
 ### Done means
 
-Test 25 fails if FOUND/SRV missing, if the second process does not
+Test 48 fails if FOUND/SRV missing, if the second process does not
 rename, or (with tshark) if PTR/SRV/goodbye are absent. Passes without
 avahi. Unity for new symbols green.
 
 ### Exit gate
 
-`zsh -ic 'mks'`; `tests/test_25_mdns.sh` ×3; `mkt`/`mkp`; listed `mku`.
+`zsh -ic 'mks'`; `tests/test_48_mdns.sh` ×3; `mkt`/`mkp`; listed `mku`.
 
 ### Working Log
 
-- 2026-09-01: Phase 7 coverage + Test 25 refactor.
-  - Test 25 refactored: extracted 18 mDNS helper functions to
-    `tests/lib/mdns_test_helpers.sh` (769 lines); `test_25_mdns.sh` reduced
+- 2026-09-01: Phase 7 coverage + Test 48 refactor.
+  - Test 48 refactored: extracted 18 mDNS helper functions to
+    `tests/lib/mdns_test_helpers.sh` (769 lines); `test_48_mdns.sh` reduced
     from 1,411 lines to 476 lines.
-  - Test 25 failures fixed (was 14/17, now 17/17):
+  - Test 48 failures fixed (was 14/17, now 17/17):
     - GOODBYE test (25-0014): fixed by detecting server process already
       exited before shutdown test and accepting MDNS_CLIENT GOODBYE as
       sufficient proof when MDNS_SERVER GOODBYE missing due to shutdown race.
@@ -886,7 +886,7 @@ avahi. Unity for new symbols green.
     mdns_server_announce.c and mdns_server_respond.c helper functions.
   - Lint: mkp green (2,010 files), mks green (165 files, 1072 directives
     all justified).
-  - Test 25 version bumped to 4.1.0.
+  - Test 48 version bumped to 4.1.0.
 
 ---
 
@@ -911,7 +911,7 @@ Operator/subsystem docs match behavior. Plan complete.
 - [x] Fix [`mdns_configuration.md`](/docs/H/core/reference/mdns_configuration.md)
       intervals (ms vs seconds) and client section.
 - [x] Link from [`/docs/H/README.md`](/docs/H/README.md) / SITEMAP.
-- [x] Update [`test_25_mdns.md`](/docs/H/tests/test_25_mdns.md) (Phase 7 leftover).
+- [x] Update [`test_48_mdns.md`](/docs/H/tests/test_48_mdns.md) (Phase 7 leftover).
 - [x] `mkl` / Test 04.
 - [x] Move this plan to `plans/complete/MDNS_UPGRADE_COMPLETE.md`, drop
       TODO item 20, update [`plans/README.md`](/docs/H/plans/README.md).
@@ -931,7 +931,7 @@ Test 04 / `mkl` green; TODO and plan index updated.
   - Added `mdnsclient.md`: browse/resolve, cache, filters, TCP health, registry snapshot, system/info, Lua `H.mdns.list`, log contract.
   - Rewrote `mdns_client_architecture.md`: shipped vs deferred (load balancer out of scope).
   - Fixed `mdns_configuration.md`: ms intervals, full client section.
-  - Updated `test_25_mdns.md` (Phase 7 leftover): log contract, duplicate-name test, wire capture.
+  - Updated `test_48_mdns.md` (Phase 7 leftover): log contract, duplicate-name test, wire capture.
   - Updated indexes: SITEMAP, `README.md`, `subsystems/README.md`.
   - Created `mdnsclient/README.md`, updated `mdnsserver/README.md`.
   - Moved plan to `plans/complete/MDNS_UPGRADE_COMPLETE.md`.
@@ -1322,24 +1322,24 @@ send HTTP.
 | Date | Phase | Note |
 | --- | --- | --- |
 | 2026-08-31 | — | Plan written from Hydrogen vs mini-stack comparison. Implementation not started. |
-| 2026-08-31 | — | Expanded: no in-mDNS load balancer; registry/TCP health/Lua/info; config debt; Phase 6a/6b; Test 25 two-process duplicate names + tshark RR gating. |
+| 2026-08-31 | — | Expanded: no in-mDNS load balancer; registry/TCP health/Lua/info; config debt; Phase 6a/6b; Test 48 two-process duplicate names + tshark RR gating. |
 | 2026-08-31 | — | Re-read scratch-tree source in full against this plan; nothing missing from Keep/Steal or the appendices except client resilience details (immediate first query, TXT-optional grace, endpoint dedup key). Added those to Phase 6/Appendix F. Resolved the Phase 6 landing-order paragraph, which hedged between three options, into one concrete decision (server lands before client). |
 | 2026-08-31 | 0 | Plan locked (keep vs steal + log contract). Scratch tree already gone. TODO remaining starts at Phase 1. |
 | 2026-08-31 | 1 | `mdns_wire.c`/`.h`; process_query uses parse + `mdns_name_equal`; `mdns_wire_keep_linked` for encode reachability. `mkt`/`mkp`/listed `mku` green. Zero new dead `mdns_*` symbols. |
-| 2026-08-31 | 2 | Announce/goodbye via `mdns_buf`; RFC TTL split + cache-flush; V6ONLY/PKTINFO; recv 9000; deleted `mdns_dns_utils`. `mkt`/`mkp`/mdns `mku`/Test 25 green. |
-| 2026-08-31 | 3 | Selective responder in `mdns_server_respond.c`; QU+legacy dest; known-answer strip; dns-sd. `mkt`/`mkp`/new `mku`/Test 25 green. |
-| 2026-08-31 | 4 | Probe/claim in `mdns_server_probe.c`; per-name claimed; hostname `label-N.local`; fail-whole after 8. `mkt`/`mkp`/probe `mku`/Test 25 CLAIMED green. |
-| 2026-08-31 | 5 | Missing-family NSEC; NSEC also on positive A/AAAA. `mkt`/`mkp`/NSEC `mku`/Test 25 3.0.5 green. |
-| 2026-08-31 | 6 | Browse worker + cache; string ServiceTypes; land Server then Client; scan_interval as ms. `mkt`/`mkp`/client `mku`/Test 25 3.0.5 green. |
-| 2026-08-31 | 6a | Registry snapshot/count/lookup; TCP health; MonitoredServices; info JSON `mdns`; `H.mdns.list`; on_change. `mkt`/`mkp`/new `mku` green. Test 25 log tests pass; tshark Hydrogen-name wait timed out on busy LAN (Phase 7). |
-| 2026-09-01 | 7 | Test 25 refactor + coverage. Extracted 18 helpers to `lib/mdns_test_helpers.sh`; test_25 1,411→476 lines. Fixed 3 Test 25 failures (GOODBYE race, tshark loopback limitation). Added 47 new Unity tests across 8 files (respond helpers, strip_and_build, announce edge cases, run_probe). `mkp`/`mks` green. Test 25 17/17. |
+| 2026-08-31 | 2 | Announce/goodbye via `mdns_buf`; RFC TTL split + cache-flush; V6ONLY/PKTINFO; recv 9000; deleted `mdns_dns_utils`. `mkt`/`mkp`/mdns `mku`/Test 48 green. |
+| 2026-08-31 | 3 | Selective responder in `mdns_server_respond.c`; QU+legacy dest; known-answer strip; dns-sd. `mkt`/`mkp`/new `mku`/Test 48 green. |
+| 2026-08-31 | 4 | Probe/claim in `mdns_server_probe.c`; per-name claimed; hostname `label-N.local`; fail-whole after 8. `mkt`/`mkp`/probe `mku`/Test 48 CLAIMED green. |
+| 2026-08-31 | 5 | Missing-family NSEC; NSEC also on positive A/AAAA. `mkt`/`mkp`/NSEC `mku`/Test 48 3.0.5 green. |
+| 2026-08-31 | 6 | Browse worker + cache; string ServiceTypes; land Server then Client; scan_interval as ms. `mkt`/`mkp`/client `mku`/Test 48 3.0.5 green. |
+| 2026-08-31 | 6a | Registry snapshot/count/lookup; TCP health; MonitoredServices; info JSON `mdns`; `H.mdns.list`; on_change. `mkt`/`mkp`/new `mku` green. Test 48 log tests pass; tshark Hydrogen-name wait timed out on busy LAN (Phase 7). |
+| 2026-09-01 | 7 | Test 48 refactor + coverage. Extracted 18 helpers to `lib/mdns_test_helpers.sh`; `test_48` 1,411→476 lines. Fixed 3 Test 48 failures (GOODBYE race, tshark loopback limitation). Added 47 new Unity tests across 8 files (respond helpers, strip_and_build, announce edge cases, run_probe). `mkp`/`mks` green. Test 48 17/17. |
 
 ## Lessons learned
 
-- Test 25 historically aborted on `set -e` + `grep -c` (fixed 3.0.3). New
+- Test 48 historically aborted on `set -e` + `grep -c` (fixed 3.0.3). New
   greps must use `|| true` / `grep -c ... || true`.
 - Client landing-before-server would miss goodbye; Phase 6 must pick an
-  order before Test 25 asserts `MDNS_CLIENT GOODBYE`.
+  order before Test 48 asserts `MDNS_CLIENT GOODBYE`.
 - `mkt` dead-code gate: codec must be referenced from `src/` in the same
   phase it is added, or Unity-only objects never enter the trial binary —
   still add a production call (`mdns_name_equal` in the responder) in
@@ -1364,11 +1364,11 @@ send HTTP.
   750 ms wait. `probe.c` objects are compiled without that mock.
 - `mdns_server_want_empty` must count `W_NSEC`. Masking it made explicit NSEC
   questions and missing-family-only replies look empty.
-- Phase 6 string-array ServiceTypes must be parsed or Test 25 client types
+- Phase 6 string-array ServiceTypes must be parsed or Test 48 client types
   stay empty. Nested `mDNSClient.ServiceTypes` lookup is required in addition
   to the dotted-key Unity fixture.
 - Landing Server-before-Client is a special case vs reverse-of-launch;
   launch order stays Server then Client.
 - Unity `USE_MOCK_SYSTEM` mocks `socket`/`connect`; a real listen+connect TCP
   health test cannot pass there. Keep refused/null Unity and live TCP for
-  Test 25 / Phase 7.
+  Test 48 / Phase 7.

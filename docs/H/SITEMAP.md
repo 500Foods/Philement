@@ -332,7 +332,7 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [test_22_swagger.md](/docs/H/tests/test_22_swagger.md): Swagger documentation tests
 - [test_23_websockets.md](/docs/H/tests/test_23_websockets.md): WebSocket server functionality and integration tests
 - [test_24_uploads.md](/docs/H/tests/test_24_uploads.md): File upload functionality tests
-- [test_25_mdns.md](/docs/H/tests/test_25_mdns.md): mDNS server and client functionality and integration tests
+- [test_48_mdns.md](/docs/H/tests/test_48_mdns.md): mDNS server and client functionality and integration tests
 - [test_26_terminal.md](/docs/H/tests/test_26_terminal.md): Terminal functionality, payload serving, and WebSocket connections
 - [test_27_reporting_image_scale.md](/docs/H/tests/test_27_reporting_image_scale.md): Reporting image_scale endpoint (ImageMagick)
 - [test_30_database.md](/docs/H/tests/test_30_database.md): All Engines Parallel Operational Test

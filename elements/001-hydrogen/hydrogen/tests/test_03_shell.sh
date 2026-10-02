@@ -151,7 +151,7 @@ declare -a ENV_WHITELIST=(
     # First found in tests/test_22_swagger.sh
     "CUSTOM_HEADERS_TEST_RESULT" "SWAGGER_JSON_PROXY1_RESULT" "SWAGGER_JSON_PROXY2_RESULT" 
     "SWAGGER_JSON_PROXY3_RESULT" "SWAGGER_JSON_PROXY4_RESULT" "BR_DECOMPRESS_TEST_RESULT"
-    # First found in tests/test_25_mdns.sh
+    # First found in tests/test_48_mdns.sh
     "BASH_COMMAND"                     
     "DUP_CONFIG_FILE" "DUP_LOG" "HYDROGEN_DUP_PID" "MDNS_TEST_HELPERS_NAME"
     "MDNS_TEST_HELPERS_VERSION"

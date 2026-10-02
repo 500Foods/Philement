@@ -618,7 +618,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_22_swagger.sh](/elements/001-hydrogen/hydrogen/tests/test_22_swagger.sh) - Swagger functionality tests
 - [tests/test_23_websockets.sh](/elements/001-hydrogen/hydrogen/tests/test_23_websockets.sh) - WebSocket functionality tests
 - [tests/test_24_uploads.sh](/elements/001-hydrogen/hydrogen/tests/test_24_uploads.sh) - File upload functionality tests
-- [tests/test_25_mdns.sh](/elements/001-hydrogen/hydrogen/tests/test_25_mdns.sh) - mDNS service discovery tests
+- [tests/test_48_mdns.sh](/elements/001-hydrogen/hydrogen/tests/test_48_mdns.sh) - mDNS service discovery tests
 - [tests/test_26_terminal.sh](/elements/001-hydrogen/hydrogen/tests/test_26_terminal.sh) - Terminal interface tests
 - [tests/test_27_reporting_image_scale.sh](/elements/001-hydrogen/hydrogen/tests/test_27_reporting_image_scale.sh) - Reporting image_scale endpoint (ImageMagick)
 

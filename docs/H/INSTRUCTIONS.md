@@ -98,7 +98,6 @@ tests/          Test framework
 - tests/test_22_swagger.sh - Checks that Swagger files are served up from payload
 - tests/test_23_websockets.sh - Retrieves status from WebSockets interface
 - tests/test_24_uploads.sh - Upload file to server
-- tests/test_25_mdns.sh - mDNS announcements
 - tests/test_26_terminal.sh - Testing xterm.js implementation
 - tests/test_27_reporting_image_scale.sh - Reporting image scale endpoint testing with ImageMagick
 - tests/test_30_database.sh - All Engines Parallel Operational Test (PostgreSQL, MySQL, SQLite, DB2, MariaDB, Firebird, YugabyteDB, MSSQL, plus a combined config)
@@ -116,6 +115,7 @@ tests/          Test framework
 - tests/test_44_exercise_native.sh - Memory exercise native RSS (5000 concurrent auth requests across 6 DBs; port 5444; suite-parallel with test 41)
 - tests/test_46_conduit_script.sh - Conduit script invoke JWT blackbox (Api.Echo, 7 engines parallel)
 - tests/test_47_mcp.sh - MCP Streamable HTTP blackbox (JWT, Mcp.Echo, 7 engines; ports 1547x / 1548x)
+- tests/test_48_mdns.sh - mDNS announcements
 - tests/test_50_conduit_query.sh - Single public query endpoint testing
 - tests/test_51_conduit_queries.sh - Conduit multiple queries endpoint testing
 - tests/test_52_conduit_auth_query.sh - Authenticated single query endpoint
