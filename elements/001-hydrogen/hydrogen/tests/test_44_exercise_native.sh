@@ -18,6 +18,9 @@
 # heapmon_prepare() heapmon_capture() heapmon_report()
 
 # CHANGELOG
+# 1.2.2 - 2026-10-01 - Snapshot and final Prometheus checks use
+#                     metrics_text_has_hydrogen. echo | grep -q under
+#                     pipefail was SIGPIPE.
 # 1.2.1 - 2026-10-01 - Seventh enabled engine: MSSQL (Demo_MS, schema demoms).
 #                     YugabyteDB stays disabled.
 # 1.2.0 - 2026-09-23 - Steady-state heap analysis: smaps mapping delta, glibc
@@ -31,7 +34,7 @@ TEST_NAME="Exercise Native"
 TEST_ABBR="EXN"
 TEST_NUMBER="44"
 TEST_COUNTER=0
-TEST_VERSION="1.2.1"
+TEST_VERSION="1.2.2"
 
 TOTAL_REQUESTS=5000
 SNAPSHOT_INTERVAL=500
@@ -344,7 +347,8 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
             if (( N_CNT - N_LAST_SNAPSHOT_AT >= SNAPSHOT_INTERVAL )) || (( N_CNT >= TOTAL_REQUESTS )); then
                 N_LAST_SNAPSHOT_AT="${N_CNT}"
                 NM=$(scrape_metrics "${PROMETHEUS_URL}" "${METRICS_DELAY}")
-                if [[ -n "${NM}" ]] && echo "${NM}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then
+                # shellcheck disable=SC2310 # Non-zero means this snapshot has no hydrogen_ series
+                if metrics_text_has_hydrogen "${NM}"; then
                     N_CONSEC_FAILS=0
                     N_SNAPSHOTS_OK=$(( N_SNAPSHOTS_OK + 1 ))
                     NR=$(get_metric "${NM}" "hydrogen_process_resident_memory_bytes")
@@ -403,7 +407,8 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
 
         sleep 0.25
         NFN=$(scrape_metrics "${PROMETHEUS_URL}" "${METRICS_DELAY}")
-        if [[ -n "${NFN}" ]] && echo "${NFN}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then
+        # shellcheck disable=SC2310 # Non-zero means the final body has no hydrogen_ series
+        if metrics_text_has_hydrogen "${NFN}"; then
             NF_RSS=$(get_metric "${NFN}" "hydrogen_process_resident_memory_bytes")
             NF_Q=$(get_metric "${NFN}" "hydrogen_database_queries_executed_total")
             NF_F=$(get_metric "${NFN}" "hydrogen_process_open_fds")

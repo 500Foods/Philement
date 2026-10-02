@@ -17,7 +17,7 @@ set -euo pipefail
 
 # Test Configuration
 TEST_NAME="MySQL Migration"
-TEST_ABBR="MSQ"
+TEST_ABBR="MYS"
 TEST_NUMBER="33"
 TEST_COUNTER=0
 TEST_VERSION="1.1.1"

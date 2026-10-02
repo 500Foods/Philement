@@ -6,6 +6,8 @@
 # shellcheck disable=SC2154 # Globals (TEST_NUMBER, TEST_COUNTER, GREP) set by framework before sourcing
 
 # CHANGELOG
+# 1.0.7 - 2026-10-01 - hydrogen_ presence is grep of a file, not echo | grep -q.
+#                     pipefail turned grep -q's early exit into SIGPIPE (141).
 # 1.0.6 - 2026-09-08 - Capture auth flood HTTP codes instead of discarding them
 # 1.0.5 - 2026-09-04 - read_scrape_status always returns 0 (set -e abort when
 #                      HTTP code/attempts were already set: [[ -z ]] && default).
@@ -23,7 +25,7 @@
 export EXERCISE_HELPERS_GUARD="true"
 
 EXERCISE_HELPERS_NAME="Exercise Test Helpers"
-EXERCISE_HELPERS_VERSION="1.0.6"
+EXERCISE_HELPERS_VERSION="1.0.7"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${EXERCISE_HELPERS_NAME} ${EXERCISE_HELPERS_VERSION}" "info"
 
 # shellcheck source=tests/lib/group40_http.sh # Shared 40-series HTTP timing
@@ -45,6 +47,34 @@ if ! [[ "${METRICS_DELAY:-}" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
     METRICS_DELAY=0.25
 fi
 
+# metrics_file_has_hydrogen path
+# True when path is a non-empty file containing a hydrogen_ series.
+# Grep reads the file. echo | grep -q under pipefail is SIGPIPE: grep -q
+# closes the pipe at the first match while echo is still writing.
+metrics_file_has_hydrogen() {
+    local body_file="$1"
+    [[ -n "${body_file}" && -s "${body_file}" ]] && \
+        "${GREP}" -q "hydrogen_" "${body_file}" 2>/dev/null
+}
+
+# metrics_text_has_hydrogen text
+# Same check for a body already held in a variable. The text is written to
+# a temp file first so grep is not the reader of a pipe.
+metrics_text_has_hydrogen() {
+    local text="$1"
+    local tmp=""
+    local rc=1
+    [[ -n "${text}" ]] || return 1
+    tmp=$(mktemp 2>/dev/null) || return 1
+    if printf '%s\n' "${text}" > "${tmp}"; then
+        if metrics_file_has_hydrogen "${tmp}"; then
+            rc=0
+        fi
+    fi
+    rm -f "${tmp}"
+    return "${rc}"
+}
+
 # scrape_metrics prom_url [settle_delay]
 # Retries until a body containing hydrogen_ metrics is returned, or attempts exhausted.
 # Uses connect-timeout so a hung ASAN handler does not burn the full max-time on
@@ -55,7 +85,7 @@ fi
 scrape_metrics() {
     local prom_url="$1"
     local settle_delay="${2:-${METRICS_DELAY}}"
-    local attempt response http_code
+    local attempt response http_code body_ok
     local max_attempts="${SCRAPE_MAX_ATTEMPTS}"
     local curl_timeout="${SCRAPE_CURL_TIMEOUT}"
     local retry_delay="${SCRAPE_RETRY_DELAY}"
@@ -110,8 +140,18 @@ scrape_metrics() {
         SCRAPE_LAST_ATTEMPTS="${attempt}"
         echo "${http_code}" > "${SCRAPE_STATUS_FILE}" 2>/dev/null || true
         echo "${attempt}" >> "${SCRAPE_STATUS_FILE}" 2>/dev/null || true
-        if [[ "${http_code}" == "200" ]] && [[ -n "${response}" ]] && \
-           echo "${response}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then
+        body_ok=0
+        if [[ "${http_code}" == "200" ]]; then
+            if [[ -n "${tmp_body}" ]]; then
+                # shellcheck disable=SC2310 # Non-zero means the body is not metrics yet
+                if metrics_file_has_hydrogen "${tmp_body}"; then
+                    body_ok=1
+                fi
+            elif metrics_text_has_hydrogen "${response}"; then
+                body_ok=1
+            fi
+        fi
+        if [[ "${body_ok}" -eq 1 ]]; then
             [[ -n "${tmp_body}" ]] && rm -f "${tmp_body}"
             echo "${response}"
             return 0

@@ -14,34 +14,57 @@
 #include "dbqueue.h"
 
 /*
- * Destroy database queue and all associated resources
+ * Destroy database queue and all associated resources.
+ * Returns false when a worker is still inside a call on this queue.
+ * The object is left allocated in that case.
  */
-void database_queue_destroy(DatabaseQueue* db_queue) {
-    if (!db_queue) return;
+bool database_queue_destroy(DatabaseQueue* db_queue) {
+    if (!db_queue) return true;
 
     // Create DQM component name with full label for logging
     char* dqm_label = database_queue_generate_label(db_queue);
     log_this(dqm_label, "Destroying queue", LOG_LEVEL_TRACE, 0);
-    free(dqm_label);
 
     // Wait for worker thread to finish (this will set shutdown_requested internally)
     database_queue_stop_worker(db_queue);
 
-    // If this is a Lead queue, clean up child queues first
+    // If this is a Lead queue, clean up child queues first.
+    // A child that is still running keeps its object, and this lead
+    // stays too, because the child may still be using the shared cache.
+    bool child_still_running = false;
     if (db_queue->is_lead_queue && db_queue->child_queues) {
         MutexResult lock_result = MUTEX_LOCK(&db_queue->children_lock, SR_DATABASE);
         if (lock_result == MUTEX_SUCCESS) {
             for (int i = 0; i < db_queue->child_queue_count; i++) {
-                if (db_queue->child_queues[i]) {
-                    database_queue_destroy(db_queue->child_queues[i]);
+                DatabaseQueue* child = db_queue->child_queues[i];
+                if (!child) {
+                    continue;
+                }
+                if (database_queue_destroy(child)) {
                     db_queue->child_queues[i] = NULL;
+                } else {
+                    child_still_running = true;
                 }
             }
-            db_queue->child_queue_count = 0;
+            if (!child_still_running) {
+                db_queue->child_queue_count = 0;
+            }
             mutex_unlock(&db_queue->children_lock);
+        } else if (db_queue->child_queue_count > 0) {
+            child_still_running = true;
         }
+    }
 
+    if (db_queue->worker_thread_started || child_still_running) {
+        log_this(dqm_label, "Worker still running; leaving this queue allocated", LOG_LEVEL_ERROR, 0);
+        free(dqm_label);
+        return false;
+    }
+    free(dqm_label);
+
+    if (db_queue->is_lead_queue && db_queue->child_queues) {
         free(db_queue->child_queues);
+        db_queue->child_queues = NULL;
         pthread_mutex_destroy(&db_queue->children_lock);
     }
 
@@ -85,6 +108,29 @@ void database_queue_destroy(DatabaseQueue* db_queue) {
     track_queue_deallocation(&database_queue_memory, sizeof(DatabaseQueue));
 
     free(db_queue);
+    return true;
+}
+
+/*
+ * Ask the engine to abort whatever this worker is blocked in.
+ * Safe to call when the connection is idle. The watchdog uses the
+ * same hook from another thread while a query is running.
+ */
+void database_queue_cancel_worker_query(DatabaseQueue* db_queue) {
+    DatabaseHandle* connection;
+    DatabaseEngineInterface* engine;
+
+    if (!db_queue) {
+        return;
+    }
+    connection = db_queue->persistent_connection;
+    if (!connection || connection->engine_type >= DB_ENGINE_MAX) {
+        return;
+    }
+    engine = database_engine_get(connection->engine_type);
+    if (engine && engine->cancel_inflight) {
+        engine->cancel_inflight(connection);
+    }
 }
 
 /*
@@ -121,32 +167,43 @@ void database_queue_stop_worker(DatabaseQueue* db_queue) {
     // Create DQM component name with full label for logging
     char* dqm_label = database_queue_generate_label(db_queue);
     log_this(dqm_label, "Stopping worker thread", LOG_LEVEL_TRACE, 0);
-    free(dqm_label);
 
     db_queue->shutdown_requested = true;
 
-    // Wake worker thread only if it was started
+    // Wake worker thread only if it was started.
+    // The loop only notices shutdown between queries. A remote query
+    // can outlast the join. Cancel it, and do not claim the thread
+    // has stopped until pthread_timedjoin_np says it has. Clearing
+    // the flag early is what let destroy close the connection under
+    // PQexec / mysql_real_query.
     if (db_queue->worker_thread_started) {
-        // Wake the worker thread via semaphore so it can see shutdown_requested
-        sem_post(&db_queue->worker_semaphore);
-        
-        // Wait for thread to exit gracefully with timeout
         struct timespec timeout;
+        int join_result;
+
+        sem_post(&db_queue->worker_semaphore);
+        database_queue_cancel_worker_query(db_queue);
+
         clock_gettime(CLOCK_REALTIME, &timeout);
-        timeout.tv_sec += 5;  // 5 second timeout
-        
-        int join_result = pthread_timedjoin_np(db_queue->worker_thread, NULL, &timeout);
+        timeout.tv_sec += 5;
+        join_result = pthread_timedjoin_np(db_queue->worker_thread, NULL, &timeout);
         if (join_result == ETIMEDOUT) {
-            char* timeout_label = database_queue_generate_label(db_queue);
-            log_this(timeout_label, "Worker thread did not exit within timeout", LOG_LEVEL_ALERT, 0);
-            free(timeout_label);
+            log_this(dqm_label, "Worker thread did not exit within timeout", LOG_LEVEL_ALERT, 0);
+            database_queue_cancel_worker_query(db_queue);
+            clock_gettime(CLOCK_REALTIME, &timeout);
+            timeout.tv_sec += 5;
+            join_result = pthread_timedjoin_np(db_queue->worker_thread, NULL, &timeout);
         }
-        
-        db_queue->worker_thread = 0;  // Reset to indicate thread is stopped
-        db_queue->worker_thread_started = false;  // Reset flag
+
+        if (join_result == 0) {
+            db_queue->worker_thread = 0;
+            db_queue->worker_thread_started = false;
+            log_this(dqm_label, "Stopped worker thread", LOG_LEVEL_TRACE, 0);
+        } else {
+            log_this(dqm_label, "Worker thread still running after cancel", LOG_LEVEL_ERROR, 0);
+        }
+    } else {
+        log_this(dqm_label, "Stopped worker thread", LOG_LEVEL_TRACE, 0);
     }
 
-    char* dqm_label_stop = database_queue_generate_label(db_queue);
-    log_this(dqm_label_stop, "Stopped worker thread", LOG_LEVEL_TRACE, 0);
-    free(dqm_label_stop);
+    free(dqm_label);
 }

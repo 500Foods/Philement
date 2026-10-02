@@ -189,7 +189,13 @@ void database_queue_system_destroy(void);
 // Database queue management
 DatabaseQueue* database_queue_create_lead(const char* database_name, const char* connection_string, const char* bootstrap_query);
 DatabaseQueue* database_queue_create_worker(const char* database_name, const char* connection_string, const char* queue_type, const char* dqm_label);
-void database_queue_destroy(DatabaseQueue* db_queue);
+/*
+ * Free db_queue and its connection. Returns false, and frees nothing,
+ * when the worker is still running. Callers may drop their pointer
+ * either way; a false return means the object stays allocated for
+ * that thread.
+ */
+bool database_queue_destroy(DatabaseQueue* db_queue);
 
 // Internal helper functions for Lead queue creation (exposed for testing)
 bool database_queue_validate_lead_params(const char* database_name, const char* connection_string);
@@ -220,6 +226,7 @@ DatabaseQuery* database_queue_await_result(DatabaseQueue* db_queue, const char* 
 void* database_queue_worker_thread(void* arg);
 bool database_queue_start_worker(DatabaseQueue* db_queue);
 void database_queue_stop_worker(DatabaseQueue* db_queue);
+void database_queue_cancel_worker_query(DatabaseQueue* db_queue);
 
 // Helper function for processing queries (extracted for testability)
 void database_queue_process_single_query(DatabaseQueue* db_queue);

@@ -28,12 +28,13 @@ void sqlite_destroy_prepared_statement_cache(PreparedStatementCache* cache);
 // in sqlite_cancel_inflight that require it to be set.
 extern sqlite3_interrupt_t sqlite3_interrupt_ptr;
 
-// Tracks whether our injected sqlite3_interrupt mock was invoked
+// Tracks whether our injected sqlite3_interrupt mock was invoked, and with what pointer
 static int g_test_interrupt_called = 0;
+static void* g_test_interrupt_db = NULL;
 
 // Mock implementation of sqlite3_interrupt used to cover the active-interrupt path
 static void test_sqlite3_interrupt_mock(void* db) {
-    (void)db;
+    g_test_interrupt_db = db;
     g_test_interrupt_called++;
 }
 
@@ -79,6 +80,7 @@ void test_sqlite_cancel_inflight_null_connection(void);
 void test_sqlite_cancel_inflight_wrong_engine_type(void);
 void test_sqlite_cancel_inflight_null_interrupt_ptr(void);
 void test_sqlite_cancel_inflight_null_handle(void);
+void test_sqlite_cancel_inflight_null_db(void);
 void test_sqlite_cancel_inflight_success(void);
 
 void setUp(void) {
@@ -525,7 +527,23 @@ void test_sqlite_cancel_inflight_null_handle(void) {
     TEST_ASSERT_FALSE(g_test_interrupt_called);
 }
 
-// Test sqlite_cancel_inflight success path (interrupt invoked)
+// Wrapper with no sqlite3* must not call interrupt
+void test_sqlite_cancel_inflight_null_db(void) {
+    SQLiteConnection sqlite_conn = {
+        .db = NULL
+    };
+    DatabaseHandle connection = {
+        .engine_type = DB_ENGINE_SQLITE,
+        .connection_handle = &sqlite_conn
+    };
+    sqlite3_interrupt_ptr = test_sqlite3_interrupt_mock;
+    g_test_interrupt_called = 0;
+    g_test_interrupt_db = NULL;
+    sqlite_cancel_inflight(&connection);
+    TEST_ASSERT_EQUAL(0, g_test_interrupt_called);
+}
+
+// Interrupt is invoked on wrapper->db, not on the wrapper itself
 void test_sqlite_cancel_inflight_success(void) {
     SQLiteConnection sqlite_conn = {
         .db = (void*)0x12345678
@@ -537,8 +555,10 @@ void test_sqlite_cancel_inflight_success(void) {
     };
     sqlite3_interrupt_ptr = test_sqlite3_interrupt_mock;
     g_test_interrupt_called = 0;
+    g_test_interrupt_db = NULL;
     sqlite_cancel_inflight(&connection);
     TEST_ASSERT_EQUAL(1, g_test_interrupt_called);
+    TEST_ASSERT_EQUAL_PTR(sqlite_conn.db, g_test_interrupt_db);
 }
 
 int main(void) {
@@ -586,6 +606,7 @@ int main(void) {
     RUN_TEST(test_sqlite_cancel_inflight_wrong_engine_type);
     RUN_TEST(test_sqlite_cancel_inflight_null_interrupt_ptr);
     RUN_TEST(test_sqlite_cancel_inflight_null_handle);
+    RUN_TEST(test_sqlite_cancel_inflight_null_db);
     RUN_TEST(test_sqlite_cancel_inflight_success);
 
     return UNITY_END();

@@ -15,8 +15,8 @@
 set -euo pipefail
 
 # Test Configuration
-TEST_NAME="MSSQL Migration"
-TEST_ABBR="MSQ"
+TEST_NAME="MS SQL Server Migration"
+TEST_ABBR="MSS"
 TEST_NUMBER="39"
 TEST_COUNTER=0
 TEST_VERSION="1.0.2"

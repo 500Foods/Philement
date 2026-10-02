@@ -10,6 +10,8 @@
 # scrape_metrics() get_metric() run_auth_request() run_auth_batch()
 
 # CHANGELOG
+# 4.0.7 - 2026-10-01 - Initial, snapshot, and final Prometheus checks grep the
+#                      saved body. echo | grep -q under pipefail was SIGPIPE.
 # 4.0.6 - 2026-10-01 - Seventh enabled engine: MSSQL (Demo_MS, schema demoms).
 #                      YugabyteDB stays disabled.
 # 4.0.5 - 2026-09-04 - Do not abort after a successful scrape: read_scrape_status
@@ -34,7 +36,7 @@ TEST_NAME="Exercise ASAN"
 TEST_ABBR="EXA"
 TEST_NUMBER="41"
 TEST_COUNTER=0
-TEST_VERSION="4.0.6"
+TEST_VERSION="4.0.7"
 
 TOTAL_REQUESTS=500
 SNAPSHOT_INTERVAL=50
@@ -258,10 +260,11 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         # stall the final-metrics scrape already settles 3s for after 500 auths).
         # shellcheck disable=SC2310 # Continue even if scrape_metrics returns non-zero
         scrape_metrics "${PROMETHEUS_URL}" 3 > "${METRICS_LOG}.prom_initial" || true
-        INITIAL_METRICS=$(cat "${METRICS_LOG}.prom_initial" 2>/dev/null || true)
         read_scrape_status "${TEST_NUMBER}"
 
-        if [[ -n "${INITIAL_METRICS}" ]] && echo "${INITIAL_METRICS}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then
+        # shellcheck disable=SC2310 # Non-zero means the saved body has no hydrogen_ series
+        if metrics_file_has_hydrogen "${METRICS_LOG}.prom_initial"; then
+            INITIAL_METRICS=$(cat "${METRICS_LOG}.prom_initial" 2>/dev/null || true)
             INITIAL_RSS=$(get_metric "${INITIAL_METRICS}" "hydrogen_process_resident_memory_bytes")
             INITIAL_QUERIES=$(get_metric "${INITIAL_METRICS}" "hydrogen_database_queries_executed_total")
             INITIAL_CONNS=$(get_metric "${INITIAL_METRICS}" "hydrogen_webserver_connections_current")
@@ -325,9 +328,10 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
                 LAST_SNAPSHOT_AT="${REQUEST_COUNT}"
                 # shellcheck disable=SC2310 # Continue even if scrape_metrics returns non-zero
                 scrape_metrics "${PROMETHEUS_URL}" > "${METRICS_LOG}.prom_snap" || true
-                METRICS=$(cat "${METRICS_LOG}.prom_snap" 2>/dev/null || true)
                 read_scrape_status "${TEST_NUMBER}"
-                if [[ -n "${METRICS}" ]] && echo "${METRICS}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then
+                # shellcheck disable=SC2310 # Non-zero means this snapshot has no hydrogen_ series
+                if metrics_file_has_hydrogen "${METRICS_LOG}.prom_snap"; then
+                    METRICS=$(cat "${METRICS_LOG}.prom_snap" 2>/dev/null || true)
                     RSS=$(get_metric "${METRICS}" "hydrogen_process_resident_memory_bytes")
                     QUERIES=$(get_metric "${METRICS}" "hydrogen_database_queries_executed_total")
                     CONNS=$(get_metric "${METRICS}" "hydrogen_webserver_connections_current")
@@ -383,10 +387,11 @@ if [[ "${EXIT_CODE}" -eq 0 ]]; then
         sleep 3
         # shellcheck disable=SC2310 # Continue even if scrape_metrics returns non-zero
         scrape_metrics "${PROMETHEUS_URL}" > "${METRICS_LOG}.prom_final" || true
-        FINAL_METRICS=$(cat "${METRICS_LOG}.prom_final" 2>/dev/null || true)
         read_scrape_status "${TEST_NUMBER}"
 
-        if [[ -n "${FINAL_METRICS}" ]] && echo "${FINAL_METRICS}" | "${GREP}" -q "hydrogen_" 2>/dev/null; then
+        # shellcheck disable=SC2310 # Non-zero means the saved body has no hydrogen_ series
+        if metrics_file_has_hydrogen "${METRICS_LOG}.prom_final"; then
+            FINAL_METRICS=$(cat "${METRICS_LOG}.prom_final" 2>/dev/null || true)
             FINAL_RSS=$(get_metric "${FINAL_METRICS}" "hydrogen_process_resident_memory_bytes")
             FINAL_QUERIES=$(get_metric "${FINAL_METRICS}" "hydrogen_database_queries_executed_total")
             FINAL_CONNS=$(get_metric "${FINAL_METRICS}" "hydrogen_webserver_connections_current")

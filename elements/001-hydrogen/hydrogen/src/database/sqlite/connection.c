@@ -646,19 +646,20 @@ bool sqlite_reset_connection(DatabaseHandle* connection) {
 /*
  * Cancel any in-flight query on this SQLite connection.
  *
- * sqlite3_interrupt is documented as safe to call from any thread.
- * It sets a flag on the connection struct that the running query
- * (and any future queries on this connection, until sqlite3_reset is
- * called) checks periodically. This is the cleanest cross-thread
- * cancel in the engines Hydrogen supports - no network I/O, no
- * mutex contention on the connection itself.
+ * sqlite3_interrupt is safe to call from any thread. It stores a flag
+ * at a fixed offset inside the sqlite3 object (0x1a8 on this libsqlite3).
+ * connection_handle is the SQLiteConnection wrapper, not that object.
+ * Passing the wrapper writes 424 bytes past a 48-byte allocation and
+ * the next malloc or free reports a smashed chunk. The sqlite3* is
+ * wrapper->db, the same pointer sqlite3_step and sqlite3_exec use.
  *
- * After this returns, the next call into the connection that
- * checks the interrupt flag (sqlite3_step, sqlite3_exec) will
- * return SQLITE_INTERRUPT and the blocked call will eventually
- * unblock.
+ * An idle connection treats the call as a no-op. A running sqlite3_step
+ * or sqlite3_exec returns SQLITE_INTERRUPT.
  */
 void sqlite_cancel_inflight(DatabaseHandle* connection) {
+    SQLiteConnection* sqlite_conn;
+    const char* designator;
+
     if (!connection || connection->engine_type != DB_ENGINE_SQLITE) {
         return;
     }
@@ -666,13 +667,13 @@ void sqlite_cancel_inflight(DatabaseHandle* connection) {
         return;
     }
 
-    void* sqlite_conn = connection->connection_handle;
-    if (!sqlite_conn) {
+    sqlite_conn = (SQLiteConnection*)connection->connection_handle;
+    if (!sqlite_conn || !sqlite_conn->db) {
         return;
     }
 
-    sqlite3_interrupt_ptr(sqlite_conn);
+    sqlite3_interrupt_ptr(sqlite_conn->db);
 
-    const char* designator = connection->designator ? connection->designator : SR_DATABASE;
+    designator = connection->designator ? connection->designator : SR_DATABASE;
     log_this(designator, "SQLite: requested cancel of in-flight query", LOG_LEVEL_ALERT, 0);
 }
