@@ -115,12 +115,23 @@ int version_matches(const char* loaded_version, const char* expected_version);
 
 // Database subsystem validation functions
 void validate_database_configuration(const DatabaseConfig* db_config, const char*** messages,
-                                    size_t* count, size_t* capacity, bool* overall_readiness,
-                                    int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count, int* firebird_count, int* mariadb_count, int* mssql_count);
+                                     size_t* count, size_t* capacity, bool* overall_readiness,
+                                     int* postgres_count, int* mysql_count, int* sqlite_count, int* db2_count, int* firebird_count, int* mariadb_count, int* mssql_count);
 void check_database_library_dependencies(const char*** messages, size_t* count, size_t* capacity, bool* overall_readiness,
                                        int postgres_count, int mysql_count, int sqlite_count, int db2_count, int firebird_count, int mariadb_count, int mssql_count);
 bool validate_database_connections(const DatabaseConfig* db_config, const char*** messages,
-                                  size_t* count, size_t* capacity);
+                                   size_t* count, size_t* capacity);
+
+// Helpers refactored from launch_database_check.c (exposed for Unity tests)
+char* add_connection_name(char* names, const char* new_name);
+void report_database_count(const char*** messages, size_t* count, size_t* capacity,
+                           const char* engine_label, int db_count, char* db_names);
+bool check_database_library(const char*** messages, size_t* count, size_t* capacity,
+                            bool* overall_readiness,
+                            const char* lib_name, const char* const* lib_paths,
+                            int num_paths, const char* found_pattern,
+                            const char* expected_version, const char* match_mode,
+                            bool keep_open);
 
 // Forward declarations for validation helpers for launch_resources.c
 bool validate_memory_limits(const ResourceConfig* config, int* msg_count, const char** messages);
