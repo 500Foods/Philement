@@ -102,15 +102,27 @@ static short mssql_mock_SQLEndTran_result = 0; // 0 = SQL_SUCCESS
 static short mssql_mock_SQLSetConnectAttr_result = 0; // 0 = SQL_SUCCESS
 static short mssql_mock_SQLPrepare_result = 0; // 0 = SQL_SUCCESS
 static short mssql_mock_SQLBindParameter_result = 0; // 0 = SQL_SUCCESS
+static short mssql_mock_SQLSetEnvAttr_result = 0; // 0 = SQL_SUCCESS
+static short mssql_mock_SQLCancel_result = 0; // 0 = SQL_SUCCESS
 
 static int mssql_mock_SQLSetConnectAttr_last_attribute = -1;
 static int mssql_mock_SQLSetConnectAttr_call_count = 0;
 static int mssql_mock_SQLSetConnectAttr_autocommit_off_seen = 0;
+static int mssql_mock_SQLAllocHandle_call_count = 0;
+static int mssql_mock_SQLAllocHandle_fail_at_call = 0;
 
 // Mock implementations
 short mssql_mock_SQLAllocHandle(short handleType, void* inputHandle, void** outputHandle) {
     (void)handleType;
     (void)inputHandle;
+    mssql_mock_SQLAllocHandle_call_count++;
+    if (mssql_mock_SQLAllocHandle_fail_at_call > 0 &&
+        mssql_mock_SQLAllocHandle_call_count == mssql_mock_SQLAllocHandle_fail_at_call) {
+        if (outputHandle) {
+            *outputHandle = NULL;
+        }
+        return 1;
+    }
     if (outputHandle) {
         *outputHandle = mssql_mock_SQLAllocHandle_output_handle;
     }
@@ -332,7 +344,7 @@ short mssql_mock_SQLBindParameter(void* statementHandle, unsigned short paramete
 
 short mssql_mock_SQLCancel(void* statementHandle) {
     (void)statementHandle;
-    return 0; // Always success
+    return mssql_mock_SQLCancel_result;
 }
 
 short mssql_mock_SQLSetEnvAttr(void* environmentHandle, int attribute, void* value, int stringLength) {
@@ -340,7 +352,7 @@ short mssql_mock_SQLSetEnvAttr(void* environmentHandle, int attribute, void* val
     (void)attribute;
     (void)value;
     (void)stringLength;
-    return 0; // Always success
+    return mssql_mock_SQLSetEnvAttr_result;
 }
 
 // Mock control functions
@@ -450,6 +462,18 @@ void mssql_mock_libodbc_set_SQLBindParameter_result(short result) {
     mssql_mock_SQLBindParameter_result = result;
 }
 
+void mssql_mock_libodbc_set_SQLSetEnvAttr_result(short result) {
+    mssql_mock_SQLSetEnvAttr_result = result;
+}
+
+void mssql_mock_libodbc_set_SQLCancel_result(short result) {
+    mssql_mock_SQLCancel_result = result;
+}
+
+void mssql_mock_libodbc_set_SQLAllocHandle_fail_at_call(int call_num) {
+    mssql_mock_SQLAllocHandle_fail_at_call = call_num;
+}
+
 void mssql_mock_libodbc_reset_all(void) {
     mssql_mock_SQLAllocHandle_result = 0;
     mssql_mock_SQLAllocHandle_output_handle = (void*)0x12345678;
@@ -480,4 +504,8 @@ void mssql_mock_libodbc_reset_all(void) {
     mssql_mock_SQLSetConnectAttr_autocommit_off_seen = 0;
     mssql_mock_SQLPrepare_result = 0;
     mssql_mock_SQLBindParameter_result = 0;
+    mssql_mock_SQLSetEnvAttr_result = 0;
+    mssql_mock_SQLCancel_result = 0;
+    mssql_mock_SQLAllocHandle_fail_at_call = 0;
+    mssql_mock_SQLAllocHandle_call_count = 0;
 }

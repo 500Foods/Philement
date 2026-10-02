@@ -67,6 +67,10 @@ int mssql_mock_libodbc_get_SQLSetConnectAttr_autocommit_off_seen(void);
 int mssql_mock_libodbc_get_SQLSetConnectAttr_call_count(void);
 void mssql_mock_libodbc_set_SQLPrepare_result(short result);
 void mssql_mock_libodbc_set_SQLBindParameter_result(short result);
+
+void mssql_mock_libodbc_set_SQLSetEnvAttr_result(short result);
+void mssql_mock_libodbc_set_SQLCancel_result(short result);
+void mssql_mock_libodbc_set_SQLAllocHandle_fail_at_call(int call_num);
 void mssql_mock_libodbc_reset_all(void);
 
 #endif // MOCK_LIBODBC_H
