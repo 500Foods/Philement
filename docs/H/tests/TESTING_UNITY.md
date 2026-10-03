@@ -137,7 +137,7 @@ int main(void) {
 
 Unity test file naming has two independent constraints that must both be satisfied. Failing either one triggers Test 89 (coverage validation) or a CMake/CTest build error.
 
-**Constraint 1: Coverage Orphan Detection (Test 89)**
+#### Constraint 1: Coverage Orphan Detection (Test 89)
 
 Test 89's orphan-detection logic strips everything from `_test` onwards from the test filename to derive the expected source file basename. The test file **must** map to an existing source file in `src/`:
 
@@ -156,7 +156,7 @@ tests/unity/src/database/mssql/mssql_query_test_format_helpers.c
 
 **Rule**: The portion of the test filename *before* `_test` must exactly match the source file basename (minus `.c`). Since the source file is `query.c`, the test file must start with `query_test_`, **not** `mssql_query_test_`.
 
-**Constraint 2: CMake/CTest Basename Uniqueness**
+#### Constraint 2: CMake/CTest Basename Uniqueness
 
 CTest registers tests by basename (path and `.c` suffix stripped). If two test files in the same CMake `add_test` scope produce the same basename, CMake errors out:
 
@@ -186,12 +186,12 @@ tests/unity/src/database/mssql/connection_test_mssql_check_timeout_expired.c
 4. Run `mkt` to confirm CMake accepts the naming (basename collisions surface as CMake configuration errors)
 5. Run `test_89` (or the coverage orphan-check section) to confirm no orphan warnings
 
-**Example: Correct naming for MSSQL module**
+#### Example: Correct naming for MSSQL module
 
 Source files: `src/database/mssql/query.c`, `src/database/mssql/connection.c`
 
 | Test file | Maps to (orphan check) | CMake basename |
-|---|---|---|
+| --- | --- | --- |
 | `query_test_format_helpers.c` | `src/database/mssql/query.c` ✓ | `query_test_format_helpers` |
 | `connection_test_mssql_connect.c` | `src/database/mssql/connection.c` ✓ | `connection_test_mssql_connect` |
 

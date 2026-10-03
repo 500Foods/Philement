@@ -88,11 +88,16 @@ static short mssql_mock_SQLNumResultCols_result = 0; // 0 = SQL_SUCCESS
 static int mssql_mock_SQLNumResultCols_column_count = 1;
 static short mssql_mock_SQLRowCount_result = 0; // 0 = SQL_SUCCESS
 static int mssql_mock_SQLRowCount_row_count = 1;
+static long mssql_mock_SQLRowCount_long_override = 0;
+static int mssql_mock_SQLRowCount_use_long_override = 0;
 static short mssql_mock_SQLDescribeCol_result = 0; // 0 = SQL_SUCCESS
 static char mssql_mock_SQLDescribeCol_column_name[256] = "test_column";
+static int mssql_mock_SQLDescribeCol_data_type = 0;
 static short mssql_mock_SQLGetData_result = 0; // 0 = SQL_SUCCESS
 static char mssql_mock_SQLGetData_data[4096] = "test_data";
 static int mssql_mock_SQLGetData_data_len = 9; // strlen("test_data")
+static int mssql_mock_SQLGetData_use_str_len_or_ind = 0; // 0 = auto, 1 = use custom value
+static long mssql_mock_SQLGetData_str_len_or_ind = 0;
 static short mssql_mock_SQLGetDiagRec_result = 0; // 0 = SQL_SUCCESS
 static char mssql_mock_SQLGetDiagRec_sqlstate[6] = "42000";
 static long mssql_mock_SQLGetDiagRec_native_error = 12345;
@@ -177,7 +182,7 @@ short mssql_mock_SQLFetch(void* statementHandle) {
 }
 
 short mssql_mock_SQLGetData(void* statementHandle, int columnNumber, int targetType,
-                    void* targetValue, long bufferLength, long* strLenOrIndPtr) {
+                     void* targetValue, long bufferLength, long* strLenOrIndPtr) {
     (void)statementHandle;
     (void)columnNumber;
     (void)targetType;
@@ -195,7 +200,11 @@ short mssql_mock_SQLGetData(void* statementHandle, int columnNumber, int targetT
     }
 
     if (strLenOrIndPtr) {
-        *strLenOrIndPtr = (long)mssql_mock_SQLGetData_data_len;
+        if (mssql_mock_SQLGetData_use_str_len_or_ind) {
+            *strLenOrIndPtr = mssql_mock_SQLGetData_str_len_or_ind;
+        } else {
+            *strLenOrIndPtr = (long)mssql_mock_SQLGetData_data_len;
+        }
     }
 
     return 0; // SQL_SUCCESS
@@ -212,7 +221,11 @@ short mssql_mock_SQLNumResultCols(void* statementHandle, int* columnCount) {
 short mssql_mock_SQLRowCount(void* statementHandle, long* rowCount) {
     (void)statementHandle;
     if (rowCount) {
-        *rowCount = (long)mssql_mock_SQLRowCount_row_count;
+        if (mssql_mock_SQLRowCount_use_long_override) {
+            *rowCount = mssql_mock_SQLRowCount_long_override;
+        } else {
+            *rowCount = (long)mssql_mock_SQLRowCount_row_count;
+        }
     }
     return mssql_mock_SQLRowCount_result;
 }
@@ -260,7 +273,6 @@ short mssql_mock_SQLDescribeCol(void* statementHandle, int columnNumber, unsigne
                          short* decimalDigits, short* nullable) {
     (void)statementHandle;
     (void)columnNumber;
-    (void)dataType;
     (void)columnSize;
     (void)decimalDigits;
     (void)nullable;
@@ -277,6 +289,10 @@ short mssql_mock_SQLDescribeCol(void* statementHandle, int columnNumber, unsigne
 
     if (nameLength) {
         *nameLength = (short)strlen(mssql_mock_SQLDescribeCol_column_name);
+    }
+
+    if (dataType) {
+        *dataType = mssql_mock_SQLDescribeCol_data_type;
     }
 
     return 0; // SQL_SUCCESS
@@ -401,6 +417,12 @@ void mssql_mock_libodbc_set_SQLNumResultCols_result(short result, int column_cou
 void mssql_mock_libodbc_set_SQLRowCount_result(short result, int row_count) {
     mssql_mock_SQLRowCount_result = result;
     mssql_mock_SQLRowCount_row_count = row_count;
+    mssql_mock_SQLRowCount_use_long_override = 0;
+}
+
+void mssql_mock_libodbc_set_SQLRowCount_long(long row_count) {
+    mssql_mock_SQLRowCount_long_override = row_count;
+    mssql_mock_SQLRowCount_use_long_override = 1;
 }
 
 void mssql_mock_libodbc_set_SQLDescribeCol_result(short result) {
@@ -414,6 +436,10 @@ void mssql_mock_libodbc_set_SQLDescribeCol_column_name(const char* name) {
     }
 }
 
+void mssql_mock_libodbc_set_SQLDescribeCol_data_type(int data_type) {
+    mssql_mock_SQLDescribeCol_data_type = data_type;
+}
+
 void mssql_mock_libodbc_set_SQLGetData_result(short result) {
     mssql_mock_SQLGetData_result = result;
 }
@@ -424,6 +450,11 @@ void mssql_mock_libodbc_set_SQLGetData_data(const char* data, int data_len) {
         mssql_mock_SQLGetData_data[sizeof(mssql_mock_SQLGetData_data) - 1] = '\0';
         mssql_mock_SQLGetData_data_len = data_len;
     }
+}
+
+void mssql_mock_libodbc_set_SQLGetData_str_len_or_ind(long value) {
+    mssql_mock_SQLGetData_use_str_len_or_ind = 1;
+    mssql_mock_SQLGetData_str_len_or_ind = value;
 }
 
 void mssql_mock_libodbc_set_SQLGetDiagRec_result(short result) {
@@ -487,11 +518,18 @@ void mssql_mock_libodbc_reset_all(void) {
     mssql_mock_SQLNumResultCols_column_count = 1;
     mssql_mock_SQLRowCount_result = 0;
     mssql_mock_SQLRowCount_row_count = 1;
+    mssql_mock_SQLRowCount_long_override = 0;
+    mssql_mock_SQLRowCount_use_long_override = 0;
     mssql_mock_SQLDescribeCol_result = 0;
     strncpy(mssql_mock_SQLDescribeCol_column_name, "test_column", sizeof(mssql_mock_SQLDescribeCol_column_name) - 1);
+    mssql_mock_SQLDescribeCol_column_name[sizeof(mssql_mock_SQLDescribeCol_column_name) - 1] = '\0';
+    mssql_mock_SQLDescribeCol_data_type = 0;
     mssql_mock_SQLGetData_result = 0;
     strncpy(mssql_mock_SQLGetData_data, "test_data", sizeof(mssql_mock_SQLGetData_data) - 1);
+    mssql_mock_SQLGetData_data[sizeof(mssql_mock_SQLGetData_data) - 1] = '\0';
     mssql_mock_SQLGetData_data_len = 9;
+    mssql_mock_SQLGetData_use_str_len_or_ind = 0;
+    mssql_mock_SQLGetData_str_len_or_ind = 0;
     mssql_mock_SQLGetDiagRec_result = 0;
     memcpy(mssql_mock_SQLGetDiagRec_sqlstate, "42000\0", 6);
     mssql_mock_SQLGetDiagRec_native_error = 12345;

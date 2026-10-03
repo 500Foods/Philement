@@ -705,10 +705,10 @@
     "section": "primary",
     "language": "Markdown",
     "files": 1168,
-    "blank": 63388,
+    "blank": 23388,
     "comment": 238,
-    "code": 180673,
-    "lines": 244299,
+    "code": 80673,
+    "lines": 104299,
     "comment_code_percentage": "0.1 %"
   },
   {
@@ -996,7 +996,7 @@
      {
          "section": "code_metrics",
          "metric": "Docs",
-         "value": "180,673",
+         "value": "80,673",
          "description": "Markdown documentation code"
      },
      {
