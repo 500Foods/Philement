@@ -48,7 +48,7 @@ Requires Node.js v18+ and npm dependencies.
 ```bash
 # Install dependencies
 cd elements/001-hydrogen/hydrogen/extras/hbm_browser
-npm install jsdom @jaames/iro flatpickr d3
+npm install jsdom@^29 @jaames/iro flatpickr d3
 
 # Make script executable
 chmod +x hbm_browser.sh
