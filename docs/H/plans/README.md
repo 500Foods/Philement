@@ -51,6 +51,14 @@ Letter **V** (U is Chat), launch 22. Exhaustive plan (Phases 0–15) with
 completeness and coverage fences. Phase 0 not approved. Lithium UI deferred.
 Does not reuse `Notify` SMTP scaffold or `H.notify`.
 
+### [NATS PLAN](/docs/H/plans/NATS_PLAN.md)
+
+NATS subsystem plan for cross-instance cache invalidation backchannel. Uses
+DOKS-managed NATS to broadcast cache-invalidation events (token refreshes,
+order updates, query cache clears) between Hydrogen instances and optionally
+forward them to WebSocket clients. Config letter **V** (after U. Chat),
+launch position **22** (after MCP). Planning draft — no code yet.
+
 ### [FIREBIRD PLAN](/docs/H/plans/FIREBIRD.md)
 
 Replace the CockroachDB operator slot with a real Firebird engine

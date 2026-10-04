@@ -85,8 +85,8 @@ Status is complete.
    Last seen: **`acuranzo_1377.lua`** (QueryRef **#154**). Next free:
    migration **1378**, QueryRef **#155** (re-check; do not trust this
    snapshot).
-4. Confirm config letter **V** is still free (`config.h` last letter is
-   **U. Chat**). If someone shipped W, amend the lock.
+4. Confirm config letter **W** is still free (`config.h` last letter is
+    **U. Chat**, V taken by NATS). If someone shipped X, amend the lock.
 
 ### Session checklist
 
@@ -150,7 +150,7 @@ Date of snapshot: 2026-09-08
 2. **Own launch / landing** — dedicated readiness, plan, launch, land,
    review. Disabled-by-default **clean skip** (`ready=true`, not a No-Go)
    so [test_17](/docs/H/tests/TESTING.md) min/max stay stable.
-3. **Own config letter V** — operator supplies VAPID subject + keys,
+3. **Own config letter W** — operator supplies VAPID subject + keys,
    workers, queue, TTL/urgency caps, database name, test seams.
 4. **Own status** — queue/worker counters on `GET /api/subscribers/status`
    and in `/api/system/info` + Prometheus.
@@ -185,7 +185,7 @@ Do not re-implement these; they are constraints.
 
 | Area | Status | Where |
 | --- | --- | --- |
-| Config letters | **A–U taken.** Last is **U. Chat**. **V is free.** | `src/config/config.h`, `hydrogen.h` `AppConfig` |
+| Config letters | **A–U taken.** Last is **U. Chat**. **V taken by NATS. W is free.** | `src/config/config.h`, `hydrogen.h` `AppConfig` |
 | Launch list | 21 `process_subsystem_readiness` calls (Registry … MCP). Chat is **config-only**, not a launch subsystem. | `launch_readiness.c` |
 | `MAX_SUBSYSTEMS` | **24** / `INITIAL_REGISTRY_CAPACITY` **24**. Adding Subscribers = **22nd** registered. **No bump required.** | `globals.h` |
 | `Notify` config/launch | SMTP **scaffold only**. No send runtime. Enabled defaults false. | `config_notify.*`, `launch_notify.c`, `landing_notify.c` |
@@ -203,9 +203,9 @@ Do not re-implement these; they are constraints.
 | Lua handles | `H_HK_QUERY=1` … `H_HK_MCP=6`. Next free: **`H_HK_SUBSCRIBERS = 7`**. `H.wait` must wire **both** single- and multi-handle paths. | `scripting_handle.h` |
 | Status | `ServiceMetrics` has logging/webserver/websocket/mdns/print/database/scripting/**mcp**. Mail uses `QueueMetrics mail_relay_queue`. | `status_core.h`, `status_process.c`, `status_formatters.c` |
 | Test 17 min | Almost empty JSON (`Server` + WebServer IPv4/IPv6 false). New subsystem **must** clean-skip when absent. | `tests/configs/hydrogen_test_17_startup_min.json` |
-| Blackbox slots | **62 is free.** 57/58/61 = Mail Relay; 59 = auth chat; 60 = performance; 47 = MCP. | `tests/test_*.sh` |
+| Blackbox slots | **63 is free** (NATS takes 62). 57/58/61 = Mail Relay; 59 = auth chat; 60 = performance; 47 = MCP. | `tests/test_*.sh` |
 | Helium | Last `acuranzo_1377.lua`, QueryRef **#154**. Next **1378** / **#155**. | `elements/002-helium/acuranzo/migrations/` |
-| INSTRUCTIONS.md | Stale: letters end at T. MCP; launch order ends at 21 MCP; **U. Chat is missing**. This plan adds **V** / **22** and should also write U. Chat into the letter list so the doc matches `config.h`. | [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md) |
+| INSTRUCTIONS.md | Stale: letters end at T. MCP; launch order ends at 21 MCP; **U. Chat is missing**. This plan adds **W** / **23** (NATS takes V/22) and should also write U. Chat into the letter list so the doc matches `config.h`. | [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md) |
 | `landing_plan.c` | `expected_order[]` is stale (missing Scripting/Reporting/MCP). Do **not** rewrite the whole list. Add Subscribers adjacent to MCP in every **live** dispatch table (`launch_readiness.c`, `launch.c`, `landing.c`, `landing_readiness.c`). | `landing_plan.c` |
 
 ### Live subsystem count (do not guess)
@@ -376,9 +376,9 @@ or explicitly amended in this section.
    FCM/APNs client libraries. Safari 16+ is the same protocol via
    `web.push.apple.com`.
 2. **New subsystem `Subscribers`**, not a reuse of `Notify`.
-   - Config letter **V. Subscribers** (after **U. Chat**). **Not U.**
-   - Launch order **22** (after MCP, last registered).
-   - `SR_SUBSCRIBERS` `"Subscribers"`.
+    - Config letter **W. Subscribers** (after **V. NATS**). **Not V.**
+    - Launch order **23** (after NATS at 22, last registered).
+    - `SR_SUBSCRIBERS` `"Subscribers"`.
    - Source: `src/subscribers/`.
    - API: `src/api/subscribers/`, Swagger tag **Subscribers**, prefix
      `/api/subscribers`.
@@ -417,10 +417,10 @@ or explicitly amended in this section.
     - injectable POST transport (Mail Relay `mailval` / smtp seam).
     `pushval` has **its own CMakeLists** and is **not** in Hydrogen's
     recursive `src/` glob.
-12. **Blackbox Test 62**, ports **5620–5626** (`5<TT>x` per
-    [TESTING.md](/docs/H/tests/TESTING.md)). If 562x collides in
-    practice (MCP lesson: Test 47 moved to 1547x), switch to **15620–
-    15626** and record the variance. Do not create the script until
+12. **Blackbox Test 63**, ports **5630–5636** (`5<TT>x` per
+     [TESTING.md](/docs/H/tests/TESTING.md)). If 563x collides in
+     practice (MCP lesson: Test 47 moved to 1547x), switch to **15630–
+     15636** and record the variance. Do not create the script until
     Phase 9.
 13. **Helium packets only; never apply.** Next IDs re-checked at packet
     time. Snapshot: migration **1378**, QueryRef **#155**. Reuse #127
@@ -616,7 +616,7 @@ re-checks the whole table.
 | `landing_subscribers.c` | drain workers, join, registry shutdown |
 | `landing.h` decls | |
 | `landing.c` dispatch | |
-| `landing_readiness.c` table | Land Subscribers **before** Database (workers may still query). Place **immediately before MCP** in the table unless a better reverse-order slot is obvious. |
+| `landing_readiness.c` table | Land Subscribers **before** Database (workers may still query). Place **immediately before MCP** in the table (NATS at 22, Subscribers at 23; landing is reverse launch order). |
 | `volatile sig_atomic_t subscribers_system_shutdown` | `state.c` + externs matching Notify/Mail Relay |
 | `ServiceThreads subscribers_threads` | define `state.c`, extern `threads.h`, count in thread status if Mail/MCP do |
 | `register_subsystem_from_launch` | same helper MCP uses |
@@ -673,7 +673,7 @@ re-checks the whole table.
 | Unity under `tests/unity/src/subscribers/` and `…/api/subscribers/` and `…/config/` `…/launch/` `…/landing/` | unique filenames; search before create |
 | `extras/pushval/` standalone CMake | not in `src/` glob |
 | `extras/vapidgen/` | |
-| `tests/test_62_subscribers.sh` + `.md` + configs | Phase 9 only |
+| `tests/test_63_subscribers.sh` + `.md` + configs | Phase 9 only |
 | CHANGELOG + TEST_VERSION | every script change |
 | `jq` only for JSON | no grep-JSON |
 | No `TEST_COUNTER=$((TEST_COUNTER + 1))` | |
@@ -688,13 +688,13 @@ re-checks the whole table.
 | --- | --- |
 | `docs/H/PUSH_GUIDE.md` | **Do not create or link before Phase 10** (Test 04 orphans) |
 | `docs/H/api/subscribers/` | |
-| [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md) | letters A–V including **U. Chat** (existing omission) + launch **22** |
+| [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md) | letters A–W including **U. Chat** (existing omission) + launch **23** (NATS takes V/22) |
 | [STRUCTURE.md](/docs/H/STRUCTURE.md) | every new file |
 | [SITEMAP.md](/docs/H/SITEMAP.md) | |
 | [README.md](/docs/H/README.md) | |
 | [API_OVERVIEW.md](/docs/H/core/API_OVERVIEW.md) | |
 | [lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md) | |
-| [TESTING.md](/docs/H/tests/TESTING.md) | Test 62 row |
+| [TESTING.md](/docs/H/tests/TESTING.md) | Test 63 row |
 | [SECRETS.md](/docs/H/SECRETS.md) | `VAPID_*` env names, not values |
 | [TODO.md](/docs/H/TODO.md) item 26 | progress |
 | Test 04 / `mkl` | absolute links, no `:line` refs |
@@ -784,11 +784,11 @@ user.
 
 ### Blackbox
 
-`test_62_subscribers.sh`: shebang, title, FUNCTIONS, CHANGELOG (newest
+`test_63_subscribers.sh`: shebang, title, FUNCTIONS, CHANGELOG (newest
 first), `set -euo pipefail`, `TEST_NAME` / `TEST_ABBR` / `TEST_NUMBER` /
 `TEST_VERSION`, `TEST_COUNTER=0` once, `source lib/framework.sh`. Configs
-`tests/configs/hydrogen_test_62_*.json`. Lifecycle helpers. `jq` for
-JSON. Matching `docs/H/tests/test_62_subscribers.md`. Run Test 04 after
+`tests/configs/hydrogen_test_63_*.json`. Lifecycle helpers. `jq` for
+JSON. Matching `docs/H/tests/test_63_subscribers.md`. Run Test 04 after
 adding that doc.
 
 ### Unity
@@ -825,13 +825,13 @@ This plan exists and has been read.
 
 - [ ] 0.1 Confirm Web Push-only (no FCM/APNs SDKs, no legacy Safari).
 - [ ] 0.2 Confirm new `Subscribers` subsystem vs folding into `Notify`.
-- [ ] 0.3 Confirm letter **V** (U is Chat) and launch **22**.
+- [ ] 0.3 Confirm letter **W** (V taken by NATS, U is Chat) and launch **23**.
 - [ ] 0.4 Confirm `H.subscribers` + `H_HK_SUBSCRIBERS=7` (not `H.notify`,
       not `H.push`).
 - [ ] 0.5 Confirm JWT-in-handlers / public-vapid / `push_send` via #127.
 - [ ] 0.6 Confirm SSRF allowlist is v1 (not Phase 12-only).
 - [ ] 0.7 Confirm Lithium UI deferred; Hydrogen+Helium+`pushval` only.
-- [ ] 0.8 Confirm Test 62 / ports 562x / Helium re-check / never-apply.
+- [ ] 0.8 Confirm Test 63 / ports 563x / Helium re-check / never-apply.
 - [ ] 0.9 Confirm completeness + coverage fences as Exit criteria for
       Phase 15.
 - [ ] 0.10 Record amendments in this document if any lock changes.
@@ -875,7 +875,7 @@ Phase 0 Status complete. User said go.
 ### Work items
 
 - [ ] 1.1 `config_subscribers.h/.c` + defaults + `AppConfig` field +
-      load/dump/cleanup + letter V in `config.h` / `config_forward.h` /
+      load/dump/cleanup + letter W in `config.h` / `config_forward.h` /
       `config.c` load/dump/cleanup. Env overrides for VAPID
       keys/subject. AllowedHosts array. Test substruct.
       Verification: `mku config_subscribers_test_load_subscribers_config`.
@@ -1156,7 +1156,7 @@ not started
 
 ---
 
-## Phase 9 — Blackbox Test 62 + `pushval`
+## Phase 9 — Blackbox Test 63 + `pushval`
 
 ### Goal
 
@@ -1166,11 +1166,11 @@ path disables subscription. No public Internet.
 
 ### Work items
 
-- [ ] 9.1 `tests/test_62_subscribers.sh` + `docs/H/tests/test_62_subscribers.md`
-      + configs on ports **562x**. `jq` only. CHANGELOG + TEST_VERSION.
+- [ ] 9.1 `tests/test_63_subscribers.sh` + `docs/H/tests/test_63_subscribers.md`
+      + configs on ports **563x**. `jq` only. CHANGELOG + TEST_VERSION.
       Do not increment `TEST_COUNTER`.
 - [ ] 9.2 Orchestrator discovery (glob). Do not collide with 561x
-      (test 61 inbound mail). If 562x is unusable, variance to 1562x.
+      (test 61 inbound mail). If 563x is unusable, variance to 1563x.
 - [ ] 9.3 Cases: vapid public; unauth register 401; register+list (no
       `auth` in JSON); dispatch 403 without role; dispatch 200 queued;
       pushval 201; override 410 then list omits/disabled; prefix still
@@ -1181,11 +1181,11 @@ path disables subscription. No public Internet.
 
 ### Done means
 
-`test_62` PASS on the engines this phase locks.
+`test_63` PASS on the engines this phase locks.
 
 ### Exit gate
 
-Live `test_62` green; `mks` green; Test 04 green for new doc.
+Live `test_63` green; `mks` green; Test 04 green for new doc.
 
 ### Status
 
@@ -1209,8 +1209,8 @@ Someone can enable Subscribers without reading the plan.
 - [ ] 10.3 Link from [README.md](/docs/H/README.md),
       [SITEMAP.md](/docs/H/SITEMAP.md),
       [STRUCTURE.md](/docs/H/STRUCTURE.md) (every new source file),
-      [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md) (U. Chat + V.
-      Subscribers; launch 22),
+[INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md) (U. Chat + W.
+       Subscribers; launch 23),
       [API_OVERVIEW.md](/docs/H/core/API_OVERVIEW.md),
       [lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md),
       [TESTING.md](/docs/H/tests/TESTING.md),
@@ -1266,7 +1266,7 @@ rest, not a place to postpone SSRF.
 - [ ] 12.4 Grep fence: no private key / `auth` / JWT / body in
       `log_this` format strings on the subscribers path.
 - [ ] 12.5 Minimum TLS on outbound libcurl (Mail Relay 14.4 analog).
-- [ ] 12.6 `mkq`, `mku`, `mkp`, `test_62` regression if behavior changed.
+- [ ] 12.6 `mkq`, `mku`, `mkp`, `test_63` regression if behavior changed.
 
 ### Done means
 
@@ -1275,7 +1275,7 @@ optional in production.
 
 ### Exit gate
 
-Named `mku`; `mkp`; `test_62` if touched.
+Named `mku`; `mkp`; `test_63` if touched.
 
 ### Status
 
@@ -1339,7 +1339,7 @@ Swagger, coverage, dead code.
       every row true or explicitly deferred with rationale.
 - [ ] 15.2 `zsh -ic 'mkt'` then `mkp`; `mka` once trial is clean.
 - [ ] 15.3 `test_17` min + max; `test_16` shutdown; `test_22` Swagger;
-      `test_20` if prefix configs include the new routes; `test_62`.
+      `test_20` if prefix configs include the new routes; `test_63`.
 - [ ] 15.4 Test 04, 90, 91, 92, 93, 98, 99 as touched.
 - [ ] 15.5 Update TODO item 26 Done %; Working Log verdict.
 
@@ -1386,12 +1386,12 @@ Names are **targets** — search before creating; adjust if a name exists.
 | Layer | What |
 | --- | --- |
 | Unity | Config, VAPID, RFC 8291, HTTP seam, SSRF, repository, handlers, queue/workers, Lua. No `static` in `src/`. |
-| Blackbox | Test 62 + `pushval`. Never hit `fcm.googleapis.com` / `web.push.apple.com` / `updates.push.mozilla.org`. |
+| Blackbox | Test 63 + `pushval`. Never hit `fcm.googleapis.com` / `web.push.apple.com` / `updates.push.mozilla.org`. |
 | Coverage | See [Coverage fences](#coverage-fences). |
 | Build | `mkq` ordinary C; `mkt` after add/remove `src/`; `mkp` after C; `mks` after Bash. |
 
-Port scheme: Test 62 → **562x** ([TESTING.md](/docs/H/tests/TESTING.md)).
-Fallback **1562x** if needed (Test 47 lesson).
+Port scheme: Test 63 → **563x** ([TESTING.md](/docs/H/tests/TESTING.md)).
+Fallback **1563x** if needed (Test 47 lesson).
 
 ---
 
@@ -1414,11 +1414,11 @@ Fallback **1562x** if needed (Test 47 lesson).
 
 | Risk | Mitigation |
 | --- | --- |
-| Letter collision | V confirmed free as of 2026-09-08; re-check Phase 1 |
+| Letter collision | W confirmed free as of 2026-10-04 (V taken by NATS); re-check Phase 1 |
 | OpenSSL API maze | Stay on EVP 3.x like `utils_crypto.c`; Unity vectors |
 | libcurl in workers | `NOSIGNAL`, per-request easy handle, timeouts |
 | Helium ID drift | Re-check disk at packet time |
-| Test 62 port clash | 562x first, 1562x variance |
+| Test 63 port clash | 563x first, 1563x variance |
 | Coverage discovered late | Per-phase fence, not only Phase 13 |
 | Scope creep into Lithium | Phase 11 permanently deferred |
 
