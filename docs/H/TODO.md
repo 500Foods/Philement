@@ -174,7 +174,7 @@ not open work unless listed below.
 | **Plan** | [`NOTIFICATIONS_PLAN.md`](/docs/H/plans/NOTIFICATIONS_PLAN.md) |
 | **Effort** | L–XL |
 | **Done** | 0% — exhaustive plan; Phase 0 locks not approved |
-| **Remaining** | Phase 0 lock approval (letter **V**, launch 22, SSRF v1, coverage/completeness fences), then Phases 1–10/12/13/15. Lithium subscribe UI deferred (Phase 11). |
+| **Remaining** | Phase 0 lock approval (letter **W**, launch 23, Test 63, `H_HK_SUBSCRIBERS = 8` after NATS takes 7, SSRF v1, coverage/completeness fences), then Phases 1–10/12/13/15. Lithium subscribe UI deferred (Phase 11). NATS plan holds V / 22 / 62 and is also unapproved. |
 | **Why later** | Lithium SW already displays pushes; Hydrogen has no subscribe/dispatch path. Mail Relay is the outbound analog. Do not reuse `Notify` SMTP scaffold or `H.notify`. |
 | **Note** | Web Push RFC 8030/8291/8292 to vendor endpoints (`fcm.googleapis.com`, `updates.push.mozilla.org`, `web.push.apple.com`). No proprietary FCM/APNs SDKs. No live vendor calls in CI. |
 

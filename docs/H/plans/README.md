@@ -47,9 +47,9 @@ Archive only.
 ### [NOTIFICATIONS / SUBSCRIBERS PLAN](/docs/H/plans/NOTIFICATIONS_PLAN.md)
 
 Web Push backend (RFC 8030/8291/8292): Subscribers API + dispatch queue.
-Letter **V** (U is Chat), launch 22. Exhaustive plan (Phases 0–15) with
-completeness and coverage fences. Phase 0 not approved. Lithium UI deferred.
-Does not reuse `Notify` SMTP scaffold or `H.notify`.
+Letter **W** (V is NATS, U is Chat), launch 23, Test 63. Exhaustive plan
+(Phases 0–15) with completeness and coverage fences. Phase 0 not approved.
+Lithium UI deferred. Does not reuse `Notify` SMTP scaffold or `H.notify`.
 
 ### [NATS PLAN](/docs/H/plans/NATS_PLAN.md)
 

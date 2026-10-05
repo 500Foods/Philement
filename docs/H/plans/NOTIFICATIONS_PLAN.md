@@ -80,11 +80,12 @@ Status is complete.
 1. Confirm this document is the source of truth.
 2. Re-read Phase 0 locks. If Status is still draft, discuss and get
    explicit approval before any `src/` edits.
-3. Re-check disk for next Acuranzo migration / QueryRef before any Helium
-   packet (`ls elements/002-helium/acuranzo/migrations/acuranzo_*.lua`).
-   Last seen: **`acuranzo_1377.lua`** (QueryRef **#154**). Next free:
-   migration **1378**, QueryRef **#155** (re-check; do not trust this
-   snapshot).
+3. Re-check disk for the next Acuranzo migration / QueryRef before any
+   Helium packet. As of 2026-10-05 the latest file is
+   **`acuranzo_1385.lua`** (it rewrites QueryRef **#154**). The highest
+   product QueryRef is **#155** in `acuranzo_1381.lua`. Next free
+   migration **1386**, next free QueryRef **#156**. Do not trust this
+   snapshot at packet time. NATS v1 does not consume a QueryRef.
 4. Confirm config letter **W** is still free (`config.h` last letter is
     **U. Chat**, V taken by NATS). If someone shipped X, amend the lock.
 
@@ -116,7 +117,7 @@ Primary: `/elements/001-hydrogen/hydrogen`
 Related:
 
 - `/elements/001-hydrogen/hydrogen/src/config/` — `config_subscribers.{c,h}`,
-  defaults, `AppConfig` member **V. Subscribers**
+  defaults, `AppConfig` member **W. Subscribers**
 - `/elements/001-hydrogen/hydrogen/src/launch/` — `launch_subscribers.c`,
   readiness, `launch.c` dispatch
 - `/elements/001-hydrogen/hydrogen/src/landing/` — `landing_subscribers.c`,
@@ -187,7 +188,7 @@ Do not re-implement these; they are constraints.
 | --- | --- | --- |
 | Config letters | **A–U taken.** Last is **U. Chat**. **V taken by NATS. W is free.** | `src/config/config.h`, `hydrogen.h` `AppConfig` |
 | Launch list | 21 `process_subsystem_readiness` calls (Registry … MCP). Chat is **config-only**, not a launch subsystem. | `launch_readiness.c` |
-| `MAX_SUBSYSTEMS` | **24** / `INITIAL_REGISTRY_CAPACITY` **24**. Adding Subscribers = **22nd** registered. **No bump required.** | `globals.h` |
+| `MAX_SUBSYSTEMS` | **24**. Launch registers **21** subsystems today. NATS is the 22nd, Subscribers the **23rd**. One slot remains. The readiness writer does not bounds-check the index. | `globals.h`, `launch_readiness.c` |
 | `Notify` config/launch | SMTP **scaffold only**. No send runtime. Enabled defaults false. | `config_notify.*`, `launch_notify.c`, `landing_notify.c` |
 | `H.notify` | **Permanent** deferred-error shim `"notify: deferred to mailrelay rules"` | `scripting_api_mail_notify.c`; [MAIL_GUIDE.md](/docs/H/MAIL_GUIDE.md) |
 | Mail Relay | Production outbound mail (REST, Lua `H.mail`, events, LogNotify) | [MAILRELAY_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md) |
@@ -197,22 +198,22 @@ Do not re-implement these; they are constraints.
 | Lithium Notification Manager | Placeholder (menu ID 19) | [LITHIUM-MGR.md](/docs/Li/LITHIUM-MGR.md) |
 | Oxygen (008) | Idea-stage brainstorm | `elements/008-oxygen/README.md` |
 | Crypto on hand | Base64url, SHA-256, HMAC, RSA/RS256 via OpenSSL 3 `EVP_PKEY_*`. **No** ECDSA P-256 sign, **no** ECDH, **no** HKDF, **no** AES-128-GCM helper. OIDC lists `KEY_ALG_ES256` but keys are RSA. | `src/utils/utils_crypto.*`, `src/oidc/oidc_keys.c` |
-| Outbound HTTP | libcurl via OIDC RP helpers; scripting wraps them | `oidc_rp_http_*`, `src/scripting/http_client.*` |
+| Outbound HTTP | libcurl exists. `oidc_rp_http_post` and `oidc_rp_http_post_with_headers_slist` set `CURLOPT_POSTFIELDSIZE` from `strlen`, allow `http://`, and send `User-Agent: Hydrogen-OIDC-RP/1.0`. An aes128gcm body is binary and can contain `0x00`, so those helpers truncate it. `apply_common_curl_opts` does set `CURLOPT_FOLLOWLOCATION` to 0 and `CURLOPT_NOSIGNAL` to 1. Copy those two options. Do not call the OIDC POST helpers for the push body. | `src/api/auth/oidc_rp/oidc_rp_http.c` |
 | API registration | JWT `protected_endpoints` + `json_endpoints` in `api_service.c`; Mail Relay does JWT **inside handlers** (not in the middleware list). Swagger `//@ swagger:` on handler headers; `payloads/swagger-generate.sh`. | `src/api/api_service.c`, `src/api/mailrelay/` |
 | Role check | JWT `roles` claim = comma-separated **role_id integers**. Mail resolves `mail_send` via QueryRef **#127** Get Role By Name. | `mailrelay_api_auth.*`, `acuranzo_1260.lua` |
-| Lua handles | `H_HK_QUERY=1` … `H_HK_MCP=6`. Next free: **`H_HK_SUBSCRIBERS = 7`**. `H.wait` must wire **both** single- and multi-handle paths. | `scripting_handle.h` |
-| Status | `ServiceMetrics` has logging/webserver/websocket/mdns/print/database/scripting/**mcp**. Mail uses `QueueMetrics mail_relay_queue`. | `status_core.h`, `status_process.c`, `status_formatters.c` |
+| Lua handles | `H_HK_QUERY=1` … `H_HK_MCP=6`. NATS takes **`H_HK_NATS = 7`**. Subscribers takes **`H_HK_SUBSCRIBERS = 8`**. `H.wait` must grow a branch in **both** `H_lua_wait_one` and the multi-handle loop in `H_lua_wait`. A kind added in only one of those places is treated as a database query. | `scripting_handle.h`, `scripting_api_query_wait.c` |
+| Status | MCP is both a `ServiceMetrics` member of `SystemMetrics` and a `specific.mcp` union arm. Terminal is also a member. Mail uses `QueueMetrics mail_relay_queue`. Subscribers follows the MCP pair. | `status_core.h`, `status_process.c`, `status_formatters.c` |
 | Test 17 min | Almost empty JSON (`Server` + WebServer IPv4/IPv6 false). New subsystem **must** clean-skip when absent. | `tests/configs/hydrogen_test_17_startup_min.json` |
 | Blackbox slots | **63 is free** (NATS takes 62). 57/58/61 = Mail Relay; 59 = auth chat; 60 = performance; 47 = MCP. | `tests/test_*.sh` |
-| Helium | Last `acuranzo_1377.lua`, QueryRef **#154**. Next **1378** / **#155**. | `elements/002-helium/acuranzo/migrations/` |
+| Helium | Latest file `acuranzo_1385.lua` (rewrites **#154**). Highest product QueryRef **#155** (`acuranzo_1381.lua`). Next free migration **1386**, next free QueryRef **#156**. Re-check at packet time. | `elements/002-helium/acuranzo/migrations/` |
 | INSTRUCTIONS.md | Stale: letters end at T. MCP; launch order ends at 21 MCP; **U. Chat is missing**. This plan adds **W** / **23** (NATS takes V/22) and should also write U. Chat into the letter list so the doc matches `config.h`. | [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md) |
-| `landing_plan.c` | `expected_order[]` is stale (missing Scripting/Reporting/MCP). Do **not** rewrite the whole list. Add Subscribers adjacent to MCP in every **live** dispatch table (`launch_readiness.c`, `launch.c`, `landing.c`, `landing_readiness.c`). | `landing_plan.c` |
+| `landing_plan.c` | `expected_order[]` is only the Go/No-Go log. It already omits MCP, Scripting, and Reporting. A missing name still lands. Do **not** rewrite the list, and do not look for MCP in it. Add `SR_SUBSCRIBERS` between `SR_WEBSERVER` and `SR_DATABASE`. Live shutdown order is the table in `landing_readiness.c` (after WebServer, before Database). Live launch order is after NATS in `launch_readiness.c` and `launch.c`. | `landing_plan.c` |
 
 ### Live subsystem count (do not guess)
 
 `launch_readiness.c` registers **21** subsystems. `MAX_SUBSYSTEMS` is **24**.
-Adding Subscribers uses slot 22. Do not bump 24 unless a later subsystem
-lands in the same change.
+NATS uses slot 22. Subscribers uses slot 23. One slot remains. Do not
+bump 24 in this plan. The writer does not bounds-check `results[]`.
 
 ---
 
@@ -261,8 +262,17 @@ service worker's `push` event then calls `showNotification`.
 
 - Push API requires **HTTPS** (localhost is exempt).
 - Chrome requires `userVisibleOnly: true` (no silent push).
-- Payloads are small (treat **4096 bytes** plaintext JSON as the hard cap
-  before encrypt; ciphertext is larger).
+- Push services cap the HTTP body at **4096 bytes**, not the plaintext.
+  The aes128gcm prefix for an uncompressed P-256 key is 86 bytes
+  (16 salt + 4 record-size + 1 id length + 65 key). The record adds a
+  16-byte tag and a `0x02` padding delimiter. With no extra padding the
+  largest plaintext that still fits is **3993** bytes
+  (86 + 3993 + 1 + 16 = 4096). Lock `MaxPayloadBytes` default and
+  maximum to 3993. Record size field `rs` is 4096. A Unity test rejects
+  3994 and accepts 3993 with a body no larger than 4096. Round-trip
+  alone is not enough; also check one published RFC 8291 or web-push
+  vector, because a shared bug encrypts and decrypts the same wrong
+  bytes.
 - iOS: installed PWA only, 16.4+.
 - `410 Gone` / some `404`s mean the subscription is dead — disable it.
   Do not retry gone.
@@ -294,7 +304,9 @@ vector if we have it). Injectable RNG/ECDH for determinism.
 - Claims: `aud` = origin of endpoint (`https://fcm.googleapis.com`),
   `exp` = now + a few hours (not days), `sub` = config Subject.
 - Signature: ECDSA P-256 over `base64url(header).base64url(payload)`,
-  IEEE P1363 (r\|\|s, 64 bytes) not DER.
+  IEEE P1363 (r\|\|s, 64 bytes) not DER. OpenSSL `EVP_DigestSign`
+  returns DER. Convert and left-pad `r` and `s` to 32 bytes each.
+  `exp` is now + 12 hours, which is inside the 24-hour RFC 8292 limit.
 - Header: `Authorization: vapid t=<jwt>, k=<urlsafe-b64 uncompressed public>`.
 - `Crypto-Key: p256ecdsa=…` is the old draft; **do not send it** (RFC 8292
   replaced it).
@@ -379,11 +391,14 @@ or explicitly amended in this section.
     - Config letter **W. Subscribers** (after **V. NATS**). **Not V.**
     - Launch order **23** (after NATS at 22, last registered).
     - `SR_SUBSCRIBERS` `"Subscribers"`.
-   - Source: `src/subscribers/`.
-   - API: `src/api/subscribers/`, Swagger tag **Subscribers**, prefix
-     `/api/subscribers`.
+    - Source: `src/subscribers/`.
+    - API: `src/api/subscribers/`, Swagger tag **Subscribers**, prefix
+      `/api/subscribers`.
 3. **Do not touch `H.notify`.** New Lua surface: `H.subscribers.send` /
-   `send_sync`. Handle kind `H_HK_SUBSCRIBERS = 7`.
+   `send_sync`. Handle kind **`H_HK_SUBSCRIBERS = 8`** because NATS
+   holds 7. Re-read `scripting_handle.h` at the start of Phase 8. If
+   NATS has not landed, stop and amend both plans before picking a
+   number.
 4. **Leave `NotifyConfig` SMTP scaffold and `launch_notify` alone.** No
    parallel SMTP, no folding Web Push into `Notify.SMTP`.
 5. **Subscriptions persist in the database** (restart must not drop
@@ -402,12 +417,15 @@ or explicitly amended in this section.
    `acuranzo_1257`). Any authenticated user may register/list/delete
    **their own** subscription.
 8. **SSRF fence (v1, not later).** Register and POST reject non-HTTPS
-   endpoints unless `Test.PushEndpointOverride` is set. Default host
-   allowlist: `fcm.googleapis.com`, `updates.push.mozilla.org`,
-   `web.push.apple.com`, plus the override host in test. Reject
-   RFC1918 / link-local / localhost unless test override. An
-   authenticated attacker must not be able to make Hydrogen POST to
-   `169.254.169.254`.
+   endpoints unless `Test.PushEndpointOverride` is set. Host match is
+   an exact string compare against `AllowedHosts` (default
+   `fcm.googleapis.com`, `updates.push.mozilla.org`,
+   `web.push.apple.com`, plus the override host in test). No suffix
+   match, no URL userinfo, no IP literals, no port other than 443
+   except the test override. `CURLOPT_FOLLOWLOCATION = 0` and
+   `CURLOPT_PROTOCOLS` limited to HTTPS. A 302 from an allowlisted
+   name to `169.254.169.254` must not be followed. Reject RFC1918,
+   link-local, and localhost unless the test override is set.
 9. **Lithium Notification Manager and `pushManager.subscribe` client
    are deferred** (same as Mail Relay Phase 9). This plan ships
    Hydrogen + Helium + blackbox sink. Lithium SW already displays
@@ -423,8 +441,10 @@ or explicitly amended in this section.
      15636** and record the variance. Do not create the script until
     Phase 9.
 13. **Helium packets only; never apply.** Next IDs re-checked at packet
-    time. Snapshot: migration **1378**, QueryRef **#155**. Reuse #127
-    for role lookup. New QueryRefs start at #155.
+    time. Snapshot 2026-10-05: migration **1386**, QueryRef **#156**.
+    Reuse #127
+    for role lookup. New QueryRefs start at **#156** (snapshot
+    2026-10-05). #155 is already `acuranzo_1381.lua`.
 14. **One delivery path.** REST, Lua, and (later) system events enqueue
     through `subscribers_dispatch`. Scripts must not POST to vendor
     endpoints themselves.
@@ -491,7 +511,7 @@ Prefix honours `Api.Prefix` (`test_20`).
   "DefaultTTL": 86400,
   "MaxTTL": 2419200,
   "DefaultUrgency": "normal",
-  "MaxPayloadBytes": 4096,
+  "MaxPayloadBytes": 3993,
   "AllowedHosts": [
     "fcm.googleapis.com",
     "updates.push.mozilla.org",
@@ -505,7 +525,7 @@ Prefix honours `Api.Prefix` (`test_20`).
 ```
 
 Ranges (No-Go when Enabled): Workers 1–16; QueueCapacity 1–100000;
-DefaultTTL 0–MaxTTL; MaxPayloadBytes 1–4096.
+DefaultTTL 0–MaxTTL; MaxPayloadBytes 1–3993.
 
 VAPID keys are operator-generated (`extras/vapidgen` in Phase 2). Do not
 auto-write secrets into `hydrogen.json`. Dump redacts the private key as
@@ -518,7 +538,9 @@ Env substitution uses the existing `${env.NAME}` loader (Test 12 pattern).
 Table working name `push_subscriptions`:
 
 - `subscription_id` integer PK (`MAX+1` + confirm/retry per TODO 12e)
-- `user_id` (JWT subject / existing users FK pattern)
+- `user_id` integer from `jwt_claims_t.user_id` (the same number
+  `generate_jwt` also writes into `sub` as a string). Do not key the
+  row on the string `sub`. Owner checks compare this integer.
 - `endpoint` unique
 - `p256dh`, `auth` (secrets at rest; never log)
 - `expiration_time` nullable
@@ -526,7 +548,7 @@ Table working name `push_subscriptions`:
 - `created_at`, `last_seen_at`, `disabled_at` nullable (410 Gone)
 - `${COMMON_CREATE}` audit columns
 
-QueryRefs (assign at packet time; snapshot start **#155**):
+QueryRefs (assign at packet time; snapshot start **#156**):
 
 | Working name | Use |
 | --- | --- |
@@ -592,12 +614,12 @@ re-checks the whole table.
 
 | Must exist | Notes |
 | --- | --- |
-| Letter **V** in `config.h` comment block | After U. Chat |
+| Letter **W** in `config.h` comment block | After V. NATS. Do not take V |
 | `config_forward.h` `SubscribersConfig` | |
 | `config_subscribers.h/.c` | load / dump (redact private key) / cleanup / apply_defaults |
 | `initialize_config_defaults_subscribers` | `config_defaults.c` + header; called from master init |
-| `LOAD_CONFIG("V", SR_SUBSCRIBERS, …)` | `config.c` |
-| `DUMP_CONFIG_SECTION("V", …)` | `config.c` — Chat dump is currently missing; do not "fix" Chat as a drive-by except the INSTRUCTIONS letter list |
+| `LOAD_CONFIG("W", SR_SUBSCRIBERS, …)` | `config.c`. Letter V is NATS |
+| `DUMP_CONFIG_SECTION("W", …)` | `config.c`. Chat's missing `DUMP_CONFIG_SECTION("U")` is not this plan's exit gate |
 | `cleanup_subscribers_config` in `cleanup_application_config` | `config.c` |
 | `AppConfig.subscribers` | `hydrogen.h` |
 | Example `hydrogen.json` section | `Enabled: false` |
@@ -611,19 +633,19 @@ re-checks the whole table.
 | `SR_SUBSCRIBERS` | `globals.h` |
 | `launch_subscribers.c` | readiness clean-skip when disabled; No-Go when enabled+invalid |
 | `launch.h` `check_*` + `launch_*` decls | |
-| `launch_readiness.c` after MCP | 22nd `process_subsystem_readiness` |
+| `launch_readiness.c` after NATS | 23rd `process_subsystem_readiness`. If NATS is not in the tree yet, do not start this phase |
 | `launch.c` `strcmp` dispatch | |
 | `landing_subscribers.c` | drain workers, join, registry shutdown |
 | `landing.h` decls | |
 | `landing.c` dispatch | |
-| `landing_readiness.c` table | Land Subscribers **before** Database (workers may still query). Place **immediately before MCP** in the table (NATS at 22, Subscribers at 23; landing is reverse launch order). |
+| `landing_readiness.c` table | Shutdown order is the table order, first entry first. It is not the reverse of launch. Insert Subscribers **after WebServer and before Database** so workers can still query while API has stopped accepting. Do not place it next to MCP |
 | `volatile sig_atomic_t subscribers_system_shutdown` | `state.c` + externs matching Notify/Mail Relay |
 | `ServiceThreads subscribers_threads` | define `state.c`, extern `threads.h`, count in thread status if Mail/MCP do |
 | `register_subsystem_from_launch` | same helper MCP uses |
 | Dependencies | Registry + Network; Database when Enabled |
 
-`MAX_SUBSYSTEMS` stays 24 unless the 22nd slot somehow does not fit
-`ReadinessResults.results[]` (it will).
+`MAX_SUBSYSTEMS` stays 24. Subscribers is registration 23 of 24. Do not
+add another subsystem in the same change.
 
 ### API / Swagger / prefix
 
@@ -642,7 +664,7 @@ re-checks the whole table.
 | --- | --- |
 | Counters struct | queued, sending, sent, failed, retrying, gone, last_success, last_failure, worker_count, queue_depth |
 | `GET /api/subscribers/status` | JWT, no `push_send` |
-| `status_core.h` + `status_process.c` + `status_formatters.c` | JSON + Prometheus, MCP analog |
+| `status_core.h` + `status_process.c` + `status_formatters.c` | JSON + Prometheus. Both a `SystemMetrics` member and a `specific` union arm, matching MCP |
 | Log with `log_this(SR_SUBSCRIBERS, …)` | `num_args` matches `%` count |
 | Never log secrets or bodies | grep fence in Phase 12 |
 
@@ -759,17 +781,30 @@ Send: `api_send_json_response` (takes ownership).
 Errors: `{ success:false, error, message }` +
 `api_send_error_and_cleanup`.
 
-GET status must **not** use `handle_method_validation()` if that helper
-only allows POST (Mail Relay lesson).
+`handle_method_validation()` allows POST only. GET and DELETE make it
+send 405 and return `MHD_NO`. GET vapid, GET status, and DELETE
+unregister must not call it.
 
 ### libcurl (thread-safe)
 
-Per-request easy handle. Always `CURLOPT_NOSIGNAL = 1L`. Connect/timeout
-set. `curl_slist` for headers. Read `CURLINFO_RESPONSE_CODE`. Cleanup
-slist + easy. Model `oidc_rp_http` `apply_common_curl_opts`.
+Own per-request easy handle. Do not call `oidc_rp_http_post` or
+`oidc_rp_http_post_with_headers_slist`: both set
+`CURLOPT_POSTFIELDSIZE` from `strlen`, so a binary body with an
+interior `0x00` is truncated, and both accept `http://`.
+`CURLOPT_POSTFIELDSIZE` is the ciphertext byte length.
+`CURLOPT_NOSIGNAL = 1L`. `CURLOPT_FOLLOWLOCATION = 0`.
+`CURLOPT_PROTOCOLS_STR` is `"HTTPS"` (libcurl 7.85 and later; this
+workstation has 8.15). Do not use the deprecated `CURLOPT_PROTOCOLS`
+long. Copy the redirect and signal options from
+`apply_common_curl_opts`. Do not copy its `User-Agent`. Connect and
+total timeouts set. `curl_slist` for headers. Read
+`CURLINFO_RESPONSE_CODE`. Cleanup slist + easy.
 
-Status map: 201 success; 410/404 gone; 413 too large; 429 retry; 5xx
-retry; else fail. Do not retry gone.
+Status map: 200, 201, and 202 are success (do not retry a 200 forever).
+410 and 404 mean gone: disable the row, do not retry. 413 is too large
+and is not retried. 429 honours `Retry-After` when it is a delay in
+seconds, otherwise the worker backoff. 5xx retries. Anything else fails
+without retry.
 
 ### Logging
 
@@ -826,8 +861,8 @@ This plan exists and has been read.
 - [ ] 0.1 Confirm Web Push-only (no FCM/APNs SDKs, no legacy Safari).
 - [ ] 0.2 Confirm new `Subscribers` subsystem vs folding into `Notify`.
 - [ ] 0.3 Confirm letter **W** (V taken by NATS, U is Chat) and launch **23**.
-- [ ] 0.4 Confirm `H.subscribers` + `H_HK_SUBSCRIBERS=7` (not `H.notify`,
-      not `H.push`).
+- [ ] 0.4 Confirm `H.subscribers` + `H_HK_SUBSCRIBERS=8` (NATS owns 7;
+      not `H.notify`, not `H.push`).
 - [ ] 0.5 Confirm JWT-in-handlers / public-vapid / `push_send` via #127.
 - [ ] 0.6 Confirm SSRF allowlist is v1 (not Phase 12-only).
 - [ ] 0.7 Confirm Lithium UI deferred; Hydrogen+Helium+`pushval` only.
@@ -851,8 +886,13 @@ User explicit approval of Phase 0. No C compiled.
 ### Lessons learned
 
 - 2026-09-08: First draft used letter **U**. Live `config.h` already has
-  **U. Chat**. Corrected to **V** in this rewrite. Chat is not a launch
+  **U. Chat**. That draft then picked **V**. Chat is not a launch
   subsystem.
+- 2026-10-05: NATS holds **V / 22 / 62 / handle 7**. This plan holds
+  **W / 23 / 63 / handle 8**. Helium snapshot moved from 1378/#155 to
+  1386/#156 because #155 is already used. Plaintext cap is 3993 bytes
+  so the encrypted body stays within 4096. Landing goes between
+  WebServer and Database, not beside MCP. Phase 0 is still not approved.
 
 ---
 
@@ -879,7 +919,7 @@ Phase 0 Status complete. User said go.
       `config.c` load/dump/cleanup. Env overrides for VAPID
       keys/subject. AllowedHosts array. Test substruct.
       Verification: `mku config_subscribers_test_load_subscribers_config`.
-- [ ] 1.2 `SR_SUBSCRIBERS`, launch order 22, `launch_subscribers.c`,
+- [ ] 1.2 `SR_SUBSCRIBERS`, launch order 23 (after NATS), `launch_subscribers.c`,
       `landing_subscribers.c`, wire `launch.h` / `launch.c` /
       `launch_readiness.c` / `landing.h` / `landing.c` /
       `landing_readiness.c`. Shutdown flag + `subscribers_threads`.
@@ -922,8 +962,10 @@ VAPID JWTs. No HTTP yet.
 - [ ] 2.1 P-256 load from urlsafe-b64 raw private (32) + public (65).
       Reject wrong curve / wrong length. Uncompressed public → urlsafe
       b64 (no padding) for `applicationServerKey`.
-- [ ] 2.2 VAPID JWT ES256 (P1363 r\|\|s). `aud` = origin of endpoint
-      URL. `exp` hours, not days. Header format locked above.
+- [ ] 2.2 VAPID JWT ES256. `EVP_DigestSign` returns DER. Convert to
+      IEEE P1363 and left-pad `r` and `s` to 32 bytes each. A test that
+      only round-trips DER is not a pass. `aud` = origin of the
+      endpoint URL. `exp` = now + 12 hours. Header format locked above.
 - [ ] 2.3 `extras/vapidgen` (small C + own CMake, or documented
       `openssl` recipe that prints env-ready values). Do not invent a
       blackbox `test_NN`.
@@ -983,10 +1025,14 @@ swappable. Local sink records requests. No real vendor hosts.
 
 ### Work items
 
-- [ ] 4.1 `subscribers_http_post` wrapping OIDC RP / libcurl POST.
+- [ ] 4.1 `subscribers_http_post` owns its easy handle. Do not call
+      `oidc_rp_http_post`: `POSTFIELDSIZE` there is `strlen` and would
+      truncate a binary body. Pass the ciphertext length.
+      `CURLOPT_NOSIGNAL=1`. `CURLOPT_FOLLOWLOCATION=0`.
+      `CURLOPT_PROTOCOLS_STR` = `"HTTPS"`.
       Headers locked in Protocol section. Status map locked. SSRF
-      allowlist enforced here as well as at register.
-      `CURLOPT_NOSIGNAL=1`.
+      allowlist enforced here as well as at register. Treat
+      200/201/202 as success. Honour `Retry-After` on 429.
 - [ ] 4.2 Injectable transport function pointer (Mail Relay SMTP
       pattern).
 - [ ] 4.3 `extras/pushval`: tiny HTTP listener, own CMakeLists, captures
@@ -1061,7 +1107,8 @@ complete. Dispatch handler may 503 until Phase 7.
       status (zeros until Phase 7), dispatch stub 503
       `PUSH_DISABLED` or `PUSH_QUEUE_FULL` — **not** a silent success.
 - [ ] 6.2 Wire `api_service.c` routes + `json_endpoints`. GET vapid is
-      **not** JWT-gated.
+      **not** JWT-gated. GET vapid, GET status, and DELETE unregister
+      must not call `handle_method_validation` (POST only; it sends 405).
 - [ ] 6.3 Register: validate HTTPS + allowlist + keys; upsert by
       endpoint bound to JWT user; reject stealing another user's
       endpoint (`PUSH_FORBIDDEN`).
@@ -1103,8 +1150,9 @@ row. Launch/landing start/stop workers. Status counters live.
 - [ ] 7.3 410/gone → repository disable. Do not retry gone.
 - [ ] 7.4 `POST /api/subscribers/dispatch` with `push_send`.
 - [ ] 7.5 Status counters + `status_core.h` / `status_process.c` /
-      `status_formatters.c` JSON + Prometheus. `FailNextSendOnLaunch`
-      test seam.
+      `status_formatters.c` JSON + Prometheus. Add both a
+      `SystemMetrics` member and a `specific` union arm, matching MCP.
+      `FailNextSendOnLaunch` test seam.
 - [ ] 7.6 Unity queue/workers/retry/producer; `mkt`/`mkq`, `mkp`.
       `test_17` still clean (new subsystem must shut down). Coverage
       fence.
@@ -1134,7 +1182,7 @@ Scripts can send a push. `H.notify` unchanged.
 
 - [ ] 8.1 `H.subscribers.send` / `send_sync` → producer. Wait helper
       wired in **both** single- and multi-handle `H.wait` paths.
-      `H_HK_SUBSCRIBERS = 7`.
+      `H_HK_SUBSCRIBERS = 8` (NATS owns 7). Both `H.wait` paths.
 - [ ] 8.2 Reject missing title/body; honour ttl/urgency caps;
       `PUSH_*` mapped to Lua errors.
 - [ ] 8.3 Unity scripting tests including **notify-shim regression**.
@@ -1447,3 +1495,32 @@ Fallback **1563x** if needed (Test 47 lesson).
   criteria.
 - SSRF allowlist locked for v1 (register + POST).
 - Phase 0 awaiting user approval of design locks.
+
+### 2026-10-05 — Review against the tree, no code
+
+- NATS plan is the sibling that lands first. Letter, launch slot, test
+  number, and Lua handle kind in this file were still on the pre-NATS
+  values in the fences, Phase 1, and Phase 8. Those now say W / 23 / 63
+  / `H_HK_SUBSCRIBERS = 8`.
+- Next Helium ids are migration 1386 and QueryRef 156. `acuranzo_1385.lua`
+  reuses 154. `acuranzo_1381.lua` already owns 155.
+- `MAX_SUBSYSTEMS` is 24 with 21 launch registrations today. After NATS
+  and Subscribers, one slot remains. `process_subsystem_readiness` does
+  not bounds-check.
+- Landing table order is shutdown order. Subscribers is inserted after
+  WebServer and before Database.
+- Web Push body limit is 4096 bytes on the wire. Plaintext cap locked
+  at 3993. OpenSSL ECDSA signatures come out as DER and must be
+  converted to P1363. `exp` is 12 hours.
+- SSRF: exact host match, no redirects, HTTPS only.
+- Subscription owner key is `jwt_claims_t.user_id` (integer).
+- `push_send` still resolves through QueryRef #127, same as `mail_send`.
+  Hydrogen login JWTs store role ids in the `roles` claim. Do not invent
+  a second resolver.
+- Phase 0 is still draft. No `src/` edits.
+- `oidc_rp_http_post` sets `POSTFIELDSIZE` from `strlen` and allows
+  `http://`. Push uses its own easy handle. `handle_method_validation`
+  is POST-only, so GET and DELETE routes must not call it.
+- `landing_plan.c` `expected_order[]` is a Go/No-Go log and does not
+  contain MCP. Subscribers is inserted between WebServer and Database
+  there, and in the real landing table. Launch stays after NATS.

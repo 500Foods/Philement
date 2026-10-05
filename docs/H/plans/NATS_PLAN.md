@@ -6,7 +6,7 @@ Each phase is self-contained with its own exit gate (V/Val/C) and is documented 
 
 | Phase | Focus | Status | Effort |
 | --- | --- | --- | --- |
-| 0 | Design approval — confirm config letter V, launch 22, message model, open questions | **Not approved** — awaiting sign-off | Easy |
+| 0 | Design approval — confirm config letter V, launch 22, message model, open questions | **Approved** 2026-10-05 | Easy |
 | 1 | Config + launch + landing wiring | Not started | Medium |
 | 2 | NATS connection + lifecycle (custom client) | Not started | Hard |
 | 3 | Publish path (broadcast) | Not started | Medium |
@@ -24,7 +24,7 @@ Each phase is self-contained with its own exit gate (V/Val/C) and is documented 
 
 | Phase | Status | Last updated | Notes |
 | --- | --- | --- | --- |
-| 0 | **Not approved** — design review pending | 2026-10-04 | Awaiting sign-off on config letter V, launch position 22, and message model. |
+| 0 | **Approved** | 2026-10-05 | Locks signed off. Phase 1 has not started. No `src/` edits in the approval turn. |
 
 ## Purpose
 
@@ -35,25 +35,38 @@ instances running in a Kubernetes cluster (DOKS) alongside a managed NATS server
 The original motivation is **cache invalidation without database triggers**.
 Database triggers are notoriously difficult to build cross-engine (PostgreSQL,
 MySQL/MariaDB, SQLite, DB2, Firebird, YugabyteDB, MSSQL) and painful to manage
-during schema evolution. Instead, when a query executes that mutates cached state,
-Hydrogen broadcasts a NATS message identifying what cached data is now stale.
-Peer instances receive the message and refresh their local caches. The same
-messages can also be forwarded to connected WebSocket clients so front-end
-applications receive live notifications (e.g., "your JWT token table was
-refreshed", "order 1234 was updated").
+during schema evolution. v1 does not hook the query executor. An explicit C
+or Lua call names a database and a QueryRef. The caller deletes matching
+result-cache entries, then publishes. Peers delete the same entries. The
+next read misses and runs SQL. The same messages can also be forwarded to
+connected WebSocket clients so a UI can show a live event. There is no
+separate token table to refresh. OIDC reads through the same query path
+as everyone else.
 
-This document is a **planning draft**. It describes the subsystem concept, the
-integration points, the message model, and the channel-coordination strategy.
-It is **not** a phased implementation plan with work items yet — those follow
-once the approach is approved.
+This document is a **phased plan**. Phase 0 was approved on 2026-10-05.
+Phase 1 has not started. A 2026-10-05 review checked the locks below
+against the tree and the DOKS NATS deployment; where an earlier paragraph
+disagrees with [Verified constraints](#verified-constraints-2026-10-05),
+the verified section wins.
 
 ## How To Use This Document
 
-1. Review the design locks and open questions.
-2. Confirm the config letter, launch position, and message model.
-3. Once approved, convert into a phased plan (Phases 0–N) following the
-    template of [`NOTIFICATIONS_PLAN.md`](/docs/H/plans/NOTIFICATIONS_PLAN.md)
-    and [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md).
+1. Review the design locks, the verified constraints, and the open questions.
+2. Confirm the config letter, launch position, cache target, and client model.
+3. Work **one phase per conversation**. Phase 0 was approved on
+   2026-10-05. The next conversation is Phase 1 only. Follow
+   [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) and the gate template already
+   in this file (the same shape as
+   [`NOTIFICATIONS_PLAN.md`](/docs/H/plans/NOTIFICATIONS_PLAN.md)).
+
+## Next session
+
+Phase 1 is config, launch, and landing only. Letter **V**, launch
+registration **22** after MCP, landing table entry before Print,
+disabled path is a clean skip. No TCP client in that phase.
+`nats-server` is not on `PATH` on this workstation (checked 2026-10-05).
+Phase 1 does not need it. Phase 2's Unity tests use a fake socket.
+Phase 11 needs a real `nats-server` on port 5620.
 
 ## Implementation order
 
@@ -70,18 +83,22 @@ Do not re-implement these; they are constraints.
 | --- | --- | --- |
 | Config letters | **A–U in use. V = NATS (held). W is the next free letter** for any future plan (e.g., NOTIFICATIONS/SUBSCRIBERS). | `src/config/config.h`, `src/hydrogen.h` `AppConfig` |
 | Launch list | 21 subsystems (Registry … MCP). Chat is config-only. | `src/launch/launch_readiness.c` |
-| `MAX_SUBSYSTEMS` | **24** / `INITIAL_REGISTRY_CAPACITY` **24**. Adding NATS as 22nd = **no bump required.** | `src/globals.h` |
-| Source glob | `file(GLOB_RECURSE HYDROGEN_SOURCES "../src/*.c")` — new `.c` files in `src/` are picked up automatically. | `cmake/CMakeLists-init.cmake:147` |
-| Query cache | Per-DQM `QueryTableCache` in `src/database/database_cache.h`. Currently in-memory only; no cross-instance invalidation. `timeout_seconds` field exists in `QueryCacheEntry` but auto-refresh was never implemented — NATS invalidation replaces this missing behavior. | `src/database/database_cache.h` |
-| WebSocket broadcast | libwebsockets context in `src/websocket/websocket_server_internal.h`. Connected sessions tracked per-vhost, each with a `subscribed_events` list (events the client declared interest in). No existing "push to all clients" helper — each subsystem sends to specific sessions. **New `ws_broadcast_json(event_type, payload)` required** (iterates all sessions, filters by `subscribed_events` membership, writes JSON text frame). | `src/websocket/` |
+| `MAX_SUBSYSTEMS` | **24** / `INITIAL_REGISTRY_CAPACITY` **24**. Launch registers **21** today. NATS is the 22nd, Subscribers the planned 23rd. One slot remains. Do not bump 24. The readiness writer does not bounds-check the index. | `src/globals.h`, `src/launch/launch_readiness.c` |
+| Source glob | `file(GLOB_RECURSE … "../src/*.c")` in `cmake/CMakeLists-init.cmake`. New `src/*.c` and new Unity files are picked up only after CMake reconfigures. `mkt` does that. `mkq` alone does not. | `cmake/CMakeLists-init.cmake` |
+| Query templates (QTC) | Per-DQM catalog of SQL templates loaded by the bootstrap SELECT (`ref`, `type`, `query`, `name`, `queue`, `timeout`). `QueryCacheEntry.timeout_seconds` is the **execution budget** and is already applied. It is not a result TTL. `query_cache_clear` wipes the whole template catalog. Bootstrap does **not** load `collection`. | `src/database/database_cache.h`, `src/database/database_bootstrap.c` |
+| Query **result** cache | The cross-instance problem. Global, indefinite, server-lifetime cache. Used only when the query's queue type is cache (Lookup 58 value 3). Key is `database_name` + SHA-256(SQL template) + SHA-256(normalized params). API today is get / put / clear-all. There is **no** per-ref or per-template delete. | `src/database/dbqueue/query_result_cache.h` |
+| WebSocket broadcast | One vhost, name `"hydrogen"`, on `websocket.port`. Session data is per-connection libwebsockets user data (`WebSocketSessionData.authenticated` exists). Hydrogen does **not** keep a session list, and there is no `subscribed_events` field. `ws_write_json_response` writes one `wsi`. `lws_write` from a NATS thread is not safe. | `src/websocket/websocket_server_internal.h`, `websocket_server_message.c` |
+| Network subsystem | Interface discovery, port scan, and ping. It does **not** expose a client socket, epoll loop, or TLS stack. NATS opens its own TCP sockets. | `src/network/network.h` |
 | API service | `api_service.c` mounts REST handlers; `json_endpoints` for body parsing; `extract_and_validate_jwt` for auth. Mail Relay checks JWT inside handlers (not via `protected_endpoints` middleware). | `src/api/` |
-| Status metrics | `ServiceMetrics` union in `src/status/status_core.h`. MCP pattern added as a union arm. QueueMetrics per-subsystem. | `src/status/status_core.h` |
-| Landing dispatch | `landing_readiness.c` uses a table in reverse launch order; `landing.c` `get_landing_function()` maps name → `land_*_subsystem()`. | `src/landing/` |
+| Status metrics | MCP is both a `ServiceMetrics mcp` member of `SystemMetrics` and a `specific.mcp` union arm. Terminal is also a member. Mail uses `QueueMetrics mail_relay_queue`, not a `ServiceMetrics` arm. NATS follows the MCP pair: member and union arm. | `src/status/status_core.h` |
+| Landing dispatch | `landing_readiness.c` holds the shutdown table. First entry lands first. Comments in that file and in `landing.c` say "reverse launch order"; `land_approved_subsystems` walks the readiness results in table order and skips Registry. MCP is near the end of the table (after Threads), with Scripting and Reporting after MCP. | `src/landing/` |
 | Env var substitution | `${env.NAME}` resolved in `src/config/config.c:load_config`. | `config.c` |
-| Blackbox slots | **62 is free** (NOTIFICATIONS plan reserved it; since that plan is unapproved, reclaim it here or pick another). NATS takes 62; NOTIFICATIONS shifts to **63**. | `tests/test_*.sh` |
-| Helium | Last `acuranzo_1377.lua`, QueryRef **#154**. | `elements/002-helium/acuranzo/migrations/` |
-| INSTRUCTIONS.md | Stale: letters end at T, launch order ends at 21 MCP, **U. Chat missing**. | [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) |
-| `landing_plan.c` | `expected_order[]` is stale (missing Scripting/Reporting/MCP). Do **not** rewrite the whole list. | `src/landing/landing_plan.c` |
+| Blackbox slots | **62 is free.** 63–69 are also free. 61 is inbound mail. NATS takes **62**. NOTIFICATIONS takes **63**. | `tests/test_*.sh` |
+| Helium | Latest file is `acuranzo_1385.lua` (it rewrites QueryRef **#154**). Highest product QueryRef is **#155** (`acuranzo_1381.lua`). Next free migration **1386**, next free QueryRef **#156**. NATS v1 stores nothing. | `elements/002-helium/acuranzo/migrations/` |
+| DOKS NATS | Image `nats:2.11.4`, three pods, client port **4222** plaintext, monitor **8222**, cluster routes **6222**. `nats.conf` has no authorization block, no TLS, and no JetStream. Service DNS `nats.nats.svc.cluster.local`. The NATS cluster name is `festival`. That name is server routing, not Hydrogen's subject prefix. | namespace `nats`, 2026-10-05 |
+| `landing_plan.c` | `expected_order[]` is only the Go/No-Go log. It already omits MCP, Scripting, and Reporting. A name missing from it still lands. Do **not** rewrite the list. Add `SR_NATS` before `SR_PRINT` so the log has a Go line. Do not place it next to MCP; MCP is not in the array. | `src/landing/landing_plan.c` |
+| `INSTRUCTIONS.md` | Lists A–U. V and launch 22 are reserved there until Phase 1 writes them into `config.h` and `launch_readiness.c`. Phase 12 turns that reservation into the live letter once the code exists, and adds the operator guide. Chat's missing `DUMP_CONFIG_SECTION("U")` is still a Chat bug, not a NATS gate. | [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) |
+| `config.c` | `DUMP_CONFIG_SECTION("U", …)` for Chat is **missing** — dump sequence goes T (MCP) → `#undef`, skipping U. | `src/config/config.c` |
 
 ### Note on the NOTIFICATIONS_PLAN.md reservation
 
@@ -90,10 +107,109 @@ config letter **V** and launch position **22** for a `Subscribers`
 subsystem (Web Push). That plan is **Phase 0 — not approved** and no code
 exists for it.
 
-**NATS takes priority.** NATS holds **V / 22 / 62**. NOTIFICATIONS
-shifts to **W / 23 / 63** (ports 563x). Since Subscribers was never
-committed to source, there is no conflict — NATS lands first, then
-NOTIFICATIONS moves to W/23/63 when its own plan is approved.
+**NATS takes priority.** NATS holds **V / 22 / 62 / `H_HK_NATS = 7`**.
+Subscribers holds **W / 23 / 63 / `H_HK_SUBSCRIBERS = 8`**. Neither
+number is in source yet. If Subscribers is ever implemented first, swap
+the handle kind and amend both plans in the same change.
+
+---
+
+## Verified constraints (2026-10-05)
+
+Checked against the tree and `kubectl` in namespace `nats`. These override
+any older sentence in this file.
+
+1. **Letters and slots.** `config.h` comments run A–U. V and W are free.
+   `launch_readiness.c` has 21 `process_subsystem_readiness` calls, ending
+   at MCP. `MAX_SUBSYSTEMS` is 24. NATS is the 22nd registration,
+   Subscribers the 23rd. One slot remains. The readiness writer does not
+   bounds-check the index, so a 25th registration is a buffer overrun,
+   not a clean error.
+2. **Readiness is a boolean.** Disabled matches MCP: `ready = true`, and
+   `launch_nats_subsystem` returns 1 without connecting. A not-ready
+   subsystem is skipped. It does not stop the rest of the server, and it
+   also never starts the retry thread. Unreachable NATS must still be
+   `ready = true`. The status field `degraded` is a metric, not a third
+   readiness value. `ready = false` is only for invalid config (enabled,
+   no servers, bad URL, bad delays, or `TlsEnabled: true`). v1 has no
+   TLS client. Do not connect in plaintext when the operator asked for
+   TLS.
+3. **Sockets.** NATS opens its own TCP connection to port 4222. Do not
+   route it through `src/network/`. Do not connect to 6222. TLS is out of
+   v1. Live servers: `nats://nats.nats.svc.cluster.local:4222`, three
+   replicas, image 2.11.4, no auth, no JetStream. `ClusterId` is the
+   subject prefix (`philement` unless the operator changes it). It is not
+   the NATS server cluster name (`festival`).
+4. **Echo.** A connection receives its own messages unless `CONNECT`
+   sets `no_echo: true`. A second connection does not suppress that.
+   Use one connection and `no_echo: true`. Still compare `instance_id`
+   before applying an invalidation, so a bug in the flag cannot evict
+   twice or loop. Local evict happens in the publisher before the
+   publish returns. Do not wait for the message to come back.
+5. **What is cached.** Invalidate the global query **result** cache
+   (`query_result_cache_*`), not the QTC template catalog.
+   `timeout_seconds` on a template is the query deadline and already
+   works. `queries.collection` is not loaded by bootstrap and is not an
+   invalidation list. v1 has no `InvalidateQTC` column.
+6. **Invalidation v1.** One subject, `cluster.<ClusterId>.cache.invalidate`.
+   Body carries `database` (connection name) and `query_ref` (integer).
+   The receiver looks up that ref's SQL template in the named database's
+   QTC and drops every result-cache entry for that template (all
+   parameter variants). That needs a new
+   `query_result_cache_invalidate_template`. `query_cache_clear` and
+   `query_result_cache_clear` wipe whole caches and must not be the
+   per-ref path. The publisher evicts the same way locally, then
+   publishes. Emission v1 is an explicit C or Lua call. A lost message leaves peers
+   holding the old result until process restart: the result cache has
+   no TTL, and template `timeout_seconds` does not expire it. A
+   declarative list on the query row is a later Helium migration (next
+   file 1386, next QueryRef 156), not something the executor can read
+   today.
+7. **Wildcards.** NATS tokens are `*` (one token) and `>` (the rest).
+   `+` is not a wildcard.
+8. **WebSocket relay.** Add a session list (connect / close) and a
+   `subscribed_events` field on `WebSocketSessionData`. The NATS thread
+   enqueues. The libwebsockets service thread calls `lws_write`. There
+   is no direct `H.ws.broadcast`.
+9. **Lua.** `ScriptingConfig` has no handler-file map. `H.mcp` and
+   `H.mail` are C functions installed on the Lua state, not JSON paths.
+   A `"NATS Handler"` script path is new work, not an existing pattern.
+   `H.nats.broadcast_sync` waits until the frame is written to the
+   socket. It does not wait for a peer ack. Core NATS here is
+   at-most-once. `H.wait` must grow a branch in **both**
+   `H_lua_wait_one` and the multi-handle loop in `H_lua_wait`.
+10. **Presence v1.** `app_state` carries `instance_id`, `state`, and the
+    current WebSocket `active_connections` count if that counter is easy
+    to read. A 5-minute unique-IP tally across REST and WebSocket does
+    not exist. Do not block presence on building one.
+11. **Landing.** The landing table is shutdown order, first entry first.
+    It is not the reverse of launch. Land NATS **before WebSocket**
+    (with Print and Mail Relay), while libwebsockets and the database
+    are still up. Landing only closes the NATS socket and joins NATS
+    threads. It must not call into a subsystem that has already landed.
+    Do not insert NATS after MCP. Comments in `landing_readiness.c` and
+    `landing.c` say "reverse launch order". `land_approved_subsystems`
+    walks the readiness results in table order and skips Registry.
+    `landing_plan.c` `expected_order[]` is only the Go/No-Go log. It
+    already omits MCP, Scripting, and Reporting. Add `SR_NATS` before
+    `SR_PRINT` in that array. Do not rebuild the stale list, and do not
+    look for MCP in it.
+12. **Tests.** Hydrogen web ports and the NATS listen port must differ.
+    Fixture `nats-server` on **5620**. Hydrogen instances on **5621**
+    (disabled), **5622** (connected), **5623** (enabled, servers pointed
+    at nothing on **5628**), **5624** (peer). Unity covers each phase.
+    Phase 10 is the coverage fence, not the first time tests are written.
+13. **Chat dump gap.** `DUMP_CONFIG_SECTION("U")` is missing and
+    `initialize_config_defaults_chat` is not called from the master init
+    (`memset` still zeroes the struct). That is pre-existing. It is not
+    a NATS exit gate.
+14. **Config stores suffixes.** Code builds every subject as
+    `cluster.` + `ClusterId` + `.` + suffix. Do not store
+    `cluster.philement…` in config and also prepend `ClusterId`. There
+    is no `PublishSubjects.ClusterPrefix` field. `QueueGroup`, when set,
+    is the full name sent in `SUB` and is not prefixed again. v1 suffixes
+    are `cache.invalidate`, `instance.app_state`, and optional
+    `jobs.<name>`.
 
 ---
 
@@ -107,9 +223,10 @@ NOTIFICATIONS moves to W/23/63 when its own plan is approved.
 3. **Launch / landing** — dedicated readiness, launch, and landing. Disabled by
    default = clean skip so [`test_17`](/docs/H/tests/TESTING.md) min/max stay
    stable.
-4. **Cache invalidation broadcast** — when a mutating query completes (or a
-   scripted action runs), publish a NATS message; when messages arrive, refresh
-   or clear the relevant in-process cache (query cache, token table, etc.).
+4. **Result-cache invalidation** — an explicit C or Lua call names a
+   database and a QueryRef. The publisher deletes matching result-cache
+   entries, then publishes. Peers delete the same template's entries.
+   The next read misses and runs SQL. A lost message stays stale.
 5. **WebSocket forwarding** — optionally forward a subset of broadcast messages
    to connected WebSocket clients so UIs get live updates.
 6. **Channel coordination** — distinguish cluster-wide subjects from
@@ -118,8 +235,8 @@ NOTIFICATIONS moves to W/23/63 when its own plan is approved.
 
 ## Non-goals
 
-- Implementing the NATS client library in C. We are rolling our own (Option B) — see [NATS Client Implementation](#nats-client-implementation).
-- Auth complexity. This is an internal DOKS cluster — no external exposure. Simple auth only (username/password or none), not full NKEYS/JWT enterprise auth.
+- Linking an upstream NATS C library (`cnats` / `libnats`). The client is ours. See [NATS Client Implementation](#nats-client-implementation).
+- Auth complexity. The live DOKS server has no authorization block. Support username/password or none. Do not implement NKEYS or operator JWT.
 - Building the NATS server itself. The user states they already have NATS running
   in their DOKS cluster.
 - Full schema migrations. NATS is a message bus; it is stateless from the
@@ -136,36 +253,41 @@ NOTIFICATIONS moves to W/23/63 when its own plan is approved.
 
 Rationale:
 
-- No new dependencies (user has implemented mDNS from scratch; prefers no external libs)
-- NATS protocol is text frames over TCP — manageable scope
-- jansson already available for JSON encoding/decoding
-- Network subsystem provides socket/epoll layer — borrow, don't duplicate
-- Full control over reconnect, backoff, and auth behavior
+- No new dependencies
+- Core NATS is a small TCP protocol and is enough for invalidation
+- jansson is already available for CONNECT JSON and message bodies
+- The client owns its sockets. `src/network/` is not a socket or TLS layer
 
-Scope of custom client:
+Scope of the custom client (plaintext v1):
 
-- CONNECT handshake (client info + auth)
-- PUB/SUB/UNSUB frame encoding/decoding
-- MSG delivery with subject matching
-- PING/PONG keepalive
-- Reconnect with exponential backoff
-- TLS support (optional, via existing Network TLS)
+- Read the server `INFO` line. Honour `auth_required`, `tls_required`, and `max_payload`.
+- Send `CONNECT` with `verbose:false`, `pedantic:true`, `protocol:1`, `lang`, `version`, and `no_echo:true`. Omit `user` / `pass` when the config credentials are empty. The live server has no auth and no TLS; a client that sends an empty user can still be rejected by a future server, so omit the fields.
+- `PUB` / `SUB` / `UNSUB` / `MSG`. Queue-group subscribe is `SUB <subject> <queue-group> <sid>`.
+- `MSG` payloads are raw bytes of the declared length, not a text line. One TCP read can contain several operations or a split body. Parse with a byte buffer.
+- Answer server `PING` with `PONG` on the reader thread. The server drops a client that does not.
+- Reconnect with the cascading delays already locked. After every reconnect, re-send every `SUB` (the server does not remember them), including queue groups.
+- One connection per instance for publish and subscribe. `no_echo:true` stops that connection from receiving its own publishes. It does nothing for a second connection.
 
-Out of scope for the custom client:
+Out of scope for v1:
 
-- NKEYS/JWT enterprise auth (internal cluster, simple auth sufficient)
-- JetStream (not needed for invalidation signals)
-- TLS certificate pinning (use system CA store)
+- NKEYS / operator JWT
+- JetStream (the DOKS config does not enable it)
+- TLS. `nats.conf` is plaintext on 4222. There is no shared outbound TLS helper to borrow. A later phase can add an OpenSSL client on the same socket if `INFO` reports `tls_required`. Do not connect to the cluster port **6222**
+- A second "connection pool". One live connection plus the reconnect loop is the v1 model
 
-The client lives in `src/nats/nats_client.c` with `nats_client.h` public API:
+Client files:
 
-- `nats_client_connect(config)` → connection handle
-- `nats_client_publish(conn, subject, payload)` → publish
-- `nats_client_subscribe(conn, subject, callback, user_data)` → subscribe
-- `nats_client_disconnect(conn)` → graceful shutdown
-- `nats_client_ping(conn)` → keepalive
+- `src/nats/nats_client.c` and `nats_client.h` — sockets, protocol, reconnect
+- `src/config/config_nats.c` — JSON parsing only. Do **not** also add `src/nats/nats_config.c`
 
-The connection pool and subscription table are in `nats_internal.h`.
+Public client operations (names can move, the split cannot):
+
+- connect, publish, subscribe (subject + optional queue group), unsubscribe, disconnect
+- a function-pointer seam so Unity never opens a real socket
+
+Split the reader, writer, and frame parser across files before any one file reaches 1000 lines (Test 99). No `static` functions in `src/`.
+
+Subscription state (sid, subject, queue group, callback) lives in `nats_internal.h`, as file-scope state or heap structures. Not a connection pool.
 
 ---
 
@@ -189,38 +311,36 @@ NATS is a cross-cutting backchannel. It launches **after** the subsystems it
 coordinates (Database cache, API, WebSocket, Scripting) are initialized, so that
 invalidation hooks are ready when the first mutating request hits.
 
-**Explicit Network dependency.** NATS opens TCP (optionally TLS) connections to
-NATS servers, which the **`Network`** subsystem provides. Concrete ordering from
-  `src/launch/launch_readiness.c` (launch order) and
-  `src/landing/landing_readiness.c` (landing order, adjusted per subsystem lifecycle, not strictly reversed):
+NATS does not use the Network subsystem's API. It still launches after
+Database, API, and WebSocket so those objects exist before the first
+publish. Launch position is **22**, immediately after MCP.
 
-- Launch 4 = `Network`; launch 21 = MCP; NATS = launch 22 (last). So NATS
-  starts **after Network** — the prerequisite is guaranteed.
-- Landing table (`landing_readiness.c`) generally follows reverse-launch order but
-  has been adjusted as needed per subsystem lifecycle. NATS lands **before Network**
-  (which lands 12th from the end) — see the table insertion point below for exact placement.
-- **Non-blocking startup.** If NATS is enabled but the NATS server is unreachable,
-  the server starts anyway. The NATS subsystem enters **degraded** mode and
-  retries with a cascading backoff: 30s, 60s, 120s, 240s, 480s, then stays at
-  480s indefinitely. The readiness check returns "degraded" (not No-Go). If NATS
-  becomes available after a retry period, the subsystem transitions to healthy
-  and updates its status in the subsystem registry. Nothing in Hydrogen depends
-  on NATS — if it never becomes available, the server continues running without
-  it.
-- The readiness clean-skip when `Enabled: false` must run *after* Network so
-  the connect attempt (had it been enabled) would have a working socket layer.
+- **Disabled.** Same shape as MCP: `ready = true`, launch returns 1, no
+  socket. Test 17 min keeps working when the section is absent.
+- **Enabled but unreachable.** `ready = true`. Launch starts the retry
+  thread and returns 1 even when the first connect fails. Status metric
+  `state` is `degraded` until a connect succeeds, then `up`. Delays are
+  30s, 60s, 120s, 240s, 480s, then 480s forever. A `ready = false` here
+  would skip launch, and the retry thread would never run.
+- **Enabled but invalid.** `ready = false`. The subsystem is not launched.
+  The rest of the server still starts. Invalid means no servers, a bad
+  URL, bad delays, or `TlsEnabled: true`. v1 has no TLS client, so a
+  true flag must not fall through to a plaintext connect.
+- **Landing.** Insert `{SR_NATS, check_nats_landing_readiness}` at the
+  top of the landing table, before Print, so the bridge stops while
+  WebSocket and Database are still up. Do not insert it after MCP.
 
 | Must update | File | What |
 | --- | --- | --- |
 | `SR_NATS` constant | `src/globals.h` | `#define SR_NATS "NATS"` |
-| `nats_system_shutdown` | `src/state.h` | `extern volatile sig_atomic_t` |
-| `nats_threads` | `src/state.h` + `src/threads/threads.h` | `ServiceThreads` extern + definition in `state.c` |
+| `nats_system_shutdown` | `src/state/state.h` | `extern volatile sig_atomic_t` |
+| `nats_threads` | `src/state/state.h` + `src/threads/threads.h` | `ServiceThreads` extern + definition in `state.c` |
 | Readiness check | `src/launch/launch.h` | `check_nats_launch_readiness(void)` |
 | Launch dispatch | `src/launch/launch_readiness.c` | Add `process_subsystem_readiness(..., SR_NATS, check_nats_launch_readiness())` after MCP |
 | Launch function | `src/launch/launch.h` | `launch_nats_subsystem(void)` |
 | Launch dispatch | `src/launch/launch.c` | Add `strcmp(subsystem, SR_NATS) == 0` branch in `launch_approved_subsystems()` |
 | Landing readiness | `src/landing/landing.h` | `check_nats_landing_readiness(void)` |
-| Landing readiness table | `src/landing/landing_readiness.c` | Add `{SR_NATS, check_nats_landing_readiness}` to the table (reverse position: after MCP, before Threads) |
+| Landing readiness table | `src/landing/landing_readiness.c` | Insert `{SR_NATS, check_nats_landing_readiness}` **before** `{SR_PRINT, ...}`, not after MCP |
 | Landing dispatch | `src/landing/landing.c` | Add `SR_NATS → land_nats_subsystem` in `get_landing_function()` |
 | Landing function | `src/landing/landing.h` | `land_nats_subsystem(void)` |
 | Status metrics | `src/status/status_core.h` | `ServiceMetrics nats;` in `SystemMetrics` + union arm |
@@ -237,17 +357,16 @@ NATS servers, which the **`Network`** subsystem provides. Concrete ordering from
 ```text
 src/nats/
   nats.h                    public API: nats_init, nats_shutdown, nats_broadcast, nats_subscribe, status snapshot (state: healthy|degraded)
-  nats_internal.h           connection pool, subscription table, shutdown flag, peer registry
-  nats.c                    init / shutdown / metrics snapshot / main loop (retry scheduler, state transitions healthy↔degraded)
-  nats_client.c             custom NATS client: connect, publish, subscribe, reconnect, ping/pong, TLS
+  nats_internal.h           one connection, subscription table, shutdown flag, peer registry
+  nats.c                    init / shutdown / metrics snapshot / retry scheduler (state up|degraded)
+  nats_client.c             plaintext client: INFO, CONNECT, PUB, SUB, MSG, PING/PONG, reconnect
   nats_client.h             public client API
-  nats_config.c             NATS connection lifecycle (connect/disconnect/reconnect)
   nats_publish.c            publish path (broadcast invalidation events)
   nats_subscribe.c          subscribe path (receive and dispatch invalidation events)
   nats_dispatch.c           local dispatch: invalidate caches, refresh queries, etc.
   nats_ws_bridge.c          forward selected NATS messages to WebSocket clients via ws_broadcast_json()
   nats_queue.c              internal queue for outbound publishes (bounded)
-   nats_reconnect.c          cascading retry: 30s, 60s, 120s, 240s, 480s, then steady 480s
+  nats_reconnect.c          cascading retry: 30s, 60s, 120s, 240s, 480s, then steady 480s
   nats_registry.c           in-memory peer registry (presence/heartbeat tracking)
   nats_subject.c            subject name validation + assembly helpers
 
@@ -270,26 +389,28 @@ state only.
 
 NATS uses the term **subject** for what a message is published to. The user's
 question "do we call them channels?" — in NATS terminology the answer is
-"subject." We will use "subject" in code/config and document the mapping
-("NATS subjects are the logical channels"). In the config, we'll call the
-array **Subjects** to match NATS conventions, but document clearly.
+"subject." Code and docs say subject. The config array is `Subscriptions`.
+Each entry's `Subject` is a suffix. The client prefixes
+`cluster.<ClusterId>.`. There is no second array named `Subjects` or
+`QueueSubscriptions`.
 
 ### Subject naming convention
 
-We propose a hierarchical subject scheme using `.` as a delimiter (NATS token):
+Subjects are built as `cluster.<ClusterId>.<suffix>`. The suffix is one
+or more dot-separated tokens. Do not hard-code `philement` in C; read
+`ClusterId`. Wildcards, if a subscription needs them, are `*` (one token)
+and `>` (the remainder). `+` is not a wildcard.
 
-```text
-cluster.<cluster_id>.<domain>.action.<resource>
-```
-
-Examples:
+v1 subjects:
 
 | Subject | Meaning |
 | --- | --- |
-| `cluster.philement.query.invalidate.ref.<ref>` | Specific QueryRef (e.g. `127`) cache entry stale; evict + re-fetch |
-| `cluster.philement.order.updated` | An order was modified |
-| `cluster.philement.order.updated.<order_id>` | Specific order changed (instance-group targeted) |
-| `cluster.<cluster_id>.instance.<instance_id>.status` | Per-instance status beacon (for health/coordination) |
+| `cluster.<ClusterId>.cache.invalidate` | Result-cache invalidation. `query_ref` and `database` are in the JSON body, not in the subject |
+| `cluster.<ClusterId>.instance.app_state` | Presence. One subject for every instance |
+| `cluster.<ClusterId>.jobs.<name>` | Optional queue-group work. Not required for invalidation |
+
+`order.updated` in examples elsewhere is a stand-in event name for the
+WebSocket relay. There is no order subsystem to hook.
 
 ### Subscription model
 
@@ -315,16 +436,20 @@ lists the subjects to listen on. We distinguish:
 ### What we send and receive
 
 Messages are **JSON** (consistent with the rest of Hydrogen's API and config,
-which uses jansson). Each message has a common envelope:
+which uses jansson). Each message has a common envelope. `subject` here
+is the on-wire name after the client prefixes `cluster.<ClusterId>.`.
+The example assumes `ClusterId` is `philement`. Config does not store
+that full string.
 
 ```json
 {
   "event": "cache.invalidate_by_ref",
-  "subject": "cluster.philement.query.invalidate.ref.127",
-  "timestamp": "2026-10-04T00:00:00Z",
-  "source": "hydrogen-01.philement.svc.cluster.local",
+  "subject": "cluster.philement.cache.invalidate",
+  "timestamp": "2026-10-05T00:00:00Z",
+  "source": "hydrogen-01",
   "instance_id": "hydrogen-01",
   "data": {
+    "database": "Acuranzo",
     "query_ref": 127,
     "reason": "mutation"
   }
@@ -333,59 +458,59 @@ which uses jansson). Each message has a common envelope:
 
 ### Message types (events)
 
-| Event | When emitted | When received | Purpose |
-| --- | --- | --- | --- |
-| `cache.invalidate_by_ref` | A specific QueryRef's result cache is stale; emitted per-QueryRef from the `InvalidateQTC` list in the query's collection JSON | `data.query_ref` → evict that cache entry, then re-fetch from DB | Targeted query cache invalidation (QTC refresh) |
-| `state.changed` | Any scripted or API state mutation | `data.resource` + `data.id` → mark stale | General state-change notification |
-| `order.updated` | An order record changes | `data.order_id` → refresh order cache | Example domain event |
-| `instance.heartbeat` | Periodic (configurable interval) | Health/status awareness | Peer liveness, optional |
-| `app_state` | Instance publishes state: "Starting", "Alive", "Stopping" | Peers track active instances via heartbeat timeout; "Alive" payload carries active connection count + unique active IPs | Singleton detection, peer count, cluster-wide active client tally |
+Only `cache.invalidate_by_ref` and `app_state` are v1. The other names
+are reserved so later work does not invent a second vocabulary. Do not
+subscribe to them in v1. `instance.heartbeat` is not a subject. Presence
+is `app_state`.
+
+| Event | v1 | When emitted | When received | Purpose |
+| --- | --- | --- | --- | --- |
+| `cache.invalidate_by_ref` | yes | Explicit C or Lua call. One message per QueryRef. Subject suffix `cache.invalidate` | Look up `data.query_ref` in the QTC for `data.database`, then drop result-cache entries for that SQL template | Result-cache invalidation. Next read misses and runs SQL |
+| `app_state` | yes | Instance publishes `Starting`, `Alive`, or `Stopping` on suffix `instance.app_state` | Peers track liveness from the stale window. `Alive` may include the current WebSocket connection count | Singleton detection and peer count. Unique-IP tallies are not v1 |
+| `state.changed` | no | Reserved | `data.resource` + `data.id` | Later state-change notification |
+| `order.updated` | no | Reserved stand-in for the WebSocket relay allowlist | — | There is no order subsystem |
 
 ### Cache invalidation hooks (the core use case)
 
-The plan is to hook into two emission points:
+v1 has two emitters. Neither reads `queries.collection`.
 
-1. **Query execution completion** — when a Conduit query (or any DB operation)
-     that is registered as "mutating" succeeds, broadcast a
-     `cache.invalidate_by_ref` message. Which queries are
-     "mutating" can be determined by:
-     - Query metadata flag in the SQL template (e.g., a comment `-- mutating`
-       or a QueryRef attribute)
-     - A config table in Helium listing "watch these QueryRefs"
-     - The scripting layer explicitly calling `H.nats.broadcast(...)`
-     - **QTC invalidation list**: the query's `collection` JSON may contain
-       `"InvalidateQTC":[14,15]`. When the query executes, Hydrogen broadcasts
-       one `cache.invalidate_by_ref` message per QueryRef in the list, each
-       on its own subject (`cluster.<cluster_id>.query.invalidate.ref.<ref>`).
-       This is the primary mechanism for cross-instance cache consistency.
+1. **Explicit C call** after a successful mutation, naming the database
+   connection and one or more QueryRefs whose **results** are now stale.
+   Each ref becomes one message on
+   `cluster.<ClusterId>.cache.invalidate`.
+2. **Lua** `H.nats.broadcast("cache.invalidate_by_ref", data)` with the
+   same `database` and `query_ref` fields. See [Lua Host API](#lua-host-api).
 
-2. **Scripting layer** — Lua scripts can call `H.nats.broadcast(event, data)`
-      to publish arbitrary events (not cache-invalidation-specific), or
-      invalidation events via `H.nats.broadcast("cache.invalidate_by_ref", ...)`.
-      See [Lua Host API](#lua-host-api) below.
+A declarative list on the query row (working name `invalidate_refs`) can
+come later. It needs a Helium column the bootstrap SELECT actually loads,
+plus a field on `QueryCacheEntry`. Do not store it in `collection`, and
+do not parse SQL comments for it.
 
-Receiving side: when a `cache.invalidate_by_ref` message
-arrives, `nats_dispatch.c` calls into the existing cache management:
+On receipt, `nats_dispatch.c`:
 
-- `query_cache_lookup` / `query_cache_clear` in `src/database/database_cache.h`
-  to evict the stale `QueryCacheEntry`.
+- ignores the message when `instance_id` is this process (local evict
+  already happened)
+- loads the template with `query_cache_lookup` on that database's QTC
+- calls a new `query_result_cache_invalidate_template(database, sql)`
+- does not call `query_cache_clear` or `query_result_cache_clear`
 
-**QTC refresh semantics**: "Invalidate" means "refresh" — the cache entry is
-evicted and the next lookup re-fetches from the database. The existing
-`timeout_seconds` field in `QueryCacheEntry` was never implemented for
-auto-refresh; this NATS mechanism replaces that missing timeout behavior.
-If a timeout is later implemented, it would serve as a safety net (catch
-missed invalidations) rather than the primary refresh path.
+"Invalidate" means delete matching result-cache entries. The next lookup
+misses and runs the SQL. It does not mean write a fresh result, and it
+does not mean drop the SQL template. The publisher does the same delete
+locally before `PUB`, then publishes for peers. Parameter variants of
+that template all go. That is coarser than one parameter set, and it
+matches a list of QueryRefs.
 
-**Originating instance behavior**: When an instance executes a mutating
-query with `InvalidateQTC:[14,15]`, it broadcasts invalidation messages
-for refs 14, 15 AND updates its own cache immediately (optimistic update).
-It does NOT wait for the round-trip message to come back, because
-self-suppression means it won't receive its own messages anyway, and
-there's no guarantee the round-trip will complete. The broadcast is for
-peer instances only.
+The prepared-statement cache is a different structure. v1 does not
+touch it. Template text changes when the process reloads the QTC.
 
-**App state broadcasting**: Each instance publishes `app_state` with its current state ("Starting", "Alive", "Stopping"). The "Alive" payload includes `active_connections` (count of unique active IPs in the last 5 minutes, covering REST API clients and active WebSocket connections). Instances subscribe to `app_state` and maintain a peer registry: an instance is considered active if it has published an "Alive" state within `HeartbeatIntervalSeconds * 3`. The cluster-wide active instance count and active client count are derived from the aggregated "Alive" payloads. This replaces separate `app.startup`/`app.shutdown` subjects — one-shot events are folded into the state machine, and crash handling is resolved via heartbeat-stale detection (an instance that stops publishing "Alive" is considered dead after the stale window).
+**App state.** Each instance publishes `app_state` on
+`cluster.<ClusterId>.instance.app_state` with `instance_id` and `state`
+(`Starting`, `Alive`, `Stopping`). Peers drop an instance that has not
+published `Alive` within `StaleAfterSeconds` (default three heartbeat
+intervals). A crashed process simply stops publishing. v1 may attach
+`websocket_connections` from the existing counter. It does not compute
+unique client IPs.
 
 ---
 
@@ -395,9 +520,10 @@ peer instances only.
 
 Config provides:
 
-- `NATS.ClusterId` — identifies the DOKS cluster / deployment group.
-  Subjects are namespaced by cluster (`cluster.<cluster_id>....`). Instances
-  in different clusters never cross-talk.
+- `NATS.ClusterId` — subject prefix only (`cluster.<ClusterId>.…`).
+  Default `philement`. This is not the NATS server cluster name
+  (`festival` in the live `nats.conf`). Two Hydrogen deployments that
+  must not hear each other use different `ClusterId` values.
 - `NATS.InstanceId` — defaults to hostname (K8s pod name). Used in message
   `source`/`instance_id` and for instance-targeted subjects. If not set,
   derive from `gethostname()`.
@@ -422,14 +548,11 @@ Coordination strategies:
    the subscription is no longer needed. This lets individual instances
    express interest in specific resource streams.
 
-4. **Suppress self-receipt** — NATS does not deliver a message back to the
-    connection that published it on the same subject within the same
-    subscription (standard NATS behavior with separate publish/subscribe
-    connections). The custom client uses separate connections for publish
-    and subscribe, so self-suppression is handled by NATS itself. The
-    handler still checks `message.source == own instance_id` as a
-    safety net (defense in depth) for edge cases where the library might
-    echo back.
+4. **Suppress self-receipt** — set `no_echo: true` on the one connection
+   that both publishes and subscribes. Also drop any message whose
+   `instance_id` equals this process. Do not open a second connection
+   to try to hide publishes; the subscriber connection would still
+   receive them.
 
 ### Queue groups for cluster-wide single-processing tasks
 
@@ -437,13 +560,15 @@ For events that should trigger **one** action per cluster (not N), use a NATS
 queue group. The config specifies queue-group subscriptions:
 
 ```json
-"QueueSubscriptions": [
-  {
-    "Subject": "cluster.philement.jobs.refresh-all",
-    "QueueGroup": "philement-refresher"
-  }
-]
+{
+  "Subject": "jobs.refresh-all",
+  "Type": "queue-group",
+  "QueueGroup": "philement-refresher"
+}
 ```
+
+That object is one element of `Subscriptions`. `Subject` is the suffix.
+`QueueGroup` is the full name sent in `SUB`.
 
 Each instance joins the same queue group; NATS load-balances each message to
 exactly one member.
@@ -464,31 +589,29 @@ NATS messages can be mirrored down to connected WebSocket clients.
   types the client has declared interest in at connection time. A client
   with no access to orders would not include `order.updated` in its list,
   so it never receives order information of any kind.
-- A dedicated bridge thread (`nats_ws_bridge.c`) subscribes to the
-  configured subjects and, for each message, calls the new
-  `ws_broadcast_json(event_type, json_payload)` helper. The helper
-  iterates all connected libwebsockets sessions on the chat vhost and
-  writes the JSON text frame **only to sessions whose `subscribed_events`
-  list contains `event_type`**.
-- Only **authenticated** WebSocket sessions receive relayed messages (the
-  existing `WebSocketSessionData.authenticated` flag is checked).
-- **New function required**: `ws_broadcast_json(event_type, payload)` in
-  `websocket_server_message.c/h` iterates all connected libwebsockets
-  sessions, filters by `subscribed_events` membership, and writes the
-  JSON payload as a text frame. This does not exist yet — the current
-  API (`ws_write_json_response`, `ws_write_raw_data`) targets a single
-  `wsi`. The bridge thread calls `ws_broadcast_json()` rather than
-  sending to individual sessions.
-- **No direct Lua→WS path.** Lua scripts push to WebSocket clients only
-  by publishing a NATS event that is relayed via `WebSocketRelay`. A
-  direct `H.ws.broadcast()` API is not in scope — the Scripting config
-  linkage (`"NATS Handler":"NATS/intake_handler.lua"`) is the Lua→NATS
-  path, and NATS→WS relay handles the rest.
+- Hydrogen does not keep a list of `wsi`s. Phase 6 adds one: append in
+  the established callback, remove in the close callback, mutex held.
+  `subscribed_events` is a new field on `WebSocketSessionData`. The
+  client sends it in an application message after auth. There is no
+  such message today.
+- The NATS thread only enqueues `(event, json)` onto sessions whose
+  `authenticated` flag is set and whose list contains `event`. The
+  libwebsockets service thread performs `lws_write` from
+  `LWS_CALLBACK_SERVER_WRITEABLE`. Calling `lws_write` from the NATS
+  thread is a defect, not an implementation shortcut.
+- The vhost name is `"hydrogen"` on `websocket.port`. There is no second
+  chat vhost to iterate.
+- Lua reaches a browser only by publishing an event that
+  `WebSocketRelay` allows. There is no `H.ws.broadcast`. There is also
+  no scripting config key that maps a subject to a Lua file; see
+  [Lua Host API](#lua-host-api).
 
 ### Message format to clients
 
 The same JSON envelope is sent to WebSocket clients. A `type` field distinguishes
-NATS-relayed messages from native WebSocket protocol messages:
+NATS-relayed messages from native WebSocket protocol messages. `order.updated`
+is a stand-in allowlist name. There is no order subsystem. `subject` is
+the on-wire name.
 
 ```json
 {
@@ -509,26 +632,23 @@ for autoscaling and load-balancing decisions.
 
 ### Presence Design
 
-- Each instance publishes `app_state` on subject `cluster.<cluster_id>.app_state` with payload:
+- Each instance publishes `app_state` on subject `cluster.<cluster_id>.instance.app_state` with payload:
   - `instance_id`
   - `state`: one of `"Starting"`, `"Alive"`, `"Stopping"`
-  - When `state == "Alive"`: `active_connections` (count of unique active IPs in last 5 minutes, covering REST API clients and active WebSocket connections)
-- Instances subscribe to `cluster.<cluster_id>.app_state` to track all peers.
+  - When `state == "Alive"`: optional `websocket_connections`, copied from the existing WebSocket counter. Not a unique-IP window.
+- Instances subscribe to `cluster.<cluster_id>.instance.app_state` to track all peers.
 - An in-memory registry (`nats_registry.c`) maintains the last-seen timestamp
   and the latest `app_state` payload for each peer. Peers are considered stale after
   `HeartbeatIntervalSeconds * 3` with no "Alive" update (configurable via `Presence.StaleAfterSeconds`).
 - `H.nats.instances()` Lua function and a `GET /api/nats/instances` endpoint
   (if admin API is added) return the current peer list and singleton status.
-- **Singleton detection**: if no other instances are seen as "Alive" for one full
-  stale-window after startup, the instance can optionally signal "sole operator"
-  — useful for background tasks that should run only once in single-instance
-  deployments. This does not gate cache invalidation (that is handled by the
-  wildcard subject logic regardless of instance count).
-- **Active client tally**: the "Alive" payload's `active_connections` field
-  carries the count of unique active IPs in the last 5 minutes. Since all
-  instances know the heartbeat timeout, they can compute both the active
-  instance count and the cluster-wide active client count from the aggregated
-  "Alive" payloads. No separate tally mechanism is needed.
+- **Singleton detection**: if no other instance is `Alive` for one full
+  stale window after startup, `H.nats.instances()` reports a singleton.
+  Cache invalidation does not change based on that. Every peer still
+  subscribes to `cache.invalidate`.
+- **Client counts**: summing `websocket_connections` across `Alive` peers
+  is allowed. Do not invent a 5-minute unique-IP set in v1. Nothing in
+  the server records REST client IPs that way today.
 
 ### Config additions
 
@@ -558,42 +678,48 @@ Following the pattern where subsystems expose host API functions to Lua scripts
 | Function | Purpose |
 | --- | --- |
 | `H.nats.broadcast(event, data)` | Publish a JSON event to a cluster-wide subject |
-| `H.nats.broadcast_sync(event, data)` | Publish and wait for confirmation (optional) |
+| `H.nats.broadcast_sync(event, data)` | Publish and return when the bytes are written to the socket. No peer ack |
 | `H.nats.subscribe(subject, handler)` | Subscribe to a NATS subject; handler receives parsed JSON envelope (optional — config-driven is the normal path) |
 | `H.nats.unsubscribe(subject)` | Remove a runtime subscription |
 | `H.nats.status()` | Return NATS connectivity / message counters |
 | `H.nats.instances()` | Return live peer instances from app_state registry |
 
-**Subscription is config-driven by default.** The Scripting subsystem maps NATS subjects to Lua handler files via the scripting config:
+Config subscriptions are the normal path: the C dispatcher handles
+`cache.invalidate` and `app_state`. Lua handlers for arbitrary subjects
+are optional and are new code. `ScriptingConfig` has source roots,
+workers, and sandbox flags. It has no `Handlers` map. `H.mcp` and
+`H.mail` are C functions registered in the Lua state.
 
-```json
-"Scripting": {
-  "Handlers": {
-    "NATS": "NATS/intake_handler.lua"
-  }
-}
-```
+`H.nats.subscribe` / `H.nats.unsubscribe` are the optional runtime path.
+Handle kind is `H_HK_NATS = 7` (the current last value is
+`H_HK_MCP = 6`). Wire it in both wait functions. Subscribers, if it
+lands second, uses `8`.
 
-The Scripting subsystem loads the Lua handler and invokes it when a matching NATS message arrives. The handler receives the parsed JSON envelope. This matches the existing scripting config pattern (e.g., `H.mcp`, `H.mail`).
-
-`H.nats.subscribe()` / `H.nats.unsubscribe()` are available as an optional Lua API for runtime subscriptions that the config cannot anticipate (e.g., dynamic subject interest per instance). The scripting handle kind would need a new constant in `src/scripting/scripting_handle.h` (next free slot, analogous to `H_HK_MCP = 6`).
+`H.wait` today special-cases HTTP, LLM, mail, notify, and MCP in
+`H_lua_wait_one` and again in the multi-handle loop. A new kind that
+is added in only one of those places is treated as a database query
+and fails with "no pending query".
 
 ---
 
 ## Updated: Open Question #5 — Heartbeat necessity
 
-Now a **desired feature**: instance presence/group membership is required for
-autoscaling awareness and singleton detection. The `instance.heartbeat` subject
-is needed. K8s liveness probes cover *crash* detection but not *peer count* —
-two Hydrogen pods running means cache invalidation must fan out to both, and a
-background job should know it has a peer to avoid duplicate work.
+Presence is required for peer count and singleton detection. The subject
+suffix is `instance.app_state`, not `instance.heartbeat`. K8s liveness
+probes cover crash detection and do not tell a pod how many peers are
+up. Two Hydrogen pods mean cache invalidation must reach both, and a
+queue-group job should be able to see that it has a peer.
 
 ## Config Sketch
+
+`Subject` values below are suffixes. The client publishes and subscribes
+on `cluster.<ClusterId>.<suffix>`. Nested `Enabled` flags match the
+struct defaults. `StaleAfterSeconds: 0` means three heartbeat intervals.
 
 ```json
 "NATS": {
   "Enabled": false,
-  "Servers": ["nats://hydrogen-nats:4222"],
+  "Servers": ["nats://nats.nats.svc.cluster.local:4222"],
   "ClusterId": "philement",
   "InstanceId": "",
   "Group": "",
@@ -602,35 +728,32 @@ background job should know it has a peer to avoid duplicate work.
   "TlsEnabled": false,
   "TlsCaCert": "",
   "ConnectionTimeoutSeconds": 10,
-   "Reconnect": {
-     "MaxRetries": -1,
-     "Delays": [30, 60, 120, 240, 480],
-     "SteadyDelaySeconds": 480
-   },
-  "PublishSubjects": {
-    "ClusterPrefix": "cluster.philement"
+  "Reconnect": {
+    "MaxRetries": -1,
+    "Delays": [30, 60, 120, 240, 480],
+    "SteadyDelaySeconds": 480
   },
   "Subscriptions": [
     {
-      "Subject": "cluster.philement.query.invalidate.ref.+",
+      "Subject": "cache.invalidate",
       "Type": "cluster-wide"
     },
     {
-      "Subject": "cluster.philement.app_state",
+      "Subject": "instance.app_state",
       "Type": "cluster-wide"
     },
     {
-      "Subject": "cluster.philement.jobs.refresh-all",
+      "Subject": "jobs.refresh-all",
       "Type": "queue-group",
       "QueueGroup": "philement-refresh"
     }
   ],
   "WebSocketRelay": {
-    "Enabled": true,
+    "Enabled": false,
     "Events": ["order.updated"]
   },
   "Presence": {
-    "Enabled": true,
+    "Enabled": false,
     "HeartbeatIntervalSeconds": 60,
     "StaleAfterSeconds": 0,
     "ReportConnections": true
@@ -652,17 +775,18 @@ background job should know it has a peer to avoid duplicate work.
 | `InstanceId` | string | "" | Defaults to hostname |
 | `Group` | string | "" | Optional instance group |
 | `Username` / `Password` | string | null | Auth creds (env-injected) |
-| `TlsEnabled` | bool | false | Use TLS for NATS connection |
+| `TlsEnabled` | bool | false | v1 rejects `true` (`ready = false`). The field is reserved so a later TLS phase does not rename config. Do not connect in plaintext when it is true |
 | `ConnectionTimeoutSeconds` | int | 10 | Connect timeout |
 | `Reconnect.MaxRetries` | int | -1 (unlimited) | -1 = forever |
 | `Reconnect.Delays` | int[] | [30, 60, 120, 240, 480] | Cascading retry delays in seconds; after the last delay, stay at `SteadyDelaySeconds` |
 | `Reconnect.SteadyDelaySeconds` | int | 480 | Retry interval after all cascading delays are exhausted |
-| `Subscriptions` | array | [] | Subjects to listen on (see Channel Model). Includes `query.invalidate.ref.+` wildcard for per-QueryRef invalidation. |
+| `Subscriptions` | array | [] | One array. `Subject` is a suffix (`cache.invalidate`, `instance.app_state`, optional `jobs.<name>`). Code prefixes `cluster.<ClusterId>.`. Do not add `PublishSubjects.ClusterPrefix` or a second `QueueSubscriptions` key |
 | `WebSocketRelay` | object | `{Enabled: false}` | Forward events to WS clients; `Events` is the server-side allowlist; per-client `subscribed_events` set at WS connection time filters which clients receive each event |
 | `Presence` | object | `{Enabled: false}` | Instance presence/heartbeat registry (see Presence section) |
 | `Presence.HeartbeatIntervalSeconds` | int | 60 | App_state publish interval (how often "Alive" is re-published) |
+| `Presence.StaleAfterSeconds` | int | 0 | `0` means three heartbeat intervals. A positive value is the window in seconds |
 | `Test` | object | test seam flags | For blackbox/Unity testing |
-| **Scripting** | object | — | Lua handler linkage: `"NATS Handler":"NATS/intake_handler.lua"` maps NATS subjects to Lua handler files (see [Lua Host API](#lua-host-api)) |
+| Scripting | — | — | No new `Scripting.Handlers` key in v1. Cache and presence are C dispatch. Optional `H.nats.subscribe` is a later phase |
 
 ---
 
@@ -694,14 +818,16 @@ were skipped. This section lists every integration point.
 - `landing.h` — declarations
 - `landing.c` — `get_landing_function()` dispatch
 - `landing_readiness.c` — table entry
-- `state.h` — `nats_system_shutdown` shutdown flag extern
-- `state.c` — `nats_system_shutdown` definition (or in `nats.c`)
-- `threads.h` / `state.c` — `ServiceThreads nats_threads` extern + definition
+- `src/state/state.h` — `nats_system_shutdown` shutdown flag extern
+- `src/state/state.c` — `nats_system_shutdown` definition (or in `nats.c`)
+- `src/threads/threads.h` / `src/state/state.c` — `ServiceThreads nats_threads` extern + definition
 - Dependencies: Registry + Network always; Database when Enabled (cache hooks); WebSocket when WS relay enabled
   - `nats_registry.c` — peer registry for app_state tracking (no extra dependency)
   - `nats_subject.c` — subject validation helpers (no extra dependency)
 
-`MAX_SUBSYSTEMS` (24) stays as-is (22nd subsystem fits).
+`MAX_SUBSYSTEMS` (24) stays as-is. NATS is registration 22 of 24.
+Subscribers is planned as 23. One slot remains. The readiness writer
+does not bounds-check the index.
 
 ### API / Swagger / prefix (if admin API is needed)
 
@@ -713,8 +839,10 @@ were skipped. This section lists every integration point.
 
 ### Status / observability
 
-- `NATSConfig` counters in `status_core.h` `ServiceMetrics` union + `SystemMetrics`
-  (include peer count, reconnect count, messages published/subscribed)
+- `status_core.h` — a `ServiceMetrics nats` member of `SystemMetrics` and
+  a `specific.nats` union arm, matching MCP (member and arm, not one of
+  them). Counters include peer count, reconnect count, and messages
+  published and received. `state` is `degraded` or `up`
 - `GET /api/nats/status` (if API is added) or counters in `/api/system/info`
 - `GET /api/nats/instances` (if presence enabled) — peer list + singleton status
 - `log_this(SR_NATS, …)` — `num_args` matches `%` count
@@ -723,11 +851,11 @@ were skipped. This section lists every integration point.
 ### Scripting
 
 - `H.nats.broadcast` / `broadcast_sync` / `subscribe` / `unsubscribe` / `status` / `instances`
-- Scripting config linkage: `"NATS Handler":"NATS/intake_handler.lua"` — Scripting subsystem loads the Lua handler and invokes it on matching NATS messages (primary subscription path)
-- `H.nats.subscribe()` / `H.nats.unsubscribe()` — optional runtime subscription API for dynamic subject interest
+- No `Scripting.Handlers` map in v1. C dispatch owns `cache.invalidate` and `app_state`
+- `H.nats.subscribe()` / `H.nats.unsubscribe()` — optional, and new. Not an existing scripting feature
 - No `H.ws.broadcast()` — WebSocket push from Lua goes through NATS relay only
 - Handle kind constant in `src/scripting/scripting_handle.h`
-- `lua_api.md` documentation for all `H.nats.*` functions and the Scripting config linkage pattern
+- `lua_api.md` for `H.nats.*`. Document that `broadcast_sync` means "bytes hit the socket"
 
 ### Helium
 
@@ -742,12 +870,15 @@ were skipped. This section lists every integration point.
 - One test file per function, `<source_test_function>.c` naming
   (see [`TESTING_UNITY.md`](/docs/H/tests/TESTING_UNITY.md) for orphan-detection
   and CMake basename-uniqueness rules)
-- `extras/natsval` — a local NATS test server mock or wrapper (analogous to
-  `extras/pushval`, `extras/mailval`) if a real `nats-server` container is
-  unavailable in CI. Alternatively, a lightweight `nats-server -D` dev-mode
-  process started by the test script.
+- Prefer a real `nats-server` on port 5620, started by the test script,
+  with no credentials. It is not on `PATH` on this workstation
+  (2026-10-05). Phase 11 installs or locates it. Add `extras/natsval`
+  only if that binary is missing in CI. Do not invent it before the
+  blackbox phase needs it.
 - `tests/test_62_nats.sh` + `docs/H/tests/test_62_nats.md` + 3 config files
-- Ports: `562x` scheme (Test 62 → 5620–5629); NATS server fixture on 5620
+- Ports inside `5620–5629`: NATS listen **5620**; Hydrogen **5621–5624**;
+  closed port **5628** for the unreachable case. Do not bind Hydrogen and
+  `nats-server` to the same port
 - CHANGELOG + TEST_VERSION at the top of every script
 - `jq` only for JSON in tests
 - `TEST_COUNTER` owned by the framework — never increment manually
@@ -758,14 +889,18 @@ were skipped. This section lists every integration point.
 
 - `docs/H/core/subsystems/nats/` — subsystem guide (incl. app_state presence design)
 - `docs/H/api/nats/` — API reference (`GET /api/nats/status`, `GET /api/nats/instances`)
-- Index updates: `README.md`, `SITEMAP.md`, `STRUCTURE.md`, `INSTRUCTIONS.md`
-  (V. NATS + launch 22; also add U. Chat to letter list to fix staleness),
+- Index updates: `README.md`, `SITEMAP.md`, `STRUCTURE.md`,
   `API_OVERVIEW.md`, `lua_api.md`, `TESTING.md` (Test 62 row), `SECRETS.md`
-  (NATS credential env names)
-- **Documentation accuracy check**: The plan previously claimed the landing table
-  is the "strict reverse of launch order." This was corrected — the landing table
-  has its own order (verified in `landing_readiness.c`), adjusted per subsystem
-  lifecycle rather than strictly reversed. Ensure no other docs make this claim.
+  (NATS credential env names). `INSTRUCTIONS.md` already lists U. Chat and
+  reserves V / launch 22. Phase 12 promotes V from reserved to present
+  once `config.h` has the letter. Do not add the operator guide before
+  the code exists.
+- Chat's missing `DUMP_CONFIG_SECTION("U")` and the uncalled
+  `initialize_config_defaults_chat` are pre-existing. They are not a NATS
+  exit gate. Fix them only in a change whose subject is Chat.
+- Landing order is the order of the table in `landing_readiness.c`, first
+  entry first. It is not the reverse of launch. NATS is inserted before
+  Print.
 
 ---
 
@@ -781,8 +916,10 @@ were skipped. This section lists every integration point.
 - **Coverage target**: source files over 100 lines need >75% unit test coverage
   (repo constraint). Combined Unity + blackbox target 85%.
 - **`TEST_COUNTER` is framework-owned** — never increment manually.
-- **`mkq` / `mkt`** after adding any `.c`/`.h` file (the glob
-  `cmake/CMakeLists-init.cmake:147` requires a reconfigure on new files).
+- **`mkt`** when a `.c` file is added or removed. The source glob is
+  resolved at configure time. `mkq` is enough for edits to files that
+  are already in the build. Unity files are also picked up only on
+  reconfigure.
 - **`mkp`** (cppcheck, Test 91) and **`mks`** (shellcheck, Test 92) after each
   phase.
 
@@ -796,21 +933,22 @@ like `mock_system`) so Unit tests never require a live NATS server.
 | Source file | Unit-testable functions | Unity test files |
 | --- | --- | --- |
 | `nats.c` | `nats_init()`, `nats_shutdown()`, `nats_get_status()` (includes `state: healthy \| degraded`) | `nats_test_init.c`, `nats_test_shutdown.c`, `nats_test_get_status.c` |
-| `nats_config.c` | `nats_config_apply_defaults()`, `validate_nats_config()`, `nats_subscription_validate()`, `nats_config_parse_reconnect()` | `nats_test_config_defaults.c`, `nats_test_config_validate.c`, `nats_test_subscription_validate.c` |
+| `config_nats.c` | load, dump (password redacted), cleanup, defaults, subscription subject check | `config_nats_test_load.c`, `config_nats_test_dump.c`, `config_nats_test_defaults.c` |
 | `nats_publish.c` | `nats_publish()`, `nats_broadcast()`, `nats_build_envelope()`, `nats_broadcast_to_subject()` | `nats_test_publish.c`, `nats_test_build_envelope.c`, `nats_test_broadcast.c` |
 | `nats_subscribe.c` | `nats_subscribe()`, `nats_unsubscribe()`, `nats_subscriptions_init()` | `nats_test_subscribe.c`, `nats_test_unsubscribe.c`, `nats_test_subscriptions_init.c` |
-| `nats_dispatch.c` | `nats_dispatch_message()`, `nats_should_skip_self()`, `nats_parse_message()`, `nats_handle_cache_invalidate()`, `nats_handle_qtc_invalidate()`, `nats_handle_app_state()` | `nats_test_dispatch_message.c`, `nats_test_should_skip_self.c`, `nats_test_parse_message.c`, `nats_test_handle_cache_invalidate.c`, `nats_test_handle_qtc_invalidate.c`, `nats_test_handle_app_state.c` |
+| `nats_dispatch.c` | dispatch, skip-self, parse, invalidate-by-ref (template hash), app_state | `nats_dispatch_test_message.c`, `nats_dispatch_test_skip_self.c`, `nats_dispatch_test_invalidate.c`, `nats_dispatch_test_app_state.c` |
 | `nats_ws_bridge.c` | `nats_ws_bridge_start()`, `nats_ws_bridge_stop()`, `nats_should_relay_to_ws()`, `nats_forward_to_clients()` | `nats_test_ws_bridge_start.c`, `nats_test_should_relay_to_ws.c`, `nats_test_forward_to_clients.c` |
 | `nats_queue.c` | `nats_queue_init()`, `nats_queue_push()`, `nats_queue_pop()`, `nats_queue_destroy()` | `nats_test_queue_init.c`, `nats_test_queue_push.c`, `nats_test_queue_pop.c`, `nats_test_queue_destroy.c` |
 | `nats_reconnect.c` | `nats_reconnect()`, `nats_backoff_delay()` (cascading: 30, 60, 120, 240, 480, then steady 480), `nats_reconnect_should_retry()` | `nats_test_reconnect.c`, `nats_test_backoff_delay.c`, `nats_test_reconnect_should_retry.c` |
 | `nats_registry.c` | `nats_registry_init()`, `nats_registry_update_peer()`, `nats_registry_peers()`, `nats_registry_is_singleton()`, `nats_registry_active_count()`, `nats_registry_active_clients()` | `nats_test_registry_init.c`, `nats_test_registry_update_peer.c`, `nats_test_registry_peers.c`, `nats_test_registry_is_singleton.c`, `nats_test_registry_active_count.c`, `nats_test_registry_active_clients.c` |
 | `nats_subject.c` | `nats_validate_subject_name()`, `nats_build_subject()` | `nats_test_validate_subject_name.c`, `nats_test_build_subject.c` |
 
-**Mock strategy**: Create `mock_nats` (analogous to `mock_system`, `mock_libpq`)
-for the underlying NATS C library calls (`natsConnection_*`, `natsSubscription_*`,
-`natsMsg_*`). Define `USE_MOCK_NATS` before includes. The NATS connection layer
-is the only module that links the real library in Unit tests; all dispatch,
-parsing, subject-building, and cache-hook logic tests use the mock.
+**Mock strategy**: There is no `cnats` library to mock. Put connect,
+read, and write behind function pointers on the client. Unity supplies
+a byte buffer that speaks `INFO` / `MSG` / `PING`. Dispatch tests call
+`nats_dispatch_message` with a parsed envelope and a fake
+`query_result_cache_invalidate_template`. Do not define
+`USE_MOCK_NATS` against symbols that will never exist.
 
 ### Blackbox integration test — Test 62
 
@@ -823,15 +961,15 @@ as NATS does not require multi-DB variants for its own logic).
 | # | TEST | What |
 | --- | --- | --- |
 | 1 | NATS disabled clean-skip | `NATS.Enabled: false` → server starts, no NATS connections, shutdown clean |
-| 2 | NATS enabled, server unreachable | `Enabled: true` + no NATS server → readiness returns "degraded", server starts, retries at 30s→60s→120s→240s→480s→480s; status endpoint shows `state: "degraded"` |
+| 2 | NATS enabled, server unreachable | `Enabled: true`, servers pointed at `127.0.0.1:5628`. Readiness is Go (`ready = true`). Launch returns success. Status shows `state: "degraded"`. Use a test delay list of 1 second. Do not sleep through the production 480s ladder |
 | 3 | NATS enabled connects | `Enabled: true` + local mock NATS → connects, subscribes to configured subjects, publishes heartbeat within `HeartbeatIntervalSeconds + grace` |
-| 4 | Cache invalidation broadcast → peer receive | Instance A publishes `cache.invalidate_by_ref` for QueryRef 127; Instance B receives, `query_cache_clear` evicts the entry; verify via query re-execution |
-| 4a | QTC `InvalidateQTC` list broadcast | Query with `collection: {"InvalidateQTC":[14,15]}` executes → Instance A broadcasts two `cache.invalidate_by_ref` messages (refs 14, 15); Instance B receives both, evicts entries 14 and 15 from its QTC |
-| 4b | QTC refresh semantics | After `cache.invalidate_by_ref` for QueryRef 14, Instance B's next lookup for ref 14 re-fetches from DB (not a stale cache hit) |
+| 4 | Result-cache invalidation | Two Hydrogen processes. A cache-queue query is warm on B. A calls the explicit invalidate for that ref and database. B's next execution of that template misses and hits the database. Assert with the result-cache entry count, not `query_cache_clear` |
+| 4a | Local evict does not wait | A drops its own entries before publish returns. Stopping `nats-server` after the local delete still leaves A correct. B stays stale, which is the at-most-once case |
+| 4b | Lost message stays stale | Covered by 4a on B. Do not expect a timeout to heal it |
 | 5 | WebSocket relay | With `WebSocketRelay.Enabled: true` + authenticated WS client with `subscribed_events` including `order.updated` → NATS broadcast event arrives as `nats_event` message on WS |
 | 6 | WS relay filtering | With `WebSocketRelay.Events` list excluding an event type → that event is NOT forwarded to WS clients; also, a WS client whose `subscribed_events` excludes an event type does NOT receive it even if the server allowlist includes it |
 | 7 | Presence / singleton detection | Two instances launched → both see each other as live peers within `HeartbeatIntervalSeconds * 3`; singleton reports 0 peers |
-| 7a | Startup/shutdown tally | Instance A publishes `app_state` with state="Alive"; Instance B receives and tracks it as active. Instance A publishes state="Stopping"; Instance B removes it from active set after stale window. Singleton: only one instance in "Alive" state. Active client tally: sum of `active_connections` across all "Alive" instances. |
+| 7a | app_state | A publishes `Alive`, B lists A. A publishes `Stopping` or goes silent past `StaleAfterSeconds` (set the test window to a couple of seconds). B drops A. No unique-IP assertion |
 | 8 | Self-suppression | Instance publishes on a subject it also subscribes to → handler skips processing (`source == instance_id`) |
 | 9 | Queue group load balancing | Queue-group subscription on `jobs.refresh-all` → message delivered to exactly one of N instances |
 | 10 | Reconnect backoff | NATS server stops mid-session → Hydrogen reconnects on next backoff tick; verify via status endpoint shows `reconnect_count > 0` |
@@ -840,7 +978,7 @@ as NATS does not require multi-DB variants for its own logic).
 **NATS server fixture**: A real `nats-server -D` (in-memory store, dev mode)
 started by the test script before launching Hydrogen. Port `5620`. Credentials:
 none (dev mode). A fallback `extras/natsval` mock binary (analogous to
-`extras/pushval`) can be used if the container is unavailable in CI.
+`extras/mailval`) can be used if the container is unavailable in CI.
 
 **Helpers**: `tests/lib/nats_helpers.sh` — `run_nats_server()`, `stop_nats_server()`,
 `nats_publish_test_event()`, `nats_wait_for_subscription()`, `assert_ws_relay()`.
@@ -855,9 +993,9 @@ none (dev mode). A fallback `extras/natsval` mock binary (analogous to
 
 | Config | Port | NATS enabled? | Purpose |
 | --- | --- | --- | --- |
-| `hydrogen_test_62_nats_disabled.json` | 5620 | false | Subtest 1 |
-| `hydrogen_test_62_nats_local.json` | 5621 | true | Subtests 3–12 |
-| `hydrogen_test_62_nats_bad.json` | 5622 | true | Subtest 2 |
+| `hydrogen_test_62_nats_disabled.json` | 5621 | false | Subtest 1. NATS listen 5620 stays unused |
+| `hydrogen_test_62_nats_local.json` | 5622 | true | Connected cases. Peer process uses 5624 |
+| `hydrogen_test_62_nats_bad.json` | 5623 | true | Subtest 2. `Servers` is `nats://127.0.0.1:5628` |
 
 ### Library dependencies
 
@@ -885,75 +1023,183 @@ none (dev mode). A fallback `extras/natsval` mock binary (analogous to
 
 1. **NATS C library**: RESOLVED — Option B, roll our own. No external NATS C library dependency. Custom client in `src/nats/nats_client.c`. See [NATS Client Implementation](#nats-client-implementation).
 
-2. **Cache invalidation granularity**: RESOLVED — Query-declared invalidation. Each query's `collection` JSON may contain an `"InvalidateQTC":[14,15]` list of QueryRef IDs. When the query executes, Hydrogen broadcasts one NATS message per QueryRef in the list (e.g., `cache.invalidate_by_ref` with `data.query_ref = 14`). This is a hybrid approach: the query itself declares what it invalidates, so the invalidation is precise by construction. Subject naming: `cluster.<cluster_id>.query.invalidate.ref.<ref>` for per-QueryRef. QTC events are grouped under the `cache.invalidate*` family. "Invalidate" is treated as "refresh" — the cache entry is replaced with fresh data on receipt, not merely deleted. The existing `timeout_seconds` field in `QueryCacheEntry` was never implemented for auto-refresh; this NATS mechanism replaces that missing timeout behavior.
+2. **Cache invalidation granularity**: AMENDED 2026-10-05 — The stale data is the global query **result** cache, not the QTC. v1 evicts by SQL template for one `(database, query_ref)`. All parameter variants of that template drop. The next read misses and runs SQL. Nothing writes a fresh row on receipt. `collection` / `InvalidateQTC` is not loaded and is not the mechanism. See [Verified constraints](#verified-constraints-2026-10-05).
 
 3. **Token table refresh mechanism**: RESOLVED — OIDC sits above the query cache layer and calls queries like any other subsystem. It does not maintain its own mutable token table. Cache invalidation/refresh is handled by the subscribe system at the database layer; OIDC is "none the wiser." The `token_refresh` NATS event is a phantom requirement and has been removed from the message model.
 
-4. **WebSocket relay filter**: RESOLVED — each WebSocket connection carries a `subscribed_events` list. The bridge thread calls `ws_broadcast_json(event_type, payload)` which iterates sessions and forwards only to clients whose `subscribed_events` includes `event_type`. A client with no access to orders simply doesn't include `order.updated` in its list. See [WebSocket Broadcast Forwarding](#websocket-broadcast-forwarding).
+4. **WebSocket relay filter**: AMENDED 2026-10-05 — `subscribed_events` does not exist yet. Phase 6 adds the field and a session list. The NATS thread enqueues; the libwebsockets thread writes. See [WebSocket Broadcast Forwarding](#websocket-broadcast-forwarding).
 
 5. **Heartbeat necessity**: RESOLVED — instance presence is now a required feature. See [Instance Presence & Group Membership](#instance-presence--group-membership). K8s probes cover crash detection; NATS heartbeats provide peer-count and singleton awareness.
 
-6. **Error handling**: RESOLVED — cascading retry with exponential backoff: 30s, 60s, 120s, 240s, 480s, then stay at 480s indefinitely. NATS is a backchannel — nothing depends on it. If NATS is enabled but unavailable at launch, the server starts anyway (degraded mode). The readiness check returns "degraded" (not No-Go). If NATS becomes available after a retry period, it updates its status in the subsystem registry and operates normally. If it stays unavailable, Hydrogen continues running without NATS; retries continue at 480s intervals. When NATS later becomes reachable, the connection is established and the subsystem transitions to healthy.
+6. **Error handling**: AMENDED 2026-10-05 — same delays (30, 60, 120, 240, 480, then 480). Readiness stays `ready = true` when the server is down so the retry thread actually starts. Status `state` is `degraded` until connect, then `up`. `ready = false` is invalid config only. Reconnect re-sends every `SUB`.
 
 7. **Config letter conflict**: RESOLVED — NATS takes **V** (implemented first). NOTIFICATIONS/SUBSCRIBERS plan, if approved later, shifts to **W**. Documented in both plans.
 
-8. **Subscription path**: RESOLVED — both paths exist. Config-driven (`"NATS Handler":"NATS/intake_handler.lua"`) is the primary path; `H.nats.subscribe()` / `H.nats.unsubscribe()` are available as an optional Lua API for runtime subscriptions the config cannot anticipate.
+8. **Subscription path**: AMENDED 2026-10-05 — C dispatch for `cache.invalidate` and `app_state` is the v1 path. There is no `Scripting.Handlers` entry. `H.nats.subscribe` is optional later work. Handle kind `H_HK_NATS = 7`.
 
-9. **Self-suppression**: RESOLVED — every message carries `instance_id` in the envelope. The dispatch handler checks `message.source == own instance_id` universally (all message types, not selective). NATS itself prevents self-delivery via separate publish/subscribe connections; the application-level check is a safety net (defense in depth). Originating instance updates its own cache optimistically (no round-trip wait).
+9. **Self-suppression**: AMENDED 2026-10-05 — one connection, `CONNECT` field `no_echo: true`, plus an `instance_id` check. Two connections do not suppress self-delivery. The publisher evicts locally before `PUB` and does not wait to hear itself.
 
 10. **Auth simplicity**: RESOLVED — internal DOKS cluster, no external exposure. Simple auth only (username/password from env vars, or none). No NKEYS/JWT enterprise auth needed. Credentials in config via `${env.NATS_USERNAME}` / `${env.NATS_PASSWORD}` env var substitution.
 
-11. **App startup/shutdown tally**: RESOLVED — single subject `cluster.<id>.app_state` with payload `{instance_id, state: "Starting"|"Alive"|"Stopping", active_connections}`. "Alive" includes unique active IPs in last 5 minutes (REST API + WebSocket). Instances derive active count and client tally from aggregated "Alive" payloads using the shared heartbeat timeout. Crash handling via heartbeat-stale correction. No separate startup/shutdown subjects.
+11. **App state payload**: AMENDED 2026-10-05 — `{instance_id, state}` with optional `websocket_connections` (the live counter). No unique-IP window. One subject `cluster.<ClusterId>.instance.app_state`. A peer that stops publishing is removed after the stale window.
 
-12. **Delivery guarantees**: RESOLVED — fire-and-forget, at-most-once. No ack required. NATS is a backchannel; nothing depends on guaranteed delivery. If a message is lost, the next cache lookup re-fetches from the database (cache miss → fresh data). The `timeout_seconds` field in `QueryCacheEntry` serves as a safety net for missed invalidations.
+12. **Delivery guarantees**: AMENDED 2026-10-05 — core NATS on this cluster is at-most-once. A lost invalidation does **not** cause the next lookup to miss. The result cache keeps the old JSON until something deletes it or the process restarts. v1 accepts that. Do not describe `timeout_seconds` as a safety net.
 
-13. **Self-suppression**: RESOLVED — standard NATS behavior with separate publish/subscribe connections means an instance does NOT receive its own published messages on the same subject. The application-level `source == instance_id` check in `nats_dispatch.c` is a safety net (defense in depth) for edge cases where the library might echo back. No special handling needed in the custom client beyond the standard check.
+13. **Originating instance**: AMENDED 2026-10-05 — the publisher deletes the local result-cache entries, then publishes. It does not write a replacement result, and it does not wait for an echo.
 
-14. **QTC invalidation — originating instance**: RESOLVED — when an instance executes a mutating query with `InvalidateQTC:[14,15]`, it broadcasts invalidation messages for refs 14, 15 AND updates its own cache immediately (optimistic update). It does NOT wait for the round-trip message to come back, because self-suppression means it won't receive its own messages anyway, and there's no guarantee the round-trip will complete. The broadcast is for peer instances only.
+14. **Subject strategy**: AMENDED 2026-10-05 — one subject, `cluster.<ClusterId>.cache.invalidate`. The ref is in the body. A subject per ref would still be subscribed by every instance, so it adds wildcards (`*`, never `+`) without filtering.
 
-15. **QTC subject strategy**: RESOLVED — per-QueryRef only (`cluster.<id>.query.invalidate.ref.<ref>`). No broad `cache.invalidate` subject. Broad invalidation can be implemented in Lua if needed later.
+15. **Declarative list**: AMENDED 2026-10-05 — not in v1. A future column must be part of the bootstrap SELECT. `collection` is the wrong column.
 
-16. **QTC format**: RESOLVED — `InvalidateQTC` is a list of query numbers in the query's `collection` JSON. When the query executes, Hydrogen broadcasts one `cache.invalidate_by_ref` message per QueryRef in the list. Simple and minimal: just the QueryRef IDs, no extra envelope fields.
+16. **NATS server**: CONFIRMED 2026-10-05 — image `nats:2.11.4`, three pods, client port 4222, monitor 8222, route port 6222, cluster name `festival`, no auth, no TLS, no JetStream. Client URL `nats://nats.nats.svc.cluster.local:4222`. Do not dial 6222. `ClusterId` is not `festival`.
 
-17. **NATS server version**: RESOLVED — NATS 2.11.4 in DOKS (confirmed via kubectl). Recent version; no compatibility concerns for the custom client.
+17. **TLS**: CONFIRMED absent. v1 is plaintext. A later TLS phase uses OpenSSL on the NATS socket. There is no Network TLS helper to reuse.
 
-18. **TLS cert rotation**: RESOLVED — NATS has no TLS configured in DOKS (plain text on 4222). Not a concern for now. If TLS is added later, cert rotation follows the existing Network TLS pattern.
+18. **WebSocket vhost**: CONFIRMED — one vhost named `hydrogen` on `websocket.port`. There is no session list yet. Phase 6 creates one. The NATS thread does not call `lws_write`.
 
-19. **WebSocket vhost**: RESOLVED — WebSocket runs on its own dedicated port, not per-vhost. Single `/ws` endpoint. No vhost routing complexity for the NATS bridge.
+19. **Write path**: AMENDED 2026-10-05 — WebSocket owns the session list and the writable callback. NATS owns the decision of which event is eligible.
 
-20. **`ws_broadcast_json` ownership**: RESOLVED — WebSocket subsystem owns `ws_broadcast_json()`. The NATS bridge thread (`nats_ws_bridge.c`) calls it.
+20. **Config file**: AMENDED 2026-10-05 — parsing is only `src/config/config_nats.c`. Do not add `src/nats/nats_config.c`. Sockets and reconnect stay in `nats_client.c`.
 
-21. **`nats_config.c` vs `nats_client.c` boundary**: RESOLVED — `nats_config.c` is just initial config parsing (like other subsystems). Connection lifecycle (connect/disconnect/reconnect) lives in `nats_client.c`.
+21. **Handle kind constant**: AMENDED 2026-10-05 — `H_HK_NATS = 7`. The current last value is `H_HK_MCP = 6`. Subscribers, landing second, is `8`. Wire the kind in both `H.wait` functions.
 
-22. **Handle kind constant**: RESOLVED — new `H_HK_NATS` enum value in `scripting_handle.h`, following the existing pattern (next after `H_HK_MCP = 6`).
+22. **Presence registry persistence**: RESOLVED — registry is ephemeral. Clients re-register on reconnect. No persistence needed.
 
-23. **Presence registry persistence**: RESOLVED — registry is ephemeral. Clients re-register on reconnect. No persistence needed.
+23. **Queue group names**: AMENDED 2026-10-05 — the config string is the full queue-group name sent in `SUB`. Code does not prepend `ClusterId` a second time. Operators put the cluster id in the name if two deployments share a NATS server.
 
-24. **Queue group name collision**: RESOLVED — cluster id prefixes queue group names. Two Hydrogen instances with different cluster ids won't collide.
-
-25. **`app_state` active_connections scope**: RESOLVED — unique list across both WebSocket and REST API connections. `active_connections` is the count of unique active IPs in the last 5 minutes, covering all client types.
+24. **`app_state` counts**: AMENDED 2026-10-05 — optional current WebSocket connection count only. See question 11.
 
 ---
 
 ## Proposed phased breakdown
 
-If approved, this becomes a multi-phase plan (modeled on NOTIFICATIONS_PLAN):
+The phases below are the work plan. Each phase is its own conversation.
+Gate template:
+Goal, Entry gate, Work items, Done means, Exit gate, Status. Build aliases:
+`mkq` / `mkt` / `mku <base>` / `mkp` / `mka` / `mks` (see
+[INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md)).
 
 | Phase | Goal | Key deliverables |
 | --- | --- | --- |
-| 0 | Design lock | Approve letter V, launch 22, message model, channel model, custom client decision |
+| 0 | Design lock | **Approved 2026-10-05.** Letter V, launch 22, message model, channel model, custom client, app_state naming, WebSocket broadcast boundary |
 | 1 | Config + launch + landing | `config_nats.c/h`, `launch_nats.c`, `landing_nats.c`, `nats_subject.c`, wiring in all dispatch tables, disabled clean-skip |
-| 2 | NATS connection + lifecycle | Custom NATS client (`nats_client.c`): connect, publish, subscribe, reconnect, ping/pong, TLS; shutdown flag, threads |
+| 2 | NATS connection + lifecycle | Plaintext client: INFO, CONNECT (`no_echo`), PUB/SUB/MSG, PING/PONG, reconnect that re-sends SUBs. No TLS. Unity against a fake socket in this phase |
 | 3 | Publish path (broadcast) | `nats_broadcast()` function, message envelope, test seam |
 | 4 | Subscribe + dispatch | Receive messages, parse JSON, dispatch to cache invalidation hooks |
-| 5 | Cache invalidation hooks | Integrate with `query_cache_clear` / token table refresh in Database + OIDC layers; QTC `InvalidateQTC` list parsing and per-QueryRef broadcast; `app_state` publish on launch/landing (state="Starting" → "Alive" → "Stopping") |
-| 6 | WebSocket relay | Bridge thread forwarding selected events to authenticated WS clients; `ws_broadcast_json(event_type, payload)` filters by client `subscribed_events` |
-| 7 | Instance presence & registry | `nats_registry.c`, `app_state` publish/subscribe (state="Alive" with active_connection), singleton detection, active client tally via aggregated "Alive" payloads |
+| 5 | Result-cache invalidation | New `query_result_cache_invalidate_template`. Explicit emit plus local evict. One subject. No `collection` parsing |
+| 6 | WebSocket relay | Session list, `subscribed_events`, enqueue from NATS, `lws_write` on the service thread |
+| 7 | Instance presence & registry | `nats_registry.c`, `app_state` publish/subscribe, singleton detection, active client tally |
 | 8 | Lua host API | `H.nats.broadcast` / `subscribe` / `unsubscribe` / `status` / `instances` |
 | 9 | Status + metrics | Counters in `status_core.h`, `GET /api/nats/status` + `GET /api/nats/instances` |
-| 10 | Unity unit tests | All unit-testable functions covered (see Testing Strategy table), 75% fence for files >100 lines |
+| 10 | Coverage fence | Per-file Unity fence for `src/nats/` and `src/config/config_nats.c`. Tests are written in the phase that adds the code. This phase only closes gaps |
 | 11 | Blackbox Test 62 | End-to-end integration with local `nats-server`; all 12 subtests pass |
 | 12 | Docs + indexes | Operator guide, API docs, INSTRUCTIONS.md/STRUCTURE.md/SITEMAP.md updates, lua_api.md |
+
+---
+
+## Phase 0 — Design lock
+
+### Goal
+
+Approve or amend the design locks below. **No `src/` edits in this phase.**
+Confirms config letter V, launch position 22, the message model, the channel
+model, the custom-client decision, the `app_state` subject naming, and the
+WebSocket broadcast boundary.
+
+### Entry gate
+
+- This plan exists and has been read against Hydrogen project conventions
+  ([INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md),
+  [TESTING.md](/docs/H/tests/TESTING.md),
+  [TESTING_UNITY.md](/docs/H/tests/TESTING_UNITY.md),
+  [NOTIFICATIONS_PLAN.md](/docs/H/plans/NOTIFICATIONS_PLAN.md)).
+- Source code verified: `config.h` letters A–U (V free in the tree),
+  `MAX_SUBSYSTEMS` = 24, `launch_readiness.c` has 21
+  `process_subsystem_readiness` calls. NATS is registration 22.
+  Subscribers is planned as 23. One slot remains. `subscribed_events`
+  and `ws_broadcast_json` do **not** yet exist (new additions).
+
+### Work items
+
+- [x] 0.1 Confirm config letter **V** / launch **22** (after MCP at 21).
+- [x] 0.2 Confirm a plaintext custom client on its own TCP socket.
+      `no_echo: true`, one connection, no `cnats`, no Network subsystem
+      API, no TLS in v1, do not dial port 6222.
+- [x] 0.3 Confirm message model: JSON envelope with `event`, `subject`,
+      `timestamp`, `source`, `instance_id`, `data`.
+- [x] 0.4 Confirm on-wire subjects
+      `cluster.<ClusterId>.cache.invalidate` and
+      `cluster.<ClusterId>.instance.app_state`. Config stores the suffix
+      only. Code adds the prefix. `QueueGroup` is the full name. Ref and
+      database travel in the JSON body. Wildcards are `*` and `>`, never
+      `+`.
+- [x] 0.5 Confirm the WebSocket relay needs a new session list and a new
+      `subscribed_events` field, and that `lws_write` stays on the
+      libwebsockets thread.
+- [x] 0.6 Confirm config parsing is only `src/config/config_nats.c`.
+      No `src/nats/nats_config.c`.
+- [x] 0.7 Confirm invalidation targets `query_result_cache` by SQL
+      template. Local delete, then publish. No `InvalidateQTC`, no
+      `collection` field, no optimistic fill. A lost message stays stale.
+- [x] 0.8 Confirm `no_echo: true` on one connection, plus an
+      `instance_id` check. Not two connections.
+- [x] 0.9 Confirm unreachable NATS is `ready = true` plus status
+      `degraded`, with the retry thread running. `ready = false` is
+      invalid config only, including `TlsEnabled: true` in v1.
+- [x] 0.10 Confirm Chat's missing config dump is **not** a NATS exit
+      gate. Landing inserts NATS before Print, not after MCP.
+      `landing_plan.c` `expected_order[]` is only the Go/No-Go log; add
+      `SR_NATS` before `SR_PRINT` and do not rebuild that list.
+- [x] 0.11 Record amendments in this document if any lock changes.
+
+### Done means
+
+All locks in this section are approved or explicitly amended; Phase 0 Status
+marked complete. No C compiled.
+
+### Exit gate
+
+User explicit approval of Phase 0. No `src/` edits.
+
+### Implementation Status
+
+**Approved** 2026-10-05. Phase 1 has not started. No `src/` edits in the approval turn.
+
+### Lessons learned
+
+- 2026-10-04: `subscribed_events` and `ws_broadcast_json` are new additions;
+  the original "Current observed state" table incorrectly claimed they existed.
+- 2026-10-04: Config parsing was first described as `src/nats/nats_config.c`.
+  2026-10-05 moved that role to `src/config/config_nats.c` only, matching
+  every other subsystem. Sockets stay in `nats_client.c`.
+- 2026-10-05: Review against the tree. The result cache is
+  `query_result_cache`, not the QTC. `timeout_seconds` is a query
+  deadline. `collection` is not loaded. NATS echo needs `no_echo`.
+  `+` is not a wildcard. Network is not a socket layer. Live NATS is
+  2.11.4, plaintext, port 4222, cluster name `festival`, no auth.
+  A lost invalidation stays cached. Config stores subject suffixes and
+  the client prefixes `cluster.<ClusterId>.`. `landing_plan.c`
+  `expected_order[]` is a Go/No-Go log, not shutdown order. Details are
+  in [Verified constraints](#verified-constraints-2026-10-05).
+- 2026-10-04: `app_state` subject must follow the `cluster.<id>.<domain>.<action>.<resource>`
+  convention — `cluster.<id>.app_state` is a flat name that does not comply.
+  Proposed fix: `cluster.<id>.instance.app_state`.
+- 2026-10-04: config.h comment block and config.c "Configuration Sections" comment go
+  A–U (Chat is present). `DUMP_CONFIG_SECTION("U", …)` for Chat is **missing** in
+  config.c — the dump sequence jumps from T (MCP) to `#undef`, skipping U. This is a
+  pre-existing. It is not a NATS exit gate. Fix it only in a Chat change.
+- 2026-10-04: landing table (`landing_readiness.c`) is not the reverse of
+  launch order. 2026-10-05 corrected the insertion point: NATS lands
+  **before Print**, while WebSocket and Database are still up. Inserting
+  after MCP shuts NATS down only after those subsystems are already gone.
+- 2026-10-04: WebSocket has a single named vhost ("hydrogen") and its own dedicated port
+  (`websocket.port`), not "no vhost". The NATS bridge iterates sessions on that single
+  vhost, so no vhost routing complexity exists.
+- 2026-10-04: `SR_CHAT`, `SR_MIRAGE`, and `SR_WEBSOCKET_CHAT` exist in globals.h but are
+  **not** registered in the landing readiness table and Chat has no launch/landing
+  functions (config-only). This is expected — Chat is config-only like Webhooks.
+- 2026-10-04: `mcp_threads` is declared in `registry_integration.h` and
+  again in `threads.h`. `mcp_system_shutdown` is in `state.h`.
 
 ---
 
@@ -966,12 +1212,13 @@ subsystem additions):
 - `src/launch/launch_mcp.c` — readiness clean-skip pattern + launch dispatch
 - `src/landing/landing_mcp.c` — landing readiness + land function
 - `src/mcp/mcp.h` — minimal public API surface
-- `src/registry/registry_integration.h:109-110` — `mcp_threads` + `mcp_system_shutdown` externs
-- `src/threads/threads.h:48` — `extern ServiceThreads mcp_threads;`
-- `src/state/state.h:54` — `extern volatile sig_atomic_t mcp_system_shutdown;`
-- `src/launch/launch_readiness.c:424` — after-MCP readiness check position
-- `src/launch/launch.c:197` — after-MCP launch dispatch
-- `src/landing/landing_readiness.c:142` — after-MCP landing readiness table entry
-- `src/landing/landing.c:104` — MCP landing function dispatch
-- `src/status/status_core.h` — `ServiceMetrics mcp;` in `SystemMetrics` + union arm
+- `src/registry/registry_integration.h` — `extern ServiceThreads mcp_threads;`
+- `src/threads/threads.h` — `extern ServiceThreads mcp_threads;`
+- `src/state/state.h` — `extern volatile sig_atomic_t mcp_system_shutdown;`
+- `src/launch/launch_readiness.c` — last `process_subsystem_readiness` call is MCP. NATS is the next call
+- `src/launch/launch.c` — `launch_mcp_subsystem` branch in `launch_approved_subsystems`
+- `src/landing/landing_readiness.c` — shutdown table, first entry first. Insert NATS before Print. MCP is near the end, after Threads, with Scripting and Reporting after it
+- `src/landing/landing.c` — `get_landing_function` maps `SR_MCP` to `land_mcp_subsystem`. The comment says reverse launch order; the walk is the readiness-table order
+- `src/landing/landing_plan.c` — `expected_order[]` is the Go/No-Go log only. Add `SR_NATS` before `SR_PRINT`. Do not rebuild the list
+- `src/status/status_core.h` — `ServiceMetrics mcp` member of `SystemMetrics`, plus a `specific.mcp` union arm
 - `src/config/config_chat.h` — config-only subsystem (no launch) pattern
