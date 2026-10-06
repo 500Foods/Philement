@@ -5,18 +5,18 @@
  * - This file is a lightweight orchestrator only - no subsystem-specific code
  * - All subsystems are equal in importance - no hierarchy
  * - Each subsystem independently determines its own readiness
- * - Processing order is reverse of launch for consistency
+ * - Processing order is the landing execution order
  * 
  * ROLE:
  * This module coordinates landing readiness checks by:
  * - Calling each subsystem's readiness check function
  * - Collecting results without imposing hierarchy
- * - Maintaining consistent reverse-launch order
+ * - Keeping MCP and Scripting ahead of Database
  * 
  * Key Points:
  * - No subsystem has special status in readiness checks
  * - Each subsystem determines its own readiness criteria
- * - Order of checks is reverse of launch for consistency
+ * - The subsystems array is the order land_approved_subsystems walks
  * - All readiness checks are equally important
  * 
  * Implementation:
@@ -31,7 +31,7 @@
 // Local includes
 #include "landing.h"
 
-// External declarations for subsystem readiness checks (in reverse launch order)
+// External declarations for subsystem readiness checks
 extern LaunchReadiness check_print_landing_readiness(void);        // from landing_print.c
 extern LaunchReadiness check_mail_relay_landing_readiness(void);   // from landing_mail_relay.c
 extern LaunchReadiness check_mdns_client_landing_readiness(void);  // from landing_mdns_client.c
@@ -107,7 +107,7 @@ void process_landing_subsystem_readiness(ReadinessResults* results, size_t* inde
 /*
  * Coordinate readiness checks for all subsystems.
  * Each subsystem's specific readiness logic lives in its own landing_*.c file.
- * Subsystems are checked in reverse launch order.
+ * This array is also the landing execution order.
  */
 ReadinessResults handle_landing_readiness(void) {
     ReadinessResults results = {0};
@@ -132,6 +132,9 @@ ReadinessResults handle_landing_readiness(void) {
         {SR_SWAGGER,        check_swagger_landing_readiness},
         {SR_API,            check_api_landing_readiness},
         {SR_WEBSERVER,      check_webserver_landing_readiness},
+        /* MCP and Scripting still submit queries, so they land before Database. */
+        {SR_MCP,            check_mcp_landing_readiness},
+        {SR_SCRIPTING,      check_scripting_landing_readiness},
         {SR_DATABASE,       check_database_landing_readiness},
         {SR_LOGGING,        check_logging_landing_readiness},
         {SR_NETWORK,        check_network_landing_readiness},
@@ -140,10 +143,8 @@ ReadinessResults handle_landing_readiness(void) {
         {SR_OIDC,           check_oidc_landing_readiness},
         {SR_PAYLOAD,        check_payload_landing_readiness},
         {SR_THREADS,        check_threads_landing_readiness},
-         {SR_MCP,            check_mcp_landing_readiness},
-         {SR_SCRIPTING,      check_scripting_landing_readiness},
-         {SR_REPORTING,      check_reporting_landing_readiness},
-         {SR_REGISTRY,       check_registry_landing_readiness}
+        {SR_REPORTING,      check_reporting_landing_readiness},
+        {SR_REGISTRY,       check_registry_landing_readiness}
     };
     
     // Process subsystems in defined order

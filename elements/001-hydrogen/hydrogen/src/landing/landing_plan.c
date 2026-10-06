@@ -5,7 +5,7 @@
  * - This file is a lightweight orchestrator only - no subsystem-specific code
  * - All subsystems are equal in importance - no hierarchy
  * - Dependencies determine what's needed, not importance
- * - Processing order is reverse of launch for consistency
+ * - Processing order follows landing dependencies
  *
  * PLANNING SEQUENCE:
  * 1. Status Assessment:
@@ -23,26 +23,18 @@
  *    - Verify all dependencies are satisfied
  *    - Make final landing decision
  *
- * Standard Processing Order (reverse of launch):
- * - 15. Print (last launched, first to land)
- * - 14. MailRelay
- * - 13. mDNS Server (goodbye burst while client still listening)
- * - 12. mDNS Client
- * - 11. Terminal
- * - 10. WebSocket
- * - 09. Swagger
- * - 08. API
- * - 07. WebServer
- * - 06. Logging
- * - 05. Database
- * - 04. Network
- * - 03. Threads
- * - 02. Payload
- * - 01. Registry (first launched, last to land)
+ * Standard Processing Order:
+ * - NATS, Print, MailRelay
+ * - mDNS Server, then mDNS Client (goodbye burst while the client still listens)
+ * - Terminal, WebSocket, Swagger, API, WebServer
+ * - MCP, then Scripting, then Database
+ *   MCP and Scripting still submit queries, so Database stays up until they finish
+ * - Logging, Network, Resources, Notify, OIDC, Payload, Threads, Reporting
+ * - Registry (lands last)
  *
  * Key Points:
  * - Each subsystem's landing must wait for its dependents
- * - Order is reverse of launch to maintain system stability
+ * - MCP and Scripting land before Database so in-flight queries can finish
  * - All decisions are based on actual dependencies, not importance
  */
 
@@ -53,7 +45,6 @@
 #include "landing.h"
 
 // Forward declarations
-bool check_dependent_states(const char* subsystem, bool* can_land);
 void log_landing_status(const ReadinessResults* results);
 
 /*
@@ -76,7 +67,7 @@ bool handle_landing_plan(const ReadinessResults* results) {
         return false;
     }
     
-    // Define subsystem order (reversing landing_readiness.c)
+    /* Log-only sequence. Execution order is the landing_readiness.c array. */
     const char* expected_order[] = {
         SR_NOTIFY,
         SR_OIDC,
@@ -91,6 +82,8 @@ bool handle_landing_plan(const ReadinessResults* results) {
         SR_SWAGGER,
         SR_API,
         SR_WEBSERVER,
+        SR_MCP,
+        SR_SCRIPTING,
         SR_DATABASE,
         SR_LOGGING,
         SR_NETWORK,
@@ -108,7 +101,8 @@ bool handle_landing_plan(const ReadinessResults* results) {
         bool is_ready = false;
         
         for (size_t j = 0; j < results->total_checked; j++) {
-            if (strcmp(results->results[j].subsystem, subsystem) == 0) {
+            const char* name = results->results[j].subsystem;
+            if (name && strcmp(name, subsystem) == 0) {
                 found = true;
                 is_ready = results->results[j].ready;
                 break;

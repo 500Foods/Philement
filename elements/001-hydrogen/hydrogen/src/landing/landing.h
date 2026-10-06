@@ -23,6 +23,8 @@ void handle_sigint(void);  // SIGINT signal handler for shutdown
 // Internal landing functions (exposed for unit testing)
 typedef int (*LandingFunction)(void);
 LandingFunction get_landing_function(const char* subsystem_name);
+/* True when every subsystem that depends on this one is inactive or in error. */
+bool check_dependent_states(const char* subsystem, bool* can_land);
 bool land_approved_subsystems(ReadinessResults* results);
 
 ReadinessResults handle_landing_readiness(void);

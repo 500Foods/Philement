@@ -5,7 +5,7 @@
  * - This file is a lightweight orchestrator only - no subsystem-specific code
  * - All subsystems are equal in importance - no hierarchy
  * - Dependencies determine what's needed, not importance
- * - Processing order is reverse of launch for consistency
+ * - Processing order follows landing dependencies
  *
  * LANDING SEQUENCE:
  * 1. Landing Readiness (landing_readiness.c):
@@ -19,8 +19,8 @@
  *    - No inherent priority, just dependency order
  *
  * 3. Landing Execution (landing.c):
- *    - Lands each ready subsystem
- *    - Order is reverse of launch for consistency
+ *    - Lands each ready subsystem once its dependents have landed
+ *    - MCP and Scripting land before Database
  *    - Each subsystem is equally important
  *
  * 4. Landing Review (landing_review.c):
@@ -28,22 +28,14 @@
  *    - Reports success/failure for each subsystem
  *    - All outcomes are equally important
  *
- * Standard Processing Order (reverse of launch):
- * - 15. Print (last launched, first to land)
- * - 14. MailRelay
- * - 13. mDNS Server (goodbye burst while client still listening)
- * - 12. mDNS Client
- * - 11. Terminal
- * - 10. WebSocket
- * - 09. Swagger
- * - 08. API
- * - 07. WebServer
- * - 06. Logging
- * - 05. Database
- * - 04. Network
- * - 03. Threads
- * - 02. Payload
- * - 01. Registry (first launched, last to land)
+ * Standard Processing Order:
+ * - NATS, Print, MailRelay
+ * - mDNS Server, then mDNS Client (goodbye burst while the client still listens)
+ * - Terminal, WebSocket, Swagger, API, WebServer
+ * - MCP, then Scripting, then Database
+ *   MCP and Scripting still submit queries, so Database stays up until they finish
+ * - Logging, Network, Resources, Notify, OIDC, Payload, Threads, Reporting
+ * - Registry (lands last, outside this list)
  */
 
 // Global includes
@@ -107,52 +99,88 @@ LandingFunction get_landing_function(const char* subsystem_name) {
 }
 
 /*
- * Land approved subsystems in reverse launch order
- * Each subsystem's specific landing code is in its own landing_*.c file
- * Handles both shutdown and restart scenarios
+ * Land each ready subsystem once the subsystems that depend on it have landed.
+ * MCP and Scripting land before Database so an in-flight query can finish.
+ * A running dependent that is not ready cannot stall shutdown: when a pass
+ * makes no progress, the rest land in readiness order.
  */
 bool land_approved_subsystems(ReadinessResults* results) {
     if (!results) return false;
-    
+
     bool all_landed = true;
-    
-    // Process all subsystems in reverse launch order
-    for (size_t i = 0; i < results->total_checked; i++) {
-        const char* subsystem = results->results[i].subsystem;
-        bool is_ready = results->results[i].ready;
-        
-        // Skip Registry - it lands last
-        if (strcmp(subsystem, SR_REGISTRY) == 0) continue;
-        
-        // Get subsystem ID
-        int subsystem_id = get_subsystem_id_by_name(subsystem);
-        if (subsystem_id < 0) continue;
-        
-        // Skip if not ready
-        if (!is_ready) continue;
-        
-        // Update state and attempt landing
-        update_subsystem_state(subsystem_id, SUBSYSTEM_STOPPING);
-        
-        // Get and execute the subsystem's landing function
-        LandingFunction land_func = get_landing_function(subsystem);
-        if (!land_func) continue;
-        
-        bool land_ok = (land_func() == 1);
-        
-        // Update registry state
-        update_subsystem_state(subsystem_id, land_ok ? SUBSYSTEM_INACTIVE : SUBSYSTEM_ERROR);
-        
-        all_landed &= land_ok;
+    size_t limit = results->total_checked;
+    if (limit > MAX_SUBSYSTEMS) {
+        limit = MAX_SUBSYSTEMS;
     }
-    
+
+    bool done[MAX_SUBSYSTEMS] = {0};
+    bool forcing = false;
+
+    for (;;) {
+        bool progressed = false;
+
+        for (size_t i = 0; i < limit; i++) {
+            if (done[i]) continue;
+
+            const char* subsystem = results->results[i].subsystem;
+            bool is_ready = results->results[i].ready;
+
+            /* Registry lands later. Unknown and not-ready entries are skipped. */
+            if (!subsystem || strcmp(subsystem, SR_REGISTRY) == 0 || !is_ready) {
+                done[i] = true;
+                continue;
+            }
+
+            int subsystem_id = get_subsystem_id_by_name(subsystem);
+            if (subsystem_id < 0) {
+                done[i] = true;
+                continue;
+            }
+
+            if (!forcing) {
+                bool can_land = true;
+                check_dependent_states(subsystem, &can_land);
+                if (!can_land) continue;
+            }
+
+            update_subsystem_state(subsystem_id, SUBSYSTEM_STOPPING);
+
+            LandingFunction land_func = get_landing_function(subsystem);
+            if (!land_func) {
+                done[i] = true;
+                continue;
+            }
+
+            bool land_ok = (land_func() == 1);
+            update_subsystem_state(subsystem_id, land_ok ? SUBSYSTEM_INACTIVE : SUBSYSTEM_ERROR);
+            all_landed &= land_ok;
+            done[i] = true;
+            progressed = true;
+        }
+
+        if (progressed) continue;
+        if (forcing) break;
+
+        bool pending = false;
+        for (size_t i = 0; i < limit; i++) {
+            if (!done[i]) {
+                pending = true;
+                break;
+            }
+        }
+        if (!pending) break;
+
+        forcing = true;
+        log_this(SR_LANDING, "Landing remaining ready subsystems in readiness order", LOG_LEVEL_DEBUG, 0);
+    }
+
     return all_landed;
 }
 
 /*
- * Coordinate landing sequence for all subsystems
- * This is the main orchestration function that follows the same pattern as launch
- * but in reverse order. Each phase is handled by its own specialized module.
+ * Coordinate landing sequence for all subsystems.
+ * Each phase is handled by its own specialized module.
+ * Dependents land before the subsystem they use.
  */
 /*
  * Signal handlers for SIGHUP and SIGINT
@@ -202,15 +230,15 @@ bool check_all_landing_readiness(void) {
     
     /*
      * Phase 2: Execute landing plan
-     * Create sequence based on dependencies, in reverse launch order
+     * Log the dependency sequence. Execution uses the readiness order.
      * Handled by landing_plan.c
      */
     bool landing_success = handle_landing_plan(&results);
     
     /*
-     * Phase 3: Land approved subsystems in reverse launch order
-     * Each subsystem's specific landing code is in its own landing_*.c file
-     * This orchestrator only coordinates the process
+     * Phase 3: Land approved subsystems once their dependents have landed.
+     * Each subsystem's specific landing code is in its own landing_*.c file.
+     * This orchestrator only coordinates the process.
      */
     if (landing_success) {
         landing_success = land_approved_subsystems(&results);

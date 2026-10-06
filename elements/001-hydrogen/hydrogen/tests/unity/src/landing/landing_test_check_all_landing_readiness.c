@@ -5,7 +5,10 @@
  *
  * handle_landing_* and land_registry_subsystem are weak-overridden here so the
  * archive members are not pulled. startup_hydrogen is weak under UNITY_TEST_MODE.
- * Real subsystem_registry and restart_requested globals are used.
+ * check_dependent_states is weak for the same reason: landing.c calls it, and the
+ * strong copy lives in landing_plan.c beside handle_landing_plan. Pulling that
+ * object would replace the plan mock. Real subsystem_registry and restart_requested
+ * globals are used.
  */
 
 #include <src/hydrogen.h>
@@ -36,6 +39,15 @@ __attribute__((weak))
 bool handle_landing_plan(const ReadinessResults* results) {
     (void)results;
     return mock_landing_plan_success;
+}
+
+__attribute__((weak))
+bool check_dependent_states(const char* subsystem, bool* can_land) {
+    (void)subsystem;
+    if (can_land) {
+        *can_land = true;
+    }
+    return true;
 }
 
 __attribute__((weak))
