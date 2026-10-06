@@ -44,6 +44,19 @@ typedef struct DQMStatistics {
 } DQMStatistics;
 
 // Forward declaration for self-referencing structure
+#define MIGRATION_RANGE_CAP 8
+
+/* One thousand-series of migration numbers that this payload actually ships.
+ * Band 1 is refs 1000–1999, band 2 is 2000–2999. Loaded and applied are the
+ * high water of query types 1000 and 1003 inside that band. */
+typedef struct MigrationRange {
+    int band;
+    char design[33];
+    long long available;
+    long long loaded;
+    long long applied;
+} MigrationRange;
+
 typedef struct DatabaseQueue DatabaseQueue;
 
 // Database-specific queue wrapper that manages multiple queues
@@ -99,6 +112,8 @@ struct DatabaseQueue {
     volatile long long latest_available_migration;  // AVAIL: Highest number of Lua scripts available
     volatile long long latest_loaded_migration;     // LOAD: Highest query_ref for type = 1000
     volatile long long latest_applied_migration;    // APPLY: Highest query_ref for type = 1003
+    MigrationRange migration_ranges[MIGRATION_RANGE_CAP];
+    size_t migration_range_count;
     volatile bool empty_database;                   // True if no queries found in bootstrap results
     volatile bool orphaned_table_dropped;           // True if orphaned table was dropped during bootstrap cleanup
 
@@ -255,6 +270,18 @@ typedef enum {
 } MigrationAction;
 
 MigrationAction database_queue_lead_determine_migration_action(const DatabaseQueue* lead_queue);
+
+/* Per-band migration watermarks. Bands come from payload file numbers. */
+int migration_ref_band(long long ref);
+void migration_ranges_reset(DatabaseQueue* db_queue);
+bool migration_ranges_load_from_payload(DatabaseQueue* db_queue, const char* migrations_config, const char* dqm_label);
+void migration_ranges_clear_progress(DatabaseQueue* db_queue);
+void migration_ranges_note_query(DatabaseQueue* db_queue, long long query_ref, long long query_type);
+void migration_ranges_sync_globals(DatabaseQueue* db_queue);
+long long migration_range_skip_through(const DatabaseQueue* db_queue, long long query_ref);
+const MigrationRange* migration_range_for_ref(const DatabaseQueue* db_queue, long long query_ref);
+MigrationAction migration_ranges_action(const DatabaseQueue* db_queue);
+void migration_ranges_log(const DatabaseQueue* db_queue, const char* dqm_label, const char* verb, int level);
 void database_queue_lead_log_migration_status(DatabaseQueue* lead_queue, const char* action);
 void database_queue_lead_log_migration_summary(DatabaseQueue* lead_queue);
 bool database_queue_lead_validate_migrations(DatabaseQueue* lead_queue);

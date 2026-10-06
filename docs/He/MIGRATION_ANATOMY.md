@@ -50,8 +50,8 @@ FROM next_query_id;
 
 ### Key Components
 
-- **next_query_id CTE**: Generates the next available query_id
-- **query_ref**: The migration number (e.g., '1001')
+- **next_query_id CTE**: Generates the next `query_id` with `MAX(query_id)+1`. That surrogate is not the migration number, and no design owns a range of them.
+- **query_ref** on these three rows: the migration number (`cfg.MIGRATION`), for example `1001` or `2000`. A caller-facing QueryRef is a different value, `cfg.QUERY_REF`, set by the migration that installs that query. Bands, packs, and lookup ids are in [GUIDE.md](/docs/He/GUIDE.md) under Designs, packs, and numbers.
 - **query_type_a28**: The migration type (forward/reverse/diagram)
 - **code**: The actual SQL to execute, embedded in [=[...]=]
 - **collection**: JSON metadata (used for diagrams)

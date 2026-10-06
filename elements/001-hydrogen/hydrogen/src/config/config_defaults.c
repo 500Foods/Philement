@@ -74,6 +74,7 @@ bool initialize_config_defaults(AppConfig* config) {
     initialize_config_defaults_reporting(config);
     initialize_config_defaults_webhooks(config);
     initialize_config_defaults_mcp(config);
+    initialize_config_defaults_nats(config);
 
     log_this(SR_CONFIG, "― Successfully initialized configuration defaults", LOG_LEVEL_DEBUG, 0);
     return true;
@@ -668,5 +669,13 @@ void initialize_config_defaults_chat(AppConfig* config) {
         memset(&config->chat, 0, sizeof(config->chat));
         chat_config_apply_defaults(&config->chat);
         log_this(SR_CONFIG, "――― Applied config defaults for Chat", LOG_LEVEL_DEBUG, 0);
+    }
+}
+
+void initialize_config_defaults_nats(AppConfig* config) {
+    if (config) {
+        memset(&config->nats, 0, sizeof(config->nats));
+        nats_config_apply_defaults(&config->nats);
+        log_this(SR_CONFIG, "――― Applied config defaults for NATS", LOG_LEVEL_DEBUG, 0);
     }
 }

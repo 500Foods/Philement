@@ -53,11 +53,12 @@ Lithium UI deferred. Does not reuse `Notify` SMTP scaffold or `H.notify`.
 
 ### [NATS PLAN](/docs/H/plans/NATS_PLAN.md)
 
-NATS subsystem plan for cross-instance cache invalidation backchannel. Uses
-DOKS-managed NATS to broadcast cache-invalidation events (token refreshes,
-order updates, query cache clears) between Hydrogen instances and optionally
-forward them to WebSocket clients. Config letter **V** (after U. Chat),
-launch position **22** (after MCP). Planning draft — no code yet.
+NATS subsystem for cross-instance query **result-cache** invalidation.
+An explicit C or Lua call deletes local entries, then publishes. Peers
+delete the same SQL template. Config letter **V**, launch **22**, Test
+**62**, `H_HK_NATS = 7`. Phase 0 approved 2026-10-05. Phases 1, 2, 3, and 4
+complete the same day. Lands before Subscribers
+(letter W).
 
 ### [FIREBIRD PLAN](/docs/H/plans/FIREBIRD.md)
 
@@ -83,6 +84,15 @@ free for test; not Windows). Test **39**. Grows the operator matrix
 ### [MIRAGE PLAN](/docs/H/plans/MIRAGE_PLAN.md)
 
 Distributed proxy architecture sketch. Implementation deferred.
+
+### [ARGENT PLAN](/docs/H/plans/ARGENT_PLAN.md)
+
+Double-entry bookkeeping as an optional pack on the Acuranzo database
+(`elements/002-helium/argent/`, migrations `argent_2xxx`, first file
+`argent_2000`). Never applied alone. A future Gaius pack is `3xxx`.
+Plus-list loader is in source. Tests 32–40 use
+`PAYLOAD:acuranzo+argent`. `H.http.request` for CalDAV is not started.
+Phase 0 not approved. Design folder started 2026-10-05.
 
 ---
 

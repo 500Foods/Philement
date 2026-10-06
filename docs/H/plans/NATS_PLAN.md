@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD007 MD024 -->
 # NATS Subsystem Plan
 
 ## Phases
@@ -7,11 +8,11 @@ Each phase is self-contained with its own exit gate (V/Val/C) and is documented 
 | Phase | Focus | Status | Effort |
 | --- | --- | --- | --- |
 | 0 | Design approval — confirm config letter V, launch 22, message model, open questions | **Approved** 2026-10-05 | Easy |
-| 1 | Config + launch + landing wiring | Not started | Medium |
-| 2 | NATS connection + lifecycle (custom client) | Not started | Hard |
-| 3 | Publish path (broadcast) | Not started | Medium |
-| 4 | Subscribe + dispatch | Not started | Hard |
-| 5 | Cache invalidation hooks | Not started | Hard |
+| 1 | Config + launch + landing wiring | **Complete** 2026-10-05 | Medium |
+| 2 | NATS connection + lifecycle (custom client) | **Complete** 2026-10-05 | Hard |
+| 3 | Publish path (broadcast) | **Complete** 2026-10-05 | Medium |
+| 4 | Subscribe + dispatch | **Complete** 2026-10-05 | Hard |
+| 5 | Cache invalidation hooks | **In progress** 2026-10-05 | Hard |
 | 6 | WebSocket relay | Not started | Hard |
 | 7 | Instance presence & registry | Not started | Hard |
 | 8 | Lua host API | Not started | Medium |
@@ -25,6 +26,11 @@ Each phase is self-contained with its own exit gate (V/Val/C) and is documented 
 | Phase | Status | Last updated | Notes |
 | --- | --- | --- | --- |
 | 0 | **Approved** | 2026-10-05 | Locks signed off. Phase 1 has not started. No `src/` edits in the approval turn. |
+| 1 | **Complete** | 2026-10-05 | `mkp` green, `mkt` green (4m 38s), five `mku` bases green. `test_17` was not in this run. |
+| 2 | **Complete** | 2026-10-05 | `mkp` green (2,200 files). `mkt` green (4m 51s, 346 dead functions, no `nats_` symbol). Seven `mku` bases green. `test_17` was not in this run. |
+| 3 | **Complete** | 2026-10-05 | `mkp` green (2,202 files). `mkt` green (2m 41s, 346 dead functions, no `nats_` symbol). `mku nats_publish_test_nats_broadcast` green (6). `test_17` was not in this run. |
+| 4 | **Complete** | 2026-10-05 | `mkp` green (2,204 files). `mkt` green (2m 43s, 346 dead functions, no `nats_` symbol). `mku nats_dispatch_test_nats_dispatch_message` green (8). `test_17` was not in this run. |
+| 5 | **In progress** | 2026-10-05 | Code is in the tree. The exit gate has not been run. |
 
 ## Purpose
 
@@ -44,7 +50,8 @@ separate token table to refresh. OIDC reads through the same query path
 as everyone else.
 
 This document is a **phased plan**. Phase 0 was approved on 2026-10-05.
-Phase 1 has not started. A 2026-10-05 review checked the locks below
+Phases 1, 2, 3, and 4 are complete. Phase 5 code is in the tree and its
+exit gate has not been run. A 2026-10-05 review checked the locks below
 against the tree and the DOKS NATS deployment; where an earlier paragraph
 disagrees with [Verified constraints](#verified-constraints-2026-10-05),
 the verified section wins.
@@ -53,20 +60,33 @@ the verified section wins.
 
 1. Review the design locks, the verified constraints, and the open questions.
 2. Confirm the config letter, launch position, cache target, and client model.
-3. Work **one phase per conversation**. Phase 0 was approved on
-   2026-10-05. The next conversation is Phase 1 only. Follow
+3. Work **one phase per conversation**. Phases 0–4 are complete.
+   Phase 5 code is in the tree and the exit gate has not been run.
+   Do not start Phase 6 in the turn that closes Phase 5.
+   Follow
    [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) and the gate template already
    in this file (the same shape as
    [`NOTIFICATIONS_PLAN.md`](/docs/H/plans/NOTIFICATIONS_PLAN.md)).
 
 ## Next session
 
-Phase 1 is config, launch, and landing only. Letter **V**, launch
-registration **22** after MCP, landing table entry before Print,
-disabled path is a clean skip. No TCP client in that phase.
-`nats-server` is not on `PATH` on this workstation (checked 2026-10-05).
-Phase 1 does not need it. Phase 2's Unity tests use a fake socket.
-Phase 11 needs a real `nats-server` on port 5620.
+Phase 5 code is in the tree (2026-10-05). The exit gate has not been
+run. Read [Phase 5](#phase-5--result-cache-invalidation). Leave the
+boxes open until these commands pass, in order:
+
+```bash
+zsh -ic 'mkp'
+zsh -ic 'mkt'
+zsh -ic 'mku query_result_cache_test_query_result_cache_invalidate_template'
+zsh -ic 'mku nats_publish_test_nats_broadcast'
+zsh -ic 'mku nats_dispatch_test_nats_dispatch_message'
+```
+
+The new Unity file is invisible until `mkt` reconfigures. Do not start
+Phase 6 in the turn that runs the gate. Do not relay WebSocket, track
+peers, or register Lua. `nats-server` is not on `PATH` on this
+workstation (checked 2026-10-05). Phase 11 needs a real `nats-server`
+on port 5620. The live DOKS broker is not the Phase 11 target.
 
 ## Implementation order
 
@@ -375,6 +395,14 @@ src/api/nats/
   status/status.c/.h        GET /api/nats/status (JWT, cluster connectivity, subscriptions)
   status/peers.c/.h         GET /api/nats/instances (peer list from presence heartbeats)
 ```
+
+That block is the end-state sketch from Phase 0. Files added in each
+phase are listed in that phase's Accomplished section. Do not add a
+file only to match the sketch. There is no `nats_init`, no
+`nats_queue.c`, and no separate client header. The outbound ring lives
+in `nats_client.c`. Link state strings are `down`, `degraded`, and
+`up`. `nats_dispatch.c` parses an incoming envelope. It does not delete
+result-cache rows.
 
 Each `.c` begins with `#include <src/hydrogen.h>`. Includes use
 `<src/folder/...>`. Every function has a header prototype. **No `static`
@@ -803,9 +831,15 @@ were skipped. This section lists every integration point.
 - `config_defaults.c` — `initialize_config_defaults_nats()` + call in master init
 - `config.c` — `LOAD_CONFIG("V", …)`, `DUMP_CONFIG_SECTION`, cleanup in `clean_app_config`
 - `hydrogen.h` — `NATSConfig nats;` in `AppConfig`
-- Example `hydrogen.json` section with `Enabled: false`
+- Example `examples/configs/hydrogen.json` section with `Enabled: false`.
+  That file currently has no MCP section. A missing `NATS` section must
+  still clean-skip, so `tests/configs/hydrogen_test_17_startup_min.json`
+  stays untouched
 - Test 12 env-var pattern for `Username`/`Password` (`${env.*}`)
-- `tests/artifacts/hydrogen_config_schema.json` — if schema is maintained
+- `tests/artifacts/hydrogen_config_schema.json` — root
+  `additionalProperties` is true, and MCP is not in the schema. Do not
+  block Phase 1 on a schema object. Phase 12 adds `NATS` when the
+  operator guide is written
 
 ### Launch / landing / registry / threads
 
@@ -929,6 +963,11 @@ Each `.c` file in `src/nats/` gets dedicated Unity tests. Mock injection follows
 the existing mock framework (`tests/unity/mocks/`). The NATS client connection
 layer should sit behind an injectable seam (function pointer table or mock header,
 like `mock_system`) so Unit tests never require a live NATS server.
+
+The names in the table are the Phase 0 sketch. Tests that exist use
+`<source>_test_<function>.c` and are listed in the phase status
+blocks. Phase 4 added `nats_dispatch_test_nats_dispatch_message.c`.
+Do not add `nats_test_publish.c` for a symbol that is not in the tree.
 
 | Source file | Unit-testable functions | Unity test files |
 | --- | --- | --- |
@@ -1200,6 +1239,905 @@ User explicit approval of Phase 0. No `src/` edits.
   functions (config-only). This is expected — Chat is config-only like Webhooks.
 - 2026-10-04: `mcp_threads` is declared in `registry_integration.h` and
   again in `threads.h`. `mcp_system_shutdown` is in `state.h`.
+- 2026-10-05: Phase 0 approved. Indexes and `INSTRUCTIONS.md` reserve
+  letter V and launch 22. They do not claim the code exists. `nats-server`
+  is not on `PATH`. Phase 1 is the next conversation.
+
+---
+
+## Phase 1 — Config, launch, landing
+
+### Goal
+
+`NATS` config loads, dumps, cleans up, and the subsystem registers,
+launches, and lands. Disabled and missing sections are a clean skip.
+No TCP client, no cache hook, no WebSocket session list.
+
+### Dependencies
+
+Phase 0 approved.
+
+### Entry gate
+
+Phase 0 Status is approved. This section is the work list.
+
+### Work items
+
+- [x] 1.1 `config_nats.h` / `config_nats.c` in `src/config/`. No
+      `src/nats/nats_config.c`. Letter **V** in the `config.h` comment
+      block, after U. Chat. `config_forward.h`, `LOAD_CONFIG("V")`,
+      `DUMP_CONFIG_SECTION("V")`, cleanup in `clean_app_config`,
+      `NATSConfig nats` on `AppConfig`. Call
+      `initialize_config_defaults_nats` from the master init. Chat's
+      initializer is not called today; do not copy that bug, and do not
+      add Chat's missing dump in this phase.
+- [x] 1.2 Parse the sketch in [Config Sketch](#config-sketch). `Subject`
+      is a suffix. Reject `TlsEnabled: true`, an enabled section with
+      no servers, a bad URL, and a bad delay list (`ready = false`).
+      Defaults match the field table, including `StaleAfterSeconds` 0.
+      Passwords stay out of the dump.
+- [x] 1.3 `nats_subject.c`: build `cluster.<ClusterId>.<suffix>`.
+      Reject an empty id, an empty suffix, and a suffix that already
+      starts with `cluster.`. No sockets. `nats_registry.c` waits for
+      Phase 7.
+- [x] 1.4 `SR_NATS` in `globals.h`. `launch_nats.c` and
+      `landing_nats.c`. Wire `launch.h`, `launch.c`,
+      `launch_readiness.c` (22nd call, after MCP), `landing.h`,
+      `landing.c`, and `landing_readiness.c` (before Print).
+      `nats_system_shutdown` and `ServiceThreads nats_threads` follow
+      the MCP externs. In `landing_plan.c`, add `SR_NATS` before
+      `SR_PRINT` only. Do not rebuild `expected_order[]`. Do not bump
+      `MAX_SUBSYSTEMS`.
+- [x] 1.5 Readiness. Missing or disabled: `ready = true`, launch returns
+      1, no thread. Enabled and valid: `ready = true`, launch returns 1,
+      still no thread. The retry thread arrives in Phase 2, including
+      the unreachable-but-valid case. Enabled and invalid:
+      `ready = false`. Register a Network dependency. Register Database
+      when Enabled. Leave the WebSocket dependency for Phase 6.
+- [x] 1.6 Disabled `NATS` object in `examples/configs/hydrogen.json`.
+      Leave the Test 17 min config without a `NATS` section.
+- [x] 1.7 Unity in this phase, one file per function, MCP names as the
+      pattern: `config_nats_test_load_nats_config`,
+      `launch_nats_test_check_nats_launch_readiness`,
+      `launch_nats_test_launch_nats_subsystem`,
+      `landing_nats_test_check_nats_landing_readiness`. Cover disabled,
+      missing, valid, and the four invalid cases in 1.2.
+- [x] 1.8 `mkt` (new `src/` and Unity files are invisible to `mkq`),
+      then `mkp`. `test_17` min still reaches ready. The user runs
+      those commands.
+
+### Done means
+
+Trial build is green. The named Unity tests pass. Dump redacts the
+password. A missing section still launches. No socket is opened.
+
+### Exit gate
+
+`zsh -ic 'mkt'`, the named `mku` bases, `zsh -ic 'mkp'`. `test_17` min
+if it is run.
+
+### Status
+
+**Complete** 2026-10-05. `mkp` passed (2,189 files). `mkt` passed
+(4m 38s, shutdown test passed, no NATS symbol in the dead-code list).
+The five Unity bases passed: `config_nats_test_load_nats_config` (14),
+`launch_nats_test_check_nats_launch_readiness` (8),
+`launch_nats_test_launch_nats_subsystem` (4),
+`landing_nats_test_check_nats_landing_readiness` (1),
+`nats_subject_test_nats_subject_build` (2). `test_17` was not run.
+
+### Implementation note
+
+2026-10-05: config, launch, landing, subject builder, shutdown stub,
+example `NATS` object (`Enabled: false`), and the Unity files named in
+1.7 plus `nats_subject_test_nats_subject_build`. No socket is opened.
+`TlsEnabled: true`, no servers, a bad URL, and a bad delay list load
+successfully and make `ready = false`. A missing or disabled section
+stays a clean skip. cppcheck `variableScope` on the server and event
+lookups was fixed by declaring them in the block that uses them. The
+password Unity check reads the mock log history (`*****` present, the
+secret absent) because Unity replaces `log_this` and
+`log_get_messages` does not see those lines.
+
+---
+
+## Phase 2 — NATS connection + lifecycle
+
+### Goal
+
+One plaintext NATS connection. The client speaks INFO, CONNECT
+(`no_echo`), PUB, SUB, UNSUB, MSG, and PING/PONG. A retry thread
+reconnects and re-sends every SUB. No TLS. No cache dispatch, no
+WebSocket relay, no registry, no Lua, no status HTTP, no Test 62.
+
+### Dependencies
+
+Phase 1 complete.
+
+### Entry gate
+
+Phase 1 Status is complete. `mkp`, `mkt`, and the five Phase 1 Unity
+bases passed on 2026-10-05.
+
+### Work items
+
+- [x] 2.1 Plaintext client in `src/nats/`. Read INFO. Refuse
+      `tls_required`. Refuse `auth_required` when no username is set.
+      Send CONNECT with `verbose: false`, `pedantic: true`,
+      `protocol: 1`, `lang: "c"`, `no_echo: true`, and optional `name`,
+      `user`, and `pass`. Do not log the CONNECT line. SUB from config
+      suffixes via `nats_subject_build`. Queue-group subscriptions send
+      `QueueGroup` as the queue token. Answer PING with PONG. `-ERR` and
+      unknown ops (`HMSG`) are protocol failures. MSG payload is the
+      declared byte count plus CRLF. One read may hold several ops or a
+      split body. Do not dial port 6222.
+- [x] 2.2 Reconnect thread. Delays are 30, 60, 120, 240, 480, then
+      `SteadyDelaySeconds`. `MaxRetries < 0` retries forever.
+      `MaxRetries >= 0` stops after that many handshake failures
+      (`0` is one attempt and no retry). The wait wakes on shutdown.
+      After CONNECT the link is `up`. Until then it is `degraded`.
+      A drop after `up` still reconnects and re-sends SUBs. The outbound
+      queue survives the handshake. `nats_on_msg` logs the subject and
+      length at TRACE and does not dispatch.
+- [x] 2.3 Launch. Enabled and valid calls `nats_start` and returns 1
+      when the thread starts, including when the first connect fails.
+      Disabled still returns 1 with no thread. Invalid still returns 0.
+      `MockConnection` installs the in-source IO that fails immediately.
+      Tests install their own IO table and do not dial.
+- [x] 2.4 Unity, fake socket only:
+      `config_nats_test_nats_server_endpoint`,
+      `nats_client_test_nats_session_handshake`,
+      `nats_client_test_nats_parser_feed`,
+      `nats_client_test_nats_client_publish`,
+      `nats_reconnect_test_nats_reconnect_delay_seconds`,
+      `nats_reconnect_test_nats_reconnect_should_retry`,
+      and the updated `launch_nats_test_launch_nats_subsystem`.
+      The enabled-valid launch case expects one thread, link
+      `degraded`, then a joined shutdown with link `down`.
+- [x] 2.5 Exit gate below. New `src/` and Unity files are invisible to
+      `mkq`. Do not check these boxes until the commands pass.
+
+### Done means
+
+`mkp` is clean. `mkt` is green and the dead-code list has no new NATS
+symbol. The Unity bases in 2.4 pass. No live `nats-server` is required.
+
+### Exit gate
+
+`zsh -ic 'mkp'`, then `zsh -ic 'mkt'`, then `zsh -ic 'mku <base>'` for
+each base in 2.4. `test_17` was not part of this phase.
+
+### Status
+
+**Complete** 2026-10-05. `mkp` passed (2,200 files) after a cppcheck
+`variableScope` / `unreadVariable` fix on the connect `fd` and the
+reset loop index. `mkt` passed (4m 51s, shutdown test passed, 346
+dead functions, no `nats_` symbol). The seven Unity bases passed:
+`config_nats_test_nats_server_endpoint` (5),
+`nats_client_test_nats_session_handshake` (4),
+`nats_client_test_nats_parser_feed` (9),
+`nats_client_test_nats_client_publish` (4),
+`nats_reconnect_test_nats_reconnect_delay_seconds` (2),
+`nats_reconnect_test_nats_reconnect_should_retry` (3),
+`launch_nats_test_launch_nats_subsystem` (4). `test_17` was not run.
+
+### Implementation note
+
+2026-10-05: `src/nats/nats_client.c`, `nats_reconnect.c`, `nats_frame.c`,
+and `nats_io.c`. `launch_nats_subsystem` calls `nats_start`.
+`nats_shutdown` wakes the wait, joins the thread, and closes the
+socket. `nats_server_endpoint` splits a checked `nats://` URL and
+strips IPv6 brackets. The default port is 4222. Unity never opens a
+socket: `MockConnection` fails the launch connect, and the protocol
+tests install an IO table. cppcheck wanted `fd` declared inside the
+address loop and the outbound-reset index declared inside the lock.
+Do not publish on the live DOKS broker as a fixture.
+
+### Accomplished in Phase 2
+
+2026-10-05. One plaintext connection and a retry thread. No TLS, no
+cache dispatch, no WebSocket relay, no registry, no Lua, no status
+HTTP, and no Test 62.
+
+Files in the tree:
+
+- `src/nats/nats.h` — public surface (`nats_start`, `nats_shutdown`,
+  `nats_client_publish`, the IO table, the message handler)
+- `src/nats/nats_internal.h` — buffer caps and internal prototypes
+- `src/nats/nats.c` — lifecycle, link state, `nats_on_msg` (114 lines)
+- `src/nats/nats_client.c` — parser, handshake, SUB table, outbound
+  ring (745 lines)
+- `src/nats/nats_frame.c` — `SUB`, `UNSUB`, `PUB` header, `CONNECT`
+- `src/nats/nats_io.c` — TCP connect, read, and write, plus the
+  failing mock IO used when `Test.MockConnection` is set
+- `src/nats/nats_reconnect.c` — delay ladder and the retry thread
+- `src/nats/nats_subject.c` / `nats_subject.h` — from Phase 1,
+  `nats_subject_build`
+- `src/config/config_nats.c` — `nats_server_endpoint` added beside
+  `nats_server_url_ok`
+- `src/launch/launch_nats.c` — enabled and valid calls `nats_start`
+
+What that code does:
+
+- Launch returns 1 when the thread starts, including when the first
+  connect fails. The link stays `degraded` until `CONNECT`, then
+  `up`. Disabled still returns 1 with no thread. Invalid still
+  returns 0.
+- `nats_shutdown` sets the shutdown flag, wakes the wait, joins,
+  closes the socket, and resets the client.
+- `CONNECT` sends `verbose:false`, `pedantic:true`, `protocol:1`,
+  `lang:"c"`, `version` from `VERSION`, and `no_echo:true`. `name`,
+  `user`, and `pass` are omitted when those strings are empty. The
+  JSON is not logged.
+- `tls_required`, or `auth_required` with no username, skips
+  `CONNECT`. INFO flags that are absent mean false.
+- Every handshake rebuilds `SUB` lines from config.
+  `nats_subject_build` turns each suffix into
+  `cluster.<ClusterId>.<suffix>`. A queue-group entry sends
+  `QueueGroup` as the queue token. The sid is the index plus 1.
+- The reader answers `PING` with `PONG`. `-ERR` and an unknown op
+  (`HMSG`) fail the session. A `MSG` body is the declared byte count
+  plus a trailing CRLF. One read may hold several ops or a split body.
+- The outbound ring has 8 slots (`NATS_OUTBOUND_SLOTS`). It survives
+  a dropped connection. `nats_client_reset` clears it, and that runs
+  on start and after shutdown joins, not on a failed handshake.
+  Publish while the link is not `up` returns 0 and stays queued.
+  Publish while `up` flushes. A write failure pushes the same copies
+  back to the head.
+- `nats_on_msg` logs the subject and the length at TRACE. It does not
+  read the payload and does not dispatch.
+- Port 6222 is rejected by `nats_server_url_ok`, again by
+  `nats_server_endpoint`, and again before `connect`. A host with no
+  port defaults to 4222. IPv6 brackets are stripped.
+- Unity never dials. Protocol tests install an `NatsIo` table. The
+  launch test sets `Test.MockConnection`.
+
+Gate, after the cppcheck fix below: `mkp` clean on 2,200 files.
+`mkt` passed in 4m 51s (shutdown test passed, 346 dead functions, no
+`nats_` symbol). Unity: `config_nats_test_nats_server_endpoint` (5),
+`nats_client_test_nats_session_handshake` (4),
+`nats_client_test_nats_parser_feed` (9),
+`nats_client_test_nats_client_publish` (4),
+`nats_reconnect_test_nats_reconnect_delay_seconds` (2),
+`nats_reconnect_test_nats_reconnect_should_retry` (3),
+`launch_nats_test_launch_nats_subsystem` (4). `test_17` was not run.
+
+### Lessons learned (Phase 2)
+
+- cppcheck `variableScope` is not suppressed. The comment in
+  `.lintignore-c` says it is. Declare a local in the block that uses
+  it. An initializer that the next statement always overwrites is
+  `unreadVariable`. Phase 1 hit this on `servers` and `events`. Phase
+  2 hit it on the connect `fd` and on the reset loop index. The first
+  `mkp` failed on those four findings. The second was clean.
+- `-Werror=format-truncation` fires when `snprintf` copies a 256-byte
+  token into the 32-byte sid buffer (`NATS_SID_CAP`). Check the
+  length, then `memcpy`. A sid of 32 or more is a protocol error.
+- The dead-code gate is `-O0` with `--gc-sections`, rooted at
+  `main()`. A function that only Unity calls is still dead there.
+  Production code has to call it or store its address.
+  `nats_start` stores `nats_client_publish` in `nats_publish_fn` and
+  logs `nats_link_state_name()`. `nats_io_use_config` takes the mock
+  IO addresses on every call, including when `MockConnection` is
+  false. `nats_session_handshake_try` calls `nats_server_endpoint`.
+  `nats_on_msg` is the handler installed at start.
+- New `src/` and Unity `.c` files show up only after `mkt`
+  reconfigures. `mkq` keeps the previous file list. The gate order
+  for this phase was `mkp`, then `mkt`, then `mku <base>`.
+- Unity builds `src/nats` with `-Dlog_this=mock_log_this`. Assert with
+  `mock_logging.h`. `log_get_messages` does not see those lines.
+  Phase 1's first publish of the password test failed for this reason.
+- `TEST_ASSERT` longjmps out of the test. A stack `AppConfig` is gone
+  in `tearDown` while the retry thread is still running. The launch
+  test keeps `launch_cfg` at file scope and calls `nats_shutdown` in
+  `tearDown` before it frees the config. The test body does not free
+  that config.
+- The reconnect wait is `pthread_cond_timedwait` on `CLOCK_REALTIME`.
+  Shutdown broadcasts it. Without that wake the launch test sits on
+  the 30 second first delay. `nats_start` clears
+  `nats_system_shutdown` because setUp and tearDown set the flag.
+  `add_service_thread` runs on the parent while `nats_life_mu` is
+  held, so `thread_count` is already 1 when launch returns.
+- Do not hold `nats_client_mu` across `nats_io_write`. `nats_on_msg`
+  must not take that lock. Phase 4's handler has the same constraint.
+  A lock failure after flush has popped a slot can leave
+  `nats_flush_busy` set and free the copies. That path is rare. Do
+  not "fix" it by clearing the outbound ring on handshake failure.
+- A clean drop (`nats_session_once` returns 1) waits
+  `nats_reconnect_delay_seconds(1)` and does not increment the
+  failure count. A handshake failure (`-1`) does. `MaxRetries < 0`
+  retries forever. `MaxRetries >= 0` stops once
+  `failure_number > MaxRetries`, so `0` is one attempt and no retry.
+- `no_echo` is true, so this process does not receive its own `PUB`
+  as a `MSG`. Local work cannot wait for that echo. Phase 5 still
+  evicts before publish. Phase 4's skip-self check is for peers, and
+  for a server that echoes anyway.
+- The older sketch called the good link `healthy`. The launch section
+  and the code use `up`. `nats_link_state_name` returns `down`,
+  `degraded`, or `up`.
+- Do not log the `CONNECT` line. The password is in that JSON when it
+  is set. Do not log a `MSG` payload. Trace logs the subject and the
+  length.
+- A bad `MSG` trailer is a protocol error only once all `size + 2`
+  bytes are present. A short buffer returns 0, which means "need
+  more". The parser test uses `MSG demo 1 1\r\nX\nZ` for that case.
+- Handshake does not flush the outbound ring, and it does not drop
+  it. A test that publishes while the link is down, then completes a
+  handshake, still has to call `nats_client_flush_outbound` (or enter
+  the read loop) before the `PUB` bytes appear.
+- `nats-server` is not on `PATH` (checked 2026-10-05). The DOKS pod
+  IPs change. Do not put them in a test, and do not publish on that
+  shared broker as a fixture. Phase 11 is a local `nats-server` on
+  port 5620.
+
+### Handoff for Phase 3
+
+Phase 3 adds one JSON envelope and `nats_broadcast()`. The byte path
+is already there. This phase does not parse an incoming envelope,
+evict `query_result_cache`, keep a WebSocket session list, track
+peers, or register Lua. Those are Phases 4, 5, 6, 7, and 8.
+
+Publish through the function that exists:
+
+`nats_client_publish(const char *subject, const void *data, size_t len)`
+
+`subject` is the on-wire name. Build it with
+`nats_subject_build(ClusterId, suffix)`, which returns a malloc'd
+`cluster.<ClusterId>.<suffix>` or NULL. The frame is
+`PUB <subject> <size>\r\n`, then the raw body, then `\r\n`
+(`nats_frame_pub_header` in `nats_frame.c`). Return values:
+
+- `0` — queued, because the link is not `up`
+- the flush result — the link is `up` (0 when the bytes were written)
+- `-1` — bad subject token, subject length of 256 or more, `len`
+  above `max_payload`, the 8-slot ring is full, or
+  `Test.FailNextPublishOnLaunch` was set (that flag fails once and
+  does not enqueue)
+
+Put `nats_broadcast` in a new `src/nats/nats_publish.c`. Leave it out
+of `nats_client.c`. That file is 745 lines, and Test 99 rejects a
+`.c` file past 1000 lines. Do not add `nats_queue.c`. The ring is the
+`nats_out` array in `nats_client.c`. `nats_start` has to call
+`nats_broadcast` or store its address, or the dead-code gate will
+drop it. `nats_publish_fn` is typed as `nats_client_publish`
+(`const char *`, `const void *`, `size_t`). Leave that assignment.
+Take the address of `nats_broadcast` in a second pointer whose type
+matches `nats_broadcast`, and have `nats_broadcast` call
+`nats_client_publish`. Both then stay reachable from `main()`.
+
+One call is one envelope and one `PUB`. The loop over several
+QueryRefs, and the local evict before publish, belong to Phase 5.
+Map the v1 event `cache.invalidate_by_ref` to the suffix
+`cache.invalidate`. Reject a suffix that already starts with
+`cluster.`. Read `ClusterId` and `InstanceId` from
+`app_config->nats`. An explicit `""` in JSON stays empty. The
+hostname default is applied only when the field was never set.
+
+The envelope is the object in [Message Model](#message-model):
+`event`, `subject` (on-wire name), `timestamp` (ISO-8601 UTC),
+`source`, `instance_id`, and `data` (`database`, `query_ref`,
+`reason` for invalidation). Build it with jansson and `JSON_COMPACT`,
+the same way `nats_connect_send` builds `CONNECT`. Do not log that
+JSON. `max_payload` stays 1 MiB until INFO sets it, with an 8 MiB
+ceiling. A full ring returns -1. Do not raise `NATS_OUTBOUND_SLOTS`
+in this phase.
+
+`no_echo` is already on. `nats_broadcast` is finished when the bytes
+are queued or written. It does not wait for a `MSG`. While the link
+is `degraded`, a 0 return means queued, not acknowledged by a peer.
+Leave `H.nats.broadcast_sync` for Phase 8.
+
+Leave `nats_on_msg` as the TRACE log. Phase 4 is the handler that
+parses the envelope. That handler must not take `nats_client_mu`.
+
+Unity file: `nats_publish_test_nats_broadcast.c`, one fake `NatsIo`,
+no dial. Cover the envelope fields, the `PUB` line, a down link that
+only queues, and `FailNextPublishOnLaunch`. Pass `NULL` as the
+jansson error argument so cppcheck does not flag an unread
+`json_error_t`. If a test starts the retry thread, shut it down in
+`tearDown` before freeing config, and keep that `AppConfig` at file
+scope.
+
+Exit gate shape: `zsh -ic 'mkp'`, then `zsh -ic 'mkt'`, then
+`zsh -ic 'mku nats_publish_test_nats_broadcast'`. A new `.c` file
+needs `mkt` before `mku`. Leave the Phase 3 boxes open until those
+commands pass.
+
+Names from the Phase 0 sketch that are not in the tree:
+`nats_init`, `nats_get_status`, `nats_build_subject`,
+`nats_validate_subject_name`, `nats_queue_push`. The live names are
+`nats_start`, `nats_shutdown`, `nats_link_state_name`,
+`nats_subject_build`, and `nats_client_publish`.
+
+---
+
+## Phase 3 — Publish path (broadcast)
+
+### Goal
+
+One JSON envelope and `nats_broadcast()`. The call maps
+`cache.invalidate_by_ref` to the suffix `cache.invalidate`, builds the
+[Message Model](#message-model) object, and hands the bytes to
+`nats_client_publish`. No MSG parse, no result-cache eviction, no
+WebSocket relay, no peer table, no Lua, and no new socket.
+
+### Dependencies
+
+Phase 2 complete.
+
+### Entry gate
+
+Phase 2 Status is complete. `mkp`, `mkt`, and the seven Phase 2 Unity
+bases passed on 2026-10-05.
+
+### Work items
+
+- [x] 3.1 `src/nats/nats_publish.c`. `nats_broadcast(event, data)`
+      accepts only `cache.invalidate_by_ref`. The on-wire suffix is
+      `cache.invalidate`. An event or suffix that starts with
+      `cluster.` returns -1. `data` must be an object with string
+      `database` (non-empty), integer `query_ref`, and string
+      `reason`. The envelope fields are `event`, `subject` (on-wire
+      name), `timestamp` (ISO-8601 UTC), `source`, `instance_id`, and
+      `data`. `source` and `instance_id` are `app_config->nats.InstanceId`.
+      An empty string stays empty. Build with jansson and
+      `JSON_COMPACT`. Do not log that JSON. Return the
+      `nats_client_publish` code. Do not raise `NATS_OUTBOUND_SLOTS`.
+- [x] 3.2 `nats_start` stores `&nats_broadcast` in a pointer typed as
+      `nats_broadcast`. Leave `nats_publish_fn` assigned to
+      `nats_client_publish`. `nats_broadcast` calls
+      `nats_client_publish`.
+- [x] 3.3 Unity `nats_publish_test_nats_broadcast.c`. One fake
+      `NatsIo`. No dial and no retry thread. Cover the envelope
+      fields, the `PUB` line, a down link that only queues,
+      `FailNextPublishOnLaunch`, a `cluster.` event, an empty
+      `InstanceId`, and bad `data`. `json_loads` takes a NULL error
+      argument.
+- [x] 3.4 Exit gate below. A new `.c` file is invisible to `mkq`.
+      Leave these boxes open until the commands pass.
+
+### Done means
+
+`mkp` is clean. `mkt` is green and the dead-code list has no new NATS
+symbol. `nats_publish_test_nats_broadcast` passes. No live
+`nats-server` is required.
+
+### Exit gate
+
+`zsh -ic 'mkp'`, then `zsh -ic 'mkt'`, then
+`zsh -ic 'mku nats_publish_test_nats_broadcast'`. `test_17` is not
+part of this phase.
+
+### Status
+
+**Complete** 2026-10-05. `mkp` passed (2,202 files). `mkt` passed
+(2m 41s, shutdown test passed, 346 dead functions, no `nats_`
+symbol). `mku nats_publish_test_nats_broadcast` passed (6). `test_17`
+was not run.
+
+### Implementation note
+
+2026-10-05: `src/nats/nats_publish.c` (127 lines).
+`nats_broadcast(const char *event, const json_t *data)` builds one
+compact JSON object and calls `nats_client_publish`. `nats_start`
+stores that function in `nats_broadcast_fn` and still stores
+`nats_client_publish` in `nats_publish_fn`. `nats_client.c` stayed
+at 745 lines. The Unity test uses a fake `NatsIo` and does not start
+the retry thread.
+
+### Accomplished in Phase 3
+
+2026-10-05. One JSON envelope and one `PUB`. No MSG parse, no
+result-cache eviction, no WebSocket relay, no peer table, no Lua,
+and no new socket.
+
+Files:
+
+- `src/nats/nats_publish.c` — `nats_broadcast`,
+  `nats_broadcast_suffix`, `nats_broadcast_data_ok`,
+  `nats_broadcast_timestamp` (127 lines)
+- `src/nats/nats.h` — public prototype
+  `nats_broadcast(const char *event, const json_t *data)`
+- `src/nats/nats_internal.h` — prototypes for the three helpers
+- `src/nats/nats.c` — `nats_start` stores `nats_broadcast` (116 lines)
+- `tests/unity/src/nats/nats_publish_test_nats_broadcast.c` — six
+  cases, fake socket
+
+What that code does:
+
+- The only accepted event is `cache.invalidate_by_ref`. The suffix
+  is `cache.invalidate`. `nats_subject_build` turns that into
+  `cluster.<ClusterId>.cache.invalidate`.
+- An empty event, any other event, or a name that starts with
+  `cluster.` returns -1 and does not queue. `app_state` is not
+  mapped here.
+- `data` must be an object with a non-empty string `database`, an
+  integer `query_ref`, and a string `reason`. The envelope copies
+  those three fields and drops anything else.
+- Envelope fields, in order: `event`, `subject` (the on-wire name),
+  `timestamp`, `source`, `instance_id`, `data`. `timestamp` is
+  `YYYY-MM-DDTHH:MM:SSZ` from `gmtime_r`. `source` and `instance_id`
+  are `app_config->nats.InstanceId`. NULL becomes `""`. An explicit
+  empty string stays empty. The publisher does not call
+  `gethostname`.
+- The JSON is `json_dumps` with `JSON_COMPACT`. It is not logged.
+- Return values are `nats_client_publish`'s: 0 when the link is not
+  `up` (queued), the flush result when the link is `up`, and -1 for
+  a bad subject, a payload over `max_payload`, a full 8-slot ring,
+  or `Test.FailNextPublishOnLaunch`. `NATS_OUTBOUND_SLOTS` was not
+  raised.
+- The call is finished when the bytes are queued or written. It
+  does not wait for a `MSG`. `no_echo` is already on.
+
+Gate: `mkp` clean on 2,202 files. `mkt` passed in 2m 41s (shutdown
+test passed, 346 dead functions, no `nats_` symbol). Unity:
+`nats_publish_test_nats_broadcast` (6). `test_17` was not run.
+
+### Lessons learned (Phase 3)
+
+- The first `mkp` was clean. Locals are declared in the function
+  that uses them. In the Unity test, `char *end` is not initialized
+  before `strtoul` writes it. An initializer that the next call
+  always overwrites is `unreadVariable`.
+- The helpers are not `static`. Their prototypes are in
+  `nats_internal.h`. A new `static` function fails `mkt`. cppcheck
+  did not ask to make them static.
+- The dead-code gate stayed at 346 functions and listed no `nats_`
+  symbol. `nats_start` stores `nats_broadcast` in a pointer whose
+  type matches `nats_broadcast`, and it still stores
+  `nats_client_publish` in `nats_publish_fn`. `nats_broadcast`
+  calls `nats_client_publish`, so both stay reachable from `main()`.
+- `mkt` was 2m 41s and built the Unity binary. `mku` then reported
+  `ninja: no work to do` and ran the six tests. A new `.c` file
+  still needs that `mkt` before `mku`. `mkq` would not have seen it.
+- `format_iso_time` uses `gmtime`. The envelope uses `gmtime_r`.
+- Do not log the envelope. Unity builds `src/nats` with
+  `-Dlog_this=mock_log_this`. The test includes `mock_logging.h`
+  and checks that the log does not contain the database name or
+  the event.
+- The test does not call `nats_start`, so it does not need
+  `nats_shutdown`. `AppConfig` is file scope. `json_t` values are
+  released in `tearDown` because `TEST_ASSERT` longjmps.
+- `json_loads` takes NULL as the error argument. An unread
+  `json_error_t` fails cppcheck.
+- `nats_client.c` stayed at 745 lines. Test 99 rejects a `.c` file
+  past 1000 lines. The envelope lives in `nats_publish.c`.
+
+### Handoff for Phase 4
+
+Phase 4 parses one incoming envelope and dispatches. It does not
+create `query_result_cache_invalidate_template`, delete result-cache
+rows, relay WebSocket, track peers, or register Lua. Those are
+Phases 5, 6, 7, and 8.
+
+The handler today is `nats_on_msg` in `src/nats/nats.c`. `nats_start`
+installs it. It logs the subject and the length at TRACE and does
+not read the payload. Phase 4 replaces that behavior. The handler
+must not take `nats_client_mu`. Do not log the payload.
+
+`no_echo` is on, so this process does not receive its own `PUB`.
+Skip-self compares `instance_id` with `app_config->nats.InstanceId`
+for a peer, and for a server that echoes anyway. Phase 5 is the
+local delete, in the publisher, before `nats_broadcast` returns.
+Phase 4 does not delete cache rows.
+
+The bytes Phase 3 writes are `PUB <subject> <size>\r\n`, then
+compact JSON, then `\r\n`. The object is:
+
+- `event`: `cache.invalidate_by_ref`
+- `subject`: `cluster.<ClusterId>.cache.invalidate`
+- `timestamp`: `YYYY-MM-DDTHH:MM:SSZ`
+- `source` and `instance_id`: the configured `InstanceId`, which
+  may be `""`
+- `data.database`: non-empty string
+- `data.query_ref`: a JSON integer
+- `data.reason`: a string
+
+`nats_parser_feed` already hands a `MSG` body to `nats_on_msg`.
+Tests install a fake `NatsIo`. They do not dial. `json_loads` takes
+NULL for the error argument.
+
+Leave `nats_broadcast`'s allow-list as `cache.invalidate_by_ref`
+only. Do not map `app_state` in Phase 4. That publish path is
+Phase 7. `nats_broadcast_suffix` rejects a name that starts with
+`cluster.`.
+
+Do not grow `nats_client.c` (745 lines). `nats.c` is 116 lines. Put
+a parser in its own file if it would push either toward the 1000-line
+Test 99 cap. Unity files use `<source>_test_<function>.c`.
+
+Exit gate shape: `zsh -ic 'mkp'`, then `zsh -ic 'mkt'`, then
+`zsh -ic 'mku <base>'` for each new base. A new `.c` file needs
+`mkt` before `mku`. Leave the Phase 4 boxes open until those
+commands pass. `test_17` is not part of Phase 4. `nats-server` is
+not on `PATH`. Do not publish on the live DOKS broker.
+
+---
+
+## Phase 4 — Subscribe + dispatch
+
+### Goal
+
+Parse one incoming envelope and dispatch `cache.invalidate_by_ref`.
+The handler reads the `MSG` body. A peer whose `instance_id` differs
+from `InstanceId` reaches `nats_dispatch_invalidate`. That function
+traces the event name. It does not delete result-cache rows, relay
+WebSocket, track peers, register Lua, or open a socket.
+
+### Dependencies
+
+Phase 3 complete.
+
+### Entry gate
+
+Phase 3 Status is complete. `mkp`, `mkt`, and
+`nats_publish_test_nats_broadcast` passed on 2026-10-05.
+
+### Work items
+
+- [x] 4.1 `src/nats/nats_dispatch.c`. `nats_dispatch_message` parses
+      the `MSG` body with `json_loadb` and a NULL error argument.
+      The body is not a C string. The only accepted event is
+      `cache.invalidate_by_ref`. The wire subject and the envelope
+      `subject` must both be
+      `cluster.<ClusterId>.cache.invalidate`. `data` must pass
+      `nats_broadcast_data_ok`. `timestamp` is a non-empty string.
+      `source` and `instance_id` are strings. An empty `instance_id`
+      matches an empty `InstanceId`. NULL `InstanceId` is `""`.
+      Skip-self compares those two strings. Do not log the payload,
+      the database name, `query_ref`, or `reason`. Do not take
+      `nats_client_mu`. Do not map `app_state`.
+- [x] 4.2 `nats_on_msg` still traces the subject and the length, then
+      calls `nats_dispatch_message`. `nats_start` stores
+      `nats_dispatch_message` and installs `nats_dispatch_invalidate`.
+      The invalidate function traces the event name and discards
+      its arguments. Pointers passed into it are valid only for
+      that call.
+- [x] 4.3 Unity `nats_dispatch_test_nats_dispatch_message.c`. One
+      fake `NatsIo`. No dial and no retry thread. Cover a peer
+      dispatch, skip-self, an empty `InstanceId`, bad JSON (the
+      parser stays 0), `app_state`, bad `data`, a subject mismatch,
+      and a log that omits the database name. `json_loadb` takes a
+      NULL error argument.
+- [x] 4.4 Exit gate below. A new `.c` file is invisible to `mkq`.
+      Leave these boxes open until the commands pass.
+
+### Done means
+
+`mkp` is clean. `mkt` is green and the dead-code list has no new NATS
+symbol. `nats_dispatch_test_nats_dispatch_message` passes. No live
+`nats-server` is required. No result-cache row is deleted.
+
+### Exit gate
+
+`zsh -ic 'mkp'`, then `zsh -ic 'mkt'`, then
+`zsh -ic 'mku nats_dispatch_test_nats_dispatch_message'`. `test_17`
+is not part of this phase.
+
+### Status
+
+**Complete** 2026-10-05. `mkp` passed (2,204 files). `mkt` passed
+(2m 43s, shutdown test passed, 346 dead functions, no `nats_`
+symbol). `mku nats_dispatch_test_nats_dispatch_message` passed (8).
+`test_17` was not run.
+
+### Implementation note
+
+2026-10-05: `src/nats/nats_dispatch.c` (133 lines).
+`nats_on_msg` traces the subject and the length, then calls
+`nats_dispatch_message`. `nats_dispatch_invalidate` traces the event
+name. `nats_start` stores `nats_dispatch_message` and installs that
+invalidate function. `nats_client.c` stayed at 745 lines. `nats.c`
+is 120 lines. The Unity test uses a fake `NatsIo` and does not start
+the retry thread.
+
+### Accomplished in Phase 4
+
+2026-10-05. One incoming envelope is parsed and dispatched. No
+result-cache eviction, no WebSocket relay, no peer table, no Lua,
+and no new socket.
+
+Files:
+
+- `src/nats/nats_dispatch.c` — `nats_dispatch_message`,
+  `nats_dispatch_fields_ok`, `nats_dispatch_subject_ok`,
+  `nats_dispatch_is_self`, `nats_dispatch_invalidate`,
+  `nats_dispatch_set_invalidate` (133 lines)
+- `src/nats/nats_internal.h` — prototypes for those functions
+- `src/nats/nats.c` — `nats_on_msg` calls the parser;
+  `nats_start` stores it (120 lines)
+- `tests/unity/src/nats/nats_dispatch_test_nats_dispatch_message.c`
+  — eight cases, fake socket
+
+What that code does:
+
+- `nats_parser_feed` still delivers the `MSG` body to `nats_on_msg`.
+  The body is `len` bytes and is not NUL-terminated. The parser
+  uses `json_loadb` with a NULL error argument.
+- The trace line is still the subject and the length. The payload
+  is not logged. A dropped envelope logs `NATS envelope dropped`.
+  Skip-self logs `NATS skip self`. A peer logs
+  `NATS dispatch cache.invalidate_by_ref`.
+- Accepted event: `cache.invalidate_by_ref`. The `MSG` subject, the
+  envelope `subject`, and
+  `cluster.<ClusterId>.cache.invalidate` must be the same string.
+  `app_state` is dropped.
+- `data` reuses `nats_broadcast_data_ok`: non-empty string
+  `database`, integer `query_ref`, string `reason`. `timestamp` is
+  a non-empty string. `source` may be empty.
+- Skip-self compares `instance_id` with
+  `app_config->nats.InstanceId`. NULL becomes `""`. Two empty
+  strings match, so the hook is not called.
+- `nats_dispatch_invalidate` receives `database`, `query_ref`, and
+  `reason`. It traces the event name and discards the arguments.
+  The pointers are valid only for that call, before `json_decref`.
+- A bad JSON body, a bad `data` object, or a subject mismatch does
+  not change the parser result. `nats_parser_feed` stays 0. The
+  handler does not take `nats_client_mu`.
+- `nats_client.c` stayed at 745 lines. `nats_publish.c` stayed at
+  127 lines.
+
+Gate: `mkp` clean on 2,204 files. `mkt` passed in 2m 43s (shutdown
+test passed, 346 dead functions, no `nats_` symbol). Unity:
+`nats_dispatch_test_nats_dispatch_message` (8). `test_17` was not
+run.
+
+### Lessons learned (Phase 4)
+
+- The `MSG` body is not a C string. `json_loads` would read past
+  `len`. `json_loadb` with a NULL error argument parses those
+  bytes. An unread `json_error_t` fails cppcheck.
+- The subject trace includes the wire subject. A test that forbids
+  the token `app_state` fails, because the subject
+  `cluster.philement.instance.app_state` contains it. Assert the
+  payload words (`Acuranzo`, `mutation`) and the dispatch line.
+- Bad JSON is an application drop. `nats_parser_feed` returns 0.
+  Returning -1 would tear the session down.
+- The helpers are not `static`. Their prototypes are in
+  `nats_internal.h`. Locals that belong to one branch are declared
+  in that block. The first `mkp` was clean (2,204 files).
+- The dead-code gate stayed at 346 functions and listed no `nats_`
+  symbol. `nats_start` stores `nats_dispatch_message` and passes
+  `nats_dispatch_invalidate` to `nats_dispatch_set_invalidate`.
+  `nats_on_msg` calls `nats_dispatch_message`.
+- `mkt` was 2m 43s and built the Unity binary. `mku` then reported
+  `ninja: no work to do` and ran the eight tests. A new `.c` file
+  still needs that `mkt` before `mku`.
+- The test does not call `nats_start`. `AppConfig` is file scope.
+  The fake `NatsIo` connect count stays 0. `json_t` is released
+  inside the parser. The test frees the frame in `tearDown`
+  because `TEST_ASSERT` longjmps.
+- `nats_client.c` stayed at 745 lines. The parser lives in
+  `nats_dispatch.c` (133 lines). `nats.c` is 120 lines.
+
+### Handoff for Phase 5
+
+Phase 5 deletes result-cache rows for one SQL template. It does not
+relay WebSocket, track peers, register Lua, or map `app_state`.
+
+Add `query_result_cache_invalidate_template`. It drops every
+parameter variant of one template in one database. The global cache
+is `query_result_cache_get_global`. Keys are the database name, the
+SHA-256 of `QueryCacheEntry.sql_template`, and the parameter hash.
+Do not call `query_result_cache_clear` or `query_cache_clear`.
+
+The template catalog is `DatabaseQueue.query_cache`.
+`global_queue_manager` and
+`database_queue_manager_get_database(manager, name)` find the queue
+for `data.database`. `query_cache_lookup(cache, query_ref, SR_NATS)`
+returns the entry. `query_ref` arrives as `json_int_t`. The lookup
+takes `int`. Drop the message when the value does not fit in `int`.
+
+Call that delete from both sides:
+
+- `nats_dispatch_invalidate` does it for a peer. The `database` and
+  `reason` pointers are valid only for that call. Copy them if the
+  work outlives the call. Do not take `nats_client_mu`. Do not log
+  the payload, the database name, `query_ref`, or `reason`.
+- `nats_broadcast` does the same delete before
+  `nats_client_publish` returns. Local evict does not wait for a
+  `MSG`. `no_echo` is already on.
+
+Leave the publish allow-list as `cache.invalidate_by_ref`. Do not
+grow `nats_client.c` (745 lines). `nats_dispatch.c` is 133 lines.
+`nats.c` is 120 lines. `nats_publish.c` is 127 lines.
+
+Exit gate shape: `zsh -ic 'mkp'`, then `zsh -ic 'mkt'`, then
+`zsh -ic 'mku <base>'` for each new base. A new `.c` file needs
+`mkt` before `mku`. Leave the Phase 5 boxes open until those
+commands pass. `test_17` is not part of Phase 5. `nats-server` is
+not on `PATH`. Do not publish on the live DOKS broker.
+
+---
+
+## Phase 5 — Result-cache invalidation
+
+### Goal
+
+Drop every parameter variant of one SQL template in one database.
+`nats_broadcast` does that delete before `nats_client_publish`.
+`nats_dispatch_invalidate` does it for a peer. No WebSocket relay, no
+peer table, no Lua, and no `app_state` handling.
+
+### Dependencies
+
+Phase 4 complete.
+
+### Entry gate
+
+Phase 4 Status is complete. `mkp`, `mkt`, and
+`nats_dispatch_test_nats_dispatch_message` passed on 2026-10-05.
+
+### Work items
+
+- [ ] 5.1 `query_result_cache_invalidate_template(cache, database, sql)`
+      walks that cache under its own lock and drops every parameter
+      variant of one template in one database. The cache pointer matches
+      `query_result_cache_get` and `query_result_cache_put`. Callers pass
+      `query_result_cache_get_global()`. A NULL cache or a NULL template
+      removes nothing. NULL `database` matches rows stored with a NULL
+      database name. The return value is the number of rows removed.
+      Keys are `database:template_hash:param_hash`. The two hashes do
+      not contain `:`. The database name may. Do not call
+      `query_result_cache_clear` or `query_cache_clear`.
+- [ ] 5.2 `nats_invalidate_query_ref` finds the database on
+      `global_queue_manager` and takes the first
+      `query_cache_lookup` row for that ref. It copies
+      `sql_template` for the call. `query_ref` outside `int` makes
+      `nats_broadcast_data_ok` return false, so `nats_broadcast`
+      returns -1 and does not publish or delete. A missing database
+      or a missing ref deletes nothing. `nats_broadcast` still
+      publishes in that case. Do not log the payload, the database
+      name, `query_ref`, or `reason`. Do not take `nats_client_mu`.
+- [ ] 5.3 `nats_dispatch_invalidate` calls `nats_invalidate_query_ref`,
+      then keeps the trace line `NATS dispatch cache.invalidate_by_ref`.
+      `nats_broadcast` calls the helper after the envelope bytes exist
+      and before `nats_client_publish`. A bad event, bad `data`, or a
+      failed envelope returns -1 with no delete. Do not grow
+      `nats_client.c` (745 lines). `nats.c` stays 120 lines.
+- [ ] 5.4 Unity. New file
+      `query_result_cache_test_query_result_cache_invalidate_template`.
+      Extend `nats_publish_test_nats_broadcast` and
+      `nats_dispatch_test_nats_dispatch_message`. Cover two parameter
+      variants, a different template, another database, a database
+      name that contains `:`, a missing ref that still publishes, a
+      `query_ref` outside `int` that does not publish, the first QTC
+      row when two rows share a ref, a peer delete, and skip-self
+      leaving rows in place. Logs still omit the database name and
+      `reason`. No dial and no retry thread.
+- [ ] 5.5 Exit gate below. A new `.c` file is invisible to `mkq`.
+      Leave these boxes open until the commands pass.
+
+### Done means
+
+`mkp` is clean. `mkt` is green and the dead-code list has no new NATS
+symbol. The three Unity bases pass. No live `nats-server` is required.
+`query_result_cache_clear` and `query_cache_clear` are not the
+per-template path.
+
+### Exit gate
+
+`zsh -ic 'mkp'`, then `zsh -ic 'mkt'`, then
+`zsh -ic 'mku query_result_cache_test_query_result_cache_invalidate_template'`,
+`zsh -ic 'mku nats_publish_test_nats_broadcast'`, and
+`zsh -ic 'mku nats_dispatch_test_nats_dispatch_message'`. `test_17`
+is not part of this phase.
+
+### Status
+
+**In progress** 2026-10-05. The code is in the tree. The exit gate
+has not been run.
+
+### Implementation note
+
+2026-10-05: `query_result_cache_invalidate_template` walks every bucket
+and unlinks matching keys. `nats_invalidate_query_ref` lives in
+`src/nats/nats_dispatch.c` (180 lines) and is called from
+`nats_dispatch_invalidate` and from `nats_broadcast`
+(`src/nats/nats_publish.c`, 140 lines) before
+`nats_client_publish`. `nats_client.c` stayed at 745 lines. `nats.c`
+stayed at 120 lines. `query_result_cache.c` is 536 lines. A `query_ref`
+that does not fit in `int` fails `nats_broadcast_data_ok`.
 
 ---
 
@@ -1222,3 +2160,67 @@ subsystem additions):
 - `src/landing/landing_plan.c` — `expected_order[]` is the Go/No-Go log only. Add `SR_NATS` before `SR_PRINT`. Do not rebuild the list
 - `src/status/status_core.h` — `ServiceMetrics mcp` member of `SystemMetrics`, plus a `specific.mcp` union arm
 - `src/config/config_chat.h` — config-only subsystem (no launch) pattern
+
+---
+
+## Working Log
+
+Resume from the latest entry. Phase status, lessons, and the next-phase
+notes stay in the phase sections above.
+
+### 2026-10-05 — Phase 0 approved
+
+Locks signed off. No `src/` edits in that turn. Letter V, launch 22,
+landing before Print, plaintext client, `no_echo`, subject suffixes.
+
+### 2026-10-05 — Phase 1 complete
+
+Config, launch, landing, and `nats_subject_build`. Gate numbers are in
+the Phase 1 status block. cppcheck `variableScope` is not suppressed.
+
+### 2026-10-05 — Phase 2 complete
+
+Plaintext client, retry thread, and fake-socket Unity tests. Gate
+numbers are in the Phase 2 status block. What landed, what bit the
+build, and how to start Phase 3:
+
+- [Accomplished in Phase 2](#accomplished-in-phase-2)
+- [Lessons learned (Phase 2)](#lessons-learned-phase-2)
+- [Handoff for Phase 3](#handoff-for-phase-3)
+
+Phase 3 has not started. Do not dispatch, evict, or open a socket in
+that phase.
+
+### 2026-10-05 — Phase 3 complete
+
+JSON envelope and `nats_broadcast()`. Gate numbers are in the Phase 3
+status block. What landed, what the build did, and how to start
+Phase 4:
+
+- [Accomplished in Phase 3](#accomplished-in-phase-3)
+- [Lessons learned (Phase 3)](#lessons-learned-phase-3)
+- [Handoff for Phase 4](#handoff-for-phase-4)
+
+Phase 4 has not started. Do not evict, relay, or open a socket in
+that phase.
+
+### 2026-10-05 — Phase 4 complete
+
+Incoming envelope parse and dispatch. Gate numbers are in the Phase 4
+status block. What landed, what the build did, and how to start
+Phase 5:
+
+- [Accomplished in Phase 4](#accomplished-in-phase-4)
+- [Lessons learned (Phase 4)](#lessons-learned-phase-4)
+- [Handoff for Phase 5](#handoff-for-phase-5)
+
+Phase 5 has not started. Do not relay WebSocket, track peers, or
+register Lua in that phase.
+
+### 2026-10-05 — Phase 5 code in the tree
+
+Result-cache delete for one SQL template, from `nats_broadcast` and
+from `nats_dispatch_invalidate`. The exit gate has not been run.
+Boxes in [Phase 5](#phase-5--result-cache-invalidation) stay open
+until `mkp`, `mkt`, and the three `mku` bases pass. Do not start
+Phase 6 in that turn.

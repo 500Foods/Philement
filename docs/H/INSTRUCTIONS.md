@@ -258,6 +258,12 @@ Q. Scripting
 R. Reporting
 S. Webhooks
 T. MCP
+U. Chat (config-only today: no launch or landing)
+
+V is reserved for NATS. W is reserved for Subscribers. Neither letter is
+in `config.h` yet. NATS Phase 0 is approved and Phase 1 adds V. Subscribers
+is still an unapproved plan and must not take V. See
+[`/docs/H/plans/NATS_PLAN.md`](/docs/H/plans/NATS_PLAN.md).
 
 ## SUBSYSTEM ORDER
 
@@ -284,6 +290,18 @@ App uses subsystems and a launch/landing system to control them. Details in src/
 19. Scripting
 20. Reporting
 21. MCP
+
+That list is what `launch_readiness.c` registers today. NATS is the
+approved next registration, **22**, after MCP. It is not in the launch
+list yet. Subscribers is planned as **23** and is not approved.
+`MAX_SUBSYSTEMS` is 24. Do not add a 25th registration: the readiness
+writer does not bounds-check the index.
+
+Landing order is the table in `landing_readiness.c`, first entry first.
+It is not this list reversed. Comments in `landing_readiness.c` and
+`landing.c` that say "reverse launch order" are stale. NATS is inserted
+before Print. `landing_plan.c` `expected_order[]` is only the Go/No-Go
+log.
 
 ## LAUNCH / LANDING
 

@@ -37,6 +37,7 @@
  * S. Webhooks (generic signed ingress)
  * T. MCP (subsystem)
  * U. Chat (subsystem — Phase 10b: per-sub rate limiting)
+ * V. NATS (subsystem)
  * 
  * NOTE: threads, registry, and payload are subsystems that don't 
  * have their own sections in the config system because they are
@@ -83,6 +84,7 @@ bool is_file_readable(const char* path);
 #include "config_webhooks.h"             // S. Webhooks
 #include "config_mcp.h"                  // T. MCP
 #include "config_chat.h"                 // U. Chat
+#include "config_nats.h"                 // V. NATS
 
 // Support for configuration value handling and type conversion
 #include "config_utils.h"  // Includes string handling and file operations

@@ -34,6 +34,37 @@ long long database_queue_find_next_migration_to_apply(DatabaseQueue* lead_queue)
 
     long long after_ref = lead_queue->latest_applied_migration;
 
+    if (lead_queue->migration_range_count > 0 && lead_queue->query_cache) {
+        long long best = 0;
+        size_t range_index;
+
+        for (range_index = 0; range_index < lead_queue->migration_range_count; range_index++) {
+            const MigrationRange* range = &lead_queue->migration_ranges[range_index];
+            long long lo = (long long)range->band * 1000;
+            long long hi = lo + 999;
+            long long after = range->applied;
+            long long next;
+
+            if (after < lo - 1) {
+                after = lo - 1;
+            }
+            next = query_cache_next_ref_between(lead_queue->query_cache, 1000, after, hi, dqm_label);
+            if (next > 0 && (best == 0 || next < best)) {
+                best = next;
+            }
+        }
+        if (best > 0) {
+            log_this(dqm_label, "Found next migration to apply: ref=%lld, type=1000 (from QTC)",
+                     LOG_LEVEL_DEBUG, 1, best);
+            free(dqm_label);
+            return best;
+        }
+        log_this(dqm_label, "No forward migration found in payload ranges (type=1000) - APPLY phase complete",
+                 LOG_LEVEL_DEBUG, 0);
+        free(dqm_label);
+        return 0;
+    }
+
     log_this(dqm_label, "Looking for next migration to apply from QTC (after ref=%lld, type=1000)",
              LOG_LEVEL_DEBUG, 1, after_ref);
 
@@ -309,14 +340,23 @@ bool database_queue_lead_execute_migration_apply(DatabaseQueue* lead_queue) {
             // Re-run bootstrap query to update state after successful application
             database_queue_execute_bootstrap_query(lead_queue);
             
-            // Check if APPLY value actually changed - if not, migration didn't take effect
-            if (lead_queue->latest_applied_migration == previous_apply) {
+            // Check if APPLY value actually changed - if not, migration didn't take effect.
+            // A lower band can move while the global max stays on a higher band.
+            if (lead_queue->migration_range_count > 0) {
+                const MigrationRange* range = migration_range_for_ref(lead_queue, next_migration_id);
+                if (!range || range->applied < next_migration_id) {
+                    log_this(dqm_label, "Migration %lld applied but APPLY value unchanged (%lld) - stopping to prevent infinite loop",
+                             LOG_LEVEL_ERROR, 2, next_migration_id, range ? range->applied : previous_apply);
+                    overall_success = false;
+                    break;
+                }
+            } else if (lead_queue->latest_applied_migration == previous_apply) {
                 log_this(dqm_label, "Migration %lld applied but APPLY value unchanged (%lld) - stopping to prevent infinite loop",
                          LOG_LEVEL_ERROR, 2, next_migration_id, previous_apply);
                 overall_success = false;
                 break;
             }
-            
+
             // Update for next iteration
             previous_apply = lead_queue->latest_applied_migration;
         } else {

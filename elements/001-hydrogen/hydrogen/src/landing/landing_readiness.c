@@ -122,6 +122,7 @@ ReadinessResults handle_landing_readiness(void) {
         const char* name;
         LaunchReadiness (*check_func)(void);
     } subsystems[] = {
+        {SR_NATS,           check_nats_landing_readiness},
         {SR_PRINT,          check_print_landing_readiness},
         {SR_MAIL_RELAY,     check_mail_relay_landing_readiness},
         {SR_MDNS_SERVER,    check_mdns_server_landing_readiness},

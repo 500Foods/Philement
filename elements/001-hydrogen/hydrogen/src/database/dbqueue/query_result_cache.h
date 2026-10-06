@@ -103,6 +103,22 @@ bool query_result_cache_put(QueryResultCache* cache,
 void query_result_cache_clear(QueryResultCache* cache);
 
 /*
+ * Drop every parameter variant of one SQL template in one database.
+ *
+ * Other templates and other databases stay. A NULL cache or a NULL
+ * template removes nothing. database_name NULL matches rows stored
+ * with a NULL database name.
+ *
+ * @param cache          Cache to update; may be NULL.
+ * @param database_name  Database name; NULL is the empty name.
+ * @param sql_template   SQL template; NULL removes nothing.
+ * @return               Number of entries removed.
+ */
+size_t query_result_cache_invalidate_template(QueryResultCache* cache,
+                                              const char* database_name,
+                                              const char* sql_template);
+
+/*
  * Return the number of entries currently in the cache.
  *
  * @param cache  Cache to inspect.
@@ -141,5 +157,6 @@ char* query_result_cache_compute_template_hash(const char* sql_template);
 char* query_result_cache_compute_param_hash(const char* params_json);
 char* query_result_cache_build_key(const char* database_name, const char* template_hash, const char* param_hash);
 size_t query_result_cache_bucket_index(const QueryResultCache* cache, const char* key);
+bool query_result_cache_key_matches_template(const char* key, const char* database_name, const char* template_hash);
 
 #endif /* QUERY_RESULT_CACHE_H */

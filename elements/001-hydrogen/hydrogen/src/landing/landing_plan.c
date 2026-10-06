@@ -81,6 +81,7 @@ bool handle_landing_plan(const ReadinessResults* results) {
         SR_NOTIFY,
         SR_OIDC,
         SR_RESOURCES,
+        SR_NATS,
         SR_PRINT,
         SR_MAIL_RELAY,
         SR_MDNS_SERVER,

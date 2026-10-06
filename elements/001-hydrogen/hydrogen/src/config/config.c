@@ -6,12 +6,12 @@
  * 2. Environment variables (can override JSON values)
  * 3. Built-in defaults (secure baseline when nothing else available)
  *
- * Configuration Sections (A-U):
+ * Configuration Sections (A-V):
  * System Monitoring
  * A. Server        F. API           K. mDNS Client    P. Notify
  * B. Network       G. Swagger       L. Mail Relay     Q. Scripting
  * C. Database      H. WebSocket     M. Print          R. Reporting
- * D. Logging       I. Terminal      N. Resources      S. Webhooks
+ * D. Logging       I. Terminal      N. Resources      S. Webhooks       V. NATS
  * E. WebServer     J. mDNS Server   O. OIDC           T. MCP
  *                                                         U. Chat
  *
@@ -387,6 +387,7 @@ AppConfig* load_config(const char* cmdline_path) {
     LOAD_CONFIG("S", SR_API,             load_webhooks_config);
     LOAD_CONFIG("T", SR_MCP,             load_mcp_config);
     LOAD_CONFIG("U", SR_CHAT,            load_chat_config);
+    LOAD_CONFIG("V", SR_NATS,            load_nats_config);
 
     #undef LOAD_SERVER_CONFIG
     #undef LOAD_CONFIG
@@ -504,6 +505,7 @@ void dumpAppConfig(const AppConfig* config, const char* section) {
     DUMP_CONFIG_SECTION("Q", SR_SCRIPTING,   scripting,   dump_scripting_config);
     DUMP_CONFIG_SECTION("S", SR_API,          webhooks,    dump_webhooks_config);
     DUMP_CONFIG_SECTION("T", SR_MCP,          mcp,         dump_mcp_config);
+    DUMP_CONFIG_SECTION("V", SR_NATS,         nats,        dump_nats_config);
 
     #undef DUMP_CONFIG_SECTION
 
@@ -547,6 +549,7 @@ void clean_app_config(AppConfig* config) {
     cleanup_webhooks_config(&config->webhooks);           // S. Webhooks Configuration
     cleanup_mcp_config(&config->mcp);                     // T. MCP Configuration
     cleanup_chat_config(&config->chat);                   // U. Chat Configuration
+    cleanup_nats_config(&config->nats);                   // V. NATS Configuration
 
 }
 

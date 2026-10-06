@@ -20,7 +20,7 @@
                 "AutoMigration": true,
                 "TestMigration": false,
                 "Schema": "",
-                "Migrations":"PAYLOAD:acuranzo",
+                "Migrations":"PAYLOAD:acuranzo+argent",
                 "Queues": {
                     "Slow": {
                         "start": 2

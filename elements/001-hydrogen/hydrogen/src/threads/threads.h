@@ -46,6 +46,7 @@ extern ServiceThreads print_threads;
 extern ServiceThreads database_threads;
 extern ServiceThreads scripting_threads;
 extern ServiceThreads mcp_threads;
+extern ServiceThreads nats_threads;
 
 // Thread management functions
 void init_service_threads(ServiceThreads *threads, const char* subsystem_name);

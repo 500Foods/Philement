@@ -134,6 +134,17 @@ not open work unless listed below.
 
 ## P2 — Active product subsystems (larger, clear value)
 
+### 29. NATS — cross-instance result-cache invalidation
+
+| | |
+| --- | --- |
+| **Plan** | [`NATS_PLAN.md`](/docs/H/plans/NATS_PLAN.md) |
+| **Effort** | L–XL |
+| **Done** | Phase 0 approved 2026-10-05. Phases 1–4 complete the same day. Phase 4: `mkp` 2,204 files, `mkt` 2m 43s, `mku nats_dispatch_test_nats_dispatch_message` 8/8. Letter V, launch 22, landing before Print. Plaintext client, retry thread, `nats_broadcast()`, and incoming envelope dispatch. |
+| **Remaining** | Phase 5 result-cache invalidation, then WebSocket relay, presence, Lua, Test 62. One phase per conversation. |
+| **Why now** | Phase 0 is approved. Lands before Subscribers so letter V, launch 22, Test 62, and `H_HK_NATS = 7` stay with NATS. |
+| **Note** | Invalidate `query_result_cache`, not the QTC. Config stores subject suffixes. `nats-server` is not on `PATH`; Phase 1 does not need it. `MAX_SUBSYSTEMS` stays 24. |
+
 ### 13. Mail Relay — finish remaining phases
 
 | | |
@@ -174,7 +185,7 @@ not open work unless listed below.
 | **Plan** | [`NOTIFICATIONS_PLAN.md`](/docs/H/plans/NOTIFICATIONS_PLAN.md) |
 | **Effort** | L–XL |
 | **Done** | 0% — exhaustive plan; Phase 0 locks not approved |
-| **Remaining** | Phase 0 lock approval (letter **W**, launch 23, Test 63, `H_HK_SUBSCRIBERS = 8` after NATS takes 7, SSRF v1, coverage/completeness fences), then Phases 1–10/12/13/15. Lithium subscribe UI deferred (Phase 11). NATS plan holds V / 22 / 62 and is also unapproved. |
+| **Remaining** | Phase 0 lock approval (letter **W**, launch 23, Test 63, `H_HK_SUBSCRIBERS = 8`, SSRF v1, coverage/completeness fences), then Phases 1–10/12/13/15. Lithium subscribe UI deferred (Phase 11). NATS (item 29) is approved and goes first: V / 22 / 62 / handle 7. |
 | **Why later** | Lithium SW already displays pushes; Hydrogen has no subscribe/dispatch path. Mail Relay is the outbound analog. Do not reuse `Notify` SMTP scaffold or `H.notify`. |
 | **Note** | Web Push RFC 8030/8291/8292 to vendor endpoints (`fcm.googleapis.com`, `updates.push.mozilla.org`, `web.push.apple.com`). No proprietary FCM/APNs SDKs. No live vendor calls in CI. |
 
@@ -215,6 +226,16 @@ not open work unless listed below.
 | **Done** | 0% — architecture sketch only |
 | **Remaining** | Full design → phased implementation (not yet broken into gates) |
 | **Note** | Deferred. Do not treat as near-term backlog. |
+
+### 30. Argent — Helium bookkeeping design
+
+| | |
+| --- | --- |
+| **Plan** | [`ARGENT_PLAN.md`](/docs/H/plans/ARGENT_PLAN.md) |
+| **Effort** | L (Helium pack and Lua) plus a small Hydrogen surface |
+| **Done** | Design folder, `argent_2000` organizations, `argent_2001` ledgers, plus-list loader source, and tests 31–40 wiring (2026-10-05). Phase 0 not approved. |
+| **Remaining** | Andrew sign-off. Lookup seeds 200, 201, and 202, then the rest of `argent_2xxx`. `H.http.request` before CalDAV. |
+| **Note** | Argent is a 2xxx pack on the Acuranzo database. Query refs start at 2000. `database*.lua` is a copy, packed per design. Tests 32–40 use `PAYLOAD:acuranzo+argent`. Other configs stay `PAYLOAD:acuranzo`. |
 
 ### 23. Enum / struct reservations (no work unless product needs them)
 
@@ -321,12 +342,14 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 12d | MailRelay Persist MySQL/MariaDB SEGV | M | **done** — 14/14 live green; 12d closed | — |
 | 12e | MAX+1 PK clients: confirm + retry | M | single-thread OK | P1 |
 | 13 | Mail Relay remainder | L–XL | ~75% | P2 |
+| 29 | NATS result-cache invalidation | L–XL | Phases 0–4 complete | P2 |
 | 26 | Notifications / Subscribers | L–XL | 0% plan | P2 |
 | 27 | Firebird engine (replace Cockroach) | XL | Phases 0–11 done; cache follow-up | P2 |
 | 28 | MSSQL engine (Lookup 030 key 5) | XL | 0% plan | P2 |
 | 24 | `H.externaldb` — ad-hoc external DB from Lua | M | 0% | P2 |
 | 19 | Print job → device / Beryllium | L–XL | ~30% | P3 |
 | 22 | Mirage | XL | 0% | P3 |
+| 30 | Argent Helium bookkeeping | L | folder started | P3 |
 | 23 | Reserved enums/fields | n/a | n/a | P3 |
 
 (End of file)

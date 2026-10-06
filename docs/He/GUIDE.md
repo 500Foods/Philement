@@ -32,6 +32,24 @@ A single migration file (`acuranzo_XXXX.lua`) must represent **exactly one logic
 
 **Why:** The migration system processes each file as a single transaction with a single `query_ref`. Splitting by engine fragments the state machine and breaks schemahelper/schematool diffing; bundling multiple QueryRefs in one file makes drift auditing ambiguous and complicates forward/reverse symmetry. If a concept genuinely spans multiple QueryRefs, each gets its own migration file.
 
+The migration's own forward, reverse, and diagram rows share one value in the `query_ref` column: `cfg.MIGRATION`, the file number. A caller-facing QueryRef is `cfg.QUERY_REF` and counts as the one QueryRef this rule allows. `acuranzo_1232.lua` is migration 1232 and installs QueryRef 102.
+
+### Designs, packs, and numbers
+
+Files live at `elements/002-helium/{design}/migrations/{design}_{number}.lua`. The design name in the path is what selects `database.lua`. It is not a SQL schema. Each design ships its own `database.lua` and `database_<engine>.lua`. The loader reads `{design}/database.lua` for that design's files.
+
+Some designs own a database and bootstrap `queries`, `lookups`, and `scripts` (`acuranzo_1000`, `helium_4000`, today's `gaius_2000`, `glm_3000`). Argent does not. It is an optional pack on the Acuranzo database: same connection, same schema, same three tables. It inserts rows and adds domain tables. It does not create `queries`, `lookups`, or `scripts`. See [`ARGENT_PLAN.md`](/docs/H/plans/ARGENT_PLAN.md) and [`argent_2000.lua`](/elements/002-helium/argent/migrations/argent_2000.lua).
+
+Allowed `Migrations` values include `PAYLOAD:acuranzo`, `PAYLOAD:acuranzo+argent`, and later `PAYLOAD:acuranzo+gaius` or all three. Argent alone and Gaius alone are rejected. The folder `elements/002-helium/gaius/` is still its own database. Do not apply that tree onto Acuranzo. When a Gaius pack joins this database it is renumbered into 3000–3999 and drops the queries bootstrap.
+
+Three numbers stay separate:
+
+- **Migration number** (`cfg.MIGRATION`, the file number). Acuranzo is 1000–1999. Argent is 2000–2999. A future Gaius pack on this database is 3000–3999. The forward, reverse, and diagram rows store this number in `query_ref`. Hydrogen tracks AVAIL, LOAD, and APPLY once per thousand that the payload ships. A thousand left out of the payload is not migrated. Inside one thousand, a file at or below that band's high-water mark is skipped, so take the next number above the highest file already in that design. Across thousands, the next apply is the lowest pending migration number. A new `acuranzo_1386` still runs after `argent_2001` is applied.
+- **`query_id`.** `MAX(query_id)+1` on the shared `queries` table. No design owns a range.
+- **Caller-facing QueryRef** (`cfg.QUERY_REF`). The id a caller uses. One per migration, in the migration that installs it. It is not the migration number. Uniqueness on `queries` is `(query_ref, query_type_a28)`.
+
+Lookup ids on this shared database are their own sequence. Acuranzo keeps 0–199 (68 families seeded, highest 068). Argent uses 200–299. A later pack takes 300–399. One lookup family per migration. The column name is `*_aN` with that id (`status_a200`). Seed the family from the design that owns the block.
+
 ### Non-Negotiable Rules for Every Migration You Generate
 
 - The migration file **must** be a Lua function with exact signature: `return function(engine, design_name, schema_name, cfg) ... return queries end`
@@ -61,7 +79,7 @@ If you cannot follow all of the above from the source material, ask for clarific
 
 ### Quick Canonical Checklist (use before emitting any migration)
 
-- [ ] One file covers all engines (no per-engine files); exactly one `query_ref` in this migration
+- [ ] One file covers all engines (no per-engine files); exactly one caller-facing QueryRef in this migration, and the file number is the next free number in that design's thousand
 - [ ] Correct function signature and luacheck directives
 - [ ] CHANGELOG entry
 - [ ] cfg.TABLE + cfg.MIGRATION set
@@ -664,6 +682,8 @@ For status and reference tables:
 3. Insert initial lookup values
 4. Use diagram migration with `"lookup": true` for status fields
 
+On the shared Acuranzo database, one migration seeds one lookup family, and the id comes from that design's block: Acuranzo 0–199, Argent 200–299, a later pack 300–399. The column is `*_aN`. See **Designs, packs, and numbers**.
+
 ## Copy/Paste Templates
 
 ### Basic Table Creation Template (Modern Canonical Form)
@@ -999,7 +1019,7 @@ These templates provide a starting point for common migration patterns. Copy, mo
 
 ## Best Practices
 
-0. **One migration = one logical change.** Never create per-engine migration files (one file covers all engines via macros). Never add or modify multiple QueryRefs (`query_ref` values) in a single migration file — each QueryRef gets its own migration. See **"One Migration = One Logical Change"** above.
+0. **One migration = one logical change.** Never create per-engine migration files (one file covers all engines via macros). Never add or modify multiple caller-facing QueryRefs in a single migration file — each gets its own migration. The file number is the next free number in that design's thousand. See **"One Migration = One Logical Change"** and **"Designs, packs, and numbers"**.
 1. **Always include reverse migrations** for testing (and use `${DROP_CHECK}` for table drops).
 2. **Forward ↔ reverse exact mirror** — reverse undoes only what forward did (CREATE↔DROP, INSERT↔DELETE same keys/tables). Zero-row reverse DML is a migration bug; DB2 SQL0100W is the intended alarm. See **Forward/Reverse Symmetry**. Never paper this over in the engine.
 3. **Use diagram migrations** for every schema change (table, significant column change). Include `object_ref` and `${COMMON_DIAGRAM}`.
@@ -1026,9 +1046,10 @@ These templates provide a starting point for common migration patterns. Copy, mo
 
 ## File Naming
 
-- Format: `{schema}_{number}.lua`
-- Numbers: 1000+ for schema migrations
-- Examples: `acuranzo_1000.lua`, `helium_4000.lua`
+- Format: `{design}_{number}.lua`. The design name is the folder, not the SQL schema. Argent files are `argent_2xxx.lua` and land in the Acuranzo schema.
+- Migration numbers: Acuranzo 1000–1999, Argent 2000–2999, a future Gaius pack on that database 3000–3999. Standalone designs that bootstrap their own `queries` table keep their own series (`helium_4000`, today's `gaius_2000` on the Gaius database).
+- Take the next number above the highest file already in that thousand. A number at or below that band's high-water mark is skipped. See **Designs, packs, and numbers**.
+- Examples: `acuranzo_1386.lua`, `argent_2002.lua`, `helium_4000.lua`
 
 ## Testing
 

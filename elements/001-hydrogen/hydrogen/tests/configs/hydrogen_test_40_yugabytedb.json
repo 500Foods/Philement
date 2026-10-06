@@ -50,7 +50,7 @@
           "LOGINMAXATTEMPTS": 100000
         },
         "Schema": "demo",
-        "Migrations": "PAYLOAD:acuranzo",
+        "Migrations": "PAYLOAD:acuranzo+argent",
         "Queues": {
           "Slow": {
             "start": 2

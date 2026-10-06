@@ -1,6 +1,6 @@
 # AGENTS.md — Philement repo guide for automated agents
 
-This is the first file an automated coding agent should read when dropped onto a fresh clone of `500Foods/Philement`. It points you at the elements that actually do work, the docs that matter, the build/test workflow, and the conventions the project enforces. If a pointer below conflicts with a more specific per-element `AGENTS.md` or guide, the specific document wins (Hydrogen's AI guide is [`docs/H/INSTRUCTIONS.md`]; Lithium's is [`elements/003-lithium/AGENTS.md`](/elements/003-lithium/AGENTS.md)).
+This is the first file an automated coding agent should read when dropped onto a fresh clone of `500Foods/Philement`. It points you at the elements that actually do work, the docs that matter, the build/test workflow, and the conventions the project enforces. If a pointer below conflicts with a more specific per-element `AGENTS.md` or guide, the specific document wins (Hydrogen's AI guide is [`docs/H/INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md); Helium's is [`elements/002-helium/AGENTS.md`](/elements/002-helium/AGENTS.md); Lithium's is [`elements/003-lithium/AGENTS.md`](/elements/003-lithium/AGENTS.md)).
 
 ## What is Philement, in 30 seconds
 
@@ -28,7 +28,7 @@ Philement/
 └── elements/                # source trees, named 001-…-name
     ├── 001-hydrogen/        # C server + its own AGENTS-like AI guide
     │   └── hydrogen/        # the actual project (src/, tests/, extras/, payloads/)
-    ├── 002-helium/          # Lua migrations + SchemaTool/SchemaHelper
+    ├── 002-helium/          # Lua migrations + SchemaTool/SchemaHelper (has its OWN AGENTS.md)
     ├── 003-lithium/         # JS SPA (has its OWN AGENTS.md — start there)
     ├── 004-beryllium …      # gcode / 3D-printer-specific elements
     └── 023-vanadium … 026-iron
@@ -43,14 +43,14 @@ Elements are grouped by readiness. **Check each element's `README.md`** before t
 | Element | Path | Maturity | Docs root | Notes |
 |---|---|---|---|---|
 | **001 Hydrogen** | `elements/001-hydrogen/hydrogen/` | active / primary | [`docs/H/README.md`](/docs/H/README.md) | C server; AI guide: [`docs/H/INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) |
-| **002 Helium** | `elements/002-helium/` | active (data layer) | [`docs/He/README.md`](/docs/He/README.md) | Lua migrations for multiple DB engines |
+| **002 Helium** | `elements/002-helium/` | active (data layer) | [`docs/He/README.md`](/docs/He/README.md) | Lua migrations; **[`elements/002-helium/AGENTS.md`](/elements/002-helium/AGENTS.md) is authoritative for migration numbers, packs, and lookup ids** |
 | **003 Lithium** | `elements/003-lithium/` | active (UI) | [`docs/Li/README.md`](/docs/Li/README.md) | Vanilla JS SPA; **[`elements/003-lithium/AGENTS.md`](/elements/003-lithium/AGENTS.md) is element-specific and authoritative for UI work** |
 | 004 Beryllium | `elements/004-beryllium/` | 🏆 usable | [`elements/004-beryllium/README.md`](/elements/004-beryllium/README.md) | gcode handling |
 | 005 Boron … 026 Iron | `elements/005-*` … `elements/026-iron` | 💡🔨 ideas/stubs | per-element `README.md` | Read the README before assuming anything is "live" |
 
 Key: 💡 Idea/Planning, 🔨 Working on it, 🏆 Usable but incomplete.
 
-> **This guide is Hydrogen-centric.** Hydrogen (001) is where the active plans and most conventions live. Other elements have their own conventions, toolchains, and (where present) their own `AGENTS.md` files; their docs may reference aliases/conventions that differ from the Hydrogen ones below, so check an element's `README.md` and docs first. Today only Lithium ships an element-specific `AGENTS.md`; Helium follows Hydrogen's payload/build/test flow but has its own Lua authoring rules.
+> **This guide is Hydrogen-centric.** Hydrogen (001) is where the active plans and most conventions live. Other elements have their own conventions, toolchains, and (where present) their own `AGENTS.md` files; their docs may reference aliases/conventions that differ from the Hydrogen ones below, so check an element's `README.md` and docs first. Helium and Lithium each ship an element-specific `AGENTS.md`. Helium still follows Hydrogen's payload/build/test flow.
 
 ## Where work is organized: plans and the backlog
 
@@ -125,9 +125,12 @@ For Lithium UI work, follow the element-specific [`elements/003-lithium/AGENTS.m
 
 ## Helium (002) — migrations
 
-- **Lua migrations** for multiple designs (Acuranzo = product DB; plus GAIUS, GLM, Helium). Primary target is PostgreSQL 15+ via YugabyteDB.
+Start at [`elements/002-helium/AGENTS.md`](/elements/002-helium/AGENTS.md). It points at **Designs, packs, and numbers** in [`docs/He/GUIDE.md`](/docs/He/GUIDE.md). Read that section before choosing a file number, a QueryRef, or a lookup id.
+
+- **Lua migrations** for multiple designs. Acuranzo owns the product database (migration numbers 1000–1999, lookup ids 0–199). Argent is an optional 2xxx pack on that same database (lookup ids 200–299). GLM and the Helium printing design, and today's Gaius tree, stay on their own databases. Primary target is PostgreSQL 15+ via YugabyteDB.
+- The migration number, `query_id`, and a caller-facing QueryRef are three different values. The bookkeeping rows store the migration number in `query_ref`. `query_id` is `MAX+1`. A caller-facing QueryRef is `cfg.QUERY_REF`.
 - Migrations are **embedded into the Hydrogen payload** and applied by Hydrogen's AutoMigrations — so **after changing a migration you must rebuild the payload** (`mkt`/`mka`) before running migration tests (30–38, 71).
-- Authors should read, in order: [`docs/He/GUIDE.md`](/docs/He/GUIDE.md) → [`docs/He/MIGRATION_ANATOMY.md`](/docs/He/MIGRATION_ANATOMY.md) → [`docs/He/MACRO_REFERENCE.md`](/docs/He/MACRO_REFERENCE.md).
+- Authors then read, in order: [`docs/He/GUIDE.md`](/docs/He/GUIDE.md) → [`docs/He/MIGRATION_ANATOMY.md`](/docs/He/MIGRATION_ANATOMY.md) → [`docs/He/MACRO_REFERENCE.md`](/docs/He/MACRO_REFERENCE.md).
 - **SchemaTool** ([docs/H/tools/SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md), `extras/schematool/`) audits migration drift (Lua migrations vs live `queries`); **SchemaHelper** ([docs/H/tools/SCHEMAHELPER.md](/docs/H/tools/SCHEMAHELPER.md), `extras/schematool/schemahelper.lua`) is its interactive Lua TUI front-end. `mks`/luacheck (Test 98) covers the Lua.
 - Never hand-edit a production DB as the source of truth; migrations are source of truth, and `schemahelper` apply steps are run by a human, not the agent.
 
@@ -145,7 +148,7 @@ For any element 004+, **read its `README.md` in place of assuming activity.** Mo
 - **All Hydrogen docs:** [`docs/H/README.md`](/docs/H/README.md) (table of contents)
 - **Markdown index (Hydrogen-centric):** [`docs/H/SITEMAP.md`](/docs/H/SITEMAP.md)
 - **Every file in the repo:** [`docs/H/STRUCTURE.md`](/docs/H/STRUCTURE.md)
-- **Helium docs:** [`docs/He/README.md`](/docs/He/README.md) · **Lithium docs:** [`docs/Li/README.md`](/docs/Li/README.md)
+- **Helium docs:** [`docs/He/README.md`](/docs/He/README.md) · agent map [`elements/002-helium/AGENTS.md`](/elements/002-helium/AGENTS.md) · **Lithium docs:** [`docs/Li/README.md`](/docs/Li/README.md)
 - **AI/human dev guide (Hydrogen):** [`docs/H/INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) and [`docs/H/PROMPTS.md`](/docs/H/PROMPTS.md)
 - **Architecture:** [`docs/H/core/README.md`](/docs/H/core/README.md), [`docs/H/core/ARCHITECTURE.md`](/docs/H/core/ARCHITECTURE.md)
 - **API reference:** [`docs/H/core/API_OVERVIEW.md`](/docs/H/core/API_OVERVIEW.md), [`docs/H/api/`](/docs/H/api)
@@ -162,7 +165,7 @@ For any element 004+, **read its `README.md` in place of assuming activity.** Mo
 - **"How do I lint my shell script?"** → `zsh -ic 'mks'` (shellcheck, Test 92).
 - **"I changed a migration — why do tests fail?"** → rebuild the payload first: `zsh -ic 'mkt'` (or `mka`), then re-run migration tests. The binary embeds the migrations.
 - **"I need to check if a function is dead code."** → run `mkt`; the linker-based gate writes `elements/001-hydrogen/hydrogen/build/deadcode/dead_functions.txt`. Do **not** baseline chat-named dead functions — drive them to zero (see CHAT_FINALE Phase 5).
-- **"How do I add a DB migration?"** → read `docs/He/GUIDE.md` + `MIGRATION_ANATOMY.md` + `MACRO_REFERENCE.md`. Generate the packet via SchemaTool; **do not apply it yourself** — hand it to a human.
+- **"How do I add a DB migration?"** → [`elements/002-helium/AGENTS.md`](/elements/002-helium/AGENTS.md), then **Designs, packs, and numbers** in [`docs/He/GUIDE.md`](/docs/He/GUIDE.md), then `MIGRATION_ANATOMY.md` and `MACRO_REFERENCE.md`. Generate the packet via SchemaTool; **do not apply it yourself** — hand it to a human.
 - **"Am I allowed to create a new test script?"** → only if explicitly asked. Prefer extending existing tests and following their numbering/conventions.
 
 ## Pull requests

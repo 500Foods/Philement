@@ -150,6 +150,7 @@ struct AppConfig {
     WebhooksConfig webhooks;       // S. Webhooks (LUA_CLIENT Phase 14)
     MCPConfig mcp;                 // T. MCP configuration
     ChatConfig chat;               // U. Chat configuration (Phase 10b)
+    NATSConfig nats;               // V. NATS configuration
 };
 
 // Defined in global.c

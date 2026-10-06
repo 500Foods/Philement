@@ -85,8 +85,11 @@ bool discover_payload_migration_files(const char* migration_name, char*** migrat
                                         free((*migration_files)[j]);
                                     }
                                     free(*migration_files);
+                                    *migration_files = NULL;
+                                    *migration_count = 0;
                                     for (size_t j = 0; j < payload_count; j++) {
                                         free(payload_files[j].name);
+                                        free(payload_files[j].data);
                                     }
                                     free(payload_files);
                                     return false;
@@ -199,7 +202,6 @@ bool discover_files(const DatabaseConnection* conn_config, char*** migration_fil
     bool is_payload = false;
 
     if (strncmp(conn_config->migrations, "PAYLOAD:", 8) == 0) {
-        migration_name = conn_config->migrations + 8;
         is_payload = true;
     } else {
         // For path-based migrations, extract the basename
@@ -210,7 +212,7 @@ bool discover_files(const DatabaseConnection* conn_config, char*** migration_fil
         }
     }
 
-    if (!migration_name) {
+    if (!is_payload && !migration_name) {
         log_this(dqm_label, "Invalid migration configuration", LOG_LEVEL_ERROR, 0);
         return false;
     }
@@ -221,7 +223,25 @@ bool discover_files(const DatabaseConnection* conn_config, char*** migration_fil
 
     bool success = false;
     if (is_payload) {
-        success = discover_payload_migration_files(migration_name, migration_files, migration_count, &files_capacity, dqm_label);
+        char** designs = NULL;
+        size_t design_count = 0;
+        size_t d;
+
+        success = migration_payload_designs(conn_config->migrations, &designs, &design_count, dqm_label);
+        for (d = 0; success && d < design_count; d++) {
+            size_t before = *migration_count;
+            success = discover_payload_migration_files(designs[d], migration_files, migration_count, &files_capacity, dqm_label);
+            if (success && *migration_count == before) {
+                log_this(dqm_label, "No migration files found in payload cache for: %s", LOG_LEVEL_ERROR, 1, designs[d]);
+                success = false;
+            }
+        }
+        migration_payload_designs_free(designs, design_count);
+        if (!success) {
+            cleanup_files(*migration_files, *migration_count);
+            *migration_files = NULL;
+            *migration_count = 0;
+        }
     } else {
         success = discover_path_migration_files(conn_config, migration_files, migration_count, &files_capacity, dqm_label);
     }

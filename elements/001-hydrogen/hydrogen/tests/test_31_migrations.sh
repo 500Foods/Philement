@@ -8,6 +8,7 @@
 # validate_migration()
 
 # CHANGELOG
+# 1.9.0 - 2026-10-05 - Lint the argent design with the same schema map as acuranzo
 # 1.8.0 - 2026-09-29 - Added mssql engine to ENGINES array and DESIGN_SCHEMAS; skip sqruff for mssql
 # 1.7.0 - 2026-09-19 - Removed firebase engine (C-level Firebase fully removed)
 # 1.6.0 - 2026-09-19 - Fixed cache check to recognize SKIPPED results as success
@@ -25,7 +26,7 @@ TEST_NAME="Migrations"
 TEST_ABBR="MGR"
 TEST_NUMBER="31"
 TEST_COUNTER=0
-TEST_VERSION="1.8.0"
+TEST_VERSION="1.9.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -39,7 +40,7 @@ mkdir -p "${CACHE_DIR}"
 HELIUM_DIR="../../../elements/002-helium"
 
 # List of designs to validate
-DESIGNS=("helium" "acuranzo")
+DESIGNS=("helium" "acuranzo" "argent")
 
 # Supported database engines
 ENGINES=("postgresql" "sqlite" "mysql" "db2" "mariadb" "firebird" "mssql")
@@ -49,6 +50,7 @@ ENGINES=("postgresql" "sqlite" "mysql" "db2" "mariadb" "firebird" "mssql")
 declare -A DESIGN_SCHEMAS
 DESIGN_SCHEMAS["helium"]="helium::helium:HELIUM:helium:helium:testms:"
 DESIGN_SCHEMAS["acuranzo"]="app::acuranzo:ACURANZO:test:testfb:testms:"
+DESIGN_SCHEMAS["argent"]="app::acuranzo:ACURANZO:test:testfb:testms:"
 
 # Function to get file hash (using md5sum or equivalent)
 get_file_hash() {

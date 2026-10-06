@@ -7,6 +7,7 @@
 # download_unity_framework()
 
 # CHANGELOG
+# 4.4.2 - 2026-10-05 - Payload freshness check includes the argent design
 # 4.4.1 - 2026-01-01 - If migrations have been updated, in addition to regenerating the payload, the helium/helium_update.sh script is also run
 # 4.4.0 - 2025-12-13 - Added check for HBM browser files timestamps in payload regeneration logic
 # 4.3.0 - 2025-12-03 - Extracted installer building functionality to standalone Test 80 (INS)
@@ -43,7 +44,7 @@ TEST_NAME="Compilation"
 TEST_ABBR="CMP"
 TEST_NUMBER="01"
 TEST_COUNTER=0
-TEST_VERSION="4.4.0"
+TEST_VERSION="4.4.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -194,7 +195,7 @@ needs_payload_regeneration() {
     # Check if migration files are newer than the payload
     # Migration files are in elements/002-helium/{design}/migrations/
     local helium_base_dir="${PROJECT_DIR}/../../002-helium"
-    local designs=("helium" "acuranzo")
+    local designs=("helium" "acuranzo" "argent")
     
     for design in "${designs[@]}"; do
         local migrations_dir="${helium_base_dir}/${design}/migrations"

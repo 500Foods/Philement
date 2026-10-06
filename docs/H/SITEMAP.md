@@ -132,13 +132,14 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [README.md](/docs/H/plans/README.md): Plans folder index
 - [AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md): Auth finale (active P0 plan — OIDC, Keycloak, register, MFA, IdP leftovers)
 - [NOTIFICATIONS_PLAN.md](/docs/H/plans/NOTIFICATIONS_PLAN.md): Web Push / Subscribers subsystem plan (Phase 0 draft)
-- [NATS_PLAN.md](/docs/H/plans/NATS_PLAN.md): NATS subsystem plan — cross-instance cache invalidation backchannel
+- [NATS_PLAN.md](/docs/H/plans/NATS_PLAN.md): NATS subsystem — result-cache invalidation (Phases 1–4 complete 2026-10-05)
 - [FIREBIRD.md](/docs/H/plans/FIREBIRD.md): Firebird engine; retire CockroachDB slot; Firebase teardown
 - [MSSQL.md](/docs/H/plans/MSSQL.md): MS SQL Server engine (Lookup 030 key 5); Fedora Podman Linux container (Phase 0 not approved)
 - [FIREBASE.md](/docs/H/plans/FIREBASE.md): Stub — Firestore plan superseded
 - [MAILRELAY_PLAN.md](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md): Mail Relay subsystem implementation plan
 - [PERSIST_PLAN_COMPLETE.md](/docs/H/plans/complete/PERSIST_PLAN_COMPLETE.md): Mail Relay Persist MySQL/MariaDB fetch SIGSEGV — closed 2026-09-04 (TODO 12d)
 - [MIRAGE_PLAN.md](/docs/H/plans/MIRAGE_PLAN.md): Mirage distributed proxy architecture (deferred)
+- [ARGENT_PLAN.md](/docs/H/plans/ARGENT_PLAN.md): Bookkeeping pack on the Acuranzo database (`argent_2xxx`). Phase 0 not approved. Tests 32–40 apply it with Acuranzo.
 - [UNITY_ASAN_PLAN.md](/docs/H/plans/UNITY_ASAN_PLAN.md): Separate ASAN Unity test variant plan
 - [TERMINAL_FIX_PLAN_COMPLETE.md](/docs/H/plans/complete/TERMINAL_FIX_PLAN_COMPLETE.md): End-to-end terminal fix (JWT IP, payload, WebSocket key, iframe postMessage)
 

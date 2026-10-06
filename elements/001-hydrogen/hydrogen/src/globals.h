@@ -105,6 +105,7 @@
 #define SR_SCRIPTING        "Scripting"   // Lua scripting subsystem (Phase 2b+)
 #define SR_REPORTING        "Reporting"   // Reporting service (image processing)
 #define SR_MCP              "MCP"         // Model Context Protocol server
+#define SR_NATS             "NATS"        // Cross-instance result-cache backchannel
 
 // Additional sub-Subsystem Tracking
 #define SR_WEBSOCKET_LIB    "WebSocket-Lib"     // Low-level libwebsockets diagnostics

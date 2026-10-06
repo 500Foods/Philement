@@ -56,7 +56,8 @@ IN addtion, [Test 01 - Compilation](/docs/H/tests/test_01_compilation.md) builds
 - [**Quick Start Tutorial**](/docs/He/QUICKSTART.md) - 10-minute tutorial for your first migration
 - [**Getting Started Guide**](/docs/He/GETTING_STARTED.md) - Complete setup and learning path
 - [**Setup Guide**](/docs/He/SETUP.md) - Detailed environment setup instructions
-- [**Migration Creation Guide**](/docs/He/GUIDE.md) - Complete guide for creating new migrations with examples
+- [**Helium agent guide**](/elements/002-helium/AGENTS.md) - Session map for migration numbers, packs, QueryRefs, and lookup ids. Read before writing a migration
+- [**Migration Creation Guide**](/docs/He/GUIDE.md) - Complete guide for creating new migrations with examples. Numbering rules are in **Designs, packs, and numbers**
 
 ### Fundamentals
 
@@ -95,6 +96,7 @@ Each schema provides a complete database design with migrations, supporting Post
 
 - [**Main Helium README**](/elements/002-helium/README.md) - Overview of all schemas and scripts
 - [**Acuranzo Schema**](/elements/002-helium/acuranzo/README.md) - Frontend web application schema
+- [**Argent pack**](/elements/002-helium/argent/README.md) - Optional `argent_2xxx` bookkeeping on the Acuranzo database. Never applied alone.
 - [**GAIUS Schema**](/elements/002-helium/gaius/README.md) - GAIUS project database design
 - [**GLM Schema**](/elements/002-helium/glm/README.md) - Greenhouse Labour Management schema
 - [**Helium Schema**](/elements/002-helium/helium/README.md) - 3D printing focused schema

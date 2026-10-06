@@ -209,7 +209,24 @@ bool execute_migration_files_load_only(DatabaseQueue* db_queue, DatabaseHandle* 
     size_t payload_count = 0;
     size_t payload_capacity = 0;
 
-    if (!get_payload_files_by_prefix(migration_name, &payload_files, &payload_count, &payload_capacity)) {
+    bool plus_list = migration_name && strchr(migration_name, '+') != NULL;
+    char** designs = NULL;
+    size_t design_count = 0;
+
+    if (plus_list) {
+        /* PAYLOAD: + 8 names of 32 chars + 7 pluses. */
+        char spec[272];
+        int written = snprintf(spec, sizeof(spec), "PAYLOAD:%s", migration_name);
+        if (written < 0 || (size_t)written >= sizeof(spec)) {
+            log_this(dqm_label, "Migrations list is too long", LOG_LEVEL_ERROR, 0);
+            return false;
+        }
+        if (!migration_payload_designs(spec, &designs, &design_count, dqm_label) ||
+            !payload_files_for_designs(designs, design_count, &payload_files, &payload_count, dqm_label)) {
+            migration_payload_designs_free(designs, design_count);
+            return false;
+        }
+    } else if (!get_payload_files_by_prefix(migration_name, &payload_files, &payload_count, &payload_capacity)) {
         log_this(dqm_label, "Failed to get payload files for migrations", LOG_LEVEL_ERROR, 0);
         return false;
     }
@@ -219,8 +236,11 @@ bool execute_migration_files_load_only(DatabaseQueue* db_queue, DatabaseHandle* 
     // Process each migration with a FRESH Lua state
     // Skip migrations already loaded or applied. After APPLY, type 1000 becomes 1003 so
     // latest_loaded may be 0 while latest_applied is high — treat applied as a floor.
+    // Payload bands use that floor inside the file's own thousand. A file whose thousand
+    // is not in this payload is skipped.
     // Passing NULL for L forces execute_single_migration_load_only_with_state to create its own
     long long skip_through = db_queue->latest_loaded_migration;
+    bool use_ranges = db_queue->migration_range_count > 0;
     if (db_queue->latest_applied_migration > skip_through) {
         skip_through = db_queue->latest_applied_migration;
     }
@@ -228,22 +248,34 @@ bool execute_migration_files_load_only(DatabaseQueue* db_queue, DatabaseHandle* 
     for (size_t i = 0; i < migration_count; i++) {
         // Extract migration reference number from filename (e.g., "acuranzo_1148.lua" -> 1148)
         long long migration_ref = migration_extract_ref_from_filename(migration_files[i]);
+        long long band_floor = skip_through;
         if (migration_ref == -1) {
             log_this(dqm_label, "Failed to extract migration ref from filename: %s", LOG_LEVEL_ERROR, 1, migration_files[i]);
             all_success = false;
             break;
         }
 
-        // Skip migrations already present in Queries (loaded and/or applied)
-        if (migration_ref <= skip_through) {
+        if (use_ranges) {
+            band_floor = migration_range_skip_through(db_queue, migration_ref);
+        }
+
+        // Skip migrations already present in Queries (loaded and/or applied).
+        // band_floor < 0 means this file's thousand is not in the payload.
+        if ((use_ranges && band_floor < 0) || migration_ref <= band_floor) {
             log_this(dqm_label, "Skipping already loaded/applied migration: %s (ref=%lld, skip_through=%lld, loaded=%lld, applied=%lld)",
-                     LOG_LEVEL_DEBUG, 5, migration_files[i], migration_ref, skip_through,
+                     LOG_LEVEL_DEBUG, 5, migration_files[i], migration_ref, band_floor,
                      db_queue->latest_loaded_migration, db_queue->latest_applied_migration);
             continue;
         }
 
+        char design_buf[64];
+        const char* design_name = migration_name;
+        if (plus_list && migration_file_design(migration_files[i], design_buf, sizeof(design_buf))) {
+            design_name = design_buf;
+        }
+
         bool migration_success = execute_single_migration_load_only_with_state(
-            connection, migration_files[i], engine_name, migration_name, schema_name,
+            connection, migration_files[i], engine_name, design_name, schema_name,
             dqm_label, NULL, payload_files, payload_count);
 
         if (!migration_success) {
@@ -254,6 +286,7 @@ bool execute_migration_files_load_only(DatabaseQueue* db_queue, DatabaseHandle* 
 
     // Clean up payload files ONCE at the end
     free_payload_files(payload_files, payload_count);
+    migration_payload_designs_free(designs, design_count);
 
     return all_success;
 }

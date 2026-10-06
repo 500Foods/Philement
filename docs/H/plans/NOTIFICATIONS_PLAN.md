@@ -206,7 +206,7 @@ Do not re-implement these; they are constraints.
 | Test 17 min | Almost empty JSON (`Server` + WebServer IPv4/IPv6 false). New subsystem **must** clean-skip when absent. | `tests/configs/hydrogen_test_17_startup_min.json` |
 | Blackbox slots | **63 is free** (NATS takes 62). 57/58/61 = Mail Relay; 59 = auth chat; 60 = performance; 47 = MCP. | `tests/test_*.sh` |
 | Helium | Latest file `acuranzo_1385.lua` (rewrites **#154**). Highest product QueryRef **#155** (`acuranzo_1381.lua`). Next free migration **1386**, next free QueryRef **#156**. Re-check at packet time. | `elements/002-helium/acuranzo/migrations/` |
-| INSTRUCTIONS.md | Stale: letters end at T. MCP; launch order ends at 21 MCP; **U. Chat is missing**. This plan adds **W** / **23** (NATS takes V/22) and should also write U. Chat into the letter list so the doc matches `config.h`. | [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md) |
+| INSTRUCTIONS.md | Lists A–U and reserves V for NATS and W for this plan. Launch list still ends at 21 MCP. This plan adds **W** / **23** when it is approved. Do not take V. | [INSTRUCTIONS.md](/docs/H/INSTRUCTIONS.md) |
 | `landing_plan.c` | `expected_order[]` is only the Go/No-Go log. It already omits MCP, Scripting, and Reporting. A missing name still lands. Do **not** rewrite the list, and do not look for MCP in it. Add `SR_SUBSCRIBERS` between `SR_WEBSERVER` and `SR_DATABASE`. Live shutdown order is the table in `landing_readiness.c` (after WebServer, before Database). Live launch order is after NATS in `launch_readiness.c` and `launch.c`. | `landing_plan.c` |
 
 ### Live subsystem count (do not guess)

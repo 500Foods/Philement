@@ -32,6 +32,13 @@ bool execute_test(struct DatabaseQueue* db_queue);
 const char* normalize_engine_name(const char* engine_name);
 const char* extract_migration_name(const char* migrations_config, char** path_copy_out);
 
+/* Split PAYLOAD:acuranzo+argent into design names. Rejects argent or gaius without acuranzo. */
+bool migration_payload_designs(const char* migrations_config, char*** designs_out, size_t* count_out, const char* dqm_label);
+void migration_payload_designs_free(char** designs, size_t count);
+bool migration_file_design(const char* migration_file, char* design_out, size_t design_len);
+bool migration_design_span(const char* design, char** first_file_out, size_t* first_size_out, long long* highest_out, const char* dqm_label);
+bool payload_files_for_designs(char** designs, size_t design_count, PayloadFile** files_out, size_t* count_out, const char* dqm_label);
+
 // Helper functions for migration execution (exposed for testing)
 char* copy_sql_from_lua(const char* sql_result, size_t sql_length, const char* dqm_label);
 int count_sql_lines(const char* sql, size_t sql_length);

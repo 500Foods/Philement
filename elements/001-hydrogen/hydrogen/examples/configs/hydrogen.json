@@ -486,5 +486,51 @@
                 "TxtRecords": "path=/websocket"
             }
         ]
+    },
+    "NATS": {
+        "Enabled": false,
+        "Servers": ["nats://nats.nats.svc.cluster.local:4222"],
+        "ClusterId": "philement",
+        "InstanceId": "",
+        "Group": "",
+        "Username": "${env.NATS_USERNAME}",
+        "Password": "${env.NATS_PASSWORD}",
+        "TlsEnabled": false,
+        "TlsCaCert": "",
+        "ConnectionTimeoutSeconds": 10,
+        "Reconnect": {
+            "MaxRetries": -1,
+            "Delays": [30, 60, 120, 240, 480],
+            "SteadyDelaySeconds": 480
+        },
+        "Subscriptions": [
+            {
+                "Subject": "cache.invalidate",
+                "Type": "cluster-wide"
+            },
+            {
+                "Subject": "instance.app_state",
+                "Type": "cluster-wide"
+            },
+            {
+                "Subject": "jobs.refresh-all",
+                "Type": "queue-group",
+                "QueueGroup": "philement-refresh"
+            }
+        ],
+        "WebSocketRelay": {
+            "Enabled": false,
+            "Events": ["order.updated"]
+        },
+        "Presence": {
+            "Enabled": false,
+            "HeartbeatIntervalSeconds": 60,
+            "StaleAfterSeconds": 0,
+            "ReportConnections": true
+        },
+        "Test": {
+            "FailNextPublishOnLaunch": false,
+            "MockConnection": false
+        }
     }
 }

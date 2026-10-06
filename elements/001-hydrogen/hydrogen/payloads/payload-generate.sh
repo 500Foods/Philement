@@ -14,6 +14,7 @@
 # - Cleans up all temporary files
 
 # CHANGELONG
+# 4.4.0 - 2026-10-05 - Pack the argent design beside helium and acuranzo
 # 4.3.0 - 2026-01-10 - Changed SwaggerUI download to use git clone instead of GitHub API to avoid rate limits
 # 4.2.0 - 2025-12-13 - Added folder breakdown section showing file counts, sizes, and percentages for payload components
 # 4.1.0 - 2025-12-08 - Added Hydrogen Build Metrics Browser files to swagger folder in payload
@@ -43,11 +44,11 @@ fi
 set -e
 
 # Display script information
-echo "payload-generate.sh version 4.3.0"
+echo "payload-generate.sh version 4.4.0"
 echo "Encrypted Payload Generator for Hydrogen"
 
 # Helium project Migrations to include (same as test_31_migrations.sh)
-DESIGNS=("helium" "acuranzo")
+DESIGNS=("helium" "acuranzo" "argent")
 HELIUM_DIR="${HELIUM_ROOT}"
 
 # Path configuration

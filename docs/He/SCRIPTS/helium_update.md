@@ -29,6 +29,7 @@ Updates migration indexes for all schemas by calling `migration_index.sh`:
 
 ```bash
 ./migration_index.sh ${HELIUM_ROOT}/acuranzo/README.md ${HELIUM_ROOT}/acuranzo/migrations
+./migration_index.sh ${HELIUM_ROOT}/argent/README.md ${HELIUM_ROOT}/argent/migrations
 ./migration_index.sh ${HELIUM_ROOT}/gaius/README.md ${HELIUM_ROOT}/gaius/migrations
 ./migration_index.sh ${HELIUM_ROOT}/glm/README.md ${HELIUM_ROOT}/glm/migrations
 ./migration_index.sh ${HELIUM_ROOT}/helium/README.md ${HELIUM_ROOT}/helium/migrations
@@ -82,7 +83,7 @@ This script serves as a comprehensive documentation maintenance tool to:
 ## Dependencies
 
 - `migration_index.sh` must be in the same directory
-- All schema directories (acuranzo, gaius, glm, helium) must exist
+- All schema directories (acuranzo, argent, gaius, glm, helium) must exist
 - Each schema must have a README.md and migrations/ folder
 - Optional tools (quality checks skipped if not available):
   - `cloc` for code statistics

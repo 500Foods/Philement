@@ -413,6 +413,94 @@ void query_result_cache_clear(QueryResultCache* cache) {
     pthread_mutex_unlock(&cache->lock);
 }
 
+/*
+ * A stored key is database:template_hash:param_hash. The two hashes do
+ * not contain ':'. The database name may. Match the last two fields.
+ */
+bool query_result_cache_key_matches_template(const char* key,
+                                              const char* database_name,
+                                              const char* template_hash) {
+    if (!key || !database_name || !template_hash || template_hash[0] == '\0') {
+        return false;
+    }
+    {
+        const char* last = strrchr(key, ':');
+
+        if (!last || last == key || last[1] == '\0') {
+            return false;
+        }
+        {
+            const char* prev = last - 1;
+
+            while (prev > key && *prev != ':') {
+                prev--;
+            }
+            if (*prev != ':') {
+                return false;
+            }
+            {
+                size_t name_len = strlen(database_name);
+                size_t db_len = (size_t)(prev - key);
+                size_t hash_len = (size_t)(last - (prev + 1));
+
+                if (db_len != name_len || memcmp(key, database_name, db_len) != 0) {
+                    return false;
+                }
+                if (hash_len != strlen(template_hash) ||
+                    memcmp(prev + 1, template_hash, hash_len) != 0) {
+                    return false;
+                }
+                return true;
+            }
+        }
+    }
+}
+
+size_t query_result_cache_invalidate_template(QueryResultCache* cache,
+                                              const char* database_name,
+                                              const char* sql_template) {
+    if (!cache || !sql_template) {
+        return 0;
+    }
+    {
+        char* template_hash = query_result_cache_compute_template_hash(sql_template);
+
+        if (!template_hash) {
+            return 0;
+        }
+        {
+            const char* db_name = database_name ? database_name : "";
+            size_t removed = 0;
+
+            pthread_mutex_lock(&cache->lock);
+            for (size_t bucket = 0; bucket < cache->bucket_count; bucket++) {
+                QueryResultCacheEntry** link = &cache->buckets[bucket];
+
+                while (*link) {
+                    QueryResultCacheEntry* entry = *link;
+
+                    if (query_result_cache_key_matches_template(entry->key, db_name,
+                                                                template_hash)) {
+                        *link = entry->next;
+                        free(entry->key);
+                        json_decref(entry->data);
+                        free(entry);
+                        if (cache->entry_count > 0) {
+                            cache->entry_count--;
+                        }
+                        removed++;
+                    } else {
+                        link = &entry->next;
+                    }
+                }
+            }
+            pthread_mutex_unlock(&cache->lock);
+            free(template_hash);
+            return removed;
+        }
+    }
+}
+
 // cppcheck-suppress constParameterPointer - pthread_mutex_lock requires non-const mutex even for read-only access
 size_t query_result_cache_entry_count(QueryResultCache* cache) {
     if (!cache) {

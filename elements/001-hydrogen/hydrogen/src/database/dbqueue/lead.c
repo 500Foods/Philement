@@ -79,10 +79,19 @@ MigrationAction database_queue_lead_determine_migration_action(const DatabaseQue
     // AVAIL: The highest number of Lua scripts available
     // LOAD: The highest number from Bootstrap query where type = 1000
     // APPLY: The highest number from Bootstrap query where type = 1003
+    // Payload bands decide per thousand. An empty band list keeps this path.
 
-    long long available = lead_queue->latest_available_migration;
-    long long loaded = lead_queue->latest_loaded_migration;
-    long long applied = lead_queue->latest_applied_migration;
+    long long available;
+    long long loaded;
+    long long applied;
+
+    if (lead_queue->migration_range_count > 0) {
+        return migration_ranges_action(lead_queue);
+    }
+
+    available = lead_queue->latest_available_migration;
+    loaded = lead_queue->latest_loaded_migration;
+    applied = lead_queue->latest_applied_migration;
 
     // Fix inconsistency: if LOAD is 0 but APPLY > 0, migrations were applied without LOAD tracking
     // Assume LOAD = APPLY in this case, since applied migrations must have been loaded first
@@ -124,6 +133,19 @@ MigrationAction database_queue_lead_determine_migration_action(const DatabaseQue
 void database_queue_lead_log_migration_status(DatabaseQueue* lead_queue, const char* action) {
     char* dqm_label = database_queue_generate_label(lead_queue);
 
+    if (lead_queue->migration_range_count > 0) {
+        const char* verb = "Current";
+
+        if (action && strcmp(action, "updating") == 0) {
+            verb = "Updating";
+        } else if (action && strcmp(action, "loading") == 0) {
+            verb = "Loading";
+        }
+        migration_ranges_log(lead_queue, dqm_label, verb, LOG_LEVEL_DEBUG);
+        free(dqm_label);
+        return;
+    }
+
     long long available = lead_queue->latest_available_migration;
     long long loaded = lead_queue->latest_loaded_migration;
     long long applied = lead_queue->latest_applied_migration;
@@ -152,6 +174,11 @@ void database_queue_lead_log_migration_summary(DatabaseQueue* lead_queue) {
         return;
     }
     dqm_label = database_queue_generate_label(lead_queue);
+    if (lead_queue->migration_range_count > 0) {
+        migration_ranges_log(lead_queue, dqm_label, "summary", LOG_LEVEL_STATE);
+        free(dqm_label);
+        return;
+    }
     available = lead_queue->latest_available_migration;
     loaded = lead_queue->latest_loaded_migration;
     applied = lead_queue->latest_applied_migration;
@@ -308,6 +335,7 @@ bool database_queue_lead_execute_migration_process(DatabaseQueue* lead_queue, ch
  * AVAIL: The highest number of Lua scripts available
  * LOAD: The highest number from Bootstrap query where type = 1000
  * APPLY: The highest number from Bootstrap query where type = 1003
+ * Payload migrations repeat that triple once per thousand the payload ships.
  *
  * NOTE: This function ONLY checks AutoMigration flag (not TestMigration).
  *       TestMigration is checked separately by database_queue_lead_run_migration_test().

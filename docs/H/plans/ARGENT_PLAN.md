@@ -2,16 +2,16 @@
 
 **Date:** 2026-10-05 (PT)  
 **Author:** Folly (for Andrew)  
-**Status:** Plan only — implement after Phase 0 gate  
+**Status:** Phase 0 open. Design folder started 2026-10-05 (`argent_2000` organizations, `argent_2001` ledgers). Plus-list loader and per-thousand watermarks are compiled. `H.http.request` is specified and not started.  
 **Authority:** `/workspace/folly/hydrogen-bookkeeping-decisions.md` (33 decisions; supersedes the earlier `fin_*` / Acuranzo-extension proposal)  
 **Design name:** Argent  
-**Helium path:** `elements/002-helium/argent/` (new)  
-**Yugabyte schema:** `argent`  
-**Migration series:** `argent_5xxx.lua` (bootstrap `argent_5000.lua`; next free thousand after acuranzo 1xxx, gaius 2xxx, glm 3xxx, helium 4xxx)
+**Helium path:** `elements/002-helium/argent/`  
+**Database:** the Acuranzo database (same schema, same `queries` / `lookups` / `scripts`). Optional pack. Never applied alone.  
+**Migration series:** `argent_2xxx.lua`. First file `argent_2000.lua` (organizations). Acuranzo keeps lookup ids 0–199. Argent lookup ids are 200–299.
 
 ---
 
-## 0. How a separate Helium design is laid out (verified on Angrin)
+## 0. How Helium designs are laid out (verified on Angrin)
 
 Cited under `/mnt/extra/Projects/Philement`:
 
@@ -19,17 +19,72 @@ Cited under `/mnt/extra/Projects/Philement`:
 |--------|----------|
 | One folder per design | `elements/002-helium/{acuranzo,gaius,glm,helium}/` each with `README.md` + `migrations/` |
 | Own `database*.lua` copy | Every design ships `database.lua` + per-engine files (`database_postgresql.lua`, `database_sqlite.lua`, …) |
-| Own migration numbering | Bootstrap `*_1000` / `*_2000` / `*_3000` / `*_4000` creates that design’s `queries` table |
+| Own migration numbering | Standalone designs bootstrap `queries` at `*_1000` / `*_2000` / `*_3000` / `*_4000`. Argent does not. It is a 2xxx pack on Acuranzo’s `queries` table. |
 | SQLite has empty `${SCHEMA}` | `MACRO_REFERENCE.md`: “SQLite and Firebird use an empty schema prefix.” Yugabyte/PG use `Schema` from Hydrogen config (e.g. `"Schema": "acuranzo"` / `"demo"`). |
-| Designs do **not** share tables via FK | Zero `FOREIGN KEY` / `REFERENCES` across Acuranzo migrations. Cross-design identity is by integer id + Lua `H.altquery(database_name, …)`. |
-| Payload / tests wire designs by name | `payloads/payload-generate.sh` and `tests/test_31_migrations.sh`: `DESIGNS=("helium" "acuranzo")`. Add `"argent"`. Config: `"Design"` / `"Migrations": "PAYLOAD:argent"` / `"Schema": "argent"`. |
-| MCP tools live in that design’s `scripts` | Seeded like `System.Info` / `Mcp.Echo` (`acuranzo_1376.lua`, `acuranzo_1370.lua`): `group_name`, `script_name`, `mcp_access=1`, `mcp_schema`, `mcp_annotations`. |
+| Designs do **not** share tables via FK | Zero `FOREIGN KEY` / `REFERENCES` across Acuranzo migrations. A separate database (GLM, Helium printing, today's Gaius tree) reaches Acuranzo by integer id and `H.altquery`. Argent shares the Acuranzo database, so its Lua uses `H.query`. |
+| Payload / tests wire designs by name | `payloads/payload-generate.sh` and `tests/test_31_migrations.sh`: `DESIGNS=("helium" "acuranzo" "argent")`. Test 71 still diagrams `acuranzo` only. Argent is linted as its own design and applied with Acuranzo on tests 32–40. Connection keys the parser reads: `Name`, `Schema` (the Acuranzo schema), `Migrations`. A `Design` key in JSON is ignored. |
+| MCP tools live in `scripts` | Seeded like `System.Info` / `Mcp.Echo` (`acuranzo_1376.lua`, `acuranzo_1370.lua`): `group_name`, `script_name`, `mcp_access=1`, `mcp_schema`, `mcp_annotations`. Argent inserts those rows into Acuranzo's `scripts` table. |
 | No Python | Lua migrations + Lua MCP scripts only. |
 
-**Implication for Argent:** own schema on Yugabyte (`argent.*`); own SQLite file in tests (empty schema prefix). Unprefixed table names must not collide with Acuranzo’s list so a single-file SQLite dump of both remains safe (decision 22). Bootstrap tables `queries` / `lookups` / `scripts` are duplicated per design by design — they live in separate schemas/files, same as helium/glm/gaius.
+**Implication for Argent:** same Yugabyte schema as Acuranzo, same SQLite file (empty schema prefix). Unprefixed table names must not collide with Acuranzo’s list (decision 22). `queries`, `lookups`, and `scripts` are the Acuranzo tables. Argent adds rows and new domain tables. It does not create a second copy of those three.
 
 **Acuranzo table names checked (do not reuse for Argent domain tables):**  
 `account_access`, `account_canvas_alerts`, `account_canvas_links`, `account_contacts`, `account_oidc_identities`, `account_roles`, `accounts`, `account_settings`, `actions`, `catalog_events`, `connections`, `contact_submissions`, `convos`, `convo_segs`, `course_prices`, `courses`, `course_suggestions`, `dictionaries`, `documents`, `enrollment_events`, `languages`, `licenses`, `lists`, `lookups`, `mail_attempts`, `mail_events`, `mail_otp_codes`, `mail_queue`, `mail_routes`, `mail_templates`, `media_assets`, `notes`, `numbers`, `oauth_authorization_codes`, `oauth_clients`, `oauth_refresh_tokens`, `orders`, `queries`, `reports`, `roles`, `rules`, `scripts`, `sessions`, `systems`, `templates`, `tokens`, `user_enrollments`, `user_preferences`, `user_registration_meta`, `workflows`, `workflow_steps`.
+
+### Composition (2026-10-05)
+
+Argent is a second migration set on the Acuranzo database. Same schema, same connection, same `queries` / `lookups` / `scripts`. Login rows stay in `accounts`. Lua reads them with `H.query`. `Scripting.DefaultDatabase` stays that connection, so QueryRefs 87, 152, and 153 and `Mcp.Server` are already there. `Argent.*` tools are later rows in the same `scripts` table (`group_name` `Argent`, `mcp_access=1`).
+
+| Pack | Numbers | When |
+|------|---------|------|
+| Acuranzo | 1xxx | Always. Owns `queries`, `lookups`, `scripts`, `accounts`. |
+| Argent | 2xxx | Optional. Requires Acuranzo. |
+| Gaius pack | 3xxx | Optional, later. Requires Acuranzo. |
+| Allowed | | acuranzo; acuranzo+argent; acuranzo+gaius; acuranzo+gaius+argent |
+| Refused | | argent alone; gaius alone; argent+gaius with no acuranzo |
+
+The folder `elements/002-helium/gaius/` still bootstraps its own `queries` table in `gaius_2000.lua`. That tree is not this pack. Applying it to an Acuranzo database would create another `queries` table, and that file stores migration number 2000 in `query_ref`, the same value `argent_2000` stores on its bookkeeping rows. When Gaius joins this database, that pack is renumbered into 3xxx and drops the queries bootstrap. GLM (`glm_3xxx`) and the Helium printing design (`helium_4xxx`) stay on their own databases.
+
+Shared-table rules:
+
+- Migration numbers are the file numbers. Acuranzo is 1000–1999, Argent is 2000–2999, and the future Gaius pack is 3000–3999. Each migration's forward, reverse, and diagram rows store that number in `query_ref`. The lead reads types 1000 and 1003 of that column. The overlap with today's `gaius_2000.lua` is accepted. That file is not applied on this database.
+- `query_id` is `MAX(query_id)+1` on the shared table. No pack owns a range of those.
+- A caller-facing QueryRef is `cfg.QUERY_REF` on the migration that installs it. It is a different value from the migration number and from `query_id`. Uniqueness is `(query_ref, query_type_a28)`. Acuranzo migration 1232 installs QueryRef 102. Argent has not assigned a caller-facing QueryRef yet.
+- `lookups`: Acuranzo keeps lookup_id 0–199. On 2026-10-05 it has 68 families and the highest seeded id is 068. It may pass 100. Argent uses 200–299. A later pack takes 300–399. A hundred families is more than Argent or that later pack will use.
+- Domain tables use names absent from the Acuranzo list above. No SQL foreign keys. `created_id` is `accounts.account_id` in this schema.
+
+SQLite’s schema prefix is empty, so both packs land in one file. Names must stay distinct (decision 22).
+
+**Hydrogen loader.** `Migrations` accepts one design or a plus-list:
+
+- `PAYLOAD:acuranzo`
+- `PAYLOAD:acuranzo+argent`
+- `PAYLOAD:acuranzo+gaius`
+- `PAYLOAD:acuranzo+argent+gaius`
+- `PAYLOAD:acuranzo+gaius+argent`
+
+`migration_payload_designs` splits on `+`. `discover_files` collects each design’s `design/design_NNNN.lua` files and sorts by number, so 1xxx runs before 2000. LOAD passes that file’s design name into Lua, which loads `design/database.lua` from the payload. The connection `Schema` is shared. Each thousand present in the payload keeps its own AVAIL, LOAD, and APPLY, taken from the bootstrap rows already in hand; a thousand the payload does not ship is neither reported nor migrated. Inside one thousand, a file at or below that band's high-water mark is skipped. Across thousands, the next apply is the lowest pending migration number. A list that names argent or gaius and omits acuranzo is rejected. `payload-generate.sh` packs `helium`, `acuranzo`, and `argent`, including each design’s `database*.lua`. A trial build leaves `payload.tar.br.enc` in place until `payload-generate.sh` runs. Test 01 regenerates it when a listed design’s migration files are newer than the archive.
+
+`test_31_migrations.sh` lints Argent as its own design. `DESIGN_SCHEMAS["argent"]` uses the same schema map as Acuranzo. Tests 32–39 and 40 set `Migrations` to `PAYLOAD:acuranzo+argent` on the existing connection. Other configs stay `PAYLOAD:acuranzo`.
+
+### CalDAV and `H.http` (Hydrogen)
+
+CalDAV cannot be implemented on the current Lua HTTP surface. `H.http.get` and `H.http.post` are the only verbs. `scripting_api_http.c` and `http_pool.c` return an error for any other method. Stalwart needs PROPFIND, REPORT, PUT, and DELETE, plus a body on PROPFIND and REPORT. A 207 Multi-Status or 412 Precondition Failed must come back as data.
+
+Transport success already returns `{ status, headers, body, elapsed_ms }` for a non-2xx HTTP status. The missing piece is the verb.
+
+Add, and keep `get` / `post` as wrappers over the same path:
+
+```lua
+H.http.request(method, url, body?, headers?, opts?)
+H.http.request_sync(...)
+```
+
+`method` is an allowlist: `GET`, `POST`, `PUT`, `DELETE`, `PROPFIND`, `REPORT`, `MKCALENDAR`, `PROPPATCH`. Any other token, including `CONNECT` and `TRACE`, is an error. Headers already carry `Depth`, `Content-Type`, and `If-Match`. Credentials stay in `ARGENT_CAL_USER`, `ARGENT_CAL_PASS`, and `ARGENT_CAL_HTTP` (decision 31). `os.getenv` can read them. Bank of Canada rates stay on `H.http.get`. Confirm tokens stay as rows. The sandbox has no HMAC helper.
+
+Code to touch when that phase is approved: `scripting_api_http.c`, `http_client.c`, `http_pool.c`, the Unity HTTP tests, and [`LUA_GUIDE.md`](/docs/H/LUA_GUIDE.md). No new subsystem letter.
+
+Chat’s hosted-MCP rule (tools the chat model sees do not call `H.query` or `H.http`) still applies to tools exposed on the chat engine. `Argent.*` is full read/write for Folly, including `H.query` and `H.http.request`.
 
 ---
 
@@ -73,22 +128,22 @@ Conventions (all new tables unless noted):
 
 **Line sign convention (implement in Lua, document in README):** each line’s `amount_cents` is signed so that **for every currency present in a transaction, Σ amount_cents = 0**. Debit-positive for asset/expense ledgers; credit-positive for liability/equity/income — encoded by ledger type when tools compose lines, not by separate debit/credit columns.
 
-### 2.1 Bootstrap (every Helium design)
+### 2.1 Shared Acuranzo tables (not recreated)
 
-| Table | Purpose | Migration |
-|-------|---------|-----------|
-| `queries` | Migration + QueryRef metadata | `argent_5000` |
-| `lookups` | Argent lookup families | `argent_5001` |
-| `scripts` | Lua MCP tools + orchestrator hooks | `argent_5xxx` (create early; MCP columns if not in base create) |
+| Table | Role for Argent |
+|-------|-----------------|
+| `queries` | Created by `acuranzo_1000`. Argent's bookkeeping rows store migration numbers 2000–2999 in `query_ref`. `query_id` is `MAX+1`. Caller-facing QueryRefs are separate. |
+| `lookups` | Created by `acuranzo_1001`. Acuranzo keeps 0–199. Argent seeds lookup_id 200–299. |
+| `scripts` | Acuranzo table, including `mcp_access` / `mcp_schema` / `mcp_annotations`. Later migrations insert `Argent.*`. |
 
-Login identity **reuses Acuranzo `accounts`** (decision 19). Argent stores only integer `account_id` values in `created_id` / permission rows. Lua resolves display names via `H.altquery('Acuranzo', …)` when needed. No Argent copy of passwords.
+Login identity **reuses Acuranzo `accounts`** (decision 19). Argent stores integer `account_id` values in `created_id` / permission rows in the same schema. Lua reads display names with `H.query`. No Argent copy of passwords.
 
 ### 2.2 `organizations`
 
 | Column | Type | Notes |
 |--------|------|-------|
 | `organization_id` | `${INTEGER}` PK | |
-| `status_aNN` | `${INTEGER}` | active / archived |
+| `status_a200` | `${INTEGER}` | Lookup 200, active / archived. Column shipped in `argent_2000`. Seed is the next migration. |
 | `name` | `${TEXT}` | `Andrew Simard`, `500 Foods` |
 | `fiscal_year_start_month` | `${INTEGER}` | 1–12; 500 Foods = 1 (Jan; FYE Dec 31) |
 | `fiscal_year_start_day` | `${INTEGER}` | usually 1 |
@@ -106,8 +161,8 @@ Five types (lookup): **asset, liability, equity, income, expense**. Optional `pa
 | `ledger_id` | `${INTEGER}` PK | |
 | `organization_id` | `${INTEGER}` NOT NULL | |
 | `parent_id` | `${INTEGER}` NULL | Nesting; parents have `is_posting=0` |
-| `status_aNN` | `${INTEGER}` | open / closed / archive |
-| `ledger_type_aNN` | `${INTEGER}` | asset/liability/equity/income/expense |
+| `status_a202` | `${INTEGER}` | Lookup 202, open / closed / archive. Column shipped in `argent_2001`. Seed is later. |
+| `ledger_type_a201` | `${INTEGER}` | Lookup 201, asset/liability/equity/income/expense. Column shipped in `argent_2001`. Seed is later. |
 | `is_posting` | `${INTEGER_SMALL}` | 1 = accepts lines; 0 = parent roll-up only |
 | `name` | `${TEXT}` | |
 | `currency` | `${VARCHAR_20}` NOT NULL | **Fixed** for life of ledger |
@@ -380,15 +435,15 @@ MVP: table exists; tools ignore and grant full r/w to Andrew/Folly.
 - `v_ledger_rollup` — parent ledger in **parent’s fixed reporting currency**, converting children via `rates` (default source BoC) at as-of; exposes `rate_id` / rate used per child.
 - Implementation: `${engine}`-specific view DDL in migrations (PG/YB primary); SQLite views for tests. Document rate fallback (missing rate → null balance + warning column).
 
-### 2.17 Lookups to seed (Argent-local ids; illustrative)
+### 2.17 Lookups to seed (shared `lookups`, ids 200–299)
 
-Ledger type, ledger status, txn status (5 states), txn kind, calendar state (4), rate source, tax code status, schedule status/horizon, entity type (org, ledger, txn, line, recon, schedule, attachment, contact, tag, …), contact role, attachment type/status (includes note), permission unused flags, etc.
+Organization status is **200** (`organizations.status_a200` in `argent_2000`). Ledger type is **201** (`ledgers.ledger_type_a201`) and ledger status is **202** (`ledgers.status_a202`), both columns shipped in `argent_2001`. Seeds for 200, 201, and 202 are later migrations. Then txn status (5 states), txn kind, calendar state (4), rate source, tax code status, schedule status/horizon, entity type (org, ledger, txn, line, recon, schedule, attachment, contact, tag, …), contact role, attachment type/status (includes note), permission unused flags. One lookup family per migration. Acuranzo keeps 0–199 (68 families seeded, highest 068 on 2026-10-05). Argent does not use 069–199.
 
 ---
 
 ## 3. Business rules (Lua)
 
-All live in Argent `scripts` (MCP tools and internal modules). Prefer pure functions + `H.query_sync` / `H.altquery_sync`.
+All live in the shared `scripts` table (MCP tools and internal modules, group `Argent`). Prefer pure functions + `H.query_sync` on this database. Calendar sync uses `H.http.request` once that verb exists. BoC rates use `H.http.get`.
 
 | Rule | Behaviour |
 |------|-----------|
@@ -399,7 +454,7 @@ All live in Argent `scripts` (MCP tools and internal modules). Prefer pure funct
 | **Warn-and-confirm** | Edits/deletes touching Reconciled txns, or `txn_on` ≤ `ledgers.latest_reconciled_on`, or period_close boundaries → response `{ needs_confirm, warning, confirm_token }`. Retry with `confirm=token` applies change and **knocks status back to Recorded** (and clears recon links as needed). Same for edits before a period_close statement txn. |
 | **Schedule generation** | Expand RRULE through horizon (default **through org FYE**); create Reserved txns; skip dates that already have a matching Reserved/actual. |
 | **Reserved → actual** | Posting an actual with `replaces_txn_id` or match key (schedule_id + date + amount window): mark Reserved Rescinded or superseded; estimates replaced by actuals. |
-| **CalDAV sync** | After successful save, enqueue calendar_state=pending; async Lua/orchestrator pushes create/update using **env only** `ARGENT_CAL_USER`, `ARGENT_CAL_PASS`, `ARGENT_CAL_HTTP` (base URL) — **never stored in the DB** (decision 31). Never fails the save. Retries increment `calendar_attempts`; Failed after N with `calendar_error`. `Argent.RetryCalendar` + sync-problems query. |
+| **CalDAV sync** | After successful save, enqueue calendar_state=pending; async Lua pushes create/update with `H.http.request` (PROPFIND, REPORT, PUT, DELETE) using **env only** `ARGENT_CAL_USER`, `ARGENT_CAL_PASS`, `ARGENT_CAL_HTTP` (base URL) — **never stored in the DB** (decision 31). Never fails the save. Retries increment `calendar_attempts`; Failed after N with `calendar_error`. `Argent.RetryCalendar` + sync-problems query. |
 | **Report inclusion** | Balances and most reports **exclude Reserved and Rescinded** by default. Forecast/projected tools (`QueryDue`, etc.) include Reserved only when `include_reserved=true` (decision 32). |
 | **Parent roll-up** | Read-only views/tools; conversion uses selected rate source (default BoC); never posts FX. |
 | **Opening** | Creating a ledger posts opening balance txn (kind=opening) on `opening_on`; moving opening earlier is a deliberate tool that may insert history. |
@@ -461,7 +516,7 @@ Register in Argent `scripts`: `mcp_access=1`, `invokable=0`, annotations per too
 | `Argent.GenerateSchedule` | schedule_id?, org_id?, horizon? | Creates Reserved |
 | `Argent.MatchReserved` | actual payload + replaces/match | |
 | `Argent.AddTags` / `Argent.RemoveTags` | entity, tag names | |
-| `Argent.AddAttachment` | entity_type, entity_id, name, `att_type` (note|pdf|…), `file_text?` (note body), file_name/mime/data? | File and/or plain note (decision 33); replaces AddMemo/AttachFile | |
+| `Argent.AddAttachment` | entity_type, entity_id, name, `att_type` (note, pdf, …), `file_text?` (note body), file_name/mime/data? | File and/or plain note (decision 33); replaces AddMemo/AttachFile |
 | `Argent.RetryCalendar` | txn_id? or all failed | |
 | `Argent.UpsertRate` | pair, source, as_of, rate | Manual |
 | `Argent.UpsertTaxCode` / `Argent.UpsertTaxRate` | … | |
@@ -501,10 +556,22 @@ Each GATE = (a) listed Hydrogen tests green on Argent design, (b) Folly verifica
 
 ### Phase 1 — Schema / migrations / seeds
 
-- Create `elements/002-helium/argent/` (README, `database*.lua` copied from Acuranzo/helium pattern, `migrations/`).
-- `argent_5000` queries bootstrap; `5001` lookups; then tables in dependency order; diagram migrations; seed currencies CAD/USD; seed tax codes skeleton; seed entity-type lookups.
-- Wire `DESIGNS` in `test_31_migrations.sh`, `payload-generate.sh`, and add Argent connection snippets for `test_38` / sqlite migration tests.
-- **GATE 1:** `test_31` (static) + `test_34`/`test_38` (or Argent-targeted equivalents) apply clean forward+reverse on SQLite and Yugabyte; `test_71` diagrams generate; `test_98` luacheck clean; Andrew reviews ERD/README.
+Started 2026-10-05, before GATE 0. Organizations and ledgers exist. The rest of the schema does not.
+
+Done:
+
+- `elements/002-helium/argent/` with README, eight `database*.lua` files copied from Acuranzo (including MariaDB and MSSQL), `argent_2000.lua` (`organizations`, `status_a200`), and `argent_2001.lua` (`ledgers`, `ledger_type_a201`, `status_a202`). The copies stay. Each is small, and the loader reads `argent/database.lua` for Argent files.
+- `helium_update.sh` indexes and luachecks `argent` with the other designs.
+- Plus-list loader in `execute_helpers.c`, `files.c`, `validate.c`, and `execute_load.c`. Per-thousand AVAIL, LOAD, and APPLY compiled into `hydrogen` and `hydrogen_coverage` on 2026-10-05. A payload reports and migrates only the thousands it ships.
+- `payload-generate.sh` and Test 01 list `argent`. Test 31 lints it. Tests 32–39 and 40 use `PAYLOAD:acuranzo+argent`.
+- 2026-10-05: payload archive regenerated with `argent_2000` and `argent_2001`. Coverage and regular binaries rebuilt with that archive. Test 34 applied both forward onto `hydrotst.sqlite` (6/6). `TestMigration` stayed off, so reverse did not run.
+
+Still to do:
+
+- Next migrations seed lookups 200, 201, and 202. Then the remaining tables in dependency order, each with forward, reverse, and diagram. Seed currencies CAD/USD, a tax-code skeleton, and entity-type lookups. No `queries`, `lookups`, or `scripts` bootstrap.
+- `H.http.request` is still specified and not started.
+
+**GATE 1:** `test_31` lints Argent. An apply of Acuranzo then Argent runs clean forward and reverse on SQLite and Yugabyte. `test_71` diagrams generate. `test_98` luacheck is clean. Andrew reviews the ERD and README.
 
 ### Phase 2 — Core Lua + MCP CRUD + balancing
 
@@ -521,6 +588,7 @@ Each GATE = (a) listed Hydrogen tests green on Argent design, (b) Folly verifica
 ### Phase 4 — Schedules + calendar sync
 
 - Schedules + GenerateSchedule through FYE; Reserved matching; calendar_state machine; non-blocking sync worker; RetryCalendar; QuerySyncProblems.
+- The sync worker calls `H.http.request` (see CalDAV and `H.http`). That Hydrogen change lands before this phase's Lua worker.
 - CalDAV against Folly’s Stalwart test calendar (or mock in harness); credentials only from `ARGENT_CAL_USER` / `ARGENT_CAL_PASS` / `ARGENT_CAL_HTTP` (never in DB).
 - **GATE 4:** Generate month of Reserved rent; match actual; save txn while CalDAV down still succeeds with pending/failed; Andrew sign-off.
 
@@ -536,7 +604,7 @@ Each GATE = (a) listed Hydrogen tests green on Argent design, (b) Folly verifica
 
 ### Phase 7 — Production DB + seed from Folly tracker
 
-- Provision Yugabyte schema `argent` + Hydrogen connection (separate from Acuranzo app DB as appropriate).
+- Apply `argent_2xxx` onto the existing Acuranzo database. Same Yugabyte schema, same connection. No new schema and no second connection. `Migrations` on that connection is `PAYLOAD:acuranzo+argent` (with a future Gaius pack, `PAYLOAD:acuranzo+gaius+argent` or `PAYLOAD:acuranzo+argent+gaius`).
 - Seed organizations, institutions-as-ledgers, real ledgers from `/workspace/folly/accounts.md` (balances as opening or statement snapshots — **manual Folly entry via MCP**, no bulk import pipeline).
 - Dual-write period: Folly updates Argent + keeps `accounts.md` until trust.
 - **GATE 7:** Production migrations applied; ~25 ledgers visible; Folly daily interview writes one statement through MCP; Andrew declares Argent source of truth for balances (markdown becomes backup).
@@ -552,12 +620,13 @@ Each GATE = (a) listed Hydrogen tests green on Argent design, (b) Folly verifica
 ## 7. Open questions
 
 None remaining. Closed:
+
 1. Parent ledgers — non-posting roll-up views (decision 25).
 2. Notes — no `memos` table; liberal notes are text `attachments`; short `memo` on transactions/lines (decision 33).
 3. CalDAV credentials — env vars `ARGENT_CAL_USER`, `ARGENT_CAL_PASS`, `ARGENT_CAL_HTTP` only; never in DB (decision 31).
 4. Reserved/Rescinded — excluded from balances/most reports by default; forecast tools take an explicit include flag (decision 32).
 
-`argent_5xxx` numbering and Argent-native `attachments` stand as plan defaults.
+`argent_2xxx` numbering (a pack on Acuranzo, not a fifth standalone series) and Argent-native `attachments` stand as plan defaults.
 
 ---
 
@@ -565,15 +634,19 @@ None remaining. Closed:
 
 | Item | Action |
 |------|--------|
-| `elements/002-helium/argent/` | Create design tree |
-| `elements/002-helium/README.md` | Link Argent schema |
-| `docs/He/README.md` | List Argent under Schemas |
-| `test_31_migrations.sh` `DESIGNS` + `DESIGN_SCHEMAS["argent"]=...` | Include argent |
-| `payload-generate.sh` `DESIGNS` | Include argent |
-| Hydrogen prod/test configs | Connection Name e.g. `Argent`, Schema `argent`, Migrations `PAYLOAD:argent` |
-| Scripting `DefaultDatabase` / MCP | Point Folly MCP at Argent connection for `Argent.*` tools; keep Acuranzo for logins via `H.altquery` |
-| `helium_update.sh` / migration_index | Regenerate argent README index |
-| Hydrogen env (prod + Folly box) | Set `ARGENT_CAL_USER`, `ARGENT_CAL_PASS`, `ARGENT_CAL_HTTP` for calendar sync (decision 31) |
+| `elements/002-helium/argent/` | Started 2026-10-05: README, eight `database*.lua` copies, `argent_2000.lua`, `argent_2001.lua` |
+| `elements/002-helium/README.md` | Done 2026-10-05. Linked as an Acuranzo pack. |
+| `docs/He/README.md` | Done 2026-10-05. Listed under Schemas. |
+| `helium_update.sh` | Done 2026-10-05. `argent` is in the index and luacheck loops. |
+| `test_31_migrations.sh` | Done 2026-10-05. Lints `argent` with Acuranzo's schema map. |
+| `payload-generate.sh` `DESIGNS` | Done 2026-10-05. Packs `argent` migration files and its `database*.lua`. Archive regenerated the same day with `argent_2000` and `argent_2001`. |
+| Hydrogen loader | Done in source 2026-10-05. Plus-list in `execute_helpers.c`, `files.c`, `validate.c`, `execute_load.c`. Each thousand in the payload has its own AVAIL, LOAD, and APPLY (`lead.c`, `lead_apply.c`, `database_bootstrap.c`). Compiled the same day into `hydrogen` and `hydrogen_coverage`, with the payload embedded. |
+| Hydrogen configs | Tests 32–39 and 40 use `PAYLOAD:acuranzo+argent` on the existing connection. `Schema` stays the Acuranzo schema. Other configs stay `PAYLOAD:acuranzo`. The parser ignores a `Design` key. |
+| MCP / logins | `Scripting.DefaultDatabase` stays the Acuranzo connection. QueryRefs 87, 152, and 153 and `Mcp.Server` are already seeded. Later Argent migrations insert `Argent.*` into that `scripts` table. Login ids are `accounts.account_id` via `H.query`. |
+| Tests 32–40 | Done 2026-10-05. `Migrations` is `PAYLOAD:acuranzo+argent`. |
+| Payload rebuild | Regenerated 2026-10-05 and embedded in `hydrogen` and `hydrogen_coverage`. A later trial build does not refresh `payload.tar.br.enc` by itself; Test 01 regenerates it when a listed design’s files are newer than the archive. |
+| `H.http.request` | `scripting_api_http.c`, `http_client.c`, `http_pool.c`, Unity HTTP tests, [`LUA_GUIDE.md`](/docs/H/LUA_GUIDE.md). Allowlist in the CalDAV section. `get` and `post` stay wrappers. Not built. |
+| Hydrogen env (Folly box) | Set `ARGENT_CAL_USER`, `ARGENT_CAL_PASS`, `ARGENT_CAL_HTTP` when Phase 4 runs (decision 31). |
 
 ---
 

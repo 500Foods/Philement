@@ -114,6 +114,10 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
     // Since Lead DQM is single-threaded for bootstrap operations, skip mutex entirely
     // log_this(dqm_label, "MUTEX: Skipping connection lock for bootstrap query (single-threaded context)", LOG_LEVEL_TRACE, 0);
     if (db_queue->persistent_connection) {
+        /* Drop loaded/applied marks and refill them from this result. AVAIL stays. */
+        if (db_queue->migration_range_count > 0) {
+            migration_ranges_clear_progress(db_queue);
+        }
         // Parse bootstrap query results for migration information
         long long latest_available_migration = db_queue->latest_available_migration; // Preserve AVAIL from validation
         long long latest_loaded_migration = 0;
@@ -370,6 +374,9 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
                                              }
                                          }
                                      }
+                                     if (db_queue->migration_range_count > 0) {
+                                         migration_ranges_note_query(db_queue, query_ref_ll, query_type_ll);
+                                     }
                                  }
                              }
                          }
@@ -398,18 +405,26 @@ void database_queue_execute_bootstrap_query(DatabaseQueue* db_queue) {
             latest_applied_migration = 0;
         }
 
-            // Store migration information in the queue structure
+            // Store migration information in the queue structure.
+            // With payload bands, sync from those bands so an out-of-payload row
+            // cannot raise the global mark or wipe AVAIL on an empty result.
             // latest_available_migration tracks AVAIL from Lua scripts
             // latest_loaded_migration tracks LOAD from bootstrap query (type 1000)
             // latest_applied_migration tracks APPLY from bootstrap query (type 1003)
-            db_queue->latest_available_migration = latest_available_migration;
-            db_queue->latest_loaded_migration = latest_loaded_migration;
-            db_queue->latest_applied_migration = latest_applied_migration;
+            if (db_queue->migration_range_count > 0) {
+                migration_ranges_sync_globals(db_queue);
+            } else {
+                db_queue->latest_available_migration = latest_available_migration;
+                db_queue->latest_loaded_migration = latest_loaded_migration;
+                db_queue->latest_applied_migration = latest_applied_migration;
+            }
             db_queue->empty_database = empty_database;
 
             // Log clear decision
             if (empty_database) {
                 log_this(dqm_label, "Migration status: Empty database", LOG_LEVEL_DEBUG, 0);
+            } else if (db_queue->migration_range_count > 0) {
+                migration_ranges_log(db_queue, dqm_label, "status", LOG_LEVEL_DEBUG);
             } else {
                 log_this(dqm_label, "Migration status: AVAIL=%lld, LOAD=%lld, APPLY=%lld",
                          LOG_LEVEL_DEBUG, 3, latest_available_migration, latest_loaded_migration, latest_applied_migration);

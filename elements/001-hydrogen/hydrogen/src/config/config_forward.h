@@ -174,4 +174,8 @@ typedef struct ChatConfig ChatConfig;
 struct ChatRateLimitConfig;
 typedef struct ChatRateLimitConfig ChatRateLimitConfig;
 
+// V. NATS Configuration
+struct NATSConfig;
+typedef struct NATSConfig NATSConfig;
+
 #endif /* CONFIG_FORWARD_H */

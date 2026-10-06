@@ -38,6 +38,7 @@ extern ServiceThreads mdns_server_threads;
 extern ServiceThreads print_threads;
 extern ServiceThreads scripting_threads;
 extern ServiceThreads mcp_threads;
+extern ServiceThreads nats_threads;
 
 // Component shutdown flags
 extern volatile sig_atomic_t log_queue_shutdown;
@@ -52,6 +53,7 @@ extern volatile sig_atomic_t print_system_shutdown;
 extern volatile sig_atomic_t print_queue_shutdown;
 extern volatile sig_atomic_t scripting_system_shutdown;
 extern volatile sig_atomic_t mcp_system_shutdown;
+extern volatile sig_atomic_t nats_system_shutdown;
 
 // Queue Threads
 extern pthread_t log_thread;

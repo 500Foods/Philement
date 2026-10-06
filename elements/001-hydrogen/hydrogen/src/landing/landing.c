@@ -82,6 +82,7 @@ LandingFunction get_landing_function(const char* subsystem_name) {
     // Registry is handled separately due to different signature
     if (strcmp(subsystem_name, SR_REGISTRY) == 0) return NULL;
 
+    if (strcmp(subsystem_name, SR_NATS          ) == 0) return land_nats_subsystem;
     if (strcmp(subsystem_name, SR_PRINT         ) == 0) return land_print_subsystem;
     if (strcmp(subsystem_name, SR_MAIL_RELAY    ) == 0) return land_mail_relay_subsystem;
     if (strcmp(subsystem_name, SR_MDNS_CLIENT   ) == 0) return land_mdns_client_subsystem;
