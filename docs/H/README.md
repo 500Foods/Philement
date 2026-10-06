@@ -106,7 +106,7 @@ Hydrogen is currently designed for technical users who:
 - [**Migrations**](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md) - Performance improvements to the Migration system
 - [**Conduit**](/docs/H/plans/complete/CONDUIT_COMPLETE.md) - Implementation plan for Conduit Service endpoints
 - [**Auth Finale**](/docs/H/plans/AUTH_FINALE.md) - Remaining OIDC / Keycloak / auth work (active)
-- [**NATS**](/docs/H/plans/NATS_PLAN.md) - Cross-instance result-cache invalidation (Phases 1–9 complete 2026-10-06; next is Phase 10, coverage fence)
+- [**NATS**](/docs/H/plans/NATS_PLAN.md) - Cross-instance result-cache invalidation (Phases 1–10 complete 2026-10-06; next is Phase 11, Test 62)
 - [**Notifications / Subscribers**](/docs/H/plans/NOTIFICATIONS_PLAN.md) - Web Push backend plan (Phase 0 draft; after NATS)
 - [**Firebird**](/docs/H/plans/FIREBIRD.md) - Firebird engine; replace CockroachDB slot; Firebase teardown
 - [**MSSQL**](/docs/H/plans/MSSQL.md) - MS SQL Server engine (Lookup 030 key 5); Fedora-local Linux container (Phase 0 not approved)

@@ -140,8 +140,8 @@ not open work unless listed below.
 | --- | --- |
 | **Plan** | [`NATS_PLAN.md`](/docs/H/plans/NATS_PLAN.md) |
 | **Effort** | L–XL |
-| **Done** | Phase 0 approved 2026-10-05. Phases 1–7 complete the same day. Phase 8 complete 2026-10-06. Phase 9 complete 2026-10-06: `mkp` 2,231 files, `mkt` 4m 45s, Unity 5 + 5 + 5 + 3 + 4 + 4 + 4 + 7 + 7. `GET /api/nats/status`, `GET /api/nats/instances`, and `services.nats`. `H.nats.broadcast`, `broadcast_sync`, `status`, and `instances`. |
-| **Remaining** | Phase 10 coverage fence (section not written), then Test 62 and docs. One phase per conversation. |
+| **Done** | Phase 0 approved 2026-10-05. Phases 1–7 complete the same day. Phase 8 complete 2026-10-06. Phase 9 complete 2026-10-06: `mkp` 2,231 files, `mkt` 4m 45s, Unity 5 + 5 + 5 + 3 + 4 + 4 + 4 + 7 + 7. `GET /api/nats/status`, `GET /api/nats/instances`, and `services.nats`. `H.nats.broadcast`, `broadcast_sync`, `status`, and `instances`. Phase 10 complete 2026-10-06: `mkp` 2,232 files, `mkt` 2m 34s, `nats_client.c` 369/470, `nats_reconnect.c` 47/60. |
+| **Remaining** | Phase 11 blackbox Test 62, then docs. `nats_io.c` is 39/146 until that test. One phase per conversation. The Phase 11 section is not written. |
 | **Why now** | Phase 0 is approved. Lands before Subscribers so letter V, launch 22, Test 62, and `H_HK_NATS = 7` stay with NATS. |
 | **Note** | Invalidate `query_result_cache` by SQL template, not the QTC. Config stores subject suffixes. `nats-server` is not on `PATH`; Phase 11 needs it on port 5620. `MAX_SUBSYSTEMS` stays 24. |
 

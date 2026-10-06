@@ -17,7 +17,7 @@ Each phase is self-contained with its own exit gate (V/Val/C) and is documented 
 | 7 | Instance presence & registry | **Complete** 2026-10-05 | Hard |
 | 8 | Lua host API | **Complete** 2026-10-06 | Medium |
 | 9 | Status + metrics | **Complete** 2026-10-06 | Easy |
-| 10 | Unity unit tests | Not started | Hard |
+| 10 | Coverage fence | **Complete** 2026-10-06 | Hard |
 | 11 | Blackbox Test 62 | Not started | Hard |
 | 12 | Docs + indexes | Not started | Easy |
 
@@ -35,6 +35,7 @@ Each phase is self-contained with its own exit gate (V/Val/C) and is documented 
 | 7 | **Complete** | 2026-10-05 | `mkp` green (2,214 files, cache hit). `mkt` green (2m 24s, 346 dead functions, no `nats_` symbol). Two `mku` bases green (12, 15). `test_17` was not in this run. |
 | 8 | **Complete** | 2026-10-06 | `mkp` green (2,221 files). `mkt` green (3m 58s, 346 dead functions, no `nats_` or `H_lua_nats` symbol). Seven `mku` bases green (8, 8, 5, 4, 7, 5, 10). `test_17` was not in this run. |
 | 9 | **Complete** | 2026-10-06 | `mkp` green (2,231 files). `mkt` green (4m 45s, 346 dead functions, no `nats_` symbol). Nine `mku` bases green (5, 5, 5, 3, 4, 4, 4, 7, 7). `test_17` was not in this run. |
+| 10 | **Complete** | 2026-10-06 | `mkp` green (2,232 files, cache hit). `mkt` green (2m 34s, 346 dead functions, no `nats_` symbol). Unity gcov: `nats_client.c` 369/470, `nats_reconnect.c` 47/60. `nats_io.c` 39/146, TCP exception for Phase 11. `test_17` was not in this run. |
 
 ## Purpose
 
@@ -54,8 +55,9 @@ separate token table to refresh. OIDC reads through the same query path
 as everyone else.
 
 This document is a **phased plan**. Phase 0 was approved on 2026-10-05.
-Phases 1, 2, 3, 4, 5, 6, 7, 8, and 9 are complete. Phase 10
-has not started. Its section is not written. A
+Phases 1 through 10 are complete. Phase 10 closed the Unity
+coverage fence on 2026-10-06. Phase 11 is blackbox Test 62.
+Its section is not written. A
 2026-10-05 review checked the locks below
 against the tree and the DOKS NATS deployment; where an earlier paragraph
 disagrees with [Verified constraints](#verified-constraints-2026-10-05),
@@ -65,10 +67,10 @@ the verified section wins.
 
 1. Review the design locks, the verified constraints, and the open questions.
 2. Confirm the config letter, launch position, cache target, and client model.
-3. Work **one phase per conversation**. Phases 0–9 are complete.
-   Phase 10 is the coverage fence. Its section is not written.
-   Discuss and write that section before any source edit. Do
-   not start Phase 11 in that turn.
+3. Work **one phase per conversation**. Phases 0–10 are complete.
+   Phase 11 is blackbox Test 62. Its section is not written.
+   Discuss and write that section before any source edit.
+   Do not start Phase 12 in that turn.
    Follow
    [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) and the gate template already
    in this file (the same shape as
@@ -76,16 +78,15 @@ the verified section wins.
 
 ## Next session
 
-Phase 9 is complete (2026-10-06). The next session discusses
-and writes the Phase 10 coverage-fence section before any
-source edit. Read
-[Accomplished in Phase 9](#accomplished-in-phase-9),
-[Lessons learned (Phase 9)](#lessons-learned-phase-9), and
-[Handoff for Phase 10](#handoff-for-phase-10). Do not start
-Phase 11 in that turn. Do not edit source in a turn that
-only writes the section.
+Phase 10 is complete (2026-10-06). Phase 11 is blackbox
+Test 62. Its section is not written. Discuss and write it
+before any source edit or any new test script. Read
+[Accomplished in Phase 10](#accomplished-in-phase-10),
+[Lessons learned (Phase 10)](#lessons-learned-phase-10), and
+[Handoff for Phase 11](#handoff-for-phase-11). Do not start
+Phase 12 in that turn.
 
-`test_17` was not part of Phase 9. `nats-server` is not on
+`test_17` was not part of Phase 10. `nats-server` is not on
 `PATH` on this workstation (checked 2026-10-05). Do not publish
 on the live DOKS broker. Do not edit
 [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) or
@@ -1148,7 +1149,7 @@ Goal, Entry gate, Work items, Done means, Exit gate, Status. Build aliases:
 | 7 | Instance presence & registry | **Complete 2026-10-05.** `nats_registry.c`, `app_state` publish/subscribe, singleton detection, active client tally |
 | 8 | Lua host API | **Complete 2026-10-06.** `H.nats.broadcast`, `broadcast_sync`, `status`, `instances`. `subscribe` stays later work |
 | 9 | Status + metrics | **Complete 2026-10-06.** Counters in `nats_stats.c`, `services.nats`, `GET /api/nats/status`, `GET /api/nats/instances` |
-| 10 | Coverage fence | Per-file Unity fence for `src/nats/` and `src/config/config_nats.c`. Tests are written in the phase that adds the code. This phase only closes gaps |
+| 10 | Coverage fence | **Complete 2026-10-06.** `nats_client.c` 369/470. `nats_reconnect.c` 47/60. `nats_io.c` stays the TCP exception (39/146) for Phase 11 |
 | 11 | Blackbox Test 62 | End-to-end integration with local `nats-server`; all 12 subtests pass |
 | 12 | Docs + indexes | Operator guide, API docs, INSTRUCTIONS.md/STRUCTURE.md/SITEMAP.md updates, lua_api.md |
 
@@ -3559,17 +3560,19 @@ publish 4, handshake 4, launch 4, formatters 7, mcp collect
 
 ### Handoff for Phase 10
 
-Phase 10 is the coverage fence. The section is not written.
-Discuss and write the work items before any source edit.
-Do not start Phase 11 in that turn. Do not edit
+Phase 10 is complete 2026-10-06. See
+[Accomplished in Phase 10](#accomplished-in-phase-10),
+[Lessons learned (Phase 10)](#lessons-learned-phase-10), and
+[Handoff for Phase 11](#handoff-for-phase-11). Do not edit
 [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) or
-[`lua_api.md`](/docs/H/core/subsystems/scripting/lua_api.md).
+[`lua_api.md`](/docs/H/core/subsystems/scripting/lua_api.md)
+until Phase 12.
 
 The breakdown row says Phase 10 closes gaps in the per-file
 Unity fence for `src/nats/` and `src/config/config_nats.c`.
-Tests are written in the phase that adds the code. Files
-over 100 lines need more than 75% unit coverage. Combined
-Unity plus blackbox stays 85%. Test 62 is Phase 11.
+Tests are written in the phase that adds the code. The fence
+numbers and the TCP exception are in the Phase 10 section.
+Test 62 is Phase 11.
 
 Already in the tree:
 
@@ -3595,6 +3598,340 @@ Leave these alone:
   `-Werror=format-truncation`.
 - `nats-server` is not on `PATH`. Do not publish on the
   live DOKS broker. `test_17` is not named by this handoff.
+
+## Phase 10 — Coverage fence
+
+### Goal
+
+Bring the two NATS sources that sit under the per-file coverage
+fence up to that fence with Unity tests. Tests were written in
+the phase that added the code. This phase only closes the gaps
+measured below. Test 62 is Phase 11.
+
+### Instructions review
+
+Read [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) before editing.
+Reviewed 2026-10-06. Do not edit that file. Phase 12 owns it.
+
+What it still says, and what the tree does:
+
+- Letter V is "not in `config.h` yet" and the launch list stops
+  at MCP. `config.h` already documents V. `launch_readiness.c`
+  registers `SR_NATS` as registration 22. `MAX_SUBSYSTEMS` stays
+  24.
+- Ordinary C edits use `mkq`. A new Unity `.c` file is invisible
+  until `mkt` reconfigures. Extending a test file that is already
+  in the build does not need `mkt`.
+- "Only create new test scripts when specifically asked" is the
+  blackbox rule. This phase adds the Unity files it names. It
+  does not add `tests/test_62_nats.sh`.
+- No new `static` function in `src/`. `src/hydrogen.h` is first.
+  Every new function has a prototype. No `goto`. Unity test
+  files may keep `static` helpers. The handshake test already
+  does.
+- The bash lint script named in that file is
+  `tests/test_92_cppcheck.sh`. The script on disk is
+  `tests/test_92_shellcheck.sh`. This phase has no shell change.
+
+The user runs `mkp`, then `mkt` when a new `.c` file was added,
+then the named `mku` bases. A turn that only edits this section
+does not run those commands.
+
+### Locks
+
+The fence is the one in `tests/lib/coverage_table.sh`. Focus is 0
+when combined coverage is at least 50% and the file has at most
+100 instrumented lines, or at least 75% and the file has at least
+100 instrumented lines. Combined means a line covered by Unity or
+by blackbox. The count is instrumented lines, not `wc -l`.
+`nats_frame.c` is 144 physical lines and 83 instrumented, so it
+uses the 50% rule. The project-wide 85% figure is not a per-file
+gate and is not this phase's exit.
+
+Blackbox does not lift the short files. The coverage binary's
+gcda (123 runs, 2026-10-06) executed none of the instrumented
+lines in `nats_client.c`, `nats_io.c`, or `nats_reconnect.c`.
+NATS is disabled in the existing suite. Combined equals Unity
+for those three until Phase 11.
+
+Scope is `src/nats/*.c` and `src/config/config_nats.c`. Leave
+these alone: `launch_nats.c`, `landing_nats.c`,
+`scripting_api_nats.c`, `src/api/nats/`, `status_formatters.c`,
+`api_service.c`, and the WebSocket relay. The Phase 0 test-name
+sketch (`nats_init`, `nats_subscribe.c`, `nats_queue.c`,
+`nats_ws_bridge.c`) is not the tree. Do not add those files.
+
+`nats_io.c` does not get TCP unit tests. The file says tests
+replace the IO table and never open a socket.
+`nats_io_tcp_connect`, `nats_io_tcp_read`, `nats_io_tcp_write`,
+`nats_io_tcp_close`, and `nats_io_connect_fd` call
+`getaddrinfo`, `connect`, `send`, `recv`, and `getsockopt`.
+`tests/unity/mocks/mock_system.h` does not mock those five.
+`socket`, `fcntl`, `poll`, `read`, `write`, and `close` are
+mocked and are not enough to drive this path. Do not add those
+mocks. Do not dial. Phase 11's local `nats-server` is what
+executes that path. The file stays under 75% until then. Record
+the 37 of 146 figure in the status note after the gate. That
+exception is not a failed gate.
+
+No production behavior change. No new `static` function in
+`src/`. Fake `NatsIo`, the same shape as
+`tests/unity/src/nats/nats_client_test_nats_session_handshake.c`.
+`AppConfig` stays at file scope. Do not `pthread_create` the
+retry thread. Do not call `nats_reconnect_thread` unless
+`nats_system_shutdown` is already set. Do not call
+`nats_reconnect_wait` on a live clock. Do not take
+`nats_client_mu` across `nats_io_write`. Do not log payloads
+or CONNECT JSON. A new test function needs its prototype above
+the definition. Search for the basename before adding a file.
+
+### Measured 2026-10-06
+
+Unity gcov is `build/unity/src/<file>.gcov`, written at 09:05,
+Runs 1350. Source mtimes are older than that gcov. Blackbox
+percentages come from `build/coverage` gcda (Runs 123), read
+with gcov for this measurement only. Re-measure if a NATS
+source changes before the tests land.
+
+| File | wc | Instrumented | Unity | Combined | Fence |
+| --- | --- | --- | --- | --- | --- |
+| `config_nats.c` | 496 | 318 | 87.11% | 87.11% | met (75) |
+| `nats.c` | 126 | 73 | 82.19% | 82.19% | met (50) |
+| `nats_client.c` | 765 | 470 | 74.26% | 74.26% | short. 349 covered, need 353 |
+| `nats_dispatch.c` | 218 | 113 | 89.38% | 89.38% | met (75) |
+| `nats_frame.c` | 144 | 83 | 80.72% | 80.72% | met (50) |
+| `nats_io.c` | 267 | 146 | 25.34% | 25.34% | TCP exception. 37 covered |
+| `nats_publish.c` | 204 | 114 | 78.95% | 78.95% | met (75) |
+| `nats_reconnect.c` | 118 | 60 | 45.00% | 45.00% | short. 27 covered, need 30 |
+| `nats_registry.c` | 660 | 370 | 89.19% | 89.19% | met (75) |
+| `nats_relay.c` | 105 | 50 | 90.00% | 90.00% | met (50) |
+| `nats_stats.c` | 66 | 35 | 100% | 100% | met (50) |
+| `nats_subject.c` | 56 | 25 | 96.00% | 96.00% | met (50) |
+
+Files marked met get no new tests.
+
+### Dependencies
+
+Phase 9 complete. The client tests already install a fake
+`NatsIo`. `nats_stats_collect` reads `reconnects`. The uncovered
+call of `nats_stats_inc_reconnects` is the drop path in
+`nats_session_once`.
+
+### Entry gate
+
+Phase 9 Status is complete. This section was written on
+2026-10-06 with no `src/` edits and no new Unity files. The
+table above is the baseline.
+
+### Work items
+
+- [x] 10.1 `nats_reconnect.c` to at least 50% (30 of 60). Extend
+      `nats_reconnect_test_nats_reconnect_delay_seconds` only.
+      Cases the gcov still marks uncovered: `failure_number < 1`
+      clamps to 1; `DelayCount == 0` with
+      `SteadyDelaySeconds > 0` returns that steady value;
+      `DelayCount == 0` with `SteadyDelaySeconds == 0` returns
+      30; an index past `DelayCount` with
+      `SteadyDelaySeconds == 0` returns
+      `Delays[DelayCount - 1]`. Re-measure after those four.
+      If the file is still under 30 covered lines, add
+      `nats_reconnect_test_nats_reconnect_wake` for the success
+      path only (`nats_system_shutdown` becomes 1). Do not call
+      `nats_reconnect_wait`. Do not call
+      `nats_reconnect_thread` unless shutdown is already set,
+      and do not `pthread_create` it. Stop once the file is at
+      or above 50%.
+- [x] 10.2 `nats_client.c` to at least 75% (353 of 470). The
+      file is four lines short. The required new case is the
+      session drop. New file
+      `nats_client_test_nats_session_once.c`. Copy the fake
+      `NatsIo` from the handshake test. Reuse an INFO script
+      that already reaches `NATS_LINK_UP`, then make the next
+      read return 0. Assert `reconnects` goes from 0 to 1, the
+      link ends `degraded`, and shutdown was not set. Do not
+      start the retry thread. If that case does not clear 353
+      covered lines, extend
+      `nats_client_test_nats_parser_feed` with one bad INFO
+      object and one MSG header reject, and extend
+      `nats_client_test_nats_client_publish` with a full
+      outbound ring. Stop once the file is at or above 75%.
+      Leave the remaining handshake rejects alone once the
+      fence is met.
+- [x] 10.3 Leave `nats_io.c` under 75%. Do not add a test that
+      calls the five TCP functions. Do not add syscall mocks.
+      The status note after the gate records 37 of 146 and
+      names Phase 11 as the remeasure.
+- [x] 10.4 No new tests for the nine files that already meet
+      the fence. Re-run a base when this phase edits its file,
+      and re-run the handshake base because the new session
+      test copies that fake IO.
+- [x] 10.5 Exit gate below. Leave these boxes open until the
+      commands pass. Do not start Phase 11 in that turn. Do
+      not edit [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) or
+      [`lua_api.md`](/docs/H/core/subsystems/scripting/lua_api.md).
+      Do not change `H.nats.status` or `H.nats.instances`.
+      Do not register `H.nats.subscribe` or `H_HK_NATS`.
+      Phase 11 owns Test 62 and the `nats_io.c` remeasure.
+      Phase 12 owns the operator guide.
+
+### Done means
+
+`mkp` is clean. `mkt` is green when a new Unity file was added,
+and the dead-code list has no new `nats_` symbol.
+`nats_reconnect.c` combined coverage is at least 50%.
+`nats_client.c` combined coverage is at least 75%.
+`nats_io.c` is unchanged and still the TCP exception. No file
+that already met the fence dropped below it. No live
+`nats-server` is required. No production behavior change.
+
+### Exit gate
+
+`zsh -ic 'mkp'`, then `zsh -ic 'mkt'` (a new `.c` file is
+invisible to `mkq`), then
+`zsh -ic 'mku nats_reconnect_test_nats_reconnect_delay_seconds'`,
+`zsh -ic 'mku nats_client_test_nats_session_once'`,
+`zsh -ic 'mku nats_client_test_nats_parser_feed'`,
+`zsh -ic 'mku nats_client_test_nats_client_publish'`,
+and
+`zsh -ic 'mku nats_client_test_nats_session_handshake'`.
+Add `nats_reconnect_test_nats_reconnect_wake` to that list only
+if 10.1 needed the file. After the tests, re-read the Unity
+gcov for `nats_client.c` and `nats_reconnect.c` and record
+covered over instrumented. `test_17` is not part of this phase.
+Test 62 is Phase 11. Test 89 is not this phase's gate.
+
+### Status
+
+**Complete** 2026-10-06. `mkp` passed (2,232 files, cache hit).
+`mkt` passed (2m 34s, shutdown test passed, 346 dead functions,
+no `nats_` symbol). Unity gcov: `nats_client.c` 369 of 470
+(78.51%), `nats_reconnect.c` 47 of 60 (78.33%). `nats_io.c` is
+39 of 146. The five TCP functions are still uncovered. Phase 11
+remeasures that file. `test_17` was not run.
+
+### Accomplished in Phase 10
+
+2026-10-06. Two Unity files bring the short NATS sources up to
+the per-file fence. No production source changed. No socket
+was opened.
+
+Files:
+
+- `tests/unity/src/nats/nats_reconnect_test_nats_reconnect_delay_seconds.c`
+  — six cases (82 lines)
+- `tests/unity/src/nats/nats_client_test_nats_session_once.c`
+  — one case (159 lines)
+
+What those tests do:
+
+- The delay cases cover a failure number below 1, an empty
+  delay list with a steady value, an empty list with steady 0,
+  and an index past the list with steady 0.
+  `nats_reconnect_delay_seconds` executed every block. The
+  wake file was not added.
+- The session case feeds `PING` / `INFO {}` through a fake
+  `NatsIo`. The next read returns 0. `nats_session_once`
+  returns 1, `reconnects` moves from 0 to 1, the link ends
+  `degraded`, and shutdown stays clear. That is the read-loop
+  drop. The flush-failure drop is still uncovered. 369 covered
+  lines already clears 353, so the bad-INFO and full-ring
+  fallbacks were not added.
+- The fake write returns 0. Callers treat a non-zero
+  `nats_io_write` as failure.
+
+Unity gcov after `mkt` cleaned `build/`, then the NATS Unity
+set. Blackbox was not re-run. NATS stays disabled in that
+suite, so combined coverage for these three files equals this
+Unity number until Phase 11.
+
+| File | Instrumented | Covered | Percent | Fence |
+| --- | --- | --- | --- | --- |
+| `config_nats.c` | 318 | 277 | 87.11% | met (75) |
+| `nats.c` | 73 | 60 | 82.19% | met (50) |
+| `nats_client.c` | 470 | 369 | 78.51% | met (75) |
+| `nats_dispatch.c` | 113 | 101 | 89.38% | met (75) |
+| `nats_frame.c` | 83 | 67 | 80.72% | met (50) |
+| `nats_io.c` | 146 | 39 | 26.71% | TCP exception |
+| `nats_publish.c` | 114 | 90 | 78.95% | met (75) |
+| `nats_reconnect.c` | 60 | 47 | 78.33% | met (50) |
+| `nats_registry.c` | 370 | 332 | 89.73% | met (75) |
+| `nats_relay.c` | 50 | 45 | 90.00% | met (50) |
+| `nats_stats.c` | 35 | 35 | 100% | met (50) |
+| `nats_subject.c` | 25 | 24 | 96.00% | met (50) |
+
+`nats_io_tcp_connect`, `nats_io_tcp_read`, `nats_io_tcp_write`,
+`nats_io_tcp_close`, and `nats_io_connect_fd` are still
+uncovered. The pre-gate baseline was 37 of 146. This remeasure
+is 39 of 146. Phase 11 remeasures the file.
+
+Gate: `mkp` clean on 2,232 files (cache hit, 0 rechecked,
+5.961s). `mkt` passed in 2m 34s (shutdown test passed, 3,198
+functions, 346 dead functions, no `nats_` symbol). Unity:
+delay 6, session-once 1, parser 9, publish 4, handshake 4.
+`mkt` had wiped the gcda, so the rest of the NATS Unity set
+was re-run and passed (`OVERALL fail=0`). `test_17` was not
+run. No live `nats-server`.
+
+### Lessons learned (Phase 10)
+
+- `mkt` deletes `build/`. The Runs 1350 gcov from 09:05 was
+  gone before this remeasure. The new `nats_reconnect.gcda`
+  records 26 runs, which is the NATS Unity set. That set
+  includes the launch test, and `nats_reconnect_thread` ran
+  once. The delay function is fully covered on its own. The
+  file is 47 of 60. The earlier estimate of 32 of 60 was the
+  five delay lines on top of the old 27.
+- The reconnect counter moves on the read returning 0 after
+  the link is up. The flush-failure branch in
+  `nats_session_once` is a different return. It is still
+  uncovered. The file was already past 353 covered lines, so
+  the parser and publish fallbacks stayed out.
+- A fake `NatsIo` write must return 0. `nats_client.c` treats
+  any other `nats_io_write` result as a failed write.
+- `nats_io.c` is 39 of 146. The five TCP functions are still
+  uncovered. Phase 11's local `nats-server` is the remeasure.
+  This phase did not add syscall mocks.
+- A new Unity `.c` file is invisible until `mkt`. Each later
+  `mku` reported `ninja: no work to do`.
+- cppcheck was a full cache hit. Production `src/` did not
+  change, so that cache hit is expected.
+- [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) and
+  [`lua_api.md`](/docs/H/core/subsystems/scripting/lua_api.md)
+  stay untouched. Phase 12 owns both.
+
+### Handoff for Phase 11
+
+Phase 11 is blackbox Test 62. The section is not written.
+Discuss and write the work items before any source edit and
+before adding `tests/test_62_nats.sh`. Do not start Phase 12
+in that turn. Do not edit
+[`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) or
+[`lua_api.md`](/docs/H/core/subsystems/scripting/lua_api.md).
+
+The early sketch is
+[Blackbox integration test — Test 62](#blackbox-integration-test--test-62).
+Write the section against the tree. The Phase 0 test-name
+sketch (`nats_init`, `nats_subscribe.c`, `nats_queue.c`,
+`nats_ws_bridge.c`) is not the tree.
+
+Already measured:
+
+- `nats_io.c` is 39 of 146 after this Unity remeasure. The
+  five TCP functions are uncovered. Test 62 is what executes
+  them. Re-read combined coverage after that test.
+- `nats-server` is not on `PATH` (checked 2026-10-05). The
+  fixture port is 5620. Do not publish on the live DOKS
+  broker.
+- `link` stays `down`, `degraded`, or `up`. `state` is `down`
+  only when `NATS.Enabled` is false. Enabled and not up is
+  `state` `degraded`. That is subtest 2.
+
+Leave these alone:
+
+- Do not register `H.nats.subscribe` or `H_HK_NATS`.
+- Do not change `H.nats.status` or `H.nats.instances`.
+- Do not log payloads, CONNECT JSON, or peer ids.
+- `test_17` is out unless the Phase 11 section names it.
 
 ## Reference: how a recently-added subsystem was integrated
 
@@ -3847,3 +4184,69 @@ Phase 11 in that turn. Do not edit
 [`lua_api.md`](/docs/H/core/subsystems/scripting/lua_api.md).
 
 - [Phase 9 — Status and metrics](#phase-9--status-and-metrics)
+
+### 2026-10-06 — Phase 10 section written
+
+Coverage-fence contract, no `src/` edits.
+[`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) was reviewed and
+left untouched. Letter V and launch 22 are already in the tree.
+The fence is combined coverage from `coverage_table.sh`: at
+least 50% at or under 100 instrumented lines, at least 75% at
+or over 100. Unity gcov Runs 1350 (09:05). Blackbox gcda Runs
+123 covers none of the instrumented lines in the three short
+files, so combined equals Unity there.
+
+`nats_client.c` is 349 of 470 (74.26%, need 353).
+`nats_reconnect.c` is 27 of 60 (45%, need 30). `nats_io.c` is
+37 of 146. Its TCP functions stay untested here: `mock_system.h`
+does not mock `getaddrinfo`, `connect`, `send`, `recv`, or
+`getsockopt`, and the file forbids opening a socket. Phase 11
+remeasures that file. The other nine sources already meet the
+fence and get no new tests. Implement when the user says to
+start. Do not start Phase 11 in that turn.
+
+- [Phase 10 — Coverage fence](#phase-10--coverage-fence)
+
+### 2026-10-06 — Phase 10 in progress
+
+Coverage tests are in the tree. No production source change.
+Items 10.1–10.5 stay open. The exit gate has not been run.
+Do not start Phase 11 in that turn.
+
+- `nats_reconnect_test_nats_reconnect_delay_seconds` gained
+  the low clamp, an empty delay list with and without a steady
+  value, and a past-the-end index with steady 0. Those are the
+  five uncovered lines in `nats_reconnect_delay_seconds`.
+  27 + 5 is 32 of 60, which clears 30. The wake file was not
+  added.
+- `nats_client_test_nats_session_once.c` is new. It feeds
+  `PING` / `INFO {}` through a fake `NatsIo`, then the next
+  read returns 0. The test expects `nats_session_once` to
+  return 1, `reconnects` to move from 0 to 1, the link to end
+  `degraded`, and shutdown to stay clear. That drop is the
+  uncovered `nats_stats_inc_reconnects` call. A new `.c` file
+  needs `mkt` before `mku`.
+- `nats_io.c` was not given TCP tests.
+
+- [Phase 10 — Coverage fence](#phase-10--coverage-fence)
+
+### 2026-10-06 — Phase 10 complete
+
+Coverage fence. Gate numbers are in the Phase 10 status
+block. What the tests cover, and how to start Phase 11:
+
+- [Accomplished in Phase 10](#accomplished-in-phase-10)
+- [Lessons learned (Phase 10)](#lessons-learned-phase-10)
+- [Handoff for Phase 11](#handoff-for-phase-11)
+
+`mkp` passed (2,232 files, cache hit). `mkt` passed (2m 34s,
+shutdown test passed, 346 dead functions, no `nats_` symbol).
+Unity gcov: `nats_client.c` 369 of 470, `nats_reconnect.c`
+47 of 60. `nats_io.c` is 39 of 146. The five TCP functions
+are still uncovered. Phase 11 remeasures that file. The
+Phase 11 section is not written. Do not start Phase 12 in
+that turn. Do not edit
+[`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) or
+[`lua_api.md`](/docs/H/core/subsystems/scripting/lua_api.md).
+
+- [Phase 10 — Coverage fence](#phase-10--coverage-fence)
