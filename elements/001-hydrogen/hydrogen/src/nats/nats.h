@@ -29,6 +29,9 @@ typedef void (*NatsMsgHandler)(const char *subject, const char *sid,
 
 int nats_start(void);
 void nats_shutdown(void);
+
+/* down, degraded, or up. Unknown values are down. */
+const char *nats_link_name(int state);
 const char *nats_link_state_name(void);
 
 void nats_io_install(const NatsIo *io);
@@ -41,6 +44,22 @@ int nats_parser_take_ctrl(void *dst, size_t cap);
 
 int nats_client_publish(const char *subject, const void *data, size_t len);
 int nats_broadcast(const char *event, const json_t *data);
+
+/* Same envelope as nats_broadcast. The subject suffix is the event.
+ * Does not evict. cache.invalidate_by_ref and app_state return -1. */
+int nats_publish_event(const char *event, const json_t *data);
+
+#define NATS_REGISTRY_COPY_CAP 64
+
+/* state is "Starting" or "Alive". Stopping peers are not copied. */
+typedef struct NatsRegistryCopy {
+    char id[128];
+    char state[16];
+    int websocket_connections;
+} NatsRegistryCopy;
+
+int nats_registry_copy(NatsRegistryCopy *out, size_t cap);
+
 int nats_client_flush_outbound(void);
 void nats_client_reset(void);
 

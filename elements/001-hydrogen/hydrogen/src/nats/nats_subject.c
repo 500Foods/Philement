@@ -6,6 +6,25 @@
 
 #include <src/nats/nats_subject.h>
 
+bool nats_event_suffix_ok(const char *suffix) {
+    size_t i;
+
+    if (!suffix || suffix[0] == '\0') {
+        return false;
+    }
+    if (strncmp(suffix, "cluster.", 8) == 0) {
+        return false;
+    }
+    for (i = 0; suffix[i] != '\0'; i++) {
+        unsigned char c = (unsigned char)suffix[i];
+
+        if (c <= ' ' || c == '*' || c == '>') {
+            return false;
+        }
+    }
+    return true;
+}
+
 char *nats_subject_build(const char *cluster_id, const char *suffix) {
     size_t i;
     size_t id_len;
@@ -13,22 +32,14 @@ char *nats_subject_build(const char *cluster_id, const char *suffix) {
     size_t total;
     char *out;
 
-    if (!cluster_id || cluster_id[0] == '\0' || !suffix || suffix[0] == '\0') {
-        return NULL;
-    }
-    if (strncmp(suffix, "cluster.", 8) == 0) {
+    if (!cluster_id || cluster_id[0] == '\0' || !nats_event_suffix_ok(suffix)) {
         return NULL;
     }
 
     for (i = 0; cluster_id[i] != '\0'; i++) {
         unsigned char c = (unsigned char)cluster_id[i];
+
         if (c <= ' ' || c == '.' || c == '*' || c == '>') {
-            return NULL;
-        }
-    }
-    for (i = 0; suffix[i] != '\0'; i++) {
-        unsigned char c = (unsigned char)suffix[i];
-        if (c <= ' ' || c == '*' || c == '>') {
             return NULL;
         }
     }

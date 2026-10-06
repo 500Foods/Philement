@@ -132,7 +132,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [README.md](/docs/H/plans/README.md): Plans folder index
 - [AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md): Auth finale (active P0 plan — OIDC, Keycloak, register, MFA, IdP leftovers)
 - [NOTIFICATIONS_PLAN.md](/docs/H/plans/NOTIFICATIONS_PLAN.md): Web Push / Subscribers subsystem plan (Phase 0 draft)
-- [NATS_PLAN.md](/docs/H/plans/NATS_PLAN.md): NATS subsystem — result-cache invalidation (Phases 1–4 complete 2026-10-05)
+- [NATS_PLAN.md](/docs/H/plans/NATS_PLAN.md): NATS subsystem — result-cache invalidation (Phases 1–9 complete 2026-10-06; next is Phase 10, coverage fence)
 - [FIREBIRD.md](/docs/H/plans/FIREBIRD.md): Firebird engine; retire CockroachDB slot; Firebase teardown
 - [MSSQL.md](/docs/H/plans/MSSQL.md): MS SQL Server engine (Lookup 030 key 5); Fedora Podman Linux container (Phase 0 not approved)
 - [FIREBASE.md](/docs/H/plans/FIREBASE.md): Stub — Firestore plan superseded

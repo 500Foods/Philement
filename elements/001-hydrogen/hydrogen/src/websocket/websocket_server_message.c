@@ -16,6 +16,7 @@
 #include "websocket_server_internal.h"
 #include "websocket_server_chat.h"   // For chat message handling
 #include "websocket_server_media.h"  // For media upload handling
+#include "websocket_server_relay.h"  // For NATS relay subscribe
 
 // Libwebsockets header for struct lws
 #include <libwebsockets.h>
@@ -134,7 +135,11 @@ int parse_and_handle_message(struct lws *wsi, const WebSocketSessionData *sessio
             result = handle_media_chunk_message(wsi, (WebSocketSessionData*)session, root);
             return result;
         }
-        
+
+        if (strcmp(type, "nats_subscribe") == 0) {
+            return ws_relay_handle_subscribe(wsi, (WebSocketSessionData *)session, root);
+        }
+
         result = handle_message_type(wsi, type);
     } else {
         log_this(SR_WEBSOCKET, "Missing or invalid 'type' in request", LOG_LEVEL_STATE, 0);

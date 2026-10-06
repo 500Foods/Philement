@@ -33,6 +33,8 @@
 #include "mailrelay/send/send.h"
 #include "mailrelay/preview/preview.h"
 #include "mcp/status/status.h"
+#include "nats/status/status.h"
+#include "nats/instances/instances.h"
 #include <src/reporting/image_scale/image_scale.h>
 #include "api/wschat/auth_chat/auth_chat.h"
 #include "api/wschat/auth_chats/auth_chats.h"
@@ -287,6 +289,8 @@ bool register_api_endpoints(void) {
         log_this(SR_API, "― %s/mailrelay/send", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/mailrelay/preview", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/mcp/status", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/nats/status", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
+        log_this(SR_API, "― %s/nats/instances", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
         log_this(SR_API, "― %s/reporting/image_scale", LOG_LEVEL_DEBUG, 1, app_config->api.prefix);
     log_group_end();
     
@@ -874,6 +878,14 @@ enum MHD_Result handle_api_request_dispatch(struct MHD_Connection *connection,
     else if (strcmp(path, "mcp/status") == 0) {
         return handle_mcp_status_request(connection, url, method, upload_data,
                                          upload_data_size, con_cls);
+    }
+    else if (strcmp(path, "nats/status") == 0) {
+        return handle_nats_status_request(connection, url, method, upload_data,
+                                           upload_data_size, con_cls);
+    }
+    else if (strcmp(path, "nats/instances") == 0) {
+        return handle_nats_instances_request(connection, url, method, upload_data,
+                                              upload_data_size, con_cls);
     }
     else if (strcmp(path, "reporting/image_scale") == 0) {
         return handle_reporting_image_scale_request(connection, url, method, upload_data,

@@ -48,7 +48,7 @@ struct lws_context *mock_lws_create_context(const struct lws_context_creation_in
 void mock_lws_context_destroy(struct lws_context *context);
 int mock_lws_get_peer_simple(struct lws *wsi, char *name, int namelen);
 int mock_lws_is_final_fragment(struct lws *wsi);
-int mock_lws_write(struct lws *wsi, unsigned char *buf, size_t len, enum lws_write_protocol protocol);
+int mock_lws_write(struct lws *wsi, const unsigned char *buf, size_t len, enum lws_write_protocol protocol);
 const struct lws_protocols *mock_lws_get_protocol(struct lws *wsi);
 int mock_lws_callback_on_writable(struct lws *wsi);
 void mock_lws_set_timer_usecs(struct lws *wsi, long long usecs);
@@ -72,6 +72,9 @@ void mock_lws_set_hdr_copy_failure(int should_fail);
 void mock_lws_set_hdr_total_length_failure(int should_fail);
 void mock_lws_set_get_peer_failure(int should_fail);
 int mock_lws_get_is_final_fragment_result(void);
+int mock_lws_write_count(void);
+const char *mock_lws_last_write(void);
+const char *mock_lws_write_log(void);
 void mock_lws_reset_all(void);
 
 #endif // USE_MOCK_LIBWEBSOCKETS

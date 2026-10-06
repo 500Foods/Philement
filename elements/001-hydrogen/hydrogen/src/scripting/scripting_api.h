@@ -24,6 +24,7 @@
 #define HYDROGEN_SCRIPTING_SCRIPTING_API_H
 
 // Third-party headers
+#include <stdbool.h>
 #include <lua.h>
 
 // Local headers
@@ -391,5 +392,23 @@ void H_lua_install_mcp(lua_State* L);
 
 void H_lua_install_mdns(lua_State* L);
 int H_lua_mdns_list(lua_State* L);
+
+/*
+ * NATS Phase 8. H.nats.broadcast, broadcast_sync, status, and
+ * instances. subscribe and unsubscribe are not registered.
+ * H_HK_NATS is not added.
+ *
+ * broadcast success is true. Errors are nil, message.
+ * broadcast_sync returns nil, "link down" when the link is not up
+ * and does not queue. status returns one table. instances returns
+ * singleton, self, and peers.
+ */
+int H_lua_nats_fail(lua_State* L, const char* message);
+int H_lua_nats_publish(lua_State* L, bool sync);
+int H_lua_nats_broadcast(lua_State* L);
+int H_lua_nats_broadcast_sync(lua_State* L);
+int H_lua_nats_status(lua_State* L);
+int H_lua_nats_instances(lua_State* L);
+void H_lua_install_nats(lua_State* L);
 
 #endif /* HYDROGEN_SCRIPTING_SCRIPTING_API_H */

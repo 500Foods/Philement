@@ -56,8 +56,10 @@ Lithium UI deferred. Does not reuse `Notify` SMTP scaffold or `H.notify`.
 NATS subsystem for cross-instance query **result-cache** invalidation.
 An explicit C or Lua call deletes local entries, then publishes. Peers
 delete the same SQL template. Config letter **V**, launch **22**, Test
-**62**, `H_HK_NATS = 7`. Phase 0 approved 2026-10-05. Phases 1, 2, 3, and 4
-complete the same day. Lands before Subscribers
+**62**, `H_HK_NATS = 7`. Phase 0 approved 2026-10-05. Phases 1–7
+complete that day. Phases 8 and 9 complete 2026-10-06. Next
+is Phase 10 (coverage fence; section not written).
+Lands before Subscribers
 (letter W).
 
 ### [FIREBIRD PLAN](/docs/H/plans/FIREBIRD.md)

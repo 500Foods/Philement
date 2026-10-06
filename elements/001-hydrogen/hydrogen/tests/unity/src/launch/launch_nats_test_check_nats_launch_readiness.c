@@ -19,6 +19,7 @@ void test_check_nats_launch_readiness_no_servers(void);
 void test_check_nats_launch_readiness_bad_url(void);
 void test_check_nats_launch_readiness_bad_delays(void);
 void test_check_nats_launch_readiness_bad_subject(void);
+void test_check_nats_launch_readiness_websocket_relay(void);
 
 void setUp(void) {
 }
@@ -162,6 +163,34 @@ void test_check_nats_launch_readiness_bad_subject(void) {
     cleanup_readiness_messages(&result);
 }
 
+void test_check_nats_launch_readiness_websocket_relay(void) {
+    AppConfig *original = app_config;
+    AppConfig mock;
+    LaunchReadiness result;
+    bool found = false;
+
+    fill_enabled_nats(&mock);
+    mock.nats.WebSocketRelay.Enabled = true;
+    app_config = &mock;
+    result = check_nats_launch_readiness();
+    cleanup_nats_config(&mock.nats);
+    app_config = original;
+
+    if (result.messages) {
+        size_t i;
+
+        for (i = 0; result.messages[i] != NULL; i++) {
+            if (strcmp(result.messages[i],
+                       "  Go:      WebSocket dependency registered") == 0) {
+                found = true;
+            }
+        }
+    }
+    cleanup_readiness_messages(&result);
+    TEST_ASSERT_TRUE(result.ready);
+    TEST_ASSERT_TRUE(found);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_check_nats_launch_readiness_missing_config);
@@ -172,5 +201,6 @@ int main(void) {
     RUN_TEST(test_check_nats_launch_readiness_bad_url);
     RUN_TEST(test_check_nats_launch_readiness_bad_delays);
     RUN_TEST(test_check_nats_launch_readiness_bad_subject);
+    RUN_TEST(test_check_nats_launch_readiness_websocket_relay);
     return UNITY_END();
 }

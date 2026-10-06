@@ -8,6 +8,11 @@
 #include <src/nats/nats.h>
 
 #include <sys/socket.h>
+#include <time.h>
+
+#define NATS_REGISTRY_CAP 64
+#define NATS_PRESENCE_SID 17
+#define NATS_PRESENCE_SUFFIX "instance.app_state"
 
 #define NATS_HOST_CAP 256
 #define NATS_SUBJECT_CAP 256
@@ -74,6 +79,11 @@ bool nats_dispatch_fields_ok(const json_t *root);
 bool nats_dispatch_subject_ok(const char *wire_subject, const json_t *root);
 bool nats_dispatch_is_self(const json_t *root);
 
+bool nats_relay_event_allowed(const char *event);
+bool nats_relay_envelope_ok(const json_t *root);
+bool nats_relay_subject_ok(const char *wire_subject, const json_t *root);
+void nats_relay_offer(const char *event, const char *subject, const json_t *data);
+
 int nats_parse_append(const void *data, size_t len);
 void nats_parse_consume(size_t count);
 void nats_parser_reset(void);
@@ -85,5 +95,27 @@ int nats_ctrl_append(const char *text, size_t len);
 void nats_session_clear_held(void);
 int nats_session_send_subs(void);
 int nats_session_handshake_try(void);
+
+void nats_registry_peer_clear_at(size_t index);
+void nats_registry_set_clock(time_t (*clock_fn)(void));
+void nats_registry_set_connection_count(int (*count_fn)(void));
+void nats_registry_reset(void);
+void nats_registry_bind(void);
+int nats_registry_heartbeat_seconds(void);
+int nats_registry_stale_seconds(void);
+time_t nats_registry_now(void);
+int nats_registry_subscribe(void);
+int nats_registry_announce_up(void);
+void nats_registry_on_link_down(void);
+int nats_registry_tick(void);
+void nats_registry_sweep(void);
+bool nats_registry_envelope_ok(const json_t *root);
+bool nats_registry_subject_ok(const char *wire_subject, const json_t *root);
+void nats_registry_apply(const json_t *root);
+int nats_registry_publish(const char *state);
+int nats_registry_alive_count(void);
+int nats_registry_peer_count(void);
+bool nats_registry_is_singleton(void);
+const char *nats_registry_self_state(void);
 
 #endif /* NATS_INTERNAL_H */

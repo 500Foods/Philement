@@ -140,10 +140,10 @@ not open work unless listed below.
 | --- | --- |
 | **Plan** | [`NATS_PLAN.md`](/docs/H/plans/NATS_PLAN.md) |
 | **Effort** | L–XL |
-| **Done** | Phase 0 approved 2026-10-05. Phases 1–4 complete the same day. Phase 4: `mkp` 2,204 files, `mkt` 2m 43s, `mku nats_dispatch_test_nats_dispatch_message` 8/8. Letter V, launch 22, landing before Print. Plaintext client, retry thread, `nats_broadcast()`, and incoming envelope dispatch. |
-| **Remaining** | Phase 5 result-cache invalidation, then WebSocket relay, presence, Lua, Test 62. One phase per conversation. |
+| **Done** | Phase 0 approved 2026-10-05. Phases 1–7 complete the same day. Phase 8 complete 2026-10-06. Phase 9 complete 2026-10-06: `mkp` 2,231 files, `mkt` 4m 45s, Unity 5 + 5 + 5 + 3 + 4 + 4 + 4 + 7 + 7. `GET /api/nats/status`, `GET /api/nats/instances`, and `services.nats`. `H.nats.broadcast`, `broadcast_sync`, `status`, and `instances`. |
+| **Remaining** | Phase 10 coverage fence (section not written), then Test 62 and docs. One phase per conversation. |
 | **Why now** | Phase 0 is approved. Lands before Subscribers so letter V, launch 22, Test 62, and `H_HK_NATS = 7` stay with NATS. |
-| **Note** | Invalidate `query_result_cache`, not the QTC. Config stores subject suffixes. `nats-server` is not on `PATH`; Phase 1 does not need it. `MAX_SUBSYSTEMS` stays 24. |
+| **Note** | Invalidate `query_result_cache` by SQL template, not the QTC. Config stores subject suffixes. `nats-server` is not on `PATH`; Phase 11 needs it on port 5620. `MAX_SUBSYSTEMS` stays 24. |
 
 ### 13. Mail Relay — finish remaining phases
 
@@ -342,7 +342,7 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 12d | MailRelay Persist MySQL/MariaDB SEGV | M | **done** — 14/14 live green; 12d closed | — |
 | 12e | MAX+1 PK clients: confirm + retry | M | single-thread OK | P1 |
 | 13 | Mail Relay remainder | L–XL | ~75% | P2 |
-| 29 | NATS result-cache invalidation | L–XL | Phases 0–4 complete | P2 |
+| 29 | NATS result-cache invalidation | L–XL | Phases 0–9 complete | P2 |
 | 26 | Notifications / Subscribers | L–XL | 0% plan | P2 |
 | 27 | Firebird engine (replace Cockroach) | XL | Phases 0–11 done; cache follow-up | P2 |
 | 28 | MSSQL engine (Lookup 030 key 5) | XL | 0% plan | P2 |

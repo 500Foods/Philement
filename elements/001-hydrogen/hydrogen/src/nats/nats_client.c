@@ -3,13 +3,15 @@
  *
  * One connection. The outbound queue survives a failed handshake.
  * Parser state and the SUB table are rebuilt on every successful CONNECT.
- * The handler must not take the client mutex. Phase 2 only logs.
+ * The handler must not take the client mutex. Presence subscribe,
+ * announce, tick, and link-down live in nats_registry.c.
  */
 
 #include <src/hydrogen.h>
 
 #include <src/config/config_nats.h>
 #include <src/nats/nats_internal.h>
+#include <src/nats/nats_stats.h>
 #include <src/nats/nats_subject.h>
 
 #include <errno.h>
@@ -527,6 +529,9 @@ int nats_session_handshake_try(void) {
     if (nats_session_send_subs() != 0) {
         return -1;
     }
+    if (nats_registry_subscribe() != 0 || nats_registry_announce_up() != 0) {
+        return -1;
+    }
     nats_link_set(NATS_LINK_UP);
     return 0;
 }
@@ -549,14 +554,23 @@ int nats_session_once(void) {
     }
     if (nats_client_flush_outbound() != 0) {
         if (nats_link_get() == NATS_LINK_UP) {
+            nats_registry_on_link_down();
             nats_session_send_unsubs();
+            if (!nats_system_shutdown) {
+                nats_stats_inc_reconnects();
+            }
         }
         nats_io_close();
         nats_link_set(NATS_LINK_DEGRADED);
         return 1;
     }
     while (!nats_system_shutdown) {
-        int n = nats_io_read(chunk, sizeof(chunk));
+        int n;
+
+        if (nats_registry_tick() != 0) {
+            break;
+        }
+        n = nats_io_read(chunk, sizeof(chunk));
 
         if (n == -2) {
             if (nats_client_flush_outbound() != 0) {
@@ -574,7 +588,11 @@ int nats_session_once(void) {
         }
     }
     if (nats_link_get() == NATS_LINK_UP) {
+        nats_registry_on_link_down();
         nats_session_send_unsubs();
+        if (!nats_system_shutdown) {
+            nats_stats_inc_reconnects();
+        }
     }
     nats_io_close();
     nats_link_set(NATS_LINK_DEGRADED);
@@ -605,6 +623,7 @@ void nats_client_reset(void) {
     nats_parser_reset();
     nats_msg_set_handler(nats_on_msg);
     nats_server_cursor = 0;
+    nats_registry_reset();
     free(nats_parse_buf);
     nats_parse_buf = NULL;
     nats_parse_len = 0;
@@ -733,6 +752,7 @@ int nats_client_flush_outbound(void) {
             pthread_mutex_unlock(&nats_client_mu);
             return -1;
         }
+        nats_stats_inc_published();
         free(subject);
         free(body);
     }

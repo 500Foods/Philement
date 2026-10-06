@@ -70,6 +70,16 @@ LaunchReadiness check_nats_launch_readiness(void) {
             add_launch_message(&messages, &count, &capacity,
                                strdup("  Go:      Database dependency registered"));
         }
+        if (nats->WebSocketRelay.Enabled) {
+            if (!add_dependency_from_launch(nats_subsystem_id, SR_WEBSOCKET)) {
+                add_launch_message(&messages, &count, &capacity,
+                                   strdup("  No-Go:   Failed to register WebSocket dependency"));
+                ready = false;
+            } else {
+                add_launch_message(&messages, &count, &capacity,
+                                   strdup("  Go:      WebSocket dependency registered"));
+            }
+        }
     }
 
     if (!nats->LoadOk) {

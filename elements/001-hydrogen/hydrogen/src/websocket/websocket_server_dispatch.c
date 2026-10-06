@@ -14,6 +14,7 @@
 // Local includes
 #include "websocket_server_internal.h"
 #include "websocket_server_chat.h"
+#include "websocket_server_relay.h"
 
 // External reference to the server context
 extern WebSocketServerContext *ws_context;
@@ -347,6 +348,7 @@ int ws_callback_dispatch(struct lws *wsi, enum lws_callback_reasons reason,
 
         case LWS_CALLBACK_SERVER_WRITEABLE:
             if (session) {
+                ws_relay_on_writable(wsi, session);
                 handle_chat_writable(wsi, session);
                 ws_maybe_send_heartbeat_ping(wsi, session);
             }

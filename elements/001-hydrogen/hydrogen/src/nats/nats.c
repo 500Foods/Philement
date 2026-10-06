@@ -8,6 +8,7 @@
 #include <src/hydrogen.h>
 
 #include <src/nats/nats_internal.h>
+#include <src/nats/nats_stats.h>
 #include <src/threads/threads.h>
 
 static pthread_mutex_t nats_life_mu = PTHREAD_MUTEX_INITIALIZER;
@@ -26,9 +27,7 @@ int nats_link_get(void) {
     return nats_link_state;
 }
 
-const char *nats_link_state_name(void) {
-    int state = nats_link_state;
-
+const char *nats_link_name(int state) {
     if (state == NATS_LINK_UP) {
         return "up";
     }
@@ -38,10 +37,15 @@ const char *nats_link_state_name(void) {
     return "down";
 }
 
+const char *nats_link_state_name(void) {
+    return nats_link_name(nats_link_state);
+}
+
 void nats_on_msg(const char *subject, const char *sid, const char *reply,
                  const void *data, size_t len) {
     (void)sid;
     (void)reply;
+    nats_stats_inc_received();
     log_this(SR_NATS, "NATS message on %s (%zu bytes)", LOG_LEVEL_TRACE, 2,
              subject ? subject : "", len);
     nats_dispatch_message(subject, data, len);
@@ -71,6 +75,7 @@ int nats_start(void) {
     nats_broadcast_fn = nats_broadcast;
     nats_dispatch_fn = nats_dispatch_message;
     nats_dispatch_set_invalidate(nats_dispatch_invalidate);
+    nats_registry_bind();
     if (nats_publish_fn == NULL || nats_broadcast_fn == NULL ||
         nats_dispatch_fn == NULL) {
         nats_link_set(NATS_LINK_DOWN);
@@ -78,6 +83,7 @@ int nats_start(void) {
         return 0;
     }
     nats_io_use_config();
+    nats_stats_reset();
     rc = pthread_create(&created, NULL, nats_reconnect_thread, NULL);
     if (rc != 0) {
         nats_link_set(NATS_LINK_DOWN);

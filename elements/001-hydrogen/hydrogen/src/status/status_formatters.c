@@ -11,6 +11,9 @@
 #include <src/api/wschat/helpers/metrics.h>
 #include <src/mailrelay/mailrelay_metrics.h>
 #include <src/mdns/mdns_client.h>
+#include <src/nats/nats.h>
+#include <src/nats/nats_internal.h>
+#include <src/nats/nats_stats.h>
 
 // Convert system metrics to JSON format
 // Exposed for testing - was previously static
@@ -352,6 +355,31 @@ json_t* format_system_status_json(const SystemMetrics *metrics) {
                           json_integer((json_int_t)metrics->mcp.specific.mcp.last_rpc_at));
         json_object_set_new(mcp, "status", mcp_status);
         json_object_set_new(services, "mcp", mcp);
+    }
+
+    {
+        json_t *nats_service = json_object();
+        int link = metrics->nats.specific.nats.link;
+
+        if (nats_service) {
+            json_object_set_new(nats_service, "enabled",
+                metrics->nats.enabled ? json_true() : json_false());
+            json_object_set_new(nats_service, "link",
+                json_string(nats_link_name(link)));
+            json_object_set_new(nats_service, "state",
+                json_string(nats_status_state(metrics->nats.enabled, link)));
+            json_object_set_new(nats_service, "peers",
+                json_integer(metrics->nats.specific.nats.peers));
+            json_object_set_new(nats_service, "alive",
+                json_integer(metrics->nats.specific.nats.alive));
+            json_object_set_new(nats_service, "published",
+                json_integer((json_int_t)metrics->nats.specific.nats.published));
+            json_object_set_new(nats_service, "received",
+                json_integer((json_int_t)metrics->nats.specific.nats.received));
+            json_object_set_new(nats_service, "reconnects",
+                json_integer((json_int_t)metrics->nats.specific.nats.reconnects));
+            json_object_set_new(services, "nats", nats_service);
+        }
     }
 
     json_object_set_new(root, "services", services);
@@ -736,6 +764,35 @@ char* format_system_status_prometheus(const SystemMetrics *metrics) {
            metrics->mcp.specific.mcp.bytes_in,
            metrics->mcp.specific.mcp.bytes_out,
             (long)metrics->mcp.specific.mcp.last_rpc_at);
+
+    APPEND("# HELP hydrogen_nats_enabled NATS subsystem enabled\n"
+           "# TYPE hydrogen_nats_enabled gauge\n"
+           "hydrogen_nats_enabled %d\n"
+           "# HELP hydrogen_nats_up NATS link is up\n"
+           "# TYPE hydrogen_nats_up gauge\n"
+           "hydrogen_nats_up %d\n"
+           "# HELP hydrogen_nats_published_total NATS messages published\n"
+           "# TYPE hydrogen_nats_published_total counter\n"
+           "hydrogen_nats_published_total %llu\n"
+           "# HELP hydrogen_nats_received_total NATS messages received\n"
+           "# TYPE hydrogen_nats_received_total counter\n"
+           "hydrogen_nats_received_total %llu\n"
+           "# HELP hydrogen_nats_reconnects_total NATS sessions dropped from up\n"
+           "# TYPE hydrogen_nats_reconnects_total counter\n"
+           "hydrogen_nats_reconnects_total %llu\n"
+           "# HELP hydrogen_nats_peers NATS peers in the registry\n"
+           "# TYPE hydrogen_nats_peers gauge\n"
+           "hydrogen_nats_peers %d\n"
+           "# HELP hydrogen_nats_alive NATS peers in Alive state\n"
+           "# TYPE hydrogen_nats_alive gauge\n"
+           "hydrogen_nats_alive %d\n",
+           metrics->nats.enabled ? 1 : 0,
+           metrics->nats.specific.nats.link == NATS_LINK_UP ? 1 : 0,
+           metrics->nats.specific.nats.published,
+           metrics->nats.specific.nats.received,
+           metrics->nats.specific.nats.reconnects,
+           metrics->nats.specific.nats.peers,
+           metrics->nats.specific.nats.alive);
 
     APPEND("# HELP hydrogen_terminal_enabled Whether terminal subsystem is initialized (1) or not (0)\n"
            "# TYPE hydrogen_terminal_enabled gauge\n"

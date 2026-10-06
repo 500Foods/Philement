@@ -22,6 +22,10 @@ static int mock_lws_service_result = 0;
 static struct lws_context* mock_lws_create_context_result = NULL;
 static int mock_lws_is_final_fragment_result = 1; // Default to final fragment
 static int mock_lws_write_result = 0;
+static int mock_lws_write_calls = 0;
+static char mock_lws_last_write_buf[4096];
+static char mock_lws_write_log_buf[16384];
+static size_t mock_lws_write_log_len = 0;
 static const char* mock_lws_protocol_name = "hydrogen"; // Default protocol name
 static int mock_lws_hdr_copy_should_fail = 0;
 static int mock_lws_hdr_total_length_should_fail = 0;
@@ -175,10 +179,51 @@ int mock_lws_is_final_fragment(struct lws *wsi)
     return mock_lws_is_final_fragment_result;
 }
 
-int mock_lws_write(struct lws *wsi, unsigned char *buf, size_t len, enum lws_write_protocol protocol)
+int mock_lws_write(struct lws *wsi, const unsigned char *buf, size_t len, enum lws_write_protocol protocol)
 {
-    (void)wsi; (void)buf; (void)len; (void)protocol;
+    (void)wsi;
+    (void)protocol;
+    mock_lws_write_calls++;
+    if (buf && len > 0) {
+        size_t copy = len;
+
+        if (copy >= sizeof(mock_lws_last_write_buf)) {
+            copy = sizeof(mock_lws_last_write_buf) - 1;
+        }
+        memcpy(mock_lws_last_write_buf, buf, copy);
+        mock_lws_last_write_buf[copy] = '\0';
+        if (mock_lws_write_log_len + 1 < sizeof(mock_lws_write_log_buf)) {
+            size_t room = sizeof(mock_lws_write_log_buf) - mock_lws_write_log_len - 1;
+            size_t take = len;
+
+            if (take > room) {
+                take = room;
+            }
+            memcpy(mock_lws_write_log_buf + mock_lws_write_log_len, buf, take);
+            mock_lws_write_log_len += take;
+            if (mock_lws_write_log_len + 1 < sizeof(mock_lws_write_log_buf)) {
+                mock_lws_write_log_buf[mock_lws_write_log_len] = '\n';
+                mock_lws_write_log_len++;
+            }
+            mock_lws_write_log_buf[mock_lws_write_log_len] = '\0';
+        }
+    }
     return mock_lws_write_result;
+}
+
+int mock_lws_write_count(void)
+{
+    return mock_lws_write_calls;
+}
+
+const char *mock_lws_last_write(void)
+{
+    return mock_lws_last_write_buf;
+}
+
+const char *mock_lws_write_log(void)
+{
+    return mock_lws_write_log_buf;
 }
 
 int mock_lws_callback_on_writable(struct lws *wsi)
@@ -351,6 +396,10 @@ void mock_lws_reset_all(void)
     mock_lws_create_context_result = NULL;
     mock_lws_is_final_fragment_result = 1; // Default to final fragment
     mock_lws_write_result = 0;
+    mock_lws_write_calls = 0;
+    mock_lws_last_write_buf[0] = '\0';
+    mock_lws_write_log_buf[0] = '\0';
+    mock_lws_write_log_len = 0;
     mock_lws_protocol_name = "hydrogen"; // Reset to default
     mock_lws_hdr_copy_should_fail = 0;
     mock_lws_hdr_total_length_should_fail = 0;

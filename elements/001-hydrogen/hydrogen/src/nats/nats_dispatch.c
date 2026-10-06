@@ -2,9 +2,11 @@
  * Parse one incoming envelope and dispatch.
  *
  * A peer cache.invalidate_by_ref drops result-cache rows for that SQL
- * template. Pointers passed to the invalidate hook are valid only for
- * that call. This file does not relay WebSocket, track peers, register
- * Lua, or take nats_client_mu.
+ * template. An allowlisted event is offered to WebSocket sessions.
+ * A peer app_state updates the presence registry when presence is on.
+ * That envelope is not offered to the relay. Pointers passed to the
+ * invalidate hook are valid only for that call. This file does not
+ * register Lua or take nats_client_mu.
  */
 
 #include <src/hydrogen.h>
@@ -154,27 +156,63 @@ void nats_dispatch_message(const char *wire_subject, const void *data, size_t le
     {
         json_t *root = json_loadb((const char *)data, len, 0, NULL);
 
-        if (!nats_dispatch_fields_ok(root) ||
-            !nats_dispatch_subject_ok(wire_subject, root)) {
-            json_decref(root);
-            log_this(SR_NATS, "NATS envelope dropped", LOG_LEVEL_TRACE, 0);
-            return;
-        }
-        if (nats_dispatch_is_self(root)) {
-            json_decref(root);
-            log_this(SR_NATS, "NATS skip self", LOG_LEVEL_TRACE, 0);
-            return;
-        }
-        {
-            const json_t *body = json_object_get(root, "data");
-            const char *database = json_string_value(json_object_get(body, "database"));
-            const char *reason = json_string_value(json_object_get(body, "reason"));
-            json_int_t query_ref = json_integer_value(json_object_get(body, "query_ref"));
-
-            if (nats_invalidate_hook) {
-                nats_invalidate_hook(database, query_ref, reason);
+        if (nats_dispatch_fields_ok(root) &&
+            nats_dispatch_subject_ok(wire_subject, root)) {
+            if (nats_dispatch_is_self(root)) {
+                json_decref(root);
+                log_this(SR_NATS, "NATS skip self", LOG_LEVEL_TRACE, 0);
+                return;
             }
+            {
+                const json_t *body = json_object_get(root, "data");
+                const char *database = json_string_value(json_object_get(body, "database"));
+                const char *reason = json_string_value(json_object_get(body, "reason"));
+                const char *subject = json_string_value(json_object_get(root, "subject"));
+                json_int_t query_ref = json_integer_value(json_object_get(body, "query_ref"));
+
+                if (nats_invalidate_hook) {
+                    nats_invalidate_hook(database, query_ref, reason);
+                }
+                /* body is owned by root. Offer before json_decref. */
+                nats_relay_offer("cache.invalidate_by_ref", subject, body);
+            }
+            json_decref(root);
+            return;
+        }
+        if (nats_registry_envelope_ok(root) &&
+            nats_registry_subject_ok(wire_subject, root)) {
+            if (nats_dispatch_is_self(root)) {
+                json_decref(root);
+                log_this(SR_NATS, "NATS skip self", LOG_LEVEL_TRACE, 0);
+                return;
+            }
+            if (app_config->nats.Presence.Enabled) {
+                nats_registry_apply(root);
+                log_this(SR_NATS, "NATS dispatch app_state", LOG_LEVEL_TRACE, 0);
+            } else {
+                log_this(SR_NATS, "NATS envelope dropped", LOG_LEVEL_TRACE, 0);
+            }
+            json_decref(root);
+            return;
+        }
+        if (nats_relay_envelope_ok(root) &&
+            nats_relay_subject_ok(wire_subject, root)) {
+            if (nats_dispatch_is_self(root)) {
+                json_decref(root);
+                log_this(SR_NATS, "NATS skip self", LOG_LEVEL_TRACE, 0);
+                return;
+            }
+            {
+                const char *event_name = json_string_value(json_object_get(root, "event"));
+                const char *subject = json_string_value(json_object_get(root, "subject"));
+                const json_t *body = json_object_get(root, "data");
+
+                nats_relay_offer(event_name, subject, body);
+            }
+            json_decref(root);
+            return;
         }
         json_decref(root);
+        log_this(SR_NATS, "NATS envelope dropped", LOG_LEVEL_TRACE, 0);
     }
 }

@@ -244,6 +244,7 @@ void H_lua_install_api(lua_State* L) {
     // H.notify returns a stable deferred error (no channel map yet).
     H_lua_install_mail_notify(L);
     H_lua_install_mcp(L);
+    H_lua_install_nats(L);
     H_lua_install_mdns(L);
 }
 

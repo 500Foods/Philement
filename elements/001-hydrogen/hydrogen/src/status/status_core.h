@@ -183,6 +183,14 @@ typedef struct {
             unsigned long long bytes_out;
             time_t last_rpc_at;
         } mcp;
+        struct {
+            unsigned long long published;
+            unsigned long long received;
+            unsigned long long reconnects;
+            int peers;
+            int alive;
+            int link;
+        } nats;
     } specific;
 } ServiceMetrics;
 
@@ -225,6 +233,7 @@ typedef struct {
     ServiceMetrics scripting;
     ServiceMetrics terminal;
     ServiceMetrics mcp;
+    ServiceMetrics nats;
     
     // Queue metrics
     QueueMetrics log_queue;

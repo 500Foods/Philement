@@ -11,6 +11,7 @@
 #include <src/database/database.h>
 #include <src/scripting/scoreboard_json.h>
 #include <src/mcp/mcp_stats.h>
+#include <src/nats/nats_stats.h>
 #include <src/terminal/terminal.h>
 #include <src/terminal/terminal_session.h>
 #include <sys/socket.h>
@@ -26,6 +27,7 @@ extern ServiceThreads print_threads;
 extern ServiceThreads database_threads;
 extern ServiceThreads scripting_threads;
 extern ServiceThreads mcp_threads;
+extern ServiceThreads nats_threads;
 
 // External queue memory structures
 extern QueueMemoryMetrics log_queue_memory;
@@ -502,6 +504,21 @@ bool collect_service_metrics(SystemMetrics *metrics, const WebSocketMetrics *ws_
          metrics->mcp.specific.mcp.bytes_out = mcp_metrics.bytes_out;
          metrics->mcp.specific.mcp.last_rpc_at = mcp_metrics.last_rpc_at;
      }
+
+    update_service_thread_metrics(&nats_threads);
+    {
+        NatsMetrics nats_metrics;
+
+        nats_stats_collect(&nats_metrics);
+        metrics->nats.enabled = nats_metrics.enabled;
+        convert_thread_metrics(&nats_threads, &metrics->nats.threads);
+        metrics->nats.specific.nats.published = nats_metrics.published;
+        metrics->nats.specific.nats.received = nats_metrics.received;
+        metrics->nats.specific.nats.reconnects = nats_metrics.reconnects;
+        metrics->nats.specific.nats.peers = nats_metrics.peers;
+        metrics->nats.specific.nats.alive = nats_metrics.alive;
+        metrics->nats.specific.nats.link = nats_metrics.link;
+    }
 
     // Terminal service metrics
     metrics->terminal.enabled = is_terminal_subsystem_initialized();

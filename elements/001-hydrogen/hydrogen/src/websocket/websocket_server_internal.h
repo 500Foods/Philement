@@ -25,11 +25,14 @@
 #endif
 
 // Project headers
+#include <src/config/config_nats.h>  // NATS_MAX_RELAY_EVENTS
 #include <src/threads/threads.h>  // Thread management subsystem
 #include <src/terminal/terminal_session.h>  // Terminal session definitions
 #include <src/terminal/terminal_websocket.h>  // Terminal WebSocket definitions
 #include <src/api/conduit/helpers/auth_jwt_helper.h>  // JWT validation for chat
 #include <src/api/auth/auth_service.h>  // JWT claims structure
+
+#define WS_RELAY_QUEUE_DEPTH 8
 
 // WebSocket server context structure
 typedef struct {
@@ -83,6 +86,11 @@ typedef struct WebSocketSessionData {
     time_t last_pong_received;         // When we last received a pong from this client
     bool ping_pending;                 // Whether we're waiting for a pong response
     bool heartbeat_ping_due;           // Timer requested a ping; send on next writable
+    /* NATS relay. Names the client asked for, capped at NATS_MAX_RELAY_EVENTS. */
+    char *subscribed_events[NATS_MAX_RELAY_EVENTS];
+    size_t subscribed_event_count;
+    char *relay_queue[WS_RELAY_QUEUE_DEPTH];
+    size_t relay_queue_count;
 } WebSocketSessionData;
 
 // Initialize the server context

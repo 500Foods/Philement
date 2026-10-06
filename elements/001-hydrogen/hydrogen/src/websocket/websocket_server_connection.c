@@ -12,7 +12,9 @@
 #include <src/hydrogen.h>
 
 // Local includes
+#include "websocket_count.h"
 #include "websocket_server_internal.h"
+#include "websocket_server_relay.h"
 
 // Terminal includes for session management
 #include <src/terminal/terminal_session.h>
@@ -26,12 +28,28 @@
 // External reference to the server context
 extern WebSocketServerContext *ws_context;
 
+int websocket_active_connection_count(void)
+{
+    int count;
+
+    if (!ws_context) {
+        return 0;
+    }
+    if (pthread_mutex_lock(&ws_context->mutex) != 0) {
+        return 0;
+    }
+    count = ws_context->active_connections;
+    pthread_mutex_unlock(&ws_context->mutex);
+    if (count < 0) {
+        return 0;
+    }
+    return count;
+}
+
 // Terminal session management now uses WebSocketSessionData instead of globals
 
 int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *session)
 {
-    (void)wsi;  // Parameter reserved for future use
-
     if (!session || !ws_context) {
         log_this(SR_WEBSOCKET, "Invalid session or context", LOG_LEVEL_DEBUG, 0);
         return -1;
@@ -74,6 +92,7 @@ int ws_handle_connection_established(struct lws *wsi, WebSocketSessionData *sess
              ws_context->active_connections, 
              ws_context->total_connections);
 
+    ws_relay_session_add(wsi, session);
     return 0;
 }
 
@@ -90,6 +109,7 @@ int ws_handle_connection_closed(const struct lws *wsi, WebSocketSessionData *ses
         if (!session->connection_valid) {
             return 0;  // Already cleaned up
         }
+        ws_relay_session_remove(session);
         session->connection_valid = false;
         session->chat_stream_active = false;
     }

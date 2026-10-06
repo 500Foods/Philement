@@ -20,7 +20,7 @@
 #define NATS_MAX_SERVERS 8
 #define NATS_MAX_DELAYS 8
 #define NATS_MAX_SUBSCRIPTIONS 16
-#define NATS_MAX_RELAY_EVENTS 16
+#define NATS_MAX_RELAY_EVENTS 64
 
 typedef struct NATSSubscriptionConfig {
     char *Subject;

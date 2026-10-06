@@ -233,6 +233,51 @@ static int feed_event(const char *msg_subject, const char *event,
     return rc;
 }
 
+static char *presence_json(const char *state, const char *instance_id) {
+    json_t *root = json_object();
+    json_t *body = json_object();
+    char *text;
+    const char *subject = "cluster.philement.instance.app_state";
+
+    if (!root || !body) {
+        json_decref(root);
+        json_decref(body);
+        return NULL;
+    }
+    json_object_set_new(body, "state", json_string(state));
+    json_object_set_new(root, "event", json_string("app_state"));
+    json_object_set_new(root, "subject", json_string(subject));
+    json_object_set_new(root, "timestamp", json_string("2026-10-05T00:00:00Z"));
+    json_object_set_new(root, "source", json_string(instance_id));
+    json_object_set_new(root, "instance_id", json_string(instance_id));
+    json_object_set_new(root, "data", body);
+    text = json_dumps(root, JSON_COMPACT);
+    json_decref(root);
+    return text;
+}
+
+static int feed_presence(const char *state, const char *instance_id) {
+    size_t len = 0;
+    char *json = presence_json(state, instance_id);
+    const char *subject = "cluster.philement.instance.app_state";
+
+    free(held_json);
+    held_json = json;
+    if (!json) {
+        return -1;
+    }
+    {
+        char *frame = build_frame(subject, json, &len);
+
+        free(held_frame);
+        held_frame = frame;
+        if (!frame) {
+            return -1;
+        }
+        return nats_parser_feed(frame, len);
+    }
+}
+
 static int feed_event_ref(json_int_t ref) {
     size_t len = 0;
     char *json = envelope_json_ref("cache.invalidate_by_ref", k_wire,
@@ -266,6 +311,10 @@ void test_nats_dispatch_message_log_omits_payload(void);
 void test_nats_dispatch_message_evicts_template(void);
 void test_nats_dispatch_message_skip_self_keeps_rows(void);
 void test_nats_dispatch_message_drops_wide_ref(void);
+void test_nats_dispatch_message_presence_peer(void);
+void test_nats_dispatch_message_presence_skip_self(void);
+void test_nats_dispatch_message_presence_disabled(void);
+void test_nats_dispatch_message_presence_bad_state(void);
 
 void setUp(void) {
     saved_config = app_config;
@@ -365,6 +414,7 @@ void test_nats_dispatch_message_ignores_app_state(void) {
     rc = feed_event(subject, "app_state", subject, "hydrogen-02", true);
     TEST_ASSERT_EQUAL(0, rc);
     TEST_ASSERT_EQUAL(0, got_count);
+    TEST_ASSERT_EQUAL(0, nats_registry_alive_count());
     TEST_ASSERT_TRUE(mock_logging_message_contains("NATS envelope dropped"));
     TEST_ASSERT_FALSE(mock_logging_message_contains("Acuranzo"));
 }
@@ -443,6 +493,57 @@ void test_nats_dispatch_message_skip_self_keeps_rows(void) {
     TEST_ASSERT_TRUE(cached("Acuranzo", sql, "{\"id\":1}"));
 }
 
+void test_nats_dispatch_message_presence_peer(void) {
+    int rc;
+
+    prime_server("hydrogen-01");
+    cfg.nats.Presence.Enabled = true;
+    nats_dispatch_set_invalidate(capture_invalidate);
+    rc = feed_presence("Alive", "hydrogen-02");
+    TEST_ASSERT_EQUAL(0, rc);
+    TEST_ASSERT_EQUAL(0, got_count);
+    TEST_ASSERT_EQUAL(1, nats_registry_alive_count());
+    TEST_ASSERT_EQUAL(1, nats_registry_peer_count());
+    TEST_ASSERT_TRUE(mock_logging_message_contains("NATS dispatch app_state"));
+    TEST_ASSERT_FALSE(mock_logging_message_contains("NATS dispatch cache.invalidate_by_ref"));
+    TEST_ASSERT_FALSE(mock_logging_message_contains("hydrogen-02"));
+}
+
+void test_nats_dispatch_message_presence_skip_self(void) {
+    int rc;
+
+    prime_server("hydrogen-01");
+    cfg.nats.Presence.Enabled = true;
+    rc = feed_presence("Alive", "hydrogen-01");
+    TEST_ASSERT_EQUAL(0, rc);
+    TEST_ASSERT_EQUAL(0, nats_registry_alive_count());
+    TEST_ASSERT_TRUE(mock_logging_message_contains("NATS skip self"));
+    TEST_ASSERT_FALSE(mock_logging_message_contains("NATS dispatch app_state"));
+}
+
+void test_nats_dispatch_message_presence_disabled(void) {
+    int rc;
+
+    prime_server("hydrogen-01");
+    rc = feed_presence("Alive", "hydrogen-02");
+    TEST_ASSERT_EQUAL(0, rc);
+    TEST_ASSERT_EQUAL(0, nats_registry_alive_count());
+    TEST_ASSERT_TRUE(mock_logging_message_contains("NATS envelope dropped"));
+    TEST_ASSERT_FALSE(mock_logging_message_contains("NATS dispatch app_state"));
+}
+
+void test_nats_dispatch_message_presence_bad_state(void) {
+    int rc;
+
+    prime_server("hydrogen-01");
+    cfg.nats.Presence.Enabled = true;
+    rc = feed_presence("Sleeping", "hydrogen-02");
+    TEST_ASSERT_EQUAL(0, rc);
+    TEST_ASSERT_EQUAL(0, nats_registry_alive_count());
+    TEST_ASSERT_TRUE(mock_logging_message_contains("NATS envelope dropped"));
+    TEST_ASSERT_FALSE(mock_logging_message_contains("NATS dispatch app_state"));
+}
+
 void test_nats_dispatch_message_drops_wide_ref(void) {
     const char *sql = "SELECT id FROM accounts WHERE id = :id";
 
@@ -470,5 +571,9 @@ int main(void) {
     RUN_TEST(test_nats_dispatch_message_evicts_template);
     RUN_TEST(test_nats_dispatch_message_skip_self_keeps_rows);
     RUN_TEST(test_nats_dispatch_message_drops_wide_ref);
+    RUN_TEST(test_nats_dispatch_message_presence_peer);
+    RUN_TEST(test_nats_dispatch_message_presence_skip_self);
+    RUN_TEST(test_nats_dispatch_message_presence_disabled);
+    RUN_TEST(test_nats_dispatch_message_presence_bad_state);
     return UNITY_END();
 }
