@@ -4,6 +4,8 @@
 -- modules under lua/ (schemahelper_qutil, _qstate, _qload, _qdecode).
 --
 -- CHANGELOG
+-- 0.6.7 - 2026-10-07 - Queue type and dropped; info extras stay off the review list
+-- 0.6.6 - 2026-10-07 - Pass sidecar role through to the state path
 -- 0.6.5 - 2026-09-09 - Accept hash gate + accepted list + un-accept
 -- 0.5.8 - 2026-08-25 - Split into lua/ submodules (qutil/qstate/qload/qdecode); this file is now the orchestrator
 -- 0.5.7 - 2026-08-24 - Decode MySQL/MariaDB lowercase brotli_decompress(FROM_BASE64('...'))
@@ -32,8 +34,8 @@ local M = {}
 local has_embed = U.has_embed
 local split_lines = U.split_lines
 
-function M.default_state_path(out_dir, design, engine)
-    return S.default_state_path(out_dir, design, engine)
+function M.default_state_path(out_dir, design, engine, role)
+    return S.default_state_path(out_dir, design, engine, role)
 end
 
 function M.load_state(path)
@@ -76,32 +78,45 @@ function M.build(opts)
 
     local subject = {}
     local classes = {}
+    local info = {}
     local accepted_list = {}
     local accepted = 0
     local applied = 0
     local packet = 0
     local skipped = 0
 
+    local function is_info_extra(item)
+        local kind = item.kind or ""
+        if kind == "extra_table" or kind == "extra_column" then
+            return true
+        end
+        return item.class == "catalog live extra"
+    end
+
     for _, item in ipairs(all) do
-        local dec = state.by_id and state.by_id[item.id]
-        local action = dec and dec.action or ""
-        item.action = action
-        if action == "accepted" and M.accept_holds(dec, item) then
-            accepted = accepted + 1
-            accepted_list[#accepted_list + 1] = item
-        elseif action == "applied" then
-            applied = applied + 1
-        elseif action == "packet" then
-            packet = packet + 1
+        if is_info_extra(item) then
+            info[#info + 1] = item
         else
-            if action == "accepted" then
-                item.action = ""
-            elseif action == "skipped" then
-                skipped = skipped + 1
+            local dec = state.by_id and state.by_id[item.id]
+            local action = dec and dec.action or ""
+            item.action = action
+            if action == "accepted" and M.accept_holds(dec, item) then
+                accepted = accepted + 1
+                accepted_list[#accepted_list + 1] = item
+            elseif action == "applied" then
+                applied = applied + 1
+            elseif action == "packet" then
+                packet = packet + 1
+            else
+                if action == "accepted" then
+                    item.action = ""
+                elseif action == "skipped" then
+                    skipped = skipped + 1
+                end
+                subject[#subject + 1] = item
+                local cls = item.class
+                classes[cls] = (classes[cls] or 0) + 1
             end
-            subject[#subject + 1] = item
-            local cls = item.class
-            classes[cls] = (classes[cls] or 0) + 1
         end
     end
 
@@ -136,6 +151,7 @@ function M.build(opts)
             skipped = skipped,
             catalog_ok = cat_counts.ok,
             catalog_checked = cat_counts.checked,
+            info = #info,
          },
      }
 end
@@ -257,6 +273,10 @@ local function explain_check(finding)
             end
         elseif finding.kind == "column" then
             lines[#lines + 1] = "  apply:     [U]pdate Database — ADD COLUMN (type from expected fold)"
+        elseif finding.kind == "type" then
+            lines[#lines + 1] = "  apply:     review only — type change waits for dialect DDL"
+        elseif finding.kind == "dropped" then
+            lines[#lines + 1] = "  apply:     review only — a later migration dropped this object"
         end
         return lines
     end
@@ -795,6 +815,8 @@ function M.build_dashboard_lines(opts)
     lines[#lines + 1] = string.format("Perfect migrations          %d", built.totals.perfect)
     lines[#lines + 1] = string.format("Accepted variations         %d", built.totals.accepted)
     lines[#lines + 1] = string.format("Findings for review         %d", built.totals.subject)
+    lines[#lines + 1] = string.format(
+        "Live extras (not applicable) %d", built.totals.info or 0)
     if built.totals.applied > 0 or built.totals.packet > 0 then
         lines[#lines + 1] = string.format("Applied / packets           %d / %d",
             built.totals.applied, built.totals.packet)

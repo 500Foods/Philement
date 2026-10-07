@@ -1,15 +1,14 @@
 #!/usr/bin/env bash
-# SchemaTool wrapper — IBM Db2 (Test 40: hydrogen_test_40_db2.json)
+# SchemaTool wrapper — IBM Db2 (Test 35: hydrogen_test_35_db2.json)
 #
-# Sets connection env vars from the Test 40 Db2 config and calls schematool.sh.
 # Engine-specific env: HYDROTST_DB_{USER,NAME,PASS}
-# Host/Port:           localhost:55555 (hardcoded in Test 40 config)
-# Schema:             demo
-# Design:             acuranzo
+# Host/Port:           localhost:55555 (hardcoded in the Test 35 config)
+# Schema:             test
+# Design:             acuranzo+argent
 #
 # CHANGELOG
-# 1.1.0 - 2026-08-22 - Resolve sibling schematool.sh, then HYDROGEN_ROOT
-# 1.0.0 - 2026-08-02 - Created as Test 40 config convenience wrapper
+# 1.1.0 - 2026-10-07 - Payload acuranzo+argent in one run
+# 1.0.0 - 2026-10-07 - Test 35 wrapper; schema test
 
 set -euo pipefail
 
@@ -32,10 +31,17 @@ fi
 
 export SCHEMATOOL_DB_HOST="localhost"
 export SCHEMATOOL_DB_PORT="55555"
-export SCHEMATOOL_DB_SCHEMA="demo"
+export SCHEMATOOL_DB_SCHEMA="test"
+
+for _arg in "$@"; do
+    if [[ "${_arg}" == "--help" || "${_arg}" == "-h" ]]; then
+        exec "${SCHEMATOOL}" --help
+    fi
+done
 
 exec "${SCHEMATOOL}" \
     --migrations "${MIGRATIONS_DIR}" \
-    --design acuranzo \
+    --design acuranzo+argent \
     --engine db2 \
+    --schema test \
     "$@"

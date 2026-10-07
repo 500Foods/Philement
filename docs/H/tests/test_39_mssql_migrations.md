@@ -89,4 +89,4 @@ Stop the container after testing:
 - **Test 31**: Migration validation (static SQL generation analysis) — includes mssql
 - **Test 32-38**: Migration performance for other database engines
 - **Test 40**: Auth endpoint testing across engines (includes MSSQL)
-- **[MSSQL.md](/docs/H/plans/MSSQL.md)**: Full MSSQL engine plan
+- **[MSSQL_COMPLETE.md](/docs/H/plans/complete/MSSQL_COMPLETE.md)**: Full MSSQL engine plan

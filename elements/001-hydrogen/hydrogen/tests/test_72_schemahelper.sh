@@ -11,6 +11,8 @@
 # (Helpers live in tests/lib/schemahelper_helpers.sh)
 
 # CHANGELOG
+# 1.4.0 - 2026-10-07 - Disk-fold column, type, dropped, and info extras
+# 1.3.0 - 2026-10-07 - Test and demo sidecars do not share a file
 # 1.2.0 - 2026-09-09 - Split Lua fixtures + helpers under tests/lib for 1000-line cap
 # 1.1.6 - 2026-09-09 - Accept hash invalidation + un-accept
 # 1.1.5 - 2026-09-08 - Progress bar dark-grey background
@@ -39,7 +41,7 @@ TEST_NAME="SchemaHelper"
 TEST_ABBR="SCH"
 TEST_NUMBER="72"
 TEST_COUNTER=0
-TEST_VERSION="1.2.0"
+TEST_VERSION="1.4.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -135,6 +137,18 @@ schemahelper_lua_subtest \
     "hash.lua" \
     "Hash mismatch re-queues; un-accept restores" \
     "Accept hash / un-accept failed"
+
+schemahelper_lua_subtest \
+    "Test and demo sidecars" \
+    "sidecar.lua" \
+    "Test and demo sidecars do not share a file" \
+    "Sidecar role split failed"
+
+schemahelper_lua_subtest \
+    "Disk fold catalog shape" \
+    "catalog_shape.lua" \
+    "Disk column, type, dropped, and info extras" \
+    "Catalog shape fixture failed"
 
 schemahelper_cleanup
 

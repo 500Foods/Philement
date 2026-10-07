@@ -8,6 +8,11 @@
 # Database/Lua operations, audit orchestration, and rendering are in lib/.
 #
 # CHANGELOG
+# 1.15.0 - 2026-10-07 - Catalog compares type; info extras are not failures
+# 1.14.0 - 2026-10-07 - --design plus-list; catalog folds disk forward DDL
+# 1.13.0 - 2026-10-07 - mariadb is its own engine; no CANVAS_DB fallback
+# 1.12.0 - 2026-10-07 - cockroachdb is unknown; Firebird replaced that slot
+# 1.11.0 - 2026-10-07 - Firebird file readiness: path and user, empty schema
 # 1.10.0 - 2026-10-07 - Engine mssql: env, readiness, help (query/catalog adapters)
 # 1.9.0 - 2026-08-25 - --work-dir / --keep-work-dir: caller-managed intermediates
 # 1.8.3 - 2026-08-23 - Catalog failures[] include last fold ref
@@ -34,7 +39,7 @@ LUA_DIR="${SCRIPT_DIR}/lua"
 DB_DIR="${SCRIPT_DIR}/db"
 LIB_DIR="${SCRIPT_DIR}/lib"
 
-VERSION="1.10.0"
+VERSION="1.15.0"
 
 # Source library modules (helpers, audit orchestration, rendering)
 # shellcheck source=extras/schematool/lib/schematool_init.sh # dependency checks + command lookups
@@ -58,12 +63,14 @@ Usage:
   schematool.sh --migrations DIR --design NAME --engine ENGINE [options]
 
 Required:
-  --migrations DIR       Folder with database.lua and design_NNNN.lua
-  --design NAME          Design prefix (e.g. acuranzo)
-    --engine ENGINE        postgresql|mysql|sqlite|db2|firebird|mssql (aliases: mariadb→mysql)
+  --migrations DIR       First design's folder (database.lua and design_NNNN.lua)
+  --design NAME          One design, or a plus-list (acuranzo+argent).
+                         Later names are sibling folders
+                         (…/<design>/migrations), each with database.lua.
+  --engine ENGINE        postgresql|mysql|mariadb|sqlite|db2|firebird|mssql (aliases: postgres, yugabytedb → postgresql)
 
 Connection (required for full audit / --dump-db; env fallbacks apply):
-  --schema NAME          Schema prefix (empty OK for SQLite)
+  --schema NAME          Schema prefix (empty OK for SQLite and Firebird)
   --database NAME        Database name or SQLite file path
   --host HOST            DB host
   --port PORT            DB port
@@ -72,10 +79,11 @@ Connection (required for full audit / --dump-db; env fallbacks apply):
 
   Env precedence when flags omitted (first non-empty wins per field):
     1) Requested engine name (before alias) → primary env:
-          postgresql|postgres|firebird → ACURANZO_DB_{HOST,PORT,USER,NAME,PASS} (PG wire) / FIREBIRD_DB_PATH_DEMO|_TEST (or deprecated FIREBIRD_DB_PATH)+FIREBIRD_SYSDBA_PASSWORD (native)
+          postgresql|postgres           → ACURANZO_DB_{HOST,PORT,USER,NAME,PASS}
+          firebird                      → FIREBIRD_DB_PATH_DEMO / _TEST (or deprecated FIREBIRD_DB_PATH) + FIREBIRD_SYSDBA_PASSWORD
          yugabytedb                      → YUGABYTE_DB_{HOST,PORT,USER,NAME,PASS}
-          mysql                           → MYSQL_DB_{HOST,PORT,USER,NAME,PASS} (fallback: CANVAS_DB_*)
-          mariadb                       → MARIADB_DB_{HOST,PORT,USER,NAME,PASS} (fallback: CANVAS_DB_*)
+          mysql                         → MYSQL_DB_{HOST,PORT,USER,NAME,PASS}
+          mariadb                       → MARIADB_DB_{HOST,PORT,USER,NAME,PASS}
          db2                             → HYDROTST_DB_{USER,NAME,PASS}
          mssql                           → MSSQL_DB_{HOST,PORT,USER,NAME} + MSSQL_SA_PASSWORD (sqlcmd inside philement-mssql)
     2) Generic SCHEMATOOL_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}
@@ -107,7 +115,9 @@ Output:
   --include-diagram           Also compare diagram payloads (type 1002)
   --emit-expected [PATH]      Write expected payloads JSON only
   --dump-db [PATH]            Fetch queries metadata JSON only
-  --catalog                   Live catalog audit (object shape vs applied DDL fold)
+  --catalog                   Live catalog audit (object shape vs disk DDL fold)
+  --fold-stored               Catalog fold uses applied type-1003 text from the DB.
+                              Default folds disk forward DDL (type 1000) in ref order.
   --dump-catalog [PATH]       Fetch live catalog JSON only (optional --only-tables)
   --only-tables a,b           Catalog: probe/compare only these tables (cheap path)
   --group-size N              Insert table separator after every N rows (default: 20; 0 = disabled)
@@ -119,7 +129,12 @@ Output:
 Default path: when connection is available and --dry-disk is not set, run full
 metadata audit (discover + expect + dump + compare + tables + .sql/.mig).
 With --catalog, also (or instead if --dump-catalog) run live catalog track:
-  fold applied type-1003 forward code → expected shape → targeted probes → compare.
+  fold disk forward DDL (type 1000, every design in --design) in ref order
+  → expected shape → targeted probes → compare presence, nullability, and
+  data type (case and spacing normalized). A live object no migration
+  mentions is info, not a failure. An object the fold created and a later
+  migration dropped, still live, is a dropped finding.
+  --fold-stored folds applied type-1003 text from the database dump instead.
 Exit when both tracks run: worst of metadata/catalog (0/2/3); bitfield later.
 
 Exit codes:
@@ -132,6 +147,7 @@ MIGRATIONS=""
 DESIGN=""
 ENGINE=""
 SCHEMA=""
+SCHEMA_FROM_CLI=0
 DATABASE=""
 HOST=""
 PORT=""
@@ -159,6 +175,7 @@ DUMP_DB_PATH=""
 CATALOG=0
 DUMP_CATALOG=0
 DUMP_CATALOG_PATH=""
+FOLD_STORED=0
 ONLY_TABLES=""
 ROW_GROUP_SIZE=20
 NO_DETAIL=0
@@ -181,6 +198,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         --schema)
             SCHEMA="${2:-}"
+            SCHEMA_FROM_CLI=1
             shift 2
             ;;
         --database)
@@ -285,6 +303,10 @@ while [[ $# -gt 0 ]]; do
             CATALOG=1
             shift
             ;;
+        --fold-stored)
+            FOLD_STORED=1
+            shift
+            ;;
         --dump-catalog)
             DUMP_CATALOG=1
             CATALOG=1
@@ -332,8 +354,7 @@ ENGINE_REQUESTED="${ENGINE}"
 
 # Engine aliases (dialect adapters)
 case "${ENGINE}" in
-    mariadb) ENGINE="mysql" ;;
-    cockroachdb|yugabytedb|postgres) ENGINE="postgresql" ;;
+    yugabytedb|postgres) ENGINE="postgresql" ;;
     *) ;;
 esac
 
@@ -353,9 +374,9 @@ if [[ ! -f "${MIGRATIONS}/database.lua" ]]; then
 fi
 
 case "${ENGINE}" in
-    postgresql|mysql|sqlite|db2|firebird|mssql) ;;
+    postgresql|mysql|mariadb|sqlite|db2|firebird|mssql) ;;
     *)
-        echo "Error: unsupported engine '${ENGINE}' (use postgresql|mysql|sqlite|db2|firebird|mssql)" >&2
+        echo "Error: unsupported engine '${ENGINE}' (use postgresql|mysql|mariadb|sqlite|db2|firebird|mssql). Firebird replaced that slot." >&2
         exit 1
         ;;
 esac
@@ -405,7 +426,7 @@ case "${ENGINE_REQUESTED}" in
         [[ -z "${PASSWORD_ENV}" && -n "${YUGABYTE_DB_PASS:-}" ]] && PASSWORD_ENV="YUGABYTE_DB_PASS"
         [[ -z "${SCHEMA}" && -n "${YUGABYTE_DB_SCHEMA:-}" ]] && SCHEMA="${YUGABYTE_DB_SCHEMA}"
         ;;
-    postgresql|postgres|cockroachdb)
+    postgresql|postgres)
         [[ -z "${HOST}" ]] && HOST="${ACURANZO_DB_HOST:-}"
         [[ -z "${PORT}" ]] && PORT="${ACURANZO_DB_PORT:-}"
         [[ -z "${USER_NAME}" ]] && USER_NAME="${ACURANZO_DB_USER:-}"
@@ -420,24 +441,20 @@ case "${ENGINE_REQUESTED}" in
         [[ -z "${SCHEMA}" ]] && SCHEMA=""
         ;;
     mysql)
-        [[ -z "${HOST}" ]] && HOST="${MYSQL_DB_HOST:-${CANVAS_DB_HOST:-}}"
-        [[ -z "${PORT}" ]] && PORT="${MYSQL_DB_PORT:-${CANVAS_DB_PORT:-}}"
-        [[ -z "${USER_NAME}" ]] && USER_NAME="${MYSQL_DB_USER:-${CANVAS_DB_USER:-}}"
-        [[ -z "${DATABASE}" ]] && DATABASE="${MYSQL_DB_NAME:-${CANVAS_DB_NAME:-}}"
+        [[ -z "${HOST}" ]] && HOST="${MYSQL_DB_HOST:-}"
+        [[ -z "${PORT}" ]] && PORT="${MYSQL_DB_PORT:-}"
+        [[ -z "${USER_NAME}" ]] && USER_NAME="${MYSQL_DB_USER:-}"
+        [[ -z "${DATABASE}" ]] && DATABASE="${MYSQL_DB_NAME:-}"
         [[ -z "${PASSWORD_ENV}" && -n "${MYSQL_DB_PASS:-}" ]] && PASSWORD_ENV="MYSQL_DB_PASS"
-        [[ -z "${PASSWORD_ENV}" && -n "${CANVAS_DB_PASS:-}" ]] && PASSWORD_ENV="CANVAS_DB_PASS"
         [[ -z "${SCHEMA}" && -n "${MYSQL_DB_SCHEMA:-}" ]] && SCHEMA="${MYSQL_DB_SCHEMA}"
-        [[ -z "${SCHEMA}" && -n "${CANVAS_DB_SCHEMA:-}" ]] && SCHEMA="${CANVAS_DB_SCHEMA}"
         ;;
     mariadb)
-        [[ -z "${HOST}" ]] && HOST="${MARIADB_DB_HOST:-${CANVAS_DB_HOST:-}}"
-        [[ -z "${PORT}" ]] && PORT="${MARIADB_DB_PORT:-${CANVAS_DB_PORT:-}}"
-        [[ -z "${USER_NAME}" ]] && USER_NAME="${MARIADB_DB_USER:-${CANVAS_DB_USER:-}}"
-        [[ -z "${DATABASE}" ]] && DATABASE="${MARIADB_DB_NAME:-${CANVAS_DB_NAME:-}}"
+        [[ -z "${HOST}" ]] && HOST="${MARIADB_DB_HOST:-}"
+        [[ -z "${PORT}" ]] && PORT="${MARIADB_DB_PORT:-}"
+        [[ -z "${USER_NAME}" ]] && USER_NAME="${MARIADB_DB_USER:-}"
+        [[ -z "${DATABASE}" ]] && DATABASE="${MARIADB_DB_NAME:-}"
         [[ -z "${PASSWORD_ENV}" && -n "${MARIADB_DB_PASS:-}" ]] && PASSWORD_ENV="MARIADB_DB_PASS"
-        [[ -z "${PASSWORD_ENV}" && -n "${CANVAS_DB_PASS:-}" ]] && PASSWORD_ENV="CANVAS_DB_PASS"
         [[ -z "${SCHEMA}" && -n "${MARIADB_DB_SCHEMA:-}" ]] && SCHEMA="${MARIADB_DB_SCHEMA}"
-        [[ -z "${SCHEMA}" && -n "${CANVAS_DB_SCHEMA:-}" ]] && SCHEMA="${CANVAS_DB_SCHEMA}"
         ;;
     db2)
         [[ -z "${USER_NAME}" ]] && USER_NAME="${HYDROTST_DB_USER:-}"
@@ -468,12 +485,18 @@ if [[ -z "${PASSWORD_ENV}" && -n "${SCHEMATOOL_DB_PASS:-}" ]]; then
     PASSWORD_ENV="SCHEMATOOL_DB_PASS"
 fi
 
+# Firebird is a file engine. An empty schema is valid. Do not inherit
+# SCHEMATOOL_DB_SCHEMA from another engine's environment.
+if [[ "${ENGINE}" == "firebird" && "${SCHEMA_FROM_CLI}" -eq 0 ]]; then
+    SCHEMA=""
+fi
+
 # Engine default ports only after all env probes
 case "${ENGINE}" in
     postgresql)
         [[ -z "${PORT}" ]] && PORT="5432"
         ;;
-    mysql)
+    mysql|mariadb)
         [[ -z "${PORT}" ]] && PORT="3306"
         ;;
     mssql)
@@ -486,6 +509,11 @@ CONN_OK=0
 case "${ENGINE}" in
     sqlite)
         if [[ -n "${DATABASE}" && -f "${DATABASE}" ]]; then
+            CONN_OK=1
+        fi
+        ;;
+    firebird)
+        if [[ -n "${DATABASE}" && -f "${DATABASE}" && -n "${USER_NAME}" ]]; then
             CONN_OK=1
         fi
         ;;

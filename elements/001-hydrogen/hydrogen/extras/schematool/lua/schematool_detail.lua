@@ -10,6 +10,7 @@
 --   lua schematool_detail.lua --catalog-findings PATH [--max-lines N]
 --
 -- CHANGELOG
+-- 1.1.0 - 2026-10-07 - Guidance for type and dropped catalog checks
 -- 1.0.0 - 2026-08-06 - Post-table drift detail (diff + commented UPDATE)
 
 -- luacheck: globals arg
@@ -360,6 +361,12 @@ if catalog_path then
             emit("  remediation: author a new numbered migration; do not edit historical Lua in place.")
         elseif check == "presence" or check == "table" or check == "column" then
             emit("  guidance: create missing object via new forward migration (Hydrogen LOAD/APPLY).")
+        elseif check == "type" then
+            emit("  guidance: type text differs after case and spacing are normalized.")
+            emit("  remediation: review only in this phase; dialect DDL is later.")
+        elseif check == "dropped" then
+            emit("  guidance: a later migration dropped this object; it is still live.")
+            emit("  remediation: review only in this phase; this is not an unused extra.")
         end
     end
 

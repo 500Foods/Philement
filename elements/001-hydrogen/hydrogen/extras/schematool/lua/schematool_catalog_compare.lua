@@ -8,6 +8,7 @@
 --     [--only-failures]
 --
 -- CHANGELOG
+-- 1.2.0 - 2026-10-07 - Compare normalized data_type; info extras vs dropped
 -- 1.1.2 - 2026-09-08 - Stderr catalog lines for findings only
 -- 1.1.1 - 2026-08-23 - Pass expected column fold ref onto failures[]
 -- 1.1.0 - 2026-08-23 - Additive findings: failures[] + live_extras[] (tables unchanged)
@@ -101,6 +102,19 @@ local function emit_flat(path, out_path)
     end
 end
 
+-- Case and spacing only. "varchar (32)" and "VARCHAR(32)" match.
+-- "character varying" and "varchar(255)" stay different.
+local function collapse_type(s)
+    s = tostring(s or ""):lower()
+    s = s:gsub("%s+", " ")
+    s = s:gsub("^%s+", ""):gsub("%s+$", "")
+    return s
+end
+
+local function norm_type(s)
+    return (collapse_type(s):gsub("%s+", ""))
+end
+
 local function load_flat(path)
     local map = {} -- table -> col -> {nullable=bool|nil, data_type=string}
     local tables_seen = {}
@@ -129,13 +143,70 @@ local function load_flat(path)
             end
             map[t][c] = {
                 nullable = nullable,
-                data_type = (dt or ""):lower(),
+                data_type = collapse_type(dt),
                 ref = tonumber(ref),
             }
         end
     end
     f:close()
     return map, tables_seen
+end
+
+-- TSV: table \t column \t data_type \t ref. column "-" is a dropped table.
+local function emit_dropped(path, out_path)
+    local filter = [[
+.dropped[]? |
+  [
+    (.object // ""),
+    (if .column == "" or .column == null then "-" else .column end),
+    (.data_type // ""),
+    (if .ref then (.ref|tostring) else "" end)
+  ] | @tsv
+]]
+    local fpath = TMP_DIR .. "/dropped.jq"
+    write_all(fpath, filter .. "\n")
+    local cmd = string.format(
+        'jq -r -f "%s" "%s" > "%s"',
+        fpath,
+        path:gsub('"', '\\"'),
+        out_path:gsub('"', '\\"')
+    )
+    local rc = os.execute(cmd)
+    if rc ~= true and rc ~= 0 then
+        cleanup_tmp()
+        io.stderr:write("Error: jq dropped-list failed for " .. path .. "\n")
+        os.exit(1)
+    end
+end
+
+local function load_dropped(path)
+    local tables_dropped = {}
+    local cols = {}
+    local f = io.open(path, "r")
+    if not f then
+        return tables_dropped, cols
+    end
+    for line in f:lines() do
+        local t, c, dt, ref = line:match("^(.-)\t(.-)\t(.-)\t(.*)$")
+        if t and c and t ~= "" then
+            t = t:lower()
+            c = c:lower()
+            local rec = {
+                data_type = collapse_type(dt),
+                ref = tonumber(ref),
+            }
+            if c == "-" or c == "" then
+                tables_dropped[t] = rec
+            else
+                if not cols[t] then
+                    cols[t] = {}
+                end
+                cols[t][c] = rec
+            end
+        end
+    end
+    f:close()
+    return tables_dropped, cols
 end
 
 local function json_escape(s)
@@ -150,11 +221,14 @@ end
 
 local exp_flat = TMP_DIR .. "/exp.tsv"
 local live_flat = TMP_DIR .. "/live.tsv"
+local dropped_flat = TMP_DIR .. "/dropped.tsv"
 emit_flat(expected_path, exp_flat)
 emit_flat(live_path, live_flat)
+emit_dropped(expected_path, dropped_flat)
 
 local exp_map, exp_tables = load_flat(exp_flat)
 local live_map, live_tables = load_flat(live_flat)
+local dropped_tables, dropped_cols = load_dropped(dropped_flat)
 
 local rows = {}
 local counts = {
@@ -162,6 +236,8 @@ local counts = {
     missing_table = 0,
     missing_column = 0,
     nullability = 0,
+    type = 0,
+    dropped = 0,
     checked = 0,
     live_extra_table = 0,
     live_extra_column = 0,
@@ -224,31 +300,52 @@ for _, tname in ipairs(exp_names) do
             goto continue_col
         end
 
-        local status = "Y"
-        local notes = {}
         local exp_s = exp.nullable == nil and "-" or tostring(exp.nullable)
         local live_s = live.nullable == nil and "-" or tostring(live.nullable)
+        local null_bad = exp.nullable ~= nil and live.nullable ~= nil
+            and exp.nullable ~= live.nullable
+        local exp_ty = exp.data_type or ""
+        local live_ty = live.data_type or ""
+        local type_bad = exp_ty ~= "" and norm_type(exp_ty) ~= norm_type(live_ty)
 
-        if exp.nullable ~= nil and live.nullable ~= nil and exp.nullable ~= live.nullable then
-            status = "N"
+        if null_bad then
             counts.nullability = counts.nullability + 1
-            notes[#notes + 1] = "nullable exp=" .. exp_s .. " live=" .. live_s
             emit_catalog(exp.ref, "nullability")
         end
-
-        if status == "Y" then
+        if type_bad then
+            counts.type = counts.type + 1
+            emit_catalog(exp.ref, "type")
+        end
+        if not null_bad and not type_bad then
             counts.ok = counts.ok + 1
         end
 
-        if status == "N" or not only_failures then
+        local null_status = null_bad and "N" or "Y"
+        if null_status == "N" or not only_failures then
+            local null_notes = ""
+            if null_bad then
+                null_notes = "nullable exp=" .. exp_s .. " live=" .. live_s
+            end
             rows[#rows + 1] = {
                 object = tname,
                 column = cn,
                 check = "nullable",
-                status = status,
+                status = null_status,
                 expected = exp_s,
                 live = live_s,
-                notes = table.concat(notes, "; "),
+                notes = null_notes,
+                ref = exp.ref,
+            }
+        end
+        if type_bad then
+            rows[#rows + 1] = {
+                object = tname,
+                column = cn,
+                check = "type",
+                status = "N",
+                expected = exp_ty,
+                live = live_ty,
+                notes = "type exp=" .. exp_ty .. " live=" .. live_ty,
                 ref = exp.ref,
             }
         end
@@ -257,9 +354,44 @@ for _, tname in ipairs(exp_names) do
     ::continue_table::
 end
 
--- Reverse pass: live tables/columns absent from the expected fold.
--- JSON only (live_extras[]). Do not add these to the tables checklist.
+-- Reverse pass. A live object the fold created and a later migration
+-- dropped is a dropped finding (checklist + failures). A live object no
+-- migration mentions is info: counted in live_extras, status I, not a
+-- failure, and not on the checklist.
 local live_extras = {}
+
+local function add_dropped(tname, cname, ref, note)
+    counts.dropped = counts.dropped + 1
+    rows[#rows + 1] = {
+        object = tname,
+        column = cname,
+        check = "dropped",
+        status = "N",
+        expected = "missing",
+        live = "present",
+        notes = note,
+        ref = ref,
+    }
+    emit_catalog(ref, "dropped")
+end
+
+local function add_info(tname, cname, check, note)
+    if check == "extra_table" then
+        counts.live_extra_table = counts.live_extra_table + 1
+    else
+        counts.live_extra_column = counts.live_extra_column + 1
+    end
+    live_extras[#live_extras + 1] = {
+        object = tname,
+        column = cname,
+        check = check,
+        status = "I",
+        expected = "missing",
+        live = "present",
+        notes = note,
+    }
+end
+
 local live_names = {}
 for tname, _ in pairs(live_tables) do
     live_names[#live_names + 1] = tname
@@ -269,34 +401,34 @@ table.sort(live_names)
 for _, tname in ipairs(live_names) do
     local live_cols = live_map[tname] or {}
     if not exp_tables[tname] then
-        counts.live_extra_table = counts.live_extra_table + 1
-        live_extras[#live_extras + 1] = {
-            object = tname,
-            column = "-",
-            check = "extra_table",
-            status = "N",
-            expected = "missing",
-            live = "present",
-            notes = "live table not in expected fold",
-        }
-        emit_catalog(0, "extra_table")
-        local col_names = {}
-        for cn, _ in pairs(live_cols) do
-            col_names[#col_names + 1] = cn
-        end
-        table.sort(col_names)
-        for _, cn in ipairs(col_names) do
-            counts.live_extra_column = counts.live_extra_column + 1
-            live_extras[#live_extras + 1] = {
-                object = tname,
-                column = cn,
-                check = "extra_column",
-                status = "N",
-                expected = "missing",
-                live = "present",
-                notes = "live column not in expected fold",
-            }
-            emit_catalog(0, "extra_column")
+        local table_drop = dropped_tables[tname]
+        if table_drop then
+            add_dropped(
+                tname,
+                "-",
+                table_drop.ref,
+                "migration dropped this table; it is still live"
+            )
+        else
+            add_info(
+                tname,
+                "-",
+                "extra_table",
+                "not applicable; no migration mentions this table"
+            )
+            local col_names = {}
+            for cn, _ in pairs(live_cols) do
+                col_names[#col_names + 1] = cn
+            end
+            table.sort(col_names)
+            for _, cn in ipairs(col_names) do
+                add_info(
+                    tname,
+                    cn,
+                    "extra_column",
+                    "not applicable; no migration mentions this column"
+                )
+            end
         end
     else
         local exp_cols = exp_map[tname] or {}
@@ -307,24 +439,30 @@ for _, tname in ipairs(live_names) do
         table.sort(col_names)
         for _, cn in ipairs(col_names) do
             if not exp_cols[cn] then
-                counts.live_extra_column = counts.live_extra_column + 1
-                live_extras[#live_extras + 1] = {
-                    object = tname,
-                    column = cn,
-                    check = "extra_column",
-                    status = "N",
-                    expected = "missing",
-                    live = "present",
-                    notes = "live column not in expected fold",
-                }
-                emit_catalog(0, "extra_column")
+                local col_drop = dropped_cols[tname] and dropped_cols[tname][cn]
+                if col_drop then
+                    add_dropped(
+                        tname,
+                        cn,
+                        col_drop.ref,
+                        "migration dropped this column; it is still live"
+                    )
+                else
+                    add_info(
+                        tname,
+                        cn,
+                        "extra_column",
+                        "not applicable; no migration mentions this column"
+                    )
+                end
             end
         end
     end
 end
 
 local exit_code = 0
-if counts.missing_table > 0 or counts.missing_column > 0 or counts.nullability > 0 then
+if counts.missing_table > 0 or counts.missing_column > 0
+    or counts.nullability > 0 or counts.type > 0 or counts.dropped > 0 then
     exit_code = 2
 end
 
@@ -379,13 +517,16 @@ end
 
 local findings = string.format(
     '{"exit_code":%d,"counts":{"ok":%d,"missing_table":%d,"missing_column":%d,'
-        .. '"nullability":%d,"checked":%d,"live_extra_table":%d,"live_extra_column":%d},'
+        .. '"nullability":%d,"type":%d,"dropped":%d,"checked":%d,'
+        .. '"live_extra_table":%d,"live_extra_column":%d},'
         .. '"track":"catalog","failures":[%s],"live_extras":[%s]}',
     exit_code,
     counts.ok,
     counts.missing_table,
     counts.missing_column,
     counts.nullability,
+    counts.type,
+    counts.dropped,
     counts.checked,
     counts.live_extra_table,
     counts.live_extra_column,

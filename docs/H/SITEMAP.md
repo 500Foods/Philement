@@ -23,6 +23,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [TODO.md](/docs/H/TODO.md): Prioritized incomplete plans and actionable backlog
 - [DATABASES.md](/docs/H/DATABASES.md): Multi-engine SQL notes and design constraints
 - [database_firebird.md](/docs/He/DATABASES/database_firebird.md): Firebird 4 Helium macros (empty schema, native Base64, Brotli and JSON_VALUE UDRs)
+- [database_mssql.md](/docs/He/DATABASES/database_mssql.md): SQL Server Helium macros (dot-prefixed schema, T-SQL Base64 and SHA-256, COMPRESS unset)
 
 ## Folder: /docs/H/database
 
@@ -137,9 +138,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [README.md](/docs/H/plans/README.md): Plans folder index
 - [AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md): Auth finale (active P0 plan — OIDC, Keycloak, register, MFA, IdP leftovers)
 - [NOTIFICATIONS_PLAN.md](/docs/H/plans/NOTIFICATIONS_PLAN.md): Web Push / Subscribers subsystem plan (Phase 0 draft)
-- [NATS_PLAN.md](/docs/H/plans/NATS_PLAN.md): Stub — finished plan is NATS_PLAN_COMPLETE.md
 - [FIREBIRD.md](/docs/H/plans/FIREBIRD.md): Firebird engine; retire CockroachDB slot; Firebase teardown
-- [MSSQL.md](/docs/H/plans/MSSQL.md): MS SQL Server engine (Lookup 030 key 5); Fedora Podman Linux container (Phase 0 not approved)
 - [SCHEMA_V2_PLAN.md](/docs/H/plans/SCHEMA_V2_PLAN.md): SchemaTool / SchemaHelper v2 — eight engines, test and demo wrappers, structural apply, migration-owned default rows
 - [FIREBASE.md](/docs/H/plans/FIREBASE.md): Stub — Firestore plan superseded
 - [MAILRELAY_PLAN.md](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md): Mail Relay subsystem implementation plan
@@ -204,6 +203,7 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [NATS_PLAN_COMPLETE.md](/docs/H/plans/complete/NATS_PLAN_COMPLETE.md): NATS client (Phases 0–12, complete 2026-10-06)
 - [MAILRELAY_BLACKBOX_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md)
 - [MDNS_UPGRADE_COMPLETE.md](/docs/H/plans/complete/MDNS_UPGRADE_COMPLETE.md): mDNS RFC server + real client (Phases 0–8)
+- [MSSQL_COMPLETE.md](/docs/H/plans/complete/MSSQL_COMPLETE.md): MS SQL Server engine (Lookup 030 key 5). Phases 0-9 complete 2026-10-07
 - [MIGRATIONS_COMPLETE.md](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md)
 - [OIDC-PLAN_COMPLETE.md](/docs/H/plans/complete/OIDC-PLAN_COMPLETE.md): OIDC RP implementation phase log (superseded by AUTH_FINALE)
 - [OIDC_IDP_COMPLETE.md](/docs/H/plans/complete/OIDC_IDP_COMPLETE.md): Hydrogen as OIDC IdP Phases 0–16 (superseded by AUTH_FINALE)

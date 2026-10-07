@@ -28,8 +28,8 @@ of problem with a per-migration checklist.
 
 Separately, later migrations can change live shape (e.g. `acuranzo_1190.lua`
 drops `NOT NULL` on `accounts.password_hash`) while each migration’s stored
-text still matches its own Lua file. The **catalog** track folds applied
-forward DDL and probes the live catalog (targeted, not a full-DB dump).
+text still matches its own Lua file. The **catalog** track folds forward DDL
+from the migration files and probes the live catalog (targeted, not a full-DB dump).
 
 ## What it is / is not
 
@@ -46,7 +46,10 @@ forward DDL and probes the live catalog (targeted, not a full-DB dump).
 
 - `tables`, `jq`, `lua` (and `lua-brotli` for compressed migration payloads)
 - Engine client for the target: `psql` / `mysql` / `sqlite3` / `db2` / in-container `sqlcmd` (MSSQL)
-- Migrations folder containing `database.lua` and `design_NNNN.lua`
+- Migrations folder containing `database.lua` and `design_NNNN.lua`.
+  `--design acuranzo+argent` keeps that folder as the Acuranzo anchor and
+  also reads the sibling `argent/migrations` directory. A single design
+  name still uses only `--migrations`.
 
 ## Quick start
 
@@ -54,7 +57,7 @@ forward DDL and probes the live catalog (targeted, not a full-DB dump).
 # From hydrogen root (or any cwd with absolute paths)
 extras/schematool/schematool.sh \
   --migrations "$HELIUM_ROOT/acuranzo/migrations" \
-  --design acuranzo \
+  --design acuranzo+argent \
   --engine sqlite \
   --database "$HYDROGEN_ROOT/tests/artifacts/database/sqlite/hydrodemo.sqlite" \
   --from 1000 --to 1005 \
@@ -66,7 +69,7 @@ PostgreSQL (env fallbacks `ACURANZO_DB_*`):
 ```bash
 extras/schematool/schematool.sh \
   --migrations "$HELIUM_ROOT/acuranzo/migrations" \
-  --design acuranzo \
+  --design acuranzo+argent \
   --engine postgresql \
   --schema demo \
   --from 1000 --to 1010 \
@@ -92,7 +95,8 @@ Specialized modes:
 | `--dry-disk` | Disk discovery + stub SQL only |
 | `--emit-expected [PATH]` | Expected payloads JSON only |
 | `--dump-db [PATH]` | DB metadata JSON only |
-| `--catalog` | Live catalog audit (hybrid-C fold + targeted probes) |
+| `--catalog` | Live catalog audit (disk DDL fold + targeted probes) |
+| `--fold-stored` | Catalog fold uses applied type-1003 text from the DB dump |
 | `--dump-catalog [PATH]` | Live catalog JSON only |
 | `--only-tables a,b` | Catalog: limit fold output + probes (cheap one-table path) |
 
@@ -102,7 +106,7 @@ Specialized modes:
 # 1190 acceptance — accounts.password_hash must be live-nullable
 extras/schematool/schematool.sh \
   --migrations "$HELIUM_ROOT/acuranzo/migrations" \
-  --design acuranzo \
+  --design acuranzo+argent \
   --engine sqlite \
   --database "$HYDROGEN_ROOT/tests/artifacts/database/sqlite/hydrodemo.sqlite" \
   --catalog --only-tables accounts \
@@ -114,7 +118,7 @@ PostgreSQL (Test 40 / `ACURANZO_DB_*`):
 ```bash
 extras/schematool/schematool.sh \
   --migrations "$HELIUM_ROOT/acuranzo/migrations" \
-  --design acuranzo \
+  --design acuranzo+argent \
   --engine postgresql \
   --schema demo \
   --catalog --only-tables accounts \
@@ -123,11 +127,17 @@ extras/schematool/schematool.sh \
 
 How it works:
 
-1. Dump applied migration rows (`queries` type **1003** codes) — same adapters as metadata
-2. **Hybrid C fold** — parse CREATE/ALTER/DROP NOT NULL / MODIFY / SQLite rebuild rename
+1. Extract engine-expanded payloads for every design in `--design` (same path as metadata expect). `--from` / `--to` limit the refs.
+2. **Disk fold** — forward body is query type **1000** (the text the database stores as type **1003** after apply). Reverse (1001) and diagram (1002) are not folded. Parse CREATE/ALTER/DROP NOT NULL / MODIFY / SQLite rebuild rename in ref order, including Firebird and MSSQL spellings that omit `COLUMN` and MSSQL `ALTER COLUMN … NULL`.
 3. **Targeted probe** — only tables in the expected set (or `--only-tables`):  
    SQLite `PRAGMA table_info`; PG/MySQL `information_schema`; DB2 `SYSCAT.COLUMNS`
-4. Compare presence + **nullability**; `tables` report (Object / Column / OK / Expected / Live)
+4. Compare presence, **nullability**, and **data type**. Type text is
+   compared after case and spacing are normalized. A real type difference
+   is a `type` finding. A live object no migration mentions is info:
+   counted, shown, not a failure. An object the fold created and a later
+   migration dropped, still present live, is a `dropped` finding.
+
+`--fold-stored` skips the disk extract and folds applied type-1003 `code` from the queries dump instead.
 
 With `--only-tables`, metadata audit is skipped (fast path). Without it,
 `--catalog` runs **after** the default metadata audit; exit is **worst-wins**.
@@ -214,37 +224,60 @@ CLI flags always win. For each empty field, env is chosen from the **requested**
 `ACURANZO_DB_*`):
 
 1. **Requested-engine env**
-   - `postgresql` / `postgres` / `yugabytedb` → `ACURANZO_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`. `cockroachdb` is accepted as a historical name for that same PostgreSQL path.
+   - `postgresql` / `postgres` → `ACURANZO_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`.
    - `yugabytedb` → `YUGABYTE_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`
-   - `mysql` / `mariadb` → `CANVAS_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`
+   - `mysql` → `MYSQL_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`
+   - `mariadb` → `MARIADB_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`
    - `db2` → `HYDROTST_DB_{USER,NAME,PASS,SCHEMA}`
    - `firebird` → `FIREBIRD_DB_PATH_DEMO` (or `_TEST` / deprecated `FIREBIRD_DB_PATH`) + `FIREBIRD_SYSDBA_PASSWORD`
    - `mssql` → `MSSQL_DB_{HOST,PORT,USER,NAME}` and `MSSQL_SA_PASSWORD`. `sqlcmd` runs inside container `philement-mssql` and talks to localhost there. `--host` and `--port` fill readiness only.
 2. **Generic** `SCHEMATOOL_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`
-3. Default ports: postgresql 5432, mysql 3306, mssql 1433
+3. Default ports: postgresql 5432, mysql 3306, mariadb 3306, mssql 1433
 
 Password: prefer `--password-env VAR` (never printed; never written into `.sql`).
 
 SQLite: `--database` is the file path (or `SCHEMATOOL_DB_NAME`); host/user unused.
 
+Firebird: `--database` is the `.fdb` path (`FIREBIRD_DB_PATH_DEMO`, else
+`FIREBIRD_DB_PATH_TEST`, else deprecated `FIREBIRD_DB_PATH`). The user is
+`SYSDBA`. An empty schema is valid. A missing host does not force
+disk-only mode. `isql-fb` reads `ISC_PASSWORD` from
+`FIREBIRD_SYSDBA_PASSWORD`. That value is never printed.
+
 ### Test 40 convenience wrappers
 
 | Wrapper | Schema | Primary credentials |
-| --------- | -------- | --------------------- |
-| `schematool_postgresql.sh` | `demo` | `ACURANZO_DB_*` |
-| `schematool_firebird.sh` | _(empty)_ | `FIREBIRD_DB_PATH_DEMO` (or `_TEST`) + `FIREBIRD_SYSDBA_PASSWORD` |
-| `schematool_yugabytedb.sh` | `demo` | **`YUGABYTE_DB_*`** (explicit flags; never ACURANZO) |
-| `schematool_mysql.sh` | `demo` | `CANVAS_DB_*` |
-| `schematool_mariadb.sh` | `demomrdb` | `CANVAS_DB_*` |
-| `schematool_sqlite.sh` | _(empty)_ | `hydrodemo.sqlite` path |
-| `schematool_db2.sh` | `demo` | `HYDROTST_DB_*` + localhost:55555 |
-| `schematool_mssql.sh` | `demoms` | `MSSQL_DB_*` + `MSSQL_SA_PASSWORD` (`sqlcmd` in `philement-mssql`) |
+| --- | --- | --- |
+| `schematool_postgresql_demo.sh` | `demo` | `ACURANZO_DB_*` |
+| `schematool_mysql_demo.sh` | `demo` | `MYSQL_DB_*` |
+| `schematool_sqlite_demo.sh` | _(empty)_ | `hydrodemo.sqlite` path |
+| `schematool_db2_demo.sh` | `demo` | `HYDROTST_DB_*` + localhost:55555 |
+| `schematool_mariadb_demo.sh` | `demo` | `MARIADB_DB_*` |
+| `schematool_firebird_demo.sh` | _(empty)_ | `FIREBIRD_DB_PATH_DEMO` + `FIREBIRD_SYSDBA_PASSWORD` |
+| `schematool_yugabytedb_demo.sh` | `demo` | **`YUGABYTE_DB_*`** (explicit flags; never ACURANZO) |
+| `schematool_mssql_demo.sh` | `demoms` | `MSSQL_DB_*` + `MSSQL_SA_PASSWORD` (`sqlcmd` in `philement-mssql`) |
+
+### Tests 32–39 wrappers
+
+`schematool_<engine>_test.sh` points at the migration-test database.
+`schematool_<engine>_demo.sh` is the Test 40 launcher.
+
+| Wrapper | Schema or file | Primary credentials |
+| --- | --- | --- |
+| `schematool_postgresql_test.sh` | `test` | `ACURANZO_DB_*` |
+| `schematool_mysql_test.sh` | `test` | `MYSQL_DB_*` |
+| `schematool_sqlite_test.sh` | _(empty)_ | `hydrotst.sqlite` path |
+| `schematool_db2_test.sh` | `test` | `HYDROTST_DB_*` + localhost:55555 |
+| `schematool_mariadb_test.sh` | `test` | `MARIADB_DB_*` |
+| `schematool_firebird_test.sh` | _(empty)_ | `FIREBIRD_DB_PATH_TEST` + `FIREBIRD_SYSDBA_PASSWORD` |
+| `schematool_yugabytedb_test.sh` | `test` | **`YUGABYTE_DB_*`** |
+| `schematool_mssql_test.sh` | `testms` | `MSSQL_DB_*` + `MSSQL_SA_PASSWORD` |
 
 Multi-engine 1190 catalog smoke:
 
 ```bash
 extras/schematool/smoke_test40_catalog.sh --out-dir /tmp/schematool-t40
-# Eight wrappers. Firebird still fails until its dump adapters exist.
+# Eight `_demo` wrappers, including MSSQL. Firebird requires FIREBIRD_DB_PATH_DEMO.
 ```
 
 ## Normalization
@@ -281,11 +314,12 @@ later ALTERs changed live objects.
 
 | Engine flag | Client | Notes |
 | ------------- | -------- | ------- |
-| `postgresql` | `psql` | Aliases: `postgres`, `yugabytedb`. `cockroachdb` is a historical name for this same PostgreSQL path, not a Firebird connection. |
-| `mysql` | `mysql` | Alias: `mariadb` |
+| `postgresql` | `psql` | Aliases: `postgres`, `yugabytedb`. |
+| `mysql` | `mysql` | `MYSQL_DB_*`. Schema `demo` |
+| `mariadb` | `mariadb` | `MARIADB_DB_*`. Schema `demo`. Expect receives `mariadb` |
 | `sqlite` | `sqlite3` | No schema qualifier |
 | `db2` | `db2` EXPORT LOBS | Schema often uppercase (`DEMO`) |
-| `firebird` | `isql-fb` | No schema qualifier (empty); `BASE64_DECODE`/`BROTLI_DECOMPRESS` UDRs |
+| `firebird` | `isql-fb` | File path. Empty schema is valid. No host. `BASE64_DECODE`/`BROTLI_DECOMPRESS` UDRs |
 | `mssql` | `sqlcmd` in `philement-mssql` | Schema `demoms` or `testms` inside `MSSQL_DB_NAME`. `SELECT` only. |
 
 ## Safety (production checklist)

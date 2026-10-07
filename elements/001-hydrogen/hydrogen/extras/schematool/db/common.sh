@@ -2,6 +2,7 @@
 # SchemaTool DB common helpers — schema qualification and shared contracts
 #
 # CHANGELOG
+# 1.2.0 - 2026-10-07 - Drop CANVAS_DB_* from MySQL and MariaDB fallbacks
 # 1.1.0 - 2026-08-20 - HEX decode helper (xxd) for MySQL/DB2 adapters
 # 1.0.0 - 2026-07-29 - Phase 3 shared helpers
 
@@ -44,7 +45,7 @@ schematool_resolve_password() {
     printf '%s\n' "${!password_env}"
 }
 
-# Apply ACURANZO_/CANVAS_/HYDROTST_ style fallbacks when flags empty
+# Apply ACURANZO_/MYSQL_/MARIADB_/HYDROTST_ style fallbacks when flags empty
 # Sets caller variables via namerefs when bash 4.3+; otherwise echo KEY=VAL lines
 schematool_apply_env_fallbacks() {
     local engine="$1"
@@ -56,18 +57,18 @@ schematool_apply_env_fallbacks() {
             : "${SCHEMATOOL_FB_DATABASE:=${ACURANZO_DB_NAME:-}}"
             : "${SCHEMATOOL_FB_PASSWORD_ENV:=ACURANZO_DB_PASS}"
             ;;
-         mysql)
-            : "${SCHEMATOOL_FB_HOST:=${MYSQL_DB_HOST:-${CANVAS_DB_HOST:-}}}"
-            : "${SCHEMATOOL_FB_PORT:=${MYSQL_DB_PORT:-${CANVAS_DB_PORT:-}}}"
-            : "${SCHEMATOOL_FB_USER:=${MYSQL_DB_USER:-${CANVAS_DB_USER:-}}}"
-            : "${SCHEMATOOL_FB_DATABASE:=${MYSQL_DB_NAME:-${CANVAS_DB_NAME:-}}}"
+        mysql)
+            : "${SCHEMATOOL_FB_HOST:=${MYSQL_DB_HOST:-}}"
+            : "${SCHEMATOOL_FB_PORT:=${MYSQL_DB_PORT:-}}"
+            : "${SCHEMATOOL_FB_USER:=${MYSQL_DB_USER:-}}"
+            : "${SCHEMATOOL_FB_DATABASE:=${MYSQL_DB_NAME:-}}"
             : "${SCHEMATOOL_FB_PASSWORD_ENV:=MYSQL_DB_PASS}"
             ;;
-         mariadb)
-            : "${SCHEMATOOL_FB_HOST:=${MARIADB_DB_HOST:-${CANVAS_DB_HOST:-}}}"
-            : "${SCHEMATOOL_FB_PORT:=${MARIADB_DB_PORT:-${CANVAS_DB_PORT:-}}}"
-            : "${SCHEMATOOL_FB_USER:=${MARIADB_DB_USER:-${CANVAS_DB_USER:-}}}"
-            : "${SCHEMATOOL_FB_DATABASE:=${MARIADB_DB_NAME:-${CANVAS_DB_NAME:-}}}"
+        mariadb)
+            : "${SCHEMATOOL_FB_HOST:=${MARIADB_DB_HOST:-}}"
+            : "${SCHEMATOOL_FB_PORT:=${MARIADB_DB_PORT:-}}"
+            : "${SCHEMATOOL_FB_USER:=${MARIADB_DB_USER:-}}"
+            : "${SCHEMATOOL_FB_DATABASE:=${MARIADB_DB_NAME:-}}"
             : "${SCHEMATOOL_FB_PASSWORD_ENV:=MARIADB_DB_PASS}"
             ;;
         db2)

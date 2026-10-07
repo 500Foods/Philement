@@ -30,7 +30,7 @@ one by one:
 | Live DB should become a migration | `[g]` reserve next ref and write a packet |
 | Official Lua should win | `[u]` update one field (`--allow-write`, type `REF.field`) |
 | DB ref is a keeper, not a refix | `[u]` delete an orphan ref (`--allow-write`, type `REF`; true orphans only) |
-| Live catalog shape drifted | `[u]` apply catalog DDL (`--allow-write`, type `object.column`; nullable→SET/DROP NOT NULL, missing col→ADD COLUMN) |
+| Live catalog shape drifted | `[u]` apply catalog DDL (`--allow-write`, type `object.column`; nullable→SET/DROP NOT NULL, missing col→ADD COLUMN). `type` and `dropped` are in the review queue and stay review-only. Info extras (no migration mentions them) show on the dashboard and stay out of that queue. |
 | Need a Helium migration | `[g]` reserve next ref and write a packet, then `[m]` promote to `design_NNNN.lua` stub |
 
 ## What it is / is not
@@ -58,7 +58,7 @@ luarocks --lua-version=5.5 install terminal --nodeps
 SQLite is the usual local path (Test 40 `hydrodemo.sqlite`):
 
 ```bash
-extras/schematool/schemahelper.sh schematool_sqlite.sh
+extras/schematool/schemahelper.sh schematool_sqlite_demo.sh
 ```
 
 Or pick a wrapper after the splash:
@@ -70,7 +70,7 @@ extras/schematool/schemahelper.sh
 Reuse an existing workspace without invoking SchemaTool:
 
 ```bash
-extras/schematool/schemahelper.sh schematool_sqlite.sh \
+extras/schematool/schemahelper.sh schematool_sqlite_demo.sh \
   --reuse --out-dir /tmp/schemahelper-out
 ```
 
@@ -83,27 +83,43 @@ separate from `--work-dir` and persists by default.
 ## Wrappers
 
 `schemahelper.sh` discovers `extras/schematool/schematool_*.sh`. The
-Target picker shows real env **names** (never password values):
+Target picker shows real env **names** (never password values). Rows
+are keyed by path. The test block comes first, then the demo block.
+Inside each block the order is PostgreSQL, MySQL, SQLite, DB2,
+MariaDB, Firebird, YugabyteDB, MSSQL.
 
 | Wrapper | Picker blurb | Typical local target |
 | --- | --- | --- |
-| `schematool_sqlite.sh` | `hydrodemo.sqlite` | `tests/artifacts/database/sqlite/hydrodemo.sqlite` |
-| `schematool_postgresql.sh` | `ACURANZO_DB_HOST USER PASS NAME schema demo` | schema `demo` |
-| `schematool_mysql.sh` | `CANVAS_DB_HOST USER PASS NAME schema demo` | schema `demo` |
-| `schematool_mariadb.sh` | `CANVAS_DB_HOST USER PASS NAME schema demomrdb` | schema `demomrdb` |
-| `schematool_db2.sh` | `HYDROTST_DB_USER PASS NAME schema demo` | `localhost:55555` / `HYDROTST` |
-| `schematool_firebird.sh` | `FIREBIRD_DB_PATH_DEMO` + `FIREBIRD_SYSDBA_PASSWORD` | empty schema; `.fdb` file |
-| `schematool_yugabytedb.sh` | `YUGABYTE_DB_HOST USER PASS NAME schema demo` | never `ACURANZO_DB_*` |
-| `schematool_mssql.sh` | `MSSQL_DB_HOST MSSQL_DB_USER MSSQL_DB_NAME schema demoms MSSQL_SA_PASSWORD` | schema `demoms` in `philement-mssql` |
+| `schematool_postgresql_test.sh` | `ACURANZO_DB_HOST USER PASS NAME schema test` | schema `test` |
+| `schematool_mysql_test.sh` | `MYSQL_DB_HOST MYSQL_DB_USER MYSQL_DB_PASS MYSQL_DB_NAME schema test` | schema `test` |
+| `schematool_sqlite_test.sh` | `hydrotst.sqlite` | `tests/artifacts/database/sqlite/hydrotst.sqlite` |
+| `schematool_db2_test.sh` | `HYDROTST_DB_USER PASS NAME schema test` | `localhost:55555` / schema `test` |
+| `schematool_mariadb_test.sh` | `MARIADB_DB_HOST MARIADB_DB_USER MARIADB_DB_PASS MARIADB_DB_NAME schema test` | schema `test` |
+| `schematool_firebird_test.sh` | `FIREBIRD_DB_PATH_TEST FIREBIRD_SYSDBA_PASSWORD` | empty schema; test `.fdb` |
+| `schematool_yugabytedb_test.sh` | `YUGABYTE_DB_HOST USER PASS NAME schema test` | never `ACURANZO_DB_*` |
+| `schematool_mssql_test.sh` | `MSSQL_DB_HOST MSSQL_DB_USER MSSQL_DB_NAME schema testms MSSQL_SA_PASSWORD` | schema `testms` in `philement-mssql` |
+| `schematool_postgresql_demo.sh` | `ACURANZO_DB_HOST USER PASS NAME schema demo` | schema `demo` |
+| `schematool_mysql_demo.sh` | `MYSQL_DB_HOST MYSQL_DB_USER MYSQL_DB_PASS MYSQL_DB_NAME schema demo` | schema `demo` |
+| `schematool_sqlite_demo.sh` | `hydrodemo.sqlite` | `tests/artifacts/database/sqlite/hydrodemo.sqlite` |
+| `schematool_db2_demo.sh` | `HYDROTST_DB_USER PASS NAME schema demo` | `localhost:55555` / `HYDROTST` |
+| `schematool_mariadb_demo.sh` | `MARIADB_DB_HOST MARIADB_DB_USER MARIADB_DB_PASS MARIADB_DB_NAME schema demo` | schema `demo` |
+| `schematool_firebird_demo.sh` | `FIREBIRD_DB_PATH_DEMO FIREBIRD_SYSDBA_PASSWORD` | empty schema; demo `.fdb` |
+| `schematool_yugabytedb_demo.sh` | `YUGABYTE_DB_HOST USER PASS NAME schema demo` | never `ACURANZO_DB_*` |
+| `schematool_mssql_demo.sh` | `MSSQL_DB_HOST MSSQL_DB_USER MSSQL_DB_NAME schema demoms MSSQL_SA_PASSWORD` | schema `demoms` in `philement-mssql` |
 
 A failed ping does **not** start SchemaTool. Press `[w]` to pick another
 wrapper, `[q]` to quit, or Enter to review artifacts already in
 `--out-dir`. Custom wrappers (any `schematool_*.sh` path) are probed from the
 expanded `exec` line (so jq-computed host/user/database/password-env
-work). Sidecar names still use the filename stem. Passwords stay in
-the wrapper process and are never printed.
+work). Sidecar names are `schemahelper_<design>_<engine>_<role>.json`.
+The sixteen wrappers pass `--design acuranzo+argent`, so a live sidecar
+is `schemahelper_acuranzo+argent_<engine>_<role>.json`. A single design
+name still works, and the checked-in `schemahelper_acuranzo_sqlite.json`
+fixture stays on that name. A `_test` wrapper is role `test`. A `_demo`
+wrapper is role `demo`.
+Passwords stay in the wrapper process and are never printed.
 
-If only SQLite is up, pick `schematool_sqlite.sh`. The other wrappers
+If only SQLite is up, pick `schematool_sqlite_demo.sh`. The other wrappers
 need that engine listening and the matching env vars (see
 [SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md)).
 
@@ -112,7 +128,7 @@ need that engine listening and the matching env vars (see
 | Flag | Meaning |
 | --- | --- |
 | `--wrapper PATH` | Same as the positional wrapper |
-| `--migrations DIR` | Override Helium migrations (default acuranzo tree) |
+| `--migrations DIR` | Override the anchor migrations folder (default acuranzo tree; a plus-list design also reads sibling folders) |
 | `--out-dir DIR` | SchemaTool workspace for final artifacts (SQL, .mig, state sidecar) (default: directory of wrapper) |
 | `--work-dir DIR` | Intermediate JSON/detail/log files for this session (default: `/tmp/schemahelper-<timestamp>-<rand>`; auto-cleaned on exit unless `--keep-work-dir`) |
 | `--state-file PATH` | Sidecar JSON override |

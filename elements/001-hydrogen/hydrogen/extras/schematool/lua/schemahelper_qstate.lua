@@ -3,6 +3,7 @@
 -- artifact presence checks. Depends only on schemahelper_qutil.
 --
 -- CHANGELOG
+-- 0.6.6 - 2026-10-07 - Sidecar name gains the role: schemahelper_<design>_<engine>_<role>.json
 -- 0.6.5 - 2026-09-09 - remove_decision for un-accept
 -- 0.5.8 - 2026-08-25 - Extracted from schemahelper_queue.lua (state cluster)
 
@@ -10,8 +11,13 @@ local U = require("schemahelper_qutil")
 
 local M = {}
 
-function M.default_state_path(out_dir, design, engine)
-    return string.format("%s/schemahelper_%s_%s.json", out_dir, design, engine)
+function M.default_state_path(out_dir, design, engine, role)
+    if role == nil or role == "" then
+        role = "demo"
+    end
+    return string.format(
+        "%s/schemahelper_%s_%s_%s.json",
+        out_dir, design, engine, role)
 end
 
 function M.load_state(path)

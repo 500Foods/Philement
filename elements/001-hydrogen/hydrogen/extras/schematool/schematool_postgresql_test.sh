@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
-# SchemaTool wrapper — PostgreSQL (Test 40: hydrogen_test_40_postgres.json)
+# SchemaTool wrapper — PostgreSQL (Test 32: hydrogen_test_32_postgres.json)
 #
-# Sets connection env vars from the Test 40 PostgreSQL config and calls schematool.sh.
 # Engine-specific env: ACURANZO_DB_{HOST,PORT,NAME,USER,PASS}
-# Schema:             demo
-# Design:             acuranzo
+# Schema:             test
+# Design:             acuranzo+argent
 #
 # CHANGELOG
-# 1.1.0 - 2026-08-22 - Resolve sibling schematool.sh, then HYDROGEN_ROOT
-# 1.0.0 - 2026-08-02 - Created as Test 40 config convenience wrapper
+# 1.1.0 - 2026-10-07 - Payload acuranzo+argent in one run
+# 1.0.0 - 2026-10-07 - Test 32 wrapper; schema test
 
 set -euo pipefail
 
@@ -29,10 +28,17 @@ else
     MIGRATIONS_DIR="${SCRIPT_DIR}/../../../../002-helium/acuranzo/migrations"
 fi
 
-export SCHEMATOOL_DB_SCHEMA="demo"
+export SCHEMATOOL_DB_SCHEMA="test"
+
+for _arg in "$@"; do
+    if [[ "${_arg}" == "--help" || "${_arg}" == "-h" ]]; then
+        exec "${SCHEMATOOL}" --help
+    fi
+done
 
 exec "${SCHEMATOOL}" \
     --migrations "${MIGRATIONS_DIR}" \
-    --design acuranzo \
+    --design acuranzo+argent \
     --engine postgresql \
+    --schema test \
     "$@"

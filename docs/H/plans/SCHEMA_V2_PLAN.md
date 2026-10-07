@@ -13,13 +13,13 @@ reopen them.
 
 | Phase | Status | Remaining |
 | --- | --- | --- |
-| 1 Firebird adapters | not started | Moderate |
-| 2 MSSQL adapters | complete | Moderate |
-| 3 Remove Cockroach names | not started | Quick |
-| 4 Split MySQL and MariaDB | not started | Moderate |
-| 5 Eight test wrappers (tests 32–39) | not started | Moderate |
-| 6 Eight demo wrappers (Test 40) | not started | Moderate |
-| 7 Expected shape from disk migrations | not started | Difficult |
+| 1 Firebird adapters | complete | none |
+| 2 MSSQL adapters | complete | none |
+| 3 Remove Cockroach names | complete | none |
+| 4 Split MySQL and MariaDB | complete | none |
+| 5 Eight test wrappers (tests 32–39) | complete | none |
+| 6 Eight demo wrappers (Test 40) | complete | none |
+| 7 Expected shape from disk migrations | complete | none |
 | 8 Structural apply, per dialect | not started | Difficult |
 | 9 Migration-owned default rows | not started | Difficult |
 | 10 Docs and smoke | not started | Quick |
@@ -34,7 +34,7 @@ Sister plans:
 [`FIREBIRD.md`](/docs/H/plans/FIREBIRD.md) Phase 9 marked the Firebird
 wrapper and ping complete. The dump and catalog adapters were not
 written. This plan owns them.
-[`MSSQL.md`](/docs/H/plans/MSSQL.md) Phase 6 items 6.1–6.3 (wrapper,
+[`MSSQL_COMPLETE.md`](/docs/H/plans/complete/MSSQL_COMPLETE.md) Phase 6 items 6.1–6.3 (wrapper,
 SchemaHelper, flush) are specified here in Phase 2. MSSQL item 6.4
 stays in that plan (Test 40 transaction probe, already moved to its
 Phase 7).
@@ -330,32 +330,32 @@ This plan is in place. No code yet.
 
 ### Work items
 
-- [ ] 1.1 File-database connection readiness. SQLite and Firebird
+- [x] 1.1 File-database connection readiness. SQLite and Firebird
       succeed when the database path exists and the user is set.
       Empty schema is valid. A missing host must not force disk-only
       mode.
-- [ ] 1.2 `db/query_firebird.sh`. `isql-fb` as `SYSDBA`, password from
+- [x] 1.2 `db/query_firebird.sh`. `isql-fb` as `SYSDBA`, password from
       `FIREBIRD_SYSDBA_PASSWORD`, database from the path flag. `SELECT`
       of `queries` types 1000–1003. Same JSON object shape as
       `query_pg.sh`. The script contains no DML. Password never
       printed. Scrub it from `isql` errors before they reach the log.
-- [ ] 1.3 `db/catalog_firebird.sh`. Targeted read of
+- [x] 1.3 `db/catalog_firebird.sh`. Targeted read of
       `RDB$RELATIONS` / `RDB$RELATION_FIELDS` for the tables in
       `--tables`. Map `RDB$NULL_FLAG` to nullable. Map Firebird field
       types to the type spellings the fold stores (the migration's SQL
       type, lowercased). A fixture of recorded `isql` output covers
       the mapping with no live database.
-- [ ] 1.4 `schematool_runners.sh` dispatches `firebird` to those two
+- [x] 1.4 `schematool_runners.sh` dispatches `firebird` to those two
       scripts. `--engine firebird` still reaches `schematool_expect.lua`
       as `firebird` (`database.defaults.firebird` already exists).
-- [ ] 1.5 SchemaHelper: picker blurb names `FIREBIRD_DB_PATH_DEMO` and
+- [x] 1.5 SchemaHelper: picker blurb names `FIREBIRD_DB_PATH_DEMO` and
       `FIREBIRD_SYSDBA_PASSWORD`. `exec_sql` gains an `isql-fb` branch
       so a later apply phase has a place to send one statement. This
       phase does not invoke it against a database.
-- [ ] 1.6 Help text in `schematool.sh`. The Firebird env block is
+- [x] 1.6 Help text in `schematool.sh`. The Firebird env block is
       `FIREBIRD_DB_PATH_DEMO` / `_TEST` / `FIREBIRD_SYSDBA_PASSWORD`.
       The line that lists Firebird under `ACURANZO_DB_*` goes away.
-- [ ] 1.7 Docs: Firebird rows in
+- [x] 1.7 Docs: Firebird rows in
       [`SCHEMATOOL.md`](/docs/H/tools/SCHEMATOOL.md) and
       [`SCHEMAHELPER.md`](/docs/H/tools/SCHEMAHELPER.md) match the
       code. `smoke_test40_catalog.sh` can pass Firebird when
@@ -381,14 +381,17 @@ Neither path prints `no dump adapter` or the disk-only note.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-10-07 |
+| **Result** | `schematool_firebird.sh` against `FIREBIRD_DB_PATH_DEMO` ran the metadata audit (exit 3) and `--catalog --only-tables accounts` (exit 2). Neither path printed `no dump adapter` or the disk-only note. `mks` and Test 98 passed. The catalog fixture passed with no live database. |
+| **Variances** | Phase 2 was already complete; this phase ran after it. Metadata: 386 disk refs, 385 ok, drift 0, missing LOAD 1 (ref 1168, on disk only), 15 orphan refs 2000–2014. Catalog: 16 nullable checks, 15 Y, 1 N. `accounts.password_hash` nullable expected false, live true, fold ref 1005, live type `char(128)`. Live extra column `accounts.stripe_customer_id` is counted and is not a second failure. `smoke_test40_catalog.sh` was not run. Its 1190 check wants `password_hash` expected true and live true, so a Firebird row would fail that check. `isql-fb` uses `ISC_PASSWORD` (not `-password`). A private `FIREBIRD_LOCK` is used because `/tmp/firebird` is mode 770. Large `code` blobs are hex-chunked; `VARCHAR(8191)` cannot hold the longest value (max hex length observed 80226). |
 
 ### Working log
 
-(none yet)
+- **2026-10-07** `mks` (Test 92) passed, 191 shell files. Test 98 passed, 492 Lua files. `extras/schematool/test/firebird_catalog_map.sh` passed on the recorded fixture with no live database.
+- **2026-10-07** `schematool_firebird.sh --no-sql --format json` against `FIREBIRD_DB_PATH_DEMO` (`hydrogen_demo.fdb`). Exit 3. Compare: total 386, ok 385, drift 0, missing LOAD 1 (ref 1168, on disk only), missing APPLY 0, orphans 15 (refs 2000–2014). Checklist 401 rows. Stdout, stderr, the `.mig`, and `db_metadata.json` did not contain `FIREBIRD_SYSDBA_PASSWORD`.
+- **2026-10-07** `schematool_firebird.sh --catalog --only-tables accounts --no-sql --format json` on the same file. Exit 2. Catalog checklist 16 rows, 15 Y, 1 N: `accounts.password_hash` nullable expected false, live true, ref 1005. Live column is `char(128)`, nullable true. Primary key `account_id` (`integer`, not null). `accounts.stripe_customer_id` is a live extra column. Neither path printed `no dump adapter` or the disk-only note.
+- **2026-10-07** `exec_sql` has an `isql-fb` branch and was not invoked. `smoke_test40_catalog.sh` was not run.
 
 ## Phase 2 — MSSQL adapters
 
@@ -473,19 +476,19 @@ the alias from being confused with Firebird during Phases 1 and 2.
 
 ### Work items
 
-- [ ] 3.1 Delete the `cockroachdb` → `postgresql` branch in
+- [x] 3.1 Delete the `cockroachdb` → `postgresql` branch in
       `schematool.sh`, `schemahelper_connect.lua`, and
       `schemahelper_apply.lua`. An unknown engine, including
       `cockroachdb`, exits 1 and names the supported list. The message
       says Firebird replaced that slot.
-- [ ] 3.2 Strip the alias from
+- [x] 3.2 Strip the alias from
       [`SCHEMATOOL.md`](/docs/H/tools/SCHEMATOOL.md),
       [`SCHEMAHELPER.md`](/docs/H/tools/SCHEMAHELPER.md), and
       [`extras/schematool/README.md`](/elements/001-hydrogen/hydrogen/extras/schematool/README.md).
-- [ ] 3.3 Leave changelog lines that describe the 2026-09 rename.
+- [x] 3.3 Leave changelog lines that describe the 2026-09 rename.
       Leave completed plans. Leave Unity `normalize_engine_name`.
       Those are history, and they are outside `extras/schematool`.
-- [ ] 3.4 `rg -i cockroach extras/schematool` returns only changelog
+- [x] 3.4 `rg -i cockroach extras/schematool` returns only changelog
       comments. `rg -i cockroach docs/H/tools` returns nothing.
 
 ### Done means
@@ -505,14 +508,25 @@ PostgreSQL adapter.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-10-07 |
+| **Result** | `--engine cockroachdb` exits 1 and names the supported list. Yugabyte `--dry-disk` and a ref-1000 expect both resolve `YUGABYTE_DB_*` and reach the PostgreSQL adapter. `mks` and Test 98 passed. `rg -i cockroach docs/H/tools` returned nothing. |
+| **Variances** | Every unsupported engine, not only `cockroachdb`, gets the sentence "Firebird replaced that slot." A name-specific branch would leave a live `cockroachdb` token in `schematool.sh`, which item 3.4 does not allow. `SCHEMAHELPER.md` already had no Cockroach text. The `mariadb` → `mysql` alias is unchanged. |
 
 ### Working log
 
-(none yet)
+- **2026-10-07** `mks` (Test 92) passed, 190 shell files, 3/3, 1177/1177 directives justified. Test 98 passed, 495 Lua files, no issues.
+- **2026-10-07** `schematool.sh --engine cockroachdb --dry-disk --no-sql` exited 1. Stderr: `Error: unsupported engine 'cockroachdb' (use postgresql|mysql|sqlite|db2|firebird|mssql). Firebird replaced that slot.` Stdout was empty. The same sentence is printed for any other unknown name.
+- **2026-10-07** `--engine yugabytedb --dry-disk` with only `YUGABYTE_DB_*` set (dummy host, user, name, and schema; password unset). Exit 0. SQL stub header: `engine=postgresql schema=yb-schema-proof database=yb-name-proof`, schematool 1.12.0. No live dump. `--engine postgres` with only `ACURANZO_DB_*` set wrote `engine=postgresql schema=pg-schema-proof database=pg-name-proof`.
+- **2026-10-07** `--engine yugabytedb --schema demo --from 1000 --to 1000 --dry-disk --emit-expected --no-sql`. Exit 0. Stderr: `expect 1/1 ref 1000 name=Create queries Table`. Expected payload engine `postgresql`, schema `demo`, ref 1000. Stderr did not contain `unsupported`.
+- **2026-10-07** `rg -i cockroach extras/schematool` (changelog comments only):
+  - `schematool_firebird.sh:12` `# 1.1.1 - 2026-09-20 - Renamed from CockroachDB wrapper to Firebird; uses isql-fb`
+  - `schematool.sh:11` `# 1.12.0 - 2026-10-07 - cockroachdb is unknown; Firebird replaced that slot`
+  - `schemahelper.sh:7` `# 0.6.9 - 2026-10-07 - SchemaTool 1.12.0; drop the cockroachdb alias`
+  - `lua/schemahelper_const.lua:5` `-- 0.6.9 - 2026-10-07 - SchemaTool 1.12.0; drop the cockroachdb alias`
+  - `lua/schemahelper_connect.lua:5` `-- 0.6.5 - 2026-10-07 - Drop cockroachdb from picker, family, ping, and exec_sql`
+  - `lua/schemahelper_apply.lua:6` `-- 0.5.7 - 2026-10-07 - Dollar-quote literals no longer treat cockroachdb as postgresql`
+- **2026-10-07** `rg -i cockroach docs/H/tools` returned no lines.
 
 ## Phase 4 — Split MySQL and MariaDB
 
@@ -528,23 +542,23 @@ Phase 3 Status complete.
 
 ### Work items
 
-- [ ] 4.1 Remove `mariadb) ENGINE=mysql` from `schematool.sh`.
+- [x] 4.1 Remove `mariadb) ENGINE=mysql` from `schematool.sh`.
       Runners, readiness, env, help, and expect all see `mariadb`.
       Expect then loads `database.defaults.mariadb`.
-- [ ] 4.2 `db/query_mariadb.sh` and `db/catalog_mariadb.sh`. They may
+- [x] 4.2 `db/query_mariadb.sh` and `db/catalog_mariadb.sh`. They may
       source a shared client fragment. They are separate entry points
       so a later dialect quirk does not land in an `if engine` inside
       the MySQL file. The MySQL files drop the "MySQL/MariaDB" header.
-- [ ] 4.3 Credentials. MySQL uses `MYSQL_DB_*`. MariaDB uses
+- [x] 4.3 Credentials. MySQL uses `MYSQL_DB_*`. MariaDB uses
       `MARIADB_DB_*`. Delete the `CANVAS_DB_*` fallback from
       SchemaTool and SchemaHelper. Fix the MariaDB demo schema from
       `demomrdb` to `demo` in the wrapper, the picker blurb, and
       `apply_family`.
-- [ ] 4.4 Apply and qualify helpers take `mariadb` as its own engine.
+- [x] 4.4 Apply and qualify helpers take `mariadb` as its own engine.
       Qualified names stay `` `schema`.`table` `` style for both until
       Phase 8 replaces the DDL text. This phase does not need to
       invent MariaDB-only DDL.
-- [ ] 4.5 Tool docs and `smoke_test40_catalog.sh` treat the two
+- [x] 4.5 Tool docs and `smoke_test40_catalog.sh` treat the two
       engines as separate rows. A MariaDB smoke must show expect
       running as `mariadb` in the log (the dialect name, not a
       password).
@@ -566,14 +580,22 @@ demo wrapper's schema is `demo`.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-10-07 |
+| **Result** | MariaDB demo metadata audit exit 3. MySQL demo metadata audit exit 3 (`query_mysql.sh`, `engine=mysql`, schema `demo`): total 386, ok 385, drift 0, missing LOAD 1 (ref 1168), missing APPLY 0, orphans 2 (refs 2000 and 2001). |
+| **Variances** | `mks`, Test 98, and Test 72 passed. The first MySQL attempt used process host `10.119.2.49` (`ERROR 2002`). `~/.my.cnf` `[client]` is a localhost login with a different password, so a `mysql` probe that sets `MYSQL_PWD` and still reads that file sends the wrong password and gets `ERROR 1045`. `MYSQL_DB_PASS` logs in with `--no-defaults`. The successful audit passed `--host 10.118.0.3`. `findings.json` `counts.anomalies` is 2 and the anomalies array is empty. No password was reset. |
 
 ### Working log
 
-(none yet)
+- **2026-10-07** `mks` passed, 193 shell files, 3/3, 1181/1181 directives justified. Test 98 passed, 495 Lua files. Test 72 passed, 19/19. SchemaHelper 0.6.10, SchemaTool 1.13.0.
+- **2026-10-07** `--engine cockroachdb` still exits 1. The supported list is `postgresql|mysql|mariadb|sqlite|db2|firebird|mssql`.
+- **2026-10-07** `--emit-expected --from 1000 --to 1000` on `schematool_mysql.sh`: `expect 1/1 ref 1000 engine=mysql`, payload engine `mysql`, schema `demo`. On `schematool_mariadb.sh`: `engine=mariadb`, schema `demo`. No password in those files.
+- **2026-10-07** `schematool_mariadb.sh --no-sql --format json` against `MARIADB_DB_*`, schema `demo`. Exit 3. Stderr: `phase: expect engine=mariadb` and `adapter: query_mariadb.sh`. Counts: total 386, ok 385, drift 0, missing LOAD 1, missing APPLY 0, orphans 15. The log did not contain `query_mysql.sh` or `MARIADB_DB_PASS`.
+- **2026-10-07** `schematool_mysql.sh --no-sql --format json` against `MYSQL_DB_*`, schema `demo`. Expect ran as `engine=mysql` (386 refs) and called `adapter: query_mysql.sh`. The dump then failed: `ERROR 2002 (HY000): Can't connect to server on '10.119.2.49' (115)`. Exit 1. A follow-up client ping with `--connect-timeout=8` returned `ERROR 2002` (110). The log did not contain `query_mariadb.sh` or `MYSQL_DB_PASS`.
+- **2026-10-07** `10.119.2.49` is the removed `mysql-test-proxy` pod address. `~/.festival.env` and the tenant README name `10.118.0.3:3306`. A client to that host with `--connect-timeout=8` reached MySQL and returned `ERROR 1045 (28000)` (`using password: YES`) for `root` and `testuser` against `demo`, `test`, and `testdb`. MySQL saw the client as an `lmtp-edge` pod (`10.119.0.244` or `10.119.2.4`). The session password matches `root-password` in secret `mysql-secrets` and does not match `testuser-password`. No user was altered. The metadata audit was not re-run. Phase 4 stays open.
+- **2026-10-07** Test 33 passed against `10.118.0.3:3306` as `root`, database `test`. Hydrogen connected and read `test.queries` (1049 bootstrap rows). LOAD and APPLY were already at the tip. `TestMigration` is false, so the reverse phase was skipped. The log line was `Migration test completed in 0.001s`.
+- **2026-10-07** `~/.my.cnf` `[client]` sets host `localhost` and a different password. A `mysql` invocation that exports `MYSQL_PWD` still uses that file, so the `1045` above was the defaults-file password. `mysql --no-defaults` with `MYSQL_DB_PASS` logs in to `test`, `demo`, and `testdb`.
+- **2026-10-07** `schematool_mysql.sh --host 10.118.0.3 --no-sql --format json`. Exit 3. Stderr: `phase: expect engine=mysql` and `adapter: query_mysql.sh`. Compare: total 386, ok 385, drift 0, missing LOAD 1 (ref 1168), missing APPLY 0, orphans 2 (refs 2000 and 2001). Schema `demo`. The log did not contain `query_mariadb.sh` or `MYSQL_DB_PASS`. Phase 4 exit gate is met.
 
 ## Phase 5 — Eight test wrappers
 
@@ -587,17 +609,17 @@ Phase 4 Status complete. All eight engines have adapters.
 
 ### Work items
 
-- [ ] 5.1 Add the eight `schematool_<engine>_test.sh` files from the
+- [x] 5.1 Add the eight `schematool_<engine>_test.sh` files from the
       Locks table. Each sets the test schema or file and the engine's
       own env. Firebird uses `FIREBIRD_DB_PATH_TEST`. MSSQL uses
       schema `testms`. SQLite uses `hydrotst.sqlite`.
-- [ ] 5.2 Picker keys by wrapper path. `schematool_mysql_test.sh` and
+- [x] 5.2 Picker keys by wrapper path. `schematool_mysql_test.sh` and
       `schematool_mysql.sh` are two rows. Blurbs show the schema or
       the file name, plus the env names, never a password.
-- [ ] 5.3 Sidecar path gains the role:
+- [x] 5.3 Sidecar path gains the role:
       `schemahelper_<design>_<engine>_<role>.json`. Suffix `_test` is
       role `test`. An unsuffixed wrapper is role `demo` until Phase 6.
-- [ ] 5.4 Test 72 fixture grows a second wrapper stem and asserts the
+- [x] 5.4 Test 72 fixture grows a second wrapper stem and asserts the
       two sidecars do not share a file. Update
       [`test_72_schemahelper.md`](/docs/H/tests/test_72_schemahelper.md)
       if the fixture contract changes.
@@ -621,14 +643,18 @@ the `_test` sidecar and leaves the demo sidecar untouched.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-10-07 |
+| **Result** | Eight `schematool_<engine>_test.sh` wrappers. The picker lists those eight test rows and the eight unsuffixed demo rows. Sidecars are `schemahelper_<design>_<engine>_<role>.json`. Seven short metadata audits exited 3. SQLite exited 1 because `hydrotst.sqlite` has no tables. |
+| **Variances** | The test block follows current `WRAPPER_ORDER` (mariadb before sqlite). Locks order is Phase 6.2. Yugabyte `phase: expect` prints `engine=postgresql` after the dialect alias. That audit used `YUGABYTE_DB_*` on `adm-c:30543`. No engine was down. All eight `--help` paths exited 0. |
 
 ### Working log
 
-(none yet)
+- **2026-10-07** `mks` passed, 202 shell files, 3/3, 1189/1189 directives justified. Test 98 passed, 506 Lua files. Test 72 passed, 20/20. SchemaHelper 0.6.11, SchemaTool 1.13.0.
+- **2026-10-07** Discover on `extras/schematool` returns 16 rows: the `_test` stems in `WRAPPER_ORDER`, then the unsuffixed demo stems. A fixture `create_state` on the `_test` sidecar left the seeded demo sidecar bytes unchanged.
+- **2026-10-07** `--help` on all eight test wrappers exited 0 and printed the SchemaTool help. No password in that output.
+- **2026-10-07** Short metadata audits `--from 1000 --to 1000 --no-sql --format json`. PostgreSQL exit 3, `engine=postgresql`, total 1, ok 1, orphans 15 beginning at ref 2000. MySQL `--host 10.118.0.3` exit 3, `query_mysql.sh`, `engine=mysql`, schema flag `test`, total 1, ok 1, orphans 25 beginning at ref 2000. The Phase 4 demo audit reported 2 orphans. DB2 exit 3, `engine=db2`, total 1, ok 1, orphans 30 beginning at ref 2000. MariaDB exit 3, `query_mariadb.sh`, `engine=mariadb`, total 1, ok 1, orphans 15 beginning at ref 2000. Firebird exit 3, `engine=firebird`, `FIREBIRD_DB_PATH_TEST` (`hydrogen_test.fdb`), total 1, ok 1, orphans 15 beginning at ref 2000. Yugabyte exit 3, expect `engine=postgresql`, host `adm-c` port 30543, total 1, ok 1, orphans 15 beginning at ref 2000. MSSQL exit 3, `engine=mssql`, schema `testms`, total 1, ok 1, orphans 15 beginning at ref 2000. `counts.anomalies` matched the orphan count. The logs did not contain the password values.
+- **2026-10-07** SQLite exit 1. The wrapper opened `tests/artifacts/database/sqlite/hydrotst.sqlite` (3977216 bytes, `sqlite_master` has no tables). Dump error: `no such table: queries`. `hydrodemo.sqlite` still has `queries`. No migration was run. `--help` exited 0. Phase 5 exit gate is met.
 
 ## Phase 6 — Eight demo wrappers
 
@@ -643,18 +669,18 @@ Phase 5 Status complete.
 
 ### Work items
 
-- [ ] 6.1 Rename `schematool_<engine>.sh` to
+- [x] 6.1 Rename `schematool_<engine>.sh` to
       `schematool_<engine>_demo.sh` for all eight, including the
       MSSQL wrapper from Phase 2. MariaDB demo schema stays `demo`.
       SQLite demo file stays `hydrodemo.sqlite`. Firebird demo path
       stays `FIREBIRD_DB_PATH_DEMO`. MSSQL demo schema stays `demoms`.
-- [ ] 6.2 Picker order matches the Locks list: test block, then demo
+- [x] 6.2 Picker order matches the Locks list: test block, then demo
       block. `WRAPPER_ORDER` lists the sixteen stems.
-- [ ] 6.3 `smoke_test40_catalog.sh` calls the `_demo` wrappers and
+- [x] 6.3 `smoke_test40_catalog.sh` calls the `_demo` wrappers and
       includes `mssql`. Update tool docs and the extras README. Delete
       any doc row that still shows `demomrdb` or an unsuffixed wrapper
       as the current interface.
-- [ ] 6.4 Grep `extras/schematool` for `schematool_<engine>.sh` exec
+- [x] 6.4 Grep `extras/schematool` for `schematool_<engine>.sh` exec
       lines. Tests and smokes call the new names.
 
 ### Done means
@@ -673,14 +699,16 @@ Phase 5 Status complete.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-10-07 |
+| **Result** | Sixteen wrappers: eight `_test` and eight `_demo`. The picker lists them in locks order, test block then demo block. Catalog smoke: 6 pass, 2 fail, 0 down. |
+| **Variances** | `schematool_firebird_demo.sh` passes `--database` from `FIREBIRD_DB_PATH_DEMO` and exits 1 when that variable is unset. Firebird and MSSQL catalog checks failed on the known `accounts.password_hash` mismatch (expected not null, live nullable, ref 1005). No engine was down. |
 
 ### Working log
 
-(none yet)
+- **2026-10-07** `mks` passed, 202 shell files, 3/3, 1189/1189 directives justified. Test 98 passed, 506 Lua files. Test 72 passed, 20/20. SchemaHelper 0.6.12, SchemaTool 1.13.0.
+- **2026-10-07** `ls extras/schematool/schematool_*.sh` prints sixteen files. Discover returns those sixteen stems in locks order. No unsuffixed wrapper remains. Help examples and the Test 40 smoke call the `_demo` names. MSSQL is in the smoke list.
+- **2026-10-07** `smoke_test40_catalog.sh` exit 2. SQLite pass. PostgreSQL pass. MySQL pass (`query_mysql.sh`, `catalog_mysql.sh`, `password_hash` nullable Y, ref 1190). MariaDB pass (`query_mariadb.sh`, `catalog_mariadb.sh`, ref 1190). DB2 pass. Yugabyte pass. Firebird fail, exit 2, `password_hash` nullable expected false, live true, ref 1005. MSSQL fail, exit 2, same `password_hash` row, schema `demoms`. No password in the smoke summary. No engine was skipped for being down. Phase 6 exit gate is met.
 
 ## Phase 7 — Expected shape from disk migrations
 
@@ -693,23 +721,57 @@ on disk, so an older database shows what it still lacks.
 
 Phase 6 Status complete. Read-only. No apply changes yet.
 
+### Payload
+
+One SchemaTool run covers the designs the database actually has.
+The disk set for the sixteen wrappers is `acuranzo+argent`, not two
+runs and not Acuranzo alone. Argent is an optional pack on the
+Acuranzo database: same connection, same SQL schema, same `queries`
+table. It does not bootstrap `queries`. Each design keeps its own
+`database.lua` and `database_<engine>.lua` beside its migration files.
+The loader reads the copy beside the file.
+
+`--design` accepts a plus-list. `--migrations` stays the first
+design's folder (`…/acuranzo/migrations`), which is what a single
+design name already requires, so fixture directories keep working.
+Each later name is a sibling folder:
+`dirname(dirname(--migrations))/<design>/migrations`. For the Helium
+tree that is `…/002-helium/argent/migrations`. A missing sibling
+directory is an error. Refs are the file numbers, sorted together
+(Acuranzo 1000–1999, then Argent 2000–2999). The ranges do not overlap.
+
+A single design name stays valid. Argent alone is not a wrapper
+payload. The folder `elements/002-helium/gaius/` is still its own
+database. Do not pass that tree as a pack on Acuranzo. A later
+renumbered Gaius pack (3000–3999) can join the plus-list when it
+exists as its own design folder. `PAYLOAD:acuranzo+gaius` and all
+three are later Hydrogen payloads, not this slice.
+
 ### Work items
 
-- [ ] 7.1 Fold DDL from the expected payloads of the disk migrations
+- [x] 7.0 Point discovery, expect, and all sixteen wrappers at
+      `acuranzo+argent` in one run. Each design loads its own
+      `database.lua`. A single design name still resolves only the
+      `--migrations` directory.
+- [x] 7.1 Fold DDL from the expected payloads of the disk migrations
       (the Lua extract), in ref order, across the selected `--from` /
-      `--to` range. Keep the current "fold only applied type 1003"
+      `--to` range, for every design in the plus-list. The forward
+      body on disk is query type 1000. Applied rows in the database
+      store that same body as type 1003. The disk fold reads the
+      expanded type-1000 code and does not fold reverse (1001) or
+      diagram (1002). Keep the current "fold only applied type 1003"
       behavior available as an explicit flag if a caller still wants
       the stored-text fold. The default becomes the disk fold.
-- [ ] 7.2 Compare `data_type` as well as nullability and presence.
+- [x] 7.2 Compare `data_type` as well as nullability and presence.
       Type text is normalized (case, spacing) before compare. A real
       type difference is a `type` finding.
-- [ ] 7.3 Classify live extras. An object no migration mentions is
+- [x] 7.3 Classify live extras. An object no migration mentions is
       an info row: counted, shown, not a failure, not applicable.
       An object the fold created and a later migration dropped, still
       present live, is a `dropped` finding.
-- [ ] 7.4 SchemaHelper queues `type` and `dropped`. Info extras show
+- [x] 7.4 SchemaHelper queues `type` and `dropped`. Info extras show
       on the dashboard and stay out of the one-by-one review queue.
-- [ ] 7.5 Fixture in Test 72: a disk migration adds a column the
+- [x] 7.5 Fixture in Test 72: a disk migration adds a column the
       live catalog lacks; the finding appears even when that ref has
       no type-1003 row in the dumped `queries` set. A second case:
       a live column no migration mentions does not increment the
@@ -733,14 +795,17 @@ production columns do not fail the audit.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-10-07 |
+| **Result** | One run covers acuranzo+argent. The catalog compares presence, nullability, and data type, and classifies live extras. A copy of `hydrodemo.sqlite` left `accounts.password_hash` NOT NULL and dropped `stripe_customer_id`. Findings: `cat:accounts:password_hash:nullable` ref 1190, and `cat:accounts:stripe_customer_id:column` ref 1310. Added `prod_extra` stayed info and did not fail the audit. |
+| **Variances** | The fold reads Firebird `ALTER col DROP NOT NULL` and `ADD col`, and MSSQL `ALTER COLUMN col type NULL` and `ADD col`. `--fold-stored` keeps the type-1003 dump fold. A catalog-only run extracts all 416 refs first (about 50s on SQLite). Type text is normalized for case and spacing only, so probe spellings that drop a length or expand a name are `type` findings. On 2026-10-07 `smoke_test40_catalog.sh` (MySQL host 10.118.0.3): sqlite, firebird, and mssql exited 0. postgresql and yugabytedb exited 2 with 6 type findings (`char(128)` vs `character`, `timestamptz` vs `timestamp with time zone`). mysql and mariadb exited 2 with 10 (`varchar(255)` vs `varchar`, `datetime(3)` vs `datetime`). db2 exited 2 with 8 (`varchar(250)` vs `varchar`, `char(128)` vs `character`). `password_hash` nullable stayed Y on all eight. No engine was down. No database was edited. The smoke was not weakened. |
 
 ### Working log
 
-(none yet)
+- **2026-10-07** Discovery of `acuranzo+argent` returns 416 refs, sorted, first `acuranzo_1000.lua`, last `argent_2029.lua`. A single design name still lists only that directory. A missing sibling directory is an error. Fixture files named `design_NNNN.lua` still match a single design. Expect reloads `database.lua` per design. `mks` passed, 202 shell files, 3/3, 1189/1189 directives. Test 98 passed, 507 Lua files. Test 72 passed, 20/20. SchemaHelper 0.6.13, SchemaTool 1.14.0.
+- **2026-10-07** Disk fold of the sqlite expect marks `accounts.password_hash` nullable, ref 1190, and keeps `accounts.stripe_customer_id`, ref 1310. `--fold-stored` still folds a type-1003 dump. Passing both `--db` and `--expected` is an error.
+- **2026-10-07** `smoke_test40_catalog.sh` against the demo databases, MySQL host 10.118.0.3. First pass: sqlite, postgresql, mysql, mariadb, db2, and yugabytedb exit 0 with `password_hash` nullable expected true, live true. Firebird and MSSQL exited 2 because the fold still had ref 1005 not null. After the fold learned those two spellings, both re-smoked exit 0, `password_hash` ref 1190 and `stripe_customer_id` ref 1310, no extra column on `accounts`. No engine was down. No database was edited. Phase 7 stays open for 7.2–7.5.
+- **2026-10-07** Type compare, dropped-versus-info, and the SchemaHelper queue landed. Test 72 passed, 21/21. Test 98 passed, 508 Lua files. Test 92 passed, 202 shell files, 3/3, 1189/1189 directives. SchemaTool 1.15.0, SchemaHelper 0.6.14. A copy of `hydrodemo.sqlite` (original not written) reported `cat:accounts:password_hash:nullable` ref 1190 and `cat:accounts:stripe_customer_id:column` ref 1310. `prod_extra` was info, status I, and was not a failure. The eight-engine accounts smoke then exited 2 overall: sqlite, firebird, and mssql passed; the other five failed on type spelling only, with `password_hash` nullable still Y. No engine was down. No database was edited.
 
 ## Phase 8 — Structural apply, per dialect
 
@@ -953,7 +1018,7 @@ docs.
   [`SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md)
 - Engines:
   [`FIREBIRD.md`](/docs/H/plans/FIREBIRD.md),
-  [`MSSQL.md`](/docs/H/plans/MSSQL.md),
+  [`MSSQL_COMPLETE.md`](/docs/H/plans/complete/MSSQL_COMPLETE.md),
   [`MARIADB_SPLIT_PLAN.md`](/docs/H/plans/MARIADB_SPLIT_PLAN.md)
 - Test 72:
   [`test_72_schemahelper.md`](/docs/H/tests/test_72_schemahelper.md)

@@ -202,6 +202,28 @@ Base64 itself is native (`BASE64_DECODE`). Brotli is not.
 - `brotli_decfn.so` in the Firebird UDR plugin directory
 - See: [extras/brotli_udf_firebird/README.md](/elements/001-hydrogen/hydrogen/extras/brotli_udf_firebird/README.md)
 
+#### SQL Server
+
+**Functions:**
+
+- `brotli_decompress` — CLR assembly, not deployed
+
+**Macros:** (`database_mssql.lua`)
+
+```lua
+COMPRESS_START = nil
+COMPRESS_END = nil
+BROTLI_DECOMPRESS_FUNCTION = "-- Phase 4: CREATE ASSEMBLY brotli_assembly + CREATE FUNCTION brotli_decompress (CLR)"
+```
+
+Base64 and SHA-256 are T-SQL functions and do not need this assembly. A migration body that expands `${COMPRESS_START}` does not decompress on SQL Server until the assembly exists.
+
+**Requirements:**
+
+- SQL Server 2022 Linux container
+- CLR enabled and [extras/brotli_udf_mssql/README.md](/elements/001-hydrogen/hydrogen/extras/brotli_udf_mssql/README.md) deployed
+- See: [database_mssql.md](/docs/He/DATABASES/database_mssql.md)
+
 ### 3. Migration Integration
 
 #### Function Declaration (acuranzo_1000.lua)

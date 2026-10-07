@@ -4,6 +4,7 @@
 # Generate SVG database diagram from migration JSON
 
 # CHANGELOG
+# 3.2.0 - 2026-10-07 - Accept mariadb, firebird, and mssql; unwrap their JSON_INGEST the same way as postgresql
 # 3.1.1 - 2026-08-27 - Combine before/after JSON via Node files instead of jq --argjson (ARG_MAX)
 # 3.1.0 - 2026-07-08 - Fixed diagram JSON extraction for Brotli/base64-encoded content that folds to a single line; metadata now emitted as compact JSON
 # 3.0.0 - 2025-12-05 - Added HYDROGEN_ROOT and HELIUM_ROOT environment variable checks
@@ -41,7 +42,7 @@ LIB_DIR="${SCRIPT_DIR}/lib"
 # Function to display usage
 usage() {
     echo "Usage: $0 <engine> <design> <prefix> [migration]"
-    echo "  engine: database engine (db2, postgresql, mysql, sqlite)"
+    echo "  engine: database engine (postgresql, mysql, sqlite, db2, mariadb, firebird, mssql)"
     echo "  design: design name (acuranzo, helium)"
     echo "  prefix: schema prefix (ACURANZO, HELIUM, etc.)"
     echo "  migration: optional migration number (1000, etc.) - if not provided, process all migrations"
@@ -64,7 +65,7 @@ MIGRATION="${4:-}"  # Optional migration parameter
 
 # Validate engine
 case "${ENGINE}" in
-    db2|postgresql|mysql|sqlite) ;;
+    postgresql|mysql|sqlite|db2|mariadb|firebird|mssql) ;;
     *) echo "Error: Invalid engine '${ENGINE}'" >&2; usage ;;
 esac
 
@@ -153,8 +154,9 @@ for MIGRATION_FILE in "${FILTERED_MIGRATION_FILES[@]}"; do
             JSON_INGEST_START='^[[:space:]]*\('
             JSON_INGEST_END='\)[[:space:]]*$'
             ;;
-        postgresql|mysql|db2)
-            # The wrapper looks like "<schema>.json_ingest(...)" or "<schema>.JSON_INGEST(...)".
+        postgresql|mysql|mariadb|db2|firebird|mssql)
+            # The wrapper looks like "<schema>.json_ingest(...)", "json_ingest(...)",
+            # or "<schema>.JSON_INGEST(...)". Firebird has no schema prefix.
             # Strip everything up to and including the wrapper's opening paren, and the
             # matching trailing closing paren.  The [^()] class ensures we consume the wrapper
             # function name, not parentheses that may appear inside the encoded content.

@@ -7,6 +7,7 @@
 # shellcheck disable=SC2312 # Diagnostic substitutions swallow inner status; callers use || true
 
 # CHANGELOG
+# 1.0.1 - 2026-10-07 - Fixture check includes schematool_sqlite_test.sh
 # 1.0.0 - 2026-09-09 - Split from test_72 to stay under the 1000-line cap
 
 [[ -n "${SCHEMAHELPER_HELPERS_GUARD:-}" ]] && return 0
@@ -15,7 +16,7 @@ export SCHEMAHELPER_HELPERS_GUARD="true"
 export EXIT_CODE
 
 SCHEMAHELPER_HELPERS_NAME="SchemaHelper Test Helpers"
-SCHEMAHELPER_HELPERS_VERSION="1.0.0"
+SCHEMAHELPER_HELPERS_VERSION="1.0.1"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "${SCHEMAHELPER_HELPERS_NAME} ${SCHEMAHELPER_HELPERS_VERSION}" "info"
 
 SCHEMAHELPER_LUA_DIR="$(dirname "${BASH_SOURCE[0]}")/schemahelper"
@@ -100,6 +101,7 @@ schemahelper_check_fixtures() {
         "finding_detail_meta_drift_1148.txt"
         "catalog_finding_detail_nullable.txt"
         "schematool_sqlite_fixture.sh"
+        "schematool_sqlite_test.sh"
     )
 
     local missing=0

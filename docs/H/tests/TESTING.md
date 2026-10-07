@@ -95,14 +95,14 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 ### API
 
 - **[test_40_auth.sh](/docs/H/tests/test_40_auth.md)**: Authentication endpoints testing (JWT tokens across multiple database engines)
-- **[test_41_exercise_asan.sh](/docs/H/tests/test_41_exercise.md)**: Memory exercise under ASAN/LSAN (500 concurrent auths, 6 DBs; YugabyteDB disabled)
-- **[test_44_exercise_native.sh](/docs/H/tests/test_44_exercise_native.md)**: Native RSS exercise (5000 concurrent auths, 6 DBs; suite-parallel with test 41)
+- **[test_41_exercise_asan.sh](/docs/H/tests/test_41_exercise.md)**: Memory exercise under ASAN/LSAN (500 concurrent auths, 7 enabled databases; YugabyteDB disabled)
+- **[test_44_exercise_native.sh](/docs/H/tests/test_44_exercise_native.md)**: Native RSS exercise (5000 concurrent auths, 7 enabled databases; YugabyteDB disabled; suite-parallel with test 41)
 - **[test_42_oidc_rp.sh](/docs/H/tests/test_42_oidc_rp.md)**: OIDC Relying Party - complete authentication flow testing
 - **[test_45_oidc_idp.sh](/docs/H/tests/test_45_oidc_idp.md)**: OIDC Identity Provider — multi-engine parallel (ports 5450–5456): discovery, JWKS, authorize/login, PKCE token, userinfo, refresh
 - **[test_43_scripting.sh](/docs/H/tests/test_43_scripting.md)**: Scripting subsystem end-to-end testing
 - **[test_46_conduit_script.sh](/docs/H/tests/test_46_conduit_script.md)**: Conduit script invoke (`POST/GET /api/conduit/script`, JWT + Api.Echo)
 - **[test_47_mcp.sh](/docs/H/tests/test_47_mcp.md)**: MCP Streamable HTTP (JWT initialize/tools/call, ports 1547x / 1548x)
-- **[test_51_conduit.sh](/docs/H/tests/test_51_conduit_queries.md)**: Conduit endpoints testing (all 4 endpoints with full parameter support across 7 database engines)
+- **[test_51_conduit.sh](/docs/H/tests/test_51_conduit_queries.md)**: Conduit endpoints testing (all 4 endpoints with full parameter support across 8 database engines)
 - **[test_52_conduit_auth_query.sh](/docs/H/tests/test_52_conduit_auth_query.md)**: Authenticated conduit query testing
 - **[test_53_conduit_auth_queries.sh](/docs/H/tests/test_53_conduit_auth_queries.md)**: Authenticated conduit batch query testing
 - **[test_54_conduit_alt_query.sh](/docs/H/tests/test_54_conduit_alt_query.md)**: Alternative conduit query testing
@@ -145,7 +145,7 @@ To prevent port conflicts between simultaneously running tests, the Hydrogen tes
 Where:
 
 - **T#** = Test number (e.g., 40, 51)
-- **x** = Database index (0-6 for 7 databases)
+- **x** = Engine slot in that test's 10-port range. Test 40 MSSQL is port 5409.
 
 ### **Examples**
 
@@ -158,6 +158,7 @@ Where:
 | Test 40 | MariaDB | 5404 | `hydrogen_test_40_mariadb.json` |
 | Test 40 | Firebird | 5407 | `hydrogen_test_40_firebird.json` |
 | Test 40 | YugabyteDB | 5406 | `hydrogen_test_40_yugabytedb.json` |
+| Test 40 | MSSQL | 5409 | `hydrogen_test_40_mssql.json` |
 | Test 51 | PostgreSQL | 5510 | `hydrogen_test_51_postgres.json` |
 | Test 51 | MySQL | 5511 | `hydrogen_test_51_mysql.json` |
 | ... | ... | ... | ... |

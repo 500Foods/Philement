@@ -3,6 +3,7 @@
 -- Depends only on schemahelper_qutil.
 --
 -- CHANGELOG
+-- 0.5.9 - 2026-10-07 - Catalog classes for type and dropped findings
 -- 0.5.8 - 2026-08-25 - Extracted from schemahelper_queue.lua (findings load cluster)
 
 local U = require("schemahelper_qutil")
@@ -145,6 +146,12 @@ local function catalog_class(check)
     end
     if check == "nullable" then
         return "catalog nullability"
+    end
+    if check == "type" then
+        return "catalog type"
+    end
+    if check == "dropped" then
+        return "catalog dropped"
     end
     if check == "extra_table" or check == "extra_column" then
         return "catalog live extra"

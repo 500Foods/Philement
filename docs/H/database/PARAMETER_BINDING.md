@@ -18,6 +18,7 @@ Types and JSON format: [PARAMETER_TYPES.md](/docs/H/database/PARAMETER_TYPES.md)
 | SQLite | `?` | `sqlite3_prepare_v2` + bind_* |
 | DB2 | `?` | `SQLPrepare` + `SQLBindParameter` |
 | Firebird | `?` | `isc_dsql_prepare` + `XSQLDA` input |
+| SQL Server | `?` | `SQLBindParameter` (1-based) |
 
 CockroachDB used the PostgreSQL row above. It was a `libpq` alias, not its own engine, and that operator slot is now Firebird.
 
@@ -97,6 +98,16 @@ Source: [`firebird/query.c`](/elements/001-hydrogen/hydrogen/src/database/firebi
   Each execute still allocates, prepares, and frees the `isc_stmt_handle`.
   Holding that handle is a later consistency pass on Firebird 4.0.7. It is
   not required for correct results.
+
+## SQL Server
+
+Source: [`mssql/query.c`](/elements/001-hydrogen/hydrogen/src/database/mssql/query.c)
+
+- Named `:markers` become `?`. `mssql_bind_single_parameter()` calls `SQLBindParameter` with a 1-based index. NULL binds as `SQL_NULL_DATA`.
+- INTEGER uses `SQL_C_LONG` / `SQL_INTEGER`. BOOLEAN uses `SQL_C_SHORT` / `SQL_SMALLINT` (0 or 1). FLOAT uses `SQL_C_DOUBLE` / `SQL_DOUBLE`.
+- STRING uses `SQL_C_CHAR` / `SQL_CHAR`. An ISO-8601 STRING is normalized before the bind. TEXT uses `SQL_C_CHAR` / `SQL_LONGVARCHAR`.
+- DATE uses `SQL_DATE_STRUCT` parsed from `YYYY-MM-DD`. TIME uses `SQL_TIME_STRUCT` parsed from `HH:MM:SS`.
+- DATETIME and TIMESTAMP are checked as text, then bound as `SQL_C_CHAR` / `SQL_TYPE_TIMESTAMP`.
 
 ## Parameterless queries
 

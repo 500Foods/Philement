@@ -14,6 +14,7 @@
 #   smoke_schemahelper_queue.sh --packet-dir /tmp/custom
 #
 # CHANGELOG
+# 0.5.7 - 2026-10-07 - Pass the historical sidecar; new sessions use a role suffix
 # 0.5.6 - 2026-08-24 - Initial version: queue totals, finding IDs, next_ref,
 #   collision, and packet write verification against sample_project fixtures.
 
@@ -100,6 +101,7 @@ lua "${LUA_SCRIPT}" \
     --out-dir "${FIXTURE_DIR}" \
     --work-dir "${FIXTURE_DIR}" \
     --migrations "${MIGRATIONS_DIR}" \
+    --state-file "${STATE_FILE}" \
     --packet-dir "${PACKET_DIR}"
 SMOKE_RC=$?
 set -e

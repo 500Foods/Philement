@@ -1,11 +1,23 @@
 -- schematool_catalog_fold.lua
--- Hybrid C: fold applied migration forward code (type 1003) into expected catalog.
+-- Hybrid C: fold migration forward code into the expected catalog.
+--
+-- Default input is the disk expect JSON (--expected). That file's forward
+-- body is query type 1000 (the text the database stores as type 1003 once
+-- applied). Reverse (1001) and diagram (1002) are not folded.
+--
+-- --db PATH keeps the previous fold: applied type-1003 code from a queries dump.
 --
 -- Usage:
+--   lua schematool_catalog_fold.lua --expected PATH [--from N] [--to N]
+--        [--schema NAME] [--only-tables a,b] [--out PATH]
 --   lua schematool_catalog_fold.lua --db PATH [--schema NAME] [--only-tables a,b]
---        [--checklist-out PATH]  (stdout JSON if no out)
+--        [--out PATH]
 --
 -- CHANGELOG
+-- 1.3.0 - 2026-10-07 - Remember tables and columns a later migration drops
+-- 1.2.2 - 2026-10-07 - Firebird and MSSQL ADD/DROP without the COLUMN keyword
+-- 1.2.1 - 2026-10-07 - Firebird ALTER col DROP/SET NOT NULL; MSSQL ALTER COLUMN type NULL
+-- 1.2.0 - 2026-10-07 - Disk fold from expect type-1000 code; --db stays stored 1003
 -- 1.1.0 - 2026-08-23 - Record last fold ref on each expected column
 -- 1.0.1 - 2026-08-23 - Lua 5.5: do not assign to generic-for loop variable
 -- 1.0.0 - 2026-08-02 - Phase 7b hybrid C fold from applied codes
@@ -13,15 +25,21 @@
 -- luacheck: globals arg
 
 local db_path
+local expected_path
 local schema_name = ""
 local only_tables_csv = ""
 local out_path
+local from_ref
+local to_ref
 
 local i = 1
 while i <= #arg do
     local a = arg[i]
     if a == "--db" then
         db_path = arg[i + 1]
+        i = i + 2
+    elseif a == "--expected" then
+        expected_path = arg[i + 1]
         i = i + 2
     elseif a == "--schema" then
         schema_name = arg[i + 1] or ""
@@ -32,16 +50,23 @@ while i <= #arg do
     elseif a == "--out" then
         out_path = arg[i + 1]
         i = i + 2
+    elseif a == "--from" then
+        from_ref = tonumber(arg[i + 1] or "")
+        i = i + 2
+    elseif a == "--to" then
+        to_ref = tonumber(arg[i + 1] or "")
+        i = i + 2
     else
         io.stderr:write("Error: unknown argument: " .. tostring(a) .. "\n")
         os.exit(1)
     end
 end
 
-if not db_path then
+if (db_path and expected_path) or (not db_path and not expected_path) then
     io.stderr:write(
-        "Usage: lua schematool_catalog_fold.lua --db PATH [--schema S] "
-            .. "[--only-tables a,b] [--out PATH]\n"
+        "Usage: lua schematool_catalog_fold.lua --expected PATH [--from N] [--to N]\n"
+            .. "       lua schematool_catalog_fold.lua --db PATH\n"
+            .. "       both accept [--schema S] [--only-tables a,b] [--out PATH]\n"
     )
     os.exit(1)
 end
@@ -103,8 +128,30 @@ local function is_keyword_col(name)
 end
 
 -- tables[name] = { columns = { [name] = {name, data_type, nullable, ref} }, col_order = {}, pk = {} }
+-- dropped[tname\tcol] records an object this fold created and a later migration removed.
+-- column "-" is the whole table. A recreate or rename onto that name clears the entry.
 local tables = {}
+local dropped = {}
 local current_ref = 0
+
+local function drop_key(tname, cname)
+    return tname:lower() .. "\t" .. (cname or "-"):lower()
+end
+
+local function remember_dropped(tname, cname, data_type)
+    tname = tname:lower()
+    cname = (cname or "-"):lower()
+    dropped[drop_key(tname, cname)] = {
+        object = tname,
+        column = cname,
+        data_type = data_type or "",
+        ref = current_ref,
+    }
+end
+
+local function forget_dropped(tname, cname)
+    dropped[drop_key(tname, cname)] = nil
+end
 
 local function ensure_table(tname)
     tname = tname:lower()
@@ -115,7 +162,19 @@ local function ensure_table(tname)
 end
 
 local function drop_table(tname)
-    tables[tname:lower()] = nil
+    tname = tname:lower()
+    local t = tables[tname]
+    if not t then
+        return
+    end
+    for _, cn in ipairs(t.col_order) do
+        local c = t.columns[cn]
+        if c then
+            remember_dropped(tname, cn, c.data_type)
+        end
+    end
+    remember_dropped(tname, "-", "")
+    tables[tname] = nil
 end
 
 local function rename_table(from_n, to_n)
@@ -130,11 +189,17 @@ local function rename_table(from_n, to_n)
     end
     tables[from_n] = nil
     tables[to_n] = t
+    forget_dropped(to_n, "-")
+    for _, cn in ipairs(t.col_order) do
+        forget_dropped(to_n, cn)
+    end
 end
 
 local function set_column(tname, cname, data_type, nullable)
     local t = ensure_table(tname)
     cname = cname:lower()
+    forget_dropped(tname, cname)
+    forget_dropped(tname, "-")
     local prev = t.columns[cname]
     if not prev then
         t.col_order[#t.col_order + 1] = cname
@@ -177,6 +242,10 @@ local function drop_column(tname, cname)
         return
     end
     cname = cname:lower()
+    local prev = t.columns[cname]
+    if prev then
+        remember_dropped(tname, cname, prev.data_type)
+    end
     t.columns[cname] = nil
     local new_order = {}
     for _, n in ipairs(t.col_order) do
@@ -322,24 +391,39 @@ local function apply_statement(stmt)
     local tname = strip_schema(at_table)
     local rest = stmt:match("^[Aa][Ll][Tt][Ee][Rr]%s+[Tt][Aa][Bb][Ll][Ee]%s+[%w_%.\"%[%]]+%s+(.*)$") or ""
 
-    -- ADD COLUMN col type ...
-    local add_col, add_rest = rest:match("^[Aa][Dd][Dd]%s+[Cc][Oo][Ll][Uu][Mm][Nn]%s+([%w_]+)%s+(.*)$")
-    if add_col then
+    local function take_added_column(cname, col_rest)
+        if not cname or is_keyword_col(cname) then
+            return false
+        end
         local nullable = true
-        if add_rest:upper():find("NOT%s+NULL", 1, false) then
+        if col_rest:upper():find("NOT%s+NULL", 1, false) then
             nullable = false
         end
-        local dtype = add_rest
+        local dtype = col_rest
         dtype = dtype:gsub("[Nn][Oo][Tt]%s+[Nn][Uu][Ll][Ll]", "")
         dtype = dtype:gsub("[Dd][Ee][Ff][Aa][Uu][Ll][Tt]%s+%S+", "")
         dtype = dtype:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", ""):gsub(";$", "")
-        set_column(tname, add_col, dtype, nullable)
+        set_column(tname, cname, dtype, nullable)
+        return true
+    end
+
+    -- ADD COLUMN col type ...  and Firebird/MSSQL ADD col type
+    local add_col, add_rest = rest:match(
+        "^[Aa][Dd][Dd]%s+[Cc][Oo][Ll][Uu][Mm][Nn]%s+([%w_]+)%s+(.*)$"
+    )
+    if not add_col then
+        add_col, add_rest = rest:match("^[Aa][Dd][Dd]%s+([%w_]+)%s+(.*)$")
+    end
+    if take_added_column(add_col, add_rest or "") then
         return
     end
 
-    -- DROP COLUMN col
+    -- DROP COLUMN col, and Firebird/MSSQL DROP col
     local drop_col = rest:match("^[Dd][Rr][Oo][Pp]%s+[Cc][Oo][Ll][Uu][Mm][Nn]%s+([%w_]+)")
-    if drop_col then
+    if not drop_col then
+        drop_col = rest:match("^[Dd][Rr][Oo][Pp]%s+([%w_]+)")
+    end
+    if drop_col and not is_keyword_col(drop_col) then
         drop_column(tname, drop_col)
         return
     end
@@ -359,6 +443,43 @@ local function apply_statement(stmt)
     local ac_set = rest:match(set_nn_pat)
     if ac_set then
         set_nullable(tname, ac_set, false)
+        return
+    end
+
+    -- Firebird omits COLUMN: ALTER col DROP|SET NOT NULL
+    local fb_drop_pat = "^[Aa][Ll][Tt][Ee][Rr]%s+([%w_]+)%s+"
+        .. "[Dd][Rr][Oo][Pp]%s+[Nn][Oo][Tt]%s+[Nn][Uu][Ll][Ll]"
+    local fb_drop = rest:match(fb_drop_pat)
+    if fb_drop then
+        set_nullable(tname, fb_drop, true)
+        return
+    end
+    local fb_set_pat = "^[Aa][Ll][Tt][Ee][Rr]%s+([%w_]+)%s+"
+        .. "[Ss][Ee][Tt]%s+[Nn][Oo][Tt]%s+[Nn][Uu][Ll][Ll]"
+    local fb_set = rest:match(fb_set_pat)
+    if fb_set then
+        set_nullable(tname, fb_set, false)
+        return
+    end
+
+    -- ALTER COLUMN col type [NULL|NOT NULL] (MSSQL)
+    local ac_type_pat = "^[Aa][Ll][Tt][Ee][Rr]%s+[Cc][Oo][Ll][Uu][Mm][Nn]%s+([%w_]+)%s+(.*)$"
+    local ac_col, ac_rest = rest:match(ac_type_pat)
+    if ac_col and ac_rest and not ac_rest:upper():match("^[Dd][Rr][Oo][Pp]%s")
+        and not ac_rest:upper():match("^[Ss][Ee][Tt]%s") then
+        local nullable = true
+        if ac_rest:upper():find("NOT%s+NULL", 1, false) then
+            nullable = false
+        elseif not (ac_rest:upper():match("%sNULL%s*$")
+            or ac_rest:upper():match("%sNULL%s*;%s*$")
+            or ac_rest:upper():match("%sNULL$")) then
+            nullable = nil
+        end
+        local dtype = ac_rest
+        dtype = dtype:gsub("[Nn][Oo][Tt]%s+[Nn][Uu][Ll][Ll]", "")
+        dtype = dtype:gsub("%s+[Nn][Uu][Ll][Ll]%s*;?%s*$", "")
+        dtype = dtype:gsub("%s+", " "):gsub("^%s+", ""):gsub("%s+$", ""):gsub(";$", "")
+        set_column(tname, ac_col, dtype, nullable)
         return
     end
 
@@ -427,17 +548,39 @@ local function fold_code(code)
     end
 end
 
--- Extract applied forward bodies ordered by ref via jq (-c objects)
-local filter = [[
-  [.[] | select(.query_type == 1003) | {r:.query_ref, c:.code}]
-  | sort_by(.r) | .[]
-]]
+-- Disk expect JSON: type 1000 is the forward body. Fall back to 1003
+-- only when a migration result has no type-1000 payload. Stored --db
+-- input is already applied type 1003.
+local source_path = expected_path or db_path
+local filter
+if expected_path then
+    filter = [[
+      def rows:
+        if type == "array" then .[]
+        elif type == "object" and has("payloads") then .
+        else empty end;
+      [ rows
+        | . as $m
+        | ($m.ref // 0) as $r
+        | ($m.payloads // []) as $ps
+        | ([$ps[] | select(.query_type == 1000)]) as $fwd
+        | (if ($fwd | length) > 0 then $fwd
+           else [$ps[] | select(.query_type == 1003)] end)[]
+        | {r: $r, c: .code}
+      ] | sort_by(.r) | .[]
+    ]]
+else
+    filter = [[
+      [.[] | select(.query_type == 1003) | {r:.query_ref, c:.code}]
+      | sort_by(.r) | .[]
+    ]]
+end
 
 local lines = {}
 do
     local fpath = TMP_DIR .. "/fold.jq"
     write_all(fpath, filter .. "\n")
-    local cmd = 'jq -c -f "' .. fpath .. '" "' .. db_path:gsub('"', '\\"') .. '"'
+    local cmd = 'jq -c -f "' .. fpath .. '" "' .. source_path:gsub('"', '\\"') .. '"'
     local h = io.popen(cmd)
     if not h then
         cleanup_tmp()
@@ -500,8 +643,17 @@ end
 
 for _, line in ipairs(lines) do
     current_ref = json_num_field(line, "r") or 0
+    if expected_path then
+        if from_ref and current_ref < from_ref then
+            goto skip_line
+        end
+        if to_ref and current_ref > to_ref then
+            goto skip_line
+        end
+    end
     local code = json_string_field(line, "c")
     fold_code(code)
+    ::skip_line::
 end
 
 -- only-tables filter
@@ -555,6 +707,31 @@ for idx, n in ipairs(names) do
     parts[#parts + 1] = table.concat(pks, ",")
     parts[#parts + 1] = '],"indexes":[]}'
     if idx < #names then
+        parts[#parts + 1] = ","
+    end
+end
+parts[#parts + 1] = '],"dropped":['
+local dropped_keys = {}
+for key, rec in pairs(dropped) do
+    if (not only_set) or only[rec.object] then
+        dropped_keys[#dropped_keys + 1] = key
+    end
+end
+table.sort(dropped_keys)
+for di, key in ipairs(dropped_keys) do
+    local rec = dropped[key]
+    local ref_json = ""
+    if rec.ref and rec.ref > 0 then
+        ref_json = string.format(',"ref":%d', rec.ref)
+    end
+    parts[#parts + 1] = string.format(
+        '{"object":"%s","column":"%s","data_type":"%s"%s}',
+        json_escape(rec.object),
+        json_escape(rec.column),
+        json_escape(rec.data_type or ""),
+        ref_json
+    )
+    if di < #dropped_keys then
         parts[#parts + 1] = ","
     end
 end

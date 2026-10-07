@@ -22,19 +22,17 @@ proves local RAM/image cannot run.
 | 4 T-SQL helpers + Brotli CLR | complete | **Difficult** |
 | 5 Test 39 full Acuranzo | complete | **Difficult** |
 | 6 SchemaTool / flush | complete | **Moderate** |
-| 7 Grow matrix 7 → 8 | in progress | **Difficult** |
-| 8 Docs | not started | **Quick** |
-| 9 Coverage / completeness | not started | **Moderate** |
+| 7 Grow matrix 7 → 8 | complete | **Difficult** |
+| 8 Docs | complete | **Quick** |
+| 9 Coverage / completeness | complete | **Moderate** |
 
-Remaining: Phase 7 (Difficult, in progress), Phase 9 (Moderate),
-Phase 8 (Quick). Phases 0–6 are complete. Phase 7 started ahead of
-SchemaTool on 2026-09-30 so the full suite can include MSSQL.
-Phase 6 items 6.1–6.3 were checked on 2026-10-07 from
-[`SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md) Phase 2.
-Item 6.4 (the Test 40 transaction probe) stays in this Phase 7
-slice. Items 7.1 and 7.2 are checked from the 2026-10-01 suite.
-Item 7.3 stays open. Suite `20261001_105356` connected `Demo_MS` and failed QueryRef 30 (`LENGTH`) and QueryRef 57 (positional `?`). The source fix is `database_mssql.lua` 1.3.3 and `acuranzo_1151.lua` 1.7.0. Suite `20261001_123106` had that payload (available=1385). The operator later confirmed that refresh had not finished repopulating the databases, and AutoMigration tried to LOAD or APPLY rows that were already written. Login failed because QueryRef 1 was not in the cache. `LENGTH` and QueryRef 57 were not reached. Suite `20261001_134516` (Build 2688) is the run after that correction: Test 50 is 137/137 and Test 60 is 46/46. The remaining failures are Tests 43, 45, and 47, and none of them is MSSQL.
-Phases 8–9 are not started.
+Phases 0-9 are complete (2026-10-07). Build 2706 on 2026-10-06
+is 5,627/5,627 and closed Phase 7, including Test 41. Phase 8 is
+this docs sweep. Phase 9 cites
+`docs/H/metrics/2026-10/2026-10-06.txt`.
+The operator accepted that coverage report as the Phase 9 close.
+`database/mssql/interface.c` is 50.000% on 8 instrumented lines.
+The small-file fence is written as greater than 50%.
 
 **Parity:** MSSQL is a Hydrogen `DatabaseEngineInterface`, not a new
 API. Match PostgreSQL / SQLite / MySQL / DB2: same `QueryRequest` /
@@ -267,13 +265,13 @@ Lua changes show up only when those rows are absent and LOAD runs.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-10-01):** Phases 0–5 complete. Phase 7 is in progress, ahead of Phase 6 items 6.1–6.3. Item 6.4 landed with this slice. Items 7.1 and 7.2 are checked from suite `20261001_092958` (Tests 39, 40, 43, 45, 46, 47, and 58 MSSQL green). Item 7.3 adds `Demo_MS` (schema `demoms`) to the single-process configs for Tests 41, 44, 50, 51, 52, 53, 54, 55, 56, and 60. Suite `20261001_105356` ran them. `Demo_MS` was ready on every one of those tests. Tests 41, 44, 51, 55, and 56 passed. Tests 50, 52, 53, 54, and 60 failed on stored QueryRefs: 30 uses `LENGTH` (SQL Server wants `LEN`), and 57's MSSQL arm is positional `?` so `convert_named_to_positional` bound 0 parameters. That source fix is in the payload. Suite `20261001_123106` (Build 2687, available=1385) did not reach QueryRef 30 or 57: the refresh left the applied watermark near 1000, and the operator later confirmed those databases had not actually been fully repopulated. Suite `20261001_134516` (Build 2688, 5461/5481, combined coverage 85.292%) is the run after that correction. Test 50 is 137/137. Test 60 finished 46/46, winner Demo_FB, median 0.161s. The remaining red tests are 43 (46/48), 45 (88/103), and 47 (20/22). None of those failures is MSSQL. Test 43 segfaulted during shutdown on Yugabyte default and MySQL no-default. The cores were removed by the suite. The logs show `database_queue_stop_worker` clearing `worker_thread_started` after a 5s join timeout and `database_queue_destroy` then closing the connection under the worker. `destroy.c` now cancels that query, joins again, and leaves the queue allocated if the worker is still running. The coverage binary rebuilt at 14:57 includes that change. The results table still prints Build 2688. Suite `20261001_145641` is 5522/5524. Tests 43, 45, and 47 are green. The two failures are shutdown timeouts on SQLite leads: Test 42 full-config stop (43/44, PID 49365, 10s) and Test 58 OTP probe (22/23, PID 211750, 30s). Both leads log `Worker thread exiting` and then a glibc heap error (`malloc_consolidate(): invalid chunk size`, `corrupted double-linked list`). The worker never returns, so both 5s joins run out and the process stays up. The same heap abort shows up on other SQLite shutdowns (Tests 26 and 30), where SIGABRT does fire and the process dies inside the harness window, so those subtests still pass. `sqlite3_interrupt` writes its flag at offset 0x1a8 inside the sqlite3 object. `sqlite_cancel_inflight` was passing the 48-byte `SQLiteConnection` wrapper, so that store landed past the allocation. It now passes `wrapper->db`. Suite `20261001_161109` is 5564/5565, combined coverage 85.276%. Tests 26, 30, 42, and 58 are green, and those logs have no glibc heap error. The one failure is Test 41 subtest 41-0008: HTTP 200, 13134 bytes of `hydrogen_` metrics, and `echo | grep -q` under `pipefail` returned SIGPIPE. Item 7.3 stays open. Matrix schema is `demoms` in `hydrotst`; Test 39 keeps `testms`. The closing Test 39 log from the migration close is `build/tests/logs/test_39_20260930_151436_342589048_519453_mssql.log`: available=loaded=applied=1384, 385 reverses through migration 1000, `Migration test finished - normal execution` at 498.021s, no `[ ERROR ]` lines. The 2026-10-01 Test 39 result file records `MIGRATION_COMPLETED` in 0.003s on an already-applied schema.
+**CLOSED (2026-10-07).** Build 2706 (2026-10-06, 5,627/5,627) closed Phase 7. The paragraph below is the 2026-10-01 pause. Phases 0–5 complete. Phase 7 is in progress, ahead of Phase 6 items 6.1–6.3. Item 6.4 landed with this slice. Items 7.1 and 7.2 are checked from suite `20261001_092958` (Tests 39, 40, 43, 45, 46, 47, and 58 MSSQL green). Item 7.3 adds `Demo_MS` (schema `demoms`) to the single-process configs for Tests 41, 44, 50, 51, 52, 53, 54, 55, 56, and 60. Suite `20261001_105356` ran them. `Demo_MS` was ready on every one of those tests. Tests 41, 44, 51, 55, and 56 passed. Tests 50, 52, 53, 54, and 60 failed on stored QueryRefs: 30 uses `LENGTH` (SQL Server wants `LEN`), and 57's MSSQL arm is positional `?` so `convert_named_to_positional` bound 0 parameters. That source fix is in the payload. Suite `20261001_123106` (Build 2687, available=1385) did not reach QueryRef 30 or 57: the refresh left the applied watermark near 1000, and the operator later confirmed those databases had not actually been fully repopulated. Suite `20261001_134516` (Build 2688, 5461/5481, combined coverage 85.292%) is the run after that correction. Test 50 is 137/137. Test 60 finished 46/46, winner Demo_FB, median 0.161s. The remaining red tests are 43 (46/48), 45 (88/103), and 47 (20/22). None of those failures is MSSQL. Test 43 segfaulted during shutdown on Yugabyte default and MySQL no-default. The cores were removed by the suite. The logs show `database_queue_stop_worker` clearing `worker_thread_started` after a 5s join timeout and `database_queue_destroy` then closing the connection under the worker. `destroy.c` now cancels that query, joins again, and leaves the queue allocated if the worker is still running. The coverage binary rebuilt at 14:57 includes that change. The results table still prints Build 2688. Suite `20261001_145641` is 5522/5524. Tests 43, 45, and 47 are green. The two failures are shutdown timeouts on SQLite leads: Test 42 full-config stop (43/44, PID 49365, 10s) and Test 58 OTP probe (22/23, PID 211750, 30s). Both leads log `Worker thread exiting` and then a glibc heap error (`malloc_consolidate(): invalid chunk size`, `corrupted double-linked list`). The worker never returns, so both 5s joins run out and the process stays up. The same heap abort shows up on other SQLite shutdowns (Tests 26 and 30), where SIGABRT does fire and the process dies inside the harness window, so those subtests still pass. `sqlite3_interrupt` writes its flag at offset 0x1a8 inside the sqlite3 object. `sqlite_cancel_inflight` was passing the 48-byte `SQLiteConnection` wrapper, so that store landed past the allocation. It now passes `wrapper->db`. Suite `20261001_161109` is 5564/5565, combined coverage 85.276%. Tests 26, 30, 42, and 58 are green, and those logs have no glibc heap error. The one failure is Test 41 subtest 41-0008: HTTP 200, 13134 bytes of `hydrogen_` metrics, and `echo | grep -q` under `pipefail` returned SIGPIPE. Build 2706 later closed item 7.3. Matrix schema is `demoms` in `hydrotst`; Test 39 keeps `testms`. The closing Test 39 log from the migration close is `build/tests/logs/test_39_20260930_151436_342589048_519453_mssql.log`: available=loaded=applied=1384, 385 reverses through migration 1000, `Migration test finished - normal execution` at 498.021s, no `[ ERROR ]` lines. The 2026-10-01 Test 39 result file records `MIGRATION_COMPLETED` in 0.003s on an already-applied schema.
 
 ### Resume here next session
 
-1. This file is the source of truth for MSSQL. Do not start a second
-   “add SQL Server” plan. Do not implement Firebird or Firebase teardown
-   from here.
+1. This plan is closed and lives at
+   [MSSQL_COMPLETE.md](/docs/H/plans/complete/MSSQL_COMPLETE.md).
+   Do not start a second “add SQL Server” plan.
 2. Read Status at a glance, CURRENT PAUSE POINT, Phase Index Status,
    Working Log.
 3. Confirm prior phase Exit gate.
@@ -296,11 +294,11 @@ Lua changes show up only when those rows are absent and LOAD runs.
 | --- | --- |
 | **Band** | P2 — new engine, after Auth Finale; parallel with Firebird, not a substitute |
 | **Effort** | XL (unixODBC engine + Helium dialect + T-SQL/CLR extras + Test 39 + 8-engine matrix) |
-| **Done** | Phases 0–5 complete. Phase 7 in progress (ahead of 6.1–6.3). Phases 8–9 not started |
+| **Done** | Closed 2026-10-07. Phases 0-9 complete. |
 | **Why this shape** | Key 5 has been a lookup row without a C engine. Fedora has no mssql-server RPM; the official Linux container is the local free path. |
 | **Do not start casually** | Touches enum (reserved slot), registry, DQM, Helium four designs, Test 31/39, every 7-engine loop (becomes 8), SchemaTool. |
 
-Backlog: [TODO.md item 28](/docs/H/TODO.md).
+Closed 2026-10-07. Removed from [TODO.md](/docs/H/TODO.md).
 
 ## Coordination with Firebird
 
@@ -748,9 +746,9 @@ no new `static` / no dead symbols). Mock ODBC in Unity.
 | 4 | T-SQL helpers + Brotli CLR (or COMPRESS pre-eval variance); SHA-256 fixture matches SQLite | L | complete |
 | 5 | Test 39 mssql AutoMigrations **full Acuranzo** green | L | complete |
 | 6 | SchemaTool / SchemaHelper / hydrogen_flush (6.4 is in Phase 7) | M | complete |
-| 7 | Tests 40/43/45/46/47/58 include mssql; single-process 41/44/50–56/60 gain Demo_MS | L | in progress |
-| 8 | Docs/SITEMAP/MACRO_REFERENCE/DATABASES/SECRETS match; `mkl` green | S | pending |
-| 9 | Completeness + coverage fences; dead-code clean; `mkp` | M | pending |
+| 7 | Tests 40/43/45/46/47/58 include mssql; single-process 41/44/50–56/60 gain Demo_MS | L | complete |
+| 8 | Docs/SITEMAP/MACRO_REFERENCE/DATABASES/SECRETS match; `mkl` green | S | complete |
+| 9 | Completeness + coverage fences; dead-code clean; `mkp` | M | complete |
 
 ---
 
@@ -1276,11 +1274,11 @@ keep the count at 7. Matrix schema is `demoms`. Test 39 keeps `testms`.
 
 - [x] 7.1 Test 40 auth live on mssql.
 - [x] 7.2 Tests 43, 45, 46, 47, 58 configs + loops.
-- [ ] 7.3 Single-process configs that already run PostgreSQL, SQLite,
+- [x] 7.3 Single-process configs that already run PostgreSQL, SQLite,
       and DB2 also run MSSQL: Tests 41, 44, 50, 51, 52, 53, 54, 55,
       56, and 60. Connection name `Demo_MS`, schema `demoms`, last.
       `DATABASE_NAMES` maps `MSSQL` to `Demo_MS`.
-- [ ] 7.4 Document 8-engine order (existing seven, then mssql last;
+- [x] 7.4 Document 8-engine order (existing seven, then mssql last;
       Test 58 `MAILRELAY_API_ENGINE_ORDER` keeps MSSQL after Yugabyte).
 
 ### Done means
@@ -1295,9 +1293,9 @@ Status table: each suite green (or env skip). Loops print eight names.
 
 | | |
 | --- | --- |
-| **State** | in progress |
-| **Date** | 2026-10-01 |
-| **Result** | Items 7.1 and 7.2 checked from suite `20261001_092958`. MSSQL result files: Test 40 `AUTH_TEST_COMPLETE`; Test 43 default and no-default `LIFECYCLE_COMPLETE`; Test 45 `IDP_TEST_COMPLETE`; Test 46 and 47 `ENGINE_COMPLETE=1`; Test 58 plaintext and STARTTLS `ENGINE_TEST_COMPLETE`. Test 39 the same morning records `MIGRATION_COMPLETED`. Item 7.3 ran in suite `20261001_105356` and stays open. `Demo_MS` was ready. Pass: 41 (13/13), 44 (9/9, 81 B/req), 51 (70/70), 55 (51/51), 56 (8/8). Fail: 50 (135/137) QueryRef 30 `LENGTH` and QueryRef 57 (`?` bound 0 names); 52 (69/70) auth lookups HTTP 422; 53 (81/82) lookups+themes HTTP 422; 54 (24/27) MariaDB→MSSQL lookups plus two rollups; 60 (40/46) five QueryRef 30 iterations plus the error summary. The Test 60 headline `winner: Demo_MS with 0.063s` is that failed request returning first. `tests/lib/conduit_utils.sh` 1.7.9 maps `MSSQL` to `Demo_MS`. Engine order stays the existing seven, then MSSQL. Test 58's `MAILRELAY_API_ENGINE_ORDER` lists MSSQL after Yugabyte. Ports unchanged: 40 → 5409, 43 → 15437 and 15447, 45 → 5458, 46 → 15467, 47 → 15478 / 15488, 58 → 15832–15835. The new connections share each test's existing web port and the SQL Server listener on 1433. Suite `20261001_123106` (00:27:09, 4993/5236, combined coverage 83.807%) rebuilt that payload and refreshed every engine through 1385. The 40s and 50s failed because the applied watermark stayed near 1000, so AutoMigration re-LOAD/re-APPLYed rows that already existed. QueryRef 30 and 57 were not executed. Suite `20261001_134516` (Build 2688, 5461/5481, Unity 74.504%, blackbox 59.200%, combined 85.292%) followed the operator's correction that the prior refresh had not finished. Test 50 is 137/137 and Test 60 is 46/46 (winner Demo_FB, median 0.161s). Tests 40, 41, 42, 44, 46, 52, 53, 54, 55, 56, and 58 are green. Remaining failures in this matrix are Test 43 (46/48: Yugabyte default and MySQL no-default segfaulted during shutdown), Test 45 (88/103: remote Yugabyte and MySQL login timed out), and Test 47 (20/22: PostgreSQL and MariaDB System.Info returned JSON-RPC -32603). MSSQL is not in that fail list. Item 7.3 stays open. |
+| **State** | complete |
+| **Date** | 2026-10-07 |
+| **Result** | Items 7.1 and 7.2 checked from suite `20261001_092958`. MSSQL result files: Test 40 `AUTH_TEST_COMPLETE`; Test 43 default and no-default `LIFECYCLE_COMPLETE`; Test 45 `IDP_TEST_COMPLETE`; Test 46 and 47 `ENGINE_COMPLETE=1`; Test 58 plaintext and STARTTLS `ENGINE_TEST_COMPLETE`. Test 39 the same morning records `MIGRATION_COMPLETED`. Item 7.3 ran in suite `20261001_105356` and stays open. `Demo_MS` was ready. Pass: 41 (13/13), 44 (9/9, 81 B/req), 51 (70/70), 55 (51/51), 56 (8/8). Fail: 50 (135/137) QueryRef 30 `LENGTH` and QueryRef 57 (`?` bound 0 names); 52 (69/70) auth lookups HTTP 422; 53 (81/82) lookups+themes HTTP 422; 54 (24/27) MariaDB→MSSQL lookups plus two rollups; 60 (40/46) five QueryRef 30 iterations plus the error summary. The Test 60 headline `winner: Demo_MS with 0.063s` is that failed request returning first. `tests/lib/conduit_utils.sh` 1.7.9 maps `MSSQL` to `Demo_MS`. Engine order stays the existing seven, then MSSQL. Test 58's `MAILRELAY_API_ENGINE_ORDER` lists MSSQL after Yugabyte. Ports unchanged: 40 → 5409, 43 → 15437 and 15447, 45 → 5458, 46 → 15467, 47 → 15478 / 15488, 58 → 15832–15835. The new connections share each test's existing web port and the SQL Server listener on 1433. Suite `20261001_123106` (00:27:09, 4993/5236, combined coverage 83.807%) rebuilt that payload and refreshed every engine through 1385. The 40s and 50s failed because the applied watermark stayed near 1000, so AutoMigration re-LOAD/re-APPLYed rows that already existed. QueryRef 30 and 57 were not executed. Suite `20261001_134516` (Build 2688, 5461/5481, Unity 74.504%, blackbox 59.200%, combined 85.292%) followed the operator's correction that the prior refresh had not finished. Test 50 is 137/137 and Test 60 is 46/46 (winner Demo_FB, median 0.161s). Tests 40, 41, 42, 44, 46, 52, 53, 54, 55, 56, and 58 are green. Remaining failures in this matrix are Test 43 (46/48: Yugabyte default and MySQL no-default segfaulted during shutdown), Test 45 (88/103: remote Yugabyte and MySQL login timed out), and Test 47 (20/22: PostgreSQL and MariaDB System.Info returned JSON-RPC -32603). MSSQL is not in that fail list. Item 7.3 stayed open after the 2026-10-01 suites. Build 2706 on 2026-10-06 closed it. |
 | **Variances** | Started before Phase 6 items 6.1–6.3. Schema is `demoms`, not `demo`. |
 
 ### Working Log
@@ -1313,6 +1311,7 @@ Status table: each suite green (or env skip). Loops print eight names.
 - **2026-10-01** Suite `20261001_145641` (results table still labeled Build 2688; `hydrogen_coverage` rebuilt 14:57 after the `destroy.c` edit, 5522/5524, combined coverage 84.899%). Tests 43, 45, and 47 are green. The two failures are not MSSQL and not a query failure. Test 42 is 43/44: subtest 42-0043, stop of the full-config server, PID 49365, `Shutdown timeout after 10s`. The disabled and enabled configs in the same test stopped in 345ms and 75ms. Test 58 is 22/23: subtest 58-0022, the OTP + repo probe, PID 211750, `Shutdown timeout after 30s`. The 16 engine/transport variants passed, including MSSQL plaintext and STARTTLS, and the rate-limit subtest passed. Both stuck servers are the SQLite lead `DQM-Acuranzo-00-SMFC`. The lead was idle (its last query had already completed). Shutdown called `sqlite3_interrupt`, the worker logged `Worker thread exiting`, and glibc then printed `malloc_consolidate(): invalid chunk size` (Test 42) or `corrupted double-linked list` (Test 58 OTP). There is no `Signal 6` line after those messages. `pthread_timedjoin_np` waited 5s, cancelled again, waited another 5s, and logged `Worker thread still running after cancel`. The queue was left allocated. Test 42 then finished landing and logged `SHUTDOWN COMPLETE` with shutdown elapsed 10.003s, which is the two joins, but the lead thread was still alive so the process outlived the harness's 10s budget. Test 58 OTP never logged `SHUTDOWN COMPLETE`. After child 01 stopped, child 02 never logged `Destroying queue`, and the log is queue polling until the harness killed PID 211750 at 30s. The same exit-time heap error appears on SQLite shutdown in Tests 26 and 30 and on Test 58 SQLite STARTTLS. Tests 26 and 30 do get `Signal 6` and the crash handler `_exit`s, so the process is gone inside the timeout and those subtests pass. Item 7.3 stays open.
 - **2026-10-01** `sqlite_cancel_inflight` passed `connection_handle` to `sqlite3_interrupt`. That pointer is the `SQLiteConnection` wrapper (48 bytes). On this libsqlite3 the interrupt flag is a store of 1 at offset 0x1a8, so every SQLite shutdown wrote 376 bytes past the wrapper. The lead's next `free` of its exit label then reported `malloc_consolidate(): invalid chunk size` or `corrupted double-linked list` and the worker never returned. MySQL and PostgreSQL already unwrap their handles before cancel. The call now passes `wrapper->db`, and the Unity success test asserts that pointer. Suite not yet rerun. Item 7.3 stays open.
 - **2026-10-01** Suite `20261001_161109` is 5564/5565, combined coverage 85.276% (Unity 74.485%, blackbox 59.484%). Tests 42 (88/88) and 58 (23/23) are green. Tests 26 and 30 are green. No log in this run contains `malloc_consolidate`, `corrupted double-linked list`, `free(): invalid size`, or `Signal 6`. The SQLite cancel now hits `wrapper->db`. The one failure is Test 41 (9/10, 17.696s). Subtest 41-0008, Collect Initial Metrics: the server logged `Prometheus output length: 13134 bytes` and `Prometheus response queued successfully` at 23:16:54.521Z, HTTP 200 on the first of three attempts. The saved body starts with `hydrogen_system_info` and contains 244 `hydrogen_` series. `Demo_MS` was ready. Shutdown was clean and LeakSanitizer reported no leaks. The 500 auth requests never ran. The check is `echo "${INITIAL_METRICS}" | grep -q hydrogen_` under `set -o pipefail`. `grep -q` exits at the first match and closes the pipe; when `echo` is still writing, the pipeline status is 141 (SIGPIPE) and the subtest fails. An idle replay of that saved body failed 1 of 200 times. `scrape_metrics` uses the same pipeline and got through on attempt 1; the caller's second check does not retry. Item 7.3 stays open.
+- **2026-10-07** Build 2706 (`docs/H/metrics/2026-10/2026-10-06.txt`, generated 2026-Oct-06 15:49:49 PDT) is 5,627/5,627 and closes items 7.3 and 7.4. Test 39 is 5/5 (mig: 0 on an already-applied schema). Test 40 is 53/53 (databases: 8). Test 41 is 13/13. Test 43 is 52/52 (engines: 8). Test 44 is 9/9. Test 45 is 103/103 (databases: 8). Test 46 is 20/20. Test 47 is 22/22. Test 58 is 23/23 (16 variants). Tests 50, 51, 52, 53, 54, 55, 56, and 60 are 137/137, 70/70, 70/70, 82/82, 27/27, 51/51, 8/8, and 46/46. `Demo_MS` is enabled on those single-process configs. Tests 41 and 44 keep `Demo_YB` disabled (7 enabled). Tests 50-56 and 60 enable all eight. `MAILRELAY_API_ENGINE_ORDER` is SQLite, PostgreSQL, MySQL, MariaDB, DB2, Firebird, YugabyteDB, MSSQL. This session did not rerun the suite.
 
 ### Lessons learned
 
@@ -1344,11 +1343,11 @@ Phase 7 Status complete.
 
 ### Work items
 
-- [ ] 8.1 Helium GUIDE, MACRO_REFERENCE, DATABASES, TESTING_GUIDE,
+- [x] 8.1 Helium GUIDE, MACRO_REFERENCE, DATABASES, TESTING_GUIDE,
       BROTLI_COMPRESSION, design READMEs, `docs/He/DATABASES/database_mssql.md`.
-- [ ] 8.2 Hydrogen TESTING, INSTRUCTIONS, PARAMETER_BINDING, SECRETS,
+- [x] 8.2 Hydrogen TESTING, INSTRUCTIONS, PARAMETER_BINDING, SECRETS,
       STRUCTURE, SITEMAP, MAIL_GUIDE, SchemaTool/SchemaHelper, tests README.
-- [ ] 8.3 Lithium `DATABASE-MIGRATIONS.md` (key 5 already named).
+- [x] 8.3 Lithium `DATABASE-MIGRATIONS.md` (key 5 already named).
 
 ### Done means
 
@@ -1362,18 +1361,21 @@ Phase 7 Status complete.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | 2026-09-30 |
-| **Result** | Not started. The earlier text in this cell was a copy of the Test 39 scaffold. The work items above are this phase's work, and they are unchecked. |
-| **Variances** | None yet. |
+| **State** | complete |
+| **Date** | 2026-10-07 |
+| **Result** | Docs name SQL Server as implemented. [MACRO_REFERENCE.md](/docs/He/MACRO_REFERENCE.md) has an MSSQL column. [database_mssql.md](/docs/He/DATABASES/database_mssql.md) covers NVARCHAR, T-SQL Base64 and SHA-256, and nil COMPRESS macros. [DATABASES.md](/docs/H/DATABASES.md) states the Linux container, unixODBC, and that Developer edition is not production. [PARAMETER_BINDING.md](/docs/H/database/PARAMETER_BINDING.md) documents `SQLBindParameter`. STRUCTURE, INSTRUCTIONS, TESTING, SITEMAP, MAIL_GUIDE, and the tests README name the engine. SchemaTool and SchemaHelper already listed mssql. SECRETS already had section 9. No active doc claims Lookup 030 key 5 is unimplemented. |
+| **Variances** | Test 39 defaults `MSSQL_ODBC_DRIVER` to FreeTDS. ODBC Driver 18 is the driver name when `msodbcsql18` is installed. `src/database/database_types.h` key 5 now says the engine is implemented. That comment was updated after this docs close. |
 
 ### Working Log
 
 - **2026-09-30** Not started. The Test 39 file-creation notes copied here were removed. That work is Phase 5 items 5.1–5.3.
+- **2026-10-07** Docs sweep. New [database_mssql.md](/docs/He/DATABASES/database_mssql.md). MSSQL column on [MACRO_REFERENCE.md](/docs/He/MACRO_REFERENCE.md). Engine lists updated in Helium GUIDE, DATABASES, TESTING_GUIDE, BROTLI_COMPRESSION, `database.md`, the Helium README, and the four design READMEs. Lithium `DATABASE-MIGRATIONS.md` names SQL Server and key 5. Hydrogen `DATABASES.md`, `PARAMETER_BINDING.md`, `STRUCTURE.md`, `INSTRUCTIONS.md`, `TESTING.md`, `SITEMAP.md`, `MAIL_GUIDE.md`, and `tests/README.md` name the engine. Link check and markdownlint run after this file moves.
+- **2026-10-07** `mkl`: 345 files, 2,695 links, 0 missing. markdownlint on the touched files exited 0.
 
 ### Lessons learned
 
-(empty until the phase runs)
+- On this Fedora host Test 39 defaults the ODBC driver to FreeTDS. Microsoft ODBC Driver 18 is the name the engine uses when `msodbcsql18` is installed.
+- Developer edition is a development and test license. Docs say so.
 
 ---
 
@@ -1390,10 +1392,10 @@ Phase 8 Status complete.
 
 ### Work items
 
-- [ ] 9.1 Walk completeness table.
-- [ ] 9.2 Walk coverage fences.
-- [ ] 9.3 `mkt` dead-code gate.
-- [ ] 9.4 `mkp`, `mks`, `test_98`, Test 31, Test 39, Test 40 mssql.
+- [x] 9.1 Walk completeness table.
+- [x] 9.2 Walk coverage fences.
+- [x] 9.3 `mkt` dead-code gate.
+- [x] 9.4 `mkp`, `mks`, `test_98`, Test 31, Test 39, Test 40 mssql.
 
 ### Done means
 
@@ -1408,18 +1410,20 @@ Fences green; Test 39 and Test 40 mssql green. Then move this plan to
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | 2026-09-30 |
-| **Result** | Not started. The earlier text in this cell was a copy of the Test 39 scaffold. The work items above are this phase's work, and they are unchecked. |
-| **Variances** | None yet. |
+| **State** | complete |
+| **Date** | 2026-10-07 |
+| **Result** | The operator accepted Build 2706, `docs/H/metrics/2026-10/2026-10-06.txt`, generated 2026-Oct-06 15:49:49 PDT. Suite 5,627/5,627. Unity 76.162%. Combined 85.921%. Blackbox 58.360% is under that report's 60% display target. The plan fence applied here is combined 85% plus the per-file Unity rows. Test 31 is 2,723/2,723. Test 39 is 5/5 (mig: 0 on an already-applied schema). Test 40 is 53/53. Tests 90, 91, 92, and 98 passed in that run (markdownlint 365 files, cppcheck 2,232 files, shellcheck 181 files, luacheck 477 files). Per-file Unity from that report: `interface.c` 4/8 = 50.000%; `mssql.c` 11/18 = 61.111%; `utils.c` 81/81; `query_helpers.c` 82/82; `transaction.c` 68/68; `prepared.c` 135/147 = 91.837%; `query_result.c` 194/234 = 82.906% (Cover 87.607%); `connection.c` 245/309 = 79.288% (Cover 91.262%); `query.c` 391/427 = 91.569% (Cover 92.037%). File lengths on 2026-10-07: `query.c` 706, `connection.c` 623, `query_result.c` 425, `prepared.c` 315. None over 1,000. The only `static` lines under `src/database/mssql/` are the interface vtable and `connection.c`'s `libodbc_handle` and mutex. No static functions. This session did not rerun `mkt`, `mkp`, `mks`, or the suite. Shellcheck in Build 2706 was 181 files; the 2026-10-07 SchemaTool adapters came after that run. |
+| **Variances** | `database/mssql/interface.c` is exactly 50.000% on 8 instrumented lines. The small-file fence is greater than 50%. The same 50.000% / 8-line row is on the other engines' `interface.c` files in this report. The operator accepted the report. Blackbox 58.360% is under the metrics banner's 60% display target. The plan's combined fence is 85%, and this report is 85.921%. |
 
 ### Working Log
 
 - **2026-09-30** Not started. The Test 39 file-creation notes copied here were removed. That work is Phase 5 items 5.1–5.3.
+- **2026-10-07** Closed from Build 2706 on the operator's acceptance. Completeness rows checked against the tree: `DB_ENGINE_MSSQL`, `mssql_get_interface`, four `database_mssql.lua` designs, Test 39, `extras/mssql_server/`, no `rewrite.c`, no file over 1,000 lines, no static functions. Dead-code gate cited from that build's compile (01-CMP 18/18), not a new `mkt`.
 
 ### Lessons learned
 
-(empty until the phase runs)
+- An 8-line `interface.c` at exactly 50% misses a fence written as greater than 50%. The other engines' interface files sit on the same row. The operator accepted the report with that line recorded.
+- Build 2706 predates the 2026-10-07 SchemaTool MSSQL adapters. Those adapters are shell, and this close did not rerun shellcheck.
 
 ---
 

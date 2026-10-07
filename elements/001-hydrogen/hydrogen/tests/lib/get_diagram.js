@@ -4,6 +4,7 @@
 // Converts JSON table definition into SVG database diagram
 
 // CHANGELOG
+// 2.2.0 - 2026-10-07 - Use a built-in SVG template when the diagram JSON has none
 // 2.1.0 - 2026-07-08 - removeDuplicateObjects now keeps the last occurrence so later diagram migrations replace earlier ones
 // 2.0.0 - 2025-11-17 - Implemented before/after comparison with automatic highlighting
 // 1.1.0 - 2025-09-30 - Added metadata, starting with 'Tables included' to output
@@ -27,6 +28,41 @@ const __dirname = path.dirname(__filename);
 const FONTS = {
     header: 'Cairo, Arial, sans-serif',    // Title font (bold, larger)
     row: 'Cairo, Arial, sans-serif'        // Row text font
+};
+
+// Page chrome used when a design's diagram JSON has tables and no template
+// object. Acuranzo, Helium, GLM, and Gaius ship this in their bootstrap
+// migration. Argent does not bootstrap queries, so its files omit it.
+const DEFAULT_DIAGRAM_TEMPLATE = {
+    object_type: 'template',
+    object_id: 'base template',
+    object_value: `<svg   xmlns="http://www.w3.org/2000/svg"
+                                                xmlns:xlink="http://www.w3.org/1999/xlink"
+                                                width="2520"
+                                                height="1980"
+                                                viewBox="0 0 2520 1980">
+                                            <!-- Define clipPath for rounded border with 2mm margin -->
+                                            <defs>
+                                                <clipPath id="border-clip">
+                                                <rect x="18" y="18" width="2484" height="1944" rx="42.51" ry="42.51"/>
+                                                </clipPath>
+                                            </defs>
+                                            <!-- Thin black border with 2mm margin -->
+                                            <rect x="18" y="18" width="2484" height="1944" fill="none" stroke="black" stroke-width="3" rx="42.51" ry="42.51"/>
+                                            <!-- White background within border, clipped to rounded shape -->
+                                            <rect x="18" y="18" width="2484" height="1944" fill="white" clip-path="url(#border-clip)"/>
+                                            <!-- 1cm (28.3pt) dashed silver grid, offset by 2mm margin -->
+                                            <defs>
+                                                <pattern id="grid" width="84.9" height="84.9" patternUnits="userSpaceOnUse" x="18" y="18">
+                                                    <path d="M 84.9 0 L 0 0 0 84.9" fill="none" stroke="black" stroke-width="1.5" stroke-dasharray="6,6"/>
+                                                </pattern>
+                                            </defs>
+                                            <rect x="18" y="18" width="2484" height="1944" fill="url(#grid)" clip-path="url(#border-clip)"/>
+                                            <!-- ERD content placeholder -->
+                                            <g id="erd-content" transform="translate(0, 0)">
+                                                <!-- ERD SVG content goes here -->
+                                            </g>
+                                        </svg>`
 };
 
 // ============================================================================
@@ -776,10 +812,11 @@ function generateDiagramCore(jsonInput, options = {}) {
             templateObj = processedDiagram.find(obj => obj.object_type === 'template');
         }
         
-        // If no template, we need a default (this shouldn't happen in normal flow)
+        // A design that does not ship a template object still has tables to draw.
         if (!templateObj || !templateObj.object_value) {
-            console.error('Error: No template found in diagram data');
-            throw new Error('Template object not found in JSON data');
+            console.error('No template in diagram JSON; using the built-in page template');
+            templateObj = DEFAULT_DIAGRAM_TEMPLATE;
+            processedDiagram = [templateObj, ...processedDiagram];
         }
         
         const template = templateObj.object_value;

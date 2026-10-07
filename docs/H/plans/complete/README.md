@@ -59,6 +59,7 @@ Active plans folder: [`/docs/H/plans/`](/docs/H/plans/).
 | [MCP_COMPLETE.md](/docs/H/plans/complete/MCP_COMPLETE.md) | MCP server (Streamable HTTP + Lua) |
 | [NATS_PLAN_COMPLETE.md](/docs/H/plans/complete/NATS_PLAN_COMPLETE.md) | NATS client (Phases 0–12, complete 2026-10-06) |
 | [MIGRATIONS_COMPLETE.md](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md) | Migration performance |
+| [MSSQL_COMPLETE.md](/docs/H/plans/complete/MSSQL_COMPLETE.md) | MS SQL Server engine (Lookup 030 key 5). Phases 0-9 closed 2026-10-07 |
 | [SCHEMAHELPER_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md) | SchemaHelper v1 TUI (review queue, packets, apply; 0.5.8) |
 | [SCHEMAHELPER_V2_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md) | SchemaHelper v2 (Target, Instance, progress; 0.6.5) |
 | [SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md) | SchemaTool drift auditor (metadata + catalog, CLI 1.7.1) |

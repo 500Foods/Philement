@@ -159,6 +159,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [src/database/prepared_cache.h](/elements/001-hydrogen/hydrogen/src/database/prepared_cache.h) - Prepared statement cache
 - [src/database/db2/](/elements/001-hydrogen/hydrogen/src/database/db2/) - DB2-specific database implementation
 - [src/database/firebird/](/elements/001-hydrogen/hydrogen/src/database/firebird/) - Firebird 4 (`libfbclient`) database implementation
+- [src/database/mssql/](/elements/001-hydrogen/hydrogen/src/database/mssql/) - SQL Server (unixODBC) database implementation
 - [src/database/dbqueue/](/elements/001-hydrogen/hydrogen/src/database/dbqueue/) - Database queue system
 - [src/database/migration/](/elements/001-hydrogen/hydrogen/src/database/migration/) - Database migration system
 - [src/database/mysql/](/elements/001-hydrogen/hydrogen/src/database/mysql/) - MySQL-specific database implementation
@@ -666,17 +667,19 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_37_firebird_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_37_firebird_migrations.sh) - Firebird migration performance test
 - [tests/test_37_firebird_config.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_37_firebird.json) - Firebird test config (port 5376)
 - [tests/test_38_yugabytedb_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_38_yugabytedb_migrations.sh) - YugabyteDB migration performance test
+- [tests/test_39_mssql_migrations.sh](/elements/001-hydrogen/hydrogen/tests/test_39_mssql_migrations.sh) - MSSQL migration performance test
+- [tests/test_39_mssql.json](/elements/001-hydrogen/hydrogen/tests/configs/hydrogen_test_39_mssql.json) - MSSQL test config (port 5390)
 - [tests/test_40_auth.sh](/elements/001-hydrogen/hydrogen/tests/test_40_auth.sh) - Authentication endpoints testing (JWT tokens across multiple database engines)
-- [tests/test_41_exercise_asan.sh](/elements/001-hydrogen/hydrogen/tests/test_41_exercise_asan.sh) - Memory exercise ASAN (500 concurrent auths, 6 DBs + LSAN; YugabyteDB disabled)
-- [tests/test_44_exercise_native.sh](/elements/001-hydrogen/hydrogen/tests/test_44_exercise_native.sh) - Memory exercise native RSS (5000 concurrent auths, 6 DBs; port 5444)
+- [tests/test_41_exercise_asan.sh](/elements/001-hydrogen/hydrogen/tests/test_41_exercise_asan.sh) - Memory exercise ASAN (500 concurrent auths, 7 enabled databases + LSAN; YugabyteDB disabled)
+- [tests/test_44_exercise_native.sh](/elements/001-hydrogen/hydrogen/tests/test_44_exercise_native.sh) - Memory exercise native RSS (5000 concurrent auths, 7 enabled databases; YugabyteDB disabled; port 5444)
 - [tests/test_42_oidc_rp.sh](/elements/001-hydrogen/hydrogen/tests/test_42_oidc_rp.sh) - OIDC Relying Party - complete authentication flow testing
 - [tests/test_45_oidc_idp.sh](/elements/001-hydrogen/hydrogen/tests/test_45_oidc_idp.sh) - OIDC Identity Provider - discovery, authorize/login, PKCE token, userinfo, refresh
-- [tests/test_50_conduit_query.sh](/elements/001-hydrogen/hydrogen/tests/test_50_conduit_query.sh) - Conduit single query endpoint testing (public queries across 7 database engines)
-- [tests/test_51_conduit_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_51_conduit_queries.sh) - Conduit multiple queries endpoint testing (batch queries across 7 database engines)
-- [tests/test_46_conduit_script.sh](/elements/001-hydrogen/hydrogen/tests/test_46_conduit_script.sh) - Conduit script invoke blackbox (JWT POST/GET /api/conduit/script, Api.Echo, 7 engines)
-- [tests/test_47_mcp.sh](/elements/001-hydrogen/hydrogen/tests/test_47_mcp.sh) - MCP Streamable HTTP blackbox (JWT, Mcp.Echo, 7 engines, ports 1547x / 1548x)
-- [tests/test_52_conduit_auth_query.sh](/elements/001-hydrogen/hydrogen/tests/test_52_conduit_auth_query.sh) - Conduit authenticated single query endpoint testing (JWT-protected queries across 7 database engines)
-- [tests/test_53_conduit_auth_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_53_conduit_auth_queries.sh) - Conduit authenticated multiple queries endpoint testing (batch authenticated queries across 7 database engines)
+- [tests/test_50_conduit_query.sh](/elements/001-hydrogen/hydrogen/tests/test_50_conduit_query.sh) - Conduit single query endpoint testing (public queries across 8 database engines)
+- [tests/test_51_conduit_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_51_conduit_queries.sh) - Conduit multiple queries endpoint testing (batch queries across 8 database engines)
+- [tests/test_46_conduit_script.sh](/elements/001-hydrogen/hydrogen/tests/test_46_conduit_script.sh) - Conduit script invoke blackbox (JWT POST/GET /api/conduit/script, Api.Echo, 8 engines)
+- [tests/test_47_mcp.sh](/elements/001-hydrogen/hydrogen/tests/test_47_mcp.sh) - MCP Streamable HTTP blackbox (JWT, Mcp.Echo, 8 engines, ports 1547x / 1548x)
+- [tests/test_52_conduit_auth_query.sh](/elements/001-hydrogen/hydrogen/tests/test_52_conduit_auth_query.sh) - Conduit authenticated single query endpoint testing (JWT-protected queries across 8 database engines)
+- [tests/test_53_conduit_auth_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_53_conduit_auth_queries.sh) - Conduit authenticated multiple queries endpoint testing (batch authenticated queries across 8 database engines)
 - [tests/test_54_conduit_alt_query.sh](/elements/001-hydrogen/hydrogen/tests/test_54_conduit_alt_query.sh) - Conduit alt single query endpoint testing (cross-database single queries with JWT authentication)
 - [tests/test_55_conduit_alt_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_55_conduit_alt_queries.sh) - Conduit alt multiple queries endpoint testing (cross-database batch queries with JWT authentication)
 - [tests/test_57_mailrelay_outbound.sh](/elements/001-hydrogen/hydrogen/tests/test_57_mailrelay_outbound.sh) - Mail Relay outbound delivery testing with local SMTP sink
@@ -772,6 +775,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md) - SchemaHelper v2 implementation plan (complete)
 - [docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md) - SchemaHelper v1 implementation plan (complete)
 - [docs/H/plans/SCHEMA_V2_PLAN.md](/docs/H/plans/SCHEMA_V2_PLAN.md) - SchemaTool / SchemaHelper v2 plan (eight engines, wrappers, apply)
+- [docs/H/plans/complete/MSSQL_COMPLETE.md](/docs/H/plans/complete/MSSQL_COMPLETE.md) - MS SQL Server engine plan (closed 2026-10-07)
 
 </details>
 
@@ -788,6 +792,8 @@ Database User-Defined Functions (UDFs) for extending database capabilities:
 - [extras/brotli_udf_firebird/](/elements/001-hydrogen/hydrogen/extras/brotli_udf_firebird/) - Brotli decompression UDR for Firebird
 - [extras/json_udf_firebird/](/elements/001-hydrogen/hydrogen/extras/json_udf_firebird/) - JSON_VALUE UDR for Firebird
 - [extras/firebird/](/elements/001-hydrogen/hydrogen/extras/firebird/) - Firebird 4 SuperServer install and `.fdb` scripts
+- [extras/mssql_server/](/elements/001-hydrogen/hydrogen/extras/mssql_server/) - SQL Server 2022 Linux container scripts
+- [extras/brotli_udf_mssql/](/elements/001-hydrogen/hydrogen/extras/brotli_udf_mssql/) - SQL Server Brotli CLR (not deployed)
 
 Each UDF directory contains C source code, compiled shared libraries, Makefiles, and test scripts for the respective database engine.
 

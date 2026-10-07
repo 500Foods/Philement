@@ -2,8 +2,11 @@
 -- Reserve the next migration ref and write a review-only packet directory.
 --
 -- CHANGELOG
+-- 0.5.6 - 2026-10-07 - Next-ref scan follows a design plus-list
 -- 0.5.5 - 2026-08-24 - Phase 7: promote to Helium migration stub
 -- 0.4.0 - 2026-08-23 - Phase 4: next-ref, collision, packet files
+
+local payload = require("schematool_payload")
 
 local M = {}
 
@@ -150,26 +153,24 @@ end
 local function scan_disk_refs(migrations, design)
     local max_ref = 0
     local by_ref = {}
-    if not migrations or migrations == "" or not is_dir(migrations) then
+    if not migrations or migrations == "" then
         return max_ref, by_ref
     end
-    local design_pat = (design or "design"):gsub("(%W)", "%%%1")
-    local patterns = {
-        "^" .. design_pat .. "_(%d+)%.lua$",
-        "^design_(%d+)%.lua$",
-    }
-    for _, name in ipairs(list_names(migrations)) do
-        for i = 1, #patterns do
-            local n = name:match(patterns[i])
-            if n then
-                local ref = tonumber(n)
-                if ref then
-                    by_ref[ref] = migrations .. "/" .. name
-                    if ref > max_ref then
-                        max_ref = ref
+    local locs = payload.locations(migrations, design or "design")
+    if not locs then
+        return max_ref, by_ref
+    end
+    local generic = #locs == 1
+    for _, loc in ipairs(locs) do
+        if payload.is_dir(loc.dir) then
+            local entries = payload.list_entries(loc.dir, loc.name, nil, nil, generic)
+            if entries then
+                for _, row in ipairs(entries) do
+                    by_ref[row.ref] = loc.dir .. "/" .. row.file
+                    if row.ref > max_ref then
+                        max_ref = row.ref
                     end
                 end
-                break
             end
         end
     end

@@ -848,7 +848,7 @@ export FIREBIRD_DB_PASS="your_test_password"
 
 These variables configure the SQL Server 2022 Linux container connection for
 the MSSQL Acuranzo migration matrix (Test 39). See
-[`docs/H/plans/MSSQL.md`](/docs/H/plans/MSSQL.md) for the full plan.
+[`docs/H/plans/complete/MSSQL_COMPLETE.md`](/docs/H/plans/complete/MSSQL_COMPLETE.md) for the full plan.
 
 The `MSSQL_SA_PASSWORD` is used both for the Podman container's
 `MSSQL_SA_PASSWORD` environment variable and for Hydrogen's database `Pass`

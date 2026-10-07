@@ -88,14 +88,15 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_36_mariadb_migrations.sh](/docs/H/tests/test_36_mariadb_migrations.md)**: MariaDB migration performance test
 - **[test_37_firebird_migrations.sh](/docs/H/tests/test_37_firebird_migrations.md)**: Firebird migration performance test
 - **[test_38_yugabytedb_migrations.sh](/docs/H/tests/test_38_yugabytedb_migrations.md)**: YugabyteDB migration performance test
+- **[test_39_mssql_migrations.sh](/docs/H/tests/test_39_mssql_migrations.md)**: MSSQL migration performance test
 - **[test_71_database_diagrams.sh](/docs/H/tests/test_71_database_diagrams.md)**: Database diagram generation
 
 ### Conduit Tests
 
 - **[test_40_auth.sh](/docs/H/tests/test_40_auth.md)**: Authentication endpoints testing (JWT tokens across multiple database engines)
-- **[test_41_exercise_asan.sh](/docs/H/tests/test_41_exercise.md)**: Memory exercise under ASAN/LSAN (500 concurrent auths, 6 DBs)
+- **[test_41_exercise_asan.sh](/docs/H/tests/test_41_exercise.md)**: Memory exercise under ASAN/LSAN (500 concurrent auths, 7 enabled databases; YugabyteDB disabled)
 - **[test_42_oidc_rp.sh](/docs/H/tests/test_42_oidc_rp.md)**: OIDC Relying Party - complete authentication flow testing
-- **[test_44_exercise_native.sh](/docs/H/tests/test_44_exercise_native.md)**: Native RSS exercise (5000 concurrent auths, 6 DBs)
+- **[test_44_exercise_native.sh](/docs/H/tests/test_44_exercise_native.md)**: Native RSS exercise (5000 concurrent auths, 7 enabled databases; YugabyteDB disabled)
 - **[test_50_conduit_query.sh](/docs/H/tests/test_50_conduit_query.md)**: Single public query endpoint testing
 - **[test_51_conduit_queries.sh](/docs/H/tests/test_51_conduit_queries.md)**: Conduit multiple queries endpoint testing
 - **[test_52_conduit_auth_query.sh](/docs/H/tests/test_52_conduit_auth_query.md)**: Authenticated single query endpoint

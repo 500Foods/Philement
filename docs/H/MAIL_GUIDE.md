@@ -768,6 +768,9 @@ With `Queue.Persist=true` and a configured `Database`:
   engine-specific configuration is required. Historical workaround and
   bind-path guard details:
   [`PERSIST_PLAN_COMPLETE.md`](/docs/H/plans/complete/PERSIST_PLAN_COMPLETE.md).
+- Test 58 also runs MSSQL (plaintext and STARTTLS), after Yugabyte in
+  `MAILRELAY_API_ENGINE_ORDER` (SQLite, PostgreSQL, MySQL, MariaDB, DB2,
+  Firebird, YugabyteDB, MSSQL).
 
 ---
 

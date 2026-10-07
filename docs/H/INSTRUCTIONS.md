@@ -108,13 +108,14 @@ tests/          Test framework
 - tests/test_36_mariadb_migrations.sh - MariaDB migration performance test
 - tests/test_37_firebird_migrations.sh - Firebird migration performance test
 - tests/test_38_yugabytedb_migrations.sh - YugabyteDB migration performance test
+- tests/test_39_mssql_migrations.sh - MSSQL migration performance test
 - tests/test_40_auth.sh - Authentication endpoints testing (JWT tokens across multiple database engines)
-- tests/test_41_exercise_asan.sh - Memory exercise ASAN (500 concurrent auth requests across 6 DBs + LeakSanitizer; YugabyteDB disabled)
+- tests/test_41_exercise_asan.sh - Memory exercise ASAN (500 concurrent auth requests across 7 enabled databases + LeakSanitizer; YugabyteDB disabled)
 - tests/test_42_oidc_rp.sh - OIDC Relying Party - complete authentication flow testing through Role Mapping
-- tests/test_43_scripting.sh - Scripting subsystem Orchestrator lifecycle across all 7 database engines in parallel (with/without DefaultDatabase, fail-fast)
-- tests/test_44_exercise_native.sh - Memory exercise native RSS (5000 concurrent auth requests across 6 DBs; port 5444; suite-parallel with test 41)
-- tests/test_46_conduit_script.sh - Conduit script invoke JWT blackbox (Api.Echo, 7 engines parallel)
-- tests/test_47_mcp.sh - MCP Streamable HTTP blackbox (JWT, Mcp.Echo, 7 engines; ports 1547x / 1548x)
+- tests/test_43_scripting.sh - Scripting subsystem Orchestrator lifecycle across all 8 database engines in parallel (with/without DefaultDatabase, fail-fast)
+- tests/test_44_exercise_native.sh - Memory exercise native RSS (5000 concurrent auth requests across 7 enabled databases; YugabyteDB disabled; port 5444; suite-parallel with test 41)
+- tests/test_46_conduit_script.sh - Conduit script invoke JWT blackbox (Api.Echo, 8 engines parallel)
+- tests/test_47_mcp.sh - MCP Streamable HTTP blackbox (JWT, Mcp.Echo, 8 engines; ports 1547x / 1548x)
 - tests/test_48_mdns.sh - mDNS announcements
 - tests/test_50_conduit_query.sh - Single public query endpoint testing
 - tests/test_51_conduit_queries.sh - Conduit multiple queries endpoint testing

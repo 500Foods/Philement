@@ -14,6 +14,7 @@ Primary database target for the overall Helium project is PostgreSQL 15+ via Yug
 | [`database_sqlite.lua`](migrations/database_sqlite.lua) | SQLite-specific database configuration |
 | [`database_db2.lua`](migrations/database_db2.lua) | IBM DB2-specific database configuration |
 | [`database_firebird.lua`](migrations/database_firebird.lua) | Firebird-specific database configuration |
+| [`database_mssql.lua`](migrations/database_mssql.lua) | SQL Server-specific database configuration |
 
 ## Migrations
 

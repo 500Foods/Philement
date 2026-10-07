@@ -76,7 +76,8 @@ data (no live database required). It exercises the full module stack:
 extras/schematool/test/fixtures/sample_project/
   findings.json          — SchemaTool metadata audit output (copy of what --work-dir produces)
   catalog_findings.json  — SchemaTool catalog audit output
-  schemahelper_acuranzo_sqlite.json  — state sidecar (cursor + decisions)
+  schemahelper_acuranzo_sqlite.json  — historical state sidecar (smoke passes --state-file)
+  schematool_sqlite_test.sh  — second wrapper stem (role test)
   migrations/
     design_1000.lua      — perfect migration
     design_0100.lua
@@ -102,7 +103,7 @@ SchemaHelper TUI:
   unless `--keep-work-dir` is passed.
 
 - **`--out-dir`** (default: wrapper directory): holds the state sidecar
-  (`schemahelper_<design>_<engine>.json`), final `.sql` remediation, and
+  (`schemahelper_<design>_<engine>_<role>.json`), final `.sql` remediation, and
   `.mig` orphan capture. Persists across sessions for `--reuse`.
 
 ## Output Structure

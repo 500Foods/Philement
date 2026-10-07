@@ -7,6 +7,8 @@
 # generate_database_diagram()
 
 # CHANGELOG
+# 3.2.0 - 2026-10-07 - Seven engines, in this order: postgresql, mysql, sqlite, db2, mariadb, firebird, mssql. A zero-byte SVG is generated again.
+# 3.1.0 - 2026-10-07 - Add argent to DESIGNS, using the Acuranzo schema list
 # 3.0.0 - 2026-07-08 - Metadata capture updated for compact JSON emitted by get_diagram.sh 3.1.0
 # 2.0.0 - 2025-11-17 - Fixed diagram numbering bug, added before/after highlighting, generates diagrams for ALL migrations (not just latest)
 # 1.2.0 - 2025-11-15 - Fixed filename generation to use last_diagram_migration from metadata
@@ -20,7 +22,7 @@ TEST_NAME="Database Diagrams"
 TEST_ABBR="ERD"
 TEST_NUMBER="71"
 TEST_COUNTER=0
-TEST_VERSION="3.0.0"
+TEST_VERSION="3.2.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -64,13 +66,17 @@ HELIUM_DIR=${HELIUM_ROOT}
 
 # List of designs to process
 # DESIGNS=( "acuranzo" "helium" "glm" "gaius")
-DESIGNS=( "acuranzo" )
+# Argent is the 2xxx pack on the Acuranzo database, so it uses that schema list.
+DESIGNS=( "acuranzo" "argent" )
 
-# Supported database engines
-ENGINES=("postgresql" "sqlite" "mysql" "db2")
+# Supported database engines. Order is the slot order of DESIGN_SCHEMAS.
+# postgresql, mysql, sqlite, db2, mariadb, firebird, mssql.
+ENGINES=("postgresql" "mysql" "sqlite" "db2" "mariadb" "firebird" "mssql")
 
 declare -A DESIGN_SCHEMAS
-DESIGN_SCHEMAS["acuranzo"]="app::acuranzo:ACURANZO"
+# Slots: app, acuranzo, (empty sqlite), ACURANZO, test, testfb, testms.
+DESIGN_SCHEMAS["acuranzo"]="app:acuranzo::ACURANZO:test:testfb:testms"
+DESIGN_SCHEMAS["argent"]="app:acuranzo::ACURANZO:test:testfb:testms"
 # DESIGN_SCHEMAS["helium"]="helium::helium:HELIUM"
 # DESIGN_SCHEMAS["glm"]="glm2:glm2:glm2:GLM2"
 # DESIGN_SCHEMAS["gaius"]="gaius:gaius:gaius:GAIUS"
@@ -91,11 +97,12 @@ generate_database_diagram() {
     local output_file="${output_dir}/${design,,}-${engine,,}-${migration_num}.svg"
     local metadata_file="${output_file%.svg}.metadata"
 
-    # Check if diagram already exists - skip if it does
-    if [[ -f "${output_file}" ]]; then
+    # A zero-byte file is a failed render. Generate it again.
+    if [[ -s "${output_file}" ]]; then
         echo "SKIPPED=Diagram already exists"
         return 0
     fi
+    rm -f "${output_file}"
 
     # Run get_diagram.sh and capture both SVG output and metadata
     local error_file
@@ -105,6 +112,11 @@ generate_database_diagram() {
 
     # Capture both stdout (SVG) and stderr (metadata + errors)
     if "${SCRIPT_DIR}/lib/get_diagram.sh" "${engine}" "${design}" "${schema}" "${migration_num}" > "${output_file}" 2> "${error_file}"; then
+        if [[ ! -s "${output_file}" ]]; then
+            rm -f "${output_file}" "${error_file}"
+            echo "ERROR=Diagram file is empty"
+            return 1
+        fi
         # Success - check for metadata in error output
         error_output=$(cat "${error_file}")
         rm -f "${error_file}"
@@ -119,7 +131,10 @@ generate_database_diagram() {
 
         return 0
     else
-        # Failure - read error output
+        # Failure - read error output. Drop an empty SVG so the next run tries again.
+        if [[ ! -s "${output_file}" ]]; then
+            rm -f "${output_file}"
+        fi
         error_output=$(cat "${error_file}")
         rm -f "${error_file}"
 

@@ -2,6 +2,13 @@
 -- Constants, terminal module references, and attribute tables for SchemaHelper.
 --
 -- CHANGELOG
+-- 0.6.14 - 2026-10-07 - SchemaTool 1.15.0; type and dropped stay review-only
+-- 0.6.13 - 2026-10-07 - SchemaTool 1.14.0; wrappers cover acuranzo+argent
+-- 0.6.12 - 2026-10-07 - Sixteen wrapper stems, test block then demo block
+-- 0.6.11 - 2026-10-07 - Test wrappers and role sidecars
+-- 0.6.10 - 2026-10-07 - SchemaTool 1.13.0; MariaDB schema demo, no CANVAS_DB
+-- 0.6.9 - 2026-10-07 - SchemaTool 1.12.0; drop the cockroachdb alias
+-- 0.6.8 - 2026-10-07 - SchemaTool 1.11.0 Firebird file env in the picker
 -- 0.6.7 - 2026-10-07 - Append mssql to the wrapper order
 -- 0.6.5 - 2026-09-09 - Phase 4 accept hash / un-accept
 -- 0.6.4 - 2026-09-08 - Progress bar dark-grey background
@@ -11,7 +18,7 @@
 -- 0.6.0 - 2026-09-08 - Chrome titles + Instance log name
 -- 0.5.8 - 2026-08-25 - Extracted from schemahelper.lua (constants + terminal refs)
 
-local VERSION = "0.6.7"
+local VERSION = "0.6.14"
 local RELEASED = "2026-10-07"
 
 local INSTANCE_LOG = "schemahelper_schematool.log"
@@ -39,14 +46,22 @@ local TERMINAL_RELEASES = {
 }
 
 local WRAPPER_ORDER = {
-    "postgresql",
-    "mysql",
-    "mariadb",
-    "sqlite",
-    "db2",
-    "firebird",
-    "yugabytedb",
-    "mssql",
+    "postgresql_test",
+    "mysql_test",
+    "sqlite_test",
+    "db2_test",
+    "mariadb_test",
+    "firebird_test",
+    "yugabytedb_test",
+    "mssql_test",
+    "postgresql_demo",
+    "mysql_demo",
+    "sqlite_demo",
+    "db2_demo",
+    "mariadb_demo",
+    "firebird_demo",
+    "yugabytedb_demo",
+    "mssql_demo",
 }
 
 local t = require("terminal")

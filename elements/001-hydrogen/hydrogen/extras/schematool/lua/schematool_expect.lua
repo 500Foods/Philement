@@ -7,15 +7,30 @@
 --   lua schematool_expect.lua <migrations_dir> <engine> <design> <schema> <ref>
 --   lua schematool_expect.lua <migrations_dir> <engine> <design> <schema> --all [from] [to]
 --
--- Prints one JSON object (single ref) or a JSON array (--all).
+-- <design> is one name or a plus-list (acuranzo+argent). Each design loads
+-- the database.lua beside its own migration files. Prints one JSON object
+-- (single ref) or a JSON array (--all), sorted by ref.
 --
 -- CHANGELOG
+-- 1.1.0 - 2026-10-07 - Plus-list payload; reload database.lua per design
+-- 1.0.4 - 2026-10-07 - Stderr names the dialect: engine=<name>
 -- 1.0.3 - 2026-09-08 - Stderr: expect N/M ref R name=<text>
 -- 1.0.2 - 2026-08-23 - Stderr progress: expect N/M ref R
 -- 1.0.1 - 2026-07-29 - extract_as_field: ignore commas inside SQL string literals
 -- 1.0.0 - 2026-07-29 - Phase 2 expected payload extraction
 
 -- luacheck: globals arg package
+
+local function script_dir()
+    local src = arg[0] or ""
+    local dir = src:match("^(.*)/[^/]+$")
+    return dir or "."
+end
+
+package.path = script_dir() .. "/?.lua;" .. package.path
+
+local payload = require("schematool_payload")
+local base_path = package.path
 
 local migrations_dir = arg[1]
 local engine = arg[2]
@@ -35,18 +50,42 @@ if schema_name == nil or schema_name == "." then
     schema_name = ""
 end
 
--- Load design database module (cwd / package.path must include migrations_dir)
-package.path = migrations_dir .. "/?.lua;" .. package.path
-
-local ok_db, database = pcall(require, "database")
-if not ok_db then
-    io.stderr:write("Error: require('database') failed: " .. tostring(database) .. "\n")
+local function fail(msg)
+    io.stderr:write("Error: " .. msg .. "\n")
     os.exit(1)
 end
 
-if not database.defaults or not database.defaults[engine] then
-    io.stderr:write("Error: unsupported or missing engine defaults: " .. tostring(engine) .. "\n")
-    os.exit(1)
+local function clear_database_modules()
+    for key in pairs(package.loaded) do
+        if key == "database" or key:match("^database_") then
+            package.loaded[key] = nil
+        end
+    end
+end
+
+local db_by_dir = {}
+
+local function database_for(dir, design_name)
+    package.path = dir .. "/?.lua;" .. base_path
+    local cached = db_by_dir[dir]
+    if cached then
+        return cached
+    end
+    local db_file = io.open(dir .. "/database.lua", "r")
+    if not db_file then
+        fail("database.lua not found for design '" .. design_name .. "' in " .. dir)
+    end
+    db_file:close()
+    clear_database_modules()
+    local ok_db, database = pcall(require, "database")
+    if not ok_db then
+        fail("require('database') failed for " .. design_name .. ": " .. tostring(database))
+    end
+    if not database.defaults or not database.defaults[engine] then
+        fail("unsupported or missing engine defaults for " .. design_name .. ": " .. tostring(engine))
+    end
+    db_by_dir[dir] = database
+    return database
 end
 
 local brotli_mod
@@ -283,9 +322,11 @@ local function payload_to_json(p)
     )
 end
 
-local function expect_one(ref)
+local function expect_one(ref, design_name, dir, database)
     local ref_str = string.format("%d", ref)
-    local mod_name = design .. "_" .. ref_str
+    local mod_name = design_name .. "_" .. ref_str
+    package.path = dir .. "/?.lua;" .. base_path
+    package.loaded[mod_name] = nil
     local ok_m, migration_func = pcall(require, mod_name)
     if not ok_m then
         io.stderr:write("Error: require('" .. mod_name .. "') failed: " .. tostring(migration_func) .. "\n")
@@ -329,9 +370,9 @@ local function expect_one(ref)
 
     return {
         ref = ref,
-        file = design .. "_" .. ref_str .. ".lua",
+        file = design_name .. "_" .. ref_str .. ".lua",
         engine = engine,
-        design = design,
+        design = design_name,
         schema = schema_name,
         payloads = payloads,
     }
@@ -378,53 +419,68 @@ local function result_to_json(result)
     return table.concat(buf)
 end
 
-local function list_refs(from_ref, to_ref)
-    local design_pat = design:gsub("(%W)", "%%%1")
-    local pattern = "^" .. design_pat .. "_(%d+)%.lua$"
-    local refs = {}
-    local handle = io.popen('ls -1 "' .. migrations_dir:gsub('"', '\\"') .. '" 2>/dev/null')
-    if not handle then
-        io.stderr:write("Error: failed to list migrations directory\n")
-        os.exit(1)
+local function collect_jobs(from_ref, to_ref)
+    local locs, loc_err = payload.locations(migrations_dir, design)
+    if not locs then
+        fail(loc_err)
     end
-    for name in handle:lines() do
-        local num = name:match(pattern)
-        if num then
-            local r = tonumber(num)
-            local include = true
-            if from_ref and r < from_ref then
-                include = false
+    local generic = #locs == 1
+    local jobs = {}
+    local seen_ref = {}
+    for _, loc in ipairs(locs) do
+        if not payload.is_dir(loc.dir) then
+            fail("migrations directory for design '" .. loc.name .. "' not found: " .. loc.dir)
+        end
+        local present, present_err = payload.list_entries(loc.dir, loc.name, nil, nil, generic)
+        if not present then
+            fail(present_err)
+        end
+        if #present == 0 then
+            fail("no migrations matched " .. loc.name .. "_NNNN.lua in " .. loc.dir)
+        end
+        local ranged, range_err = payload.list_entries(
+            loc.dir, loc.name, from_ref, to_ref, generic
+        )
+        if not ranged then
+            fail(range_err)
+        end
+        for _, row in ipairs(ranged) do
+            if seen_ref[row.ref] then
+                fail("migration ref " .. tostring(row.ref)
+                    .. " is in both " .. seen_ref[row.ref] .. " and " .. row.design)
             end
-            if to_ref and r > to_ref then
-                include = false
-            end
-            if include then
-                refs[#refs + 1] = r
-            end
+            seen_ref[row.ref] = row.design
+            jobs[#jobs + 1] = row
         end
     end
-    handle:close()
-    table.sort(refs)
-    return refs
+    table.sort(jobs, function(a, b)
+        return a.ref < b.ref
+    end)
+    return jobs
+end
+
+local function run_job(job)
+    local database = database_for(job.dir, job.design)
+    return expect_one(job.ref, job.design, job.dir, database)
 end
 
 if mode_or_ref == "--all" then
     local from_ref = tonumber(arg[6] or "")
     local to_ref = tonumber(arg[7] or "")
-    local refs = list_refs(from_ref, to_ref)
-    if #refs == 0 then
+    local jobs = collect_jobs(from_ref, to_ref)
+    if #jobs == 0 then
         io.stderr:write("Error: no migrations matched\n")
         os.exit(1)
     end
     local out = { "[" }
-    for i, r in ipairs(refs) do
-        local result = expect_one(r)
+    for i, job in ipairs(jobs) do
+        local result = run_job(job)
         io.stderr:write(string.format(
-            "expect %d/%d ref %d name=%s\n",
-            i, #refs, r, oneline(progress_name(result))))
+            "expect %d/%d ref %d engine=%s design=%s name=%s\n",
+            i, #jobs, job.ref, engine, job.design, oneline(progress_name(result))))
         io.stderr:flush()
         out[#out + 1] = result_to_json(result)
-        if i < #refs then
+        if i < #jobs then
             out[#out + 1] = ","
         end
     end
@@ -436,6 +492,11 @@ else
         io.stderr:write("Error: ref must be an integer or --all\n")
         os.exit(1)
     end
-    io.write(result_to_json(expect_one(ref)))
+    local jobs = collect_jobs(ref, ref)
+    if #jobs == 0 then
+        io.stderr:write("Error: no migration matched ref " .. tostring(ref) .. "\n")
+        os.exit(1)
+    end
+    io.write(result_to_json(run_job(jobs[1])))
     io.write("\n")
 end

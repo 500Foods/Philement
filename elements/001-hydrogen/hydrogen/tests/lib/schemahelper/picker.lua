@@ -30,6 +30,21 @@ local db2 = connect.picker_blurb('db2')
 assert(db2:find('HYDROTST_DB_USER', 1, true), db2)
 assert(not db2:find('HYDROTST_DB_*', 1, true), db2)
 
+local mysql_test = connect.picker_blurb('mysql', 'test')
+assert(mysql_test:find('schema test', 1, true), mysql_test)
+assert(not mysql_test:find('schema demo', 1, true), mysql_test)
+
+local mssql_test = connect.picker_blurb('mssql', 'test')
+assert(mssql_test:find('schema testms', 1, true), mssql_test)
+assert(not mssql_test:find('demoms', 1, true), mssql_test)
+
+local sq_test = connect.picker_blurb('sqlite', 'test')
+assert(sq_test == 'hydrotst.sqlite', sq_test)
+
+local fb_test = connect.picker_blurb('firebird', 'test')
+assert(fb_test:find('FIREBIRD_DB_PATH_TEST', 1, true), fb_test)
+assert(not fb_test:find('FIREBIRD_DB_PATH_DEMO', 1, true), fb_test)
+
 local label = W.wrapper_label({ engine = 'postgresql', path = '/tmp/schematool_postgresql.sh' })
 assert(label:find('ACURANZO_DB_HOST', 1, true), label)
 assert(not label:find('ACURANZO_DB_*', 1, true), label)

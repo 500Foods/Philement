@@ -1,13 +1,12 @@
 #!/usr/bin/env bash
-# SchemaTool wrapper — YugabyteDB (Test 40: hydrogen_test_40_yugabytedb.json)
+# SchemaTool wrapper — YugabyteDB (Test 38: hydrogen_test_38_yugabytedb.json)
 #
 # Sets connection from YUGABYTE_DB_* (NOT ACURANZO_DB_* — different host/port).
-# Dialect adapter: postgresql (psql). Schema: demo. Design: acuranzo.
+# Dialect adapter: postgresql (psql). Schema: test. Design: acuranzo+argent.
 #
 # CHANGELOG
-# 1.2.0 - 2026-08-22 - Resolve sibling schematool.sh, then HYDROGEN_ROOT
-# 1.1.0 - 2026-08-06 - Pass explicit --engine yugabytedb so env maps to YUGABYTE_DB_*
-# 1.0.0 - 2026-08-02 - Created as Test 40 config convenience wrapper
+# 1.1.0 - 2026-10-07 - Payload acuranzo+argent in one run
+# 1.0.0 - 2026-10-07 - Test 38 wrapper; schema test
 
 set -euo pipefail
 
@@ -28,19 +27,24 @@ else
     MIGRATIONS_DIR="${SCRIPT_DIR}/../../../../002-helium/acuranzo/migrations"
 fi
 
+for _arg in "$@"; do
+    if [[ "${_arg}" == "--help" || "${_arg}" == "-h" ]]; then
+        exec "${SCHEMATOOL}" --help
+    fi
+done
+
 if [[ -z "${YUGABYTE_DB_HOST:-}" || -z "${YUGABYTE_DB_USER:-}" || -z "${YUGABYTE_DB_NAME:-}" ]]; then
     echo "Error: YUGABYTE_DB_{HOST,USER,NAME} (and PASS) must be set for YugabyteDB" >&2
     exit 1
 fi
 
-export SCHEMATOOL_DB_SCHEMA="demo"
+export SCHEMATOOL_DB_SCHEMA="test"
 
-# --engine yugabytedb (before alias) selects YUGABYTE_DB_* env in schematool.sh
 exec "${SCHEMATOOL}" \
     --migrations "${MIGRATIONS_DIR}" \
-    --design acuranzo \
+    --design acuranzo+argent \
     --engine yugabytedb \
-    --schema demo \
+    --schema test \
     --host "${YUGABYTE_DB_HOST}" \
     --port "${YUGABYTE_DB_PORT:-5433}" \
     --user "${YUGABYTE_DB_USER}" \

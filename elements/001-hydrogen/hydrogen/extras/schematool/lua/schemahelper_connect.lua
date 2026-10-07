@@ -2,6 +2,10 @@
 -- Resolve wrapper credentials and ping the live DB. Never return passwords.
 --
 -- CHANGELOG
+-- 0.6.7 - 2026-10-07 - Picker blurb takes a test or demo role
+-- 0.6.6 - 2026-10-07 - MariaDB is its own family; schema demo; no CANVAS_DB
+-- 0.6.5 - 2026-10-07 - Drop cockroachdb from picker, family, ping, and exec_sql
+-- 0.6.4 - 2026-10-07 - Firebird picker blurb and exec_sql isql-fb (wired, not run)
 -- 0.6.3 - 2026-10-07 - MSSQL family, ping, and exec_sql (wired, not run on a database)
 -- 0.6.2 - 2026-09-08 - picker_blurb: real env names, never password values
 -- 0.5.0 - 2026-08-23 - Phase 5: non-RO exec_sql for one-field apply
@@ -209,23 +213,38 @@ local function family_blurb(prefix, schema)
         .. prefix .. "_NAME schema " .. schema
 end
 
-function M.picker_blurb(engine)
+function M.picker_blurb(engine, role)
+    local schema = "demo"
+    if role == "test" then
+        schema = "test"
+    end
     if engine == "postgresql" then
-        return family_blurb("ACURANZO_DB", "demo")
-    elseif engine == "cockroachdb" then
-        return family_blurb("ACURANZO_DB", "democrdb")
+        return family_blurb("ACURANZO_DB", schema)
     elseif engine == "mysql" then
-        return family_blurb("MYSQL_DB", "demo") .. " (fallback: CANVAS_DB)"
+        return family_blurb("MYSQL_DB", schema)
     elseif engine == "mariadb" then
-        return family_blurb("MARIADB_DB", "demomrdb") .. " (fallback: CANVAS_DB)"
+        return family_blurb("MARIADB_DB", schema)
     elseif engine == "db2" then
-        return "HYDROTST_DB_USER HYDROTST_DB_PASS HYDROTST_DB_NAME schema demo"
+        return "HYDROTST_DB_USER HYDROTST_DB_PASS HYDROTST_DB_NAME schema " .. schema
     elseif engine == "yugabytedb" then
-        return family_blurb("YUGABYTE_DB", "demo")
+        return family_blurb("YUGABYTE_DB", schema)
+    elseif engine == "firebird" then
+        if role == "test" then
+            return "FIREBIRD_DB_PATH_TEST FIREBIRD_SYSDBA_PASSWORD"
+        end
+        return "FIREBIRD_DB_PATH_DEMO FIREBIRD_SYSDBA_PASSWORD"
     elseif engine == "sqlite" then
+        if role == "test" then
+            return "hydrotst.sqlite"
+        end
         return "hydrodemo.sqlite"
     elseif engine == "mssql" then
-        return "MSSQL_DB_HOST MSSQL_DB_USER MSSQL_DB_NAME schema demoms MSSQL_SA_PASSWORD"
+        local mssql_schema = "demoms"
+        if role == "test" then
+            mssql_schema = "testms"
+        end
+        return "MSSQL_DB_HOST MSSQL_DB_USER MSSQL_DB_NAME schema "
+            .. mssql_schema .. " MSSQL_SA_PASSWORD"
     end
     return engine or ""
 end
@@ -245,7 +264,7 @@ local function apply_family(conn, engine, wrapper)
         if conn.schema == "" then
             conn.schema = "demo"
         end
-    elseif engine == "postgresql" or engine == "cockroachdb" then
+    elseif engine == "postgresql" then
         conn.family = "ACURANZO_DB_*"
         conn.host = getenv("ACURANZO_DB_HOST")
         conn.port = getenv("ACURANZO_DB_PORT")
@@ -255,39 +274,29 @@ local function apply_family(conn, engine, wrapper)
         conn.user = getenv("ACURANZO_DB_USER")
         conn.database = getenv("ACURANZO_DB_NAME")
         conn.password_env = "ACURANZO_DB_PASS"
-        conn.schema = engine == "cockroachdb" and "democrdb" or "demo"
+        conn.schema = "demo"
     elseif engine == "mysql" then
         conn.family = "MYSQL_DB_*"
         conn.host = getenv("MYSQL_DB_HOST")
-        if conn.host == "" then conn.host = getenv("CANVAS_DB_HOST") end
         conn.port = getenv("MYSQL_DB_PORT")
-        if conn.port == "" then conn.port = getenv("CANVAS_DB_PORT") end
         if conn.port == "" then
             conn.port = "3306"
         end
         conn.user = getenv("MYSQL_DB_USER")
-        if conn.user == "" then conn.user = getenv("CANVAS_DB_USER") end
         conn.database = getenv("MYSQL_DB_NAME")
-        if conn.database == "" then conn.database = getenv("CANVAS_DB_NAME") end
         conn.password_env = "MYSQL_DB_PASS"
-        if getenv("MYSQL_DB_PASS") == "" then conn.password_env = "CANVAS_DB_PASS" end
         conn.schema = "demo"
     elseif engine == "mariadb" then
         conn.family = "MARIADB_DB_*"
         conn.host = getenv("MARIADB_DB_HOST")
-        if conn.host == "" then conn.host = getenv("CANVAS_DB_HOST") end
         conn.port = getenv("MARIADB_DB_PORT")
-        if conn.port == "" then conn.port = getenv("CANVAS_DB_PORT") end
         if conn.port == "" then
             conn.port = "3306"
         end
         conn.user = getenv("MARIADB_DB_USER")
-        if conn.user == "" then conn.user = getenv("CANVAS_DB_USER") end
         conn.database = getenv("MARIADB_DB_NAME")
-        if conn.database == "" then conn.database = getenv("CANVAS_DB_NAME") end
         conn.password_env = "MARIADB_DB_PASS"
-        if getenv("MARIADB_DB_PASS") == "" then conn.password_env = "CANVAS_DB_PASS" end
-        conn.schema = "demomrdb"
+        conn.schema = "demo"
     elseif engine == "db2" then
         conn.family = "HYDROTST_DB_*"
         conn.host = "localhost"
@@ -448,9 +457,9 @@ local function ping_pg(conn)
     return run_shell(script)
 end
 
-local function ping_mysql(conn)
-    if not have_cmd("mysql") then
-        return false, "mysql client not found"
+local function ping_mysql_client(conn, client)
+    if not have_cmd(client) then
+        return false, client .. " client not found"
     end
     if conn.host == "" or conn.user == "" or conn.database == "" then
         return false, "missing host/user/database"
@@ -460,8 +469,9 @@ local function ping_mysql(conn)
     end
     local db = conn.schema ~= "" and conn.schema or conn.database
     local script = string.format(
-        'export MYSQL_PWD="${%s}"\nmysql -h %s -P %s -u %s %s -N -e "SELECT 1"\n',
+        'export MYSQL_PWD="${%s}"\n%s -h %s -P %s -u %s %s -N -e "SELECT 1"\n',
         conn.password_env,
+        client,
         sh_quote(conn.host),
         sh_quote(conn.port),
         sh_quote(conn.user),
@@ -567,13 +577,13 @@ exec() {
         engine=%s
     fi
     case "$engine" in
-        postgresql|cockroachdb|yugabytedb)
+        postgresql|yugabytedb)
             if [ -n "$password_env" ]; then
                 eval "export PGPASSWORD=\"\${$password_env}\""
             fi
             psql -h "$host" -p "$port" -U "$user" -d "$database" -v ON_ERROR_STOP=1 -t -A -c "SELECT 1"
             ;;
-        mysql|mariadb)
+        mysql)
             if [ -n "$password_env" ]; then
                 eval "export MYSQL_PWD=\"\${$password_env}\""
             fi
@@ -582,6 +592,16 @@ exec() {
                 db="$database"
             fi
             mysql -h "$host" -P "$port" -u "$user" "$db" -N -e "SELECT 1"
+            ;;
+        mariadb)
+            if [ -n "$password_env" ]; then
+                eval "export MYSQL_PWD=\"\${$password_env}\""
+            fi
+            db="$schema"
+            if [ -z "$db" ]; then
+                db="$database"
+            fi
+            mariadb -h "$host" -P "$port" -u "$user" "$db" -N -e "SELECT 1"
             ;;
         sqlite)
             sqlite3 "file:${database}?mode=ro" "SELECT 1"
@@ -632,11 +652,12 @@ function M.probe(wrapper)
     local need_wrap = conn.password_env ~= "" and getenv(conn.password_env) == ""
     if need_wrap then
         ok, out = ping_via_wrapper(wrapper, conn)
-    elseif conn.engine == "postgresql" or conn.engine == "cockroachdb"
-        or conn.engine == "yugabytedb" then
+    elseif conn.engine == "postgresql" or conn.engine == "yugabytedb" then
         ok, out = ping_pg(conn)
-    elseif conn.engine == "mysql" or conn.engine == "mariadb" then
-        ok, out = ping_mysql(conn)
+    elseif conn.engine == "mysql" then
+        ok, out = ping_mysql_client(conn, "mysql")
+    elseif conn.engine == "mariadb" then
+        ok, out = ping_mysql_client(conn, "mariadb")
     elseif conn.engine == "sqlite" then
         ok, out = ping_sqlite(conn)
     elseif conn.engine == "firebird" then
@@ -671,7 +692,7 @@ run_sql() {
     engine="$1"; host="$2"; port="$3"; user="$4"; database="$5"
     schema="$6"; password_env="$7"; sql_file="$8"
     case "$engine" in
-        postgresql|cockroachdb|yugabytedb)
+        postgresql|yugabytedb)
             if [ -n "$password_env" ]; then
                 eval "export PGPASSWORD=\"\${$password_env}\""
             fi
@@ -682,7 +703,7 @@ run_sql() {
             } | psql -h "$host" -p "$port" -U "$user" -d "$database" \
                 -v ON_ERROR_STOP=1 -f -
             ;;
-        mysql|mariadb)
+        mysql)
             if [ -n "$password_env" ]; then
                 eval "export MYSQL_PWD=\"\${$password_env}\""
             fi
@@ -696,12 +717,38 @@ run_sql() {
                 printf '%s\n' 'COMMIT;'
             } | mysql -h "$host" -P "$port" -u "$user" "$db"
             ;;
+        mariadb)
+            if [ -n "$password_env" ]; then
+                eval "export MYSQL_PWD=\"\${$password_env}\""
+            fi
+            db="$schema"
+            if [ -z "$db" ]; then
+                db="$database"
+            fi
+            {
+                printf '%s\n' 'START TRANSACTION;'
+                cat "$sql_file"
+                printf '%s\n' 'COMMIT;'
+            } | mariadb -h "$host" -P "$port" -u "$user" "$db"
+            ;;
         sqlite)
             {
                 printf '%s\n' 'BEGIN;'
                 cat "$sql_file"
                 printf '%s\n' 'COMMIT;'
             } | sqlite3 -bail "$database"
+            ;;
+        firebird)
+            lock=$(mktemp -d "${TMPDIR:-/tmp}/schematool-fb-lock.XXXXXX")
+            export FIREBIRD_LOCK="$lock" FIREBIRD_TMP="$lock" ISC_USER="$user"
+            if [ -n "$password_env" ]; then
+                eval "export ISC_PASSWORD=\"\${$password_env}\""
+            fi
+            isql-fb -q -b -pag 0 -ch UTF8 "$database" -i "$sql_file"
+            rc=$?
+            rm -rf "$lock"
+            unset ISC_PASSWORD
+            exit $rc
             ;;
         db2)
             . /home/db2inst1/sqllib/db2profile >/dev/null 2>&1 || true

@@ -17,6 +17,7 @@ Defines supported database engines and their configurations:
 - SQLite
 - IBM DB2
 - Firebird (`${SCHEMA}` empty; dialect id 6)
+- SQL Server (`${SCHEMA}` dot-prefixed; dialect id 5, Lookup 030 key 5)
 
 ### Query Types & Status
 
@@ -44,7 +45,7 @@ The primary function that transforms template SQL into engine-specific SQL:
 **Parameters:**
 
 - `template`: SQL template string with macros
-- `engine`: Target database engine ('postgresql', 'mysql', 'sqlite', 'db2', 'firebird')
+- `engine`: Target database engine ('postgresql', 'mysql', 'sqlite', 'db2', 'firebird', 'mssql')
 - `design_name`: Schema design identifier
 - `schema_name`: Database schema name
 

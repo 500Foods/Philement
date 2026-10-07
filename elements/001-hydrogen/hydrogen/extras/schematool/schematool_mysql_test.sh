@@ -1,19 +1,17 @@
 #!/usr/bin/env bash
-# SchemaTool wrapper — MSSQL (Test 40: hydrogen_test_40_mssql.json)
+# SchemaTool wrapper — MySQL (Test 33: hydrogen_test_33_mysql.json)
 #
-# Sets connection env vars from the Test 40 MSSQL config and calls schematool.sh.
-# Engine-specific env: MSSQL_DB_{HOST,PORT,NAME,USER} and MSSQL_SA_PASSWORD
-# Schema:             demoms (inside database MSSQL_DB_NAME, default hydrotst)
-# Design:             acuranzo
-#
-# Phase 6 renames this file to schematool_mssql_demo.sh.
+# Engine-specific env: MYSQL_DB_{HOST,PORT,NAME,USER,PASS}
+# Schema:             test
+# Design:             acuranzo+argent
 #
 # CHANGELOG
-# 1.0.0 - 2026-10-07 - Test 40 MSSQL convenience wrapper (schema demoms)
+# 1.1.0 - 2026-10-07 - Payload acuranzo+argent in one run
+# 1.0.0 - 2026-10-07 - Test 33 wrapper; schema test
 
 set -euo pipefail
 
-# shellcheck disable=SC2154 # HELIUM_ROOT may be set by env; MSSQL_DB_* from .zshrc
+# shellcheck disable=SC2154 # HELIUM_ROOT may be set by env; MYSQL_DB_* from .zshrc
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 if [[ -x "${HERE}/schematool.sh" ]]; then
     SCHEMATOOL="${HERE}/schematool.sh"
@@ -30,11 +28,17 @@ else
     MIGRATIONS_DIR="${SCRIPT_DIR}/../../../../002-helium/acuranzo/migrations"
 fi
 
-export SCHEMATOOL_DB_SCHEMA="demoms"
+export SCHEMATOOL_DB_SCHEMA="test"
+
+for _arg in "$@"; do
+    if [[ "${_arg}" == "--help" || "${_arg}" == "-h" ]]; then
+        exec "${SCHEMATOOL}" --help
+    fi
+done
 
 exec "${SCHEMATOOL}" \
     --migrations "${MIGRATIONS_DIR}" \
-    --design acuranzo \
-    --engine mssql \
-    --password-env MSSQL_SA_PASSWORD \
+    --design acuranzo+argent \
+    --engine mysql \
+    --schema test \
     "$@"

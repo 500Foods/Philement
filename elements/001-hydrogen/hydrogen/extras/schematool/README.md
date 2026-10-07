@@ -3,7 +3,14 @@
 Migration drift auditor for Hydrogen Lua migrations vs a live database.
 
 **Two tracks:** metadata (`queries` text vs Lua) and catalog (`--catalog` live
-object shape vs folded applied DDL).
+object shape vs forward DDL folded from the migration files). The sixteen
+wrappers pass `--design acuranzo+argent` and read both designs in one run.
+`--migrations` stays the Acuranzo folder. A single design name still uses
+only that folder. `--fold-stored` keeps the old type-1003 dump fold. The catalog compare
+checks presence, nullability, and data type (case and spacing only).
+A live object no migration mentions is info, not a failure. An object
+the fold created and a later migration dropped, still live, is a
+`dropped` finding.
 
 **Full docs:** [`/docs/H/tools/SCHEMATOOL.md`](/docs/H/tools/SCHEMATOOL.md)  
 **Active plan:** [`/docs/H/plans/SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md)  
@@ -18,7 +25,7 @@ v1: [`/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md`](/docs/H/plans/complete/S
 ```bash
 extras/schematool/schematool.sh \
   --migrations "$HELIUM_ROOT/acuranzo/migrations" \
-  --design acuranzo \
+  --design acuranzo+argent \
   --engine sqlite \
   --database "$HYDROGEN_ROOT/tests/artifacts/database/sqlite/hydrodemo.sqlite" \
   --from 1000 --to 1005 \
@@ -30,14 +37,14 @@ extras/schematool/schematool.sh \
 ```bash
 extras/schematool/schematool.sh \
   --migrations "$HELIUM_ROOT/acuranzo/migrations" \
-  --design acuranzo \
+  --design acuranzo+argent \
   --engine sqlite \
   --database "$HYDROGEN_ROOT/tests/artifacts/database/sqlite/hydrodemo.sqlite" \
   --catalog --only-tables accounts \
   --out-dir /tmp/schematool-cat --no-sql
 ```
 
-Requires: `tables`, `jq`, `lua`, `xxd` (MySQL/DB2 HEX), plus `sqlite3` / `psql` / `mysql` / `db2`. MSSQL uses `podman` and `sqlcmd` inside `philement-mssql`.
+Requires: `tables`, `jq`, `lua`, `xxd` (MySQL/MariaDB/DB2 HEX), plus `sqlite3` / `psql` / `mysql` / `mariadb` / `db2` / `isql-fb`. MSSQL uses `podman` and `sqlcmd` inside `philement-mssql`.
 
 ## Row Grouping
 
@@ -48,7 +55,7 @@ rows to make long tables easier to scan. Override with `--group-size N`
 ```bash
 extras/schematool/schematool.sh \
   --migrations "$HELIUM_ROOT/acuranzo/migrations" \
-  --design acuranzo \
+  --design acuranzo+argent \
   --engine sqlite \
   --database "$HYDROGEN_ROOT/tests/artifacts/database/sqlite/hydrodemo.sqlite" \
   --group-size 50
@@ -82,6 +89,7 @@ lua/
   schemahelper_qdecode.lua      # brotli/base64 decode + decode view
   schemahelper_connect.lua
   schemahelper_packet.lua
+  schematool_payload.lua
   schematool_discover.lua
   schematool_expect.lua
   schematool_normalize.lua
@@ -90,10 +98,12 @@ lua/
   schematool_catalog_fold.lua
   schematool_catalog_compare.lua
 db/
-  query_{pg,mysql,sqlite,db2,mssql}.sh
-  catalog_{pg,mysql,sqlite,db2,mssql}.sh
+  query_{pg,mysql,mariadb,sqlite,db2,firebird,mssql}.sh
+  catalog_{pg,mysql,mariadb,sqlite,db2,firebird,mssql}.sh
   common.sh
+  firebird_common.sh
   mssql_common.sh
+  mysql_family.sh
 testdata/
   expected_pg_demo_1000_1002.json
 ```
@@ -115,10 +125,10 @@ Chosen from **requested** `--engine` (before alias):
 
 | Requested engine | Primary env | Also |
 | ------------------ | ------------- | ------ |
-| postgresql / cockroachdb | `ACURANZO_DB_*` | `SCHEMATOOL_DB_*` |
+| postgresql / postgres | `ACURANZO_DB_*` | `SCHEMATOOL_DB_*` |
 | yugabytedb | `YUGABYTE_DB_*` | `SCHEMATOOL_DB_*` |
-| mysql | `MYSQL_DB_*` (fallback: `CANVAS_DB_*`) | `SCHEMATOOL_DB_*` |
-| mariadb | `MARIADB_DB_*` (fallback: `CANVAS_DB_*`) | `SCHEMATOOL_DB_*` |
+| mysql | `MYSQL_DB_*` | `SCHEMATOOL_DB_*` |
+| mariadb | `MARIADB_DB_*` | `SCHEMATOOL_DB_*` |
 | db2 | `HYDROTST_DB_*` | `SCHEMATOOL_DB_*` |
 | firebird | `FIREBIRD_DB_PATH_DEMO` (or `_TEST` / deprecated `FIREBIRD_DB_PATH`) / `FIREBIRD_SYSDBA_PASSWORD` | `SCHEMATOOL_DB_*` |
 | mssql | `MSSQL_DB_{HOST,PORT,USER,NAME}` / `MSSQL_SA_PASSWORD` | `sqlcmd` in `philement-mssql`; schema `demoms` |
@@ -126,7 +136,8 @@ Chosen from **requested** `--engine` (before alias):
 
 Password: `--password-env VAR` preferred (never printed).
 
-Test 40 wrappers: `schematool_{postgresql,mysql,mariadb,sqlite,db2,firebird,yugabytedb,mssql}.sh`  
+Test 40 wrappers: `schematool_<engine>_demo.sh` (schema `demo`, SQLite `hydrodemo.sqlite`, Firebird `FIREBIRD_DB_PATH_DEMO`, MSSQL `demoms`)  
+Tests 32–39 wrappers: `schematool_<engine>_test.sh` (schema `test`, SQLite `hydrotst.sqlite`, Firebird `FIREBIRD_DB_PATH_TEST`, MSSQL `testms`)  
 Smoke (8 engines, 1190 catalog): `./smoke_test40_catalog.sh`
 
 ## Safety

@@ -6,7 +6,7 @@
 The fifth Hydrogen engine is **Firebird**, not Cloud Firestore. Firestore
 is not a SQL server; Helium still emits SQL. The live plan is
 [`FIREBIRD.md`](/docs/H/plans/FIREBIRD.md). MS SQL Server (Lookup 030
-key 5, already seeded) is [`MSSQL.md`](/docs/H/plans/MSSQL.md).
+key 5, already seeded) is [`MSSQL_COMPLETE.md`](/docs/H/plans/complete/MSSQL_COMPLETE.md).
 
 Historical Working Log, locks, and Phases 0–7 notes:
 

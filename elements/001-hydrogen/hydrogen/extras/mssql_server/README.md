@@ -119,6 +119,6 @@ export MSSQL_TEST_DB="hydrotst"
 
 ## Related
 
-- [`docs/H/plans/MSSQL.md`](/docs/H/plans/MSSQL.md) — full engine plan
+- [`docs/H/plans/complete/MSSQL_COMPLETE.md`](/docs/H/plans/complete/MSSQL_COMPLETE.md) — full engine plan
 - [`docs/H/SECRETS.md`](/docs/H/SECRETS.md) — environment variable reference
 - [`docs/H/DATABASES.md`](/docs/H/DATABASES.md) — database connection reference

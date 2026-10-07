@@ -5,6 +5,7 @@
 -- into the run loops and main entry point.
 --
 -- CHANGELOG
+-- 0.6.6 - 2026-10-07 - State path uses the wrapper role
 -- 0.6.5 - 2026-09-09 - Phase 4: accept hash + dashboard un-accept
 -- 0.6.4 - 2026-09-08 - Dark-grey progress bar background
 -- 0.6.3 - 2026-09-08 - Phase 3: eighths progress + issue pane
@@ -770,10 +771,11 @@ local function plan_work_dir(opts, app)
 end
 
 local function finish_paths(opts, app)
-    local design, engine, schema = W.wrapper_meta(opts.wrapper)
+    local design, engine, schema, role = W.wrapper_meta(opts.wrapper)
     opts.design = design
     opts.engine = engine
     opts.schema = schema
+    opts.role = role or "demo"
     if opts.out_dir == "" then
         opts.out_dir = W.wrapper_dir(opts.wrapper)
     end
@@ -788,7 +790,7 @@ local function finish_paths(opts, app)
     end
     W.ensure_dir(opts.packet_dir)
     if opts.state_file == "" then
-        opts.state_file = Q.default_state_path(opts.out_dir, design, engine)
+        opts.state_file = Q.default_state_path(opts.out_dir, design, engine, opts.role)
     end
 end
 

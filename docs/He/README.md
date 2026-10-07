@@ -21,6 +21,8 @@ The Helium project provides database schemas and migrations (collectively referr
 - [MariaDB 10.5+](https://mariadb.org/) - Enhanced, drop-in MySQL replacement[^mysql-note]
 - [SQLite 3.35+](https://www.sqlite.org/) - Self-contained, serverless SQL database engine
 - [IBM DB2 (LUW) 10+](https://www.ibm.com/products/db2-database) - Enterprise-grade relational database system
+- Firebird 4 - File-backed SQL engine (`libfbclient`). `${SCHEMA}` is empty.
+- SQL Server 2022 - Linux container under Podman, unixODBC client. Lookup 030 key 5. Developer edition is not a production license.
 
 YugabyteDB is treated as the primary PostgreSQL-compatible platform for ongoing work (see Hydrogen `test_38_yugabytedb_migrations.sh`). Migrations must remain compatible with PostgreSQL 15 semantics.
 
@@ -42,6 +44,7 @@ The Hydrogen project is what uses these files. The migration files themsleves ca
 - [Test 33 - MySQL Migrations](/docs/H/tests/test_33_mysql_migrations.md) - Tests MySQL/MariaDB database migration performance and execution
 - [Test 34 - SQLite Migrations](/docs/H/tests/test_34_sqlite_migrations.md) - Tests SQLite database migration performance and execution
 - [Test 35 - DB2 Migrations](/docs/H/tests/test_35_db2_migrations.md) - Tests IBM DB2 database migration performance and execution
+- [Test 39 - SQL Server Migrations](/docs/H/tests/test_39_mssql_migrations.md) - Full Acuranzo AutoMigrations on SQL Server (schema `testms`)
 - [Test 71 - Database Diagrams](/docs/H/tests/test_71_database_diagrams.md) - Generates SVG database diagrams for all supported database engine and design combinations
 - [Test 98 - Lua Code Analysis](/docs/H/tests/test_98_luacheck.md) - Performs static analysis on Lua source files using luacheck tool
 
@@ -89,10 +92,11 @@ IN addtion, [Test 01 - Compilation](/docs/H/tests/test_01_compilation.md) builds
 - [**database_sqlite.lua**](/docs/He/DATABASES/database_sqlite.md) (sample: [Acuranzo](/elements/002-helium/acuranzo/migrations/database_sqlite.lua)) - SQLite-specific configuration
 - [**database_db2.lua**](/docs/He/DATABASES/database_db2.md) (sample: [Acuranzo](/elements/002-helium/acuranzo/migrations/database_db2.lua)) - IBM DB2-specific configuration
 - [**database_firebird.lua**](/docs/He/DATABASES/database_firebird.md) (sample: [Acuranzo](/elements/002-helium/acuranzo/migrations/database_firebird.lua)) - Firebird 4 configuration (empty schema, native Base64, Brotli and JSON_VALUE UDRs)
+- [**database_mssql.lua**](/docs/He/DATABASES/database_mssql.md) (sample: [Acuranzo](/elements/002-helium/acuranzo/migrations/database_mssql.lua)) - SQL Server configuration (dot-prefixed schema, T-SQL Base64, Brotli CLR not deployed)
 
 ### Schemas
 
-Each schema provides a complete database design with migrations, supporting PostgreSQL, MySQL/MariaDB, SQLite, IBM DB2, and Firebird.
+Each schema provides a complete database design with migrations, supporting PostgreSQL, MySQL/MariaDB, SQLite, IBM DB2, Firebird, and SQL Server.
 
 - [**Main Helium README**](/elements/002-helium/README.md) - Overview of all schemas and scripts
 - [**Acuranzo Schema**](/elements/002-helium/acuranzo/README.md) - Frontend web application schema
@@ -111,18 +115,18 @@ Each schema provides a complete database design with migrations, supporting Post
 
 ## Repository Information
 
-Generated 2026-Oct-07 (Wed) 04:18:17 PDT
+Generated 2026-Oct-07 (Wed) 10:16:49 PDT
 
 ```cloc
-github.com/AlDanial/cloc v 2.10  T=5.07 s (145.9 files/s, 128403.4 lines/s)
+github.com/AlDanial/cloc v 2.10  T=4.70 s (160.5 files/s, 139119.1 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
 SVG                            285            570          11542         521420
-Lua                            419          11657           7661          90204
-Markdown                        32           1662              0           4607
+Lua                            434          11969           7841          93327
+Markdown                        33           1697              0           4708
 Bourne Shell                     3            154            168            836
 -------------------------------------------------------------------------------
-SUM:                           739          14043          19371         617067
+SUM:                           755          14390          19551         620291
 -------------------------------------------------------------------------------
 ```

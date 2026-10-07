@@ -3,6 +3,8 @@
 -- post-run result-line builder.
 --
 -- CHANGELOG
+-- 0.6.6 - 2026-10-07 - Progress tint treats type and dropped as catalog
+-- 0.6.5 - 2026-10-07 - Expect progress may include engine=<name>
 -- 0.6.4 - 2026-09-08 - Dark-grey progress bar background
 -- 0.6.3 - 2026-09-08 - Eighths bar, compare/catalog parse, issue scroll
 -- 0.6.1 - 2026-09-08 - Instance rows are label + value + two attrs
@@ -65,7 +67,8 @@ local function ui_issue_class(raw)
         return "missing"
     end
     if raw == "catalog" or raw == "missing_table" or raw == "missing_column"
-        or raw == "nullability" or raw == "extra_table" or raw == "extra_column" then
+        or raw == "nullability" or raw == "type" or raw == "dropped"
+        or raw == "extra_table" or raw == "extra_column" then
         return "catalog"
     end
     return "drift"
@@ -104,7 +107,10 @@ local function parse_schematool_progress(log, fallback_total)
         if phase then
             prog.phase = phase
         end
-        local cur, tot, ref, name = line:match("^expect (%d+)/(%d+) ref (%d+) name=(.*)")
+        local cur, tot, ref, name = line:match("^expect (%d+)/(%d+) ref (%d+) engine=%S+ name=(.*)")
+        if not cur then
+            cur, tot, ref, name = line:match("^expect (%d+)/(%d+) ref (%d+) name=(.*)")
+        end
         if not cur then
             cur, tot, ref = line:match("^expect (%d+)/(%d+) ref (%d+)")
         end

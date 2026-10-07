@@ -113,7 +113,7 @@ API. Match PostgreSQL / SQLite / MySQL / DB2: same `QueryRequest` /
 `convert_named_to_positional` → bind, same `data_json` array of row
 objects. Do not change those engines. Do not interpret SQL in C.
 
-**Sister plan:** [`MSSQL.md`](/docs/H/plans/MSSQL.md) (Lookup 030 key 5).
+**Sister plan:** [`MSSQL_COMPLETE.md`](/docs/H/plans/complete/MSSQL_COMPLETE.md) (Lookup 030 key 5).
 Shared enum lock is in [Coordination with MSSQL](#coordination-with-mssql).
 
 ## Purpose
@@ -276,7 +276,7 @@ Backlog: [TODO.md item 27](/docs/H/TODO.md).
 
 ## Coordination with MSSQL
 
-[`MSSQL.md`](/docs/H/plans/MSSQL.md) adds Lookup 030 **key 5** (already
+[`MSSQL_COMPLETE.md`](/docs/H/plans/complete/MSSQL_COMPLETE.md) adds Lookup 030 **key 5** (already
 seeded as `MS SQL Server`). This plan owns key **6** (relabel Firebase
 → Firebird) and the Cockroach replacement (Test **37**).
 
@@ -288,15 +288,17 @@ typedef enum {
     DB_ENGINE_SQLITE,
     DB_ENGINE_MYSQL,
     DB_ENGINE_DB2,
-    DB_ENGINE_MSSQL,      // key 5 — interface may be NULL until MSSQL.md
+    DB_ENGINE_MSSQL,      // key 5 — implemented; see MSSQL_COMPLETE.md
     DB_ENGINE_FIREBIRD,   // key 6
     DB_ENGINE_AI,         // Unity mock — do not reuse
     DB_ENGINE_MAX
 } DatabaseEngine;
 ```
 
-Phase 5 of this plan may introduce `DB_ENGINE_MSSQL` as an unused
-enumerator so the MSSQL plan does not shift Firebird’s numeric value.
+Phase 5 of this plan introduced `DB_ENGINE_MSSQL` so later work does not
+shift Firebird's numeric value. That slot is implemented. See
+[MSSQL_COMPLETE.md](/docs/H/plans/complete/MSSQL_COMPLETE.md).
+
 Do not add `mssql_get_interface` symbols here (dead-code gate). Registry
 skips a NULL interface.
 
@@ -556,7 +558,7 @@ DB2-only extras that must still be defined:
 ### Dialect id
 
 `query_dialects.firebird = 6` (Lookup 030 key 6). Do not reuse key 5
-(MS SQL Server — [`MSSQL.md`](/docs/H/plans/MSSQL.md)). Do not edit
+(MS SQL Server — [`MSSQL_COMPLETE.md`](/docs/H/plans/complete/MSSQL_COMPLETE.md)). Do not edit
 `acuranzo_1055.lua` reverse-in-place. Packet **1384** (re-check disk)
 `UPDATE`s key 6 `value_txt` from `Firebase` to `Firebird` and the icon
 to `sql_dialect_firebird.png`. Do not reverse 1383 (that deletes key 6).
@@ -1859,7 +1861,7 @@ Port scheme: Test 37 → **537x**.
   [`FIREBASE_SUPERSEDED.md`](/docs/H/plans/complete/FIREBASE_SUPERSEDED.md).
   Cleanup is Phases 3–4. Cockroach retirement is Phase 8. Lookup 030
   key 6 is relabelled, not reused from key 5. Sister plan
-  [`MSSQL.md`](/docs/H/plans/MSSQL.md).
+  [`MSSQL_COMPLETE.md`](/docs/H/plans/complete/MSSQL_COMPLETE.md).
 
 - **(2026-09-22 Carmine/Andrew)** Stay on Firebird **4.0.7**; do not block on
   FB5 for Option D / ALTER COLUMN / DROP_CHECK class issues — those are
@@ -1888,7 +1890,7 @@ Port scheme: Test 37 → **537x**.
   exist on disk. **Lua-level cruft survived:** `database.lua` still
   `require("database_firebase")` (dangling), migration files still have
   `if engine == 'firebase'` branches, Test 31 still lists firebase in ENGINES.
-- Lookup 030 key 5 is "MS SQL Server" and unused in C; do not steal it.
+- Lookup 030 key 5 is "MS SQL Server" and is implemented in `src/database/mssql/`; do not renumber it.
   Key 6 is still labelled Firebase until packet 1384.
 - Helium `database.lua` currently special-cases `engine == 'firebase'`
   for underscore schema prefixes. Firebird must not inherit that.

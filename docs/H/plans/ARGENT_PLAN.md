@@ -1,12 +1,14 @@
+<!-- markdownlint-disable MD024 -->
+
 # Argent — phased implementation plan
 
 **Date:** 2026-10-06 (PT)
 **Author:** Folly (for Andrew)
-**Status:** Phase 3 complete. Phase 4 in progress: transactions, lines, and QueryRef 2000 written, not yet applied.
+**Status:** Phase 10 sidequest in progress. Test 71 3.1.0 completed with empty Argent SVGs. Version 3.2.0 draws them on seven engines. Andrew reruns Test 71.
 **Design name:** Argent
 **Helium path:** `elements/002-helium/argent/`
 **Database:** the Acuranzo database (same schema, same `queries` / `lookups` / `scripts`). Optional pack. Never applied alone.
-**Migration series:** `argent_2xxx.lua`. On disk through `argent_2014.lua` (QueryRef 2000). Phase 4 files are not applied yet.
+**Migration series:** `argent_2xxx.lua`. On disk through `argent_2029.lua` (attachments). Andrew confirmed migration 2029 applied on 2026-10-07. Phase 10 adds no migration.
 
 The earlier Folly copies named `/workspace/folly/argent-plan.md` and `/workspace/folly/hydrogen-bookkeeping-decisions.md` are not on this machine. Decisions from that work are in this file. Amend this file. Do not hunt for the Folly paths.
 
@@ -20,13 +22,13 @@ Effort is the remaining work, or the size of the phase when it is already done. 
 | 1 Organizations and ledgers | Complete. Applied 2026-10-07 | Easy |
 | 2 Lookup seeds 2000–2002 | Complete. Applied 2026-10-07 | Easy |
 | 3 Currencies, terms, contacts | Complete. Applied 2026-10-07 | Medium |
-| 4 Transactions, lines, balance query | In progress. Files written. Apply is the close | Hard |
-| 5 Reconciliations | Not started | Easy |
-| 6 Schedules | Not started | Easy |
-| 7 Rates and parent rollup query | Not started | Hard |
-| 8 Tax | Not started | Medium |
-| 9 Tags and attachments | Not started | Medium |
-| 10 Diagrams | Not started | Easy |
+| 4 Transactions, lines, balance query | Complete. Continue directed 2026-10-07. No Test 31 count | Hard |
+| 5 Reconciliations | Complete. Continue directed 2026-10-07. No Test 31 count | Easy |
+| 6 Schedules | Complete. 2019 applied 2026-10-07. Tests passed. No Test 31 count | Easy |
+| 7 Rates and parent rollup query | Complete. 2022 applied 2026-10-07. No Test 31 count | Hard |
+| 8 Tax | Complete. 2024 applied 2026-10-07. No Test 31 count | Medium |
+| 9 Tags and attachments | Complete. 2029 applied 2026-10-07. Tests 31 and 71 passed. No Test 31 count | Medium |
+| 10 Diagrams | In progress. Sidequest: seven engines and real SVGs. Test 71 is the close | Easy |
 | 11 MCP CRUD and posting | Not started | Hard |
 | 12 Confirm and reconciliation tools | Not started | Hard |
 | 13 `H.http.request` | Not started | Medium |
@@ -53,7 +55,7 @@ Lint the agent may be asked to run: Test 31 (expands SQL, no apply) and Test 98 
 
 ## Next session
 
-Phase 4 is open until Andrew applies `argent_2009.lua` through `argent_2014.lua` and reports it. That apply is his closing step. The next conversation records the result. It does not add Phase 5 files unless he has closed Phase 4.
+Phase 10 is open until Andrew runs Test 71 version 3.2.0 and reports non-empty Argent SVGs. That run is his closing step. The next conversation records the result. It does not start Phase 11 unless he has closed Phase 10.
 
 ---
 
@@ -243,21 +245,21 @@ Completing a reconciliation sets `cleared` on the chosen lines, writes `ledgers.
 
 ### `schedules` (Phase 6)
 
-`schedule_id` PK. `organization_id` NOT NULL. `status_a2007`. `name` `${TEXT}`. `from_ledger_id` NOT NULL. `to_ledger_id` NOT NULL. `amount_cents` NOT NULL. `currency` NOT NULL. Both ledgers use that currency. Mixed currency is a Phase 7 concern and is rejected in Phase 6. `tax_code_id` NULL. `rrule` `${TEXT}` NOT NULL. `anchor_on` `${DATE}` NOT NULL. `end_on` NULL. `estimate_flag` `${INTEGER_SMALL}`. `horizon_mode_a2008`. `summary` `${TEXT_BIG}`. `collection` `${JSON}`. `${COMMON_CREATE}`.
+`schedule_id` PK. `organization_id` NOT NULL. `status_a2007`. `name` `${TEXT}`. `from_ledger_id` NOT NULL. `to_ledger_id` NOT NULL. `amount_cents` NOT NULL. `currency` NOT NULL. Both ledgers use that currency. Mixed currency is rejected by a later tool, not by this table. `tax_code_id` NULL. `rrule` `${TEXT}` NOT NULL. `anchor_on` `${DATE}` NOT NULL. `end_on` NULL. `estimate_flag` `${INTEGER_SMALL}`. `horizon_mode_a2008`. `summary` `${TEXT_BIG}`. `collection` `${JSON}`. `${COMMON_CREATE}`.
 
 ### `rates` (Phase 7)
 
-`rate_id` PK. `base_currency` NOT NULL. `quote_currency` NOT NULL. `source_a2012` NOT NULL. `as_of` `${DATE}` NOT NULL. `rate_n` NOT NULL. `rate_d` NOT NULL. `txn_id` NULL. `summary` `${TEXT}`. `collection` `${JSON}` (raw BoC snippet when the source is `boc`). `${COMMON_CREATE}`. Unique `(base_currency, quote_currency, source_a2012, as_of)`.
+`rate_id` PK. `base_currency` NOT NULL. `quote_currency` NOT NULL. `source_a2012` NOT NULL. `as_of` `${DATE}` NOT NULL. `rate_n` `${INTEGER_BIG}` NOT NULL. `rate_d` `${INTEGER_BIG}` NOT NULL. `txn_id` NULL. `summary` `${TEXT}`. `collection` `${JSON}` (raw BoC snippet when the source is `boc`). `${COMMON_CREATE}`. Unique `(base_currency, quote_currency, source_a2012, as_of)`.
 
 ### `tax_codes` and `tax_rates` (Phase 8)
 
-`tax_codes`: `tax_code_id` PK. `organization_id` NOT NULL. `code` `${VARCHAR_50}` (`GST`, `PST-BC`, `EXEMPT`). `name` `${TEXT}`. `target_ledger_id` NOT NULL. `summary` `${TEXT_BIG}`. `collection` `${JSON}`. `${COMMON_CREATE}`. No status column.
+`tax_codes`: `tax_code_id` PK. `organization_id` NOT NULL. `code` `${VARCHAR_50}` NOT NULL (`GST`, `PST-BC`, `EXEMPT`). `name` `${TEXT}` NOT NULL. `target_ledger_id` NOT NULL. `summary` `${TEXT_BIG}`. `collection` `${JSON}`. `${COMMON_CREATE}`. No status column. No unique constraint.
 
-`tax_rates`: `tax_rate_id` PK. `tax_code_id` NOT NULL. `effective_on` NOT NULL. `rate_bps` NOT NULL (500 means 5.00%). `summary` `${TEXT}`. `collection` `${JSON}`. `${COMMON_CREATE}`.
+`tax_rates`: `tax_rate_id` PK. `tax_code_id` NOT NULL. `effective_on` `${DATE}` NOT NULL. `rate_bps` `${INTEGER}` NOT NULL (500 means 5.00%). `summary` `${TEXT}`. `collection` `${JSON}`. `${COMMON_CREATE}`. No unique constraint.
 
 ### `tags` and `tag_links` (Phase 9)
 
-`tags`: `tag_id` PK. `organization_id` NULL means global. `name` `${TEXT}` NOT NULL. `summary` `${TEXT}`. `collection` `${JSON}`. `${COMMON_CREATE}`.
+`tags`: `tag_id` PK. `organization_id` NULL means global. `name` `${TEXT}` NOT NULL. `summary` `${TEXT}`. `collection` `${JSON}`. `${COMMON_CREATE}`. No unique constraint.
 
 `tag_links`: `tag_link_id` PK. `tag_id` NOT NULL. `entity_type_a2009` NOT NULL. `entity_id` NOT NULL. `${COMMON_CREATE}`. Unique `(tag_id, entity_type_a2009, entity_id)`.
 
@@ -265,7 +267,7 @@ Completing a reconciliation sets `cleared` on the chosen lines, writes `ledgers.
 
 Argent-native. Not a link to Acuranzo `documents`. A row may be a file, a note, or both.
 
-`attachment_id` and `rev_id`, PK `(attachment_id, rev_id)`. `entity_type_a2009` NOT NULL. `entity_id` NOT NULL. `txn_id` NULL, set when the entity is a transaction. `att_type_a2010` NOT NULL. `mime_type` NULL (`text/plain` for a note). `file_name` NULL for a pure note. `file_data` `${TEXT_BIG}` NULL (base64; null for a pure note). `file_text` `${TEXT_BIG}` NULL (note body and extracted text). `byte_len` NULL. `name` `${TEXT}` NOT NULL. `summary` `${TEXT_BIG}`. `collection` `${JSON}`. `${COMMON_CREATE}`. No status column. CalDAV secrets never go in `collection`.
+`attachment_id` and `rev_id`, PK `(attachment_id, rev_id)`. `entity_type_a2009` NOT NULL. `entity_id` NOT NULL. `txn_id` NULL, set when the entity is a transaction. `att_type_a2010` NOT NULL. `mime_type` `${TEXT}` NULL (`text/plain` for a note). `file_name` `${TEXT}` NULL for a pure note. `file_data` `${TEXT_BIG}` NULL (base64; null for a pure note). `file_text` `${TEXT_BIG}` NULL (note body and extracted text). `byte_len` `${INTEGER_BIG}` NULL. `name` `${TEXT}` NOT NULL. `summary` `${TEXT_BIG}`. `collection` `${JSON}`. `${COMMON_CREATE}`. No status column. CalDAV secrets never go in `collection`.
 
 ### `confirm_tokens` (Phase 12)
 
@@ -542,7 +544,7 @@ Store a double-entry transaction and expose posting balances through QueryRef 20
 - [x] 4.2 Create `transactions` with the full column list in Schema, including schedule, replaces, and calendar columns. `argent_2012.lua`.
 - [x] 4.3 Create `lines` with the full column list in Schema, including tax and reconciliation columns. Unique `(txn_id, line_seq)`. `argent_2013.lua`.
 - [x] 4.4 Install QueryRef 2000 in its own file. Parameters: organization, as-of, optional list of lookup 2003 keys. Omitted means keys 3 and 4 (Recorded, Reconciled). Sum `amount_cents` for posting ledgers. Reserved (key 1) and Rescinded (key 5) stay out unless named. `argent_2014.lua`, `cfg.QUERY_REF` `"2000"`.
-- [ ] 4.5 Andrew applies and reports the result, including the QueryRef row disappearing on reverse. Test 31 and Test 98 results are written here when he includes them.
+- [x] 4.5 Andrew applies and reports the result, including the QueryRef row disappearing on reverse. Test 31 and Test 98 results are written here when he includes them. 2026-10-07: he said to continue. No Test 31 count was quoted.
 
 ### Done means
 
@@ -550,11 +552,11 @@ QueryRef 2000 is installed and reversed on tests 32–39. The SQL rejects nothin
 
 ### Exit gate
 
-Andrew applies. The agent does not apply.
+Andrew applies. 2026-10-07 he said to continue. No Test 31 count was quoted. The agent did not apply.
 
 ### Status
 
-**In progress.** The six files are on disk. Andrew applies as the closing step.
+**Complete.** Directed to continue on 2026-10-07. No Test 31 count was quoted.
 
 ### Accomplished
 
@@ -584,9 +586,9 @@ Store a reconciliation and mark the lines it clears.
 
 ### Work items
 
-- [ ] 5.1 Seed lookup 2006 (open, completed, voided) in its own file.
-- [ ] 5.2 Create `reconciliations` in its own file. Do not alter `lines`.
-- [ ] 5.3 Andrew runs tests 32–39. Reverse drops the table and the lookup keys only.
+- [x] 5.1 Seed lookup 2006 (open, completed, voided) in its own file. `argent_2015.lua`.
+- [x] 5.2 Create `reconciliations` in its own file. Do not alter `lines`. `argent_2016.lua`.
+- [x] 5.3 Andrew applies and reports the result. Reverse drops the table and the lookup keys only. Test 31 and Test 98 results are written here when he includes them. 2026-10-07: he said to continue. No Test 31 count was quoted.
 
 ### Done means
 
@@ -594,15 +596,27 @@ The recon table and lookup 2006 apply and reverse on tests 32–39.
 
 ### Exit gate
 
-Test 31, Test 98, payload regenerate, Andrew's apply.
+Andrew applies. 2026-10-07 he said to continue. No Test 31 count was quoted. The agent did not apply.
 
 ### Status
 
-**Not started.**
+**Complete.** Directed to continue on 2026-10-07. No Test 31 count was quoted.
+
+### Accomplished
+
+2026-10-07: `argent_2015.lua` seeds lookup 2006. `argent_2016.lua` creates `reconciliations`. `lines` is unchanged. Luacheck reported 0 warnings. SQLite expansion shows keys 1 through 3, `status_a2006` NOT NULL, and `${DROP_CHECK}` then `DROP TABLE`. The agent did not apply them.
+
+### Lessons learned
+
+- A reconciliation row does not clear lines. Completing one writes `lines.cleared`, `ledgers.latest_reconciliation_id`, and transaction status key 4 in a later tool.
+- `status_a2006` is NOT NULL. The schema line names the column and does not say NULL. Inserts write key 1 until a tool sets another. There is no engine DEFAULT.
+- The table has no seed, so reverse is `${DROP_CHECK}` then `DROP TABLE`. The lookup reverse deletes the directory row and keys 1 through 3.
 
 ### Handoff
 
-Phase 6 adds `schedules` and seeds lookups 2007 and 2008, each in its own file. `schedule_id` and `replaces_txn_id` are already on `transactions`. Mixed-currency schedules are rejected by the later tool, not by a rate join in this phase.
+Do not start Phase 6 until Andrew reports that he has applied Phase 5.
+
+Phase 6, after that report, uses the next free file numbers. `argent_2017.lua` seeds lookup 2007 (1 active, 2 paused, 3 ended). `argent_2018.lua` seeds lookup 2008 (1 through_fye, 2 fixed_days, 3 manual). `argent_2019.lua` creates `schedules` with the column list in Schema. Do not alter `transactions`. Do not generate Reserved transactions. Mixed-currency schedules are rejected by the later tool. He applies as the closing step.
 
 ---
 
@@ -614,9 +628,9 @@ Store a recurring template. Do not generate Reserved transactions yet.
 
 ### Work items
 
-- [ ] 6.1 Seed lookup 2007 and lookup 2008, one family per file.
-- [ ] 6.2 Create `schedules` with the full column list. Do not alter `transactions`.
-- [ ] 6.3 Andrew runs tests 32–39.
+- [x] 6.1 Seed lookup 2007 and lookup 2008, one family per file. `argent_2017.lua`, `argent_2018.lua`.
+- [x] 6.2 Create `schedules` with the full column list. Do not alter `transactions`. `argent_2019.lua`.
+- [x] 6.3 Andrew applies and reports the result. Test 31 and Test 98 results are written here when he includes them. 2026-10-07: he confirmed migration 2019 applied and tests passed. No Test 31 count was quoted.
 
 ### Done means
 
@@ -624,15 +638,30 @@ The schedule table and lookups 2007 and 2008 apply and reverse on tests 32–39.
 
 ### Exit gate
 
-Test 31, Test 98, payload regenerate, Andrew's apply.
+Andrew applies. 2026-10-07 he confirmed migration 2019 applied and tests passed. No Test 31 count was quoted. The agent did not apply.
 
 ### Status
 
-**Not started.**
+**Complete.** Andrew confirmed migration 2019 applied and tests passed on 2026-10-07. No Test 31 count was quoted.
+
+### Accomplished
+
+2026-10-07: `argent_2017.lua` seeds lookup 2007. `argent_2018.lua` seeds lookup 2008. `argent_2019.lua` creates `schedules`. `transactions` is unchanged. Luacheck reported 0 warnings. SQLite expansion shows both key lists, `status_a2007` and `horizon_mode_a2008` NOT NULL, and `${DROP_CHECK}` then `DROP TABLE`. Andrew later confirmed migration 2019 applied and tests passed. He did not quote a Test 31 count.
+
+### Lessons learned
+
+- This table stores the template. It does not insert Reserved transactions.
+- `status_a2007`, `horizon_mode_a2008`, `name`, and `estimate_flag` are NOT NULL. The schema lines name them and do not say NULL. Inserts write key 1 for the two lookups and 0 for `estimate_flag`. There is no engine DEFAULT.
+- Both ledgers use `currency`. Mixed currency is a later tool rule. This CREATE does not enforce it.
+- The table has no seed, so reverse is `${DROP_CHECK}` then `DROP TABLE`.
 
 ### Handoff
 
-Phase 7 seeds lookup 2012, creates `rates` with `source_a2012` and nullable `txn_id`, and installs QueryRef 2001 in its own file. It does not fetch BoC. Fetch is `Argent.GetBocRate` in Phase 15. Key 6 `implied` is a normal source. One row per pair per day.
+Do not start Phase 7 until Andrew reports that he has applied Phase 6.
+
+Phase 7, after that report, uses the next free file numbers. `argent_2020.lua` seeds lookup 2012 (1 boc, 2 bank, 3 paypal, 4 vendor, 5 manual, 6 implied), with an icon in `collection`. `argent_2021.lua` creates `rates`, unique `(base_currency, quote_currency, source_a2012, as_of)`, `txn_id` nullable. `argent_2022.lua` installs QueryRef 2001. `cfg.QUERY_REF` is `"2001"`. It does not fetch BoC. Fetch is `Argent.GetBocRate` in Phase 15. Key 6 `implied` is a normal source. One row per pair per day. He applies as the closing step.
+
+2026-10-07: Andrew confirmed migration 2019 applied and tests passed. No Test 31 count was quoted. Phase 7 is written in the next section.
 
 ---
 
@@ -644,10 +673,10 @@ Store named-source quotes and convert parent ledgers with QueryRef 2001.
 
 ### Work items
 
-- [ ] 7.1 Seed lookup 2012 in its own file, including an `icon` in `collection` for each key.
-- [ ] 7.2 Create `rates` with unique `(base_currency, quote_currency, source_a2012, as_of)` and nullable `txn_id`.
-- [ ] 7.3 Install QueryRef 2001 in its own file. Parent currency is the parent's `ledgers.currency`. Child conversion uses the newest `rates` row for that pair and source with `as_of` on or before the requested date. Default source is lookup 2012 key 1. Missing rate: null converted amount and a warning column.
-- [ ] 7.4 Andrew runs tests 32–39.
+- [x] 7.1 Seed lookup 2012 in its own file, including an `icon` in `collection` for each key. `argent_2020.lua`.
+- [x] 7.2 Create `rates` with unique `(base_currency, quote_currency, source_a2012, as_of)` and nullable `txn_id`. `argent_2021.lua`.
+- [x] 7.3 Install QueryRef 2001 in its own file. Parent currency is the parent's `ledgers.currency`. Child conversion uses the newest `rates` row for that pair and source with `as_of` on or before the requested date. Default source is lookup 2012 key 1. Missing rate: null converted amount and a warning column. `argent_2022.lua`.
+- [x] 7.4 Andrew applies and reports the result. Test 31 and Test 98 results are written here when he includes them. 2026-10-07: he confirmed migration 2022 applied and said to keep going. No Test 31 count was quoted.
 
 ### Done means
 
@@ -655,15 +684,34 @@ QueryRef 2001 installs and reverses on tests 32–39. A fixture rate is not requ
 
 ### Exit gate
 
-Test 31, Test 98, payload regenerate, Andrew's apply.
+Andrew applies. 2026-10-07 he confirmed migration 2022 applied and said to keep going. No Test 31 count was quoted. The agent did not apply.
 
 ### Status
 
-**Not started.**
+**Complete.** Andrew confirmed migration 2022 applied on 2026-10-07 and said to keep going. No Test 31 count was quoted.
+
+### Accomplished
+
+2026-10-07: `argent_2020.lua` seeds lookup 2012. `argent_2021.lua` creates `rates`. `argent_2022.lua` installs QueryRef 2001 as type SQL. Luacheck reported 0 warnings. SQLite expansion shows keys 1 through 6, `${UNIQUE}(base_currency, quote_currency, source_a2012, as_of)`, `${DROP_CHECK}` then `DROP TABLE`, each rollup parameter once, and a reverse delete of query_ref 2001 limited to type SQL. MSSQL expansion stores `WITH`. PostgreSQL, SQLite, DB2, and Firebird store `WITH RECURSIVE`. DB2 uses `SYSIBM.SYSDUMMY1`. Firebird uses `RDB$DATABASE`. No leftover `${}`. Andrew later confirmed migration 2022 applied and said to keep going. He did not quote a Test 31 count.
+
+### Lessons learned
+
+- `rate_n` and `rate_d` are `${INTEGER_BIG}`. The sample 1324434 / 1000000 fits a smaller integer. A longer numerator may not. `summary` is `${TEXT}`, which is `NVARCHAR(255)` on MSSQL.
+- Lookup 2012 icons are defaults: 1 `fa-building-columns`, 2 `fa-landmark`, 3 `fa-credit-card`, 4 `fa-store`, 5 `fa-pen`, 6 `fa-link`. Correct them in place before apply.
+- `USE_RATE_DEFAULT` 1 selects lookup 2012 key 1. 0 selects `RATE_SOURCE`. Any other value matches no source. `RATE_SOURCE` is always bound. Each of the ten parameter names appears once, in a one-row `req` CTE that uses `${DUMMY_TABLE}`.
+- Same currency uses rate 1/1, a null `rate_as_of`, and `converted_cents` equal to `balance_cents`. No `rates` row is required. A different currency prefers a direct quote (base = child, quote = parent) and falls back to the inverse. Integer division truncates toward zero. A missing rate, or a zero numerator or denominator, leaves `converted_cents` null and sets `rate_warning` to 1.
+- The descendant walk stops at depth 16. `SELECT DISTINCT` keeps one row per parent and posting child so a `parent_id` cycle does not multiply the sum. A parent with no posting descendant returns no row.
+- `cfg.WITH_RECURSIVE` is set in this file: `WITH` on MSSQL, `WITH RECURSIVE` on the other engines. It is not a new macro in `database.lua`.
+- Reverse of QueryRef 2001 deletes `query_ref = 2001` and `query_type_a28 = TYPE_SQL` (1). A delete by query_ref alone would also remove the `argent_2001.lua` ledgers bookkeeping rows.
+- The table has no seed, so reverse is `${DROP_CHECK}` then `DROP TABLE`. This file does not fetch BoC.
 
 ### Handoff
 
-Phase 8 adds `tax_codes` and `tax_rates`, each in its own file. The tax columns are already on `lines`. No tax-status lookup.
+Do not start Phase 8 until Andrew reports that he has applied Phase 7.
+
+Phase 8, after that report, uses the next free file numbers. `argent_2023.lua` creates `tax_codes`. No status lookup. `argent_2024.lua` creates `tax_rates`. Do not alter `lines`. The tax columns are already there. He applies as the closing step.
+
+2026-10-07: Andrew confirmed migration 2022 applied and said to keep going. No Test 31 count was quoted. Phase 8 is written in the next section.
 
 ---
 
@@ -675,9 +723,9 @@ Store a tax code and its dated rate. The line columns a tax split writes already
 
 ### Work items
 
-- [ ] 8.1 Create `tax_codes` in its own file. No status lookup.
-- [ ] 8.2 Create `tax_rates` in its own file. Do not alter `lines`.
-- [ ] 8.3 Andrew runs tests 32–39.
+- [x] 8.1 Create `tax_codes` in its own file. No status lookup. `argent_2023.lua`.
+- [x] 8.2 Create `tax_rates` in its own file. Do not alter `lines`. `argent_2024.lua`.
+- [x] 8.3 Andrew applies and reports the result. Test 31 and Test 98 results are written here when he includes them. 2026-10-07: he confirmed migration 2024 applied. No Test 31 count was quoted.
 
 ### Done means
 
@@ -685,15 +733,30 @@ Both tax tables apply and reverse on tests 32–39.
 
 ### Exit gate
 
-Test 31, Test 98, payload regenerate, Andrew's apply.
+Andrew applies. 2026-10-07 he confirmed migration 2024 applied. No Test 31 count was quoted. The agent did not apply.
 
 ### Status
 
-**Not started.**
+**Complete.** Andrew confirmed migration 2024 applied on 2026-10-07. No Test 31 count was quoted.
+
+### Accomplished
+
+2026-10-07: `argent_2023.lua` creates `tax_codes`. `argent_2024.lua` creates `tax_rates`. `lines` is unchanged. Luacheck reported 0 warnings. SQLite expansion shows `code` and `name` NOT NULL, `rate_bps` integer, `effective_on` text, a primary key only, and `${DROP_CHECK}` then `DROP TABLE`. No leftover `${}`. Andrew later confirmed migration 2024 applied. He did not quote a Test 31 count.
+
+### Lessons learned
+
+- `code` and `name` are NOT NULL. The schema names them and does not say NULL. `GST`, `PST-BC`, and `EXEMPT` are examples. This file does not seed them.
+- `rate_bps` is `${INTEGER}`. 500 means 5.00%. `effective_on` is `${DATE}`. The current rate is the latest `effective_on` on or before the as-of date.
+- The schema lists no unique key, so two `tax_rates` rows may share a tax code and date. Add `(tax_code_id, effective_on)` in place if that should be refused.
+- Neither table has a status column or a seed, so reverse is `${DROP_CHECK}` then `DROP TABLE`. Neither file alters `lines`. Companion tax lines are a later tool.
 
 ### Handoff
 
-Phase 9 adds `tags`, `tag_links`, and `attachments`, and seeds lookups 2009 and 2010, each in its own file. It does not add an attachment-status lookup.
+Do not start Phase 9 until Andrew reports that he has applied Phase 8.
+
+Phase 9, after that report, uses the next free file numbers. `argent_2025.lua` seeds lookup 2009 (1 organization, 2 ledger, 3 transaction, 4 line, 5 reconciliation, 6 schedule, 7 attachment, 8 contact, 9 tag). `argent_2026.lua` seeds lookup 2010 (1 note, 2 pdf, 3 image, 4 report, 5 other). `argent_2027.lua` creates `tags`. `organization_id` NULL means global. `argent_2028.lua` creates `tag_links`, unique `(tag_id, entity_type_a2009, entity_id)`. `argent_2029.lua` creates `attachments` with primary key `(attachment_id, rev_id)`. No attachment-status lookup. He applies as the closing step.
+
+2026-10-07: Andrew confirmed migration 2024 applied. No Test 31 count was quoted. Phase 9 is written in the next section.
 
 ---
 
@@ -705,10 +768,10 @@ Store tags and revisioned notes or files on any Argent entity.
 
 ### Work items
 
-- [ ] 9.1 Seed lookup 2009 and lookup 2010, one family per file.
-- [ ] 9.2 Create `tags` and `tag_links`.
-- [ ] 9.3 Create `attachments` with PK `(attachment_id, rev_id)`. A note has `file_data` null and `file_text` set.
-- [ ] 9.4 Andrew runs tests 32–39.
+- [x] 9.1 Seed lookup 2009 and lookup 2010, one family per file. `argent_2025.lua` and `argent_2026.lua`.
+- [x] 9.2 Create `tags` and `tag_links`, one table per file. `argent_2027.lua` and `argent_2028.lua`.
+- [x] 9.3 Create `attachments` with PK `(attachment_id, rev_id)`. A note has `file_data` null and `file_text` set. `argent_2029.lua`.
+- [x] 9.4 Andrew applies and reports the result. Test 31 and Test 98 results are written here when he includes them. 2026-10-07: he confirmed migration 2029 applied. Tests 31 and 71 passed. No Test 31 count was quoted. He did not include a Test 98 result.
 
 ### Done means
 
@@ -716,15 +779,31 @@ Tag and attachment tables apply and reverse on tests 32–39.
 
 ### Exit gate
 
-Test 31, Test 98, payload regenerate, Andrew's apply.
+Andrew applies. 2026-10-07 he confirmed migration 2029 applied. Tests 31 and 71 passed. No Test 31 count was quoted. The agent did not apply.
 
 ### Status
 
-**Not started.**
+**Complete.** Andrew confirmed migration 2029 applied on 2026-10-07. Tests 31 and 71 passed. No Test 31 count was quoted.
+
+### Accomplished
+
+2026-10-07: `argent_2025.lua` seeds lookup 2009. `argent_2026.lua` seeds lookup 2010. `argent_2027.lua` creates `tags`. `argent_2028.lua` creates `tag_links`. `argent_2029.lua` creates `attachments`. Luacheck reported 0 warnings. SQLite expansion shows both key lists and their icons, `tags` with a primary key only, `UNIQUE(tag_id, entity_type_a2009, entity_id)`, `PRIMARY KEY(attachment_id, rev_id)`, and `${DROP_CHECK}` then `DROP TABLE` on each of the three tables. The diagram marks both attachment key columns primary and not unique by themselves. No leftover `${}`. Andrew later confirmed migration 2029 applied. Tests 31 and 71 passed. He did not quote a Test 31 count. That Test 71 run used `DESIGNS` set to Acuranzo alone. Phase 10 changes the list.
+
+### Lessons learned
+
+- Lookup 2009 icons are defaults: 1 `fa-building`, 2 `fa-book`, 3 `fa-right-left`, 4 `fa-list`, 5 `fa-scale-balanced`, 6 `fa-calendar-days`, 7 `fa-paperclip`, 8 `fa-address-book`, 9 `fa-tag`. Lookup 2010 icons are defaults: 1 `fa-note-sticky`, 2 `fa-file-pdf`, 3 `fa-image`, 4 `fa-chart-column`, 5 `fa-ellipsis`. The PDF value text is `PDF`. Correct them in place before apply.
+- `tags.organization_id` NULL means the tag is global. The schema lists no unique key, so two tags may share a name. `summary` is `${TEXT}`.
+- `tag_links` has no `summary` column and no `collection` column. Unique `(tag_id, entity_type_a2009, entity_id)`. Each of those three columns is not unique by itself.
+- `attachments` uses a pair primary key. The diagram marks `attachment_id` and `rev_id` primary and not unique by themselves. `mime_type` and `file_name` are `${TEXT}`. `byte_len` is `${INTEGER_BIG}`. A note has `file_data` null and `file_text` set. This CREATE does not enforce that shape.
+- None of the three tables has a status column, a seed, or a SQL foreign key, so reverse is `${DROP_CHECK}` then `DROP TABLE`. There is no attachment-status lookup. This table is not a link to Acuranzo `documents`.
 
 ### Handoff
 
-Phase 10 may edit `tests/test_71_database_diagrams.sh` only, to add `argent` to `DESIGNS`, plus the script's `CHANGELOG` and `TEST_VERSION`. It does not add a migration. Schema phases leave Test 71 on Acuranzo alone.
+Do not start Phase 10 until Andrew reports that he has applied Phase 9.
+
+Phase 10, after that report, may edit `tests/test_71_database_diagrams.sh` only, to add `argent` to `DESIGNS`, plus the script's `CHANGELOG` and `TEST_VERSION`. It does not add a migration. Schema phases leave Test 71 on Acuranzo alone. He runs Test 71.
+
+2026-10-07: Andrew confirmed migration 2029 applied. Tests 31 and 71 passed. No Test 31 count was quoted. Phase 10 is written in the next section.
 
 ---
 
@@ -736,25 +815,43 @@ Test 71 diagrams the Argent tables as well as Acuranzo.
 
 ### Work items
 
-- [ ] 10.1 Add `argent` to `DESIGNS` in `tests/test_71_database_diagrams.sh`.
-- [ ] 10.2 Bump that script's `CHANGELOG` and `TEST_VERSION`.
-- [ ] 10.3 `mks` is clean. Andrew runs Test 71 and the result is recorded here.
+- [x] 10.1 Add `argent` to `DESIGNS` in `tests/test_71_database_diagrams.sh`. Schema list matches Acuranzo: `app::acuranzo:ACURANZO`.
+- [x] 10.2 Bump that script's `CHANGELOG` and `TEST_VERSION`. Version 3.1.0.
+- [ ] 10.3 `mks` is clean. Andrew runs Test 71 and the result is recorded here. 2026-10-07: version 3.1.0 completed. All 120 Argent SVGs were zero bytes, so that run does not close the phase.
+- [x] 10.4 Sidequest: seven engines, in this order: postgresql, mysql, sqlite, db2, mariadb, firebird, mssql. Schema slots `app:acuranzo::ACURANZO:test:testfb:testms`.
+- [x] 10.5 Sidequest: a missing template uses the built-in page SVG. A zero-byte file is generated again. `get_diagram.js` 2.2.0, `get_diagram.sh` 3.2.0, Test 71 3.2.0.
+- [ ] 10.6 Andrew runs Test 71 3.2.0. Argent SVGs are non-empty. The result is written here.
 
 ### Done means
 
-Test 71 exits 0 with `argent` in `DESIGNS`.
+Test 71 exits 0 with `argent` in `DESIGNS`, and the Argent SVG files are non-empty.
 
 ### Exit gate
 
-`mks`, then Test 71. Andrew runs Test 71.
+`mks` passed on 2026-10-07 (Test 92, 202 files, 0 fail). Andrew runs Test 71 version 3.2.0.
 
 ### Status
 
-**Not started.**
+**In progress.** Sidequest written. Test 71 is 3.2.0. Andrew runs it as the closing step. The database stays at migration 2029. No new migration.
+
+### Accomplished
+
+2026-10-07: `DESIGNS` lists `acuranzo` and `argent`. Version 3.1.0 completed and wrote 120 zero-byte Argent SVGs, 30 files on each of postgresql, mysql, sqlite, and db2. Those files were removed. Version 3.2.0 adds mariadb, firebird, and mssql. A one-file render of `argent_2000` produced a non-empty SVG on all seven engines. The sqlite render through `argent_2029` was 198573 bytes, 15 tables, with `attachments` highlighted. Acuranzo migration 1000 still renders. `mks` exited 0: Test 92, 202 shell files, 0 fail, 24.080s. The full Test 71 was not run.
+
+### Lessons learned
+
+- Argent diagram JSON has tables and no `template` object. Acuranzo ships that object in `acuranzo_1000.lua`. `get_diagram.js` threw, `get_diagram.sh` exited before printing SVG, and the shell redirect left a zero-byte file.
+- Test 71 treated any existing file as success, including those empty files. A later run can complete while every Argent SVG stays empty. A file now has to be non-empty to be skipped.
+- Engine order is postgresql, mysql, sqlite, db2, mariadb, firebird, mssql. The empty slot is sqlite. DB2 names are uppercased in the SVG.
+- `get_diagram.js` draws `object_type` `table` only. Lookup and query objects stay out of the picture. The 2029 snapshot has 15 tables.
+- This test calls `get_migration.lua` on the design directory. A payload regenerate is not required.
+- Acuranzo already had 120 zero-byte SVGs (42 postgresql, 42 mysql, 36 sqlite, none on db2). The next Test 71 retries those as well.
 
 ### Handoff
 
-Phase 11 adds `Argent.*` rows to `scripts` for the CRUD and posting tools listed in that phase. It does not add `H.http.request`. It does not implement confirm tokens. QueryRefs 400 and 401 already exist. Tools call them. They do not install a second copy.
+Do not start Phase 11 until Andrew reports Test 71 version 3.2.0 with non-empty Argent SVGs.
+
+Phase 11, after that report, adds `Argent.*` rows to `scripts` for the CRUD and posting tools listed in that phase. It does not add `H.http.request`. It does not implement confirm tokens. QueryRefs 400 and 401 already exist. Tools call them. They do not install a second copy. One script migration per tool, or one migration per tool group under 1000 lines. The next file number is `argent_2030.lua`.
 
 ---
 
@@ -975,5 +1072,33 @@ Andrew regenerated the payload and applied the Phase 2 seeds. Phase 2 is complet
 ### 2026-10-07 — Phase 3 applied, Phase 4 written
 
 Andrew reported the build succeeded and the Phase 3 migrations applied. Phase 3 is complete. Phase 4 adds `argent_2009.lua` through `argent_2014.lua`: lookups 2003, 2004, and 2011, `transactions`, `lines`, and QueryRef 2000. Not applied. Phase 5 waits for his report.
+
+### 2026-10-07 — Phase 4 directed forward, Phase 5 written
+
+Andrew said to continue. He did not quote a Test 31 count. Phase 5 adds `argent_2015.lua` (lookup 2006) and `argent_2016.lua` (`reconciliations`). Not applied. `lines` is unchanged. Phase 6 waits for his report.
+
+### 2026-10-07 — Phase 5 directed forward, Phase 6 written
+
+Andrew said to continue. He did not quote a Test 31 count. Phase 6 adds `argent_2017.lua` (lookup 2007), `argent_2018.lua` (lookup 2008), and `argent_2019.lua` (`schedules`). Not applied. `transactions` is unchanged. Phase 7 waits for his report.
+
+### 2026-10-07 — Phase 6 applied, Phase 7 written
+
+Andrew confirmed migration 2019 applied and tests passed. He did not quote a Test 31 count. Phase 6 is complete. Phase 7 adds `argent_2020.lua` (lookup 2012), `argent_2021.lua` (`rates`), and `argent_2022.lua` (QueryRef 2001). Not applied. Phase 8 waits for his report.
+
+### 2026-10-07 — Phase 7 applied, Phase 8 written
+
+Andrew confirmed migration 2022 applied and said to keep going. He did not quote a Test 31 count. Phase 7 is complete. Phase 8 adds `argent_2023.lua` (`tax_codes`) and `argent_2024.lua` (`tax_rates`). Not applied. `lines` is unchanged. Phase 9 waits for his report.
+
+### 2026-10-07 — Phase 8 applied, Phase 9 written
+
+Andrew confirmed migration 2024 applied. He did not quote a Test 31 count. Phase 8 is complete. Phase 9 adds `argent_2025.lua` (lookup 2009), `argent_2026.lua` (lookup 2010), `argent_2027.lua` (`tags`), `argent_2028.lua` (`tag_links`), and `argent_2029.lua` (`attachments`). Not applied. Phase 10 waits for his report.
+
+### 2026-10-07 — Phase 9 applied, Phase 10 script updated
+
+Andrew confirmed migration 2029 applied. Tests 31 and 71 passed. He did not quote a Test 31 count. Phase 9 is complete. That Test 71 run used `DESIGNS` set to Acuranzo alone. Phase 10 sets `tests/test_71_database_diagrams.sh` to 3.1.0 and adds `argent` to `DESIGNS`. No migration was added. `mks` exited 0 (Test 92, 193 files, 0 fail). Phase 11 waits for his Test 71 report.
+
+### 2026-10-07 — Phase 10 sidequest, empty Argent diagrams
+
+Andrew said the latest build and apply is migration 2029, and Test 71 completes. All 120 Argent SVGs were zero bytes. The sidequest is Test 71 3.2.0: seven engines, a built-in page template, and a retry of empty files. No migration was added. Phase 11 waits for his 3.2.0 report.
 
 *End of Argent plan.*

@@ -12,6 +12,9 @@
 #   CAT_EXPECTED_JSON, CAT_DATA_JSON, CAT_FINDINGS_JSON, ONLY_FAILURES
 #
 # CHANGELOG
+# 1.5.0 - 2026-10-07 - Catalog default fold is disk expect; --fold-stored keeps type 1003
+# 1.4.0 - 2026-10-07 - MariaDB query and catalog adapters
+# 1.3.0 - 2026-10-07 - Firebird query and catalog adapters; empty schema
 # 1.2.0 - 2026-10-07 - MSSQL query and catalog adapters
 # 1.1.0 - 2026-08-23 - Catalog fold/compare/probe return 1 (caller may degrade)
 # 1.0.0 - 2026-08-02 - Split from schematool.sh
@@ -26,9 +29,11 @@ run_dump_db() {
     case "${ENGINE}" in
         postgresql) adapter="${DB_DIR}/query_pg.sh" ;;
         mysql) adapter="${DB_DIR}/query_mysql.sh" ;;
+        mariadb) adapter="${DB_DIR}/query_mariadb.sh" ;;
         sqlite) adapter="${DB_DIR}/query_sqlite.sh" ;;
         db2) adapter="${DB_DIR}/query_db2.sh" ;;
         mssql) adapter="${DB_DIR}/query_mssql.sh" ;;
+        firebird) adapter="${DB_DIR}/query_firebird.sh" ;;
         *)
             echo "Error: no dump adapter for engine ${ENGINE}" >&2
             exit 1
@@ -45,6 +50,15 @@ run_dump_db() {
     if [[ "${ENGINE}" == "sqlite" ]]; then
         if [[ -z "${DATABASE}" ]]; then
             echo "Error: --database (sqlite file path) is required" >&2
+            exit 1
+        fi
+    elif [[ "${ENGINE}" == "firebird" ]]; then
+        if [[ -z "${DATABASE}" || ! -f "${DATABASE}" ]]; then
+            echo "Error: --database (firebird .fdb path) is required and must exist" >&2
+            exit 1
+        fi
+        if [[ -z "${USER_NAME}" ]]; then
+            echo "Error: --user is required for firebird (SYSDBA)" >&2
             exit 1
         fi
     elif [[ "${ENGINE}" == "db2" ]]; then
@@ -98,8 +112,8 @@ run_dump_db() {
 
 run_expect() {
     local out_file="$1"
-    if [[ -z "${SCHEMA}" && "${ENGINE}" != "sqlite" ]]; then
-        echo "Error: --schema is required for expected extract (empty only for sqlite)" >&2
+    if [[ -z "${SCHEMA}" && "${ENGINE}" != "sqlite" && "${ENGINE}" != "firebird" ]]; then
+        echo "Error: --schema is required for expected extract (empty only for sqlite and firebird)" >&2
         exit 1
     fi
     local schema_arg="${SCHEMA}"
@@ -143,7 +157,7 @@ run_discover() {
     local row_count
     row_count="$("${JQ}" 'length' "${out_file}")"
     if [[ "${row_count}" -eq 0 ]]; then
-        echo "Error: no migrations matched ${DESIGN}_NNNN.lua in ${MIGRATIONS}" >&2
+        echo "Error: no migrations matched ${DESIGN} in ${MIGRATIONS} for this range" >&2
         exit 1
     fi
 }
@@ -154,9 +168,11 @@ run_dump_catalog() {
     case "${ENGINE}" in
         postgresql) adapter="${DB_DIR}/catalog_pg.sh" ;;
         mysql) adapter="${DB_DIR}/catalog_mysql.sh" ;;
+        mariadb) adapter="${DB_DIR}/catalog_mariadb.sh" ;;
         sqlite) adapter="${DB_DIR}/catalog_sqlite.sh" ;;
         db2) adapter="${DB_DIR}/catalog_db2.sh" ;;
         mssql) adapter="${DB_DIR}/catalog_mssql.sh" ;;
+        firebird) adapter="${DB_DIR}/catalog_firebird.sh" ;;
         *)
             echo "Error: no catalog adapter for engine ${ENGINE}" >&2
             return 1
@@ -197,21 +213,36 @@ run_dump_catalog() {
 }
 
 run_catalog_audit() {
-    if [[ ! -f "${DB_JSON}" ]] || ! "${JQ}" -e 'type == "array"' "${DB_JSON}" >/dev/null 2>&1; then
-        local saved_from="${FROM_REF}"
-        local saved_to="${TO_REF}"
-        FROM_REF=""
-        TO_REF=""
-        run_dump_db "${DB_JSON}"
-        FROM_REF="${saved_from}"
-        TO_REF="${saved_to}"
-    fi
-
     local fold_args=(
-        --db "${DB_JSON}"
         --schema "${SCHEMA}"
         --out "${CAT_EXPECTED_JSON}"
     )
+    if [[ "${FOLD_STORED:-0}" -eq 1 ]]; then
+        echo "phase: catalog fold=stored" >&2
+        if [[ ! -f "${DB_JSON}" ]] || ! "${JQ}" -e 'type == "array"' "${DB_JSON}" >/dev/null 2>&1; then
+            local saved_from="${FROM_REF}"
+            local saved_to="${TO_REF}"
+            FROM_REF=""
+            TO_REF=""
+            run_dump_db "${DB_JSON}"
+            FROM_REF="${saved_from}"
+            TO_REF="${saved_to}"
+        fi
+        fold_args+=(--db "${DB_JSON}")
+    else
+        echo "phase: catalog fold=disk engine=${ENGINE}" >&2
+        if [[ ! -f "${EXPECTED_JSON}" ]] \
+            || ! "${JQ}" -e 'type == "array"' "${EXPECTED_JSON}" >/dev/null 2>&1; then
+            run_expect "${EXPECTED_JSON}"
+        fi
+        fold_args+=(--expected "${EXPECTED_JSON}")
+        if [[ -n "${FROM_REF}" ]]; then
+            fold_args+=(--from "${FROM_REF}")
+        fi
+        if [[ -n "${TO_REF}" ]]; then
+            fold_args+=(--to "${TO_REF}")
+        fi
+    fi
     if [[ -n "${ONLY_TABLES}" ]]; then
         fold_args+=(--only-tables "${ONLY_TABLES}")
     fi

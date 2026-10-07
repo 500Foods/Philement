@@ -1,14 +1,13 @@
 #!/usr/bin/env bash
-# SchemaTool wrapper — SQLite (Test 40: hydrogen_test_40_sqlite.json)
+# SchemaTool wrapper — SQLite (Test 34: hydrogen_test_34_sqlite.json)
 #
-# Sets connection params from the Test 40 SQLite config and calls schematool.sh.
-# Database:           tests/artifacts/database/sqlite/hydrodemo.sqlite
+# Database:           tests/artifacts/database/sqlite/hydrotst.sqlite
 # Schema:             (empty — SQLite has no schema prefix)
-# Design:             acuranzo
+# Design:             acuranzo+argent
 #
 # CHANGELOG
-# 1.1.0 - 2026-08-22 - Resolve sibling schematool.sh, then HYDROGEN_ROOT
-# 1.0.0 - 2026-08-02 - Created as Test 40 config convenience wrapper
+# 1.1.0 - 2026-10-07 - Payload acuranzo+argent in one run
+# 1.0.0 - 2026-10-07 - Test 34 wrapper; hydrotst.sqlite
 
 set -euo pipefail
 
@@ -25,17 +24,23 @@ fi
 SCRIPT_DIR="$(cd "$(dirname "${SCHEMATOOL}")" && pwd)"
 if [[ -n "${HYDROGEN_ROOT:-}" ]]; then
     MIGRATIONS_DIR="${HYDROGEN_ROOT}/../../002-helium/acuranzo/migrations"
-    SQLITE_DB="${HYDROGEN_ROOT}/tests/artifacts/database/sqlite/hydrodemo.sqlite"
+    SQLITE_DB="${HYDROGEN_ROOT}/tests/artifacts/database/sqlite/hydrotst.sqlite"
 else
     MIGRATIONS_DIR="${SCRIPT_DIR}/../../../../002-helium/acuranzo/migrations"
-    SQLITE_DB="${SCRIPT_DIR}/../../../tests/artifacts/database/sqlite/hydrodemo.sqlite"
+    SQLITE_DB="${SCRIPT_DIR}/../../../tests/artifacts/database/sqlite/hydrotst.sqlite"
 fi
 
 export SCHEMATOOL_DB_SCHEMA=""
 
+for _arg in "$@"; do
+    if [[ "${_arg}" == "--help" || "${_arg}" == "-h" ]]; then
+        exec "${SCHEMATOOL}" --help
+    fi
+done
+
 exec "${SCHEMATOOL}" \
     --migrations "${MIGRATIONS_DIR}" \
-    --design acuranzo \
+    --design acuranzo+argent \
     --engine sqlite \
     --database "${SQLITE_DB}" \
     --schema "" \

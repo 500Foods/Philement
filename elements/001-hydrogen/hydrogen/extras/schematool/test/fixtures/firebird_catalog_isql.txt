@@ -1,0 +1,55 @@
+# Recorded from hydrogen_demo.fdb on 2026-10-07 (accounts), trimmed the
+# way the adapter trims isql's padded VARCHAR(72) lines. sample_types
+# rows use the same grammar for field types that accounts does not have.
+# null_flag 1 = NOT NULL. identity -1 = none, 0 = ALWAYS, 1 = BY DEFAULT.
+
+T|ACCOUNTS
+C|ACCOUNT_ID
+M|8|0|0|0|0|1|-1
+C|PASSWORD_HASH
+M|14|0|128|0|0|0|-1
+C|NAME
+M|37|0|255|0|0|1|-1
+C|SUMMARY
+M|261|1|0|0|0|1|-1
+C|COLLECTION
+M|261|1|0|0|0|0|-1
+C|CREATED_AT
+M|29|0|0|0|0|1|-1
+K|ACCOUNT_ID|0
+
+T|sample_types
+C|SMALL_ONE
+M|7|0|0|0|0|0|-1
+C|BIG_ONE
+M|16|0|0|0|0|0|-1
+C|NUM_ONE
+M|8|1|0|10|-2|1|-1
+C|DEC_ONE
+M|16|2|0|8|-2|0|-1
+C|FLAG
+M|23|0|0|0|0|0|-1
+C|BIG_FLOAT
+M|27|0|0|0|0|0|-1
+C|SMALL_FLOAT
+M|10|0|0|0|0|1|-1
+C|DAY
+M|12|0|0|0|0|0|-1
+C|CLOCK
+M|13|0|0|0|0|0|-1
+C|STAMP
+M|35|0|0|0|0|1|-1
+C|STAMP_TZ
+M|29|0|0|0|0|0|-1
+C|CLOCK_TZ
+M|28|0|0|0|0|0|-1
+C|BLOB_BIN
+M|261|0|0|0|0|0|-1
+C|IDENT_DEF
+M|8|0|0|0|0|1|1
+C|IDENT_ALWAYS
+M|8|0|0|0|0|1|0
+C|SHORT_TEXT
+M|37|0|20|0|0|0|-1
+K|BIG_ONE|0
+K|SMALL_ONE|1

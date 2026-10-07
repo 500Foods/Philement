@@ -154,18 +154,7 @@ not open work unless listed below.
 | **Done** | Phases 0–11 complete (2026-09-23). Suite reported 100% passing. Phase 12 fence pass deferred. |
 | **Remaining** | Prepared-statement handle cache (`firebird_prepare_statement` stores SQL text; each execute still prepares and frees). Consistency follow-up on Firebird 4.0.7. Not a blocker. |
 | **Why later** | Correctness does not depend on reusing the `isc_stmt_handle`. Firebird 5's compiled-statement cache is a different mechanism and is not required. |
-| **Note** | `src/database/firebird/` + `database_firebird.lua`. No SQL interpreter. Firebase tree is deleted in FIREBIRD Phases 3–4, not reused. Sister plan: item 28 MSSQL. |
-
-### 28. MSSQL engine — implement Lookup 030 key 5
-
-| | |
-| --- | --- |
-| **Plan** | [`MSSQL.md`](/docs/H/plans/MSSQL.md) |
-| **Effort** | XL |
-| **Done** | 0% — plan authored 2026-09-18; Phase 0 locks not approved |
-| **Remaining** | Phase 0 lock approval, Fedora Podman SQL Server 2022 Linux + ODBC 18, Helium dialect, unixODBC C engine, T-SQL/CLR extras, Test 39, SchemaTool, grow matrix 7→8, docs, fences |
-| **Why later** | Key 5 has been a lookup row without a C engine. Fedora has no `mssql-server` RPM; official Linux container is the local free path. Auth Finale remains P0. Parallel with item 27, not a substitute. |
-| **Note** | `src/database/mssql/` + `database_mssql.lua`. Test **39** (37 is Firebird). Developer edition is test-only. No Windows. Shared enum lock with FIREBIRD.md. SchemaTool items 6.1–6.3 are [`SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md) Phase 2. |
+| **Note** | `src/database/firebird/` + `database_firebird.lua`. No SQL interpreter. Firebase tree is deleted in FIREBIRD Phases 3–4, not reused. Sister plan: [MSSQL_COMPLETE.md](/docs/H/plans/complete/MSSQL_COMPLETE.md) (closed 2026-10-07). |
 
 ### 31. SchemaTool / SchemaHelper v2 — eight engines and convergence
 
@@ -233,8 +222,8 @@ not open work unless listed below.
 | --- | --- |
 | **Plan** | [`ARGENT_PLAN.md`](/docs/H/plans/ARGENT_PLAN.md) |
 | **Effort** | L (Helium pack and Lua) plus a small Hydrogen surface |
-| **Done** | Phases 0–3 applied 2026-10-07. Phase 4 files `argent_2009`–`argent_2014` (lookups 2003, 2004, 2011, transactions, lines, QueryRef 2000) are written and not applied yet. |
-| **Remaining** | Andrew applies Phase 4 as its closing step and reports it. Phase 5 is lookup 2006 and reconciliations. Until the plan is done, unshipped Argent files may be edited in place. After that, a schema, lookup, or QueryRef change is a new migration. |
+| **Done** | Phases 0–3 applied 2026-10-07. Phases 4 and 5 were directed forward the same day. Phase 6 closed the same day on the 2019 apply. Phase 7 closed the same day: Andrew confirmed migration 2022 applied and said to keep going. No Test 31 count was quoted. Phase 8 closed the same day: Andrew confirmed migration 2024 applied. No Test 31 count was quoted. Phase 9 closed the same day: Andrew confirmed migration 2029 applied. Tests 31 and 71 passed. No Test 31 count was quoted. Phase 10 set `tests/test_71_database_diagrams.sh` to 3.1.0. That run completed with 120 zero-byte Argent SVGs. The sidequest is version 3.2.0: seven engines and a built-in page template. |
+| **Remaining** | Andrew runs Test 71 on version 3.2.0 and reports non-empty Argent SVGs. That run is the Phase 10 close. Phase 11 adds the `Argent.*` script migrations, starting at `argent_2030.lua`. Until the plan is done, unshipped Argent files may be edited in place. After that, a schema, lookup, or QueryRef change is a new migration. |
 | **Note** | Argent is a 2xxx pack on the Acuranzo database. File numbers, caller-facing QueryRefs, and lookup ids all use 2000–2999 and may share integers. Andrew applies. Tests 32–40 use `PAYLOAD:acuranzo+argent`. |
 
 ### 23. Enum / struct reservations (no work unless product needs them)
@@ -346,12 +335,11 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 13 | Mail Relay remainder | L–XL | ~75% | P2 |
 | 26 | Notifications / Subscribers | L–XL | 0% plan | P2 |
 | 27 | Firebird engine (replace Cockroach) | XL | Phases 0–11 done; cache follow-up | P2 |
-| 28 | MSSQL engine (Lookup 030 key 5) | XL | 0% plan | P2 |
 | 31 | SchemaTool / SchemaHelper v2 | L | plan only | P2 |
 | 24 | `H.externaldb` — ad-hoc external DB from Lua | M | 0% | P2 |
 | 19 | Print job → device / Beryllium | L–XL | ~30% | P3 |
 | 22 | Mirage | XL | 0% | P3 |
-| 30 | Argent Helium bookkeeping | L | Phases 0–3 applied | P3 |
+| 30 | Argent Helium bookkeeping | L | Phase 10 diagrams | P3 |
 | 23 | Reserved enums/fields | n/a | n/a | P3 |
 
 (End of file)

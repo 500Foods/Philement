@@ -9,6 +9,9 @@
 #   extras/schematool/smoke_test40_catalog.sh --out-dir /tmp/st40
 #
 # CHANGELOG
+# 1.1.3 - 2026-10-07 - Call schematool_<engine>_demo.sh. MSSQL stays in the list.
+# 1.1.2 - 2026-10-07 - MariaDB is its own row. Expect log must name engine=mariadb.
+# 1.1.1 - 2026-10-07 - Firebird query and catalog adapters exist. password_hash check unchanged.
 # 1.1.0 - 2026-10-07 - Add mssql (schema demoms). Firebird still lacks dump adapters.
 # 1.0.0 - 2026-08-06 - Initial multi-engine 1190 acceptance smoke
 
@@ -41,7 +44,7 @@ fail=0
 
 run_one() {
     local name="$1"
-    local wrapper="${SCRIPT_DIR}/schematool_${name}.sh"
+    local wrapper="${SCRIPT_DIR}/schematool_${name}_demo.sh"
     local odir="${OUT_DIR}/${name}"
     local log="${OUT_DIR}/${name}.log"
     mkdir -p "${odir}"
@@ -60,6 +63,19 @@ run_one() {
     local ec=$?
     set -e
 
+    local expect_ok=1
+    if [[ "${name}" == "mariadb" ]]; then
+        set +e
+        "${wrapper}" --emit-expected --from 1000 --to 1000 --no-sql --format json \
+            >"${odir}/expect.json" 2>>"${log}"
+        local erc=$?
+        set -e
+        expect_ok=0
+        if [[ "${erc}" -eq 0 ]] && grep -q 'engine=mariadb' "${log}"; then
+            expect_ok=1
+        fi
+    fi
+
     local ph_ok=0
     if [[ -f "${odir}/catalog_checklist.json" ]]; then
         if jq -e '
@@ -77,11 +93,11 @@ run_one() {
         ph_ok=1
     fi
 
-    if [[ "${ec}" -eq 0 && "${ph_ok}" -eq 1 ]]; then
+    if [[ "${ec}" -eq 0 && "${ph_ok}" -eq 1 && "${expect_ok}" -eq 1 ]]; then
         echo "${name}: PASS (exit=${ec}, password_hash nullable Y)" | tee -a "${SUMMARY}"
         pass=$((pass + 1))
     else
-        echo "${name}: FAIL (exit=${ec}, password_hash_ok=${ph_ok}) log=${log}" | tee -a "${SUMMARY}"
+        echo "${name}: FAIL (exit=${ec}, password_hash_ok=${ph_ok}, expect_ok=${expect_ok}) log=${log}" | tee -a "${SUMMARY}"
         fail=$((fail + 1))
         tail -30 "${log}" >>"${SUMMARY}" || true
     fi

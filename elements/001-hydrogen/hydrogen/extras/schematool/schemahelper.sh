@@ -4,6 +4,13 @@
 # Lua 5.5 TUI over extras/schematool. Default is review-only.
 #
 # CHANGELOG
+# 0.6.14 - 2026-10-07 - SchemaTool 1.15.0; type and dropped stay review-only
+# 0.6.13 - 2026-10-07 - SchemaTool 1.14.0; wrappers cover acuranzo+argent
+# 0.6.12 - 2026-10-07 - Help examples use the _demo wrapper names
+# 0.6.11 - 2026-10-07 - Sidecar default includes the wrapper role
+# 0.6.10 - 2026-10-07 - SchemaTool 1.13.0; MariaDB schema demo, no CANVAS_DB
+# 0.6.9 - 2026-10-07 - SchemaTool 1.12.0; drop the cockroachdb alias
+# 0.6.8 - 2026-10-07 - SchemaTool 1.11.0; Firebird picker names the file env
 # 0.6.7 - 2026-10-07 - SchemaTool 1.10.0; MSSQL wrapper in the picker
 # 0.6.6 - 2026-09-09 - --help docs URL → SCHEMAHELPER.md
 # 0.6.5 - 2026-09-09 - Phase 4: accept hash + dashboard un-accept
@@ -50,8 +57,8 @@ SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
 LUA_APP="${SCRIPT_DIR}/schemahelper.lua"
 SCHEMATOOL_SH="${SCRIPT_DIR}/schematool.sh"
 
-VERSION="0.6.7"
-SCHEMATOOL_VERSION="1.10.0"
+VERSION="0.6.14"
+SCHEMATOOL_VERSION="1.15.0"
 
 print_help() {
     cat <<EOF
@@ -64,8 +71,8 @@ Usage:
   schemahelper.sh --version
 
 wrapper is a SchemaTool engine script (credentials + engine). Examples:
-  schemahelper.sh schematool_db2.sh
-  schemahelper.sh "${SCRIPT_DIR}/schematool_postgresql.sh"
+  schemahelper.sh schematool_db2_demo.sh
+  schemahelper.sh "${SCRIPT_DIR}/schematool_postgresql_demo.sh"
 
 If wrapper is omitted, the TUI lists extras/schematool/schematool_*.sh
 after the splash.
@@ -76,7 +83,7 @@ Options:
   --out-dir DIR          SchemaTool workspace (default: directory of wrapper)
   --work-dir DIR         Use DIR for intermediate JSON/detail/log files
                          (default: /tmp/schemahelper-<timestamp>-<rand>)
-  --state-file PATH      Sidecar JSON (default: <out-dir>/schemahelper_<design>_<engine>.json)
+  --state-file PATH      Sidecar JSON (default: <out-dir>/schemahelper_<design>_<engine>_<role>.json)
   --packet-dir DIR       Packet workspace (default: same as --out-dir)
   --ref N                Force packet ref instead of max(disk, reserved)+1
   --track metadata|catalog|both
@@ -85,14 +92,17 @@ Options:
   --allow-write          Enable [U]pdate Database: apply metadata change
                           (type REF.field), delete orphan ref (type REF; true
                           orphans only), apply catalog DDL on nullable/
-                          add-column findings (type object.column), and
+                          add-column findings (type object.column). Type and
+                          dropped findings stay review-only. Also enables
                           [M] Promote a packet stub into Helium migrations
   --keep-work-dir        Do not remove the auto-generated work-dir on exit
   --help, -h             This help
   --version              Print versions
 
-Migrations default to the same Helium acuranzo tree the wrappers use
+Migrations default to the acuranzo folder the wrappers use
 (HELIUM_ROOT/acuranzo/migrations, else the repo 002-helium path).
+Those wrappers pass --design acuranzo+argent, so one run also reads
+the sibling argent/migrations folder.
 
 Requires Lua 5.5 and the terminal rock:
   luarocks --lua-version=5.5 install terminal

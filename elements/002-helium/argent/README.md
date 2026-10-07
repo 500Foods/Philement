@@ -15,7 +15,7 @@ Primary target is PostgreSQL 15+ via YugabyteDB. Authoritative guidance is in `/
 
 `database*.lua` here is a copy of the Acuranzo macro set (including MariaDB and MSSQL). The copy stays. The payload packs it as `argent/database*.lua`, and the loader uses that copy when it runs an `argent_*.lua` file.
 
-Lookup ids **2000–2999** are Argent's block on the shared `lookups` table, the same range as Argent's migration numbers and caller-facing QueryRefs. The same integer may be all three. `organizations.status_a2000` is lookup 2000. `ledgers.ledger_type_a2001` is lookup 2001 (asset, liability, equity, income, expense). `ledgers.status_a2002` is lookup 2002 (open, closed, archive). Lookups 2000–2002 are seeded by `argent_2002.lua` through `argent_2004.lua`. Lookup 2005 is `argent_2005.lua`. Lookups 2003, 2004, and 2011 are `argent_2009.lua`, `argent_2010.lua`, and `argent_2011.lua`. QueryRef 2000 is `argent_2014.lua`. See [`/docs/H/plans/ARGENT_PLAN.md`](/docs/H/plans/ARGENT_PLAN.md).
+Lookup ids **2000–2999** are Argent's block on the shared `lookups` table, the same range as Argent's migration numbers and caller-facing QueryRefs. The same integer may be all three. `organizations.status_a2000` is lookup 2000. `ledgers.ledger_type_a2001` is lookup 2001 (asset, liability, equity, income, expense). `ledgers.status_a2002` is lookup 2002 (open, closed, archive). Lookups 2000–2002 are seeded by `argent_2002.lua` through `argent_2004.lua`. Lookup 2005 is `argent_2005.lua`. Lookups 2003, 2004, and 2011 are `argent_2009.lua`, `argent_2010.lua`, and `argent_2011.lua`. QueryRef 2000 is `argent_2014.lua`. Lookup 2006 is `argent_2015.lua`. Lookups 2007 and 2008 are `argent_2017.lua` and `argent_2018.lua`. Lookup 2012 is `argent_2020.lua`. QueryRef 2001 is `argent_2022.lua`. Lookups 2009 and 2010 are `argent_2025.lua` and `argent_2026.lua`. See [`/docs/H/plans/ARGENT_PLAN.md`](/docs/H/plans/ARGENT_PLAN.md).
 
 ## Database Files
 
@@ -49,4 +49,19 @@ Lookup ids **2000–2999** are Argent's block on the shared `lookups` table, the
 | [2012](/elements/002-helium/argent/migrations/argent_2012.lua) | transactions | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the transactions table |
 | [2013](/elements/002-helium/argent/migrations/argent_2013.lua) | lines | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the lines table |
 | [2014](/elements/002-helium/argent/migrations/argent_2014.lua) | queries | 1.0.0 | 2026-10-07 | 5 | ✓ | QueryRef #2000 - Argent balance |
-| **15** | | | | **98** | **15** | |
+| [2015](/elements/002-helium/argent/migrations/argent_2015.lua) | lookups | 1.0.0 | 2026-10-07 | 7 | ✓ | Seeds lookup 2006, reconciliation status |
+| [2016](/elements/002-helium/argent/migrations/argent_2016.lua) | reconciliations | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the reconciliations table |
+| [2017](/elements/002-helium/argent/migrations/argent_2017.lua) | lookups | 1.0.0 | 2026-10-07 | 7 | ✓ | Seeds lookup 2007, schedule status |
+| [2018](/elements/002-helium/argent/migrations/argent_2018.lua) | lookups | 1.0.0 | 2026-10-07 | 7 | ✓ | Seeds lookup 2008, horizon mode |
+| [2019](/elements/002-helium/argent/migrations/argent_2019.lua) | schedules | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the schedules table |
+| [2020](/elements/002-helium/argent/migrations/argent_2020.lua) | lookups | 1.0.0 | 2026-10-07 | 7 | ✓ | Seeds lookup 2012, rate source |
+| [2021](/elements/002-helium/argent/migrations/argent_2021.lua) | rates | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the rates table |
+| [2022](/elements/002-helium/argent/migrations/argent_2022.lua) | queries | 1.0.0 | 2026-10-07 | 5 | ✓ | QueryRef #2001 - Argent rollup |
+| [2023](/elements/002-helium/argent/migrations/argent_2023.lua) | tax_codes | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the tax_codes table |
+| [2024](/elements/002-helium/argent/migrations/argent_2024.lua) | tax_rates | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the tax_rates table |
+| [2025](/elements/002-helium/argent/migrations/argent_2025.lua) | lookups | 1.0.0 | 2026-10-07 | 7 | ✓ | Seeds lookup 2009, entity type |
+| [2026](/elements/002-helium/argent/migrations/argent_2026.lua) | lookups | 1.0.0 | 2026-10-07 | 7 | ✓ | Seeds lookup 2010, attachment type |
+| [2027](/elements/002-helium/argent/migrations/argent_2027.lua) | tags | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the tags table |
+| [2028](/elements/002-helium/argent/migrations/argent_2028.lua) | tag_links | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the tag_links table |
+| [2029](/elements/002-helium/argent/migrations/argent_2029.lua) | attachments | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the attachments table |
+| **30** | | | | **193** | **30** | |

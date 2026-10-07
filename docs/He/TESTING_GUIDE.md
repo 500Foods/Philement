@@ -6,7 +6,7 @@ This guide explains how to validate, test, and debug Helium migrations before de
 
 - Lua CLI (prefer 5.5 to match Hydrogen embed) with luarocks; migration host needs `lua-brotli` loadable by the embed (`brotli.so` on `package.cpath`, and the hydrogen binary linked with `-rdynamic` when Lua is static)
 - luacheck: `luarocks install luacheck`
-- Database engines: PostgreSQL, MySQL, SQLite, DB2, or Firebird 4
+- Database engines: PostgreSQL, MySQL, SQLite, DB2, Firebird 4, or SQL Server 2022 (Linux container)
 - Hydrogen test suite access
 
 ## Syntax Validation
@@ -126,6 +126,14 @@ lua database.lua firebird acuranzo '' < acuranzo_9999.lua | isql-fb -user SYSDBA
 ```
 
 `${SCHEMA}` is empty. The `.fdb` file is the database. Brotli and `JSON_VALUE` require the UDRs in [extras/brotli_udf_firebird](/elements/001-hydrogen/hydrogen/extras/brotli_udf_firebird/README.md) and [extras/json_udf_firebird](/elements/001-hydrogen/hydrogen/extras/json_udf_firebird/README.md).
+
+#### SQL Server
+
+```bash
+lua database.lua mssql acuranzo testms < acuranzo_9999.lua
+```
+
+Run the SQL with `sqlcmd` inside container `philement-mssql`, against database `hydrotst` and schema `testms`. `${SCHEMA}` is `testms.`. Developer edition is not a production license. The container and driver notes are in [extras/mssql_server/README.md](/elements/001-hydrogen/hydrogen/extras/mssql_server/README.md). Do not put the SA password on the command line.
 
 ### Verification Steps
 

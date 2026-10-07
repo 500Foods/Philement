@@ -3,6 +3,9 @@
 -- orphan DELETE, or single-statement catalog DDL (nullable / add column).
 --
 -- CHANGELOG
+-- 0.5.9 - 2026-10-07 - Type and dropped catalog findings stay review-only
+-- 0.5.8 - 2026-10-07 - MariaDB qualifies with the same backticks as MySQL
+-- 0.5.7 - 2026-10-07 - Dollar-quote literals no longer treat cockroachdb as postgresql
 -- 0.5.6 - 2026-10-07 - MSSQL bracket qualify and N'' field literals
 -- 0.5.5 - 2026-08-24 - Phase 7: catalog DDL apply (nullable / add column), louder confirm (object.column)
 -- 0.5.4 - 2026-08-24 - Phase 5 slice: confirmed orphan DELETE (true orphans only)
@@ -103,6 +106,13 @@ local function sql_string_literal(body)
     return "'" .. tostring(body or ""):gsub("'", "''") .. "'"
 end
 
+local function backtick_name(schema, table_name)
+    if schema:match("^[%w_]+$") and tostring(table_name):match("^[%w_]+$") then
+        return "`" .. schema .. "`.`" .. table_name .. "`"
+    end
+    return schema .. "." .. table_name
+end
+
 function M.qualify_queries(engine, schema)
     if not schema or schema == "" or schema == "." or engine == "sqlite" then
         return "queries"
@@ -112,6 +122,9 @@ function M.qualify_queries(engine, schema)
     end
     if engine == "mssql" and schema:match("^[%w_]+$") then
         return "[" .. schema .. "].[queries]"
+    end
+    if engine == "mysql" or engine == "mariadb" then
+        return backtick_name(schema, "queries")
     end
     return schema .. ".queries"
 end
@@ -127,6 +140,9 @@ function M.qualify_table(engine, schema, table_name)
         and schema:match("^[%w_]+$")
         and tostring(table_name):match("^[%w_]+$") then
         return "[" .. schema .. "].[" .. table_name .. "]"
+    end
+    if engine == "mysql" or engine == "mariadb" then
+        return backtick_name(schema, table_name)
     end
     return schema .. "." .. table_name
 end
@@ -210,6 +226,9 @@ function M.refuse_reason(finding, allow_write)
         return "anomaly — do not auto-delete"
     end
     if class:find("^catalog") or kind:find("^cat") then
+        if kind == "type" or kind == "dropped" then
+            return "review only"
+        end
         if kind == "nullable" or kind == "column" then
             return nil
         end
@@ -242,12 +261,14 @@ function M.can_apply(finding, allow_write)
 end
 
 function M.field_literal(engine, value)
-    if engine == "postgresql" or engine == "cockroachdb"
-        or engine == "yugabytedb" then
+    if engine == "postgresql" or engine == "yugabytedb" then
         return dollar_quote(value)
     end
     if engine == "mssql" then
         return "N" .. sql_string_literal(value)
+    end
+    if engine == "mysql" or engine == "mariadb" then
+        return sql_string_literal(value)
     end
     return sql_string_literal(value)
 end

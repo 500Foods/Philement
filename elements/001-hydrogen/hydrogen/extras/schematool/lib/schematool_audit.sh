@@ -21,10 +21,12 @@
 #
 # Globals set by this library (consumed by schematool_render.sh):
 #   AUDIT_EXIT, SUBTITLE, FOOTER, DATA_JSON,
-#   CATALOG_EXIT, CAT_OK, CAT_MT, CAT_MC, CAT_NULL, CAT_CHK,
+#   CATALOG_EXIT, CAT_OK, CAT_MT, CAT_MC, CAT_NULL, CAT_TYPE, CAT_DROP, CAT_CHK,
 #   CAT_ROWS, CAT_EXIT_LABEL, RENDER_MODE, SUBTITLE, FOOTER
 #
 # CHANGELOG
+# 1.4.0 - 2026-10-07 - Catalog footer counts type and dropped findings
+# 1.3.0 - 2026-10-07 - phase: expect names the dialect
 # 1.2.0 - 2026-08-23 - Catalog track degrades after a successful metadata audit
 # 1.1.0 - 2026-08-23 - Stderr phase: markers for SchemaHelper progress
 # 1.0.0 - 2026-08-02 - Split from schematool.sh
@@ -128,7 +130,7 @@ schematool_run_metadata_audit() {
     else
         cp "${DISK_JSON}" "${disk_all_json}"
     fi
-    echo "phase: expect" >&2
+    echo "phase: expect engine=${ENGINE}" >&2
     run_expect "${EXPECTED_JSON}"
     # Dump all migration metadata (no --from/--to) so orphans outside range are visible
     local saved_from="${FROM_REF}"
@@ -329,6 +331,8 @@ schematool_run_catalog_audit() {
     CAT_MT="$("${JQ}" -r '.counts.missing_table // 0' "${CAT_FINDINGS_JSON}")"
     CAT_MC="$("${JQ}" -r '.counts.missing_column // 0' "${CAT_FINDINGS_JSON}")"
     CAT_NULL="$("${JQ}" -r '.counts.nullability // 0' "${CAT_FINDINGS_JSON}")"
+    CAT_TYPE="$("${JQ}" -r '.counts.type // 0' "${CAT_FINDINGS_JSON}")"
+    CAT_DROP="$("${JQ}" -r '.counts.dropped // 0' "${CAT_FINDINGS_JSON}")"
     CAT_CHK="$("${JQ}" -r '.counts.checked // 0' "${CAT_FINDINGS_JSON}")"
     CAT_ROWS="$("${JQ}" 'length' "${CAT_DATA_JSON}")"
 
@@ -353,7 +357,7 @@ schematool_run_catalog_audit() {
         RENDER_MODE="catalog"
         DATA_JSON="${CAT_DATA_JSON}"
         SUBTITLE="{CYAN}Catalog{WHITE} hybrid-C · ${CAT_CHK} checks · tables filter=${ONLY_TABLES:-all}{RESET}"
-        FOOTER="{CYAN}${DISPLAY_STAMP}{RESET} {RED}———{RESET} ok=${CAT_OK} missT=${CAT_MT} missC=${CAT_MC} null=${CAT_NULL} · ${CAT_EXIT_LABEL}"
+        FOOTER="{CYAN}${DISPLAY_STAMP}{RESET} {RED}———{RESET} ok=${CAT_OK} missT=${CAT_MT} missC=${CAT_MC} null=${CAT_NULL} type=${CAT_TYPE:-0} drop=${CAT_DROP:-0} · ${CAT_EXIT_LABEL}"
     else
         # Print catalog table after metadata
         RENDER_MODE="both"

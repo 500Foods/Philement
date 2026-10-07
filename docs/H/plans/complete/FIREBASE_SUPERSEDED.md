@@ -4,7 +4,7 @@
 > **Superseded 2026-09-18.** Cloud Firestore was the wrong fifth engine:
 > Helium emits SQL, and Firestore is not a SQL server. The replacement is
 > Firebird ([`FIREBIRD.md`](/docs/H/plans/FIREBIRD.md)). MS SQL Server
-> (Lookup 030 key 5) is a separate plan ([`MSSQL.md`](/docs/H/plans/MSSQL.md)).
+> (Lookup 030 key 5) is a separate plan ([`MSSQL_COMPLETE.md`](/docs/H/plans/complete/MSSQL_COMPLETE.md)).
 > Do not resume Phase 8 or add C to `src/database/firebase/`. Firebase
 > teardown is FIREBIRD Phases 3–4. This file is the historical Working Log
 > only.

@@ -11,12 +11,13 @@
 #   SUBTITLE, FOOTER, DISPLAY_STAMP,
 #   DATA_JSON, LAYOUT_JSON, OUT_DIR, FORMAT, FINDINGS_JSON,
 #   CAT_DATA_JSON, CAT_EXPECTED_JSON, CAT_LIVE_JSON, CAT_FINDINGS_JSON,
-#   CAT_OK, CAT_MT, CAT_MC, CAT_NULL, CAT_CHK, CAT_ROWS, CAT_EXIT_LABEL,
+#   CAT_OK, CAT_MT, CAT_MC, CAT_NULL, CAT_TYPE, CAT_DROP, CAT_CHK, CAT_ROWS, CAT_EXIT_LABEL,
 #   ONLY_TABLES, TABLES, JQ, LUA, LUA_DIR, ROW_GROUP_SIZE, WORK_DIR,
 #   SCHEMA, NO_DETAIL, DETAIL_MAX_LINES, WORK_DIR_SET
 #   SCHEMA, NO_DETAIL, DETAIL_MAX_LINES
 #
 # CHANGELOG
+# 1.3.0 - 2026-10-07 - Catalog footer counts type and dropped findings
 # 1.2.0 - 2026-08-06 - Post-table finding details (diff + commented remediation)
 # 1.1.0 - 2026-08-02 - Row grouping: horizontal separators every ROW_GROUP_SIZE rows
 # 1.0.0 - 2026-08-02 - Split from schematool.sh
@@ -107,7 +108,7 @@ render_catalog_table() {
 {
     "title": "{BOLD}{WHITE}SchemaTool Catalog{RESET} — ${DESIGN} / ${ENGINE} / ${SCHEMA_LABEL} @ ${TITLE_DB}",
     "subtitle": "{CYAN}Live object shape{WHITE} · hybrid-C · filter=${only_label} · ${CAT_CHK} checks ({BOLD}${CAT_ROWS}{RESET}{CYAN} rows){RESET}",
-    "footer": "{CYAN}${DISPLAY_STAMP}{RESET} {RED}———{RESET} ok=${CAT_OK} missT=${CAT_MT} missC=${CAT_MC} null=${CAT_NULL} · ${CAT_EXIT_LABEL}",
+    "footer": "{CYAN}${DISPLAY_STAMP}{RESET} {RED}———{RESET} ok=${CAT_OK} missT=${CAT_MT} missC=${CAT_MC} null=${CAT_NULL} type=${CAT_TYPE:-0} drop=${CAT_DROP:-0} · ${CAT_EXIT_LABEL}",
     "footer_position": "right",
     "theme": "${theme}",
     "columns": [

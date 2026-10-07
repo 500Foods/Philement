@@ -2,11 +2,14 @@
 -- SchemaTool wrapper discovery + metadata, plus path/sh quoting helpers.
 --
 -- CHANGELOG
--- 0.6.2 - 2026-09-08 - Picker labels use connect.picker_blurb
+-- 0.6.5 - 2026-10-07 - Disk ref count follows a design plus-list
+-- 0.6.4 - 2026-10-07 - Discover follows the sixteen-stem WRAPPER_ORDER
+-- 0.6.3 - 2026-10-07 - Picker rows key by path; test role is its own row
 -- 0.5.8 - 2026-08-25 - Extracted from schemahelper.lua (wrapper cluster)
 
 local connect = require("schemahelper_connect")
 local C = require("schemahelper_const")
+local payload = require("schematool_payload")
 
 local WRAPPER_ORDER = C.WRAPPER_ORDER
 
@@ -39,8 +42,21 @@ local function wrapper_engine(path)
     return base:match("^schematool_(.+)%.sh$") or ""
 end
 
+local function wrapper_engine_role(stem)
+    local base = stem:match("^(.*)_test$")
+    if base and base ~= "" then
+        return base, "test"
+    end
+    base = stem:match("^(.*)_demo$")
+    if base and base ~= "" then
+        return base, "demo"
+    end
+    return stem, "demo"
+end
+
 local function wrapper_meta(path)
-    local engine = wrapper_engine(path)
+    local stem = wrapper_engine(path)
+    local engine, role = wrapper_engine_role(stem)
     local flags = connect.parse_wrapper(path)
     local design = flags.design or "acuranzo"
     local schema = flags.schema or ""
@@ -48,7 +64,7 @@ local function wrapper_meta(path)
         local resolved = connect.resolve(path)
         schema = resolved.schema or ""
     end
-    return design, engine, schema
+    return design, engine, schema, role
 end
 
 local function wrapper_dir(path)
@@ -56,46 +72,59 @@ local function wrapper_dir(path)
 end
 
 local function discover_wrappers(dir)
-    local found = {}
+    local by_stem = {}
     local cmd = 'ls -1 "' .. dir:gsub('"', '\\"') .. '"/schematool_*.sh 2>/dev/null'
     local h = io.popen(cmd)
     if h then
         for line in h:lines() do
             if line ~= "" then
-                local eng = wrapper_engine(line)
-                if eng ~= "" then
-                    found[eng] = line
+                local stem = wrapper_engine(line)
+                if stem ~= "" and not by_stem[stem] then
+                    by_stem[stem] = line
                 end
             end
         end
         h:close()
     end
     local list = {}
-    local seen = {}
-    for _, eng in ipairs(WRAPPER_ORDER) do
-        if found[eng] then
-            list[#list + 1] = { engine = eng, path = found[eng] }
-            seen[eng] = true
+    local seen_path = {}
+    local function add(stem)
+        local path = by_stem[stem]
+        if path and not seen_path[path] then
+            seen_path[path] = true
+            local engine, role = wrapper_engine_role(stem)
+            list[#list + 1] = {
+                engine = engine,
+                role = role,
+                path = path,
+                stem = stem,
+            }
         end
+    end
+    for _, stem in ipairs(WRAPPER_ORDER) do
+        add(stem)
     end
     local extras = {}
-    for eng, path in pairs(found) do
-        if not seen[eng] then
-            extras[#extras + 1] = { engine = eng, path = path }
+    for stem, path in pairs(by_stem) do
+        if not seen_path[path] then
+            extras[#extras + 1] = stem
         end
     end
-    table.sort(extras, function(a, b)
-        return a.engine < b.engine
-    end)
-    for _, item in ipairs(extras) do
-        list[#list + 1] = item
+    table.sort(extras)
+    for _, stem in ipairs(extras) do
+        add(stem)
     end
     return list
 end
 
 local function wrapper_label(item)
     local base = item.path:match("([^/]+)$") or item.path
-    local blurb = connect.picker_blurb(item.engine)
+    local engine = item.engine
+    local role = item.role
+    if not role or role == "" then
+        engine, role = wrapper_engine_role(engine or "")
+    end
+    local blurb = connect.picker_blurb(engine, role)
     return string.format("%-28s %s", base, blurb)
 end
 
@@ -113,31 +142,27 @@ local function count_disk_refs(migrations, design)
     if not migrations or migrations == "" then
         return 0
     end
-    local design_pat = (design or "acuranzo"):gsub("(%W)", "%%%1")
-    local patterns = {
-        "^" .. design_pat .. "_(%d+)%.lua$",
-        "^design_(%d+)%.lua$",
-    }
-    local n = 0
-    local h = io.popen("ls -1 " .. sh_quote(migrations) .. " 2>/dev/null")
-    if not h then
+    local locs = payload.locations(migrations, design or "acuranzo")
+    if not locs then
         return 0
     end
-    for name in h:lines() do
-        for i = 1, #patterns do
-            if name:match(patterns[i]) then
-                n = n + 1
-                break
+    local generic = #locs == 1
+    local n = 0
+    for _, loc in ipairs(locs) do
+        if payload.is_dir(loc.dir) then
+            local entries = payload.list_entries(loc.dir, loc.name, nil, nil, generic)
+            if entries then
+                n = n + #entries
             end
         end
     end
-    h:close()
     return n
 end
 
 return {
     read_tool_version = read_tool_version,
     wrapper_engine = wrapper_engine,
+    wrapper_engine_role = wrapper_engine_role,
     wrapper_meta = wrapper_meta,
     wrapper_dir = wrapper_dir,
     discover_wrappers = discover_wrappers,
