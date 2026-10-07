@@ -113,7 +113,9 @@ int nats_connect_send(void) {
     json_object_set_new(obj, "protocol", json_integer(1));
     json_object_set_new(obj, "lang", json_string("c"));
     json_object_set_new(obj, "version", json_string(VERSION));
-    json_object_set_new(obj, "no_echo", json_true());
+    /* nats-server 2.11 reads "echo". false keeps this connection from
+       receiving its own PUB. The server ignores a "no_echo" field. */
+    json_object_set_new(obj, "echo", json_false());
     if (cfg->InstanceId && cfg->InstanceId[0] != '\0') {
         json_object_set_new(obj, "name", json_string(cfg->InstanceId));
     }

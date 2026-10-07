@@ -1,0 +1,86 @@
+{
+    "Server": {
+        "ServerName": "hydrogen-test-62-bad",
+        "PayloadKey": "${env.PAYLOAD_KEY}"
+    },
+    "WebServer": {
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "Port": 5623
+    },
+    "API": {
+        "Enabled": true,
+        "Prefix": "/api"
+    },
+    "Databases": {
+        "Connections": [
+            {
+                "Name": "Helium",
+                "Engine": "sqlite",
+                "Enabled": true,
+                "Database": "tests/artifacts/database/sqlite/hydrotst.sqlite",
+                "StmtCache": 100,
+                "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
+                "AutoMigration": false,
+                "TestMigration": false,
+                "Schema": "",
+                "Migrations": "PAYLOAD:acuranzo+argent",
+                "Queues": {
+                    "Slow": {
+                        "start": 2
+                    }
+                }
+            }
+        ]
+    },
+    "NATS": {
+        "Enabled": true,
+        "Servers": ["nats://127.0.0.1:5628"],
+        "ClusterId": "philement",
+        "InstanceId": "nats-62-bad",
+        "Group": "",
+        "Username": "",
+        "Password": "",
+        "TlsEnabled": false,
+        "TlsCaCert": "",
+        "ConnectionTimeoutSeconds": 2,
+        "Reconnect": {
+            "MaxRetries": -1,
+            "Delays": [1],
+            "SteadyDelaySeconds": 1
+        },
+        "Subscriptions": [
+            {
+                "Subject": "cache.invalidate",
+                "Type": "cluster-wide"
+            },
+            {
+                "Subject": "instance.app_state",
+                "Type": "cluster-wide"
+            },
+            {
+                "Subject": "jobs.refresh-all",
+                "Type": "queue-group",
+                "QueueGroup": "philement-refresh"
+            },
+            {
+                "Subject": "order.updated",
+                "Type": "cluster-wide"
+            }
+        ],
+        "WebSocketRelay": {
+            "Enabled": false,
+            "Events": []
+        },
+        "Presence": {
+            "Enabled": false,
+            "HeartbeatIntervalSeconds": 1,
+            "StaleAfterSeconds": 2,
+            "ReportConnections": true
+        },
+        "Test": {
+            "FailNextPublishOnLaunch": false,
+            "MockConnection": false
+        }
+    }
+}

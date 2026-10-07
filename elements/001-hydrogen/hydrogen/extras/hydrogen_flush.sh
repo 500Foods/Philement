@@ -5,6 +5,7 @@
 # Used to reset databases before major migration changes
 
 # CHANGELOG
+# 1.0.5 - 2026-10-07 - MSSQL: drop user tables and views in testms and demoms
 # 1.0.4 - 2026-09-20 - Replaced CockroachDB with Firebird engine (isql-fb)
 # 1.0.3 - 2026-01-17 - Fix DB2 password handling with special characters by disabling history expansion
 
@@ -74,6 +75,75 @@ get_db_config() {
     echo "${engine}|${host}|${port}|${database}|${user}|${pass}|${schema}"
 }
 
+# MSSQL runs sqlcmd inside philement-mssql. The password is
+# SQLCMDPASSWORD on that script's stdin, not a process argument.
+# A down container prints a note and leaves the schema in place.
+# These arms return 0 so set -e does not abort the rest of the flush.
+mssql_note() {
+    echo "mssql: $*" >&2
+}
+
+mssql_can_run() {
+    local pass="$1"
+    local schema="$2"
+    if ! command -v podman >/dev/null 2>&1; then
+        mssql_note "podman not found; leaving schema untouched"
+        return 1
+    fi
+    # shellcheck disable=SC2312 # container lookup is the flush precondition
+    if ! podman ps --format '{{.Names}}' 2>/dev/null | grep -qx philement-mssql; then
+        mssql_note "container philement-mssql is not running; leaving schema untouched"
+        return 1
+    fi
+    if [[ -z "${pass}" ]]; then
+        mssql_note "password is empty; leaving schema untouched"
+        return 1
+    fi
+    if [[ ! "${schema}" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+        mssql_note "schema must be a plain identifier; leaving schema untouched"
+        return 1
+    fi
+    return 0
+}
+
+# SQL on stdin. sqlcmd stdout goes to dest. Errors are scrubbed.
+mssql_sqlcmd() {
+    local database="$1"
+    local user="$2"
+    local pass="$3"
+    local dest="$4"
+    local flags="$5"
+    local err sqlfile scriptfile rc safe
+    err="$(mktemp "${TMPDIR:-/tmp}/hydrogen_flush_mssql_err.XXXXXX")"
+    sqlfile="$(mktemp "${TMPDIR:-/tmp}/hydrogen_flush_mssql_sql.XXXXXX")"
+    scriptfile="$(mktemp "${TMPDIR:-/tmp}/hydrogen_flush_mssql_sh.XXXXXX")"
+    cat > "${sqlfile}"
+    {
+        printf 'export SQLCMDPASSWORD=%q\n' "${pass}"
+        printf "exec /opt/mssql-tools18/bin/sqlcmd -S localhost -U %q -C -d %q %s -b -i /dev/stdin <<'SCHEMATOOL_MSSQL_SQL_END'\n" \
+            "${user}" "${database}" "${flags}"
+        cat "${sqlfile}"
+        printf '\nSCHEMATOOL_MSSQL_SQL_END\n'
+    } > "${scriptfile}"
+    set +e
+    podman exec -i philement-mssql bash -s < "${scriptfile}" >"${dest}" 2>"${err}"
+    rc=$?
+    set -e
+    rm -f "${sqlfile}" "${scriptfile}"
+    if [[ "${rc}" -ne 0 ]]; then
+        safe="$(cat "${err}" "${dest}" 2>/dev/null || true)"
+        safe="${safe//${pass}/***}"
+        mssql_note "sqlcmd failed"
+        echo "${safe}" >&2
+    elif [[ "${DEBUG}" == true ]]; then
+        safe="$(cat "${dest}" 2>/dev/null || true)"
+        safe="${safe//${pass}/***}"
+        printf '%s\n' "${safe}"
+    fi
+    rm -f "${err}"
+    return 0
+}
+
 # Function to count objects in schema/database
 count_objects() {
     local engine="$1"
@@ -128,6 +198,30 @@ count_objects() {
                 count=$(ysqlsh -h "${host}" -p "${port}" -U "${user}" -d "${database}" -c "SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = '${schema}';" 2>/dev/null | tail -1 | tr -d ' ' | grep -E '^[0-9]+$' || echo "0")
             else
                 count="0"
+            fi
+            ;;
+        mssql)
+            : "${host}" "${port}"
+            # shellcheck disable=SC2310 # a down container leaves this schema and continues
+            if ! mssql_can_run "${pass}" "${schema}"; then
+                count="0"
+            else
+                local raw
+                raw="$(mktemp "${TMPDIR:-/tmp}/hydrogen_flush_mssql_count.XXXXXX")"
+                mssql_sqlcmd "${database}" "${user}" "${pass}" "${raw}" "-h-1 -W" <<SQL
+SET NOCOUNT ON;
+SELECT
+  (SELECT COUNT(*) FROM sys.tables AS t
+    WHERE SCHEMA_NAME(t.schema_id) = N'${schema}' AND t.is_ms_shipped = 0)
+  + (SELECT COUNT(*) FROM sys.views AS v
+    WHERE SCHEMA_NAME(v.schema_id) = N'${schema}');
+SQL
+                count="$(tr -d '\r ' < "${raw}" | grep -E '^[0-9]+$' || true)"
+                count="${count%%$'\n'*}"
+                rm -f "${raw}"
+                if [[ -z "${count}" ]]; then
+                    count="0"
+                fi
             fi
             ;;
         *)
@@ -214,6 +308,45 @@ drop_schema() {
                 fi
             fi
             ;;
+        mssql)
+            : "${host}" "${port}"
+            # shellcheck disable=SC2310 # a down container leaves this schema and continues
+            if mssql_can_run "${pass}" "${schema}"; then
+                local raw
+                raw="$(mktemp "${TMPDIR:-/tmp}/hydrogen_flush_mssql_drop.XXXXXX")"
+                mssql_sqlcmd "${database}" "${user}" "${pass}" "${raw}" "-b" <<SQL
+SET NOCOUNT ON;
+SET XACT_ABORT ON;
+DECLARE @schema sysname = N'${schema}';
+DECLARE @sql nvarchar(max) = N'';
+
+SELECT @sql = @sql + N'ALTER TABLE '
+    + QUOTENAME(SCHEMA_NAME(t.schema_id)) + N'.'
+    + QUOTENAME(t.name)
+    + N' DROP CONSTRAINT ' + QUOTENAME(fk.name) + N';'
+FROM sys.foreign_keys AS fk
+JOIN sys.tables AS t ON t.object_id = fk.parent_object_id
+WHERE SCHEMA_NAME(t.schema_id) = @schema;
+
+SELECT @sql = @sql + N'DROP VIEW '
+    + QUOTENAME(SCHEMA_NAME(v.schema_id)) + N'.'
+    + QUOTENAME(v.name) + N';'
+FROM sys.views AS v
+WHERE SCHEMA_NAME(v.schema_id) = @schema;
+
+SELECT @sql = @sql + N'DROP TABLE '
+    + QUOTENAME(SCHEMA_NAME(t.schema_id)) + N'.'
+    + QUOTENAME(t.name) + N';'
+FROM sys.tables AS t
+WHERE SCHEMA_NAME(t.schema_id) = @schema
+  AND t.is_ms_shipped = 0;
+
+IF @sql <> N''
+    EXEC sp_executesql @sql;
+SQL
+                rm -f "${raw}"
+            fi
+            ;;
         *)
             echo "Unsupported database engine: ${engine}"
             return 1
@@ -221,7 +354,7 @@ drop_schema() {
     esac
 }
 
-# Collect test databases (tests 32-38)
+# Collect test databases (tests 32-39)
 echo "TESTS:"
 test_configs=(
     "32:PostgreSQL:hydrogen_test_32_postgres.json"
@@ -231,6 +364,7 @@ test_configs=(
     "36:MariaDB:hydrogen_test_36_mariadb.json"
     "37:Firebird:hydrogen_test_37_firebird.json"
     "38:YugabyteDB:hydrogen_test_38_yugabytedb.json"
+    "39:MSSQL:hydrogen_test_39_mssql.json"
 )
 
 for config in "${test_configs[@]}"; do
@@ -266,6 +400,7 @@ demo_configs=(
     "40:MariaDB:hydrogen_test_40_mariadb.json"
     "40:Firebird:hydrogen_test_40_firebird.json"
     "40:YugabyteDB:hydrogen_test_40_yugabytedb.json"
+    "40:MSSQL:hydrogen_test_40_mssql.json"
 )
 
 for config in "${demo_configs[@]}"; do

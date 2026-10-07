@@ -3,6 +3,7 @@
 -- orphan DELETE, or single-statement catalog DDL (nullable / add column).
 --
 -- CHANGELOG
+-- 0.5.6 - 2026-10-07 - MSSQL bracket qualify and N'' field literals
 -- 0.5.5 - 2026-08-24 - Phase 7: catalog DDL apply (nullable / add column), louder confirm (object.column)
 -- 0.5.4 - 2026-08-24 - Phase 5 slice: confirmed orphan DELETE (true orphans only)
 -- 0.5.0 - 2026-08-23 - Phase 5: per-field UPDATE, confirm REF.field
@@ -109,6 +110,9 @@ function M.qualify_queries(engine, schema)
     if engine == "db2" then
         return string.upper(schema) .. ".QUERIES"
     end
+    if engine == "mssql" and schema:match("^[%w_]+$") then
+        return "[" .. schema .. "].[queries]"
+    end
     return schema .. ".queries"
 end
 
@@ -118,6 +122,11 @@ function M.qualify_table(engine, schema, table_name)
     end
     if engine == "db2" then
         return string.upper(schema) .. "." .. string.upper(table_name)
+    end
+    if engine == "mssql"
+        and schema:match("^[%w_]+$")
+        and tostring(table_name):match("^[%w_]+$") then
+        return "[" .. schema .. "].[" .. table_name .. "]"
     end
     return schema .. "." .. table_name
 end
@@ -236,6 +245,9 @@ function M.field_literal(engine, value)
     if engine == "postgresql" or engine == "cockroachdb"
         or engine == "yugabytedb" then
         return dollar_quote(value)
+    end
+    if engine == "mssql" then
+        return "N" .. sql_string_literal(value)
     end
     return sql_string_literal(value)
 end

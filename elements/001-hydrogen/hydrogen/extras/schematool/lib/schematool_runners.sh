@@ -12,6 +12,7 @@
 #   CAT_EXPECTED_JSON, CAT_DATA_JSON, CAT_FINDINGS_JSON, ONLY_FAILURES
 #
 # CHANGELOG
+# 1.2.0 - 2026-10-07 - MSSQL query and catalog adapters
 # 1.1.0 - 2026-08-23 - Catalog fold/compare/probe return 1 (caller may degrade)
 # 1.0.0 - 2026-08-02 - Split from schematool.sh
 
@@ -27,6 +28,7 @@ run_dump_db() {
         mysql) adapter="${DB_DIR}/query_mysql.sh" ;;
         sqlite) adapter="${DB_DIR}/query_sqlite.sh" ;;
         db2) adapter="${DB_DIR}/query_db2.sh" ;;
+        mssql) adapter="${DB_DIR}/query_mssql.sh" ;;
         *)
             echo "Error: no dump adapter for engine ${ENGINE}" >&2
             exit 1
@@ -154,6 +156,7 @@ run_dump_catalog() {
         mysql) adapter="${DB_DIR}/catalog_mysql.sh" ;;
         sqlite) adapter="${DB_DIR}/catalog_sqlite.sh" ;;
         db2) adapter="${DB_DIR}/catalog_db2.sh" ;;
+        mssql) adapter="${DB_DIR}/catalog_mssql.sh" ;;
         *)
             echo "Error: no catalog adapter for engine ${ENGINE}" >&2
             return 1

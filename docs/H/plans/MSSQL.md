@@ -21,16 +21,17 @@ proves local RAM/image cannot run.
 | 3 C register / connect (unixODBC) | complete | **Moderate** |
 | 4 T-SQL helpers + Brotli CLR | complete | **Difficult** |
 | 5 Test 39 full Acuranzo | complete | **Difficult** |
-| 6 SchemaTool / flush | not started | **Moderate** |
+| 6 SchemaTool / flush | complete | **Moderate** |
 | 7 Grow matrix 7 → 8 | in progress | **Difficult** |
 | 8 Docs | not started | **Quick** |
 | 9 Coverage / completeness | not started | **Moderate** |
 
-Remaining: Phase 7 (Difficult, in progress), Phase 6 (Moderate),
-Phase 9 (Moderate), Phase 8 (Quick). Phases 0–5 are complete.
-Phase 7 started ahead of SchemaTool on 2026-09-30 so the full suite
-can include MSSQL. Phase 6 items 6.1–6.3 are still unchecked.
-Item 6.4 (the Test 40 transaction probe) moved into this Phase 7
+Remaining: Phase 7 (Difficult, in progress), Phase 9 (Moderate),
+Phase 8 (Quick). Phases 0–6 are complete. Phase 7 started ahead of
+SchemaTool on 2026-09-30 so the full suite can include MSSQL.
+Phase 6 items 6.1–6.3 were checked on 2026-10-07 from
+[`SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md) Phase 2.
+Item 6.4 (the Test 40 transaction probe) stays in this Phase 7
 slice. Items 7.1 and 7.2 are checked from the 2026-10-01 suite.
 Item 7.3 stays open. Suite `20261001_105356` connected `Demo_MS` and failed QueryRef 30 (`LENGTH`) and QueryRef 57 (positional `?`). The source fix is `database_mssql.lua` 1.3.3 and `acuranzo_1151.lua` 1.7.0. Suite `20261001_123106` had that payload (available=1385). The operator later confirmed that refresh had not finished repopulating the databases, and AutoMigration tried to LOAD or APPLY rows that were already written. Login failed because QueryRef 1 was not in the cache. `LENGTH` and QueryRef 57 were not reached. Suite `20261001_134516` (Build 2688) is the run after that correction: Test 50 is 137/137 and Test 60 is 46/46. The remaining failures are Tests 43, 45, and 47, and none of them is MSSQL.
 Phases 8–9 are not started.
@@ -746,7 +747,7 @@ no new `static` / no dead symbols). Mock ODBC in Unity.
 | 3 | C engine registers, `mssql://`, connect + health vs container or ODBC mock | M | complete |
 | 4 | T-SQL helpers + Brotli CLR (or COMPRESS pre-eval variance); SHA-256 fixture matches SQLite | L | complete |
 | 5 | Test 39 mssql AutoMigrations **full Acuranzo** green | L | complete |
-| 6 | SchemaTool / SchemaHelper / hydrogen_flush (6.4 is in Phase 7) | M | pending |
+| 6 | SchemaTool / SchemaHelper / hydrogen_flush (6.4 is in Phase 7) | M | complete |
 | 7 | Tests 40/43/45/46/47/58 include mssql; single-process 41/44/50–56/60 gain Demo_MS | L | in progress |
 | 8 | Docs/SITEMAP/MACRO_REFERENCE/DATABASES/SECRETS match; `mkl` green | S | pending |
 | 9 | Completeness + coverage fences; dead-code clean; `mkp` | M | pending |
@@ -1203,15 +1204,20 @@ full design; `mks`; markdown exists.
 
 Operator tools talk TDS/ODBC, not `psql`.
 
+SchemaTool, SchemaHelper, and the flush path (items 6.1–6.3) are
+specified in [`SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md)
+Phase 2. Do not start a second MSSQL adapter in this file. Item 6.4
+stays in this plan's Phase 7.
+
 ### Entry gate
 
 Phase 5 Status complete.
 
 ### Work items
 
-- [ ] 6.1 `schematool_mssql.sh`.
-- [ ] 6.2 schemahelper connect/apply/const.
-- [ ] 6.3 `hydrogen_flush.sh` mssql path (drop/recreate schema or db).
+- [x] 6.1 `schematool_mssql.sh`.
+- [x] 6.2 schemahelper connect/apply/const.
+- [x] 6.3 `hydrogen_flush.sh` mssql path (drop/recreate schema or db).
 - [~] 6.4 `transaction_utils.sh` mssql path. Moved to Phase 7 on
       2026-09-30. Test 40 probes every engine it launches, so the
       matrix cannot land without this case. SchemaTool, SchemaHelper,
@@ -1229,19 +1235,22 @@ mssql SchemaTool wrapper does not call `psql` or `isql-fb`.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | 2026-09-30 |
-| **Result** | Items 6.1–6.3 not started. Item 6.4 moved to Phase 7: Test 40's DML probe calls `transaction_utils.sh` for every engine, and that case is `verify_tx_mssql` (in-container `sqlcmd`, schema `demoms`). |
-| **Variances** | 6.4 runs during Phase 7, before 6.1–6.3. |
+| **State** | complete |
+| **Date** | 2026-10-07 |
+| **Result** | Items 6.1–6.3 done in [`SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md) Phase 2. Live `demoms` metadata audit exit 3 and `--catalog --only-tables accounts` exit 2. Item 6.4 stays in Phase 7 as `verify_tx_mssql`. |
+| **Variances** | 6.4 ran during Phase 7, before 6.1–6.3. The flush drops user tables and views in `testms` and `demoms`. It does not drop database `hydrotst`. |
 
 ### Working Log
 
 - **2026-09-30** Not started. The Test 39 file-creation notes copied here were removed. That work is Phase 5 items 5.1–5.3.
 - **2026-09-30** Operator asked to run the full suite before SchemaTool. Item 6.4 is the only Phase 6 piece on that path. It moved to Phase 7. 6.1–6.3 stay here.
+- **2026-10-07** Items 6.1–6.3 are specified in [`SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md) Phase 2. Check them only after that phase's exit gate.
+- **2026-10-07** Exit gate met. `mks`, Test 98, and Test 72 passed. `schematool_mssql.sh` on `philement-mssql` schema `demoms`: metadata exit 3 (386 clean refs, 2 orphan query rows), catalog exit 2 (`accounts.password_hash` nullable expected false, live true). Process list and out-dirs did not contain the SA password. `hydrogen_flush.sh` was not run.
 
 ### Lessons learned
 
-(empty until the phase runs)
+- `sqlcmd -y 0` returns one UTF-8 JSON line and rejects `-h`, `-W`, and a wrapping `-w`. `FOR JSON PATH` is enough. Do not round-trip the cell through `varchar`.
+- Put `MSSQL_SA_PASSWORD` in `SQLCMDPASSWORD` on the container script's stdin. `sqlcmd -P` would show the password in the host process list.
 
 ---
 
@@ -1257,9 +1266,9 @@ and 60). Skips only for environmental reasons (container down), not
 
 ### Entry gate
 
-Phase 5 Status complete. Phase 6 items 6.1–6.3 are still open; their
-entry gate was waived on 2026-09-30 so this matrix can run. Item 6.4
-is part of this phase. Firebird may or may not have retired Cockroach;
+Phase 5 Status complete. Phase 6 items 6.1–6.3 closed on 2026-10-07.
+Their entry gate was waived on 2026-09-30 so this matrix could run
+ahead of them. Item 6.4 is part of this phase. Firebird may or may not have retired Cockroach;
 this phase **adds** mssql either way. Do not drop an existing engine to
 keep the count at 7. Matrix schema is `demoms`. Test 39 keeps `testms`.
 

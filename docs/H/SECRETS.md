@@ -65,6 +65,10 @@ This document provides a comprehensive reference for all environment variables u
     - [MSSQL_SA_PASSWORD](#mssql_sa_password)
     - [MSSQL_TEST_DB](#mssql_test_db)
 
+10. [NATS Credentials](#10-nats-credentials)
+    - [NATS_USERNAME](#nats_username)
+    - [NATS_PASSWORD](#nats_password)
+
 ---
 
 ## 1. Project Path Variables
@@ -883,6 +887,40 @@ export MSSQL_TEST_DB="hydrotst"
 
 ---
 
+## 10. NATS Credentials
+
+The example config maps these names onto `NATS.Username` and `NATS.Password`
+with `${env.NATS_USERNAME}` and `${env.NATS_PASSWORD}`. Set them when the
+broker requires accounts. Test 62 leaves both empty because its local
+broker has no authentication.
+
+The current-config dump prints `Password` as `*****` when it is set and
+`(not set)` when it is absent. The operator guide is
+[nats.md](/docs/H/core/subsystems/nats/nats.md).
+
+### NATS_USERNAME
+
+**Description:** User sent on the NATS `CONNECT` frame.
+
+**Setup:**
+
+```bash
+export NATS_USERNAME="nats_user"
+```
+
+### NATS_PASSWORD
+
+**Description:** Password sent on the NATS `CONNECT` frame. Do not commit it
+and do not print it.
+
+**Setup:**
+
+```bash
+export NATS_PASSWORD="your_nats_password"
+```
+
+---
+
 ## Quick Setup Script
 
 Here's a complete script to set up all required environment variables:
@@ -964,6 +1002,10 @@ export FIREBIRD_DB_PASS="${FIREBIRD_SYSDBA_PASSWORD}"
 # MSSQL (SQL Server 2022 Linux container) - customize for your environment
 export MSSQL_SA_PASSWORD="your_strong_password_here"
 export MSSQL_TEST_DB="hydrotst"
+
+# NATS (optional; required when the broker has accounts)
+export NATS_USERNAME="nats_user"
+export NATS_PASSWORD="your_nats_password"
 
 cd -
 echo "Environment setup complete!"

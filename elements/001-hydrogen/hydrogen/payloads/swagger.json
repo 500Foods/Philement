@@ -3888,6 +3888,319 @@
         ]
       }
     },
+    "/nats/instances": {
+      "get": {
+        "summary": "Get NATS peer instances",
+        "description": "Returns singleton, self state, and the peer snapshot. Presence disabled returns self and an empty peers array. Requires a valid JWT Bearer token with a database claim.",
+        "operationId": "natsInstancesGet",
+        "tags": [
+          ""
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "singleton",
+                    "self",
+                    "peers"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "singleton": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "self": {
+                      "type": "string",
+                      "example": "none"
+                    },
+                    "peers": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": [
+                          "id",
+                          "state",
+                          "websocket_connections"
+                        ],
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "Starting",
+                              "Alive"
+                            ]
+                          },
+                          "websocket_connections": {
+                            "type": "integer",
+                            "example": 0
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Invalid or expired JWT token"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Method not allowed"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Only GET requests are supported"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Failed to build instances response"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
+    "/nats/status": {
+      "get": {
+        "summary": "Get NATS status and counters",
+        "description": "Returns enabled, link, state, presence, singleton, peer counts, self state, and published, received, and reconnect counters. Requires a valid JWT Bearer token with a database claim. Does not include peer ids or payloads.",
+        "operationId": "natsStatusGet",
+        "tags": [
+          ""
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "enabled",
+                    "link",
+                    "state",
+                    "presence",
+                    "singleton",
+                    "peers",
+                    "alive",
+                    "self",
+                    "published",
+                    "received",
+                    "reconnects"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "enabled": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "link": {
+                      "type": "string",
+                      "enum": [
+                        "down",
+                        "degraded",
+                        "up"
+                      ],
+                      "example": "down"
+                    },
+                    "state": {
+                      "type": "string",
+                      "enum": [
+                        "down",
+                        "degraded",
+                        "up"
+                      ],
+                      "example": "down"
+                    },
+                    "presence": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "singleton": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "peers": {
+                      "type": "integer",
+                      "example": 0
+                    },
+                    "alive": {
+                      "type": "integer",
+                      "example": 0
+                    },
+                    "self": {
+                      "type": "string",
+                      "example": "none"
+                    },
+                    "published": {
+                      "type": "integer",
+                      "example": 0
+                    },
+                    "received": {
+                      "type": "integer",
+                      "example": 0
+                    },
+                    "reconnects": {
+                      "type": "integer",
+                      "example": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Invalid or expired JWT token"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Client error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "success",
+                    "error",
+                    "message"
+                  ],
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Method not allowed"
+                    },
+                    "message": {
+                      "type": "string",
+                      "example": "Only GET requests are supported"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": false
+                    },
+                    "error": {
+                      "type": "string",
+                      "example": "Failed to build status response"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ]
+      }
+    },
     "/oauth/authorize": {
       "get": {
         "summary": "OAuth 2.0 authorization endpoint",

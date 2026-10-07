@@ -76,6 +76,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [scripting/README.md](/docs/H/core/subsystems/scripting/README.md): Scripting subsystem overview
 - [scripting/lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md): Lua host API reference
 - [mcp/mcp.md](/docs/H/core/subsystems/mcp/mcp.md): MCP subsystem architecture
+- [nats/nats.md](/docs/H/core/subsystems/nats/nats.md): NATS client, cache invalidation, relay, and presence
 - [LUA_GUIDE.md](/docs/H/LUA_GUIDE.md): Intro to Lua and practical Hydrogen scripting guide
 - [LUA_FEATURES.md](/docs/H/LUA_FEATURES.md): Pure Lua language features and standard library recipes
 
@@ -97,6 +98,10 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 ### Folder: /docs/api/mcp
 
 - [mcp_endpoints.md](/docs/H/api/mcp/mcp_endpoints.md): MCP Streamable HTTP listen, PRM, JWT `/api/mcp/status`
+
+### Folder: /docs/api/nats
+
+- [nats_endpoints.md](/docs/H/api/nats/nats_endpoints.md): JWT `GET /api/nats/status` and `GET /api/nats/instances`
 
 ### Folder: /docs/api/reporting
 
@@ -132,9 +137,10 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [README.md](/docs/H/plans/README.md): Plans folder index
 - [AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md): Auth finale (active P0 plan — OIDC, Keycloak, register, MFA, IdP leftovers)
 - [NOTIFICATIONS_PLAN.md](/docs/H/plans/NOTIFICATIONS_PLAN.md): Web Push / Subscribers subsystem plan (Phase 0 draft)
-- [NATS_PLAN.md](/docs/H/plans/NATS_PLAN.md): NATS subsystem — result-cache invalidation (Phases 1–10 complete 2026-10-06; next is Phase 11, Test 62)
+- [NATS_PLAN.md](/docs/H/plans/NATS_PLAN.md): Stub — finished plan is NATS_PLAN_COMPLETE.md
 - [FIREBIRD.md](/docs/H/plans/FIREBIRD.md): Firebird engine; retire CockroachDB slot; Firebase teardown
 - [MSSQL.md](/docs/H/plans/MSSQL.md): MS SQL Server engine (Lookup 030 key 5); Fedora Podman Linux container (Phase 0 not approved)
+- [SCHEMA_V2_PLAN.md](/docs/H/plans/SCHEMA_V2_PLAN.md): SchemaTool / SchemaHelper v2 — eight engines, test and demo wrappers, structural apply, migration-owned default rows
 - [FIREBASE.md](/docs/H/plans/FIREBASE.md): Stub — Firestore plan superseded
 - [MAILRELAY_PLAN.md](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md): Mail Relay subsystem implementation plan
 - [PERSIST_PLAN_COMPLETE.md](/docs/H/plans/complete/PERSIST_PLAN_COMPLETE.md): Mail Relay Persist MySQL/MariaDB fetch SIGSEGV — closed 2026-09-04 (TODO 12d)
@@ -195,6 +201,7 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [LUA_55_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_55_PLAN_COMPLETE.md): Upgrade embedded Lua 5.4 → 5.5
 - [LUA_CLIENT_COMPLETE.md](/docs/H/plans/complete/LUA_CLIENT_COMPLETE.md)
 - [MCP_COMPLETE.md](/docs/H/plans/complete/MCP_COMPLETE.md)
+- [NATS_PLAN_COMPLETE.md](/docs/H/plans/complete/NATS_PLAN_COMPLETE.md): NATS client (Phases 0–12, complete 2026-10-06)
 - [MAILRELAY_BLACKBOX_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md)
 - [MDNS_UPGRADE_COMPLETE.md](/docs/H/plans/complete/MDNS_UPGRADE_COMPLETE.md): mDNS RFC server + real client (Phases 0–8)
 - [MIGRATIONS_COMPLETE.md](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md)
@@ -355,6 +362,7 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [test_43_scripting.md](/docs/H/tests/test_43_scripting.md): Scripting subsystem end-to-end testing
 - [test_46_conduit_script.md](/docs/H/tests/test_46_conduit_script.md): Conduit script invoke blackbox (JWT + Api.Echo)
 - [test_47_mcp.md](/docs/H/tests/test_47_mcp.md): MCP Streamable HTTP blackbox (JWT + Mcp.Echo)
+- [test_62_nats.md](/docs/H/tests/test_62_nats.md): NATS client blackbox (local nats-server, ports 5620–5629)
 - [test_50_conduit_query.md](/docs/H/tests/test_50_conduit_query.md): Single public query endpoint testing
 - [test_51_conduit_queries.md](/docs/H/tests/test_51_conduit_queries.md): Conduit multiple queries endpoint testing
 - [test_52_conduit_auth_query.md](/docs/H/tests/test_52_conduit_auth_query.md): Authenticated single query endpoint

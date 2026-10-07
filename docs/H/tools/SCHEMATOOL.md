@@ -13,7 +13,9 @@ Standalone **Bash + Lua** operator utility under
 Quick start (local extras README):
 [`extras/schematool/README.md`](/elements/001-hydrogen/hydrogen/extras/schematool/README.md).
 
-Implementation plan:
+Active plan:
+[`/docs/H/plans/SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md).
+Archived plan:
 [`/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md).
 
 ## Purpose
@@ -43,7 +45,7 @@ forward DDL and probes the live catalog (targeted, not a full-DB dump).
 ## Requirements
 
 - `tables`, `jq`, `lua` (and `lua-brotli` for compressed migration payloads)
-- Engine client for the target: `psql` / `mysql` / `sqlite3` / `db2`
+- Engine client for the target: `psql` / `mysql` / `sqlite3` / `db2` / in-container `sqlcmd` (MSSQL)
 - Migrations folder containing `database.lua` and `design_NNNN.lua`
 
 ## Quick start
@@ -217,8 +219,9 @@ CLI flags always win. For each empty field, env is chosen from the **requested**
    - `mysql` / `mariadb` → `CANVAS_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`
    - `db2` → `HYDROTST_DB_{USER,NAME,PASS,SCHEMA}`
    - `firebird` → `FIREBIRD_DB_PATH_DEMO` (or `_TEST` / deprecated `FIREBIRD_DB_PATH`) + `FIREBIRD_SYSDBA_PASSWORD`
+   - `mssql` → `MSSQL_DB_{HOST,PORT,USER,NAME}` and `MSSQL_SA_PASSWORD`. `sqlcmd` runs inside container `philement-mssql` and talks to localhost there. `--host` and `--port` fill readiness only.
 2. **Generic** `SCHEMATOOL_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}`
-3. Default ports: postgresql 5432, mysql 3306
+3. Default ports: postgresql 5432, mysql 3306, mssql 1433
 
 Password: prefer `--password-env VAR` (never printed; never written into `.sql`).
 
@@ -235,12 +238,13 @@ SQLite: `--database` is the file path (or `SCHEMATOOL_DB_NAME`); host/user unuse
 | `schematool_mariadb.sh` | `demomrdb` | `CANVAS_DB_*` |
 | `schematool_sqlite.sh` | _(empty)_ | `hydrodemo.sqlite` path |
 | `schematool_db2.sh` | `demo` | `HYDROTST_DB_*` + localhost:55555 |
+| `schematool_mssql.sh` | `demoms` | `MSSQL_DB_*` + `MSSQL_SA_PASSWORD` (`sqlcmd` in `philement-mssql`) |
 
 Multi-engine 1190 catalog smoke:
 
 ```bash
 extras/schematool/smoke_test40_catalog.sh --out-dir /tmp/schematool-t40
-# Expect: 7 pass / 0 fail
+# Eight wrappers. Firebird still fails until its dump adapters exist.
 ```
 
 ## Normalization
@@ -282,6 +286,7 @@ later ALTERs changed live objects.
 | `sqlite` | `sqlite3` | No schema qualifier |
 | `db2` | `db2` EXPORT LOBS | Schema often uppercase (`DEMO`) |
 | `firebird` | `isql-fb` | No schema qualifier (empty); `BASE64_DECODE`/`BROTLI_DECOMPRESS` UDRs |
+| `mssql` | `sqlcmd` in `philement-mssql` | Schema `demoms` or `testms` inside `MSSQL_DB_NAME`. `SELECT` only. |
 
 ## Safety (production checklist)
 
@@ -299,6 +304,7 @@ documented. Confirm these before pointing at prod:
 | MySQL / MariaDB | `SET SESSION TRANSACTION READ ONLY` before probes |
 | SQLite | `sqlite3 -readonly` |
 | DB2 | EXPORT LOBS read path only (no DML from SchemaTool) |
+| MSSQL | `SELECT` via in-container `sqlcmd`. Password is not a process argument. Errors are scrubbed. |
 | Wrong-host risk | Use correct `--engine` / wrapper / explicit `--host` — especially Yugabyte vs local PG |
 
 **Operator tips for prod:**
@@ -317,7 +323,8 @@ read-only.
 
 ## Related
 
-- Plan: [`SCHEMATOOL_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md)
+- Active plan: [`SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md)
+- Archived plan: [`SCHEMATOOL_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md)
 - Offline SQL gen: [`tests/lib/get_migration.lua`](/elements/001-hydrogen/hydrogen/tests/lib/get_migration.lua)
 - Migration performance tests: `test_32`–`test_38`
 - Migrations complete plan: [`MIGRATIONS_COMPLETE.md`](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md)

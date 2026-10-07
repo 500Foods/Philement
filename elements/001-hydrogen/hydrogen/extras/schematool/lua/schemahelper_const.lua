@@ -2,6 +2,7 @@
 -- Constants, terminal module references, and attribute tables for SchemaHelper.
 --
 -- CHANGELOG
+-- 0.6.7 - 2026-10-07 - Append mssql to the wrapper order
 -- 0.6.5 - 2026-09-09 - Phase 4 accept hash / un-accept
 -- 0.6.4 - 2026-09-08 - Progress bar dark-grey background
 -- 0.6.3 - 2026-09-08 - Phase 3 progress bar
@@ -10,8 +11,8 @@
 -- 0.6.0 - 2026-09-08 - Chrome titles + Instance log name
 -- 0.5.8 - 2026-08-25 - Extracted from schemahelper.lua (constants + terminal refs)
 
-local VERSION = "0.6.5"
-local RELEASED = "2026-09-09"
+local VERSION = "0.6.7"
+local RELEASED = "2026-10-07"
 
 local INSTANCE_LOG = "schemahelper_schematool.log"
 
@@ -45,6 +46,7 @@ local WRAPPER_ORDER = {
     "db2",
     "firebird",
     "yugabytedb",
+    "mssql",
 }
 
 local t = require("terminal")

@@ -15,7 +15,7 @@ Primary target is PostgreSQL 15+ via YugabyteDB. Authoritative guidance is in `/
 
 `database*.lua` here is a copy of the Acuranzo macro set (including MariaDB and MSSQL). The copy stays. The payload packs it as `argent/database*.lua`, and the loader uses that copy when it runs an `argent_*.lua` file.
 
-Lookup ids **200–299** are reserved for Argent on the shared `lookups` table. `organizations.status_a200` is lookup 200. `ledgers.ledger_type_a201` is lookup 201 (asset, liability, equity, income, expense). `ledgers.status_a202` is lookup 202 (open, closed, archive). Those three seeds are later migrations.
+Lookup ids **2000–2999** are Argent's block on the shared `lookups` table, the same range as Argent's migration numbers and caller-facing QueryRefs. The same integer may be all three. `organizations.status_a2000` is lookup 2000. `ledgers.ledger_type_a2001` is lookup 2001 (asset, liability, equity, income, expense). `ledgers.status_a2002` is lookup 2002 (open, closed, archive). Lookups 2000–2002 are seeded by `argent_2002.lua` through `argent_2004.lua`. Lookup 2005 is `argent_2005.lua`. Lookups 2003, 2004, and 2011 are `argent_2009.lua`, `argent_2010.lua`, and `argent_2011.lua`. QueryRef 2000 is `argent_2014.lua`. See [`/docs/H/plans/ARGENT_PLAN.md`](/docs/H/plans/ARGENT_PLAN.md).
 
 ## Database Files
 
@@ -34,6 +34,19 @@ Lookup ids **200–299** are reserved for Argent on the shared `lookups` table. 
 
 | M# | Table | Version | Updated | Stmts | Diagram | Description |
 | ---- | ------- | --------- | --------- | ------- | --------- | ------------- |
-| [2000](/elements/002-helium/argent/migrations/argent_2000.lua) | organizations | 1.0.0 | 2026-10-05 | 6 | ✓ | Creates the organizations table |
-| [2001](/elements/002-helium/argent/migrations/argent_2001.lua) | ledgers | 1.0.0 | 2026-10-05 | 6 | ✓ | Creates the ledgers table |
-| **2** | | | | **12** | **2** | |
+| [2000](/elements/002-helium/argent/migrations/argent_2000.lua) | organizations | 1.0.1 | 2026-10-06 | 6 | ✓ | Creates the organizations table |
+| [2001](/elements/002-helium/argent/migrations/argent_2001.lua) | ledgers | 1.0.1 | 2026-10-06 | 6 | ✓ | Creates the ledgers table |
+| [2002](/elements/002-helium/argent/migrations/argent_2002.lua) | lookups | 1.0.0 | 2026-10-07 | 7 | ✓ | Seeds lookup 2000, organization status |
+| [2003](/elements/002-helium/argent/migrations/argent_2003.lua) | lookups | 1.0.0 | 2026-10-07 | 7 | ✓ | Seeds lookup 2001, ledger type |
+| [2004](/elements/002-helium/argent/migrations/argent_2004.lua) | lookups | 1.0.0 | 2026-10-07 | 7 | ✓ | Seeds lookup 2002, ledger status |
+| [2005](/elements/002-helium/argent/migrations/argent_2005.lua) | lookups | 1.0.0 | 2026-10-07 | 7 | ✓ | Seeds lookup 2005, contact role |
+| [2006](/elements/002-helium/argent/migrations/argent_2006.lua) | currencies | 1.0.0 | 2026-10-07 | 8 | ✓ | Creates the currencies table and seeds cad and usd |
+| [2007](/elements/002-helium/argent/migrations/argent_2007.lua) | ledger_terms | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the ledger_terms table |
+| [2008](/elements/002-helium/argent/migrations/argent_2008.lua) | contacts | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the contacts table |
+| [2009](/elements/002-helium/argent/migrations/argent_2009.lua) | lookups | 1.0.0 | 2026-10-07 | 7 | ✓ | Seeds lookup 2003, transaction status |
+| [2010](/elements/002-helium/argent/migrations/argent_2010.lua) | lookups | 1.0.0 | 2026-10-07 | 7 | ✓ | Seeds lookup 2004, transaction kind |
+| [2011](/elements/002-helium/argent/migrations/argent_2011.lua) | lookups | 1.0.0 | 2026-10-07 | 7 | ✓ | Seeds lookup 2011, calendar state |
+| [2012](/elements/002-helium/argent/migrations/argent_2012.lua) | transactions | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the transactions table |
+| [2013](/elements/002-helium/argent/migrations/argent_2013.lua) | lines | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the lines table |
+| [2014](/elements/002-helium/argent/migrations/argent_2014.lua) | queries | 1.0.0 | 2026-10-07 | 5 | ✓ | QueryRef #2000 - Argent balance |
+| **15** | | | | **98** | **15** | |

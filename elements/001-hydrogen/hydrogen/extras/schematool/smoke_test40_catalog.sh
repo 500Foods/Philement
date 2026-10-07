@@ -9,13 +9,14 @@
 #   extras/schematool/smoke_test40_catalog.sh --out-dir /tmp/st40
 #
 # CHANGELOG
+# 1.1.0 - 2026-10-07 - Add mssql (schema demoms). Firebird still lacks dump adapters.
 # 1.0.0 - 2026-08-06 - Initial multi-engine 1190 acceptance smoke
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 OUT_DIR="${TMPDIR:-/tmp}/schematool-t40-smoke-$$"
-ENGINES=(sqlite postgresql mysql mariadb db2 firebird yugabytedb)
+ENGINES=(sqlite postgresql mysql mariadb db2 firebird yugabytedb mssql)
 
 while [[ $# -gt 0 ]]; do
     case "$1" in

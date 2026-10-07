@@ -48,6 +48,13 @@ MCP is Hydrogen's Model Context Protocol adapter: Streamable HTTP JSON-RPC for A
 - [mcp.md](/docs/H/core/subsystems/mcp/mcp.md)
 - [mcp_endpoints.md](/docs/H/api/mcp/mcp_endpoints.md)
 
+## NATS
+
+NATS is Hydrogen's plaintext client for cross-instance result-cache invalidation, an allowlisted WebSocket relay, and an in-memory presence registry. v1 is one connection on port 4222. It does not speak TLS.
+
+- [nats.md](/docs/H/core/subsystems/nats/nats.md)
+- [nats_endpoints.md](/docs/H/api/nats/nats_endpoints.md)
+
 ## Mirage
 
 The Mirage subsystem is the distributed proxy network that enables secure and seamless remote access to Hydrogen servers. It acts as a bridge between public access points and private Hydrogen instances, allowing users to connect to their devices from anywhere in the world while preserving all customizations, branding, and features.

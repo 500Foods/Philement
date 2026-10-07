@@ -145,7 +145,8 @@ void test_nats_session_handshake_connect_and_subs(void) {
     TEST_ASSERT_NOT_NULL(pong);
     TEST_ASSERT_NOT_NULL(connect);
     TEST_ASSERT_TRUE(pong < connect);
-    TEST_ASSERT_NOT_NULL(strstr(fake.written, "\"no_echo\":true"));
+    TEST_ASSERT_NOT_NULL(strstr(fake.written, "\"echo\":false"));
+    TEST_ASSERT_NULL(strstr(fake.written, "no_echo"));
     TEST_ASSERT_NOT_NULL(strstr(fake.written, "\"verbose\":false"));
     TEST_ASSERT_NOT_NULL(strstr(fake.written, "\"pedantic\":true"));
     TEST_ASSERT_NULL(strstr(fake.written, "\"user\":"));
@@ -196,7 +197,8 @@ void test_nats_session_handshake_sends_user_and_pass(void) {
     TEST_ASSERT_EQUAL(0, nats_session_handshake());
     TEST_ASSERT_NOT_NULL(strstr(fake.written, "\"user\":\"nats-user\""));
     TEST_ASSERT_NOT_NULL(strstr(fake.written, "\"pass\":\"nats-secret\""));
-    TEST_ASSERT_NOT_NULL(strstr(fake.written, "\"no_echo\":true"));
+    TEST_ASSERT_NOT_NULL(strstr(fake.written, "\"echo\":false"));
+    TEST_ASSERT_NULL(strstr(fake.written, "no_echo"));
 }
 
 int main(void) {

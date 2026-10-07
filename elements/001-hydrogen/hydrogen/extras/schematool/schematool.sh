@@ -8,6 +8,7 @@
 # Database/Lua operations, audit orchestration, and rendering are in lib/.
 #
 # CHANGELOG
+# 1.10.0 - 2026-10-07 - Engine mssql: env, readiness, help (query/catalog adapters)
 # 1.9.0 - 2026-08-25 - --work-dir / --keep-work-dir: caller-managed intermediates
 # 1.8.3 - 2026-08-23 - Catalog failures[] include last fold ref
 # 1.8.2 - 2026-08-23 - Catalog fold/compare failure degrades after metadata
@@ -33,7 +34,7 @@ LUA_DIR="${SCRIPT_DIR}/lua"
 DB_DIR="${SCRIPT_DIR}/db"
 LIB_DIR="${SCRIPT_DIR}/lib"
 
-VERSION="1.8.3"
+VERSION="1.10.0"
 
 # Source library modules (helpers, audit orchestration, rendering)
 # shellcheck source=extras/schematool/lib/schematool_init.sh # dependency checks + command lookups
@@ -59,7 +60,7 @@ Usage:
 Required:
   --migrations DIR       Folder with database.lua and design_NNNN.lua
   --design NAME          Design prefix (e.g. acuranzo)
-    --engine ENGINE        postgresql|mysql|sqlite|db2|firebird (aliases: mariadb→mysql)
+    --engine ENGINE        postgresql|mysql|sqlite|db2|firebird|mssql (aliases: mariadb→mysql)
 
 Connection (required for full audit / --dump-db; env fallbacks apply):
   --schema NAME          Schema prefix (empty OK for SQLite)
@@ -76,6 +77,7 @@ Connection (required for full audit / --dump-db; env fallbacks apply):
           mysql                           → MYSQL_DB_{HOST,PORT,USER,NAME,PASS} (fallback: CANVAS_DB_*)
           mariadb                       → MARIADB_DB_{HOST,PORT,USER,NAME,PASS} (fallback: CANVAS_DB_*)
          db2                             → HYDROTST_DB_{USER,NAME,PASS}
+         mssql                           → MSSQL_DB_{HOST,PORT,USER,NAME} + MSSQL_SA_PASSWORD (sqlcmd inside philement-mssql)
     2) Generic SCHEMATOOL_DB_{HOST,PORT,USER,NAME,PASS,SCHEMA}
     3) sqlite → --database path (or SCHEMATOOL_DB_NAME as file path)
 
@@ -351,9 +353,9 @@ if [[ ! -f "${MIGRATIONS}/database.lua" ]]; then
 fi
 
 case "${ENGINE}" in
-    postgresql|mysql|sqlite|db2|firebird) ;;
+    postgresql|mysql|sqlite|db2|firebird|mssql) ;;
     *)
-        echo "Error: unsupported engine '${ENGINE}' (use postgresql|mysql|sqlite|db2|firebird)" >&2
+        echo "Error: unsupported engine '${ENGINE}' (use postgresql|mysql|sqlite|db2|firebird|mssql)" >&2
         exit 1
         ;;
 esac
@@ -446,6 +448,13 @@ case "${ENGINE_REQUESTED}" in
     sqlite)
         [[ -z "${PORT}" ]] && PORT=""
         ;;
+    mssql)
+        [[ -z "${HOST}" ]] && HOST="${MSSQL_DB_HOST:-127.0.0.1}"
+        [[ -z "${PORT}" ]] && PORT="${MSSQL_DB_PORT:-1433}"
+        [[ -z "${USER_NAME}" ]] && USER_NAME="${MSSQL_DB_USER:-sa}"
+        [[ -z "${DATABASE}" ]] && DATABASE="${MSSQL_DB_NAME:-hydrotst}"
+        [[ -z "${PASSWORD_ENV}" && -n "${MSSQL_SA_PASSWORD:-}" ]] && PASSWORD_ENV="MSSQL_SA_PASSWORD"
+        ;;
     *) ;;
 esac
 
@@ -466,6 +475,9 @@ case "${ENGINE}" in
         ;;
     mysql)
         [[ -z "${PORT}" ]] && PORT="3306"
+        ;;
+    mssql)
+        [[ -z "${PORT}" ]] && PORT="1433"
         ;;
     *) ;;
 esac

@@ -1530,6 +1530,167 @@
                 }
             },
             "additionalProperties": false
+        },
+        "NATS": {
+            "type": "object",
+            "description": "NATS client (config letter V). Subject values are suffixes. The wire subject is cluster.<ClusterId>.<suffix>.",
+            "properties": {
+                "Enabled": {
+                    "type": "boolean",
+                    "description": "Enable the NATS subsystem"
+                },
+                "Servers": {
+                    "type": "array",
+                    "description": "Client URLs (nats://host or nats://host:port). Port 6222 is rejected.",
+                    "maxItems": 8,
+                    "items": {
+                        "type": "string",
+                        "description": "NATS client URL"
+                    }
+                },
+                "ClusterId": {
+                    "type": "string",
+                    "description": "Subject prefix. No space, dot, asterisk, or greater-than."
+                },
+                "InstanceId": {
+                    "type": "string",
+                    "description": "Copied into envelope source and instance_id. An empty string stays empty."
+                },
+                "Group": {
+                    "type": "string",
+                    "description": "Optional group label"
+                },
+                "Username": {
+                    "type": "string",
+                    "description": "CONNECT user. Example value is ${env.NATS_USERNAME}."
+                },
+                "Password": {
+                    "type": "string",
+                    "description": "CONNECT password. Example value is ${env.NATS_PASSWORD}. Dumped as ***** or (not set)."
+                },
+                "TlsEnabled": {
+                    "type": "boolean",
+                    "description": "v1 does not speak TLS. true means the subsystem is not ready."
+                },
+                "TlsCaCert": {
+                    "type": "string",
+                    "description": "CA certificate path. Unused while TLS is off."
+                },
+                "ConnectionTimeoutSeconds": {
+                    "type": "integer",
+                    "description": "TCP handshake budget in seconds"
+                },
+                "Reconnect": {
+                    "type": "object",
+                    "description": "Reconnect ladder",
+                    "properties": {
+                        "MaxRetries": {
+                            "type": "integer",
+                            "description": "Retry cap. -1 keeps trying."
+                        },
+                        "Delays": {
+                            "type": "array",
+                            "description": "Delay seconds before steady state. One to eight positive values.",
+                            "maxItems": 8,
+                            "items": {
+                                "type": "integer",
+                                "description": "Delay in seconds",
+                                "minimum": 1
+                            }
+                        },
+                        "SteadyDelaySeconds": {
+                            "type": "integer",
+                            "description": "Delay after the list is exhausted",
+                            "minimum": 1
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "Subscriptions": {
+                    "type": "array",
+                    "description": "Up to 16 subscriptions. Subject is a suffix.",
+                    "maxItems": 16,
+                    "items": {
+                        "type": "object",
+                        "description": "One subscription",
+                        "properties": {
+                            "Subject": {
+                                "type": "string",
+                                "description": "Subject suffix"
+                            },
+                            "Type": {
+                                "type": "string",
+                                "description": "cluster-wide or queue-group",
+                                "enum": ["cluster-wide", "queue-group"]
+                            },
+                            "QueueGroup": {
+                                "type": "string",
+                                "description": "Queue group name. Required when Type is queue-group. Sent without the cluster prefix."
+                            }
+                        },
+                        "additionalProperties": false
+                    }
+                },
+                "WebSocketRelay": {
+                    "type": "object",
+                    "description": "Push allowlisted events to authenticated WebSocket sessions",
+                    "properties": {
+                        "Enabled": {
+                            "type": "boolean",
+                            "description": "Enable the relay"
+                        },
+                        "Events": {
+                            "type": "array",
+                            "description": "Allowlisted event names",
+                            "maxItems": 64,
+                            "items": {
+                                "type": "string",
+                                "description": "Event name"
+                            }
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "Presence": {
+                    "type": "object",
+                    "description": "In-memory instance registry",
+                    "properties": {
+                        "Enabled": {
+                            "type": "boolean",
+                            "description": "Publish app_state and track peers"
+                        },
+                        "HeartbeatIntervalSeconds": {
+                            "type": "integer",
+                            "description": "Approximate heartbeat period"
+                        },
+                        "StaleAfterSeconds": {
+                            "type": "integer",
+                            "description": "Peer stale window. 0 means three heartbeat intervals."
+                        },
+                        "ReportConnections": {
+                            "type": "boolean",
+                            "description": "Include websocket_connections on Alive beats"
+                        }
+                    },
+                    "additionalProperties": false
+                },
+                "Test": {
+                    "type": "object",
+                    "description": "Test hooks. Leave both false outside tests.",
+                    "properties": {
+                        "FailNextPublishOnLaunch": {
+                            "type": "boolean",
+                            "description": "Fail the next publish once"
+                        },
+                        "MockConnection": {
+                            "type": "boolean",
+                            "description": "Skip the real broker"
+                        }
+                    },
+                    "additionalProperties": false
+                }
+            },
+            "additionalProperties": false
         }
     },
     "required": [

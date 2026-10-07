@@ -46,9 +46,9 @@ Three numbers stay separate:
 
 - **Migration number** (`cfg.MIGRATION`, the file number). Acuranzo is 1000–1999. Argent is 2000–2999. A future Gaius pack on this database is 3000–3999. The forward, reverse, and diagram rows store this number in `query_ref`. Hydrogen tracks AVAIL, LOAD, and APPLY once per thousand that the payload ships. A thousand left out of the payload is not migrated. Inside one thousand, a file at or below that band's high-water mark is skipped, so take the next number above the highest file already in that design. Across thousands, the next apply is the lowest pending migration number. A new `acuranzo_1386` still runs after `argent_2001` is applied.
 - **`query_id`.** `MAX(query_id)+1` on the shared `queries` table. No design owns a range.
-- **Caller-facing QueryRef** (`cfg.QUERY_REF`). The id a caller uses. One per migration, in the migration that installs it. It is not the migration number. Uniqueness on `queries` is `(query_ref, query_type_a28)`.
+- **Caller-facing QueryRef** (`cfg.QUERY_REF`). The id a caller uses. One per migration, in the migration that installs it. It is a different sequence from the file number. Uniqueness on `queries` is `(query_ref, query_type_a28)`. Acuranzo's caller-facing refs stay the small numbers already shipped (102, 154, and the rest). Argent's caller-facing refs are 2000–2999, the same range as Argent's file numbers. The same integer may be both. The query type tells them apart. A later pack on this database uses its migration thousand the same way.
 
-Lookup ids on this shared database are their own sequence. Acuranzo keeps 0–199 (68 families seeded, highest 068). Argent uses 200–299. A later pack takes 300–399. One lookup family per migration. The column name is `*_aN` with that id (`status_a200`). Seed the family from the design that owns the block.
+Lookup ids on this shared database are their own sequence. Acuranzo keeps 0–199 (68 families seeded, highest 068). Argent uses 2000–2999, the same range as its file numbers and its caller-facing QueryRefs. The same integer may be all three. The audiences are different: a lookup id is not a migration number and not a QueryRef. A later pack on this database uses its migration thousand (Gaius 3000–3999). One lookup family per migration. The column name is `*_aN` with that id (`status_a2000`). A key may be 0 or negative when that value is meaningful. Seed the family from the design that owns the block.
 
 ### Non-Negotiable Rules for Every Migration You Generate
 
@@ -682,7 +682,7 @@ For status and reference tables:
 3. Insert initial lookup values
 4. Use diagram migration with `"lookup": true` for status fields
 
-On the shared Acuranzo database, one migration seeds one lookup family, and the id comes from that design's block: Acuranzo 0–199, Argent 200–299, a later pack 300–399. The column is `*_aN`. See **Designs, packs, and numbers**.
+On the shared Acuranzo database, one migration seeds one lookup family, and the id comes from that design's block: Acuranzo 0–199, Argent 2000–2999, a later pack the same thousand as its migration files. The column is `*_aN`. See **Designs, packs, and numbers**.
 
 ## Copy/Paste Templates
 

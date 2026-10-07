@@ -268,6 +268,7 @@ void ws_relay_enqueue(const char *event, const char *subject, const json_t *data
     json_t *frame;
     json_t *copy;
     char *text;
+    struct lws_context *wake_ctx = NULL;
 
     if (!event || event[0] == '\0' || !subject || subject[0] == '\0' ||
         !json_is_object(data)) {
@@ -312,6 +313,9 @@ void ws_relay_enqueue(const char *event, const char *subject, const json_t *data
                         session->relay_queue[session->relay_queue_count] = queued;
                         session->relay_queue_count++;
                         lws_callback_on_writable(node->wsi);
+                        if (!wake_ctx) {
+                            wake_ctx = lws_get_context(node->wsi);
+                        }
                     }
                 }
             }
@@ -319,6 +323,11 @@ void ws_relay_enqueue(const char *event, const char *subject, const json_t *data
         }
         pthread_mutex_unlock(&ws_relay_mu);
         free(text);
+        /* Cancel after the unlock. The writable callback takes ws_relay_mu,
+           and without the cancel the service thread waits out its poll. */
+        if (wake_ctx) {
+            lws_cancel_service(wake_ctx);
+        }
         if (dropped) {
             log_this(SR_NATS, "NATS relay queue full", LOG_LEVEL_TRACE, 0);
         }

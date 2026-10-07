@@ -2,6 +2,7 @@
 -- Resolve wrapper credentials and ping the live DB. Never return passwords.
 --
 -- CHANGELOG
+-- 0.6.3 - 2026-10-07 - MSSQL family, ping, and exec_sql (wired, not run on a database)
 -- 0.6.2 - 2026-09-08 - picker_blurb: real env names, never password values
 -- 0.5.0 - 2026-08-23 - Phase 5: non-RO exec_sql for one-field apply
 -- 0.4.8 - 2026-08-23 - Source wrapper exec line for computed host/password-env
@@ -223,6 +224,8 @@ function M.picker_blurb(engine)
         return family_blurb("YUGABYTE_DB", "demo")
     elseif engine == "sqlite" then
         return "hydrodemo.sqlite"
+    elseif engine == "mssql" then
+        return "MSSQL_DB_HOST MSSQL_DB_USER MSSQL_DB_NAME schema demoms MSSQL_SA_PASSWORD"
     end
     return engine or ""
 end
@@ -311,6 +314,26 @@ local function apply_family(conn, engine, wrapper)
             conn.database = wrapper_dir(wrapper)
                 .. "/../../../tests/artifacts/database/sqlite/hydrodemo.sqlite"
         end
+    elseif engine == "mssql" then
+        conn.family = "MSSQL_*"
+        conn.host = getenv("MSSQL_DB_HOST")
+        if conn.host == "" then
+            conn.host = "127.0.0.1"
+        end
+        conn.port = getenv("MSSQL_DB_PORT")
+        if conn.port == "" then
+            conn.port = "1433"
+        end
+        conn.user = getenv("MSSQL_DB_USER")
+        if conn.user == "" then
+            conn.user = "sa"
+        end
+        conn.database = getenv("MSSQL_DB_NAME")
+        if conn.database == "" then
+            conn.database = "hydrotst"
+        end
+        conn.password_env = "MSSQL_SA_PASSWORD"
+        conn.schema = "demoms"
     else
         conn.family = "SCHEMATOOL_DB_*"
         conn.host = getenv("SCHEMATOOL_DB_HOST")
@@ -500,6 +523,30 @@ local function ping_firebird(conn)
     return run_shell(script)
 end
 
+local function ping_mssql(conn)
+    if not have_cmd("podman") then
+        return false, "podman not found"
+    end
+    if conn.user == "" or conn.database == "" then
+        return false, "missing user/database"
+    end
+    if conn.password_env ~= "" and getenv(conn.password_env) == "" then
+        return false, conn.password_env .. " not set"
+    end
+    local script = string.format([[
+command -v podman >/dev/null || { echo podman not found; exit 1; }
+podman ps --format '{{.Names}}' | grep -qx philement-mssql || { echo container philement-mssql is not running; exit 1; }
+eval "pw=\"\${%s}\""
+{
+    printf 'export SQLCMDPASSWORD=%%q\n' "$pw"
+    printf 'exec /opt/mssql-tools18/bin/sqlcmd -S localhost -U %%q -C -d %%q -b -h-1 -W -i /dev/stdin <<'"'"'SCHEMATOOL_MSSQL_SQL_END'"'"'\n' %s %s
+    printf '%%s\n' 'SET NOCOUNT ON; SELECT 1;'
+    printf '%%s\n' 'SCHEMATOOL_MSSQL_SQL_END'
+} | podman exec -i philement-mssql bash -s
+]], conn.password_env, sh_quote(conn.user), sh_quote(conn.database))
+    return run_shell(script)
+end
+
 local function ping_via_wrapper(wrapper, conn)
     local script = string.format([[
 exec() {
@@ -555,6 +602,17 @@ VALUES 1;
 CONNECT RESET;
 EOF
             ;;
+        mssql)
+            command -v podman >/dev/null || { echo podman not found; exit 1; }
+            podman ps --format '{{.Names}}' | grep -qx philement-mssql || { echo container philement-mssql is not running; exit 1; }
+            eval "pw=\"\${$password_env}\""
+            {
+                printf 'export SQLCMDPASSWORD=%%q\n' "$pw"
+                printf 'exec /opt/mssql-tools18/bin/sqlcmd -S localhost -U %%q -C -d %%q -b -h-1 -W -i /dev/stdin <<'"'"'SCHEMATOOL_MSSQL_SQL_END'"'"'\n' "$user" "$database"
+                printf '%%s\n' 'SET NOCOUNT ON; SELECT 1;'
+                printf '%%s\n' 'SCHEMATOOL_MSSQL_SQL_END'
+            } | podman exec -i philement-mssql bash -s
+            ;;
         *)
             echo "unsupported engine"
             exit 1
@@ -585,6 +643,8 @@ function M.probe(wrapper)
         ok, out = ping_firebird(conn)
     elseif conn.engine == "db2" then
         ok, out = ping_db2(conn)
+    elseif conn.engine == "mssql" then
+        ok, out = ping_mssql(conn)
     else
         ok, out = false, "unsupported engine"
     end
@@ -653,6 +713,20 @@ run_sql() {
                 printf '%s\n' 'COMMIT;'
                 printf '%s\n' 'CONNECT RESET;'
             } | db2 +c -t +o
+            ;;
+        mssql)
+            command -v podman >/dev/null || { echo podman not found; exit 1; }
+            podman ps --format '{{.Names}}' | grep -qx philement-mssql || { echo container philement-mssql is not running; exit 1; }
+            eval "pw=\"\${$password_env}\""
+            {
+                printf 'export SQLCMDPASSWORD=%q\n' "$pw"
+                printf 'exec /opt/mssql-tools18/bin/sqlcmd -S localhost -U %q -C -d %q -b -i /dev/stdin <<'"'"'SCHEMATOOL_MSSQL_SQL_END'"'"'\n' "$user" "$database"
+                printf '%s\n' 'SET XACT_ABORT ON;'
+                printf '%s\n' 'BEGIN TRANSACTION;'
+                cat "$sql_file"
+                printf '%s\n' 'COMMIT TRANSACTION;'
+                printf '%s\n' 'SCHEMATOOL_MSSQL_SQL_END'
+            } | podman exec -i philement-mssql bash -s
             ;;
         *)
             echo "unsupported engine"

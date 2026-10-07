@@ -36,7 +36,7 @@ Hydrogen is currently designed for technical users who:
 - [**Mail Guide**](/docs/H/MAIL_GUIDE.md) - Mail Relay, templates, rewrites, and Lua mail handling
 - [**Examples**](/docs/H/EXAMPLES.md) - Practical end-to-end examples for common Hydrogen tasks
 - [**SchemaTool**](/docs/H/tools/SCHEMATOOL.md) - Migration drift auditor (Lua migrations vs live `queries`)
-- [**SchemaHelper**](/docs/H/tools/SCHEMAHELPER.md) - Interactive SchemaTool front-end (review queue + packets); v2 archive: [`SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md)
+- [**SchemaHelper**](/docs/H/tools/SCHEMAHELPER.md) - Interactive SchemaTool front-end (review queue + packets); active plan: [`SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md); v2 archive: [`SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md)
 - [**Databases**](/docs/H/DATABASES.md) - Considerations around using PostgreSQL, MySQL/MariaDB, SQLite, and DB2
 - [**AI Instructions**](/docs/H/INSTRUCTIONS.md) - Development guide optimized for AI assistance
 - [**AI Prompts**](/docs/H/PROMPTS.md) - Development guide optimized for AI assistance
@@ -64,6 +64,7 @@ Hydrogen is currently designed for technical users who:
 - [**Subsystems Documentation**](/docs/H/core/subsystems/README.md) - Overview of all Hydrogen subsystems
 - [**Scripting / Lua API**](/docs/H/core/subsystems/scripting/README.md) - In-server Lua scripting subsystem
 - [**MCP Server**](/docs/H/core/subsystems/mcp/mcp.md) - Model Context Protocol (Streamable HTTP + Lua tools)
+- [**NATS**](/docs/H/core/subsystems/nats/nats.md) - Cross-instance cache invalidation, WebSocket relay, and presence
 - [**Lua Guide**](/docs/H/LUA_GUIDE.md) - Human-oriented intro to Lua and the `H` host API
 - [**Lua Features**](/docs/H/LUA_FEATURES.md) - Pure Lua language features (strings, tables, numbers, dates)
 - [**Mail Guide**](/docs/H/MAIL_GUIDE.md) - Mail Relay pipeline, rewrites, events, and Lua `H.mail`
@@ -98,6 +99,7 @@ Hydrogen is currently designed for technical users who:
 - [**OIDC IdP Operator**](/docs/H/api/oidc/OIDC_IDP_OPERATOR.md) - Enable, keys, kill switch, IdP vs RP
 - [**OIDC RP Endpoints**](/docs/H/api/auth/oidc_rp.md) - Hydrogen as Keycloak client
 - [**MCP Endpoints**](/docs/H/api/mcp/mcp_endpoints.md) - Streamable HTTP listen, PRM, `/api/mcp/status`
+- [**NATS Endpoints**](/docs/H/api/nats/nats_endpoints.md) - JWT `GET /api/nats/status` and `GET /api/nats/instances`
 - [**System Information**](/docs/H/core/system_info.md) - System monitoring and reporting
 
 ### Implementation Notes
@@ -106,11 +108,11 @@ Hydrogen is currently designed for technical users who:
 - [**Migrations**](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md) - Performance improvements to the Migration system
 - [**Conduit**](/docs/H/plans/complete/CONDUIT_COMPLETE.md) - Implementation plan for Conduit Service endpoints
 - [**Auth Finale**](/docs/H/plans/AUTH_FINALE.md) - Remaining OIDC / Keycloak / auth work (active)
-- [**NATS**](/docs/H/plans/NATS_PLAN.md) - Cross-instance result-cache invalidation (Phases 1–10 complete 2026-10-06; next is Phase 11, Test 62)
+- [**NATS**](/docs/H/plans/complete/NATS_PLAN_COMPLETE.md) - Cross-instance result-cache invalidation (Phases 0–12 complete 2026-10-06)
 - [**Notifications / Subscribers**](/docs/H/plans/NOTIFICATIONS_PLAN.md) - Web Push backend plan (Phase 0 draft; after NATS)
 - [**Firebird**](/docs/H/plans/FIREBIRD.md) - Firebird engine; replace CockroachDB slot; Firebase teardown
 - [**MSSQL**](/docs/H/plans/MSSQL.md) - MS SQL Server engine (Lookup 030 key 5); Fedora-local Linux container (Phase 0 not approved)
-- [**Argent**](/docs/H/plans/ARGENT_PLAN.md) - Bookkeeping pack on the Acuranzo database (`argent_2xxx`). Phase 0 not approved. Tests 32–40 apply it with Acuranzo. `H.http.request` is still open.
+- [**Argent**](/docs/H/plans/ARGENT_PLAN.md) - Bookkeeping pack on the Acuranzo database (`argent_2xxx`). Phases 0–16. Phases 1–3 applied 2026-10-07. Phase 4 transactions, lines, and QueryRef 2000 are waiting on apply. `H.http.request` is Phase 13.
 - [**Auth**](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md) - Implementation plan for Auth subsystem (historical)
 - [**MCP**](/docs/H/plans/complete/MCP_COMPLETE.md) - MCP server subsystem (Phases 0–14)
 - [**Conduit REST API**](/docs/H/core/subsystems/conduit/conduit_api.md) - Database query by reference

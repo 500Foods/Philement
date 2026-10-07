@@ -143,7 +143,7 @@ bool database_cancel_query(const char* query_id) {
     return pending_result_cancel(manager, query_id, SR_DATABASE);
 }
 
-// Cleanup expired pending results (max_age is advisory; pending uses per-query timeout)
+// Leaves waiter-owned pending results in place (max_age is advisory and unused).
 size_t database_cleanup_old_results(time_t max_age_seconds __attribute__((unused))) {
     if (!database_subsystem) {
         return 0;

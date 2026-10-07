@@ -51,17 +51,6 @@ Letter **W** (V is NATS, U is Chat), launch 23, Test 63. Exhaustive plan
 (Phases 0–15) with completeness and coverage fences. Phase 0 not approved.
 Lithium UI deferred. Does not reuse `Notify` SMTP scaffold or `H.notify`.
 
-### [NATS PLAN](/docs/H/plans/NATS_PLAN.md)
-
-NATS subsystem for cross-instance query **result-cache** invalidation.
-An explicit C or Lua call deletes local entries, then publishes. Peers
-delete the same SQL template. Config letter **V**, launch **22**, Test
-**62**, `H_HK_NATS = 7`. Phase 0 approved 2026-10-05. Phases 1–7
-complete that day. Phases 8, 9, and 10 complete 2026-10-06.
-Next is Phase 11 (blackbox Test 62; section not written).
-Lands before Subscribers
-(letter W).
-
 ### [FIREBIRD PLAN](/docs/H/plans/FIREBIRD.md)
 
 Replace the CockroachDB operator slot with a real Firebird engine
@@ -82,6 +71,16 @@ Implement Lookup 030 key 5 (MS SQL Server) as a sixth C engine
 Fedora-local official Linux container via Podman (Developer edition,
 free for test; not Windows). Test **39**. Grows the operator matrix
 7 → 8. Sister plan of FIREBIRD (shared enum). Phase 0 not approved.
+SchemaTool items 6.1–6.3 are specified in
+[SCHEMA_V2_PLAN.md](/docs/H/plans/SCHEMA_V2_PLAN.md) Phase 2.
+
+### [SCHEMA V2 PLAN](/docs/H/plans/SCHEMA_V2_PLAN.md)
+
+SchemaTool and SchemaHelper across the eight engines. Firebird and
+MSSQL adapters, Cockroach name removal, MySQL/MariaDB split, eight
+test wrappers (tests 32–39) and eight demo wrappers (Test 40), then
+structural apply and migration-owned default rows. Extra production
+rows stay out of the queue. Opened 2026-10-07. Phase 1 not started.
 
 ### [MIRAGE PLAN](/docs/H/plans/MIRAGE_PLAN.md)
 
@@ -93,8 +92,10 @@ Double-entry bookkeeping as an optional pack on the Acuranzo database
 (`elements/002-helium/argent/`, migrations `argent_2xxx`, first file
 `argent_2000`). Never applied alone. A future Gaius pack is `3xxx`.
 Plus-list loader is in source. Tests 32–40 use
-`PAYLOAD:acuranzo+argent`. `H.http.request` for CalDAV is not started.
-Phase 0 not approved. Design folder started 2026-10-05.
+`PAYLOAD:acuranzo+argent`. Restructured 2026-10-06 into Phases 0–16.
+Phase 0 approved the same day. Phases 1–3 applied 2026-10-07.
+Phase 4 transactions, lines, and QueryRef 2000 are written and waiting on apply.
+`H.http.request` is Phase 13.
 
 ---
 
@@ -123,6 +124,7 @@ Full index: [`complete/README.md`](/docs/H/plans/complete/README.md). Highlights
 | Lua 5.5 embed upgrade | [LUA_55_PLAN_COMPLETE.md](/docs/H/plans/complete/LUA_55_PLAN_COMPLETE.md) |
 | Mail Relay blackbox | [MAILRELAY_BLACKBOX_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_BLACKBOX_PLAN_COMPLETE.md) |
 | MCP server | [MCP_COMPLETE.md](/docs/H/plans/complete/MCP_COMPLETE.md) |
+| NATS client | [NATS_PLAN_COMPLETE.md](/docs/H/plans/complete/NATS_PLAN_COMPLETE.md) |
 | mDNS upgrade | [MDNS_UPGRADE_COMPLETE.md](/docs/H/plans/complete/MDNS_UPGRADE_COMPLETE.md) |
 | Migrations perf | [MIGRATIONS_COMPLETE.md](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md) |
 | SchemaHelper v1 | [SCHEMAHELPER_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md) |

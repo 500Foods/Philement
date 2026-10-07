@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.1 - 2026-10-06 - Lookup columns are ledger_type_a2001 and status_a2002
 -- 1.0.0 - 2026-10-05 - Create ledgers on the shared Acuranzo database
 
 return function(engine, design_name, schema_name, cfg)
@@ -36,8 +37,8 @@ table.insert(queries,{sql=[[
                 ledger_id                   ${INTEGER}          NOT NULL,
                 organization_id             ${INTEGER}          NOT NULL,
                 parent_id                   ${INTEGER}                  ,
-                status_a202                 ${INTEGER}          NOT NULL,
-                ledger_type_a201            ${INTEGER}          NOT NULL,
+                status_a2002                ${INTEGER}          NOT NULL,
+                ledger_type_a2001           ${INTEGER}          NOT NULL,
                 is_posting                  ${INTEGER_SMALL}    NOT NULL,
                 name                        ${TEXT}             NOT NULL,
                 currency                    ${VARCHAR_20}       NOT NULL,
@@ -80,14 +81,15 @@ table.insert(queries,{sql=[[
             - **organization_id**: Owning organization. Same schema as
               `organizations.organization_id`. No SQL foreign key.
             - **parent_id**: Optional parent ledger in this table. Null is
-              a root. Parents are roll-up views (`is_posting` = 0).
-              Posting ledgers (`is_posting` = 1) are the only ones that
-              receive lines. Enforced in Lua.
-            - **status_a202**: Ledger status (open / closed / archive).
-              Lookup **202**. The seed is a later migration. No SQL
+              a root. Parents are non-posting (`is_posting` = 0). Their
+              balance is a later query, not a SQL view. Posting ledgers
+              (`is_posting` = 1) are the only ones that receive lines.
+              Enforced in Lua.
+            - **status_a2002**: Ledger status (open / closed / archive).
+              Lookup **2002**. The seed is a later migration. No SQL
               foreign key.
-            - **ledger_type_a201**: asset, liability, equity, income, or
-              expense. Lookup **201**. The seed is a later migration.
+            - **ledger_type_a2001**: asset, liability, equity, income, or
+              expense. Lookup **2001**. The seed is a later migration.
               Line sign follows this type in Lua, not a debit/credit pair
               of columns.
             - **is_posting**: 1 accepts lines. 0 is a parent roll-up only.
@@ -227,7 +229,7 @@ table.insert(queries,{sql=[[
                                 "unique": false
                             },
                             {
-                                "name": "status_a202",
+                                "name": "status_a2002",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,
@@ -235,7 +237,7 @@ table.insert(queries,{sql=[[
                                 "lookup": true
                             },
                             {
-                                "name": "ledger_type_a201",
+                                "name": "ledger_type_a2001",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,

@@ -6,7 +6,8 @@ Migration drift auditor for Hydrogen Lua migrations vs a live database.
 object shape vs folded applied DDL).
 
 **Full docs:** [`/docs/H/tools/SCHEMATOOL.md`](/docs/H/tools/SCHEMATOOL.md)  
-**Plan:** [`/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md)  
+**Active plan:** [`/docs/H/plans/SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md)  
+**Archived plan:** [`/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md)  
 **SchemaHelper:** `schemahelper.sh` —
 [`/docs/H/tools/SCHEMAHELPER.md`](/docs/H/tools/SCHEMAHELPER.md)
 (v2: [`/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md);
@@ -36,7 +37,7 @@ extras/schematool/schematool.sh \
   --out-dir /tmp/schematool-cat --no-sql
 ```
 
-Requires: `tables`, `jq`, `lua`, `xxd` (MySQL/DB2 HEX), plus `sqlite3` / `psql` / `mysql` / `db2`.
+Requires: `tables`, `jq`, `lua`, `xxd` (MySQL/DB2 HEX), plus `sqlite3` / `psql` / `mysql` / `db2`. MSSQL uses `podman` and `sqlcmd` inside `philement-mssql`.
 
 ## Row Grouping
 
@@ -89,9 +90,10 @@ lua/
   schematool_catalog_fold.lua
   schematool_catalog_compare.lua
 db/
-  query_{pg,mysql,sqlite,db2}.sh
-  catalog_{pg,mysql,sqlite,db2}.sh
+  query_{pg,mysql,sqlite,db2,mssql}.sh
+  catalog_{pg,mysql,sqlite,db2,mssql}.sh
   common.sh
+  mssql_common.sh
 testdata/
   expected_pg_demo_1000_1002.json
 ```
@@ -119,12 +121,13 @@ Chosen from **requested** `--engine` (before alias):
 | mariadb | `MARIADB_DB_*` (fallback: `CANVAS_DB_*`) | `SCHEMATOOL_DB_*` |
 | db2 | `HYDROTST_DB_*` | `SCHEMATOOL_DB_*` |
 | firebird | `FIREBIRD_DB_PATH_DEMO` (or `_TEST` / deprecated `FIREBIRD_DB_PATH`) / `FIREBIRD_SYSDBA_PASSWORD` | `SCHEMATOOL_DB_*` |
+| mssql | `MSSQL_DB_{HOST,PORT,USER,NAME}` / `MSSQL_SA_PASSWORD` | `sqlcmd` in `philement-mssql`; schema `demoms` |
 | sqlite | `--database` path | `SCHEMATOOL_DB_NAME` as path |
 
 Password: `--password-env VAR` preferred (never printed).
 
-Test 40 wrappers: `schematool_{postgresql,mysql,mariadb,sqlite,db2,firebird,yugabytedb}.sh`  
-Smoke (all 7, 1190 catalog): `./smoke_test40_catalog.sh`
+Test 40 wrappers: `schematool_{postgresql,mysql,mariadb,sqlite,db2,firebird,yugabytedb,mssql}.sh`  
+Smoke (8 engines, 1190 catalog): `./smoke_test40_catalog.sh`
 
 ## Safety
 

@@ -110,6 +110,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_57_mailrelay_outbound.sh](/docs/H/tests/test_57_mailrelay_outbound.md)**: Mail Relay outbound delivery testing
 - **[test_58_mailrelay_api.sh](/docs/H/tests/test_58_mailrelay_api.md)**: Mail Relay authenticated API end-to-end testing
 - **[test_60_performance.sh](/docs/H/tests/test_60_performance.md)**: Performance benchmarking
+- **[test_62_nats.sh](/docs/H/tests/test_62_nats.md)**: NATS client against a local broker (ports 5620–5629)
 
 ### Deliverables
 

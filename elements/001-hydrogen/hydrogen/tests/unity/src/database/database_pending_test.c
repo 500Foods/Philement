@@ -166,7 +166,7 @@ void test_pending_result_signal_ready_not_found(void) {
     pending_result_manager_destroy(manager, NULL);
 }
 
-// Test cleanup of expired results
+// Cleanup leaves an expired result for the waiter to unregister
 void test_pending_result_cleanup_expired(void) {
     PendingResultManager* manager = pending_result_manager_create(NULL);
     TEST_ASSERT_NOT_NULL(manager);
@@ -178,9 +178,13 @@ void test_pending_result_cleanup_expired(void) {
     // Manually set submitted time to past
     pending->submitted_at = time(NULL) - 5; // 5 seconds ago
 
-    // Run cleanup
+    // Cleanup must leave the waiter-owned entry in place
     size_t cleaned = pending_result_cleanup_expired(manager, NULL);
-    TEST_ASSERT_EQUAL(1, cleaned);
+    TEST_ASSERT_EQUAL(0, cleaned);
+    TEST_ASSERT_EQUAL(1, manager->count);
+    TEST_ASSERT_NOT_NULL(pending->query_id);
+
+    pending_result_unregister(manager, pending, NULL);
     TEST_ASSERT_EQUAL(0, manager->count);
 
     pending_result_manager_destroy(manager, NULL);
@@ -455,26 +459,30 @@ void test_pending_result_wait_multiple_timeout(void) {
     pending_result_manager_destroy(manager, NULL);
 }
 
-// Test pending result cleanup expired with result
+// Cleanup leaves an expired result, including its QueryResult, for unregister
 void test_pending_result_cleanup_expired_with_result(void) {
     PendingResultManager* manager = pending_result_manager_create(NULL);
     TEST_ASSERT_NOT_NULL(manager);
-    
+
     PendingQueryResult* pending = pending_result_register(manager, "expired_test", 1, NULL);
     TEST_ASSERT_NOT_NULL(pending);
-    
+
     QueryResult* mock_result = calloc(1, sizeof(QueryResult));
     TEST_ASSERT_NOT_NULL(mock_result);
     mock_result->success = true;
     mock_result->data_json = strdup("{\"test\": \"data\"}");
     pending->result = mock_result;
-    
+
     pending->submitted_at = time(NULL) - 5;
-    
+
     size_t cleaned = pending_result_cleanup_expired(manager, NULL);
-    TEST_ASSERT_EQUAL(1, cleaned);
+    TEST_ASSERT_EQUAL(0, cleaned);
+    TEST_ASSERT_EQUAL(1, manager->count);
+    TEST_ASSERT_EQUAL_PTR(mock_result, pending->result);
+
+    pending_result_unregister(manager, pending, NULL);
     TEST_ASSERT_EQUAL(0, manager->count);
-    
+
     pending_result_manager_destroy(manager, NULL);
 }
 

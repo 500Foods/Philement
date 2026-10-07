@@ -274,10 +274,7 @@ PendingQueryResult* pending_result_register(
     // Add to manager
     pthread_mutex_lock(&manager->manager_lock);
 
-    // Opportunistically reclaim expired/timed-out slots before growing the
-    // array. Under sustained load this keeps the backlog (and therefore the
-    // average hash chain length) bounded without waiting for the next
-    // per-queue heartbeat cleanup pass.
+    // A full array grows below. Reap leaves waiter-owned entries in place.
     if (manager->count >= manager->capacity) {
         pending_result_reap_expired_locked(manager, dqm_label);
     }
@@ -530,70 +527,19 @@ void pending_result_unregister(PendingResultManager* manager, PendingQueryResult
             "Pending result unregistered and cleaned up", LOG_LEVEL_TRACE, 0);
 }
 
-/**
- * @brief Clean up expired pending results; caller must already hold manager_lock
- *
- * Walks results[] once, swap-removing each expired/timed-out entry in O(1)
- * (see pending_result_detach_locked). Because a swap can move an unvisited
- * entry into the current slot, the index is only advanced when the current
- * slot survives the pass.
+/*
+ * The registering thread owns each PendingQueryResult until
+ * pending_result_unregister(). See the header. Returns 0 and leaves
+ * the manager unchanged.
  */
 size_t pending_result_reap_expired_locked(PendingResultManager* manager, const char* dqm_label) {
-    if (!manager) return 0;
-
-    size_t cleaned = 0;
-    time_t now = time(NULL);
-
-    size_t i = 0;
-    while (i < manager->count) {
-        PendingQueryResult* pending = manager->results[i];
-        if (!pending) {
-            i++;
-            continue;
-        }
-
-        time_t elapsed = now - pending->submitted_at;
-        bool expired = (elapsed >= pending->timeout_seconds);
-
-        if (!expired && !pending->timed_out) {
-            i++;
-            continue;
-        }
-
-        // Detach first (O(1) swap-with-last) so the slot at `i` now holds
-        // an unvisited entry (or the array shrinks); do not advance `i`.
-        pending_result_detach_locked(manager, pending);
-
-        // Lock the pending result's mutex to prevent concurrent access
-        // from pending_result_wait (which may be blocked on
-        // pthread_cond_timedwait with the lock released). Signal any
-        // blocked waiter before freeing so it can exit cleanly.
-        pthread_mutex_lock(&pending->result_lock);
-        pending->timed_out = true;
-        pthread_cond_signal(&pending->result_ready);
-        pthread_mutex_unlock(&pending->result_lock);
-
-        // Clean up the pending result
-        if (pending->query_id) free(pending->query_id);
-        if (pending->result) {
-            database_engine_cleanup_result(pending->result);
-        }
-        pthread_mutex_destroy(&pending->result_lock);
-        pthread_cond_destroy(&pending->result_ready);
-        free(pending);
-
-        cleaned++;
-    }
-
-    if (cleaned > 0) {
-        log_this(dqm_label ? dqm_label : SR_DATABASE, "Cleaned up expired pending results", LOG_LEVEL_DEBUG, 0);
-    }
-
-    return cleaned;
+    (void)manager;
+    (void)dqm_label;
+    return 0;
 }
 
 /**
- * @brief Clean up expired pending results
+ * @brief Leave waiter-owned pending results in place
  */
 size_t pending_result_cleanup_expired(PendingResultManager* manager, const char* dqm_label) {
     if (!manager) return 0;

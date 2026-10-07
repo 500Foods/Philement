@@ -134,17 +134,6 @@ not open work unless listed below.
 
 ## P2 — Active product subsystems (larger, clear value)
 
-### 29. NATS — cross-instance result-cache invalidation
-
-| | |
-| --- | --- |
-| **Plan** | [`NATS_PLAN.md`](/docs/H/plans/NATS_PLAN.md) |
-| **Effort** | L–XL |
-| **Done** | Phase 0 approved 2026-10-05. Phases 1–7 complete the same day. Phase 8 complete 2026-10-06. Phase 9 complete 2026-10-06: `mkp` 2,231 files, `mkt` 4m 45s, Unity 5 + 5 + 5 + 3 + 4 + 4 + 4 + 7 + 7. `GET /api/nats/status`, `GET /api/nats/instances`, and `services.nats`. `H.nats.broadcast`, `broadcast_sync`, `status`, and `instances`. Phase 10 complete 2026-10-06: `mkp` 2,232 files, `mkt` 2m 34s, `nats_client.c` 369/470, `nats_reconnect.c` 47/60. |
-| **Remaining** | Phase 11 blackbox Test 62, then docs. `nats_io.c` is 39/146 until that test. One phase per conversation. The Phase 11 section is not written. |
-| **Why now** | Phase 0 is approved. Lands before Subscribers so letter V, launch 22, Test 62, and `H_HK_NATS = 7` stay with NATS. |
-| **Note** | Invalidate `query_result_cache` by SQL template, not the QTC. Config stores subject suffixes. `nats-server` is not on `PATH`; Phase 11 needs it on port 5620. `MAX_SUBSYSTEMS` stays 24. |
-
 ### 13. Mail Relay — finish remaining phases
 
 | | |
@@ -176,7 +165,18 @@ not open work unless listed below.
 | **Done** | 0% — plan authored 2026-09-18; Phase 0 locks not approved |
 | **Remaining** | Phase 0 lock approval, Fedora Podman SQL Server 2022 Linux + ODBC 18, Helium dialect, unixODBC C engine, T-SQL/CLR extras, Test 39, SchemaTool, grow matrix 7→8, docs, fences |
 | **Why later** | Key 5 has been a lookup row without a C engine. Fedora has no `mssql-server` RPM; official Linux container is the local free path. Auth Finale remains P0. Parallel with item 27, not a substitute. |
-| **Note** | `src/database/mssql/` + `database_mssql.lua`. Test **39** (37 is Firebird). Developer edition is test-only. No Windows. Shared enum lock with FIREBIRD.md. |
+| **Note** | `src/database/mssql/` + `database_mssql.lua`. Test **39** (37 is Firebird). Developer edition is test-only. No Windows. Shared enum lock with FIREBIRD.md. SchemaTool items 6.1–6.3 are [`SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md) Phase 2. |
+
+### 31. SchemaTool / SchemaHelper v2 — eight engines and convergence
+
+| | |
+| --- | --- |
+| **Plan** | [`SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md) |
+| **Effort** | L |
+| **Done** | Plan written 2026-10-07. No code yet. |
+| **Remaining** | Phases 1–10. First slice is Firebird dump and catalog adapters. |
+| **Why next** | The review UI exists. Firebird and MSSQL cannot be audited, and apply covers only a narrow DDL slice. |
+| **Note** | Bring an older database up to the current migrations. Extra production rows stay out of the queue. Test wrappers are tests 32–39. Demo wrappers are Test 40. |
 
 ### 26. Notifications / Subscribers — Web Push backend
 
@@ -185,7 +185,7 @@ not open work unless listed below.
 | **Plan** | [`NOTIFICATIONS_PLAN.md`](/docs/H/plans/NOTIFICATIONS_PLAN.md) |
 | **Effort** | L–XL |
 | **Done** | 0% — exhaustive plan; Phase 0 locks not approved |
-| **Remaining** | Phase 0 lock approval (letter **W**, launch 23, Test 63, `H_HK_SUBSCRIBERS = 8`, SSRF v1, coverage/completeness fences), then Phases 1–10/12/13/15. Lithium subscribe UI deferred (Phase 11). NATS (item 29) is approved and goes first: V / 22 / 62 / handle 7. |
+| **Remaining** | Phase 0 lock approval (letter **W**, launch 23, Test 63, `H_HK_SUBSCRIBERS = 8`, SSRF v1, coverage/completeness fences), then Phases 1–10/12/13/15. Lithium subscribe UI deferred (Phase 11). NATS is complete (letter V, launch 22, Test 62). |
 | **Why later** | Lithium SW already displays pushes; Hydrogen has no subscribe/dispatch path. Mail Relay is the outbound analog. Do not reuse `Notify` SMTP scaffold or `H.notify`. |
 | **Note** | Web Push RFC 8030/8291/8292 to vendor endpoints (`fcm.googleapis.com`, `updates.push.mozilla.org`, `web.push.apple.com`). No proprietary FCM/APNs SDKs. No live vendor calls in CI. |
 
@@ -233,9 +233,9 @@ not open work unless listed below.
 | --- | --- |
 | **Plan** | [`ARGENT_PLAN.md`](/docs/H/plans/ARGENT_PLAN.md) |
 | **Effort** | L (Helium pack and Lua) plus a small Hydrogen surface |
-| **Done** | Design folder, `argent_2000` organizations, `argent_2001` ledgers, plus-list loader source, and tests 31–40 wiring (2026-10-05). Phase 0 not approved. |
-| **Remaining** | Andrew sign-off. Lookup seeds 200, 201, and 202, then the rest of `argent_2xxx`. `H.http.request` before CalDAV. |
-| **Note** | Argent is a 2xxx pack on the Acuranzo database. Query refs start at 2000. `database*.lua` is a copy, packed per design. Tests 32–40 use `PAYLOAD:acuranzo+argent`. Other configs stay `PAYLOAD:acuranzo`. |
+| **Done** | Phases 0–3 applied 2026-10-07. Phase 4 files `argent_2009`–`argent_2014` (lookups 2003, 2004, 2011, transactions, lines, QueryRef 2000) are written and not applied yet. |
+| **Remaining** | Andrew applies Phase 4 as its closing step and reports it. Phase 5 is lookup 2006 and reconciliations. Until the plan is done, unshipped Argent files may be edited in place. After that, a schema, lookup, or QueryRef change is a new migration. |
+| **Note** | Argent is a 2xxx pack on the Acuranzo database. File numbers, caller-facing QueryRefs, and lookup ids all use 2000–2999 and may share integers. Andrew applies. Tests 32–40 use `PAYLOAD:acuranzo+argent`. |
 
 ### 23. Enum / struct reservations (no work unless product needs them)
 
@@ -259,6 +259,8 @@ not open work unless listed below.
 ---
 
 ## Recently completed (do not re-open)
+
+**2026-10-06 NATS (item 29):** Phases 0–12 are complete. The record is [`NATS_PLAN_COMPLETE.md`](/docs/H/plans/complete/NATS_PLAN_COMPLETE.md). The operator guide is [`nats.md`](/docs/H/core/subsystems/nats/nats.md). Test 62 is 13 pass, 12.411s. Do not re-open the plan.
 
 Moved under [`plans/complete/`](/docs/H/plans/complete/) in this cleanup, including:
 
@@ -342,14 +344,14 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 12d | MailRelay Persist MySQL/MariaDB SEGV | M | **done** — 14/14 live green; 12d closed | — |
 | 12e | MAX+1 PK clients: confirm + retry | M | single-thread OK | P1 |
 | 13 | Mail Relay remainder | L–XL | ~75% | P2 |
-| 29 | NATS result-cache invalidation | L–XL | Phases 0–9 complete | P2 |
 | 26 | Notifications / Subscribers | L–XL | 0% plan | P2 |
 | 27 | Firebird engine (replace Cockroach) | XL | Phases 0–11 done; cache follow-up | P2 |
 | 28 | MSSQL engine (Lookup 030 key 5) | XL | 0% plan | P2 |
+| 31 | SchemaTool / SchemaHelper v2 | L | plan only | P2 |
 | 24 | `H.externaldb` — ad-hoc external DB from Lua | M | 0% | P2 |
 | 19 | Print job → device / Beryllium | L–XL | ~30% | P3 |
 | 22 | Mirage | XL | 0% | P3 |
-| 30 | Argent Helium bookkeeping | L | folder started | P3 |
+| 30 | Argent Helium bookkeeping | L | Phases 0–3 applied | P3 |
 | 23 | Reserved enums/fields | n/a | n/a | P3 |
 
 (End of file)

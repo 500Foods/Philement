@@ -5,6 +5,7 @@
 -- luacheck: no unused args
 
 -- CHANGELOG
+-- 1.0.1 - 2026-10-06 - Lookup column is status_a2000 (lookup 2000)
 -- 1.0.0 - 2026-10-05 - Create organizations on the shared Acuranzo database
 
 return function(engine, design_name, schema_name, cfg)
@@ -34,7 +35,7 @@ table.insert(queries,{sql=[[
             CREATE TABLE ${SCHEMA}${TABLE}
             (
                 organization_id             ${INTEGER}          NOT NULL,
-                status_a200                 ${INTEGER}          NOT NULL,
+                status_a2000                ${INTEGER}          NOT NULL,
                 name                        ${TEXT}             NOT NULL,
                 fiscal_year_start_month     ${INTEGER}          NOT NULL,
                 fiscal_year_start_day       ${INTEGER}          NOT NULL,
@@ -68,10 +69,9 @@ table.insert(queries,{sql=[[
             - **organization_id**: Surrogate primary key. Assigned by Lua
               (`COALESCE(MAX(organization_id),0)+1`), same house pattern as
               other integer keys. No `${SERIAL}`.
-            - **status_a200**: Organization status. Lookup **200** (Argent
-              families occupy lookup_id 200–299 on the shared `lookups`
-              table). The seed for lookup 200 is a later migration. No SQL
-              foreign key.
+            - **status_a2000**: Organization status. Lookup **2000**
+              (1 active, 2 archived). The seed is a later migration. No
+              SQL foreign key.
             - **name**: Display name (`Andrew Simard`, `500 Foods`).
             - **fiscal_year_start_month**: 1–12. 500 Foods is 1 (January;
               year ends 31 December). Range is enforced in Lua.
@@ -186,7 +186,7 @@ table.insert(queries,{sql=[[
                                 "unique": true
                             },
                             {
-                                "name": "status_a200",
+                                "name": "status_a2000",
                                 "datatype": "${INTEGER}",
                                 "nullable": false,
                                 "primary_key": false,

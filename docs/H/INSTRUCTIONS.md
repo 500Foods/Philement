@@ -124,6 +124,7 @@ tests/          Test framework
 - tests/test_55_conduit_alt_queries.sh - Cross-database batch query with override
 - tests/test_57_mailrelay_outbound.sh - Mail Relay outbound delivery testing with local SMTP sink
 - tests/test_60_performance.sh - Performance benchmarking across databases
+- tests/test_62_nats.sh - NATS client blackbox (local nats-server, ports 5620–5629)
 - tests/test_70_installer.sh - Standalone installer building test
 - tests/test_71_database_diagrams.sh - Database diagram generation
 - tests/test_72_schemahelper.sh - SchemaHelper fixture + luacheck integration (no live DB)
@@ -150,6 +151,7 @@ tests/          Test framework
 - /docs/H/MAIL_GUIDE.md - Mail Relay, templates, rewrites, and Lua mail handling
 - /docs/H/core/subsystems/scripting/lua_api.md - Lua `H.*` host API reference
 - /docs/H/core/subsystems/mcp/mcp.md - MCP Streamable HTTP subsystem
+- /docs/H/core/subsystems/nats/nats.md - NATS client, cache invalidation, relay, and presence
 - /docs/H/tests/TESTING.md - blackbox/integration tests tests
 - /docs/H/tests/TESTING_UNITY.md - Unity unit tests
 
@@ -259,11 +261,11 @@ R. Reporting
 S. Webhooks
 T. MCP
 U. Chat (config-only today: no launch or landing)
+V. NATS
 
-V is reserved for NATS. W is reserved for Subscribers. Neither letter is
-in `config.h` yet. NATS Phase 0 is approved and Phase 1 adds V. Subscribers
-is still an unapproved plan and must not take V. See
-[`/docs/H/plans/NATS_PLAN.md`](/docs/H/plans/NATS_PLAN.md).
+W is reserved for Subscribers. That letter is not in `config.h` yet.
+Subscribers is still an unapproved plan. The finished NATS plan is
+[`/docs/H/plans/complete/NATS_PLAN_COMPLETE.md`](/docs/H/plans/complete/NATS_PLAN_COMPLETE.md).
 
 ## SUBSYSTEM ORDER
 
@@ -290,12 +292,12 @@ App uses subsystems and a launch/landing system to control them. Details in src/
 19. Scripting
 20. Reporting
 21. MCP
+22. NATS
 
-That list is what `launch_readiness.c` registers today. NATS is the
-approved next registration, **22**, after MCP. It is not in the launch
-list yet. Subscribers is planned as **23** and is not approved.
-`MAX_SUBSYSTEMS` is 24. Do not add a 25th registration: the readiness
-writer does not bounds-check the index.
+That list is what `launch_readiness.c` registers today. Subscribers is
+planned as **23** and is not approved. `MAX_SUBSYSTEMS` is 24. Do not
+add a 25th registration: the readiness writer does not bounds-check
+the index.
 
 Landing order is the table in `landing_readiness.c`, first entry first.
 It is not this list reversed. Comments in `landing_readiness.c` and

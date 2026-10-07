@@ -4,6 +4,7 @@
 # Lua 5.5 TUI over extras/schematool. Default is review-only.
 #
 # CHANGELOG
+# 0.6.7 - 2026-10-07 - SchemaTool 1.10.0; MSSQL wrapper in the picker
 # 0.6.6 - 2026-09-09 - --help docs URL → SCHEMAHELPER.md
 # 0.6.5 - 2026-09-09 - Phase 4: accept hash + dashboard un-accept
 # 0.6.4 - 2026-09-08 - Dark-grey progress bar background
@@ -49,8 +50,8 @@ SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
 LUA_APP="${SCRIPT_DIR}/schemahelper.lua"
 SCHEMATOOL_SH="${SCRIPT_DIR}/schematool.sh"
 
-VERSION="0.6.6"
-SCHEMATOOL_VERSION="1.9.0"
+VERSION="0.6.7"
+SCHEMATOOL_VERSION="1.10.0"
 
 print_help() {
     cat <<EOF

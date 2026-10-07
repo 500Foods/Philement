@@ -42,8 +42,9 @@ typedef struct PendingQueryResult {
  * Lookups by query_id (register/signal/find/cancel) are served by an
  * intrusive chained hash index (hash_buckets) keyed on query_id, so they
  * are O(1) average instead of scanning the results[] array. The array
- * itself is kept (unordered) for cheap enumeration in cleanup_expired();
- * removals use swap-with-last (O(1)) rather than shifting the tail.
+ * itself is kept (unordered) for enumeration; removals use swap-with-last
+ * (O(1)). The registering thread frees its entry in
+ * pending_result_unregister().
  */
 typedef struct PendingResultManager {
     PendingQueryResult** results;      /**< Unordered array of pending results */
@@ -162,12 +163,22 @@ bool pending_result_is_completed(const PendingQueryResult* pending);
 bool pending_result_is_timed_out(const PendingQueryResult* pending);
 
 /**
- * @brief Clean up expired pending results
+ * @brief Leave waiter-owned pending results in place
  *
- * Removes results that have been waiting longer than their timeout period.
+ * The thread that called pending_result_register() owns the
+ * PendingQueryResult until pending_result_unregister(). Heartbeat and a
+ * full results[] array both call this while that waiter may still be
+ * inside pending_result_wait() or pending_result_unregister().
+ *
+ * Returns 0. The entry, its query_id, its QueryResult, and its
+ * synchronization objects stay with the waiter, and timed_out stays as
+ * the waiter left it: time(NULL) is coarser than the waiter's
+ * gettimeofday deadline. A full results array grows. An entry whose
+ * waiter never unregisters stays until pending_result_manager_destroy().
  *
  * @param manager The pending result manager
- * @return Number of results cleaned up
+ * @param dqm_label Label for logging purposes
+ * @return Always 0
  */
 size_t pending_result_cleanup_expired(PendingResultManager* manager, const char* dqm_label);
 
@@ -276,16 +287,15 @@ bool pending_hash_resize(PendingResultManager* manager, size_t new_bucket_count)
 void pending_result_detach_locked(PendingResultManager* manager, PendingQueryResult* pending);
 
 /**
- * @brief Clean up expired pending results; caller must already hold manager_lock
+ * @brief Same ownership rule as pending_result_cleanup_expired()
  *
- * Shared implementation used both by pending_result_cleanup_expired() (which
- * acquires the lock itself) and by pending_result_register() (which is
- * already holding the lock and wants to reclaim expired slots before
- * growing results[]).
+ * Caller must already hold manager_lock. Shared by
+ * pending_result_cleanup_expired() and by pending_result_register() when
+ * results[] is full. Returns 0 and leaves every entry in place.
  *
  * @param manager The pending result manager
  * @param dqm_label Label for logging purposes
- * @return Number of results cleaned up
+ * @return Always 0
  */
 size_t pending_result_reap_expired_locked(PendingResultManager* manager, const char* dqm_label);
 

@@ -57,6 +57,7 @@ Active plans folder: [`/docs/H/plans/`](/docs/H/plans/).
 | [MAILRELAY_PLAN_COMPLETE.md](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md) | Mail Relay subsystem (outbound, templates, API, Lua, OTP, events, inbound, security) |
 | [MDNS_UPGRADE_COMPLETE.md](/docs/H/plans/complete/MDNS_UPGRADE_COMPLETE.md) | mDNS RFC 6762/6763 server + real client (Phases 0–8) |
 | [MCP_COMPLETE.md](/docs/H/plans/complete/MCP_COMPLETE.md) | MCP server (Streamable HTTP + Lua) |
+| [NATS_PLAN_COMPLETE.md](/docs/H/plans/complete/NATS_PLAN_COMPLETE.md) | NATS client (Phases 0–12, complete 2026-10-06) |
 | [MIGRATIONS_COMPLETE.md](/docs/H/plans/complete/MIGRATIONS_COMPLETE.md) | Migration performance |
 | [SCHEMAHELPER_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md) | SchemaHelper v1 TUI (review queue, packets, apply; 0.5.8) |
 | [SCHEMAHELPER_V2_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md) | SchemaHelper v2 (Target, Instance, progress; 0.6.5) |

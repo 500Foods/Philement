@@ -1,0 +1,33 @@
+{
+    "Server": {
+        "ServerName": "hydrogen-test-62-disabled"
+    },
+    "WebServer": {
+        "EnableIPv4": true,
+        "EnableIPv6": false,
+        "Port": 5621
+    },
+    "API": {
+        "Enabled": true,
+        "Prefix": "/api"
+    },
+    "NATS": {
+        "Enabled": false,
+        "Servers": ["nats://127.0.0.1:5620"],
+        "ClusterId": "philement",
+        "InstanceId": "nats-62-off",
+        "Username": "",
+        "Password": "",
+        "TlsEnabled": false,
+        "ConnectionTimeoutSeconds": 2,
+        "Reconnect": {
+            "MaxRetries": -1,
+            "Delays": [1],
+            "SteadyDelaySeconds": 1
+        },
+        "Test": {
+            "FailNextPublishOnLaunch": false,
+            "MockConnection": false
+        }
+    }
+}

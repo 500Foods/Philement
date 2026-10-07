@@ -73,6 +73,10 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [src/api/reporting/image_scale/image_scale.h](/elements/001-hydrogen/hydrogen/src/api/reporting/image_scale/image_scale.h) - image_scale swagger + handler prototype
 - [src/api/mcp/status/status.c](/elements/001-hydrogen/hydrogen/src/api/mcp/status/status.c) - JWT GET /api/mcp/status
 - [src/api/mcp/status/status.h](/elements/001-hydrogen/hydrogen/src/api/mcp/status/status.h) - MCP status handler interface
+- [src/api/nats/status/status.c](/elements/001-hydrogen/hydrogen/src/api/nats/status/status.c) - JWT GET /api/nats/status
+- [src/api/nats/status/status.h](/elements/001-hydrogen/hydrogen/src/api/nats/status/status.h) - NATS status handler interface
+- [src/api/nats/instances/instances.c](/elements/001-hydrogen/hydrogen/src/api/nats/instances/instances.c) - JWT GET /api/nats/instances
+- [src/api/nats/instances/instances.h](/elements/001-hydrogen/hydrogen/src/api/nats/instances/instances.h) - NATS instances handler interface
 
 </details>
 
@@ -92,6 +96,8 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [src/config/config_mail_relay.h](/elements/001-hydrogen/hydrogen/src/config/config_mail_relay.h) - Mail relay configuration interface definitions
 - [src/config/config_mcp.c](/elements/001-hydrogen/hydrogen/src/config/config_mcp.c) - MCP configuration implementation
 - [src/config/config_mcp.h](/elements/001-hydrogen/hydrogen/src/config/config_mcp.h) - MCP configuration interface (letter T)
+- [src/config/config_nats.c](/elements/001-hydrogen/hydrogen/src/config/config_nats.c) - NATS configuration implementation
+- [src/config/config_nats.h](/elements/001-hydrogen/hydrogen/src/config/config_nats.h) - NATS configuration interface (letter V)
 - [src/config/config_reporting.c](/elements/001-hydrogen/hydrogen/src/config/config_reporting.c) - Reporting configuration implementation
 - [src/config/config_reporting.h](/elements/001-hydrogen/hydrogen/src/config/config_reporting.h) - Reporting configuration interface definitions
 - [src/config/config_mdns_client.c](/elements/001-hydrogen/hydrogen/src/config/config_mdns_client.c) - mDNS client configuration implementation
@@ -200,6 +206,29 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 </details>
 
 <details>
+<summary><b>NATS Client</b></summary>
+
+- [src/nats/nats.c](/elements/001-hydrogen/hydrogen/src/nats/nats.c) - Subsystem bind and lifecycle entry
+- [src/nats/nats.h](/elements/001-hydrogen/hydrogen/src/nats/nats.h) - Public NATS interface
+- [src/nats/nats_client.c](/elements/001-hydrogen/hydrogen/src/nats/nats_client.c) - Session, publish queue, and read loop
+- [src/nats/nats_dispatch.c](/elements/001-hydrogen/hydrogen/src/nats/nats_dispatch.c) - Inbound envelope dispatch
+- [src/nats/nats_frame.c](/elements/001-hydrogen/hydrogen/src/nats/nats_frame.c) - CONNECT, SUB, and PUB frames
+- [src/nats/nats_internal.h](/elements/001-hydrogen/hydrogen/src/nats/nats_internal.h) - Internal prototypes
+- [src/nats/nats_io.c](/elements/001-hydrogen/hydrogen/src/nats/nats_io.c) - TCP connect, read, and write
+- [src/nats/nats_publish.c](/elements/001-hydrogen/hydrogen/src/nats/nats_publish.c) - Cache invalidation and general publish
+- [src/nats/nats_reconnect.c](/elements/001-hydrogen/hydrogen/src/nats/nats_reconnect.c) - Delay ladder
+- [src/nats/nats_registry.c](/elements/001-hydrogen/hydrogen/src/nats/nats_registry.c) - Presence peer table
+- [src/nats/nats_relay.c](/elements/001-hydrogen/hydrogen/src/nats/nats_relay.c) - Allowlist offer into the WebSocket queue
+- [src/nats/nats_stats.c](/elements/001-hydrogen/hydrogen/src/nats/nats_stats.c) - Counters and status snapshot
+- [src/nats/nats_stats.h](/elements/001-hydrogen/hydrogen/src/nats/nats_stats.h) - Stats interface
+- [src/nats/nats_subject.c](/elements/001-hydrogen/hydrogen/src/nats/nats_subject.c) - Suffix checks and subject build
+- [src/nats/nats_subject.h](/elements/001-hydrogen/hydrogen/src/nats/nats_subject.h) - Subject interface
+- [src/scripting/scripting_api_nats.c](/elements/001-hydrogen/hydrogen/src/scripting/scripting_api_nats.c) - H.nats host API
+- [src/websocket/websocket_server_relay.c](/elements/001-hydrogen/hydrogen/src/websocket/websocket_server_relay.c) - WebSocket nats_subscribe and nats_event
+
+</details>
+
+<details>
 <summary><b>Mutex Management</b></summary>
 
 - [src/mutex/mutex.c](/elements/001-hydrogen/hydrogen/src/mutex/mutex.c) - Mutex utility functions implementation
@@ -217,6 +246,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [src/launch/launch_logging.c](/elements/001-hydrogen/hydrogen/src/launch/launch_logging.c) - Logging subsystem launch
 - [src/launch/launch_mail_relay.c](/elements/001-hydrogen/hydrogen/src/launch/launch_mail_relay.c) - Mail relay launch
 - [src/launch/launch_mcp.c](/elements/001-hydrogen/hydrogen/src/launch/launch_mcp.c) - MCP subsystem launch
+- [src/launch/launch_nats.c](/elements/001-hydrogen/hydrogen/src/launch/launch_nats.c) - NATS subsystem launch
 - [src/launch/launch_reporting.c](/elements/001-hydrogen/hydrogen/src/launch/launch_reporting.c) - Reporting subsystem launch
 - [src/launch/launch_mdns_client.c](/elements/001-hydrogen/hydrogen/src/launch/launch_mdns_client.c) - mDNS client launch
 - [src/launch/launch_mdns_server.c](/elements/001-hydrogen/hydrogen/src/launch/launch_mdns_server.c) - mDNS server launch
@@ -248,6 +278,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [src/landing/landing_logging.c](/elements/001-hydrogen/hydrogen/src/landing/landing_logging.c) - Logging subsystem shutdown
 - [src/landing/landing_mail_relay.c](/elements/001-hydrogen/hydrogen/src/landing/landing_mail_relay.c) - Mail relay shutdown
 - [src/landing/landing_mcp.c](/elements/001-hydrogen/hydrogen/src/landing/landing_mcp.c) - MCP subsystem shutdown
+- [src/landing/landing_nats.c](/elements/001-hydrogen/hydrogen/src/landing/landing_nats.c) - NATS subsystem shutdown
 - [src/landing/landing_reporting.c](/elements/001-hydrogen/hydrogen/src/landing/landing_reporting.c) - Reporting subsystem shutdown
 - [src/landing/landing_mdns_client.c](/elements/001-hydrogen/hydrogen/src/landing/landing_mdns_client.c) - mDNS client shutdown
 - [src/landing/landing_mdns_server.c](/elements/001-hydrogen/hydrogen/src/landing/landing_mdns_server.c) - mDNS server shutdown
@@ -465,6 +496,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [docs/scripting/README.md](/docs/H/core/subsystems/scripting/README.md) - Scripting subsystem overview
 - [docs/scripting/lua_api.md](/docs/H/core/subsystems/scripting/lua_api.md) - Lua host API reference
 - [docs/mcp/mcp.md](/docs/H/core/subsystems/mcp/mcp.md) - MCP subsystem architecture
+- [docs/nats/nats.md](/docs/H/core/subsystems/nats/nats.md) - NATS client, cache invalidation, relay, and presence
 - [LUA_GUIDE.md](/docs/H/LUA_GUIDE.md) - Intro to Lua and practical Hydrogen scripting guide
 - [LUA_FEATURES.md](/docs/H/LUA_FEATURES.md) - Pure Lua language features and standard library recipes
 - [MAIL_GUIDE.md](/docs/H/MAIL_GUIDE.md) - Mail Relay, templates, rewrites, and Lua mail handling
@@ -491,6 +523,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [docs/api/conduit/webhook.md](/docs/H/api/conduit/webhook.md) - Generic signed webhook ingress
 - [docs/api/reporting/reporting_endpoints.md](/docs/H/api/reporting/reporting_endpoints.md) - Reporting image_scale
 - [docs/api/mcp/mcp_endpoints.md](/docs/H/api/mcp/mcp_endpoints.md) - MCP Streamable HTTP + status
+- [docs/api/nats/nats_endpoints.md](/docs/H/api/nats/nats_endpoints.md) - JWT NATS status and instances
 
 </details>
 
@@ -738,6 +771,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md) - SchemaTool implementation plan (complete)
 - [docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md) - SchemaHelper v2 implementation plan (complete)
 - [docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md) - SchemaHelper v1 implementation plan (complete)
+- [docs/H/plans/SCHEMA_V2_PLAN.md](/docs/H/plans/SCHEMA_V2_PLAN.md) - SchemaTool / SchemaHelper v2 plan (eight engines, wrappers, apply)
 
 </details>
 

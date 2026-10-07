@@ -5,6 +5,8 @@ Lua **5.5** TUI under
 It sits in front of the read-only SchemaTool auditor and turns a batch of
 drift findings into operator decisions.
 
+Active plan:
+[`/docs/H/plans/SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md).
 Implementation plan (v2 archive):
 [`/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md).
 v1 archive:
@@ -92,6 +94,7 @@ Target picker shows real env **names** (never password values):
 | `schematool_db2.sh` | `HYDROTST_DB_USER PASS NAME schema demo` | `localhost:55555` / `HYDROTST` |
 | `schematool_firebird.sh` | `FIREBIRD_DB_PATH_DEMO` + `FIREBIRD_SYSDBA_PASSWORD` | empty schema; `.fdb` file |
 | `schematool_yugabytedb.sh` | `YUGABYTE_DB_HOST USER PASS NAME schema demo` | never `ACURANZO_DB_*` |
+| `schematool_mssql.sh` | `MSSQL_DB_HOST MSSQL_DB_USER MSSQL_DB_NAME schema demoms MSSQL_SA_PASSWORD` | schema `demoms` in `philement-mssql` |
 
 A failed ping does **not** start SchemaTool. Press `[w]` to pick another
 wrapper, `[q]` to quit, or Enter to review artifacts already in
@@ -248,6 +251,7 @@ complete the INSERT-into-queries pattern before loading. The packet's
 
 ## Related
 
+- Active plan: [`SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md)
 - Plan (v2 archive): [`SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md)
 - v1 archive: [`SCHEMAHELPER_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md)
 - Auditor: [`SCHEMATOOL.md`](/docs/H/tools/SCHEMATOOL.md)

@@ -436,7 +436,7 @@ void database_queue_perform_heartbeat(DatabaseQueue* db_queue) {
         database_queue_manage_child_queues(db_queue);
     }
 
-    // Periodic cleanup of expired pending results (via name-based façade)
+    // Waiter owns each pending result until unregister, so cleaned stays 0.
     size_t cleaned = database_cleanup_old_results(0);
     if (cleaned > 0) {
         char* cleanup_label = database_queue_generate_label(db_queue);

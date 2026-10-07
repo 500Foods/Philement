@@ -127,9 +127,9 @@ For Lithium UI work, follow the element-specific [`elements/003-lithium/AGENTS.m
 
 Start at [`elements/002-helium/AGENTS.md`](/elements/002-helium/AGENTS.md). It points at **Designs, packs, and numbers** in [`docs/He/GUIDE.md`](/docs/He/GUIDE.md). Read that section before choosing a file number, a QueryRef, or a lookup id.
 
-- **Lua migrations** for multiple designs. Acuranzo owns the product database (migration numbers 1000–1999, lookup ids 0–199). Argent is an optional 2xxx pack on that same database (lookup ids 200–299). GLM and the Helium printing design, and today's Gaius tree, stay on their own databases. Primary target is PostgreSQL 15+ via YugabyteDB.
+- **Lua migrations** for multiple designs. Acuranzo owns the product database (migration numbers 1000–1999, lookup ids 0–199). Argent is an optional 2xxx pack on that same database. Its file numbers, caller-facing QueryRefs, and lookup ids all use 2000–2999 and may share integers. GLM and the Helium printing design, and today's Gaius tree, stay on their own databases. Primary target is PostgreSQL 15+ via YugabyteDB.
 - The migration number, `query_id`, and a caller-facing QueryRef are three different values. The bookkeeping rows store the migration number in `query_ref`. `query_id` is `MAX+1`. A caller-facing QueryRef is `cfg.QUERY_REF`.
-- Migrations are **embedded into the Hydrogen payload** and applied by Hydrogen's AutoMigrations — so **after changing a migration you must rebuild the payload** (`mkt`/`mka`) before running migration tests (30–38, 71).
+- Migrations are **embedded into the Hydrogen payload** and applied by Hydrogen's AutoMigrations — so **after changing a migration you must regenerate the payload** (`payload-generate.sh` or `mka`) before running migration tests (30–38, 71). `mkt` does not refresh the archive.
 - Authors then read, in order: [`docs/He/GUIDE.md`](/docs/He/GUIDE.md) → [`docs/He/MIGRATION_ANATOMY.md`](/docs/He/MIGRATION_ANATOMY.md) → [`docs/He/MACRO_REFERENCE.md`](/docs/He/MACRO_REFERENCE.md).
 - **SchemaTool** ([docs/H/tools/SCHEMATOOL.md](/docs/H/tools/SCHEMATOOL.md), `extras/schematool/`) audits migration drift (Lua migrations vs live `queries`); **SchemaHelper** ([docs/H/tools/SCHEMAHELPER.md](/docs/H/tools/SCHEMAHELPER.md), `extras/schematool/schemahelper.lua`) is its interactive Lua TUI front-end. `mks`/luacheck (Test 98) covers the Lua.
 - Never hand-edit a production DB as the source of truth; migrations are source of truth, and `schemahelper` apply steps are run by a human, not the agent.
@@ -163,7 +163,7 @@ For any element 004+, **read its `README.md` in place of assuming activity.** Mo
 - **"How do I test one thing?"** → `zsh -ic 'mku <base_test_name>'` builds + runs a single Unity test (tab-completion is wired up). Blackbox tests are `tests/test_NN_*.sh`. The full orchestrator is `tests/test_00_all.sh`.
 - **"How do I run C lint?"** → `zsh -ic 'mkp'` (cppcheck, Test 91).
 - **"How do I lint my shell script?"** → `zsh -ic 'mks'` (shellcheck, Test 92).
-- **"I changed a migration — why do tests fail?"** → rebuild the payload first: `zsh -ic 'mkt'` (or `mka`), then re-run migration tests. The binary embeds the migrations.
+- **"I changed a migration — why do tests fail?"** → regenerate the payload first (`payload-generate.sh` or `zsh -ic 'mka'`), then re-run migration tests. `mkt` does not refresh the archive. The binary embeds the migrations.
 - **"I need to check if a function is dead code."** → run `mkt`; the linker-based gate writes `elements/001-hydrogen/hydrogen/build/deadcode/dead_functions.txt`. Do **not** baseline chat-named dead functions — drive them to zero (see CHAT_FINALE Phase 5).
 - **"How do I add a DB migration?"** → [`elements/002-helium/AGENTS.md`](/elements/002-helium/AGENTS.md), then **Designs, packs, and numbers** in [`docs/He/GUIDE.md`](/docs/He/GUIDE.md), then `MIGRATION_ANATOMY.md` and `MACRO_REFERENCE.md`. Generate the packet via SchemaTool; **do not apply it yourself** — hand it to a human.
 - **"Am I allowed to create a new test script?"** → only if explicitly asked. Prefer extending existing tests and following their numbering/conventions.
