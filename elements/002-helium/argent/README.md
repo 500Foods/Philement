@@ -64,4 +64,12 @@ Lookup ids **2000–2999** are Argent's block on the shared `lookups` table, the
 | [2027](/elements/002-helium/argent/migrations/argent_2027.lua) | tags | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the tags table |
 | [2028](/elements/002-helium/argent/migrations/argent_2028.lua) | tag_links | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the tag_links table |
 | [2029](/elements/002-helium/argent/migrations/argent_2029.lua) | attachments | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the attachments table |
-| **30** | | | | **193** | **30** | |
+| [2030](/elements/002-helium/argent/migrations/argent_2030.lua) | scripts | 1.0.0 | 2026-10-07 | 6 | ✓ | Argent.ListOrganizations and Argent.UpsertOrganization |
+| [2031](/elements/002-helium/argent/migrations/argent_2031.lua) | scripts | 1.0.0 | 2026-10-07 | 6 | ✓ | Argent.ListLedgers and Argent.GetLedger |
+| [2032](/elements/002-helium/argent/migrations/argent_2032.lua) | scripts | 1.0.0 | 2026-10-07 | 5 | ✓ | Argent.UpsertLedger |
+| [2033](/elements/002-helium/argent/migrations/argent_2033.lua) | scripts | 1.0.0 | 2026-10-07 | 6 | ✓ | Argent.UpsertLedgerTerms and Argent.UpsertContact |
+| [2034](/elements/002-helium/argent/migrations/argent_2034.lua) | scripts | 1.0.0 | 2026-10-07 | 5 | ✓ | Argent.PostTransaction |
+| [2035](/elements/002-helium/argent/migrations/argent_2035.lua) | scripts | 1.0.0 | 2026-10-07 | 7 | ✓ | Argent.AddTags, Argent.RemoveTags, and Argent.AddAttachment |
+| [2036](/elements/002-helium/argent/migrations/argent_2036.lua) | scripts | 1.0.0 | 2026-10-07 | 6 | ✓ | Argent.UpsertTaxCode and Argent.UpsertTaxRate |
+| [2037](/elements/002-helium/argent/migrations/argent_2037.lua) | scripts | 1.0.0 | 2026-10-07 | 7 | ✓ | Argent.GetTransaction, Argent.ListTransactions, and Argent.QueryBalances |
+| **38** | | | | **241** | **38** | |

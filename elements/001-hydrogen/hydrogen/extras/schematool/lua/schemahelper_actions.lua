@@ -6,6 +6,7 @@
 -- input loops) are injected via init() to avoid a circular require.
 --
 -- CHANGELOG
+-- 0.5.9 - 2026-10-07 - Refuse uses the resolved engine before confirm
 -- 0.5.8 - 2026-08-25 - Use work_dir for JSON/detail reads; out_dir for .mig/state
 
 local W = require("schemahelper_wrappers")
@@ -110,13 +111,17 @@ local function apply_finding(screen, app, opts)
         app.show_mode_msg = "error: no finding selected"
         return nil
     end
-    local why = apply.refuse_reason(f, opts.allow_write)
+    local conn = connect.resolve(opts.wrapper)
+    local engine = conn and conn.engine or ""
+    if engine == "" then
+        engine = opts.engine
+    end
+    local why = apply.refuse_reason(f, opts.allow_write, engine)
     if why then
         app.show_mode_msg = "update disabled — " .. why
         return nil
     end
     local token = apply.confirm_token(f)
-    local conn = connect.resolve(opts.wrapper)
     local sql, sql_err = apply.build_sql(f, conn, opts.work_dir)
     if not sql then
         app.show_mode_msg = "error: " .. tostring(sql_err)

@@ -4,11 +4,11 @@
 
 **Date:** 2026-10-06 (PT)
 **Author:** Folly (for Andrew)
-**Status:** Phase 10 sidequest in progress. Test 71 3.1.0 completed with empty Argent SVGs. Version 3.2.0 draws them on seven engines. Andrew reruns Test 71.
+**Status:** Phase 10 complete. Phase 11 is written and not applied. `argent_2030.lua` through `argent_2037.lua` install the Argent MCP scripts. Andrew's confirmed apply high-water is migration 2029.
 **Design name:** Argent
 **Helium path:** `elements/002-helium/argent/`
 **Database:** the Acuranzo database (same schema, same `queries` / `lookups` / `scripts`). Optional pack. Never applied alone.
-**Migration series:** `argent_2xxx.lua`. On disk through `argent_2029.lua` (attachments). Andrew confirmed migration 2029 applied on 2026-10-07. Phase 10 adds no migration.
+**Migration series:** `argent_2xxx.lua`. On disk through `argent_2037.lua` (transaction reads). Andrew confirmed migration 2029 applied on 2026-10-07. Phase 11 files `argent_2030.lua` through `argent_2037.lua` are written and not applied.
 
 The earlier Folly copies named `/workspace/folly/argent-plan.md` and `/workspace/folly/hydrogen-bookkeeping-decisions.md` are not on this machine. Decisions from that work are in this file. Amend this file. Do not hunt for the Folly paths.
 
@@ -28,8 +28,8 @@ Effort is the remaining work, or the size of the phase when it is already done. 
 | 7 Rates and parent rollup query | Complete. 2022 applied 2026-10-07. No Test 31 count | Hard |
 | 8 Tax | Complete. 2024 applied 2026-10-07. No Test 31 count | Medium |
 | 9 Tags and attachments | Complete. 2029 applied 2026-10-07. Tests 31 and 71 passed. No Test 31 count | Medium |
-| 10 Diagrams | In progress. Sidequest: seven engines and real SVGs. Test 71 is the close | Easy |
-| 11 MCP CRUD and posting | Not started | Hard |
+| 10 Diagrams | Complete. Test 71 3.2.0 on 2026-10-07. 1490 passed, 0 failed. No new migration | Easy |
+| 11 MCP CRUD and posting | Written, not applied. 2026-10-07. `argent_2030.lua`–`argent_2037.lua` | Hard |
 | 12 Confirm and reconciliation tools | Not started | Hard |
 | 13 `H.http.request` | Not started | Medium |
 | 14 Schedules and calendar sync | Not started | Hard |
@@ -55,7 +55,7 @@ Lint the agent may be asked to run: Test 31 (expands SQL, no apply) and Test 98 
 
 ## Next session
 
-Phase 10 is open until Andrew runs Test 71 version 3.2.0 and reports non-empty Argent SVGs. That run is his closing step. The next conversation records the result. It does not start Phase 11 unless he has closed Phase 10.
+Phase 10 is complete. Phase 11 is written and not applied. `argent_2030.lua` through `argent_2037.lua` install the Argent MCP scripts. Andrew's confirmed apply high-water is migration 2029. The next step is his payload regenerate, tests 32–39, and the MCP round-trip in work item 11.7. Phase 12 waits for that report.
 
 ---
 
@@ -817,10 +817,10 @@ Test 71 diagrams the Argent tables as well as Acuranzo.
 
 - [x] 10.1 Add `argent` to `DESIGNS` in `tests/test_71_database_diagrams.sh`. Schema list matches Acuranzo: `app::acuranzo:ACURANZO`.
 - [x] 10.2 Bump that script's `CHANGELOG` and `TEST_VERSION`. Version 3.1.0.
-- [ ] 10.3 `mks` is clean. Andrew runs Test 71 and the result is recorded here. 2026-10-07: version 3.1.0 completed. All 120 Argent SVGs were zero bytes, so that run does not close the phase.
+- [x] 10.3 `mks` is clean. Andrew runs Test 71 and the result is recorded here. 2026-10-07: version 3.1.0 completed with 120 zero-byte Argent SVGs, so that run does not close the phase. `mks` exited 0 (Test 92, 202 files, 0 fail). The closing run is 10.6.
 - [x] 10.4 Sidequest: seven engines, in this order: postgresql, mysql, sqlite, db2, mariadb, firebird, mssql. Schema slots `app:acuranzo::ACURANZO:test:testfb:testms`.
 - [x] 10.5 Sidequest: a missing template uses the built-in page SVG. A zero-byte file is generated again. `get_diagram.js` 2.2.0, `get_diagram.sh` 3.2.0, Test 71 3.2.0.
-- [ ] 10.6 Andrew runs Test 71 3.2.0. Argent SVGs are non-empty. The result is written here.
+- [x] 10.6 Andrew runs Test 71 3.2.0. Argent SVGs are non-empty. 2026-10-07 diagnostics `test_71_20261007_113705_483159983_2387479`: version 3.2.0, 14 design/engine passes, 2912 combinations, 1490 passed, 0 failed, elapsed 4422.095s. Argent has 30 non-empty SVGs on each of the seven engines, migrations 2000–2029. Acuranzo has 386 non-empty SVGs on each engine.
 
 ### Done means
 
@@ -828,15 +828,15 @@ Test 71 exits 0 with `argent` in `DESIGNS`, and the Argent SVG files are non-emp
 
 ### Exit gate
 
-`mks` passed on 2026-10-07 (Test 92, 202 files, 0 fail). Andrew runs Test 71 version 3.2.0.
+`mks` passed on 2026-10-07 (Test 92, 202 files, 0 fail). Test 71 3.2.0 on 2026-10-07 recorded 1490 passed and 0 failed.
 
 ### Status
 
-**In progress.** Sidequest written. Test 71 is 3.2.0. Andrew runs it as the closing step. The database stays at migration 2029. No new migration.
+**Complete.** Test 71 3.2.0 recorded 1490 passed and 0 failed on 2026-10-07. Argent SVGs for migrations 2000–2029 are non-empty on seven engines. The database stays at migration 2029. No new migration.
 
 ### Accomplished
 
-2026-10-07: `DESIGNS` lists `acuranzo` and `argent`. Version 3.1.0 completed and wrote 120 zero-byte Argent SVGs, 30 files on each of postgresql, mysql, sqlite, and db2. Those files were removed. Version 3.2.0 adds mariadb, firebird, and mssql. A one-file render of `argent_2000` produced a non-empty SVG on all seven engines. The sqlite render through `argent_2029` was 198573 bytes, 15 tables, with `attachments` highlighted. Acuranzo migration 1000 still renders. `mks` exited 0: Test 92, 202 shell files, 0 fail, 24.080s. The full Test 71 was not run.
+2026-10-07: `DESIGNS` lists `acuranzo` and `argent`. Version 3.1.0 completed and wrote 120 zero-byte Argent SVGs, 30 files on each of postgresql, mysql, sqlite, and db2. Those files were removed. Version 3.2.0 adds mariadb, firebird, and mssql. A one-file render of `argent_2000` produced a non-empty SVG on all seven engines. The sqlite render through `argent_2029` was 198573 bytes, 15 tables, with `attachments` highlighted. Acuranzo migration 1000 still renders. `mks` exited 0: Test 92, 202 shell files, 0 fail, 24.080s. Andrew then ran the full Test 71. Diagnostics `test_71_20261007_113705_483159983_2387479` record version 3.2.0, 14 design/engine passes, 2912 combinations, 1490 passed, 0 failed, elapsed 4422.095s. On disk, Argent has 30 non-empty SVGs on each of the seven engines, migrations 2000–2029. The sqlite file for 2029 is 198573 bytes. Acuranzo has 386 non-empty SVGs on each engine. No migration was added.
 
 ### Lessons learned
 
@@ -845,13 +845,16 @@ Test 71 exits 0 with `argent` in `DESIGNS`, and the Argent SVG files are non-emp
 - Engine order is postgresql, mysql, sqlite, db2, mariadb, firebird, mssql. The empty slot is sqlite. DB2 names are uppercased in the SVG.
 - `get_diagram.js` draws `object_type` `table` only. Lookup and query objects stay out of the picture. The 2029 snapshot has 15 tables.
 - This test calls `get_migration.lua` on the design directory. A payload regenerate is not required.
-- Acuranzo already had 120 zero-byte SVGs (42 postgresql, 42 mysql, 36 sqlite, none on db2). The next Test 71 retries those as well.
+- Acuranzo already had 120 zero-byte SVGs (42 postgresql, 42 mysql, 36 sqlite, none on db2). Version 3.2.0 retried those. After the closing run every Acuranzo SVG on the seven engines is non-empty.
+- A skipped file does not print a subtest. The closing footer can show 1490 passed while the run still covers 2912 combinations. The two bookkeeping subtests sit beside the diagrams that were actually drawn.
+- The version 3.1.0 footer that recorded 2 passed in about 8 seconds was that skip. An existing zero-byte file counted as success.
+- Generated SVGs stay out of git. `.gitignore` uses `elements/002-helium/*/diagrams/`. Commit `0a73c20fc` removed the 1,544 tracked Acuranzo SVGs from the tree and left the files on disk.
 
 ### Handoff
 
-Do not start Phase 11 until Andrew reports Test 71 version 3.2.0 with non-empty Argent SVGs.
+Phase 10 is complete. Phase 11 starts in the next conversation.
 
-Phase 11, after that report, adds `Argent.*` rows to `scripts` for the CRUD and posting tools listed in that phase. It does not add `H.http.request`. It does not implement confirm tokens. QueryRefs 400 and 401 already exist. Tools call them. They do not install a second copy. One script migration per tool, or one migration per tool group under 1000 lines. The next file number is `argent_2030.lua`.
+Phase 11 adds `Argent.*` rows to `scripts` for the CRUD and posting tools listed in that phase. It does not add `H.http.request`. It does not implement confirm tokens. Tools call QueryRef 2000 (`argent_2014.lua`) and, when parents are requested, QueryRef 2001 (`argent_2022.lua`). They do not install a second copy. One script migration per tool, or one migration per tool group under 1000 lines. The next file number is `argent_2030.lua`.
 
 ---
 
@@ -863,12 +866,12 @@ Folly can create an organization, two posting ledgers, and one balanced transact
 
 ### Work items
 
-- [ ] 11.1 Scripts for `ListOrganizations`, `UpsertOrganization`, `ListLedgers`, `GetLedger`, `UpsertLedger`, `UpsertLedgerTerms`, `UpsertContact`.
-- [ ] 11.2 `PostTransaction` rejects a transaction whose per-currency line sum is not 0. It writes the header and lines when the sum is 0. Idempotency key is stored in `collection`.
-- [ ] 11.3 `UpsertLedger` writes the opening transaction (kind 6) and `opening_txn_id`.
-- [ ] 11.4 `AddTags`, `RemoveTags`, `AddAttachment`. `UpsertTaxCode` and `UpsertTaxRate`. `PostTransaction` posts companion tax lines when `tax_code_id` is set.
-- [ ] 11.5 `GetTransaction`, `ListTransactions`, and `QueryBalances` (QueryRef 2000, and 2001 when parents are requested). Status values are lookup 2003 keys.
-- [ ] 11.6 One script migration per tool, or one migration per tool group where the file stays under 1000 lines. `mcp_access=1`, group `Argent`. No second caller-facing QueryRef in a file that already installs one.
+- [x] 11.1 Scripts for `ListOrganizations`, `UpsertOrganization`, `ListLedgers`, `GetLedger`, `UpsertLedger`, `UpsertLedgerTerms`, `UpsertContact`.
+- [x] 11.2 `PostTransaction` rejects a transaction whose per-currency line sum is not 0. It writes the header and lines when the sum is 0. Idempotency key is stored in `collection`.
+- [x] 11.3 `UpsertLedger` writes the opening transaction (kind 6) and `opening_txn_id`.
+- [x] 11.4 `AddTags`, `RemoveTags`, `AddAttachment`. `UpsertTaxCode` and `UpsertTaxRate`. `PostTransaction` posts companion tax lines when `tax_code_id` is set.
+- [x] 11.5 `GetTransaction`, `ListTransactions`, and `QueryBalances` (QueryRef 2000, and 2001 when parents are requested). Status values are lookup 2003 keys.
+- [x] 11.6 One script migration per tool, or one migration per tool group where the file stays under 1000 lines. `mcp_access=1`, group `Argent`. No second caller-facing QueryRef in a file that already installs one.
 - [ ] 11.7 Andrew runs tests 32–39 for the new script migrations, then an MCP round-trip: create org, two ledgers, one balanced txn, one unbalanced txn rejected.
 
 ### Done means
@@ -881,11 +884,47 @@ Test 31, Test 98, payload regenerate, tests 32–39, then the MCP round-trip. Te
 
 ### Status
 
-**Not started.**
+**Written, not applied.** `argent_2030.lua` through `argent_2037.lua` are in the tree. Luacheck reported 0 warnings on each file. Each factory returns 3 queries. SQLite expansion left no `${...}` in the stored script bodies, and `luac -p` accepted those bodies. Work item 11.7 is still open. The phase is not complete.
+
+### Accomplished
+
+2026-10-07: eight script migrations, group `Argent`, `mcp_access=1`, `invokable=0`.
+
+| File | Tools | Lines | Stmts |
+| --- | --- | --- | --- |
+| `argent_2030.lua` | `ListOrganizations`, `UpsertOrganization` | 453 | 6 |
+| `argent_2031.lua` | `ListLedgers`, `GetLedger` | 513 | 6 |
+| `argent_2032.lua` | `UpsertLedger` | 661 | 5 |
+| `argent_2033.lua` | `UpsertLedgerTerms`, `UpsertContact` | 649 | 6 |
+| `argent_2034.lua` | `PostTransaction` | 580 | 5 |
+| `argent_2035.lua` | `AddTags`, `RemoveTags`, `AddAttachment` | 689 | 7 |
+| `argent_2036.lua` | `UpsertTaxCode`, `UpsertTaxRate` | 536 | 6 |
+| `argent_2037.lua` | `GetTransaction`, `ListTransactions`, `QueryBalances` | 672 | 7 |
+
+The Argent README now lists 38 files, 241 statements, and 38 diagrams. No payload regenerate, no apply, and no tests 32–39 were run.
+
+### Lessons learned
+
+- A Lua nil cannot bind SQL NULL. `H.query` omits nil table values. Optional integers use `CASE WHEN :FLAG = 0 THEN NULL ELSE :VALUE END`, and each name appears once in that statement. Empty text uses `NULLIF(:NAME, '')`.
+- The actor is `tonumber(h.user_id) or tonumber(h.sub) or 0`. MCP dispatch injects `sub`. Conduit injects `user_id`.
+- `UpsertLedger` posts the opening transaction on create of a posting ledger. A non-posting create stores `opening_balance_cents` and leaves `opening_txn_id` null. A zero balance is one line of 0. A nonzero balance requires `offset_ledger_id` in the same organization, the same currency, and posting. The new ledger receives the supplied amount. The offset receives the negation. An update does not post another opening.
+- `PostTransaction` stores caller amounts as given. Kind 6, 7, and 8 are rejected. Status on create is 1, 2, or 3, default 3. Kind defaults to 11. After tax companions, each currency sums to 0.
+- Net tax is signed half-up of `amount * rate_bps / 10000`. Gross tax is half-up of `amount * rate_bps / (10000 + rate_bps)`, and the source line is reduced by that tax. The companion uses the same sign on `target_ledger_id`. A computed tax of 0 adds no companion. The target ledger is posting and uses the source currency. No rate row on or before `txn_on` is an error. A manual `tax_cents` more than 1 cent from the computed tax returns `needs_confirm` and writes nothing. Within 1 cent, the manual amount is stored and `tax_manual` is 1.
+- There is no multi-statement transaction API. Validation finishes before the first insert. A later insert failure returns `partial_write` and the `txn_id` already stored.
+- Idempotency stores `{"idempotency_key":"..."}` in `transactions.collection`. A repeat for the same organization returns the existing transaction and writes nothing. The new body is not compared. Keys longer than 80, or keys with quotes, backslashes, or control characters, are rejected.
+- Phase 11 does not write implied rates. Per-currency zero-sum does not define a unique pair. `UpsertRate` and `GetBocRate` stay in Phase 15.
+- `QueryBalances` requires `organization_id` and `as_of`. An omitted status list uses lookup 2003 keys 3 and 4. `include_parents` also runs QueryRef 2001. The tool loads `queries.code` where `query_ref` is 2000 or 2001 and `query_type_a28` is 1, then calls `H.query_sync`. It does not install another QueryRef. The Phase 10 handoff sentence that named QueryRefs 400 and 401 was stale.
+- `ListTransactions` with an omitted status list returns every status. It requires `organization_id` or `ledger_id`. `GetTransaction` tags are entity type 3, the transaction. Attachment meta omits `file_data` and `file_text`.
+- Write tools build `collection` themselves. `AddAttachment` stores `{}`. CalDAV secrets are not copied from the caller.
+- `AddTags` finds a tag by name and organization. A null organization is global. An existing link is returned. `RemoveTags` deletes the link and leaves the tag.
+- Reverse deletes `scripts` rows by `group_name` and `script_name`, then flips this migration's bookkeeping type. It does not delete a QueryRef.
+- The ledger-write group did not fit in 1000 lines, so `UpsertLedger` is `argent_2032.lua` and terms plus contacts are `argent_2033.lua`. Reads landed in `argent_2037.lua`.
 
 ### Handoff
 
-Phase 12 adds `confirm_tokens` and the recon and edit tools. It leaves the Phase 11 scripts in place and calls them. A reconciled edit without a token must not write.
+Phase 12 adds `confirm_tokens` and the recon and edit tools. It leaves these scripts in place and calls them. A reconciled edit without a token must not write. Phase 12 waits until Andrew reports tests 32–39 and the MCP round-trip: create an organization, two ledgers, one balanced transaction, and one unbalanced transaction rejected.
+
+Regenerate the payload before tests 32–39. The apply is forward from migration 2029. His confirmed high-water is 2029. Test 71 reads the migration files and does not need that payload.
 
 ---
 
@@ -1100,5 +1139,13 @@ Andrew confirmed migration 2029 applied. Tests 31 and 71 passed. He did not quot
 ### 2026-10-07 — Phase 10 sidequest, empty Argent diagrams
 
 Andrew said the latest build and apply is migration 2029, and Test 71 completes. All 120 Argent SVGs were zero bytes. The sidequest is Test 71 3.2.0: seven engines, a built-in page template, and a retry of empty files. No migration was added. Phase 11 waits for his 3.2.0 report.
+
+### 2026-10-07 — Phase 10 closed
+
+Andrew reported Test 71 completed. Diagnostics `test_71_20261007_113705_483159983_2387479` record version 3.2.0, 1490 passed, 0 failed, elapsed 4422.095s, and 2912 combinations. Argent SVGs for migrations 2000–2029 are non-empty on all seven engines. Acuranzo SVGs on those engines are non-empty as well. Phase 10 is complete. No migration was added. The database stays at migration 2029. Phase 11 has not started. The next file is `argent_2030.lua`.
+
+### 2026-10-07 — Phase 11 scripts written
+
+`argent_2030.lua` through `argent_2037.lua` install the Argent MCP scripts. Luacheck reported 0 warnings. SQLite expansion left no `${...}` in the stored bodies, and `luac -p` accepted them. The files are not applied. Work item 11.7 stays open: Andrew regenerates the payload, runs tests 32–39, and records the MCP round-trip. Phase 12 has not started. The confirmed apply high-water remains migration 2029.
 
 *End of Argent plan.*

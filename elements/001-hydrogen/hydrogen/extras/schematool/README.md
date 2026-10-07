@@ -10,7 +10,9 @@ only that folder. `--fold-stored` keeps the old type-1003 dump fold. The catalog
 checks presence, nullability, and data type (case and spacing only).
 A live object no migration mentions is info, not a failure. An object
 the fold created and a later migration dropped, still live, is a
-`dropped` finding.
+`dropped` finding. SchemaHelper can apply one structural finding
+in that engine's DDL. SQLite nullability, type changes, and
+`DROP COLUMN` stay refused.
 
 **Full docs:** [`/docs/H/tools/SCHEMATOOL.md`](/docs/H/tools/SCHEMATOOL.md)  
 **Active plan:** [`/docs/H/plans/SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md)  

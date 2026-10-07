@@ -8,6 +8,7 @@
 # Database/Lua operations, audit orchestration, and rendering are in lib/.
 #
 # CHANGELOG
+# 1.15.1 - 2026-10-07 - Detail text points type and dropped at SchemaHelper
 # 1.15.0 - 2026-10-07 - Catalog compares type; info extras are not failures
 # 1.14.0 - 2026-10-07 - --design plus-list; catalog folds disk forward DDL
 # 1.13.0 - 2026-10-07 - mariadb is its own engine; no CANVAS_DB fallback
@@ -39,7 +40,7 @@ LUA_DIR="${SCRIPT_DIR}/lua"
 DB_DIR="${SCRIPT_DIR}/db"
 LIB_DIR="${SCRIPT_DIR}/lib"
 
-VERSION="1.15.0"
+VERSION="1.15.1"
 
 # Source library modules (helpers, audit orchestration, rendering)
 # shellcheck source=extras/schematool/lib/schematool_init.sh # dependency checks + command lookups

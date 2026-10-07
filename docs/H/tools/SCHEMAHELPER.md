@@ -28,9 +28,9 @@ one by one:
 | Known divergence | `[a]` accept permanent variance (sidecar; hidden until expected/live hash changes) |
 | Undo an accept | Dashboard `[x]` on the highlighted accepted id |
 | Live DB should become a migration | `[g]` reserve next ref and write a packet |
-| Official Lua should win | `[u]` update one field (`--allow-write`, type `REF.field`) |
+| Official Lua should win | `[u]` replace that queries row (`--allow-write`, type `REF` for `code`, `name`, and `summary` together). One field stays `REF.field`. This does not replay DDL |
 | DB ref is a keeper, not a refix | `[u]` delete an orphan ref (`--allow-write`, type `REF`; true orphans only) |
-| Live catalog shape drifted | `[u]` apply catalog DDL (`--allow-write`, type `object.column`; nullable→SET/DROP NOT NULL, missing col→ADD COLUMN). `type` and `dropped` are in the review queue and stay review-only. Info extras (no migration mentions them) show on the dashboard and stay out of that queue. |
+| Live catalog shape drifted | `[u]` one statement in that engine's DDL (`--allow-write`). Create or alter confirms as `object` or `object.column`. A fold-dropped object confirms as `DROP object` or `DROP object.column`. SQLite nullability, type, and `DROP COLUMN` are refused (table rebuild). Info extras stay off the queue |
 | Need a Helium migration | `[g]` reserve next ref and write a packet, then `[m]` promote to `design_NNNN.lua` stub |
 
 ## What it is / is not
@@ -244,26 +244,25 @@ complete the INSERT-into-queries pattern before loading. The packet's
 
 - SchemaTool stays read-only. SchemaHelper writes only with
   `--allow-write`, after a typed confirm, and only one finding at a time.
-  Two write shapes exist:
-  - **Update database `[u]`** — one metadata field (`code` / `name` /
-     `summary`) from official Lua. Confirm is `REF.field` (e.g. `1223.code`).
+  - **Replace a queries row `[u]`** — sets `code`, `name`, and `summary`
+    together from official Lua. Confirm is the bare `REF` (e.g. `1223`).
+    A one-field finding stays `REF.field` (e.g. `1223.code`). The review
+    copy says this does not replay DDL.
   - **Delete orphan `[u]`** — removes a true orphan ref from `queries`
-     (`DELETE WHERE query_ref = N AND query_type_a28 BETWEEN 1000 AND 1003`,
-     matching SchemaTool remediation). Confirm is the bare `REF`
-     (e.g. `1290`). Anomalies (1000+1003 on disk) are **not** deletable —
-     review and skip instead.
-  - **Apply catalog DDL `[u]`** — single-statement `ALTER TABLE` on a
-     `nullable` mismatch (SET/DROP NOT NULL) or `missing column`
-     (ADD COLUMN, type from expected fold). Confirm is `object.column`
-     (e.g. `accounts.id`) — louder than `REF.field`. Refused on missing
-     tables, live-only extras, and extra columns.
-  Catalog, missing LOAD/APPLY, and decoded views are refused. A metadata
-  update does not replay DDL.
+    (`DELETE WHERE query_ref = N AND query_type_a28 BETWEEN 1000 AND 1003`).
+    Confirm is the bare `REF` (e.g. `1290`). Anomalies are not deletable.
+  - **Catalog DDL `[u]`** — one statement in that engine's dialect:
+    add column, nullability, type, create table, or drop a fold-dropped
+    object. Create and alter confirm as `object` or `object.column`.
+    Drops confirm as `DROP object` or `DROP object.column`.
+    `SET NOT NULL` and a type change say that existing values can reject
+    the statement. SQLite nullability, type, and `DROP COLUMN` are refused
+    on screen (a table rebuild would copy rows). Live extras are never
+    offered for drop.
+  Missing LOAD/APPLY stays refused, with guidance to run Hydrogen
+  AutoMigration. A decoded view is refused.
 - Secrets inherit SchemaTool `--password-env`; never printed; never
   written into packets or the sidecar.
-- Catalog DDL apply is limited to nullable and add-column; other catalog
-  checks are refused. Missing LOAD/APPLY is guidance to run Hydrogen
-  AutoMigration, not a helper `UPDATE`.
 
 ## Related
 

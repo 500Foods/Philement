@@ -2,6 +2,7 @@
 -- Resolve wrapper credentials and ping the live DB. Never return passwords.
 --
 -- CHANGELOG
+-- 0.6.8 - 2026-10-07 - Firebird exec_sql runs inside SET TRANSACTION
 -- 0.6.7 - 2026-10-07 - Picker blurb takes a test or demo role
 -- 0.6.6 - 2026-10-07 - MariaDB is its own family; schema demo; no CANVAS_DB
 -- 0.6.5 - 2026-10-07 - Drop cockroachdb from picker, family, ping, and exec_sql
@@ -744,7 +745,11 @@ run_sql() {
             if [ -n "$password_env" ]; then
                 eval "export ISC_PASSWORD=\"\${$password_env}\""
             fi
-            isql-fb -q -b -pag 0 -ch UTF8 "$database" -i "$sql_file"
+            {
+                printf '%s\n' 'SET TRANSACTION;'
+                cat "$sql_file"
+                printf '%s\n' 'COMMIT;'
+            } | isql-fb -q -b -pag 0 -ch UTF8 "$database"
             rc=$?
             rm -rf "$lock"
             unset ISC_PASSWORD

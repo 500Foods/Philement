@@ -6,6 +6,7 @@
 -- explore cursor + shared hotspot state; they are passed into build_screen.
 --
 -- CHANGELOG
+-- 0.6.6 - 2026-10-07 - Confirm screen names the dialect action and the refusal
 -- 0.6.5 - 2026-09-09 - Dashboard accepted list + [X] un-accept
 -- 0.6.3 - 2026-09-08 - SchemaTool eighths bar + issue list
 -- 0.6.1 - 2026-09-08 - Splash has no Instance block
@@ -335,7 +336,8 @@ local function review_content(self)
     end
     local finding = subj[idx]
     local next_ref, g_reason = packet_next(self.opts)
-    local u_reason = apply.refuse_reason(finding, self.opts.allow_write)
+    local u_reason = apply.refuse_reason(
+        finding, self.opts.allow_write, self.opts.engine)
     local review_lines = Q.build_review_lines_detailed(
         finding, self.opts.work_dir, app.state, next_ref,
         g_reason, u_reason, self.opts.allow_write)
@@ -345,6 +347,12 @@ local function review_content(self)
         if not is_review_key_line(line) then
             body[#body + 1] = { line, ATTR.PATH }
         end
+    end
+    if u_reason and u_reason ~= "" then
+        body[#body + 1] = {
+            "  update disabled — " .. u_reason,
+            ATTR.ERR,
+        }
     end
     local u_hint
     if u_reason then
@@ -400,19 +408,57 @@ local function split_lines(text)
     return lines
 end
 
+local function catalog_action(finding)
+    local kind = finding.kind or ""
+    if kind == "nullable" then
+        local dn = (finding.expected == "true"
+            or finding.expected == "YES" or finding.expected == "1")
+        if dn then
+            return "DROP NOT NULL"
+        end
+        return "SET NOT NULL"
+    end
+    if kind == "column" then
+        return "ADD COLUMN"
+    end
+    if kind == "type" then
+        return "change column type"
+    end
+    if kind == "table" then
+        return "CREATE TABLE"
+    end
+    if kind == "dropped" then
+        if finding.column and finding.column ~= "" and finding.column ~= "-" then
+            return "DROP COLUMN"
+        end
+        return "DROP TABLE"
+    end
+    return kind
+end
+
 local function apply_content(self)
     local app = self.app
     local header = I.session_header(self.opts, app, self.inner_width)
     local token = app.apply_token or "?"
     local finding = app.apply_finding
     local is_orphan = finding and finding.kind == "orphan"
+    local is_row = finding and finding.field == "row"
     local is_catalog = finding and finding.class
         and finding.class:find("^catalog") ~= nil
-    local title = is_orphan
-        and "Delete this orphan from the database"
-        or is_catalog
-        and "Apply catalog DDL to the database"
-        or "Update this field on the database"
+    local is_drop = is_catalog and finding.kind == "dropped"
+    local is_create = is_catalog and finding.kind == "table"
+    local title = "Update this field on the database"
+    if is_orphan then
+        title = "Delete this orphan from the database"
+    elseif is_row then
+        title = "Replace code, name, and summary"
+    elseif is_drop then
+        title = "Drop this object from the database"
+    elseif is_create then
+        title = "Create this table on the database"
+    elseif is_catalog then
+        title = "Apply catalog DDL to the database"
+    end
     local lines = {
         { title, ATTR.TITLE },
         { "  type      " .. token, ATTR.VERSION },
@@ -427,19 +473,14 @@ local function apply_content(self)
                 lines[#lines + 1] = {
                     "  column    " .. finding.column, ATTR.PATH }
             end
-            local want_null = (finding.kind == "nullable")
-            if want_null then
-                local dn = (finding.expected == "true"
-                    or finding.expected == "YES" or finding.expected == "1")
-                local verb = dn and "DROP NOT NULL" or "SET NOT NULL"
-                lines[#lines + 1] = {
-                    "  action    ALTER COLUMN " .. verb, ATTR.PATH }
-            else
-                lines[#lines + 1] = {
-                    "  action    ADD COLUMN", ATTR.PATH }
-            end
+            lines[#lines + 1] = {
+                "  action    " .. catalog_action(finding), ATTR.PATH }
         elseif not is_orphan then
-            lines[#lines + 1] = { "  field     " .. (finding.field or ""), ATTR.PATH }
+            local field_label = finding.field or ""
+            if is_row then
+                field_label = "row (code, name, summary)"
+            end
+            lines[#lines + 1] = { "  field     " .. field_label, ATTR.PATH }
             local ref_line = "  ref       " .. tostring(finding.ref or "?")
                 .. "  /  type=" .. tostring(finding.db_type or "?")
             lines[#lines + 1] = { ref_line, ATTR.PATH }
@@ -451,11 +492,32 @@ local function apply_content(self)
             "This deletes orphan rows from queries. It does not author a migration.",
             ATTR.ERR,
         }
-    elseif is_catalog then
+    elseif is_drop then
         lines[#lines + 1] = {
-            "This ALTER statement mutates live DDL shape.",
+            "This DROP removes a live object the fold dropped.",
             ATTR.ERR,
         }
+    elseif is_create then
+        lines[#lines + 1] = {
+            "This CREATE adds a table from the fold.",
+            ATTR.ERR,
+        }
+    elseif is_catalog then
+        lines[#lines + 1] = {
+            "This statement mutates live DDL shape.",
+            ATTR.ERR,
+        }
+        if finding.kind == "nullable" and catalog_action(finding) == "SET NOT NULL" then
+            lines[#lines + 1] = {
+                "SET NOT NULL can reject existing values.",
+                ATTR.ERR,
+            }
+        elseif finding.kind == "type" then
+            lines[#lines + 1] = {
+                "A type change can reject existing values.",
+                ATTR.ERR,
+            }
+        end
     else
         lines[#lines + 1] = {
             "This updates queries metadata only. It does not replay DDL.",
@@ -476,6 +538,10 @@ local function apply_content(self)
     local cancel
     if is_orphan then
         cancel = "Press Enter to delete   ESC cancel"
+    elseif is_drop then
+        cancel = "Press Enter to drop   ESC cancel"
+    elseif is_create then
+        cancel = "Press Enter to create   ESC cancel"
     elseif is_catalog then
         cancel = "Press Enter to apply DDL   ESC cancel"
     else

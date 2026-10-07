@@ -222,8 +222,8 @@ not open work unless listed below.
 | --- | --- |
 | **Plan** | [`ARGENT_PLAN.md`](/docs/H/plans/ARGENT_PLAN.md) |
 | **Effort** | L (Helium pack and Lua) plus a small Hydrogen surface |
-| **Done** | Phases 0–3 applied 2026-10-07. Phases 4 and 5 were directed forward the same day. Phase 6 closed the same day on the 2019 apply. Phase 7 closed the same day: Andrew confirmed migration 2022 applied and said to keep going. No Test 31 count was quoted. Phase 8 closed the same day: Andrew confirmed migration 2024 applied. No Test 31 count was quoted. Phase 9 closed the same day: Andrew confirmed migration 2029 applied. Tests 31 and 71 passed. No Test 31 count was quoted. Phase 10 set `tests/test_71_database_diagrams.sh` to 3.1.0. That run completed with 120 zero-byte Argent SVGs. The sidequest is version 3.2.0: seven engines and a built-in page template. |
-| **Remaining** | Andrew runs Test 71 on version 3.2.0 and reports non-empty Argent SVGs. That run is the Phase 10 close. Phase 11 adds the `Argent.*` script migrations, starting at `argent_2030.lua`. Until the plan is done, unshipped Argent files may be edited in place. After that, a schema, lookup, or QueryRef change is a new migration. |
+| **Done** | Phases 0–3 applied 2026-10-07. Phases 4 and 5 were directed forward the same day. Phase 6 closed the same day on the 2019 apply. Phase 7 closed the same day: Andrew confirmed migration 2022 applied and said to keep going. No Test 31 count was quoted. Phase 8 closed the same day: Andrew confirmed migration 2024 applied. No Test 31 count was quoted. Phase 9 closed the same day: Andrew confirmed migration 2029 applied. Tests 31 and 71 passed. No Test 31 count was quoted. Phase 10 closed the same day on Test 71 3.2.0: diagnostics `test_71_20261007_113705_483159983_2387479` record 1490 passed and 0 failed. Argent SVGs for migrations 2000–2029 are non-empty on seven engines. No new migration. Phase 11 scripts `argent_2030.lua` through `argent_2037.lua` were written the same day and are not applied. |
+| **Remaining** | Andrew regenerates the payload, runs tests 32–39, and records the Phase 11 MCP round-trip. Until the plan is done, unshipped Argent files may be edited in place. After that, a schema, lookup, or QueryRef change is a new migration. |
 | **Note** | Argent is a 2xxx pack on the Acuranzo database. File numbers, caller-facing QueryRefs, and lookup ids all use 2000–2999 and may share integers. Andrew applies. Tests 32–40 use `PAYLOAD:acuranzo+argent`. |
 
 ### 23. Enum / struct reservations (no work unless product needs them)
@@ -339,7 +339,7 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 24 | `H.externaldb` — ad-hoc external DB from Lua | M | 0% | P2 |
 | 19 | Print job → device / Beryllium | L–XL | ~30% | P3 |
 | 22 | Mirage | XL | 0% | P3 |
-| 30 | Argent Helium bookkeeping | L | Phase 10 diagrams | P3 |
+| 30 | Argent Helium bookkeeping | L | Phase 10 complete | P3 |
 | 23 | Reserved enums/fields | n/a | n/a | P3 |
 
 (End of file)

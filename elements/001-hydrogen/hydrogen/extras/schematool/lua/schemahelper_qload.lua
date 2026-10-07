@@ -3,6 +3,7 @@
 -- Depends only on schemahelper_qutil.
 --
 -- CHANGELOG
+-- 0.6.0 - 2026-10-07 - One whole-row metadata finding per drift
 -- 0.5.9 - 2026-10-07 - Catalog classes for type and dropped findings
 -- 0.5.8 - 2026-08-25 - Extracted from schemahelper_queue.lua (findings load cluster)
 
@@ -73,6 +74,32 @@ local function load_metadata(path, tmp_dir, findings)
                 view = view,
                 file = file,
                 summary = summary,
+                expected = expected,
+                actual = actual,
+                detail = detail,
+            })
+        end
+        if #specs > 0 then
+            local row_summary
+            if db_type == 1003 then
+                row_summary = string.format(
+                    "APPLY check ref %d — replace code, name, and summary (does not replay DDL)",
+                    ref)
+            else
+                row_summary = string.format(
+                    "LOAD check ref %d type %d — replace code, name, and summary (does not replay DDL)",
+                    ref, db_type)
+            end
+            add_finding(findings, {
+                id = string.format("meta:drift:%d:%d:row", ref, db_type),
+                class = "metadata content drift",
+                kind = st_kind,
+                ref = ref,
+                db_type = db_type,
+                field = "row",
+                view = "raw",
+                file = file,
+                summary = row_summary,
                 expected = expected,
                 actual = actual,
                 detail = detail,

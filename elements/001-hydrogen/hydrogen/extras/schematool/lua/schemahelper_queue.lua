@@ -4,6 +4,7 @@
 -- modules under lua/ (schemahelper_qutil, _qstate, _qload, _qdecode).
 --
 -- CHANGELOG
+-- 0.6.8 - 2026-10-07 - Dialect apply text; whole-row metadata does not replay DDL
 -- 0.6.7 - 2026-10-07 - Queue type and dropped; info extras stay off the review list
 -- 0.6.6 - 2026-10-07 - Pass sidecar role through to the state path
 -- 0.6.5 - 2026-09-09 - Accept hash gate + accepted list + un-accept
@@ -274,9 +275,15 @@ local function explain_check(finding)
         elseif finding.kind == "column" then
             lines[#lines + 1] = "  apply:     [U]pdate Database — ADD COLUMN (type from expected fold)"
         elseif finding.kind == "type" then
-            lines[#lines + 1] = "  apply:     review only — type change waits for dialect DDL"
+            lines[#lines + 1] = "  apply:     [U]pdate Database — change column type (existing values may be rejected)"
+        elseif finding.kind == "table" then
+            lines[#lines + 1] = "  apply:     [U]pdate Database — CREATE TABLE from the folded column list"
         elseif finding.kind == "dropped" then
-            lines[#lines + 1] = "  apply:     review only — a later migration dropped this object"
+            if finding.column and finding.column ~= "" and finding.column ~= "-" then
+                lines[#lines + 1] = "  apply:     [U]pdate Database — DROP COLUMN (confirm token DROP object.column)"
+            else
+                lines[#lines + 1] = "  apply:     [U]pdate Database — DROP TABLE (confirm token DROP object)"
+            end
         end
         return lines
     end
@@ -307,6 +314,10 @@ local function explain_check(finding)
     else
         lines[#lines + 1] = "  left:      migration / expected"
         lines[#lines + 1] = "  right:     database / actual"
+    end
+    if finding.field == "row" then
+        lines[#lines + 1] = "  apply:     replace code, name, and summary together"
+        lines[#lines + 1] = "  note:      this does not replay DDL"
     end
     return lines
 end
@@ -877,7 +888,13 @@ local function u_label(u_reason, finding)
     end
     if finding and finding.class
         and finding.class:find("^catalog") then
+        if finding.kind == "dropped" then
+            return "  [U]pdate Database            (drop, type DROP object)"
+        end
         return "  [U]pdate Database            (apply catalog DDL, type object.column)"
+    end
+    if finding and finding.field == "row" then
+        return "  [U]pdate Database            (replace row, type REF)"
     end
     return "  [U]pdate Database            (type REF.field)"
 end

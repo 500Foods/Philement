@@ -10,6 +10,7 @@
 --   lua schematool_detail.lua --catalog-findings PATH [--max-lines N]
 --
 -- CHANGELOG
+-- 1.2.0 - 2026-10-07 - Type and dropped guidance points at SchemaHelper
 -- 1.1.0 - 2026-10-07 - Guidance for type and dropped catalog checks
 -- 1.0.0 - 2026-08-06 - Post-table drift detail (diff + commented UPDATE)
 
@@ -363,10 +364,10 @@ if catalog_path then
             emit("  guidance: create missing object via new forward migration (Hydrogen LOAD/APPLY).")
         elseif check == "type" then
             emit("  guidance: type text differs after case and spacing are normalized.")
-            emit("  remediation: review only in this phase; dialect DDL is later.")
+            emit("  remediation: SchemaHelper can emit one dialect ALTER. Probe spellings are not aliases.")
         elseif check == "dropped" then
             emit("  guidance: a later migration dropped this object; it is still live.")
-            emit("  remediation: review only in this phase; this is not an unused extra.")
+            emit("  remediation: SchemaHelper can drop it after the DROP confirm. This is not an unused extra.")
         end
     end
 

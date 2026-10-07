@@ -220,16 +220,24 @@ if not type_finding then
     die('type finding missing from subject')
 end
 local review = table.concat(queue.build_review_lines(type_finding), '\n')
-if not review:find('review only', 1, true) then
-    die('type review does not say review only')
+if not review:find('change column type', 1, true) then
+    die('type review does not describe a type change')
 end
-if apply.refuse_reason(type_finding, true) ~= 'review only' then
+if apply.refuse_reason(type_finding, true) ~= nil then
     die('type apply refuse=' .. tostring(apply.refuse_reason(type_finding, true)))
 end
 local dropped_finding = queue.find_finding(
     built.subject, 'cat:accounts:gone_col:dropped')
-if apply.refuse_reason(dropped_finding, true) ~= 'review only' then
-    die('dropped apply is not review only')
+if apply.refuse_reason(dropped_finding, true) ~= nil then
+    die('dropped apply refused without an engine')
+end
+local sqlite_type = apply.refuse_reason(type_finding, true, 'sqlite')
+if not sqlite_type or not sqlite_type:find('rebuild', 1, true) then
+    die('sqlite type should refuse a rebuild')
+end
+local sqlite_drop = apply.refuse_reason(dropped_finding, true, 'sqlite')
+if not sqlite_drop or not sqlite_drop:find('DROP COLUMN', 1, true) then
+    die('sqlite DROP COLUMN should refuse a rebuild')
 end
 
 os.execute('rm -rf "' .. tmp .. '"')

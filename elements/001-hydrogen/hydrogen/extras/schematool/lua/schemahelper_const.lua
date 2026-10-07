@@ -2,6 +2,7 @@
 -- Constants, terminal module references, and attribute tables for SchemaHelper.
 --
 -- CHANGELOG
+-- 0.6.15 - 2026-10-07 - Dialect DDL apply; SchemaTool 1.15.1
 -- 0.6.14 - 2026-10-07 - SchemaTool 1.15.0; type and dropped stay review-only
 -- 0.6.13 - 2026-10-07 - SchemaTool 1.14.0; wrappers cover acuranzo+argent
 -- 0.6.12 - 2026-10-07 - Sixteen wrapper stems, test block then demo block
@@ -18,7 +19,7 @@
 -- 0.6.0 - 2026-09-08 - Chrome titles + Instance log name
 -- 0.5.8 - 2026-08-25 - Extracted from schemahelper.lua (constants + terminal refs)
 
-local VERSION = "0.6.14"
+local VERSION = "0.6.15"
 local RELEASED = "2026-10-07"
 
 local INSTANCE_LOG = "schemahelper_schematool.log"

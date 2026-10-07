@@ -20,7 +20,7 @@ reopen them.
 | 5 Eight test wrappers (tests 32–39) | complete | none |
 | 6 Eight demo wrappers (Test 40) | complete | none |
 | 7 Expected shape from disk migrations | complete | none |
-| 8 Structural apply, per dialect | not started | Difficult |
+| 8 Structural apply, per dialect | complete | none |
 | 9 Migration-owned default rows | not started | Difficult |
 | 10 Docs and smoke | not started | Quick |
 
@@ -821,15 +821,15 @@ artifact. Any other engine needs an explicit yes.
 
 ### Work items
 
-- [ ] 8.1 Replace the hand-rolled JSON string decoder used to build
+- [x] 8.1 Replace the hand-rolled JSON string decoder used to build
       `UPDATE` literals. Non-ASCII content round-trips. A unit check
       covers a `\u` escape above 127.
-- [ ] 8.2 Whole metadata row. One confirm token `REF` replaces
+- [x] 8.2 Whole metadata row. One confirm token `REF` replaces
       `code`, `name`, and `summary` on that `query_ref` and
       `query_type`. The screen still says this does not replay DDL.
       The one-field token `REF.field` can remain for a single-field
       finding.
-- [ ] 8.3 Dialect DDL, generated in `schemahelper_apply.lua` (or a
+- [x] 8.3 Dialect DDL, generated in `schemahelper_apply.lua` (or a
       sibling module it calls):
 
       | Change | postgresql / yugabytedb | mysql | mariadb | sqlite | db2 | firebird | mssql |
@@ -843,15 +843,15 @@ artifact. Any other engine needs an explicit yes.
       SQLite nullability and type changes need a table rebuild. This
       phase refuses them with an on-screen reason rather than emitting
       a rebuild that copies rows. A later plan can add the rebuild.
-- [ ] 8.4 Confirm tokens. Structural create/alter stays
+- [x] 8.4 Confirm tokens. Structural create/alter stays
       `object` or `object.column`. Drops use the `DROP` token from
       the Locks section. Refused cases return a reason and do not
       open the confirm prompt.
-- [ ] 8.5 `exec_sql` already has a branch per engine after Phases 1,
+- [x] 8.5 `exec_sql` already has a branch per engine after Phases 1,
       2, and 4. Send the one statement in a transaction where the
       engine allows it, and commit only after the client returns
       success. SQLite uses a copy of the artifact file for the proof.
-- [ ] 8.6 Test 72 asserts the SQL text for each engine for add column,
+- [x] 8.6 Test 72 asserts the SQL text for each engine for add column,
       nullability, type, create table, and drop. It does not execute
       them.
 
@@ -876,14 +876,14 @@ does not replay DDL.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-10-07 |
+| **Result** | On a copy of `hydrodemo.sqlite`, `cat:accounts:stripe_customer_id:column` ref 1310 applied as `ALTER TABLE accounts ADD COLUMN stripe_customer_id varchar(100)`. Re-audit exit 0, failures empty. `prod_extra` stayed info, status I, and was not offered for drop. Generated SQL for the other seven engines is fixture-checked. A metadata replace says it does not replay DDL. |
+| **Variances** | `database_firebird.lua` has no table `ALTER`. Firebird spelling follows `acuranzo_1190` (no `COLUMN` keyword) and `FIREBIRD.md` (`ADD`/`DROP` without `COLUMN`). DB2 type change is `ALTER COLUMN … SET DATA TYPE`. No migration in the tree shows that form, and the one statement does not add `REORG`. MSSQL `DROP COLUMN` is a batch in the existing transaction: look up `sys.default_constraints`, drop it when present, then drop the column. SQLite nullability, type, and `DROP COLUMN` are refused. A whole-row `UPDATE` sets `code`, `name`, and `summary` when those keys are present. Probe-spelling type findings were not applied. Firebird `SET TRANSACTION`/`COMMIT` was not executed. SQL fixture only for postgresql, yugabytedb, mysql, mariadb, db2, firebird, and mssql. |
 
 ### Working log
 
-(none yet)
+- **2026-10-07** Dialect DDL, UTF-8 `\u` literals, and the whole-row metadata token landed. Test 72 passed, 22/22. Test 98 passed, 510 Lua files. Test 92 passed, 202 shell files, 3/3, 1189/1189 directives. SchemaHelper 0.6.15, SchemaTool 1.15.1. A copy of `hydrodemo.sqlite` (original not written; mtime stayed `2026-10-07 13:43:22.639974472 -0700`, size 14036992) dropped `stripe_customer_id` and added `prod_extra`. Before: exit 2, `cat:accounts:stripe_customer_id:column` ref 1310, and `cat:accounts:prod_extra:extra_column` status I. The generated `ADD COLUMN` ran under `BEGIN`/`COMMIT` on the copy only. After: exit 0, failures empty, `prod_extra` still status I. The copy was removed. No server engine was executed.
 
 ## Phase 9 — Migration-owned default rows
 

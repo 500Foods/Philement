@@ -73,7 +73,9 @@ structural apply and migration-owned default rows. Extra production
 rows stay out of the queue. Opened 2026-10-07. Phases 1–6 complete.
 Phase 7 is complete: the catalog compares type as well as presence
 and nullability, and a live object no migration mentions does not
-fail the audit. Phase 8 has not started.
+fail the audit. Phase 8 is complete: `[u]` emits one statement in
+that engine's DDL. The SQLite proof added a missing column on a copy.
+The other seven engines are SQL fixtures only. Phase 9 has not started.
 
 ### [MIRAGE PLAN](/docs/H/plans/MIRAGE_PLAN.md)
 
@@ -87,7 +89,7 @@ Double-entry bookkeeping as an optional pack on the Acuranzo database
 Plus-list loader is in source. Tests 32–40 use
 `PAYLOAD:acuranzo+argent`. Restructured 2026-10-06 into Phases 0–16.
 Phase 0 approved the same day. Phases 1–3 applied 2026-10-07.
-Phase 9 closed on the 2029 apply. Phase 10 Test 71 is at 3.2.0 (seven engines) and is waiting on that run.
+Phase 9 closed on the 2029 apply. Phase 10 closed on Test 71 3.2.0 (1490 passed, 0 failed). Phase 11 is written and not applied (`argent_2030.lua`–`argent_2037.lua`).
 `H.http.request` is Phase 13.
 
 ---

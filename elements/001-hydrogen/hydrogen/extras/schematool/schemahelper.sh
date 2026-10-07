@@ -4,6 +4,7 @@
 # Lua 5.5 TUI over extras/schematool. Default is review-only.
 #
 # CHANGELOG
+# 0.6.15 - 2026-10-07 - Dialect DDL apply; whole-row metadata; SchemaTool 1.15.1
 # 0.6.14 - 2026-10-07 - SchemaTool 1.15.0; type and dropped stay review-only
 # 0.6.13 - 2026-10-07 - SchemaTool 1.14.0; wrappers cover acuranzo+argent
 # 0.6.12 - 2026-10-07 - Help examples use the _demo wrapper names
@@ -57,8 +58,8 @@ SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
 LUA_APP="${SCRIPT_DIR}/schemahelper.lua"
 SCHEMATOOL_SH="${SCRIPT_DIR}/schematool.sh"
 
-VERSION="0.6.14"
-SCHEMATOOL_VERSION="1.15.0"
+VERSION="0.6.15"
+SCHEMATOOL_VERSION="1.15.1"
 
 print_help() {
     cat <<EOF
@@ -89,12 +90,14 @@ Options:
   --track metadata|catalog|both
                           Which SchemaTool track to queue (default: both)
   --reuse                Load existing --out-dir artifacts; skip SchemaTool
-  --allow-write          Enable [U]pdate Database: apply metadata change
-                          (type REF.field), delete orphan ref (type REF; true
-                          orphans only), apply catalog DDL on nullable/
-                          add-column findings (type object.column). Type and
-                          dropped findings stay review-only. Also enables
-                          [M] Promote a packet stub into Helium migrations
+  --allow-write          Enable [U]pdate Database: one finding, one statement.
+                          A metadata row is REF (code, name, and summary; it
+                          does not replay DDL). One field stays REF.field.
+                          Orphan delete is REF. Catalog create or alter is
+                          object or object.column. A drop is DROP object or
+                          DROP object.column. SQLite nullability, type, and
+                          DROP COLUMN stay refused. Live extras are not
+                          offered. Also enables [M] Promote into Helium.
   --keep-work-dir        Do not remove the auto-generated work-dir on exit
   --help, -h             This help
   --version              Print versions
