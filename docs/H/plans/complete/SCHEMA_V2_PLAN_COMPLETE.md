@@ -21,8 +21,8 @@ reopen them.
 | 6 Eight demo wrappers (Test 40) | complete | none |
 | 7 Expected shape from disk migrations | complete | none |
 | 8 Structural apply, per dialect | complete | none |
-| 9 Migration-owned default rows | not started | Difficult |
-| 10 Docs and smoke | not started | Quick |
+| 9 Migration-owned default rows | complete | none |
+| 10 Docs and smoke | complete | none |
 
 Operator guides:
 [`SCHEMATOOL.md`](/docs/H/tools/SCHEMATOOL.md),
@@ -899,22 +899,22 @@ Phase 8 Status complete. Same write caution: SQLite copy first.
 
 ### Work items
 
-- [ ] 9.1 Extract keyed `INSERT`, `UPDATE`, and `DELETE` from the
+- [x] 9.1 Extract keyed `INSERT`, `UPDATE`, and `DELETE` from the
       disk migration SQL in ref order. Build the net expected row
       per table. Statements with no key become unkeyed-DML findings
       with apply refused and a pointer to AutoMigration.
-- [ ] 9.2 Probe the live table with a `SELECT` of the expected keys
+- [x] 9.2 Probe the live table with a `SELECT` of the expected keys
       only, plus the migration-owned columns. No `SELECT *`.
-- [ ] 9.3 Findings: `row_missing`, `row_diff`, `row_present` (a key
+- [x] 9.3 Findings: `row_missing`, `row_diff`, `row_present` (a key
       the net migration deleted). A live key that is not in the
       expected set produces nothing.
-- [ ] 9.4 Apply: `INSERT` the missing default row, `UPDATE` the
+- [x] 9.4 Apply: `INSERT` the missing default row, `UPDATE` the
       differing migration-owned columns, `DELETE` only the key a
       migration deleted. Confirm token is `table.key`. One row per
       confirm.
-- [ ] 9.5 Per-engine literal quoting for the inserted values. Reuse
+- [x] 9.5 Per-engine literal quoting for the inserted values. Reuse
       the Phase 8 string path so non-ASCII values survive.
-- [ ] 9.6 Test 72 fixture: a `contacts`-style table with two default
+- [x] 9.6 Test 72 fixture: a `contacts`-style table with two default
       rows in the migration, three rows live (the two defaults, one
       of them stale, plus an extra person). The queue contains the
       stale default and, if one default was removed from the live
@@ -937,14 +937,14 @@ updated, and the extra person is not listed as drift.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-10-07 |
+| **Result** | On a copy of `hydrodemo.sqlite`, missing default `contacts.1` was inserted (`Café` / London) and stale `contacts.2` city was updated from Berlin to Paris. Extra person key 9, Zoe, stayed in the table and was not in the queue or in any generated `DELETE`. `contacts.3` remained `row_present` because that `DELETE` was not executed. |
+| **Variances** | Row findings live in `rows_findings.json` and the SchemaHelper queue. Catalog exit and `smoke_test40_catalog.sh` stay shape-only. DML on `queries` is skipped. Non-literal values are not migration-owned. Unkeyed DML is refused and points at AutoMigration; it does not by itself set exit 2. A row-track failure warns and does not change the catalog exit. `--fold-stored` skips the row track. SQL fixture only for postgresql, yugabytedb, mysql, mariadb, db2, firebird, and mssql. |
 
 ### Working log
 
-(none yet)
+- **2026-10-07** Keyed default rows, a targeted probe, and one-row apply landed. Test 72 passed, 23/23, script 1.6.0. Test 98 passed, 519 Lua files. Test 92 passed, 203 shell files, 3/3, 1189/1189 directives. SchemaHelper 0.6.16, SchemaTool 1.15.2. A copy of `hydrodemo.sqlite` (original not written; mtime stayed `2026-10-07 14:00:14.162349409 -0700`, size 14036992) held contacts keys 2 (Bea, Berlin), 3 (Cara, Rome), and 9 (Zoe, Oslo). Before: `row_missing` 1, `row_diff` 2, `row_present` 3, one unkeyed `UPDATE` with no `WHERE`. Key 9 was not in the queue. Generated `DELETE FROM contacts WHERE contact_id = 3` does not name key 9 and was not executed. The copy applied, under `sqlite3` `BEGIN`/`COMMIT`, `INSERT` key 1 (`Café`, London; name bytes `43 61 66 C3 A9`) and `UPDATE` key 2 city to Paris. After: missing 0, diff 0, `row_present` 3, unkeyed still present. Live rows were 1 Café London, 2 Bea Paris, 3 Cara Rome, 9 Zoe Oslo. The copy was removed. Expanded refs 1044 and 1144 kept lookup keys `019|0`, `019|1`, and `0|019`, and account keys 1–4, with `password_hash` left unowned. No server engine was executed.
 
 ## Phase 10 — Docs and smoke
 
@@ -959,20 +959,19 @@ Phase 9 Status complete.
 
 ### Work items
 
-- [ ] 10.1 Rewrite the apply and catalog sections of
+- [x] 10.1 Rewrite the apply and catalog sections of
       [`SCHEMATOOL.md`](/docs/H/tools/SCHEMATOOL.md) and
       [`SCHEMAHELPER.md`](/docs/H/tools/SCHEMAHELPER.md) so they match
-      Phases 7–9. Link this plan as the active plan. Keep the v1 and
-      v2 archives linked as history.
-- [ ] 10.2 Extras README, `smoke_test40_catalog.sh` usage comment, and
+      Phases 7–9. Link this plan. Keep the v1 and v2 archives linked
+      as history. After the move, operator docs label this plan
+      complete (2026-10-07) and point at the archive path.
+- [x] 10.2 Extras README, `smoke_test40_catalog.sh` usage comment, and
       Test 72 doc agree on the sixteen wrapper names and the sidecar
       role suffix.
-- [ ] 10.3 Sitemap, structure, and plans index already link this file
-      from the day it was added. Confirm they still do after any
-      rename. Run Test 04.
-- [ ] 10.4 Move this file to `docs/H/plans/complete/` and add
-      `_COMPLETE` to the name only when every phase Status is
-      complete. Until then it stays here.
+- [x] 10.3 Sitemap, structure, and plans index link this file at its
+      archive path. Test 04 is the link check.
+- [x] 10.4 Move this file to `docs/H/plans/complete/` and add
+      `_COMPLETE` to the name. Every phase Status is complete.
 
 ### Done means
 
@@ -989,14 +988,15 @@ docs.
 
 | | |
 | --- | --- |
-| **State** | not started |
-| **Date** | |
-| **Result** | |
-| **Variances** | |
+| **State** | complete |
+| **Date** | 2026-10-07 |
+| **Result** | Operator docs match Phases 7–9. A reader can pick one of the sixteen wrappers and predict what `[u]` will and will not change. This file moved to `docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md`. |
+| **Variances** | Item 10.1 said "active plan" while this file was still open. The archived operator docs call it complete. `smoke_test40_catalog.sh` calls the eight `_demo` wrappers only. Its order differs from the picker. The sixteen names still agree. |
 
 ### Working log
 
-(none yet)
+- **2026-10-07** Catalog and apply docs now cover eight-engine probes, `rows_findings.json` (catalog exit unchanged; `--fold-stored` skips it), and `[u]`. SQLite nullability, type, and `DROP COLUMN` stay refused. Firebird omits `COLUMN`. DB2 `DROP COLUMN` commits and runs `REORG TABLE`. MSSQL drops a default with `QUOTENAME` and `sp_executesql`. Info extras are not applied. Extra live rows are not deleted. Unkeyed DML is refused. Queries-table DML is not a row finding. Sixteen wrapper names and sidecar `schemahelper_<design>_<engine>_<role>.json` agree in the extras README, `smoke_test40_catalog.sh` 1.1.4, Test 72 1.7.1, and `docs/H/tests/test_72_schemahelper.md`. Test 72 passed 24/24 on 2026-10-07 (script 1.7.0 before this comment bump). Test 98 passed, 520 Lua files. Test 92 passed, 204 shell files, 1212/1212 directives. `hydrodemo.sqlite` after that run: mtime `2026-10-07 15:48:55.844882680 -0700`, size 14036992. `schematooltest` was not left in that file. v1 and v2 SchemaHelper archives stay linked. SchemaTool's archived plan stays linked.
+- **2026-10-07** Exit gate after the archive move. Test 04 passed, 5/5, 2,707 links, 0 missing, 0 orphaned, 0 relative. Test 90 passed, 370 markdown files. Test 72 1.7.1 passed 24/24 in 80.289s, all eight engines. Test 98 passed, 520 Lua files. Test 92 passed, 204 shell files, 1212/1212 directives. `mkl` exited 0 with 2,707 links found. `hydrodemo.sqlite` after this re-run: mtime `2026-10-07 16:32:39.148060690 -0700`, size 14036992. `schematooltest` is not in `sqlite_master`.
 
 ## Plan log
 

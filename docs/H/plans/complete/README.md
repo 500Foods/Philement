@@ -63,6 +63,7 @@ Active plans folder: [`/docs/H/plans/`](/docs/H/plans/).
 | [SCHEMAHELPER_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md) | SchemaHelper v1 TUI (review queue, packets, apply; 0.5.8) |
 | [SCHEMAHELPER_V2_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md) | SchemaHelper v2 (Target, Instance, progress; 0.6.5) |
 | [SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md) | SchemaTool drift auditor (metadata + catalog, CLI 1.7.1) |
+| [SCHEMA_V2_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md) | SchemaTool / SchemaHelper v2 (eight engines, structural apply, default rows; closed 2026-10-07) |
 | [STATIC_COMPLETE.md](/docs/H/plans/complete/STATIC_COMPLETE.md) | Static-function purge |
 | [TERMINAL_PLAN_COMPLETE.md](/docs/H/plans/complete/TERMINAL_PLAN_COMPLETE.md) | Terminal subsystem |
 | [TERMINAL_FIX_PLAN_COMPLETE.md](/docs/H/plans/complete/TERMINAL_FIX_PLAN_COMPLETE.md) | End-to-end terminal + chat WebSocket fix (JWT IP, payload, WS key, iframe postMessage) |

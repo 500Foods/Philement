@@ -156,17 +156,6 @@ not open work unless listed below.
 | **Why later** | Correctness does not depend on reusing the `isc_stmt_handle`. Firebird 5's compiled-statement cache is a different mechanism and is not required. |
 | **Note** | `src/database/firebird/` + `database_firebird.lua`. No SQL interpreter. Firebase tree is deleted in FIREBIRD Phases 3–4, not reused. Sister plan: [MSSQL_COMPLETE.md](/docs/H/plans/complete/MSSQL_COMPLETE.md) (closed 2026-10-07). |
 
-### 31. SchemaTool / SchemaHelper v2 — eight engines and convergence
-
-| | |
-| --- | --- |
-| **Plan** | [`SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md) |
-| **Effort** | L |
-| **Done** | Plan written 2026-10-07. No code yet. |
-| **Remaining** | Phases 1–10. First slice is Firebird dump and catalog adapters. |
-| **Why next** | The review UI exists. Firebird and MSSQL cannot be audited, and apply covers only a narrow DDL slice. |
-| **Note** | Bring an older database up to the current migrations. Extra production rows stay out of the queue. Test wrappers are tests 32–39. Demo wrappers are Test 40. |
-
 ### 26. Notifications / Subscribers — Web Push backend
 
 | | |
@@ -222,8 +211,8 @@ not open work unless listed below.
 | --- | --- |
 | **Plan** | [`ARGENT_PLAN.md`](/docs/H/plans/ARGENT_PLAN.md) |
 | **Effort** | L (Helium pack and Lua) plus a small Hydrogen surface |
-| **Done** | Phases 0–3 applied 2026-10-07. Phases 4 and 5 were directed forward the same day. Phase 6 closed the same day on the 2019 apply. Phase 7 closed the same day: Andrew confirmed migration 2022 applied and said to keep going. No Test 31 count was quoted. Phase 8 closed the same day: Andrew confirmed migration 2024 applied. No Test 31 count was quoted. Phase 9 closed the same day: Andrew confirmed migration 2029 applied. Tests 31 and 71 passed. No Test 31 count was quoted. Phase 10 closed the same day on Test 71 3.2.0: diagnostics `test_71_20261007_113705_483159983_2387479` record 1490 passed and 0 failed. Argent SVGs for migrations 2000–2029 are non-empty on seven engines. No new migration. Phase 11 scripts `argent_2030.lua` through `argent_2037.lua` were written the same day and are not applied. |
-| **Remaining** | Andrew regenerates the payload, runs tests 32–39, and records the Phase 11 MCP round-trip. Until the plan is done, unshipped Argent files may be edited in place. After that, a schema, lookup, or QueryRef change is a new migration. |
+| **Done** | Phases 0–3 applied 2026-10-07. Phases 4 and 5 were directed forward the same day. Phase 6 closed the same day on the 2019 apply. Phase 7 closed the same day: Andrew confirmed migration 2022 applied and said to keep going. No Test 31 count was quoted. Phase 8 closed the same day: Andrew confirmed migration 2024 applied. No Test 31 count was quoted. Phase 9 closed the same day: Andrew confirmed migration 2029 applied. Tests 31 and 71 passed. No Test 31 count was quoted. Phase 10 closed the same day on Test 71 3.2.0: diagnostics `test_71_20261007_113705_483159983_2387479` record 1490 passed and 0 failed. Argent SVGs for migrations 2000–2029 are non-empty on seven engines. No new migration. Phase 11 scripts `argent_2030.lua` through `argent_2037.lua` are applied. Diagnostics `test_73_20261007_173712`: SQLite 178/178, PostgreSQL 178/178, DB2 177/178 (`FAIL_bal_parents`, SQL0104N on `WITH RECURSIVE`). `argent_2022.lua` 1.0.2 stores `WITH` for DB2. Work item 11.7 stays open. |
+| **Remaining** | Rebuild the payload and load migration 2022 on DB2 again, then a green Test 73 on all eight engines. MySQL, MariaDB, Firebird, YugabyteDB, and MSSQL on the 17:37 run still have the first-apply column names. Tests 32–39 were not reported. Until the plan is done, unshipped Argent files may be edited in place. After that, a schema, lookup, or QueryRef change is a new migration. |
 | **Note** | Argent is a 2xxx pack on the Acuranzo database. File numbers, caller-facing QueryRefs, and lookup ids all use 2000–2999 and may share integers. Andrew applies. Tests 32–40 use `PAYLOAD:acuranzo+argent`. |
 
 ### 23. Enum / struct reservations (no work unless product needs them)
@@ -300,6 +289,10 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 
 - [`TERMINAL_FIX_PLAN_COMPLETE.md`](/docs/H/plans/complete/TERMINAL_FIX_PLAN_COMPLETE.md) — Phases 0–13 complete (Phase 5 skipped, superseded by Phase 12); query-string auth, split chat/terminal keys, info gating, Test 26 two-key contract, production E2E on `lithium.500courses.com`; dropped from active TODO item 2
 
+**2026-10-07 Schema v2 closeout (item 31):**
+
+- [`SCHEMA_V2_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md) — Phases 1–10 complete. Eight engines, sixteen wrappers, structural apply, and migration-owned default rows. Dropped from the active list.
+
 **2026-09-09 SCHEMAHELPER v2 closeout:**
 
 - [`SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md) — Phases 0–5 complete (0.6.5); moved from active TODO item 25
@@ -335,11 +328,10 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 13 | Mail Relay remainder | L–XL | ~75% | P2 |
 | 26 | Notifications / Subscribers | L–XL | 0% plan | P2 |
 | 27 | Firebird engine (replace Cockroach) | XL | Phases 0–11 done; cache follow-up | P2 |
-| 31 | SchemaTool / SchemaHelper v2 | L | plan only | P2 |
 | 24 | `H.externaldb` — ad-hoc external DB from Lua | M | 0% | P2 |
 | 19 | Print job → device / Beryllium | L–XL | ~30% | P3 |
 | 22 | Mirage | XL | 0% | P3 |
-| 30 | Argent Helium bookkeeping | L | Phase 10 complete | P3 |
+| 30 | Argent Helium bookkeeping | L | Phase 11 applied; Test 73 SQLite and PostgreSQL green; DB2 rollup keyword | P3 |
 | 23 | Reserved enums/fields | n/a | n/a | P3 |
 
 (End of file)

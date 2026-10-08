@@ -4,11 +4,11 @@
 
 **Date:** 2026-10-06 (PT)
 **Author:** Folly (for Andrew)
-**Status:** Phase 10 complete. Phase 11 is written and not applied. `argent_2030.lua` through `argent_2037.lua` install the Argent MCP scripts. Andrew's confirmed apply high-water is migration 2029.
+**Status:** Phase 10 complete. Phase 11 scripts are applied and Test 73 is not green. Diagnostics `test_73_20261007_173712`: SQLite 178/178, PostgreSQL 178/178, DB2 177/178 on `WITH RECURSIVE`. `argent_2022.lua` 1.0.2 stores `WITH` for DB2. That row reloads after a payload rebuild. Work item 11.7 is open.
 **Design name:** Argent
 **Helium path:** `elements/002-helium/argent/`
 **Database:** the Acuranzo database (same schema, same `queries` / `lookups` / `scripts`). Optional pack. Never applied alone.
-**Migration series:** `argent_2xxx.lua`. On disk through `argent_2037.lua` (transaction reads). Andrew confirmed migration 2029 applied on 2026-10-07. Phase 11 files `argent_2030.lua` through `argent_2037.lua` are written and not applied.
+**Migration series:** `argent_2xxx.lua`. On disk through `argent_2037.lua` (transaction reads). Andrew said everything is applied on 2026-10-07. `demo.queries` records argent 2000–2037 as type 1003.
 
 The earlier Folly copies named `/workspace/folly/argent-plan.md` and `/workspace/folly/hydrogen-bookkeeping-decisions.md` are not on this machine. Decisions from that work are in this file. Amend this file. Do not hunt for the Folly paths.
 
@@ -29,7 +29,7 @@ Effort is the remaining work, or the size of the phase when it is already done. 
 | 8 Tax | Complete. 2024 applied 2026-10-07. No Test 31 count | Medium |
 | 9 Tags and attachments | Complete. 2029 applied 2026-10-07. Tests 31 and 71 passed. No Test 31 count | Medium |
 | 10 Diagrams | Complete. Test 71 3.2.0 on 2026-10-07. 1490 passed, 0 failed. No new migration | Easy |
-| 11 MCP CRUD and posting | Written, not applied. 2026-10-07. `argent_2030.lua`–`argent_2037.lua` | Hard |
+| 11 MCP CRUD and posting | Applied 2026-10-07. Test 73: SQLite and PostgreSQL 178/178. DB2 177/178 on WITH RECURSIVE. 1.0.2 awaits a DB2 reload | Hard |
 | 12 Confirm and reconciliation tools | Not started | Hard |
 | 13 `H.http.request` | Not started | Medium |
 | 14 Schedules and calendar sync | Not started | Hard |
@@ -55,7 +55,7 @@ Lint the agent may be asked to run: Test 31 (expands SQL, no apply) and Test 98 
 
 ## Next session
 
-Phase 10 is complete. Phase 11 is written and not applied. `argent_2030.lua` through `argent_2037.lua` install the Argent MCP scripts. Andrew's confirmed apply high-water is migration 2029. The next step is his payload regenerate, tests 32–39, and the MCP round-trip in work item 11.7. Phase 12 waits for that report.
+Phase 10 is complete. Phase 11 scripts are applied. Test 73 is not green, so work item 11.7 stays open and Phase 12 waits. SQLite and PostgreSQL passed 178/178 on `test_73_20261007_173712`. DB2 failed one case, `bal_parents`, because QueryRef 2001 stored `WITH RECURSIVE`. `argent_2022.lua` 1.0.2 stores `WITH` for DB2. The next step is a payload rebuild and a DB2 reload of migration 2022, then Test 73. Engines he has not refreshed can still have the first-apply column names. Tests 32–39 were not reported.
 
 ---
 
@@ -701,7 +701,7 @@ Andrew applies. 2026-10-07 he confirmed migration 2022 applied and said to keep 
 - `USE_RATE_DEFAULT` 1 selects lookup 2012 key 1. 0 selects `RATE_SOURCE`. Any other value matches no source. `RATE_SOURCE` is always bound. Each of the ten parameter names appears once, in a one-row `req` CTE that uses `${DUMMY_TABLE}`.
 - Same currency uses rate 1/1, a null `rate_as_of`, and `converted_cents` equal to `balance_cents`. No `rates` row is required. A different currency prefers a direct quote (base = child, quote = parent) and falls back to the inverse. Integer division truncates toward zero. A missing rate, or a zero numerator or denominator, leaves `converted_cents` null and sets `rate_warning` to 1.
 - The descendant walk stops at depth 16. `SELECT DISTINCT` keeps one row per parent and posting child so a `parent_id` cycle does not multiply the sum. A parent with no posting descendant returns no row.
-- `cfg.WITH_RECURSIVE` is set in this file: `WITH` on MSSQL, `WITH RECURSIVE` on the other engines. It is not a new macro in `database.lua`.
+- `cfg.WITH_RECURSIVE` is set in this file. DB2 and MSSQL store `WITH`. The other engines store `WITH RECURSIVE`. It is not a new macro in `database.lua`. The 1.0.0 expansion stored `WITH RECURSIVE` on DB2. Test 73 `test_73_20261007_173712` rejected that with SQL0104N. Version 1.0.2 stores `WITH` for DB2.
 - Reverse of QueryRef 2001 deletes `query_ref = 2001` and `query_type_a28 = TYPE_SQL` (1). A delete by query_ref alone would also remove the `argent_2001.lua` ledgers bookkeeping rows.
 - The table has no seed, so reverse is `${DROP_CHECK}` then `DROP TABLE`. This file does not fetch BoC.
 
@@ -872,19 +872,19 @@ Folly can create an organization, two posting ledgers, and one balanced transact
 - [x] 11.4 `AddTags`, `RemoveTags`, `AddAttachment`. `UpsertTaxCode` and `UpsertTaxRate`. `PostTransaction` posts companion tax lines when `tax_code_id` is set.
 - [x] 11.5 `GetTransaction`, `ListTransactions`, and `QueryBalances` (QueryRef 2000, and 2001 when parents are requested). Status values are lookup 2003 keys.
 - [x] 11.6 One script migration per tool, or one migration per tool group where the file stays under 1000 lines. `mcp_access=1`, group `Argent`. No second caller-facing QueryRef in a file that already installs one.
-- [ ] 11.7 Andrew runs tests 32–39 for the new script migrations, then an MCP round-trip: create org, two ledgers, one balanced txn, one unbalanced txn rejected.
+- [ ] 11.7 Andrew runs tests 32–39 for the new script migrations, then Test 73 on all eight engines. The script calls every Argent tool and the validation variants those tools return, including one unbalanced transaction rejected.
 
 ### Done means
 
-The round-trip in 11.7 is recorded, including the rejected unbalanced transaction.
+Andrew reports tests 32–39 and a green Test 73. The rejected unbalanced transaction is one of the Test 73 cases.
 
 ### Exit gate
 
-Test 31, Test 98, payload regenerate, tests 32–39, then the MCP round-trip. Test 47's shape is the pattern. This phase does not add a new blackbox script unless 11.7 cannot be recorded any other way, and then only with Andrew's ask.
+Test 31, Test 98, payload regenerate, tests 32–39, then Test 73. Test 73 is the MCP round-trip on all eight engines. It calls every Argent tool and the validation variants those tools return. It uses `PAYLOAD:acuranzo+argent` on the demo connections (the same databases as Test 40) with AutoMigration true, so a regenerated payload applies `argent_2030.lua` through `argent_2037.lua` on startup. Test 47 stays the protocol blackbox. Work item 11.7 stays open until Andrew reports tests 32–39 and a green Test 73.
 
 ### Status
 
-**Written, not applied.** `argent_2030.lua` through `argent_2037.lua` are in the tree. Luacheck reported 0 warnings on each file. Each factory returns 3 queries. SQLite expansion left no `${...}` in the stored script bodies, and `luac -p` accepted those bodies. Work item 11.7 is still open. The phase is not complete.
+**Applied. Test 73 is not green.** Andrew refreshed SQLite, DB2, and PostgreSQL. Diagnostics `test_73_20261007_173712`: SQLite 178/178, PostgreSQL 178/178, DB2 177 pass and 1 fail. The failure is `FAIL_bal_parents` SQL0104N on `WITH RECURSIVE`. `argent_2022.lua` 1.0.2 stores `WITH` for DB2. The stored query stays the previous text until migration 2022 is loaded again. Work item 11.7 is open. Tests 32–39 were not reported. The phase is not complete.
 
 ### Accomplished
 
@@ -901,11 +901,13 @@ Test 31, Test 98, payload regenerate, tests 32–39, then the MCP round-trip. Te
 | `argent_2036.lua` | `UpsertTaxCode`, `UpsertTaxRate` | 536 | 6 |
 | `argent_2037.lua` | `GetTransaction`, `ListTransactions`, `QueryBalances` | 672 | 7 |
 
-The Argent README now lists 38 files, 241 statements, and 38 diagrams. No payload regenerate, no apply, and no tests 32–39 were run.
+The Argent README now lists 38 files, 241 statements, and 38 diagrams. Andrew said everything is applied. Tests 32–39 were not reported.
+
+Test 73 is `tests/test_73_argent_mcp.sh` 1.0.2 with `tests/lib/argent_mcp_helpers.sh` 1.0.2. Diagnostics `test_73_20261007_173712` recorded SQLite 178/178, PostgreSQL 178/178, and DB2 177/178. MySQL, MariaDB, Firebird, YugabyteDB, and MSSQL on that run still report the first-apply column names.
 
 ### Lessons learned
 
-- A Lua nil cannot bind SQL NULL. `H.query` omits nil table values. Optional integers use `CASE WHEN :FLAG = 0 THEN NULL ELSE :VALUE END`, and each name appears once in that statement. Empty text uses `NULLIF(:NAME, '')`.
+- A Lua nil cannot bind SQL NULL. Hydrogen omits nil table values. Each parameter name appears once per statement. Optional integers are `CASE WHEN CAST(:FLAG AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:VALUE AS ${INTEGER}) END`. Empty text is `NULLIF(CAST(:NAME AS ${TEXT}), '')`. A bare `NULL` is SQL0418N on DB2 and `text` on PostgreSQL. An uncast `NULLIF` against `''` is SQL0302N on DB2 when the value is non-empty. See **Portable named parameters** in [`GUIDE.md`](/docs/He/GUIDE.md).
 - The actor is `tonumber(h.user_id) or tonumber(h.sub) or 0`. MCP dispatch injects `sub`. Conduit injects `user_id`.
 - `UpsertLedger` posts the opening transaction on create of a posting ledger. A non-posting create stores `opening_balance_cents` and leaves `opening_txn_id` null. A zero balance is one line of 0. A nonzero balance requires `offset_ledger_id` in the same organization, the same currency, and posting. The new ledger receives the supplied amount. The offset receives the negation. An update does not post another opening.
 - `PostTransaction` stores caller amounts as given. Kind 6, 7, and 8 are rejected. Status on create is 1, 2, or 3, default 3. Kind defaults to 11. After tax companions, each currency sums to 0.
@@ -918,13 +920,19 @@ The Argent README now lists 38 files, 241 statements, and 38 diagrams. No payloa
 - Write tools build `collection` themselves. `AddAttachment` stores `{}`. CalDAV secrets are not copied from the caller.
 - `AddTags` finds a tag by name and organization. A null organization is global. An existing link is returned. `RemoveTags` deletes the link and leaves the tag.
 - Reverse deletes `scripts` rows by `group_name` and `script_name`, then flips this migration's bookkeeping type. It does not delete a QueryRef.
+- Test 73 is the record of work item 11.7. A tool error is `structuredContent.ok` false with `structuredContent.code`. The JSON-RPC `error` field stays null, and HTTP status stays 200. Success is `structuredContent.ok` true. The writing turn did not run the test: the payload does not yet contain these scripts, and AutoMigration on the demo connections would apply them. SQLite copies `hydrodemo.sqlite` first. `partial_write` needs a failed insert after validation, so Test 73 does not force it.
 - The ledger-write group did not fit in 1000 lines, so `UpsertLedger` is `argent_2032.lua` and terms plus contacts are `argent_2033.lua`. Reads landed in `argent_2037.lua`.
+- `organizations` and `ledgers` on the already-applied schemas kept `status_a200`, `ledger_type_a201`, and `status_a202`. The files and the tools use `status_a2000`, `ledger_type_a2001`, and `status_a2002`. The watermark skips migration 2000 and 2001, so a later apply does not rename those columns. A fresh SQLite copy creates the current names and Test 73 passes there.
+- `validate_config_file` already closes its subtest. A second `print_result` in the same subtest prints `extra PASS/FAIL without TEST`.
+- In jq, `|` binds tighter than `and`. Each comparison in a compound filter needs its own parentheses.
+- `QueryBalances` checks `rate_source` when `include_parents` is set. The posting cases need the 500 bps rate to be the latest row on or before `txn_on`.
+- QueryRef 2001 stores `WITH` on DB2 and SQL Server. The other engines store `WITH RECURSIVE`. `WITH RECURSIVE` on DB2 is SQL0104N (`FAIL_bal_parents`). The keyword is `cfg.WITH_RECURSIVE` in `argent_2022.lua` 1.0.2. It is not a macro. See **Recursive common table expressions** in [`GUIDE.md`](/docs/He/GUIDE.md).
 
 ### Handoff
 
-Phase 12 adds `confirm_tokens` and the recon and edit tools. It leaves these scripts in place and calls them. A reconciled edit without a token must not write. Phase 12 waits until Andrew reports tests 32–39 and the MCP round-trip: create an organization, two ledgers, one balanced transaction, and one unbalanced transaction rejected.
+Phase 12 adds `confirm_tokens` and the recon and edit tools. It leaves these scripts in place and calls them. A reconciled edit without a token must not write. Phase 12 waits until Test 73 is green on all eight engines.
 
-Regenerate the payload before tests 32–39. The apply is forward from migration 2029. His confirmed high-water is 2029. Test 71 reads the migration files and does not need that payload.
+Andrew refreshed SQLite, DB2, and PostgreSQL after the 1.0.1 casts. Diagnostics `test_73_20261007_173712`: SQLite 178/178, PostgreSQL 178/178, DB2 177/178. The one DB2 failure is `FAIL_bal_parents` SQL0104N, unexpected token `req` after `WITH RECURSIVE`. `argent_2022.lua` 1.0.2 stores `WITH` on DB2 and SQL Server, and `WITH RECURSIVE` on the other engines. The stored QueryRef 2001 row stays the 1.0.1 text until the payload is rebuilt and DB2 loads migration 2022 again. A schema that already applied 2022 skips the new file. Tests 32–39 were not reported. MySQL, MariaDB, Firebird, YugabyteDB, and MSSQL on that run still have `status_a200`, `ledger_type_a201`, and `status_a202`. Work item 11.7 stays open.
 
 ---
 
@@ -1147,5 +1155,21 @@ Andrew reported Test 71 completed. Diagnostics `test_71_20261007_113705_48315998
 ### 2026-10-07 — Phase 11 scripts written
 
 `argent_2030.lua` through `argent_2037.lua` install the Argent MCP scripts. Luacheck reported 0 warnings. SQLite expansion left no `${...}` in the stored bodies, and `luac -p` accepted them. The files are not applied. Work item 11.7 stays open: Andrew regenerates the payload, runs tests 32–39, and records the MCP round-trip. Phase 12 has not started. The confirmed apply high-water remains migration 2029.
+
+### 2026-10-07 — Test 73 written
+
+Andrew asked for Test 73 on all eight engines, covering every Argent MCP tool and the variants each tool returns. `tests/test_73_argent_mcp.sh` 1.0.0, `tests/lib/argent_mcp_helpers.sh` 1.0.1, and eight `hydrogen_test_73_argent_mcp_*.json` configs are in the tree. Web ports are 15730–15736 and 15738. MCP ports are 15740–15746 and 15748. Payload is `acuranzo+argent` with AutoMigration true on the demo connections. Test 92 (`mks`) exited 0: 205 shell files, 0 fail, 25.467s. The test was not run. Work item 11.7 stays open. Phase 12 has not started. The confirmed apply high-water remains migration 2029.
+
+### 2026-10-07 — Test 73 run, seven engines blocked on old column names
+
+Andrew said everything is applied. `demo.queries` has argent 2000–2037 at type 1003. Test 73 1.0.0 printed `extra PASS/FAIL without TEST` on each config and listed every prereq miss. Version 1.0.2 removes that warning and reports the root tool error. The 15:29 run is 14 passed, 8 failed, 53.105s. SQLite passed 178 cases. PostgreSQL, MySQL, MariaDB, DB2, Firebird, YugabyteDB, and MSSQL fail in `UpsertOrganization` because `organizations.status_a200`, `ledgers.ledger_type_a201`, and `ledgers.status_a202` are still the first-apply names. The tools use `status_a2000`, `ledger_type_a2001`, and `status_a2002`. Those columns were not renamed. Work item 11.7 stays open. Phase 12 has not started.
+
+### 2026-10-07 — PostgreSQL and DB2 reloads still fail Test 73
+
+Andrew fully reset PostgreSQL and DB2. Diagnostics `test_73_20261007_164151`: both engines pass 65 and fail 113, with 100 of the failures waiting on a ledger. PostgreSQL rejects `CASE WHEN :USE_PARENT = 0 THEN NULL ELSE :PARENT_ID END` because the expression is `text`. DB2 returns SQL0418N for that `NULL` and SQL0302N for `NULLIF(:ORG_SUMMARY, '')` when the summary is `hello`. The 1.0.1 edits cast those parameters in `argent_2014.lua`, `argent_2022.lua`, and `argent_2030.lua` through `argent_2037.lua`. [`GUIDE.md`](/docs/He/GUIDE.md) now has **Portable named parameters**. The stored rows do not change until he loads these files again. Work item 11.7 stays open. Phase 12 has not started.
+
+### 2026-10-07 — DB2 rollup rejects WITH RECURSIVE
+
+Andrew refreshed SQLite, DB2, and PostgreSQL. Diagnostics `test_73_20261007_173712`: SQLite 178/178, PostgreSQL 178/178, DB2 177 pass and 1 fail (`FAIL_bal_parents`, SQL0104N, unexpected token `req` after `WITH RECURSIVE`). `argent_2022.lua` 1.0.2 stores `WITH` for DB2 and SQL Server. [`GUIDE.md`](/docs/He/GUIDE.md) records that under **Recursive common table expressions**. The stored QueryRef 2001 row stays the 1.0.1 text until the payload is rebuilt and DB2 loads migration 2022 again. MySQL, MariaDB, Firebird, YugabyteDB, and MSSQL on that run still report the first-apply column names. Tests 32–39 were not reported. Work item 11.7 stays open. Phase 12 has not started.
 
 *End of Argent plan.*

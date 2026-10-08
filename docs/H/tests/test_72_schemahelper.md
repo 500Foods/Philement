@@ -3,10 +3,18 @@
 ## Overview
 
 Test 72 validates the SchemaHelper interactive TUI front-end and its
-underlying queue/packet/apply/connect modules against checked-in fixture
-data (no live database required). It exercises the full module stack:
+underlying queue/packet/apply/connect modules. Earlier subtests use
+checked-in fixtures and do not connect. The last subtest is a live
+`schematooltest` round trip on the eight Test 40 demo databases.
+It exercises the full module stack:
 `schemahelper_queue`, `schemahelper_packet`, `schemahelper_apply`,
 `schemahelper_connect`, and `schemahelper_qutil`.
+
+Sixteen wrappers, picker order, test block then demo block:
+`schematool_{postgresql,mysql,sqlite,db2,mariadb,firebird,yugabytedb,mssql}_test.sh`
+and the same eight stems with `_demo.sh`. The live subtest calls the
+eight `_demo` wrappers. Sidecars are
+`schemahelper_<design>_<engine>_<role>.json` (role `test` or `demo`).
 
 ## Purpose
 
@@ -33,7 +41,7 @@ data (no live database required). It exercises the full module stack:
 - **Test Name**: SchemaHelper
 - **Test Abbreviation**: SCH
 - **Test Number**: 72
-- **Version**: 1.2.0
+- **Version**: 1.7.1
 
 ## What It Does
 

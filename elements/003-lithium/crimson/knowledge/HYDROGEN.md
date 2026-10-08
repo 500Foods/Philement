@@ -36,7 +36,7 @@ Hydrogen is currently designed for technical users who:
 - [**Mail Guide**](/docs/H/MAIL_GUIDE.md) - Mail Relay, templates, rewrites, and Lua mail handling
 - [**Examples**](/docs/H/EXAMPLES.md) - Practical end-to-end examples for common Hydrogen tasks
 - [**SchemaTool**](/docs/H/tools/SCHEMATOOL.md) - Migration drift auditor (Lua migrations vs live `queries`)
-- [**SchemaHelper**](/docs/H/tools/SCHEMAHELPER.md) - Interactive SchemaTool front-end (review queue + packets); active plan: [`SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md); v2 archive: [`SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md)
+- [**SchemaHelper**](/docs/H/tools/SCHEMAHELPER.md) - Interactive SchemaTool front-end (review queue + packets); plan (complete 2026-10-07): [`SCHEMA_V2_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md); v2 archive: [`SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md)
 - [**Databases**](/docs/H/DATABASES.md) - Considerations around using PostgreSQL, MySQL/MariaDB, SQLite, and DB2
 - [**AI Instructions**](/docs/H/INSTRUCTIONS.md) - Development guide optimized for AI assistance
 - [**AI Prompts**](/docs/H/PROMPTS.md) - Development guide optimized for AI assistance
@@ -112,7 +112,7 @@ Hydrogen is currently designed for technical users who:
 - [**Notifications / Subscribers**](/docs/H/plans/NOTIFICATIONS_PLAN.md) - Web Push backend plan (Phase 0 draft; after NATS)
 - [**Firebird**](/docs/H/plans/FIREBIRD.md) - Firebird engine; replace CockroachDB slot; Firebase teardown
 - [**MSSQL**](/docs/H/plans/complete/MSSQL_COMPLETE.md) - MS SQL Server engine (Lookup 030 key 5). Linux container under Podman. Phases 0-9 complete 2026-10-07
-- [**Argent**](/docs/H/plans/ARGENT_PLAN.md) - Bookkeeping pack on the Acuranzo database (`argent_2xxx`). Phases 0–16. Phases 1–3 applied 2026-10-07. Phase 9 closed on the 2029 apply. Phase 10 closed on Test 71 3.2.0 (1490 passed, 0 failed). Phase 11 is written and not applied (`argent_2030.lua`–`argent_2037.lua`). `H.http.request` is Phase 13.
+- [**Argent**](/docs/H/plans/ARGENT_PLAN.md) - Bookkeeping pack on the Acuranzo database (`argent_2xxx`). Phases 0–16. Phases 1–3 applied 2026-10-07. Phase 9 closed on the 2029 apply. Phase 10 closed on Test 71 3.2.0 (1490 passed, 0 failed). Phase 11 scripts are applied (`argent_2030.lua`–`argent_2037.lua`). Test 73 passed on SQLite and PostgreSQL. DB2 still fails the parent rollup until migration 2022 is loaded again. Work item 11.7 is open. `H.http.request` is Phase 13.
 - [**Auth**](/docs/H/plans/complete/AUTH_PLAN_COMPLETE.md) - Implementation plan for Auth subsystem (historical)
 - [**MCP**](/docs/H/plans/complete/MCP_COMPLETE.md) - MCP server subsystem (Phases 0–14)
 - [**Conduit REST API**](/docs/H/core/subsystems/conduit/conduit_api.md) - Database query by reference

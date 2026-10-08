@@ -10,6 +10,7 @@
 #   EMIT_EXPECTED, EMIT_EXPECTED_PATH, DRY_DISK, FULL_AUDIT,
 #   CATALOG_AUDIT, DB_JSON, CAT_LIVE_JSON, EXPECTED_JSON,
 #   CAT_EXPECTED_JSON, CAT_DATA_JSON, CAT_FINDINGS_JSON,
+#   ROWS_EXPECTED_JSON, ROWS_FINDINGS_JSON,
 #   DATA_JSON, LAYOUT_JSON, DISK_JSON, FINDINGS_JSON,
 #   DB_DIR, LUA_DIR, MIGRATIONS, DESIGN, ENGINE, SCHEMA, DATABASE,
 #   HOST, PORT, USER_NAME, PASSWORD_ENV, FROM_REF, TO_REF,
@@ -347,6 +348,12 @@ schematool_run_catalog_audit() {
         cp "${CAT_LIVE_JSON}" "${OUT_DIR}/catalog_live.json"
         cp "${CAT_DATA_JSON}" "${OUT_DIR}/catalog_checklist.json"
         cp "${CAT_FINDINGS_JSON}" "${OUT_DIR}/catalog_findings.json"
+        if [[ -f "${ROWS_FINDINGS_JSON}" ]]; then
+            cp "${ROWS_FINDINGS_JSON}" "${OUT_DIR}/rows_findings.json"
+        fi
+        if [[ -f "${ROWS_EXPECTED_JSON}" ]]; then
+            cp "${ROWS_EXPECTED_JSON}" "${OUT_DIR}/rows_expected.json"
+        fi
         if [[ -f "${DB_JSON}" ]]; then
             cp "${DB_JSON}" "${OUT_DIR}/db_metadata.json"
         fi

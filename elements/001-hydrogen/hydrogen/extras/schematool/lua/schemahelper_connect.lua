@@ -2,6 +2,8 @@
 -- Resolve wrapper credentials and ping the live DB. Never return passwords.
 --
 -- CHANGELOG
+-- 0.6.10 - 2026-10-07 - db2 exec_sql stops on error and returns rows
+-- 0.6.9 - 2026-10-07 - mysql exec ignores client cnf; UTF-8 on the wire
 -- 0.6.8 - 2026-10-07 - Firebird exec_sql runs inside SET TRANSACTION
 -- 0.6.7 - 2026-10-07 - Picker blurb takes a test or demo role
 -- 0.6.6 - 2026-10-07 - MariaDB is its own family; schema demo; no CANVAS_DB
@@ -697,6 +699,7 @@ run_sql() {
             if [ -n "$password_env" ]; then
                 eval "export PGPASSWORD=\"\${$password_env}\""
             fi
+            export PGCLIENTENCODING=UTF8
             {
                 printf '%s\n' 'BEGIN;'
                 cat "$sql_file"
@@ -716,7 +719,8 @@ run_sql() {
                 printf '%s\n' 'START TRANSACTION;'
                 cat "$sql_file"
                 printf '%s\n' 'COMMIT;'
-            } | mysql -h "$host" -P "$port" -u "$user" "$db"
+            } | mysql --no-defaults --default-character-set=utf8mb4 \
+                -h "$host" -P "$port" -u "$user" "$db"
             ;;
         mariadb)
             if [ -n "$password_env" ]; then
@@ -730,7 +734,8 @@ run_sql() {
                 printf '%s\n' 'START TRANSACTION;'
                 cat "$sql_file"
                 printf '%s\n' 'COMMIT;'
-            } | mariadb -h "$host" -P "$port" -u "$user" "$db"
+            } | mariadb --no-defaults --default-character-set=utf8mb4 \
+                -h "$host" -P "$port" -u "$user" "$db"
             ;;
         sqlite)
             {
@@ -764,7 +769,7 @@ run_sql() {
                 cat "$sql_file"
                 printf '%s\n' 'COMMIT;'
                 printf '%s\n' 'CONNECT RESET;'
-            } | db2 +c -t +o
+            } | db2 +c -s -t -o
             ;;
         mssql)
             command -v podman >/dev/null || { echo podman not found; exit 1; }

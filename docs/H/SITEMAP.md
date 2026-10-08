@@ -139,7 +139,7 @@ This file serves as a sitemap for all Markdown (.md) files in the repository, or
 - [AUTH_FINALE.md](/docs/H/plans/AUTH_FINALE.md): Auth finale (active P0 plan — OIDC, Keycloak, register, MFA, IdP leftovers)
 - [NOTIFICATIONS_PLAN.md](/docs/H/plans/NOTIFICATIONS_PLAN.md): Web Push / Subscribers subsystem plan (Phase 0 draft)
 - [FIREBIRD.md](/docs/H/plans/FIREBIRD.md): Firebird engine; retire CockroachDB slot; Firebase teardown
-- [SCHEMA_V2_PLAN.md](/docs/H/plans/SCHEMA_V2_PLAN.md): SchemaTool / SchemaHelper v2 — eight engines, test and demo wrappers, structural apply, migration-owned default rows
+- [SCHEMA_V2_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md): SchemaTool / SchemaHelper v2 — eight engines, test and demo wrappers, structural apply, migration-owned default rows (complete 2026-10-07)
 - [FIREBASE.md](/docs/H/plans/FIREBASE.md): Stub — Firestore plan superseded
 - [MAILRELAY_PLAN.md](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md): Mail Relay subsystem implementation plan
 - [PERSIST_PLAN_COMPLETE.md](/docs/H/plans/complete/PERSIST_PLAN_COMPLETE.md): Mail Relay Persist MySQL/MariaDB fetch SIGSEGV — closed 2026-09-04 (TODO 12d)
@@ -362,6 +362,7 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [test_43_scripting.md](/docs/H/tests/test_43_scripting.md): Scripting subsystem end-to-end testing
 - [test_46_conduit_script.md](/docs/H/tests/test_46_conduit_script.md): Conduit script invoke blackbox (JWT + Api.Echo)
 - [test_47_mcp.md](/docs/H/tests/test_47_mcp.md): MCP Streamable HTTP blackbox (JWT + Mcp.Echo)
+- [test_73_argent_mcp.md](/docs/H/tests/test_73_argent_mcp.md): Argent MCP tools on eight engines (ports 1573x / 1574x)
 - [test_62_nats.md](/docs/H/tests/test_62_nats.md): NATS client blackbox (local nats-server, ports 5620–5629)
 - [test_50_conduit_query.md](/docs/H/tests/test_50_conduit_query.md): Single public query endpoint testing
 - [test_51_conduit_queries.md](/docs/H/tests/test_51_conduit_queries.md): Conduit multiple queries endpoint testing

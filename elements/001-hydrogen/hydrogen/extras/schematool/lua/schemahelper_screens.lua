@@ -6,6 +6,7 @@
 -- explore cursor + shared hotspot state; they are passed into build_screen.
 --
 -- CHANGELOG
+-- 0.6.7 - 2026-10-07 - Confirm screen names the default-row statement
 -- 0.6.6 - 2026-10-07 - Confirm screen names the dialect action and the refusal
 -- 0.6.5 - 2026-09-09 - Dashboard accepted list + [X] un-accept
 -- 0.6.3 - 2026-09-08 - SchemaTool eighths bar + issue list
@@ -433,6 +434,15 @@ local function catalog_action(finding)
         end
         return "DROP TABLE"
     end
+    if kind == "row_missing" then
+        return "INSERT"
+    end
+    if kind == "row_diff" then
+        return "UPDATE"
+    end
+    if kind == "row_present" then
+        return "DELETE"
+    end
     return kind
 end
 
@@ -447,9 +457,18 @@ local function apply_content(self)
         and finding.class:find("^catalog") ~= nil
     local is_drop = is_catalog and finding.kind == "dropped"
     local is_create = is_catalog and finding.kind == "table"
+    local row_kind = finding and finding.kind or ""
+    local is_default = row_kind == "row_missing" or row_kind == "row_diff"
+        or row_kind == "row_present"
     local title = "Update this field on the database"
     if is_orphan then
         title = "Delete this orphan from the database"
+    elseif is_default and row_kind == "row_missing" then
+        title = "Insert this default row"
+    elseif is_default and row_kind == "row_diff" then
+        title = "Update migration-owned columns on this row"
+    elseif is_default and row_kind == "row_present" then
+        title = "Delete this migration-owned row"
     elseif is_row then
         title = "Replace code, name, and summary"
     elseif is_drop then
@@ -465,13 +484,17 @@ local function apply_content(self)
     }
     if finding then
         lines[#lines + 1] = { "  finding   " .. (finding.id or ""), ATTR.PATH }
-        if is_catalog then
+        if is_catalog or is_default then
             lines[#lines + 1] = {
                 "  table     " .. (finding.object or ""), ATTR.PATH }
             if finding.column and finding.column ~= ""
                 and finding.column ~= "-" then
+                local label = "  column    "
+                if is_default then
+                    label = "  key       "
+                end
                 lines[#lines + 1] = {
-                    "  column    " .. finding.column, ATTR.PATH }
+                    label .. finding.column, ATTR.PATH }
             end
             lines[#lines + 1] = {
                 "  action    " .. catalog_action(finding), ATTR.PATH }
@@ -500,6 +523,11 @@ local function apply_content(self)
     elseif is_create then
         lines[#lines + 1] = {
             "This CREATE adds a table from the fold.",
+            ATTR.ERR,
+        }
+    elseif is_default then
+        lines[#lines + 1] = {
+            "This statement changes only the named key.",
             ATTR.ERR,
         }
     elseif is_catalog then

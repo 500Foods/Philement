@@ -4,6 +4,7 @@
 -- modules under lua/ (schemahelper_qutil, _qstate, _qload, _qdecode).
 --
 -- CHANGELOG
+-- 0.6.9 - 2026-10-07 - Default-row and unkeyed DML review text
 -- 0.6.8 - 2026-10-07 - Dialect apply text; whole-row metadata does not replay DDL
 -- 0.6.7 - 2026-10-07 - Queue type and dropped; info extras stay off the review list
 -- 0.6.6 - 2026-10-07 - Pass sidecar role through to the state path
@@ -73,6 +74,7 @@ function M.build(opts)
     end
     if track == "catalog" or track == "both" then
         cat_counts = L.load_catalog(out_dir .. "/catalog_findings.json", tmp, all)
+        L.load_rows(out_dir .. "/rows_findings.json", tmp, all)
     end
 
     os.execute('rm -rf "' .. tmp .. '"')
@@ -243,8 +245,36 @@ local function sides_of(finding)
     return left, right, lname, rname
 end
 
+local function explain_default(finding)
+    local kind = finding.kind or ""
+    if kind ~= "row_missing" and kind ~= "row_diff"
+        and kind ~= "row_present" and kind ~= "unkeyed" then
+        return nil
+    end
+    local lines = {}
+    lines[#lines + 1] = "  table:     " .. (finding.object or "")
+    if finding.column and finding.column ~= "" and finding.column ~= "-" then
+        lines[#lines + 1] = "  key:       " .. finding.column
+    end
+    if kind == "row_missing" then
+        lines[#lines + 1] = "  apply:     [U]pdate Database — INSERT this default row"
+    elseif kind == "row_diff" then
+        lines[#lines + 1] = "  apply:     [U]pdate Database — UPDATE migration-owned columns"
+    elseif kind == "row_present" then
+        lines[#lines + 1] = "  apply:     [U]pdate Database — DELETE this key only"
+    else
+        lines[#lines + 1] = "  apply:     refused — run Hydrogen AutoMigration"
+    end
+    lines[#lines + 1] = "  confirm:   table.key"
+    return lines
+end
+
 local function explain_check(finding)
     local lines = {}
+    local row_lines = explain_default(finding)
+    if row_lines then
+        return row_lines
+    end
     if finding.object and finding.object ~= "" then
         lines[#lines + 1] = "  check:     catalog expected vs live object"
         lines[#lines + 1] = "  table:     " .. finding.object
@@ -885,6 +915,10 @@ local function u_label(u_reason, finding)
     end
     if finding and finding.kind == "orphan" then
         return "  [U]pdate Database            (delete orphan, type REF)"
+    end
+    if finding and (finding.kind == "row_missing"
+        or finding.kind == "row_diff" or finding.kind == "row_present") then
+        return "  [U]pdate Database            (default row, type table.key)"
     end
     if finding and finding.class
         and finding.class:find("^catalog") then

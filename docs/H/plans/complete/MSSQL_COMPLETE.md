@@ -1203,7 +1203,7 @@ full design; `mks`; markdown exists.
 Operator tools talk TDS/ODBC, not `psql`.
 
 SchemaTool, SchemaHelper, and the flush path (items 6.1–6.3) are
-specified in [`SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md)
+specified in [`SCHEMA_V2_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md)
 Phase 2. Do not start a second MSSQL adapter in this file. Item 6.4
 stays in this plan's Phase 7.
 
@@ -1235,14 +1235,14 @@ mssql SchemaTool wrapper does not call `psql` or `isql-fb`.
 | --- | --- |
 | **State** | complete |
 | **Date** | 2026-10-07 |
-| **Result** | Items 6.1–6.3 done in [`SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md) Phase 2. Live `demoms` metadata audit exit 3 and `--catalog --only-tables accounts` exit 2. Item 6.4 stays in Phase 7 as `verify_tx_mssql`. |
+| **Result** | Items 6.1–6.3 done in [`SCHEMA_V2_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md) Phase 2. Live `demoms` metadata audit exit 3 and `--catalog --only-tables accounts` exit 2. Item 6.4 stays in Phase 7 as `verify_tx_mssql`. |
 | **Variances** | 6.4 ran during Phase 7, before 6.1–6.3. The flush drops user tables and views in `testms` and `demoms`. It does not drop database `hydrotst`. |
 
 ### Working Log
 
 - **2026-09-30** Not started. The Test 39 file-creation notes copied here were removed. That work is Phase 5 items 5.1–5.3.
 - **2026-09-30** Operator asked to run the full suite before SchemaTool. Item 6.4 is the only Phase 6 piece on that path. It moved to Phase 7. 6.1–6.3 stay here.
-- **2026-10-07** Items 6.1–6.3 are specified in [`SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md) Phase 2. Check them only after that phase's exit gate.
+- **2026-10-07** Items 6.1–6.3 are specified in [`SCHEMA_V2_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md) Phase 2. Check them only after that phase's exit gate.
 - **2026-10-07** Exit gate met. `mks`, Test 98, and Test 72 passed. `schematool_mssql.sh` on `philement-mssql` schema `demoms`: metadata exit 3 (386 clean refs, 2 orphan query rows), catalog exit 2 (`accounts.password_hash` nullable expected false, live true). Process list and out-dirs did not contain the SA password. `hydrogen_flush.sh` was not run.
 
 ### Lessons learned

@@ -116,6 +116,7 @@ tests/          Test framework
 - tests/test_44_exercise_native.sh - Memory exercise native RSS (5000 concurrent auth requests across 7 enabled databases; YugabyteDB disabled; port 5444; suite-parallel with test 41)
 - tests/test_46_conduit_script.sh - Conduit script invoke JWT blackbox (Api.Echo, 8 engines parallel)
 - tests/test_47_mcp.sh - MCP Streamable HTTP blackbox (JWT, Mcp.Echo, 8 engines; ports 1547x / 1548x)
+- tests/test_73_argent_mcp.sh - Argent MCP tools and validation variants (8 engines; ports 1573x / 1574x)
 - tests/test_48_mdns.sh - mDNS announcements
 - tests/test_50_conduit_query.sh - Single public query endpoint testing
 - tests/test_51_conduit_queries.sh - Conduit multiple queries endpoint testing

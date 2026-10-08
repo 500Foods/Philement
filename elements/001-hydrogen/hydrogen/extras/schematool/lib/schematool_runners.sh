@@ -9,9 +9,11 @@
 #   ENGINE, DB_DIR, LUA_DIR, MIGRATIONS, SCHEMA, FROM_REF, TO_REF,
 #   HOST, PORT, USER_NAME, DATABASE, PASSWORD_ENV, ONLY_TABLES,
 #   JQ, LUA, WORK_DIR, DB_JSON, EXPECTED_JSON, CAT_LIVE_JSON,
-#   CAT_EXPECTED_JSON, CAT_DATA_JSON, CAT_FINDINGS_JSON, ONLY_FAILURES
+#   CAT_EXPECTED_JSON, CAT_DATA_JSON, CAT_FINDINGS_JSON, ONLY_FAILURES,
+#   ROWS_EXPECTED_JSON, ROWS_LIVE_JSON, ROWS_FINDINGS_JSON, EXPECTED_JSON
 #
 # CHANGELOG
+# 1.6.0 - 2026-10-07 - Default-row extract; SQLite probe; other engines stay SQL-only
 # 1.5.0 - 2026-10-07 - Catalog default fold is disk expect; --fold-stored keeps type 1003
 # 1.4.0 - 2026-10-07 - MariaDB query and catalog adapters
 # 1.3.0 - 2026-10-07 - Firebird query and catalog adapters; empty schema
@@ -212,6 +214,49 @@ run_dump_catalog() {
     fi
 }
 
+run_rows_track() {
+    if [[ ! -f "${EXPECTED_JSON}" || ! -f "${CAT_EXPECTED_JSON}" ]]; then
+        echo "phase: rows skipped (no disk expect)" >&2
+        return 0
+    fi
+    local rows_args=(
+        --expected "${EXPECTED_JSON}"
+        --catalog "${CAT_EXPECTED_JSON}"
+        --engine "${ENGINE}"
+        --schema "${SCHEMA}"
+        --out "${ROWS_EXPECTED_JSON}"
+    )
+    if [[ -n "${ONLY_TABLES}" ]]; then
+        rows_args+=(--only-tables "${ONLY_TABLES}")
+    fi
+    if [[ -n "${FROM_REF}" ]]; then
+        rows_args+=(--from "${FROM_REF}")
+    fi
+    if [[ -n "${TO_REF}" ]]; then
+        rows_args+=(--to "${TO_REF}")
+    fi
+    "${LUA}" "${LUA_DIR}/schematool_rows.lua" "${rows_args[@]}" || return 1
+    local compare_args=(
+        --compare
+        --rows "${ROWS_EXPECTED_JSON}"
+        --findings-out "${ROWS_FINDINGS_JSON}"
+    )
+    if [[ "${ENGINE}" == "sqlite" && -n "${DATABASE}" && -f "${DATABASE}" ]]; then
+        if "${LUA}" "${LUA_DIR}/schematool_rows.lua" \
+            --probe-sqlite "${DATABASE}" \
+            --rows "${ROWS_EXPECTED_JSON}" \
+            --live-out "${ROWS_LIVE_JSON}"; then
+            compare_args+=(--live "${ROWS_LIVE_JSON}")
+        else
+            echo "Warning: default-row probe failed; unkeyed findings only" >&2
+            compare_args+=(--sql-only)
+        fi
+    else
+        compare_args+=(--sql-only)
+    fi
+    "${LUA}" "${LUA_DIR}/schematool_rows.lua" "${compare_args[@]}" || return 1
+}
+
 run_catalog_audit() {
     local fold_args=(
         --schema "${SCHEMA}"
@@ -286,5 +331,12 @@ run_catalog_audit() {
     if [[ "${ccmp_rc}" -ne 0 ]]; then
         echo "Error: catalog compare failed" >&2
         return 1
+    fi
+    set +e
+    run_rows_track
+    local rows_rc=$?
+    set -e
+    if [[ "${rows_rc}" -ne 0 ]]; then
+        echo "Warning: default-row track skipped" >&2
     fi
 }

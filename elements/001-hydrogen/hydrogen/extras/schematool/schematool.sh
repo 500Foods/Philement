@@ -8,6 +8,7 @@
 # Database/Lua operations, audit orchestration, and rendering are in lib/.
 #
 # CHANGELOG
+# 1.15.2 - 2026-10-07 - Catalog audit also writes rows_findings.json
 # 1.15.1 - 2026-10-07 - Detail text points type and dropped at SchemaHelper
 # 1.15.0 - 2026-10-07 - Catalog compares type; info extras are not failures
 # 1.14.0 - 2026-10-07 - --design plus-list; catalog folds disk forward DDL
@@ -40,7 +41,7 @@ LUA_DIR="${SCRIPT_DIR}/lua"
 DB_DIR="${SCRIPT_DIR}/db"
 LIB_DIR="${SCRIPT_DIR}/lib"
 
-VERSION="1.15.1"
+VERSION="1.15.2"
 
 # Source library modules (helpers, audit orchestration, rendering)
 # shellcheck source=extras/schematool/lib/schematool_init.sh # dependency checks + command lookups
@@ -604,6 +605,9 @@ CAT_EXPECTED_JSON="${WORK_DIR}/catalog_expected.json"
 CAT_LIVE_JSON="${WORK_DIR}/catalog_live.json"
 CAT_DATA_JSON="${WORK_DIR}/catalog_checklist.json"
 CAT_FINDINGS_JSON="${WORK_DIR}/catalog_findings.json"
+ROWS_EXPECTED_JSON="${WORK_DIR}/rows_expected.json"
+ROWS_LIVE_JSON="${WORK_DIR}/rows_live.json"
+ROWS_FINDINGS_JSON="${WORK_DIR}/rows_findings.json"
 
 DB_LABEL="${DATABASE:-none}"
 SCHEMA_LABEL="${SCHEMA:-.}"

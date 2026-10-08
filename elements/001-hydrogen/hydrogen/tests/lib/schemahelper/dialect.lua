@@ -201,6 +201,10 @@ for _, engine in ipairs(engines) do
         end
         if engine.id == 'firebird' then
             col_want = 'ALTER TABLE ' .. engine.q .. ' DROP gone_col;'
+        elseif engine.id == 'db2' then
+            col_want = 'ALTER TABLE ' .. engine.q
+                .. ' DROP COLUMN gone_col;\nCOMMIT;\nREORG TABLE '
+                .. engine.q .. ';'
         elseif engine.id ~= 'mssql' then
             col_want = 'ALTER TABLE ' .. engine.q
                 .. ' DROP COLUMN gone_col;'

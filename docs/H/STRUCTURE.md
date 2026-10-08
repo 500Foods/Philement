@@ -678,6 +678,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_51_conduit_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_51_conduit_queries.sh) - Conduit multiple queries endpoint testing (batch queries across 8 database engines)
 - [tests/test_46_conduit_script.sh](/elements/001-hydrogen/hydrogen/tests/test_46_conduit_script.sh) - Conduit script invoke blackbox (JWT POST/GET /api/conduit/script, Api.Echo, 8 engines)
 - [tests/test_47_mcp.sh](/elements/001-hydrogen/hydrogen/tests/test_47_mcp.sh) - MCP Streamable HTTP blackbox (JWT, Mcp.Echo, 8 engines, ports 1547x / 1548x)
+- [tests/test_73_argent_mcp.sh](/elements/001-hydrogen/hydrogen/tests/test_73_argent_mcp.sh) - Argent MCP tools and validation variants (8 engines, ports 1573x / 1574x)
 - [tests/test_52_conduit_auth_query.sh](/elements/001-hydrogen/hydrogen/tests/test_52_conduit_auth_query.sh) - Conduit authenticated single query endpoint testing (JWT-protected queries across 8 database engines)
 - [tests/test_53_conduit_auth_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_53_conduit_auth_queries.sh) - Conduit authenticated multiple queries endpoint testing (batch authenticated queries across 8 database engines)
 - [tests/test_54_conduit_alt_query.sh](/elements/001-hydrogen/hydrogen/tests/test_54_conduit_alt_query.sh) - Conduit alt single query endpoint testing (cross-database single queries with JWT authentication)
@@ -733,6 +734,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
   - [conduit_utils.sh](/elements/001-hydrogen/hydrogen/tests/lib/conduit_utils.sh) - Conduit endpoint testing utilities
   - [mailrelay_api_helpers.sh](/elements/001-hydrogen/hydrogen/tests/lib/mailrelay_api_helpers.sh) - Mail Relay API blackbox helpers (test_58)
   - [mcp_helpers.sh](/elements/001-hydrogen/hydrogen/tests/lib/mcp_helpers.sh) - MCP Streamable HTTP blackbox helpers (test_47)
+  - [argent_mcp_helpers.sh](/elements/001-hydrogen/hydrogen/tests/lib/argent_mcp_helpers.sh) - Argent MCP tool calls (test_73)
   - [schemahelper_helpers.sh](/elements/001-hydrogen/hydrogen/tests/lib/schemahelper_helpers.sh) - SchemaHelper blackbox helpers (test_72)
   - [terminal_utils.sh](/elements/001-hydrogen/hydrogen/tests/lib/terminal_utils.sh) - Terminal SQLite/HTTP/sysinfo helpers (test_26)
   - [terminal_ws_helpers.sh](/elements/001-hydrogen/hydrogen/tests/lib/terminal_ws_helpers.sh) - Terminal WebSocket helpers (test_26)
@@ -774,7 +776,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md) - SchemaTool implementation plan (complete)
 - [docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md) - SchemaHelper v2 implementation plan (complete)
 - [docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md) - SchemaHelper v1 implementation plan (complete)
-- [docs/H/plans/SCHEMA_V2_PLAN.md](/docs/H/plans/SCHEMA_V2_PLAN.md) - SchemaTool / SchemaHelper v2 plan (eight engines, wrappers, apply)
+- [docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md) - SchemaTool / SchemaHelper v2 plan (complete 2026-10-07)
 - [docs/H/plans/complete/MSSQL_COMPLETE.md](/docs/H/plans/complete/MSSQL_COMPLETE.md) - MS SQL Server engine plan (closed 2026-10-07)
 
 </details>

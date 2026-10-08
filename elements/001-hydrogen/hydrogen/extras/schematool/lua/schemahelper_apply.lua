@@ -3,6 +3,8 @@
 -- orphan DELETE, or one catalog DDL statement in the engine's dialect.
 --
 -- CHANGELOG
+-- 0.6.3 - 2026-10-07 - DB2 drop column reorgs; MSSQL default uses QUOTENAME
+-- 0.6.2 - 2026-10-07 - Default-row SQL sees guard_names
 -- 0.6.1 - 2026-10-07 - One default row: INSERT, UPDATE, or DELETE; token table.key
 -- 0.6.0 - 2026-10-07 - Dialect DDL, whole-row metadata, UTF-8 JSON literals
 -- 0.5.9 - 2026-10-07 - Type and dropped catalog findings stay review-only
@@ -522,6 +524,19 @@ local function row_literal(engine, col, spec, nums, nulls)
     return M.field_literal(engine, spec.text or "")
 end
 
+local function guard_names(engine, schema, table_name)
+    if not supported_engine(engine) then
+        return nil, "unsupported engine"
+    end
+    if schema and schema ~= "" and schema ~= "." and not safe_ident(schema) then
+        return nil, "unsafe schema"
+    end
+    if not safe_ident(table_name) then
+        return nil, "unsafe table"
+    end
+    return M.qualify_table(engine, schema, table_name)
+end
+
 local function build_row_sql(finding, engine, schema)
     local kind = finding.kind or ""
     local qualified, name_err = guard_names(engine, schema, finding.object or "")
@@ -742,19 +757,6 @@ function M.field_literal(engine, value)
     return sql_string_literal(value)
 end
 
-local function guard_names(engine, schema, table_name)
-    if not supported_engine(engine) then
-        return nil, "unsupported engine"
-    end
-    if schema and schema ~= "" and schema ~= "." and not safe_ident(schema) then
-        return nil, "unsafe schema"
-    end
-    if not safe_ident(table_name) then
-        return nil, "unsafe table"
-    end
-    return M.qualify_table(engine, schema, table_name)
-end
-
 local function column_type_text(out_dir, table_name, column, prefer)
     local typ = safe_type(prefer)
     if typ then
@@ -876,6 +878,7 @@ end
 local function mssql_drop_column(schema, table_name, column, qualified)
     local lines = {
         "DECLARE @schemahelper_dc sysname;",
+        "DECLARE @schemahelper_sql nvarchar(1000);",
         "SELECT @schemahelper_dc = dc.name",
         "  FROM sys.default_constraints AS dc",
         "  INNER JOIN sys.columns AS c",
@@ -890,9 +893,12 @@ local function mssql_drop_column(schema, table_name, column, qualified)
     end
     lines[#lines + 1] = "   AND c.name = N'" .. column .. "';"
     lines[#lines + 1] = "IF @schemahelper_dc IS NOT NULL"
-    lines[#lines + 1] = "    EXEC(N'ALTER TABLE " .. qualified
-        .. " DROP CONSTRAINT ['"
-        .. " + REPLACE(@schemahelper_dc, N']', N']]') + N']');"
+    lines[#lines + 1] = "BEGIN"
+    lines[#lines + 1] = "    SET @schemahelper_sql = N'ALTER TABLE "
+        .. qualified .. " DROP CONSTRAINT ' +"
+    lines[#lines + 1] = "        QUOTENAME(@schemahelper_dc);"
+    lines[#lines + 1] = "    EXEC sp_executesql @schemahelper_sql;"
+    lines[#lines + 1] = "END"
     lines[#lines + 1] = "ALTER TABLE " .. qualified
         .. " DROP COLUMN " .. column .. ";"
     return table.concat(lines, "\n")
@@ -904,6 +910,11 @@ local function drop_column_sql(engine, schema, table_name, column, qualified)
     end
     if engine == "mssql" then
         return mssql_drop_column(schema, table_name, column, qualified)
+    end
+    if engine == "db2" then
+        return string.format(
+            "ALTER TABLE %s DROP COLUMN %s;\nCOMMIT;\nREORG TABLE %s;",
+            qualified, column, qualified)
     end
     return string.format(
         "ALTER TABLE %s DROP COLUMN %s;", qualified, column)

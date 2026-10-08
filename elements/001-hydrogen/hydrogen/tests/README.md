@@ -105,6 +105,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_55_conduit_alt_queries.sh](/docs/H/tests/test_55_conduit_alt_queries.md)**: Cross-database batch query with override
 - **[test_60_performance.sh](/docs/H/tests/test_60_performance.md)**: Performance benchmarking across databases
 - **[test_70_installer.sh](/docs/H/tests/test_70_installer.md)**: Standalone installer building test
+- **[test_73_argent_mcp.sh](/docs/H/tests/test_73_argent_mcp.md)**: Argent MCP tools and validation variants (8 engines, ports 1573x / 1574x)
 
 ### Static Analysis & Code Quality Tests
 

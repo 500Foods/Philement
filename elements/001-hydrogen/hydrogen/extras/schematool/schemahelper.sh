@@ -4,6 +4,7 @@
 # Lua 5.5 TUI over extras/schematool. Default is review-only.
 #
 # CHANGELOG
+# 0.6.16 - 2026-10-07 - Default-row apply; confirm token is table.key; SchemaTool 1.15.2
 # 0.6.15 - 2026-10-07 - Dialect DDL apply; whole-row metadata; SchemaTool 1.15.1
 # 0.6.14 - 2026-10-07 - SchemaTool 1.15.0; type and dropped stay review-only
 # 0.6.13 - 2026-10-07 - SchemaTool 1.14.0; wrappers cover acuranzo+argent
@@ -58,8 +59,8 @@ SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
 LUA_APP="${SCRIPT_DIR}/schemahelper.lua"
 SCHEMATOOL_SH="${SCRIPT_DIR}/schematool.sh"
 
-VERSION="0.6.15"
-SCHEMATOOL_VERSION="1.15.1"
+VERSION="0.6.16"
+SCHEMATOOL_VERSION="1.15.2"
 
 print_help() {
     cat <<EOF
@@ -95,8 +96,9 @@ Options:
                           does not replay DDL). One field stays REF.field.
                           Orphan delete is REF. Catalog create or alter is
                           object or object.column. A drop is DROP object or
-                          DROP object.column. SQLite nullability, type, and
-                          DROP COLUMN stay refused. Live extras are not
+                          DROP object.column. A default row is table.key.
+                          Unkeyed DML stays refused. SQLite nullability, type,
+                          and DROP COLUMN stay refused. Live extras are not
                           offered. Also enables [M] Promote into Helium.
   --keep-work-dir        Do not remove the auto-generated work-dir on exit
   --help, -h             This help

@@ -3,14 +3,23 @@
 # Test: SchemaHelper Phase 72 Integration
 # Exercise schemahelper_queue.lua, schemahelper_packet.lua,
 # schemahelper_apply.lua, schemahelper_connect.lua and
-# schemahelper_qutil.lua against checked-in fixture findings
-# (no live DB required; brotli-only paths guarded).
+# schemahelper_qutil.lua against checked-in fixture findings.
+# The last subtest is a live schematooltest round trip on the eight
+# Test 40 demo databases. Earlier subtests do not connect.
+# Sixteen wrappers, picker order, test block then demo block:
+#   schematool_{postgresql,mysql,sqlite,db2,mariadb,firebird,yugabytedb,mssql}_test.sh
+#   schematool_{postgresql,mysql,sqlite,db2,mariadb,firebird,yugabytedb,mssql}_demo.sh
+# Sidecar: schemahelper_<design>_<engine>_<role>.json (role test or demo).
+# The live subtest calls the eight _demo wrappers.
 # Lua fixtures live in tests/lib/schemahelper/.
 
 # FUNCTIONS
 # (Helpers live in tests/lib/schemahelper_helpers.sh)
 
 # CHANGELOG
+# 1.7.1 - 2026-10-07 - Name the sixteen wrappers and the sidecar role suffix
+# 1.7.0 - 2026-10-07 - Live schematooltest round trip on eight Test 40 databases
+# 1.6.0 - 2026-10-07 - Contacts default rows; extra person stays out of the queue
 # 1.5.0 - 2026-10-07 - Dialect DDL text for eight engines; no execution
 # 1.4.0 - 2026-10-07 - Disk-fold column, type, dropped, and info extras
 # 1.3.0 - 2026-10-07 - Test and demo sidecars do not share a file
@@ -42,7 +51,7 @@ TEST_NAME="SchemaHelper"
 TEST_ABBR="SCH"
 TEST_NUMBER="72"
 TEST_COUNTER=0
-TEST_VERSION="1.5.0"
+TEST_VERSION="1.7.1"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -156,6 +165,18 @@ schemahelper_lua_subtest \
     "catalog_shape.lua" \
     "Disk column, type, dropped, and info extras" \
     "Catalog shape fixture failed"
+
+schemahelper_lua_subtest \
+    "Default rows and extra person" \
+    "rows.lua" \
+    "Default rows queue the stale and missing keys" \
+    "Default-row fixture failed"
+
+schemahelper_lua_subtest \
+    "Live round trip on eight Test 40 databases" \
+    "roundtrip.lua" \
+    "schematooltest create, column, row, and drop" \
+    "Live round trip failed"
 
 schemahelper_cleanup
 

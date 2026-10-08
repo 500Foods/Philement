@@ -5,8 +5,8 @@ Lua **5.5** TUI under
 It sits in front of the read-only SchemaTool auditor and turns a batch of
 drift findings into operator decisions.
 
-Active plan:
-[`/docs/H/plans/SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md).
+Plan (complete 2026-10-07):
+[`/docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md).
 Implementation plan (v2 archive):
 [`/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md).
 v1 archive:
@@ -31,6 +31,7 @@ one by one:
 | Official Lua should win | `[u]` replace that queries row (`--allow-write`, type `REF` for `code`, `name`, and `summary` together). One field stays `REF.field`. This does not replay DDL |
 | DB ref is a keeper, not a refix | `[u]` delete an orphan ref (`--allow-write`, type `REF`; true orphans only) |
 | Live catalog shape drifted | `[u]` one statement in that engine's DDL (`--allow-write`). Create or alter confirms as `object` or `object.column`. A fold-dropped object confirms as `DROP object` or `DROP object.column`. SQLite nullability, type, and `DROP COLUMN` are refused (table rebuild). Info extras stay off the queue |
+| Migration-owned default row | `[u]` insert the missing row, update the columns that migration set, or delete the one key a migration deleted (`--allow-write`, type `table.key`, e.g. `contacts.1`). A live row no migration names is not listed. Unkeyed DML stays refused |
 | Need a Helium migration | `[g]` reserve next ref and write a packet, then `[m]` promote to `design_NNNN.lua` stub |
 
 ## What it is / is not
@@ -136,7 +137,7 @@ need that engine listening and the matching env vars (see
 | `--ref N` | Force the next packet number |
 | `--track metadata\|catalog\|both` | Queue filter (default `both`) |
 | `--reuse` | Load existing artifacts; skip SchemaTool |
-| `--allow-write` | Enable `[u]` apply (metadata / orphan / catalog DDL) and `[m]` promote |
+| `--allow-write` | Enable `[u]` apply (metadata / orphan / catalog DDL / one default row) and `[m]` promote |
 | `--keep-work-dir` | Do not remove the auto-generated work-dir on exit |
 
 Default `--out-dir` next to a Test 40 wrapper is inside the git tree.
@@ -179,7 +180,7 @@ ping is SchemaTool (Enter).
 | `e` | Review | Explore one field: Migration vs Database |
 | `s` | Review | Skip for now |
 | `a` | Review | Accept permanent variance (stores expected/live hash) |
-| `u` | Review | Update a field (`--allow-write`; type `1223.code`) OR delete an orphan ref (type `1290`; true orphans only; anomalies refused) OR apply catalog DDL (type `accounts.id`; nullable/add-column only) |
+| `u` | Review | One finding with `--allow-write`. Queries row: type `REF` (one field stays `REF.field`). Orphan: type `REF`. Catalog DDL: `object`, `object.column`, `DROP object`, or `DROP object.column`. Default row: `table.key` (for example `contacts.1`). Safety lists what each confirm changes |
 | `g` | Review | Generate a migration packet |
 | `m` | Review | Promote current packet to a `design_NNNN.lua` stub in Helium (`--allow-write`; requires an existing packet) |
 | `n` / `p` | Review | Next / previous |
@@ -207,8 +208,11 @@ Mouse behavior:
 ## Sidecar
 
 Selections live in
-`<out-dir>/schemahelper_<design>_<engine>.json` (no timestamp). Several
-engines can share one folder. Actions: `skipped`, `accepted`, `applied`,
+`<out-dir>/schemahelper_<design>_<engine>_<role>.json` (no timestamp).
+Role is `test` or `demo`. The sixteen wrappers pass
+`--design acuranzo+argent`, so a live sidecar is
+`schemahelper_acuranzo+argent_<engine>_<role>.json`. Several engines
+can share one folder. Actions: `skipped`, `accepted`, `applied`,
 `packet`. No passwords and no full `code` blobs.
 
 Skipped items stay in **findings for review**. Accepted / packet /
@@ -253,20 +257,31 @@ complete the INSERT-into-queries pattern before loading. The packet's
     Confirm is the bare `REF` (e.g. `1290`). Anomalies are not deletable.
   - **Catalog DDL `[u]`** — one statement in that engine's dialect:
     add column, nullability, type, create table, or drop a fold-dropped
-    object. Create and alter confirm as `object` or `object.column`.
-    Drops confirm as `DROP object` or `DROP object.column`.
-    `SET NOT NULL` and a type change say that existing values can reject
-    the statement. SQLite nullability, type, and `DROP COLUMN` are refused
-    on screen (a table rebuild would copy rows). Live extras are never
-    offered for drop.
-  Missing LOAD/APPLY stays refused, with guidance to run Hydrogen
+    object or column. Create and alter confirm as `object` or
+    `object.column`. Drops confirm as `DROP object` or
+    `DROP object.column`. `SET NOT NULL` and a type change say that
+    existing values can reject the statement. SQLite nullability, type,
+    and `DROP COLUMN` are refused on screen (a table rebuild would copy
+    rows). Firebird add, drop, and alter omit the word `COLUMN`. DB2
+    `DROP COLUMN` commits and runs `REORG TABLE` before the next
+    statement. MSSQL drops a column default with `QUOTENAME` and
+    `sp_executesql`, then drops the column. Info extras stay off the
+    queue and are not applied. Live extras are never offered for drop.
+  - **Default row `[u]`** — one keyed row. Confirm is `table.key`
+    (e.g. `contacts.1`). Insert when that key is missing, update the
+    columns the migration set, or delete only a key a migration
+    deleted. A live row the migrations never name is not listed and
+    is not deleted. A statement with no single key is refused. DML
+    against the `queries` table is not a row finding. Row findings do
+    not change the catalog exit.
+  Missing LOAD/APPLY and unkeyed DML stay refused, with guidance to run Hydrogen
   AutoMigration. A decoded view is refused.
 - Secrets inherit SchemaTool `--password-env`; never printed; never
   written into packets or the sidecar.
 
 ## Related
 
-- Active plan: [`SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md)
+- Plan (complete 2026-10-07): [`SCHEMA_V2_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md)
 - Plan (v2 archive): [`SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md)
 - v1 archive: [`SCHEMAHELPER_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md)
 - Auditor: [`SCHEMATOOL.md`](/docs/H/tools/SCHEMATOOL.md)

@@ -64,19 +64,6 @@ Firestore attempt (historical):
 [`FIREBASE_SUPERSEDED.md`](/docs/H/plans/complete/FIREBASE_SUPERSEDED.md).
 Stub: [`FIREBASE.md`](/docs/H/plans/FIREBASE.md).
 
-### [SCHEMA V2 PLAN](/docs/H/plans/SCHEMA_V2_PLAN.md)
-
-SchemaTool and SchemaHelper across the eight engines. Firebird and
-MSSQL adapters, Cockroach name removal, MySQL/MariaDB split, eight
-test wrappers (tests 32–39) and eight demo wrappers (Test 40), then
-structural apply and migration-owned default rows. Extra production
-rows stay out of the queue. Opened 2026-10-07. Phases 1–6 complete.
-Phase 7 is complete: the catalog compares type as well as presence
-and nullability, and a live object no migration mentions does not
-fail the audit. Phase 8 is complete: `[u]` emits one statement in
-that engine's DDL. The SQLite proof added a missing column on a copy.
-The other seven engines are SQL fixtures only. Phase 9 has not started.
-
 ### [MIRAGE PLAN](/docs/H/plans/MIRAGE_PLAN.md)
 
 Distributed proxy architecture sketch. Implementation deferred.
@@ -89,7 +76,7 @@ Double-entry bookkeeping as an optional pack on the Acuranzo database
 Plus-list loader is in source. Tests 32–40 use
 `PAYLOAD:acuranzo+argent`. Restructured 2026-10-06 into Phases 0–16.
 Phase 0 approved the same day. Phases 1–3 applied 2026-10-07.
-Phase 9 closed on the 2029 apply. Phase 10 closed on Test 71 3.2.0 (1490 passed, 0 failed). Phase 11 is written and not applied (`argent_2030.lua`–`argent_2037.lua`).
+Phase 9 closed on the 2029 apply. Phase 10 closed on Test 71 3.2.0 (1490 passed, 0 failed). Phase 11 scripts are applied (`argent_2030.lua`–`argent_2037.lua`). Test 73 on `test_73_20261007_173712` passed on SQLite and PostgreSQL (178/178). DB2 is 177/178 on `WITH RECURSIVE`; `argent_2022.lua` 1.0.2 stores `WITH` for DB2 and awaits a reload. Work item 11.7 is open.
 `H.http.request` is Phase 13.
 
 ---
@@ -126,6 +113,7 @@ Full index: [`complete/README.md`](/docs/H/plans/complete/README.md). Highlights
 | SchemaHelper v1 | [SCHEMAHELPER_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md) |
 | SchemaHelper v2 | [SCHEMAHELPER_V2_COMPLETE.md](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md) |
 | SchemaTool | [SCHEMATOOL_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md) |
+| Schema v2 | [SCHEMA_V2_PLAN_COMPLETE.md](/docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md) |
 | Static-function purge | [STATIC_COMPLETE.md](/docs/H/plans/complete/STATIC_COMPLETE.md) |
 | Terminal | [TERMINAL_PLAN_COMPLETE.md](/docs/H/plans/complete/TERMINAL_PLAN_COMPLETE.md) |
 | Unity disabled-test cleanup | [UNITY_CLEANUP_COMPLETE.md](/docs/H/plans/complete/UNITY_CLEANUP_COMPLETE.md) |

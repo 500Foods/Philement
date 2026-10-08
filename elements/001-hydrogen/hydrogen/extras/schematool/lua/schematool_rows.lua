@@ -14,6 +14,8 @@
 --        --findings-out PATH [--sql-only]
 --
 -- CHANGELOG
+-- 1.0.2 - 2026-10-07 - Encode does not shadow the unkeyed helper
+-- 1.0.1 - 2026-10-07 - apply_insert no longer returns an undefined name
 -- 1.0.0 - 2026-10-07 - Keyed default rows, targeted probe, row findings
 
 -- luacheck: globals arg
@@ -980,7 +982,6 @@ local function apply_insert(model, keys, dml, ref)
             end
         end
     end
-    return any
 end
 
 local function apply_update(model, keys, dml, ref)
@@ -1358,7 +1359,7 @@ function M.encode_model(model)
             tombstones = tombs,
         }
     end
-    local unkeyed = model.unkeyed or {}
+    local loose = model.unkeyed or {}
     local parts = {
         '{"engine":', encode_string(model.engine or ""),
         ',"schema":', encode_string(model.schema or ""),
@@ -1403,7 +1404,7 @@ function M.encode_model(model)
         parts[#parts + 1] = "]}"
     end
     parts[#parts + 1] = '],"unkeyed":['
-    for i, u in ipairs(unkeyed) do
+    for i, u in ipairs(loose) do
         if i > 1 then
             parts[#parts + 1] = ","
         end

@@ -1,14 +1,28 @@
 #!/usr/bin/env bash
 # SchemaTool — Test 40 multi-engine catalog smoke (1190 accounts.password_hash)
 #
-# Runs --catalog --only-tables accounts against each Test 40 layout wrapper.
+# Runs --catalog --only-tables accounts against each Test 40 demo wrapper.
 # Expect exit 0 and password_hash expected=true live=true on each engine.
+# This script calls only the eight _demo wrappers, in this order:
+#   schematool_sqlite_demo.sh
+#   schematool_postgresql_demo.sh
+#   schematool_mysql_demo.sh
+#   schematool_mariadb_demo.sh
+#   schematool_db2_demo.sh
+#   schematool_firebird_demo.sh
+#   schematool_yugabytedb_demo.sh
+#   schematool_mssql_demo.sh
+# The matching _test wrappers are not invoked. Picker order for that block:
+#   schematool_{postgresql,mysql,sqlite,db2,mariadb,firebird,yugabytedb,mssql}_test.sh
+# Sidecar: schemahelper_<design>_<engine>_<role>.json
+# Role is test or demo. These demo runs use role demo.
 #
 # Usage (from anywhere, needs zsh env / DB credentials):
 #   extras/schematool/smoke_test40_catalog.sh
 #   extras/schematool/smoke_test40_catalog.sh --out-dir /tmp/st40
 #
 # CHANGELOG
+# 1.1.4 - 2026-10-07 - Name the sixteen wrappers and the sidecar role suffix.
 # 1.1.3 - 2026-10-07 - Call schematool_<engine>_demo.sh. MSSQL stays in the list.
 # 1.1.2 - 2026-10-07 - MariaDB is its own row. Expect log must name engine=mariadb.
 # 1.1.1 - 2026-10-07 - Firebird query and catalog adapters exist. password_hash check unchanged.

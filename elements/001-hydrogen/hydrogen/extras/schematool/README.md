@@ -12,10 +12,13 @@ A live object no migration mentions is info, not a failure. An object
 the fold created and a later migration dropped, still live, is a
 `dropped` finding. SchemaHelper can apply one structural finding
 in that engine's DDL. SQLite nullability, type changes, and
-`DROP COLUMN` stay refused.
+`DROP COLUMN` stay refused. The same audit writes
+`rows_findings.json` for keyed default rows: SchemaHelper can insert
+a missing row, update the columns the migration set, or delete one
+key a migration deleted. A live row no migration names is not listed.
 
 **Full docs:** [`/docs/H/tools/SCHEMATOOL.md`](/docs/H/tools/SCHEMATOOL.md)  
-**Active plan:** [`/docs/H/plans/SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md)  
+**Plan (complete 2026-10-07):** [`/docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md)  
 **Archived plan:** [`/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md)  
 **SchemaHelper:** `schemahelper.sh` —
 [`/docs/H/tools/SCHEMAHELPER.md`](/docs/H/tools/SCHEMAHELPER.md)
@@ -138,9 +141,24 @@ Chosen from **requested** `--engine` (before alias):
 
 Password: `--password-env VAR` preferred (never printed).
 
-Test 40 wrappers: `schematool_<engine>_demo.sh` (schema `demo`, SQLite `hydrodemo.sqlite`, Firebird `FIREBIRD_DB_PATH_DEMO`, MSSQL `demoms`)  
-Tests 32–39 wrappers: `schematool_<engine>_test.sh` (schema `test`, SQLite `hydrotst.sqlite`, Firebird `FIREBIRD_DB_PATH_TEST`, MSSQL `testms`)  
-Smoke (8 engines, 1190 catalog): `./smoke_test40_catalog.sh`
+Sixteen wrappers. The picker shows the test block, then the demo block. Inside each block the order is postgresql, mysql, sqlite, db2, mariadb, firebird, yugabytedb, mssql.
+
+Tests 32–39 (`_test`, schema `test`, SQLite `hydrotst.sqlite`, Firebird `FIREBIRD_DB_PATH_TEST`, MSSQL `testms`):
+
+- `schematool_postgresql_test.sh`
+- `schematool_mysql_test.sh`
+- `schematool_sqlite_test.sh`
+- `schematool_db2_test.sh`
+- `schematool_mariadb_test.sh`
+- `schematool_firebird_test.sh`
+- `schematool_yugabytedb_test.sh`
+- `schematool_mssql_test.sh`
+
+Test 40 (`_demo`, schema `demo`, SQLite `hydrodemo.sqlite`, Firebird `FIREBIRD_DB_PATH_DEMO`, MSSQL `demoms`): the same eight stems with `_demo.sh`.
+
+Sidecar: `schemahelper_<design>_<engine>_<role>.json`. Role is `test` or `demo`. The sixteen wrappers pass `--design acuranzo+argent`.
+
+Smoke (eight `_demo` wrappers only, 1190 catalog): `./smoke_test40_catalog.sh`. Its engine order is sqlite, postgresql, mysql, mariadb, db2, firebird, yugabytedb, mssql.
 
 ## Safety
 

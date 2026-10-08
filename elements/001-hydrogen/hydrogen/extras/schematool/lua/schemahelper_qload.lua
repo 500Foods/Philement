@@ -3,6 +3,7 @@
 -- Depends only on schemahelper_qutil.
 --
 -- CHANGELOG
+-- 0.6.1 - 2026-10-07 - Load rows_findings.json (default rows and unkeyed DML)
 -- 0.6.0 - 2026-10-07 - One whole-row metadata finding per drift
 -- 0.5.9 - 2026-10-07 - Catalog classes for type and dropped findings
 -- 0.5.8 - 2026-08-25 - Extracted from schemahelper_queue.lua (findings load cluster)
@@ -223,8 +224,42 @@ local function load_catalog(path, tmp_dir, findings)
     }
 end
 
+local function load_rows(path, tmp_dir, findings)
+    if not U.file_exists(path) then
+        return
+    end
+    for _, obj in ipairs(U.jq_lines(".failures[]?", path, tmp_dir)) do
+        local kind = U.json_string_field(obj, "check")
+        local object = U.json_string_field(obj, "object")
+        local column = U.json_string_field(obj, "column")
+        if column == "" then
+            column = "-"
+        end
+        local id = U.json_string_field(obj, "id")
+        if id == "" then
+            id = string.format("row:%s:%s:%s", object, column, kind)
+        end
+        local class = U.json_string_field(obj, "class")
+        if class == "" then
+            class = "default row"
+        end
+        add_finding(findings, {
+            id = id,
+            class = class,
+            kind = kind,
+            object = object,
+            column = column,
+            ref = U.json_num_field(obj, "ref"),
+            expected = U.json_string_field(obj, "expected"),
+            live = U.json_string_field(obj, "live"),
+            summary = U.json_string_field(obj, "notes"),
+        })
+    end
+end
+
 M.load_metadata = load_metadata
 M.load_catalog = load_catalog
+M.load_rows = load_rows
 M.add_catalog_rows = add_catalog_rows
 
 return M

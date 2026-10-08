@@ -36,7 +36,7 @@ Hydrogen is currently designed for technical users who:
 - [**Mail Guide**](/docs/H/MAIL_GUIDE.md) - Mail Relay, templates, rewrites, and Lua mail handling
 - [**Examples**](/docs/H/EXAMPLES.md) - Practical end-to-end examples for common Hydrogen tasks
 - [**SchemaTool**](/docs/H/tools/SCHEMATOOL.md) - Migration drift auditor (Lua migrations vs live `queries`)
-- [**SchemaHelper**](/docs/H/tools/SCHEMAHELPER.md) - Interactive SchemaTool front-end (review queue + packets); active plan: [`SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md); v2 archive: [`SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md)
+- [**SchemaHelper**](/docs/H/tools/SCHEMAHELPER.md) - Interactive SchemaTool front-end (review queue + packets); plan (complete 2026-10-07): [`SCHEMA_V2_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md); v2 archive: [`SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md)
 - [**Databases**](/docs/H/DATABASES.md) - Considerations around using PostgreSQL, MySQL/MariaDB, SQLite, and DB2
 - [**AI Instructions**](/docs/H/INSTRUCTIONS.md) - Development guide optimized for AI assistance
 - [**AI Prompts**](/docs/H/PROMPTS.md) - Development guide optimized for AI assistance

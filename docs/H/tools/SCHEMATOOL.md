@@ -13,8 +13,8 @@ Standalone **Bash + Lua** operator utility under
 Quick start (local extras README):
 [`extras/schematool/README.md`](/elements/001-hydrogen/hydrogen/extras/schematool/README.md).
 
-Active plan:
-[`/docs/H/plans/SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md).
+Plan (complete 2026-10-07):
+[`/docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md).
 Archived plan:
 [`/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md).
 
@@ -36,7 +36,8 @@ from the migration files and probes the live catalog (targeted, not a full-DB du
 | Is | Is not |
 | ---- | -------- |
 | Read-only auditor (native clients) | Replacement for Hydrogen LOAD/APPLY |
-| Metadata fidelity (types 1000–1003) | Row-data auditor / product table scans |
+| Metadata fidelity (types 1000–1003) | Product-table scan or `SELECT *` |
+| Keyed default rows (`rows_findings.json`; catalog exit unchanged) | Queries-table DML or unkeyed statements treated as owned rows |
 | Live catalog probes (`--catalog`) | Bulk `pg_dump` / full-schema export default |
 | Console checklist via `tables` | Auto-executor of remediation SQL |
 | Commented `.sql` + orphan `.mig` | C code in `src/` or a REST endpoint |
@@ -45,7 +46,7 @@ from the migration files and probes the live catalog (targeted, not a full-DB du
 ## Requirements
 
 - `tables`, `jq`, `lua` (and `lua-brotli` for compressed migration payloads)
-- Engine client for the target: `psql` / `mysql` / `sqlite3` / `db2` / in-container `sqlcmd` (MSSQL)
+- Engine client for the target: `psql` / `mysql` / `mariadb` / `sqlite3` / `db2` / `isql-fb` / in-container `sqlcmd` (MSSQL)
 - Migrations folder containing `database.lua` and `design_NNNN.lua`.
   `--design acuranzo+argent` keeps that folder as the Acuranzo anchor and
   also reads the sibling `argent/migrations` directory. A single design
@@ -129,15 +130,19 @@ How it works:
 
 1. Extract engine-expanded payloads for every design in `--design` (same path as metadata expect). `--from` / `--to` limit the refs.
 2. **Disk fold** — forward body is query type **1000** (the text the database stores as type **1003** after apply). Reverse (1001) and diagram (1002) are not folded. Parse CREATE/ALTER/DROP NOT NULL / MODIFY / SQLite rebuild rename in ref order, including Firebird and MSSQL spellings that omit `COLUMN` and MSSQL `ALTER COLUMN … NULL`.
-3. **Targeted probe** — only tables in the expected set (or `--only-tables`):  
-   SQLite `PRAGMA table_info`; PG/MySQL `information_schema`; DB2 `SYSCAT.COLUMNS`
+3. **Targeted probe** — only tables in the expected set (or `--only-tables`):
+   SQLite `PRAGMA table_info`; PostgreSQL and Yugabyte `information_schema`;
+   MySQL and MariaDB `information_schema`; DB2 `SYSCAT.COLUMNS`;
+   Firebird `RDB$RELATIONS` / `RDB$RELATION_FIELDS`; MSSQL `information_schema`.
 4. Compare presence, **nullability**, and **data type**. Type text is
    compared after case and spacing are normalized. A real type difference
    is a `type` finding. A live object no migration mentions is info:
    counted, shown, not a failure. An object the fold created and a later
    migration dropped, still present live, is a `dropped` finding.
 
-`--fold-stored` skips the disk extract and folds applied type-1003 `code` from the queries dump instead.
+`--fold-stored` skips the disk extract and folds applied type-1003 `code` from the queries dump instead. It also skips the default-row track.
+
+The same catalog run writes `rows_findings.json` (and `rows_expected.json` when that probe runs). Keyed default rows the migrations insert, update, or delete are in that file. An extra live row is absent. DML against `queries` is skipped. A statement with no single key is not a row finding. These findings do not change the catalog exit. A row-track failure warns and leaves the catalog result alone. SchemaTool does not apply them.
 
 With `--only-tables`, metadata audit is skipped (fast path). Without it,
 `--catalog` runs **after** the default metadata audit; exit is **worst-wins**.
@@ -207,6 +212,12 @@ Prefer a **new forward migration** when the live schema must change.
 Plain-text capture of DB migration rows **not** present on disk (for authoring a
 new `design_NNNN.lua` if those changes should be kept). Written when orphans
 exist (`--mig-out` or under `--out-dir`).
+
+### Default rows
+
+`rows_findings.json` lists migration-owned keys only. SchemaHelper reads that
+file. SchemaTool does not apply it, and it does not change the catalog exit.
+`--fold-stored` skips this file. An extra live row is not in it.
 
 ## Exit codes
 
@@ -314,7 +325,8 @@ later ALTERs changed live objects.
 
 | Engine flag | Client | Notes |
 | ------------- | -------- | ------- |
-| `postgresql` | `psql` | Aliases: `postgres`, `yugabytedb`. |
+| `postgresql` | `psql` | Alias: `postgres`. Credentials `ACURANZO_DB_*`. |
+| `yugabytedb` | `psql` | Own credentials `YUGABYTE_DB_*`. Dialect follows PostgreSQL after those credentials are chosen. |
 | `mysql` | `mysql` | `MYSQL_DB_*`. Schema `demo` |
 | `mariadb` | `mariadb` | `MARIADB_DB_*`. Schema `demo`. Expect receives `mariadb` |
 | `sqlite` | `sqlite3` | No schema qualifier |
@@ -331,10 +343,10 @@ documented. Confirm these before pointing at prod:
 | ------- | ---------- |
 | No auto-apply | Tool never runs remediation SQL; `.sql` is 100% commented |
 | Metadata I/O | `SELECT` on `queries` types 1000–1003 only |
-| Catalog I/O | Targeted `information_schema` / `PRAGMA` / `SYSCAT` for in-scope tables |
+| Catalog I/O | Targeted probes for in-scope tables: `information_schema`, SQLite `PRAGMA`, DB2 `SYSCAT`, Firebird `RDB$` |
 | No row scans | Never `SELECT *` product tables |
 | Secrets | `--password-env`; passwords never printed or written to artifacts |
-| PG / YB / CRDB | `PGOPTIONS=-c default_transaction_read_only=on` on client sessions |
+| PG / YB | `PGOPTIONS=-c default_transaction_read_only=on` on client sessions |
 | MySQL / MariaDB | `SET SESSION TRANSACTION READ ONLY` before probes |
 | SQLite | `sqlite3 -readonly` |
 | DB2 | EXPORT LOBS read path only (no DML from SchemaTool) |
@@ -357,7 +369,7 @@ read-only.
 
 ## Related
 
-- Active plan: [`SCHEMA_V2_PLAN.md`](/docs/H/plans/SCHEMA_V2_PLAN.md)
+- Plan (complete 2026-10-07): [`SCHEMA_V2_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md)
 - Archived plan: [`SCHEMATOOL_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMATOOL_PLAN_COMPLETE.md)
 - Offline SQL gen: [`tests/lib/get_migration.lua`](/elements/001-hydrogen/hydrogen/tests/lib/get_migration.lua)
 - Migration performance tests: `test_32`–`test_38`

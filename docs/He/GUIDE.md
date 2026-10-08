@@ -89,6 +89,8 @@ If you cannot follow all of the above from the source material, ask for clarific
 - [ ] Diagram query with proper JSON_INGEST wrappers, object_ref, and COMMON_DIAGRAM where appropriate
 - [ ] All SQL uses only allowed macros + ${SUBQUERY_DELIMITER}
 - [ ] Multi-row seeds use `INSERT … VALUES (row), (row);` + `${COMMON_FIELDS}` / `${COMMON_VALUES}` (not `VALUES AS v(cols)`, not bare `UNION ALL` derived tables)
+- [ ] Named parameters follow **Portable named parameters** (one use of each name, no bare `NULL`, cast both sides of an optional value)
+- [ ] A recursive CTE uses `WITH` on DB2 and SQL Server, and `WITH RECURSIVE` on the other engines (**Recursive common table expressions**)
 - [ ] Structural ALTER (ADD/DROP/ALTER COLUMN): `${REORG}` after change on reverse (and as needed on forward) — DB2 SQL0668N rc7
 - [ ] Summary Markdown is clear and explains purpose, columns, indexes, and any engine quirks
 - [ ] Tested mentally against PostgreSQL 15 / YugabyteDB **and** SQLite, DB2, Firebird, and SQL Server seed syntax (primary target is PG; seeds must still apply everywhere)
@@ -600,6 +602,7 @@ VALUES
 | `FROM (VALUES (…), (…)) AS v(col1, col2, …)` | PostgreSQL-style column list on a `VALUES` derived table — **SQLite** errors with `near "(": syntax error` |
 | `FROM (SELECT … UNION ALL SELECT …) AS v` inside `INSERT…SELECT` | **DB2** often rejects `UNION` in that context (`SQL0104N … UNION … Expected … <table_expr>`) |
 | Bare `SELECT … WHERE NOT EXISTS` without a row source on DB2 | DB2 needs `${DUMMY_TABLE}` (`FROM SYSIBM.SYSDUMMY1`); empty on other engines — see `database_db2.lua` and `acuranzo_1289` / `1290` notes |
+| `WITH RECURSIVE` on DB2 or SQL Server | DB2 returns SQL0104N (unexpected token after `WITH RECURSIVE`). Both engines use `WITH`. PostgreSQL, SQLite, MySQL, MariaDB, and Firebird keep `WITH RECURSIVE`. See **Recursive common table expressions**. |
 | Hard-coded `CURRENT_TIMESTAMP` / engine types | Use `${NOW}`, `${INTEGER}`, etc. from macros |
 
 **Idempotency:** APPLY runs each forward migration once. Prefer a simple
@@ -618,6 +621,49 @@ or LOADed-but-not-APPLIED rows keep the old broken `code` until LOAD refreshes.
 2. `acuranzo_1281.lua` — multi-row script seeds
 3. `acuranzo_1293.lua` — larger catalog seed (same pattern)
 4. `docs/He/MACRO_REFERENCE.md` — `${COMMON_FIELDS}`, `${COMMON_VALUES}`, `${DUMMY_TABLE}`
+
+### Portable named parameters
+
+Hydrogen sends every parameter as text. PostgreSQL uses `PQexecParams` with no type OID, so an uncast marker defaults to `text`. DB2 binds integers as integers and strings as `SQL_CHAR` whose length is the value length. A statement that only runs on PostgreSQL can hide both facts.
+
+**Each name once per statement.** The binder keeps one value per name. On PostgreSQL every use becomes the same `$n`. On DB2, MySQL, MariaDB, SQLite, Firebird, and SQL Server every use becomes `?`, but the value is still bound once, so a second use is an extra marker. `acuranzo_1363.lua` repeats `:Q` and `:SORT`. That shape is for a PostgreSQL query. Do not copy it into SQL that Test 73 or any other engine will execute.
+
+**Do not bind Lua nil.** Hydrogen omits a nil named value. Bind `''` or `0`. Store NULL in SQL. `acuranzo_1320.lua` (`NULLIF(:COL, '')`) and `acuranzo_1327.lua` (`NULLIF(:ID, 0)`) are the examples.
+
+**Do not write a bare `NULL` in `CASE`.** DB2 rejects it as SQL0418N (`SQLSTATE` 42610): an untyped parameter marker or a null value. PostgreSQL types that `CASE` as `text`, then refuses to store it in an integer column (`column "parent_id" is of type integer but expression is of type text`).
+
+```sql
+CASE WHEN CAST(:USE_PARENT AS ${INTEGER}) = 0
+     THEN CAST(NULL AS ${INTEGER})
+     ELSE CAST(:PARENT_ID AS ${INTEGER})
+END
+```
+
+`CAST(:FLAG AS ${INTEGER}) = 0` is required. `CASE :USE_DEFAULT WHEN 1` fails on PostgreSQL with `operator does not exist: text = integer`. The same cast belongs on status slots, ids, and dates (`CAST(:AS_OF AS ${DATE})`). `${INTEGER}` and `${DATE}` expand per engine (`int` / `integer` / `INTEGER`, and `date` / `DATE`).
+
+**Cast an empty string before `NULLIF`.** `NULLIF(:ORG_SUMMARY, '')` lets DB2 take the length of `''` as the marker length. A non-empty value then fails with SQL0302N (`SQLSTATE` 22001). An empty value passes, which makes the bug look intermittent.
+
+```sql
+NULLIF(CAST(:ORG_SUMMARY AS ${TEXT}), '')
+```
+
+`${TEXT}` is unbounded `text` on PostgreSQL and SQLite. It is `VARCHAR(250)` on DB2 and `varchar(255)` / `VARCHAR(255)` / `NVARCHAR(255)` on MySQL, MariaDB, Firebird, and SQL Server. A value longer than that engine's `${TEXT}` does not fit this cast. `acuranzo_1363.lua` is the cast example (`CAST(:SORT AS VARCHAR(20))`).
+
+### Recursive common table expressions
+
+DB2 and SQL Server write a recursive query with `WITH`. PostgreSQL, SQLite, MySQL, MariaDB, and Firebird write it with `WITH RECURSIVE`. On DB2 the keyword `RECURSIVE` is SQL0104N: the parser stops at the next name.
+
+Choose the keyword in the migration. It is a file-local `cfg` field, not a macro in `database.lua`:
+
+```lua
+if engine == "mssql" or engine == "db2" then
+    cfg.WITH_RECURSIVE = "WITH"
+else
+    cfg.WITH_RECURSIVE = "WITH RECURSIVE"
+end
+```
+
+[`argent_2022.lua`](/elements/002-helium/argent/migrations/argent_2022.lua) is the example. The recursive member lists its column names. DB2 requires that list. The same `if engine ==` shape is how `acuranzo_1385.lua` picks one SQL fragment.
 
 ### Schema Modification Pattern
 
@@ -1033,6 +1079,8 @@ These templates provide a starting point for common migration patterns. Copy, mo
 11. **Keep reverse migrations safe** — for data-changing reverses, document manual prerequisites (e.g. "delete or assign passwords before reversing").
 12. **Multi-row seeds** — copy `acuranzo_1280` (`INSERT … VALUES (…), (…);` + `${COMMON_VALUES}`). Never invent `VALUES AS v(cols)` or untested `UNION ALL` row sources (see **Portable Multi-Row Data Seeds**).
 13. **DB2 REORG** — after structural `ADD`/`DROP`/`ALTER COLUMN`, use `${REORG}` (especially **after** DROP on reverse so TestMigration’s next reverse can DML the table). See **DB2: `${REORG}` after ADD/DROP COLUMN**.
+14. **Named parameters** — one use of each name. Cast optional integers with `CAST(NULL AS ${INTEGER})` and cast empty strings with `NULLIF(CAST(:COL AS ${TEXT}), '')`. See **Portable named parameters**.
+15. **Recursive CTEs** — `WITH` on DB2 and SQL Server, `WITH RECURSIVE` on the other engines. Name the recursive columns. See **Recursive common table expressions**.
 
 ## Migration Workflow
 

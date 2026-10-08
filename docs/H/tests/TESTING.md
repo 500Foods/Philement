@@ -102,6 +102,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_43_scripting.sh](/docs/H/tests/test_43_scripting.md)**: Scripting subsystem end-to-end testing
 - **[test_46_conduit_script.sh](/docs/H/tests/test_46_conduit_script.md)**: Conduit script invoke (`POST/GET /api/conduit/script`, JWT + Api.Echo)
 - **[test_47_mcp.sh](/docs/H/tests/test_47_mcp.md)**: MCP Streamable HTTP (JWT initialize/tools/call, ports 1547x / 1548x)
+- **[test_73_argent_mcp.sh](/docs/H/tests/test_73_argent_mcp.md)**: Argent MCP tools and validation variants (8 engines, ports 1573x / 1574x)
 - **[test_51_conduit.sh](/docs/H/tests/test_51_conduit_queries.md)**: Conduit endpoints testing (all 4 endpoints with full parameter support across 8 database engines)
 - **[test_52_conduit_auth_query.sh](/docs/H/tests/test_52_conduit_auth_query.md)**: Authenticated conduit query testing
 - **[test_53_conduit_auth_queries.sh](/docs/H/tests/test_53_conduit_auth_queries.md)**: Authenticated conduit batch query testing
