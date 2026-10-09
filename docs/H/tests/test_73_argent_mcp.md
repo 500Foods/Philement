@@ -20,16 +20,14 @@ Each engine logs in, checks `GET /api/mcp/status`, initializes MCP, sends
 prerequisite records that case as a failure and the engine continues, so
 the case count stays stable.
 
-The twenty-three tools are `Argent.ListOrganizations`, `Argent.UpsertOrganization`,
-`Argent.ListLedgers`, `Argent.GetLedger`, `Argent.UpsertLedger`,
-`Argent.UpsertLedgerTerms`, `Argent.UpsertContact`, `Argent.PostTransaction`,
-`Argent.AddTags`, `Argent.RemoveTags`, `Argent.AddAttachment`,
-`Argent.UpsertTaxCode`, `Argent.UpsertTaxRate`, `Argent.GetTransaction`,
-`Argent.ListTransactions`, `Argent.QueryBalances`, `Argent.EditTransaction`,
-`Argent.RescindTransaction`, `Argent.PostStatement`, `Argent.PostPeriodClose`,
-`Argent.StartReconciliation`, `Argent.ClearLines`, and
-`Argent.CompleteReconciliation`. `tools/list` asks for page size 500 so all
-twenty-three names are on one page.
+The exercise lists every Argent tool, including `Argent.UpsertSchedule`,
+`Argent.GenerateSchedule`, `Argent.MatchReserved`, `Argent.RetryCalendar`,
+`Argent.QueryDue`, `Argent.QueryReconciliationStatus`,
+`Argent.QueryLedgerHistory`, `Argent.QueryTaxSummary`,
+`Argent.QueryIncomeExpense`, `Argent.QueryCalendarView`,
+`Argent.QueryFxPremium`, `Argent.QuerySyncProblems`, `Argent.Search`,
+`Argent.ListRates`, `Argent.UpsertRate`, and `Argent.GetBocRate`.
+`tools/list` asks for page size 500 so the names fit on one page.
 
 Success is HTTP 200 with `result.error` null and
 `result.structuredContent.ok` true. A tool error is the same HTTP 200 with
@@ -69,6 +67,12 @@ Covered variants include:
   over 4000 characters is `body_too_long`. A rescinded statement is
   `statement_rescinded`. A statement from another organization is
   `organization_id`
+- Reports and rates: a bad due date, default and status-1 due lists,
+  reconciliation rows, ledger history, tax, income and expense in `cad`,
+  the calendar view, sync problems, and search. `UpsertRate` rejects
+  source 1 and stores a manual USD/CAD rate. A second call on that key
+  is an update. `GetBocRate` rejects `xxx`/`cad` and a bad date. It does
+  not call the Bank of Canada.
 
 The card ledger is not posted after its opening, so its balance stays 500.
 `GetLedger` for the January term uses `as_of` 2026-03-01. A later `as_of`
@@ -79,7 +83,7 @@ would select the June term.
 - **Test Name**: Argent MCP
 - **Test Abbreviation**: ARG
 - **Test Number**: 73
-- **Version**: 1.0.4
+- **Version**: 1.0.7
 
 The exercise writes `EXPECTED_TOOL_CASES` at runtime. Version 1.0.2 recorded
 173 tool cases. Version 1.0.3 records 271 tool cases on the path where every
@@ -91,7 +95,17 @@ separate results. Diagnostics `test_73_20261008_115801` (script 1.0.3) passed
 276/276 on PostgreSQL, SQLite, MariaDB, Firebird, MSSQL, and MySQL. DB2 was
 250/276. YugabyteDB was 275/276 (`tools_list` HTTP 503). Version 1.0.4 retries
 that 503 once. Diagnostics `test_73_20261008_145836` passed 276/276 on all
-eight engines.
+eight engines. Version 1.0.5 diagnostics `test_73_20261008_173729` passed
+300/300 on all eight engines (`EXPECTED_TOOL_CASES` 295). Version 1.0.6
+adds the report, rate, and offline BoC cases. Diagnostics
+`test_73_20261008_200256` recorded `EXPECTED_TOOL_CASES` 316. PostgreSQL,
+YugabyteDB, SQLite, DB2, Firebird, and MSSQL were 320 pass and 1 fail.
+MySQL was 316 pass and 5 fail. MariaDB was 314 pass and 7 fail. Every
+engine failed `income_ok` because `warnings` was `{}`. Version 1.0.7
+accepts a `warnings` array or an empty object. Diagnostics
+`test_73_20261008_221958` passed 321/321 on all eight engines
+(`EXPECTED_TOOL_CASES` 316). The harness is 22 pass, 0 fail, 328.966s.
+The case total stays `EXPECTED_TOOL_CASES` plus 5.
 
 ## Port Assignment
 

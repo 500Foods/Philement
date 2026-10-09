@@ -22,6 +22,16 @@ duplicated here:
 
 [`/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md`](/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md)
 
+### [Reporting](/docs/Li/plans/REPORTING_PLAN.md)
+
+Report writer. Lithium manager 24 designs a JSON definition. Helium
+`Reports.Render` composes an intermediate document and emits HTML,
+then CSV. Later phases seed lua-pdfkit and lua-zint, size images
+through `POST /api/reporting/image_scale`, and emit PDF from Lua.
+Author formulas are Lua stored in the definition. Phases 0–26.
+Phase 0 is a draft and is not approved. CATCHUP stays the active
+plan until Andrew pulls this one in.
+
 ### Superseded
 
 [`LITHIUM_SPRINT.md`](/docs/Li/plans/LITHIUM_SPRINT.md) — authored

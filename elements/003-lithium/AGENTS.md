@@ -7,6 +7,11 @@ conflicts. Active plan:
 [`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md)
 (supersedes
 [`/docs/Li/plans/LITHIUM_SPRINT.md`](/docs/Li/plans/LITHIUM_SPRINT.md)).
+Report writer (manager 24), not started. Phases 0–26, Phase 0 not
+approved. HTML and CSV first; PDF and barcodes are Lua ports; images
+use the existing Reporting endpoint. Author formulas are Lua stored
+in the definition.
+[`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md).
 
 **Last reviewed:** 2026-09-09 (CATCHUP plan authored).
 
@@ -511,6 +516,7 @@ Start: [`docs/Li/LITHIUM-TOC.md`](/docs/Li/LITHIUM-TOC.md).
 | JWT / OIDC | `LITHIUM-JWT.md`, `LITHIUM-OIDC.md`, `LITHIUM-KEYCLOAK.md` |
 | Deploy | `LITHIUM-WEB.md` |
 | Catchup (active) | [`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md) |
+| Report writer (draft, Phases 0–26) | [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md) |
 | Sprint (superseded) | `docs/Li/plans/LITHIUM_SPRINT.md` |
 | Hydrogen script API | `docs/H/api/conduit/script.md` |
 | Course Builder pipeline | `/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md` |

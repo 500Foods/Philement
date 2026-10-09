@@ -33,6 +33,7 @@ This directory contains the complete documentation for the Lithium PWA.
 | [LITHIUM-CHANGELOG.md](LITHIUM-CHANGELOG.md) | Migration notes |
 | [AGENTS.md](/elements/003-lithium/AGENTS.md) | Agent / session map |
 | [CATCHUP.md](/elements/003-lithium/CATCHUP.md) | **Active plan** (Phases 0–38) |
+| [plans/REPORTING_PLAN.md](/docs/Li/plans/REPORTING_PLAN.md) | Report writer — Phases 0–26, Phase 0 not approved |
 | [plans/LITHIUM_SPRINT.md](plans/LITHIUM_SPRINT.md) | Superseded sprint |
 | [TODO.md](TODO.md) | Backlog pointer |
 

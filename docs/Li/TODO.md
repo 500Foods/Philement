@@ -28,6 +28,21 @@ partners, Scripting invoke, Course Manager, or chat/MCP.
 | **Remaining** | Phases 0a, 0b, 1–38, 5a–5d |
 | **Superseded** | [LITHIUM_SPRINT.md](/docs/Li/plans/LITHIUM_SPRINT.md) |
 
+## P2 — Report writer (draft, do not start)
+
+Gated plan for manager 24. Phase 0 is not approved. HTML and CSV
+come first. PDF and barcodes are the Lua ports (lua-pdfkit,
+lua-zint). Images use Hydrogen's existing `image_scale` endpoint.
+Author formulas are Lua stored in the definition. Do not pull this
+ahead of CATCHUP unless Andrew says so.
+
+| | |
+| --- | --- |
+| **Plan** | [REPORTING_PLAN.md](/docs/Li/plans/REPORTING_PLAN.md) |
+| **Next** | Phase 0 — design lock |
+| **Effort** | XL across Phases 0–26. Each phase is one sitting. |
+| **Done** | 0% — plan only (2026-10-08) |
+
 ## Parallel (other repos)
 
 | Item | Where |

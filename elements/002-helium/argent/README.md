@@ -83,4 +83,25 @@ Lookup ids **2000–2999** are Argent's block on the shared `lookups` table, the
 | [2046](/elements/002-helium/argent/migrations/argent_2046.lua) | scripts | 1.0.0 | 2026-10-08 | 5 | ✓ | Argent.GenerateSchedule |
 | [2047](/elements/002-helium/argent/migrations/argent_2047.lua) | scripts | 1.0.0 | 2026-10-08 | 5 | ✓ | Argent.MatchReserved |
 | [2048](/elements/002-helium/argent/migrations/argent_2048.lua) | scripts | 1.0.0 | 2026-10-08 | 5 | ✓ | Argent.RetryCalendar |
-| **49** | | | | **298** | **49** | |
+| [2049](/elements/002-helium/argent/migrations/argent_2049.lua) | queries | 1.0.1 | 2026-10-08 | 5 | ✓ | QueryRef #2002 - Argent due |
+| [2050](/elements/002-helium/argent/migrations/argent_2050.lua) | queries | 1.0.1 | 2026-10-08 | 5 | ✓ | QueryRef #2003 - Argent reconciliation status |
+| [2051](/elements/002-helium/argent/migrations/argent_2051.lua) | queries | 1.0.1 | 2026-10-08 | 5 | ✓ | QueryRef #2004 - Argent ledger history |
+| [2052](/elements/002-helium/argent/migrations/argent_2052.lua) | queries | 1.0.1 | 2026-10-08 | 5 | ✓ | QueryRef #2005 - Argent tax summary |
+| [2053](/elements/002-helium/argent/migrations/argent_2053.lua) | queries | 1.0.1 | 2026-10-08 | 5 | ✓ | QueryRef #2006 - Argent income and expense |
+| [2054](/elements/002-helium/argent/migrations/argent_2054.lua) | queries | 1.0.1 | 2026-10-08 | 5 | ✓ | QueryRef #2007 - Argent calendar view |
+| [2055](/elements/002-helium/argent/migrations/argent_2055.lua) | queries | 1.0.1 | 2026-10-08 | 5 | ✓ | QueryRef #2008 - Argent FX premium |
+| [2056](/elements/002-helium/argent/migrations/argent_2056.lua) | queries | 1.0.1 | 2026-10-08 | 5 | ✓ | QueryRef #2009 - Argent sync problems |
+| [2057](/elements/002-helium/argent/migrations/argent_2057.lua) | queries | 1.0.1 | 2026-10-08 | 5 | ✓ | QueryRef #2010 - Argent search |
+| [2058](/elements/002-helium/argent/migrations/argent_2058.lua) | scripts | 1.0.1 | 2026-10-08 | 5 | ✓ | Argent.QueryDue |
+| [2059](/elements/002-helium/argent/migrations/argent_2059.lua) | scripts | 1.0.1 | 2026-10-08 | 5 | ✓ | Argent.QueryReconciliationStatus |
+| [2060](/elements/002-helium/argent/migrations/argent_2060.lua) | scripts | 1.0.1 | 2026-10-08 | 5 | ✓ | Argent.QueryLedgerHistory |
+| [2061](/elements/002-helium/argent/migrations/argent_2061.lua) | scripts | 1.0.1 | 2026-10-08 | 5 | ✓ | Argent.QueryTaxSummary |
+| [2062](/elements/002-helium/argent/migrations/argent_2062.lua) | scripts | 1.0.1 | 2026-10-08 | 5 | ✓ | Argent.QueryIncomeExpense |
+| [2063](/elements/002-helium/argent/migrations/argent_2063.lua) | scripts | 1.0.1 | 2026-10-08 | 5 | ✓ | Argent.QueryCalendarView |
+| [2064](/elements/002-helium/argent/migrations/argent_2064.lua) | scripts | 1.0.1 | 2026-10-08 | 5 | ✓ | Argent.QueryFxPremium |
+| [2065](/elements/002-helium/argent/migrations/argent_2065.lua) | scripts | 1.0.1 | 2026-10-08 | 5 | ✓ | Argent.QuerySyncProblems |
+| [2066](/elements/002-helium/argent/migrations/argent_2066.lua) | scripts | 1.0.1 | 2026-10-08 | 5 | ✓ | Argent.Search |
+| [2067](/elements/002-helium/argent/migrations/argent_2067.lua) | scripts | 1.0.1 | 2026-10-08 | 5 | ✓ | Argent.ListRates |
+| [2068](/elements/002-helium/argent/migrations/argent_2068.lua) | scripts | 1.0.1 | 2026-10-08 | 5 | ✓ | Argent.UpsertRate |
+| [2069](/elements/002-helium/argent/migrations/argent_2069.lua) | scripts | 1.0.1 | 2026-10-08 | 5 | ✓ | Argent.GetBocRate |
+| **70** | | | | **403** | **70** | |

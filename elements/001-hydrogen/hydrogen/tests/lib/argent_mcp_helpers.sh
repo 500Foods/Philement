@@ -14,12 +14,14 @@
 # 1.0.3 - 2026-10-08 - Confirm tokens, edits, rescinds, statements, and reconciliation
 # 1.0.4 - 2026-10-08 - Retry one HTTP 503 (auth lookup timed out)
 # 1.0.5 - 2026-10-08 - Schedules, reserved rows, and a down calendar host
+# 1.0.6 - 2026-10-08 - Report queries, manual rates, and offline BoC checks
+# 1.0.7 - 2026-10-08 - Accept an empty income warnings object
 
 [[ -n "${ARGENT_MCP_HELPERS_GUARD:-}" ]] && return 0
 export ARGENT_MCP_HELPERS_GUARD="true"
 
 ARGENT_MCP_HELPERS_NAME="Argent MCP Helpers"
-ARGENT_MCP_HELPERS_VERSION="1.0.5"
+ARGENT_MCP_HELPERS_VERSION="1.0.7"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
     "${ARGENT_MCP_HELPERS_NAME} ${ARGENT_MCP_HELPERS_VERSION}" "info"
 
@@ -223,6 +225,10 @@ argent_mcp_exercise() {
         PostStatement PostPeriodClose
         StartReconciliation ClearLines CompleteReconciliation
         UpsertSchedule GenerateSchedule MatchReserved RetryCalendar
+        QueryDue QueryReconciliationStatus QueryLedgerHistory
+        QueryTaxSummary QueryIncomeExpense QueryCalendarView
+        QueryFxPremium QuerySyncProblems Search ListRates
+        UpsertRate GetBocRate
     )
     list_filter='.result.error == null'
     for tool in "${tools[@]}"; do
@@ -1509,6 +1515,76 @@ argent_mcp_exercise() {
     else
         argent_miss retry_down_get || true
     fi
+
+    args=$(jq -n '{from:"2026-10-01",to:"nope"}')
+    argent_fail due_date Argent.QueryDue "${args}" to || true
+    args=$(jq -n '{from:"2026-10-01",to:"2026-10-31"}')
+    argent_ok due_default Argent.QueryDue "${args}" \
+        '(.result.structuredContent.schedules|type) == "array" and (.result.structuredContent.transactions|type) == "array"' || true
+    args=$(jq -n '{from:"2026-10-01",to:"2026-10-31",status:[1]}')
+    argent_ok due_status Argent.QueryDue "${args}" \
+        '(.result.structuredContent.schedules|type) == "array" and (.result.structuredContent.transactions|type) == "array"' || true
+
+    args=$(jq -n '{}')
+    argent_ok recon_ok Argent.QueryReconciliationStatus "${args}" \
+        '(.result.structuredContent.rows|type) == "array"' || true
+
+    args=$(jq -n '{from:"2026-10-01",to:"2026-10-31"}')
+    argent_fail history_ledger Argent.QueryLedgerHistory "${args}" ledger_id || true
+    args=$(jq -n --argjson id "${bank_id:-0}" '{ledger_id:$id,from:"2026-10-01",to:"2026-10-31"}')
+    argent_ok history_ok Argent.QueryLedgerHistory "${args}" \
+        '(.result.structuredContent.rows|type) == "array"' \
+        "${bank_id}" || true
+
+    args=$(jq -n '{from:"2026-10-01",to:"2026-10-31"}')
+    argent_fail tax_org Argent.QueryTaxSummary "${args}" organization_id || true
+    args=$(jq -n --argjson org "${org_id:-0}" '{organization_id:$org,from:"2026-10-01",to:"2026-10-31"}')
+    argent_ok tax_ok Argent.QueryTaxSummary "${args}" \
+        '(.result.structuredContent.rows|type) == "array"' \
+        "${org_id}" || true
+
+    args=$(jq -n --argjson org "${org_id:-0}" '{organization_id:$org,from:"2026-10-01",to:"2026-10-31"}')
+    argent_ok income_ok Argent.QueryIncomeExpense "${args}" \
+        '(.result.structuredContent.rows|type) == "array" and ((.result.structuredContent.warnings|type) == "array" or .result.structuredContent.warnings == {}) and .result.structuredContent.currency == "cad" and (.result.structuredContent.rate_source|tonumber) == 1' \
+        "${org_id}" || true
+
+    args=$(jq -n '{from:"2026-10-01",to:"2026-10-31"}')
+    argent_ok calendar_ok Argent.QueryCalendarView "${args}" \
+        '(.result.structuredContent.rows|type) == "array"' || true
+
+    args=$(jq -n '{from:"2026-10-01",to:"2026-10-31",base_currency:"usd",quote_currency:"cad",compare_source:1}')
+    argent_fail fx_source Argent.QueryFxPremium "${args}" compare_source || true
+
+    args=$(jq -n '{}')
+    argent_ok sync_ok Argent.QuerySyncProblems "${args}" \
+        '(.result.structuredContent.rows|type) == "array" and ([.result.structuredContent.rows[].calendar_state_a2011 | tonumber] | all(. == 2 or . == 4))' || true
+
+    args=$(jq -n '{}')
+    argent_fail search_q Argent.Search "${args}" q || true
+    args=$(jq -n --arg q "${token}" '{q:$q}')
+    argent_ok search_ok Argent.Search "${args}" \
+        '(.result.structuredContent.rows|type) == "array" and (.result.structuredContent.truncated|type) == "boolean"' || true
+
+    args=$(jq -n '{base_currency:"usd",quote_currency:"cad",as_of:"2026-10-08",rate_n:1324434,rate_d:1000000,source:1}')
+    argent_fail rate_source Argent.UpsertRate "${args}" source || true
+    args=$(jq -n '{base_currency:"usd",quote_currency:"cad",as_of:"2026-10-08",rate_n:1324434,rate_d:1000000}')
+    argent_ok rate_manual Argent.UpsertRate "${args}" \
+        '(.result.structuredContent.created == true or .result.structuredContent.updated == true) and (.result.structuredContent.source_a2012|tonumber) == 5 and (.result.structuredContent.rate_n|tonumber) == 1324434 and (.result.structuredContent.rate_d|tonumber) == 1000000' || true
+    argent_ok rate_again Argent.UpsertRate "${args}" \
+        '.result.structuredContent.updated == true and (.result.structuredContent.source_a2012|tonumber) == 5 and (.result.structuredContent.rate_n|tonumber) == 1324434' || true
+
+    args=$(jq -n '{base_currency:"usd",quote_currency:"cad",source:5,from:"2026-10-01",to:"2026-10-31"}')
+    argent_ok rate_list Argent.ListRates "${args}" \
+        '(.result.structuredContent.rows|type) == "array" and (.result.structuredContent.rows|length) >= 1' || true
+
+    args=$(jq -n '{from:"2026-10-08",to:"2026-10-08",base_currency:"usd",quote_currency:"cad",compare_source:5}')
+    argent_ok fx_manual Argent.QueryFxPremium "${args}" \
+        '([.result.structuredContent.rows[].compare_rate_n | tonumber] | index(1324434)) != null' || true
+
+    args=$(jq -n '{base_currency:"xxx",quote_currency:"cad",as_of:"2026-10-08"}')
+    argent_fail boc_pair Argent.GetBocRate "${args}" pair || true
+    args=$(jq -n '{base_currency:"usd",quote_currency:"cad",as_of:"not-a-date"}')
+    argent_fail boc_date Argent.GetBocRate "${args}" as_of || true
 
     echo "EXPECTED_TOOL_CASES=${ARGENT_CASE_N}" >> "${result_file}"
 }

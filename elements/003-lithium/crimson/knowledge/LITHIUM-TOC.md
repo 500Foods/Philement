@@ -41,6 +41,7 @@ URL in `config/lithium.json`). For most code edits prefer `npm test` and
 | [../elements/003-lithium/AGENTS.md](/elements/003-lithium/AGENTS.md) | **Agent map** — stack, IDs, Hydrogen/Helium/Keycloak, known defects |
 | [TODO.md](TODO.md) | Active backlog pointer |
 | [CATCHUP.md](/elements/003-lithium/CATCHUP.md) | **Active plan** — Phases 0–38 |
+| [plans/REPORTING_PLAN.md](/docs/Li/plans/REPORTING_PLAN.md) | Report writer — Phases 0–26, Phase 0 not approved |
 | [plans/LITHIUM_SPRINT.md](plans/LITHIUM_SPRINT.md) | Superseded sprint (do not implement) |
 
 ### Core Architecture

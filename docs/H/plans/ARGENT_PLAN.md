@@ -4,11 +4,11 @@
 
 **Date:** 2026-10-06 (PT)
 **Author:** Folly (for Andrew)
-**Status:** Phases 0–14 complete. Phase 12 closed 2026-10-08 on Andrew's report that migration 2044 is applied on every engine, and on Test 73 1.0.4 diagnostics `test_73_20261008_145836`: 276/276 on PostgreSQL, YugabyteDB, SQLite, MariaDB, DB2, MSSQL, MySQL, and Firebird (271 tool cases plus 5 session cases, 0 failures). The reverse half of tests 32–39 was not run. Test 31 and the full Test 98 were not re-run after the 1.0.1 edit. Phase 13 closed 2026-10-08. Andrew reported that all Unity framework unit tests pass and `mkp` passes. He did not quote a count. No migration was added in Phase 13. Phase 14 closed 2026-10-08 on Test 73 1.0.5 diagnostics `test_73_20261008_173729`: 300/300 on PostgreSQL, YugabyteDB, SQLite, MariaDB, DB2, MSSQL, MySQL, and Firebird (295 tool cases plus 5 session cases, 0 failures). The harness is 22 pass, 0 fail, 314.196s. Every engine log shows argent AVAIL = LOAD = APPLY = 2048. The down-host match stayed saved at status 3 with calendar state 4 and error `H.wait: Could not connect to server`. Work item 14.4 is checked. The full Test 31 harness was not run. Phase 15 has not started.
+**Status:** Phases 0–15 complete. Phase 12 closed 2026-10-08 on Andrew's report that migration 2044 is applied on every engine, and on Test 73 1.0.4 diagnostics `test_73_20261008_145836`: 276/276 on PostgreSQL, YugabyteDB, SQLite, MariaDB, DB2, MSSQL, MySQL, and Firebird (271 tool cases plus 5 session cases, 0 failures). The reverse half of tests 32–39 was not run. Test 31 and the full Test 98 were not re-run after the 1.0.1 edit. Phase 13 closed 2026-10-08. Andrew reported that all Unity framework unit tests pass and `mkp` passes. He did not quote a count. No migration was added in Phase 13. Phase 14 closed 2026-10-08 on Test 73 1.0.5 diagnostics `test_73_20261008_173729`: 300/300 on PostgreSQL, YugabyteDB, SQLite, MariaDB, DB2, MSSQL, MySQL, and Firebird (295 tool cases plus 5 session cases, 0 failures). The harness is 22 pass, 0 fail, 314.196s. Every engine log shows argent AVAIL = LOAD = APPLY = 2048. The down-host match stayed saved at status 3 with calendar state 4 and error `H.wait: Could not connect to server`. Work item 14.4 is checked. The full Test 31 harness was not run. Phase 15 is complete. Test 73 1.0.7 diagnostics `test_73_20261008_221958` is 321/321 on PostgreSQL, YugabyteDB, SQLite, MariaDB, DB2, MSSQL, MySQL, and Firebird (`EXPECTED_TOOL_CASES` 316 plus 5 session cases, 0 failures). The harness is 22 pass, 0 fail, 328.966s. Every engine log shows argent AVAIL = LOAD = APPLY = 2069. Work item 15.4 is checked. The full Test 31 harness was not run. Tests 32–39 were not in this report. Phase 16 opened 2026-10-08 and is waiting on Andrew. No migration was added. The agent does not apply.
 **Design name:** Argent
 **Helium path:** `elements/002-helium/argent/`
 **Database:** the Acuranzo database (same schema, same `queries` / `lookups` / `scripts`). Optional pack. Never applied alone.
-**Migration series:** `argent_2xxx.lua`. On disk through `argent_2048.lua` (`RetryCalendar`). Andrew has applied through `argent_2044.lua`, including the 1.0.1 `ClearLines` and `CompleteReconciliation` scripts. `argent_2045.lua` through `argent_2048.lua` are applied. Test 73 1.0.5 diagnostics `test_73_20261008_173729` show argent AVAIL = LOAD = APPLY = 2048 on every engine. DB2 passing `test_73_20261008_145836` is that proof.
+**Migration series:** `argent_2xxx.lua`. On disk through `argent_2069.lua` (`GetBocRate`). Test 73 1.0.5 diagnostics `test_73_20261008_173729` show argent AVAIL = LOAD = APPLY = 2048 on every engine. Test 73 1.0.7 diagnostics `test_73_20261008_221958` show argent AVAIL = LOAD = APPLY = 2069 on every engine. `argent_2049.lua` through `argent_2069.lua` are 1.0.1. DB2 passing `test_73_20261008_145836` is the 1.0.1 proof for `ClearLines` and `CompleteReconciliation`.
 
 The earlier Folly copies named `/workspace/folly/argent-plan.md` and `/workspace/folly/hydrogen-bookkeeping-decisions.md` are not on this machine. Decisions from that work are in this file. Amend this file. Do not hunt for the Folly paths.
 
@@ -33,8 +33,8 @@ Effort is the remaining work, or the size of the phase when it is already done. 
 | 12 Confirm and reconciliation tools | Complete. Test 73 1.0.4 `test_73_20261008_145836`, 276/276 on eight engines | Hard |
 | 13 `H.http.request` | Complete. Andrew 2026-10-08: all Unity tests pass, `mkp` passes. No count quoted. No migration | Medium |
 | 14 Schedules and calendar sync | Complete. Test 73 1.0.5 `test_73_20261008_173729`, 300/300 on eight engines | Hard |
-| 15 Report queries | Not started | Hard |
-| 16 Production | Not started | Easy |
+| 15 Report queries | Complete. Test 73 1.0.7 `test_73_20261008_221958`, 321/321 on eight engines | Hard |
+| 16 Production | Waiting on Andrew. No agent apply. No new migration | Easy |
 
 Permissions, imports, Plaid, and QBO are not phases. They need an amendment.
 
@@ -55,7 +55,7 @@ Lint the agent may be asked to run: Test 31 (expands SQL, no apply) and Test 98 
 
 ## Next session
 
-Phases 0–14 are complete. Phase 12 closed 2026-10-08. Andrew reported migration 2044 applied on every engine. Test 73 1.0.4 diagnostics `test_73_20261008_145836` is 276/276 on all eight engines. The reverse half of tests 32–39 was not run. Test 31 and the full Test 98 were not re-run after the 1.0.1 edit. Phase 13 closed 2026-10-08. Andrew reported that all Unity framework unit tests pass and `mkp` passes. He did not quote a count. No migration was added in Phase 13. Phase 14 closed 2026-10-08. Test 73 1.0.5 diagnostics `test_73_20261008_173729` is 300/300 on all eight engines (295 tool cases plus 5 session cases). The harness is 22 pass, 0 fail, 314.196s. Every engine log shows argent AVAIL = LOAD = APPLY = 2048. Work item 14.4 is checked. The full Test 31 harness was not run. The next conversation starts Phase 15 when Andrew asks. Phase 15 installs QueryRefs 2002–2010, one per file, and the remaining read tools, plus `UpsertRate` and `GetBocRate`. It does not change the Phase 11 posting rules. The next free file is `argent_2049.lua`. The agent does not start Phase 15 here.
+Phases 0–15 are complete. Phase 12 closed 2026-10-08. Andrew reported migration 2044 applied on every engine. Test 73 1.0.4 diagnostics `test_73_20261008_145836` is 276/276 on all eight engines. The reverse half of tests 32–39 was not run. Test 31 and the full Test 98 were not re-run after the 1.0.1 edit. Phase 13 closed 2026-10-08. Andrew reported that all Unity framework unit tests pass and `mkp` passes. He did not quote a count. No migration was added in Phase 13. Phase 14 closed 2026-10-08. Test 73 1.0.5 diagnostics `test_73_20261008_173729` is 300/300 on all eight engines (295 tool cases plus 5 session cases). The harness is 22 pass, 0 fail, 314.196s. Every engine log shows argent AVAIL = LOAD = APPLY = 2048. Work item 14.4 is checked. The full Test 31 harness was not run. Phase 15 is complete. Test 73 1.0.7 diagnostics `test_73_20261008_221958` is 321/321 on PostgreSQL, YugabyteDB, SQLite, MariaDB, DB2, MSSQL, MySQL, and Firebird (`EXPECTED_TOOL_CASES` 316 plus 5 session cases, 0 failures). The harness is 22 pass, 0 fail, 328.966s. Every engine log shows argent AVAIL = LOAD = APPLY = 2069. Work item 15.4 is checked. The full Test 31 harness was not run. Tests 32–39 were not in this report. Phase 16 opened 2026-10-08 and is waiting on Andrew. He sets the production Acuranzo connection to `Migrations` `PAYLOAD:acuranzo+argent` and applies on that same schema and connection. The binary must already embed `argent_2000.lua` through `argent_2069.lua`, with 2049–2069 at 1.0.1. He enters organizations and ledgers through MCP. Opening balances are opening transactions or statement snapshots. Folly keeps the tracker until he says otherwise. The phase closes when he says Argent is the source of truth and about 25 ledgers are visible through `Argent.ListLedgers`. The agent does not apply. No file was added. The next free file remains `argent_2070.lua`. Do not assign QueryRef 2011.
 
 ---
 
@@ -1138,10 +1138,10 @@ Each report in the read-tool table returns stable JSON. The migrations have been
 
 ### Work items
 
-- [ ] 15.1 Install QueryRefs 2002 through 2010, one per file. Defaults match the tool table. `QueryDue` (2002) defaults to lookup 2003 key 1 (Reserved). The others that take a status list default to keys 3 and 4 (Recorded, Reconciled).
-- [ ] 15.2 MCP wrappers: `QueryDue`, `QueryReconciliationStatus`, `QueryLedgerHistory`, `QueryTaxSummary`, `QueryIncomeExpense`, `QueryCalendarView`, `QueryFxPremium`, `QuerySyncProblems`, `Search`, `ListRates`, `GetBocRate`.
-- [ ] 15.3 `UpsertRate` for lookup 2012 key 5 (`manual`). `GetBocRate` inserts key 1 (`boc`) through `H.http.get`.
-- [ ] 15.4 Andrew runs tests 32–39 and a fixture. The JSON paths are recorded here.
+- [x] 15.1 Install QueryRefs 2002 through 2010, one per file. Defaults match the tool table. `QueryDue` (2002) defaults to lookup 2003 key 1 (Reserved). The others that take a status list default to keys 3 and 4 (Recorded, Reconciled).
+- [x] 15.2 MCP wrappers: `QueryDue`, `QueryReconciliationStatus`, `QueryLedgerHistory`, `QueryTaxSummary`, `QueryIncomeExpense`, `QueryCalendarView`, `QueryFxPremium`, `QuerySyncProblems`, `Search`, `ListRates`, `GetBocRate`.
+- [x] 15.3 `UpsertRate` for lookup 2012 key 5 (`manual`). `GetBocRate` inserts key 1 (`boc`) through `H.http.get`.
+- [x] 15.4 Andrew's fixture. Test 73 1.0.7 diagnostics `test_73_20261008_221958` is 321/321 on all eight engines (`EXPECTED_TOOL_CASES` 316 plus 5 session cases, 0 `CASE_FAIL`). The harness is 22 pass, 0 fail, 328.966s. Tests 32–39 were not in this report. The full Test 31 harness was not run.
 
 ### Done means
 
@@ -1153,11 +1153,81 @@ Test 31, Test 98, payload regenerate, Andrew's apply, Andrew's fixture.
 
 ### Status
 
-**Not started.**
+**Complete.** Test 73 1.0.7 diagnostics `test_73_20261008_221958` is 321/321 on all eight engines. The harness is 22 pass, 0 fail, 328.966s. Work item 15.4 is checked. The full Test 31 harness was not run. Tests 32–39 were not in this report.
+
+### Accomplished
+
+Nine QueryRef files and twelve script files are 1.0.1. Test 73 1.0.6 applied the 1.0.0 text and failed. Test 73 1.0.7 ran after that text had been loaded again.
+
+| File | What it stores |
+| --- | --- |
+| `argent_2049.lua` | QueryRef 2002, due |
+| `argent_2050.lua` | QueryRef 2003, reconciliation status |
+| `argent_2051.lua` | QueryRef 2004, ledger history |
+| `argent_2052.lua` | QueryRef 2005, tax summary |
+| `argent_2053.lua` | QueryRef 2006, income and expense |
+| `argent_2054.lua` | QueryRef 2007, calendar view |
+| `argent_2055.lua` | QueryRef 2008, FX premium |
+| `argent_2056.lua` | QueryRef 2009, sync problems |
+| `argent_2057.lua` | QueryRef 2010, search |
+| `argent_2058.lua` | `Argent.QueryDue` |
+| `argent_2059.lua` | `Argent.QueryReconciliationStatus` |
+| `argent_2060.lua` | `Argent.QueryLedgerHistory` |
+| `argent_2061.lua` | `Argent.QueryTaxSummary` |
+| `argent_2062.lua` | `Argent.QueryIncomeExpense` |
+| `argent_2063.lua` | `Argent.QueryCalendarView` |
+| `argent_2064.lua` | `Argent.QueryFxPremium` |
+| `argent_2065.lua` | `Argent.QuerySyncProblems` |
+| `argent_2066.lua` | `Argent.Search` |
+| `argent_2067.lua` | `Argent.ListRates` |
+| `argent_2068.lua` | `Argent.UpsertRate` |
+| `argent_2069.lua` | `Argent.GetBocRate` |
+
+QueryRef 2002 defaults to lookup 2003 key 1. QueryRefs 2004 and 2006 default to keys 3 and 4. QueryRef 2005 hardcodes keys 3 and 4. QueryRef 2009 is calendar states 2 and 4, not a transaction-status list. Reverse of each QueryRef deletes only `query_type_a28` SQL. Bookkeeping rows on those same integers stay. No QueryRef 2011 was assigned. `ListRates` is SQL inside the script. `UpsertRate` writes source 5 only and replaces the unique rate row. `GetBocRate` inserts source 1 only after a 2xx body with a `v`.
+
+`get_migration.lua` expanded all 21 files for postgresql (`app`), sqlite (empty schema), mysql (`acuranzo`), db2 (`ACURANZO`), mariadb (`test`), firebird (no schema prefix; the Test 31 name `testfb` is ignored), and mssql (`testms`). The decoded SQL has no `${...}` and no `@@` tokens. Firebird's running balance is `CAST(SUM(...) AS BIGINT)`. MySQL nulls in QueryRef 2002 are `CAST(NULL AS signed)` and `CAST(NULL AS char(20))`. DB2 search uses `SUBSTR` of the first 240 characters of `file_text`. A req CTE that is not from a real table ends with `${DUMMY_TABLE}`: empty on PostgreSQL, SQLite, MySQL, MariaDB, and MSSQL, `FROM SYSIBM.SYSDUMMY1` on DB2, and `FROM RDB$DATABASE` on Firebird. The full Test 31 harness was not run, so there is no Test 31 count. SQLite `EXPLAIN` was not run. The 1.0.1 text was expanded the same way later the same day. MySQL and MariaDB decoded SQL uses `signed` and `char`, including `CAST(s.currency AS char(20))` beside `CAST(NULL AS char(20))`.
+
+Test 98 1.1.1 at 2026-10-08 18:41:18 found no issues in 552 files (2 pass, 0 fail, 4.313s). It linted the 21 new files and used the cache for the other 531. `luac -p` accepted the migration files and the extracted script bodies before that run.
+
+`tests/test_73_argent_mcp.sh` and `tests/lib/argent_mcp_helpers.sh` are 1.0.7. The exercise adds the twelve tools and the offline cases. `GetBocRate` is called only for `xxx`/`cad` and for a bad date on `usd`/`cad`, which returns before HTTP. There is no live Bank of Canada call. `EXPECTED_TOOL_CASES` stays the live count. Diagnostics `test_73_20261008_200256` (script 1.0.6) recorded `EXPECTED_TOOL_CASES` 316. PostgreSQL, YugabyteDB, SQLite, DB2, Firebird, and MSSQL were 320 pass and 1 fail (`income_ok`). MySQL was 316 pass and 5 fail (`due_default`, `due_status`, `income_ok`, `search_ok`, `fx_manual`). MariaDB was 314 pass and 7 fail (`due_default`, `due_status`, `income_ok`, `rate_manual`, `rate_again`, `rate_list`, `fx_manual`). Version 1.0.7 accepts an empty `warnings` object. Test 92 4.1.1 at 2026-10-08 20:27:30 found no issues in 206 shell files (3 pass, 0 fail, 27.066s). Test 73 1.0.7 diagnostics `test_73_20261008_221958` is 321/321 on all eight engines. The Argent README lists 70 files, 403 statements, and 70 diagrams.
+
+JSON paths for the fixture, with no counts invented:
+
+- `QueryDue`: `ok`, `from`, `to`, `schedules[]`, `transactions[]`. A schedule row has `schedule_id`, `organization_id`, `name`, `on_date`, `end_on`, `amount_cents`, `currency`, `status_a2007`, `from_ledger_id`, `to_ledger_id`. A transaction row has `txn_id`, `organization_id`, `name`, `on_date`, `status_a2003`, `schedule_id`, `kind_a2004`.
+- `QueryReconciliationStatus`: `ok`, `rows[]` with `ledger_id`, `ledger_name`, `latest_reconciliation_id`, `latest_reconciled_on`, `reconciliation_id`, `reconciled_on`, `status_a2006`, `statement_balance_cents`, `book_balance_cents`, `uncleared_count`.
+- `QueryLedgerHistory`: `ok`, `ledger_id`, `from`, `to`, `rows[]` with `txn_id`, `txn_on`, `description`, `status_a2003`, `kind_a2004`, `line_id`, `line_seq`, `amount_cents`, `memo`, `running_cents`.
+- `QueryTaxSummary`: `ok`, `organization_id`, `from`, `to`, `rows[]` with `tax_code_id`, `code`, `name`, `line_count`, `net_cents`, `tax_cents`.
+- `QueryIncomeExpense`: `ok`, `organization_id`, `from`, `to`, `currency`, `rate_source`, `warnings`, `rows[]` with `ledger_id`, `name`, `ledger_type_a2001`, `currency`, `amount_cents`, `rate_n`, `rate_d`, `rate_as_of`, `converted_cents`, `rate_warning`. An empty `warnings` table is `{}`. A non-empty one is an array.
+- `QueryCalendarView`: `ok`, `from`, `to`, `rows[]` with `txn_id`, `txn_on`, `description`, `status_a2003`, `kind_a2004`, `schedule_id`, `calendar_state_a2011`, `calendar_event_id`, `calendar_error`, `calendar_attempts`, `calendar_synced_at`.
+- `QueryFxPremium`: `ok`, `base_currency`, `quote_currency`, `compare_source`, `rows[]` with `as_of`, `boc_rate_n`, `boc_rate_d`, `compare_rate_n`, `compare_rate_d`, `premium_n`, `premium_d`, `warning`.
+- `QuerySyncProblems`: `ok`, `rows[]` with `txn_id`, `txn_on`, `organization_id`, `description`, `calendar_state_a2011`, `calendar_attempts`, `calendar_error`, `calendar_event_id`.
+- `Search`: `ok`, `q`, `truncated`, `rows[]` with `entity_type`, `entity_id`, `label`, `organization_id`.
+- `ListRates`: `ok`, `base_currency`, `quote_currency`, `source`, `from`, `to`, `rows[]` with `rate_id`, `base_currency`, `quote_currency`, `source_a2012`, `as_of`, `rate_n`, `rate_d`, `txn_id`.
+- `UpsertRate`: `ok`, `rate_id`, `created`, `updated`, `base_currency`, `quote_currency`, `source_a2012`, `as_of`, `rate_n`, `rate_d`.
+- `GetBocRate`: `ok`, `cached`, `rate_id`, `base_currency`, `quote_currency`, `source_a2012`, `as_of`, `rate_n`, `rate_d`. A row written on that call also has `created` and `series`. A cache hit may omit `series` and `created`.
+
+### Lessons learned
+
+- `@@NUMBER@@` and the other `@@` tokens lived only in the scratch templates under `/tmp/argent15/`. The filler substitutes them before it writes a file. They are not Helium macros. The migrations use `${SCHEMA}`, `${DATE}`, `${CAST_BIG}`, `${NULL_BIG}`, `${NULL_CURRENCY}`, and the rest. A scan of `argent_2049.lua` through `argent_2069.lua` found no `@@`.
+- The first generator kept the migration text inside a Lua long string delimited by `[=[ ]=]`. The migration text also contains `]=]`, so that string would have closed early. That generator was not run. The filler reads plain templates and replaces `@@` tokens with a function, so the replacement is literal.
+- QueryRefs 2002–2010 share integers with `argent_2002.lua` through `argent_2010.lua`. Uniqueness is `(query_ref, query_type_a28)`. The reverse deletes type SQL only.
+- Each named parameter appears once. The req CTE casts it, and later SQL reads the column. `IN (req.status_1, ...)` is columns, not a bound list. Unused status slots are 0.
+- `QueryLedgerHistory` sums every status-matched line, including lines before `from`, then the outer query keeps `txn_on` in the window. `running_cents` therefore includes the earlier lines. It does not add `opening_balance_cents`.
+- Income conversion stays in SQL. A missing rate is `converted_cents` null, `rate_warning` `missing`, and a warning string, with `ok` true. Premium is computed in Lua from the QueryRef rows. `compare_source` 1 is `compare_source`, before the query runs.
+- `GetBocRate` checks the series list, then the date, then `currencies`, then the cache. `xxx` returns `pair`. A bad date returns `as_of`. Neither calls `H.http.get`. A cache hit does not call it either. Transport failure and a non-2xx body insert nothing.
+- `UpsertRate` `created` is not stable across Test 73 reruns. The pair, date, and source 5 key remains. The first call accepts `created` or `updated`. The second call on that key expects `updated`.
+- Firebird still has an empty schema prefix. Passing `testfb` does not put `testfb.` in the SQL. That matches `argent_2014.lua`.
+- Grep of the generated SQL does not show the report text until the brotli payload is decoded. The unsubstituted-`${}` check on the wrapper is not enough by itself. This session decoded the blobs. The full Test 31 harness was not run.
+- `H.set_result_json` encodes an empty Lua table as a JSON object. `QueryIncomeExpense` on every engine in `test_73_20261008_200256` returned `ok` true, `currency` `cad`, `rate_source` 1, one row, and `warnings` `{}`. `rate_warning` on that same-currency row was an empty string. The 1.0.7 `income_ok` filter accepts a `warnings` array or `{}`. The encoder is unchanged.
+- MariaDB does not take the MySQL cast strings unless the engine test names it. `CAST AS bigint` and `CAST AS varchar` are illegal there. The 1.0.1 engine block uses `signed` and `char` when `engine` is `mysql` or `mariadb`. `rate_list` and `fx_manual` on MariaDB failed because the manual rate never inserted.
+- MySQL 8 table columns are `utf8mb4_0900_ai_ci`. `CAST AS char` uses the connection collation `utf8mb4_general_ci`. A column compared with that cast, or united with it, is an illegal mix. The 1.0.1 SQL casts both sides of the QueryRef 2002 currency union, the QueryRef 2010 `LIKE` arms, and the QueryRef 2008 currency equalities. It does not name a collation.
+- A migration number already applied is skipped. The 1.0.1 text is invisible until the payload is regenerated and `argent_2049.lua` through `argent_2069.lua` are loaded again.
 
 ### Handoff
 
-Phase 16 is the production database Andrew already uses for Acuranzo. The agent does not apply. There is no bulk import.
+Phase 15 is complete. `argent_2049.lua` through `argent_2069.lua` are 1.0.1. Test 73 1.0.7 diagnostics `test_73_20261008_221958` recorded the fixture. Every engine log shows argent AVAIL = LOAD = APPLY = 2069.
+
+Phase 16 does not start in this conversation. Phase 16 is the production database Andrew already uses for Acuranzo. It starts when he asks. The next free file is `argent_2070.lua`. Do not assign QueryRef 2011. Do not edit `argent_2000.lua` through `argent_2069.lua` for that phase. There is no bulk import.
 
 ---
 
@@ -1184,11 +1254,19 @@ Andrew's report. No agent apply.
 
 ### Status
 
-**Not started.**
+**Waiting on Andrew.** Opened 2026-10-08. No migration was added. Work items 16.1–16.4 are his. The agent does not apply.
+
+### Accomplished
+
+Opened when Andrew said to continue. No file was added. `argent_2070.lua` was not written. QueryRef 2011 was not assigned. `argent_2000.lua` through `argent_2069.lua` were not edited.
+
+### Lessons learned
+
+This phase has no migration and no import pipeline. The production process uses the Acuranzo connection it already has. `Migrations` becomes `PAYLOAD:acuranzo+argent`. A second database is not created. Opening balances are opening transactions or statement snapshots entered through MCP. The in-place edit window stays open until he declares Argent the source of truth and this plan closes.
 
 ### Handoff
 
-None. An amendment opens permissions, imports, or QBO. Those are not implied by this phase closing.
+Andrew sets that connection's `Migrations` to `PAYLOAD:acuranzo+argent` and applies. Same schema, same connection. The payload in that binary includes `argent_2049.lua` through `argent_2069.lua` at 1.0.1. He enters the organizations and ledgers from his tracker through MCP. Folly updates Argent and the tracker until he says otherwise. He reports the argent migration summary and the `Argent.ListLedgers` count. Work item 16.4 is checked only after he says Argent is the source of truth. An amendment opens permissions, imports, or QBO. Those are not implied by this phase closing.
 
 ---
 
@@ -1327,5 +1405,33 @@ Andrew reported Test 73 1.0.5 passing. The harness table is 22 pass, 0 fail, 314
 PostgreSQL `gen_month` created four Reserved rows, txn 64–67, on `2026-10-01`, `2026-10-08`, `2026-10-15`, and `2026-10-22`. Each is status 1, kind 11, calendar state 1, and `calendar_attempts` 0. `match_one` saved txn 68 at status 3 and rescinded txn 64 to status 5, with calendar state 1. `match_down` saved txn 69 at status 3. Calendar state is 4, attempts is 1, and `calendar_error` is `H.wait: Could not connect to server`. `retry_down` left status 3, raised attempts to 2, and returned tried 1, failed 1, set 0. The same calendar outcome is on all eight engines: `match_down` is ok, status 3, state 4, attempts 1, and that same error string. `retry_down` is attempts 2, tried 1, failed 1, set 0, status 3.
 
 Hydrogen elapsed time was 20.870s on PostgreSQL, 21.204s on MariaDB, 22.390s on DB2, 22.517s on MSSQL, 26.376s on SQLite, 27.486s on Firebird, 280.964s on MySQL, and 313.581s on YugabyteDB. Work item 14.4 is checked. The full Test 31 harness was not run. Phase 15 has not started.
+
+### 2026-10-08 — Phase 15 implemented
+
+`argent_2049.lua` through `argent_2057.lua` install QueryRefs 2002–2010. `argent_2058.lua` through `argent_2069.lua` are the report tools, `ListRates`, `UpsertRate`, and `GetBocRate`. No earlier file was edited. No column was added. The files are not applied. Applied high-water stays 2048.
+
+`get_migration.lua` expanded the 21 files for postgresql, sqlite, mysql, db2, mariadb, firebird, and mssql. Decoded SQL has no `${...}`. The full Test 31 harness was not run, so there is no Test 31 count. Test 98 1.1.1 at 18:41:18 found no issues in 552 files (2 pass, 0 fail, 4.313s), linting the 21 new files and using the cache for 531. `luac -p` had already accepted the migration files and the extracted script bodies.
+
+Test 73 and `tests/lib/argent_mcp_helpers.sh` are 1.0.6. The exercise adds the twelve tools and the offline cases, including `GetBocRate` only for an unknown pair and a bad date. Test 92 4.1.1 at 18:41:29 found no issues in 206 shell files (3 pass, 0 fail, 27.193s). Test 73 was not run. The Argent README lists 70 files, 403 statements, and 70 diagrams.
+
+Work items 15.1–15.3 are checked. Work item 15.4 is open. The JSON paths are in the Phase 15 Accomplished section. Andrew regenerates the payload, applies, runs tests 32–39, and records the fixture. Phase 16 has not started.
+
+### 2026-10-08 — Phase 15 Test 73 1.0.6
+
+Diagnostics `test_73_20261008_200256` applied the 1.0.0 text. `EXPECTED_TOOL_CASES` is 316. PostgreSQL, YugabyteDB, SQLite, DB2, Firebird, and MSSQL were 320 pass and 1 fail. MySQL was 316 pass and 5 fail. MariaDB was 314 pass and 7 fail. Every engine failed `income_ok` because `warnings` was `{}`. MariaDB also rejected `CAST AS bigint` and `CAST AS varchar`. MySQL rejected the QueryRef 2002 currency union, the QueryRef 2010 `LIKE`, and the QueryRef 2008 currency equality as mixed collations.
+
+The 1.0.1 edit names MariaDB in the MySQL cast branch and casts both sides of those three text compares. Test 73 and the helper are 1.0.7. The `income_ok` filter accepts a `warnings` array or `{}`. `get_migration.lua` expanded the 21 files again for the seven engines. The decoded SQL has no `${...}` and no `@@`. MySQL and MariaDB decoded SQL has no `CAST AS bigint` and no `CAST AS varchar`. Test 98 1.1.1 at 20:27:30 found no issues in 552 files (2 pass, 0 fail, 5.400s). Test 92 4.1.1 at 20:27:30 found no issues in 206 shell files (3 pass, 0 fail, 27.066s). The full Test 31 harness was not run. Test 73 1.0.7 was not run. Work item 15.4 stays open. Phase 16 has not started.
+
+### 2026-10-08 — Phase 15 closed
+
+Andrew reported Test 73 1.0.7 passing. The harness table is 22 pass, 0 fail, 328.966s. Diagnostics `test_73_20261008_221958` record 321 `CASE_PASS` and 0 `CASE_FAIL` on PostgreSQL, YugabyteDB, SQLite, MariaDB, DB2, MSSQL, MySQL, and Firebird. `EXPECTED_TOOL_CASES` is 316. Every engine's migration summary is argent AVAIL = LOAD = APPLY = 2069. Migration completed in 0.002s on DB2, Firebird, MSSQL, MySQL, and SQLite, 0.003s on MariaDB, and 0.004s on PostgreSQL and YugabyteDB. The number was already applied when this launch started.
+
+The cases that failed on `test_73_20261008_200256` passed here: `due_default`, `due_status`, `income_ok`, `search_ok`, `rate_manual`, `rate_again`, `rate_list`, `fx_manual`, `boc_pair`, and `boc_date`. PostgreSQL `income_ok` returned `warnings` as an object, currency `cad`, rate source 1, and one row. MySQL `due_default` returned `schedules` and `transactions` as arrays. MySQL `search_ok` returned 35 rows with `truncated` false. MySQL `fx_manual` returned one row. MariaDB `rate_manual` returned `created` true, `updated` false, and source 5.
+
+Hydrogen log span was 24.289s on PostgreSQL, 23.498s on SQLite, 24.768s on MariaDB, 27.577s on MSSQL, 28.548s on DB2, 32.744s on Firebird, 298.201s on MySQL, and 328.375s on YugabyteDB. Work item 15.4 is checked. The full Test 31 harness was not run. Tests 32–39 were not in this report. Phase 16 has not started.
+
+### 2026-10-08 — Phase 16 opened
+
+Andrew said to continue. Phase 16 is his production apply on the Acuranzo database he already uses. No migration was written. `argent_2070.lua` was not created. QueryRef 2011 was not assigned. `argent_2000.lua` through `argent_2069.lua` were not edited. Work items 16.1–16.4 stay open. He sets `Migrations` to `PAYLOAD:acuranzo+argent` on that connection, applies, enters organizations and ledgers through MCP, and reports when Argent is the source of truth. The agent does not apply.
 
 *End of Argent plan.*
