@@ -64,19 +64,19 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-10-08 00:52:59 UTC
+Last updated at 2026-10-09 01:03:58 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-JSON                           561            472              0        1939018
-C                             1873          76040          61961         328621
-Text                           379            376              0         163104
-Markdown                       785          40059            266         124389
-Lua                            498          13537           8735         113080
-Bourne Shell                   217           8782         117683          51036
+JSON                           562            473              0        1947014
+C                             1875          76126          61977         329134
+Text                           380            377              0         163747
+Markdown                       783          40048            264         124241
+Lua                            509          14110           9001         119408
+Bourne Shell                   219           8925         118596          53349
 JavaScript                     228          10621          13694          50542
-SVG                             16             17             27          17283
-C/C++ Header                   389           4540          14745          14526
+SVG                             16             17             27          17308
+C/C++ Header                   389           4543          14788          14554
 CSS                             86           2781           1565          14077
 HTML                            42            273            219           3039
 CMake                           19            177            430           1566
@@ -92,12 +92,12 @@ YAML                             2              8             13             37
 Pascal                           2             11              2             31
 MSBuild script                   1              3              0             11
 -------------------------------------------------------------------------------
-SUM:                          5133         158073         219628        2822547
+SUM:                          5148         158869         220864        2840245
 -------------------------------------------------------------------------------
-525 Files were skipped (duplicate, binary, or without source code):
+527 Files were skipped (duplicate, binary, or without source code):
   css: 167
   html: 134
-  md: 37
+  md: 39
   js: 24
   png: 24
   lua: 22
