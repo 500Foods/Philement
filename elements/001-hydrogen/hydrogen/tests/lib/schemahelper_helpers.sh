@@ -8,6 +8,7 @@
 
 # CHANGELOG
 # 1.0.1 - 2026-10-07 - Fixture check includes schematool_sqlite_test.sh
+# 1.0.2 - 2026-10-09 - Added apply/qexplain/qdiff/qview/qrender submodules to luacheck list
 # 1.0.0 - 2026-09-09 - Split from test_72 to stay under the 1000-line cap
 
 [[ -n "${SCHEMAHELPER_HELPERS_GUARD:-}" ]] && return 0
@@ -154,11 +155,21 @@ schemahelper_luacheck() {
         "schemahelper.lua"
         "lua/schemahelper_qutil.lua"
         "lua/schemahelper_apply.lua"
+        "lua/schemahelper_apply_sqlutil.lua"
+        "lua/schemahelper_apply_engine.lua"
+        "lua/schemahelper_apply_decode.lua"
+        "lua/schemahelper_apply_json.lua"
+        "lua/schemahelper_apply_logic.lua"
+        "lua/schemahelper_apply_ddl.lua"
         "lua/schemahelper_packet.lua"
         "lua/schemahelper_connect.lua"
         "lua/schemahelper_qstate.lua"
         "lua/schemahelper_qload.lua"
         "lua/schemahelper_qdecode.lua"
+        "lua/schemahelper_qexplain.lua"
+        "lua/schemahelper_qdiff.lua"
+        "lua/schemahelper_qview.lua"
+        "lua/schemahelper_qrender.lua"
         "lua/schemahelper_queue.lua"
         "lua/schemahelper_screens.lua"
         "lua/schemahelper_decode_test.lua"
