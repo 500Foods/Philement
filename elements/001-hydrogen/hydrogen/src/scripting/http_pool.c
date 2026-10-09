@@ -115,24 +115,15 @@ void scripting_http_worker_process_one(ScriptingHttpPool* pool,
         return;
     }
 
-    // Take ownership of the headers slist (scripting_http_get/_post
-    // pass it to the OIDC helper, which frees it on return).
+    // Take ownership of the headers slist (scripting_http_request
+    // passes it to the OIDC helper, which frees it on return).
     struct curl_slist* headers = (struct curl_slist*)h->http_headers_slist;
     h->http_headers_slist = NULL;
 
     struct timespec start_ts;
     clock_gettime(CLOCK_MONOTONIC, &start_ts);
 
-    struct OidcRpHttpResponse* resp = NULL;
-    if (strcmp(h->http_method, "GET") == 0) {
-        resp = scripting_http_get(h->http_url, headers,
-                                  h->http_timeout, true);
-    } else if (strcmp(h->http_method, "POST") == 0) {
-        resp = scripting_http_post(h->http_url, h->http_body,
-                                   h->http_content_type, headers,
-                                   h->http_timeout, true);
-    } else {
-        // Should not happen. Free the slist we claimed above.
+    if (!scripting_http_method_allowed(h->http_method)) {
         if (headers) curl_slist_free_all(headers);
         pthread_mutex_lock(&h->http_mutex);
         h->http_result_error = strdup("H.wait: unknown HTTP method on handle");
@@ -142,6 +133,10 @@ void scripting_http_worker_process_one(ScriptingHttpPool* pool,
         H_Handle_release(h);
         return;
     }
+
+    struct OidcRpHttpResponse* resp = scripting_http_request(
+        h->http_method, h->http_url, h->http_body,
+        h->http_content_type, headers, h->http_timeout, true);
 
     struct timespec end_ts;
     clock_gettime(CLOCK_MONOTONIC, &end_ts);

@@ -7,6 +7,7 @@
 -- CHANGELOG
 -- 1.0.0 - 2026-10-07 - MCP ledger upsert and opening transaction
 -- 1.0.1 - 2026-10-07 - Cast optional NULL, dates, and empty strings
+-- 1.0.2 - 2026-10-07 - MySQL CAST targets; json parameters are cast before ingest
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
@@ -14,6 +15,13 @@ local queries = {}
 cfg.TABLE = "scripts"
 cfg.MIGRATION = "2032"
 cfg.GROUP_NAME = "Argent"
+if engine == "mysql" then
+    cfg.CAST_INTEGER = "signed"
+    cfg.CAST_TEXT = "char(255)"
+else
+    cfg.CAST_INTEGER = cfg.INTEGER
+    cfg.CAST_TEXT = cfg.TEXT
+end
 -- ----------------------------------------------------------------------------
 -- Forward
 -- ----------------------------------------------------------------------------
@@ -342,7 +350,7 @@ local parent_bind = parent or 0
 if existing then
     local _, uerr = H.query_sync([[
         UPDATE ${SCHEMA}ledgers
-        SET parent_id = CASE WHEN CAST(:USE_PARENT AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:PARENT_ID AS ${INTEGER}) END,
+        SET parent_id = CASE WHEN CAST(:USE_PARENT AS ${CAST_INTEGER}) = 0 THEN CAST(NULL AS ${CAST_INTEGER}) ELSE CAST(:PARENT_ID AS ${CAST_INTEGER}) END,
             status_a2002 = :STATUS_A2002,
             ledger_type_a2001 = :LEDGER_TYPE,
             is_posting = :IS_POSTING,
@@ -350,9 +358,9 @@ if existing then
             currency = :CUR_CODE,
             opening_on = CAST(:OPENING_ON AS ${DATE}),
             opening_balance_cents = :OPENING_CENTS,
-            mask = NULLIF(CAST(:LEDGER_MASK AS ${TEXT}), ''),
-            external_ref = NULLIF(CAST(:LEDGER_REF AS ${TEXT}), ''),
-            summary = NULLIF(CAST(:LEDGER_SUMMARY AS ${TEXT}), ''),
+            mask = NULLIF(CAST(:LEDGER_MASK AS ${CAST_TEXT}), ''),
+            external_ref = NULLIF(CAST(:LEDGER_REF AS ${CAST_TEXT}), ''),
+            summary = NULLIF(CAST(:LEDGER_SUMMARY AS ${CAST_TEXT}), ''),
             updated_id = :ACTOR_UPDATED,
             updated_at = ${NOW}
         WHERE ledger_id = :LEDGER_ID
@@ -409,12 +417,12 @@ local _, ierr = H.query_sync([[
         valid_after, valid_until, created_id, created_at, updated_id, updated_at
     ) VALUES (
         :LEDGER_ID, :ORG_ID,
-        CASE WHEN CAST(:USE_PARENT AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:PARENT_ID AS ${INTEGER}) END,
+        CASE WHEN CAST(:USE_PARENT AS ${CAST_INTEGER}) = 0 THEN CAST(NULL AS ${CAST_INTEGER}) ELSE CAST(:PARENT_ID AS ${CAST_INTEGER}) END,
         :STATUS_A2002, :LEDGER_TYPE, :IS_POSTING, :LEDGER_NAME, :CUR_CODE,
         CAST(:OPENING_ON AS ${DATE}), :OPENING_CENTS, NULL,
         NULL, NULL, NULL, NULL,
-        NULLIF(CAST(:LEDGER_MASK AS ${TEXT}), ''), NULLIF(CAST(:LEDGER_REF AS ${TEXT}), ''),
-        NULLIF(CAST(:LEDGER_SUMMARY AS ${TEXT}), ''), ${JIS}:LEDGER_COLLECTION${JIE},
+        NULLIF(CAST(:LEDGER_MASK AS ${CAST_TEXT}), ''), NULLIF(CAST(:LEDGER_REF AS ${CAST_TEXT}), ''),
+        NULLIF(CAST(:LEDGER_SUMMARY AS ${CAST_TEXT}), ''), ${JIS}CAST(:LEDGER_COLLECTION AS ${CAST_TEXT})${JIE},
         NULL, NULL, :ACTOR_CREATED, ${NOW}, :ACTOR_UPDATED, ${NOW}
     )
 ]], {
@@ -462,7 +470,7 @@ local _, terr = H.query_sync([[
         :TXN_ID, :ORG_ID, 3, 6, CAST(:TXN_ON AS ${DATE}),
         :TXN_DESCRIPTION, NULL, NULL, NULL,
         1, NULL, NULL,
-        0, NULL, NULL, ${JIS}:TXN_COLLECTION${JIE},
+        0, NULL, NULL, ${JIS}CAST(:TXN_COLLECTION AS ${CAST_TEXT})${JIE},
         NULL, NULL, :ACTOR_CREATED, ${NOW}, :ACTOR_UPDATED, ${NOW}
     )
 ]], {
@@ -492,7 +500,7 @@ local function insert_line(seq, ledger_id, amount)
         ) VALUES (
             :LINE_ID, :TXN_ID, :LINE_SEQ, :LEDGER_ID, :AMOUNT_CENTS,
             NULL, NULL, 0, 0,
-            NULL, NULL, NULL, ${JIS}:LINE_COLLECTION${JIE},
+            NULL, NULL, NULL, ${JIS}CAST(:LINE_COLLECTION AS ${CAST_TEXT})${JIE},
             NULL, NULL, :ACTOR_CREATED, ${NOW}, :ACTOR_UPDATED, ${NOW}
         )
     ]], {

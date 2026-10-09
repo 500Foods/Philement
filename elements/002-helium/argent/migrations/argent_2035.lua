@@ -7,6 +7,7 @@
 -- CHANGELOG
 -- 1.0.0 - 2026-10-07 - MCP tag links and attachment revisions
 -- 1.0.1 - 2026-10-07 - Cast optional NULL, dates, and empty strings
+-- 1.0.2 - 2026-10-07 - MySQL CAST targets; json parameters are cast before ingest
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
@@ -14,6 +15,13 @@ local queries = {}
 cfg.TABLE = "scripts"
 cfg.MIGRATION = "2035"
 cfg.GROUP_NAME = "Argent"
+if engine == "mysql" then
+    cfg.CAST_INTEGER = "signed"
+    cfg.CAST_TEXT = "char(255)"
+else
+    cfg.CAST_INTEGER = cfg.INTEGER
+    cfg.CAST_TEXT = cfg.TEXT
+end
 -- ----------------------------------------------------------------------------
 -- Forward
 -- ----------------------------------------------------------------------------
@@ -197,8 +205,8 @@ for i = 1, #params.tags do
             FROM ${SCHEMA}tags
             WHERE name = :TAG_NAME
               AND (
-                    (CAST(:MATCH_GLOBAL AS ${INTEGER}) = 1 AND organization_id IS NULL)
-                    OR organization_id = CAST(:ORG_ID AS ${INTEGER})
+                    (CAST(:MATCH_GLOBAL AS ${CAST_INTEGER}) = 1 AND organization_id IS NULL)
+                    OR organization_id = CAST(:ORG_ID AS ${CAST_INTEGER})
                   )
             ORDER BY tag_id
         ]], { TAG_NAME = name, MATCH_GLOBAL = match_global, ORG_ID = org_bind })
@@ -218,8 +226,8 @@ for i = 1, #params.tags do
                     valid_after, valid_until, created_id, created_at, updated_id, updated_at
                 ) VALUES (
                     :TAG_ID,
-                    CASE WHEN CAST(:USE_ORG AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:ORG_ID AS ${INTEGER}) END,
-                    :TAG_NAME, NULL, ${JIS}:TAG_COLLECTION${JIE},
+                    CASE WHEN CAST(:USE_ORG AS ${CAST_INTEGER}) = 0 THEN CAST(NULL AS ${CAST_INTEGER}) ELSE CAST(:ORG_ID AS ${CAST_INTEGER}) END,
+                    :TAG_NAME, NULL, ${JIS}CAST(:TAG_COLLECTION AS ${CAST_TEXT})${JIE},
                     NULL, NULL, :ACTOR_CREATED, ${NOW}, :ACTOR_UPDATED, ${NOW}
                 )
             ]], {
@@ -530,11 +538,11 @@ local _, ierr = H.query_sync([[
         valid_after, valid_until, created_id, created_at, updated_id, updated_at
     ) VALUES (
         :ATTACHMENT_ID, :REV_ID, :ENTITY_TYPE, :ENTITY_ID,
-        CASE WHEN CAST(:USE_TXN AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:TXN_ID AS ${INTEGER}) END,
-        :ATT_TYPE, NULLIF(CAST(:MIME_TYPE AS ${TEXT}), ''), NULLIF(CAST(:FILE_NAME AS ${TEXT}), ''),
-        NULLIF(CAST(:FILE_DATA AS ${TEXT}), ''), NULLIF(CAST(:FILE_TEXT AS ${TEXT}), ''),
-        :BYTE_LEN, :ATT_NAME, NULLIF(CAST(:ATT_SUMMARY AS ${TEXT}), ''),
-        ${JIS}:ATT_COLLECTION${JIE},
+        CASE WHEN CAST(:USE_TXN AS ${CAST_INTEGER}) = 0 THEN CAST(NULL AS ${CAST_INTEGER}) ELSE CAST(:TXN_ID AS ${CAST_INTEGER}) END,
+        :ATT_TYPE, NULLIF(CAST(:MIME_TYPE AS ${CAST_TEXT}), ''), NULLIF(CAST(:FILE_NAME AS ${CAST_TEXT}), ''),
+        NULLIF(CAST(:FILE_DATA AS ${CAST_TEXT}), ''), NULLIF(CAST(:FILE_TEXT AS ${CAST_TEXT}), ''),
+        :BYTE_LEN, :ATT_NAME, NULLIF(CAST(:ATT_SUMMARY AS ${CAST_TEXT}), ''),
+        ${JIS}CAST(:ATT_COLLECTION AS ${CAST_TEXT})${JIE},
         NULL, NULL, :ACTOR_CREATED, ${NOW}, :ACTOR_UPDATED, ${NOW}
     )
 ]], {

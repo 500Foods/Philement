@@ -89,8 +89,8 @@ If you cannot follow all of the above from the source material, ask for clarific
 - [ ] Diagram query with proper JSON_INGEST wrappers, object_ref, and COMMON_DIAGRAM where appropriate
 - [ ] All SQL uses only allowed macros + ${SUBQUERY_DELIMITER}
 - [ ] Multi-row seeds use `INSERT … VALUES (row), (row);` + `${COMMON_FIELDS}` / `${COMMON_VALUES}` (not `VALUES AS v(cols)`, not bare `UNION ALL` derived tables)
-- [ ] Named parameters follow **Portable named parameters** (one use of each name, no bare `NULL`, cast both sides of an optional value)
-- [ ] A recursive CTE uses `WITH` on DB2 and SQL Server, and `WITH RECURSIVE` on the other engines (**Recursive common table expressions**)
+- [ ] Named parameters follow **Portable named parameters** (one use of each name, no bare `NULL`, cast both sides of an optional value, MySQL `signed` / `char(255)`, Firebird `json_ingest` and `SUM` casts)
+- [ ] A recursive CTE uses `WITH` on DB2 and SQL Server, and `WITH RECURSIVE` on the other engines. The recursive member uses a comma join, not `JOIN ... ON` (**Recursive common table expressions**)
 - [ ] Structural ALTER (ADD/DROP/ALTER COLUMN): `${REORG}` after change on reverse (and as needed on forward) — DB2 SQL0668N rc7
 - [ ] Summary Markdown is clear and explains purpose, columns, indexes, and any engine quirks
 - [ ] Tested mentally against PostgreSQL 15 / YugabyteDB **and** SQLite, DB2, Firebird, and SQL Server seed syntax (primary target is PG; seeds must still apply everywhere)
@@ -558,6 +558,7 @@ That is a **feature**: it proves reverse claimed work that forward never did.
 - If forward is free-only seed (no prices), reverse deletes courses only —
   see `acuranzo_1293.lua` (fixed 1.0.3)
 - Treat SQL0100W on reverse as “fix the migration,” not “fix the driver”
+- A tool `UPDATE` or `DELETE` that can match zero rows hits the same alarm. Hydrogen’s DB2 driver returns that CLI `SQL_NO_DATA` as a failed query. Probe with `SELECT` and skip the write when the probe is empty. `argent_2043.lua` 1.0.1 does this before `ClearLines` unlinks a reconciliation. `argent_2044.lua` 1.0.1 does this before `CompleteReconciliation` sets `cleared = 1`
 
 Full failure symptoms: `docs/He/TESTING_GUIDE.md` → **DB2 SQL0100W**.
 
@@ -603,6 +604,10 @@ VALUES
 | `FROM (SELECT … UNION ALL SELECT …) AS v` inside `INSERT…SELECT` | **DB2** often rejects `UNION` in that context (`SQL0104N … UNION … Expected … <table_expr>`) |
 | Bare `SELECT … WHERE NOT EXISTS` without a row source on DB2 | DB2 needs `${DUMMY_TABLE}` (`FROM SYSIBM.SYSDUMMY1`); empty on other engines — see `database_db2.lua` and `acuranzo_1289` / `1290` notes |
 | `WITH RECURSIVE` on DB2 or SQL Server | DB2 returns SQL0104N (unexpected token after `WITH RECURSIVE`). Both engines use `WITH`. PostgreSQL, SQLite, MySQL, MariaDB, and Firebird keep `WITH RECURSIVE`. See **Recursive common table expressions**. |
+| `JOIN ... ON` inside a DB2 recursive CTE | SQL0345N (`SQLSTATE` 42836). The recursive fullselect cannot use an explicit join. Use a comma join and put the condition in `WHERE`. See **Recursive common table expressions**. |
+| `CAST(x AS int)` or `CAST(x AS varchar(n))` on MySQL | MySQL rejects both. Use `signed` and `char(n)`. MariaDB accepts `int` and `varchar(n)`. See **Portable named parameters**. |
+| `SUM` of a Firebird `BIGINT` with no outer cast | Firebird 4 returns `INT128`. Hydrogen turns that cell into JSON null. `CAST(... AS BIGINT)` is `INT64`. See **Portable named parameters**. |
+| A parameter as the argument of Firebird `json_ingest` | The argument is a blob, and Hydrogen does not bind blob inputs, so the value is null. Cast the parameter to `VARCHAR` first. See **Portable named parameters**. |
 | Hard-coded `CURRENT_TIMESTAMP` / engine types | Use `${NOW}`, `${INTEGER}`, etc. from macros |
 
 **Idempotency:** APPLY runs each forward migration once. Prefer a simple
@@ -649,6 +654,24 @@ NULLIF(CAST(:ORG_SUMMARY AS ${TEXT}), '')
 
 `${TEXT}` is unbounded `text` on PostgreSQL and SQLite. It is `VARCHAR(250)` on DB2 and `varchar(255)` / `VARCHAR(255)` / `NVARCHAR(255)` on MySQL, MariaDB, Firebird, and SQL Server. A value longer than that engine's `${TEXT}` does not fit this cast. `acuranzo_1363.lua` is the cast example (`CAST(:SORT AS VARCHAR(20))`).
 
+**MySQL cast targets are `signed` and `char(n)`.** `CAST(x AS int)` and `CAST(x AS varchar(n))` are syntax errors on MySQL. `CAST(x AS char(255))` does not pad. MariaDB accepts `int` and `varchar(255)`, so a statement that passed on MariaDB can still fail on MySQL. Set the targets in the migration, not in `database.lua`:
+
+```lua
+if engine == "mysql" then
+    cfg.CAST_INTEGER = "signed"
+    cfg.CAST_TEXT = "char(255)"
+else
+    cfg.CAST_INTEGER = cfg.INTEGER
+    cfg.CAST_TEXT = cfg.TEXT
+end
+```
+
+[`argent_2030.lua`](/elements/002-helium/argent/migrations/argent_2030.lua) is the example. The other engines keep `${INTEGER}` and `${TEXT}`.
+
+**Firebird `SUM` of `BIGINT` is `INT128`.** Hydrogen's reader has no `INT128` case, so the cell becomes JSON null and Lua omits the field. `CAST(COALESCE(SUM(ln.amount_cents), 0) AS BIGINT)` is `INT64`. [`argent_2014.lua`](/elements/002-helium/argent/migrations/argent_2014.lua) and the posting total in [`argent_2022.lua`](/elements/002-helium/argent/migrations/argent_2022.lua) store that cast on Firebird. The other engines store `COALESCE(SUM(ln.amount_cents), 0)`.
+
+**Cast a parameter before Firebird `json_ingest`.** `json_ingest` takes `BLOB SUB_TYPE TEXT`. Hydrogen does not bind blob inputs, so the parameter is not sent and the function returns null. A string literal passed to `json_ingest` returns the object. Write `json_ingest(CAST(:NAME AS VARCHAR(255)))`. `${TEXT}` on Firebird is already `VARCHAR(255)`. The Argent tools write `${JIS}CAST(:NAME AS ${CAST_TEXT})${JIE}` on every engine. PostgreSQL stores `json_ingest (CAST(:NAME AS text))`. SQLite stores `(CAST(:NAME AS text))`.
+
 ### Recursive common table expressions
 
 DB2 and SQL Server write a recursive query with `WITH`. PostgreSQL, SQLite, MySQL, MariaDB, and Firebird write it with `WITH RECURSIVE`. On DB2 the keyword `RECURSIVE` is SQL0104N: the parser stops at the next name.
@@ -664,6 +687,8 @@ end
 ```
 
 [`argent_2022.lua`](/elements/002-helium/argent/migrations/argent_2022.lua) is the example. The recursive member lists its column names. DB2 requires that list. The same `if engine ==` shape is how `acuranzo_1385.lua` picks one SQL fragment.
+
+The recursive fullselect is a `UNION` of two or more fullselects. It cannot include column functions, `GROUP BY`, `HAVING`, `ORDER BY`, or an explicit join (`JOIN ... ON`). DB2 returns SQL0345N (`SQLSTATE` 42836). A comma join with the condition in `WHERE` is accepted. Both arms of `descendants` in [`argent_2022.lua`](/elements/002-helium/argent/migrations/argent_2022.lua) use that shape. A later CTE in the same statement, such as `posting`, may still use `JOIN ... ON`.
 
 ### Schema Modification Pattern
 
@@ -1079,8 +1104,8 @@ These templates provide a starting point for common migration patterns. Copy, mo
 11. **Keep reverse migrations safe** — for data-changing reverses, document manual prerequisites (e.g. "delete or assign passwords before reversing").
 12. **Multi-row seeds** — copy `acuranzo_1280` (`INSERT … VALUES (…), (…);` + `${COMMON_VALUES}`). Never invent `VALUES AS v(cols)` or untested `UNION ALL` row sources (see **Portable Multi-Row Data Seeds**).
 13. **DB2 REORG** — after structural `ADD`/`DROP`/`ALTER COLUMN`, use `${REORG}` (especially **after** DROP on reverse so TestMigration’s next reverse can DML the table). See **DB2: `${REORG}` after ADD/DROP COLUMN**.
-14. **Named parameters** — one use of each name. Cast optional integers with `CAST(NULL AS ${INTEGER})` and cast empty strings with `NULLIF(CAST(:COL AS ${TEXT}), '')`. See **Portable named parameters**.
-15. **Recursive CTEs** — `WITH` on DB2 and SQL Server, `WITH RECURSIVE` on the other engines. Name the recursive columns. See **Recursive common table expressions**.
+14. **Named parameters** — one use of each name. Cast optional integers with `CAST(NULL AS ${INTEGER})` and cast empty strings with `NULLIF(CAST(:COL AS ${TEXT}), '')`. On MySQL the cast targets are `signed` and `char(255)`. On Firebird, cast a parameter before `json_ingest`, and cast a `SUM` of `BIGINT` to `BIGINT`. See **Portable named parameters**.
+15. **Recursive CTEs** — `WITH` on DB2 and SQL Server, `WITH RECURSIVE` on the other engines. Name the recursive columns. The recursive member uses a comma join. DB2 rejects `JOIN ... ON` in that member (SQL0345N). See **Recursive common table expressions**.
 
 ## Migration Workflow
 

@@ -7,6 +7,7 @@
 -- CHANGELOG
 -- 1.0.0 - 2026-10-07 - MCP PostTransaction with balance, tax, and idempotency
 -- 1.0.1 - 2026-10-07 - Cast optional NULL, dates, and empty strings
+-- 1.0.2 - 2026-10-07 - MySQL CAST targets; json parameters are cast before ingest
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
@@ -14,6 +15,13 @@ local queries = {}
 cfg.TABLE = "scripts"
 cfg.MIGRATION = "2034"
 cfg.GROUP_NAME = "Argent"
+if engine == "mysql" then
+    cfg.CAST_INTEGER = "signed"
+    cfg.CAST_TEXT = "char(255)"
+else
+    cfg.CAST_INTEGER = cfg.INTEGER
+    cfg.CAST_TEXT = cfg.TEXT
+end
 -- ----------------------------------------------------------------------------
 -- Forward
 -- ----------------------------------------------------------------------------
@@ -394,9 +402,9 @@ local _, herr = H.query_sync([[
         valid_after, valid_until, created_id, created_at, updated_id, updated_at
     ) VALUES (
         :TXN_ID, :ORG_ID, :STATUS_A2003, :KIND_A2004, CAST(:TXN_ON AS ${DATE}),
-        :TXN_DESCRIPTION, NULLIF(CAST(:TXN_MEMO AS ${TEXT}), ''), NULL, NULL,
+        :TXN_DESCRIPTION, NULLIF(CAST(:TXN_MEMO AS ${CAST_TEXT}), ''), NULL, NULL,
         1, NULL, NULL,
-        0, NULL, NULL, ${JIS}:TXN_COLLECTION${JIE},
+        0, NULL, NULL, ${JIS}CAST(:TXN_COLLECTION AS ${CAST_TEXT})${JIE},
         NULL, NULL, :ACTOR_CREATED, ${NOW}, :ACTOR_UPDATED, ${NOW}
     )
 ]], {
@@ -426,10 +434,10 @@ for i = 1, #prepared do
             valid_after, valid_until, created_id, created_at, updated_id, updated_at
         ) VALUES (
             :LINE_ID, :TXN_ID, :LINE_SEQ, :LEDGER_ID, :AMOUNT_CENTS,
-            CASE WHEN CAST(:USE_TAX AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:TAX_CODE_ID AS ${INTEGER}) END,
-            CASE WHEN CAST(:USE_TAX_CENTS AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:TAX_CENTS AS ${INTEGER}) END,
+            CASE WHEN CAST(:USE_TAX AS ${CAST_INTEGER}) = 0 THEN CAST(NULL AS ${CAST_INTEGER}) ELSE CAST(:TAX_CODE_ID AS ${CAST_INTEGER}) END,
+            CASE WHEN CAST(:USE_TAX_CENTS AS ${CAST_INTEGER}) = 0 THEN CAST(NULL AS ${CAST_INTEGER}) ELSE CAST(:TAX_CENTS AS ${CAST_INTEGER}) END,
             :TAX_MANUAL, 0,
-            NULL, NULL, NULLIF(CAST(:LINE_MEMO AS ${TEXT}), ''), ${JIS}:LINE_COLLECTION${JIE},
+            NULL, NULL, NULLIF(CAST(:LINE_MEMO AS ${CAST_TEXT}), ''), ${JIS}CAST(:LINE_COLLECTION AS ${CAST_TEXT})${JIE},
             NULL, NULL, :ACTOR_CREATED, ${NOW}, :ACTOR_UPDATED, ${NOW}
         )
     ]], {

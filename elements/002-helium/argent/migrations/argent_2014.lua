@@ -7,6 +7,7 @@
 -- CHANGELOG
 -- 1.0.0 - 2026-10-07 - Install QueryRef 2000, Argent balance
 -- 1.0.1 - 2026-10-07 - Cast parameters; PostgreSQL sends them as text
+-- 1.0.2 - 2026-10-07 - MySQL CAST uses signed; Firebird SUM is BIGINT
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
@@ -15,6 +16,16 @@ cfg.TABLE = "queries"
 cfg.MIGRATION = "2014"
 cfg.QUERY_REF = "2000"
 cfg.QUERY_NAME = "Argent balance"
+if engine == "mysql" then
+    cfg.CAST_INTEGER = "signed"
+else
+    cfg.CAST_INTEGER = cfg.INTEGER
+end
+if engine == "firebird" then
+    cfg.BALANCE_SUM = "CAST(COALESCE(SUM(ln.amount_cents), 0) AS BIGINT)"
+else
+    cfg.BALANCE_SUM = "COALESCE(SUM(ln.amount_cents), 0)"
+end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
 
@@ -54,22 +65,22 @@ table.insert(queries,{sql=[[
                         l.ledger_id,
                         l.name,
                         l.currency,
-                        COALESCE(SUM(ln.amount_cents), 0) AS balance_cents
+                        ${BALANCE_SUM} AS balance_cents
                     FROM ${SCHEMA}ledgers l
                     LEFT JOIN ${SCHEMA}transactions t
                         ON t.organization_id = l.organization_id
                        AND t.txn_on <= CAST(:AS_OF AS ${DATE})
                        AND (
-                            CASE CAST(:USE_DEFAULT AS ${INTEGER})
+                            CASE CAST(:USE_DEFAULT AS ${CAST_INTEGER})
                                 WHEN 1 THEN CASE WHEN t.status_a2003 IN (3, 4) THEN 1 ELSE 0 END
-                                WHEN 0 THEN CASE WHEN t.status_a2003 IN (CAST(:STATUS_1 AS ${INTEGER}), CAST(:STATUS_2 AS ${INTEGER}), CAST(:STATUS_3 AS ${INTEGER}), CAST(:STATUS_4 AS ${INTEGER}), CAST(:STATUS_5 AS ${INTEGER})) THEN 1 ELSE 0 END
+                                WHEN 0 THEN CASE WHEN t.status_a2003 IN (CAST(:STATUS_1 AS ${CAST_INTEGER}), CAST(:STATUS_2 AS ${CAST_INTEGER}), CAST(:STATUS_3 AS ${CAST_INTEGER}), CAST(:STATUS_4 AS ${CAST_INTEGER}), CAST(:STATUS_5 AS ${CAST_INTEGER})) THEN 1 ELSE 0 END
                                 ELSE 0
                             END
                        ) = 1
                     LEFT JOIN ${SCHEMA}lines ln
                         ON ln.txn_id = t.txn_id
                        AND ln.ledger_id = l.ledger_id
-                    WHERE l.organization_id = CAST(:ORGANIZATION_ID AS ${INTEGER})
+                    WHERE l.organization_id = CAST(:ORGANIZATION_ID AS ${CAST_INTEGER})
                       AND l.is_posting = 1
                     GROUP BY l.ledger_id, l.name, l.currency
                     ORDER BY l.ledger_id

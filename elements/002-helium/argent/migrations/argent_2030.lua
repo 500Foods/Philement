@@ -7,6 +7,7 @@
 -- CHANGELOG
 -- 1.0.0 - 2026-10-07 - MCP organization list and upsert
 -- 1.0.1 - 2026-10-07 - Cast optional NULL, dates, and empty strings
+-- 1.0.2 - 2026-10-07 - MySQL CAST targets; json parameters are cast before ingest
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
@@ -14,6 +15,13 @@ local queries = {}
 cfg.TABLE = "scripts"
 cfg.MIGRATION = "2030"
 cfg.GROUP_NAME = "Argent"
+if engine == "mysql" then
+    cfg.CAST_INTEGER = "signed"
+    cfg.CAST_TEXT = "char(255)"
+else
+    cfg.CAST_INTEGER = cfg.INTEGER
+    cfg.CAST_TEXT = cfg.TEXT
+end
 -- ----------------------------------------------------------------------------
 -- Forward
 -- ----------------------------------------------------------------------------
@@ -265,7 +273,7 @@ if id then
             fiscal_year_start_month = :FY_MONTH,
             fiscal_year_start_day = :FY_DAY,
             default_currency = :CUR_CODE,
-            summary = NULLIF(CAST(:ORG_SUMMARY AS ${TEXT}), ''),
+            summary = NULLIF(CAST(:ORG_SUMMARY AS ${CAST_TEXT}), ''),
             updated_id = :ACTOR_UPDATED,
             updated_at = ${NOW}
         WHERE organization_id = :ORG_ID
@@ -300,7 +308,7 @@ local _, ierr = H.query_sync([[
     ) VALUES (
         :ORG_ID, :STATUS_A2000, :ORG_NAME,
         :FY_MONTH, :FY_DAY,
-        :CUR_CODE, NULLIF(CAST(:ORG_SUMMARY AS ${TEXT}), ''), ${JIS}:ORG_COLLECTION${JIE},
+        :CUR_CODE, NULLIF(CAST(:ORG_SUMMARY AS ${CAST_TEXT}), ''), ${JIS}CAST(:ORG_COLLECTION AS ${CAST_TEXT})${JIE},
         NULL, NULL, :ACTOR_CREATED, ${NOW}, :ACTOR_UPDATED, ${NOW}
     )
 ]], {

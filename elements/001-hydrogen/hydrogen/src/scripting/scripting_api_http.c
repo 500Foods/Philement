@@ -3,6 +3,11 @@
  *
  * Phase 16/17 of the LUA_PLAN. H.http.get / H.http.post return an
  * opaque H_Handle; H.wait resolves it. Sync wrappers also provided.
+ *
+ * Argent Phase 13 adds H.http.request and H.http.request_sync.
+ * get and post store the handle through the same helper and the
+ * wait path performs every allowlisted method through
+ * scripting_http_request. A status such as 207 or 412 is data.
  */
 
 // Project includes
@@ -89,6 +94,36 @@ int H_lua_opts_timeout(lua_State* L, int idx) {
     return result;
 }
 
+int H_lua_http_store_request(lua_State* L,
+                             const char* method,
+                             const char* url,
+                             const char* body,
+                             struct curl_slist* headers,
+                             int timeout,
+                             const char* content_type,
+                             const char* err_prefix) {
+    H_Handle* h = H_Handle_new(L, H_HK_HTTP);
+    if (!h) {
+        if (headers) curl_slist_free_all(headers);
+        return 0;
+    }
+    h->http_url = url ? strdup(url) : NULL;
+    h->http_method = method ? strdup(method) : NULL;
+    if (body) h->http_body = strdup(body);
+    if (content_type) h->http_content_type = strdup(content_type);
+    h->http_timeout = timeout;
+    h->http_headers_slist = headers;
+    if (!h->http_url || !h->http_method
+        || (body && !h->http_body)
+        || (content_type && !h->http_content_type)) {
+        char buf[96];
+        snprintf(buf, sizeof(buf), "%s: allocation failed",
+                 err_prefix ? err_prefix : "H.http");
+        h->error = strdup(buf);
+    }
+    return 1;
+}
+
 int H_lua_http_get(lua_State* L) {
     int nargs = lua_gettop(L);
     if (nargs < 1) {
@@ -113,20 +148,8 @@ int H_lua_http_get(lua_State* L) {
 
     int timeout = (nargs >= 3) ? H_lua_opts_timeout(L, 3) : -1;
 
-    H_Handle* h = H_Handle_new(L, H_HK_HTTP);
-    if (!h) {
-        if (headers) curl_slist_free_all(headers);
-        return 0;
-    }
-    h->http_url = strdup(url);
-    h->http_method = strdup("GET");
-    h->http_timeout = timeout;
-    h->http_headers_slist = headers;
-    if (!h->http_url || !h->http_method) {
-        h->error = strdup("H.http.get: allocation failed");
-        return 1;
-    }
-    return 1;
+    return H_lua_http_store_request(L, "GET", url, NULL, headers, timeout,
+                                    NULL, "H.http.get");
 }
 
 int H_lua_http_post(lua_State* L) {
@@ -170,32 +193,93 @@ int H_lua_http_post(lua_State* L) {
     }
 
     int timeout = -1;
-    const char* content_type = NULL;
+    char* content_type_copy = NULL;
     if (nargs >= arg_idx && lua_istable(L, arg_idx)) {
         timeout = H_lua_opts_timeout(L, arg_idx);
         lua_getfield(L, arg_idx, "content_type");
         if (lua_isstring(L, -1)) {
-            content_type = lua_tostring(L, -1);
+            const char* raw = lua_tostring(L, -1);
+            if (raw) {
+                content_type_copy = strdup(raw);
+            }
         }
         lua_pop(L, 1);
     }
 
-    H_Handle* h = H_Handle_new(L, H_HK_HTTP);
-    if (!h) {
-        if (headers) curl_slist_free_all(headers);
-        return 0;
+    int stored = H_lua_http_store_request(L, "POST", url, body, headers, timeout,
+                                          content_type_copy, "H.http.post");
+    free(content_type_copy);
+    return stored;
+}
+
+int H_lua_http_request(lua_State* L) {
+    int nargs = lua_gettop(L);
+    const char* method = NULL;
+    if (nargs >= 1 && lua_isstring(L, 1)) {
+        method = lua_tostring(L, 1);
     }
-    h->http_url = strdup(url);
-    h->http_method = strdup("POST");
-    if (body) h->http_body = strdup(body);
-    if (content_type) h->http_content_type = strdup(content_type);
-    h->http_timeout = timeout;
-    h->http_headers_slist = headers;
-    if (!h->http_url || !h->http_method) {
-        h->error = strdup("H.http.post: allocation failed");
+    if (!method || !*method) {
+        H_Handle* h = H_Handle_new(L, H_HK_HTTP);
+        if (h) h->error = strdup("H.http.request: method is not a non-empty string");
         return 1;
     }
-    return 1;
+    if (!scripting_http_method_allowed(method)) {
+        H_Handle* h = H_Handle_new(L, H_HK_HTTP);
+        if (h) h->error = strdup("H.http.request: method is not allowed");
+        return 1;
+    }
+
+    const char* url = NULL;
+    if (nargs >= 2 && lua_isstring(L, 2)) {
+        url = lua_tostring(L, 2);
+    }
+    if (!url || !*url) {
+        H_Handle* h = H_Handle_new(L, H_HK_HTTP);
+        if (h) h->error = strdup("H.http.request: url is not a non-empty string");
+        return 1;
+    }
+
+    const char* body = NULL;
+    if (nargs >= 3 && lua_isstring(L, 3)) {
+        body = lua_tostring(L, 3);
+    } else if (nargs >= 3 && !lua_isnil(L, 3)) {
+        H_Handle* h = H_Handle_new(L, H_HK_HTTP);
+        if (h) h->error = strdup("H.http.request: body must be a string or nil");
+        return 1;
+    }
+
+    struct curl_slist* headers = NULL;
+    if (nargs >= 4 && lua_istable(L, 4)) {
+        headers = H_lua_headers_to_slist(L, 4);
+    } else if (nargs >= 4 && !lua_isnil(L, 4)) {
+        H_Handle* h = H_Handle_new(L, H_HK_HTTP);
+        if (h) h->error = strdup("H.http.request: headers must be a table or nil");
+        return 1;
+    }
+
+    int timeout = -1;
+    char* content_type_copy = NULL;
+    if (nargs >= 5 && lua_istable(L, 5)) {
+        timeout = H_lua_opts_timeout(L, 5);
+        lua_getfield(L, 5, "content_type");
+        if (lua_isstring(L, -1)) {
+            const char* raw = lua_tostring(L, -1);
+            if (raw) {
+                content_type_copy = strdup(raw);
+            }
+        }
+        lua_pop(L, 1);
+    } else if (nargs >= 5 && !lua_isnil(L, 5)) {
+        if (headers) curl_slist_free_all(headers);
+        H_Handle* h = H_Handle_new(L, H_HK_HTTP);
+        if (h) h->error = strdup("H.http.request: opts must be a table or nil");
+        return 1;
+    }
+
+    int stored = H_lua_http_store_request(L, method, url, body, headers, timeout,
+                                          content_type_copy, "H.http.request");
+    free(content_type_copy);
+    return stored;
 }
 
 /*
@@ -234,21 +318,17 @@ int H_lua_http_wait_one(lua_State* L, H_Handle* h) {
         struct timespec start_ts;
         clock_gettime(CLOCK_MONOTONIC, &start_ts);
 
-        struct OidcRpHttpResponse* resp;
-        if (strcmp(h->http_method, "GET") == 0) {
-            resp = scripting_http_get(h->http_url, headers,
-                                      h->http_timeout, true);
-        } else if (strcmp(h->http_method, "POST") == 0) {
-            resp = scripting_http_post(h->http_url, h->http_body,
-                                       h->http_content_type, headers,
-                                       h->http_timeout, true);
-        } else {
+        if (!scripting_http_method_allowed(h->http_method)) {
             if (headers) curl_slist_free_all(headers);
             lua_pushnil(L);
             lua_pushstring(L, "H.wait: unknown HTTP method on handle");
             h->consumed = true;
             return 2;
         }
+
+        struct OidcRpHttpResponse* resp = scripting_http_request(
+            h->http_method, h->http_url, h->http_body,
+            h->http_content_type, headers, h->http_timeout, true);
 
         h->consumed = true;
 
@@ -487,6 +567,25 @@ int H_lua_http_post_sync(lua_State* L) {
     return n;
 }
 
+int H_lua_http_request_sync(lua_State* L) {
+    int n_pushed = H_lua_http_request(L);
+    if (n_pushed == 0) {
+        lua_pushnil(L);
+        lua_pushstring(L, "H.http.request_sync: handle allocation failed");
+        return 2;
+    }
+    H_Handle* h = H_Handle_check(L, -1);
+    if (!h) {
+        lua_pop(L, 1);
+        lua_pushnil(L);
+        lua_pushstring(L, "H.http.request_sync: handle creation failed");
+        return 2;
+    }
+    int n = H_lua_http_wait_one(L, h);
+    lua_remove(L, -(n + 1));
+    return n;
+}
+
 void H_lua_install_http(lua_State* L) {
     if (!L) return;
 
@@ -501,10 +600,12 @@ void H_lua_install_http(lua_State* L) {
     }
 
     lua_newtable(L);
-    lua_pushcfunction(L, H_lua_http_get);        lua_setfield(L, -2, "get");
-    lua_pushcfunction(L, H_lua_http_post);       lua_setfield(L, -2, "post");
-    lua_pushcfunction(L, H_lua_http_get_sync);   lua_setfield(L, -2, "get_sync");
-    lua_pushcfunction(L, H_lua_http_post_sync);  lua_setfield(L, -2, "post_sync");
+    lua_pushcfunction(L, H_lua_http_get);           lua_setfield(L, -2, "get");
+    lua_pushcfunction(L, H_lua_http_post);          lua_setfield(L, -2, "post");
+    lua_pushcfunction(L, H_lua_http_request);       lua_setfield(L, -2, "request");
+    lua_pushcfunction(L, H_lua_http_get_sync);      lua_setfield(L, -2, "get_sync");
+    lua_pushcfunction(L, H_lua_http_post_sync);     lua_setfield(L, -2, "post_sync");
+    lua_pushcfunction(L, H_lua_http_request_sync);  lua_setfield(L, -2, "request_sync");
     lua_setfield(L, -2, "http");
 
     lua_pop(L, 1);

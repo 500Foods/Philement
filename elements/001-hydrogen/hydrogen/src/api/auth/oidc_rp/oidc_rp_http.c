@@ -726,6 +726,106 @@ OidcRpHttpResponse *oidc_rp_http_post_with_headers_slist(
     return resp;
 }
 
+OidcRpHttpResponse *oidc_rp_http_request_with_headers_slist(
+    const char *method,
+    const char *url,
+    bool verify_ssl,
+    const char *body_in,
+    const char *content_type,
+    struct curl_slist *headers,
+    size_t max_body_bytes,
+    long request_timeout_seconds) {
+
+    if (!method || !*method) {
+        if (headers) curl_slist_free_all(headers);
+        OidcRpHttpResponse *resp = response_alloc();
+        if (resp) {
+            response_set_error(resp, "HTTP method is NULL or empty");
+        }
+        return resp;
+    }
+
+    size_t max_body = resolve_max_body(max_body_bytes);
+    long timeout = resolve_request_timeout(request_timeout_seconds);
+
+    OidcRpHttpResponse *resp = response_alloc();
+    if (!resp) {
+        if (headers) curl_slist_free_all(headers);
+        return NULL;
+    }
+
+    bool proceed = false;
+    if (preflight_request(resp, url, &proceed)) {
+        if (headers) curl_slist_free_all(headers);
+        return resp;
+    }
+    if (!proceed) {
+        if (headers) curl_slist_free_all(headers);
+        return resp;
+    }
+
+    CURL *curl = curl_easy_init();
+    if (!curl) {
+        if (headers) curl_slist_free_all(headers);
+        response_set_error(resp, "curl_easy_init failed");
+        return resp;
+    }
+
+    ResponseBuffer body = {0};
+    body.data = malloc(OIDC_RP_HTTP_INITIAL_BUFFER);
+    if (!body.data) {
+        curl_easy_cleanup(curl);
+        if (headers) curl_slist_free_all(headers);
+        response_set_error(resp, "malloc failed");
+        return resp;
+    }
+    body.data[0] = '\0';
+    body.capacity = OIDC_RP_HTTP_INITIAL_BUFFER;
+    body.max_body = max_body;
+
+    HeaderList hdrs = {0};
+
+    struct curl_slist *headers_owned = headers;
+    bool has_content_type_in_slist = false;
+    if (headers_owned) {
+        for (struct curl_slist *p = headers_owned; p; p = p->next) {
+            if (p->data && strncasecmp(p->data, "Content-Type:", 12) == 0) {
+                has_content_type_in_slist = true;
+                break;
+            }
+        }
+    }
+    if (content_type && *content_type && !has_content_type_in_slist) {
+        char header[256];
+        snprintf(header, sizeof(header), "Content-Type: %s", content_type);
+        headers_owned = curl_slist_append(headers_owned, header);
+    }
+
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_CUSTOMREQUEST, method);
+    if (body_in) {
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDS, body_in);
+        curl_easy_setopt(curl, CURLOPT_POSTFIELDSIZE, (long)strlen(body_in));
+    }
+
+    if (headers_owned) curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers_owned);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, write_callback);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, (void *)&body);
+    curl_easy_setopt(curl, CURLOPT_HEADERFUNCTION, header_callback);
+    curl_easy_setopt(curl, CURLOPT_HEADERDATA, (void *)&hdrs);
+    apply_common_curl_opts(curl, verify_ssl, timeout);
+
+    perform_and_finalize(curl, &body, resp, method);
+
+    resp->headers = hdrs.items;
+    resp->headers_count = hdrs.count;
+
+    if (headers_owned) curl_slist_free_all(headers_owned);
+    curl_easy_cleanup(curl);
+
+    return resp;
+}
+
 void oidc_rp_http_test_set_response(const char *url_substring,
                                     long http_status,
                                     const char *body) {

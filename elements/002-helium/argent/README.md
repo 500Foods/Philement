@@ -48,7 +48,7 @@ Lookup ids **2000–2999** are Argent's block on the shared `lookups` table, the
 | [2011](/elements/002-helium/argent/migrations/argent_2011.lua) | lookups | 1.0.0 | 2026-10-07 | 7 | ✓ | Seeds lookup 2011, calendar state |
 | [2012](/elements/002-helium/argent/migrations/argent_2012.lua) | transactions | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the transactions table |
 | [2013](/elements/002-helium/argent/migrations/argent_2013.lua) | lines | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the lines table |
-| [2014](/elements/002-helium/argent/migrations/argent_2014.lua) | queries | 1.0.1 | 2026-10-07 | 5 | ✓ | QueryRef #2000 - Argent balance |
+| [2014](/elements/002-helium/argent/migrations/argent_2014.lua) | queries | 1.0.2 | 2026-10-07 | 5 | ✓ | QueryRef #2000 - Argent balance |
 | [2015](/elements/002-helium/argent/migrations/argent_2015.lua) | lookups | 1.0.0 | 2026-10-07 | 7 | ✓ | Seeds lookup 2006, reconciliation status |
 | [2016](/elements/002-helium/argent/migrations/argent_2016.lua) | reconciliations | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the reconciliations table |
 | [2017](/elements/002-helium/argent/migrations/argent_2017.lua) | lookups | 1.0.0 | 2026-10-07 | 7 | ✓ | Seeds lookup 2007, schedule status |
@@ -56,7 +56,7 @@ Lookup ids **2000–2999** are Argent's block on the shared `lookups` table, the
 | [2019](/elements/002-helium/argent/migrations/argent_2019.lua) | schedules | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the schedules table |
 | [2020](/elements/002-helium/argent/migrations/argent_2020.lua) | lookups | 1.0.0 | 2026-10-07 | 7 | ✓ | Seeds lookup 2012, rate source |
 | [2021](/elements/002-helium/argent/migrations/argent_2021.lua) | rates | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the rates table |
-| [2022](/elements/002-helium/argent/migrations/argent_2022.lua) | queries | 1.0.2 | 2026-10-07 | 5 | ✓ | QueryRef #2001 - Argent rollup |
+| [2022](/elements/002-helium/argent/migrations/argent_2022.lua) | queries | 1.0.3 | 2026-10-07 | 5 | ✓ | QueryRef #2001 - Argent rollup |
 | [2023](/elements/002-helium/argent/migrations/argent_2023.lua) | tax_codes | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the tax_codes table |
 | [2024](/elements/002-helium/argent/migrations/argent_2024.lua) | tax_rates | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the tax_rates table |
 | [2025](/elements/002-helium/argent/migrations/argent_2025.lua) | lookups | 1.0.0 | 2026-10-07 | 7 | ✓ | Seeds lookup 2009, entity type |
@@ -64,12 +64,23 @@ Lookup ids **2000–2999** are Argent's block on the shared `lookups` table, the
 | [2027](/elements/002-helium/argent/migrations/argent_2027.lua) | tags | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the tags table |
 | [2028](/elements/002-helium/argent/migrations/argent_2028.lua) | tag_links | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the tag_links table |
 | [2029](/elements/002-helium/argent/migrations/argent_2029.lua) | attachments | 1.0.0 | 2026-10-07 | 6 | ✓ | Creates the attachments table |
-| [2030](/elements/002-helium/argent/migrations/argent_2030.lua) | scripts | 1.0.1 | 2026-10-07 | 6 | ✓ | Argent.ListOrganizations and Argent.UpsertOrganization |
+| [2030](/elements/002-helium/argent/migrations/argent_2030.lua) | scripts | 1.0.2 | 2026-10-07 | 6 | ✓ | Argent.ListOrganizations and Argent.UpsertOrganization |
 | [2031](/elements/002-helium/argent/migrations/argent_2031.lua) | scripts | 1.0.0 | 2026-10-07 | 6 | ✓ | Argent ledger reads |
-| [2032](/elements/002-helium/argent/migrations/argent_2032.lua) | scripts | 1.0.1 | 2026-10-07 | 5 | ✓ | Argent ledger upsert |
-| [2033](/elements/002-helium/argent/migrations/argent_2033.lua) | scripts | 1.0.1 | 2026-10-07 | 6 | ✓ | Argent ledger terms and contacts |
-| [2034](/elements/002-helium/argent/migrations/argent_2034.lua) | scripts | 1.0.1 | 2026-10-07 | 5 | ✓ | Argent post transaction |
-| [2035](/elements/002-helium/argent/migrations/argent_2035.lua) | scripts | 1.0.1 | 2026-10-07 | 7 | ✓ | Argent tags and attachments |
-| [2036](/elements/002-helium/argent/migrations/argent_2036.lua) | scripts | 1.0.1 | 2026-10-07 | 6 | ✓ | Argent tax writes |
-| [2037](/elements/002-helium/argent/migrations/argent_2037.lua) | scripts | 1.0.1 | 2026-10-07 | 7 | ✓ | Argent transaction reads |
-| **38** | | | | **241** | **38** | |
+| [2032](/elements/002-helium/argent/migrations/argent_2032.lua) | scripts | 1.0.2 | 2026-10-07 | 5 | ✓ | Argent ledger upsert |
+| [2033](/elements/002-helium/argent/migrations/argent_2033.lua) | scripts | 1.0.2 | 2026-10-07 | 6 | ✓ | Argent ledger terms and contacts |
+| [2034](/elements/002-helium/argent/migrations/argent_2034.lua) | scripts | 1.0.2 | 2026-10-07 | 5 | ✓ | Argent post transaction |
+| [2035](/elements/002-helium/argent/migrations/argent_2035.lua) | scripts | 1.0.2 | 2026-10-07 | 7 | ✓ | Argent tags and attachments |
+| [2036](/elements/002-helium/argent/migrations/argent_2036.lua) | scripts | 1.0.2 | 2026-10-07 | 6 | ✓ | Argent tax writes |
+| [2037](/elements/002-helium/argent/migrations/argent_2037.lua) | scripts | 1.0.2 | 2026-10-07 | 7 | ✓ | Argent transaction reads |
+| [2038](/elements/002-helium/argent/migrations/argent_2038.lua) | confirm_tokens | 1.0.0 | 2026-10-08 | 6 | ✓ | Creates the confirm_tokens table |
+| [2039](/elements/002-helium/argent/migrations/argent_2039.lua) | scripts | 1.0.0 | 2026-10-08 | 6 | ✓ | Argent.EditTransaction and Argent.RescindTransaction |
+| [2040](/elements/002-helium/argent/migrations/argent_2040.lua) | scripts | 1.0.0 | 2026-10-08 | 5 | ✓ | Argent.PostStatement |
+| [2041](/elements/002-helium/argent/migrations/argent_2041.lua) | scripts | 1.0.0 | 2026-10-08 | 5 | ✓ | Argent.PostPeriodClose |
+| [2042](/elements/002-helium/argent/migrations/argent_2042.lua) | scripts | 1.0.0 | 2026-10-08 | 5 | ✓ | Argent.StartReconciliation |
+| [2043](/elements/002-helium/argent/migrations/argent_2043.lua) | scripts | 1.0.1 | 2026-10-08 | 5 | ✓ | Argent.ClearLines |
+| [2044](/elements/002-helium/argent/migrations/argent_2044.lua) | scripts | 1.0.1 | 2026-10-08 | 5 | ✓ | Argent.CompleteReconciliation |
+| [2045](/elements/002-helium/argent/migrations/argent_2045.lua) | scripts | 1.0.0 | 2026-10-08 | 5 | ✓ | Argent.UpsertSchedule |
+| [2046](/elements/002-helium/argent/migrations/argent_2046.lua) | scripts | 1.0.0 | 2026-10-08 | 5 | ✓ | Argent.GenerateSchedule |
+| [2047](/elements/002-helium/argent/migrations/argent_2047.lua) | scripts | 1.0.0 | 2026-10-08 | 5 | ✓ | Argent.MatchReserved |
+| [2048](/elements/002-helium/argent/migrations/argent_2048.lua) | scripts | 1.0.0 | 2026-10-08 | 5 | ✓ | Argent.RetryCalendar |
+| **49** | | | | **298** | **49** | |

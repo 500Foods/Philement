@@ -9,7 +9,7 @@
  *
  * Design (mirrors the existing scripting worker pool):
  *   - N pthreads that loop, dequeue an H_Handle* from a Queue*,
- *     perform the HTTP call via scripting_http_get/_post, store
+ *     perform the HTTP call via scripting_http_request, store
  *     the result in the handle's per-handle fields, signal the
  *     condvar, and loop.
  *   - The handle owns its own result fields and sync primitive

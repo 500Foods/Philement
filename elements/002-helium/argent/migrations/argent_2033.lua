@@ -7,6 +7,7 @@
 -- CHANGELOG
 -- 1.0.0 - 2026-10-07 - MCP ledger terms and contact upserts
 -- 1.0.1 - 2026-10-07 - Cast optional NULL, dates, and empty strings
+-- 1.0.2 - 2026-10-07 - MySQL CAST targets; json parameters are cast before ingest
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
@@ -14,6 +15,13 @@ local queries = {}
 cfg.TABLE = "scripts"
 cfg.MIGRATION = "2033"
 cfg.GROUP_NAME = "Argent"
+if engine == "mysql" then
+    cfg.CAST_INTEGER = "signed"
+    cfg.CAST_TEXT = "char(255)"
+else
+    cfg.CAST_INTEGER = cfg.INTEGER
+    cfg.CAST_TEXT = cfg.TEXT
+end
 -- ----------------------------------------------------------------------------
 -- Forward
 -- ----------------------------------------------------------------------------
@@ -254,14 +262,14 @@ if term_id then
         UPDATE ${SCHEMA}ledger_terms
         SET ledger_id = :LEDGER_ID,
             effective_on = CAST(:EFFECTIVE_ON AS ${DATE}),
-            credit_limit_cents = CASE WHEN CAST(:USE_CREDIT AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:CREDIT_LIMIT AS ${INTEGER}) END,
-            od_limit_cents = CASE WHEN CAST(:USE_OD AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:OD_LIMIT AS ${INTEGER}) END,
-            apr_purchase_bps = CASE WHEN CAST(:USE_APR_P AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:APR_PURCHASE AS ${INTEGER}) END,
-            apr_cash_bps = CASE WHEN CAST(:USE_APR_C AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:APR_CASH AS ${INTEGER}) END,
-            annual_fee_cents = CASE WHEN CAST(:USE_FEE AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:ANNUAL_FEE AS ${INTEGER}) END,
-            statement_close_day = CASE WHEN CAST(:USE_CLOSE AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:CLOSE_DAY AS ${INTEGER}) END,
-            payment_due_offset_days = CASE WHEN CAST(:USE_DUE AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:DUE_OFFSET AS ${INTEGER}) END,
-            summary = NULLIF(CAST(:TERM_SUMMARY AS ${TEXT}), ''),
+            credit_limit_cents = CASE WHEN CAST(:USE_CREDIT AS ${CAST_INTEGER}) = 0 THEN CAST(NULL AS ${CAST_INTEGER}) ELSE CAST(:CREDIT_LIMIT AS ${CAST_INTEGER}) END,
+            od_limit_cents = CASE WHEN CAST(:USE_OD AS ${CAST_INTEGER}) = 0 THEN CAST(NULL AS ${CAST_INTEGER}) ELSE CAST(:OD_LIMIT AS ${CAST_INTEGER}) END,
+            apr_purchase_bps = CASE WHEN CAST(:USE_APR_P AS ${CAST_INTEGER}) = 0 THEN CAST(NULL AS ${CAST_INTEGER}) ELSE CAST(:APR_PURCHASE AS ${CAST_INTEGER}) END,
+            apr_cash_bps = CASE WHEN CAST(:USE_APR_C AS ${CAST_INTEGER}) = 0 THEN CAST(NULL AS ${CAST_INTEGER}) ELSE CAST(:APR_CASH AS ${CAST_INTEGER}) END,
+            annual_fee_cents = CASE WHEN CAST(:USE_FEE AS ${CAST_INTEGER}) = 0 THEN CAST(NULL AS ${CAST_INTEGER}) ELSE CAST(:ANNUAL_FEE AS ${CAST_INTEGER}) END,
+            statement_close_day = CASE WHEN CAST(:USE_CLOSE AS ${CAST_INTEGER}) = 0 THEN CAST(NULL AS ${CAST_INTEGER}) ELSE CAST(:CLOSE_DAY AS ${CAST_INTEGER}) END,
+            payment_due_offset_days = CASE WHEN CAST(:USE_DUE AS ${CAST_INTEGER}) = 0 THEN CAST(NULL AS ${CAST_INTEGER}) ELSE CAST(:DUE_OFFSET AS ${CAST_INTEGER}) END,
+            summary = NULLIF(CAST(:TERM_SUMMARY AS ${CAST_TEXT}), ''),
             updated_id = :ACTOR_UPDATED,
             updated_at = ${NOW}
         WHERE ledger_term_id = :TERM_ID
@@ -289,14 +297,14 @@ local _, ierr = H.query_sync([[
         valid_after, valid_until, created_id, created_at, updated_id, updated_at
     ) VALUES (
         :TERM_ID, :LEDGER_ID, CAST(:EFFECTIVE_ON AS ${DATE}),
-        CASE WHEN CAST(:USE_CREDIT AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:CREDIT_LIMIT AS ${INTEGER}) END,
-        CASE WHEN CAST(:USE_OD AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:OD_LIMIT AS ${INTEGER}) END,
-        CASE WHEN CAST(:USE_APR_P AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:APR_PURCHASE AS ${INTEGER}) END,
-        CASE WHEN CAST(:USE_APR_C AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:APR_CASH AS ${INTEGER}) END,
-        CASE WHEN CAST(:USE_FEE AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:ANNUAL_FEE AS ${INTEGER}) END,
-        CASE WHEN CAST(:USE_CLOSE AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:CLOSE_DAY AS ${INTEGER}) END,
-        CASE WHEN CAST(:USE_DUE AS ${INTEGER}) = 0 THEN CAST(NULL AS ${INTEGER}) ELSE CAST(:DUE_OFFSET AS ${INTEGER}) END,
-        NULLIF(CAST(:TERM_SUMMARY AS ${TEXT}), ''), ${JIS}:TERM_COLLECTION${JIE},
+        CASE WHEN CAST(:USE_CREDIT AS ${CAST_INTEGER}) = 0 THEN CAST(NULL AS ${CAST_INTEGER}) ELSE CAST(:CREDIT_LIMIT AS ${CAST_INTEGER}) END,
+        CASE WHEN CAST(:USE_OD AS ${CAST_INTEGER}) = 0 THEN CAST(NULL AS ${CAST_INTEGER}) ELSE CAST(:OD_LIMIT AS ${CAST_INTEGER}) END,
+        CASE WHEN CAST(:USE_APR_P AS ${CAST_INTEGER}) = 0 THEN CAST(NULL AS ${CAST_INTEGER}) ELSE CAST(:APR_PURCHASE AS ${CAST_INTEGER}) END,
+        CASE WHEN CAST(:USE_APR_C AS ${CAST_INTEGER}) = 0 THEN CAST(NULL AS ${CAST_INTEGER}) ELSE CAST(:APR_CASH AS ${CAST_INTEGER}) END,
+        CASE WHEN CAST(:USE_FEE AS ${CAST_INTEGER}) = 0 THEN CAST(NULL AS ${CAST_INTEGER}) ELSE CAST(:ANNUAL_FEE AS ${CAST_INTEGER}) END,
+        CASE WHEN CAST(:USE_CLOSE AS ${CAST_INTEGER}) = 0 THEN CAST(NULL AS ${CAST_INTEGER}) ELSE CAST(:CLOSE_DAY AS ${CAST_INTEGER}) END,
+        CASE WHEN CAST(:USE_DUE AS ${CAST_INTEGER}) = 0 THEN CAST(NULL AS ${CAST_INTEGER}) ELSE CAST(:DUE_OFFSET AS ${CAST_INTEGER}) END,
+        NULLIF(CAST(:TERM_SUMMARY AS ${CAST_TEXT}), ''), ${JIS}CAST(:TERM_COLLECTION AS ${CAST_TEXT})${JIE},
         NULL, NULL, :ACTOR_CREATED, ${NOW}, :ACTOR_UPDATED, ${NOW}
     )
 ]], binds)
@@ -471,10 +479,10 @@ if id then
         SET ledger_id = :LEDGER_ID,
             role_a2005 = :ROLE_A2005,
             name = :CONTACT_NAME,
-            email = NULLIF(CAST(:CONTACT_EMAIL AS ${TEXT}), ''),
-            phone = NULLIF(CAST(:CONTACT_PHONE AS ${TEXT}), ''),
-            summary = NULLIF(CAST(:CONTACT_SUMMARY AS ${TEXT}), ''),
-            collection = ${JIS}:CONTACT_COLLECTION${JIE},
+            email = NULLIF(CAST(:CONTACT_EMAIL AS ${CAST_TEXT}), ''),
+            phone = NULLIF(CAST(:CONTACT_PHONE AS ${CAST_TEXT}), ''),
+            summary = NULLIF(CAST(:CONTACT_SUMMARY AS ${CAST_TEXT}), ''),
+            collection = ${JIS}CAST(:CONTACT_COLLECTION AS ${CAST_TEXT})${JIE},
             updated_id = :ACTOR_UPDATED,
             updated_at = ${NOW}
         WHERE contact_id = :CONTACT_ID
@@ -502,8 +510,8 @@ local _, ierr = H.query_sync([[
         valid_after, valid_until, created_id, created_at, updated_id, updated_at
     ) VALUES (
         :CONTACT_ID, :LEDGER_ID, :ROLE_A2005, :CONTACT_NAME,
-        NULLIF(CAST(:CONTACT_EMAIL AS ${TEXT}), ''), NULLIF(CAST(:CONTACT_PHONE AS ${TEXT}), ''),
-        NULLIF(CAST(:CONTACT_SUMMARY AS ${TEXT}), ''), ${JIS}:CONTACT_COLLECTION${JIE},
+        NULLIF(CAST(:CONTACT_EMAIL AS ${CAST_TEXT}), ''), NULLIF(CAST(:CONTACT_PHONE AS ${CAST_TEXT}), ''),
+        NULLIF(CAST(:CONTACT_SUMMARY AS ${CAST_TEXT}), ''), ${JIS}CAST(:CONTACT_COLLECTION AS ${CAST_TEXT})${JIE},
         NULL, NULL, :ACTOR_CREATED, ${NOW}, :ACTOR_UPDATED, ${NOW}
     )
 ]], {

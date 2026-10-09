@@ -317,6 +317,30 @@ OidcRpHttpResponse *oidc_rp_http_post_with_headers_slist(
     long request_timeout_seconds);
 
 /**
+ * @brief Synchronous HTTP request with a caller-chosen method.
+ *
+ * Used by the scripting H.http.request path for PUT, DELETE, and the
+ * CalDAV verbs. The method string is sent with CURLOPT_CUSTOMREQUEST.
+ * A non-NULL body is sent with CURLOPT_POSTFIELDS. A NULL body sends
+ * no body. Content-Type handling matches
+ * oidc_rp_http_post_with_headers_slist. An HTTP status such as 207
+ * or 412 is stored on the response and does not set error_message.
+ * Transport failures still do.
+ *
+ * The function takes ownership of headers and frees it on return.
+ * method NULL or empty returns a response with error_message set.
+ */
+OidcRpHttpResponse *oidc_rp_http_request_with_headers_slist(
+    const char *method,
+    const char *url,
+    bool verify_ssl,
+    const char *body,
+    const char *content_type,
+    struct curl_slist *headers,
+    size_t max_body_bytes,
+    long request_timeout_seconds);
+
+/**
  * @brief Test-only: drop every queued fixture.
  *
  * Unity tearDown should call this so no leftover fixture leaks into

@@ -24,6 +24,11 @@
  * jansson + libcurl. The OIDC helper takes ownership of the slist
  * and frees it on return.
  *
+ * H.http.get and H.http.post call scripting_http_request. GET and
+ * POST keep the existing OIDC helpers. PUT, DELETE, and the CalDAV
+ * verbs use one custom-request helper. The method allowlist is
+ * exact and uppercase.
+ *
  * Threading: the public functions block the calling thread on the
  * libcurl transfer. The Lua H.wait path calls these from the worker
  * thread (or the Orchestrator's thread), so this is the expected
@@ -56,6 +61,35 @@ struct OidcRpHttpResponse;
  * underlying OIDC `_with_headers_slist` form.
  */
 #define SCRIPTING_HTTP_DEFAULT_MAX_BODY (16 * 1024 * 1024)
+
+/*
+ * True when method is one of GET, POST, PUT, DELETE, PROPFIND,
+ * REPORT, MKCALENDAR, PROPPATCH. The match is exact. NULL, empty,
+ * lowercase, CONNECT, and TRACE are false.
+ */
+bool scripting_http_method_allowed(const char *method);
+
+/*
+ * Synchronous HTTP request for the scripting subsystem.
+ *
+ * method must be an allowlisted token. GET ignores body and
+ * content_type and calls the OIDC GET helper. POST calls the OIDC
+ * POST helper. Every other allowlisted method calls the OIDC custom
+ * request helper (CURLOPT_CUSTOMREQUEST). A rejected method returns
+ * a response whose error_message is set and does not touch the
+ * network. A 207 or 412 from the test seam or from the server is a
+ * normal response: error_message stays NULL.
+ *
+ * Ownership of headers matches scripting_http_get.
+ */
+struct OidcRpHttpResponse *scripting_http_request(
+    const char *method,
+    const char *url,
+    const char *body,
+    const char *content_type,
+    struct curl_slist *headers,
+    int timeout_seconds,
+    bool verify_ssl);
 
 /*
  * Synchronous HTTP GET for the scripting subsystem.

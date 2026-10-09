@@ -8,6 +8,7 @@
 -- 1.0.0 - 2026-10-07 - Install QueryRef 2001, Argent rollup
 -- 1.0.1 - 2026-10-07 - Cast the req parameters; PostgreSQL sends them as text
 -- 1.0.2 - 2026-10-07 - DB2 stores WITH, the same keyword MSSQL uses
+-- 1.0.3 - 2026-10-07 - DB2 recursive member uses comma joins; Firebird SUM is BIGINT
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
@@ -20,6 +21,16 @@ if engine == "mssql" or engine == "db2" then
     cfg.WITH_RECURSIVE = "WITH"
 else
     cfg.WITH_RECURSIVE = "WITH RECURSIVE"
+end
+if engine == "mysql" then
+    cfg.CAST_INTEGER = "signed"
+else
+    cfg.CAST_INTEGER = cfg.INTEGER
+end
+if engine == "firebird" then
+    cfg.BALANCE_SUM = "CAST(COALESCE(SUM(ln.amount_cents), 0) AS BIGINT)"
+else
+    cfg.BALANCE_SUM = "COALESCE(SUM(ln.amount_cents), 0)"
 end
 -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- -- --
 table.insert(queries,{sql=[[
@@ -59,16 +70,16 @@ table.insert(queries,{sql=[[
                     ${WITH_RECURSIVE}
                     req AS (
                         SELECT
-                            CAST(:ORGANIZATION_ID AS ${INTEGER}) AS organization_id,
+                            CAST(:ORGANIZATION_ID AS ${CAST_INTEGER}) AS organization_id,
                             CAST(:AS_OF AS ${DATE}) AS as_of,
-                            CAST(:USE_DEFAULT AS ${INTEGER}) AS use_default,
-                            CAST(:STATUS_1 AS ${INTEGER}) AS status_1,
-                            CAST(:STATUS_2 AS ${INTEGER}) AS status_2,
-                            CAST(:STATUS_3 AS ${INTEGER}) AS status_3,
-                            CAST(:STATUS_4 AS ${INTEGER}) AS status_4,
-                            CAST(:STATUS_5 AS ${INTEGER}) AS status_5,
-                            CAST(:USE_RATE_DEFAULT AS ${INTEGER}) AS use_rate_default,
-                            CAST(:RATE_SOURCE AS ${INTEGER}) AS rate_source
+                            CAST(:USE_DEFAULT AS ${CAST_INTEGER}) AS use_default,
+                            CAST(:STATUS_1 AS ${CAST_INTEGER}) AS status_1,
+                            CAST(:STATUS_2 AS ${CAST_INTEGER}) AS status_2,
+                            CAST(:STATUS_3 AS ${CAST_INTEGER}) AS status_3,
+                            CAST(:STATUS_4 AS ${CAST_INTEGER}) AS status_4,
+                            CAST(:STATUS_5 AS ${CAST_INTEGER}) AS status_5,
+                            CAST(:USE_RATE_DEFAULT AS ${CAST_INTEGER}) AS use_rate_default,
+                            CAST(:RATE_SOURCE AS ${CAST_INTEGER}) AS rate_source
                         ${DUMMY_TABLE}
                     ),
                     descendants (
@@ -92,13 +103,11 @@ table.insert(queries,{sql=[[
                             c.is_posting,
                             p.organization_id,
                             1
-                        FROM ${SCHEMA}ledgers p
-                        INNER JOIN ${SCHEMA}ledgers c
-                            ON c.parent_id = p.ledger_id
-                           AND c.organization_id = p.organization_id
-                        INNER JOIN req
-                            ON p.organization_id = req.organization_id
-                        WHERE p.is_posting = 0
+                        FROM ${SCHEMA}ledgers p, ${SCHEMA}ledgers c, req
+                        WHERE c.parent_id = p.ledger_id
+                          AND c.organization_id = p.organization_id
+                          AND p.organization_id = req.organization_id
+                          AND p.is_posting = 0
                         UNION ALL
                         SELECT
                             d.parent_ledger_id,
@@ -110,11 +119,10 @@ table.insert(queries,{sql=[[
                             c.is_posting,
                             d.organization_id,
                             d.walk_depth + 1
-                        FROM descendants d
-                        INNER JOIN ${SCHEMA}ledgers c
-                            ON c.parent_id = d.child_ledger_id
-                           AND c.organization_id = d.organization_id
-                        WHERE d.child_is_posting = 0
+                        FROM descendants d, ${SCHEMA}ledgers c
+                        WHERE c.parent_id = d.child_ledger_id
+                          AND c.organization_id = d.organization_id
+                          AND d.child_is_posting = 0
                           AND d.walk_depth < 16
                     ),
                     posting_pairs AS (
@@ -138,7 +146,7 @@ table.insert(queries,{sql=[[
                             d.child_name,
                             d.child_currency,
                             d.organization_id,
-                            COALESCE(SUM(ln.amount_cents), 0) AS balance_cents
+                            ${BALANCE_SUM} AS balance_cents
                         FROM posting_pairs d
                         INNER JOIN req
                             ON req.organization_id = d.organization_id
@@ -354,7 +362,8 @@ table.insert(queries,{sql=[[
             Caller-facing query_ref ${QUERY_REF}, type SQL.
             Does not touch the ledgers bookkeeping rows.
             Does not fetch BoC. DB2 and MSSQL store WITH. Other engines
-            store WITH RECURSIVE. That choice is cfg.WITH_RECURSIVE in this file.
+            store WITH RECURSIVE. The descendant walk uses comma joins
+            because DB2 rejects JOIN ON inside a recursive CTE.
         ]=]
                                                                             AS summary,
         '{}'                                                                AS collection,

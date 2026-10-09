@@ -11,12 +11,15 @@
 # 1.0.0 - 2026-10-07 - Argent tool calls and validation variants
 # 1.0.1 - 2026-10-07 - Quote the contact_not_found arguments so jq accepts them
 # 1.0.2 - 2026-10-07 - One tool call, root error text, tax rate in force, parent rate check
+# 1.0.3 - 2026-10-08 - Confirm tokens, edits, rescinds, statements, and reconciliation
+# 1.0.4 - 2026-10-08 - Retry one HTTP 503 (auth lookup timed out)
+# 1.0.5 - 2026-10-08 - Schedules, reserved rows, and a down calendar host
 
 [[ -n "${ARGENT_MCP_HELPERS_GUARD:-}" ]] && return 0
 export ARGENT_MCP_HELPERS_GUARD="true"
 
 ARGENT_MCP_HELPERS_NAME="Argent MCP Helpers"
-ARGENT_MCP_HELPERS_VERSION="1.0.2"
+ARGENT_MCP_HELPERS_VERSION="1.0.5"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
     "${ARGENT_MCP_HELPERS_NAME} ${ARGENT_MCP_HELPERS_VERSION}" "info"
 
@@ -62,10 +65,17 @@ argent_rpc() {
     local http_st out code msg
     ARGENT_CASE_N=$(( ARGENT_CASE_N + 1 ))
     out="${ARGENT_RESULT}.${case_name}.json"
-    # One call. A wrong tool result is not a slow response, so this does not
-    # retry or print the body as an INFO delay line.
+    # A wrong tool result is not a slow response. Retry only HTTP 503, once.
+    # Yugabyte tools/list on test_73_20261008_115801 was that code: QueryRef 18
+    # exceeded the 20s auth budget, then the same lookup succeeded.
     http_st=$(mcp_http "POST" "${ARGENT_URL}" "${payload}" "${out}" \
         "${ARGENT_HDR}" "${ARGENT_JWT}" "${ARGENT_SESSION}" "" "${HTTP_TIMEOUT}")
+    if [[ "${http_st}" == "503" ]]; then
+        print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
+            "INFO delay ${case_name}: HTTP 503, one retry"
+        http_st=$(mcp_http "POST" "${ARGENT_URL}" "${payload}" "${out}" \
+            "${ARGENT_HDR}" "${ARGENT_JWT}" "${ARGENT_SESSION}" "" "${HTTP_TIMEOUT}")
+    fi
     if [[ "${http_st}" == "200" ]] && jq -e "${filter}" "${out}" >/dev/null 2>&1; then
         record_case "${ARGENT_RESULT}" "${case_name}" 1
         return 0
@@ -138,6 +148,34 @@ argent_fail() {
     argent_call "${case_name}" "${tool}" "${args_json}" "${filter}"
 }
 
+argent_confirm() {
+    local case_name="$1"
+    local tool="$2"
+    local args_json="$3"
+    local warning="$4"
+    local v filter warn_re
+    shift 4
+    for v in "$@"; do
+        if [[ ! "${v}" =~ ^[0-9]+$ ]]; then
+            argent_miss "${case_name}"
+            return 1
+        fi
+    done
+    # A space inside an unquoted [[ =~ ]] class is split by the shell.
+    warn_re='^[a-z ]+$'
+    if [[ ! "${warning}" =~ ${warn_re} ]]; then
+        argent_miss "${case_name}"
+        return 1
+    fi
+    filter='.result.error == null and .result.structuredContent.ok == false'
+    filter="${filter} and .result.structuredContent.code == \"needs_confirm\""
+    filter="${filter} and .result.structuredContent.needs_confirm == true"
+    filter="${filter} and .result.structuredContent.warning == \"${warning}\""
+    filter="${filter} and (.result.structuredContent.confirm_token | type) == \"string\""
+    filter="${filter} and (.result.structuredContent.confirm_token | length) > 0"
+    argent_call "${case_name}" "${tool}" "${args_json}" "${filter}"
+}
+
 argent_grab() {
     local case_name="$1"
     local expr="$2"
@@ -156,6 +194,10 @@ argent_mcp_exercise() {
     local args org_id org2_id bank_id card_id exp_id tax_id usd_id parent_id child_id org2_ledger
     local term_id term2_id contact_id txn_id line_id tax_code_id tax_rate_id rate2_id
     local bare_code_id usd_code_id tag_id att_id long_key
+    local recon_ledger buy_txn buy_line buy_exp_line future_txn future_line stmt_txn exp_stmt late_stmt
+    local open_recon later_recon edit_token mismatch_token close_token rescind_token
+    local close_txn mid_txn stmt_token buy_base mismatch_base stmt_late_id org2_stmt_id
+    local sched_id rent_a rent_b rent_actual rent_down
 
     ARGENT_RESULT="${result_file}"
     ARGENT_URL="${mcp_url}"
@@ -177,6 +219,10 @@ argent_mcp_exercise() {
         AddTags RemoveTags AddAttachment
         UpsertTaxCode UpsertTaxRate
         GetTransaction ListTransactions QueryBalances
+        EditTransaction RescindTransaction
+        PostStatement PostPeriodClose
+        StartReconciliation ClearLines CompleteReconciliation
+        UpsertSchedule GenerateSchedule MatchReserved RetryCalendar
     )
     list_filter='.result.error == null'
     for tool in "${tools[@]}"; do
@@ -893,6 +939,575 @@ argent_mcp_exercise() {
             "${org_id}" || true
     else
         argent_miss ledger_idem_blocked
+    fi
+
+    # Phase 12. A fresh posting ledger keeps the earlier balance cases stable.
+    # Book balance through 2026-10-07 is the purchase of -250. The statement
+    # line is amount 0. Complete is asked to match 0, so a bare override fails.
+    argent_fail edit_txn_required Argent.EditTransaction '{}' txn_id_required || true
+    argent_fail edit_unknown Argent.EditTransaction '{"txn_id":999999999}' not_found || true
+    args=$(jq -n --argjson id "${txn_id:-0}" '{txn_id:$id,txn_on:"bad"}')
+    argent_fail edit_date Argent.EditTransaction "${args}" txn_on "${txn_id}" || true
+    args=$(jq -n --argjson id "${txn_id:-0}" '{txn_id:$id,description:""}')
+    argent_fail edit_description Argent.EditTransaction "${args}" description_required "${txn_id}" || true
+    args=$(jq -n --argjson id "${txn_id:-0}" '{txn_id:$id,memo:1}')
+    argent_fail edit_memo Argent.EditTransaction "${args}" memo "${txn_id}" || true
+    args=$(jq -n --argjson id "${txn_id:-0}" '{txn_id:$id,lines:1}')
+    argent_fail edit_lines Argent.EditTransaction "${args}" lines "${txn_id}" || true
+    argent_fail rescind_required Argent.RescindTransaction '{}' txn_id_required || true
+    argent_fail rescind_unknown Argent.RescindTransaction '{"txn_id":999999999}' not_found || true
+    argent_fail stmt_ledger_required Argent.PostStatement '{"txn_on":"2026-10-07","description":"x"}' ledger_id_required || true
+    argent_fail stmt_date Argent.PostStatement '{"ledger_id":1,"txn_on":"bad","description":"x"}' txn_on || true
+    argent_fail stmt_description Argent.PostStatement '{"ledger_id":1,"txn_on":"2026-10-07"}' description_required || true
+    args=$(jq -n '{ledger_id:1,txn_on:"2026-10-07",description:"x",statement_balance_cents:1.5}')
+    argent_fail stmt_balance_type Argent.PostStatement "${args}" statement_balance_cents || true
+    args=$(jq -n --argjson id "${parent_id:-0}" '{ledger_id:$id,txn_on:"2026-10-07",description:"x"}')
+    argent_fail stmt_nonposting Argent.PostStatement "${args}" ledger "${parent_id}" || true
+    argent_fail close_ledger_required Argent.PostPeriodClose '{"txn_on":"2026-10-20","description":"x"}' ledger_id_required || true
+    args=$(jq -n --argjson id "${parent_id:-0}" '{ledger_id:$id,txn_on:"2026-10-20",description:"x"}')
+    argent_fail close_nonposting Argent.PostPeriodClose "${args}" ledger "${parent_id}" || true
+    argent_fail start_ledger_required Argent.StartReconciliation '{"statement_txn_id":1,"reconciled_on":"2026-10-07","statement_balance_cents":0}' ledger_id_required || true
+    argent_fail start_balance_required Argent.StartReconciliation '{"ledger_id":1,"statement_txn_id":1,"reconciled_on":"2026-10-07"}' statement_balance_cents || true
+    argent_fail start_date Argent.StartReconciliation '{"ledger_id":1,"statement_txn_id":1,"reconciled_on":"bad","statement_balance_cents":0}' reconciled_on || true
+    argent_fail done_required Argent.CompleteReconciliation '{}' reconciliation_id_required || true
+    argent_fail done_reason_type Argent.CompleteReconciliation '{"reconciliation_id":1,"override_reason":1}' override_reason || true
+    argent_fail clear_required Argent.ClearLines '{}' reconciliation_id_required || true
+    argent_fail clear_ids Argent.ClearLines '{"reconciliation_id":1}' line_ids || true
+
+    args=$(jq -n --argjson org "${org_id:-0}" --arg name "recon${token}" \
+        '{organization_id:$org,name:$name,ledger_type_a2001:1,is_posting:true,currency:"cad",opening_on:"2026-10-01",opening_balance_cents:0}')
+    argent_ok recon_ledger_ok Argent.UpsertLedger "${args}" '.result.structuredContent.created == true' \
+        "${org_id}" || true
+    recon_ledger=$(argent_grab recon_ledger_ok '.result.structuredContent.ledger_id | tonumber')
+
+    args=$(jq -n --arg desc "buy${token}" --argjson ledger "${recon_ledger:-0}" --argjson exp "${exp_id:-0}" \
+        '{txn_on:"2026-10-02",description:$desc,lines:[{ledger_id:$ledger,amount_cents:-250},{ledger_id:$exp,amount_cents:250}]}')
+    argent_ok recon_buy Argent.PostTransaction "${args}" \
+        '.result.structuredContent.created == true and (.result.structuredContent.lines|length) == 2' \
+        "${recon_ledger}" "${exp_id}" || true
+    buy_txn=$(argent_grab recon_buy '.result.structuredContent.txn_id | tonumber')
+    if [[ "${recon_ledger}" =~ ^[0-9]+$ ]]; then
+        buy_line=$(argent_grab recon_buy "[.result.structuredContent.lines[] | select((.ledger_id|tonumber)==${recon_ledger}) | .line_id | tonumber] | .[0]")
+    fi
+    if [[ "${exp_id}" =~ ^[0-9]+$ ]]; then
+        buy_exp_line=$(argent_grab recon_buy "[.result.structuredContent.lines[] | select((.ledger_id|tonumber)==${exp_id}) | .line_id | tonumber] | .[0]")
+    fi
+
+    args=$(jq -n --arg desc "future${token}" --argjson ledger "${recon_ledger:-0}" --argjson exp "${exp_id:-0}" \
+        '{txn_on:"2026-10-08",description:$desc,lines:[{ledger_id:$ledger,amount_cents:-1},{ledger_id:$exp,amount_cents:1}]}')
+    argent_ok recon_future Argent.PostTransaction "${args}" '.result.structuredContent.created == true' \
+        "${recon_ledger}" "${exp_id}" || true
+    future_txn=$(argent_grab recon_future '.result.structuredContent.txn_id | tonumber')
+    if [[ "${recon_ledger}" =~ ^[0-9]+$ ]]; then
+        future_line=$(argent_grab recon_future "[.result.structuredContent.lines[] | select((.ledger_id|tonumber)==${recon_ledger}) | .line_id | tonumber] | .[0]")
+    fi
+    args=$(jq -n --argjson id "${future_txn:-0}" --arg desc "nope${token}" \
+        '{txn_id:$id,description:$desc,confirm_token:"not-a-token"}')
+    argent_fail future_bogus Argent.EditTransaction "${args}" confirm_not_found "${future_txn}" || true
+    args=$(jq -n --argjson id "${future_txn:-0}" '{txn_id:$id}')
+    if [[ "${future_txn}" =~ ^[0-9]+$ ]]; then
+        argent_ok future_bogus_seen Argent.GetTransaction "${args}" \
+            ".result.structuredContent.transaction.description == \"future${token}\"" \
+            "${future_txn}" || true
+    else
+        argent_miss future_bogus_seen || true
+    fi
+
+    args=$(jq -n --argjson ledger "${recon_ledger:-0}" --arg desc "stmt${token}" --arg key "stmt${token}" \
+        '{ledger_id:$ledger,txn_on:"2026-10-07",description:$desc,idempotency_key:$key}')
+    argent_ok recon_stmt Argent.PostStatement "${args}" \
+        '.result.structuredContent.created == true and (.result.structuredContent.kind_a2004|tonumber) == 7' \
+        "${recon_ledger}" || true
+    stmt_txn=$(argent_grab recon_stmt '.result.structuredContent.txn_id | tonumber')
+    args=$(jq -n --argjson ledger "${recon_ledger:-0}" --arg desc "stmt-again${token}" --arg key "stmt${token}" \
+        '{ledger_id:$ledger,txn_on:"2026-10-07",description:$desc,idempotency_key:$key}')
+    if [[ "${stmt_txn}" =~ ^[0-9]+$ ]]; then
+        argent_ok recon_stmt_idem Argent.PostStatement "${args}" \
+            ".result.structuredContent.idempotent == true and .result.structuredContent.created == false and ((.result.structuredContent.txn_id|tonumber) == ${stmt_txn})" \
+            "${recon_ledger}" || true
+        argent_ok recon_stmt_get Argent.GetTransaction "{\"txn_id\":${stmt_txn}}" \
+            '(.result.structuredContent.transaction.kind_a2004|tonumber) == 7 and (.result.structuredContent.transaction.status_a2003|tonumber) == 3' \
+            "${stmt_txn}" || true
+    else
+        argent_miss recon_stmt_idem || true
+        argent_miss recon_stmt_get || true
+    fi
+
+    args=$(jq -n --argjson ledger "${exp_id:-0}" --arg desc "stmtexp${token}" \
+        '{ledger_id:$ledger,txn_on:"2026-10-07",description:$desc}')
+    argent_ok recon_stmt_exp Argent.PostStatement "${args}" '.result.structuredContent.created == true' \
+        "${exp_id}" || true
+    exp_stmt=$(argent_grab recon_stmt_exp '.result.structuredContent.txn_id | tonumber')
+
+    args=$(jq -n --argjson ledger "${recon_ledger:-0}" --arg desc "late${token}" \
+        '{ledger_id:$ledger,txn_on:"2026-10-31",description:$desc}')
+    argent_ok recon_stmt_late Argent.PostStatement "${args}" '.result.structuredContent.created == true' \
+        "${recon_ledger}" || true
+    late_stmt=$(argent_grab recon_stmt_late '.result.structuredContent.txn_id | tonumber')
+
+    args=$(jq -n --argjson id "${buy_txn:-0}" '{txn_id:$id}')
+    argent_fail edit_empty Argent.EditTransaction "${args}" edit_empty "${buy_txn}" || true
+    args=$(jq -n --argjson id "${buy_txn:-0}" '{txn_id:$id,lines:[{line_id:999999999,amount_cents:1}]}')
+    argent_fail edit_line_missing Argent.EditTransaction "${args}" line_not_found "${buy_txn}" || true
+    args=$(jq -n --argjson id "${buy_txn:-0}" --argjson line "${buy_line:-0}" \
+        '{txn_id:$id,lines:[{line_id:$line,amount_cents:5}]}')
+    argent_fail edit_unbalanced Argent.EditTransaction "${args}" unbalanced "${buy_txn}" "${buy_line}" || true
+    args=$(jq -n --argjson id "${buy_txn:-0}" --arg desc "bought${token}" '{txn_id:$id,description:$desc}')
+    argent_ok edit_safe Argent.EditTransaction "${args}" \
+        '(.result.structuredContent.status_a2003|tonumber) == 3 and .result.structuredContent.knocked == false' \
+        "${buy_txn}" || true
+    args=$(jq -n --argjson id "${buy_txn:-0}" '{txn_id:$id}')
+    if [[ "${buy_txn}" =~ ^[0-9]+$ ]]; then
+        argent_ok edit_safe_seen Argent.GetTransaction "${args}" \
+            ".result.structuredContent.transaction.description == \"bought${token}\" and (.result.structuredContent.transaction.status_a2003|tonumber) == 3" \
+            "${buy_txn}" || true
+    else
+        argent_miss edit_safe_seen || true
+    fi
+
+    args=$(jq -n --argjson ledger "${recon_ledger:-0}" --argjson stmt "${buy_txn:-0}" \
+        '{ledger_id:$ledger,statement_txn_id:$stmt,reconciled_on:"2026-10-07",statement_balance_cents:0}')
+    argent_fail start_kind Argent.StartReconciliation "${args}" statement_kind "${recon_ledger}" "${buy_txn}" || true
+    args=$(jq -n --argjson ledger "${recon_ledger:-0}" \
+        '{ledger_id:$ledger,statement_txn_id:999999999,reconciled_on:"2026-10-07",statement_balance_cents:0}')
+    argent_fail start_missing Argent.StartReconciliation "${args}" statement_not_found "${recon_ledger}" || true
+    args=$(jq -n --argjson ledger "${recon_ledger:-0}" --argjson stmt "${exp_stmt:-0}" \
+        '{ledger_id:$ledger,statement_txn_id:$stmt,reconciled_on:"2026-10-07",statement_balance_cents:0}')
+    argent_fail start_other_ledger Argent.StartReconciliation "${args}" statement_ledger "${recon_ledger}" "${exp_stmt}" || true
+    args=$(jq -n --argjson ledger "${recon_ledger:-0}" --argjson stmt "${stmt_txn:-0}" --arg summary "$(printf '%201s' '' | tr ' ' 's')" \
+        '{ledger_id:$ledger,statement_txn_id:$stmt,reconciled_on:"2026-10-07",statement_balance_cents:0,summary:$summary}')
+    argent_fail start_summary Argent.StartReconciliation "${args}" summary "${recon_ledger}" "${stmt_txn}" || true
+    args=$(jq -n --argjson ledger "${recon_ledger:-0}" --argjson stmt "${stmt_txn:-0}" \
+        '{ledger_id:$ledger,statement_txn_id:$stmt,reconciled_on:"2026-10-07",statement_balance_cents:0}')
+    argent_ok start_open Argent.StartReconciliation "${args}" \
+        '.result.structuredContent.created == true and (.result.structuredContent.status_a2006|tonumber) == 1 and (.result.structuredContent.book_balance_cents|tonumber) == -250 and (.result.structuredContent.statement_balance_cents|tonumber) == 0' \
+        "${recon_ledger}" "${stmt_txn}" || true
+    open_recon=$(argent_grab start_open '.result.structuredContent.reconciliation_id | tonumber')
+    argent_fail start_again Argent.StartReconciliation "${args}" reconciliation_open "${recon_ledger}" "${stmt_txn}" || true
+
+    args=$(jq -n --argjson id "${open_recon:-0}" --argjson line "${buy_exp_line:-0}" '{reconciliation_id:$id,line_ids:[$line]}')
+    argent_fail clear_mismatch Argent.ClearLines "${args}" ledger_mismatch "${open_recon}" "${buy_exp_line}" || true
+    args=$(jq -n --argjson id "${open_recon:-0}" --argjson line "${future_line:-0}" '{reconciliation_id:$id,line_ids:[$line]}')
+    argent_fail clear_future Argent.ClearLines "${args}" line_after_statement "${open_recon}" "${future_line}" || true
+    args=$(jq -n --argjson id "${open_recon:-0}" '{reconciliation_id:$id,line_ids:[999999999]}')
+    argent_fail clear_missing Argent.ClearLines "${args}" line_not_found "${open_recon}" || true
+    args=$(jq -n --argjson id "${open_recon:-0}" '{reconciliation_id:$id,line_ids:[]}')
+    argent_ok clear_empty Argent.ClearLines "${args}" '(.result.structuredContent.line_ids|length) == 0' \
+        "${open_recon}" || true
+    args=$(jq -n --argjson id "${open_recon:-0}" --argjson line "${buy_line:-0}" '{reconciliation_id:$id,line_ids:[$line]}')
+    if [[ "${buy_line}" =~ ^[0-9]+$ ]]; then
+        argent_ok clear_buy Argent.ClearLines "${args}" \
+            "([.result.structuredContent.line_ids[]? | tonumber] | index(${buy_line})) != null" \
+            "${open_recon}" "${buy_line}" || true
+    else
+        argent_miss clear_buy || true
+    fi
+
+    argent_fail done_unknown Argent.CompleteReconciliation '{"reconciliation_id":999999999}' not_found || true
+    if [[ "${open_recon}" =~ ^[0-9]+$ ]]; then
+        args=$(jq -n --argjson id "${open_recon}" '{reconciliation_id:$id}')
+        argent_call done_override Argent.CompleteReconciliation "${args}" \
+            '.result.error == null and .result.structuredContent.ok == false and .result.structuredContent.code == "override_reason_required" and (.result.structuredContent.statement_balance_cents|tonumber) == 0 and (.result.structuredContent.book_balance_cents|tonumber) == -250' \
+            || true
+    else
+        argent_miss done_override || true
+    fi
+    args=$(jq -n --argjson id "${buy_txn:-0}" '{txn_id:$id}')
+    if [[ "${buy_txn}" =~ ^[0-9]+$ ]]; then
+        argent_ok done_still_recorded Argent.GetTransaction "${args}" \
+            ".result.structuredContent.transaction.description == \"bought${token}\" and (.result.structuredContent.transaction.status_a2003|tonumber) == 3" \
+            "${buy_txn}" || true
+    else
+        argent_miss done_still_recorded || true
+    fi
+    args=$(jq -n --argjson id "${open_recon:-0}" --arg reason "test73" '{reconciliation_id:$id,override_reason:$reason}')
+    if [[ "${buy_txn}" =~ ^[0-9]+$ ]]; then
+        argent_ok done_reason Argent.CompleteReconciliation "${args}" \
+            "(.result.structuredContent.status_a2006|tonumber) == 2 and .result.structuredContent.override == true and ((.result.structuredContent.book_balance_cents|tonumber) == -250) and (([.result.structuredContent.txn_ids[]? | tonumber] | index(${buy_txn})) != null)" \
+            "${open_recon}" || true
+    else
+        argent_miss done_reason || true
+    fi
+    args=$(jq -n --argjson id "${buy_txn:-0}" '{txn_id:$id}')
+    if [[ "${buy_txn}" =~ ^[0-9]+$ ]]; then
+        argent_ok done_reconciled Argent.GetTransaction "${args}" \
+            '(.result.structuredContent.transaction.status_a2003|tonumber) == 4' \
+            "${buy_txn}" || true
+    else
+        argent_miss done_reconciled || true
+    fi
+    args=$(jq -n --argjson id "${open_recon:-0}" '{reconciliation_id:$id}')
+    argent_ok done_again Argent.CompleteReconciliation "${args}" \
+        '.result.structuredContent.already == true and (.result.structuredContent.status_a2006|tonumber) == 2' \
+        "${open_recon}" || true
+    args=$(jq -n --argjson id "${open_recon:-0}" '{reconciliation_id:$id,line_ids:[]}')
+    argent_fail clear_closed Argent.ClearLines "${args}" reconciliation_closed "${open_recon}" || true
+
+    args=$(jq -n --argjson ledger "${recon_ledger:-0}" --argjson stmt "${stmt_txn:-0}" \
+        '{ledger_id:$ledger,statement_txn_id:$stmt,reconciled_on:"2026-10-07",statement_balance_cents:0}')
+    argent_confirm start_reconciled_date Argent.StartReconciliation "${args}" "reconciled date" \
+        "${recon_ledger}" "${stmt_txn}" || true
+    args=$(jq -n --argjson ledger "${recon_ledger:-0}" --argjson stmt "${late_stmt:-0}" \
+        '{ledger_id:$ledger,statement_txn_id:$stmt,reconciled_on:"2026-10-31",statement_balance_cents:0}')
+    argent_ok start_later Argent.StartReconciliation "${args}" \
+        '.result.structuredContent.created == true and (.result.structuredContent.status_a2006|tonumber) == 1' \
+        "${recon_ledger}" "${late_stmt}" || true
+    later_recon=$(argent_grab start_later '.result.structuredContent.reconciliation_id | tonumber')
+    args=$(jq -n --argjson id "${later_recon:-0}" --argjson line "${buy_line:-0}" '{reconciliation_id:$id,line_ids:[$line]}')
+    argent_fail clear_reconciled_line Argent.ClearLines "${args}" reconciled_line "${later_recon}" "${buy_line}" || true
+
+    buy_base=$(jq -nc --argjson id "${buy_txn:-0}" --arg desc "knock${token}" '{txn_id:$id,description:$desc}')
+    argent_confirm edit_warn Argent.EditTransaction "${buy_base}" "reconciled transaction" "${buy_txn}" || true
+    edit_token=$(argent_grab edit_warn '.result.structuredContent.confirm_token')
+    args=$(jq -n --argjson id "${buy_txn:-0}" '{txn_id:$id}')
+    if [[ "${buy_txn}" =~ ^[0-9]+$ ]]; then
+        argent_ok edit_unchanged Argent.GetTransaction "${args}" \
+            ".result.structuredContent.transaction.description == \"bought${token}\" and (.result.structuredContent.transaction.status_a2003|tonumber) == 4" \
+            "${buy_txn}" || true
+    else
+        argent_miss edit_unchanged || true
+    fi
+    args=$(jq -nc --argjson id "${buy_txn:-0}" --arg desc "$(printf '%4001s' '' | tr ' ' 'd')" \
+        '{txn_id:$id,description:$desc}')
+    argent_fail edit_body_long Argent.EditTransaction "${args}" body_too_long "${buy_txn}" || true
+    args=$(jq -n --argjson id "${buy_txn:-0}" '{txn_id:$id}')
+    if [[ "${buy_txn}" =~ ^[0-9]+$ ]]; then
+        argent_ok edit_body_unchanged Argent.GetTransaction "${args}" \
+            ".result.structuredContent.transaction.description == \"bought${token}\" and (.result.structuredContent.transaction.status_a2003|tonumber) == 4" \
+            "${buy_txn}" || true
+    else
+        argent_miss edit_body_unchanged || true
+    fi
+    if [[ -n "${edit_token}" && "${buy_txn}" =~ ^[0-9]+$ ]]; then
+        args=$(jq -nc --argjson id "${buy_txn}" --arg token "${edit_token}" '{txn_id:$id,confirm_token:$token}')
+        argent_fail edit_token_tool Argent.RescindTransaction "${args}" confirm_tool "${buy_txn}" || true
+    else
+        argent_miss edit_token_tool || true
+    fi
+    if [[ -n "${edit_token}" && "${buy_txn}" =~ ^[0-9]+$ ]]; then
+        args=$(jq -nc --argjson base "${buy_base}" --arg token "${edit_token}" '$base + {confirm_token:$token}')
+        argent_ok edit_apply Argent.EditTransaction "${args}" \
+            '(.result.structuredContent.status_a2003|tonumber) == 3 and .result.structuredContent.knocked == true' \
+            "${buy_txn}" || true
+    else
+        argent_miss edit_apply || true
+    fi
+    args=$(jq -n --argjson id "${buy_txn:-0}" '{txn_id:$id}')
+    if [[ "${buy_txn}" =~ ^[0-9]+$ ]]; then
+        argent_ok edit_knocked Argent.GetTransaction "${args}" \
+            ".result.structuredContent.transaction.description == \"knock${token}\" and (.result.structuredContent.transaction.status_a2003|tonumber) == 3" \
+            "${buy_txn}" || true
+    else
+        argent_miss edit_knocked || true
+    fi
+    if [[ -n "${edit_token}" && "${buy_txn}" =~ ^[0-9]+$ ]]; then
+        args=$(jq -nc --argjson id "${buy_txn}" --arg desc "again${token}" --arg token "${edit_token}" \
+            '{txn_id:$id,description:$desc,confirm_token:$token}')
+        argent_fail edit_token_used Argent.EditTransaction "${args}" confirm_used "${buy_txn}" || true
+    else
+        argent_miss edit_token_used || true
+    fi
+    args=$(jq -n --argjson id "${buy_txn:-0}" '{txn_id:$id}')
+    if [[ "${buy_txn}" =~ ^[0-9]+$ ]]; then
+        argent_ok edit_still_knock Argent.GetTransaction "${args}" \
+            ".result.structuredContent.transaction.description == \"knock${token}\"" \
+            "${buy_txn}" || true
+    else
+        argent_miss edit_still_knock || true
+    fi
+    mismatch_base=$(jq -nc --argjson id "${buy_txn:-0}" --arg desc "mismatch${token}" '{txn_id:$id,description:$desc}')
+    argent_confirm edit_mismatch_warn Argent.EditTransaction "${mismatch_base}" "reconciled date" "${buy_txn}" || true
+    mismatch_token=$(argent_grab edit_mismatch_warn '.result.structuredContent.confirm_token')
+    if [[ -n "${mismatch_token}" && "${buy_txn}" =~ ^[0-9]+$ ]]; then
+        args=$(jq -nc --argjson base "${mismatch_base}" --arg desc "other${token}" --arg token "${mismatch_token}" \
+            '$base + {description:$desc,confirm_token:$token}')
+        argent_fail edit_mismatch Argent.EditTransaction "${args}" confirm_mismatch "${buy_txn}" || true
+    else
+        argent_miss edit_mismatch || true
+    fi
+    args=$(jq -n --argjson id "${buy_txn:-0}" '{txn_id:$id}')
+    if [[ "${buy_txn}" =~ ^[0-9]+$ ]]; then
+        argent_ok edit_still_after_mismatch Argent.GetTransaction "${args}" \
+            ".result.structuredContent.transaction.description == \"knock${token}\"" \
+            "${buy_txn}" || true
+    else
+        argent_miss edit_still_after_mismatch || true
+    fi
+    args=$(jq -n --argjson id "${buy_txn:-0}" --arg desc "bogus${token}" \
+        '{txn_id:$id,description:$desc,confirm_token:"not-a-token"}')
+    argent_fail edit_bogus Argent.EditTransaction "${args}" confirm_not_found "${buy_txn}" || true
+    args=$(jq -n --argjson id "${buy_txn:-0}" '{txn_id:$id}')
+    if [[ "${buy_txn}" =~ ^[0-9]+$ ]]; then
+        argent_ok edit_still_after_bogus Argent.GetTransaction "${args}" \
+            ".result.structuredContent.transaction.description == \"knock${token}\"" \
+            "${buy_txn}" || true
+    else
+        argent_miss edit_still_after_bogus || true
+    fi
+
+    args=$(jq -n --argjson ledger "${recon_ledger:-0}" --arg desc "stmtr${token}" \
+        '{ledger_id:$ledger,txn_on:"2026-10-07",description:$desc}')
+    argent_confirm stmt_reconciled_warn Argent.PostStatement "${args}" "reconciled date" "${recon_ledger}" || true
+    stmt_token=$(argent_grab stmt_reconciled_warn '.result.structuredContent.confirm_token')
+    args=$(jq -n --argjson org "${org_id:-0}" '{organization_id:$org}')
+    if [[ "${org_id}" =~ ^[0-9]+$ ]]; then
+        argent_ok stmt_reconciled_absent Argent.ListTransactions "${args}" \
+            "[.result.structuredContent.transactions[]?.description] | index(\"stmtr${token}\") == null" \
+            "${org_id}" || true
+    else
+        argent_miss stmt_reconciled_absent || true
+    fi
+    if [[ -n "${stmt_token}" && "${recon_ledger}" =~ ^[0-9]+$ ]]; then
+        args=$(jq -nc --argjson ledger "${recon_ledger}" --arg desc "stmtr${token}" --arg token "${stmt_token}" \
+            '{ledger_id:$ledger,txn_on:"2026-10-07",description:$desc,confirm_token:$token}')
+        argent_ok stmt_reconciled_apply Argent.PostStatement "${args}" \
+            '.result.structuredContent.created == true and (.result.structuredContent.kind_a2004|tonumber) == 7' \
+            "${recon_ledger}" || true
+        stmt_late_id=$(argent_grab stmt_reconciled_apply '.result.structuredContent.txn_id | tonumber')
+        if [[ "${stmt_late_id}" =~ ^[0-9]+$ ]]; then
+            argent_ok stmt_reconciled_get Argent.GetTransaction "{\"txn_id\":${stmt_late_id}}" \
+                '(.result.structuredContent.transaction.kind_a2004|tonumber) == 7 and (.result.structuredContent.transaction.status_a2003|tonumber) == 3' \
+                "${stmt_late_id}" || true
+        else
+            argent_miss stmt_reconciled_get || true
+        fi
+    else
+        argent_miss stmt_reconciled_apply || true
+        argent_miss stmt_reconciled_get || true
+    fi
+
+    args=$(jq -n --arg desc "mid${token}" --argjson ledger "${recon_ledger:-0}" --argjson exp "${exp_id:-0}" \
+        '{txn_on:"2026-10-10",description:$desc,lines:[{ledger_id:$ledger,amount_cents:-3},{ledger_id:$exp,amount_cents:3}]}')
+    argent_ok mid_post Argent.PostTransaction "${args}" '.result.structuredContent.created == true' \
+        "${recon_ledger}" "${exp_id}" || true
+    mid_txn=$(argent_grab mid_post '.result.structuredContent.txn_id | tonumber')
+
+    args=$(jq -n --argjson ledger "${recon_ledger:-0}" --arg desc "close${token}" --arg key "close${token}" \
+        '{ledger_id:$ledger,txn_on:"2026-10-20",description:$desc,idempotency_key:$key}')
+    argent_ok close_create Argent.PostPeriodClose "${args}" \
+        '.result.structuredContent.created == true and (.result.structuredContent.kind_a2004|tonumber) == 8' \
+        "${recon_ledger}" || true
+    close_txn=$(argent_grab close_create '.result.structuredContent.txn_id | tonumber')
+    if [[ "${close_txn}" =~ ^[0-9]+$ ]]; then
+        argent_ok close_get Argent.GetTransaction "{\"txn_id\":${close_txn}}" \
+            '(.result.structuredContent.transaction.kind_a2004|tonumber) == 8 and (.result.structuredContent.transaction.status_a2003|tonumber) == 3' \
+            "${close_txn}" || true
+        args=$(jq -n --argjson ledger "${recon_ledger:-0}" --arg desc "close-again${token}" --arg key "close${token}" \
+            '{ledger_id:$ledger,txn_on:"2026-10-20",description:$desc,idempotency_key:$key}')
+        argent_ok close_idem Argent.PostPeriodClose "${args}" \
+            ".result.structuredContent.idempotent == true and .result.structuredContent.created == false and ((.result.structuredContent.txn_id|tonumber) == ${close_txn})" \
+            "${recon_ledger}" || true
+    else
+        argent_miss close_get || true
+        argent_miss close_idem || true
+    fi
+    args=$(jq -n --argjson ledger "${recon_ledger:-0}" --arg desc "close2${token}" \
+        '{ledger_id:$ledger,txn_on:"2026-10-18",description:$desc}')
+    argent_confirm close_boundary_warn Argent.PostPeriodClose "${args}" "period close boundary" "${recon_ledger}" || true
+    args=$(jq -n --argjson org "${org_id:-0}" '{organization_id:$org}')
+    if [[ "${org_id}" =~ ^[0-9]+$ ]]; then
+        argent_ok close_boundary_absent Argent.ListTransactions "${args}" \
+            "[.result.structuredContent.transactions[]?.description] | index(\"close2${token}\") == null" \
+            "${org_id}" || true
+    else
+        argent_miss close_boundary_absent || true
+    fi
+    args=$(jq -nc --argjson id "${close_txn:-0}" --arg desc "closed2${token}" '{txn_id:$id,description:$desc}')
+    argent_confirm close_edit_warn Argent.EditTransaction "${args}" "period close" "${close_txn}" || true
+    if [[ "${close_txn}" =~ ^[0-9]+$ ]]; then
+        argent_ok close_edit_unchanged Argent.GetTransaction "{\"txn_id\":${close_txn}}" \
+            ".result.structuredContent.transaction.description == \"close${token}\"" \
+            "${close_txn}" || true
+    else
+        argent_miss close_edit_unchanged || true
+    fi
+    args=$(jq -nc --argjson id "${mid_txn:-0}" --arg desc "mid2${token}" '{txn_id:$id,description:$desc}')
+    argent_confirm mid_edit_warn Argent.EditTransaction "${args}" "period close boundary" "${mid_txn}" || true
+    if [[ "${mid_txn}" =~ ^[0-9]+$ ]]; then
+        argent_ok mid_edit_unchanged Argent.GetTransaction "{\"txn_id\":${mid_txn}}" \
+            ".result.structuredContent.transaction.description == \"mid${token}\" and (.result.structuredContent.transaction.status_a2003|tonumber) == 3" \
+            "${mid_txn}" || true
+    else
+        argent_miss mid_edit_unchanged || true
+    fi
+
+    args=$(jq -nc --argjson id "${close_txn:-0}" '{txn_id:$id}')
+    argent_confirm close_rescind_warn Argent.RescindTransaction "${args}" "period close" "${close_txn}" || true
+    close_token=$(argent_grab close_rescind_warn '.result.structuredContent.confirm_token')
+    if [[ -n "${close_token}" && "${close_txn}" =~ ^[0-9]+$ ]]; then
+        args=$(jq -nc --argjson id "${close_txn}" --arg token "${close_token}" '{txn_id:$id,confirm_token:$token}')
+        argent_ok close_rescind_apply Argent.RescindTransaction "${args}" \
+            '(.result.structuredContent.status_a2003|tonumber) == 5 and .result.structuredContent.knocked == true' \
+            "${close_txn}" || true
+    else
+        argent_miss close_rescind_apply || true
+    fi
+    args=$(jq -nc --argjson id "${close_txn:-0}" '{txn_id:$id}')
+    argent_ok close_rescind_again Argent.RescindTransaction "${args}" \
+        '.result.structuredContent.already == true and (.result.structuredContent.status_a2003|tonumber) == 5' \
+        "${close_txn}" || true
+    args=$(jq -nc --argjson id "${mid_txn:-0}" '{txn_id:$id}')
+    argent_ok mid_rescind Argent.RescindTransaction "${args}" \
+        '(.result.structuredContent.status_a2003|tonumber) == 5 and .result.structuredContent.knocked == false' \
+        "${mid_txn}" || true
+    argent_ok mid_rescind_again Argent.RescindTransaction "${args}" \
+        '.result.structuredContent.already == true and (.result.structuredContent.status_a2003|tonumber) == 5' \
+        "${mid_txn}" || true
+
+    args=$(jq -nc --argjson id "${buy_txn:-0}" '{txn_id:$id}')
+    argent_confirm buy_rescind_warn Argent.RescindTransaction "${args}" "reconciled date" "${buy_txn}" || true
+    rescind_token=$(argent_grab buy_rescind_warn '.result.structuredContent.confirm_token')
+    if [[ -n "${rescind_token}" && "${buy_txn}" =~ ^[0-9]+$ ]]; then
+        args=$(jq -nc --argjson id "${buy_txn}" --arg token "${rescind_token}" '{txn_id:$id,confirm_token:$token}')
+        argent_ok buy_rescind_apply Argent.RescindTransaction "${args}" \
+            '(.result.structuredContent.status_a2003|tonumber) == 5 and .result.structuredContent.knocked == true' \
+            "${buy_txn}" || true
+    else
+        argent_miss buy_rescind_apply || true
+    fi
+    args=$(jq -nc --argjson id "${buy_txn:-0}" '{txn_id:$id}')
+    argent_ok buy_rescind_again Argent.RescindTransaction "${args}" \
+        '.result.structuredContent.already == true and (.result.structuredContent.status_a2003|tonumber) == 5' \
+        "${buy_txn}" || true
+
+    args=$(jq -nc --argjson id "${exp_stmt:-0}" '{txn_id:$id}')
+    argent_ok exp_stmt_rescind Argent.RescindTransaction "${args}" \
+        '(.result.structuredContent.status_a2003|tonumber) == 5 and .result.structuredContent.knocked == false' \
+        "${exp_stmt}" || true
+    args=$(jq -n --argjson ledger "${exp_id:-0}" --argjson stmt "${exp_stmt:-0}" \
+        '{ledger_id:$ledger,statement_txn_id:$stmt,reconciled_on:"2026-10-07",statement_balance_cents:0}')
+    argent_fail start_rescinded Argent.StartReconciliation "${args}" statement_rescinded "${exp_id}" "${exp_stmt}" || true
+
+    args=$(jq -n --argjson ledger "${org2_ledger:-0}" --arg desc "o2stmt${token}" \
+        '{ledger_id:$ledger,txn_on:"2026-10-07",description:$desc}')
+    argent_ok org2_stmt Argent.PostStatement "${args}" '.result.structuredContent.created == true' \
+        "${org2_ledger}" || true
+    org2_stmt_id=$(argent_grab org2_stmt '.result.structuredContent.txn_id | tonumber')
+    args=$(jq -n --argjson ledger "${recon_ledger:-0}" --argjson stmt "${org2_stmt_id:-0}" \
+        '{ledger_id:$ledger,statement_txn_id:$stmt,reconciled_on:"2026-10-07",statement_balance_cents:0}')
+    argent_fail start_other_org Argent.StartReconciliation "${args}" organization_id "${recon_ledger}" "${org2_stmt_id}" || true
+
+    # Phase 14. Generate runs before calendar_url is set, so those rows stay not_set.
+    # The idempotent upsert sends a dead URL and must not store it.
+    # The later match uses http://127.0.0.1:9/cal/ and must still save.
+    args=$(jq -n --argjson org "${org_id:-0}" '{organization_id:$org}')
+    argent_fail sched_name_required Argent.UpsertSchedule "${args}" name_required "${org_id}" || true
+    args=$(jq -n --argjson org "${org_id:-0}" --arg name "rent${token}" \
+        '{organization_id:$org,name:$name,rrule:"FREQ=HOURLY"}')
+    argent_fail sched_rrule Argent.UpsertSchedule "${args}" rrule "${org_id}" || true
+    args=$(jq -n --argjson org "${org_id:-0}" --argjson from "${bank_id:-0}" --argjson to "${usd_id:-0}" \
+        --arg name "mix${token}" \
+        '{organization_id:$org,name:$name,from_ledger_id:$from,to_ledger_id:$to,amount_cents:100,currency:"cad",rrule:"FREQ=WEEKLY",anchor_on:"2026-10-01"}')
+    argent_fail sched_currency Argent.UpsertSchedule "${args}" currency "${org_id}" "${bank_id}" "${usd_id}" || true
+    args=$(jq -n --argjson org "${org_id:-0}" --arg name "zero${token}" \
+        '{organization_id:$org,name:$name,rrule:"FREQ=WEEKLY",amount_cents:0}')
+    argent_fail sched_amount Argent.UpsertSchedule "${args}" amount "${org_id}" || true
+    args=$(jq -n --argjson org "${org_id:-0}" --argjson from "${bank_id:-0}" --arg name "same${token}" \
+        '{organization_id:$org,name:$name,from_ledger_id:$from,to_ledger_id:$from,amount_cents:100,currency:"cad",rrule:"FREQ=WEEKLY",anchor_on:"2026-10-01"}')
+    argent_fail sched_same Argent.UpsertSchedule "${args}" ledger "${org_id}" "${bank_id}" || true
+    args=$(jq -n --argjson org "${org_id:-0}" --arg name "days${token}" \
+        '{organization_id:$org,name:$name,from_ledger_id:1,to_ledger_id:2,amount_cents:100,currency:"cad",rrule:"FREQ=WEEKLY",anchor_on:"2026-10-01",horizon_mode_a2008:2}')
+    argent_fail sched_horizon Argent.UpsertSchedule "${args}" horizon_days "${org_id}" || true
+
+    args=$(jq -n --argjson org "${org_id:-0}" --argjson from "${bank_id:-0}" --argjson to "${exp_id:-0}" \
+        --arg name "rent${token}" --arg key "rent${token}" \
+        '{organization_id:$org,name:$name,from_ledger_id:$from,to_ledger_id:$to,amount_cents:150000,currency:"cad",rrule:"FREQ=WEEKLY",anchor_on:"2026-10-01",idempotency_key:$key}')
+    argent_ok sched_create Argent.UpsertSchedule "${args}" \
+        '.result.structuredContent.created == true and .result.structuredContent.idempotent == false and ((.result.structuredContent.schedule_id|tonumber) > 0)' \
+        "${org_id}" "${bank_id}" "${exp_id}" || true
+    sched_id=$(argent_grab sched_create '.result.structuredContent.schedule_id | tonumber')
+    args=$(jq -n --argjson org "${org_id:-0}" --arg key "rent${token}" \
+        '{organization_id:$org,idempotency_key:$key,calendar_url:"http://127.0.0.1:9/cal/"}')
+    if [[ "${sched_id}" =~ ^[0-9]+$ ]]; then
+        argent_ok sched_idem Argent.UpsertSchedule "${args}" \
+            ".result.structuredContent.created == false and .result.structuredContent.idempotent == true and ((.result.structuredContent.schedule_id|tonumber) == ${sched_id})" \
+            "${org_id}" || true
+    else
+        argent_miss sched_idem || true
+    fi
+
+    argent_fail gen_missing Argent.GenerateSchedule '{"schedule_id":999999999}' not_found || true
+    args=$(jq -n --argjson id "${sched_id:-0}" '{schedule_id:$id,through:"2026-10-22"}')
+    argent_ok gen_month Argent.GenerateSchedule "${args}" \
+        '(.result.structuredContent.created|length) == 4 and (.result.structuredContent.skipped|tonumber) == 0 and ([.result.structuredContent.created[].status_a2003] | all(. == 1)) and ([.result.structuredContent.created[].calendar_state_a2011] | all(. == 1)) and ([.result.structuredContent.created[].calendar_attempts] | all(. == 0)) and (([.result.structuredContent.created[].txn_on] | index("2026-10-01")) != null) and (([.result.structuredContent.created[].txn_on] | index("2026-10-22")) != null)' \
+        "${sched_id}" || true
+    rent_a=$(argent_grab gen_month '.result.structuredContent.txn_ids[0] | tonumber')
+    rent_b=$(argent_grab gen_month '.result.structuredContent.txn_ids[1] | tonumber')
+    if [[ "${rent_a}" =~ ^[0-9]+$ ]]; then
+        argent_ok gen_get Argent.GetTransaction "{\"txn_id\":${rent_a}}" \
+            '(.result.structuredContent.transaction.status_a2003|tonumber) == 1 and (.result.structuredContent.transaction.calendar_state_a2011|tonumber) == 1' \
+            "${rent_a}" || true
+    else
+        argent_miss gen_get || true
+    fi
+    args=$(jq -n --argjson id "${sched_id:-0}" '{schedule_id:$id,through:"2026-10-22"}')
+    argent_ok gen_skip Argent.GenerateSchedule "${args}" \
+        '(.result.structuredContent.created|length) == 0 and (.result.structuredContent.skipped|tonumber) == 4' \
+        "${sched_id}" || true
+
+    args=$(jq -n --argjson id "${rent_a:-0}" '{reserved_txn_id:$id,amount_window:0,amount_cents:1}')
+    argent_fail match_amount Argent.MatchReserved "${args}" match_amount "${rent_a}" || true
+    if [[ "${rent_a}" =~ ^[0-9]+$ ]]; then
+        argent_ok match_still Argent.GetTransaction "{\"txn_id\":${rent_a}}" \
+            '(.result.structuredContent.transaction.status_a2003|tonumber) == 1' \
+            "${rent_a}" || true
+    else
+        argent_miss match_still || true
+    fi
+    args=$(jq -n --argjson id "${rent_a:-0}" '{reserved_txn_id:$id}')
+    argent_ok match_one Argent.MatchReserved "${args}" \
+        '(.result.structuredContent.status_a2003|tonumber) == 3 and (.result.structuredContent.reserved_status_a2003|tonumber) == 5 and (.result.structuredContent.calendar_state_a2011|tonumber) == 1 and (.result.structuredContent.calendar_attempts|tonumber) == 0 and ((.result.structuredContent.replaces_txn_id|tonumber) == (.result.structuredContent.reserved_txn_id|tonumber))' \
+        "${rent_a}" || true
+    rent_actual=$(argent_grab match_one '.result.structuredContent.txn_id | tonumber')
+    if [[ "${rent_a}" =~ ^[0-9]+$ ]]; then
+        argent_ok match_reserved_get Argent.GetTransaction "{\"txn_id\":${rent_a}}" \
+            '(.result.structuredContent.transaction.status_a2003|tonumber) == 5' \
+            "${rent_a}" || true
+    else
+        argent_miss match_reserved_get || true
+    fi
+    if [[ "${rent_actual}" =~ ^[0-9]+$ && "${rent_a}" =~ ^[0-9]+$ ]]; then
+        argent_ok match_actual_get Argent.GetTransaction "{\"txn_id\":${rent_actual}}" \
+            "(.result.structuredContent.transaction.status_a2003|tonumber) == 3 and (.result.structuredContent.transaction.calendar_state_a2011|tonumber) == 1 and ((.result.structuredContent.transaction.replaces_txn_id|tonumber) == ${rent_a})" \
+            "${rent_actual}" || true
+    else
+        argent_miss match_actual_get || true
+    fi
+
+    argent_fail retry_missing Argent.RetryCalendar '{"txn_id":999999999}' not_found || true
+    args=$(jq -n --argjson id "${rent_a:-0}" '{txn_id:$id}')
+    argent_fail retry_not_pending Argent.RetryCalendar "${args}" not_pending "${rent_a}" || true
+
+    args=$(jq -n --argjson id "${sched_id:-0}" '{schedule_id:$id,calendar_url:"http://127.0.0.1:9/cal/"}')
+    if [[ "${sched_id}" =~ ^[0-9]+$ ]]; then
+        argent_ok sched_url Argent.UpsertSchedule "${args}" \
+            ".result.structuredContent.created == false and .result.structuredContent.idempotent == false and ((.result.structuredContent.schedule_id|tonumber) == ${sched_id})" \
+            "${sched_id}" || true
+    else
+        argent_miss sched_url || true
+    fi
+    args=$(jq -n --argjson id "${rent_b:-0}" '{reserved_txn_id:$id}')
+    argent_ok match_down Argent.MatchReserved "${args}" \
+        '(.result.structuredContent.status_a2003|tonumber) == 3 and (.result.structuredContent.calendar_state_a2011|tonumber) == 4 and (.result.structuredContent.calendar_attempts|tonumber) >= 1 and (.result.structuredContent.calendar_error|type) == "string" and (.result.structuredContent.calendar_error|length) > 0' \
+        "${rent_b}" || true
+    rent_down=$(argent_grab match_down '.result.structuredContent.txn_id | tonumber')
+    if [[ "${rent_down}" =~ ^[0-9]+$ ]]; then
+        argent_ok match_down_get Argent.GetTransaction "{\"txn_id\":${rent_down}}" \
+            '(.result.structuredContent.transaction.status_a2003|tonumber) == 3' \
+            "${rent_down}" || true
+    else
+        argent_miss match_down_get || true
+    fi
+    args=$(jq -n --argjson id "${rent_down:-0}" '{txn_id:$id}')
+    argent_ok retry_down Argent.RetryCalendar "${args}" \
+        '(.result.structuredContent.tried|tonumber) == 1 and (.result.structuredContent.failed|tonumber) == 1 and (.result.structuredContent.set|tonumber) == 0 and (.result.structuredContent.calendar_state_a2011|tonumber) == 4 and (.result.structuredContent.calendar_attempts|tonumber) >= 2 and (.result.structuredContent.status_a2003|tonumber) == 3' \
+        "${rent_down}" || true
+    if [[ "${rent_down}" =~ ^[0-9]+$ ]]; then
+        argent_ok retry_down_get Argent.GetTransaction "{\"txn_id\":${rent_down}}" \
+            '(.result.structuredContent.transaction.status_a2003|tonumber) == 3' \
+            "${rent_down}" || true
+    else
+        argent_miss retry_down_get || true
     fi
 
     echo "EXPECTED_TOOL_CASES=${ARGENT_CASE_N}" >> "${result_file}"

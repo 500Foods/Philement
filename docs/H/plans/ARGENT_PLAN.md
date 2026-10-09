@@ -4,11 +4,11 @@
 
 **Date:** 2026-10-06 (PT)
 **Author:** Folly (for Andrew)
-**Status:** Phase 10 complete. Phase 11 scripts are applied and Test 73 is not green. Diagnostics `test_73_20261007_173712`: SQLite 178/178, PostgreSQL 178/178, DB2 177/178 on `WITH RECURSIVE`. `argent_2022.lua` 1.0.2 stores `WITH` for DB2. That row reloads after a payload rebuild. Work item 11.7 is open.
+**Status:** Phases 0–14 complete. Phase 12 closed 2026-10-08 on Andrew's report that migration 2044 is applied on every engine, and on Test 73 1.0.4 diagnostics `test_73_20261008_145836`: 276/276 on PostgreSQL, YugabyteDB, SQLite, MariaDB, DB2, MSSQL, MySQL, and Firebird (271 tool cases plus 5 session cases, 0 failures). The reverse half of tests 32–39 was not run. Test 31 and the full Test 98 were not re-run after the 1.0.1 edit. Phase 13 closed 2026-10-08. Andrew reported that all Unity framework unit tests pass and `mkp` passes. He did not quote a count. No migration was added in Phase 13. Phase 14 closed 2026-10-08 on Test 73 1.0.5 diagnostics `test_73_20261008_173729`: 300/300 on PostgreSQL, YugabyteDB, SQLite, MariaDB, DB2, MSSQL, MySQL, and Firebird (295 tool cases plus 5 session cases, 0 failures). The harness is 22 pass, 0 fail, 314.196s. Every engine log shows argent AVAIL = LOAD = APPLY = 2048. The down-host match stayed saved at status 3 with calendar state 4 and error `H.wait: Could not connect to server`. Work item 14.4 is checked. The full Test 31 harness was not run. Phase 15 has not started.
 **Design name:** Argent
 **Helium path:** `elements/002-helium/argent/`
 **Database:** the Acuranzo database (same schema, same `queries` / `lookups` / `scripts`). Optional pack. Never applied alone.
-**Migration series:** `argent_2xxx.lua`. On disk through `argent_2037.lua` (transaction reads). Andrew said everything is applied on 2026-10-07. `demo.queries` records argent 2000–2037 as type 1003.
+**Migration series:** `argent_2xxx.lua`. On disk through `argent_2048.lua` (`RetryCalendar`). Andrew has applied through `argent_2044.lua`, including the 1.0.1 `ClearLines` and `CompleteReconciliation` scripts. `argent_2045.lua` through `argent_2048.lua` are applied. Test 73 1.0.5 diagnostics `test_73_20261008_173729` show argent AVAIL = LOAD = APPLY = 2048 on every engine. DB2 passing `test_73_20261008_145836` is that proof.
 
 The earlier Folly copies named `/workspace/folly/argent-plan.md` and `/workspace/folly/hydrogen-bookkeeping-decisions.md` are not on this machine. Decisions from that work are in this file. Amend this file. Do not hunt for the Folly paths.
 
@@ -29,10 +29,10 @@ Effort is the remaining work, or the size of the phase when it is already done. 
 | 8 Tax | Complete. 2024 applied 2026-10-07. No Test 31 count | Medium |
 | 9 Tags and attachments | Complete. 2029 applied 2026-10-07. Tests 31 and 71 passed. No Test 31 count | Medium |
 | 10 Diagrams | Complete. Test 71 3.2.0 on 2026-10-07. 1490 passed, 0 failed. No new migration | Easy |
-| 11 MCP CRUD and posting | Applied 2026-10-07. Test 73: SQLite and PostgreSQL 178/178. DB2 177/178 on WITH RECURSIVE. 1.0.2 awaits a DB2 reload | Hard |
-| 12 Confirm and reconciliation tools | Not started | Hard |
-| 13 `H.http.request` | Not started | Medium |
-| 14 Schedules and calendar sync | Not started | Hard |
+| 11 MCP CRUD and posting | Complete. Directed close 2026-10-08. Forward load plus Test 73. Reverse half of tests 32–39 was not run | Hard |
+| 12 Confirm and reconciliation tools | Complete. Test 73 1.0.4 `test_73_20261008_145836`, 276/276 on eight engines | Hard |
+| 13 `H.http.request` | Complete. Andrew 2026-10-08: all Unity tests pass, `mkp` passes. No count quoted. No migration | Medium |
+| 14 Schedules and calendar sync | Complete. Test 73 1.0.5 `test_73_20261008_173729`, 300/300 on eight engines | Hard |
 | 15 Report queries | Not started | Hard |
 | 16 Production | Not started | Easy |
 
@@ -55,7 +55,7 @@ Lint the agent may be asked to run: Test 31 (expands SQL, no apply) and Test 98 
 
 ## Next session
 
-Phase 10 is complete. Phase 11 scripts are applied. Test 73 is not green, so work item 11.7 stays open and Phase 12 waits. SQLite and PostgreSQL passed 178/178 on `test_73_20261007_173712`. DB2 failed one case, `bal_parents`, because QueryRef 2001 stored `WITH RECURSIVE`. `argent_2022.lua` 1.0.2 stores `WITH` for DB2. The next step is a payload rebuild and a DB2 reload of migration 2022, then Test 73. Engines he has not refreshed can still have the first-apply column names. Tests 32–39 were not reported.
+Phases 0–14 are complete. Phase 12 closed 2026-10-08. Andrew reported migration 2044 applied on every engine. Test 73 1.0.4 diagnostics `test_73_20261008_145836` is 276/276 on all eight engines. The reverse half of tests 32–39 was not run. Test 31 and the full Test 98 were not re-run after the 1.0.1 edit. Phase 13 closed 2026-10-08. Andrew reported that all Unity framework unit tests pass and `mkp` passes. He did not quote a count. No migration was added in Phase 13. Phase 14 closed 2026-10-08. Test 73 1.0.5 diagnostics `test_73_20261008_173729` is 300/300 on all eight engines (295 tool cases plus 5 session cases). The harness is 22 pass, 0 fail, 314.196s. Every engine log shows argent AVAIL = LOAD = APPLY = 2048. Work item 14.4 is checked. The full Test 31 harness was not run. The next conversation starts Phase 15 when Andrew asks. Phase 15 installs QueryRefs 2002–2010, one per file, and the remaining read tools, plus `UpsertRate` and `GetBocRate`. It does not change the Phase 11 posting rules. The next free file is `argent_2049.lua`. The agent does not start Phase 15 here.
 
 ---
 
@@ -701,7 +701,7 @@ Andrew applies. 2026-10-07 he confirmed migration 2022 applied and said to keep 
 - `USE_RATE_DEFAULT` 1 selects lookup 2012 key 1. 0 selects `RATE_SOURCE`. Any other value matches no source. `RATE_SOURCE` is always bound. Each of the ten parameter names appears once, in a one-row `req` CTE that uses `${DUMMY_TABLE}`.
 - Same currency uses rate 1/1, a null `rate_as_of`, and `converted_cents` equal to `balance_cents`. No `rates` row is required. A different currency prefers a direct quote (base = child, quote = parent) and falls back to the inverse. Integer division truncates toward zero. A missing rate, or a zero numerator or denominator, leaves `converted_cents` null and sets `rate_warning` to 1.
 - The descendant walk stops at depth 16. `SELECT DISTINCT` keeps one row per parent and posting child so a `parent_id` cycle does not multiply the sum. A parent with no posting descendant returns no row.
-- `cfg.WITH_RECURSIVE` is set in this file. DB2 and MSSQL store `WITH`. The other engines store `WITH RECURSIVE`. It is not a new macro in `database.lua`. The 1.0.0 expansion stored `WITH RECURSIVE` on DB2. Test 73 `test_73_20261007_173712` rejected that with SQL0104N. Version 1.0.2 stores `WITH` for DB2.
+- `cfg.WITH_RECURSIVE` is set in this file. DB2 and MSSQL store `WITH`. The other engines store `WITH RECURSIVE`. It is not a new macro in `database.lua`. The 1.0.0 expansion stored `WITH RECURSIVE` on DB2. Test 73 `test_73_20261007_173712` rejected that with SQL0104N. Version 1.0.2 stores `WITH` for DB2. Version 1.0.3 keeps that keyword. Test 73 `test_73_20261007_182200` accepted `WITH` and returned SQL0345N on `JOIN ... ON` in the recursive member. Both arms of `descendants` now use a comma join. See Phase 11.
 - Reverse of QueryRef 2001 deletes `query_ref = 2001` and `query_type_a28 = TYPE_SQL` (1). A delete by query_ref alone would also remove the `argent_2001.lua` ledgers bookkeeping rows.
 - The table has no seed, so reverse is `${DROP_CHECK}` then `DROP TABLE`. This file does not fetch BoC.
 
@@ -872,7 +872,7 @@ Folly can create an organization, two posting ledgers, and one balanced transact
 - [x] 11.4 `AddTags`, `RemoveTags`, `AddAttachment`. `UpsertTaxCode` and `UpsertTaxRate`. `PostTransaction` posts companion tax lines when `tax_code_id` is set.
 - [x] 11.5 `GetTransaction`, `ListTransactions`, and `QueryBalances` (QueryRef 2000, and 2001 when parents are requested). Status values are lookup 2003 keys.
 - [x] 11.6 One script migration per tool, or one migration per tool group where the file stays under 1000 lines. `mcp_access=1`, group `Argent`. No second caller-facing QueryRef in a file that already installs one.
-- [ ] 11.7 Andrew runs tests 32–39 for the new script migrations, then Test 73 on all eight engines. The script calls every Argent tool and the validation variants those tools return, including one unbalanced transaction rejected.
+- [x] 11.7 Andrew runs tests 32–39 for the new script migrations, then Test 73 on all eight engines. The script calls every Argent tool and the validation variants those tools return, including one unbalanced transaction rejected. Directed close 2026-10-08: `database_load.sh` applied the forward half with TestMigration off, and Test 73 `test_73_20261008_085126` is 178/178 on all eight engines. The reverse half of tests 32–39 was not run.
 
 ### Done means
 
@@ -880,11 +880,11 @@ Andrew reports tests 32–39 and a green Test 73. The rejected unbalanced transa
 
 ### Exit gate
 
-Test 31, Test 98, payload regenerate, tests 32–39, then Test 73. Test 73 is the MCP round-trip on all eight engines. It calls every Argent tool and the validation variants those tools return. It uses `PAYLOAD:acuranzo+argent` on the demo connections (the same databases as Test 40) with AutoMigration true, so a regenerated payload applies `argent_2030.lua` through `argent_2037.lua` on startup. Test 47 stays the protocol blackbox. Work item 11.7 stays open until Andrew reports tests 32–39 and a green Test 73.
+Test 31, Test 98, payload regenerate, tests 32–39, then Test 73. Test 73 is the MCP round-trip on all eight engines. It calls every Argent tool and the validation variants those tools return. It uses `PAYLOAD:acuranzo+argent` on the demo connections (the same databases as Test 40) with AutoMigration true, so a regenerated payload applies `argent_2030.lua` through `argent_2037.lua` on startup. Test 47 stays the protocol blackbox. Andrew directed this item closed on 2026-10-08. `database_load.sh` applied the forward half with TestMigration off. Test 73 `test_73_20261008_085126` is green. The reverse half of tests 32–39 was not run.
 
 ### Status
 
-**Applied. Test 73 is not green.** Andrew refreshed SQLite, DB2, and PostgreSQL. Diagnostics `test_73_20261007_173712`: SQLite 178/178, PostgreSQL 178/178, DB2 177 pass and 1 fail. The failure is `FAIL_bal_parents` SQL0104N on `WITH RECURSIVE`. `argent_2022.lua` 1.0.2 stores `WITH` for DB2. The stored query stays the previous text until migration 2022 is loaded again. Work item 11.7 is open. Tests 32–39 were not reported. The phase is not complete.
+**Complete. Directed close 2026-10-08.** Diagnostics `test_73_20261008_085126`: all eight engines passed 178 cases. The harness is 22 pass, 0 fail, 172.497s. DB2 ran `FROM DEMO.ledgers p, DEMO.ledgers c, req`. MySQL ran `json_ingest(CAST(:ORG_COLLECTION AS char(255)))`. Firebird returned `balance_cents` and the idempotency retry returned `created` false. `database_load.sh` applied the forward half with TestMigration off. The reverse half of tests 32–39 was not run.
 
 ### Accomplished
 
@@ -901,9 +901,9 @@ Test 31, Test 98, payload regenerate, tests 32–39, then Test 73. Test 73 is th
 | `argent_2036.lua` | `UpsertTaxCode`, `UpsertTaxRate` | 536 | 6 |
 | `argent_2037.lua` | `GetTransaction`, `ListTransactions`, `QueryBalances` | 672 | 7 |
 
-The Argent README now lists 38 files, 241 statements, and 38 diagrams. Andrew said everything is applied. Tests 32–39 were not reported.
+The Argent README listed 38 files, 241 statements, and 38 diagrams when these scripts were written. Andrew said everything is applied. On 2026-10-08 he directed work item 11.7 closed from the forward `database_load.sh` run and Test 73. The reverse half of tests 32–39 was not run.
 
-Test 73 is `tests/test_73_argent_mcp.sh` 1.0.2 with `tests/lib/argent_mcp_helpers.sh` 1.0.2. Diagnostics `test_73_20261007_173712` recorded SQLite 178/178, PostgreSQL 178/178, and DB2 177/178. MySQL, MariaDB, Firebird, YugabyteDB, and MSSQL on that run still report the first-apply column names.
+Test 73 is `tests/test_73_argent_mcp.sh` 1.0.2 with `tests/lib/argent_mcp_helpers.sh` 1.0.2. Diagnostics `test_73_20261007_173712` recorded SQLite 178/178, PostgreSQL 178/178, and DB2 177/178. Diagnostics `test_73_20261007_182200` recorded PostgreSQL, SQLite, MariaDB, and MSSQL at 178/178, DB2 at 177/178, Firebird at 171/178, and MySQL at 31/147. YugabyteDB returned HTTP 401 on login. Diagnostics `test_73_20261008_085126`, after a schema reset and `database_load.sh`, recorded 178/178 on all eight engines.
 
 ### Lessons learned
 
@@ -926,13 +926,17 @@ Test 73 is `tests/test_73_argent_mcp.sh` 1.0.2 with `tests/lib/argent_mcp_helper
 - `validate_config_file` already closes its subtest. A second `print_result` in the same subtest prints `extra PASS/FAIL without TEST`.
 - In jq, `|` binds tighter than `and`. Each comparison in a compound filter needs its own parentheses.
 - `QueryBalances` checks `rate_source` when `include_parents` is set. The posting cases need the 500 bps rate to be the latest row on or before `txn_on`.
-- QueryRef 2001 stores `WITH` on DB2 and SQL Server. The other engines store `WITH RECURSIVE`. `WITH RECURSIVE` on DB2 is SQL0104N (`FAIL_bal_parents`). The keyword is `cfg.WITH_RECURSIVE` in `argent_2022.lua` 1.0.2. It is not a macro. See **Recursive common table expressions** in [`GUIDE.md`](/docs/He/GUIDE.md).
+- QueryRef 2001 stores `WITH` on DB2 and SQL Server. The other engines store `WITH RECURSIVE`. `WITH RECURSIVE` on DB2 is SQL0104N (`FAIL_bal_parents` on `test_73_20261007_173712`). The keyword is `cfg.WITH_RECURSIVE` in `argent_2022.lua`. It is not a macro. See **Recursive common table expressions** in [`GUIDE.md`](/docs/He/GUIDE.md).
+- DB2 also rejects `JOIN ... ON` inside the recursive fullselect. That is SQL0345N (`SQLSTATE` 42836), the `bal_parents` failure on `test_73_20261007_182200`, after `WITH` was loaded. `argent_2022.lua` 1.0.3 uses a comma join in both arms of `descendants`. The `posting` CTE still uses `JOIN ... ON`.
+- MySQL rejects `CAST(x AS int)` and `CAST(x AS varchar(n))`. The file-local targets are `cfg.CAST_INTEGER = "signed"` and `cfg.CAST_TEXT = "char(255)"`. MariaDB accepts `int` and `varchar(255)`, so it keeps `cfg.INTEGER` and `cfg.TEXT`. The organization insert on `test_73_20261007_182200` failed at `CAST(:ORG_SUMMARY AS varchar(255))`.
+- Firebird 4 types `SUM` of `BIGINT` as INT128. Hydrogen's reader emits JSON null, so `balance_cents` disappears. `cfg.BALANCE_SUM` casts that sum to `BIGINT` on Firebird in QueryRef 2000 and in the posting CTE of QueryRef 2001. The other engines keep the uncast `COALESCE`.
+- Firebird describes a `json_ingest` parameter as a blob. Hydrogen does not bind blob inputs, so `transactions.collection` was stored null and the idempotency check inserted a second row. The tool scripts pass `${JIS}CAST(:NAME AS ${CAST_TEXT})${JIE}` on every engine. These fields are not new macros in `database.lua`.
 
 ### Handoff
 
 Phase 12 adds `confirm_tokens` and the recon and edit tools. It leaves these scripts in place and calls them. A reconciled edit without a token must not write. Phase 12 waits until Test 73 is green on all eight engines.
 
-Andrew refreshed SQLite, DB2, and PostgreSQL after the 1.0.1 casts. Diagnostics `test_73_20261007_173712`: SQLite 178/178, PostgreSQL 178/178, DB2 177/178. The one DB2 failure is `FAIL_bal_parents` SQL0104N, unexpected token `req` after `WITH RECURSIVE`. `argent_2022.lua` 1.0.2 stores `WITH` on DB2 and SQL Server, and `WITH RECURSIVE` on the other engines. The stored QueryRef 2001 row stays the 1.0.1 text until the payload is rebuilt and DB2 loads migration 2022 again. A schema that already applied 2022 skips the new file. Tests 32–39 were not reported. MySQL, MariaDB, Firebird, YugabyteDB, and MSSQL on that run still have `status_a200`, `ledger_type_a201`, and `status_a202`. Work item 11.7 stays open.
+Andrew directed work item 11.7 closed on 2026-10-08. `database_load.sh` applied the test schemas and the demo schemas with TestMigration off. Test 73 `test_73_20261008_085126` passed 178 cases on all eight engines. The reverse half of tests 32–39 was not run. Phase 12 is the next section. Andrew later applied those files through `argent_2044.lua`.
 
 ---
 
@@ -944,10 +948,10 @@ Dangerous edits do not write until the same body comes back with a confirm token
 
 ### Work items
 
-- [ ] 12.1 Create `confirm_tokens` as specified. No HMAC.
-- [ ] 12.2 `EditTransaction` and `RescindTransaction` implement the warn path and the knock-back to Recorded.
-- [ ] 12.3 `PostStatement`, `PostPeriodClose`, `StartReconciliation`, `ClearLines`, `CompleteReconciliation`. Override without `override_reason` is rejected when the balances differ.
-- [ ] 12.4 Andrew's fixture: edit a reconciled txn, observe `needs_confirm` and no mutation, retry with the token, observe Recorded.
+- [x] 12.1 Create `confirm_tokens` as specified. No HMAC.
+- [x] 12.2 `EditTransaction` and `RescindTransaction` implement the warn path and the knock-back to Recorded.
+- [x] 12.3 `PostStatement`, `PostPeriodClose`, `StartReconciliation`, `ClearLines`, `CompleteReconciliation`. Override without `override_reason` is rejected when the balances differ.
+- [x] 12.4 Andrew's fixture: edit a reconciled txn, observe `needs_confirm` and no mutation, retry with the token, observe Recorded. Test 73 1.0.4 `test_73_20261008_145836`, 276/276 on all eight engines.
 
 ### Done means
 
@@ -959,11 +963,48 @@ Test 31, Test 98, payload regenerate, Andrew's apply, Andrew's fixture report.
 
 ### Status
 
-**Not started.**
+**Complete.** Andrew applied through `argent_2044.lua`, including the 1.0.1 scripts. Test 73 1.0.4 diagnostics `test_73_20261008_145836` passed 276 cases on PostgreSQL, YugabyteDB, SQLite, MariaDB, DB2, MSSQL, MySQL, and Firebird. Each result file has `EXPECTED_TOOL_CASES=271`, `READY=1`, `LOGIN_OK=1`, and 0 `CASE_FAIL`. The YugabyteDB log for that run has no auth-query timeout. Test 31 and the full Test 98 were not re-run after the 1.0.1 edit. Phase 13 has not started.
+
+### Accomplished
+
+2026-10-08: `confirm_tokens` and seven tools. Group `Argent`, `mcp_access=1`, `invokable=0`. No caller-facing QueryRef.
+
+| File | Tools | Lines | Stmts |
+| --- | --- | --- | --- |
+| `argent_2038.lua` | `confirm_tokens` table | 216 | 6 |
+| `argent_2039.lua` | `EditTransaction`, `RescindTransaction` | 994 | 6 |
+| `argent_2040.lua` | `PostStatement` | 617 | 5 |
+| `argent_2041.lua` | `PostPeriodClose` | 602 | 5 |
+| `argent_2042.lua` | `StartReconciliation` | 592 | 5 |
+| `argent_2043.lua` | `ClearLines` | 586 | 5 |
+| `argent_2044.lua` | `CompleteReconciliation` | 402 | 5 |
+
+The Argent README lists 45 files, 278 statements, and 45 diagrams. The next free file number is `argent_2045.lua`.
+
+A dangerous edit writes nothing on the first call. The response is `fail("needs_confirm", ...)`, so `ok` is false and `code` is `needs_confirm`, and the extra fields are `needs_confirm` true, `warning`, and `confirm_token`. The retry sends the same body plus the token. Lua compares the stored body. The stored body omits `confirm_token` and `_hydrogen`. A confirmed edit sets status 3 (Recorded) and clears recon links on that transaction's lines. A confirmed rescind sets status 5 and clears those links. `CompleteReconciliation` has no token. When `statement_balance_cents` and the recomputed book balance differ and `override_reason` is empty, it returns `override_reason_required` and writes nothing.
+
+### Lessons learned
+
+- There is no shared Lua module inside a migration. The confirm helper is copied into each script that issues a token. `argent_2039.lua` holds both edit tools and is 994 lines. A second copy of the helper puts two tools over the 1000-line ceiling, so `argent_2040.lua` through `argent_2043.lua` are one tool each. `argent_2044.lua` does not copy the helper.
+- Expiry SQL and the Firebird body cast are `cfg` strings set in the migration. They are not new macros in `database.lua`. SQLite uses `datetime('now', '+15 minutes')`. MySQL and MariaDB use `DATE_ADD`. DB2 uses `CURRENT TIMESTAMP + 15 MINUTES`. SQL Server uses `DATEADD` on `SYSDATETIMEOFFSET()`. Firebird uses `DATEADD`. PostgreSQL, including Yugabyte, uses `CURRENT_TIMESTAMP + INTERVAL '15 minutes'`. The compare is `expires_at > ${NOW_CMP}`.
+- Firebird insert of `body` is `CAST(:BODY AS VARCHAR(8191))`, so the parameter is `VARCHAR`. A canonical body longer than 4000 characters is `body_too_long`. The other engines bind `:BODY` into `${TEXT_BIG}`.
+- The token is `c{confirm_id}-{os.time()}-{os.clock fraction}`. Comparison is the canonical body. The sandbox has no HMAC helper.
+- Canonical JSON is hand-rolled. Keys are sorted by `tostring`. A table whose keys are a dense positive-integer range encodes as an array. An empty table encodes as `[]`. Whole numbers with absolute value under 1e15 use `%d`. The escape pattern stays a Lua short string inside the `[====[ ]====]` migration so the backslashes are literal.
+- Creates (`PostStatement`, `PostPeriodClose`, `StartReconciliation`) consume the token before the insert, so a replay cannot insert twice. Edits and `ClearLines` consume after the write. A token on a safe call is still checked, and consumed after success.
+- `ClearLines` does not knock a transaction back to Recorded. Status 4 is `reconciled_line`. Status 5 is `rescinded_line`. It sets `reconciliation_id` and `statement_txn_id` and leaves `cleared` at 0. `CompleteReconciliation` sets `cleared` to 1, promotes a transaction to status 4 when every line on that ledger is cleared, then stores status 2 and the ledger's `latest_reconciliation_id` and `latest_reconciled_on`.
+- Date checks are Lua compares of the first 10 characters when they match `YYYY-MM-DD`. Period-close coverage is a select of non-rescinded kind 8 rows, then a Lua compare. These tools do not add a recursive CTE.
+- Book balance uses `cfg.BALANCE_SUM`. Firebird casts `SUM` to `BIGINT`. The other engines use `COALESCE(SUM(ln.amount_cents), 0)`. The sum is not returned to Lua as INT128.
+- A Lua long string drops one leading newline. Concatenating an `end` block with a `[[` block that opened on a newline produced `endif` in `argent_2040.lua` through `argent_2044.lua`. Those six joins were split before luacheck and `luac -p`.
+- Phase 11 posting rules stay in `argent_2034.lua`. Kinds 7 and 8 are posted by the new tools, with one line of amount 0 and status 3. Idempotency on those two tools matches `PostTransaction`: the stored key returns the existing row and does not compare the new body.
+- The first `PostPeriodClose` does not warn because the new row will be kind 8. `period close` is the edit or rescind warning for an existing kind-8 row. A later close whose date falls on or before that row warns `period close boundary`. Test 73 follows that order.
+- A space inside an unquoted `[[ =~ ]]` class is split by the shell. The warning check in `argent_mcp_helpers.sh` stores `^[a-z ]+$` in `warn_re`.
+- DB2 returns `SQL0100W` when an `UPDATE` matches zero rows, and Hydrogen treats that as `update_failed`. `ClearLines` selects `cleared = 0` lines for the reconciliation and skips the unlink when the select is empty. `CompleteReconciliation` selects lines for the reconciliation and skips `cleared = 1` when the select is empty. Do not ignore `SQL0100W` in the DB2 driver. DB2 passing `clear_empty` on `test_73_20261008_145836` is the proof the stored script is that 1.0.1 text.
 
 ### Handoff
 
-Phase 13 is C, in `scripting_api_http.c`, `http_client.c`, and `http_pool.c`. It does not add a migration. It does not start the calendar worker. `H.http.get` and `H.http.post` stay as wrappers.
+Phase 12 is complete. The stored `ClearLines` and `CompleteReconciliation` bodies are the 1.0.1 text. The next free Argent file is `argent_2045.lua`.
+
+Phase 13 is C, in `scripting_api_http.c`, `http_client.c`, and `http_pool.c`. It does not add a migration. It does not start the calendar worker. `H.http.get` and `H.http.post` stay as wrappers. The allowlist is `GET`, `POST`, `PUT`, `DELETE`, `PROPFIND`, `REPORT`, `MKCALENDAR`, and `PROPPATCH`. Phase 13 has not started.
 
 ---
 
@@ -975,11 +1016,11 @@ Lua can send the CalDAV verbs. Non-2xx responses come back as data.
 
 ### Work items
 
-- [ ] 13.1 `H.http.request(method, url, body, headers, opts)` and `H.http.request_sync`. Allowlist: `GET`, `POST`, `PUT`, `DELETE`, `PROPFIND`, `REPORT`, `MKCALENDAR`, `PROPPATCH`. Any other token, including `CONNECT` and `TRACE`, is an error.
-- [ ] 13.2 `get` and `post` call the same path. A 207 or 412 returns `{ status, headers, body, elapsed_ms }`.
-- [ ] 13.3 Unity tests for an allowed verb, a rejected verb, and a non-2xx body. No new `static` function. Prototypes in the existing headers.
-- [ ] 13.4 Update [`LUA_GUIDE.md`](/docs/H/LUA_GUIDE.md) and [`lua_api.md`](/docs/H/core/subsystems/scripting/lua_api.md).
-- [ ] 13.5 Andrew runs `mkq` (or `mkt` if a new `src/` file was added) and `mkp`. Named `mku` results are written here.
+- [x] 13.1 `H.http.request(method, url, body, headers, opts)` and `H.http.request_sync`. Allowlist: `GET`, `POST`, `PUT`, `DELETE`, `PROPFIND`, `REPORT`, `MKCALENDAR`, `PROPPATCH`. Any other token, including `CONNECT` and `TRACE`, is an error.
+- [x] 13.2 `get` and `post` call the same path. A 207 or 412 returns `{ status, headers, body, elapsed_ms }`.
+- [x] 13.3 Unity tests for an allowed verb, a rejected verb, and a non-2xx body. No new `static` function. Prototypes in the existing headers.
+- [x] 13.4 Update [`LUA_GUIDE.md`](/docs/H/LUA_GUIDE.md) and [`lua_api.md`](/docs/H/core/subsystems/scripting/lua_api.md).
+- [x] 13.5 Andrew runs `mkq` (or `mkt` if a new `src/` file was added) and `mkp`. Named `mku` results are written here. Andrew reported 2026-10-08 that all Unity framework unit tests pass and `mkp` passes. He did not quote a count. The implementation run recorded `http_client_test_request` 7 tests, `scripting_api_http_test_request` 8 tests, and `http_pool_test_worker_process_one` 5 tests, each with 0 failures.
 
 ### Done means
 
@@ -991,11 +1032,46 @@ The Unity tests pass and `mkp` is clean. No migration was added.
 
 ### Status
 
-**Not started.**
+**Complete.** Andrew reported 2026-10-08 that all Unity framework unit tests pass and `mkp` passes. He did not quote a Unity total or an `mkp` file count. No new `src/` file was added. `oidc_rp_http.c` is the existing libcurl file. No migration was added. Phase 14 has not started.
+
+### Accomplished
+
+2026-10-08: `H.http.request` and `H.http.request_sync`. `H.http.get` and `H.http.post` call `scripting_http_request`. The allowlist is an exact match on `GET`, `POST`, `PUT`, `DELETE`, `PROPFIND`, `REPORT`, `MKCALENDAR`, and `PROPPATCH`.
+
+`scripting_http_request` lives in `http_client.c`. GET calls `oidc_rp_http_get_with_headers_slist`. POST calls `oidc_rp_http_post_with_headers_slist`. The other six verbs call `oidc_rp_http_request_with_headers_slist` in `oidc_rp_http.c`, which sets `CURLOPT_CUSTOMREQUEST`. A NULL body on that helper sends no body. POST with a NULL body still sends an empty body, which is the helper that already shipped. A rejected method returns `error_message` `"HTTP method is not allowed"` and does not consume the scripting test seam. Lua stores `"H.http.request: method is not allowed"` on the handle before any wait. The pool and the inline wait still store `"H.wait: unknown HTTP method on handle"` when a raw handle carries a disallowed method.
+
+A status such as 207 or 412 is the result table. `perform_and_finalize` sets `error_message` on a transport failure. An HTTP status leaves it unset.
+
+New Unity files: `tests/unity/src/scripting/http_client_test_request.c` and `tests/unity/src/scripting/scripting_api_http_test_request.c`. `http_pool_test_worker_process_one.c` rejects `CONNECT`. `DELETE` is allowlisted. [`LUA_GUIDE.md`](/docs/H/LUA_GUIDE.md) and [`lua_api.md`](/docs/H/core/subsystems/scripting/lua_api.md) describe the contract. Markdownlint on those two files exited 0.
+
+This session ran `cmake -S . -B ../build --preset default` from `cmake/`. That reconfigured `build/` and did not wipe it. `mkq` skips configure, so a build directory that has not been reconfigured will not see the new `*_test*.c` files. The binaries then ran:
+
+| Binary | Tests | Failures |
+| --- | --- | --- |
+| `http_client_test_request` | 7 | 0 |
+| `scripting_api_http_test_request` | 8 | 0 |
+| `http_pool_test_worker_process_one` | 5 | 0 |
+| `http_client_test_get` | 4 | 0 |
+| `http_client_test_post` | 4 | 0 |
+| `scripting_api_http_test_async` | 5 | 0 |
+| `scripting_api_http_test` | 33 | 0 |
+
+### Lessons learned
+
+- GET and POST stay on the OIDC helpers that already shipped, so those curl options stay byte-stable for OIDC and MCP. The six other verbs are `CURLOPT_CUSTOMREQUEST` in `oidc_rp_http_request_with_headers_slist`. The plan named three files. Libcurl stays in `oidc_rp_http.c`, so that file is the fourth edit and the only curl contact.
+- A non-2xx status was already data when `error_message` is unset. The new path does not turn 207 or 412 into an error.
+- `http_pool_test_worker_process_one` used `DELETE` as the unknown method. `DELETE` is allowlisted, so the rejected case is `CONNECT`. A `DELETE` handle with no fixture would reach the network.
+- The match is `strcmp` of the eight uppercase tokens. `propfind` and `get` are errors. Lua rejects them on the handle and does not consume a fixture. `scripting_http_request` does the same for a C caller.
+- Content-Type is `strdup`'d while the Lua string is still on the stack. A `lua_tostring` pointer does not survive the pop plus a later Lua call.
+- New Unity sources are invisible to ninja until CMake configure. `cmake/CMakeLists-unity.cmake` globs `*_test*.c` at configure time. `mkq` skips configure. `mkt` reconfigures and deletes `build/*`. This session reconfigured the existing `build/` directory. No new `src/` file was added, so the plan's "`mkt` if a new `src/` file" clause does not force `mkt`.
+- No migration was added. The next free Argent file is still `argent_2045.lua`.
+- The close report names the whole Unity suite and `mkp`, and does not quote a count. The named binaries from the implementation run stay in Accomplished.
 
 ### Handoff
 
-Phase 14 adds the schedule and calendar tools. Lookup 2011 and the calendar columns already exist. The worker calls `H.http.request`. Credentials come from the environment. A failed HTTP call does not roll back the transaction.
+Phase 13 is complete. The stored allowlist and the `H.http.request` path stay as written.
+
+Phase 14 adds the schedule and calendar tools. Lookup 2011 and the calendar columns already exist. Do not add columns. The worker calls `H.http.request`. Credentials are `ARGENT_CAL_USER`, `ARGENT_CAL_PASS`, and `ARGENT_CAL_HTTP`. A failed HTTP call does not roll back the transaction. The next free file is `argent_2045.lua`. Phase 14 has not started.
 
 ---
 
@@ -1007,10 +1083,10 @@ Generate a month of Reserved rent, match an actual, and save a transaction while
 
 ### Work items
 
-- [ ] 14.1 `UpsertSchedule`, `GenerateSchedule` through fiscal year end, `MatchReserved`. Do not add columns.
-- [ ] 14.2 After a successful save, set calendar state pending (lookup 2011 key 2). The worker uses `H.http.request` with `ARGENT_CAL_*`. Failure increments `calendar_attempts`, stores `calendar_error`, and leaves the transaction saved.
-- [ ] 14.3 `RetryCalendar`.
-- [ ] 14.4 Andrew's fixture: a month of Reserved rows, one matched actual, one save with the calendar host unreachable. The Reserved status written is lookup 2003 key 1.
+- [x] 14.1 `UpsertSchedule`, `GenerateSchedule` through fiscal year end, `MatchReserved`. Do not add columns.
+- [x] 14.2 After a successful save, set calendar state pending (lookup 2011 key 2). The worker uses `H.http.request` with `ARGENT_CAL_*`. Failure increments `calendar_attempts`, stores `calendar_error`, and leaves the transaction saved.
+- [x] 14.3 `RetryCalendar`.
+- [x] 14.4 Andrew's fixture: a month of Reserved rows, one matched actual, one save with the calendar host unreachable. The Reserved status written is lookup 2003 key 1.
 
 ### Done means
 
@@ -1022,11 +1098,35 @@ Test 31, Test 98, payload regenerate, Andrew's apply, Andrew's fixture.
 
 ### Status
 
-**Not started.**
+**Complete.** Test 73 1.0.5 diagnostics `test_73_20261008_173729` is 300/300 on all eight engines. The harness is 22 pass, 0 fail, 314.196s. Work item 14.4 is checked. The full Test 31 harness was not run.
+
+### Accomplished
+
+`argent_2045.lua` 1.0.0 stores a schedule and, when `calendar_url` is sent on a real save, writes it on `from_ledger_id`. A repeat `idempotency_key` with no `schedule_id` returns the existing row and writes nothing, including the URL. `argent_2046.lua` expands `FREQ=WEEKLY` and the other accepted RRULE subset. Horizon mode 1 stops at fiscal year end. `through` and `end_on` can stop earlier. Reserved rows are lookup 2003 key 1 and kind 11. A date that already has a row for that schedule is skipped. `argent_2047.lua` checks the amount window before any write, inserts or links the Recorded actual, and rescinds the Reserved row to key 5. `argent_2048.lua` retries calendar state 2 or 4, one `txn_id` or up to 20.
+
+Calendar sync runs only when a line ledger already has a usable `calendar_url`. An absolute `http(s)` URL is used as-is. A relative path joins `ARGENT_CAL_HTTP`. No URL leaves the calendar state unchanged, so existing `PostTransaction` calls and the pre-URL generate do not open a socket. The worker sets state 2, then `PUT`s a small `VEVENT` through `H.http.request_sync` with a 3 second timeout. Basic auth is sent only when `ARGENT_CAL_USER` is non-empty. A transport error, a `pcall` failure, or a non-2xx status sets state 4, increments `calendar_attempts`, stores `calendar_error`, and the tool still returns `ok`. A 2xx sets state 3, `calendar_event_id` `argent-txn-{id}`, and clears the error. Each update is selected first. No column was added. `argent_2032.lua`, `argent_2034.lua`, and `argent_2037.lua` were not edited.
+
+Luacheck on the four files reported 0 warnings. Test 98 1.1.1 at 2026-10-08 17:21:57 found no issues in 531 files (2 pass, 0 fail, 4.485s). That run linted these four files and used the cache for the other 527. `luac -p` accepted the migration files and the extracted script bodies. `tests/lib/get_migration.sh` expanded each file for postgresql, sqlite, mysql, db2, mariadb, firebird, and mssql (28 files). None of that SQL still contains `${...}`. The full Test 31 harness was not run, so there is no Test 31 count. The script bodies are brotli and base64 when the engine sets `COMPRESS_START`.
+
+`tests/test_73_argent_mcp.sh` and `tests/lib/argent_mcp_helpers.sh` are 1.0.5. The exercise adds the four tool names and 24 cases. `EXPECTED_TOOL_CASES` stays the live count. Test 92 4.1.1 at 2026-10-08 17:21:57 found no issues in 207 shell files (3 pass, 0 fail, 27.120s). Test 73 was not run. The Argent README lists 49 files, 298 statements, and 49 diagrams.
+
+### Lessons learned
+
+- The calendar gate is `ledgers.calendar_url`, not the process environment alone. Generate checks that URL before it inserts, so a month of Reserved rows can be written with no HTTP call. The dead host is attached afterward, by `schedule_id`, and the next match is the one that must survive the refusal.
+- Pending is one update, and the attempt counter moves only in the failure update. A down host still returns `ok`. The save is already committed as its own `H.query_sync` calls. There is no multi-statement transaction to roll back.
+- A repeat idempotency key returns before validation and before `calendar_url`. The Test 73 repeat sends `http://127.0.0.1:9/cal/` on purpose. The following generate must still show calendar state 1. That is the proof the URL was not stored.
+- There is no shared Lua module inside a migration. The helper is copied into 2046, 2047, and 2048. 2045 does not call HTTP. The wrapper's nested long strings reject `]=]` and `]==]` in the inner script. 2046 is 943 lines.
+- Select before every calendar update. DB2 `SQL0100W` still fails a zero-row update. The driver stays unchanged.
+- "A month" in the fixture is `FREQ=WEEKLY` from `2026-10-01` through `2026-10-22`: four dates, `2026-10-01`, `2026-10-08`, `2026-10-15`, and `2026-10-22`. Mode 1 still caps at fiscal year end. The Test 73 organization starts its year on April 1, so that anchor's year ends `2027-03-31`. `through` stops the expansion earlier.
+- Each file is five statements: forward insert, the applied update, reverse insert, the reverse update, and the diagram insert. The README total is 49 files, 298 statements, and 49 diagrams.
+- Grep of the expanded SQL does not show the tool's `INSERT`. `COMPRESS_START` stores the script as brotli plus base64. The unsubstituted-`${}` check is the one that matters. This session did not run the Test 31 harness.
+- The refused connect is `H.wait: Could not connect to server`. On every engine the saved actual stayed status 3, calendar state 4, one attempt. `RetryCalendar` made that two attempts and left the status at 3.
 
 ### Handoff
 
-Phase 15 installs QueryRefs 2002–2010, one per file, and the remaining read tools, plus `UpsertRate` and `GetBocRate`. It does not change the Phase 11 posting rules.
+Phase 14 is complete. `argent_2045.lua` through `argent_2048.lua` are applied. Test 73 1.0.5 diagnostics `test_73_20261008_173729` recorded the fixture.
+
+Phase 15 installs QueryRefs 2002–2010, one per file, and the remaining read tools, plus `UpsertRate` and `GetBocRate`. It does not change the Phase 11 posting rules. Phase 15 has not started. The next free file is `argent_2049.lua`. The next conversation starts Phase 15 when Andrew asks.
 
 ---
 
@@ -1171,5 +1271,61 @@ Andrew fully reset PostgreSQL and DB2. Diagnostics `test_73_20261007_164151`: bo
 ### 2026-10-07 — DB2 rollup rejects WITH RECURSIVE
 
 Andrew refreshed SQLite, DB2, and PostgreSQL. Diagnostics `test_73_20261007_173712`: SQLite 178/178, PostgreSQL 178/178, DB2 177 pass and 1 fail (`FAIL_bal_parents`, SQL0104N, unexpected token `req` after `WITH RECURSIVE`). `argent_2022.lua` 1.0.2 stores `WITH` for DB2 and SQL Server. [`GUIDE.md`](/docs/He/GUIDE.md) records that under **Recursive common table expressions**. The stored QueryRef 2001 row stays the 1.0.1 text until the payload is rebuilt and DB2 loads migration 2022 again. MySQL, MariaDB, Firebird, YugabyteDB, and MSSQL on that run still report the first-apply column names. Tests 32–39 were not reported. Work item 11.7 stays open. Phase 12 has not started.
+
+### 2026-10-07 — DB2 JOIN, MySQL CAST, Firebird sums and blobs
+
+Diagnostics `test_73_20261007_182200`: PostgreSQL, SQLite, MariaDB, and MSSQL are 178/178. DB2 is 177/178. The `WITH RECURSIVE` error is gone. `FAIL_bal_parents` is SQL0345N (`SQLSTATE` 42836): the recursive fullselect of `DEMO.DESCENDANTS` used `JOIN ... ON`. Firebird is 171/178. `SUM` of `BIGINT` is INT128, so `balance_cents` is omitted, and `json_ingest` parameters are unbound blobs, so idempotency JSON is stored null. MySQL is 31/147. `UpsertOrganization` fails at `CAST(:ORG_SUMMARY AS varchar(255))`. YugabyteDB returned HTTP 401 on login and ran no cases. `argent_2022.lua` 1.0.3 stores comma joins and keeps `WITH` for DB2 and SQL Server. `argent_2014.lua` 1.0.2 casts the Firebird sum to `BIGINT`. `argent_2030.lua` and `argent_2032.lua` through `argent_2036.lua` cast each json parameter before `json_ingest`, and those files plus `argent_2037.lua` use MySQL `signed` and `char(255)`. `argent_2031.lua` did not change. [`GUIDE.md`](/docs/He/GUIDE.md) records the four rules. The stored rows stay the previous text until the payload is rebuilt and those migrations are loaded again. Tests 32–39 were not reported. Work item 11.7 stays open. Phase 12 has not started.
+
+### 2026-10-08 — Test 73 is green on all eight engines
+
+Andrew ran `database_reset.sh`, then `database_load.sh`. The test schemas (tests 32–39) and the demo schemas each came back with 66 tables. TestMigration stayed off, so that load is not the reverse suite. Test 73 `test_73_20261008_085126` then passed 178 cases on PostgreSQL, YugabyteDB, SQLite, MariaDB, DB2, MSSQL, MySQL, and Firebird. The harness is 22 pass, 0 fail, 172.497s. The DB2 rollup that ran is `FROM DEMO.ledgers p, DEMO.ledgers c, req`. MySQL sent `demo.json_ingest(CAST(:ORG_COLLECTION AS char(255)))`. Firebird `GetLedger` returned `balance_cents` -500, and the idempotency retry returned `created` false. The 07:38 run had still been executing the previous stored SQL. Work item 11.7 stays open until tests 32–39 are reported. Phase 12 has not started.
+
+### 2026-10-08 — Phase 11 closed and Phase 12 written
+
+Andrew directed work item 11.7 closed. The report he accepted is `database_load.sh` (TestMigration off, forward only) plus Test 73 `test_73_20261008_085126` (178/178 on all eight engines, harness 22/22, 172.497s). The reverse half of tests 32–39 was not run.
+
+Phase 12 is written and not applied. `argent_2038.lua` creates `confirm_tokens`. `argent_2039.lua` installs `EditTransaction` and `RescindTransaction`. `argent_2040.lua` through `argent_2044.lua` install `PostStatement`, `PostPeriodClose`, `StartReconciliation`, `ClearLines`, and `CompleteReconciliation`. Luacheck reported 0 warnings on the seven files. Expansion for postgresql, sqlite, mysql, db2, mariadb, firebird, and mssql left no `${...}` in the pre-base64 SQL, and each `[[ ]]` block names each parameter once. `luac -p` accepted the migration files and the extracted script bodies. Work items 12.1–12.3 are checked. Work item 12.4 is open. The Argent README lists 45 files, 278 statements, and 45 diagrams. Phase 13 has not started.
+
+### 2026-10-08 — Test 73 1.0.3 contains the Phase 12 fixture
+
+`tests/test_73_argent_mcp.sh` and `tests/lib/argent_mcp_helpers.sh` are 1.0.3. The exercise adds the seven Phase 12 tools and the confirm and reconciliation cases. On the path where every prerequisite is present, that is 271 tool cases. Five session cases sit beside them. The count is `EXPECTED_TOOL_CASES` plus 5, not a hardcoded total. Test 92 (`mks`) exited 0: 207 shell files, 0 fail, 29.571s. The blackbox was not run. The current payload does not contain `argent_2038.lua` through `argent_2044.lua`, so `tools/list` cannot see the new tools until Andrew regenerates the payload and applies those files. Work item 12.4 stays open. Phase 13 has not started.
+
+### 2026-10-08 — Test 73 1.0.3 ran; DB2 SQL0100W and one Yugabyte 503
+
+Andrew had applied through `argent_2044.lua`. Diagnostics `test_73_20261008_115801`: PostgreSQL, SQLite, MariaDB, Firebird, MSSQL, and MySQL passed 276/276. DB2 passed 250 and failed 26. The first failure is `clear_empty`: `ClearLines` ran `UPDATE lines SET reconciliation_id = NULL ... WHERE reconciliation_id = :RECON_ID AND cleared = 0` on a reconciliation with no linked line. DB2 returned `SQL0100W` and the tool returned `update_failed`. `clear_buy` is the same statement. The other 24 DB2 failures follow because the purchase stays Recorded and the reconciliation stays open. `edit_body_long` then writes a 4001-character description as a safe edit and DB2 returns `CLI0109E`. YugabyteDB passed 275 and failed `tools_list` with HTTP 503, body `Authentication service unavailable`. The log shows QueryRef 18 (`conduit_14_1791485891`) hitting the 20 second auth budget; the query later finished with one row. The other tool calls succeeded.
+
+`argent_2043.lua` 1.0.1 selects before that unlink and skips the update when the select is empty. `argent_2044.lua` 1.0.1 does the same before `SET cleared = 1`. The DB2 driver is unchanged. Test 73 and the helper are 1.0.4. `argent_rpc` retries HTTP 503 once. Luacheck reported 0 warnings on the two migrations. Test 92 exited 0: 206 shell files, 0 fail, 28.594s. The blackbox was not re-run. APPLY is already 2044, so AutoMigration will not install 1.0.1 until the payload is regenerated and those two files are loaded again. Work item 12.4 stays open. Phase 13 has not started.
+
+The parallel wall clock was the slowest engine, about 5 minutes 18 seconds (YugabyteDB). Six engines shut down 34–39 seconds after ready. MySQL took about 4 minutes 34 seconds and still passed. Ready was about 3 seconds and migration was 0.002–0.004 seconds. `READY_TIMEOUT` 300 and the HTTP max-time of 90 were not what the clock spent. Each engine ran about 1800 queries. The logged `time: N ms` value is microseconds. Summed, PostgreSQL is 1.8 seconds and SQLite is 1.3 seconds. MySQL is 263.6 seconds and YugabyteDB is 300.2 seconds, almost all of it queries between 0.1 and 0.5 seconds. MySQL is `10.118.0.3:3306`. YugabyteDB is `adm-c:30543`. Tightening the HTTP or ready ceilings would not shorten the run.
+
+### 2026-10-08 — Phase 12 closed
+
+Andrew reported migration 2044 applied on every engine and Test 73 fully passing. Diagnostics `test_73_20261008_145836` (script 1.0.4) record 276 `CASE_PASS` and 0 `CASE_FAIL` on PostgreSQL, YugabyteDB, SQLite, MariaDB, DB2, MSSQL, MySQL, and Firebird. `EXPECTED_TOOL_CASES` is 271. `READY=1` and `LOGIN_OK=1` on each file. PostgreSQL's log shows argent AVAIL = LOAD = APPLY = 2044 and migration completed in 0.003s. The YugabyteDB log has no auth-query timeout. Hydrogen elapsed time was 18.032s on SQLite, 18.868s on PostgreSQL, 19.139s on MariaDB, 20.174s on DB2, 20.738s on MSSQL, 24.045s on Firebird, 253.121s on MySQL, and 278.169s on YugabyteDB. Work item 12.4 is checked. Test 31 and the full Test 98 were not re-run after the 1.0.1 edit. The harness summary table was not in the diagnostics directory. Phase 13 has not started.
+
+### 2026-10-08 — Phase 13 implemented
+
+`H.http.request` and `H.http.request_sync` are in the tree. `H.http.get` and `H.http.post` call `scripting_http_request`. The allowlist is the eight exact tokens. `CONNECT`, `TRACE`, and a lowercase token are errors. A 207 or 412 is the result table. GET and POST keep `oidc_rp_http_get_with_headers_slist` and `oidc_rp_http_post_with_headers_slist`. The other verbs use `oidc_rp_http_request_with_headers_slist` (`CURLOPT_CUSTOMREQUEST`) in the existing `oidc_rp_http.c`. No new `static` function. No new `src/` file. No migration.
+
+`cmake -S . -B ../build --preset default` from `cmake/` reconfigured `build/` without wiping it. The binaries then passed: `http_client_test_request` 7 tests, `scripting_api_http_test_request` 8, `http_pool_test_worker_process_one` 5, `http_client_test_get` 4, `http_client_test_post` 4, `scripting_api_http_test_async` 5, and `scripting_api_http_test` 33. Each report is 0 failures. The worker test rejects `CONNECT` because `DELETE` is allowlisted. Markdownlint on [`LUA_GUIDE.md`](/docs/H/LUA_GUIDE.md) and [`lua_api.md`](/docs/H/core/subsystems/scripting/lua_api.md) exited 0. Work items 13.1–13.4 are checked. Work item 13.5 is open. `mkp` was not run. Andrew runs `mkq` on this build directory (or `mkt`, which wipes `build/`), then `mkp`, then the three named `mku` tests. Phase 14 has not started.
+
+### 2026-10-08 — Phase 13 closed
+
+Andrew reported that all Unity framework unit tests are passing and `mkp` is passing. He did not quote a Unity total or an `mkp` file count. Work item 13.5 is checked. No migration was added. The next free Argent file is `argent_2045.lua`. Phase 14 has not started.
+
+### 2026-10-08 — Phase 14 implemented
+
+`argent_2045.lua` is `UpsertSchedule`. `argent_2046.lua` is `GenerateSchedule`. `argent_2047.lua` is `MatchReserved`. `argent_2048.lua` is `RetryCalendar`. No columns were added. No earlier migration was edited. Luacheck on the four files reported 0 warnings. Test 98 1.1.1 at 17:21:57 found no issues in 531 files (2 pass, 0 fail, 4.485s). That run linted the four new files and used the cache for the other 527. Expansion through `tests/lib/get_migration.sh` for postgresql, sqlite, mysql, db2, mariadb, firebird, and mssql left no `${...}` in the 28 SQL files. The full Test 31 harness was not run, so there is no Test 31 count. `luac -p` accepted the migration files and the extracted script bodies.
+
+Test 73 and `tests/lib/argent_mcp_helpers.sh` are 1.0.5. The exercise adds the four tools and 24 cases: validation, a weekly schedule, four Reserved rows, a skipped regenerate, one match inside a zero window, then a calendar URL of `http://127.0.0.1:9/cal/` and a second match that must stay saved. Test 92 4.1.1 at 17:21:57 found no issues in 207 shell files (3 pass, 0 fail, 27.120s). Test 73 was not run. The payload on disk does not contain 2045–2048 until Andrew regenerates it, so `tools/list` cannot see the new tools until he does that and applies the files.
+
+Work items 14.1–14.3 are checked. Work item 14.4 is open. The Argent README lists 49 files, 298 statements, and 49 diagrams. Phase 15 has not started.
+
+### 2026-10-08 — Phase 14 closed
+
+Andrew reported Test 73 1.0.5 passing. The harness table is 22 pass, 0 fail, 314.196s. Diagnostics `test_73_20261008_173729` record 300 `CASE_PASS` and 0 `CASE_FAIL` on PostgreSQL, YugabyteDB, SQLite, MariaDB, DB2, MSSQL, MySQL, and Firebird. `EXPECTED_TOOL_CASES` is 295. Every engine's migration summary is argent AVAIL = LOAD = APPLY = 2048. SQLite applied `argent_2045.lua` through `argent_2048.lua` during the run and finished migration in 7.425s. The other seven engines finished the migration pass in 0.002–0.003s.
+
+PostgreSQL `gen_month` created four Reserved rows, txn 64–67, on `2026-10-01`, `2026-10-08`, `2026-10-15`, and `2026-10-22`. Each is status 1, kind 11, calendar state 1, and `calendar_attempts` 0. `match_one` saved txn 68 at status 3 and rescinded txn 64 to status 5, with calendar state 1. `match_down` saved txn 69 at status 3. Calendar state is 4, attempts is 1, and `calendar_error` is `H.wait: Could not connect to server`. `retry_down` left status 3, raised attempts to 2, and returned tried 1, failed 1, set 0. The same calendar outcome is on all eight engines: `match_down` is ok, status 3, state 4, attempts 1, and that same error string. `retry_down` is attempts 2, tried 1, failed 1, set 0, status 3.
+
+Hydrogen elapsed time was 20.870s on PostgreSQL, 21.204s on MariaDB, 22.390s on DB2, 22.517s on MSSQL, 26.376s on SQLite, 27.486s on Firebird, 280.964s on MySQL, and 313.581s on YugabyteDB. Work item 14.4 is checked. The full Test 31 harness was not run. Phase 15 has not started.
 
 *End of Argent plan.*

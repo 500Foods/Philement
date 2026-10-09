@@ -501,11 +501,17 @@ local res, err = H.authquery_sync(token,
 ```lua
 local h = H.http.get(url, headers?, opts?)
 local h = H.http.post(url, body?, headers?, opts?)
+local h = H.http.request(method, url, body, headers, opts)
 local res, err = H.wait(h)
 -- res = { status, headers, body, elapsed_ms }
+local res, err = H.http.request_sync(method, url, body, headers, opts)
 ```
 
-TLS verification is always on. Body cap for scripting HTTP is 16 MiB. Multiple GETs can be waited together for parallel fan-out.
+`H.http.get` and `H.http.post` call the same path as `H.http.request`. `method` is one of `GET`, `POST`, `PUT`, `DELETE`, `PROPFIND`, `REPORT`, `MKCALENDAR`, and `PROPPATCH`. The match is exact. Any other token, including `CONNECT` and `TRACE`, sets the handle error.
+
+A response status such as 207 or 412 is the result table. `err` is nil. Transport failures are `nil, message`.
+
+TLS verification is always on. Body cap for scripting HTTP is 16 MiB. Multiple requests can be waited together for parallel fan-out.
 
 ### LLM
 

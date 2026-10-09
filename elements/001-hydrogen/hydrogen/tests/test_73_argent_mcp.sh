@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
-# Test: Argent MCP tools (Argent Phase 11)
+# Test: Argent MCP tools (Argent Phases 11, 12, and 14)
 # Eight engines. PAYLOAD:acuranzo+argent on the demo connections.
-# AutoMigration applies argent_2030.lua–argent_2037.lua when the payload has them.
+# AutoMigration applies argent_2030.lua–argent_2048.lua when the payload has them.
 
 # FUNCTIONS
 # (Tool calls live in tests/lib/argent_mcp_helpers.sh)
@@ -13,6 +13,9 @@
 # 1.0.0 - 2026-10-07 - Argent MCP tools and validation variants on 8 engines
 # 1.0.1 - 2026-10-07 - Report the root tool error instead of every prereq miss
 # 1.0.2 - 2026-10-07 - One result per config file, so validation does not warn
+# 1.0.3 - 2026-10-08 - Confirm tokens, edits, rescinds, statements, and reconciliation
+# 1.0.4 - 2026-10-08 - Helper retries one HTTP 503
+# 1.0.5 - 2026-10-08 - Schedules, reserved rows, and a down calendar host
 
 set -euo pipefail
 
@@ -20,7 +23,7 @@ TEST_NAME="Argent MCP"
 TEST_ABBR="ARG"
 TEST_NUMBER="73"
 TEST_COUNTER=0
-TEST_VERSION="1.0.2"
+TEST_VERSION="1.0.5"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"

@@ -273,6 +273,9 @@ declare -a ENV_WHITELIST=(
     "FULL_URL" "INTERVAL" "MAINTENANCE_PINGS" "MAINTENANCE_PING_INTERVAL" "PASSED" "PROTO"
     "RECV" "TOTAL" "RUN_DELAYED_TESTS" "RUN_IMMEDIATE_TEST" "RUN_MAINTENANCE_TEST" "SENT"
     "SEQUENTIAL_COUNT" "TEST_RESET" "VERBOSE" "WS_EXIT" "WS_PID" "WS_PROTOCOL" "TEST_REQUEST"
+    # first found in tests/lib/argent_mcp_helpers.sh
+    "ARGENT_CASE_N" "ARGENT_HDR" "ARGENT_JWT" "ARGENT_MCP_HELPERS_NAME" "ARGENT_MCP_HELPERS_VERSION"
+    "ARGENT_RESULT" "ARGENT_RPC_ID" "ARGENT_SESSION" "ARGENT_URL"     
     # First found in tests/lib/oidc_rp_helpers_link.sh
     "MOCK_KC_LOG" "MOCK_KC_PID"
     "MOCK_KC_PORT" "MOCK_KC_SCRIPT" "MOCK_SUBJECT" "OIDC_CHAIN_ERROR" "OIDC_CHAIN_HANDOFF" "OIDC_CHAIN_STATUS"
@@ -316,6 +319,10 @@ declare -a ENV_WHITELIST=(
     "API_DIR" "OUTPUT_FILE" "PATH4" "PATHS_FILE" "RED" "TAGS_FILE"     
     # First found in payloads/terminal-generate.sh
     "ARTIFACTS_DIR" "XTERMJS_DIR" "XTERMJS_VERSION_FILE" "XTERM_ATTACH_VERSION" "XTERM_FIT_VERSION" "XTERM_JS_VERSION" 
+    # First found in extras/database_load.sh and extras/database_reset.sh
+    "ASSUME_YES" "CONN_DATABASE"
+    "CONN_ENGINE" "CONN_HOST" "CONN_PASS" "CONN_PORT" "CONN_SCHEMA" "CONN_USER" "DB2_COUNT"
+    "DB2_OPEN" "DRY_RUN" "ENGINE_FILTER" "FAILS" "GROUP_FILTER" "HYDROGEN_BIN_OVERRIDE" "LOG_DIR"    
     # First found in extras/hm_browser.sh
     "DEFAULT_CONFIG" "DEFAULT_OUTPUT" "OUTPUT_DIR"                  
     # First found in extras/firefbird/start.sh and friends

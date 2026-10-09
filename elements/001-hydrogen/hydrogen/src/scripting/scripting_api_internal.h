@@ -147,13 +147,23 @@ void H_lua_install_mail_repo(lua_State* L);
 
 struct curl_slist* H_lua_headers_to_slist(lua_State* L, int idx);
 int H_lua_opts_timeout(lua_State* L, int idx);
+int H_lua_http_store_request(lua_State* L,
+                             const char* method,
+                             const char* url,
+                             const char* body,
+                             struct curl_slist* headers,
+                             int timeout,
+                             const char* content_type,
+                             const char* err_prefix);
 int H_lua_http_get(lua_State* L);
 int H_lua_http_post(lua_State* L);
+int H_lua_http_request(lua_State* L);
 int H_lua_http_wait_one(lua_State* L, H_Handle* h);
 int H_lua_http_push_inline_result(lua_State* L, OidcRpHttpResponse* resp, long elapsed_ms);
 int H_lua_http_push_pool_result(lua_State* L, H_Handle* h);
 int H_lua_http_get_sync(lua_State* L);
 int H_lua_http_post_sync(lua_State* L);
+int H_lua_http_request_sync(lua_State* L);
 
 // ----------------------------------------------------------------------------
 // scripting_api_llm.c

@@ -290,7 +290,7 @@ int H_lua_build_result_table(lua_State* L, const char* data_json, int affected_r
 
 /*
  * Populate H.http with the C functions backing H.http.get,
- * H.http.post, H.http.get_sync, and H.http.post_sync.
+ * H.http.post, H.http.request, and their _sync wrappers.
  *
  * Phase 16 of the LUA_PLAN. H.http.get(url, headers?, opts?) and
  * H.http.post(url, body?, headers?, opts?) return an opaque
@@ -298,13 +298,19 @@ int H_lua_build_result_table(lua_State* L, const char* data_json, int affected_r
  * HTTP call completes and pushes a result table
  * { status, headers, body, elapsed_ms }.
  *
- * The "always return a handle" contract from Phase 13 is
- * preserved: any error before the network call (missing url, alloc
- * failure) results in a handle whose `error` field is set, so
- * H.wait returns (nil, error) without raising.
+ * Argent Phase 13 adds H.http.request(method, url, body, headers, opts).
+ * The method allowlist is GET, POST, PUT, DELETE, PROPFIND, REPORT,
+ * MKCALENDAR, and PROPPATCH. get and post call that same path.
+ * A 207 or 412 is the result table. A method outside the list sets
+ * the handle error.
  *
- * Installs H.http.get / H.http.post (and related). Called from the
- * shared H.* install path on each fresh lua_State.
+ * The "always return a handle" contract from LUA_PLAN Phase 13 is
+ * preserved: any error before the network call (missing url, alloc
+ * failure, rejected method) results in a handle whose `error`
+ * field is set, so H.wait returns (nil, error) without raising.
+ *
+ * Installs H.http.get / H.http.post / H.http.request (and related).
+ * Called from the shared H.* install path on each fresh lua_State.
  */
 void H_lua_install_http(lua_State* L);
 

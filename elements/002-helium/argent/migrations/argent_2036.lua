@@ -7,6 +7,7 @@
 -- CHANGELOG
 -- 1.0.0 - 2026-10-07 - MCP tax code and tax rate upserts
 -- 1.0.1 - 2026-10-07 - Cast optional NULL, dates, and empty strings
+-- 1.0.2 - 2026-10-07 - MySQL CAST targets; json parameters are cast before ingest
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
@@ -14,6 +15,13 @@ local queries = {}
 cfg.TABLE = "scripts"
 cfg.MIGRATION = "2036"
 cfg.GROUP_NAME = "Argent"
+if engine == "mysql" then
+    cfg.CAST_INTEGER = "signed"
+    cfg.CAST_TEXT = "char(255)"
+else
+    cfg.CAST_INTEGER = cfg.INTEGER
+    cfg.CAST_TEXT = cfg.TEXT
+end
 -- ----------------------------------------------------------------------------
 -- Forward
 -- ----------------------------------------------------------------------------
@@ -176,7 +184,7 @@ if id then
             code = :TAX_CODE,
             name = :TAX_NAME,
             target_ledger_id = :LEDGER_ID,
-            summary = NULLIF(CAST(:TAX_SUMMARY AS ${TEXT}), ''),
+            summary = NULLIF(CAST(:TAX_SUMMARY AS ${CAST_TEXT}), ''),
             updated_id = :ACTOR_UPDATED,
             updated_at = ${NOW}
         WHERE tax_code_id = :TAX_CODE_ID
@@ -201,7 +209,7 @@ local _, ierr = H.query_sync([[
         valid_after, valid_until, created_id, created_at, updated_id, updated_at
     ) VALUES (
         :TAX_CODE_ID, :ORG_ID, :TAX_CODE, :TAX_NAME, :LEDGER_ID,
-        NULLIF(CAST(:TAX_SUMMARY AS ${TEXT}), ''), ${JIS}:TAX_COLLECTION${JIE},
+        NULLIF(CAST(:TAX_SUMMARY AS ${CAST_TEXT}), ''), ${JIS}CAST(:TAX_COLLECTION AS ${CAST_TEXT})${JIE},
         NULL, NULL, :ACTOR_CREATED, ${NOW}, :ACTOR_UPDATED, ${NOW}
     )
 ]], {
@@ -366,7 +374,7 @@ if id then
         SET tax_code_id = :TAX_CODE_ID,
             effective_on = CAST(:EFFECTIVE_ON AS ${DATE}),
             rate_bps = :RATE_BPS,
-            summary = NULLIF(CAST(:RATE_SUMMARY AS ${TEXT}), ''),
+            summary = NULLIF(CAST(:RATE_SUMMARY AS ${CAST_TEXT}), ''),
             updated_id = :ACTOR_UPDATED,
             updated_at = ${NOW}
         WHERE tax_rate_id = :TAX_RATE_ID
@@ -391,7 +399,7 @@ local _, ierr = H.query_sync([[
         valid_after, valid_until, created_id, created_at, updated_id, updated_at
     ) VALUES (
         :TAX_RATE_ID, :TAX_CODE_ID, CAST(:EFFECTIVE_ON AS ${DATE}), :RATE_BPS,
-        NULLIF(CAST(:RATE_SUMMARY AS ${TEXT}), ''), ${JIS}:RATE_COLLECTION${JIE},
+        NULLIF(CAST(:RATE_SUMMARY AS ${CAST_TEXT}), ''), ${JIS}CAST(:RATE_COLLECTION AS ${CAST_TEXT})${JIE},
         NULL, NULL, :ACTOR_CREATED, ${NOW}, :ACTOR_UPDATED, ${NOW}
     )
 ]], {

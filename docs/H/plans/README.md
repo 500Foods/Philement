@@ -76,8 +76,8 @@ Double-entry bookkeeping as an optional pack on the Acuranzo database
 Plus-list loader is in source. Tests 32–40 use
 `PAYLOAD:acuranzo+argent`. Restructured 2026-10-06 into Phases 0–16.
 Phase 0 approved the same day. Phases 1–3 applied 2026-10-07.
-Phase 9 closed on the 2029 apply. Phase 10 closed on Test 71 3.2.0 (1490 passed, 0 failed). Phase 11 scripts are applied (`argent_2030.lua`–`argent_2037.lua`). Test 73 on `test_73_20261007_173712` passed on SQLite and PostgreSQL (178/178). DB2 is 177/178 on `WITH RECURSIVE`; `argent_2022.lua` 1.0.2 stores `WITH` for DB2 and awaits a reload. Work item 11.7 is open.
-`H.http.request` is Phase 13.
+Phase 9 closed on the 2029 apply. Phase 10 closed on Test 71 3.2.0 (1490 passed, 0 failed). Phase 11 closed 2026-10-08 on the forward load plus Test 73 `test_73_20261008_085126` (178/178 on all eight engines). The reverse half of tests 32–39 was not run. Phase 12 closed 2026-10-08 on Test 73 1.0.4 `test_73_20261008_145836` (276/276 on all eight engines). Phase 13 closed 2026-10-08. Andrew reported that all Unity tests pass and `mkp` passes. He did not quote a count. Phase 14 closed 2026-10-08 on Test 73 1.0.5 `test_73_20261008_173729` (300/300 on all eight engines, harness 22/22, 314.196s). Phase 15 has not started.
+`H.http.request` allowlist is `GET`, `POST`, `PUT`, `DELETE`, `PROPFIND`, `REPORT`, `MKCALENDAR`, and `PROPPATCH`. `H.http.get` and `H.http.post` call that path.
 
 ---
 

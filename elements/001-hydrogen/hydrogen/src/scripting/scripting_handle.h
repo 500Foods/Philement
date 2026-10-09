@@ -105,7 +105,7 @@ int H_Handle_get_refcount(struct H_Handle* h);
  *     http_headers_json  unused (NULL)
  *   H_HK_HTTP:
  *     http_url      strdup'd, owned (the request URL)
- *     http_method   strdup'd, owned ("GET" or "POST")
+ *     http_method   strdup'd, owned (allowlisted HTTP method)
  *     http_body     strdup'd, owned (POST body, may be NULL for GET)
  *     http_content_type   strdup'd, owned (HTTP) - may be NULL (POST only)
  *     http_timeout        int, seconds; <=0 means "use config default" (HTTP)
@@ -140,7 +140,7 @@ typedef struct H_Handle {
     char*           error;        // strdup'd; non-NULL means handle is in error state
     // Phase 16: HTTP kind fields
     char*           http_url;            // strdup'd; owned (HTTP)
-    char*           http_method;         // strdup'd; owned (HTTP) - "GET" or "POST"
+    char*           http_method;         // strdup'd; owned (HTTP) - allowlisted method
     char*           http_body;           // strdup'd; owned (HTTP) - may be NULL
     char*           http_content_type;   // strdup'd; owned (HTTP) - may be NULL (POST only)
     int             http_timeout;        // seconds; <=0 means "use config default" (HTTP)

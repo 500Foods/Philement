@@ -7,6 +7,7 @@
 -- CHANGELOG
 -- 1.0.0 - 2026-10-07 - MCP transaction reads and balance query
 -- 1.0.1 - 2026-10-07 - Cast optional NULL, dates, and empty strings
+-- 1.0.2 - 2026-10-07 - MySQL integer casts use signed
 
 return function(engine, design_name, schema_name, cfg)
 local queries = {}
@@ -14,6 +15,13 @@ local queries = {}
 cfg.TABLE = "scripts"
 cfg.MIGRATION = "2037"
 cfg.GROUP_NAME = "Argent"
+if engine == "mysql" then
+    cfg.CAST_INTEGER = "signed"
+    cfg.CAST_TEXT = "char(255)"
+else
+    cfg.CAST_INTEGER = cfg.INTEGER
+    cfg.CAST_TEXT = cfg.TEXT
+end
 -- ----------------------------------------------------------------------------
 -- Forward
 -- ----------------------------------------------------------------------------
@@ -322,15 +330,15 @@ local res, err = H.query_sync([[
     SELECT DISTINCT t.txn_id, t.organization_id, t.status_a2003, t.kind_a2004,
            t.txn_on, t.description, t.memo
     FROM ${SCHEMA}transactions t
-    WHERE (CAST(:USE_ORG AS ${INTEGER}) = 0 OR t.organization_id = CAST(:ORG_ID AS ${INTEGER}))
-      AND (CAST(:USE_LEDGER AS ${INTEGER}) = 0 OR t.txn_id IN (
-            SELECT ln.txn_id FROM ${SCHEMA}lines ln WHERE ln.ledger_id = CAST(:LEDGER_ID AS ${INTEGER})
+    WHERE (CAST(:USE_ORG AS ${CAST_INTEGER}) = 0 OR t.organization_id = CAST(:ORG_ID AS ${CAST_INTEGER}))
+      AND (CAST(:USE_LEDGER AS ${CAST_INTEGER}) = 0 OR t.txn_id IN (
+            SELECT ln.txn_id FROM ${SCHEMA}lines ln WHERE ln.ledger_id = CAST(:LEDGER_ID AS ${CAST_INTEGER})
           ))
-      AND (CAST(:USE_FROM AS ${INTEGER}) = 0 OR t.txn_on >= CAST(:DATE_FROM AS ${DATE}))
-      AND (CAST(:USE_TO AS ${INTEGER}) = 0 OR t.txn_on <= CAST(:DATE_TO AS ${DATE}))
-      AND (CAST(:USE_KIND AS ${INTEGER}) = 0 OR t.kind_a2004 = CAST(:KIND_A2004 AS ${INTEGER}))
-      AND (CAST(:USE_STATUS AS ${INTEGER}) = 0 OR t.status_a2003 IN (
-            CAST(:STATUS_1 AS ${INTEGER}), CAST(:STATUS_2 AS ${INTEGER}), CAST(:STATUS_3 AS ${INTEGER}), CAST(:STATUS_4 AS ${INTEGER}), CAST(:STATUS_5 AS ${INTEGER})
+      AND (CAST(:USE_FROM AS ${CAST_INTEGER}) = 0 OR t.txn_on >= CAST(:DATE_FROM AS ${DATE}))
+      AND (CAST(:USE_TO AS ${CAST_INTEGER}) = 0 OR t.txn_on <= CAST(:DATE_TO AS ${DATE}))
+      AND (CAST(:USE_KIND AS ${CAST_INTEGER}) = 0 OR t.kind_a2004 = CAST(:KIND_A2004 AS ${CAST_INTEGER}))
+      AND (CAST(:USE_STATUS AS ${CAST_INTEGER}) = 0 OR t.status_a2003 IN (
+            CAST(:STATUS_1 AS ${CAST_INTEGER}), CAST(:STATUS_2 AS ${CAST_INTEGER}), CAST(:STATUS_3 AS ${CAST_INTEGER}), CAST(:STATUS_4 AS ${CAST_INTEGER}), CAST(:STATUS_5 AS ${CAST_INTEGER})
           ))
     ORDER BY t.txn_on, t.txn_id
 ]], {

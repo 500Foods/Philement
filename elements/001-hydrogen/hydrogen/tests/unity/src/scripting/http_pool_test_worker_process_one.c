@@ -4,10 +4,11 @@
  * Drives scripting_http_worker_process_one() directly (no worker
  * thread) to cover the branches the pool-path submit tests never hit:
  *   - NULL handle (early return, line 115)
- *   - unknown HTTP method (error stored on handle, condvar broadcast,
- *     ref released; lines 134-143)
- *   - POST method success (scripting_http_post via the test seam
- *     stores status + body on the handle; lines 130-133)
+ *   - rejected HTTP method (error stored on handle, condvar broadcast,
+ *     ref released). CONNECT is outside the Phase 13 allowlist.
+ *   - POST method success (scripting_http_request via the test seam
+ *     stores status + body on the handle)
+ *   - PROPFIND 207 and REPORT 412 are stored as status and body
  *
  * The GET success path is already covered by the pool/submit tests
  * (a worker thread runs process_one for every submitted GET handle).
@@ -35,6 +36,8 @@
 void test_process_one_null_handle(void);
 void test_process_one_unknown_method(void);
 void test_process_one_post_success(void);
+void test_process_one_propfind_207(void);
+void test_process_one_report_412(void);
 
 static AppConfig mock_app_config_storage = {0};
 
@@ -66,7 +69,7 @@ void test_process_one_unknown_method(void) {
     H_Handle* h = H_Handle_new(L, H_HK_HTTP);
     TEST_ASSERT_NOT_NULL(h);
     h->http_url = strdup("http://example.test/");
-    h->http_method = strdup("DELETE");
+    h->http_method = strdup("CONNECT");
 
     H_Handle_acquire(h);                 // refcount 2
     scripting_http_worker_process_one(NULL, h);
@@ -109,10 +112,57 @@ void test_process_one_post_success(void) {
     lua_close(L);                        // drops the last ref via __gc
 }
 
+void test_process_one_propfind_207(void) {
+    scripting_http_test_set_response("cal.test", 207, "multi-status");
+
+    lua_State* L = luaL_newstate();
+    TEST_ASSERT_NOT_NULL(L);
+    H_Handle_install_metatable(L);
+    H_Handle* h = H_Handle_new(L, H_HK_HTTP);
+    TEST_ASSERT_NOT_NULL(h);
+    h->http_url = strdup("http://cal.test/dav");
+    h->http_method = strdup("PROPFIND");
+    h->http_body = strdup("<propfind/>");
+    h->http_content_type = strdup("application/xml");
+
+    H_Handle_acquire(h);
+    scripting_http_worker_process_one(NULL, h);
+    TEST_ASSERT_EQUAL(1, H_Handle_get_refcount(h));
+    TEST_ASSERT_TRUE(h->http_ready);
+    TEST_ASSERT_NULL(h->http_result_error);
+    TEST_ASSERT_EQUAL(207, h->http_result_status);
+    TEST_ASSERT_EQUAL_STRING("multi-status", h->http_result_body);
+
+    lua_close(L);
+}
+
+void test_process_one_report_412(void) {
+    scripting_http_test_set_response("cal.test", 412, "precondition");
+
+    lua_State* L = luaL_newstate();
+    TEST_ASSERT_NOT_NULL(L);
+    H_Handle_install_metatable(L);
+    H_Handle* h = H_Handle_new(L, H_HK_HTTP);
+    TEST_ASSERT_NOT_NULL(h);
+    h->http_url = strdup("http://cal.test/dav");
+    h->http_method = strdup("REPORT");
+    h->http_body = strdup("<calendar-query/>");
+
+    H_Handle_acquire(h);
+    scripting_http_worker_process_one(NULL, h);
+    TEST_ASSERT_NULL(h->http_result_error);
+    TEST_ASSERT_EQUAL(412, h->http_result_status);
+    TEST_ASSERT_EQUAL_STRING("precondition", h->http_result_body);
+
+    lua_close(L);
+}
+
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_process_one_null_handle);
     RUN_TEST(test_process_one_unknown_method);
     RUN_TEST(test_process_one_post_success);
+    RUN_TEST(test_process_one_propfind_207);
+    RUN_TEST(test_process_one_report_412);
     return UNITY_END();
 }

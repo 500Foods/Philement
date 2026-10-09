@@ -20,13 +20,16 @@ Each engine logs in, checks `GET /api/mcp/status`, initializes MCP, sends
 prerequisite records that case as a failure and the engine continues, so
 the case count stays stable.
 
-The sixteen tools are `Argent.ListOrganizations`, `Argent.UpsertOrganization`,
+The twenty-three tools are `Argent.ListOrganizations`, `Argent.UpsertOrganization`,
 `Argent.ListLedgers`, `Argent.GetLedger`, `Argent.UpsertLedger`,
 `Argent.UpsertLedgerTerms`, `Argent.UpsertContact`, `Argent.PostTransaction`,
 `Argent.AddTags`, `Argent.RemoveTags`, `Argent.AddAttachment`,
 `Argent.UpsertTaxCode`, `Argent.UpsertTaxRate`, `Argent.GetTransaction`,
-`Argent.ListTransactions`, and `Argent.QueryBalances`. `tools/list` asks for
-page size 500 so all sixteen names are on one page.
+`Argent.ListTransactions`, `Argent.QueryBalances`, `Argent.EditTransaction`,
+`Argent.RescindTransaction`, `Argent.PostStatement`, `Argent.PostPeriodClose`,
+`Argent.StartReconciliation`, `Argent.ClearLines`, and
+`Argent.CompleteReconciliation`. `tools/list` asks for page size 500 so all
+twenty-three names are on one page.
 
 Success is HTTP 200 with `result.error` null and
 `result.structuredContent.ok` true. A tool error is the same HTTP 200 with
@@ -54,6 +57,18 @@ Covered variants include:
 - Balances: required `organization_id` and `as_of`, six statuses, a bad
   rate source sent with `include_parents` (the tool checks `rate_source`
   on the rollup path), the card balance after its opening only, and parent rollup
+- Confirm and reconciliation, on a fresh posting ledger: edit validation,
+  a purchase of -250, a statement, and a period close. The first close does
+  not warn. A bare complete returns `override_reason_required` and leaves
+  the purchase Recorded. A reason moves it to Reconciled. Editing that row
+  returns `needs_confirm` and does not change it. The same body plus the
+  token sets Recorded. A second use of the token is `confirm_used`. A
+  changed body is `confirm_mismatch`. A fake token is `confirm_not_found`
+  and does not write, including on an edit that would otherwise be safe.
+  An Edit token presented to Rescind is `confirm_tool`. A canonical body
+  over 4000 characters is `body_too_long`. A rescinded statement is
+  `statement_rescinded`. A statement from another organization is
+  `organization_id`
 
 The card ledger is not posted after its opening, so its balance stays 500.
 `GetLedger` for the January term uses `as_of` 2026-03-01. A later `as_of`
@@ -64,14 +79,19 @@ would select the June term.
 - **Test Name**: Argent MCP
 - **Test Abbreviation**: ARG
 - **Test Number**: 73
-- **Version**: 1.0.2
+- **Version**: 1.0.4
 
-The exercise writes `EXPECTED_TOOL_CASES` at runtime. Version 1.0.2 of the
-helper records 173 tool cases. Five session cases sit beside them: login,
+The exercise writes `EXPECTED_TOOL_CASES` at runtime. Version 1.0.2 recorded
+173 tool cases. Version 1.0.3 records 271 tool cases on the path where every
+prerequisite is present. Five session cases sit beside them: login,
 `api_status`, `initialize`, `initialized_202`, and `shutdown_clean`. An
 engine passes when the fail count is 0 and the pass count equals
 `EXPECTED_TOOL_CASES` plus 5. Startup, ready, and login failures are
-separate results.
+separate results. Diagnostics `test_73_20261008_115801` (script 1.0.3) passed
+276/276 on PostgreSQL, SQLite, MariaDB, Firebird, MSSQL, and MySQL. DB2 was
+250/276. YugabyteDB was 275/276 (`tools_list` HTTP 503). Version 1.0.4 retries
+that 503 once. Diagnostics `test_73_20261008_145836` passed 276/276 on all
+eight engines.
 
 ## Port Assignment
 
@@ -107,7 +127,7 @@ Each config enables **API** (JWT), **Scripting** (`WorkerCount` 2,
 `DefaultQueryTimeout` 60), and **MCP** (`Protocol` `Mcp.Server`,
 `RequestTimeoutSeconds` 60). `Migrations` is `PAYLOAD:acuranzo+argent`.
 `AutoMigration` is true. `TestMigration` is false. The ready wait is 300
-seconds because startup can apply `argent_2030.lua` through `argent_2037.lua`.
+seconds because startup can apply `argent_2030.lua` through `argent_2044.lua`.
 
 Connection targets are the demo databases used by Test 40, with schema
 `demo` (empty on SQLite and Firebird, `demoms` on MSSQL). A run with a
@@ -118,8 +138,8 @@ copy. The shared SQLite file stays as it was.
 
 ## Prerequisites
 
-- A payload that already contains `argent_2030.lua` through `argent_2037.lua`
-  (`payload-generate.sh` or `mka`)
+- A payload that already contains `argent_2030.lua` through `argent_2044.lua`
+  (`payload-generate.sh` or `mka`). `mkt` does not refresh the payload archive.
 - Hydrogen binary (via `find_hydrogen_binary`)
 - `HYDROGEN_DEMO_USER_NAME`, `HYDROGEN_DEMO_USER_PASS`, `HYDROGEN_DEMO_API_KEY`,
   `HYDROGEN_DEMO_JWT_KEY`, `PAYLOAD_KEY`
@@ -128,12 +148,14 @@ copy. The shared SQLite file stays as it was.
 ## Limits
 
 `partial_write` is the code returned when an insert fails after validation.
-The script has no fault injection, so that code is not asserted. Confirm
-tokens, reconciliation edits, calendar sync, and the report QueryRefs are
-later Argent phases.
+The script has no fault injection, so that code is not asserted.
+`confirm_expired` waits out a 15-minute token, so it is not asserted.
+`confirm_account` needs a second user. `already_cleared` and `line_linked`
+are reached only after earlier line checks, so this fixture does not hit
+them. Calendar sync and the report QueryRefs are later Argent phases.
 
 ## Related
 
-- Plan: [ARGENT_PLAN.md](/docs/H/plans/ARGENT_PLAN.md) Phase 11, work item 11.7
+- Plan: [ARGENT_PLAN.md](/docs/H/plans/ARGENT_PLAN.md) Phase 12, work item 12.4
 - Protocol blackbox: [test_47_mcp.md](/docs/H/tests/test_47_mcp.md)
-- Script migrations: Helium `argent_2030`–`argent_2037`
+- Script migrations: Helium `argent_2030`–`argent_2044`
