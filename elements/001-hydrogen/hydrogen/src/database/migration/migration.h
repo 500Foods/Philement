@@ -79,6 +79,8 @@ bool discover_path_migration_files(const struct DatabaseConnection* conn_config,
 // Internal validation functions (exposed for unit testing)
 bool validate_payload_migrations(const struct DatabaseConnection* conn_config, const char* dqm_label);
 bool validate_path_migrations(const struct DatabaseConnection* conn_config, const char* dqm_label);
+bool scan_migration_directory(const struct DatabaseConnection* conn_config, char** first_file, char** latest_file, const char* dqm_label);
+const struct DatabaseConnection* find_conn_config_for_queue(const struct DatabaseQueue* db_queue);
 
 // Transaction handling functions
 bool execute_transaction(DatabaseHandle* connection, const char* sql_result,

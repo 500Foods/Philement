@@ -14,6 +14,24 @@
 #include "migration.h"
 
 /*
+ * Look up the DatabaseConnection matching a queue's database_name
+ * in the global app_config. Returns NULL if not found.
+ */
+const DatabaseConnection* find_conn_config_for_queue(const DatabaseQueue* db_queue) {
+    if (!db_queue || !db_queue->database_name || !app_config) {
+        return NULL;
+    }
+
+    for (int i = 0; i < app_config->databases.connection_count; i++) {
+        if (strcmp(app_config->databases.connections[i].name, db_queue->database_name) == 0) {
+            return &app_config->databases.connections[i];
+        }
+    }
+
+    return NULL;
+}
+
+/*
  * Validate PAYLOAD-based migration files
  */
 bool validate_payload_migrations(const DatabaseConnection* conn_config, const char* dqm_label) {
@@ -50,22 +68,28 @@ bool validate_payload_migrations(const DatabaseConnection* conn_config, const ch
 }
 
 /*
- * Validate path-based migration files
+ * Scan a migration directory for <basename>_XXXX.lua files and return
+ * the first (lowest number) and latest (highest number) file names.
+ *
+ * On success returns true and sets *first_file and *latest_file
+ * (both newly allocated strings that the caller must free).  On failure
+ * returns false; the output pointers are left NULL.
  */
-bool validate_path_migrations(const DatabaseConnection* conn_config, const char* dqm_label) {
+bool scan_migration_directory(const DatabaseConnection* conn_config, char** first_file, char** latest_file, const char* dqm_label) {
+    if (first_file) *first_file = NULL;
+    if (latest_file) *latest_file = NULL;
+
     if (!conn_config || !conn_config->migrations) {
         log_this(dqm_label, "Invalid database connection configuration", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
-    // Path-based migration - find the first file matching <path>/<basename>_*.lua
     char* path_copy = strdup(conn_config->migrations);
     if (!path_copy) {
         log_this(dqm_label, "Memory allocation failed for migration path validation", LOG_LEVEL_ERROR, 0);
         return false;
     }
 
-    // Make another copy for dirname since it modifies the string
     char* path_copy2 = strdup(conn_config->migrations);
     if (!path_copy2) {
         log_this(dqm_label, "Memory allocation failed for migration path validation", LOG_LEVEL_ERROR, 0);
@@ -81,90 +105,112 @@ bool validate_path_migrations(const DatabaseConnection* conn_config, const char*
         return false;
     }
 
-    // Look for migration files in the directory
     char* dir_path = dirname(path_copy2);
+    char* saved_dir = strdup(dir_path);
     DIR* dir = opendir(dir_path);
     if (!dir) {
         log_this(dqm_label, "Cannot open migration directory: %s", LOG_LEVEL_ERROR, 1, dir_path);
         free(path_copy);
         free(path_copy2);
+        free(saved_dir);
         return false;
     }
 
-    // Find both the lowest and highest migration file numbers
     char* found_file = NULL;
-    char* latest_file = NULL;
+    char* scan_latest_file = NULL;
     unsigned long lowest_number = ULONG_MAX;
     unsigned long highest_number = 0;
     struct stat st;
 
     struct dirent* entry;
     while ((entry = readdir(dir)) != NULL) {
-        // Check if it matches the pattern <basename>_XXXXX.lua
         char expected_prefix[256];
         snprintf(expected_prefix, sizeof(expected_prefix), "%s_", base_name);
 
         if (strncmp(entry->d_name, expected_prefix, strlen(expected_prefix)) == 0) {
-            // Extract the number part
             const char* number_start = entry->d_name + strlen(expected_prefix);
             const char* lua_ext = strstr(number_start, ".lua");
-            if (lua_ext && lua_ext == strstr(entry->d_name, ".lua")) { // Ensure .lua is at the end
+            if (lua_ext && lua_ext == strstr(entry->d_name, ".lua")) {
                 size_t number_len = (size_t)(lua_ext - number_start);
                 if (number_len >= 1 && number_len <= 6) {
-                    // Valid number length, try to parse
                     char number_str[8];
                     strncpy(number_str, number_start, number_len);
                     number_str[number_len] = '\0';
 
                     unsigned long file_number = strtoul(number_str, NULL, 10);
 
-                    // Track lowest number (first file)
                     if (file_number < lowest_number) {
                         lowest_number = file_number;
 
-                        // Construct full path
                         char full_path[2048];
-                        int written = snprintf(full_path, sizeof(full_path), "%s/%s", conn_config->migrations, entry->d_name);
+                        int written = snprintf(full_path, sizeof(full_path), "%s/%s", saved_dir, entry->d_name);
                         if (written >= (int)sizeof(full_path)) {
-                            continue; // Skip if path too long
+                            continue;
                         }
 
                         free(found_file);
                         found_file = strdup(full_path);
                     }
 
-                    // Track highest number (latest available)
                     if (file_number > highest_number) {
                         highest_number = file_number;
-                        free(latest_file);
-                        latest_file = strdup(entry->d_name);
+                        free(scan_latest_file);
+                        scan_latest_file = strdup(entry->d_name);
                     }
                 }
             }
         }
     }
 
-
     closedir(dir);
+    free(path_copy);
+    free(path_copy2);
+    free(saved_dir);
 
     if (found_file && stat(found_file, &st) == 0) {
         log_this(dqm_label, "Found first migration file: %s (%lld bytes)", LOG_LEVEL_TRACE, 2, found_file, (long long)st.st_size);
-        if (latest_file && strcmp(found_file, latest_file) != 0) {
-            log_this(dqm_label, "Found latest migration file: %s (version %lu)", LOG_LEVEL_TRACE, 2, latest_file, highest_number);
+        if (scan_latest_file && strcmp(found_file, scan_latest_file) != 0) {
+            log_this(dqm_label, "Found latest migration file: %s (version %lu)", LOG_LEVEL_TRACE, 2, scan_latest_file, highest_number);
         }
-        free(found_file);
-        free(latest_file);
-        free(path_copy);
-        free(path_copy2);
+        if (first_file) *first_file = found_file;
+        if (latest_file) *latest_file = scan_latest_file;
+        else free(scan_latest_file);
         return true;
     } else {
         log_this(dqm_label, "No migration files found for: %s", LOG_LEVEL_ERROR, 1, conn_config->migrations);
         free(found_file);
-        free(latest_file);
-        free(path_copy);
-        free(path_copy2);
+        free(scan_latest_file);
         return false;
     }
+}
+
+/*
+ * Validate path-based migration files
+ */
+bool validate_path_migrations(const DatabaseConnection* conn_config, const char* dqm_label) {
+    if (!conn_config || !conn_config->migrations) {
+        log_this(dqm_label, "Invalid database connection configuration", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+
+    char* found_file = NULL;
+    char* latest_file = NULL;
+    struct stat st;
+
+    if (!scan_migration_directory(conn_config, &found_file, &latest_file, dqm_label)) {
+        return false;
+    }
+
+    if (found_file && stat(found_file, &st) == 0) {
+        log_this(dqm_label, "Found first migration file: %s (%lld bytes)", LOG_LEVEL_TRACE, 2, found_file, (long long)st.st_size);
+        if (latest_file && strcmp(found_file, latest_file) != 0) {
+            log_this(dqm_label, "Found latest migration file: %s", LOG_LEVEL_TRACE, 1, latest_file);
+        }
+    }
+
+    free(found_file);
+    free(latest_file);
+    return true;
 }
 
 /*
@@ -177,16 +223,7 @@ bool validate(DatabaseQueue* db_queue) {
 
     char* dqm_label = database_queue_generate_label(db_queue);
 
-    // Find the database configuration
-    const DatabaseConnection* conn_config = NULL;
-    if (app_config) {
-        for (int i = 0; i < app_config->databases.connection_count; i++) {
-            if (strcmp(app_config->databases.connections[i].name, db_queue->database_name) == 0) {
-                conn_config = &app_config->databases.connections[i];
-                break;
-            }
-        }
-    }
+    const DatabaseConnection* conn_config = find_conn_config_for_queue(db_queue);
 
     if (!conn_config) {
         log_this(dqm_label, "No configuration found for database", LOG_LEVEL_ERROR, 0);
@@ -194,25 +231,22 @@ bool validate(DatabaseQueue* db_queue) {
         return false;
     }
 
-    // Check if migrations are configured
     if (!conn_config->auto_migration || !conn_config->migrations) {
         log_this(dqm_label, "Migrations not configured or disabled", LOG_LEVEL_TRACE, 0);
         free(dqm_label);
-        return true; // Not an error, just not configured
+        return true;
     }
 
     bool migrations_valid = false;
+    bool is_payload = (strncmp(conn_config->migrations, "PAYLOAD:", 8) == 0);
 
-    // Check if migrations starts with PAYLOAD:
-    if (strncmp(conn_config->migrations, "PAYLOAD:", 8) == 0) {
+    if (is_payload) {
         migrations_valid = validate_payload_migrations(conn_config, dqm_label);
     } else {
         migrations_valid = validate_path_migrations(conn_config, dqm_label);
     }
 
-    /* Payload migrations track one AVAIL/LOAD/APPLY per thousand that the
-     * payload actually ships. Path-based migrations leave the band list empty. */
-    if (migrations_valid && strncmp(conn_config->migrations, "PAYLOAD:", 8) == 0) {
+    if (migrations_valid && is_payload) {
         if (!migration_ranges_load_from_payload(db_queue, conn_config->migrations, dqm_label)) {
             migrations_valid = false;
         } else {
@@ -231,8 +265,6 @@ bool validate(DatabaseQueue* db_queue) {
  * Find the latest available migration version from payload files
  */
 long long find_latest_available_migration(const DatabaseQueue* db_queue) {
-    const DatabaseConnection* conn_config = NULL;
-
     if (db_queue && db_queue->migration_range_count > 0) {
         size_t range_index;
         long long highest = -1;
@@ -244,14 +276,8 @@ long long find_latest_available_migration(const DatabaseQueue* db_queue) {
         }
         return highest;
     }
-    if (app_config) {
-        for (int i = 0; i < app_config->databases.connection_count; i++) {
-            if (strcmp(app_config->databases.connections[i].name, db_queue->database_name) == 0) {
-                conn_config = &app_config->databases.connections[i];
-                break;
-            }
-        }
-    }
+
+    const DatabaseConnection* conn_config = find_conn_config_for_queue(db_queue);
 
     if (!conn_config || !conn_config->migrations) {
         return -1;

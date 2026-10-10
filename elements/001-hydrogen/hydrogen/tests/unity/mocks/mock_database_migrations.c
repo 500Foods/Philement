@@ -44,8 +44,12 @@ lua_State* mock_database_migrations_lua_setup(const char* dqm_label) {
 bool mock_get_payload_files_by_prefix(const char* prefix, PayloadFile** files, size_t* count, size_t* capacity) {
     (void)prefix;
     (void)files;
-    (void)count;
-    (void)capacity;
+    if (count) {
+        *count = 0;
+    }
+    if (capacity) {
+        *capacity = 0;
+    }
     return mock_get_payload_files_result;
 }
 

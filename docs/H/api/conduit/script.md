@@ -41,6 +41,13 @@ Optional knobs under `Scripting` (defaults match Phase 0 design lock):
 | `ClientInvokeMaxParamsBytes` | `262144` (256 KiB) | Max serialized params JSON |
 | `ClientInvokeMaxResultBytes` | `1048576` (1 MiB) | Max `H.set_result_json` body |
 
+Both byte caps are operator-tunable in `hydrogen.json` and are the only
+gates on their path — the API POST body ceiling is a separate
+`API_MAX_POST_SIZE` of 10 MiB (`src/api/api_utils.h`), so raising
+`ClientInvokeMaxParamsBytes` to at most 10 MiB needs no binary change,
+and the scoreboard keeps one params copy per job memory-wise.
+`params_too_large` maps to HTTP 413.
+
 ## Authentication
 
 JWT **required** on POST and GET.
