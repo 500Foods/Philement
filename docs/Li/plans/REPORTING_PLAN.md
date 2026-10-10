@@ -1565,6 +1565,7 @@ disk the day the file is numbered.
 **Lookup family note:** Helium AGENTS.md states "One lookup family per
 migration." Lookup 053 (Report Object Types) and lookup 057 (Report Page
 Sizes) are distinct families. Phase 11 is split into two migrations:
+
 - Migration A (lookup 053): icon fixes for keys 7 and 16, attribute list
   updates for static text and field items, and insertion of Page Number
   (key 61) and Page Count (key 62) — the keys Phase 0 approved.
