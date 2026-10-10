@@ -3,8 +3,7 @@
 # Reporting Plan
 
 **Date:** 2026-10-08
-**Status:** Phase 0 draft. Awaiting approval. No Lithium source, Helium
-migration, or Hydrogen C has been written for this plan.
+**Status:** Phase 0 complete. Approved 2026-10-10.
 **Home:** Manager **24**, Report Manager, already registered.
 **Design:** Acuranzo (shared product database). Lookups 0–199. Migrations
 1000–1999.
@@ -95,13 +94,8 @@ Each phase is its own conversation.
 
 ## Resume here
 
-**Pause point (2026-10-10):** Phase 0 is a proposal. The 2026-10-10
-amendment applied Andrew's answers to the open questions: exports are
-PDF (default), HTML, SVG, PNG, and CSV; charts and barcodes are v1;
-each Lua port is its own seed phase and its own repository; PDFs past
-the result cap are answered by operator config. The next session
-re-reads the amended locks, confirms 0.11–0.15 with Andrew, and stops.
-Do not open `src/managers/reports/` for implementation in that session.
+**Pause point (2026-10-10):** Phase 0 is approved. Phase 1 (Contracts and
+fixtures) can start.
 
 ## Priority
 
@@ -142,7 +136,7 @@ rather than renumbered.
 
 | Phase | What | Kind | Effort | Status |
 | --- | --- | --- | --- | --- |
-| 0 | Design lock | Decision | Easy | Draft |
+| 0 | Design lock | Decision | Easy | Complete |
 | 1 | Definition, intermediate, and emit contracts | Docs + fixtures | Medium | Not started |
 | 2 | Units and geometry | JS + Vitest | Easy | Not started |
 | 3 | Document model and undo | JS + Vitest | Medium | Not started |
@@ -509,8 +503,9 @@ v1 `typeKey` allowlist:
 | 44 | Field chart |
 | 43 | Static barcode |
 | 45 | Field barcode |
+| 61 | Page number |
+| 62 | Page count |
 
-Page number and page count join this list if Phase 0 adds lookup keys.
 Rulers, Report Top, and Report Bottom are canvas chrome. They are not
 bands in the file. Grid and ruler settings on the definition are view
 defaults, stored so the next session opens the same page.
@@ -1047,44 +1042,46 @@ This file is the plan under discussion.
 
 ### Work items
 
-- [ ] 0.1 Confirm format version 1 stores lookup `key_idx` and unit
+- [x] 0.1 Confirm format version 1 stores lookup `key_idx` and unit
       strings, and that the retired label-keyed JSON is evidence, not
       the file we write.
-- [ ] 0.2 Confirm the `reports` column roles, including `design` and
+- [x] 0.2 Confirm the `reports` column roles, including `design` and
       `thumbnail` left unused.
-- [ ] 0.3 Confirm the v1 type allowlist, and whether Page Number and
-      Page Count are new lookup 053 keys.
-- [ ] 0.4 Confirm Vanadium Sans (and any other face) is added to
-      lookup 054's font list in the Phase 11 packet.
-- [ ] 0.5 Confirm `Reports.Render` stages `pdf` (default), `html`,
+- [x] 0.3 Confirm the v1 type allowlist, and whether Page Number
+      and Page Count are new lookup 053 keys 61 and 62. (See Q1.)
+- [x] 0.4 Confirm Vanadium Sans (and any other face) is added to
+      lookup 054's font list in the Phase 11 packet. (See Q2.)
+- [x] 0.5 Confirm `Reports.Render` stages `pdf` (default), `html`,
       `svg`, `png`, `csv`, `compose`, and `check`, and that
       lua-pdfkit, lua-zint, and d3.lua are seeded as `require`
-      libraries (`lua-pdfkit.*`, `zint.*`, and the d3.lua module),
-      `invokable = 0`, one seed phase and probe per library.
-- [ ] 0.6 Confirm the export order PDF, HTML, SVG, PNG, CSV, with
+      libraries (`lua-pdfkit.*` with group `lua-pdfkit`, `zint.*`
+      with group `zint`, and `require("d3.lua")` with group `d3`
+      and script name `lua`), `invokable = 0`, one seed phase and
+      probe per library.
+- [x] 0.6 Confirm the export order PDF, HTML, SVG, PNG, CSV, with
       PDF as the default stage. Fixed band heights. Lua does not
       measure glyphs. CSV is data only and stands in for a
       spreadsheet. HTML is both an export and the preview medium.
       SVG is a document export, PNG is its per-page raster through
       `image_scale`, and a label-sized report is a bare file.
-- [ ] 0.7 Confirm no new Hydrogen C. Image sizing stays on
+- [x] 0.7 Confirm no new Hydrogen C. Image sizing stays on
       `POST /api/reporting/image_scale`. PNG emit uses that
       endpoint's documented SVG input. PDF embeds the `xo` result
       once lua-pdfkit can, and PNG until then. Charts and barcodes
       reach the PDF through the ports' native PDF output, with no
       SVG conversion. The one new direct npm dependency is
       `@codemirror/lint` for the formula editor.
-- [ ] 0.8 Confirm this plan waits behind CATCHUP until Andrew pulls
+- [x] 0.8 Confirm this plan waits behind CATCHUP until Andrew pulls
       it in, and that Phase 18 may add `invokeScript` if CATCHUP
       Phases 7–10 have not.
-- [ ] 0.9 Confirm manager 24, append-only revisions, sandboxed
+- [x] 0.9 Confirm manager 24, append-only revisions, sandboxed
       preview, the 256 KiB param cap, and the 1 MiB result cap.
       A PDF that fits is base64 inside that JSON. A PDF that does
       not fit returns an error naming the cap, and raising
       `ClientInvokeMaxResultBytes` is the v1 answer; a stored
       output returned by `H.set_result` with a location is later
       work.
-- [ ] 0.10 Confirm author Lua lives in `definition.functions` and
+- [x] 0.10 Confirm author Lua lives in `definition.functions` and
       runs in the environment in User Lua. A detail formula sees
       the current record. Headers, footers, and breaks see the band
       context. Confirm the primitive ops, with `avg` and `mean` as
@@ -1092,25 +1089,26 @@ This file is the plan under discussion.
       inserts one blank detail-height. The formula editor is
       CodeMirror 6 with the in-repo Lua personality, and syntax
       diagnostics come from `stage=check`.
-- [ ] 0.11 Confirm the chart locks: series-first roles with the combo
+- [x] 0.11 Confirm the chart locks: series-first roles with the combo
       as a first-class case, all four scopes in v1, a bespoke chart
       panel rather than lookup 054 rows, and Phase 25 as the chart
       design lock.
-- [ ] 0.12 Confirm the library homes. Each port lives in its own
+- [x] 0.12 Confirm the library homes. Each port lives in its own
       repository with its tests and porting notes, the seed packet
       records the commit or version, and LuaRocks is a possibility
       only if the sandbox can read `package.path`.
-- [ ] 0.13 Confirm image elements carry `dpi`, `format`, downsample,
+- [x] 0.13 Confirm image elements carry `dpi`, `format`, downsample,
       and reuse options, and store once per unique source.
-- [ ] 0.14 Confirm the phase order: render content, then the bare
+- [x] 0.14 Confirm the phase order: render content, then the bare
        format emits, then CSV.
-- [ ] 0.15 Confirm the image source model: embedded, reference, and
+- [x] 0.15 Confirm the image source model: embedded, reference, and
        url are all v1, resolved at the start of generation, with the
        definition's base64 registry deduplicated by content hash.
-- [ ] 0.16 The effort column in the phase table matches the phases as
+- [x] 0.16 The effort column in the phase table matches the phases as
        scoped, and Phase 34's split (see its note) is what ships.
-- [ ] 0.17 The 2026-10-10 amendments are applied to this file.
-       Re-read the amended locks and confirm they match the approval.
+- [x] 0.17 The 2026-10-10 amendments are applied to this file.
+      Re-read the amended locks and confirm they match the approval.
+      (See Q3.)
 
 ### Done means
 
@@ -1120,11 +1118,22 @@ The locks in this file are the ones Andrew approved.
 
 Andrew's explicit approval of Phase 0. No source edited.
 
-### Status
+**Status: complete — approved 2026-10-10** (2026-10-08; fact-check pass
+2026-10-10; plan-review incorporation pass 2026-10-10)
 
-**draft — awaiting approval** (2026-10-08; fact-check pass 2026-10-10)
+Work items 0.1, 0.2, and 0.5–0.17 are confirmed and checked off. All
+three open questions were resolved during this session:
 
-The 2026-10-10 fact-check pass resolved the open measurement questions:
+- **Q1 (Phase 11 lookup family split):** Helium AGENTS.md states "One
+  lookup family per migration." Lookups 053 (Report Object Types) and 057
+  (Report Page Sizes) are distinct families. Phase 11 splits into two
+  migrations: one for 053 (icon fixes + attribute updates + page-number
+  keys) and one for 057 (label fix + new page sizes).
+- **Q2 (Allocation of lookup 053 keys 61/62):** Confirmed the max `key_idx`
+  in lookup 053 is 60 (highest row in `acuranzo_1086.lua`), so keys 61 and
+  62 are free. Page Number = key 61, Page Count = key 62. These join the
+  v1 type allowlist at entry point.
+- **Q3 (Phase 0.17 amendment sign-off):** Approved by Andrew on 2026-10-10.
 `ClientInvokeMaxParamsBytes` (256 KiB) and `ClientInvokeMaxResultBytes`
 (1 MiB) are both real and confirmed in `config_scripting.c`/`config_defaults.c`.
 `H.http.request_sync` has a 16 MiB default body cap. DOMPurify is present in
@@ -1553,21 +1562,35 @@ Phase 0 Status complete. This phase may be prepared while Phases 1–10
 are still open, and it is applied before Phase 12 starts. Re-check
 disk the day the file is numbered.
 
+**Lookup family note:** Helium AGENTS.md states "One lookup family per
+migration." Lookup 053 (Report Object Types) and lookup 057 (Report Page
+Sizes) are distinct families. Phase 11 is split into two migrations:
+- Migration A (lookup 053): icon fixes for keys 7 and 16, attribute list
+  updates for static text and field items, and insertion of Page Number
+  (key 61) and Page Count (key 62) — the keys Phase 0 approved.
+- Migration B (lookup 057): label fix for key 1, insertion of Legal
+  portrait, A4, and Tabloid rows, and font list additions to lookup 054
+  (Vanadium Sans plus any faces Phase 0 named). Lookup 054 is updated as
+  a separate family migration if the rule requires it; otherwise it is
+  bundled with A only if the rule permits multiple families per packet.
+  Re-check the rule the day the files are numbered.
+
 ### Work items
 
 - [ ] 11.1 Re-read
        [`/docs/He/GUIDE.md`](/docs/He/GUIDE.md) and the highest
        Acuranzo file, QueryRef, and lookup key. Take the next file
        number. Do not edit 1086, 1087, or 1090 in place.
-- [ ] 11.2 One migration. Forward updates the broken 053 icons and
-       the 057 key 1 label, and inserts the missing page sizes and
-       any Phase 0 page-number keys. Update v1 attribute lists so
-       static text and field items include position, font, text or
-       field, and datasource as Phase 0 requires. This packet does
-       not add chart or barcode attributes: those types have none in
-       lookup 054 today and their options live in bespoke panels.
-       Reverse restores the previous JSON and deletes only the
-       inserted keys.
+- [ ] 11.2 Two forward migrations (Phase 0 Q1 decided: split). Migration
+       A updates the broken 053 icons (keys 7 and 16), inserts page-number
+       keys 61 and 62 (Page Number, Page Count), and updates v1 attribute
+       lists so static text and field items include position, font, text
+       or field, and datasource as Phase 0 requires. Migration B fixes the
+       057 key 1 label and inserts the missing page sizes (Legal portrait,
+       A4, Tabloid). Neither packet adds chart or barcode attributes:
+       those types have none in lookup 054 today and their options live in
+       bespoke panels. Reverse restores the previous JSON and deletes only
+       the inserted keys.
 - [ ] 11.3 Font list gains the faces Phase 0 named. Existing faces
        stay, so an old row still resolves.
 - [ ] 11.4 Hand the packet over. Record the file number in this
@@ -1575,10 +1598,11 @@ disk the day the file is numbered.
 
 ### Done means
 
-Andrew reports the packet applied. Lookup 053 key 7 has `icon`.
-Lookup 057 has a correctly labeled Letter landscape row and the new
-page sizes. v1 attribute lists include the properties Phase 12 will
-edit.
+Andrew reports the packets applied. Lookup 053 keys 7 and 16 have `icon`.
+Lookup 053 has new keys 61 (Page Number) and 62 (Page Count). Lookup 057
+has a correctly labeled Letter landscape row and the new page sizes.
+Lookup 054 font list gains Vanadium Sans. v1 attribute lists include the
+properties Phase 12 will edit.
 
 ### Exit gate
 
@@ -2747,6 +2771,10 @@ Pull one of these into a numbered phase only by amending this file.
 | Report permissions and sharing | Who can generate or view which report. Hydrogen JWT auth exists; a row-level ACL model is not defined here. This waits on the permissions pass; the report writer does not block on it. |
 | Text search and filtering of report output | Full-text search over rendered HTML/PDF, or filtering the detail set by a text query. v1 datasources are plain JSON arrays. |
 | Incremental and delta reports | "Rows changed since the last run." Needs a watermark column on the datasource and a "last run" marker. v1 is a full snapshot. |
+| Conditional formatting | Text color, background, or font overrides driven by a field value or a formula. A style rule is a condition plus a set of property changes. v1 renders unstyled values. |
+| Data filtering | Exclude or include detail rows by a condition before compose assigns pages. A single filter expression on the datasource, applied before grouping. v1 renders every row. |
+| Detail row sorting | Order the detail rows within a band by one or more keys before compose lays them out. v1 preserves datasource order. |
+| Template inheritance | A base definition that another definition extends, overriding bands or items by id. v1 definitions are standalone. |
 
 ## Working log
 
@@ -3059,3 +3087,52 @@ Verified during this pass, against disk:
 
 Phase 0 is still not approved. No product source was edited for the
 report writer in this pass.
+
+### 2026-10-10 — Phase 0 completion
+
+Andrew approved Phase 0. Three decisions were recorded:
+
+- **Q1 resolved.** Phase 11 splits into two forward migrations per Helium
+  AGENTS.md "one lookup family per migration" rule: Migration A touches
+  lookup 053 (icon fixes, page-number keys 61/62, attribute list updates);
+  Migration B touches lookup 057 (label fix, new page sizes). Lookup 054
+  font additions ride with one of the two, depending on final rule reading.
+  Phase 11 work items and Done means updated to match.
+- **Q2 resolved.** Verified max `key_idx` in `acuranzo_1086.lua` is 60.
+  Page Number = key 61, Page Count = key 62. v1 type allowlist updated.
+- **Q3 resolved.** The 2026-10-10 amendments (exports PDF/HTML/SVG/PNG/CSV;
+  charts v1 series-first; no SVG-to-PDF conversion; three image sources;
+  10 MB params cap via config) are approved as written.
+
+Phase 0 Status set to complete. No source was edited for the report writer
+in this pass; the plan is now the gate for Phase 1.
+
+### 2026-10-10 — Plan review incorporation
+
+Incorporated all items from the review session:
+
+- **Phase 0.5 wording fixed.** Clarified that `require("d3.lua")` means
+  group `d3` and script name `lua`, matching Hydrogen's first-dot-split
+  searcher in `scripting_api_scoreboard.c:293`. `lua-pdfkit.*` is group
+  `lua-pdfkit`; `zint.*` is group `zint`.
+- **Phase 0.5-0.17 checked off** for all items confirmed by the
+  2026-10-10 fact-check pass. Items 0.3, 0.4, and 0.17 remain open
+  pending user decisions (see Q1–Q3 below).
+- **Phase 15.3 QueryRef overlap resolved.** Read `acuranzo_1138.lua`
+  (QueryRef #047 "Get Documents"): it returns all documents with no
+  `doc_id` filter. Phase 15.3 needs a new read-by-`doc_id` QueryRef,
+  which is a distinct query — no conflict.
+- **Phase 11 lookup family noted.** Helium AGENTS.md says "One lookup
+  family per migration." Phase 11 touches both lookup 053 and 057.
+  Added an entry-gate note pending the Q1 decision on whether to split.
+- **LITHIUM-INS.md §4 resolved.** The Anti-Patterns section (line 301)
+  explicitly allows `element.style.property = value` for "dynamic
+  positioning (e.g., drag handles)." Phase 6's
+  `element.style.height` drag preview is compliant.
+- **Phase 34 effort sizing confirmed.** 28 of 35 phases are one sitting;
+  Phase 34 splits into three sittings by its scope note. No change.
+- **v2 features added** to "Later, not scheduled": conditional
+  formatting, data filtering, detail row sorting, and template
+  inheritance.
+- **Open questions:** See Q1 (Phase 11 lookup family split), Q2 (Page
+  Number/Count keys 61/62), and Q3 (Phase 0.17 amendment sign-off).
