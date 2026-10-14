@@ -22,6 +22,7 @@
 #endif
 
 #include <src/database/database.h>
+#include <src/database/database_transaction_exec.h>
 #include <src/database/dbqueue/dbqueue.h>
 #include <src/utils/utils_hash.h>
 
@@ -605,50 +606,6 @@ bool execute_sqlite_migration(DatabaseHandle* connection, char** statements, siz
     return transaction_success;
 }
 
-/*
- * Firebird metadata (CREATE/ALTER/DROP/RECREATE) is only visible to later
- * DSQL after commit. Detect leading DDL keywords (skip whitespace/comments).
- */
-bool firebird_migration_sql_is_ddl(const char* sql) {
-    const char* p = sql;
-    if (!p) {
-        return false;
-    }
-    for (;;) {
-        while (*p == ' ' || *p == '\t' || *p == '\n' || *p == '\r') {
-            p++;
-        }
-        if (p[0] == '-' && p[1] == '-') {
-            while (*p && *p != '\n') {
-                p++;
-            }
-            continue;
-        }
-        if (p[0] == '/' && p[1] == '*') {
-            p += 2;
-            while (*p && !(p[0] == '*' && p[1] == '/')) {
-                p++;
-            }
-            if (*p) {
-                p += 2;
-            }
-            continue;
-        }
-        break;
-    }
-    static const char* const kws[] = { "CREATE", "ALTER", "DROP", "RECREATE", NULL };
-    for (size_t i = 0; kws[i]; i++) {
-        size_t n = strlen(kws[i]);
-        if (strncasecmp(p, kws[i], n) == 0) {
-            unsigned char c = (unsigned char)p[n];
-            if (c == '\0' || (!isalnum(c) && c != '_')) {
-                return true;
-            }
-        }
-    }
-    return false;
-}
-
 bool execute_firebird_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
                               const char* migration_file, const char* dqm_label) {
     /*
@@ -719,7 +676,7 @@ bool execute_firebird_migration(DatabaseHandle* connection, char** statements, s
             return false;
         }
 
-        if (firebird_migration_sql_is_ddl(statements[j])) {
+        if (sql_statement_is_ddl(statements[j])) {
             if (!database_engine_commit_transaction(connection, fb_transaction)) {
                 log_this(dqm_label, "Failed to commit migration %s after DDL statement %zu", LOG_LEVEL_ERROR, 2, migration_file, j + 1);
                 database_engine_cleanup_transaction(fb_transaction);

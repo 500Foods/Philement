@@ -6,8 +6,11 @@
 # Hydrogen against a local nats-server on 127.0.0.1:5620.
 # Assertions are Prometheus gauges. MockConnection stays false.
 # Cache invalidation rows stay on the Phase 5 Unity tests.
+# Subtest 11 exercises the JWT API surface (/api/nats/status,
+# /api/nats/instances) against the live two-peer cluster.
 
 # CHANGELOG
+# 1.0.3 - 2026-10-14 - Subtest 11: /api/nats/status and /api/nats/instances answer 401/405/200 on A and B (JWT login, live peer list)
 # 1.0.2 - 2026-10-06 - Queue check counts the jobs.refresh-all trace. A presence heartbeat is not a second delivery.
 # 1.0.1 - 2026-10-06 - Watch received for 3s, give websocat a terminal so frames flush, sample a short quiet gap for the queue, recheck subjects after reconnect
 # 1.0.0 - 2026-10-06 - Initial blackbox Test 62
@@ -19,7 +22,7 @@ TEST_NAME="NATS"
 TEST_ABBR="NAT"
 TEST_NUMBER="62"
 TEST_COUNTER=0
-TEST_VERSION="1.0.2"
+TEST_VERSION="1.0.3"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -65,6 +68,9 @@ WS_EMPTY_PID=""
 WS_SUB_OUT=""
 WS_EMPTY_OUT=""
 WEBSOCAT_BIN=""
+NATS62_TOKEN=""
+NATS62_LOGIN_HTTP=""
+NAT62_API_DETAIL=""
 
 # shellcheck disable=SC2329 # invoked via trap EXIT
 cleanup_nats62() {
@@ -259,6 +265,143 @@ nat62_log_count() {
     printf '%s' "${n}"
 }
 
+# Login against one instance; caches the JWT in NATS62_TOKEN and the
+# status in NATS62_LOGIN_HTTP. The runtime config pins JWTSecret from
+# HYDROGEN_DEMO_JWT_KEY (subtest 5), and the connection name is "Helium".
+nat62_login() {
+    local base_url="$1"
+    local out_file="$2"
+    local login_data=""
+    local http_st=""
+    local try=1
+
+    NATS62_TOKEN=""
+    NATS62_LOGIN_HTTP="000"
+    login_data=$(jq -n \
+        --arg login_id "${HYDROGEN_DEMO_USER_NAME}" \
+        --arg password "${HYDROGEN_DEMO_USER_PASS}" \
+        --arg api_key "${HYDROGEN_DEMO_API_KEY}" \
+        '{database: "Helium", login_id: $login_id, password: $password, api_key: $api_key, tz: "America/Vancouver"}')
+    while [[ "${try}" -le 3 ]]; do
+        http_st=$(curl -sS -o "${out_file}" -w "%{http_code}" --connect-timeout 5 --max-time 20 \
+            -X POST -H "Content-Type: application/json" -d "${login_data}" \
+            "${base_url}/api/auth/login" 2>/dev/null || true)
+        NATS62_LOGIN_HTTP="${http_st:-000}"
+        if [[ "${NATS62_LOGIN_HTTP}" == "200" ]]; then
+            NATS62_TOKEN=$(jq -r '.token // empty' "${out_file}" 2>/dev/null || true)
+            if [[ -n "${NATS62_TOKEN}" ]]; then
+                return 0
+            fi
+        fi
+        sleep 1
+        try=$((try + 1))
+    done
+    return 1
+}
+
+# One API request: nat62_http <method> <url> <token> <output_file>. Prints
+# the HTTP status. A POST carries an empty JSON body; the method check runs
+# before the JWT check, so the 405 case does not need a token.
+nat62_http() {
+    local method="$1"
+    local url="$2"
+    local token="$3"
+    local out_file="$4"
+    local http_st=""
+    local -a curl_args=(-sS -o "${out_file}" -w "%{http_code}"
+        --connect-timeout 5 --max-time 20 -X "${method}")
+
+    if [[ -n "${token}" ]]; then
+        curl_args+=(-H "Authorization: Bearer ${token}")
+    fi
+    if [[ "${method}" == "POST" ]]; then
+        curl_args+=(-H "Content-Type: application/json" -d '{}')
+    fi
+    http_st=$(curl "${curl_args[@]}" "${url}" 2>/dev/null || true)
+    printf '%s' "${http_st:-000}"
+}
+
+# Exercise /api/nats/status and /api/nats/instances on one instance:
+# missing token -> 401, POST -> 405, GET with token -> 200 and the live
+# peer list. Appends to NAT62_API_DETAIL on any miss. peer_id is the other
+# instance's NATS.InstanceId; it must appear exactly once, state Alive.
+nat62_api_check_instance() {
+    local base_url="$1"
+    local peer_id="$2"
+    local label="$3"
+    local out_file="${DIAG_TEST_DIR}/api_${label}.json"
+    local token=""
+    local http_st=""
+    local failed=0
+
+    nat62_login "${base_url}" "${out_file}" || true
+    token="${NATS62_TOKEN}"
+
+    http_st=$(nat62_http GET "${base_url}/api/nats/status" "" "${out_file}")
+    if [[ "${http_st}" != "401" ]]; then
+        NAT62_API_DETAIL="${NAT62_API_DETAIL}${label} status no-token ${http_st}; "
+        failed=1
+    fi
+
+    http_st=$(nat62_http POST "${base_url}/api/nats/status" "${token}" "${out_file}")
+    if [[ "${http_st}" != "405" ]] || ! jq -e '.error == "Method not allowed"' \
+        "${out_file}" >/dev/null 2>&1; then
+        NAT62_API_DETAIL="${NAT62_API_DETAIL}${label} status POST ${http_st}; "
+        failed=1
+    fi
+
+    if [[ -z "${token}" ]]; then
+        NAT62_API_DETAIL="${NAT62_API_DETAIL}${label} login ${NATS62_LOGIN_HTTP:-000}; "
+        failed=1
+    else
+        http_st=$(nat62_http GET "${base_url}/api/nats/status" "${token}" "${out_file}")
+        if [[ "${http_st}" != "200" ]] || ! jq -e '
+                (.success == true)
+                and (.enabled == true)
+                and (.link == "up")
+                and (.state == "up")
+                and (.presence == true)
+                and (.singleton == false)
+                and (.peers >= 1)
+                and (.alive >= 1)
+                and (.self == "Alive")
+                and ((.published | type) == "number")
+                and ((.received | type) == "number")
+                and ((.reconnects | type) == "number")
+            ' "${out_file}" >/dev/null 2>&1; then
+            NAT62_API_DETAIL="${NAT62_API_DETAIL}${label} status GET ${http_st}; "
+            failed=1
+        fi
+
+        http_st=$(nat62_http GET "${base_url}/api/nats/instances" "" "${out_file}")
+        if [[ "${http_st}" != "401" ]]; then
+            NAT62_API_DETAIL="${NAT62_API_DETAIL}${label} instances no-token ${http_st}; "
+            failed=1
+        fi
+
+        http_st=$(nat62_http POST "${base_url}/api/nats/instances" "${token}" "${out_file}")
+        if [[ "${http_st}" != "405" ]] || ! jq -e '.error == "Method not allowed"' \
+            "${out_file}" >/dev/null 2>&1; then
+            NAT62_API_DETAIL="${NAT62_API_DETAIL}${label} instances POST ${http_st}; "
+            failed=1
+        fi
+
+        http_st=$(nat62_http GET "${base_url}/api/nats/instances" "${token}" "${out_file}")
+        if [[ "${http_st}" != "200" ]] || ! jq -e --arg peer "${peer_id}" '
+                (.success == true)
+                and (.singleton == false)
+                and ((.peers | type) == "array")
+                and ((.peers | length) >= 1)
+                and (all(.peers[]; .id != $peer or (.state == "Alive")))
+                and (all(.peers[]; .id != $peer or ((.websocket_connections | type) == "number")))
+            ' "${out_file}" >/dev/null 2>&1; then
+            NAT62_API_DETAIL="${NAT62_API_DETAIL}${label} instances GET ${http_st}; "
+            failed=1
+        fi
+    fi
+    return "${failed}"
+}
+
 # --- 1. Locate coverage binary and nats-server ---
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Locate coverage binary and nats-server"
 HYDROGEN_BIN="${PROJECT_DIR}/hydrogen_coverage"
@@ -427,7 +570,9 @@ elif [[ -z "${PAYLOAD_KEY:-}" ]]; then
     nat62_fail "PAYLOAD_KEY is not set"
 elif ! nat62_sqlite_copy "${SQLITE_A}"; then
     nat62_fail "SQLite artifact is missing"
-elif ! jq --arg database "${SQLITE_A}" '.Databases.Connections[0].Database = $database' "${CONFIG_LOCAL}" > "${RUNTIME_A}"; then
+elif ! jq --arg database "${SQLITE_A}" --arg jwt "${HYDROGEN_DEMO_JWT_KEY:-}" \
+    '.Databases.Connections[0].Database = $database
+     | .API.JWTSecret = $jwt' "${CONFIG_LOCAL}" > "${RUNTIME_A}"; then
     nat62_fail "Could not rewrite the local configuration"
 elif ! start_hydrogen_with_pid "${RUNTIME_A}" "${A_LOG}" "${STARTUP_TIMEOUT}" "${HYDROGEN_BIN}" "HYDROGEN_A_PID"; then
     EXIT_CODE=1
@@ -695,7 +840,24 @@ else
     fi
 fi
 
-# --- 11. Reconnect ---
+# --- 11. Status and instances API ---
+print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "NATS status and instances API report the live cluster"
+NAT62_API_DETAIL=""
+if [[ -z "${HYDROGEN_A_PID}" || -z "${HYDROGEN_B_PID}" || "${NATS62_BROKER_UP}" -ne 1 ]]; then
+    nat62_fail "Both instances and the broker must be up"
+elif [[ -z "${HYDROGEN_DEMO_USER_NAME:-}" || -z "${HYDROGEN_DEMO_USER_PASS:-}" || -z "${HYDROGEN_DEMO_API_KEY:-}" || -z "${HYDROGEN_DEMO_JWT_KEY:-}" ]]; then
+    nat62_fail "HYDROGEN_DEMO_USER_NAME, HYDROGEN_DEMO_USER_PASS, HYDROGEN_DEMO_API_KEY, and HYDROGEN_DEMO_JWT_KEY are required"
+else
+    nat62_api_check_instance "http://127.0.0.1:${PORT_A}" "nats-62-b" "a" || true
+    nat62_api_check_instance "http://127.0.0.1:${PORT_B}" "nats-62-a" "b" || true
+    if [[ -z "${NAT62_API_DETAIL}" ]]; then
+        nat62_pass "status and instances answer 401/405/200 on A and B and list the live peer"
+    else
+        nat62_fail "NATS API check failed (${NAT62_API_DETAIL})"
+    fi
+fi
+
+# --- 12. Reconnect ---
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "A reconnects after the broker returns"
 if [[ -z "${HYDROGEN_A_PID}" || "${NATS62_BROKER_UP}" -ne 1 ]]; then
     nat62_fail "Instance A or the broker is not up"
@@ -748,7 +910,7 @@ else
     fi
 fi
 
-# --- 12. B stops and A forgets the peer ---
+# --- 13. B stops and A forgets the peer ---
 print_subtest "${TEST_NUMBER}" "${TEST_COUNTER}" "Stopping B clears A's peers"
 if [[ -z "${HYDROGEN_B_PID}" ]]; then
     nat62_fail "Instance B is not running"

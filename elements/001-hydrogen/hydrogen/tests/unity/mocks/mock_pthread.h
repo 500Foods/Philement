@@ -34,6 +34,11 @@
 #define pthread_mutex_init mock_pthread_mutex_init
 #define pthread_mutex_timedlock mock_pthread_mutex_timedlock
 #define pthread_cond_init mock_pthread_cond_init
+#define pthread_rwlock_init mock_pthread_rwlock_init
+#define pthread_rwlock_destroy mock_pthread_rwlock_destroy
+#define pthread_rwlock_rdlock mock_pthread_rwlock_rdlock
+#define pthread_rwlock_wrlock mock_pthread_rwlock_wrlock
+#define pthread_rwlock_unlock mock_pthread_rwlock_unlock
 
 #endif // USE_MOCK_PTHREAD
 
@@ -49,6 +54,11 @@ int mock_pthread_mutex_unlock(pthread_mutex_t *mutex);
 int mock_pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr);
 int mock_pthread_mutex_timedlock(pthread_mutex_t *mutex, const struct timespec *timeout);
 int mock_pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr);
+int mock_pthread_rwlock_init(pthread_rwlock_t *rwlock, const pthread_rwlockattr_t *attr);
+int mock_pthread_rwlock_destroy(pthread_rwlock_t *rwlock);
+int mock_pthread_rwlock_rdlock(pthread_rwlock_t *rwlock);
+int mock_pthread_rwlock_wrlock(pthread_rwlock_t *rwlock);
+int mock_pthread_rwlock_unlock(pthread_rwlock_t *rwlock);
 
 // Mock control functions for tests - always available
 void mock_pthread_set_create_failure(int should_fail);
@@ -61,6 +71,9 @@ void mock_pthread_set_mutex_lock_failure(int should_fail);
 void mock_pthread_set_mutex_timedlock_failure(int should_fail);
 void mock_pthread_set_mutex_init_failure(int should_fail);
 void mock_pthread_set_cond_init_failure(int should_fail);
+void mock_pthread_set_rwlock_init_failure(int should_fail);
+void mock_pthread_set_rwlock_rdlock_failure(int should_fail);
+void mock_pthread_set_rwlock_wrlock_failure(int should_fail);
 void mock_pthread_reset_all(void);
 
 // Extern declarations for global mock state variables (defined in mock_pthread.c)
@@ -77,5 +90,8 @@ extern int mock_pthread_mutex_timedlock_should_fail;
 extern int mock_pthread_mutex_init_call_count;
 extern int mock_pthread_cond_init_should_fail;
 extern int mock_pthread_cond_init_call_count;
+extern int mock_pthread_rwlock_init_should_fail;
+extern int mock_pthread_rwlock_rdlock_should_fail;
+extern int mock_pthread_rwlock_wrlock_should_fail;
 
 #endif // MOCK_PTHREAD_H

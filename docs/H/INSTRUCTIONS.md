@@ -115,6 +115,7 @@ tests/          Test framework
 - tests/test_43_scripting.sh - Scripting subsystem Orchestrator lifecycle across all 8 database engines in parallel (with/without DefaultDatabase, fail-fast)
 - tests/test_44_exercise_native.sh - Memory exercise native RSS (5000 concurrent auth requests across 7 enabled databases; YugabyteDB disabled; port 5444; suite-parallel with test 41)
 - tests/test_46_conduit_script.sh - Conduit script invoke JWT blackbox (Api.Echo, 8 engines parallel)
+- tests/test_63_conduit_webhook.sh - Conduit webhook ingress blackbox (HMAC signatures, alias, error paths, 8 engines parallel, ports 1563x)
 - tests/test_47_mcp.sh - MCP Streamable HTTP blackbox (JWT, Mcp.Echo, 8 engines; ports 1547x / 1548x)
 - tests/test_73_argent_mcp.sh - Argent MCP tools and validation variants (8 engines; ports 1573x / 1574x)
 - tests/test_48_mdns.sh - mDNS announcements
@@ -126,7 +127,7 @@ tests/          Test framework
 - tests/test_55_conduit_alt_queries.sh - Cross-database batch query with override
 - tests/test_57_mailrelay_outbound.sh - Mail Relay outbound delivery testing with local SMTP sink
 - tests/test_60_performance.sh - Performance benchmarking across databases
-- tests/test_62_nats.sh - NATS client blackbox (local nats-server, ports 5620–5629)
+- tests/test_62_nats.sh - NATS client blackbox (local nats-server, ports 5620–5629; JWT /api/nats/status and /api/nats/instances)
 - tests/test_70_installer.sh - Standalone installer building test
 - tests/test_71_database_diagrams.sh - Database diagram generation
 - tests/test_72_schemahelper.sh - SchemaHelper fixture + luacheck integration (no live DB)
@@ -326,7 +327,7 @@ log.
 When returning to a multi-phase subsystem such as Mail Relay, use this quick-start to avoid rediscovering state:
 
 1. Read the subsystem plan, e.g. [`/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md`](/docs/H/plans/complete/MAILRELAY_PLAN_COMPLETE.md).
-2. Check the current phase status blocks and the Working Log at the bottom of the plan.
+2. Check the current phase status blocks and the Working Log at the bottom of the plan. Close a phase the way [`/docs/PLANNING.md`](/docs/PLANNING.md) says.
 3. Verify the baseline build by running `zsh -ic 'mkt'` (full trial) or `zsh -ic 'mkq'` if `build/` is already configured.
 4. Run the existing Unity tests for the subsystem:
    `zsh -ic 'mku mailrelay_message_test && mku mailrelay_render_test && mku mailrelay_smtp_test && mku mailrelay_send_raw_test && mku config_mail_relay_test_load_mailrelay_config'`

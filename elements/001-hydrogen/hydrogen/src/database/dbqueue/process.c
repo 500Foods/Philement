@@ -10,6 +10,8 @@
 #include <src/database/database.h>
 #include <src/database/database_pending.h>
 #include <src/database/dbqueue/query_result_cache.h>
+#include <src/database/dbqueue/transaction_blocks.h>
+#include <src/database/dbqueue/transaction_query.h>
 
 // Local includes
 #include "dbqueue.h"
@@ -141,7 +143,15 @@ void database_queue_process_single_query(DatabaseQueue* db_queue) {
             
             // Execute query using database engine
             QueryResult* result = NULL;
-            bool success = database_engine_execute(db_queue->persistent_connection, &request, &result);
+            bool success;
+            if (sql_has_transaction_markers(query->query_template)) {
+                // Marked runtime QueryRef: multi-statement transaction blocks.
+                success = database_queue_execute_query_with_blocks(db_queue->persistent_connection,
+                                                                  &request, &result, dqm_label_exec);
+            } else {
+                // Existing single-statement path, unchanged.
+                success = database_engine_execute(db_queue->persistent_connection, &request, &result);
+            }
             
             if (success && result) {
                log_this(dqm_label_exec, "Query executed successfully: %s (rows: %zu, time: %ld ms)",

@@ -677,6 +677,7 @@ This document provides a comprehensive overview of the Hydrogen project's file o
 - [tests/test_50_conduit_query.sh](/elements/001-hydrogen/hydrogen/tests/test_50_conduit_query.sh) - Conduit single query endpoint testing (public queries across 8 database engines)
 - [tests/test_51_conduit_queries.sh](/elements/001-hydrogen/hydrogen/tests/test_51_conduit_queries.sh) - Conduit multiple queries endpoint testing (batch queries across 8 database engines)
 - [tests/test_46_conduit_script.sh](/elements/001-hydrogen/hydrogen/tests/test_46_conduit_script.sh) - Conduit script invoke blackbox (JWT POST/GET /api/conduit/script, Api.Echo, 8 engines)
+- [tests/test_63_conduit_webhook.sh](/elements/001-hydrogen/hydrogen/tests/test_63_conduit_webhook.sh) - Conduit webhook ingress blackbox (POST /api/conduit/webhook/{hook} + /webhook/{hook} alias, HMAC sha256/sha256-timestamp, 8 engines + 2 disabled variants, ports 1563x)
 - [tests/test_47_mcp.sh](/elements/001-hydrogen/hydrogen/tests/test_47_mcp.sh) - MCP Streamable HTTP blackbox (JWT, Mcp.Echo, 8 engines, ports 1547x / 1548x)
 - [tests/test_73_argent_mcp.sh](/elements/001-hydrogen/hydrogen/tests/test_73_argent_mcp.sh) - Argent MCP tools and validation variants (8 engines, ports 1573x / 1574x)
 - [tests/test_52_conduit_auth_query.sh](/elements/001-hydrogen/hydrogen/tests/test_52_conduit_auth_query.sh) - Conduit authenticated single query endpoint testing (JWT-protected queries across 8 database engines)

@@ -23,6 +23,11 @@
 #undef pthread_mutex_unlock
 #undef pthread_cond_init
 #undef pthread_mutex_timedlock
+#undef pthread_rwlock_init
+#undef pthread_rwlock_destroy
+#undef pthread_rwlock_rdlock
+#undef pthread_rwlock_wrlock
+#undef pthread_rwlock_unlock
 
 // Function prototypes - these are defined in the header when USE_MOCK_PTHREAD is set
 int mock_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
@@ -35,6 +40,11 @@ int mock_pthread_mutex_lock(pthread_mutex_t *mutex);
 int mock_pthread_mutex_unlock(pthread_mutex_t *mutex);
 int mock_pthread_mutex_init(pthread_mutex_t *mutex, const pthread_mutexattr_t *attr);
 int mock_pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr);
+int mock_pthread_rwlock_init(pthread_rwlock_t *rwlock, const pthread_rwlockattr_t *attr);
+int mock_pthread_rwlock_destroy(pthread_rwlock_t *rwlock);
+int mock_pthread_rwlock_rdlock(pthread_rwlock_t *rwlock);
+int mock_pthread_rwlock_wrlock(pthread_rwlock_t *rwlock);
+int mock_pthread_rwlock_unlock(pthread_rwlock_t *rwlock);
 void mock_pthread_set_create_failure(int should_fail);
 void mock_pthread_set_detach_failure(int should_fail);
 void mock_pthread_set_setcancelstate_failure(int should_fail);
@@ -44,6 +54,9 @@ void mock_pthread_set_cond_timedwait_failure(int should_fail);
 void mock_pthread_set_mutex_lock_failure(int should_fail);
 void mock_pthread_set_mutex_init_failure(int should_fail);
 void mock_pthread_set_cond_init_failure(int should_fail);
+void mock_pthread_set_rwlock_init_failure(int should_fail);
+void mock_pthread_set_rwlock_rdlock_failure(int should_fail);
+void mock_pthread_set_rwlock_wrlock_failure(int should_fail);
 void mock_pthread_reset_all(void);
 
 // Global variables to store mock state - shared across all object files
@@ -60,6 +73,9 @@ int mock_pthread_cond_init_should_fail = 0;
 int mock_pthread_mutex_timedlock_should_fail = 0;
 int mock_pthread_mutex_init_call_count = 0;
 int mock_pthread_cond_init_call_count = 0;
+int mock_pthread_rwlock_init_should_fail = 0;
+int mock_pthread_rwlock_rdlock_should_fail = 0;
+int mock_pthread_rwlock_wrlock_should_fail = 0;
 
 // Mock implementation of pthread_create
 int mock_pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg) {
@@ -194,6 +210,50 @@ int mock_pthread_cond_init(pthread_cond_t *cond, const pthread_condattr_t *attr)
     return pthread_cond_init(cond, attr);
 }
 
+// Mock implementation of pthread_rwlock_init
+// A simulated failure leaves the lock zero-initialized (the same state as
+// PTHREAD_RWLOCK_INITIALIZER) so a later pthread_rwlock_destroy on the failed
+// lock stays well defined instead of touching uninitialized memory.
+int mock_pthread_rwlock_init(pthread_rwlock_t *rwlock, const pthread_rwlockattr_t *attr) {
+    if (mock_pthread_rwlock_init_should_fail) {
+        if (rwlock) {
+            memset(rwlock, 0, sizeof(*rwlock));
+        }
+        return -1;  // Simulate lock initialization failure
+    }
+
+    // Call the real function to actually initialize the rwlock
+    return pthread_rwlock_init(rwlock, attr);
+}
+
+// Mock implementation of pthread_rwlock_destroy
+int mock_pthread_rwlock_destroy(pthread_rwlock_t *rwlock) {
+    return pthread_rwlock_destroy(rwlock);
+}
+
+// Mock implementation of pthread_rwlock_rdlock
+int mock_pthread_rwlock_rdlock(pthread_rwlock_t *rwlock) {
+    if (mock_pthread_rwlock_rdlock_should_fail) {
+        return EDEADLK;  // Simulate read lock acquisition failure
+    }
+
+    return pthread_rwlock_rdlock(rwlock);
+}
+
+// Mock implementation of pthread_rwlock_wrlock
+int mock_pthread_rwlock_wrlock(pthread_rwlock_t *rwlock) {
+    if (mock_pthread_rwlock_wrlock_should_fail) {
+        return EDEADLK;  // Simulate write lock acquisition failure
+    }
+
+    return pthread_rwlock_wrlock(rwlock);
+}
+
+// Mock implementation of pthread_rwlock_unlock
+int mock_pthread_rwlock_unlock(pthread_rwlock_t *rwlock) {
+    return pthread_rwlock_unlock(rwlock);
+}
+
 // Weak implementations removed to avoid infinite recursion
 
 // Mock control functions
@@ -237,6 +297,18 @@ void mock_pthread_set_cond_init_failure(int should_fail) {
     mock_pthread_cond_init_should_fail = should_fail;
 }
 
+void mock_pthread_set_rwlock_init_failure(int should_fail) {
+    mock_pthread_rwlock_init_should_fail = should_fail;
+}
+
+void mock_pthread_set_rwlock_rdlock_failure(int should_fail) {
+    mock_pthread_rwlock_rdlock_should_fail = should_fail;
+}
+
+void mock_pthread_set_rwlock_wrlock_failure(int should_fail) {
+    mock_pthread_rwlock_wrlock_should_fail = should_fail;
+}
+
 void mock_pthread_reset_all(void) {
     mock_pthread_create_should_fail = 0;
     mock_pthread_detach_should_fail = 0;
@@ -250,4 +322,7 @@ void mock_pthread_reset_all(void) {
     mock_pthread_mutex_timedlock_should_fail = 0;
     mock_pthread_mutex_init_call_count = 0;
     mock_pthread_cond_init_call_count = 0;
+    mock_pthread_rwlock_init_should_fail = 0;
+    mock_pthread_rwlock_rdlock_should_fail = 0;
+    mock_pthread_rwlock_wrlock_should_fail = 0;
 }

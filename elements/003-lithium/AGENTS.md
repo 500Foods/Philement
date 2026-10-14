@@ -7,11 +7,12 @@ conflicts. Active plan:
 [`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md)
 (supersedes
 [`/docs/Li/plans/LITHIUM_SPRINT.md`](/docs/Li/plans/LITHIUM_SPRINT.md)).
-Report writer (manager 24), not started. Phases 0–26, Phase 0 not
-approved. HTML and CSV first; PDF and barcodes are Lua ports; images
-use the existing Reporting endpoint. Author formulas are Lua stored
-in the definition.
+Report writer (manager 24). Phases 0–71. Phase 0 approved
+2026-10-10. Next is Phase 1. PDF is the default export. The build
+order is the phase index. CATCHUP stays the active plan until
+Andrew pulls this in.
 [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md).
+Phased work follows [`/docs/PLANNING.md`](/docs/PLANNING.md).
 
 **Last reviewed:** 2026-09-09 (CATCHUP plan authored).
 
@@ -516,7 +517,7 @@ Start: [`docs/Li/LITHIUM-TOC.md`](/docs/Li/LITHIUM-TOC.md).
 | JWT / OIDC | `LITHIUM-JWT.md`, `LITHIUM-OIDC.md`, `LITHIUM-KEYCLOAK.md` |
 | Deploy | `LITHIUM-WEB.md` |
 | Catchup (active) | [`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md) |
-| Report writer (draft, Phases 0–26) | [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md) |
+| Report writer (Phases 0–71, Phase 0 approved) | [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md) |
 | Sprint (superseded) | `docs/Li/plans/LITHIUM_SPRINT.md` |
 | Hydrogen script API | `docs/H/api/conduit/script.md` |
 | Course Builder pipeline | `/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md` |
@@ -534,6 +535,7 @@ Start: [`docs/Li/LITHIUM-TOC.md`](/docs/Li/LITHIUM-TOC.md).
 5. After HTML templates: `npm run templates:copy`.
 6. After Helium Lua: rebuild Hydrogen payload (`mkt`/`mka`) — that is a
    different tree.
-7. Update the phase Status + Working Log. Do not start the next phase in the
-   same turn unless the user asked to continue.
+7. Close the phase the way [`/docs/PLANNING.md`](/docs/PLANNING.md) says:
+   Status, Accomplished, Lessons learned, Handoff, and the Working Log,
+   then stop. The next phase is a new conversation.
 8. Never commit secrets, JWTs, or `node_modules`. Do not commit unless asked.

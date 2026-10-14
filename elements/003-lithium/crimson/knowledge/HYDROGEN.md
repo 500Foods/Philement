@@ -39,6 +39,7 @@ Hydrogen is currently designed for technical users who:
 - [**SchemaHelper**](/docs/H/tools/SCHEMAHELPER.md) - Interactive SchemaTool front-end (review queue + packets); plan (complete 2026-10-07): [`SCHEMA_V2_PLAN_COMPLETE.md`](/docs/H/plans/complete/SCHEMA_V2_PLAN_COMPLETE.md); v2 archive: [`SCHEMAHELPER_V2_COMPLETE.md`](/docs/H/plans/complete/SCHEMAHELPER_V2_COMPLETE.md)
 - [**Databases**](/docs/H/DATABASES.md) - Considerations around using PostgreSQL, MySQL/MariaDB, SQLite, and DB2
 - [**AI Instructions**](/docs/H/INSTRUCTIONS.md) - Development guide optimized for AI assistance
+- [**Phased plans**](/docs/PLANNING.md) - One phase per conversation, and the close-out written before a phase is marked complete
 - [**AI Prompts**](/docs/H/PROMPTS.md) - Development guide optimized for AI assistance
 - [**Project Structure**](/docs/H/STRUCTURE.md) - Complete file organization and architecture overview
 - [**Build Environment**](/docs/H/SETUP.md) - Build and runtime requirements, environment setup

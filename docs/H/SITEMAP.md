@@ -2,6 +2,11 @@
 
 This file serves as a sitemap for all Markdown (.md) files in the repository, organized by folder.
 
+## Folder: /docs/
+
+- [README.md](/docs/README.md): Master index across elements
+- [PLANNING.md](/docs/PLANNING.md): How a phased plan is written and how one phase is worked
+
 ## Folder: /docs/H/
 
 - [README.md](/docs/H/README.md): Main Hydrogen project README - eseentially the Table of Contents for the project
@@ -361,9 +366,10 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [test_45_oidc_idp.md](/docs/H/tests/test_45_oidc_idp.md): OIDC Identity Provider - discovery, authorize/login, PKCE token, userinfo, refresh
 - [test_43_scripting.md](/docs/H/tests/test_43_scripting.md): Scripting subsystem end-to-end testing
 - [test_46_conduit_script.md](/docs/H/tests/test_46_conduit_script.md): Conduit script invoke blackbox (JWT + Api.Echo)
+- [test_63_conduit_webhook.md](/docs/H/tests/test_63_conduit_webhook.md): Conduit webhook ingress blackbox (HMAC sha256/sha256-timestamp, alias, ports 1563x)
 - [test_47_mcp.md](/docs/H/tests/test_47_mcp.md): MCP Streamable HTTP blackbox (JWT + Mcp.Echo)
 - [test_73_argent_mcp.md](/docs/H/tests/test_73_argent_mcp.md): Argent MCP tools on eight engines (ports 1573x / 1574x)
-- [test_62_nats.md](/docs/H/tests/test_62_nats.md): NATS client blackbox (local nats-server, ports 5620–5629)
+- [test_62_nats.md](/docs/H/tests/test_62_nats.md): NATS client blackbox (local nats-server, ports 5620–5629; JWT status/instances endpoints)
 - [test_50_conduit_query.md](/docs/H/tests/test_50_conduit_query.md): Single public query endpoint testing
 - [test_51_conduit_queries.md](/docs/H/tests/test_51_conduit_queries.md): Conduit multiple queries endpoint testing
 - [test_52_conduit_auth_query.md](/docs/H/tests/test_52_conduit_auth_query.md): Authenticated single query endpoint

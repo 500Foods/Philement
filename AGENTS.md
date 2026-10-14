@@ -21,6 +21,7 @@ Philement/
 ├── releases/                # tagged release artifacts (2024-07 … 2026-08)
 ├── docs/                    # all documentation lives under docs/, namespaced per element
 │   ├── README.md            # MASTER index across all elements
+│   ├── PLANNING.md          # how a phased plan is worked, one phase per conversation
 │   ├── H/                   # Hydrogen (the big one)
 │   ├── He/                  # Helium (Lua migrations)
 │   ├── Li/                  # Lithium (JS SPA)
@@ -63,17 +64,15 @@ There is one canonical action backlog and phased plans.
 
 ### How plans are run (critical for agents)
 
-Plans are **phase-gated and each phase is its own conversation**:
+Phased work follows [`docs/PLANNING.md`](/docs/PLANNING.md). Read it at the start of any session that opens a plan. The short form:
 
-1. **Confirm the prior phase is actually done** — re-read its Status block; do not trust memory of a previous session.
-2. **Discuss the current phase first** — read its Goal + Work items + Done means + Exit gate; grep/read code **before** writing anything.
-3. **Get explicit approval before editing source** when work is under an active phased plan (`docs/H/plans/`, e.g. [`AUTH_FINALE`](/docs/H/plans/AUTH_FINALE.md)). For a small isolated fix with no plan file in play, follow [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md) and the tests below. Migration packets are handed to the user (see item 7), not applied here.
-4. **Ask questions as they arise** rather than guessing at ambiguous requirements.
-5. **Mark work items `[x]` and phase Status "complete" only after the named verification command actually passed** (`mkt`/`mku <base>`/`mkp`/`mks`/the named blackbox test). "Intent to verify" is not verification.
-6. **Update the phase's Status block and Working Log** at major milestones (not only at the end), and record lessons learned.
-7. **Never apply a database migration.** If a phase needs a Helium seed/schema/migration packet, prepare/generate it and hand it to the user to apply; do not run `schematool`/`schemahelper` apply steps yourself.
+1. **One phase per conversation.** Confirm the prior phase's Status and Exit gate. Discuss the current phase and ask qualifying questions before editing. The locks and the current phase body are the contract. Working-log entries keep the numbers of the day they were written.
+2. **Wait for approval** before editing source on a phase that has not been approved. A small fix with no plan file follows [`INSTRUCTIONS.md`](/docs/H/INSTRUCTIONS.md).
+3. **Close the phase before marking it complete.** The named verification has passed (`mkt` / `mku <base>` / `mkp` / `mks` / the named test). Then write Status, Accomplished, Lessons learned, and Handoff, and append the Working Log. "Intent to verify" is not verification. Then stop. The next phase starts in a new conversation.
+4. **A sitting that ends early** sets Status to in progress, names the last finished work item, and does not mark the phase complete.
+5. **Never apply a database migration.** Prepare the packet and hand it to the user. Do not run `schematool` or `schemahelper` apply.
 
-These rules are baked into [`CHAT_FINALE_COMPLETE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md) and apply repo-wide to phased work.
+[`CHAT_FINALE_COMPLETE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md) closed under this arrangement. New and amended plans follow [`docs/PLANNING.md`](/docs/PLANNING.md).
 
 ## Environment & build tooling
 
@@ -145,6 +144,7 @@ For any element 004+, **read its `README.md` in place of assuming activity.** Mo
 ## Documentation map (start here, not with Google)
 
 - **Master cross-element index:** [`docs/README.md`](/docs/README.md)
+- **Phased plans:** [`docs/PLANNING.md`](/docs/PLANNING.md) — one phase per conversation, qualifying questions, and the close-out written before a phase is marked complete
 - **All Hydrogen docs:** [`docs/H/README.md`](/docs/H/README.md) (table of contents)
 - **Markdown index (Hydrogen-centric):** [`docs/H/SITEMAP.md`](/docs/H/SITEMAP.md)
 - **Every file in the repo:** [`docs/H/STRUCTURE.md`](/docs/H/STRUCTURE.md)
@@ -158,6 +158,7 @@ For any element 004+, **read its `README.md` in place of assuming activity.** Mo
 ## Common "first questions" answered
 
 - **"What should I work on?"** → [`docs/H/TODO.md`](/docs/H/TODO.md). P0 is Auth Finale ([`docs/H/plans/AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md)). Chat Finale is complete ([`CHAT_FINALE_COMPLETE.md`](/docs/H/plans/complete/CHAT_FINALE_COMPLETE.md)).
+- **"How does a phased plan run?"** → [`docs/PLANNING.md`](/docs/PLANNING.md). One phase per conversation. Ask qualifying questions, then write Status, Accomplished, Lessons learned, Handoff, and the Working Log before marking the phase complete.
 - **"Where is the C code?"** → `elements/001-hydrogen/hydrogen/src/`. `src/hydrogen.h` is the umbrella header.
 - **"How do I build?"** → `zsh -ic 'mkt'` (trial) or `mka` (all targets). On a clean box, set `HYDROGEN_ROOT` and `HELIUM_ROOT` and run `elements/001-hydrogen/hydrogen/extras/make-trial.sh`.
 - **"How do I test one thing?"** → `zsh -ic 'mku <base_test_name>'` builds + runs a single Unity test (tab-completion is wired up). Blackbox tests are `tests/test_NN_*.sh`. The full orchestrator is `tests/test_00_all.sh`.

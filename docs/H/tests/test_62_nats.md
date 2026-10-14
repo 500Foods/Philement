@@ -28,19 +28,23 @@ Validates one coverage binary against a local broker:
 - One `jobs.refresh-all` publish is traced on exactly one of A or B,
   and received rises on that instance. A presence heartbeat is a
   different trace line. The subscribed client does not get a `nats_event`
+- `GET /api/nats/status` and `GET /api/nats/instances` answer 401 without
+  a JWT and 405 on POST against both instances; with a JWT they answer
+  200 with `state`/`link` `up`, `presence` true, `singleton` false, the
+  peer count and self state, and a peer list naming the other instance
+  with state Alive
 - Stopping the broker increments A's reconnects and clears up; bringing the
   broker back restores up and the four subjects
 - Stopping B returns A's peers to 0, then both Hydrogen processes exit clean
 
 Cache invalidation rows 4, 4a, and 4b stay on the Phase 5 Unity tests.
-This script does not log in and does not call `GET /api/nats/status`.
 
 ## Test Configuration
 
 - **Test Name**: NATS
 - **Test Abbreviation**: NAT
 - **Test Number**: 62
-- **Version**: 1.0.2
+- **Version**: 1.0.3
 
 ## Port Assignment
 
@@ -72,7 +76,9 @@ and the script sets that variable. Enabled configs copy
 `tests/artifacts/database/sqlite/hydrotst.sqlite` into the diagnostics
 directory and rewrite `Database` so A and B do not share a file.
 `AutoMigration` and `TestMigration` are false. The connection name is Helium.
-The bootstrap SELECT matches Test 34.
+The bootstrap SELECT matches Test 34. The runtime copy of A's config also
+pins `API.JWTSecret` to `${env.HYDROGEN_DEMO_JWT_KEY}` so the subtest 11
+JWT login works; B inherits it from A's runtime config.
 
 The broker is a local `nats-server` 2.x binary from `PATH` or
 `/usr/local/bin/nats-server`, bound with `-a 127.0.0.1 -p 5620 -m 5629`,
@@ -82,6 +88,8 @@ with no auth and no TLS. A missing binary fails the locate subtest.
 
 - `hydrogen_coverage` at the Hydrogen root
 - `PAYLOAD_KEY`
+- `HYDROGEN_DEMO_USER_NAME`, `HYDROGEN_DEMO_USER_PASS`,
+  `HYDROGEN_DEMO_API_KEY`, `HYDROGEN_DEMO_JWT_KEY` (subtest 11 only)
 - `websocat` (the same client Test 23 uses)
 - `hydrotst.sqlite` already on disk
 - A local plaintext `nats-server`
@@ -100,12 +108,17 @@ with no auth and no TLS. A missing binary fails the locate subtest.
    `websocat` stdout is a terminal, so each frame is on disk before the
    wait ends
 10. One outside PUB of `jobs.refresh-all`. The trace names that subject,
-    so a presence heartbeat is not counted as a second delivery
-11. Stop the broker, then start it again
-12. Stop B, then stop A and the broker
+     so a presence heartbeat is not counted as a second delivery
+11. Log in against A and B, then probe `/api/nats/status` and
+     `/api/nats/instances` (401 without a token, 405 on POST, 200 with
+     the live peer list)
+12. Stop the broker, then start it again
+13. Stop B, then stop A and the broker
 
 Assertions read `GET /api/system/prometheus` and save the body before
-reading a gauge. Monitor documents are read with `jq`.
+reading a gauge. Monitor documents are read with `jq`. The subtest 11
+login posts to `/api/auth/login` with database `Helium` (the connection
+name in the local config) and retries three times under suite load.
 
 ## Related
 

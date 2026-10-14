@@ -11,6 +11,7 @@ Read this before adding or editing a Helium migration. The numbering rules live 
 3. [`/docs/He/MIGRATION_ANATOMY.md`](/docs/He/MIGRATION_ANATOMY.md) — the `queries` insert and the 1000 / 1003 / 1001 state machine.
 4. [`/docs/He/MACRO_REFERENCE.md`](/docs/He/MACRO_REFERENCE.md) — the only macros you may use.
 5. [`/docs/H/plans/ARGENT_PLAN.md`](/docs/H/plans/ARGENT_PLAN.md) when the work is the Argent pack.
+6. [`/docs/PLANNING.md`](/docs/PLANNING.md) when the work is a phase of a plan.
 
 ## Three numbers
 

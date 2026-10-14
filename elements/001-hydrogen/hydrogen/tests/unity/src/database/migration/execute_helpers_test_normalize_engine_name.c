@@ -9,6 +9,7 @@
 #include <src/database/migration/migration.h>
 
 void test_normalize_engine_name_known(void);
+void test_normalize_engine_name_mariadb(void);
 void test_normalize_engine_name_unknown(void);
 
 void setUp(void) {
@@ -28,6 +29,10 @@ void test_normalize_engine_name_known(void) {
     TEST_ASSERT_EQUAL_STRING("mssql", normalize_engine_name("sqlserver"));
 }
 
+void test_normalize_engine_name_mariadb(void) {
+    TEST_ASSERT_EQUAL_STRING("mariadb", normalize_engine_name("mariadb"));
+}
+
 void test_normalize_engine_name_unknown(void) {
     TEST_ASSERT_NULL(normalize_engine_name(NULL));
     TEST_ASSERT_NULL(normalize_engine_name("cockroach"));
@@ -36,6 +41,7 @@ void test_normalize_engine_name_unknown(void) {
 int main(void) {
     UNITY_BEGIN();
     RUN_TEST(test_normalize_engine_name_known);
+    RUN_TEST(test_normalize_engine_name_mariadb);
     RUN_TEST(test_normalize_engine_name_unknown);
     return UNITY_END();
 }

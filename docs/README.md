@@ -2,6 +2,10 @@
 
 This is the master index for documentation across the entire Philement project.
 
+## For every element
+
+- [How phased plans run](/docs/PLANNING.md) — one phase per conversation, qualifying questions, and the close-out written before a phase is marked complete
+
 ## 001 Hydrogen - Server Application
 
 - [Hydrogen Project](/docs/H/README.md) - Table of contents

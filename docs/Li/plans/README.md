@@ -9,6 +9,8 @@ Working and completed implementation plans for Lithium.
 When a plan finishes: move it into `complete/`, update links, drop it from
 `TODO.md`.
 
+How a phase runs: [`/docs/PLANNING.md`](/docs/PLANNING.md).
+
 ## Active plans
 
 ### [CATCHUP](/elements/003-lithium/CATCHUP.md)
@@ -25,12 +27,12 @@ duplicated here:
 ### [Reporting](/docs/Li/plans/REPORTING_PLAN.md)
 
 Report writer. Lithium manager 24 designs a JSON definition. Helium
-`Reports.Render` composes an intermediate document and emits HTML,
-then CSV. Later phases seed lua-pdfkit and lua-zint, size images
-through `POST /api/reporting/image_scale`, and emit PDF from Lua.
-Author formulas are Lua stored in the definition. Phases 0–26.
-Phase 0 is a draft and is not approved. CATCHUP stays the active
-plan until Andrew pulls this one in.
+`Reports.Render` composes an intermediate document and emits a
+format. PDF is the default. The build order is the phase index.
+A datasource may be a QueryRef plus parameters. Values print
+through a mask. Phases 0–71. Phase 0 approved 2026-10-10. Next is
+Phase 1.
+CATCHUP stays the active plan until Andrew pulls this one in.
 
 ### Superseded
 

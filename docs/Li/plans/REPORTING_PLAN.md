@@ -2,84 +2,202 @@
 
 # Reporting Plan
 
-**Date:** 2026-10-08
-**Status:** Phase 0 complete. Approved 2026-10-10.
+**Date:** 2026-10-10
+**Status:** Phase 0 complete. Approved 2026-10-10. Next is Phase 1.
 **Home:** Manager **24**, Report Manager, already registered.
 **Design:** Acuranzo (shared product database). Lookups 0–199. Migrations
 1000–1999.
 
-This is the gated plan for a report writer. Lithium is the designer. The
-designer writes a JSON report definition. A Helium Lua script reads that
-definition plus zero or more JSON datasources, builds an intermediate
-document, and emits a format. The exports are PDF (the default), HTML,
-SVG, PNG, and CSV, in that implementation order. PDF comes from the
-pure-Lua PDFKit port, barcodes from the pure-Lua zint port, charts from
-the pure-Lua D3 port, and image sizing from Hydrogen's existing
-ImageMagick endpoint. The end state for charts and barcodes in the PDF
-is the vector objects the zint and d3 ports emit natively; the raster
-stopgap before that lands is named per phase. A label-sized report
-with no pagination is a bare SVG or PNG. Authors store their own Lua
-functions in the definition. The same script compiles those functions
-and runs them.
-
-PDFs will run past the 1 MiB script-result cap. That cap, and what the
-operator raises to lift it, is part of the Emit contract below.
-
-CATCHUP stays the active Lithium plan
+Lithium is the designer. It writes a versioned JSON definition. The
+Helium script `Reports.Render` reads that definition plus zero or more
+JSON datasources, builds an intermediate document, and emits a format.
+PDF is the default stage. The build order is this index. CATCHUP stays
+the active Lithium plan until Andrew pulls this one in
 ([`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md)).
-This plan starts when Andrew says so. It does not move Course Manager,
-Scripting invoke, or the lifecycle fix.
+This plan does not move Course Manager, Scripting invoke, or the
+lifecycle fix.
 
 Argent Phase 15 "Report queries" in
 [`/docs/H/plans/ARGENT_PLAN.md`](/docs/H/plans/ARGENT_PLAN.md) is a set of
 bookkeeping QueryRefs. It is a different piece of work.
 
+## Phases
+
+One phase per conversation, top to bottom. A phase whose entry gate
+says earlier phases may still be open follows that gate. Every other
+phase waits until the previous phase's Exit gate is green. A packet
+phase ends when the packet is handed over, and it is complete when
+Andrew reports the apply.
+
+| Phase | What | Kind | Effort | Status |
+| --- | --- | --- | --- | --- |
+| 0 | Design lock | Decision | Easy | Complete |
+| 1 | Contracts and fixtures | Docs + fixtures | Medium | Not started |
+| 2 | Units and geometry | JS + Vitest | Easy | Not started |
+| 3 | Document model and undo | JS + Vitest | Medium | Not started |
+| 4 | Manager shell, import, export | Lithium UI | Medium | Not started |
+| 5 | Page surface | Lithium UI | Easy | Not started |
+| 6 | Bands and resize | Lithium UI | Medium | Not started |
+| 7 | Section grid | Lithium UI | Easy | Not started |
+| 8 | Rulers and the mouse line | Lithium UI | Medium | Not started |
+| 9 | View scale | Lithium UI | Easy | Not started |
+| 10 | Static text | Lithium UI | Medium | Not started |
+| 11 | Lookup 053 repair | Helium, human apply | Medium | Not started |
+| 12 | Lookup 054 fonts | Helium, human apply | Easy | Not started |
+| 13 | Lookup 057 page sizes | Helium, human apply | Easy | Not started |
+| 14 | Property panel | Lithium UI | Medium | Not started |
+| 15 | Field items and a sample datasource | Lithium UI | Easy | Not started |
+| 16 | One group level | Lithium UI | Easy | Not started |
+| 17 | Save and load packet | Helium, human apply | Medium | Not started |
+| 18 | Revisions in the manager | Lithium UI | Medium | Not started |
+| 19 | Compose skeleton | Helium seed, human apply | Medium | Not started |
+| 20 | Value format | Helium amendment | Medium | Not started |
+| 21 | Paging | Helium amendment | Easy | Not started |
+| 22 | System datetime and system user | Lithium UI + Lua | Medium | Not started |
+| 23 | Page number and page count | Lithium UI + Lua | Medium | Not started |
+| 24 | HTML emit | Helium amendment | Easy | Not started |
+| 25 | Preview | Lithium UI | Medium | Not started |
+| 26 | Generation log | Lithium UI | Medium | Not started |
+| 27 | Over-cap preview | Lithium UI | Easy | Not started |
+| 28 | Query designer | Lithium UI | Medium | Not started |
+| 29 | Query execution | Helium amendment | Medium | Not started |
+| 30 | Seed lua-pdfkit | Helium library pack | Easy | Not started |
+| 31 | PDF text | Helium amendment | Medium | Not started |
+| 32 | Result cap | Helium amendment | Easy | Not started |
+| 33 | Text formula | Helium amendment | Medium | Not started |
+| 34 | Formula editor | Lithium UI | Medium | Not started |
+| 35 | Formula check | Lithium UI + Lua | Easy | Not started |
+| 36 | Number and datetime formula | Helium amendment | Medium | Not started |
+| 37 | Formula runtime errors | Helium amendment | Easy | Not started |
+| 38 | Count, unique, and sum | Helium + designer | Medium | Not started |
+| 39 | Page totals | Helium + designer | Medium | Not started |
+| 40 | Average and weighted | Helium amendment | Medium | Not started |
+| 41 | Median | Helium amendment | Medium | Not started |
+| 42 | Mode | Helium amendment | Medium | Not started |
+| 43 | Min and max | Helium amendment | Medium | Not started |
+| 44 | First and last | Helium amendment | Medium | Not started |
+| 45 | Group-key function | Helium + designer | Medium | Not started |
+| 46 | Page-break predicate | Helium + designer | Easy | Not started |
+| 47 | Line-break predicate | Helium + designer | Easy | Not started |
+| 48 | Header and footer context | Helium amendment | Medium | Not started |
+| 49 | CSV emit | Helium amendment | Easy | Not started |
+| 50 | Embedded image | Lithium UI + Lua | Medium | Not started |
+| 51 | Reference and URL images | Helium amendment | Medium | Not started |
+| 52 | PDF image stored once | Helium amendment | Easy | Not started |
+| 53 | Seed lua-zint | Helium library pack | Easy | Not started |
+| 54 | Barcode SVG | Lithium UI + Lua | Medium | Not started |
+| 55 | Barcode PDF raster | Lithium UI | Easy | Not started |
+| 56 | Seed d3.lua | Helium library pack | Easy | Not started |
+| 57 | Chart design lock | Decision | Easy | Not started |
+| 58 | Charts in the designer | Lithium UI | Medium | Not started |
+| 59 | Bar chart | Helium amendment | Medium | Not started |
+| 60 | Group and record chart scopes | Helium amendment | Medium | Not started |
+| 61 | Line charts | Helium amendment | Medium | Not started |
+| 62 | Combo chart | Helium amendment | Medium | Not started |
+| 63 | Pie chart | Helium amendment | Medium | Not started |
+| 64 | Custom chart | Helium amendment | Medium | Not started |
+| 65 | Chart PDF raster | Lithium UI | Easy | Not started |
+| 66 | SVG emit | Helium amendment | Easy | Not started |
+| 67 | PNG export | Lithium UI | Easy | Not started |
+| 68 | Native PDF contract | Decision | Easy | Not started |
+| 69 | Zint PDF payload | Port repository | Medium | Not started |
+| 70 | D3 PDF payload | Port repository | Medium | Not started |
+| 71 | Place native PDF objects | Helium amendment | Medium | Not started |
+
+Seventy-two phases, numbered 0 through 71. Each one is Easy or
+Medium, and each one closes on a single behavior. Easy is a
+fixture, a probe, or a decision. Medium adds a designer surface
+or a browser pass. A sitting that ends early marks that phase in
+progress and keeps its number.
+
+A phase that hands a packet to a human is one sitting of agent work
+plus the wait for the apply. Its Status block records the wait.
+
+What a finished phase lets an author do. Later phases add to this.
+They do not replace it.
+
+| After | The author can |
+| --- | --- |
+| 10 | Place static text and export the definition file. |
+| 18 | Save a revision and open it again. |
+| 25 | Preview the HTML export. |
+| 26 | Read the generation log and its three counts. |
+| 29 | Run a QueryRef from a stored report with no sources array. |
+| 31 | Download a text PDF. |
+| 35 | See a syntax error in the formula editor. |
+| 36 | See a pack-date code and a masked number. |
+| 44 | Put the built-in totals on a footer. |
+| 49 | Download CSV. |
+| 54 | See a barcode in the preview. A PDF barcode is a raster until Phase 71. |
+| 71 | Get charts and barcodes as vectors in the PDF. |
+
+**Resume:** Phase 1 is next when Andrew pulls reporting in. CATCHUP
+stays P0 until then. Phase 0's Exit gate is green.
+
 ## How to use this document
 
 - Work **one phase at a time**, top to bottom.
-- Do not start a phase until the previous phase Status is complete and
-  its Exit gate is green.
+- This plan follows [`/docs/PLANNING.md`](/docs/PLANNING.md). The
+  steps below match that file.
+- A phase whose entry gate says earlier phases may still be open
+  follows that gate. Every other phase waits until the previous
+  Status is complete and its Exit gate is green.
 - Each phase has one **Done means** line. That is the testable state.
 - Mark a work item `[x]` only when that item's verification passed.
 - Defer with `[~]` plus one line and the phase it moves to.
-- After each phase: fill Status, append the Working Log, and stop.
+- Before marking a phase complete, write Status, Accomplished,
+  Lessons learned, and Handoff, and append the Working Log. Then
+  stop. The next phase starts in a new conversation.
+- A sitting that ends early sets Status to **in progress**, names
+  the last finished work item, and does not mark the phase complete.
 - A Helium phase ends when the packet is handed over. It is complete
   only after Andrew reports the apply. The agent does not run SchemaTool
   or SchemaHelper apply, and does not apply a migration.
+- The locks and the phase body are the contract. A Working Log entry
+  keeps the numbers and the decisions of the day it was written.
 
 ## Implementor workflow
 
-Each phase is its own conversation.
+Each phase is its own conversation. A new conversation may start with
+only a pointer to this file.
 
-1. Re-read the previous phase Status and Exit gate.
+1. Read Resume, the phase-index Status column, and the previous
+   phase's Status, Accomplished, Lessons learned, and Handoff.
 2. Re-read this phase Goal, Work items, Done means, and Exit gate.
-   Ask before editing if a lock is ambiguous.
-3. Wait for approval before editing source on a phase that has not
+   Open a lock when the phase cites it.
+3. Ask the qualifying questions before editing. Ask when a lock names
+   a behavior and leaves a stored string, a column, or an order
+   unpinned.
+4. Wait for approval before editing source on a phase that has not
    been approved.
-4. Ask when a requirement is ambiguous. Do not guess a schema change.
-5. Update the Working Log when a major piece lands.
-6. Record lessons learned for the phase.
-7. Check work items and set Status complete only after the named
-   command passed. Intent to verify is not verification.
-8. Never apply a database migration. Prepare the packet and hand it
+5. Ask again when a requirement is ambiguous. Do not guess a schema
+   change, a stored string, or a column name.
+6. Update the Working Log when a major piece lands.
+7. The named command has passed. Then write Status, Accomplished,
+   Lessons learned, and Handoff. Check work items and set Status
+   complete only after that. Intent to verify is not verification.
+   A sitting that ends before Done means writes in-progress Status
+   and Handoff, and leaves unfinished items unchecked.
+8. Stop. The next phase starts in a new conversation.
+9. Never apply a database migration. Prepare the packet and hand it
    over. Re-check the next free Acuranzo file, QueryRef, and lookup
    id on disk before numbering anything. The snapshot in this file
    goes stale.
-9. Lithium rules win on the SPA:
+10. Lithium rules win on the SPA:
    [`/docs/Li/LITHIUM-INS.md`](/docs/Li/LITHIUM-INS.md) and
    [`/elements/003-lithium/AGENTS.md`](/elements/003-lithium/AGENTS.md).
    Files stay at or under 1000 lines. CSS first. `element.style` is
    limited to drag geometry (`top`, `left`, `width`, `height`).
    No `alert`, `confirm`, or `prompt`. Log through `log(...)`.
    Preview HTML goes through DOMPurify and a sandboxed iframe.
-10. Helium rules win on packets:
+11. Helium rules win on packets:
     [`/elements/002-helium/AGENTS.md`](/elements/002-helium/AGENTS.md),
     then Designs, packs, and numbers in
     [`/docs/He/GUIDE.md`](/docs/He/GUIDE.md). One file, one change.
     Copy an existing seed. Do not invent macros.
-11. Do not add a Hydrogen `test_NN` script, a new npm dependency, or a
+12. Do not add a Hydrogen `test_NN` script, a new npm dependency, or a
     new manager id unless a work item in this plan says so.
-12. Do not log JWTs, script params that contain report data, or
+13. Do not log JWTs, script params that contain report data, or
     datasource rows in normal logs.
 
 ### Verification
@@ -92,87 +210,15 @@ Each phase is its own conversation.
 | Helium packet | Test 31 and Test 98 when Andrew asks. Payload regenerate (`mka` or `payload-generate.sh`) before tests 30–38 or 71. `mkt` does not refresh the archive |
 | Live render | Andrew runs the conduit script call after the seed is applied and reports the result |
 
-## Resume here
-
-**Pause point (2026-10-10):** Phase 0 is approved. Phase 1 (Contracts and
-fixtures) can start.
-
 ## Priority
 
 | | |
 | --- | --- |
 | **Band** | P2. Starts when Andrew pulls it in. CATCHUP remains P0. |
-| **Effort** | XL across the phases. Each phase is meant to be one sitting. |
-| **Done** | 0%. This document is the first pass. |
+| **Effort** | XL. Each phase is one behavior and one gate. |
+| **Done** | Phase 0 of 72. Phases 1–71 have not started. |
 | **Why now** | Hydrogen's host work is close to done. The report writer is the next product surface, and the lookups and table already exist. |
 | **Do not start casually** | The JSON contract has to be agreed before the designer and the Lua script both grow around it. |
-
-## Phases
-
-**Effort** is easy / medium / hard: how large the phase is as a single
-sitting, and a hint about model strength. Easy and medium phases are
-comfortable for a mid-range model. Hard phases are where a stronger
-model pays for itself — they carry fixtures plus a migration plus a
-hand-over, or they extend another repository.
-
-On session sizing: 28 of the 35 phases are one sitting each — easy or
-medium, in one tree, ending in a check that a browser, a fixture call,
-or a lint pass can confirm. The hard phases are hard for a stated
-reason each, not for size:
-
-| Phase | Why it is hard |
-| --- | --- |
-| 17 | The Lua engine, three fixtures, a seed packet, and a hand-over in one session. |
-| 20 | Same shape, plus a first port wired into compose. |
-| 27 | Four chart scopes plus the d3 draw call plus five fixtures. |
-| 28 | The compiler contract, `stage=check`, the editor wiring, and a fixture that fails at runtime on purpose. |
-| 30 | Custom breaks change paging, so the fixture has to prove the page list. |
-| 34 | Three repositories, split into three sittings by the scope note in its section. |
-
-A phase that hands a packet to a human is one sitting of agent work
-plus the wait for the apply, and its Status block records the wait.
-No phase is over-sized beyond Phase 34's, which is split in place
-rather than renumbered.
-
-| Phase | What | Kind | Effort | Status |
-| --- | --- | --- | --- | --- |
-| 0 | Design lock | Decision | Easy | Complete |
-| 1 | Definition, intermediate, and emit contracts | Docs + fixtures | Medium | Not started |
-| 2 | Units and geometry | JS + Vitest | Easy | Not started |
-| 3 | Document model and undo | JS + Vitest | Medium | Not started |
-| 4 | Manager shell, import, export | Lithium UI | Medium | Not started |
-| 5 | Page surface | Lithium UI | Easy | Not started |
-| 6 | Bands and resize | Lithium UI | Medium | Not started |
-| 7 | Section grid | Lithium UI | Easy | Not started |
-| 8 | Rulers and the mouse line | Lithium UI | Medium | Not started |
-| 9 | View scale | Lithium UI | Easy | Not started |
-| 10 | Static text | Lithium UI | Medium | Not started |
-| 11 | Lookup repair packet | Helium, human apply | Medium | Not started |
-| 12 | Property panel | Lithium UI | Medium | Not started |
-| 13 | Field items and a sample datasource | Lithium UI | Easy | Not started |
-| 14 | One group level | Lithium UI | Easy | Not started |
-| 15 | Save and load packet | Helium, human apply | Medium | Not started |
-| 16 | Revisions in the manager | Lithium UI | Medium | Not started |
-| 17 | `Reports.Render` compose + HTML | Helium seed, human apply | Hard | Not started |
-| 18 | Preview | Lithium UI | Medium | Not started |
-| 19 | Seed lua-pdfkit | Helium library pack | Easy | Not started |
-| 20 | PDF emit | Helium amendment | Hard | Not started |
-| 21 | Images through `image_scale` | Lua + designer | Medium | Not started |
-| 22 | Seed lua-zint | Helium library pack | Easy | Not started |
-| 23 | Barcodes through lua-zint | Lua + designer | Medium | Not started |
-| 24 | Seed d3.lua | Helium library pack | Easy | Not started |
-| 25 | Chart design lock | Decision | Easy | Not started |
-| 26 | Charts in the designer | Lithium UI | Medium | Not started |
-| 27 | Charts in compose | Helium amendment | Hard | Not started |
-| 28 | User Lua in the definition | Helium + designer | Hard | Not started |
-| 29 | Primitive aggregates | Helium + designer | Medium | Not started |
-| 30 | Custom breaks and band context | Helium + designer | Hard | Not started |
-| 31 | SVG emit | Helium amendment | Easy | Not started |
-| 32 | PNG emit | Helium amendment | Easy | Not started |
-| 33 | CSV emit | Helium amendment | Easy | Not started |
-| 34 | PDF-native output from the zint and d3 ports | Helium amendment | Hard | Not started |
-
-Later work is listed after the phases. It is not scheduled.
 
 ## Scope
 
@@ -184,7 +230,7 @@ Later work is listed after the phases. It is not scheduled.
 | `elements/003-lithium/tests/fixtures/reporting/` | Definition, datasources, expected intermediate, expected HTML |
 | `docs/Li/` | Contract note written in Phase 1. This plan stays the gate list |
 | `elements/002-helium/acuranzo/migrations/` | Lookup repair, QueryRefs, `Reports.Render`, lua-pdfkit, lua-zint, d3.lua |
-| `elements/001-hydrogen/hydrogen/src/` | No new C. Image work calls the existing Reporting endpoint |
+| `elements/001-hydrogen/hydrogen/src/` | No new C. Lithium calls the existing Reporting endpoint. The script does not. |
 
 Runtime truth for the manager id is `manager-loader.js` and
 `config/lithium.json`: id **24**, key `024.Report Manager`, module
@@ -198,27 +244,30 @@ Phase 4. Do not renumber the manager.
 1. A designer that places bands and items on a page, with a dot or
    line grid, resizable bands, and rulers that track the pointer.
 2. A versioned JSON definition that round-trips through a file and,
-   after Phase 16, through the `reports` table.
-3. One Lua program, `Reports.Render`, with two stages. Compose maps
-   datasources onto the definition and assigns pages. Emit turns that
-   intermediate document into the requested format.
-4. PDF as the default export, then HTML, then SVG, then PNG, then CSV,
-   in that implementation order. SVG is a structured document with page
-   breaks marked. PNG is that SVG rasterized per page through
-   `image_scale`, which is what a label-sized, non-paginated report
-   wants. HTML is an export and the preview medium at once.
-5. PDF from lua-pdfkit, barcodes from lua-zint, charts from d3.lua, and
-   photographs sized by `POST /api/reporting/image_scale`. Hydrogen does
-   not grow a PDF, barcode, or chart library.
+   after Phase 18, through the `reports` table.
+3. One Lua program, `Reports.Render`. Compose maps datasources onto
+   the definition and assigns pages. Emit turns that intermediate
+   document into the requested stage. `pdf` is the default.
+4. PDF is the default export. HTML, SVG, and CSV are the other script
+   stages, in the phase-index order. SVG is one document with page
+   breaks marked. PNG is that SVG rasterized by Lithium through
+   `image_scale`. A label-sized report is one page. HTML is an export
+   and the preview medium at once.
+5. PDF from lua-pdfkit, barcodes from lua-zint, charts from d3.lua.
+   The script embeds image bytes it has already resolved. Lithium calls
+   `POST /api/reporting/image_scale` when a raster is required.
+   Hydrogen does not grow a PDF, barcode, or chart library.
 6. Charts and barcodes are first-class items. They render as SVG in the
    HTML, preview, and SVG paths, and the end state for PDF is the
    vector objects the zint and d3 ports emit natively. Any raster
    stopgap before that lands is named per phase, not assumed.
 7. CSV as the tabular download. A native spreadsheet writer waits.
 8. Report authors write Lua functions in the definition JSON.
-   `Reports.Render` compiles and runs them. A field formula receives
-   the current record. A header, footer, or break receives the
-   context for that band.
+   Each function names its return type. `Reports.Render` compiles
+   and runs them, then formats a number or a datetime with the item
+   mask. A field formula receives the current record. A header,
+   footer, or break receives the context for that band. Group and
+   report totals are known before those headers are formatted.
 9. The existing lookup families stay the catalog of object types,
    attributes, and page sizes.
 10. Built-in aggregates: count, unique, sum, avg, weighted mean,
@@ -226,32 +275,39 @@ Phase 4. Do not renumber the manager.
 11. Chart items bind data with full scope flexibility: the band's own
     datasource, a named datasource, the current group, or a custom
     function, placed on any band.
-12. Image elements carry their own resolution and reuse options, so a
-    repeated image is stored once in an emitted file.
+12. Image elements carry their own resolution. A repeated image is
+    stored once in the PDF and each placement references it.
+13. A number, date, aggregate, or parameter prints through a format
+    mask. Null is blank. Align and font are honored. Text clips to
+    its box. A group header stays with its first detail row.
+14. A datasource may name a QueryRef and the report's parameters.
+    The canvas still designs against sample rows. Phase 29
+    runs the query.
 
 ## Out of scope until a later plan
 
 - Crosstabs, subreports, packages, shapes, and memos. The lookup rows
-    can stay. The palette hides them. Chart keys 42, 43, 44, and 45
-    are v1.
+    can stay. The palette hides them. Chart keys 42 and 44, and barcode
+    keys 43 and 45, are v1.
 - Chart interactivity. The exported chart is static SVG or a PDF
     vector object; hover, zoom, and tooltips are a later idea.
-- A user's own SVG entering a PDF as a vector. Phase 34's native
+- A user's own SVG entering a PDF as a vector. Phase 71's native
   output serves charts and barcodes first; a user-supplied SVG
   rasterizes through `image_scale` until a later plan extends the
   ports' native output to imported art.
 - A native XLS writer. CSV is the spreadsheet stand-in.
-- A SQL catalog inside the designer. v1 datasources are JSON.
+- A SQL catalog inside the designer. A datasource is a JSON sample
+  or a named QueryRef. The designer does not edit SQL.
 - Browser PDF generation (`jsPDF`) and a PDF thumbnail viewer.
 - Mailing a report. Mail Relay already exists for mail.
 - A new Hydrogen subsystem, config letter, or C route. PDF, barcodes,
-  and image bytes stay in Lua plus the Reporting endpoint that
-  already shipped.
+  and charts stay in Lua. Lithium calls the Reporting endpoint that
+  already shipped when a raster is required.
 - Rewriting CATCHUP, Course Builder, or Argent's financial queries.
 - Measuring wrapped text inside Lua. v1 bands have a fixed height.
 - Handing a user formula the Hydrogen host API. `H` stays in
-  `Reports.Render`. `require` stays the loader for lua-pdfkit and
-  lua-zint.
+  `Reports.Render`. `require` stays the loader for lua-pdfkit,
+  lua-zint, and d3.lua.
 - Datasource payloads over the conduit script param cap (256 KiB
   default, `ClientInvokeMaxParamsBytes`).
 
@@ -263,7 +319,7 @@ Manager 24 is a 49-line placeholder. It tells the operator the module
 is under development. `conduit.js` can run QueryRefs.
 `invokeScript` is not in the client. Scripting Manager does not call
 `POST /api/conduit/script`. CATCHUP Phases 7–10 are the planned home
-for that helper. Phase 18 of this plan adds it if those phases have
+for that helper. Phase 25 of this plan adds it if those phases have
 not landed, and reuses it if they have.
 
 `closeManager` calls `destroy()` and ignores `cleanup()` and
@@ -279,6 +335,14 @@ the canvas listeners.
 | Lookup 053 | [`acuranzo_1086.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1086.lua) | Report Object Types, keys 0–60. |
 | Lookup 054 | [`acuranzo_1087.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1087.lua) | Report Object Attributes, keys 0–40. |
 | Lookup 057 | [`acuranzo_1090.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1090.lua) | Two page-size rows. |
+
+Lithium QueryRefs 053 and 054 are not these lookup ids. QueryRef 053
+([`acuranzo_1146.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1146.lua))
+is Get Themes and reads lookup 41. QueryRef 054
+([`acuranzo_1148.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1148.lua))
+is Get Icons and reads lookup 40. The reader for a lookup id is
+QueryRef 026, Get Lookup, parameter `LOOKUPID`
+([`acuranzo_1117.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1117.lua)).
 
 Lookup 053 `value_int` groups the rows. This reading is from the
 names, and Phase 0 confirms it:
@@ -309,15 +373,15 @@ barcode keys 43 (Static Barcode) and 45 (Field Barcode). No lookup 054
 row describes a chart or a barcode, and none of the chart or barcode
 types advertises font or field attributes. Chart and barcode options
 therefore live in their own panels beside the property panel, which is
-what removes the need to wait on the Phase 11 repair packet for them.
+what removes the need to wait on Phases 11–13 for them.
 Most object types in lookup 053 advertise only
 `attributes: [0, 1, 2, 3, 4, 14, 24, 29]`
 (Top, Left, Width, Height, Align, Rotation, Grid Background Color,
 Link). Page Header and Detail advertise a longer list that includes
 fonts. A field cannot show its datasource or its font with the lists
-as they stand. Phase 11 repairs the v1 types.
+as they stand. Phases 11–13 repair the v1 types.
 
-Known seed defects, also Phase 11:
+Known seed defects, fixed in Phases 11–13:
 
 - Lookup 053 key 7 (System Server) and key 16 (Group Footer) store
   `"Iion"` where the other rows store `"icon"`.
@@ -327,9 +391,10 @@ Known seed defects, also Phase 11:
 - Lookup 057 has no Legal portrait, A4, or Tabloid row.
 - Lookup 054 font list is Helvetica, Open Sans, Cairo, Courier New,
   Lexend. Vanadium is the product face and is absent.
-- There is no Page Number or Page Count type. Keys 0–60 are taken.
-  The next keys are 61 and 62 if Phase 0 wants them. Re-check the
-  max key before writing the file.
+- The seed has no Page Number or Page Count type. Keys 0–60 are
+  taken. Phase 0 assigned Page Number to key 61 and Page Count to
+  key 62. Phase 11 writes them. Re-check the max key before writing
+  the file.
 
 Number snapshot on 2026-10-08, for orientation only:
 
@@ -344,7 +409,7 @@ Script seeds copy the `scripts` insert shape in
 [`acuranzo_1376.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1376.lua)
 (`System.Info`). That row is `invokable = 0` and `mcp_access = 1`
 because it is an MCP tool. `Reports.Render` is the opposite:
-`invokable = 1`, `mcp_access = 0`, unless Phase 0 says otherwise.
+`invokable = 1`, `mcp_access = 0`. Phase 0 confirmed that.
 Primary key of `scripts` is `(group_name, script_name)`.
 
 ### Retired Acuranzo client
@@ -398,10 +463,10 @@ rulers, and direct manipulation. The JSON keys are worth replacing.
 Label strings break when a lookup caption changes. Format version 1
 stores `key_idx` and stable item ids.
 
-## Proposed locks
+## Approved locks
 
-Phase 0 approves these or amends them in place. Later phases implement
-the approved text.
+Phase 0 approved these on 2026-10-10. Later phases implement this
+text.
 
 ### Three documents
 
@@ -441,7 +506,7 @@ the approved text.
     "color": "silver",
     "background": "white"
   },
-  "font": { "family": "Vanadium Sans", "size": "10 pt", "style": "normal" },
+  "font": { "family": "Vanadium Sans", "size": "10 pt", "style": "Normal" },
   "datasources": [
     { "name": "orders", "kind": "json", "shape": "list" }
   ],
@@ -468,7 +533,7 @@ the approved text.
             "width": "2 in",
             "height": "0.2 in"
           },
-          "style": {}
+          "align": "Left"
         }
       ]
     }
@@ -476,6 +541,11 @@ the approved text.
   "functions": []
 }
 ```
+
+A field text item stores `align`. Omitted align is `Left`. A number,
+datetime, aggregate, or parameter item also stores `mask`. An item
+stores `font` only when it overrides the definition font, in the same
+shape. The style captions below are legal in both places.
 
 `typeKey` is lookup 053 `key_idx`. Lengths are strings with a unit
 suffix (`in`, `mm`, `cm`, `pt`, `px`). The designer converts at
@@ -505,22 +575,222 @@ v1 `typeKey` allowlist:
 | 45 | Field barcode |
 | 61 | Page number |
 | 62 | Page count |
+| 63 | Parameter. One declared report parameter. |
+| 28 | Calculated text. Names a function whose `returns` is `text`. |
+| 29 | Calculated number. Names a function whose `returns` is `number`. The item mask formats the raw number. |
+| 32 | Calculated datetime. Names a function whose `returns` is `datetime`. The item mask formats the raw value. |
+| 34 | Aggregate text. Mode, min, max, first, and last of a text value. |
+| 35 | Aggregate number. |
+| 38 | Aggregate datetime. Min, max, first, and last of a datetime. |
 
 Rulers, Report Top, and Report Bottom are canvas chrome. They are not
 bands in the file. Grid and ruler settings on the definition are view
 defaults, stored so the next session opens the same page.
 
 Chart and barcode items add a `chart` or `barcode` object described
-under Charts and in Phase 23. Their series, scope, and options bind to
+under Charts and in Phase 54. Their series, scope, and options bind to
 datasources, and their option panels are bespoke, not lookup 054 rows.
 
 `functions` holds the author's Lua. The shape is in the next section.
 An early definition stores `[]`.
 
-A group band names one field or, from Phase 30, one Lua function that
+A group band names one field or, from Phase 45, one Lua function that
 returns the key. Compose sorts that key with Lua's ordinary `<`
 unless the band sets `sort` to false, in which case it breaks only
 when consecutive keys differ. Nested groups are later.
+
+### Value format
+
+Compose turns a value into text before it builds the intermediate
+document. Emit, including CSV, prints that text and does not format
+again. The item property is `mask`, a string. It is not a lookup
+054 key. Text fields omit it. An image item's `format` is the
+raster it stores (`png`, or `jpeg` when the source is already
+JPEG). It is not a mask, and it is not an XO payload.
+
+Null and a missing value are an empty string. The mask is not
+applied. The page never shows `nil` or `null`. A column that is
+absent from the row warns once per item, not once per row. A present
+column whose value is null does not warn.
+
+An omitted mask prints a number as a plain decimal, with no thousands
+separator and no scientific notation, and a datetime as `yyyy-mm-dd`
+when it has no time and as `yyyy-mm-dd hh:nn` when it does. Anything
+else is the string value.
+
+A number mask uses `#` for an optional digit, `0` for a required
+digit, `,` as the thousands separator, and `.` as the decimal point.
+A trailing `%` multiplies by 100 and suffixes `%`. Wrapping the
+pattern in parentheses prints a negative in parentheses and drops the
+minus sign. A positive value prints without the parentheses. A leading
+`$` is a literal prefix. `#,##0.00`,
+`$#,##0.00`, `(#,##0.00)`, and `0%` are the v1 set's shapes. There
+is no locale. The comma and the dot mean the same thing on every
+machine.
+
+A date mask uses `yyyy`, `yy`, `mmm`, `mm`, `d`, `dd`, `hh`, `nn`,
+and `ss`. `mm` is the month. `nn` is the minutes. `mmm` is the
+English abbreviation `Jan` through `Dec`. `d` is the day without a
+leading zero. `dd` is the day from 01 to 31. `hh` is the hour from
+00 to 23. `yyyy-mm-dd` and `d mmm yyyy` are enough for v1. The value
+may be `yyyy-mm-dd`, `yyyy-mm-ddThh:nn:ss`, or a number of unix
+seconds. A string is the civil time written in it, with no zone
+shift. A number is unix seconds, formatted in UTC. A mask that omits
+the time tokens drops the time. A mask that asks for time on a
+date-only value uses `00:00:00`. Anything else warns once and prints
+the raw value.
+
+A number rounds half away from zero. `1.235` with `#,##0.00` prints
+`1.24`. `-1.235` prints `-1.24`. Zero prints as the mask says,
+including `0.00`. Blank-if-zero is lookup 054 key 10 and stays off
+the v1 attribute lists.
+
+Aggregate numbers use the same mask. A parameter item uses it too.
+A calculated number and a calculated datetime use the same mask on
+the raw value the function returned. The function does not format
+the text. An aggregate reduces those raw values, and the aggregate
+item's own mask formats the reduction. A mask that does not parse
+warns once, and the raw value is printed.
+
+| Value | Mask | Prints |
+| --- | --- | --- |
+| null | `#,##0.00` | empty string |
+| `1234.5` | omitted | `1234.5` |
+| `1234.5` | `#,##0.00` | `1,234.50` |
+| `1.235` | `#,##0.00` | `1.24` |
+| `-1.235` | `#,##0.00` | `-1.24` |
+| `-1234.5` | `(#,##0.00)` | `(1,234.50)` |
+| `1234.5` | `(#,##0.00)` | `1,234.50` |
+| `1234.5` | `$#,##0.00` | `$1,234.50` |
+| `0.25` | `0%` | `25%` |
+| `5` | `0.00` | `5.00` |
+| `0` | `#,##0.00` | `0.00` |
+| `no` | `#,##0.00` | `no`, and one warning |
+| `2026-03-05` | omitted | `2026-03-05` |
+| `2026-03-05T14:07:09` | omitted | `2026-03-05 14:07` |
+| `2026-03-05T14:07:09` | `d mmm yyyy` | `5 Mar 2026` |
+| `2026-03-05` | `yyyy-mm-dd hh:nn` | `2026-03-05 00:00` |
+| `1772719629` | `yyyy-mm-dd hh:nn` | `2026-03-05 14:07` |
+
+System datetime is not a field value. Compose reads one instant for
+the whole generation, and every system-datetime item uses it. When
+`params.now` is a unix number, that is the instant. When the call
+omits it, the instant is `H.system.now()`. A normal preview omits
+`params.now`. The Phase 22 fixture sends `1772719629`, the same
+instant as the mask row above. `params.now` is a call parameter. It
+is not a report parameter, it is not stored on the definition, and
+it is not a field of `params._hydrogen`. The item adds
+`params._hydrogen.tzoffset` minutes, where a negative offset is west
+of UTC, and formats that civil time with the item mask. The shift is
+the claim value. Compose does not look up the IANA name in `tz`. A
+missing `tzoffset` formats the instant in UTC and adds an info log
+entry. Field datetimes keep the rules above.
+
+### Page rules
+
+Align and the font keys are real. Compose reads Align and font
+family, size, and style from the item, then from the definition
+font. On an item, `align` is `Left`, `Center`, or `Right`. Omitted
+means `Left`. `font`, when present, is `{ family, size, style }`
+and overrides the definition font. `style` is `Normal`, `Bold`,
+`Italic`, or `Bold + Italic`. Those four are the v1 set. Underline,
+superscript, subscript, and strikethrough stay in Later. Phase 12
+sets lookup 054 key 4's list to `Left`, `Center`, and `Right`, and
+key 17's list to the four style captions. HTML uses the family,
+the size, and the style. PDF uses align, size, and style as bold
+and italic flags, and keeps the standard face the port already
+carries. Embedding Vanadium stays in Later. Rotation, link, and
+conditional color stay in Later.
+
+Lookup 054 keys 9, 10, 11, and 12 (Number Format, Blank if Zero,
+Zero if Blank, Negative Parentheses) stay off every v1 attribute
+list. The `mask` string is the format.
+
+Text clips to the item box. The canvas clips the same way, so the
+cutoff is visible while designing. The band does not grow. Measuring
+wrapped text stays in Later.
+
+A group header is not left alone at the bottom of a page. If the
+header plus one detail row do not fit in the remaining content box,
+both move to the next page. If they do not fit on an empty page
+either, compose warns and places them anyway. Heights are fixed, so
+this is arithmetic.
+
+A page header or footer sees the group that is open on that page and
+the detail rows placed on that page. Page totals are reduced from
+those rows after the page list exists. Both the page header and the
+page footer can show them.
+
+Compose is not a single pass. Group and report totals are known
+before the headers that display them are formatted.
+
+1. Resolve rows. An array in `sources` wins. A query datasource with
+   no array waits for Phase 29, and until that phase it warns and
+   contributes no rows.
+2. Evaluate each detail-row function. Store the raw value. Format
+   each detail item from that raw value and the item mask. A detail
+   `ctx` has no aggregates, so a total is a header or footer item.
+3. Reduce each group, and the whole report, from raw field values
+   and those raw function results. Format the group header, the
+   group footer, the report header, and the report footer from
+   those totals. A calculated item on those bands may read
+   `ctx.aggregates`. Its return is masked by its own type, and it
+   is not fed back into the totals.
+4. Paginate on fixed heights and the stored text. A group header
+   that does not fit with its first detail row moves with that row.
+   The header is not repeated on a later page. Its summary is every
+   row of the group, including rows that land on a later page.
+5. Fill `page.count` and `page.rows`. Reduce the page totals from
+   the raw values of the detail rows on that page. Format the page
+   header and the page footer.
+
+Keep-together changes which rows land on a page, so step 5 reads the
+finished list.
+
+### Datasource kinds
+
+`kind` `json` is an array passed in `sources`, or the session sample
+while designing. That array is not stored in the definition. `kind`
+`query` names a caller-facing QueryRef and the binds that fill it.
+Sample rows still design the canvas. A real run uses the QueryRef.
+
+```json
+{
+  "parameters": [
+    { "name": "from", "type": "date", "default": "2026-01-01" }
+  ],
+  "datasources": [
+    {
+      "name": "orders",
+      "kind": "query",
+      "queryRef": 120,
+      "params": { "from": { "parameter": "from" } },
+      "shape": "list"
+    }
+  ]
+}
+```
+
+`parameters` live on the definition. Each one has `name`, `type`
+(`text`, `number`, `date`, or `boolean`), and `default`. A bind is
+`{ "parameter": "<name>" }` or `{ "literal": "<value>" }`. The
+`reports.parameters` column stays `{}`. The run strip's current
+values are session state, passed as `params.parameters`, and they
+override the defaults. Saved presets wait with the parameter form.
+
+An array in `sources` wins, which is how fixtures and the canvas
+sample run. When that array is absent, Phase 29 runs the
+QueryRef. It loads the installed row the way
+[`argent_2059.lua`](/elements/002-helium/argent/migrations/argent_2059.lua)
+does: `SELECT code FROM queries WHERE query_ref = :QREF AND
+query_type_a28 = 1`, then `H.altquery_sync(params._hydrogen.database, code, binds)`
+with the resolved binds. `query_type_a28 = 1` is the installed
+query. The database name is the session claim. When that name is
+empty or is not a configured connection, compose adds a warn entry
+and returns no rows for that datasource. The worker login is the
+one configured for that connection. The script does not send the
+session JWT. Row filters, detail sort, and code-to-caption columns
+stay on the query. The report already sorts a group by its key.
 
 ### User Lua
 
@@ -530,14 +800,17 @@ and runs inside `Reports.Render`. It is not a separate `scripts` row.
 ```json
 {
   "name": "pack_code",
-  "source": "function(ctx)\n  return ctx.row.month\nend"
+  "returns": "text",
+  "source": "return function(ctx)\n  return ctx.row.month\nend"
 }
 ```
 
-`name` is a Lua identifier, unique in the report. `source` is a text
-chunk that returns a function of one argument. `Reports.Render`
-compiles it with `load(source, name, "t", env)` under Lua 5.5. Mode
-`"t"` accepts source text.
+`name` is a Lua identifier, unique in the report. `returns` is the
+value type below. `source` is a text chunk that returns a function
+of one argument. The chunk starts with `return`. A bare
+`function(ctx)` is not a Lua chunk. `Reports.Render` compiles it
+with `load(source, name, "t", env)` under Lua 5.5. Mode `"t"`
+accepts source text.
 
 `env` contains `string`, `math`, `table`, `utf8`, `tonumber`,
 `tostring`, `type`, `pairs`, `ipairs`, `next`, `select`, `pcall`,
@@ -548,72 +821,153 @@ globals. `H` stays in `Reports.Render`. The scripting progress hook
 already bounds the worker by `max_runtime_seconds`. This plan adds
 no hook and no C.
 
-`ctx` depends on where the function runs:
+`returns` is the value type compose expects. The v1 value types are
+`text`, `number`, `datetime`, and `boolean`. A chart scope of
+`custom` uses `rows`. Lookup 053 stays the object catalog: a
+calculated number is key 29, and a memo is a later object type.
+Image, memo, and shape are not function returns in v1. Parameter
+type `date` is a datetime value.
 
-| Call | What `ctx` holds |
+| `returns` | Who may name the function | What compose does with the raw value |
+| --- | --- | --- |
+| `text` | Calculated text, key 28. A group key. | Prints the string. No mask. |
+| `number` | Calculated number, key 29. A group key. An aggregate. | The item mask formats the display. An aggregate reduces the raw number. |
+| `datetime` | Calculated datetime, key 32. | The datetime mask formats the display. Min, max, first, and last use that same mask. |
+| `boolean` | `pageBreak` and `lineBreak`. | True or false. It is not a printed item. |
+| `rows` | Chart scope `custom`. | The rows the chart plots. No mask. |
+
+A missing `returns` means `text`. The panel shows `text` and notes
+the omission. Creating a function writes `returns`. The item type
+and `returns` must agree. A calculated number names a function
+whose `returns` is `number`. That function returns the raw number,
+such as `1234.5`. Compose applies the item's `mask` with the Value
+format rules, so `1234.5` with `#,##0.00` prints `1,234.50`. The
+function does not insert the separators. A datetime function
+returns a value the datetime mask already accepts. A text function
+returns the string that is printed.
+
+A value of the wrong type warns once per item, and that call prints
+empty. A compile error stops compose and returns the message. A
+runtime error on one call is a warning and an empty value, so one
+bad row does not drop the rest of the report. An unknown function
+name is a compose error.
+
+Every `ctx` includes `parameters`, the run values with defaults
+filled in. `ctx` otherwise depends on where the function runs:
+
+| Call | What else `ctx` holds |
 | --- | --- |
-| Calculated item on a detail | `row` (the current record), `prev`, `index` (1-based), `band` |
-| Group header or footer | Those, plus `group.key` and `rows` for the group |
-| Page header or footer | `page.number`, and `page.count` once the page list exists |
-| Report header or footer | `report.name` and `report.parameters` |
-| Group, page, or line break | `row`, `prev`, and `index` |
+| Calculated item on a detail | `row` (the current record), `prev`, `index` (1-based in the detail source), `band`. No aggregates. |
+| Group header or footer | `row` is the first row of the group. `prev` is the last row of the previous group, or nil. `index` is that first row's index in the detail source. `rows` is the group's records. `group.key`. `aggregates` for the whole group. `band`. |
+| Page header or footer | `page.number`, `page.count`, `group` for the group open on that page, `page.rows`, and `aggregates` for those rows. |
+| Report header or footer | `report.name`, and `aggregates` for every detail row. |
+| Group, page, or line break | `row`, `prev`, and `index`. |
 
-A calculated item stores `"function": "pack_code"`. Lookup 053 keys
-28 (Calculated Text) and 29 (Calculated Number) are the v1 calculated
-items. The return value is substituted as text. A number uses
-`tostring` when the function did not already return a string.
+A calculated item stores `"function": "pack_code"`. The item does
+not store the source.
 
-A compile error stops compose and returns the message. A runtime
-error on one call is a warning and an empty value, so one bad row
-does not drop the rest of the report. An unknown function name is a
-compose error.
+Breaks, implemented in Phases 45, 46, and 47:
 
-Breaks, implemented in Phase 30:
+- `groupKey` names a text or number function. A text key compares
+  as a string. A number key compares as a number, so the display
+  mask does not split one value into two groups. The one-field
+  group remains the path with no Lua. One level.
+- `pageBreak` names a boolean function. A true result starts a new
+  page before the current row. Any other value warns once and
+  counts as false. Fixed-height paging still applies.
+- `lineBreak` names a boolean function. A true result inserts one
+  blank detail-height before the current row. Any other value
+  warns once and counts as false. A newline inside a calculated
+  value is kept by HTML (`white-space: pre-line`) and by the PDF
+  text drawer. The stored band height does not change. Overflow
+  clips.
 
-- `groupKey` names a function. Its return value is the group key.
-  The one-field group remains the path with no Lua. One level.
-- `pageBreak` names a function. A true result starts a new page
-  before the current row. Fixed-height paging still applies.
-- `lineBreak` names a function. A true result inserts one blank
-  detail-height before the current row. A newline inside a
-  calculated value is kept by HTML (`white-space: pre-line`) and by
-  the PDF text drawer. The stored band height does not change.
-  Overflow clips.
-
-The pack-date fixture in Phase 28 is an invented pattern (month
+The pack-date fixture in Phase 33 is an invented pattern (month
 letter, week digit, day), standing in for the grower-specific codes
 on a PTI label. It is not a PTI specification.
 
 ### Primitive aggregates
 
-Lookup 053 key 35 (Aggregate Number) stores `op` and `field`.
-`weighted` also stores `weight`. The engine computes these. An author
-who needs a different reduction writes a footer function and reads
-`ctx.aggregates`.
+Lookup 053 key 35 (Aggregate Number) stores `op` and either `field`
+or `function`. `weighted` also stores `weight`. The engine computes
+these. An author who needs a different reduction writes a header or
+footer function and reads `ctx.aggregates`.
 
 | op | Result |
 | --- | --- |
 | `count` | Rows in the band's scope. Empty scope is 0. |
-| `unique` | Distinct values of `field`, compared as text. Empty scope is 0. |
-| `sum` | Sum of numeric `field`. |
+| `unique` | Distinct values. Numbers compare as numbers. Text compares as text. A datetime compares as its raw value. Empty scope is 0. |
+| `sum` | Sum of the raw numeric values. |
 | `avg` | Arithmetic mean. |
 | `mean` | The same arithmetic mean as `avg`. |
-| `weighted` | Sum of `field * weight`, divided by the sum of `weight`. |
+| `weighted` | Sum of `value * weight`, divided by the sum of `weight`. `value` is the field or the function result. `weight` is a field. A zero sum of weights, or no numeric pair left, prints an empty string and adds one warn entry. |
 | `median` | Middle value after a numeric sort. Even count: mean of the two central numbers. |
 | `mode` | Most common value. Text uses key 34 (Aggregate Text). A number uses key 35. A tie keeps the smallest value under Lua `<` and records a warning. |
+| `min` | Smallest value. Numbers compare as numbers. Text compares with Lua `<`, which is code-point order. A datetime uses the rule below. |
+| `max` | Largest value, by the same comparison as `min`. |
+| `first` | First non-null value in the scope's row order. This is not `min`. |
+| `last` | Last non-null value in that same row order. This is not `max`. |
+| `filled` | How many values are non-null. Empty scope is 0. |
 
-Group footer scope is the current group. Report footer scope is every
-detail row. A non-numeric value in a numeric op warns and is skipped.
-An empty numeric result is an empty string. Phase 29 places the
-results on `ctx.aggregates` for footer formulas, keyed by op and
-field name.
+An aggregate names a row column with `field`, or a detail function
+with `function`. Exactly one of those is set. The function runs on
+each detail row with that row's context. The reduction uses the raw
+return values, not the masked text. `weight` stays a field name.
+
+| Input | Ops the designer offers |
+| --- | --- |
+| Text, or a text function | `count`, `filled`, `unique`, `min`, `max`, `first`, `last`, `mode` |
+| Number, or a number function | `count`, `filled`, `unique`, `sum`, `avg`, `mean`, `weighted`, `median`, `mode`, `min`, `max`, `first`, `last` |
+| Datetime, or a datetime function | `count`, `filled`, `unique`, `min`, `max`, `first`, `last` |
+
+`count`, `filled`, and `unique` are numbers and use key 35. So do
+`sum`, `avg`, `mean`, `weighted`, and `median`. `mode`, `min`,
+`max`, `first`, and `last` keep the input's type: text uses key 34,
+a number uses key 35, and a datetime uses key 38. A text result has
+no mask. A number result uses the number mask. A datetime result
+uses the datetime mask.
+
+`ctx.aggregates` stores the raw result. The mask is applied when
+the aggregate item is formatted, so a header formula can read two
+raw results and subtract them. A range is that formula. There is
+no `range` op, and no standard-deviation op.
+
+Nulls are skipped by every op except `count`. A skipped null does
+not warn. `count` still counts the row. `first` and `last` walk
+the scope in its row order: the query's order, then the group sort
+when the band sorts. Page scope walks the rows in the order they
+were placed on that page. An empty `min`, `max`, `first`, or
+`last` prints an empty string.
+
+A datetime is either a civil string or a unix number, using the
+same two forms as Value format. The first non-null value picks
+which one this total uses. A later value of the other kind warns
+once per item and is skipped. Strings compare as written, which
+is chronological for `yyyy-mm-dd` and `yyyy-mm-ddThh:nn:ss`.
+Numbers compare as numbers.
+
+A field has no declared type, so a value that does not fit the op
+warns and is skipped at runtime. A function has `returns`, so the
+designer hides the ops that type cannot support. Boolean functions
+and `rows` functions are not aggregate inputs.
+
+Group scope is the current group. Report scope is every detail row.
+Page scope is the detail rows placed on that page. The group header
+and the group footer show the same group totals. The report header
+and the report footer show the same report totals. The page header
+and the page footer show the same page totals. A non-numeric value
+in a numeric op warns and is skipped. An empty numeric result is an
+empty string. Phase 38 places the results on `ctx.aggregates` for
+the header and footer formulas of that scope, keyed by the op and
+the field or function name.
 
 ### Charts
 
 A chart item is lookup 053 key 42 (Static Chart) or key 44 (Field
 Chart). A Static Chart plots a datasource with fixed options. A Field
-Chart is bound like a field barcode: the current record supplies a key
-or a value. Both carry a `chart` object.
+Chart uses scope `record`. The current record of the chart's window
+supplies `keyField`. The chart does not repeat on every detail row.
+A field barcode does. Both chart kinds carry a `chart` object.
 
 ```json
 {
@@ -662,14 +1016,16 @@ derived at compose otherwise. The combo case is first-class, not an
 exception: the fixture set includes a stacked bar with an overlaid
 line, which is also the shape of the D3 port's own demo chart.
 
-**Scopes.** All four ship in v1:
+**Scopes.** All four ship in v1. Phases 59 and 60 draw `band`,
+`group`, and `record`. Phase 64 draws `custom` by calling the one
+compiler Phase 33 owns:
 
 | scope | Data the chart plots |
 | --- | --- |
 | `band` | Every row of `datasource`, which defaults to the band's own. |
 | `group` | The rows of the current group. |
 | `record` | The rows of `datasource` whose `keyField` equals the current record's. |
-| `custom` | The rows a function from `functions[]` returns for the current context. |
+| `custom` | The rows a function from `functions[]` returns for the current context. That function's `returns` is `rows`. |
 
 `datasource` may name any datasource on the definition, so a chart can
 plot something completely different from the band it sits on. A chart
@@ -677,22 +1033,28 @@ may be placed on any band. It draws on the first instance of its band
 inside its window: once per group on a group band, once per page on a
 detail or page band, once per report on a report band.
 
+That window is the chart rule. A chart on a detail band is drawn
+once on the page, on the first detail of that page, not once per
+row. Scope `record` uses that first row. Scope `band` plots the
+named datasource. A field barcode is a different item and repeats
+on every detail row.
+
 **Ports.** The SVG form comes from d3.lua. The end state for PDF is
-the port's native PDF output (Phase 34): vector objects lua-pdfkit
-places directly, with no SVG converted. Until Phase 34 lands, the
-PDF path rasterizes the chart SVG through `image_scale` at the chart's
-own `dpi` option (a chart defaults higher than text, because axis
-labels suffer at 72), and Phase 34 replaces that detour. The two
-ports stay SVG producers for the HTML, preview, and SVG paths, and the
-PNG path rasterizes that SVG the same way. Composing happens once;
+the port's native PDF output (Phase 71): vector objects lua-pdfkit
+places directly. Until Phase 71, Lithium rasterizes the chart SVG
+through `image_scale` at the chart's own `dpi` option (a chart
+defaults higher than text, because axis labels suffer at 72) and
+passes the PNG in `params.rasters`. The script embeds those bytes.
+The ports stay SVG producers for the HTML, preview, and SVG paths.
+PNG export is Lithium rasterizing that SVG. Composing happens once;
 the chart's data is resolved per the scope above and then drawn in
 whichever form the stage needs.
 
-**Pie.** The v1 set includes pie, and the port does not have it yet.
-The port as it stands is `scaleBand`, `scaleLinear`,
+**Pie.** Pie is in v1. The port does not have an arc yet. The
+port as it stands is `scaleBand`, `scaleLinear`,
 `axisLeft`/`axisRight`/`axisBottom`, `stack`, `curveBasis`, `line`,
-and `range`. Phase 25 decides between extending the port with an arc
-generator and pinning pie behind that extension. Everything else in
+and `range`. Phase 57 names the arc this plan will add. Phase 63
+adds that arc in the port and previews one pie. Everything else in
 the v1 set is already in the port.
 
 **Fonts.** A chart uses the definition's face in the SVG paths and a
@@ -702,10 +1064,24 @@ standard face in the PDF, the same rule as text.
 
 Compose output is JSON. One page object per page. Each page has the
 bands that landed on it, in order. Item text is the substituted
-string. Boxes stay in physical units relative to the band. A group
-break starts a group header and ends with a group footer. Page header
-and page footer repeat. Report header is on page 1. Report footer is
-on the last page.
+string, already passed through the mask. Boxes stay in physical
+units relative to the band. Emit reads `text`, `align`, `font`, and
+`box`, and clips to the box. Emit does not format again.
+
+```json
+{
+  "id": "amount",
+  "typeKey": 21,
+  "text": "1,234.50",
+  "align": "Left",
+  "font": { "family": "Vanadium Sans", "size": "10 pt", "style": "Normal" },
+  "box": { "left": "0 in", "top": "0 in", "width": "2 in", "height": "0.2 in" }
+}
+```
+
+A group break starts a group header and ends with a group footer.
+Page header and page footer repeat. Report header is on page 1.
+Report footer is on the last page.
 
 Page breaks use fixed band heights against the content box (page size
 minus margins). An item keeps the height stored on it. Text that does
@@ -718,41 +1094,59 @@ glyphs in v1.
 
 | stage | Result |
 | --- | --- |
-| `pdf` | Default. Base64 PDF bytes inside the JSON result. |
+| `pdf` | Default. Base64 PDF bytes inside the JSON result when they fit. |
 | `html` | One section per page with `break-after: page`. Export and preview medium. |
-| `svg` | Compose, then one SVG document per report with page breaks marked. |
-| `png` | Compose, then one PNG per page through `image_scale`, which takes SVG input and applies `dpi` before it reads. |
-| `csv` | Phase 33. One row per detail record. Data only. |
+| `svg` | One SVG document. Page breaks are marked. |
+| `csv` | Phase 49. One flat row per detail record. Data only. |
 | `compose` | Intermediate JSON via `H.set_result_json`. |
-| `check` | Phase 28. Compile the posted functions and return diagnostics. No rows are read. |
+| `check` | Phase 35. Compile the posted functions and return diagnostics. No rows are read. |
 
-PDF is the default stage and the highest-priority export. HTML is both
-an export and the preview medium: the preview is the HTML export
-artifact, rendered as a deliberate action into a sandboxed iframe, with
-DOMPurify on it before `srcdoc` (Phase 18). The parent page never
-assigns it to `innerHTML`. SVG and PNG are file exports. Charts and
-barcodes are SVG in the HTML, preview, and SVG paths; in the PDF they
-rasterize through `image_scale` at an explicit dpi until Phase 34
-replaces that with the ports' native vector output.
+There is no script stage `png`. Phase 67 posts the SVG result to
+`image_scale`.
 
-**The PDF will not always fit the result cap.** `H.set_result_json`
-is capped by `ClientInvokeMaxResultBytes`, 1 MiB by default, and a
-multi-page PDF with images exceeds that. The contract is:
+PDF is the default stage. HTML is an export and the preview medium.
+The preview is that HTML, rendered on purpose into a sandboxed iframe,
+with DOMPurify before `srcdoc` (Phase 25). The parent page never
+assigns it to `innerHTML`. Charts and barcodes are SVG in the HTML,
+preview, and SVG paths. In the PDF they are native vectors at
+Phase 71. Until then, Lithium rasterizes the item SVG through
+`image_scale` and passes the PNG bytes back in `params.rasters`,
+keyed by item id. The script embeds those bytes. It does not call
+`image_scale`. A missing raster omits the item and adds a warning.
 
-- A PDF that fits returns `{ "pdf_base64": "...", "warnings": [] }`.
-- A PDF that does not fit returns an error through
-  `H.set_result_json` naming the cap and the actual size. Compose
-  already ran; only delivery failed, and the call may be retried once
-  the operator raises the cap.
-- Raising `ClientInvokeMaxResultBytes` is operator config in
-  hydrogen.json. It is the v1 answer for large PDFs, and it needs no
-  new C. The phase that writes this contract also confirms the conduit
-  response path has no second, smaller body cap.
-- A stored-output path — writing the file once and returning a
-  location through `H.set_result(type, location)`, which is not capped
-  — waits on a store. Hydrogen has no generic file or blob store; the
-  `/api/files/local` upload endpoint is gcode-specific and is not that
-  store. Recorded in "Later, not scheduled".
+**The result cap is 1 MiB, and config cannot raise it.**
+`scoreboard_update_result_json` starts at `SCOREBOARD_RESULT_JSON_MAX`
+(1 MiB) and lets `ClientInvokeMaxResultBytes` only shrink that.
+`H.set_result_json` returns no Lua values on success or on rejection.
+A rejected body is a log line, and the job is left without a result.
+The script measures the encoded JSON before it calls.
+
+- A PDF that fits returns `{ "pdf_base64": "...", "log": [] }`.
+  Base64 puts the ceiling near three quarters of a megabyte of PDF.
+- A PDF that does not fit returns a small table:
+  `{ "error": "result_too_large", "cap": N, "size": N, "log": [] }`.
+  Compose already ran. Delivery failed. Raising the config key past
+  1 MiB does nothing. Changing the ceiling is a C change, and this
+  plan does not add C.
+- `H.set_result(type, location)` stores two strings. It does not store
+  the PDF. A stored-output path waits on a store. Hydrogen has no
+  generic file or blob store. `/api/files/local` is gcode-specific.
+  Recorded in "Later, not scheduled".
+
+
+### Generation log
+
+Every result includes `log`, an array of `{ "level", "message" }`.
+`level` is `info`, `warn`, or `error`. Where this plan says a warning,
+that is one entry with `level` `warn`. A note that does not change the
+output is `info`. A failure that still returns a document is `warn`.
+A failure that returns `error` also appends one `error` entry and does
+not throw out of the worker.
+
+Lithium counts the three levels. It does not expect a second counts
+object. Phase 19 starts returning `log`. Phase 26 shows the entries
+and flags the open report with the three counts. The counts are the
+last generation's session state. They are not columns on `reports`.
 
 `Reports.Render` is one invokable row. lua-pdfkit, lua-zint, and
 d3.lua are other rows, loaded with `require("group.script")`. Author
@@ -760,7 +1154,7 @@ formulas are not rows. Hydrogen's DB searcher splits on the first dot:
 group, then the rest of the name as `script_name`. `AllowDBModuleLoad`
 has to be on for those three libraries. `require("lua-pdfkit")` is
 rejected because it has no dot. The entry points are `lua-pdfkit.init`
-and `zint.barcode`; the d3.lua entry point is pinned at the Phase 24
+and `zint.barcode`; the d3.lua entry point is pinned at the Phase 56
 probe.
 
 ### Lua libraries
@@ -772,27 +1166,28 @@ written to run inside a host that has no native modules and no `io`.
 | --- | --- | --- |
 | lua-pdfkit | `/home/asimard/DA/triton4/triton-toolkit-5b12870/tasks/lua-pdfkit/solution/lua-pdfkit/` (pure Lua; its own repo planned) | `PDFDocument.new`, then `doc:finish()`, then `doc:output()` for the bytes. Port of PDFKit 0.19.1. JPEG and PNG from raw bytes or a `data:` URI. |
 | lua-zint | `/home/asimard/DA/triton3/triton-toolkit-e8fb24a/tasks/lua-zint/solution/` (pure Lua; its own repo planned) | `zint.barcode(opts)` returns an SVG string. Symbologies in the port: QR, Code 39, Code 128, UPC-A, GS1-128. |
-| d3.lua | Poseidon job artifact `/home/asimard/DA/poseidon1/jobs/lua-run10/` (pure Lua; its own repo planned). Validated byte-identical to D3.js on the reference pair `d3_chart.js` / `lua_chart.lua` | `d3.create_root`, `d3.scaleBand`, `d3.scaleLinear`, `d3.axisLeft` / `d3.axisRight` / `d3.axisBottom`, `d3.stack`, `d3.curveBasis`, `d3.line`, `d3.range`. Entry point pinned at the Phase 24 probe. |
+| d3.lua | Poseidon job artifact `/home/asimard/DA/poseidon1/jobs/lua-run10/` (pure Lua; its own repo planned). Validated byte-identical to D3.js on the reference pair `d3_chart.js` / `lua_chart.lua` | `d3.create_root`, `d3.scaleBand`, `d3.scaleLinear`, `d3.axisLeft` / `d3.axisRight` / `d3.axisBottom`, `d3.stack`, `d3.curveBasis`, `d3.line`, `d3.range`. Entry point pinned at the Phase 56 probe. |
 
 **Status:** None of the three libraries is in this repository. They are
 pure-Lua ports Andrew owns, each moving to its own repository: the zint
 and pdfkit ports ship `tests/test.sh` plus `PORTING-NOTES.md` /
 `AUTHOR-NOTES.md`, and the D3 port's validation is byte-equivalence
 against D3.js itself. Each library gets its own seed phase and probe
-(Phases 19, 22, and 24), and the packet records the repo commit or
-version it was generated from. If a port reaches LuaRocks, that helps
+(Phases 30, 53, and 56), and the packet records the repo commit or
+version it was generated from. The path in the table is the fallback
+when that repository does not exist yet. The seed phase stops and
+asks when neither the repository nor the path is there. If a port
+reaches LuaRocks, that helps
 only if Hydrogen's sandbox can read `package.path`; the seeded
 `group.script` module is the path this plan builds on, and the probe
 confirms which one is live.
 
-All three are producers. The report mechanism treats SVG as the form
-the HTML export and the preview embed inline and the SVG and PNG emit
-paths return or rasterize, and it treats the ports' native PDF output
-(Phase 34) as the form the PDF path embeds. Until that lands, charts
-and barcodes reach the PDF through `image_scale` at an explicit dpi —
-a stopgap named in Phases 23 and 27, not the architecture. The raster
-path is also the permanent home of photographs and a user's own
-imported art.
+All three are producers. HTML, preview, and SVG use the SVG those
+ports return. PNG is Lithium rasterizing that SVG. PDF embeds the
+ports' native output at Phase 71. Until then, charts and barcodes
+reach the PDF only when Lithium passes rasters in `params.rasters`,
+the stopgap named in Phases 55 and 65. Photographs and imported art
+stay on that raster path.
 
 The sandbox nils `io` unless `Sandbox.AllowIo` is set. Emit does not
 turn that on. lua-pdfkit writes the document with `output()` and never
@@ -805,10 +1200,11 @@ ones carried as AFM data. A phase that needs `io` stops and asks.
 - `H.set_result_json` is capped by `ClientInvokeMaxResultBytes`
   (default 1 MiB). A text report fits. A PDF is base64 inside that JSON,
   so the ceiling is about three quarters of a megabyte of PDF. Fixtures
-  in this plan stay under the cap. Raising it is operator config.
+  in this plan stay under the cap. That ceiling is the compile-time
+  `SCOREBOARD_RESULT_JSON_MAX`. The config key can only shrink it.
 
 **Note:** `ClientInvokeMaxParamsBytes` (default 256 KiB, confirmed in
-`config_scripting.c:47` and `conduit/script/script.c:39`) is a separate cap
+`config_scripting.c` and `conduit/script/script.c`) is a separate cap
 on the conduit **script params** JSON, not on HTTP response bodies. The 256 KiB
 figure in this plan refers to the params cap, which is the binding constraint
 for a definition + datasource passed inline to `Reports.Render`.
@@ -831,9 +1227,8 @@ verified against the source:
 The recommendation is `Scripting.ClientInvokeMaxParamsBytes: 10485760`
 in hydrogen.json, which matches the body ceiling exactly and leaves
 embedded-base64 definitions workable inline. It is operator config and
-needs no new C. Raising it does **not** lift
-`ClientInvokeMaxResultBytes` (1 MiB), which is a separate key and still
-governs every stage's output. A datasource or a rendered output past
+needs no new C. Raising it does **not** lift the result ceiling.
+`ClientInvokeMaxResultBytes` can only shrink `SCOREBOARD_RESULT_JSON_MAX`. A datasource or a rendered output past
 either cap is still deferred to "Later, not scheduled" for the
 stored-blob path.
 
@@ -849,30 +1244,39 @@ Endpoint:
 height, `units` (`px` or `pt`), `dpi`, and a format. ImageMagick
 (MagickWand) decodes and scales. Format `xo` is a FlateDecode PDF
 XObject payload (width, height, color space, optional alpha) built so
-a PDF writer can insert the streams. lua-pdfkit today accepts JPEG and
-PNG, not XO. Phase 21 teaches the port to embed XO, which is why that
-format exists. Until that lands, a PNG from the same endpoint still
-embeds through `doc:image`.
+a PDF writer can insert the streams. lua-pdfkit accepts JPEG and PNG. Photographs are those bytes.
+Phase 52 embeds each unique image once, through `doc:image`, and
+every later placement references that object. The script does not
+call this endpoint, and it does not grow an XO embedder. Lithium
+calls `image_scale` for SVG rasterization (Phase 67, and charts and
+barcodes until Phase 71). A PNG that comes back from that call
+follows the same rule: one object, then references.
 
 **SVG input and the raster paths.** `image_scale` documents SVG as a
 supported input, with `dpi` applied before the read so rasterization
 honors it, and `png` as a supported output. That one fact carries the
-whole PNG emit (Phase 32), and it is also where a user's own imported
+whole PNG emit (Phase 67), and it is also where a user's own imported
 art goes. A user-supplied SVG placed as a static image is rasterized
 this way; it does not enter the PDF as a vector until a later plan
 extends the ports' native output to imported art.
 
-**Image element options.** Photographs are the one part of a report
-that is unavoidably raster, so the image item carries its own options,
-chosen in the designer: `dpi` (default 72 for PDF, the designer can
-raise it), `format` (`png` or `xo`), a downsample cap in pixels, and a
-reuse rule. The reuse rule matters more than it sounds: an image that
-repeats on every detail row would otherwise be stored once per row. An
-image element resolves to one stored object per unique source, placed
-as many times as the item appears. Phase 21 confirms lua-pdfkit's
-image caching does that, and if it does not, `Reports.Render` keeps a
-per-render cache keyed by a content hash of the source. Stored once,
-at a suitable resolution, is the rule for every embedded image.
+**Image element options.** Photographs are raster. The item stores
+`dpi` (default 72) and `format` (`png`, or `jpeg` when the stored
+bytes are JPEG). Embedding a file or a paste opens a designer panel,
+not a browser confirm. The panel computes a suggested pixel size
+from the physical box and that dpi, rounding half away from zero,
+and shows the width and the height. The author can change either
+number. Each side is at least 1 pixel. A side that rounds to zero,
+or that the author sets below 1, is kept at 1. The panel states
+that confirming stores those pixels and does not keep the original
+file. Confirm calls `image_scale` unless
+the chosen size is the source's own pixel size, in which case the
+original bytes are stored. Changing the box or the dpi later does
+not resample. Opening the panel again does. The script embeds the
+stored bytes and does not call `image_scale`. An image that repeats
+is one PDF image object when every placement is handed the same
+stored bytes (`doc._imageRegistry`). Different stored bytes are two
+objects.
 
 **Where the bytes come from.** All three source kinds are v1, and they
 are all resolved to bytes at the start of generation, before any item
@@ -881,27 +1285,31 @@ is placed:
 | kind | Stored on the item | Resolved how | Trade-off |
 | --- | --- | --- | --- |
 | `embedded` | Base64 data URI in the definition, deduplicated in a content-hash-keyed registry | Already in hand | Portable, one file; makes the definition big |
-| `reference` | A document id | A QueryRef reads `documents` (`acuranzo_1010.lua`: `(doc_id, rev_id)`, `file_data TEXT_BIG`, `file_name`) | Swapping the document changes the report without editing it; the report is no longer portable alone |
+| `reference` | A document id | `H.altquery_sync` on the session database reads `documents` (`acuranzo_1010.lua`: `(doc_id, rev_id)`, `file_data TEXT_BIG`, `file_name`) | Swapping the document changes the report without editing it; the report is no longer portable alone |
 | `url` | A URL | `H.http.request_sync` at the start of generation, the same call the endpoint step uses | Live and small; the URL must stay available, and it slows every generation |
 
 The designer's image browser loads a file from the local filesystem
-or takes a paste from the clipboard, and both become `embedded`. A
-`reference` picker lists documents through the Phase 15 read QueryRef.
+or takes a paste from the clipboard. Both go through the confirm
+panel above, and confirming stores them as `embedded`. A
+`reference` picker lists documents through the Phase 17 read QueryRef.
 A failed reference or an unreachable URL is a warning and an empty
-image box, the same contract as the endpoint's errors.
+image box.
 
 Which kind an author picks is a size decision. Embedded base64 is the
 reason a definition can outgrow the 256 KiB params cap; reference and
-url kinds keep the definition small. Phase 18 previews an over-cap
-definition by saving it first and rendering by `report_id` — the
-params cap does not have to stop the author, it just decides the path.
+url kinds keep the definition small. Phase 27 previews an over-cap
+definition by saving it first and rendering by `report_id`. The
+params cap decides the path. It does not drop the preview quietly.
 
-Lua calls the endpoint with `H.http.request_sync` using the operator's
-bearer JWT in the `Authorization` header. There is no `H.system_token`
-in the Hydrogen scripting API — `H.system_token` was a mistake in the
-first draft. The JWT comes from the user's Lithium session (the
-conduit query helper already attaches it). The base URL is read from
-the process's API prefix, not hard-coded. No new C wrapper is added.
+The script does not call `image_scale`. `params._hydrogen` carries
+claims and does not carry the bearer token, and `H.system_token`
+does not exist. Lithium holds the session JWT and is the only caller
+of that endpoint. Reference bytes come from `H.altquery_sync` on
+`params._hydrogen.database` and the Phase 17 document QueryRef, the
+same database rule as a query datasource. URL bytes come from
+`H.http.request_sync` against that URL, with no Hydrogen JWT. The
+worker fetches whatever absolute `http://` or `https://` URL the
+item stores. No new C wrapper is added.
 
 The designer and the PDF emitter use `pt` (1/72 inch), matching
 `DefaultDPI` 72. The on-screen designer stays at 96 CSS pixels per
@@ -913,8 +1321,9 @@ same physical unit.
 "mime_type": "image/png", "width": N, "height": N,
 "input_format": "png", "input_dimensions": { "width": N, "height": N } }`.
 Errors return HTTP 400/401/503 with `{ "success": false, "error": "...",
-"details": "..." }`. On any non-200, `Reports.Render` logs a warning
-and yields an empty image box.
+"details": "..." }`. On any non-200, the Lithium caller toasts and
+omits that raster. A photograph that fails to resolve is a script
+warning and an empty box (Phase 51).
 
 ### Call shape
 
@@ -924,6 +1333,7 @@ and yields an empty image box.
   "params": {
     "stage": "html",
     "definition": { "format": 1 },
+    "parameters": { "from": "2026-01-01" },
     "sources": { "orders": [{ "customer": "North" }] }
   },
   "wait": true,
@@ -932,8 +1342,10 @@ and yields an empty image box.
 ```
 
 A stored report may send `report_id` and `rev_id` instead of
-`definition`. The script loads the row through the Phase 15 QueryRef.
-`stage` is optional and defaults to `pdf`. Client params stay under
+`definition`. The script loads the row through the Phase 17 QueryRef.
+`stage` is optional and defaults to `pdf`. `params.now`, when it is
+a unix number, is the generation instant from Value format. A
+fixture may send it. A preview omits it. Client params stay under
 `ClientInvokeMaxParamsBytes` (256 KiB unless the operator changed it).
 A fixture in this plan fits. A larger datasource is a later phase that
 stores the JSON and passes an id.
@@ -948,22 +1360,84 @@ stores the JSON and passes an id.
 | `name` | List label. |
 | `summary` | Short description. |
 | `report` | Definition JSON text. |
-| `parameters` | JSON object. v1 stores `{}`. |
+| `parameters` | JSON object. Declarations live in the definition. v1 stores `{}`. |
 | `scripts` | Unused in v1. Store `[]`. Author Lua lives in `report`. |
 | `design` | Unused. Leave null. The old column name is ambiguous and this pass found no writer. |
 | `thumbnail` | Unused in v1. |
 | `collection` | Standard audit JSON. The designer does not read it. |
 
+### Defaults
+
+Compose and the designer share this table. A phase that adds a
+property adds its row in that same sitting. Chart options other than
+`dpi` get their rows in Phase 57. An embedded image stores the bytes
+the author confirmed in Phase 50. There is no separate
+downsample-cap property. Reuse is not a property. Same stored bytes
+are one object.
+
+The property panel shows the effective value. When the file omits the
+key, the control still shows the default and notes that the file omits
+it. The note is a label. Import accepts the omission. Compose uses the
+value the panel showed. The panel does not reject a file for leaving
+a key out.
+
+Creating a report, a band, or an item writes the stored defaults into
+the definition, so a person editing the JSON can see the value. A key
+whose default is "omit" stays off the object. Import and export leave
+an omitted key omitted until the operator edits that control. Editing
+writes the key. Minimum band height stays `0.15 in`. That is a clamp,
+not a default.
+
+| Object | Property | On create | When the key is absent |
+| --- | --- | --- | --- |
+| Report | `name`, `title` | `Report` | `Report` |
+| Report | `page.sizeKey` | `0` | Lookup 057 key 0, US Letter portrait, `8.5 in` by `11 in` |
+| Report | `page.orientation` | `portrait` | `portrait` |
+| Report | `page.units` | `in` | `in` |
+| Report | each margin | `0.25 in` | `0.25 in` |
+| Report | `grid.visible` | `true` | `true` |
+| Report | `grid.style` | `dots` | `dots` |
+| Report | `grid.spacing` | `0.125 in` | `0.125 in` |
+| Report | `grid.weight` | `0.5` | `0.5` |
+| Report | `grid.color` | `silver` | `silver` |
+| Report | `grid.background` | `white` | `white` |
+| Report | `font` | Vanadium Sans, `10 pt`, `Normal` | the same |
+| Report | `datasources`, `functions` | `[]` | `[]` |
+| Function | `returns` | `text`, or the type of the item or break that added it | `text`. The panel says so |
+| Function | `source` | `return function(ctx)\n  return ""\nend` for text. Number returns `0`. Datetime returns nil. Boolean returns `false`. `rows` returns `{}` | empty source, which checks clean |
+| Report | bands | page header, detail, page footer | a missing band is not invented |
+| Band | height for report header, page header, page footer, report footer | `0.4 in` | `0.4 in` |
+| Band | height for group header, detail, group footer | `0.25 in` | `0.25 in` |
+| Item | `align` | `Left` | `Left` |
+| Item | `font` | omitted | the report font. The panel says so |
+| Item | `box` | `1.5 in` by `0.2 in`, centered in the band | that box |
+| Item | static `text` | `Text` | `Text` |
+| Item | `mask` on number, datetime, calculated number, calculated datetime, aggregate number, aggregate datetime, parameter | `""` | the omitted-mask rule in Value format. A datetime uses the datetime rule. The panel says which rule |
+| Item | `mask` on text and aggregate text | omitted | the string itself. The panel shows no mask |
+| Image | `dpi` | `72` | `72` |
+| Image | `format` | `png` | `png` |
+| Chart | `dpi` | `150` | `150` |
+| Barcode | raster `dpi` | `300` | `300` |
+| Call | `stage` | not stored on the definition | `pdf` |
+| Call | `now` | not stored on the definition | `H.system.now()` when the call omits it |
+
 ### Designer rules
 
-- No new npm package for v1, except `@codemirror/lint` in Phase 28.
+- No new npm package for v1, except `@codemirror/lint` in Phase 35.
   Pointer events do the dragging and the resize. Zoom is a CSS
   variable on the canvas.
 - Palette and property editors read lookups 053, 054, and 057.
   Captions and icons come from those rows. The file stores keys.
+  One palette lists the v1 type keys. Hidden types stay off it.
+  Adding an item or a band is a palette choice. Phases 10, 16, 22,
+  23, 28, 34, 38, 50, 54, and 58 use that palette.
+- The property panel shows the Defaults table, including a key the
+  file omits. The canvas uses the faces Lithium already loads.
+  Vanadium Sans is the SPA face in
+  [`/elements/003-lithium/src/styles/base.css`](/elements/003-lithium/src/styles/base.css).
 - Sample datasource JSON in the designer is session state. It is how
-  field items show a column name. It is not written into the
-  definition.
+  field items show a column name, including after a QueryRef run.
+  It is not written into the definition.
 - Import and export of the definition file work before the database
   save exists. The file is the artifact Phase 4 already proves.
 - Split files before 1000 lines. Expected split: `reports.js` (shell),
@@ -972,8 +1446,8 @@ stores the JSON and passes an id.
   `model/units.js`, `model/document.js`, `model/history.js`.
 - **DOMPurify is in `package.json`** (v3.3.2) but unused as of the last
   review. Preview HTML is sanitized with DOMPurify before assignment to
-  a   sandboxed iframe `srcdoc` (Phase 18). Barcode SVG must survive that
-  sanitizer (Phase 23). This is the one place HTML from a script crosses
+  a sandboxed iframe `srcdoc` (Phase 25). Barcode SVG must survive that
+  sanitizer (Phase 54). This is the one place HTML from a script crosses
   into the DOM. Even though the preview HTML is fully generated by
   `Reports.Render` and there is no external HTML surface, the sanitizer
   stays as defense-in-depth for the iframe.
@@ -995,7 +1469,7 @@ The buffer also has line numbers, folding, search, bracket matching,
 Vanadium Mono, same as the other editors.
 
 Syntax diagnostics use `@codemirror/lint`. That package is already
-in the lockfile transitively. Phase 28 adds it to the direct
+in the lockfile transitively. Phase 35 adds it to the direct
 dependencies so the editor owns the import. The messages come from
 Lua 5.5 `load` via `stage=check`, not from a JavaScript parser and
 not from luacheck. The editor debounces a check of the open
@@ -1009,24 +1483,51 @@ is focused.
 
 An undefined name is a runtime event in Lua. The editor does not
 flag `io`, `H`, or a misspelled field while the author types. Those
-fail when the line runs, and Phase 28 turns that into a warning and
+fail when the line runs, and Phase 37 turns that into a warning and
 an empty value.
+
+The Functions list and the item share one buffer. `functions.js`
+lists every function on the report: its name, its `returns`, and
+the items and bands that name it. Selecting a row opens the
+CodeMirror buffer. A calculated item, a group key, a break, and a
+chart scope of `custom` store the function name only. The property
+picker lists functions whose `returns` matches that use, and Edit
+focuses the same buffer. A helper that no item names still appears
+in the list. Renaming a function updates those references. Adding
+a function from the list writes `returns` `text` and the text chunk
+from the Defaults table. Adding one from a calculated item, a
+break, or a custom chart writes that use's type and chunk.
 
 ### v1 render behavior
 
-Given a definition and a source array, compose:
+Given a definition and a source array, compose. An array in
+`sources` wins. A query datasource with no array waits for
+Phase 29 to fill it, and until that phase it warns and
+contributes no rows:
 
 - emits a static report when `sources` is empty and the detail band
   has no datasource
 - repeats the detail band once per row
-- substitutes field items from the row
-- prints system date and system user from `H.system` and
-  `params._hydrogen` when those items exist
-- breaks pages on fixed heights
+- substitutes field items from the row, already passed through the
+  value-format rules, with null as an empty string
+- honors Align and the font keys, and clips text to the item box
+- prints system user from `params._hydrogen.username` (Phase 22)
+- prints system datetime from the one generation instant, shifted
+  by `params._hydrogen.tzoffset` minutes, then the item mask
+  (Phase 22)
+- prints page number and page count as integers through the number
+  mask (Phase 23)
+- prints a parameter item from `params.parameters` or the definition
+  default
+- breaks pages on fixed heights, keeping a group header with its
+  first detail row
 - opens and closes one group level when a group band is present
 
-Phase 17 implements that list. User formulas (Phase 28), primitive
-aggregates (Phase 29), and custom breaks (Phase 30) extend it.
+The order is the five steps under Page rules. Phase 19 emits the
+structural intermediate. Phase 20 applies the mask. Phase 21
+paginates. Phase 24 emits HTML. Barcodes (Phase 54), charts
+(Phases 59–63), user formulas (Phase 33), primitive aggregates
+(Phase 38), and custom breaks (Phases 45–47) extend it.
 Emit HTML reproduces the page list. The same intermediate fixture is
 the oracle for both the Lua result and the preview.
 
@@ -1048,39 +1549,39 @@ This file is the plan under discussion.
 - [x] 0.2 Confirm the `reports` column roles, including `design` and
       `thumbnail` left unused.
 - [x] 0.3 Confirm the v1 type allowlist, and whether Page Number
-      and Page Count are new lookup 053 keys 61 and 62. (See Q1.)
+      and Page Count are lookup 053 keys 61 and 62.
 - [x] 0.4 Confirm Vanadium Sans (and any other face) is added to
-      lookup 054's font list in the Phase 11 packet. (See Q2.)
+      lookup 054's font list in Phase 12.
 - [x] 0.5 Confirm `Reports.Render` stages `pdf` (default), `html`,
-      `svg`, `png`, `csv`, `compose`, and `check`, and that
+      `svg`, `csv`, `compose`, and `check`. PNG is the manager
+      posting the SVG to `image_scale`. Confirm that
       lua-pdfkit, lua-zint, and d3.lua are seeded as `require`
       libraries (`lua-pdfkit.*` with group `lua-pdfkit`, `zint.*`
       with group `zint`, and `require("d3.lua")` with group `d3`
       and script name `lua`), `invokable = 0`, one seed phase and
       probe per library.
-- [x] 0.6 Confirm the export order PDF, HTML, SVG, PNG, CSV, with
-      PDF as the default stage. Fixed band heights. Lua does not
-      measure glyphs. CSV is data only and stands in for a
-      spreadsheet. HTML is both an export and the preview medium.
-      SVG is a document export, PNG is its per-page raster through
-      `image_scale`, and a label-sized report is a bare file.
-- [x] 0.7 Confirm no new Hydrogen C. Image sizing stays on
-      `POST /api/reporting/image_scale`. PNG emit uses that
-      endpoint's documented SVG input. PDF embeds the `xo` result
-      once lua-pdfkit can, and PNG until then. Charts and barcodes
-      reach the PDF through the ports' native PDF output, with no
-      SVG conversion. The one new direct npm dependency is
-      `@codemirror/lint` for the formula editor.
+- [x] 0.6 Confirm PDF as the default stage. The build order is the
+      phase index: compose and HTML, then PDF, then the later
+      exports. Fixed band heights. Lua does not measure glyphs.
+      CSV is flat data and stands in for a spreadsheet. HTML is
+      both an export and the preview medium. SVG is a document
+      export. PNG is Lithium rasterizing that SVG, and a
+      label-sized report is one file.
+- [x] 0.7 Confirm no new Hydrogen C. Lithium calls
+      `POST /api/reporting/image_scale`. The script does not. PNG
+      uses that endpoint's SVG input. Charts and barcodes reach
+      the PDF as native vectors in Phases 68–71. Until Phase 71,
+      Lithium may pass rasters in `params.rasters`. The one new
+      direct npm dependency is `@codemirror/lint`.
 - [x] 0.8 Confirm this plan waits behind CATCHUP until Andrew pulls
-      it in, and that Phase 18 may add `invokeScript` if CATCHUP
+      it in, and that Phase 25 may add `invokeScript` if CATCHUP
       Phases 7–10 have not.
 - [x] 0.9 Confirm manager 24, append-only revisions, sandboxed
       preview, the 256 KiB param cap, and the 1 MiB result cap.
-      A PDF that fits is base64 inside that JSON. A PDF that does
-      not fit returns an error naming the cap, and raising
-      `ClientInvokeMaxResultBytes` is the v1 answer; a stored
-      output returned by `H.set_result` with a location is later
-      work.
+      The result cap is compile-time. Config can only shrink it.
+      A PDF that fits is base64 inside the JSON. A PDF that does
+      not fit returns a small error table. `H.set_result` with a
+      location is later work and needs a store.
 - [x] 0.10 Confirm author Lua lives in `definition.functions` and
       runs in the environment in User Lua. A detail formula sees
       the current record. Headers, footers, and breaks see the band
@@ -1091,24 +1592,27 @@ This file is the plan under discussion.
       diagnostics come from `stage=check`.
 - [x] 0.11 Confirm the chart locks: series-first roles with the combo
       as a first-class case, all four scopes in v1, a bespoke chart
-      panel rather than lookup 054 rows, and Phase 25 as the chart
+      panel rather than lookup 054 rows, and Phase 57 as the chart
       design lock.
 - [x] 0.12 Confirm the library homes. Each port lives in its own
       repository with its tests and porting notes, the seed packet
       records the commit or version, and LuaRocks is a possibility
       only if the sandbox can read `package.path`.
-- [x] 0.13 Confirm image elements carry `dpi`, `format`, downsample,
-      and reuse options, and store once per unique source.
-- [x] 0.14 Confirm the phase order: render content, then the bare
-       format emits, then CSV.
+- [x] 0.13 Confirm image elements carry `dpi` and `format`. The
+      author confirms the stored pixel size at embed time. The
+      original file is not kept. A repeated image stores once per
+      distinct byte string.
+- [x] 0.14 Confirm the phase order: paging, then the system and
+       page items, then HTML and PDF, then formulas, totals, and
+       CSV, then images, barcodes, and charts, then the native PDF
+       objects.
 - [x] 0.15 Confirm the image source model: embedded, reference, and
        url are all v1, resolved at the start of generation, with the
        definition's base64 registry deduplicated by content hash.
-- [x] 0.16 The effort column in the phase table matches the phases as
-       scoped, and Phase 34's split (see its note) is what ships.
-- [x] 0.17 The 2026-10-10 amendments are applied to this file.
-      Re-read the amended locks and confirm they match the approval.
-      (See Q3.)
+- [x] 0.16 The effort column matches the phase index. The native PDF
+       work is Phases 68, 69, 70, and 71, one sitting each.
+- [x] 0.17 The 2026-10-10 amendments are applied to this file and
+      match the approval.
 
 ### Done means
 
@@ -1118,44 +1622,43 @@ The locks in this file are the ones Andrew approved.
 
 Andrew's explicit approval of Phase 0. No source edited.
 
-**Status: complete — approved 2026-10-10** (2026-10-08; fact-check pass
-2026-10-10; plan-review incorporation pass 2026-10-10)
+### Status
 
-Work items 0.1, 0.2, and 0.5–0.17 are confirmed and checked off. All
-three open questions were resolved during this session:
+**complete — approved 2026-10-10.** Andrew approved the locks in this
+file. No source was edited. This close-out records that approval. It
+does not reopen it.
 
-- **Q1 (Phase 11 lookup family split):** Helium AGENTS.md states "One
-  lookup family per migration." Lookups 053 (Report Object Types) and 057
-  (Report Page Sizes) are distinct families. Phase 11 splits into two
-  migrations: one for 053 (icon fixes + attribute updates + page-number
-  keys) and one for 057 (label fix + new page sizes).
-- **Q2 (Allocation of lookup 053 keys 61/62):** Confirmed the max `key_idx`
-  in lookup 053 is 60 (highest row in `acuranzo_1086.lua`), so keys 61 and
-  62 are free. Page Number = key 61, Page Count = key 62. These join the
-  v1 type allowlist at entry point.
-- **Q3 (Phase 0.17 amendment sign-off):** Approved by Andrew on 2026-10-10.
-`ClientInvokeMaxParamsBytes` (256 KiB) and `ClientInvokeMaxResultBytes`
-(1 MiB) are both real and confirmed in `config_scripting.c`/`config_defaults.c`.
-`H.http.request_sync` has a 16 MiB default body cap. DOMPurify is present in
-`package.json` but unused. These corrections do not change the approved locks;
-they remove the "verify the cap" uncertainty.
+### Accomplished
 
-The 2026-10-10 scope refinement pass scoped exports to PDF, SVG, and CSV only;
-HTML is a preview helper, not an export. Scheduling and permissions were
-confirmed as separate modules that do not block the writer. Queries can
-supply parameters as well as datasources.
+The locks above are the approved contract.
 
-The 2026-10-10 format amendment supersedes the paragraph above. Exports are
-PDF (default), HTML, SVG, PNG, and CSV, in that implementation order; HTML is
-both an export and the preview medium. Charts and barcodes are v1, with a
-chart design lock of their own. Each Lua port gets its own seed phase and
-lives in its own repository. The zint and d3 ports emit native PDF output, so
-no SVG is ever converted to PDF. The port's SVG input at
-`POST /api/reporting/image_scale` carries the PNG emit. `H.set_result(type,
-location)` is not capped and is the shape a stored-output path will use once a
-store exists; the gcode upload endpoint is not that store. This amendment
-reflects Andrew's answers to the phase-0 questions and still awaits his
-sign-off on the amended locks.
+- One lookup family per migration. Object types are Phase 11, fonts
+  are Phase 12, and page sizes are Phase 13.
+- Page Number is lookup 053 key 61. Page Count is key 62.
+  Parameter is key 63.
+- A value has a format mask. Null is blank. Align and font are
+  honored. Text clips to its box. A group header stays with its
+  first detail row. Page bands see the open group and the rows on
+  the page. A datasource may name a QueryRef and the report's
+  parameters.
+- `align` is `Left`, `Center`, or `Right`. Font style is `Normal`,
+  `Bold`, `Italic`, or `Bold + Italic`. Lookup 054 keys 9–12 stay
+  off the v1 attribute lists. Compose resolves rows, formats text,
+  paginates, then fills page fields. A query datasource reads
+  `queries.code` by `query_ref` and runs `H.altquery_sync` on
+  `params._hydrogen.database`. The mask table in Value format is
+  the oracle.
+- Script stages are `pdf` (default), `html`, `svg`, `csv`, `compose`,
+  and `check`. PNG is a manager step. Native PDF objects are
+  Phases 68–71.
+- The Defaults table is the omitted-key contract. The panel shows
+  the effective value. New writes the stored defaults into the file.
+- Compose uses one generation instant. A fixture sends `params.now`.
+  A preview omits it and compose uses `H.system.now()`.
+- A file load and a paste both go through the embed panel. Each
+  stored side is at least 1 pixel. Photographs are JPEG or PNG.
+  `image_scale` can return an XO payload, and this plan does not
+  use it.
 
 ### Lessons learned
 
@@ -1168,12 +1671,26 @@ sign-off on the amended locks.
 - PDF and barcodes are pure Lua ports Andrew already has
   (lua-pdfkit, lua-zint). Hydrogen require is `group.script` with
   the split on the first dot. Image sizing is the existing
-  ImageMagick endpoint, including the XO format meant for PDF.
+  ImageMagick endpoint. That endpoint can return an XO payload.
+  This plan does not use it. Photographs are JPEG or PNG.
   The script result cap is 1 MiB.
 - Author formulas are source in the definition, compiled with
   `load` into a small environment. `require` remains the loader for
   lua-pdfkit and lua-zint. Built-in aggregates are engine ops.
   `avg` and `mean` are the arithmetic mean.
+- A close-out that names only Status and the Working Log drops what
+  the next session needs. Accomplished, Lessons learned, and Handoff
+  are written before the phase is marked complete. The repo copy is
+  [`/docs/PLANNING.md`](/docs/PLANNING.md).
+
+### Handoff
+
+Phase 1 is next, and only when Andrew pulls reporting in. CATCHUP
+stays P0 until then. Re-check the next free Acuranzo file, QueryRef,
+and lookup id on disk before numbering a packet. Hand the packet
+over. Do not apply it. Phase 68 still asks before a native PDF
+payload field is pinned. A fixture that needs a fixed clock sends
+`params.now`. A preview omits it.
 
 ---
 
@@ -1191,15 +1708,20 @@ Phase 0 Status complete.
 ### Work items
 
 - [ ] 1.1 Add a contract note under `docs/Li/` that restates the
-      approved definition, intermediate, HTML, and call shapes.
-      Absolute links. No line-number references.
+      approved definition, intermediate, HTML, and call shapes,
+      and the Defaults table. Absolute links. No line-number
+      references.
 - [ ] 1.2 Add `elements/003-lithium/tests/fixtures/reporting/` with
       one static definition, one detail definition, one grouped
-      definition, matching source JSON, the expected intermediate
-      for each, and a short expected HTML skeleton for the detail
-      case.
-- [ ] 1.3 Point this plan's Phase 2, 17, 20, and 31 at those paths.
-       Chart fixtures land in Phase 25.
+      definition, and matching source JSON. Each case has an expected
+      structural intermediate: plain text, one page. The detail
+      definition includes `1234.5` with mask `#,##0.00` and a null.
+      A second expected file for that detail case is the formatted
+      intermediate, `1,234.50` and a blank null, matching the
+      value-format table. HTML, page-split, PDF, and chart fixtures
+      are written by the phase that owns that gate.
+- [ ] 1.3 Point this plan's Phases 2, 19, and 20 at those paths.
+       Chart fixtures land in Phase 57.
 
 ### Done means
 
@@ -1272,6 +1794,10 @@ Phase 2 Status complete.
 - [ ] 3.3 `model/history.js` snapshots the document. Undo and redo
       restore it. A new edit drops the redo tail.
 - [ ] 3.4 Vitest uses the Phase 1 fixtures.
+- [ ] 3.5 `createBlank()` returns the new-report document from the
+      Defaults table: Letter portrait, the grid and font rows, and
+      page header, detail, and page footer at the table heights.
+      Vitest checks those written keys. Detail has no datasource.
 
 ### Done means
 
@@ -1292,8 +1818,8 @@ and the export matches the fixture again.
 
 ### Goal
 
-Replace the placeholder with a manager that loads a fixture and
-downloads the definition file.
+Replace the placeholder with a manager that starts a blank report,
+loads a fixture, and downloads the definition file.
 
 ### Entry gate
 
@@ -1303,8 +1829,10 @@ Phase 3 Status complete.
 
 - [ ] 4.1 `reports.html` / `reports.css` / `reports.js`. Fetch the
       HTML template. `templates:copy`. Stay under 1000 lines.
-- [ ] 4.2 `init`, `destroy`, and `cleanup`. Both destroy paths
-      release listeners. Drop the "under development" copy.
+- [ ] 4.2 `init`, `destroy`, and `cleanup`. `destroy` releases
+      listeners itself, because `closeManager` calls `destroy` only
+      until CATCHUP's lifecycle fix. `cleanup` releases the same
+      set. Drop the "under development" copy.
 - [ ] 4.3 Import picks a local JSON file, runs it through the
       document model, and shows the report name. A bad file toasts
       the model error and leaves the previous document in place.
@@ -1316,11 +1844,16 @@ Phase 3 Status complete.
 - [ ] 4.6 Browser: import the detail fixture, export it, import the
       export, and confirm the name survived. Confirm a bad file
       toasts and the name stays.
+- [ ] 4.7 New calls `createBlank()`. Export of that document contains
+      the written defaults, including `page.sizeKey` 0,
+      `font.style` `Normal`, `grid.style` `dots`, and the three
+      bands. An imported file that omits a key still omits it on
+      export.
 
 ### Done means
 
-Manager 24 round-trips the detail fixture through a file. Lint and
-unit tests pass.
+Manager 24 round-trips the detail fixture through a file, and New
+exports the written defaults. Lint and unit tests pass.
 
 ### Exit gate
 
@@ -1348,7 +1881,7 @@ Phase 4 Status complete.
 - [ ] 5.1 Draw the page from the document model. Unzoomed scale is
       96 CSS pixels per inch. Margins are guides.
 - [ ] 5.2 Changing the page in the model (test hook or a temporary
-      control that Phase 12 will replace) redraws the page.
+      control that Phase 14 will replace) redraws the page.
 - [ ] 5.3 Browser: Letter portrait is larger than a 4 in custom page,
       and the margin guides sit inset by 0.25 in on the fixture.
 
@@ -1417,8 +1950,8 @@ Phase 6 Status complete.
       object: dots, grid, dotted, dashed, and none.
 - [ ] 7.2 A `ResizeObserver` redraws when the band size changes.
       Disconnect it in `cleanup` / `destroy`.
-- [ ] 7.3 Spacing follows the unit string. Default from the fixture
-      is `0.125 in`.
+- [ ] 7.3 Spacing follows the unit string. The default is the
+      Defaults table: `0.125 in`, style `dots`.
 - [ ] 7.4 Browser: switch the fixture grid style across the five
       values and resize a band. The pattern stays aligned to the
       band origin.
@@ -1522,18 +2055,23 @@ Phase 9 Status complete.
 
 ### Work items
 
-- [ ] 10.1 Add a static text item to the selected band. Default box
-       `1.5 in` by `0.2 in`, centered in the band.
+- [ ] 10.1 The palette adds a static text item to the selected band.
+       The new item writes the Defaults table: box `1.5 in` by
+       `0.2 in`, centered in the band, `align` `Left`, `text`
+       `Text`. It omits `font` and `mask`.
 - [ ] 10.2 Drag moves `left` and `top`. Corner resize changes `width`
        and `height`. Commit on pointerup through the model. Clamp to
        the band.
 - [ ] 10.3 Selection draws an inset outline. Delete removes the item.
        Undo restores position and existence.
 - [ ] 10.4 The item shows its text. v1 text is the item's `text`
-       property, edited in Phase 12. Until then a new item reads
+       property, edited in Phase 14. Until then a new item reads
        "Text".
 - [ ] 10.5 Browser: add, drag, resize, undo, export. The file has
        `typeKey` 0 and unit strings.
+- [ ] 10.6 The canvas clips item text to the item box. A string
+       longer than the box is cut off on screen. Emit clips the same
+       way. The band does not grow.
 
 ### Done means
 
@@ -1549,61 +2087,44 @@ Lint, unit tests for the clamp, and the browser check.
 
 ---
 
-## Phase 11 — Lookup repair packet
+## Phase 11 — Lookup 053 repair
 
 ### Goal
 
-Hand Andrew a migration that fixes the v1 lookup rows. Do not apply
-it.
+Hand Andrew one migration for lookup 053. Do not apply it.
 
 ### Entry gate
 
 Phase 0 Status complete. This phase may be prepared while Phases 1–10
-are still open, and it is applied before Phase 12 starts. Re-check
-disk the day the file is numbered.
-
-**Lookup family note:** Helium AGENTS.md states "One lookup family per
-migration." Lookup 053 (Report Object Types) and lookup 057 (Report Page
-Sizes) are distinct families. Phase 11 is split into two migrations:
-
-- Migration A (lookup 053): icon fixes for keys 7 and 16, attribute list
-  updates for static text and field items, and insertion of Page Number
-  (key 61) and Page Count (key 62) — the keys Phase 0 approved.
-- Migration B (lookup 057): label fix for key 1, insertion of Legal
-  portrait, A4, and Tabloid rows, and font list additions to lookup 054
-  (Vanadium Sans plus any faces Phase 0 named). Lookup 054 is updated as
-  a separate family migration if the rule requires it; otherwise it is
-  bundled with A only if the rule permits multiple families per packet.
-  Re-check the rule the day the files are numbered.
+are still open. It is applied before Phase 14 starts. Re-check disk
+the day the file is numbered.
 
 ### Work items
 
 - [ ] 11.1 Re-read
        [`/docs/He/GUIDE.md`](/docs/He/GUIDE.md) and the highest
        Acuranzo file, QueryRef, and lookup key. Take the next file
-       number. Do not edit 1086, 1087, or 1090 in place.
-- [ ] 11.2 Two forward migrations (Phase 0 Q1 decided: split). Migration
-       A updates the broken 053 icons (keys 7 and 16), inserts page-number
-       keys 61 and 62 (Page Number, Page Count), and updates v1 attribute
-       lists so static text and field items include position, font, text
-       or field, and datasource as Phase 0 requires. Migration B fixes the
-       057 key 1 label and inserts the missing page sizes (Legal portrait,
-       A4, Tabloid). Neither packet adds chart or barcode attributes:
-       those types have none in lookup 054 today and their options live in
-       bespoke panels. Reverse restores the previous JSON and deletes only
-       the inserted keys.
-- [ ] 11.3 Font list gains the faces Phase 0 named. Existing faces
-       stay, so an old row still resolves.
-- [ ] 11.4 Hand the packet over. Record the file number in this
+       number. Do not edit 1086 in place.
+- [ ] 11.2 One forward migration for lookup 053 only. Fix the `Iion`
+       keys 7 and 16. Fix the unclosed tag on key 52. Insert Page
+       Number (key 61), Page Count (key 62), and Parameter (key 63).
+       Update the v1 attribute lists so static text, field text, field
+       number, field datetime, field image, calculated text, calculated
+       number, calculated datetime, aggregate text, aggregate number,
+       aggregate datetime, and parameter include position, font,
+       text or field, and
+       datasource. Leave lookup 054 keys 9, 10, 11, and 12 off every
+       v1 attribute list. The `mask` string is the format. Do not add
+       chart or barcode attribute rows. Reverse
+       restores the previous JSON and deletes only the inserted keys.
+- [ ] 11.3 Hand the packet over. Record the file number in this
        phase's Status after Andrew reports the apply.
 
 ### Done means
 
-Andrew reports the packets applied. Lookup 053 keys 7 and 16 have `icon`.
-Lookup 053 has new keys 61 (Page Number) and 62 (Page Count). Lookup 057
-has a correctly labeled Letter landscape row and the new page sizes.
-Lookup 054 font list gains Vanadium Sans. v1 attribute lists include the
-properties Phase 12 will edit.
+Andrew reports the packet applied. Keys 7 and 16 store `icon`. Keys
+61, 62, and 63 exist. The v1 attribute lists include the properties
+Phase 14 edits.
 
 ### Exit gate
 
@@ -1616,7 +2137,87 @@ does not mark this complete from a clean local lint alone.
 
 ---
 
-## Phase 12 — Property panel
+## Phase 12 — Lookup 054 fonts
+
+### Goal
+
+Add Vanadium Sans to the report font list. One family, one migration.
+Do not apply it.
+
+### Entry gate
+
+Phase 0 Status complete. May be prepared with Phase 11. Applied before
+Phase 14 starts. Re-check the next file number the day it is written.
+
+### Work items
+
+- [ ] 12.1 Re-read the highest Acuranzo file. Do not edit
+       [`acuranzo_1087.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1087.lua)
+       in place.
+- [ ] 12.2 One forward migration for lookup 054 only. The font list
+       gains Vanadium Sans. Existing faces stay, so an old row still
+       resolves. Key 4's list becomes `Left`, `Center`, and `Right`.
+       Key 17's list becomes `Normal`, `Bold`, `Italic`, and
+       `Bold + Italic`. Reverse removes the added face and restores
+       the previous JSON for keys 4 and 17.
+- [ ] 12.3 Hand the packet over. Record the file number after Andrew
+       reports the apply.
+
+### Done means
+
+Andrew reports Vanadium Sans on lookup 054, the faces that were
+already there still resolve, and keys 4 and 17 list the v1 captions.
+
+### Exit gate
+
+Andrew's apply report.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 13 — Lookup 057 page sizes
+
+### Goal
+
+Fix the Letter landscape label and add the missing page sizes. One
+family, one migration. Do not apply it.
+
+### Entry gate
+
+Phase 0 Status complete. May be prepared with Phases 11 and 12.
+Applied before Phase 14 starts. Re-check the next file number the
+day it is written.
+
+### Work items
+
+- [ ] 13.1 Re-read the highest Acuranzo file. Do not edit
+       [`acuranzo_1090.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1090.lua)
+       in place.
+- [ ] 13.2 One forward migration for lookup 057 only. Relabel key 1
+       as US Letter landscape. Insert Legal portrait, A4, and Tabloid.
+       Reverse restores the label and deletes only the inserted keys.
+- [ ] 13.3 Hand the packet over. Record the file number after Andrew
+       reports the apply.
+
+### Done means
+
+Andrew reports a correctly labeled Letter landscape row and the three
+new page sizes.
+
+### Exit gate
+
+Andrew's apply report.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 14 — Property panel
 
 ### Goal
 
@@ -1625,35 +2226,37 @@ list on its lookup 053 row.
 
 ### Entry gate
 
-Phase 11 Status complete, including the apply.
+Phases 11, 12, and 13 are complete, including the applies.
 
 ### Work items
 
-- [ ] 12.1 Load lookups 053, 054, and 057 through the existing lookup
-        cache. Read `src/shared/lookups.js` first and follow its shape.
-   - **Gap:** `lookups.js` currently fetches `[1, 30, 53, 54, 60]` and
-     stores 053 as `themes` and 054 as `icons`. It does **not** fetch
-     lookup 057 (`page_sizes`), and there is no accessor for it. Add 057
-     to the batch query and expose a `getPageSizes()` accessor so the page
-     size picker in 12.3 has data. Rename the category comments for 053
-     and 054 from "Themes/Icons" to "Report Object Types" and "Report
-     Object Attributes" (or add aliases); the stale names are confusing
-     for anyone reading the plan.
-- [ ] 12.2 The panel lists the attributes advertised for the selected
+- [ ] 14.1 Load lookup ids 053, 054, and 057 with QueryRef 026
+       (Get Lookup, `LOOKUPID`). Do not read them from `lookups.js`.
+       That module's QueryRefs 053 and 054 are Get Themes (lookup 41)
+       and Get Icons (lookup 40). Leave those categories alone.
+       Cache the three report lookups on the manager.
+- [ ] 14.2 The panel lists the attributes advertised for the selected
        `typeKey`. Editors follow lookup 054's `Editor` value for the
        v1 set: text, number, list, boolean. An unknown editor toasts
-       and skips that row.
-- [ ] 12.3 Edits commit through the model. Undo reverts the panel and
+       and skips that row. Keys 9–12 are not on the lists. The mask
+       string is edited in work item 15.5 and is not a lookup row.
+- [ ] 14.3 Edits commit through the model. Undo reverts the panel and
        the canvas. Page size picks a lookup 057 row and copies its
        width, height, and margins into the definition.
-- [ ] 12.4 Browser: change the static text, the font size, and the
+- [ ] 14.4 Browser: change the static text, the font size, and the
        page size. Export. Import into a fresh session and see the
        same panel values.
+- [ ] 14.5 An omitted key shows the Defaults table value and a note
+       that the file omits it. Editing the control writes the key.
+       A number item with `mask` `""` shows the plain-decimal rule.
+       An item with no `font` shows the report font and says the
+       file omits the override.
 
 ### Done means
 
-The properties the operator can see are the properties in the file,
-and they come from the lookups.
+The panel shows the effective value, including a default the file
+left out. The properties come from the lookups and the Defaults
+table.
 
 ### Exit gate
 
@@ -1667,7 +2270,7 @@ to be visible).
 
 ---
 
-## Phase 13 — Field items and a sample datasource
+## Phase 15 — Field items and a sample datasource
 
 ### Goal
 
@@ -1675,23 +2278,26 @@ Place a field and show which column it is bound to.
 
 ### Entry gate
 
-Phase 12 Status complete.
+Phase 14 Status complete.
 
 ### Work items
 
-- [ ] 13.1 A session-only sample JSON datasource. The operator pastes
+- [ ] 15.1 A session-only sample JSON datasource. The operator pastes
        or imports an array of objects. Column names are the union of
        keys. This JSON is not part of the definition export.
-- [ ] 13.2 Add field text, number, and datetime items. The property
+- [ ] 15.2 Add field text, number, and datetime items. The property
        panel's Field editor lists those column names. Datasource
        names come from the definition's `datasources` array.
-- [ ] 13.3 The canvas label is the field name. An empty binding shows
+- [ ] 15.3 The canvas label is the field name. An empty binding shows
         the type caption and a toast when the operator exports, and
         export is refused for that item. Compose will warn later. The
         designer does not invent a value. (Per `LITHIUM-INS.md` rule 1,
         no silent fallback — the operator must pick or fill a binding.)
-- [ ] 13.4 Browser: bind `customer`, export, confirm `field` and
+- [ ] 15.4 Browser: bind `customer`, export, confirm `field` and
        `typeKey` 20, reload, and see the binding.
+- [ ] 15.5 Number and datetime items edit a `mask` string. The
+       canvas label stays the field name. An empty mask means the
+       default in Value format. Export round-trips `mask`.
 
 ### Done means
 
@@ -1708,7 +2314,7 @@ Lint, unit tests, and the browser check.
 
 ---
 
-## Phase 14 — One group level
+## Phase 16 — One group level
 
 ### Goal
 
@@ -1717,15 +2323,17 @@ datasource.
 
 ### Entry gate
 
-Phase 13 Status complete.
+Phase 15 Status complete.
 
 ### Work items
 
-- [ ] 14.1 The group header stores `field`. The footer shares that
-       grouping. A second group level is refused with a toast.
-- [ ] 14.2 The canvas shows the three bands in order: group header,
+- [ ] 16.1 The palette adds one group header and one group footer.
+       Each is `0.25 in` tall. The header stores `field`. The footer
+       shares that grouping. A second group level is refused with a
+       toast.
+- [ ] 16.2 The canvas shows the three bands in order: group header,
        detail, group footer.
-- [ ] 14.3 Browser: set the group field, export, undo.
+- [ ] 16.3 Browser: set the group field, export, undo.
 
 ### Done means
 
@@ -1742,7 +2350,7 @@ Lint, unit tests, and the browser check.
 
 ---
 
-## Phase 15 — Save and load packet
+## Phase 17 — Save and load packet
 
 ### Goal
 
@@ -1752,36 +2360,38 @@ insert a new revision. Hand them over. Do not apply them.
 ### Entry gate
 
 Phase 0 column lock still matches this file. Re-check numbers the
-day the files are written. Phases 4–14 may still be open. Phase 16
+day the files are written. Phases 4–16 may still be open. Phase 18
 waits for the apply.
 
 ### Work items
 
-- [ ] 15.1 Read a recent QueryRef seed (the 1260 / 1108 pattern in
+- [ ] 17.1 Read a recent QueryRef seed (the 1260 / 1108 pattern in
        [`/docs/He/GUIDE.md`](/docs/He/GUIDE.md)) and
        [`acuranzo_1015.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1015.lua)
        before writing SQL.
-- [ ] 15.2 Three migrations, one QueryRef each, `TYPE_SQL` so the SPA
-        can call them. List latest revision per `report_id`. Get one
-        `(report_id, rev_id)`. Insert the next `rev_id` for a name and
-        a definition. Insert allocates `report_id` the way a sibling
-        insert migration allocates its id. Copy that pattern. Do not
-        invent one.
-- [ ] 15.3 A fourth QueryRef reads one document image by `doc_id`:
+- [ ] 17.2 Three report migrations, one QueryRef each, `TYPE_SQL` so
+        the SPA can call them. List latest revision per `report_id`.
+        Get one `(report_id, rev_id)`. Insert the next `rev_id` for a
+        name and a definition. Insert allocates `report_id` the way a
+        sibling insert migration allocates its id. Copy that pattern.
+        Do not invent one. The document-image read is the fourth
+        migration, in 17.3.
+- [ ] 17.3 A fourth QueryRef reads one document image by `doc_id`:
         `file_data` and `file_name` from `documents`
         ([`acuranzo_1010.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1010.lua)).
         The report writer's `reference` image kind resolves through it
-        in Phase 21, so the picker and compose share one read. If the
+        in Phase 51, so the picker and compose share one read. If the
         documents table shape has changed by the day this is written,
         re-read it before numbering.
-- [ ] 15.4 Reverse deletes the QueryRef row only.
-- [ ] 15.5 Hand the packets over. Record the QueryRef integers in
+- [ ] 17.4 Reverse deletes the QueryRef row only.
+- [ ] 17.5 Hand the packets over. Record the QueryRef integers in
         this phase's Status after Andrew reports the apply.
 
 ### Done means
 
-Andrew reports the three QueryRefs applied, and a manual call returns
-the row he inserted.
+Andrew reports the four QueryRefs applied. A manual call of the
+insert returns the row he inserted, and a manual call of the
+document read returns `file_data` for a `doc_id`.
 
 ### Exit gate
 
@@ -1794,7 +2404,7 @@ Andrew's apply report. The agent does not mark this complete on Test
 
 ---
 
-## Phase 16 — Revisions in the manager
+## Phase 18 — Revisions in the manager
 
 ### Goal
 
@@ -1802,17 +2412,17 @@ Save the open definition as a new revision and reopen it.
 
 ### Entry gate
 
-Phase 14 and Phase 15 Status complete.
+Phase 16 and Phase 17 Status complete.
 
 ### Work items
 
-- [ ] 16.1 List view of latest revisions via the list QueryRef.
+- [ ] 18.1 List view of latest revisions via the list QueryRef.
        Opening a row loads that revision into the document model.
-- [ ] 16.2 Save appends a revision. It does not update the open
+- [ ] 18.2 Save appends a revision. It does not update the open
        `rev_id` in place. The canvas then shows the new revision.
-- [ ] 16.3 A failed call toasts the conduit error and keeps the
+- [ ] 18.3 A failed call toasts the conduit error and keeps the
        document dirty.
-- [ ] 16.4 Browser: save, reload the manager, open the row, and see
+- [ ] 18.4 Browser: save, reload the manager, open the row, and see
        the same items. Save again and see `rev_id` increase.
 
 ### Done means
@@ -1831,51 +2441,49 @@ against the applied QueryRefs.
 
 ---
 
-## Phase 17 — `Reports.Render` compose and HTML
+## Phase 19 — Compose skeleton
 
 ### Goal
 
-Seed one invokable script that composes the intermediate document and
-emits the HTML export. The HTML export is also the preview medium.
+Seed `Reports.Render` and return the structural intermediate for a
+static report, a detail list, and one group level.
 
 ### Entry gate
 
-Phase 1 fixtures exist. Phase 15 is applied if the script loads a
+Phase 1 fixtures exist. Phase 17 is applied if the script loads a
 stored id. The fixture call, which passes `definition` inline, can be
-written before Phase 15. Re-check the next file number.
+written before Phase 17. Re-check the next file number.
 
 ### Work items
 
-- [ ] 17.1 Copy the `scripts` insert shape from
+- [ ] 19.1 Copy the `scripts` insert shape from
        [`acuranzo_1376.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1376.lua).
        Group `Reports`, name `Render`, `invokable = 1`,
        `mcp_access = 0`.
-- [ ] 17.2 `stage=compose` implements the structural render behavior
-       (the bullet list under v1 render behavior). User formulas,
-       primitive aggregates, custom breaks, barcodes, and charts are
-       Phases 23, 27, 28, 29, and 30. Output matches the Phase 1
-       intermediate fixtures for the static, detail, and grouped
-       cases.
-- [ ] 17.3 `stage=html` emits one section per page with
-       `break-after: page`, the substituted text, and positions in
-       physical CSS units. `stage` defaults to `pdf`; the preview and
-       the HTML export both request `html` explicitly, so the bytes
-       Andrew previews are the bytes he exports.
-- [ ] 17.4 Missing datasource, unknown `typeKey`, and empty `field`
-       become warnings on the result. The script still returns a
-       document. A `format` other than 1 returns an error through
+- [ ] 19.2 `stage=compose` emits the structural intermediate. A static
+       report renders when `sources` is empty and the detail band has
+       no datasource. The detail band repeats once per row. Field text
+       is the plain value, so `1234.5` prints `1234.5` even when a
+       mask is stored. One group level opens and closes, on one page.
+       The result includes `log`. A query datasource with no
+       array adds a warn entry and contributes no rows. The fixture calls
+       pass `stage=compose`. Phase 31 switches the default stage to
+       `pdf`.
+- [ ] 19.3 A missing datasource, an unknown `typeKey`, and an empty
+       `field` become warn entries on `log`. The script still returns a document.
+       A `format` other than 1 returns an error through
        `H.set_result_json` and does not throw out of the worker.
-- [ ] 17.5 Hand the packet over. After apply, Andrew runs the three
-       fixture calls and the results match the fixture files.
+- [ ] 19.4 Hand the packet over. After apply, the three structural
+       fixture calls match. The formatted `1,234.50` file is Phase 20.
 
 ### Done means
 
-Andrew reports the three fixture calls matched. The script is
-`Reports.Render`.
+Andrew reports the three structural fixture calls matched, and the
+script is `Reports.Render`.
 
 ### Exit gate
 
-Andrew's apply report and the three calls. Test 98 on the new
+Andrew's apply report and those three calls. Test 98 on the new
 migration if he ran it.
 
 ### Status
@@ -1884,47 +2492,226 @@ migration if he ran it.
 
 ---
 
-## Phase 18 — Preview
+## Phase 20 — Value format
 
 ### Goal
 
-The designer runs `Reports.Render` and shows the composed pages in a
-sandboxed iframe. The preview is the HTML export artifact: the same
-stage, the same bytes. The designer and the preview are not co-visible,
-so rendering the whole report is a deliberate action, never a re-render
-chasing every drag.
+Compose applies the mask table. Null prints blank.
 
 ### Entry gate
 
-Phase 17 Status complete. The open definition's datasources are the
-session sample from Phase 13, or an empty object for a static report.
+Phase 19 Status complete.
 
 ### Work items
 
-- [ ] 18.1 If `src/shared/conduit.js` still has no `invokeScript`,
-         add it for `POST /api/conduit/script` (JWT-bearer, params shape
-         per the call contract above) and cover it with a unit test.
-         If CATCHUP already added it, call that function. Note that
-         `conduit.js` currently exposes `query`/`authQuery` only — there
-         is no `invokeScript` helper today.
-- [ ] 18.2 Preview requests `stage=html` with the current definition
-         and the session sample. DOMPurify runs on the HTML. The result
-         is assigned to a sandboxed iframe `srcdoc`. Because preview
-         and export are the same stage, the preview matches the export
-         by construction, not by a second renderer.
-- [ ] 18.3 A render button renders the whole report. Whether auto-render
-         on change is worth the round trips is decided by the browser
-         trial in 18.5 — if it wins, it debounces, and it never fires
-         while the pointer is dragging or resizing.
-- [ ] 18.4 Errors and warnings from the script toast. The canvas
-        stays as it was.
-- [ ] 18.5 Browser: preview the detail fixture with two sample rows
-        and see two detail bands. Preview a report whose sample is
-        missing and see the warning.
+- [ ] 20.1 Apply the Value format table. A number rounds half away
+       from zero. An omitted number mask prints a plain decimal. A
+       mask that does not parse warns once, and the raw value is
+       printed. Dates follow the same table.
+- [ ] 20.2 The formatted detail fixture prints `1,234.50` and a blank
+       null. A second fixture walks the rest of the mask table.
+- [ ] 20.3 Hand the amendment over. Do not edit the applied Phase 19
+       file. After apply, both fixture calls match.
 
 ### Done means
 
-The operator can preview the report the Lua script produced.
+The formatted detail fixture and the mask-table fixture both match.
+
+### Exit gate
+
+Andrew's apply report and the two fixture calls.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 21 — Paging
+
+### Goal
+
+Fixed-height paging keeps a group header with its first detail row.
+
+### Entry gate
+
+Phase 20 Status complete. Masks do not change band height.
+
+### Work items
+
+- [ ] 21.1 Page breaks use the stored band heights against the content
+       box. If the group header plus one detail row do not fit in the
+       remaining box, both move to the next page. If they do not fit
+       on an empty page either, compose warns and places them anyway.
+       The header is not repeated on a later page. Its summary is
+       every row of the group.
+- [ ] 21.2 Add an overflow fixture beside the Phase 1 files. The
+       header moves with its first detail row.
+- [ ] 21.3 Hand the amendment over. After apply, the overflow fixture
+       matches.
+
+### Done means
+
+The overflow fixture's page list keeps the group header with its
+first detail row.
+
+### Exit gate
+
+Andrew's apply report and the fixture call.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 22 — System datetime and system user
+
+### Goal
+
+The palette can place a system datetime and a system user, and compose prints them.
+
+### Entry gate
+
+Phase 21 Status complete.
+
+### Work items
+
+- [ ] 22.1 The palette adds lookup 053 key 5 (System datetime) and key 6 (System user). A new datetime item stores the omitted-mask default. A new user item stores no mask.
+- [ ] 22.2 System user prints `params._hydrogen.username`. An empty username prints blank and adds a warn log entry.
+- [ ] 22.3 System datetime uses the one generation instant from
+       Value format. Two items on the same report share it. It adds
+       `params._hydrogen.tzoffset` minutes, where a negative offset
+       is west of UTC, and formats that civil time with the item
+       mask. The mask grammar does not change. `tz` is the IANA name
+       Hydrogen stored on the claim, and compose does not look it up.
+       A missing `tzoffset` formats the instant in UTC and adds an
+       info log entry. Field datetimes keep the Value format rules.
+- [ ] 22.4 Fixture: username `ada` prints `ada`. An empty username
+       prints blank and adds a warn entry. The call sends
+       `params.now` `1772719629` and does not read the live clock.
+       With `tzoffset` `-420` and mask `yyyy-mm-dd hh:nn` it prints
+       `2026-03-05 07:07`. The same instant with no `tzoffset` prints
+       `2026-03-05 14:07` and adds an info entry. Hand the amendment
+       over.
+
+### Done means
+
+The fixture prints the username and the timezone-shifted system datetime.
+
+### Exit gate
+
+Andrew's apply report and the fixture call.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 23 — Page number and page count
+
+### Goal
+
+Page number and page count print on the page that owns them.
+
+### Entry gate
+
+Phase 22 Status complete.
+
+### Work items
+
+- [ ] 23.1 The palette adds lookup 053 key 61 (Page number) and key 62 (Page count). Both use the number mask. An omitted mask prints a plain integer.
+- [ ] 23.2 Compose writes the page's number and the report's page count into those items after the page list exists.
+- [ ] 23.3 Fixture: a two-page report prints `1` and `2`, and page count `2` on both pages. Hand the amendment over.
+
+### Done means
+
+The two-page fixture shows the page number and the page count.
+
+### Exit gate
+
+Andrew's apply report and the fixture call.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 24 — HTML emit
+
+### Goal
+
+`stage=html` emits one section per page of the composed document.
+
+### Entry gate
+
+Phase 23 Status complete.
+
+### Work items
+
+- [ ] 24.1 `stage=html` emits one section per page with
+       `break-after: page`, the composed text, and positions in
+       physical CSS units. Align, font family, size, and style come
+       from the item, then the definition font. Text clips to the
+       item box. A call that omits `stage` still runs `compose`
+       until Phase 31.
+- [ ] 24.2 Add the expected HTML skeleton for the detail fixture.
+- [ ] 24.3 Hand the amendment over. After apply, the HTML fixture
+       matches.
+
+### Done means
+
+The detail fixture's HTML matches the expected skeleton.
+
+### Exit gate
+
+Andrew's apply report and the fixture call.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 25 — Preview
+
+### Goal
+
+The designer runs `Reports.Render` at `stage=html` and shows that
+HTML in a sandboxed iframe.
+
+### Entry gate
+
+Phase 24 Status complete. The open definition's datasources are the
+session sample from Phase 15, or an empty object for a static report.
+
+### Work items
+
+- [ ] 25.1 If `src/shared/conduit.js` still has no `invokeScript`,
+       add it for `POST /api/conduit/script` (JWT-bearer, params shape
+       per the call contract) and cover it with a unit test. If
+       CATCHUP already added it, call that function.
+- [ ] 25.2 Preview requests `stage=html` with the current definition
+       and the session sample. DOMPurify runs on the HTML. The result
+       is assigned to a sandboxed iframe `srcdoc`. The parent page
+       does not assign report HTML to `innerHTML`.
+- [ ] 25.3 A render button renders the whole report. Auto-render on
+       change is decided by the browser trial in 23.5. If it wins, it
+       debounces, and it never fires while the pointer is dragging
+       or resizing.
+- [ ] 25.4 A result that carries `error` toasts once and leaves
+       the canvas as it was. `log` stays on the result. This phase
+       does not toast each entry. The generation-log phase shows them.
+- [ ] 25.5 Browser: preview the detail fixture with two sample rows
+       and see two detail bands. Preview a report whose sample is
+       missing and see one warn entry on `log`.
+
+### Done means
+
+The operator can preview the HTML the script produced for the detail
+fixture.
 
 ### Exit gate
 
@@ -1937,33 +2724,188 @@ Lint, the conduit unit test, and the browser check against an applied
 
 ---
 
-## Phase 19 — Seed lua-pdfkit
+## Phase 26 — Generation log
+
+### Goal
+
+A generation shows its info, warn, and error messages, and the open report shows the three counts.
+
+### Entry gate
+
+Phase 25 Status complete.
+
+### Work items
+
+- [ ] 26.1 The preview keeps the script's `log` array. The panel lists each entry's level and message. Lithium counts `info`, `warn`, and `error`. The report header shows those three counts for the last generation.
+- [ ] 26.2 A non-zero error count flags the open report as an error. A warn count with zero errors flags it as a warning. Info only flags it as info. Zero entries show no flag. The counts are session state. They are not columns on `reports`.
+- [ ] 26.3 Browser: the missing-sample preview shows one warn entry, a warn count of 1, and the warn flag. A clean detail preview shows an empty log and no flag.
+
+### Done means
+
+The operator can read the generation messages and see the three counts on the open report.
+
+### Exit gate
+
+Lint and the browser check.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 27 — Over-cap preview
+
+### Goal
+
+A definition that does not fit in the params cap still previews, by
+saving first and rendering by `report_id`.
+
+### Entry gate
+
+Phase 26 Status complete. Phase 18 is already applied.
+
+### Work items
+
+- [ ] 27.1 When the inline params would exceed
+       `ClientInvokeMaxParamsBytes`, save the definition and preview
+       by `report_id`. One toast names that path. Do not send the
+       session JWT as a script param.
+- [ ] 27.2 Browser: an over-cap definition previews after that toast,
+       and the canvas is unchanged when the save fails.
+
+### Done means
+
+An over-cap definition previews by `report_id` after one toast.
+
+### Exit gate
+
+Lint and the browser check.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 28 — Query designer
+
+### Goal
+
+The designer stores a QueryRef datasource and its parameters, runs
+that query with the session, and previews the rows it returned.
+
+### Entry gate
+
+Phase 27 Status complete.
+
+### Work items
+
+- [ ] 28.1 The definition stores `parameters`: `name`, `type`
+       (`text`, `number`, `date`, or `boolean`), and `default`. A
+       query datasource stores `kind` `query`, `queryRef`, and
+       `params` mapping each bind to a parameter or a literal.
+       `kind` `json` stays the fixture and paste path. Sample rows
+       stay session state and are not exported.
+- [ ] 28.2 The designer edits that list and shows a run strip: one
+       control per parameter, defaults filled in. Run calls each
+       QueryRef through conduit `authQuery` with the session JWT
+       and stores the rows as the session sample. A failed query
+       toasts and leaves the previous sample.
+- [ ] 28.3 A parameter item (lookup 053 key 63) prints one parameter
+       with the same `mask` as a field. It may sit on any band.
+       Phase 20 formats that mask.
+- [ ] 28.4 Browser: a small QueryRef returns two rows and the preview
+       shows two detail bands. The preview request includes those
+       rows in `sources`.
+
+### Done means
+
+Andrew runs a QueryRef from the designer and the preview shows two
+detail bands.
+
+### Exit gate
+
+Lint and the browser check.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 29 — Query execution
+
+### Goal
+
+A render that does not include rows runs the same QueryRef inside
+`Reports.Render`.
+
+### Entry gate
+
+Phase 28 Status complete. Phase 17 is applied when the call uses
+`report_id`. Re-check that `H.altquery_sync` still accepts a database name,
+SQL, and named binds.
+
+### Work items
+
+- [ ] 29.1 When `sources` omits a query datasource, `Reports.Render`
+       loads `queries.code` with `query_ref` and
+       `query_type_a28 = 1`, then runs
+       `H.altquery_sync(params._hydrogen.database, code, binds)`
+       with the resolved binds. `params.parameters` overrides
+       defaults. When `sources` includes the array, the script does
+       not query. When the database name is empty or is not a
+       configured connection, the script adds a warn entry and
+       returns no rows. The worker login is the one on that
+       connection. Row-level permissions stay in Later.
+- [ ] 29.2 Hand the amendment over. A `report_id` render with no
+       `sources` returns the same rows the designer run returned.
+
+### Done means
+
+A `report_id` render with no `sources` returns the same two rows as
+the designer run.
+
+### Exit gate
+
+Andrew's apply report and that call.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 30 — Seed lua-pdfkit
 
 ### Goal
 
 Put the pure-Lua PDFKit port into `scripts` so `require` loads it.
-No report output yet. The source is the port's own repository, and the
-packet records the commit or version it was generated from.
+No report output yet.
 
 ### Entry gate
 
 Phase 0 Status complete. Re-check the next Acuranzo file number the
-day this is written. Phases 1–18 may still be open. Phases 20–21 wait
-for the apply.
+day this is written. Phases 1–29 may still be open. Phases 31 and 52
+wait for the apply.
 
 ### Work items
 
-- [ ] 19.1 Copy the tree named in the library lock into one migration.
+- [ ] 30.1 Copy the tree named in the library lock into one migration.
        One migration seeds every `lua-pdfkit.*` module (`init`,
        `document`, `page`, `path`, `image`, `font.afm`, …).
-       `invokable = 0`, `mcp_access = 0`. Group name `lua-pdfkit`. The
-       script name is the require path after the first dot. One library
-       per file, the exception to one-script-per-migration. Reverse
-       deletes only those rows.
-- [ ] 19.2 Confirm a standard face (`Helvetica`) renders with `io` nil.
-       If the port still `io.open`s an AFM file, bundle that AFM text
-       into the seeded module before handing the packet over.
-- [ ] 19.3 Hand the packet over. After apply, Andrew runs a one-page
+       `invokable = 0`, `mcp_access = 0`. Group name `lua-pdfkit`.
+       The script name is the require path after the first dot. One
+       library per file, the exception to one-script-per-migration.
+       Reverse deletes only those rows. The packet records the commit.
+       If neither the port repository nor the task-tree path is
+       present, stop and ask.
+- [ ] 30.2 Confirm a standard face (`Helvetica`) renders with `io`
+       nil. If the port still `io.open`s an AFM file, bundle that AFM
+       text into the seeded module before handing the packet over. A
+       phase that needs `io` stops and asks.
+- [ ] 30.3 Hand the packet over. After apply, Andrew runs a one-page
        probe: `require("lua-pdfkit.init")`, `doc:text`, `doc:finish()`,
        and `doc:output()`. The probe returns a PDF byte length.
        `AllowDBModuleLoad` is on for that call.
@@ -1984,42 +2926,38 @@ if he ran it.
 
 ---
 
-## Phase 20 — PDF emit
+## Phase 31 — PDF text
 
 ### Goal
 
-`stage=pdf` returns a PDF of the composed pages. This is the default
-stage and the highest-priority export. Text only; images, barcodes,
-and charts join in Phases 21, 23, and 27.
+`stage=pdf` returns a text PDF of the composed pages, and `pdf`
+becomes the default stage.
 
 ### Entry gate
 
-Phase 19 Status complete.
+Phase 30 and Phase 21 Status complete.
 
 ### Work items
 
-- [ ] 20.1 Amend `Reports.Render` in a new migration that replaces
-       the script body the way a sibling script-update migration
-       does. Re-read one before writing. Do not edit the Phase 17
-       file after it has been applied.
-- [ ] 20.2 `PDFDocument.new` uses the definition page size. One
+- [ ] 31.1 Amend `Reports.Render` in a new migration. Do not edit an
+       applied file. Re-read one script-update migration before
+       writing.
+- [ ] 31.2 `PDFDocument.new` uses the definition page size. One
        `addPage` per intermediate page. Text uses a standard face
-       the port already carries. Positions are in PDF points.
-- [ ] 20.3 The JSON result is `{ "pdf_base64": "...", "warnings": [] }`.
-       Write the result-cap contract into the docs: a PDF that does not
-       fit `ClientInvokeMaxResultBytes` returns an error naming the cap
-       and the actual size, compose having already run. Confirm the
-       conduit response path has no second, smaller body cap, and say
-       so in the contract note.
-- [ ] 20.4 A fixture pair: detail definition, source, expected PDF page
-       count. The fixture PDF is measured against the cap.
-- [ ] 20.5 Hand the packet over. Andrew's call for the detail fixture
-       opens as a PDF with the right page count.
+       the port already carries. Positions are in PDF points. Align,
+       font size, and font style come from the item, then the
+       definition font. Bold and italic are the PDF flags. The face
+       stays that standard face. Text clips to the item box.
+- [ ] 31.3 A call that omits `stage` now runs `pdf`. The detail
+       fixture returns `{ "pdf_base64": "...", "log": [] }` and
+       opens with the right page count. The result-cap behavior is
+       Phase 32.
+- [ ] 31.4 Hand the packet over. Andrew's call opens as a PDF with
+       the right page count.
 
 ### Done means
 
-The detail fixture renders to a PDF that opens with the right page
-count, and the result-cap behavior is written down.
+The detail fixture opens as a PDF with the right page count.
 
 ### Exit gate
 
@@ -2031,66 +2969,38 @@ Andrew's apply report and the fixture call.
 
 ---
 
-## Phase 21 — Images through image_scale
+## Phase 32 — Result cap
 
 ### Goal
 
-A static image and a field image are sized by Hydrogen and shown in
-the HTML export, the preview, and the PDF, with per-element options and
-a store-once rule.
+A PDF whose JSON does not fit the result cap returns
+`result_too_large` instead of a rejected body.
 
 ### Entry gate
 
-Phase 18 and Phase 19 Status complete. `Reporting.Enabled` is true
-on the server Andrew uses for the gate.
+Phase 31 Status complete.
 
 ### Work items
 
-- [ ] 21.1 Palette shows lookup 053 keys 2 (Static Image) and 22
-       (Field Image). The item stores its source per the Images
-       section (`embedded` base URI, a `doc_id` reference, or a URL),
-       the box, and the image options: `dpi`, `format`, a downsample
-       cap in pixels, and the reuse rule.
-- [ ] 21.2 The designer's image browser loads a local file or takes a
-       clipboard paste, and both become `embedded`. The reference
-       picker lists documents through the Phase 15 read QueryRef.
-       Embedded bytes dedupe into the definition's content-hash
-       registry, so a repeated image costs one copy.
-- [ ] 21.3 `Reports.Render` resolves all three kinds to bytes at the
-       start of generation: references through the Phase 15 QueryRef,
-       URLs through `H.http.request_sync` with the JWT, before any
-       item is placed. A failed reference or unreachable URL is a
-       warning and an empty box.
-- [ ] 21.4 `stage=html` and `stage=pdf` then call
-       `POST /api/reporting/image_scale` with `units=pt`, the box size,
-       and the item's format. An error from the endpoint is a warning
-       and an empty box.
-- [ ] 21.5 The HTML path uses the returned image (`result.image`
-       base64) as a data URI inside the item box. DOMPurify keeps
-       that image.
-- [ ] 21.6 Confirm lua-pdfkit stores one image object per unique
-       source. If the port does not, `Reports.Render` keeps a
-       per-render cache keyed by a content hash of the source, so a
-       repeated image is stored once and placed many times. Say which
-       shipped in the Working Log.
-- [ ] 21.7 Teach the port to embed the endpoint's `xo` payload, or
-       record in the Working Log that PDF images ship as PNG through
-       `doc:image` and why.
-- [ ] 21.8 Fixture image stays under the 1 MiB result cap after
-       base64. Browser: a sample PNG lands at the box size, and a
-       reference source and a URL source each render once their bytes
-       resolve.
+- [ ] 32.1 The script measures the encoded JSON before
+       `H.set_result_json`. When it does not fit, the script submits
+       `{ "error": "result_too_large", "cap": N, "size": N }`.
+       The ceiling is `SCOREBOARD_RESULT_JSON_MAX` (1 MiB).
+       `ClientInvokeMaxResultBytes` can only lower it. Write that
+       into the contract note.
+- [ ] 32.2 One probe builds a result over the cap and receives that
+       error object. The Phase 31 detail fixture still returns
+       `pdf_base64`.
+- [ ] 32.3 Hand the amendment over.
 
 ### Done means
 
-The preview shows the scaled image, the call went through
-`image_scale`, all three source kinds resolve, and a repeated image
-stores once.
+The over-cap probe returns `result_too_large` with `cap` and `size`,
+and the detail fixture still returns `pdf_base64`.
 
 ### Exit gate
 
-The script update applied, the fixture call, and the browser check.
-Reporting and the Phase 15 QueryRefs were enabled for that check.
+Andrew's apply report and the two calls.
 
 ### Status
 
@@ -2098,32 +3008,800 @@ Reporting and the Phase 15 QueryRefs were enabled for that check.
 
 ---
 
-## Phase 22 — Seed lua-zint
+## Phase 33 — Text formula
+
+### Goal
+
+`Reports.Render` compiles an author function and a calculated text
+item prints what it returns.
+
+### Entry gate
+
+Phase 32 Status complete. lua-pdfkit, lua-zint, and d3.lua stay on
+`require`. Author formulas do not.
+
+### Work items
+
+- [ ] 33.1 Implement the User Lua contract. Compile every function at
+       the start of compose with `load(source, name, "t", env)`. A
+       compile error returns through `H.set_result_json` and does not
+       throw out of the worker. A runtime error warns and yields an
+       empty value. An unknown function name is a compose error.
+       This is the one compiler. Chart `custom` waits for Phase 64.
+- [ ] 33.2 Fixture function `pack_code`, `returns` `text`. Letters
+       `A` through `L` are months 1 through 12. The return value is
+       that letter, the week digit, and the day as two digits. Row
+       `month=3`, `week=2`, `day=5` renders `C205`. The fixture
+       definition is JSON. The editor is Phase 34.
+- [ ] 33.3 Hand the amendment over. After apply, the fixture renders
+       `C205`.
+
+### Done means
+
+The pack-code fixture renders `C205`.
+
+### Exit gate
+
+Andrew's apply report and the fixture call.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 34 — Formula editor
+
+### Goal
+
+The designer edits a function's source and `returns`, and the
+definition file round-trips them.
+
+### Entry gate
+
+Phase 33 and Phase 14 Status complete.
+
+### Work items
+
+- [ ] 34.1 Palette shows lookup 053 keys 28, 29, and 32. The item
+       stores the function name. The Functions list and that item
+       share one CodeMirror 6 buffer, `language: 'lua'`, Vanadium
+       Mono, and the shared footer. The list shows name, `returns`,
+       and references. The item picker offers functions whose
+       `returns` matches the item, and Edit focuses the same buffer.
+       A new function writes the Defaults table's `returns` and
+       `source`. Source is saved when the editor blurs. The browser
+       does not run the Lua. Diagnostics are Phase 35.
+- [ ] 34.2 Browser: edit the pack-code source, export, reload, and
+       see the same source and `returns`. The document model stores
+       the source and does not execute it.
+- [ ] 34.3 Unit tests cover that storage if a pure helper exists.
+
+### Done means
+
+The designer round-trips function source and `returns` in the
+definition file.
+
+### Exit gate
+
+Lint, the unit test, and the browser export/reload.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 35 — Formula check
+
+### Goal
+
+`stage=check` underlines a Lua compile error in the formula editor.
+
+### Entry gate
+
+Phase 33 and Phase 34 Status complete.
+
+### Work items
+
+- [ ] 35.1 `stage=check` compiles the posted functions with the same
+       `load` path as compose and returns `{ name, line, message }`
+       for each failure. No rows are read.
+- [ ] 35.2 Add `@codemirror/lint` to the direct dependencies. The
+       editor debounces that call for the open function and underlines
+       the line. Empty source is clean. Typing is never blocked, and
+       a bad chunk can still be saved. Compose still refuses to render
+       a chunk that does not compile. Undefined names such as `io` or
+       `H` are not gutter diagnostics.
+- [ ] 35.3 Browser: type `function(ctx` with no `end`, see the
+       diagnostic, close the chunk, and see the diagnostic clear.
+
+### Done means
+
+An unclosed chunk shows a CodeMirror diagnostic, and closing the
+chunk clears it.
+
+### Exit gate
+
+Lint and the browser check.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 36 — Number and datetime formula
+
+### Goal
+
+A calculated number and a calculated datetime print through the item
+mask.
+
+### Entry gate
+
+Phase 35 Status complete.
+
+### Work items
+
+- [ ] 36.1 A function with `returns` `number` returns the raw number.
+       The item mask formats it. Fixture: return `1234.5` with mask
+       `#,##0.00` and print `1,234.50`. A function with `returns`
+       `datetime` returns a value the datetime mask accepts, and the
+       item mask formats it. The calculated number and calculated
+       datetime use the mask editor from work item 15.5.
+- [ ] 36.2 Hand the amendment over. Browser: the masked number prints
+       `1,234.50`.
+
+### Done means
+
+The number fixture prints `1,234.50`, and the datetime fixture prints
+through its mask.
+
+### Exit gate
+
+Andrew's apply report, the fixture call, and the browser preview.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 37 — Formula runtime errors
+
+### Goal
+
+One bad function call warns and prints empty, and the rest of the
+report still renders.
+
+### Entry gate
+
+Phase 36 Status complete.
+
+### Work items
+
+- [ ] 37.1 A row whose function raises comes back empty with a
+       warning. A number function that returns a string warns once
+       per item and prints empty.
+- [ ] 37.2 Hand the amendment over. The fixture matches, and the
+       other rows of that report still render.
+
+### Done means
+
+The raising row and the type-mismatch row each warn and print empty,
+and the other rows still render.
+
+### Exit gate
+
+Andrew's apply report and the fixture call.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 38 — Count, unique, and sum
+
+### Goal
+
+Group and report headers and footers can show count, filled, unique,
+and sum.
+
+### Entry gate
+
+Phase 37 Status complete.
+
+### Work items
+
+- [ ] 38.1 An aggregate item stores `op` and either `field` or
+       `function`. This phase's ops are `count`, `filled`, `unique`,
+       and `sum`. Numeric results use lookup 053 key 35. A text
+       result uses key 34. The picker offers a function only when
+       its `returns` allows the op. The fixture uses a field.
+- [ ] 38.2 Compose reduces the raw values for the current group and
+       for the whole detail source, and places them on
+       `ctx.aggregates`. `count` counts every row. `filled`,
+       `unique`, and `sum` skip nulls. An empty `count`, `filled`,
+       or `unique` is 0. An empty `sum` is an empty string. A
+       non-numeric value in `sum` warns and is skipped. The header
+       and the footer of one scope show the same total. The item
+       mask formats the reduction.
+- [ ] 38.3 The designer places the item on a group header, a group
+       footer, a report header, or a report footer.
+- [ ] 38.4 Fixture: two groups. Hand the amendment over. The preview
+       shows each op this phase names, and the header matches the
+       footer.
+
+### Done means
+
+The two-group fixture shows count, filled, unique, and sum, and the
+header matches the footer.
+
+### Exit gate
+
+Lint, the script packet apply, the fixture call, and the browser
+preview.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 39 — Page totals
+
+### Goal
+
+A page header or page footer shows the sum of the detail rows on
+that page.
+
+### Entry gate
+
+Phase 38 and Phase 21 Status complete.
+
+### Work items
+
+- [ ] 39.1 A page-footer aggregate reduces the detail rows placed on
+       that page. The same window serves later ops. The page header
+       and the page footer show the same page total.
+- [ ] 39.2 The designer can place the aggregate on a page header or
+       a page footer.
+- [ ] 39.3 Fixture: the page sum sits beside the report sum, and the
+       two differ when the rows span two pages. Hand the amendment
+       over.
+
+### Done means
+
+The fixture shows a page sum and a report sum, and they differ across
+a two-page report.
+
+### Exit gate
+
+The script packet apply, the fixture call, and the browser preview.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 40 — Average and weighted
+
+### Goal
+
+`avg`, `mean`, and `weighted` reduce a numeric field.
+
+### Entry gate
+
+Phase 39 Status complete.
+
+### Work items
+
+- [ ] 40.1 `avg` and `mean` are the same arithmetic mean. `weighted`
+       stores `weight` as a field and computes field times weight,
+       divided by the sum of the weights. A non-numeric value warns
+       and is skipped. A zero sum of weights, or no numeric pair
+       left, prints an empty string and adds one warn entry. An
+       empty result is an empty string.
+- [ ] 40.2 Add the three ops to the picker Phase 38 built. Fixture:
+       `avg` and `mean` match, and `weighted` matches its inputs.
+       Hand the amendment over. The preview shows the mean.
+
+### Done means
+
+The fixture shows `avg` equal to `mean`, and the weighted total
+matches its inputs.
+
+### Exit gate
+
+The script packet apply, the fixture call, and the browser preview.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 41 — Median
+
+### Goal
+
+`median` reduces a numeric field. An even count uses the mean of the
+two central numbers.
+
+### Entry gate
+
+Phase 40 Status complete.
+
+### Work items
+
+- [ ] 41.1 Implement `median` on the raw values. An even count is the
+       mean of the two central numbers. An empty result is an empty
+       string.
+- [ ] 41.2 Add `median` to the picker. One fixture has an odd count
+       and one has an even count. Hand the amendment over. The
+       preview shows the odd-count median.
+
+### Done means
+
+The odd-count median and the even-count median both match, and the
+preview shows the odd-count median.
+
+### Exit gate
+
+Andrew's apply report, the fixture call, and the browser preview.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 42 — Mode
+
+### Goal
+
+`mode` reduces a field. A tie picks the smallest value under Lua `<`
+and warns.
+
+### Entry gate
+
+Phase 41 Status complete.
+
+### Work items
+
+- [ ] 42.1 Implement `mode`. A single mode returns that value. A tie
+       returns the smallest value under Lua `<` and adds a warning.
+       A text mode uses lookup 053 key 34.
+- [ ] 42.2 Add `mode` to the picker. One fixture has a single mode
+       and one has a tie. Hand the amendment over. The preview shows
+       the single mode.
+
+### Done means
+
+The single-mode fixture matches, the tie fixture returns the
+smallest value plus a warning, and the preview shows the single mode.
+
+### Exit gate
+
+Andrew's apply report, the fixture call, and the browser preview.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 43 — Min and max
+
+### Goal
+
+`min` and `max` reduce a number or a datetime.
+
+### Entry gate
+
+Phase 42 Status complete.
+
+### Work items
+
+- [ ] 43.1 `min` and `max` compare numbers as numbers and datetimes
+       as one kind per total. The first non-null value picks the
+       kind. A later value of the other kind warns once and is
+       skipped. Nulls are skipped and do not warn. An empty result
+       is an empty string. A datetime result uses lookup 053 key 38.
+       A number uses key 35.
+- [ ] 43.2 Add the ops to the picker. The fixture records `min` and
+       `max` for a number and for a datetime. Hand the amendment
+       over. The preview shows both.
+
+### Done means
+
+The number fixture and the datetime fixture each show `min` and
+`max`.
+
+### Exit gate
+
+The script packet apply, the fixture call, and the browser preview.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 44 — First and last
+
+### Goal
+
+`first` and `last` follow row order and skip nulls.
+
+### Entry gate
+
+Phase 43 Status complete.
+
+### Work items
+
+- [ ] 44.1 `first` and `last` walk row order and skip nulls. `first`
+       is not the minimum. A null in the middle is skipped. An empty
+       result is an empty string. Text uses key 34. A number uses
+       key 35. A datetime uses key 38.
+- [ ] 44.2 Add the ops to the picker. The fixture shows `first` and
+       `last` for a number and for a datetime, with a null in the
+       middle. Hand the amendment over.
+
+### Done means
+
+The fixture shows `first` and `last` in row order, and the null in
+the middle is skipped.
+
+### Exit gate
+
+The script packet apply, the fixture call, and the browser preview.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 45 — Group-key function
+
+### Goal
+
+A group band can take its key from a text or number function.
+
+### Entry gate
+
+Phase 44 Status complete.
+
+### Work items
+
+- [ ] 45.1 A group band may set `groupKey` to a text or number
+       function. A text key compares as a string. A number key
+       compares as a number. `sort` defaults to true and uses Lua
+       `<`. `sort` false breaks only when consecutive keys differ.
+       One level. The one-field group remains the path with no Lua.
+- [ ] 45.2 The group band's key picker lists text and number
+       functions. Edit focuses the same Functions buffer.
+- [ ] 45.3 Fixture: group by the pack-code month letter. Hand the
+       amendment over. Browser: the preview shows that split.
+
+### Done means
+
+The fixture intermediate shows the Lua group split.
+
+### Exit gate
+
+Script packet apply, the fixture call, and the browser preview.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 46 — Page-break predicate
+
+### Goal
+
+A boolean function can start a new page before a detail row.
+
+### Entry gate
+
+Phase 45 Status complete.
+
+### Work items
+
+- [ ] 46.1 A detail band may set `pageBreak` to a boolean function.
+       A true result starts a new page before that row. Any other
+       value warns once and counts as false. Fixed-height paging
+       still applies.
+- [ ] 46.2 The detail band's picker lists boolean functions.
+- [ ] 46.3 Fixture: start a new page when `ctx.row.break_before` is
+       true. Hand the amendment over. Browser: the preview shows the
+       extra page.
+
+### Done means
+
+The fixture intermediate shows the forced page.
+
+### Exit gate
+
+Script packet apply, the fixture call, and the browser preview.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 47 — Line-break predicate
+
+### Goal
+
+A boolean function can insert one blank detail-height before a row.
+
+### Entry gate
+
+Phase 46 Status complete.
+
+### Work items
+
+- [ ] 47.1 A detail band may set `lineBreak` to a boolean function.
+       A true result inserts one blank detail-height before that
+       row. Any other value warns once and counts as false. A
+       newline inside a calculated value is kept by HTML
+       (`white-space: pre-line`) and by the PDF text drawer. The
+       stored band height does not change. Overflow clips.
+- [ ] 47.2 The detail band's picker lists boolean functions.
+- [ ] 47.3 Fixture: insert a blank line when `ctx.row.blank_before`
+       is true. Hand the amendment over. Browser: the preview shows
+       the blank line.
+
+### Done means
+
+The fixture intermediate shows the blank line.
+
+### Exit gate
+
+Script packet apply, the fixture call, and the browser preview.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 48 — Header and footer context
+
+### Goal
+
+A calculated item on a header or footer sees that band's context.
+
+### Entry gate
+
+Phase 47 Status complete. Header and footer formulas can read
+`ctx.aggregates`. This phase's fixture does not require an aggregate.
+
+### Work items
+
+- [ ] 48.1 Calculated items on a group, page, or report header or
+       footer receive the context in the User Lua table. On a group
+       band, `ctx.row` is the first row of the group and `ctx.rows`
+       is the whole group. Every `ctx` includes `parameters`.
+       `page.count` is filled after the page list exists, before the
+       page formulas run.
+- [ ] 48.2 Fixture: a group footer formula reads `ctx.group.key` and
+       prints it. Hand the amendment over.
+
+### Done means
+
+The group-footer formula prints `ctx.group.key`.
+
+### Exit gate
+
+Script packet apply and the fixture call.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 49 — CSV emit
+
+### Goal
+
+`stage=csv` returns one row per detail record, as the text compose
+already stored.
+
+### Entry gate
+
+Phase 48 Status complete. The mask table is already applied.
+
+### Work items
+
+- [ ] 49.1 Amend `Reports.Render` with `stage=csv`. Columns are the
+       field items on the detail band, in item order. Header and
+       footer bands are not rows. Every value exports as the
+       formatted text compose stored.
+- [ ] 49.2 Grouped reports export flat rows. The group key is
+       repeated as leading columns. Aggregates are not CSV rows.
+       Write that shape into the contract note.
+- [ ] 49.3 Values are escaped per RFC 4180. A newline inside a value
+       is quoted, not split.
+- [ ] 49.4 Add the expected CSV for the detail fixture. Hand the
+       packet over. Andrew's call matches.
+
+### Done means
+
+The detail fixture renders to the expected CSV.
+
+### Exit gate
+
+Andrew's apply report and the fixture call.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 50 — Embedded image
+
+### Goal
+
+An embedded image shows in the designer and in the HTML preview.
+
+### Entry gate
+
+Phase 49 Status complete.
+
+### Work items
+
+- [ ] 50.1 Palette shows lookup 053 keys 2 (Static Image) and 22
+       (Field Image). A new item stores `dpi` `72`. `format` is
+       `png`, or `jpeg` when the stored bytes are JPEG. Reuse is the
+       rule, not a switch. There is no downsample-cap property.
+- [ ] 50.2 The image browser loads a local file or takes a clipboard
+       paste. A designer panel shows the suggested pixel size from
+       the physical box and the item dpi, and lets the author change
+       the width and the height. Each side is at least 1 pixel. A
+       side that rounds to zero, or that the author sets below 1,
+       is kept at 1. The panel states that confirming stores those
+       pixels and does not keep the original file.
+       Confirm calls `image_scale` unless the chosen size is the
+       source's own pixel size, in which case the original bytes are
+       stored. Embedded bytes dedupe into the definition's
+       content-hash registry. Changing the box later does not
+       resample.
+- [ ] 50.3 `stage=html` repeats the data URI of the stored bytes in
+       each placement. DOMPurify keeps that data URI. The script
+       does not call `image_scale`.
+- [ ] 50.4 Browser: the panel shows a suggested size, an edited size
+       is what gets stored, and the same PNG on two detail rows
+       shows in both rows of the preview, at the box size.
+
+### Done means
+
+The preview shows the same embedded PNG on two detail rows.
+
+### Exit gate
+
+The script update applied, lint, and the browser check.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 51 — Reference and URL images
+
+### Goal
+
+A reference image and a URL image each resolve to bytes and render.
+
+### Entry gate
+
+Phase 50 Status complete. The Phase 17 document QueryRef is applied.
+
+### Work items
+
+- [ ] 51.1 The reference picker lists documents through the Phase 17
+       read QueryRef. A URL item stores the URL.
+- [ ] 51.2 `Reports.Render` resolves both kinds to bytes before any
+       item is placed. References use `H.altquery_sync` on
+       `params._hydrogen.database` and the Phase 17 QueryRef. A
+       missing or unconfigured database name adds a warn entry and
+       leaves the box empty. URLs use `H.http.request_sync` against
+       that URL, with no Hydrogen JWT. A failed reference or an
+       unreachable URL is a warn entry and an empty box.
+- [ ] 51.3 Browser: a reference source and a URL source each render
+       once their bytes resolve.
+
+### Done means
+
+A reference image and a URL image each render once.
+
+### Exit gate
+
+The script update applied, and the browser check. The Phase 17
+document QueryRef was applied before that check.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 52 — PDF image stored once
+
+### Goal
+
+A repeated image is one PDF image object, and each placement
+references it.
+
+### Entry gate
+
+Phase 51 Status complete.
+
+### Work items
+
+- [ ] 52.1 `stage=pdf` calls `doc:image` with the same resolved bytes
+       for every placement of that image. The port stores one image
+       object and each placement references it. JPEG sources stay
+       JPEG. Everything else stores as PNG. There is no XO embedder.
+       The script does not call `image_scale`.
+- [ ] 52.2 Fixture: the same PNG on two detail rows. The PDF contains
+       one image object and two drawing references. A second,
+       different PNG is a second object. The fixture stays under the
+       1 MiB result cap after base64. Say in the Working Log that the
+       port registry supplied the reuse.
+- [ ] 52.3 Hand the amendment over. After apply, the fixture matches.
+
+### Done means
+
+The repeated PNG is one PDF image object with two drawing references.
+
+### Exit gate
+
+Andrew's apply report and the fixture call.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 53 — Seed lua-zint
 
 ### Goal
 
 Put the pure-Lua zint port into `scripts` so `require` loads it. No
-report output yet. The source is the port's own repository, and the
-packet records the commit or version it was generated from.
+report output yet.
 
 ### Entry gate
 
 Phase 0 Status complete. Re-check the next Acuranzo file number the
-day this is written. Phases 1–21 may still be open. Phases 23 and 34
+day this is written. Phases 1–52 may still be open. Phases 54 and 69
 wait for the apply.
 
 ### Work items
 
-- [ ] 22.1 Copy the tree named in the library lock into one migration.
+- [ ] 53.1 Copy the tree named in the library lock into one migration.
        One migration seeds every `zint.*` module (`init`, `barcode`,
        `common`, …). `invokable = 0`, `mcp_access = 0`. Group name
-       `zint`. The script name is the require path after the first dot.
-       One library per file, the exception to one-script-per-migration.
-       Reverse deletes only those rows.
-- [ ] 22.2 The port writes a file when `opts.output` is set, and the
-       sandbox leaves `io` nil. `Reports.Render` leaves that field
-       unset and uses the returned SVG string.
-- [ ] 22.3 Hand the packet over. After apply, Andrew runs a probe:
+       `zint`. The script name is the require path after the first
+       dot. One library per file. Reverse deletes only those rows.
+       The packet records the commit. If neither the port repository
+       nor the task-tree path is present, stop and ask.
+- [ ] 53.2 The port writes a file when `opts.output` is set, and the
+       sandbox leaves `io` nil. The probe leaves that field unset and
+       uses the returned SVG string.
+- [ ] 53.3 Hand the packet over. After apply, Andrew runs a probe:
        `require("zint.barcode")` for a Code 128 and a QR code. Each
        probe returns an SVG that contains the data string.
        `AllowDBModuleLoad` is on for that call.
@@ -2144,47 +3822,40 @@ if he ran it.
 
 ---
 
-## Phase 23 — Barcodes through lua-zint
+## Phase 54 — Barcode SVG
 
 ### Goal
 
-Static and field barcodes render as SVG in the HTML export, the
-preview, and the SVG export, and as vector objects in the PDF once
-Phase 34 lands.
+Static and field barcodes render as SVG in the HTML preview.
 
 ### Entry gate
 
-Phase 22 Status complete.
+Phase 53 and Phase 25 Status complete.
 
 ### Work items
 
-- [ ] 23.1 Palette shows lookup 053 keys 43 (Static Barcode) and 45
-       (Field Barcode). The item stores `symbology` as one of
-       `qr`, `code39`, `code128`, `upca`, `gs1-128`, plus the data
-       string or the field name. Other symbologies are refused with a
-       warning.
-- [ ] 23.2 Compose calls `zint.barcode` with no `output` path. The
-       SVG inlines into the item box in the HTML preview, the HTML
-       export, and the SVG export.
-- [ ] 23.3 DOMPurify is configured so this SVG survives the preview
-       sandbox. A stripped SVG is a failed gate, not a pass.
-- [ ] 23.4 Browser: a Code 128 of a known string and a QR of a known
+- [ ] 54.1 Palette shows lookup 053 keys 43 (Static Barcode) and 45
+       (Field Barcode). A new barcode writes raster `dpi` `300`.
+       The item stores `symbology` as one of `qr`, `code39`,
+       `code128`, `upca`, `gs1-128`, plus the data string or the
+       field name. Other symbologies are refused with a warning.
+- [ ] 54.2 Compose calls `zint.barcode` with no `output` path. The
+       SVG inlines into the item box in the HTML preview and the
+       HTML export.
+- [ ] 54.3 DOMPurify is configured so this SVG survives the preview
+       sandbox. A stripped SVG is a failed gate.
+- [ ] 54.4 Browser: a Code 128 of a known string and a QR of a known
        string appear in the preview. A field barcode follows the
        sample row.
-- [ ] 23.5 The PDF path: until Phase 34 lands the port's native
-       output, the barcode SVG rasterizes through `image_scale` at the
-       item's `dpi` (default 300, which scans fine) and embeds as a PNG.
-       Phase 34 replaces this with the native vector object. Either
-       way, what shipped is named in the Working Log.
 
 ### Done means
 
-Those two symbols render from Lua and survive the preview sanitizer,
-and a Code 128 appears in the PDF by whichever path shipped.
+The Code 128 and the QR survive the preview sanitizer, and the field
+barcode follows the sample row.
 
 ### Exit gate
 
-Applied script update, fixture call, and the browser check.
+Applied script update, lint, and the browser check.
 
 ### Status
 
@@ -2192,45 +3863,76 @@ Applied script update, fixture call, and the browser check.
 
 ---
 
-## Phase 24 — Seed d3.lua
+## Phase 55 — Barcode PDF raster
+
+### Goal
+
+Until Phase 71, a barcode in the PDF is a PNG Lithium rasterized and
+passed in `params.rasters`.
+
+### Entry gate
+
+Phase 54 and Phase 31 Status complete.
+
+### Work items
+
+- [ ] 55.1 `stage=pdf` embeds a barcode PNG only when Lithium passes
+       it in `params.rasters` under the item id. Lithium rasterizes
+       the barcode SVG through `image_scale` at the item's dpi
+       (default 300). A missing raster omits the symbol and adds a
+       warning. The Working Log names this raster path.
+- [ ] 55.2 A Code 128 of a known string appears in the PDF.
+
+### Done means
+
+A Code 128 appears in the PDF as a raster.
+
+### Exit gate
+
+The browser check, or Andrew's fixture PDF if the browser cannot
+open it. Lint passes.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 56 — Seed d3.lua
 
 ### Goal
 
 Put the pure-Lua D3 port into `scripts` so `require` loads it. No
-report output yet. The source is the port's own repository, and the
-packet records the commit or version it was generated from.
+report output yet.
 
 ### Entry gate
 
 Phase 0 Status complete. Re-check the next Acuranzo file number the
-day this is written. Phases 1–23 may still be open. Phases 25–27 and
-34 wait for the apply.
+day this is written. Phases 1–55 may still be open. Phase 57 may
+run alongside this one. Phases 59 and 70 wait for the apply.
 
 ### Work items
 
-- [ ] 24.1 Copy the module named in the library lock into one
-       migration. `invokable = 0`, `mcp_access = 0`. Hydrogen's
-       searcher splits on the first dot, so the group and module names
-       must produce a require path with a dot; `require("d3.lua")` is
-       the working hypothesis and the probe pins it. Reverse deletes
-       only those rows.
-- [ ] 24.2 The demo writes its SVG with `io.open`, and the sandbox
-       leaves `io` nil. Confirm the module returns its SVG as a string
-       with no file written, the way `zint` leaves `opts.output`
-       unset.
-- [ ] 24.3 The regression oracle: the port ships a reference pair — the
-       D3.js chart (`d3_chart.js`) and the Lua chart (`lua_chart.lua`)
-       — whose SVGs are byte-identical. After apply, Andrew's probe
-       reproduces the reference SVG from inside Hydrogen, and that
-       string is recorded as the seeded library's checksum.
-- [ ] 24.4 Hand the packet over. The probe also draws one chart of
-       each locked kind (Phases 25 and 27 depend on those kinds
-       existing in the port, minus pie if Phase 25 defers it).
+- [ ] 56.1 Copy the module named in the library lock into one
+       migration. `invokable = 0`, `mcp_access = 0`. Phase 0 locked
+       `require("d3.lua")`: group `d3`, script name `lua`. Reverse
+       deletes only those rows. The packet records the commit. If
+       neither the port repository nor the task-tree path is present,
+       stop and ask.
+- [ ] 56.2 The demo writes its SVG with `io.open`, and the sandbox
+       leaves `io` nil. Confirm the module returns its SVG as a
+       string with no file written.
+- [ ] 56.3 The regression oracle is the port's reference pair, the
+       D3.js chart and the Lua chart, whose SVGs are byte-identical.
+       After apply, Andrew's probe reproduces the reference SVG from
+       inside Hydrogen. The probe stops at that SVG.
+- [ ] 56.4 Hand the packet over. Per-kind charts wait for Phase 57
+       and the draw phases.
 
 ### Done means
 
 Andrew reports the reference SVG reproduced byte-for-byte inside
-Hydrogen, with `io` left off, plus one SVG per chart kind.
+Hydrogen, with `io` left off.
 
 ### Exit gate
 
@@ -2243,39 +3945,35 @@ if he ran it.
 
 ---
 
-## Phase 25 — Chart design lock
+## Phase 57 — Chart design lock
 
 ### Goal
 
 Agree the chart contract before the designer and the Lua grow around
-it. This is a mini design lock: the taxonomy, the scope model, and the
-v1 set. No source edits.
+it. No source edits.
 
 ### Entry gate
 
-Phase 0 Status complete. This phase may run alongside Phases 19–24.
+Phase 0 Status complete. This phase may run alongside Phases 1–56.
+Phase 58 waits for this phase.
 
 ### Work items
 
-- [ ] 25.1 Lock the chart kinds for v1: bar, stacked-bar, line,
-       dual-axis, combinations (a stacked bar with an overlaid line is
-       one of the fixture cases, not a special case), and pie. The
-       series-first model in Charts is the rule; `kind` stays as
-       optional shorthand only.
-- [ ] 25.2 Lock the options hierarchy: chart kind, then one or more
-       series datasources, then per-chart options (title, legend,
-       legend position, axes, grid, gradient, rounded bars) and
-       per-series options (label, role, stack, axis side, color,
-       weight). Adding a series is how an author also picks that
-       series' format.
-- [ ] 25.3 Lock the scope model as written in Charts. All four scopes
-       ship in v1: `band`, `group`, `record`, and `custom`.
-- [ ] 25.4 Decide pie. The port has no arc generator. Either the port
-       is extended with one — in the port's repo, recorded as a
-       version the seed packet pins — or pie is pinned behind that
-       extension and the rest of the v1 set ships without it.
-- [ ] 25.5 Fixtures: one stacked bar with an overlaid line, one
-       grouped bar, one dual-axis line, and pie or its deferral note.
+- [ ] 57.1 Lock the chart kinds for v1: bar, stacked bar, line,
+       dual-axis, combinations, and pie. The series-first model in
+       Charts is the rule. `kind` stays optional shorthand.
+- [ ] 57.2 Lock the options hierarchy: chart options, then one or
+       more series. Adding a series picks that series' format.
+       Record the option defaults in the Defaults table. Chart `dpi`
+       stays 150.
+- [ ] 57.3 Lock the four scopes as written in Charts: `band`,
+       `group`, `record`, and `custom`.
+- [ ] 57.4 Record the arc the port will add. Pie is in v1. This
+       phase does not edit the port. Phase 63 adds the arc and
+       previews one pie.
+- [ ] 57.5 Name the fixtures: one bar, one grouped-scope bar, one
+       record-scope bar, one line, one dual-axis line, one stacked
+       bar with an overlaid line, and one pie.
 
 ### Done means
 
@@ -2291,38 +3989,34 @@ Andrew's explicit approval. No source edited.
 
 ---
 
-## Phase 26 — Charts in the designer
+## Phase 58 — Charts in the designer
 
 ### Goal
 
-Place a chart on a band, add its series, bind each series to data,
-and set the chart's options, with the series-first flow Phase 25
-locked.
+Place a chart, add its series, and round-trip the bindings through
+the definition file.
 
 ### Entry gate
 
-Phase 25 Status complete.
+Phase 57 Status complete.
 
 ### Work items
 
-- [ ] 26.1 Palette shows lookup 053 keys 42 (Static Chart) and 44
+- [ ] 58.1 Palette shows lookup 053 keys 42 (Static Chart) and 44
        (Field Chart). The item stores a `chart` object per the locked
-       contract, plus its box.
-- [ ] 26.2 `chart-panel.js` walks the options hierarchy: the chart's
+       contract, plus its box. A new chart writes `dpi` `150` and the
+       option defaults Phase 57 added.
+- [ ] 58.2 `chart-panel.js` walks the options hierarchy: the chart's
        options first, then an add-series row. Each series names its
-       datasource, field, role, stack, axis, and label — picking a
-       series is also picking that series' format. A kind shorthand
-       fills the common cases in one move.
-- [ ] 26.3 The panel follows the property panel's commit rules:
-       through the document model, undo, export, import. Options are
-       designer state until commit; the browser does not draw the
-       chart.
-- [ ] 26.4 An empty series binding blocks export with a toast, the
-       same as a field item (LITHIUM-INS.md rule 1 — no silent
-       fallback).
-- [ ] 26.5 Browser: place a chart, add a bar series and a line series
-       over the session sample, set the dual axis, export, reload, and
-       see the bindings.
+       datasource, field, role, stack, axis, and label. A kind
+       shorthand fills the common cases.
+- [ ] 58.3 The panel follows the property panel's commit rules.
+       Options are designer state until commit. The browser does not
+       draw the chart.
+- [ ] 58.4 An empty series binding blocks export with a toast.
+- [ ] 58.5 Browser: place a chart, add a bar series and a line series
+       over the session sample, set the dual axis, export, reload,
+       and see the bindings.
 
 ### Done means
 
@@ -2339,53 +4033,39 @@ Lint, unit tests, and the browser check.
 
 ---
 
-## Phase 27 — Charts in compose
+## Phase 59 — Bar chart
 
 ### Goal
 
-Compose resolves a chart's scope, calls d3.lua with the resolved rows
-and the item's box, and puts the chart into the intermediate document,
-so it appears in the HTML export, the preview, and the SVG export.
+A band-scope bar chart renders in the HTML preview.
 
 ### Entry gate
 
-Phase 17, Phase 24, and Phase 26 Status complete. A chart in the PDF
-rasterizes through `image_scale` at the chart's `dpi` until Phase 34
-replaces that with the port's native output.
+Phase 19, Phase 56, and Phase 58 Status complete.
 
 ### Work items
 
-- [ ] 27.1 Resolve the scope per the locked model. `band` and `group`
-       use the rows compose already has. `record` filters the named
-       datasource on the current record's `keyField`. `custom` runs a
-       function from `definition.functions`.
-- [ ] 27.2 The `custom` scope function compiles with the same `load`
-       contract as User Lua (Phase 28). This phase lands that compile
-       for the chart scope only; the detail formula context is
-       Phase 28's.
-- [ ] 27.3 d3.lua draws with the resolved rows, the `categoryField`,
-       the series definitions, and the box in points. The returned SVG
-       is stored on the intermediate as the chart item's render. The
-       intermediate never re-derives the chart.
-- [ ] 27.4 The HTML export and the preview inline the SVG, and
-       DOMPurify keeps it — the same gate as barcodes in 23.3. The SVG
-       export (Phase 31) inlines the same string.
-- [ ] 27.5 Fixtures from Phase 25: the stacked bar with an overlaid
-       line, the grouped bar, the dual-axis line, and pie or its
-       deferral note. One fixture per scope, including a `record` chart
-       and a `custom` chart.
-- [ ] 27.6 Hand the script update over. After apply, Andrew's compose
-       call for each fixture matches the expected intermediate, and the
-       preview shows the charts.
+- [ ] 59.1 Resolve scope `band` as every row of the chart's
+       datasource. A `custom` scope warns and draws nothing.
+       Phase 64 draws that scope.
+- [ ] 59.2 d3.lua draws the bar with the resolved rows, the
+       `categoryField`, the series, and the box in points. The
+       returned SVG is stored on the intermediate. The intermediate
+       does not re-derive the chart.
+- [ ] 59.3 The HTML export and the preview inline that SVG.
+       DOMPurify keeps it. A stripped SVG is a failed gate.
+- [ ] 59.4 One band-scope bar fixture from Phase 57. Hand the
+       amendment over. After apply, the fixture matches and the
+       preview shows the bar.
 
 ### Done means
 
-Each chart fixture renders in the preview and matches the expected
-intermediate document.
+The band-scope bar fixture matches the expected intermediate and
+renders in the preview.
 
 ### Exit gate
 
-Applied script update, fixture call, and the browser preview.
+Applied script update, the fixture call, and the browser preview.
 
 ### Status
 
@@ -2393,58 +4073,34 @@ Applied script update, fixture call, and the browser preview.
 
 ---
 
-## Phase 28 — User Lua in the definition
+## Phase 60 — Group and record chart scopes
 
 ### Goal
 
-An author stores a Lua function on the report, and a calculated item
-runs it against the current record.
+The same bar draws for a group window and for a record window.
 
 ### Entry gate
 
-Phase 13, Phase 17, and Phase 18 Status complete. lua-pdfkit,
-lua-zint, and d3.lua stay on `require`. Author formulas do not.
+Phase 59 Status complete.
 
 ### Work items
 
-- [ ] 28.1 Implement the User Lua contract. Compile every function at
-       the start of compose. A compile error returns through
-       `H.set_result_json` and does not throw out of the worker. A
-       runtime error warns and yields an empty value.
-- [ ] 28.2 Palette shows lookup 053 keys 28 and 29. The item stores
-       the function name. The function panel is the formula editor
-       locked above: CodeMirror 6, `language: 'lua'`, Vanadium Mono,
-       footer, and `@codemirror/lint`. Source is saved on the
-       definition when the editor blurs. The browser does not run
-       the Lua.
-- [ ] 28.3 `stage=check` compiles the posted functions with the same
-       `load` path as compose and returns `{ name, line, message }`
-       for each failure. The editor debounces that call for the open
-       function and underlines the line. Browser: type `function(ctx`
-       with no `end`, see the diagnostic, close the chunk, and see
-       the diagnostic clear.
-- [ ] 28.4 Fixture function `pack_code`, a stand-in for a grower pack
-       date. Letters `A` through `L` are months 1 through 12. The
-       return value is that letter, the week digit, and the day as
-       two digits. Row `month=3`, `week=2`, `day=5` renders `C205`.
-       A second row raises a runtime error and comes back empty with
-       a warning. An unknown function name is a compose error.
-- [ ] 28.5 Hand the script update over. After apply, the fixture call
-       matches. Browser: change the letter table, preview, and see
-       the new text on the detail. The repaired `pack_code` still
-       renders `C205`.
+- [ ] 60.1 Scope `group` uses the rows of the current group. Scope
+       `record` filters the named datasource on the current record's
+       `keyField`. A chart on a detail band draws once per page, on
+       the first detail of that page, not once per row.
+- [ ] 60.2 One fixture for `group` and one for `record`, using the
+       bar from Phase 59.
+- [ ] 60.3 Hand the amendment over. After apply, both fixtures match
+       and both preview.
 
 ### Done means
 
-The pack-code fixture renders `C205`, the bad row warns, and the
-designer round-trips the source in the definition file. A broken
-chunk shows a CodeMirror diagnostic and, once repaired, previews.
+The group fixture and the record fixture both match and both preview.
 
 ### Exit gate
 
-Andrew's apply report, the fixture call, lint, and the browser
-preview. The document model stores the source and does not execute
-Lua. Unit tests cover that storage if a pure helper exists.
+Applied script update, the two fixture calls, and the browser preview.
 
 ### Status
 
@@ -2452,44 +4108,32 @@ Lua. Unit tests cover that storage if a pure helper exists.
 
 ---
 
-## Phase 29 — Primitive aggregates
+## Phase 61 — Line charts
 
 ### Goal
 
-Group footer and report footer can show the built-in reductions of
-one field.
+A line chart and a dual-axis line chart render in the preview.
 
 ### Entry gate
 
-Phase 14 and Phase 17 Status complete.
+Phase 60 Status complete.
 
 ### Work items
 
-- [ ] 29.1 Aggregate items store `op` and `field`. `weighted` also
-       stores `weight`. Ops are the set in Primitive aggregates.
-       Numeric results use lookup 053 key 35. A text mode uses key 34.
-- [ ] 29.2 Compose computes the value for the current group and for
-       the whole detail source, and places it on `ctx.aggregates`.
-       A non-numeric value in a numeric op warns and is skipped. An
-       empty numeric result is an empty string. `count` and `unique`
-       of an empty scope are 0.
-- [ ] 29.3 The designer can place the item on a group footer or a
-       report footer and pick the op.
-- [ ] 29.4 Fixture: two groups. One has an odd count and a single
-       mode. A second case covers an even median and a mode tie.
-       `avg` and `mean` match. Andrew's compose call matches after
-       the script update is applied.
+- [ ] 61.1 Draw the Phase 57 line fixture and the dual-axis line
+       fixture with the same d3 path Phase 59 uses. Roles `line` on
+       one axis, then `line` on two axes.
+- [ ] 61.2 Hand the amendment over. After apply, both fixtures match
+       and both preview.
 
 ### Done means
 
-The grouped fixture's footers show each op's expected value in the
-intermediate document and in the HTML preview.
+The line fixture and the dual-axis fixture both match and both
+preview.
 
 ### Exit gate
 
-Lint, the script packet apply, and the fixture call. Aggregate math
-lives in the script. The document model stores `op` and does not
-recompute it. Preview checked in the browser.
+Applied script update, the two fixture calls, and the browser preview.
 
 ### Status
 
@@ -2497,52 +4141,33 @@ recompute it. Preview checked in the browser.
 
 ---
 
-## Phase 30 — Custom breaks and band context
+## Phase 62 — Combo chart
 
 ### Goal
 
-A Lua function can supply the group key, force a page break, or
-insert a blank line. A calculated item on a header or footer sees
-that band's context.
+A stacked bar with an overlaid line renders in the preview.
 
 ### Entry gate
 
-Phase 28 and Phase 14 Status complete. When Phase 29 is already
-complete, footer formulas can read `ctx.aggregates`. This phase's
-fixture does not require that.
+Phase 61 Status complete.
 
 ### Work items
 
-- [ ] 30.1 A group band may set `groupKey` to a function name. The
-       return value is the key. `sort` defaults to true. `sort`
-       false breaks only when consecutive keys differ. One level.
-- [ ] 30.2 A detail band may set `pageBreak`. A true result starts a
-       new page before that row. Fixed-height paging still applies.
-- [ ] 30.3 A detail band may set `lineBreak`. A true result inserts
-       one blank detail-height before that row. Newlines in a
-       calculated value are preserved by the HTML and PDF emitters.
-       The band height does not grow.
-- [ ] 30.4 Calculated items on a group, page, or report header or
-       footer receive the context in the User Lua table.
-       `page.count` is filled after compose finishes the page list,
-       before those formulas run.
-- [ ] 30.5 Fixture: group by the pack-code month letter, start a new
-       page when `ctx.row.break_before` is true, and insert a blank
-       line when `ctx.row.blank_before` is true. A group footer
-       formula reads `ctx.group.key`. Andrew's compose call matches.
-- [ ] 30.6 Designer: the group band can choose a function as its key,
-       and the detail band can name the two break functions.
-       Browser: preview the fixture and see the group split, the
-       extra page, and the blank line.
+- [ ] 62.1 Draw the Phase 57 combo fixture: bar series sharing a
+       `stack`, plus a line series. This is the shape of the port's
+       demo chart, drawn with the report's series, not by pasting
+       the demo.
+- [ ] 62.2 Hand the amendment over. After apply, the fixture matches
+       and the preview shows the combo.
 
 ### Done means
 
-The fixture intermediate document shows the Lua group split, the
-forced page, and the blank line.
+The combo fixture matches the expected intermediate and renders in
+the preview.
 
 ### Exit gate
 
-Script packet apply, fixture call, lint, and the browser preview.
+Applied script update, the fixture call, and the browser preview.
 
 ### Status
 
@@ -2550,42 +4175,63 @@ Script packet apply, fixture call, lint, and the browser preview.
 
 ---
 
-## Phase 31 — SVG emit
+## Phase 63 — Pie chart
 
 ### Goal
 
-`stage=svg` returns one SVG document per report: the composed pages
-as sections with page breaks marked, in physical units. A label-sized
-report with no pagination is this file unwrapped — page size is the
-label size, margins are zero, and the document is the bare artwork.
+Add the pie arc to the port and preview one pie.
 
 ### Entry gate
 
-Phase 17 Status complete. Barcodes and charts inline from Phases 23
-and 27 when those have landed; a text-only fixture otherwise.
+Phase 62 Status complete.
 
 ### Work items
 
-- [ ] 31.1 Amend `Reports.Render` with `stage=svg`. One page per
-       section, positions in physical CSS units, the definition's font
-       face, and page breaks marked per the Emit contract.
-- [ ] 31.2 Chart and barcode items inline their SVG from the
-       intermediate document. Images inline as data URIs at their
-       scaled size.
-- [ ] 31.3 A fixture pair: detail definition, source, expected SVG
-       skeleton. The intermediate fixture stays the oracle for the
-       text and the structure.
-- [ ] 31.4 Hand the packet over. Andrew's call matches the fixture,
-       and a browser check embeds the SVG and shows the pages.
+- [ ] 63.1 Add the arc in the port's repository, record the commit,
+       and preview one pie fixture.
+- [ ] 63.2 Hand the script amendment over. After apply, the fixture
+       matches and the preview shows the pie.
 
 ### Done means
 
-The detail fixture renders to the expected SVG, and it embeds in a
-page as one image with the page breaks marked.
+The pie fixture matches the expected intermediate and renders in
+the preview.
 
 ### Exit gate
 
-Applied script update, fixture call, and the browser check.
+Applied script update, the fixture call, and the browser preview.
+
+### Status
+
+**not started**
+
+---
+## Phase 64 — Custom chart
+
+### Goal
+
+A chart scope of `custom` plots the rows its function returns.
+
+### Entry gate
+
+Phase 63 Status complete. Phase 33 Status complete.
+
+### Work items
+
+- [ ] 64.1 A `custom` scope names a function whose `returns` is
+       `rows`. Compose calls it with the band context, using the
+       Phase 33 compiler, and plots the rows it returns.
+- [ ] 64.2 The Phase 57 custom fixture renders in the preview. Hand
+       the amendment over.
+
+### Done means
+
+The custom-chart fixture renders in the preview from the Phase 33
+compiler.
+
+### Exit gate
+
+Applied script update, the fixture call, and the browser preview.
 
 ### Status
 
@@ -2593,44 +4239,33 @@ Applied script update, fixture call, and the browser check.
 
 ---
 
-## Phase 32 — PNG emit
+## Phase 65 — Chart PDF raster
 
 ### Goal
 
-`stage=png` returns one PNG per page, through `image_scale`, which
-takes SVG as input and applies `dpi` before it reads. The result is
-the label case: one page, one image, no pagination.
+Until Phase 71, a chart in the PDF is a PNG Lithium rasterized and
+passed in `params.rasters`.
 
 ### Entry gate
 
-Phase 31 Status complete.
+Phase 64 Status complete.
 
 ### Work items
 
-- [ ] 32.1 Amend `Reports.Render` with `stage=png`. Compose renders
-       the page SVG, and each page goes to
-       `POST /api/reporting/image_scale` with `units=px`, the page box,
-       a `dpi` param (default 150 for output, the item's own dpi for
-       a chart), and `format=png`.
-- [ ] 32.2 The result is
-       `{ "pages": [{"page": 1, "png_base64": "..."}], "warnings": [] }`.
-       The label fixture is the one-page case and is the fixture this
-       phase gates on.
-- [ ] 32.3 Multi-page PNG lists every page against the same 1 MiB
-       result cap. A report whose pages do not fit returns an error
-       naming the cap, the same contract as PDF in Phase 20, and the
-       note in the contract doc says so.
-- [ ] 32.4 Hand the packet over. Andrew's call for the label fixture
-       returns one PNG at the label size.
+- [ ] 65.1 Lithium rasterizes the chart SVG through `image_scale` at
+       the chart `dpi` (default 150) and passes the PNG in
+       `params.rasters` under the item id. A missing raster omits the
+       chart and adds a warning. HTML, preview, and SVG keep the
+       vector.
+- [ ] 65.2 The band-scope bar from Phase 59 appears in the PDF.
 
 ### Done means
 
-The label fixture renders to one PNG at the label's physical size,
-rasterized through `image_scale`.
+The band-scope bar appears in the PDF as a raster.
 
 ### Exit gate
 
-Applied script update, fixture call, and the browser check.
+The browser check, or Andrew's fixture PDF. Lint passes.
 
 ### Status
 
@@ -2638,45 +4273,38 @@ Applied script update, fixture call, and the browser check.
 
 ---
 
-## Phase 33 — CSV emit
+## Phase 66 — SVG emit
 
 ### Goal
 
-`stage=csv` returns the data of the report: one row per detail
-record, text-compatible fields only. No charts, no barcodes, no
-images.
+`stage=svg` returns one SVG document of the composed pages.
 
 ### Entry gate
 
-Phase 17 Status complete.
+Phase 65 Status complete. The fixture is the text detail. Chart and
+barcode SVG inline from the intermediate.
 
 ### Work items
 
-- [ ] 33.1 Amend `Reports.Render` with `stage=csv`. Columns are the
-       field items on the detail band, in item order. Header and
-       footer bands are not rows. A datetime item exports in the
-       format its item options carry; a number exports unformatted
-       unless the item carries a mask.
-- [ ] 33.2 Decide the grouping representation and write it into the
-       contract note. The recommendation is flat rows with the group
-       key repeated as leading columns, because that is what a
-       spreadsheet consumer wants; the alternatives are group header
-       rows or blank-line-separated sections. Whichever is chosen,
-       `avg`/`mean`-style aggregates do not become CSV rows.
-- [ ] 33.3 Values are escaped per RFC 4180 unless the work item above
-       picks a looser text format and says why. A newline inside a
-       value is quoted, not split.
-- [ ] 33.4 A fixture pair: detail definition, source, expected CSV.
-- [ ] 33.5 Hand the packet over. Andrew's call matches the fixture.
+- [ ] 66.1 Amend `Reports.Render` with `stage=svg`. One page per
+       section, positions in physical CSS units, the definition's
+       font face, and page breaks marked per the Emit contract. A
+       label-sized report is this file with the page size set to the
+       label and the margins set to zero.
+- [ ] 66.2 Chart and barcode items inline their SVG from the
+       intermediate. Images inline as data URIs at their scaled size.
+- [ ] 66.3 Add the expected SVG skeleton for the detail fixture. Hand
+       the packet over. Andrew's call matches, and a browser check
+       embeds the SVG and shows the pages.
 
 ### Done means
 
-The detail fixture renders to the expected CSV, and the grouping
-representation is written down.
+The detail fixture's SVG matches the expected skeleton and embeds in
+a page with the page breaks marked.
 
 ### Exit gate
 
-Andrew's apply report and the fixture call.
+Applied script update, the fixture call, and the browser check.
 
 ### Status
 
@@ -2684,61 +4312,37 @@ Andrew's apply report and the fixture call.
 
 ---
 
-## Phase 34 — PDF-native output from the zint and d3 ports
+## Phase 67 — PNG export
 
 ### Goal
 
-Charts and barcodes enter the PDF as the vector objects the two ports
-emit natively. No SVG is converted to PDF anywhere, and nothing is
-rasterized to get there.
+The manager turns a `stage=svg` result into one PNG per page.
 
 ### Entry gate
 
-Phase 20, Phase 23, and Phase 27 Status complete. This phase extends
-the ports in their own repositories, so it is the one phase whose
-library work lands upstream of the packet.
+Phase 66 Status complete. `Reporting.Enabled` is true on the server
+used for the gate.
 
 ### Work items
 
-**Scope note:** as written this is three sittings, not one, because it
-touches three repositories. The session ordering is: (a) agree the
-contract and extend one port, with its probe; (b) the second port,
-same shape; (c) the lua-pdfkit placement plus the `Reports.Render`
-amendment and both fixture sets. Split it at those lines rather than
-by port, so the contract is settled before either port is written
-against it.
-
-- [ ] 34.1 Agree the native-output contract with both ports. Each
-       port gains a PDF emit that returns the report's chart or
-       barcode as a Form-XObject-ready payload — a bounding box, the
-       resources it needs, and a content stream — that lua-pdfkit can
-       place with the machinery it already has (`Page:xobjects()`,
-       `Document:ref`, the path runners). The exact shape,
-       `zint.barcode_pdf(opts)` and the d3 module's chart emit, is
-       pinned at the port, not guessed at here.
-- [ ] 34.2 Extend lua-pdfkit where the payload needs it: a placeable
-       vector resource with a matrix, and the shared resources the
-       two payloads reference (standard faces for labels, the
-       gradient patterns the D3 chart uses).
-- [ ] 34.3 Amend `Reports.Render`: chart and barcode items in
-       `stage=pdf` call the native emits and place the objects. The
-       SVG paths keep their SVG from the same compose, unchanged.
-- [ ] 34.4 Fixtures: the chart fixtures and the barcode fixtures from
-       Phases 23 and 27, now as PDFs. Andrew opens each and the
-       chart and the barcode are vector — selectable text on the axis
-       labels, crisp bars at any zoom.
-- [ ] 34.5 Record in the Working Log which port versions the packet
-       pins, and that the seed packet regenerates against them.
+- [ ] 67.1 The export action requests `stage=svg`, then posts each
+       page's SVG to `image_scale` with `units=px`, the page box,
+       `dpi` 150, and `format=png`. The script does not call that
+       endpoint.
+- [ ] 67.2 A label downloads as one PNG. More than one page downloads
+       as a zip of PNGs. The script result stays the SVG, so the
+       1 MiB result cap applies to that SVG.
+- [ ] 67.3 Browser: the label fixture downloads one PNG at the
+       label's physical size.
 
 ### Done means
 
-A chart PDF and a barcode PDF open with vector objects the ports
-emitted, and the PDF path no longer rasterizes any SVG.
+The label fixture becomes one PNG, rasterized by `image_scale` from
+the SVG the script returned.
 
 ### Exit gate
 
-Applied script updates, the fixture PDFs, and Andrew's confirmation
-they are vector.
+Lint and the browser check. Reporting was enabled for that check.
 
 ### Status
 
@@ -2746,394 +4350,178 @@ they are vector.
 
 ---
 
+## Phase 68 — Native PDF contract
+
+### Goal
+
+Agree the payload lua-zint and d3.lua will return, before either
+port grows a PDF writer. No port code in this phase.
+
+### Entry gate
+
+Phase 67 Status complete. Phase 54 Status complete. The barcode SVG
+and the chart SVG are what this payload replaces.
+
+### Work items
+
+- [ ] 68.1 Agree the payload both ports will return: a bounding box,
+       the resources it needs, and a content stream that lua-pdfkit
+       can place. Pin the entry name in the contract note. Do not
+       guess the table in this plan. Ask when a field is still open.
+- [ ] 68.2 Andrew approves that note. No migration is written.
+
+### Done means
+
+The contract note names the payload Andrew approved.
+
+### Exit gate
+
+Andrew's explicit approval. No source edited.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 69 — Zint PDF payload
+
+### Goal
+
+lua-zint returns the Phase 68 payload for a Code 128 and a QR code.
+
+### Entry gate
+
+Phase 68 Status complete. The work is in the zint repository.
+
+### Work items
+
+- [ ] 69.1 Extend lua-zint so a Code 128 probe and a QR probe return
+       the Phase 68 payload. Record the commit.
+- [ ] 69.2 No Helium packet in this phase. Phase 71 ships the
+       modules.
+
+### Done means
+
+Andrew reports the two zint probes from the port's tests, and each
+probe matches the Phase 68 payload.
+
+### Exit gate
+
+The port probe. No migration is applied in this phase.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 70 — D3 PDF payload
+
+### Goal
+
+d3.lua returns the Phase 68 payload for the port's reference chart.
+
+### Entry gate
+
+Phase 68 and Phase 56 Status complete. The work is in the d3
+repository. This phase may run before Phase 69.
+
+### Work items
+
+- [ ] 70.1 Implement the chart PDF emit against the Phase 68 payload,
+       including the gradient and the standard face the demo chart
+       uses.
+- [ ] 70.2 Probe with the port's reference chart. Record the commit.
+       No Helium packet in this phase.
+
+### Done means
+
+Andrew reports the d3 probe payload from the port's tests.
+
+### Exit gate
+
+The port probe. No migration is applied in this phase.
+
+### Status
+
+**not started**
+
+---
+
+## Phase 71 — Place native PDF objects
+
+### Goal
+
+`stage=pdf` places the payloads from Phases 69 and 70. Charts and
+barcodes in the PDF are vectors.
+
+### Entry gate
+
+Phases 31, 55, 65, 69, and 70 are complete.
+
+### Work items
+
+- [ ] 71.1 Extend lua-pdfkit where the payload needs a placeable
+       vector resource, a matrix, and the shared resources the two
+       payloads reference. Record the commit. Ship the changed
+       modules in a new migration. Do not edit an applied seed in
+       place.
+- [ ] 71.2 Amend `Reports.Render`. Chart and barcode items in
+       `stage=pdf` call the native emits and place the objects.
+       `params.rasters` is not required for these items. The SVG
+       paths keep their SVG from the same compose.
+- [ ] 71.3 A chart fixture and a barcode fixture, rendered as PDFs.
+       Andrew opens each one. Axis text is selectable. Bars stay
+       crisp when the page is zoomed.
+- [ ] 71.4 Record the port commits the packet pins.
+
+### Done means
+
+A chart PDF and a barcode PDF open as vectors the ports emitted.
+
+### Exit gate
+
+Applied script update, the fixture PDFs, and Andrew's confirmation
+that the objects are vectors.
+
+### Status
+
+**not started**
+
+---
 ## Later, not scheduled
 
 Pull one of these into a numbered phase only by amending this file.
 
 | Topic | Why it waits |
 | --- | --- |
-| Memos and shapes | Each is a `typeKey` with its own box behavior. Images are Phase 21. |
-| Other barcode keys | Phase 23 places lookup 053 keys 43 and 45. Aggregate, calculated, and crosstab barcode keys stay hidden. |
-| Chart kinds beyond the v1 set | Pie is in v1 behind the port extension. Anything past bar, stacked bar, line, dual-axis, combos, and pie is a port extension plus a panel pass. |
+| Memos and shapes | Each is a `typeKey` with its own box behavior. Images are Phases 50–52. |
+| Other barcode keys | Phase 54 places lookup 053 keys 43 and 45. Aggregate, calculated, and crosstab barcode keys stay hidden. |
+| Chart kinds beyond the v1 set | Pie is in v1. Phase 63 extends the port. Anything past bar, stacked bar, line, dual-axis, combos, and pie is a port extension plus a panel pass. |
 | Chart interactivity | Hover, zoom, and tooltips need scripted SVG, and the exports are static files. |
 | Crosstabs | A second layout engine. |
 | Subreports and packages | Nested definitions and their own datasources. |
-| Multiple group levels | v1 is one level. The key is a field, or one Lua function from Phase 30. |
+| Multiple group levels | v1 is one level. The key is a field, or one Lua function from Phase 45. |
 | Related datasources | v1 is one list. A link between two lists is a new contract. |
-| Stored blobs past the caps | A datasource over 256 KiB, or a PDF or PNG set whose base64 JSON exceeds the 1 MiB result cap. v1 answers both by operator config: `ClientInvokeMaxParamsBytes` and `ClientInvokeMaxResultBytes`. The stored-output shape is `H.set_result(type, location)`, which is not capped — but Hydrogen has no generic file store yet, and the gcode upload endpoint is not one. Raising the caps is operator config. |
-| Parameter form | The `parameters` column is reserved and empty. |
-| Native XLS | CSV is Phase 33. A spreadsheet writer waits until that path is the boring one. The retired client loaded SheetJS in the browser. |
+| Stored blobs past the caps | A datasource over the params cap, or a PDF whose base64 JSON exceeds 1 MiB. The params cap is operator config, up to the 10 MiB POST ceiling. The result cap is the compile-time 1 MiB scoreboard ceiling. `H.set_result(type, location)` stores two strings and needs a store Hydrogen does not have. The gcode upload endpoint is not that store. |
+| Parameter form | Declarations and the run strip are in this plan. Saved presets, lookup-driven pickers, and validation beyond type wait here. |
+| Native XLS | CSV is Phase 49. A spreadsheet writer waits until that path is the boring one. The retired client loaded SheetJS in the browser. |
 | Thumbnails | `thumbnail` stays null until a preview snapshot has a home. |
-| Text measurement and stretching bands | Needs a font engine shared by compose and the designer. |
+| Text measurement and stretching bands | v1 clips to the item box, on the canvas and in emit. Growing a band needs a font engine shared by compose and the designer. |
 | Vanadium in PDF | The v1 PDF face is Helvetica. Embedding the product face needs the font bytes inside the sandbox, with `io` left off. |
-| Live QueryRef datasources | A datasource `kind` of `query` that runs a QueryRef and uses the rows. Deferred per discussion — a query can also supply a parameter value, not just a datasource. |
-| Mail and scheduled runs | Mail Relay and the script scheduler. The report plan only has to leave `Reports.Render` invokable. Scheduling is a separate Lithium module covering reports, adhoc queries, and emails — not baked into the report writer itself. |
-| Scheduling and recurring runs | Handled by the separate scheduling module (see Mail and scheduled runs). `Reports.Render` is invokable, but there is no scheduler UI or `scripts` schedule row in this plan. |
+| Mail and scheduled runs | Mail Relay and the script scheduler. `Reports.Render` stays invokable. Scheduling is a separate Lithium module covering reports, ad hoc queries, and emails. This plan has no scheduler UI and no `scripts` schedule row. |
 | Report permissions and sharing | Who can generate or view which report. Hydrogen JWT auth exists; a row-level ACL model is not defined here. This waits on the permissions pass; the report writer does not block on it. |
-| Text search and filtering of report output | Full-text search over rendered HTML/PDF, or filtering the detail set by a text query. v1 datasources are plain JSON arrays. |
+| Text search and filtering of report output | Full-text search over rendered HTML or PDF. Which rows come back stays on the query. |
 | Incremental and delta reports | "Rows changed since the last run." Needs a watermark column on the datasource and a "last run" marker. v1 is a full snapshot. |
 | Conditional formatting | Text color, background, or font overrides driven by a field value or a formula. A style rule is a condition plus a set of property changes. v1 renders unstyled values. |
-| Data filtering | Exclude or include detail rows by a condition before compose assigns pages. A single filter expression on the datasource, applied before grouping. v1 renders every row. |
-| Detail row sorting | Order the detail rows within a band by one or more keys before compose lays them out. v1 preserves datasource order. |
+| Data filtering | The query's parameters decide which rows come back. A report-side filter expression stays here. v1 renders every row it was given. |
+| Detail row sorting | The query owns order. v1 also sorts one group by its key. A designer sort of the detail rows stays here. |
 | Template inheritance | A base definition that another definition extends, overriding bands or items by id. v1 definitions are standalone. |
 
 ## Working log
 
-### 2026-10-08 — First pass
+### 2026-10-10 — Plan locked
 
-Surveyed Lithium manager 24 (placeholder, id confirmed in
-`manager-loader.js` and `lithium.json`), Helium `acuranzo_1015`,
-`acuranzo_1086`, `acuranzo_1087`, and `acuranzo_1090`, and the retired
-client at `/mnt/extra/Projects/acuranzo/`.
-
-The compiled designer (`AcuranzoClient_6_1_5045.js`) contains
-`getReportPixels`, `addBackgroundPattern`, `createRuler`, section
-resize, item drag, lookup-filtered properties, and JSON undo. The
-source zip does not contain the Pascal units. No write to the
-`reports` table turned up in that build. PDF viewing was pdf.js, and
-the page loaded `jsPDF`.
-
-The first reading of the scripting API was that it can return JSON
-and run `H.query`, and that it had no PDF library. Conduit script
-params default to a 256 KiB cap. The same-day amendment below
-replaces the PDF and module conclusions.
-
-Phase 0 is not approved. No product source was edited for the report
-writer in this pass. Index pointers were added so the next session
-can find this file.
-
-### 2026-10-08 — Lua PDF, barcodes, and image scale
-
-Andrew pointed at two pure-Lua ports that are not in this repo.
-
-- lua-pdfkit lives at
-  `/home/asimard/DA/triton4/triton-toolkit-5b12870/tasks/lua-pdfkit/solution/lua-pdfkit/`.
-  `PDFDocument.new`, then `doc:finish()`, then `doc:output()` returns
-  the PDF bytes. JPEG and PNG come from raw bytes or a `data:` URI.
-  File paths and some AFM loads call `io.open`. Emit does not turn
-  `Sandbox.AllowIo` on.
-- lua-zint lives at
-  `/home/asimard/DA/triton3/triton-toolkit-e8fb24a/tasks/lua-zint/solution/`.
-  `zint.barcode(opts)` returns SVG. The port draws QR, Code 39,
-  Code 128, UPC-A, and GS1-128. `opts.output` writes a file, so
-  `Reports.Render` leaves that field unset.
-
-Hydrogen `require("group.script")` splits on the first dot
-(`H_lua_package_searcher` in `scripting_api_scoreboard.c`). The
-entry points that fit are `lua-pdfkit.init` and `zint.barcode`.
-`require("lua-pdfkit")` has no dot and is rejected. Each library is
-one migration, many script rows, `invokable = 0`, `mcp_access = 0`.
-
-Image sizing is the shipped Reporting endpoint
-`POST /api/reporting/image_scale` (ImageMagick / MagickWand),
-including format `xo` for a PDF XObject. Lua calls it with
-`H.http.request_sync` using the operator's bearer JWT, the same
-header that conduit query calls already attach. No new C. Phase 23 prefers `xo`
-and falls back to PNG plus `doc:image`. HTML barcodes stay inline
-SVG. PDF barcodes are rasterized through the same endpoint.
-Designer scale stays 96 CSS pixels per inch. Emit and `image_scale`
-use points (72 per inch).
-
-CSV is the spreadsheet emit (Phase 19). A native XLS writer stays
-unscheduled. `H.set_result_json` defaults to 1 MiB, so a PDF inside
-that JSON is about three quarters of a megabyte. Fixtures stay
-under the cap.
-
-Phases 20–23 are the library seed, images, barcodes, and PDF.
-This entry sketched calculated Lua as `require` and Count and Sum
-as Phase 25. The next entry replaces that. Phase 0 items 0.5–0.7
-and 0.9 were rewritten to match. Phase 0 is still awaiting
-approval. No product source was edited.
-
-### 2026-10-08 — Author Lua in the definition
-
-Andrew described the report author as the person who writes the
-function. Growers invent their own pack-date codes on PTI labels
-(a letter for the month, a week digit, a day split their way). That
-source has to travel with the report.
-
-The lock is `definition.functions[]`, each entry a name plus a Lua
-chunk that returns `function(ctx)`. `Reports.Render` compiles it
-with `load(source, name, "t", env)` on Lua 5.5. The environment is
-the string, math, table, and utf8 libraries, the usual pure
-functions, and `os.date` / `os.time` under the names `date` and
-`time`. The chunk does not receive the worker globals. `H` and
-`require` stay in `Reports.Render`, which is what loads lua-pdfkit
-and lua-zint. Hydrogen's sandbox logs `AllowOsExecute` and does not
-yet strip `os.execute` (`lua_context.c`). The separate environment
-is what keeps a formula away from it. No new C, and `debug` stays
-off. The existing progress hook still enforces
-`max_runtime_seconds`.
-
-A detail formula receives the current record. Group, page, and
-report headers and footers receive that band's context. Phase 26
-adds a group-key function, a page-break predicate, and a line-break
-predicate. The line-break predicate inserts one blank detail-height.
-Newlines inside a value are kept by the emitter. Band height stays
-fixed.
-
-Primitive ops are count, unique, sum, avg, weighted, mean, mode,
-and median. `avg` and `mean` are both the arithmetic mean. The
-engine computes them. A footer formula can read `ctx.aggregates`.
-
-Phase 24 is the field formula and the `C205` pack-code fixture.
-Phase 25 is the primitive set. Phase 26 is breaks and band context.
-Phase 0 item 0.10 asks for approval of this lock, and 0.11 is the
-amend step. Phase 0 is still awaiting approval. No product source
-was edited.
-
-### 2026-10-08 — Formula editor
-
-The function panel is a CodeMirror 6 view with the Lua personality
-already in `src/core/codemirror.js` (`lua()`, a stream language).
-Scripting manager builds its Lua buffer through
-`buildEditorExtensions({ language: 'lua' })`. Reports uses that
-path, including the shared footer, Vanadium Mono, brackets, and
-comment continuation. The older `codemirror-init.js` wrapper is not
-the one.
-
-That personality highlights. It does not parse. Syntax diagnostics
-are `@codemirror/lint`, added as a direct dependency in Phase 24
-(it is already transitive in the lockfile). The messages come from
-a new `Reports.Render` stage, `check`, which `load`s the chunk in
-Lua 5.5 and returns the line and message. luacheck stays the repo
-file linter. A JavaScript Lua parser would drift from the engine
-that actually runs the report.
-
-The editor debounces `check` and does not block typing. Report undo
-commits the source on blur. Undefined names such as `io` or `H` are
-runtime, so the gutter does not flag them while typing. Phase 0
-item 0.7 now names `@codemirror/lint` as the one new direct
-dependency. Phase 0 is still awaiting approval.
-
-### 2026-10-10 — Fact-check corrections
-
-Applied corrections from a codebase read pass against
-`elements/001-hydrogen/hydrogen/src/`, `elements/002-helium/acuranzo/`,
-and `elements/003-lithium/`:
-
-- **`H.system_token` does not exist.** Replaced with `H.http.request_sync`
-  carrying the operator's bearer JWT (the same header conduit query calls
-  attach). Verified `H.http.request_sync` in the scripting API and in
-  `argent_2034.lua`/`argent_2047.lua`; confirmed no `system_token`,
-  `system-token`, or `SYSTEM_TOKEN` anywhere in `src/`.
-- **`H.http.post` was wrong.** The real API is `H.http.request_sync`.
-  Updated Phases 21.2 and the working log.
-- **Lookup 057 gap in `lookups.js`.** The batch query at line 363 is
-  `[1, 30, 53, 54, 60]` — lookup 057 (page sizes) is never fetched and
-  has no accessor. Phase 12 now carries a work item to add 057 to the
-  fetch and expose a `getPageSizes()` accessor.
-- **Stale lookup category names.** `lookups.js` lines 10–15 comment
-  lookup 053 as "Themes" and 054 as "Icons". Phase 12 notes the rename
-  to "Report Object Types" / "Report Object Attributes".
-- **`invokeScript` absent.** `conduit.js` exposes only
-  `query`/`authQuery`. Phase 18.1 updated to state this explicitly.
-- **LITHIUM-INS.md rule 1 violation.** Phase 13.3 no longer lets an
-  empty field binding silently succeed export; it now refuses with a
-  toast. Updated Done means accordingly.
-- **`image_scale` return contract.** Added the documented success and
-  error response shapes to the Images section.
-- **D3.js is Hydrogen-only.** Confirmed `d3` is used solely by
-  `hbm_browser`. No D3 port exists in Lithium or Helium. The plan
-  defers charts to "Later, not scheduled." The upcoming D3.lua SVG
-  port is noted as pending from the user; it is not in the repo yet.
-- **zint / lua-pdfkit ports pending.** Neither library is in-repo; they
-  live on Andrew's disk outside the repo. Phase 20 seeds them. Added
-  status note and a note that SVG generators (zint + D3.lua) share an
-  intermediate representation that the HTML path embeds directly and
-  the PDF path rasterizes via `image_scale`.
-
-### 2026-10-10 — Body cap and DOMPurify verification
-
-- **`ClientInvokeMaxParamsBytes` is real.** Confirmed at 256 KiB default in
-  `config_scripting.c:47` and `conduit/script/script.c:39`. This is the conduit
-  script params cap, not the HTTP response limit. The 256 KiB reference in the
-  plan is correct and was clarified to not be confused with the `request_sync`
-  HTTP body limit (16 MiB, `SCRIPTING_HTTP_DEFAULT_MAX_BODY` in `http_client.h`).
-- **`ClientInvokeMaxResultBytes` is real.** Confirmed at 1 MiB default in
-  `config_scripting.h:62`. The PDF-in-JSON ceiling math holds.
-- **DOMPurify is in `package.json`** (v3.3.2). It was present but unused as of
-  the last Lithium review. Designer rules updated: Phase 18 sanitizes with
-  DOMPurify before `srcdoc`; Phase 22 ensures barcode SVG survives.
-- **Four expectation gaps** added to "Later, not scheduled": scheduling and
-  recurring runs, report permissions and sharing, text search and filtering of
-  report output, and incremental/delta reports.
-
-### 2026-10-10 — Export format and scope refinements
-
-- **Exports scoped to PDF, SVG, and CSV.** SVG is now the first emitted format
-  (Goal 4, Emit table `stage=svg` as default). HTML is repositioned as a preview-
-  only helper stage (`stage=html`) that consumes the same intermediate document
-  as the SVG export. The HTML path stays for the sandboxed iframe preview; it is
-  not an export format. Updated Phase 18 goal and work item 18.2, and Phase 22
-  text to reflect SVG as the primary path.
-- **Scheduling and permissions confirmed as separate.** The "Later, not scheduled"
-  rows for scheduling and report permissions were clarified: scheduling is a
-  separate Lithium module (covering reports, adhoc queries, and emails), not
-  baked into the report writer; permissions waits on the ACL pass and does not
-  block the writer.
-- **Queries as parameter sources noted.** The "Live QueryRef datasources" row in
-  "Later, not scheduled" now also notes that a query can supply a parameter
-  value, not just a datasource.
-- **DOMPurify rationale.** Added a note that even though the preview HTML is
-  fully generated by `Reports.Render` with no external HTML surface, the
-  sanitizer stays as defense-in-depth for the iframe.
-
-### 2026-10-10 — Format, chart, and library amendment
-
-Andrew's answers to the phase-0 review, applied to the locks and the
-phase list. Supersedes the same-day "HTML is a preview helper" refinement.
-
-- **Exports are PDF (default), HTML, SVG, PNG, and CSV**, in that
-  implementation order. HTML is both an export and the preview medium;
-  the preview is the HTML export artifact. SVG is a document export,
-  PNG is the per-page SVG through `image_scale`, and a label-sized
-  report with no pagination is a bare file.
-- **Phases renumbered.** Render content lands before the bare format
-  emits so no format is built twice: 17 compose + HTML, 18 preview,
-  19 seed lua-pdfkit, 20 PDF, 21 images, 22 seed lua-zint, 23
-  barcodes, 24 seed d3.lua, 25 chart design lock, 26 charts in the
-  designer, 27 charts in compose, 28 user Lua, 29 aggregates, 30
-  breaks, 31 SVG, 32 PNG, 33 CSV, 34 PDF-native port output. Excel
-  stays unscheduled.
-- **Charts are v1, series-first.** A chart item is lookup 053 key 42
-  or 44, carries a `chart` object, and its shape falls out of per-series
-  roles — a line beside a bar on two axes is the combo, first-class.
-  All four scopes ship: `band`, `group`, `record`, `custom`. Chart
-  options live in a bespoke panel because lookup 054 has no chart
-  rows, which also removes any dependency on the Phase 11 packet.
-- **PDFs run past the result cap.** Phase 20 writes the contract: a
-  PDF that fits is base64 in the result JSON; one that does not returns
-  an error naming `ClientInvokeMaxResultBytes` and the actual size, and
-  raising the cap is operator config. `H.set_result(type, location)` is
-  uncapped and is the shape a stored output will take, but there is no
-  generic store yet — `/api/files/local` is gcode-only.
-- **No SVG-to-PDF conversion, as the architecture.** The zint and d3
-  ports gain a native PDF emit (a Form-XObject-ready payload: bbox,
-  resources, content stream) that lua-pdfkit places directly. Phase 34
-  owns that work, in the ports' own repos. Until it lands, charts and
-  barcodes reach the PDF through `image_scale` at an explicit dpi — a
-  stopgap named in Phases 23 and 27, because a label PDF without its
-  barcode is worse than a sharp raster. Raster through `image_scale`
-  is the permanent home of photographs and imported art.
-- **Image elements carry options.** `dpi`, `format`, a downsample cap,
-  and a reuse rule, so a repeated image stores once per unique source.
-  Phase 21 confirms lua-pdfkit's image caching, or a content-hash cache
-  in `Reports.Render`.
-- **Library homes.** Each port is its own repository with its tests;
-  the seed packet pins the version. LuaRocks matters only if the
-  sandbox can read `package.path`.
-
-Verified during this pass, against disk:
-
-- The D3 port is real and done, not upcoming: two poseidon trials both
-  scored 1.0, and the artifact patch is `d3.lua` plus `lua_chart.lua`
-  and `d3_chart.js` with byte-identical SVGs. Its API is `create_root`,
-  `scaleBand`, `scaleLinear`, `axisLeft/Right/Bottom`, `stack`,
-  `curveBasis`, `line`, `range` — no pie arc yet. The demo writes with
-  `io.open`, so the probe confirms an in-memory SVG path.
-- lua-pdfkit already parses SVG path data (`path.lua` runners) and
-  already builds Form XObjects (`gradient.lua`), with
-  `Page:xobjects()` for the resource dict. The native emit is an
-  extension, not a rewrite.
-- `image_scale` documents SVG input, applies `dpi` before the read,
-  and emits `png`. That carries Phase 32.
-- Lookup 053 chart keys are 42/44/46/40/54 and barcode keys 43/45; no
-  lookup 054 row describes either.
-- `H.set_result` and `H.set_result_json` are distinct; only the JSON
-  one is capped. No `H.*` file or blob API exists.
-
-### 2026-10-10 — Image sources, cap raise, and effort sizing
-
-Second amendment pass, same day. Answers two questions raised after
-the format amendment, plus the effort column.
-
-- **Three image sources, all v1.** An image item is `embedded`
-  (base64 in the definition, deduplicated by content hash), a
-  `reference` (a `doc_id`, read at generation time through a new
-  Phase 15 QueryRef), or a `url` (fetched through
-  `H.http.request_sync` before any item is placed). All three resolve
-  to bytes at the start of generation. The `documents` table
-  (`acuranzo_1010.lua`: `(doc_id, rev_id)`, `file_data TEXT_BIG`,
-  `file_name`, `doc_type_a51`) is the reference target, which Andrew
-  identified and which was confirmed on disk. The designer's image
-  browser loads a local file or takes a clipboard paste into
-  `embedded`.
-- **Over-cap definitions preview by saving first.** Phase 18 saves
-  the definition and previews by `report_id` when the inline params
-  would not fit — one toast explaining the detour, no silent fallback.
-- **The 256 KiB params cap is config-only to raise to 10 MB.** The
-  enforcement is a length compare against
-  `Scripting.ClientInvokeMaxParamsBytes` with no fixed buffer behind
-  it, and the API POST body ceiling is already 10 MiB
-  (`API_MAX_POST_SIZE`, `src/api/api_utils.h` — its "64KB default"
-  comment is stale). The scoreboard strdups the params per job, so the
-  cap is a memory dial too. Recommendation recorded: set it to
-  10485760. It does not lift the separate 1 MiB result cap.
-- **Effort column.** easy / medium / hard per phase, doubling as a
-  model-strength hint. 28 of 35 phases are one sitting; the hard ones
-  are hard for stated reasons, and Phase 34 carries a scope note
-  splitting it into three sittings by contract, port, port, then
-  placement.
-
-Verified during this pass, against disk:
-
-- `ClientInvokeMaxParamsBytes` is parsed from
-  `Scripting.ClientInvokeMaxParamsBytes` (`config_scripting.c`), the
-  checks live in `conduit/script/script.c` (raw and merged), and
-  `params_too_large` already maps to HTTP 413.
-- The `documents` table and the Phase 15 list/get QueryRefs that
-  already touch it (acuranzo_1138, 1139) exist; a read-by-`doc_id`
-  QueryRef is the new one.
-
-Phase 0 is still not approved. No product source was edited for the
-report writer in this pass.
-
-### 2026-10-10 — Phase 0 completion
-
-Andrew approved Phase 0. Three decisions were recorded:
-
-- **Q1 resolved.** Phase 11 splits into two forward migrations per Helium
-  AGENTS.md "one lookup family per migration" rule: Migration A touches
-  lookup 053 (icon fixes, page-number keys 61/62, attribute list updates);
-  Migration B touches lookup 057 (label fix, new page sizes). Lookup 054
-  font additions ride with one of the two, depending on final rule reading.
-  Phase 11 work items and Done means updated to match.
-- **Q2 resolved.** Verified max `key_idx` in `acuranzo_1086.lua` is 60.
-  Page Number = key 61, Page Count = key 62. v1 type allowlist updated.
-- **Q3 resolved.** The 2026-10-10 amendments (exports PDF/HTML/SVG/PNG/CSV;
-  charts v1 series-first; no SVG-to-PDF conversion; three image sources;
-  10 MB params cap via config) are approved as written.
-
-Phase 0 Status set to complete. No source was edited for the report writer
-in this pass; the plan is now the gate for Phase 1.
-
-### 2026-10-10 — Plan review incorporation
-
-Incorporated all items from the review session:
-
-- **Phase 0.5 wording fixed.** Clarified that `require("d3.lua")` means
-  group `d3` and script name `lua`, matching Hydrogen's first-dot-split
-  searcher in `scripting_api_scoreboard.c:293`. `lua-pdfkit.*` is group
-  `lua-pdfkit`; `zint.*` is group `zint`.
-- **Phase 0.5-0.17 checked off** for all items confirmed by the
-  2026-10-10 fact-check pass. Items 0.3, 0.4, and 0.17 remain open
-  pending user decisions (see Q1–Q3 below).
-- **Phase 15.3 QueryRef overlap resolved.** Read `acuranzo_1138.lua`
-  (QueryRef #047 "Get Documents"): it returns all documents with no
-  `doc_id` filter. Phase 15.3 needs a new read-by-`doc_id` QueryRef,
-  which is a distinct query — no conflict.
-- **Phase 11 lookup family noted.** Helium AGENTS.md says "One lookup
-  family per migration." Phase 11 touches both lookup 053 and 057.
-  Added an entry-gate note pending the Q1 decision on whether to split.
-- **LITHIUM-INS.md §4 resolved.** The Anti-Patterns section (line 301)
-  explicitly allows `element.style.property = value` for "dynamic
-  positioning (e.g., drag handles)." Phase 6's
-  `element.style.height` drag preview is compliant.
-- **Phase 34 effort sizing confirmed.** 28 of 35 phases are one sitting;
-  Phase 34 splits into three sittings by its scope note. No change.
-- **v2 features added** to "Later, not scheduled": conditional
-  formatting, data filtering, detail row sorting, and template
-  inheritance.
-- **Open questions:** See Q1 (Phase 11 lookup family split), Q2 (Page
-  Number/Count keys 61/62), and Q3 (Phase 0.17 amendment sign-off).
+Phase 0 is approved. The locks in this file are the contract. Phase 1
+is next when Andrew pulls reporting in. CATCHUP stays P0 until then.

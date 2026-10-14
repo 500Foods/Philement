@@ -28,6 +28,7 @@ QueryTableCache* query_cache_create(const char* dqm_label) {
 
     // Initialize reader-writer lock
     if (pthread_rwlock_init(&cache->cache_lock, NULL) != 0) {
+        // The lock was never initialized, so it must not be destroyed here
         log_this(dqm_label ? dqm_label : SR_DATABASE, "Failed to initialize cache lock", LOG_LEVEL_ERROR, 0);
         free(cache);
         return NULL;
@@ -155,7 +156,10 @@ void query_cache_entry_destroy(QueryCacheEntry* entry) {
  bool database_cache_add_entry_locked(QueryTableCache* cache, QueryCacheEntry* entry, const char* dqm_label) {
     // Check if we need to resize
     if (cache->entry_count >= cache->capacity) {
-        size_t new_capacity = cache->capacity * 2;
+        // A zero capacity means the array was never allocated (or was emptied by
+        // realloc(ptr, 0)); start over at the initial capacity instead of
+        // reallocating to zero bytes, which would not hold the new entry.
+        size_t new_capacity = cache->capacity > 0 ? cache->capacity * 2 : INITIAL_CACHE_CAPACITY;
         QueryCacheEntry** new_entries = (QueryCacheEntry**)realloc(cache->entries,
                                                                     new_capacity * sizeof(QueryCacheEntry*));
         if (!new_entries) {
@@ -270,52 +274,20 @@ QueryCacheEntry* query_cache_lookup_by_ref_and_type(QueryTableCache* cache, int 
     return result;
 }
 
-long long query_cache_next_ref_of_type(QueryTableCache* cache, int query_type, long long after_ref,
-                                       const char* dqm_label) {
+/*
+ * Shared scan used by query_cache_next_ref_of_type and query_cache_next_ref_between.
+ * The caller is responsible for holding the cache read lock (or otherwise having
+ * exclusive access) and for validating the cache pointer and the bound ordering.
+ *
+ * Returns the smallest query_ref greater than after_ref and not greater than
+ * max_ref among the entries matching query_type, or 0 when there is none.
+ * Pass LLONG_MAX for max_ref when no upper bound should apply.
+ */
+long long query_cache_next_ref_scan_locked(QueryTableCache* cache, int query_type, long long after_ref,
+                                           long long max_ref) {
     long long best = 0;
-    size_t i;
 
-    if (!cache) {
-        return 0;
-    }
-    if (pthread_rwlock_rdlock(&cache->cache_lock) != 0) {
-        log_this(dqm_label ? dqm_label : SR_DATABASE,
-                 "Failed to acquire read lock for next-ref lookup", LOG_LEVEL_ERROR, 0);
-        return 0;
-    }
-    for (i = 0; i < cache->entry_count; i++) {
-        QueryCacheEntry* entry = cache->entries[i];
-        long long ref;
-
-        if (!entry || entry->query_type != query_type) {
-            continue;
-        }
-        ref = (long long)entry->query_ref;
-        if (ref <= after_ref) {
-            continue;
-        }
-        if (best == 0 || ref < best) {
-            best = ref;
-        }
-    }
-    pthread_rwlock_unlock(&cache->cache_lock);
-    return best;
-}
-
-long long query_cache_next_ref_between(QueryTableCache* cache, int query_type, long long after_ref,
-                                       long long max_ref, const char* dqm_label) {
-    long long best = 0;
-    size_t i;
-
-    if (!cache || max_ref <= after_ref) {
-        return 0;
-    }
-    if (pthread_rwlock_rdlock(&cache->cache_lock) != 0) {
-        log_this(dqm_label ? dqm_label : SR_DATABASE,
-                 "Failed to acquire read lock for next-ref lookup", LOG_LEVEL_ERROR, 0);
-        return 0;
-    }
-    for (i = 0; i < cache->entry_count; i++) {
+    for (size_t i = 0; i < cache->entry_count; i++) {
         QueryCacheEntry* entry = cache->entries[i];
         long long ref;
 
@@ -330,6 +302,40 @@ long long query_cache_next_ref_between(QueryTableCache* cache, int query_type, l
             best = ref;
         }
     }
+
+    return best;
+}
+
+long long query_cache_next_ref_of_type(QueryTableCache* cache, int query_type, long long after_ref,
+                                       const char* dqm_label) {
+    long long best = 0;
+
+    if (!cache) {
+        return 0;
+    }
+    if (pthread_rwlock_rdlock(&cache->cache_lock) != 0) {
+        log_this(dqm_label ? dqm_label : SR_DATABASE,
+                 "Failed to acquire read lock for next-ref lookup", LOG_LEVEL_ERROR, 0);
+        return 0;
+    }
+    best = query_cache_next_ref_scan_locked(cache, query_type, after_ref, LLONG_MAX);
+    pthread_rwlock_unlock(&cache->cache_lock);
+    return best;
+}
+
+long long query_cache_next_ref_between(QueryTableCache* cache, int query_type, long long after_ref,
+                                       long long max_ref, const char* dqm_label) {
+    long long best = 0;
+
+    if (!cache || max_ref <= after_ref) {
+        return 0;
+    }
+    if (pthread_rwlock_rdlock(&cache->cache_lock) != 0) {
+        log_this(dqm_label ? dqm_label : SR_DATABASE,
+                 "Failed to acquire read lock for next-ref lookup", LOG_LEVEL_ERROR, 0);
+        return 0;
+    }
+    best = query_cache_next_ref_scan_locked(cache, query_type, after_ref, max_ref);
     pthread_rwlock_unlock(&cache->cache_lock);
     return best;
 }

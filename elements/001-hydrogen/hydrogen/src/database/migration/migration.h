@@ -106,7 +106,9 @@ bool execute_firebird_migration(DatabaseHandle* connection, char** statements, s
                             const char* migration_file, const char* dqm_label);
 bool execute_mssql_migration(DatabaseHandle* connection, char** statements, size_t statement_count,
                            const char* migration_file, const char* dqm_label);
-bool firebird_migration_sql_is_ddl(const char* sql);
+// DDL detection moved to an engine-neutral home: sql_statement_is_ddl
+// (src/database/database_transaction_exec.h). The Firebird executor and
+// the shared transactional executor share it.
 
 // LOAD phase functions (metadata population only)
 bool execute_migration_files_load_only(struct DatabaseQueue* db_queue, DatabaseHandle* connection, char** migration_files,

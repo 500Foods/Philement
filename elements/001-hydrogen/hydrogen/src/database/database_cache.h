@@ -45,8 +45,7 @@ QueryCacheEntry* query_cache_lookup_by_ref_and_type(QueryTableCache* cache, int 
 long long query_cache_next_ref_of_type(QueryTableCache* cache, int query_type, long long after_ref,
                                        const char* dqm_label);
 long long query_cache_next_ref_between(QueryTableCache* cache, int query_type, long long after_ref,
-                                       long long max_ref, const char* dqm_label);
-void query_cache_update_usage(QueryTableCache* cache, int query_ref, const char* dqm_label);
+                                       long long max_ref, const char* dqm_label);void query_cache_update_usage(QueryTableCache* cache, int query_ref, const char* dqm_label);
 
 // Entry creation and cleanup
 QueryCacheEntry* query_cache_entry_create(int query_ref, int query_type, const char* sql_template,
@@ -59,9 +58,15 @@ size_t query_cache_get_entry_count(QueryTableCache* cache);
 void query_cache_get_stats(QueryTableCache* cache, char* buffer, size_t buffer_size);
 
 /* ----------------------------------------------------------------------------
- * The following helper is NOT part of the stable public API. It is exposed
- * (non-static) solely so the Unity test framework can call it directly.
+ * The following helpers are NOT part of the stable public API. They are exposed
+ * (non-static) solely so the Unity test framework can call them directly.
  * -------------------------------------------------------------------------- */
 bool database_cache_add_entry_locked(QueryTableCache* cache, QueryCacheEntry* entry, const char* dqm_label);
+
+/* Shared scan behind query_cache_next_ref_of_type / query_cache_next_ref_between.
+ * The caller must hold the cache read lock, validate the cache pointer, and
+ * order the bounds. Pass LLONG_MAX for max_ref to leave the upper bound open. */
+long long query_cache_next_ref_scan_locked(QueryTableCache* cache, int query_type, long long after_ref,
+                                           long long max_ref);
 
 #endif // DATABASE_CACHE_H

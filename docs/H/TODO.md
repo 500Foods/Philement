@@ -119,7 +119,6 @@ not open work unless listed below.
 | **Note** | Distinct from item 12e (pkey race). `Phase 2c` is the C-side datetime format fix (engine-aware translator in `mailrelay_repository.c`); not a Helium migration. |
 
 ### 12e. App-generated `MAX+1` PKs — clients must confirm insert + retry on conflict
-
 | | |
 | --- | --- |
 | **Design** | **Intentional:** prefer integer PKs via `COALESCE(MAX(id),0)+1` + `INSERT_KEY_*` / `RETURNING` over UUIDs everywhere. Migrations that emit this pattern are fine; the duty is on **callers**, not on rewriting schema to sequences/UUIDs. |
@@ -129,6 +128,17 @@ not open work unless listed below.
 | **Remaining** | (1) **Audit** C (and any other) clients of `INSERT_KEY_*` / `MAX+1` QueryRefs for concurrent use. (2) On unique/duplicate PK (or missing returned id): **retry** the insert (bounded), then treat returned id as success. (3) Mail Relay: `mailrelay_persist_message` already retries empty `queue_id`; concurrent `mail_queue_pkey` under PG still possible (no UNIQUE idempotency). (4) Document the contract: success = insert OK **and** new id in result; failure = retry or surface error — never assume `MAX+1` alone is race-free. |
 | **Why now** | Concurrent Persist/workers will hit this; silent one-shot failure is worse than a short retry loop. |
 | **Note** | Orthogonal to 12d (MySQL SEGV). Do **not** “fix” only by serializing tests. Search migrations for `COALESCE(MAX(` / `INSERT_KEY_` to find the surface area; fix **call sites**, not the migration style. |
+
+### 16. Runtime QueryRef transactions — multi-statement transaction blocks
+
+| | |
+| --- | --- |
+| **Plan** | [`TRANSACTION_PLAN.md`](/docs/H/plans/TRANSACTION_PLAN.md) |
+| **Effort** | L |
+| **Done** | Plan authored and Phase 0 locked (2026-10-14): marker syntax, per-engine DDL semantics, result payload, fixture set |
+| **Remaining** | Phases 1–6: marker parser, shared transactional executor, runtime queue wiring, fixture migrations 1386–1388 (QueryRefs #156–#158, owner-applied), blackbox test 64 across all engines, coverage + docs |
+| **Code** | `src/database/dbqueue/`, `src/database/migration/transaction.c`, `elements/002-helium/acuranzo/migrations/` |
+| **Why now** | Runtime multi-statement SQL is a live trap: SQLite silently runs only the first statement, MySQL/MariaDB fail outright (`client_flag = 0`), DB2/MSSQL/Firebird fail at prepare — and no runtime QueryRef documents intent. Also lifts `src/database/db2/prepared.c` and `src/database/db2/transaction.c` off 0% blackbox. |
 
 ---
 

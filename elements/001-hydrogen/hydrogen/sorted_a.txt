@@ -1,0 +1,20 @@
+108:        sqlite3_exec_ptr(sqlite_conn->db, "ROLLBACK;", NULL, NULL, NULL);
+109:        free(tx);
+110:        return false;
+140:        log_this(SR_DATABASE, "SQLite COMMIT execution time exceeded 10 seconds", LOG_LEVEL_ERROR, 0);
+141:        if (error_msg) {
+142:            free(error_msg);
+144:        return false;
+159:        free(error_msg);
+186:        log_this(SR_DATABASE, "SQLite ROLLBACK execution time exceeded 10 seconds", LOG_LEVEL_ERROR, 0);
+187:        if (error_msg) {
+188:            free(error_msg);
+190:        return false;
+205:        free(error_msg);
+72:        log_this(SR_DATABASE, "SQLite BEGIN TRANSACTION execution time exceeded 10 seconds", LOG_LEVEL_ERROR, 0);
+73:        if (error_msg) {
+74:            free(error_msg);
+76:        return false;
+91:        free(error_msg);
+98:        sqlite3_exec_ptr(sqlite_conn->db, "ROLLBACK;", NULL, NULL, NULL);
+99:        return false;

@@ -101,6 +101,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_45_oidc_idp.sh](/docs/H/tests/test_45_oidc_idp.md)**: OIDC Identity Provider — multi-engine parallel (ports 5450–5456): discovery, JWKS, authorize/login, PKCE token, userinfo, refresh
 - **[test_43_scripting.sh](/docs/H/tests/test_43_scripting.md)**: Scripting subsystem end-to-end testing
 - **[test_46_conduit_script.sh](/docs/H/tests/test_46_conduit_script.md)**: Conduit script invoke (`POST/GET /api/conduit/script`, JWT + Api.Echo)
+- **[test_63_conduit_webhook.sh](/docs/H/tests/test_63_conduit_webhook.md)**: Conduit webhook ingress (`POST /api/conduit/webhook/{hook}` + `/webhook/{hook}` alias, HMAC sha256/sha256-timestamp, 8 engines, ports 1563x)
 - **[test_47_mcp.sh](/docs/H/tests/test_47_mcp.md)**: MCP Streamable HTTP (JWT initialize/tools/call, ports 1547x / 1548x)
 - **[test_73_argent_mcp.sh](/docs/H/tests/test_73_argent_mcp.md)**: Argent MCP tools and validation variants (8 engines, ports 1573x / 1574x)
 - **[test_51_conduit.sh](/docs/H/tests/test_51_conduit_queries.md)**: Conduit endpoints testing (all 4 endpoints with full parameter support across 8 database engines)
@@ -111,7 +112,7 @@ And Test 11 is all about Unity unit tests, where we have custom code written to 
 - **[test_57_mailrelay_outbound.sh](/docs/H/tests/test_57_mailrelay_outbound.md)**: Mail Relay outbound delivery testing
 - **[test_58_mailrelay_api.sh](/docs/H/tests/test_58_mailrelay_api.md)**: Mail Relay authenticated API end-to-end testing
 - **[test_60_performance.sh](/docs/H/tests/test_60_performance.md)**: Performance benchmarking
-- **[test_62_nats.sh](/docs/H/tests/test_62_nats.md)**: NATS client against a local broker (ports 5620–5629)
+- **[test_62_nats.sh](/docs/H/tests/test_62_nats.md)**: NATS client against a local broker (ports 5620–5629), plus the `/api/nats/status` and `/api/nats/instances` JWT endpoints on the live two-peer cluster
 
 ### Deliverables
 
