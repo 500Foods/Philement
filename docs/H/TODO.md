@@ -135,8 +135,8 @@ not open work unless listed below.
 | --- | --- |
 | **Plan** | [`TRANSACTION_PLAN.md`](/docs/H/plans/TRANSACTION_PLAN.md) |
 | **Effort** | L |
-| **Done** | Plan authored and Phase 0 locked (2026-10-14): marker syntax, per-engine DDL semantics, result payload, fixture set |
-| **Remaining** | Phases 1–6: marker parser, shared transactional executor, runtime queue wiring, fixture migrations 1386–1388 (QueryRefs #156–#158, owner-applied), blackbox test 64 across all engines, coverage + docs |
+| **Done** | Phases 0–3 complete (2026-10-14): parser, shared executor, runtime wiring. Phase 4 files `acuranzo_1386.lua`–`acuranzo_1388.lua` are 1.0.1 (nested QueryRefs #156–#158). Packet handed over. Not applied |
+| **Remaining** | Owner regenerates the payload, deletes the 1.0.0 type-1000 rows (SQLite artifacts already have them, plus a leftover `TEST_TRANSACTIONS`), and applies 1386–1388. Then Phase 5 test 64, Phase 6 coverage and docs. Do not APPLY the stored 1.0.0 code. Suite `20261014_070232` failed on it |
 | **Code** | `src/database/dbqueue/`, `src/database/migration/transaction.c`, `elements/002-helium/acuranzo/migrations/` |
 | **Why now** | Runtime multi-statement SQL is a live trap: SQLite silently runs only the first statement, MySQL/MariaDB fail outright (`client_flag = 0`), DB2/MSSQL/Firebird fail at prepare — and no runtime QueryRef documents intent. Also lifts `src/database/db2/prepared.c` and `src/database/db2/transaction.c` off 0% blackbox. |
 

@@ -87,11 +87,12 @@ Explicit multi-statement transactions for runtime QueryRefs
 (`-- TRANSACTION_START` / `-- STATEMENT` / `-- TRANSACTION_END`),
 per-engine DDL semantics (in-transaction DDL on PostgreSQL/SQLite/DB2/MSSQL;
 commit-and-reopen on Firebird/MySQL/MariaDB), JSON array of per-statement
-result sets, and rich failure payloads. No migration changes. Fixtures are
-QueryRefs #156–#158 (migrations 1386–1388, packet handed to the owner);
-proof is blackbox test 64 across every live engine. Also lifts blackbox
+result sets, and rich failure payloads. The migration delimiter is unchanged.
+Phases 0–3 are complete. Phase 4 is in progress: fixture migrations
+1386–1388 (QueryRefs #156–#158) are written at 1.0.1 and the packet is
+handed over. The owner still regenerates the payload and applies.
+Proof is blackbox test 64, not started. Also lifts blackbox
 coverage of `src/database/db2/prepared.c` and `src/database/db2/transaction.c`.
-Plan authored 2026-10-14. Phase 0 not approved.
 
 ---
 

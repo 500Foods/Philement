@@ -47,20 +47,23 @@ How a phase runs in full: [`/docs/PLANNING.md`](/docs/PLANNING.md).
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-10-14):** Phases 0–3 are complete
-(parser, shared executor, runtime wiring). The agent wrote the Phase 2
-close-out after Phase 3. Next: **Phase 4 (Helium fixture migrations
-1386–1388 → QueryRefs #156–#158)** — author, audit, regenerate the
-payload, and hand the packet to the owner. **The agent does not apply
-the migrations.**
+**CURRENT PAUSE POINT (as of 2026-10-14):** Phases 0–3 are complete.
+Phase 4 is **in progress**. The fixture files are rewritten to 1.0.1
+(nested QueryRef inserts, same shape as `acuranzo_1381.lua`) and the
+packet is handed over. The phase is not complete: the payload is not
+regenerated, and the owner has not applied 1386–1388. **Do not APPLY
+the type-1000 rows already loaded from version 1.0.0.** Suite
+`20261014_070232` failed on that shape. Next session starts at Phase 5
+only after the owner reports the apply.
 
 ### Resume here next session
 
-1. Re-verify the free numbers on disk (migration files, QueryRefs, test
-   number) — the ones recorded below are a snapshot and go stale.
-2. Re-read only Phase 4's Goal, Work items, Done means, and Exit gate.
-3. Baseline: `zsh -ic 'mkq'`.
-4. Implement Phase 4 only, verify its Exit gate, update this doc, stop.
+1. Confirm the owner applied 1386–1388 and that `queries` holds
+   caller-facing rows 156, 157, and 158 at type 1. If this Status is
+   still in progress, the apply has not been reported. Stay on Phase 4.
+2. Re-read only Phase 5's Goal, Work items, Done means, and Exit gate.
+3. Test 64 is still free. Next Acuranzo file after these fixtures is
+   **1389**. Next caller-facing QueryRef is **159**. Re-verify on disk.
 
 ## Priority
 
@@ -297,7 +300,7 @@ is documented in the fixture summaries.
 | 1 | Marker parser parses the syntax and rejects every malformed shape; Unity green | M | **complete** |
 | 2 | Shared transactional statement executor extracted and unit-tested; migration path provably unchanged | M | **complete** |
 | 3 | Runtime queue executes marked QueryRefs and returns the result array; unmarked path unchanged | L | **complete** |
-| 4 | Fixture migrations 1386–1388 written, audited, packet handed to owner; owner reports the apply | M | pending |
+| 4 | Fixture migrations 1386–1388 written, audited, packet handed to owner; owner reports the apply | M | **in progress** |
 | 5 | Test 64 green on every live engine, failure path and cleanup included | L | pending |
 | 6 | Coverage targets met, docs updated, plan closed after owner sign-off | S | pending |
 | 7 | (Deferred by default) Migration executors converged onto the shared executor | M | pending — deferred |
@@ -810,9 +813,10 @@ Phase 3 complete. Free numbers re-verified in Phase 0 still hold.
       (`payload-generate.sh` or `zsh -ic 'mka'`) — required before any
       migration test can see the new files.
       **Verify:** payload regenerated; timestamp noted in Status.
-- [ ] Run the SchemaTool drift audit (read-only) and hand the packet to
+- [x] Run the SchemaTool drift audit (read-only) and hand the packet to
       the owner. **The agent does not apply.**
       **Verify:** handoff recorded in Status with the audit output.
+      Audit is exit 2 on purpose: SQLite demo still holds the 1.0.0 load.
 - [ ] Phase completes only when the owner reports the apply (per
       [`/docs/PLANNING.md`](/docs/PLANNING.md) packet rule).
       **Verify:** owner report quoted in Status.
@@ -828,10 +832,107 @@ Owner apply report in Status; payload regenerated; `mkl` clean.
 
 ### Status
 
-- **State:** pending
-- **Date:**
-- **Result:**
+- **State:** in progress
+- **Date:** 2026-10-14
+- **Result:** Packet handed over. Not applied. Payload not regenerated.
+  - `acuranzo_1386.lua`, `acuranzo_1387.lua`, and `acuranzo_1388.lua`
+    are version **1.0.1**. APPLY inserts a type-1 row at QueryRef
+    156, 157, or 158. The marker SQL is that row's `code`. The reverse
+    row is type 1001 and deletes that QueryRef. Generation checked with
+    `get_migration.lua` for postgresql, sqlite, mysql, mariadb, db2,
+    firebird, and mssql. Inner `code` is brotli-compressed in the
+    migration text; decoding it shows the markers, the unqualified
+    index, and `:SHOULD_FAIL`. `luacheck` on the three files exited 0.
+  - README rows updated to 1.0.1. Statement count stays 4 (two
+    `table.insert` calls plus two `${SUBQUERY_DELIMITER}`s).
+  - SchemaTool SQLite demo, `--from 1386 --to 1388 --include-reverse
+    --only-failures`, **exit 2** at 2026-10-14 07:37 PDT:
+    `Compare: total=3 ok=0 drift=3 missing_load=0 missing_apply=3`.
+    Each row: loaded, not applied; forward code+summary drift; reverse
+    missing in DB. The stored type-1000 `code` is still the 1.0.0
+    fixture SQL (`CREATE TABLE TEST_TRANSACTIONS` at the top). The Lua
+    expected `code` is the nested `INSERT INTO queries`.
+  - Same type-1000 rows, and a leftover `TEST_TRANSACTIONS` table, are
+    in `hydrodemo.sqlite` and `hydrotst.sqlite`. No `TEST_TXN_STAGING`.
+    No type-1 row for 156, 157, or 158.
+  - Suite `20261014_070232` embedded the 1.0.0 file (payload log:
+    6,301 bytes). `Failed to apply migration 1386` means LOAD
+    committed and APPLY then stopped: PostgreSQL, YugabyteDB, MSSQL,
+    and SQLite demo connections in that suite. The type-1000 row is
+    still there. `Migration acuranzo_1386.lua failed - transaction
+    rolled back` is the LOAD path (MySQL, MariaDB, DB2, Firebird in
+    the migration tests): that transaction did not keep a row.
+    SQLite's APPLY ran only the leading `CREATE TABLE`, left the row
+    at type 1000, and the watermark stayed 1385.
 - **Variances:**
+  - `query_dialect_a30` is `${DIALECT}` (1–7), chosen this session
+    over the Phase 0 literal 0. Runtime does not read the column.
+  - Index name is unqualified `TEST_TRANSACTIONS_idx_label`, matching
+    other Acuranzo `CREATE INDEX` statements. The 1.0.0 draft qualified
+    it with `${SCHEMA}`.
+  - Runtime queue for the three QueryRefs is slow (`QTC_SLOW` = 0).
+    The bookkeeping forward row is fast, the reverse row is slow, same
+    split as `acuranzo_1366.lua`.
+  - Phase 4 is not complete. Payload regeneration and the owner apply
+    are still open. `mkl` was not run; the README edit is the version
+    cell on three existing rows.
+
+### Accomplished
+
+- Rewrote the three fixture migrations from the 1.0.0 shape (marker SQL
+  stored as the migration's own `code`) to the nested QueryRef insert
+  used by `acuranzo_1381.lua` / `acuranzo_1366.lua`.
+- Confirmed the generated SQL for all seven engines, and recorded the
+  SchemaTool drift against the SQLite demo artifact.
+- Did not regenerate the payload, did not delete database rows, and
+  did not apply.
+
+### Lessons learned
+
+- A migration file's returned SQL is what LOAD executes. The
+  caller-facing QueryRef has to be an `INSERT` nested inside that
+  `code` column. Putting the fixture SQL in the outer `code` makes
+  APPLY try to run the markers as a migration.
+- The reverse chunk has to be an `INSERT` of a type-1001 row. A bare
+  `DELETE` at the top level runs during LOAD and never stores a reverse.
+- `]=]` inside `]==]` will not close the outer Helium long string; the
+  equals-count matches. The generated forward `code` is brotli-wrapped
+  once, and the runtime statement text is brotli-wrapped again inside
+  it. A search of the raw `get_migration.lua` output does not see
+  `TRANSACTION_START` until both layers are decoded.
+- SQLite's runtime still executes only the first statement of a batch.
+  That is why the 1.0.0 apply created `TEST_TRANSACTIONS` and left the
+  migration row at type 1000.
+
+### Handoff
+
+Owner, before any APPLY:
+
+1. Regenerate the payload from these 1.0.1 files (`payload-generate.sh`
+   or `zsh -ic 'mka'`) and rebuild the binary you will launch. `mkt`
+   does not refresh the archive. The archive timestamped 2026-10-14
+   07:03 is the 1.0.0 shape.
+2. Delete the loaded rows before the next LOAD. LOAD skips a ref at or
+   below the high-water mark, so a new payload will not replace them.
+   On both SQLite artifacts the rows are `query_ref` 1386, 1387, and
+   1388, `query_type_a28` 1000. Drop `TEST_TRANSACTIONS` there too.
+   Repeat the delete on every other database whose log for suite
+   `20261014_070232` says `Failed to apply migration 1386` (the LOAD
+   committed). A log line `rolled back due to errors` during LOAD left
+   no row.
+3. LOAD and APPLY 1386–1388. Do not apply the code that is stored today.
+4. Reply with the apply result (engine, schema, and that query_ref
+   156/157/158 exist at type 1). Phase 5 starts from that report.
+
+Phase 5 should assert the payload as it landed: per-block `statement`
+numbers, top-level `error_class` `DB_ERR_OTHER`, top-level message
+`transaction block N failed at statement M (rolled back)`, engine text
+on the failing entry's `error`. After #157 with `SHOULD_FAIL = 1`, row
+`txn_id` 1 remains; the staging drop in #158 is the DDL observable.
+Block statements, including the `CREATE TABLE` and `DROP TABLE` inside
+blocks, use prepared statements. MySQL, MariaDB, and MSSQL may reject
+prepared DDL. That is the first thing to check if #157 fails before
+the duplicate-key statement.
 
 ---
 
@@ -972,6 +1073,16 @@ Log.
 
 ### Decisions log
 
+- **(2026-10-14, Phase 4 packet)** Fixture migrations rewritten to 1.0.1
+  and handed over. Not applied. `get_migration.lua` on seven engines
+  shows type-1 rows 156/157/158 nested inside the type-1000 code, reverse
+  type 1001, unqualified `TEST_TRANSACTIONS_idx_label`, and
+  `${DIALECT}` (owner's choice over the Phase 0 literal 0). `luacheck`
+  exited 0. SchemaTool SQLite demo exit 2: the 1.0.0 load is still in
+  `hydrodemo.sqlite` and `hydrotst.sqlite` (type 1000, code starts with
+  `CREATE TABLE`, leftover `TEST_TRANSACTIONS`, no QueryRef 156). Suite
+  `20261014_070232` failed APPLY of that shape. Owner regenerates the
+  payload, deletes those rows, then applies. Phase 5 waits on that report.
 - **(2026-10-14, Phase 2 closed)** Shared executor landed:
   `src/database/database_transaction_exec.{c,h}` —
   `database_execute_statements_in_transaction` (begin → statements →

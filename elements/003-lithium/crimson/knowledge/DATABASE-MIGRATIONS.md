@@ -425,4 +425,7 @@ in the migrations themselves so that they get populated in the database directly
 | [1383](/elements/002-helium/acuranzo/migrations/acuranzo_1383.lua) | lookups | 1.0.0 | 2026-09-16 | 4 | ✗ | Addition to Lookup 030 - Query Dialect (key 6 Firebase) |
 | [1384](/elements/002-helium/acuranzo/migrations/acuranzo_1384.lua) | lookups | 1.0.0 | 2026-09-18 | 4 | ✗ | UPDATE Lookup 030 - Query Dialect (key 6 Firebase → Firebird) |
 | [1385](/elements/002-helium/acuranzo/migrations/acuranzo_1385.lua) | queries | 1.0.0 | 2026-10-01 | 4 | ✗ | QueryRef #154 claim: derived pick so MySQL and SQL Server accept it |
-| **386** | | | | **2014** | **386** | |
+| [1386](/elements/002-helium/acuranzo/migrations/acuranzo_1386.lua) | queries | 1.0.0 | 2026-10-14 | 4 | ✗ | QueryRef #156 - Transaction Block Smoke |
+| [1387](/elements/002-helium/acuranzo/migrations/acuranzo_1387.lua) | queries | 1.0.0 | 2026-10-14 | 4 | ✗ | QueryRef #157 - Transaction Block Stress |
+| [1388](/elements/002-helium/acuranzo/migrations/acuranzo_1388.lua) | queries | 1.0.0 | 2026-10-14 | 4 | ✗ | QueryRef #158 - Transaction Fixture Cleanup |
+| **389** | | | | **2026** | **389** | |
