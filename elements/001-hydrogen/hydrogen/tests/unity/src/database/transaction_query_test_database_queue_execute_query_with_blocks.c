@@ -142,6 +142,7 @@ void test_marked_query_single_block(void);
 void test_marked_query_block_failure(void);
 void test_marked_query_bare_statements(void);
 void test_marked_query_parameters_filtered_per_statement(void);
+void test_marked_query_bare_statement_execute_fails(void);
 void test_marked_query_invalid_request(void);
 
 void setUp(void) {
@@ -294,16 +295,39 @@ void test_marked_query_parameters_filtered_per_statement(void) {
         "INSERT INTO t (a) VALUES (:A);\n"
         "-- STATEMENT\n"
         "UPDATE t SET b = :B WHERE a = :A;\n"
-        "-- TRANSACTION_END", "{\"A\":1,\"B\":2}");
+        "-- TRANSACTION_END", "{\"INTEGER\":{\"A\":1,\"B\":2}}");
     QueryResult* result = NULL;
 
     bool success = database_queue_execute_query_with_blocks(connection, &request, &result, "T");
     TEST_ASSERT_TRUE(success);
     TEST_ASSERT_NOT_NULL(result);
 
-    // Each statement is bound only the names it references.
-    TEST_ASSERT_EQUAL_STRING("{\"A\":1}", stub_all_parameters[0]);
-    TEST_ASSERT_EQUAL_STRING("{\"A\":1,\"B\":2}", stub_all_parameters[1]);
+    // Each statement is bound only the names it references, in typed sections.
+    TEST_ASSERT_EQUAL_STRING("{\"INTEGER\":{\"A\":1}}", stub_all_parameters[0]);
+    TEST_ASSERT_EQUAL_STRING("{\"INTEGER\":{\"A\":1,\"B\":2}}", stub_all_parameters[1]);
+
+    database_engine_cleanup_result(result);
+    free(connection->designator);
+    free(connection);
+}
+
+void test_marked_query_bare_statement_execute_fails(void) {
+    DatabaseHandle* connection = make_connection();
+    mock_database_engine_set_execute_result(false);
+    QueryRequest request = make_request(
+        "CREATE TABLE t (a INT);\n"
+        "-- TRANSACTION_START\n"
+        "INSERT INTO t VALUES (1);\n"
+        "-- TRANSACTION_END", NULL);
+    QueryResult* result = NULL;
+
+    bool success = database_queue_execute_query_with_blocks(connection, &request, &result, "T");
+    TEST_ASSERT_FALSE(success);
+    TEST_ASSERT_NOT_NULL(result);
+    TEST_ASSERT_FALSE(result->success);
+    TEST_ASSERT_NOT_NULL(result->error_message);
+    TEST_ASSERT_NOT_NULL(strstr(result->error_message, "statement 1 outside a transaction block failed"));
+    TEST_ASSERT_EQUAL_INT(0, stub_begin_calls);
 
     database_engine_cleanup_result(result);
     free(connection->designator);
@@ -327,6 +351,7 @@ int main(void) {
     RUN_TEST(test_marked_query_block_failure);
     RUN_TEST(test_marked_query_bare_statements);
     RUN_TEST(test_marked_query_parameters_filtered_per_statement);
+    RUN_TEST(test_marked_query_bare_statement_execute_fails);
     RUN_TEST(test_marked_query_invalid_request);
 
     return UNITY_END();

@@ -79,6 +79,22 @@ bool build_parameter_array(
     const char* dqm_label
 );
 
+/*
+ * Unique :name slots in SQL appearance order for a prepared execute.
+ * Pointers alias the returned ParameterList. Caller frees the array with
+ * free and the list with free_parameter_list. NULL or "{}" yields count 0
+ * and a NULL list so parameter-free migration executes stay unbound.
+ */
+bool database_ordered_parameters(
+    const char* sql_template,
+    const char* parameters_json,
+    DatabaseEngineType engine_type,
+    TypedParameter*** ordered_params,
+    size_t* param_count,
+    ParameterList** list_out,
+    const char* dqm_label
+);
+
 // Cleanup functions
 void free_typed_parameter(TypedParameter* param);
 void free_parameter_list(ParameterList* params);

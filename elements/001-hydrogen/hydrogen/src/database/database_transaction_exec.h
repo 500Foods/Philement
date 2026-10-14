@@ -4,9 +4,9 @@
  * Runs an ordered list of statements inside a transaction:
  *   begin -> statements -> commit (rollback on any failure)
  *
- * Two callers share this implementation:
- *   - the runtime QueryRef transaction-block path (dbqueue worker), and
- *   - eventually the migration executors (deferred Phase 7).
+ * The runtime QueryRef transaction-block path (dbqueue worker) calls
+ * this. Migration executors stay on their own code. Folding them in is
+ * speculative TODO item 32.
  *
  * DDL handling is engine-adaptive. Engines whose DDL participates in a
  * transaction (PostgreSQL, SQLite, DB2, MSSQL) keep the whole block

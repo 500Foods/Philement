@@ -25,6 +25,7 @@ Database Instance
 - **Dynamic Queue Scaling** - Automatic spawning/shutdown based on workload
 - **[Parameter types](/docs/H/database/PARAMETER_TYPES.md)** - Typed JSON parameters and named SQL markers
 - **[Parameter binding](/docs/H/database/PARAMETER_BINDING.md)** - Per-engine placeholders and bind APIs
+- **Runtime transaction blocks** - Line-start markers that run several statements of one QueryRef in a transaction. See [Runtime QueryRef transactions](#runtime-queryref-transactions) below.
 
 ## Implementation Status
 
@@ -189,6 +190,30 @@ The watchdog's startup log line shows the effective bounds:
 - A secondary admin MySQL connection for KILL (today's `mysql_kill` on the same connection can block the watchdog thread if the socket is dead).
 - Loading `mysql_errno` for proper numeric classification (today's MySQL classification is substring-based on the error message).
 - Per-query timeout overrides via a config knob (the per-request `timeout_seconds` field on `QueryRequest` is the way to set this today; the bootstrap path is the only caller that does).
+
+## Runtime QueryRef transactions
+
+A runtime QueryRef runs as one statement unless the author puts transaction markers at the start of a line:
+
+- `-- TRANSACTION_START` opens a block.
+- `-- STATEMENT` separates statements inside that block.
+- `-- TRANSACTION_END` closes the block.
+
+SQL with none of those markers stays on the single-statement path. Migrations keep `-- SUBQUERY DELIMITER` and `-- QUERY DELIMITER`. They do not use these markers.
+
+Marked SQL is served by `POST /api/conduit/alt_query`. Success is HTTP 200 and the statement array is `rows`. Failure is HTTP 422 with `error` "Database error" and `message` "transaction block N failed at statement M (rolled back)".
+
+Statements inside a block use prepared statements named from an `RTXN` hash. A bare statement outside a block does not.
+
+DDL inside a block follows the engine:
+
+| Engines | What a block does with DDL |
+| --- | --- |
+| PostgreSQL, SQLite, DB2, MSSQL | DDL stays in the transaction. A later failure rolls it back. |
+| Firebird, MySQL, MariaDB | DDL is a commit point. The executor commits the open segment, runs the DDL, and opens a new transaction for what follows. A later failure does not undo that DDL. |
+| YugabyteDB | Rides the PostgreSQL engine. It is not in the commit-point list in C. On the QueryRef 157 fixture, the empty staging table still remained after the rolled-back block (Test 64). That is this fixture's result, not a second policy in `engine_ddl_breaks_transaction`. |
+
+The fixture QueryRefs and the blackbox contract are in [Test 64](/docs/H/tests/test_64_queryref_transactions.md).
 
 ## Usage
 

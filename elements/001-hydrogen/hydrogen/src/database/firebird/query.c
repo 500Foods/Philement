@@ -757,6 +757,11 @@ bool firebird_execute_prepared(DatabaseHandle* connection, const PreparedStateme
     }
     const char* sql = stmt->sql_template;
     const char* params = request ? request->parameters_json : NULL;
+    /* The cached template is already positional. firebird_execute_sql binds
+     * :name from the request template; the cached handle stays unused. */
+    if (request && request->sql_template && request->sql_template[0] != '\0') {
+        sql = request->sql_template;
+    }
     if (!sql) {
         *result = firebird_build_error_result("Prepared statement missing SQL", DB_ERR_OTHER);
         return false;

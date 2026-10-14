@@ -13,6 +13,7 @@
 #include "types.h"
 #include "connection.h"
 #include "prepared.h"
+#include "query.h"
 
 // ODBC type definitions for MSSQL
 typedef short SQLSMALLINT;
@@ -312,4 +313,53 @@ bool mssql_remove_prepared_statement(PreparedStatementCache* cache, const char* 
     (void)cache;
     (void)name;
     return true;
+}
+
+int mssql_bind_and_execute_prepared(void* stmt_handle, const char* sql_template,
+                                    const char* parameters_json, const char* designator) {
+    TypedParameter** ordered = NULL;
+    size_t count = 0;
+    ParameterList* list = NULL;
+    void** bound_values = NULL;
+    long* indicators = NULL;
+    const char* label = designator ? designator : SR_DATABASE;
+
+    if (!mssql_SQLExecute_ptr) {
+        return -1;
+    }
+    if (!database_ordered_parameters(sql_template, parameters_json, DB_ENGINE_MSSQL,
+                                     &ordered, &count, &list, label)) {
+        log_this(label, "MSSQL prepared statement: failed to order parameters", LOG_LEVEL_ERROR, 0);
+        return -1;
+    }
+    if (count > 0) {
+        bound_values = calloc(count, sizeof(void*));
+        indicators = calloc(count, sizeof(long));
+        if (!bound_values || !indicators) {
+            free(bound_values);
+            free(indicators);
+            free(ordered);
+            free_parameter_list(list);
+            return -1;
+        }
+        for (size_t i = 0; i < count; i++) {
+            if (!mssql_bind_single_parameter(stmt_handle, (unsigned short)(i + 1), ordered[i],
+                                             bound_values, indicators, label)) {
+                mssql_cleanup_bound_values(bound_values, i);
+                free(indicators);
+                free(ordered);
+                free_parameter_list(list);
+                return -1;
+            }
+        }
+    }
+
+    int exec_result = mssql_SQLExecute_ptr(stmt_handle);
+    if (bound_values) {
+        mssql_cleanup_bound_values(bound_values, count);
+    }
+    free(indicators);
+    free(ordered);
+    free_parameter_list(list);
+    return exec_result;
 }

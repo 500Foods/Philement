@@ -119,6 +119,7 @@ not open work unless listed below.
 | **Note** | Distinct from item 12e (pkey race). `Phase 2c` is the C-side datetime format fix (engine-aware translator in `mailrelay_repository.c`); not a Helium migration. |
 
 ### 12e. App-generated `MAX+1` PKs — clients must confirm insert + retry on conflict
+
 | | |
 | --- | --- |
 | **Design** | **Intentional:** prefer integer PKs via `COALESCE(MAX(id),0)+1` + `INSERT_KEY_*` / `RETURNING` over UUIDs everywhere. Migrations that emit this pattern are fine; the duty is on **callers**, not on rewriting schema to sequences/UUIDs. |
@@ -128,17 +129,6 @@ not open work unless listed below.
 | **Remaining** | (1) **Audit** C (and any other) clients of `INSERT_KEY_*` / `MAX+1` QueryRefs for concurrent use. (2) On unique/duplicate PK (or missing returned id): **retry** the insert (bounded), then treat returned id as success. (3) Mail Relay: `mailrelay_persist_message` already retries empty `queue_id`; concurrent `mail_queue_pkey` under PG still possible (no UNIQUE idempotency). (4) Document the contract: success = insert OK **and** new id in result; failure = retry or surface error — never assume `MAX+1` alone is race-free. |
 | **Why now** | Concurrent Persist/workers will hit this; silent one-shot failure is worse than a short retry loop. |
 | **Note** | Orthogonal to 12d (MySQL SEGV). Do **not** “fix” only by serializing tests. Search migrations for `COALESCE(MAX(` / `INSERT_KEY_` to find the surface area; fix **call sites**, not the migration style. |
-
-### 16. Runtime QueryRef transactions — multi-statement transaction blocks
-
-| | |
-| --- | --- |
-| **Plan** | [`TRANSACTION_PLAN.md`](/docs/H/plans/TRANSACTION_PLAN.md) |
-| **Effort** | L |
-| **Done** | Phases 0–3 complete (2026-10-14): parser, shared executor, runtime wiring. Phase 4 files `acuranzo_1386.lua`–`acuranzo_1388.lua` are 1.0.1 (nested QueryRefs #156–#158). Packet handed over. Not applied |
-| **Remaining** | Owner regenerates the payload, deletes the 1.0.0 type-1000 rows (SQLite artifacts already have them, plus a leftover `TEST_TRANSACTIONS`), and applies 1386–1388. Then Phase 5 test 64, Phase 6 coverage and docs. Do not APPLY the stored 1.0.0 code. Suite `20261014_070232` failed on it |
-| **Code** | `src/database/dbqueue/`, `src/database/migration/transaction.c`, `elements/002-helium/acuranzo/migrations/` |
-| **Why now** | Runtime multi-statement SQL is a live trap: SQLite silently runs only the first statement, MySQL/MariaDB fail outright (`client_flag = 0`), DB2/MSSQL/Firebird fail at prepare — and no runtime QueryRef documents intent. Also lifts `src/database/db2/prepared.c` and `src/database/db2/transaction.c` off 0% blackbox. |
 
 ---
 
@@ -235,6 +225,17 @@ not open work unless listed below.
 | **Remaining** | Implement only if a real engine/rwlock design appears; otherwise leave as reserved |
 | **Note** | Not actionable backlog — listed so scans do not rediscover them as gaps. |
 
+### 32. Converge migration executors onto the shared transaction executor
+
+| | |
+| --- | --- |
+| **Plan** | Closed record: [`TRANSACTION_PLAN_COMPLETE.md`](/docs/H/plans/complete/TRANSACTION_PLAN_COMPLETE.md) (its Phase 7) |
+| **Code** | `src/database/dbqueue/lead_apply.c`, `lead_reverse.c`, `src/database/migration/transaction.c`, `database_execute_statements_in_transaction` |
+| **Effort** | M |
+| **Done** | Runtime QueryRef transactions ship (Phases 0–6). Migrations keep their own executors and passed the full suite on 2026-10-14 |
+| **Remaining** | Switch those migration callers onto the shared executor only when someone wants the migration path touched. Firebird must keep commit-after-DDL inside the open transaction. MSSQL migrations keep prepare off. Gate: tests 30–38 and 71 |
+| **Note** | Speculative. The transaction feature does not need this. Do not start it casually. |
+
 ---
 
 ## Outside this tree (track elsewhere)
@@ -247,6 +248,8 @@ not open work unless listed below.
 ---
 
 ## Recently completed (do not re-open)
+
+**2026-10-14 QueryRef transactions (item 16):** Phases 0–6 are complete. The record is [`TRANSACTION_PLAN_COMPLETE.md`](/docs/H/plans/complete/TRANSACTION_PLAN_COMPLETE.md). Test 64 run `20261014_112748` is 60/60. The owner reported the full suite passed. Phase 7 was not done; it is speculative item 32. Do not re-open the plan.
 
 **2026-10-06 NATS (item 29):** Phases 0–12 are complete. The record is [`NATS_PLAN_COMPLETE.md`](/docs/H/plans/complete/NATS_PLAN_COMPLETE.md). The operator guide is [`nats.md`](/docs/H/core/subsystems/nats/nats.md). Test 62 is 13 pass, 12.411s. Do not re-open the plan.
 
@@ -343,5 +346,6 @@ Auth suite, Conduit (+ fix/diagrams), Database subsystem, Terminal, Migrations, 
 | 22 | Mirage | XL | 0% | P3 |
 | 30 | Argent Helium bookkeeping | L | Phase 16 waiting on Andrew. No new migration | P3 |
 | 23 | Reserved enums/fields | n/a | n/a | P3 |
+| 32 | Migration executor convergence | M | speculative | P3 |
 
 (End of file)

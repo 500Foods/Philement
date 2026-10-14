@@ -34,5 +34,9 @@ char* db2_format_timestamp_string(char* str);
 bool db2_normalize_iso8601_timestamp(const char* input, char* output, size_t output_size);
 void db2_complete_standalone_statement(DatabaseHandle* connection, bool success);
 void db2_cleanup_bound_values(void** bound_values, size_t count);
+/* Bind ordered :name parameters, SQLExecute, then release bind storage.
+ * Returns the SQLExecute code, or -1 when ordering or binding fails. */
+int db2_bind_and_execute_prepared(void* stmt_handle, const char* sql_template,
+                                  const char* parameters_json, const char* designator);
 
 #endif // DATABASE_ENGINE_DB2_QUERY_H

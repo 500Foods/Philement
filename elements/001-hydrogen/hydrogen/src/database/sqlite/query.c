@@ -69,6 +69,7 @@ extern sqlite3_column_text_t sqlite3_column_text_ptr;
 extern sqlite3_column_type_t sqlite3_column_type_ptr;
 extern sqlite3_changes_t sqlite3_changes_ptr;
 extern sqlite3_reset_t sqlite3_reset_ptr;
+extern sqlite3_clear_bindings_t sqlite3_clear_bindings_ptr;
 extern sqlite3_bind_text_t sqlite3_bind_text_ptr;
 extern sqlite3_bind_int_t sqlite3_bind_int_ptr;
 extern sqlite3_bind_double_t sqlite3_bind_double_ptr;
@@ -650,6 +651,32 @@ bool sqlite_execute_prepared(DatabaseHandle* connection, const PreparedStatement
     }
 
     log_this(designator, "SQLite prepared statement execution: Executing prepared statement", LOG_LEVEL_TRACE, 0);
+
+    TypedParameter** ordered_params = NULL;
+    size_t ordered_count = 0;
+    ParameterList* param_list = NULL;
+    if (!database_ordered_parameters(request->sql_template, request->parameters_json,
+                                     DB_ENGINE_SQLITE, &ordered_params, &ordered_count,
+                                     &param_list, designator)) {
+        log_this(designator, "SQLite execute_prepared: Failed to order parameters", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+    if (ordered_count > 0) {
+        /* Bind copies strings (SQLITE_TRANSIENT) and numbers by value. */
+        sqlite3_reset_ptr(stmt_handle);
+        if (sqlite3_clear_bindings_ptr) {
+            sqlite3_clear_bindings_ptr(stmt_handle);
+        }
+        for (size_t i = 0; i < ordered_count; i++) {
+            if (!sqlite_bind_single_parameter(stmt_handle, (int)(i + 1), ordered_params[i], designator)) {
+                free(ordered_params);
+                free_parameter_list(param_list);
+                return false;
+            }
+        }
+    }
+    free(ordered_params);
+    free_parameter_list(param_list);
 
     // Create result structure
     QueryResult* db_result = calloc(1, sizeof(QueryResult));

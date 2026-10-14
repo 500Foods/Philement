@@ -375,6 +375,7 @@ Completed plans (historical). See also [/docs/H/TODO.md](/docs/H/TODO.md) for ac
 - [test_52_conduit_auth_query.md](/docs/H/tests/test_52_conduit_auth_query.md): Authenticated single query endpoint
 - [test_53_conduit_auth_queries.md](/docs/H/tests/test_53_conduit_auth_queries.md): Authenticated batch query endpoint
 - [test_54_conduit_alt_query.md](/docs/H/tests/test_54_conduit_alt_query.md): Cross-database single query with override
+- [test_64_queryref_transactions.md](/docs/H/tests/test_64_queryref_transactions.md): Runtime QueryRef transaction blocks (QueryRefs 156–158, port 5640)
 - [test_55_conduit_alt_queries.md](/docs/H/tests/test_55_conduit_alt_queries.md): Cross-database batch query with override
 - [test_57_mailrelay_outbound.md](/docs/H/tests/test_57_mailrelay_outbound.md): Mail Relay outbound delivery testing
 - [test_58_mailrelay_api.md](/docs/H/tests/test_58_mailrelay_api.md): Mail Relay authenticated API end-to-end testing

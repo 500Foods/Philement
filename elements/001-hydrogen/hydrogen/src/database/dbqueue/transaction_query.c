@@ -1,6 +1,6 @@
 /*
  * Runtime QueryRef Transaction Blocks
- * See transaction_query.h and TRANSACTION_PLAN.md for the contract.
+ * See transaction_query.h and TRANSACTION_PLAN_COMPLETE.md for the contract.
  */
 
 // Project includes

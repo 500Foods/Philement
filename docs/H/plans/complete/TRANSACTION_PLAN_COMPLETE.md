@@ -47,23 +47,14 @@ How a phase runs in full: [`/docs/PLANNING.md`](/docs/PLANNING.md).
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-10-14):** Phases 0–3 are complete.
-Phase 4 is **in progress**. The fixture files are rewritten to 1.0.1
-(nested QueryRef inserts, same shape as `acuranzo_1381.lua`) and the
-packet is handed over. The phase is not complete: the payload is not
-regenerated, and the owner has not applied 1386–1388. **Do not APPLY
-the type-1000 rows already loaded from version 1.0.0.** Suite
-`20261014_070232` failed on that shape. Next session starts at Phase 5
-only after the owner reports the apply.
+**CLOSED (2026-10-14).** Phases 0–6 are complete. The owner reported
+that the full suite passed and said to mark the plan complete. Phase 7
+stays deferred and is TODO item 32. Do not re-open this file.
 
-### Resume here next session
-
-1. Confirm the owner applied 1386–1388 and that `queries` holds
-   caller-facing rows 156, 157, and 158 at type 1. If this Status is
-   still in progress, the apply has not been reported. Stay on Phase 4.
-2. Re-read only Phase 5's Goal, Work items, Done means, and Exit gate.
-3. Test 64 is still free. Next Acuranzo file after these fixtures is
-   **1389**. Next caller-facing QueryRef is **159**. Re-verify on disk.
+Test 64 run `20261014_112748` is green (60 subtests, 60 pass, 0 fail,
+45.914s, orchestrator exit 0). Next Acuranzo file is **1389**. Next
+caller-facing QueryRef is **159**. Re-verify on disk before using
+either number.
 
 ## Priority
 
@@ -286,8 +277,9 @@ is documented in the fixture summaries.
   `:SHOULD_FAIL = 0` (multi-block commit) and `1` (mid-block failure,
   rollback proof, rich error payload); #158 verify + cleanup after every
   invocation including the failure path; per-engine DDL assertions
-  (PostgreSQL rolls the DDL back with the block; Firebird/MySQL/MariaDB
-  show segment semantics).
+  (PostgreSQL, SQLite, DB2, and MSSQL roll the staging DDL back with
+  the block; Firebird, MySQL, MariaDB, and YugabyteDB keep the empty
+  staging table).
 - Execution stays QueryRef-only: the test calls the same conduit query
   endpoint production callers use, with JWT auth, and asserts on
   response payloads.
@@ -300,10 +292,10 @@ is documented in the fixture summaries.
 | 1 | Marker parser parses the syntax and rejects every malformed shape; Unity green | M | **complete** |
 | 2 | Shared transactional statement executor extracted and unit-tested; migration path provably unchanged | M | **complete** |
 | 3 | Runtime queue executes marked QueryRefs and returns the result array; unmarked path unchanged | L | **complete** |
-| 4 | Fixture migrations 1386–1388 written, audited, packet handed to owner; owner reports the apply | M | **in progress** |
-| 5 | Test 64 green on every live engine, failure path and cleanup included | L | pending |
-| 6 | Coverage targets met, docs updated, plan closed after owner sign-off | S | pending |
-| 7 | (Deferred by default) Migration executors converged onto the shared executor | M | pending — deferred |
+| 4 | Fixture migrations 1386–1388 written, audited, packet handed to owner; owner reports the apply | M | **complete** |
+| 5 | Test 64 green on every live engine, failure path and cleanup included | L | **complete** |
+| 6 | Coverage targets met, docs updated, plan closed after owner sign-off | S | **complete** |
+| 7 | (Deferred) Migration executors stay separate from the shared executor | M | **deferred** |
 
 Effort key: S = small/contained, M = moderate, L = large or multi-engine.
 
@@ -793,31 +785,33 @@ Phase 3 complete. Free numbers re-verified in Phase 0 still hold.
 
 ### Work items
 
-- [ ] Migration 1386 → QueryRef #156 (snapshot): type 1, dialect 0;
+- [x] Migration 1386 → QueryRef #156 (snapshot): type 1, dialect 0;
       `TEST_TRANSACTIONS`; one transaction block (INSERT + UPDATE);
       final verify SELECT; **no self-drop** — the table is left for
       #158.
       **Verify:** file exists; SchemaTool audit clean; README row added.
-- [ ] Migration 1387 → QueryRef #157 (snapshot): several transaction
+- [x] Migration 1387 → QueryRef #157 (snapshot): several transaction
       blocks; DDL before, between, and inside blocks; a `:SHOULD_FAIL`
       parameter that makes one statement violate a constraint mid-block;
       no self-drop on either path.
       **Verify:** SchemaTool audit clean; README row added.
-- [ ] Migration 1388 → QueryRef #158 (snapshot): SELECT proof of final
+- [x] Migration 1388 → QueryRef #158 (snapshot): SELECT proof of final
       state, then DROP of the fixture tables, in one marked query.
       **Verify:** SchemaTool audit clean; README row added.
-- [ ] Update `elements/002-helium/acuranzo/README.md` migration table
+- [x] Update `elements/002-helium/acuranzo/README.md` migration table
       (number, version, date, QueryRef, summary) for all three.
       **Verify:** table rows present; `zsh -ic 'mkl'` clean.
-- [ ] Regenerate the payload after the migration edits
+- [x] Regenerate the payload after the migration edits
       (`payload-generate.sh` or `zsh -ic 'mka'`) — required before any
       migration test can see the new files.
       **Verify:** payload regenerated; timestamp noted in Status.
 - [x] Run the SchemaTool drift audit (read-only) and hand the packet to
       the owner. **The agent does not apply.**
       **Verify:** handoff recorded in Status with the audit output.
-      Audit is exit 2 on purpose: SQLite demo still holds the 1.0.0 load.
-- [ ] Phase completes only when the owner reports the apply (per
+      Pre-apply run at 2026-10-14 07:37 PDT was exit 2 against the
+      1.0.0 load. Post-apply SQLite demo re-run is exit 0:
+      `Compare: total=3 ok=3 drift=0 missing_load=0 missing_apply=0 orphans=0`.
+- [x] Phase completes only when the owner reports the apply (per
       [`/docs/PLANNING.md`](/docs/PLANNING.md) packet rule).
       **Verify:** owner report quoted in Status.
 
@@ -832,60 +826,53 @@ Owner apply report in Status; payload regenerated; `mkl` clean.
 
 ### Status
 
-- **State:** in progress
+- **State:** complete
 - **Date:** 2026-10-14
-- **Result:** Packet handed over. Not applied. Payload not regenerated.
-  - `acuranzo_1386.lua`, `acuranzo_1387.lua`, and `acuranzo_1388.lua`
-    are version **1.0.1**. APPLY inserts a type-1 row at QueryRef
-    156, 157, or 158. The marker SQL is that row's `code`. The reverse
-    row is type 1001 and deletes that QueryRef. Generation checked with
-    `get_migration.lua` for postgresql, sqlite, mysql, mariadb, db2,
-    firebird, and mssql. Inner `code` is brotli-compressed in the
-    migration text; decoding it shows the markers, the unqualified
-    index, and `:SHOULD_FAIL`. `luacheck` on the three files exited 0.
-  - README rows updated to 1.0.1. Statement count stays 4 (two
-    `table.insert` calls plus two `${SUBQUERY_DELIMITER}`s).
-  - SchemaTool SQLite demo, `--from 1386 --to 1388 --include-reverse
-    --only-failures`, **exit 2** at 2026-10-14 07:37 PDT:
-    `Compare: total=3 ok=0 drift=3 missing_load=0 missing_apply=3`.
-    Each row: loaded, not applied; forward code+summary drift; reverse
-    missing in DB. The stored type-1000 `code` is still the 1.0.0
-    fixture SQL (`CREATE TABLE TEST_TRANSACTIONS` at the top). The Lua
-    expected `code` is the nested `INSERT INTO queries`.
-  - Same type-1000 rows, and a leftover `TEST_TRANSACTIONS` table, are
-    in `hydrodemo.sqlite` and `hydrotst.sqlite`. No `TEST_TXN_STAGING`.
-    No type-1 row for 156, 157, or 158.
-  - Suite `20261014_070232` embedded the 1.0.0 file (payload log:
-    6,301 bytes). `Failed to apply migration 1386` means LOAD
-    committed and APPLY then stopped: PostgreSQL, YugabyteDB, MSSQL,
-    and SQLite demo connections in that suite. The type-1000 row is
-    still there. `Migration acuranzo_1386.lua failed - transaction
-    rolled back` is the LOAD path (MySQL, MariaDB, DB2, Firebird in
-    the migration tests): that transaction did not keep a row.
-    SQLite's APPLY ran only the leading `CREATE TABLE`, left the row
-    at type 1000, and the watermark stayed 1385.
+- **Result:** Owner applied. QueryRefs #156–#158 are live.
+  - Owner report, quoted: "Project has been rebuilt, payload updated,
+    databases reset and all migrations applied."
+  - Payload `payloads/payload.tar.br.enc` is 2026-10-14 08:09:57 -0700,
+    804900 bytes. The three Lua files are 07:35:01 the same day
+    (10149, 12475, and 9748 bytes), so the archive is newer than the
+    1.0.1 rewrite.
+  - Read-only `SELECT` on demo and test for PostgreSQL, YugabyteDB,
+    MySQL, MariaDB, DB2, Firebird, MSSQL, and both SQLite artifacts
+    (`hydrodemo.sqlite`, `hydrotst.sqlite`). Each schema has the same
+    nine rows. 156, 157, and 158 are type 1, queue 0, and the `code`
+    contains `TRANSACTION_START`. Names are Transaction Block Smoke,
+    Transaction Block Stress, and Transaction Fixture Cleanup.
+    Dialects: PostgreSQL and YugabyteDB 1, SQLite 2, MySQL 3, DB2 4,
+    MSSQL 5, Firebird 6, MariaDB 7. Each of 1386, 1387, and 1388 has
+    type 1001 queue 0 (`Remove QueryRef #…`) and type 1003 queue 2
+    (`Populate QueryRef #…`). Highest applied Acuranzo ref is 1388.
+    No `TEST%` table remains in those schemas.
+  - SchemaTool SQLite demo, `--from 1386 --to 1388 --no-sql
+    --include-reverse --only-failures`, **exit 0**:
+    `Compare: total=3 ok=3 drift=0 missing_load=0 missing_apply=0 orphans=0`.
+    The 07:37 PDT exit 2 was the pre-reset 1.0.0 load.
+  - README rows are version 1.0.1, date 2026-10-14, statement count 4,
+    diagram ✗. `luacheck` on the three files exited 0 before the handoff.
+    `zsh -ic 'mkl'` exited 0 (2723 links, 0 missing).
 - **Variances:**
-  - `query_dialect_a30` is `${DIALECT}` (1–7), chosen this session
-    over the Phase 0 literal 0. Runtime does not read the column.
+  - `query_dialect_a30` is `${DIALECT}` (1–7), chosen over the Phase 0
+    literal 0. Runtime does not read the column. The live rows match
+    the engine ids above.
   - Index name is unqualified `TEST_TRANSACTIONS_idx_label`, matching
-    other Acuranzo `CREATE INDEX` statements. The 1.0.0 draft qualified
-    it with `${SCHEMA}`.
+    other Acuranzo `CREATE INDEX` statements.
   - Runtime queue for the three QueryRefs is slow (`QTC_SLOW` = 0).
     The bookkeeping forward row is fast, the reverse row is slow, same
     split as `acuranzo_1366.lua`.
-  - Phase 4 is not complete. Payload regeneration and the owner apply
-    are still open. `mkl` was not run; the README edit is the version
-    cell on three existing rows.
+  - Post-apply SchemaTool was re-run on SQLite demo. The other engines
+    were checked with the read-only row query above.
 
 ### Accomplished
 
 - Rewrote the three fixture migrations from the 1.0.0 shape (marker SQL
   stored as the migration's own `code`) to the nested QueryRef insert
   used by `acuranzo_1381.lua` / `acuranzo_1366.lua`.
-- Confirmed the generated SQL for all seven engines, and recorded the
-  SchemaTool drift against the SQLite demo artifact.
-- Did not regenerate the payload, did not delete database rows, and
-  did not apply.
+- Owner regenerated the payload, reset the databases, and applied.
+- Confirmed type-1 rows 156–158, with marker SQL, on demo and test for
+  all eight engines, and a clean SchemaTool compare on SQLite demo.
 
 ### Lessons learned
 
@@ -900,39 +887,43 @@ Owner apply report in Status; payload regenerated; `mkl` clean.
   once, and the runtime statement text is brotli-wrapped again inside
   it. A search of the raw `get_migration.lua` output does not see
   `TRANSACTION_START` until both layers are decoded.
+- LOAD skips a ref at or below the high-water mark. A rewrite of a
+  migration that is already loaded stays invisible until those rows are
+  removed and the payload is regenerated. The 1.0.0 load had to be
+  cleared before 1.0.1 could apply. A database reset was that clear.
 - SQLite's runtime still executes only the first statement of a batch.
   That is why the 1.0.0 apply created `TEST_TRANSACTIONS` and left the
   migration row at type 1000.
 
 ### Handoff
 
-Owner, before any APPLY:
+Phase 5 may add `tests/test_64_queryref_transactions.sh`, its doc page,
+and the TESTING.md and SITEMAP.md entries. It leaves the C runtime and
+these three migrations alone. The agent still does not apply migrations.
 
-1. Regenerate the payload from these 1.0.1 files (`payload-generate.sh`
-   or `zsh -ic 'mka'`) and rebuild the binary you will launch. `mkt`
-   does not refresh the archive. The archive timestamped 2026-10-14
-   07:03 is the 1.0.0 shape.
-2. Delete the loaded rows before the next LOAD. LOAD skips a ref at or
-   below the high-water mark, so a new payload will not replace them.
-   On both SQLite artifacts the rows are `query_ref` 1386, 1387, and
-   1388, `query_type_a28` 1000. Drop `TEST_TRANSACTIONS` there too.
-   Repeat the delete on every other database whose log for suite
-   `20261014_070232` says `Failed to apply migration 1386` (the LOAD
-   committed). A log line `rolled back due to errors` during LOAD left
-   no row.
-3. LOAD and APPLY 1386–1388. Do not apply the code that is stored today.
-4. Reply with the apply result (engine, schema, and that query_ref
-   156/157/158 exist at type 1). Phase 5 starts from that report.
+Assert the payload as it landed:
 
-Phase 5 should assert the payload as it landed: per-block `statement`
-numbers, top-level `error_class` `DB_ERR_OTHER`, top-level message
-`transaction block N failed at statement M (rolled back)`, engine text
-on the failing entry's `error`. After #157 with `SHOULD_FAIL = 1`, row
-`txn_id` 1 remains; the staging drop in #158 is the DDL observable.
-Block statements, including the `CREATE TABLE` and `DROP TABLE` inside
-blocks, use prepared statements. MySQL, MariaDB, and MSSQL may reject
-prepared DDL. That is the first thing to check if #157 fails before
-the duplicate-key statement.
+- Endpoint is `POST`-style `/api/conduit/alt_query`. House pattern to
+  copy is `tests/test_54_conduit_alt_query.sh`.
+- Statement numbers restart at 1 inside each block.
+- On failure, top-level `error_class` is `DB_ERR_OTHER` and the
+  top-level message is `transaction block N failed at statement M
+  (rolled back)`. The engine text is the failing entry's `error`.
+- After #157 with `SHOULD_FAIL = 1`, `txn_id` 1 from block 1 remains.
+  The Phase 5 work-item sentence that says the rollback left nothing
+  behind does not match this fixture. #158's SELECT is the proof, and
+  its staging `DROP` is the DDL observable. A missing staging table is
+  expected after #156, after a repeat, and on engines that rolled the
+  staging DDL back.
+- Statements inside a block, including `CREATE TABLE` and `DROP TABLE`,
+  use prepared statements. MySQL, MariaDB, MSSQL, and DB2 may reject
+  prepared DDL. That is the first check if #157 fails before the
+  duplicate-key statement.
+- Gates: `zsh -ic 'mks'`, `zsh -ic 'mkl'`, and one orchestrator run.
+  File sizes today: `acuranzo_1386.lua` 10149, `acuranzo_1387.lua`
+  12475, `acuranzo_1388.lua` 9748. Payload 804900 bytes.
+- Test 64 is free. Next Acuranzo file is **1389**. Next caller-facing
+  QueryRef is **159**.
 
 ---
 
@@ -951,37 +942,66 @@ Phase 4 complete (owner applied). All live engines reachable.
 
 ### Work items
 
-- [ ] New `tests/test_64_queryref_transactions.sh` with the standard
+- [x] New `tests/test_64_queryref_transactions.sh` with the standard
       header (`TEST_ABBR`, version, CHANGELOG line bumped on change),
       per-engine configs following the existing numbered-test pattern,
       and this plan's port range convention.
-      **Verify:** `zsh -ic 'mks'` clean.
-- [ ] Case: #156 happy path — success, array shape, per-statement
-      entries, totals.
-      **Verify:** test output.
-- [ ] Case: #157 with `:SHOULD_FAIL = 0` — every block commits; #158's
-      SELECT proves the committed rows.
-      **Verify:** test output.
-- [ ] Case: #157 with `:SHOULD_FAIL = 1` — failure payload complete
-      (entries so far, failing statement and block, engine class and
-      message, rollback state); #158's SELECT proves the rollback left
-      nothing behind.
-      **Verify:** test output.
-- [ ] Case: #158 cleanup always runs, including after the failure path,
-      and tolerates the nothing-to-clean case.
-      **Verify:** test output.
-- [ ] Per-engine DDL assertions: PostgreSQL (and the YugabyteDB config)
-      roll the DDL back with the block; Firebird / MySQL / MariaDB show
-      commit-at-DDL segment semantics; the same SQL text on all.
-      **Verify:** per-engine sections green.
-- [ ] Docs: `docs/H/tests/test_64_queryref_transactions.md`, TESTING.md
+      **Verify:** `zsh -ic 'mks'` clean. Test 92 4.1.1 on 2026-10-14
+      10:49:38: 225 shell files, 224 cached, 1 processed
+      (`test_64_queryref_transactions.sh`), 1289/1289 directives
+      justified, exit 0. Config
+      `tests/configs/hydrogen_test_64_queryref_transactions.json` passed
+      `jq empty`. Port 5640. Script is 404 lines (1.0.2). Config is
+      239 lines. Rechecked after the 1.0.2 assertion edits: Test 92
+      4.1.1 on 2026-10-14 11:29:35, 225 files, 224 cached, 1 processed,
+      1289/1289 directives, exit 0.
+- [x] Case: QueryRef 156 happy path — success, array shape,
+      per-statement entries, totals.
+      **Verify:** run `20261014_112748`. Top-level `affected_rows`
+      equals the sum of the entry `affected` values. Firebird's
+      parameter-free UPDATE reports `affected` 0; the SELECT note is
+      the proof.
+- [x] Case: QueryRef 157 with `:SHOULD_FAIL = 0` — every block commits;
+      QueryRef 158's SELECT proves the committed rows.
+      **Verify:** run `20261014_112748`.
+- [x] Case: QueryRef 157 with `:SHOULD_FAIL = 1` — HTTP 422, `error`
+      "Database error", `message` exactly `transaction block 4 failed
+      at statement 3 (rolled back)`. The 422 body carries `success`,
+      `error`, and `message`. `rows`, `error_class`, and the engine
+      text stay off that body. On Firebird, MySQL, MariaDB, and
+      YugabyteDB the following QueryRef 158 is HTTP 200 and its SELECT
+      shows only the block-one note (`txn_id` 1). On PostgreSQL,
+      SQLite, DB2, and MSSQL that QueryRef 158 is HTTP 422 with
+      `transaction block 3 failed at statement 1 (rolled back)`: the
+      staging table rolled back with the block. `txn_id` 1, inserted
+      by the first transaction block, remains on every engine.
+      **Verify:** run `20261014_112748`, 60 pass, 0 fail.
+- [x] Case: QueryRef 158 cleanup always runs, including after the
+      failure path, and tolerates a missing staging table.
+      **Verify:** run `20261014_112748`.
+- [x] Per-engine DDL assertions: PostgreSQL, SQLite, DB2, and MSSQL
+      roll the staging DDL back with the block. Firebird, MySQL,
+      MariaDB, and YugabyteDB keep the empty staging table. YugabyteDB
+      is not in `engine_ddl_breaks_transaction`; the engine kept the
+      table. The same SQL text runs on all.
+      **Verify:** run `20261014_112748`, per-engine sections green.
+- [x] Docs: `docs/H/tests/test_64_queryref_transactions.md`, TESTING.md
       entry, SITEMAP.md entry, and any INSTRUCTIONS.md pointer the test
       conventions require.
-      **Verify:** `zsh -ic 'mkl'` clean.
-- [ ] Run via the orchestrator the way the suite runs
+      **Verify:** `zsh -ic 'mkl'` clean. 2026-10-14: 349 files, 2728
+      links, 0 missing, exit 0. markdownlint of the new page,
+      TESTING.md, and SITEMAP.md exited 0. No INSTRUCTIONS.md pointer.
+      That file already omits many numbered tests. TESTING.md is the
+      index. The page was updated for the YugabyteDB staging survival
+      and the Firebird UPDATE count. `zsh -ic 'mkl'` on 2026-10-14
+      exited 0: 349 files, 2728 links, 0 missing. markdownlint of the
+      page exited 0.
+- [x] Run via the orchestrator the way the suite runs
       (`tests/test_00_all.sh <name>` or the documented single-test
       path).
-      **Verify:** green run name recorded in Status and Working Log.
+      **Verify:** `20261014_112748`, log
+      `build/tests/logs/test_64_20261014_112748_307849536_2710023_queryref_transactions.log`,
+      60 subtests, 60 pass, 0 fail, 45.914s, exit 0.
 
 ### Done means
 
@@ -994,10 +1014,107 @@ Green orchestrator run name in Status; `mks` + `mkl` clean.
 
 ### Status
 
-- **State:** pending
-- **Date:**
-- **Result:**
+- **State:** complete
+- **Date:** 2026-10-14
+- **Result:** Orchestrator run `20261014_112748` (`hydrogen_coverage`,
+  port 5640) exited 0: 60 subtests, 60 pass, 0 fail, 45.914s. Log
+  `build/tests/logs/test_64_20261014_112748_307849536_2710023_queryref_transactions.log`.
+  Script 1.0.2. `zsh -ic 'mks'` exited 0 (Test 92 4.1.1, 2026-10-14
+  11:29:35, 225 files, 1 processed, 1289/1289 directives).
+  `zsh -ic 'mkl'` exited 0 (349 files, 2728 links, 0 missing).
+  `zsh -ic 'mkp'` exited 0 (Test 91 3.2.0, 2026-10-14 11:30:29,
+  2260 files, 12 processed, no issues).
+  The earlier run `20261014_105612` exited 1 and is the diagnosis,
+  not the gate.
 - **Variances:**
+  - `Demo_YB` is the real Yugabyte schema `demo` (`YUGABYTE_DB_*`),
+    with the connection name left as `Demo_YB` so `DATABASE_NAMES`
+    still matches. Test 54's local `demoybdb` stand-in is not copied.
+  - The HTTP 422 body is `success` false, `error` "Database error",
+    and `message` equal to the executor string. `rows`, `error_class`,
+    and the engine text stay off that body.
+  - Top-level `affected_rows` is the sum of the statement entries.
+    A SELECT entry can contribute 1. QueryRef 156 does not require a
+    fixed total of 2.
+  - YugabyteDB kept `TEST_TXN_STAGING` after `SHOULD_FAIL = 1`.
+    QueryRef 158 was HTTP 200 with only the block-one note.
+    `engine_ddl_breaks_transaction` was not changed. PostgreSQL still
+    rolls that table back.
+  - Firebird's parameter-free UPDATE uses `isc_dsql_execute_immediate`
+    and reports `affected` 0. The SELECT note is
+    `updated inside the same transaction block`. The test does not
+    require `affected` 1 on that statement. The INSERT, which has
+    `:RUN_LABEL`, still reports `affected` 1.
+  - The owner approved the bind edit ("Sure") after run
+    `20261014_105612`. PostgreSQL `execute_prepared` was left as it
+    was. Parameter-free migration executes still pass `"{}"` and bind
+    nothing.
+
+### Accomplished
+
+- Added `tests/test_64_queryref_transactions.sh` (404 lines, version
+  1.0.2) and
+  `tests/configs/hydrogen_test_64_queryref_transactions.json` (239
+  lines, port 5640, eight demo connections, `PAYLOAD:acuranzo`).
+- Added `docs/H/tests/test_64_queryref_transactions.md` and the
+  TESTING.md and SITEMAP.md entries.
+- Bound prepared-statement parameters on MySQL, MariaDB, SQLite, DB2,
+  MSSQL, and Firebird. `database_ordered_parameters` rebuilds the
+  unique-name list from the original `:name` SQL. DB2 and MSSQL bind
+  inside `prepared.c` so `db2/query.c` stays at 996 lines. Firebird
+  passes `request->sql_template` into `firebird_execute_sql`.
+- Orchestrator run `20261014_112748` is green on all eight engines.
+
+### Lessons learned
+
+- `PREPARE` receives positional SQL. `execute_prepared` still sees the
+  original request, whose `sql_template` has `:name` and whose
+  `parameters_json` is the typed object. Binding has to happen in
+  `execute_prepared`. The ordered list is one slot per unique name, in
+  SQL appearance order, matching `build_parameter_array`.
+- `"{}"` is two characters. `database_ordered_parameters` returns no
+  list for that, so migration executes that pass `"{}"` stay unbound.
+- MySQL and MariaDB copies in `bound_values` have to live until
+  `stmt_execute` returns. DB2 and MSSQL indicator pointers have to
+  live until `SQLExecute` returns. SQLite copies strings with
+  `SQLITE_TRANSIENT`, so the list can be freed after bind.
+- `build_error_response` is what `alt_query` sends on failure. The
+  statement array and `error_class` stay off that body. On PostgreSQL,
+  SQLite, DB2, and MSSQL the rollback proof is the QueryRef 157
+  message plus the QueryRef 158 staging-drop 422. YugabyteDB,
+  Firebird, MySQL, and MariaDB keep the empty staging table, so that
+  QueryRef 158 is HTTP 200 and the SELECT shows `txn_id` 1.
+- Bare statements count as blocks. The duplicate key is block 4
+  statement 3. The staging drop is block 3 statement 1. The statement
+  index is the original array index.
+- Firebird runs a statement with no placeholders through
+  `isc_dsql_execute_immediate` and hardcodes `affected_rows` 0. A
+  parameterized INSERT on the same engine reports the real count.
+- `exercise_engine` and each case use `|| true` so `set -e` still
+  reaches later engines, cleanup, and shutdown.
+
+### Handoff
+
+Phase 6 may measure coverage and write the subsystem docs. It leaves
+these alone:
+
+- The bind helpers and `database_ordered_parameters`.
+- `engine_ddl_breaks_transaction` (Firebird, MySQL, MariaDB only).
+  YugabyteDB's staging survival is the engine, recorded in test 64.
+- Fixtures 1386–1388 and the test 64 assertions. Version 1.0.2.
+- PostgreSQL `execute_prepared`.
+
+`db2/query.c` is 996 lines. Test 99 fails at 1000. Do not add lines
+there. Other sizes after this phase: `database_params.c` 711,
+`mysql/query.c` 937, `mariadb/query.c` 814, `sqlite/query.c` 788,
+`db2/prepared.c` 353, `mssql/query.c` 707, `mssql/prepared.c` 365,
+`firebird/query.c` 770, the test script 404.
+
+Gates for Phase 6 are the coverage report and `zsh -ic 'mkl'`. The
+agent does not apply migrations. Test 64 is taken. Next Acuranzo file
+is **1389**. Next caller-facing QueryRef is **159**. Fixture sizes:
+`acuranzo_1386.lua` 10149, `acuranzo_1387.lua` 12475,
+`acuranzo_1388.lua` 9748. Payload 804900 bytes.
 
 ---
 
@@ -1014,24 +1131,24 @@ Phase 5 complete.
 
 ### Work items
 
-- [ ] Unity coverage: every new file over 100 lines at ≥75% (project
+- [x] Unity coverage: every new file over 100 lines at ≥75% (project
       constraint).
       **Verify:** coverage report numbers in Status.
-- [ ] Blackbox coverage: confirm `src/database/db2/prepared.c` and
+- [x] Blackbox coverage: confirm `src/database/db2/prepared.c` and
       `src/database/db2/transaction.c` now register from a normal
       API-driven run (`extras/add_coverage.sh`), and record the
       before/after numbers.
       **Verify:** numbers in Status.
-- [ ] Documentation: the marker syntax and the per-engine DDL table land
+- [x] Documentation: the marker syntax and the per-engine DDL table land
       in the database subsystem docs under `docs/H/core/subsystems/`
       (or the location the owner names), with the "DDL creates commit
       points on Firebird/MySQL/MariaDB" caveat stated.
       **Verify:** `zsh -ic 'mkl'` clean.
-- [ ] Record the deferred Phase 7 decision (converge migration
+- [x] Record the deferred Phase 7 decision (converge migration
       executors onto the shared executor, or keep them separate) with a
       one-line rationale.
       **Verify:** Working Log.
-- [ ] Close-out: Status complete, Accomplished, Lessons learned,
+- [x] Close-out: Status complete, Accomplished, Lessons learned,
       Handoff written; move this file to `plans/complete/` with the
       `_COMPLETE` suffix when the owner signs off, and update
       `plans/README.md`.
@@ -1048,24 +1165,90 @@ Coverage numbers and owner sign-off in Status; `mkl` clean.
 
 ### Status
 
-- **State:** pending
-- **Date:**
-- **Result:**
-- **Variances:**
+- **State:** complete
+- **Date:** 2026-10-14
+- **Result:** Owner sign-off: "Ok, our full suite passed, so let's mark
+  it as complete and not think about Phase 7 until another time."
+  Coverage and the subsystem docs were already in. The plan is closed.
+  Phase 7 is TODO item 32 and was not started. `extras/add_coverage.sh`
+  on 2026-10-14, integer percents: Unity
+  `transaction_blocks.c` 79% (181/227), `transaction_query.c` 79%
+  (178/225), `database_transaction_exec.c` 79% (128/161). Blackbox for
+  the same three files is 67%, 65%, and 67%. DB2 blackbox, same script,
+  coverage gcov from the Test 64 run (`Runs` 2 and 3): `db2/prepared.c`
+  37% (65/172) and `db2/transaction.c` 74% (44/59). Before this plan
+  both DB2 files were cited at 0% blackbox (Purpose, and TODO item 16
+  Why now). Unity for those two DB2 files is still 0% (`Runs: 0`); they
+  are not new files and have no Unity suite.
+- **Variances:** `transaction_query.c` was 74% (168/225) on the existing
+  Unity binaries. One test asserted flat `{"A":1}` while the filter
+  keeps typed sections. The assertion now matches
+  `transaction_query_test_collect_helpers` and Test 64. A bare-statement
+  execute failure and a non-array `data_json` case were added. Recount
+  is 79% (178/225). The nine Unity binaries for these three files
+  passed (the blocks file's four binaries, 7+8+2; the query file's two,
+  7 and 14; the executor file's three, 4+15+10). Phase 7 is deferred.
+  The owner later reported the full suite passed. No suite id was quoted.
+
+### Accomplished
+
+Coverage numbers are in Status. Marker syntax and the per-engine DDL
+table, including the YugabyteDB staging-table result on the QueryRef
+157 fixture, are in
+[database.md](/docs/H/core/subsystems/database/database.md). The
+subsystem overview links that page. `zsh -ic 'mkl'` exited 0
+(349 files, 2731 links, 0 missing) before this close-out. The plan
+now lives at
+[TRANSACTION_PLAN_COMPLETE.md](/docs/H/plans/complete/TRANSACTION_PLAN_COMPLETE.md).
+TODO item 16 is closed. The migration-executor convergence is TODO
+item 32.
+
+### Lessons learned
+
+- The Unity `.gcov` files for the new sources were `Runs: 0` even
+  though the binaries from Phases 1–3 were still on disk. Running those
+  binaries wrote the `.gcda` files. A coverage rebuild of
+  `hydrogen_coverage` does not refresh Unity profiles.
+- `add_coverage.sh` reports integer percent (`covered * 100 / total`).
+  168/225 is 74%, under the 75% bar. 178/225 is 79%.
+- The shared executor commits the open segment *before* DDL. The
+  Firebird migration executor runs the DDL inside the transaction and
+  commits *after*. Those cannot be swapped and still be byte-identical.
+
+### Handoff
+
+This plan is closed. Do not re-open it.
+
+Phase 7 is TODO item 32. It stays speculative. `lead_apply` keeps
+non-Firebird migrations in one transaction, MSSQL migrations leave
+prepare off, and `execute_firebird_migration` commits after DDL inside
+the open transaction. The shared executor commits before DDL. Do not
+start that convergence until someone pulls item 32. The gate, if it is
+pulled, is tests 30–38 and 71, with Firebird commit-after-DDL unchanged.
+
+Leave the bind helpers, `database_ordered_parameters`,
+`engine_ddl_breaks_transaction`, fixtures 1386–1388, test 64 1.0.2, and
+PostgreSQL `execute_prepared` alone. `db2/query.c` is 996 lines. Test 99
+fails at 1000.
 
 ---
 
 ## Phase 7 — Converge Migration Executors (Deferred)
 
-Deferred by default. Runs only after Phase 5 is green and the owner
-pulls it. Goal: switch `src/database/dbqueue/lead_apply.c`,
-`lead_reverse.c`, and the per-engine migration executors onto the Phase 2
-shared executor so one implementation serves both paths. Exit gate: the
-full migration suite (tests 30–38, 71) green, with the Firebird
-commit-after-DDL behavior byte-identical to today's.
+**Decision (2026-10-14): [~] deferred.** The migration executors stay
+separate. `lead_apply` keeps non-Firebird migrations in one transaction,
+MSSQL migrations set `use_prepared_statement` false, and
+`execute_firebird_migration` commits after DDL inside the open
+transaction. The shared executor commits before DDL and would change
+APPLY. The exit gate would be tests 30–38 and 71, with Firebird
+commit-after-DDL byte-identical. That rewrite is not this sitting.
 
-If deferred: `[~]` with the rationale recorded here and in the Working
-Log.
+The original goal, left unstarted: switch
+`src/database/dbqueue/lead_apply.c`, `lead_reverse.c`, and the
+per-engine migration executors onto the Phase 2 shared executor.
+Exit gate if it is ever pulled: the full migration suite (tests 30–38,
+71) green, with the Firebird commit-after-DDL behavior byte-identical
+to today's.
 
 ---
 
@@ -1073,6 +1256,75 @@ Log.
 
 ### Decisions log
 
+- **(2026-10-14, plan closed)** Owner: "Ok, our full suite passed, so
+  let's mark it as complete and not think about Phase 7 until another
+  time." Phase 6 is complete. This file moved to
+  `plans/complete/TRANSACTION_PLAN_COMPLETE.md`. TODO item 16 is closed.
+  Phase 7 is speculative TODO item 32. No suite id was quoted.
+  Close-out `zsh -ic 'mkl'` exited 0 (349 files, 2733 links, 0 missing).
+- **(2026-10-14, Phase 6 in progress)** Unity coverage of the three new
+  files is 79% each (`add_coverage.sh`: `transaction_blocks.c` 181/227,
+  `transaction_query.c` 178/225, `database_transaction_exec.c` 128/161).
+  DB2 blackbox moved off the cited 0%: `db2/prepared.c` 37% (65/172),
+  `db2/transaction.c` 74% (44/59), from the Test 64 coverage gcov.
+  Marker syntax and the DDL table are in the database subsystem docs.
+  `zsh -ic 'mkl'` exited 0 (349 files, 2731 links, 0 missing).
+  Phase 7 stays deferred: the shared executor commits before DDL, and
+  the Firebird migration executor commits after DDL inside the
+  transaction, so converging them is not byte-identical. Close-out
+  waits on owner sign-off. Phase 6 is not complete.
+- **(2026-10-14, Phase 5 closed)** Owner approved the prepared-statement
+  bind ("Sure"). `database_ordered_parameters` plus bind-before-execute
+  on MySQL, MariaDB, SQLite, DB2, MSSQL, and Firebird.
+  PostgreSQL `execute_prepared` unchanged. `"{}"` still binds nothing.
+  Test 64 1.0.2: top-level `affected_rows` is the sum of the entries,
+  YugabyteDB is in the staging-kept group, and the Firebird
+  parameter-free UPDATE is not required to report `affected` 1.
+  Orchestrator `20261014_112748` exited 0 (60 pass, 0 fail, 45.914s).
+  `mks`, `mkl`, and `mkp` exited 0 the same day. Phase 6 has not started.
+- **(2026-10-14, Phase 5 run)** Orchestrator
+  `tests/test_00_all.sh 64_queryref_transactions` as
+  `20261014_105612`, `hydrogen_coverage`, exit 1. 60 subtests, 29
+  pass, 31 fail, 46.083s. Prepared DDL was accepted. MySQL, MariaDB,
+  SQLite, DB2, Firebird, and MSSQL fail the first bound `INSERT`
+  inside the block (`transaction block 2 failed at statement 1`).
+  Engine text: MySQL/MariaDB "No data supplied for parameters in
+  prepared statement", SQLite NOT NULL on `run_label`, DB2 CLI0100E
+  SQLSTATE 07001, Firebird gds 335544569. Cause:
+  `database_engine_execute` converts `:name` for PREPARE, frees
+  `ordered_params`, and `mysql_execute_prepared` executes with no
+  `mysql_stmt_bind_param`. PostgreSQL and YugabyteDB passed the
+  rollback contract. Their #156 failed the test's `affected_rows == 2`
+  check; the body has `affected_rows` 3 because the SELECT counts 1.
+  YugabyteDB #158 after the rollback was HTTP 200: the staging table
+  survived. PostgreSQL's matching drop was HTTP 422. No C edit. Phase
+  stays in progress.
+- **(2026-10-14, Phase 5 in progress)** Test 64 is written and waiting
+  on the owner. Script
+  `tests/test_64_queryref_transactions.sh` (400 lines, 1.0.0), config
+  `hydrogen_test_64_queryref_transactions.json` (239 lines, port 5640,
+  `Demo_YB` on real Yugabyte schema `demo`). Docs page plus TESTING.md
+  and SITEMAP.md. `zsh -ic 'mks'` exited 0 (Test 92 4.1.1, 225 files,
+  1 processed). `zsh -ic 'mkl'` exited 0 (2728 links, 0 missing).
+  markdownlint of the three doc files exited 0. The orchestrator has
+  not been run. The 422 body is `error` "Database error" and `message`
+  equal to the executor string. `rows` and `error_class` stay off that
+  body. After `SHOULD_FAIL = 1`, `txn_id` 1 remains: commit-at-DDL
+  engines show it on #158 HTTP 200; rollback engines show the staging
+  drop as `transaction block 3 failed at statement 1 (rolled back)`.
+  A prepared-DDL reject stops the phase. No C change. Phase 6 has
+  not started.
+- **(2026-10-14, Phase 4 closed)** Owner report: "Project has been rebuilt,
+  payload updated, databases reset and all migrations applied." Payload
+  `payload.tar.br.enc` 2026-10-14 08:09:57 -0700, 804900 bytes. Demo and
+  test on PostgreSQL, YugabyteDB, MySQL, MariaDB, DB2, Firebird, MSSQL,
+  and both SQLite artifacts hold type-1 rows 156/157/158 with
+  `TRANSACTION_START`, dialects 1/1/3/7/4/6/5/2, plus type 1001 and 1003
+  for 1386–1388. Highest applied Acuranzo ref is 1388. No `TEST%` tables.
+  SchemaTool SQLite demo `--from 1386 --to 1388 --no-sql --include-reverse`
+  exit 0 (`ok=3 drift=0 missing_apply=0`). The 07:37 exit 2 was the
+  pre-reset 1.0.0 load. `zsh -ic 'mkl'` exited 0 (2723 links, 0 missing).
+  Phase 5 has not started.
 - **(2026-10-14, Phase 4 packet)** Fixture migrations rewritten to 1.0.1
   and handed over. Not applied. `get_migration.lua` on seven engines
   shows type-1 rows 156/157/158 nested inside the type-1000 code, reverse

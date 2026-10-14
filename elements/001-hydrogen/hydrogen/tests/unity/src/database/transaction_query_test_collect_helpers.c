@@ -18,6 +18,8 @@ void test_collector_create_and_free_null(void);
 void test_collector_create_without_parameters(void);
 void test_collect_entry_fields_and_totals(void);
 void test_collect_entry_without_data_json(void);
+void test_collect_entry_non_array_data_json(void);
+void test_parameters_filter_skips_non_object_sections(void);
 void test_parameters_filter_keeps_only_referenced(void);
 void test_parameters_filter_without_references(void);
 void test_parameters_filter_ignores_type_casts(void);
@@ -97,6 +99,36 @@ void test_collect_entry_without_data_json(void) {
     TEST_ASSERT_EQUAL_size_t(0, json_array_size(json_object_get(entry, "rows")));
 
     free(result.error_message);
+    txn_collector_free(collector);
+}
+
+void test_collect_entry_non_array_data_json(void) {
+    BlockCollector* collector = txn_collector_create(NULL);
+    TEST_ASSERT_NOT_NULL(collector);
+    collector->current_block = 1;
+
+    QueryResult result;
+    memset(&result, 0, sizeof(result));
+    result.success = true;
+    result.data_json = strdup("{\"not\":\"rows\"}");
+    result.affected_rows = 1;
+
+    TEST_ASSERT_TRUE(txn_collect_entry(collector, 0, &result));
+    json_t* rows = json_object_get(json_array_get(collector->entries, 0), "rows");
+    TEST_ASSERT_TRUE(json_is_array(rows));
+    TEST_ASSERT_EQUAL_size_t(0, json_array_size(rows));
+
+    free(result.data_json);
+    txn_collector_free(collector);
+}
+
+void test_parameters_filter_skips_non_object_sections(void) {
+    BlockCollector* collector = txn_collector_create("{\"INTEGER\":{\"A\":1},\"NOTE\":\"skip\"}");
+    TEST_ASSERT_NOT_NULL(collector);
+
+    const char* filtered = txn_parameters_callback(0, "INSERT INTO t VALUES (:A);", collector);
+    TEST_ASSERT_EQUAL_STRING("{\"INTEGER\":{\"A\":1}}", filtered);
+
     txn_collector_free(collector);
 }
 
@@ -230,6 +262,8 @@ int main(void) {
     RUN_TEST(test_collector_create_without_parameters);
     RUN_TEST(test_collect_entry_fields_and_totals);
     RUN_TEST(test_collect_entry_without_data_json);
+    RUN_TEST(test_collect_entry_non_array_data_json);
+    RUN_TEST(test_parameters_filter_skips_non_object_sections);
     RUN_TEST(test_parameters_filter_keeps_only_referenced);
     RUN_TEST(test_parameters_filter_without_references);
     RUN_TEST(test_parameters_filter_ignores_type_casts);

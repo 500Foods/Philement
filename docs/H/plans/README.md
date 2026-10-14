@@ -81,19 +81,6 @@ Phase 0 approved the same day. Phases 1–3 applied 2026-10-07.
 Phase 9 closed on the 2029 apply. Phase 10 closed on Test 71 3.2.0 (1490 passed, 0 failed). Phase 11 closed 2026-10-08 on the forward load plus Test 73 `test_73_20261008_085126` (178/178 on all eight engines). The reverse half of tests 32–39 was not run. Phase 12 closed 2026-10-08 on Test 73 1.0.4 `test_73_20261008_145836` (276/276 on all eight engines). Phase 13 closed 2026-10-08. Andrew reported that all Unity tests pass and `mkp` passes. He did not quote a count. Phase 14 closed 2026-10-08 on Test 73 1.0.5 `test_73_20261008_173729` (300/300 on all eight engines, harness 22/22, 314.196s). Phase 15 closed 2026-10-08 on Test 73 1.0.7 diagnostics `test_73_20261008_221958` (321/321 on all eight engines, harness 22 pass, 0 fail, 328.966s). Every engine log shows argent AVAIL = LOAD = APPLY = 2069. Work item 15.4 is checked. The full Test 31 harness was not run. Tests 32–39 were not in this report. Phase 16 opened 2026-10-08 and is waiting on Andrew. No new migration. The agent does not apply.
 `H.http.request` allowlist is `GET`, `POST`, `PUT`, `DELETE`, `PROPFIND`, `REPORT`, `MKCALENDAR`, and `PROPPATCH`. `H.http.get` and `H.http.post` call that path.
 
-### [QUERYREF TRANSACTIONS PLAN](/docs/H/plans/TRANSACTION_PLAN.md)
-
-Explicit multi-statement transactions for runtime QueryRefs
-(`-- TRANSACTION_START` / `-- STATEMENT` / `-- TRANSACTION_END`),
-per-engine DDL semantics (in-transaction DDL on PostgreSQL/SQLite/DB2/MSSQL;
-commit-and-reopen on Firebird/MySQL/MariaDB), JSON array of per-statement
-result sets, and rich failure payloads. The migration delimiter is unchanged.
-Phases 0–3 are complete. Phase 4 is in progress: fixture migrations
-1386–1388 (QueryRefs #156–#158) are written at 1.0.1 and the packet is
-handed over. The owner still regenerates the payload and applies.
-Proof is blackbox test 64, not started. Also lifts blackbox
-coverage of `src/database/db2/prepared.c` and `src/database/db2/transaction.c`.
-
 ---
 
 ## Completed plans
@@ -113,6 +100,7 @@ Full index: [`complete/README.md`](/docs/H/plans/complete/README.md). Highlights
 | Conduit | [CONDUIT_COMPLETE.md](/docs/H/plans/complete/CONDUIT_COMPLETE.md) |
 | Image / Reporting | [IMAGE_PLAN_COMPLETE.md](/docs/H/plans/complete/IMAGE_PLAN_COMPLETE.md) |
 | Database subsystem | [DATABASE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_PLAN_COMPLETE.md) |
+| QueryRef transactions | [TRANSACTION_PLAN_COMPLETE.md](/docs/H/plans/complete/TRANSACTION_PLAN_COMPLETE.md) |
 | Database parameters | [DATABASE_UPDATE_PLAN_COMPLETE.md](/docs/H/plans/complete/DATABASE_UPDATE_PLAN_COMPLETE.md) |
 | Forties (tests 40–47) | [FORTIES_COMPLETE.md](/docs/H/plans/complete/FORTIES_COMPLETE.md) |
 | Log fanout | [LOG_FANOUT_PLAN_COMPLETE.md](/docs/H/plans/complete/LOG_FANOUT_PLAN_COMPLETE.md) |

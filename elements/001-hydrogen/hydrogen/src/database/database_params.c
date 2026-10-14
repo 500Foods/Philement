@@ -611,6 +611,57 @@ bool build_parameter_array(
     return true;
 }
 
+/*
+ * Rebuild the unique-name bind list from the original :name SQL. The
+ * prepared handle was already created from positional SQL, so the
+ * converted string is discarded. Ordered pointers alias the list.
+ */
+bool database_ordered_parameters(
+    const char* sql_template,
+    const char* parameters_json,
+    DatabaseEngineType engine_type,
+    TypedParameter*** ordered_params,
+    size_t* param_count,
+    ParameterList** list_out,
+    const char* dqm_label
+) {
+    if (ordered_params) {
+        *ordered_params = NULL;
+    }
+    if (param_count) {
+        *param_count = 0;
+    }
+    if (list_out) {
+        *list_out = NULL;
+    }
+    if (!ordered_params || !param_count || !list_out) {
+        return false;
+    }
+    if (!parameters_json || strlen(parameters_json) <= 2 || !sql_template) {
+        return true;
+    }
+
+    ParameterList* list = parse_typed_parameters(parameters_json, dqm_label);
+    if (!list) {
+        return false;
+    }
+
+    TypedParameter** ordered = NULL;
+    size_t count = 0;
+    char* positional = convert_named_to_positional(sql_template, list, engine_type,
+                                                   &ordered, &count, dqm_label);
+    if (!positional) {
+        free_parameter_list(list);
+        return false;
+    }
+
+    free(positional);
+    *ordered_params = ordered;
+    *param_count = count;
+    *list_out = list;
+    return true;
+}
+
 // Cleanup functions
 void free_typed_parameter(TypedParameter* param) {
     if (!param) return;

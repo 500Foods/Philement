@@ -860,8 +860,54 @@ bool mysql_execute_prepared(DatabaseHandle* connection, const PreparedStatement*
 
     log_this(designator, "MySQL execute_prepared: Executing prepared statement", LOG_LEVEL_TRACE, 0);
 
-    // Execute the prepared statement
-    if (mysql_stmt_execute_ptr(stmt_handle) != 0) {
+    TypedParameter** ordered_params = NULL;
+    size_t ordered_count = 0;
+    ParameterList* param_list = NULL;
+    MYSQL_BIND* bind = NULL;
+    void** bound_values = NULL;
+    if (!database_ordered_parameters(request->sql_template, request->parameters_json,
+                                     DB_ENGINE_MYSQL, &ordered_params, &ordered_count,
+                                     &param_list, designator)) {
+        log_this(designator, "MySQL execute_prepared: Failed to order parameters", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+    if (ordered_count > 0) {
+        bool bind_ok = true;
+        bind = calloc(ordered_count, sizeof(MYSQL_BIND));
+        bound_values = calloc(ordered_count * 2, sizeof(void*));
+        if (!bind || !bound_values || !mysql_stmt_bind_param_ptr) {
+            log_this(designator, "MySQL execute_prepared: Failed to allocate parameter bindings", LOG_LEVEL_ERROR, 0);
+            bind_ok = false;
+        }
+        for (size_t i = 0; bind_ok && i < ordered_count; i++) {
+            if (!mysql_bind_single_parameter(bind, (unsigned int)i, ordered_params[i],
+                                             bound_values, ordered_count, designator)) {
+                log_this(designator, "MySQL execute_prepared: Failed to bind parameter %zu", LOG_LEVEL_ERROR, 1, i);
+                bind_ok = false;
+            }
+        }
+        if (bind_ok && mysql_stmt_bind_param_ptr(stmt_handle, bind) != 0) {
+            const char* bind_error = mysql_stmt_error_ptr ? mysql_stmt_error_ptr(stmt_handle) : NULL;
+            log_this(designator, "MySQL execute_prepared: mysql_stmt_bind_param failed: %s", LOG_LEVEL_ERROR, 1,
+                     (bind_error && bind_error[0] != '\0') ? bind_error : "(no error details)");
+            bind_ok = false;
+        }
+        if (!bind_ok) {
+            mysql_cleanup_bound_values(bound_values, ordered_count);
+            free(bind);
+            free(ordered_params);
+            free_parameter_list(param_list);
+            return false;
+        }
+    }
+
+    // Bound buffers must stay alive until mysql_stmt_execute returns.
+    int exec_rc = mysql_stmt_execute_ptr(stmt_handle);
+    mysql_cleanup_bound_values(bound_values, ordered_count);
+    free(bind);
+    free(ordered_params);
+    free_parameter_list(param_list);
+    if (exec_rc != 0) {
         log_this(designator, "MySQL prepared statement execution failed", LOG_LEVEL_ERROR, 0);
         if (mysql_stmt_error_ptr) {
             const char* error_msg = mysql_stmt_error_ptr(stmt_handle);

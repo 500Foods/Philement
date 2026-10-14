@@ -18,5 +18,6 @@ In any modern software system, data is at the heart of everything. The Database 
 - **Unified interface** - Provides a consistent way to work with different database types
 - **Reliable operation** - Includes monitoring and automatic recovery to keep things running smoothly
 - **Flexible configuration** - Can be set up to work with various database setups and requirements
+- **Transaction blocks** - A QueryRef can group statements with line-start `-- TRANSACTION_START`, `-- STATEMENT`, and `-- TRANSACTION_END`. SQL without those markers stays one statement. DDL commits early on Firebird, MySQL, and MariaDB. The technical page is [database.md](/docs/H/core/subsystems/database/database.md).
 
 This subsystem forms the foundation for data management across the entire Hydrogen platform, ensuring that all parts of the system can store and retrieve information effectively.

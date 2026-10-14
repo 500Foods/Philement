@@ -953,8 +953,9 @@ bool db2_execute_prepared(DatabaseHandle* connection, const PreparedStatement* s
     struct timespec start_time;
     clock_gettime(CLOCK_MONOTONIC, &start_time);
 
-    // Execute the prepared statement
-    int exec_result = SQLExecute_ptr(stmt_handle);
+    // Bind :name parameters, then execute. Bind storage ends inside the helper.
+    int exec_result = db2_bind_and_execute_prepared(stmt_handle, request->sql_template,
+                                                    request->parameters_json, designator);
     if (exec_result != SQL_SUCCESS && exec_result != SQL_SUCCESS_WITH_INFO) {
         // Get detailed error information
         unsigned char sql_state[6] = {0};

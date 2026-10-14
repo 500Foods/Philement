@@ -6,7 +6,7 @@
  * result sets. Unmarked SQL never reaches this file: the queue worker's
  * existing single-statement path handles it, byte for byte unchanged.
  *
- * Semantics implemented here (see TRANSACTION_PLAN.md):
+ * Semantics implemented here (see TRANSACTION_PLAN_COMPLETE.md):
  *   - bare statements outside blocks: exactly today's autocommit behavior
  *   - transaction blocks: one transaction per block, via the shared
  *     executor in database_transaction_exec.c (engine-adaptive DDL)

@@ -250,6 +250,9 @@ declare -a ENV_WHITELIST=(
     "WS_SUB_OUT" "WS_SUB_PID" "NAT62_API_DETAIL" "NATS62_LOGIN_HTTP" "NATS62_TOKEN"
     # First found in tests/test_63_conduit_webhook.sh    
     "HYDROGEN_TEST_WEBHOOK_SECRET"
+    # First found in tests/test_64_queryref_transactions.sh     
+    "TXN_CASES_FAILED" "TXN_CONFIG_FILE" "TXN_DESCRIPTION" "TXN_FAIL_157" "TXN_FAIL_158"
+    "TXN_LOG_SUFFIX"    
     # First found in tests/test_91_cppcheck.sh
     "CACHE_HITS_FMT" "FILES_TO_RUN_FMT" "OTHER_ISSUES_FMT"
     # First found in tests/test_93_jsonlint.sh
