@@ -15,8 +15,10 @@ How a phase runs: [`/docs/PLANNING.md`](/docs/PLANNING.md).
 
 ### [CATCHUP](/elements/003-lithium/CATCHUP.md)
 
-Gated Phases 0, 0a, 0b, 1–38, 5a–5d. First official deployment is **Course Manager**
-(ID 34) for 500 Courses. Agent map:
+Gated Phases 0, 0a, 0b, 0c, 1–38, 5a–5d. Pause point 2026-10-16:
+Phases 0 through 5 are complete. Phase 5a (Didit partner) is next. First
+official deployment is **Course Manager** (ID 34) for 500 Courses.
+Agent map:
 [`/elements/003-lithium/AGENTS.md`](/elements/003-lithium/AGENTS.md).
 
 Course Builder **pipeline** (Lua / Helium / human gates CB-0..35) is not

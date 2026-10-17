@@ -14,6 +14,9 @@
 # - Cleans up all temporary files
 
 # CHANGELONG
+# 4.5.2 - 2026-10-16 - Pack courses when its migrations directory exists
+# 4.5.1 - 2026-10-16 - Require helium/database.lua and every engine file the C loader opens
+# 4.5.0 - 2026-10-16 - Pack one helium/database*.lua set for every design
 # 4.4.0 - 2026-10-05 - Pack the argent design beside helium and acuranzo
 # 4.3.0 - 2026-01-10 - Changed SwaggerUI download to use git clone instead of GitHub API to avoid rate limits
 # 4.2.0 - 2025-12-13 - Added folder breakdown section showing file counts, sizes, and percentages for payload components
@@ -44,11 +47,17 @@ fi
 set -e
 
 # Display script information
-echo "payload-generate.sh version 4.4.0"
+echo "payload-generate.sh version 4.5.2"
 echo "Encrypted Payload Generator for Hydrogen"
 
-# Helium project Migrations to include (same as test_31_migrations.sh)
-DESIGNS=("helium" "acuranzo" "argent")
+# Helium project migrations to include (same as test_31_migrations.sh).
+# database*.lua is packed once from elements/002-helium/helium/, not per design.
+# Order matches PAYLOAD:acuranzo+courses+argent. A design with no
+# migrations directory is skipped so the archive still builds before that pack is cut.
+DESIGNS=("acuranzo" "courses" "argent")
+SHARED_DATABASE="helium"
+# Same names as lua.c lua_load_database_module() engines[].
+SHARED_ENGINES=(sqlite postgresql mysql mariadb mssql db2 firebird)
 HELIUM_DIR="${HELIUM_ROOT}"
 
 # Path configuration
@@ -294,44 +303,50 @@ copy_migration_files() {
 
     echo -e "${CYAN}${INFO} Copying database migration files...${NC}"
 
+    # One copy of the macro scripts, addressed as helium/database.lua in the payload.
+    local shared_src="${HELIUM_DIR}/${SHARED_DATABASE}"
+    local shared_dir="${SWAGGERUI_DIR}/${SHARED_DATABASE}"
+    mkdir -p "${shared_dir}"
+    if [[ -f "${shared_src}/database.lua" ]]; then
+        cp "${shared_src}/database.lua" "${shared_dir}/"
+        echo -e "${GREEN}${PASS} Copied ${SHARED_DATABASE}/database.lua${NC}"
+    else
+        echo -e "${RED}${FAIL} ${shared_src}/database.lua not found${NC}"
+        exit 1
+    fi
+    for engine in "${SHARED_ENGINES[@]}"; do
+        local engine_file="${shared_src}/database_${engine}.lua"
+        if [[ ! -f "${engine_file}" ]]; then
+            echo -e "${RED}${FAIL} ${engine_file} not found${NC}"
+            exit 1
+        fi
+        cp "${engine_file}" "${shared_dir}/"
+        echo -e "${GREEN}${PASS} Copied ${SHARED_DATABASE}/database_${engine}.lua${NC}"
+    done
+
     # Process each design
     for design in "${DESIGNS[@]}"; do
-        echo -e "${CYAN}${INFO} Processing design: ${design}${NC}"
-
-        # Create design directory in swaggerui
-        local design_dir="${SWAGGERUI_DIR}/${design}"
-        mkdir -p "${design_dir}"
-
-        # Copy database.lua and database_<engine>.lua files for this design
-        local source_db="${HELIUM_DIR}/${design}/migrations/database.lua"
-        if [[ -f "${source_db}" ]]; then
-            cp "${source_db}" "${design_dir}/"
-            echo -e "${GREEN}${PASS} Copied ${design}/migrations/database.lua${NC}"
-        else
-            echo -e "${YELLOW}${WARN} Warning: ${source_db} not found${NC}"
+        local migrations_src="${HELIUM_DIR}/${design}/migrations"
+        if [[ ! -d "${migrations_src}" ]]; then
+            rm -rf "${SWAGGERUI_DIR}/${design:?}"
+            echo -e "${CYAN}${INFO} Design ${design} has no migrations directory; not packed${NC}"
+            continue
         fi
 
-        # Copy database_<engine>.lua files for this design
-        local engine_files=()
-        while IFS= read -r -d '' engine_file; do
-            engine_files+=("${engine_file}")
-        done < <("${FIND}" "${HELIUM_DIR}/${design}/migrations" -name "database_*.lua" -type f -print0 2>/dev/null | sort -z || true)
+        echo -e "${CYAN}${INFO} Processing design: ${design}${NC}"
 
-        for engine_file in "${engine_files[@]}"; do
-            if [[ -f "${engine_file}" ]]; then
-                local filename
-                filename=$(basename "${engine_file}")
-                cp "${engine_file}" "${design_dir}/"
-                echo -e "${GREEN}${PASS} Copied ${design}/migrations/${filename}${NC}"
-            fi
-        done
+        # Create design directory in swaggerui. Drop a previous per-design copy
+        # of the macro scripts so the payload cannot prefer a stale file.
+        local design_dir="${SWAGGERUI_DIR}/${design}"
+        mkdir -p "${design_dir}"
+        rm -f "${design_dir}/database.lua" "${design_dir}"/database_*.lua
 
         # Copy all migration files for this design
         local migration_count=0
         local migration_files=()
         while IFS= read -r -d '' file; do
             migration_files+=("${file}")
-        done < <("${FIND}" "${HELIUM_DIR}/${design}/migrations" -name "${design}_????.lua" -type f -print0 2>/dev/null | sort -z || true)
+        done < <("${FIND}" "${migrations_src}" -name "${design}_????.lua" -type f -print0 2>/dev/null | sort -z || true)
 
         for migration_file in "${migration_files[@]}"; do
             if [[ -f "${migration_file}" ]]; then
@@ -617,20 +632,27 @@ create_tarball() {
         )
     fi
 
+    # Shared macro scripts, then each design's numbered migrations.
+    # Fail if the C loader's set is not in the stage directory.
+    local shared_payload="${SWAGGERUI_DIR}/${SHARED_DATABASE}"
+    if [[ ! -f "${shared_payload}/database.lua" ]]; then
+        echo -e "${RED}${FAIL} ${SHARED_DATABASE}/database.lua missing from payload stage${NC}"
+        exit 1
+    fi
+    TAR_FILES+=("${SHARED_DATABASE}/database.lua")
+    for engine in "${SHARED_ENGINES[@]}"; do
+        local engine_name="${SHARED_DATABASE}/database_${engine}.lua"
+        if [[ ! -f "${shared_payload}/database_${engine}.lua" ]]; then
+            echo -e "${RED}${FAIL} ${engine_name} missing from payload stage${NC}"
+            exit 1
+        fi
+        TAR_FILES+=("${engine_name}")
+    done
+
     # Add migration files for each design
     for design in "${DESIGNS[@]}"; do
         if [[ -d "${SWAGGERUI_DIR}/${design}" ]]; then
-            # Add database.lua
-            if [[ -f "${SWAGGERUI_DIR}/${design}/database.lua" ]]; then
-                TAR_FILES+=("${design}/database.lua")
-            fi
-
-            # Add database_<engine>.lua files
-            while IFS= read -r -d '' engine_file; do
-                local rel_path="${engine_file#"${SWAGGERUI_DIR}"/}"
-                TAR_FILES+=("${rel_path}")
-            done < <("${FIND}" "${SWAGGERUI_DIR}/${design}" -name "database_*.lua" -type f -print0 2>/dev/null || true)
-
+            # Numbered migrations only. Macro scripts are packed once under helium/.
             # Add all migration files
             while IFS= read -r -d '' migration_file; do
                 local rel_path="${migration_file#"${SWAGGERUI_DIR}"/}"

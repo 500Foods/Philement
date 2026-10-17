@@ -21,11 +21,11 @@ partners, Scripting invoke, Course Manager, or chat/MCP.
 | | |
 | --- | --- |
 | **Plan** | [CATCHUP.md](/elements/003-lithium/CATCHUP.md) |
-| **Next** | Phase 0a — manager IDs in Helium Lookup 042 |
+| **Next** | Phase 5a — Didit partner |
 | **First deploy** | Band D — Course Manager (ID 34) |
-| **Effort** | XL (gated phases 0, 0a, 0b, 1–38, 5a–5d) |
-| **Done** | Phase 0 complete 2026-09-09 |
-| **Remaining** | Phases 0a, 0b, 1–38, 5a–5d |
+| **Effort** | XL (gated phases 0, 0a, 0b, 0c, 1–38, 5a–5d) |
+| **Done** | Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, and 5 complete (2026-10-16) |
+| **Remaining** | Phases 5a–5d, 6–38 |
 | **Superseded** | [LITHIUM_SPRINT.md](/docs/Li/plans/LITHIUM_SPRINT.md) |
 
 ## P2 — Report writer (do not start)

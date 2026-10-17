@@ -13,7 +13,6 @@ export class PhonePage extends SimpleSettingsPage {
   }
   async onInit() { await super.onInit(); log(Subsystems.MANAGER, Status.DEBUG, '[PhonePage] Initialized (stub)'); }
   async loadData() { /* TODO */ }
-  async save() { this.setDirty(false); return { success: true }; }
 }
 
 export default PhonePage;

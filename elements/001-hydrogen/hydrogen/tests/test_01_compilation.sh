@@ -7,6 +7,9 @@
 # download_unity_framework()
 
 # CHANGELOG
+# 4.4.5 - 2026-10-16 - Payload freshness watches every Lua file under Helium
+# 4.4.4 - 2026-10-16 - Design freshness watches numbered migrations only
+# 4.4.3 - 2026-10-16 - Payload freshness includes helium/database*.lua
 # 4.4.2 - 2026-10-05 - Payload freshness check includes the argent design
 # 4.4.1 - 2026-01-01 - If migrations have been updated, in addition to regenerating the payload, the helium/helium_update.sh script is also run
 # 4.4.0 - 2025-12-13 - Added check for HBM browser files timestamps in payload regeneration logic
@@ -44,7 +47,7 @@ TEST_NAME="Compilation"
 TEST_ABBR="CMP"
 TEST_NUMBER="01"
 TEST_COUNTER=0
-TEST_VERSION="4.4.2"
+TEST_VERSION="4.4.5"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -192,24 +195,14 @@ needs_payload_regeneration() {
         return 0  # Payload missing, need to generate
     fi
     
-    # Check if migration files are newer than the payload
-    # Migration files are in elements/002-helium/{design}/migrations/
+    # Any Lua file under elements/002-helium is a payload input. That covers
+    # helium/database*.lua and every design's migrations folder, including
+    # designs the generator does not pack yet. Diagrams and markdown do not.
     local helium_base_dir="${PROJECT_DIR}/../../002-helium"
-    local designs=("helium" "acuranzo" "argent")
-    
-    for design in "${designs[@]}"; do
-        local migrations_dir="${helium_base_dir}/${design}/migrations"
-        
-        # Skip if migrations directory doesn't exist
-        [[ ! -d "${migrations_dir}" ]] && continue
-        
-        # Check if any migration files are newer than the payload
-        # Look for: database.lua, database_*.lua, and ${design}_????.lua files
-        if find "${migrations_dir}" -type f \
-            \( -name "database.lua" -o -name "database_*.lua" -o -name "${design}_????.lua" \) \
+    if [[ -d "${helium_base_dir}" ]]; then
+        # A newer migration also refreshes the Helium indexes before the rebuild.
+        if find "${helium_base_dir}" -path '*/migrations/*.lua' -type f \
             -newer "${payload_file}" -print -quit 2>/dev/null | grep -q .; then
-            
-            # Run helium_update.sh from within the HELIUM_ROOT folder
             if [[ -f "${helium_base_dir}/scripts/helium_update.sh" ]]; then
                 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "Running helium_update.sh due to migration changes..."
                 # shellcheck disable=SC2310 # We want to continue even if this fails
@@ -219,10 +212,14 @@ needs_payload_regeneration() {
                     print_message "${TEST_NUMBER}" "${TEST_COUNTER}" "helium_update.sh failed or not found"
                 fi
             fi
-            
-            return 0  # Found newer migration files, need to regenerate
+            return 0
         fi
-    done
+
+        if find "${helium_base_dir}" -type f -name '*.lua' \
+            -newer "${payload_file}" -print -quit 2>/dev/null | grep -q .; then
+            return 0
+        fi
+    fi
 
     # Check if HBM browser files are newer than the payload
     local hbm_dir="${PROJECT_DIR}/extras/hbm_browser"

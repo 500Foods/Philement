@@ -231,6 +231,12 @@ bool execute_migration_files_load_only(DatabaseQueue* db_queue, DatabaseHandle* 
         return false;
     }
 
+    if (!payload_files_include_shared_database(&payload_files, &payload_count, dqm_label)) {
+        free_payload_files(payload_files, payload_count);
+        migration_payload_designs_free(designs, design_count);
+        return false;
+    }
+
     bool all_success = true;
 
     // Process each migration with a FRESH Lua state
@@ -318,6 +324,12 @@ bool execute_single_migration_load_only(DatabaseHandle* connection, const char* 
 
     if (!get_payload_files_by_prefix(migration_name, &payload_files, &payload_count, &payload_capacity)) {
         log_this(dqm_label, "Failed to get payload files for migration: %s", LOG_LEVEL_ERROR, 1, migration_file);
+        lua_close(L);
+        return false;
+    }
+
+    if (!payload_files_include_shared_database(&payload_files, &payload_count, dqm_label)) {
+        free_payload_files(payload_files, payload_count);
         lua_close(L);
         return false;
     }

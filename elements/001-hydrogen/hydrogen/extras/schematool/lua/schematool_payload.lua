@@ -7,6 +7,7 @@
 -- A single design name stays the anchor only.
 --
 -- CHANGELOG
+-- 1.1.0 - 2026-10-16 - shared_database_dir is the sibling helium/ folder
 -- 1.0.0 - 2026-10-07 - Payload plus-list: anchor plus sibling migrations
 
 local M = {}
@@ -58,6 +59,16 @@ end
 local function parent_dir(path)
     local trimmed = (path or ""):gsub("/+$", "")
     return trimmed:match("^(.*)/[^/]+$")
+end
+
+-- elements/002-helium/helium next to elements/002-helium/<design>/migrations.
+function M.shared_database_dir(anchor)
+    local design_root = parent_dir(anchor)
+    local helium_root = design_root and parent_dir(design_root)
+    if not helium_root then
+        return nil
+    end
+    return helium_root .. "/helium"
 end
 
 -- First design uses anchor. Later designs are sibling migrations folders.

@@ -8,6 +8,9 @@
 # validate_migration()
 
 # CHANGELOG
+# 1.12.0 - 2026-10-16 - Include courses in the suite; skip it until its migrations exist
+# 1.11.0 - 2026-10-16 - Require the shared helium/database*.lua set before expanding
+# 1.10.0 - 2026-10-16 - Drop the retired helium printing design from DESIGNS
 # 1.9.0 - 2026-10-05 - Lint the argent design with the same schema map as acuranzo
 # 1.8.0 - 2026-09-29 - Added mssql engine to ENGINES array and DESIGN_SCHEMAS; skip sqruff for mssql
 # 1.7.0 - 2026-09-19 - Removed firebase engine (C-level Firebase fully removed)
@@ -26,7 +29,7 @@ TEST_NAME="Migrations"
 TEST_ABBR="MGR"
 TEST_NUMBER="31"
 TEST_COUNTER=0
-TEST_VERSION="1.9.0"
+TEST_VERSION="1.12.0"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -39,8 +42,8 @@ mkdir -p "${CACHE_DIR}"
 # Helium project path (relative to workspace root) - points to parent to allow appending design names
 HELIUM_DIR="../../../elements/002-helium"
 
-# List of designs to validate
-DESIGNS=("helium" "acuranzo" "argent")
+# Full suite order. courses is skipped below when that folder does not exist yet.
+DESIGNS=("acuranzo" "courses" "argent")
 
 # Supported database engines
 ENGINES=("postgresql" "sqlite" "mysql" "db2" "mariadb" "firebird" "mssql")
@@ -48,8 +51,8 @@ ENGINES=("postgresql" "sqlite" "mysql" "db2" "mariadb" "firebird" "mssql")
 # Schema mapping per design per engine (corresponding to ENGINES array order)
 # ENGINES=("postgresql" "sqlite" "mysql" "db2" "mariadb" "firebird" "mssql")
 declare -A DESIGN_SCHEMAS
-DESIGN_SCHEMAS["helium"]="helium::helium:HELIUM:helium:helium:testms:"
 DESIGN_SCHEMAS["acuranzo"]="app::acuranzo:ACURANZO:test:testfb:testms:"
+DESIGN_SCHEMAS["courses"]="app::acuranzo:ACURANZO:test:testfb:testms:"
 DESIGN_SCHEMAS["argent"]="app::acuranzo:ACURANZO:test:testfb:testms:"
 
 # Function to get file hash (using md5sum or equivalent)
@@ -187,6 +190,19 @@ CACHED_VALIDATIONS=0
 
 # Arrays to collect results for final reporting
 VALIDATION_RESULTS=()
+
+# The payload and the C loader share one helium/database.lua set.
+SHARED_DATABASE="${HELIUM_DIR}/helium"
+if [[ ! -f "${SHARED_DATABASE}/database.lua" ]]; then
+    echo "Missing ${SHARED_DATABASE}/database.lua" >&2
+    exit 1
+fi
+for engine in "${ENGINES[@]}"; do
+    if [[ ! -f "${SHARED_DATABASE}/database_${engine}.lua" ]]; then
+        echo "Missing ${SHARED_DATABASE}/database_${engine}.lua" >&2
+        exit 1
+    fi
+done
 
 # Calculate total combos
 total_combos=0

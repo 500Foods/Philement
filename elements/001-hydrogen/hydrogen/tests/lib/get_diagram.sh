@@ -4,6 +4,9 @@
 # Generate SVG database diagram from migration JSON
 
 # CHANGELOG
+# 3.4.1 - 2026-10-16 - Usage names the packed designs, not the shared helium folder
+# 3.4.0 - 2026-10-16 - Require database.lua and database_<engine>.lua from the shared set
+# 3.3.0 - 2026-10-16 - Load database.lua from elements/002-helium/helium
 # 3.2.0 - 2026-10-07 - Accept mariadb, firebird, and mssql; unwrap their JSON_INGEST the same way as postgresql
 # 3.1.1 - 2026-08-27 - Combine before/after JSON via Node files instead of jq --argjson (ARG_MAX)
 # 3.1.0 - 2026-07-08 - Fixed diagram JSON extraction for Brotli/base64-encoded content that folds to a single line; metadata now emitted as compact JSON
@@ -43,7 +46,7 @@ LIB_DIR="${SCRIPT_DIR}/lib"
 usage() {
     echo "Usage: $0 <engine> <design> <prefix> [migration]"
     echo "  engine: database engine (postgresql, mysql, sqlite, db2, mariadb, firebird, mssql)"
-    echo "  design: design name (acuranzo, helium)"
+    echo "  design: design name (acuranzo, courses, argent)"
     echo "  prefix: schema prefix (ACURANZO, HELIUM, etc.)"
     echo "  migration: optional migration number (1000, etc.) - if not provided, process all migrations"
     echo ""
@@ -73,6 +76,14 @@ esac
 DESIGN_DIR="${HELIUM_DIR}/${DESIGN}/migrations"
 if [[ ! -d "${DESIGN_DIR}" ]]; then
     echo "Error: Design directory not found: ${DESIGN_DIR}" >&2
+    exit 1
+fi
+if [[ ! -f "${HELIUM_DIR}/helium/database.lua" && ! -f "${DESIGN_DIR}/database.lua" ]]; then
+    echo "Error: database.lua not found in ${HELIUM_DIR}/helium or ${DESIGN_DIR}" >&2
+    exit 1
+fi
+if [[ ! -f "${HELIUM_DIR}/helium/database_${ENGINE}.lua" && ! -f "${DESIGN_DIR}/database_${ENGINE}.lua" ]]; then
+    echo "Error: database_${ENGINE}.lua not found in ${HELIUM_DIR}/helium or ${DESIGN_DIR}" >&2
     exit 1
 fi
 
@@ -131,7 +142,7 @@ for MIGRATION_FILE in "${FILTERED_MIGRATION_FILES[@]}"; do
 
     # Run Lua script to generate SQL for this migration (from lib directory for consistent paths)
     pushd "${LIB_DIR}" >/dev/null
-    SQL_OUTPUT=$(LUA_PATH="./?.lua;${DESIGN_DIR}/?.lua" lua "./get_migration.lua" "${ENGINE}" "${DESIGN}" "${PREFIX}" "${migration_num}")
+    SQL_OUTPUT=$(LUA_PATH="${HELIUM_DIR}/helium/?.lua;./?.lua;${DESIGN_DIR}/?.lua" lua "./get_migration.lua" "${ENGINE}" "${DESIGN}" "${PREFIX}" "${migration_num}")
     popd >/dev/null
 
     # Extract JSON from the diagram migration using DIAGRAM_START and DIAGRAM_END markers.

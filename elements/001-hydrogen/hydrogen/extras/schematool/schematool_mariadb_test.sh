@@ -3,9 +3,10 @@
 #
 # Engine-specific env: MARIADB_DB_{HOST,PORT,NAME,USER,PASS}
 # Schema:             test
-# Design:             acuranzo+argent
+# Design:             acuranzo+courses+argent
 #
 # CHANGELOG
+# 1.1.1 - 2026-10-16 - Full suite acuranzo+courses+argent
 # 1.1.0 - 2026-10-07 - Payload acuranzo+argent in one run
 # 1.0.0 - 2026-10-07 - Test 36 wrapper; schema test
 
@@ -38,7 +39,7 @@ done
 
 exec "${SCHEMATOOL}" \
     --migrations "${MIGRATIONS_DIR}" \
-    --design acuranzo+argent \
+    --design acuranzo+courses+argent \
     --engine mariadb \
     --schema test \
     "$@"

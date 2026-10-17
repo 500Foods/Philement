@@ -26,6 +26,7 @@
 #   CAT_ROWS, CAT_EXIT_LABEL, RENDER_MODE, SUBTITLE, FOOTER
 #
 # CHANGELOG
+# 1.5.0 - 2026-10-16 - Discover phase names the file count
 # 1.4.0 - 2026-10-07 - Catalog footer counts type and dropped findings
 # 1.3.0 - 2026-10-07 - phase: expect names the dialect
 # 1.2.0 - 2026-08-23 - Catalog track degrades after a successful metadata audit
@@ -120,6 +121,9 @@ schematool_run_metadata_audit() {
     local disk_all_json="${WORK_DIR}/disk_all.json"
     echo "phase: discover" >&2
     run_discover "${DISK_JSON}"
+    local discover_n
+    discover_n="$("${JQ}" 'length' "${DISK_JSON}")"
+    echo "phase: discover files=${discover_n}" >&2
     if [[ -n "${FROM_REF}" || -n "${TO_REF}" ]]; then
         # Full discovery without range (orphan = in DB, not on any disk file)
         if ! "${LUA}" "${LUA_DIR}/schematool_discover.lua" \

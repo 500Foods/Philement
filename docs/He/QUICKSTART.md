@@ -126,14 +126,17 @@ lua -e "require 'acuranzo_9999'"
 Execute the migration against your database (primary target is YugabyteDB / PG15-compatible PostgreSQL):
 
 ```bash
+# From the Hydrogen tree. HYDROGEN_ROOT and HELIUM_ROOT must be set.
+# Arguments: engine, design, schema, migration number.
+
 # For PostgreSQL 15+ or YugabyteDB (primary)
-lua database.lua postgresql acuranzo public < acuranzo_9999.lua | psql -h localhost -U your_user -d your_database
+tests/lib/get_migration.sh postgresql acuranzo app 9999 | psql -h localhost -U your_user -d your_database
 
 # For MySQL/MariaDB
-lua database.lua mysql acuranzo your_schema < acuranzo_9999.lua | mysql -h localhost -u your_user -p your_database
+tests/lib/get_migration.sh mysql acuranzo acuranzo 9999 | mysql -h localhost -u your_user -p your_database
 
 # For SQLite
-lua database.lua sqlite acuranzo '' < acuranzo_9999.lua | sqlite3 your_database.db
+tests/lib/get_migration.sh sqlite acuranzo '' 9999 | sqlite3 your_database.db
 ```
 
 ## Step 4: Verify the Migration (2 minutes)
@@ -155,7 +158,7 @@ Test the rollback capability:
 
 ```bash
 # Run the reverse migration (same command, it will execute the reverse query)
-lua database.lua postgresql acuranzo public < acuranzo_9999.lua | psql -h localhost -U your_user -d your_database
+tests/lib/get_migration.sh postgresql acuranzo app 9999 | psql -h localhost -U your_user -d your_database
 ```
 
 Verify the rollback:
@@ -211,7 +214,7 @@ rm acuranzo_9999.lua
 ### Macros not expanding
 
 - Verify you're using the correct database engine name (postgresql, mysql, sqlite, db2)
-- Check that database.lua and the engine-specific files are present
+- Check that [`/elements/002-helium/helium/database.lua`](/elements/002-helium/helium/database.lua) and the engine files beside it are present
 
 ### State machine problems (wrong query_type_a28 after running)
 

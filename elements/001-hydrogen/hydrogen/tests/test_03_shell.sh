@@ -163,8 +163,10 @@ declare -a ENV_WHITELIST=(
     "TERMINAL_WS_HELPERS_GUARD" "TERMINAL_WS_HELPERS_NAME" "TERMINAL_WS_HELPERS_VERSION"     
     # First found in tests/test_27_reporting_image_scale.sh
     "CURL_MAX_TIME" "FAIL_COUNT" "IMAGES_DIR" "PASS_COUNT" "RESULT_DIR" "TOTAL_COUNT"
+    # First found in tests/test_31_migration.sh
+    "SHARED_DATABASE" "SHARED_DIR"
     # First found in tests/test_40_auth.sh
-    "MIGRATION_TIMEOUT"
+    "MIGRATION_TIMEOUT"                        
     # First found in tests/test_41_exercise_asan.sh / test_44_exercise_native.sh / lib/exercise_helpers.sh
     "API_PREFIX" "CONNS" "DB_COUNT" "EXERCISE_LOG_SUFFIX" "FAILED_REQUESTS" "FDS" "FINAL_API" 
     "FINAL_BYTES_IN" "FINAL_BYTES_OUT" "FINAL_CONNS" "FINAL_FS" "FINAL_METRICS" "FINAL_POST"

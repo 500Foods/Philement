@@ -130,6 +130,10 @@
   margin-bottom: var(--space-3);
 }
 
+.version-preview-rendered pre.version-preview-plain {
+  white-space: pre-wrap;
+}
+
 .version-preview-rendered pre code {
   background: transparent;
   padding: 0;

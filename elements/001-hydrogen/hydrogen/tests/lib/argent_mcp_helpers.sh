@@ -23,12 +23,13 @@
 # 1.0.6 - 2026-10-08 - Report queries, manual rates, and offline BoC checks
 # 1.0.7 - 2026-10-08 - Accept an empty income warnings object
 # 1.0.8 - 2026-10-09 - Split exercise blocks into argent_helpers_*.sh for code-size cap
+# 1.0.9 - 2026-10-16 - SQLite copy keeps AutoMigration false
 
 [[ -n "${ARGENT_MCP_HELPERS_GUARD:-}" ]] && return 0
 export ARGENT_MCP_HELPERS_GUARD="true"
 
 ARGENT_MCP_HELPERS_NAME="Argent MCP Helpers"
-ARGENT_MCP_HELPERS_VERSION="1.0.8"
+ARGENT_MCP_HELPERS_VERSION="1.0.9"
 print_message "${TEST_NUMBER}" "${TEST_COUNTER}" \
     "${ARGENT_MCP_HELPERS_NAME} ${ARGENT_MCP_HELPERS_VERSION}" "info"
 
@@ -72,7 +73,7 @@ argent_prepare_sqlite() {
     jq --arg db "${db_copy}" '
         .Databases.Connections |= map(
             if ((.Engine // "") | ascii_downcase) == "sqlite" then
-                .Database = $db | .AutoMigration = true
+                .Database = $db | .AutoMigration = false
             else . end
         )
     ' "${src_config}" > "${out_config}"

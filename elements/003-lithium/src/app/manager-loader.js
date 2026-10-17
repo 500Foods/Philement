@@ -116,12 +116,6 @@ export class ManagerLoader {
       case 33: return import('../managers/scripting/scripting.js');
       case 34: return import('../managers/course-manager/course-manager.js');
       case 35: return import('../managers/course-builder/course-builder.js');
-      case 1: return import('../managers/login/login.js');
-      case 2: return import('../managers/server-sessions/server-sessions.js');
-      case 3: return import('../managers/version-history/version-history.js');
-      case 4: return import('../managers/queries/queries.js');
-      case 5: return import('../managers/lookups/lookups.js');
-      case 6: return import('../managers/chats/chats.js');
       default: throw new Error(`No import mapping for manager ID: ${managerId}`);
     }
   }
@@ -239,6 +233,9 @@ export class ManagerLoader {
       return;
     }
 
+    const outgoingInstance = this.app.currentManager?.instance ?? null;
+    const outgoingName = this.app.currentManager?.name ?? '';
+
     this.showTransitionOverlay();
     this._saveLastManager('manager', managerId);
     this.getTransitionDurationFromCSS();
@@ -251,6 +248,11 @@ export class ManagerLoader {
       }
       this.hideTransitionOverlay();
     });
+
+    if (outgoingInstance && outgoingInstance !== managerData.instance) {
+      await this._callManagerHook(outgoingInstance, outgoingName, 'onDeactivate');
+    }
+    await this._callManagerHook(managerData.instance, managerData.name, 'onActivate');
   }
 
   _getSlotForCurrent() {
@@ -373,14 +375,7 @@ export class ManagerLoader {
       managerData.slotEl.remove();
     }
 
-    // Call destroy/cleanup on manager instance if it exists
-    if (managerData.instance && typeof managerData.instance.destroy === 'function') {
-      try {
-        await managerData.instance.destroy();
-      } catch (err) {
-        logManager(Status.WARN, `Error destroying manager ${managerData.name}: ${err.message}`);
-      }
-    }
+    await this._releaseManager(managerData.instance, managerData.name);
 
     // Remove from tracking
     this.app.loadedManagers.delete(numericId);
@@ -395,6 +390,36 @@ export class ManagerLoader {
     // Clear currentManager if it was this manager
     if (this.app.currentManager && this.app.currentManager.id === numericId) {
       this.app.currentManager = null;
+    }
+  }
+
+  /**
+   * One close hook. destroy wins, then cleanup, then teardown.
+   * A failure is logged and the slot is still removed by the caller.
+   * @param {object|null|undefined} instance
+   * @param {string} name
+   */
+  async _releaseManager(instance, name) {
+    if (!instance) return;
+    const method = ['destroy', 'cleanup', 'teardown'].find(
+      (key) => typeof instance[key] === 'function'
+    );
+    if (!method) return;
+    await this._callManagerHook(instance, name, method);
+  }
+
+  /**
+   * Await a lifecycle hook when the instance implements it.
+   * @param {object|null|undefined} instance
+   * @param {string} name
+   * @param {string} method
+   */
+  async _callManagerHook(instance, name, method) {
+    if (!instance || typeof instance[method] !== 'function') return;
+    try {
+      await instance[method]();
+    } catch (err) {
+      logManager(Status.WARN, `${method} failed for ${name}: ${err.message}`);
     }
   }
 }

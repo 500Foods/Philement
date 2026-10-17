@@ -7,6 +7,7 @@
  */
 
 import { processIcons } from '../../core/icons.js';
+import { promptDialog } from '../../shared/confirm.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { createPopupSeparator } from './popup-manager.js';
 
@@ -27,7 +28,7 @@ export function buildTemplatePopup(table) {
 
   popup.appendChild(createTemplateMenuAction(table, 'Save Template', async () => {
     logTemplateMenuSelection(table, 'save');
-    const savedTemplate = saveTemplate(table);
+    const savedTemplate = await saveTemplate(table);
     if (!savedTemplate) return;
     table.templateMenuSelectedName = getTemplateName(table, savedTemplate);
     refreshTemplatePopup(table);
@@ -262,16 +263,22 @@ function logTemplateMenuSelection(table, action, detail = '') {
  * @param {Object} table - LithiumTable instance
  * @returns {Object|null} Saved template or null
  */
-function saveTemplate(table) {
+async function saveTemplate(table) {
   const template = table.generateTemplateJSON?.();
   if (!template) return null;
 
   const defaultName = `${template._templateMeta?.name || 'Template'} - ${new Date().toLocaleDateString()}`;
-  const name = window.prompt('Enter template name:', defaultName);
-  if (!name) return null;
+  const name = await promptDialog({
+    title: 'Save template',
+    message: 'Enter template name',
+    defaultValue: defaultName,
+    confirmLabel: 'Save',
+  });
+  const trimmed = name?.trim();
+  if (!trimmed) return null;
 
   template._templateMeta = template._templateMeta || {};
-  template._templateMeta.name = name;
+  template._templateMeta.name = trimmed;
 
   const templates = getSavedTemplates(table);
   const existingIndex = templates.findIndex((item) => getTemplateName(table, item) === name);

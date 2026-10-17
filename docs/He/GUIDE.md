@@ -26,7 +26,7 @@ Only after the above should you write or modify a migration.
 
 A single migration file (`acuranzo_XXXX.lua`) must represent **exactly one logical unit of work**. The following are hard rules — never violate them:
 
-1. **No separate migrations per engine.** A migration is engine-agnostic by construction (macros handle dialect differences). Unless an `if engine == 'xxx'` conditional block is genuinely required for a dialect-specific quirk (see `acuranzo_1190.lua` as the canonical example), there is one migration file with one forward, one reverse, and (if schema) one diagram. Do **not** create `acuranzo_1339_postgresql.lua`, `acuranzo_1339_sqlite.lua`, etc. — there is only `acuranzo_1339.lua`.
+1. **No separate migrations per engine.** A migration is engine-agnostic by construction (macros handle dialect differences). Unless an `if engine == 'xxx'` conditional block is genuinely required for a dialect-specific quirk (see `acuranzo_1190.lua` as the canonical example), there is one migration file with one forward, one reverse, and (if schema) one diagram. Do **not** create `courses_4052_postgresql.lua`, `courses_4052_sqlite.lua`, etc. — there is only `courses_4052.lua`.
 
 2. **No multiple QueryRefs (or query_ref changes) in the same migration.** Each migration seeds or modifies **exactly one** `query_ref` value. If you need to add, modify, or remove a second QueryRef, that is a separate migration with its own number. Never bundle two distinct QueryRefs into a single migration file under one `query_ref`. Similarly, never change a `query_ref` that belongs to an already-applied migration — create a new migration that updates the existing row, and document it clearly.
 
@@ -36,19 +36,19 @@ The migration's own forward, reverse, and diagram rows share one value in the `q
 
 ### Designs, packs, and numbers
 
-Files live at `elements/002-helium/{design}/migrations/{design}_{number}.lua`. The design name in the path is what selects `database.lua`. It is not a SQL schema. Each design ships its own `database.lua` and `database_<engine>.lua`. The loader reads `{design}/database.lua` for that design's files.
+Files live at `elements/002-helium/{design}/migrations/{design}_{number}.lua`. The folder name is the design. It is not a SQL schema. Every design loads [`/elements/002-helium/helium/database.lua`](/elements/002-helium/helium/database.lua) and the `database_<engine>.lua` files beside it. Those scripts are not a design and they are not under `migrations/`. The payload packs that one copy as `helium/database.lua`. A `{design}/database.lua` already in the payload still wins.
 
-Some designs own a database and bootstrap `queries`, `lookups`, and `scripts` (`acuranzo_1000`, `helium_4000`, today's `gaius_2000`, `glm_3000`). Argent does not. It is an optional pack on the Acuranzo database: same connection, same schema, same three tables. It inserts rows and adds domain tables. It does not create `queries`, `lookups`, or `scripts`. See [`ARGENT_PLAN.md`](/docs/H/plans/ARGENT_PLAN.md) and [`argent_2000.lua`](/elements/002-helium/argent/migrations/argent_2000.lua).
+Some designs own a database and bootstrap `queries`, `lookups`, and `scripts` (`acuranzo_1000`, today's `gaius_2000`, `glm_3000`). Argent does not. It is an optional pack on the Acuranzo database: same connection, same schema, same three tables. It inserts rows and adds domain tables. It does not create `queries`, `lookups`, or `scripts`. See [`ARGENT_PLAN.md`](/docs/H/plans/ARGENT_PLAN.md) and [`argent_2000.lua`](/elements/002-helium/argent/migrations/argent_2000.lua). Courses is that kind of pack. Files `courses_4000.lua` through `courses_4075.lua` are cut. The next file is 4076. Caller-facing QueryRefs are 4000–4007. The inventory is [`COURSES_MIGRATION.md`](/docs/He/COURSES_MIGRATION.md). `Orchestrators.Orchestrator` stayed in Acuranzo.
 
-Allowed `Migrations` values include `PAYLOAD:acuranzo`, `PAYLOAD:acuranzo+argent`, and later `PAYLOAD:acuranzo+gaius` or all three. Argent alone and Gaius alone are rejected. The folder `elements/002-helium/gaius/` is still its own database. Do not apply that tree onto Acuranzo. When a Gaius pack joins this database it is renumbered into 3000–3999 and drops the queries bootstrap.
+The full suite is `PAYLOAD:acuranzo+courses+argent`. `PAYLOAD:acuranzo` and `PAYLOAD:acuranzo+argent` stay valid and omit Courses. Later, `PAYLOAD:acuranzo+gaius` or a list that also names Gaius. Argent, Courses, or Gaius alone is rejected. The archive rebuilt by `mka` on 2026-10-16 contains the Courses files. Tests 32–40, 62, and 73, and the SchemaTool wrappers, use the full suite. A database that already applied the old 1xxx course files must be rebuilt before this pack is applied. The folder `elements/002-helium/gaius/` is still its own database. Do not apply that tree onto Acuranzo. When a Gaius pack joins this database it is renumbered into 3000–3999 and drops the queries bootstrap.
 
 Three numbers stay separate:
 
-- **Migration number** (`cfg.MIGRATION`, the file number). Acuranzo is 1000–1999. Argent is 2000–2999. A future Gaius pack on this database is 3000–3999. The forward, reverse, and diagram rows store this number in `query_ref`. Hydrogen tracks AVAIL, LOAD, and APPLY once per thousand that the payload ships. A thousand left out of the payload is not migrated. Inside one thousand, a file at or below that band's high-water mark is skipped, so take the next number above the highest file already in that design. Across thousands, the next apply is the lowest pending migration number. A new `acuranzo_1386` still runs after `argent_2001` is applied.
+- **Migration number** (`cfg.MIGRATION`, the file number). Acuranzo is 1000–1999. Argent is 2000–2999. A future Gaius pack on this database is 3000–3999. Courses uses 4000–4999. The cut occupies 4000–4075. The forward, reverse, and diagram rows store this number in `query_ref`. Hydrogen tracks AVAIL, LOAD, and APPLY once per thousand that the payload ships. A thousand left out of the payload is not migrated. Inside one thousand, a file at or below that band's high-water mark is skipped, so take the next number above the highest file already in that design. Across thousands, the next apply is the lowest pending migration number. A new `acuranzo_1386` still runs after `argent_2001` is applied.
 - **`query_id`.** `MAX(query_id)+1` on the shared `queries` table. No design owns a range.
 - **Caller-facing QueryRef** (`cfg.QUERY_REF`). The id a caller uses. One per migration, in the migration that installs it. It is a different sequence from the file number. Uniqueness on `queries` is `(query_ref, query_type_a28)`. Acuranzo's caller-facing refs stay the small numbers already shipped (102, 154, and the rest). Argent's caller-facing refs are 2000–2999, the same range as Argent's file numbers. The same integer may be both. The query type tells them apart. A later pack on this database uses its migration thousand the same way.
 
-Lookup ids on this shared database are their own sequence. Acuranzo keeps 0–199 (68 families seeded, highest 068). Argent uses 2000–2999, the same range as its file numbers and its caller-facing QueryRefs. The same integer may be all three. The audiences are different: a lookup id is not a migration number and not a QueryRef. A later pack on this database uses its migration thousand (Gaius 3000–3999). One lookup family per migration. The column name is `*_aN` with that id (`status_a2000`). A key may be 0 or negative when that value is meaningful. Seed the family from the design that owns the block.
+Lookup ids on this shared database are their own sequence. Acuranzo keeps 0–199 (68 families seeded, highest 068). Argent uses 2000–2999, the same range as its file numbers and its caller-facing QueryRefs. The same integer may be all three. The audiences are different: a lookup id is not a migration number and not a QueryRef. A later pack on this database uses its migration thousand (Gaius 3000–3999, Courses 4000–4999). Courses caller-facing QueryRefs are 4000–4007, the same range as its file numbers. Lookup 055 keeps family id 055 because that family already existed in Acuranzo. One lookup family per migration. The column name is `*_aN` with that id (`status_a2000`). A key may be 0 or negative when that value is meaningful. Seed the family from the design that owns the block.
 
 ### Non-Negotiable Rules for Every Migration You Generate
 
@@ -508,7 +508,7 @@ Canonical multi-row seed — `INSERT … VALUES (…), (…), (…);` with
 - Forward seed: [`acuranzo_1280.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1280.lua)
   (system mail templates)
 - Similar: [`acuranzo_1281.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1281.lua)
-  (script rows), [`acuranzo_1293.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1293.lua)
+  (script rows), [`courses_4010.lua`](/elements/002-helium/courses/migrations/courses_4010.lua)
   (courses catalog)
 
 ### Lookup Data (Migration 1069)
@@ -556,7 +556,7 @@ That is a **feature**: it proves reverse claimed work that forward never did.
 
 - List every `INSERT`/`CREATE`/`ALTER` in forward; write the inverse only
 - If forward is free-only seed (no prices), reverse deletes courses only —
-  see `acuranzo_1293.lua` (fixed 1.0.3)
+  see `courses_4010.lua` (fixed 1.0.3)
 - Treat SQL0100W on reverse as “fix the migration,” not “fix the driver”
 - A tool `UPDATE` or `DELETE` that can match zero rows hits the same alarm. Hydrogen’s DB2 driver returns that CLI `SQL_NO_DATA` as a failed query. Probe with `SELECT` and skip the write when the probe is empty. `argent_2043.lua` 1.0.1 does this before `ClearLines` unlinks a reconciliation. `argent_2044.lua` 1.0.1 does this before `CompleteReconciliation` sets `cleared = 1`
 
@@ -602,7 +602,7 @@ VALUES
 |--------------|--------------|
 | `FROM (VALUES (…), (…)) AS v(col1, col2, …)` | PostgreSQL-style column list on a `VALUES` derived table — **SQLite** errors with `near "(": syntax error` |
 | `FROM (SELECT … UNION ALL SELECT …) AS v` inside `INSERT…SELECT` | **DB2** often rejects `UNION` in that context (`SQL0104N … UNION … Expected … <table_expr>`) |
-| Bare `SELECT … WHERE NOT EXISTS` without a row source on DB2 | DB2 needs `${DUMMY_TABLE}` (`FROM SYSIBM.SYSDUMMY1`); empty on other engines — see `database_db2.lua` and `acuranzo_1289` / `1290` notes |
+| Bare `SELECT … WHERE NOT EXISTS` without a row source on DB2 | DB2 needs `${DUMMY_TABLE}` (`FROM SYSIBM.SYSDUMMY1`); empty on other engines — see `database_db2.lua` and `acuranzo_1289` / `courses_4007` notes |
 | `WITH RECURSIVE` on DB2 or SQL Server | DB2 returns SQL0104N (unexpected token after `WITH RECURSIVE`). Both engines use `WITH`. PostgreSQL, SQLite, MySQL, MariaDB, and Firebird keep `WITH RECURSIVE`. See **Recursive common table expressions**. |
 | `JOIN ... ON` inside a DB2 recursive CTE | SQL0345N (`SQLSTATE` 42836). The recursive fullselect cannot use an explicit join. Use a comma join and put the condition in `WHERE`. See **Recursive common table expressions**. |
 | `CAST(x AS int)` or `CAST(x AS varchar(n))` on MySQL | MySQL rejects both. Use `signed` and `char(n)`. MariaDB accepts `int` and `varchar(n)`. See **Portable named parameters**. |
@@ -624,16 +624,16 @@ or LOADed-but-not-APPLIED rows keep the old broken `code` until LOAD refreshes.
 
 1. `acuranzo_1280.lua` — multi-row `VALUES` + `${COMMON_VALUES}`
 2. `acuranzo_1281.lua` — multi-row script seeds
-3. `acuranzo_1293.lua` — larger catalog seed (same pattern)
+3. `courses_4010.lua` — larger catalog seed (same pattern)
 4. `docs/He/MACRO_REFERENCE.md` — `${COMMON_FIELDS}`, `${COMMON_VALUES}`, `${DUMMY_TABLE}`
 
 ### Portable named parameters
 
 Hydrogen sends every parameter as text. PostgreSQL uses `PQexecParams` with no type OID, so an uncast marker defaults to `text`. DB2 binds integers as integers and strings as `SQL_CHAR` whose length is the value length. A statement that only runs on PostgreSQL can hide both facts.
 
-**Each name once per statement.** The binder keeps one value per name. On PostgreSQL every use becomes the same `$n`. On DB2, MySQL, MariaDB, SQLite, Firebird, and SQL Server every use becomes `?`, but the value is still bound once, so a second use is an extra marker. `acuranzo_1363.lua` repeats `:Q` and `:SORT`. That shape is for a PostgreSQL query. Do not copy it into SQL that Test 73 or any other engine will execute.
+**Each name once per statement.** The binder keeps one value per name. On PostgreSQL every use becomes the same `$n`. On DB2, MySQL, MariaDB, SQLite, Firebird, and SQL Server every use becomes `?`, but the value is still bound once, so a second use is an extra marker. `courses_4075.lua` repeats `:Q` and `:SORT`. That shape is for a PostgreSQL query. Do not copy it into SQL that Test 73 or any other engine will execute.
 
-**Do not bind Lua nil.** Hydrogen omits a nil named value. Bind `''` or `0`. Store NULL in SQL. `acuranzo_1320.lua` (`NULLIF(:COL, '')`) and `acuranzo_1327.lua` (`NULLIF(:ID, 0)`) are the examples.
+**Do not bind Lua nil.** Hydrogen omits a nil named value. Bind `''` or `0`. Store NULL in SQL. `courses_4033.lua` (`NULLIF(:COL, '')`) and `courses_4040.lua` (`NULLIF(:ID, 0)`) are the examples.
 
 **Do not write a bare `NULL` in `CASE`.** DB2 rejects it as SQL0418N (`SQLSTATE` 42610): an untyped parameter marker or a null value. PostgreSQL types that `CASE` as `text`, then refuses to store it in an integer column (`column "parent_id" is of type integer but expression is of type text`).
 
@@ -652,7 +652,7 @@ END
 NULLIF(CAST(:ORG_SUMMARY AS ${TEXT}), '')
 ```
 
-`${TEXT}` is unbounded `text` on PostgreSQL and SQLite. It is `VARCHAR(250)` on DB2 and `varchar(255)` / `VARCHAR(255)` / `NVARCHAR(255)` on MySQL, MariaDB, Firebird, and SQL Server. A value longer than that engine's `${TEXT}` does not fit this cast. `acuranzo_1363.lua` is the cast example (`CAST(:SORT AS VARCHAR(20))`).
+`${TEXT}` is unbounded `text` on PostgreSQL and SQLite. It is `VARCHAR(250)` on DB2 and `varchar(255)` / `VARCHAR(255)` / `NVARCHAR(255)` on MySQL, MariaDB, Firebird, and SQL Server. A value longer than that engine's `${TEXT}` does not fit this cast. `courses_4075.lua` is the cast example (`CAST(:SORT AS VARCHAR(20))`).
 
 **MySQL cast targets are `signed` and `char(n)`.** `CAST(x AS int)` and `CAST(x AS varchar(n))` are syntax errors on MySQL. `CAST(x AS char(255))` does not pad. MariaDB accepts `int` and `varchar(255)`, so a statement that passed on MariaDB can still fail on MySQL. Set the targets in the migration, not in `database.lua`:
 
@@ -1113,16 +1113,16 @@ These templates provide a starting point for common migration patterns. Copy, mo
 2. Implement forward migration (with state UPDATE to APPLIED inside the code block).
 3. Implement reverse migration (with `${DROP_CHECK}` for tables + state reset to FORWARD).
 4. Add diagram migration (if schema changes) using `object_ref` + `${COMMON_DIAGRAM}`.
-5. Validate locally with `lua database.lua postgresql ...` and the Hydrogen test suite (`test_31_migrations.sh`, `test_32...`, `test_38...`).
+5. Validate locally with `tests/lib/get_migration.sh postgresql acuranzo app 1000` (from the Hydrogen tree, with `HYDROGEN_ROOT` and `HELIUM_ROOT` set) and the Hydrogen test suite (`test_31_migrations.sh`, `test_32...`, `test_38...`).
 6. Run `helium_update.sh` (or `migration_index.sh`) to update documentation.
 7. Commit changes.
 
 ## File Naming
 
 - Format: `{design}_{number}.lua`. The design name is the folder, not the SQL schema. Argent files are `argent_2xxx.lua` and land in the Acuranzo schema.
-- Migration numbers: Acuranzo 1000–1999, Argent 2000–2999, a future Gaius pack on that database 3000–3999. Standalone designs that bootstrap their own `queries` table keep their own series (`helium_4000`, today's `gaius_2000` on the Gaius database).
+- Migration numbers: Acuranzo 1000–1999, Argent 2000–2999, a future Gaius pack on that database 3000–3999. Courses is 4000–4999 and the cut occupies 4000–4075. Standalone designs that bootstrap their own `queries` table keep their own series (today's `gaius_2000` on the Gaius database, `glm_3000` on the GLM database).
 - Take the next number above the highest file already in that thousand. A number at or below that band's high-water mark is skipped. See **Designs, packs, and numbers**.
-- Examples: `acuranzo_1386.lua`, `argent_2002.lua`, `helium_4000.lua`
+- Examples: `acuranzo_1386.lua`, `argent_2002.lua`, `gaius_2000.lua`
 
 ## Testing
 

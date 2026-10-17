@@ -2,7 +2,7 @@
 
 Read this before adding or editing a Helium migration. The numbering rules live in the Migration Creation Guide, section **Designs, packs, and numbers**: [`/docs/He/GUIDE.md`](/docs/He/GUIDE.md). That section wins if this file and the guide ever disagree.
 
-**Last reviewed:** 2026-10-06.
+**Last reviewed:** 2026-10-16.
 
 ## What to read
 
@@ -12,26 +12,27 @@ Read this before adding or editing a Helium migration. The numbering rules live 
 4. [`/docs/He/MACRO_REFERENCE.md`](/docs/He/MACRO_REFERENCE.md) — the only macros you may use.
 5. [`/docs/H/plans/ARGENT_PLAN.md`](/docs/H/plans/ARGENT_PLAN.md) when the work is the Argent pack.
 6. [`/docs/PLANNING.md`](/docs/PLANNING.md) when the work is a phase of a plan.
+7. [`/docs/He/COURSES_MIGRATION.md`](/docs/He/COURSES_MIGRATION.md) when the work is the Courses pack. The pack is cut. Files run through `courses_4075.lua`. The next file is 4076. The next caller-facing QueryRef is 4008.
 
 ## Three numbers
 
 Do not treat these as one sequence.
 
-- **Migration number** is `cfg.MIGRATION`, the file number. Acuranzo is 1000–1999. Argent is 2000–2999. A future Gaius pack on the Acuranzo database is 3000–3999. Take the next number above the highest file already in that thousand. The forward, reverse, and diagram rows store that number in the `query_ref` column. Hydrogen tracks AVAIL, LOAD, and APPLY once per thousand the payload ships. A thousand left out of the payload is not migrated. Inside one thousand, a file at or below that band's high-water mark is skipped.
+- **Migration number** is `cfg.MIGRATION`, the file number. Acuranzo is 1000–1999. Argent is 2000–2999. A future Gaius pack on the Acuranzo database is 3000–3999. Courses is 4000–4999. The cut occupies 4000–4075, so the next file is 4076. Caller-facing QueryRefs already used are 4000–4007. The inventory is [`/docs/He/COURSES_MIGRATION.md`](/docs/He/COURSES_MIGRATION.md). Take the next number above the highest file already in that thousand. The forward, reverse, and diagram rows store that number in the `query_ref` column. Hydrogen tracks AVAIL, LOAD, and APPLY once per thousand the payload ships. A thousand left out of the payload is not migrated. Inside one thousand, a file at or below that band's high-water mark is skipped.
 - **`query_id`** is `MAX(query_id)+1` on the shared `queries` table. No design owns a range.
-- **Caller-facing QueryRef** is `cfg.QUERY_REF`, one per migration, in the migration that installs it. It is a different sequence from the file number. `acuranzo_1232.lua` is migration 1232 and installs QueryRef 102. Uniqueness is `(query_ref, query_type_a28)`. Argent's caller-facing refs are 2000–2999, the same range as its file numbers. The same integer may be both. The query type tells them apart.
+- **Caller-facing QueryRef** is `cfg.QUERY_REF`, one per migration, in the migration that installs it. It is a different sequence from the file number. `acuranzo_1232.lua` is migration 1232 and installs QueryRef 102. Uniqueness is `(query_ref, query_type_a28)`. Argent's caller-facing refs are 2000–2999, the same range as its file numbers. Courses caller-facing refs are 4000–4007, the same range as its file numbers. The same integer may be a file number and a QueryRef. The query type tells them apart.
 
-Lookup ids on the Acuranzo database are a fourth sequence. Acuranzo keeps 0–199. Argent uses 2000–2999, the same range as its file numbers and its caller-facing QueryRefs. The same integer may be a file number, a QueryRef, and a lookup id. A later pack uses its migration thousand. One lookup family per migration. The column name is `*_aN` (`status_a2000`). A key may be 0 or negative when that value is meaningful.
+Lookup ids on the Acuranzo database are a fourth sequence. Acuranzo keeps 0–199. Argent uses 2000–2999, the same range as its file numbers and its caller-facing QueryRefs. Courses uses 4000–4999 the same way. The same integer may be a file number, a QueryRef, and a lookup id. Lookup 055 keeps family id 055 because that family already existed in Acuranzo. One lookup family per migration. The column name is `*_aN` (`status_a2000`). A key may be 0 or negative when that value is meaningful.
 
 ## Packs
 
 Argent is an optional pack on the Acuranzo database. Same connection, same schema, same `queries`, `lookups`, and `scripts`. It adds rows and domain tables. It does not create those three tables.
 
-Allowed payloads are `PAYLOAD:acuranzo` and `PAYLOAD:acuranzo+argent`. Later, `PAYLOAD:acuranzo+gaius` and `PAYLOAD:acuranzo+gaius+argent`. Argent alone and Gaius alone are rejected.
+The full suite is `PAYLOAD:acuranzo+courses+argent`. `PAYLOAD:acuranzo` and `PAYLOAD:acuranzo+argent` stay valid and omit Courses. Later, `PAYLOAD:acuranzo+gaius` and a list that also names Gaius. Argent, Courses, or Gaius alone is rejected. The archive rebuilt by `mka` on 2026-10-16 contains the Courses files. Tests 32–40, 62, and 73, and the SchemaTool wrappers, use the full suite. A database that already applied the old 1xxx course files must be rebuilt before this pack is applied.
 
 The folder `elements/002-helium/gaius/` still bootstraps its own database in `gaius_2000.lua`. That tree is not the 3xxx pack. Do not apply it onto Acuranzo, and do not edit it into the pack.
 
-Each design keeps its own `database.lua` and `database_<engine>.lua`. The loader reads the copy beside the migration file. Argent's copies stay.
+One copy of `database.lua` and `database_<engine>.lua` lives in [`/elements/002-helium/helium/`](/elements/002-helium/helium/). It is not a design and it is not under `migrations/`. The payload packs that copy once as `helium/database.lua`. The loader uses a design's own `database.lua` when the payload still contains one. Otherwise it uses the shared copy. Do not put another copy beside a design's migrations.
 
 ## Do not
 

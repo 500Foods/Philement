@@ -119,6 +119,7 @@ vi.mock('../../../../src/managers/login/login.css', () => ({}));
 // ---------------------------------------------------------------------------
 
 import LoginManager from '../../../../src/managers/login/login.js';
+import { log } from '../../../../src/core/log.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -506,5 +507,141 @@ describe('applyPasswordRecentHighlight — Phase 26', () => {
     const submit = document.createElement('button');
     lm.elements.submit = submit;
     expect(() => lm.applyPasswordRecentHighlight({})).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Phase 5: ordered partner logins
+// ---------------------------------------------------------------------------
+
+const CHECKED_IN_PARTNERS = {
+  didit: true,
+  apple: true,
+  google: true,
+  microsoft: true,
+};
+
+function providerEntry(id, label = `Sign in with ${id}`) {
+  return { id, label, image: `/assets/images/login_${id}.png` };
+}
+
+function makePartnerDeps(providers, partners, extra = {}) {
+  return {
+    getConfigValue: (key, def) => {
+      if (key === 'auth.oidc_providers') return providers;
+      if (key === 'login partners') return partners;
+      return def;
+    },
+    startOidc: extra.startOidc ?? vi.fn(),
+    window: extra.window ?? { location: { pathname: '/login', href: '' } },
+    lithiumSettings: extra.lithiumSettings,
+  };
+}
+
+function buttonIds(lm) {
+  return [...lm.elements.altButtonGroup.querySelectorAll('.login-btn-oidc')]
+    .map((btn) => btn.getAttribute('data-provider'));
+}
+
+describe('renderOidcProviders — ordered partners (Phase 5)', () => {
+  beforeEach(() => {
+    document.body.innerHTML = '';
+    log.mockClear();
+  });
+
+  it('renders only 500passwords when partner flags are on and those providers are absent', () => {
+    const lm = makeSubject();
+    lm.renderOidcProviders(makePartnerDeps(oneProviderConfig(), CHECKED_IN_PARTNERS));
+    expect(buttonIds(lm)).toEqual(['500passwords']);
+    expect(log).toHaveBeenCalledWith(
+      'Login',
+      'INFO',
+      'Login partners hidden (no OIDC provider): didit, apple, google, microsoft',
+    );
+  });
+
+  it('omits a partner whose flag is false even when that provider exists', () => {
+    const lm = makeSubject();
+    const providers = [
+      providerEntry('google', 'Sign in with Google'),
+      ...oneProviderConfig(),
+    ];
+    const partners = { didit: true, apple: true, google: false, microsoft: true };
+    lm.renderOidcProviders(makePartnerDeps(providers, partners));
+    expect(buttonIds(lm)).toEqual(['500passwords']);
+    expect(lm.elements.altButtonGroup.querySelector('[data-provider="google"]')).toBeNull();
+  });
+
+  it('calls startOidc with the partner id and records oidc:<id> when the flag is on', () => {
+    const lm = makeSubject();
+    const startFn = vi.fn();
+    const settings = { get: vi.fn(() => null), set: vi.fn() };
+    const providers = [
+      providerEntry('google', 'Sign in with Google'),
+      ...oneProviderConfig(),
+    ];
+    lm.renderOidcProviders(makePartnerDeps(providers, { google: true }, {
+      startOidc: startFn,
+      lithiumSettings: settings,
+    }));
+    const btn = lm.elements.altButtonGroup.querySelector('[data-provider="google"]');
+    btn.click();
+    expect(startFn).toHaveBeenCalledOnce();
+    expect(startFn.mock.calls[0][0]).toBe('google');
+    expect(settings.set).toHaveBeenCalledWith('auth.last_method', 'oidc:google');
+  });
+
+  it('orders Didit, Apple, Google, Microsoft, then other OIDC providers', () => {
+    const lm = makeSubject();
+    const providers = [
+      ...oneProviderConfig(),
+      providerEntry('microsoft', 'Sign in with Microsoft'),
+      providerEntry('google', 'Sign in with Google'),
+      providerEntry('didit', 'Sign in with Didit'),
+      providerEntry('apple', 'Sign in with Apple'),
+    ];
+    lm.renderOidcProviders(makePartnerDeps(providers, CHECKED_IN_PARTNERS));
+    expect(buttonIds(lm)).toEqual([
+      'didit', 'apple', 'google', 'microsoft', '500passwords',
+    ]);
+  });
+
+  it('adds is-recent only to the partner whose oidc:<id> was stored', () => {
+    const lm = makeSubject();
+    const settings = {
+      get: vi.fn((key) => (key === 'auth.last_method' ? 'oidc:google' : null)),
+      set: vi.fn(),
+    };
+    const providers = [
+      providerEntry('google', 'Sign in with Google'),
+      ...oneProviderConfig(),
+    ];
+    lm.renderOidcProviders(makePartnerDeps(providers, { google: true }, {
+      lithiumSettings: settings,
+    }));
+    const google = lm.elements.altButtonGroup.querySelector('[data-provider="google"]');
+    const passwords = lm.elements.altButtonGroup.querySelector('[data-provider="500passwords"]');
+    expect(google.classList.contains('is-recent')).toBe(true);
+    expect(passwords.classList.contains('is-recent')).toBe(false);
+  });
+
+  it('removes a stale template partner button', () => {
+    const elements = makeDomElements();
+    const stale = document.createElement('button');
+    stale.id = 'didit-btn';
+    stale.type = 'button';
+    elements.altButtonGroup.appendChild(stale);
+    const lm = makeSubject(elements);
+    lm.renderOidcProviders(makePartnerDeps(oneProviderConfig(), CHECKED_IN_PARTNERS));
+    expect(lm.elements.altButtonGroup.querySelector('#didit-btn')).toBeNull();
+    expect(buttonIds(lm)).toEqual(['500passwords']);
+  });
+
+  it('does not duplicate buttons when render runs twice', () => {
+    const lm = makeSubject();
+    const deps = makePartnerDeps(oneProviderConfig(), CHECKED_IN_PARTNERS);
+    lm.renderOidcProviders(deps);
+    lm.renderOidcProviders(deps);
+    expect(buttonIds(lm)).toEqual(['500passwords']);
   });
 });

@@ -6,6 +6,7 @@
 
 import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
+import { confirmDialog } from '../../shared/confirm.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 
 // Constants
@@ -294,7 +295,7 @@ export class NavigationManager {
           QUERYTYPE: rowData.query_type_a28 ?? 1,
           QUERYDIALECT: rowData.query_dialect_a30 ?? 1,
           QUERYSTATUS: rowData.query_status_a27 ?? 1,
-          USERID: mgr.app?.user?.id ?? 0,
+          USERID: mgr.app?.auth?.user?.id ?? 0,
           QUERYREF: parseInt(rowData.query_ref, 10) || 0,
         },
         STRING: {
@@ -347,7 +348,15 @@ export class NavigationManager {
     const pkValue = row.getData()[this.manager.primaryKeyField];
     const rowName = row.getData()?.name || '';
 
-    if (!window.confirm(rowName ? `Delete "${rowName}"?\n\nThis action cannot be undone.` : 'Delete this row?\n\nThis action cannot be undone.')) return;
+    const confirmed = await confirmDialog({
+      title: 'Delete row',
+      message: rowName
+        ? `Delete "${rowName}"?\n\nThis action cannot be undone.`
+        : 'Delete this row?\n\nThis action cannot be undone.',
+      confirmLabel: 'Delete',
+      danger: true,
+    });
+    if (!confirmed) return;
 
     const deleteRef = this.manager.queryRefs?.deleteQueryRef;
     if (deleteRef && pkValue != null) {
@@ -475,7 +484,7 @@ export class NavigationManager {
           QUERYTYPE: rowData.query_type_a28 ?? 1,
           QUERYDIALECT: rowData.query_dialect_a30 ?? 1,
           QUERYSTATUS: rowData.query_status_a27 ?? 1,
-          USERID: mgr.app?.user?.id ?? 0,
+          USERID: mgr.app?.auth?.user?.id ?? 0,
           QUERYREF: parseInt(rowData.query_ref, 10) || 0,
         },
         STRING: {

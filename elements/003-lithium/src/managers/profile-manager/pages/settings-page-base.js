@@ -39,6 +39,7 @@ export class BaseSettingsPage {
 
     // Override in subclasses to perform setup
     await this.onInit();
+    this.disableSaveControls();
 
     log(Subsystems.MANAGER, Status.DEBUG, `[SettingsPage] Initialized page ${this.index}`);
   }
@@ -76,6 +77,28 @@ export class BaseSettingsPage {
   }
 
   /**
+   * Whether this page persists. Stubs refuse. A real writer overrides this.
+   * @returns {boolean}
+   */
+  canSave() {
+    return false;
+  }
+
+  /**
+   * Disable in-page Save buttons when this page cannot persist.
+   */
+  disableSaveControls() {
+    if (this.canSave() !== false || !this.container) return;
+    this.container.querySelectorAll('button').forEach((button) => {
+      const id = (button.id || '').toLowerCase();
+      const label = (button.textContent || '').trim().toLowerCase();
+      if (id.includes('save') || label === 'save') {
+        button.disabled = true;
+      }
+    });
+  }
+
+  /**
    * Mark the page as dirty/clean
    * @param {boolean} dirty
    */
@@ -90,9 +113,8 @@ export class BaseSettingsPage {
    * @returns {Promise<Object>}
    */
   async save() {
-    // Override in subclass
-    this.setDirty(false);
-    return { success: true };
+    log(Subsystems.MANAGER, Status.WARN, `[SettingsPage] Save refused for page ${this.index}`);
+    return { success: false, message: 'Save is not available for this page' };
   }
 
   /**
@@ -280,14 +302,9 @@ export class SimpleSettingsPage extends BaseSettingsPage {
   }
 
   /**
-   * Save the form data
+   * Stubs inherit BaseSettingsPage.save, which refuses and stays dirty.
+   * A page that persists overrides save() and canSave().
    */
-  async save() {
-    const data = this.getFormData(this.formSelector);
-    // Override in subclass to save to settings service
-    this.setDirty(false);
-    return { success: true, data };
-  }
 
   /**
    * Cancel changes and reload data

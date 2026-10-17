@@ -40,7 +40,7 @@ Environment resolution happens at config load time. The secret is never written 
 curl -X POST http://localhost:5000/api/conduit/cap_query \
   -H "Content-Type: application/json" \
   -d '{
-    "query_ref": 85,
+    "query_ref": 4000,
     "database": "Demo_PG",
     "chachaToken": "<cap-response-token>",
     "chachaSite": "<site-id>",
@@ -65,7 +65,7 @@ curl -X POST http://localhost:5000/api/conduit/cap_query \
 ```json
 {
   "success": true,
-  "query_ref": 85,
+  "query_ref": 4000,
   "database": "Demo_PG",
   "rows": [
     {"id": 1}
@@ -82,7 +82,7 @@ When the Cap siteverify endpoint returns a transient failure (HTTP 5xx or networ
 {
   "success": true,
   "cap_fallback": true,
-  "query_ref": 85,
+  "query_ref": 4000,
   "database": "Demo_PG",
   "rows": [],
   "row_count": 0
@@ -140,7 +140,7 @@ The blackbox script `tests/test_56_cap_query.sh` exercises both negative and pos
 ./tests/test_56_cap_query.sh
 ```
 
-Negative paths verify `CAP_TOKEN_MISSING` and `CAP_VERIFY_FAILED`. Positive paths use the Cap fallback path (an unreachable `CHACHA_SERVER`) to execute protected INSERT queries QueryRef #085 (course suggestions) and QueryRef #086 (contact submissions) without requiring a real browser-solved token.
+Negative paths verify `CAP_TOKEN_MISSING` and `CAP_VERIFY_FAILED`. Positive paths use the Cap fallback path (an unreachable `CHACHA_SERVER`) to execute protected INSERT queries QueryRef #4000 (course suggestions) and QueryRef #086 (contact submissions) without requiring a real browser-solved token.
 
 ### Forcing a fallback
 

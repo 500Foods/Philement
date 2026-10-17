@@ -4,9 +4,10 @@
 # Sets connection env vars from the Test 40 Firebird config and calls schematool.sh.
 # Engine-specific env: FIREBIRD_DB_PATH_DEMO, FIREBIRD_SYSDBA_PASSWORD
 # Schema:             (empty - Firebird uses database file isolation)
-# Design:             acuranzo+argent
+# Design:             acuranzo+courses+argent
 #
 # CHANGELOG
+# 1.3.1 - 2026-10-16 - Full suite acuranzo+courses+argent
 # 1.3.0 - 2026-10-07 - Payload acuranzo+argent in one run
 # 1.2.0 - 2026-10-07 - Renamed from schematool_firebird.sh; --database is FIREBIRD_DB_PATH_DEMO
 # 1.1.2 - 2026-09-22 - Prefer FIREBIRD_DB_PATH_DEMO (fallback TEST, then deprecated singular)
@@ -50,7 +51,7 @@ fi
 
 exec "${SCHEMATOOL}" \
     --migrations "${MIGRATIONS_DIR}" \
-    --design acuranzo+argent \
+    --design acuranzo+courses+argent \
     --engine firebird \
     --database "${FIREBIRD_DB_PATH_DEMO}" \
     --schema "" \

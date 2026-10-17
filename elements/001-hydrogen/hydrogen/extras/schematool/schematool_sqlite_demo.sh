@@ -4,9 +4,10 @@
 # Sets connection params from the Test 40 SQLite config and calls schematool.sh.
 # Database:           tests/artifacts/database/sqlite/hydrodemo.sqlite
 # Schema:             (empty — SQLite has no schema prefix)
-# Design:             acuranzo+argent
+# Design:             acuranzo+courses+argent
 #
 # CHANGELOG
+# 1.3.1 - 2026-10-16 - Full suite acuranzo+courses+argent
 # 1.3.0 - 2026-10-07 - Payload acuranzo+argent in one run
 # 1.2.0 - 2026-10-07 - Renamed from schematool_sqlite.sh
 # 1.1.0 - 2026-08-22 - Resolve sibling schematool.sh, then HYDROGEN_ROOT
@@ -37,7 +38,7 @@ export SCHEMATOOL_DB_SCHEMA=""
 
 exec "${SCHEMATOOL}" \
     --migrations "${MIGRATIONS_DIR}" \
-    --design acuranzo+argent \
+    --design acuranzo+courses+argent \
     --engine sqlite \
     --database "${SQLITE_DB}" \
     --schema "" \

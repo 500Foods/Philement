@@ -7,6 +7,7 @@
  */
 
 import { log, Subsystems, Status } from '../../../core/log.js';
+import { toast } from '../../../shared/toast.js';
 import { BaseSettingsPage, SimpleSettingsPage } from './settings-page-base.js';
 
 // Import all internal page handlers statically for Vite compatibility
@@ -378,7 +379,17 @@ export class SettingsPageRegistry {
       if (handler?.isDirty?.() && handler?.save) {
         try {
           const result = await handler.save();
-          results.push({ index, success: true, result });
+          if (result?.success === false) {
+            log(Subsystems.MANAGER, Status.WARN, `[PageRegistry] Save refused for page ${index}`);
+            toast.error('Save unavailable', {
+              description: result.message || 'This page cannot be saved',
+              subsystem: 'Profile',
+              duration: 5000,
+            });
+            results.push({ index, success: false, result });
+          } else {
+            results.push({ index, success: true, result });
+          }
         } catch (error) {
           results.push({ index, success: false, error: error.message });
         }

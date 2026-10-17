@@ -25,15 +25,9 @@ in the migrations themselves so that they get populated in the database directly
 
 ## Database Files
 
-| File | Purpose |
-| ------ | --------- |
-| [`database.lua`](migrations/database.lua) | Converts migration files to engine-specific SQL using macros and fancy formatting tricks |
-| [`database_mysql.lua`](migrations/database_mysql.lua) | MySQL-specific database configuration |
-| [`database_postgresql.lua`](migrations/database_postgresql.lua) | PostgreSQL-specific database configuration |
-| [`database_sqlite.lua`](migrations/database_sqlite.lua) | SQLite-specific database configuration |
-| [`database_db2.lua`](migrations/database_db2.lua) | IBM DB2-specific database configuration |
-| [`database_firebird.lua`](migrations/database_firebird.lua) | Firebird-specific database configuration |
-| [`database_mssql.lua`](migrations/database_mssql.lua) | SQL Server-specific database configuration |
+Macro scripts are shared. They live in [`/elements/002-helium/helium/`](/elements/002-helium/helium/): `database.lua` and one `database_<engine>.lua` for PostgreSQL, MySQL, MariaDB, SQLite, DB2, Firebird, and SQL Server. This design does not keep a copy.
+
+The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elements/002-helium/courses/). The retired numbers, and the QueryRefs that moved with them, are the inventory in [`/docs/He/COURSES_MIGRATION.md`](/docs/He/COURSES_MIGRATION.md). `Orchestrators.Orchestrator` stays here: `acuranzo_1210.lua`, and the courses-era patches 1289, 1299, 1343, and 1364. File 1289 also inserts the first `Provision.EnsureCanvasUser`. Later bodies of that script are in the Courses pack.
 
 ## Migrations
 
@@ -127,7 +121,6 @@ in the migrations themselves so that they get populated in the database directly
 | [1085](/elements/002-helium/acuranzo/migrations/acuranzo_1085.lua) | lookups | 1.0.2 | 2026-03-20 | 6 | ✗ | Defaults for Lookup 052 - AI Summary Engines |
 | [1086](/elements/002-helium/acuranzo/migrations/acuranzo_1086.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 053 - Report Object Types |
 | [1087](/elements/002-helium/acuranzo/migrations/acuranzo_1087.lua) | lookups | 1.0.0 | 2025-12-25 | 6 | ✗ | Defaults for Lookup 054 - Report Object Attributes |
-| [1088](/elements/002-helium/acuranzo/migrations/acuranzo_1088.lua) | lookups | 1.0.0 | 2025-12-26 | 6 | ✗ | Defaults for Lookup 055 - Canvas LMS Links |
 | [1089](/elements/002-helium/acuranzo/migrations/acuranzo_1089.lua) | lookups | 1.0.1 | 2026-03-18 | 6 | ✗ | Defaults for Lookup 056 - Acuranzo Systems |
 | [1090](/elements/002-helium/acuranzo/migrations/acuranzo_1090.lua) | lookups | 1.0.0 | 2025-12-26 | 6 | ✗ | Defaults for Lookup 057 - Report Page Sizes |
 | [1091](/elements/002-helium/acuranzo/migrations/acuranzo_1091.lua) | lookups | 1.0.0 | 2025-12-26 | 6 | ✗ | Defaults for Lookup 058 - Query Queues |
@@ -236,8 +229,6 @@ in the migrations themselves so that they get populated in the database directly
 | [1194](/elements/002-helium/acuranzo/migrations/acuranzo_1194.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #083 - OIDC RP: Provision OIDC Account (Phase 17) |
 | [1195](/elements/002-helium/acuranzo/migrations/acuranzo_1195.lua) | queries | 1.0.0 | 2026-05-09 | 4 | ✗ | QueryRef #084 - OIDC RP: Touch OIDC Identity (Phase 17) |
 | [1196](/elements/002-helium/acuranzo/migrations/acuranzo_1196.lua) | lookups | 1.0.0 | 2026-06-24 | 4 | ✗ | Adds key_idx 11 'SQL - Protected' to Lookup 028 - Query Type (Cap Phase 2b) |
-| [1197](/elements/002-helium/acuranzo/migrations/acuranzo_1197.lua) | course_suggestions | 1.0.0 | 2026-06-24 | 8 | ✓ | Creates the course_suggestions table (Cap Phase 2b: Suggest a Course form) |
-| [1198](/elements/002-helium/acuranzo/migrations/acuranzo_1198.lua) | queries | 1.0.0 | 2026-06-24 | 4 | ✗ | QueryRef #085 - Insert Course Suggestion (Cap-protected, slow queue) |
 | [1199](/elements/002-helium/acuranzo/migrations/acuranzo_1199.lua) | contact_submissions | 1.0.0 | 2026-06-24 | 8 | ✓ | Creates the contact_submissions table (Cap Phase 2b: Contact Us form) |
 | [1200](/elements/002-helium/acuranzo/migrations/acuranzo_1200.lua) | queries | 1.0.0 | 2026-06-24 | 4 | ✗ | QueryRef #086 - Insert Contact Submission (Cap-protected, slow queue) |
 | [1201](/elements/002-helium/acuranzo/migrations/acuranzo_1201.lua) | scripts | 1.0.0 | 2026-07-01 | 6 | ✓ | Creates the scripts table for the Hydrogen Scripting Subsystem (Phase 11a) |
@@ -322,87 +313,14 @@ in the migrations themselves so that they get populated in the database directly
 | [1280](/elements/002-helium/acuranzo/migrations/acuranzo_1280.lua) | mail_templates | 1.0.0 | 2026-07-28 | 4 | ✗ | Seed system mail templates (server_started, databases_ready, server_stopped) |
 | [1281](/elements/002-helium/acuranzo/migrations/acuranzo_1281.lua) | scripts | 1.0.0 | 2026-07-28 | 4 | ✗ | Seed Mail.Events.* handler scripts for system mail events |
 | [1282](/elements/002-helium/acuranzo/migrations/acuranzo_1282.lua) | mail_templates | 1.0.0 | 2026-07-28 | 4 | ✗ | Fix system event templates: COUNT/SUMMARY use macro defaults for debounce |
-| [1283](/elements/002-helium/acuranzo/migrations/acuranzo_1283.lua) | account_canvas_links | 1.0.0 | 2026-08-08 | 7 | ✓ | Creates the account_canvas_links table (Band E/F Phase 23/30) |
 | [1284](/elements/002-helium/acuranzo/migrations/acuranzo_1284.lua) | user_registration_meta | 1.0.1 | 2026-08-08 | 6 | ✓ | Creates the user_registration_meta table (Band F Phase 29) |
 | [1285](/elements/002-helium/acuranzo/migrations/acuranzo_1285.lua) | queries | 1.0.0 | 2026-08-08 | 4 | ✗ | QueryRef #143 - OIDC RP: Insert User Registration Meta (Phase 29) |
-| [1286](/elements/002-helium/acuranzo/migrations/acuranzo_1286.lua) | queries | 1.0.0 | 2026-08-08 | 4 | ✗ | QueryRef #144 - Canvas: Lookup Link by Account (Phase 30) |
-| [1287](/elements/002-helium/acuranzo/migrations/acuranzo_1287.lua) | queries | 1.0.0 | 2026-08-08 | 4 | ✗ | QueryRef #145 - Canvas: Link Account to Canvas User (Phase 30) |
-| [1288](/elements/002-helium/acuranzo/migrations/acuranzo_1288.lua) | queries | 1.0.0 | 2026-08-08 | 4 | ✗ | QueryRef #146 - Canvas: Touch Link (Phase 30) |
 | [1289](/elements/002-helium/acuranzo/migrations/acuranzo_1289.lua) | scripts | 1.0.3 | 2026-08-09 | 5 | ✗ | Phase 30: Provision.EnsureCanvasUser Lua + Orchestrator poll driver |
-| [1290](/elements/002-helium/acuranzo/migrations/acuranzo_1290.lua) | scripts | 1.0.4 | 2026-08-08 | 4 | ✗ | Phase 31: intro course enrollment on first Canvas provision |
-| [1291](/elements/002-helium/acuranzo/migrations/acuranzo_1291.lua) | courses | 1.0.0 | 2026-08-08 | 8 | ✓ | Phase 35: courses catalog table (Band G) |
-| [1292](/elements/002-helium/acuranzo/migrations/acuranzo_1292.lua) | course_prices | 1.0.0 | 2026-08-08 | 8 | ✓ | Phase 35: course_prices table (Band G + STRIPE_PLAN Phase 3) |
-| [1293](/elements/002-helium/acuranzo/migrations/acuranzo_1293.lua) | courses | 1.0.3 | 2026-08-09 | 4 | ✗ | Phase 36: seed courses from live Canvas catalog + assets (free; no prices) |
-| [1294](/elements/002-helium/acuranzo/migrations/acuranzo_1294.lua) | queries | 1.0.0 | 2026-08-08 | 4 | ✗ | QueryRef #147 - Courses: List Published (Phase 37) |
-| [1295](/elements/002-helium/acuranzo/migrations/acuranzo_1295.lua) | queries | 1.0.0 | 2026-08-08 | 4 | ✗ | QueryRef #148 - Courses: Get by Slug (Phase 37) |
 | [1296](/elements/002-helium/acuranzo/migrations/acuranzo_1296.lua) | scripts | 1.0.0 | 2026-08-08 | 4 | ✗ | LUA_CLIENT Phase 6: seed Api.Echo fixture for conduit script invoke |
 | [1297](/elements/002-helium/acuranzo/migrations/acuranzo_1297.lua) | scripts | 1.0.1 | 2026-08-09 | 7 | ✗ | LUA_CLIENT Phase 7: scripts.invokable allowlist column + Api.Echo=true |
 | [1298](/elements/002-helium/acuranzo/migrations/acuranzo_1298.lua) | queries | 1.0.0 | 2026-08-08 | 4 | ✗ | QueryRef #149 - Get Invokable Script by Group/Name (LUA_CLIENT Phase 7) |
 | [1299](/elements/002-helium/acuranzo/migrations/acuranzo_1299.lua) | scripts | 1.0.0 | 2026-08-09 | 4 | ✗ | Fix Orchestrator scripts schema + tick/shutdown markers (follow-up to mig 1289) |
-| [1300](/elements/002-helium/acuranzo/migrations/acuranzo_1300.lua) | scripts | 1.0.0 | 2026-08-12 | 4 | ✗ | Phase 49: seed Enroll.FreeCourse (invokable) for Reception free enroll |
-| [1301](/elements/002-helium/acuranzo/migrations/acuranzo_1301.lua) | user_preferences | 1.0.0 | 2026-08-12 | 6 | ✓ | Creates the user_preferences table (Band L Phase 52) |
-| [1302](/elements/002-helium/acuranzo/migrations/acuranzo_1302.lua) | scripts | 1.0.0 | 2026-08-13 | 4 | ✗ | Phase 53: seed Account.GetSettings (invokable) for Reception settings read |
-| [1303](/elements/002-helium/acuranzo/migrations/acuranzo_1303.lua) | scripts | 1.0.0 | 2026-08-13 | 4 | ✗ | Phase 53: seed Account.UpdatePrefs (invokable) for Reception settings write |
-| [1304](/elements/002-helium/acuranzo/migrations/acuranzo_1304.lua) | mail_templates | 1.0.0 | 2026-08-12 | 4 | ✗ | Seed Reception user-notification mail templates (Band L Phase 55) |
-| [1305](/elements/002-helium/acuranzo/migrations/acuranzo_1305.lua) | scripts | 1.0.0 | 2026-08-13 | 4 | ✗ | Phase 56: seed Mail.Notices.CourseExpiration (invokable) for expiring/expired mail |
-| [1306](/elements/002-helium/acuranzo/migrations/acuranzo_1306.lua) | scripts | 1.0.0 | 2026-08-13 | 4 | ✗ | Phase 56 follow-up: rename Mail.Notices / CourseExpiration to first-dot split |
-| [1307](/elements/002-helium/acuranzo/migrations/acuranzo_1307.lua) | user_enrollments | 1.0.0 | 2026-08-13 | 9 | ✓ | Creates the user_enrollments table (Band M Phase 59) |
-| [1308](/elements/002-helium/acuranzo/migrations/acuranzo_1308.lua) | scripts | 1.0.0 | 2026-08-13 | 4 | ✗ | Phase 60: seed Enroll.SyncProgress (invokable) for Canvas progress cache |
-| [1309](/elements/002-helium/acuranzo/migrations/acuranzo_1309.lua) | scripts | 1.0.0 | 2026-08-13 | 4 | ✗ | Phase 61: seed Account.MyCourses (invokable) for Reception My Courses list |
-| [1310](/elements/002-helium/acuranzo/migrations/acuranzo_1310.lua) | accounts | 1.0.0 | 2026-08-13 | 6 | ✗ | Adds accounts.stripe_customer_id (STRIPE_PLAN Phase 1) |
-| [1311](/elements/002-helium/acuranzo/migrations/acuranzo_1311.lua) | orders | 1.0.0 | 2026-08-13 | 8 | ✓ | Creates the orders table (STRIPE_PLAN Phase 1) |
-| [1312](/elements/002-helium/acuranzo/migrations/acuranzo_1312.lua) | scripts | 1.0.0 | 2026-08-13 | 4 | ✗ | STRIPE_PLAN Phase 2: seed Stripe.EnsureCustomer (invokable) |
-| [1313](/elements/002-helium/acuranzo/migrations/acuranzo_1313.lua) | queries | 1.0.0 | 2026-08-13 | 6 | ✗ | STRIPE_PLAN Phase 3: QueryRefs 147/148 SELECT stripe_price_id |
-| [1314](/elements/002-helium/acuranzo/migrations/acuranzo_1314.lua) | scripts | 1.0.0 | 2026-08-13 | 4 | ✗ | STRIPE_PLAN Phase 2 follow-up: seed Stripe.SyncCustomer (invokable) |
-| [1315](/elements/002-helium/acuranzo/migrations/acuranzo_1315.lua) | scripts | 1.0.0 | 2026-08-13 | 4 | ✗ | STRIPE_PLAN Phase 5: seed Stripe.Checkout (invokable) |
-| [1316](/elements/002-helium/acuranzo/migrations/acuranzo_1316.lua) | courses | 1.0.0 | 2026-08-13 | 6 | ✗ | STRIPE_PLAN Phase 3: seed sandbox paid course + course_prices |
-| [1317](/elements/002-helium/acuranzo/migrations/acuranzo_1317.lua) | scripts | 1.0.0 | 2026-08-13 | 4 | ✗ | STRIPE_PLAN Phase 5 follow-up: Stripe.Checkout nil-bind INSERT fix |
-| [1318](/elements/002-helium/acuranzo/migrations/acuranzo_1318.lua) | scripts | 1.0.0 | 2026-08-13 | 4 | ✗ | STRIPE_PLAN Phase 7/8: seed Enroll.PaidCourse (module, not invokable) |
-| [1319](/elements/002-helium/acuranzo/migrations/acuranzo_1319.lua) | scripts | 1.0.0 | 2026-08-13 | 4 | ✗ | STRIPE_PLAN Phase 7: seed Stripe.Webhook (invokable) |
-| [1320](/elements/002-helium/acuranzo/migrations/acuranzo_1320.lua) | scripts | 1.0.0 | 2026-08-17 | 4 | ✗ | PRIORITIZE 2.11: Account.UpdatePrefs empty-optional nil-bind fix |
-| [1321](/elements/002-helium/acuranzo/migrations/acuranzo_1321.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.8: Enroll.FreeCourse writes user_enrollments |
-| [1322](/elements/002-helium/acuranzo/migrations/acuranzo_1322.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.8: Provision.EnsureCanvasUser writes intro user_enrollments |
-| [1323](/elements/002-helium/acuranzo/migrations/acuranzo_1323.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.8: seed Enroll.SyncEnrollments (invokable) Canvas→Helium backfill |
-| [1324](/elements/002-helium/acuranzo/migrations/acuranzo_1324.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.7: seed Enroll.Archive (invokable) hide overlay |
-| [1325](/elements/002-helium/acuranzo/migrations/acuranzo_1325.lua) | enrollment_events | 1.0.0 | 2026-08-20 | 8 | ✓ | PRIORITIZE 2.9: create enrollment_events table |
-| [1326](/elements/002-helium/acuranzo/migrations/acuranzo_1326.lua) | queries | 1.0.0 | 2026-08-20 | 4 | ✗ | QueryRef #150 - Enrolment History lines (PRIORITIZE 2.9) |
-| [1327](/elements/002-helium/acuranzo/migrations/acuranzo_1327.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.9: seed Enroll.LogEvent (module, not invokable) |
-| [1328](/elements/002-helium/acuranzo/migrations/acuranzo_1328.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.9: Enroll.FreeCourse appends enrollment_events |
-| [1329](/elements/002-helium/acuranzo/migrations/acuranzo_1329.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.9: Enroll.PaidCourse appends enrollment_events |
-| [1330](/elements/002-helium/acuranzo/migrations/acuranzo_1330.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.9: Enroll.Archive appends enrollment_events |
-| [1331](/elements/002-helium/acuranzo/migrations/acuranzo_1331.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.9: Provision.EnsureCanvasUser appends enrollment_events |
-| [1332](/elements/002-helium/acuranzo/migrations/acuranzo_1332.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.9: Enroll.SyncEnrollments appends enrollment_events |
-| [1333](/elements/002-helium/acuranzo/migrations/acuranzo_1333.lua) | courses | 1.0.0 | 2026-08-20 | 9 | ✗ | PRIORITIZE 2.29: courses.tags JSON + canvas_updated_at |
-| [1334](/elements/002-helium/acuranzo/migrations/acuranzo_1334.lua) | catalog_events | 1.0.0 | 2026-08-20 | 7 | ✓ | PRIORITIZE 2.29: create catalog_events table |
-| [1335](/elements/002-helium/acuranzo/migrations/acuranzo_1335.lua) | queries | 1.0.0 | 2026-08-20 | 4 | ✗ | QueryRef #151 - Management History lines (PRIORITIZE 2.29) |
-| [1336](/elements/002-helium/acuranzo/migrations/acuranzo_1336.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.29: seed Catalog.LogEvent (module, not invokable) |
-| [1337](/elements/002-helium/acuranzo/migrations/acuranzo_1337.lua) | scripts | 1.0.0 | 2026-08-20 | 4 | ✗ | PRIORITIZE 2.29: seed Catalog.SyncFromCanvas (not invokable) |
-| [1338](/elements/002-helium/acuranzo/migrations/acuranzo_1338.lua) | queries | 1.0.0 | 2026-08-20 | 6 | ✗ | PRIORITIZE 2.29: QueryRefs 147/148 SELECT tags |
-| [1339](/elements/002-helium/acuranzo/migrations/acuranzo_1339.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.27: seed Catalog.GetBySlug (invokable) enrolled unpublished detail |
-| [1340](/elements/002-helium/acuranzo/migrations/acuranzo_1340.lua) | account_canvas_alerts | 1.0.0 | 2026-08-21 | 6 | ✓ | PRIORITIZE 2.1: account_canvas_alerts |
-| [1341](/elements/002-helium/acuranzo/migrations/acuranzo_1341.lua) | mail_templates | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.1: ops.canvas_user_unlinked mail template |
-| [1342](/elements/002-helium/acuranzo/migrations/acuranzo_1342.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.1: replace Provision.EnsureCanvasUser |
 | [1343](/elements/002-helium/acuranzo/migrations/acuranzo_1343.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.1: replace Orchestrators.Orchestrator |
-| [1344](/elements/002-helium/acuranzo/migrations/acuranzo_1344.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.1: replace Enroll.FreeCourse |
-| [1345](/elements/002-helium/acuranzo/migrations/acuranzo_1345.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.34: seed Stripe.EnsureProduct (not invokable) |
-| [1346](/elements/002-helium/acuranzo/migrations/acuranzo_1346.lua) | courses | 1.0.0 | 2026-08-21 | 6 | ✗ | PRIORITIZE 2.35: courses.retired (searchable, not buyable) |
-| [1347](/elements/002-helium/acuranzo/migrations/acuranzo_1347.lua) | queries | 1.0.0 | 2026-08-21 | 6 | ✗ | PRIORITIZE 2.35: QueryRefs 147/148 SELECT retired |
-| [1348](/elements/002-helium/acuranzo/migrations/acuranzo_1348.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.35: Catalog.GetBySlug SELECT retired |
-| [1349](/elements/002-helium/acuranzo/migrations/acuranzo_1349.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.35: seed Catalog.Retire (not invokable) |
-| [1350](/elements/002-helium/acuranzo/migrations/acuranzo_1350.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.35: Stripe.Checkout fail-closed on retired |
-| [1351](/elements/002-helium/acuranzo/migrations/acuranzo_1351.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.35: Enroll.FreeCourse fail-closed on retired |
-| [1352](/elements/002-helium/acuranzo/migrations/acuranzo_1352.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.35: Enroll.PaidCourse fail-closed on retired |
-| [1353](/elements/002-helium/acuranzo/migrations/acuranzo_1353.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.1 leftover: Enroll.PaidCourse Helium-first, find-don't-create |
-| [1354](/elements/002-helium/acuranzo/migrations/acuranzo_1354.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.1 leftover: EnsureCanvasUser projects entitled Canvas seats |
-| [1355](/elements/002-helium/acuranzo/migrations/acuranzo_1355.lua) | orders | 1.0.0 | 2026-08-21 | 12 | ✗ | PRIORITIZE 2.18: orders refund columns |
-| [1356](/elements/002-helium/acuranzo/migrations/acuranzo_1356.lua) | queries | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: QueryRef #150 revoked / unenrolled lines |
-| [1357](/elements/002-helium/acuranzo/migrations/acuranzo_1357.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: seed Enroll.CanvasSeat (module, not invokable) |
-| [1358](/elements/002-helium/acuranzo/migrations/acuranzo_1358.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: Enroll.Archive Canvas unenroll / reenroll |
-| [1359](/elements/002-helium/acuranzo/migrations/acuranzo_1359.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: Enroll.SyncEnrollments Canvas heal |
-| [1360](/elements/002-helium/acuranzo/migrations/acuranzo_1360.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: seed Account.Orders (invokable) |
-| [1361](/elements/002-helium/acuranzo/migrations/acuranzo_1361.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: seed Stripe.Refund (not invokable) |
-| [1362](/elements/002-helium/acuranzo/migrations/acuranzo_1362.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: seed Stripe.DeactivateCustomer (not invokable) |
-| [1363](/elements/002-helium/acuranzo/migrations/acuranzo_1363.lua) | queries | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.19: QueryRef 147 Q / LEVEL / PAID_FREE / TAG / SORT / HIDE_RETIRED |
 | [1364](/elements/002-helium/acuranzo/migrations/acuranzo_1364.lua) | scripts | 1.0.0 | 2026-08-24 | 4 | ✗ | OOM fix: patch Orchestrators.Orchestrator to call H.scoreboard.prune_terminal() each tick |
 | [1365](/elements/002-helium/acuranzo/migrations/acuranzo_1365.lua) | scripts | 1.0.0 | 2026-08-26 | 12 | ✗ | MCP Phase 8: scripts.mcp_access allowlist + mcp_schema / mcp_annotations |
 | [1366](/elements/002-helium/acuranzo/migrations/acuranzo_1366.lua) | queries | 1.0.0 | 2026-08-26 | 4 | ✗ | QueryRef #152 - List MCP Scripts (MCP Phase 8) |
@@ -428,4 +346,4 @@ in the migrations themselves so that they get populated in the database directly
 | [1386](/elements/002-helium/acuranzo/migrations/acuranzo_1386.lua) | queries | 1.0.1 | 2026-10-14 | 4 | ✗ | QueryRef #156 - Transaction Block Smoke |
 | [1387](/elements/002-helium/acuranzo/migrations/acuranzo_1387.lua) | queries | 1.0.1 | 2026-10-14 | 4 | ✗ | QueryRef #157 - Transaction Block Stress |
 | [1388](/elements/002-helium/acuranzo/migrations/acuranzo_1388.lua) | queries | 1.0.1 | 2026-10-14 | 4 | ✗ | QueryRef #158 - Transaction Fixture Cleanup |
-| **389** | | | | **2026** | **389** | |
+| **313** | | | | **1660** | **313** | |

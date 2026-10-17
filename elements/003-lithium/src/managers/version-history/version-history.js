@@ -20,6 +20,7 @@ import { togglePanelCollapse, restorePanelState as restoreCollapsedPanelState } 
 import '../../styles/vendor-tabulator.css';
 import { authQuery } from '../../shared/conduit.js';
 import { log, Subsystems, Status } from '../../core/log.js';
+import { escapeHtml, sanitizeHtml } from '../../core/utils.js';
 import { processIcons } from '../../core/icons.js';
 import { expandMacros } from '../../core/macro-expansion.js';
 import { getMacros } from '../../shared/lookups.js';
@@ -611,47 +612,61 @@ export default class VersionHistoryManager {
       // Expand macros in status as well
       let status = this.expandContentMacros(this.selectedVersionData.value_txt) || 'Unknown';
 
-      let htmlContent = '';
+      const rendered = document.createElement('div');
+      rendered.className = 'version-preview-rendered';
+
+      const header = document.createElement('div');
+      header.className = 'version-preview-header';
+      const heading = document.createElement('h2');
+      heading.textContent = status == null ? '' : String(status);
+      header.appendChild(heading);
+      if (released || focus) {
+        const meta = document.createElement('div');
+        meta.className = 'version-meta';
+        if (released) {
+          const releasedItem = document.createElement('span');
+          releasedItem.className = 'version-meta-item';
+          releasedItem.textContent = `Released: ${released}`;
+          meta.appendChild(releasedItem);
+        }
+        if (focus) {
+          const focusItem = document.createElement('span');
+          focusItem.className = 'version-meta-item';
+          focusItem.textContent = `Focus: ${focus}`;
+          meta.appendChild(focusItem);
+        }
+        header.appendChild(meta);
+      }
+      rendered.appendChild(header);
 
       if (summary) {
         const contentType = this.detectContentType(summary);
-
         if (contentType === 'html') {
-          htmlContent = summary;
+          const body = document.createElement('div');
+          body.innerHTML = sanitizeHtml(summary);
+          rendered.appendChild(body);
         } else if (marked) {
-          htmlContent = marked.parse(summary);
+          const body = document.createElement('div');
+          body.innerHTML = sanitizeHtml(marked.parse(summary));
+          rendered.appendChild(body);
         } else {
-          htmlContent = `<pre style="white-space: pre-wrap;">${this.escapeHtml(summary)}</pre>`;
+          const pre = document.createElement('pre');
+          pre.className = 'version-preview-plain';
+          pre.innerHTML = escapeHtml(summary);
+          rendered.appendChild(pre);
         }
       } else {
-        htmlContent = '<p class="version-preview-placeholder">No summary available for this version</p>';
+        const empty = document.createElement('p');
+        empty.className = 'version-preview-placeholder';
+        empty.textContent = 'No summary available for this version';
+        rendered.appendChild(empty);
       }
 
-      // Build header with status and metadata
-      const versionHeader = `
-        <div class="version-preview-header">
-          <h2>${this.escapeHtml(status)}</h2>
-          <div class="version-meta">
-            ${released ? `<span class="version-meta-item">Released: ${released}</span>` : ''}
-            ${focus ? `<span class="version-meta-item">Focus: ${focus}</span>` : ''}
-          </div>
-        </div>
-      `;
-
-      this.elements.previewContent.innerHTML = `<div class="version-preview-rendered">${versionHeader}${htmlContent}</div>`;
+      this.elements.previewContent.replaceChildren(rendered);
     } catch (error) {
       log(Subsystems.MANAGER, Status.ERROR, `[VersionHistory] Failed to update preview: ${error.message}`);
       this.elements.previewContent.innerHTML = '<p class="version-preview-placeholder">Error rendering preview</p>';
     }
-  }
-
-  escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML
-      .replace(/</g, '<')
-      .replace(/>/g, '>')
-      .replace(/\n/g, '<br>');
   }
 
   // ── Splitter Logic ─────────────────────────────────────────────────────────

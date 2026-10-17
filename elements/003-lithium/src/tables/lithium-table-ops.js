@@ -14,6 +14,7 @@
 
 import { authQuery } from '../shared/conduit.js';
 import { toast } from '../shared/toast.js';
+import { confirmDialog } from '../shared/confirm.js';
 import { log, Subsystems, Status } from '../core/log.js';
 
 // ── Mixin for CRUD Operations ───────────────────────────────────────────────
@@ -257,12 +258,14 @@ export const LithiumTableOpsMixin = {
     const selectedId = selected[0].getData()?.[pkField];
     const rowName = selected[0].getData()?.name || '';
 
-    // Confirm deletion
-    const confirmed = window.confirm(
-      rowName
+    const confirmed = await confirmDialog({
+      title: 'Delete row',
+      message: rowName
         ? `Delete "${rowName}" (${pkField}: ${selectedId})?\n\nThis action cannot be undone.`
-        : `Are you sure you want to delete this row?\n\nThis action cannot be undone.`
-    );
+        : 'Are you sure you want to delete this row?\n\nThis action cannot be undone.',
+      confirmLabel: 'Delete',
+      danger: true,
+    });
 
     if (!confirmed) return;
 

@@ -210,6 +210,19 @@ import { SettingsPageRegistry } from './pages/page-registry.js';
   }
 
   /**
+   * Whether the visible settings page may enable the footer Save button.
+   * A page with no canSave method may save. A stub returns false.
+   * @returns {boolean}
+   */
+  currentCanSave() {
+    const handler = this._pageRegistry?.getLoadedHandler(this.currentPageIndex);
+    if (!handler || typeof handler.canSave !== 'function') {
+      return true;
+    }
+    return handler.canSave() !== false;
+  }
+
+  /**
    * Reset/cancel changes on all pages
    */
   cancel() {

@@ -8,7 +8,7 @@
 import { authQuery } from '../../shared/conduit.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { eventBus, Events } from '../../core/event-bus.js';
-import { processIcons } from '../../core/icons.js';
+import { processIcons, appendTextWithIcons } from '../../core/icons.js';
 import { expandMacros, hasMacros } from '../../core/macro-expansion.js';
 import { getMacros } from '../../shared/lookups.js';
 import { offset, flip, shift } from '@floating-ui/dom';
@@ -2285,7 +2285,7 @@ export async function launchVideoTour(tour, options = {}) {
           captionEl = document.createElement('div');
           captionEl.className = 'lithium-video-tour-caption';
           captionEl.dataset.index = caption.index;
-          captionEl.innerHTML = caption.text;
+          appendTextWithIcons(captionEl, caption.text);
           captionsContainer.appendChild(captionEl);
           
           // Process icons in caption (e.g., <fa fa-party-horn></fa>)

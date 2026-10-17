@@ -224,13 +224,10 @@ rm test_lua.lua
 ### Migration Processing Test
 
 ```bash
-# Try processing a simple migration
-cd elements/002-helium
-lua acuranzo/migrations/database.lua \
-  postgresql \
-  acuranzo \
-  public \
-  < acuranzo/migrations/acuranzo_1024.lua
+# Expand one migration. Needs HYDROGEN_ROOT and HELIUM_ROOT.
+# Arguments: engine, design, schema, migration number.
+cd elements/001-hydrogen/hydrogen
+tests/lib/get_migration.sh postgresql acuranzo app 1024
 ```
 
 ## Troubleshooting

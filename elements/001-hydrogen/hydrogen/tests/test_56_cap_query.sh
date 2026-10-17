@@ -7,6 +7,7 @@
 # required in CI.
 
 # CHANGELOG
+# 1.3.2 - 2026-10-16 - Course suggestion positive path uses QueryRef 4000
 # 1.3.1 - 2026-10-01 - Eighth engine: MSSQL (Demo_MS, schema demoms)
 # 1.3.0 - 2026-07-15 - Use dedicated config (hydrogen_test_56_cap_query.json) on port 5560 to avoid colliding with test 50/51 on port 5500 in the 5x parallel batch
 # 1.2.0 - 2026-06-28 - Added queue_used == "slow" assertion for protected INSERT success cases
@@ -20,7 +21,7 @@ TEST_NAME="Conduit Cap Query"
 TEST_ABBR="CCQ"
 TEST_NUMBER="56"
 TEST_COUNTER=0
-TEST_VERSION="1.3.1"
+TEST_VERSION="1.3.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"

@@ -6,6 +6,15 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { LanguagePanel } from '../../../../src/managers/login/login-language-panel.js';
+import { toast } from '../../../../src/shared/toast.js';
+
+vi.mock('../../../../src/shared/toast.js', () => ({
+  toast: {
+    error: vi.fn(),
+    success: vi.fn(),
+    info: vi.fn(),
+  },
+}));
 
 // Mock the log module
 vi.mock('../../../../src/core/log.js', () => ({
@@ -256,14 +265,14 @@ describe('LanguagePanel', () => {
     });
 
     it('should handle ArrowDown', () => {
-      const event = new KeyboardEvent('keydown', { key: 'ArrowDown' });
+      const event = new window.KeyboardEvent('keydown', { key: 'ArrowDown' });
       const preventDefault = vi.spyOn(event, 'preventDefault');
       panel._handleKeydown(event);
       expect(preventDefault).toHaveBeenCalled();
     });
 
     it('should handle ArrowUp', () => {
-      const event = new KeyboardEvent('keydown', { key: 'ArrowUp' });
+      const event = new window.KeyboardEvent('keydown', { key: 'ArrowUp' });
       const preventDefault = vi.spyOn(event, 'preventDefault');
       panel._handleKeydown(event);
       expect(preventDefault).toHaveBeenCalled();
@@ -272,7 +281,7 @@ describe('LanguagePanel', () => {
     it('should handle Enter to select current row', () => {
       // Select a row first
       panel._languageTable._selectedRows = [panel._languageData[1]];
-      const event = new KeyboardEvent('keydown', { key: 'Enter' });
+      const event = new window.KeyboardEvent('keydown', { key: 'Enter' });
       const preventDefault = vi.spyOn(event, 'preventDefault');
       panel._handleKeydown(event);
       expect(preventDefault).toHaveBeenCalled();
@@ -280,7 +289,7 @@ describe('LanguagePanel', () => {
     });
 
     it('should ignore unhandled keys', () => {
-      const event = new KeyboardEvent('keydown', { key: 'a' });
+      const event = new window.KeyboardEvent('keydown', { key: 'a' });
       const preventDefault = vi.spyOn(event, 'preventDefault');
       panel._handleKeydown(event);
       expect(preventDefault).not.toHaveBeenCalled();
@@ -299,9 +308,8 @@ describe('LanguagePanel', () => {
     });
   });
 
-  describe('fallback rendering', () => {
-    it('should render fallback on table error', async () => {
-      // Force Tabulator to throw by temporarily breaking the mock
+  describe('table init error', () => {
+    it('shows a text failure and a toast when the table cannot start', async () => {
       const { TabulatorFull } = await import('tabulator-tables');
       TabulatorFull.mockImplementationOnce(() => {
         throw new Error('Tabulator fail');
@@ -311,7 +319,9 @@ describe('LanguagePanel', () => {
       panel.elements.languageTable = container;
       await panel.init();
 
-      expect(container.querySelectorAll('.language-item-fallback').length).toBe(3);
+      expect(container.querySelector('.language-item-fallback')).toBeNull();
+      expect(container.textContent).toBe('Language list failed to load');
+      expect(toast.error).toHaveBeenCalled();
     });
   });
 });

@@ -9,26 +9,17 @@ Allowed packs on that database:
 - Acuranzo + Gaius (1xxx, then 3xxx) — Gaius pack is later
 - Acuranzo + Gaius + Argent
 
-Gaius alone and Argent alone are refused. The on-disk `elements/002-helium/gaius/` tree still bootstraps its own `queries` table at `gaius_2000.lua`. That file is not this pack. When Gaius joins the Acuranzo database, that pack is numbered 3xxx. GLM and the Helium printing design stay on their own databases.
+Gaius alone and Argent alone are refused. The on-disk `elements/002-helium/gaius/` tree still bootstraps its own `queries` table at `gaius_2000.lua`. That file is not this pack. When Gaius joins the Acuranzo database, that pack is numbered 3xxx. GLM stays on its own database. The `helium/` folder is the shared macro scripts, not a design.
 
 Primary target is PostgreSQL 15+ via YugabyteDB. Authoritative guidance is in `/docs/He/GUIDE.md`, `/docs/He/MIGRATION_ANATOMY.md`, and `/docs/He/MACRO_REFERENCE.md`. The plan is [`/docs/H/plans/ARGENT_PLAN.md`](/docs/H/plans/ARGENT_PLAN.md).
 
-`database*.lua` here is a copy of the Acuranzo macro set (including MariaDB and MSSQL). The copy stays. The payload packs it as `argent/database*.lua`, and the loader uses that copy when it runs an `argent_*.lua` file.
+Argent loads the shared macro scripts in [`/elements/002-helium/helium/`](/elements/002-helium/helium/). The payload packs that one copy as `helium/database.lua`. Argent does not keep its own.
 
 Lookup ids **2000–2999** are Argent's block on the shared `lookups` table, the same range as Argent's migration numbers and caller-facing QueryRefs. The same integer may be all three. `organizations.status_a2000` is lookup 2000. `ledgers.ledger_type_a2001` is lookup 2001 (asset, liability, equity, income, expense). `ledgers.status_a2002` is lookup 2002 (open, closed, archive). Lookups 2000–2002 are seeded by `argent_2002.lua` through `argent_2004.lua`. Lookup 2005 is `argent_2005.lua`. Lookups 2003, 2004, and 2011 are `argent_2009.lua`, `argent_2010.lua`, and `argent_2011.lua`. QueryRef 2000 is `argent_2014.lua`. Lookup 2006 is `argent_2015.lua`. Lookups 2007 and 2008 are `argent_2017.lua` and `argent_2018.lua`. Lookup 2012 is `argent_2020.lua`. QueryRef 2001 is `argent_2022.lua`. Lookups 2009 and 2010 are `argent_2025.lua` and `argent_2026.lua`. See [`/docs/H/plans/ARGENT_PLAN.md`](/docs/H/plans/ARGENT_PLAN.md).
 
 ## Database Files
 
-| File | Purpose |
-| ------ | --------- |
-| [`database.lua`](migrations/database.lua) | Converts migration files to engine-specific SQL using macros and fancy formatting tricks |
-| [`database_mysql.lua`](migrations/database_mysql.lua) | MySQL-specific database configuration |
-| [`database_mariadb.lua`](migrations/database_mariadb.lua) | MariaDB-specific database configuration |
-| [`database_postgresql.lua`](migrations/database_postgresql.lua) | PostgreSQL-specific database configuration |
-| [`database_sqlite.lua`](migrations/database_sqlite.lua) | SQLite-specific database configuration |
-| [`database_db2.lua`](migrations/database_db2.lua) | IBM DB2-specific database configuration |
-| [`database_firebird.lua`](migrations/database_firebird.lua) | Firebird-specific database configuration |
-| [`database_mssql.lua`](migrations/database_mssql.lua) | MS SQL Server-specific database configuration |
+Macro scripts are shared. They live in [`/elements/002-helium/helium/`](/elements/002-helium/helium/): `database.lua` and one `database_<engine>.lua` for PostgreSQL, MySQL, MariaDB, SQLite, DB2, Firebird, and SQL Server. This design does not keep a copy.
 
 ## Migrations
 

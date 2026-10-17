@@ -8,10 +8,12 @@
 --   lua schematool_expect.lua <migrations_dir> <engine> <design> <schema> --all [from] [to]
 --
 -- <design> is one name or a plus-list (acuranzo+argent). Each design loads
--- the database.lua beside its own migration files. Prints one JSON object
--- (single ref) or a JSON array (--all), sorted by ref.
+-- the shared database.lua in elements/002-helium/helium. Prints one JSON
+-- object (single ref) or a JSON array (--all), sorted by ref.
 --
 -- CHANGELOG
+-- 1.3.0 - 2026-10-16 - Record DDL that runs before the metadata INSERT
+-- 1.2.0 - 2026-10-16 - Load database.lua from the shared helium folder
 -- 1.1.0 - 2026-10-07 - Plus-list payload; reload database.lua per design
 -- 1.0.4 - 2026-10-07 - Stderr names the dialect: engine=<name>
 -- 1.0.3 - 2026-09-08 - Stderr: expect N/M ref R name=<text>
@@ -65,17 +67,33 @@ end
 
 local db_by_dir = {}
 
+local function database_dir_for(dir)
+    local shared = payload.shared_database_dir(dir)
+    if shared then
+        local shared_file = io.open(shared .. "/database.lua", "r")
+        if shared_file then
+            shared_file:close()
+            return shared
+        end
+    end
+    local local_file = io.open(dir .. "/database.lua", "r")
+    if local_file then
+        local_file:close()
+        return dir
+    end
+    return nil
+end
+
 local function database_for(dir, design_name)
-    package.path = dir .. "/?.lua;" .. base_path
     local cached = db_by_dir[dir]
     if cached then
         return cached
     end
-    local db_file = io.open(dir .. "/database.lua", "r")
-    if not db_file then
+    local db_dir = database_dir_for(dir)
+    if not db_dir then
         fail("database.lua not found for design '" .. design_name .. "' in " .. dir)
     end
-    db_file:close()
+    package.path = db_dir .. "/?.lua;" .. base_path
     clear_database_modules()
     local ok_db, database = pcall(require, "database")
     if not ok_db then
@@ -269,6 +287,25 @@ local function is_insert_part(part)
     return part:upper():find("INSERT%s+INTO", 1) ~= nil
 end
 
+-- A statement Hydrogen runs as its own query part, not as stored code.
+-- The queries bootstrap CREATE is this shape: it is not inside an INSERT.
+local function is_executed_ddl(part)
+    local body = part:gsub("^%s+", "")
+    while body:match("^%-%-") do
+        local nxt = body:match("^[^\n]*\n(.*)$")
+        if not nxt then
+            return false
+        end
+        body = nxt:gsub("^%s+", "")
+    end
+    local word = body:match("^(%a+)")
+    if not word then
+        return false
+    end
+    word = word:upper()
+    return word == "CREATE" or word == "ALTER" or word == "DROP"
+end
+
 local function parse_insert_payload(part)
     if not is_insert_part(part) then
         return nil
@@ -350,6 +387,7 @@ local function expect_one(ref, design_name, dir, database)
     local sql = database:run_migration(queries, engine, design, schema_name)
     local parts = split_queries(sql)
     local payloads = {}
+    local executed = {}
     for _, part in ipairs(parts) do
         local p = parse_insert_payload(part)
         if p then
@@ -357,6 +395,8 @@ local function expect_one(ref, design_name, dir, database)
                 p.query_ref = ref
             end
             payloads[#payloads + 1] = p
+        elseif is_executed_ddl(part) then
+            executed[#executed + 1] = part
         end
     end
 
@@ -375,6 +415,7 @@ local function expect_one(ref, design_name, dir, database)
         design = design_name,
         schema = schema_name,
         payloads = payloads,
+        executed = executed,
     }
 end
 
@@ -412,6 +453,14 @@ local function result_to_json(result)
     for i, p in ipairs(result.payloads) do
         buf[#buf + 1] = payload_to_json(p)
         if i < #result.payloads then
+            buf[#buf + 1] = ","
+        end
+    end
+    buf[#buf + 1] = '],"executed":['
+    local executed = result.executed or {}
+    for i, sql in ipairs(executed) do
+        buf[#buf + 1] = '"' .. json_escape(sql) .. '"'
+        if i < #executed then
             buf[#buf + 1] = ","
         end
     end

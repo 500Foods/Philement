@@ -12,6 +12,7 @@
  */
 
 import { log, getRawLog, Subsystems, Status } from '../../core/log.js';
+import { toast } from '../../shared/toast.js';
 import { formatLogText } from '../../shared/log-formatter.js';
 import { createFontPopup, initToolbars, LithiumEditorFooter } from '../../core/manager-ui.js';
 import { processIcons } from '../../core/icons.js';
@@ -52,7 +53,8 @@ export default class SessionLogManager {
    */
   async init() {
     log(SESSIONLOG, Status.INFO, 'Session Log manager initializing');
-    await this.render();
+    const ready = await this.render();
+    if (!ready) return;
     this.setupEventListeners();
     await this.populateLog();
     this.show();
@@ -70,10 +72,18 @@ export default class SessionLogManager {
   async render() {
     try {
       const response = await fetch('/src/managers/session-log/session-log.html');
+      if (!response.ok) {
+        throw new Error(`Session Log template HTTP ${response.status}`);
+      }
       const html = await response.text();
       this.container.innerHTML = html;
     } catch (error) {
-      this.renderFallback();
+      log(SESSIONLOG, Status.ERROR, `Failed to load template: ${error.message}`);
+      toast.error('Session Log failed to load', {
+        description: error.message,
+        subsystem: 'Session Log',
+      });
+      return false;
     }
 
     // Cache DOM elements
@@ -90,6 +100,7 @@ export default class SessionLogManager {
     // Initialize toolbar collapse behavior
     initToolbars();
     processIcons(this.container);
+    return true;
   }
 
   /**
@@ -304,30 +315,6 @@ export default class SessionLogManager {
     requestAnimationFrame(() => {
       this.elements.page?.classList.add('visible');
     });
-  }
-
-  /**
-   * Minimal fallback if template fetch fails
-   */
-  renderFallback() {
-    this.container.innerHTML = `
-      <div id="session-log-page">
-        <div class="lithium-toolbar" id="session-log-toolbar">
-          <button type="button" class="lithium-toolbar-btn" id="session-log-refresh-btn">
-            <fa fa-arrows-rotate></fa>
-            <span>Refresh</span>
-          </button>
-          <div class="lithium-toolbar-placeholder"></div>
-          <button type="button" class="lithium-toolbar-btn" id="session-log-coverage-btn">
-            <fa fa-chart-simple-horizontal></fa>
-            <span>Coverage</span>
-          </button>
-        </div>
-        <div class="session-log-viewer" id="session-log-viewer">
-          <div class="log-placeholder"><p>Loading session log...</p></div>
-        </div>
-      </div>
-    `;
   }
 
   /**

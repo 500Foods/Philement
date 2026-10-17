@@ -89,6 +89,10 @@ export class LookupsManagerPage extends SimpleSettingsPage {
     this.setDirty(false);
   }
 
+  canSave() {
+    return true;
+  }
+
   /**
    * Save settings via the Settings Service.
    */

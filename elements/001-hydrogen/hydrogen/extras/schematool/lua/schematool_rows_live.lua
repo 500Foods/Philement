@@ -9,6 +9,7 @@
 -- Usage: required by schematool_rows.lua
 --
 -- CHANGELOG
+-- 1.1.0 - 2026-10-16 - Match numeric key parts; per-table probe progress
 -- 1.0.0 - 2026-10-09 - Split from schematool_rows.lua
 --
 -- luacheck: globals arg package
@@ -56,7 +57,31 @@ local function live_equal(row, col, live_val)
     if live_val == nil then
         return false
     end
+    if row.nums[col] then
+        return model.canon_part(live_val, true) == model.canon_part(row.values[col], true)
+    end
     return tostring(live_val) == tostring(row.values[col])
+end
+
+local function numeric_key_cols(st)
+    local nums = {}
+    local function take(row)
+        if not row or not row.nums then
+            return
+        end
+        for col, flag in pairs(row.nums) do
+            if flag then
+                nums[col] = true
+            end
+        end
+    end
+    for _, row in pairs(st.rows or {}) do
+        take(row)
+    end
+    for _, row in pairs(st.tombs or {}) do
+        take(row)
+    end
+    return nums
 end
 
 local function live_bits(cols, live_row)
@@ -115,7 +140,7 @@ function M.compare(model_obj, live, sql_only)
             table.sort(keys, model.key_sort)
             for _, key in ipairs(keys) do
                 local row = st.rows[key]
-                local have = got[key]
+                local have = got[model.canon_key(row.parts, row.key_cols, row.nums)]
                 if not have then
                     counts.row_missing = counts.row_missing + 1
                     push_finding(findings, {
@@ -172,8 +197,9 @@ function M.compare(model_obj, live, sql_only)
             end
             table.sort(tombs, model.key_sort)
             for _, key in ipairs(tombs) do
-                if got[key] then
-                    local tomb = st.tombs[key]
+                local tomb = st.tombs[key]
+                local live_key = model.canon_key(tomb.parts, tomb.key_cols, tomb.nums)
+                if got[live_key] then
                     counts.row_present = counts.row_present + 1
                     push_finding(findings, {
                         id = string.format("row:%s:%s:row_present", tname, key),
@@ -241,6 +267,7 @@ function M.live_from_probe(model_obj, raw_by_table)
                 return nil, "probe JSON for " .. tname
             end
             local rows = {}
+            local key_nums = numeric_key_cols(st)
             for _, obj in ipairs(arr) do
                 local parts = {}
                 local values = {}
@@ -261,7 +288,7 @@ function M.live_from_probe(model_obj, raw_by_table)
                             values[col] = tostring(v)
                         end
                     end
-                    rows[model.display_key(parts)] = values
+                    rows[model.canon_key(parts, st.key_cols, key_nums)] = values
                 end
             end
             live.tables[tname] = rows
@@ -278,7 +305,12 @@ end
 
 function M.probe_sqlite(db_path, model_obj)
     local raw = {}
-    for _, tname in ipairs(model_obj.table_order) do
+    local order = model_obj.table_order or {}
+    local total = #order
+    for i, tname in ipairs(order) do
+        io.stderr:write(string.format(
+            "phase: rows probe %d/%d %s\n", i, total, tname))
+        io.stderr:flush()
         local st = model_obj.tables[tname]
         local sql = st.probe_sql
         if sql and sql ~= "" then

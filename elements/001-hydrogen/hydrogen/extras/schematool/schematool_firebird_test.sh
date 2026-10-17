@@ -3,9 +3,10 @@
 #
 # Engine-specific env: FIREBIRD_DB_PATH_TEST, FIREBIRD_SYSDBA_PASSWORD
 # Schema:             (empty — Firebird uses the database file)
-# Design:             acuranzo+argent
+# Design:             acuranzo+courses+argent
 #
 # CHANGELOG
+# 1.1.1 - 2026-10-16 - Full suite acuranzo+courses+argent
 # 1.1.0 - 2026-10-07 - Payload acuranzo+argent in one run
 # 1.0.0 - 2026-10-07 - Test 37 wrapper; FIREBIRD_DB_PATH_TEST only
 
@@ -45,7 +46,7 @@ fi
 
 exec "${SCHEMATOOL}" \
     --migrations "${MIGRATIONS_DIR}" \
-    --design acuranzo+argent \
+    --design acuranzo+courses+argent \
     --engine firebird \
     --database "${FIREBIRD_DB_PATH_TEST}" \
     --schema "" \

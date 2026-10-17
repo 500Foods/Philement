@@ -35,15 +35,6 @@ export class NamesPage extends SimpleSettingsPage {
     log(Subsystems.MANAGER, Status.DEBUG, '[NamesPage] loadData (stub)');
   }
 
-  /**
-   * Save data - to be implemented when API is available
-   */
-  async save() {
-    // TODO: Save to API
-    log(Subsystems.MANAGER, Status.DEBUG, '[NamesPage] save (stub)');
-    this.setDirty(false);
-    return { success: true };
-  }
 }
 
 export default NamesPage;

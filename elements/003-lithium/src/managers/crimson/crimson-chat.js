@@ -12,6 +12,7 @@
  */
 
 import { processIcons } from '../../core/icons.js';
+import { sanitizeHtml } from '../../core/utils.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { getCrimsonWS } from '../../shared/crimson-ws.js';
 import { isAppWSConnected } from '../../shared/app-ws.js';
@@ -188,7 +189,10 @@ CrimsonManager.prototype.handleStreamChunk = function(content, _index, finishRea
 
     const displayContent = this.conversationBuffer.replace(/\s+$/, '');
     contentEl.setAttribute('data-raw-content', displayContent);
-    contentEl.innerHTML = this.formatMessageContent(displayContent) + '<span class="crimson-streaming-cursor"></span>';
+    contentEl.innerHTML = sanitizeHtml(this.formatMessageContent(displayContent));
+    const cursor = document.createElement('span');
+    cursor.className = 'crimson-streaming-cursor';
+    contentEl.appendChild(cursor);
 
     if (this.conversation) {
       this.conversation.scrollTop = this.conversation.scrollHeight;
@@ -386,8 +390,8 @@ CrimsonManager.prototype.handleStreamDone = function(content, result) {
         contentEl.setAttribute('data-raw-content', conversationText);
 
         this.formatMessageContentMarkdown(conversationText).then(htmlContent => {
-          htmlContent = this.convertCitationMarkers(htmlContent, messageId, turnMapping);
           contentEl.innerHTML = htmlContent;
+          this.applyCitationLinks(contentEl, messageId, turnMapping);
           if (this.conversation) {
             this.conversation.scrollTop = this.conversation.scrollHeight;
           }
@@ -610,7 +614,15 @@ CrimsonManager.prototype.addFollowUpQuestions = function(messageEl, questions) {
   questions.forEach(question => {
     const btn = document.createElement('button');
     btn.className = 'crimson-followup-btn';
-    btn.innerHTML = `<span class="crimson-followup-icon"><fa fa-up></fa></span><span class="crimson-followup-text">${this.escapeHtml(question)}</span>`;
+    const iconWrap = document.createElement('span');
+    iconWrap.className = 'crimson-followup-icon';
+    const icon = document.createElement('fa');
+    icon.setAttribute('fa-up', '');
+    iconWrap.appendChild(icon);
+    const text = document.createElement('span');
+    text.className = 'crimson-followup-text';
+    text.textContent = typeof question === 'string' ? question : '';
+    btn.append(iconWrap, text);
     btn.addEventListener('click', () => {
       this.input.value = question;
       this.handleSend();
@@ -658,11 +670,11 @@ CrimsonManager.prototype.formatMessageContentMarkdown = async function(content) 
       gfm: true,
       breaks: true,
     });
-    const htmlContent = await marked.parse(content);
+    const htmlContent = sanitizeHtml(await marked.parse(content));
     return htmlContent;
   } catch (error) {
     log(Subsystems.CRIMSON, Status.WARN, `Failed to render markdown: ${error.message}`);
-    return this.formatMessageContent(content);
+    return sanitizeHtml(this.formatMessageContent(content));
   }
 };
 

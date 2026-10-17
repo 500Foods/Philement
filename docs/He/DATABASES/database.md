@@ -4,6 +4,8 @@
 
 `database.lua` is the core Lua module that defines the Helium database schema framework, supported database engines, and provides comprehensive SQL processing capabilities. It serves as the foundation for all migration operations in the Helium system.
 
+The one copy is [`/elements/002-helium/helium/database.lua`](/elements/002-helium/helium/database.lua). The engine files sit beside it. Designs do not keep their own copy. The payload packs this set once as `helium/database.lua`.
+
 ## Architecture
 
 The module is structured as a Lua table with the following key components:

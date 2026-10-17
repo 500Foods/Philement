@@ -6,15 +6,7 @@ Primary database target for the overall Helium project is PostgreSQL 15+ via Yug
 
 ## Database Files
 
-| File | Purpose |
-| ------ | --------- |
-| [`database.lua`](migrations/database.lua) | Converts migration files to engine-specific SQL using macros and fancy formatting tricks |
-| [`database_mysql.lua`](migrations/database_mysql.lua) | MySQL-specific database configuration |
-| [`database_postgresql.lua`](migrations/database_postgresql.lua) | PostgreSQL-specific database configuration |
-| [`database_sqlite.lua`](migrations/database_sqlite.lua) | SQLite-specific database configuration |
-| [`database_db2.lua`](migrations/database_db2.lua) | IBM DB2-specific database configuration |
-| [`database_firebird.lua`](migrations/database_firebird.lua) | Firebird-specific database configuration |
-| [`database_mssql.lua`](migrations/database_mssql.lua) | SQL Server-specific database configuration |
+Macro scripts are shared. They live in [`/elements/002-helium/helium/`](/elements/002-helium/helium/): `database.lua` and one `database_<engine>.lua` for PostgreSQL, MySQL, MariaDB, SQLite, DB2, Firebird, and SQL Server. This design does not keep a copy. Gaius still bootstraps its own `queries` table in `gaius_2000.lua`.
 
 ## Migrations
 

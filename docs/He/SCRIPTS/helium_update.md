@@ -32,10 +32,9 @@ Updates migration indexes for all schemas by calling `migration_index.sh`:
 ./migration_index.sh ${HELIUM_ROOT}/argent/README.md ${HELIUM_ROOT}/argent/migrations
 ./migration_index.sh ${HELIUM_ROOT}/gaius/README.md ${HELIUM_ROOT}/gaius/migrations
 ./migration_index.sh ${HELIUM_ROOT}/glm/README.md ${HELIUM_ROOT}/glm/migrations
-./migration_index.sh ${HELIUM_ROOT}/helium/README.md ${HELIUM_ROOT}/helium/migrations
 ```
 
-Each call updates the corresponding schema's README.md file with the latest migration information from its migrations folder.
+Courses is included in that loop when `courses/migrations` and `courses/README.md` both exist. Each call updates that design's README from its migrations folder. `elements/002-helium/helium/` holds the shared `database.lua` scripts and has no migrations index.
 
 ### 2. Documentation Link Validation
 
@@ -55,11 +54,7 @@ markdownlint [all .md files in ${HELIUM_ROOT} and ${HELIUM_DOCS_ROOT}]
 
 ### 4. Lua Code Quality Checks
 
-Runs `luacheck` on all migration files to validate Lua syntax and coding standards:
-
-```bash
-luacheck [all .lua files in ${HELIUM_ROOT}]
-```
+Runs `luacheck` on each design's `migrations/` directory and on the shared scripts in `elements/002-helium/helium/*.lua`.
 
 ### 5. Repository Statistics Generation
 
@@ -83,8 +78,9 @@ This script serves as a comprehensive documentation maintenance tool to:
 ## Dependencies
 
 - `migration_index.sh` must be in the same directory
-- All schema directories (acuranzo, argent, gaius, glm, helium) must exist
-- Each schema must have a README.md and migrations/ folder
+- Acuranzo, Argent, Gaius, and GLM each have a README and a `migrations/` folder
+- Courses is indexed only when both of those exist
+- `elements/002-helium/helium/` must exist. It holds `database.lua` and `database_<engine>.lua` and has no `migrations/` folder
 - Optional tools (quality checks skipped if not available):
   - `cloc` for code statistics
   - `luacheck` for Lua code quality

@@ -2,6 +2,16 @@
 -- Constants, terminal module references, and attribute tables for SchemaHelper.
 --
 -- CHANGELOG
+-- 0.6.26 - 2026-10-17 - Target picker aligns script names
+-- 0.6.25 - 2026-10-17 - Variance and explore omit the Ref line
+-- 0.6.24 - 2026-10-17 - Explore header is the condensed variance block
+-- 0.6.23 - 2026-10-17 - Variance summary shows the migration name
+-- 0.6.22 - 2026-10-17 - Variance summary is grouped into aligned sections
+-- 0.6.21 - 2026-10-17 - Loading steps share one column; no running-screen keys
+-- 0.6.20 - 2026-10-16 - Loading screen keeps a line for each finished step
+-- 0.6.19 - 2026-10-16 - Dashboard summary and breakdown are separate columns
+-- 0.6.18 - 2026-10-16 - Progress log is separate from the checklist log
+-- 0.6.17 - 2026-10-16 - Wrappers pass acuranzo+courses+argent
 -- 0.6.16 - 2026-10-07 - Default-row apply; SchemaTool 1.15.2
 -- 0.6.15 - 2026-10-07 - Dialect DDL apply; SchemaTool 1.15.1
 -- 0.6.14 - 2026-10-07 - SchemaTool 1.15.0; type and dropped stay review-only
@@ -20,10 +30,11 @@
 -- 0.6.0 - 2026-09-08 - Chrome titles + Instance log name
 -- 0.5.8 - 2026-08-25 - Extracted from schemahelper.lua (constants + terminal refs)
 
-local VERSION = "0.6.16"
-local RELEASED = "2026-10-07"
+local VERSION = "0.6.26"
+local RELEASED = "2026-10-16"
 
 local INSTANCE_LOG = "schemahelper_schematool.log"
+local INSTANCE_PROGRESS = "schemahelper_schematool.progress"
 
 local CHROME_TITLE = {
     splash = " SchemaHelper ",
@@ -96,6 +107,7 @@ return {
     VERSION = VERSION,
     RELEASED = RELEASED,
     INSTANCE_LOG = INSTANCE_LOG,
+    INSTANCE_PROGRESS = INSTANCE_PROGRESS,
     CHROME_TITLE = CHROME_TITLE,
     LUA_RELEASES = LUA_RELEASES,
     TERMINAL_RELEASES = TERMINAL_RELEASES,

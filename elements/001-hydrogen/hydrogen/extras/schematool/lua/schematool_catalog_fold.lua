@@ -1,9 +1,11 @@
 -- schematool_catalog_fold.lua
 -- Hybrid C: fold migration forward code into the expected catalog.
 --
--- Default input is the disk expect JSON (--expected). That file's forward
--- body is query type 1000 (the text the database stores as type 1003 once
--- applied). Reverse (1001) and diagram (1002) are not folded.
+-- Default input is the disk expect JSON (--expected). DDL that ran as its
+-- own statement (the queries bootstrap CREATE) is folded first. Type 1000
+-- is the forward body. Type 1003 is used only when that migration has
+-- neither executed DDL nor a type-1000 payload. Reverse and diagram are
+-- not folded.
 --
 -- --db PATH keeps the previous fold: applied type-1003 code from a queries dump.
 --
@@ -14,6 +16,7 @@
 --        [--out PATH]
 --
 -- CHANGELOG
+-- 1.4.0 - 2026-10-16 - Fold executed DDL; skip type 1003 when that DDL exists
 -- 1.3.0 - 2026-10-07 - Remember tables and columns a later migration drops
 -- 1.2.2 - 2026-10-07 - Firebird and MSSQL ADD/DROP without the COLUMN keyword
 -- 1.2.1 - 2026-10-07 - Firebird ALTER col DROP/SET NOT NULL; MSSQL ALTER COLUMN type NULL
@@ -548,8 +551,9 @@ local function fold_code(code)
     end
 end
 
--- Disk expect JSON: type 1000 is the forward body. Fall back to 1003
--- only when a migration result has no type-1000 payload. Stored --db
+-- Disk expect JSON: executed DDL first, then type 1000. Fall back to
+-- type 1003 only when the migration has neither. A later CREATE in the
+-- recorded type-1003 body would replace the bootstrap table. Stored --db
 -- input is already applied type 1003.
 local source_path = expected_path or db_path
 local filter
@@ -563,10 +567,17 @@ if expected_path then
         | . as $m
         | ($m.ref // 0) as $r
         | ($m.payloads // []) as $ps
+        | ($m.executed // []) as $ex
         | ([$ps[] | select(.query_type == 1000)]) as $fwd
-        | (if ($fwd | length) > 0 then $fwd
-           else [$ps[] | select(.query_type == 1003)] end)[]
-        | {r: $r, c: .code}
+        | (
+            [$ex[] | {r: $r, c: .}]
+            + (
+                if ($fwd | length) > 0 then [$fwd[] | {r: $r, c: .code}]
+                elif ($ex | length) > 0 then []
+                else [$ps[] | select(.query_type == 1003) | {r: $r, c: .code}]
+                end
+              )
+          )[]
       ] | sort_by(.r) | .[]
     ]]
 else
@@ -641,7 +652,13 @@ local function json_num_field(obj, key)
     return n and tonumber(n) or nil
 end
 
-for _, line in ipairs(lines) do
+local nlines = #lines
+for idx, line in ipairs(lines) do
+    if idx == 1 or idx == nlines or idx % 20 == 0 then
+        io.stderr:write(string.format(
+            "phase: catalog fold %d/%d\n", idx, nlines))
+        io.stderr:flush()
+    end
     current_ref = json_num_field(line, "r") or 0
     if expected_path then
         if from_ref and current_ref < from_ref then

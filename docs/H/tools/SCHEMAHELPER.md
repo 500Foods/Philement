@@ -113,8 +113,8 @@ wrapper, `[q]` to quit, or Enter to review artifacts already in
 `--out-dir`. Custom wrappers (any `schematool_*.sh` path) are probed from the
 expanded `exec` line (so jq-computed host/user/database/password-env
 work). Sidecar names are `schemahelper_<design>_<engine>_<role>.json`.
-The sixteen wrappers pass `--design acuranzo+argent`, so a live sidecar
-is `schemahelper_acuranzo+argent_<engine>_<role>.json`. A single design
+The sixteen wrappers pass `--design acuranzo+courses+argent`, so a live sidecar
+is `schemahelper_acuranzo+courses+argent_<engine>_<role>.json`. A single design
 name still works, and the checked-in `schemahelper_acuranzo_sqlite.json`
 fixture stays on that name. A `_test` wrapper is role `test`. A `_demo`
 wrapper is role `demo`.
@@ -210,8 +210,8 @@ Mouse behavior:
 Selections live in
 `<out-dir>/schemahelper_<design>_<engine>_<role>.json` (no timestamp).
 Role is `test` or `demo`. The sixteen wrappers pass
-`--design acuranzo+argent`, so a live sidecar is
-`schemahelper_acuranzo+argent_<engine>_<role>.json`. Several engines
+`--design acuranzo+courses+argent`, so a live sidecar is
+`schemahelper_acuranzo+courses+argent_<engine>_<role>.json`. Several engines
 can share one folder. Actions: `skipped`, `accepted`, `applied`,
 `packet`. No passwords and no full `code` blobs.
 

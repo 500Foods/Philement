@@ -4,9 +4,10 @@
 # Sets connection env vars from the Test 40 MySQL config and calls schematool.sh.
 # Engine-specific env: MYSQL_DB_{HOST,PORT,NAME,USER,PASS}
 # Schema:             demo
-# Design:             acuranzo+argent
+# Design:             acuranzo+courses+argent
 #
 # CHANGELOG
+# 1.3.1 - 2026-10-16 - Full suite acuranzo+courses+argent
 # 1.3.0 - 2026-10-07 - Payload acuranzo+argent in one run
 # 1.2.0 - 2026-10-07 - Renamed from schematool_mysql.sh
 # 1.1.0 - 2026-08-22 - Resolve sibling schematool.sh, then HYDROGEN_ROOT
@@ -35,6 +36,6 @@ export SCHEMATOOL_DB_SCHEMA="demo"
 
 exec "${SCHEMATOOL}" \
     --migrations "${MIGRATIONS_DIR}" \
-    --design acuranzo+argent \
+    --design acuranzo+courses+argent \
     --engine mysql \
     "$@"

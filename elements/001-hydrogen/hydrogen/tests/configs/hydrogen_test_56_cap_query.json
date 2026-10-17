@@ -44,7 +44,7 @@
                 "Pass": "${env.ACURANZO_DB_PASS}",
                 "StmtCache": 100,
                 "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM demo.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
-                "AutoMigration": true,
+                "AutoMigration": false,
                 "TestMigration": false,
                 "Parameters": {
                     "LOGINRETRYWINDOW": 15,
@@ -70,7 +70,7 @@
                 "Pass": "${env.MYSQL_DB_PASS}",
                 "StmtCache": 100,
                 "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM demo.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
-                "AutoMigration": true,
+                "AutoMigration": false,
                 "TestMigration": false,
                 "Parameters": {
                     "LOGINRETRYWINDOW": 15,
@@ -92,7 +92,7 @@
                 "Database": "tests/artifacts/database/sqlite/hydrodemo.sqlite",
                 "StmtCache": 100,
                 "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
-                "AutoMigration": true,
+                "AutoMigration": false,
                 "TestMigration": false,
                 "Parameters": {
                     "LOGINRETRYWINDOW": 15,
@@ -118,7 +118,7 @@
                 "Pass": "${env.HYDROTST_DB_PASS}",
                 "StmtCache": 100,
                 "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM demo.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
-                "AutoMigration": true,
+                "AutoMigration": false,
                 "TestMigration": false,
                 "Parameters": {
                     "LOGINRETRYWINDOW": 15,
@@ -144,7 +144,7 @@
                 "Pass": "${env.MARIADB_DB_PASS}",
                 "StmtCache": 100,
                 "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM demo.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
-                "AutoMigration": true,
+                "AutoMigration": false,
                 "TestMigration": false,
                 "Parameters": {
                     "LOGINRETRYWINDOW": 15,
@@ -170,7 +170,7 @@
                 "Pass": "${env.FIREBIRD_SYSDBA_PASSWORD}",
                 "StmtCache": 100,
                 "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
-                "AutoMigration": true,
+                "AutoMigration": false,
                 "TestMigration": false,
                 "Parameters": {
                     "LOGINRETRYWINDOW": 15,
@@ -196,7 +196,7 @@
                 "Pass": "${env.YUGABYTE_DB_PASS}",
                 "StmtCache": 100,
                 "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM demo.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
-                "AutoMigration": true,
+                "AutoMigration": false,
                 "TestMigration": false,
                 "Parameters": {
                     "LOGINRETRYWINDOW": 15,
@@ -222,7 +222,7 @@
                 "Pass": "${env.MSSQL_SA_PASSWORD}",
                 "StmtCache": 100,
                 "Bootstrap": "SELECT query_id id, query_ref ref, query_status_a27 status, query_type_a28 type, query_dialect_a30 engine, query_queue_a58 queue, query_timeout timeout, name, code query FROM demoms.queries WHERE (query_status_a27 = 1) ORDER BY query_type_a28 desc;",
-                "AutoMigration": true,
+                "AutoMigration": false,
                 "TestMigration": false,
                 "Parameters": {
                     "LOGINRETRYWINDOW": 15,

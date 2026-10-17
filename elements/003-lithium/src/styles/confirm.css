@@ -1,0 +1,52 @@
+/**
+ * Confirm and prompt dialog.
+ */
+
+@layer components {
+.lithium-confirm-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 12000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(0 0 0 / 45%);
+}
+
+.lithium-confirm {
+  width: min(28rem, calc(100vw - var(--space-6)));
+  padding: var(--space-4);
+  background: var(--bg-elevated, var(--bg-secondary));
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-md, 8px);
+  box-shadow: var(--shadow-lg, 0 8px 24px rgb(0 0 0 / 35%));
+}
+
+.lithium-confirm-title {
+  margin: 0 0 var(--space-3);
+  font-size: var(--font-size-lg, 1.125rem);
+}
+
+.lithium-confirm-message {
+  margin: 0 0 var(--space-4);
+  white-space: pre-wrap;
+}
+
+.lithium-confirm-input {
+  width: 100%;
+  margin-bottom: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  color: var(--text-primary);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius-sm, 4px);
+}
+
+.lithium-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-3);
+}
+
+}

@@ -62,6 +62,65 @@ export function normalizeIconHtml(value, fallback = '') {
   return html || fallback;
 }
 
+const FA_NAME_TOKEN = /^fa-[a-z0-9-]+$/;
+
+/**
+ * True when value is only an fa-name token such as fa-wrench.
+ * @param {string} value
+ * @returns {boolean}
+ */
+export function isFaNameToken(value) {
+  return typeof value === 'string' && FA_NAME_TOKEN.test(value);
+}
+
+/**
+ * Return the fa-name when value is only an <fa fa-name></fa> tag.
+ * @param {string} value
+ * @returns {string} Icon token, or '' when the string is anything else
+ */
+export function faNameFromTag(value) {
+  if (typeof value !== 'string') return '';
+  const match = value.trim().match(/^<fa\s+(fa-[a-z0-9-]+)\s*>\s*<\/fa>$/i);
+  if (!match) return '';
+  const name = match[1].toLowerCase();
+  return FA_NAME_TOKEN.test(name) ? name : '';
+}
+
+/**
+ * Create one <fa fa-name> element. Returns null for any other token.
+ * @param {string} name
+ * @returns {HTMLElement|null}
+ */
+export function createFaIcon(name) {
+  if (!isFaNameToken(name)) return null;
+  const fa = document.createElement('fa');
+  fa.setAttribute(name, '');
+  return fa;
+}
+
+/**
+ * Append caption text. Each exact <fa fa-name></fa> token becomes an
+ * icon element. Every other character, including other tags, stays text.
+ * @param {HTMLElement} parent
+ * @param {string} text
+ */
+export function appendTextWithIcons(parent, text) {
+  const source = text == null ? '' : String(text);
+  const pattern = /<fa\s+(fa-[a-z0-9-]+)\s*>\s*<\/fa>/gi;
+  let last = 0;
+  for (const match of source.matchAll(pattern)) {
+    if (match.index > last) {
+      parent.appendChild(document.createTextNode(source.slice(last, match.index)));
+    }
+    const icon = createFaIcon(match[1].toLowerCase());
+    if (icon) parent.appendChild(icon);
+    last = match.index + match[0].length;
+  }
+  if (last < source.length) {
+    parent.appendChild(document.createTextNode(source.slice(last)));
+  }
+}
+
 // Font Awesome class mappings
 const FA_PREFIX_MAP = {
   'solid': 'fas',
@@ -672,6 +731,10 @@ export default {
   init,
   teardown,
   processIcons,
+  isFaNameToken,
+  faNameFromTag,
+  createFaIcon,
+  appendTextWithIcons,
   refreshIconLookups,
   getIconConfiguration,
   setIcon,

@@ -1,26 +1,18 @@
-# Helium Database Design
+# Shared database scripts
 
-The Helium migration is intended for use within the 3D printing environment. This could be used by someone with a single printer, in an embedded capacity, typically with SQLite. Or it could be used to host substantially larger datasets like broad printer part assemblies. Or maybe it could be used for someone with a print farm, managing jobs and that ssort of thing. Filament tracking also comes to mind.
+`database.lua` and `database_<engine>.lua` in this folder are the one macro set every Helium design loads. They are not migrations, and this folder is not a schema. The payload packs them once as `helium/database.lua` and `helium/database_<engine>.lua`.
 
-Early days, so lots of things could find their way into here.
+A design's migration files stay in that design's `migrations/` folder. Hydrogen uses these scripts when the payload has no `{design}/database.lua` of its own.
 
-Primary target for Helium migrations overall is PostgreSQL 15+ via YugabyteDB. Authoritative guidance for writing or generating migrations lives in `/docs/He/`: start with `MIGRATION_ANATOMY.md`, `MACRO_REFERENCE.md`, and the "For AI / LLM Migration Generation" section in `GUIDE.md`.
-
-## Database Files
+## Files
 
 | File | Purpose |
 | ------ | --------- |
-| [`database.lua`](migrations/database.lua) | Converts migration files to engine-specific SQL using macros and fancy formatting tricks |
-| [`database_mysql.lua`](migrations/database_mysql.lua) | MySQL-specific database configuration |
-| [`database_postgresql.lua`](migrations/database_postgresql.lua) | PostgreSQL-specific database configuration |
-| [`database_sqlite.lua`](migrations/database_sqlite.lua) | SQLite-specific database configuration |
-| [`database_db2.lua`](migrations/database_db2.lua) | IBM DB2-specific database configuration |
-| [`database_firebird.lua`](migrations/database_firebird.lua) | Firebird-specific database configuration |
-| [`database_mssql.lua`](migrations/database_mssql.lua) | SQL Server-specific database configuration |
-
-## Migrations
-
-| M# | Table | Version | Updated | Stmts | Diagram | Description |
-| ---- | ------- | --------- | --------- | ------- | --------- | ------------- |
-| [4000](/elements/002-helium/helium/migrations/helium_4000.lua) | queries | 3.4.0 | 2026-09-19 | 10 | ✓ | Bootstraps the migration system by creating the queries table and supporting user-defined functions |
-| **1** | | | | **10** | **1** | |
+| [`database.lua`](/elements/002-helium/helium/database.lua) | Macro expansion and migration runner |
+| [`database_postgresql.lua`](/elements/002-helium/helium/database_postgresql.lua) | PostgreSQL configuration |
+| [`database_mysql.lua`](/elements/002-helium/helium/database_mysql.lua) | MySQL configuration |
+| [`database_mariadb.lua`](/elements/002-helium/helium/database_mariadb.lua) | MariaDB configuration |
+| [`database_sqlite.lua`](/elements/002-helium/helium/database_sqlite.lua) | SQLite configuration |
+| [`database_db2.lua`](/elements/002-helium/helium/database_db2.lua) | IBM DB2 configuration |
+| [`database_firebird.lua`](/elements/002-helium/helium/database_firebird.lua) | Firebird configuration |
+| [`database_mssql.lua`](/elements/002-helium/helium/database_mssql.lua) | SQL Server configuration |

@@ -26,7 +26,8 @@ If no errors, the Lua syntax is valid.
 Test macro expansion without database:
 
 ```bash
-lua database.lua postgresql acuranzo public < acuranzo_9999.lua > /dev/null
+# HYDROGEN_ROOT and HELIUM_ROOT must be set. Run from the Hydrogen tree.
+tests/lib/get_migration.sh postgresql acuranzo app 9999 > /dev/null
 ```
 
 This will show any undefined macros or expansion errors.
@@ -98,31 +99,31 @@ Test migration on each supported database:
 #### PostgreSQL
 
 ```bash
-lua database.lua postgresql acuranzo public < acuranzo_9999.lua | psql -h localhost -U user -d db
+tests/lib/get_migration.sh postgresql acuranzo app 9999 | psql -h localhost -U user -d db
 ```
 
 #### MySQL
 
 ```bash
-lua database.lua mysql acuranzo schema < acuranzo_9999.lua | mysql -h localhost -u user -p db
+tests/lib/get_migration.sh mysql acuranzo acuranzo 9999 | mysql -h localhost -u user -p db
 ```
 
 #### SQLite
 
 ```bash
-lua database.lua sqlite acuranzo '' < acuranzo_9999.lua | sqlite3 database.db
+tests/lib/get_migration.sh sqlite acuranzo '' 9999 | sqlite3 database.db
 ```
 
 #### DB2
 
 ```bash
-lua database.lua db2 acuranzo schema < acuranzo_9999.lua | db2 -f -
+tests/lib/get_migration.sh db2 acuranzo ACURANZO 9999 | db2 -f -
 ```
 
 #### Firebird
 
 ```bash
-lua database.lua firebird acuranzo '' < acuranzo_9999.lua | isql-fb -user SYSDBA -password "$FIREBIRD_SYSDBA_PASSWORD" localhost:"$FIREBIRD_DB_PATH_TEST"
+tests/lib/get_migration.sh firebird acuranzo '' 9999 | isql-fb -user SYSDBA -password "$FIREBIRD_SYSDBA_PASSWORD" localhost:"$FIREBIRD_DB_PATH_TEST"
 ```
 
 `${SCHEMA}` is empty. The `.fdb` file is the database. Brotli and `JSON_VALUE` require the UDRs in [extras/brotli_udf_firebird](/elements/001-hydrogen/hydrogen/extras/brotli_udf_firebird/README.md) and [extras/json_udf_firebird](/elements/001-hydrogen/hydrogen/extras/json_udf_firebird/README.md).
@@ -130,7 +131,7 @@ lua database.lua firebird acuranzo '' < acuranzo_9999.lua | isql-fb -user SYSDBA
 #### SQL Server
 
 ```bash
-lua database.lua mssql acuranzo testms < acuranzo_9999.lua
+tests/lib/get_migration.sh mssql acuranzo testms 9999
 ```
 
 Run the SQL with `sqlcmd` inside container `philement-mssql`, against database `hydrotst` and schema `testms`. `${SCHEMA}` is `testms.`. Developer edition is not a production license. The container and driver notes are in [extras/mssql_server/README.md](/elements/001-hydrogen/hydrogen/extras/mssql_server/README.md). Do not put the SA password on the command line.
@@ -165,7 +166,7 @@ Test the reverse migration:
 
 ```bash
 # Run reverse (same command, system detects reverse type)
-lua database.lua postgresql acuranzo public < acuranzo_9999.lua | psql ...
+tests/lib/get_migration.sh postgresql acuranzo app 9999 | psql ...
 
 # Verify rollback
 SELECT * FROM queries WHERE query_ref = '9999';  -- Should be type 1000 again
@@ -175,21 +176,13 @@ SELECT * FROM queries WHERE query_ref = '9999';  -- Should be type 1000 again
 
 The vast majority of Hydrogen tests (including all the migration-related ones: Test 30, 31–38, 71, etc.) execute against a built Hydrogen binary. That binary embeds the current Helium migrations inside its **payload**.
 
-After editing any files under `elements/002-helium/` (migrations, database.lua, etc.):
+After editing any files under `elements/002-helium/` (migrations or `helium/database*.lua`):
 
 - You **must** rebuild the payload before running Hydrogen tests that exercise migrations, otherwise the tests will run against stale embedded migrations.
-- Use the shell aliases defined in `~/.zshrc`:
-  - `mkt` — "make trial" (faster incremental build, typical for development)
-  - `mka` — "make all" (full build)
-- These aliases expand to something like:
+- `payload-generate.sh` or `mka` (make-all) refreshes `payloads/payload.tar.br.enc`. `mkt` (make-trial) rebuilds the binary and does not refresh the archive.
+- Test 31 expands the Lua on disk. It does not read the archive.
 
-  ```bash
-  cdh && extras/make-trial.sh ; cd - > /dev/null 2>&1
-  ```
-
-  (where `cdh` changes to the Hydrogen directory).
-
-The Hydrogen build itself (see Test 01 - Compilation) also detects when migration files are newer than the payload and will automatically regenerate it (and run `helium_update.sh`).
+Test 01 (Compilation) regenerates the payload when any Lua file under `elements/002-helium/` is newer than it. That includes `helium/database*.lua` and every design's `migrations` folder. A newer migration also runs `helium_update.sh`. Diagrams and markdown do not, by themselves, request a rebuild.
 
 Only after the payload is current should you run the individual migration tests described below.
 
@@ -263,7 +256,7 @@ cd elements/001-hydrogen/hydrogen
 
 ### Multi-row seed fails on SQLite or DB2 only
 
-**Symptoms** (seen on `acuranzo_1293` before the portable rewrite):
+**Symptoms** (seen on `courses_4010` before the portable rewrite):
 
 - SQLite: `near "(": syntax error` while applying a seed that uses
   `FROM (VALUES …) AS v(col1, col2, …)`
@@ -306,7 +299,7 @@ the failure to fix the Lua, do not teach the driver to ignore it.
 - Reverse must **not** `DELETE`/`UPDATE` rows or tables the forward never touched
 - Hundreds of migrations never hit this because they already mirrored correctly
 
-**Symptoms** (e.g. TestMigration reverse fails on `acuranzo_1293` statement 1):
+**Symptoms** (e.g. TestMigration reverse fails on `courses_4010` statement 1):
 
 - `SQL0100W  No row was found for FETCH, UPDATE or DELETE…`
 - `SQLSTATE: 02000, Native Error: 100`
@@ -388,7 +381,7 @@ Test migrations with large embedded content:
 
 ```bash
 # Check processing time
-time lua database.lua postgresql acuranzo public < large_migration.lua > /dev/null
+time tests/lib/get_migration.sh postgresql acuranzo app 1067 > /dev/null
 
 # Verify compression is applied for >1KB content
 ls -la large_migration.lua  # Should be >1024 bytes
@@ -400,8 +393,8 @@ Test multiple migrations running simultaneously:
 
 ```bash
 # Run in parallel
-lua database.lua ... < migration1.lua | psql ... &
-lua database.lua ... < migration2.lua | psql ... &
+tests/lib/get_migration.sh postgresql acuranzo app 1000 | psql ... &
+tests/lib/get_migration.sh postgresql acuranzo app 1001 | psql ... &
 wait
 ```
 
@@ -415,7 +408,9 @@ Test complete schema deployment:
 # Run all migrations in order
 for migration in acuranzo_*.lua; do
     echo "Running $migration"
-    lua database.lua postgresql acuranzo public < "$migration" | psql ...
+    number="${migration#acuranzo_}"
+    number="${number%.lua}"
+    tests/lib/get_migration.sh postgresql acuranzo app "${number}" | psql ...
 done
 ```
 
@@ -425,10 +420,10 @@ Ensure same results across engines:
 
 ```bash
 # PostgreSQL
-lua ... postgresql ... < migration.lua | psql ...
+tests/lib/get_migration.sh postgresql acuranzo app 1000 | psql ...
 
 # MySQL
-lua ... mysql ... < migration.lua | mysql ...
+tests/lib/get_migration.sh mysql acuranzo acuranzo 1000 | mysql ...
 
 # Compare results
 # (Manual verification of table structures and data)

@@ -38,7 +38,7 @@ Example data from migration 1067 (CSS Theme):
 
 #### Compression Function
 
-Location: `elements/002-helium/acuranzo/migrations/database.lua:256-272`
+Location: [`/elements/002-helium/helium/database.lua`](/elements/002-helium/helium/database.lua), function `brotli_compress`.
 
 ```lua
 local function brotli_compress(data)
@@ -67,7 +67,7 @@ Strings smaller than 1KB are not compressed to avoid overhead on small content.
 
 #### Encoding Logic
 
-Location: `elements/002-helium/acuranzo/migrations/database.lua:328-358`
+Location: [`/elements/002-helium/helium/database.lua`](/elements/002-helium/helium/database.lua), the encoding step after `brotli_compress`.
 
 The encoding logic checks content size and conditionally applies compression before base64 encoding:
 
@@ -439,5 +439,5 @@ Each database engine should be tested:
 
 - Brotli Algorithm: <https://github.com/google/brotli>
 - lua-brotli: <https://github.com/sjnam/lua-brotli>
-- Database Migration System: `database.lua`
+- Database Migration System: [`/elements/002-helium/helium/database.lua`](/elements/002-helium/helium/database.lua)
 - Example Migration: `acuranzo_1067.lua` (CSS Theme)

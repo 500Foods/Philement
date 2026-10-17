@@ -11,6 +11,7 @@
 -- Usage: parsed by schematool_rows.lua / schematool_rows_model.lua only.
 --
 -- CHANGELOG
+-- 1.1.0 - 2026-10-16 - SET stops at WHERE; CRYPTO_DECODE base64 is a literal
 -- 1.0.0 - 2026-10-09 - Split from schematool_rows.lua
 --
 -- luacheck: globals arg package
@@ -173,11 +174,109 @@ local function skip_expr(s, i)
             i = i + 1
         elseif c == "," and depth == 0 then
             return i
+        elseif depth == 0 and keyword_at(s, i, "WHERE") then
+            return i
+        elseif c == ";" and depth == 0 then
+            return i
         else
             i = i + 1
         end
     end
     return i
+end
+
+local b64_map = {}
+do
+    local alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    for n = 1, #alphabet do
+        b64_map[alphabet:sub(n, n)] = n - 1
+    end
+end
+
+local function b64_decode(data)
+    data = (data or ""):gsub("%s", "")
+    if data == "" or data:find("[^A-Za-z0-9+/=]") then
+        return nil
+    end
+    local out = {}
+    local i = 1
+    while i <= #data do
+        local a = b64_map[data:sub(i, i)]
+        local b = b64_map[data:sub(i + 1, i + 1)]
+        if not a or not b then
+            return nil
+        end
+        out[#out + 1] = string.char(a * 4 + math.floor(b / 16))
+        local c = data:sub(i + 2, i + 2)
+        local d = data:sub(i + 3, i + 3)
+        if c ~= "" and c ~= "=" then
+            local nc = b64_map[c]
+            if not nc then
+                return nil
+            end
+            out[#out + 1] = string.char((b % 16) * 16 + math.floor(nc / 4))
+            if d ~= "" and d ~= "=" then
+                local nd = b64_map[d]
+                if not nd then
+                    return nil
+                end
+                out[#out + 1] = string.char((nc % 4) * 64 + nd)
+            end
+        end
+        i = i + 4
+    end
+    return table.concat(out)
+end
+
+-- SQLite stores the decoded text. The migration writes CRYPTO_DECODE('…','base64').
+local function read_crypto_decode(s, i)
+    local start = skip_ws(s, i)
+    local pos = start
+    local wrapped = false
+    if s:sub(pos, pos) == "(" then
+        wrapped = true
+        pos = skip_ws(s, pos + 1)
+    end
+    local after = keyword_at(s, pos, "CRYPTO_DECODE")
+    if not after then
+        return nil, i
+    end
+    pos = skip_ws(s, after)
+    if s:sub(pos, pos) ~= "(" then
+        return nil, i
+    end
+    pos = skip_ws(s, pos + 1)
+    local payload
+    payload, pos = read_sq(s, pos)
+    if not payload or payload.kind ~= "str" then
+        return nil, i
+    end
+    pos = skip_ws(s, pos)
+    if s:sub(pos, pos) ~= "," then
+        return nil, i
+    end
+    pos = skip_ws(s, pos + 1)
+    local how
+    how, pos = read_sq(s, pos)
+    if not how or how.text:lower() ~= "base64" then
+        return nil, i
+    end
+    pos = skip_ws(s, pos)
+    if s:sub(pos, pos) ~= ")" then
+        return nil, i
+    end
+    pos = skip_ws(s, pos + 1)
+    if wrapped then
+        if s:sub(pos, pos) ~= ")" then
+            return nil, i
+        end
+        pos = pos + 1
+    end
+    local text = b64_decode(payload.text)
+    if not text then
+        return nil, i
+    end
+    return { kind = "str", text = text }, pos
 end
 
 local function read_value(s, i)
@@ -217,6 +316,10 @@ local function read_value(s, i)
         if not after:match("[%w_]") then
             return { kind = "num", text = num }, i + #num
         end
+    end
+    local decoded, decoded_at = read_crypto_decode(s, i)
+    if decoded then
+        return decoded, decoded_at
     end
     local e = skip_expr(s, i)
     if e == i then

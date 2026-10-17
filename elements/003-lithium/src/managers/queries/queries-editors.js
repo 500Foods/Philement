@@ -7,6 +7,7 @@
  */
 
 import { log, Subsystems, Status } from '../../core/log.js';
+import { sanitizeHtml } from '../../core/utils.js';
 import { toast } from '../../shared/toast.js';
 import {
   EditorState,
@@ -380,8 +381,11 @@ export class EditorManager {
 
     try {
       const { marked } = await import('marked');
-      const htmlContent = await marked.parse(markdownContent);
-      container.innerHTML = `<div class="queries-preview-content">${htmlContent}</div>`;
+      const htmlContent = sanitizeHtml(await marked.parse(markdownContent));
+      const preview = document.createElement('div');
+      preview.className = 'queries-preview-content';
+      preview.innerHTML = htmlContent;
+      container.replaceChildren(preview);
     } catch (error) {
       console.error('[QueriesManager] Failed to render markdown:', error);
     }

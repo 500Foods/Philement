@@ -3,6 +3,10 @@
 -- post-run result-line builder.
 --
 -- CHANGELOG
+-- 0.6.11 - 2026-10-17 - Step labels share one width; counts are four digits
+-- 0.6.9 - 2026-10-16 - Loading screen keeps one line per finished step
+-- 0.6.8 - 2026-10-16 - Result counts use the dashboard column
+-- 0.6.7 - 2026-10-16 - Progress log stays separate; phase labels name the work
 -- 0.6.6 - 2026-10-07 - Progress tint treats type and dropped as catalog
 -- 0.6.5 - 2026-10-07 - Expect progress may include engine=<name>
 -- 0.6.4 - 2026-09-08 - Dark-grey progress bar background
@@ -89,9 +93,119 @@ local function tint_cell(prog, ref, ui)
     end
 end
 
+local function touch_step(prog, key, label, cur, tot, detail)
+    local steps = prog.steps
+    local step
+    for i = 1, #steps do
+        if steps[i].key == key then
+            step = steps[i]
+        end
+    end
+    if not step then
+        for i = 1, #steps do
+            steps[i].done = true
+        end
+        step = {
+            key = key,
+            label = label,
+            cur = 0,
+            tot = 0,
+            detail = "",
+            done = false,
+        }
+        steps[#steps + 1] = step
+    end
+    step.label = label
+    if cur and cur > 0 then
+        step.cur = cur
+    end
+    if tot and tot > 0 then
+        step.tot = tot
+    end
+    if detail and detail ~= "" then
+        step.detail = detail:gsub("^%s+", ""):gsub("%s+$", "")
+    end
+    if step.tot > 0 and step.cur >= step.tot then
+        step.done = true
+    end
+end
+
+local function note_phase(prog, line)
+    local phase, detail = line:match("^phase: (%S+)%s*(.*)")
+    if not phase then
+        return
+    end
+    detail = detail or ""
+    prog.phase = phase
+    prog.detail = detail
+    if phase == "discover" then
+        local files = detail:match("^files=(%d+)")
+        if files then
+            prog.discover_total = tonumber(files)
+            touch_step(prog, "discover", "Finding migration files",
+                prog.discover_total, prog.discover_total, "")
+        else
+            touch_step(prog, "discover", "Finding migration files", 0, 0, "")
+        end
+    elseif phase == "expect" then
+        touch_step(prog, "expect", "Reading migration", 0, 0, "")
+    elseif phase == "dump" then
+        touch_step(prog, "dump", "Reading the database", 0, 0, "")
+    elseif phase == "compare" then
+        touch_step(prog, "compare", "Comparing queries", 0, 0, "")
+    elseif phase == "remediate" then
+        touch_step(prog, "remediate", "Writing the report", 0, 0, "")
+    elseif phase == "catalog" then
+        local fc, ft = detail:match("^fold%s+(%d+)/(%d+)")
+        if not fc then
+            fc, ft = detail:match("^table%s+(%d+)/(%d+)")
+        end
+        if fc then
+            prog.cat_current = tonumber(fc)
+            prog.cat_total = tonumber(ft)
+        end
+        local tname = detail:match("^table%s+%d+/%d+%s+(%S+)")
+        if tname then
+            prog.name = tname
+        else
+            prog.name = nil
+        end
+        local pn = detail:match("^probe%s+(%d+)")
+        if pn then
+            prog.cat_total = tonumber(pn)
+            prog.cat_current = 0
+            prog.name = nil
+        end
+        if detail:find("^fold", 1) then
+            touch_step(prog, "fold", "Folding migration DDL",
+                prog.cat_current, prog.cat_total, "")
+        elseif detail:find("^table", 1) then
+            touch_step(prog, "tables", "Finding tables",
+                prog.cat_current, prog.cat_total, prog.name or "")
+        elseif detail:find("^probe", 1) then
+            touch_step(prog, "shapes", "Reading table shapes", 0, 0, "")
+        end
+    elseif phase == "rows" then
+        local rc, rt, rname = detail:match("^probe%s+(%d+)/(%d+)%s*(.*)")
+        if rc then
+            prog.row_current = tonumber(rc)
+            prog.row_total = tonumber(rt)
+            if rname and rname ~= "" then
+                prog.name = rname
+            end
+            touch_step(prog, "rows", "Checking default rows",
+                prog.row_current, prog.row_total, prog.name or "")
+        elseif detail:find("^skipped", 1) then
+            touch_step(prog, "rows", "Checking default rows", 0, 0, "")
+            prog.steps[#prog.steps].done = true
+        end
+    end
+end
+
 local function parse_schematool_progress(log, fallback_total)
     local prog = {
         phase = "starting",
+        detail = "",
         current = 0,
         total = fallback_total or 0,
         ref = nil,
@@ -100,31 +214,44 @@ local function parse_schematool_progress(log, fallback_total)
         cell_issue = {},
         ref_at = {},
         compare_current = 0,
+        discover_total = 0,
+        cat_current = 0,
+        cat_total = 0,
+        row_current = 0,
+        row_total = 0,
+        steps = {},
+        ref_name = {},
     }
     local text = read_tail_bytes(log, 262144)
     for line in (text .. "\n"):gmatch("([^\n]*)\n") do
-        local phase = line:match("^phase: (%S+)")
-        if phase then
-            prog.phase = phase
-        end
-        local cur, tot, ref, name = line:match("^expect (%d+)/(%d+) ref (%d+) engine=%S+ name=(.*)")
-        if not cur then
-            cur, tot, ref, name = line:match("^expect (%d+)/(%d+) ref (%d+) name=(.*)")
-        end
-        if not cur then
-            cur, tot, ref = line:match("^expect (%d+)/(%d+) ref (%d+)")
+        note_phase(prog, line)
+        local cur, tot, ref, rest = line:match("^expect (%d+)/(%d+) ref (%d+)%s*(.*)")
+        local name
+        if rest and rest ~= "" then
+            name = rest:match("name=(.*)")
         end
         if cur then
             prog.phase = "expect"
             prog.current = tonumber(cur) or 0
             prog.total = tonumber(tot) or prog.total
             prog.ref = tonumber(ref)
-            if name then
-                prog.name = name
+            if name and name ~= "" then
+                prog.name = name:gsub("^%s+", ""):gsub("%s+$", "")
+            else
+                prog.name = nil
             end
             if prog.ref then
                 prog.ref_at[prog.ref] = prog.current
+                if prog.name and prog.name ~= "" then
+                    prog.ref_name[prog.ref] = prog.name
+                end
             end
+            local detail = prog.ref and string.format("%04d", prog.ref) or ""
+            if prog.name and prog.name ~= "" then
+                detail = detail .. " " .. prog.name
+            end
+            touch_step(prog, "expect", "Reading migration",
+                prog.current, prog.total, detail)
         end
         local ccur, ctot, cref, cclass = line:match("^compare (%d+)/(%d+) ref (%d+) (%S+)")
         if ccur then
@@ -147,6 +274,13 @@ local function parse_schematool_progress(log, fallback_total)
                 }
                 tint_cell(prog, prog.ref, ui)
             end
+            local title = prog.ref_name[prog.ref] or ""
+            local detail = prog.ref and string.format("%04d", prog.ref) or ""
+            if title ~= "" then
+                detail = detail .. " " .. title
+            end
+            touch_step(prog, "compare", "Comparing queries",
+                prog.compare_current, tonumber(ctot) or prog.total, detail)
         end
         local catref, catclass = line:match("^catalog ref (%d+) (%S+)")
         if not catref then
@@ -215,6 +349,103 @@ local function progress_eighths(prog)
     return cells
 end
 
+local PHASE_LABEL = {
+    starting = "Starting",
+    discover = "Finding migration files",
+    expect = "Reading migration",
+    dump = "Reading the database",
+    compare = "Comparing queries",
+    catalog = "Reading table shapes",
+    rows = "Checking default rows",
+    remediate = "Writing the report",
+    done = "Finished",
+}
+
+local ACTIVITY_LABELS = {
+    "Finding migration files",
+    "Reading migration",
+    "Reading the database",
+    "Comparing queries",
+    "Folding migration DDL",
+    "Reading table shapes",
+    "Finding tables",
+    "Checking default rows",
+    "Writing the report",
+}
+
+local ACTIVITY_WIDTH = 0
+for i = 1, #ACTIVITY_LABELS do
+    if #ACTIVITY_LABELS[i] > ACTIVITY_WIDTH then
+        ACTIVITY_WIDTH = #ACTIVITY_LABELS[i]
+    end
+end
+
+local COUNT_WIDTH = 9
+
+local function step_line(step)
+    local label = string.format("%-" .. ACTIVITY_WIDTH .. "s", step.label or "")
+    local cur = step.cur or 0
+    local tot = step.tot or 0
+    local detail = step.detail or ""
+    if step.done then
+        detail = "Done"
+    elseif tot < 1 and detail == "" then
+        detail = "…"
+    end
+    local count
+    if tot > 0 then
+        count = string.format("%04d/%04d", cur, tot)
+    else
+        count = string.rep(" ", COUNT_WIDTH)
+    end
+    if detail ~= "" then
+        return string.format("%s %s: %s", label, count, detail)
+    end
+    return string.format("%s %s", label, count)
+end
+
+local function phase_text(prog)
+    prog = prog or {}
+    local phase = prog.phase or "starting"
+    local detail = prog.detail or ""
+    local label = PHASE_LABEL[phase] or phase
+    if phase == "catalog" and detail:find("^fold", 1) then
+        label = "Folding migration DDL"
+    elseif phase == "rows" and detail:find("^probe", 1) then
+        label = "Checking default rows"
+    end
+    local extra = ""
+    if phase == "expect" and (prog.total or 0) > 0 then
+        extra = string.format("%d / %d", prog.current or 0, prog.total)
+        local desc = prog.name
+        if not desc or desc == "" then
+            desc = prog.ref and ("ref " .. tostring(prog.ref)) or ""
+        end
+        if desc ~= "" then
+            extra = extra .. "   " .. desc
+        end
+    elseif phase == "compare" then
+        extra = string.format("%d / %d",
+            prog.compare_current or prog.current or 0, prog.total or 0)
+    elseif phase == "discover" and (prog.discover_total or 0) > 0 then
+        extra = string.format("%d files", prog.discover_total)
+    elseif phase == "catalog" and (prog.cat_total or 0) > 0 then
+        extra = string.format("%d / %d", prog.cat_current or 0, prog.cat_total)
+        if prog.name and prog.name ~= "" and detail:find("^table", 1) then
+            extra = extra .. "   " .. prog.name
+        end
+    elseif phase == "rows" and (prog.row_total or 0) > 0 then
+        extra = string.format("%d / %d", prog.row_current or 0, prog.row_total)
+        if prog.name and prog.name ~= "" then
+            extra = extra .. "   " .. prog.name
+        end
+    end
+    if extra ~= "" then
+        return "  " .. label .. "   " .. extra
+    end
+    return "  " .. label
+end
+
 local function progress_bar_spans(prog)
     local spans = {}
     local cells = progress_eighths(prog)
@@ -279,6 +510,7 @@ end
 
 local function invoke_schematool(opts, screen, app, show_mode_fn)
     local log = opts.work_dir .. "/" .. C.INSTANCE_LOG
+    local progress = opts.work_dir .. "/" .. C.INSTANCE_PROGRESS
     local exitf = opts.work_dir .. "/schemahelper_schematool.exit"
     local parts = {
         W.sh_quote(opts.wrapper),
@@ -302,10 +534,15 @@ local function invoke_schematool(opts, screen, app, show_mode_fn)
     if wipe then
         wipe:close()
     end
+    local wipe_p = io.open(progress, "w")
+    if wipe_p then
+        wipe_p:close()
+    end
     os.remove(exitf)
     local total = W.count_disk_refs(opts.migrations, opts.design)
     app.progress = {
         phase = "starting",
+        detail = "",
         current = 0,
         total = total,
         ref = nil,
@@ -315,7 +552,8 @@ local function invoke_schematool(opts, screen, app, show_mode_fn)
         issue_vis = 8,
     }
     local cmd = "(" .. table.concat(parts, " ") .. " > " .. W.sh_quote(log)
-        .. " 2>&1; echo $? > " .. W.sh_quote(exitf) .. ") &"
+        .. " 2> " .. W.sh_quote(progress)
+        .. "; echo $? > " .. W.sh_quote(exitf) .. ") &"
     os.execute(cmd)
     while true do
         local raw = C.t.input.readansi(0.2)
@@ -326,7 +564,7 @@ local function invoke_schematool(opts, screen, app, show_mode_fn)
         end
         local scroll = app.progress and app.progress.issue_scroll or 0
         local vis = app.progress and app.progress.issue_vis or 8
-        app.progress = parse_schematool_progress(log, total)
+        app.progress = parse_schematool_progress(progress, total)
         app.progress.issue_scroll = scroll
         app.progress.issue_vis = vis
         apply_issue_scroll(app, 0)
@@ -340,6 +578,10 @@ local function invoke_schematool(opts, screen, app, show_mode_fn)
                 app.progress.current = app.progress.total
             end
             app.progress.phase = "done"
+            local steps = app.progress.steps or {}
+            for i = 1, #steps do
+                steps[i].done = true
+            end
             show_mode_fn(screen, app, "running")
             return code, log
         end
@@ -499,7 +741,11 @@ local function build_result_lines(opts, ran, exit_code, built, err, Q, ATTR_OK)
     if err then
         add(err, ATTR.ERR)
         if ran then
-            local tail = log_tail(opts.work_dir .. "/" .. C.INSTANCE_LOG, 6)
+            local tail_path = opts.work_dir .. "/" .. C.INSTANCE_PROGRESS
+            local tail = log_tail(tail_path, 8)
+            if #tail == 0 then
+                tail = log_tail(opts.work_dir .. "/" .. C.INSTANCE_LOG, 8)
+            end
             for i = 1, #tail do
                 add(tail[i], ATTR.PATH)
             end
@@ -507,22 +753,47 @@ local function build_result_lines(opts, ran, exit_code, built, err, Q, ATTR_OK)
     end
     if built and not err then
         local tot = built.totals
-        add(string.format("Total migrations found     %d", tot.total), ATTR.PROMPT)
-        add(string.format("Perfect migrations         %d", tot.perfect), ATTR.PROMPT)
-        add(string.format("Accepted variations        %d", tot.accepted), ATTR.PROMPT)
-        add(string.format("Findings for review        %d", tot.subject), ATTR.PROMPT)
+        local rows = {
+            { label = "Total migrations found", value = tot.total },
+            { label = "Perfect migrations", value = tot.perfect },
+            { label = "Accepted variations", value = tot.accepted },
+            { label = "Findings for review", value = tot.subject },
+            { label = "Live extras (not applicable)", value = tot.info or 0 },
+            { label = "Unkeyed DML (AutoMigration)", value = tot.unkeyed or 0 },
+        }
         if tot.applied > 0 or tot.packet > 0 then
-            add(string.format("Applied / packets          %d / %d", tot.applied, tot.packet),
-                ATTR.PATH)
+            rows[#rows + 1] = {
+                label = "Applied / packets",
+                value = string.format("%d / %d", tot.applied, tot.packet),
+            }
+        end
+        local class_rows = {}
+        for i = 1, #built.classes do
+            local c = built.classes[i]
+            class_rows[#class_rows + 1] = {
+                label = c.name,
+                value = c.count,
+                indent = 2,
+            }
+        end
+        local aligned_in = {}
+        for i = 1, #rows do
+            aligned_in[#aligned_in + 1] = rows[i]
+        end
+        for i = 1, #class_rows do
+            aligned_in[#aligned_in + 1] = class_rows[i]
+        end
+        local aligned = Q.align_count_lines(aligned_in)
+        for i = 1, #rows do
+            add(aligned[i], ATTR.PROMPT)
         end
         add("", ATTR.PATH)
         add("Variance classes (findings for review)", ATTR.SECTION)
-        if #built.classes == 0 then
+        if #class_rows == 0 then
             add("  (none)", ATTR.PATH)
         else
-            for i = 1, #built.classes do
-                local c = built.classes[i]
-                add(string.format("  %-28s %d", c.name, c.count), ATTR.PATH)
+            for i = 1, #class_rows do
+                add(aligned[#rows + i], ATTR.PATH)
             end
         end
     end
@@ -537,6 +808,8 @@ end
 return {
     read_tail_bytes = read_tail_bytes,
     parse_schematool_progress = parse_schematool_progress,
+    phase_text = phase_text,
+    step_line = step_line,
     progress_bar = progress_bar,
     progress_eighths = progress_eighths,
     progress_bar_spans = progress_bar_spans,

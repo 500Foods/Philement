@@ -8,6 +8,8 @@
 # Database/Lua operations, audit orchestration, and rendering are in lib/.
 #
 # CHANGELOG
+# 1.17.0 - 2026-10-16 - Fold executed DDL; numeric row keys; no-forward is not missing LOAD
+# 1.16.0 - 2026-10-16 - database.lua is the shared copy under elements/002-helium/helium
 # 1.15.2 - 2026-10-07 - Catalog audit also writes rows_findings.json
 # 1.15.1 - 2026-10-07 - Detail text points type and dropped at SchemaHelper
 # 1.15.0 - 2026-10-07 - Catalog compares type; info extras are not failures
@@ -41,7 +43,7 @@ LUA_DIR="${SCRIPT_DIR}/lua"
 DB_DIR="${SCRIPT_DIR}/db"
 LIB_DIR="${SCRIPT_DIR}/lib"
 
-VERSION="1.15.2"
+VERSION="1.17.0"
 
 # Source library modules (helpers, audit orchestration, rendering)
 # shellcheck source=extras/schematool/lib/schematool_init.sh # dependency checks + command lookups
@@ -65,10 +67,11 @@ Usage:
   schematool.sh --migrations DIR --design NAME --engine ENGINE [options]
 
 Required:
-  --migrations DIR       First design's folder (database.lua and design_NNNN.lua)
+  --migrations DIR       First design's migrations folder (design_NNNN.lua).
+                         database.lua is elements/002-helium/helium/database.lua.
   --design NAME          One design, or a plus-list (acuranzo+argent).
                          Later names are sibling folders
-                         (…/<design>/migrations), each with database.lua.
+                         (…/<design>/migrations).
   --engine ENGINE        postgresql|mysql|mariadb|sqlite|db2|firebird|mssql (aliases: postgres, yugabytedb → postgresql)
 
 Connection (required for full audit / --dump-db; env fallbacks apply):
@@ -370,8 +373,9 @@ if [[ ! -d "${MIGRATIONS}" ]]; then
     exit 1
 fi
 
-if [[ ! -f "${MIGRATIONS}/database.lua" ]]; then
-    echo "Error: database.lua not found in ${MIGRATIONS}" >&2
+SHARED_DATABASE="${MIGRATIONS}/../../helium/database.lua"
+if [[ ! -f "${SHARED_DATABASE}" && ! -f "${MIGRATIONS}/database.lua" ]]; then
+    echo "Error: database.lua not found in ${MIGRATIONS}/../../helium or ${MIGRATIONS}" >&2
     exit 1
 fi
 

@@ -9,6 +9,7 @@
 --     [--only-failures] [--include-reverse] [--include-diagram]
 --
 -- CHANGELOG
+-- 1.1.0 - 2026-10-16 - No forward body on this engine is not a missing LOAD
 -- 1.0.1 - 2026-09-08 - Per-ref stderr: compare N/M ref R class
 -- 1.0.0 - 2026-07-29 - Phase 4 compare
 
@@ -372,6 +373,7 @@ for _, d in ipairs(disk) do
     local has_1003 = types and types[1003] ~= nil
     local has_load = has_1000 or has_1003
     local has_apply = has_1003
+    local no_forward = (not has_load) and exp_fwd == nil
 
     local load_s = yn(has_load)
     local apply_s = yn(has_apply)
@@ -393,13 +395,17 @@ for _, d in ipairs(disk) do
     end
 
     if not has_load then
-        notes[#notes + 1] = "on disk only"
-        is_fail = true
-        findings.missing_load[#findings.missing_load + 1] = {
-            ref = ref,
-            file = file,
-            expected = exp_fwd,
-        }
+        if no_forward then
+            notes[#notes + 1] = "no forward on this engine"
+        else
+            notes[#notes + 1] = "on disk only"
+            is_fail = true
+            findings.missing_load[#findings.missing_load + 1] = {
+                ref = ref,
+                file = file,
+                expected = exp_fwd,
+            }
+        end
     end
 
     if has_load and not has_apply then
@@ -501,17 +507,19 @@ for _, d in ipairs(disk) do
     if is_anomaly then
         counts.anomalies = counts.anomalies + 1
     end
-    if not has_load then
+    if not has_load and not no_forward then
         counts.missing_load = counts.missing_load + 1
-    elseif not has_apply then
+    elseif not has_apply and not no_forward then
         counts.missing_apply = counts.missing_apply + 1
     end
     if has_content_drift then
         counts.drift = counts.drift + 1
     end
 
-    local row_ok = (not is_fail) and (not is_anomaly) and has_load and has_apply
-        and load_match == "Y" and apply_match == "Y"
+    local row_ok = (not is_fail) and (not is_anomaly) and (
+        no_forward
+        or (has_load and has_apply and load_match == "Y" and apply_match == "Y")
+    )
     if row_ok then
         counts.ok = counts.ok + 1
         findings.ok_refs[#findings.ok_refs + 1] = ref
@@ -532,6 +540,8 @@ for _, d in ipairs(disk) do
     local class = "ok"
     if is_anomaly then
         class = "anomaly"
+    elseif no_forward then
+        class = "ok"
     elseif not has_load then
         class = "missing_load"
     elseif not has_apply then

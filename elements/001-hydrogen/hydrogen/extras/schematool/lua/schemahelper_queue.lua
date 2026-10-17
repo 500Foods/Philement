@@ -5,6 +5,7 @@
 -- _qload, _qdecode, _qexplain, _qdiff, _qview, _qrender).
 --
 -- CHANGELOG
+-- 0.6.11 - 2026-10-16 - Re-export aligned dashboard counts
 -- 0.6.10 - 2026-10-09 - Split into lua/ submodules for the 1000-line cap;
 --   this file is now the thin orchestrator + find_by_id
 -- 0.6.9 - 2026-10-07 - Default-row and unkeyed DML review text
@@ -78,6 +79,7 @@ M.finding_hash = U.finding_hash
 
 M.build_review_lines_detailed = R.build_review_lines_detailed
 M.build_dashboard_lines = R.build_dashboard_lines
+M.align_count_lines = R.align_count_lines
 M.build_review_lines = R.build_review_lines
 M.accept_holds = R.accept_holds
 M.build = R.build

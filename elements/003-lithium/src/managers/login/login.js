@@ -11,6 +11,7 @@ import { getTransitionDuration } from '../../core/transitions.js';
 import { LoginPanels } from './login-panels.js';
 import { hasLookup } from '../../shared/lookups.js';
 import { log, Subsystems, Status } from '../../core/log.js';
+import { toast } from '../../shared/toast.js';
 import { PasswordManager } from './login-password-manager.js';
 import { LanguagePanel } from './login-language-panel.js';
 import { LogsPanel } from './login-logs-panel.js';
@@ -25,6 +26,67 @@ import './login.css';
 
 // Convenience alias for this module's subsystem
 const LOGIN = Subsystems.LOGIN;
+
+/**
+ * CATCHUP L7 order. These ids render before every other OIDC provider.
+ * A partner button exists only when `login partners.<id>` is true and
+ * `auth.oidc_providers` has an entry with that id.
+ */
+const LOGIN_PARTNER_ORDER = ['didit', 'apple', 'google', 'microsoft'];
+
+function isRenderableProvider(provider) {
+  return Boolean(provider && provider.id && provider.label);
+}
+
+function partnerFlagMap(partnerFlags) {
+  if (!partnerFlags || typeof partnerFlags !== 'object' || Array.isArray(partnerFlags)) {
+    return {};
+  }
+  return partnerFlags;
+}
+
+/**
+ * Order login buttons: enabled partners that have a provider entry,
+ * then every other renderable OIDC provider. A partner id with a
+ * false or missing flag is omitted, including from the tail.
+ * @param {Array} providers
+ * @param {Object} partnerFlags
+ * @returns {Array}
+ */
+export function orderLoginProviders(providers, partnerFlags) {
+  const list = Array.isArray(providers) ? providers.filter(isRenderableProvider) : [];
+  const flags = partnerFlagMap(partnerFlags);
+  const firstById = new Map();
+  for (const provider of list) {
+    if (!firstById.has(provider.id)) firstById.set(provider.id, provider);
+  }
+
+  const ordered = [];
+  for (const id of LOGIN_PARTNER_ORDER) {
+    if (flags[id] !== true) continue;
+    const provider = firstById.get(id);
+    if (!provider) continue;
+    ordered.push(provider);
+  }
+  for (const provider of list) {
+    if (LOGIN_PARTNER_ORDER.includes(provider.id)) continue;
+    ordered.push(provider);
+  }
+  return ordered;
+}
+
+/**
+ * Partner ids whose flag is true and that have no renderable provider.
+ * @param {Array} providers
+ * @param {Object} partnerFlags
+ * @returns {string[]}
+ */
+export function hiddenLoginPartners(providers, partnerFlags) {
+  const list = Array.isArray(providers) ? providers.filter(isRenderableProvider) : [];
+  const flags = partnerFlagMap(partnerFlags);
+  const ids = new Set(list.map((provider) => provider.id));
+  return LOGIN_PARTNER_ORDER.filter((id) => flags[id] === true && !ids.has(id));
+}
 
 /**
  * Login Manager Class
@@ -49,7 +111,8 @@ export default class LoginManager {
    * Initialize the login manager
    */
   async init() {
-    await this.render();
+    const ready = await this.render();
+    if (!ready) return;
     this.setupEventListeners();
     this.setupLookupListeners();
     this.initializeButtonStates();
@@ -183,11 +246,18 @@ export default class LoginManager {
     // Load HTML template
     try {
       const response = await fetch('/src/managers/login/login.html');
+      if (!response.ok) {
+        throw new Error(`Login template HTTP ${response.status}`);
+      }
       const html = await response.text();
       this.container.innerHTML = html;
     } catch (error) {
-      console.error('[LoginManager] Failed to load template:', error);
-      this.renderFallback();
+      log(LOGIN, Status.ERROR, `[LoginManager] Failed to load template: ${error.message}`);
+      toast.error('Login page failed to load', {
+        description: error.message,
+        subsystem: 'Login',
+      });
+      return false;
     }
 
     // Cache DOM elements
@@ -331,70 +401,21 @@ export default class LoginManager {
 
     // Subtly highlight the last-used login method (Phase 26).
     this.applyPasswordRecentHighlight();
-  }
-
-  /**
-   * Render a fallback login form if template fails to load
-   */
-  renderFallback() {
-    this.container.innerHTML = `
-      <div id="login-page">
-        <div class="login-container" id="login-panel">
-          <div class="login-header">
-            <h1>Lithium</h1>
-            <p>A Philement Project</p>
-          </div>
-          <form class="login-form" id="login-form" novalidate>
-            <div class="form-group">
-              <div class="input-with-icon">
-                <input type="text" id="login-username" placeholder="Username" required>
-                <button type="button" class="input-icon-btn" id="login-clear-username" data-tooltip="Clear" data-tip-placement="right">
-                  <fa fa-xmark></fa>
-                </button>
-              </div>
-            </div>
-            <div class="form-group">
-              <div class="input-with-icon">
-                <input type="password" id="login-password" placeholder="Password" required>
-                <button type="button" class="input-icon-btn" id="login-toggle-password" data-tooltip="Show password" data-tip-placement="right">
-                  <fa fa-eye></fa>
-                </button>
-              </div>
-            </div>
-            <div class="login-error" id="login-error">
-              <span id="login-error-text">Error</span>
-            </div>
-            <div class="login-btn-group">
-              <button type="button" class="login-btn-icon" id="login-language-btn" data-tooltip="Select language" data-tip-placement="left">
-                <fa fa-earth-americas></fa>
-              </button>
-              <button type="button" class="login-btn-icon" id="login-theme-btn" data-tooltip="Select theme" data-tip-placement="left">
-                <fa fa-palette></fa>
-              </button>
-              <button type="submit" class="login-btn-primary" id="login-submit" data-tooltip="Login" data-tip-placement="left">
-                <fa fa-sign-in-alt></fa>
-                <span>Login</span>
-              </button>
-              <button type="button" class="login-btn-icon" id="login-logs-btn" data-tooltip="View Session Log" data-tip-placement="left">
-                <fa fa-receipt></fa>
-              </button>
-              <button type="button" class="login-btn-icon" id="login-help-btn" data-tooltip="Help" data-tip-placement="left">
-                <fa circle-question></fa>
-              </button>
-            </div>
-          </form>
-        </div>
-      </div>
-    `;
+    return true;
   }
 
   /**
    * Render zero-or-more OIDC provider buttons in the alt login row.
    *
-   * Reads `auth.oidc_providers` from the Lithium config. If the array is
-   * absent or empty, nothing is rendered.
-   * Per LITHIUM-INS.md rule #1 (no fallback path), there is no greyed-out
-   * placeholder — the UI simply does not render when OIDC is disabled.
+   * Reads `auth.oidc_providers` and the top-level `login partners` map
+   * (the key contains a space). Partner ids are Didit, Apple, Google,
+   * then Microsoft. Each renders only when its flag is true and a
+   * provider entry with that id exists. Other providers follow.
+   * A false flag or a missing provider omits the button. There is no
+   * greyed-out placeholder.
+   *
+   * Template buttons already in the row are removed. The live path is
+   * this render.
    *
    * Each button:
    *   - Has class `login-alt-btn login-btn-oidc` and `data-provider="<id>"`.
@@ -406,7 +427,8 @@ export default class LoginManager {
    *
    * On render, if `auth.last_method` in `lithiumSettings` starts with
    * `'oidc:'` and matches this provider's id, the `.is-recent` class is
-   * added to the button as a subtle highlight (Phase 26).
+   * added to the button as a subtle highlight (Phase 26). Plain `oidc`
+   * highlights every rendered provider button, same as before.
    *
    * @param {Object} [deps] - Dependency injection for tests.
    * @param {Function} [deps.getConfigValue]   - Config accessor override.
@@ -421,22 +443,27 @@ export default class LoginManager {
     const settings        = deps.lithiumSettings ??
       (typeof window !== 'undefined' ? window.lithiumSettings : null);
 
-    const providers = gcv('auth.oidc_providers', []);
-
-    // Nothing to render.
-    if (!Array.isArray(providers) || providers.length === 0) return;
-
-    const container = this.elements.altButtonGroup;
-
+    const container = this.elements?.altButtonGroup;
     if (!container) return;
+
+    // Config is the live row. A stale template button must not remain.
+    container.querySelectorAll('button').forEach((node) => node.remove());
+
+    const providers = gcv('auth.oidc_providers', []);
+    const partnerFlags = gcv('login partners', {});
+    const ordered = orderLoginProviders(providers, partnerFlags);
+    const hidden = hiddenLoginPartners(providers, partnerFlags);
+    if (hidden.length > 0) {
+      log(LOGIN, Status.INFO,
+        `Login partners hidden (no OIDC provider): ${hidden.join(', ')}`);
+    }
 
     // Read the stored last-used login method for the `.is-recent` highlight.
     const lastMethod = settings?.get('auth.last_method') ?? null;
 
-    // Build one button per valid provider.
+    // Build one button per provider that passed the partner gate.
     let rendered = 0;
-    providers.forEach((provider) => {
-      if (!provider || !provider.id || !provider.label) return;
+    ordered.forEach((provider) => {
 
       const btn = document.createElement('button');
       btn.type = 'button';

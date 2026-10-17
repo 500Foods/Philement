@@ -47,10 +47,12 @@ from the migration files and probes the live catalog (targeted, not a full-DB du
 
 - `tables`, `jq`, `lua` (and `lua-brotli` for compressed migration payloads)
 - Engine client for the target: `psql` / `mysql` / `mariadb` / `sqlite3` / `db2` / `isql-fb` / in-container `sqlcmd` (MSSQL)
-- Migrations folder containing `database.lua` and `design_NNNN.lua`.
-  `--design acuranzo+argent` keeps that folder as the Acuranzo anchor and
-  also reads the sibling `argent/migrations` directory. A single design
-  name still uses only `--migrations`.
+- Migrations folder containing `design_NNNN.lua`. `database.lua` is
+  [`/elements/002-helium/helium/database.lua`](/elements/002-helium/helium/database.lua).
+  `--design acuranzo+courses+argent` keeps that folder as the Acuranzo anchor and
+  also reads the sibling `courses/migrations` and `argent/migrations` directories.
+  `acuranzo+argent` stays valid and omits Courses.
+  A single design name still uses only `--migrations`.
 
 ## Quick start
 
@@ -58,7 +60,7 @@ from the migration files and probes the live catalog (targeted, not a full-DB du
 # From hydrogen root (or any cwd with absolute paths)
 extras/schematool/schematool.sh \
   --migrations "$HELIUM_ROOT/acuranzo/migrations" \
-  --design acuranzo+argent \
+  --design acuranzo+courses+argent \
   --engine sqlite \
   --database "$HYDROGEN_ROOT/tests/artifacts/database/sqlite/hydrodemo.sqlite" \
   --from 1000 --to 1005 \
@@ -70,7 +72,7 @@ PostgreSQL (env fallbacks `ACURANZO_DB_*`):
 ```bash
 extras/schematool/schematool.sh \
   --migrations "$HELIUM_ROOT/acuranzo/migrations" \
-  --design acuranzo+argent \
+  --design acuranzo+courses+argent \
   --engine postgresql \
   --schema demo \
   --from 1000 --to 1010 \
@@ -107,7 +109,7 @@ Specialized modes:
 # 1190 acceptance — accounts.password_hash must be live-nullable
 extras/schematool/schematool.sh \
   --migrations "$HELIUM_ROOT/acuranzo/migrations" \
-  --design acuranzo+argent \
+  --design acuranzo+courses+argent \
   --engine sqlite \
   --database "$HYDROGEN_ROOT/tests/artifacts/database/sqlite/hydrodemo.sqlite" \
   --catalog --only-tables accounts \
@@ -119,7 +121,7 @@ PostgreSQL (Test 40 / `ACURANZO_DB_*`):
 ```bash
 extras/schematool/schematool.sh \
   --migrations "$HELIUM_ROOT/acuranzo/migrations" \
-  --design acuranzo+argent \
+  --design acuranzo+courses+argent \
   --engine postgresql \
   --schema demo \
   --catalog --only-tables accounts \

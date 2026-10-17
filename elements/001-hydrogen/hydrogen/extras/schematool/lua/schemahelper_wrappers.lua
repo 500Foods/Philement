@@ -2,6 +2,7 @@
 -- SchemaTool wrapper discovery + metadata, plus path/sh quoting helpers.
 --
 -- CHANGELOG
+-- 0.6.6 - 2026-10-17 - Picker script column matches the longest name
 -- 0.6.5 - 2026-10-07 - Disk ref count follows a design plus-list
 -- 0.6.4 - 2026-10-07 - Discover follows the sixteen-stem WRAPPER_ORDER
 -- 0.6.3 - 2026-10-07 - Picker rows key by path; test role is its own row
@@ -117,7 +118,7 @@ local function discover_wrappers(dir)
     return list
 end
 
-local function wrapper_label(item)
+local function wrapper_label(item, name_width)
     local base = item.path:match("([^/]+)$") or item.path
     local engine = item.engine
     local role = item.role
@@ -125,7 +126,11 @@ local function wrapper_label(item)
         engine, role = wrapper_engine_role(engine or "")
     end
     local blurb = connect.picker_blurb(engine, role)
-    return string.format("%-28s %s", base, blurb)
+    local width = name_width or #base
+    if width < #base then
+        width = #base
+    end
+    return string.format("%-" .. width .. "s  %s", base, blurb)
 end
 
 local function sh_quote(s)

@@ -16,7 +16,11 @@ import {
   authQueries,
   query,
   queries,
+  buildScriptPayload,
+  invokeScript,
+  getScriptJob,
 } from '../../src/shared/conduit.js';
+import * as radar from '../../src/shared/radar-controller.js';
 
 // ─── Pure Functions ──────────────────────────────────────────────────────
 
@@ -352,5 +356,139 @@ describe('queries', () => {
       database: 'Acuranzo',
       queries: [{ query_ref: 1, params: {} }],
     });
+  });
+});
+
+describe('buildScriptPayload', () => {
+  it('should require a Group.Name script and omit optional fields', () => {
+    expect(buildScriptPayload({ script: 'Api.Echo' })).toEqual({ script: 'Api.Echo' });
+  });
+
+  it('should reject a missing script, a slash, and a name without a group', () => {
+    expect(() => buildScriptPayload()).toThrow('script is required');
+    expect(() => buildScriptPayload({ script: 'Enroll/FreeCourse' })).toThrow('not a path');
+    expect(() => buildScriptPayload({ script: 'Echo' })).toThrow('Group.Name');
+    expect(() => buildScriptPayload({ script: '.Echo' })).toThrow('Group.Name');
+    expect(() => buildScriptPayload({ script: 'Api.' })).toThrow('Group.Name');
+  });
+
+  it('should pass params through and refuse _hydrogen', () => {
+    expect(buildScriptPayload({
+      script: 'Api.Echo',
+      params: { hello: 'world' },
+    })).toEqual({
+      script: 'Api.Echo',
+      params: { hello: 'world' },
+    });
+    expect(() => buildScriptPayload({
+      script: 'Api.Echo',
+      params: { _hydrogen: { sub: 'nope' } },
+    })).toThrow('reserved');
+    expect(() => buildScriptPayload({
+      script: 'Api.Echo',
+      params: ['nope'],
+    })).toThrow('params must be an object');
+  });
+
+  it('should clamp timeoutSeconds to 1–60 and require a boolean wait', () => {
+    expect(buildScriptPayload({ script: 'Api.Echo', timeoutSeconds: 0 }).timeout_seconds).toBe(1);
+    expect(buildScriptPayload({ script: 'Api.Echo', timeoutSeconds: 90 }).timeout_seconds).toBe(60);
+    expect(buildScriptPayload({ script: 'Api.Echo', timeoutSeconds: 15, wait: false })).toEqual({
+      script: 'Api.Echo',
+      timeout_seconds: 15,
+      wait: false,
+    });
+    expect(() => buildScriptPayload({ script: 'Api.Echo', timeoutSeconds: 1.5 })).toThrow('integer');
+    expect(() => buildScriptPayload({ script: 'Api.Echo', wait: 'yes' })).toThrow('boolean');
+  });
+});
+
+describe('invokeScript', () => {
+  let mockApi;
+
+  beforeEach(() => {
+    mockApi = { post: vi.fn(), get: vi.fn() };
+  });
+
+  it('should post the payload and return a terminal envelope', async () => {
+    const envelope = {
+      status: 'failed',
+      job_id: 'ABCDE',
+      script: 'Api.Echo',
+      error: 'boom',
+    };
+    mockApi.post.mockResolvedValue(envelope);
+
+    const result = await invokeScript(mockApi, {
+      script: 'Api.Echo',
+      params: { hello: 'world' },
+      wait: true,
+      timeoutSeconds: 15,
+    });
+
+    expect(mockApi.post).toHaveBeenCalledWith('conduit/script', {
+      script: 'Api.Echo',
+      params: { hello: 'world' },
+      wait: true,
+      timeout_seconds: 15,
+    });
+    expect(result).toBe(envelope);
+  });
+
+  it('should blip the radar and attach serverError on an HTTP failure', async () => {
+    const add = vi.spyOn(radar, 'addTarget').mockReturnValue('target-1');
+    const remove = vi.spyOn(radar, 'removeTarget').mockImplementation(() => {});
+    const httpError = {
+      message: 'HTTP 400',
+      data: {
+        success: false,
+        error: 'missing_script',
+        message: "Field 'script' is required",
+      },
+    };
+    mockApi.post.mockRejectedValue(httpError);
+
+    await expect(invokeScript(mockApi, { script: 'Api.Echo' })).rejects.toBe(httpError);
+    expect(httpError.serverError).toEqual({
+      message: "Field 'script' is required",
+      error: 'missing_script',
+      queryRef: undefined,
+      database: undefined,
+    });
+    expect(add).toHaveBeenCalledWith('triangle', 'rest');
+    expect(remove).toHaveBeenCalledWith('target-1');
+    add.mockRestore();
+    remove.mockRestore();
+  });
+
+  it('should throw the envelope error when success is false', async () => {
+    mockApi.post.mockResolvedValue({
+      success: false,
+      error: 'script_not_found',
+      message: 'Script not found',
+    });
+
+    await expect(invokeScript(mockApi, { script: 'Api.Echo' })).rejects.toMatchObject({
+      message: 'Script not found',
+      serverError: {
+        message: 'Script not found',
+        error: 'script_not_found',
+      },
+    });
+  });
+});
+
+describe('getScriptJob', () => {
+  it('should GET the job and reject a bad id', async () => {
+    const mockApi = {
+      get: vi.fn().mockResolvedValue({ status: 'pending', job_id: 'ABCDE' }),
+    };
+
+    const result = await getScriptJob(mockApi, 'ABCDE');
+
+    expect(mockApi.get).toHaveBeenCalledWith('conduit/script/ABCDE');
+    expect(result.status).toBe('pending');
+    await expect(getScriptJob(mockApi, '')).rejects.toThrow('jobId is required');
+    await expect(getScriptJob(mockApi, 'a/b')).rejects.toThrow('jobId is required');
   });
 });

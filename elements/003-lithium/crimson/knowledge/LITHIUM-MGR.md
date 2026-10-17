@@ -598,9 +598,12 @@ These are registered in `app.js` but not yet implemented:
 
 Canonical map locked in CATCHUP Phase 0
 ([`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md)).
-Runtime menu IDs 7–33 today:
-`src/app/manager-loader.js` + `config/lithium.json`. Helium Lookup **042**
-(Modules) currently seeds 1–32 only (no 33/34/35) — sync in Phase 0a.
+Runtime menu IDs are 7–35 in `src/app/manager-loader.js` and
+`config/lithium.json`. `getPermittedManagers()` with no punchcard
+returns `[7..35]`. Helium Lookup **042** keys 33–35 are in
+[`acuranzo_1378.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1378.lua)
+(Phase 0a packet, handed over, not applied by the agent). A database
+that has not applied that file still seeds modules 1–32.
 
 Tour matching uses **numeric ID only**. Do not give utility Terminal
 numeric 5 (collides with Crimson tours).
@@ -626,8 +629,8 @@ numeric 5 (collides with Crimson tours).
 | 29 | Queries | `queries/` | Canonical LithiumTable consumer |
 | 32 | Terminal | `terminal/` | Menu 32. Utility key `terminal` **without** numeric 5. |
 | 33 | Scripting | `scripting/` | In `manager-loader.js`; **added to Lookup 042 in migration 1378** |
-| **34** | **Course Manager** | `course-manager/` | **First deploy.** Stub created (Phase 0a). Band D implements. |
-| **35** | **Course Builder** | `course-builder/` | **Pipeline UI.** Stub created (Phase 0a). Band E implements. |
+| **34** | **Course Manager** | `course-manager/` | **First deploy.** Placeholder (Phase 0a). Calls QueryRef **155**. `cleanup()`. Band D is the real UI. |
+| **35** | **Course Builder** | `course-builder/` | Placeholder (Phase 0a). `teardown()`. Band E is the real UI. |
 
 ---
 

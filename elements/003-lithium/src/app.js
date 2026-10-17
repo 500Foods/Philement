@@ -13,6 +13,7 @@ import './styles/layout.css';
 import './styles/components.css';
 import './styles/transitions.css';
 import './styles/toast.css';
+import './styles/confirm.css';
 import './styles/tooltip.css';
 
 // Camera popout styles (global component)

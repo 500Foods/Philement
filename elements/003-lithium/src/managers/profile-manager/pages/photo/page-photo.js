@@ -1096,6 +1096,10 @@ this._updateSliderPosition(this._customSliders.x, this.xPct);
     }
   }
 
+  canSave() {
+    return true;
+  }
+
   /**
    * Save method for settings page
    * @returns {Promise<Object>}

@@ -266,7 +266,7 @@ export default class QueriesManager {
         QUERYTYPE: rowData.query_type_a28 ?? 1,
         QUERYDIALECT: rowData.query_dialect_a30 ?? 1,
         QUERYSTATUS: rowData.query_status_a27 ?? 1,
-        USERID: this.app?.user?.id ?? 0,
+        USERID: this.app?.auth?.user?.id ?? 0,
         QUERYREF: parseInt(rowData.query_ref, 10) || 0,
       },
       STRING: {
@@ -325,7 +325,7 @@ export default class QueriesManager {
         QUERYTYPE: rowData.query_type_a28 ?? 1,
         QUERYDIALECT: rowData.query_dialect_a30 ?? 1,
         QUERYSTATUS: rowData.query_status_a27 ?? 1,
-        USERID: this.app?.user?.id ?? 0,
+        USERID: this.app?.auth?.user?.id ?? 0,
         QUERYREF: parseInt(rowData.query_ref, 10) || 0,
       },
       STRING: {

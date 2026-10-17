@@ -163,6 +163,65 @@ export function extractError(response) {
   return null;
 }
 
+const SCRIPT_TIMEOUT_MIN = 1;
+const SCRIPT_TIMEOUT_MAX = 60;
+
+/**
+ * Build a POST body for /api/conduit/script.
+ * Script names are Group.Name. A slash is rejected. params._hydrogen
+ * is reserved for the server and is never sent. timeoutSeconds is
+ * clamped to 1–60. Omitted wait and timeout stay omitted.
+ *
+ * @param {Object} options
+ * @param {string} options.script
+ * @param {Object} [options.params]
+ * @param {boolean} [options.wait]
+ * @param {number} [options.timeoutSeconds]
+ * @returns {{ script: string, params?: Object, wait?: boolean, timeout_seconds?: number }}
+ */
+export function buildScriptPayload({ script, params, wait, timeoutSeconds } = {}) {
+  if (typeof script !== 'string' || script.length === 0) {
+    throw new Error('invokeScript: script is required');
+  }
+  if (script.includes('/')) {
+    throw new Error('invokeScript: script name must be Group.Name, not a path');
+  }
+  const dot = script.indexOf('.');
+  if (dot <= 0 || dot === script.length - 1) {
+    throw new Error('invokeScript: script name must be Group.Name');
+  }
+
+  const payload = { script };
+
+  if (params !== undefined && params !== null) {
+    if (typeof params !== 'object' || Array.isArray(params)) {
+      throw new Error('invokeScript: params must be an object');
+    }
+    if (Object.prototype.hasOwnProperty.call(params, '_hydrogen')) {
+      throw new Error('invokeScript: params._hydrogen is reserved');
+    }
+    payload.params = params;
+  }
+
+  if (wait !== undefined && wait !== null) {
+    if (typeof wait !== 'boolean') {
+      throw new Error('invokeScript: wait must be a boolean');
+    }
+    payload.wait = wait;
+  }
+
+  if (timeoutSeconds !== undefined && timeoutSeconds !== null) {
+    if (!Number.isInteger(timeoutSeconds)) {
+      throw new Error('invokeScript: timeoutSeconds must be an integer');
+    }
+    let timeout = timeoutSeconds;
+    if (timeout < SCRIPT_TIMEOUT_MIN) timeout = SCRIPT_TIMEOUT_MIN;
+    if (timeout > SCRIPT_TIMEOUT_MAX) timeout = SCRIPT_TIMEOUT_MAX;
+    payload.timeout_seconds = timeout;
+  }
+
+  return payload;
+}
 
 // ─── API Functions (thin wrappers using the api client) ──────────────────
 
@@ -272,6 +331,70 @@ export async function queries(api, queryList, database) {
   }
 }
 
+/**
+ * POST or GET a conduit call that returns an envelope, not rows.
+ * Radar and error.serverError match authQuery.
+ *
+ * @param {Object} api
+ * @param {'post'|'get'} method
+ * @param {string} path
+ * @param {Object} [body]
+ * @returns {Promise<Object>}
+ */
+async function conduitEnvelope(api, method, path, body) {
+  const targetId = addTarget('triangle', 'rest');
+  let response;
+  try {
+    response = method === 'get'
+      ? await api.get(path)
+      : await api.post(path, body);
+  } catch (httpError) {
+    const serverErr = extractError(httpError?.data);
+    if (serverErr) {
+      httpError.serverError = serverErr;
+    }
+    throw httpError;
+  } finally {
+    if (targetId) removeTarget(targetId);
+  }
+
+  const error = extractError(response);
+  if (error) {
+    const err = new Error(error.message);
+    err.serverError = error;
+    throw err;
+  }
+
+  return response;
+}
+
+/**
+ * Run a named Lua script. Returns the job envelope. HTTP 200 statuses
+ * completed, failed, killed, and timeout are returned, not thrown.
+ *
+ * @param {Object} api
+ * @param {Object} options - See buildScriptPayload
+ * @returns {Promise<Object>}
+ */
+export async function invokeScript(api, options = {}) {
+  const payload = buildScriptPayload(options);
+  return conduitEnvelope(api, 'post', 'conduit/script', payload);
+}
+
+/**
+ * Read one script job. jobId must be a non-empty string without a slash.
+ *
+ * @param {Object} api
+ * @param {string} jobId
+ * @returns {Promise<Object>}
+ */
+export async function getScriptJob(api, jobId) {
+  if (typeof jobId !== 'string' || jobId.length === 0 || jobId.includes('/')) {
+    throw new Error('getScriptJob: jobId is required');
+  }
+  return conduitEnvelope(api, 'get', `conduit/script/${encodeURIComponent(jobId)}`);
+}
+
 
 // ─── Default Export ──────────────────────────────────────────────────────
 
@@ -282,9 +405,12 @@ export default {
   extractRows,
   extractBatchRows,
   extractError,
+  buildScriptPayload,
   // API wrappers
   authQuery,
   authQueries,
   query,
   queries,
+  invokeScript,
+  getScriptJob,
 };

@@ -9,6 +9,7 @@
 
 import { log, Subsystems, Status } from '../core/log.js';
 import { toast } from '../shared/toast.js';
+import { confirmDialog, promptDialog } from '../shared/confirm.js';
 import {
   buildColumnDefinitionsFromTemplateState,
   generateTemplateJSON as generateTemplateJSONFromCapture,
@@ -402,16 +403,22 @@ export const LithiumTableUIMixin = {
     }
   },
 
-  saveTemplate() {
+  async saveTemplate() {
     const template = this.generateTemplateJSON();
     if (!template) return;
 
     const defaultName = `${template._templateMeta?.name || 'Template'} - ${new Date().toLocaleDateString()}`;
-    const name = window.prompt('Enter template name:', defaultName);
-    if (!name) return;
+    const name = await promptDialog({
+      title: 'Save template',
+      message: 'Enter template name',
+      defaultValue: defaultName,
+      confirmLabel: 'Save',
+    });
+    const trimmed = name?.trim();
+    if (!trimmed) return;
 
     template._templateMeta = template._templateMeta || {};
-    template._templateMeta.name = name;
+    template._templateMeta.name = trimmed;
 
     const templates = getSavedTemplates(this);
 
@@ -464,9 +471,11 @@ export const LithiumTableUIMixin = {
   async clearTemplate() {
     if (!this.table) return;
 
-    const confirmed = window.confirm(
-      'Reload the default template from the database?\n\nThis will reset the current table view, but will not delete any saved templates.'
-    );
+    const confirmed = await confirmDialog({
+      title: 'Reload default template',
+      message: 'Reload the default template from the database?\n\nThis will reset the current table view, but will not delete any saved templates.',
+      confirmLabel: 'Reload',
+    });
     if (!confirmed) return;
 
     try {

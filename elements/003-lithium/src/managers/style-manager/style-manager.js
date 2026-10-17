@@ -269,6 +269,8 @@ export default class StyleManager {
     this.setupFooter();
     this.restorePanelState();
     this.show();
+    this.updateUndoRedoButtons();
+    this.refreshStyleActionButtons();
   }
 
   async render() {
@@ -392,7 +394,10 @@ export default class StyleManager {
     // Register CSS editor with editHelper (bound to lookup table)
     this.editHelper.registerEditor('css', {
       getContent: () => this.cssEditor?.state?.doc?.toString() || '',
-      setContent: (content) => setEditorContentNoHistory(this.cssEditor, content),
+      setContent: (content) => {
+        setEditorContentNoHistory(this.cssEditor, content);
+        this.refreshStyleActionButtons();
+      },
       setEditable: (editable) => this.setCssEditorEditable(editable),
       boundTable: this.lookupTable,
     });
@@ -762,7 +767,7 @@ export default class StyleManager {
     }
   }
 
-  handleStateToggle(state) {
+  async handleStateToggle(state) {
     this.currentState = state;
 
     this.elements.stateButtons.forEach(btn => {
@@ -779,7 +784,7 @@ export default class StyleManager {
     }
 
     if (isCssState && !this.cssEditor) {
-      this.initCssEditor();
+      await this.initCssEditor();
     }
 
     // Only populate CSS editor if it's empty (first time showing CSS view)
@@ -789,6 +794,7 @@ export default class StyleManager {
       setEditorContentNoHistory(this.cssEditor, this.generateCss());
     }
 
+    this.refreshStyleActionButtons();
     log(Subsystems.MANAGER, Status.INFO, `[Style] State changed to: ${state}`);
   }
 
@@ -815,8 +821,11 @@ const extensions = buildEditorExtensions({
                // Defer footer update to prevent DOM interference during CodeMirror updates
                requestAnimationFrame(() => this.cssEditorFooter?.updateCursorPosition());
              }
-             if (update.docChanged && this.isCssEditorInEditMode) {
-               this.handleCssEditorDirty();
+             if (update.docChanged) {
+               this.refreshStyleActionButtons();
+               if (this.isCssEditorInEditMode) {
+                 this.handleCssEditorDirty();
+               }
              }
            },
           ...this.editHelper.getCodeMirrorKeymapOptions(),
@@ -868,6 +877,7 @@ const extensions = buildEditorExtensions({
         storageKey: 'style_css_editor',
       });
       this.cssEditorFooter.init();
+      this.refreshStyleActionButtons();
 
       // Double-click to enter edit mode
       this.elements.cssEditor?.addEventListener('dblclick', () => {
@@ -1063,9 +1073,25 @@ ${selector}:disabled {
 
   // ── Editor Actions ───────────────────────────────────────────────────────
 
+  cssEditorText() {
+    return this.cssEditor?.state?.doc?.toString() ?? '';
+  }
+
+  refreshStyleActionButtons() {
+    const hasCss = this.cssEditorText().trim().length > 0;
+    if (this.elements?.applyBtn) this.elements.applyBtn.disabled = !hasCss;
+    if (this.elements?.copyCssBtn) this.elements.copyCssBtn.disabled = !hasCss;
+  }
+
   applyStyleChanges() {
-    // TODO: Apply style changes to configuration
-    log(Subsystems.MANAGER, Status.INFO, '[Style] Apply style changes');
+    const css = this.cssEditorText();
+    if (!css.trim() || !this.previewStyleEl) {
+      this.refreshStyleActionButtons();
+      log(Subsystems.MANAGER, Status.WARN, '[Style] Apply skipped: no CSS text');
+      return;
+    }
+    this.previewStyleEl.textContent = css;
+    log(Subsystems.MANAGER, Status.INFO, '[Style] Applied CSS to preview');
     toast.success('Style changes applied');
   }
 
@@ -1078,11 +1104,16 @@ ${selector}:disabled {
   }
 
   copyCssToClipboard() {
-    // TODO: Generate CSS from current properties and copy to clipboard
-    const css = `/* Generated CSS */\n/* Target: ${this.currentTarget?.target?.label || 'Unknown'} */\n`;
+    const css = this.cssEditorText();
+    if (!css.trim()) {
+      this.refreshStyleActionButtons();
+      log(Subsystems.MANAGER, Status.WARN, '[Style] Copy skipped: no CSS text');
+      return;
+    }
     navigator.clipboard.writeText(css).then(() => {
       toast.success('CSS copied to clipboard');
-    }).catch(() => {
+    }).catch((error) => {
+      log(Subsystems.MANAGER, Status.ERROR, `[Style] Failed to copy CSS: ${error.message}`);
       toast.error('Failed to copy CSS');
     });
   }

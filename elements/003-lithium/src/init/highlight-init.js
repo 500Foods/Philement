@@ -427,18 +427,22 @@ class HighlightInit {
    */
   highlightInline(elementId, language = 'javascript') {
     const element = document.getElementById(elementId);
-    if (element) {
-      // For inline code, we wrap it in a span with appropriate classes
-      const code = element.textContent;
-      element.innerHTML = `<span class="hljs-inline language-${language}">${code}</span>`;
-      
-      if (typeof hljs !== 'undefined') {
-        hljs.highlightElement(element.querySelector('span'));
-      }
-      
-      return element;
+    if (!element) return null;
+
+    const code = element.textContent;
+    const span = document.createElement('span');
+    span.className = 'hljs-inline';
+    if (isHighlightLanguage(language)) {
+      span.classList.add(`language-${language}`);
     }
-    return null;
+    span.textContent = code;
+    element.replaceChildren(span);
+
+    if (typeof hljs !== 'undefined') {
+      hljs.highlightElement(span);
+    }
+
+    return element;
   }
 
   /**
@@ -460,6 +464,16 @@ class HighlightInit {
     const element = this.highlightedElements.get(elementId);
     return element ? element.textContent : null;
   }
+}
+
+/**
+ * highlight.js language ids are a single token. Anything else stays
+ * off the class attribute.
+ * @param {string} language
+ * @returns {boolean}
+ */
+function isHighlightLanguage(language) {
+  return typeof language === 'string' && /^[a-z0-9_+#-]+$/i.test(language);
 }
 
 // Export singleton instance

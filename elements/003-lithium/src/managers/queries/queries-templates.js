@@ -6,6 +6,7 @@
 
 import { log, Subsystems, Status } from '../../core/log.js';
 import { toast } from '../../shared/toast.js';
+import { confirmDialog } from '../../shared/confirm.js';
 
 // Constants
 const TEMPLATES_KEY = 'lithium_queries_templates';
@@ -72,8 +73,13 @@ export class TemplateManager {
   /**
    * Delete a template by name
    */
-  deleteTemplate(templateName) {
-    const confirmed = window.confirm(`Delete template "${templateName}"?\n\nThis action cannot be undone.`);
+  async deleteTemplate(templateName) {
+    const confirmed = await confirmDialog({
+      title: 'Delete template',
+      message: `Delete template "${templateName}"?\n\nThis action cannot be undone.`,
+      confirmLabel: 'Delete',
+      danger: true,
+    });
     if (!confirmed) return;
 
     const templates = this.loadTemplates();

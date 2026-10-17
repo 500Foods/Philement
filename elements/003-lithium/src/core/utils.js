@@ -5,6 +5,7 @@
  * Reads user preferences from localStorage or uses sensible defaults.
  */
 
+import DOMPurify from 'dompurify';
 import { getClaims } from './jwt.js';
 
 const PREFS_KEY = 'lithium_preferences';
@@ -347,6 +348,53 @@ export function escapeHtml(text) {
   const div = document.createElement('div');
   div.textContent = text;
   return div.innerHTML;
+}
+
+// happy-dom's DOMParser leaves a nested script and on* attributes in
+// DOMPurify's string. A browser already removed them. Re-parse only
+// when those markers are still in the string.
+const ACTIVE_HTML = /<\s*(?:script|iframe|object|embed)\b|\son[a-z0-9_-]+\s*=|javascript\s*:/i;
+
+function htmlStillActive(html) {
+  return ACTIVE_HTML.test(html);
+}
+
+function stripActiveHtml(html) {
+  const host = document.createElement('div');
+  host.innerHTML = html;
+  host.querySelectorAll('script, iframe, object, embed').forEach((node) => {
+    node.remove();
+  });
+  host.querySelectorAll('*').forEach((el) => {
+    for (const attr of [...el.attributes]) {
+      const name = attr.name.toLowerCase();
+      const dropHandler = name.startsWith('on');
+      const dropUrl = (name === 'href' || name === 'src' || name === 'xlink:href')
+        && /^\s*javascript:/i.test(attr.value);
+      if (dropHandler || dropUrl) {
+        el.removeAttribute(attr.name);
+      }
+    }
+  });
+  return host.innerHTML;
+}
+
+/**
+ * Strip active content from an HTML fragment.
+ * For text, use escapeHtml. This is the path for markdown HTML.
+ *
+ * @param {string} html
+ * @returns {string} Sanitized HTML, or '' when html is not a string
+ */
+export function sanitizeHtml(html) {
+  if (typeof html !== 'string' || html.length === 0) {
+    return '';
+  }
+  const clean = DOMPurify.sanitize(html);
+  if (!htmlStillActive(clean)) {
+    return clean;
+  }
+  return stripActiveHtml(clean);
 }
 
 /**

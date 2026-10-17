@@ -2,9 +2,10 @@
 # SchemaTool wrapper — YugabyteDB (Test 38: hydrogen_test_38_yugabytedb.json)
 #
 # Sets connection from YUGABYTE_DB_* (NOT ACURANZO_DB_* — different host/port).
-# Dialect adapter: postgresql (psql). Schema: test. Design: acuranzo+argent.
+# Dialect adapter: postgresql (psql). Schema: test. Design: acuranzo+courses+argent.
 #
 # CHANGELOG
+# 1.1.1 - 2026-10-16 - Full suite acuranzo+courses+argent
 # 1.1.0 - 2026-10-07 - Payload acuranzo+argent in one run
 # 1.0.0 - 2026-10-07 - Test 38 wrapper; schema test
 
@@ -42,7 +43,7 @@ export SCHEMATOOL_DB_SCHEMA="test"
 
 exec "${SCHEMATOOL}" \
     --migrations "${MIGRATIONS_DIR}" \
-    --design acuranzo+argent \
+    --design acuranzo+courses+argent \
     --engine yugabytedb \
     --schema test \
     --host "${YUGABYTE_DB_HOST}" \

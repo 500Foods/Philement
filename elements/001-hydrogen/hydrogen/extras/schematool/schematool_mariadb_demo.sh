@@ -4,9 +4,10 @@
 # Sets connection env vars from the Test 40 MariaDB config and calls schematool.sh.
 # Engine-specific env: MARIADB_DB_{HOST,PORT,NAME,USER,PASS}
 # Schema:             demo
-# Design:             acuranzo+argent
+# Design:             acuranzo+courses+argent
 #
 # CHANGELOG
+# 1.4.1 - 2026-10-16 - Full suite acuranzo+courses+argent
 # 1.4.0 - 2026-10-07 - Payload acuranzo+argent in one run
 # 1.3.0 - 2026-10-07 - Renamed from schematool_mariadb.sh
 # 1.2.0 - 2026-10-07 - Demo schema is demo
@@ -36,6 +37,6 @@ export SCHEMATOOL_DB_SCHEMA="demo"
 
 exec "${SCHEMATOOL}" \
     --migrations "${MIGRATIONS_DIR}" \
-    --design acuranzo+argent \
+    --design acuranzo+courses+argent \
     --engine mariadb \
     "$@"

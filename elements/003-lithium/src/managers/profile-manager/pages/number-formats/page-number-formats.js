@@ -13,7 +13,6 @@ export class NumberFormatsPage extends SimpleSettingsPage {
   }
   async onInit() { await super.onInit(); log(Subsystems.MANAGER, Status.DEBUG, '[NumberFormatsPage] Initialized (stub)'); }
   async loadData() { /* TODO */ }
-  async save() { this.setDirty(false); return { success: true }; }
 }
 
 export default NumberFormatsPage;

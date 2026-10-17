@@ -2,9 +2,10 @@
 # SchemaTool wrapper — YugabyteDB (Test 40: hydrogen_test_40_yugabytedb.json)
 #
 # Sets connection from YUGABYTE_DB_* (NOT ACURANZO_DB_* — different host/port).
-# Dialect adapter: postgresql (psql). Schema: demo. Design: acuranzo+argent.
+# Dialect adapter: postgresql (psql). Schema: demo. Design: acuranzo+courses+argent.
 #
 # CHANGELOG
+# 1.4.1 - 2026-10-16 - Full suite acuranzo+courses+argent
 # 1.4.0 - 2026-10-07 - Payload acuranzo+argent in one run
 # 1.3.0 - 2026-10-07 - Renamed from schematool_yugabytedb.sh
 # 1.2.0 - 2026-08-22 - Resolve sibling schematool.sh, then HYDROGEN_ROOT
@@ -40,7 +41,7 @@ export SCHEMATOOL_DB_SCHEMA="demo"
 # --engine yugabytedb (before alias) selects YUGABYTE_DB_* env in schematool.sh
 exec "${SCHEMATOOL}" \
     --migrations "${MIGRATIONS_DIR}" \
-    --design acuranzo+argent \
+    --design acuranzo+courses+argent \
     --engine yugabytedb \
     --schema demo \
     --host "${YUGABYTE_DB_HOST}" \

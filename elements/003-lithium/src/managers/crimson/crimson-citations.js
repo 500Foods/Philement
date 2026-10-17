@@ -520,25 +520,65 @@ CrimsonManager.prototype.highlightCitation = function(citationNumber) {
  * @param {Map<number,number>} turnMapping - Per-turn index to global number mapping
  * @returns {string} Content with citation links
  */
-CrimsonManager.prototype.convertCitationMarkers = function(content, messageId, turnMapping) {
-  if (!content) return '';
+CrimsonManager.prototype.applyCitationLinks = function(root, _messageId, turnMapping) {
+  if (!root) return;
 
-  return content.replace(/\[\[C(\d+)\]\]/g, (match, num) => {
-    const turnIndex = parseInt(num, 10);
-    const globalNum = (turnMapping && turnMapping.has(turnIndex))
-      ? turnMapping.get(turnIndex)
-      : turnIndex;
-    const citation = this.allCitations.find(c => c.number === globalNum);
-    let tooltipText;
-    if (citation?.name && citation.name !== 'Untitled') {
-      tooltipText = citation.name;
-    } else if (citation?.url) {
-      tooltipText = this.formatReference(citation.url);
-    } else {
-      tooltipText = `Citation ${globalNum}`;
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
+
+  for (const textNode of textNodes) {
+    const text = textNode.nodeValue || '';
+    if (!text.includes('[[C')) continue;
+    const pattern = /\[\[C(\d+)\]\]/g;
+    const fragment = document.createDocumentFragment();
+    let last = 0;
+    let found = false;
+    for (const match of text.matchAll(pattern)) {
+      found = true;
+      if (match.index > last) {
+        fragment.appendChild(document.createTextNode(text.slice(last, match.index)));
+      }
+      fragment.appendChild(this._createCitationLink(match[1], turnMapping));
+      last = match.index + match[0].length;
     }
-    return `<a href="#" class="crimson-citation-link" data-citation="${globalNum}" title="${this.escapeHtml(tooltipText)}"><fa fa-book-open-lines class="crimson-citation-link-icon"></fa></a>`;
-  });
+    if (!found) continue;
+    if (last < text.length) {
+      fragment.appendChild(document.createTextNode(text.slice(last)));
+    }
+    textNode.parentNode.replaceChild(fragment, textNode);
+  }
+
+  processIcons(root);
+};
+
+CrimsonManager.prototype._createCitationLink = function(num, turnMapping) {
+  const turnIndex = parseInt(num, 10);
+  const globalNum = (turnMapping && turnMapping.has(turnIndex))
+    ? turnMapping.get(turnIndex)
+    : turnIndex;
+  const citation = Array.isArray(this.allCitations)
+    ? this.allCitations.find(c => c.number === globalNum)
+    : null;
+  let tooltipText;
+  if (citation?.name && citation.name !== 'Untitled') {
+    tooltipText = citation.name;
+  } else if (citation?.url) {
+    tooltipText = this.formatReference(citation.url);
+  } else {
+    tooltipText = `Citation ${globalNum}`;
+  }
+
+  const link = document.createElement('a');
+  link.href = '#';
+  link.className = 'crimson-citation-link';
+  link.dataset.citation = String(globalNum);
+  link.setAttribute('title', tooltipText);
+  const icon = document.createElement('fa');
+  icon.setAttribute('fa-book-open-lines', '');
+  icon.className = 'crimson-citation-link-icon';
+  link.appendChild(icon);
+  return link;
 };
 
 /**

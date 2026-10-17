@@ -55,6 +55,10 @@ export class LanguagePage extends SimpleSettingsPage {
     }
   }
 
+  canSave() {
+    return true;
+  }
+
   /**
    * Save the form data
    */

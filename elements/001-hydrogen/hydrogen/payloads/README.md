@@ -164,10 +164,14 @@ payload.tar.br.enc (encrypted, brotli-compressed)
 │   ├── xterm-addon-attach.js.br (brotli-compressed)
 │   ├── xterm-addon-fit.js.br (brotli-compressed)
 │   └── xtermjs_version.txt (version info)
-└── helium/, acuranzo/, etc./
-    ├── database.lua (database configuration)
-    └── *.lua (migration files)
+├── helium/
+│   ├── database.lua (shared macro scripts)
+│   └── database_<engine>.lua
+└── acuranzo/, courses/, argent/
+    └── <design>_NNNN.lua (migration files)
 ```
+
+`courses/` is packed from `elements/002-helium/courses/migrations` (`courses_4000.lua` through `courses_4075.lua`). The full suite value is `PAYLOAD:acuranzo+courses+argent`. The archive rebuilt by `mka` on 2026-10-16 contains that pack. A connection that does not name `courses` does not load it. Macro scripts are the `helium/database*.lua` set above, not a copy inside each design.
 
 This modular structure allows easy addition of new payload types in separate directories.
 

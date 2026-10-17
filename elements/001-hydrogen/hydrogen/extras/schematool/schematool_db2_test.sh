@@ -4,9 +4,10 @@
 # Engine-specific env: HYDROTST_DB_{USER,NAME,PASS}
 # Host/Port:           localhost:55555 (hardcoded in the Test 35 config)
 # Schema:             test
-# Design:             acuranzo+argent
+# Design:             acuranzo+courses+argent
 #
 # CHANGELOG
+# 1.1.1 - 2026-10-16 - Full suite acuranzo+courses+argent
 # 1.1.0 - 2026-10-07 - Payload acuranzo+argent in one run
 # 1.0.0 - 2026-10-07 - Test 35 wrapper; schema test
 
@@ -41,7 +42,7 @@ done
 
 exec "${SCHEMATOOL}" \
     --migrations "${MIGRATIONS_DIR}" \
-    --design acuranzo+argent \
+    --design acuranzo+courses+argent \
     --engine db2 \
     --schema test \
     "$@"

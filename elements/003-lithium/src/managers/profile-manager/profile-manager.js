@@ -134,7 +134,8 @@ export default class ProfileManager {
     log(Subsystems.MANAGER, Status.INFO, '[ProfileManager] init() START');
     this.api = createRequest();
 
-    await this.render();
+    const ready = await this.render();
+    if (!ready) return;
     this.loadUserInfo();
 
     // Load menu data first (needed for merging with Lookup 60)
@@ -211,12 +212,25 @@ export default class ProfileManager {
    * Render the profile manager template
    */
   async render() {
-    const response = await fetch('/src/managers/profile-manager/profile-manager.html');
-    this.container.innerHTML = await response.text();
+    try {
+      const response = await fetch('/src/managers/profile-manager/profile-manager.html');
+      if (!response.ok) {
+        throw new Error(`Profile template HTTP ${response.status}`);
+      }
+      this.container.innerHTML = await response.text();
+    } catch (error) {
+      log(Subsystems.MANAGER, Status.ERROR, `[ProfileManager] Failed to load template: ${error.message}`);
+      toast.error('Profile page failed to load', {
+        description: error.message,
+        subsystem: 'Profile',
+      });
+      return false;
+    }
 
     this.cacheElements();
     processIcons(this.container);
     initToolbars();
+    return true;
   }
 
   /**
@@ -244,17 +258,6 @@ export default class ProfileManager {
       btnFont: this.container.querySelector('#btn-font'),
       btnPrettify: this.container.querySelector('#btn-prettify'),
     };
-  }
-
-  /**
-   * Render fallback if template fails
-   */
-  renderFallback() {
-    this.container.innerHTML = `
-      <div id="profile-manager-page">
-        <p>Profile Manager loading...</p>
-      </div>
-    `;
   }
 
   /**
@@ -341,7 +344,8 @@ export default class ProfileManager {
         log(Subsystems.MANAGER, Status.DEBUG, `[ProfileManager] Page changed to ${index}`);
       },
       onDirtyChange: (dirty) => {
-        this.updateFooterButtons(dirty);
+        const allow = this.settingsHandler.currentCanSave() !== false;
+        this.updateFooterButtons(Boolean(dirty) && allow);
       },
     });
     this.settingsHandler.init();

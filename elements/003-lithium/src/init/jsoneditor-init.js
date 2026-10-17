@@ -1,5 +1,8 @@
 // JSONEditor Initialization Module
 // Handles vanilla-jsoneditor initialization and configuration
+
+import { log, Subsystems, Status } from '../core/log.js';
+import { toast } from '../shared/toast.js';
 //
 // vanilla-jsoneditor API reference:
 //   import { JSONEditor } from 'vanilla-jsoneditor';
@@ -180,8 +183,11 @@ class JSONEditorInit {
                 const importedData = JSON.parse(event.target.result);
                 editor.set({ json: importedData });
               } catch (error) {
-                console.error('Error parsing JSON file:', error);
-                alert('Invalid JSON file');
+                log(Subsystems.MANAGER, Status.ERROR, `[JSONEditor] Invalid JSON file: ${error.message}`);
+                toast.error('Invalid JSON file', {
+                  description: error.message,
+                  subsystem: 'JSON',
+                });
               }
             };
             reader.readAsText(file);

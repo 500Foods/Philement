@@ -7,6 +7,8 @@
 # generate_database_diagram()
 
 # CHANGELOG
+# 3.2.2 - 2026-10-16 - Include courses; a design with no migrations is not drawn
+# 3.2.1 - 2026-10-16 - Require the shared helium/database*.lua set before drawing
 # 3.2.0 - 2026-10-07 - Seven engines, in this order: postgresql, mysql, sqlite, db2, mariadb, firebird, mssql. A zero-byte SVG is generated again.
 # 3.1.0 - 2026-10-07 - Add argent to DESIGNS, using the Acuranzo schema list
 # 3.0.0 - 2026-07-08 - Metadata capture updated for compact JSON emitted by get_diagram.sh 3.1.0
@@ -22,7 +24,7 @@ TEST_NAME="Database Diagrams"
 TEST_ABBR="ERD"
 TEST_NUMBER="71"
 TEST_COUNTER=0
-TEST_VERSION="3.2.0"
+TEST_VERSION="3.2.2"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -67,7 +69,7 @@ HELIUM_DIR=${HELIUM_ROOT}
 # List of designs to process
 # DESIGNS=( "acuranzo" "helium" "glm" "gaius")
 # Argent is the 2xxx pack on the Acuranzo database, so it uses that schema list.
-DESIGNS=( "acuranzo" "argent" )
+DESIGNS=( "acuranzo" "courses" "argent" )
 
 # Supported database engines. Order is the slot order of DESIGN_SCHEMAS.
 # postgresql, mysql, sqlite, db2, mariadb, firebird, mssql.
@@ -76,10 +78,23 @@ ENGINES=("postgresql" "mysql" "sqlite" "db2" "mariadb" "firebird" "mssql")
 declare -A DESIGN_SCHEMAS
 # Slots: app, acuranzo, (empty sqlite), ACURANZO, test, testfb, testms.
 DESIGN_SCHEMAS["acuranzo"]="app:acuranzo::ACURANZO:test:testfb:testms"
+DESIGN_SCHEMAS["courses"]="app:acuranzo::ACURANZO:test:testfb:testms"
 DESIGN_SCHEMAS["argent"]="app:acuranzo::ACURANZO:test:testfb:testms"
 # DESIGN_SCHEMAS["helium"]="helium::helium:HELIUM"
 # DESIGN_SCHEMAS["glm"]="glm2:glm2:glm2:GLM2"
 # DESIGN_SCHEMAS["gaius"]="gaius:gaius:gaius:GAIUS"
+
+# The diagram path loads the same shared scripts the payload packs.
+if [[ ! -f "${HELIUM_DIR}/helium/database.lua" ]]; then
+    echo "Missing ${HELIUM_DIR}/helium/database.lua" >&2
+    exit 1
+fi
+for engine in "${ENGINES[@]}"; do
+    if [[ ! -f "${HELIUM_DIR}/helium/database_${engine}.lua" ]]; then
+        echo "Missing ${HELIUM_DIR}/helium/database_${engine}.lua" >&2
+        exit 1
+    fi
+done
 
 # Function to generate database diagram for a specific migration number
 generate_database_diagram() {

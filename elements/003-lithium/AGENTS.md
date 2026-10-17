@@ -7,14 +7,15 @@ conflicts. Active plan:
 [`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md)
 (supersedes
 [`/docs/Li/plans/LITHIUM_SPRINT.md`](/docs/Li/plans/LITHIUM_SPRINT.md)).
-Report writer (manager 24). Phases 0–71. Phase 0 approved
-2026-10-10. Next is Phase 1. PDF is the default export. The build
-order is the phase index. CATCHUP stays the active plan until
-Andrew pulls this in.
-[`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md).
-Phased work follows [`/docs/PLANNING.md`](/docs/PLANNING.md).
+Pause point 2026-10-16: Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, and 5 are complete.
+Phase 5a (Didit partner) is next. The report writer (manager 24,
+[`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md),
+Phases 0–71, Phase 0 approved 2026-10-10) stays parked. Its next
+phase is Phase 1, and only after Andrew pulls that plan in. PDF is
+the default export there. Phased work follows
+[`/docs/PLANNING.md`](/docs/PLANNING.md).
 
-**Last reviewed:** 2026-09-09 (CATCHUP plan authored).
+**Last reviewed:** 2026-10-16 (CATCHUP Phase 5 closed).
 
 ---
 
@@ -47,12 +48,13 @@ Live: https://lithium.philement.com — Coverage: https://lithium.philement.com/
 
 - **Language:** Vanilla JS ES modules. No React/Vue/Svelte.
 - **Build:** Vite 8 (`vite.config.js`). Dev port **3000**. Production minify Oxc.
-- **Test:** Vitest 4 + happy-dom. Config: `vitest.config.js`.
+- **Test:** Vitest 5 (`vitest` ^5.0.2) + happy-dom. Config: `vitest.config.js`.
 - **Lint:** ESLint 10 (`eslint.config.js`), Stylelint (`src/**/*.css`).
 - **Tables:** Tabulator 6 wrapped as **LithiumTable** (`src/tables/`).
 - **Editors:** CodeMirror 6 (`src/core/codemirror-setup.js`).
-- **HTML in editors:** SunEditor. **Markdown:** marked. **Sanitize:** DOMPurify
-  is in `package.json` but **was unused as of 2026-08-22** — use it.
+- **HTML in editors:** SunEditor. **Markdown:** marked. **Sanitize:** DOMPurify.
+  `sanitizeHtml` in `src/core/utils.js` wraps it (CATCHUP Phase 2,
+  2026-10-16). The Phase 3 sinks call it.
 - **Tours:** Shepherd.js. **Dates:** Luxon + flatpickr. **Icons:** Font Awesome kit.
 - **Auth:** Hydrogen JWT in `localStorage` via `src/core/jwt.js`.
 - **Node:** >= 18, npm >= 9.
@@ -73,7 +75,7 @@ elements/003-lithium/
 │   ├── app.js                # Thin entry: CSS + LithiumApp
 │   ├── app/                  # LithiumApp, AuthManager, ManagerLoader
 │   ├── core/                 # jwt, log, event-bus, config, popup, toolbar…
-│   ├── shared/               # conduit.js, lookups, toast, websocket
+│   ├── shared/               # conduit.js, lookups, toast, confirm, websocket
 │   ├── tables/               # LithiumTable mixins + column manager
 │   ├── managers/             # One folder per manager
 │   ├── init/                 # Vendor init (CM, SunEditor, highlight, prism)
@@ -135,25 +137,24 @@ OIDC return: `?oidc=1&handoff=` exchanged via `POST /api/auth/oidc/handoff`
 
 ## Managers
 
-### Lifecycle (code vs docs — fix in CATCHUP Phase 1)
+### Lifecycle (CATCHUP Phase 1, 2026-10-16)
 
-Docs say `constructor(app, container)` → `init()` → `render()` → `teardown()`.
+`ManagerLoader.closeManager` (`src/app/manager-loader.js`) calls one
+hook: `destroy`, otherwise `cleanup`, otherwise `teardown`. A thrown
+hook is logged and the slot is still removed. Close does not call
+`onDeactivate`.
 
-`ManagerLoader.closeManager` (`src/app/manager-loader.js`) currently calls
-**only `instance.destroy()`**. Real table managers implement **`cleanup()`**
-(Queries, Lookups, Style, Version, Scripting). Login/Main/placeholders implement
-**`teardown()`**. Terminal implements **`destroy()`**. Closing Queries today
-drops the slot and leaks Tabulator / CodeMirror / splitters.
+`showManager` calls `onDeactivate` on the outgoing instance and
+`onActivate` on the incoming one after the crossfade. There is no
+separate hide path. A manager that is already visible is not
+activated again.
 
-**Target contract (lock in Phase 0, implement in Phase 1):**
+Queries, Lookups, Style, Version History, and Scripting implement
+`cleanup()`. Login, Main, and the placeholders implement `teardown()`.
+Terminal implements `destroy()`.
 
-```text
-closeManager → destroy() if present
-            → else cleanup()
-            → else teardown()
-showManager  → onActivate() if present
-hide         → onDeactivate() if present
-```
+`_importManager` cases 1–6 are gone. Theme `loadManager(1)` still
+returns before the import, because 1 is not in the menu registry.
 
 ### Registration
 
@@ -164,20 +165,21 @@ and broke CSS order (`vite.config.js` comments).
 
 | Kind | Where | IDs |
 |------|-------|-----|
-| Menu | `ManagerLoader.managerRegistry` | **7–33** (Course Manager reserved **34**, Course Builder **35**) |
+| Menu | `ManagerLoader.managerRegistry` | **7–35** (34 Course Manager and 35 Course Builder are registered placeholders) |
 | Utility | `LithiumApp.utilityManagerRegistry` | `user-profile`=3, `session-log`=4, `terminal`=5 |
 | Special | Auth / Main / Tour / Crimson | Login + Main loaded outside registry. Tour is a side-effect import from Main. Crimson is a popout. |
 
 Sidebar labels/icons come from **server menu data** (`getMenu`), not the
-registry. Punchcard `getPermittedManagers()` is called **without a punchcard**
-today and returns `[7..33]`. Course Manager v1 uses JWT `roles` (CATCHUP
-L3). Do not assume punchcard authz.
+registry. Punchcard `getPermittedManagers()` with no punchcard returns
+`[7..35]` (Phase 0a). Course Manager v1 uses JWT `roles` under CATCHUP
+L3. Punchcard is not that gate.
 
-### Canonical ID map (2026-08-22)
+### Canonical ID map
 
-Docs, `lithium.json` `managers`, fallback icons, and `_importManager` cases
-1–6 **disagree**. Until CATCHUP Phase 0 writes this table into `LITHIUM-MGR.md`, treat
-**`manager-loader.js` + `lithium.json`** as runtime truth for menu IDs:
+Runtime truth is `manager-loader.js` plus `config/lithium.json`.
+Ids 34 and 35 were refreshed here on 2026-10-16. `_importManager`
+cases 1–6 were removed in CATCHUP Phase 1. Older manager docs still
+disagree in places.
 
 | ID | Name (config / registry) | Module |
 |----|--------------------------|--------|
@@ -200,27 +202,33 @@ Docs, `lithium.json` `managers`, fallback icons, and `_importManager` cases
 | 30–31 | Sync, Camera | placeholders |
 | 32 | Terminal (menu) | `terminal/` (also utility key `terminal`) |
 | 33 | Scripting | `scripting/` |
-| 34 | Course Manager | **not created yet** — first 500 Courses deploy |
-| 35 | Course Builder | **not created yet** — COURSEBUILDER.md pipeline UI |
+| 34 | Course Manager | `course-manager/` — placeholder (Phase 0a). Calls QueryRef **155**. Band D is the real UI. |
+| 35 | Course Builder | `course-builder/` — placeholder (Phase 0a). Band E is the real UI. |
 
 Tour matching uses **numeric ID only** (`"003.Profile"` matches anything with
 3). Utility Terminal=5 can steal a Crimson tour. Do not add another ID 5.
 
-`_importManager` cases **1–6** are dead and mapped to the wrong modules.
-Theme keyboard `loadManager(1)` is dead (1 is not in the menu registry).
+`_importManager` cases **1–6** were removed in CATCHUP Phase 1.
+Theme keyboard `loadManager(1)` is still dead (1 is not in the menu registry).
 
 ### Implemented vs placeholder
 
-**Real UI:** Login, Main, Queries, Lookups, Style (UI exists; apply/copy are
-no-ops), Version History, Scripting (list + Lua editor + save), Profile
-(partial; many page `save()` stubs return success), Session Log, Terminal,
-Crimson, Tour.
+**Real UI:** Login, Main, Queries, Lookups, Style (Apply and Copy write the
+CSS editor text into `#style-manager-preview`; Undo and Redo stay disabled),
+Version History, Scripting (list + Lua editor + save), Profile (language,
+date formats, photo, and Lookups settings persist; other pages refuse save),
+Session Log, Terminal, Crimson, Tour.
 
 **~22 placeholders** share the same 49-line “under development” shell
 (Dashboard, Mail, Calendar, Contacts, Files, Document, Media, Diagram, Chats,
 Notifications, Annotation, Ticketing, Reports, Role, Security, AI Auditor,
 Job, Sync, Camera, …). `LITHIUM-MGR.md` marks several as Implemented — it is
 wrong. Collapse to one `PlaceholderManager` rather than copy-paste.
+
+Course Manager (34) and Course Builder (35) are separate registered
+placeholders from Phase 0a. Course Manager calls QueryRef **155** and
+implements `cleanup()`. Course Builder implements `teardown()`. Their
+real UI is Band D and Band E.
 
 ### New manager checklist (corrected)
 
@@ -301,9 +309,12 @@ GET /api/conduit/script/{job_id}
 - Do not send `params._hydrogen` (reserved; server injects claims).
 - C does not interpret business logic.
 
-**Lithium has no `invokeScript` helper yet** (`conduit.js` is query-only).
-Scripting Manager does **not** invoke. Course Builder operator buttons must
-use this surface, not new C.
+`invokeScript` and `getScriptJob` live in `src/shared/conduit.js`
+(CATCHUP Phase 2, 2026-10-16). No manager calls them yet. Scripting
+Manager does **not** invoke. Course Builder operator buttons must use
+this surface, not new C. `sanitizeHtml` is in `src/core/utils.js`.
+Lookups, Crimson, Version History, and the Queries summary preview
+call it (CATCHUP Phase 3, 2026-10-16).
 
 ### Other Hydrogen surfaces
 
@@ -371,6 +382,10 @@ MFA/OTP for the test user — that is ops, not a reason to re-implement RP.
 
 Password login stays independent of IdP availability.
 
+Partner buttons (Didit, Apple, Google, Microsoft) render from
+`login partners` plus `auth.oidc_providers` (CATCHUP Phase 5,
+2026-10-16). The checked-in config shows 500 Passwords only.
+
 ---
 
 ## Scripting Manager (ID 33) — current state
@@ -388,21 +403,21 @@ via QueryRefs 129/130, audit footer, splitter.
 - `invokable` column visibility / edit
 - Job poll `GET /api/conduit/script/{job_id}` when `wait: false`
 - Delete, validate/luacheck, run-as-role
-- `cleanup()` actually called (lifecycle Phase 1)
 - Unit tests
 - `LITHIUM-MGR-SCRIPT.md`
-- Shared `invokeScript()` in `conduit.js`
 
-`this.app.user` is unset on `LithiumApp`; save sends `USERID: 0`. Real user is
-`this.app.auth.user` — fix when touching save.
+`USERID` reads `this.app.auth.user` (CATCHUP Phase 4, 2026-10-16). A missing
+id is still `0`. `this.app.user` is still unset on `LithiumApp`.
 
 ---
 
 ## Course Manager (ID 34) and Course Builder (ID 35)
 
 **First deploy:** Course Manager — PRIORITIZE Part 5 in
-`/mnt/extra/Projects/500-Courses-Reception/PRIORITIZE.md`. JWT `roles`
-staff/admin (CATCHUP L3). Not waiting on Hydrogen 2.23 `account_roles`.
+`/mnt/extra/Projects/500-Courses-Reception/PRIORITIZE.md`. The
+placeholder is already registered. Authz v1 is CATCHUP L3: integer
+`role_id`s resolved to `roles.name` `staff` or `admin`. Hydrogen
+2.23 `account_roles` is a later cutover (Band H).
 
 **Course Builder pipeline:**  
 `/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md` (CB-0..35).
@@ -456,8 +471,11 @@ Env: `LITHIUM_ROOT`, `LITHIUM_DEPLOY`, `LITHIUM_DEPLOY_KEEP`.
 - Many manager tests are mocks/smoke. Do not add tests for placeholder shells.
 - `tests/integration/auth.integration.test.js` hits
   `https://lithium.philement.com` (override with `HYDROGEN_SERVER_URL`).
-  Missing credentials or a down server **skip** the cases. The live cert
-  expired 2026-08-02; tests retry once without TLS verify and warn.
+  Missing credentials skip the cases. A health check that is not HTTP
+  2xx skips them too. On 2026-10-16 health was up and login, renew,
+  and logout returned HTTP 503, so those 10 cases failed. The live
+  cert expired 2026-08-02; tests retry once without TLS verify and
+  warn.
 - `LITHIUM-TST.md` still says “672 tests” / 14 unit files — stale.
 - Coverage excludes `src/init/**`.
 
@@ -484,20 +502,21 @@ From the 2026-08-22 review. Tracked in
 
 | Sev | Issue |
 |-----|--------|
-| High | `closeManager` only calls `destroy()` — leaks on Queries/Lookups/Scripting |
-| High | `lookups.js` “HTML escape” is a no-op (`&`→`&`); preview `innerHTML` XSS |
-| High | `marked.parse` → `innerHTML` in Crimson / Version History; DOMPurify unused |
-| High | `highlight-init.js` interpolates code into `innerHTML` |
-| High | Style Manager `applyState` empty; apply/copy toast success |
-| High | Profile page `save()` stubs return `{ success: true }` |
-| High | `suneditor-init.js`: `'Bearer ' + localStorage.getItem(...) \|\| ''` → `"Bearer null"` |
+| High | `closeManager` lifecycle — fixed in CATCHUP Phase 1 (2026-10-16). `destroy`, else `cleanup`, else `teardown` |
+| High | Lookups preview XSS — fixed in CATCHUP Phase 3 (2026-10-16). `escapeHtml`, then highlight, then `sanitizeHtml` |
+| High | `marked.parse` → `innerHTML` in Crimson, Version History, and Queries `renderMarkdownPreview` — fixed in Phase 3. Assign is `sanitizeHtml` |
+| High | `highlightInline` — fixed in Phase 3. `textContent`, and a language class only for a safe token |
+| High | Tour captions, grouping titles, and Queries nav labels — fixed in Phase 3. Text nodes, plus one allowlisted `fa-` icon |
+| High | Style Apply / Copy — fixed in CATCHUP Phase 4 (2026-10-16). Non-empty CSS editor text is written to `#style-manager-preview` and copied. Empty buttons stay disabled. Undo and Redo stay disabled. `applyState` is still empty |
+| High | Profile `save()` stubs — fixed in Phase 4. Stubs return `{ success: false }` and stay dirty. Language, date formats, photo, and manager 23 still return success |
+| High | SunEditor bearer — fixed in Phase 4. `uploadAuthHeader` omits Authorization when `retrieveJWT()` is missing |
 | Med | ~14 files over 1000 lines (`tour.js` 2834, `lookups.js` 1888, …) |
 | Med | Three ID schemes; utility Terminal=5 vs Crimson=5 |
-| Med | Native `alert`/`confirm`/`prompt` (~9 sites) |
+| Med | Native `alert` / `confirm` / `prompt` — fixed in Phase 4. `rg` of `src/` is empty |
 | Med | ~491 `element.style` assignments; ~72 live `console.*` |
 | Med | ~138 direct `localStorage` pref writes |
 | Med | `public/src` CSS duplicates Vite CSS; orphans `user-profiles/`, `session-logs/`, `style-manager-v2.html` |
-| Med | `app.user` never set; `getState()` lies |
+| Med | `app.user` never set; `getState()` lies. `USERID` reads `app.auth.user` as of Phase 4 |
 | Low | Missing `REFACTORING_PLAN.md`; API/TST/MGR docs stale |
 
 ---

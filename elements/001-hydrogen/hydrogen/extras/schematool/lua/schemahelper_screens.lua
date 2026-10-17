@@ -6,6 +6,12 @@
 -- explore cursor + shared hotspot state; they are passed into build_screen.
 --
 -- CHANGELOG
+-- 0.6.13 - 2026-10-17 - Target list pads script names to the longest
+-- 0.6.12 - 2026-10-17 - Variance summary uses section headings
+-- 0.6.11 - 2026-10-17 - Running screen footer has no key hints
+-- 0.6.10 - 2026-10-16 - Loading screen lists each step under the progress bar
+-- 0.6.9 - 2026-10-16 - Accepted list sits under its own heading
+-- 0.6.8 - 2026-10-16 - Running screen names the SchemaTool phase and its count
 -- 0.6.7 - 2026-10-07 - Confirm screen names the default-row statement
 -- 0.6.6 - 2026-10-07 - Confirm screen names the dialect action and the refusal
 -- 0.6.5 - 2026-09-09 - Dashboard accepted list + [X] un-accept
@@ -155,10 +161,17 @@ local function picker_content(self)
         { "Select SchemaTool target", ATTR.TITLE },
         { "", ATTR.PATH },
     }
+    local name_w = 0
+    for i = 1, #list do
+        local base = list[i].path:match("([^/]+)$") or list[i].path
+        if #base > name_w then
+            name_w = #base
+        end
+    end
     for i, item in ipairs(list) do
         local mark = i == selected and "● " or "○ "
         local attr = i == selected and ATTR.TITLE or ATTR.PATH
-        lines[#lines + 1] = { mark .. W.wrapper_label(item), attr }
+        lines[#lines + 1] = { mark .. W.wrapper_label(item, name_w), attr }
     end
     local hotrows = {}
     for i = 1, #list do
@@ -175,28 +188,18 @@ local function running_content(self)
     }
     local prog = app.progress
     if prog then
-        local label = "  phase    " .. (prog.phase or "starting")
-        if prog.phase == "expect" and prog.total and prog.total > 0 then
-            local desc = prog.name
-            if not desc or desc == "" then
-                desc = prog.ref and ("ref " .. tostring(prog.ref)) or ""
-            end
-            label = string.format("  expect   %d / %d", prog.current or 0, prog.total)
-            if desc ~= "" then
-                label = label .. "   " .. desc
-            end
-        elseif prog.phase == "compare" then
-            label = string.format("  compare  %d / %d",
-                prog.compare_current or prog.current or 0, prog.total or 0)
-        elseif prog.total and prog.total > 0 and (prog.current or 0) > 0 then
-            label = string.format("  %s     %d / %d",
-                prog.phase or "work", prog.current, prog.total)
-        end
-        body[#body + 1] = { label, ATTR.VERSION }
         body[#body + 1] = { spans = I.progress_bar_spans(prog) }
+        local steps = prog.steps or {}
+        for i = 1, #steps do
+            local attr = ATTR.PATH
+            if i == #steps then
+                attr = ATTR.VERSION
+            end
+            body[#body + 1] = { I.step_line(steps[i]), attr }
+        end
         local issues = prog.issues or {}
         local height = self.inner_height or 20
-        local vis = math.max(1, height - (#header + 6))
+        local vis = math.max(1, height - (#header + 4 + #steps))
         prog.issue_vis = vis
         local n = #issues
         local scroll = prog.issue_scroll or 0
@@ -216,7 +219,7 @@ local function running_content(self)
             end
         end
     end
-    P.paint_framed(self, header, body, "Running SchemaTool…   [j]/[k] issues")
+    P.paint_framed(self, header, body, "")
 end
 
 local function result_content(self)
@@ -259,15 +262,21 @@ local function dashboard_content(self)
     app.accepted_index = sel
     local body = {}
     for i = 1, #dash_lines do
-        body[#body + 1] = { dash_lines[i], ATTR.PATH }
-        if dash_lines[i]:match("^Accepted variations") then
+        local text = dash_lines[i]
+        local attr = ATTR.PATH
+        if text == "Accepted" or text:match("^Variance classes")
+            or text == "Reserved packet refs" then
+            attr = ATTR.SECTION
+        end
+        body[#body + 1] = { text, attr }
+        if text == "Accepted" then
             if #acc == 0 then
                 body[#body + 1] = { "  (none)", ATTR.PATH }
             else
                 for j = 1, #acc do
                     local mark = j == sel and "● " or "○ "
-                    local attr = j == sel and ATTR.TITLE or ATTR.PATH
-                    body[#body + 1] = { "  " .. mark .. acc[j].id, attr }
+                    local item_attr = j == sel and ATTR.TITLE or ATTR.PATH
+                    body[#body + 1] = { "  " .. mark .. acc[j].id, item_attr }
                 end
             end
         end
@@ -343,10 +352,25 @@ local function review_content(self)
         finding, self.opts.work_dir, app.state, next_ref,
         g_reason, u_reason, self.opts.allow_write)
     local body = {}
+    local section = {
+        Identity = true,
+        Migration = true,
+        Database = true,
+        Catalog = true,
+        Row = true,
+        Difference = true,
+        Operator = true,
+    }
     for i = 1, #review_lines do
         local line = review_lines[i]
         if not is_review_key_line(line) then
-            body[#body + 1] = { line, ATTR.PATH }
+            local attr = ATTR.PATH
+            if line == "This is the variance" then
+                attr = ATTR.TITLE
+            elseif section[line] then
+                attr = ATTR.SECTION
+            end
+            body[#body + 1] = { line, attr }
         end
     end
     if u_reason and u_reason ~= "" then

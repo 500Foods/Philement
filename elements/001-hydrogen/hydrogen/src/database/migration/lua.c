@@ -46,6 +46,25 @@ lua_State* lua_setup(const char* dqm_label) {
 }
 
 /*
+ * Design prefix that holds database.lua in this payload set.
+ * A design that still ships its own copy wins. Everyone else uses helium/.
+ */
+const char* migration_database_prefix(const char* migration_name, const PayloadFile* files, size_t count) {
+    if (migration_name && migration_name[0] != '\0' && !strchr(migration_name, '+')) {
+        char specific[256];
+        int written = snprintf(specific, sizeof(specific), "%s/database.lua", migration_name);
+        if (written > 0 && (size_t)written < sizeof(specific)) {
+            for (size_t i = 0; i < count; i++) {
+                if (files && files[i].name && strcmp(files[i].name, specific) == 0) {
+                    return migration_name;
+                }
+            }
+        }
+    }
+    return MIGRATION_SHARED_DATABASE;
+}
+
+/*
  * Load database engine module into Lua state
  */
 bool lua_load_engine_module(lua_State* L, const char* migration_name,
@@ -54,7 +73,8 @@ bool lua_load_engine_module(lua_State* L, const char* migration_name,
     // Find database_<engine>.lua file
     PayloadFile* engine_file = NULL;
     char engine_filename[256];
-    snprintf(engine_filename, sizeof(engine_filename), "%s/database_%s.lua", migration_name, engine_name);
+    const char* prefix = migration_database_prefix(migration_name, payload_files, payload_count);
+    snprintf(engine_filename, sizeof(engine_filename), "%s/database_%s.lua", prefix, engine_name);
 
     for (size_t j = 0; j < payload_count; j++) {
         if (strcmp(payload_files[j].name, engine_filename) == 0) {
@@ -114,7 +134,8 @@ bool lua_load_engine_module(lua_State* L, const char* migration_name,
 bool lua_load_database_module(lua_State* L, const char* migration_name,
                              PayloadFile* payload_files, size_t payload_count,
                              const char* dqm_label) {
-    // First load all database engine modules that database.lua will require
+    // First load all database engine modules that database.lua will require.
+    // payloads/payload-generate.sh SHARED_ENGINES must list these same names.
     const char* engines[] = {"sqlite", "postgresql", "mysql", "mariadb", "mssql", "db2", "firebird"};
     size_t engine_count = sizeof(engines) / sizeof(engines[0]);
 
@@ -125,10 +146,11 @@ bool lua_load_database_module(lua_State* L, const char* migration_name,
         }
     }
 
-    // Find database.lua file
+    // Find database.lua file. Designs share helium/database.lua.
     PayloadFile* db_file = NULL;
     char db_filename[256];
-    snprintf(db_filename, sizeof(db_filename), "%s/database.lua", migration_name);
+    const char* prefix = migration_database_prefix(migration_name, payload_files, payload_count);
+    snprintf(db_filename, sizeof(db_filename), "%s/database.lua", prefix);
 
     for (size_t j = 0; j < payload_count; j++) {
         if (strcmp(payload_files[j].name, db_filename) == 0) {

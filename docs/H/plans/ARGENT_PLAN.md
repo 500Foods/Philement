@@ -73,7 +73,7 @@ Argent is a second migration set on the Acuranzo database. Same schema, same con
 | Allowed | | `acuranzo`; `acuranzo+argent`; `acuranzo+gaius`; `acuranzo+gaius+argent` |
 | Refused | | argent alone; gaius alone; argent+gaius with no acuranzo |
 
-`elements/002-helium/gaius/` still bootstraps its own `queries` table in `gaius_2000.lua`. That tree is not this pack. Do not edit it and do not apply it onto Acuranzo. GLM and the Helium printing design stay on their own databases.
+`elements/002-helium/gaius/` still bootstraps its own `queries` table in `gaius_2000.lua`. That tree is not this pack. Do not edit it and do not apply it onto Acuranzo. GLM stays on its own database. The `helium/` folder is the shared macro scripts, not a design.
 
 Four different numbers. For Argent, three of them share the range 2000–2999. The same integer may be a file number, a caller-facing QueryRef, and a lookup id. That is intentional. Someone looking up a lookup is not looking up a migration or a QueryRef. `query_id` stays the shared `MAX+1` sequence and is not in this range.
 
@@ -157,7 +157,7 @@ The sandbox has no HMAC helper. A confirm token is a row in `confirm_tokens`, cr
 
 Andrew applies every migration, and that apply is the closing step of the phase. The agent prepares the files, updates this plan, and stops. He reports the result. The agent then records it and may mark the phase complete. The agent does not apply, and does not manage databases that already hold an older copy of a file edited in place.
 
-The usual gate is tests 32–39 on every engine that suite covers. Test 31 lints the SQL for all seven engines without applying. Test 40 stays on `PAYLOAD:acuranzo+argent`. Where the first real database is deployed does not change this gate. Phase 16 is still his declaration that Argent is the source of truth for balances.
+The usual gate is tests 32–39 on every engine that suite covers. Test 31 lints the SQL for all seven engines without applying. Test 40 uses `PAYLOAD:acuranzo+courses+argent`. Where the first real database is deployed does not change this gate. Phase 16 is still his declaration that Argent is the source of truth for balances.
 
 ### In-place edits until the plan is done
 
@@ -1239,7 +1239,7 @@ Argent is applied on the real Acuranzo database and Folly records day-to-day ent
 
 ### Work items
 
-- [ ] 16.1 Andrew sets that connection's `Migrations` to `PAYLOAD:acuranzo+argent` and applies. Same schema, same connection. No second database.
+- [ ] 16.1 Andrew rebuilds that database, then sets its `Migrations` to `PAYLOAD:acuranzo+courses+argent` and applies. Same schema, same connection. No second database. The 4000 pack creates the course tables the old 1xxx files already created, so apply it only on a rebuilt database.
 - [ ] 16.2 Organizations and ledgers are entered through MCP from his tracker. Opening balances are opening transactions or statement snapshots. No import pipeline.
 - [ ] 16.3 A dual-write period: Folly updates Argent and the tracker until he says otherwise.
 - [ ] 16.4 He declares Argent the source of truth for balances.
@@ -1262,11 +1262,11 @@ Opened when Andrew said to continue. No file was added. `argent_2070.lua` was no
 
 ### Lessons learned
 
-This phase has no migration and no import pipeline. The production process uses the Acuranzo connection it already has. `Migrations` becomes `PAYLOAD:acuranzo+argent`. A second database is not created. Opening balances are opening transactions or statement snapshots entered through MCP. The in-place edit window stays open until he declares Argent the source of truth and this plan closes.
+This phase has no migration and no import pipeline. The production process uses the Acuranzo connection it already has. `Migrations` becomes `PAYLOAD:acuranzo+courses+argent` after that database is rebuilt. A second database is not created. Opening balances are opening transactions or statement snapshots entered through MCP. The in-place edit window stays open until he declares Argent the source of truth and this plan closes.
 
 ### Handoff
 
-Andrew sets that connection's `Migrations` to `PAYLOAD:acuranzo+argent` and applies. Same schema, same connection. The payload in that binary includes `argent_2049.lua` through `argent_2069.lua` at 1.0.1. He enters the organizations and ledgers from his tracker through MCP. Folly updates Argent and the tracker until he says otherwise. He reports the argent migration summary and the `Argent.ListLedgers` count. Work item 16.4 is checked only after he says Argent is the source of truth. An amendment opens permissions, imports, or QBO. Those are not implied by this phase closing.
+Andrew rebuilds that database, then sets its `Migrations` to `PAYLOAD:acuranzo+courses+argent` and applies. Same schema, same connection. The payload in that binary includes `argent_2049.lua` through `argent_2069.lua` at 1.0.1 and `courses_4000.lua` through `courses_4075.lua`. He enters the organizations and ledgers from his tracker through MCP. Folly updates Argent and the tracker until he says otherwise. He reports the argent migration summary and the `Argent.ListLedgers` count. Work item 16.4 is checked only after he says Argent is the source of truth. An amendment opens permissions, imports, or QBO. Those are not implied by this phase closing.
 
 ---
 

@@ -6,6 +6,7 @@
  */
 
 import { log, Subsystems, Status } from '../../../../core/log.js';
+import { toast } from '../../../../shared/toast.js';
 
 export class CameraPopup {
   constructor(options = {}) {
@@ -333,7 +334,10 @@ export class CameraPopup {
 
     } catch (error) {
       log(Subsystems.MANAGER, Status.ERROR, '[CameraPopout] Failed to start camera:', error.message);
-      alert('Camera access failed. Please check permissions.');
+      toast.error('Camera access failed', {
+        description: 'Please check permissions.',
+        subsystem: 'Profile',
+      });
     }
   }
 
@@ -707,7 +711,10 @@ export class CameraPopup {
 
     } catch (error) {
       log(Subsystems.MANAGER, Status.ERROR, '[CameraPopout] Capture failed:', error.message);
-      alert('Failed to capture photo. Please try again.');
+      toast.error('Failed to capture photo', {
+        description: 'Please try again.',
+        subsystem: 'Profile',
+      });
     }
   }
 

@@ -13,6 +13,7 @@
 #   ROWS_EXPECTED_JSON, ROWS_LIVE_JSON, ROWS_FINDINGS_JSON, EXPECTED_JSON
 #
 # CHANGELOG
+# 1.6.1 - 2026-10-16 - Catalog probe phase names the table count
 # 1.6.0 - 2026-10-07 - Default-row extract; SQLite probe; other engines stay SQL-only
 # 1.5.0 - 2026-10-07 - Catalog default fold is disk expect; --fold-stored keeps type 1003
 # 1.4.0 - 2026-10-07 - MariaDB query and catalog adapters
@@ -304,6 +305,9 @@ run_catalog_audit() {
     if [[ -z "${probe_tables}" ]]; then
         probe_tables="$("${JQ}" -r '[.tables[].table] | join(",")' "${CAT_EXPECTED_JSON}")"
     fi
+    local ntables=0
+    ntables="$("${JQ}" -r '(.tables // []) | length' "${CAT_EXPECTED_JSON}")"
+    echo "phase: catalog probe ${ntables}" >&2
     local saved_only="${ONLY_TABLES}"
     ONLY_TABLES="${probe_tables}"
     set +e

@@ -4,7 +4,9 @@
 # Updates migration indexes for all Helium schemas and performs documentation quality checks
 # Uses HELIUM_ROOT and HELIUM_DOCS_ROOT environment variables for path resolution
 
-# CHANGEHISTORY
+# CHANGELOG
+# 2.1.1 - 2026-10-16 - Index courses when its migrations folder and README exist
+# 2.1.0 - 2026-10-16 - Lint helium/database*.lua. Do not index helium/migrations.
 # 2.0.2 - 2026-10-05 - Include the argent design in the index and luacheck loops.
 # 2.0.1 - 2026-09-16 - Notes that migration_index.sh 1.1.0 uses strict CHANGELOG semver.
 # 2.0.0 - 2025-12-15 - Added documentation quality checks (link validation and markdown linting)
@@ -29,11 +31,11 @@ else
 fi
 
 echo "=== Updating Migration Indexes ==="
-"${BASE_DIR}/scripts/migration_index.sh" "${BASE_DIR}/acuranzo/README.md" "${BASE_DIR}/acuranzo/migrations"
-"${BASE_DIR}/scripts/migration_index.sh" "${BASE_DIR}/argent/README.md" "${BASE_DIR}/argent/migrations"
-"${BASE_DIR}/scripts/migration_index.sh" "${BASE_DIR}/gaius/README.md" "${BASE_DIR}/gaius/migrations"
-"${BASE_DIR}/scripts/migration_index.sh" "${BASE_DIR}/glm/README.md" "${BASE_DIR}/glm/migrations"
-"${BASE_DIR}/scripts/migration_index.sh" "${BASE_DIR}/helium/README.md" "${BASE_DIR}/helium/migrations"
+for schema in acuranzo courses argent gaius glm; do
+    if [[ -d "${BASE_DIR}/${schema}/migrations" && -f "${BASE_DIR}/${schema}/README.md" ]]; then
+        "${BASE_DIR}/scripts/migration_index.sh" "${BASE_DIR}/${schema}/README.md" "${BASE_DIR}/${schema}/migrations"
+    fi
+done
 
 echo ""
 echo "=== Checking Documentation Links ==="
@@ -67,13 +69,22 @@ echo ""
 echo "=== Checking Lua Code Quality ==="
 # Run luacheck on migration files (similar to Hydrogen test 98)
 if command -v luacheck >/dev/null 2>&1; then
-    for schema in acuranzo argent gaius glm helium; do
+    for schema in acuranzo courses argent gaius glm; do
         migrations_dir="${BASE_DIR}/${schema}/migrations"
         if [[ -d "${migrations_dir}" ]]; then
             echo "Checking ${schema} migrations..."
             luacheck "${migrations_dir}" | tail -n 1
         fi
     done
+    shared_list=$(mktemp)
+    find "${BASE_DIR}/helium" -maxdepth 1 -type f -name '*.lua' > "${shared_list}"
+    sort -o "${shared_list}" "${shared_list}"
+    mapfile -t shared_lua < "${shared_list}"
+    rm -f "${shared_list}"
+    if [[ ${#shared_lua[@]} -gt 0 ]]; then
+        echo "Checking shared database scripts..."
+        luacheck "${shared_lua[@]}" | tail -n 1
+    fi
 else
     echo "luacheck not found, skipping Lua code quality check"
 fi

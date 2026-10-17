@@ -7,6 +7,8 @@
 -- directory is the first design. Later designs are sibling folders.
 --
 -- CHANGELOG
+-- 1.2.1 - 2026-10-16 - Drop the unused loop index in has_database
+-- 1.2.0 - 2026-10-16 - database.lua may live in the shared helium folder
 -- 1.1.0 - 2026-10-07 - Plus-list payload; one combined ref-ordered list
 -- 1.0.0 - 2026-07-29 - Phase 1 discovery for SchemaTool
 
@@ -40,12 +42,19 @@ local function fail(msg)
 end
 
 local function has_database(dir)
-    local f = io.open(dir .. "/database.lua", "r")
-    if not f then
-        return false
+    local shared = payload.shared_database_dir(dir)
+    local candidates = { dir, shared }
+    for i = 1, #candidates do
+        local candidate = candidates[i]
+        if candidate then
+            local f = io.open(candidate .. "/database.lua", "r")
+            if f then
+                f:close()
+                return true
+            end
+        end
     end
-    f:close()
-    return true
+    return false
 end
 
 local locs, loc_err = payload.locations(migrations_dir, design)

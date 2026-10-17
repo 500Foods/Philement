@@ -24,23 +24,12 @@
       </div>
     </div>
             
-    <!-- Alternative login buttons row.
-         OIDC providers configured in auth.oidc_providers are rendered here
-         at runtime as image buttons alongside the built-in partner buttons. -->
-    <div class="login-alt-btn-group" id="login-alt-btn-group">
-      <button type="button" class="login-alt-btn" id="didit-btn" data-tooltip="Sign in with Didit" data-tip-placement="top">
-        <img height=50 src="/assets/images/login_didit.png" alt="Didit" class="login-alt-icon">
-      </button>
-      <button type="button" class="login-alt-btn" id="apple-btn" data-tooltip="Sign in with Apple" data-tip-placement="top">
-        <img src="/assets/images/login_apple.png" alt="Apple" class="login-alt-icon">
-      </button>
-      <button type="button" class="login-alt-btn" id="google-btn" data-tooltip="Sign in with Google" data-tip-placement="top">
-        <img src="/assets/images/login_google.png" alt="Google" class="login-alt-icon">
-      </button>
-      <button type="button" class="login-alt-btn" id="microsoft-btn" data-tooltip="Sign in with Microsoft" data-tip-placement="top">
-        <img src="/assets/images/login_microsoft.png" alt="Microsoft" class="login-alt-icon">
-      </button>
-    </div>
+    <!-- Alternative login buttons.
+         renderOidcProviders fills this row from config. A partner id
+         renders only when login partners.<id> is true and that id is
+         also an auth.oidc_providers entry. Order is Didit, Apple,
+         Google, Microsoft, then the other OIDC providers. -->
+    <div class="login-alt-btn-group" id="login-alt-btn-group"></div>
 
     <!-- Login form -->
     <form class="login-form" id="login-form" novalidate>

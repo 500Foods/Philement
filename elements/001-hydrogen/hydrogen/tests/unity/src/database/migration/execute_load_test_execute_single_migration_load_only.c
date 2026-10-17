@@ -28,6 +28,7 @@ bool execute_single_migration_load_only(DatabaseHandle* connection, const char* 
 
 // Forward declarations for test functions
 void test_execute_single_migration_load_only_success(void);
+void test_execute_single_migration_load_only_shared_scripts(void);
 void test_execute_single_migration_load_only_module_load_failure(void);
 void test_execute_single_migration_load_only_payload_failure(void);
 
@@ -138,6 +139,26 @@ void test_execute_single_migration_load_only_success(void) {
     TEST_ASSERT_TRUE(result);
 }
 
+void test_execute_single_migration_load_only_shared_scripts(void) {
+    DatabaseHandle connection = make_connection();
+
+    /* Shared scripts live under helium/. The migration file is acuranzo. */
+    cache_install_design("helium", kDatabaseModule);
+    free(global_payload_cache.files[8].name);
+    free(global_payload_cache.files[8].data);
+    global_payload_cache.files[8].name = strdup("acuranzo/acuranzo_1001.lua");
+    global_payload_cache.files[8].data = (uint8_t*)strdup(kMigrationModule);
+    global_payload_cache.files[8].size = strlen(kMigrationModule);
+    TEST_ASSERT_NOT_NULL(global_payload_cache.files[8].name);
+    TEST_ASSERT_NOT_NULL(global_payload_cache.files[8].data);
+
+    bool result = execute_single_migration_load_only(&connection, "acuranzo/acuranzo_1001.lua",
+                                                    "sqlite", "acuranzo", "app",
+                                                    "test-label");
+
+    TEST_ASSERT_TRUE(result);
+}
+
 void test_execute_single_migration_load_only_module_load_failure(void) {
     DatabaseHandle connection = make_connection();
 
@@ -166,6 +187,7 @@ int main(void) {
     UNITY_BEGIN();
 
     RUN_TEST(test_execute_single_migration_load_only_success);
+    RUN_TEST(test_execute_single_migration_load_only_shared_scripts);
     RUN_TEST(test_execute_single_migration_load_only_module_load_failure);
     RUN_TEST(test_execute_single_migration_load_only_payload_failure);
 

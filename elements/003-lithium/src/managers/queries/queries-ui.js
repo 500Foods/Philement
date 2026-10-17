@@ -6,7 +6,7 @@
 
 import { log, Subsystems, Status } from '../../core/log.js';
 import { toast } from '../../shared/toast.js';
-import { processIcons } from '../../core/icons.js';
+import { processIcons, isFaNameToken, createFaIcon } from '../../core/icons.js';
 import { setupManagerFooterIcons } from '../../core/manager-ui.js';
 
 // Constants
@@ -17,6 +17,53 @@ const MAX_FONT_SIZE = 24;
 const DEFAULT_FONT_SIZE = 14;
 const FONT_SIZE_STEP = 2;
 const DEFAULT_FONT_FAMILY = '"Vanadium Mono", var(--font-mono, monospace)';
+
+/**
+ * Fill a nav-popup row. Labels are text. An icon is added only when
+ * item.icon is a single fa-name token.
+ * @param {HTMLElement} row
+ * @param {Object} item
+ */
+export function fillQueriesNavLabel(row, item) {
+  row.replaceChildren();
+  if (typeof item.checked === 'boolean') {
+    const check = document.createElement('span');
+    check.className = 'queries-nav-popup-check';
+    check.textContent = item.checked ? '✓' : '';
+    const label = document.createElement('span');
+    label.className = 'queries-nav-popup-label';
+    label.textContent = item.label ?? '';
+    row.append(check, label);
+    return;
+  }
+  if (isFaNameToken(item.icon)) {
+    const icon = createFaIcon(item.icon);
+    if (icon) row.appendChild(icon);
+  }
+  row.appendChild(document.createTextNode(item.label ?? ''));
+}
+
+/**
+ * Fill a template-menu label. The template name is text.
+ * @param {HTMLElement} labelBtn
+ * @param {Object} item
+ */
+export function fillQueriesTemplateLabel(labelBtn, item) {
+  labelBtn.replaceChildren();
+  const check = document.createElement('span');
+  check.className = 'queries-nav-popup-template-check';
+  check.textContent = item.isDefault ? '✓' : '';
+  const name = document.createElement('span');
+  name.className = 'queries-nav-popup-template-name';
+  name.textContent = item.label ?? '';
+  labelBtn.append(check, name);
+  if (item.isDefault) {
+    const flag = document.createElement('span');
+    flag.className = 'queries-nav-popup-template-default';
+    flag.textContent = '(default)';
+    labelBtn.appendChild(flag);
+  }
+}
 
 /**
  * UIManager - Manages UI components and interactions
@@ -402,11 +449,7 @@ export class UIManager {
         const labelBtn = document.createElement('button');
         labelBtn.type = 'button';
         labelBtn.className = 'queries-nav-popup-template-label';
-        labelBtn.innerHTML = `
-          <span class="queries-nav-popup-template-check">${item.isDefault ? '✓' : ''}</span>
-          <span class="queries-nav-popup-template-name">${item.label}</span>
-          ${item.isDefault ? '<span class="queries-nav-popup-template-default">(default)</span>' : ''}
-        `;
+        fillQueriesTemplateLabel(labelBtn, item);
         labelBtn.addEventListener('click', () => {
           this.closeNavPopup();
           item.action();
@@ -429,16 +472,7 @@ export class UIManager {
       row.type = 'button';
       row.className = 'queries-nav-popup-item';
 
-      if (typeof item.checked === 'boolean') {
-        row.innerHTML = `
-          <span class="queries-nav-popup-check">${item.checked ? '✓' : ''}</span>
-          <span class="queries-nav-popup-label">${item.label}</span>
-        `;
-      } else if (item.icon) {
-        row.innerHTML = `<fa ${item.icon}></fa> ${item.label}`;
-      } else {
-        row.textContent = item.label;
-      }
+      fillQueriesNavLabel(row, item);
 
       row.addEventListener('click', () => {
         this.closeNavPopup();

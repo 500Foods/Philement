@@ -204,7 +204,8 @@ bool migration_payload_designs(const char* migrations_config, char*** designs_ou
         if (strcmp(name, "acuranzo") == 0) {
             has_acuranzo = true;
         }
-        if (strcmp(name, "argent") == 0 || strcmp(name, "gaius") == 0) {
+        if (strcmp(name, "argent") == 0 || strcmp(name, "courses") == 0 ||
+            strcmp(name, "gaius") == 0) {
             needs_acuranzo = true;
         }
         designs[filled++] = name;
@@ -215,7 +216,7 @@ bool migration_payload_designs(const char* migrations_config, char*** designs_ou
     }
 
     if (ok && needs_acuranzo && !has_acuranzo) {
-        log_this(dqm_label, "Migrations list names argent or gaius without acuranzo", LOG_LEVEL_ERROR, 0);
+        log_this(dqm_label, "Migrations list names argent, courses, or gaius without acuranzo", LOG_LEVEL_ERROR, 0);
         ok = false;
     }
     if (!ok) {
@@ -656,6 +657,59 @@ bool migration_ranges_load_from_payload(DatabaseQueue* db_queue, const char* mig
     }
 
     migration_ranges_sync_globals(db_queue);
+    return true;
+}
+
+/*
+ * Append the shared helium/database*.lua scripts when this set does not
+ * already contain helium/database.lua. A missing shared prefix is not an
+ * error: a design that still ships its own copy can load without it.
+ * Ownership of the appended name and data pointers moves into files_out.
+ */
+bool payload_files_include_shared_database(PayloadFile** files_out, size_t* count_out, const char* dqm_label) {
+    size_t i;
+    PayloadFile* shared = NULL;
+    size_t shared_count = 0;
+    size_t shared_capacity = 0;
+    PayloadFile* grown;
+    char marker[64];
+    int written;
+
+    if (!files_out || !count_out || !dqm_label) {
+        return false;
+    }
+    if (!*files_out || *count_out == 0) {
+        return true;
+    }
+
+    written = snprintf(marker, sizeof(marker), "%s/database.lua", MIGRATION_SHARED_DATABASE);
+    if (written < 0 || (size_t)written >= sizeof(marker)) {
+        return false;
+    }
+    for (i = 0; i < *count_out; i++) {
+        if ((*files_out)[i].name && strcmp((*files_out)[i].name, marker) == 0) {
+            return true;
+        }
+    }
+
+    if (!get_payload_files_by_prefix(MIGRATION_SHARED_DATABASE "/", &shared, &shared_count, &shared_capacity)) {
+        return true;
+    }
+    if (shared_count == 0) {
+        free(shared);
+        return true;
+    }
+
+    grown = realloc(*files_out, (*count_out + shared_count) * sizeof(PayloadFile));
+    if (!grown) {
+        log_this(dqm_label, "Memory allocation failed for shared database scripts", LOG_LEVEL_ERROR, 0);
+        free_payload_files(shared, shared_count);
+        return false;
+    }
+    memcpy(grown + *count_out, shared, shared_count * sizeof(PayloadFile));
+    free(shared);
+    *files_out = grown;
+    *count_out += shared_count;
     return true;
 }
 

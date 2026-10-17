@@ -1,7 +1,22 @@
 // SunEditor Initialization Module
 // Handles SunEditor (WYSIWYG editor) initialization and configuration
 
-class SunEditorInit {
+import { retrieveJWT } from '../core/jwt.js';
+
+/**
+ * Authorization header for a SunEditor upload.
+ * A missing token omits the header. It must not become "Bearer null".
+ * @param {string|null|undefined} token
+ * @returns {Object}
+ */
+export function uploadAuthHeader(token) {
+  if (typeof token !== 'string' || token.length === 0) {
+    return {};
+  }
+  return { Authorization: 'Bearer ' + token };
+}
+
+export class SunEditorInit {
   constructor() {
     this.editors = new Map(); // Store editor instances
     this.defaultOptions = {
@@ -30,13 +45,9 @@ class SunEditorInit {
       font: ['Vanadium Sans', 'Arial', 'Times New Roman', 'Courier New', 'Georgia', 'Verdana', 'FontAwesome'],
       fontAwesome: true,
       imageUploadUrl: '/api/upload/image',
-      imageUploadHeader: {
-        'Authorization': 'Bearer ' + localStorage.getItem('lithium_jwt') || ''
-      },
+      imageUploadHeader: uploadAuthHeader(retrieveJWT()),
       videoUploadUrl: '/api/upload/video',
-      videoUploadHeader: {
-        'Authorization': 'Bearer ' + localStorage.getItem('lithium_jwt') || ''
-      },
+      videoUploadHeader: uploadAuthHeader(retrieveJWT()),
       callbacks: {
         onChange: (contents, core) => {
           // console.log('SunEditor content changed:', contents);
@@ -71,8 +82,14 @@ class SunEditorInit {
         throw new Error(`Element with ID ${elementId} not found`);
       }
 
-      // Merge default options with custom options
-      const mergedOptions = { ...this.defaultOptions, ...options };
+      // Refresh the bearer at editor creation. Construct-time headers go stale after login.
+      const authHeader = uploadAuthHeader(retrieveJWT());
+      const mergedOptions = {
+        ...this.defaultOptions,
+        imageUploadHeader: authHeader,
+        videoUploadHeader: { ...authHeader },
+        ...options,
+      };
 
       // Initialize SunEditor
       const editor = SUNEDITOR.create(element, mergedOptions);

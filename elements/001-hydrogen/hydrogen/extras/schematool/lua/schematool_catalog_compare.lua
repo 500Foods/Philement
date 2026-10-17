@@ -8,6 +8,7 @@
 --     [--only-failures]
 --
 -- CHANGELOG
+-- 1.2.1 - 2026-10-16 - Stderr names each table while comparing shapes
 -- 1.2.0 - 2026-10-07 - Compare normalized data_type; info extras vs dropped
 -- 1.1.2 - 2026-09-08 - Stderr catalog lines for findings only
 -- 1.1.1 - 2026-08-23 - Pass expected column fold ref onto failures[]
@@ -255,7 +256,10 @@ for t, _ in pairs(exp_tables) do
 end
 table.sort(exp_names)
 
-for _, tname in ipairs(exp_names) do
+for ti, tname in ipairs(exp_names) do
+    io.stderr:write(string.format(
+        "phase: catalog table %d/%d %s\n", ti, #exp_names, tname))
+    io.stderr:flush()
     if not live_tables[tname] then
         counts.missing_table = counts.missing_table + 1
         counts.checked = counts.checked + 1

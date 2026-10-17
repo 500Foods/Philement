@@ -872,8 +872,12 @@ export class DateFormatsPage extends BaseSettingsPage {
     return custom;
   }
 
+  canSave() {
+    return true;
+  }
+
   /**
-   * Save — no-op for live-save page, but required by base class
+   * Save — changes already went through setSetting
    */
   async save() {
     // All changes are saved live via setSetting

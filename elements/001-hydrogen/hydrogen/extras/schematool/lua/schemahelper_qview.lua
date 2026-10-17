@@ -5,6 +5,7 @@
 -- schemahelper_qexplain, and schemahelper_qdiff.
 --
 -- CHANGELOG
+-- 0.6.4 - 2026-10-17 - Explore header uses the condensed variance attributes
 -- 0.6.3 - 2026-10-09 - Extracted from schemahelper_queue.lua (view cluster)
 
 local U = require("schemahelper_qutil")
@@ -72,26 +73,8 @@ function M.build_line_decode_view(left_line, right_line)
 end
 
 function M.build_explore_view(finding)
-    local facts = {}
-    if finding and finding.id then
-        facts[#facts + 1] = finding.id
-    end
-    if finding and finding.file and finding.file ~= "" then
-        facts[#facts + 1] = "file  " .. finding.file
-    end
-    if finding and finding.field and finding.field ~= "" then
-        local view = finding.view or "raw"
-        if view == "decoded" then
-            facts[#facts + 1] = "field  " .. finding.field .. "  (decoded)"
-        else
-            facts[#facts + 1] = "field  " .. finding.field
-        end
-    end
-    if finding then
-        for _, r in ipairs(X.explain_check(finding)) do
-            facts[#facts + 1] = r:gsub("^%s+", "")
-        end
-    end
+    local R = require("schemahelper_qrender")
+    local facts = R.explore_facts(finding)
     local rows = {}
     if not finding then
         return { facts = facts, rows = rows, first_diff = 0 }

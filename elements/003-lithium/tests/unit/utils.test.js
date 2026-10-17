@@ -18,6 +18,7 @@ import {
   generateId,
   deepClone,
   escapeHtml,
+  sanitizeHtml,
   parseRoleIds,
   isStaffRoleSet,
   isCourseManagerAuthorized,
@@ -325,6 +326,48 @@ describe('Utils', () => {
 
     it('should return unchanged string without special chars', () => {
       expect(escapeHtml('plain text')).toBe('plain text');
+    });
+
+    it('should cover & < > " \' for a text node', () => {
+      expect(escapeHtml('&')).toBe('&amp;');
+      expect(escapeHtml('<')).toBe('&lt;');
+      expect(escapeHtml('>')).toBe('&gt;');
+      expect(escapeHtml('"')).toBe('"');
+      expect(escapeHtml("'")).toBe("'");
+    });
+  });
+
+  describe('sanitizeHtml', () => {
+    it('should keep the text of ordinary markup', () => {
+      // happy-dom does not round-trip elements through DOMPurify, so this
+      // asserts the text. A browser keeps the <p> tag.
+      const clean = sanitizeHtml('<p>Hello</p>');
+      expect(clean).toContain('Hello');
+      expect(clean.toLowerCase()).not.toContain('<script');
+    });
+
+    it('should strip script and event handlers', () => {
+      expect(sanitizeHtml('<script>alert(1)</script>').toLowerCase()).not.toContain('<script');
+      expect(sanitizeHtml('<img src="x" onerror="alert(1)">')).not.toContain('onerror');
+      expect(sanitizeHtml('<img src="x" onerror="alert(1)">')).not.toContain('alert');
+    });
+
+    it('should strip a script that follows an image', () => {
+      const clean = sanitizeHtml('<img src="x" onerror="alert(1)"><script>alert(1)</script>');
+      expect(clean.toLowerCase()).not.toContain('<script');
+      expect(clean.toLowerCase()).not.toContain('onerror');
+    });
+
+    it('should strip a nested script and its event handler', () => {
+      const clean = sanitizeHtml('<p><img src="x" onerror="alert(1)"><script>alert(1)</script></p>');
+      expect(clean.toLowerCase()).not.toContain('<script');
+      expect(clean.toLowerCase()).not.toContain('onerror');
+    });
+
+    it('should return empty string for non-strings and empty input', () => {
+      expect(sanitizeHtml(null)).toBe('');
+      expect(sanitizeHtml(1)).toBe('');
+      expect(sanitizeHtml('')).toBe('');
     });
   });
 

@@ -20,6 +20,7 @@ import '../../core/manager-panels.css';
 import { authQuery } from '../../shared/conduit.js';
 import { toast } from '../../shared/toast.js';
 import { log, Subsystems, Status } from '../../core/log.js';
+import { escapeHtml, sanitizeHtml } from '../../core/utils.js';
 import { processIcons } from '../../core/icons.js';
 import { setupManagerFooterIcons, createFontPopup, closeExportPopup, initToolbars, positionPopup, closeAllPopups, LithiumEditorFooter } from '../../core/manager-ui.js';
 import { ManagerEditHelper } from '../../core/manager-edit-helper.js';
@@ -482,7 +483,11 @@ export default class LookupsManager {
         }
       });
     } catch (error) {
-      console.error('[LookupsManager] Failed to initialize JSON editor:', error);
+      log(Subsystems.MANAGER, Status.ERROR, `[LookupsManager] Failed to initialize JSON editor: ${error.message}`);
+      toast.error('JSON editor failed to load', {
+        description: error.message,
+        subsystem: 'Lookups',
+      });
     }
   }
 
@@ -825,7 +830,7 @@ export default class LookupsManager {
           VALUEINT: valueOrFallback(rowData.value_int, originalData.value_int, 0),
           SORTSEQ: valueOrFallback(rowData.sort_seq, originalData.sort_seq, 0),
           STATUSLUA1: status,
-          USERID: this.app?.user?.id ?? 0,
+          USERID: this.app?.auth?.user?.id ?? 0,
         },
         STRING: {
           VALUETXT: rowData.value_txt ?? rowData.name ?? originalData.value_txt ?? '',
@@ -844,7 +849,7 @@ export default class LookupsManager {
         VALUEINT: valueOrFallback(rowData.value_int, originalData.value_int, 0),
         SORTSEQ: valueOrFallback(rowData.sort_seq, originalData.sort_seq, 0),
         STATUSA1: status,
-        USERID: this.app?.user?.id ?? 0,
+        USERID: this.app?.auth?.user?.id ?? 0,
         ORIGLOOKUPID: valueOrFallback(originalData.lookup_id, rowData.lookup_id, 0),
         ORIGKEYIDX: valueOrFallback(originalData.key_idx, rowData.key_idx, 0),
       },
@@ -976,7 +981,7 @@ export default class LookupsManager {
         VALUEINT: rowData.value_int ?? 0,
         SORTSEQ: nextSortSeq,
         STATUSLUA1: rowData.status_a1 ?? 1,
-        USERID: this.app?.user?.id ?? 0,
+        USERID: this.app?.auth?.user?.id ?? 0,
       },
       STRING: {
         VALUETXT: rowData.value_txt ? `${rowData.value_txt} (Copy)` : '',
@@ -1123,7 +1128,7 @@ export default class LookupsManager {
         htmlContent = '<p class="lookups-preview-placeholder">No summary content available</p>';
       }
 
-      this.elements.previewContent.innerHTML = htmlContent;
+      this.elements.previewContent.innerHTML = sanitizeHtml(htmlContent);
     } catch (error) {
       console.error('[LookupsManager] Failed to refresh preview:', error);
       this.elements.previewContent.innerHTML = '<p class="lookups-preview-placeholder">Error rendering preview</p>';
@@ -1131,11 +1136,9 @@ export default class LookupsManager {
   }
 
   processContentWithHighlighting(content) {
-    // Escape HTML first
-    let html = content
-      .replace(/&/g, '&')
-      .replace(/</g, '<')
-      .replace(/>/g, '>');
+    // Escape HTML first. Highlight spans are added after this, then
+    // refreshPreview sanitizes the assignment.
+    let html = escapeHtml(content);
 
     // Process code blocks with highlight.js
     html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
@@ -1167,12 +1170,7 @@ export default class LookupsManager {
   }
 
   basicContentProcessing(content) {
-    // Simple HTML escaping and line breaks
-    return content
-      .replace(/&/g, '&')
-      .replace(/</g, '<')
-      .replace(/>/g, '>')
-      .replace(/\n/g, '<br>');
+    return escapeHtml(content).replace(/\n/g, '<br>');
   }
 
   // ── Splitter Logic ─────────────────────────────────────────────────────────
@@ -1705,8 +1703,6 @@ export default class LookupsManager {
     if (jsonContainer?._cmView) {
       return jsonContainer._cmView.state.doc.toString();
     }
-    const fallback = this.elements.jsonEditor?.querySelector('#lookups-json-editor-fallback');
-    if (fallback) return fallback.value || '';
     return '';
   }
 

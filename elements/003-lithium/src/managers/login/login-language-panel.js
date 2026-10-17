@@ -7,6 +7,7 @@
  */
 
 import { log, Subsystems, Status } from '../../core/log.js';
+import { toast } from '../../shared/toast.js';
 import { getFlagSvg } from '../../shared/log-formatter.js';
 import {
   getBestGuessLocale,
@@ -346,37 +347,13 @@ export class LanguagePanel {
    * @private
    */
   _handleError(error, tableContainer) {
-    console.error('[LanguagePanel] Failed to initialize language table:', error);
-    log(LOGIN, Status.ERROR, `Failed to initialize language table: ${error.message}`);
-    this._renderFallback(tableContainer);
-  }
-
-  /**
-   * Render fallback language list
-   * @param {HTMLElement} tableContainer - Container element
-   * @private
-   */
-  _renderFallback(tableContainer) {
-    tableContainer.innerHTML = this._languageData.map(lang => `
-      <div class="language-item-fallback" data-locale="${lang.locale}" style="
-        padding: var(--space-3);
-        border-bottom: var(--border-standard);
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: var(--space-3);
-        ${lang.locale === this._currentLocale ? 'background: var(--accent-primary); color: white;' : ''}
-      ">
-        ${this._getFlagSvg(lang.countryCode)}
-        <span style="flex: 1;">${lang.language}</span>
-        <span style="color: ${lang.locale === this._currentLocale ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)'}">${lang.country}</span>
-        <span style="color: ${lang.locale === this._currentLocale ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)'}">${lang.locale}</span>
-      </div>
-    `).join('');
-
-    tableContainer.querySelectorAll('.language-item-fallback').forEach(item => {
-      item.addEventListener('click', () => this.selectLanguage(item.dataset.locale));
+    const message = error?.message || 'The language table could not be initialized';
+    log(LOGIN, Status.ERROR, `Failed to initialize language table: ${message}`);
+    toast.error('Language list failed to load', {
+      description: message,
+      subsystem: 'Login',
     });
+    tableContainer?.replaceChildren(document.createTextNode('Language list failed to load'));
   }
 
   /**

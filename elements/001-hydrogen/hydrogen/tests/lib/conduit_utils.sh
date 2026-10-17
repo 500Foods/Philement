@@ -12,6 +12,7 @@
 # test_conduit_multiple_queries_endpoint()
 
 # CHANGELOG
+# 1.8.0 - 2026-10-16 - Course suggestion cap query is QueryRef 4000
 # 1.7.9 - 2026-10-01 - Eighth engine: MSSQL maps to Demo_MS (schema demoms)
 # 1.7.8 - 2026-09-04 - Pair JWT skip with print_result (not-ready engines)
 # 1.7.7 - 2026-09-04 - Pair TEST/PASS/FAIL in analyze_conduit_results
@@ -115,7 +116,7 @@ PROTECTED_CAP_QUERY_REFS=(
     # The test environment sets CHACHA_SERVER to an unreachable URL to force the
     # FALLBACK path, so no real Cap token is needed for automated testing.
     # Parameters are grouped by type (STRING, INTEGER, etc.) as expected by parse_typed_parameters.
-    ["85"]="Insert Course Suggestion:{\"STRING\":{\"COURSE_NAME\":\"Test Course\",\"SUMMARY\":\"Test summary\",\"DETAIL\":\"<p>Test detail</p>\",\"INTENDED_AUDIENCE\":\"Beginners\",\"ADDITIONAL_FEATURES\":\"None\",\"SUBMITTER_NAME\":\"Test User\",\"SUBMITTER_EMAIL\":\"test@example.com\",\"CHACHA_TOKEN\":\"test-token\",\"CHACHA_SITE\":\"a9b8369d3b\",\"IP_ADDRESS\":\"127.0.0.1\"}}"
+    ["4000"]="Insert Course Suggestion:{\"STRING\":{\"COURSE_NAME\":\"Test Course\",\"SUMMARY\":\"Test summary\",\"DETAIL\":\"<p>Test detail</p>\",\"INTENDED_AUDIENCE\":\"Beginners\",\"ADDITIONAL_FEATURES\":\"None\",\"SUBMITTER_NAME\":\"Test User\",\"SUBMITTER_EMAIL\":\"test@example.com\",\"CHACHA_TOKEN\":\"test-token\",\"CHACHA_SITE\":\"a9b8369d3b\",\"IP_ADDRESS\":\"127.0.0.1\"}}"
     ["86"]="Insert Contact Submission:{\"STRING\":{\"NAME\":\"Test User\",\"EMAIL\":\"test@example.com\",\"SUBJECT\":\"Test Subject\",\"MESSAGE\":\"<p>Test message</p>\",\"CHACHA_TOKEN\":\"test-token\",\"CHACHA_SITE\":\"a9b8369d3b\",\"IP_ADDRESS\":\"127.0.0.1\"}}"
 )
 

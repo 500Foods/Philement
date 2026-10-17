@@ -14,8 +14,8 @@ JSON datasources, builds an intermediate document, and emits a format.
 PDF is the default stage. The build order is this index. CATCHUP stays
 the active Lithium plan until Andrew pulls this one in
 ([`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md)).
-This plan does not move Course Manager, Scripting invoke, or the
-lifecycle fix.
+This plan does not move Course Manager or Scripting invoke.
+CATCHUP Phase 1 (2026-10-16) already shipped the lifecycle fix.
 
 Argent Phase 15 "Report queries" in
 [`/docs/H/plans/ARGENT_PLAN.md`](/docs/H/plans/ARGENT_PLAN.md) is a set of
@@ -1829,10 +1829,11 @@ Phase 3 Status complete.
 
 - [ ] 4.1 `reports.html` / `reports.css` / `reports.js`. Fetch the
       HTML template. `templates:copy`. Stay under 1000 lines.
-- [ ] 4.2 `init`, `destroy`, and `cleanup`. `destroy` releases
-      listeners itself, because `closeManager` calls `destroy` only
-      until CATCHUP's lifecycle fix. `cleanup` releases the same
-      set. Drop the "under development" copy.
+- [ ] 4.2 `init`, `destroy`, and `cleanup`. CATCHUP Phase 1
+      (2026-10-16) calls `destroy`, otherwise `cleanup`, otherwise
+      `teardown`. `destroy` releases the listeners. `cleanup`
+      releases the same set when `destroy` is absent. Drop the
+      "under development" copy.
 - [ ] 4.3 Import picks a local JSON file, runs it through the
       document model, and shows the report name. A bad file toasts
       the model error and leaves the previous document in place.

@@ -139,16 +139,15 @@ The suite runs Test 73 in group 7, after the group-4 demo tests.
 
 Each config enables **API** (JWT), **Scripting** (`WorkerCount` 2,
 `DefaultQueryTimeout` 60), and **MCP** (`Protocol` `Mcp.Server`,
-`RequestTimeoutSeconds` 60). `Migrations` is `PAYLOAD:acuranzo+argent`.
-`AutoMigration` is true. `TestMigration` is false. The ready wait is 300
-seconds because startup can apply `argent_2030.lua` through `argent_2044.lua`.
+`RequestTimeoutSeconds` 60). `Migrations` is `PAYLOAD:acuranzo+courses+argent`.
+`AutoMigration` is false. `TestMigration` is false. The ready wait is 300
+seconds.
 
 Connection targets are the demo databases used by Test 40, with schema
-`demo` (empty on SQLite and Firebird, `demoms` on MSSQL). A run with a
-regenerated payload applies those migrations onto the shared demo schema.
-SQLite copies `tests/artifacts/database/sqlite/hydrodemo.sqlite` into the
-diagnostics directory, checks that `Mcp.Server` is seeded, and migrates the
-copy. The shared SQLite file stays as it was.
+`demo` (empty on SQLite and Firebird, `demoms` on MSSQL). Test 40 loads that
+schema. SQLite copies `tests/artifacts/database/sqlite/hydrodemo.sqlite` into the
+diagnostics directory and checks that `Mcp.Server` is seeded. The copy keeps
+`AutoMigration` false. The shared SQLite file stays as it was.
 
 ## Prerequisites
 

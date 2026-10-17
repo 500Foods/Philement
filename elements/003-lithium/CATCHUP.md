@@ -71,18 +71,38 @@ only.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-09-10):** Phase 0, 0a, 0b, 0c complete. Band A (Phase 1) next.
+**CURRENT PAUSE POINT (as of 2026-10-16):** Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, and 5 are complete. The next session opens **Phase 5a — Didit partner**. Discuss it and wait for approval before editing. Didit, Apple, Google, and Microsoft stay omitted until their own phases. Course QueryRefs moved to the 4000 pack on 2026-10-16. Band D uses the Courses pack QueryRefs section. Do not call retired **#085**, **#150**, or **#151**.
 
 ### Resume here next session
 
-1. Confirm latest completed phase via Status blocks; active phase = first
-   not complete.
-2. Re-read Working Log decisions that affect the next chunk.
-3. Re-read [`AGENTS.md`](/elements/003-lithium/AGENTS.md) Known defects +
-   ID map.
-4. Baseline: `cd elements/003-lithium && npm test && npm run lint`.
-5. One phase: discuss → approval → implement → verify exit gate → update
-   this doc → stop.
+Phase 5 Status is complete. Phase 5a Status is pending. Do not reopen Phases 0–5.
+
+1. Read Phase 5a (Goal, work items, exit gate) and lock L7.
+   Phase 5 renders a partner only when `login partners.<id>` is true
+   and `auth.oidc_providers` has that id. The checked-in booleans are
+   already true. The four ids are still absent from `oidc_providers`
+   and from example Hydrogen `OIDC_RP`. Ask whether Didit is OIDC.
+   Wait for approval before editing source. If it is not OIDC, omit
+   it and log that. CATCHUP adds no product C.
+2. Do not apply migrations. Do not add product C. Do not put Keycloak
+   tokens in the SPA. The report writer stays parked. Do not start
+   Phase 5b in that sitting.
+3. Baseline from `elements/003-lithium`: `npm test` was 1003 passed
+   and 10 failed. The 10 are `tests/integration/auth.integration.test.js`
+   when health is up and login, renew, or logout returns HTTP 503.
+   A health check that is not HTTP 2xx skips those cases. `npm run lint`
+   was 0 errors and 35 pre-existing warnings. `npx eslint` on
+   `src/managers/login/login.js` was 0 errors and 2 pre-existing
+   warnings. No browser pass was done. Andrew checks the login page.
+4. Left open on purpose, and not Phase 5a work: the Profile footer
+   Save still writes the collection JSON and does not call
+   `settingsHandler.save()`. Style `applyState` and the undo stacks
+   are empty. `this.app.user` is still unset; `USERID` reads
+   `app.auth.user`. `invokeScript` has no manager caller. The Style
+   Manager login mockup still paints the four partner images.
+5. Close Phase 5a in this file before marking it complete: Status,
+   Accomplished, Lessons learned, Handoff, and the Working Log.
+   Then stop. Phase 5b starts in a new conversation.
 
 ---
 
@@ -113,8 +133,9 @@ only.
 **500 Courses Course Manager (menu ID 34)** on `lithium.500courses.com`.
 
 Band D is the deployable product. Bands E–I do not block that deploy.
-Authz for v1 is the Hydrogen JWT `roles` claim (staff/admin strings locked
-in Phase 0). Do **not** wait for Hydrogen 2.23 / AUTH_FINALE Phase 2
+Authz for v1 is lock L3. The JWT `roles` claim is a CSV of integer
+`role_id`s, resolved to `roles.name`. Staff means the name is exactly
+`staff` or `admin`. Do **not** wait for Hydrogen 2.23 / AUTH_FINALE Phase 2
 `account_roles` rows. When 2.23 lands, Band H records the cutover; the
 manager UI contract does not change.
 
@@ -170,6 +191,13 @@ until Band D’s Helium packet (human apply) flips the known button list.
 
 ## Current Observed State (2026-09-09)
 
+Snapshot from the day this plan was written. Cells marked
+2026-10-16 were refreshed after Phases 0a–2. Phases 0a–0c registered
+managers 34 and 35, handed the staff-role packet, and taught the
+Course Manager placeholder to call QueryRef **155**. Phases 1 and 2
+shipped the close path and the shared helpers. The Courses pack
+QueryRefs section is the course-number contract.
+
 ### Hydrogen / Helium already done (do not rebuild)
 
 | Surface | Evidence |
@@ -180,27 +208,94 @@ until Band D’s Helium packet (human apply) flips the known button list.
 | MCP Streamable HTTP + `#152`/`#153` | MCP complete; product tool = `System.Info` |
 | Mail Relay outbound + templates + OTP C API | MAILRELAY complete; Lithium UI is not |
 | Course learner Lua | `Enroll.*`, `Catalog.*`, `Account.*`, `Stripe.*`; staff writers `invokable=0` |
-| QueryRefs | Scripting 87/89/90/129/130; delete **131**; Enrolment History **#150**; Management History **#151**; suggestions insert **#085**; MCP **#152/#153**; chat store **#067/#068/#069** |
+| QueryRefs | Scripting 87/89/90/129/130; delete **131**; MCP **#152/#153**; chat store **#067/#068/#069**. Course numbers in this row were retired 2026-10-16. See Courses pack QueryRefs. **#086** and **#155** stayed. |
 
 ### Lithium today
 
 | Surface | Reality |
 | --------- | --------- |
 | Login OIDC | `renderOidcProviders` from `auth.oidc_providers` (500passwords) |
-| Partner buttons | Hardcoded in `login.html`; `login partners` booleans unused; **no JS handlers** |
+| Partner buttons | Config row (Phase 5, 2026-10-16). A button renders only when `login partners.<id>` is true and that id is in `auth.oidc_providers`. Checked-in config shows 500 Passwords only. Didit, Apple, Google, and Microsoft stay hidden until 5a–5d. |
 | Scripting ID 33 | List/edit/save; **no invoke**; `scripting.js` 1004 lines |
-| `conduit.js` | Query only — no `invokeScript` |
+| `conduit.js` | `authQuery` plus `buildScriptPayload`, `invokeScript`, and `getScriptJob` (Phase 2, 2026-10-16). No manager calls the script helpers yet. |
 | Crimson | Live WS chat; login JWT; hardcoded engine `"Crimson"` |
 | Chats ID 18 | 49-line placeholder |
-| Course Manager | **Does not exist** |
-| Course Builder | **Does not exist** (sprint reserved 34; this plan moves it to 35) |
+| Course Manager | Placeholder at `course-manager/` (Phase 0a, refreshed 2026-10-16). Calls QueryRef **155**. `cleanup()` is the close hook. Real UI is Band D. |
+| Course Builder | Placeholder at `course-builder/` (Phase 0a, refreshed 2026-10-16). No QueryRef. Close hook is `teardown()`. Real UI is Band E. |
 | Terminal | Real iframe popup but `DEFAULT_URL` hardcoded to `https://www.philement.com`; not wired to Hydrogen terminal `WebPath`. Troubleshoot in Phase 0c. |
 | Mail / Jobs / Dashboard / Roles | Placeholders |
 | CM6 | Real: `codemirror-setup.js`, `cm6-virtual-columns.js`, `cm6-custom-scrollbars.js` |
 | CM5 | `src/init/codemirror-init.js` dead (zero imports) |
-| `closeManager` | Calls `destroy()` only — leaks Tabulator/CM |
-| DOMPurify | Dependency unused |
-| `escapeHtml` | Real in `src/core/utils.js`; Lookups has a local no-op |
+| `closeManager` | `destroy`, else `cleanup`, else `teardown` (Phase 1, 2026-10-16). Close does not call `onDeactivate`. |
+| DOMPurify | `sanitizeHtml` in `src/core/utils.js`. Phase 3 (2026-10-16) calls it from Lookups, Crimson, Version History, and the Queries summary preview. |
+| `escapeHtml` | Real in `src/core/utils.js`. Quotes stay literal. Lookups processors use it before highlight. |
+
+---
+
+## Courses pack QueryRefs (2026-10-16)
+
+Helium cut the course objects out of Acuranzo into the Courses pack
+on the same database. File numbers, bookkeeping `query_ref`, and
+caller-facing QueryRefs share 4000–4999. Script names did not change.
+Inventory:
+[`/docs/He/COURSES_MIGRATION.md`](/docs/He/COURSES_MIGRATION.md).
+
+Band D calls the **New** column. The September working log still
+shows 85, 150, and 151 because those were the numbers that day.
+
+| Use | Was | New | Installed by |
+| --- | --- | --- | --- |
+| Insert `course_suggestions` | 85 | **4000** | [`courses_4002.lua`](/elements/002-helium/courses/migrations/courses_4002.lua) |
+| Canvas: lookup link by account | 144 | **4001** | [`courses_4004.lua`](/elements/002-helium/courses/migrations/courses_4004.lua) |
+| Canvas: link account to Canvas user | 145 | **4002** | [`courses_4005.lua`](/elements/002-helium/courses/migrations/courses_4005.lua) |
+| Canvas: touch link | 146 | **4003** | [`courses_4006.lua`](/elements/002-helium/courses/migrations/courses_4006.lua) |
+| Courses: list published | 147 | **4004** | [`courses_4011.lua`](/elements/002-helium/courses/migrations/courses_4011.lua). Filters in [`courses_4075.lua`](/elements/002-helium/courses/migrations/courses_4075.lua) |
+| Courses: get by slug | 148 | **4005** | [`courses_4012.lua`](/elements/002-helium/courses/migrations/courses_4012.lua) |
+| Enrolment History lines by course | 150 | **4006** | [`courses_4039.lua`](/elements/002-helium/courses/migrations/courses_4039.lua). Later SQL in [`courses_4068.lua`](/elements/002-helium/courses/migrations/courses_4068.lua) |
+| Management History lines by course | 151 | **4007** | [`courses_4048.lua`](/elements/002-helium/courses/migrations/courses_4048.lua) |
+
+Stays in Acuranzo:
+
+| Ref | What | File |
+| --- | --- | --- |
+| **86** | Insert `contact_submissions` | [`acuranzo_1200.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1200.lua) |
+| **149** | Scripting allowlist. Hydrogen hardcodes it. | [`acuranzo_1298.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1298.lua) |
+| **155** | Get Role Name By ID. Course Manager already calls this. | [`acuranzo_1381.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1381.lua) |
+
+`Enroll.LogEvent` reads **4006**. `Catalog.LogEvent` reads **4007**.
+Both stay `invokable=0`.
+
+**4004** is the published catalog. It is not a staff list of every
+course. `courses_4075.lua` adds `Q`, `LEVEL`, `PAID_FREE`, `TAG`,
+`SORT`, and `HIDE_RETIRED`. Bind every new name (`''` when unused).
+Retired published rows still return unless `HIDE_RETIRED=1`. **4005**
+is unchanged by that file. **4001–4003** are the Canvas link queries
+Lua calls. They are not an account search.
+
+No list or triage QueryRef exists for `course_suggestions` (insert
+**4000** only) or `contact_submissions` (insert **86** only). No
+staff "all courses, including unpublished" QueryRef exists. The next
+Courses file is **4076**. The next caller-facing QueryRef is
+**4008**. Phase 13 and Phase 16 identify or packet those. Do not
+invent a number in the SPA.
+
+Script names stay: `Catalog.*`, `Enroll.*`, `Account.*`, `Stripe.*`,
+`Provision.EnsureCanvasUser`, `Mail.Notices.CourseExpiration`. Bodies
+live under
+[`/elements/002-helium/courses/migrations/`](/elements/002-helium/courses/migrations/).
+`Orchestrators.Orchestrator` stayed in Acuranzo. The first insert of
+`Provision.EnsureCanvasUser` stayed in
+[`acuranzo_1289.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1289.lua).
+`Enroll.RenewFree` still has no Helium seed. Lookup **055** keeps
+family id 055. Lookup 042 keys 33–35 and Lookup 048 key 6 (Learning)
+stay in
+[`acuranzo_1378.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1378.lua)
+and
+[`acuranzo_1379.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1379.lua).
+
+A database that already applied the old 1xxx course files must be
+rebuilt before this pack is applied. On that rebuilt database, 85,
+150, and 151 are absent.
 
 ---
 
@@ -245,8 +340,8 @@ until Band D’s Helium packet (human apply) flips the known button list.
 | 29 | Queries | `queries/` | Canonical LithiumTable consumer |
 | 32 | Terminal | `terminal/` | Menu 32. Utility key `terminal` **without** numeric 5. |
 | 33 | Scripting | `scripting/` | |
-| **34** | **Course Manager** | `course-manager/` | **First deploy. Not created.** |
-| **35** | **Course Builder** | `course-builder/` | Pipeline UI. Not created. |
+| **34** | **Course Manager** | `course-manager/` | **First deploy.** Placeholder registered (Phase 0a). Calls QueryRef **155**. Band D is the real UI. |
+| **35** | **Course Builder** | `course-builder/` | Placeholder registered (Phase 0a). Band E is the real UI. |
 
 Tour matching uses **numeric ID only**. Do not give Terminal utility
 numeric 5 (collides with Crimson tours).
@@ -262,7 +357,7 @@ numeric 5 (collides with Crimson tours).
 | L3 | Course Manager authz v1 | Parse JWT `roles` to integer `role_id`s (C today: CSV string; accept array if that lands). Resolve `role_id` → `roles.name`. Staff if name is exactly `staff` or `admin`. Lookup 036 is Role Type (`type_a36`), not the name catalog. Seed + UI in Phase 0b. Hide manager + disable invoke otherwise. |
 | L4 | 2.23 `account_roles` | Not a v1 ship gate. Band H cutover later. |
 | L5 | Terminal vs Crimson | Crimson = system 5 popout. Terminal = menu 32 + utility key `terminal` only. |
-| L6 | Lifecycle | `closeManager` → `destroy` else `cleanup` else `teardown`. `show`/`hide` → `onActivate`/`onDeactivate`. |
+| L6 | Lifecycle | `closeManager` → `destroy` else `cleanup` else `teardown`. Close does not call `onDeactivate`. `showManager` calls `onDeactivate` then `onActivate` after the crossfade. There is no `hideManager`. An already-visible manager is not activated again. Locked in Phase 1 (2026-10-16). |
 | L7 | Partner buttons | Render only if `login partners.<id>` is true **and** a Hydrogen OIDC provider with that `id` exists. Else **omit**. Order: Didit, Apple, Google, Microsoft, then `auth.oidc_providers`. Wire-up is Phases 5a–5d (one partner each). Repo/example Hydrogen has only `500passwords`. |
 | L8 | Last-method polish | OIDC-PLAN Phase 26 is done. Only extend `.is-recent` to partners if handlers exist. |
 | L9 | Chat JWT | CATCHUP does **not** add C. Crimson keeps sending the login JWT until a Hydrogen mint exists; surface `JWT not authorized for chat` / `error_code` honestly. |
@@ -298,8 +393,9 @@ QueryRefs so later phases do not invent a second scheme.
 - [`/docs/H/api/conduit/script.md`](/docs/H/api/conduit/script.md)
 - [`/docs/H/plans/AUTH_FINALE.md`](/docs/H/plans/AUTH_FINALE.md)
 - [`/mnt/extra/Projects/500-Courses-Reception/PRIORITIZE.md`](/mnt/extra/Projects/500-Courses-Reception/PRIORITIZE.md) Part 5
-- Helium `acuranzo_1204`/`1206`/`1207`/`1263`–`1265`/`1297` (scripts);
-  `1326` (#150); `1335` (#151)
+- Helium `acuranzo_1204`/`1206`/`1207`/`1263`–`1265`/`1297` (scripts).
+  The 2026-09-09 course refs were `1326` (#150) and `1335` (#151).
+  Both were retired 2026-10-16. See Courses pack QueryRefs.
 
 **Work items:**
 
@@ -309,6 +405,8 @@ QueryRefs so later phases do not invent a second scheme.
       omit it). Log the table: column → QueryRef.
 - [x] Confirm Course Manager QueryRefs that already exist (#150, #151,
       #085, Catalog/Enroll/Stripe script names). Do not invent refs.
+      Those three numbers are the 2026-09-09 confirm. They moved on
+      2026-10-16. See Courses pack QueryRefs.
 - [x] Read one live Hydrogen JWT `roles` value (or Test 40 fixture) and
       write the exact v1 match rule (substring vs list vs exact).
 - [x] Confirm `login partners` key (space in JSON) vs `oidc_providers`.
@@ -642,7 +740,7 @@ and listeners.
 
 **Entry gate:**
 
-- [ ] Phase 0 Status complete.
+- [x] Phase 0 Status complete.
 
 **Reference:**
 
@@ -652,22 +750,59 @@ and listeners.
 
 **Work items:**
 
-- [ ] `closeManager` tries `destroy`, then `cleanup`, then `teardown`
+- [x] `closeManager` tries `destroy`, then `cleanup`, then `teardown`
       (await, log failures).
-- [ ] `showManager` / hide call `onActivate` / `onDeactivate` when present.
-- [ ] Delete dead `_importManager` cases 1–6 (wrong modules, including
+- [x] `showManager` / hide call `onActivate` / `onDeactivate` when present.
+- [x] Delete dead `_importManager` cases 1–6 (wrong modules, including
       Chats as case 6).
-- [ ] Unit test: fake manager with only `cleanup()` is invoked; only
+- [x] Unit test: fake manager with only `cleanup()` is invoked; only
       `destroy()` still works.
 
 **Exit gate / validation:**
 
-- [ ] `npm test && npm run lint`
-- [ ] Grep: `closeManager` no longer calls `destroy` exclusively.
+- [x] `npm test && npm run lint`
+- [x] Grep: `closeManager` no longer calls `destroy` exclusively.
 
-**Status:** pending
+**Status:** complete (2026-10-16). Variance: `npm test` was 953
+passed and 10 failed. The 10 failures are
+`tests/integration/auth.integration.test.js`. The live server at
+`https://lithium.philement.com` returned HTTP 503 on login, renew,
+and logout. Those cases do not import `manager-loader.js`. The new
+lifecycle file passed 7 tests. `npm run lint`: 0 errors, 35
+pre-existing warnings.
+
+**Accomplished:**
+
+- `closeManager` calls `_releaseManager`: `destroy`, otherwise
+  `cleanup`, otherwise `teardown`. A thrown hook is logged and the
+  slot is still removed. Close does not call `onDeactivate`.
+- `showManager` calls `onDeactivate` on the outgoing instance and
+  `onActivate` on the incoming one after the crossfade. A manager
+  that is already visible is left alone.
+- `_importManager` cases 1–6 are gone.
+- `tests/unit/app/manager-loader.test.js` covers cleanup-only,
+  destroy-wins, teardown-only, a thrown cleanup, hook order, the
+  already-visible switch, and the retired import ids.
 
 **Lessons learned:**
+
+- There is no `hideManager`. A switch is another `showManager`. The
+  hooks belong after `await _crossfadeSlots`, so a Tabulator redraw
+  runs once the slot is visible.
+- `onDeactivate` on close would fire next to `cleanup` for Queries
+  and Lookups. The approved rule keeps those hooks on the switch
+  path only.
+
+**Handoff:**
+
+- Phase 2 may start. It adds `sanitizeHtml` and `invokeScript` and
+  must not edit `manager-loader.js`.
+- Queries, Lookups, Style, Scripting, and Version History already
+  implement `cleanup()`. Closing one of them now runs that method.
+  A browser pass of open-then-close was not done in this session.
+- `AGENTS.md` lifecycle section matches this phase. The 2026-10-16
+  doc alignment corrected the ID map: 34 and 35 are registered
+  placeholders. Band D and Band E own the real UI.
 
 ---
 
@@ -680,8 +815,9 @@ yet.
 
 **Entry gate:**
 
-- [ ] Phase 0 complete. May parallel Phase 1 if this phase does not
-      touch `manager-loader.js`.
+- [x] Phase 0 complete. May parallel Phase 1 if this phase does not
+      touch `manager-loader.js`. Phase 1 was already complete.
+      `manager-loader.js` was not edited.
 
 **Reference:**
 
@@ -692,24 +828,62 @@ yet.
 
 **Work items:**
 
-- [ ] Confirm `escapeHtml` in `utils.js`; tests for `& < > " '`.
-- [ ] Add `sanitizeHtml(html)` wrapping the existing DOMPurify
+- [x] Confirm `escapeHtml` in `utils.js`; tests for `& < > " '`.
+- [x] Add `sanitizeHtml(html)` wrapping the existing DOMPurify
       dependency. Use for markdown → HTML later.
-- [ ] Add `invokeScript(api, { script, params, wait, timeoutSeconds })`
+- [x] Add `invokeScript(api, { script, params, wait, timeoutSeconds })`
       and `getScriptJob(api, jobId)`. Radar blips + `error.serverError`
       parity with `authQuery`.
-- [ ] Reject slash names; require `script`; never send `_hydrogen`;
+- [x] Reject slash names; require `script`; never send `_hydrogen`;
       clamp timeout 1–60 on the client if you add a clamp.
 
 **Exit gate / validation:**
 
-- [ ] `npm test` includes utils + conduit script tests.
-- [ ] `npm run lint`
-- [ ] No manager calls the helper yet.
+- [x] `npm test` includes utils + conduit script tests.
+- [x] `npm run lint`
+- [x] No manager calls the helper yet.
 
-**Status:** pending
+**Status:** complete (2026-10-16). Variance: `npm test` was 965
+passed and 10 failed. The 10 failures are the same live auth file
+as Phase 1 (`lithium.philement.com` returned HTTP 503). Utils and
+conduit tests passed. `npm run lint`: 0 errors, 35 pre-existing
+warnings.
+
+**Accomplished:**
+
+- `escapeHtml` stays the text-node helper. Tests cover `& < > " '`.
+  Quotes stay literal.
+- `sanitizeHtml` in `src/core/utils.js` calls `DOMPurify.sanitize`.
+  No manager imports it.
+- `buildScriptPayload`, `invokeScript`, and `getScriptJob` are in
+  `src/shared/conduit.js`. Names must be `Group.Name`. A slash is
+  rejected. `params._hydrogen` throws before the request.
+  `timeoutSeconds` clamps to 1–60. A triangle radar blip is added
+  and removed. HTTP errors get `error.serverError` from
+  `{ success: false, error, message }`. An HTTP 200 envelope with
+  `status: failed` is returned, not thrown.
 
 **Lessons learned:**
+
+- `escapeHtml` uses `textContent`, so `"` and `'` are not encoded.
+  That is safe in a text node and unsafe in an attribute. Phase 3
+  should not put the result inside an attribute.
+- happy-dom does not round-trip elements through DOMPurify 3.4.
+  `<p>Hello</p>` comes back as `Hello` in Vitest. A browser keeps
+  the tag. The unit test asserts the text and the absence of
+  `<script` and `onerror`.
+
+**Handoff:**
+
+- Phase 3 wires the sinks named in that phase's Reference. Use
+  `escapeHtml` for text and `sanitizeHtml(marked.parse(...))` for
+  markdown. Keep `escapeHtml` output out of attributes. Do not call
+  `invokeScript` from a manager in that phase.
+- `getScriptJob` encodes the job id. An empty id or a slash rejects
+  before the GET.
+- Full `npm test` still fails the 10 live auth cases when health is
+  up and login, renew, or logout returns HTTP 503. That variance is
+  on this phase's Status. Lint exits 0 with 35 pre-existing warnings.
 
 ---
 
@@ -721,36 +895,137 @@ yet.
 
 **Entry gate:**
 
-- [ ] Phase 2 `escapeHtml` / `sanitizeHtml` shipped.
+- [x] Phase 2 `escapeHtml` / `sanitizeHtml` shipped.
 
 **Reference:**
 
-- `src/managers/lookups/lookups.js` local no-op escape
-- `src/managers/crimson/crimson-chat.js`
-- `src/managers/version-history/`
-- `src/init/highlight-init.js`
+Confirmed 2026-10-16. Edit these functions. `lookups.js` is over the
+1000-line cap; Phase 35 splits it after sanitize, so Phase 3 edits
+in place.
+
+- [`lookups.js`](/elements/003-lithium/src/managers/lookups/lookups.js)
+  `processContentWithHighlighting` and `basicContentProcessing`
+  use `.replace(/&/g, '&')`, and the same pattern for `<` and `>`.
+  The replacement is the character itself, so nothing is escaped.
+  `refreshPreview` assigns `previewContent.innerHTML`.
+- [`crimson-chat.js`](/elements/003-lithium/src/managers/crimson/crimson-chat.js)
+  `formatMessageContentMarkdown` runs `marked.parse`. The stream
+  path assigns that HTML, and the live stream assigns
+  `formatMessageContent`. Follow-up buttons in
+  `addFollowUpQuestions` put a local `escapeHtml` inside HTML.
+  Static chrome in `crimson-citations.js`, `crimson-ui.js`, and
+  `crimson-core.js` is not the sink. `crimson-core.js` `escapeHtml`
+  is the text-node helper.
+- [`version-history.js`](/elements/003-lithium/src/managers/version-history/version-history.js)
+  preview: `marked.parse` for markdown, and the raw summary when the
+  content type is html, then `previewContent.innerHTML`. Local
+  `escapeHtml` already escapes through `textContent`.
+- [`highlight-init.js`](/elements/003-lithium/src/init/highlight-init.js)
+  `highlightInline` interpolates `language` and `code` into
+  `innerHTML`.
+- [`tour.js`](/elements/003-lithium/src/managers/tour/tour.js)
+  `updateCaptionsForTime` sets `captionEl.innerHTML = caption.text`,
+  then `processIcons`.
+- [`grouping-popup.js`](/elements/003-lithium/src/tables/popups/grouping-popup.js)
+  sets `title.innerHTML` when `createLookupPreview` returns HTML or
+  `titleContainsIcon` is true. Plain titles already use
+  `textContent`.
+- [`queries-ui.js`](/elements/003-lithium/src/managers/queries/queries-ui.js)
+  `toggleNavPopup` interpolates `item.label`. The column-chooser
+  title already uses `textContent`.
+- [`queries-editors.js`](/elements/003-lithium/src/managers/queries/queries-editors.js)
+  `renderMarkdownPreview` assigns `marked.parse`. Same class of sink
+  as Crimson and Version History. Added during the 2026-10-16 doc
+  alignment.
 
 **Work items:**
 
-- [ ] Lookups processors: real `escapeHtml` then highlight; sanitized
+- [x] Lookups processors: real `escapeHtml` then highlight; sanitized
       assign.
-- [ ] Crimson + Version History: `sanitizeHtml(marked.parse(...))`.
-- [ ] `highlight-init.js`: do not interpolate raw `code` / `language`
+- [x] Crimson + Version History: `sanitizeHtml(marked.parse(...))`.
+      Version History's html content type is the same assign.
+- [x] Queries summary preview: `sanitizeHtml(marked.parse(...))` in
+      `renderMarkdownPreview`.
+- [x] `highlight-init.js`: do not interpolate raw `code` / `language`
       into `innerHTML`.
-- [ ] Tour captions: `textContent` + icon nodes, or sanitize allowlist.
-- [ ] Grouping / queries popup titles: `textContent`.
-- [ ] Unit tests with `<img onerror>` / `<script>` fixtures.
+- [x] Tour captions: `textContent` + icon nodes, or sanitize allowlist.
+- [x] Grouping popup titles and Queries nav-popup labels:
+      `textContent`, except an allowlisted icon.
+- [x] Unit tests with `<img onerror>` / `<script>` fixtures.
 
 **Exit gate / validation:**
 
-- [ ] Grep Lookups shows real entity escapes or `escapeHtml`.
-- [ ] `npm test && npm run lint`
-- [ ] Manual: lookup summary `<img onerror=alert(1)>` does not fire
+- [x] Grep Lookups shows real entity escapes or `escapeHtml`.
+- [x] `npm test && npm run lint`
+- [x] Manual: lookup summary `<img onerror=alert(1)>` does not fire
       (Working Log).
 
-**Status:** pending
+**Status:** complete (2026-10-16). Variance: `npm test` was 983
+passed and 10 failed. The 10 failures are the same live auth file
+as Phases 1 and 2 (`lithium.philement.com` returned HTTP 503).
+`tests/unit/xss-sinks.test.js` passed 16 tests. `npm run lint`: 0
+errors, 35 pre-existing warnings. `npm run lint:css` exited 0.
+
+**Accomplished:**
+
+- Lookups `processContentWithHighlighting` and
+  `basicContentProcessing` start with `escapeHtml`. `refreshPreview`
+  assigns `sanitizeHtml`. SunEditor tags such as `<p>` show as text.
+- Crimson markdown, the live stream, Version History markdown, and
+  the Queries summary preview assign `sanitizeHtml(marked.parse(...))`.
+  Version History HTML content type assigns `sanitizeHtml` of the
+  raw summary. Status, Released, and Focus are text nodes. A plain
+  summary uses `escapeHtml` inside `pre.version-preview-plain`.
+- `highlightInline` sets `textContent` and adds `language-*` only
+  when the language matches `/^[a-z0-9_+#-]+$/i`.
+- Tour captions turn each exact `<fa fa-name></fa>` into an icon
+  node. Other caption markup stays text. A grouping title or a nav
+  `item.icon` becomes an icon only when the whole value is one
+  `fa-name` token (`/^fa-[a-z0-9-]+$/`). The lookup group title is
+  text. Queries template names are text.
+- Crimson citations are built after sanitize. The tooltip is
+  `setAttribute('title', ...)`. The book icon is a node.
+  Follow-up text is a text node. The up icon is a static node.
+- `sanitizeHtml` re-parses when DOMPurify's string still contains a
+  script, iframe, object, embed, an `on*` attribute, or
+  `javascript:`. Headless Chrome already strips those, so ordinary
+  markup skips the second pass.
+- `npm run templates:copy` refreshed
+  `public/src/managers/version-history/version-history.css`.
 
 **Lessons learned:**
+
+- happy-dom's DOMPurify leaves a nested `<script>` and an `onerror`
+  attribute in the returned string. A lone script and a lone image
+  are stripped. Headless Chrome with DOMPurify 3.4.16 strips the
+  nested payload: `alert` does not fire, the script element is gone,
+  and the image has no `onerror`. The second pass makes Vitest see
+  that result. Ordinary markup (`<p>`, lists, links, a safe image)
+  does not match the marker, so Chrome keeps DOMPurify's string.
+- A citation tooltip is attribute text. `setAttribute` stores
+  `<script>` as text. The sink test looks for script, iframe,
+  object, and embed elements, and for attribute names that start
+  with `on`.
+- Default DOMPurify drops `<fa>`. Icon sinks insert nodes, then
+  `processIcons` runs. `sanitizeHtml` has no `<fa>` allowlist.
+- A safe `<img src>` can remain after sanitize. The lookup path
+  escapes first, so `<img onerror=alert(1)>` is text.
+- `lookups.js` stays over the 1000-line cap. Phase 35 splits it.
+  Static chrome (the grouping arrow and the Queries delete icon)
+  still assigns authored `<fa>` HTML.
+
+**Handoff:**
+
+- Phase 4 is Honest UI: replace `window.confirm`, `prompt`, and
+  `alert` on the hottest paths, remove the Login / Main / Session
+  Log / Profile `renderFallback` clones, and send a real Bearer
+  token from SunEditor. Do not start it in the Phase 3 conversation.
+- `escapeHtml` output stays out of attributes. `invokeScript` still
+  has no manager caller.
+- Full `npm test` still fails the 10 live auth cases when health is
+  up and login, renew, or logout returns HTTP 503. The count on
+  this phase is 983 passed and 10 failed. Lint exits 0 with 35
+  pre-existing warnings.
 
 ---
 
@@ -764,7 +1039,7 @@ nothing here.
 
 **Entry gate:**
 
-- [ ] Phase 0 complete. Existing toast / confirm pattern cited in log.
+- [x] Phase 0 complete. Existing toast / confirm pattern cited in log.
 
 **Reference:**
 
@@ -775,33 +1050,106 @@ nothing here.
 
 **Work items:**
 
-- [ ] Replace `window.confirm` / `prompt` / `alert` on the hottest
+- [x] Replace `window.confirm` / `prompt` / `alert` on the hottest
       paths (table ops, queries nav/templates, template-popup,
       jsoneditor-init, camera-popout).
-- [ ] Remove Login / Main / Session Log / Profile `renderFallback` HTML
+- [x] Remove Login / Main / Session Log / Profile `renderFallback` HTML
       clones; fail with toast + session log.
-- [ ] Remove Lookups JSON textarea fallback.
-- [ ] Style Manager: implement `applyState` **or** disable Apply / Undo /
+- [x] Remove Lookups JSON textarea fallback.
+- [x] Style Manager: implement `applyState` **or** disable Apply / Undo /
       Redo / Copy (L15). `copyCssToClipboard` copies real CSS.
-- [ ] Profile page `save()` stubs: return failure or disable. No
+- [x] Profile page `save()` stubs: return failure or disable. No
       `{ success: true }` on no-ops.
-- [ ] `USERID` from `this.app.auth.user`, not `this.app.user` (Scripting,
+- [x] `USERID` from `this.app.auth.user`, not `this.app.user` (Scripting,
       Queries, Lookups when touched).
-- [ ] SunEditor: `retrieveJWT()`; missing token must not produce
+- [x] SunEditor: `retrieveJWT()`; missing token must not produce
       `"Bearer null"`.
 
 **Exit gate / validation:**
 
-- [ ] `rg "\\balert\\(|\\bconfirm\\(|\\bprompt\\(" src/` empty or
+- [x] `rg "\\balert\\(|\\bconfirm\\(|\\bprompt\\(" src/` empty or
       leftovers listed with target phase.
-- [ ] `rg renderFallback src/` empty.
-- [ ] Profile stub `success: true` grep empty.
-- [ ] Unit: missing JWT ≠ `"Bearer null"`.
-- [ ] `npm test && npm run lint`
+- [x] `rg renderFallback src/` empty.
+- [x] Profile stub `success: true` grep empty.
+- [x] Unit: missing JWT ≠ `"Bearer null"`.
+- [x] `npm test && npm run lint`
 
-**Status:** pending
+**Status:** complete (2026-10-16). Variance: `npm test` was 996
+passed and 10 failed. The 10 failures are the same live auth file
+as Phases 1–3 (`lithium.philement.com` returned HTTP 503).
+`tests/unit/honest-ui.test.js` passed 13 tests. `npm run lint`: 0
+errors, 35 pre-existing warnings. `npm run lint:css` exited 0.
+No manager HTML changed, so `templates:copy` was not required.
+
+**Accomplished:**
+
+- [`confirm.js`](/elements/003-lithium/src/shared/confirm.js) and
+  [`confirm.css`](/elements/003-lithium/src/styles/confirm.css) are
+  the shared confirm and prompt. Delete uses the danger button.
+  The message is `textContent`. Cancel, Escape, backdrop, and
+  `close-all-popups` resolve false or null. Table delete, Queries
+  delete, template reload, and both template-name prompts use it.
+  Camera failures and invalid JSON import use `toast.error` plus
+  `log`. Queries `showSaveTemplateDialog` was already a custom
+  dialog and stayed.
+- Login, Main, Session Log, and Profile return before init when
+  the template fetch fails or is not OK. The login language list
+  does the same: toast, log, and a text node. Lookups no longer
+  reads `#lookups-json-editor-fallback`.
+- Style Apply writes the CSS editor text into
+  `#style-manager-preview` when that text is non-empty, then toasts
+  success. Copy copies that same text. Empty Apply and Copy stay
+  disabled and do not toast. Undo and Redo stay disabled.
+  `applyState` is still empty.
+- Stub profile `save()` returns `{ success: false }` and stays
+  dirty. In-page Save buttons are disabled. The settings footer
+  Save stays disabled while the current page cannot save.
+  `saveAll` records that failure and toasts once. Language, date
+  formats, photo, and Lookups manager settings (manager 23) still
+  return `{ success: true }` and `canSave()` is true.
+- Scripting, Queries, and Lookups read `USERID` from
+  `app.auth.user`. A missing id is still `0`.
+- [`uploadAuthHeader`](/elements/003-lithium/src/init/suneditor-init.js)
+  returns `{}` unless the token is a non-empty string.
+  `initEditor` reads `retrieveJWT()` again so a login after
+  construction is sent. A missing token is not `"Bearer null"`.
 
 **Lessons learned:**
+
+- There was no confirm modal to reuse. Toast
+  ([`toast.js`](/elements/003-lithium/src/shared/toast.js)) was the
+  existing pattern. The new dialog dispatches `close-all-popups`
+  before it listens, or it cancels itself.
+- `+` binds tighter than `||`, so
+  `'Bearer ' + localStorage.getItem(...) || ''` is the string
+  `"Bearer null"` when the key is missing.
+- The visible Profile footer Save is the collection JSON path.
+  `settingsHandler.save()` has no UI caller. Gating that footer
+  when `canSave()` is false stops a stub edit from toasting
+  "Preferences saved successfully".
+- The login language panel's `_renderFallback` matches
+  `rg renderFallback`. It was an HTML clone, so it went with the
+  other clones.
+- `npm run lint` globs one directory level (`src/*/*.js` and
+  `tests/*/*.js` under `sh`). Nested manager files are outside
+  that command. `npm run lint:css` covers `src/**/*.css`.
+- Headless Chrome `--dump-dom` escapes `<` inside `<pre>`. The
+  dialog check is `hasImg: false` plus the resolved values.
+
+**Handoff:**
+
+- The next conversation opens Phase 5, Ordered partner logins.
+  Start at **Resuming Work**. Do not start Phase 5a in that sitting.
+- Profile pages that persist are language, date formats, photo,
+  and manager 23. Everything else inherits the refusing base save.
+  Wiring the footer Save to `settingsHandler.save()` is still open.
+- `applyState` and the undo stacks are still empty. Apply replaces
+  the whole `#style-manager-preview` text, including rules that
+  `applyPreviewStyle` appended.
+- `this.app.user` is still unset. `USERID` reads `app.auth.user`.
+- Full `npm test` still fails the 10 live auth cases when health
+  is up and login, renew, or logout returns HTTP 503. The count
+  on this phase is 996 passed and 10 failed.
 
 ---
 
@@ -816,8 +1164,12 @@ nothing here.
 
 **Entry gate:**
 
-- [ ] Phase 0 Working Log records whether each partner id exists on
+- [x] Phase 0 Working Log records whether each partner id exists on
       Hydrogen `OIDC_RP.Providers[]` for the target deploys.
+      Variance: the log records example `hydrogen.json` only
+      (`500passwords`) and says the live configs were not in the
+      tree. Andrew confirmed this sitting treats Didit, Apple,
+      Google, and Microsoft as absent on both deploys until 5a–5d.
 
 **Reference:**
 
@@ -831,27 +1183,86 @@ nothing here.
 
 **Work items:**
 
-- [ ] Remove hardcoded partner markup as the live path. Render partners
+- [x] Remove hardcoded partner markup as the live path. Render partners
       from config (same row as OIDC).
-- [ ] Honor `login partners` booleans. `false` or missing Hydrogen
+- [x] Honor `login partners` booleans. `false` or missing Hydrogen
       provider → do not render (no greyed-out fake).
-- [ ] Click → `startOidc(id)` (or the Phase 0-recorded start path).
+- [x] Click → `startOidc(id)` (or the Phase 0-recorded start path).
       Record `auth.last_method`. Apply `.is-recent` like OIDC.
-- [ ] Visual order: Didit, Apple, Google, Microsoft, then OIDC providers.
-- [ ] Do not put Keycloak tokens in the SPA. Do not add C.
-- [ ] If a partner has no Hydrogen provider, Working Log lists it as
+- [x] Visual order: Didit, Apple, Google, Microsoft, then OIDC providers.
+- [x] Do not put Keycloak tokens in the SPA. Do not add C.
+- [x] If a partner has no Hydrogen provider, Working Log lists it as
       hidden; do not invent a second protocol.
 
 **Exit gate / validation:**
 
-- [ ] Unit tests: boolean off → no button; boolean on + provider →
+- [x] Unit tests: boolean off → no button; boolean on + provider →
       click calls `startOidc` with that id; order asserted.
-- [ ] `npm test && npm run lint`
-- [ ] Manual checklist if a provider is live (log which).
+- [x] `npm test && npm run lint`
+- [x] Manual checklist if a provider is live (log which). None of
+      Didit, Apple, Google, or Microsoft is live. No browser pass.
+      Andrew checks the login page.
 
-**Status:** pending
+**Status:** complete (2026-10-16). Variance: `npm test` was 1003
+passed and 10 failed. The 10 failures are the same live auth file
+as Phases 1–4 (`lithium.philement.com` returned HTTP 503).
+`tests/unit/managers/login/login.test.js` passed 37 tests, 7 of
+them new for this phase. `npm run lint`: 0 errors, 35 pre-existing
+warnings. That glob does not reach `login.js`. Direct `npx eslint`
+on `login.js` and `login.test.js`: 0 errors, 2 pre-existing
+warnings in `login.js`. No browser pass. Andrew asked to check the
+login page himself. No partner provider is live.
+
+**Accomplished:**
+
+- [`login.html`](/elements/003-lithium/src/managers/login/login.html)
+  no longer contains the four partner buttons. The alt row is empty
+  until `renderOidcProviders` fills it. `templates:copy` updated
+  [`public/src/managers/login/login.html`](/elements/003-lithium/public/src/managers/login/login.html).
+  [`index.html`](/elements/003-lithium/index.html) preloads only
+  `login_500passwords.svg`.
+- [`orderLoginProviders`](/elements/003-lithium/src/managers/login/login.js)
+  and `hiddenLoginPartners` apply L7. A partner id renders when
+  `login partners.<id>` is strictly true and `auth.oidc_providers`
+  has an entry with that id and a label. Order is Didit, Apple,
+  Google, Microsoft, then other providers. A false or missing flag
+  omits that id, including from the tail. The click path is unchanged:
+  `auth.last_method` is `oidc:<id>`, `.is-recent` matches `oidc:<id>`
+  or plain `oidc`, then `startOidc(id)`.
+- Checked-in [`lithium.json`](/elements/003-lithium/config/lithium.json)
+  still has the four booleans true and only `500passwords` in
+  `auth.oidc_providers`. Those four buttons stay hidden. A stale
+  template button in the row is removed on render.
+- The Style Manager login mockup still paints the four images. It is
+  not the live login path.
 
 **Lessons learned:**
+
+- `getConfigValue` splits on `.`. The partner map is the top-level
+  key `login partners`, space included. `login.partners` would miss it.
+- A partner whose flag is false must not fall through into the OIDC
+  tail, or turning the flag off would still show the button.
+- `npm run lint` from `package.json` does not lint
+  `src/managers/login/login.js`. The direct eslint run does.
+- No partner image preload belongs on `index.html` while those
+  buttons are omitted. The Style Manager mockup still references
+  the PNG files on disk.
+
+**Handoff:**
+
+- The next conversation opens Phase 5a, Didit. Start at
+  **Resuming Work**. Do not start Phase 5b in that sitting.
+- To show a partner later: add a Hydrogen `OIDC_RP.Providers[]`
+  entry (human config, not C) and a matching `auth.oidc_providers`
+  id. The boolean is already true. The click path already calls
+  `startOidc`. Phase 5a decides whether Didit is OIDC. If it is not,
+  leave the button omitted.
+- Andrew has not looked at the login page yet. The checked-in page
+  should show 500 Passwords and no Didit, Apple, Google, or
+  Microsoft button.
+- Profile footer Save, `applyState`, `this.app.user`, and
+  `invokeScript` are unchanged. The Style Manager mockup still
+  shows the four partner images.
 
 ---
 
@@ -1248,9 +1659,12 @@ Builder widgets.
 
 **Work items:**
 
-- [ ] `src/managers/course-manager/` js/html/css. Register **34** in
-      `managerRegistry`, `_importManager`, `lithium.json`.
-- [ ] `cleanup()` implemented.
+- [ ] Placeholder already exists from Phase 0a: `course-manager.js`,
+      `course-manager.css`, registry id 34, `_importManager` case 34,
+      `config/lithium.json` `managers`, and `cleanup()`. Markup is
+      inline. The placeholder calls QueryRef **155**. Phase 12
+      replaces that UI. Do not register 34 a second time.
+- [ ] `cleanup()` stays the close hook.
 - [ ] Hide / refuse load when JWT `roles` fails L3. Honest empty/denied
       state — not a placeholder “under development” that looks like a
       bug.
@@ -1289,7 +1703,8 @@ sync-from-Canvas CTAs.
 - PRIORITIZE §5.1
 - `Catalog.SyncFromCanvas`, `Catalog.Retire` (still `invokable=0` until
   Phase 18 packet)
-- QueryRefs **#150** Enrolment History, **#151** Management History
+- Courses pack QueryRefs: history **#4006** and **#4007**. **#4004**
+  is the published catalog, not a staff list of unpublished rows.
 
 **Work items:**
 
@@ -1303,7 +1718,8 @@ sync-from-Canvas CTAs.
       sanitized JSON editor.
 - [ ] Buttons call `invokeScript` when `invokable`; else disabled with
       tooltip “not enabled on this server” (do not fake).
-- [ ] History popups: #150 / #151 via LithiumTable or sanitized `<pre>`.
+- [ ] History popups: **#4006** / **#4007** via LithiumTable or sanitized
+      `<pre>`.
 - [ ] Stripe ids read-only.
 
 **Exit gate / validation:**
@@ -1371,11 +1787,14 @@ Canvas token.
 **Entry gate:**
 
 - [ ] Phase 12 complete. `account_canvas_links` QueryRef or script
-      identified.
+      identified. Canvas link refs **#4001**, **#4002**, and **#4003**
+      already exist and are what Lua calls. They are not an account
+      search.
 
 **Reference:**
 
 - PRIORITIZE §5.3–5.4
+- Courses pack QueryRefs
 - `Enroll.FreeCourse`, `Enroll.Archive`, `Enroll.RenewFree`,
   `Provision.EnsureCanvasUser`, `Stripe.SyncCustomer`
 
@@ -1412,14 +1831,19 @@ without raw SQL.
 
 **Entry gate:**
 
-- [ ] Phase 12 complete. Insert QueryRef **#085** exists; list/triage
-      QueryRefs confirmed or packet prepared.
+- [ ] Phase 12 complete. Insert QueryRef **#4000** exists (was #085).
+      Contact insert stays **#086**. List/triage QueryRefs confirmed
+      or packet prepared. Next free caller-facing ref is **4008**.
 
 **Reference:**
 
 - PRIORITIZE §5.5
 - COURSEBUILDER CB-9 (queue only — do not build the LLM pipeline)
-- Helium `course_suggestions`, contact table + QueryRef #086 insert
+- Courses pack QueryRefs
+- `course_suggestions` in
+  [`courses_4001.lua`](/elements/002-helium/courses/migrations/courses_4001.lua);
+  contact insert QueryRef **#086** in
+  [`acuranzo_1200.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1200.lua)
 
 **Work items:**
 
@@ -1554,8 +1978,13 @@ asks; it does not block Course Manager deploy.
 
 **Work items:**
 
-- [ ] `src/managers/course-builder/` js/html/css. Register **35**.
-- [ ] `cleanup()`. JWT roles gate (same L3 unless Phase 0 variance).
+- [ ] Placeholder already exists from Phase 0a: `course-builder.js`,
+      `course-builder.css`, registry id 35, `_importManager` case 35,
+      and `config/lithium.json` `managers`. Markup is inline. Close
+      hook today is `teardown()`. Phase 19 replaces that UI. Do not
+      register 35 a second time.
+- [ ] `cleanup()` (or keep `teardown()`). JWT roles gate (same L3
+      unless Phase 0 variance).
 - [ ] Menu seed packet or documented load path.
 - [ ] Docs stub `LITHIUM-MGR-COURSEBUILDER.md` pointing at
       COURSEBUILDER.md.
@@ -2321,10 +2750,10 @@ Phase 7 packet must add `invokable` to 087/089/090/129/130.
 
 | Ref / name | Status |
 | ------------ | -------- |
-| #085 insert `course_suggestions` | exists (1198). No list/triage QueryRef |
-| #086 insert `contact_submissions` | exists (1200). No list/triage QueryRef |
-| #150 Enrolment History | exists (1326) |
-| #151 Management History | exists (1335) |
+| #085 insert `course_suggestions` | existed as 1198 on this day. Renumbered **4000** on 2026-10-16 (`courses_4002.lua`). Still no list/triage QueryRef |
+| #086 insert `contact_submissions` | exists (1200). Stayed. No list/triage QueryRef |
+| #150 Enrolment History | existed as 1326 on this day. Renumbered **4006** on 2026-10-16 (`courses_4039.lua`) |
+| #151 Management History | existed as 1335 on this day. Renumbered **4007** on 2026-10-16 (`courses_4048.lua`) |
 | `Catalog.SyncFromCanvas` / `Retire` / `GetBySlug` / `LogEvent` | seeded; staff writers `invokable=0` |
 | `Stripe.EnsureProduct` / `EnsureCustomer` / `SyncCustomer` / `Checkout` / `Refund` / `DeactivateCustomer` / `Webhook` | seeded; several `invokable=0` |
 | `Enroll.FreeCourse` / `Archive` / `SyncEnrollments` / `SyncProgress` / `PaidCourse` / `LogEvent` / `CanvasSeat` | seeded |
@@ -2359,6 +2788,131 @@ Hydrogen configs were not in tree.
 Hydrogen; prefer `npm test` / `npm run lint`. `LITHIUM-DEV.md` is
 silent (does not claim Vite cannot run). Logged; no DEV rewrite.
 
+### Courses pack cut — 2026-10-16
+
+- What we did: Reviewed Lithium against the Courses pack cut. No SPA
+  source change. Course Manager's only Conduit call is still QueryRef
+  **155**. Course Builder sends no QueryRef. Wrote the Courses pack
+  QueryRefs section and pointed Phases 13, 15, and 16 at it.
+- Gate result: plan note only. The pause point at that moment stayed
+  Phase 1. Later the same day Phases 1 and 2 closed. The pause point
+  at the top of this file is Phase 3.
+- Follow-ups: Band D must not call 85, 150, or 151. A database that
+  already applied the old 1xxx course files has to be rebuilt before
+  the 4000 pack is applied. Next Courses file **4076**. Next
+  caller-facing QueryRef **4008**.
+
+### P1 — 2026-10-16 Manager lifecycle
+
+- What we did: `closeManager` now calls `destroy`, otherwise
+  `cleanup`, otherwise `teardown`. `showManager` calls `onDeactivate`
+  then `onActivate` after the crossfade. Deleted `_importManager`
+  cases 1–6. Added `tests/unit/app/manager-loader.test.js`.
+- Gate result: `npm test` was 953 passed and 10 failed. The 10
+  failures are the live auth file (HTTP 503 from
+  `lithium.philement.com`). The lifecycle file passed 7 tests. Lint
+  0 errors, 35 existing warnings. Variance recorded on the phase.
+  `closeManager` no longer calls `destroy` by itself.
+- Follow-ups: Phase 2. No browser pass of open-then-close.
+
+### P2 — 2026-10-16 Sanitize and script client
+
+- What we did: Confirmed `escapeHtml`. Added `sanitizeHtml`. Added
+  `invokeScript` and `getScriptJob` with the authQuery radar and
+  `serverError` shape. No manager calls them.
+- Gate result: `npm test` was 965 passed and 10 failed. The 10
+  failures are the live auth file (HTTP 503). Lint 0 errors, 35
+  existing warnings. Variance recorded on the phase.
+- Follow-ups: Phase 3. happy-dom drops tags inside DOMPurify, so
+  tag preservation is a browser check, not a Vitest check.
+
+### Docs — 2026-10-16 Phase 3 resume alignment
+
+- What we did: Brought the pause-facing docs in line with Phases 1
+  and 2. Refreshed the Observed State rows for conduit, Course
+  Manager, Course Builder, `closeManager`, DOMPurify, and
+  `escapeHtml`. Lock L6 now matches the Phase 1 close and switch
+  rules. Phase 3 Reference names the sink functions, including
+  Queries `renderMarkdownPreview`. ID maps in this file and
+  `AGENTS.md` say 34 and 35 are registered placeholders. Phases 12
+  and 19 say those files already exist. `docs/Li/TODO.md` next phase
+  is Phase 3.
+- Gate result: doc pass only. No source change. Phase 3 Status stays
+  pending.
+- Follow-ups: Phase 3 starts in a new conversation.
+
+### P3 — 2026-10-16 XSS sinks
+
+- What we did: Wired the named sinks. Lookups escapes, then
+  highlights, then `sanitizeHtml` on assign. Crimson, Version
+  History, and the Queries summary preview sanitize markdown.
+  Version History HTML content type sanitizes the raw summary.
+  Status, Released, and Focus are text. Captions, grouping titles,
+  nav labels, follow-ups, and citation links use text nodes plus an
+  allowlisted icon node. `highlightInline` uses `textContent`.
+  `sanitizeHtml` re-parses when a script, iframe, object, embed,
+  `on*` attribute, or `javascript:` remains in DOMPurify's string.
+- Gate result: `npm test` was 983 passed and 10 failed. The 10
+  failures are the live auth file (HTTP 503). `xss-sinks.test.js`
+  passed 16. Lint 0 errors, 35 existing warnings. `lint:css` exited
+  0. `templates:copy` updated the version-history CSS copy.
+  Headless Chrome: nested `<p><img onerror><script>` did not fire
+  `alert`, left no script element, and left the image without
+  `onerror`. Lookup preview of `<img onerror=alert(1)>` and of
+  `<img src="x" onerror="alert(1)"><script>alert(1)</script>`
+  rendered both as text. `alert` did not fire. No image element and
+  no script element.
+- Follow-ups: Phase 4. `lookups.js` split stays in Phase 35.
+  `invokeScript` still has no manager caller.
+
+### P4 — 2026-10-16 Honest UI
+
+- What we did: Added `confirmDialog` and `promptDialog`. Alerts on
+  the camera popout and the JSON import became toasts. Removed the
+  Login, Main, Session Log, Profile, and login-language HTML clones.
+  Lookups no longer reads a JSON textarea. Style Apply and Copy use
+  the CSS editor text and `#style-manager-preview`. Stub profile
+  saves return failure and stay dirty. `USERID` comes from
+  `app.auth.user`. SunEditor uses `uploadAuthHeader(retrieveJWT())`.
+- Entry pattern: toast is
+  [`toast.js`](/elements/003-lithium/src/shared/toast.js). No confirm
+  modal existed, so this phase added
+  [`confirm.js`](/elements/003-lithium/src/shared/confirm.js).
+- Gate result: `rg` of `alert(`, `confirm(`, `prompt(`, and
+  `renderFallback` in `src/` is empty. Stub `success: true` is empty
+  outside language, date formats, photo, manager 23, and the
+  `saveAll` bookkeeping line. `npm test` was 996 passed and 10
+  failed. The 10 failures are the live auth file (HTTP 503).
+  `honest-ui.test.js` passed 13. Lint 0 errors, 35 existing
+  warnings. `lint:css` exited 0. Headless Chrome loaded `confirm.js`:
+  the delete message stayed text (`hasImg` false), confirm resolved
+  true, and the prompt returned `Named`.
+- Follow-ups: Phase 5. Footer Save still does not call
+  `settingsHandler.save()`. `applyState` is still empty.
+  `invokeScript` still has no manager caller.
+
+### P5 — 2026-10-16 Ordered partner logins
+
+- What we did: Removed the four hardcoded login buttons. The alt
+  row now comes from `login partners` plus `auth.oidc_providers`.
+  Order is Didit, Apple, Google, Microsoft, then other OIDC
+  providers. A missing provider or a false flag omits the button.
+  Click still calls `startOidc` and stores `oidc:<id>`.
+- Entry gate: Andrew confirmed the four partners stay absent until
+  5a–5d. Example Hydrogen `OIDC_RP` has only `500passwords`. Live
+  philement and 500courses configs were not in the tree in Phase 0,
+  and this sitting did not look them up.
+- Hidden, no Hydrogen provider: **didit**, **apple**, **google**,
+  **microsoft**. No second protocol. `login partners` booleans stay
+  true. Checked-in `oidc_providers` stays `500passwords` only.
+- Gate result: `login.test.js` passed 37 tests. `npm test` was 1003
+  passed and 10 failed. The 10 failures are the live auth file
+  (HTTP 503). Lint 0 errors, 35 existing warnings. Direct eslint on
+  `login.js` was 0 errors and 2 existing warnings. No browser pass.
+  Andrew checks the login page. No partner provider is live.
+- Follow-ups: Phase 5a. Ask whether Didit is OIDC before editing.
+  Style Manager mockup still shows the four images.
+
 ---
 
 ## Revision history
@@ -2367,3 +2921,10 @@ silent (does not claim Vite cannot run). Logged; no DEV rewrite.
 | ------ | -------- |
 | 2026-09-09 | Initial CATCHUP.md (Phases 0–38). Supersedes LITHIUM_SPRINT.md. |
 | 2026-09-09 | Phase 0 complete. Added 0a, 0b, 5a–5d. L3/L7 variances. |
+| 2026-10-16 | Courses pack QueryRefs. Band D uses 4000–4007. 85, 150, and 151 retired. 86, 149, and 155 stay. |
+| 2026-10-16 | Phase 1 complete. Manager close uses destroy, else cleanup, else teardown. Switch hooks run after the crossfade. |
+| 2026-10-16 | Phase 2 complete. `sanitizeHtml`, `invokeScript`, and `getScriptJob` exist. No manager calls them yet. |
+| 2026-10-16 | Docs aligned for a Phase 3 restart. Observed State, L6, ID maps, Phase 3 sink list, and `docs/Li/TODO.md`. |
+| 2026-10-16 | Phase 3 complete. Named HTML sinks escape text or sanitize markdown. Icon tokens become nodes. |
+| 2026-10-16 | Phase 4 complete. Shared confirm and prompt. Stub saves refuse. SunEditor omits a missing bearer. |
+| 2026-10-16 | Phase 5 complete. Partner buttons render from config or stay omitted. Checked-in login shows 500 Passwords only. |

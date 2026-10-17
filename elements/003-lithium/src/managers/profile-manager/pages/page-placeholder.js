@@ -77,13 +77,6 @@ export class PlaceholderPage extends BaseSettingsPage {
   isDirty() {
     return false;
   }
-
-  /**
-   * Nothing to save
-   */
-  async save() {
-    return { success: true, message: 'No settings to save' };
-  }
 }
 
 export default PlaceholderPage;

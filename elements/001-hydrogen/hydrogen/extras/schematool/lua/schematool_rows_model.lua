@@ -14,6 +14,7 @@
 -- Usage: required by schematool_rows.lua
 --
 -- CHANGELOG
+-- 1.1.0 - 2026-10-16 - Numeric key canon; UPDATE moves a row when its key changes
 -- 1.0.0 - 2026-10-09 - Split from schematool_rows.lua
 --
 -- luacheck: globals arg package
@@ -29,6 +30,30 @@ function M.display_key(parts)
         return parts[1]
     end
     return table.concat(parts, "|")
+end
+
+-- Integer key parts compare equal across padding: lookup 001 and live 1.
+-- A SQL string that only looks numeric stays as written.
+function M.canon_part(text, is_num)
+    local raw = tostring(text or "")
+    if not is_num then
+        return raw
+    end
+    local n = tonumber(raw)
+    if n == nil or n ~= math.floor(n) or math.abs(n) >= 1e15 then
+        return raw
+    end
+    return string.format("%.0f", n)
+end
+
+function M.canon_key(parts, key_cols, nums)
+    local canon = {}
+    for i, part in ipairs(parts or {}) do
+        local col = key_cols and key_cols[i]
+        local is_num = nums and col and nums[col] and true or false
+        canon[#canon + 1] = M.canon_part(part, is_num)
+    end
+    return M.display_key(canon)
 end
 
 local function same_list(a, b)
@@ -250,6 +275,22 @@ local function apply_update(model, keys, dml, ref)
         if lit then
             put_col(row, set.col, lit)
         end
+    end
+    local old_key = row.key
+    local new_parts = {}
+    for i, col in ipairs(key_cols) do
+        local text = row.values[col]
+        if text == nil then
+            return
+        end
+        new_parts[i] = text
+    end
+    row.parts = new_parts
+    row.key = M.display_key(new_parts)
+    if row.key ~= old_key then
+        st.rows[old_key] = nil
+        st.rows[row.key] = row
+        st.tombs[row.key] = nil
     end
 end
 

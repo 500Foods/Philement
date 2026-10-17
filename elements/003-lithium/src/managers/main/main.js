@@ -37,6 +37,7 @@ import { stateMethods } from './main-state.js';
 import { initRadar, destroyRadar } from '../../shared/radar-controller.js';
 import { initTooltips } from '../../core/tooltip-api.js';
 import { log, Subsystems, Status } from '../../core/log.js';
+import { toast } from '../../shared/toast.js';
 
 // Sidebar constraints
 const MIN_SIDEBAR_WIDTH = 220;
@@ -103,7 +104,8 @@ export default class MainManager {
    */
   async init(options = {}) {
     try {
-      await this.render();
+      const ready = await this.render();
+      if (!ready) return;
       this.setupEventListeners();
       this.setupGlobalKeyboardShortcuts();
       this.setupSplitter();
@@ -142,11 +144,18 @@ export default class MainManager {
   async render() {
     try {
       const response = await fetch('/src/managers/main/main.html');
+      if (!response.ok) {
+        throw new Error(`Main template HTTP ${response.status}`);
+      }
       const html = await response.text();
       this.container.innerHTML = html;
     } catch (error) {
-      console.error('[MainManager] Failed to load template:', error);
-      this.renderFallback();
+      log(Subsystems.MANAGER, Status.ERROR, `[MainManager] Failed to load template: ${error.message}`);
+      toast.error('Main page failed to load', {
+        description: error.message,
+        subsystem: 'Main',
+      });
+      return false;
     }
 
     // Cache DOM elements
@@ -191,25 +200,7 @@ export default class MainManager {
     if (this.elements.radarIconSidebar) {
       initTooltips(this.elements.radarIconSidebar);
     }
-  }
-
-  /**
-   * Render a fallback layout if template fails to load
-   */
-  renderFallback() {
-    this.container.innerHTML = `
-      <div id="main-layout">
-        <aside class="main-sidebar" id="sidebar">
-          <div class="sidebar-menu" id="sidebar-menu"></div>
-          <div class="sidebar-footer">
-            <button class="logout-btn" id="logout-btn">Logout</button>
-          </div>
-        </aside>
-        <div class="manager-area" id="manager-area">
-          <!-- Manager slots will be injected here -->
-        </div>
-      </div>
-    `;
+    return true;
   }
 
   /**

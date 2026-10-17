@@ -22,6 +22,9 @@ void migration_payload_designs_free(char** designs, size_t count);
 void test_migration_payload_designs_single_design(void);
 void test_migration_payload_designs_acuranzo_and_argent(void);
 void test_migration_payload_designs_acuranzo_and_gaius(void);
+void test_migration_payload_designs_full_suite(void);
+void test_migration_payload_designs_acuranzo_and_courses(void);
+void test_migration_payload_designs_courses_without_acuranzo(void);
 void test_migration_payload_designs_maximum_designs(void);
 void test_migration_payload_designs_null_config(void);
 void test_migration_payload_designs_not_payload_format(void);
@@ -80,6 +83,47 @@ void test_migration_payload_designs_acuranzo_and_argent(void) {
     TEST_ASSERT_EQUAL_STRING("argent", designs[1]);
 
     migration_payload_designs_free(designs, count);
+}
+
+void test_migration_payload_designs_full_suite(void) {
+    char** designs = NULL;
+    size_t count = 0;
+
+    bool result = migration_payload_designs("PAYLOAD:acuranzo+courses+argent",
+                                            &designs, &count, "test-label");
+
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_EQUAL(3, count);
+    TEST_ASSERT_EQUAL_STRING("acuranzo", designs[0]);
+    TEST_ASSERT_EQUAL_STRING("courses", designs[1]);
+    TEST_ASSERT_EQUAL_STRING("argent", designs[2]);
+
+    migration_payload_designs_free(designs, count);
+}
+
+void test_migration_payload_designs_acuranzo_and_courses(void) {
+    char** designs = NULL;
+    size_t count = 0;
+
+    bool result = migration_payload_designs("PAYLOAD:acuranzo+courses", &designs, &count, "test-label");
+
+    TEST_ASSERT_TRUE(result);
+    TEST_ASSERT_EQUAL(2, count);
+    TEST_ASSERT_EQUAL_STRING("acuranzo", designs[0]);
+    TEST_ASSERT_EQUAL_STRING("courses", designs[1]);
+
+    migration_payload_designs_free(designs, count);
+}
+
+void test_migration_payload_designs_courses_without_acuranzo(void) {
+    char** designs = NULL;
+    size_t count = 99;
+
+    bool result = migration_payload_designs("PAYLOAD:courses", &designs, &count, "test-label");
+
+    TEST_ASSERT_FALSE(result);
+    TEST_ASSERT_NULL(designs);
+    TEST_ASSERT_EQUAL(0, count);
 }
 
 void test_migration_payload_designs_acuranzo_and_gaius(void) {
@@ -320,6 +364,9 @@ int main(void) {
     RUN_TEST(test_migration_payload_designs_single_design);
     RUN_TEST(test_migration_payload_designs_acuranzo_and_argent);
     RUN_TEST(test_migration_payload_designs_acuranzo_and_gaius);
+    RUN_TEST(test_migration_payload_designs_full_suite);
+    RUN_TEST(test_migration_payload_designs_acuranzo_and_courses);
+    RUN_TEST(test_migration_payload_designs_courses_without_acuranzo);
     RUN_TEST(test_migration_payload_designs_maximum_designs);
     RUN_TEST(test_migration_payload_designs_null_config);
     RUN_TEST(test_migration_payload_designs_not_payload_format);

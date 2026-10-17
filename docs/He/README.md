@@ -48,9 +48,9 @@ The Hydrogen project is what uses these files. The migration files themsleves ca
 - [Test 71 - Database Diagrams](/docs/H/tests/test_71_database_diagrams.md) - Generates SVG database diagrams for all supported database engine and design combinations
 - [Test 98 - Lua Code Analysis](/docs/H/tests/test_98_luacheck.md) - Performs static analysis on Lua source files using luacheck tool
 
-IN addtion, [Test 01 - Compilation](/docs/H/tests/test_01_compilation.md) builds the Hydrgoen payload which typically includes the migration files. As part of the build step, it checks to see if the migrations files have been updated more recently than the paylod. If so, it regenerates the payload and also runs the [helium_update.sh](/elements/002-helium/scripts/helium_update.sh) script.
+In addition, [Test 01 - Compilation](/docs/H/tests/test_01_compilation.md) builds the Hydrogen payload, which includes the migration files. It regenerates that payload when any Lua file under `elements/002-helium/` is newer than the archive, and then runs [helium_update.sh](/elements/002-helium/scripts/helium_update.sh).
 
-**Critical for running tests after migration changes**: Most Hydrogen tests run against the compiled binary + embedded payload. After changing Helium migrations you must usually run `mkt` (make-trial) or `mka` (make-all) — aliases defined in `~/.zshrc` — to rebuild the payload before executing tests such as 30, 31–38 or 71. See the note in [TESTING_GUIDE.md](/docs/He/TESTING_GUIDE.md).
+**Critical for running tests after migration changes**: Most Hydrogen tests run against the compiled binary and its embedded payload. After changing Helium Lua, refresh the archive with `payload-generate.sh` or `mka` (make-all) before tests 30–38 or 71. `mkt` (make-trial) rebuilds the binary and does not refresh the archive. Test 31 reads the Lua on disk and does not need that refresh. See [TESTING_GUIDE.md](/docs/He/TESTING_GUIDE.md).
 
 ## Table of Contents
 
@@ -86,13 +86,14 @@ IN addtion, [Test 01 - Compilation](/docs/H/tests/test_01_compilation.md) builds
 
 ### Database Configuration
 
-- [**database.lua**](/docs/He/DATABASES/database.md) (sample: [Acuranzo](/elements/002-helium/acuranzo/migrations/database.lua)) - Core database framework and macro system
-- [**database_postgresql.lua**](/docs/He/DATABASES/database_postgresql.md) (sample: [Acuranzo](/elements/002-helium/acuranzo/migrations/database_postgresql.lua)) - PostgreSQL-specific configuration
-- [**database_mysql.lua**](/docs/He/DATABASES/database_mysql.md) (sample: [Acuranzo](/elements/002-helium/acuranzo/migrations/database_mysql.lua)) - MySQL/MariaDB-specific configuration
-- [**database_sqlite.lua**](/docs/He/DATABASES/database_sqlite.md) (sample: [Acuranzo](/elements/002-helium/acuranzo/migrations/database_sqlite.lua)) - SQLite-specific configuration
-- [**database_db2.lua**](/docs/He/DATABASES/database_db2.md) (sample: [Acuranzo](/elements/002-helium/acuranzo/migrations/database_db2.lua)) - IBM DB2-specific configuration
-- [**database_firebird.lua**](/docs/He/DATABASES/database_firebird.md) (sample: [Acuranzo](/elements/002-helium/acuranzo/migrations/database_firebird.lua)) - Firebird 4 configuration (empty schema, native Base64, Brotli and JSON_VALUE UDRs)
-- [**database_mssql.lua**](/docs/He/DATABASES/database_mssql.md) (sample: [Acuranzo](/elements/002-helium/acuranzo/migrations/database_mssql.lua)) - SQL Server configuration (dot-prefixed schema, T-SQL Base64, Brotli CLR not deployed)
+- [**database.lua**](/docs/He/DATABASES/database.md) ([source](/elements/002-helium/helium/database.lua)) - Core database framework and macro system. One copy, packed as `helium/database.lua`.
+- [**database_postgresql.lua**](/docs/He/DATABASES/database_postgresql.md) ([source](/elements/002-helium/helium/database_postgresql.lua)) - PostgreSQL-specific configuration
+- [**database_mysql.lua**](/docs/He/DATABASES/database_mysql.md) ([source](/elements/002-helium/helium/database_mysql.lua)) - MySQL-specific configuration
+- [**database_mariadb.lua**](/elements/002-helium/helium/database_mariadb.lua) - MariaDB-specific configuration
+- [**database_sqlite.lua**](/docs/He/DATABASES/database_sqlite.md) ([source](/elements/002-helium/helium/database_sqlite.lua)) - SQLite-specific configuration
+- [**database_db2.lua**](/docs/He/DATABASES/database_db2.md) ([source](/elements/002-helium/helium/database_db2.lua)) - IBM DB2-specific configuration
+- [**database_firebird.lua**](/docs/He/DATABASES/database_firebird.md) ([source](/elements/002-helium/helium/database_firebird.lua)) - Firebird 4 configuration (empty schema, native Base64, Brotli and JSON_VALUE UDRs)
+- [**database_mssql.lua**](/docs/He/DATABASES/database_mssql.md) ([source](/elements/002-helium/helium/database_mssql.lua)) - SQL Server configuration (dot-prefixed schema, T-SQL Base64, Brotli CLR not deployed)
 
 ### Schemas
 
@@ -101,9 +102,10 @@ Each schema provides a complete database design with migrations, supporting Post
 - [**Main Helium README**](/elements/002-helium/README.md) - Overview of all schemas and scripts
 - [**Acuranzo Schema**](/elements/002-helium/acuranzo/README.md) - Frontend web application schema
 - [**Argent pack**](/elements/002-helium/argent/README.md) - Optional `argent_2xxx` bookkeeping on the Acuranzo database. Never applied alone.
+- [**Courses pack running list**](/docs/He/COURSES_MIGRATION.md) - Inventory for the 4000 Courses pack. Not cut yet. Reception QueryRefs and script names live here.
 - [**GAIUS Schema**](/elements/002-helium/gaius/README.md) - GAIUS project database design
 - [**GLM Schema**](/elements/002-helium/glm/README.md) - Greenhouse Labour Management schema
-- [**Helium Schema**](/elements/002-helium/helium/README.md) - 3D printing focused schema
+- [**Shared database scripts**](/elements/002-helium/helium/README.md) - The one `database.lua` set. Not a schema.
 
 ### Integration
 
@@ -115,18 +117,18 @@ Each schema provides a complete database design with migrations, supporting Post
 
 ## Repository Information
 
-Generated 2026-Oct-14 (Wed) 08:09:24 PDT
+Generated 2026-Oct-16 (Fri) 15:14:47 PDT
 
 ```cloc
-github.com/AlDanial/cloc v 2.10  T=9.29 s (118.7 files/s, 117366.9 lines/s)
+github.com/AlDanial/cloc v 2.10  T=5.06 s (197.5 files/s, 159292.3 lines/s)
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-SVG                            590           1180          21178         927505
-Lua                            477          13630           8650         110939
-Markdown                        33           1718              0           4804
-Bourne Shell                     3            154            168            836
+SVG                            493            986          15725         650306
+Lua                            468          13335           8194         109279
+Markdown                        35           1765              0           5018
+Bourne Shell                     3            154            170            845
 -------------------------------------------------------------------------------
-SUM:                          1103          16682          29996        1044084
+SUM:                           999          16240          24089         765448
 -------------------------------------------------------------------------------
 ```

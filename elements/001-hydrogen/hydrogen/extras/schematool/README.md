@@ -4,7 +4,8 @@ Migration drift auditor for Hydrogen Lua migrations vs a live database.
 
 **Two tracks:** metadata (`queries` text vs Lua) and catalog (`--catalog` live
 object shape vs forward DDL folded from the migration files). The sixteen
-wrappers pass `--design acuranzo+argent` and read both designs in one run.
+wrappers pass `--design acuranzo+courses+argent` and read all three designs in one run.
+`acuranzo+argent` stays valid and omits Courses.
 `--migrations` stays the Acuranzo folder. A single design name still uses
 only that folder. `--fold-stored` keeps the old type-1003 dump fold. The catalog compare
 checks presence, nullability, and data type (case and spacing only).
@@ -30,7 +31,7 @@ v1: [`/docs/H/plans/complete/SCHEMAHELPER_COMPLETE.md`](/docs/H/plans/complete/S
 ```bash
 extras/schematool/schematool.sh \
   --migrations "$HELIUM_ROOT/acuranzo/migrations" \
-  --design acuranzo+argent \
+  --design acuranzo+courses+argent \
   --engine sqlite \
   --database "$HYDROGEN_ROOT/tests/artifacts/database/sqlite/hydrodemo.sqlite" \
   --from 1000 --to 1005 \
@@ -42,7 +43,7 @@ extras/schematool/schematool.sh \
 ```bash
 extras/schematool/schematool.sh \
   --migrations "$HELIUM_ROOT/acuranzo/migrations" \
-  --design acuranzo+argent \
+  --design acuranzo+courses+argent \
   --engine sqlite \
   --database "$HYDROGEN_ROOT/tests/artifacts/database/sqlite/hydrodemo.sqlite" \
   --catalog --only-tables accounts \
@@ -60,7 +61,7 @@ rows to make long tables easier to scan. Override with `--group-size N`
 ```bash
 extras/schematool/schematool.sh \
   --migrations "$HELIUM_ROOT/acuranzo/migrations" \
-  --design acuranzo+argent \
+  --design acuranzo+courses+argent \
   --engine sqlite \
   --database "$HYDROGEN_ROOT/tests/artifacts/database/sqlite/hydrodemo.sqlite" \
   --group-size 50
@@ -156,7 +157,7 @@ Tests 32–39 (`_test`, schema `test`, SQLite `hydrotst.sqlite`, Firebird `FIREB
 
 Test 40 (`_demo`, schema `demo`, SQLite `hydrodemo.sqlite`, Firebird `FIREBIRD_DB_PATH_DEMO`, MSSQL `demoms`): the same eight stems with `_demo.sh`.
 
-Sidecar: `schemahelper_<design>_<engine>_<role>.json`. Role is `test` or `demo`. The sixteen wrappers pass `--design acuranzo+argent`.
+Sidecar: `schemahelper_<design>_<engine>_<role>.json`. Role is `test` or `demo`. The sixteen wrappers pass `--design acuranzo+courses+argent`.
 
 Smoke (eight `_demo` wrappers only, 1190 catalog): `./smoke_test40_catalog.sh`. Its engine order is sqlite, postgresql, mysql, mariadb, db2, firebird, yugabytedb, mssql.
 

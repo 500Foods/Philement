@@ -4,9 +4,10 @@
 # Sets connection env vars from the Test 40 MSSQL config and calls schematool.sh.
 # Engine-specific env: MSSQL_DB_{HOST,PORT,NAME,USER} and MSSQL_SA_PASSWORD
 # Schema:             demoms (inside database MSSQL_DB_NAME, default hydrotst)
-# Design:             acuranzo+argent
+# Design:             acuranzo+courses+argent
 #
 # CHANGELOG
+# 1.2.1 - 2026-10-16 - Full suite acuranzo+courses+argent
 # 1.2.0 - 2026-10-07 - Payload acuranzo+argent in one run
 # 1.1.0 - 2026-10-07 - Renamed from schematool_mssql.sh
 # 1.0.0 - 2026-10-07 - Test 40 MSSQL convenience wrapper (schema demoms)
@@ -34,7 +35,7 @@ export SCHEMATOOL_DB_SCHEMA="demoms"
 
 exec "${SCHEMATOOL}" \
     --migrations "${MIGRATIONS_DIR}" \
-    --design acuranzo+argent \
+    --design acuranzo+courses+argent \
     --engine mssql \
     --password-env MSSQL_SA_PASSWORD \
     "$@"

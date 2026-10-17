@@ -219,7 +219,7 @@ export default class ScriptingManager {
         SUMMARY: rowData.summary || '',
       },
       INTEGER: {
-        USERID: this.app?.user?.id ?? 0,
+        USERID: this.app?.auth?.user?.id ?? 0,
       },
     };
 
@@ -255,7 +255,7 @@ export default class ScriptingManager {
         SUMMARY: rowData.summary || '',
       },
       INTEGER: {
-        USERID: this.app?.user?.id ?? 0,
+        USERID: this.app?.auth?.user?.id ?? 0,
       },
     });
 

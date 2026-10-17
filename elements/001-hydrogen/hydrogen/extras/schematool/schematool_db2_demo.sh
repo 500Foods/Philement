@@ -5,9 +5,10 @@
 # Engine-specific env: HYDROTST_DB_{USER,NAME,PASS}
 # Host/Port:           localhost:55555 (hardcoded in Test 40 config)
 # Schema:             demo
-# Design:             acuranzo+argent
+# Design:             acuranzo+courses+argent
 #
 # CHANGELOG
+# 1.3.1 - 2026-10-16 - Full suite acuranzo+courses+argent
 # 1.3.0 - 2026-10-07 - Payload acuranzo+argent in one run
 # 1.2.0 - 2026-10-07 - Renamed from schematool_db2.sh
 # 1.1.0 - 2026-08-22 - Resolve sibling schematool.sh, then HYDROGEN_ROOT
@@ -38,6 +39,6 @@ export SCHEMATOOL_DB_SCHEMA="demo"
 
 exec "${SCHEMATOOL}" \
     --migrations "${MIGRATIONS_DIR}" \
-    --design acuranzo+argent \
+    --design acuranzo+courses+argent \
     --engine db2 \
     "$@"

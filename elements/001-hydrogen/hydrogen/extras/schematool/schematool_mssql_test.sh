@@ -3,9 +3,10 @@
 #
 # Engine-specific env: MSSQL_DB_{HOST,PORT,NAME,USER} and MSSQL_SA_PASSWORD
 # Schema:             testms (inside database MSSQL_DB_NAME, default hydrotst)
-# Design:             acuranzo+argent
+# Design:             acuranzo+courses+argent
 #
 # CHANGELOG
+# 1.1.1 - 2026-10-16 - Full suite acuranzo+courses+argent
 # 1.1.0 - 2026-10-07 - Payload acuranzo+argent in one run
 # 1.0.0 - 2026-10-07 - Test 39 wrapper; schema testms
 
@@ -38,7 +39,7 @@ done
 
 exec "${SCHEMATOOL}" \
     --migrations "${MIGRATIONS_DIR}" \
-    --design acuranzo+argent \
+    --design acuranzo+courses+argent \
     --engine mssql \
     --schema testms \
     --password-env MSSQL_SA_PASSWORD \

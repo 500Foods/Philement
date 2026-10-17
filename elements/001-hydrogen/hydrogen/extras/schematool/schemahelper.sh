@@ -4,6 +4,16 @@
 # Lua 5.5 TUI over extras/schematool. Default is review-only.
 #
 # CHANGELOG
+# 0.6.26 - 2026-10-17 - Target picker aligns script names
+# 0.6.25 - 2026-10-17 - Variance and explore omit the Ref line
+# 0.6.24 - 2026-10-17 - Explore header is the condensed variance block
+# 0.6.23 - 2026-10-17 - Variance summary shows the migration name
+# 0.6.22 - 2026-10-17 - Variance summary is grouped into aligned sections
+# 0.6.21 - 2026-10-17 - Loading steps share one column; no running-screen keys
+# 0.6.20 - 2026-10-16 - Loading screen keeps a line for each finished step
+# 0.6.19 - 2026-10-16 - Dashboard summary and breakdown use one count column
+# 0.6.18 - 2026-10-16 - Loading labels name each SchemaTool phase; SchemaTool 1.17.0
+# 0.6.17 - 2026-10-16 - Wrappers pass acuranzo+courses+argent
 # 0.6.16 - 2026-10-07 - Default-row apply; confirm token is table.key; SchemaTool 1.15.2
 # 0.6.15 - 2026-10-07 - Dialect DDL apply; whole-row metadata; SchemaTool 1.15.1
 # 0.6.14 - 2026-10-07 - SchemaTool 1.15.0; type and dropped stay review-only
@@ -59,8 +69,8 @@ SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
 LUA_APP="${SCRIPT_DIR}/schemahelper.lua"
 SCHEMATOOL_SH="${SCRIPT_DIR}/schematool.sh"
 
-VERSION="0.6.16"
-SCHEMATOOL_VERSION="1.15.2"
+VERSION="0.6.26"
+SCHEMATOOL_VERSION="1.17.0"
 
 print_help() {
     cat <<EOF
@@ -106,8 +116,8 @@ Options:
 
 Migrations default to the acuranzo folder the wrappers use
 (HELIUM_ROOT/acuranzo/migrations, else the repo 002-helium path).
-Those wrappers pass --design acuranzo+argent, so one run also reads
-the sibling argent/migrations folder.
+Those wrappers pass --design acuranzo+courses+argent, so one run also reads
+the sibling courses/migrations and argent/migrations folders.
 
 Requires Lua 5.5 and the terminal rock:
   luarocks --lua-version=5.5 install terminal

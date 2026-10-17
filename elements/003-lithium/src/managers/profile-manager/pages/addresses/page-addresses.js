@@ -27,12 +27,6 @@ export class AddressesPage extends SimpleSettingsPage {
   async loadData() {
     // TODO: Load from API
   }
-
-  async save() {
-    // TODO: Save to API
-    this.setDirty(false);
-    return { success: true };
-  }
 }
 
 export default AddressesPage;

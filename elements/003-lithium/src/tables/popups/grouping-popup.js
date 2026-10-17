@@ -8,7 +8,7 @@
  */
 
 import { log, Subsystems, Status } from '../../core/log.js';
-import { processIcons } from '../../core/icons.js';
+import { processIcons, faNameFromTag, createFaIcon } from '../../core/icons.js';
 import { resolveTableOptions, getLookup } from '../lithium-table.js';
 import { closeNavPopupImmediate } from './popup-manager.js';
 
@@ -174,15 +174,6 @@ function createSeparator() {
 }
 
 /**
- * Check if a title contains an icon (fa- tag)
- * @param {string} title - Column title
- * @returns {boolean} True if title contains an icon
- */
-function titleContainsIcon(title) {
-  return typeof title === 'string' && /<fa\s+/.test(title);
-}
-
-/**
  * Get the display title for a column - uses title from tableDef
  * @param {Object} col - Column info from tableDef
  * @returns {string} Display title
@@ -200,36 +191,59 @@ function getColumnDisplayTitle(col) {
  * Create a lookup preview element for the grouping popup
  * For iconLabel: shows title (icon) + groupTitle (text label)
  * @param {Object} col - Column info from tableDef
- * @returns {string} HTML string for the preview, or empty string if not applicable
+ * @returns {HTMLElement|null} Preview element, or null when this column has none
  */
 function createLookupPreview(col) {
-  if (!col.lookupRef) {
-    return '';
-  }
+  if (!col?.lookupRef) return null;
 
-  // groupStyle controls display in grouping UI, fallback to lookupStyle
   const groupStyle = col.groupStyle || col.lookupStyle || 'label';
+  if (groupStyle !== 'iconLabel') return null;
 
-  switch (groupStyle) {
-    case 'icon':
-      // Title contains the icon
-      return '';
-    case 'iconLabel':
-      // Title (icon) + groupTitle (text label)
-      // groupTitle defaults to field name if not set
-      {
-        const groupTitle = col.groupTitle || col.field || '';
-        if (groupTitle) {
-          return `<span class="lithium-grouping-lookup-preview lithium-grouping-lookup-iconlabel"><span class="lithium-grouping-grouptitle">${groupTitle}</span></span>`;
-        }
-      }
-      break;
-    case 'label':
-    default:
-      return '';
+  const groupTitle = col.groupTitle || col.field || '';
+  if (!groupTitle) return null;
+
+  const preview = document.createElement('span');
+  preview.className = 'lithium-grouping-lookup-preview lithium-grouping-lookup-iconlabel';
+  const label = document.createElement('span');
+  label.className = 'lithium-grouping-grouptitle';
+  label.textContent = groupTitle;
+  preview.appendChild(label);
+  return preview;
+}
+
+/**
+ * Fill a grouping title. An icon is rendered only when the whole title
+ * is one <fa fa-name></fa> tag. The lookup group title is always text.
+ * @param {HTMLElement} title
+ * @param {string} displayTitle
+ * @param {Object} col
+ */
+export function fillGroupingTitle(title, displayTitle, col) {
+  title.replaceChildren();
+  const preview = createLookupPreview(col);
+  const iconName = faNameFromTag(displayTitle);
+  const icon = iconName ? createFaIcon(iconName) : null;
+
+  if (preview) {
+    const text = document.createElement('span');
+    text.className = 'lithium-grouping-title-text';
+    if (icon) {
+      text.appendChild(icon);
+    } else {
+      text.textContent = displayTitle ?? '';
+    }
+    const separator = document.createElement('span');
+    separator.className = 'lithium-grouping-title-separator';
+    separator.textContent = '—';
+    title.append(text, separator, preview);
+    return;
   }
 
-  return '';
+  if (icon) {
+    title.appendChild(icon);
+    return;
+  }
+  title.textContent = displayTitle ?? '';
 }
 
 /**
@@ -265,20 +279,7 @@ function createGroupingItem(table, col, index, total) {
   title.className = 'lithium-grouping-title';
   title.title = tooltipText;
 
-  const displayTitle = getColumnDisplayTitle(col);
-
-  // Build title content with optional lookup preview
-  const lookupPreview = createLookupPreview(col);
-  if (lookupPreview) {
-    // Show title with lookup preview
-    title.innerHTML = `<span class="lithium-grouping-title-text">${displayTitle}</span><span class="lithium-grouping-title-separator">—</span>${lookupPreview}`;
-  } else if (titleContainsIcon(displayTitle)) {
-    // Title contains an icon - render as HTML
-    title.innerHTML = displayTitle;
-  } else {
-    // Regular text title
-    title.textContent = displayTitle;
-  }
+  fillGroupingTitle(title, getColumnDisplayTitle(col), col);
 
   if (isGrouped) {
     title.classList.add('lithium-grouping-active');
