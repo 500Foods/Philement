@@ -3,10 +3,32 @@
 # The entry point passes the client name. This file does not choose an engine.
 #
 # CHANGELOG
+# 1.2.0 - 2026-10-17 - TCP login from a defaults file; do not read ~/.my.cnf
+# 1.1.0 - 2026-10-16 - Keep varchar, char, and datetime precision in the catalog type
 # 1.0.0 - 2026-10-07 - Query and catalog bodies moved out of the MySQL scripts
 
 # shellcheck source=extras/schematool/db/common.sh # HEX decode helper
 source "$(dirname "${BASH_SOURCE[0]}")/common.sh"
+
+# --defaults-file must be the first client argument. That skips ~/.my.cnf,
+# whose [client] password is the local MariaDB login. --protocol=TCP uses
+# the host and port from the arguments. Same shape as database_reset_lib/mysql.sh.
+schematool_mysql_write_defaults() {
+    local dest="$1"
+    local pass="$2"
+    local escaped
+    if [[ "${pass}" == *$'\n'* ]]; then
+        echo "Error: password contains a newline" >&2
+        return 1
+    fi
+    escaped="${pass//\\/\\\\}"
+    escaped="${escaped//\"/\\\"}"
+    {
+        printf '[client]\n'
+        printf 'password="%s"\n' "${escaped}"
+    } > "${dest}"
+    chmod 600 "${dest}"
+}
 
 schematool_mysql_family_dump_queries() {
     local client="$1"
@@ -102,8 +124,11 @@ EOF
     local RAW="${WORK}/rows.tsv"
     local ERR="${WORK}/err.txt"
 
+    schematool_mysql_write_defaults "${WORK}/client.cnf" "${PASS}"
+
     set +e
-    "${client}" -h "${HOST}" -P "${PORT}" -u "${USER_NAME}" -p"${PASS}" "${DB_USE}" \
+    "${client}" --defaults-file="${WORK}/client.cnf" --protocol=TCP --connect-timeout=10 \
+        -h "${HOST}" -P "${PORT}" -u "${USER_NAME}" "${DB_USE}" \
         -N -B --raw -e "SET SESSION TRANSACTION READ ONLY; ${SQL}" >"${RAW}" 2>"${ERR}"
     local RC=$?
     set -e
@@ -112,7 +137,6 @@ EOF
         local SAFE
         SAFE=$(cat "${ERR}")
         SAFE="${SAFE//${PASS}/***}"
-        SAFE=$(printf '%s\n' "${SAFE}" | grep -v 'Using a password on the command line' || true)
         echo "Error: ${client} query failed (host=${HOST} port=${PORT} db=${DB_USE} table=${QUALIFIED})" >&2
         echo "${SAFE}" >&2
         exit 1
@@ -235,7 +259,19 @@ schematool_mysql_family_dump_catalog() {
 SELECT
     c.TABLE_NAME,
     c.COLUMN_NAME,
-    LOWER(c.DATA_TYPE),
+    LOWER(CASE
+        WHEN c.DATA_TYPE IN ('char', 'varchar')
+             AND c.CHARACTER_MAXIMUM_LENGTH IS NOT NULL
+            THEN CONCAT(c.DATA_TYPE, '(', c.CHARACTER_MAXIMUM_LENGTH, ')')
+        WHEN c.DATA_TYPE IN ('datetime', 'timestamp', 'time')
+             AND c.DATETIME_PRECISION > 0
+            THEN CONCAT(c.DATA_TYPE, '(', c.DATETIME_PRECISION, ')')
+        WHEN c.DATA_TYPE IN ('decimal', 'numeric')
+             AND c.NUMERIC_PRECISION IS NOT NULL
+            THEN CONCAT(c.DATA_TYPE, '(', c.NUMERIC_PRECISION, ',',
+                        COALESCE(c.NUMERIC_SCALE, 0), ')')
+        ELSE c.DATA_TYPE
+    END),
     c.IS_NULLABLE,
     c.ORDINAL_POSITION,
     COALESCE((
@@ -265,8 +301,11 @@ EOF
     local RAW="${WORK}/cols.tsv"
     local ERR="${WORK}/err.txt"
 
+    schematool_mysql_write_defaults "${WORK}/client.cnf" "${PASS}"
+
     set +e
-    "${client}" -h "${HOST}" -P "${PORT}" -u "${USER_NAME}" -p"${PASS}" "${DB_USE}" \
+    "${client}" --defaults-file="${WORK}/client.cnf" --protocol=TCP --connect-timeout=10 \
+        -h "${HOST}" -P "${PORT}" -u "${USER_NAME}" "${DB_USE}" \
         -N -B --raw -e "SET SESSION TRANSACTION READ ONLY; ${SQL}" >"${RAW}" 2>"${ERR}"
     local RC=$?
     set -e
@@ -275,7 +314,6 @@ EOF
         local SAFE
         SAFE=$(cat "${ERR}")
         SAFE="${SAFE//${PASS}/***}"
-        SAFE=$(printf '%s\n' "${SAFE}" | grep -v 'Using a password on the command line' || true)
         echo "Error: ${client} catalog probe failed (host=${HOST} db=${DB_USE} schema=${SCHEMA_USE})" >&2
         echo "${SAFE}" >&2
         exit 1

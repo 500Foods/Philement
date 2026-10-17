@@ -18,6 +18,7 @@
     "test": "vitest run",
     "test:watch": "vitest watch",
     "test:coverage": "vitest run --coverage",
+    "test:coverage:deploy": "vitest run --coverage --exclude tests/integration/auth.integration.test.js",
     "coverage:copy": "rm -rf public/coverage && cp -r coverage public/coverage 2>/dev/null || echo 'No coverage report found. Run npm run test:coverage first.'",
     "templates:copy": "node scripts/copy-templates.js",
     "lint": "eslint src/**/*.js tests/**/*.js --no-warn-ignored",

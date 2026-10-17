@@ -4,6 +4,7 @@
 # Lua 5.5 TUI over extras/schematool. Default is review-only.
 #
 # CHANGELOG
+# 0.6.27 - 2026-10-17 - MySQL login matches database_reset: TCP, no ~/.my.cnf
 # 0.6.26 - 2026-10-17 - Target picker aligns script names
 # 0.6.25 - 2026-10-17 - Variance and explore omit the Ref line
 # 0.6.24 - 2026-10-17 - Explore header is the condensed variance block
@@ -69,7 +70,7 @@ SCRIPT_DIR="$(cd "$(dirname "${SCRIPT_PATH}")" && pwd)"
 LUA_APP="${SCRIPT_DIR}/schemahelper.lua"
 SCHEMATOOL_SH="${SCRIPT_DIR}/schematool.sh"
 
-VERSION="0.6.26"
+VERSION="0.6.27"
 SCHEMATOOL_VERSION="1.17.0"
 
 print_help() {

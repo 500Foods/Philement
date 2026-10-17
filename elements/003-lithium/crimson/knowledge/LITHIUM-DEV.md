@@ -238,7 +238,7 @@ npm run format
 Requires `$LITHIUM_DEPLOY` (`predeploy`). Script: `scripts/deploy-parallel.sh`.
 
 1. **Validate** — Tabulator config
-2. **Test + CSS lint** — `test:coverage` and `lint:css` in parallel (both must pass)
+2. **Test + CSS lint** — `test:coverage:deploy` and `lint:css` in parallel (both must pass). Deploy omits `tests/integration/auth.integration.test.js`; `npm test` still runs it.
 3. **Coverage copy** — into `public/coverage`
 4. **Templates** — `templates:copy` (HTML/CSS → `public/src/managers/`)
 5. **Version** — `version:bump`

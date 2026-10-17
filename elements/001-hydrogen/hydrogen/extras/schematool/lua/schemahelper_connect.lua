@@ -2,6 +2,7 @@
 -- Resolve wrapper credentials and ping the live DB. Never return passwords.
 --
 -- CHANGELOG
+-- 0.6.27 - 2026-10-17 - MySQL ping uses a TCP defaults file, not ~/.my.cnf
 -- 0.6.10 - 2026-10-07 - db2 exec_sql stops on error and returns rows
 -- 0.6.9 - 2026-10-07 - mysql exec ignores client cnf; UTF-8 on the wire
 -- 0.6.8 - 2026-10-07 - Firebird exec_sql runs inside SET TRANSACTION
@@ -471,10 +472,20 @@ local function ping_mysql_client(conn, client)
         return false, conn.password_env .. " not set"
     end
     local db = conn.schema ~= "" and conn.schema or conn.database
-    local script = string.format(
-        'export MYSQL_PWD="${%s}"\n%s -h %s -P %s -u %s %s -N -e "SELECT 1"\n',
+    -- Same login as database_reset_lib/mysql.sh: --defaults-file is first, so
+    -- ~/.my.cnf is not read. MYSQL_PWD loses to that file and returns 1045.
+    local script = string.format([[
+cnf=$(mktemp)
+chmod 600 "$cnf"
+trap 'rm -f "$cnf"' EXIT
+pw="${%s}"
+esc="${pw//\\/\\\\}"
+esc="${esc//\"/\\\"}"
+printf '[client]\npassword="%%s"\n' "$esc" > "$cnf"
+%s --defaults-file="$cnf" --protocol=TCP --connect-timeout=10 -h %s -P %s -u %s %s -N -e "SELECT 1"
+]],
         conn.password_env,
-        client,
+        sh_quote(client),
         sh_quote(conn.host),
         sh_quote(conn.port),
         sh_quote(conn.user),
@@ -586,25 +597,27 @@ exec() {
             fi
             psql -h "$host" -p "$port" -U "$user" -d "$database" -v ON_ERROR_STOP=1 -t -A -c "SELECT 1"
             ;;
-        mysql)
+        mysql|mariadb)
+            pw=""
             if [ -n "$password_env" ]; then
-                eval "export MYSQL_PWD=\"\${$password_env}\""
+                eval "pw=\"\${$password_env}\""
             fi
+            cnf=$(mktemp)
+            chmod 600 "$cnf"
+            trap 'rm -f "$cnf"' EXIT
+            esc="${pw//\\/\\\\}"
+            esc="${esc//\"/\\\"}"
+            printf '[client]\npassword="%%s"\n' "$esc" > "$cnf"
             db="$schema"
             if [ -z "$db" ]; then
                 db="$database"
             fi
-            mysql -h "$host" -P "$port" -u "$user" "$db" -N -e "SELECT 1"
-            ;;
-        mariadb)
-            if [ -n "$password_env" ]; then
-                eval "export MYSQL_PWD=\"\${$password_env}\""
+            client=mysql
+            if [ "$engine" = "mariadb" ]; then
+                client=mariadb
             fi
-            db="$schema"
-            if [ -z "$db" ]; then
-                db="$database"
-            fi
-            mariadb -h "$host" -P "$port" -u "$user" "$db" -N -e "SELECT 1"
+            "$client" --defaults-file="$cnf" --protocol=TCP --connect-timeout=10 \
+                -h "$host" -P "$port" -u "$user" "$db" -N -e "SELECT 1"
             ;;
         sqlite)
             sqlite3 "file:${database}?mode=ro" "SELECT 1"
@@ -719,7 +732,7 @@ run_sql() {
                 printf '%s\n' 'START TRANSACTION;'
                 cat "$sql_file"
                 printf '%s\n' 'COMMIT;'
-            } | mysql --no-defaults --default-character-set=utf8mb4 \
+            } | mysql --no-defaults --protocol=TCP --default-character-set=utf8mb4 \
                 -h "$host" -P "$port" -u "$user" "$db"
             ;;
         mariadb)
@@ -734,7 +747,7 @@ run_sql() {
                 printf '%s\n' 'START TRANSACTION;'
                 cat "$sql_file"
                 printf '%s\n' 'COMMIT;'
-            } | mariadb --no-defaults --default-character-set=utf8mb4 \
+            } | mariadb --no-defaults --protocol=TCP --default-character-set=utf8mb4 \
                 -h "$host" -P "$port" -u "$user" "$db"
             ;;
         sqlite)

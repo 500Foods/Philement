@@ -18,9 +18,11 @@ How a phase runs: [`/docs/PLANNING.md`](/docs/PLANNING.md).
 Gated Phases 0, 0a, 0b, 0c, 1–38, 5a–5d. Pause point 2026-10-16:
 Phases 0 through 5, 7, and 8 are complete. Phases 5a–5d and 6 are deferred.
 Andrew reported Acuranzo 1389–1393 applied. `acuranzo_1394.lua` was
-not in that report. Phase 9 is in progress at the manual `Api.Echo`
-gate. Do not rebuild `scripting-invoke.js`. Do not open Phase 10
-until those two lines are green. First official deployment is
+not in that report. Phase 9 is in progress (2026-10-17). The
+database under test is an older schema, so Run stayed disabled.
+Resume after QueryRef 87 returns `invokable` 1, then the manual
+`Api.Echo` gate. Do not rebuild `scripting-invoke.js`. Do not open
+Phase 10 until those two lines are green. First official deployment is
 **Course Manager** (ID 34) for 500 Courses.
 Agent map:
 [`/elements/003-lithium/AGENTS.md`](/elements/003-lithium/AGENTS.md).

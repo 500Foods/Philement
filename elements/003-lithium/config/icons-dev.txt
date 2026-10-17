@@ -1,4 +1,3 @@
-<fa circle-question></fa>
 <fa class="lithium-grouping-sort-asc" fa-angle-up></fa>
 <fa class="lithium-grouping-sort-desc" fa-angle-down></fa>
 <fa class="lithium-grouping-sort-none" fa-angles-up-down></fa>
@@ -25,7 +24,6 @@
 <fa fa-bars></fa>
 <fa fa-bell-concierge></fa>
 <fa fa-bell></fa>
-<fa fa-book-open-lines class="crimson-citation-link-icon"></fa>
 <fa fa-book-open-lines></fa>
 <fa fa-book-open></fa>
 <fa fa-brackets-curly></fa>
@@ -108,6 +106,7 @@
 <fa fa-maximize></fa>
 <fa fa-minimize></fa>
 <fa fa-minus></fa>
+<fa fa-name></fa>
 <fa fa-note-sticky></fa>
 <fa fa-octagon></fa>
 <fa fa-palette></fa>

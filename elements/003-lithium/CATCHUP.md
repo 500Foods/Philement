@@ -71,7 +71,7 @@ only.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-10-16):** Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, and 8 are complete. Phase 9 is **in progress**: the Run tab is in [`scripting-invoke.js`](/elements/003-lithium/src/managers/scripting/scripting-invoke.js). The two manual lines (JWT → `Api.Echo`, then wait off) are still open. Do not rebuild the panel. Do not open Phase 10. Phases 5a, 5b, 5c, 5d, and 6 stay deferred until Andrew pulls Band B back. Save, duplicate, and update send INTEGER `INVOKABLE` (0 when the row has none). Delete uses QueryRef 131 with STRING `GROUP_NAME` and `SCRIPT_NAME`. A dirty row switch asks to save or stay. Lookup 059 key 13 ([`acuranzo_1394.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1394.lua)) is written and was not in the 1389–1393 apply report. Course QueryRefs moved to the 4000 pack on 2026-10-16. Band D uses the Courses pack QueryRefs section. Do not call retired **#085**, **#150**, or **#151**.
+**CURRENT PAUSE POINT (as of 2026-10-17):** Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, and 8 are complete. Phase 9 is **in progress**: the Run tab is in [`scripting-invoke.js`](/elements/003-lithium/src/managers/scripting/scripting-invoke.js). The two manual lines are still open. On 2026-10-17 Andrew selected `Api.Echo` on an older database and Run stayed disabled. That database does not yet return `invokable` from QueryRefs 87 and 89 (1389 and 1390) and may not have the 1297 flag. He is sorting that schema. Do not treat a disabled Run button as a Lithium bug until QueryRef 87 returns `"invokable": 1` for `Api` / `Echo`. Do not rebuild the panel. Do not apply migrations. Do not open Phase 10. Phases 5a, 5b, 5c, 5d, and 6 stay deferred until Andrew pulls Band B back. Save, duplicate, and update send INTEGER `INVOKABLE` (0 when the row has none). Delete uses QueryRef 131 with STRING `GROUP_NAME` and `SCRIPT_NAME`. A dirty row switch asks to save or stay. Lookup 059 key 13 ([`acuranzo_1394.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1394.lua)) is written and was not in the 1389–1393 apply report. Course QueryRefs moved to the 4000 pack on 2026-10-16. Band D uses the Courses pack QueryRefs section. Do not call retired **#085**, **#150**, or **#151**.
 
 ### Resume here next session
 
@@ -79,11 +79,17 @@ Phases 0–5, 7, and 8 are complete. Do not reopen them. Do not open 5a–5d or 
 
 1. Finish **Phase 9 — Invoke panel and async poll**. Do not rebuild
    [`scripting-invoke.js`](/elements/003-lithium/src/managers/scripting/scripting-invoke.js).
-   Sign in, open Scripting, run `Api.Echo` with Wait on, and confirm
-   the body and `job_id` in the pane and the session log. Then turn
-   Wait off and confirm the spinner reaches a terminal status.
-   Check those two exit lines and mark the phase complete. Do not
-   open Phase 10 in that sitting unless both lines are green.
+   Andrew is sorting the older schema first. Do not apply migrations.
+   Start only after QueryRef 87 for `Api` / `Echo` returns
+   `"invokable": 1`. Then run it with Wait on, and confirm the body
+   and `job_id` in the pane and the session log. Then turn Wait off
+   and confirm the spinner reaches a terminal status. Check those two
+   exit lines and mark the phase complete. Do not open Phase 10 in
+   that sitting unless both lines are green. The Lua long-bracket
+   fix is in [`codemirror.js`](/elements/003-lithium/src/core/codemirror.js)
+   and is not confirmed on a deployed bundle. The bundle that threw
+   was `codemirror-setup-C4xZ7-ri.js`. `npm run deploy` now uses
+   `test:coverage:deploy` and skips the live auth file.
 2. Run stays disabled unless the row is invokable. Wait defaults to
    true. Timeout is 1–60, default 15. A top-level `_hydrogen` key is
    removed before the request. Poll delays are 250, 500, 1000, then
@@ -1759,13 +1765,18 @@ existing warnings. `npm run lint:css` exited 0. No browser pass.
 
 **Handoff:**
 
-- Resume is the two unchecked manual lines. Sign in, open Scripting,
-  select `Api.Echo`, leave Wait on, and confirm the body and `job_id`
-  in the pane and the session log. Then turn Wait off and confirm the
-  spinner reaches a terminal status. Check those boxes and mark the
-  phase complete. Do not rebuild
+- Resume is the two unchecked manual lines, after the schema Andrew
+  is sorting. Do not apply migrations. QueryRef 87 for `Api` / `Echo`
+  must return `"invokable": 1` before a disabled Run button is a
+  Lithium bug. Then sign in, open Scripting, leave Wait on, and
+  confirm the body and `job_id` in the pane and the session log.
+  Then turn Wait off and confirm the spinner reaches a terminal
+  status. Check those boxes and mark the phase complete. Do not
+  rebuild
   [`scripting-invoke.js`](/elements/003-lithium/src/managers/scripting/scripting-invoke.js).
   Do not open Phase 10 in that sitting unless both lines are green.
+  The Lua long-bracket fix (2026-10-17) is in the tree. The bundle
+  that threw was `codemirror-setup-C4xZ7-ri.js`. Deploy to pick it up.
 - Apply [`acuranzo_1394.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1394.lua)
   before Scripting reads Lookup 059 key 13. List 89 and search 90
   stay on the constructor.
@@ -3236,6 +3247,33 @@ silent (does not claim Vite cannot run). Logged; no DEV rewrite.
   Check those two exit lines before marking Phase 9 complete. Do not
   rebuild the panel. Do not open Phase 10 unless both lines are green.
 
+### P9 — 2026-10-17 Schema gate and Lua long brackets
+
+- What we did: Left the Run tab as built. `npm run deploy` now runs
+  `test:coverage:deploy`, which skips
+  `tests/integration/auth.integration.test.js`. The other tests still
+  abort the deploy. That command passed here: 38 files, 1038 tests.
+  Fixed the Lua highlighter in `src/core/codemirror.js`. A long
+  bracket (`[[` or `[=[`) called `.slice` on `stream.match`, which is
+  the method. The matched text is the return value. A bracket that
+  runs past the line stays open until its closer.
+  `tests/unit/lua-mode.test.js` passed 5. ESLint on those two files
+  was clean.
+- What Andrew saw: On `lithium.500courses.com`, after a Hydrogen
+  update, login worked and Scripting listed scripts. Selecting
+  `Api.Echo` left Run disabled. He identified that database as an
+  older schema. Row changes had thrown
+  `e.match.slice is not a function` from bundle
+  `codemirror-setup-C4xZ7-ri.js`. He later moved between rows without
+  that throw. That bundle does not contain the highlighter fix.
+- Gate result: Phase 9 stays in progress. The two manual lines stay
+  unchecked. No migration was applied. 1394 stays unapplied.
+- Follow-ups: Andrew sorts 1297, 1389, and 1390 on the database under
+  test. Next session starts when QueryRef 87 returns
+  `"invokable": 1` for `Api` / `Echo`, then runs the two manual lines.
+  Do not rebuild the panel. Do not open Phase 10 unless both lines
+  are green. Deploy before retesting long strings.
+
 ---
 
 ## Revision history
@@ -3255,3 +3293,4 @@ silent (does not claim Vite cannot run). Logged; no DEV rewrite.
 | 2026-10-16 | Phase 7 complete. Andrew reported 1389–1393 applied. 1394 unapplied. Resume is Phase 8. |
 | 2026-10-16 | Phase 8 complete. Scripting save sends INTEGER `INVOKABLE`. Delete uses QueryRef 131. Resume is Phase 9. |
 | 2026-10-16 | Phase 9 in progress. Run tab is in `scripting-invoke.js`. Manual `Api.Echo` lines are still open. |
+| 2026-10-17 | Phase 9 still in progress. Older schema left Run disabled. Lua long-bracket fix is in the tree. Resume after QueryRef 87 returns `invokable` 1. |

@@ -11,16 +11,18 @@ Pause point 2026-10-16: Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, and 8 are comple
 Phases 5a–5d and 6 are deferred. Andrew reported Acuranzo 1389–1393 applied.
 Scripting save, update, and duplicate send INTEGER `INVOKABLE`. Delete uses
 QueryRef 131. `acuranzo_1394.lua` (Lookup 059 key 13) is written and was not
-in that report. Phase 9 is in progress: the Run tab is in
+in that report. Phase 9 is in progress (2026-10-17): the Run tab is in
 `scripting-invoke.js`. The manual `Api.Echo` lines are still open.
-Do not rebuild the panel. Do not open Phase 10. The report writer (manager 24,
+On an older schema, Run stays disabled until QueryRef 87 returns
+`invokable` 1. Andrew is sorting that schema. Do not rebuild the
+panel. Do not apply migrations. Do not open Phase 10. The report writer (manager 24,
 [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md),
 Phases 0–71, Phase 0 approved 2026-10-10) stays parked. Its next
 phase is Phase 1, and only after Andrew pulls that plan in. PDF is
 the default export there. Phased work follows
 [`/docs/PLANNING.md`](/docs/PLANNING.md).
 
-**Last reviewed:** 2026-10-16 (CATCHUP Phase 9 in progress; resume is the manual `Api.Echo` gate).
+**Last reviewed:** 2026-10-17 (CATCHUP Phase 9 in progress; resume after QueryRef 87 returns `invokable` 1, then the manual `Api.Echo` gate).
 
 ---
 
@@ -416,7 +418,10 @@ strips a top-level `params._hydrogen`, and polls
 then 2000 ms). Payload tests are
 `tests/unit/managers/scripting-save.test.js` and
 `tests/unit/managers/scripting-invoke.test.js`. The manual `Api.Echo`
-pass is still open (CATCHUP Phase 9).
+pass is still open (CATCHUP Phase 9). A database whose queries 87 and
+89 omit `invokable` keeps Run disabled. The Lua highlighter accepts
+long brackets (`src/core/codemirror.js`, 2026-10-17). That fix is in
+the tree; the bundle `codemirror-setup-C4xZ7-ri.js` does not have it.
 
 **Missing (CATCHUP Phase 10).** Lookup 059 key 13 is
 `acuranzo_1394.lua` and was not in the apply report.

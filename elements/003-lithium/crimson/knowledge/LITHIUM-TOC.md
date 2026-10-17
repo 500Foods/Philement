@@ -40,7 +40,7 @@ URL in `config/lithium.json`). For most code edits prefer `npm test` and
 | [LITHIUM-FAQ.md](LITHIUM-FAQ.md) | Common issues, troubleshooting, lessons learned |
 | [../elements/003-lithium/AGENTS.md](/elements/003-lithium/AGENTS.md) | **Agent map** — stack, IDs, Hydrogen/Helium/Keycloak, known defects |
 | [TODO.md](TODO.md) | Active backlog pointer |
-| [CATCHUP.md](/elements/003-lithium/CATCHUP.md) | **Active plan** — Phases 0–38. Pause 2026-10-16: Phase 8 complete, resume Phase 9 |
+| [CATCHUP.md](/elements/003-lithium/CATCHUP.md) | **Active plan** — Phases 0–38. Pause 2026-10-16: Phase 9 in progress at the manual `Api.Echo` gate |
 | [plans/REPORTING_PLAN.md](/docs/Li/plans/REPORTING_PLAN.md) | Report writer — Phases 0–71. Phase 0 approved 2026-10-10. Next is Phase 1 |
 | [plans/LITHIUM_SPRINT.md](plans/LITHIUM_SPRINT.md) | Superseded sprint (do not implement) |
 

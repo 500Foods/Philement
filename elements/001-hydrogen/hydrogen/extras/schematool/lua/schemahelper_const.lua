@@ -2,6 +2,7 @@
 -- Constants, terminal module references, and attribute tables for SchemaHelper.
 --
 -- CHANGELOG
+-- 0.6.27 - 2026-10-17 - MySQL login matches database_reset: TCP, no ~/.my.cnf
 -- 0.6.26 - 2026-10-17 - Target picker aligns script names
 -- 0.6.25 - 2026-10-17 - Variance and explore omit the Ref line
 -- 0.6.24 - 2026-10-17 - Explore header is the condensed variance block
@@ -30,7 +31,7 @@
 -- 0.6.0 - 2026-09-08 - Chrome titles + Instance log name
 -- 0.5.8 - 2026-08-25 - Extracted from schemahelper.lua (constants + terminal refs)
 
-local VERSION = "0.6.26"
+local VERSION = "0.6.27"
 local RELEASED = "2026-10-16"
 
 local INSTANCE_LOG = "schemahelper_schematool.log"

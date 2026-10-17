@@ -21,11 +21,11 @@ partners, Scripting invoke, Course Manager, or chat/MCP.
 | | |
 | --- | --- |
 | **Plan** | [CATCHUP.md](/elements/003-lithium/CATCHUP.md) |
-| **Next** | Phase 9 — Invoke panel, in progress. Resume is the manual `Api.Echo` gate. Do not rebuild `scripting-invoke.js` |
+| **Next** | Phase 9 — Invoke panel, in progress. Andrew is sorting the older schema. Resume after QueryRef 87 returns `invokable` 1, then the manual `Api.Echo` gate. Do not rebuild `scripting-invoke.js` |
 | **First deploy** | Band D — Course Manager (ID 34) |
 | **Effort** | XL (gated phases 0, 0a, 0b, 0c, 1–38, 5a–5d) |
 | **Done** | Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, and 8 complete (2026-10-16). Phase 9 code landed the same day. 5a–5d and 6 deferred. 1389–1393 reported applied. 1394 not in that report |
-| **Remaining** | Finish the Phase 9 manual lines, then Phases 10–38. Apply `acuranzo_1394.lua` before Scripting uses Lookup 059 key 13. Band B (5a–5d, 6) when Andrew pulls it back |
+| **Remaining** | Schema 1297, 1389, and 1390 on the database under test, then the Phase 9 manual lines, then Phases 10–38. Apply `acuranzo_1394.lua` before Scripting uses Lookup 059 key 13. Band B (5a–5d, 6) when Andrew pulls it back |
 | **Superseded** | [LITHIUM_SPRINT.md](/docs/Li/plans/LITHIUM_SPRINT.md) |
 
 ## P2 — Report writer (do not start)

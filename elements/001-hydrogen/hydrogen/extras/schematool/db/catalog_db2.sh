@@ -2,6 +2,8 @@
 # SchemaTool DB2 live catalog probe — SYSCAT.COLUMNS (filtered)
 #
 # CHANGELOG
+# 1.2.1 - 2026-10-16 - Keep empty DEL fields; a null default was shifting length
+# 1.2.0 - 2026-10-16 - Report char, varchar, and lob lengths in migration spelling
 # 1.1.0 - 2026-08-20 - Tab/HEX export + jq assemble (drop python3)
 # 1.0.0 - 2026-08-02 - Phase 7a DB2 catalog probe
 
@@ -110,12 +112,80 @@ PASS_SQL="${PASS//\'/\'\'}"
     echo "CONNECT TO ${DATABASE} USER ${USER_NAME} USING '${PASS_SQL}';"
 } > "${CONN_SCRIPT}"
 
+# SYSCAT.COLUMNS.TYPENAME drops the size. CHAR is reported as CHARACTER.
+# CLOB(100K) is stored as length 102400. VARCHAR and CHAR lengths are the
+# declared counts and must stay plain numbers.
+schematool_db2_lob_size() {
+    local n="$1"
+    if [[ "${n}" -le 0 ]]; then
+        printf '0'
+        return
+    fi
+    if (( n % 1073741824 == 0 )); then
+        printf '%sg' "$((n / 1073741824))"
+    elif (( n % 1048576 == 0 )); then
+        printf '%sm' "$((n / 1048576))"
+    elif (( n % 1024 == 0 )); then
+        printf '%sk' "$((n / 1024))"
+    else
+        printf '%s' "${n}"
+    fi
+}
+
+schematool_db2_type() {
+    local typ="${1//[[:space:]]/}"
+    local length="${2:-0}"
+    local scale="${3:-0}"
+    typ="${typ,,}"
+    length="${length//[[:space:]]/}"
+    scale="${scale//[[:space:]]/}"
+    length="${length//$'\r'/}"
+    scale="${scale//$'\r'/}"
+    if [[ ! "${length}" =~ ^[0-9]+$ ]]; then
+        length=0
+    fi
+    if [[ ! "${scale}" =~ ^[0-9]+$ ]]; then
+        scale=0
+    fi
+    case "${typ}" in
+        character)
+            typ="char"
+            ;;
+        *)
+            ;;
+    esac
+    case "${typ}" in
+        char|varchar|graphic|vargraphic)
+            if [[ "${length}" -gt 0 ]]; then
+                printf '%s(%s)' "${typ}" "${length}"
+            else
+                printf '%s' "${typ}"
+            fi
+            ;;
+        clob|blob|dbclob)
+            local lob
+            lob="$(schematool_db2_lob_size "${length}")"
+            printf '%s(%s)' "${typ}" "${lob}"
+            ;;
+        decimal|numeric)
+            if [[ "${length}" -gt 0 ]]; then
+                printf '%s(%s,%s)' "${typ}" "${length}" "${scale}"
+            else
+                printf '%s' "${typ}"
+            fi
+            ;;
+        *)
+            printf '%s' "${typ}"
+            ;;
+    esac
+}
+
 # Tab-delimited HEX default so commas/quotes in DEFAULT cannot break fields
 EXPORT_FILE="${WORK}/cols.del"
 SQL_EXPORT="EXPORT TO '${EXPORT_FILE}' OF DEL MODIFIED BY COLDEL0x09 NOCHARDEL
 SELECT TABNAME, COLNAME, TYPENAME, NULLS,
        HEX(CAST(COALESCE(DEFAULT, '') AS VARCHAR(512))),
-       COALESCE(KEYSEQ, 0), COLNO
+       COALESCE(KEYSEQ, 0), COLNO, LENGTH, SCALE
 FROM SYSCAT.COLUMNS
 WHERE TABSCHEMA = '${SCHEMA_SQL}'
   ${TABLE_FILTER}
@@ -146,9 +216,30 @@ fi
 NDJSON="${WORK}/cols.ndjson"
 : > "${NDJSON}"
 idx=0
-while IFS=$'\t' read -r tab col typ nulls def_h keyseq colno || [[ -n "${tab:-}" ]]; do
-    [[ -z "${tab:-}" ]] && continue
-    colno="${colno//$'\r'/}"
+# bash read collapses consecutive tabs, and tab is IFS whitespace. A null
+# default is an empty HEX field, so that read dropped it and the length
+# column landed on SCALE (0). Split the line so empty fields stay put.
+while IFS= read -r line || [[ -n "${line}" ]]; do
+    line="${line%$'\r'}"
+    [[ -z "${line}" ]] && continue
+    parts=()
+    rest="${line}"
+    while [[ "${rest}" == *$'\t'* ]]; do
+        parts+=("${rest%%$'\t'*}")
+        rest="${rest#*$'\t'}"
+    done
+    parts+=("${rest}")
+    tab="${parts[0]:-}"
+    col="${parts[1]:-}"
+    typ="${parts[2]:-}"
+    nulls="${parts[3]:-}"
+    def_h="${parts[4]:-}"
+    keyseq="${parts[5]:-0}"
+    colno="${parts[6]:-0}"
+    length="${parts[7]:-0}"
+    scale="${parts[8]:-0}"
+    [[ -z "${tab}" ]] && continue
+    typ="$(schematool_db2_type "${typ:-}" "${length:-0}" "${scale:-0}")"
     pk_n="${keyseq:-0}"
     pk_n="${pk_n// /}"
     if [[ ! "${pk_n}" =~ ^[0-9]+$ ]]; then
