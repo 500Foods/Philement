@@ -203,7 +203,7 @@ export async function get(path, options = {}) {
  */
 export async function post(path, body, options = {}) {
   const startTime = Date.now();
-  const { config, includeAuth = true, ...fetchOptions } = options;
+  const { config, includeAuth = true, timeoutMs, ...fetchOptions } = options;
   
   const url = buildUrl(path, config);
   const requestNum = logHttpRequest('POST', path);
@@ -213,7 +213,7 @@ export async function post(path, body, options = {}) {
     headers: getHeaders(includeAuth),
     body: JSON.stringify(body),
     ...fetchOptions,
-  });
+  }, timeoutMs);
 
   const duration = Date.now() - startTime;
   const contentLength = response.headers.get('content-length') || 0;

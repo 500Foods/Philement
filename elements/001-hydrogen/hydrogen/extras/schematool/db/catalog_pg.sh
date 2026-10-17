@@ -2,6 +2,7 @@
 # SchemaTool PostgreSQL live catalog probe — information_schema (filtered)
 #
 # CHANGELOG
+# 1.1.0 - 2026-10-16 - Report migration type names, including varchar and char lengths
 # 1.0.0 - 2026-08-02 - Phase 7a PostgreSQL catalog probe
 
 set -euo pipefail
@@ -91,7 +92,25 @@ FROM (
             SELECT json_agg(
                 json_build_object(
                     'name', c.column_name,
-                    'data_type', lower(c.data_type),
+                    'data_type', lower(CASE
+                        WHEN c.data_type = 'timestamp with time zone' THEN 'timestamptz'
+                        WHEN c.data_type = 'timestamp without time zone' THEN 'timestamp'
+                        WHEN c.data_type = 'time with time zone' THEN 'timetz'
+                        WHEN c.data_type = 'time without time zone' THEN 'time'
+                        WHEN c.data_type = 'character varying'
+                             AND c.character_maximum_length IS NOT NULL
+                            THEN 'varchar(' || c.character_maximum_length::text || ')'
+                        WHEN c.data_type = 'character varying' THEN 'varchar'
+                        WHEN c.data_type = 'character'
+                             AND c.character_maximum_length IS NOT NULL
+                            THEN 'char(' || c.character_maximum_length::text || ')'
+                        WHEN c.data_type = 'character' THEN 'char'
+                        WHEN c.data_type IN ('numeric', 'decimal')
+                             AND c.numeric_precision IS NOT NULL
+                            THEN c.data_type || '(' || c.numeric_precision::text || ','
+                                 || COALESCE(c.numeric_scale, 0)::text || ')'
+                        ELSE c.data_type
+                    END),
                     'nullable', (c.is_nullable = 'YES'),
                     'default', c.column_default
                 ) ORDER BY c.ordinal_position

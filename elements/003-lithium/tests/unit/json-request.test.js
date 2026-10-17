@@ -151,6 +151,27 @@ describe('JSON Request', () => {
       );
       expect(result).toEqual({ id: 1 });
     });
+
+    it('should abort POST after timeoutMs', async () => {
+      vi.useFakeTimers();
+      try {
+        mockFetch.mockImplementation((_url, opts) => new Promise((_resolve, reject) => {
+          opts.signal.addEventListener('abort', () => {
+            const error = new Error('aborted');
+            error.name = 'AbortError';
+            reject(error);
+          });
+        }));
+
+        const config = { server: { url: 'https://api.example.com', api_prefix: '/api' } };
+        const pending = post('/script', { a: 1 }, { config, timeoutMs: 65000 });
+        const assertion = expect(pending).rejects.toThrow('Request timeout after 65000ms');
+        await vi.advanceTimersByTimeAsync(65000);
+        await assertion;
+      } finally {
+        vi.useRealTimers();
+      }
+    });
   });
 
   describe('put', () => {

@@ -298,8 +298,9 @@ function escapeHtml(text) {
   return div.innerHTML;
 }
 
-function destroyCodeMirrorScrollbars(view) {
-  // Custom scrollbars cleanup if needed
+function destroyCodeMirrorScrollbars(_view) {
+  // buildEditorExtensions does not install customScrollbars().
+  // EditorView.destroy() drops the editor. There is no scrollbar instance.
 }
 
 export function createEditorManager(manager) {

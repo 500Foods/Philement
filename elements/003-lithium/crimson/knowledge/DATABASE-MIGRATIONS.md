@@ -346,4 +346,10 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1386](/elements/002-helium/acuranzo/migrations/acuranzo_1386.lua) | queries | 1.0.1 | 2026-10-14 | 4 | ✗ | QueryRef #156 - Transaction Block Smoke |
 | [1387](/elements/002-helium/acuranzo/migrations/acuranzo_1387.lua) | queries | 1.0.1 | 2026-10-14 | 4 | ✗ | QueryRef #157 - Transaction Block Stress |
 | [1388](/elements/002-helium/acuranzo/migrations/acuranzo_1388.lua) | queries | 1.0.1 | 2026-10-14 | 4 | ✗ | QueryRef #158 - Transaction Fixture Cleanup |
-| **313** | | | | **1660** | **313** | |
+| [1389](/elements/002-helium/acuranzo/migrations/acuranzo_1389.lua) | queries | 1.0.0 | 2026-10-16 | 4 | ✗ | QueryRef #087 add invokable to Get Script by Group/Name |
+| [1390](/elements/002-helium/acuranzo/migrations/acuranzo_1390.lua) | queries | 1.0.0 | 2026-10-16 | 4 | ✗ | QueryRef #089 add invokable to List All Scripts |
+| [1391](/elements/002-helium/acuranzo/migrations/acuranzo_1391.lua) | queries | 1.0.0 | 2026-10-16 | 4 | ✗ | QueryRef #090 add invokable to Search Scripts |
+| [1392](/elements/002-helium/acuranzo/migrations/acuranzo_1392.lua) | queries | 1.0.0 | 2026-10-16 | 4 | ✗ | QueryRef #129 add invokable to Insert Script |
+| [1393](/elements/002-helium/acuranzo/migrations/acuranzo_1393.lua) | queries | 1.0.0 | 2026-10-16 | 4 | ✗ | QueryRef #130 add invokable to Update Script |
+| [1394](/elements/002-helium/acuranzo/migrations/acuranzo_1394.lua) | lookups | 1.0.0 | 2026-10-16 | 4 | ✗ | Lookup 059 key 13 scripts/script-manager tableDef |
+| **319** | | | | **1684** | **319** | |

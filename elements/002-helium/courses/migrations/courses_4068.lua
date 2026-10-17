@@ -9,6 +9,7 @@
 -- luacheck: no unused args
 --
 -- CHANGELOG
+-- 1.0.1 - 2026-10-16 - Limit the #4006 code replace to the SQL row
 -- 1.0.0 - 2026-08-21 - Enrolment History revoked/unenrolled (PRIORITIZE 2.18)
 
 return function(engine, design_name, schema_name, cfg)
@@ -18,7 +19,8 @@ cfg.TABLE = "queries"
 cfg.MIGRATION = "4068"
 cfg.QUERY_REF = "4006"
 -- ----------------------------------------------------------------------------
--- Forward: replace #4006 CASE
+-- Forward: replace #4006 CASE on the SQL row only.
+-- query_ref 4006 is also the bookkeeping key of courses_4006.lua.
 -- ----------------------------------------------------------------------------
 table.insert(queries,{sql=[====[
 
@@ -66,7 +68,8 @@ table.insert(queries,{sql=[====[
                     WHERE course_id = :COURSEID
                     ORDER BY created_at DESC, event_id DESC
                ]==]
-             WHERE query_ref = ${QUERY_REF};
+             WHERE query_ref = ${QUERY_REF}
+               AND query_type_a28 = ${TYPE_SQL};
 
             ${SUBQUERY_DELIMITER}
 
@@ -136,7 +139,8 @@ table.insert(queries,{sql=[====[
                     WHERE course_id = :COURSEID
                     ORDER BY created_at DESC, event_id DESC
                ]==]
-             WHERE query_ref = ${QUERY_REF};
+             WHERE query_ref = ${QUERY_REF}
+               AND query_type_a28 = ${TYPE_SQL};
 
             ${SUBQUERY_DELIMITER}
 

@@ -17,6 +17,7 @@ import {
   query,
   queries,
   buildScriptPayload,
+  scriptClientTimeoutMs,
   invokeScript,
   getScriptJob,
 } from '../../src/shared/conduit.js';
@@ -403,6 +404,15 @@ describe('buildScriptPayload', () => {
   });
 });
 
+describe('scriptClientTimeoutMs', () => {
+  it('should outlive a synchronous timeout and skip async submits', () => {
+    expect(scriptClientTimeoutMs({ wait: true, timeout_seconds: 60 })).toBe(65000);
+    expect(scriptClientTimeoutMs({ wait: true, timeout_seconds: 15 })).toBe(20000);
+    expect(scriptClientTimeoutMs({ wait: false, timeout_seconds: 60 })).toBeUndefined();
+    expect(scriptClientTimeoutMs({ script: 'Api.Echo' })).toBeUndefined();
+  });
+});
+
 describe('invokeScript', () => {
   let mockApi;
 
@@ -431,7 +441,7 @@ describe('invokeScript', () => {
       params: { hello: 'world' },
       wait: true,
       timeout_seconds: 15,
-    });
+    }, { timeoutMs: 20000 });
     expect(result).toBe(envelope);
   });
 

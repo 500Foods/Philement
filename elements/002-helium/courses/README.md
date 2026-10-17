@@ -80,7 +80,7 @@ Macro scripts are the shared set in [`/elements/002-helium/helium/`](/elements/0
 | [4065](/elements/002-helium/courses/migrations/courses_4065.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.1 leftover: Enroll.PaidCourse Helium-first, find-don't-create |
 | [4066](/elements/002-helium/courses/migrations/courses_4066.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.1 leftover: EnsureCanvasUser projects entitled Canvas seats |
 | [4067](/elements/002-helium/courses/migrations/courses_4067.lua) | orders | 1.0.0 | 2026-08-21 | 12 | ✗ | PRIORITIZE 2.18: orders refund columns |
-| [4068](/elements/002-helium/courses/migrations/courses_4068.lua) | queries | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: QueryRef #4006 revoked / unenrolled lines |
+| [4068](/elements/002-helium/courses/migrations/courses_4068.lua) | queries | 1.0.1 | 2026-10-16 | 4 | ✗ | PRIORITIZE 2.18: QueryRef #4006 revoked / unenrolled lines |
 | [4069](/elements/002-helium/courses/migrations/courses_4069.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: seed Enroll.CanvasSeat (module, not invokable) |
 | [4070](/elements/002-helium/courses/migrations/courses_4070.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: Enroll.Archive Canvas unenroll / reenroll |
 | [4071](/elements/002-helium/courses/migrations/courses_4071.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: Enroll.SyncEnrollments Canvas heal |

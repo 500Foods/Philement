@@ -22,6 +22,10 @@
         <fa fa-eye></fa>
         <span>Preview</span>
       </button>
+      <button type="button" class="lithium-toolbar-tab" data-tab="run" data-collapsible-text>
+        <fa fa-play></fa>
+        <span>Run</span>
+      </button>
       <!-- Placeholder fills available space -->
       <div class="lithium-toolbar-placeholder"></div>
       <button type="button" class="lithium-toolbar-btn" id="scripting-undo-btn" data-collapsible-text title="Undo (Ctrl+Z)" disabled>
@@ -53,6 +57,28 @@
       </div>
       <div class="scripting-tab-pane" id="scripting-tab-preview">
         <!-- Preview (rendered content) -->
+      </div>
+      <div class="scripting-tab-pane" id="scripting-tab-run">
+        <div class="scripting-run-bar">
+          <label class="checkbox scripting-run-wait">
+            <input type="checkbox" id="scripting-run-wait" checked>
+            <span>Wait</span>
+          </label>
+          <label class="scripting-run-timeout">
+            <span>Timeout</span>
+            <input type="number" class="scripting-run-timeout-input" id="scripting-run-timeout" min="1" max="60" step="1" value="15">
+          </label>
+          <button type="button" class="lithium-toolbar-btn" id="scripting-run-btn" disabled>
+            <fa fa-play></fa>
+            <span>Run</span>
+          </button>
+          <span class="scripting-run-spinner" aria-hidden="true"></span>
+        </div>
+        <div class="editor-wrapper" id="scripting-run-editor-wrapper">
+          <div class="scripting-run-editor" id="scripting-run-editor"></div>
+          <div class="lithium-toolbar lithium-editor-footer" id="scripting-run-editor-footer"></div>
+        </div>
+        <pre class="scripting-run-result" id="scripting-run-result"></pre>
       </div>
     </div>
   </div>

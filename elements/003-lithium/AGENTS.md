@@ -7,15 +7,20 @@ conflicts. Active plan:
 [`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md)
 (supersedes
 [`/docs/Li/plans/LITHIUM_SPRINT.md`](/docs/Li/plans/LITHIUM_SPRINT.md)).
-Pause point 2026-10-16: Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, and 5 are complete.
-Phase 5a (Didit partner) is next. The report writer (manager 24,
+Pause point 2026-10-16: Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, and 8 are complete.
+Phases 5a–5d and 6 are deferred. Andrew reported Acuranzo 1389–1393 applied.
+Scripting save, update, and duplicate send INTEGER `INVOKABLE`. Delete uses
+QueryRef 131. `acuranzo_1394.lua` (Lookup 059 key 13) is written and was not
+in that report. Phase 9 is in progress: the Run tab is in
+`scripting-invoke.js`. The manual `Api.Echo` lines are still open.
+Do not rebuild the panel. Do not open Phase 10. The report writer (manager 24,
 [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md),
 Phases 0–71, Phase 0 approved 2026-10-10) stays parked. Its next
 phase is Phase 1, and only after Andrew pulls that plan in. PDF is
 the default export there. Phased work follows
 [`/docs/PLANNING.md`](/docs/PLANNING.md).
 
-**Last reviewed:** 2026-10-16 (CATCHUP Phase 5 closed).
+**Last reviewed:** 2026-10-16 (CATCHUP Phase 9 in progress; resume is the manual `Api.Echo` gate).
 
 ---
 
@@ -215,7 +220,7 @@ Theme keyboard `loadManager(1)` is still dead (1 is not in the menu registry).
 
 **Real UI:** Login, Main, Queries, Lookups, Style (Apply and Copy write the
 CSS editor text into `#style-manager-preview`; Undo and Redo stay disabled),
-Version History, Scripting (list + Lua editor + save), Profile (language,
+Version History, Scripting (list, Lua editor, save, duplicate, delete, and a Run tab whose manual `Api.Echo` pass is still open), Profile (language,
 date formats, photo, and Lookups settings persist; other pages refuse save),
 Session Log, Terminal, Crimson, Tour.
 
@@ -310,9 +315,11 @@ GET /api/conduit/script/{job_id}
 - C does not interpret business logic.
 
 `invokeScript` and `getScriptJob` live in `src/shared/conduit.js`
-(CATCHUP Phase 2, 2026-10-16). No manager calls them yet. Scripting
-Manager does **not** invoke. Course Builder operator buttons must use
-this surface, not new C. `sanitizeHtml` is in `src/core/utils.js`.
+(CATCHUP Phase 2, 2026-10-16). The Scripting Run tab calls them
+(CATCHUP Phase 9, in progress). A wait-true POST uses
+`timeout_seconds` plus 5 seconds. Course Manager and Course Builder
+do not invoke yet. Course Builder operator buttons must use this
+surface, not new C. `sanitizeHtml` is in `src/core/utils.js`.
 Lookups, Crimson, Version History, and the Queries summary preview
 call it (CATCHUP Phase 3, 2026-10-16).
 
@@ -390,20 +397,32 @@ Partner buttons (Didit, Apple, Google, Microsoft) render from
 
 ## Scripting Manager (ID 33) — current state
 
-Path: `src/managers/scripting/` (`scripting.js` ~1004 lines — already over the
-cap, `scripting-editors.js`, html, css).
+Path: `src/managers/scripting/` (`scripting.js` 627 lines,
+`scripting-invoke.js` 546 lines, `scripting-save.js`,
+`scripting-footer.js`, `scripting-editors.js`, html, css).
 
 **Works:** LithiumTable of `scripts`, row select → detail QueryRef, CodeMirror
-Lua tab, preview tab, font popup, undo/redo/fold, edit helper, save/duplicate
-via QueryRefs 129/130, audit footer, splitter.
+Lua tab, preview tab, Run tab, font popup, undo/redo/fold, edit helper,
+audit footer, splitter. List (089), search (090), and detail (087) return
+`invokable` after Acuranzo 1389–1391 (Andrew reported those applied
+2026-10-16). Save and update (129/130) send INTEGER `INVOKABLE` and
+`USERID`. Duplicate copies that flag and append ` (Copy)`. Delete
+confirms and calls QueryRef 131 with STRING `GROUP_NAME` and
+`SCRIPT_NAME`. A dirty row switch asks to save or stay. Rename of a
+saved script is refused. New scripts prompt for group and name.
+The Run tab posts `conduit/script` for an invokable `Group.Name`,
+strips a top-level `params._hydrogen`, and polls
+`GET /api/conduit/script/{job_id}` when Wait is off (250, 500, 1000,
+then 2000 ms). Payload tests are
+`tests/unit/managers/scripting-save.test.js` and
+`tests/unit/managers/scripting-invoke.test.js`. The manual `Api.Echo`
+pass is still open (CATCHUP Phase 9).
 
-**Missing (CATCHUP Phases 7–10):**
+**Missing (CATCHUP Phase 10).** Lookup 059 key 13 is
+`acuranzo_1394.lua` and was not in the apply report.
 
-- `POST /api/conduit/script` invoke UI (params JSON, wait/timeout, result pane)
-- `invokable` column visibility / edit
-- Job poll `GET /api/conduit/script/{job_id}` when `wait: false`
-- Delete, validate/luacheck, run-as-role
-- Unit tests
+- `invokable` column visibility / edit (1394 tableDef is unapplied)
+- Validate/luacheck, run-as-role
 - `LITHIUM-MGR-SCRIPT.md`
 
 `USERID` reads `this.app.auth.user` (CATCHUP Phase 4, 2026-10-16). A missing

@@ -71,38 +71,41 @@ only.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-10-16):** Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, and 5 are complete. The next session opens **Phase 5a — Didit partner**. Discuss it and wait for approval before editing. Didit, Apple, Google, and Microsoft stay omitted until their own phases. Course QueryRefs moved to the 4000 pack on 2026-10-16. Band D uses the Courses pack QueryRefs section. Do not call retired **#085**, **#150**, or **#151**.
+**CURRENT PAUSE POINT (as of 2026-10-16):** Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, and 8 are complete. Phase 9 is **in progress**: the Run tab is in [`scripting-invoke.js`](/elements/003-lithium/src/managers/scripting/scripting-invoke.js). The two manual lines (JWT → `Api.Echo`, then wait off) are still open. Do not rebuild the panel. Do not open Phase 10. Phases 5a, 5b, 5c, 5d, and 6 stay deferred until Andrew pulls Band B back. Save, duplicate, and update send INTEGER `INVOKABLE` (0 when the row has none). Delete uses QueryRef 131 with STRING `GROUP_NAME` and `SCRIPT_NAME`. A dirty row switch asks to save or stay. Lookup 059 key 13 ([`acuranzo_1394.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1394.lua)) is written and was not in the 1389–1393 apply report. Course QueryRefs moved to the 4000 pack on 2026-10-16. Band D uses the Courses pack QueryRefs section. Do not call retired **#085**, **#150**, or **#151**.
 
 ### Resume here next session
 
-Phase 5 Status is complete. Phase 5a Status is pending. Do not reopen Phases 0–5.
+Phases 0–5, 7, and 8 are complete. Do not reopen them. Do not open 5a–5d or 6 unless Andrew pulls Band B back. Phase 9 code is in. The phase stays in progress until the manual lines are done.
 
-1. Read Phase 5a (Goal, work items, exit gate) and lock L7.
-   Phase 5 renders a partner only when `login partners.<id>` is true
-   and `auth.oidc_providers` has that id. The checked-in booleans are
-   already true. The four ids are still absent from `oidc_providers`
-   and from example Hydrogen `OIDC_RP`. Ask whether Didit is OIDC.
-   Wait for approval before editing source. If it is not OIDC, omit
-   it and log that. CATCHUP adds no product C.
-2. Do not apply migrations. Do not add product C. Do not put Keycloak
-   tokens in the SPA. The report writer stays parked. Do not start
-   Phase 5b in that sitting.
-3. Baseline from `elements/003-lithium`: `npm test` was 1003 passed
-   and 10 failed. The 10 are `tests/integration/auth.integration.test.js`
-   when health is up and login, renew, or logout returns HTTP 503.
-   A health check that is not HTTP 2xx skips those cases. `npm run lint`
-   was 0 errors and 35 pre-existing warnings. `npx eslint` on
-   `src/managers/login/login.js` was 0 errors and 2 pre-existing
-   warnings. No browser pass was done. Andrew checks the login page.
-4. Left open on purpose, and not Phase 5a work: the Profile footer
-   Save still writes the collection JSON and does not call
-   `settingsHandler.save()`. Style `applyState` and the undo stacks
-   are empty. `this.app.user` is still unset; `USERID` reads
-   `app.auth.user`. `invokeScript` has no manager caller. The Style
-   Manager login mockup still paints the four partner images.
-5. Close Phase 5a in this file before marking it complete: Status,
-   Accomplished, Lessons learned, Handoff, and the Working Log.
-   Then stop. Phase 5b starts in a new conversation.
+1. Finish **Phase 9 — Invoke panel and async poll**. Do not rebuild
+   [`scripting-invoke.js`](/elements/003-lithium/src/managers/scripting/scripting-invoke.js).
+   Sign in, open Scripting, run `Api.Echo` with Wait on, and confirm
+   the body and `job_id` in the pane and the session log. Then turn
+   Wait off and confirm the spinner reaches a terminal status.
+   Check those two exit lines and mark the phase complete. Do not
+   open Phase 10 in that sitting unless both lines are green.
+2. Run stays disabled unless the row is invokable. Wait defaults to
+   true. Timeout is 1–60, default 15. A top-level `_hydrogen` key is
+   removed before the request. Poll delays are 250, 500, 1000, then
+   2000 ms. There is no cancel control. Changing rows stops painting
+   that poll and does not kill the job.
+3. Save and duplicate already send INTEGER `INVOKABLE`. Delete
+   already sends STRING `GROUP_NAME` and `SCRIPT_NAME` to QueryRef
+   131. A dirty row switch uses the Phase 4 confirm dialog: Save
+   continues, Stay keeps the row. Other tables still auto-save.
+4. [`acuranzo_1394.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1394.lua)
+   is still unapplied. The constructor sets list 89 and search 90.
+   New scripts ask for group and name because those columns are not
+   editable. Apply 1394 before Scripting relies on that tableDef.
+5. No browser pass of create, save, duplicate, delete, or
+   `Api.Echo`. `npm test` was 1040 passed and 10 failed. The 10 are
+   the live auth file (HTTP 503). Lint was 0 errors and 35 existing
+   warnings. `npm run lint:css` was clean.
+6. Left open on purpose: Profile footer Save still does not call
+   `settingsHandler.save()`. Style `applyState` is empty.
+   `this.app.user` is unset; `USERID` reads `app.auth.user`.
+   The Style Manager login mockup still paints the four partner
+   images. Didit, Apple, Google, and Microsoft stay omitted.
 
 ---
 
@@ -216,8 +219,8 @@ QueryRefs section is the course-number contract.
 | --------- | --------- |
 | Login OIDC | `renderOidcProviders` from `auth.oidc_providers` (500passwords) |
 | Partner buttons | Config row (Phase 5, 2026-10-16). A button renders only when `login partners.<id>` is true and that id is in `auth.oidc_providers`. Checked-in config shows 500 Passwords only. Didit, Apple, Google, and Microsoft stay hidden until 5a–5d. |
-| Scripting ID 33 | List/edit/save; **no invoke**; `scripting.js` 1004 lines |
-| `conduit.js` | `authQuery` plus `buildScriptPayload`, `invokeScript`, and `getScriptJob` (Phase 2, 2026-10-16). No manager calls the script helpers yet. |
+| Scripting ID 33 | List/edit/save plus a Run tab (Phase 9, in progress 2026-10-16). `scripting.js` is 627 lines. The manual `Api.Echo` pass is still open |
+| `conduit.js` | `authQuery` plus `buildScriptPayload`, `invokeScript`, and `getScriptJob` (Phase 2, 2026-10-16). The Scripting Run tab calls them (Phase 9). A synchronous invoke extends the POST past the 30s client cap by `timeout_seconds` plus 5 seconds. |
 | Crimson | Live WS chat; login JWT; hardcoded engine `"Crimson"` |
 | Chats ID 18 | 49-line placeholder |
 | Course Manager | Placeholder at `course-manager/` (Phase 0a, refreshed 2026-10-16). Calls QueryRef **155**. `cleanup()` is the close hook. Real UI is Band D. |
@@ -1250,8 +1253,10 @@ login page himself. No partner provider is live.
 
 **Handoff:**
 
-- The next conversation opens Phase 5a, Didit. Start at
-  **Resuming Work**. Do not start Phase 5b in that sitting.
+- Andrew deferred Phases 5a–5d and 6 on 2026-10-16 to open Band C.
+  Resume Band B when he pulls it back. The pause point at the top
+  of this file is Phase 8. Phase 7 closed the same day on Andrew's
+  report that 1389–1393 are applied.
 - To show a partner later: add a Hydrogen `OIDC_RP.Providers[]`
   entry (human config, not C) and a matching `auth.oidc_providers`
   id. The boolean is already true. The click path already calls
@@ -1280,19 +1285,20 @@ or the button stays omitted.
 
 **Work items:**
 
-- [ ] Confirm whether Didit is OIDC or another protocol. CATCHUP adds
+- [~] Confirm whether Didit is OIDC or another protocol. CATCHUP adds
       no product C. If not OIDC, omit and log.
-- [ ] If OIDC: Hydrogen `OIDC_RP.Providers[]` entry `Name: didit`
+      Deferred 2026-10-16. Resume when Andrew pulls Band B back.
+- [~] If OIDC: Hydrogen `OIDC_RP.Providers[]` entry `Name: didit`
       (human config, not C). Lithium `login partners.didit` + matching
       `oidc_providers` id. Click → `startOidc('didit')`.
-- [ ] No Keycloak tokens in the SPA.
+- [~] No Keycloak tokens in the SPA.
 
 **Exit gate / validation:**
 
 - [ ] Working Log: OIDC or omitted, and why.
 - [ ] `npm test && npm run lint` if JS changed.
 
-**Status:** pending
+**Status:** deferred (2026-10-16). [~] Andrew deferred the rest of Band B to open Band C. Resume when he pulls Band B back. No new phase number.
 
 **Lessons learned:**
 
@@ -1310,16 +1316,17 @@ or the button stays omitted.
 
 **Work items:**
 
-- [ ] Research Apple as an OIDC_RP provider (IdP, client, redirect).
+- [~] Research Apple as an OIDC_RP provider (IdP, client, redirect).
       No product C. Omit if Hydrogen cannot host it yet.
-- [ ] If live: provider `apple`, `login partners.apple`, `startOidc`.
+      Deferred 2026-10-16. Resume when Andrew pulls Band B back.
+- [~] If live: provider `apple`, `login partners.apple`, `startOidc`.
 
 **Exit gate / validation:**
 
 - [ ] Working Log: wired or omitted.
 - [ ] `npm test && npm run lint` if JS changed.
 
-**Status:** pending
+**Status:** deferred (2026-10-16). [~] Same deferral as Phase 5a. Resume when Andrew pulls Band B back.
 
 **Lessons learned:**
 
@@ -1337,15 +1344,16 @@ or the button stays omitted.
 
 **Work items:**
 
-- [ ] Research Google as an OIDC_RP provider. No product C.
-- [ ] If live: provider `google`, `login partners.google`, `startOidc`.
+- [~] Research Google as an OIDC_RP provider. No product C.
+      Deferred 2026-10-16. Resume when Andrew pulls Band B back.
+- [~] If live: provider `google`, `login partners.google`, `startOidc`.
 
 **Exit gate / validation:**
 
 - [ ] Working Log: wired or omitted.
 - [ ] `npm test && npm run lint` if JS changed.
 
-**Status:** pending
+**Status:** deferred (2026-10-16). [~] Same deferral as Phase 5a. Resume when Andrew pulls Band B back.
 
 **Lessons learned:**
 
@@ -1363,8 +1371,9 @@ or the button stays omitted.
 
 **Work items:**
 
-- [ ] Research Microsoft as an OIDC_RP provider. No product C.
-- [ ] If live: provider `microsoft`, `login partners.microsoft`,
+- [~] Research Microsoft as an OIDC_RP provider. No product C.
+      Deferred 2026-10-16. Resume when Andrew pulls Band B back.
+- [~] If live: provider `microsoft`, `login partners.microsoft`,
       `startOidc`.
 
 **Exit gate / validation:**
@@ -1372,7 +1381,7 @@ or the button stays omitted.
 - [ ] Working Log: wired or omitted.
 - [ ] `npm test && npm run lint` if JS changed.
 
-**Status:** pending
+**Status:** deferred (2026-10-16). [~] Same deferral as Phase 5a. Resume when Andrew pulls Band B back.
 
 **Lessons learned:**
 
@@ -1397,11 +1406,12 @@ Band A/B churn. Do not block on AUTH_FINALE Phase 11 OTP.
 
 **Work items:**
 
-- [ ] Walk KEYCLOAK client checklist against `oidc-client.js` + login.
-- [ ] Integration: invalid handoff → 401; unknown provider does not
+- [~] Walk KEYCLOAK client checklist against `oidc-client.js` + login.
+      Deferred 2026-10-16. Resume when Andrew pulls Band B back.
+- [~] Integration: invalid handoff → 401; unknown provider does not
       fall back (mock or live).
-- [ ] Confirm password login still works with IdP down (if testable).
-- [ ] Provider `id` must match `OIDC_RP.Providers[].Name`.
+- [~] Confirm password login still works with IdP down (if testable).
+- [~] Provider `id` must match `OIDC_RP.Providers[].Name`.
 
 **Exit gate / validation:**
 
@@ -1409,7 +1419,7 @@ Band A/B churn. Do not block on AUTH_FINALE Phase 11 OTP.
 - [ ] `npm test`. If real Keycloak E2E still OTP-blocked, `[~]` and do
       **not** block CATCHUP.
 
-**Status:** pending
+**Status:** deferred (2026-10-16). [~] Same deferral as Phase 5a. Resume when Andrew pulls Band B back. Phase 5 already kept the 500 Passwords click path.
 
 **Lessons learned:**
 
@@ -1426,36 +1436,112 @@ packet ready if CRUD queries omit the column.
 
 **Entry gate:**
 
-- [ ] Phase 0 Working Log has the scripts QueryRef table.
+- [x] Phase 0 Working Log has the scripts QueryRef table. Re-checked
+      on disk 2026-10-16. The five caller-facing SQL bodies still omit
+      `invokable`.
 
 **Reference:**
 
 - Helium `acuranzo_1204` (87), `1206` (89), `1207` (90), `1263` (129),
   `1264` (130), `1265` (131), `1297` (`scripts.invokable`)
-- Lookup 59 tableDef `scripts/script-manager`
+- Packet: `acuranzo_1389` through `acuranzo_1394`
+- Lookup 59 tableDef `scripts/script-manager` (key 13, migration 1394)
 - [`/docs/H/api/conduit/script.md`](/docs/H/api/conduit/script.md)
 
 **Work items:**
 
-- [ ] Inventory columns vs QueryRefs vs tableDef. Confirm `invokable`
+- [x] Inventory columns vs QueryRefs vs tableDef. Confirm `invokable`
       on list/detail/insert/update. Confirm delete 131 params
       (`GROUP_NAME` + `SCRIPT_NAME`, not INTEGER pk).
-- [ ] If queries omit `invokable`, prepare Helium packet (human apply).
+- [x] If queries omit `invokable`, prepare Helium packet (human apply).
       Do not apply.
-- [ ] List seeded `invokable=1` scripts (`Api.Echo`, …) in Working Log.
-- [ ] Confirm Lookup 59 exposes `invokable` and `deleteQueryRef: 131`.
+- [x] List seeded `invokable=1` scripts (`Api.Echo`, …) in Working Log.
+- [x] Confirm Lookup 59 exposes `invokable` and `deleteQueryRef: 131`.
+      It did not. Key 13 is in the packet.
 
 **Exit gate / validation:**
 
-- [ ] Working Log table: column → QueryRef / tableDef field.
-- [ ] Packet handed over **or** log that live queries already SELECT
+- [x] Working Log table: column → QueryRef / tableDef field.
+- [x] Packet handed over **or** log that live queries already SELECT
       `invokable`.
 - [ ] If Helium changed: human `mkt` after apply; name the migration
-      test in the log.
+      test in the log. Payload refresh is `mka` or
+      `payload-generate.sh`. `mkt` does not refresh the archive.
 
-**Status:** pending
+**Status:** complete (2026-10-16) on Andrew's report that 1389–1393
+are applied. Variance: the agent did not see SchemaTool or
+SchemaHelper output, did not run `mkt` or `mka`, and no migration
+test was named. The human-build exit line stays open.
+[`acuranzo_1394.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1394.lua)
+(Lookup 059 key 13) is written and was not in that report.
+`luacheck` on the six files was 0 warnings. No Lithium source
+change, so `npm test` was not re-run for this close.
+
+**Accomplished:**
+
+- Re-read QueryRefs 087, 089, 090, 129, and 130. Each omitted
+  `invokable` before this packet. Delete 131 is `GROUP_NAME` +
+  `SCRIPT_NAME`. Lookup 059 keys on disk were 0–12. None was
+  `scripts/script-manager`.
+- Wrote six files. Andrew reported five of them applied:
+  - [`acuranzo_1389.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1389.lua) — QueryRef 087 SELECT adds `invokable`. Applied.
+  - [`acuranzo_1390.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1390.lua) — QueryRef 089 SELECT adds `invokable`. Applied.
+  - [`acuranzo_1391.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1391.lua) — QueryRef 090 SELECT adds `invokable`. Applied.
+  - [`acuranzo_1392.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1392.lua) — QueryRef 129 INSERT writes `:INVOKABLE`. Applied.
+  - [`acuranzo_1393.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1393.lua) — QueryRef 130 UPDATE writes `:INVOKABLE`. Applied.
+  - [`acuranzo_1394.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1394.lua) — Lookup 059 key 13, `value_txt` `scripts/script-manager`, `deleteQueryRef` 131. Written. Not in the apply report.
+- `lua` `loadfile` compiled all six. `luacheck` reported 0 warnings
+  and 0 errors. The tableDef JSON parses. Highest Acuranzo file before
+  this packet was 1388. The next file is 1395. No Lithium JS edit.
 
 **Lessons learned:**
+
+- The Phase 0 inventory was still true. Later files did not patch
+  these five QueryRefs.
+- Hydrogen rejects a missing `:NAME` before SQL runs. A SQL
+  `COALESCE` does not make `INVOKABLE` optional. The column default
+  of 0 applies only when an INSERT leaves the column out. 1392 and
+  1393 do not leave it out. The Scripting save in `scripting.js`
+  does not send `INVOKABLE`.
+- Andrew applied 1392 and 1393 with the SELECT files. Save and
+  duplicate now fail until Phase 8 sends INTEGER `INVOKABLE`. List,
+  search, and detail keep working. Existing rows are unchanged.
+- The apply report covered 1389–1393. Lookup 059 key 13 stays a
+  file on disk until a later report.
+- Closing on an owner report does not stand in for `mkt` or a named
+  migration test. Leave that exit line open and record the gap.
+- `LithiumTable` copies a tableDef `deleteQueryRef` when the
+  constructor leaves that ref null. `handleDelete` then reads one
+  `primaryKeyField`. Scripting passes the pair
+  `['group_name', 'script_name']`, so `selectedId` is null and
+  QueryRef 131 is not called. The grid row is still removed locally.
+  That local remove already happened before key 13. Key 13 is not
+  live yet.
+- One caller-facing QueryRef per file. Five query updates plus one
+  lookup key.
+- `courses_4032.lua` seeds `Stripe.Webhook` with `invokable = 1`.
+  Phase 17 later calls that script non-invokable. This phase left
+  the seed alone.
+
+**Handoff:**
+
+- Phase 8 starts in the next conversation. Send INTEGER `INVOKABLE`
+  on insert (129) and update (130), including duplicate. Use 0 when
+  the row has none. Save and duplicate currently omit it, so both
+  fail against the applied SQL.
+- Custom delete is `GROUP_NAME` + `SCRIPT_NAME` (QueryRef 131). Do
+  not use a generic INTEGER `selectedId`. Split `scripting.js` under
+  1000 lines before invoke UI. Dirty prompt. Rename forbidden (L13).
+- Apply [`acuranzo_1394.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1394.lua)
+  before Scripting relies on Lookup 059 key 13. The constructor
+  still sets list 89 and search 90, so Phase 8 can proceed without
+  that key. Do not apply it unless Andrew asks.
+- If the payload was not regenerated after 1389–1393, run `mka` or
+  `payload-generate.sh` before a migration test. `mkt` does not
+  refresh the archive. No test name was recorded. The agent does
+  not run SchemaTool or SchemaHelper apply.
+- Seeded `invokable = 1` rows are in the Working Log. Staff writers
+  stay 0 until the Band D packet (L17).
 
 ---
 
@@ -1468,36 +1554,109 @@ under 1000 **before** invoke UI lands.
 
 **Entry gate:**
 
-- [ ] Phase 7 schema table exists. Phase 1 close path exists.
+- [x] Phase 7 schema table exists. Phase 1 close path exists.
 
 **Reference:**
 
-- `src/managers/scripting/scripting.js` (1004)
-- `src/managers/scripting/scripting-editors.js`
+- [`scripting.js`](/elements/003-lithium/src/managers/scripting/scripting.js) (616 after this phase)
+- [`scripting-save.js`](/elements/003-lithium/src/managers/scripting/scripting-save.js)
+- [`scripting-footer.js`](/elements/003-lithium/src/managers/scripting/scripting-footer.js)
+- [`scripting-editors.js`](/elements/003-lithium/src/managers/scripting/scripting-editors.js)
 - Queries delete pattern (`queries-navigation.js`)
+- Applied 2026-10-16: 087, 089, and 090 SELECT `invokable`. 129 and
+  130 require INTEGER `INVOKABLE`.
+- Lookup 059 key 13 is
+  [`acuranzo_1394.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1394.lua).
+  Not in the 1389–1393 apply report.
 
 **Work items:**
 
-- [ ] Split footer / save-payload builder out of `scripting.js` so the
+- [x] Split footer / save-payload builder out of `scripting.js` so the
       file is under 1000 before Phase 9.
-- [ ] Save/insert/update use confirmed QueryRefs and `app.auth.user`.
-- [ ] Custom delete: composite PK + Phase 4 modal. Do not use generic
+- [x] Save/insert/update use confirmed QueryRefs and `app.auth.user`.
+- [x] Custom delete: composite PK + Phase 4 modal. Do not use generic
       INTEGER `selectedId`.
-- [ ] Dirty prompt on row switch. Rename forbidden (L13).
-- [ ] `cleanup()`: table, editors, splitter, **keydown** listener.
+- [x] Dirty prompt on row switch. Rename forbidden (L13).
+- [x] `cleanup()`: table, editors, splitter, **keydown** listener.
       `destroyCodeMirrorScrollbars` must not stay a no-op if scrollbars
       are created.
-- [ ] Extract save-payload builder + unit tests.
+- [x] Extract save-payload builder + unit tests.
 
 **Exit gate / validation:**
 
-- [ ] `wc -l src/managers/scripting/scripting.js` ≤ 1000
-- [ ] Unit tests for save payload.
-- [ ] `npm test && npm run lint`
+- [x] `wc -l src/managers/scripting/scripting.js` ≤ 1000
+- [x] Unit tests for save payload.
+- [x] `npm test && npm run lint`
 
-**Status:** pending
+**Status:** complete (2026-10-16). Variance: `npm test` was 1021
+passed and 10 failed. The 10 are
+`tests/integration/auth.integration.test.js` (HTTP 503 from
+`https://lithium.philement.com`), the same live auth variance as
+Phases 1–5 and 7. Lint was 0 errors and 35 existing warnings.
+No browser pass of create, save, duplicate, or delete.
+`acuranzo_1394.lua` stays unapplied. No new migration.
+
+**Accomplished:**
+
+- [`scripting-save.js`](/elements/003-lithium/src/managers/scripting/scripting-save.js)
+  builds insert (129), update (130), duplicate, and delete (131)
+  payloads. INTEGER `INVOKABLE` is 1 only when the row value is 1,
+  otherwise 0. INTEGER `USERID` comes from `app.auth.user.id`, or 0.
+  `SCRIPT_TYPE` and `STATUS` stay in STRING.
+- A row loaded from the list updates in place. A changed group or
+  name throws. A new script asks for group and name, then inserts.
+  Duplicate appends ` (Copy)`, clears the three run timestamps, and
+  loads code from the row, the open editor, or QueryRef 087.
+- Delete confirms, then sends STRING `GROUP_NAME` and `SCRIPT_NAME`.
+  A draft that was never saved is removed locally and does not call
+  131. The generic INTEGER `selectedId` path is not used.
+- A dirty row switch on Scripting asks “Save changes to Group.Name?”
+  Save continues. Stay keeps the row. Other managers still auto-save.
+- Footer actions moved to
+  [`scripting-footer.js`](/elements/003-lithium/src/managers/scripting/scripting-footer.js).
+  `wc -l` on `scripting.js` is 616. `cleanup()` removes the document
+  keydown listener. The Lua editor does not install
+  `customScrollbars()`, so `destroyCodeMirrorScrollbars` stays empty.
+- [`scripting-save.test.js`](/elements/003-lithium/tests/unit/managers/scripting-save.test.js)
+  passed 18 tests.
 
 **Lessons learned:**
+
+- “The row has names” is not “this row is persisted.” A new script
+  already has both names before the first insert. The list load is
+  the persisted set. Rename is refused only for an id in that set.
+- LithiumTable auto-saves on row switch. Replacing
+  `autoSaveBeforeRowChange` on the Scripting instance leaves every
+  other table alone. Stay returns false, and the existing selection
+  path reselects the editing row.
+- `primaryKeyField` as a pair makes `rowData[pkField]` undefined, so
+  the generic delete never calls QueryRef 131 and still removes the
+  grid row. Scripting needed its own delete.
+- List QueryRef 089 omits `code`. Duplicate of a row that is not the
+  open editor has to read QueryRef 087 or the copy is empty.
+- `buildEditorExtensions` does not install `customScrollbars()`. A
+  no-op teardown is the honest cleanup. Phase 11 owns that plugin.
+- The document keydown listener was an anonymous function, so
+  `cleanup()` could not remove it.
+- Group and name are not editable under auto-discovery, and 1394
+  also marks them `editable: false`. Create is two prompts, then a
+  local draft, then Save. 1394 is still not applied.
+
+**Handoff:**
+
+- Phase 9 starts in the next conversation. Add
+  `scripting-invoke.js`. Do not put the run panel in `scripting.js`.
+- `invokeScript` / `getScriptJob` still have no manager caller.
+  `Api.Echo` is the `invokable = 1` fixture. Run disabled unless
+  invokable. Wait defaults true. Timeout 1–60. No `_hydrogen`. No
+  run-as-role. No fake cancel.
+- Apply [`acuranzo_1394.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1394.lua)
+  before Scripting reads Lookup 059 key 13. List 89 and search 90
+  are still set on the constructor.
+- No browser pass. The live auth file still fails 10 cases with
+  HTTP 503. Cert for `lithium.philement.com` was already expired.
+- Profile footer Save, Style `applyState`, and `this.app.user` stay
+  open. Ctrl+P `handlePrettify` is still missing (Phase 10).
 
 ---
 
@@ -1510,8 +1669,9 @@ Course Manager will clone this pattern, not `scripting.js`.
 
 **Entry gate:**
 
-- [ ] `invokeScript` exists. `Api.Echo` (or named fixture) is
-      `invokable=1` in the target DB.
+- [x] `invokeScript` exists. `Api.Echo` is seeded `invokable=1` by
+      `acuranzo_1297.lua` (Phase 7 working log). This sitting did not
+      re-query the live row.
 
 **Reference:**
 
@@ -1520,24 +1680,101 @@ Course Manager will clone this pattern, not `scripting.js`.
 
 **Work items:**
 
-- [ ] Run tab: JSON params via `buildEditorExtensions({ language: 'json' })`,
+- [x] Run tab: JSON params via `buildEditorExtensions({ language: 'json' })`,
       wait default true, timeout 1–60, Run disabled unless `invokable`.
-- [ ] Result pane: status, `job_id`, JSON / error. Treat 404
+- [x] Result pane: status, `job_id`, JSON / error. Treat 404
       `script_not_found` as not-runnable, not “row missing”.
-- [ ] `wait: false` → `getScriptJob` backoff until
+- [x] `wait: false` → `getScriptJob` backoff until
       `completed|failed|killed|timeout`. No fake cancel.
-- [ ] Strip `_hydrogen`. Do not invent run-as-role.
-- [ ] Unit tests: payload, invokable gating, poll machine.
+- [x] Strip `_hydrogen`. Do not invent run-as-role.
+- [x] Unit tests: payload, invokable gating, poll machine.
 
 **Exit gate / validation:**
 
 - [ ] Manual: JWT → Scripting → `Api.Echo` → body in pane (log job_id).
 - [ ] Manual: wait off → spinner → terminal status (log).
-- [ ] `npm test && npm run lint`
+- [x] `npm test && npm run lint` — variance below. The chained
+      command exited 1 at `npm test`. Lint was a separate run.
 
-**Status:** pending
+**Status:** in progress (2026-10-16). Last finished work item is the
+unit-tested Run tab. The two manual lines are open. Variance:
+`npm test` was 1040 passed and 10 failed. The 10 are
+`tests/integration/auth.integration.test.js` (HTTP 503 from
+`https://lithium.philement.com`; cert expired 2026-08-02), the same
+live auth variance as Phases 1–5, 7, and 8. The +19 from Phase 8 are
+the invoke suite (17), `scriptClientTimeoutMs` (1), and the
+json-request abort case (1). `npm run lint` was 0 errors and 35
+existing warnings. `npm run lint:css` exited 0. No browser pass.
+`acuranzo_1394.lua` stays unapplied. No new migration. No product C.
+
+**Accomplished:**
+
+- [`scripting-invoke.js`](/elements/003-lithium/src/managers/scripting/scripting-invoke.js)
+  (546 lines) owns the Run tab. `scripting.js` is 627 lines and only
+  mounts the panel, shows it on the Run tab, syncs on row change, and
+  destroys it on close.
+- The Run tab sits after Preview. Params are a JSON CodeMirror editor
+  that starts at `{}`, stays editable, and does not mark the script
+  row dirty. Wait defaults checked. Timeout defaults to 15 and clamps
+  to 1–60. Run stays disabled unless `invokable` is 1 and the name is
+  `Group.Name`.
+- The request drops a top-level `params._hydrogen` and logs that strip.
+  The result pane still prints a `_hydrogen` key the script returns.
+  There is no run-as-role field and no cancel control.
+- `wait: false` polls `getScriptJob` at 250 ms, 500 ms, 1000 ms, then
+  2000 ms. A pending job keeps polling until the row changes, the
+  manager closes, or GET returns 404. Leaving the row stops painting
+  and does not kill the job. The spinner is `.scripting-run-spinner`
+  while the run or the poll is in flight.
+- HTTP 404 `script_not_found` paints status `not_runnable` and the
+  body “Not runnable”. GET 404 `job_not_found` paints status
+  `missing` and the body “Job not found”. The session line is
+  `[Scripting] Run ${script} status=${status} job_id=${jobId}`.
+- A synchronous invoke extends the POST past the 30s client cap:
+  `scriptClientTimeoutMs` is `(timeout_seconds + 5) * 1000` when wait
+  is on. Timeout 15 uses 20000 ms. Timeout 60 uses 65000 ms. Wait off
+  and the GET polls stay on the 30s default.
+- [`scripting-invoke.test.js`](/elements/003-lithium/tests/unit/managers/scripting-invoke.test.js)
+  passed 17 tests. `templates:copy` refreshed the public Scripting
+  HTML and CSS.
 
 **Lessons learned:**
+
+- `post()` ignored any timeout longer than 30 seconds. A wait-true
+  timeout of 31–60 would abort in the browser before Hydrogen
+  returned. The grace is 5 seconds on top of `timeout_seconds`.
+- `scriptInvokable` reads the field. Passing the whole row makes
+  `Number(object)` NaN, so Run stays disabled and `run()` returns
+  before the POST. The first suite run failed five tests for that.
+- HTTP 202 is `response.ok`. `wait: false` returns the pending
+  envelope. HTTP errors throw, and `extractError` attaches
+  `serverError` only when `success` is false.
+- A non-terminal status (`pending`, `running`) continues the poll.
+  Stop is a terminal status, GET 404, a row change, or close.
+- The params editor is session state. A detail merge only syncs the
+  button, so a late `invokable` flag does not abandon an in-flight run.
+  Selecting the same row id does not abandon it either.
+- Invalid JSON is painted in the pane and does not call the API.
+  There is no toast.
+
+**Handoff:**
+
+- Resume is the two unchecked manual lines. Sign in, open Scripting,
+  select `Api.Echo`, leave Wait on, and confirm the body and `job_id`
+  in the pane and the session log. Then turn Wait off and confirm the
+  spinner reaches a terminal status. Check those boxes and mark the
+  phase complete. Do not rebuild
+  [`scripting-invoke.js`](/elements/003-lithium/src/managers/scripting/scripting-invoke.js).
+  Do not open Phase 10 in that sitting unless both lines are green.
+- Apply [`acuranzo_1394.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1394.lua)
+  before Scripting reads Lookup 059 key 13. List 89 and search 90
+  stay on the constructor.
+- The live auth file still fails 10 cases with HTTP 503. Cert for
+  `lithium.philement.com` expired 2026-08-02.
+- Phase 10 still owns the preview summary, `lithiumSettings` fonts,
+  Ctrl+P `handlePrettify`, the optional meta tab, validate/luacheck,
+  run-as-role, and `LITHIUM-MGR-SCRIPT.md`. Profile footer Save,
+  Style `applyState`, and `this.app.user` stay open.
 
 ---
 
@@ -2701,11 +2938,11 @@ Defaults are L1–L18. Only reopen with a Phase 0 variance.
 | # | Question | Default |
 | --- | --------- | --------- |
 | 1 | JWT roles match rule | Integer `role_id`s → `roles.name` `staff`/`admin`. Phase 0b. |
-| 2 | Partner ids missing on Hydrogen | Hide until Phases 5a–5d |
+| 2 | Partner ids missing on Hydrogen | Hide until Phases 5a–5d. Those phases are deferred as of 2026-10-16. |
 | 3 | Chat mint C | Out of CATCHUP |
 | 4 | REST `auth_chat` / `auth_chats` UI | Parked unless user asks after Phase 25 |
 | 5 | `media_chunk` / store toggle | Parked |
-| 6 | Didit = OIDC or other | Phase 5a decides; else hidden |
+| 6 | Didit = OIDC or other | Phase 5a decides; else hidden. Phase 5a is deferred. |
 
 ---
 
@@ -2912,6 +3149,92 @@ silent (does not claim Vite cannot run). Logged; no DEV rewrite.
   Andrew checks the login page. No partner provider is live.
 - Follow-ups: Phase 5a. Ask whether Didit is OIDC before editing.
   Style Manager mockup still shows the four images.
+  Later the same day Andrew deferred 5a–5d and 6. See P7.
+
+### P7 — 2026-10-16 Scripts schema packet
+
+- What we did: Deferred Phases 5a, 5b, 5c, 5d, and 6. Audited the
+  script QueryRefs on disk and wrote Acuranzo 1389–1394. Did not
+  edit Lithium source. Later the same day Andrew reported 1389–1393
+  applied. 1394 was not in that report.
+- Column → QueryRef / tableDef:
+
+  | Column | 087 detail | 089 list | 090 search | 129 insert | 130 update | 131 delete | Lookup 059 key 13 |
+  | --- | --- | --- | --- | --- | --- | --- | --- |
+  | `group_name` | SELECT, `:GROUP_NAME` | SELECT | `:GROUP_NAME` optional | `:GROUP_NAME` | WHERE | WHERE | column, primary key |
+  | `script_name` | SELECT, `:SCRIPT_NAME` | SELECT | no | `:SCRIPT_NAME` | WHERE | WHERE | column, primary key |
+  | `script_type` | SELECT | SELECT | `:SCRIPT_TYPE` optional | `:SCRIPT_TYPE` | SET | no | lookup 061 |
+  | `schedule` | SELECT | SELECT | no | `:SCHEDULE` | SET | no | column |
+  | `next_run` | SELECT | SELECT | no | `:NEXT_RUN` | SET | no | hidden column |
+  | `last_run_start` | SELECT | SELECT | no | `:LAST_RUN_START` | SET | no | hidden column |
+  | `last_run_end` | SELECT | SELECT | no | `:LAST_RUN_END` | SET | no | hidden column |
+  | `status` | SELECT | SELECT | `:STATUS` optional | `:STATUS` | SET | no | lookup 062 |
+  | `code` | SELECT | omitted | omitted | `:CODE` | SET | no | hidden column |
+  | `summary` | SELECT | SELECT | no | `:SUMMARY` | SET | no | column |
+  | `invokable` | 1389 applied | 1390 applied | 1391 applied | `:INVOKABLE` in 1392, applied | `:INVOKABLE` in 1393, applied | no | integer column in 1394, not applied |
+  | audit fields | omitted | omitted | omitted | `${COMMON_FIELDS}` | `updated_at`, `:USERID` | no | omitted |
+
+- Delete 131 parameters are `GROUP_NAME` and `SCRIPT_NAME`. Not an
+  integer primary key.
+- Seeded `invokable = 1` (migration source, not a live query):
+  `Api.Echo` (1297), `Enroll.FreeCourse` (4013),
+  `Account.GetSettings` (4015), `Account.UpdatePrefs` (4016),
+  `Mail.Notices.CourseExpiration` (4018), `Enroll.SyncProgress`
+  (4021), `Account.MyCourses` (4022), `Stripe.EnsureCustomer`
+  (4025), `Stripe.SyncCustomer` (4027), `Stripe.Checkout` (4028),
+  `Stripe.Webhook` (4032), `Enroll.SyncEnrollments` (4036),
+  `Enroll.Archive` (4037), `Catalog.GetBySlug` (4052),
+  `Account.Orders` (4072).
+- Gate result: complete on Andrew's report that 1389–1393 are
+  applied. `luacheck` 0 warnings on the six files. `lua` compiled
+  each file. The agent did not see the apply, did not run `mkt` or
+  `mka`, and no migration test was named. The human-build exit line
+  stays open. 1394 stays unapplied.
+- Follow-ups: Phase 8 sends INTEGER `INVOKABLE` on 129 and 130.
+  Save and duplicate fail until then. Apply 1394 before Scripting
+  relies on Lookup 059 key 13. Regenerate the payload with `mka`
+  or `payload-generate.sh` if that step was skipped.
+
+### P8 — 2026-10-16 Scripting CRUD honesty
+
+- What we did: Save, update, and duplicate send INTEGER `INVOKABLE`
+  (0 unless the row is 1) and `USERID` from `app.auth.user`. Delete
+  confirms and calls QueryRef 131 with STRING `GROUP_NAME` and
+  `SCRIPT_NAME`. A dirty Scripting row switch asks to save or stay.
+  Rename of a persisted row is refused. New scripts prompt for group
+  and name. Footer and the payload builder left `scripting.js`.
+- Gate result: `wc -l scripting.js` is 616.
+  `scripting-save.test.js` passed 18. `npm test` was 1021 passed and
+  10 failed. The 10 are the live auth file (HTTP 503). Lint was 0
+  errors and 35 existing warnings. No browser pass. 1394 stays
+  unapplied. No new migration.
+- Follow-ups: Phase 9 invoke panel in `scripting-invoke.js`. Do not
+  grow `scripting.js` for it. `invokeScript` still has no manager
+  caller.
+
+### P9 — 2026-10-16 Invoke panel and async poll
+
+- What we did: Added the Scripting Run tab in `scripting-invoke.js`.
+  `scripting.js` only mounts it, shows it, syncs the button, and
+  destroys it. Wait defaults on. Timeout is 1–60, default 15. A
+  top-level `params._hydrogen` is removed before the POST. Poll
+  delays are 250, 500, 1000, then 2000 ms until a terminal status,
+  GET 404, a row change, or close. No cancel control. A wait-true
+  POST uses `timeout_seconds` plus 5 seconds so a 31–60 second
+  Hydrogen timeout is not cut by the 30s client cap.
+- Approved poll schedule: 250, 500, 1000, then 2000 ms. A pending job
+  keeps polling until the row changes or the manager closes.
+- Gate result: `scripting-invoke.test.js` passed 17.
+  `wc -l scripting.js` is 627. `scripting-invoke.js` is 546.
+  `npm test` was 1040 passed and 10 failed. The 10 are the live auth
+  file (HTTP 503). The chained `npm test && npm run lint` exited 1
+  at `npm test`. Lint, run separately, was 0 errors and 35 existing
+  warnings. `npm run lint:css` exited 0. `templates:copy` refreshed
+  the public Scripting HTML and CSS. The two manual `Api.Echo` lines
+  were not run. 1394 stays unapplied. No new migration. No product C.
+- Follow-ups: Sign in and run `Api.Echo` with Wait on, then Wait off.
+  Check those two exit lines before marking Phase 9 complete. Do not
+  rebuild the panel. Do not open Phase 10 unless both lines are green.
 
 ---
 
@@ -2928,3 +3251,7 @@ silent (does not claim Vite cannot run). Logged; no DEV rewrite.
 | 2026-10-16 | Phase 3 complete. Named HTML sinks escape text or sanitize markdown. Icon tokens become nodes. |
 | 2026-10-16 | Phase 4 complete. Shared confirm and prompt. Stub saves refuse. SunEditor omits a missing bearer. |
 | 2026-10-16 | Phase 5 complete. Partner buttons render from config or stay omitted. Checked-in login shows 500 Passwords only. |
+| 2026-10-16 | Phases 5a–5d and 6 deferred. Phase 7 packet 1389–1394 handed over, not applied. |
+| 2026-10-16 | Phase 7 complete. Andrew reported 1389–1393 applied. 1394 unapplied. Resume is Phase 8. |
+| 2026-10-16 | Phase 8 complete. Scripting save sends INTEGER `INVOKABLE`. Delete uses QueryRef 131. Resume is Phase 9. |
+| 2026-10-16 | Phase 9 in progress. Run tab is in `scripting-invoke.js`. Manual `Api.Echo` lines are still open. |

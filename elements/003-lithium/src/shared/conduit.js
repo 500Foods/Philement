@@ -165,6 +165,22 @@ export function extractError(response) {
 
 const SCRIPT_TIMEOUT_MIN = 1;
 const SCRIPT_TIMEOUT_MAX = 60;
+const SCRIPT_CLIENT_GRACE_SECONDS = 5;
+
+/**
+ * Browser wait for a synchronous invoke. Hydrogen holds the POST until
+ * timeout_seconds. The default client cap is 30s, so 31–60 would abort
+ * first. Five extra seconds lets the timeout status come back.
+ *
+ * @param {{ wait?: boolean, timeout_seconds?: number }} payload
+ * @returns {number|undefined}
+ */
+export function scriptClientTimeoutMs(payload) {
+  if (!payload || payload.wait === false) return undefined;
+  const seconds = payload.timeout_seconds;
+  if (!Number.isInteger(seconds)) return undefined;
+  return (seconds + SCRIPT_CLIENT_GRACE_SECONDS) * 1000;
+}
 
 /**
  * Build a POST body for /api/conduit/script.
@@ -341,13 +357,13 @@ export async function queries(api, queryList, database) {
  * @param {Object} [body]
  * @returns {Promise<Object>}
  */
-async function conduitEnvelope(api, method, path, body) {
+async function conduitEnvelope(api, method, path, body, timeoutMs) {
   const targetId = addTarget('triangle', 'rest');
   let response;
   try {
     response = method === 'get'
       ? await api.get(path)
-      : await api.post(path, body);
+      : await api.post(path, body, timeoutMs ? { timeoutMs } : undefined);
   } catch (httpError) {
     const serverErr = extractError(httpError?.data);
     if (serverErr) {
@@ -378,7 +394,7 @@ async function conduitEnvelope(api, method, path, body) {
  */
 export async function invokeScript(api, options = {}) {
   const payload = buildScriptPayload(options);
-  return conduitEnvelope(api, 'post', 'conduit/script', payload);
+  return conduitEnvelope(api, 'post', 'conduit/script', payload, scriptClientTimeoutMs(payload));
 }
 
 /**
@@ -406,6 +422,7 @@ export default {
   extractBatchRows,
   extractError,
   buildScriptPayload,
+  scriptClientTimeoutMs,
   // API wrappers
   authQuery,
   authQueries,

@@ -32,7 +32,7 @@ This directory contains the complete documentation for the Lithium PWA.
 | [LITHIUM-WEB.md](LITHIUM-WEB.md) | Deployment process |
 | [LITHIUM-CHANGELOG.md](LITHIUM-CHANGELOG.md) | Migration notes |
 | [AGENTS.md](/elements/003-lithium/AGENTS.md) | Agent / session map |
-| [CATCHUP.md](/elements/003-lithium/CATCHUP.md) | **Active plan** (Phases 0–38). Pause 2026-10-16: Phase 5a next |
+| [CATCHUP.md](/elements/003-lithium/CATCHUP.md) | **Active plan** (Phases 0–38). Pause 2026-10-16: Phase 9 in progress at the manual `Api.Echo` gate |
 | [plans/REPORTING_PLAN.md](/docs/Li/plans/REPORTING_PLAN.md) | Report writer — Phases 0–71. Phase 0 approved 2026-10-10. Next is Phase 1 |
 | [plans/LITHIUM_SPRINT.md](plans/LITHIUM_SPRINT.md) | Superseded sprint |
 | [TODO.md](TODO.md) | Backlog pointer |
