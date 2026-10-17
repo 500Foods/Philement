@@ -27,6 +27,7 @@
 # exercise_engine()
 
 # CHANGELOG
+# 1.0.3 - 2026-10-17 - Best-effort #158 before the cases, so a leftover table does not fail #156
 # 1.0.2 - 2026-10-14 - Firebird parameter-free UPDATE reports affected 0
 # 1.0.1 - 2026-10-14 - Sum statement affected counts; Yugabyte keeps staging after rollback
 # 1.0.0 - 2026-10-14 - Initial blackbox for QueryRefs 156, 157, and 158
@@ -38,7 +39,7 @@ TEST_NAME="QueryRef Transactions"
 TEST_ABBR="QRT"
 TEST_NUMBER="64"
 TEST_COUNTER=0
-TEST_VERSION="1.0.2"
+TEST_VERSION="1.0.3"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -268,10 +269,19 @@ exercise_engine() {
     local label_156="t64-${db_engine}-smoke"
     local label_ok="t64-${db_engine}-commit"
     local label_fail="t64-${db_engine}-rollback"
-    local params_156 params_ok params_fail
+    local params_156 params_ok params_fail preclean_payload
     params_156=$(jq -n --arg label "${label_156}" '{STRING: {RUN_LABEL: $label}}')
     params_ok=$(jq -n --arg label "${label_ok}" '{STRING: {RUN_LABEL: $label}, INTEGER: {SHOULD_FAIL: 0}}')
     params_fail=$(jq -n --arg label "${label_fail}" '{STRING: {RUN_LABEL: $label}, INTEGER: {SHOULD_FAIL: 1}}')
+
+    # DDL that commits on its own (YugabyteDB, and MySQL-family CREATE)
+    # can leave TEST_TRANSACTIONS behind when a run stops early. #158
+    # drops that table before it attempts TEST_TXN_STAGING, so one
+    # ignored call gives #156 an empty slate. A missing table is fine.
+    preclean_payload=$(txn_payload "${jwt_token}" "${database}" 158 '{}')
+    # shellcheck disable=SC2310 # HTTP 422 from a missing table is a clean slate, not a case failure
+    txn_http "${endpoint}" "${jwt_token}" "${preclean_payload}" \
+        "${result_file}.${db_engine}.preclean.json" >/dev/null || true
 
     # shellcheck disable=SC2310 # A failed case is recorded; later cases still run so #158 can clean up
     txn_case "${db_engine} #156 smoke" "${endpoint}" "${jwt_token}" "${database}" 156 \

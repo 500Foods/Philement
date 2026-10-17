@@ -7,6 +7,7 @@
 # generate_database_diagram()
 
 # CHANGELOG
+# 3.2.3 - 2026-10-17 - A migration with no diagram block yet is a skip, not a failure
 # 3.2.2 - 2026-10-16 - Include courses; a design with no migrations is not drawn
 # 3.2.1 - 2026-10-16 - Require the shared helium/database*.lua set before drawing
 # 3.2.0 - 2026-10-07 - Seven engines, in this order: postgresql, mysql, sqlite, db2, mariadb, firebird, mssql. A zero-byte SVG is generated again.
@@ -24,7 +25,7 @@ TEST_NAME="Database Diagrams"
 TEST_ABBR="ERD"
 TEST_NUMBER="71"
 TEST_COUNTER=0
-TEST_VERSION="3.2.2"
+TEST_VERSION="3.2.3"
 
 # shellcheck source=tests/lib/framework.sh # Reference framework directly
 [[ -n "${FRAMEWORK_GUARD:-}" ]] || source "$(dirname "${BASH_SOURCE[0]}")/lib/framework.sh"
@@ -161,9 +162,12 @@ generate_database_diagram() {
             echo "${metadata}" > "${metadata_file}"
         fi
 
-        # Determine failure reason from error output
+        # A lookup seed that precedes the first diagram block has nothing
+        # to draw. That is a skip. A later migration in the same design
+        # still draws once a diagram block exists.
         if echo "${error_output}" | grep -q "No diagram data"; then
-            echo "ERROR=No diagram data found in migration files"
+            echo "SKIPPED=No diagram data in migrations up to this number"
+            return 0
         elif [[ -n "${error_output}" ]]; then
             # Extract the last error line for cleaner output
             error_line=$(echo "${error_output}" | grep "^Error:" | tail -1 | sed 's/^Error: //')
@@ -216,7 +220,7 @@ run_diagram_generation_parallel() {
     local exit_code=$?
 
     if [[ ${exit_code} -eq 0 ]]; then
-        if [[ "${output}" == "SKIPPED=Diagram already exists" ]]; then
+        if [[ "${output}" == SKIPPED=* ]]; then
             echo "${output}" > "${result_file}"
         else
             echo "SUCCESS" > "${result_file}"
@@ -374,8 +378,8 @@ for design in "${DESIGNS[@]}"; do
 
                     if [[ -f "${result_file}" ]]; then
                         result_content=$(cat "${result_file}")
-                        if [[ "${result_content}" == "SKIPPED=Diagram already exists" ]]; then
-                            # Skip all output for existing diagrams
+                        if [[ "${result_content}" == SKIPPED=* ]]; then
+                            # Existing SVG, or a migration that has no diagram block yet.
                             SUCCESSFUL_GENERATIONS=$((SUCCESSFUL_GENERATIONS + 1))
                             continue
                         fi

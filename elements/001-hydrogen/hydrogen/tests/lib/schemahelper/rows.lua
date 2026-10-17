@@ -1,6 +1,7 @@
 -- Phase 9: keyed default rows. This fixture does not execute SQL.
 -- Net migration rows are keys 1 and 2. Key 3 was deleted. Key 9 is
 -- a live person no migration names, so it stays out of the queue.
+-- Unkeyed DML is counted and stays off the review queue. Apply refuses it.
 
 require('schemahelper_test_env')
 local apply = require('schemahelper_apply')
@@ -119,20 +120,24 @@ write_all(tmp .. '/rows_findings.json',
     rows.encode_findings(findings, counts) .. '\n')
 
 local built = queue.build({ out_dir = tmp, track = 'catalog' })
-must_eq('queue size', #built.subject, 4)
+must_eq('queue size', #built.subject, 3)
+must_eq('unkeyed held back', built.totals.unkeyed, 1)
 
-local function take(id)
-    local found = queue.find_finding(built.subject, id)
+local function take(list, id)
+    local found = queue.find_finding(list, id)
     if not found then
         die('missing queue id ' .. id)
     end
     return found
 end
 
-local missing = take('row:contacts:1:row_missing')
-local diff = take('row:contacts:2:row_diff')
-local present = take('row:contacts:3:row_present')
-local unkeyed = take('row:contacts:unkeyed:2100:1')
+local missing = take(built.subject, 'row:contacts:1:row_missing')
+local diff = take(built.subject, 'row:contacts:2:row_diff')
+local present = take(built.subject, 'row:contacts:3:row_present')
+local unkeyed = take(built.findings, 'row:contacts:unkeyed:2100:1')
+if queue.find_finding(built.subject, unkeyed.id) then
+    die('unkeyed entered the review queue')
+end
 
 must_find('cafe survived json', missing.expected, cafe)
 must_absent('queue expected', missing.expected, 'Zoe')
