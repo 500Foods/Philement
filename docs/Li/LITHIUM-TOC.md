@@ -40,7 +40,7 @@ URL in `config/lithium.json`). For most code edits prefer `npm test` and
 | [LITHIUM-FAQ.md](LITHIUM-FAQ.md) | Common issues, troubleshooting, lessons learned |
 | [../elements/003-lithium/AGENTS.md](/elements/003-lithium/AGENTS.md) | **Agent map** — stack, IDs, Hydrogen/Helium/Keycloak, known defects |
 | [TODO.md](TODO.md) | Active backlog pointer |
-| [CATCHUP.md](/elements/003-lithium/CATCHUP.md) | **Active plan** — Phases 0–38. Pause 2026-10-22: Phase 9 complete. Next is Phase 10. Phases 5a–5d and 6 stay deferred |
+| [CATCHUP.md](/elements/003-lithium/CATCHUP.md) | **Active plan** — Phases 0–38. Pause 2026-10-22: Phases 9 and 10 complete. Phase 11 is next. The meta tab was declined. Phases 5a–5d and 6 stay deferred |
 | [plans/REPORTING_PLAN.md](/docs/Li/plans/REPORTING_PLAN.md) | Report writer — Phases 0–71. Phase 0 approved 2026-10-10. Next is Phase 1 |
 | [plans/LITHIUM_SPRINT.md](plans/LITHIUM_SPRINT.md) | Superseded sprint (do not implement) |
 
@@ -67,6 +67,7 @@ URL in `config/lithium.json`). For most code edits prefer `npm test` and
 | [LITHIUM-MGR-TOUR.md](LITHIUM-MGR-TOUR.md) | Tour Manager — Shepherd.js guided tours (Lookup #43) |
 | [LITHIUM-MGR-VERSION.md](LITHIUM-MGR-VERSION.md) | Version Manager — history browser (Lookups 44/45) |
 | [LITHIUM-MGR-SESSION.md](LITHIUM-MGR-SESSION.md) | Session Log Manager — debug output viewer |
+| [LITHIUM-MGR-SCRIPT.md](LITHIUM-MGR-SCRIPT.md) | Scripting Manager — Lua editor, summary preview, Run |
 | [LITHIUM-MGR-USERPROFILE.md](LITHIUM-MGR-USERPROFILE.md) | User Profile Manager — preferences |
 
 ### LithiumTable (Tabulator-Based Tables)

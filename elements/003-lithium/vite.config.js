@@ -48,6 +48,11 @@ export default defineConfig(({ mode }) => {
           manualChunks(id) {
             // Handle node_modules libraries
             if (id.includes('node_modules')) {
+              // StyLua's wasm is about 3.5 MB. Its own chunk stays off
+              // the first load; Ctrl+P imports it.
+              if (id.includes('@johnnymorganz/stylua') || id.includes('stylua_lib')) {
+                return 'vendor-stylua';
+              }
               // Keep heavy libraries in separate chunks
               if (id.includes('tabulator')) return 'vendor-tabulator';
               if (id.includes('codemirror')) return 'vendor-codemirror';

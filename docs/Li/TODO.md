@@ -21,11 +21,11 @@ partners, Scripting invoke, Course Manager, or chat/MCP.
 | | |
 | --- | --- |
 | **Plan** | [CATCHUP.md](/elements/003-lithium/CATCHUP.md) |
-| **Next** | Phase 10 — Scripting UX, tests, docs. Discuss and approve before editing |
+| **Next** | Phase 11. Discuss it and wait. Phase 10 closed 2026-10-22. The meta tab was declined |
 | **First deploy** | Band D — Course Manager (ID 34) |
 | **Effort** | XL (gated phases 0, 0a, 0b, 0c, 1–38, 5a–5d) |
-| **Done** | Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, and 9 complete (Phase 9 closed 2026-10-22 on Andrew's `Api.Echo` runs). 5a–5d and 6 deferred. 1389–1393 reported applied. 500 Courses Lookup 059 key 13 is `scripts/script-manager` |
-| **Remaining** | Phases 10–38. Band B (5a–5d, 6) when Andrew pulls it back |
+| **Done** | Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, and 10 complete (Phase 10 closed 2026-10-22). 5a–5d and 6 deferred. 1389–1393 reported applied. 1395 and 1396 applied. 500 Courses Lookup 059 key 13 is `scripts/script-manager` |
+| **Remaining** | Phases 11–38. Band B (5a–5d, 6) when Andrew pulls it back |
 | **Superseded** | [LITHIUM_SPRINT.md](/docs/Li/plans/LITHIUM_SPRINT.md) |
 
 ## P2 — Report writer (do not start)

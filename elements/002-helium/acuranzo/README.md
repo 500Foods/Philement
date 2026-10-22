@@ -352,4 +352,6 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1392](/elements/002-helium/acuranzo/migrations/acuranzo_1392.lua) | queries | 1.0.0 | 2026-10-16 | 4 | ✗ | QueryRef #129 add invokable to Insert Script |
 | [1393](/elements/002-helium/acuranzo/migrations/acuranzo_1393.lua) | queries | 1.0.0 | 2026-10-16 | 4 | ✗ | QueryRef #130 add invokable to Update Script |
 | [1394](/elements/002-helium/acuranzo/migrations/acuranzo_1394.lua) | lookups | 1.0.0 | 2026-10-16 | 4 | ✗ | Lookup 059 key 13 scripts/script-manager tableDef |
-| **319** | | | | **1684** | **319** | |
+| [1395](/elements/002-helium/acuranzo/migrations/acuranzo_1395.lua) | queries | 1.0.0 | 2026-10-22 | 4 | ✗ | QueryRef #130 store a blank schedule and blank run times as NULL |
+| [1396](/elements/002-helium/acuranzo/migrations/acuranzo_1396.lua) | queries | 1.0.0 | 2026-10-22 | 4 | ✗ | QueryRef #129 store a blank schedule and blank run times as NULL |
+| **321** | | | | **1692** | **321** | |

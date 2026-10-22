@@ -7,21 +7,31 @@ conflicts. Active plan:
 [`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md)
 (supersedes
 [`/docs/Li/plans/LITHIUM_SPRINT.md`](/docs/Li/plans/LITHIUM_SPRINT.md)).
-Pause point 2026-10-22: Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, and 9 are complete.
+Pause point 2026-10-22: Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, and 11 are complete.
 Phases 5a–5d and 6 stay deferred. Andrew reported Acuranzo 1389–1393 applied.
-Scripting save, update, and duplicate send INTEGER `INVOKABLE`. Delete uses
+Scripting save, update, and duplicate send INTEGER `SCRIPT_TYPE`,
+`STATUS`, `USERID`, and `INVOKABLE`. A blank schedule or run time is
+`''`. Andrew applied `acuranzo_1395.lua` (QueryRef 130) and
+`acuranzo_1396.lua` (QueryRef 129) and confirmed pretty-print then
+save. Delete uses
 QueryRef 131. On the 500 Courses Lithium database, Lookup 059 key 13 is
 `scripts/script-manager`. Andrew confirmed `Api.Echo` on
 `https://lithium.500courses.com`: Wait on `BBTDC`, Wait off `CCCRP`, both
-completed. Next is Phase 10. Discuss it and wait for approval before
-editing. He does deploys and login checks. Do not apply migrations. The report writer (manager 24,
+completed. Phase 10 is complete. He confirmed the tulip button,
+Ctrl+P (`@johnnymorganz/stylua` 2.6.0 defaults), pretty-print then
+save, the Preview tab (summary, then Lua), and that 9px survives a
+reload. He declined the optional meta tab. It does not move
+forward. Phase 11 is complete: CodeMirror 6 is the only stack, Lua
+folds statement blocks, and `H.` names use the namespace tag. Next
+is Phase 12 (Course Manager scaffold). Discuss it and wait for
+approval. He does deploys and login checks. Do not apply migrations. The report writer (manager 24,
 [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md),
 Phases 0–71, Phase 0 approved 2026-10-10) stays parked. Its next
 phase is Phase 1, and only after Andrew pulls that plan in. PDF is
 the default export there. Phased work follows
 [`/docs/PLANNING.md`](/docs/PLANNING.md).
 
-**Last reviewed:** 2026-10-22 (CATCHUP Phase 9 complete. Andrew confirmed both `Api.Echo` runs. Next is Phase 10, after its questions. Phases 5a–5d and 6 stay deferred.)
+**Last reviewed:** 2026-10-22 (CATCHUP Phase 11 complete. CodeMirror 6 is the only stack. Lua folds statement blocks and tints `H.` names. Next is Phase 12. Phases 5a–5d and 6 stay deferred.)
 
 ---
 
@@ -398,16 +408,21 @@ Partner buttons (Didit, Apple, Google, Microsoft) render from
 
 ## Scripting Manager (ID 33) — current state
 
-Path: `src/managers/scripting/` (`scripting.js` 627 lines,
-`scripting-invoke.js` 546 lines, `scripting-save.js`,
-`scripting-footer.js`, `scripting-editors.js`, html, css).
+Path: `src/managers/scripting/` (`scripting.js` 649 lines,
+`scripting-invoke.js` 546, `scripting-save.js` 495,
+`scripting-editors.js` 415, `scripting-footer.js` 333,
+`scripting-format.js` 91, `scripting-font.js` 161,
+`scripting-preview.js` 48, html, css).
 
 **Works:** LithiumTable of `scripts`, row select → detail QueryRef, CodeMirror
 Lua tab, preview tab, Run tab, font popup, undo/redo/fold, edit helper,
 audit footer, splitter. List (089), search (090), and detail (087) return
 `invokable` after Acuranzo 1389–1391 (Andrew reported those applied
-2026-10-16). Save and update (129/130) send INTEGER `INVOKABLE` and
-`USERID`. Duplicate copies that flag and append ` (Copy)`. Delete
+2026-10-16). Save and update (129/130) send INTEGER `SCRIPT_TYPE`,
+`STATUS`, `USERID`, and `INVOKABLE`. A blank schedule or run time is
+`''`. Andrew applied Acuranzo 1395 and 1396, which store that blank
+as SQL NULL, and confirmed pretty-print then save. Duplicate copies the invokable flag, clears the three
+run times, and appends ` (Copy)`. Delete
 confirms and calls QueryRef 131 with STRING `GROUP_NAME` and
 `SCRIPT_NAME`. A dirty row switch asks to save or stay. Rename of a
 saved script is refused. New scripts prompt for group and name.
@@ -420,16 +435,44 @@ then 2000 ms). Payload tests are
 `Api.Echo` on `https://lithium.500courses.com` (Wait on `BBTDC`,
 Wait off `CCCRP`, both completed). A database whose
 queries 87 and 89 omit `invokable` keeps Run disabled. The Lua
-highlighter accepts long brackets (`src/core/codemirror.js`,
-2026-10-17). That fix is in the tree; confirm the deployed bundle
-before retesting scripts that use `[[`.
+highlighter lives in `src/core/lua-mode.js`. It accepts long
+brackets (2026-10-17). Phase 11 (2026-10-22) folds `function`,
+`if`, `do`, `for`, and `while` through `end`, and `repeat` through
+`until`. `H.` and `H.name` use the namespace tag. Confirm the
+deployed bundle before retesting scripts that use `[[`.
 
-**Missing (CATCHUP Phase 10).** On the 500 Courses database, Lookup
-059 key 13 is `scripts/script-manager`.
+Ctrl+P and the tulip button (`#scripting-prettify-btn`, right side of
+the Lua toolbar) call `EditorManager.handlePrettify`. It formats with
+`@johnnymorganz/stylua` 2.6.0 defaults (tabs, width 4, column 120,
+Unix LF). The button is disabled on Preview and Run. The wasm loads
+on the first format. A parse error toasts and leaves the buffer.
+Lua 5.5 `global` does not parse. Andrew confirmed the button and
+Ctrl+P on 2026-10-22.
+Tests: `tests/unit/managers/scripting-format.test.js`.
 
-- `invokable` column visibility / edit
-- Validate/luacheck, run-as-role
-- `LITHIUM-MGR-SCRIPT.md`
+The Preview tab renders `currentScript.summary` as sanitized
+markdown, then the Lua source as plain text (`scripting-preview.js`).
+A blank summary shows "No summary to preview." A blank buffer shows
+"No script content to preview." The editor buffer wins over the row. Font size, family,
+and weight go through `window.lithiumSettings` at `33.font.<tab>`
+(`get`, `set`, and `removeSection`, one dotted path). The font
+button is enabled on Lua and Preview, and disabled on Run. An older
+`lithium_scripting_font_*` value is copied once and then removed.
+Save calls `flush()` so the account-settings update does not wait
+two seconds. A reload that still has the previous server copy reads
+`lithium_preferences`.
+Doc: [`/docs/Li/LITHIUM-MGR-SCRIPT.md`](/docs/Li/LITHIUM-MGR-SCRIPT.md).
+Tests: `scripting-preview.test.js` and `scripting-font.test.js`.
+Andrew confirmed the Preview tab, the font popup, and that 9px
+survives a reload on 2026-10-22.
+
+**Left after Phase 11.** Andrew declined the optional meta tab
+(invokable, schedule, last run) on 2026-10-22. On the 500 Courses
+database, Lookup 059 key 13 is `scripts/script-manager`.
+
+- `invokable` column visibility / edit. Not started.
+- Validate/luacheck and run-as-role. Not started. The editor footer
+  still shows zero errors.
 
 `USERID` reads `this.app.auth.user` (CATCHUP Phase 4, 2026-10-16). A missing
 id is still `0`. `this.app.user` is still unset on `LithiumApp`.

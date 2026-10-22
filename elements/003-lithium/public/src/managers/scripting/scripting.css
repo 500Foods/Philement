@@ -144,17 +144,84 @@
 }
 
 .scripting-preview-content {
-  margin: 16px;
-  padding: 16px;
-  background: var(--bg-secondary, #1E1E2E);
-  border: 1px solid var(--border-color, #313244);
-  border-radius: 8px;
-  font-family: var(--font-mono, monospace);
-  font-size: 14px;
-  line-height: 1.5;
-  color: var(--text-primary, #CDD6F4);
-  white-space: pre-wrap;
-  word-break: break-all;
+  padding: var(--space-4);
+  color: var(--text-primary);
+  line-height: 1.6;
   overflow: auto;
   flex: 1;
+}
+
+.scripting-preview-label {
+  margin: 0 0 var(--space-2);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+  font-weight: 600;
+}
+
+.scripting-preview-label + .scripting-preview-label,
+.scripting-preview-summary + .scripting-preview-label,
+.scripting-preview-content > .text-muted + .scripting-preview-label {
+  margin-top: var(--space-4);
+}
+
+.scripting-preview-lua {
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: inherit;
+}
+
+.scripting-preview-content h1,
+.scripting-preview-content h2,
+.scripting-preview-content h3,
+.scripting-preview-content h4,
+.scripting-preview-content h5,
+.scripting-preview-content h6 {
+  margin-top: var(--space-4);
+  margin-bottom: var(--space-2);
+  color: var(--text-primary);
+}
+
+.scripting-preview-content h1 { font-size: var(--font-size-2xl); }
+.scripting-preview-content h2 { font-size: var(--font-size-xl); }
+.scripting-preview-content h3 { font-size: var(--font-size-lg); }
+
+.scripting-preview-content p {
+  margin-bottom: var(--space-3);
+}
+
+.scripting-preview-content code {
+  background: var(--bg-tertiary);
+  padding: 2px 6px;
+  border-radius: var(--border-radius-sm);
+  font-family: var(--font-mono);
+  font-size: var(--font-size-sm);
+}
+
+.scripting-preview-content pre {
+  background: var(--bg-secondary);
+  padding: var(--space-3);
+  border-radius: var(--border-radius-md);
+  overflow-x: auto;
+}
+
+.scripting-preview-content pre code {
+  background: none;
+  padding: 0;
+}
+
+.scripting-preview-content ul,
+.scripting-preview-content ol {
+  margin-bottom: var(--space-3);
+  padding-left: var(--space-5);
+}
+
+.scripting-preview-content li {
+  margin-bottom: var(--space-1);
+}
+
+.scripting-preview-content blockquote {
+  border-left: 4px solid var(--accent-primary);
+  margin: var(--space-3) 0;
+  padding-left: var(--space-3);
+  color: var(--text-secondary);
 }

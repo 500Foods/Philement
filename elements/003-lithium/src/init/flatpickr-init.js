@@ -16,19 +16,7 @@ class FlatpickrInit {
       minDate: null,
       maxDate: null,
       defaultDate: null,
-      locale: "default",
-      onChange: (selectedDates, dateStr, instance) => {
-        // console.log('Flatpickr date changed:', dateStr);
-      },
-      onOpen: (selectedDates, dateStr, instance) => {
-        // console.log('Flatpickr opened');
-      },
-      onClose: (selectedDates, dateStr, instance) => {
-        // console.log('Flatpickr closed');
-      },
-      onReady: (selectedDates, dateStr, instance) => {
-        // console.log('Flatpickr ready');
-      }
+      locale: "default"
     };
   }
 
@@ -87,7 +75,7 @@ class FlatpickrInit {
    * Destroy all Flatpickr instances
    */
   destroyAllInstances() {
-    this.instances.forEach((instance, elementId) => {
+    this.instances.forEach((instance) => {
       instance.destroy();
     });
     this.instances.clear();

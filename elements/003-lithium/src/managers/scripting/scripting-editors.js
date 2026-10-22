@@ -6,6 +6,9 @@
  */
 
 import { log, Subsystems, Status } from '../../core/log.js';
+import { toast } from '../../shared/toast.js';
+import { formatErrorMessage, formatLuaSource, formatWithStyLua } from './scripting-format.js';
+import { buildScriptSummaryHtml, scriptPreviewLua } from './scripting-preview.js';
 import {
   EditorState,
   EditorView,
@@ -187,24 +190,108 @@ export class EditorManager {
     if (this.luaEditor) unfoldAllInEditor(this.luaEditor);
   }
 
+  /**
+   * Format the Lua buffer. Enters edit mode when a row is selected,
+   * replaces the whole document so undo can restore it, and leaves
+   * the buffer unchanged when formatting fails.
+   *
+   * @param {(source: string) => string | Promise<string>} [formatFn]
+   */
+  async handlePrettify(formatFn = formatWithStyLua) {
+    if (!this.luaEditor || this._prettifyBusy) return;
+    this._prettifyBusy = true;
+    try {
+      const table = this.manager.scriptTable;
+      if (table && !table.isEditing) {
+        const selected = table.table?.getSelectedRows?.() || [];
+        if (selected.length === 0) {
+          log(Subsystems.MANAGER, Status.WARN, '[Scripting] Lua format skipped: no script selected');
+          toast.warning('Select a script before formatting', {
+            subsystem: 'Scripting',
+            duration: 4000,
+          });
+          return;
+        }
+        await table.enterEditMode(selected[0]);
+      }
+      if (!this.luaEditor) return;
+
+      const currentContent = this.luaEditor.state.doc.toString();
+      const result = await formatLuaSource(currentContent, formatFn);
+      if (!this.luaEditor) return;
+      if (this.luaEditor.state.doc.toString() !== currentContent) return;
+
+      if (!result.ok) {
+        this._reportFormatFailure(result.message);
+        return;
+      }
+      if (result.empty || !result.changed) return;
+
+      this.luaEditor.dispatch({
+        changes: {
+          from: 0,
+          to: this.luaEditor.state.doc.length,
+          insert: result.text,
+        },
+      });
+      log(Subsystems.MANAGER, Status.INFO, '[Scripting] Lua formatted');
+    } catch (error) {
+      this._reportFormatFailure(formatErrorMessage(error));
+    } finally {
+      this._prettifyBusy = false;
+    }
+  }
+
+  _reportFormatFailure(message) {
+    const description = message || 'Unknown formatting error';
+    log(Subsystems.MANAGER, Status.ERROR, `[Scripting] Lua format failed: ${description}`);
+    toast.error('Lua Format Failed', {
+      description,
+      subsystem: 'Scripting',
+      duration: 8000,
+    });
+  }
+
   _setContentNoHistory(view, content) {
     setEditorContentNoHistory(view, content);
   }
 
-  async renderLuaPreview() {
+  async renderSummaryPreview() {
     const container = this.manager.elements.previewContainer;
     if (!container) return;
 
-    const luaContent = this.luaEditor?.state.doc.toString()
-      || this.manager._pendingLuaContent
-      || '';
+    const summary = this.manager.currentScript?.summary ?? '';
+    const built = await buildScriptSummaryHtml(summary);
+    const lua = scriptPreviewLua({
+      editorText: this.luaEditor ? this.luaEditor.state.doc.toString() : null,
+      pending: this.manager._pendingLuaContent,
+      code: this.manager.currentScript?.code,
+    });
 
-    if (!luaContent.trim()) {
-      container.innerHTML = '<p class="text-muted">No script content to preview.</p>';
-      return;
+    const preview = document.createElement('div');
+    preview.className = 'scripting-preview-content';
+    preview.append(previewLabel('Summary'));
+
+    if (built.empty) {
+      preview.append(previewNote('No summary to preview.'));
+    } else if (built.failed) {
+      log(Subsystems.MANAGER, Status.ERROR, `[Scripting] Summary preview failed: ${built.message}`);
+      toast.error('Summary preview failed', {
+        description: built.message || 'Unknown preview error',
+        subsystem: 'Scripting',
+        duration: 8000,
+      });
+      preview.append(previewNote('Summary preview failed.'));
+    } else {
+      const summaryNode = document.createElement('div');
+      summaryNode.className = 'scripting-preview-summary';
+      summaryNode.innerHTML = built.html;
+      preview.append(summaryNode);
     }
 
-    container.innerHTML = `<pre class="scripting-preview-content">${escapeHtml(luaContent)}</pre>`;
+    preview.append(previewLabel('Lua'));
+    preview.append(previewLua(lua));
+    container.replaceChildren(preview);
   }
 
   applyFontSettings(settings) {
@@ -292,10 +379,30 @@ export class EditorManager {
   }
 }
 
-function escapeHtml(text) {
-  const div = document.createElement('div');
-  div.textContent = text;
-  return div.innerHTML;
+function previewLabel(text) {
+  const label = document.createElement('p');
+  label.className = 'scripting-preview-label';
+  label.textContent = text;
+  return label;
+}
+
+function previewNote(message) {
+  const note = document.createElement('p');
+  note.className = 'text-muted';
+  note.textContent = message;
+  return note;
+}
+
+function previewLua(source) {
+  const block = document.createElement('pre');
+  block.className = 'scripting-preview-lua';
+  if (!String(source).trim()) {
+    block.classList.add('text-muted');
+    block.textContent = 'No script content to preview.';
+    return block;
+  }
+  block.textContent = source;
+  return block;
 }
 
 function destroyCodeMirrorScrollbars(_view) {

@@ -80,7 +80,7 @@ class PrismInit {
       }
 
       if (mergedOptions.copyButton) {
-        this.addCopyButton(element, elementId);
+        this.addCopyButton(element);
       }
 
       if (mergedOptions.downloadButton) {
@@ -126,9 +126,8 @@ class PrismInit {
   /**
    * Add copy button to a code block
    * @param {HTMLElement} element - The code element
-   * @param {string} elementId - The element ID
    */
-  addCopyButton(element, elementId) {
+  addCopyButton(element) {
     const copyButton = document.createElement('button');
     copyButton.className = 'prism-copy-btn btn btn-sm btn-outline-secondary';
     copyButton.dataset.tooltip = 'Copy to clipboard';

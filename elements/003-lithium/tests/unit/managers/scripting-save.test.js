@@ -68,15 +68,18 @@ describe('resolveScriptSave', () => {
 
     expect(save.queryRef).toBe(SCRIPT_UPDATE_QUERY_REF);
     expect(save.isInsert).toBe(false);
-    expect(save.params.INTEGER).toEqual({ USERID: 9, INVOKABLE: 1 });
+    expect(save.params.INTEGER).toEqual({
+      SCRIPT_TYPE: 2,
+      STATUS: 3,
+      USERID: 9,
+      INVOKABLE: 1,
+    });
     expect(save.params.STRING.GROUP_NAME).toBe('Api');
     expect(save.params.STRING.SCRIPT_NAME).toBe('Echo');
     expect(save.params.STRING.CODE).toBe('return true');
     expect(save.params.STRING.SUMMARY).toBe('Edited');
-    expect(save.params.STRING.SCRIPT_TYPE).toBe(2);
-    expect(save.params.STRING.STATUS).toBe(3);
-    expect(save.params.INTEGER.SCRIPT_TYPE).toBeUndefined();
-    expect(save.params.INTEGER.STATUS).toBeUndefined();
+    expect(save.params.STRING.SCRIPT_TYPE).toBeUndefined();
+    expect(save.params.STRING.STATUS).toBeUndefined();
   });
 
   it('sends INVOKABLE 0 when the persisted row has none', () => {
@@ -109,9 +112,16 @@ describe('resolveScriptSave', () => {
     expect(save.queryRef).toBe(SCRIPT_INSERT_QUERY_REF);
     expect(save.isInsert).toBe(true);
     expect(save.rowId).toBe('Staff::NewOne');
-    expect(save.params.INTEGER).toEqual({ USERID: 4, INVOKABLE: 0 });
+    expect(save.params.INTEGER).toEqual({
+      SCRIPT_TYPE: 1,
+      STATUS: 1,
+      USERID: 4,
+      INVOKABLE: 0,
+    });
     expect(save.params.STRING.GROUP_NAME).toBe('Staff');
     expect(save.params.STRING.SCRIPT_NAME).toBe('NewOne');
+    expect(save.params.STRING.SCHEDULE).toBe('');
+    expect(save.params.STRING.NEXT_RUN).toBe('');
   });
 
   it('refuses a rename of a persisted row', () => {
@@ -146,6 +156,34 @@ describe('buildScriptSaveParams', () => {
     expect(params.STRING.NEXT_RUN).toBe(existing.next_run);
     expect(params.STRING.LAST_RUN_START).toBe(existing.last_run_start);
     expect(params.STRING.SCHEDULE).toBe(existing.schedule);
+    expect(params.INTEGER.SCRIPT_TYPE).toBe(2);
+    expect(params.INTEGER.STATUS).toBe(3);
+  });
+
+  it('sends empty strings when the schedule and run times are blank', () => {
+    const params = buildScriptSaveParams({
+      row: {
+        schedule: null,
+        next_run: null,
+        last_run_start: null,
+        last_run_end: null,
+        summary: null,
+      },
+      groupName: 'Api',
+      scriptName: 'Echo',
+      code: 'return 1',
+      userId: 1,
+    });
+
+    expect(params.STRING.SCHEDULE).toBe('');
+    expect(params.STRING.NEXT_RUN).toBe('');
+    expect(params.STRING.LAST_RUN_START).toBe('');
+    expect(params.STRING.LAST_RUN_END).toBe('');
+    expect(params.STRING.SUMMARY).toBe('');
+    expect(params.INTEGER.SCRIPT_TYPE).toBe(1);
+    expect(params.INTEGER.STATUS).toBe(1);
+    expect(params.STRING.SCRIPT_TYPE).toBeUndefined();
+    expect(params.STRING.STATUS).toBeUndefined();
   });
 });
 
@@ -158,11 +196,16 @@ describe('buildScriptDuplicateParams', () => {
     expect(duplicate.params.STRING.GROUP_NAME).toBe('Api');
     expect(duplicate.params.STRING.SCRIPT_NAME).toBe('Echo (Copy)');
     expect(duplicate.params.STRING.CODE).toBe('return params');
-    expect(duplicate.params.STRING.NEXT_RUN).toBeNull();
-    expect(duplicate.params.STRING.LAST_RUN_START).toBeNull();
-    expect(duplicate.params.STRING.LAST_RUN_END).toBeNull();
+    expect(duplicate.params.STRING.NEXT_RUN).toBe('');
+    expect(duplicate.params.STRING.LAST_RUN_START).toBe('');
+    expect(duplicate.params.STRING.LAST_RUN_END).toBe('');
     expect(duplicate.params.STRING.SCHEDULE).toBe(existing.schedule);
-    expect(duplicate.params.INTEGER).toEqual({ USERID: 11, INVOKABLE: 1 });
+    expect(duplicate.params.INTEGER).toEqual({
+      SCRIPT_TYPE: 2,
+      STATUS: 3,
+      USERID: 11,
+      INVOKABLE: 1,
+    });
   });
 
   it('copies INVOKABLE 0 when the source has none', () => {

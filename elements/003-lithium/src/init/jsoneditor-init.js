@@ -243,7 +243,7 @@ class JSONEditorInit {
     if (content.text !== undefined) {
       try {
         return JSON.parse(content.text);
-      } catch (e) {
+      } catch {
         return null;
       }
     }

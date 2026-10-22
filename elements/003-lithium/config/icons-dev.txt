@@ -167,10 +167,7 @@
 <fa fa-water></fa>
 <fa fa-wrench></fa>
 <fa fa-xmark></fa>
-<i class="fa-brands fa-css3"></i>
 <i class="fa-brands fa-github"></i>
-<i class="fa-brands fa-html5"></i>
-<i class="fa-brands fa-js"></i>
 <i class="fa-brands fa-markdown"></i>
 <i class="fa-duotone fa-thin fa-grip-dots-vertical"></i>
 <i class="fa-kit-duotone fa-crimson"></i>

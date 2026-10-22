@@ -628,7 +628,7 @@ numeric 5 (collides with Crimson tours).
 | 25 | Role | `role-manager/` | Placeholder until Band G |
 | 29 | Queries | `queries/` | Canonical LithiumTable consumer |
 | 32 | Terminal | `terminal/` | Menu 32. Utility key `terminal` **without** numeric 5. |
-| 33 | Scripting | `scripting/` | In `manager-loader.js`; **added to Lookup 042 in migration 1378** |
+| 33 | Scripting | `scripting/` | [LITHIUM-MGR-SCRIPT.md](LITHIUM-MGR-SCRIPT.md). Lookup 042 key 33 is migration 1378 |
 | **34** | **Course Manager** | `course-manager/` | **First deploy.** Placeholder (Phase 0a). Calls QueryRef **155**. `cleanup()`. Band D is the real UI. |
 | **35** | **Course Builder** | `course-builder/` | Placeholder (Phase 0a). `teardown()`. Band E is the real UI. |
 

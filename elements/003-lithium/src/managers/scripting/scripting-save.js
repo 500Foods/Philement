@@ -1,8 +1,11 @@
 /**
  * Scripting save, duplicate, and delete payloads.
  *
- * QueryRefs 129 and 130 require INTEGER INVOKABLE. QueryRef 131 deletes
- * by GROUP_NAME and SCRIPT_NAME. Rename of an existing row is refused.
+ * QueryRefs 129 and 130 require INTEGER SCRIPT_TYPE, STATUS, USERID,
+ * and INVOKABLE. A blank schedule or run time is an empty string.
+ * Acuranzo 1395 and 1396 store that blank as SQL NULL. QueryRef 131
+ * deletes by GROUP_NAME and SCRIPT_NAME. Rename of an existing row
+ * is refused.
  */
 
 import { authQuery } from '../../shared/conduit.js';
@@ -34,6 +37,19 @@ function scriptError(error, message) {
  */
 export function scriptInvokable(value) {
   return Number(value) === 1 ? 1 : 0;
+}
+
+/**
+ * Lookup integers stay integers. A missing value uses the fallback.
+ *
+ * @param {unknown} value
+ * @param {number} fallback
+ * @returns {number}
+ */
+function scriptInteger(value, fallback) {
+  if (value == null || value === '') return fallback;
+  const n = Number(value);
+  return Number.isInteger(n) ? n : fallback;
 }
 
 /**
@@ -91,7 +107,7 @@ export async function confirmDirtyRowSwitch(row, confirm, save) {
  * @param {string} [args.code]
  * @param {number} [args.userId]
  * @param {boolean} [args.clearRuns]
- * @returns {{ STRING: object, INTEGER: { USERID: number, INVOKABLE: 0|1 } }}
+ * @returns {{ STRING: object, INTEGER: { SCRIPT_TYPE: number, STATUS: number, USERID: number, INVOKABLE: 0|1 } }}
  */
 export function buildScriptSaveParams({
   row,
@@ -105,16 +121,16 @@ export function buildScriptSaveParams({
     STRING: {
       GROUP_NAME: groupName,
       SCRIPT_NAME: scriptName,
-      SCRIPT_TYPE: row?.script_type ?? 1,
-      SCHEDULE: row?.schedule || null,
-      NEXT_RUN: clearRuns ? null : (row?.next_run || null),
-      LAST_RUN_START: clearRuns ? null : (row?.last_run_start || null),
-      LAST_RUN_END: clearRuns ? null : (row?.last_run_end || null),
-      STATUS: row?.status ?? 1,
+      SCHEDULE: storedText(row?.schedule),
+      NEXT_RUN: clearRuns ? '' : storedText(row?.next_run),
+      LAST_RUN_START: clearRuns ? '' : storedText(row?.last_run_start),
+      LAST_RUN_END: clearRuns ? '' : storedText(row?.last_run_end),
       CODE: code ?? '',
-      SUMMARY: row?.summary || '',
+      SUMMARY: storedText(row?.summary),
     },
     INTEGER: {
+      SCRIPT_TYPE: scriptInteger(row?.script_type, 1),
+      STATUS: scriptInteger(row?.status, 1),
       USERID: Number.isInteger(userId) ? userId : 0,
       INVOKABLE: scriptInvokable(row?.invokable),
     },

@@ -47,24 +47,7 @@ export class SunEditorInit {
       imageUploadUrl: '/api/upload/image',
       imageUploadHeader: uploadAuthHeader(retrieveJWT()),
       videoUploadUrl: '/api/upload/video',
-      videoUploadHeader: uploadAuthHeader(retrieveJWT()),
-      callbacks: {
-        onChange: (contents, core) => {
-          // console.log('SunEditor content changed:', contents);
-        },
-        onBlur: (contents, core) => {
-          // console.log('SunEditor blurred:', contents);
-        },
-        onFocus: (contents, core) => {
-          // console.log('SunEditor focused');
-        },
-        onImageUpload: (targetImgElement, index, state, imageInfo, remainingFilesCount) => {
-          // console.log('Image upload:', imageInfo);
-        },
-        onImageUploadError: (errorMessage, result, core) => {
-          // console.error('Image upload error:', errorMessage);
-        }
-      }
+      videoUploadHeader: uploadAuthHeader(retrieveJWT())
     };
   }
 
@@ -135,7 +118,7 @@ export class SunEditorInit {
    * Destroy all editor instances
    */
   destroyAllEditors() {
-    this.editors.forEach((editor, elementId) => {
+    this.editors.forEach((editor) => {
       SUNEDITOR.remove(editor);
     });
     this.editors.clear();
@@ -376,7 +359,7 @@ export class SunEditorInit {
    * @param {string} elementId - The DOM element ID
    * @param {Object} plugins - Plugins to configure
    */
-  configurePlugins(elementId, plugins) {
+  configurePlugins(elementId, _plugins) {
     const editor = this.getEditor(elementId);
     if (editor) {
       // SunEditor plugins are typically configured during initialization
@@ -404,7 +387,7 @@ export class SunEditorInit {
    * @param {string} elementId - The DOM element ID
    * @param {Array} buttonList - New button list configuration
    */
-  updateToolbar(elementId, buttonList) {
+  updateToolbar(elementId, _buttonList) {
     const editor = this.getEditor(elementId);
     if (editor) {
       // SunEditor doesn't support dynamic toolbar updates directly

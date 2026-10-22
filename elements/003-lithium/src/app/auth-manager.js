@@ -1,5 +1,5 @@
 import { logAuth, Status } from '../core/log.js';
-import { retrieveJWT, validateJWT, storeJWT, clearJWT, getTimeUntilExpiry, consumeSloQuery, getClaims } from '../core/jwt.js';
+import { retrieveJWT, validateJWT, storeJWT, clearJWT, getTimeUntilExpiry, consumeSloQuery } from '../core/jwt.js';
 import { parseRoleIds } from '../core/utils.js';
 import { loadMacrosPostLogin } from '../shared/lookups.js';
 import { toast } from '../shared/toast.js';

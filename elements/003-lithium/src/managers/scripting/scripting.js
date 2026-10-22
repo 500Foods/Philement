@@ -32,6 +32,7 @@ import { createEditorManager } from './scripting-editors.js';
 import { scriptingFooterMethods } from './scripting-footer.js';
 import { createScriptInvoke } from './scripting-invoke.js';
 import { scriptingSaveMethods } from './scripting-save.js';
+import { clearScriptFont, isScriptFontEnabled, loadScriptFont, saveScriptFont } from './scripting-font.js';
 
 /**
  * ScriptingManager - Main class
@@ -97,6 +98,9 @@ export default class ScriptingManager {
   }
 
   _loadSavedFontSettings() {
+    if (!this._fontSettingsService()) {
+      log(Subsystems.MANAGER, Status.WARN, '[Scripting] Font settings are unavailable');
+    }
     const savedSettings = this._loadFontSettings('lua');
     if (savedSettings) {
       this.editorFontSize = savedSettings.fontSize;
@@ -133,6 +137,7 @@ export default class ScriptingManager {
       foldAllBtn: this.container.querySelector('#scripting-fold-all-btn'),
       unfoldAllBtn: this.container.querySelector('#scripting-unfold-all-btn'),
       fontBtn: this.container.querySelector('#scripting-font-btn'),
+      prettifyBtn: this.container.querySelector('#scripting-prettify-btn'),
       tabsHeader: this.container.querySelector('.scripting-tabs-header'),
     };
 
@@ -204,6 +209,7 @@ export default class ScriptingManager {
     this.elements.foldAllBtn?.addEventListener('click', () => this.editorManager.handleFoldAll());
     this.elements.unfoldAllBtn?.addEventListener('click', () => this.editorManager.handleUnfoldAll());
     this.elements.fontBtn?.addEventListener('click', () => this._handleFontClick());
+    this.elements.prettifyBtn?.addEventListener('click', () => this.editorManager.handlePrettify());
 
     this._onKeyDown = (e) => this._handleKeyboardShortcuts(e);
     document.addEventListener('keydown', this._onKeyDown);
@@ -223,7 +229,8 @@ export default class ScriptingManager {
     }
 
     const hasEditor = tabId === 'lua';
-    if (this.elements.fontBtn) this.elements.fontBtn.disabled = !hasEditor;
+    if (this.elements.fontBtn) this.elements.fontBtn.disabled = !isScriptFontEnabled(tabId);
+    if (this.elements.prettifyBtn) this.elements.prettifyBtn.disabled = tabId !== 'lua';
 
     if (!hasEditor) {
       if (this.elements.undoBtn) this.elements.undoBtn.disabled = true;
@@ -248,7 +255,7 @@ export default class ScriptingManager {
     }
 
     if (tabId === 'preview') {
-      this.editorManager.renderLuaPreview();
+      await this.editorManager.renderSummaryPreview();
       requestAnimationFrame(() => this._applyFontToCurrentTab());
     }
 
@@ -507,19 +514,34 @@ export default class ScriptingManager {
     };
   }
 
+  _fontSettingsService() {
+    const settings = typeof window !== 'undefined' ? window.lithiumSettings : null;
+    if (!settings || typeof settings.get !== 'function' || typeof settings.set !== 'function') {
+      return null;
+    }
+    return settings;
+  }
+
   _clearFontSettings(tabId) {
-    try { localStorage.removeItem(`lithium_scripting_font_${tabId}`); } catch { /* ignore */ }
+    clearScriptFont(this._fontSettingsService(), tabId, localStorage);
   }
 
   _loadFontSettings(tabId) {
-    try {
-      const stored = localStorage.getItem(`lithium_scripting_font_${tabId}`);
-      return stored ? JSON.parse(stored) : null;
-    } catch { return null; }
+    return loadScriptFont(this._fontSettingsService(), tabId, localStorage);
   }
 
   _saveFontSettings(tabId, settings) {
-    try { localStorage.setItem(`lithium_scripting_font_${tabId}`, JSON.stringify(settings)); } catch { /* ignore */ }
+    const service = this._fontSettingsService();
+    const saved = saveScriptFont(service, tabId, settings);
+    if (!saved) {
+      log(Subsystems.MANAGER, Status.ERROR, '[Scripting] Font settings were not saved');
+      return;
+    }
+    // set() waits two seconds before the account-settings update.
+    // A reload in that window fetches the previous server copy.
+    if (typeof service.flush === 'function') {
+      service.flush();
+    }
   }
 
   _restoreFontStateForTab(tabId) {

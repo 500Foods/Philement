@@ -16,9 +16,10 @@ How a phase runs: [`/docs/PLANNING.md`](/docs/PLANNING.md).
 ### [CATCHUP](/elements/003-lithium/CATCHUP.md)
 
 Gated Phases 0, 0a, 0b, 0c, 1–38, 5a–5d. Pause point 2026-10-22:
-Phases 0 through 5, 7, 8, and 9 are complete. Phases 5a–5d and 6 stay
+Phases 0 through 5, 7, 8, 9, and 10 are complete. Phases 5a–5d and 6 stay
 deferred. Andrew confirmed `Api.Echo` on `https://lithium.500courses.com`.
-Next is Phase 10. Discuss it and wait for approval before editing.
+Phase 10 closed on 2026-10-22. He declined the optional meta tab.
+Next is Phase 11. Discuss it and wait for approval.
 First official deployment is
 **Course Manager** (ID 34) for 500 Courses.
 Agent map:

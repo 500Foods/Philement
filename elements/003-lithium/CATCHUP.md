@@ -71,33 +71,38 @@ only.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-10-22):** Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, and 9 are complete. Andrew confirmed `Api.Echo` on `https://lithium.500courses.com`: Wait on `job_id: BBTDC`, Wait off `job_id: CCCRP`, both `status: completed`. Next is **Phase 10**. Discuss it and wait for approval before editing. Phases 5a, 5b, 5c, 5d, and 6 stay deferred until Andrew pulls Band B back. He does deploys and login checks. Do not drive a browser for those. Save, duplicate, and update send INTEGER `INVOKABLE` (0 when the row has none). Delete uses QueryRef 131 with STRING `GROUP_NAME` and `SCRIPT_NAME`. A dirty row switch asks to save or stay. On the 500 Courses Lithium database, Lookup 059 key 13 is `scripts/script-manager` and its collection names delete 131. Course QueryRefs moved to the 4000 pack on 2026-10-16. Band D uses the Courses pack QueryRefs section. Do not call retired **#085**, **#150**, or **#151**.
+**CURRENT PAUSE POINT (as of 2026-10-22):** Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, and 11 are complete. Andrew confirmed `Api.Echo` on `https://lithium.500courses.com`: Wait on `job_id: BBTDC`, Wait off `job_id: CCCRP`, both `status: completed`. **Phase 10** is complete. Andrew confirmed the tulip button, Ctrl+P, pretty-print then save, the Preview tab (summary, then Lua), and that a 9px font survives a reload. He declined the optional meta tab. It does not move forward. **Phase 11** is complete. CodeMirror 6 is the only stack. Lua folds `function`, `if`, `do`, `for`, and `while` through `end`, and `repeat` through `until`. `H.` and `H.name` use the namespace tag. Next is Phase 12 (Course Manager scaffold). Discuss it and wait for approval. Do not start it in this sitting. Phases 5a, 5b, 5c, 5d, and 6 stay deferred until Andrew pulls Band B back. He does deploys and login checks. Do not drive a browser for those. Save, duplicate, and update send INTEGER `SCRIPT_TYPE`, `STATUS`, `USERID`, and `INVOKABLE` (0 when the row has none). A blank schedule or run time is `''`. Andrew applied Acuranzo 1395 (QueryRef 130) and 1396 (QueryRef 129) and confirmed pretty-print then save on 2026-10-22. Delete uses QueryRef 131 with STRING `GROUP_NAME` and `SCRIPT_NAME`. A dirty row switch asks to save or stay. On the 500 Courses Lithium database, Lookup 059 key 13 is `scripts/script-manager` and its collection names delete 131. Course QueryRefs moved to the 4000 pack on 2026-10-16. Band D uses the Courses pack QueryRefs section. Do not call retired **#085**, **#150**, or **#151**.
 
 ### Resume here next session
 
-Phases 0–5, 7, 8, and 9 are complete. Do not reopen them. Do not open 5a–5d or 6 unless Andrew pulls Band B back.
+Phases 0–5, 7, 8, 9, 10, and 11 are complete. Do not reopen them. Do not open 5a–5d or 6 unless Andrew pulls Band B back.
 
-1. Start **Phase 10 — Scripting UX, tests, docs**. Discuss it and
-   wait for approval before editing. Andrew confirmed both Phase 9
-   runs. He does the deploy and the login check. Do not drive a
-   browser for that.
+1. **Phase 12** is next (Course Manager scaffold, ID 34). Discuss it
+   and wait for approval before editing. Do not start it in the
+   Phase 11 close-out. Andrew declined the Scripting meta tab. It
+   stays declined. He does deploys and login checks. Do not drive a
+   browser for those. Fold All and the `H.` tint have unit coverage
+   and no live click yet.
 2. Run stays disabled unless the row is invokable. Wait defaults to
    true. Timeout is 1–60, default 15. A top-level `_hydrogen` key is
    removed before the request. Poll delays are 250, 500, 1000, then
    2000 ms. There is no cancel control. Changing rows stops painting
    that poll and does not kill the job.
-3. Save and duplicate already send INTEGER `INVOKABLE`. Delete
-   already sends STRING `GROUP_NAME` and `SCRIPT_NAME` to QueryRef
-   131. A dirty row switch uses the Phase 4 confirm dialog: Save
-   continues, Stay keeps the row. Other tables still auto-save.
+3. Save and duplicate send INTEGER `SCRIPT_TYPE`, `STATUS`,
+   `USERID`, and `INVOKABLE`, and `''` for a blank schedule or run
+   time. Delete already sends STRING `GROUP_NAME` and `SCRIPT_NAME`
+   to QueryRef 131. A dirty row switch uses the Phase 4 confirm
+   dialog: Save continues, Stay keeps the row. Other tables still
+   auto-save.
 4. On the 500 Courses Lithium database, Lookup 059 key 13 is
    `scripts/script-manager`. The constructor still sets list 89 and
    search 90. New scripts ask for group and name because those
    columns are not editable.
 5. Andrew confirmed `Api.Echo` on 2026-10-22. Wait on was
    `job_id: BBTDC`. Wait off was `job_id: CCCRP`. Both were
-   `status: completed`. Create, save, duplicate, and delete still
-   have no browser pass. `npm test` was 1040 passed and 10 failed
+   `status: completed`. Andrew applied 1395 and 1396 and confirmed
+   pretty-print then save. Create, duplicate, and delete still have
+   no browser pass. `npm test` was 1040 passed and 10 failed
    when Phase 9's code landed. The 10 are the live auth file
    (HTTP 503). Lint was 0 errors and 35 existing warnings.
 6. Left open on purpose: Profile footer Save still does not call
@@ -226,8 +231,8 @@ QueryRefs section is the course-number contract.
 | Course Builder | Placeholder at `course-builder/` (Phase 0a, refreshed 2026-10-16). No QueryRef. Close hook is `teardown()`. Real UI is Band E. |
 | Terminal | Real iframe popup but `DEFAULT_URL` hardcoded to `https://www.philement.com`; not wired to Hydrogen terminal `WebPath`. Troubleshoot in Phase 0c. |
 | Mail / Jobs / Dashboard / Roles | Placeholders |
-| CM6 | Real: `codemirror-setup.js`, `cm6-virtual-columns.js`, `cm6-custom-scrollbars.js` |
-| CM5 | `src/init/codemirror-init.js` dead (zero imports) |
+| CM6 | Real. `codemirror-setup.js` is the facade (654 lines). Newline, indent, JSON sort, and fold live in `cm6-newline.js`, `cm6-indent.js`, `cm6-json.js`, and `cm6-fold.js`. Lua is `lua-mode.js`. |
+| CM5 | Deleted in Phase 11 (2026-10-22). `src/init/codemirror-init.js` had zero imports. |
 | `closeManager` | `destroy`, else `cleanup`, else `teardown` (Phase 1, 2026-10-16). Close does not call `onDeactivate`. |
 | DOMPurify | `sanitizeHtml` in `src/core/utils.js`. Phase 3 (2026-10-16) calls it from Lookups, Crimson, Version History, and the Queries summary preview. |
 | `escapeHtml` | Real in `src/core/utils.js`. Quotes stay literal. Lookups processors use it before highlight. |
@@ -1794,32 +1799,184 @@ user pulls Course Manager forward.
 
 **Entry gate:**
 
-- [ ] Phase 9 sync invoke works against Hydrogen.
+- [x] Phase 9 sync invoke works against Hydrogen. Andrew confirmed
+      2026-10-22 (`BBTDC`, `CCCRP`).
 
 **Reference:**
 
-- `docs/Li/LITHIUM-MGR-SCRIPT.md` (does not exist yet)
+- [`/docs/Li/LITHIUM-MGR-SCRIPT.md`](/docs/Li/LITHIUM-MGR-SCRIPT.md)
 
 **Work items:**
 
-- [ ] Preview = sanitized **summary** markdown (Phase 3 helper), not
-      escaped Lua source.
-- [ ] Fonts via `lithiumSettings`, not raw `lithium_scripting_font_*`.
-- [ ] Implement or remove Ctrl+P (`handlePrettify` is missing).
-- [ ] Optional meta tab: invokable, schedule, last run.
-- [ ] `tests/unit/managers/scripting-*.test.js`.
-- [ ] Write `LITHIUM-MGR-SCRIPT.md`; TOC + MGR links.
-- [ ] All `src/managers/scripting/*` ≤ 1000 lines.
+- [x] Preview = sanitized **summary** markdown (Phase 3 helper),
+      then the Lua source as plain text. `buildScriptSummaryHtml`
+      and `scriptPreviewLua` in `scripting-preview.js`. Empty
+      summary shows a note. The editor buffer wins over the row.
+- [x] Fonts via `window.lithiumSettings`, path `33.font.<tab>`,
+      using `get` / `set` / `removeSection` (one dotted path). An
+      old `lithium_scripting_font_*` value is copied once.
+- [x] Ctrl+P formats with `@johnnymorganz/stylua` 2.6.0 defaults
+      (tabs, indent width 4, column 120, Unix LF). The Lua toolbar
+      has the same tulip button as Queries, `#scripting-prettify-btn`,
+      disabled off the Lua tab. Andrew confirmed both on 2026-10-22.
+- [~] Optional meta tab: invokable, schedule, last run. Andrew
+      declined it on 2026-10-22. It does not move to Phase 11.
+- [x] `tests/unit/managers/scripting-*.test.js` for the rest of this
+      phase that is built. Formatter coverage is
+      `scripting-format.test.js`. Preview and font coverage are
+      `scripting-preview.test.js` and `scripting-font.test.js`.
+      The declined meta tab has no test.
+- [x] Write `LITHIUM-MGR-SCRIPT.md`; TOC + MGR links.
+- [x] All `src/managers/scripting/*` ≤ 1000 lines. Largest is
+      `scripting.js` at 649.
 
 **Exit gate / validation:**
 
-- [ ] `npm test && npm run lint`
-- [ ] `wc -l src/managers/scripting/*` all ≤ 1000
-- [ ] TOC lists `LITHIUM-MGR-SCRIPT.md`
+- [x] `npm test && npm run lint` — variance below. The chained
+      command exited 1 at `npm test`. Lint was a separate run.
+      2026-10-22: 1067 passed and 10 failed. The failures are
+      `auth.integration.test.js` HTTP 503 against
+      `https://lithium.philement.com` (cert expired 2026-08-02).
+      Lint was 0 errors and 34 warnings.
+- [x] `wc -l src/managers/scripting/*` all ≤ 1000. Largest is
+      `scripting.js` at 649.
+- [x] TOC lists `LITHIUM-MGR-SCRIPT.md`
 
-**Status:** pending
+**Status:** complete (2026-10-22). Andrew confirmed the tulip
+button, Ctrl+P, pretty-print then save, the Preview tab (summary,
+then Lua), and that a 9px font survives a reload. He declined the
+optional meta tab. Variance: `npm test` was 1067 passed and 10
+failed. The 10 are `tests/integration/auth.integration.test.js`
+(HTTP 503 from `https://lithium.philement.com`; cert expired
+2026-08-02). `npm run lint` was 0 errors and 34 warnings. No new
+caller-facing QueryRef. Acuranzo 1395 and 1396 were already applied.
+
+**Accomplished:**
+
+- Ctrl+P and `#scripting-prettify-btn` format with
+  `@johnnymorganz/stylua` 2.6.0 defaults (tabs, indent width 4,
+  column 120, Unix LF). The code is
+  [`scripting-format.js`](/elements/003-lithium/src/managers/scripting/scripting-format.js)
+  and `EditorManager.handlePrettify`. Andrew confirmed both on
+  2026-10-22.
+- Save sends INTEGER `SCRIPT_TYPE`, `STATUS`, `USERID`, and
+  `INVOKABLE`, and `''` for a blank schedule or run time.
+  Acuranzo 1395 (QueryRef 130) and 1396 (QueryRef 129) store that
+  blank as SQL NULL. Andrew applied both and confirmed
+  pretty-print then save.
+- Preview shows sanitized summary markdown, then the Lua source as
+  plain text (`scripting-preview.js`). Andrew confirmed it on
+  `Api.Echo`.
+- Fonts use `window.lithiumSettings` at `33.font.<tab>`. Save calls
+  `flush()`. Load reads `lithium_preferences` when the server copy
+  has no font. Andrew confirmed that 9px survives a reload.
+- [`/docs/Li/LITHIUM-MGR-SCRIPT.md`](/docs/Li/LITHIUM-MGR-SCRIPT.md)
+  is linked from the TOC and from `LITHIUM-MGR.md`.
+- Tests: `scripting-format.test.js` 9, `scripting-save.test.js` 19,
+  `scripting-preview.test.js` 5, `scripting-font.test.js` 7.
+  `npm test` was 1067 passed and 10 failed. `npm run lint` was 0
+  errors and 34 warnings. Largest scripting file is `scripting.js`
+  at 649 lines.
+
+**Working log:**
+
+- 2026-10-22: Andrew approved the official StyLua package and its
+  defaults. `scripting-format.js` loads `@johnnymorganz/stylua/web`
+  on Ctrl+P. Each format builds a new `Config`. A parse failure is
+  a string, is toasted, and does not change the buffer. Lua 5.5
+  `global` still fails that parse. `scripting-format.test.js`
+  passed 9. `npx vite build` emitted `vendor-stylua` and a separate
+  wasm asset (about 3.6 MB) referenced only from the Scripting
+  chunk. Full `npm test` was not re-run.
+- 2026-10-22: Andrew confirmed the tulip button and Ctrl+P. Saving
+  the formatted script failed on QueryRef 130 because `SCRIPT_TYPE`
+  and `STATUS` were numbers in `STRING`, and the blank schedule and
+  run times were JSON null. `buildScriptSaveParams` now puts those
+  integers in `INTEGER` and sends `''` for a blank. `acuranzo_1395.lua`
+  and `acuranzo_1396.lua` store that blank as SQL NULL. They are
+  not applied. `scripting-save.test.js` passed 19. Full `npm test`
+  was not re-run.
+- 2026-10-22: Andrew applied 1395 and 1396. Pretty-print then save
+  works on the 500 Courses Lithium install. Preview markdown, font
+  prefs, the optional meta tab, `LITHIUM-MGR-SCRIPT.md`, and the
+  phase exit (`npm test && npm run lint`, line counts, TOC) are
+  still open.
+- 2026-10-22: Andrew asked for the summary preview, font prefs,
+  the scripting doc, and the test exit. Preview renders
+  `currentScript.summary` through `marked` and `sanitizeHtml`.
+  A blank summary shows "No summary to preview." Fonts use
+  `window.lithiumSettings` at `33.font.<tab>`. That service takes
+  one path. A section-plus-path call would store the path string
+  in section 33. `scripting-preview.test.js` passed 3.
+  `scripting-font.test.js` passed 5. `npm test` was 1063 passed
+  and 10 failed, the same live auth HTTP 503. `npm run lint` was
+  0 errors and 34 warnings. Every scripting file is under 1000
+  lines. TOC lists the doc. The optional meta tab is not built.
+  The phase stays open until he confirms the Preview tab and the
+  font popup.
+- 2026-10-22: Andrew opened Preview on `Api.Echo` and saw only
+  `LUA_CLIENT fixture: echo params (+ optional probe_health)`.
+  That string is the whole `summary` column from
+  `acuranzo_1296.lua`. The font button was disabled because
+  `switchTab` enabled it only on Lua. It is now enabled on Lua
+  and Preview, and stays disabled on Run. He chose summary, then
+  the Lua source. Preview shows both. The Lua is `textContent`.
+- 2026-10-22: Andrew confirmed Preview (summary, then Lua) and that
+  the font applies. A reload did not keep 9px. Save wrote
+  `lithium_preferences` and waited two seconds to update account
+  settings. Login then replaces the in-memory settings with the
+  server copy. Load now reads the local preferences when that copy
+  has no font, writes the font back, and flushes the update at once.
+- 2026-10-22: Andrew confirmed the font size survives a reload:
+  "Fixed! Font size is retained after restart." The optional meta
+  tab is still not started. Phase 10 stays in progress.
+- 2026-10-22: Andrew declined the optional meta tab. `npm test`
+  was 1067 passed and 10 failed, the same live auth HTTP 503.
+  `npm run lint` was 0 errors and 34 warnings. `scripting.js` is
+  649 lines. Phase 10 is complete.
 
 **Lessons learned:**
+
+- StyLua's `formatCode` destroys the Config, including on a parse
+  failure. A second call on the same Config throws a null-pointer
+  string. The thrown parse error has no `.message`.
+- Hydrogen's conduit type check rejects JSON null before the binder
+  that would store SQL NULL. A blank optional value is `''`, and
+  the SQL is `NULLIF(CAST(:COL AS text), '')`. A timestamp then
+  casts that result. One caller-facing QueryRef per file, so 129
+  and 130 are 1396 and 1395.
+- `window.lithiumSettings` is `GlobalSettingsService`. `get`, `set`,
+  and `removeSection` each take one dotted path. The profile
+  service's `(section, path)` shape is a different object.
+- `set` writes `lithium_preferences` and waits two seconds before
+  QueryRef 74. `syncFromServer` replaces memory and does not write
+  local storage. A reload inside that window drops the new font.
+  `flush()` sends the update at once. Load reads the local JSON
+  when the server copy has no font.
+- `Api.Echo` `scripts.summary` is one sentence. The longer markdown
+  in `acuranzo_1296.lua` belongs to the migration query row.
+- happy-dom's DOMPurify drops the `h1` tag. The preview test
+  asserts the heading text and that `<script` is absent.
+
+**Handoff:**
+
+- Phase 10 is complete. Phase 11 (productize CodeMirror) is next.
+  Discuss it and wait for approval. Do not edit Phase 11 source in
+  this sitting.
+- Andrew declined the meta tab. Validate/luacheck and run-as-role
+  stay out. Do not build them under Phase 11 unless he asks.
+- Create, duplicate, and delete still have no browser pass.
+- Queries fonts still use `lithium_queries_font_*`. Do not change
+  that storage.
+- Profile footer Save, Style `applyState`, and `this.app.user` stay
+  open. Phases 5a–5d and 6 stay deferred. Reporting stays parked.
+- Variance: `npm test` was 1067 passed and 10 failed, all
+  `auth.integration.test.js` HTTP 503 on
+  `https://lithium.philement.com`. The cert expired 2026-08-02.
+  Lint was a separate run: 0 errors and 34 warnings.
+- He does deploys and login checks. Do not drive a browser. Do not
+  apply migrations. Next free Acuranzo file is 1397. This phase
+  added no caller-facing QueryRef.
 
 ---
 
@@ -1829,50 +1986,143 @@ user pulls Course Manager forward.
 Lua folds.
 
 **Dependencies:** Phase 8 (scripting already uses `buildEditorExtensions`).
-May proceed after Phase 8 even if Phase 9/10 are in flight **only** if
-the user approves parallel — default is serial.
+Phases 9 and 10 are complete. Default is serial. Discuss this phase
+and wait for approval before editing.
 
 **Entry gate:**
 
-- [ ] Phase 8 complete (editor facades stable).
+- [x] Phase 8 complete (editor facades stable).
 
 **Reference:**
 
-- `src/core/codemirror.js`, `codemirror-setup.js` (1019),
+- `src/core/codemirror.js`, `codemirror-setup.js`,
   `cm6-virtual-columns.js`, `cm6-custom-scrollbars.js`,
   `editor-footer.js`
-- Dead: `src/init/codemirror-init.js`
-- `package.json` CM packages (several runtime imports live in
-  `devDependencies`)
+- `src/core/lua-mode.js`, `cm6-newline.js`, `cm6-indent.js`,
+  `cm6-json.js`, `cm6-fold.js`
+- Deleted: `src/init/codemirror-init.js`
 
 **Work items:**
 
-- [ ] Move runtime CM packages from `devDependencies` → `dependencies`.
-      Declare `@codemirror/language` if imported. Drop or use
-      `@codemirror/legacy-modes`.
-- [ ] Delete `codemirror-init.js` if still unimported (L16).
-- [ ] Split `codemirror-setup.js` under 1000: newline plugin, indent
-      facet/filter/Tab-Enter, JSON sort helpers, fold-to-level.
-      Leave `buildEditorExtensions` as the facade.
-- [ ] Deduplicate virtual-columns registration (compartment **or**
-      unconditional push, not both).
-- [ ] Tests for `virtualColumns` pad/trim and scrollbar plugin destroy.
-- [ ] Lua: replace homemade tokenizer with `@codemirror/legacy-modes`
-      `lua` **or** fix StreamLanguage (long-bracket bug:
-      `stream.match` assigned as function; `foldNodeProp` so fold-all
-      works). Optional `H.` highlight.
-- [ ] Footer error count stays 0 until a real lint surface exists. Do
-      not pretend luacheck.
+- [x] Runtime CM packages are in `dependencies`.
+      `@codemirror/language` is declared at `^6.13.1`.
+      `@codemirror/legacy-modes` is removed. Nothing imported it.
+- [x] Deleted `src/init/codemirror-init.js` (L16). Zero imports.
+- [x] Split `codemirror-setup.js` under 1000. Newline, indent
+      facet/filter/Tab-Enter, JSON sort, and fold-to-level are
+      modules. `buildEditorExtensions` stays the facade and
+      re-exports the moved helpers. The file is 654 lines.
+- [x] Virtual columns register once. A compartment owns the
+      extension when the caller passes one. The extra push runs
+      only when there is no compartment.
+- [x] Tests for `virtualColumns` pad/trim and scrollbar destroy:
+      `tests/unit/cm6-virtual-columns.test.js` and
+      `tests/unit/cm6-scrollbars.test.js`.
+- [x] Kept the homemade Lua tokenizer. Andrew chose that on
+      2026-10-22. Long brackets stay as they were. Fold All covers
+      `function`, `if`, `do`, `for`, and `while` through `end`, and
+      `repeat` through `until`. The header line stays. Keywords
+      inside strings and comments do not count. Parentheses and
+      braces do not fold. `H.` and `H.name` use the `namespace` tag.
+- [x] Footer error count stays 0. `init` still writes `Errors: 0`.
+      No caller passes a diagnostic count. No luacheck.
 
 **Exit gate / validation:**
 
-- [ ] `wc -l src/core/codemirror-setup.js` ≤ 1000
-- [ ] `npm test && npm run lint && npm run build`
-- [ ] Grep: no imports of `codemirror-init.js`
+- [x] `wc -l src/core/codemirror-setup.js` is 654.
+- [x] `npm test && npm run lint && npm run build` — variance below.
+      The chained command exits 1 at `npm test`. Lint and build were
+      separate runs, both exit 0. 2026-10-22: 1079 passed and 10
+      failed. The failures are `auth.integration.test.js` HTTP 503
+      against `https://lithium.philement.com` (cert expired
+      2026-08-02). Lint was 0 errors and 34 warnings. Build
+      completed.
+- [x] Grep of `src/` and `tests/`: no imports of `codemirror-init.js`.
 
-**Status:** pending
+**Status:** complete (2026-10-22). Andrew chose the current Lua
+tokenizer, statement-block folds, and the `H.` tint. Variance:
+`npm test` was 1079 passed and 10 failed. The 10 are
+`tests/integration/auth.integration.test.js` (HTTP 503 from
+`https://lithium.philement.com`; cert expired 2026-08-02).
+`npm run lint` was 0 errors and 34 warnings. `npm run build`
+completed. No new caller-facing QueryRef.
+
+**Accomplished:**
+
+- Runtime `@codemirror/*` packages moved from `devDependencies` to
+  `dependencies`. `@codemirror/language` is a direct dependency.
+  `@codemirror/legacy-modes` is gone from `package.json` and the
+  lockfile.
+- Deleted `src/init/codemirror-init.js`.
+- [`codemirror-setup.js`](/elements/003-lithium/src/core/codemirror-setup.js)
+  is the facade at 654 lines. Newline, indent, JSON sort, and fold
+  helpers live in `cm6-newline.js`, `cm6-indent.js`, `cm6-json.js`,
+  and `cm6-fold.js`, and are re-exported.
+- A virtual-columns compartment is the only registration when the
+  caller passes one.
+- Lua stays in
+  [`lua-mode.js`](/elements/003-lithium/src/core/lua-mode.js).
+  `luaFoldRanges` feeds a fold service. Fold All asks `foldable`
+  per line as well as per syntax node. `H.` and `H.name` are
+  `namespace` tokens, which oneDark already paints.
+- Trailing virtual-column spaces trim after the update, because
+  CodeMirror rejects a dispatch inside `ViewPlugin.update`.
+- Tests: `lua-mode.test.js` 14, `cm6-virtual-columns.test.js` 2,
+  `cm6-scrollbars.test.js` 1. `npm test` was 1079 passed and 10
+  failed. Lint was 0 errors and 34 warnings. Build completed.
+
+**Working log:**
+
+- 2026-10-22: Andrew kept the current tokenizer, asked for statement
+  folds (`function` / `if` / `do` / `for` / `while` … `end`, and
+  `repeat` … `until`), and asked for the `H.` tint. Parentheses,
+  braces, and long strings stay open. The header line stays visible.
+- 2026-10-22: The split, the dependency move, the CM5 delete, and
+  the fold service landed. `npm test` was 1079 passed and 10 failed
+  (the same auth HTTP 503). Lint was 0 errors and 34 warnings.
+  `npm run build` completed. `codemirror-setup.js` is 654 lines.
 
 **Lessons learned:**
+
+- Stream tokens are flat. A node prop on `keyword` cannot span
+  `function` … `end`. `foldable` asks a fold service with the line
+  extent first. Fold All used to walk syntax nodes only, so that
+  service never saw the line.
+- The `do` of `for` and `while` is the body introducer. A bare `do`
+  is its own block.
+- oneDark paints `namespace` with the same chalk color it uses for
+  numbers and type names. `H.http` does not need a new stylesheet.
+- `ViewPlugin.update` cannot dispatch. The trim of virtual-column
+  padding has to wait until that update finishes.
+- `@codemirror/legacy-modes` was installed and never imported.
+
+**Handoff:**
+
+- Phase 11 is complete. Phase 12 (Course Manager scaffold, ID 34)
+  is next. Discuss it and wait for approval. Do not edit Phase 12
+  source in this sitting.
+- Fold All on Lua covers the six statement blocks above. The header
+  stays. Strings and comments do not count. Parentheses and braces
+  do not fold. There is no browser click of the Fold All button.
+  The unit test folds a function body in happy-dom.
+- `H.` and `H.name` are `namespace` tokens. A bare `H` stays a name.
+- Create, duplicate, and delete still have no browser pass.
+- The footer still shows `Errors: 0`. Do not add luacheck here.
+- Queries fonts still use `lithium_queries_font_*`. Do not change
+  that storage.
+- Profile footer Save, Style `applyState`, and `this.app.user` stay
+  open. Phases 5a–5d and 6 stay deferred. Reporting stays parked.
+  [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md)
+  still links the deleted `codemirror-init.js`. That plan was not
+  edited.
+- Variance: `npm test` was 1079 passed and 10 failed, all
+  `auth.integration.test.js` HTTP 503 on
+  `https://lithium.philement.com`. The cert expired 2026-08-02.
+  Lint was a separate run: 0 errors and 34 warnings. Build was a
+  separate run and completed.
+- He does deploys and login checks. Do not drive a browser. Do not
+  apply migrations. Next free Acuranzo file is still 1397. This
+  phase added no caller-facing QueryRef.
 
 ---
 
@@ -2153,8 +2403,8 @@ only UI. Word “Lua” does not appear.
 
 **Goal:** Course Manager is shippable on `lithium.500courses.com`.
 
-**Dependencies:** Phases 12–17. Phase 10 may still be open (Scripting
-docs) — do not block deploy on Scripting polish.
+**Dependencies:** Phases 12–17. Phase 10 is complete. Do not block
+deploy on further Scripting polish.
 
 **Entry gate:**
 
@@ -3312,3 +3562,5 @@ silent (does not claim Vite cannot run). Logged; no DEV rewrite.
 | 2026-10-16 | Phase 9 in progress. Run tab is in `scripting-invoke.js`. Manual `Api.Echo` lines are still open. |
 | 2026-10-17 | Phase 9 still in progress. Older schema left Run disabled. Lua long-bracket fix is in the tree. Resume after QueryRef 87 returns `invokable` 1. |
 | 2026-10-22 | Phase 9 complete. Andrew confirmed `Api.Echo` Wait on (`BBTDC`) and Wait off (`CCCRP`), both `status: completed`. |
+| 2026-10-22 | Phase 10 complete. StyLua, save, summary-then-Lua preview, and font reload are confirmed. The meta tab was declined. Next is Phase 11. |
+| 2026-10-22 | Phase 11 complete. CodeMirror 6 is the only stack. Lua folds statement blocks. `H.` uses the namespace tag. Next is Phase 12. |
