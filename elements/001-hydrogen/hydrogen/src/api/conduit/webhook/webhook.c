@@ -79,8 +79,6 @@ char *conduit_webhook_extract_hook_from_url(const char *url) {
 char *conduit_webhook_extract_kv(const char *header, const char *key) {
     const char *p;
     size_t key_len;
-    char *out;
-    size_t n;
 
     if (!header || !key) {
         return NULL;
@@ -92,6 +90,9 @@ char *conduit_webhook_extract_kv(const char *header, const char *key) {
             p++;
         }
         if (strncmp(p, key, key_len) == 0 && p[key_len] == '=') {
+            char *out;
+            size_t n;
+
             p += key_len + 1;
             n = 0;
             while (p[n] && p[n] != ',' && p[n] != ' ') {

@@ -282,8 +282,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
         free_jwt_validation_result(&jwt_result);
     }
 
-    // cppcheck: session guaranteed non-null due to check at function entry
-    const char* database = session ? session->chat_database : NULL;
+    const char* database = session->chat_database;
 
     // Get database queue
     DatabaseQueue *db_queue = database_queue_manager_get_database(global_queue_manager, database);
@@ -345,7 +344,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     // pre-provider; covers mid-session JWT rotation by re-keying per
     // message). Look up sub from session->chat_claims which may have
     // been refreshed via payload.jwt.
-    const char *ws_sub = (session && session->chat_claims) ? session->chat_claims->sub : NULL;
+    const char *ws_sub = session->chat_claims ? session->chat_claims->sub : NULL;
     if (ws_sub && ws_sub[0] != '\0') {
         long long est_input = chat_rate_limit_estimate_input_tokens(messages);
         ChatRateLimitResult rl = chat_rate_limit_check_and_record(ws_sub, est_input);
@@ -371,7 +370,7 @@ int handle_chat_message(struct lws *wsi, WebSocketSessionData *session, json_t *
     chat_request_params_apply_hosted_mcp(&params, engine,
                                          ws_sub,
                                          database,
-                                         session && session->chat_claims ? session->chat_claims->roles : NULL,
+                                         session->chat_claims ? session->chat_claims->roles : NULL,
                                          hosted_mcp_cid);
     json_t *local_mcp_tools = chat_request_params_apply_local_mcp(&params, engine, hosted_mcp_cid);
 

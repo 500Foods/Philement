@@ -336,7 +336,7 @@ int verify_password_and_status_code(const char* password, int account_id, const 
     json_t* row = json_array_get(result_json, 0);
     bool verified = (row != NULL);
 
-    if (verified && account) {
+    if (verified) {
         // Populate account info from returned row
         json_t* name_json = json_object_get(row, "name");
         if (!name_json) name_json = json_object_get(row, "NAME"); // DB2 uppercase

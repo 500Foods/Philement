@@ -170,10 +170,7 @@ char* chat_storage_store_segment(const char* database, const char* message, size
         return NULL;
     }
 
-    double compression_ratio = 0.0;
-    if (message_len > 0) {
-        compression_ratio = (double)compressed_size / (double)message_len;
-    }
+    double compression_ratio = (double)compressed_size / (double)message_len;
 
     char* compressed_hex = NULL;
     if (compressed && compressed_size > 0) {

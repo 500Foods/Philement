@@ -68,8 +68,6 @@ int land_api_subsystem(void) {
     log_this(SR_API, LOG_LINE_BREAK, LOG_LEVEL_DEBUG, 0);
     log_this(SR_API, "LANDING: " SR_API, LOG_LEVEL_DEBUG, 0);
 
-    bool success = true;
-
     // Step 1: Verify state
     log_this(SR_API, "Verifying state", LOG_LEVEL_DEBUG, 0);
     if (!is_subsystem_running_by_name(SR_API)) {
@@ -91,5 +89,5 @@ int land_api_subsystem(void) {
 
     log_this(SR_API, "LANDING: API - Successfully landed", LOG_LEVEL_DEBUG, 0);
 
-    return success ? 1 : 0;  // Return 1 for success, 0 for failure
+    return 1;
 }

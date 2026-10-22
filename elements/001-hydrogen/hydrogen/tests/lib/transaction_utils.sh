@@ -4,6 +4,9 @@
 # Confirms multi-statement DML commit/rollback behavior that migration LOAD/APPLY rely on.
 
 # CHANGELOG
+# 1.0.7 - 2026-10-22 - MySQL probe uses the mariadb client and does not verify
+#           the server certificate. Fedora 44's mysql name is that client, and
+#           it rejects the Festival MySQL certificate (ERROR 2026).
 # 1.0.6 - 2026-09-30 - Firebird probe no longer sets FIREBIRD=/tmp/firebird.
 #           That lock dir is mode 770 after fbguard starts, so isql stat fails
 #           with HY000 before any SQL. Network isql uses the client default.
@@ -243,7 +246,18 @@ verify_tx_mysql_family() {
     local sql
     local result
     local counts
+    local client="mysql"
+    local -a ssl_args=()
     # DDL often implicit-commits on MySQL/MariaDB; DML is what migration LOAD needs.
+    # Fedora's mysql command is the MariaDB client. Invoking it by that name
+    # prints a deprecation warning, and the client verifies TLS certificates
+    # by default. The Festival MySQL server certificate is not in that trust
+    # store (ERROR 2026). Keep TLS; skip verification. An Oracle mysql client
+    # does not take the MariaDB flag and does not verify by default.
+    if command -v mariadb >/dev/null 2>&1; then
+        client="mariadb"
+        ssl_args=(--skip-ssl-verify-server-cert)
+    fi
     sql=$(cat <<EOF
 DROP TABLE IF EXISTS ${qualified};
 CREATE TABLE ${qualified} (id INT PRIMARY KEY, val VARCHAR(128));
@@ -260,7 +274,7 @@ SELECT COUNT(*) AS c FROM ${qualified};
 DROP TABLE ${qualified};
 EOF
 )
-    result=$(mysql -h "${host}" -P "${port}" -u "${user}" -p"${pass}" "${db}" \
+    result=$("${client}" "${ssl_args[@]}" -h "${host}" -P "${port}" -u "${user}" -p"${pass}" "${db}" \
         -N -B -e "${sql}" 2>&1) || {
         echo "mysql_error:${result}"
         return 1

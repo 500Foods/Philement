@@ -195,12 +195,6 @@ TerminalSession* find_or_create_terminal_session(struct lws *wsi)
         return NULL;
     }
 
-    // Additional null check for session_data before proceeding
-    if (!session_data) {
-        log_this(SR_WEBSOCKET, "Session data is null when trying to create terminal session", LOG_LEVEL_ERROR, 0);
-        return NULL;
-    }
-
     // Create new terminal session using terminal config
     // Use default values for rows/cols since they're not in TerminalConfig
     const int DEFAULT_ROWS = 24;
@@ -262,13 +256,11 @@ TerminalSession* find_or_create_terminal_session(struct lws *wsi)
         if (new_session) {
             remove_terminal_session(new_session);
         }
-        if (session_data) {
-            session_data->terminal_session = NULL;
-        }
+        session_data->terminal_session = NULL;
         return NULL;
     }
 
-    log_this(SR_WEBSOCKET, "Created new terminal connection for session: %s", LOG_LEVEL_STATE, 1, new_session ? new_session->session_id : "unknown");
+    log_this(SR_WEBSOCKET, "Created new terminal connection for session: %s", LOG_LEVEL_STATE, 1, new_session->session_id);
 
     return new_session;
 }

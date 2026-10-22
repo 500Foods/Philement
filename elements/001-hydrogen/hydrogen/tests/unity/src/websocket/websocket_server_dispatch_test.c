@@ -253,11 +253,12 @@ void test_context_availability_check(void) {
 
 // Tests for session validation logic
 void test_session_validation_requirements(void) {
-    // Test session validation requirements for different callbacks
+    // Session is absent. Whether validation runs depends on the callback reason.
     const WebSocketSessionData *session = NULL;
     enum lws_callback_reasons reason;
-    
-    // Test callbacks that require session validation
+
+    TEST_ASSERT_NULL(session);
+
     reason = LWS_CALLBACK_ESTABLISHED;
     bool session_required = (reason != LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED &&
                             reason != LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION &&
@@ -266,11 +267,9 @@ void test_session_validation_requirements(void) {
                             reason != LWS_CALLBACK_FILTER_HTTP_CONNECTION &&
                             reason != LWS_CALLBACK_WS_SERVER_BIND_PROTOCOL &&
                             reason != LWS_CALLBACK_WS_SERVER_DROP_PROTOCOL);
-    
-    bool should_validate = (!session && session_required);
-    TEST_ASSERT_TRUE(should_validate);
-    
-    // Test callbacks that don't require session validation
+
+    TEST_ASSERT_TRUE(session_required);
+
     reason = LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION;
     session_required = (reason != LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED &&
                        reason != LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION &&
@@ -279,9 +278,8 @@ void test_session_validation_requirements(void) {
                        reason != LWS_CALLBACK_FILTER_HTTP_CONNECTION &&
                        reason != LWS_CALLBACK_WS_SERVER_BIND_PROTOCOL &&
                        reason != LWS_CALLBACK_WS_SERVER_DROP_PROTOCOL);
-    
-    should_validate = (!session && session_required);
-    TEST_ASSERT_FALSE(should_validate);
+
+    TEST_ASSERT_FALSE(session_required);
 }
 
 void test_session_validation_with_valid_session(void) {
@@ -289,10 +287,8 @@ void test_session_validation_with_valid_session(void) {
     const WebSocketSessionData *session = &test_session;
     enum lws_callback_reasons reason = LWS_CALLBACK_ESTABLISHED;
 
-    // Test with valid session first
     TEST_ASSERT_NOT_NULL(session);
 
-    // With valid session, no validation failure should occur
     bool session_required = (reason != LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED &&
                             reason != LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION &&
                             reason != LWS_CALLBACK_FILTER_NETWORK_CONNECTION &&
@@ -301,15 +297,14 @@ void test_session_validation_with_valid_session(void) {
                             reason != LWS_CALLBACK_WS_SERVER_BIND_PROTOCOL &&
                             reason != LWS_CALLBACK_WS_SERVER_DROP_PROTOCOL);
 
-    bool should_fail = (!session && session_required);
-    TEST_ASSERT_FALSE(should_fail);
+    TEST_ASSERT_TRUE(session_required);
 
-    // Test with NULL session to make conditions variable
+    // Absent session on a reason that requires one
     session = NULL;
-    should_fail = (!session && session_required);
-    TEST_ASSERT_TRUE(should_fail);
+    TEST_ASSERT_NULL(session);
+    TEST_ASSERT_TRUE(session_required);
 
-    // Test with protocol init (doesn't require session)
+    // Protocol init is not in the exclusion list, so it still requires a session
     reason = LWS_CALLBACK_PROTOCOL_INIT;
     session_required = (reason != LWS_CALLBACK_SERVER_NEW_CLIENT_INSTANTIATED &&
                         reason != LWS_CALLBACK_FILTER_PROTOCOL_CONNECTION &&
@@ -319,8 +314,8 @@ void test_session_validation_with_valid_session(void) {
                         reason != LWS_CALLBACK_WS_SERVER_BIND_PROTOCOL &&
                         reason != LWS_CALLBACK_WS_SERVER_DROP_PROTOCOL);
 
-    should_fail = (!session && session_required);
-    TEST_ASSERT_TRUE(should_fail); // Protocol init requires session when session is NULL
+    TEST_ASSERT_NULL(session);
+    TEST_ASSERT_TRUE(session_required);
 }
 
 // Tests for authentication validation in dispatch

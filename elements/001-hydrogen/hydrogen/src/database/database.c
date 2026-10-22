@@ -356,9 +356,6 @@ bool database_validate_query(const char* query_template) {
     bool has_content = false;
     for (size_t i = 0; i < len; i++) {
         unsigned char c = (unsigned char)query_template[i];
-        if (c == '\0') {
-            return false;
-        }
         if (!isspace(c)) {
             has_content = true;
         }

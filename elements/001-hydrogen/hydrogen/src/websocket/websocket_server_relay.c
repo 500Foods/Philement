@@ -268,7 +268,6 @@ void ws_relay_enqueue(const char *event, const char *subject, const json_t *data
     json_t *frame;
     json_t *copy;
     char *text;
-    struct lws_context *wake_ctx = NULL;
 
     if (!event || event[0] == '\0' || !subject || subject[0] == '\0' ||
         !json_is_object(data)) {
@@ -298,6 +297,7 @@ void ws_relay_enqueue(const char *event, const char *subject, const json_t *data
     {
         WsRelayNode *node = ws_relay_head;
         int dropped = 0;
+        struct lws_context *wake_ctx = NULL;
 
         while (node) {
             WebSocketSessionData *session = node->session;

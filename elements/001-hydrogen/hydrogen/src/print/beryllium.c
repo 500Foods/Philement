@@ -335,9 +335,9 @@ bool parse_object_commands(const char *line, ObjectInfo **object_infos, int *num
     if (line == NULL) return false;
 
     if (strstr(line, "EXCLUDE_OBJECT_DEFINE") != NULL) {
-        char *name_pos = strstr(line, "NAME=");
+        const char *name_pos = strstr(line, "NAME=");
         if (name_pos != NULL) {
-            char *name_start = name_pos + 5;
+            const char *name_start = name_pos + 5;
             const char *name_end = strchr(name_start, ' ');
             if (name_end == NULL) {
                 name_end = strchr(name_start, '\n');
@@ -371,9 +371,9 @@ bool parse_object_commands(const char *line, ObjectInfo **object_infos, int *num
     }
 
     if (strstr(line, "EXCLUDE_OBJECT_START") != NULL) {
-        char *name_pos = strstr(line, "NAME=");
+        const char *name_pos = strstr(line, "NAME=");
         if (name_pos != NULL) {
-            char *name_start = name_pos + 5;
+            const char *name_start = name_pos + 5;
             const char *name_end = strchr(name_start, ' ');
             if (name_end == NULL) {
                 name_end = strchr(name_start, '\n');
@@ -418,7 +418,7 @@ int parse_current_layer(const char *line) {
     if (line == NULL) return -1;
 
     // Check for SET_PRINT_STATS_INFO format (Klipper/PrusaSlicer)
-    char *pos = strstr(line, "SET_PRINT_STATS_INFO CURRENT_LAYER=");
+    const char *pos = strstr(line, "SET_PRINT_STATS_INFO CURRENT_LAYER=");
     if (pos != NULL) {
         return atoi(pos + strlen("SET_PRINT_STATS_INFO CURRENT_LAYER="));
     }

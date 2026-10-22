@@ -107,10 +107,7 @@ void setUp(void) {
 }
 
 void tearDown(void) {
-    json_t *cap = mock_api_utils_get_captured_response();
-    if (cap) {
-        json_decref(cap);
-    }
+    /* reset_capture frees the captured JSON. A second json_decref corrupts the heap. */
     mock_api_utils_reset_capture();
     conduit_script_set_jwt_hook(NULL);
     conduit_script_set_submit_hook(NULL);

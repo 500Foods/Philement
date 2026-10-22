@@ -78,18 +78,15 @@ void test_callback_hydrogen_protocol_init_reason(void) {
 }
 
 void test_callback_hydrogen_session_validation_logic(void) {
-    // Test the session validation logic conditions
+    // Session is absent. Whether validation fails depends on the callback reason.
     const WebSocketSessionData *session = NULL;
     enum lws_callback_reasons reason = LWS_CALLBACK_ESTABLISHED;
-    
-    // Test the condition: !session && reason != LWS_CALLBACK_PROTOCOL_INIT
-    bool should_fail = (!session && reason != LWS_CALLBACK_PROTOCOL_INIT);
-    TEST_ASSERT_TRUE(should_fail);
-    
-    // Test the opposite condition
+
+    TEST_ASSERT_NULL(session);
+    TEST_ASSERT_TRUE(reason != LWS_CALLBACK_PROTOCOL_INIT);
+
     reason = LWS_CALLBACK_PROTOCOL_INIT;
-    should_fail = (!session && reason != LWS_CALLBACK_PROTOCOL_INIT);
-    TEST_ASSERT_FALSE(should_fail);
+    TEST_ASSERT_FALSE(reason != LWS_CALLBACK_PROTOCOL_INIT);
 }
 
 // More comprehensive callback_hydrogen tests - logic testing only
@@ -112,20 +109,18 @@ void test_callback_hydrogen_vhost_creation_logic(void) {
     ws_context = &test_context;
     test_context.shutdown = 0;
     test_context.vhost_creating = 1;
-    
-    // Test the condition: ctx && ctx->vhost_creating
-    bool vhost_creating = (ws_context && ws_context->vhost_creating);
-    TEST_ASSERT_TRUE(vhost_creating);
+
+    TEST_ASSERT_NOT_NULL(ws_context);
+    TEST_ASSERT_EQUAL_INT(1, test_context.vhost_creating);
 }
 
 void test_callback_hydrogen_shutdown_conditions(void) {
     // Test shutdown condition logic
     ws_context = &test_context;
     test_context.shutdown = 1;
-    
-    // Test the condition: ctx && ctx->shutdown
-    bool shutdown_active = (ws_context && ws_context->shutdown);
-    TEST_ASSERT_TRUE(shutdown_active);
+
+    TEST_ASSERT_NOT_NULL(ws_context);
+    TEST_ASSERT_EQUAL_INT(1, test_context.shutdown);
 }
 
 void test_callback_hydrogen_callback_reason_categories(void) {
@@ -163,25 +158,20 @@ void test_callback_hydrogen_session_validation_conditions(void) {
     const WebSocketSessionData *session = NULL;
     enum lws_callback_reasons established_reason = LWS_CALLBACK_ESTABLISHED;
 
-    // Test the validation logic: !session && reason != LWS_CALLBACK_PROTOCOL_INIT
-    // For protocol init, session validation is bypassed
-    bool should_fail_established = (!session && established_reason != LWS_CALLBACK_PROTOCOL_INIT);
-    TEST_ASSERT_TRUE(should_fail_established);
+    // An absent session fails validation for reasons other than protocol init.
+    TEST_ASSERT_NULL(session);
+    TEST_ASSERT_TRUE(established_reason != LWS_CALLBACK_PROTOCOL_INIT);
 
-    // Test with different reasons to make conditions variable
     enum lws_callback_reasons other_reason = LWS_CALLBACK_RECEIVE;
-    bool should_fail_other = (!session && other_reason != LWS_CALLBACK_PROTOCOL_INIT);
-    TEST_ASSERT_TRUE(should_fail_other);
+    TEST_ASSERT_TRUE(other_reason != LWS_CALLBACK_PROTOCOL_INIT);
 
-    // Test protocol init case (should not fail validation)
-    // For protocol init, session validation is bypassed regardless of session state
-    bool should_fail_protocol_init = (!session);  // This should be true, but validation is bypassed
-    TEST_ASSERT_TRUE(should_fail_protocol_init);  // Session is NULL, but protocol init bypasses this
+    // Protocol init bypasses session validation. The session is still absent.
+    enum lws_callback_reasons protocol_reason = LWS_CALLBACK_PROTOCOL_INIT;
+    TEST_ASSERT_FALSE(protocol_reason != LWS_CALLBACK_PROTOCOL_INIT);
 
-    // Test with valid session
+    // A present session is not a missing-session failure.
     session = &mock_session;
-    bool should_fail_with_session = (!session && established_reason != LWS_CALLBACK_PROTOCOL_INIT);
-    TEST_ASSERT_FALSE(should_fail_with_session);
+    TEST_ASSERT_NOT_NULL(session);
 }
 
 void test_callback_hydrogen_session_data_structure(void) {

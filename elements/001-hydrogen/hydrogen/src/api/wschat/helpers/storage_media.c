@@ -234,7 +234,6 @@ bool chat_storage_resolve_media_in_content(const char* database,
 
     size_t index;
     json_t* item;
-    bool success = true;
 
     json_array_foreach(content_array, index, item) {
         if (!json_is_object(item)) {
@@ -293,8 +292,12 @@ bool chat_storage_resolve_media_in_content(const char* database,
         free(media_data);
         if (!base64) {
             free(mime_type);
-            success = false;
-            break;
+            json_decref(content_array);
+            json_decref(new_array);
+            if (error_message) {
+                *error_message = strdup("Failed to resolve media reference");
+            }
+            return false;
         }
 
         /* Build data URL */
@@ -303,8 +306,12 @@ bool chat_storage_resolve_media_in_content(const char* database,
         if (!data_url) {
             free(base64);
             free(mime_type);
-            success = false;
-            break;
+            json_decref(content_array);
+            json_decref(new_array);
+            if (error_message) {
+                *error_message = strdup("Failed to resolve media reference");
+            }
+            return false;
         }
         sprintf(data_url, "data:%s;base64,%s", mime, base64);
         free(base64);
@@ -323,14 +330,6 @@ bool chat_storage_resolve_media_in_content(const char* database,
     }
 
     json_decref(content_array);
-
-    if (!success) {
-        json_decref(new_array);
-        if (error_message) {
-            *error_message = strdup("Failed to resolve media reference");
-        }
-        return false;
-    }
 
     /* Convert new array to string */
     *resolved_json = json_dumps(new_array, JSON_COMPACT);

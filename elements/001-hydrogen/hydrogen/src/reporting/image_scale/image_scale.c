@@ -31,9 +31,8 @@ enum MHD_Result image_scale_send_error(struct MHD_Connection *connection,
     if (details) {
         json_object_set_new(response, "details", json_string(details));
     }
-    enum MHD_Result result = api_send_json_response(connection, response, http_status);
-    json_decref(response);
-    return result;
+    /* api_send_json_response takes ownership of response. */
+    return api_send_json_response(connection, response, http_status);
 }
 
 enum MHD_Result handle_reporting_image_scale_request(
@@ -289,7 +288,6 @@ enum MHD_Result handle_reporting_image_scale_request(
     DestroyMagickWand(wand);
     json_decref(request_json);
 
-    enum MHD_Result result = api_send_json_response(connection, response, MHD_HTTP_OK);
-    json_decref(response);
-    return result;
+    /* api_send_json_response takes ownership of response. */
+    return api_send_json_response(connection, response, MHD_HTTP_OK);
 }

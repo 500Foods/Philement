@@ -71,7 +71,7 @@ bool load_oidc_config(json_t* root, AppConfig* config) {
 
     // Process core settings
     if (success) {
-        success = success && PROCESS_BOOL(root, oidc, enabled, "OIDC.Enabled", "OIDC");
+        success = PROCESS_BOOL(root, oidc, enabled, "OIDC.Enabled", "OIDC");
         success = success && PROCESS_STRING(root, oidc, issuer, "OIDC.Issuer", "OIDC");
         success = success && PROCESS_STRING(root, oidc, client_id, "OIDC.ClientId", "OIDC");
         success = success && PROCESS_SENSITIVE(root, oidc, client_secret, "OIDC.ClientSecret", "OIDC");

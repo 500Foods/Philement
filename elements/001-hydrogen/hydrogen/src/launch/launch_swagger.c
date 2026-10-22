@@ -30,7 +30,6 @@ LaunchReadiness check_swagger_launch_readiness(void) {
     const char** messages = NULL;
     size_t count = 0;
     size_t capacity = 0;
-    bool ready = true;
 
     // First message is subsystem name
     add_launch_message(&messages, &count, &capacity, strdup(SR_SWAGGER));
@@ -93,16 +92,15 @@ LaunchReadiness check_swagger_launch_readiness(void) {
         return (LaunchReadiness){.subsystem = SR_SWAGGER, .ready = false, .messages = messages};
     }
 
-    // Final decision
-    add_launch_message(&messages, &count, &capacity, strdup(ready ?
-        "  Decide:  Go For Launch of Swagger Subsystem" :
-        "  Decide:  No-Go For Launch of Swagger Subsystem"));
+    // Final decision. Every failure path above has already returned.
+    add_launch_message(&messages, &count, &capacity,
+                       strdup("  Decide:  Go For Launch of Swagger Subsystem"));
 
     finalize_launch_messages(&messages, &count, &capacity);
 
     return (LaunchReadiness){
         .subsystem = SR_SWAGGER,
-        .ready = ready,
+        .ready = true,
         .messages = messages
     };
 }

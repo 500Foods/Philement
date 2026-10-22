@@ -270,9 +270,9 @@ bool mysql_connect(ConnectionConfig* config, DatabaseHandle** connection, const 
     const unsigned int retry_delay_ms[] = {200, 400, 800, 1600};
     const unsigned int max_attempts = 5;
     void* mysql_conn = NULL;
-    void* result = NULL;
 
     for (unsigned int attempt = 1; attempt <= max_attempts; attempt++) {
+        void* result = NULL;
         mysql_conn = mysql_init_ptr(NULL);
         if (!mysql_conn) {
             log_this(SR_DATABASE, "MySQL connection initialization failed", LOG_LEVEL_ERROR, 0);

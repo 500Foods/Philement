@@ -171,13 +171,7 @@ bool mssql_prepare_statement(DatabaseHandle* connection, const char* name, const
         mssql_SQLGetDiagRec_ptr(SQL_HANDLE_STMT, stmt_handle, 1, sqlstate, &native_error,
                          message, sizeof(message), &text_length);
         log_this(SR_DATABASE, "MSSQL PREPARE failed: %s", LOG_LEVEL_ERROR, 1, (char*)message);
-        if (mssql_SQLFreeHandle_ptr) {
-            mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
-        } else {
-            log_this(SR_DATABASE, "mssql_SQLFreeHandle_ptr not available for freeing statement", LOG_LEVEL_ERROR, 0);
-            free(prepare_sql);
-            return false;
-        }
+        mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
         free(prepare_sql);
         return false;
     }
@@ -185,13 +179,7 @@ bool mssql_prepare_statement(DatabaseHandle* connection, const char* name, const
     // Create prepared statement structure
     PreparedStatement* prepared_stmt = calloc(1, sizeof(PreparedStatement));
     if (!prepared_stmt) {
-        if (mssql_SQLFreeHandle_ptr) {
-            mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
-        } else {
-            log_this(SR_DATABASE, "mssql_SQLFreeHandle_ptr not available for freeing statement", LOG_LEVEL_ERROR, 0);
-            free(prepare_sql);
-            return false;
-        }
+        mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
         free(prepare_sql);
         return false;
     }
@@ -212,12 +200,7 @@ bool mssql_prepare_statement(DatabaseHandle* connection, const char* name, const
             free(prepared_stmt->name);
             free(prepared_stmt->sql_template);
             free(prepared_stmt);
-            if (mssql_SQLFreeHandle_ptr) {
-                mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
-            } else {
-                log_this(SR_DATABASE, "mssql_SQLFreeHandle_ptr not available for freeing statement", LOG_LEVEL_ERROR, 0);
-                return false;
-            }
+            mssql_SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
             return false;
         }
     }

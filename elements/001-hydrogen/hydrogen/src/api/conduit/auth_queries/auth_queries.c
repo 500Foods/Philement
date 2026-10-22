@@ -688,7 +688,16 @@ enum MHD_Result handle_conduit_auth_queries_request(
             // Create mapping array and is_duplicate array
             mapping_array = malloc(original_query_count * sizeof(size_t));
             is_duplicate = malloc(original_query_count * sizeof(bool));
-            
+            if (!mapping_array || !is_duplicate) {
+                log_this(SR_AUTH, "%s: Failed to allocate rate-limit mapping", LOG_LEVEL_ERROR, 1, conduit_service_name());
+                json_decref(deduplicated_queries);
+                free(mapping_array);
+                free(is_duplicate);
+                free(database);
+                json_decref(request_json);
+                return send_conduit_error_response(connection, "Internal server error", MHD_HTTP_INTERNAL_SERVER_ERROR);
+            }
+
             for (size_t i = 0; i < original_query_count; i++) {
                 if (i < unique_query_count) {
                     mapping_array[i] = i;

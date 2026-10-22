@@ -98,7 +98,7 @@ bool load_network_config(json_t* root, AppConfig* config) {
     }
 
     // Process interface settings
-    success = success && PROCESS_SECTION(root, "Network.Interfaces");
+    success = PROCESS_SECTION(root, "Network.Interfaces");
     success = success && PROCESS_SIZE(root, &config->network, max_interfaces, "Network.Interfaces.MaxInterfaces", "Network");
     success = success && PROCESS_SIZE(root, &config->network, max_ips_per_interface, "Network.Interfaces.MaxIPsPerInterface", "Network");
     success = success && PROCESS_SIZE(root, &config->network, max_interface_name_length, "Network.Interfaces.MaxInterfaceNameLength", "Network");

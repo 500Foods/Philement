@@ -40,19 +40,8 @@ bool sqlite_validate_connection_string(const char* connection_string) {
     // Allow :memory: and file paths
     if (strcmp(connection_string, ":memory:") == 0) return true;
 
-    // Check for basic file path validity (no null bytes, reasonable length)
+    // Check for basic file path validity (reasonable length)
     if (len > 4096) return false; // Path too long
-
-    // Check for null bytes in path (null bytes should only be at the end)
-    for (size_t i = 0; i < len; i++) {
-        if (connection_string[i] == '\0') {
-            // Null byte found - this is only valid at the end of the string
-            if (i < len - 1) {
-                return false; // Null byte in middle of string
-            }
-            break; // End of string reached
-        }
-    }
 
     return true;
 }

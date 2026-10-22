@@ -97,7 +97,7 @@ bool mcp_auth_aud_is_resource_uri(const char *aud) {
 
 char *mcp_prm_metadata_url(const MCPConfig *cfg) {
     const char *resource = mcp_auth_resource(cfg);
-    const char *path;
+    char *path;
     char origin[512];
     char *slash;
     char *out;

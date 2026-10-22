@@ -118,8 +118,8 @@ void test_token_code_exchange_happy(void) {
     TEST_ASSERT_NOT_NULL(id_token);
 
     /* Verify RS256 signature on id_token */
-    char *dot1 = strchr(id_token, '.');
-    char *dot2 = strchr(dot1 + 1, '.');
+    const char *dot1 = strchr(id_token, '.');
+    const char *dot2 = strchr(dot1 + 1, '.');
     size_t hlen = (size_t)(dot1 - id_token);
     size_t plen = (size_t)(dot2 - dot1 - 1);
     char *hb64 = (char*)malloc(hlen + 1U);

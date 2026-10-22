@@ -705,7 +705,6 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
     ParameterList* param_list = NULL;
     TypedParameter** ordered_params = NULL;
     size_t param_count = 0;
-    char* positional_sql = NULL;
     void** bound_values = NULL;
     long* str_len_indicators = NULL;
     int exec_result = -1;
@@ -720,7 +719,7 @@ bool db2_execute_query(DatabaseHandle* connection, QueryRequest* request, QueryR
         
         if (param_list && param_list->count > 0) {
             // Convert named parameters to positional
-            positional_sql = convert_named_to_positional(
+            char* positional_sql = convert_named_to_positional(
                 request->sql_template, param_list, DB_ENGINE_DB2,
                 &ordered_params, &param_count, designator
             );

@@ -165,24 +165,14 @@ bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const c
         SQLGetDiagRec_ptr(SQL_HANDLE_STMT, stmt_handle, 1, sqlstate, &native_error, 
                          message, sizeof(message), &text_length);
         log_this(SR_DATABASE, "DB2 PREPARE failed: %s", LOG_LEVEL_ERROR, 1, (char*)message);
-        if (SQLFreeHandle_ptr) {
-            SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
-        } else {
-            log_this(SR_DATABASE, "SQLFreeHandle_ptr not available for freeing statement", LOG_LEVEL_ERROR, 0);
-            return false;
-        }
+        SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
         return false;
     }
 
     // Create prepared statement structure
     PreparedStatement* prepared_stmt = calloc(1, sizeof(PreparedStatement));
     if (!prepared_stmt) {
-        if (SQLFreeHandle_ptr) {
-            SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
-        } else {
-            log_this(SR_DATABASE, "SQLFreeHandle_ptr not available for freeing statement", LOG_LEVEL_ERROR, 0);
-            return false;
-        }
+        SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
         return false;
     }
 
@@ -201,12 +191,7 @@ bool db2_prepare_statement(DatabaseHandle* connection, const char* name, const c
             free(prepared_stmt->name);
             free(prepared_stmt->sql_template);
             free(prepared_stmt);
-            if (SQLFreeHandle_ptr) {
-                SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
-            } else {
-                log_this(SR_DATABASE, "SQLFreeHandle_ptr not available for freeing statement", LOG_LEVEL_ERROR, 0);
-                return false;
-            }
+            SQLFreeHandle_ptr(SQL_HANDLE_STMT, stmt_handle);
             return false;
         }
     }

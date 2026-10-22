@@ -101,7 +101,6 @@ int mdns_server_run_probe(mdns_server_t *server)
 {
     int attempt;
     int tries;
-    int waited;
 
     if (!server) {
         return -1;
@@ -123,8 +122,9 @@ int mdns_server_run_probe(mdns_server_t *server)
         }
         mdns_server_clear_probe_conflicts(server);
         for (tries = 0; tries < MDNS_PROBE_TRIES && !mdns_server_system_shutdown; tries++) {
+            int waited = 0;
+
             mdns_server_send_probe(server);
-            waited = 0;
             while (waited < MDNS_PROBE_GAP_MS && !mdns_server_system_shutdown) {
                 usleep(10000);
                 waited += 10;

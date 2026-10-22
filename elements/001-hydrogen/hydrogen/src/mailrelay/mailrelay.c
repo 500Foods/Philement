@@ -65,13 +65,7 @@ bool mailrelay_recover_stale_sending_rows(void) {
     // before the cache is populated (other engines lose the race to
     // network latency but are not guaranteed safe).
     const char* database = config->Database;
-    if (database == NULL || database[0] == '\0') {
-        if (app_config->databases.connection_count >= 1 &&
-            app_config->databases.connections[0].name) {
-            database = app_config->databases.connections[0].name;
-        }
-    }
-    if (database && database[0] != '\0' && global_queue_manager) {
+    if (global_queue_manager) {
         unsigned int waited = 0;
         const unsigned int step_ms = 25;
         const unsigned int timeout_ms = 30000;

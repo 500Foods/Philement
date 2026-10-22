@@ -344,10 +344,8 @@ bool firebird_parse_connstring_url(const char* conn_str,
         // Could be "host:port" or "host:port:dir" or just a filename with ':'
         // In Firebird URL, host:port uses ':' as separator
         *colon = '\0';
-        if (host_out_sz > 0) {
-            strncpy(host_out, segment, (size_t)host_out_sz - 1);
-            host_out[(size_t)host_out_sz - 1] = '\0';
-        }
+        strncpy(host_out, segment, (size_t)host_out_sz - 1);
+        host_out[(size_t)host_out_sz - 1] = '\0';
         // Port is after the first ':'
         const char* port_str = colon + 1;
         // Check for a second ':' (embedded-port variant) — just take first segment as port

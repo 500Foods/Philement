@@ -320,7 +320,7 @@ bool database_engine_execute(DatabaseHandle* connection, QueryRequest* request, 
      * did something wrong" errors fail immediately because retrying
      * them just wastes time and clutters the log.
      */
-    int max_retries = (request && request->max_retries > 0) ? request->max_retries : 0;
+    int max_retries = (request->max_retries > 0) ? request->max_retries : 0;
     int total_attempts = max_retries + 1;
     bool result_success = false;
     QueryResult* attempt_result = NULL;

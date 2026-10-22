@@ -285,7 +285,7 @@ bool mailrelay_validate_message(const MailRelayMessage* m, char* err, size_t err
         if (err) snprintf(err, err_cap, "subject exceeds maximum length");
         return false;
     }
-    if (m->from && !mailrelay_is_safe_header_value(m->from)) {
+    if (!mailrelay_is_safe_header_value(m->from)) {
         if (err) snprintf(err, err_cap, "CRLF found in From header");
         return false;
     }
@@ -293,7 +293,7 @@ bool mailrelay_validate_message(const MailRelayMessage* m, char* err, size_t err
         if (err) snprintf(err, err_cap, "CRLF found in Reply-To header");
         return false;
     }
-    if (m->subject && !mailrelay_is_safe_header_value(m->subject)) {
+    if (!mailrelay_is_safe_header_value(m->subject)) {
         if (err) snprintf(err, err_cap, "CRLF found in Subject header");
         return false;
     }

@@ -91,7 +91,6 @@ int mcp_session_count(void) {
 int mcp_session_reap(int idle_timeout_seconds) {
     McpSessionEntry *cur;
     McpSessionEntry *prev;
-    McpSessionEntry *gone;
     time_t now;
     int expired = 0;
 
@@ -104,7 +103,7 @@ int mcp_session_reap(int idle_timeout_seconds) {
     cur = mcp_session_head;
     while (cur) {
         if ((now - cur->last_seen) >= (time_t)idle_timeout_seconds) {
-            gone = cur;
+            McpSessionEntry *gone = cur;
             cur = cur->next;
             if (prev) {
                 prev->next = cur;

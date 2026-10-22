@@ -7,22 +7,21 @@ conflicts. Active plan:
 [`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md)
 (supersedes
 [`/docs/Li/plans/LITHIUM_SPRINT.md`](/docs/Li/plans/LITHIUM_SPRINT.md)).
-Pause point 2026-10-16: Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, and 8 are complete.
-Phases 5a–5d and 6 are deferred. Andrew reported Acuranzo 1389–1393 applied.
+Pause point 2026-10-22: Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, and 9 are complete.
+Phases 5a–5d and 6 stay deferred. Andrew reported Acuranzo 1389–1393 applied.
 Scripting save, update, and duplicate send INTEGER `INVOKABLE`. Delete uses
-QueryRef 131. `acuranzo_1394.lua` (Lookup 059 key 13) is written and was not
-in that report. Phase 9 is in progress (2026-10-17): the Run tab is in
-`scripting-invoke.js`. The manual `Api.Echo` lines are still open.
-On an older schema, Run stays disabled until QueryRef 87 returns
-`invokable` 1. Andrew is sorting that schema. Do not rebuild the
-panel. Do not apply migrations. Do not open Phase 10. The report writer (manager 24,
+QueryRef 131. On the 500 Courses Lithium database, Lookup 059 key 13 is
+`scripts/script-manager`. Andrew confirmed `Api.Echo` on
+`https://lithium.500courses.com`: Wait on `BBTDC`, Wait off `CCCRP`, both
+completed. Next is Phase 10. Discuss it and wait for approval before
+editing. He does deploys and login checks. Do not apply migrations. The report writer (manager 24,
 [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md),
 Phases 0–71, Phase 0 approved 2026-10-10) stays parked. Its next
 phase is Phase 1, and only after Andrew pulls that plan in. PDF is
 the default export there. Phased work follows
 [`/docs/PLANNING.md`](/docs/PLANNING.md).
 
-**Last reviewed:** 2026-10-17 (CATCHUP Phase 9 in progress; resume after QueryRef 87 returns `invokable` 1, then the manual `Api.Echo` gate).
+**Last reviewed:** 2026-10-22 (CATCHUP Phase 9 complete. Andrew confirmed both `Api.Echo` runs. Next is Phase 10, after its questions. Phases 5a–5d and 6 stay deferred.)
 
 ---
 
@@ -222,7 +221,7 @@ Theme keyboard `loadManager(1)` is still dead (1 is not in the menu registry).
 
 **Real UI:** Login, Main, Queries, Lookups, Style (Apply and Copy write the
 CSS editor text into `#style-manager-preview`; Undo and Redo stay disabled),
-Version History, Scripting (list, Lua editor, save, duplicate, delete, and a Run tab whose manual `Api.Echo` pass is still open), Profile (language,
+Version History, Scripting (list, Lua editor, save, duplicate, delete, and a Run tab; Andrew confirmed `Api.Echo` 2026-10-22), Profile (language,
 date formats, photo, and Lookups settings persist; other pages refuse save),
 Session Log, Terminal, Crimson, Tour.
 
@@ -318,7 +317,7 @@ GET /api/conduit/script/{job_id}
 
 `invokeScript` and `getScriptJob` live in `src/shared/conduit.js`
 (CATCHUP Phase 2, 2026-10-16). The Scripting Run tab calls them
-(CATCHUP Phase 9, in progress). A wait-true POST uses
+(CATCHUP Phase 9, complete 2026-10-22). A wait-true POST uses
 `timeout_seconds` plus 5 seconds. Course Manager and Course Builder
 do not invoke yet. Course Builder operator buttons must use this
 surface, not new C. `sanitizeHtml` is in `src/core/utils.js`.
@@ -417,16 +416,18 @@ strips a top-level `params._hydrogen`, and polls
 `GET /api/conduit/script/{job_id}` when Wait is off (250, 500, 1000,
 then 2000 ms). Payload tests are
 `tests/unit/managers/scripting-save.test.js` and
-`tests/unit/managers/scripting-invoke.test.js`. The manual `Api.Echo`
-pass is still open (CATCHUP Phase 9). A database whose queries 87 and
-89 omit `invokable` keeps Run disabled. The Lua highlighter accepts
-long brackets (`src/core/codemirror.js`, 2026-10-17). That fix is in
-the tree; the bundle `codemirror-setup-C4xZ7-ri.js` does not have it.
+`tests/unit/managers/scripting-invoke.test.js`. Andrew confirmed
+`Api.Echo` on `https://lithium.500courses.com` (Wait on `BBTDC`,
+Wait off `CCCRP`, both completed). A database whose
+queries 87 and 89 omit `invokable` keeps Run disabled. The Lua
+highlighter accepts long brackets (`src/core/codemirror.js`,
+2026-10-17). That fix is in the tree; confirm the deployed bundle
+before retesting scripts that use `[[`.
 
-**Missing (CATCHUP Phase 10).** Lookup 059 key 13 is
-`acuranzo_1394.lua` and was not in the apply report.
+**Missing (CATCHUP Phase 10).** On the 500 Courses database, Lookup
+059 key 13 is `scripts/script-manager`.
 
-- `invokable` column visibility / edit (1394 tableDef is unapplied)
+- `invokable` column visibility / edit
 - Validate/luacheck, run-as-role
 - `LITHIUM-MGR-SCRIPT.md`
 

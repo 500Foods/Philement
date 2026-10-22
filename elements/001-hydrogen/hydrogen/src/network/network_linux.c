@@ -437,7 +437,6 @@ double interface_time(const char *ip_str) {
     }
 
     // Auto-detect iface for link-local scoping
-    const char *iface = NULL;
     char *iface_copy = NULL;  // For freeing the strdup result
     char dest_str[INET6_ADDRSTRLEN + 10];
     strncpy(dest_str, resolved_ip_str, sizeof(dest_str) - 1);
@@ -449,9 +448,8 @@ double interface_time(const char *ip_str) {
     if (is_linklocal) {
         iface_copy = find_iface_for_ip(resolved_ip_str);
         if (iface_copy) {
-            iface = iface_copy;
             size_t len = strlen(resolved_ip_str);
-            snprintf(dest_str + len, sizeof(dest_str) - len, "%%%s", iface);
+            snprintf(dest_str + len, sizeof(dest_str) - len, "%%%s", iface_copy);
         } else {
             return 0.000000;  // Unreachable link-local (setup fail)
         }

@@ -139,6 +139,11 @@ void test_segment_exists_db_hit(void) {
 
     chat_storage_compress_message(content, strlen(content), &compressed, &compressed_size);
     hash_hex = calloc(compressed_size * 2 + 1, 1);
+    if (!hash_hex) {
+        free(compressed);
+        TEST_FAIL();
+        return;
+    }
     for (size_t i = 0; i < compressed_size; i++) {
         sprintf(hash_hex + i * 2, "%02x", compressed[i]);
     }

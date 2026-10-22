@@ -557,9 +557,8 @@ void test_websocket_server_run_invalid_context(void) {
     WebSocketServerContext *saved_context = ws_context;
     ws_context = NULL;
 
-    // Test the condition that would trigger line 301
-    bool should_return_early = (!ws_context || ws_context->shutdown);
-    TEST_ASSERT_TRUE(should_return_early);
+    // A null context is the early-return path at line 301
+    TEST_ASSERT_NULL(ws_context);
 
     // Restore context
     ws_context = saved_context;

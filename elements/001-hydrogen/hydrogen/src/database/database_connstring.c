@@ -43,7 +43,7 @@ char* database_connstring_extract_query_value(const char* query, const char* key
  * Helper function to extract DB2 parameter value and strip quotes
  */
 char* database_connstring_extract_db2_value(const char* connection_string, const char* key) {
-    char* pos = strstr(connection_string, key);
+    const char* pos = strstr(connection_string, key);
     if (!pos) return NULL;
 
     pos += strlen(key);

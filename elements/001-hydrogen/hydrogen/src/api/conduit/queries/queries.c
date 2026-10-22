@@ -552,7 +552,19 @@ enum MHD_Result handle_conduit_queries_request(
             // Create mapping array and is_duplicate array
             mapping_array = malloc(original_query_count * sizeof(size_t));
             is_duplicate = malloc(original_query_count * sizeof(bool));
-            
+            if (!mapping_array || !is_duplicate) {
+                log_this(SR_API, "%s: Failed to allocate rate-limit mapping", LOG_LEVEL_ERROR, 1, conduit_service_name());
+                json_decref(deduplicated_queries);
+                free(mapping_array);
+                free(is_duplicate);
+                json_decref(request_json);
+
+                json_t *error_response = json_object();
+                json_object_set_new(error_response, "success", json_false());
+                json_object_set_new(error_response, "error", json_string("Internal server error"));
+                return api_send_json_response(connection, error_response, MHD_HTTP_INTERNAL_SERVER_ERROR);
+            }
+
             for (size_t i = 0; i < original_query_count; i++) {
                 if (i < unique_query_count) {
                     mapping_array[i] = i;  // Map to itself

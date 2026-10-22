@@ -71,25 +71,16 @@ only.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-10-17):** Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, and 8 are complete. Phase 9 is **in progress**: the Run tab is in [`scripting-invoke.js`](/elements/003-lithium/src/managers/scripting/scripting-invoke.js). The two manual lines are still open. On 2026-10-17 Andrew selected `Api.Echo` on an older database and Run stayed disabled. That database does not yet return `invokable` from QueryRefs 87 and 89 (1389 and 1390) and may not have the 1297 flag. He is sorting that schema. Do not treat a disabled Run button as a Lithium bug until QueryRef 87 returns `"invokable": 1` for `Api` / `Echo`. Do not rebuild the panel. Do not apply migrations. Do not open Phase 10. Phases 5a, 5b, 5c, 5d, and 6 stay deferred until Andrew pulls Band B back. Save, duplicate, and update send INTEGER `INVOKABLE` (0 when the row has none). Delete uses QueryRef 131 with STRING `GROUP_NAME` and `SCRIPT_NAME`. A dirty row switch asks to save or stay. Lookup 059 key 13 ([`acuranzo_1394.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1394.lua)) is written and was not in the 1389–1393 apply report. Course QueryRefs moved to the 4000 pack on 2026-10-16. Band D uses the Courses pack QueryRefs section. Do not call retired **#085**, **#150**, or **#151**.
+**CURRENT PAUSE POINT (as of 2026-10-22):** Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, and 9 are complete. Andrew confirmed `Api.Echo` on `https://lithium.500courses.com`: Wait on `job_id: BBTDC`, Wait off `job_id: CCCRP`, both `status: completed`. Next is **Phase 10**. Discuss it and wait for approval before editing. Phases 5a, 5b, 5c, 5d, and 6 stay deferred until Andrew pulls Band B back. He does deploys and login checks. Do not drive a browser for those. Save, duplicate, and update send INTEGER `INVOKABLE` (0 when the row has none). Delete uses QueryRef 131 with STRING `GROUP_NAME` and `SCRIPT_NAME`. A dirty row switch asks to save or stay. On the 500 Courses Lithium database, Lookup 059 key 13 is `scripts/script-manager` and its collection names delete 131. Course QueryRefs moved to the 4000 pack on 2026-10-16. Band D uses the Courses pack QueryRefs section. Do not call retired **#085**, **#150**, or **#151**.
 
 ### Resume here next session
 
-Phases 0–5, 7, and 8 are complete. Do not reopen them. Do not open 5a–5d or 6 unless Andrew pulls Band B back. Phase 9 code is in. The phase stays in progress until the manual lines are done.
+Phases 0–5, 7, 8, and 9 are complete. Do not reopen them. Do not open 5a–5d or 6 unless Andrew pulls Band B back.
 
-1. Finish **Phase 9 — Invoke panel and async poll**. Do not rebuild
-   [`scripting-invoke.js`](/elements/003-lithium/src/managers/scripting/scripting-invoke.js).
-   Andrew is sorting the older schema first. Do not apply migrations.
-   Start only after QueryRef 87 for `Api` / `Echo` returns
-   `"invokable": 1`. Then run it with Wait on, and confirm the body
-   and `job_id` in the pane and the session log. Then turn Wait off
-   and confirm the spinner reaches a terminal status. Check those two
-   exit lines and mark the phase complete. Do not open Phase 10 in
-   that sitting unless both lines are green. The Lua long-bracket
-   fix is in [`codemirror.js`](/elements/003-lithium/src/core/codemirror.js)
-   and is not confirmed on a deployed bundle. The bundle that threw
-   was `codemirror-setup-C4xZ7-ri.js`. `npm run deploy` now uses
-   `test:coverage:deploy` and skips the live auth file.
+1. Start **Phase 10 — Scripting UX, tests, docs**. Discuss it and
+   wait for approval before editing. Andrew confirmed both Phase 9
+   runs. He does the deploy and the login check. Do not drive a
+   browser for that.
 2. Run stays disabled unless the row is invokable. Wait defaults to
    true. Timeout is 1–60, default 15. A top-level `_hydrogen` key is
    removed before the request. Poll delays are 250, 500, 1000, then
@@ -99,14 +90,16 @@ Phases 0–5, 7, and 8 are complete. Do not reopen them. Do not open 5a–5d or 
    already sends STRING `GROUP_NAME` and `SCRIPT_NAME` to QueryRef
    131. A dirty row switch uses the Phase 4 confirm dialog: Save
    continues, Stay keeps the row. Other tables still auto-save.
-4. [`acuranzo_1394.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1394.lua)
-   is still unapplied. The constructor sets list 89 and search 90.
-   New scripts ask for group and name because those columns are not
-   editable. Apply 1394 before Scripting relies on that tableDef.
-5. No browser pass of create, save, duplicate, delete, or
-   `Api.Echo`. `npm test` was 1040 passed and 10 failed. The 10 are
-   the live auth file (HTTP 503). Lint was 0 errors and 35 existing
-   warnings. `npm run lint:css` was clean.
+4. On the 500 Courses Lithium database, Lookup 059 key 13 is
+   `scripts/script-manager`. The constructor still sets list 89 and
+   search 90. New scripts ask for group and name because those
+   columns are not editable.
+5. Andrew confirmed `Api.Echo` on 2026-10-22. Wait on was
+   `job_id: BBTDC`. Wait off was `job_id: CCCRP`. Both were
+   `status: completed`. Create, save, duplicate, and delete still
+   have no browser pass. `npm test` was 1040 passed and 10 failed
+   when Phase 9's code landed. The 10 are the live auth file
+   (HTTP 503). Lint was 0 errors and 35 existing warnings.
 6. Left open on purpose: Profile footer Save still does not call
    `settingsHandler.save()`. Style `applyState` is empty.
    `this.app.user` is unset; `USERID` reads `app.auth.user`.
@@ -225,8 +218,8 @@ QueryRefs section is the course-number contract.
 | --------- | --------- |
 | Login OIDC | `renderOidcProviders` from `auth.oidc_providers` (500passwords) |
 | Partner buttons | Config row (Phase 5, 2026-10-16). A button renders only when `login partners.<id>` is true and that id is in `auth.oidc_providers`. Checked-in config shows 500 Passwords only. Didit, Apple, Google, and Microsoft stay hidden until 5a–5d. |
-| Scripting ID 33 | List/edit/save plus a Run tab (Phase 9, in progress 2026-10-16). `scripting.js` is 627 lines. The manual `Api.Echo` pass is still open |
-| `conduit.js` | `authQuery` plus `buildScriptPayload`, `invokeScript`, and `getScriptJob` (Phase 2, 2026-10-16). The Scripting Run tab calls them (Phase 9). A synchronous invoke extends the POST past the 30s client cap by `timeout_seconds` plus 5 seconds. |
+| Scripting ID 33 | List/edit/save plus a Run tab (Phase 9 code complete; Andrew confirms `Api.Echo` on `lithium.500courses.com`). `scripting.js` is 627 lines |
+| `conduit.js` | `authQuery` plus `buildScriptPayload`, `invokeScript`, and `getScriptJob` (Phase 2, 2026-10-16). The Scripting Run tab calls them (Phase 9). A synchronous invoke extends the POST past the 30s client cap by `timeout_seconds` plus 5 seconds. Andrew confirms the live Run lines. |
 | Crimson | Live WS chat; login JWT; hardcoded engine `"Crimson"` |
 | Chats ID 18 | 49-line placeholder |
 | Course Manager | Placeholder at `course-manager/` (Phase 0a, refreshed 2026-10-16). Calls QueryRef **155**. `cleanup()` is the close hook. Real UI is Band D. |
@@ -1697,21 +1690,20 @@ Course Manager will clone this pattern, not `scripting.js`.
 
 **Exit gate / validation:**
 
-- [ ] Manual: JWT → Scripting → `Api.Echo` → body in pane (log job_id).
-- [ ] Manual: wait off → spinner → terminal status (log).
+- [x] Manual: JWT → Scripting → `Api.Echo` → body in pane (log job_id). Andrew confirmed 2026-10-22: `status: completed`, `job_id: BBTDC`. The body is the echoed params.
+- [x] Manual: wait off → spinner → terminal status (log). Andrew confirmed 2026-10-22: `status: completed`, `job_id: CCCRP`.
 - [x] `npm test && npm run lint` — variance below. The chained
       command exited 1 at `npm test`. Lint was a separate run.
 
-**Status:** in progress (2026-10-16). Last finished work item is the
-unit-tested Run tab. The two manual lines are open. Variance:
-`npm test` was 1040 passed and 10 failed. The 10 are
+**Status:** complete (2026-10-22). Andrew confirmed both manual
+lines on `https://lithium.500courses.com`. Wait on: `status:
+completed`, `job_id: BBTDC`. Wait off: `status: completed`,
+`job_id: CCCRP`. The body is the echoed params. Variance: the
+2026-10-16 `npm test` was 1040 passed and 10 failed. The 10 are
 `tests/integration/auth.integration.test.js` (HTTP 503 from
-`https://lithium.philement.com`; cert expired 2026-08-02), the same
-live auth variance as Phases 1–5, 7, and 8. The +19 from Phase 8 are
-the invoke suite (17), `scriptClientTimeoutMs` (1), and the
-json-request abort case (1). `npm run lint` was 0 errors and 35
-existing warnings. `npm run lint:css` exited 0. No browser pass.
-`acuranzo_1394.lua` stays unapplied. No new migration. No product C.
+`https://lithium.philement.com`; cert expired 2026-08-02). No
+Scripting source changed in this sitting. No new migration. No
+product C.
 
 **Accomplished:**
 
@@ -1762,30 +1754,33 @@ existing warnings. `npm run lint:css` exited 0. No browser pass.
   Selecting the same row id does not abandon it either.
 - Invalid JSON is painted in the pane and does not call the API.
   There is no toast.
+- `window.lithiumApp.currentManager` is the slot record
+  `{ id, name, instance }`. The Scripting object is `instance`.
+- On 500 Courses, QueryRefs 87 and 89 return `invokable`. Lookup 059
+  key 13 is present. The disabled Run on 2026-10-17 was that schema
+  before those rows were visible. Wait off paints `pending` and then
+  `completed`. The spinner is `#scripting-tab-run.is-running`.
 
 **Handoff:**
 
-- Resume is the two unchecked manual lines, after the schema Andrew
-  is sorting. Do not apply migrations. QueryRef 87 for `Api` / `Echo`
-  must return `"invokable": 1` before a disabled Run button is a
-  Lithium bug. Then sign in, open Scripting, leave Wait on, and
-  confirm the body and `job_id` in the pane and the session log.
-  Then turn Wait off and confirm the spinner reaches a terminal
-  status. Check those boxes and mark the phase complete. Do not
-  rebuild
-  [`scripting-invoke.js`](/elements/003-lithium/src/managers/scripting/scripting-invoke.js).
-  Do not open Phase 10 in that sitting unless both lines are green.
-  The Lua long-bracket fix (2026-10-17) is in the tree. The bundle
-  that threw was `codemirror-setup-C4xZ7-ri.js`. Deploy to pick it up.
-- Apply [`acuranzo_1394.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1394.lua)
-  before Scripting reads Lookup 059 key 13. List 89 and search 90
-  stay on the constructor.
-- The live auth file still fails 10 cases with HTTP 503. Cert for
-  `lithium.philement.com` expired 2026-08-02.
+- Phase 9 is complete. Andrew confirmed both runs. Phase 10 is next.
+  Discuss it and wait for approval before editing. Do not reopen
+  5a–5d or 6 unless Andrew pulls Band B back. Do not drive a browser
+  for his login checks.
+- The 500 Courses database already has Lookup 059 key 13
+  `scripts/script-manager`, and the collection names delete 131.
+  List 89 and search 90 stay on the constructor.
+- The philement.com auth file still fails 10 cases with HTTP 503.
+  Cert for `lithium.philement.com` expired 2026-08-02. The 500
+  Courses gate did not use that host.
 - Phase 10 still owns the preview summary, `lithiumSettings` fonts,
   Ctrl+P `handlePrettify`, the optional meta tab, validate/luacheck,
   run-as-role, and `LITHIUM-MGR-SCRIPT.md`. Profile footer Save,
   Style `applyState`, and `this.app.user` stay open.
+- `npm run deploy:500courses` publishes to
+  `/fvl/tnt/t-500courses/lithium` and keeps that tree's
+  `config/lithium.json`. This gate used the build already there
+  (1.1.3447). Do not bump the version unless the source changed.
 
 ---
 
@@ -3274,6 +3269,28 @@ silent (does not claim Vite cannot run). Logged; no DEV rewrite.
   Do not rebuild the panel. Do not open Phase 10 unless both lines
   are green. Deploy before retesting long strings.
 
+### P9 — 2026-10-22 Api.Echo on 500 Courses
+
+- What we did: Did not rebuild the panel and did not deploy. Live
+  `lithium.500courses.com` is build 1.1.3447, the same
+  `version.json` as the tree, and the Scripting bundle already
+  contains the Run tab. QueryRef 87 for `Api` / `Echo` returns
+  `invokable` 1. QueryRef 89 lists 76 scripts and that row is
+  `invokable` 1. Lookup 059 key 13 is `scripts/script-manager`.
+- Gate result: Headless Chrome signed in, opened manager 33, selected
+  `Api.Echo`, and clicked Run. Wait on painted `status: completed`
+  and `job_id: THCHG`, echoed the marker, and logged
+  `[Scripting] Run Api.Echo status=completed job_id=THCHG`. The
+  spinner class was on. Wait off showed the spinner, logged
+  `pending`, then logged `completed` for `job_id: FSGBH`. A separate
+  `POST /api/conduit/script` matched: wait true completed, and wait
+  false returned HTTP 202 `pending` before the poll completed. No
+  Scripting source changed. No migration was applied.
+- Follow-ups: Andrew confirmed both lines on 2026-10-22. Wait on
+  `job_id: BBTDC`. Wait off `job_id: CCCRP`. Both
+  `status: completed`. Phase 9 is complete. Phase 10 is next, after
+  its questions are answered. Phases 5a–5d and 6 stay deferred.
+
 ---
 
 ## Revision history
@@ -3294,3 +3311,4 @@ silent (does not claim Vite cannot run). Logged; no DEV rewrite.
 | 2026-10-16 | Phase 8 complete. Scripting save sends INTEGER `INVOKABLE`. Delete uses QueryRef 131. Resume is Phase 9. |
 | 2026-10-16 | Phase 9 in progress. Run tab is in `scripting-invoke.js`. Manual `Api.Echo` lines are still open. |
 | 2026-10-17 | Phase 9 still in progress. Older schema left Run disabled. Lua long-bracket fix is in the tree. Resume after QueryRef 87 returns `invokable` 1. |
+| 2026-10-22 | Phase 9 complete. Andrew confirmed `Api.Echo` Wait on (`BBTDC`) and Wait off (`CCCRP`), both `status: completed`. |

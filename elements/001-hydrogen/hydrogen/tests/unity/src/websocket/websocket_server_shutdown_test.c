@@ -350,22 +350,13 @@ void test_lws_service_cancellation_logic(void) {
     
     ws_context = &test_context;
     test_context.lws_context = (struct lws_context*)0x1234; // Mock non-NULL pointer
-    
-    // Test condition for service cancellation
-    bool should_cancel = (ws_context && ws_context->lws_context);
-    TEST_ASSERT_TRUE(should_cancel);
-    
-    // Test multiple cancellation calls (should be safe)
-    if (should_cancel) {
-        // In real code: lws_cancel_service(ctx->lws_context) called multiple times
-        // For test, just verify the condition holds
-        TEST_ASSERT_NOT_NULL(ws_context->lws_context);
-    }
-    
-    // Test with null context
+
+    TEST_ASSERT_NOT_NULL(ws_context);
+    TEST_ASSERT_NOT_NULL(ws_context->lws_context);
+
+    // Test with null libwebsockets context
     test_context.lws_context = NULL;
-    should_cancel = (ws_context && ws_context->lws_context);
-    TEST_ASSERT_FALSE(should_cancel);
+    TEST_ASSERT_NULL(ws_context->lws_context);
 }
 
 // Integration test for complete shutdown workflow

@@ -47,7 +47,9 @@ void tearDown(void) {
 
 static DatabaseQueue *make_queue(bool with_cache, bool healthy) {
     DatabaseQueue *queue = calloc(1, sizeof(DatabaseQueue));
-    if (!with_cache) return queue;
+    if (!queue || !with_cache) {
+        return queue;
+    }
     queue->chat_engine_cache = chat_engine_cache_create("test_db");
     ChatEngineConfig *engine = chat_engine_config_create(
         1, "engine", CEC_PROVIDER_OPENAI, "test-model", "https://example.test", "key",
@@ -88,6 +90,10 @@ void test_handle_auth_chats_request_success(void) {
     set_valid_request();
     mock_auth_chat_deps_set_proxy_response_body(OPENAI_RESPONSE);
     DatabaseQueue *queue = make_queue(true, true);
+    if (!queue) {
+        TEST_FAIL();
+        return;
+    }
     TEST_ASSERT_NOT_NULL(chat_engine_cache_lookup_by_name(queue->chat_engine_cache, "engine"));
     mock_dbqueue_set_get_database_result(queue);
 
@@ -101,6 +107,10 @@ void test_handle_auth_chats_request_partial_failure(void) {
     mock_auth_chat_deps_set_proxy_response_body(OPENAI_RESPONSE);
     mock_auth_chat_deps_set_multi_failure_index(0);
     DatabaseQueue *queue = make_queue(true, true);
+    if (!queue) {
+        TEST_FAIL();
+        return;
+    }
     TEST_ASSERT_NOT_NULL(chat_engine_cache_lookup_by_name(queue->chat_engine_cache, "engine"));
     mock_dbqueue_set_get_database_result(queue);
 
@@ -112,6 +122,10 @@ void test_handle_auth_chats_request_partial_failure(void) {
 void test_handle_auth_chats_request_no_healthy_engines(void) {
     set_valid_request();
     DatabaseQueue *queue = make_queue(true, false);
+    if (!queue) {
+        TEST_FAIL();
+        return;
+    }
     mock_dbqueue_set_get_database_result(queue);
 
     TEST_ASSERT_EQUAL(MHD_YES, run_handler());
@@ -122,6 +136,10 @@ void test_handle_auth_chats_request_no_healthy_engines(void) {
 void test_handle_auth_chats_request_chat_disabled(void) {
     set_valid_request();
     DatabaseQueue *queue = make_queue(false, false);
+    if (!queue) {
+        TEST_FAIL();
+        return;
+    }
     mock_dbqueue_set_get_database_result(queue);
 
     TEST_ASSERT_EQUAL(MHD_YES, run_handler());
