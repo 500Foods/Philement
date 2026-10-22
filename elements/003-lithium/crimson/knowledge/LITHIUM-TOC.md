@@ -68,6 +68,7 @@ URL in `config/lithium.json`). For most code edits prefer `npm test` and
 | [LITHIUM-MGR-VERSION.md](LITHIUM-MGR-VERSION.md) | Version Manager — history browser (Lookups 44/45) |
 | [LITHIUM-MGR-SESSION.md](LITHIUM-MGR-SESSION.md) | Session Log Manager — debug output viewer |
 | [LITHIUM-MGR-SCRIPT.md](LITHIUM-MGR-SCRIPT.md) | Scripting Manager — Lua editor, summary preview, Run |
+| [LITHIUM-MGR-COURSE.md](LITHIUM-MGR-COURSE.md) | Course Manager — staff shell, QueryRef 155 gate |
 | [LITHIUM-MGR-USERPROFILE.md](LITHIUM-MGR-USERPROFILE.md) | User Profile Manager — preferences |
 
 ### LithiumTable (Tabulator-Based Tables)

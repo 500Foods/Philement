@@ -1,108 +1,49 @@
 /**
  * Course Manager — Manager ID 34
  *
- * First official 500 Courses operator deployment.
- * Authz for v1: JWT roles claim (staff/admin) — see CATCHUP L3.
- *
- * Full feature set: CATCHUP Band D (Phases 12–18).
+ * Staff shell for the 500 Courses operator surface.
+ * Authz is CATCHUP L3: QueryRef 155 names, then staff or admin.
+ * Catalog, commerce, learners, and inbox land in later Band D phases.
  */
 
 import { processIcons } from '../../core/icons.js';
-import { parseRoleIds, isStaffRoleSet } from '../../core/utils.js';
-import { getClaims } from '../../core/jwt.js';
-import { authQuery } from '../../shared/conduit.js';
-import { log, Subsystems, Status } from '../../core/log.js';
+import { resolveCourseManagerAccess } from './course-access.js';
 import './course-manager.css';
 
-/** Role IDs seeded for staff/admin (acuranzo_1380). */
-const STAFF_ROLE_IDS = [2, 3];
+const SHELL_TEXT = 'Manage the 500 Courses catalog, enrollments, commerce, and learner accounts.';
 
 export default class CourseManager {
   constructor(app, container) {
     this.app = app;
     this.container = container;
     this.elements = {};
-    this._isStaff = false;
-    this._roleNames = [];
+    this._allowed = false;
   }
 
   async init() {
     await this.render();
-    this.setupEventListeners();
-  }
-
-  async _checkStaffAccess() {
-    const claims = getClaims();
-    if (!claims) {
-      this._isStaff = false;
-      this._roleNames = [];
-      log(Subsystems.MANAGER, Status.INFO, 'Course Manager: no JWT claims');
-      return;
-    }
-    const roleIds = parseRoleIds(claims.roles);
-    log(Subsystems.MANAGER, Status.INFO,
-      `Course Manager: role_ids=[${roleIds.join(',')}] resolving names`);
-
-    if (roleIds.length === 0) {
-      this._isStaff = false;
-      this._roleNames = [];
-      return;
-    }
-
-    this._roleNames = await this._resolveRoleNames(roleIds);
-    this._isStaff = isStaffRoleSet(this._roleNames);
-    log(Subsystems.MANAGER, Status.INFO,
-      `Course Manager: resolved names=[${this._roleNames.join(',')}] staff=${this._isStaff}`);
-  }
-
-  async _resolveRoleNames(roleIds) {
-    if (!this.app.api) {
-      const names = roleIds
-        .map(id => STAFF_ROLE_IDS.includes(id) ? (id === 2 ? 'staff' : 'admin') : null)
-        .filter(Boolean);
-      return names;
-    }
-
-    try {
-      const results = await Promise.all(
-        roleIds.map((id) => authQuery(this.app.api, 155, { INTEGER: { ROLEID: id } }))
-      );
-      return results.flat().map((r) => r.name).filter(Boolean);
-    } catch (err) {
-      log(Subsystems.MANAGER, Status.WARN,
-        `Course Manager: role name resolution failed, falling back to ID check: ${err.message}`);
-      return roleIds
-        .map(id => STAFF_ROLE_IDS.includes(id) ? (id === 2 ? 'staff' : 'admin') : null)
-        .filter(Boolean);
-    }
   }
 
   async render() {
-    await this._checkStaffAccess();
-
-    if (!this._isStaff) {
+    const access = await resolveCourseManagerAccess(this.app && this.app.api);
+    this._allowed = access.allowed;
+    if (!access.allowed) {
       this._renderDenied();
       return;
     }
+    this._renderShell();
+  }
 
+  _renderShell() {
     this.container.innerHTML = `
       <div class="course-manager-container">
         <div class="course-manager-header">
           <fa fa-book-open></fa>
           <h2>Course Manager</h2>
         </div>
-        <div class="course-manager-body">
-          <p class="course-manager-intro">
-            Manage 500 Courses catalog, enrollments, commerce, and learner administration.
-          </p>
-          <div class="course-manager-placeholder">
-            <fa fa-info-circle></fa>
-            <span>Course Manager UI is coming in Phase 12 (CATCHUP Band D).</span>
-          </div>
-        </div>
+        <p class="course-manager-intro">${SHELL_TEXT}</p>
       </div>
     `;
-
     processIcons(this.container);
   }
 
@@ -120,9 +61,6 @@ export default class CourseManager {
       </div>
     `;
     processIcons(this.container);
-  }
-
-  setupEventListeners() {
   }
 
   cleanup() {

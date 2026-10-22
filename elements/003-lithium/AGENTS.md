@@ -7,7 +7,7 @@ conflicts. Active plan:
 [`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md)
 (supersedes
 [`/docs/Li/plans/LITHIUM_SPRINT.md`](/docs/Li/plans/LITHIUM_SPRINT.md)).
-Pause point 2026-10-22: Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, and 11 are complete.
+Pause point 2026-10-22: Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, and 12 are complete.
 Phases 5a–5d and 6 stay deferred. Andrew reported Acuranzo 1389–1393 applied.
 Scripting save, update, and duplicate send INTEGER `SCRIPT_TYPE`,
 `STATUS`, `USERID`, and `INVOKABLE`. A blank schedule or run time is
@@ -22,16 +22,19 @@ Ctrl+P (`@johnnymorganz/stylua` 2.6.0 defaults), pretty-print then
 save, the Preview tab (summary, then Lua), and that 9px survives a
 reload. He declined the optional meta tab. It does not move
 forward. Phase 11 is complete: CodeMirror 6 is the only stack, Lua
-folds statement blocks, and `H.` names use the namespace tag. Next
-is Phase 12 (Course Manager scaffold). Discuss it and wait for
-approval. He does deploys and login checks. Do not apply migrations. The report writer (manager 24,
+folds statement blocks, and `H.` names use the namespace tag.
+Phase 12 is complete: Course Manager is a staff shell (title and
+one sentence). QueryRef 155 failure denies. The sidebar omits ID
+34 when the gate fails. Andrew reported Acuranzo 1378, 1379,
+1380, and 1381 applied. Next is Phase 13 (courses list). Discuss
+it and wait for approval. He does deploys and login checks. Do not apply migrations. The report writer (manager 24,
 [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md),
 Phases 0–71, Phase 0 approved 2026-10-10) stays parked. Its next
 phase is Phase 1, and only after Andrew pulls that plan in. PDF is
 the default export there. Phased work follows
 [`/docs/PLANNING.md`](/docs/PLANNING.md).
 
-**Last reviewed:** 2026-10-22 (CATCHUP Phase 11 complete. CodeMirror 6 is the only stack. Lua folds statement blocks and tints `H.` names. Next is Phase 12. Phases 5a–5d and 6 stay deferred.)
+**Last reviewed:** 2026-10-22 (CATCHUP Phase 12 complete. Course Manager is a staff shell. QueryRef 155 failure denies and the sidebar omits ID 34. Next is Phase 13. Phases 5a–5d and 6 stay deferred.)
 
 ---
 
@@ -181,7 +184,7 @@ and broke CSS order (`vite.config.js` comments).
 
 | Kind | Where | IDs |
 |------|-------|-----|
-| Menu | `ManagerLoader.managerRegistry` | **7–35** (34 Course Manager and 35 Course Builder are registered placeholders) |
+| Menu | `ManagerLoader.managerRegistry` | **7–35** (34 Course Manager is the staff shell; 35 Course Builder is still a placeholder) |
 | Utility | `LithiumApp.utilityManagerRegistry` | `user-profile`=3, `session-log`=4, `terminal`=5 |
 | Special | Auth / Main / Tour / Crimson | Login + Main loaded outside registry. Tour is a side-effect import from Main. Crimson is a popout. |
 
@@ -218,7 +221,7 @@ disagree in places.
 | 30–31 | Sync, Camera | placeholders |
 | 32 | Terminal (menu) | `terminal/` (also utility key `terminal`) |
 | 33 | Scripting | `scripting/` |
-| 34 | Course Manager | `course-manager/` — placeholder (Phase 0a). Calls QueryRef **155**. Band D is the real UI. |
+| 34 | Course Manager | `course-manager/` — staff shell (Phase 12). QueryRef **155** is the roles gate. Later Band D phases add the screens. |
 | 35 | Course Builder | `course-builder/` — placeholder (Phase 0a). Band E is the real UI. |
 
 Tour matching uses **numeric ID only** (`"003.Profile"` matches anything with
@@ -241,10 +244,11 @@ Notifications, Annotation, Ticketing, Reports, Role, Security, AI Auditor,
 Job, Sync, Camera, …). `LITHIUM-MGR.md` marks several as Implemented — it is
 wrong. Collapse to one `PlaceholderManager` rather than copy-paste.
 
-Course Manager (34) and Course Builder (35) are separate registered
-placeholders from Phase 0a. Course Manager calls QueryRef **155** and
-implements `cleanup()`. Course Builder implements `teardown()`. Their
-real UI is Band D and Band E.
+Course Manager (34) is the Phase 12 staff shell. It calls QueryRef
+**155** and implements `cleanup()`. A failed name lookup denies, and
+the sidebar omits the row. Course Builder (35) is still the Phase 0a
+placeholder and implements `teardown()`. Band D continues with Phase
+13. Band E is the Course Builder UI.
 
 ### New manager checklist (corrected)
 
@@ -482,10 +486,15 @@ id is still `0`. `this.app.user` is still unset on `LithiumApp`.
 ## Course Manager (ID 34) and Course Builder (ID 35)
 
 **First deploy:** Course Manager — PRIORITIZE Part 5 in
-`/mnt/extra/Projects/500-Courses-Reception/PRIORITIZE.md`. The
-placeholder is already registered. Authz v1 is CATCHUP L3: integer
-`role_id`s resolved to `roles.name` `staff` or `admin`. Hydrogen
-2.23 `account_roles` is a later cutover (Band H).
+`/mnt/extra/Projects/500-Courses-Reception/PRIORITIZE.md`. Phase 12
+(2026-10-22) replaced the placeholder with a title and one sentence.
+Authz v1 is CATCHUP L3: integer `role_id`s resolved through QueryRef
+**155** to `roles.name` `staff` or `admin`. A failed resolve denies.
+The sidebar omits ID 34 when the gate fails. A direct open shows the
+lock panel. Doc:
+[`/docs/Li/LITHIUM-MGR-COURSE.md`](/docs/Li/LITHIUM-MGR-COURSE.md).
+Hydrogen 2.23 `account_roles` is a later cutover (Band H). Phase 13
+is the courses list. Discuss it and wait for approval.
 
 **Course Builder pipeline:**  
 `/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md` (CB-0..35).

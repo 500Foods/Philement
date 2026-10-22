@@ -71,18 +71,21 @@ only.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-10-22):** Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, and 11 are complete. Andrew confirmed `Api.Echo` on `https://lithium.500courses.com`: Wait on `job_id: BBTDC`, Wait off `job_id: CCCRP`, both `status: completed`. **Phase 10** is complete. Andrew confirmed the tulip button, Ctrl+P, pretty-print then save, the Preview tab (summary, then Lua), and that a 9px font survives a reload. He declined the optional meta tab. It does not move forward. **Phase 11** is complete. CodeMirror 6 is the only stack. Lua folds `function`, `if`, `do`, `for`, and `while` through `end`, and `repeat` through `until`. `H.` and `H.name` use the namespace tag. Next is Phase 12 (Course Manager scaffold). Discuss it and wait for approval. Do not start it in this sitting. Phases 5a, 5b, 5c, 5d, and 6 stay deferred until Andrew pulls Band B back. He does deploys and login checks. Do not drive a browser for those. Save, duplicate, and update send INTEGER `SCRIPT_TYPE`, `STATUS`, `USERID`, and `INVOKABLE` (0 when the row has none). A blank schedule or run time is `''`. Andrew applied Acuranzo 1395 (QueryRef 130) and 1396 (QueryRef 129) and confirmed pretty-print then save on 2026-10-22. Delete uses QueryRef 131 with STRING `GROUP_NAME` and `SCRIPT_NAME`. A dirty row switch asks to save or stay. On the 500 Courses Lithium database, Lookup 059 key 13 is `scripts/script-manager` and its collection names delete 131. Course QueryRefs moved to the 4000 pack on 2026-10-16. Band D uses the Courses pack QueryRefs section. Do not call retired **#085**, **#150**, or **#151**.
+**CURRENT PAUSE POINT (as of 2026-10-22):** Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, and 12 are complete. Andrew confirmed `Api.Echo` on `https://lithium.500courses.com`: Wait on `job_id: BBTDC`, Wait off `job_id: CCCRP`, both `status: completed`. **Phase 10** is complete. Andrew confirmed the tulip button, Ctrl+P, pretty-print then save, the Preview tab (summary, then Lua), and that a 9px font survives a reload. He declined the optional meta tab. It does not move forward. **Phase 11** is complete. CodeMirror 6 is the only stack. Lua folds `function`, `if`, `do`, `for`, and `while` through `end`, and `repeat` through `until`. `H.` and `H.name` use the namespace tag. **Phase 12** is complete. A staff or admin JWT sees a Course Manager title and one sentence. QueryRef 155 failure denies, and the sidebar omits ID 34. A direct open still shows the lock panel. Andrew reported Acuranzo 1378, 1379, 1380, and 1381 applied. Next is Phase 13 (courses list). Discuss it and wait for approval. Do not start it in this sitting. Phases 5a, 5b, 5c, 5d, and 6 stay deferred until Andrew pulls Band B back. He does deploys and login checks. Do not drive a browser for those. Save, duplicate, and update send INTEGER `SCRIPT_TYPE`, `STATUS`, `USERID`, and `INVOKABLE` (0 when the row has none). A blank schedule or run time is `''`. Andrew applied Acuranzo 1395 (QueryRef 130) and 1396 (QueryRef 129) and confirmed pretty-print then save on 2026-10-22. Delete uses QueryRef 131 with STRING `GROUP_NAME` and `SCRIPT_NAME`. A dirty row switch asks to save or stay. On the 500 Courses Lithium database, Lookup 059 key 13 is `scripts/script-manager` and its collection names delete 131. Course QueryRefs moved to the 4000 pack on 2026-10-16. Band D uses the Courses pack QueryRefs section. Do not call retired **#085**, **#150**, or **#151**.
 
 ### Resume here next session
 
-Phases 0–5, 7, 8, 9, 10, and 11 are complete. Do not reopen them. Do not open 5a–5d or 6 unless Andrew pulls Band B back.
+Phases 0–5, 7, 8, 9, 10, 11, and 12 are complete. Do not reopen them. Do not open 5a–5d or 6 unless Andrew pulls Band B back.
 
-1. **Phase 12** is next (Course Manager scaffold, ID 34). Discuss it
-   and wait for approval before editing. Do not start it in the
-   Phase 11 close-out. Andrew declined the Scripting meta tab. It
+1. **Phase 13** is next (courses list, ID 34). Discuss it and wait
+   for approval before editing. Do not start it in the Phase 12
+   close-out. There is still no staff list of unpublished courses.
+   The next caller-facing Courses QueryRef is **4008**. Do not
+   invent it in the SPA. Andrew declined the Scripting meta tab. It
    stays declined. He does deploys and login checks. Do not drive a
-   browser for those. Fold All and the `H.` tint have unit coverage
-   and no live click yet.
+   browser for those. The Course Manager shell has unit coverage
+   and no live click yet. Fold All and the `H.` tint have unit
+   coverage and no live click yet.
 2. Run stays disabled unless the row is invokable. Wait defaults to
    true. Timeout is 1–60, default 15. A top-level `_hydrogen` key is
    removed before the request. Poll delays are 250, 500, 1000, then
@@ -227,7 +230,7 @@ QueryRefs section is the course-number contract.
 | `conduit.js` | `authQuery` plus `buildScriptPayload`, `invokeScript`, and `getScriptJob` (Phase 2, 2026-10-16). The Scripting Run tab calls them (Phase 9). A synchronous invoke extends the POST past the 30s client cap by `timeout_seconds` plus 5 seconds. Andrew confirms the live Run lines. |
 | Crimson | Live WS chat; login JWT; hardcoded engine `"Crimson"` |
 | Chats ID 18 | 49-line placeholder |
-| Course Manager | Placeholder at `course-manager/` (Phase 0a, refreshed 2026-10-16). Calls QueryRef **155**. `cleanup()` is the close hook. Real UI is Band D. |
+| Course Manager | Staff shell at `course-manager/` (Phase 12, 2026-10-22). QueryRef **155** is the roles gate. A failed resolve denies. The sidebar omits ID 34 when the gate fails. `cleanup()` is the close hook. Courses, commerce, learners, and inbox are later Band D phases. |
 | Course Builder | Placeholder at `course-builder/` (Phase 0a, refreshed 2026-10-16). No QueryRef. Close hook is `teardown()`. Real UI is Band E. |
 | Terminal | Real iframe popup but `DEFAULT_URL` hardcoded to `https://www.philement.com`; not wired to Hydrogen terminal `WebPath`. Troubleshoot in Phase 0c. |
 | Mail / Jobs / Dashboard / Roles | Placeholders |
@@ -347,7 +350,7 @@ rebuilt before this pack is applied. On that rebuilt database, 85,
 | 29 | Queries | `queries/` | Canonical LithiumTable consumer |
 | 32 | Terminal | `terminal/` | Menu 32. Utility key `terminal` **without** numeric 5. |
 | 33 | Scripting | `scripting/` | |
-| **34** | **Course Manager** | `course-manager/` | **First deploy.** Placeholder registered (Phase 0a). Calls QueryRef **155**. Band D is the real UI. |
+| **34** | **Course Manager** | `course-manager/` | **First deploy.** Staff shell (Phase 12). QueryRef **155**. `cleanup()`. Later Band D phases add the screens. |
 | **35** | **Course Builder** | `course-builder/` | Placeholder registered (Phase 0a). Band E is the real UI. |
 
 Tour matching uses **numeric ID only**. Do not give Terminal utility
@@ -2141,7 +2144,7 @@ Builder widgets.
 
 **Entry gate:**
 
-- [ ] Phase 0 reserved ID 34. Phase 1 close path exists. Phase 2
+- [x] Phase 0 reserved ID 34. Phase 1 close path exists. Phase 2
       `invokeScript` exists.
 
 **Reference:**
@@ -2152,30 +2155,120 @@ Builder widgets.
 
 **Work items:**
 
-- [ ] Placeholder already exists from Phase 0a: `course-manager.js`,
+- [x] Placeholder already exists from Phase 0a: `course-manager.js`,
       `course-manager.css`, registry id 34, `_importManager` case 34,
-      `config/lithium.json` `managers`, and `cleanup()`. Markup is
-      inline. The placeholder calls QueryRef **155**. Phase 12
-      replaces that UI. Do not register 34 a second time.
-- [ ] `cleanup()` stays the close hook.
-- [ ] Hide / refuse load when JWT `roles` fails L3. Honest empty/denied
-      state — not a placeholder “under development” that looks like a
-      bug.
-- [ ] Helium menu/lookup seed packet **or** documented temporary load
-      path. No silent dead ID.
-- [ ] Docs stub `docs/Li/LITHIUM-MGR-COURSE.md` pointing at PRIORITIZE
-      Part 5. Word “Lua” does not appear in the UI.
-- [ ] Do not impersonate learners. Do not show secrets.
+      `config/lithium.json` `managers`, and `cleanup()`. Markup stays
+      inline. Phase 12 replaced the “coming in Phase 12” panel. ID 34
+      was not registered a second time.
+- [x] `cleanup()` stays the close hook.
+- [x] Hide / refuse load when JWT `roles` fails L3. Staff sees a title
+      and one sentence. Anyone else sees the lock panel. The sidebar
+      omits ID 34 when the gate fails. A direct open still shows the
+      lock panel.
+- [x] No new Helium file. Andrew reported 1378, 1379, 1380, and 1381
+      applied on the 500 Courses database (2026-10-22). Those rows are
+      the menu path. QueryRef **155** is the name lookup.
+- [x] Docs stub
+      [`/docs/Li/LITHIUM-MGR-COURSE.md`](/docs/Li/LITHIUM-MGR-COURSE.md)
+      points at PRIORITIZE Part 5. The shell text does not contain
+      “Lua”.
+- [x] Do not impersonate learners. Do not show secrets. The shell has
+      no learner data and no secret fields.
 
 **Exit gate / validation:**
 
-- [ ] `npm run build && npm test && npm run lint`
-- [ ] Loader imports ID 34 without throw.
-- [ ] Unit: roles gate helper (allow/deny fixtures).
+- [x] `npm run build && npm test && npm run lint` — variance below.
+      The chained command exits 1 at `npm test`. Lint and build were
+      separate runs. Lint exited 0 and printed no problems. Build
+      completed, including `lint:css`. 2026-10-22: 1097 passed and 10
+      failed. The failures are `auth.integration.test.js` HTTP 503
+      against `https://lithium.philement.com` (cert expired
+      2026-08-02).
+- [x] Loader imports ID 34 without throw.
+      `course-manager.test.js` calls `ManagerLoader._importManager(34)`.
+- [x] Unit: roles gate helper (allow/deny fixtures).
+      `isCourseManagerAuthorized` stays in `utils.test.js`.
+      `course-access.test.js` covers QueryRef 155 allow, deny, and
+      the role-id 2 failure path.
 
-**Status:** pending
+**Status:** complete (2026-10-22). Andrew chose the one-sentence
+staff shell, sidebar hide plus the lock panel, and deny when
+QueryRef 155 cannot resolve names. He reported 1378, 1379, 1380,
+and 1381 applied. Variance: `npm test` was 1097 passed and 10
+failed. The 10 are `tests/integration/auth.integration.test.js`
+(HTTP 503 from `https://lithium.philement.com`; cert expired
+2026-08-02). `npm run lint` exited 0 and printed no problems.
+`npm run build` completed. No new caller-facing QueryRef. No live
+click of the shell.
+
+**Accomplished:**
+
+- [`course-manager.js`](/elements/003-lithium/src/managers/course-manager/course-manager.js)
+  is 71 lines. Staff see “Course Manager” and one sentence. The
+  lock panel stays for a denied open. `cleanup()` clears the
+  container.
+- [`course-access.js`](/elements/003-lithium/src/managers/course-manager/course-access.js)
+  calls QueryRef **155** once per role id. A missing client, a
+  thrown query, or a non-array payload denies and logs. Role ids
+  2 and 3 are not a local allow list.
+- [`main-sidebar.js`](/elements/003-lithium/src/managers/main/main-sidebar.js)
+  drops ID 34 from the grouped menu and from `permittedManagers`
+  when the gate fails. The menu cache is not rewritten.
+- Doc:
+  [`/docs/Li/LITHIUM-MGR-COURSE.md`](/docs/Li/LITHIUM-MGR-COURSE.md).
+  TOC lists it.
+- Tests: `course-access.test.js` 13, `course-manager.test.js` 5.
+  `npm test` was 1097 passed and 10 failed. Lint printed no
+  problems. Build completed.
+
+**Working log:**
+
+- 2026-10-22: Andrew chose a title and one sentence, hiding the
+  sidebar row while keeping the lock panel, and denying when
+  QueryRef 155 fails. He reported 1378, 1379, 1380, and 1381
+  applied. No new migration.
+- 2026-10-22: The shell, the gate, and the sidebar filter landed.
+  `npm test` was 1097 passed and 10 failed (the same auth HTTP
+  503). `npm run lint` exited 0 and printed no problems.
+  `npm run build` completed. `course-manager.js` is 71 lines.
 
 **Lessons learned:**
+
+- The Phase 0b fallback that mapped role id 2 to `staff` and 3 to
+  `admin` hid a failed QueryRef 155. The shell now denies that
+  path. A staff login needs 1380 and 1381 on the database, which
+  Andrew says are applied.
+- `getMenu` returns its cache by reference. Filtering ID 34 has to
+  copy the groups. Writing the filtered list back would hide the
+  row for the rest of the session even after a later allow.
+- `permittedManagers` is what the static sidebar and the last-manager
+  restore both read. Stripping 34 there hides the row on the menu
+  failure path. `loadManager(34)` does not consult that list, so a
+  direct open still paints the lock panel.
+
+**Handoff:**
+
+- Phase 12 is complete. Phase 13 (courses list) is next. Discuss
+  it and wait for approval. Do not edit Phase 13 source in this
+  sitting.
+- There is still no staff “all courses, including unpublished”
+  QueryRef. **4004** is the published catalog. The next
+  caller-facing Courses ref is **4008**. The next Courses file is
+  **4076**. Do not invent either number in the SPA. Prepare a
+  packet only after Phase 13 is approved, and do not apply it.
+- The shell has no live click. He does deploys and login checks.
+  Do not drive a browser for those.
+- Create, duplicate, and delete still have no browser pass. Fold
+  All and the `H.` tint have unit coverage and no live click.
+- Profile footer Save, Style `applyState`, and `this.app.user` stay
+  open. Phases 5a–5d and 6 stay deferred. Reporting stays parked.
+- Variance: `npm test` was 1097 passed and 10 failed, all
+  `auth.integration.test.js` HTTP 503 on
+  `https://lithium.philement.com`. The cert expired 2026-08-02.
+  Lint was a separate run and printed no problems. Build was a
+  separate run and completed.
+- Do not apply migrations. Next free Acuranzo file is still 1397.
+  This phase added no caller-facing QueryRef.
 
 ---
 
@@ -3564,3 +3657,4 @@ silent (does not claim Vite cannot run). Logged; no DEV rewrite.
 | 2026-10-22 | Phase 9 complete. Andrew confirmed `Api.Echo` Wait on (`BBTDC`) and Wait off (`CCCRP`), both `status: completed`. |
 | 2026-10-22 | Phase 10 complete. StyLua, save, summary-then-Lua preview, and font reload are confirmed. The meta tab was declined. Next is Phase 11. |
 | 2026-10-22 | Phase 11 complete. CodeMirror 6 is the only stack. Lua folds statement blocks. `H.` uses the namespace tag. Next is Phase 12. |
+| 2026-10-22 | Phase 12 complete. Course Manager is a staff shell. QueryRef 155 failure denies. The sidebar omits ID 34. Next is Phase 13. |

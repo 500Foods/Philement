@@ -5,9 +5,16 @@
 
 import { getMenu, buildManagerIconsRegistry, clearMenuCache } from '../../shared/menu.js';
 import { canAccessManager } from '../../core/permissions.js';
+import { getClaims } from '../../core/jwt.js';
 import { processIcons, setIcon } from '../../core/icons.js';
 import { initTooltips } from '../../core/tooltip-api.js';
 import { log, Subsystems, Status } from '../../core/log.js';
+import {
+  COURSE_MANAGER_ID,
+  permittedManagersForMenu,
+  resolveCourseManagerAccess,
+  visibleMenuGroups,
+} from '../course-manager/course-access.js';
 
 /**
  * Methods to be mixed into MainManager prototype
@@ -17,8 +24,23 @@ export const sidebarMethods = {
    * Load menu data from server
    */
   async loadMenuData() {
+    let courseManagerAllowed = false;
     try {
-      this.menuData = await getMenu(this.app.api);
+      const access = await resolveCourseManagerAccess(this.app?.api, getClaims());
+      courseManagerAllowed = access.allowed;
+    } catch (error) {
+      log(Subsystems.MANAGER, Status.WARN,
+        `Course Manager: access check failed; sidebar row hidden: ${error.message}`);
+    }
+    this.courseManagerAllowed = courseManagerAllowed;
+    this.permittedManagers = permittedManagersForMenu(
+      this.permittedManagers,
+      courseManagerAllowed
+    );
+
+    try {
+      const menuData = await getMenu(this.app.api);
+      this.menuData = visibleMenuGroups(menuData, courseManagerAllowed);
 
       // Build manager icons registry from menu data
       this.managerIcons = buildManagerIconsRegistry(this.menuData);
@@ -254,6 +276,7 @@ export const sidebarMethods = {
 
     this.permittedManagers.forEach((managerId) => {
       if (!canAccessManager(managerId)) return;
+      if (managerId === COURSE_MANAGER_ID && this.courseManagerAllowed !== true) return;
 
       const managerInfo = this.managerIcons[managerId] || { iconHtml: '<fa fa-cube></fa>', name: `Manager ${managerId}` };
 
