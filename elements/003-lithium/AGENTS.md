@@ -23,18 +23,24 @@ save, the Preview tab (summary, then Lua), and that 9px survives a
 reload. He declined the optional meta tab. It does not move
 forward. Phase 11 is complete: CodeMirror 6 is the only stack, Lua
 folds statement blocks, and `H.` names use the namespace tag.
-Phase 12 is complete: Course Manager is a staff shell (title and
-one sentence). QueryRef 155 failure denies. The sidebar omits ID
-34 when the gate fails. Andrew reported Acuranzo 1378, 1379,
-1380, and 1381 applied. Next is Phase 13 (courses list). Discuss
-it and wait for approval. He does deploys and login checks. Do not apply migrations. The report writer (manager 24,
+Phase 12 is complete: Course Manager is a staff shell. The gate calls `getClaims(retrieveJWT())`. A bare
+`getClaims()` hides the row. Andrew confirmed the Learning group
+shows it and the shell opens. QueryRef 155 failure still denies.
+The sidebar omits ID 34 when the gate fails. Andrew reported
+Acuranzo 1378, 1379, 1380, and 1381 applied. Phase 13 is in
+progress. Staff list **4500**, insert **4501**, update **4502**,
+history **4503** and **4504**. Files `courses_4076.lua` through
+`courses_4080.lua` and Lookup 059 key 14 (`acuranzo_1397.lua`) are
+not applied. **4004** stays the published catalog. The next Courses
+file is **4081** and the next caller ref is **4505**. File numbers
+stay below 4500. Do not start Phase 14. He does deploys and login checks. Do not apply migrations. The report writer (manager 24,
 [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md),
 Phases 0–71, Phase 0 approved 2026-10-10) stays parked. Its next
 phase is Phase 1, and only after Andrew pulls that plan in. PDF is
 the default export there. Phased work follows
 [`/docs/PLANNING.md`](/docs/PLANNING.md).
 
-**Last reviewed:** 2026-10-22 (CATCHUP Phase 12 complete. Course Manager is a staff shell. QueryRef 155 failure denies and the sidebar omits ID 34. Next is Phase 13. Phases 5a–5d and 6 stay deferred.)
+**Last reviewed:** 2026-10-22 (CATCHUP Phase 13 in progress. Staff QueryRefs are 4500–4504. The packet is not applied. The next Courses file is 4081 and the next caller ref is 4505. Phases 5a–5d and 6 stay deferred.)
 
 ---
 
@@ -184,7 +190,7 @@ and broke CSS order (`vite.config.js` comments).
 
 | Kind | Where | IDs |
 |------|-------|-----|
-| Menu | `ManagerLoader.managerRegistry` | **7–35** (34 Course Manager is the staff shell; 35 Course Builder is still a placeholder) |
+| Menu | `ManagerLoader.managerRegistry` | **7–35** (34 Course Manager is the staff catalog; 35 Course Builder is still a placeholder) |
 | Utility | `LithiumApp.utilityManagerRegistry` | `user-profile`=3, `session-log`=4, `terminal`=5 |
 | Special | Auth / Main / Tour / Crimson | Login + Main loaded outside registry. Tour is a side-effect import from Main. Crimson is a popout. |
 
@@ -221,7 +227,7 @@ disagree in places.
 | 30–31 | Sync, Camera | placeholders |
 | 32 | Terminal (menu) | `terminal/` (also utility key `terminal`) |
 | 33 | Scripting | `scripting/` |
-| 34 | Course Manager | `course-manager/` — staff shell (Phase 12). QueryRef **155** is the roles gate. Later Band D phases add the screens. |
+| 34 | Course Manager | `course-manager/` — staff catalog (Phase 13, packet not applied). QueryRef **155** is the roles gate. List **4500**. |
 | 35 | Course Builder | `course-builder/` — placeholder (Phase 0a). Band E is the real UI. |
 
 Tour matching uses **numeric ID only** (`"003.Profile"` matches anything with
@@ -244,11 +250,13 @@ Notifications, Annotation, Ticketing, Reports, Role, Security, AI Auditor,
 Job, Sync, Camera, …). `LITHIUM-MGR.md` marks several as Implemented — it is
 wrong. Collapse to one `PlaceholderManager` rather than copy-paste.
 
-Course Manager (34) is the Phase 12 staff shell. It calls QueryRef
-**155** and implements `cleanup()`. A failed name lookup denies, and
-the sidebar omits the row. Course Builder (35) is still the Phase 0a
+Course Manager (34) lists courses for staff. It calls QueryRef
+**155** first and implements `cleanup()`. A failed name lookup denies, and
+the sidebar omits the row. The catalog calls **4500**, **4501**, and
+**4502**. History calls **4503** and **4504**. Sync and retire stay
+disabled until QueryRef **87** reports `invokable` 1. Course Builder (35) is still the Phase 0a
 placeholder and implements `teardown()`. Band D continues with Phase
-13. Band E is the Course Builder UI.
+14 after Andrew applies the Phase 13 packet. Band E is the Course Builder UI.
 
 ### New manager checklist (corrected)
 
@@ -332,8 +340,11 @@ GET /api/conduit/script/{job_id}
 `invokeScript` and `getScriptJob` live in `src/shared/conduit.js`
 (CATCHUP Phase 2, 2026-10-16). The Scripting Run tab calls them
 (CATCHUP Phase 9, complete 2026-10-22). A wait-true POST uses
-`timeout_seconds` plus 5 seconds. Course Manager and Course Builder
-do not invoke yet. Course Builder operator buttons must use this
+`timeout_seconds` plus 5 seconds. Course Manager calls
+`invokeScript` for `Catalog.SyncFromCanvas` and `Catalog.Retire`
+only when QueryRef 87 says `invokable` is 1. Those scripts are still
+0, so the buttons stay disabled. Course Builder
+does not invoke yet. Course Builder operator buttons must use this
 surface, not new C. `sanitizeHtml` is in `src/core/utils.js`.
 Lookups, Crimson, Version History, and the Queries summary preview
 call it (CATCHUP Phase 3, 2026-10-16).
@@ -487,14 +498,16 @@ id is still `0`. `this.app.user` is still unset on `LithiumApp`.
 
 **First deploy:** Course Manager — PRIORITIZE Part 5 in
 `/mnt/extra/Projects/500-Courses-Reception/PRIORITIZE.md`. Phase 12
-(2026-10-22) replaced the placeholder with a title and one sentence.
-Authz v1 is CATCHUP L3: integer `role_id`s resolved through QueryRef
-**155** to `roles.name` `staff` or `admin`. A failed resolve denies.
-The sidebar omits ID 34 when the gate fails. A direct open shows the
-lock panel. Doc:
+(2026-10-22) is the staff shell. Phase 13 adds the catalog and is
+in progress until the packet is applied. Authz v1 is CATCHUP L3:
+integer `role_id`s from `getClaims(retrieveJWT())`, resolved through
+QueryRef **155** to `roles.name` `staff` or `admin`. A failed
+resolve denies. The sidebar omits ID 34 when the gate fails. A
+direct open shows the lock panel. Andrew confirmed the row and the
+shell on 2026-10-22. Doc:
 [`/docs/Li/LITHIUM-MGR-COURSE.md`](/docs/Li/LITHIUM-MGR-COURSE.md).
-Hydrogen 2.23 `account_roles` is a later cutover (Band H). Phase 13
-is the courses list. Discuss it and wait for approval.
+Hydrogen 2.23 `account_roles` is a later cutover (Band H). Do not
+start Phase 14 until Andrew lists fixture courses.
 
 **Course Builder pipeline:**  
 `/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md` (CB-0..35).

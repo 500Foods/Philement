@@ -1,4 +1,4 @@
-/* Course Manager shell */
+/* Course Manager */
 
 .course-manager-container {
   display: flex;
@@ -30,4 +30,164 @@
 .denied-message {
   margin: var(--space-3) 0 0;
   color: var(--text-secondary);
+}
+
+.course-manager-staff {
+  align-items: stretch;
+  justify-content: flex-start;
+  text-align: left;
+  padding: var(--space-3);
+  overflow: hidden;
+}
+
+.course-manager-staff .course-manager-header {
+  flex-direction: row;
+  align-items: center;
+  max-width: none;
+}
+
+.course-manager-staff .course-manager-intro {
+  margin-top: var(--space-2);
+}
+
+.course-manager-split {
+  display: flex;
+  flex: 1;
+  gap: var(--space-3);
+  width: 100%;
+  min-height: 0;
+  margin-top: var(--space-3);
+}
+
+.course-manager-list,
+.course-manager-detail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.course-manager-list {
+  flex: 1 1 42%;
+}
+
+.course-manager-detail {
+  flex: 1 1 58%;
+  overflow: auto;
+}
+
+.course-manager-list-tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.course-manager-list-tools .input {
+  flex: 1 1 12rem;
+}
+
+.course-retired-label,
+.course-field-check label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-primary);
+}
+
+.course-table-host {
+  flex: 1;
+  min-height: 12rem;
+  overflow: hidden;
+}
+
+.course-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-right: var(--space-2);
+}
+
+.course-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.course-field label,
+.course-field-label {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.course-field-hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.course-readonly-block,
+.course-readonly-line,
+.course-history {
+  margin: 0;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+.course-readonly-block,
+.course-history {
+  padding: var(--space-2);
+  background: var(--bg-secondary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-md);
+}
+
+.course-history {
+  min-height: 4rem;
+  overflow: auto;
+}
+
+.course-image-preview {
+  display: none;
+  max-width: 12rem;
+  max-height: 8rem;
+}
+
+.course-image-preview.is-visible {
+  display: block;
+}
+
+.course-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.course-action-tip {
+  display: inline-flex;
+}
+
+.course-action-tip button:disabled {
+  pointer-events: none;
+}
+
+@media (width <= 800px) {
+  .course-manager-staff {
+    overflow: auto;
+  }
+
+  .course-manager-split {
+    flex-direction: column;
+  }
+
+  .course-manager-list,
+  .course-manager-detail {
+    flex: none;
+    overflow: visible;
+  }
+
+  .course-table-host {
+    min-height: 16rem;
+  }
 }

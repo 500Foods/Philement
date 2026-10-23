@@ -1,11 +1,14 @@
 # Courses pack — running list
 
 Inventory of the Courses pack after the cut out of Acuranzo. Files are
-`courses_4000.lua` through `courses_4075.lua`. The next file is 4076.
-Caller-facing QueryRefs are 4000–4007. The next one is 4008.
-`Orchestrators.Orchestrator` stayed in Acuranzo.
+`courses_4000.lua` through `courses_4080.lua`. The next file is 4081.
+File numbers stay below 4500. Caller-facing QueryRefs are 4000–4007
+and 4500–4504. The next SPA ref is 4505. `auth_query` must not use a
+ref that equals a file number: bootstrap orders by query type
+descending, and the first cache row is the type-1001 reverse
+migration. `Orchestrators.Orchestrator` stayed in Acuranzo.
 
-**Last updated:** 2026-10-16.
+**Last updated:** 2026-10-22.
 
 Reception is a separate tree, `500-Courses-Reception`, not this repo.
 Lithium's course manager has barely started. Both still call the old
@@ -23,7 +26,7 @@ database, the same SQL schema, and the same `queries`, `lookups`, and
 | Acuranzo | 1000–1999 | Base. Courses files leave a hole. MCP, mail, and dialect files keep their numbers. |
 | Argent | 2000–2999 | Live pack. |
 | Gaius | 3000–3999 | Reserved. The on-disk `gaius/` tree is still its own bootstrap, not this pack. |
-| Courses | 4000–4999 | Cut. Files 4000–4075. QueryRefs 4000–4007. |
+| Courses | 4000–4999 | Files 4000–4080. Older caller refs 4000–4007. SPA refs 4500–4504. File numbers stay below 4500. |
 
 The printing design under `elements/002-helium/helium/` is gone, so
 band 4 is free. `database.lua` and `database_<engine>.lua` live in
@@ -276,14 +279,17 @@ Not part of the Reception update. Recorded so it is not rediscovered.
 
 ## When a number is assigned
 
-The cut below is assigned. The next Courses file is 4076. The next
-caller-facing QueryRef is 4008. One migration installs one
-caller-facing ref. Later patches keep that same ref.
+The cut below is assigned. Phase 13 adds files 4076–4080 and caller
+refs 4500–4504. Those five files are not applied. The next Courses
+file is 4081. The next caller-facing QueryRef is 4505. One migration
+installs one caller-facing ref. Later patches keep that same ref.
 
-File numbers, caller-facing QueryRefs, and lookup ids share this
-thousand, the same way Argent shares 2000–2999. The same integer may
-be all three. The audiences differ. Lookup 055 keeps family id 055
-because that family already existed in Acuranzo.
+File numbers stay in 4000–4499. Caller refs that `auth_query` calls
+stay in 4500–4999. 4000–4007 remain, and Lua still loads 4006 and
+4007 by `query_id`. A new SPA ref must not reuse those integers.
+Lookup 055 keeps family id 055 because that family already existed
+in Acuranzo. Lookup 059 key 14 (`courses/course-manager`) is
+`acuranzo_1397.lua`. The next Acuranzo file is 1398.
 
 The Acuranzo README points here for the retired numbers. The generated
 migration index only lists files that exist, so the hole does not

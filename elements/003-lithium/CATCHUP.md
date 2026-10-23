@@ -71,20 +71,24 @@ only.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-10-22):** Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, and 12 are complete. Andrew confirmed `Api.Echo` on `https://lithium.500courses.com`: Wait on `job_id: BBTDC`, Wait off `job_id: CCCRP`, both `status: completed`. **Phase 10** is complete. Andrew confirmed the tulip button, Ctrl+P, pretty-print then save, the Preview tab (summary, then Lua), and that a 9px font survives a reload. He declined the optional meta tab. It does not move forward. **Phase 11** is complete. CodeMirror 6 is the only stack. Lua folds `function`, `if`, `do`, `for`, and `while` through `end`, and `repeat` through `until`. `H.` and `H.name` use the namespace tag. **Phase 12** is complete. A staff or admin JWT sees a Course Manager title and one sentence. QueryRef 155 failure denies, and the sidebar omits ID 34. A direct open still shows the lock panel. Andrew reported Acuranzo 1378, 1379, 1380, and 1381 applied. Next is Phase 13 (courses list). Discuss it and wait for approval. Do not start it in this sitting. Phases 5a, 5b, 5c, 5d, and 6 stay deferred until Andrew pulls Band B back. He does deploys and login checks. Do not drive a browser for those. Save, duplicate, and update send INTEGER `SCRIPT_TYPE`, `STATUS`, `USERID`, and `INVOKABLE` (0 when the row has none). A blank schedule or run time is `''`. Andrew applied Acuranzo 1395 (QueryRef 130) and 1396 (QueryRef 129) and confirmed pretty-print then save on 2026-10-22. Delete uses QueryRef 131 with STRING `GROUP_NAME` and `SCRIPT_NAME`. A dirty row switch asks to save or stay. On the 500 Courses Lithium database, Lookup 059 key 13 is `scripts/script-manager` and its collection names delete 131. Course QueryRefs moved to the 4000 pack on 2026-10-16. Band D uses the Courses pack QueryRefs section. Do not call retired **#085**, **#150**, or **#151**.
+**CURRENT PAUSE POINT (as of 2026-10-22):** Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, and 12 are complete. Andrew confirmed `Api.Echo` on `https://lithium.500courses.com`: Wait on `job_id: BBTDC`, Wait off `job_id: CCCRP`, both `status: completed`. **Phase 10** is complete. Andrew confirmed the tulip button, Ctrl+P, pretty-print then save, the Preview tab (summary, then Lua), and that a 9px font survives a reload. He declined the optional meta tab. It does not move forward. **Phase 11** is complete. CodeMirror 6 is the only stack. Lua folds `function`, `if`, `do`, `for`, and `while` through `end`, and `repeat` through `until`. `H.` and `H.name` use the namespace tag. **Phase 12** is complete. Andrew confirmed the Learning group shows Course Manager and that he can open the shell. The gate reads the stored token with `getClaims(retrieveJWT())`. A bare `getClaims()` returns null and hides the row before the token is read. QueryRef 155 failure still denies, and the sidebar still omits ID 34 when the gate fails. A direct open still shows the lock panel. Andrew reported Acuranzo 1378, 1379, 1380, and 1381 applied. Phase 13 is in progress. The staff list is QueryRef **4500**. Insert **4501**, update **4502**, enrolment history **4503**, management history **4504**. Files `courses_4076.lua` through `courses_4080.lua` and `acuranzo_1397.lua` (Lookup 059 key 14) are written and not applied. **4008** is the courses table file, not a caller ref. The next Courses file is **4081**. The next caller ref is **4505**. File numbers stay below 4500. Do not start Phase 14. Phases 5a, 5b, 5c, 5d, and 6 stay deferred until Andrew pulls Band B back. He does deploys and login checks. Do not drive a browser for those. Save, duplicate, and update send INTEGER `SCRIPT_TYPE`, `STATUS`, `USERID`, and `INVOKABLE` (0 when the row has none). A blank schedule or run time is `''`. Andrew applied Acuranzo 1395 (QueryRef 130) and 1396 (QueryRef 129) and confirmed pretty-print then save on 2026-10-22. Delete uses QueryRef 131 with STRING `GROUP_NAME` and `SCRIPT_NAME`. A dirty row switch asks to save or stay. On the 500 Courses Lithium database, Lookup 059 key 13 is `scripts/script-manager` and its collection names delete 131. Course QueryRefs moved to the 4000 pack on 2026-10-16. Band D uses the Courses pack QueryRefs section. Do not call retired **#085**, **#150**, or **#151**.
 
 ### Resume here next session
 
 Phases 0–5, 7, 8, 9, 10, 11, and 12 are complete. Do not reopen them. Do not open 5a–5d or 6 unless Andrew pulls Band B back.
 
-1. **Phase 13** is next (courses list, ID 34). Discuss it and wait
-   for approval before editing. Do not start it in the Phase 12
-   close-out. There is still no staff list of unpublished courses.
-   The next caller-facing Courses QueryRef is **4008**. Do not
-   invent it in the SPA. Andrew declined the Scripting meta tab. It
-   stays declined. He does deploys and login checks. Do not drive a
-   browser for those. The Course Manager shell has unit coverage
-   and no live click yet. Fold All and the `H.` tint have unit
+1. **Phase 13** is in progress (courses list, ID 34). Andrew
+   approved it on 2026-10-22. The screen is in the tree. The packet
+   is not applied, and the manual check is open. Do not start
+   Phase 14. **4004** stays the published catalog. Staff list
+   **4500**, insert **4501**, update **4502**, enrolment history
+   **4503**, management history **4504**. Lookup 059 key 14 is
+   `courses/course-manager` in `acuranzo_1397.lua`. The next Courses
+   file is **4081**. The next caller ref is **4505**. The next
+   Acuranzo file is **1398**. File numbers stay below 4500. Do not
+   apply the packet. Andrew declined the Scripting meta tab. It
+   stays declined. He does deploys and login checks. Do not drive
+   a browser for those. Fold All and the `H.` tint have unit
    coverage and no live click yet.
 2. Run stays disabled unless the row is invokable. Wait defaults to
    true. Timeout is 1–60, default 15. A top-level `_hydrogen` key is
@@ -261,8 +265,13 @@ shows 85, 150, and 151 because those were the numbers that day.
 | Canvas: touch link | 146 | **4003** | [`courses_4006.lua`](/elements/002-helium/courses/migrations/courses_4006.lua) |
 | Courses: list published | 147 | **4004** | [`courses_4011.lua`](/elements/002-helium/courses/migrations/courses_4011.lua). Filters in [`courses_4075.lua`](/elements/002-helium/courses/migrations/courses_4075.lua) |
 | Courses: get by slug | 148 | **4005** | [`courses_4012.lua`](/elements/002-helium/courses/migrations/courses_4012.lua) |
-| Enrolment History lines by course | 150 | **4006** | [`courses_4039.lua`](/elements/002-helium/courses/migrations/courses_4039.lua). Later SQL in [`courses_4068.lua`](/elements/002-helium/courses/migrations/courses_4068.lua) |
-| Management History lines by course | 151 | **4007** | [`courses_4048.lua`](/elements/002-helium/courses/migrations/courses_4048.lua) |
+| Enrolment History lines by course | 150 | **4006** | [`courses_4039.lua`](/elements/002-helium/courses/migrations/courses_4039.lua). Later SQL in [`courses_4068.lua`](/elements/002-helium/courses/migrations/courses_4068.lua). Lua only. The SPA calls **4503**. |
+| Management History lines by course | 151 | **4007** | [`courses_4048.lua`](/elements/002-helium/courses/migrations/courses_4048.lua). Lua only. The SPA calls **4504**. |
+| Staff: list every course |  | **4500** | [`courses_4076.lua`](/elements/002-helium/courses/migrations/courses_4076.lua). Not applied. |
+| Staff: insert course |  | **4501** | [`courses_4077.lua`](/elements/002-helium/courses/migrations/courses_4077.lua). Not applied. |
+| Staff: update course |  | **4502** | [`courses_4078.lua`](/elements/002-helium/courses/migrations/courses_4078.lua). Not applied. |
+| Staff: enrolment history |  | **4503** | [`courses_4079.lua`](/elements/002-helium/courses/migrations/courses_4079.lua). Same line text as 4006. Not applied. |
+| Staff: management history |  | **4504** | [`courses_4080.lua`](/elements/002-helium/courses/migrations/courses_4080.lua). Same line text as 4007. Not applied. |
 
 Stays in Acuranzo:
 
@@ -283,11 +292,14 @@ is unchanged by that file. **4001–4003** are the Canvas link queries
 Lua calls. They are not an account search.
 
 No list or triage QueryRef exists for `course_suggestions` (insert
-**4000** only) or `contact_submissions` (insert **86** only). No
-staff "all courses, including unpublished" QueryRef exists. The next
-Courses file is **4076**. The next caller-facing QueryRef is
-**4008**. Phase 13 and Phase 16 identify or packet those. Do not
-invent a number in the SPA.
+**4000** only) or `contact_submissions` (insert **86** only). The
+staff list of every course is **4500** (`courses_4076.lua`), not
+**4004** and not **4008**. **4008** is the bookkeeping key of the
+courses table file. `auth_query` would stop on that type-1001 row.
+The next Courses file is **4081**. The next caller-facing QueryRef
+is **4505**. File numbers stay below 4500. Caller refs for
+`auth_query` use 4500–4999. Do not invent a number in the SPA, and
+do not apply the Phase 13 packet from an agent session.
 
 Script names stay: `Catalog.*`, `Enroll.*`, `Account.*`, `Stripe.*`,
 `Provision.EnsureCanvasUser`, `Mail.Notices.CourseExpiration`. Bodies
@@ -2198,8 +2210,8 @@ and 1381 applied. Variance: `npm test` was 1097 passed and 10
 failed. The 10 are `tests/integration/auth.integration.test.js`
 (HTTP 503 from `https://lithium.philement.com`; cert expired
 2026-08-02). `npm run lint` exited 0 and printed no problems.
-`npm run build` completed. No new caller-facing QueryRef. No live
-click of the shell.
+`npm run build` completed. No new caller-facing QueryRef. Andrew
+confirmed the shell on 2026-10-22 after the stored-token fix.
 
 **Accomplished:**
 
@@ -2231,6 +2243,14 @@ click of the shell.
   `npm test` was 1097 passed and 10 failed (the same auth HTTP
   503). `npm run lint` exited 0 and printed no problems.
   `npm run build` completed. `course-manager.js` is 71 lines.
+- 2026-10-22: The first deploy hid Course Manager for account 9001
+  even though `roles` was `2,3` and QueryRef 155 returned `staff`
+  and `admin`. `getClaims()` with no argument returns null, so the
+  gate logged `no role ids` and the sidebar removed ID 34 before
+  the token was read. A new login did not change that. The fix is
+  `getClaims(retrieveJWT())`. Andrew then confirmed the Learning
+  group shows the row and the shell opens. `course-access.test.js`
+  is 15 tests. No new migration.
 
 **Lessons learned:**
 
@@ -2238,6 +2258,16 @@ click of the shell.
   `admin` hid a failed QueryRef 155. The shell now denies that
   path. A staff login needs 1380 and 1381 on the database, which
   Andrew says are applied.
+- `getClaims` only decodes the string it is given. Calling it with
+  no argument returns null. The menu gate and the shell must use
+  `getClaims(retrieveJWT())`. A fresh login does not repair a check
+  that never reads the stored token. The session log line for that
+  bug is `no role ids`, not a failed QueryRef 155.
+- The Hydrogen connection name in the JWT `database` claim is
+  `Lithium`. That connection is Yugabyte database `t-500courses-db`,
+  schema `lithium`. `t_500courses_db` is the login role. Account
+  9001 already had `account_roles` 2 and 3, and both `roles` rows
+  are active. The missing menu row was the client, not the database.
 - `getMenu` returns its cache by reference. Filtering ID 34 has to
   copy the groups. Writing the filtered list back would hide the
   row for the rest of the session even after a later allow.
@@ -2248,16 +2278,29 @@ click of the shell.
 
 **Handoff:**
 
-- Phase 12 is complete. Phase 13 (courses list) is next. Discuss
-  it and wait for approval. Do not edit Phase 13 source in this
-  sitting.
-- There is still no staff “all courses, including unpublished”
-  QueryRef. **4004** is the published catalog. The next
-  caller-facing Courses ref is **4008**. The next Courses file is
-  **4076**. Do not invent either number in the SPA. Prepare a
-  packet only after Phase 13 is approved, and do not apply it.
-- The shell has no live click. He does deploys and login checks.
-  Do not drive a browser for those.
+- Phase 12 is complete. Andrew confirmed the Learning group shows
+  Course Manager and that the shell opens. Phase 13 (courses list)
+  is next. Discuss it and wait for approval. Do not edit Phase 13
+  source in this sitting.
+- Phase 13 cannot list every course until a staff QueryRef exists.
+  **4004** (`courses_4011.lua`, filters in `courses_4075.lua`) is
+  the published catalog. It still returns retired published rows
+  unless `HIDE_RETIRED=1`. It is not the operator list. The next
+  Courses file is **4076**. The next caller-facing ref is **4008**.
+  `courses_4008.lua` already created the `courses` table. Do not
+  treat that file number as QueryRef 4008. No Lookup 059 tableDef
+  exists for courses. Confirm the next free Lookup 059 key on disk
+  before numbering one. Prepare the packet only after Phase 13 is
+  approved, and do not apply it.
+- The table already has `code`, `slug`, `title`, `summary`,
+  `description`, `image_path`, `canvas_course_id`, `pricing_type`,
+  `stripe_product_id`, `published`, `retired`, and `tags` (jsonb,
+  `courses_4046.lua`) plus `canvas_updated_at`. History refs
+  **4006** and **4007** exist. `Catalog.SyncFromCanvas` and
+  `Catalog.Retire` stay `invokable=0` until Phase 18. Phase 13
+  shows those buttons disabled. Do not flip `invokable` in Phase 13.
+- He does deploys and login checks. Do not drive a browser for
+  those.
 - Create, duplicate, and delete still have no browser pass. Fold
   All and the `H.` tint have unit coverage and no live click.
 - Profile footer Save, Style `applyState`, and `this.app.user` stay
@@ -2281,7 +2324,7 @@ sync-from-Canvas CTAs.
 
 **Entry gate:**
 
-- [ ] Phase 12 Status complete. Helium `courses` tableDef / list
+- [x] Phase 12 Status complete. Helium `courses` tableDef / list
       QueryRef identified in Working Log (do not invent).
 
 **Reference:**
@@ -2289,35 +2332,146 @@ sync-from-Canvas CTAs.
 - PRIORITIZE §5.1
 - `Catalog.SyncFromCanvas`, `Catalog.Retire` (still `invokable=0` until
   Phase 18 packet)
-- Courses pack QueryRefs: history **#4006** and **#4007**. **#4004**
-  is the published catalog, not a staff list of unpublished rows.
+- Staff list **4500**, insert **4501**, update **4502**. History for
+  the SPA is **4503** and **4504**. Lua still reads **4006** and
+  **4007**. **4004** is the published catalog.
 
 **Work items:**
 
-- [ ] LithiumTable of all `courses` (published, unpublished, **retired**).
+- [x] LithiumTable of all `courses` (published, unpublished, **retired**).
       Search code/slug/title/`canvas_course_id`. Retired chip.
-- [ ] Create Lithium catalog row: `code`, `slug`, `canvas_course_id`,
-      `pricing_type`, `image_path` URL. Sync must not auto-INSERT.
-- [ ] Edit Lithium-owned fields only. Canvas unpublish is **not** a
-      Lithium checkbox — CTA to open Canvas URL; sync flips `published`.
-- [ ] Tags editor (JSON key/value) if tableDef allows; v1 may be a
-      sanitized JSON editor.
-- [ ] Buttons call `invokeScript` when `invokable`; else disabled with
-      tooltip “not enabled on this server” (do not fake).
-- [ ] History popups: **#4006** / **#4007** via LithiumTable or sanitized
-      `<pre>`.
-- [ ] Stripe ids read-only.
+      QueryRef **4500**. Search and the chip run in the browser.
+- [x] Create Lithium catalog row: `code`, `slug`, `canvas_course_id`,
+      `pricing_type`, `image_path` URL, plus required `title`,
+      `is_featured`, `sort_order`, and tags. QueryRef **4501**.
+      `published` stays 0. Sync does not insert.
+- [x] Edit Lithium-owned fields only. QueryRef **4502** does not
+      write title, summary, description, published, retired, or
+      stripe. Canvas unpublish is not a checkbox. Open Canvas is
+      the button. Sync flips `published` when that script is invokable.
+- [x] Tags editor is a JSON object textarea. An array is refused.
+      Blank tags send `{}`.
+- [x] Sync, sync all, and retire call `invokeScript` when QueryRef
+      **87** says `invokable` is 1. Otherwise the button stays
+      disabled and the wrapper title is “not enabled on this server”.
+- [x] History is a `<pre>` filled with `textContent`. The SPA calls
+      **4503** and **4504**, the auth_query twins of **4006** and
+      **4007**.
+- [x] `stripe_product_id` is read-only. A value shaped like `sk_`,
+      `rk_`, or `whsec_` renders as “Hidden”.
 
 **Exit gate / validation:**
 
 - [ ] Manual: list fixture courses; retired filter; denied role sees
-      nothing useful.
-- [ ] `npm test && npm run lint`
-- [ ] All new files ≤ 1000 lines.
+      nothing useful. Andrew applies the packet, rebuilds the
+      payload, and does this check.
+- [x] `npm test && npm run lint` — variance in Status. `npm run lint:css`
+      exited 0.
+- [x] All new files ≤ 1000 lines. `course-manager.js` is 666.
+      `course-catalog.js` is 523. `course-manager.css` is 193.
 
-**Status:** pending
+**Status:** in progress (2026-10-22). The screen and the packet are
+in the tree. The phase stays open until Andrew applies it and the
+manual check passes. Assigned: Courses files **4076–4080**, caller
+refs **4500–4504**, Acuranzo **1397** (Lookup 059 key **14**). Next
+Courses file **4081**. Next caller ref **4505**. Next Acuranzo file
+**1398**. File numbers stay below 4500. **4008** is not a caller
+ref. Variance: `npm test` was 1117 passed and 10 failed (1127; 47
+files passed, 1 failed). The 10 are
+`tests/integration/auth.integration.test.js` (HTTP 503 from
+`https://lithium.philement.com`, where the suite expected 200 or
+401; cert expired 2026-08-02). That is the known live auth
+variance. `npm run lint` and `npm run lint:css` exited 0 and
+printed no problems.
+
+**Accomplished:**
+
+- [`courses_4076.lua`](/elements/002-helium/courses/migrations/courses_4076.lua)
+  QueryRef **4500**, staff list, no parameters.
+- [`courses_4077.lua`](/elements/002-helium/courses/migrations/courses_4077.lua)
+  QueryRef **4501**, insert. [`courses_4078.lua`](/elements/002-helium/courses/migrations/courses_4078.lua)
+  QueryRef **4502**, update of Lithium-owned columns.
+- [`courses_4079.lua`](/elements/002-helium/courses/migrations/courses_4079.lua)
+  QueryRef **4503** and [`courses_4080.lua`](/elements/002-helium/courses/migrations/courses_4080.lua)
+  QueryRef **4504** copy the **4006** and **4007** line text for
+  `auth_query`. Lua still loads 4006 and 4007.
+- [`acuranzo_1397.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1397.lua)
+  Lookup 059 key 14, `courses/course-manager`.
+- [`course-manager.js`](/elements/003-lithium/src/managers/course-manager/course-manager.js)
+  and [`course-catalog.js`](/elements/003-lithium/src/managers/course-manager/course-catalog.js).
+  The L3 gate and the lock panel stay. The intro sentence stays.
+- Tests: `course-catalog.test.js` 11, `course-manager.test.js` 12.
+  luacheck on the six new Lua files: 0 warnings.
+
+**Working log:**
+
+- 2026-10-22: Andrew approved Phase 13. **4008** cannot be the staff
+  list. Bootstrap orders `queries` by `query_type_a28` descending,
+  and `auth_query` keeps the first cache row. After APPLY, every
+  file number still has an active type-1001 reverse row, so a
+  type-1 row at that integer is invisible. 4006 and 4007 have the
+  same shape. New SPA refs are **4500–4504**. File numbers stay
+  below 4500.
+- 2026-10-22: Packet written and not applied. `npm run lint` and
+  `npm run lint:css` exited 0 and printed no problems. Course
+  Manager unit tests passed before the full suite.
+  `course-catalog.test.js` passed 11. `course-manager.test.js`
+  passed 12. Full `npm test` was 1117 passed and 10 failed. The
+  10 are `auth.integration.test.js` HTTP 503 on
+  `https://lithium.philement.com` (cert expired 2026-08-02). The
+  same live auth variance as earlier phases.
 
 **Lessons learned:**
+
+- A Courses caller ref that equals a file number is safe for a
+  typed lookup (public type 10, migration apply type 1000) and for
+  Lua that loads `queries.code` with `ORDER BY query_id DESC`. It
+  is not safe for `auth_query`. The first cached row is the reverse
+  migration. Reserve **4500–4999** for caller refs. Do not number a
+  file there.
+- QueryRef **87** is still the invokable check. The three action
+  buttons stay disabled when that flag is not 1. Disabled-button
+  titles do not show. The wrapper span holds the title, and the
+  disabled button has `pointer-events: none`.
+- `auth_query` does not check `staff`. Any Hydrogen JWT can call
+  **4500–4504** once they are applied. The manager gate is the
+  client. A later Hydrogen change would be a different plan.
+- History SQL uses PostgreSQL `TO_CHAR` and `||`, matching 4006 and
+  4007. The 500 Courses database is Yugabyte. Do not point the SPA
+  back at 4006 or 4007.
+- Insert uses `CREATEDID` and `UPDATEDID` so the operator id is not
+  bound twice. A blank canvas id is `''`, then `NULLIF`, then a
+  cast. Tags are always a JSON object string. MySQL casts text to
+  `char(255)`, so a title longer than 255 characters does not fit
+  that engine. Yugabyte casts text.
+
+**Handoff:**
+
+- Do not start Phase 14. Phase 13 is in progress until Andrew
+  applies the packet and lists fixture courses.
+- Apply, in order, `courses_4076.lua`, `courses_4077.lua`,
+  `courses_4078.lua`, `courses_4079.lua`, `courses_4080.lua`, and
+  `acuranzo_1397.lua`. Then rebuild the Hydrogen payload with
+  `mka`. `mkt` does not refresh the archive. Do not apply from an
+  agent session.
+- Manual check: staff sees every course, including unpublished and
+  retired. The Retired chip keeps retired rows only. Search matches
+  code, slug, title, and canvas id. A denied role still sees the
+  lock panel and no fields. Sync, sync all, and retire stay
+  disabled, with the tip “not enabled on this server”. Open Canvas
+  uses `https://canvas.500courses.com/courses/{id}`. Enrolment
+  history and management history show lines for the selected course.
+- The constructor also passes QueryRef 4500, so rows can load
+  before Lookup 059 key 14 is applied. Designed columns need both.
+- Price rows stay Phase 14. Do not flip `invokable` on
+  `Catalog.SyncFromCanvas` or `Catalog.Retire`.
+- Variance: `npm test` was 1117 passed and 10 failed, all
+  `auth.integration.test.js` HTTP 503 on
+  `https://lithium.philement.com`. The cert expired 2026-08-02.
+  Lint and stylelint, run again after the test edits, exited 0
+  and printed no problems. The live browser was not driven.
+  Vitest used happy-dom.
+
 
 ---
 
@@ -2419,7 +2573,8 @@ without raw SQL.
 
 - [ ] Phase 12 complete. Insert QueryRef **#4000** exists (was #085).
       Contact insert stays **#086**. List/triage QueryRefs confirmed
-      or packet prepared. Next free caller-facing ref is **4008**.
+      or packet prepared. Next free caller-facing ref is **4505**.
+      File numbers stay below 4500. Phase 13 took 4500–4504.
 
 **Reference:**
 
@@ -3658,3 +3813,5 @@ silent (does not claim Vite cannot run). Logged; no DEV rewrite.
 | 2026-10-22 | Phase 10 complete. StyLua, save, summary-then-Lua preview, and font reload are confirmed. The meta tab was declined. Next is Phase 11. |
 | 2026-10-22 | Phase 11 complete. CodeMirror 6 is the only stack. Lua folds statement blocks. `H.` uses the namespace tag. Next is Phase 12. |
 | 2026-10-22 | Phase 12 complete. Course Manager is a staff shell. QueryRef 155 failure denies. The sidebar omits ID 34. Next is Phase 13. |
+| 2026-10-22 | Phase 12 follow-up. `getClaims(retrieveJWT())` restores the menu row. Andrew confirmed the shell. Phase 13 still needs a staff list QueryRef. |
+| 2026-10-22 | Phase 13 in progress. Staff refs 4500–4504. Files 4076–4080 and Acuranzo 1397 are written and not applied. Next file 4081. Next ref 4505. |
