@@ -7,7 +7,7 @@
  */
 
 import { authQuery } from '../../shared/conduit.js';
-import { getClaims } from '../../core/jwt.js';
+import { getClaims, retrieveJWT } from '../../core/jwt.js';
 import { parseRoleIds, isCourseManagerAuthorized } from '../../core/utils.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 
@@ -56,11 +56,13 @@ function namesFromRows(rows) {
 /**
  * Resolve whether the current JWT may open Course Manager.
  * @param {Object} api - API client with post(); omitted denies
- * @param {Object|null} claims - JWT claims; defaults to the stored token
+ * @param {Object|null} [claims] - JWT claims. Omitted reads the stored token.
+ *   getClaims() needs that token string; calling it with no argument returns null.
  * @returns {Promise<{allowed: boolean, roleIds: number[], roleNames: string[]}>}
  */
-export async function resolveCourseManagerAccess(api, claims = getClaims()) {
-  const roleIds = parseRoleIds(claims && claims.roles);
+export async function resolveCourseManagerAccess(api, claims) {
+  const resolved = claims === undefined ? getClaims(retrieveJWT()) : claims;
+  const roleIds = parseRoleIds(resolved && resolved.roles);
   if (roleIds.length === 0) {
     log(Subsystems.MANAGER, Status.INFO, 'Course Manager: no role ids; access denied');
     return { allowed: false, roleIds, roleNames: [] };

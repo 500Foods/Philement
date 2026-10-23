@@ -5,7 +5,6 @@
 
 import { getMenu, buildManagerIconsRegistry, clearMenuCache } from '../../shared/menu.js';
 import { canAccessManager } from '../../core/permissions.js';
-import { getClaims } from '../../core/jwt.js';
 import { processIcons, setIcon } from '../../core/icons.js';
 import { initTooltips } from '../../core/tooltip-api.js';
 import { log, Subsystems, Status } from '../../core/log.js';
@@ -26,7 +25,7 @@ export const sidebarMethods = {
   async loadMenuData() {
     let courseManagerAllowed = false;
     try {
-      const access = await resolveCourseManagerAccess(this.app?.api, getClaims());
+      const access = await resolveCourseManagerAccess(this.app?.api);
       courseManagerAllowed = access.allowed;
     } catch (error) {
       log(Subsystems.MANAGER, Status.WARN,

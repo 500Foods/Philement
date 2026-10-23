@@ -6,9 +6,11 @@ vi.mock('../../../src/shared/conduit.js', () => ({
 
 vi.mock('../../../src/core/jwt.js', () => ({
   getClaims: vi.fn(),
+  retrieveJWT: vi.fn(),
 }));
 
 import { authQuery } from '../../../src/shared/conduit.js';
+import { getClaims, retrieveJWT } from '../../../src/core/jwt.js';
 import {
   COURSE_MANAGER_ID,
   ROLE_NAME_QUERY_REF,
@@ -62,6 +64,29 @@ describe('permittedManagersForMenu', () => {
 describe('resolveCourseManagerAccess', () => {
   beforeEach(() => {
     authQuery.mockReset();
+    getClaims.mockReset();
+    retrieveJWT.mockReset();
+  });
+
+  it('reads roles from the stored token when claims are omitted', async () => {
+    retrieveJWT.mockReturnValue('stored-token');
+    getClaims.mockReturnValue({ roles: '2,3' });
+    authQuery
+      .mockResolvedValueOnce([{ name: 'staff' }])
+      .mockResolvedValueOnce([{ name: 'admin' }]);
+    const access = await resolveCourseManagerAccess({ post() {} });
+    expect(getClaims).toHaveBeenCalledWith('stored-token');
+    expect(access.allowed).toBe(true);
+    expect(access.roleIds).toEqual([2, 3]);
+  });
+
+  it('denies when no token is stored', async () => {
+    retrieveJWT.mockReturnValue(null);
+    getClaims.mockReturnValue(null);
+    const access = await resolveCourseManagerAccess({ post() {} });
+    expect(access.allowed).toBe(false);
+    expect(access.roleIds).toEqual([]);
+    expect(authQuery).not.toHaveBeenCalled();
   });
 
   it('allows a resolved staff name', async () => {

@@ -6,6 +6,7 @@ vi.mock('../../../src/shared/conduit.js', () => ({
 
 vi.mock('../../../src/core/jwt.js', () => ({
   getClaims: vi.fn(() => null),
+  retrieveJWT: vi.fn(() => 'stored-token'),
 }));
 
 vi.mock('../../../src/core/icons.js', () => ({
