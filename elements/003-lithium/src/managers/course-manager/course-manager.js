@@ -3,36 +3,42 @@
  *
  * Staff catalog for the 500 Courses operator surface.
  * Authz is CATCHUP L3: QueryRef 155 names, then staff or admin.
- * Commerce, learners, and inbox land in later Band D phases.
+ * The list uses the Query Manager edit path. Learners and inbox
+ * land in later Band D phases.
  */
 
+import '../../styles/vendor-tabulator.css';
+import '../../core/manager-panels.css';
 import { log, Subsystems, Status } from '../../core/log.js';
 import { processIcons } from '../../core/icons.js';
+import { initToolbars } from '../../core/manager-ui.js';
+import { LithiumSplitter } from '../../core/lithium-splitter.js';
+import { PanelStateManager } from '../../core/panel-state-manager.js';
+import { restorePanelState, togglePanelCollapse } from '../../core/panel-collapse.js';
 import { authQuery, invokeScript } from '../../shared/conduit.js';
-import { confirmDialog } from '../../shared/confirm.js';
 import { toast } from '../../shared/toast.js';
 import LithiumTable from '../../tables/lithium-table-main.js';
+import { performLocalSearch } from '../../tables/search/search-utils.js';
 import { resolveCourseManagerAccess } from './course-access.js';
+import { CourseEditor } from './course-edit.js';
 import {
-  COURSE_INSERT_QUERY_REF,
+  COURSE_DETAIL_TABS,
   COURSE_LIST_QUERY_REF,
+  COURSE_PRICE_CURRENCIES,
+  COURSE_PRICES_QUERY_REF,
+  COURSE_SEARCH_FIELDS,
   COURSE_TABLE_KEY_IDX,
   COURSE_TABLE_PATH,
-  COURSE_UPDATE_QUERY_REF,
   ENROLMENT_HISTORY_QUERY_REF,
   MANAGEMENT_HISTORY_QUERY_REF,
   NOT_ENABLED_TIP,
   SCRIPT_DETAIL_QUERY_REF,
   actionButtonState,
   actionOutcome,
-  buildCourseInsertParams,
-  buildCourseUpdateParams,
-  courseDraftSignature,
   courseFormFromRow,
-  courseUserId,
-  courseVisible,
   historyParams,
   historyText,
+  priceListView,
   retireInvokeOptions,
   retireLabel,
   scriptDetailParams,
@@ -43,20 +49,6 @@ import {
 } from './course-catalog.js';
 import './course-manager.css';
 
-const SHELL_TEXT = 'Manage the 500 Courses catalog, enrollments, commerce, and learner accounts.';
-
-const EMPTY_FORM = {
-  code: '',
-  slug: '',
-  title: '',
-  imagePath: '',
-  canvasCourseId: '',
-  pricingType: 'free',
-  featured: false,
-  sortOrder: '',
-  tags: '{}',
-};
-
 export default class CourseManager {
   constructor(app, container) {
     this.app = app;
@@ -64,16 +56,18 @@ export default class CourseManager {
     this.elements = {};
     this._allowed = false;
     this.courseTable = null;
+    this.editor = new CourseEditor(this);
     this._mode = 'create';
     this._selectedId = null;
-    this._retired = false;
-    this._dirty = false;
-    this._signature = courseDraftSignature(EMPTY_FORM);
     this._switching = false;
-    this._filtering = false;
     this._busy = false;
+    this._priceToken = 0;
     this._syncInvokable = false;
     this._retireInvokable = false;
+    this.leftPanelState = new PanelStateManager('lithium_course_left');
+    this.leftPanelWidth = this.leftPanelState.loadWidth(622);
+    this.isLeftPanelCollapsed = this.leftPanelState.loadCollapsed(false);
+    this.splitter = null;
   }
 
   async init() {
@@ -107,121 +101,161 @@ export default class CourseManager {
     processIcons(this.container);
   }
 
+  _tabButtons() {
+    return COURSE_DETAIL_TABS.map((tab, index) => `
+      <button type="button" class="lithium-toolbar-tab${index === 0 ? ' active' : ''}" data-tab="${tab.id}" data-collapsible-text>
+        <fa fa-${tab.icon}></fa>
+        <span>${tab.label}</span>
+      </button>
+    `).join('');
+  }
+
+  _priceRows() {
+    return COURSE_PRICE_CURRENCIES.map((currency) => `
+      <div class="course-price-row" data-currency="${currency}">
+        <span class="course-price-code">${currency.toUpperCase()}</span>
+        <span class="course-price-amount"></span>
+        <span class="course-price-stripe"></span>
+        <span class="course-price-state"></span>
+      </div>
+    `).join('');
+  }
+
   _renderStaff() {
     this.container.innerHTML = `
-      <div class="course-manager-container course-manager-staff">
-        <div class="course-manager-header">
-          <fa fa-book-open></fa>
-          <h2>Course Manager</h2>
-        </div>
-        <p class="course-manager-intro">${SHELL_TEXT}</p>
-        <div class="course-manager-split">
-          <section class="course-manager-list">
-            <div class="course-manager-list-tools">
-              <input id="course-search" class="input" type="search"
-                placeholder="Search code, slug, title, or Canvas id"
-                aria-label="Search courses">
-              <label class="course-retired-label" for="course-retired-chip">
-                <input id="course-retired-chip" type="checkbox">
-                Retired
-              </label>
-              <button id="course-refresh-btn" class="btn btn-sm btn-secondary" type="button">Refresh</button>
-              <button id="course-new-btn" class="btn btn-sm btn-primary" type="button">New</button>
+      <div class="course-manager-staff">
+        <div class="manager-panels course-panels">
+          <div class="course-left-panel" data-panel="left" id="course-left-panel">
+            <div id="course-table" class="course-table-host lithium-table-container"></div>
+            <div id="course-navigator" class="course-navigator lithium-navigator-container"></div>
+          </div>
+          <div class="lithium-splitter" data-splitter="left" id="course-splitter"></div>
+          <div class="course-right-panel" data-panel="right">
+            <div class="lithium-toolbar" id="course-toolbar">
+              <button type="button" class="lithium-toolbar-btn lithium-collapse-btn" id="course-collapse-btn" data-collapse-target="left" title="Toggle Table">
+                <fa fa-angles-left class="lithium-collapse-icon"></fa>
+              </button>
+              ${this._tabButtons()}
+              <div class="lithium-toolbar-placeholder"></div>
             </div>
-            <div id="course-table" class="course-table-host"></div>
-          </section>
-          <section class="course-manager-detail">
-            <form id="course-form" class="course-form">
-              <div class="course-field">
-                <label for="course-code">Code</label>
-                <input id="course-code" class="input" type="text" autocomplete="off">
+            <div class="course-tabs-content">
+              <div class="course-tab-pane active" id="course-tab-course">
+                <form id="course-form" class="course-form">
+                  <div class="course-field">
+                    <label for="course-code">Code</label>
+                    <input id="course-code" class="input" type="text" autocomplete="off" disabled>
+                  </div>
+                  <div class="course-field">
+                    <label for="course-slug">Slug</label>
+                    <input id="course-slug" class="input" type="text" autocomplete="off" disabled>
+                  </div>
+                  <div class="course-field">
+                    <label for="course-title">Title</label>
+                    <input id="course-title" class="input" type="text" autocomplete="off" disabled>
+                    <p id="course-title-hint" class="course-field-hint"></p>
+                  </div>
+                  <div class="course-field">
+                    <label for="course-image">Image path</label>
+                    <input id="course-image" class="input" type="text" autocomplete="off" disabled>
+                  </div>
+                  <div class="course-field">
+                    <label for="course-canvas-id">Canvas course id</label>
+                    <input id="course-canvas-id" class="input" type="text" inputmode="numeric" autocomplete="off" disabled>
+                  </div>
+                  <div class="course-field">
+                    <label for="course-pricing">Pricing</label>
+                    <select id="course-pricing" class="select" disabled>
+                      <option value="free">free</option>
+                      <option value="paid">paid</option>
+                    </select>
+                  </div>
+                  <div class="course-field">
+                    <label for="course-sort">Sort order</label>
+                    <input id="course-sort" class="input" type="text" inputmode="numeric" autocomplete="off" disabled>
+                  </div>
+                  <div class="course-field">
+                    <label for="course-tags">Tags</label>
+                    <textarea id="course-tags" class="textarea" rows="4" spellcheck="false" disabled></textarea>
+                  </div>
+                  <section class="course-section" id="course-options">
+                    <span class="course-section-label">Options</span>
+                    <label class="course-field-check" for="course-option-retired">
+                      <input id="course-option-retired" type="checkbox" disabled>
+                      Retired
+                    </label>
+                    <label class="course-field-check" for="course-option-featured">
+                      <input id="course-option-featured" type="checkbox" disabled>
+                      Featured
+                    </label>
+                  </section>
+                </form>
               </div>
-              <div class="course-field">
-                <label for="course-slug">Slug</label>
-                <input id="course-slug" class="input" type="text" autocomplete="off">
+              <div class="course-tab-pane" id="course-tab-canvas">
+                <div class="course-form">
+                  <img id="course-image-preview" class="course-image-preview" alt="">
+                  <div class="course-field">
+                    <span class="course-field-label">Summary</span>
+                    <div id="course-summary" class="course-readonly-block"></div>
+                  </div>
+                  <div class="course-field">
+                    <span class="course-field-label">Description</span>
+                    <div id="course-description" class="course-readonly-block"></div>
+                  </div>
+                  <div class="course-field">
+                    <span class="course-field-label">Published</span>
+                    <div id="course-published" class="course-readonly-line"></div>
+                  </div>
+                  <div class="course-field">
+                    <span class="course-field-label">Last sync</span>
+                    <div id="course-synced" class="course-readonly-line"></div>
+                  </div>
+                  <div class="course-actions">
+                    <span class="course-action-tip" id="course-sync-tip" title="${NOT_ENABLED_TIP}">
+                      <button id="course-sync-btn" class="btn btn-sm btn-secondary" type="button" disabled>Sync from Canvas</button>
+                    </span>
+                    <span class="course-action-tip" id="course-sync-all-tip" title="${NOT_ENABLED_TIP}">
+                      <button id="course-sync-all-btn" class="btn btn-sm btn-secondary" type="button" disabled>Sync all linked</button>
+                    </span>
+                    <span class="course-action-tip" id="course-retire-tip" title="${NOT_ENABLED_TIP}">
+                      <button id="course-retire-btn" class="btn btn-sm btn-secondary" type="button" disabled>Retire</button>
+                    </span>
+                    <button id="course-canvas-btn" class="btn btn-sm btn-secondary" type="button" disabled>Open Canvas</button>
+                  </div>
+                </div>
               </div>
-              <div class="course-field">
-                <label for="course-title">Title</label>
-                <input id="course-title" class="input" type="text" autocomplete="off">
-                <p id="course-title-hint" class="course-field-hint"></p>
+              <div class="course-tab-pane" id="course-tab-commerce">
+                <div class="course-form">
+                  <section class="course-section is-empty" id="course-prices">
+                    <span class="course-section-label">Prices</span>
+                    <p id="course-prices-status" class="course-field-hint"></p>
+                    ${this._priceRows()}
+                  </section>
+                  <div class="course-field">
+                    <span class="course-field-label">Stripe product</span>
+                    <div id="course-stripe" class="course-readonly-line"></div>
+                  </div>
+                </div>
               </div>
-              <div class="course-field">
-                <label for="course-image">Image path</label>
-                <input id="course-image" class="input" type="text" autocomplete="off">
-                <img id="course-image-preview" class="course-image-preview" alt="">
+              <div class="course-tab-pane" id="course-tab-history">
+                <div class="course-form">
+                  <div class="course-actions">
+                    <button id="course-enrol-history-btn" class="btn btn-sm btn-secondary" type="button">Enrolment history</button>
+                    <button id="course-manage-history-btn" class="btn btn-sm btn-secondary" type="button">Management history</button>
+                  </div>
+                  <pre id="course-history" class="course-history"></pre>
+                </div>
               </div>
-              <div class="course-field">
-                <label for="course-canvas-id">Canvas course id</label>
-                <input id="course-canvas-id" class="input" type="text" inputmode="numeric" autocomplete="off">
-              </div>
-              <div class="course-field">
-                <label for="course-pricing">Pricing</label>
-                <select id="course-pricing" class="select">
-                  <option value="free">free</option>
-                  <option value="paid">paid</option>
-                </select>
-              </div>
-              <div class="course-field course-field-check">
-                <label for="course-featured">
-                  <input id="course-featured" type="checkbox">
-                  Featured
-                </label>
-              </div>
-              <div class="course-field">
-                <label for="course-sort">Sort order</label>
-                <input id="course-sort" class="input" type="text" inputmode="numeric" autocomplete="off">
-              </div>
-              <div class="course-field">
-                <label for="course-tags">Tags</label>
-                <textarea id="course-tags" class="textarea" rows="4" spellcheck="false"></textarea>
-              </div>
-              <div class="course-field">
-                <span class="course-field-label">Summary</span>
-                <div id="course-summary" class="course-readonly-block"></div>
-              </div>
-              <div class="course-field">
-                <span class="course-field-label">Description</span>
-                <div id="course-description" class="course-readonly-block"></div>
-              </div>
-              <div class="course-field">
-                <span class="course-field-label">Published</span>
-                <div id="course-published" class="course-readonly-line"></div>
-              </div>
-              <div class="course-field">
-                <span class="course-field-label">Stripe product</span>
-                <div id="course-stripe" class="course-readonly-line"></div>
-              </div>
-              <div class="course-field">
-                <span class="course-field-label">Last sync</span>
-                <div id="course-synced" class="course-readonly-line"></div>
-              </div>
-              <div class="course-actions">
-                <button id="course-save-btn" class="btn btn-sm btn-primary" type="button">Save</button>
-                <span class="course-action-tip" id="course-sync-tip" title="${NOT_ENABLED_TIP}">
-                  <button id="course-sync-btn" class="btn btn-sm btn-secondary" type="button" disabled>Sync from Canvas</button>
-                </span>
-                <span class="course-action-tip" id="course-sync-all-tip" title="${NOT_ENABLED_TIP}">
-                  <button id="course-sync-all-btn" class="btn btn-sm btn-secondary" type="button" disabled>Sync all linked</button>
-                </span>
-                <span class="course-action-tip" id="course-retire-tip" title="${NOT_ENABLED_TIP}">
-                  <button id="course-retire-btn" class="btn btn-sm btn-secondary" type="button" disabled>Retire</button>
-                </span>
-                <button id="course-canvas-btn" class="btn btn-sm btn-secondary" type="button" disabled>Open Canvas</button>
-                <button id="course-enrol-history-btn" class="btn btn-sm btn-secondary" type="button">Enrolment history</button>
-                <button id="course-manage-history-btn" class="btn btn-sm btn-secondary" type="button">Management history</button>
-              </div>
-              <pre id="course-history" class="course-history"></pre>
-            </form>
-          </section>
+            </div>
+          </div>
         </div>
       </div>
     `;
     processIcons(this.container);
+    initToolbars();
     this.elements = {
-      search: this.container.querySelector('#course-search'),
-      retired: this.container.querySelector('#course-retired-chip'),
-      refresh: this.container.querySelector('#course-refresh-btn'),
-      newer: this.container.querySelector('#course-new-btn'),
+      leftPanel: this.container.querySelector('#course-left-panel'),
+      collapseBtn: this.container.querySelector('#course-collapse-btn'),
+      navigator: this.container.querySelector('#course-navigator'),
       table: this.container.querySelector('#course-table'),
       form: this.container.querySelector('#course-form'),
       code: this.container.querySelector('#course-code'),
@@ -232,15 +266,17 @@ export default class CourseManager {
       preview: this.container.querySelector('#course-image-preview'),
       canvas: this.container.querySelector('#course-canvas-id'),
       pricing: this.container.querySelector('#course-pricing'),
-      featured: this.container.querySelector('#course-featured'),
+      featured: this.container.querySelector('#course-option-featured'),
+      retired: this.container.querySelector('#course-option-retired'),
       sort: this.container.querySelector('#course-sort'),
       tags: this.container.querySelector('#course-tags'),
+      prices: this.container.querySelector('#course-prices'),
+      priceStatus: this.container.querySelector('#course-prices-status'),
       summary: this.container.querySelector('#course-summary'),
       description: this.container.querySelector('#course-description'),
       published: this.container.querySelector('#course-published'),
       stripe: this.container.querySelector('#course-stripe'),
       synced: this.container.querySelector('#course-synced'),
-      save: this.container.querySelector('#course-save-btn'),
       syncTip: this.container.querySelector('#course-sync-tip'),
       sync: this.container.querySelector('#course-sync-btn'),
       syncAllTip: this.container.querySelector('#course-sync-all-tip'),
@@ -255,8 +291,10 @@ export default class CourseManager {
   }
 
   async _mountStaff() {
-    this._showCreate();
+    this.editor.showEmpty();
+    this.editor.bindForm();
     this._bindStaff();
+    this.editor.wireFooter();
     await this._loadScriptFlags();
     this._paintActions();
     try {
@@ -268,18 +306,10 @@ export default class CourseManager {
   }
 
   _bindStaff() {
-    this.elements.form.addEventListener('submit', (event) => event.preventDefault());
-    this.elements.form.addEventListener('input', () => {
-      this._syncDirty();
-      this._paintPreview();
-      this._paintActions();
+    this.elements.collapseBtn?.addEventListener('click', () => this._toggleLeftPanel());
+    this.container.querySelectorAll('[data-tab]').forEach((button) => {
+      button.addEventListener('click', () => this._switchTab(button.dataset.tab));
     });
-    this.elements.form.addEventListener('change', () => this._syncDirty());
-    this.elements.search.addEventListener('input', () => this._applyFilter());
-    this.elements.retired.addEventListener('change', () => this._applyFilter());
-    this.elements.refresh.addEventListener('click', () => this._refresh());
-    this.elements.newer.addEventListener('click', () => this._startNew());
-    this.elements.save.addEventListener('click', () => this._save());
     this.elements.sync.addEventListener('click', () => this._syncOne());
     this.elements.syncAll.addEventListener('click', () => this._syncAll());
     this.elements.retire.addEventListener('click', () => this._retire());
@@ -303,9 +333,19 @@ export default class CourseManager {
     this._retireInvokable = scriptIsInvokable(retireRows);
   }
 
+  _switchTab(tabId) {
+    this.container.querySelectorAll('[data-tab]').forEach((button) => {
+      button.classList.toggle('active', button.dataset.tab === tabId);
+    });
+    this.container.querySelectorAll('.course-tab-pane').forEach((pane) => {
+      pane.classList.toggle('active', pane.id === `course-tab-${tabId}`);
+    });
+  }
+
   async _mountTable() {
     this.courseTable = new LithiumTable({
       container: this.elements.table,
+      navigatorContainer: this.elements.navigator,
       tablePath: COURSE_TABLE_PATH,
       lookupKeyIdx: COURSE_TABLE_KEY_IDX,
       primaryKeyField: ['course_id'],
@@ -313,91 +353,76 @@ export default class CourseManager {
       cssPrefix: 'course',
       storageKey: 'course_manager_table',
       app: this.app,
-      readonly: true,
+      readonly: false,
+      onExecuteSave: (row) => this.editor.executeSave(row),
+      onDuplicate: (rowData) => this.editor.duplicateRow(rowData),
+      localSearch: true,
+      localSearchFields: COURSE_SEARCH_FIELDS,
       tableWidthMode: 'wide',
+      panel: this.elements.leftPanel,
+      panelStateManager: this.leftPanelState,
       onRowSelected: (row) => this._onRowSelected(row),
-      onRowDeselected: () => this._onRowDeselected(),
       onDataLoaded: (rows) => {
         log(Subsystems.TABLE, Status.INFO, `Course Manager loaded ${rows.length} courses`);
-        this._applyFilter();
+        this._reapplyListFilter();
       },
     });
     await this.courseTable.init();
+    this.editor.attach(this.courseTable);
+    this._labelNavigatorSearch();
+    this._setupSplitter();
     await this.courseTable.loadData();
   }
 
-  _readFields() {
-    return {
-      courseId: this._mode === 'edit' ? this._selectedId : undefined,
-      code: this.elements.code.value,
-      slug: this.elements.slug.value,
-      title: this.elements.title.value,
-      imagePath: this.elements.image.value,
-      canvasCourseId: this.elements.canvas.value,
-      pricingType: this.elements.pricing.value,
-      featured: this.elements.featured.checked,
-      sortOrder: this.elements.sort.value,
-      tags: this.elements.tags.value,
-    };
+  _labelNavigatorSearch() {
+    const input = this.container.querySelector('#course-search-input');
+    if (!input) return;
+    input.placeholder = 'Search code, slug, title, or Canvas id';
+    input.setAttribute('aria-label', 'Search courses');
   }
 
-  _syncDirty() {
-    this._dirty = courseDraftSignature(this._readFields()) !== this._signature;
+  _reapplyListFilter() {
+    if (!this.courseTable || !this.courseTable.table) return;
+    const term = this.courseTable._localSearchTerm || '';
+    performLocalSearch(this.courseTable, term);
   }
 
-  _showCreate() {
-    this._mode = 'create';
-    this._selectedId = null;
-    this._retired = false;
-    this._fillForm({
-      ...EMPTY_FORM,
-      summary: '',
-      description: '',
-      published: '',
-      stripe: '',
-      synced: '',
-      imageUrl: '',
-      canvasUrl: '',
+  _setupSplitter() {
+    const element = this.container.querySelector('#course-splitter');
+    if (!element || !this.elements.leftPanel) return;
+    this.splitter = new LithiumSplitter({
+      element,
+      leftPanel: this.elements.leftPanel,
+      minWidth: 157,
+      maxWidth: 1000,
+      tables: this.courseTable,
+      onResize: (width) => {
+        this.leftPanelWidth = width;
+      },
+      onResizeEnd: (width) => {
+        this.leftPanelState.saveWidth(width);
+        this.courseTable?.table?.redraw?.();
+      },
     });
-    this.elements.title.readOnly = false;
-    this.elements.titleHint.textContent = 'Required. A later sync can replace it.';
-    this.elements.history.textContent = '';
-    this._signature = courseDraftSignature(this._readFields());
-    this._dirty = false;
-    this._paintActions();
+    this.courseTable?.setSplitter?.(this.splitter);
+    restorePanelState({
+      panel: this.elements.leftPanel,
+      splitter: this.splitter,
+      collapseBtn: this.elements.collapseBtn,
+      isCollapsed: this.isLeftPanelCollapsed,
+    });
   }
 
-  _fillForm(form) {
-    this.elements.code.value = form.code || '';
-    this.elements.slug.value = form.slug || '';
-    this.elements.title.value = form.title || '';
-    this.elements.image.value = form.imagePath || '';
-    this.elements.canvas.value = form.canvasCourseId || '';
-    const pricing = form.pricingType === 'paid' ? 'paid' : 'free';
-    this.elements.pricing.value = pricing;
-    this.elements.featured.checked = Boolean(form.featured);
-    this.elements.sort.value = form.sortOrder == null ? '' : String(form.sortOrder);
-    this.elements.tags.value = form.tags || '{}';
-    this.elements.summary.textContent = form.summary || '';
-    this.elements.description.textContent = form.description || '';
-    this.elements.published.textContent = form.published || '';
-    this.elements.stripe.textContent = form.stripe || '';
-    this.elements.synced.textContent = form.synced || '';
-    this._paintPreview(form.imageUrl);
-  }
-
-  _applyRow(row) {
-    const form = courseFormFromRow(row);
-    this._mode = 'edit';
-    this._selectedId = form.courseId || null;
-    this._retired = form.retired;
-    this._fillForm(form);
-    this.elements.title.readOnly = true;
-    this.elements.titleHint.textContent = 'Updated from Canvas.';
-    this.elements.history.textContent = '';
-    this._signature = courseDraftSignature(this._readFields());
-    this._dirty = false;
-    this._paintActions();
+  _toggleLeftPanel() {
+    this.isLeftPanelCollapsed = togglePanelCollapse({
+      panel: this.elements.leftPanel,
+      splitter: this.splitter,
+      collapseBtn: this.elements.collapseBtn,
+      panelWidth: this.leftPanelWidth,
+      isCollapsed: this.isLeftPanelCollapsed,
+      onAfterToggle: () => this.courseTable?.table?.redraw?.(),
+    });
+    this.leftPanelState.saveCollapsed(this.isLeftPanelCollapsed);
   }
 
   _paintPreview(knownUrl) {
@@ -438,7 +463,8 @@ export default class CourseManager {
     this._applyButton(this.elements.sync, this.elements.syncTip, sync);
     this._applyButton(this.elements.syncAll, this.elements.syncAllTip, syncAll);
     this._applyButton(this.elements.retire, this.elements.retireTip, retire);
-    this.elements.retire.textContent = retireLabel(this._retired ? 1 : 0);
+    const retired = this.elements.retired && this.elements.retired.checked;
+    this.elements.retire.textContent = retireLabel(retired ? 1 : 0);
     const canvasUrl = courseFormFromRow({
       canvas_course_id: this.elements.canvas.value,
     }).canvasUrl;
@@ -450,130 +476,57 @@ export default class CourseManager {
     tip.title = state.title;
   }
 
-  _applyFilter() {
-    const table = this.courseTable && this.courseTable.table;
-    if (!table || typeof table.setFilter !== 'function') return;
-    const term = this.elements.search.value;
-    const retiredOnly = this.elements.retired.checked;
-    this._filtering = true;
-    try {
-      if (!String(term || '').trim() && !retiredOnly) {
-        table.clearFilter();
-      } else {
-        table.setFilter((row) => courseVisible(row, term, retiredOnly));
-      }
-    } finally {
-      this._filtering = false;
-    }
+  _onRowSelected(row) {
+    if (this._switching || !row) return;
+    this.editor.applyRow(row);
   }
 
-  async _onRowSelected(row) {
-    if (this._switching || this._filtering || !row) return;
-    const next = courseFormFromRow(row);
-    if (this._mode === 'edit' && next.courseId === this._selectedId) return;
-    if (this._dirty) {
-      const proceed = await this._confirmSave();
-      if (!proceed) {
-        this._restoreSelection();
-        return;
-      }
-    }
-    this._applyRow(row);
-  }
-
-  _onRowDeselected() {
-    if (this._switching || this._filtering) return;
-  }
-
-  async _confirmSave() {
-    const save = await confirmDialog({
-      title: 'Unsaved changes',
-      message: 'Save this course before leaving it?',
-      confirmLabel: 'Save',
-      cancelLabel: 'Stay',
+  _paintPrices(view, status) {
+    const section = this.elements.prices;
+    if (!section) return;
+    this.elements.priceStatus.textContent = status || '';
+    section.classList.toggle('is-empty', Boolean(status));
+    const rows = view || [];
+    section.querySelectorAll('.course-price-row').forEach((row) => {
+      const item = rows.find((entry) => entry.currency === row.dataset.currency);
+      row.querySelector('.course-price-amount').textContent = item ? item.amount : '';
+      row.querySelector('.course-price-stripe').textContent = item ? item.stripe : '';
+      row.querySelector('.course-price-state').textContent = item ? item.active : '';
     });
-    if (!save) return false;
-    return this._save();
   }
 
-  _restoreSelection() {
-    this._switching = true;
-    try {
-      if (this._selectedId && this.courseTable && this.courseTable.autoSelectRow) {
-        this.courseTable.autoSelectRow(this._selectedId);
-      } else if (this.courseTable && this.courseTable.table && this.courseTable.table.deselectRow) {
-        this.courseTable.table.deselectRow();
-      }
-    } finally {
-      this._switching = false;
+  async _loadPrices(courseId) {
+    const token = this._priceToken + 1;
+    this._priceToken = token;
+    const id = Number(courseId);
+    if (!Number.isInteger(id) || id <= 0) {
+      this._paintPrices([], 'Select a course.');
+      return;
     }
-  }
-
-  async _startNew() {
-    if (this._dirty) {
-      const proceed = await this._confirmSave();
-      if (!proceed) return;
+    const api = this.app && this.app.api;
+    if (!api) {
+      this._paintPrices([], 'Prices are unavailable.');
+      return;
     }
-    this._switching = true;
     try {
-      if (this.courseTable && this.courseTable.table && this.courseTable.table.deselectRow) {
-        this.courseTable.table.deselectRow();
-      }
-      this._showCreate();
-    } finally {
-      this._switching = false;
+      const rows = await authQuery(api, COURSE_PRICES_QUERY_REF, { INTEGER: { COURSEID: id } });
+      if (this._priceToken !== token) return;
+      this._paintPrices(priceListView(rows), '');
+    } catch (error) {
+      if (this._priceToken !== token) return;
+      log(Subsystems.MANAGER, Status.ERROR, `Course prices failed: ${error.message}`);
+      this._paintPrices([], 'Prices are unavailable.');
     }
   }
 
   async _refresh() {
-    if (this._dirty) {
-      const proceed = await this._confirmSave();
-      if (!proceed) return;
+    if (this.courseTable && typeof this.courseTable.handleRefresh === 'function') {
+      await this.courseTable.handleRefresh();
+      return;
     }
     if (this.courseTable && this.courseTable.loadData) {
       await this.courseTable.loadData();
     }
-  }
-
-  async _save() {
-    const fields = this._readFields();
-    const built = this._mode === 'edit'
-      ? buildCourseUpdateParams(fields, courseUserId(this.app))
-      : buildCourseInsertParams(fields, courseUserId(this.app));
-    if (!built.ok) {
-      toast.error(built.message);
-      return false;
-    }
-    const api = this.app && this.app.api;
-    if (!api) {
-      toast.error('Save failed', { description: 'No server connection.' });
-      return false;
-    }
-    const queryRef = this._mode === 'edit' ? COURSE_UPDATE_QUERY_REF : COURSE_INSERT_QUERY_REF;
-    try {
-      await authQuery(api, queryRef, built.params);
-    } catch (error) {
-      toast.error('Save failed', {
-        description: error.message,
-        serverError: error.serverError,
-      });
-      return false;
-    }
-    this._signature = courseDraftSignature(fields);
-    this._dirty = false;
-    toast.success('Course saved');
-    if (queryRef === COURSE_INSERT_QUERY_REF) {
-      this._showCreate();
-    }
-    if (this.courseTable && this.courseTable.loadData) {
-      this._switching = true;
-      try {
-        await this.courseTable.loadData();
-      } finally {
-        this._switching = false;
-      }
-    }
-    return true;
   }
 
   async _syncOne() {
@@ -590,8 +543,9 @@ export default class CourseManager {
 
   async _retire() {
     if (!this._retireInvokable || !this._hasRow()) return;
-    const options = retireInvokeOptions(this._selectedId, this._retired ? 1 : 0);
-    const label = this._retired ? 'Course unretired' : 'Course retired';
+    const retired = this.elements.retired && this.elements.retired.checked;
+    const options = retireInvokeOptions(this._selectedId, retired ? 1 : 0);
+    const label = retired ? 'Course unretired' : 'Course retired';
     await this._runAction(options, label);
   }
 
@@ -654,6 +608,9 @@ export default class CourseManager {
   }
 
   cleanup() {
+    this.editor?.destroy();
+    this.splitter?._detachListeners?.();
+    this.splitter = null;
     if (this.courseTable && typeof this.courseTable.destroy === 'function') {
       this.courseTable.destroy();
     }

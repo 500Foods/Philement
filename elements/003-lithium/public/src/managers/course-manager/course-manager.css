@@ -1,4 +1,4 @@
-/* Course Manager shell */
+/* Course Manager */
 
 .course-manager-container {
   display: flex;
@@ -30,4 +30,205 @@
 .denied-message {
   margin: var(--space-3) 0 0;
   color: var(--text-secondary);
+}
+
+.course-manager-staff {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  height: 100%;
+  min-height: 0;
+  padding: var(--space-3);
+  overflow: hidden;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.course-manager-staff .course-manager-header {
+  flex-direction: row;
+  align-items: center;
+  max-width: none;
+}
+
+.course-manager-staff .course-manager-intro {
+  margin-top: var(--space-2);
+  flex-shrink: 0;
+}
+
+.course-panels {
+  --panel-left-w: 622px;
+
+  flex: 1;
+  min-height: 0;
+}
+
+.course-field-check {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  color: var(--text-primary);
+}
+
+.course-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-md);
+}
+
+.course-section-label {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.course-price-row {
+  display: grid;
+  grid-template-columns: 4rem 6rem minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: baseline;
+}
+
+.course-section.is-empty .course-price-row {
+  display: none;
+}
+
+.course-table-host {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  margin: var(--space-2);
+}
+
+.course-table-host .tabulator-row .tabulator-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.course-navigator {
+  flex-shrink: 0;
+}
+
+.course-tabs-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.course-tab-pane {
+  display: none;
+  height: 100%;
+  overflow: auto;
+  padding: 0 var(--space-3) var(--space-3);
+}
+
+.course-tab-pane.active {
+  display: block;
+}
+
+.course-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding-right: var(--space-2);
+}
+
+.course-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.course-field label,
+.course-field-label {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.course-field-hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.course-readonly-block,
+.course-readonly-line,
+.course-history {
+  margin: 0;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+
+.course-readonly-block,
+.course-history {
+  padding: var(--space-2);
+  background: var(--bg-secondary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-md);
+}
+
+.course-history {
+  min-height: 4rem;
+  overflow: auto;
+}
+
+/* Twice the 262×146 card used on Canvas and the reception site. */
+.course-image-preview {
+  display: none;
+  width: 524px;
+  height: 292px;
+  margin-top: var(--space-5);
+  object-fit: fill;
+  border-radius: var(--border-radius-lg);
+}
+
+.course-image-preview.is-visible {
+  display: block;
+}
+
+.course-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.course-action-tip {
+  display: inline-flex;
+}
+
+.course-action-tip button:disabled {
+  pointer-events: none;
+}
+
+@media (width <= 800px) {
+  .course-manager-staff {
+    overflow: auto;
+  }
+
+  .course-panels {
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+  }
+
+  .course-panels [data-panel="left"],
+  .course-panels [data-panel="right"] {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
+    flex: none;
+  }
+
+  .course-panels .lithium-splitter {
+    display: none;
+  }
+
+  .course-table-host {
+    min-height: 16rem;
+  }
 }

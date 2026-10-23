@@ -29,10 +29,13 @@ shows it and the shell opens. QueryRef 155 failure still denies.
 The sidebar omits ID 34 when the gate fails. Andrew reported
 Acuranzo 1378, 1379, 1380, and 1381 applied. Phase 13 is in
 progress. Staff list **4500**, insert **4501**, update **4502**,
-history **4503** and **4504**. Files `courses_4076.lua` through
-`courses_4080.lua` and Lookup 059 key 14 (`acuranzo_1397.lua`) are
-not applied. **4004** stays the published catalog. The next Courses
-file is **4081** and the next caller ref is **4505**. File numbers
+history **4503** and **4504**, prices **4505**. Andrew opened the
+live list on 2026-10-22, so **4500** and Lookup 059 key 14 are on
+that database. The navigator owns add, duplicate, and delete.
+Footer save and cancel use ManagerEditHelper. Options stores
+Retired. Canvas shows the image at 524×292, stretched. The list has no Retired checkbox. **4004** stays the published
+catalog. The next Courses file is **4084**, the next caller ref
+is **4506**, and the next Acuranzo file is **1399**. File numbers
 stay below 4500. Do not start Phase 14. He does deploys and login checks. Do not apply migrations. The report writer (manager 24,
 [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md),
 Phases 0–71, Phase 0 approved 2026-10-10) stays parked. Its next
@@ -40,7 +43,7 @@ phase is Phase 1, and only after Andrew pulls that plan in. PDF is
 the default export there. Phased work follows
 [`/docs/PLANNING.md`](/docs/PLANNING.md).
 
-**Last reviewed:** 2026-10-22 (CATCHUP Phase 13 in progress. Staff QueryRefs are 4500–4504. The packet is not applied. The next Courses file is 4081 and the next caller ref is 4505. Phases 5a–5d and 6 stay deferred.)
+**Last reviewed:** 2026-10-23 (CATCHUP Phase 13 in progress. The Canvas image is 524×292 and stretched. The list has no Retired checkbox. Options stores Retired. Prices are QueryRef 4505. Default columns are Code and Title after acuranzo_1398. The next Courses file is 4084 and the next caller ref is 4506. Phases 5a–5d and 6 stay deferred.)
 
 ---
 
@@ -227,7 +230,7 @@ disagree in places.
 | 30–31 | Sync, Camera | placeholders |
 | 32 | Terminal (menu) | `terminal/` (also utility key `terminal`) |
 | 33 | Scripting | `scripting/` |
-| 34 | Course Manager | `course-manager/` — staff catalog (Phase 13, packet not applied). QueryRef **155** is the roles gate. List **4500**. |
+| 34 | Course Manager | `course-manager/` — staff catalog (Phase 13, in progress). QueryRef **155** is the roles gate. List **4500**. Prices **4505**. |
 | 35 | Course Builder | `course-builder/` — placeholder (Phase 0a). Band E is the real UI. |
 
 Tour matching uses **numeric ID only** (`"003.Profile"` matches anything with
@@ -253,7 +256,8 @@ wrong. Collapse to one `PlaceholderManager` rather than copy-paste.
 Course Manager (34) lists courses for staff. It calls QueryRef
 **155** first and implements `cleanup()`. A failed name lookup denies, and
 the sidebar omits the row. The catalog calls **4500**, **4501**, and
-**4502**. History calls **4503** and **4504**. Sync and retire stay
+**4502**. History calls **4503** and **4504**. Prices call **4505**.
+Sync and retire stay
 disabled until QueryRef **87** reports `invokable` 1. Course Builder (35) is still the Phase 0a
 placeholder and implements `teardown()`. Band D continues with Phase
 14 after Andrew applies the Phase 13 packet. Band E is the Course Builder UI.
@@ -499,7 +503,10 @@ id is still `0`. `this.app.user` is still unset on `LithiumApp`.
 **First deploy:** Course Manager — PRIORITIZE Part 5 in
 `/mnt/extra/Projects/500-Courses-Reception/PRIORITIZE.md`. Phase 12
 (2026-10-22) is the staff shell. Phase 13 adds the catalog and is
-in progress until the packet is applied. Authz v1 is CATCHUP L3:
+in progress. The list is a LithiumTable on the Query Manager shell:
+navigator add, duplicate, and delete, plus footer save and cancel.
+Course Options holds Retired and Featured. The list has no Retired checkbox. Canvas shows the image at 524×292, stretched.
+Commerce lists prices through QueryRef **4505**. Authz v1 is CATCHUP L3:
 integer `role_id`s from `getClaims(retrieveJWT())`, resolved through
 QueryRef **155** to `roles.name` `staff` or `admin`. A failed
 resolve denies. The sidebar omits ID 34 when the gate fails. A

@@ -6,9 +6,11 @@
  * descending, so a type-1001 reverse row hides a type-1 row that
  * shares the integer. 4008, 4009, and 4010 are already file
  * numbers. 4006 and 4007 are too. Lua still reads those history
- * refs by query_id. The SPA uses 4500–4504, which are not file
+ * refs by query_id. The SPA uses 4500–4505, which are not file
  * numbers. 4004 stays the published catalog. Sync and retire stay
- * disabled until those scripts are invokable.
+ * disabled until those scripts are invokable. 4505 lists
+ * course_prices. Extra bind names that the live SQL does not use
+ * are ignored. A name the SQL uses and the client omits fails.
  */
 
 export const COURSE_LIST_QUERY_REF = 4500;
@@ -16,6 +18,7 @@ export const COURSE_INSERT_QUERY_REF = 4501;
 export const COURSE_UPDATE_QUERY_REF = 4502;
 export const ENROLMENT_HISTORY_QUERY_REF = 4503;
 export const MANAGEMENT_HISTORY_QUERY_REF = 4504;
+export const COURSE_PRICES_QUERY_REF = 4505;
 export const SCRIPT_DETAIL_QUERY_REF = 87;
 export const COURSE_TABLE_PATH = 'courses/course-manager';
 export const COURSE_TABLE_KEY_IDX = 14;
@@ -24,6 +27,24 @@ export const SYNC_SCRIPT = 'Catalog.SyncFromCanvas';
 export const RETIRE_SCRIPT = 'Catalog.Retire';
 export const NOT_ENABLED_TIP = 'not enabled on this server';
 export const CANVAS_BASE_URL = 'https://canvas.500courses.com';
+
+/** Fields the list search matches. Same names the list query returns. */
+export const COURSE_SEARCH_FIELDS = ['code', 'slug', 'title', 'canvas_course_id'];
+
+/**
+ * Right-hand tabs. Course is the brochure write. Canvas is the sync
+ * surface and the course image. Commerce lists currency prices.
+ * History is the audit lines.
+ */
+export const COURSE_DETAIL_TABS = [
+  { id: 'course', label: 'Course', icon: 'book-open' },
+  { id: 'canvas', label: 'Canvas', icon: 'graduation-cap' },
+  { id: 'commerce', label: 'Commerce', icon: 'credit-card' },
+  { id: 'history', label: 'History', icon: 'clock' },
+];
+
+/** Currencies stored on course_prices. Display order is fixed. */
+export const COURSE_PRICE_CURRENCIES = ['cad', 'usd', 'eur', 'gbp'];
 
 const MAX_INT = 2147483647;
 const LIMITS = {
@@ -63,28 +84,8 @@ export function courseUserId(app) {
 export function courseMatchesSearch(row, term) {
   const query = String(term || '').trim().toLowerCase();
   if (!query) return true;
-  const fields = ['code', 'slug', 'title', 'canvas_course_id'];
+  const fields = COURSE_SEARCH_FIELDS;
   return fields.some((name) => String(courseCell(row, name) ?? '').toLowerCase().includes(query));
-}
-
-/**
- * @param {object|null|undefined} row
- * @param {boolean} retiredOnly
- * @returns {boolean}
- */
-export function courseMatchesRetired(row, retiredOnly) {
-  if (!retiredOnly) return true;
-  return Number(courseCell(row, 'retired')) === 1;
-}
-
-/**
- * @param {object|null|undefined} row
- * @param {string} term
- * @param {boolean} retiredOnly
- * @returns {boolean}
- */
-export function courseVisible(row, term, retiredOnly) {
-  return courseMatchesSearch(row, term) && courseMatchesRetired(row, retiredOnly);
 }
 
 /**
@@ -102,6 +103,7 @@ export function courseDraftSignature(fields) {
     canvasCourseId: String(source.canvasCourseId ?? ''),
     pricingType: String(source.pricingType ?? ''),
     featured: source.featured ? 1 : 0,
+    retired: source.retired ? 1 : 0,
     sortOrder: String(source.sortOrder ?? ''),
     tags: String(source.tags ?? ''),
   });
@@ -453,6 +455,7 @@ function sharedFields(fields) {
     sortOrder: sortOrder.number,
     tags: tags.json,
     featured: fields.featured ? 1 : 0,
+    retired: fields.retired ? 1 : 0,
   };
 }
 
@@ -481,6 +484,7 @@ export function buildCourseInsertParams(fields, userId) {
       },
       INTEGER: {
         IS_FEATURED: shared.featured,
+        RETIRED: shared.retired,
         SORT_ORDER: shared.sortOrder,
         CREATEDID: id,
         UPDATEDID: id,
@@ -514,10 +518,88 @@ export function buildCourseUpdateParams(fields, userId) {
       },
       INTEGER: {
         IS_FEATURED: shared.featured,
+        RETIRED: shared.retired,
         SORT_ORDER: shared.sortOrder,
         USERID: courseUserId({ auth: { user: { id: userId } } }),
         COURSEID: courseId,
       },
     },
   };
+}
+
+/**
+ * Keep a suffix inside a column limit.
+ * @param {string} value
+ * @param {string} suffix
+ * @param {number} max
+ * @returns {string}
+ */
+function clipJoin(value, suffix, max) {
+  const base = String(value || '');
+  const room = max - suffix.length;
+  const head = room > 0 ? base.slice(0, room) : '';
+  return `${head}${suffix}`.slice(0, max);
+}
+
+/**
+ * Brochure copy for the navigator duplicate button. The row is not
+ * inserted until Save. Canvas id and the Stripe product are cleared
+ * so the copy does not point at the same course.
+ * @param {object|null|undefined} row
+ * @returns {object}
+ */
+export function courseDuplicateRow(row) {
+  const form = courseFormFromRow(row);
+  return {
+    code: clipJoin(form.code, '-copy', LIMITS.code),
+    slug: clipJoin(form.slug, '-copy', LIMITS.slug),
+    title: clipJoin(form.title, ' (Copy)', LIMITS.title),
+    image_path: form.imagePath,
+    canvas_course_id: null,
+    pricing_type: form.pricingType === 'paid' ? 'paid' : 'free',
+    is_featured: form.featured ? 1 : 0,
+    sort_order: form.sortOrder,
+    tags: form.tags,
+    published: 0,
+    retired: 0,
+    stripe_product_id: null,
+    summary: '',
+    description: '',
+  };
+}
+
+/**
+ * Minor units as a decimal amount. 1999 is 19.99.
+ * @param {unknown} cents
+ * @returns {string}
+ */
+export function formatPriceAmount(cents) {
+  const amount = Number(cents);
+  if (!Number.isFinite(amount)) return 'None';
+  return (amount / 100).toFixed(2);
+}
+
+/**
+ * One display row per catalog currency. A missing currency is None.
+ * @param {Array<object>|null|undefined} rows
+ * @returns {Array<{ currency: string, amount: string, stripe: string, active: string }>}
+ */
+export function priceListView(rows) {
+  const byCurrency = new Map();
+  (Array.isArray(rows) ? rows : []).forEach((row) => {
+    const currency = String(courseCell(row, 'currency') || '').trim().toLowerCase();
+    if (!currency) return;
+    byCurrency.set(currency, {
+      currency,
+      amount: formatPriceAmount(courseCell(row, 'unit_amount_cents')),
+      stripe: stripeLabel(courseCell(row, 'stripe_price_id')),
+      active: Number(courseCell(row, 'is_active')) === 0 ? 'Inactive' : 'Active',
+    });
+  });
+  return COURSE_PRICE_CURRENCIES.map((currency) => byCurrency.get(currency) || {
+    currency,
+    amount: 'None',
+    stripe: 'None',
+    active: '',
+  });
 }

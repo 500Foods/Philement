@@ -1,9 +1,9 @@
 # Courses pack — running list
 
 Inventory of the Courses pack after the cut out of Acuranzo. Files are
-`courses_4000.lua` through `courses_4080.lua`. The next file is 4081.
+`courses_4000.lua` through `courses_4083.lua`. The next file is 4084.
 File numbers stay below 4500. Caller-facing QueryRefs are 4000–4007
-and 4500–4504. The next SPA ref is 4505. `auth_query` must not use a
+and 4500–4505. The next SPA ref is 4506. `auth_query` must not use a
 ref that equals a file number: bootstrap orders by query type
 descending, and the first cache row is the type-1001 reverse
 migration. `Orchestrators.Orchestrator` stayed in Acuranzo.
@@ -279,17 +279,23 @@ Not part of the Reception update. Recorded so it is not rediscovered.
 
 ## When a number is assigned
 
-The cut below is assigned. Phase 13 adds files 4076–4080 and caller
-refs 4500–4504. Those five files are not applied. The next Courses
-file is 4081. The next caller-facing QueryRef is 4505. One migration
-installs one caller-facing ref. Later patches keep that same ref.
+The cut below is assigned. Phase 13 adds files 4076–4083. Caller
+refs 4500–4504 came with 4076–4080. `courses_4081.lua` rewrites
+4502 and `courses_4082.lua` rewrites 4501, so they keep those refs.
+`courses_4083.lua` installs 4505. Andrew opened the live list, so
+4076 and Lookup 059 key 14 are on that database. 4077–4083 and
+`acuranzo_1398.lua` still need his apply check. The next Courses
+file is 4084. The next caller-facing QueryRef is 4506. One migration
+installs one caller-facing ref. A rewrite keeps the ref it edits.
 
 File numbers stay in 4000–4499. Caller refs that `auth_query` calls
 stay in 4500–4999. 4000–4007 remain, and Lua still loads 4006 and
 4007 by `query_id`. A new SPA ref must not reuse those integers.
 Lookup 055 keeps family id 055 because that family already existed
 in Acuranzo. Lookup 059 key 14 (`courses/course-manager`) is
-`acuranzo_1397.lua`. The next Acuranzo file is 1398.
+`acuranzo_1397.lua`. `acuranzo_1398.lua` updates that same key so
+the default visible columns are Code and Title. The next Acuranzo
+file is 1399.
 
 The Acuranzo README points here for the retired numbers. The generated
 migration index only lists files that exist, so the hole does not

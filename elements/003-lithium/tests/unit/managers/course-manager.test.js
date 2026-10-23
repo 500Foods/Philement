@@ -1,4 +1,12 @@
+import { readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+
+const courseCss = readFileSync(join(
+  dirname(fileURLToPath(import.meta.url)),
+  '../../../src/managers/course-manager/course-manager.css',
+), 'utf8');
 
 const tableBag = { last: null };
 
@@ -12,7 +20,7 @@ vi.mock('../../../src/shared/confirm.js', () => ({
 }));
 
 vi.mock('../../../src/shared/toast.js', () => ({
-  toast: { error: vi.fn(), success: vi.fn() },
+  toast: { error: vi.fn(), info: vi.fn(), success: vi.fn() },
 }));
 
 vi.mock('../../../src/core/jwt.js', () => ({
@@ -34,6 +42,8 @@ vi.mock('../../../src/tables/lithium-table-main.js', () => ({
         clearFilter: vi.fn(),
         deselectRow: vi.fn(),
       };
+      this.setFilter = this.table.setFilter;
+      this.clearFilter = this.table.clearFilter;
       this.autoSelectRow = vi.fn();
       this.init = vi.fn(async () => {});
       this.loadData = vi.fn(async () => {
@@ -55,11 +65,10 @@ import { ManagerLoader } from '../../../src/app/manager-loader.js';
 import {
   COURSE_INSERT_QUERY_REF,
   COURSE_LIST_QUERY_REF,
+  COURSE_PRICES_QUERY_REF,
   COURSE_UPDATE_QUERY_REF,
   ENROLMENT_HISTORY_QUERY_REF,
 } from '../../../src/managers/course-manager/course-catalog.js';
-
-const INTRO = 'Manage the 500 Courses catalog, enrollments, commerce, and learner accounts.';
 
 function mount() {
   const container = document.createElement('div');
@@ -86,6 +95,7 @@ describe('CourseManager shell', () => {
     confirmDialog.mockReset();
     confirmDialog.mockResolvedValue(false);
     toast.error.mockReset();
+    toast.info.mockReset();
     toast.success.mockReset();
     processIcons.mockClear();
     getClaims.mockReturnValue({ roles: '2' });
@@ -97,18 +107,38 @@ describe('CourseManager shell', () => {
     staffQuery();
     const { container, manager } = mount();
     await manager.init();
-    expect(container.querySelector('h2').textContent).toBe('Course Manager');
-    expect(container.querySelector('.course-manager-intro').textContent).toBe(INTRO);
+    expect(container.querySelector('h2')).toBeNull();
+    expect(container.querySelector('.course-manager-intro')).toBeNull();
+    expect(container.querySelector('#course-save-btn')).toBeNull();
     expect(container.textContent).not.toMatch(/lua/i);
     expect(container.textContent).not.toMatch(/phase/i);
-    expect(container.querySelector('#course-search')).not.toBeNull();
+    expect(container.querySelector('#course-navigator')).not.toBeNull();
+    expect(container.querySelector('#course-table').classList.contains('lithium-table-container')).toBe(true);
+    expect(container.querySelector('[data-tab="course"]').classList.contains('active')).toBe(true);
+    expect(container.querySelector('#course-tab-course #course-code')).not.toBeNull();
+    expect(container.querySelector('#course-code').disabled).toBe(true);
+    expect(container.querySelector('#course-options')).not.toBeNull();
+    expect(container.querySelector('#course-retired-chip')).toBeNull();
+    expect(container.querySelector('.course-list-tools')).toBeNull();
+    expect(container.querySelector('#course-option-retired')).not.toBeNull();
+    expect(container.querySelector('#course-option-featured')).not.toBeNull();
+    expect(container.querySelector('[data-tab="canvas"] [fa-graduation-cap]')).not.toBeNull();
+    expect(container.querySelector('#course-tab-canvas #course-image-preview')).not.toBeNull();
+    expect(container.querySelector('#course-tab-canvas #course-summary')).not.toBeNull();
+    expect(container.querySelector('#course-prices-status').textContent).toBe('Select a course.');
+    expect(container.querySelector('#course-prices').classList.contains('is-empty')).toBe(true);
+    expect(container.querySelector('#course-tab-commerce #course-stripe')).not.toBeNull();
+    expect(container.querySelector('#course-tab-history #course-history')).not.toBeNull();
+    expect(tableBag.last.options.navigatorContainer).toBe(container.querySelector('#course-navigator'));
+    expect(tableBag.last.options.localSearch).toBe(true);
+    expect(tableBag.last.options.localSearchFields).toEqual(['code', 'slug', 'title', 'canvas_course_id']);
     expect(container.querySelector('#course-sync-btn').disabled).toBe(true);
     expect(container.querySelector('#course-sync-tip').title).toBe('not enabled on this server');
     expect(container.querySelector('#course-sync-all-btn').disabled).toBe(true);
     expect(container.querySelector('#course-retire-btn').disabled).toBe(true);
     expect(tableBag.last.options.queryRef).toBe(COURSE_LIST_QUERY_REF);
     expect(tableBag.last.options.primaryKeyField).toEqual(['course_id']);
-    expect(tableBag.last.options.readonly).toBe(true);
+    expect(tableBag.last.options.readonly).toBe(false);
     expect(processIcons).toHaveBeenCalledWith(container);
   });
 
@@ -120,7 +150,8 @@ describe('CourseManager shell', () => {
     expect(container.querySelector('.course-manager-denied')).not.toBeNull();
     expect(container.textContent).toMatch(/do not have permission/i);
     expect(container.querySelector('.course-manager-intro')).toBeNull();
-    expect(container.querySelector('#course-search')).toBeNull();
+    expect(container.querySelector('#course-navigator')).toBeNull();
+    expect(container.querySelector('[data-tab]')).toBeNull();
     expect(container.querySelector('#course-code')).toBeNull();
   });
 
@@ -130,24 +161,29 @@ describe('CourseManager shell', () => {
     await manager.render();
     expect(container.querySelector('.course-manager-denied')).not.toBeNull();
     expect(manager._allowed).toBe(false);
-    expect(container.querySelector('#course-search')).toBeNull();
+    expect(container.querySelector('#course-code')).toBeNull();
+    expect(container.querySelector('[data-tab]')).toBeNull();
   });
 
-  it('filters in the browser and reloads from the list query', async () => {
+  it('lists every course the query returns and reloads from the list query', async () => {
     staffQuery();
     const { container, manager } = mount();
     await manager.init();
-    container.querySelector('#course-search').value = 'bloom';
-    container.querySelector('#course-search').dispatchEvent(new Event('input'));
-    expect(tableBag.last.table.setFilter).toHaveBeenCalled();
-    container.querySelector('#course-search').value = '';
-    container.querySelector('#course-retired-chip').checked = false;
-    container.querySelector('#course-search').dispatchEvent(new Event('input'));
-    expect(tableBag.last.table.clearFilter).toHaveBeenCalled();
-    container.querySelector('#course-refresh-btn').click();
-    await vi.waitFor(() => {
-      expect(tableBag.last.loadData.mock.calls.length).toBeGreaterThan(1);
-    });
+    expect(container.querySelector('#course-retired-chip')).toBeNull();
+    expect(container.querySelector('#course-option-retired')).not.toBeNull();
+    await manager._refresh();
+    expect(tableBag.last.loadData.mock.calls.length).toBeGreaterThan(1);
+  });
+
+  it('keeps the course fields when another tab is selected', async () => {
+    staffQuery();
+    const { container, manager } = mount();
+    await manager.init();
+    container.querySelector('[data-tab="history"]').click();
+    expect(container.querySelector('[data-tab="history"]').classList.contains('active')).toBe(true);
+    expect(container.querySelector('#course-tab-history').classList.contains('active')).toBe(true);
+    expect(container.querySelector('#course-tab-course').classList.contains('active')).toBe(false);
+    expect(container.querySelector('#course-code')).not.toBeNull();
   });
 
   it('inserts a course and does not send the list query as the write', async () => {
@@ -157,13 +193,14 @@ describe('CourseManager shell', () => {
     container.querySelector('#course-code').value = 'BBT';
     container.querySelector('#course-slug').value = 'bloom';
     container.querySelector('#course-title').value = 'Bloom';
-    container.querySelector('#course-save-btn').click();
-    await vi.waitFor(() => expect(toast.success).toHaveBeenCalled());
+    await tableBag.last.options.onExecuteSave({ getData: () => ({}) });
+    expect(toast.success).not.toHaveBeenCalled();
     const insert = authQuery.mock.calls.find((call) => call[1] === COURSE_INSERT_QUERY_REF);
     expect(insert).toBeTruthy();
     expect(insert[2].STRING.CODE).toBe('BBT');
     expect(insert[2].STRING.TITLE).toBe('Bloom');
     expect(insert[2].STRING.TAGS).toBe('{}');
+    expect(insert[2].INTEGER.RETIRED).toBe(0);
     expect(insert[2].INTEGER.CREATEDID).toBe(7);
     expect(insert[2].INTEGER.UPDATEDID).toBe(7);
     expect(authQuery.mock.calls.some((call) => call[1] === COURSE_UPDATE_QUERY_REF)).toBe(false);
@@ -194,17 +231,20 @@ describe('CourseManager shell', () => {
     expect(container.querySelector('#course-stripe').textContent).toBe('prod_123');
     expect(container.querySelector('#course-published').textContent).toBe('Not published');
     container.querySelector('#course-code').value = 'BBT2';
-    container.querySelector('#course-save-btn').click();
-    await vi.waitFor(() => expect(toast.success).toHaveBeenCalled());
+    container.querySelector('#course-option-retired').checked = true;
+    await tableBag.last.options.onExecuteSave({ getData: () => ({ course_id: 4 }) });
+    expect(toast.success).not.toHaveBeenCalled();
     const update = authQuery.mock.calls.find((call) => call[1] === COURSE_UPDATE_QUERY_REF);
     expect(update[2].STRING.CODE).toBe('BBT2');
     expect(update[2].INTEGER.COURSEID).toBe(4);
     expect(update[2].INTEGER.USERID).toBe(7);
+    expect(update[2].INTEGER.RETIRED).toBe(1);
+    expect(update[2].INTEGER.IS_FEATURED).toBe(1);
     expect(update[2].STRING.TITLE).toBeUndefined();
     expect(update[2].STRING.TAGS).toBe('{"topic":"art"}');
   });
 
-  it('stays on the row when the operator declines to save', async () => {
+  it('applies the newly selected course', async () => {
     staffQuery();
     const { container, manager } = mount();
     await manager.init();
@@ -215,16 +255,83 @@ describe('CourseManager shell', () => {
       title: 'Bloom',
     });
     container.querySelector('#course-code').value = 'CHANGED';
-    container.querySelector('#course-code').dispatchEvent(new Event('input', { bubbles: true }));
     tableBag.last.options.onRowSelected({
       course_id: 9,
       code: 'OTHER',
       slug: 'other',
       title: 'Other',
     });
-    await vi.waitFor(() => expect(tableBag.last.autoSelectRow).toHaveBeenCalledWith(4));
-    expect(confirmDialog).toHaveBeenCalled();
-    expect(container.querySelector('#course-code').value).toBe('CHANGED');
+    expect(confirmDialog).not.toHaveBeenCalled();
+    expect(container.querySelector('#course-code').value).toBe('OTHER');
+  });
+
+  it('refuses navigator delete and copies a row without the course id', async () => {
+    staffQuery();
+    const { manager } = mount();
+    await manager.init();
+    const before = authQuery.mock.calls.length;
+    tableBag.last.handleDelete();
+    expect(toast.info).toHaveBeenCalledWith('Not deleted', expect.objectContaining({
+      description: 'Courses stay in the catalog. Set Retired under Options.',
+    }));
+    expect(authQuery.mock.calls.length).toBe(before);
+    const copy = tableBag.last.options.onDuplicate({
+      course_id: 4,
+      code: 'BBT',
+      slug: 'bloom',
+      title: 'Bloom',
+      canvas_course_id: 90,
+      stripe_product_id: 'prod_123',
+      is_featured: 1,
+      published: 1,
+      retired: 1,
+    });
+    expect(copy.course_id).toBeUndefined();
+    expect(copy.code).toBe('BBT-copy');
+    expect(copy.slug).toBe('bloom-copy');
+    expect(copy.title).toBe('Bloom (Copy)');
+    expect(copy.canvas_course_id).toBeNull();
+    expect(copy.stripe_product_id).toBeNull();
+    expect(copy.published).toBe(0);
+    expect(copy.retired).toBe(0);
+    expect(copy.is_featured).toBe(1);
+  });
+
+  it('lists a price for each currency', async () => {
+    staffQuery({
+      rows: {
+        [COURSE_PRICES_QUERY_REF]: [
+          { currency: 'usd', unit_amount_cents: 1999, stripe_price_id: 'price_usd', is_active: 1 },
+          { currency: 'eur', unit_amount_cents: 1000, stripe_price_id: 'sk_live_nope', is_active: 0 },
+        ],
+      },
+    });
+    const { container, manager } = mount();
+    await manager.init();
+    tableBag.last.options.onRowSelected({
+      course_id: 4,
+      code: 'BBT',
+      slug: 'bloom',
+      title: 'Bloom',
+      stripe_product_id: 'prod_123',
+    });
+    await vi.waitFor(() => {
+      expect(container.querySelector('#course-prices').classList.contains('is-empty')).toBe(false);
+    });
+    const usd = container.querySelector('[data-currency="usd"]');
+    expect(usd.querySelector('.course-price-amount').textContent).toBe('19.99');
+    expect(usd.querySelector('.course-price-stripe').textContent).toBe('price_usd');
+    expect(usd.querySelector('.course-price-state').textContent).toBe('Active');
+    const eur = container.querySelector('[data-currency="eur"]');
+    expect(eur.querySelector('.course-price-amount').textContent).toBe('10.00');
+    expect(eur.querySelector('.course-price-stripe').textContent).toBe('Hidden');
+    expect(eur.querySelector('.course-price-state').textContent).toBe('Inactive');
+    const cad = container.querySelector('[data-currency="cad"]');
+    expect(cad.querySelector('.course-price-amount').textContent).toBe('None');
+    expect(cad.querySelector('.course-price-stripe').textContent).toBe('None');
+    expect(cad.querySelector('.course-price-state').textContent).toBe('');
+    const prices = authQuery.mock.calls.find((call) => call[1] === COURSE_PRICES_QUERY_REF);
+    expect(prices[2]).toEqual({ INTEGER: { COURSEID: 4 } });
   });
 
   it('loads enrolment history for the selected course', async () => {
@@ -296,9 +403,19 @@ describe('CourseManager shell', () => {
       image_path: 'https://cdn.example/a.png',
     });
     expect(container.querySelector('#course-canvas-btn').disabled).toBe(false);
-    expect(container.querySelector('#course-image-preview').classList.contains('is-visible')).toBe(true);
-    expect(container.querySelector('#course-image-preview').getAttribute('src'))
-      .toBe('https://cdn.example/a.png');
+    const preview = container.querySelector('#course-tab-canvas #course-image-preview');
+    expect(preview.classList.contains('is-visible')).toBe(true);
+    expect(preview.getAttribute('src')).toBe('https://cdn.example/a.png');
+    const previewRule = courseCss.match(/\.course-image-preview\s*\{([^}]*)\}/);
+    expect(previewRule).not.toBeNull();
+    expect(previewRule[1]).toMatch(/width:\s*524px/);
+    expect(previewRule[1]).toMatch(/height:\s*292px/);
+    expect(previewRule[1]).toMatch(/object-fit:\s*fill/);
+    expect(previewRule[1]).toMatch(/margin-top:\s*var\(--space-5\)/);
+    expect(previewRule[1]).toMatch(/border-radius:\s*var\(--border-radius-lg\)/);
+    container.querySelector('#course-image').value = '/media/b.png';
+    container.querySelector('#course-image').dispatchEvent(new window.Event('input', { bubbles: true }));
+    expect(preview.getAttribute('src')).toBe('/media/b.png');
     container.querySelector('#course-canvas-btn').click();
     expect(open).toHaveBeenCalledWith(
       'https://canvas.500courses.com/courses/90',

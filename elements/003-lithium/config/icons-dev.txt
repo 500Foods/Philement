@@ -25,7 +25,6 @@
 <fa fa-bell-concierge></fa>
 <fa fa-bell></fa>
 <fa fa-book-open-lines></fa>
-<fa fa-book-open></fa>
 <fa fa-brackets-curly></fa>
 <fa fa-brackets-square></fa>
 <fa fa-briefcase></fa>

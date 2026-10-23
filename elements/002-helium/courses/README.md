@@ -2,7 +2,7 @@
 
 Courses is a pack on the Acuranzo database. It uses the same connection, the same SQL schema, and the same `queries`, `lookups`, and `scripts` tables. It does not bootstrap those tables. `PAYLOAD:courses` alone is refused. The suite strings that include it are `PAYLOAD:acuranzo+courses` and `PAYLOAD:acuranzo+courses+argent`.
 
-Files are `courses_4000.lua` through `courses_4075.lua`. The next file is 4076. File numbers, caller-facing QueryRefs, and lookup ids all use 4000–4999 and may share an integer, the same way Argent shares 2000–2999. Caller-facing QueryRefs already used are 4000–4007. The query type tells them apart. Later patches keep the ref the installer used. The next QueryRef is 4008.
+Files are `courses_4000.lua` through `courses_4083.lua`. The next file is 4084. File numbers stay below 4500. Caller-facing QueryRefs already used are 4000–4007 and 4500–4505. Refs that `auth_query` calls stay in 4500–4999 and are never file numbers. Later patches keep the ref the installer used. A rewrite keeps that same ref. The next QueryRef is 4506.
 
 Lookup 055 keeps family id 055. `Orchestrators.Orchestrator` stays in Acuranzo (`acuranzo_1210.lua`, plus the courses-era patches 1289, 1299, 1343, and 1364). File 1289 also inserts the first `Provision.EnsureCanvasUser`. Later bodies of that script are in this pack. The old-to-new inventory is [`/docs/He/COURSES_MIGRATION.md`](/docs/He/COURSES_MIGRATION.md).
 
@@ -88,4 +88,12 @@ Macro scripts are the shared set in [`/elements/002-helium/helium/`](/elements/0
 | [4073](/elements/002-helium/courses/migrations/courses_4073.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: seed Stripe.Refund (not invokable) |
 | [4074](/elements/002-helium/courses/migrations/courses_4074.lua) | scripts | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.18: seed Stripe.DeactivateCustomer (not invokable) |
 | [4075](/elements/002-helium/courses/migrations/courses_4075.lua) | queries | 1.0.0 | 2026-08-21 | 4 | ✗ | PRIORITIZE 2.19: QueryRef 4004 Q / LEVEL / PAID_FREE / TAG / SORT / HIDE_RETIRED |
-| **76** | | | | **366** | **76** | |
+| [4076](/elements/002-helium/courses/migrations/courses_4076.lua) | queries | 1.0.0 | 2026-10-22 | 4 | ✗ | QueryRef #4500 - Staff: List Courses |
+| [4077](/elements/002-helium/courses/migrations/courses_4077.lua) | queries | 1.0.0 | 2026-10-22 | 4 | ✗ | QueryRef #4501 - Staff: Insert Course |
+| [4078](/elements/002-helium/courses/migrations/courses_4078.lua) | queries | 1.0.0 | 2026-10-22 | 4 | ✗ | QueryRef #4502 - Staff: Update Course |
+| [4079](/elements/002-helium/courses/migrations/courses_4079.lua) | queries | 1.0.0 | 2026-10-22 | 4 | ✗ | QueryRef #4503 - Staff: Enrolment History |
+| [4080](/elements/002-helium/courses/migrations/courses_4080.lua) | queries | 1.0.0 | 2026-10-22 | 4 | ✗ | QueryRef #4504 - Staff: Management History |
+| [4081](/elements/002-helium/courses/migrations/courses_4081.lua) | queries | 1.0.0 | 2026-10-22 | 4 | ✗ | QueryRef #4502 also writes retired |
+| [4082](/elements/002-helium/courses/migrations/courses_4082.lua) | queries | 1.0.0 | 2026-10-22 | 4 | ✗ | QueryRef #4501 also writes retired |
+| [4083](/elements/002-helium/courses/migrations/courses_4083.lua) | queries | 1.0.0 | 2026-10-22 | 4 | ✗ | QueryRef #4505 - Staff: List Course Prices |
+| **84** | | | | **398** | **84** | |

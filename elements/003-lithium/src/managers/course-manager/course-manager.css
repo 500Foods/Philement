@@ -33,11 +33,16 @@
 }
 
 .course-manager-staff {
+  display: flex;
+  flex-direction: column;
   align-items: stretch;
   justify-content: flex-start;
-  text-align: left;
+  height: 100%;
+  min-height: 0;
   padding: var(--space-3);
   overflow: hidden;
+  color: var(--text-primary);
+  text-align: left;
 }
 
 .course-manager-staff .course-manager-header {
@@ -48,58 +53,82 @@
 
 .course-manager-staff .course-manager-intro {
   margin-top: var(--space-2);
+  flex-shrink: 0;
 }
 
-.course-manager-split {
-  display: flex;
+.course-panels {
+  --panel-left-w: 622px;
+
   flex: 1;
-  gap: var(--space-3);
-  width: 100%;
-  min-height: 0;
-  margin-top: var(--space-3);
-}
-
-.course-manager-list,
-.course-manager-detail {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
   min-height: 0;
 }
 
-.course-manager-list {
-  flex: 1 1 42%;
-}
-
-.course-manager-detail {
-  flex: 1 1 58%;
-  overflow: auto;
-}
-
-.course-manager-list-tools {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-2);
-  margin-bottom: var(--space-2);
-}
-
-.course-manager-list-tools .input {
-  flex: 1 1 12rem;
-}
-
-.course-retired-label,
-.course-field-check label {
+.course-field-check {
   display: inline-flex;
   align-items: center;
   gap: var(--space-2);
   color: var(--text-primary);
 }
 
+.course-section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-3);
+  background: var(--bg-secondary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-md);
+}
+
+.course-section-label {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.course-price-row {
+  display: grid;
+  grid-template-columns: 4rem 6rem minmax(0, 1fr) auto;
+  gap: var(--space-2);
+  align-items: baseline;
+}
+
+.course-section.is-empty .course-price-row {
+  display: none;
+}
+
 .course-table-host {
   flex: 1;
-  min-height: 12rem;
+  min-height: 0;
   overflow: hidden;
+  margin: var(--space-2);
+}
+
+.course-table-host .tabulator-row .tabulator-cell {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.course-navigator {
+  flex-shrink: 0;
+}
+
+.course-tabs-content {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.course-tab-pane {
+  display: none;
+  height: 100%;
+  overflow: auto;
+  padding: 0 var(--space-3) var(--space-3);
+}
+
+.course-tab-pane.active {
+  display: block;
 }
 
 .course-form {
@@ -148,10 +177,14 @@
   overflow: auto;
 }
 
+/* Twice the 262×146 card used on Canvas and the reception site. */
 .course-image-preview {
   display: none;
-  max-width: 12rem;
-  max-height: 8rem;
+  width: 524px;
+  height: 292px;
+  margin-top: var(--space-5);
+  object-fit: fill;
+  border-radius: var(--border-radius-lg);
 }
 
 .course-image-preview.is-visible {
@@ -177,14 +210,22 @@
     overflow: auto;
   }
 
-  .course-manager-split {
+  .course-panels {
     flex-direction: column;
+    height: auto;
+    overflow: visible;
   }
 
-  .course-manager-list,
-  .course-manager-detail {
+  .course-panels [data-panel="left"],
+  .course-panels [data-panel="right"] {
+    width: 100%;
+    max-width: none;
+    min-width: 0;
     flex: none;
-    overflow: visible;
+  }
+
+  .course-panels .lithium-splitter {
+    display: none;
   }
 
   .course-table-host {

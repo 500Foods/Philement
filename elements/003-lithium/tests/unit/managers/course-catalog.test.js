@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   COURSE_INSERT_QUERY_REF,
   COURSE_LIST_QUERY_REF,
+  COURSE_PRICES_QUERY_REF,
   COURSE_UPDATE_QUERY_REF,
   ENROLMENT_HISTORY_QUERY_REF,
   MANAGEMENT_HISTORY_QUERY_REF,
@@ -11,9 +12,11 @@ import {
   buildCourseUpdateParams,
   canvasCourseUrl,
   courseDraftSignature,
+  courseDuplicateRow,
   courseFormFromRow,
+  formatPriceAmount,
+  priceListView,
   courseMatchesSearch,
-  courseVisible,
   historyText,
   parseTags,
   safeImageUrl,
@@ -28,15 +31,14 @@ describe('course catalog helpers', () => {
     expect(COURSE_UPDATE_QUERY_REF).toBe(4502);
     expect(ENROLMENT_HISTORY_QUERY_REF).toBe(4503);
     expect(MANAGEMENT_HISTORY_QUERY_REF).toBe(4504);
+    expect(COURSE_PRICES_QUERY_REF).toBe(4505);
   });
 
-  it('matches code, slug, title, and canvas id, and can keep retired rows only', () => {
+  it('matches code, slug, title, and canvas id', () => {
     const row = { code: 'BBT', slug: 'bloom', title: 'Bloom', canvas_course_id: 90, retired: 1 };
     expect(courseMatchesSearch(row, '90')).toBe(true);
     expect(courseMatchesSearch(row, 'nope')).toBe(false);
-    expect(courseVisible(row, '', false)).toBe(true);
-    expect(courseVisible(row, '', true)).toBe(true);
-    expect(courseVisible({ ...row, retired: 0 }, '', true)).toBe(false);
+    expect(courseMatchesSearch(row, '')).toBe(true);
   });
 
   it('accepts http(s) and site paths for images', () => {
@@ -82,6 +84,7 @@ describe('course catalog helpers', () => {
     expect(built.params.STRING.TITLE).toBe('Bloom');
     expect(built.params.INTEGER).toEqual({
       IS_FEATURED: 0,
+      RETIRED: 0,
       SORT_ORDER: 0,
       CREATEDID: 7,
       UPDATEDID: 7,
@@ -104,7 +107,15 @@ describe('course catalog helpers', () => {
     expect(built.ok).toBe(true);
     expect(built.params.STRING.TITLE).toBeUndefined();
     expect(built.params.INTEGER.COURSEID).toBe(4);
+    expect(built.params.INTEGER.RETIRED).toBe(0);
     expect(built.params.STRING.CANVAS_COURSE_ID).toBe('90');
+    expect(buildCourseUpdateParams({
+      courseId: 4,
+      code: 'A',
+      slug: 'a',
+      pricingType: 'free',
+      retired: true,
+    }, 7).params.INTEGER.RETIRED).toBe(1);
     expect(buildCourseUpdateParams({ courseId: 0, code: 'A', slug: 'a' }, 7).ok).toBe(false);
   });
 
@@ -125,6 +136,33 @@ describe('course catalog helpers', () => {
     const right = courseDraftSignature({ code: 'A', slug: 'a', title: 'T' });
     expect(left).toBe(right);
     expect(courseDraftSignature({ code: 'B', slug: 'a', title: 'T' })).not.toBe(left);
+  });
+
+  it('copies a brochure row and formats the four currencies', () => {
+    const copy = courseDuplicateRow({
+      course_id: 4,
+      code: 'BBT',
+      slug: 'bloom',
+      title: 'Bloom',
+      canvas_course_id: 90,
+      stripe_product_id: 'prod_123',
+    });
+    expect(copy.course_id).toBeUndefined();
+    expect(copy.code).toBe('BBT-copy');
+    expect(copy.title).toBe('Bloom (Copy)');
+    expect(copy.canvas_course_id).toBeNull();
+    expect(copy.published).toBe(0);
+    expect(copy.retired).toBe(0);
+    expect(formatPriceAmount(1999)).toBe('19.99');
+    expect(formatPriceAmount('nope')).toBe('None');
+    const view = priceListView([
+      { currency: 'GBP', unit_amount_cents: 250, stripe_price_id: 'price_gbp', is_active: 1 },
+    ]);
+    expect(view.map((row) => row.currency)).toEqual(['cad', 'usd', 'eur', 'gbp']);
+    expect(view[0]).toEqual({ currency: 'cad', amount: 'None', stripe: 'None', active: '' });
+    expect(view[3].amount).toBe('2.50');
+    expect(view[3].stripe).toBe('price_gbp');
+    expect(view[3].active).toBe('Active');
   });
 
   it('keeps script buttons disabled until invokable is 1', () => {
