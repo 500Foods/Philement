@@ -1,10 +1,12 @@
 # Courses pack — running list
 
 Inventory of the Courses pack after the cut out of Acuranzo. Files are
-`courses_4000.lua` through `courses_4087.lua`. The next file is 4088.
+`courses_4000.lua` through `courses_4096.lua`. The next file is 4097.
 File numbers stay below 4500. Caller-facing QueryRefs are 4000–4007
-and 4500–4507. `courses_4087.lua` rewrites 4506 and is not applied.
-The next SPA ref is 4508. `auth_query` must not use a ref that equals a file number:
+and 4500–4512. Andrew confirmed the save on 2026-10-23.
+`courses_4087.lua` is the SQL that ran for 4506.
+`courses_4088.lua` through `courses_4096.lua` are not applied.
+The next SPA ref is 4513. `auth_query` must not use a ref that equals a file number:
 bootstrap orders by query type
 descending, and the first cache row is the type-1001 reverse
 migration. `Orchestrators.Orchestrator` stayed in Acuranzo.
@@ -288,12 +290,17 @@ refs 4500–4504 came with 4076–4080. `courses_4081.lua` rewrites
 Phase 14 adds `courses_4084.lua` (QueryRef 4506, save prices),
 `courses_4085.lua` (QueryRef 4507, orders for one course), and
 `courses_4086.lua` (`Stripe.Mode`, invokable 1, no caller ref).
-Andrew reported that packet applied. Save prices still did not
-keep a typed amount. `courses_4087.lua` rewrites QueryRef 4506 so
-`-- TRANSACTION_END` is on its own line. That file is not applied.
-The next Courses file is 4088. The next caller-facing QueryRef is
-4508. One migration installs one caller-facing ref. A rewrite
-keeps the ref it edits.
+Andrew reported that packet applied. On 2026-10-23 he confirmed
+the save. `courses_4087.lua` rewrites QueryRef 4506 so
+`-- TRANSACTION_END` is on its own line. That file is the SQL
+that ran. Phase 15 adds `courses_4088.lua` through `courses_4092.lua`
+(QueryRefs 4508 search, 4509 account, 4510 seats, 4511 orders, and
+4512 Canvas link) and `courses_4093.lua` through `courses_4096.lua`
+(`Enroll.StaffGate` invokable 0, then `Enroll.StaffGrant`,
+`Enroll.StaffArchive`, and `Enroll.StaffRenew`, invokable 1).
+That packet is not applied. The next Courses file is 4097. The next
+caller-facing QueryRef is 4513. One migration installs one
+caller-facing ref. A rewrite keeps the ref it edits.
 
 File numbers stay in 4000–4499. Caller refs that `auth_query` calls
 stay in 4500–4999. 4000–4007 remain, and Lua still loads 4006 and

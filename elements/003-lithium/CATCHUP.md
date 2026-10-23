@@ -71,31 +71,37 @@ only.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-10-23):** Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, and 13 are complete. Andrew confirmed `Api.Echo` on `https://lithium.500courses.com`: Wait on `job_id: BBTDC`, Wait off `job_id: CCCRP`, both `status: completed`. **Phase 10** is complete. Andrew confirmed the tulip button, Ctrl+P, pretty-print then save, the Preview tab (summary, then Lua), and that a 9px font survives a reload. He declined the optional meta tab. It does not move forward. **Phase 11** is complete. CodeMirror 6 is the only stack. Lua folds `function`, `if`, `do`, `for`, and `while` through `end`, and `repeat` through `until`. `H.` and `H.name` use the namespace tag. **Phase 12** is complete. Andrew confirmed the Learning group shows Course Manager and that he can open the shell. The gate reads the stored token with `getClaims(retrieveJWT())`. A bare `getClaims()` returns null and hides the row before the token is read. QueryRef 155 failure still denies, and the sidebar still omits ID 34 when the gate fails. A direct open still shows the lock panel. Andrew reported Acuranzo 1378, 1379, 1380, and 1381 applied. **Phase 13** is complete (2026-10-23). Andrew reported the latest build deployed and the latest migrations applied. The list has no Retired checkbox. Retired stays under Course Options. Staff list **4500**, insert **4501** (`courses_4082.lua` stores Retired), update **4502** (`courses_4081.lua` stores Retired), enrolment history **4503**, management history **4504**, prices **4505** (`courses_4083.lua`). Lookup 059 key 14 is `courses/course-manager` (`acuranzo_1397.lua` and `acuranzo_1398.lua`). Default columns are Code and Title. The list is a LithiumTable. The navigator owns add, duplicate, and delete. Delete leaves the row. Footer save and cancel use ManagerEditHelper. Canvas shows the image at 524×292, stretched, with rounded corners. Commerce lists cad, usd, eur, and gbp. **4004** stays the published catalog. **4008** is the courses table file, not a caller ref. Phase 14 is in progress. Save prices is **4506** (`courses_4084.lua`). Orders are **4507** (`courses_4085.lua`). `Stripe.Mode` is `courses_4086.lua`, invokable 1. Andrew reported 4084–4086 applied. A typed price still reloads the previous cents and the toast says saved. `courses_4087.lua` rewrites 4506 so `-- TRANSACTION_END` is on its own line and is not applied. The client logs the save and treats success `fail` as an error. Ensure Product, Refund, and Deactivate stay invokable 0. The next Courses file is **4088**. The next caller ref is **4508**. The next Acuranzo file is **1399**. File numbers stay below 4500. Do not mark Phase 14 complete until Andrew reports the apply. Do not start Phase 15. Phases 5a, 5b, 5c, 5d, and 6 stay deferred until Andrew pulls Band B back. He does deploys and login checks. Do not drive a browser for those. Save, duplicate, and update send INTEGER `SCRIPT_TYPE`, `STATUS`, `USERID`, and `INVOKABLE` (0 when the row has none). A blank schedule or run time is `''`. Andrew applied Acuranzo 1395 (QueryRef 130) and 1396 (QueryRef 129) and confirmed pretty-print then save on 2026-10-22. Delete uses QueryRef 131 with STRING `GROUP_NAME` and `SCRIPT_NAME`. A dirty row switch asks to save or stay. On the 500 Courses Lithium database, Lookup 059 key 13 is `scripts/script-manager` and its collection names delete 131. Course QueryRefs moved to the 4000 pack on 2026-10-16. Band D uses the Courses pack QueryRefs section. Do not call retired **#085**, **#150**, or **#151**.
+**CURRENT PAUSE POINT (as of 2026-10-23):** Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, and 14 are complete. Andrew confirmed `Api.Echo` on `https://lithium.500courses.com`: Wait on `job_id: BBTDC`, Wait off `job_id: CCCRP`, both `status: completed`. **Phase 10** is complete. Andrew confirmed the tulip button, Ctrl+P, pretty-print then save, the Preview tab (summary, then Lua), and that a 9px font survives a reload. He declined the optional meta tab. It does not move forward. **Phase 11** is complete. CodeMirror 6 is the only stack. Lua folds `function`, `if`, `do`, `for`, and `while` through `end`, and `repeat` through `until`. `H.` and `H.name` use the namespace tag. **Phase 12** is complete. Andrew confirmed the Learning group shows Course Manager and that he can open the shell. The gate reads the stored token with `getClaims(retrieveJWT())`. A bare `getClaims()` returns null and hides the row before the token is read. QueryRef 155 failure still denies, and the sidebar still omits ID 34 when the gate fails. A direct open still shows the lock panel. Andrew reported Acuranzo 1378, 1379, 1380, and 1381 applied. **Phase 13** is complete (2026-10-23). Andrew reported the latest build deployed and the latest migrations applied. The list has no Retired checkbox. Retired stays under Course Options. Staff list **4500**, insert **4501** (`courses_4082.lua` stores Retired), update **4502** (`courses_4081.lua` stores Retired), enrolment history **4503**, management history **4504**, prices **4505** (`courses_4083.lua`). Lookup 059 key 14 is `courses/course-manager` (`acuranzo_1397.lua` and `acuranzo_1398.lua`). Default columns are Code and Title. The list is a LithiumTable. The navigator owns add, duplicate, and delete. Delete leaves the row. Footer save and cancel use ManagerEditHelper. Canvas shows the image at 524×292, stretched, with rounded corners. Commerce lists cad, usd, eur, and gbp. **4004** stays the published catalog. **4008** is the courses table file, not a caller ref. **Phase 14** is complete (2026-10-23). Andrew confirmed Save prices on course 16 at 13:55:13: CAD cents 4999, success true, affected_rows 1, eight statements all success. Save prices is **4506** (`courses_4084.lua`, rewritten by `courses_4087.lua`). Orders are **4507** (`courses_4085.lua`). `Stripe.Mode` is `courses_4086.lua`, invokable 1. The client logs the save and treats success `fail` as an error. Ensure Product, Refund, and Deactivate stay invokable 0. Phase 15 is in progress (2026-10-23). The Learners tab is in the tree. Search is **4508**, the account read is **4509**, seats are **4510**, orders are **4511**, and the Canvas link is **4512**. `Enroll.StaffGate` is `courses_4093.lua` and stays invokable 0. `Enroll.StaffGrant`, `Enroll.StaffArchive`, and `Enroll.StaffRenew` are `courses_4094.lua` through `courses_4096.lua` and are invokable 1. The packet is not applied. The manual search is still open. The next Courses file is **4097**. The next caller ref is **4513**. The next Acuranzo file is **1399**. File numbers stay below 4500. Do not mark Phase 15 complete. Do not start Phase 16 source. Phases 5a, 5b, 5c, 5d, and 6 stay deferred until Andrew pulls Band B back. He does deploys and login checks. Do not drive a browser for those. Save, duplicate, and update send INTEGER `SCRIPT_TYPE`, `STATUS`, `USERID`, and `INVOKABLE` (0 when the row has none). A blank schedule or run time is `''`. Andrew applied Acuranzo 1395 (QueryRef 130) and 1396 (QueryRef 129) and confirmed pretty-print then save on 2026-10-22. Delete uses QueryRef 131 with STRING `GROUP_NAME` and `SCRIPT_NAME`. A dirty row switch asks to save or stay. On the 500 Courses Lithium database, Lookup 059 key 13 is `scripts/script-manager` and its collection names delete 131. Course QueryRefs moved to the 4000 pack on 2026-10-16. Band D uses the Courses pack QueryRefs section. Do not call retired **#085**, **#150**, or **#151**.
 
 ### Resume here next session
 
-Phases 0–5, 7, 8, 9, 10, 11, 12, and 13 are complete. Do not reopen them. Do not open 5a–5d or 6 unless Andrew pulls Band B back.
+Phases 0–5, 7, 8, 9, 10, 11, 12, 13, and 14 are complete. Do not reopen them. Do not open 5a–5d or 6 unless Andrew pulls Band B back.
 
-1. **Phase 14** is in progress (catalog commerce, ID 34). Andrew
-   reported 4084–4086 applied. Do not mark it complete until a
-   typed price stays saved. Do not start Phase 15. Phase 13
-   closed on 2026-10-23. Andrew reported the latest build
-   deployed, the latest migrations applied, and the list Retired
-   checkbox removed. **4004** stays the published catalog. Staff
-   list **4500**, insert **4501**, update **4502**, enrolment
-   history **4503**, management history **4504**, prices **4505**,
-   save prices **4506**, orders **4507**. `Stripe.Mode` is
+1. **Phase 14** is complete (2026-10-23). Andrew confirmed Save
+   prices on course 16 at 13:55:13. QueryRef **4506**, CAD cents
+   4999, success true, affected_rows 1, eight statements all
+   success. USD 3900, EUR 3500, and GBP 3000 were unchanged and
+   reported affected 0. The brochure stayed clean. **Phase 15**
+   (learners and Canvas links) is in progress. The packet
+   `courses_4088.lua` through `courses_4096.lua` is not applied.
+   The manual search is still open. Do not mark it complete. Do not
+   start Phase 16 source. Phase 13 closed on
+   2026-10-23. Andrew reported the latest build deployed, the
+   latest migrations applied, and the list Retired checkbox
+   removed. **4004** stays the published catalog. Staff list
+   **4500**, insert **4501**, update **4502**, enrolment history
+   **4503**, management history **4504**, prices **4505**, save
+   prices **4506**, orders **4507**. `Stripe.Mode` is
    `courses_4086.lua` and is invokable. Lookup 059 key 14 is
    `courses/course-manager`. Default columns are Code and Title.
    Leave `Catalog.SyncFromCanvas`, `Catalog.Retire`,
    `Stripe.EnsureProduct`, `Stripe.Refund`, and
    `Stripe.DeactivateCustomer` at `invokable` 0 until Phase 18.
-   Andrew reported 4084–4086 applied. Save prices still reloads
-   the previous cents. `courses_4087.lua` rewrites 4506 and is not
-   applied. The next Courses file is **4088**. The next caller ref is
-   **4508**. The next Acuranzo file is **1399**. File numbers stay
-   below 4500. Andrew declined the Scripting meta tab. It stays
+   `courses_4087.lua` is the SQL that ran for 4506. Do not edit
+   `courses_4084.lua`. The next Courses file is **4097**. The next
+   caller ref is **4513**. The next Acuranzo file is **1399**.
+   File numbers stay below 4500. QueryRef **4500** does not return
+   cents. Andrew declined the Scripting meta tab. It stays
    declined. He does deploys and login checks. Do not drive a
    browser for those. Fold All and the `H.` tint have unit
    coverage and no live click yet.
@@ -243,7 +249,7 @@ QueryRefs section is the course-number contract.
 | `conduit.js` | `authQuery` plus `buildScriptPayload`, `invokeScript`, and `getScriptJob` (Phase 2, 2026-10-16). The Scripting Run tab calls them (Phase 9). A synchronous invoke extends the POST past the 30s client cap by `timeout_seconds` plus 5 seconds. Andrew confirms the live Run lines. |
 | Crimson | Live WS chat; login JWT; hardcoded engine `"Crimson"` |
 | Chats ID 18 | 49-line placeholder |
-| Course Manager | Staff catalog at `course-manager/` (Phase 14 in progress, 2026-10-23). QueryRef **155** is the roles gate. List **4500**, insert **4501**, update **4502**, history **4503** and **4504**, prices **4505**, save prices **4506**, orders **4507**. The list has no Retired checkbox. Sync, retire, Ensure Product, refund, and deactivate stay disabled. `cleanup()` is the close hook. Learners and inbox are later Band D phases. |
+| Course Manager | Staff catalog at `course-manager/` (Phase 14 complete, 2026-10-23). QueryRef **155** is the roles gate. List **4500**, insert **4501**, update **4502**, history **4503** and **4504**, prices **4505**, save prices **4506**, orders **4507**. The list has no Retired checkbox. Sync, retire, Ensure Product, refund, and deactivate stay disabled. `cleanup()` is the close hook. Learners and inbox are later Band D phases. |
 | Course Builder | Placeholder at `course-builder/` (Phase 0a, refreshed 2026-10-16). No QueryRef. Close hook is `teardown()`. Real UI is Band E. |
 | Terminal | Real iframe popup but `DEFAULT_URL` hardcoded to `https://www.philement.com`; not wired to Hydrogen terminal `WebPath`. Troubleshoot in Phase 0c. |
 | Mail / Jobs / Dashboard / Roles | Placeholders |
@@ -282,8 +288,13 @@ shows 85, 150, and 151 because those were the numbers that day.
 | Staff: enrolment history |  | **4503** | [`courses_4079.lua`](/elements/002-helium/courses/migrations/courses_4079.lua). Same line text as 4006. Andrew reported applied 2026-10-23. |
 | Staff: management history |  | **4504** | [`courses_4080.lua`](/elements/002-helium/courses/migrations/courses_4080.lua). Same line text as 4007. Andrew reported applied 2026-10-23. |
 | Staff: prices |  | **4505** | [`courses_4083.lua`](/elements/002-helium/courses/migrations/courses_4083.lua). Read. Andrew reported applied 2026-10-23. |
-| Staff: save prices |  | **4506** | [`courses_4084.lua`](/elements/002-helium/courses/migrations/courses_4084.lua). Upserts cad, usd, eur, and gbp. Does not write `stripe_price_id`. Andrew reported applied. [`courses_4087.lua`](/elements/002-helium/courses/migrations/courses_4087.lua) rewrites the same ref and is not applied. |
+| Staff: save prices |  | **4506** | [`courses_4084.lua`](/elements/002-helium/courses/migrations/courses_4084.lua). Upserts cad, usd, eur, and gbp. Does not write `stripe_price_id`. [`courses_4087.lua`](/elements/002-helium/courses/migrations/courses_4087.lua) rewrites the same ref so `-- TRANSACTION_END` is its own line. Andrew confirmed that SQL on course 16 (CAD 4999 cents) on 2026-10-23. |
 | Staff: course orders |  | **4507** | [`courses_4085.lua`](/elements/002-helium/courses/migrations/courses_4085.lua). One course. `ACCOUNTID` 0 lists every account. Andrew reported applied. |
+| Staff: search accounts |  | **4508** | [`courses_4088.lua`](/elements/002-helium/courses/migrations/courses_4088.lua). Exact account id, Keycloak subject, or OIDC email. Not applied. |
+| Staff: read account |  | **4509** | [`courses_4089.lua`](/elements/002-helium/courses/migrations/courses_4089.lua). Account, registration meta, and prefs. Not applied. |
+| Staff: account enrollments |  | **4510** | [`courses_4090.lua`](/elements/002-helium/courses/migrations/courses_4090.lua). Every seat for one account. Not applied. |
+| Staff: account orders |  | **4511** | [`courses_4091.lua`](/elements/002-helium/courses/migrations/courses_4091.lua). Every order for one account. **4507** stays per course. Not applied. |
+| Staff: canvas link |  | **4512** | [`courses_4092.lua`](/elements/002-helium/courses/migrations/courses_4092.lua). SPA read of `account_canvas_links`. **4001** stays the Lua read. Not applied. |
 
 Stays in Acuranzo:
 
@@ -308,15 +319,17 @@ No list or triage QueryRef exists for `course_suggestions` (insert
 staff list of every course is **4500** (`courses_4076.lua`), not
 **4004** and not **4008**. **4008** is the bookkeeping key of the
 courses table file. `auth_query` would stop on that type-1001 row.
-The next Courses file is **4088**. The next caller-facing QueryRef
-is **4508**. File numbers stay below 4500. Caller refs for
-`auth_query` use 4500–4999. **4500–4507** are assigned. Andrew
+The next Courses file is **4097**. The next caller-facing QueryRef
+is **4513**. File numbers stay below 4500. Caller refs for
+`auth_query` use 4500–4999. **4500–4512** are assigned. **4508–4512**
+are not applied. Andrew
 reported **4500–4505** applied on 2026-10-23, with Lookup 059 key 14
 from `acuranzo_1397.lua` and Code and Title from
 `acuranzo_1398.lua`. He later reported **4506**, **4507**, and
-`courses_4086.lua` applied. Save prices still reloads the previous
-cents. [`courses_4087.lua`](/elements/002-helium/courses/migrations/courses_4087.lua)
-rewrites **4506** and is not applied. `courses_4086.lua` seeds
+`courses_4086.lua` applied. On 2026-10-23 he confirmed Save prices
+on course 16: CAD cents 4999, affected_rows 1, eight statements.
+[`courses_4087.lua`](/elements/002-helium/courses/migrations/courses_4087.lua)
+is the SQL that ran for **4506**. `courses_4086.lua` seeds
 `Stripe.Mode` and does not install a caller ref. Do not invent a number in the SPA.
 Do not apply a migration from an agent session.
 
@@ -2635,24 +2648,29 @@ exposing `sk_`.
       which renders those shapes as “Hidden”. No key is stored.
 - [x] Unit: `ensureProductOptions(4).params` is `{ course_id: 4 }`.
 - [x] `npm test && npm run lint` — variance in Status. `npm run
-      lint:css` exited 0. luacheck on 4084–4086 exited 0.
+      lint:css` exited 0. luacheck on 4084–4087 exited 0.
 
-**Status:** in progress (2026-10-23). Andrew reported 4084–4086
-applied. A typed amount still reloads the previous cents and the
-toast says saved, so this phase is not complete. Assigned:
-`courses_4084.lua` QueryRef **4506**, `courses_4085.lua` QueryRef
-**4507**, `courses_4086.lua` `Stripe.Mode` (no caller ref,
-invokable 1). `courses_4087.lua` rewrites **4506** and is not
-applied. Next Courses file **4088**. Next caller ref **4508**.
-Next Acuranzo file **1399**.
-File numbers stay below 4500. Variance: `npm test` was 1129 passed
-and 10 failed (1139; 48 files passed, 1 failed). The 10 are
+**Status:** complete (2026-10-23). Andrew confirmed Save prices on
+course 16 at 13:55:13. QueryRef **4506**, CAD present 1 keep 0
+cents 4999 active 1, success true, affected_rows 1, row_count 0.
+All eight statements returned success true. Statement 1 (the CAD
+update) reported affected 1. Statements 2–8 reported affected 0.
+The following price reload was HTTP 200, 284 bytes. The brochure
+stayed clean. Assigned: `courses_4084.lua` QueryRef **4506**,
+rewritten by `courses_4087.lua`; `courses_4085.lua` QueryRef
+**4507**; `courses_4086.lua` `Stripe.Mode` (no caller ref,
+invokable 1). Next Courses file **4088**. Next caller ref
+**4508**. Next Acuranzo file **1399**. File numbers stay below
+4500. Variance: `npm test` was 1135 passed and 10 failed (1145;
+48 files passed, 1 failed). The 10 are
 `tests/integration/auth.integration.test.js` (HTTP 503 from
 `https://lithium.philement.com`; cert expired 2026-08-02). That is
-the known live auth variance. `npm run lint` and `npm run lint:css`
-exited 0 and printed no problems. luacheck reported 0 warnings and
-0 errors on the three new Lua files. The live Course Manager was
-not driven. Andrew does the deploy and the apply.
+the known live auth variance. `npm run lint` exited 0 and printed
+no problems after the save-log change. `npm run lint:css` exited 0
+on the earlier commerce pass, and no CSS changed after that.
+luacheck reported 0 warnings on 4084–4087. The agent did not drive
+the live Course Manager. Andrew did the deploy, the apply, and
+the save.
 
 **Accomplished:**
 
@@ -2675,6 +2693,17 @@ not driven. Andrew does the deploy and the apply.
   and **4502**. Save prices is its own button.
 - Tests: `course-commerce.test.js` 10, `course-catalog.test.js` 12,
   `course-manager.test.js` 17, `course-access.test.js` 15.
+- [`courses_4087.lua`](/elements/002-helium/courses/migrations/courses_4087.lua)
+  rewrites the stored 4506 SQL so `-- TRANSACTION_END` is its own
+  line. It updates the existing TYPE_SQL row. It does not edit
+  `courses_4084.lua`. Andrew confirmed that SQL on 2026-10-23.
+- [`course-price-log.js`](/elements/003-lithium/src/managers/course-manager/course-price-log.js)
+  and `authQueryResponse` in
+  [`conduit.js`](/elements/003-lithium/src/shared/conduit.js).
+  `extractError` treats success `"fail"` as an error. A save with
+  no affected rows toasts “Prices were not saved” and leaves the
+  draft. The session log lists the four currency binds and the
+  statement counts. It omits the staff id and price-row bodies.
 
 **Lessons learned:**
 
@@ -2707,25 +2736,23 @@ not driven. Andrew does the deploy and the apply.
 - `stripeLabel` is the secret detector. `safeStripeId` takes the
   prefix as an argument, so `course-commerce.js` does not contain
   `sk_`.
+- On this save only the currency whose cents changed reported
+  affected 1. The other seven statements succeeded with affected
+  0: the unchanged updates, and the inserts that an existing row
+  skips. A later save that changes a second currency should report
+  affected 1 on that currency's update.
+- Save prices writes `course_prices` and leaves the brochure
+  snapshot alone. The footer stays clean on purpose. QueryRef
+  **4500** does not return the cents. A list column for them is
+  later work.
 
 **Handoff:**
 
-- Phase 14 stays in progress. Andrew reported 4084–4086 applied.
-  Hand him `courses_4087.lua`. Do not apply it. Do not run
-  SchemaTool or SchemaHelper. Do not edit `courses_4084.lua`.
-  The phase is complete only after a typed price stays saved.
-  Do not start Phase 15.
-- Deploy the Lithium build that logs the price save. A missing
-  QueryRef now toasts the server message and leaves the typed
-  amount. The session log lists query_ref 4506, each currency's
-  present, keep, cents, and active, then success, affected_rows,
-  row_count, and any statement affected counts. It does not log
-  the staff id or price-row bodies.
-- After 4087 is applied, restart Hydrogen. If that start is the
-  one that applies the file, restart once more so bootstrap loads
-  the new SQL. **4506** requires every INTEGER bind, including
-  the zeros. **4507** requires `COURSEID` and `ACCOUNTID`.
-  4087 only replaces an existing QueryRef 4506 row.
+- Phase 14 is complete. Andrew confirmed Save prices on course 16
+  at 13:55:13. Phase 15 (learners and Canvas links) is next.
+  Discuss it and wait for approval. Do not edit Phase 15 source
+  in the next sitting until that approval. Do not start Phase 15
+  in this sitting.
 - Leave `invokable` at 0 on `Stripe.EnsureProduct`, `Stripe.Refund`,
   `Stripe.DeactivateCustomer`, `Catalog.SyncFromCanvas`, and
   `Catalog.Retire` until Phase 18. Dashboard links are the working
@@ -2736,7 +2763,15 @@ not driven. Andrew does the deploy and the apply.
 - Amounts on the form are dollars. SQL stores cents. A blank amount
   on an existing row deactivates it and keeps the cents. A free
   course can still save price rows. Ensure and Rotate stay disabled
-  for free.
+  for free. Save prices does not dirty the brochure.
+- The query cache loads at bootstrap, before that start applies
+  migrations, and APPLY does not rebuild it. A query inserted on
+  a start is visible after the next start. **4506** requires every
+  INTEGER bind, including the zeros. **4507** requires `COURSEID`
+  and `ACCOUNTID`. `courses_4087.lua` only replaces an existing
+  QueryRef 4506 row. Do not edit `courses_4084.lua`.
+- QueryRef **4500** does not return cents. Leave the list columns
+  as they are.
 - Next Courses file **4088**. Next caller ref **4508**. Next
   Acuranzo file **1399**. File numbers stay below 4500. **4004**
   stays the published catalog.
@@ -2754,10 +2789,14 @@ Canvas token.
 
 **Entry gate:**
 
-- [ ] Phase 12 complete. `account_canvas_links` QueryRef or script
-      identified. Canvas link refs **#4001**, **#4002**, and **#4003**
-      already exist and are what Lua calls. They are not an account
-      search.
+- [x] Phase 12 complete. `account_canvas_links` is
+      [`courses_4003.lua`](/elements/002-helium/courses/migrations/courses_4003.lua).
+      Lua reads it with QueryRef **4001**
+      ([`courses_4004.lua`](/elements/002-helium/courses/migrations/courses_4004.lua)).
+      Writes are **4002** and **4003**. Those integers are also file
+      numbers, so the SPA calls **4512** instead. They are not an
+      account search. No Helium script lists Canvas aliases or merges
+      two users.
 
 **Reference:**
 
@@ -2768,25 +2807,120 @@ Canvas token.
 
 **Work items:**
 
-- [ ] Account search (email, Keycloak sub, account id).
-- [ ] Detail: prefs + `user_registration_meta` read-only. Enrollments,
-      orders, Canvas link, Stripe `cus_` (not secrets).
-- [ ] Grant/revoke seats via named scripts. No “fake paid” button.
-- [ ] Canvas aliases via script + `H.http` on the server. Relink/merge
-      UI only if the Helium script exists; else show both ids and a
-      documented ops path.
-- [ ] Open Canvas course/user in a new tab (URL only).
-- [ ] Do not impersonate. Do not PATCH Keycloak.
+- [x] Account search (email, Keycloak sub, account id). Exact match.
+      Account id wins, then subject, then email. QueryRef **4508**.
+- [x] Detail: prefs + `user_registration_meta` read-only. Enrollments,
+      orders, Canvas link, Stripe `cus_` (not secrets). QueryRefs
+      **4509**, **4510**, **4511**, and **4512**.
+- [x] Grant, archive, and renew call `Enroll.StaffGrant`,
+      `Enroll.StaffArchive`, and `Enroll.StaffRenew`. The role check
+      is `Enroll.StaffGate` (invokable 0). No “fake paid” button.
+      `Enroll.FreeCourse`, `Enroll.Archive`, and `Enroll.RenewFree`
+      are unchanged. `Enroll.RenewFree` stays unseeded.
+- [x] No alias script. The screen shows `canvas_user_id`,
+      `canvas_email`, and `last_seen_at`, plus one ops sentence.
+      Relink and merge stay with ops.
+- [x] Open Canvas user uses
+      `https://canvas.500courses.com/users/{canvas_user_id}`. The
+      course button stays
+      `https://canvas.500courses.com/courses/{id}`. Both are URL only.
+- [x] Do not impersonate. Do not PATCH Keycloak. The target account
+      is `params.account_id`. The caller stays in `params._hydrogen`,
+      which the SPA does not send.
 
 **Exit gate / validation:**
 
 - [ ] Manual: search one account; enroll/archive disabled-or-real
-      (log which).
-- [ ] `npm test && npm run lint`
+      (log which). Waiting on Andrew. The packet is not applied.
+- [x] `npm test && npm run lint` — variance in Status. `npm run
+      lint:css` exited 0. luacheck on 4088–4096 exited 0.
 
-**Status:** pending
+**Status:** in progress (2026-10-23). Andrew approved the four
+pins: new staff scripts, a link row plus an ops note, a fifth tab,
+and `/users/{id}`. Assigned and not applied: `courses_4088.lua`
+QueryRef **4508**, `courses_4089.lua` **4509**, `courses_4090.lua`
+**4510**, `courses_4091.lua` **4511**, `courses_4092.lua` **4512**,
+`courses_4093.lua` `Enroll.StaffGate` (invokable 0),
+`courses_4094.lua` `Enroll.StaffGrant`, `courses_4095.lua`
+`Enroll.StaffArchive`, and `courses_4096.lua` `Enroll.StaffRenew`
+(those three invokable 1). Next Courses file **4097**. Next caller
+ref **4513**. Next Acuranzo file **1399**. File numbers stay below
+4500. Variance: `npm test` was 1142 passed and 10 failed (1152;
+49 files passed, 1 failed). The 10 are
+`tests/integration/auth.integration.test.js` (HTTP 503 from
+`https://lithium.philement.com`; cert expired 2026-08-02). That is
+the known live auth variance. `npm run lint` exited 0. `npm run
+lint:css` exited 0. luacheck reported 0 warnings on 4088–4096.
+`luac -p` parsed each outer file and each of the four script
+bodies. The agent did not apply the packet and did not drive the
+live Course Manager.
+
+**Accomplished:**
+
+- Learners is the fifth tab. The left side stays the course list.
+  Search and the read-only account live on the right.
+- [`course-learners.js`](/elements/003-lithium/src/managers/course-manager/course-learners.js)
+  paints identity, seats, and orders with `textContent`. A secret
+  that is not `cus_` renders as Hidden. Seats and orders are
+  stacked lines. Grant uses the selected course. Archive and Renew
+  use the seat's course. Confirm comes first. A completed envelope
+  whose body has `ok: false` is a failure.
+- The three buttons stay disabled, with “not enabled on this
+  server” on the wrapper, until QueryRef 87 says that script is
+  invokable. After the packet is applied and Hydrogen restarts,
+  those three should be real for a free published course.
+- Tests: `course-learners.test.js` 7. `course-manager.test.js` 17
+  still passes, including the no-`lua` and no-`phase` shell text.
 
 **Lessons learned:**
+
+- `Enroll.FreeCourse` and `Enroll.Archive` bind the JWT caller.
+  A staff screen for someone else needs new script names. The role
+  check reads `roles.name` inside Lua. A client flag is not the
+  check.
+- Grant writes the Helium seat first. Canvas enroll is best-effort
+  and does not roll the seat back. Archive still updates Canvas
+  before `archived_at`, the same way `courses_4070.lua` does.
+- An existing seat, including an archived one, is left alone.
+  Grant returns `already: true`.
+- Renew adds 90 days only when `renew_policy` is `free_renew`.
+  `paid_renew` stays on checkout. `Enroll.RenewFree` stays
+  unseeded because Reception already calls that name with
+  `enrollment_id`.
+- `actionOutcome` treats every `completed` status as success. The
+  script body can still say `ok: false`. The Learners path reads
+  that flag.
+- Search email is `account_oidc_identities.email`, the same column
+  `Provision.EnsureCanvasUser` uses. `accounts` has no email.
+- The query cache fills at bootstrap, before that start applies
+  migrations. **4508–4512** are visible after the next start.
+  Each of those statements requires every named bind.
+
+**Handoff:**
+
+- Phase 15 is not complete. Apply `courses_4088.lua` through
+  `courses_4096.lua`, restart Hydrogen so the query cache reloads,
+  deploy the SPA, then search one account. Log whether Grant and
+  Archive ran or stayed on “not enabled on this server”.
+- Before that apply, search has no query and the three buttons
+  stay disabled. After the restart, Grant is real only for a free
+  published course that is not retired. Paid, retired, and
+  unpublished stay disabled, and the tip says why. Archive and
+  Renew follow the seat. A `paid_renew` seat cannot be renewed
+  here.
+- Do not seed `Enroll.RenewFree`. Do not call
+  `Provision.EnsureCanvasUser` for one account. Do not add a
+  `Stripe.SyncCustomer` button. Do not flip `Catalog.SyncFromCanvas`,
+  `Catalog.Retire`, `Stripe.EnsureProduct`, `Stripe.Refund`, or
+  `Stripe.DeactivateCustomer` to invokable 1. That is Phase 18.
+- Do not edit `courses_4084.lua`. **4004** stays the published
+  catalog. **4001** stays the Lua Canvas-link read.
+- Next Courses file **4097**. Next caller ref **4513**. Next
+  Acuranzo file **1399**. File numbers stay below 4500. Do not
+  start Phase 16 source in the next sitting until this manual
+  gate is closed.
+- He does deploys and login checks. Do not drive a browser for
+  those. Do not apply a migration from an agent session.
 
 ---
 
@@ -2801,11 +2935,13 @@ without raw SQL.
 
 - [ ] Phase 12 complete. Insert QueryRef **#4000** exists (was #085).
       Contact insert stays **#086**. List/triage QueryRefs confirmed
-      or packet prepared. Next free caller-facing ref is **4508**.
+      or packet prepared. Next free caller-facing ref is **4513**.
       File numbers stay below 4500. Phase 13 took 4500–4505.
-      Phase 14 took 4506 and 4507. `courses_4086.lua` is a script
-      seed and did not take a caller ref. `courses_4087.lua`
-      rewrites 4506 and is not applied. The next file is 4088.
+      Phase 14 took 4506 and 4507. Phase 15 took 4508–4512 and is
+      still in progress. `courses_4086.lua` is a script seed and
+      did not take a caller ref. `courses_4087.lua` rewrites 4506.
+      Andrew confirmed that SQL on 2026-10-23. The next file is
+      4097. Do not start this phase until Phase 15 is complete.
 
 **Reference:**
 
@@ -4050,3 +4186,5 @@ silent (does not claim Vite cannot run). Logged; no DEV rewrite.
 | 2026-10-23 | Phase 13 complete. Andrew reported the latest build deployed, the latest migrations applied, and the list Retired checkbox removed. Next is Phase 14. Discuss it and wait. |
 | 2026-10-23 | Phase 14 in progress. Packet 4084–4086 handed over, not applied. Save prices **4506**. Orders **4507**. `Stripe.Mode` invokable 1. Next file **4087**. Next ref **4508**. |
 | 2026-10-23 | Phase 14 still in progress. Andrew reported 4084–4086 applied. Save prices reloaded the previous cents and toasted success. The session log had no binds or affected_rows. `courses_4087.lua` rewrites 4506 and is not applied. Next file **4088**. Next ref **4508**. |
+| 2026-10-23 | Phase 14 complete. Andrew confirmed Save prices on course 16 at 13:55:13. CAD cents 4999, success true, affected_rows 1, eight statements. `courses_4087.lua` is the SQL that ran. Next is Phase 15. Discuss it and wait. Next file **4088**. Next ref **4508**. |
+| 2026-10-23 | Phase 15 in progress. Packet 4088–4096 handed over, not applied. Search **4508**, account **4509**, seats **4510**, orders **4511**, Canvas link **4512**. `Enroll.StaffGate` invokable 0. `Enroll.StaffGrant`, `Enroll.StaffArchive`, and `Enroll.StaffRenew` invokable 1. Manual search still open. Next file **4097**. Next ref **4513**. |

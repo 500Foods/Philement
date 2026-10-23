@@ -3,8 +3,8 @@
  *
  * Staff catalog for the 500 Courses operator surface.
  * Authz is CATCHUP L3: QueryRef 155 names, then staff or admin.
- * The list uses the Query Manager edit path. Learners and inbox
- * land in later Band D phases.
+ * The list uses the Query Manager edit path. Learners is the fifth
+ * tab. Inbox lands in a later Band D phase.
  */
 
 import '../../styles/vendor-tabulator.css';
@@ -22,6 +22,7 @@ import { performLocalSearch } from '../../tables/search/search-utils.js';
 import { resolveCourseManagerAccess } from './course-access.js';
 import { CourseEditor } from './course-edit.js';
 import { CourseCommerce } from './course-commerce.js';
+import { CourseLearners } from './course-learners.js';
 import {
   COURSE_DETAIL_TABS,
   COURSE_LIST_QUERY_REF,
@@ -56,6 +57,7 @@ export default class CourseManager {
     this.courseTable = null;
     this.editor = new CourseEditor(this);
     this.commerce = null;
+    this.learners = null;
     this._mode = 'create';
     this._selectedId = null;
     this._switching = false;
@@ -212,6 +214,7 @@ export default class CourseManager {
                 </div>
               </div>
               <div class="course-tab-pane" id="course-tab-commerce"></div>
+              <div class="course-tab-pane" id="course-tab-learners"></div>
               <div class="course-tab-pane" id="course-tab-history">
                 <div class="course-form">
                   <div class="course-actions">
@@ -266,6 +269,8 @@ export default class CourseManager {
   async _mountStaff() {
     this.commerce = new CourseCommerce(this);
     this.commerce.mount(this.container.querySelector('#course-tab-commerce'));
+    this.learners = new CourseLearners(this);
+    this.learners.mount(this.container.querySelector('#course-tab-learners'));
     this.elements.prices = this.container.querySelector('#course-prices');
     this.elements.priceStatus = this.container.querySelector('#course-prices-status');
     this.elements.stripe = this.container.querySelector('#course-stripe');
@@ -275,6 +280,7 @@ export default class CourseManager {
     this.editor.wireFooter();
     await this._loadScriptFlags();
     await this.commerce.loadFlags();
+    await this.learners.loadFlags();
     this._paintActions();
     try {
       await this._mountTable();
@@ -445,6 +451,7 @@ export default class CourseManager {
     const retired = this.elements.retired && this.elements.retired.checked;
     this.elements.retire.textContent = retireLabel(retired ? 1 : 0);
     this.commerce?.paintActions();
+    this.learners?.paintGrant();
     const canvasUrl = courseFormFromRow({
       canvas_course_id: this.elements.canvas.value,
     }).canvasUrl;
@@ -560,6 +567,8 @@ export default class CourseManager {
   cleanup() {
     this.commerce?.destroy();
     this.commerce = null;
+    this.learners?.destroy();
+    this.learners = null;
     this.editor?.destroy();
     this.splitter?._detachListeners?.();
     this.splitter = null;

@@ -45,6 +45,7 @@ export const COURSE_DETAIL_TABS = [
   { id: 'canvas', label: 'Canvas', icon: 'graduation-cap' },
   { id: 'commerce', label: 'Commerce', icon: 'credit-card' },
   { id: 'history', label: 'History', icon: 'clock' },
+  { id: 'learners', label: 'Learners', icon: 'users' },
 ];
 
 /** Currencies stored on course_prices. Display order is fixed. */

@@ -130,6 +130,12 @@ describe('CourseManager shell', () => {
     expect(container.querySelector('#course-prices').classList.contains('is-empty')).toBe(true);
     expect(container.querySelector('#course-tab-commerce #course-stripe')).not.toBeNull();
     expect(container.querySelector('#course-tab-history #course-history')).not.toBeNull();
+    expect(container.querySelector('[data-tab="learners"]')).not.toBeNull();
+    expect(container.querySelector('#course-tab-learners #learner-email')).not.toBeNull();
+    expect(container.querySelector('#learner-search-btn')).not.toBeNull();
+    expect(container.querySelector('#learner-grant-btn').disabled).toBe(true);
+    expect(container.querySelector('#learner-grant-tip').title).toBe('not enabled on this server');
+    expect(container.querySelector('#learner-canvas-note').textContent).toContain('Relink is an ops step');
     expect(tableBag.last.options.navigatorContainer).toBe(container.querySelector('#course-navigator'));
     expect(tableBag.last.options.localSearch).toBe(true);
     expect(tableBag.last.options.localSearchFields).toEqual(['code', 'slug', 'title', 'canvas_course_id']);

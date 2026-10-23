@@ -7,7 +7,7 @@ conflicts. Active plan:
 [`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md)
 (supersedes
 [`/docs/Li/plans/LITHIUM_SPRINT.md`](/docs/Li/plans/LITHIUM_SPRINT.md)).
-Pause point 2026-10-23: Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, and 13 are complete.
+Pause point 2026-10-23: Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, and 14 are complete.
 Phases 5a–5d and 6 stay deferred. Andrew reported Acuranzo 1389–1393 applied.
 Scripting save, update, and duplicate send INTEGER `SCRIPT_TYPE`,
 `STATUS`, `USERID`, and `INVOKABLE`. A blank schedule or run time is
@@ -35,15 +35,21 @@ and **4504**, prices **4505**. Lookup 059 key 14 is on that
 database. The navigator owns add, duplicate, and delete. Footer
 save and cancel use ManagerEditHelper. Options stores Retired.
 Canvas shows the image at 524×292, stretched. **4004** stays the
-published catalog. Phase 14 is in progress. Save prices is **4506**
-(`courses_4084.lua`). Orders are **4507** (`courses_4085.lua`).
-`Stripe.Mode` is `courses_4086.lua` and is invokable. Andrew
-reported 4084–4086 applied. Save prices still reloads the previous
-cents. `courses_4087.lua` rewrites QueryRef 4506 and is not
-applied. The next Courses file is **4088**, the next caller
-ref is **4508**, and the next Acuranzo file is **1399**. File
-numbers stay below 4500. Do not mark Phase 14 complete until the
-save keeps the typed amount. Do not start Phase 15.
+published catalog. Phase 14 is complete (2026-10-23). Andrew
+confirmed Save prices on course 16: CAD cents 4999, success true,
+affected_rows 1, eight statements. Save prices is **4506**
+(`courses_4084.lua`, rewritten by `courses_4087.lua`). Orders are
+**4507** (`courses_4085.lua`). `Stripe.Mode` is `courses_4086.lua`
+and is invokable. Phase 15 is in progress (2026-10-23).
+Learners is the fifth tab. Search **4508**, account **4509**,
+seats **4510**, orders **4511**, Canvas link **4512**.
+`Enroll.StaffGate` stays invokable 0. `Enroll.StaffGrant`,
+`Enroll.StaffArchive`, and `Enroll.StaffRenew` are invokable 1.
+`courses_4088.lua` through `courses_4096.lua` are not applied.
+The manual search is still open. The next Courses file is
+**4097**, the next caller ref is **4513**, and the next
+Acuranzo file is **1399**. File numbers stay below 4500. Do not
+mark Phase 15 complete. Do not start Phase 16 source.
 He does deploys and login checks. Do not apply migrations. The report writer (manager 24,
 [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md),
 Phases 0–71, Phase 0 approved 2026-10-10) stays parked. Its next
@@ -51,7 +57,7 @@ phase is Phase 1, and only after Andrew pulls that plan in. PDF is
 the default export there. Phased work follows
 [`/docs/PLANNING.md`](/docs/PLANNING.md).
 
-**Last reviewed:** 2026-10-23 (CATCHUP Phase 14 in progress. Andrew reported 4084–4086 applied. Save prices still reloads the previous cents. courses_4087.lua rewrites QueryRef 4506 and is not applied. The next Courses file is 4088 and the next caller ref is 4508. Do not start Phase 15. Phases 5a–5d and 6 stay deferred.)
+**Last reviewed:** 2026-10-23 (CATCHUP Phase 15 in progress. Packet courses_4088.lua through courses_4096.lua is not applied. Search 4508, account 4509, seats 4510, orders 4511, Canvas link 4512. Enroll.StaffGate is invokable 0. StaffGrant, StaffArchive, and StaffRenew are invokable 1. The manual search is still open. The next Courses file is 4097 and the next caller ref is 4513. Do not mark Phase 15 complete. Phases 5a–5d and 6 stay deferred.)
 
 ---
 
@@ -238,7 +244,7 @@ disagree in places.
 | 30–31 | Sync, Camera | placeholders |
 | 32 | Terminal (menu) | `terminal/` (also utility key `terminal`) |
 | 33 | Scripting | `scripting/` |
-| 34 | Course Manager | `course-manager/` — staff catalog (Phase 14, in progress 2026-10-23). QueryRef **155** is the roles gate. List **4500**. Prices **4505**. Save prices **4506**. Orders **4507**. |
+| 34 | Course Manager | `course-manager/` — staff catalog (Phase 15 in progress, 2026-10-23). QueryRef **155** is the roles gate. List **4500**. Prices **4505**. Save prices **4506**. Orders **4507**. Learners search **4508** (not applied). |
 | 35 | Course Builder | `course-builder/` — placeholder (Phase 0a). Band E is the real UI. |
 
 Tour matching uses **numeric ID only** (`"003.Profile"` matches anything with
@@ -266,11 +272,14 @@ Course Manager (34) lists courses for staff. It calls QueryRef
 the sidebar omits the row. The catalog calls **4500**, **4501**, and
 **4502**. History calls **4503** and **4504**. Prices call **4505**.
 Save prices calls **4506**. Orders call **4507**.
-Sync, retire, Ensure Product, refund, and deactivate stay
-disabled until QueryRef **87** reports `invokable` 1. Course Builder (35) is still the Phase 0a
-placeholder and implements `teardown()`. Phase 14 is in progress.
-Andrew reported 4084–4086 applied. Save prices still reloads the
-previous cents. `courses_4087.lua` is not applied. Band E is the Course Builder UI.
+Learners calls **4508** through **4512**. Those five are not
+applied. Sync, retire, Ensure Product, refund, and deactivate stay
+disabled until QueryRef **87** reports `invokable` 1. Grant,
+archive, and renew use the same gate for `Enroll.StaffGrant`,
+`Enroll.StaffArchive`, and `Enroll.StaffRenew`. Course Builder (35) is still the Phase 0a
+placeholder and implements `teardown()`. Phase 14 is complete
+(2026-10-23). Andrew confirmed Save prices on course 16. Phase 15
+is in progress. Band E is the Course Builder UI.
 
 ### New manager checklist (corrected)
 
@@ -359,7 +368,9 @@ GET /api/conduit/script/{job_id}
 `Catalog.SyncFromCanvas`, `Catalog.Retire`, `Stripe.EnsureProduct`,
 `Stripe.Refund`, and `Stripe.DeactivateCustomer` only when QueryRef
 87 says `invokable` is 1. Those five stay 0, so the buttons stay
-disabled. Course Builder
+disabled. Learners calls `Enroll.StaffGrant`, `Enroll.StaffArchive`,
+and `Enroll.StaffRenew` the same way, and only after the Phase 15
+packet is applied. Course Builder
 does not invoke yet. Course Builder operator buttons must use this
 surface, not new C. `sanitizeHtml` is in `src/core/utils.js`.
 Lookups, Crimson, Version History, and the Queries summary preview
@@ -528,10 +539,14 @@ direct open shows the lock panel. Andrew confirmed the row and the
 shell on 2026-10-22. Doc:
 [`/docs/Li/LITHIUM-MGR-COURSE.md`](/docs/Li/LITHIUM-MGR-COURSE.md).
 Hydrogen 2.23 `account_roles` is a later cutover (Band H). Phase 14
-is in progress. `Stripe.Mode` reports test or live. Ensure, rotate,
-refund, and deactivate stay disabled until invokable. Andrew
-reported 4084–4086 applied. The save still reloads the previous
-cents. `courses_4087.lua` is not applied. Do not start Phase 15.
+is complete (2026-10-23). Andrew confirmed Save prices on course 16.
+`Stripe.Mode` reports test or live. Ensure, rotate, refund, and
+deactivate stay disabled until invokable. `courses_4087.lua` is the
+SQL that ran for 4506. Phase 15 is in progress. Learners is the
+fifth tab. Search **4508**, account **4509**, seats **4510**,
+orders **4511**, Canvas link **4512**. The packet is
+`courses_4088.lua` through `courses_4096.lua` and is not applied.
+The manual search is still open. Do not mark Phase 15 complete.
 
 **Course Builder pipeline:**  
 `/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md` (CB-0..35).

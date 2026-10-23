@@ -9,9 +9,13 @@ The active build plan is
 Band D (Phases 12–18). Phase 13 is complete (2026-10-23). Andrew
 reported the latest build deployed and the latest migrations
 applied. QueryRefs 4500–4505 and Lookup 059 key 14 are on that
-database. The list has no Retired checkbox. Phase 14 is in
-progress. Save prices **4506** and orders **4507** are written and
-not applied.
+database. The list has no Retired checkbox. Phase 14 is complete
+(2026-10-23). Andrew confirmed Save prices on course 16. Save
+prices **4506** and orders **4507** are applied.
+`courses_4087.lua` is the SQL that ran for 4506. Phase 15 is in
+progress (2026-10-23). Learners is a fifth tab. Search **4508**,
+account **4509**, seats **4510**, orders **4511**, and the Canvas
+link **4512** are assigned and not applied.
 
 ---
 
@@ -29,13 +33,18 @@ not applied.
 | **Update** | QueryRef **4502** |
 | **History** | QueryRefs **4503** and **4504** |
 | **Prices** | QueryRef **4505** |
-| **Save prices** | QueryRef **4506** (packet, not applied) |
-| **Orders** | QueryRef **4507** (packet, not applied) |
+| **Save prices** | QueryRef **4506** (applied; `courses_4087.lua` is the SQL that ran) |
+| **Orders** | QueryRef **4507** (applied) |
+| **Learner search** | QueryRef **4508** (not applied) |
+| **Learner account** | QueryRef **4509** (not applied) |
+| **Learner seats** | QueryRef **4510** (not applied) |
+| **Learner orders** | QueryRef **4511** (not applied) |
+| **Canvas link** | QueryRef **4512** (not applied). **4001** stays the Lua read |
 | **Table path** | `courses/course-manager` (Lookup 059 key 14) |
 
 A person sees this manager when a resolved `roles.name` is exactly `staff` or `admin`. Anyone else gets a lock panel, and the sidebar omits the row. Opening the manager directly still shows that lock panel. The gate reads `getClaims(retrieveJWT())`.
 
-The slot title is the caption. The left side is a LithiumTable: midnight theme, splitter, and navigator. Add, duplicate, and delete are the navigator group. Local search matches code, slug, title, and canvas id. The list has no Retired checkbox. Save and Cancel live in the slot footer. The right side has four tabs. Course holds the brochure fields and an Options section for Retired and Featured. Canvas holds the course image, summary, description, published, last sync, and the sync actions. Commerce edits cad, usd, eur, and gbp, shows test or live, and lists this course's orders. History holds the enrolment and management lines. The list query returns published, unpublished, and retired rows. **4004** stays the published catalog. Default visible columns are Code and Title after `acuranzo_1398.lua`. A saved template can keep the older columns until it is reset.
+The slot title is the caption. The left side is a LithiumTable: midnight theme, splitter, and navigator. Add, duplicate, and delete are the navigator group. Local search matches code, slug, title, and canvas id. The list has no Retired checkbox. Save and Cancel live in the slot footer. The right side has five tabs. Course holds the brochure fields and an Options section for Retired and Featured. Canvas holds the course image, summary, description, published, last sync, and the sync actions. Commerce edits cad, usd, eur, and gbp, shows test or live, and lists this course's orders. Learners searches one account by email, Keycloak sub, or account id, then shows that account read-only. History holds the enrolment and management lines. The list query returns published, unpublished, and retired rows. **4004** stays the published catalog. Default visible columns are Code and Title after `acuranzo_1398.lua`. A saved template can keep the older columns until it is reset.
 
 ---
 
@@ -47,6 +56,8 @@ The slot title is the caption. The left side is a LithiumTable: midnight theme, 
 | `course-edit.js` | Footer save and cancel, duplicate, and the delete refusal |
 | `course-catalog.js` | Query refs, tab list, form payloads, and button state |
 | `course-commerce.js` | Price edit, orders, and Stripe actions |
+| `course-learners.js` | Account search, seats, orders, and the Canvas user link |
+| `course-price-log.js` | Save-prices session log. Omits the staff id and row bodies |
 | `course-access.js` | QueryRef 155 gate and sidebar filter |
 | `course-manager.css` | Staff shell and the denied lock panel |
 
@@ -62,9 +73,19 @@ Helium:
 | [`courses_4081.lua`](/elements/002-helium/courses/migrations/courses_4081.lua) | Rewrites QueryRef 4502 so it stores `retired` |
 | [`courses_4082.lua`](/elements/002-helium/courses/migrations/courses_4082.lua) | Rewrites QueryRef 4501 so it stores `retired` |
 | [`courses_4083.lua`](/elements/002-helium/courses/migrations/courses_4083.lua) | QueryRef 4505, price rows for one course |
-| [`courses_4084.lua`](/elements/002-helium/courses/migrations/courses_4084.lua) | QueryRef 4506, save the four currency amounts. Not applied |
-| [`courses_4085.lua`](/elements/002-helium/courses/migrations/courses_4085.lua) | QueryRef 4507, orders for one course. Not applied |
-| [`courses_4086.lua`](/elements/002-helium/courses/migrations/courses_4086.lua) | `Stripe.Mode`, invokable 1. Not applied |
+| [`courses_4084.lua`](/elements/002-helium/courses/migrations/courses_4084.lua) | QueryRef 4506, save the four currency amounts. Applied, then rewritten by 4087 |
+| [`courses_4085.lua`](/elements/002-helium/courses/migrations/courses_4085.lua) | QueryRef 4507, orders for one course. Applied |
+| [`courses_4086.lua`](/elements/002-helium/courses/migrations/courses_4086.lua) | `Stripe.Mode`, invokable 1. Applied |
+| [`courses_4087.lua`](/elements/002-helium/courses/migrations/courses_4087.lua) | Rewrites QueryRef 4506 so `-- TRANSACTION_END` is its own line. Andrew confirmed this SQL on 2026-10-23 |
+| [`courses_4088.lua`](/elements/002-helium/courses/migrations/courses_4088.lua) | QueryRef 4508, search one account. Not applied |
+| [`courses_4089.lua`](/elements/002-helium/courses/migrations/courses_4089.lua) | QueryRef 4509, account, meta, and prefs. Not applied |
+| [`courses_4090.lua`](/elements/002-helium/courses/migrations/courses_4090.lua) | QueryRef 4510, seats for one account. Not applied |
+| [`courses_4091.lua`](/elements/002-helium/courses/migrations/courses_4091.lua) | QueryRef 4511, orders for one account. Not applied |
+| [`courses_4092.lua`](/elements/002-helium/courses/migrations/courses_4092.lua) | QueryRef 4512, Canvas link. Not applied |
+| [`courses_4093.lua`](/elements/002-helium/courses/migrations/courses_4093.lua) | `Enroll.StaffGate`, invokable 0. Not applied |
+| [`courses_4094.lua`](/elements/002-helium/courses/migrations/courses_4094.lua) | `Enroll.StaffGrant`, invokable 1. Not applied |
+| [`courses_4095.lua`](/elements/002-helium/courses/migrations/courses_4095.lua) | `Enroll.StaffArchive`, invokable 1. Not applied |
+| [`courses_4096.lua`](/elements/002-helium/courses/migrations/courses_4096.lua) | `Enroll.StaffRenew`, invokable 1. Not applied |
 | [`acuranzo_1397.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1397.lua) | Lookup 059 key 14 |
 | [`acuranzo_1398.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1398.lua) | Same key. Default columns are Code and Title |
 
@@ -80,7 +101,7 @@ Edit writes code, slug, image path, canvas course id, pricing, featured, retired
 
 Sync from Canvas, Sync all linked, and Retire call `invokeScript` only when QueryRef **87** returns `invokable` 1 for `Catalog.SyncFromCanvas` or `Catalog.Retire`. Those scripts are still 0. The buttons stay disabled. The wrapper title is “not enabled on this server”.
 
-Open Canvas uses `https://canvas.500courses.com/courses/{id}` for a positive id. That address is a normal Canvas course URL. Canvas uses its own session. The image on the Canvas tab follows the image path. It is drawn at 524×292, twice the 262×146 card, stretched to that box, with rounded corners and a little space above it. An image is shown for an `http` or `https` URL, or a site path that does not start with `//`.
+Open Canvas uses `https://canvas.500courses.com/courses/{id}` for a positive id. Learners opens `https://canvas.500courses.com/users/{id}` when a Canvas link exists, and that button stays disabled when it does not. Both addresses are normal Canvas URLs. Canvas uses its own session. Grant, Archive, and Renew call `Enroll.StaffGrant`, `Enroll.StaffArchive`, and `Enroll.StaffRenew`. They stay disabled until QueryRef **87** says the script is invokable. A paid course is not granted here. The Canvas block shows the user id, the email, and the last-seen time. Relink stays an ops step. The image on the Canvas tab follows the image path. It is drawn at 524×292, twice the 262×146 card, stretched to that box, with rounded corners and a little space above it. An image is shown for an `http` or `https` URL, or a site path that does not start with `//`.
 
 Save and Cancel are the slot footer. Fields stay disabled until edit mode. LithiumTable saves a dirty row before it switches rows. A successful insert clears the form so a second save does not insert the same row again. Navigator delete leaves the course in the catalog and points at Options Retired. Duplicate appends `-copy` to the code and slug and ` (Copy)` to the title, clears the Canvas id and the Stripe product, and stores published and retired as 0.
 
@@ -92,7 +113,7 @@ The JWT `roles` claim is a CSV of integer `role_id` values. The client reads tha
 
 A missing API client, a failed query, or a non-array payload denies access and writes a session-log line. Role ids 2 and 3 are not treated as staff on their own.
 
-`auth_query` does not check staff. Any Hydrogen JWT can call 4500–4505. Andrew reported that packet applied on 2026-10-23. 4506 and 4507 are not applied yet. The manager is what hides the screen.
+`auth_query` does not check staff. Any Hydrogen JWT can call 4500–4507. Andrew reported 4500–4505 applied on 2026-10-23, then confirmed 4506 and 4507 the same day. Course 16 saved CAD at 4999 cents. 4508–4512 are assigned and not applied. The manager is what hides the screen. The staff scripts also check `roles.name` on the server.
 
 Menu rows come from Lookup 042 keys 34 and 35
 ([`acuranzo_1378.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1378.lua))
@@ -109,5 +130,5 @@ applied on the 500 Courses database on 2026-10-22.
 ## Related
 
 - [LITHIUM-MGR.md](/docs/Li/LITHIUM-MGR.md) — manager index
-- [CATCHUP.md](/elements/003-lithium/CATCHUP.md) — Phase 14 is in progress. The packet is not applied
+- [CATCHUP.md](/elements/003-lithium/CATCHUP.md) — Phase 15 is in progress (2026-10-23). The manual search is still open
 - [COURSES_MIGRATION.md](/docs/He/COURSES_MIGRATION.md) — pack numbers
