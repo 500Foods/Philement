@@ -200,6 +200,7 @@ export class CourseEditor {
     ].forEach((node) => {
       if (node) node.disabled = !editable;
     });
+    this.manager.commerce?.setEditable(editable);
     const existing = this.manager._mode === 'edit';
     el.title.readOnly = !editable || existing;
   }

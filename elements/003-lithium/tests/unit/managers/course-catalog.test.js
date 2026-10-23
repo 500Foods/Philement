@@ -2,7 +2,9 @@ import { describe, it, expect } from 'vitest';
 import {
   COURSE_INSERT_QUERY_REF,
   COURSE_LIST_QUERY_REF,
+  COURSE_ORDERS_QUERY_REF,
   COURSE_PRICES_QUERY_REF,
+  COURSE_PRICE_SAVE_QUERY_REF,
   COURSE_UPDATE_QUERY_REF,
   ENROLMENT_HISTORY_QUERY_REF,
   MANAGEMENT_HISTORY_QUERY_REF,
@@ -32,6 +34,8 @@ describe('course catalog helpers', () => {
     expect(ENROLMENT_HISTORY_QUERY_REF).toBe(4503);
     expect(MANAGEMENT_HISTORY_QUERY_REF).toBe(4504);
     expect(COURSE_PRICES_QUERY_REF).toBe(4505);
+    expect(COURSE_PRICE_SAVE_QUERY_REF).toBe(4506);
+    expect(COURSE_ORDERS_QUERY_REF).toBe(4507);
   });
 
   it('matches code, slug, title, and canvas id', () => {

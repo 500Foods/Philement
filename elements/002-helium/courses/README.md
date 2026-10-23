@@ -2,7 +2,7 @@
 
 Courses is a pack on the Acuranzo database. It uses the same connection, the same SQL schema, and the same `queries`, `lookups`, and `scripts` tables. It does not bootstrap those tables. `PAYLOAD:courses` alone is refused. The suite strings that include it are `PAYLOAD:acuranzo+courses` and `PAYLOAD:acuranzo+courses+argent`.
 
-Files are `courses_4000.lua` through `courses_4083.lua`. The next file is 4084. File numbers stay below 4500. Caller-facing QueryRefs already used are 4000–4007 and 4500–4505. Refs that `auth_query` calls stay in 4500–4999 and are never file numbers. Later patches keep the ref the installer used. A rewrite keeps that same ref. The next QueryRef is 4506.
+Files are `courses_4000.lua` through `courses_4087.lua`. The next file is 4088. File numbers stay below 4500. Caller-facing QueryRefs already used are 4000–4007 and 4500–4507. `courses_4087.lua` rewrites QueryRef 4506 and is not applied. Refs that `auth_query` calls stay in 4500–4999 and are never file numbers. Later patches keep the ref the installer used. A rewrite keeps that same ref. The next QueryRef is 4508.
 
 Lookup 055 keeps family id 055. `Orchestrators.Orchestrator` stays in Acuranzo (`acuranzo_1210.lua`, plus the courses-era patches 1289, 1299, 1343, and 1364). File 1289 also inserts the first `Provision.EnsureCanvasUser`. Later bodies of that script are in this pack. The old-to-new inventory is [`/docs/He/COURSES_MIGRATION.md`](/docs/He/COURSES_MIGRATION.md).
 
@@ -96,4 +96,8 @@ Macro scripts are the shared set in [`/elements/002-helium/helium/`](/elements/0
 | [4081](/elements/002-helium/courses/migrations/courses_4081.lua) | queries | 1.0.0 | 2026-10-22 | 4 | ✗ | QueryRef #4502 also writes retired |
 | [4082](/elements/002-helium/courses/migrations/courses_4082.lua) | queries | 1.0.0 | 2026-10-22 | 4 | ✗ | QueryRef #4501 also writes retired |
 | [4083](/elements/002-helium/courses/migrations/courses_4083.lua) | queries | 1.0.0 | 2026-10-22 | 4 | ✗ | QueryRef #4505 - Staff: List Course Prices |
-| **84** | | | | **398** | **84** | |
+| [4084](/elements/002-helium/courses/migrations/courses_4084.lua) | queries | 1.0.0 | 2026-10-23 | 4 | ✗ | QueryRef #4506 - Staff: Save Course Prices |
+| [4085](/elements/002-helium/courses/migrations/courses_4085.lua) | queries | 1.0.0 | 2026-10-23 | 4 | ✗ | QueryRef #4507 - Staff: List Course Orders |
+| [4086](/elements/002-helium/courses/migrations/courses_4086.lua) | scripts | 1.0.0 | 2026-10-23 | 4 | ✗ | CATCHUP Phase 14: seed Stripe.Mode (invokable) |
+| [4087](/elements/002-helium/courses/migrations/courses_4087.lua) | queries | 1.0.0 | 2026-10-23 | 4 | ✗ | QueryRef #4506 - TRANSACTION_END on its own line |
+| **88** | | | | **414** | **88** | |

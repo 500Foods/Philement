@@ -21,11 +21,10 @@ import LithiumTable from '../../tables/lithium-table-main.js';
 import { performLocalSearch } from '../../tables/search/search-utils.js';
 import { resolveCourseManagerAccess } from './course-access.js';
 import { CourseEditor } from './course-edit.js';
+import { CourseCommerce } from './course-commerce.js';
 import {
   COURSE_DETAIL_TABS,
   COURSE_LIST_QUERY_REF,
-  COURSE_PRICE_CURRENCIES,
-  COURSE_PRICES_QUERY_REF,
   COURSE_SEARCH_FIELDS,
   COURSE_TABLE_KEY_IDX,
   COURSE_TABLE_PATH,
@@ -38,7 +37,6 @@ import {
   courseFormFromRow,
   historyParams,
   historyText,
-  priceListView,
   retireInvokeOptions,
   retireLabel,
   scriptDetailParams,
@@ -57,6 +55,7 @@ export default class CourseManager {
     this._allowed = false;
     this.courseTable = null;
     this.editor = new CourseEditor(this);
+    this.commerce = null;
     this._mode = 'create';
     this._selectedId = null;
     this._switching = false;
@@ -107,17 +106,6 @@ export default class CourseManager {
         <fa fa-${tab.icon}></fa>
         <span>${tab.label}</span>
       </button>
-    `).join('');
-  }
-
-  _priceRows() {
-    return COURSE_PRICE_CURRENCIES.map((currency) => `
-      <div class="course-price-row" data-currency="${currency}">
-        <span class="course-price-code">${currency.toUpperCase()}</span>
-        <span class="course-price-amount"></span>
-        <span class="course-price-stripe"></span>
-        <span class="course-price-state"></span>
-      </div>
     `).join('');
   }
 
@@ -223,19 +211,7 @@ export default class CourseManager {
                   </div>
                 </div>
               </div>
-              <div class="course-tab-pane" id="course-tab-commerce">
-                <div class="course-form">
-                  <section class="course-section is-empty" id="course-prices">
-                    <span class="course-section-label">Prices</span>
-                    <p id="course-prices-status" class="course-field-hint"></p>
-                    ${this._priceRows()}
-                  </section>
-                  <div class="course-field">
-                    <span class="course-field-label">Stripe product</span>
-                    <div id="course-stripe" class="course-readonly-line"></div>
-                  </div>
-                </div>
-              </div>
+              <div class="course-tab-pane" id="course-tab-commerce"></div>
               <div class="course-tab-pane" id="course-tab-history">
                 <div class="course-form">
                   <div class="course-actions">
@@ -270,12 +246,9 @@ export default class CourseManager {
       retired: this.container.querySelector('#course-option-retired'),
       sort: this.container.querySelector('#course-sort'),
       tags: this.container.querySelector('#course-tags'),
-      prices: this.container.querySelector('#course-prices'),
-      priceStatus: this.container.querySelector('#course-prices-status'),
       summary: this.container.querySelector('#course-summary'),
       description: this.container.querySelector('#course-description'),
       published: this.container.querySelector('#course-published'),
-      stripe: this.container.querySelector('#course-stripe'),
       synced: this.container.querySelector('#course-synced'),
       syncTip: this.container.querySelector('#course-sync-tip'),
       sync: this.container.querySelector('#course-sync-btn'),
@@ -291,11 +264,17 @@ export default class CourseManager {
   }
 
   async _mountStaff() {
+    this.commerce = new CourseCommerce(this);
+    this.commerce.mount(this.container.querySelector('#course-tab-commerce'));
+    this.elements.prices = this.container.querySelector('#course-prices');
+    this.elements.priceStatus = this.container.querySelector('#course-prices-status');
+    this.elements.stripe = this.container.querySelector('#course-stripe');
     this.editor.showEmpty();
     this.editor.bindForm();
     this._bindStaff();
     this.editor.wireFooter();
     await this._loadScriptFlags();
+    await this.commerce.loadFlags();
     this._paintActions();
     try {
       await this._mountTable();
@@ -465,6 +444,7 @@ export default class CourseManager {
     this._applyButton(this.elements.retire, this.elements.retireTip, retire);
     const retired = this.elements.retired && this.elements.retired.checked;
     this.elements.retire.textContent = retireLabel(retired ? 1 : 0);
+    this.commerce?.paintActions();
     const canvasUrl = courseFormFromRow({
       canvas_course_id: this.elements.canvas.value,
     }).canvasUrl;
@@ -481,42 +461,12 @@ export default class CourseManager {
     this.editor.applyRow(row);
   }
 
-  _paintPrices(view, status) {
-    const section = this.elements.prices;
-    if (!section) return;
-    this.elements.priceStatus.textContent = status || '';
-    section.classList.toggle('is-empty', Boolean(status));
-    const rows = view || [];
-    section.querySelectorAll('.course-price-row').forEach((row) => {
-      const item = rows.find((entry) => entry.currency === row.dataset.currency);
-      row.querySelector('.course-price-amount').textContent = item ? item.amount : '';
-      row.querySelector('.course-price-stripe').textContent = item ? item.stripe : '';
-      row.querySelector('.course-price-state').textContent = item ? item.active : '';
-    });
+  _paintPrices(_view, status) {
+    if (status) this.commerce?.clearCourse(status);
   }
 
   async _loadPrices(courseId) {
-    const token = this._priceToken + 1;
-    this._priceToken = token;
-    const id = Number(courseId);
-    if (!Number.isInteger(id) || id <= 0) {
-      this._paintPrices([], 'Select a course.');
-      return;
-    }
-    const api = this.app && this.app.api;
-    if (!api) {
-      this._paintPrices([], 'Prices are unavailable.');
-      return;
-    }
-    try {
-      const rows = await authQuery(api, COURSE_PRICES_QUERY_REF, { INTEGER: { COURSEID: id } });
-      if (this._priceToken !== token) return;
-      this._paintPrices(priceListView(rows), '');
-    } catch (error) {
-      if (this._priceToken !== token) return;
-      log(Subsystems.MANAGER, Status.ERROR, `Course prices failed: ${error.message}`);
-      this._paintPrices([], 'Prices are unavailable.');
-    }
+    await this.commerce?.load(courseId);
   }
 
   async _refresh() {
@@ -608,6 +558,8 @@ export default class CourseManager {
   }
 
   cleanup() {
+    this.commerce?.destroy();
+    this.commerce = null;
     this.editor?.destroy();
     this.splitter?._detachListeners?.();
     this.splitter = null;

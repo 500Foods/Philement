@@ -6,11 +6,13 @@
  * descending, so a type-1001 reverse row hides a type-1 row that
  * shares the integer. 4008, 4009, and 4010 are already file
  * numbers. 4006 and 4007 are too. Lua still reads those history
- * refs by query_id. The SPA uses 4500–4505, which are not file
- * numbers. 4004 stays the published catalog. Sync and retire stay
- * disabled until those scripts are invokable. 4505 lists
- * course_prices. Extra bind names that the live SQL does not use
- * are ignored. A name the SQL uses and the client omits fails.
+ * refs by query_id. The SPA uses 4500–4507, which are not file
+ * numbers. 4004 stays the published catalog. Sync, retire, and the
+ * Stripe write scripts stay disabled until they are invokable.
+ * 4505 lists course_prices. 4506 writes the four currency amounts.
+ * 4507 lists orders for one course. Extra bind names that the live
+ * SQL does not use are ignored. A name the SQL uses and the client
+ * omits fails.
  */
 
 export const COURSE_LIST_QUERY_REF = 4500;
@@ -19,6 +21,8 @@ export const COURSE_UPDATE_QUERY_REF = 4502;
 export const ENROLMENT_HISTORY_QUERY_REF = 4503;
 export const MANAGEMENT_HISTORY_QUERY_REF = 4504;
 export const COURSE_PRICES_QUERY_REF = 4505;
+export const COURSE_PRICE_SAVE_QUERY_REF = 4506;
+export const COURSE_ORDERS_QUERY_REF = 4507;
 export const SCRIPT_DETAIL_QUERY_REF = 87;
 export const COURSE_TABLE_PATH = 'courses/course-manager';
 export const COURSE_TABLE_KEY_IDX = 14;
@@ -33,8 +37,8 @@ export const COURSE_SEARCH_FIELDS = ['code', 'slug', 'title', 'canvas_course_id'
 
 /**
  * Right-hand tabs. Course is the brochure write. Canvas is the sync
- * surface and the course image. Commerce lists currency prices.
- * History is the audit lines.
+ * surface and the course image. Commerce edits currency prices and
+ * lists orders for the selected course. History is the audit lines.
  */
 export const COURSE_DETAIL_TABS = [
   { id: 'course', label: 'Course', icon: 'book-open' },

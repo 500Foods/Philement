@@ -11,7 +11,7 @@ The primary Helium project documentation can be found in [Helium Docs](/docs/He/
 
 - The [Acuranzo](acuranzo/README.md) schema is intended for use with the JavaScript-based web app that forms the basis of the front-end, akin to Mainsail or others. (Most active migrations; primary target PostgreSQL 15+ via YugabyteDB.)
 - The [Argent](argent/README.md) pack is optional double-entry bookkeeping on the Acuranzo database (`argent_2xxx`). It is never applied alone. A future Gaius pack on that same database is reserved for the 3xxx range. The on-disk Gaius tree remains its own design.
-- The [Courses](courses/README.md) pack is the 500 Courses catalog, Canvas, Stripe, and enrollment scripts on that same database (`courses_4000.lua` through `courses_4083.lua`). `Orchestrators.Orchestrator` stays in Acuranzo.
+- The [Courses](courses/README.md) pack is the 500 Courses catalog, Canvas, Stripe, and enrollment scripts on that same database (`courses_4000.lua` through `courses_4087.lua`). `Orchestrators.Orchestrator` stays in Acuranzo.
 - The [GAIUS](gaius/README.md) schema describes tables for the [GAIUS Project](https://www.gaiusmodel.com) which has nothing at all to do with 3D printing.
 - The [GLM](glm/README.md) schema describes tables form the [GLM Project](https://www.500foods.com) which also has nothing at all to do with 3D printing.
 - The [Helium](/elements/002-helium/helium/README.md) folder holds the one copy of `database.lua` and `database_<engine>.lua` used by every design. It is not a schema.

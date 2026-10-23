@@ -150,11 +150,13 @@ export function extractBatchRows(response) {
 export function extractError(response) {
   if (!response) return null;
 
-  // Check for explicit success flag
-  if (response.success === false) {
+  // Boolean false is a failed query. The string "fail" is the
+  // not-found body (HTTP 200, rows empty). Treat both as errors so
+  // callers do not paint an empty result as success.
+  if (response.success === false || response.success === 'fail') {
     return {
       message: response.message || response.error || 'Unknown error',
-      error: response.error || 'Unknown error',
+      error: response.error || response.message || 'Unknown error',
       queryRef: response.query_ref,
       database: response.database,
     };
@@ -242,20 +244,15 @@ export function buildScriptPayload({ script, params, wait, timeoutSeconds } = {}
 // ─── API Functions (thin wrappers using the api client) ──────────────────
 
 /**
- * Execute a single authenticated conduit query.
- * Requires a valid JWT (uses auth_query endpoint).
+ * POST conduit/auth_query and return the parsed body.
+ * Throws when extractError reports a failure, including success "fail".
  *
- * @param {Object} api - The API client (from createRequest / app.api)
- * @param {number} queryRef - The QueryRef number
- * @param {Object} [params={}] - Typed parameters
- * @returns {Promise<Array>} The rows from the query result
- * @throws {Error} If the query fails, contains the server error message
- *
- * @example
- *   const rows = await authQuery(app.api, 25);
- *   const rows = await authQuery(app.api, 32, { STRING: { SEARCH: "USERS" } });
+ * @param {Object} api
+ * @param {number} queryRef
+ * @param {Object} [params={}]
+ * @returns {Promise<Object>}
  */
-export async function authQuery(api, queryRef, params = {}) {
+export async function authQueryResponse(api, queryRef, params = {}) {
   const targetId = addTarget('triangle', 'rest');
   const payload = buildQueryPayload(queryRef, params);
 
@@ -279,6 +276,25 @@ export async function authQuery(api, queryRef, params = {}) {
     throw err;
   }
 
+  return response;
+}
+
+/**
+ * Execute a single authenticated conduit query.
+ * Requires a valid JWT (uses auth_query endpoint).
+ *
+ * @param {Object} api - The API client (from createRequest / app.api)
+ * @param {number} queryRef - The QueryRef number
+ * @param {Object} [params={}] - Typed parameters
+ * @returns {Promise<Array>} The rows from the query result
+ * @throws {Error} If the query fails, contains the server error message
+ *
+ * @example
+ *   const rows = await authQuery(app.api, 25);
+ *   const rows = await authQuery(app.api, 32, { STRING: { SEARCH: "USERS" } });
+ */
+export async function authQuery(api, queryRef, params = {}) {
+  const response = await authQueryResponse(api, queryRef, params);
   return extractRows(response);
 }
 

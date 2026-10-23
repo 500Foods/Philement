@@ -2,7 +2,7 @@
 
 Read this before adding or editing a Helium migration. The numbering rules live in the Migration Creation Guide, section **Designs, packs, and numbers**: [`/docs/He/GUIDE.md`](/docs/He/GUIDE.md). That section wins if this file and the guide ever disagree.
 
-**Last reviewed:** 2026-10-22.
+**Last reviewed:** 2026-10-23.
 
 ## What to read
 
@@ -12,15 +12,15 @@ Read this before adding or editing a Helium migration. The numbering rules live 
 4. [`/docs/He/MACRO_REFERENCE.md`](/docs/He/MACRO_REFERENCE.md) — the only macros you may use.
 5. [`/docs/H/plans/ARGENT_PLAN.md`](/docs/H/plans/ARGENT_PLAN.md) when the work is the Argent pack.
 6. [`/docs/PLANNING.md`](/docs/PLANNING.md) when the work is a phase of a plan.
-7. [`/docs/He/COURSES_MIGRATION.md`](/docs/He/COURSES_MIGRATION.md) when the work is the Courses pack. The pack is cut. Files run through `courses_4083.lua`. The next file is 4084. Caller-facing QueryRefs for `auth_query` use 4500–4999. The next one is 4506. Do not number a file in that band. 4000–4007 stay the earlier caller refs. Acuranzo files run through `acuranzo_1398.lua`. The next Acuranzo file is 1399.
+7. [`/docs/He/COURSES_MIGRATION.md`](/docs/He/COURSES_MIGRATION.md) when the work is the Courses pack. The pack is cut. Files run through `courses_4087.lua`. The next file is 4088. Caller-facing QueryRefs for `auth_query` use 4500–4999. The next one is 4508. `courses_4087.lua` rewrites 4506 and is not applied. Do not number a file in that band. 4000–4007 stay the earlier caller refs. Acuranzo files run through `acuranzo_1398.lua`. The next Acuranzo file is 1399.
 
 ## Three numbers
 
 Do not treat these as one sequence.
 
-- **Migration number** is `cfg.MIGRATION`, the file number. Acuranzo is 1000–1999. Argent is 2000–2999. A future Gaius pack on the Acuranzo database is 3000–3999. Courses is 4000–4499 for files. The cut occupies 4000–4083, so the next file is 4084. Caller-facing QueryRefs already used are 4000–4007 and 4500–4505. The inventory is [`/docs/He/COURSES_MIGRATION.md`](/docs/He/COURSES_MIGRATION.md). Take the next number above the highest file already in that thousand, and keep it below 4500. The forward, reverse, and diagram rows store that number in the `query_ref` column. Hydrogen tracks AVAIL, LOAD, and APPLY once per thousand the payload ships. A thousand left out of the payload is not migrated. Inside one thousand, a file at or below that band's high-water mark is skipped.
+- **Migration number** is `cfg.MIGRATION`, the file number. Acuranzo is 1000–1999. Argent is 2000–2999. A future Gaius pack on the Acuranzo database is 3000–3999. Courses is 4000–4499 for files. The cut occupies 4000–4087, so the next file is 4088. Caller-facing QueryRefs already used are 4000–4007 and 4500–4507. `courses_4087.lua` rewrites 4506 and is not applied. The inventory is [`/docs/He/COURSES_MIGRATION.md`](/docs/He/COURSES_MIGRATION.md). Take the next number above the highest file already in that thousand, and keep it below 4500. The forward, reverse, and diagram rows store that number in the `query_ref` column. Hydrogen tracks AVAIL, LOAD, and APPLY once per thousand the payload ships. A thousand left out of the payload is not migrated. Inside one thousand, a file at or below that band's high-water mark is skipped.
 - **`query_id`** is `MAX(query_id)+1` on the shared `queries` table. No design owns a range.
-- **Caller-facing QueryRef** is `cfg.QUERY_REF`, one per migration, in the migration that installs it. It is a different sequence from the file number. `acuranzo_1232.lua` is migration 1232 and installs QueryRef 102. Uniqueness is `(query_ref, query_type_a28)`. Argent's caller-facing refs are 2000–2999, the same range as its file numbers. Courses caller-facing refs 4000–4007 share integers with file numbers. That is safe for a typed lookup and for Lua that reads `queries.code` by `query_id`. It is not safe for `auth_query`, which keeps the first cache row. Bootstrap orders by query type descending, so the type-1001 reverse row hides the type-1 row. New Courses refs that the SPA calls go in 4500–4999. That band is not used for file numbers. The next one is 4506.
+- **Caller-facing QueryRef** is `cfg.QUERY_REF`, one per migration, in the migration that installs it. It is a different sequence from the file number. `acuranzo_1232.lua` is migration 1232 and installs QueryRef 102. Uniqueness is `(query_ref, query_type_a28)`. Argent's caller-facing refs are 2000–2999, the same range as its file numbers. Courses caller-facing refs 4000–4007 share integers with file numbers. That is safe for a typed lookup and for Lua that reads `queries.code` by `query_id`. It is not safe for `auth_query`, which keeps the first cache row. Bootstrap orders by query type descending, so the type-1001 reverse row hides the type-1 row. New Courses refs that the SPA calls go in 4500–4999. That band is not used for file numbers. The next one is 4508.
 
 Lookup ids on the Acuranzo database are a fourth sequence. Acuranzo keeps 0–199. Argent uses 2000–2999, the same range as its file numbers and its caller-facing QueryRefs. Courses uses 4000–4999 the same way. The same integer may be a file number, a QueryRef, and a lookup id. Lookup 055 keeps family id 055 because that family already existed in Acuranzo. One lookup family per migration. The column name is `*_aN` (`status_a2000`). A key may be 0 or negative when that value is meaningful.
 

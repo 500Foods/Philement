@@ -12,6 +12,7 @@ const tableBag = { last: null };
 
 vi.mock('../../../src/shared/conduit.js', () => ({
   authQuery: vi.fn(),
+  authQueryResponse: vi.fn(),
   invokeScript: vi.fn(),
 }));
 
@@ -136,6 +137,12 @@ describe('CourseManager shell', () => {
     expect(container.querySelector('#course-sync-tip').title).toBe('not enabled on this server');
     expect(container.querySelector('#course-sync-all-btn').disabled).toBe(true);
     expect(container.querySelector('#course-retire-btn').disabled).toBe(true);
+    expect(container.querySelector('#course-ensure-btn').disabled).toBe(true);
+    expect(container.querySelector('#course-rotate-btn').disabled).toBe(true);
+    expect(container.querySelector('#course-ensure-tip').title).toBe('Select a course');
+    expect(container.querySelector('#course-stripe-mode').textContent).toBe('Mode unknown');
+    expect(container.querySelector('#course-price-save').disabled).toBe(true);
+    expect(container.querySelector('#course-price-save-tip').title).toBe('Save the course before editing prices.');
     expect(tableBag.last.options.queryRef).toBe(COURSE_LIST_QUERY_REF);
     expect(tableBag.last.options.primaryKeyField).toEqual(['course_id']);
     expect(tableBag.last.options.readonly).toBe(false);
@@ -368,7 +375,8 @@ describe('CourseManager shell', () => {
     expect(container.querySelector('#course-sync-tip').title).toBe('Select a course');
     container.querySelector('#course-sync-all-btn').click();
     await vi.waitFor(() => expect(toast.success).toHaveBeenCalledWith('Sync finished'));
-    expect(invokeScript.mock.calls[0][1]).toEqual({
+    const syncCall = invokeScript.mock.calls.find((call) => call[1].script === 'Catalog.SyncFromCanvas');
+    expect(syncCall[1]).toEqual({
       script: 'Catalog.SyncFromCanvas',
       params: { action: 'all' },
       wait: true,
@@ -384,8 +392,73 @@ describe('CourseManager shell', () => {
     expect(container.querySelector('#course-retire-btn').textContent).toBe('Unretire');
     expect(container.querySelector('#course-sync-btn').disabled).toBe(false);
     container.querySelector('#course-retire-btn').click();
-    await vi.waitFor(() => expect(invokeScript.mock.calls.length).toBe(2));
-    expect(invokeScript.mock.calls[1][1].params).toEqual({ course_id: 4, action: 'unretire' });
+    await vi.waitFor(() => {
+      const retireCall = invokeScript.mock.calls.find((call) => call[1].script === 'Catalog.Retire');
+      expect(retireCall).toBeTruthy();
+    });
+    const retireCall = invokeScript.mock.calls.find((call) => call[1].script === 'Catalog.Retire');
+    expect(retireCall[1].params).toEqual({ course_id: 4, action: 'unretire' });
+  });
+
+  it('ensures a product for a paid course when the script is invokable', async () => {
+    staffQuery({ invokable: true });
+    invokeScript.mockResolvedValue({
+      status: 'completed',
+      result: { mode: 'test', stripe_product_id: 'prod_new' },
+    });
+    const { container, manager } = mount();
+    await manager.init();
+    expect(container.querySelector('#course-stripe-mode').textContent).toBe('Test');
+    tableBag.last.options.onRowSelected({
+      course_id: 4,
+      code: 'BBT',
+      slug: 'bloom',
+      title: 'Bloom',
+      pricing_type: 'paid',
+    });
+    await vi.waitFor(() => {
+      expect(container.querySelector('#course-ensure-btn').disabled).toBe(false);
+    });
+    expect(container.querySelector('#course-rotate-btn').disabled).toBe(false);
+    container.querySelector('#course-ensure-btn').click();
+    await vi.waitFor(() => expect(toast.success).toHaveBeenCalledWith('Stripe product checked'));
+    const ensureCall = invokeScript.mock.calls.find((call) => call[1].script === 'Stripe.EnsureProduct');
+    expect(ensureCall[1]).toEqual({
+      script: 'Stripe.EnsureProduct',
+      params: { course_id: 4 },
+      wait: true,
+      timeoutSeconds: 15,
+    });
+    expect(container.querySelector('#course-stripe').textContent).toBe('prod_new');
+  });
+
+  it('leaves a price edit behind with a notice and does not ask to confirm', async () => {
+    staffQuery();
+    const { container, manager } = mount();
+    await manager.init();
+    tableBag.last.options.onRowSelected({
+      course_id: 4,
+      code: 'BBT',
+      slug: 'bloom',
+      title: 'Bloom',
+      pricing_type: 'paid',
+    });
+    await vi.waitFor(() => {
+      expect(container.querySelector('#course-prices').classList.contains('is-empty')).toBe(false);
+    });
+    manager.editor.setEditable(true);
+    expect(container.querySelector('#course-prices').classList.contains('is-editing')).toBe(true);
+    const usd = container.querySelector('[data-currency="usd"] .course-price-input');
+    usd.value = '19.99';
+    usd.dispatchEvent(new window.Event('input', { bubbles: true }));
+    tableBag.last.options.onRowSelected({
+      course_id: 9,
+      code: 'OTHER',
+      slug: 'other',
+      title: 'Other',
+    });
+    expect(toast.info).toHaveBeenCalledWith('Price changes were not saved.');
+    expect(confirmDialog).not.toHaveBeenCalled();
   });
 
   it('opens Canvas only for a positive course id', async () => {

@@ -7,7 +7,7 @@ conflicts. Active plan:
 [`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md)
 (supersedes
 [`/docs/Li/plans/LITHIUM_SPRINT.md`](/docs/Li/plans/LITHIUM_SPRINT.md)).
-Pause point 2026-10-22: Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, and 12 are complete.
+Pause point 2026-10-23: Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, and 13 are complete.
 Phases 5a–5d and 6 stay deferred. Andrew reported Acuranzo 1389–1393 applied.
 Scripting save, update, and duplicate send INTEGER `SCRIPT_TYPE`,
 `STATUS`, `USERID`, and `INVOKABLE`. A blank schedule or run time is
@@ -27,23 +27,31 @@ Phase 12 is complete: Course Manager is a staff shell. The gate calls `getClaims
 `getClaims()` hides the row. Andrew confirmed the Learning group
 shows it and the shell opens. QueryRef 155 failure still denies.
 The sidebar omits ID 34 when the gate fails. Andrew reported
-Acuranzo 1378, 1379, 1380, and 1381 applied. Phase 13 is in
-progress. Staff list **4500**, insert **4501**, update **4502**,
-history **4503** and **4504**, prices **4505**. Andrew opened the
-live list on 2026-10-22, so **4500** and Lookup 059 key 14 are on
-that database. The navigator owns add, duplicate, and delete.
-Footer save and cancel use ManagerEditHelper. Options stores
-Retired. Canvas shows the image at 524×292, stretched. The list has no Retired checkbox. **4004** stays the published
-catalog. The next Courses file is **4084**, the next caller ref
-is **4506**, and the next Acuranzo file is **1399**. File numbers
-stay below 4500. Do not start Phase 14. He does deploys and login checks. Do not apply migrations. The report writer (manager 24,
+Acuranzo 1378, 1379, 1380, and 1381 applied. Phase 13 is complete
+(2026-10-23). Andrew reported the latest build deployed, the latest
+migrations applied, and the list Retired checkbox removed. Staff
+list **4500**, insert **4501**, update **4502**, history **4503**
+and **4504**, prices **4505**. Lookup 059 key 14 is on that
+database. The navigator owns add, duplicate, and delete. Footer
+save and cancel use ManagerEditHelper. Options stores Retired.
+Canvas shows the image at 524×292, stretched. **4004** stays the
+published catalog. Phase 14 is in progress. Save prices is **4506**
+(`courses_4084.lua`). Orders are **4507** (`courses_4085.lua`).
+`Stripe.Mode` is `courses_4086.lua` and is invokable. Andrew
+reported 4084–4086 applied. Save prices still reloads the previous
+cents. `courses_4087.lua` rewrites QueryRef 4506 and is not
+applied. The next Courses file is **4088**, the next caller
+ref is **4508**, and the next Acuranzo file is **1399**. File
+numbers stay below 4500. Do not mark Phase 14 complete until the
+save keeps the typed amount. Do not start Phase 15.
+He does deploys and login checks. Do not apply migrations. The report writer (manager 24,
 [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md),
 Phases 0–71, Phase 0 approved 2026-10-10) stays parked. Its next
 phase is Phase 1, and only after Andrew pulls that plan in. PDF is
 the default export there. Phased work follows
 [`/docs/PLANNING.md`](/docs/PLANNING.md).
 
-**Last reviewed:** 2026-10-23 (CATCHUP Phase 13 in progress. The Canvas image is 524×292 and stretched. The list has no Retired checkbox. Options stores Retired. Prices are QueryRef 4505. Default columns are Code and Title after acuranzo_1398. The next Courses file is 4084 and the next caller ref is 4506. Phases 5a–5d and 6 stay deferred.)
+**Last reviewed:** 2026-10-23 (CATCHUP Phase 14 in progress. Andrew reported 4084–4086 applied. Save prices still reloads the previous cents. courses_4087.lua rewrites QueryRef 4506 and is not applied. The next Courses file is 4088 and the next caller ref is 4508. Do not start Phase 15. Phases 5a–5d and 6 stay deferred.)
 
 ---
 
@@ -230,7 +238,7 @@ disagree in places.
 | 30–31 | Sync, Camera | placeholders |
 | 32 | Terminal (menu) | `terminal/` (also utility key `terminal`) |
 | 33 | Scripting | `scripting/` |
-| 34 | Course Manager | `course-manager/` — staff catalog (Phase 13, in progress). QueryRef **155** is the roles gate. List **4500**. Prices **4505**. |
+| 34 | Course Manager | `course-manager/` — staff catalog (Phase 14, in progress 2026-10-23). QueryRef **155** is the roles gate. List **4500**. Prices **4505**. Save prices **4506**. Orders **4507**. |
 | 35 | Course Builder | `course-builder/` — placeholder (Phase 0a). Band E is the real UI. |
 
 Tour matching uses **numeric ID only** (`"003.Profile"` matches anything with
@@ -257,10 +265,12 @@ Course Manager (34) lists courses for staff. It calls QueryRef
 **155** first and implements `cleanup()`. A failed name lookup denies, and
 the sidebar omits the row. The catalog calls **4500**, **4501**, and
 **4502**. History calls **4503** and **4504**. Prices call **4505**.
-Sync and retire stay
+Save prices calls **4506**. Orders call **4507**.
+Sync, retire, Ensure Product, refund, and deactivate stay
 disabled until QueryRef **87** reports `invokable` 1. Course Builder (35) is still the Phase 0a
-placeholder and implements `teardown()`. Band D continues with Phase
-14 after Andrew applies the Phase 13 packet. Band E is the Course Builder UI.
+placeholder and implements `teardown()`. Phase 14 is in progress.
+Andrew reported 4084–4086 applied. Save prices still reloads the
+previous cents. `courses_4087.lua` is not applied. Band E is the Course Builder UI.
 
 ### New manager checklist (corrected)
 
@@ -345,9 +355,11 @@ GET /api/conduit/script/{job_id}
 (CATCHUP Phase 2, 2026-10-16). The Scripting Run tab calls them
 (CATCHUP Phase 9, complete 2026-10-22). A wait-true POST uses
 `timeout_seconds` plus 5 seconds. Course Manager calls
-`invokeScript` for `Catalog.SyncFromCanvas` and `Catalog.Retire`
-only when QueryRef 87 says `invokable` is 1. Those scripts are still
-0, so the buttons stay disabled. Course Builder
+`invokeScript` for `Stripe.Mode` on open. It calls
+`Catalog.SyncFromCanvas`, `Catalog.Retire`, `Stripe.EnsureProduct`,
+`Stripe.Refund`, and `Stripe.DeactivateCustomer` only when QueryRef
+87 says `invokable` is 1. Those five stay 0, so the buttons stay
+disabled. Course Builder
 does not invoke yet. Course Builder operator buttons must use this
 surface, not new C. `sanitizeHtml` is in `src/core/utils.js`.
 Lookups, Crimson, Version History, and the Queries summary preview
@@ -502,19 +514,24 @@ id is still `0`. `this.app.user` is still unset on `LithiumApp`.
 
 **First deploy:** Course Manager — PRIORITIZE Part 5 in
 `/mnt/extra/Projects/500-Courses-Reception/PRIORITIZE.md`. Phase 12
-(2026-10-22) is the staff shell. Phase 13 adds the catalog and is
-in progress. The list is a LithiumTable on the Query Manager shell:
+(2026-10-22) is the staff shell. Phase 13 (2026-10-23) is the
+catalog. Andrew reported the latest build deployed and the latest
+migrations applied. The list is a LithiumTable on the Query Manager shell:
 navigator add, duplicate, and delete, plus footer save and cancel.
 Course Options holds Retired and Featured. The list has no Retired checkbox. Canvas shows the image at 524×292, stretched.
-Commerce lists prices through QueryRef **4505**. Authz v1 is CATCHUP L3:
+Commerce lists prices through QueryRef **4505** and saves them
+through **4506**. Orders are **4507**. Authz v1 is CATCHUP L3:
 integer `role_id`s from `getClaims(retrieveJWT())`, resolved through
 QueryRef **155** to `roles.name` `staff` or `admin`. A failed
 resolve denies. The sidebar omits ID 34 when the gate fails. A
 direct open shows the lock panel. Andrew confirmed the row and the
 shell on 2026-10-22. Doc:
 [`/docs/Li/LITHIUM-MGR-COURSE.md`](/docs/Li/LITHIUM-MGR-COURSE.md).
-Hydrogen 2.23 `account_roles` is a later cutover (Band H). Do not
-start Phase 14 until Andrew lists fixture courses.
+Hydrogen 2.23 `account_roles` is a later cutover (Band H). Phase 14
+is in progress. `Stripe.Mode` reports test or live. Ensure, rotate,
+refund, and deactivate stay disabled until invokable. Andrew
+reported 4084–4086 applied. The save still reloads the previous
+cents. `courses_4087.lua` is not applied. Do not start Phase 15.
 
 **Course Builder pipeline:**  
 `/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md` (CB-0..35).

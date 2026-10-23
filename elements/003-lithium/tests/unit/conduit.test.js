@@ -11,6 +11,7 @@ import {
   buildQueryPayload,
   buildBatchPayload,
   extractRows,
+  extractError,
   extractBatchRows,
   authQuery,
   authQueries,
@@ -257,6 +258,32 @@ describe('authQuery', () => {
     mockApi.post.mockRejectedValue(new Error('Network error'));
 
     await expect(authQuery(mockApi, 25)).rejects.toThrow('Network error');
+  });
+
+  it('rejects a queryref the server marks fail', async () => {
+    mockApi.post.mockResolvedValue({
+      success: 'fail',
+      query_ref: 4506,
+      rows: [],
+      message: 'queryref not found or not public',
+    });
+
+    await expect(authQuery(mockApi, 4506)).rejects.toThrow('queryref not found or not public');
+  });
+});
+
+describe('extractError', () => {
+  it('reads boolean false and the fail string', () => {
+    expect(extractError({ success: false, error: 'Database error' }).message).toBe('Database error');
+    expect(extractError({
+      success: 'fail',
+      query_ref: 4506,
+      message: 'queryref not found or not public',
+    })).toMatchObject({
+      message: 'queryref not found or not public',
+      queryRef: 4506,
+    });
+    expect(extractError({ success: true, rows: [] })).toBeNull();
   });
 });
 
