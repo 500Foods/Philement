@@ -2,7 +2,7 @@
 
 Courses is a pack on the Acuranzo database. It uses the same connection, the same SQL schema, and the same `queries`, `lookups`, and `scripts` tables. It does not bootstrap those tables. `PAYLOAD:courses` alone is refused. The suite strings that include it are `PAYLOAD:acuranzo+courses` and `PAYLOAD:acuranzo+courses+argent`.
 
-Files are `courses_4000.lua` through `courses_4096.lua`. The next file is 4097. File numbers stay below 4500. Caller-facing QueryRefs already used are 4000–4007 and 4500–4512. Andrew confirmed the save on 2026-10-23. `courses_4087.lua` is the SQL that ran for QueryRef 4506. `courses_4088.lua` through `courses_4096.lua` are the Phase 15 packet and are not applied. Refs that `auth_query` calls stay in 4500–4999 and are never file numbers. Later patches keep the ref the installer used. A rewrite keeps that same ref. The next QueryRef is 4513.
+Files are `courses_4000.lua` through `courses_4117.lua`. Andrew applied `courses_4097.lua` through `courses_4114.lua` on 2026-10-23. The receipt went out on the Hydrogen restart. That message had a subject and no body. `courses_4115.lua`, `courses_4116.lua`, and `courses_4117.lua` are written and not applied. `courses_4117.lua` replaces the text and HTML of `course.suggestion_received`. The name and the course title come from the suggestion row. The next file is 4118. File numbers stay below 4500. Caller-facing QueryRefs already used are 4000–4007 and 4500–4522. 4513 through 4521 are applied. 4522 moves a row back to Suggested and is not applied. 4111 rewrites 4514, 4112 rewrites 4517, and 4113 rewrites 4518. Andrew confirmed the save on 2026-10-23. `courses_4087.lua` is the SQL that ran for QueryRef 4506. The same day, the Learners search and grant are the apply report for `courses_4088.lua` through `courses_4096.lua`. Refs that `auth_query` calls stay in 4500–4999 and are never file numbers. Later patches keep the ref the installer used. A rewrite keeps that same ref. The next new QueryRef is 4523.
 
 Lookup 055 keeps family id 055. `Orchestrators.Orchestrator` stays in Acuranzo (`acuranzo_1210.lua`, plus the courses-era patches 1289, 1299, 1343, and 1364). File 1289 also inserts the first `Provision.EnsureCanvasUser`. Later bodies of that script are in this pack. The old-to-new inventory is [`/docs/He/COURSES_MIGRATION.md`](/docs/He/COURSES_MIGRATION.md).
 
@@ -109,4 +109,25 @@ Macro scripts are the shared set in [`/elements/002-helium/helium/`](/elements/0
 | [4094](/elements/002-helium/courses/migrations/courses_4094.lua) | scripts | 1.0.0 | 2026-10-23 | 4 | ✗ | CATCHUP Phase 15: seed Enroll.StaffGrant (invokable) |
 | [4095](/elements/002-helium/courses/migrations/courses_4095.lua) | scripts | 1.0.0 | 2026-10-23 | 4 | ✗ | CATCHUP Phase 15: seed Enroll.StaffArchive (invokable) |
 | [4096](/elements/002-helium/courses/migrations/courses_4096.lua) | scripts | 1.0.0 | 2026-10-23 | 4 | ✗ | CATCHUP Phase 15: seed Enroll.StaffRenew (invokable) |
-| **97** | | | | **450** | **97** | |
+| [4097](/elements/002-helium/courses/migrations/courses_4097.lua) | course_build_runs | 1.0.0 | 2026-10-23 | 6 | ✓ | course_build_runs: one draft row per suggestion |
+| [4098](/elements/002-helium/courses/migrations/courses_4098.lua) | course_build_actions | 1.0.0 | 2026-10-23 | 7 | ✓ | course_build_actions: append-only action ledger |
+| [4099](/elements/002-helium/courses/migrations/courses_4099.lua) | queries | 1.0.0 | 2026-10-23 | 4 | ✗ | QueryRef #4513 - Staff: List Suggestions |
+| [4100](/elements/002-helium/courses/migrations/courses_4100.lua) | queries | 1.0.0 | 2026-10-23 | 4 | ✗ | QueryRef #4514 - Staff: Save Working Title |
+| [4101](/elements/002-helium/courses/migrations/courses_4101.lua) | course_build_runs | 1.0.0 | 2026-10-23 | 12 | ✗ | course_build_runs receipt, flag, and annotation |
+| [4102](/elements/002-helium/courses/migrations/courses_4102.lua) | queries | 1.0.0 | 2026-10-23 | 4 | ✗ | QueryRef #4515 - Staff: List Suggestions |
+| [4103](/elements/002-helium/courses/migrations/courses_4103.lua) | queries | 1.0.0 | 2026-10-23 | 4 | ✗ | QueryRef #4516 - Staff: Insert Suggestion |
+| [4104](/elements/002-helium/courses/migrations/courses_4104.lua) | queries | 1.0.0 | 2026-10-23 | 4 | ✗ | QueryRef #4517 - Staff: Update Suggestion |
+| [4105](/elements/002-helium/courses/migrations/courses_4105.lua) | queries | 1.0.0 | 2026-10-23 | 4 | ✗ | QueryRef #4518 - Staff: Duplicate Suggestion |
+| [4106](/elements/002-helium/courses/migrations/courses_4106.lua) | queries | 1.0.0 | 2026-10-23 | 4 | ✗ | QueryRef #4519 - Staff: Delete Suggestion |
+| [4107](/elements/002-helium/courses/migrations/courses_4107.lua) | queries | 1.0.0 | 2026-10-23 | 4 | ✗ | QueryRef #4520 - Staff: Move to Intake |
+| [4108](/elements/002-helium/courses/migrations/courses_4108.lua) | queries | 1.0.0 | 2026-10-23 | 4 | ✗ | QueryRef #4521 - Staff: Toggle Flag |
+| [4109](/elements/002-helium/courses/migrations/courses_4109.lua) | mail_templates | 1.0.0 | 2026-10-23 | 4 | ✗ | Mail template course.suggestion_received |
+| [4110](/elements/002-helium/courses/migrations/courses_4110.lua) | scripts | 1.0.0 | 2026-10-23 | 4 | ✗ | Seed Build.ReceiveSuggested (invokable) |
+| [4111](/elements/002-helium/courses/migrations/courses_4111.lua) | queries | 1.0.0 | 2026-10-23 | 4 | ✗ | QueryRef #4514 - cast the working title as varchar(100) |
+| [4112](/elements/002-helium/courses/migrations/courses_4112.lua) | queries | 1.0.0 | 2026-10-23 | 4 | ✗ | QueryRef #4517 - cast title and annotation as varchar |
+| [4113](/elements/002-helium/courses/migrations/courses_4113.lua) | queries | 1.0.0 | 2026-10-23 | 4 | ✗ | QueryRef #4518 - cast the copied name as varchar(100) |
+| [4114](/elements/002-helium/courses/migrations/courses_4114.lua) | scripts | 1.0.0 | 2026-10-23 | 4 | ✗ | Build.ReceiveSuggested runs from the orchestrator |
+| [4115](/elements/002-helium/courses/migrations/courses_4115.lua) | queries | 1.0.0 | 2026-10-23 | 4 | ✗ | QueryRef #4522 - Staff: Move to Suggested |
+| [4116](/elements/002-helium/courses/migrations/courses_4116.lua) | scripts | 1.0.0 | 2026-10-23 | 4 | ✗ | Build.ReceiveSuggested key changes on each send |
+| [4117](/elements/002-helium/courses/migrations/courses_4117.lua) | mail_templates | 1.0.0 | 2026-10-23 | 4 | ✗ | Receipt body for course.suggestion_received |
+| **118** | | | | **547** | **118** | |

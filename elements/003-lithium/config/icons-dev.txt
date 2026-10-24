@@ -95,6 +95,7 @@
 <fa fa-layer-group></fa>
 <fa fa-left-right></fa>
 <fa fa-left></fa>
+<fa fa-lightbulb></fa>
 <fa fa-link></fa>
 <fa fa-list-check></fa>
 <fa fa-list></fa>
@@ -113,7 +114,6 @@
 <fa fa-party-horn></fa>
 <fa fa-pause></fa>
 <fa fa-pen-to-square></fa>
-<fa fa-pencil-ruler></fa>
 <fa fa-pencil></fa>
 <fa fa-person-running-fast></fa>
 <fa fa-phone></fa>

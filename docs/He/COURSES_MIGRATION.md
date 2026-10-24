@@ -1,12 +1,15 @@
 # Courses pack — running list
 
 Inventory of the Courses pack after the cut out of Acuranzo. Files are
-`courses_4000.lua` through `courses_4096.lua`. The next file is 4097.
+`courses_4000.lua` through `courses_4100.lua`. `courses_4097.lua`
+through `courses_4100.lua` are written and not applied. The next
+file is 4101.
 File numbers stay below 4500. Caller-facing QueryRefs are 4000–4007
-and 4500–4512. Andrew confirmed the save on 2026-10-23.
+and 4500–4514. 4513 and 4514 are not applied. Andrew confirmed the save on 2026-10-23.
 `courses_4087.lua` is the SQL that ran for 4506.
-`courses_4088.lua` through `courses_4096.lua` are not applied.
-The next SPA ref is 4513. `auth_query` must not use a ref that equals a file number:
+The same day, the Learners search and grant are the apply report
+for `courses_4088.lua` through `courses_4096.lua`.
+The next SPA ref is 4515. `auth_query` must not use a ref that equals a file number:
 bootstrap orders by query type
 descending, and the first cache row is the type-1001 reverse
 migration. `Orchestrators.Orchestrator` stayed in Acuranzo.
@@ -29,7 +32,7 @@ database, the same SQL schema, and the same `queries`, `lookups`, and
 | Acuranzo | 1000–1999 | Base. Courses files leave a hole. MCP, mail, and dialect files keep their numbers. |
 | Argent | 2000–2999 | Live pack. |
 | Gaius | 3000–3999 | Reserved. The on-disk `gaius/` tree is still its own bootstrap, not this pack. |
-| Courses | 4000–4999 | Files 4000–4080. Older caller refs 4000–4007. SPA refs 4500–4504. File numbers stay below 4500. |
+| Courses | 4000–4999 | Files 4000–4100 on disk. 4097–4100 are not applied. Older caller refs 4000–4007. SPA refs 4500–4514. 4513 and 4514 are not applied. File numbers stay below 4500. |
 
 The printing design under `elements/002-helium/helium/` is gone, so
 band 4 is free. `database.lua` and `database_<engine>.lua` live in
@@ -298,8 +301,19 @@ that ran. Phase 15 adds `courses_4088.lua` through `courses_4092.lua`
 4512 Canvas link) and `courses_4093.lua` through `courses_4096.lua`
 (`Enroll.StaffGate` invokable 0, then `Enroll.StaffGrant`,
 `Enroll.StaffArchive`, and `Enroll.StaffRenew`, invokable 1).
-That packet is not applied. The next Courses file is 4097. The next
-caller-facing QueryRef is 4513. One migration installs one
+Andrew's search of andrew@500courses.com (account 9001, Canvas
+user 801) and the grant that followed are the apply report for
+that packet. Archive and Renew were not clicked. Phase 19
+adds `courses_4097.lua` (`course_build_runs`), `courses_4098.lua`
+(`course_build_actions`), `courses_4099.lua` (QueryRef 4513,
+Staff: List Suggestions), and `courses_4100.lua` (QueryRef 4514,
+Staff: Save Working Title). `acuranzo_1399.lua` is Lookup 059
+key 15, `courses/course-builder`. That packet is handed over
+and not applied. Confirm units before apply: human cost and
+token cost are integer cents, elapsed time is integer
+milliseconds, and prompt count is an integer. The next
+Courses file is 4101. The next caller-facing QueryRef is 4515.
+One migration installs one
 caller-facing ref. A rewrite keeps the ref it edits.
 
 File numbers stay in 4000–4499. Caller refs that `auth_query` calls
@@ -308,8 +322,10 @@ stay in 4500–4999. 4000–4007 remain, and Lua still loads 4006 and
 Lookup 055 keeps family id 055 because that family already existed
 in Acuranzo. Lookup 059 key 14 (`courses/course-manager`) is
 `acuranzo_1397.lua`. `acuranzo_1398.lua` updates that same key so
-the default visible columns are Code and Title. The next Acuranzo
-file is 1399.
+the default visible columns are Code and Title. `acuranzo_1399.lua`
+inserts Lookup 059 key 15 (`courses/course-builder`) and is not
+applied. The next Acuranzo file is 1400. The next Lookup 059 key
+is 16.
 
 The Acuranzo README points here for the retired numbers. The generated
 migration index only lists files that exist, so the hole does not

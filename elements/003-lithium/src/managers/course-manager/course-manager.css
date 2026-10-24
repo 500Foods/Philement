@@ -257,10 +257,10 @@
 /* Twice the 262×146 card used on Canvas and the reception site. */
 .course-image-preview {
   display: none;
-  width: 524px;
-  height: 292px;
+  width: 393px;
+  height: 222px;
   margin-top: var(--space-5);
-  object-fit: fill;
+  object-fit: cover;
   border-radius: var(--border-radius-lg);
 }
 

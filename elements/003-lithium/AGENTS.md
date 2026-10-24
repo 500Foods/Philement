@@ -7,7 +7,7 @@ conflicts. Active plan:
 [`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md)
 (supersedes
 [`/docs/Li/plans/LITHIUM_SPRINT.md`](/docs/Li/plans/LITHIUM_SPRINT.md)).
-Pause point 2026-10-23: Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, and 14 are complete.
+Pause point 2026-10-23: Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, and 15 are complete.
 Phases 5a–5d and 6 stay deferred. Andrew reported Acuranzo 1389–1393 applied.
 Scripting save, update, and duplicate send INTEGER `SCRIPT_TYPE`,
 `STATUS`, `USERID`, and `INVOKABLE`. A blank schedule or run time is
@@ -26,7 +26,7 @@ folds statement blocks, and `H.` names use the namespace tag.
 Phase 12 is complete: Course Manager is a staff shell. The gate calls `getClaims(retrieveJWT())`. A bare
 `getClaims()` hides the row. Andrew confirmed the Learning group
 shows it and the shell opens. QueryRef 155 failure still denies.
-The sidebar omits ID 34 when the gate fails. Andrew reported
+The sidebar omits IDs 34 and 35 when the gate fails. Andrew reported
 Acuranzo 1378, 1379, 1380, and 1381 applied. Phase 13 is complete
 (2026-10-23). Andrew reported the latest build deployed, the latest
 migrations applied, and the list Retired checkbox removed. Staff
@@ -40,16 +40,42 @@ confirmed Save prices on course 16: CAD cents 4999, success true,
 affected_rows 1, eight statements. Save prices is **4506**
 (`courses_4084.lua`, rewritten by `courses_4087.lua`). Orders are
 **4507** (`courses_4085.lua`). `Stripe.Mode` is `courses_4086.lua`
-and is invokable. Phase 15 is in progress (2026-10-23).
-Learners is the fifth tab. Search **4508**, account **4509**,
-seats **4510**, orders **4511**, Canvas link **4512**.
-`Enroll.StaffGate` stays invokable 0. `Enroll.StaffGrant`,
-`Enroll.StaffArchive`, and `Enroll.StaffRenew` are invokable 1.
-`courses_4088.lua` through `courses_4096.lua` are not applied.
-The manual search is still open. The next Courses file is
-**4097**, the next caller ref is **4513**, and the next
-Acuranzo file is **1399**. File numbers stay below 4500. Do not
-mark Phase 15 complete. Do not start Phase 16 source.
+and is invokable. Phase 15 is complete (2026-10-23).
+Andrew searched andrew@500courses.com, opened account **9001**
+(Canvas user **801**), granted a course, and confirmed the
+Canvas user link. Archive and Renew were not clicked. Search
+**4508**, account **4509**, seats **4510**, orders **4511**,
+Canvas link **4512**. `Enroll.StaffGate` stays invokable 0.
+`Enroll.StaffGrant`, `Enroll.StaffArchive`, and
+`Enroll.StaffRenew` are invokable 1. The live search and grant
+are the apply report for `courses_4088.lua` through
+`courses_4096.lua`. Phase 19 (in progress, 2026-10-23) is the Course Builder
+submission list. Andrew applied `courses_4097.lua` through
+`courses_4110.lua` and `acuranzo_1399.lua` and `acuranzo_1400.lua`.
+He confirmed the list and Submission tab, then received the
+receipt for "All about mDNS". That row is Received. A later
+working-title save on QueryRef **4514** failed at statement 1
+and rolled back, so the ledger write is still unproven.
+Andrew applied `courses_4111.lua` through `courses_4114.lua` and
+`acuranzo_1401.lua`. The receipt went out on the Hydrogen restart.
+`courses_4115.lua` is QueryRef **4522**. It moves Received or
+Intake back to Suggested and clears `receipt_mail`.
+`courses_4116.lua` puts the send time in the receipt key so the
+relay sends a new message. The message that went out had a
+subject and no body. `courses_4117.lua` replaces the text and
+HTML of `course.suggestion_received`. The greeting uses the
+suggestion `submitter_name`. The course title uses the
+suggestion `course_name`. Neither value comes from the JWT.
+Those three are not applied. Opening
+Course Builder does not send mail. List **4515**, insert **4516**,
+update **4517**, duplicate **4518**, delete **4519**, Intake
+**4520**, flag **4521**, Suggested **4522**. The message text is
+mail template `course.suggestion_received`. The next Courses file
+is **4118**, the next caller ref is **4523**, the next Acuranzo
+file is **1402**, and Lookup 059 key **16** stays free. File
+numbers stay below 4500. Andrew parked Course Manager on
+2026-10-23. Phases 16–18 wait until he pulls them back. Do not
+mark Phase 19 complete. Do not start Phase 20.
 He does deploys and login checks. Do not apply migrations. The report writer (manager 24,
 [`/docs/Li/plans/REPORTING_PLAN.md`](/docs/Li/plans/REPORTING_PLAN.md),
 Phases 0–71, Phase 0 approved 2026-10-10) stays parked. Its next
@@ -57,7 +83,7 @@ phase is Phase 1, and only after Andrew pulls that plan in. PDF is
 the default export there. Phased work follows
 [`/docs/PLANNING.md`](/docs/PLANNING.md).
 
-**Last reviewed:** 2026-10-23 (CATCHUP Phase 15 in progress. Packet courses_4088.lua through courses_4096.lua is not applied. Search 4508, account 4509, seats 4510, orders 4511, Canvas link 4512. Enroll.StaffGate is invokable 0. StaffGrant, StaffArchive, and StaffRenew are invokable 1. The manual search is still open. The next Courses file is 4097 and the next caller ref is 4513. Do not mark Phase 15 complete. Phases 5a–5d and 6 stay deferred.)
+**Last reviewed:** 2026-10-23 (CATCHUP Phase 19 in progress. Andrew applied 4097–4114 and Acuranzo 1399–1401. The receipt went out on the Hydrogen restart with a subject and no body. The working-title ledger write is still unproven. `courses_4115.lua`, `courses_4116.lua`, and `courses_4117.lua` are written and not applied. Suggested is a stage choice and clears the receipt mark. The receipt body uses the suggestion name and course title. Next file **4118**, next ref **4523**, next Acuranzo file **1402**, Lookup 059 key **16** stays free. Do not mark Phase 19 complete. Do not start Phase 20. Phases 16–18 and 5a–5d and 6 stay deferred.)
 
 ---
 
@@ -80,7 +106,7 @@ Keycloak token.
 | Helium | `elements/002-helium/` | Acuranzo (and other) Lua migrations |
 | Helium docs | `docs/He/` | Migration authoring |
 | Reception | `/mnt/extra/Projects/500-Courses-Reception/` | Public 500 Courses SPA (sibling repo) |
-| Course Builder plan | `/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md` | Pipeline CB-0..35 (Lua + Helium + human gates) |
+| Course Builder plan | `/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md` | Pipeline. CB-S is in progress. CATCHUP Phase 19 is the same work. Files through 4114 and Acuranzo 1401 are applied. The receipt went out on restart with a subject and no body. Move to Suggested is 4115, the receipt key rewrite is 4116, and the receipt body is 4117. Those three are not applied. |
 
 Live: https://lithium.philement.com — Coverage: https://lithium.philement.com/coverage/
 
@@ -207,7 +233,7 @@ and broke CSS order (`vite.config.js` comments).
 
 | Kind | Where | IDs |
 |------|-------|-----|
-| Menu | `ManagerLoader.managerRegistry` | **7–35** (34 Course Manager is the staff catalog; 35 Course Builder is still a placeholder) |
+| Menu | `ManagerLoader.managerRegistry` | **7–35** (34 Course Manager is the staff catalog; 35 Course Builder is the Phase 19 shell) |
 | Utility | `LithiumApp.utilityManagerRegistry` | `user-profile`=3, `session-log`=4, `terminal`=5 |
 | Special | Auth / Main / Tour / Crimson | Login + Main loaded outside registry. Tour is a side-effect import from Main. Crimson is a popout. |
 
@@ -244,8 +270,8 @@ disagree in places.
 | 30–31 | Sync, Camera | placeholders |
 | 32 | Terminal (menu) | `terminal/` (also utility key `terminal`) |
 | 33 | Scripting | `scripting/` |
-| 34 | Course Manager | `course-manager/` — staff catalog (Phase 15 in progress, 2026-10-23). QueryRef **155** is the roles gate. List **4500**. Prices **4505**. Save prices **4506**. Orders **4507**. Learners search **4508** (not applied). |
-| 35 | Course Builder | `course-builder/` — placeholder (Phase 0a). Band E is the real UI. |
+| 34 | Course Manager | `course-manager/` — staff catalog (Phase 15 complete, 2026-10-23). QueryRef **155** is the roles gate. List **4500**. Prices **4505**. Save prices **4506**. Orders **4507**. Learners search **4508** through Canvas link **4512** (applied). |
+| 35 | Course Builder | `course-builder/` — Phase 19 in progress (2026-10-23). List **4515**. Title save **4514**. Intake **4520**. Suggested **4522** (not applied). Receipt is `Build.ReceiveSuggested`. The screen does not call it. |
 
 Tour matching uses **numeric ID only** (`"003.Profile"` matches anything with
 3). Utility Terminal=5 can steal a Crimson tour. Do not add another ID 5.
@@ -272,14 +298,23 @@ Course Manager (34) lists courses for staff. It calls QueryRef
 the sidebar omits the row. The catalog calls **4500**, **4501**, and
 **4502**. History calls **4503** and **4504**. Prices call **4505**.
 Save prices calls **4506**. Orders call **4507**.
-Learners calls **4508** through **4512**. Those five are not
-applied. Sync, retire, Ensure Product, refund, and deactivate stay
-disabled until QueryRef **87** reports `invokable` 1. Grant,
-archive, and renew use the same gate for `Enroll.StaffGrant`,
-`Enroll.StaffArchive`, and `Enroll.StaffRenew`. Course Builder (35) is still the Phase 0a
-placeholder and implements `teardown()`. Phase 14 is complete
-(2026-10-23). Andrew confirmed Save prices on course 16. Phase 15
-is in progress. Band E is the Course Builder UI.
+Learners calls **4508** through **4512**. Andrew's search and
+grant on 2026-10-23 are the apply report for those five. Sync,
+retire, Ensure Product, refund, and deactivate stay disabled
+until QueryRef **87** reports `invokable` 1. Grant, archive, and
+renew use the same gate for `Enroll.StaffGrant`,
+`Enroll.StaffArchive`, and `Enroll.StaffRenew`. Those three are
+invokable 1. Course Builder (35) is the Phase 19 shell and
+implements `cleanup()`. The staff gate omits IDs 34 and 35
+together. Andrew confirmed the list and Submission tab, then
+received the receipt on the Hydrogen restart, so **4515**
+through **4521**, the cast rewrites, and `Build.ReceiveSuggested`
+ran. The stage list can move Received or Intake back to
+Suggested. That calls **4522**, which is not applied, and clears
+the receipt mark. The screen does not call the receipt script.
+The ledger is not on screen. There is no Accept, Decline, Junk,
+or Canvas control. The working-title ledger write is still
+unproven.
 
 ### New manager checklist (corrected)
 
@@ -369,10 +404,12 @@ GET /api/conduit/script/{job_id}
 `Stripe.Refund`, and `Stripe.DeactivateCustomer` only when QueryRef
 87 says `invokable` is 1. Those five stay 0, so the buttons stay
 disabled. Learners calls `Enroll.StaffGrant`, `Enroll.StaffArchive`,
-and `Enroll.StaffRenew` the same way, and only after the Phase 15
-packet is applied. Course Builder
-does not invoke yet. Course Builder operator buttons must use this
-surface, not new C. `sanitizeHtml` is in `src/core/utils.js`.
+and `Enroll.StaffRenew` when QueryRef 87 says invokable is 1.
+Andrew applied that packet and granted a course on 2026-10-23.
+Course Builder does not call `invokeScript`. The receipt script
+is `Build.ReceiveSuggested`. After `courses_4114.lua` it is
+invokable 0, and the orchestrator submits it. Later operator
+buttons must use this surface, not new C. `sanitizeHtml` is in `src/core/utils.js`.
 Lookups, Crimson, Version History, and the Queries summary preview
 call it (CATCHUP Phase 3, 2026-10-16).
 
@@ -404,7 +441,7 @@ Lithium cares about:
 | QueryRefs | Numbered SQL in Helium; Lithium passes the integer |
 | Menu / lookups | Seeded lookup rows; Lithium caches in `shared/lookups.js` |
 | Lua scripts | `scripts` table: `group_name`, `script_name`, `code`, `invokable`, schedule/status |
-| Course Builder tables | **Not created** — COURSEBUILDER CB-2 (`course_build_runs`, artifacts, events) |
+| Course Builder tables | `course_build_runs` and `course_build_actions` are applied (`courses_4097.lua`, `courses_4098.lua`). `courses_4101.lua` added `receipt_mail`, `flagged`, and `annotation`. The receipt email arrived. Do not create a second run table. |
 
 Script seeds already in Acuranzo (examples): `Api.Echo`, `Enroll.FreeCourse`,
 `Account.GetSettings` / `UpdatePrefs` / `MyCourses` / `Orders`, Stripe/Catalog
@@ -534,7 +571,7 @@ Commerce lists prices through QueryRef **4505** and saves them
 through **4506**. Orders are **4507**. Authz v1 is CATCHUP L3:
 integer `role_id`s from `getClaims(retrieveJWT())`, resolved through
 QueryRef **155** to `roles.name` `staff` or `admin`. A failed
-resolve denies. The sidebar omits ID 34 when the gate fails. A
+resolve denies. The sidebar omits IDs 34 and 35 when the gate fails. A
 direct open shows the lock panel. Andrew confirmed the row and the
 shell on 2026-10-22. Doc:
 [`/docs/Li/LITHIUM-MGR-COURSE.md`](/docs/Li/LITHIUM-MGR-COURSE.md).
@@ -542,14 +579,34 @@ Hydrogen 2.23 `account_roles` is a later cutover (Band H). Phase 14
 is complete (2026-10-23). Andrew confirmed Save prices on course 16.
 `Stripe.Mode` reports test or live. Ensure, rotate, refund, and
 deactivate stay disabled until invokable. `courses_4087.lua` is the
-SQL that ran for 4506. Phase 15 is in progress. Learners is the
-fifth tab. Search **4508**, account **4509**, seats **4510**,
-orders **4511**, Canvas link **4512**. The packet is
-`courses_4088.lua` through `courses_4096.lua` and is not applied.
-The manual search is still open. Do not mark Phase 15 complete.
+SQL that ran for 4506. Phase 15 is complete (2026-10-23).
+Andrew searched andrew@500courses.com, opened account 9001,
+granted a course, and confirmed the Canvas user link. Learners
+is the fifth tab. Search **4508**, account **4509**, seats
+**4510**, orders **4511**, Canvas link **4512**. The live
+search and grant are the apply report for `courses_4088.lua`
+through `courses_4096.lua`. Andrew parked Course Manager
+on 2026-10-23. Phases 16–18 wait. Phase 19 is in progress.
 
 **Course Builder pipeline:**  
-`/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md` (CB-0..35).
+`/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md`.
+CB-S / CATCHUP Phase 19 is in progress (2026-10-23). Andrew
+confirmed the list and the Submission tab and received the
+receipt email. Columns stay Working Title, Last activity, and
+State. The manage block can insert, copy, edit, flag, annotate,
+and delete. The orchestrator moves Suggested to Received and
+attempts one receipt email. Andrew confirmed that on the
+restart. Opening the shell does not send it. The stage select
+can move Suggested or Received to Intake and leaves the receipt
+mark alone. It can also move Received or Intake back to
+Suggested, which clears the mark so the next pass sends again.
+That move is **4522** and is not applied. The receipt body is
+`courses_4117.lua` and is not applied. The greeting uses the
+suggestion `submitter_name`. The course title uses the
+suggestion `course_name`. A title-only save
+stays **4514**. The live ledger row is still unproven. Later
+tabs appear when that stage has content. Canvas is not in this
+slice. Do not start Phase 20.
 
 Architecture lock (2026-08-12, still true):
 

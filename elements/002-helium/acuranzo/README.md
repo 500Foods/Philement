@@ -356,4 +356,7 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1396](/elements/002-helium/acuranzo/migrations/acuranzo_1396.lua) | queries | 1.0.0 | 2026-10-22 | 4 | ✗ | QueryRef #129 store a blank schedule and blank run times as NULL |
 | [1397](/elements/002-helium/acuranzo/migrations/acuranzo_1397.lua) | lookups | 1.0.0 | 2026-10-22 | 4 | ✗ | Lookup 059 key 14 courses/course-manager tableDef |
 | [1398](/elements/002-helium/acuranzo/migrations/acuranzo_1398.lua) | lookups | 1.0.0 | 2026-10-22 | 4 | ✗ | Lookup 059 key 14 default columns are Code and Title |
-| **323** | | | | **1700** | **323** | |
+| [1399](/elements/002-helium/acuranzo/migrations/acuranzo_1399.lua) | lookups | 1.0.0 | 2026-10-23 | 4 | ✗ | Lookup 059 key 15 courses/course-builder tableDef |
+| [1400](/elements/002-helium/acuranzo/migrations/acuranzo_1400.lua) | lookups | 1.0.0 | 2026-10-23 | 4 | ✗ | Lookup 059 key 15 uses QueryRef 4515 and shows the manage block |
+| [1401](/elements/002-helium/acuranzo/migrations/acuranzo_1401.lua) | scripts | 1.0.0 | 2026-10-23 | 4 | ✗ | Orchestrator submits Build.ReceiveSuggested when a row is waiting |
+| **326** | | | | **1712** | **326** | |

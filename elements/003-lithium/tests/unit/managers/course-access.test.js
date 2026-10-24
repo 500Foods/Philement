@@ -12,6 +12,7 @@ vi.mock('../../../src/core/jwt.js', () => ({
 import { authQuery } from '../../../src/shared/conduit.js';
 import { getClaims, retrieveJWT } from '../../../src/core/jwt.js';
 import {
+  COURSE_BUILDER_ID,
   COURSE_MANAGER_ID,
   ROLE_NAME_QUERY_REF,
   permittedManagersForMenu,
@@ -34,16 +35,27 @@ describe('visibleMenuGroups', () => {
     expect(visibleMenuGroups(groups, true)).toBe(groups);
   });
 
-  it('omits manager 34 and keeps the rest of the group', () => {
-    const result = visibleMenuGroups([learning], false);
+  it('omits managers 34 and 35 and keeps the rest of the group', () => {
+    const mixed = {
+      id: 6,
+      name: 'Learning',
+      items: [
+        { managerId: 33, name: 'Scripting' },
+        { managerId: 34, name: 'Course Manager' },
+        { managerId: 35, name: 'Course Builder' },
+      ],
+    };
+    const result = visibleMenuGroups([mixed], false);
     expect(result).toHaveLength(1);
-    expect(result[0].items.map((item) => item.managerId)).toEqual([35]);
+    expect(result[0].items.map((item) => item.managerId)).toEqual([33]);
     expect(learning.items).toHaveLength(2);
   });
 
-  it('drops a group that only contained manager 34', () => {
+  it('drops a group that only contained manager 34 or 35', () => {
     const only = { id: 6, name: 'Learning', items: [{ managerId: COURSE_MANAGER_ID }] };
+    const builder = { id: 6, name: 'Learning', items: [{ managerId: COURSE_BUILDER_ID }] };
     expect(visibleMenuGroups([only], false)).toEqual([]);
+    expect(visibleMenuGroups([builder], false)).toEqual([]);
   });
 
   it('returns an empty list for a missing menu', () => {
@@ -56,8 +68,8 @@ describe('permittedManagersForMenu', () => {
     expect(permittedManagersForMenu([33, 34, 35], true)).toEqual([33, 34, 35]);
   });
 
-  it('removes 34 when access is denied', () => {
-    expect(permittedManagersForMenu([33, 34, 35], false)).toEqual([33, 35]);
+  it('removes 34 and 35 when access is denied', () => {
+    expect(permittedManagersForMenu([33, 34, 35], false)).toEqual([33]);
   });
 });
 

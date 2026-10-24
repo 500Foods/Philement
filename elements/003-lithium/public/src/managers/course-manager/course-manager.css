@@ -257,10 +257,10 @@
 /* Twice the 262×146 card used on Canvas and the reception site. */
 .course-image-preview {
   display: none;
-  width: 524px;
-  height: 292px;
+  width: 393px;
+  height: 222px;
   margin-top: var(--space-5);
-  object-fit: fill;
+  object-fit: cover;
   border-radius: var(--border-radius-lg);
 }
 
@@ -280,6 +280,37 @@
 
 .course-action-tip button:disabled {
   pointer-events: none;
+}
+
+.course-learner-list,
+.course-learner-seats,
+.course-learner-orders {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.course-learner-hit,
+.course-learner-seat,
+.course-learner-order {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.course-learner-seat,
+.course-learner-order {
+  padding: var(--space-2);
+  background: var(--bg-secondary);
+  border: var(--border-standard);
+  border-radius: var(--border-radius-md);
+}
+
+.course-learner-ops {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
 }
 
 @media (width <= 800px) {

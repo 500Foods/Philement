@@ -1,9 +1,11 @@
 /**
- * Course Manager access (CATCHUP L3, menu ID 34).
+ * Staff catalog access (CATCHUP L3, menu IDs 34 and 35).
  *
  * QueryRef 155 resolves each JWT role_id to roles.name. Staff access
  * is a resolved name of staff or admin. A missing client, a failed
  * query, or an empty name list denies. There is no local id map.
+ * Course Manager and Course Builder share this check. A bare
+ * getClaims() hides both rows.
  */
 
 import { authQuery } from '../../shared/conduit.js';
@@ -12,13 +14,18 @@ import { parseRoleIds, isCourseManagerAuthorized } from '../../core/utils.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 
 export const COURSE_MANAGER_ID = 34;
+export const COURSE_BUILDER_ID = 35;
 export const ROLE_NAME_QUERY_REF = 155;
 
+/** Menu ids that share the staff or admin name check. */
+export const STAFF_MENU_IDS = [COURSE_MANAGER_ID, COURSE_BUILDER_ID];
+
 /**
- * Drop Course Manager from grouped menu data when access is denied.
- * Returns the same array when access is allowed. Does not mutate it.
+ * Drop Course Manager and Course Builder from grouped menu data when
+ * access is denied. Returns the same array when access is allowed.
+ * Does not mutate it.
  * @param {Array} groups - Grouped menu from getMenu
- * @param {boolean} allowed - True when the JWT may see manager 34
+ * @param {boolean} allowed - True when the JWT may see managers 34 and 35
  * @returns {Array}
  */
 export function visibleMenuGroups(groups, allowed) {
@@ -28,14 +35,14 @@ export function visibleMenuGroups(groups, allowed) {
     .map((group) => ({
       ...group,
       items: Array.isArray(group.items)
-        ? group.items.filter((item) => item.managerId !== COURSE_MANAGER_ID)
+        ? group.items.filter((item) => !STAFF_MENU_IDS.includes(item.managerId))
         : [],
     }))
     .filter((group) => group.items.length > 0);
 }
 
 /**
- * Remove manager 34 from a permitted-id list when access is denied.
+ * Remove managers 34 and 35 from a permitted-id list when access is denied.
  * @param {number[]} permittedIds
  * @param {boolean} allowed
  * @returns {number[]}
@@ -43,7 +50,7 @@ export function visibleMenuGroups(groups, allowed) {
 export function permittedManagersForMenu(permittedIds, allowed) {
   const ids = Array.isArray(permittedIds) ? permittedIds : [];
   if (allowed) return ids;
-  return ids.filter((id) => id !== COURSE_MANAGER_ID);
+  return ids.filter((id) => !STAFF_MENU_IDS.includes(id));
 }
 
 function namesFromRows(rows) {

@@ -9,9 +9,9 @@ import { processIcons, setIcon } from '../../core/icons.js';
 import { initTooltips } from '../../core/tooltip-api.js';
 import { log, Subsystems, Status } from '../../core/log.js';
 import {
-  COURSE_MANAGER_ID,
   permittedManagersForMenu,
   resolveCourseManagerAccess,
+  STAFF_MENU_IDS,
   visibleMenuGroups,
 } from '../course-manager/course-access.js';
 
@@ -275,7 +275,7 @@ export const sidebarMethods = {
 
     this.permittedManagers.forEach((managerId) => {
       if (!canAccessManager(managerId)) return;
-      if (managerId === COURSE_MANAGER_ID && this.courseManagerAllowed !== true) return;
+      if (STAFF_MENU_IDS.includes(managerId) && this.courseManagerAllowed !== true) return;
 
       const managerInfo = this.managerIcons[managerId] || { iconHtml: '<fa fa-cube></fa>', name: `Manager ${managerId}` };
 

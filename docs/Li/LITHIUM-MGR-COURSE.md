@@ -12,10 +12,12 @@ applied. QueryRefs 4500–4505 and Lookup 059 key 14 are on that
 database. The list has no Retired checkbox. Phase 14 is complete
 (2026-10-23). Andrew confirmed Save prices on course 16. Save
 prices **4506** and orders **4507** are applied.
-`courses_4087.lua` is the SQL that ran for 4506. Phase 15 is in
-progress (2026-10-23). Learners is a fifth tab. Search **4508**,
-account **4509**, seats **4510**, orders **4511**, and the Canvas
-link **4512** are assigned and not applied.
+`courses_4087.lua` is the SQL that ran for 4506. Phase 15 is
+complete (2026-10-23). Andrew searched andrew@500courses.com,
+opened account **9001** (Canvas user **801**), granted a course,
+and confirmed the Canvas user link. Search **4508**, account
+**4509**, seats **4510**, orders **4511**, and the Canvas link
+**4512** are applied.
 
 ---
 
@@ -35,11 +37,11 @@ link **4512** are assigned and not applied.
 | **Prices** | QueryRef **4505** |
 | **Save prices** | QueryRef **4506** (applied; `courses_4087.lua` is the SQL that ran) |
 | **Orders** | QueryRef **4507** (applied) |
-| **Learner search** | QueryRef **4508** (not applied) |
-| **Learner account** | QueryRef **4509** (not applied) |
-| **Learner seats** | QueryRef **4510** (not applied) |
-| **Learner orders** | QueryRef **4511** (not applied) |
-| **Canvas link** | QueryRef **4512** (not applied). **4001** stays the Lua read |
+| **Learner search** | QueryRef **4508** (applied 2026-10-23) |
+| **Learner account** | QueryRef **4509** (applied 2026-10-23) |
+| **Learner seats** | QueryRef **4510** (applied 2026-10-23) |
+| **Learner orders** | QueryRef **4511** (applied 2026-10-23) |
+| **Canvas link** | QueryRef **4512** (applied 2026-10-23). **4001** stays the Lua read |
 | **Table path** | `courses/course-manager` (Lookup 059 key 14) |
 
 A person sees this manager when a resolved `roles.name` is exactly `staff` or `admin`. Anyone else gets a lock panel, and the sidebar omits the row. Opening the manager directly still shows that lock panel. The gate reads `getClaims(retrieveJWT())`.
@@ -77,15 +79,15 @@ Helium:
 | [`courses_4085.lua`](/elements/002-helium/courses/migrations/courses_4085.lua) | QueryRef 4507, orders for one course. Applied |
 | [`courses_4086.lua`](/elements/002-helium/courses/migrations/courses_4086.lua) | `Stripe.Mode`, invokable 1. Applied |
 | [`courses_4087.lua`](/elements/002-helium/courses/migrations/courses_4087.lua) | Rewrites QueryRef 4506 so `-- TRANSACTION_END` is its own line. Andrew confirmed this SQL on 2026-10-23 |
-| [`courses_4088.lua`](/elements/002-helium/courses/migrations/courses_4088.lua) | QueryRef 4508, search one account. Not applied |
-| [`courses_4089.lua`](/elements/002-helium/courses/migrations/courses_4089.lua) | QueryRef 4509, account, meta, and prefs. Not applied |
-| [`courses_4090.lua`](/elements/002-helium/courses/migrations/courses_4090.lua) | QueryRef 4510, seats for one account. Not applied |
-| [`courses_4091.lua`](/elements/002-helium/courses/migrations/courses_4091.lua) | QueryRef 4511, orders for one account. Not applied |
-| [`courses_4092.lua`](/elements/002-helium/courses/migrations/courses_4092.lua) | QueryRef 4512, Canvas link. Not applied |
-| [`courses_4093.lua`](/elements/002-helium/courses/migrations/courses_4093.lua) | `Enroll.StaffGate`, invokable 0. Not applied |
-| [`courses_4094.lua`](/elements/002-helium/courses/migrations/courses_4094.lua) | `Enroll.StaffGrant`, invokable 1. Not applied |
-| [`courses_4095.lua`](/elements/002-helium/courses/migrations/courses_4095.lua) | `Enroll.StaffArchive`, invokable 1. Not applied |
-| [`courses_4096.lua`](/elements/002-helium/courses/migrations/courses_4096.lua) | `Enroll.StaffRenew`, invokable 1. Not applied |
+| [`courses_4088.lua`](/elements/002-helium/courses/migrations/courses_4088.lua) | QueryRef 4508, search one account. Applied 2026-10-23 |
+| [`courses_4089.lua`](/elements/002-helium/courses/migrations/courses_4089.lua) | QueryRef 4509, account, meta, and prefs. Applied 2026-10-23 |
+| [`courses_4090.lua`](/elements/002-helium/courses/migrations/courses_4090.lua) | QueryRef 4510, seats for one account. Applied 2026-10-23 |
+| [`courses_4091.lua`](/elements/002-helium/courses/migrations/courses_4091.lua) | QueryRef 4511, orders for one account. Applied 2026-10-23 |
+| [`courses_4092.lua`](/elements/002-helium/courses/migrations/courses_4092.lua) | QueryRef 4512, Canvas link. Applied 2026-10-23 |
+| [`courses_4093.lua`](/elements/002-helium/courses/migrations/courses_4093.lua) | `Enroll.StaffGate`, invokable 0. Applied 2026-10-23 |
+| [`courses_4094.lua`](/elements/002-helium/courses/migrations/courses_4094.lua) | `Enroll.StaffGrant`, invokable 1. Andrew granted a course |
+| [`courses_4095.lua`](/elements/002-helium/courses/migrations/courses_4095.lua) | `Enroll.StaffArchive`, invokable 1. Applied with the packet. Not clicked |
+| [`courses_4096.lua`](/elements/002-helium/courses/migrations/courses_4096.lua) | `Enroll.StaffRenew`, invokable 1. Applied with the packet. Not clicked |
 | [`acuranzo_1397.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1397.lua) | Lookup 059 key 14 |
 | [`acuranzo_1398.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1398.lua) | Same key. Default columns are Code and Title |
 
@@ -113,7 +115,7 @@ The JWT `roles` claim is a CSV of integer `role_id` values. The client reads tha
 
 A missing API client, a failed query, or a non-array payload denies access and writes a session-log line. Role ids 2 and 3 are not treated as staff on their own.
 
-`auth_query` does not check staff. Any Hydrogen JWT can call 4500–4507. Andrew reported 4500–4505 applied on 2026-10-23, then confirmed 4506 and 4507 the same day. Course 16 saved CAD at 4999 cents. 4508–4512 are assigned and not applied. The manager is what hides the screen. The staff scripts also check `roles.name` on the server.
+`auth_query` does not check staff. Any Hydrogen JWT can call 4500–4512. Andrew reported 4500–4505 applied on 2026-10-23, then confirmed 4506 and 4507 the same day. Course 16 saved CAD at 4999 cents. The same day, the Learners search and grant confirmed 4508–4512. The manager is what hides the screen. The staff scripts also check `roles.name` on the server.
 
 Menu rows come from Lookup 042 keys 34 and 35
 ([`acuranzo_1378.lua`](/elements/002-helium/acuranzo/migrations/acuranzo_1378.lua))
@@ -130,5 +132,5 @@ applied on the 500 Courses database on 2026-10-22.
 ## Related
 
 - [LITHIUM-MGR.md](/docs/Li/LITHIUM-MGR.md) — manager index
-- [CATCHUP.md](/elements/003-lithium/CATCHUP.md) — Phase 15 is in progress (2026-10-23). The manual search is still open
+- [CATCHUP.md](/elements/003-lithium/CATCHUP.md) — Phase 15 is complete (2026-10-23). Course Manager is parked. Phase 19 is the Course Builder submission list
 - [COURSES_MIGRATION.md](/docs/He/COURSES_MIGRATION.md) — pack numbers
