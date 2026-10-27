@@ -154,3 +154,39 @@
 .builder-detail {
   white-space: normal;
 }
+
+/* Run tab (CATCHUP Phase 21) */
+.builder-run-head,
+.builder-run-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) 0;
+}
+
+.builder-run-state {
+  font-weight: 600;
+  text-transform: capitalize;
+}
+
+.builder-run-error {
+  color: var(--color-danger, #c0392b);
+}
+
+.builder-run-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.builder-run-item {
+  padding: var(--space-1, 4px) 0;
+  border-bottom: 1px solid var(--border-color, rgba(128, 128, 128, 0.2));
+}
+
+.builder-run-body {
+  display: block;
+  white-space: pre-wrap;
+  word-break: break-word;
+  opacity: 0.8;
+}

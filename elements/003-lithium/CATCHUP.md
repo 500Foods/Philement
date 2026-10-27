@@ -71,11 +71,11 @@ only.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-10-27):** Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 19, and 20 are complete. Andrew confirmed `Api.Echo` on `https://lithium.500courses.com`: Wait on `job_id: BBTDC`, Wait off `job_id: CCCRP`, both `status: completed`. **Phase 10** is complete. Andrew confirmed the tulip button, Ctrl+P, pretty-print then save, the Preview tab (summary, then Lua), and that a 9px font survives a reload. He declined the optional meta tab. It does not move forward. **Phase 11** is complete. CodeMirror 6 is the only stack. Lua folds `function`, `if`, `do`, `for`, and `while` through `end`, and `repeat` through `until`. `H.` and `H.name` use the namespace tag. **Phase 12** is complete. Andrew confirmed the Learning group shows Course Manager and that he can open the shell. The gate reads the stored token with `getClaims(retrieveJWT())`. A bare `getClaims()` returns null and hides the row before the token is read. QueryRef 155 failure still denies, and the sidebar still omits ID 34 when the gate fails. A direct open still shows the lock panel. Andrew reported Acuranzo 1378, 1379, 1380, and 1381 applied. **Phase 13** is complete (2026-10-23). Andrew reported the latest build deployed and the latest migrations applied. The list has no Retired checkbox. Retired stays under Course Options. Staff list **4500**, insert **4501** (`courses_4082.lua` stores Retired), update **4502** (`courses_4081.lua` stores Retired), enrolment history **4503**, management history **4504**, prices **4505** (`courses_4083.lua`). Lookup 059 key 14 is `courses/course-manager` (`acuranzo_1397.lua` and `acuranzo_1398.lua`). Default columns are Code and Title. The list is a LithiumTable. The navigator owns add, duplicate, and delete. Delete leaves the row. Footer save and cancel use ManagerEditHelper. Canvas shows the image at 524×292, stretched, with rounded corners. Commerce lists cad, usd, eur, and gbp. **4004** stays the published catalog. **4008** is the courses table file, not a caller ref. **Phase 14** is complete (2026-10-23). Andrew confirmed Save prices on course 16 at 13:55:13: CAD cents 4999, success true, affected_rows 1, eight statements all success. Save prices is **4506** (`courses_4084.lua`, rewritten by `courses_4087.lua`). Orders are **4507** (`courses_4085.lua`). `Stripe.Mode` is `courses_4086.lua`, invokable 1. The client logs the save and treats success `fail` as an error. Ensure Product, Refund, and Deactivate stay invokable 0. **Phase 15** is complete (2026-10-23). Andrew searched andrew@500courses.com. One hit opened account **9001**. Canvas user **801**. He granted a course, and Open Canvas user worked. Archive and Renew were not clicked. Search **4508**, account **4509**, seats **4510**, orders **4511**, Canvas link **4512**. The live search and grant are the apply report for `courses_4088.lua` through `courses_4096.lua`. `Enroll.StaffGate` stays invokable 0. `Enroll.StaffGrant`, `Enroll.StaffArchive`, and `Enroll.StaffRenew` are invokable 1. At the close of Phase 15 the next Courses file was **4097**, the next caller ref was **4513**, and the next Acuranzo file was **1399**. **Phase 19** took those numbers on 2026-10-23 and is complete (2026-10-26). Andrew applied `courses_4097.lua` through `courses_4110.lua` and `acuranzo_1399.lua` and `acuranzo_1400.lua`. He confirmed the list and Submission tab, then received the receipt for "All about mDNS". That row is Received and will not be mailed again. A later working-title save on QueryRef **4514** failed at statement 1 and rolled back. The cause was Hydrogen, not the SQL: `postgresql_execute_prepared` bound INTEGER then STRING instead of `:NAME` order. It now uses `database_ordered_parameters`, like the other engines. Andrew then saved a working title and confirmed Intake, Flag, and Suggested. Units on that ledger are integer cents, integer milliseconds, and an integer prompt count. Andrew applied `courses_4111.lua` through `courses_4114.lua` and `acuranzo_1401.lua`. The receipt went out on the Hydrogen restart with a subject and no body. `courses_4115.lua` is QueryRef **4522**. It moves Received or Intake back to Suggested and clears `receipt_mail`. `courses_4116.lua` puts the send time in the receipt key. `courses_4117.lua` replaces the text and HTML of `course.suggestion_received`. The greeting uses the suggestion `submitter_name`. The course title uses the suggestion `course_name`. Neither value comes from the JWT. Andrew applied those three; Courses is applied through **4117**. Opening Course Builder does not send mail. The next Courses file is **4118**. The next caller ref is **4523**. The next Acuranzo file is **1402**. Lookup 059 key **16** stays free. File numbers stay below 4500. **Phase 16**, **Phase 17**, and **Phase 18** stay parked. Andrew parked Course Manager on 2026-10-23. A still-Suggested row is mailed on the next one-second tick without a login. **Phase 20** is complete (2026-10-27). Andrew signed off the P20a state table as written. Andrew applied `courses_4118.lua` through `courses_4122.lua` (2026-10-27, Courses APPLY 4122). CB-2 SQL fixture passed by psql on 2026-10-27 (insert, the three ref SQLs, cleanup). Andrew confirmed the remaining checks (`auth_query` refs, `mkt`/`npm test`) as good and closed the phase. **Phase 21** (queue UI and human-gate invoke) is in progress (2026-10-27): packet 4123–4127 written, not applied; see Phase 21. 4118 extends `course_build_runs` (template_key, price_cents, canvas_course_id, error_text, state index). 4119 creates `course_build_artifacts`. QueryRefs **4523** list runs by state, **4524** get run with artifacts, **4525** run events from `course_build_actions`. The tableDef is `RUN_TABLE_DEF` in `src/managers/course-builder/course-build-runs.js`; no Lookup 059 row, key **16** stays free. Phase 21 packet is `courses_4123.lua`–`courses_4127.lua` (`Build.Gate`, `Build.Accept`, `Build.Decline`, `Build.Approve`, `Build.Abandon`), not applied. Next Courses file **4128**. Next caller ref **4526**. Next Acuranzo file **1402**. Do not edit Phases 16–18 until he pulls Course Manager back. Phases 5a, 5b, 5c, 5d, and 6 stay deferred until Andrew pulls Band B back. He does deploys and login checks. Do not drive a browser for those. Save, duplicate, and update send INTEGER `SCRIPT_TYPE`, `STATUS`, `USERID`, and `INVOKABLE` (0 when the row has none). A blank schedule or run time is `''`. Andrew applied Acuranzo 1395 (QueryRef 130) and 1396 (QueryRef 129) and confirmed pretty-print then save on 2026-10-22. Delete uses QueryRef 131 with STRING `GROUP_NAME` and `SCRIPT_NAME`. A dirty row switch asks to save or stay. On the 500 Courses Lithium database, Lookup 059 key 13 is `scripts/script-manager` and its collection names delete 131. Course QueryRefs moved to the 4000 pack on 2026-10-16. Band D uses the Courses pack QueryRefs section. Do not call retired **#085**, **#150**, or **#151**.
+**CURRENT PAUSE POINT (as of 2026-10-27):** Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 19, 20, and 21 are complete. Andrew confirmed `Api.Echo` on `https://lithium.500courses.com`: Wait on `job_id: BBTDC`, Wait off `job_id: CCCRP`, both `status: completed`. **Phase 10** is complete. Andrew confirmed the tulip button, Ctrl+P, pretty-print then save, the Preview tab (summary, then Lua), and that a 9px font survives a reload. He declined the optional meta tab. It does not move forward. **Phase 11** is complete. CodeMirror 6 is the only stack. Lua folds `function`, `if`, `do`, `for`, and `while` through `end`, and `repeat` through `until`. `H.` and `H.name` use the namespace tag. **Phase 12** is complete. Andrew confirmed the Learning group shows Course Manager and that he can open the shell. The gate reads the stored token with `getClaims(retrieveJWT())`. A bare `getClaims()` returns null and hides the row before the token is read. QueryRef 155 failure still denies, and the sidebar still omits ID 34 when the gate fails. A direct open still shows the lock panel. Andrew reported Acuranzo 1378, 1379, 1380, and 1381 applied. **Phase 13** is complete (2026-10-23). Andrew reported the latest build deployed and the latest migrations applied. The list has no Retired checkbox. Retired stays under Course Options. Staff list **4500**, insert **4501** (`courses_4082.lua` stores Retired), update **4502** (`courses_4081.lua` stores Retired), enrolment history **4503**, management history **4504**, prices **4505** (`courses_4083.lua`). Lookup 059 key 14 is `courses/course-manager` (`acuranzo_1397.lua` and `acuranzo_1398.lua`). Default columns are Code and Title. The list is a LithiumTable. The navigator owns add, duplicate, and delete. Delete leaves the row. Footer save and cancel use ManagerEditHelper. Canvas shows the image at 524×292, stretched, with rounded corners. Commerce lists cad, usd, eur, and gbp. **4004** stays the published catalog. **4008** is the courses table file, not a caller ref. **Phase 14** is complete (2026-10-23). Andrew confirmed Save prices on course 16 at 13:55:13: CAD cents 4999, success true, affected_rows 1, eight statements all success. Save prices is **4506** (`courses_4084.lua`, rewritten by `courses_4087.lua`). Orders are **4507** (`courses_4085.lua`). `Stripe.Mode` is `courses_4086.lua`, invokable 1. The client logs the save and treats success `fail` as an error. Ensure Product, Refund, and Deactivate stay invokable 0. **Phase 15** is complete (2026-10-23). Andrew searched andrew@500courses.com. One hit opened account **9001**. Canvas user **801**. He granted a course, and Open Canvas user worked. Archive and Renew were not clicked. Search **4508**, account **4509**, seats **4510**, orders **4511**, Canvas link **4512**. The live search and grant are the apply report for `courses_4088.lua` through `courses_4096.lua`. `Enroll.StaffGate` stays invokable 0. `Enroll.StaffGrant`, `Enroll.StaffArchive`, and `Enroll.StaffRenew` are invokable 1. At the close of Phase 15 the next Courses file was **4097**, the next caller ref was **4513**, and the next Acuranzo file was **1399**. **Phase 19** took those numbers on 2026-10-23 and is complete (2026-10-26). Andrew applied `courses_4097.lua` through `courses_4110.lua` and `acuranzo_1399.lua` and `acuranzo_1400.lua`. He confirmed the list and Submission tab, then received the receipt for "All about mDNS". That row is Received and will not be mailed again. A later working-title save on QueryRef **4514** failed at statement 1 and rolled back. The cause was Hydrogen, not the SQL: `postgresql_execute_prepared` bound INTEGER then STRING instead of `:NAME` order. It now uses `database_ordered_parameters`, like the other engines. Andrew then saved a working title and confirmed Intake, Flag, and Suggested. Units on that ledger are integer cents, integer milliseconds, and an integer prompt count. Andrew applied `courses_4111.lua` through `courses_4114.lua` and `acuranzo_1401.lua`. The receipt went out on the Hydrogen restart with a subject and no body. `courses_4115.lua` is QueryRef **4522**. It moves Received or Intake back to Suggested and clears `receipt_mail`. `courses_4116.lua` puts the send time in the receipt key. `courses_4117.lua` replaces the text and HTML of `course.suggestion_received`. The greeting uses the suggestion `submitter_name`. The course title uses the suggestion `course_name`. Neither value comes from the JWT. Andrew applied those three; Courses is applied through **4117**. Opening Course Builder does not send mail. The next Courses file is **4118**. The next caller ref is **4523**. The next Acuranzo file is **1402**. Lookup 059 key **16** stays free. File numbers stay below 4500. **Phase 16**, **Phase 17**, and **Phase 18** stay parked. Andrew parked Course Manager on 2026-10-23. A still-Suggested row is mailed on the next one-second tick without a login. **Phase 20** is complete (2026-10-27). Andrew signed off the P20a state table as written. Andrew applied `courses_4118.lua` through `courses_4122.lua` (2026-10-27, Courses APPLY 4122). CB-2 SQL fixture passed by psql on 2026-10-27 (insert, the three ref SQLs, cleanup). Andrew confirmed the remaining checks (`auth_query` refs, `mkt`/`npm test`) as good and closed the phase. **Phase 21** (queue UI and human-gate invoke) is complete (2026-10-27): Andrew applied 4123–4127 (Courses APPLY 4127) and deployed Lithium; SQL fixtures set run 1 → `submission` and run 2 → `approve`; in the Run tab Decline moved run 1 to `declined` and Approve moved run 2 to `research`, with ledger rows `declined` and `research` (actor 9001). Both runs restored to `intake` by SQL. Abandon deferred by Andrew; Accept not clicked. **Phase 22** is next; discuss before starting. 4118 extends `course_build_runs` (template_key, price_cents, canvas_course_id, error_text, state index). 4119 creates `course_build_artifacts`. QueryRefs **4523** list runs by state, **4524** get run with artifacts, **4525** run events from `course_build_actions`. The tableDef is `RUN_TABLE_DEF` in `src/managers/course-builder/course-build-runs.js`; no Lookup 059 row, key **16** stays free. Phase 21 packet is `courses_4123.lua`–`courses_4127.lua` (`Build.Gate`, `Build.Accept`, `Build.Decline`, `Build.Approve`, `Build.Abandon`), applied (APPLY 4127). Next Courses file **4128**. Next caller ref **4526**. Next Acuranzo file **1402**. Do not edit Phases 16–18 until he pulls Course Manager back. Phases 5a, 5b, 5c, 5d, and 6 stay deferred until Andrew pulls Band B back. He does deploys and login checks. Do not drive a browser for those. Save, duplicate, and update send INTEGER `SCRIPT_TYPE`, `STATUS`, `USERID`, and `INVOKABLE` (0 when the row has none). A blank schedule or run time is `''`. Andrew applied Acuranzo 1395 (QueryRef 130) and 1396 (QueryRef 129) and confirmed pretty-print then save on 2026-10-22. Delete uses QueryRef 131 with STRING `GROUP_NAME` and `SCRIPT_NAME`. A dirty row switch asks to save or stay. On the 500 Courses Lithium database, Lookup 059 key 13 is `scripts/script-manager` and its collection names delete 131. Course QueryRefs moved to the 4000 pack on 2026-10-16. Band D uses the Courses pack QueryRefs section. Do not call retired **#085**, **#150**, or **#151**.
 
 ### Resume here next session
 
-Phases 0–5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 19, and 20 are complete. Do not reopen them. Do not open 5a–5d or 6 unless Andrew pulls Band B back.
+Phases 0–5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 19, 20, and 21 are complete. Phase 22 is next. Do not reopen them. Do not open 5a–5d or 6 unless Andrew pulls Band B back.
 
 1. **Phase 14** is complete (2026-10-23). Andrew confirmed Save
    prices on course 16 at 13:55:13. QueryRef **4506**, CAD cents
@@ -96,8 +96,11 @@ Phases 0–5, 7, 8, 9, 10, 11, 12, 13, 14, 15, 19, and 20 are complete. Do not r
    The screen does not send the receipt. Phase 20 is complete
    (2026-10-27): Andrew signed off P20a, applied CB-2 packet
    4118–4122 (refs 4523–4525), the SQL fixture passed by psql, and
-   he confirmed the rest. Phase 21 is in progress: packet 4123–4127
-   written, not applied. Next file **4128**, next ref **4526**. Do not edit Phases 16–18. Phase 13
+   he confirmed the rest. Phase 21 is complete (2026-10-27):
+   4123–4127 applied (APPLY 4127), Decline and Approve validated in
+   the Run tab, runs 1 and 2 back at `intake`. Abandon deferred,
+   Accept not clicked. **Resume at Phase 22** after Andrew discusses
+   it. Next file **4128**, next ref **4526**. Do not edit Phases 16–18. Phase 13
    closed on
    2026-10-23. Andrew reported the latest build deployed, the
    latest migrations applied, and the list Retired checkbox
@@ -3559,7 +3562,7 @@ phase. Next file **4123**, next ref **4526**, next Acuranzo
 
 **Handoff:**
 
-- Phase 20 is closed. Phase 21 is in progress; packet 4123–4127 not applied.
+- Phase 20 is closed. Phase 21 closed 2026-10-27 (see Phase 21).
 - Doc edits are uncommitted. Andrew commits.
 
 ---
@@ -3573,25 +3576,36 @@ phase. Next file **4123**, next ref **4526**, next Acuranzo
 
 **Entry gate:**
 
-- [ ] At least one fixture `course_build_runs` row. Named `Build.*`
+- [x] At least one fixture `course_build_runs` row. Named `Build.*`
       scripts exist or this phase seeds minimal handlers (packet).
+      Runs 1 and 2 exist; 4123–4127 seed the handlers.
 
 **Work items:**
 
-- [ ] Table: state, title, updated_at, cost if column exists. Filters
+- [x] Table: state, title, updated_at, cost if column exists. Filters
       by state.
-- [ ] Detail: suggestion payload + latest event + artifacts.
-- [ ] Buttons → `invokeScript` with `run_id`. Refresh. Show errors.
-- [ ] Hide Research until Approve (runner-side; UI hides the button).
+- [x] Detail: suggestion payload + latest event + artifacts.
+- [x] Buttons → `invokeScript` with `run_id`. Refresh. Show errors.
+- [x] Hide Research until Approve (runner-side; UI hides the button).
+      No Research button exists.
 
 **Exit gate / validation:**
 
-- [ ] Fixture: Decline → declined + event. Separate fixture: Accept or
-      Approve changes state.
-- [ ] `npm test` for button→payload mapping.
+- [x] Fixture: Decline → declined + event. Separate fixture: Accept or
+      Approve changes state. 2026-10-27: run 1 (SQL → `submission`)
+      Declined in the Run tab → `declined`, ledger `declined`; run 2
+      (SQL → `approve`) Approved → `research`, ledger `research`;
+      `actor_account_id` 9001 on both. Accept was not clicked (same
+      `Build.Gate` path as Decline). Abandon not exercised; deferred
+      by Andrew. A second-click `wrong_state` was not reported.
+- [x] `npm test` for button→payload mapping.
+      `course-build-gate.test.js` (Lithium unit tests pass).
 
-**Status:** in progress (started 2026-10-27). Packet written, not
-applied.
+**Status:** complete (2026-10-27). Andrew applied 4123–4127
+(Courses APPLY 4127) and deployed Lithium. Decline and Approve
+validated through the Run tab against SQL fixtures; Andrew accepted
+Decline + Approve as enough for now. Abandon deferred; Accept
+untested in the UI. Runs 1 and 2 restored to `intake`.
 
 **Decisions (Andrew, 2026-10-27):**
 
@@ -3618,7 +3632,7 @@ applied.
   mutex. CB-3 rules 3 and 6 (Research fan-out mutex, `failed`
   dead-letter) belong to the background runner and stay deferred.
 
-**Packet (2026-10-27, not applied):**
+**Packet (2026-10-27, applied APPLY 4127):**
 
 - `courses_4123.lua` — `Build.Gate` module, invokable 0.
 - `courses_4124.lua` — `Build.Accept` `submission` → `accepted`.
@@ -3633,13 +3647,57 @@ applied.
 - Ledger insert is a second statement, not one transaction. A failed
   ledger write returns `ok=true, ledger_ok=false` and logs a warning.
 
-**Apply (Andrew):** Courses 4123–4127 → expect APPLY **4127** →
-build/deploy Lithium → run the Phase 21 SQL fixture.
+**Apply (Andrew):** Courses 4123–4127 → APPLY **4127** (done
+2026-10-27) → Lithium deployed → Phase 21 SQL fixture run.
 
 Next file **4128**. Next ref **4526**. Next Acuranzo **1402**.
 Lookup 059 key **16** free.
 
+**Work performed:**
+
+- `courses_4123.lua`–`courses_4127.lua`: `Build.Gate` (invokable 0)
+  and `Build.Accept`, `Build.Decline`, `Build.Approve`,
+  `Build.Abandon` (invokable 1). No new QueryRefs, no mail.
+- Lithium `course-build-gate.js`, Run tab in `course-builder.js`,
+  CSS, and `course-build-gate.test.js`.
+- SQL fixture on `t-500courses-db` / `lithium`: run 1 → `submission`,
+  run 2 → `approve`; Andrew clicked Decline and Approve; Grok Bot
+  read state and ledger by SQL and restored both to `intake`.
+
 **Lessons learned:**
+
+- The gate path works end to end: staff gate, conditional UPDATE,
+  ledger row named after the new state, actor 9001 from the session.
+- There is no UI path back to `intake`. Andrew's UI reset left
+  `declined`/`research` in the DB; only SQL restored them. That
+  belongs to CB-9; until then fixtures are set and restored by SQL
+  (Andrew approved, 2026-10-27).
+- Cluster DNS does not resolve from angrin; use the direct DB host
+  (10.118.0.2:5433) for psql fixtures.
+- Read the DB after a UI action; the screen state is not proof.
+
+**Open debt:**
+
+- Confirm the Hydrogen `_hydrogen` user-id claim name for the ledger
+  actor and drop the `params.user_id` client fallback.
+- State UPDATE and ledger INSERT are not one transaction; a failed
+  ledger write returns `ok=true, ledger_ok=false`.
+- `course-manager` width test expects 524 and gets 393; unresolved.
+- Abandon (4127) unexercised; Accept (4124) not clicked; second-click
+  `wrong_state` not observed live.
+
+**Handoff (Phase 22 prep):**
+
+- Phase 21 is closed. Resume at Phase 22 (outline, artifacts,
+  Inspect, Publish) once Andrew discusses it. Its entry gate needs
+  an `outline` artifact or fixture JSON; Phase 20 showed artifacts
+  insert by SQL, and the Run tab already renders artifact bodies as
+  text.
+- Runs 1 and 2 are `intake`. Ledger keeps the `declined` and
+  `research` rows from this pass.
+- Next file **4128**, next ref **4526**, next Acuranzo **1402**,
+  Lookup 059 key **16** free.
+- Doc edits are uncommitted. Andrew commits.
 
 ---
 
@@ -4912,6 +4970,25 @@ Rules:
   ref **4526**, next Acuranzo **1402**. Lookup 059 key **16**
   stays free.
 
+### P21 — 2026-10-27 Gate scripts applied, Decline + Approve validated, Phase 21 closed
+
+- What we did: Andrew applied `courses_4123.lua`–`courses_4127.lua`
+  (Courses APPLY 4127) and deployed Lithium. Grok Bot set run 1 →
+  `submission` and run 2 → `approve` by SQL on `t-500courses-db`
+  (10.118.0.2:5433, schema `lithium`). Andrew clicked Decline on
+  run 1 (→ `declined`) and Approve on run 2 (→ `research`). Ledger:
+  `declined` on run 1, `research` on run 2, `actor_account_id` 9001.
+  Andrew's UI reset to `intake` did not reach the DB; Grok Bot
+  restored both runs to `intake` by SQL.
+- Gate result: Andrew accepted Decline + Approve as enough. Abandon
+  deferred; Accept not clicked. No server, no migration, no commit
+  by the agent.
+- Lessons: see Phase 21.
+- Follow-ups: Phase 22 next, after discussion. Open debt: `_hydrogen`
+  user-id claim name; state + ledger not one transaction;
+  `course-manager` 524 vs 393 width test. Next file **4128**, next
+  ref **4526**, next Acuranzo **1402**, Lookup 059 key **16** free.
+
 ---
 
 ## Revision history
@@ -4957,3 +5034,4 @@ Rules:
 | 2026-10-27 | Phase 21 in progress. Queue = Run tab in ID 35; key 16 unused. Packet 4123–4127 (`Build.Gate` + four gate scripts), no mail (CB-4 templates unwritten). Not applied. Next file **4128**, ref **4526**, Acuranzo **1402**. |
 | 2026-10-27 | Phase 20 still in progress. Andrew applied 4118–4122 (Courses APPLY 4122). CB-2 SQL fixture, QueryRefs 4523–4525, and `mkt` not yet reported. Do not start Phase 21 code. Next file **4123**. Next ref **4526**. Next Acuranzo file **1402**. |
 | 2026-10-27 | Phase 20 complete. CB-2 fixture passed by psql; Andrew confirmed the rest. Phase 21 prepared, not started: `Build.*` handlers do not exist yet. Next file **4123**. Next ref **4526**. Next Acuranzo file **1402**. Lookup 059 key 16 free. |
+| 2026-10-27 | Phase 21 complete. 4123–4127 applied (APPLY 4127), Lithium deployed. Decline (run 1 → `declined`) and Approve (run 2 → `research`) validated with ledger rows, actor 9001; runs restored to `intake` by SQL. Abandon deferred, Accept not clicked. Next is Phase 22. Next file **4128**. Next ref **4526**. Next Acuranzo **1402**. Lookup 059 key 16 free. |

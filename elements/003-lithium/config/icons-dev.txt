@@ -80,6 +80,7 @@
 <fa fa-folder-open></fa>
 <fa fa-font-case></fa>
 <fa fa-gear-complex></fa>
+<fa fa-gears></fa>
 <fa fa-globe></fa>
 <fa fa-graduation-cap fa-flip-horizontal></fa>
 <fa fa-graduation-cap></fa>

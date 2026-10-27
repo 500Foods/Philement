@@ -126,3 +126,10 @@ SELECT run_id, action_name, actor_account_id, created_at
 -- restore
 UPDATE course_build_runs SET state = 'intake' WHERE run_id IN (1, 2);
 ```
+
+### Phase 21 result (2026-10-27)
+
+Applied 4123–4127 (APPLY 4127). Decline on run 1 → `declined`,
+Approve on run 2 → `research`, ledger rows named after each state,
+actor 9001. Both runs restored to `intake` by SQL; the UI has no path
+back to `intake` until CB-9. Abandon deferred; Accept not clicked.
