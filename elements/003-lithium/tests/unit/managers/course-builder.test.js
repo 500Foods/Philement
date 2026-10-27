@@ -419,7 +419,7 @@ describe('CourseBuilder shell', () => {
     expect(container.querySelector('#builder-working-title').maxLength).toBe(100);
     expect(container.querySelector('#builder-working-title').disabled).toBe(true);
     expect(container.querySelector('[data-tab="submission"]').textContent).toContain('Submission');
-    expect(container.querySelectorAll('[data-tab]')).toHaveLength(1);
+    expect([...container.querySelectorAll('[data-tab]')].map((b) => b.dataset.tab)).toEqual(['submission', 'run']);
     const labels = [...container.querySelectorAll('.builder-field-label')].map((node) => node.textContent);
     expect(labels).toEqual([
       'Suggested Course Name',

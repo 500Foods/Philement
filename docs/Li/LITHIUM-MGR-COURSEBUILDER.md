@@ -80,3 +80,49 @@ VALUES ((SELECT COALESCE(MAX(action_id),0)+1 FROM course_build_actions),
 DELETE FROM course_build_artifacts WHERE body = '{"fixture":true}';
 DELETE FROM course_build_actions WHERE action_name = 'fixture';
 ```
+
+## Phase 21 — Run tab and human gates
+
+The queue is the existing suggestion list (Lookup 059 key **15**,
+QueryRef 4515). Key **16** is not used. The **Run** tab
+(`course-build-gate.js`) finds the selected suggestion's run in 4523
+(`STATE` `''`), then reads 4524 (artifacts) and 4525 (latest ten
+events, newest first). Artifact bodies render as text only.
+
+| State | Buttons | Script | Moves to |
+|-------|---------|--------|----------|
+| `submission` | Accept | `Build.Accept` (4124) | `accepted` |
+| `submission` | Decline (confirm) | `Build.Decline` (4125) | `declined` |
+| `approve` | Approve (confirm) | `Build.Approve` (4126) | `research` |
+| `approve` | Abandon (confirm) | `Build.Abandon` (4127) | `abandoned` |
+
+All four are `invokable` 1 and call the `Build.Gate` module (4123,
+`invokable` 0): staff gate (`Enroll.StaffGate`), one conditional
+`UPDATE … WHERE run_id = :RUN_ID AND state = :FROM_STATE`, then one
+`course_build_actions` row named after the new state. Payload:
+`{ script, params: { run_id }, wait: true, timeout_seconds: 15 }`.
+Failures: `{ ok=false, code }` with `validation`, `not_staff`,
+`missing_identity`, `lookup_error`, `not_found`, `write_error`, or
+`wrong_state` (adds `state` and `expected`). A double click or a second
+operator gets `wrong_state`. No mail (CB-4 templates not written).
+No Research button exists.
+
+### Phase 21 SQL fixture (after 4123–4127 apply)
+
+Intake → Submission is CB-9 and is not built. Andrew approved
+(2026-10-27) setting fixture run states by SQL until CB-9 exists. Set
+states by SQL for the test only. Note each run's state first and restore it after.
+
+```sql
+SELECT run_id, suggestion_id, state FROM course_build_runs ORDER BY run_id;
+UPDATE course_build_runs SET state = 'submission' WHERE run_id = 1; -- Decline test
+UPDATE course_build_runs SET state = 'approve'    WHERE run_id = 2; -- Approve/Abandon test
+-- In Lithium, Course Builder > Run tab: Decline run 1, Approve run 2.
+-- Also click Decline twice quickly or re-run via DevTools: expect wrong_state.
+SELECT run_id, state FROM course_build_runs WHERE run_id IN (1, 2);
+SELECT run_id, action_name, actor_account_id, created_at
+  FROM course_build_actions WHERE run_id IN (1, 2)
+ ORDER BY action_id DESC LIMIT 4;
+-- restore
+UPDATE course_build_runs SET state = 'intake' WHERE run_id IN (1, 2);
+```

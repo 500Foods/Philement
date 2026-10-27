@@ -41,6 +41,7 @@ import {
   restoreSubmission,
   saveBuilder,
 } from './course-builder-actions.js';
+import { loadRunPanel } from './course-build-gate.js';
 import './course-builder.css';
 
 export default class CourseBuilderManager {
@@ -53,6 +54,7 @@ export default class CourseBuilderManager {
     this._selectedId = null;
     this._row = null;
     this._mode = 'view';
+    this._tab = 'submission';
     this._loadedTitle = '';
     this._loadedAnnotation = '';
     this._sanitize = sanitizeHtml;
@@ -125,6 +127,10 @@ export default class CourseBuilderManager {
                 <fa fa-lightbulb></fa>
                 <span>Submission</span>
               </button>
+              <button type="button" class="lithium-toolbar-tab" data-tab="run" data-collapsible-text>
+                <fa fa-gears></fa>
+                <span>Run</span>
+              </button>
               <div class="lithium-toolbar-placeholder"></div>
             </div>
             <div class="builder-title-bar">
@@ -147,6 +153,7 @@ export default class CourseBuilderManager {
                   </div>
                 </div>
               </div>
+              <div class="builder-tab-pane" id="builder-tab-run"></div>
             </div>
           </div>
         </div>
@@ -165,6 +172,8 @@ export default class CourseBuilderManager {
       flag: this.container.querySelector('#builder-flag'),
       annotation: this.container.querySelector('#builder-annotation'),
       form: this.container.querySelector('.builder-form'),
+      runPane: this.container.querySelector('#builder-tab-run'),
+      tabButtons: Array.from(this.container.querySelectorAll('#builder-toolbar [data-tab]')),
     };
   }
 
@@ -186,6 +195,23 @@ export default class CourseBuilderManager {
     this.elements.annotation?.addEventListener('input', () => this._syncDirty());
     this.elements.form?.addEventListener('input', () => this._syncDirty());
     this.elements.stage?.addEventListener('change', () => onStageChange(this));
+    for (const btn of this.elements.tabButtons || []) {
+      btn.addEventListener('click', () => this._showTab(btn.dataset.tab));
+    }
+  }
+
+  /**
+   * @param {string} tab - 'submission' or 'run'
+   */
+  _showTab(tab) {
+    this._tab = tab === 'run' ? 'run' : 'submission';
+    for (const btn of this.elements.tabButtons || []) {
+      btn.classList.toggle('active', btn.dataset.tab === this._tab);
+    }
+    for (const pane of this.container.querySelectorAll('.builder-tab-pane')) {
+      pane.classList.toggle('active', pane.id === `builder-tab-${this._tab}`);
+    }
+    if (this._tab === 'run') loadRunPanel(this);
   }
 
   _wireFooter() {
@@ -324,6 +350,7 @@ export default class CourseBuilderManager {
     paintBuilderChrome(this);
     this._dirty = false;
     this._syncDirty();
+    if (this._tab === 'run') loadRunPanel(this);
     if (hasRow) {
       const cells = suggestionListCells(data);
       log(Subsystems.MANAGER, Status.INFO,
