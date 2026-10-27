@@ -135,7 +135,11 @@ Approve on run 2 → `research`, ledger rows named after each state,
 actor 9001. Both runs restored to `intake` by SQL; the UI has no path
 back to `intake` until CB-9. Abandon deferred; Accept not clicked.
 
-## Phase 22 — Outline, Inspect, Publish (in progress)
+## Phase 22 — Outline, Inspect, Publish (complete 2026-10-27)
+
+4128–4131 applied (APPLY 4131). Inspect Pass and Publish validated;
+Inspect Fail manual click deferred. Next Courses file **4132**, next
+ref **4527**.
 
 The Run tab adds an outline section (`course-build-outline.js`):
 latest `outline` artifact rendered from JSON with text nodes only,
@@ -177,7 +181,7 @@ UPDATE course_build_runs SET state = 'intake' WHERE run_id IN (1, 2);
 DELETE FROM course_build_artifacts WHERE body LIKE '{"fixture":"p22"%';
 ```
 
-### Phase 22a — Stage picker override (4526)
+### Phase 22a — Stage picker override (4526, complete)
 
 The first-tab Stage picker writes `course_build_runs.state`, the same
 column the Run tab gates move. Normal moves stay on 4520 (Intake) and
@@ -189,7 +193,8 @@ new state) and the guarded UPDATE. 0 rows → `wrong_state` toast,
 refresh. `suggested` clears `receipt_mail`, so the next receipt pass
 sends again. Automatic targets (`outline`, `research`, `build`,
 `checklist`, `publishing`, `announcing`) get a red warning in the
-confirm.
+confirm. The picker labels append ` (Auto)` for `AUTOMATIC_STATES`
+(client-only; confirm copy keeps plain names). Applied 2026-10-27.
 
 ```sql
 -- After an override: newest ledger rows for a suggestion
