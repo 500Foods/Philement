@@ -57,7 +57,7 @@ describe('TerminalManager', () => {
   describe('terminalUrl', () => {
     it('should build URL from server.url + server.terminal_path', async () => {
       getConfigValue.mockImplementation((path) => {
-        if (path === 'server.url') return 'https://lithium.philement.com';
+        if (path === 'server.url') return 'https://lithium.500courses.com';
         if (path === 'server.terminal_path') return '/terminal';
         return null;
       });
@@ -65,12 +65,12 @@ describe('TerminalManager', () => {
       const TerminalManager = await getTerminalManager();
       const terminal = new TerminalManager();
 
-      expect(terminal.terminalUrl).toBe('https://lithium.philement.com/terminal');
+      expect(terminal.terminalUrl).toBe('https://lithium.500courses.com/terminal');
     });
 
     it('should default terminal_path to /terminal when config absent', async () => {
       getConfigValue.mockImplementation((path, defaultValue) => {
-        if (path === 'server.url') return 'https://lithium.philement.com';
+        if (path === 'server.url') return 'https://lithium.500courses.com';
         if (path === 'server.terminal_path') return defaultValue;
         return null;
       });
@@ -78,12 +78,12 @@ describe('TerminalManager', () => {
       const TerminalManager = await getTerminalManager();
       const terminal = new TerminalManager();
 
-      expect(terminal.terminalUrl).toBe('https://lithium.philement.com/terminal');
+      expect(terminal.terminalUrl).toBe('https://lithium.500courses.com/terminal');
     });
 
     it('should strip trailing slash from server.url', async () => {
       getConfigValue.mockImplementation((path) => {
-        if (path === 'server.url') return 'https://lithium.philement.com/';
+        if (path === 'server.url') return 'https://lithium.500courses.com/';
         if (path === 'server.terminal_path') return '/terminal';
         return null;
       });
@@ -91,12 +91,12 @@ describe('TerminalManager', () => {
       const TerminalManager = await getTerminalManager();
       const terminal = new TerminalManager();
 
-      expect(terminal.terminalUrl).toBe('https://lithium.philement.com/terminal');
+      expect(terminal.terminalUrl).toBe('https://lithium.500courses.com/terminal');
     });
 
     it('should add leading slash to terminal_path if missing', async () => {
       getConfigValue.mockImplementation((path) => {
-        if (path === 'server.url') return 'https://lithium.philement.com';
+        if (path === 'server.url') return 'https://lithium.500courses.com';
         if (path === 'server.terminal_path') return 'terminal';
         return null;
       });
@@ -104,7 +104,7 @@ describe('TerminalManager', () => {
       const TerminalManager = await getTerminalManager();
       const terminal = new TerminalManager();
 
-      expect(terminal.terminalUrl).toBe('https://lithium.philement.com/terminal');
+      expect(terminal.terminalUrl).toBe('https://lithium.500courses.com/terminal');
     });
 
     it('should return path-only when server.url is absent (warn)', async () => {
@@ -122,7 +122,7 @@ describe('TerminalManager', () => {
 
     it('should never return https://www.philement.com', async () => {
       getConfigValue.mockImplementation((path) => {
-        if (path === 'server.url') return 'https://lithium.philement.com';
+        if (path === 'server.url') return 'https://lithium.500courses.com';
         if (path === 'server.terminal_path') return '/terminal';
         return null;
       });
@@ -150,14 +150,14 @@ describe('TerminalManager', () => {
    describe('_getAllowedOrigin', () => {
      it('should derive origin from server.url', async () => {
        getConfigValue.mockImplementation((path) => {
-         if (path === 'server.url') return 'https://lithium.philement.com';
+         if (path === 'server.url') return 'https://lithium.500courses.com';
          return null;
        });
 
        const TerminalManager = await getTerminalManager();
        const terminal = new TerminalManager();
 
-       expect(terminal._getAllowedOrigin()).toBe('https://lithium.philement.com');
+       expect(terminal._getAllowedOrigin()).toBe('https://lithium.500courses.com');
      });
 
      it('should derive origin with port from server.url', async () => {

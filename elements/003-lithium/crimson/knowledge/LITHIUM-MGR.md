@@ -630,7 +630,7 @@ numeric 5 (collides with Crimson tours).
 | 32 | Terminal | `terminal/` | Menu 32. Utility key `terminal` **without** numeric 5. |
 | 33 | Scripting | `scripting/` | [LITHIUM-MGR-SCRIPT.md](LITHIUM-MGR-SCRIPT.md). Lookup 042 key 33 is migration 1378 |
 | **34** | **Course Manager** | `course-manager/` | **First deploy.** [LITHIUM-MGR-COURSE.md](LITHIUM-MGR-COURSE.md). Staff shell. QueryRef **155**. `cleanup()`. |
-| **35** | **Course Builder** | `course-builder/` | Placeholder (Phase 0a). `teardown()`. Band E is the real UI. |
+| **35** | **Course Builder** | `course-builder/` | [LITHIUM-MGR-COURSEBUILDER.md](LITHIUM-MGR-COURSEBUILDER.md). Band E (Phases 19–23). Staff gate QueryRef **155**, list **4515**, override **4526**. `cleanup()`. |
 
 ---
 

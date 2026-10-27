@@ -3,7 +3,7 @@ import { resolve } from 'path';
 
 export default defineConfig(({ mode }) => {
   // Environment-driven paths — no hardcoded locations
-  const lithiumRoot = process.env.LITHIUM_ROOT || resolve(__dirname);
+  const lithiumRoot = process.env.LITHIUM_ROOT || import.meta.dirname;
   const deployDir = process.env.LITHIUM_DEPLOY;
   const isDeploy = mode === 'deploy' && deployDir;
 

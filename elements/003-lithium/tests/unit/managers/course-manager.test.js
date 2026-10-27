@@ -487,9 +487,9 @@ describe('CourseManager shell', () => {
     expect(preview.getAttribute('src')).toBe('https://cdn.example/a.png');
     const previewRule = courseCss.match(/\.course-image-preview\s*\{([^}]*)\}/);
     expect(previewRule).not.toBeNull();
-    expect(previewRule[1]).toMatch(/width:\s*524px/);
-    expect(previewRule[1]).toMatch(/height:\s*292px/);
-    expect(previewRule[1]).toMatch(/object-fit:\s*fill/);
+    expect(previewRule[1]).toMatch(/width:\s*393px/);
+    expect(previewRule[1]).toMatch(/height:\s*222px/);
+    expect(previewRule[1]).toMatch(/object-fit:\s*cover/);
     expect(previewRule[1]).toMatch(/margin-top:\s*var\(--space-5\)/);
     expect(previewRule[1]).toMatch(/border-radius:\s*var\(--border-radius-lg\)/);
     container.querySelector('#course-image').value = '/media/b.png';

@@ -3,11 +3,12 @@
  *
  * Auth Integration Tests
  *
- * These tests run against a real Hydrogen server. They require:
- * - HYDROGEN_SERVER_URL (default: https://lithium.philement.com)
- * - HYDROGEN_DEMO_USER_NAME
- * - HYDROGEN_DEMO_USER_PASS
- * - HYDROGEN_DEMO_API_KEY
+ * These tests run against a real Hydrogen server hosting the Lithium
+ * database (500 Courses). They require:
+ * - HYDROGEN_SERVER_URL (default: https://lithium.500courses.com)
+ * - DEV_500C_USER / DEV_500C_PASS (500 Courses test account; not
+ *   HYDROGEN_DEMO_*, which belongs to Hydrogen's own demo database)
+ * - HYDROGEN_DEMO_API_KEY (Hydrogen install API key)
  *
  * Tests are skipped (it.skip / skip()) if the server or credentials
  * are not available. They must not pass silently.
@@ -17,10 +18,11 @@ import { describe, it, expect, beforeAll, beforeEach, afterEach } from 'vitest';
 import { retrieveJWT, storeJWT, clearJWT, getClaims } from '../../src/core/jwt.js';
 
 // Test configuration from environment
-const SERVER_URL = process.env.HYDROGEN_SERVER_URL || 'https://lithium.philement.com';
+const SERVER_URL = process.env.HYDROGEN_SERVER_URL || 'https://lithium.500courses.com';
 const API_PREFIX = '/api';
-const LOGIN_ID = process.env.HYDROGEN_DEMO_USER_NAME;
-const PASSWORD = process.env.HYDROGEN_DEMO_USER_PASS;
+// 500 Courses Lithium account — do not use HYDROGEN_DEMO_* (Hydrogen demo DB).
+const LOGIN_ID = process.env.DEV_500C_USER;
+const PASSWORD = process.env.DEV_500C_PASS;
 const API_KEY = process.env.HYDROGEN_DEMO_API_KEY;
 const DATABASE = 'Lithium';
 
@@ -146,7 +148,7 @@ describe('Auth Integration', () => {
   // Synchronous check for credentials
   if (!credentialsAvailable) {
     console.warn(`\n⚠️  Missing credentials for integration tests`);
-    console.warn('   Set HYDROGEN_DEMO_USER_NAME, HYDROGEN_DEMO_USER_PASS, HYDROGEN_DEMO_API_KEY');
+    console.warn('   Set DEV_500C_USER, DEV_500C_PASS, HYDROGEN_DEMO_API_KEY');
   }
 
   beforeAll(async () => {

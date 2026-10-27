@@ -4,18 +4,20 @@ These tests run against a real Hydrogen server to verify end-to-end functionalit
 
 ## Requirements
 
-- Hydrogen server running and accessible
-- Database "Lithium" configured in Hydrogen
-- Valid demo credentials in environment variables
+- Hydrogen server running and accessible (`lithium.500courses.com` by default)
+- Database `Lithium` configured on that server
+- 500 Courses test credentials in environment variables (not Hydrogen's demo account)
 
 ## Environment Variables
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `HYDROGEN_SERVER_URL` | Hydrogen server base URL | `https://lithium.philement.com` |
-| `HYDROGEN_DEMO_USER_NAME` | Demo username for login tests | - |
-| `HYDROGEN_DEMO_USER_PASS` | Demo password for login tests | - |
-| `HYDROGEN_DEMO_API_KEY` | Demo API key for login tests | - |
+| `HYDROGEN_SERVER_URL` | Hydrogen server base URL | `https://lithium.500courses.com` |
+| `DEV_500C_USER` | 500 Courses test username (`testuser`) | - |
+| `DEV_500C_PASS` | 500 Courses test password | - |
+| `HYDROGEN_DEMO_API_KEY` | Hydrogen install API key | - |
+
+`HYDROGEN_DEMO_USER_NAME` / `HYDROGEN_DEMO_USER_PASS` are for Hydrogen's own demo database — leave them alone for Lithium. On angrin they live in `~/.festival.env` alongside `DEV_500C_*`. Password stays out of the repo.
 
 ## Running Tests
 
@@ -30,13 +32,9 @@ npm test -- tests/integration/
 
 # Run against a local Hydrogen instead of the live host
 HYDROGEN_SERVER_URL=http://localhost:8080 npm test -- tests/integration/
-
-# Run with full credentials (defaults match the documented demo user)
-HYDROGEN_DEMO_USER_NAME=testuser \
-HYDROGEN_DEMO_USER_PASS=usertest \
-HYDROGEN_DEMO_API_KEY=EveryGoodBoyDeservesFudge \
-npm test -- tests/integration/
 ```
+
+With `~/.festival.env` sourced (zshrc does this on angrin), plain `npm test` should pick up `DEV_500C_*` and the API key automatically.
 
 ### With the test script
 
@@ -61,7 +59,7 @@ Tests the authentication endpoints:
 
 If the Hydrogen server is not available or credentials are missing, tests are skipped (`it.skip` / `skip()`), not counted as passed.
 
-The live host certificate expired 2026-08-02. Integration tests retry once with certificate verification disabled and print a warning; renew the Let's Encrypt cert for `lithium.philement.com`.
+The default live host is `lithium.500courses.com` (override with `HYDROGEN_SERVER_URL`).
 
 ## Notes
 

@@ -1,14 +1,70 @@
 # Course Builder
 
-Operator surface for the 500 Courses build pipeline. Plan:
-[`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md)
-Phases 19–23. Pipeline:
+Operator surface for the 500 Courses build pipeline. Menu ID **35**.
+Plan: [`/elements/003-lithium/CATCHUP.md`](/elements/003-lithium/CATCHUP.md)
+Phases 19–23 (Band E). Pipeline:
 [`/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md`](/mnt/extra/Projects/500-Courses-Reception/COURSEBUILDER.md).
-Phase 23 finishes this page. Until then it is the QueryRef map.
 
-Code: `src/managers/course-builder/`. Table path
-`courses/course-builder` is Lookup 059 key **15**. Key **16** is free
-(reserved for the Phase 21 run queue if it needs a Lookup row).
+**Status:** Phase 23 (2026-10-27) finishes this page. Band E is
+closable as a Lithium feature; COURSEBUILDER CB-34 E2E comes later.
+
+---
+
+## Overview
+
+| Property | Value |
+|----------|-------|
+| **ID** | 35 |
+| **Location** | `src/managers/course-builder/` |
+| **Type** | Menu manager |
+| **Cleanup** | `cleanup()` |
+| **Authz** | JWT `roles` resolved through QueryRef **155** (staff gate, shared with Course Manager) |
+| **Table path** | `courses/course-builder` = Lookup 059 key **15** (key 16 free) |
+| **List** | QueryRef **4515** (suggestions = the queue) |
+| **Stage moves** | 4520 (Intake), 4522 (Suggested), **4526** (staff override, logged) |
+| **Run tab reads** | 4523 (runs by state), 4524 (run + artifacts), 4525 (events) |
+| **Run tab scripts** | `Build.Accept` / `Decline` / `Approve` / `Abandon` / `InspectPass` / `InspectFail` / `Publish` (4124–4130 over `Build.Gate` 4123) |
+| **Next numbers** | Courses file **4132**, QueryRef **4527**, Acuranzo **1402** |
+
+## File map
+
+| File | Role |
+|------|------|
+| `course-builder.js` | Manager class: shell, staff gate, table, tabs |
+| `course-builder-actions.js` | Toolbar actions: add/edit/duplicate/delete, flag, save, Stage picker change |
+| `course-suggestions.js` | Suggestion QueryRefs, fields, `stageOptions` / `stageMove` / override params, `AUTOMATIC_STATES` |
+| `course-build-runs.js` | `RUN_STATES` (P20a), run QueryRefs, `RUN_TABLE_DEF`, list/run-id params |
+| `course-build-gate.js` | Run tab: `GATE_ACTIONS`, `gateActionsFor`, Publish enable/preview, script payloads, panel paint |
+| `course-build-outline.js` | Outline/material render (text nodes only), Open LMS link |
+| `course-builder.css` | Styles |
+
+All files ≤ 1000 lines (Phase 23 check: largest 682).
+
+Tests: `tests/unit/managers/course-builder.test.js`,
+`course-build-gate.test.js`, `course-build-outline.test.js`,
+`course-build-runs.test.js`, `course-builder-phase23.test.js`
+(state→button matrix, every gate payload, STATE filter, override params).
+
+## Operator flow
+
+1. **Submission tab** — pick a suggestion from the left list (4515).
+   Edit the working title (4514), annotate, flag (4521).
+2. **Stage picker** — normal moves (Suggested ↔ Intake on 4520/4522),
+   then the **Override (staff)** group with every P20a state (4526,
+   one ledger row). Worker-driven stages show ` (Auto)` and get a red
+   confirm warning.
+3. **Run tab** — gate buttons for the run's state: Accept/Decline at
+   `submission`, Approve/Abandon at `approve`, Inspect Pass/Fail at
+   `inspect`, Publish at `draft` (disabled preview at build/inspect/checklist).
+   Stale screens get `wrong_state`.
+
+## COURSEBUILDER links
+
+- **CB-9** (Human Submission queue / Intake → Submission worker): not
+  built. Until then fixture run states are set by SQL (below) or the
+  4526 override. See COURSEBUILDER.md CB-9.
+- **CB-33** (Operator dashboard polish): later UI work on this manager.
+  See COURSEBUILDER.md CB-33.
 
 ## QueryRefs
 
@@ -24,10 +80,10 @@ Code: `src/managers/course-builder/`. Table path
 | 4520 | 4107 | Staff: Move to Intake | INTEGER SUGGESTION_ID, USERID | 19 | yes |
 | 4521 | 4108 | Staff: Toggle Flag | INTEGER SUGGESTION_ID, USERID | 19 | yes |
 | 4522 | 4115 | Staff: Move to Suggested | INTEGER SUGGESTION_ID, USERID | 19 | yes |
-| **4523** | 4120 | Staff: List Runs by State | STRING STATE (`''` = all) | 20 | no |
-| **4524** | 4121 | Staff: Get Run with Artifacts | INTEGER RUN_ID | 20 | no |
-| **4525** | 4122 | Staff: List Run Events | INTEGER RUN_ID | 20 | no |
-| **4526** | 4131 | Staff: Set Run State (logged override, P22a) | INTEGER SUGGESTION_ID, USERID; STRING FROM_STATE, TO_STATE | 22 | no |
+| **4523** | 4120 | Staff: List Runs by State | STRING STATE (`''` = all) | 20 | yes |
+| **4524** | 4121 | Staff: Get Run with Artifacts | INTEGER RUN_ID | 20 | yes |
+| **4525** | 4122 | Staff: List Run Events | INTEGER RUN_ID | 20 | yes |
+| **4526** | 4131 | Staff: Set Run State (logged override, P22a) | INTEGER SUGGESTION_ID, USERID; STRING FROM_STATE, TO_STATE | 22 | yes |
 
 Next caller ref **4527**. Next Courses file **4132** (4123–4127 Phase 21, 4128–4131 Phase 22).
 
