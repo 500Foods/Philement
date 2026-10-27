@@ -19,6 +19,7 @@ function openDialog({
   confirmLabel,
   cancelLabel,
   danger = false,
+  warning = '',
 }) {
   closeActive();
 
@@ -62,6 +63,14 @@ function openDialog({
 
     actions.append(cancelBtn, confirmBtn);
     dialog.append(titleEl, messageEl);
+    if (warning) {
+      const warningEl = document.createElement('p');
+      warningEl.className = 'lithium-confirm-message lithium-confirm-warning';
+      warningEl.style.color = 'var(--danger-color, #dc3545)';
+      warningEl.style.fontWeight = '600';
+      warningEl.textContent = warning;
+      dialog.append(warningEl);
+    }
     if (input) dialog.append(input);
     dialog.append(actions);
     backdrop.append(dialog);
@@ -133,6 +142,7 @@ function openDialog({
  * @param {string} [options.confirmLabel]
  * @param {string} [options.cancelLabel]
  * @param {boolean} [options.danger]
+ * @param {string} [options.warning] Optional red line under the message
  * @returns {Promise<boolean>}
  */
 export function confirmDialog(options = {}) {

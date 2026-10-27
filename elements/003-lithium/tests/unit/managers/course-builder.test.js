@@ -125,7 +125,13 @@ import CourseBuilderManager from '../../../src/managers/course-builder/course-bu
 import {
   FLAG_QUERY_REF,
   INTAKE_QUERY_REF,
+  OVERRIDE_QUERY_REF,
   SUGGESTED_QUERY_REF,
+  AUTOMATIC_STATES,
+  buildOverrideParams,
+  overrideMissed,
+  stateLabel,
+  storedStage,
   SUGGESTION_DUPLICATE_QUERY_REF,
   SUGGESTION_INSERT_QUERY_REF,
   SUGGESTION_LIST_QUERY_REF,
@@ -143,6 +149,7 @@ import {
   submissionValues,
 } from '../../../src/managers/course-builder/course-suggestions.js';
 import { sanitizeHtml } from '../../../src/core/utils.js';
+import { RUN_STATES } from '../../../src/managers/course-builder/course-build-runs.js';
 
 const FIXTURE = {
   suggestion_id: 7,
@@ -344,15 +351,17 @@ describe('suggestion display', () => {
   });
 
   it('labels receipt, stage, and a copied name', () => {
-    expect(stageOptions('suggested').options.map((option) => option.label)).toEqual(['Suggested', 'Intake']);
-    expect(stageOptions('received').options.map((option) => option.value)).toEqual(['suggested', 'received', 'intake']);
+    expect(stageOptions('suggested').groups[0].options.map((option) => option.label)).toEqual(['Suggested', 'Intake']);
+    expect(stageOptions('received').groups[0].options.map((option) => option.value)).toEqual(['suggested', 'received', 'intake']);
     expect(stageOptions('received').canMove).toBe(true);
     expect(stageOptions('intake').canMove).toBe(true);
-    expect(stageOptions('intake').options.map((option) => option.value)).toEqual(['suggested', 'intake']);
+    expect(stageOptions('intake').groups[0].options.map((option) => option.value)).toEqual(['suggested', 'intake']);
     expect(stageMove('received', 'suggested').queryRef).toBe(SUGGESTED_QUERY_REF);
     expect(stageMove('intake', 'suggested').message).toContain('sent again');
     expect(stageMove('suggested', 'intake').queryRef).toBe(INTAKE_QUERY_REF);
-    expect(stageMove('suggested', 'received')).toBeNull();
+    expect(stageMove('suggested', 'received').queryRef).toBe(OVERRIDE_QUERY_REF);
+    expect(stageMove('suggested', 'suggested')).toBeNull();
+    expect(stageMove('intake', 'bogus')).toBeNull();
     expect(receiptLabel('sent', true)).toBe('Receipt email: sent');
     expect(receiptLabel('failed', true)).toBe('Receipt email: failed');
     expect(receiptLabel(null, true)).toBe('Receipt email: not sent');
@@ -410,7 +419,11 @@ describe('CourseBuilder shell', () => {
     await manager.init();
     expect(container.textContent).not.toMatch(/lua/i);
     expect(container.textContent).not.toMatch(/phase/i);
-    expect(container.textContent).not.toMatch(/Accept|Decline|Junk|Canvas/);
+    // The stage picker's Override (staff) group names every P20a state;
+    // no gate buttons or other copy outside it.
+    const outsidePicker = container.cloneNode(true);
+    outsidePicker.querySelector('#builder-stage')?.remove();
+    expect(outsidePicker.textContent).not.toMatch(/Accept|Decline|Junk|Canvas/);
     expect(container.querySelector('#builder-table')).not.toBeNull();
     expect(container.querySelector('#builder-navigator')).not.toBeNull();
     const rightKids = [...container.querySelector('.builder-right-panel').children];
@@ -494,7 +507,8 @@ describe('CourseBuilder shell', () => {
     await manager.init();
     await tableBag.last.options.onRowSelected({ getData: () => FIXTURE });
     const stage = container.querySelector('#builder-stage');
-    expect([...stage.options].map((option) => option.textContent)).toEqual(['Suggested', 'Intake']);
+    expect([...stage.children].filter((node) => node.tagName === 'OPTION').map((option) => option.textContent)).toEqual(['Suggested', 'Intake']);
+    expect(stage.querySelector('optgroup').label).toBe('Override (staff)');
     expect(stage.disabled).toBe(false);
     expect(container.querySelector('#builder-receipt').textContent).toBe('Receipt email: not sent');
 
@@ -517,7 +531,7 @@ describe('CourseBuilder shell', () => {
     await tableBag.last.options.onRowSelected({
       getData: () => ({ ...FIXTURE, draft_state: 'received', receipt_mail: 'failed', flagged: 1 }),
     });
-    expect([...container.querySelector('#builder-stage').options].map((option) => option.value))
+    expect([...container.querySelector('#builder-stage').children].filter((node) => node.tagName === 'OPTION').map((option) => option.value))
       .toEqual(['suggested', 'received', 'intake']);
     const receivedStage = container.querySelector('#builder-stage');
     receivedStage.value = 'suggested';
@@ -622,3 +636,69 @@ describe('CourseBuilder shell', () => {
     manager.cleanup();
   });
 });
+
+describe('Course Builder staff override (P22a, 4526)', () => {
+  it('lists normal moves first, then every other P20a state under Override (staff)', () => {
+    const model = stageOptions('intake');
+    expect(model.groups[1].label).toBe('Override (staff)');
+    expect(model.groups[1].options.map((o) => o.value))
+      .toEqual(RUN_STATES.filter((s) => s !== 'intake').map((s) => `override:${s}`));
+    expect(model.options.length).toBe(model.groups[0].options.length + RUN_STATES.length - 1);
+  });
+
+  it('shows non-early states as themselves, not Suggested', () => {
+    expect(storedStage({ draft_state: 'research' })).toBe('research');
+    expect(storedStage({ draft_state: 'declined' })).toBe('declined');
+    expect(storedStage({ draft_state: null, state_label: 'publishing' })).toBe('publishing');
+    expect(storedStage({ draft_state: null, state_label: 'Suggested' })).toBe('suggested');
+    expect(storedStage({ draft_state: 'nonsense' })).toBe('suggested');
+    expect(stateLabel('research')).toBe('Research');
+    const model = stageOptions('research');
+    expect(model.current).toBe('research');
+    expect(model.groups[0].options.map((o) => o.value)).toEqual(['research']);
+    expect(model.canMove).toBe(true);
+  });
+
+  it('keeps normal refs for normal moves and maps everything else to 4526', () => {
+    expect(stageMove('intake', 'suggested').queryRef).toBe(SUGGESTED_QUERY_REF);
+    expect(stageMove('suggested', 'intake').queryRef).toBe(INTAKE_QUERY_REF);
+    const forced = stageMove('intake', 'override:suggested');
+    expect(forced.queryRef).toBe(OVERRIDE_QUERY_REF);
+    expect(forced.override).toBe(true);
+    const back = stageMove('declined', 'override:intake');
+    expect(back).toMatchObject({ queryRef: OVERRIDE_QUERY_REF, from: 'declined', to: 'intake', danger: false });
+    expect(stageMove('research', 'override:research')).toBeNull();
+  });
+
+  it('confirm copy: mail note for suggested, red warning for automatic stages', () => {
+    const toSuggested = stageMove('research', 'override:suggested');
+    expect(toSuggested.message).toContain('email is sent again');
+    expect(toSuggested.message).toContain('ledger');
+    expect(toSuggested.warning).toBe('');
+    AUTOMATIC_STATES.forEach((state) => {
+      const move = stageMove('intake', `override:${state}`);
+      expect(move.danger).toBe(true);
+      expect(move.warning).toContain('automatic stage');
+    });
+    const research = stageMove('intake', 'override:research');
+    expect(research.title).toBe('Override to Research');
+    expect(research.warning).toContain('Research');
+    expect(stageMove('intake', 'override:submission').danger).toBe(false);
+  });
+
+  it('builds 4526 params and detects a stale move', () => {
+    expect(buildOverrideParams(7, 'intake', 'research', 9001)).toEqual({
+      ok: true,
+      params: {
+        INTEGER: { SUGGESTION_ID: 7, USERID: 9001 },
+        STRING: { FROM_STATE: 'intake', TO_STATE: 'research' },
+      },
+    });
+    expect(buildOverrideParams(7, 'intake', 'bogus', 9001).ok).toBe(false);
+    expect(buildOverrideParams(0, 'intake', 'research', 9001).ok).toBe(false);
+    expect(overrideMissed({ results: [{ affected_rows: 0 }, { affected_rows: 0 }] })).toBe(true);
+    expect(overrideMissed({ results: [{ affected_rows: 1 }, { affected_rows: 1 }] })).toBe(false);
+    expect(overrideMissed({ success: true })).toBe(false);
+  });
+});
+

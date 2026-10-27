@@ -16,7 +16,7 @@ describe('course build gate (Phase 21)', () => {
   it('shows Accept/Decline only at submission and Approve/Abandon only at approve', () => {
     expect(gateActionsFor('submission').map((a) => a.script)).toEqual(['Build.Accept', 'Build.Decline']);
     expect(gateActionsFor('approve').map((a) => a.script)).toEqual(['Build.Approve', 'Build.Abandon']);
-    for (const state of ['intake', 'accepted', 'outline', 'research', 'declined', '', null]) {
+    for (const state of ['intake', 'accepted', 'outline', 'research', 'declined', 'checklist', 'publishing', '', null]) {
       expect(gateActionsFor(state)).toEqual([]);
     }
   });
@@ -36,7 +36,10 @@ describe('course build gate (Phase 21)', () => {
   });
 
   it('script transitions match the migrations', () => {
-    const files = { accept: 4124, decline: 4125, approve: 4126, abandon: 4127 };
+    const files = {
+      accept: 4124, decline: 4125, approve: 4126, abandon: 4127,
+      inspectPass: 4128, inspectFail: 4129, publish: 4130,
+    };
     for (const action of Object.values(GATE_ACTIONS).flat()) {
       const src = mig(files[action.key]);
       const name = GATE_SCRIPTS[action.key].split('.')[1];

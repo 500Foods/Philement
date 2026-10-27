@@ -190,3 +190,10 @@
   word-break: break-word;
   opacity: 0.8;
 }
+
+/* Phase 22 — outline render (text nodes only) */
+.builder-outline { font-size: 0.9em; max-height: 320px; overflow: auto; }
+.builder-outline-list { margin: 0; padding-left: 1.2em; }
+.builder-outline-key { margin-right: 0.25em; }
+.builder-outline-raw { white-space: pre-wrap; word-break: break-word; margin: 0; }
+.builder-run-lms { margin: 0.25em 0; display: inline-block; }

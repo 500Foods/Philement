@@ -27,8 +27,9 @@ Code: `src/managers/course-builder/`. Table path
 | **4523** | 4120 | Staff: List Runs by State | STRING STATE (`''` = all) | 20 | no |
 | **4524** | 4121 | Staff: Get Run with Artifacts | INTEGER RUN_ID | 20 | no |
 | **4525** | 4122 | Staff: List Run Events | INTEGER RUN_ID | 20 | no |
+| **4526** | 4131 | Staff: Set Run State (logged override, P22a) | INTEGER SUGGESTION_ID, USERID; STRING FROM_STATE, TO_STATE | 22 | no |
 
-Next caller ref **4526**. Next Courses file **4123**.
+Next caller ref **4527**. Next Courses file **4132** (4123–4127 Phase 21, 4128–4131 Phase 22).
 
 ## Tables (CB-S + CB-2)
 
@@ -133,3 +134,69 @@ Applied 4123–4127 (APPLY 4127). Decline on run 1 → `declined`,
 Approve on run 2 → `research`, ledger rows named after each state,
 actor 9001. Both runs restored to `intake` by SQL; the UI has no path
 back to `intake` until CB-9. Abandon deferred; Accept not clicked.
+
+## Phase 22 — Outline, Inspect, Publish (in progress)
+
+The Run tab adds an outline section (`course-build-outline.js`):
+latest `outline` artifact rendered from JSON with text nodes only,
+materials (latest per `module_index`), and the outline version list.
+**Open LMS** links `CANVAS_BASE_URL/courses/<canvas_course_id>` when
+the run has one. No token.
+
+| State | Buttons | Script | Moves to |
+|-------|---------|--------|----------|
+| `inspect` | Inspect Pass | `Build.InspectPass` (4128) | `checklist` |
+| `inspect` | Inspect Fail (confirm) | `Build.InspectFail` (4129) | `build` |
+| `draft` | Publish (confirm) | `Build.Publish` (4130) | `publishing` |
+
+Publish shows disabled at `build`, `inspect`, `checklist`. All three
+are stubs over `Build.Gate`: state + ledger only. No Canvas, catalog,
+or Stripe call until CB-28.
+
+### Phase 22 SQL fixture (after 4128–4130 apply)
+
+```sql
+SELECT run_id, state, canvas_course_id FROM course_build_runs WHERE run_id IN (1, 2);
+INSERT INTO course_build_artifacts
+  (artifact_id, run_id, kind, module_index, body, model_id,
+   created_id, created_at, updated_id, updated_at)
+VALUES ((SELECT COALESCE(MAX(artifact_id),0)+1 FROM course_build_artifacts),
+        1, 'outline', NULL,
+        '{"fixture":"p22","title":"<img src=x onerror=alert(1)>","modules":["<script>alert(2)</script>","Intro"]}',
+        'fixture', 0, now(), 0, now());
+UPDATE course_build_runs SET state = 'inspect' WHERE run_id = 1; -- Inspect Pass/Fail
+UPDATE course_build_runs SET state = 'draft'   WHERE run_id = 2; -- Publish
+-- Run tab: run 1 shows the outline as text (no alert), Inspect Pass/Fail,
+-- disabled Publish. Click Inspect Pass (-> checklist). Run 2: click Publish (-> publishing).
+SELECT run_id, state FROM course_build_runs WHERE run_id IN (1, 2);
+SELECT run_id, action_name, actor_account_id, created_at
+  FROM course_build_actions WHERE run_id IN (1, 2) ORDER BY action_id DESC LIMIT 4;
+-- Optional Fail: UPDATE ... SET state='inspect' WHERE run_id=1; click Inspect Fail (-> build).
+-- restore
+UPDATE course_build_runs SET state = 'intake' WHERE run_id IN (1, 2);
+DELETE FROM course_build_artifacts WHERE body LIKE '{"fixture":"p22"%';
+```
+
+### Phase 22a — Stage picker override (4526)
+
+The first-tab Stage picker writes `course_build_runs.state`, the same
+column the Run tab gates move. Normal moves stay on 4520 (Intake) and
+4522 (Suggested). An "Override (staff)" group lists every P20a state
+and calls **4526** with `FROM_STATE` (what the screen showed) and
+`TO_STATE`. One transaction writes one `course_build_actions` row
+(`action_name` `override`, `prompt` = previous state, `result_ref` =
+new state) and the guarded UPDATE. 0 rows → `wrong_state` toast,
+refresh. `suggested` clears `receipt_mail`, so the next receipt pass
+sends again. Automatic targets (`outline`, `research`, `build`,
+`checklist`, `publishing`, `announcing`) get a red warning in the
+confirm.
+
+```sql
+-- After an override: newest ledger rows for a suggestion
+SELECT a.action_id, a.run_id, a.action_name, a.prompt AS from_state,
+       a.result_ref AS to_state, a.actor_account_id, a.created_at
+FROM course_build_actions a
+JOIN course_build_runs r ON r.run_id = a.run_id
+WHERE r.suggestion_id = :suggestion_id
+ORDER BY a.action_id DESC LIMIT 5;
+```

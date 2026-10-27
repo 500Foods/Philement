@@ -7,13 +7,15 @@
  */
 
 import { log, Subsystems, Status } from '../../core/log.js';
-import { authQuery } from '../../shared/conduit.js';
+import { authQuery, authQueryResponse } from '../../shared/conduit.js';
 import { confirmDialog } from '../../shared/confirm.js';
 import { toast } from '../../shared/toast.js';
 import {
   ANNOTATION_MAX,
   FLAG_QUERY_REF,
   stageMove,
+  buildOverrideParams,
+  overrideMissed,
   SUGGESTION_DELETE_QUERY_REF,
   SUGGESTION_DUPLICATE_QUERY_REF,
   SUGGESTION_INSERT_QUERY_REF,
@@ -272,12 +274,16 @@ export async function onStageChange(manager) {
     title: move.title,
     message: move.message,
     confirmLabel: move.confirmLabel,
+    danger: move.danger,
+    warning: move.warning,
   });
   if (!confirmed) {
     select.value = previous;
     return;
   }
-  const built = buildIdParams(manager._selectedId, builderUserId(manager.app));
+  const built = move.override
+    ? buildOverrideParams(manager._selectedId, move.from, move.to, builderUserId(manager.app))
+    : buildIdParams(manager._selectedId, builderUserId(manager.app));
   if (!built.ok) {
     select.value = previous;
     return;
@@ -290,9 +296,26 @@ export async function onStageChange(manager) {
   }
   const id = manager._selectedId;
   try {
-    await authQuery(api, move.queryRef, built.params);
+    if (move.override) {
+      const response = await authQueryResponse(api, move.queryRef, built.params);
+      if (overrideMissed(response)) {
+        log(Subsystems.MANAGER, Status.WARN,
+          `Course Builder override ${id} ${move.from} -> ${move.to}: wrong_state`);
+        toast.error('Stage was not changed', {
+          description: `wrong_state: the run is no longer ${move.from}. Refreshed.`,
+        });
+        await manager._reload(id);
+        repaintAfterMove(manager);
+        return;
+      }
+      log(Subsystems.MANAGER, Status.INFO,
+        `Course Builder override ${id} ${move.from} -> ${move.to}`);
+    } else {
+      await authQuery(api, move.queryRef, built.params);
+    }
     toast.success(move.success);
     await manager._reload(id);
+    if (move.override) repaintAfterMove(manager);
   } catch (error) {
     select.value = previous;
     toast.error('Stage was not changed', {
@@ -300,6 +323,17 @@ export async function onStageChange(manager) {
       serverError: error.serverError,
     });
   }
+}
+
+/**
+ * Re-apply the reselected row so the picker and the Run tab show the
+ * new state (the reselect itself is silent).
+ * @param {CourseBuilderManager} manager
+ */
+function repaintAfterMove(manager) {
+  const table = typeof manager._table === 'function' ? manager._table() : null;
+  const rows = table && typeof table.getSelectedData === 'function' ? table.getSelectedData() : [];
+  if (rows && rows[0] && typeof manager._applyRow === 'function') manager._applyRow(rows[0]);
 }
 
 /**

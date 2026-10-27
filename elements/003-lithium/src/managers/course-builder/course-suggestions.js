@@ -9,7 +9,11 @@
  * orchestrator submits. This screen does not call it.
  * 4000 stays the public insert. Cap token, site id, and IP are
  * not on this screen.
+ * 4526 is the logged staff override (P22a): any P20a run state,
+ * one 'override' ledger row, guarded on the state the screen saw.
  */
+
+import { RUN_STATES } from './course-build-runs.js';
 
 export const SUGGESTION_LIST_QUERY_REF = 4515;
 export const WORKING_TITLE_QUERY_REF = 4514;
@@ -20,6 +24,7 @@ export const SUGGESTION_DELETE_QUERY_REF = 4519;
 export const INTAKE_QUERY_REF = 4520;
 export const SUGGESTED_QUERY_REF = 4522;
 export const FLAG_QUERY_REF = 4521;
+export const OVERRIDE_QUERY_REF = 4526;
 export const BUILDER_TABLE_PATH = 'courses/course-builder';
 export const BUILDER_TABLE_KEY_IDX = 15;
 export const WORKING_TITLE_MAX = 100;
@@ -85,6 +90,11 @@ export function suggestionRowData(row) {
   return row;
 }
 
+/** Worker-driven P20a states. An override into one gets a red warning. */
+export const AUTOMATIC_STATES = [
+  'outline', 'research', 'build', 'checklist', 'publishing', 'announcing',
+];
+
 /**
  * @param {unknown} value
  * @returns {string}
@@ -93,16 +103,15 @@ export function stateLabel(value) {
   const text = String(value ?? '').trim();
   if (text === '') return 'Suggested';
   const key = text.toLowerCase();
-  if (key === 'suggested') return 'Suggested';
-  if (key === 'received') return 'Received';
-  if (key === 'intake') return 'Intake';
+  if (RUN_STATES.includes(key)) return key.charAt(0).toUpperCase() + key.slice(1);
   return text;
 }
 
 /**
- * Stored gauntlet word. A missing draft is Suggested.
+ * Stored run state. A missing draft is Suggested. Any P20a state is
+ * returned as is, so research or declined no longer shows as Suggested.
  * @param {object|null|undefined} row
- * @returns {'suggested'|'received'|'intake'}
+ * @returns {string}
  */
 export function storedStage(row) {
   const draft = rawCell(row, 'draft_state');
@@ -110,57 +119,158 @@ export function storedStage(row) {
     ? rawCell(row, 'state_label')
     : draft;
   const key = String(source ?? '').trim().toLowerCase();
-  if (key === 'received' || key === 'intake') return key;
+  if (RUN_STATES.includes(key)) return key;
   return 'suggested';
 }
 
 /**
- * Stage control. Suggested and Intake are the manual moves.
- * Received stays in the list only while the row is already there.
+ * Stage control. Normal moves first (Suggested, Intake), then an
+ * "Override (staff)" group with every P20a state (4526, logged).
  * @param {unknown} stage
- * @returns {{ current: string, canMove: boolean, options: Array<{value: string, label: string}> }}
+ * @returns {{ current: string, canMove: boolean, options: Array<{value: string, label: string}>,
+ *   groups: Array<{label: string, options: Array<{value: string, label: string}>}> }}
  */
 export function stageOptions(stage) {
   const key = String(stage ?? '').trim().toLowerCase();
-  const current = key === 'received' || key === 'intake' ? key : 'suggested';
-  const options = [{ value: 'suggested', label: 'Suggested' }];
-  if (current === 'received') options.push({ value: 'received', label: 'Received' });
-  if (current === 'intake') options.push({ value: 'intake', label: 'Intake' });
-  if (current === 'suggested' || current === 'received') {
-    options.push({ value: 'intake', label: 'Intake' });
-  }
-  return { current, canMove: options.length > 1, options };
+  const current = RUN_STATES.includes(key) ? key : 'suggested';
+  const early = ['suggested', 'received', 'intake'];
+  const normalMoves = {
+    suggested: ['suggested', 'intake'],
+    received: ['suggested', 'received', 'intake'],
+    intake: ['suggested', 'intake'],
+  };
+  const normal = (early.includes(current) ? normalMoves[current] : [current])
+    .map((value) => ({ value, label: stateLabel(value) }));
+  const override = RUN_STATES
+    .filter((value) => value !== current)
+    .map((value) => ({ value: `override:${value}`, label: stateLabel(value) }));
+  const groups = [
+    { label: '', options: normal },
+    { label: 'Override (staff)', options: override },
+  ];
+  const options = [...normal, ...override];
+  return { current, canMove: options.length > 1, options, groups };
+}
+
+/**
+ * @param {unknown} value
+ * @returns {{ override: boolean, state: string }}
+ */
+export function parseStageValue(value) {
+  const text = String(value ?? '').trim().toLowerCase();
+  if (text.startsWith('override:')) return { override: true, state: text.slice(9) };
+  return { override: false, state: text };
 }
 
 /**
  * Manual stage change. Suggested clears the receipt mark.
- * Intake leaves that mark alone.
+ * Intake leaves that mark alone. Any other target is a logged staff
+ * override on 4526 (FROM_STATE / TO_STATE).
  * @param {unknown} previous
  * @param {unknown} next
- * @returns {{ queryRef: number, title: string, message: string, confirmLabel: string, success: string } | null}
+ * @returns {{ queryRef: number, override: boolean, from: string, to: string, danger: boolean, warning: string,
+ *   title: string, message: string, confirmLabel: string, success: string } | null}
  */
 export function stageMove(previous, next) {
   const from = String(previous ?? '').trim().toLowerCase();
-  const to = String(next ?? '').trim().toLowerCase();
-  if (to === 'intake' && (from === 'suggested' || from === 'received')) {
+  const parsed = parseStageValue(next);
+  const to = parsed.state;
+  if (!RUN_STATES.includes(to) || to === from) return null;
+  if (!parsed.override && to === 'intake' && (from === 'suggested' || from === 'received')) {
     return {
       queryRef: INTAKE_QUERY_REF,
+      override: false,
+      from,
+      to,
+      danger: false,
+      warning: '',
       title: 'Move to Intake',
       message: 'Move this suggestion to Intake. The receipt email stays as it is.',
       confirmLabel: 'Move to Intake',
       success: 'Moved to Intake',
     };
   }
-  if (to === 'suggested' && (from === 'received' || from === 'intake')) {
+  if (!parsed.override && to === 'suggested' && (from === 'received' || from === 'intake')) {
     return {
       queryRef: SUGGESTED_QUERY_REF,
+      override: false,
+      from,
+      to,
+      danger: false,
+      warning: '',
       title: 'Move to Suggested',
       message: 'Move this suggestion to Suggested. The receipt mark is cleared and the email is sent again.',
       confirmLabel: 'Move to Suggested',
       success: 'Moved to Suggested',
     };
   }
-  return null;
+  const label = stateLabel(to);
+  const automatic = AUTOMATIC_STATES.includes(to);
+  const parts = [
+    `Staff override: set this run from ${stateLabel(from)} to ${label}. One override row is written to the ledger.`,
+  ];
+  if (to === 'suggested') {
+    parts.push('The receipt mark is cleared and the email is sent again.');
+  }
+  return {
+    queryRef: OVERRIDE_QUERY_REF,
+    override: true,
+    from,
+    to,
+    danger: automatic,
+    warning: automatic
+      ? `Warning: ${label} is an automatic stage. Workers may act on this run as soon as it lands there.`
+      : '',
+    title: `Override to ${label}`,
+    message: parts.join(' '),
+    confirmLabel: `Set ${label}`,
+    success: `Run set to ${label}`,
+  };
+}
+
+/**
+ * Params for 4526.
+ * @param {unknown} suggestionId
+ * @param {unknown} from
+ * @param {unknown} to
+ * @param {number} userId
+ */
+export function buildOverrideParams(suggestionId, from, to, userId) {
+  const checked = requireSuggestionId(suggestionId);
+  if (!checked.ok) return checked;
+  const fromKey = String(from ?? '').trim().toLowerCase();
+  const toKey = String(to ?? '').trim().toLowerCase();
+  if (!RUN_STATES.includes(fromKey) || !RUN_STATES.includes(toKey)) {
+    return { ok: false, message: 'Unknown run state.' };
+  }
+  return {
+    ok: true,
+    params: {
+      INTEGER: { SUGGESTION_ID: checked.id, USERID: userId },
+      STRING: { FROM_STATE: fromKey, TO_STATE: toKey },
+    },
+  };
+}
+
+/**
+ * True when a 4526 response shows no row moved (stale screen or bad
+ * state). Looks for affected_rows anywhere in the envelope; when none
+ * is reported the move is treated as done.
+ * @param {unknown} response
+ * @returns {boolean}
+ */
+export function overrideMissed(response) {
+  const counts = [];
+  const walk = (node, depth) => {
+    if (!node || typeof node !== 'object' || depth > 6) return;
+    if (Array.isArray(node)) { node.forEach((item) => walk(item, depth + 1)); return; }
+    Object.entries(node).forEach(([key, value]) => {
+      if (key.toLowerCase() === 'affected_rows' && typeof value === 'number') counts.push(value);
+      else walk(value, depth + 1);
+    });
+  };
+  walk(response, 0);
+  return counts.length > 0 && counts.every((n) => n === 0);
 }
 
 /**
@@ -494,11 +604,19 @@ export function fillStageSelect(select, stage, enabled) {
   if (!select) return;
   const model = stageOptions(stage);
   select.replaceChildren();
-  model.options.forEach((option) => {
-    const node = document.createElement('option');
-    node.value = option.value;
-    node.textContent = option.label;
-    select.appendChild(node);
+  model.groups.forEach((group) => {
+    let parent = select;
+    if (group.label) {
+      parent = document.createElement('optgroup');
+      parent.label = group.label;
+      select.appendChild(parent);
+    }
+    group.options.forEach((option) => {
+      const node = document.createElement('option');
+      node.value = option.value;
+      node.textContent = option.label;
+      parent.appendChild(node);
+    });
   });
   select.value = model.current;
   select.dataset.stage = model.current;

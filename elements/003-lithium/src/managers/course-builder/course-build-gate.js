@@ -7,6 +7,9 @@
  * call Build.Accept / Build.Decline / Build.Approve / Build.Abandon
  * through invokeScript with { run_id }. Nothing here reaches research
  * except the human Approve. There is no Research button.
+ * Phase 22 adds Inspect Pass/Fail (Build.InspectPass / Build.InspectFail)
+ * and Publish (Build.Publish). Publish is always a human click: it is
+ * shown disabled from build through checklist and enabled only at draft.
  */
 
 import { log, Subsystems, Status } from '../../core/log.js';
@@ -14,6 +17,7 @@ import { authQuery, invokeScript } from '../../shared/conduit.js';
 import { confirmDialog } from '../../shared/confirm.js';
 import { toast } from '../../shared/toast.js';
 import { staffOutcome } from '../course-manager/course-learners.js';
+import { paintOutlineSection } from './course-build-outline.js';
 import {
   RUN_EVENTS_QUERY_REF,
   RUN_GET_QUERY_REF,
@@ -27,6 +31,9 @@ export const GATE_SCRIPTS = {
   decline: 'Build.Decline',
   approve: 'Build.Approve',
   abandon: 'Build.Abandon',
+  inspectPass: 'Build.InspectPass',
+  inspectFail: 'Build.InspectFail',
+  publish: 'Build.Publish',
 };
 
 /** P20a human gates. state -> buttons, in display order. */
@@ -39,7 +46,29 @@ export const GATE_ACTIONS = {
     { key: 'approve', label: 'Approve', script: GATE_SCRIPTS.approve, to: 'research', confirm: true },
     { key: 'abandon', label: 'Abandon', script: GATE_SCRIPTS.abandon, to: 'abandoned', confirm: true },
   ],
+  inspect: [
+    { key: 'inspectPass', label: 'Inspect Pass', script: GATE_SCRIPTS.inspectPass, to: 'checklist', confirm: false },
+    { key: 'inspectFail', label: 'Inspect Fail', script: GATE_SCRIPTS.inspectFail, to: 'build', confirm: true },
+  ],
+  draft: [
+    { key: 'publish', label: 'Publish', script: GATE_SCRIPTS.publish, to: 'publishing', confirm: true },
+  ],
 };
+
+/** The only state where Publish is enabled. */
+export const PUBLISH_STATE = 'draft';
+/** States that show Publish disabled, so the operator sees it is coming. */
+export const PUBLISH_PREVIEW_STATES = ['build', 'inspect', 'checklist'];
+
+/** True when the Publish button may be clicked. */
+export function publishEnabled(state) {
+  return String(state || '').trim().toLowerCase() === PUBLISH_STATE;
+}
+
+/** True when a disabled Publish button is shown. */
+export function publishPreview(state) {
+  return PUBLISH_PREVIEW_STATES.includes(String(state || '').trim().toLowerCase());
+}
 
 export const EVENT_LIMIT = 10;
 
@@ -182,10 +211,19 @@ export function paintRunPanel(mgr, run, artifacts, events) {
     btn.addEventListener('click', () => runGate(mgr, action, run.run_id));
     actions.append(btn);
   }
+  if (publishPreview(run.state)) {
+    const btn = node('button', 'btn btn-sm btn-secondary builder-run-btn', 'Publish');
+    btn.type = 'button';
+    btn.disabled = true;
+    btn.dataset.gate = 'publish';
+    btn.title = 'Publish opens at draft';
+    actions.append(btn);
+  }
   if (actions.childElementCount === 0) {
     actions.append(node('span', 'builder-run-none', 'No human action at this state.'));
   }
   host.append(actions);
+  paintOutlineSection(host, run, artifacts);
 
   host.append(node('h4', 'builder-run-sub', `Artifacts (${artifacts.length})`));
   const artList = node('ul', 'builder-run-list');
