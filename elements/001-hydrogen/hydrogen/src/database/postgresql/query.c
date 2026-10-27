@@ -620,23 +620,25 @@ bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedState
         log_this(designator, "PostgreSQL execute_prepared: Failed to set statement timeout", LOG_LEVEL_ERROR, 0);
     }
 
-    // Parse and process parameters if provided
+    // Bind in SQL appearance order of :name slots. PREPARE used the $N SQL
+    // from convert_named_to_positional, so the values must follow the same
+    // order, not the JSON type-group order from parse_typed_parameters.
     ParameterList* params = NULL;
+    TypedParameter** ordered_params = NULL;
     size_t ordered_param_count = 0;
     char** param_values = NULL;
-    
-    if (request->parameters_json && strlen(request->parameters_json) > 0) {
-        // Parse typed parameters from JSON
-        params = parse_typed_parameters(request->parameters_json, designator);
-        if (params && params->count > 0) {
-            // For prepared statements, parameters are already in positional order
-            // Just convert the parameter values to string format for PQexecPrepared
-            ordered_param_count = params->count;
-            param_values = calloc(ordered_param_count, sizeof(char*));
-            if (param_values) {
-                for (size_t i = 0; i < ordered_param_count; i++) {
-                    param_values[i] = postgresql_convert_param_value(params->params[i], designator);
-                }
+
+    if (!database_ordered_parameters(request->sql_template, request->parameters_json,
+                                     DB_ENGINE_POSTGRESQL, &ordered_params, &ordered_param_count,
+                                     &params, designator)) {
+        log_this(designator, "PostgreSQL execute_prepared: Failed to order parameters", LOG_LEVEL_ERROR, 0);
+        return false;
+    }
+    if (ordered_params && ordered_param_count > 0) {
+        param_values = calloc(ordered_param_count, sizeof(char*));
+        if (param_values) {
+            for (size_t i = 0; i < ordered_param_count; i++) {
+                param_values[i] = postgresql_convert_param_value(ordered_params[i], designator);
             }
         }
     }
@@ -669,6 +671,7 @@ bool postgresql_execute_prepared(DatabaseHandle* connection, const PreparedState
         }
         free(param_values);
     }
+    free(ordered_params);
     if (params) {
         free_parameter_list(params);
     }

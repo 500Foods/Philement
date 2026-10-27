@@ -71,11 +71,11 @@ only.
 
 ## Resuming Work
 
-**CURRENT PAUSE POINT (as of 2026-10-23):** Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, and 15 are complete. Andrew confirmed `Api.Echo` on `https://lithium.500courses.com`: Wait on `job_id: BBTDC`, Wait off `job_id: CCCRP`, both `status: completed`. **Phase 10** is complete. Andrew confirmed the tulip button, Ctrl+P, pretty-print then save, the Preview tab (summary, then Lua), and that a 9px font survives a reload. He declined the optional meta tab. It does not move forward. **Phase 11** is complete. CodeMirror 6 is the only stack. Lua folds `function`, `if`, `do`, `for`, and `while` through `end`, and `repeat` through `until`. `H.` and `H.name` use the namespace tag. **Phase 12** is complete. Andrew confirmed the Learning group shows Course Manager and that he can open the shell. The gate reads the stored token with `getClaims(retrieveJWT())`. A bare `getClaims()` returns null and hides the row before the token is read. QueryRef 155 failure still denies, and the sidebar still omits ID 34 when the gate fails. A direct open still shows the lock panel. Andrew reported Acuranzo 1378, 1379, 1380, and 1381 applied. **Phase 13** is complete (2026-10-23). Andrew reported the latest build deployed and the latest migrations applied. The list has no Retired checkbox. Retired stays under Course Options. Staff list **4500**, insert **4501** (`courses_4082.lua` stores Retired), update **4502** (`courses_4081.lua` stores Retired), enrolment history **4503**, management history **4504**, prices **4505** (`courses_4083.lua`). Lookup 059 key 14 is `courses/course-manager` (`acuranzo_1397.lua` and `acuranzo_1398.lua`). Default columns are Code and Title. The list is a LithiumTable. The navigator owns add, duplicate, and delete. Delete leaves the row. Footer save and cancel use ManagerEditHelper. Canvas shows the image at 524×292, stretched, with rounded corners. Commerce lists cad, usd, eur, and gbp. **4004** stays the published catalog. **4008** is the courses table file, not a caller ref. **Phase 14** is complete (2026-10-23). Andrew confirmed Save prices on course 16 at 13:55:13: CAD cents 4999, success true, affected_rows 1, eight statements all success. Save prices is **4506** (`courses_4084.lua`, rewritten by `courses_4087.lua`). Orders are **4507** (`courses_4085.lua`). `Stripe.Mode` is `courses_4086.lua`, invokable 1. The client logs the save and treats success `fail` as an error. Ensure Product, Refund, and Deactivate stay invokable 0. **Phase 15** is complete (2026-10-23). Andrew searched andrew@500courses.com. One hit opened account **9001**. Canvas user **801**. He granted a course, and Open Canvas user worked. Archive and Renew were not clicked. Search **4508**, account **4509**, seats **4510**, orders **4511**, Canvas link **4512**. The live search and grant are the apply report for `courses_4088.lua` through `courses_4096.lua`. `Enroll.StaffGate` stays invokable 0. `Enroll.StaffGrant`, `Enroll.StaffArchive`, and `Enroll.StaffRenew` are invokable 1. At the close of Phase 15 the next Courses file was **4097**, the next caller ref was **4513**, and the next Acuranzo file was **1399**. **Phase 19** took those numbers on 2026-10-23 and is in progress. Andrew applied `courses_4097.lua` through `courses_4110.lua` and `acuranzo_1399.lua` and `acuranzo_1400.lua`. He confirmed the list and Submission tab, then received the receipt for "All about mDNS". That row is Received and will not be mailed again. A later working-title save on QueryRef **4514** failed at statement 1 and rolled back, so the ledger write is still unproven. Units on that ledger are integer cents, integer milliseconds, and an integer prompt count. Andrew applied `courses_4111.lua` through `courses_4114.lua` and `acuranzo_1401.lua`. The receipt went out on the Hydrogen restart with a subject and no body. `courses_4115.lua` is QueryRef **4522**. It moves Received or Intake back to Suggested and clears `receipt_mail`. `courses_4116.lua` puts the send time in the receipt key. `courses_4117.lua` replaces the text and HTML of `course.suggestion_received`. The greeting uses the suggestion `submitter_name`. The course title uses the suggestion `course_name`. Neither value comes from the JWT. Those three are not applied. Opening Course Builder does not send mail. The next Courses file is **4118**. The next caller ref is **4523**. The next Acuranzo file is **1402**. Lookup 059 key **16** stays free. File numbers stay below 4500. **Phase 16**, **Phase 17**, and **Phase 18** stay parked. Andrew parked Course Manager on 2026-10-23. Do not mark Phase 19 complete. After **1401** is applied and Hydrogen is restarted, a still-Suggested row is mailed on the next one-second tick without a login. Deploy Lithium after that restart so an old page stops calling the script. Do not start Phase 20. Do not edit Phases 16–18 until he pulls Course Manager back. Phases 5a, 5b, 5c, 5d, and 6 stay deferred until Andrew pulls Band B back. He does deploys and login checks. Do not drive a browser for those. Save, duplicate, and update send INTEGER `SCRIPT_TYPE`, `STATUS`, `USERID`, and `INVOKABLE` (0 when the row has none). A blank schedule or run time is `''`. Andrew applied Acuranzo 1395 (QueryRef 130) and 1396 (QueryRef 129) and confirmed pretty-print then save on 2026-10-22. Delete uses QueryRef 131 with STRING `GROUP_NAME` and `SCRIPT_NAME`. A dirty row switch asks to save or stay. On the 500 Courses Lithium database, Lookup 059 key 13 is `scripts/script-manager` and its collection names delete 131. Course QueryRefs moved to the 4000 pack on 2026-10-16. Band D uses the Courses pack QueryRefs section. Do not call retired **#085**, **#150**, or **#151**.
+**CURRENT PAUSE POINT (as of 2026-10-23):** Phases 0, 0a, 0b, 0c, 1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 13, 14, 15, and 19 are complete. Andrew confirmed `Api.Echo` on `https://lithium.500courses.com`: Wait on `job_id: BBTDC`, Wait off `job_id: CCCRP`, both `status: completed`. **Phase 10** is complete. Andrew confirmed the tulip button, Ctrl+P, pretty-print then save, the Preview tab (summary, then Lua), and that a 9px font survives a reload. He declined the optional meta tab. It does not move forward. **Phase 11** is complete. CodeMirror 6 is the only stack. Lua folds `function`, `if`, `do`, `for`, and `while` through `end`, and `repeat` through `until`. `H.` and `H.name` use the namespace tag. **Phase 12** is complete. Andrew confirmed the Learning group shows Course Manager and that he can open the shell. The gate reads the stored token with `getClaims(retrieveJWT())`. A bare `getClaims()` returns null and hides the row before the token is read. QueryRef 155 failure still denies, and the sidebar still omits ID 34 when the gate fails. A direct open still shows the lock panel. Andrew reported Acuranzo 1378, 1379, 1380, and 1381 applied. **Phase 13** is complete (2026-10-23). Andrew reported the latest build deployed and the latest migrations applied. The list has no Retired checkbox. Retired stays under Course Options. Staff list **4500**, insert **4501** (`courses_4082.lua` stores Retired), update **4502** (`courses_4081.lua` stores Retired), enrolment history **4503**, management history **4504**, prices **4505** (`courses_4083.lua`). Lookup 059 key 14 is `courses/course-manager` (`acuranzo_1397.lua` and `acuranzo_1398.lua`). Default columns are Code and Title. The list is a LithiumTable. The navigator owns add, duplicate, and delete. Delete leaves the row. Footer save and cancel use ManagerEditHelper. Canvas shows the image at 524×292, stretched, with rounded corners. Commerce lists cad, usd, eur, and gbp. **4004** stays the published catalog. **4008** is the courses table file, not a caller ref. **Phase 14** is complete (2026-10-23). Andrew confirmed Save prices on course 16 at 13:55:13: CAD cents 4999, success true, affected_rows 1, eight statements all success. Save prices is **4506** (`courses_4084.lua`, rewritten by `courses_4087.lua`). Orders are **4507** (`courses_4085.lua`). `Stripe.Mode` is `courses_4086.lua`, invokable 1. The client logs the save and treats success `fail` as an error. Ensure Product, Refund, and Deactivate stay invokable 0. **Phase 15** is complete (2026-10-23). Andrew searched andrew@500courses.com. One hit opened account **9001**. Canvas user **801**. He granted a course, and Open Canvas user worked. Archive and Renew were not clicked. Search **4508**, account **4509**, seats **4510**, orders **4511**, Canvas link **4512**. The live search and grant are the apply report for `courses_4088.lua` through `courses_4096.lua`. `Enroll.StaffGate` stays invokable 0. `Enroll.StaffGrant`, `Enroll.StaffArchive`, and `Enroll.StaffRenew` are invokable 1. At the close of Phase 15 the next Courses file was **4097**, the next caller ref was **4513**, and the next Acuranzo file was **1399**. **Phase 19** took those numbers on 2026-10-23 and is complete (2026-10-26). Andrew applied `courses_4097.lua` through `courses_4110.lua` and `acuranzo_1399.lua` and `acuranzo_1400.lua`. He confirmed the list and Submission tab, then received the receipt for "All about mDNS". That row is Received and will not be mailed again. A later working-title save on QueryRef **4514** failed at statement 1 and rolled back. The cause was Hydrogen, not the SQL: `postgresql_execute_prepared` bound INTEGER then STRING instead of `:NAME` order. It now uses `database_ordered_parameters`, like the other engines. Andrew then saved a working title and confirmed Intake, Flag, and Suggested. Units on that ledger are integer cents, integer milliseconds, and an integer prompt count. Andrew applied `courses_4111.lua` through `courses_4114.lua` and `acuranzo_1401.lua`. The receipt went out on the Hydrogen restart with a subject and no body. `courses_4115.lua` is QueryRef **4522**. It moves Received or Intake back to Suggested and clears `receipt_mail`. `courses_4116.lua` puts the send time in the receipt key. `courses_4117.lua` replaces the text and HTML of `course.suggestion_received`. The greeting uses the suggestion `submitter_name`. The course title uses the suggestion `course_name`. Neither value comes from the JWT. Andrew applied those three; Courses is applied through **4117**. Opening Course Builder does not send mail. The next Courses file is **4118**. The next caller ref is **4523**. The next Acuranzo file is **1402**. Lookup 059 key **16** stays free. File numbers stay below 4500. **Phase 16**, **Phase 17**, and **Phase 18** stay parked. Andrew parked Course Manager on 2026-10-23. A still-Suggested row is mailed on the next one-second tick without a login. Do not start Phase 20 until Andrew discusses it. Do not edit Phases 16–18 until he pulls Course Manager back. Phases 5a, 5b, 5c, 5d, and 6 stay deferred until Andrew pulls Band B back. He does deploys and login checks. Do not drive a browser for those. Save, duplicate, and update send INTEGER `SCRIPT_TYPE`, `STATUS`, `USERID`, and `INVOKABLE` (0 when the row has none). A blank schedule or run time is `''`. Andrew applied Acuranzo 1395 (QueryRef 130) and 1396 (QueryRef 129) and confirmed pretty-print then save on 2026-10-22. Delete uses QueryRef 131 with STRING `GROUP_NAME` and `SCRIPT_NAME`. A dirty row switch asks to save or stay. On the 500 Courses Lithium database, Lookup 059 key 13 is `scripts/script-manager` and its collection names delete 131. Course QueryRefs moved to the 4000 pack on 2026-10-16. Band D uses the Courses pack QueryRefs section. Do not call retired **#085**, **#150**, or **#151**.
 
 ### Resume here next session
 
-Phases 0–5, 7, 8, 9, 10, 11, 12, 13, 14, and 15 are complete. Do not reopen them. Do not open 5a–5d or 6 unless Andrew pulls Band B back.
+Phases 0–5, 7, 8, 9, 10, 11, 12, 13, 14, 15, and 19 are complete. Do not reopen them. Do not open 5a–5d or 6 unless Andrew pulls Band B back.
 
 1. **Phase 14** is complete (2026-10-23). Andrew confirmed Save
    prices on course 16 at 13:55:13. QueryRef **4506**, CAD cents
@@ -88,14 +88,13 @@ Phases 0–5, 7, 8, 9, 10, 11, 12, 13, 14, and 15 are complete. Do not reopen th
    link. Archive and Renew were not clicked. The live search
    and grant are the apply report for `courses_4088.lua`
    through `courses_4096.lua`. Phases 16–18 are parked.
-   Phase 19 is in progress. Andrew applied 4097–4114 and
-   Acuranzo 1399–1401. The receipt went out on the Hydrogen
-   restart. QueryRef **4514** had failed at statement 1 before
-   that cast rewrite. `courses_4115.lua` and `courses_4116.lua`
-   are written and are not applied. The screen does not send
-   the receipt. Suggested is now a stage choice.
-   Do not mark it complete. Do not start Phase 20. Do not edit
-   Phases 16–18. Phase 13
+   Phase 19 is complete (2026-10-26). Andrew applied
+   4097–4117 and Acuranzo 1399–1401. QueryRef **4514** failed
+   because Hydrogen's PostgreSQL prepared path bound params out
+   of `:NAME` order; the Hydrogen fix resolved it. Andrew saved
+   a working title and confirmed Intake, Flag, and Suggested.
+   The screen does not send the receipt. Do not start Phase 20
+   until Andrew discusses it. Do not edit Phases 16–18. Phase 13
    closed on
    2026-10-23. Andrew reported the latest build deployed, the
    latest migrations applied, and the list Retired checkbox
@@ -109,10 +108,8 @@ Phases 0–5, 7, 8, 9, 10, 11, 12, 13, 14, and 15 are complete. Do not reopen th
    `Stripe.EnsureProduct`, `Stripe.Refund`, and
    `Stripe.DeactivateCustomer` at `invokable` 0 until Phase 18.
    `courses_4087.lua` is the SQL that ran for 4506. Do not edit
-   `courses_4084.lua`. Phase 19 applied **4097–4114**, refs
-   **4513–4521**, and Acuranzo **1399–1401**. The receipt went
-   out on the restart with a subject and no body. The unapplied
-   packet is **4115**, **4116**, and **4117**. **4522** moves
+   `courses_4084.lua`. Phase 19 applied **4097–4117**, refs
+   **4513–4522**, and Acuranzo **1399–1401**. **4522** moves
    Received or Intake back to Suggested and clears `receipt_mail`.
    **4116** puts the send time in the receipt key. **4117**
    replaces the receipt text and HTML. The greeting uses the
@@ -3242,7 +3239,7 @@ Phases 16–18 are parked and are not a dependency.
       duplicate **4518**, delete **4519**, Intake **4520**, flag
       **4521**. Mail template `course.suggestion_received`.
       Script `Build.ReceiveSuggested`, group `Build`.
-- [x] Third packet written and handed over, not applied.
+- [x] Third packet written, handed over, and applied.
       [`courses_4111.lua`](/elements/002-helium/courses/migrations/courses_4111.lua)
       rewrites **4514**.
       [`courses_4112.lua`](/elements/002-helium/courses/migrations/courses_4112.lua)
@@ -3263,13 +3260,23 @@ Phases 16–18 are parked and are not a dependency.
       [`courses_4116.lua`](/elements/002-helium/courses/migrations/courses_4116.lua)
       puts the send time in the receipt key. The screen does
       not send the mail.
-- [x] Receipt body written and handed over, not applied.
-      Andrew reported the sent message had a subject and no body.
+- [x] Receipt body written, handed over, and applied
+      (Courses migration summary APPLY = 4117). Andrew reported the sent message had a subject and no body.
       [`courses_4117.lua`](/elements/002-helium/courses/migrations/courses_4117.lua)
       replaces the text and HTML of `course.suggestion_received`.
       The greeting uses the suggestion `submitter_name`. The
       course title uses the suggestion `course_name`. The send
       does not read a JWT. Subject and display name stay.
+- [x] Hydrogen fix (2026-10-26).
+      [`postgresql/query.c`](/elements/001-hydrogen/hydrogen/src/database/postgresql/query.c)
+      `postgresql_execute_prepared` now orders values with
+      `database_ordered_parameters()`, by `:NAME` appearance.
+      MySQL, MariaDB, SQLite, DB2, MSSQL, and Firebird already
+      did. Unity file
+      [`query_test_execute_prepared_param_order.c`](/elements/001-hydrogen/hydrogen/tests/unity/src/database/postgresql/query_test_execute_prepared_param_order.c)
+      covers multi-statement blocks, mixed types in any order,
+      statements using a subset or none, and one name keeping
+      one value across the block. No migration.
 - [x] Visible copy has no "Lua" and no "phase". No accept,
       decline, or junk button. No Canvas control. The ledger is
       not on screen.
@@ -3280,42 +3287,44 @@ Phases 16–18 are parked and are not a dependency.
       Submission fields, Annotation, the manage block, and the
       stage select. Detail markup does not run. Andrew confirmed
       the list and the Submission tab on the applied packet.
-      The edit block and the receipt pass are not on that build.
-- [ ] A Working Title save keeps `course_name` and writes one
-      ledger row. SQL shape is tested. **4514** is applied. The
-      live save failed at statement 1 and rolled back.
-      `courses_4111.lua` rewrote the cast and went out with the
-      restart. The ledger row is still unproven.
+      4101–4117 are applied and the current Lithium build is
+      deployed, so the edit block and the receipt pass are on it.
+- [x] A Working Title save works (2026-10-26). Andrew saved a
+      title after the Hydrogen fix. The earlier statement 1
+      failure was the PostgreSQL prepared bind order, not the
+      **4111** cast. Intake, Flag, and Suggested also work.
 - [x] `course-builder.test.js` passed 9. `npm run lint` on the
       Course Builder files exited 0. `npm run lint:css` on
       `course-builder.css` exited 0. The full `npm test` was not
       re-run. Its known variance is the live auth file, HTTP 503.
 - [x] Andrew applied 4097–4114 and Acuranzo 1399–1401. The
       receipt went out on the Hydrogen restart.
-- [ ] Andrew applies 4115, 4116, and 4117, regenerates the
-      payload, restarts Hydrogen, then deploys Lithium. Moving a
-      row to Suggested clears the receipt mark and the next tick
-      sends again. That send uses the new body. He can also retry
-      the working-title save.
+- [x] Andrew applied 4115, 4116, and 4117 (Courses APPLY =
+      4117, Acuranzo APPLY = 1401) and deployed the current
+      Lithium build. Suggested is reachable from the stage select.
+      A re-sent receipt with the new body was not separately
+      reported.
+- [x] Hydrogen Unity: the new param-order file passed 8 of 8
+      (7 of 8 fail on the old code). `query_test_postgresql` 9/9
+      and `database_params_test` 21/21. `mkt` and `mkp` clean.
+      Followed `docs/H/INSTRUCTIONS.md`, `docs/H/tests/TESTING.md`,
+      and `docs/H/tests/TESTING_UNITY.md`.
 
-**Status:** in progress (2026-10-23). Last finished work is the
-receipt body. Andrew applied **4097–4114** and
-Acuranzo **1399–1401**. The receipt went out on the restart
-with a subject and no body. The working-title ledger row is
-still unproven. The unapplied packet is Courses **4115**,
-**4116**, and **4117**. Caller ref **4522** clears the receipt
-mark. **4117** replaces the receipt text and HTML. The greeting
-uses the suggestion `submitter_name`. The course title uses the
-suggestion `course_name`. Next Courses file
-**4118**. Next caller ref **4523**. Next Acuranzo file **1402**.
-Lookup 059 key **16** stays free. File numbers stay below 4500.
-The agent did not apply the packet, did not run `mka` or `mkt`,
-and did not open the live manager. `course-builder.test.js`
-passed 9. ESLint on the Course Builder files and the unit test
-exited 0. `luac -p` and luacheck exited 0 on 4111–4114 and
-`acuranzo_1401.lua`. The stored script bodies also passed
-`luac -p`. The orchestrator body keeps two luacheck warnings
-copied from `acuranzo_1364.lua`.
+**Status:** complete (2026-10-26). Andrew applied Courses
+**4097–4117** and Acuranzo **1399–1401** and deployed the current
+Lithium build. After the Hydrogen PostgreSQL prepared-param fix,
+the Working Title save on **4514** works, and Intake (**4520**),
+Flag (**4521**), and Suggested (**4522**) work. `course-builder.test.js`
+passed 9. ESLint on the Course Builder files and `npm run lint:css`
+on `course-builder.css` exited 0. `luac -p` and luacheck exited 0
+on 4111–4117 and `acuranzo_1401.lua`. The orchestrator body keeps
+two luacheck warnings copied from `acuranzo_1364.lua`. Variance:
+the full `npm test` was not re-run after P19; its known variance
+is the live auth file, HTTP 503. A re-sent receipt with the 4117
+body and the ledger row contents were not separately reported.
+The Hydrogen change is not committed. Next Courses file **4118**.
+Next caller ref **4523**. Next Acuranzo file **1402**. Lookup 059
+key **16** stays free. File numbers stay below 4500.
 
 **Accomplished:**
 
@@ -3344,7 +3353,7 @@ copied from `acuranzo_1364.lua`.
   received the receipt. **4515** labels Suggested, Received, and
   Intake and does not select the cap token, the site id, or the
   IP. **4514** still does not assign `course_name`. The live
-  save failed at statement 1. **4111** casts the title as
+  save failed at statement 1 until the Hydrogen fix. **4111** casts the title as
   `varchar(100)` (`char(100)` on MySQL). **4517** assigns
   `course_name`. Reverse **4098** before **4097** still applies
   to the first packet. Reverse **4114** down through **4111**,
@@ -3372,9 +3381,17 @@ copied from `acuranzo_1364.lua`.
   fallback to **4513**. The query cache fills at startup, so
   **4111** needs a Hydrogen restart before the title save uses
   the new cast.
-- `CAST(:WORKING_TITLE AS text)` into `varchar(100)` is the
-  likely cause of "transaction block 1 failed at statement 1"
-  on this Yugabyte. **4111**, **4112**, and **4113** cast the
+- `CAST(:WORKING_TITLE AS text)` was a suspect, not the cause.
+  "transaction block 1 failed at statement 1" came from Hydrogen:
+  `postgresql_execute_prepared` bound all INTEGER values, then all
+  STRING values, so the title landed in `CAST(:SUGGESTION_ID AS
+  integer)`. Single-statement queries use the non-prepared path,
+  which already reorders. Only `-- TRANSACTION_START` queries hit
+  it, and **4514** was the first with a string bind before the
+  integers. Same-type swaps (USERID before SUGGESTION_ID) fail
+  silently. Fix the engine, not the SQL order. A given name has
+  one value across the whole transaction; use a new name for a
+  different value. **4111**, **4112**, and **4113** cast the
   title as the column width. Detail stays a bare bind.
   Annotation stays within 250 characters.
 - The receipt pass claims the row as Received with
@@ -3432,47 +3449,18 @@ copied from `acuranzo_1364.lua`.
 
 **Handoff:**
 
-- Phase 19 stays in progress. The next sitting waits for Andrew.
-  Do not start Phase 20. Do not edit Phases 16–18.
-- He regenerates the Hydrogen payload (`mka` or
-  `payload-generate.sh`; this sitting did not), applies
-  `courses_4115.lua`, `courses_4116.lua`, and
-  `courses_4117.lua`, restarts Hydrogen, then deploys Lithium.
-  The restart loads QueryRef **4522**. The script body is read
-  on the next orchestrator tick. The template is read when the
-  message is queued. **4117** does not by itself resend the
-  mDNS row.
-- Moving Received or Intake to Suggested clears `receipt_mail`
-  and writes one ledger row named `suggested`. The next tick
-  sends the receipt again. The mail key includes the time, so
-  the relay does not return the earlier message. Intake still
-  leaves the receipt mark alone. A failed send still stores
-  `failed` until he moves the row back to Suggested.
-- The script is group `Build`, name `ReceiveSuggested`. There is
-  no Course States group and no script named Received. The
-  subject and body are template `course.suggestion_received`,
-  display name "Suggestion received". **4117** keeps the subject
-  "We received your course suggestion" and replaces the text
-  and HTML. The body names the suggested course, says updates
-  will follow through evaluation and building, says not every
-  suggestion becomes a course, and says the final disposition
-  is sent either way. `FIRST_NAME` is the suggestion
-  `submitter_name`. `COURSE_NAME` is the suggestion
-  `course_name`. After **4114**, he sets
-  `FROM_ADDRESS` and `REPLY_TO` at the top of that script and
-  saves. Blank keeps `MailRelay.DefaultFrom` and
-  `DefaultReplyTo`. Run stays off because invokable is 0.
-- Saving a working title on a row that is not in edit mode
-  should still leave `course_name` unchanged and add one
-  `course_build_actions` row with `action_name` `working_title`
-  and the six measures NULL. Retry that after the restart.
-- Calling **4520** again on a row already at Intake can append
-  another `intake` ledger row. The screen confirms a real move
-  and does not offer Intake once the row is there.
-- Reverse **4117**, then **4116**, then **4115**. **4117**
-  puts the short 4109 text and HTML back and does not delete
-  the template. Do not reverse 4097–4114 or
-  **1401** unless he also wants the applied receipt gone.
+- Phase 19 is closed. The next sitting waits for Andrew. Do not
+  start Phase 20 until he discusses it. Do not edit Phases 16–18.
+- Hydrogen has uncommitted changes in `src/database/postgresql/query.c`
+  and the new Unity file. Andrew commits and runs `mka` when he
+  chooses. No migration goes with it.
+- Optional checks, not gates: a full `npm test`; a receipt re-sent
+  after moving a row to Suggested shows the 4117 body; the
+  `course_build_actions` row for `working_title` has the six
+  measures NULL.
+- Reverse **4117**, then **4116**, then **4115**. Do not reverse
+  4097–4114 or **1401** unless he also wants the applied receipt
+  gone.
 - Do not show the ledger. Do not add Accept, Decline, Junk, or
   Canvas. Do not call QueryRef **4000** from this screen. Do not
   add a second receipt script.
@@ -4661,6 +4649,28 @@ silent (does not claim Vite cannot run). Logged; no DEV rewrite.
   **4118**. Next ref **4523**. Next Acuranzo file **1402**.
   Lookup 059 key **16** stays free.
 
+### P19f — 2026-10-26 Hydrogen bind order, Phase 19 closed
+
+- What we did: Andrew applied 4115–4117 (Courses APPLY = 4117,
+  Acuranzo APPLY = 1401) and deployed Lithium. The Working Title
+  save still failed on **4514**. Traced it to
+  `postgresql_execute_prepared`, which bound INTEGER then STRING.
+  Changed it to `database_ordered_parameters()`, as the other
+  engines already do. Added the Unity param-order file. Did not
+  apply migrations, start servers, or run `mka`.
+- Gate result: Unity param-order 8/8, `query_test_postgresql`
+  9/9, `database_params_test` 21/21, `mkt` and `mkp` clean.
+  Andrew saved a working title and confirmed Intake, Flag, and
+  Suggested.
+- Lessons: only transaction queries use the prepared path. A
+  mixed-type block fails loudly; a same-type swap fails quietly.
+  Converter unit tests did not check what the engine actually
+  received.
+- Follow-ups: Phase 19 is complete. Hydrogen change uncommitted.
+  Do not start Phase 20 until Andrew discusses it. Next file
+  **4118**. Next ref **4523**. Next Acuranzo file **1402**.
+  Lookup 059 key **16** stays free.
+
 ---
 
 ## Revision history
@@ -4698,5 +4708,6 @@ silent (does not claim Vite cannot run). Logged; no DEV rewrite.
 | 2026-10-23 | Phase 19 in progress. Shell is in the tree. Packet 4097–4100 and `acuranzo_1399.lua` handed over, not applied. List **4513**. Save **4514**. Lookup 059 key 15. Units not confirmed. Next file **4101**. Next ref **4515**. Next Acuranzo file **1400**. Do not start Phase 20. |
 | 2026-10-23 | Phase 19 still in progress. Andrew applied 4097–4100 and `acuranzo_1399.lua` and confirmed the list. Edit block, one receipt email, and Intake select are in the tree. Packet 4101–4110 and `acuranzo_1400.lua` handed over, not applied. List **4515**. Next file **4111**. Next ref **4522**. Next Acuranzo file **1401**. |
 | 2026-10-23 | Phase 19 still in progress. Andrew received the mDNS receipt, so 4101–4110 and Acuranzo 1400 ran. That row is Received. QueryRef **4514** failed at statement 1. Packet 4111–4114 and `acuranzo_1401.lua` handed over, not applied. The screen does not send mail. Next file **4115**. Next ref **4522**. Next Acuranzo file **1402**. |
+| 2026-10-26 | Phase 19 complete. Andrew applied 4115–4117 and deployed Lithium. **4514** failed because Hydrogen's PostgreSQL prepared path bound INTEGER then STRING; it now uses `database_ordered_parameters`, with Unity coverage. Working Title, Intake, Flag, and Suggested confirmed. Do not start Phase 20 until discussed. Next file **4118**. Next ref **4523**. Next Acuranzo file **1402**. |
 | 2026-10-23 | Phase 19 still in progress. Andrew applied 4111–4114 and Acuranzo 1401. The receipt went out on the restart. Suggested is a stage choice. Packet 4115–4116 handed over, not applied. **4522** clears the receipt mark. Next file **4117**. Next ref **4523**. |
 | 2026-10-23 | Phase 19 still in progress. The sent receipt had a subject and no body. `courses_4117.lua` replaces the text and HTML. The name and the course title come from the suggestion row. Packet 4115–4117 handed over, not applied. Next file **4118**. Next ref **4523**. |
