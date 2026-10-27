@@ -64,7 +64,7 @@ NOTE: Please refer to individual projects for a more nuanced breakdown.
 The Hydrogen project, for example, shows the lines of C code grouped into core project code and unit testing code, and combines C and C header files into the same row, along with providing additional statistics.
 <!--CLOC-START -->
 ```cloc
-Last updated at 2026-10-27 20:36:10 UTC
+Last updated at 2026-10-27 20:56:52 UTC
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
@@ -72,7 +72,7 @@ JSON                           593            492              0        2101260
 C                             1899          77544          62457         334827
 Text                           399            396              0         176030
 Lua                            607          15920          10422         138656
-Markdown                       793          41865            268         132760
+Markdown                       793          41871            268         132806
 JavaScript                     265          11451          14984          60078
 Bourne Shell                   238           9117         125897          54758
 SVG                             16             17             27          17460
@@ -92,7 +92,7 @@ YAML                             2              8             13             37
 Pascal                           2             11              2             31
 MSBuild script                   1              3              0             11
 -------------------------------------------------------------------------------
-SUM:                          5390         165111         231537        3052022
+SUM:                          5390         165117         231537        3052068
 -------------------------------------------------------------------------------
 506 Files were skipped (duplicate, binary, or without source code):
   css: 167
