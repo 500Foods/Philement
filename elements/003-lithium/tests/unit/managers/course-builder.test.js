@@ -646,6 +646,18 @@ describe('Course Builder staff override (P22a, 4526)', () => {
     expect(model.options.length).toBe(model.groups[0].options.length + RUN_STATES.length - 1);
   });
 
+  it('marks automatic stages with (Auto) in picker labels only', () => {
+    const model = stageOptions('intake');
+    model.groups[1].options.forEach((o) => {
+      const state = o.value.replace('override:', '');
+      if (AUTOMATIC_STATES.includes(state)) expect(o.label).toBe(`${stateLabel(state)} (Auto)`);
+      else expect(o.label).not.toContain('(Auto)');
+    });
+    expect(model.groups[1].options.find((o) => o.value === 'override:research').label).toBe('Research (Auto)');
+    expect(stageOptions('research').groups[0].options[0].label).toBe('Research (Auto)');
+    expect(stateLabel('research')).toBe('Research');
+  });
+
   it('shows non-early states as themselves, not Suggested', () => {
     expect(storedStage({ draft_state: 'research' })).toBe('research');
     expect(storedStage({ draft_state: 'declined' })).toBe('declined');

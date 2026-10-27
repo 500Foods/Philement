@@ -131,6 +131,7 @@ export function storedStage(row) {
  *   groups: Array<{label: string, options: Array<{value: string, label: string}>}> }}
  */
 export function stageOptions(stage) {
+  const optionLabel = (value) => (AUTOMATIC_STATES.includes(value) ? `${stateLabel(value)} (Auto)` : stateLabel(value));
   const key = String(stage ?? '').trim().toLowerCase();
   const current = RUN_STATES.includes(key) ? key : 'suggested';
   const early = ['suggested', 'received', 'intake'];
@@ -140,10 +141,10 @@ export function stageOptions(stage) {
     intake: ['suggested', 'intake'],
   };
   const normal = (early.includes(current) ? normalMoves[current] : [current])
-    .map((value) => ({ value, label: stateLabel(value) }));
+    .map((value) => ({ value, label: optionLabel(value) }));
   const override = RUN_STATES
     .filter((value) => value !== current)
-    .map((value) => ({ value: `override:${value}`, label: stateLabel(value) }));
+    .map((value) => ({ value: `override:${value}`, label: optionLabel(value) }));
   const groups = [
     { label: '', options: normal },
     { label: 'Override (staff)', options: override },
