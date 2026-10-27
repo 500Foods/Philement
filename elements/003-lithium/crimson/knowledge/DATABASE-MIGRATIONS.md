@@ -359,4 +359,6 @@ The 500 Courses migrations now live in [`/elements/002-helium/courses/`](/elemen
 | [1399](/elements/002-helium/acuranzo/migrations/acuranzo_1399.lua) | lookups | 1.0.0 | 2026-10-23 | 4 | ✗ | Lookup 059 key 15 courses/course-builder tableDef |
 | [1400](/elements/002-helium/acuranzo/migrations/acuranzo_1400.lua) | lookups | 1.0.0 | 2026-10-23 | 4 | ✗ | Lookup 059 key 15 uses QueryRef 4515 and shows the manage block |
 | [1401](/elements/002-helium/acuranzo/migrations/acuranzo_1401.lua) | scripts | 1.0.0 | 2026-10-23 | 4 | ✗ | Orchestrator submits Build.ReceiveSuggested when a row is waiting |
-| **326** | | | | **1712** | **326** | |
+| [1402](/elements/002-helium/acuranzo/migrations/acuranzo_1402.lua) | lookups | 1.0.0 | 2026-10-27 | 4 | ✗ | Lookup 060 key 0 Profile Sections: add page indices |
+| [1403](/elements/002-helium/acuranzo/migrations/acuranzo_1403.lua) | lookups | 1.0.0 | 2026-10-27 | 4 | ✗ | Lookup 059 key 4 profile-manager/user-options tableDef |
+| **328** | | | | **1720** | **328** | |

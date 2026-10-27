@@ -2,7 +2,6 @@
   "$schema": "../tabledef-schema.json",
   "$version": "1.0.0",
   "$description": "Column definitions for User Options from Lookup 060 (App UI Lists). Displays profile sections and user preferences.",
-
   "table": "user-options",
   "title": "User Options",
   "queryRef": 26,
@@ -13,9 +12,7 @@
   "resizableColumns": true,
   "persistSort": false,
   "persistFilter": false,
-
   "columns": {
-
     "key_idx": {
       "title": "ID#",
       "field": "key_idx",
@@ -26,10 +23,9 @@
       "editable": false,
       "calculated": false,
       "primaryKey": true,
-      "description": "Database primary key — hidden from display",
+      "description": "Database primary key \u2014 hidden from display",
       "bottomCalc": null
     },
-
     "index": {
       "title": "Index",
       "field": "index",
@@ -40,9 +36,8 @@
       "editable": false,
       "calculated": false,
       "primaryKey": false,
-      "description": "Section index for page selection — hidden from display"
+      "description": "Section index for page selection \u2014 hidden from display"
     },
-
     "section": {
       "title": "Section",
       "field": "section",
@@ -54,10 +49,11 @@
       "calculated": true,
       "primaryKey": false,
       "description": "Group/section the option belongs to",
-      "group": 1,
-      "width": 120
+      "width": 120,
+      "groupable": true,
+      "groupPri": 1,
+      "groupDir": "asc"
     },
-
     "icon": {
       "title": "<fa fa-wrench></fa>",
       "field": "icon",
@@ -69,14 +65,14 @@
       "calculated": true,
       "primaryKey": false,
       "description": "Icon for the option",
-      "width": 28,
+      "width": 30,
       "formatter": "html",
       "hozAlign": "center",
-      "bottomCalc": "count"
+      "bottomCalc": "count",
+      "minWidth": 24
     },
-
     "label": {
-      "title": "Section",
+      "title": "Page",
       "field": "label",
       "coltype": "string",
       "visible": true,
@@ -85,9 +81,8 @@
       "editable": false,
       "calculated": true,
       "primaryKey": false,
-      "description": "Section name"
+      "description": "Page name"
     },
-
     "status": {
       "title": "Status",
       "field": "status_a1",
@@ -101,5 +96,6 @@
       "description": "Active/Inactive status",
       "lookupRef": "a1"
     }
-  }
+  },
+  "groupStartOpen": false
 }
