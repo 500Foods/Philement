@@ -264,7 +264,7 @@ export class ProfileManagerTable {
       { key_idx: 9, section: 'Formatting', icon: '<fa fa-calendar></fa>', label: 'Date Formats', index: -9, search: '', status_a1: 1 },
       { key_idx: 10, section: 'Formatting', icon: '<fa fa-00></fa>', label: 'Number Formats', index: -10, search: '', status_a1: 1 },
       { key_idx: 11, section: 'Application', icon: '<fa fa-atom-simple></fa>', label: 'Startup', index: -11, search: '', status_a1: 1 },
-      { key_idx: 12, section: 'Application', icon: '<fa fa-bell></fa>', label: 'Notifications', index: -12, search: '', status_a1: 1 },
+      { key_idx: 12, section: 'Application', icon: '<fa fa-camera></fa>', label: 'Photo', index: -12, search: '', status_a1: 1 },
       { key_idx: 13, section: 'Application', icon: '<fa fa-bell-concierge></fa>', label: 'Concierge', index: -13, search: '', status_a1: 1 },
       { key_idx: 14, section: 'Application', icon: '<fa fa-note-sticky></fa>', label: 'Annotations', index: -14, search: '', status_a1: 1 },
       { key_idx: 15, section: 'Application', icon: '<fa fa-signs-post></fa>', label: 'Tours', index: -15, search: '', status_a1: 1 },
