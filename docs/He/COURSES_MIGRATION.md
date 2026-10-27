@@ -330,3 +330,15 @@ is 16.
 The Acuranzo README points here for the retired numbers. The generated
 migration index only lists files that exist, so the hole does not
 show up there by itself.
+
+## 2026-10-26 — CB-2 packet (CATCHUP Phase 20)
+
+Not applied. `courses_4118.lua` extends `course_build_runs`
+(template_key, price_cents, canvas_course_id, error_text, state
+index). `courses_4119.lua` creates `course_build_artifacts`.
+`courses_4120.lua` (QueryRef 4523, list runs by state),
+`courses_4121.lua` (4524, run with artifacts), and
+`courses_4122.lua` (4525, run events from `course_build_actions`).
+Courses 4097–4117 and refs 4513–4522 are applied. Next Courses file
+is 4123. Next caller-facing QueryRef is 4526. The table and pack
+lines above this section are older and not current.

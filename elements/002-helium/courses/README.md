@@ -130,4 +130,9 @@ Macro scripts are the shared set in [`/elements/002-helium/helium/`](/elements/0
 | [4115](/elements/002-helium/courses/migrations/courses_4115.lua) | queries | 1.0.0 | 2026-10-23 | 4 | ✗ | QueryRef #4522 - Staff: Move to Suggested |
 | [4116](/elements/002-helium/courses/migrations/courses_4116.lua) | scripts | 1.0.0 | 2026-10-23 | 4 | ✗ | Build.ReceiveSuggested key changes on each send |
 | [4117](/elements/002-helium/courses/migrations/courses_4117.lua) | mail_templates | 1.0.0 | 2026-10-23 | 4 | ✗ | Receipt body for course.suggestion_received |
-| **118** | | | | **547** | **118** | |
+| [4118](/elements/002-helium/courses/migrations/courses_4118.lua) | course_build_runs | 1.0.0 | 2026-10-26 | 17 | ✗ | course_build_runs CB-2 pipeline columns and state index |
+| [4119](/elements/002-helium/courses/migrations/courses_4119.lua) | course_build_artifacts | 1.0.0 | 2026-10-26 | 7 | ✓ | course_build_artifacts: outline, materials, modules |
+| [4120](/elements/002-helium/courses/migrations/courses_4120.lua) | queries | 1.0.0 | 2026-10-26 | 4 | ✗ | QueryRef #4523 - Staff: List Runs by State |
+| [4121](/elements/002-helium/courses/migrations/courses_4121.lua) | queries | 1.0.0 | 2026-10-26 | 4 | ✗ | QueryRef #4524 - Staff: Get Run with Artifacts |
+| [4122](/elements/002-helium/courses/migrations/courses_4122.lua) | queries | 1.0.0 | 2026-10-26 | 4 | ✗ | QueryRef #4525 - Staff: List Run Events |
+| **123** | | | | **583** | **123** | |
